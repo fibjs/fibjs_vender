@@ -165,7 +165,6 @@
     <ClInclude Include="src\compiler\pipeline-statistics.h" />
     <ClInclude Include="src\compiler\pipeline.h" />
     <ClInclude Include="src\compiler\ppc\instruction-codes-ppc.h" />
-    <ClInclude Include="src\compiler\raw-machine-assembler.h" />
     <ClInclude Include="src\compiler\register-allocator-verifier.h" />
     <ClInclude Include="src\compiler\register-allocator.h" />
     <ClInclude Include="src\compiler\register-configuration.h" />
@@ -544,7 +543,6 @@
     <ClCompile Include="src\compiler\ppc\code-generator-ppc.cc" />
     <ClCompile Include="src\compiler\ppc\instruction-selector-ppc.cc" />
     <ClCompile Include="src\compiler\ppc\linkage-ppc.cc" />
-    <ClCompile Include="src\compiler\raw-machine-assembler.cc" />
     <ClCompile Include="src\compiler\register-allocator-verifier.cc" />
     <ClCompile Include="src\compiler\register-allocator.cc" />
     <ClCompile Include="src\compiler\register-configuration.cc" />

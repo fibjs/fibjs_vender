@@ -43,6 +43,11 @@ class ElementsAccessor {
     return HasElement(holder, key, handle(holder->elements()));
   }
 
+  inline Handle<Object> Set(Handle<JSObject> holder, uint32_t key,
+                            Handle<Object> value) {
+    return Set(holder, key, handle(holder->elements()), value);
+  }
+
   // Returns the element with the specified key or undefined if there is no such
   // element. This method doesn't iterate up the prototype chain.  The caller
   // can optionally pass in the backing store to use for the check, which must
@@ -53,19 +58,6 @@ class ElementsAccessor {
 
   inline Handle<Object> Get(Handle<JSObject> holder, uint32_t key) {
     return Get(holder, key, handle(holder->elements()));
-  }
-
-  // Returns an element's attributes, or ABSENT if there is no such
-  // element. This method doesn't iterate up the prototype chain.  The caller
-  // can optionally pass in the backing store to use for the check, which must
-  // be compatible with the ElementsKind of the ElementsAccessor. If
-  // backing_store is NULL, the holder->elements() is used as the backing store.
-  virtual PropertyAttributes GetAttributes(JSObject* holder, uint32_t key,
-                                           FixedArrayBase* backing_store) = 0;
-
-  inline PropertyAttributes GetAttributes(Handle<JSObject> holder,
-                                          uint32_t key) {
-    return GetAttributes(*holder, key, holder->elements());
   }
 
   // Returns an element's accessors, or NULL if the element does not exist or
@@ -181,11 +173,16 @@ class ElementsAccessor {
   // the index to a key using the KeyAt method on the NumberDictionary.
   virtual uint32_t GetKeyForIndex(FixedArrayBase* backing_store,
                                   uint32_t index) = 0;
-  virtual uint32_t GetIndexForKey(FixedArrayBase* backing_store,
+  virtual uint32_t GetIndexForKey(JSObject* holder,
+                                  FixedArrayBase* backing_store,
                                   uint32_t key) = 0;
   virtual PropertyDetails GetDetails(FixedArrayBase* backing_store,
                                      uint32_t index) = 0;
   virtual bool HasIndex(FixedArrayBase* backing_store, uint32_t key) = 0;
+
+  virtual Handle<Object> Set(Handle<JSObject> holder, uint32_t key,
+                             Handle<FixedArrayBase> backing_store,
+                             Handle<Object> value) = 0;
 
  private:
   static ElementsAccessor** elements_accessors_;

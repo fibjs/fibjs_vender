@@ -26,7 +26,8 @@ class LookupIterator final BASE_EMBEDDED {
     HIDDEN_SKIP_INTERCEPTOR = kHidden,
     HIDDEN = kHidden | kInterceptor,
     PROTOTYPE_CHAIN_SKIP_INTERCEPTOR = kHidden | kPrototypeChain,
-    PROTOTYPE_CHAIN = kHidden | kPrototypeChain | kInterceptor
+    PROTOTYPE_CHAIN = kHidden | kPrototypeChain | kInterceptor,
+    DEFAULT = PROTOTYPE_CHAIN
   };
 
   enum State {
@@ -44,7 +45,7 @@ class LookupIterator final BASE_EMBEDDED {
   };
 
   LookupIterator(Handle<Object> receiver, Handle<Name> name,
-                 Configuration configuration = PROTOTYPE_CHAIN)
+                 Configuration configuration = DEFAULT)
       : configuration_(ComputeConfiguration(configuration, name)),
         state_(NOT_FOUND),
         exotic_index_state_(ExoticIndexState::kUninitialized),
@@ -59,18 +60,16 @@ class LookupIterator final BASE_EMBEDDED {
         holder_map_(holder_->map(), isolate_),
         initial_holder_(holder_),
         number_(DescriptorArray::kNotFound) {
-#if 0  // TODO(verwaest): Enable once blocking hacks are removed.
 #ifdef DEBUG
     uint32_t index;  // Assert that the name is not an array index.
     DCHECK(!name->AsArrayIndex(&index));
 #endif  // DEBUG
-#endif
     Next();
   }
 
   LookupIterator(Handle<Object> receiver, Handle<Name> name,
                  Handle<JSReceiver> holder,
-                 Configuration configuration = PROTOTYPE_CHAIN)
+                 Configuration configuration = DEFAULT)
       : configuration_(ComputeConfiguration(configuration, name)),
         state_(NOT_FOUND),
         exotic_index_state_(ExoticIndexState::kUninitialized),
@@ -85,17 +84,15 @@ class LookupIterator final BASE_EMBEDDED {
         holder_map_(holder_->map(), isolate_),
         initial_holder_(holder_),
         number_(DescriptorArray::kNotFound) {
-#if 0  // TODO(verwaest): Enable once blocking hacks are removed.
 #ifdef DEBUG
     uint32_t index;  // Assert that the name is not an array index.
     DCHECK(!name->AsArrayIndex(&index));
 #endif  // DEBUG
-#endif
     Next();
   }
 
   LookupIterator(Isolate* isolate, Handle<Object> receiver, uint32_t index,
-                 Configuration configuration = PROTOTYPE_CHAIN)
+                 Configuration configuration = DEFAULT)
       : configuration_(configuration),
         state_(NOT_FOUND),
         exotic_index_state_(ExoticIndexState::kUninitialized),
@@ -116,7 +113,7 @@ class LookupIterator final BASE_EMBEDDED {
 
   LookupIterator(Isolate* isolate, Handle<Object> receiver, uint32_t index,
                  Handle<JSReceiver> holder,
-                 Configuration configuration = PROTOTYPE_CHAIN)
+                 Configuration configuration = DEFAULT)
       : configuration_(configuration),
         state_(NOT_FOUND),
         exotic_index_state_(ExoticIndexState::kUninitialized),
@@ -135,6 +132,29 @@ class LookupIterator final BASE_EMBEDDED {
     Next();
   }
 
+  static LookupIterator PropertyOrElement(
+      Isolate* isolate, Handle<Object> receiver, Handle<Name> name,
+      Configuration configuration = DEFAULT) {
+    uint32_t index;
+    LookupIterator it =
+        name->AsArrayIndex(&index)
+            ? LookupIterator(isolate, receiver, index, configuration)
+            : LookupIterator(receiver, name, configuration);
+    it.name_ = name;
+    return it;
+  }
+
+  static LookupIterator PropertyOrElement(
+      Isolate* isolate, Handle<Object> receiver, Handle<Name> name,
+      Handle<JSReceiver> holder, Configuration configuration = DEFAULT) {
+    uint32_t index;
+    LookupIterator it =
+        name->AsArrayIndex(&index)
+            ? LookupIterator(isolate, receiver, index, holder, configuration)
+            : LookupIterator(receiver, name, holder, configuration);
+    it.name_ = name;
+    return it;
+  }
   Isolate* isolate() const { return isolate_; }
   State state() const { return state_; }
 
@@ -212,8 +232,6 @@ class LookupIterator final BASE_EMBEDDED {
   Handle<Object> GetAccessors() const;
   Handle<InterceptorInfo> GetInterceptor() const;
   Handle<Object> GetDataValue() const;
-  // Usually returns the value that was passed in, but may perform
-  // non-observable modifications on it, such as internalize strings.
   void WriteDataValue(Handle<Object> value);
   void InternalizeName();
 

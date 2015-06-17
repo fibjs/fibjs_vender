@@ -1157,14 +1157,22 @@ class Heap {
   static const int kTraceRingBufferSize = 512;
   static const int kStacktraceBufferSize = 512;
 
+  static const double kMinHeapGrowingFactor;
+  static const double kMaxHeapGrowingFactor;
+  static const double kMaxHeapGrowingFactorMemoryConstrained;
+  static const double kMaxHeapGrowingFactorIdle;
+  static const double kTargetMutatorUtilization;
+
+  static double HeapGrowingFactor(double gc_speed, double mutator_speed);
+
   // Calculates the allocation limit based on a given growing factor and a
   // given old generation size.
   intptr_t CalculateOldGenerationAllocationLimit(double factor,
                                                  intptr_t old_gen_size);
 
   // Sets the allocation limit to trigger the next full garbage collection.
-  void SetOldGenerationAllocationLimit(intptr_t old_gen_size,
-                                       size_t current_allocation_throughput);
+  void SetOldGenerationAllocationLimit(intptr_t old_gen_size, double gc_speed,
+                                       double mutator_speed);
 
   // Indicates whether inline bump-pointer allocation has been disabled.
   bool inline_allocation_disabled() { return inline_allocation_disabled_; }
@@ -1567,10 +1575,28 @@ class Heap {
 
   bool deserialization_complete() const { return deserialization_complete_; }
 
-  void RegisterNewArrayBuffer(void* data, size_t length);
-  void UnregisterArrayBuffer(void* data);
-  void RegisterLiveArrayBuffer(void* data);
-  void FreeDeadArrayBuffers();
+  // The following methods are used to track raw C++ pointers to externally
+  // allocated memory used as backing store in live array buffers.
+
+  // A new ArrayBuffer was created with |data| as backing store.
+  void RegisterNewArrayBuffer(bool in_new_space, void* data, size_t length);
+
+  // The backing store |data| is no longer owned by V8.
+  void UnregisterArrayBuffer(bool in_new_space, void* data);
+
+  // A live ArrayBuffer was discovered during marking/scavenge.
+  void RegisterLiveArrayBuffer(bool in_new_space, void* data);
+
+  // Frees all backing store pointers that weren't discovered in the previous
+  // marking or scavenge phase.
+  void FreeDeadArrayBuffers(bool in_new_space);
+
+  // Prepare for a new scavenge phase. A new marking phase is implicitly
+  // prepared by finishing the previous one.
+  void PrepareArrayBufferDiscoveryInNewSpace();
+
+  // An ArrayBuffer moved from new space to old space.
+  void PromoteArrayBuffer(Object* buffer);
 
  protected:
   // Methods made available to tests.
@@ -2074,8 +2100,23 @@ class Heap {
   // the old space.
   void EvaluateOldSpaceLocalPretenuring(uint64_t size_of_objects_before_gc);
 
-  // Called on heap tear-down.
+  // Called on heap tear-down. Frees all remaining ArrayBuffer backing stores.
   void TearDownArrayBuffers();
+
+  // These correspond to the non-Helper versions.
+  void RegisterNewArrayBufferHelper(std::map<void*, size_t>& live_buffers,
+                                    void* data, size_t length);
+  void UnregisterArrayBufferHelper(
+      std::map<void*, size_t>& live_buffers,
+      std::map<void*, size_t>& not_yet_discovered_buffers, void* data);
+  void RegisterLiveArrayBufferHelper(
+      std::map<void*, size_t>& not_yet_discovered_buffers, void* data);
+  size_t FreeDeadArrayBuffersHelper(
+      Isolate* isolate, std::map<void*, size_t>& live_buffers,
+      std::map<void*, size_t>& not_yet_discovered_buffers);
+  void TearDownArrayBuffersHelper(
+      Isolate* isolate, std::map<void*, size_t>& live_buffers,
+      std::map<void*, size_t>& not_yet_discovered_buffers);
 
   // Record statistics before and after garbage collection.
   void ReportStatisticsBeforeGC();
@@ -2319,7 +2360,9 @@ class Heap {
   bool concurrent_sweeping_enabled_;
 
   std::map<void*, size_t> live_array_buffers_;
+  std::map<void*, size_t> live_new_array_buffers_;
   std::map<void*, size_t> not_yet_discovered_array_buffers_;
+  std::map<void*, size_t> not_yet_discovered_new_array_buffers_;
 
   struct StrongRootsList;
   StrongRootsList* strong_roots_list_;

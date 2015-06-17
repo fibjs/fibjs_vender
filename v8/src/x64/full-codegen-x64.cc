@@ -3008,11 +3008,6 @@ void FullCodeGenerator::EmitResolvePossiblyDirectEval(int arg_count) {
   // Push the enclosing function.
   __ Push(Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
 
-  // Push the receiver of the enclosing function and do runtime call.
-  Variable* this_var = scope()->LookupThis();
-  DCHECK_NOT_NULL(this_var);
-  __ Push(VarOperand(this_var, rcx));
-
   // Push the language mode.
   __ Push(Smi::FromInt(language_mode()));
 
@@ -3020,7 +3015,7 @@ void FullCodeGenerator::EmitResolvePossiblyDirectEval(int arg_count) {
   __ Push(Smi::FromInt(scope()->start_position()));
 
   // Do the runtime call.
-  __ CallRuntime(Runtime::kResolvePossiblyDirectEval, 6);
+  __ CallRuntime(Runtime::kResolvePossiblyDirectEval, 5);
 }
 
 
@@ -3052,8 +3047,8 @@ void FullCodeGenerator::VisitCall(Call* expr) {
 
   if (call_type == Call::POSSIBLY_EVAL_CALL) {
     // In a call to eval, we first call RuntimeHidden_ResolvePossiblyDirectEval
-    // to resolve the function we need to call and the receiver of the call.
-    // Then we call the resolved function using the given arguments.
+    // to resolve the function we need to call.  Then we call the resolved
+    // function using the given arguments.
     ZoneList<Expression*>* args = expr->arguments();
     int arg_count = args->length();
     { PreservePositionScope pos_scope(masm()->positions_recorder());
@@ -3070,9 +3065,7 @@ void FullCodeGenerator::VisitCall(Call* expr) {
       __ Push(Operand(rsp, (arg_count + 1) * kPointerSize));
       EmitResolvePossiblyDirectEval(arg_count);
 
-      // The runtime call returns a pair of values in rax (function) and
-      // rdx (receiver). Touch up the stack with the right values.
-      __ movp(Operand(rsp, (arg_count + 0) * kPointerSize), rdx);
+      // Touch up the callee.
       __ movp(Operand(rsp, (arg_count + 1) * kPointerSize), rax);
 
       PrepareForBailoutForId(expr->EvalOrLookupId(), NO_REGISTERS);
@@ -3530,6 +3523,28 @@ void FullCodeGenerator::EmitIsArray(CallRuntime* expr) {
 
   __ JumpIfSmi(rax, if_false);
   __ CmpObjectType(rax, JS_ARRAY_TYPE, rbx);
+  PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
+  Split(equal, if_true, if_false, fall_through);
+
+  context()->Plug(if_true, if_false);
+}
+
+
+void FullCodeGenerator::EmitIsTypedArray(CallRuntime* expr) {
+  ZoneList<Expression*>* args = expr->arguments();
+  DCHECK(args->length() == 1);
+
+  VisitForAccumulatorValue(args->at(0));
+
+  Label materialize_true, materialize_false;
+  Label* if_true = NULL;
+  Label* if_false = NULL;
+  Label* fall_through = NULL;
+  context()->PrepareTest(&materialize_true, &materialize_false, &if_true,
+                         &if_false, &fall_through);
+
+  __ JumpIfSmi(rax, if_false);
+  __ CmpObjectType(rax, JS_TYPED_ARRAY_TYPE, rbx);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(equal, if_true, if_false, fall_through);
 
@@ -4732,9 +4747,10 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
         context()->Plug(rax);
       } else if (proxy != NULL) {
         Variable* var = proxy->var();
-        // Delete of an unqualified identifier is disallowed in strict mode
-        // but "delete this" is allowed.
-        DCHECK(is_sloppy(language_mode()) || var->is_this());
+        // Delete of an unqualified identifier is disallowed in strict mode but
+        // "delete this" is allowed.
+        bool is_this = var->HasThisName(isolate());
+        DCHECK(is_sloppy(language_mode()) || is_this);
         if (var->IsUnallocated()) {
           __ Push(GlobalObjectOperand());
           __ Push(var->name());
@@ -4745,7 +4761,7 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
           // Result of deleting non-global variables is false.  'this' is
           // not really a variable, though we implement it as one.  The
           // subexpression does not have side effects.
-          context()->Plug(var->is_this());
+          context()->Plug(is_this);
         } else {
           // Non-global variable.  Call the runtime to try to delete from the
           // context where the variable was introduced.

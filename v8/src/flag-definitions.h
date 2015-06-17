@@ -174,6 +174,7 @@ DEFINE_IMPLICATION(use_strong, use_strict)
 
 DEFINE_BOOL(strong_mode, false, "experimental strong language mode")
 DEFINE_IMPLICATION(use_strong, strong_mode)
+DEFINE_BOOL(strong_this, true, "don't allow 'this' to escape from constructors")
 
 DEFINE_BOOL(es_staging, false, "enable all completed harmony features")
 DEFINE_BOOL(harmony, false, "enable all completed harmony features")
@@ -612,8 +613,6 @@ DEFINE_INT(trace_allocation_stack_interval, -1,
 DEFINE_BOOL(trace_fragmentation, false, "report fragmentation for old space")
 DEFINE_BOOL(trace_fragmentation_verbose, false,
             "report fragmentation for old space (detailed)")
-DEFINE_BOOL(collect_maps, true,
-            "garbage collect maps from which no objects can be reached")
 DEFINE_BOOL(weak_embedded_maps_in_optimized_code, true,
             "make maps embedded in optimized code weak")
 DEFINE_BOOL(weak_embedded_objects_in_optimized_code, true,

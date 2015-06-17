@@ -345,7 +345,7 @@ void MarkCompactCollector::CollectGarbage() {
   // arrays are cleared or contain only live code objects.
   ProcessAndClearWeakCells();
 
-  if (FLAG_collect_maps) ClearNonLiveReferences();
+  ClearNonLiveReferences();
 
   ClearWeakCollections();
 
@@ -369,7 +369,7 @@ void MarkCompactCollector::CollectGarbage() {
 
 #ifdef VERIFY_HEAP
   VerifyWeakEmbeddedObjectsInCode();
-  if (FLAG_collect_maps && FLAG_omit_map_checks_for_leaf_maps) {
+  if (FLAG_omit_map_checks_for_leaf_maps) {
     VerifyOmittedMapChecks();
   }
 #endif
@@ -3041,6 +3041,10 @@ bool MarkCompactCollector::TryPromoteObject(HeapObject* object,
   AllocationResult allocation = old_space->AllocateRaw(object_size, alignment);
   if (allocation.To(&target)) {
     MigrateObject(target, object, object_size, old_space->identity());
+    // If we end up needing more special cases, we should factor this out.
+    if (V8_UNLIKELY(target->IsJSArrayBuffer())) {
+      heap()->PromoteArrayBuffer(target);
+    }
     heap()->IncrementPromotedObjectsSize(object_size);
     return true;
   }
@@ -4367,7 +4371,6 @@ void MarkCompactCollector::SweepSpaces() {
 #ifdef DEBUG
   state_ = SWEEP_SPACES;
 #endif
-  heap()->FreeDeadArrayBuffers();
 
   MoveEvacuationCandidatesToEndOfPagesList();
 
@@ -4394,6 +4397,8 @@ void MarkCompactCollector::SweepSpaces() {
   }
 
   EvacuateNewSpaceAndCandidates();
+
+  heap()->FreeDeadArrayBuffers(false);
 
   // ClearNonLiveReferences depends on precise sweeping of map space to
   // detect whether unmarked map became dead in this collection or in one

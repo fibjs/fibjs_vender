@@ -1197,17 +1197,6 @@ MaybeHandle<Object> Object::GetProperty(Isolate* isolate,
 }
 
 
-MaybeHandle<Object> JSProxy::SetElementWithHandler(Handle<JSProxy> proxy,
-                                                   Handle<JSReceiver> receiver,
-                                                   uint32_t index,
-                                                   Handle<Object> value,
-                                                   LanguageMode language_mode) {
-  Isolate* isolate = proxy->GetIsolate();
-  Handle<String> name = isolate->factory()->Uint32ToString(index);
-  return SetPropertyWithHandler(proxy, receiver, name, value, language_mode);
-}
-
-
 #define FIELD_ADDR(p, offset) \
   (reinterpret_cast<byte*>(p) + offset - kHeapObjectTag)
 
@@ -2213,14 +2202,6 @@ void JSObject::InitializeBody(Map* map,
 bool JSObject::HasFastProperties() {
   DCHECK(properties()->IsDictionary() == map()->is_dictionary_map());
   return !properties()->IsDictionary();
-}
-
-
-MaybeHandle<Object> JSObject::SetOwnElement(Handle<JSObject> object,
-                                            uint32_t index,
-                                            Handle<Object> value,
-                                            LanguageMode language_mode) {
-  return JSObject::SetOwnElement(object, index, value, NONE, language_mode);
 }
 
 
@@ -4886,7 +4867,6 @@ Object* Code::GetObjectFromEntryAddress(Address location_of_address) {
 
 
 bool Code::IsWeakObjectInOptimizedCode(Object* object) {
-  if (!FLAG_collect_maps) return false;
   if (object->IsMap()) {
     return Map::cast(object)->CanTransition() &&
            FLAG_weak_embedded_maps_in_optimized_code;
@@ -6602,10 +6582,8 @@ String* String::GetForwardedInternalizedString() {
 
 MaybeHandle<Object> Object::GetPropertyOrElement(Handle<Object> object,
                                                  Handle<Name> name) {
-  uint32_t index;
-  LookupIterator it = name->AsArrayIndex(&index)
-                          ? LookupIterator(name->GetIsolate(), object, index)
-                          : LookupIterator(object, name);
+  LookupIterator it =
+      LookupIterator::PropertyOrElement(name->GetIsolate(), object, name);
   return GetProperty(&it);
 }
 
@@ -6638,21 +6616,16 @@ Maybe<bool> JSReceiver::HasOwnProperty(Handle<JSReceiver> object,
 
 Maybe<PropertyAttributes> JSReceiver::GetPropertyAttributes(
     Handle<JSReceiver> object, Handle<Name> name) {
-  uint32_t index = 0;
-  LookupIterator it = name->AsArrayIndex(&index)
-                          ? LookupIterator(name->GetIsolate(), object, index)
-                          : LookupIterator(object, name);
+  LookupIterator it =
+      LookupIterator::PropertyOrElement(name->GetIsolate(), object, name);
   return GetPropertyAttributes(&it);
 }
 
 
 Maybe<PropertyAttributes> JSReceiver::GetOwnPropertyAttributes(
     Handle<JSReceiver> object, Handle<Name> name) {
-  uint32_t index = 0;
-  LookupIterator::Configuration c = LookupIterator::HIDDEN;
-  LookupIterator it = name->AsArrayIndex(&index)
-                          ? LookupIterator(name->GetIsolate(), object, index, c)
-                          : LookupIterator(object, name, c);
+  LookupIterator it = LookupIterator::PropertyOrElement(
+      name->GetIsolate(), object, name, LookupIterator::HIDDEN);
   return GetPropertyAttributes(&it);
 }
 
@@ -6773,15 +6746,6 @@ bool AccessorInfo::IsCompatibleReceiver(Object* receiver) {
   if (!receiver->IsJSObject()) return false;
   return FunctionTemplateInfo::cast(expected_receiver_type())
       ->IsTemplateFor(JSObject::cast(receiver)->map());
-}
-
-
-// static
-void ExecutableAccessorInfo::ClearSetter(Handle<ExecutableAccessorInfo> info) {
-  auto foreign = info->GetIsolate()->factory()->NewForeign(
-      reinterpret_cast<v8::internal::Address>(
-          reinterpret_cast<intptr_t>(nullptr)));
-  info->set_setter(*foreign);
 }
 
 

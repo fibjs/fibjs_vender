@@ -314,7 +314,7 @@ FPUCondition FlagsConditionToConditionCmpD(bool& predicate,
       __ Daddu(at, i.InputRegister(2), offset);                               \
       __ asm_instr(result, MemOperand(at, 0));                                \
     } else {                                                                  \
-      auto offset = i.InputOperand(0).immediate();                            \
+      int offset = static_cast<int>(i.InputOperand(0).immediate());           \
       __ Branch(ool->entry(), ls, i.InputRegister(1), Operand(offset));       \
       __ asm_instr(result, MemOperand(i.InputRegister(2), offset));           \
     }                                                                         \
@@ -332,7 +332,7 @@ FPUCondition FlagsConditionToConditionCmpD(bool& predicate,
       __ Daddu(at, i.InputRegister(2), offset);                               \
       __ asm_instr(result, MemOperand(at, 0));                                \
     } else {                                                                  \
-      auto offset = i.InputOperand(0).immediate();                            \
+      int offset = static_cast<int>(i.InputOperand(0).immediate());           \
       __ Branch(ool->entry(), ls, i.InputRegister(1), Operand(offset));       \
       __ asm_instr(result, MemOperand(i.InputRegister(2), offset));           \
     }                                                                         \
@@ -350,7 +350,7 @@ FPUCondition FlagsConditionToConditionCmpD(bool& predicate,
       __ Daddu(at, i.InputRegister(3), offset);                        \
       __ asm_instr(value, MemOperand(at, 0));                          \
     } else {                                                           \
-      auto offset = i.InputOperand(0).immediate();                     \
+      int offset = static_cast<int>(i.InputOperand(0).immediate());    \
       auto value = i.Input##width##Register(2);                        \
       __ Branch(&done, ls, i.InputRegister(1), Operand(offset));       \
       __ asm_instr(value, MemOperand(i.InputRegister(3), offset));     \
@@ -369,7 +369,7 @@ FPUCondition FlagsConditionToConditionCmpD(bool& predicate,
       __ Daddu(at, i.InputRegister(3), offset);                        \
       __ asm_instr(value, MemOperand(at, 0));                          \
     } else {                                                           \
-      auto offset = i.InputOperand(0).immediate();                     \
+      int offset = static_cast<int>(i.InputOperand(0).immediate());    \
       auto value = i.InputRegister(2);                                 \
       __ Branch(&done, ls, i.InputRegister(1), Operand(offset));       \
       __ asm_instr(value, MemOperand(i.InputRegister(3), offset));     \
@@ -563,24 +563,27 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       if (instr->InputAt(1)->IsRegister()) {
         __ sllv(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1));
       } else {
-        int32_t imm = i.InputOperand(1).immediate();
-        __ sll(i.OutputRegister(), i.InputRegister(0), imm);
+        int64_t imm = i.InputOperand(1).immediate();
+        __ sll(i.OutputRegister(), i.InputRegister(0),
+               static_cast<uint16_t>(imm));
       }
       break;
     case kMips64Shr:
       if (instr->InputAt(1)->IsRegister()) {
         __ srlv(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1));
       } else {
-        int32_t imm = i.InputOperand(1).immediate();
-        __ srl(i.OutputRegister(), i.InputRegister(0), imm);
+        int64_t imm = i.InputOperand(1).immediate();
+        __ srl(i.OutputRegister(), i.InputRegister(0),
+               static_cast<uint16_t>(imm));
       }
       break;
     case kMips64Sar:
       if (instr->InputAt(1)->IsRegister()) {
         __ srav(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1));
       } else {
-        int32_t imm = i.InputOperand(1).immediate();
-        __ sra(i.OutputRegister(), i.InputRegister(0), imm);
+        int64_t imm = i.InputOperand(1).immediate();
+        __ sra(i.OutputRegister(), i.InputRegister(0),
+               static_cast<uint16_t>(imm));
       }
       break;
     case kMips64Ext:
@@ -595,11 +598,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       if (instr->InputAt(1)->IsRegister()) {
         __ dsllv(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1));
       } else {
-        int32_t imm = i.InputOperand(1).immediate();
+        int64_t imm = i.InputOperand(1).immediate();
         if (imm < 32) {
-          __ dsll(i.OutputRegister(), i.InputRegister(0), imm);
+          __ dsll(i.OutputRegister(), i.InputRegister(0),
+                  static_cast<uint16_t>(imm));
         } else {
-          __ dsll32(i.OutputRegister(), i.InputRegister(0), imm - 32);
+          __ dsll32(i.OutputRegister(), i.InputRegister(0),
+                    static_cast<uint16_t>(imm - 32));
         }
       }
       break;
@@ -607,11 +612,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       if (instr->InputAt(1)->IsRegister()) {
         __ dsrlv(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1));
       } else {
-        int32_t imm = i.InputOperand(1).immediate();
+        int64_t imm = i.InputOperand(1).immediate();
         if (imm < 32) {
-          __ dsrl(i.OutputRegister(), i.InputRegister(0), imm);
+          __ dsrl(i.OutputRegister(), i.InputRegister(0),
+                  static_cast<uint16_t>(imm));
         } else {
-          __ dsrl32(i.OutputRegister(), i.InputRegister(0), imm - 32);
+          __ dsrl32(i.OutputRegister(), i.InputRegister(0),
+                    static_cast<uint16_t>(imm - 32));
         }
       }
       break;
@@ -619,7 +626,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       if (instr->InputAt(1)->IsRegister()) {
         __ dsrav(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1));
       } else {
-        int32_t imm = i.InputOperand(1).immediate();
+        int64_t imm = i.InputOperand(1).immediate();
         if (imm < 32) {
           __ dsra(i.OutputRegister(), i.InputRegister(0), imm);
         } else {
@@ -1100,7 +1107,7 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
   Label here;
 
   __ Branch(GetLabel(i.InputRpo(1)), hs, input, Operand(case_count));
-  __ BlockTrampolinePoolFor(case_count * 2 + 7);
+  __ BlockTrampolinePoolFor(static_cast<int>(case_count) * 2 + 7);
   // Ensure that dd-ed labels use 8 byte aligned addresses.
   if ((masm()->pc_offset() & 7) != 0) {
     __ nop();

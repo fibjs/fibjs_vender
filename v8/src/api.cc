@@ -3485,8 +3485,8 @@ Maybe<bool> v8::Object::Set(v8::Local<v8::Context> context, uint32_t index,
   PREPARE_FOR_EXECUTION_PRIMITIVE(context, "v8::Object::Set()", bool);
   auto self = Utils::OpenHandle(this);
   auto value_obj = Utils::OpenHandle(*value);
-  has_pending_exception = i::JSObject::SetElement(
-      self, index, value_obj, NONE, i::SLOPPY).is_null();
+  has_pending_exception =
+      i::JSReceiver::SetElement(self, index, value_obj, i::SLOPPY).is_null();
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
   return Just(true);
 }
@@ -3533,21 +3533,11 @@ Maybe<bool> v8::Object::CreateDataProperty(v8::Local<v8::Context> context,
     it.Next();
   }
 
-  if (it.state() == i::LookupIterator::DATA ||
-      it.state() == i::LookupIterator::ACCESSOR) {
-    if (!it.IsConfigurable()) return Just(false);
+  if (it.IsFound() && !it.IsConfigurable()) return Just(false);
 
-    if (it.state() == i::LookupIterator::ACCESSOR) {
-      has_pending_exception = i::JSObject::SetOwnPropertyIgnoreAttributes(
-                                  self, key_obj, value_obj, NONE,
-                                  i::JSObject::DONT_FORCE_FIELD).is_null();
-      RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
-      return Just(true);
-    }
-  }
-
-  has_pending_exception = i::Runtime::DefineObjectProperty(
-                              self, key_obj, value_obj, NONE).is_null();
+  has_pending_exception = i::JSObject::SetOwnPropertyIgnoreAttributes(
+                              self, key_obj, value_obj, NONE,
+                              i::JSObject::DONT_FORCE_FIELD).is_null();
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
   return Just(true);
 }
@@ -3584,9 +3574,9 @@ Maybe<bool> v8::Object::CreateDataProperty(v8::Local<v8::Context> context,
     return Just(false);
   }
 
-  has_pending_exception = i::Runtime::DefineObjectProperty(
-                              self, isolate->factory()->Uint32ToString(index),
-                              value_obj, NONE).is_null();
+  has_pending_exception = i::JSObject::SetOwnElementIgnoreAttributes(
+                              self, index, value_obj, NONE,
+                              i::JSObject::DONT_FORCE_FIELD).is_null();
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
   return Just(true);
 }
@@ -3624,6 +3614,35 @@ Maybe<bool> v8::Object::DefineOwnProperty(v8::Local<v8::Context> context,
 }
 
 
+MUST_USE_RESULT
+static i::MaybeHandle<i::Object> DefineObjectProperty(
+    i::Handle<i::JSObject> js_object, i::Handle<i::Object> key,
+    i::Handle<i::Object> value, PropertyAttributes attrs) {
+  i::Isolate* isolate = js_object->GetIsolate();
+  // Check if the given key is an array index.
+  uint32_t index = 0;
+  if (key->ToArrayIndex(&index)) {
+    return i::JSObject::SetOwnElementIgnoreAttributes(js_object, index, value,
+                                                      attrs);
+  }
+
+  i::Handle<i::Name> name;
+  if (key->IsName()) {
+    name = i::Handle<i::Name>::cast(key);
+  } else {
+    // Call-back into JavaScript to convert the key to a string.
+    i::Handle<i::Object> converted;
+    ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, converted,
+                                     i::Execution::ToString(isolate, key),
+                                     i::MaybeHandle<i::Object>());
+    name = i::Handle<i::String>::cast(converted);
+  }
+
+  return i::JSObject::DefinePropertyOrElementIgnoreAttributes(js_object, name,
+                                                              value, attrs);
+}
+
+
 Maybe<bool> v8::Object::ForceSet(v8::Local<v8::Context> context,
                                  v8::Local<Value> key, v8::Local<Value> value,
                                  v8::PropertyAttribute attribs) {
@@ -3631,11 +3650,9 @@ Maybe<bool> v8::Object::ForceSet(v8::Local<v8::Context> context,
   auto self = Utils::OpenHandle(this);
   auto key_obj = Utils::OpenHandle(*key);
   auto value_obj = Utils::OpenHandle(*value);
-  has_pending_exception = i::Runtime::DefineObjectProperty(
-      self,
-      key_obj,
-      value_obj,
-      static_cast<PropertyAttributes>(attribs)).is_null();
+  has_pending_exception =
+      DefineObjectProperty(self, key_obj, value_obj,
+                           static_cast<PropertyAttributes>(attribs)).is_null();
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
   return Just(true);
 }
@@ -3651,9 +3668,8 @@ bool v8::Object::ForceSet(v8::Handle<Value> key, v8::Handle<Value> value,
   i::Handle<i::Object> key_obj = Utils::OpenHandle(*key);
   i::Handle<i::Object> value_obj = Utils::OpenHandle(*value);
   has_pending_exception =
-      i::Runtime::DefineObjectProperty(self, key_obj, value_obj,
-                                       static_cast<PropertyAttributes>(attribs))
-          .is_null();
+      DefineObjectProperty(self, key_obj, value_obj,
+                           static_cast<PropertyAttributes>(attribs)).is_null();
   EXCEPTION_BAILOUT_CHECK_SCOPED(isolate, false);
   return true;
 }
@@ -4207,8 +4223,9 @@ MaybeLocal<Value> v8::Object::GetRealNamedPropertyInPrototypeChain(
   i::PrototypeIterator iter(isolate, self);
   if (iter.IsAtEnd()) return MaybeLocal<Value>();
   auto proto = i::PrototypeIterator::GetCurrent(iter);
-  i::LookupIterator it(self, key_obj, i::Handle<i::JSReceiver>::cast(proto),
-                       i::LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
+  i::LookupIterator it = i::LookupIterator::PropertyOrElement(
+      isolate, self, key_obj, i::Handle<i::JSReceiver>::cast(proto),
+      i::LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
   Local<Value> result;
   has_pending_exception = !ToLocal<Value>(i::Object::GetProperty(&it), &result);
   RETURN_ON_FAILED_EXECUTION(Value);
@@ -4236,8 +4253,9 @@ v8::Object::GetRealNamedPropertyAttributesInPrototypeChain(
   i::PrototypeIterator iter(isolate, self);
   if (iter.IsAtEnd()) return Nothing<PropertyAttribute>();
   auto proto = i::PrototypeIterator::GetCurrent(iter);
-  i::LookupIterator it(self, key_obj, i::Handle<i::JSReceiver>::cast(proto),
-                       i::LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
+  i::LookupIterator it = i::LookupIterator::PropertyOrElement(
+      isolate, self, key_obj, i::Handle<i::JSReceiver>::cast(proto),
+      i::LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
   auto result = i::JSReceiver::GetPropertyAttributes(&it);
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(PropertyAttribute);
   if (!it.IsFound()) return Nothing<PropertyAttribute>();
@@ -4261,8 +4279,9 @@ MaybeLocal<Value> v8::Object::GetRealNamedProperty(Local<Context> context,
   PREPARE_FOR_EXECUTION(context, "v8::Object::GetRealNamedProperty()", Value);
   auto self = Utils::OpenHandle(this);
   auto key_obj = Utils::OpenHandle(*key);
-  i::LookupIterator it(self, key_obj,
-                       i::LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
+  i::LookupIterator it = i::LookupIterator::PropertyOrElement(
+      isolate, self, key_obj,
+      i::LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
   Local<Value> result;
   has_pending_exception = !ToLocal<Value>(i::Object::GetProperty(&it), &result);
   RETURN_ON_FAILED_EXECUTION(Value);
@@ -4284,8 +4303,9 @@ Maybe<PropertyAttribute> v8::Object::GetRealNamedPropertyAttributes(
       PropertyAttribute);
   auto self = Utils::OpenHandle(this);
   auto key_obj = Utils::OpenHandle(*key);
-  i::LookupIterator it(self, key_obj,
-                       i::LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
+  i::LookupIterator it = i::LookupIterator::PropertyOrElement(
+      isolate, self, key_obj,
+      i::LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
   auto result = i::JSReceiver::GetPropertyAttributes(&it);
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(PropertyAttribute);
   if (!it.IsFound()) return Nothing<PropertyAttribute>();
@@ -6540,7 +6560,8 @@ v8::ArrayBuffer::Contents v8::ArrayBuffer::Externalize() {
   Utils::ApiCheck(!self->is_external(), "v8::ArrayBuffer::Externalize",
                   "ArrayBuffer already externalized");
   self->set_is_external(true);
-  isolate->heap()->UnregisterArrayBuffer(self->backing_store());
+  isolate->heap()->UnregisterArrayBuffer(isolate->heap()->InNewSpace(*self),
+                                         self->backing_store());
 
   return GetContents();
 }
@@ -6747,7 +6768,8 @@ v8::SharedArrayBuffer::Contents v8::SharedArrayBuffer::Externalize() {
   Utils::ApiCheck(!self->is_external(), "v8::SharedArrayBuffer::Externalize",
                   "SharedArrayBuffer already externalized");
   self->set_is_external(true);
-  isolate->heap()->UnregisterArrayBuffer(self->backing_store());
+  isolate->heap()->UnregisterArrayBuffer(isolate->heap()->InNewSpace(*self),
+                                         self->backing_store());
   return GetContents();
 }
 

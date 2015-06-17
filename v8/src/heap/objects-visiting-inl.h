@@ -85,6 +85,10 @@ int StaticNewSpaceVisitor<StaticVisitor>::VisitJSArrayBuffer(
       heap,
       HeapObject::RawField(object, JSArrayBuffer::BodyDescriptor::kStartOffset),
       HeapObject::RawField(object, JSArrayBuffer::kSizeWithInternalFields));
+  if (!JSArrayBuffer::cast(object)->is_external()) {
+    heap->RegisterLiveArrayBuffer(true,
+                                  JSArrayBuffer::cast(object)->backing_store());
+  }
   return JSArrayBuffer::kSizeWithInternalFields;
 }
 
@@ -298,7 +302,7 @@ void StaticMarkingVisitor<StaticVisitor>::VisitMap(Map* map,
 
   // When map collection is enabled we have to mark through map's transitions
   // and back pointers in a special way to make these links weak.
-  if (FLAG_collect_maps && map_object->CanTransition()) {
+  if (map_object->CanTransition()) {
     MarkMapContents(heap, map_object);
   } else {
     StaticVisitor::VisitPointers(
@@ -504,7 +508,8 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSArrayBuffer(
       HeapObject::RawField(object, JSArrayBuffer::BodyDescriptor::kStartOffset),
       HeapObject::RawField(object, JSArrayBuffer::kSizeWithInternalFields));
   if (!JSArrayBuffer::cast(object)->is_external()) {
-    heap->RegisterLiveArrayBuffer(JSArrayBuffer::cast(object)->backing_store());
+    heap->RegisterLiveArrayBuffer(heap->InNewSpace(object),
+                                  JSArrayBuffer::cast(object)->backing_store());
   }
 }
 

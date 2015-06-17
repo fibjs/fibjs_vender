@@ -209,35 +209,12 @@ void JSGenericLowering::ReplaceWithCompareIC(Node* node, Token::Value token) {
 
 void JSGenericLowering::ReplaceWithStubCall(Node* node, Callable callable,
                                             CallDescriptor::Flags flags) {
-  const Operator* old_op = node->op();
-  Operator::Properties properties = old_op->properties();
+  Operator::Properties properties = node->op()->properties();
   CallDescriptor* desc = Linkage::GetStubCallDescriptor(
       isolate(), zone(), callable.descriptor(), 0, flags, properties);
-  const Operator* new_op = common()->Call(desc);
-
   Node* stub_code = jsgraph()->HeapConstant(callable.code());
   node->InsertInput(zone(), 0, stub_code);
-  node->set_op(new_op);
-
-#if 0 && DEBUG
-    // Check for at most one framestate and that it's at the right position.
-  int where = -1;
-  for (int index = 0; index < node->InputCount(); index++) {
-    if (node->InputAt(index)->opcode() == IrOpcode::kFrameState) {
-      if (where >= 0) {
-        V8_Fatal(__FILE__, __LINE__,
-                 "node #%d:%s already has a framestate at index %d",
-                 node->id(), node->op()->mnemonic(), where);
-      }
-      where = index;
-      DCHECK_EQ(NodeProperties::FirstFrameStateIndex(node), where);
-      DCHECK(flags & CallDescriptor::kNeedsFrameState);
-    }
-  }
-  if (flags & CallDescriptor::kNeedsFrameState) {
-    DCHECK_GE(where, 0);  // should have found a frame state.
-  }
-#endif
+  node->set_op(common()->Call(desc));
 }
 
 
@@ -514,52 +491,7 @@ void JSGenericLowering::LowerJSCallConstruct(Node* node) {
 }
 
 
-bool JSGenericLowering::TryLowerDirectJSCall(Node* node) {
-  // Lower to a direct call to a constant JSFunction if legal.
-  const CallFunctionParameters& p = CallFunctionParametersOf(node->op());
-  int arg_count = static_cast<int>(p.arity() - 2);
-
-  // Check the function is a constant and is really a JSFunction.
-  HeapObjectMatcher<Object> function_const(node->InputAt(0));
-  if (!function_const.HasValue()) return false;  // not a constant.
-  Handle<Object> func = function_const.Value().handle();
-  if (!func->IsJSFunction()) return false;  // not a function.
-  Handle<JSFunction> function = Handle<JSFunction>::cast(func);
-  if (arg_count != function->shared()->internal_formal_parameter_count()) {
-    return false;
-  }
-
-  // Check the receiver doesn't need to be wrapped.
-  Node* receiver = node->InputAt(1);
-  if (!NodeProperties::IsTyped(receiver)) return false;
-  Type* ok_receiver = Type::Union(Type::Undefined(), Type::Receiver(), zone());
-  if (!NodeProperties::GetBounds(receiver).upper->Is(ok_receiver)) return false;
-
-  int index = NodeProperties::FirstContextIndex(node);
-
-  // TODO(titzer): total hack to share function context constants.
-  // Remove this when the JSGraph canonicalizes heap constants.
-  Node* context = node->InputAt(index);
-  HeapObjectMatcher<Context> context_const(context);
-  if (!context_const.HasValue() ||
-      *(context_const.Value().handle()) != function->context()) {
-    context = jsgraph()->HeapConstant(Handle<Context>(function->context()));
-  }
-  node->ReplaceInput(index, context);
-  CallDescriptor::Flags flags = FlagsForNode(node);
-  if (is_strict(p.language_mode())) flags |= CallDescriptor::kSupportsTailCalls;
-  CallDescriptor* desc =
-      Linkage::GetJSCallDescriptor(zone(), false, 1 + arg_count, flags);
-  node->set_op(common()->Call(desc));
-  return true;
-}
-
-
 void JSGenericLowering::LowerJSCallFunction(Node* node) {
-  // Fast case: call function directly.
-  if (TryLowerDirectJSCall(node)) return;
-
-  // General case: CallFunctionStub.
   const CallFunctionParameters& p = CallFunctionParametersOf(node->op());
   int arg_count = static_cast<int>(p.arity() - 2);
   CallFunctionStub stub(isolate(), arg_count, p.flags());

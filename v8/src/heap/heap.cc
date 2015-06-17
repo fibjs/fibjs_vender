@@ -1242,7 +1242,9 @@ bool Heap::PerformGarbageCollection(
     old_gen_exhausted_ = false;
     old_generation_size_configured_ = true;
     // This should be updated before PostGarbageCollectionProcessing, which can
-    // cause another GC.
+    // cause another GC. Take into account the objects promoted during GC.
+    old_generation_allocation_counter_ +=
+        static_cast<size_t>(promoted_objects_size_);
     old_generation_size_at_last_gc_ = PromotedSpaceSizeOfObjects();
   } else {
     Scavenge();
@@ -1285,9 +1287,12 @@ bool Heap::PerformGarbageCollection(
     // Register the amount of external allocated memory.
     amount_of_external_allocated_memory_at_last_global_gc_ =
         amount_of_external_allocated_memory_;
-    SetOldGenerationAllocationLimit(
-        PromotedSpaceSizeOfObjects(),
-        tracer()->CurrentAllocationThroughputInBytesPerMillisecond());
+    double gc_speed = tracer()->CombinedMarkCompactSpeedInBytesPerMillisecond();
+    double mutator_speed = static_cast<double>(
+        tracer()
+            ->CurrentOldGenerationAllocationThroughputInBytesPerMillisecond());
+    intptr_t old_gen_size = PromotedSpaceSizeOfObjects();
+    SetOldGenerationAllocationLimit(old_gen_size, gc_speed, mutator_speed);
   }
 
   {
@@ -1623,6 +1628,8 @@ void Heap::Scavenge() {
 
   SelectScavengingVisitorsTable();
 
+  PrepareArrayBufferDiscoveryInNewSpace();
+
   // Flip the semispaces.  After flipping, to space is empty, from space has
   // live objects.
   new_space_.Flip();
@@ -1703,6 +1710,8 @@ void Heap::Scavenge() {
 
   new_space_.LowerInlineAllocationLimit(
       new_space_.inline_allocation_limit_step());
+
+  FreeDeadArrayBuffers(true);
 
   // Update how much has survived scavenge.
   IncrementYoungSurvivorsCounter(static_cast<int>(
@@ -1797,46 +1806,122 @@ void Heap::ProcessNativeContexts(WeakObjectRetainer* retainer) {
 }
 
 
-void Heap::RegisterNewArrayBuffer(void* data, size_t length) {
+void Heap::RegisterNewArrayBufferHelper(std::map<void*, size_t>& live_buffers,
+                                        void* data, size_t length) {
+  live_buffers[data] = length;
+}
+
+
+void Heap::UnregisterArrayBufferHelper(
+    std::map<void*, size_t>& live_buffers,
+    std::map<void*, size_t>& not_yet_discovered_buffers, void* data) {
+  DCHECK(live_buffers.count(data) > 0);
+  live_buffers.erase(data);
+  not_yet_discovered_buffers.erase(data);
+}
+
+
+void Heap::RegisterLiveArrayBufferHelper(
+    std::map<void*, size_t>& not_yet_discovered_buffers, void* data) {
+  not_yet_discovered_buffers.erase(data);
+}
+
+
+size_t Heap::FreeDeadArrayBuffersHelper(
+    Isolate* isolate, std::map<void*, size_t>& live_buffers,
+    std::map<void*, size_t>& not_yet_discovered_buffers) {
+  size_t freed_memory = 0;
+  for (auto buffer = not_yet_discovered_buffers.begin();
+       buffer != not_yet_discovered_buffers.end(); ++buffer) {
+    isolate->array_buffer_allocator()->Free(buffer->first, buffer->second);
+    freed_memory += buffer->second;
+    live_buffers.erase(buffer->first);
+  }
+  not_yet_discovered_buffers = live_buffers;
+  return freed_memory;
+}
+
+
+void Heap::TearDownArrayBuffersHelper(
+    Isolate* isolate, std::map<void*, size_t>& live_buffers,
+    std::map<void*, size_t>& not_yet_discovered_buffers) {
+  for (auto buffer = live_buffers.begin(); buffer != live_buffers.end();
+       ++buffer) {
+    isolate->array_buffer_allocator()->Free(buffer->first, buffer->second);
+  }
+  live_buffers.clear();
+  not_yet_discovered_buffers.clear();
+}
+
+
+void Heap::RegisterNewArrayBuffer(bool in_new_space, void* data,
+                                  size_t length) {
   if (!data) return;
-  live_array_buffers_[data] = length;
+  RegisterNewArrayBufferHelper(
+      in_new_space ? live_new_array_buffers_ : live_array_buffers_, data,
+      length);
   reinterpret_cast<v8::Isolate*>(isolate_)
       ->AdjustAmountOfExternalAllocatedMemory(length);
 }
 
 
-void Heap::UnregisterArrayBuffer(void* data) {
+void Heap::UnregisterArrayBuffer(bool in_new_space, void* data) {
   if (!data) return;
-  DCHECK(live_array_buffers_.count(data) > 0);
-  live_array_buffers_.erase(data);
-  not_yet_discovered_array_buffers_.erase(data);
+  UnregisterArrayBufferHelper(
+      in_new_space ? live_new_array_buffers_ : live_array_buffers_,
+      in_new_space ? not_yet_discovered_new_array_buffers_
+                   : not_yet_discovered_array_buffers_,
+      data);
 }
 
 
-void Heap::RegisterLiveArrayBuffer(void* data) {
-  not_yet_discovered_array_buffers_.erase(data);
+void Heap::RegisterLiveArrayBuffer(bool in_new_space, void* data) {
+  // ArrayBuffer might be in the middle of being constructed.
+  if (data == undefined_value()) return;
+  RegisterLiveArrayBufferHelper(in_new_space
+                                    ? not_yet_discovered_new_array_buffers_
+                                    : not_yet_discovered_array_buffers_,
+                                data);
 }
 
 
-void Heap::FreeDeadArrayBuffers() {
-  for (auto buffer = not_yet_discovered_array_buffers_.begin();
-       buffer != not_yet_discovered_array_buffers_.end(); ++buffer) {
-    isolate_->array_buffer_allocator()->Free(buffer->first, buffer->second);
-    // Don't use the API method here since this could trigger another GC.
-    amount_of_external_allocated_memory_ -= buffer->second;
-    live_array_buffers_.erase(buffer->first);
+void Heap::FreeDeadArrayBuffers(bool in_new_space) {
+  size_t freed_memory = FreeDeadArrayBuffersHelper(
+      isolate_, in_new_space ? live_new_array_buffers_ : live_array_buffers_,
+      in_new_space ? not_yet_discovered_new_array_buffers_
+                   : not_yet_discovered_array_buffers_);
+  if (freed_memory) {
+    reinterpret_cast<v8::Isolate*>(isolate_)
+        ->AdjustAmountOfExternalAllocatedMemory(
+            -static_cast<int64_t>(freed_memory));
   }
-  not_yet_discovered_array_buffers_ = live_array_buffers_;
 }
 
 
 void Heap::TearDownArrayBuffers() {
-  for (auto buffer = live_array_buffers_.begin();
-       buffer != live_array_buffers_.end(); ++buffer) {
-    isolate_->array_buffer_allocator()->Free(buffer->first, buffer->second);
-  }
-  live_array_buffers_.clear();
-  not_yet_discovered_array_buffers_.clear();
+  TearDownArrayBuffersHelper(isolate_, live_array_buffers_,
+                             not_yet_discovered_array_buffers_);
+  TearDownArrayBuffersHelper(isolate_, live_new_array_buffers_,
+                             not_yet_discovered_new_array_buffers_);
+}
+
+
+void Heap::PrepareArrayBufferDiscoveryInNewSpace() {
+  not_yet_discovered_new_array_buffers_ = live_new_array_buffers_;
+}
+
+
+void Heap::PromoteArrayBuffer(Object* obj) {
+  JSArrayBuffer* buffer = JSArrayBuffer::cast(obj);
+  if (buffer->is_external()) return;
+  void* data = buffer->backing_store();
+  if (!data) return;
+  // ArrayBuffer might be in the middle of being constructed.
+  if (data == undefined_value()) return;
+  DCHECK(live_new_array_buffers_.count(data) > 0);
+  live_array_buffers_[data] = live_new_array_buffers_[data];
+  live_new_array_buffers_.erase(data);
+  not_yet_discovered_new_array_buffers_.erase(data);
 }
 
 
@@ -2089,6 +2174,7 @@ class ScavengingVisitor : public StaticVisitorBase {
     table_.Register(kVisitFixedDoubleArray, &EvacuateFixedDoubleArray);
     table_.Register(kVisitFixedTypedArray, &EvacuateFixedTypedArray);
     table_.Register(kVisitFixedFloat64Array, &EvacuateFixedFloat64Array);
+    table_.Register(kVisitJSArrayBuffer, &EvacuateJSArrayBuffer);
 
     table_.Register(
         kVisitNativeContext,
@@ -2116,9 +2202,6 @@ class ScavengingVisitor : public StaticVisitorBase {
             SharedFunctionInfo::kSize>);
 
     table_.Register(kVisitJSWeakCollection,
-                    &ObjectEvacuationStrategy<POINTER_OBJECT>::Visit);
-
-    table_.Register(kVisitJSArrayBuffer,
                     &ObjectEvacuationStrategy<POINTER_OBJECT>::Visit);
 
     table_.Register(kVisitJSTypedArray,
@@ -2345,6 +2428,18 @@ class ScavengingVisitor : public StaticVisitorBase {
                                                HeapObject* object) {
     int object_size = reinterpret_cast<FixedFloat64Array*>(object)->size();
     EvacuateObject<DATA_OBJECT, kDoubleAligned>(map, slot, object, object_size);
+  }
+
+
+  static inline void EvacuateJSArrayBuffer(Map* map, HeapObject** slot,
+                                           HeapObject* object) {
+    ObjectEvacuationStrategy<POINTER_OBJECT>::Visit(map, slot, object);
+
+    Heap* heap = map->GetHeap();
+    MapWord map_word = object->map_word();
+    DCHECK(map_word.IsForwardingAddress());
+    HeapObject* target = map_word.ToForwardingAddress();
+    if (!heap->InNewSpace(target)) heap->PromoteArrayBuffer(target);
   }
 
 
@@ -3847,7 +3942,8 @@ AllocationResult Heap::AllocateCode(int object_size, bool immovable) {
   Code* code = Code::cast(result);
   DCHECK(IsAligned(bit_cast<intptr_t>(code->address()), kCodeAlignment));
   DCHECK(isolate_->code_range() == NULL || !isolate_->code_range()->valid() ||
-         isolate_->code_range()->contains(code->address()));
+         isolate_->code_range()->contains(code->address()) ||
+         object_size <= code_space()->AreaSize());
   code->set_gc_metadata(Smi::FromInt(0));
   code->set_ic_age(global_ic_age_);
   return code;
@@ -3872,7 +3968,8 @@ AllocationResult Heap::CopyCode(Code* code) {
   // Relocate the copy.
   DCHECK(IsAligned(bit_cast<intptr_t>(new_code->address()), kCodeAlignment));
   DCHECK(isolate_->code_range() == NULL || !isolate_->code_range()->valid() ||
-         isolate_->code_range()->contains(code->address()));
+         isolate_->code_range()->contains(code->address()) ||
+         obj_size <= code_space()->AreaSize());
   new_code->Relocate(new_addr - old_addr);
   return new_code;
 }
@@ -3918,7 +4015,9 @@ AllocationResult Heap::CopyCode(Code* code, Vector<byte> reloc_info) {
   // Relocate the copy.
   DCHECK(IsAligned(bit_cast<intptr_t>(new_code->address()), kCodeAlignment));
   DCHECK(isolate_->code_range() == NULL || !isolate_->code_range()->valid() ||
-         isolate_->code_range()->contains(code->address()));
+         isolate_->code_range()->contains(code->address()) ||
+         new_obj_size <= code_space()->AreaSize());
+
   new_code->Relocate(new_addr - old_addr);
 
 #ifdef VERIFY_HEAP
@@ -5329,6 +5428,70 @@ int64_t Heap::PromotedExternalMemorySize() {
 }
 
 
+const double Heap::kMinHeapGrowingFactor = 1.1;
+const double Heap::kMaxHeapGrowingFactor = 4.0;
+const double Heap::kMaxHeapGrowingFactorMemoryConstrained = 2.0;
+const double Heap::kMaxHeapGrowingFactorIdle = 1.5;
+const double Heap::kTargetMutatorUtilization = 0.97;
+
+
+// Given GC speed in bytes per ms, the allocation throughput in bytes per ms
+// (mutator speed), this function returns the heap growing factor that will
+// achieve the kTargetMutatorUtilisation if the GC speed and the mutator speed
+// remain the same until the next GC.
+//
+// For a fixed time-frame T = TM + TG, the mutator utilization is the ratio
+// TM / (TM + TG), where TM is the time spent in the mutator and TG is the
+// time spent in the garbage collector.
+//
+// Let MU be kTargetMutatorUtilisation, the desired mutator utilization for the
+// time-frame from the end of the current GC to the end of the next GC. Based
+// on the MU we can compute the heap growing factor F as
+//
+// F = R * (1 - MU) / (R * (1 - MU) - MU), where R = gc_speed / mutator_speed.
+//
+// This formula can be derived as follows.
+//
+// F = Limit / Live by definition, where the Limit is the allocation limit,
+// and the Live is size of live objects.
+// Let’s assume that we already know the Limit. Then:
+//   TG = Limit / gc_speed
+//   TM = (TM + TG) * MU, by definition of MU.
+//   TM = TG * MU / (1 - MU)
+//   TM = Limit *  MU / (gc_speed * (1 - MU))
+// On the other hand, if the allocation throughput remains constant:
+//   Limit = Live + TM * allocation_throughput = Live + TM * mutator_speed
+// Solving it for TM, we get
+//   TM = (Limit - Live) / mutator_speed
+// Combining the two equation for TM:
+//   (Limit - Live) / mutator_speed = Limit * MU / (gc_speed * (1 - MU))
+//   (Limit - Live) = Limit * MU * mutator_speed / (gc_speed * (1 - MU))
+// substitute R = gc_speed / mutator_speed
+//   (Limit - Live) = Limit * MU  / (R * (1 - MU))
+// substitute F = Limit / Live
+//   F - 1 = F * MU  / (R * (1 - MU))
+//   F - F * MU / (R * (1 - MU)) = 1
+//   F * (1 - MU / (R * (1 - MU))) = 1
+//   F * (R * (1 - MU) - MU) / (R * (1 - MU)) = 1
+//   F = R * (1 - MU) / (R * (1 - MU) - MU)
+double Heap::HeapGrowingFactor(double gc_speed, double mutator_speed) {
+  if (gc_speed == 0 || mutator_speed == 0) return kMaxHeapGrowingFactor;
+
+  const double speed_ratio = gc_speed / mutator_speed;
+  const double mu = kTargetMutatorUtilization;
+
+  const double a = speed_ratio * (1 - mu);
+  const double b = speed_ratio * (1 - mu) - mu;
+
+  // The factor is a / b, but we need to check for small b first.
+  double factor =
+      (a < b * kMaxHeapGrowingFactor) ? a / b : kMaxHeapGrowingFactor;
+  factor = Min(factor, kMaxHeapGrowingFactor);
+  factor = Max(factor, kMinHeapGrowingFactor);
+  return factor;
+}
+
+
 intptr_t Heap::CalculateOldGenerationAllocationLimit(double factor,
                                                      intptr_t old_gen_size) {
   CHECK(factor > 1.0);
@@ -5341,52 +5504,34 @@ intptr_t Heap::CalculateOldGenerationAllocationLimit(double factor,
 }
 
 
-void Heap::SetOldGenerationAllocationLimit(
-    intptr_t old_gen_size, size_t current_allocation_throughput) {
-// Allocation throughput on Android devices is typically lower than on
-// non-mobile devices.
-#if V8_OS_ANDROID
-  const size_t kHighThroughput = 2500;
-  const size_t kLowThroughput = 250;
-#else
-  const size_t kHighThroughput = 10000;
-  const size_t kLowThroughput = 1000;
-#endif
-  const double min_scaling_factor = 1.1;
-  const double max_scaling_factor = 1.5;
-  double max_factor = 4;
-  const double idle_max_factor = 1.5;
+void Heap::SetOldGenerationAllocationLimit(intptr_t old_gen_size,
+                                           double gc_speed,
+                                           double mutator_speed) {
+  double factor = HeapGrowingFactor(gc_speed, mutator_speed);
+
+  if (FLAG_trace_gc_verbose) {
+    PrintIsolate(isolate_,
+                 "Heap growing factor %.1f based on mu=%.3f, speed_ratio=%.f "
+                 "(gc=%.f, mutator=%.f)\n",
+                 factor, kTargetMutatorUtilization, gc_speed / mutator_speed,
+                 gc_speed, mutator_speed);
+  }
+
   // We set the old generation growing factor to 2 to grow the heap slower on
   // memory-constrained devices.
   if (max_old_generation_size_ <= kMaxOldSpaceSizeMediumMemoryDevice) {
-    max_factor = 2;
-  }
-
-  double factor;
-  double idle_factor;
-  if (current_allocation_throughput == 0 ||
-      current_allocation_throughput >= kHighThroughput) {
-    factor = max_factor;
-  } else if (current_allocation_throughput <= kLowThroughput) {
-    factor = min_scaling_factor;
-  } else {
-    // Compute factor using linear interpolation between points
-    // (kHighThroughput, max_scaling_factor) and (kLowThroughput, min_factor).
-    factor = min_scaling_factor +
-             (current_allocation_throughput - kLowThroughput) *
-                 (max_scaling_factor - min_scaling_factor) /
-                 (kHighThroughput - kLowThroughput);
+    factor = Min(factor, kMaxHeapGrowingFactorMemoryConstrained);
   }
 
   if (FLAG_stress_compaction ||
       mark_compact_collector()->reduce_memory_footprint_) {
-    factor = min_scaling_factor;
+    factor = kMinHeapGrowingFactor;
   }
 
   // TODO(hpayer): Investigate if idle_old_generation_allocation_limit_ is still
   // needed after taking the allocation rate for the old generation limit into
   // account.
-  idle_factor = Min(factor, idle_max_factor);
+  double idle_factor = Min(factor, kMaxHeapGrowingFactorIdle);
 
   old_generation_allocation_limit_ =
       CalculateOldGenerationAllocationLimit(factor, old_gen_size);
