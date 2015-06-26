@@ -10,7 +10,6 @@
 // Opcodes for control operators.
 #define CONTROL_OP_LIST(V) \
   V(Start)                 \
-  V(Dead)                  \
   V(Loop)                  \
   V(Branch)                \
   V(Switch)                \
@@ -57,7 +56,8 @@
 
 #define COMMON_OP_LIST(V) \
   CONSTANT_OP_LIST(V)     \
-  INNER_OP_LIST(V)
+  INNER_OP_LIST(V)        \
+  V(Dead)
 
 // Opcodes for JavaScript operators.
 #define JS_COMPARE_BINOP_LIST(V) \
@@ -114,8 +114,10 @@
   V(JSCreateLiteralObject)   \
   V(JSLoadProperty)          \
   V(JSLoadNamed)             \
+  V(JSLoadGlobal)            \
   V(JSStoreProperty)         \
   V(JSStoreNamed)            \
+  V(JSStoreGlobal)           \
   V(JSDeleteProperty)        \
   V(JSHasProperty)           \
   V(JSInstanceOf)
@@ -318,7 +320,7 @@ class IrOpcode {
 
   // Returns true if opcode for common operator.
   static bool IsCommonOpcode(Value value) {
-    return kStart <= value && value <= kProjection;
+    return kStart <= value && value <= kDead;
   }
 
   // Returns true if opcode for control operator.

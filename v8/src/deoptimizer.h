@@ -394,6 +394,7 @@ class OptimizedFunctionVisitor BASE_EMBEDDED {
   V(kNoCache, "no cache")                                                      \
   V(kNonStrictElementsInKeyedLoadGenericStub,                                  \
     "non-strict elements in KeyedLoadGenericStub")                             \
+  V(kNotADateObject, "not a date object")                                      \
   V(kNotAHeapNumber, "not a heap number")                                      \
   V(kNotAHeapNumberUndefinedBoolean, "not a heap number/undefined/true/false") \
   V(kNotAHeapNumberUndefined, "not a heap number/undefined")                   \
@@ -896,23 +897,19 @@ class FrameDescription {
   }
 
   static int frame_size_offset() {
-    return OFFSET_OF(FrameDescription, frame_size_);
+    return offsetof(FrameDescription, frame_size_);
   }
 
-  static int pc_offset() {
-    return OFFSET_OF(FrameDescription, pc_);
-  }
+  static int pc_offset() { return offsetof(FrameDescription, pc_); }
 
-  static int state_offset() {
-    return OFFSET_OF(FrameDescription, state_);
-  }
+  static int state_offset() { return offsetof(FrameDescription, state_); }
 
   static int continuation_offset() {
-    return OFFSET_OF(FrameDescription, continuation_);
+    return offsetof(FrameDescription, continuation_);
   }
 
   static int frame_content_offset() {
-    return OFFSET_OF(FrameDescription, frame_content_);
+    return offsetof(FrameDescription, frame_content_);
   }
 
  private:

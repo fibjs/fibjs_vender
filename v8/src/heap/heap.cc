@@ -530,7 +530,8 @@ void Heap::RepairFreeListsAfterDeserialization() {
 }
 
 
-void Heap::ProcessPretenuringFeedback() {
+bool Heap::ProcessPretenuringFeedback() {
+  bool trigger_deoptimization = false;
   if (FLAG_allocation_site_pretenuring) {
     int tenure_decisions = 0;
     int dont_tenure_decisions = 0;
@@ -551,7 +552,6 @@ void Heap::ProcessPretenuringFeedback() {
 
     int i = 0;
     Object* list_element = allocation_sites_list();
-    bool trigger_deoptimization = false;
     bool maximum_size_scavenge = MaximumSizeScavenge();
     while (use_scratchpad ? i < allocation_sites_scratchpad_length_
                           : list_element->IsAllocationSite()) {
@@ -603,6 +603,7 @@ void Heap::ProcessPretenuringFeedback() {
           dont_tenure_decisions);
     }
   }
+  return trigger_deoptimization;
 }
 
 
@@ -631,9 +632,6 @@ void Heap::GarbageCollectionEpilogue() {
   if (Heap::ShouldZapGarbage()) {
     ZapFromSpace();
   }
-
-  // Process pretenuring feedback and update allocation sites.
-  ProcessPretenuringFeedback();
 
 #ifdef VERIFY_HEAP
   if (FLAG_verify_heap) {
@@ -1250,9 +1248,14 @@ bool Heap::PerformGarbageCollection(
     Scavenge();
   }
 
-
+  bool deopted = ProcessPretenuringFeedback();
   UpdateSurvivalStatistics(start_new_space_size);
-  ConfigureNewGenerationSize();
+
+  // When pretenuring is collecting new feedback, we do not shrink the new space
+  // right away.
+  if (!deopted) {
+    ConfigureNewGenerationSize();
+  }
   ConfigureInitialOldGenerationSize();
 
   isolate_->counters()->objs_since_last_young()->Set(0);
@@ -1283,16 +1286,19 @@ bool Heap::PerformGarbageCollection(
   // Update relocatables.
   Relocatable::PostGarbageCollectionProcessing(isolate_);
 
+  double gc_speed = tracer()->CombinedMarkCompactSpeedInBytesPerMillisecond();
+  double mutator_speed = static_cast<double>(
+      tracer()
+          ->CurrentOldGenerationAllocationThroughputInBytesPerMillisecond());
+  intptr_t old_gen_size = PromotedSpaceSizeOfObjects();
   if (collector == MARK_COMPACTOR) {
     // Register the amount of external allocated memory.
     amount_of_external_allocated_memory_at_last_global_gc_ =
         amount_of_external_allocated_memory_;
-    double gc_speed = tracer()->CombinedMarkCompactSpeedInBytesPerMillisecond();
-    double mutator_speed = static_cast<double>(
-        tracer()
-            ->CurrentOldGenerationAllocationThroughputInBytesPerMillisecond());
-    intptr_t old_gen_size = PromotedSpaceSizeOfObjects();
     SetOldGenerationAllocationLimit(old_gen_size, gc_speed, mutator_speed);
+  } else if (HasLowYoungGenerationAllocationRate() &&
+             old_generation_size_configured_) {
+    DampenOldGenerationAllocationLimit(old_gen_size, gc_speed, mutator_speed);
   }
 
   {
@@ -1857,9 +1863,11 @@ void Heap::TearDownArrayBuffersHelper(
 void Heap::RegisterNewArrayBuffer(bool in_new_space, void* data,
                                   size_t length) {
   if (!data) return;
-  RegisterNewArrayBufferHelper(
-      in_new_space ? live_new_array_buffers_ : live_array_buffers_, data,
-      length);
+  RegisterNewArrayBufferHelper(live_array_buffers_, data, length);
+  if (in_new_space) {
+    RegisterNewArrayBufferHelper(live_array_buffers_for_scavenge_, data,
+                                 length);
+  }
   reinterpret_cast<v8::Isolate*>(isolate_)
       ->AdjustAmountOfExternalAllocatedMemory(length);
 }
@@ -1867,29 +1875,46 @@ void Heap::RegisterNewArrayBuffer(bool in_new_space, void* data,
 
 void Heap::UnregisterArrayBuffer(bool in_new_space, void* data) {
   if (!data) return;
-  UnregisterArrayBufferHelper(
-      in_new_space ? live_new_array_buffers_ : live_array_buffers_,
-      in_new_space ? not_yet_discovered_new_array_buffers_
-                   : not_yet_discovered_array_buffers_,
+  UnregisterArrayBufferHelper(live_array_buffers_,
+                              not_yet_discovered_array_buffers_, data);
+  if (in_new_space) {
+    UnregisterArrayBufferHelper(live_array_buffers_for_scavenge_,
+                                not_yet_discovered_array_buffers_for_scavenge_,
+                                data);
+  }
+}
+
+
+void Heap::RegisterLiveArrayBuffer(bool from_scavenge, void* data) {
+  // ArrayBuffer might be in the middle of being constructed.
+  if (data == undefined_value()) return;
+  RegisterLiveArrayBufferHelper(
+      from_scavenge ? not_yet_discovered_array_buffers_for_scavenge_
+                    : not_yet_discovered_array_buffers_,
       data);
 }
 
 
-void Heap::RegisterLiveArrayBuffer(bool in_new_space, void* data) {
-  // ArrayBuffer might be in the middle of being constructed.
-  if (data == undefined_value()) return;
-  RegisterLiveArrayBufferHelper(in_new_space
-                                    ? not_yet_discovered_new_array_buffers_
-                                    : not_yet_discovered_array_buffers_,
-                                data);
-}
-
-
-void Heap::FreeDeadArrayBuffers(bool in_new_space) {
+void Heap::FreeDeadArrayBuffers(bool from_scavenge) {
+  if (from_scavenge) {
+    for (auto& buffer : not_yet_discovered_array_buffers_for_scavenge_) {
+      not_yet_discovered_array_buffers_.erase(buffer.first);
+      live_array_buffers_.erase(buffer.first);
+    }
+  } else {
+    for (auto& buffer : not_yet_discovered_array_buffers_) {
+      // Scavenge can't happend during evacuation, so we only need to update
+      // live_array_buffers_for_scavenge_.
+      // not_yet_discovered_array_buffers_for_scanvenge_ will be reset before
+      // the next scavenge run in PrepareArrayBufferDiscoveryInNewSpace.
+      live_array_buffers_for_scavenge_.erase(buffer.first);
+    }
+  }
   size_t freed_memory = FreeDeadArrayBuffersHelper(
-      isolate_, in_new_space ? live_new_array_buffers_ : live_array_buffers_,
-      in_new_space ? not_yet_discovered_new_array_buffers_
-                   : not_yet_discovered_array_buffers_);
+      isolate_,
+      from_scavenge ? live_array_buffers_for_scavenge_ : live_array_buffers_,
+      from_scavenge ? not_yet_discovered_array_buffers_for_scavenge_
+                    : not_yet_discovered_array_buffers_);
   if (freed_memory) {
     reinterpret_cast<v8::Isolate*>(isolate_)
         ->AdjustAmountOfExternalAllocatedMemory(
@@ -1901,13 +1926,12 @@ void Heap::FreeDeadArrayBuffers(bool in_new_space) {
 void Heap::TearDownArrayBuffers() {
   TearDownArrayBuffersHelper(isolate_, live_array_buffers_,
                              not_yet_discovered_array_buffers_);
-  TearDownArrayBuffersHelper(isolate_, live_new_array_buffers_,
-                             not_yet_discovered_new_array_buffers_);
 }
 
 
 void Heap::PrepareArrayBufferDiscoveryInNewSpace() {
-  not_yet_discovered_new_array_buffers_ = live_new_array_buffers_;
+  not_yet_discovered_array_buffers_for_scavenge_ =
+      live_array_buffers_for_scavenge_;
 }
 
 
@@ -1918,10 +1942,10 @@ void Heap::PromoteArrayBuffer(Object* obj) {
   if (!data) return;
   // ArrayBuffer might be in the middle of being constructed.
   if (data == undefined_value()) return;
-  DCHECK(live_new_array_buffers_.count(data) > 0);
-  live_array_buffers_[data] = live_new_array_buffers_[data];
-  live_new_array_buffers_.erase(data);
-  not_yet_discovered_new_array_buffers_.erase(data);
+  DCHECK(live_array_buffers_for_scavenge_.count(data) > 0);
+  DCHECK(live_array_buffers_.count(data) > 0);
+  live_array_buffers_for_scavenge_.erase(data);
+  not_yet_discovered_array_buffers_for_scavenge_.erase(data);
 }
 
 
@@ -2421,6 +2445,12 @@ class ScavengingVisitor : public StaticVisitorBase {
                                              HeapObject* object) {
     int object_size = reinterpret_cast<FixedTypedArrayBase*>(object)->size();
     EvacuateObject<DATA_OBJECT, kWordAligned>(map, slot, object, object_size);
+
+    MapWord map_word = object->map_word();
+    DCHECK(map_word.IsForwardingAddress());
+    FixedTypedArrayBase* target =
+        reinterpret_cast<FixedTypedArrayBase*>(map_word.ToForwardingAddress());
+    target->set_base_pointer(target, SKIP_WRITE_BARRIER);
   }
 
 
@@ -2428,6 +2458,12 @@ class ScavengingVisitor : public StaticVisitorBase {
                                                HeapObject* object) {
     int object_size = reinterpret_cast<FixedFloat64Array*>(object)->size();
     EvacuateObject<DATA_OBJECT, kDoubleAligned>(map, slot, object, object_size);
+
+    MapWord map_word = object->map_word();
+    DCHECK(map_word.IsForwardingAddress());
+    FixedTypedArrayBase* target =
+        reinterpret_cast<FixedTypedArrayBase*>(map_word.ToForwardingAddress());
+    target->set_base_pointer(target, SKIP_WRITE_BARRIER);
   }
 
 
@@ -3090,7 +3126,7 @@ AllocationResult Heap::AllocateWeakCell(HeapObject* value) {
   }
   result->set_map_no_write_barrier(weak_cell_map());
   WeakCell::cast(result)->initialize(value);
-  WeakCell::cast(result)->set_next(undefined_value(), SKIP_WRITE_BARRIER);
+  WeakCell::cast(result)->clear_next(this);
   return result;
 }
 
@@ -3169,6 +3205,8 @@ void Heap::CreateInitialObjects() {
   set_nan_value(*factory->NewHeapNumber(
       std::numeric_limits<double>::quiet_NaN(), IMMUTABLE, TENURED));
   set_infinity_value(*factory->NewHeapNumber(V8_INFINITY, IMMUTABLE, TENURED));
+  set_minus_infinity_value(
+      *factory->NewHeapNumber(-V8_INFINITY, IMMUTABLE, TENURED));
 
   // The hole has not been created yet, but we want to put something
   // predictable in the gaps in the string table, so lets make that Smi zero.
@@ -3250,11 +3288,11 @@ void Heap::CreateInitialObjects() {
 
   {
     HandleScope scope(isolate());
-#define SYMBOL_INIT(name)                                                      \
-  {                                                                            \
-    Handle<String> name##d = factory->NewStringFromStaticChars(#name);         \
-    Handle<Object> symbol(isolate()->factory()->NewPrivateOwnSymbol(name##d)); \
-    roots_[k##name##RootIndex] = *symbol;                                      \
+#define SYMBOL_INIT(name)                                                   \
+  {                                                                         \
+    Handle<String> name##d = factory->NewStringFromStaticChars(#name);      \
+    Handle<Object> symbol(isolate()->factory()->NewPrivateSymbol(name##d)); \
+    roots_[k##name##RootIndex] = *symbol;                                   \
   }
     PRIVATE_SYMBOL_LIST(SYMBOL_INIT)
 #undef SYMBOL_INIT
@@ -3315,13 +3353,27 @@ void Heap::CreateInitialObjects() {
   // Number of queued microtasks stored in Isolate::pending_microtask_count().
   set_microtask_queue(empty_fixed_array());
 
-  FeedbackVectorSpec spec(0, Code::KEYED_LOAD_IC);
-  Handle<TypeFeedbackVector> dummy_vector =
-      factory->NewTypeFeedbackVector(&spec);
-  dummy_vector->Set(FeedbackVectorICSlot(0),
-                    *TypeFeedbackVector::MegamorphicSentinel(isolate()),
-                    SKIP_WRITE_BARRIER);
-  set_keyed_load_dummy_vector(*dummy_vector);
+  {
+    FeedbackVectorSpec spec(0, Code::KEYED_LOAD_IC);
+    Handle<TypeFeedbackVector> dummy_vector =
+        factory->NewTypeFeedbackVector(&spec);
+    dummy_vector->Set(FeedbackVectorICSlot(0),
+                      *TypeFeedbackVector::MegamorphicSentinel(isolate()),
+                      SKIP_WRITE_BARRIER);
+    set_keyed_load_dummy_vector(*dummy_vector);
+  }
+
+  if (FLAG_vector_stores) {
+    FeedbackVectorSpec spec(0, Code::KEYED_STORE_IC);
+    Handle<TypeFeedbackVector> dummy_vector =
+        factory->NewTypeFeedbackVector(&spec);
+    dummy_vector->Set(FeedbackVectorICSlot(0),
+                      *TypeFeedbackVector::MegamorphicSentinel(isolate()),
+                      SKIP_WRITE_BARRIER);
+    set_keyed_store_dummy_vector(*dummy_vector);
+  } else {
+    set_keyed_store_dummy_vector(empty_fixed_array());
+  }
 
   set_detached_contexts(empty_fixed_array());
   set_retained_maps(ArrayList::cast(empty_fixed_array()));
@@ -3694,19 +3746,18 @@ AllocationResult Heap::AllocateByteArray(int length, PretenureFlag pretenure) {
 void Heap::CreateFillerObjectAt(Address addr, int size) {
   if (size == 0) return;
   HeapObject* filler = HeapObject::FromAddress(addr);
-  // At this point, we may be deserializing the heap from a snapshot, and
-  // none of the maps have been created yet and are NULL.
   if (size == kPointerSize) {
     filler->set_map_no_write_barrier(raw_unchecked_one_pointer_filler_map());
-    DCHECK(filler->map() == NULL || filler->map() == one_pointer_filler_map());
   } else if (size == 2 * kPointerSize) {
     filler->set_map_no_write_barrier(raw_unchecked_two_pointer_filler_map());
-    DCHECK(filler->map() == NULL || filler->map() == two_pointer_filler_map());
   } else {
     filler->set_map_no_write_barrier(raw_unchecked_free_space_map());
-    DCHECK(filler->map() == NULL || filler->map() == free_space_map());
     FreeSpace::cast(filler)->nobarrier_set_size(size);
   }
+  // At this point, we may be deserializing the heap from a snapshot, and
+  // none of the maps have been created yet and are NULL.
+  DCHECK((filler->map() == NULL && !deserialization_complete_) ||
+         filler->map()->IsMap());
 }
 
 
@@ -3908,6 +3959,7 @@ AllocationResult Heap::AllocateFixedTypedArray(int length,
 
   object->set_map(MapForFixedTypedArray(array_type));
   FixedTypedArrayBase* elements = FixedTypedArrayBase::cast(object);
+  elements->set_base_pointer(elements, SKIP_WRITE_BARRIER);
   elements->set_length(length);
   if (initialize) memset(elements->DataPtr(), 0, elements->DataSize());
   return elements;
@@ -4665,11 +4717,11 @@ void Heap::MakeHeapIterable() {
 
 
 bool Heap::HasLowYoungGenerationAllocationRate() {
-  const double high_mutator_utilization = 0.995;
+  const double high_mutator_utilization = 0.993;
   double mutator_speed = static_cast<double>(
       tracer()->NewSpaceAllocationThroughputInBytesPerMillisecond());
-  double gc_speed =
-      static_cast<double>(tracer()->ScavengeSpeedInBytesPerMillisecond());
+  double gc_speed = static_cast<double>(
+      tracer()->ScavengeSpeedInBytesPerMillisecond(kForSurvivedObjects));
   if (mutator_speed == 0 || gc_speed == 0) return false;
   double mutator_utilization = gc_speed / (mutator_speed + gc_speed);
   return mutator_utilization > high_mutator_utilization;
@@ -4677,7 +4729,7 @@ bool Heap::HasLowYoungGenerationAllocationRate() {
 
 
 bool Heap::HasLowOldGenerationAllocationRate() {
-  const double high_mutator_utilization = 0.995;
+  const double high_mutator_utilization = 0.993;
   double mutator_speed = static_cast<double>(
       tracer()->OldGenerationAllocationThroughputInBytesPerMillisecond());
   double gc_speed = static_cast<double>(
@@ -5003,6 +5055,20 @@ bool Heap::InSpace(Address addr, AllocationSpace space) {
   }
   UNREACHABLE();
   return false;
+}
+
+
+bool Heap::IsValidAllocationSpace(AllocationSpace space) {
+  switch (space) {
+    case NEW_SPACE:
+    case OLD_SPACE:
+    case CODE_SPACE:
+    case MAP_SPACE:
+    case LO_SPACE:
+      return true;
+    default:
+      return false;
+  }
 }
 
 
@@ -5549,6 +5615,25 @@ void Heap::SetOldGenerationAllocationLimit(intptr_t old_gen_size,
 }
 
 
+void Heap::DampenOldGenerationAllocationLimit(intptr_t old_gen_size,
+                                              double gc_speed,
+                                              double mutator_speed) {
+  double factor = HeapGrowingFactor(gc_speed, mutator_speed);
+  intptr_t limit = CalculateOldGenerationAllocationLimit(factor, old_gen_size);
+  if (limit < old_generation_allocation_limit_) {
+    if (FLAG_trace_gc_verbose) {
+      PrintIsolate(isolate_, "Dampen: old size: %" V8_PTR_PREFIX
+                             "d KB, old limit: %" V8_PTR_PREFIX
+                             "d KB, "
+                             "new limit: %" V8_PTR_PREFIX "d KB (%.1f)\n",
+                   old_gen_size / KB, old_generation_allocation_limit_ / KB,
+                   limit / KB, factor);
+    }
+    old_generation_allocation_limit_ = limit;
+  }
+}
+
+
 void Heap::EnableInlineAllocation() {
   if (!inline_allocation_disabled_) return;
   inline_allocation_disabled_ = false;
@@ -5906,7 +5991,7 @@ void Heap::PrintHandles() {
 class CheckHandleCountVisitor : public ObjectVisitor {
  public:
   CheckHandleCountVisitor() : handle_count_(0) {}
-  ~CheckHandleCountVisitor() { CHECK(handle_count_ < 2000); }
+  ~CheckHandleCountVisitor() { CHECK_LT(handle_count_, 2000); }
   void VisitPointers(Object** start, Object** end) {
     handle_count_ += end - start;
   }

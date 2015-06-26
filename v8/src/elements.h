@@ -20,7 +20,6 @@ class ElementsAccessor {
   explicit ElementsAccessor(const char* name) : name_(name) { }
   virtual ~ElementsAccessor() { }
 
-  virtual ElementsKind kind() const = 0;
   const char* name() const { return name_; }
 
   // Checks the elements of an object for consistency, asserting when a problem
@@ -41,11 +40,6 @@ class ElementsAccessor {
       Handle<JSObject> holder,
       uint32_t key) {
     return HasElement(holder, key, handle(holder->elements()));
-  }
-
-  inline Handle<Object> Set(Handle<JSObject> holder, uint32_t key,
-                            Handle<Object> value) {
-    return Set(holder, key, handle(holder->elements()), value);
   }
 
   // Returns the element with the specified key or undefined if there is no such
@@ -79,20 +73,7 @@ class ElementsAccessor {
   // changing array sizes as defined in EcmaScript 5.1 15.4.5.2, i.e. array that
   // have non-deletable elements can only be shrunk to the size of highest
   // element that is non-deletable.
-  MUST_USE_RESULT virtual MaybeHandle<Object> SetLength(
-      Handle<JSArray> holder,
-      Handle<Object> new_length) = 0;
-
-  // Modifies both the length and capacity of a JSArray, resizing the underlying
-  // backing store as necessary. This method does NOT honor the semantics of
-  // EcmaScript 5.1 15.4.5.2, arrays can be shrunk beyond non-deletable
-  // elements. This method should only be called for array expansion OR by
-  // runtime JavaScript code that use InternalArrays and don't care about
-  // EcmaScript 5.1 semantics.
-  virtual void SetCapacityAndLength(
-      Handle<JSArray> array,
-      int capacity,
-      int length) = 0;
+  virtual void SetLength(Handle<JSArray> holder, uint32_t new_length) = 0;
 
   // Deletes an element in an object.
   virtual void Delete(Handle<JSObject> holder, uint32_t key,
@@ -139,6 +120,9 @@ class ElementsAccessor {
       *from_holder, 0, from_kind, to, 0, kCopyToEndAndInitializeToHole);
   }
 
+  virtual void GrowCapacityAndConvert(Handle<JSObject> object,
+                                      uint32_t capacity) = 0;
+
   virtual Handle<FixedArray> AddElementsToFixedArray(
       Handle<JSObject> receiver, Handle<FixedArray> to,
       FixedArray::KeyFilter filter) = 0;
@@ -153,6 +137,13 @@ class ElementsAccessor {
 
   static void InitializeOncePerProcess();
   static void TearDown();
+
+  virtual void Set(FixedArrayBase* backing_store, uint32_t key,
+                   Object* value) = 0;
+  virtual void Reconfigure(Handle<JSObject> object,
+                           Handle<FixedArrayBase> backing_store, uint32_t index,
+                           Handle<Object> value,
+                           PropertyAttributes attributes) = 0;
 
  protected:
   friend class SloppyArgumentsElementsAccessor;
@@ -179,10 +170,6 @@ class ElementsAccessor {
   virtual PropertyDetails GetDetails(FixedArrayBase* backing_store,
                                      uint32_t index) = 0;
   virtual bool HasIndex(FixedArrayBase* backing_store, uint32_t key) = 0;
-
-  virtual Handle<Object> Set(Handle<JSObject> holder, uint32_t key,
-                             Handle<FixedArrayBase> backing_store,
-                             Handle<Object> value) = 0;
 
  private:
   static ElementsAccessor** elements_accessors_;

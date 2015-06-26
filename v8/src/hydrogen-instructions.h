@@ -2276,7 +2276,7 @@ class HCallWithDescriptor final : public HInstruction {
     } else {
       int par_index = index - 1;
       DCHECK(par_index < descriptor_.GetEnvironmentLength());
-      return descriptor_.GetParameterRepresentation(par_index);
+      return RepresentationFromType(descriptor_.GetParameterType(par_index));
     }
   }
 
@@ -5926,6 +5926,11 @@ class HObjectAccess final {
         kArrayLengths,
         FixedArray::kLengthOffset,
         Representation::Smi());
+  }
+
+  static HObjectAccess ForFixedTypedArrayBaseBasePointer() {
+    return HObjectAccess(kInobject, FixedTypedArrayBase::kBasePointerOffset,
+                         Representation::Tagged());
   }
 
   static HObjectAccess ForStringHashField() {

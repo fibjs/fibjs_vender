@@ -564,11 +564,15 @@ void Deserializer::Deserialize(Isolate* isolate) {
   DCHECK_NULL(isolate_->thread_manager()->FirstThreadStateInUse());
   // No active handles.
   DCHECK(isolate_->handle_scope_implementer()->blocks()->is_empty());
-  isolate_->heap()->IterateSmiRoots(this);
-  isolate_->heap()->IterateStrongRoots(this, VISIT_ONLY_STRONG);
-  isolate_->heap()->RepairFreeListsAfterDeserialization();
-  isolate_->heap()->IterateWeakRoots(this, VISIT_ALL);
-  DeserializeDeferredObjects();
+
+  {
+    DisallowHeapAllocation no_gc;
+    isolate_->heap()->IterateSmiRoots(this);
+    isolate_->heap()->IterateStrongRoots(this, VISIT_ONLY_STRONG);
+    isolate_->heap()->RepairFreeListsAfterDeserialization();
+    isolate_->heap()->IterateWeakRoots(this, VISIT_ALL);
+    DeserializeDeferredObjects();
+  }
 
   isolate_->heap()->set_native_contexts_list(
       isolate_->heap()->undefined_value());
@@ -617,8 +621,8 @@ MaybeHandle<Object> Deserializer::DeserializePartial(
   Object* root;
   Object* outdated_contexts;
   VisitPointer(&root);
-  VisitPointer(&outdated_contexts);
   DeserializeDeferredObjects();
+  VisitPointer(&outdated_contexts);
 
   // There's no code deserialized here. If this assert fires then that's
   // changed and logging should be added to notify the profiler et al of the
@@ -714,16 +718,20 @@ class StringTableInsertionKey : public HashTableKey {
 
 HeapObject* Deserializer::PostProcessNewObject(HeapObject* obj, int space) {
   if (deserializing_user_code()) {
-    if (obj->IsInternalizedString()) {
-      // Canonicalize the internalized string. If it already exists in the
-      // string table, set it to forward to the existing one.
-      DisallowHeapAllocation no_gc;
+    if (obj->IsString()) {
       String* string = String::cast(obj);
-      HandleScope scope(isolate_);
-      StringTableInsertionKey key(string);
-      String* canonical = *StringTable::LookupKey(isolate_, &key);
-      string->SetForwardedInternalizedString(canonical);
-      return canonical;
+      // Uninitialize hash field as the hash seed may have changed.
+      string->set_hash_field(String::kEmptyHashField);
+      if (string->IsInternalizedString()) {
+        // Canonicalize the internalized string. If it already exists in the
+        // string table, set it to forward to the existing one.
+        DisallowHeapAllocation no_gc;
+        HandleScope scope(isolate_);
+        StringTableInsertionKey key(string);
+        String* canonical = *StringTable::LookupKey(isolate_, &key);
+        string->SetForwardedInternalizedString(canonical);
+        return canonical;
+      }
     } else if (obj->IsScript()) {
       // Assign a new script id to avoid collision.
       Script::cast(obj)->set_id(isolate_->heap()->NextScriptId());
@@ -753,6 +761,8 @@ HeapObject* Deserializer::PostProcessNewObject(HeapObject* obj, int space) {
       new_code_objects_.Add(Code::cast(obj));
     }
   }
+  // Check alignment.
+  DCHECK_EQ(0, Heap::GetFillToAlign(obj->address(), obj->RequiredAlignment()));
   return obj;
 }
 
@@ -769,8 +779,14 @@ HeapObject* Deserializer::GetBackReferencedObject(int space) {
     uint32_t chunk_index = back_reference.chunk_index();
     DCHECK_LE(chunk_index, current_chunk_[space]);
     uint32_t chunk_offset = back_reference.chunk_offset();
-    obj = HeapObject::FromAddress(reservations_[space][chunk_index].start +
-                                  chunk_offset);
+    Address address = reservations_[space][chunk_index].start + chunk_offset;
+    if (next_alignment_ != kWordAligned) {
+      int padding = Heap::GetFillToAlign(address, next_alignment_);
+      next_alignment_ = kWordAligned;
+      DCHECK(padding == 0 || HeapObject::FromAddress(address)->IsFiller());
+      address += padding;
+    }
+    obj = HeapObject::FromAddress(address);
   }
   if (deserializing_user_code() && obj->IsInternalizedString()) {
     obj = String::cast(obj)->GetForwardedInternalizedString();
@@ -788,22 +804,25 @@ HeapObject* Deserializer::GetBackReferencedObject(int space) {
 void Deserializer::ReadObject(int space_number, Object** write_back) {
   Address address;
   HeapObject* obj;
-  int next_int = source_.GetInt();
+  int size = source_.GetInt() << kObjectAlignmentBits;
 
-  bool double_align = false;
-#ifndef V8_HOST_ARCH_64_BIT
-  double_align = next_int == kDoubleAlignmentSentinel;
-  if (double_align) next_int = source_.GetInt();
-#endif
-
-  DCHECK_NE(kDoubleAlignmentSentinel, next_int);
-  int size = next_int << kObjectAlignmentBits;
-  int reserved_size = size + (double_align ? kPointerSize : 0);
-  address = Allocate(space_number, reserved_size);
-  obj = HeapObject::FromAddress(address);
-  if (double_align) {
-    obj = isolate_->heap()->DoubleAlignForDeserialization(obj, reserved_size);
+  if (next_alignment_ != kWordAligned) {
+    int reserved = size + Heap::GetMaximumFillToAlign(next_alignment_);
+    address = Allocate(space_number, reserved);
+    obj = HeapObject::FromAddress(address);
+    // If one of the following assertions fails, then we are deserializing an
+    // aligned object when the filler maps have not been deserialized yet.
+    // We require filler maps as padding to align the object.
+    Heap* heap = isolate_->heap();
+    DCHECK(heap->free_space_map()->IsMap());
+    DCHECK(heap->one_pointer_filler_map()->IsMap());
+    DCHECK(heap->two_pointer_filler_map()->IsMap());
+    obj = heap->AlignWithFiller(obj, size, reserved, next_alignment_);
     address = obj->address();
+    next_alignment_ = kWordAligned;
+  } else {
+    address = Allocate(space_number, size);
+    obj = HeapObject::FromAddress(address);
   }
 
   isolate_->heap()->OnAllocationEvent(obj, size);
@@ -998,14 +1017,17 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
   FOUR_CASES(byte_code + 8)               \
   FOUR_CASES(byte_code + 12)
 
+#define SINGLE_CASE(where, how, within, space) \
+  CASE_STATEMENT(where, how, within, space)    \
+  CASE_BODY(where, how, within, space)
+
       // Deserialize a new object and write a pointer to it to the current
       // object.
       ALL_SPACES(kNewObject, kPlain, kStartOfObject)
       // Support for direct instruction pointers in functions.  It's an inner
       // pointer because it points at the entry point, not at the start of the
       // code object.
-      CASE_STATEMENT(kNewObject, kPlain, kInnerPointer, CODE_SPACE)
-      CASE_BODY(kNewObject, kPlain, kInnerPointer, CODE_SPACE)
+      SINGLE_CASE(kNewObject, kPlain, kInnerPointer, CODE_SPACE)
       // Deserialize a new code object and write a pointer to its first
       // instruction to the current code object.
       ALL_SPACES(kNewObject, kFromCode, kInnerPointer)
@@ -1036,45 +1058,33 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
       ALL_SPACES(kBackrefWithSkip, kPlain, kInnerPointer)
       // Find an object in the roots array and write a pointer to it to the
       // current object.
-      CASE_STATEMENT(kRootArray, kPlain, kStartOfObject, 0)
-      CASE_BODY(kRootArray, kPlain, kStartOfObject, 0)
+      SINGLE_CASE(kRootArray, kPlain, kStartOfObject, 0)
 #if defined(V8_TARGET_ARCH_MIPS) || defined(V8_TARGET_ARCH_MIPS64) || \
     defined(V8_TARGET_ARCH_PPC) || V8_EMBEDDED_CONSTANT_POOL
       // Find an object in the roots array and write a pointer to it to in code.
-      CASE_STATEMENT(kRootArray, kFromCode, kStartOfObject, 0)
-      CASE_BODY(kRootArray, kFromCode, kStartOfObject, 0)
+      SINGLE_CASE(kRootArray, kFromCode, kStartOfObject, 0)
 #endif
       // Find an object in the partial snapshots cache and write a pointer to it
       // to the current object.
-      CASE_STATEMENT(kPartialSnapshotCache, kPlain, kStartOfObject, 0)
-      CASE_BODY(kPartialSnapshotCache, kPlain, kStartOfObject, 0)
+      SINGLE_CASE(kPartialSnapshotCache, kPlain, kStartOfObject, 0)
       // Find an code entry in the partial snapshots cache and
       // write a pointer to it to the current object.
-      CASE_STATEMENT(kPartialSnapshotCache, kPlain, kInnerPointer, 0)
-      CASE_BODY(kPartialSnapshotCache, kPlain, kInnerPointer, 0)
+      SINGLE_CASE(kPartialSnapshotCache, kPlain, kInnerPointer, 0)
       // Find an external reference and write a pointer to it to the current
       // object.
-      CASE_STATEMENT(kExternalReference, kPlain, kStartOfObject, 0)
-      CASE_BODY(kExternalReference, kPlain, kStartOfObject, 0)
+      SINGLE_CASE(kExternalReference, kPlain, kStartOfObject, 0)
       // Find an external reference and write a pointer to it in the current
       // code object.
-      CASE_STATEMENT(kExternalReference, kFromCode, kStartOfObject, 0)
-      CASE_BODY(kExternalReference, kFromCode, kStartOfObject, 0)
+      SINGLE_CASE(kExternalReference, kFromCode, kStartOfObject, 0)
       // Find an object in the attached references and write a pointer to it to
       // the current object.
-      CASE_STATEMENT(kAttachedReference, kPlain, kStartOfObject, 0)
-      CASE_BODY(kAttachedReference, kPlain, kStartOfObject, 0)
-      CASE_STATEMENT(kAttachedReference, kPlain, kInnerPointer, 0)
-      CASE_BODY(kAttachedReference, kPlain, kInnerPointer, 0)
-      CASE_STATEMENT(kAttachedReference, kFromCode, kInnerPointer, 0)
-      CASE_BODY(kAttachedReference, kFromCode, kInnerPointer, 0)
+      SINGLE_CASE(kAttachedReference, kPlain, kStartOfObject, 0)
+      SINGLE_CASE(kAttachedReference, kPlain, kInnerPointer, 0)
+      SINGLE_CASE(kAttachedReference, kFromCode, kInnerPointer, 0)
       // Find a builtin and write a pointer to it to the current object.
-      CASE_STATEMENT(kBuiltin, kPlain, kStartOfObject, 0)
-      CASE_BODY(kBuiltin, kPlain, kStartOfObject, 0)
-      CASE_STATEMENT(kBuiltin, kPlain, kInnerPointer, 0)
-      CASE_BODY(kBuiltin, kPlain, kInnerPointer, 0)
-      CASE_STATEMENT(kBuiltin, kFromCode, kInnerPointer, 0)
-      CASE_BODY(kBuiltin, kFromCode, kInnerPointer, 0)
+      SINGLE_CASE(kBuiltin, kPlain, kStartOfObject, 0)
+      SINGLE_CASE(kBuiltin, kPlain, kInnerPointer, 0)
+      SINGLE_CASE(kBuiltin, kFromCode, kInnerPointer, 0)
 
 #undef CASE_STATEMENT
 #undef CASE_BODY
@@ -1169,6 +1179,15 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
         break;
       }
 
+      case kAlignmentPrefix:
+      case kAlignmentPrefix + 1:
+      case kAlignmentPrefix + 2: {
+        DCHECK_EQ(kWordAligned, next_alignment_);
+        next_alignment_ =
+            static_cast<AllocationAlignment>(data - (kAlignmentPrefix - 1));
+        break;
+      }
+
       STATIC_ASSERT(kNumberOfRootArrayConstants == Heap::kOldSpaceRoots);
       STATIC_ASSERT(kNumberOfRootArrayConstants == 32);
       SIXTEEN_CASES(kRootArrayConstantsWithSkip)
@@ -1235,6 +1254,7 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
 
 #undef SIXTEEN_CASES
 #undef FOUR_CASES
+#undef SINGLE_CASE
 
       default:
         CHECK(false);
@@ -1379,8 +1399,8 @@ void PartialSerializer::Serialize(Object** o) {
     back_reference_map()->AddGlobalProxy(context->global_proxy());
   }
   VisitPointer(o);
-  SerializeOutdatedContextsAsFixedArray();
   SerializeDeferredObjects();
+  SerializeOutdatedContextsAsFixedArray();
   Pad();
 }
 
@@ -1562,6 +1582,7 @@ bool Serializer::SerializeKnownObject(HeapObject* obj, HowToCode how_to_code,
         PrintF("\n");
       }
 
+      PutAlignmentPrefix(obj);
       AllocationSpace space = back_reference.space();
       if (skip == 0) {
         sink_->Put(kBackref + how_to_code + where_to_point + space, "BackRef");
@@ -1655,6 +1676,18 @@ void Serializer::PutBackReference(HeapObject* object, BackReference reference) {
 }
 
 
+int Serializer::PutAlignmentPrefix(HeapObject* object) {
+  AllocationAlignment alignment = object->RequiredAlignment();
+  if (alignment != kWordAligned) {
+    DCHECK(1 <= alignment && alignment <= 3);
+    byte prefix = (kAlignmentPrefix - 1) + alignment;
+    sink_->Put(prefix, "Alignment");
+    return Heap::GetMaximumFillToAlign(alignment);
+  }
+  return 0;
+}
+
+
 void PartialSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
                                         WhereToPoint where_to_point, int skip) {
   if (obj->IsMap()) {
@@ -1736,21 +1769,10 @@ void Serializer::ObjectSerializer::SerializePrologue(AllocationSpace space,
     }
     back_reference = serializer_->AllocateLargeObject(size);
   } else {
-    bool needs_double_align = false;
-    // TODO(bbudge): Generalize to other alignment constraints.
-    if (object_->RequiredAlignment() == kDoubleAligned) {
-      // Add wriggle room for double alignment padding.
-      back_reference = serializer_->Allocate(space, size + kPointerSize);
-      needs_double_align = true;
-    } else {
-      back_reference = serializer_->Allocate(space, size);
-    }
+    int fill = serializer_->PutAlignmentPrefix(object_);
+    back_reference = serializer_->Allocate(space, size + fill);
     sink_->Put(kNewObject + reference_representation_ + space, "NewObject");
-    if (needs_double_align)
-      sink_->PutInt(kDoubleAlignmentSentinel, "DoubleAlignSentinel");
-    int encoded_size = size >> kObjectAlignmentBits;
-    DCHECK_NE(kDoubleAlignmentSentinel, encoded_size);
-    sink_->PutInt(encoded_size, "ObjectSizeInWords");
+    sink_->PutInt(size >> kObjectAlignmentBits, "ObjectSizeInWords");
   }
 
 #ifdef OBJECT_PRINT
@@ -1829,6 +1851,28 @@ void Serializer::ObjectSerializer::SerializeExternalString() {
 }
 
 
+// Clear and later restore the next link in the weak cell, if the object is one.
+class UnlinkWeakCellScope {
+ public:
+  explicit UnlinkWeakCellScope(HeapObject* object) : weak_cell_(NULL) {
+    if (object->IsWeakCell()) {
+      weak_cell_ = WeakCell::cast(object);
+      next_ = weak_cell_->next();
+      weak_cell_->clear_next(object->GetHeap());
+    }
+  }
+
+  ~UnlinkWeakCellScope() {
+    if (weak_cell_) weak_cell_->set_next(next_, UPDATE_WEAK_WRITE_BARRIER);
+  }
+
+ private:
+  WeakCell* weak_cell_;
+  Object* next_;
+  DisallowHeapAllocation no_gc_;
+};
+
+
 void Serializer::ObjectSerializer::Serialize() {
   if (FLAG_trace_serializer) {
     PrintF(" Encoding heap object: ");
@@ -1853,6 +1897,10 @@ void Serializer::ObjectSerializer::Serialize() {
     // Clear cached line ends.
     Object* undefined = serializer_->isolate()->heap()->undefined_value();
     Script::cast(object_)->set_line_ends(undefined);
+    Object* shared_list = Script::cast(object_)->shared_function_infos();
+    if (shared_list->IsWeakFixedArray()) {
+      WeakFixedArray::cast(shared_list)->Compact();
+    }
   }
 
   if (object_->IsExternalString()) {
@@ -1888,6 +1936,8 @@ void Serializer::ObjectSerializer::Serialize() {
     return;
   }
 
+  UnlinkWeakCellScope unlink_weak_cell(object_);
+
   object_->IterateBody(map->instance_type(), size, this);
   OutputRawData(object_->address() + size);
 }
@@ -1911,6 +1961,8 @@ void Serializer::ObjectSerializer::SerializeDeferred() {
   sink_->Put(kNewObject + reference.space(), "deferred object");
   serializer_->PutBackReference(object_, reference);
   sink_->PutInt(size >> kPointerSizeLog2, "deferred object size");
+
+  UnlinkWeakCellScope unlink_weak_cell(object_);
 
   object_->IterateBody(map->instance_type(), size, this);
   OutputRawData(object_->address() + size);
@@ -2273,7 +2325,7 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
         DCHECK(code_object->has_reloc_info_for_serialization());
         // Only serialize the code for the toplevel function unless specified
         // by flag. Replace code of inner functions by the lazy compile builtin.
-        // This is safe, as checked in Compiler::BuildFunctionInfo.
+        // This is safe, as checked in Compiler::GetSharedFunctionInfo.
         if (code_object != main_code_ && !FLAG_serialize_inner) {
           SerializeBuiltin(Builtins::kCompileLazy, how_to_code, where_to_point);
         } else {
@@ -2300,24 +2352,12 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
 void CodeSerializer::SerializeGeneric(HeapObject* heap_object,
                                       HowToCode how_to_code,
                                       WhereToPoint where_to_point) {
-  int string_hash = String::kEmptyHashField;
-  if (heap_object->IsString()) {
-    String* string = String::cast(heap_object);
-    if (string->IsInternalizedString()) num_internalized_strings_++;
-    // Temporarily clear string hash.
-    string_hash = string->hash_field();
-    string->set_hash_field(String::kEmptyHashField);
-  }
+  if (heap_object->IsInternalizedString()) num_internalized_strings_++;
 
   // Object has not yet been serialized.  Serialize it here.
   ObjectSerializer serializer(this, heap_object, sink_, how_to_code,
                               where_to_point);
   serializer.Serialize();
-
-  if (string_hash != String::kEmptyHashField) {
-    // Restore string hash.
-    String::cast(heap_object)->set_hash_field(String::kEmptyHashField);
-  }
 }
 
 
@@ -2425,10 +2465,6 @@ MaybeHandle<SharedFunctionInfo> CodeSerializer::Deserialize(
     return MaybeHandle<SharedFunctionInfo>();
   }
 
-  // Eagerly expand string table to avoid allocations during deserialization.
-  StringTable::EnsureCapacityForDeserialization(isolate,
-                                                scd->NumInternalizedStrings());
-
   // Prepare and register list of attached objects.
   Vector<const uint32_t> code_stub_keys = scd->CodeStubKeys();
   Vector<Handle<Object> > attached_objects = Vector<Handle<Object> >::New(
@@ -2438,6 +2474,10 @@ MaybeHandle<SharedFunctionInfo> CodeSerializer::Deserialize(
     attached_objects[i + kCodeStubsBaseIndex] =
         CodeStub::GetCode(isolate, code_stub_keys[i]).ToHandleChecked();
   }
+
+  // Eagerly expand string table to avoid allocations during deserialization.
+  StringTable::EnsureCapacityForDeserialization(isolate,
+                                                scd->NumInternalizedStrings());
 
   Deserializer deserializer(scd.get());
   deserializer.SetAttachedObjects(attached_objects);
@@ -2625,13 +2665,13 @@ SerializedCodeData::SerializedCodeData(const List<byte>& payload,
 SerializedCodeData::SanityCheckResult SerializedCodeData::SanityCheck(
     Isolate* isolate, String* source) const {
   uint32_t magic_number = GetMagicNumber();
+  if (magic_number != ComputeMagicNumber(isolate)) return MAGIC_NUMBER_MISMATCH;
   uint32_t version_hash = GetHeaderValue(kVersionHashOffset);
   uint32_t source_hash = GetHeaderValue(kSourceHashOffset);
   uint32_t cpu_features = GetHeaderValue(kCpuFeaturesOffset);
   uint32_t flags_hash = GetHeaderValue(kFlagHashOffset);
   uint32_t c1 = GetHeaderValue(kChecksum1Offset);
   uint32_t c2 = GetHeaderValue(kChecksum2Offset);
-  if (magic_number != ComputeMagicNumber(isolate)) return MAGIC_NUMBER_MISMATCH;
   if (version_hash != Version::Hash()) return VERSION_MISMATCH;
   if (source_hash != SourceHash(source)) return SOURCE_MISMATCH;
   if (cpu_features != static_cast<uint32_t>(CpuFeatures::SupportedFeatures())) {

@@ -116,7 +116,7 @@ std::ostream& operator<<(std::ostream& os, ParameterInfo const& i) {
 
 
 #define CACHED_OP_LIST(V)                                  \
-  V(Dead, Operator::kFoldable, 0, 0, 0, 0, 0, 1)           \
+  V(Dead, Operator::kFoldable, 0, 0, 0, 1, 1, 1)           \
   V(IfTrue, Operator::kKontrol, 0, 0, 1, 0, 0, 1)          \
   V(IfFalse, Operator::kKontrol, 0, 0, 1, 0, 0, 1)         \
   V(IfSuccess, Operator::kKontrol, 0, 0, 1, 0, 0, 1)       \
@@ -688,15 +688,14 @@ const Operator* CommonOperatorBuilder::TypedStateValues(
 
 
 const Operator* CommonOperatorBuilder::FrameState(
-    FrameStateType type, BailoutId bailout_id,
-    OutputFrameStateCombine state_combine,
-    MaybeHandle<SharedFunctionInfo> shared_info) {
-  FrameStateCallInfo state_info(type, bailout_id, state_combine, shared_info);
-  return new (zone()) Operator1<FrameStateCallInfo>(  // --
-      IrOpcode::kFrameState, Operator::kPure,         // opcode
-      "FrameState",                                   // name
-      5, 0, 0, 1, 0, 0,                               // counts
-      state_info);                                    // parameter
+    BailoutId bailout_id, OutputFrameStateCombine state_combine,
+    const FrameStateFunctionInfo* function_info) {
+  FrameStateInfo state_info(bailout_id, state_combine, function_info);
+  return new (zone()) Operator1<FrameStateInfo>(  // --
+      IrOpcode::kFrameState, Operator::kPure,     // opcode
+      "FrameState",                               // name
+      5, 0, 0, 1, 0, 0,                           // counts
+      state_info);                                // parameter
 }
 
 
@@ -775,6 +774,14 @@ const Operator* CommonOperatorBuilder::ResizeMergeOrPhi(const Operator* op,
   }
 }
 
+
+const FrameStateFunctionInfo*
+CommonOperatorBuilder::CreateFrameStateFunctionInfo(
+    FrameStateType type, int parameter_count, int local_count,
+    Handle<SharedFunctionInfo> shared_info) {
+  return new (zone()->New(sizeof(FrameStateFunctionInfo)))
+      FrameStateFunctionInfo(type, parameter_count, local_count, shared_info);
+}
 
 }  // namespace compiler
 }  // namespace internal

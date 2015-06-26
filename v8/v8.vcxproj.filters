@@ -31,6 +31,9 @@
     <Filter Include="Source Files\compiler\x64">
       <UniqueIdentifier>{7e4db021-7f1c-d574-294e-09b6102be2dd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\compiler\x87">
+      <UniqueIdentifier>{6beedc22-e6df-e570-a793-e05223c73897}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\d8.xcodeproj">
       <UniqueIdentifier>{21b6a2cb-ceaf-378e-a76c-933ad5762d5c}</UniqueIdentifier>
     </Filter>
@@ -381,7 +384,7 @@
     <ClInclude Include="src\compiler\control-flow-optimizer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\control-reducer.h">
+    <ClInclude Include="src\compiler\dead-code-elimination.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\diamond.h">
@@ -408,10 +411,16 @@
     <ClInclude Include="src\compiler\graph-replay.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\graph-trimmer.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\graph-visualizer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\graph.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\greedy-allocator.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\ia32\instruction-codes-ia32.h">
@@ -552,6 +561,9 @@
     <ClInclude Include="src\compiler\simplified-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\simplified-operator-reducer.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\simplified-operator.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -575,6 +587,9 @@
     </ClInclude>
     <ClInclude Include="src\compiler\x64\instruction-codes-x64.h">
       <Filter>Source Files\compiler\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\x87\instruction-codes-x87.h">
+      <Filter>Source Files\compiler\x87</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\zone-pool.h">
       <Filter>Source Files\compiler</Filter>
@@ -1520,7 +1535,7 @@
     <ClCompile Include="src\compiler\control-flow-optimizer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\control-reducer.cc">
+    <ClCompile Include="src\compiler\dead-code-elimination.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\frame-elider.cc">
@@ -1538,10 +1553,16 @@
     <ClCompile Include="src\compiler\graph-replay.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\graph-trimmer.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\graph-visualizer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\graph.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\greedy-allocator.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\ia32\code-generator-ia32.cc">
@@ -1679,6 +1700,9 @@
     <ClCompile Include="src\compiler\simplified-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\simplified-operator-reducer.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\simplified-operator.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -1708,6 +1732,15 @@
     </ClCompile>
     <ClCompile Include="src\compiler\x64\linkage-x64.cc">
       <Filter>Source Files\compiler\x64</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\x87\code-generator-x87.cc">
+      <Filter>Source Files\compiler\x87</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\x87\instruction-selector-x87.cc">
+      <Filter>Source Files\compiler\x87</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\x87\linkage-x87.cc">
+      <Filter>Source Files\compiler\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\zone-pool.cc">
       <Filter>Source Files\compiler</Filter>

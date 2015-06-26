@@ -748,9 +748,11 @@ void MacroAssembler::X87SetRC(int rc) {
 
 
 void MacroAssembler::X87SetFPUCW(int cw) {
+  RecordComment("-- X87SetFPUCW start --");
   push(Immediate(cw));
   fldcw(MemOperand(esp, 0));
   add(esp, Immediate(kPointerSize));
+  RecordComment("-- X87SetFPUCW end--");
 }
 
 
@@ -1719,7 +1721,7 @@ void MacroAssembler::InitializeFieldsWithFiller(Register start_offset,
   add(start_offset, Immediate(kPointerSize));
   bind(&entry);
   cmp(start_offset, end_offset);
-  j(less, &loop);
+  j(below, &loop);
 }
 
 

@@ -116,7 +116,7 @@
     <ClInclude Include="src\compiler\control-builders.h" />
     <ClInclude Include="src\compiler\control-equivalence.h" />
     <ClInclude Include="src\compiler\control-flow-optimizer.h" />
-    <ClInclude Include="src\compiler\control-reducer.h" />
+    <ClInclude Include="src\compiler\dead-code-elimination.h" />
     <ClInclude Include="src\compiler\diamond.h" />
     <ClInclude Include="src\compiler\frame-elider.h" />
     <ClInclude Include="src\compiler\frame-states.h" />
@@ -125,8 +125,10 @@
     <ClInclude Include="src\compiler\graph-builder.h" />
     <ClInclude Include="src\compiler\graph-reducer.h" />
     <ClInclude Include="src\compiler\graph-replay.h" />
+    <ClInclude Include="src\compiler\graph-trimmer.h" />
     <ClInclude Include="src\compiler\graph-visualizer.h" />
     <ClInclude Include="src\compiler\graph.h" />
+    <ClInclude Include="src\compiler\greedy-allocator.h" />
     <ClInclude Include="src\compiler\ia32\instruction-codes-ia32.h" />
     <ClInclude Include="src\compiler\instruction-codes.h" />
     <ClInclude Include="src\compiler\instruction-selector-impl.h" />
@@ -173,6 +175,7 @@
     <ClInclude Include="src\compiler\scheduler.h" />
     <ClInclude Include="src\compiler\select-lowering.h" />
     <ClInclude Include="src\compiler\simplified-lowering.h" />
+    <ClInclude Include="src\compiler\simplified-operator-reducer.h" />
     <ClInclude Include="src\compiler\simplified-operator.h" />
     <ClInclude Include="src\compiler\source-position.h" />
     <ClInclude Include="src\compiler\state-values-utils.h" />
@@ -181,6 +184,7 @@
     <ClInclude Include="src\compiler\value-numbering-reducer.h" />
     <ClInclude Include="src\compiler\verifier.h" />
     <ClInclude Include="src\compiler\x64\instruction-codes-x64.h" />
+    <ClInclude Include="src\compiler\x87\instruction-codes-x87.h" />
     <ClInclude Include="src\compiler\zone-pool.h" />
     <ClInclude Include="src\contexts.h" />
     <ClInclude Include="src\conversions-inl.h" />
@@ -497,14 +501,16 @@
     <ClCompile Include="src\compiler\control-builders.cc" />
     <ClCompile Include="src\compiler\control-equivalence.cc" />
     <ClCompile Include="src\compiler\control-flow-optimizer.cc" />
-    <ClCompile Include="src\compiler\control-reducer.cc" />
+    <ClCompile Include="src\compiler\dead-code-elimination.cc" />
     <ClCompile Include="src\compiler\frame-elider.cc" />
     <ClCompile Include="src\compiler\frame-states.cc" />
     <ClCompile Include="src\compiler\gap-resolver.cc" />
     <ClCompile Include="src\compiler\graph-reducer.cc" />
     <ClCompile Include="src\compiler\graph-replay.cc" />
+    <ClCompile Include="src\compiler\graph-trimmer.cc" />
     <ClCompile Include="src\compiler\graph-visualizer.cc" />
     <ClCompile Include="src\compiler\graph.cc" />
+    <ClCompile Include="src\compiler\greedy-allocator.cc" />
     <ClCompile Include="src\compiler\ia32\code-generator-ia32.cc" />
     <ClCompile Include="src\compiler\ia32\instruction-selector-ia32.cc" />
     <ClCompile Include="src\compiler\ia32\linkage-ia32.cc" />
@@ -550,6 +556,7 @@
     <ClCompile Include="src\compiler\scheduler.cc" />
     <ClCompile Include="src\compiler\select-lowering.cc" />
     <ClCompile Include="src\compiler\simplified-lowering.cc" />
+    <ClCompile Include="src\compiler\simplified-operator-reducer.cc" />
     <ClCompile Include="src\compiler\simplified-operator.cc" />
     <ClCompile Include="src\compiler\source-position.cc" />
     <ClCompile Include="src\compiler\state-values-utils.cc" />
@@ -560,6 +567,9 @@
     <ClCompile Include="src\compiler\x64\code-generator-x64.cc" />
     <ClCompile Include="src\compiler\x64\instruction-selector-x64.cc" />
     <ClCompile Include="src\compiler\x64\linkage-x64.cc" />
+    <ClCompile Include="src\compiler\x87\code-generator-x87.cc" />
+    <ClCompile Include="src\compiler\x87\instruction-selector-x87.cc" />
+    <ClCompile Include="src\compiler\x87\linkage-x87.cc" />
     <ClCompile Include="src\compiler\zone-pool.cc" />
     <ClCompile Include="src\contexts.cc" />
     <ClCompile Include="src\conversions.cc" />

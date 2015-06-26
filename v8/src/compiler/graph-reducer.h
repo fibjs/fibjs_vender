@@ -47,13 +47,6 @@ class Reducer {
   // Try to reduce a node if possible.
   virtual Reduction Reduce(Node* node) = 0;
 
-  // Ask this reducer to finish operation, returns {true} if the reducer is
-  // done, while {false} indicates that the graph might need to be reduced
-  // again.
-  // TODO(turbofan): Remove this once the dead node trimming is in the
-  // GraphReducer.
-  virtual bool Finish();
-
   // Helper functions for subclasses to produce reductions for a node.
   static Reduction NoChange() { return Reduction(); }
   static Reduction Replace(Node* node) { return Reduction(node); }
@@ -123,8 +116,7 @@ class AdvancedReducer : public Reducer {
 // Performs an iterative reduction of a node graph.
 class GraphReducer : public AdvancedReducer::Editor {
  public:
-  GraphReducer(Zone* zone, Graph* graph, Node* dead_value = nullptr,
-               Node* dead_control = nullptr);
+  GraphReducer(Zone* zone, Graph* graph, Node* dead = nullptr);
   ~GraphReducer();
 
   Graph* graph() const { return graph_; }
@@ -171,8 +163,7 @@ class GraphReducer : public AdvancedReducer::Editor {
   void Revisit(Node* node) final;
 
   Graph* const graph_;
-  Node* dead_value_;
-  Node* dead_control_;
+  Node* const dead_;
   NodeMarker<State> state_;
   ZoneVector<Reducer*> reducers_;
   ZoneStack<Node*> revisit_;

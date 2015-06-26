@@ -252,8 +252,7 @@ class JSBinopReduction final {
   }
 
   Node* CreateFrameStateForLeftInput(Node* frame_state) {
-    FrameStateCallInfo state_info =
-        OpParameter<FrameStateCallInfo>(frame_state);
+    FrameStateInfo state_info = OpParameter<FrameStateInfo>(frame_state);
 
     if (state_info.bailout_id() == BailoutId::None()) {
       // Dummy frame state => just leave it as is.
@@ -270,8 +269,8 @@ class JSBinopReduction final {
     // the stack top. This is the slot that full code uses to store the
     // left operand.
     const Operator* op = jsgraph()->common()->FrameState(
-        state_info.type(), state_info.bailout_id(),
-        OutputFrameStateCombine::PokeAt(1), state_info.shared_info());
+        state_info.bailout_id(), OutputFrameStateCombine::PokeAt(1),
+        state_info.function_info());
 
     return graph()->NewNode(op,
                             frame_state->InputAt(kFrameStateParametersInput),
@@ -283,8 +282,7 @@ class JSBinopReduction final {
   }
 
   Node* CreateFrameStateForRightInput(Node* frame_state, Node* converted_left) {
-    FrameStateCallInfo state_info =
-        OpParameter<FrameStateCallInfo>(frame_state);
+    FrameStateInfo state_info = OpParameter<FrameStateInfo>(frame_state);
 
     if (state_info.bailout_id() == BailoutId::None()) {
       // Dummy frame state => just leave it as is.
@@ -294,8 +292,8 @@ class JSBinopReduction final {
     // Create a frame state that stores the result of the operation to the
     // top of the stack (i.e., the slot used for the right operand).
     const Operator* op = jsgraph()->common()->FrameState(
-        state_info.type(), state_info.bailout_id(),
-        OutputFrameStateCombine::PokeAt(0), state_info.shared_info());
+        state_info.bailout_id(), OutputFrameStateCombine::PokeAt(0),
+        state_info.function_info());
 
     // Change the left operand {converted_left} on the expression stack.
     Node* stack = frame_state->InputAt(2);
@@ -803,18 +801,14 @@ Reduction JSTypedLowering::ReduceJSToString(Node* node) {
 }
 
 
-Reduction JSTypedLowering::ReduceJSLoadNamed(Node* node) {
-  Node* object = NodeProperties::GetValueInput(node, 0);
-  Type* object_type = NodeProperties::GetBounds(object).upper;
-  if (object_type->Is(Type::GlobalObject())) {
-    // Optimize global constants like "undefined", "Infinity", and "NaN".
-    Handle<Name> name = LoadNamedParametersOf(node->op()).name().handle();
-    Handle<Object> constant_value = factory()->GlobalConstantFor(name);
-    if (!constant_value.is_null()) {
-      Node* constant = jsgraph()->Constant(constant_value);
-      ReplaceWithValue(node, constant);
-      return Replace(constant);
-    }
+Reduction JSTypedLowering::ReduceJSLoadGlobal(Node* node) {
+  // Optimize global constants like "undefined", "Infinity", and "NaN".
+  Handle<Name> name = LoadGlobalParametersOf(node->op()).name().handle();
+  Handle<Object> constant_value = factory()->GlobalConstantFor(name);
+  if (!constant_value.is_null()) {
+    Node* constant = jsgraph()->Constant(constant_value);
+    ReplaceWithValue(node, constant);
+    return Replace(constant);
   }
   return NoChange();
 }
@@ -824,7 +818,7 @@ Reduction JSTypedLowering::ReduceJSLoadProperty(Node* node) {
   Node* key = NodeProperties::GetValueInput(node, 1);
   Node* base = NodeProperties::GetValueInput(node, 0);
   Type* key_type = NodeProperties::GetBounds(key).upper;
-  HeapObjectMatcher<Object> mbase(base);
+  HeapObjectMatcher mbase(base);
   if (mbase.HasValue() && mbase.Value().handle()->IsJSTypedArray()) {
     Handle<JSTypedArray> const array =
         Handle<JSTypedArray>::cast(mbase.Value().handle());
@@ -871,7 +865,7 @@ Reduction JSTypedLowering::ReduceJSStoreProperty(Node* node) {
   Node* value = NodeProperties::GetValueInput(node, 2);
   Type* key_type = NodeProperties::GetBounds(key).upper;
   Type* value_type = NodeProperties::GetBounds(value).upper;
-  HeapObjectMatcher<Object> mbase(base);
+  HeapObjectMatcher mbase(base);
   if (mbase.HasValue() && mbase.Value().handle()->IsJSTypedArray()) {
     Handle<JSTypedArray> const array =
         Handle<JSTypedArray>::cast(mbase.Value().handle());
@@ -1025,7 +1019,7 @@ Reduction JSTypedLowering::ReduceJSLoadDynamicGlobal(Node* node) {
       javascript()->LoadContext(0, Context::GLOBAL_OBJECT_INDEX, true), context,
       context, effect);
   Node* fast = graph()->NewNode(
-      javascript()->LoadNamed(name, access.feedback(), access.mode()), global,
+      javascript()->LoadGlobal(name, access.feedback(), access.mode()), global,
       vector, context, state1, state2, global, check_true);
 
   // Slow case, because variable potentially shadowed. Perform dynamic lookup.
@@ -1132,8 +1126,8 @@ Reduction JSTypedLowering::ReduceJSCreateClosure(Node* node) {
 
 Reduction JSTypedLowering::ReduceJSCreateLiteralArray(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCreateLiteralArray, node->opcode());
-  HeapObjectMatcher<FixedArray> mconst(NodeProperties::GetValueInput(node, 2));
-  int length = mconst.Value().handle()->length();
+  HeapObjectMatcher mconst(NodeProperties::GetValueInput(node, 2));
+  int length = Handle<FixedArray>::cast(mconst.Value().handle())->length();
   int flags = OpParameter<int>(node->op());
 
   // Use the FastCloneShallowArrayStub only for shallow boilerplates up to the
@@ -1162,9 +1156,9 @@ Reduction JSTypedLowering::ReduceJSCreateLiteralArray(Node* node) {
 
 Reduction JSTypedLowering::ReduceJSCreateLiteralObject(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCreateLiteralObject, node->opcode());
-  HeapObjectMatcher<FixedArray> mconst(NodeProperties::GetValueInput(node, 2));
+  HeapObjectMatcher mconst(NodeProperties::GetValueInput(node, 2));
   // Constants are pairs, see ObjectLiteral::properties_count().
-  int length = mconst.Value().handle()->length() / 2;
+  int length = Handle<FixedArray>::cast(mconst.Value().handle())->length() / 2;
   int flags = OpParameter<int>(node->op());
 
   // Use the FastCloneShallowObjectStub only for shallow boilerplates without
@@ -1227,9 +1221,10 @@ Reduction JSTypedLowering::ReduceJSCreateWithContext(Node* node) {
 Reduction JSTypedLowering::ReduceJSCreateBlockContext(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCreateBlockContext, node->opcode());
   Node* const input = NodeProperties::GetValueInput(node, 0);
-  HeapObjectMatcher<ScopeInfo> minput(input);
+  HeapObjectMatcher minput(input);
   DCHECK(minput.HasValue());  // TODO(mstarzinger): Make ScopeInfo static.
-  int context_length = minput.Value().handle()->ContextLength();
+  int context_length =
+      Handle<ScopeInfo>::cast(minput.Value().handle())->ContextLength();
   if (FLAG_turbo_allocate && context_length < kBlockContextAllocationLimit) {
     // JSCreateBlockContext(s:scope[length < limit], f)
     Node* const effect = NodeProperties::GetEffectInput(node);
@@ -1640,8 +1635,8 @@ Reduction JSTypedLowering::Reduce(Node* node) {
       return ReduceJSToNumber(node);
     case IrOpcode::kJSToString:
       return ReduceJSToString(node);
-    case IrOpcode::kJSLoadNamed:
-      return ReduceJSLoadNamed(node);
+    case IrOpcode::kJSLoadGlobal:
+      return ReduceJSLoadGlobal(node);
     case IrOpcode::kJSLoadProperty:
       return ReduceJSLoadProperty(node);
     case IrOpcode::kJSStoreProperty:

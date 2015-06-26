@@ -877,7 +877,9 @@ class FrameStateDescriptor : public ZoneObject {
   size_t stack_count() const { return stack_count_; }
   MaybeHandle<SharedFunctionInfo> shared_info() const { return shared_info_; }
   FrameStateDescriptor* outer_state() const { return outer_state_; }
-  bool HasContext() const { return type_ == JS_FRAME; }
+  bool HasContext() const {
+    return type_ == FrameStateType::kJavaScriptFunction;
+  }
 
   size_t GetSize(OutputFrameStateCombine combine =
                      OutputFrameStateCombine::Ignore()) const;
@@ -930,7 +932,7 @@ class PhiInstruction final : public ZoneObject {
 class InstructionBlock final : public ZoneObject {
  public:
   InstructionBlock(Zone* zone, RpoNumber rpo_number, RpoNumber loop_header,
-                   RpoNumber loop_end, bool deferred);
+                   RpoNumber loop_end, bool deferred, bool handler);
 
   // Instruction indexes (used by the register allocator).
   int first_instruction_index() const {
@@ -953,6 +955,7 @@ class InstructionBlock final : public ZoneObject {
   void set_code_end(int32_t end) { code_end_ = end; }
 
   bool IsDeferred() const { return deferred_; }
+  bool IsHandler() const { return handler_; }
 
   RpoNumber ao_number() const { return ao_number_; }
   RpoNumber rpo_number() const { return rpo_number_; }
@@ -1000,6 +1003,7 @@ class InstructionBlock final : public ZoneObject {
   int32_t code_start_;   // start index of arch-specific code.
   int32_t code_end_;     // end index of arch-specific code.
   const bool deferred_;  // Block contains deferred code.
+  const bool handler_;   // Block is a handler entry point.
   bool needs_frame_;
   bool must_construct_frame_;
   bool must_deconstruct_frame_;
