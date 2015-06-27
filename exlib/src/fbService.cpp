@@ -163,7 +163,8 @@ void Service::switchtonext()
 
             m_running = m_resume.get();
 
-            fb_switch(&old->m_cntxt, &m_running->m_cntxt);
+            if (old != m_running)
+                fb_switch(&old->m_cntxt, &m_running->m_cntxt);
 
             if (m_recycle)
             {
