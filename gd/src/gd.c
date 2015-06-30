@@ -2806,7 +2806,7 @@ BGD_DECLARE(void) gdImageCopyRotated (gdImagePtr dst,
 		    gdImagePtr src,
 		    double dstX, double dstY,
 		    int srcX, int srcY,
-		    int srcWidth, int srcHeight, int angle)
+		    int srcWidth, int srcHeight, double angle)
 {
   double dx, dy;
   double radius = sqrt (srcWidth * srcWidth + srcHeight * srcHeight);

@@ -749,7 +749,7 @@ BGD_DECLARE(void) gdImageCopyRotated (gdImagePtr dst,
 			   gdImagePtr src,
 			   double dstX, double dstY,
 			   int srcX, int srcY,
-			   int srcWidth, int srcHeight, int angle);
+			   int srcWidth, int srcHeight, double angle);
 
 BGD_DECLARE(void) gdImageSetBrush (gdImagePtr im, gdImagePtr brush);
 BGD_DECLARE(void) gdImageSetTile (gdImagePtr im, gdImagePtr tile);
