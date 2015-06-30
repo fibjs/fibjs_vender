@@ -960,7 +960,7 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames) {
           Deoptimizer::GetOutputInfo(output_data, ast_id, shared_info);
       unsigned const pc_offset =
           FullCodeGenerator::PcField::decode(entry) + Code::kHeaderSize;
-      DCHECK_NE(0, pc_offset);
+      DCHECK_NE(0U, pc_offset);
 
       FrameSummary summary(receiver, function, code, pc_offset, is_constructor);
       frames->Add(summary);
@@ -1120,6 +1120,24 @@ void StackFrame::PrintIndex(StringStream* accumulator,
 }
 
 
+namespace {
+
+
+void PrintFunctionSource(StringStream* accumulator, SharedFunctionInfo* shared,
+                         Code* code) {
+  if (FLAG_max_stack_trace_source_length != 0 && code != NULL) {
+    std::ostringstream os;
+    os << "--------- s o u r c e   c o d e ---------\n"
+       << SourceCodeOf(shared, FLAG_max_stack_trace_source_length)
+       << "\n-----------------------------------------\n";
+    accumulator->Add(os.str().c_str());
+  }
+}
+
+
+}  // namespace
+
+
 void JavaScriptFrame::Print(StringStream* accumulator,
                             PrintMode mode,
                             int index) const {
@@ -1157,7 +1175,7 @@ void JavaScriptFrame::Print(StringStream* accumulator,
       accumulator->Add(":~%d", line);
     }
 
-    accumulator->Add("] ");
+    accumulator->Add("] [pc=%p] ", pc);
   }
 
   accumulator->Add("(this=%o", receiver);
@@ -1182,7 +1200,9 @@ void JavaScriptFrame::Print(StringStream* accumulator,
     return;
   }
   if (is_optimized()) {
-    accumulator->Add(" {\n// optimized frame\n}\n");
+    accumulator->Add(" {\n// optimized frame\n");
+    PrintFunctionSource(accumulator, shared, code);
+    accumulator->Add("}\n");
     return;
   }
   accumulator->Add(" {\n");
@@ -1249,15 +1269,7 @@ void JavaScriptFrame::Print(StringStream* accumulator,
     accumulator->Add("  [%02d] : %o\n", i, GetExpression(i));
   }
 
-  // Print details about the function.
-  if (FLAG_max_stack_trace_source_length != 0 && code != NULL) {
-    std::ostringstream os;
-    SharedFunctionInfo* shared = function->shared();
-    os << "--------- s o u r c e   c o d e ---------\n"
-       << SourceCodeOf(shared, FLAG_max_stack_trace_source_length)
-       << "\n-----------------------------------------\n";
-    accumulator->Add(os.str().c_str());
-  }
+  PrintFunctionSource(accumulator, shared, code);
 
   accumulator->Add("}\n\n");
 }

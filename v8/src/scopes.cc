@@ -283,11 +283,14 @@ bool Scope::Analyze(ParseInfo* info) {
   }
 
 #ifdef DEBUG
-  if (info->isolate()->bootstrapper()->IsActive()
-          ? FLAG_print_builtin_scopes
-          : FLAG_print_scopes) {
-    scope->Print();
+  bool native = info->isolate()->bootstrapper()->IsActive();
+  if (!info->shared_info().is_null()) {
+    Object* script = info->shared_info()->script();
+    native = script->IsScript() &&
+             Script::cast(script)->type()->value() == Script::TYPE_NATIVE;
   }
+
+  if (native ? FLAG_print_builtin_scopes : FLAG_print_scopes) scope->Print();
 #endif
 
   info->set_scope(scope);
@@ -463,15 +466,22 @@ Variable* Scope::DeclareParameter(const AstRawString* name, VariableMode mode,
                                   bool is_rest, bool* is_duplicate) {
   DCHECK(!already_resolved());
   DCHECK(is_function_scope());
-  Variable* var = variables_.Declare(this, name, mode, Variable::NORMAL,
-                                     kCreatedInitialized);
+
+  Variable* var;
+  if (!name->IsEmpty()) {
+    var = variables_.Declare(this, name, mode, Variable::NORMAL,
+                             kCreatedInitialized);
+    // TODO(wingo): Avoid O(n^2) check.
+    *is_duplicate = IsDeclaredParameter(name);
+  } else {
+    var = new (zone())
+        Variable(this, name, TEMPORARY, Variable::NORMAL, kCreatedInitialized);
+  }
   if (is_rest) {
     DCHECK_NULL(rest_parameter_);
     rest_parameter_ = var;
     rest_index_ = num_parameters();
   }
-  // TODO(wingo): Avoid O(n^2) check.
-  *is_duplicate = IsDeclaredParameter(name);
   params_.Add(var, zone());
   return var;
 }

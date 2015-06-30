@@ -14,9 +14,6 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-bool Reducer::Finish() { return true; }
-
-
 enum class GraphReducer::State : uint8_t {
   kUnvisited,
   kRevisit,
@@ -25,11 +22,9 @@ enum class GraphReducer::State : uint8_t {
 };
 
 
-GraphReducer::GraphReducer(Zone* zone, Graph* graph, Node* dead_value,
-                           Node* dead_control)
+GraphReducer::GraphReducer(Zone* zone, Graph* graph, Node* dead)
     : graph_(graph),
-      dead_value_(dead_value),
-      dead_control_(dead_control),
+      dead_(dead),
       state_(graph, 4),
       reducers_(zone),
       revisit_(zone),
@@ -70,23 +65,7 @@ void GraphReducer::ReduceNode(Node* node) {
 }
 
 
-void GraphReducer::ReduceGraph() {
-  for (;;) {
-    ReduceNode(graph()->end());
-    // TODO(turbofan): Remove this once the dead node trimming is in the
-    // GraphReducer.
-    bool done = true;
-    for (Reducer* const reducer : reducers_) {
-      if (!reducer->Finish()) {
-        done = false;
-        break;
-      }
-    }
-    if (done) break;
-    // Reset all marks on the graph in preparation to re-reduce the graph.
-    state_.Reset(graph());
-  }
-}
+void GraphReducer::ReduceGraph() { ReduceNode(graph()->end()); }
 
 
 Reduction GraphReducer::Reduce(Node* const node) {
@@ -224,17 +203,15 @@ void GraphReducer::ReplaceWithValue(Node* node, Node* value, Node* effect,
 
   // Requires distinguishing between value, effect and control edges.
   for (Edge edge : node->use_edges()) {
-    Node* user = edge.from();
+    Node* const user = edge.from();
+    DCHECK(!user->IsDead());
     if (NodeProperties::IsControlEdge(edge)) {
       if (user->opcode() == IrOpcode::kIfSuccess) {
         Replace(user, control);
       } else if (user->opcode() == IrOpcode::kIfException) {
-        for (Edge e : user->use_edges()) {
-          if (NodeProperties::IsValueEdge(e)) e.UpdateTo(dead_value_);
-          if (NodeProperties::IsEffectEdge(e)) e.UpdateTo(graph()->start());
-          if (NodeProperties::IsControlEdge(e)) e.UpdateTo(dead_control_);
-        }
-        edge.UpdateTo(user);
+        DCHECK_NOT_NULL(dead_);
+        edge.UpdateTo(dead_);
+        Revisit(user);
       } else {
         UNREACHABLE();
       }

@@ -450,7 +450,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // initial map and properties and elements are set to empty fixed array.
       // r1: constructor function
       // r2: initial map
-      // r3: object size (not including memento if create_memento)
+      // r3: object size (including memento if create_memento)
       // r4: JSObject (not tagged)
       __ LoadRoot(r6, Heap::kEmptyFixedArrayRootIndex);
       __ mov(r5, r4);
@@ -524,7 +524,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ add(r4, r4, Operand(kHeapObjectTag));
 
       // Check if a non-empty properties array is needed. Continue with
-      // allocated object if not fall through to runtime call if it is.
+      // allocated object if not; allocate and initialize a FixedArray if yes.
       // r1: constructor function
       // r4: JSObject
       // r5: start of next object (not tagged)
@@ -579,15 +579,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // r5: FixedArray (not tagged)
       __ add(r6, r2, Operand(r3, LSL, kPointerSizeLog2));  // End of object.
       DCHECK_EQ(2 * kPointerSize, FixedArray::kHeaderSize);
-      { Label loop, entry;
-        __ LoadRoot(r0, Heap::kUndefinedValueRootIndex);
-        __ b(&entry);
-        __ bind(&loop);
-        __ str(r0, MemOperand(r2, kPointerSize, PostIndex));
-        __ bind(&entry);
-        __ cmp(r2, r6);
-        __ b(lt, &loop);
-      }
+      __ LoadRoot(r0, Heap::kUndefinedValueRootIndex);
+      __ InitializeFieldsWithFiller(r2, r6, r0);
 
       // Store the initialized FixedArray into the properties field of
       // the JSObject
@@ -635,16 +628,16 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ bind(&count_incremented);
     }
 
+    __ pop(r1);  // Constructor function.
+
     __ push(r4);
     __ push(r4);
 
-    // Reload the number of arguments and the constructor from the stack.
+    // Reload the number of arguments from the stack.
     // sp[0]: receiver
     // sp[1]: receiver
-    // sp[2]: constructor function
-    // sp[3]: number of arguments (smi-tagged)
-    __ ldr(r1, MemOperand(sp, 2 * kPointerSize));
-    __ ldr(r3, MemOperand(sp, 3 * kPointerSize));
+    // sp[2]: number of arguments (smi-tagged)
+    __ ldr(r3, MemOperand(sp, 2 * kPointerSize));
 
     // Set up pointer to last argument.
     __ add(r2, fp, Operand(StandardFrameConstants::kCallerSPOffset));
@@ -659,8 +652,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // r3: number of arguments (smi-tagged)
     // sp[0]: receiver
     // sp[1]: receiver
-    // sp[2]: constructor function
-    // sp[3]: number of arguments (smi-tagged)
+    // sp[2]: number of arguments (smi-tagged)
     Label loop, entry;
     __ b(&entry);
     __ bind(&loop);
@@ -691,8 +683,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // Restore context from the frame.
     // r0: result
     // sp[0]: receiver
-    // sp[1]: constructor function
-    // sp[2]: number of arguments (smi-tagged)
+    // sp[1]: number of arguments (smi-tagged)
     __ ldr(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
 
     // If the result is an object (in the ECMA sense), we should get rid
@@ -703,8 +694,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // If the result is a smi, it is *not* an object in the ECMA sense.
     // r0: result
     // sp[0]: receiver (newly allocated object)
-    // sp[1]: constructor function
-    // sp[2]: number of arguments (smi-tagged)
+    // sp[1]: number of arguments (smi-tagged)
     __ JumpIfSmi(r0, &use_receiver);
 
     // If the type of the result (stored in its map) is less than
@@ -722,9 +712,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ bind(&exit);
     // r0: result
     // sp[0]: receiver (newly allocated object)
-    // sp[1]: constructor function
-    // sp[2]: number of arguments (smi-tagged)
-    __ ldr(r1, MemOperand(sp, 2 * kPointerSize));
+    // sp[1]: number of arguments (smi-tagged)
+    __ ldr(r1, MemOperand(sp, kPointerSize));
 
     // Leave construct frame.
   }
@@ -793,8 +782,6 @@ void Builtins::Generate_JSConstructStubForDerived(MacroAssembler* masm) {
     __ sub(r4, r4, Operand(2), SetCC);
     __ b(ge, &loop);
 
-    __ add(r0, r0, Operand(1));
-
     // Handle step in.
     Label skip_step_in;
     ExternalReference debug_step_in_fp =
@@ -823,7 +810,8 @@ void Builtins::Generate_JSConstructStubForDerived(MacroAssembler* masm) {
     // r0: result
     // sp[0]: number of arguments (smi-tagged)
     __ ldr(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
-    __ ldr(r1, MemOperand(sp, 0));
+    // Get arguments count, skipping over new.target.
+    __ ldr(r1, MemOperand(sp, kPointerSize));
 
     // Leave construct frame.
   }
@@ -1396,6 +1384,8 @@ static void Generate_PushAppliedArguments(MacroAssembler* masm,
   Label entry, loop;
   Register receiver = LoadDescriptor::ReceiverRegister();
   Register key = LoadDescriptor::NameRegister();
+  Register slot = LoadDescriptor::SlotRegister();
+  Register vector = LoadWithVectorDescriptor::VectorRegister();
 
   __ ldr(key, MemOperand(fp, indexOffset));
   __ b(&entry);
@@ -1405,7 +1395,13 @@ static void Generate_PushAppliedArguments(MacroAssembler* masm,
   __ ldr(receiver, MemOperand(fp, argumentsOffset));
 
   // Use inline caching to speed up access to arguments.
-  Handle<Code> ic = masm->isolate()->builtins()->KeyedLoadIC_Megamorphic();
+  FeedbackVectorSpec spec(0, Code::KEYED_LOAD_IC);
+  Handle<TypeFeedbackVector> feedback_vector =
+      masm->isolate()->factory()->NewTypeFeedbackVector(&spec);
+  int index = feedback_vector->GetIndex(FeedbackVectorICSlot(0));
+  __ mov(slot, Operand(Smi::FromInt(index)));
+  __ Move(vector, feedback_vector);
+  Handle<Code> ic = KeyedLoadICStub(masm->isolate()).GetCode();
   __ Call(ic, RelocInfo::CODE_TARGET);
 
   // Push the nth argument.

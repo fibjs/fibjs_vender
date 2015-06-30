@@ -32,6 +32,7 @@ struct Arm64LinkageHelperTraits {
     return register_parameters[i];
   }
   static int CRegisterParametersLength() { return 8; }
+  static int CStackBackingStoreLength() { return 0; }
 };
 
 

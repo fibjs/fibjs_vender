@@ -2180,8 +2180,9 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   F(Arguments)                         \
   F(ValueOf)                           \
   F(SetValueOf)                        \
-  F(ThrowIfNotADate)                   \
+  F(IsDate)                            \
   F(DateField)                         \
+  F(ThrowNotDateError)                 \
   F(StringCharFromCode)                \
   F(StringCharAt)                      \
   F(OneByteSeqStringSetChar)           \
@@ -2504,6 +2505,9 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   bool IsCallArrayInlineable(int argument_count, Handle<AllocationSite> site);
   void BuildInlinedCallArray(Expression* expression, int argument_count,
                              Handle<AllocationSite> site);
+
+  void BuildInitializeInobjectProperties(HValue* receiver,
+                                         Handle<Map> initial_map);
 
   class PropertyAccessInfo {
    public:

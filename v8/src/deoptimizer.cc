@@ -1250,14 +1250,6 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
     PrintF(trace_scope_->file(), "(%d)\n", height - 1);
   }
 
-  // Constructor function being invoked by the stub (only present on some
-  // architectures, indicated by kConstructorOffset).
-  if (ConstructFrameConstants::kConstructorOffset != kMinInt) {
-    output_offset -= kPointerSize;
-    WriteValueToOutput(function, 0, frame_index, output_offset,
-                       "constructor function    ");
-  }
-
   // The newly allocated object was passed as receiver in the artificial
   // constructor stub environment created by HEnvironment::CopyForInlining().
   output_offset -= kPointerSize;
@@ -2966,7 +2958,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
 
     case Translation::DOUBLE_STACK_SLOT: {
       int slot_offset = SlotOffsetFp(iterator->Next());
-      double value = *(reinterpret_cast<double*>(fp + slot_offset));
+      double value = ReadDoubleValue(fp + slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%e ; (double) [fp %c %d] ", value,
                slot_offset < 0 ? '-' : '+', std::abs(slot_offset));

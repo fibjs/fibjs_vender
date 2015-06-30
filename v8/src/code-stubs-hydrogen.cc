@@ -136,7 +136,8 @@ bool CodeStubGraphBuilderBase::BuildGraph() {
   bool runtime_stack_params = descriptor_.stack_parameter_count().is_valid();
   HInstruction* stack_parameter_count = NULL;
   for (int i = 0; i < param_count; ++i) {
-    Representation r = descriptor_.GetEnvironmentParameterRepresentation(i);
+    Representation r =
+        RepresentationFromType(descriptor_.GetEnvironmentParameterType(i));
     HParameter* param = Add<HParameter>(i,
                                         HParameter::REGISTER_PARAMETER, r);
     start_environment->Bind(i, param);
@@ -641,7 +642,7 @@ HValue* CodeStubGraphBuilder<CreateWeakCellStub>::BuildCodeStub() {
   HInstruction* value = GetParameter(CreateWeakCellDescriptor::kValueIndex);
   Add<HStoreNamedField>(object, HObjectAccess::ForWeakCellValue(), value);
   Add<HStoreNamedField>(object, HObjectAccess::ForWeakCellNext(),
-                        graph()->GetConstantUndefined());
+                        graph()->GetConstantHole());
 
   HInstruction* feedback_vector =
       GetParameter(CreateWeakCellDescriptor::kVectorIndex);
@@ -1817,14 +1818,10 @@ HValue* CodeStubGraphBuilder<FastNewClosureStub>::BuildCodeStub() {
   Add<HStoreNamedField>(js_function, HObjectAccess::ForFunctionContextPointer(),
                         context());
 
-  // Initialize the code pointer in the function to be the one
-  // found in the shared function info object.
-  // But first check if there is an optimized version for our context.
-  if (FLAG_cache_optimized_code) {
-    BuildInstallFromOptimizedCodeMap(js_function, shared_info, native_context);
-  } else {
-    BuildInstallCode(js_function, shared_info);
-  }
+  // Initialize the code pointer in the function to be the one found in the
+  // shared function info object. But first check if there is an optimized
+  // version for our context.
+  BuildInstallFromOptimizedCodeMap(js_function, shared_info, native_context);
 
   return js_function;
 }

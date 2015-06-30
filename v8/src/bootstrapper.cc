@@ -563,10 +563,10 @@ Handle<JSFunction> Genesis::CreateEmptyFunction(Isolate* isolate) {
   Handle<String> source = factory->NewStringFromStaticChars("() {}");
   Handle<Script> script = factory->NewScript(source);
   script->set_type(Smi::FromInt(Script::TYPE_NATIVE));
-  empty_function->shared()->set_script(*script);
   empty_function->shared()->set_start_position(0);
   empty_function->shared()->set_end_position(source->length());
   empty_function->shared()->DontAdaptArguments();
+  SharedFunctionInfo::SetScript(handle(empty_function->shared()), script);
 
   // Set prototypes for the function maps.
   Handle<Map> sloppy_function_map(native_context()->sloppy_function_map(),
@@ -1541,7 +1541,7 @@ bool Genesis::CompileNative(Isolate* isolate, Vector<const char> name,
   // environment has been at least partially initialized. Add a stack check
   // before entering JS code to catch overflow early.
   StackLimitCheck check(isolate);
-  if (check.HasOverflowed()) {
+  if (check.JsHasOverflowed(1 * KB)) {
     isolate->StackOverflow();
     return false;
   }
@@ -1711,6 +1711,13 @@ void Genesis::InstallNativeFunctions() {
   INSTALL_NATIVE(JSFunction, "$observeNativeObjectNotifierPerformChange",
                  native_object_notifier_perform_change);
   INSTALL_NATIVE(JSFunction, "$arrayValues", array_values_iterator);
+  INSTALL_NATIVE(JSFunction, "$mapGet", map_get);
+  INSTALL_NATIVE(JSFunction, "$mapSet", map_set);
+  INSTALL_NATIVE(JSFunction, "$mapHas", map_has);
+  INSTALL_NATIVE(JSFunction, "$mapDelete", map_delete);
+  INSTALL_NATIVE(JSFunction, "$setAdd", set_add);
+  INSTALL_NATIVE(JSFunction, "$setHas", set_has);
+  INSTALL_NATIVE(JSFunction, "$setDelete", set_delete);
   INSTALL_NATIVE(JSFunction, "$mapFromArray", map_from_array);
   INSTALL_NATIVE(JSFunction, "$setFromArray", set_from_array);
 }

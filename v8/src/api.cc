@@ -3503,43 +3503,16 @@ Maybe<bool> v8::Object::CreateDataProperty(v8::Local<v8::Context> context,
                                            v8::Local<Value> value) {
   PREPARE_FOR_EXECUTION_PRIMITIVE(context, "v8::Object::CreateDataProperty()",
                                   bool);
-  auto self = Utils::OpenHandle(this);
-  auto key_obj = Utils::OpenHandle(*key);
-  auto value_obj = Utils::OpenHandle(*value);
+  i::Handle<i::JSObject> self = Utils::OpenHandle(this);
+  i::Handle<i::Name> key_obj = Utils::OpenHandle(*key);
+  i::Handle<i::Object> value_obj = Utils::OpenHandle(*value);
 
-  if (self->IsAccessCheckNeeded() && !isolate->MayAccess(self)) {
-    isolate->ReportFailedAccessCheck(self);
-    return Nothing<bool>();
-  }
-
-  if (!self->IsExtensible()) return Just(false);
-
-  uint32_t index = 0;
-  if (key_obj->AsArrayIndex(&index)) {
-    return CreateDataProperty(context, index, value);
-  }
-
-  // Special case for Array.length.
-  if (self->IsJSArray() &&
-      key->StrictEquals(Utils::ToLocal(isolate->factory()->length_string()))) {
-    // Length is not configurable, however, CreateDataProperty always attempts
-    // to create a configurable property, so we just fail here.
-    return Just(false);
-  }
-
-  i::LookupIterator it(self, key_obj, i::LookupIterator::OWN_SKIP_INTERCEPTOR);
-  if (it.IsFound() && it.state() == i::LookupIterator::ACCESS_CHECK) {
-    DCHECK(isolate->MayAccess(self));
-    it.Next();
-  }
-
-  if (it.IsFound() && !it.IsConfigurable()) return Just(false);
-
-  has_pending_exception = i::JSObject::SetOwnPropertyIgnoreAttributes(
-                              self, key_obj, value_obj, NONE,
-                              i::JSObject::DONT_FORCE_FIELD).is_null();
+  i::LookupIterator it = i::LookupIterator::PropertyOrElement(
+      isolate, self, key_obj, i::LookupIterator::OWN);
+  Maybe<bool> result = i::JSObject::CreateDataProperty(&it, value_obj);
+  has_pending_exception = result.IsNothing();
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
-  return Just(true);
+  return result;
 }
 
 
@@ -3548,37 +3521,14 @@ Maybe<bool> v8::Object::CreateDataProperty(v8::Local<v8::Context> context,
                                            v8::Local<Value> value) {
   PREPARE_FOR_EXECUTION_PRIMITIVE(context, "v8::Object::CreateDataProperty()",
                                   bool);
-  auto self = Utils::OpenHandle(this);
-  auto value_obj = Utils::OpenHandle(*value);
+  i::Handle<i::JSObject> self = Utils::OpenHandle(this);
+  i::Handle<i::Object> value_obj = Utils::OpenHandle(*value);
 
-  if (self->IsAccessCheckNeeded() && !isolate->MayAccess(self)) {
-    isolate->ReportFailedAccessCheck(self);
-    return Nothing<bool>();
-  }
-
-  if (!self->IsExtensible()) return Just(false);
-
-  if (self->IsJSArray()) {
-    size_t length =
-        i::NumberToSize(isolate, i::Handle<i::JSArray>::cast(self)->length());
-    if (index >= length) {
-      return DefineOwnProperty(
-          context, Utils::ToLocal(isolate->factory()->Uint32ToString(index)),
-          value, v8::None);
-    }
-  }
-
-  Maybe<PropertyAttributes> attributes =
-      i::JSReceiver::GetOwnElementAttributes(self, index);
-  if (attributes.IsJust() && attributes.FromJust() & DONT_DELETE) {
-    return Just(false);
-  }
-
-  has_pending_exception = i::JSObject::SetOwnElementIgnoreAttributes(
-                              self, index, value_obj, NONE,
-                              i::JSObject::DONT_FORCE_FIELD).is_null();
+  i::LookupIterator it(isolate, self, index, i::LookupIterator::OWN);
+  Maybe<bool> result = i::JSObject::CreateDataProperty(&it, value_obj);
+  has_pending_exception = result.IsNothing();
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
-  return Just(true);
+  return result;
 }
 
 
@@ -3708,9 +3658,6 @@ i::MaybeHandle<i::Object> DeleteObjectProperty(
     name = i::Handle<i::String>::cast(converted);
   }
 
-  if (name->IsString()) {
-    name = i::String::Flatten(i::Handle<i::String>::cast(name));
-  }
   return i::JSReceiver::DeleteProperty(receiver, name, language_mode);
 }
 
@@ -5637,7 +5584,12 @@ Local<Context> v8::Context::New(
   if (extensions == NULL) extensions = &no_extensions;
   i::Handle<i::Context> env =
       CreateEnvironment(isolate, extensions, global_template, global_object);
-  if (env.is_null()) return Local<Context>();
+  if (env.is_null()) {
+    if (isolate->has_pending_exception()) {
+      isolate->OptionalRescheduleException(true);
+    }
+    return Local<Context>();
+  }
   return Utils::ToLocal(scope.CloseAndEscape(env));
 }
 
@@ -6312,6 +6264,70 @@ size_t v8::Map::Size() const {
 }
 
 
+void Map::Clear() {
+  auto self = Utils::OpenHandle(this);
+  i::Isolate* isolate = self->GetIsolate();
+  LOG_API(isolate, "Map::Clear");
+  ENTER_V8(isolate);
+  i::Runtime::JSMapClear(isolate, self);
+}
+
+
+MaybeLocal<Value> Map::Get(Local<Context> context, Local<Value> key) {
+  PREPARE_FOR_EXECUTION(context, "Map::Get", Value);
+  auto self = Utils::OpenHandle(this);
+  Local<Value> result;
+  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key)};
+  has_pending_exception =
+      !ToLocal<Value>(i::Execution::Call(isolate, isolate->map_get(), self,
+                                         arraysize(argv), argv, false),
+                      &result);
+  RETURN_ON_FAILED_EXECUTION(Value);
+  RETURN_ESCAPED(result);
+}
+
+
+MaybeLocal<Map> Map::Set(Local<Context> context, Local<Value> key,
+                         Local<Value> value) {
+  PREPARE_FOR_EXECUTION(context, "Map::Set", Map);
+  auto self = Utils::OpenHandle(this);
+  i::Handle<i::Object> result;
+  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key),
+                                 Utils::OpenHandle(*value)};
+  has_pending_exception =
+      !i::Execution::Call(isolate, isolate->map_set(), self, arraysize(argv),
+                          argv, false).ToHandle(&result);
+  RETURN_ON_FAILED_EXECUTION(Map);
+  RETURN_ESCAPED(Local<Map>::Cast(Utils::ToLocal(result)));
+}
+
+
+Maybe<bool> Map::Has(Local<Context> context, Local<Value> key) {
+  PREPARE_FOR_EXECUTION_PRIMITIVE(context, "Map::Has", bool);
+  auto self = Utils::OpenHandle(this);
+  i::Handle<i::Object> result;
+  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key)};
+  has_pending_exception =
+      !i::Execution::Call(isolate, isolate->map_has(), self, arraysize(argv),
+                          argv, false).ToHandle(&result);
+  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
+  return Just(result->IsTrue());
+}
+
+
+Maybe<bool> Map::Delete(Local<Context> context, Local<Value> key) {
+  PREPARE_FOR_EXECUTION_PRIMITIVE(context, "Map::Delete", bool);
+  auto self = Utils::OpenHandle(this);
+  i::Handle<i::Object> result;
+  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key)};
+  has_pending_exception =
+      !i::Execution::Call(isolate, isolate->map_delete(), self, arraysize(argv),
+                          argv, false).ToHandle(&result);
+  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
+  return Just(result->IsTrue());
+}
+
+
 Local<Array> Map::AsArray() const {
   i::Handle<i::JSMap> obj = Utils::OpenHandle(this);
   i::Isolate* isolate = obj->GetIsolate();
@@ -6361,6 +6377,54 @@ Local<v8::Set> v8::Set::New(Isolate* isolate) {
 size_t v8::Set::Size() const {
   i::Handle<i::JSSet> obj = Utils::OpenHandle(this);
   return i::OrderedHashSet::cast(obj->table())->NumberOfElements();
+}
+
+
+void Set::Clear() {
+  auto self = Utils::OpenHandle(this);
+  i::Isolate* isolate = self->GetIsolate();
+  LOG_API(isolate, "Set::Clear");
+  ENTER_V8(isolate);
+  i::Runtime::JSSetClear(isolate, self);
+}
+
+
+MaybeLocal<Set> Set::Add(Local<Context> context, Local<Value> key) {
+  PREPARE_FOR_EXECUTION(context, "Set::Add", Set);
+  auto self = Utils::OpenHandle(this);
+  i::Handle<i::Object> result;
+  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key)};
+  has_pending_exception =
+      !i::Execution::Call(isolate, isolate->set_add(), self, arraysize(argv),
+                          argv, false).ToHandle(&result);
+  RETURN_ON_FAILED_EXECUTION(Set);
+  RETURN_ESCAPED(Local<Set>::Cast(Utils::ToLocal(result)));
+}
+
+
+Maybe<bool> Set::Has(Local<Context> context, Local<Value> key) {
+  PREPARE_FOR_EXECUTION_PRIMITIVE(context, "Set::Has", bool);
+  auto self = Utils::OpenHandle(this);
+  i::Handle<i::Object> result;
+  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key)};
+  has_pending_exception =
+      !i::Execution::Call(isolate, isolate->set_has(), self, arraysize(argv),
+                          argv, false).ToHandle(&result);
+  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
+  return Just(result->IsTrue());
+}
+
+
+Maybe<bool> Set::Delete(Local<Context> context, Local<Value> key) {
+  PREPARE_FOR_EXECUTION_PRIMITIVE(context, "Set::Delete", bool);
+  auto self = Utils::OpenHandle(this);
+  i::Handle<i::Object> result;
+  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key)};
+  has_pending_exception =
+      !i::Execution::Call(isolate, isolate->set_delete(), self, arraysize(argv),
+                          argv, false).ToHandle(&result);
+  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
+  return Just(result->IsTrue());
 }
 
 
@@ -6919,9 +6983,9 @@ Local<Integer> v8::Integer::NewFromUnsigned(Isolate* isolate, uint32_t value) {
 }
 
 
-void Isolate::CollectAllGarbage(const char* gc_reason) {
-  reinterpret_cast<i::Isolate*>(this)->heap()->CollectAllGarbage(
-      i::Heap::kNoGCFlags, gc_reason);
+void Isolate::CollectGarbage(const char* gc_reason) {
+  reinterpret_cast<i::Isolate*>(this)->heap()->CollectGarbage(i::NEW_SPACE,
+                                                              gc_reason);
 }
 
 
@@ -7273,9 +7337,8 @@ size_t Isolate::NumberOfHeapSpaces() {
 
 bool Isolate::GetHeapSpaceStatistics(HeapSpaceStatistics* space_statistics,
                                      size_t index) {
-  if (!space_statistics)
-    return false;
-  if (index > i::LAST_SPACE || index < i::FIRST_SPACE)
+  if (!space_statistics) return false;
+  if (!i::Heap::IsValidAllocationSpace(static_cast<i::AllocationSpace>(index)))
     return false;
 
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);

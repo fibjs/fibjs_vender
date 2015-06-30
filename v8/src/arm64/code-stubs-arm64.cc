@@ -1689,7 +1689,6 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
 
 
 void ArgumentsAccessStub::GenerateReadElement(MacroAssembler* masm) {
-  CHECK(!has_new_target());
   Register arg_count = ArgumentsAccessReadDescriptor::parameter_count();
   Register key = ArgumentsAccessReadDescriptor::index();
   DCHECK(arg_count.is(x0));
@@ -1746,8 +1745,6 @@ void ArgumentsAccessStub::GenerateNewSloppySlow(MacroAssembler* masm) {
   //  jssp[8]:  address of receiver argument
   //  jssp[16]: function
 
-  CHECK(!has_new_target());
-
   // Check if the calling frame is an arguments adaptor frame.
   Label runtime;
   Register caller_fp = x10;
@@ -1778,8 +1775,6 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   //  jssp[16]: function
   //
   // Returns pointer to result object in x0.
-
-  CHECK(!has_new_target());
 
   // Note: arg_count_smi is an alias of param_count_smi.
   Register arg_count_smi = x3;
@@ -2107,15 +2102,6 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
          MemOperand(caller_fp,
                     ArgumentsAdaptorFrameConstants::kLengthOffset));
   __ SmiUntag(param_count, param_count_smi);
-  if (has_new_target()) {
-    __ Cmp(param_count, Operand(0));
-    Label skip_decrement;
-    __ B(eq, &skip_decrement);
-    // Skip new.target: it is not a part of arguments.
-    __ Sub(param_count, param_count, Operand(1));
-    __ SmiTag(param_count_smi, param_count);
-    __ Bind(&skip_decrement);
-  }
   __ Add(x10, caller_fp, Operand(param_count, LSL, kPointerSizeLog2));
   __ Add(params, x10, StandardFrameConstants::kCallerSPOffset);
 
@@ -2309,27 +2295,16 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   Register last_match_info_elements = x21;
   Register code_object = x22;
 
-  // TODO(jbramley): Is it necessary to preserve these? I don't think ARM does.
-  CPURegList used_callee_saved_registers(subject,
-                                         regexp_data,
-                                         last_match_info_elements,
-                                         code_object);
-  __ PushCPURegList(used_callee_saved_registers);
-
   // Stack frame.
-  //  jssp[0] : x19
-  //  jssp[8] : x20
-  //  jssp[16]: x21
-  //  jssp[24]: x22
-  //  jssp[32]: last_match_info (JSArray)
-  //  jssp[40]: previous index
-  //  jssp[48]: subject string
-  //  jssp[56]: JSRegExp object
+  //  jssp[00]: last_match_info (JSArray)
+  //  jssp[08]: previous index
+  //  jssp[16]: subject string
+  //  jssp[24]: JSRegExp object
 
-  const int kLastMatchInfoOffset = 4 * kPointerSize;
-  const int kPreviousIndexOffset = 5 * kPointerSize;
-  const int kSubjectOffset = 6 * kPointerSize;
-  const int kJSRegExpOffset = 7 * kPointerSize;
+  const int kLastMatchInfoOffset = 0 * kPointerSize;
+  const int kPreviousIndexOffset = 1 * kPointerSize;
+  const int kSubjectOffset = 2 * kPointerSize;
+  const int kJSRegExpOffset = 3 * kPointerSize;
 
   // Ensure that a RegExp stack is allocated.
   ExternalReference address_of_regexp_stack_memory_address =
@@ -2696,7 +2671,6 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Return last match info.
   __ Peek(x0, kLastMatchInfoOffset);
-  __ PopCPURegList(used_callee_saved_registers);
   // Drop the 4 arguments of the stub from the stack.
   __ Drop(4);
   __ Ret();
@@ -2719,13 +2693,11 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   __ Bind(&failure);
   __ Mov(x0, Operand(isolate()->factory()->null_value()));
-  __ PopCPURegList(used_callee_saved_registers);
   // Drop the 4 arguments of the stub from the stack.
   __ Drop(4);
   __ Ret();
 
   __ Bind(&runtime);
-  __ PopCPURegList(used_callee_saved_registers);
   __ TailCallRuntime(Runtime::kRegExpExec, 4, 1);
 
   // Deferred code for string handling.
@@ -3123,10 +3095,18 @@ void CallIC_ArrayStub::Generate(MacroAssembler* masm) {
   __ Ldr(map, FieldMemOperand(scratch, HeapObject::kMapOffset));
   __ JumpIfNotRoot(map, Heap::kAllocationSiteMapRootIndex, &miss);
 
-  Register allocation_site = feedback_vector;
-  __ Mov(allocation_site, scratch);
+  // Increment the call count for monomorphic function calls.
+  __ Add(feedback_vector, feedback_vector,
+         Operand::UntagSmiAndScale(index, kPointerSizeLog2));
+  __ Add(feedback_vector, feedback_vector,
+         Operand(FixedArray::kHeaderSize + kPointerSize));
+  __ Ldr(index, FieldMemOperand(feedback_vector, 0));
+  __ Add(index, index, Operand(Smi::FromInt(CallICNexus::kCallCountIncrement)));
+  __ Str(index, FieldMemOperand(feedback_vector, 0));
 
-  Register original_constructor = x3;
+  Register allocation_site = feedback_vector;
+  Register original_constructor = index;
+  __ Mov(allocation_site, scratch);
   __ Mov(original_constructor, function);
   ArrayConstructorStub stub(masm->isolate(), arg_count());
   __ TailCallStub(&stub);
@@ -3191,6 +3171,15 @@ void CallICStub::Generate(MacroAssembler* masm) {
   // The compare above could have been a SMI/SMI comparison. Guard against this
   // convincing us that we have a monomorphic JSFunction.
   __ JumpIfSmi(function, &extra_checks_or_miss);
+
+  // Increment the call count for monomorphic function calls.
+  __ Add(feedback_vector, feedback_vector,
+         Operand::UntagSmiAndScale(index, kPointerSizeLog2));
+  __ Add(feedback_vector, feedback_vector,
+         Operand(FixedArray::kHeaderSize + kPointerSize));
+  __ Ldr(index, FieldMemOperand(feedback_vector, 0));
+  __ Add(index, index, Operand(Smi::FromInt(CallICNexus::kCallCountIncrement)));
+  __ Str(index, FieldMemOperand(feedback_vector, 0));
 
   __ bind(&have_js_function);
   if (CallAsMethod()) {
@@ -3266,6 +3255,12 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ Ldr(x4, FieldMemOperand(feedback_vector, with_types_offset));
   __ Adds(x4, x4, Operand(Smi::FromInt(1)));
   __ Str(x4, FieldMemOperand(feedback_vector, with_types_offset));
+
+  // Initialize the call counter.
+  __ Mov(x5, Smi::FromInt(CallICNexus::kCallCountIncrement));
+  __ Adds(x4, feedback_vector,
+          Operand::UntagSmiAndScale(index, kPointerSizeLog2));
+  __ Str(x5, FieldMemOperand(x4, FixedArray::kHeaderSize + kPointerSize));
 
   // Store the function. Use a stub since we need a frame for allocation.
   // x2 - vector

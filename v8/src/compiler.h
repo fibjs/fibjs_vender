@@ -9,6 +9,7 @@
 #include "src/ast.h"
 #include "src/bailout-reason.h"
 #include "src/compilation-dependencies.h"
+#include "src/signature.h"
 #include "src/zone.h"
 
 namespace v8 {
@@ -127,7 +128,8 @@ class CompilationInfo {
     kSplittingEnabled = 1 << 13,
     kTypeFeedbackEnabled = 1 << 14,
     kDeoptimizationEnabled = 1 << 15,
-    kSourcePositionsEnabled = 1 << 16
+    kSourcePositionsEnabled = 1 << 16,
+    kFirstCompile = 1 << 17,
   };
 
   explicit CompilationInfo(ParseInfo* parse_info);
@@ -245,6 +247,10 @@ class CompilationInfo {
 
   bool is_splitting_enabled() const { return GetFlag(kSplittingEnabled); }
 
+  void MarkAsFirstCompile() { SetFlag(kFirstCompile); }
+
+  bool is_first_compile() const { return GetFlag(kFirstCompile); }
+
   bool IsCodePreAgingActive() const {
     return FLAG_optimize_for_size && FLAG_age_code && !will_serialize() &&
            !is_debug();
@@ -287,6 +293,11 @@ class CompilationInfo {
     unoptimized_code_ = unoptimized;
     optimization_id_ = isolate()->NextOptimizationId();
   }
+
+  void SetFunctionType(Type::FunctionType* function_type) {
+    function_type_ = function_type;
+  }
+  Type::FunctionType* function_type() const { return function_type_; }
 
   void SetStub(CodeStub* code_stub) {
     SetMode(STUB);
@@ -479,6 +490,8 @@ class CompilationInfo {
 
   int osr_expr_stack_height_;
 
+  Type::FunctionType* function_type_;
+
   DISALLOW_COPY_AND_ASSIGN(CompilationInfo);
 };
 
@@ -638,9 +651,8 @@ class Compiler : public AllStatic {
                                                           int source_length);
 
   // Create a shared function info object (the code may be lazily compiled).
-  static Handle<SharedFunctionInfo> BuildFunctionInfo(FunctionLiteral* node,
-                                                      Handle<Script> script,
-                                                      CompilationInfo* outer);
+  static Handle<SharedFunctionInfo> GetSharedFunctionInfo(
+      FunctionLiteral* node, Handle<Script> script, CompilationInfo* outer);
 
   enum ConcurrencyMode { NOT_CONCURRENT, CONCURRENT };
 
