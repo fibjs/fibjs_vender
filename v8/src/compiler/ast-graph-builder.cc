@@ -2552,8 +2552,9 @@ void AstGraphBuilder::VisitCallRuntime(CallRuntime* expr) {
   if (functionId == Runtime::kInlineGeneratorNext) SetStackOverflow();
   if (functionId == Runtime::kInlineGeneratorThrow) SetStackOverflow();
   const Operator* call = javascript()->CallRuntime(functionId, args->length());
+  FrameStateBeforeAndAfter states(this, expr->CallId());
   Node* value = ProcessArguments(call, args->length());
-  PrepareFrameState(value, expr->id(), ast_context()->GetStateCombine());
+  states.AddToNode(value, expr->id(), ast_context()->GetStateCombine());
   ast_context()->ProduceValue(value);
 }
 
@@ -2660,9 +2661,11 @@ void AstGraphBuilder::VisitCountOperation(CountOperation* expr) {
   }
 
   // Convert old value into a number.
-  old_value = NewNode(javascript()->ToNumber(), old_value);
-  PrepareFrameState(old_value, expr->ToNumberId(),
-                    OutputFrameStateCombine::Push());
+  if (!is_strong(language_mode())) {
+    old_value = NewNode(javascript()->ToNumber(), old_value);
+    PrepareFrameState(old_value, expr->ToNumberId(),
+                      OutputFrameStateCombine::Push());
+  }
 
   // TODO(titzer): combine this framestate with the above?
   FrameStateBeforeAndAfter store_states(this, assign_type == KEYED_PROPERTY
@@ -2678,9 +2681,10 @@ void AstGraphBuilder::VisitCountOperation(CountOperation* expr) {
     FrameStateBeforeAndAfter states(this, BailoutId::None());
     value =
         BuildBinaryOp(old_value, jsgraph()->OneConstant(), expr->binary_op());
-    // This should never deoptimize because we have converted to number
-    // before.
-    states.AddToNode(value, BailoutId::None(),
+    // This should never deoptimize outside strong mode because otherwise we
+    // have converted to number before.
+    states.AddToNode(value, is_strong(language_mode()) ? expr->ToNumberId()
+                                                       : BailoutId::None(),
                      OutputFrameStateCombine::Ignore());
   }
 
@@ -3496,7 +3500,7 @@ static inline Node* Record(JSTypeFeedbackTable* js_type_feedback, Node* node,
 
 Node* AstGraphBuilder::BuildKeyedLoad(Node* object, Node* key,
                                       const VectorSlotPair& feedback) {
-  const Operator* op = javascript()->LoadProperty(feedback);
+  const Operator* op = javascript()->LoadProperty(feedback, language_mode());
   Node* node = NewNode(op, object, key, BuildLoadFeedbackVector());
   return Record(js_type_feedback_, node, feedback.slot());
 }
@@ -3504,7 +3508,8 @@ Node* AstGraphBuilder::BuildKeyedLoad(Node* object, Node* key,
 
 Node* AstGraphBuilder::BuildNamedLoad(Node* object, Handle<Name> name,
                                       const VectorSlotPair& feedback) {
-  const Operator* op = javascript()->LoadNamed(MakeUnique(name), feedback);
+  const Operator* op =
+      javascript()->LoadNamed(MakeUnique(name), feedback, language_mode());
   Node* node = NewNode(op, object, BuildLoadFeedbackVector());
   return Record(js_type_feedback_, node, feedback.slot());
 }
@@ -3540,8 +3545,9 @@ Node* AstGraphBuilder::BuildNamedSuperLoad(Node* receiver, Node* home_object,
                                            Handle<Name> name,
                                            const VectorSlotPair& feedback) {
   Node* name_node = jsgraph()->Constant(name);
-  const Operator* op = javascript()->CallRuntime(Runtime::kLoadFromSuper, 3);
-  Node* node = NewNode(op, receiver, home_object, name_node);
+  Node* language = jsgraph()->Constant(language_mode());
+  const Operator* op = javascript()->CallRuntime(Runtime::kLoadFromSuper, 4);
+  Node* node = NewNode(op, receiver, home_object, name_node, language);
   return Record(js_type_feedback_, node, feedback.slot());
 }
 
@@ -3549,9 +3555,10 @@ Node* AstGraphBuilder::BuildNamedSuperLoad(Node* receiver, Node* home_object,
 Node* AstGraphBuilder::BuildKeyedSuperLoad(Node* receiver, Node* home_object,
                                            Node* key,
                                            const VectorSlotPair& feedback) {
+  Node* language = jsgraph()->Constant(language_mode());
   const Operator* op =
-      javascript()->CallRuntime(Runtime::kLoadKeyedFromSuper, 3);
-  Node* node = NewNode(op, receiver, home_object, key);
+      javascript()->CallRuntime(Runtime::kLoadKeyedFromSuper, 4);
+  Node* node = NewNode(op, receiver, home_object, key, language);
   return Record(js_type_feedback_, node, feedback.slot());
 }
 

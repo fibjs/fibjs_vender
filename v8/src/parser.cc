@@ -6,6 +6,7 @@
 
 #include "src/api.h"
 #include "src/ast.h"
+#include "src/ast-literal-reindexer.h"
 #include "src/bailout-reason.h"
 #include "src/base/platform/platform.h"
 #include "src/bootstrapper.h"
@@ -814,8 +815,9 @@ Literal* ParserTraits::ExpressionFromLiteral(Token::Value token, int pos,
       return factory->NewSmiLiteral(value, pos);
     }
     case Token::NUMBER: {
+      bool has_dot = scanner->ContainsDot();
       double value = scanner->DoubleValue();
-      return factory->NewNumberLiteral(value, pos);
+      return factory->NewNumberLiteral(value, pos, has_dot);
     }
     default:
       DCHECK(false);
@@ -907,8 +909,6 @@ Parser::Parser(ParseInfo* info)
   set_allow_natives(FLAG_allow_natives_syntax || info->is_native());
   set_allow_harmony_modules(!info->is_native() && FLAG_harmony_modules);
   set_allow_harmony_arrow_functions(FLAG_harmony_arrow_functions);
-  set_allow_harmony_classes(FLAG_harmony_classes);
-  set_allow_harmony_object_literals(FLAG_harmony_object_literals);
   set_allow_harmony_sloppy(FLAG_harmony_sloppy);
   set_allow_harmony_unicode(FLAG_harmony_unicode);
   set_allow_harmony_computed_property_names(
@@ -1181,6 +1181,7 @@ FunctionLiteral* Parser::ParseLazy(Isolate* isolate, ParseInfo* info,
       scope->set_start_position(shared_info->start_position());
       ExpressionClassifier formals_classifier;
       ParserFormalParameterParsingState parsing_state(scope);
+      Checkpoint checkpoint(this);
       {
         // Parsing patterns as variable reference expression creates
         // NewUnresolved references in current scope. Entrer arrow function
@@ -1199,6 +1200,7 @@ FunctionLiteral* Parser::ParseLazy(Isolate* isolate, ParseInfo* info,
       }
 
       if (ok) {
+        checkpoint.Restore(&parsing_state.materialized_literals_count);
         Expression* expression =
             ParseArrowFunctionLiteral(parsing_state, formals_classifier, &ok);
         if (ok) {
@@ -3553,11 +3555,14 @@ Statement* Parser::ParseForStatement(ZoneList<const AstRawString*>* labels,
         //
         // into
         //
-        //   <let x' be a temporary variable>
-        //   for (x' in/of e) {
-        //     let/const/var x;
-        //     x = x';
-        //     b;
+        //   {
+        //     <let x' be a temporary variable>
+        //     for (x' in/of e) {
+        //       let/const/var x;
+        //       x = x';
+        //       b;
+        //     }
+        //     let x;  // for TDZ
         //   }
 
         Variable* temp = scope_->DeclarationScope()->NewTemporary(
@@ -3566,11 +3571,13 @@ Statement* Parser::ParseForStatement(ZoneList<const AstRawString*>* labels,
             factory()->NewForEachStatement(mode, labels, stmt_pos);
         Target target(&this->target_stack_, loop);
 
-        // The expression does not see the lexical loop variables.
-        scope_ = saved_scope;
         Expression* enumerable = ParseExpression(true, CHECK_OK);
-        scope_ = for_scope;
+
         Expect(Token::RPAREN, CHECK_OK);
+
+        Scope* body_scope = NewScope(scope_, BLOCK_SCOPE);
+        body_scope->set_start_position(scanner()->location().beg_pos);
+        scope_ = body_scope;
 
         Statement* body = ParseSubStatement(NULL, CHECK_OK);
 
@@ -3599,17 +3606,46 @@ Statement* Parser::ParseForStatement(ZoneList<const AstRawString*>* labels,
         VariableProxy* temp_proxy =
             factory()->NewVariableProxy(temp, each_beg_pos, each_end_pos);
         InitializeForEachStatement(loop, temp_proxy, enumerable, body_block);
+        scope_ = for_scope;
+        body_scope->set_end_position(scanner()->location().end_pos);
+        body_scope = body_scope->FinalizeBlockScope();
+        if (body_scope != nullptr) {
+          body_block->set_scope(body_scope);
+        }
+
+        // Create a TDZ for any lexically-bound names.
+        if (is_strict(language_mode()) &&
+            IsLexicalVariableMode(parsing_result.descriptor.mode)) {
+          DCHECK_NULL(init_block);
+
+          init_block =
+              factory()->NewBlock(nullptr, 1, false, RelocInfo::kNoPosition);
+
+          for (int i = 0; i < lexical_bindings.length(); ++i) {
+            // TODO(adamk): This needs to be some sort of special
+            // INTERNAL variable that's invisible to the debugger
+            // but visible to everything else.
+            VariableProxy* tdz_proxy = NewUnresolved(lexical_bindings[i], LET);
+            Declaration* tdz_decl = factory()->NewVariableDeclaration(
+                tdz_proxy, LET, scope_, RelocInfo::kNoPosition);
+            Variable* tdz_var = Declare(tdz_decl, DeclarationDescriptor::NORMAL,
+                                        true, CHECK_OK);
+            tdz_var->set_initializer_position(position());
+          }
+        }
+
         scope_ = saved_scope;
         for_scope->set_end_position(scanner()->location().end_pos);
         for_scope = for_scope->FinalizeBlockScope();
-        if (for_scope != nullptr) {
-          body_block->set_scope(for_scope);
-        }
         // Parsed for-in loop w/ variable declarations.
         if (init_block != nullptr) {
           init_block->AddStatement(loop, zone());
+          if (for_scope != nullptr) {
+            init_block->set_scope(for_scope);
+          }
           return init_block;
         } else {
+          DCHECK_NULL(for_scope);
           return loop;
         }
       } else {
@@ -3855,6 +3891,20 @@ void ParserTraits::ParseArrowFunctionFormalParameters(
 }
 
 
+void ParserTraits::ReindexLiterals(
+    const ParserFormalParameterParsingState& parsing_state) {
+  if (parser_->function_state_->materialized_literal_count() > 0) {
+    AstLiteralReindexer reindexer;
+
+    for (const auto p : parsing_state.params) {
+      if (p.pattern != nullptr) reindexer.Reindex(p.pattern);
+    }
+    DCHECK(reindexer.count() <=
+           parser_->function_state_->materialized_literal_count());
+  }
+}
+
+
 FunctionLiteral* Parser::ParseFunctionLiteral(
     const AstRawString* function_name, Scanner::Location function_name_location,
     bool name_is_strict_reserved, FunctionKind kind, int function_token_pos,
@@ -4021,9 +4071,9 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
 
     // To make this additional case work, both Parser and PreParser implement a
     // logic where only top-level functions will be parsed lazily.
-    bool is_lazily_parsed = (mode() == PARSE_LAZILY &&
-                             scope_->AllowsLazyCompilation() &&
-                             !parenthesized_function_);
+    bool is_lazily_parsed = mode() == PARSE_LAZILY &&
+                            scope_->AllowsLazyParsing() &&
+                            !parenthesized_function_;
     parenthesized_function_ = false;  // The bit was set for this function only.
 
     // Eager or lazy parse?
@@ -4033,11 +4083,6 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     // try to lazy parse in the first place, we'll have to parse eagerly.
     Scanner::BookmarkScope bookmark(scanner());
     if (is_lazily_parsed) {
-      for (Scope* s = scope_->outer_scope();
-           s != nullptr && (s != s->DeclarationScope()); s = s->outer_scope()) {
-        s->ForceContextAllocation();
-      }
-
       Scanner::BookmarkScope* maybe_bookmark =
           bookmark.Set() ? &bookmark : nullptr;
       SkipLazyFunctionBody(&materialized_literal_count,
@@ -4368,8 +4413,6 @@ PreParser::PreParseResult Parser::ParseLazyFunctionBodyWithPreParser(
     SET_ALLOW(natives);
     SET_ALLOW(harmony_modules);
     SET_ALLOW(harmony_arrow_functions);
-    SET_ALLOW(harmony_classes);
-    SET_ALLOW(harmony_object_literals);
     SET_ALLOW(harmony_sloppy);
     SET_ALLOW(harmony_unicode);
     SET_ALLOW(harmony_computed_property_names);
@@ -4412,11 +4455,7 @@ ClassLiteral* Parser::ParseClassLiteral(const AstRawString* name,
     return NULL;
   }
 
-  // Create a block scope which is additionally tagged as class scope; this is
-  // important for resolving variable references to the class name in the strong
-  // mode.
   Scope* block_scope = NewScope(scope_, BLOCK_SCOPE);
-  block_scope->tag_as_class_scope();
   BlockState block_state(&scope_, block_scope);
   scope_->SetLanguageMode(
       static_cast<LanguageMode>(scope_->language_mode() | STRICT_BIT));

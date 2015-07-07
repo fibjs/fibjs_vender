@@ -4,6 +4,7 @@
 
 #include "src/code-stubs.h"
 #include "src/compiler.h"
+#include "src/compiler/common-operator.h"
 #include "src/compiler/linkage.h"
 #include "src/compiler/node.h"
 #include "src/compiler/pipeline.h"
@@ -45,6 +46,63 @@ bool CallDescriptor::HasSameReturnLocationsAs(
     if (GetReturnLocation(i) != other->GetReturnLocation(i)) return false;
   }
   return true;
+}
+
+
+bool CallDescriptor::CanTailCall(const Node* node) const {
+  // Tail calling is currently allowed if return locations match and all
+  // parameters are either in registers or on the stack but match exactly in
+  // number and content.
+  CallDescriptor const* other = OpParameter<CallDescriptor const*>(node);
+  if (!HasSameReturnLocationsAs(other)) return false;
+  size_t current_input = 0;
+  size_t other_input = 0;
+  size_t stack_parameter = 0;
+  while (true) {
+    if (other_input >= other->InputCount()) {
+      while (current_input <= InputCount()) {
+        if (!GetInputLocation(current_input).is_register()) {
+          return false;
+        }
+        ++current_input;
+      }
+      return true;
+    }
+    if (current_input >= InputCount()) {
+      while (other_input < other->InputCount()) {
+        if (!other->GetInputLocation(other_input).is_register()) {
+          return false;
+        }
+        ++other_input;
+      }
+      return true;
+    }
+    if (GetInputLocation(current_input).is_register()) {
+      ++current_input;
+      continue;
+    }
+    if (other->GetInputLocation(other_input).is_register()) {
+      ++other_input;
+      continue;
+    }
+    if (GetInputLocation(current_input) !=
+        other->GetInputLocation(other_input)) {
+      return false;
+    }
+    Node* input = node->InputAt(static_cast<int>(other_input));
+    if (input->opcode() != IrOpcode::kParameter) {
+      return false;
+    }
+    size_t param_index = ParameterIndexOf(input->op());
+    if (param_index != stack_parameter) {
+      return false;
+    }
+    ++stack_parameter;
+    ++current_input;
+    ++other_input;
+  }
+  UNREACHABLE();
+  return false;
 }
 
 
@@ -105,7 +163,7 @@ FrameOffset Linkage::GetFrameOffset(int spill_slot, Frame* frame,
 
 
 // static
-bool Linkage::NeedsFrameState(Runtime::FunctionId function) {
+int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
   // Most runtime functions need a FrameState. A few chosen ones that we know
   // not to call into arbitrary JavaScript, not to throw, and not to deoptimize
   // are blacklisted here and can be called without a FrameState.
@@ -129,15 +187,16 @@ bool Linkage::NeedsFrameState(Runtime::FunctionId function) {
     case Runtime::kToFastProperties:  // TODO(jarin): Is it safe?
     case Runtime::kTraceEnter:
     case Runtime::kTraceExit:
-      return false;
+      return 0;
     case Runtime::kInlineArguments:
     case Runtime::kInlineCallFunction:
-    case Runtime::kInlineDeoptimizeNow:
     case Runtime::kInlineGetCallerJSFunction:
     case Runtime::kInlineGetPrototype:
     case Runtime::kInlineRegExpExec:
+      return 1;
+    case Runtime::kInlineDeoptimizeNow:
     case Runtime::kInlineThrowNotDateError:
-      return true;
+      return 2;
     default:
       break;
   }
@@ -145,9 +204,9 @@ bool Linkage::NeedsFrameState(Runtime::FunctionId function) {
   // Most inlined runtime functions (except the ones listed above) can be called
   // without a FrameState or will be lowered by JSIntrinsicLowering internally.
   const Runtime::Function* const f = Runtime::FunctionForId(function);
-  if (f->intrinsic_type == Runtime::IntrinsicType::INLINE) return false;
+  if (f->intrinsic_type == Runtime::IntrinsicType::INLINE) return 0;
 
-  return true;
+  return 1;
 }
 
 

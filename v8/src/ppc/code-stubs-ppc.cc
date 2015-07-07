@@ -112,15 +112,15 @@ void HydrogenCodeStub::GenerateLightweightMiss(MacroAssembler* masm,
   isolate()->counters()->code_stubs()->Increment();
 
   CallInterfaceDescriptor descriptor = GetCallInterfaceDescriptor();
-  int param_count = descriptor.GetEnvironmentParameterCount();
+  int param_count = descriptor.GetRegisterParameterCount();
   {
     // Call the runtime system in a fresh internal frame.
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
     DCHECK(param_count == 0 ||
-           r3.is(descriptor.GetEnvironmentParameterRegister(param_count - 1)));
+           r3.is(descriptor.GetRegisterParameter(param_count - 1)));
     // Push arguments
     for (int i = 0; i < param_count; ++i) {
-      __ push(descriptor.GetEnvironmentParameterRegister(i));
+      __ push(descriptor.GetRegisterParameter(i));
     }
     __ CallExternalReference(miss, param_count);
   }
@@ -1383,15 +1383,14 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
   Register map = r6;              // Map of the object.
   const Register function = r4;   // Function (rhs).
   const Register prototype = r7;  // Prototype of the function.
-  const Register inline_site = r9;
+  // The map_check_delta was stored in r8
+  // The bool_load_delta was stored in r9
+  //   (See LCodeGen::DoDeferredLInstanceOfKnownGlobal).
+  const Register map_check_delta = r8;
+  const Register bool_load_delta = r9;
+  const Register inline_site = r10;
   const Register scratch = r5;
   Register scratch3 = no_reg;
-
-  // delta = mov + tagged LoadP + cmp + bne
-  const int32_t kDeltaToLoadBoolResult =
-      (Assembler::kMovInstructions + Assembler::kTaggedLoadInstructions + 2) *
-      Assembler::kInstrSize;
-
   Label slow, loop, is_instance, is_not_instance, not_js_object;
 
   if (!HasArgsInRegisters()) {
@@ -1433,17 +1432,15 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
     DCHECK(HasArgsInRegisters());
     // Patch the (relocated) inlined map check.
 
-    // The offset was stored in r8
-    //   (See LCodeGen::DoDeferredLInstanceOfKnownGlobal).
-    const Register offset = r8;
+    const Register offset = map_check_delta;
     __ mflr(inline_site);
     __ sub(inline_site, inline_site, offset);
-    // Get the map location in r8 and patch it.
+    // Get the map location in offset and patch it.
     __ GetRelocatedValue(inline_site, offset, scratch);
     __ StoreP(map, FieldMemOperand(offset, Cell::kValueOffset), r0);
 
-    __ mr(r10, map);
-    __ RecordWriteField(offset, Cell::kValueOffset, r10, function,
+    __ mr(r11, map);
+    __ RecordWriteField(offset, Cell::kValueOffset, r11, function,
                         kLRHasNotBeenSaved, kDontSaveFPRegs,
                         OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
   }
@@ -1478,7 +1475,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
   } else {
     // Patch the call site to return true.
     __ LoadRoot(r3, Heap::kTrueValueRootIndex);
-    __ addi(inline_site, inline_site, Operand(kDeltaToLoadBoolResult));
+    __ add(inline_site, inline_site, bool_load_delta);
     // Get the boolean result location in scratch and patch it.
     __ SetRelocatedValue(inline_site, scratch, r3);
 
@@ -1498,7 +1495,7 @@ void InstanceofStub::Generate(MacroAssembler* masm) {
   } else {
     // Patch the call site to return false.
     __ LoadRoot(r3, Heap::kFalseValueRootIndex);
-    __ addi(inline_site, inline_site, Operand(kDeltaToLoadBoolResult));
+    __ add(inline_site, inline_site, bool_load_delta);
     // Get the boolean result location in scratch and patch it.
     __ SetRelocatedValue(inline_site, scratch, r3);
 
@@ -1799,7 +1796,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   const int kNormalOffset =
       Context::SlotOffset(Context::SLOPPY_ARGUMENTS_MAP_INDEX);
   const int kAliasedOffset =
-      Context::SlotOffset(Context::ALIASED_ARGUMENTS_MAP_INDEX);
+      Context::SlotOffset(Context::FAST_ALIASED_ARGUMENTS_MAP_INDEX);
 
   __ LoadP(r7,
            MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
@@ -2888,14 +2885,20 @@ void CallIC_ArrayStub::Generate(MacroAssembler* masm) {
   __ bne(&miss);
 
   __ mov(r3, Operand(arg_count()));
-  __ SmiToPtrArrayOffset(r7, r6);
-  __ add(r7, r5, r7);
-  __ LoadP(r7, FieldMemOperand(r7, FixedArray::kHeaderSize));
+  __ SmiToPtrArrayOffset(r9, r6);
+  __ add(r9, r5, r9);
+  __ LoadP(r7, FieldMemOperand(r9, FixedArray::kHeaderSize));
 
   // Verify that r7 contains an AllocationSite
   __ LoadP(r8, FieldMemOperand(r7, HeapObject::kMapOffset));
   __ CompareRoot(r8, Heap::kAllocationSiteMapRootIndex);
   __ bne(&miss);
+
+  // Increment the call count for monomorphic function calls.
+  const int count_offset = FixedArray::kHeaderSize + kPointerSize;
+  __ LoadP(r6, FieldMemOperand(r9, count_offset));
+  __ AddSmiLiteral(r6, r6, Smi::FromInt(CallICNexus::kCallCountIncrement), r0);
+  __ StoreP(r6, FieldMemOperand(r9, count_offset), r0);
 
   __ mr(r5, r7);
   __ mr(r6, r4);
@@ -2928,9 +2931,9 @@ void CallICStub::Generate(MacroAssembler* masm) {
   ParameterCount actual(argc);
 
   // The checks. First, does r4 match the recorded monomorphic target?
-  __ SmiToPtrArrayOffset(r7, r6);
-  __ add(r7, r5, r7);
-  __ LoadP(r7, FieldMemOperand(r7, FixedArray::kHeaderSize));
+  __ SmiToPtrArrayOffset(r9, r6);
+  __ add(r9, r5, r9);
+  __ LoadP(r7, FieldMemOperand(r9, FixedArray::kHeaderSize));
 
   // We don't know that we have a weak cell. We might have a private symbol
   // or an AllocationSite, but the memory is safe to examine.
@@ -2953,6 +2956,12 @@ void CallICStub::Generate(MacroAssembler* masm) {
   // The compare above could have been a SMI/SMI comparison. Guard against this
   // convincing us that we have a monomorphic JSFunction.
   __ JumpIfSmi(r4, &extra_checks_or_miss);
+
+  // Increment the call count for monomorphic function calls.
+  const int count_offset = FixedArray::kHeaderSize + kPointerSize;
+  __ LoadP(r6, FieldMemOperand(r9, count_offset));
+  __ AddSmiLiteral(r6, r6, Smi::FromInt(CallICNexus::kCallCountIncrement), r0);
+  __ StoreP(r6, FieldMemOperand(r9, count_offset), r0);
 
   __ bind(&have_js_function);
   if (CallAsMethod()) {
@@ -2997,10 +3006,8 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ AssertNotSmi(r7);
   __ CompareObjectType(r7, r8, r8, JS_FUNCTION_TYPE);
   __ bne(&miss);
-  __ SmiToPtrArrayOffset(r7, r6);
-  __ add(r7, r5, r7);
   __ LoadRoot(ip, Heap::kmegamorphic_symbolRootIndex);
-  __ StoreP(ip, FieldMemOperand(r7, FixedArray::kHeaderSize), r0);
+  __ StoreP(ip, FieldMemOperand(r9, FixedArray::kHeaderSize), r0);
   // We have to update statistics for runtime profiling.
   __ LoadP(r7, FieldMemOperand(r5, with_types_offset));
   __ SubSmiLiteral(r7, r7, Smi::FromInt(1), r0);
@@ -3029,6 +3036,10 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ LoadP(r7, FieldMemOperand(r5, with_types_offset));
   __ AddSmiLiteral(r7, r7, Smi::FromInt(1), r0);
   __ StoreP(r7, FieldMemOperand(r5, with_types_offset), r0);
+
+  // Initialize the call counter.
+  __ LoadSmiLiteral(r8, Smi::FromInt(CallICNexus::kCallCountIncrement));
+  __ StoreP(r8, FieldMemOperand(r9, count_offset), r0);
 
   // Store the function. Use a stub since we need a frame for allocation.
   // r5 - vector
@@ -4603,7 +4614,7 @@ void LoadICTrampolineStub::Generate(MacroAssembler* masm) {
 
 void KeyedLoadICTrampolineStub::Generate(MacroAssembler* masm) {
   EmitLoadTypeFeedbackVector(masm, LoadWithVectorDescriptor::VectorRegister());
-  KeyedLoadICStub stub(isolate());
+  KeyedLoadICStub stub(isolate(), state());
   stub.GenerateForTrampoline(masm);
 }
 
@@ -4820,7 +4831,7 @@ void KeyedLoadICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   __ CompareRoot(feedback, Heap::kmegamorphic_symbolRootIndex);
   __ bne(&try_poly_name);
   Handle<Code> megamorphic_stub =
-      KeyedLoadIC::ChooseMegamorphicStub(masm->isolate());
+      KeyedLoadIC::ChooseMegamorphicStub(masm->isolate(), GetExtraICState());
   __ Jump(megamorphic_stub, RelocInfo::CODE_TARGET);
 
   __ bind(&try_poly_name);

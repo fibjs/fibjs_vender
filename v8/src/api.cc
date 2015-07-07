@@ -904,6 +904,7 @@ void NeanderArray::set(int index, i::Object* value) {
 
 
 static void InitializeTemplate(i::Handle<i::TemplateInfo> that, int type) {
+  that->set_number_of_properties(0);
   that->set_tag(i::Smi::FromInt(type));
 }
 
@@ -946,7 +947,7 @@ void Template::SetAccessorProperty(
 // --- F u n c t i o n   T e m p l a t e ---
 static void InitializeFunctionTemplate(
     i::Handle<i::FunctionTemplateInfo> info) {
-  info->set_tag(i::Smi::FromInt(Consts::FUNCTION_TEMPLATE));
+  InitializeTemplate(info, Consts::FUNCTION_TEMPLATE);
   info->set_flag(0);
 }
 
@@ -1426,9 +1427,7 @@ void ObjectTemplate::MarkAsUndetectable() {
 
 void ObjectTemplate::SetAccessCheckCallbacks(
     NamedSecurityCallback named_callback,
-    IndexedSecurityCallback indexed_callback,
-    Handle<Value> data,
-    bool turned_on_by_default) {
+    IndexedSecurityCallback indexed_callback, Handle<Value> data) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
@@ -1449,7 +1448,7 @@ void ObjectTemplate::SetAccessCheckCallbacks(
   info->set_data(*Utils::OpenHandle(*data));
 
   cons->set_access_check_info(*info);
-  cons->set_needs_access_check(turned_on_by_default);
+  cons->set_needs_access_check(true);
 }
 
 
@@ -1714,15 +1713,6 @@ MaybeLocal<UnboundScript> ScriptCompiler::CompileUnboundInternal(
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
   PREPARE_FOR_EXECUTION_WITH_ISOLATE(
       isolate, "v8::ScriptCompiler::CompileUnbound()", UnboundScript);
-
-  // Support the old API for a transition period:
-  // - kProduceToCache -> kProduceParserCache
-  // - kNoCompileOptions + cached_data != NULL -> kConsumeParserCache
-  if (options == kProduceDataToCache) {
-    options = kProduceParserCache;
-  } else if (options == kNoCompileOptions && source->cached_data) {
-    options = kConsumeParserCache;
-  }
 
   // Don't try to produce any kind of cache when the debugger is loaded.
   if (isolate->debug()->is_loaded() &&
@@ -3577,16 +3567,9 @@ static i::MaybeHandle<i::Object> DefineObjectProperty(
   }
 
   i::Handle<i::Name> name;
-  if (key->IsName()) {
-    name = i::Handle<i::Name>::cast(key);
-  } else {
-    // Call-back into JavaScript to convert the key to a string.
-    i::Handle<i::Object> converted;
-    ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, converted,
-                                     i::Execution::ToString(isolate, key),
-                                     i::MaybeHandle<i::Object>());
-    name = i::Handle<i::String>::cast(converted);
-  }
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, name,
+                                   i::Runtime::ToName(isolate, key),
+                                   i::MaybeHandle<i::Object>());
 
   return i::JSObject::DefinePropertyOrElementIgnoreAttributes(js_object, name,
                                                               value, attrs);
@@ -3623,45 +3606,6 @@ bool v8::Object::ForceSet(v8::Handle<Value> key, v8::Handle<Value> value,
   EXCEPTION_BAILOUT_CHECK_SCOPED(isolate, false);
   return true;
 }
-
-
-namespace {
-
-i::MaybeHandle<i::Object> DeleteObjectProperty(
-    i::Isolate* isolate, i::Handle<i::JSReceiver> receiver,
-    i::Handle<i::Object> key, i::LanguageMode language_mode) {
-  // Check if the given key is an array index.
-  uint32_t index = 0;
-  if (key->ToArrayIndex(&index)) {
-    // In Firefox/SpiderMonkey, Safari and Opera you can access the
-    // characters of a string using [] notation.  In the case of a
-    // String object we just need to redirect the deletion to the
-    // underlying string if the index is in range.  Since the
-    // underlying string does nothing with the deletion, we can ignore
-    // such deletions.
-    if (receiver->IsStringObjectWithCharacterAt(index)) {
-      return isolate->factory()->false_value();
-    }
-
-    return i::JSReceiver::DeleteElement(receiver, index, language_mode);
-  }
-
-  i::Handle<i::Name> name;
-  if (key->IsName()) {
-    name = i::Handle<i::Name>::cast(key);
-  } else {
-    // Call-back into JavaScript to convert the key to a string.
-    i::Handle<i::Object> converted;
-    if (!i::Execution::ToString(isolate, key).ToHandle(&converted)) {
-      return i::MaybeHandle<i::Object>();
-    }
-    name = i::Handle<i::String>::cast(converted);
-  }
-
-  return i::JSReceiver::DeleteProperty(receiver, name, language_mode);
-}
-
-}  // namespace
 
 
 MaybeLocal<Value> v8::Object::Get(Local<v8::Context> context,
@@ -3921,7 +3865,8 @@ Maybe<bool> v8::Object::Delete(Local<Context> context, Local<Value> key) {
   auto key_obj = Utils::OpenHandle(*key);
   i::Handle<i::Object> obj;
   has_pending_exception =
-      !DeleteObjectProperty(isolate, self, key_obj, i::SLOPPY).ToHandle(&obj);
+      !i::Runtime::DeleteObjectProperty(isolate, self, key_obj, i::SLOPPY)
+           .ToHandle(&obj);
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
   return Just(obj->IsTrue());
 }
@@ -4268,26 +4213,6 @@ Maybe<PropertyAttribute> v8::Object::GetRealNamedPropertyAttributes(
     Handle<String> key) {
   auto context = ContextFromHeapObject(Utils::OpenHandle(this));
   return GetRealNamedPropertyAttributes(context, key);
-}
-
-
-// Turns on access checks by copying the map and setting the check flag.
-// Because the object gets a new map, existing inline cache caching
-// the old map of this object will fail.
-void v8::Object::TurnOnAccessCheck() {
-  i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ENTER_V8(isolate);
-  i::HandleScope scope(isolate);
-  i::Handle<i::JSObject> obj = Utils::OpenHandle(this);
-
-  // When turning on access checks for a global object deoptimize all functions
-  // as optimized code does not always handle access checks.
-  i::Deoptimizer::DeoptimizeGlobalObject(*obj);
-
-  i::Handle<i::Map> new_map =
-      i::Map::Copy(i::Handle<i::Map>(obj->map()), "APITurnOnAccessCheck");
-  new_map->set_is_access_check_needed(true);
-  i::JSObject::MigrateToMap(obj, new_map);
 }
 
 
@@ -6983,9 +6908,9 @@ Local<Integer> v8::Integer::NewFromUnsigned(Isolate* isolate, uint32_t value) {
 }
 
 
-void Isolate::CollectGarbage(const char* gc_reason) {
-  reinterpret_cast<i::Isolate*>(this)->heap()->CollectGarbage(i::NEW_SPACE,
-                                                              gc_reason);
+void Isolate::CollectAllGarbage(const char* gc_reason) {
+  reinterpret_cast<i::Isolate*>(this)->heap()->CollectAllGarbage(
+      i::Heap::kNoGCFlags, gc_reason);
 }
 
 

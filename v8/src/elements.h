@@ -54,20 +54,6 @@ class ElementsAccessor {
     return Get(holder, key, handle(holder->elements()));
   }
 
-  // Returns an element's accessors, or NULL if the element does not exist or
-  // is plain. This method doesn't iterate up the prototype chain.  The caller
-  // can optionally pass in the backing store to use for the check, which must
-  // be compatible with the ElementsKind of the ElementsAccessor. If
-  // backing_store is NULL, the holder->elements() is used as the backing store.
-  virtual MaybeHandle<AccessorPair> GetAccessorPair(
-      Handle<JSObject> holder, uint32_t key,
-      Handle<FixedArrayBase> backing_store) = 0;
-
-  inline MaybeHandle<AccessorPair> GetAccessorPair(Handle<JSObject> holder,
-                                                   uint32_t key) {
-    return GetAccessorPair(holder, key, handle(holder->elements()));
-  }
-
   // Modifies the length data property as specified for JSArrays and resizes the
   // underlying backing store accordingly. The method honors the semantics of
   // changing array sizes as defined in EcmaScript 5.1 15.4.5.2, i.e. array that
@@ -144,9 +130,11 @@ class ElementsAccessor {
                            Handle<FixedArrayBase> backing_store, uint32_t index,
                            Handle<Object> value,
                            PropertyAttributes attributes) = 0;
+  virtual void Add(Handle<JSObject> object, uint32_t index,
+                   Handle<Object> value, PropertyAttributes attributes,
+                   uint32_t new_capacity) = 0;
 
  protected:
-  friend class SloppyArgumentsElementsAccessor;
   friend class LookupIterator;
 
   static ElementsAccessor* ForArray(FixedArrayBase* array);

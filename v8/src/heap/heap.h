@@ -16,6 +16,7 @@
 #include "src/heap/gc-tracer.h"
 #include "src/heap/incremental-marking.h"
 #include "src/heap/mark-compact.h"
+#include "src/heap/memory-reducer.h"
 #include "src/heap/objects-visiting.h"
 #include "src/heap/spaces.h"
 #include "src/heap/store-buffer.h"
@@ -831,6 +832,10 @@ class Heap {
   // Notify the heap that a context has been disposed.
   int NotifyContextDisposed(bool dependant_context);
 
+  // Start incremental marking and ensure that idle time handler can perform
+  // incremental steps.
+  void StartIdleIncrementalMarking();
+
   inline void increment_scan_on_scavenge_pages() {
     scan_on_scavenge_pages_++;
     if (FLAG_gc_verbose) {
@@ -1372,6 +1377,10 @@ class Heap {
     return PromotedSpaceSizeOfObjects() - old_generation_size_at_last_gc_;
   }
 
+  // Record the fact that we generated some optimized code since the last GC
+  // which will pretenure some previously unpretenured allocation.
+  void RecordDeoptForPretenuring() { gathering_lifetime_feedback_ = 2; }
+
   // Update GC statistics that are tracked on the Heap.
   void UpdateCumulativeGCStatistics(double duration, double spent_in_mutator,
                                     double marking_time);
@@ -1613,6 +1622,10 @@ class Heap {
   // An ArrayBuffer moved from new space to old space.
   void PromoteArrayBuffer(Object* buffer);
 
+  bool HasLowAllocationRate();
+  bool HasHighFragmentation();
+  bool HasHighFragmentation(intptr_t used, intptr_t committed);
+
  protected:
   // Methods made available to tests.
 
@@ -1772,10 +1785,6 @@ class Heap {
   // which collector to invoke, before expanding a paged space in the old
   // generation and on every allocation in large object space.
   intptr_t old_generation_allocation_limit_;
-
-  // The allocation limit when there is >16.66ms idle time in the idle time
-  // handler.
-  intptr_t idle_old_generation_allocation_limit_;
 
   // Indicates that an allocation has failed in the old generation since the
   // last GC.
@@ -2173,6 +2182,10 @@ class Heap {
   static const int kOldSurvivalRateLowThreshold = 10;
 
   bool new_space_high_promotion_mode_active_;
+  // If this is non-zero, then there is hope yet that the optimized code we
+  // have generated will solve our high promotion rate problems, so we don't
+  // need to go into high promotion mode just yet.
+  int gathering_lifetime_feedback_;
   int high_survival_rate_period_length_;
   intptr_t promoted_objects_size_;
   int low_survival_rate_period_length_;
@@ -2239,8 +2252,6 @@ class Heap {
 
   bool IsLowSurvivalRate() { return low_survival_rate_period_length_ > 0; }
 
-  // TODO(hpayer): Allocation site pretenuring may make this method obsolete.
-  // Re-visit incremental marking heuristics.
   bool IsHighSurvivalRate() { return high_survival_rate_period_length_ > 0; }
 
   void ConfigureInitialOldGenerationSize();
@@ -2251,7 +2262,6 @@ class Heap {
 
   bool HasLowYoungGenerationAllocationRate();
   bool HasLowOldGenerationAllocationRate();
-  bool HasLowAllocationRate();
 
   void ReduceNewSpaceSize();
 
@@ -2317,6 +2327,8 @@ class Heap {
   IncrementalMarking incremental_marking_;
 
   GCIdleTimeHandler gc_idle_time_handler_;
+
+  MemoryReducer memory_reducer_;
 
   // These two counters are monotomically increasing and never reset.
   size_t full_codegen_bytes_generated_;

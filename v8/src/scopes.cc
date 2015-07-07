@@ -152,7 +152,6 @@ void Scope::SetDefaults(ScopeType scope_type, Scope* outer_scope,
   outer_scope_ = outer_scope;
   scope_type_ = scope_type;
   function_kind_ = function_kind;
-  block_scope_is_class_scope_ = false;
   scope_name_ = ast_value_factory_->empty_string();
   dynamics_ = nullptr;
   receiver_ = nullptr;
@@ -189,7 +188,6 @@ void Scope::SetDefaults(ScopeType scope_type, Scope* outer_scope,
   if (!scope_info.is_null()) {
     scope_calls_eval_ = scope_info->CallsEval();
     language_mode_ = scope_info->language_mode();
-    block_scope_is_class_scope_ = scope_info->block_scope_is_class_scope();
     function_kind_ = scope_info->function_kind();
   }
 }
@@ -319,24 +317,20 @@ void Scope::Initialize() {
     receiver_ = var;
   }
 
-  if (is_function_scope()) {
-    if (!is_arrow_scope()) {
-      // Declare 'arguments' variable which exists in all non arrow functions.
-      // Note that it might never be accessed, in which case it won't be
-      // allocated during variable allocation.
-      variables_.Declare(this, ast_value_factory_->arguments_string(), VAR,
-                         Variable::ARGUMENTS, kCreatedInitialized);
-    }
+  if (is_function_scope() && !is_arrow_scope()) {
+    // Declare 'arguments' variable which exists in all non arrow functions.
+    // Note that it might never be accessed, in which case it won't be
+    // allocated during variable allocation.
+    variables_.Declare(this, ast_value_factory_->arguments_string(), VAR,
+                       Variable::ARGUMENTS, kCreatedInitialized);
 
-    if (subclass_constructor) {
-      DCHECK(!is_arrow_scope());
+    if (subclass_constructor || FLAG_harmony_new_target) {
       variables_.Declare(this, ast_value_factory_->new_target_string(), CONST,
                          Variable::NORMAL, kCreatedInitialized);
     }
 
     if (IsConciseMethod(function_kind_) || IsConstructor(function_kind_) ||
         IsAccessorFunction(function_kind_)) {
-      DCHECK(!is_arrow_scope());
       variables_.Declare(this, ast_value_factory_->this_function_string(),
                          CONST, Variable::NORMAL, kCreatedInitialized);
     }
@@ -715,28 +709,18 @@ bool Scope::HasTrivialOuterContext() const {
 }
 
 
-bool Scope::HasLazyCompilableOuterContext() const {
-  Scope* outer = outer_scope_;
-  if (outer == NULL) return true;
-  // We have to prevent lazy compilation if this scope is inside a with scope
-  // and all declaration scopes between them have empty contexts. Such
-  // declaration scopes may become invisible during scope info deserialization.
-  outer = outer->DeclarationScope();
-  bool found_non_trivial_declarations = false;
-  for (const Scope* scope = outer; scope != NULL; scope = scope->outer_scope_) {
-    if (scope->is_with_scope() && !found_non_trivial_declarations) return false;
-    if (scope->is_block_scope() && !scope->decls_.is_empty()) return false;
-    if (scope->is_declaration_scope() && scope->num_heap_slots() > 0) {
-      found_non_trivial_declarations = true;
-    }
+bool Scope::AllowsLazyParsing() const {
+  // If we are inside a block scope, we must parse eagerly to find out how
+  // to allocate variables on the block scope. At this point, declarations may
+  // not have yet been parsed.
+  for (const Scope* scope = this; scope != NULL; scope = scope->outer_scope_) {
+    if (scope->is_block_scope()) return false;
   }
-  return true;
+  return AllowsLazyCompilation();
 }
 
 
-bool Scope::AllowsLazyCompilation() const {
-  return !force_eager_compilation_ && HasLazyCompilableOuterContext();
-}
+bool Scope::AllowsLazyCompilation() const { return !force_eager_compilation_; }
 
 
 bool Scope::AllowsLazyCompilationWithoutContext() const {
@@ -1246,7 +1230,6 @@ ClassVariable* Scope::ClassVariableForMethod() const {
     return nullptr;
   }
   DCHECK_NOT_NULL(outer_scope_);
-  DCHECK(outer_scope_->is_class_scope());
   // The class scope contains at most one variable, the class name.
   DCHECK(outer_scope_->variables_.occupancy() <= 1);
   if (outer_scope_->variables_.occupancy() == 0) return nullptr;

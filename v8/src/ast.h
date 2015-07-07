@@ -1298,6 +1298,8 @@ class Literal final : public Expression {
 };
 
 
+class AstLiteralReindexer;
+
 // Base class for literals that needs space in the corresponding JSFunction.
 class MaterializedLiteral : public Expression {
  public:
@@ -1349,6 +1351,8 @@ class MaterializedLiteral : public Expression {
   bool is_simple_;
   bool is_strong_;
   int depth_;
+
+  friend class AstLiteralReindexer;
 };
 
 
@@ -2029,7 +2033,8 @@ class CallRuntime final : public Expression {
     return callruntime_feedback_slot_;
   }
 
-  static int num_ids() { return parent_num_ids(); }
+  static int num_ids() { return parent_num_ids() + 1; }
+  BailoutId CallId() { return BailoutId(local_id(0)); }
 
  protected:
   CallRuntime(Zone* zone, const AstRawString* name,
@@ -2043,6 +2048,8 @@ class CallRuntime final : public Expression {
   static int parent_num_ids() { return Expression::num_ids(); }
 
  private:
+  int local_id(int n) const { return base_id() + parent_num_ids() + n; }
+
   const AstRawString* raw_name_;
   const Runtime::Function* function_;
   ZoneList<Expression*>* arguments_;
@@ -3373,9 +3380,9 @@ class AstNodeFactory final BASE_EMBEDDED {
     return new (zone_) Literal(zone_, ast_value_factory_->NewSymbol(name), pos);
   }
 
-  Literal* NewNumberLiteral(double number, int pos) {
+  Literal* NewNumberLiteral(double number, int pos, bool with_dot = false) {
     return new (zone_)
-        Literal(zone_, ast_value_factory_->NewNumber(number), pos);
+        Literal(zone_, ast_value_factory_->NewNumber(number, with_dot), pos);
   }
 
   Literal* NewSmiLiteral(int number, int pos) {

@@ -81,7 +81,7 @@ static Handle<Object> DebugGetProperty(LookupIterator* it,
           return it->isolate()->factory()->undefined_value();
         }
         MaybeHandle<Object> maybe_result =
-            JSObject::GetPropertyWithAccessor(it);
+            JSObject::GetPropertyWithAccessor(it, SLOPPY);
         Handle<Object> result;
         if (!maybe_result.ToHandle(&result)) {
           result = handle(it->isolate()->pending_exception(), it->isolate());
@@ -457,8 +457,8 @@ RUNTIME_FUNCTION(Runtime_GetFrameCount) {
     List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
     it.frame()->Summarize(&frames);
     for (int i = frames.length() - 1; i >= 0; i--) {
-      // Omit functions from native scripts.
-      if (!frames[i].function()->IsFromNativeScript()) n++;
+      // Omit functions from native and extension scripts.
+      if (frames[i].function()->IsSubjectToDebugging()) n++;
     }
   }
   return Smi::FromInt(n);
@@ -583,8 +583,8 @@ int Runtime::FindIndexedNonNativeFrame(JavaScriptFrameIterator* it, int index) {
     List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
     it->frame()->Summarize(&frames);
     for (int i = frames.length() - 1; i >= 0; i--) {
-      // Omit functions from native scripts.
-      if (frames[i].function()->IsFromNativeScript()) continue;
+      // Omit functions from native and extension scripts.
+      if (!frames[i].function()->IsSubjectToDebugging()) continue;
       if (++count == index) return i;
     }
   }
@@ -3022,6 +3022,11 @@ RUNTIME_FUNCTION(Runtime_ExecuteInDebugContext) {
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
 
   DebugScope debug_scope(isolate->debug());
+  if (debug_scope.failed()) {
+    DCHECK(isolate->has_pending_exception());
+    return isolate->heap()->exception();
+  }
+
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, result,
@@ -3037,6 +3042,10 @@ RUNTIME_FUNCTION(Runtime_GetDebugContext) {
   Handle<Context> context;
   {
     DebugScope debug_scope(isolate->debug());
+    if (debug_scope.failed()) {
+      DCHECK(isolate->has_pending_exception());
+      return isolate->heap()->exception();
+    }
     context = isolate->debug()->GetDebugContext();
   }
   if (context.is_null()) return isolate->heap()->undefined_value();
