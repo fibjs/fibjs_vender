@@ -17,37 +17,64 @@ namespace exlib
 
 void *_CompareAndSwap(void *volatile *Destination, void *Exchange, void *Comparand)
 {
-    return InterlockedCompareExchangePointer(Destination, Exchange, Comparand);
+	return InterlockedCompareExchangePointer(Destination, Exchange, Comparand);
 }
 
-int32_t CompareAndSwap(volatile int32_t *Destination, int32_t old_value, int32_t new_value)
+#ifdef x64
+atomic_t CompareAndSwap(volatile atomic_t *Destination, atomic_t old_value, atomic_t new_value)
 {
-    return InterlockedCompareExchange((LONG *)Destination, new_value, old_value);
+	return InterlockedCompareExchange64((LONGLONG *)Destination, new_value, old_value);
 }
 
-int32_t atom_add(volatile int32_t *dest, int32_t incr)
+atomic_t atom_add(volatile atomic_t *dest, atomic_t incr)
 {
-    return InterlockedExchangeAdd((LONG *)dest, incr) + incr;
+	return InterlockedExchangeAdd64((LONGLONG *)dest, incr) + incr;
 }
 
-int32_t atom_inc(volatile int32_t *dest)
+atomic_t atom_inc(volatile atomic_t *dest)
 {
-    return InterlockedIncrement((LONG *)dest);
+	return InterlockedIncrement64((LONGLONG *)dest);
 }
 
-int32_t atom_dec(volatile int32_t *dest)
+atomic_t atom_dec(volatile atomic_t *dest)
 {
-    return InterlockedDecrement((LONG *)dest);
+	return InterlockedDecrement64((LONGLONG *)dest);
 }
 
-int32_t atom_xchg(volatile int32_t *ptr, int32_t new_value)
+atomic_t atom_xchg(volatile atomic_t *ptr, atomic_t new_value)
 {
-    return InterlockedExchange((LONG *)ptr, new_value);
+	return InterlockedExchange64((LONGLONG *)ptr, new_value);
 }
+#else
+atomic_t CompareAndSwap(volatile atomic_t *Destination, atomic_t old_value, atomic_t new_value)
+{
+	return InterlockedCompareExchange((LONG *)Destination, new_value, old_value);
+}
+
+atomic_t atom_add(volatile atomic_t *dest, atomic_t incr)
+{
+	return InterlockedExchangeAdd((LONG *)dest, incr) + incr;
+}
+
+atomic_t atom_inc(volatile atomic_t *dest)
+{
+	return InterlockedIncrement((LONG *)dest);
+}
+
+atomic_t atom_dec(volatile atomic_t *dest)
+{
+	return InterlockedDecrement((LONG *)dest);
+}
+
+atomic_t atom_xchg(volatile atomic_t *ptr, atomic_t new_value)
+{
+	return InterlockedExchange((LONG *)ptr, new_value);
+}
+#endif
 
 void *_atom_xchg(void *volatile *ptr, void *new_value)
 {
-    return InterlockedExchangePointer(ptr, new_value);
+	return InterlockedExchangePointer(ptr, new_value);
 }
 
 }

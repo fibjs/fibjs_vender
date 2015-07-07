@@ -9,6 +9,7 @@
 namespace exlib
 {
 
+typedef long atomic_t;
 typedef void (*LinuxKernelMemoryBarrierFunc)(void);
 inline void MemoryBarrier()
 {
@@ -39,9 +40,9 @@ inline T *CompareAndSwap(T *volatile *ptr, T *old_value, T *new_value)
     return oldval;
 }
 
-inline int32_t CompareAndSwap(volatile int32_t *ptr, int32_t old_value, int32_t new_value)
+inline atomic_t CompareAndSwap(volatile atomic_t *ptr, atomic_t old_value, atomic_t new_value)
 {
-    int32_t oldval, res;
+    atomic_t oldval, res;
 
     do
     {
@@ -62,10 +63,10 @@ inline int32_t CompareAndSwap(volatile int32_t *ptr, int32_t old_value, int32_t 
     return oldval;
 }
 
-inline int32_t atom_add(volatile int32_t *dest, int32_t incr)
+inline atomic_t atom_add(volatile atomic_t *dest, atomic_t incr)
 {
-    int32_t value;
-    int32_t res;
+    atomic_t value;
+    atomic_t res;
 
     do
     {
@@ -81,20 +82,20 @@ inline int32_t atom_add(volatile int32_t *dest, int32_t incr)
     return value;
 }
 
-inline int32_t atom_inc(volatile int32_t *dest)
+inline atomic_t atom_inc(volatile atomic_t *dest)
 {
     return atom_add(dest, 1);
 }
 
-inline int32_t atom_dec(volatile int32_t *dest)
+inline atomic_t atom_dec(volatile atomic_t *dest)
 {
     return atom_add(dest, -1);
 }
 
-inline int32_t atom_xchg(volatile int32_t *ptr, int32_t new_value)
+inline atomic_t atom_xchg(volatile atomic_t *ptr, atomic_t new_value)
 {
-    int32_t old_value;
-    int32_t res;
+    atomic_t old_value;
+    atomic_t res;
 
     do
     {

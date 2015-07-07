@@ -12,11 +12,13 @@ namespace exlib
 {
 
 #ifdef x64
+typedef LONGLONG atomic_t;
 inline void MemoryBarrier()
 {
     ::__faststorefence();
 }
 #else
+typedef LONG atomic_t;
 inline void MemoryBarrier()
 {
     LONG Barrier;
@@ -27,7 +29,7 @@ inline void MemoryBarrier()
 }
 #endif
 
-int32_t CompareAndSwap(volatile int32_t *ptr, int32_t old_value, int32_t new_value);
+atomic_t CompareAndSwap(volatile atomic_t *ptr, atomic_t old_value, atomic_t new_value);
 
 void *_CompareAndSwap(void *volatile *Destination, void *Exchange, void *Comparand);
 
@@ -57,9 +59,9 @@ inline void *atom_xchg(void *volatile *ptr, void *new_value)
     return _atom_xchg(ptr, new_value);
 }
 
-int32_t atom_add(volatile int32_t *dest, int32_t incr);
-int32_t atom_inc(volatile int32_t *dest);
-int32_t atom_dec(volatile int32_t *dest);
-int32_t atom_xchg(volatile int32_t *ptr, int32_t new_value);
+atomic_t atom_add(volatile atomic_t *dest, atomic_t incr);
+atomic_t atom_inc(volatile atomic_t *dest);
+atomic_t atom_dec(volatile atomic_t *dest);
+atomic_t atom_xchg(volatile atomic_t *ptr, atomic_t new_value);
 
 }

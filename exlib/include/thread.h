@@ -411,9 +411,9 @@ public:
 #endif
 };
 
-inline void InitOnce(int32_t *once, void (*initializer)())
+inline void InitOnce(atomic_t *once, void (*initializer)())
 {
-    int32_t state = CompareAndSwap(once, 0, 1);
+    atomic_t state = CompareAndSwap(once, 0, 1);
     if (state == 0)
     {
         initializer();

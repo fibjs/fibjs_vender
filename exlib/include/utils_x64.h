@@ -13,6 +13,7 @@
 namespace exlib
 {
 
+typedef long long atomic_t;
 #if defined(MacOS)
 inline void MemoryBarrier()
 {
@@ -37,34 +38,34 @@ inline T *CompareAndSwap(T *volatile *ptr, T *old_value, T *new_value)
     return prev;
 }
 
-inline int32_t CompareAndSwap(volatile int32_t *ptr, int32_t old_value, int32_t new_value)
+inline atomic_t CompareAndSwap(volatile atomic_t *ptr, atomic_t old_value, atomic_t new_value)
 {
-    int32_t prev;
+    atomic_t prev;
     __asm__ volatile(
-        "lock; cmpxchgl %1,%2"
+        "lock; cmpxchgq %1,%2"
         : "=a" (prev)
         : "q" (new_value), "m" (*ptr), "0" (old_value)
         : "memory");
     return prev;
 }
 
-inline int32_t atom_add(volatile int32_t *dest, int32_t incr)
+inline atomic_t atom_add(volatile atomic_t *dest, atomic_t incr)
 {
-    int32_t ret;
+    atomic_t ret;
     __asm__ volatile(
-        "lock; xaddl %0,(%1)"
+        "lock; xaddq %0,(%1)"
         : "=r"(ret)
         : "r"(dest), "0"(incr)
         : "memory");
     return ret + incr;
 }
 
-inline int32_t atom_xchg(volatile int32_t *ptr, int32_t new_value)
+inline atomic_t atom_xchg(volatile atomic_t *ptr, atomic_t new_value)
 {
-    int32_t prev;
+    atomic_t prev;
 
     __asm__ volatile(
-        "lock xchgl %2,(%1)"
+        "lock xchgq %2,(%1)"
         : "=r" (prev)
         : "r" (ptr), "0" (new_value)
         : "memory");
@@ -86,12 +87,12 @@ inline T *atom_xchg(T *volatile *ptr, T *new_value)
     return prev;
 }
 
-inline int32_t atom_inc(volatile int32_t *dest)
+inline atomic_t atom_inc(volatile atomic_t *dest)
 {
     return atom_add(dest, 1);
 }
 
-inline int32_t atom_dec(volatile int32_t *dest)
+inline atomic_t atom_dec(volatile atomic_t *dest)
 {
     return atom_add(dest, -1);
 }
