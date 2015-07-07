@@ -123,7 +123,6 @@ Handle<Code> PlatformCodeStub::GenerateCode() {
   // Create the code object.
   CodeDesc desc;
   masm.GetCode(&desc);
-
   // Copy the generated code into a heap object.
   Code::Flags flags = Code::ComputeFlags(
       GetCodeKind(),
@@ -628,7 +627,9 @@ void LoadDictionaryElementStub::InitializeDescriptor(
 void KeyedLoadGenericStub::InitializeDescriptor(
     CodeStubDescriptor* descriptor) {
   descriptor->Initialize(
-      Runtime::FunctionForId(Runtime::kKeyedGetProperty)->entry);
+      Runtime::FunctionForId(is_strong(language_mode())
+                                 ? Runtime::kKeyedGetPropertyStrong
+                                 : Runtime::kKeyedGetProperty)->entry);
 }
 
 
@@ -643,7 +644,7 @@ void HandlerStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
 }
 
 
-CallInterfaceDescriptor HandlerStub::GetCallInterfaceDescriptor() {
+CallInterfaceDescriptor HandlerStub::GetCallInterfaceDescriptor() const {
   if (kind() == Code::LOAD_IC || kind() == Code::KEYED_LOAD_IC) {
     return LoadWithVectorDescriptor(isolate());
   } else {
@@ -665,7 +666,8 @@ void ElementsTransitionAndStoreStub::InitializeDescriptor(
 }
 
 
-CallInterfaceDescriptor StoreTransitionStub::GetCallInterfaceDescriptor() {
+CallInterfaceDescriptor StoreTransitionStub::GetCallInterfaceDescriptor()
+    const {
   return StoreTransitionDescriptor(isolate());
 }
 
@@ -808,7 +810,8 @@ void StoreElementStub::Generate(MacroAssembler* masm) {
     case DICTIONARY_ELEMENTS:
       ElementHandlerCompiler::GenerateStoreSlow(masm);
       break;
-    case SLOPPY_ARGUMENTS_ELEMENTS:
+    case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
+    case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
       UNREACHABLE();
       break;
   }

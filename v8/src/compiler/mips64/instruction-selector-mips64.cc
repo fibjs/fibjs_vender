@@ -605,28 +605,16 @@ void InstructionSelector::VisitFloat64Mod(Node* node) {
 }
 
 
-void InstructionSelector::VisitFloat32Max(Node* node) {
-  DCHECK(kArchVariant == kMips64r6);
-  VisitRRR(this, kMips64MaxS, node);
-}
+void InstructionSelector::VisitFloat32Max(Node* node) { UNREACHABLE(); }
 
 
-void InstructionSelector::VisitFloat64Max(Node* node) {
-  DCHECK(kArchVariant == kMips64r6);
-  VisitRRR(this, kMips64MaxD, node);
-}
+void InstructionSelector::VisitFloat64Max(Node* node) { UNREACHABLE(); }
 
 
-void InstructionSelector::VisitFloat32Min(Node* node) {
-  DCHECK(kArchVariant == kMips64r6);
-  VisitRRR(this, kMips64MinS, node);
-}
+void InstructionSelector::VisitFloat32Min(Node* node) { UNREACHABLE(); }
 
 
-void InstructionSelector::VisitFloat64Min(Node* node) {
-  DCHECK(kArchVariant == kMips64r6);
-  VisitRRR(this, kMips64MinD, node);
-}
+void InstructionSelector::VisitFloat64Min(Node* node) { UNREACHABLE(); }
 
 
 void InstructionSelector::VisitFloat32Abs(Node* node) {
@@ -754,15 +742,11 @@ void InstructionSelector::VisitTailCall(Node* node) {
   DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kNeedsNopAfterCall);
 
   // TODO(turbofan): Relax restriction for stack parameters.
-  if (descriptor->UsesOnlyRegisters() &&
-      descriptor->HasSameReturnLocationsAs(
-          linkage()->GetIncomingDescriptor())) {
+  if (linkage()->GetIncomingDescriptor()->CanTailCall(node)) {
     CallBuffer buffer(zone(), descriptor, nullptr);
 
     // Compute InstructionOperands for inputs and outputs.
     InitializeCallBuffer(node, &buffer, true, false);
-
-    DCHECK_EQ(0u, buffer.pushed_nodes.size());
 
     // Select the appropriate opcode based on the call type.
     InstructionCode opcode;
@@ -1064,6 +1048,9 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
       case IrOpcode::kUint64LessThan:
         cont->OverwriteAndNegateIfEqual(kUnsignedLessThan);
         return VisitWord64Compare(selector, value, cont);
+      case IrOpcode::kUint64LessThanOrEqual:
+        cont->OverwriteAndNegateIfEqual(kUnsignedLessThanOrEqual);
+        return VisitWord64Compare(selector, value, cont);
       case IrOpcode::kFloat32Equal:
         cont->OverwriteAndNegateIfEqual(kEqual);
         return VisitFloat32Compare(selector, value, cont);
@@ -1240,6 +1227,12 @@ void InstructionSelector::VisitUint64LessThan(Node* node) {
 }
 
 
+void InstructionSelector::VisitUint64LessThanOrEqual(Node* node) {
+  FlagsContinuation cont(kUnsignedLessThanOrEqual, node);
+  VisitWord64Compare(this, node, &cont);
+}
+
+
 void InstructionSelector::VisitFloat32Equal(Node* node) {
   FlagsContinuation cont(kEqual, node);
   VisitFloat32Compare(this, node, &cont);
@@ -1311,16 +1304,8 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
-  MachineOperatorBuilder::Flags flags =
-      MachineOperatorBuilder::kFloat64RoundDown |
-      MachineOperatorBuilder::kFloat64RoundTruncate;
-  if (kArchVariant == kMips64r6) {
-    flags |= MachineOperatorBuilder::kFloat32Max |
-             MachineOperatorBuilder::kFloat32Min |
-             MachineOperatorBuilder::kFloat64Max |
-             MachineOperatorBuilder::kFloat64Min;
-  }
-  return flags;
+  return MachineOperatorBuilder::kFloat64RoundDown |
+         MachineOperatorBuilder::kFloat64RoundTruncate;
 }
 
 }  // namespace compiler

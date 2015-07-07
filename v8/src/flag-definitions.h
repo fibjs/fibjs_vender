@@ -201,16 +201,13 @@ DEFINE_IMPLICATION(es_staging, harmony)
   V(harmony_tostring, "harmony toString")
 
 // Features that are shipping (turned on by default, but internal flag remains).
-#define HARMONY_SHIPPING(V)                                                \
-  V(harmony_arrays, "harmony array methods")                               \
-  V(harmony_arrow_functions, "harmony arrow functions")                    \
-  V(harmony_classes, "harmony classes (implies object literal extension)") \
-  V(harmony_computed_property_names, "harmony computed property names")    \
-  V(harmony_object_literals, "harmony object literal extensions")          \
-  V(harmony_spreadcalls, "harmony spread-calls")                           \
-  V(harmony_spread_arrays, "harmony spread in array literals")             \
-  V(harmony_unicode, "harmony unicode escapes")                            \
-  V(harmony_object, "harmony Object methods")                              \
+#define HARMONY_SHIPPING(V)                                             \
+  V(harmony_arrow_functions, "harmony arrow functions")                 \
+  V(harmony_computed_property_names, "harmony computed property names") \
+  V(harmony_spreadcalls, "harmony spread-calls")                        \
+  V(harmony_spread_arrays, "harmony spread in array literals")          \
+  V(harmony_unicode, "harmony unicode escapes")                         \
+  V(harmony_object, "harmony Object methods")                           \
   V(harmony_rest_parameters, "harmony rest parameters")
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
@@ -238,7 +235,6 @@ HARMONY_SHIPPING(FLAG_SHIPPING_FEATURES)
 
 
 // Feature dependencies.
-DEFINE_IMPLICATION(harmony_classes, harmony_object_literals)
 DEFINE_IMPLICATION(harmony_unicode_regexps, harmony_unicode)
 
 
@@ -430,6 +426,7 @@ DEFINE_BOOL(turbo_stress_loop_peeling, false,
             "stress loop peeling optimization")
 DEFINE_BOOL(turbo_cf_optimization, true, "optimize control flow in TurboFan")
 DEFINE_BOOL(turbo_frame_elision, true, "elide frames in TurboFan")
+DEFINE_BOOL(turbo_cache_shared_code, true, "cache context-independent code")
 
 DEFINE_INT(typed_array_max_size_in_heap, 64,
            "threshold for in-heap typed array")
@@ -617,10 +614,7 @@ DEFINE_BOOL(weak_embedded_maps_in_optimized_code, true,
             "make maps embedded in optimized code weak")
 DEFINE_BOOL(weak_embedded_objects_in_optimized_code, true,
             "make objects embedded in optimized code weak")
-DEFINE_BOOL(flush_code, true,
-            "flush code that we expect not to use again (during full gc)")
-DEFINE_BOOL(flush_code_incrementally, true,
-            "flush code that we expect not to use again (incrementally)")
+DEFINE_BOOL(flush_code, true, "flush code that we expect not to use again")
 DEFINE_BOOL(trace_code_flushing, false, "trace code flushing progress")
 DEFINE_BOOL(age_code, true,
             "track un-executed functions to age code and flush only "
@@ -677,17 +671,14 @@ DEFINE_BOOL(native_code_counters, false,
 DEFINE_BOOL(always_compact, false, "Perform compaction on every full GC")
 DEFINE_BOOL(never_compact, false,
             "Never perform compaction on full GC - testing only")
-DEFINE_BOOL(compact_code_space, true,
-            "Compact code space on full non-incremental collections")
-DEFINE_BOOL(incremental_code_compaction, true,
-            "Compact code space on full incremental collections")
+DEFINE_BOOL(compact_code_space, true, "Compact code space on full collections")
 DEFINE_BOOL(cleanup_code_caches_at_gc, true,
             "Flush inline caches prior to mark compact collection and "
             "flush code caches in maps during mark compact cycle.")
 DEFINE_BOOL(use_marking_progress_bar, true,
             "Use a progress bar to scan large objects in increments when "
             "incremental marking is active.")
-DEFINE_BOOL(zap_code_space, true,
+DEFINE_BOOL(zap_code_space, DEBUG_BOOL,
             "Zap free memory in code space with 0xCC while sweeping.")
 DEFINE_INT(random_seed, 0,
            "Default seed for initializing random generator "

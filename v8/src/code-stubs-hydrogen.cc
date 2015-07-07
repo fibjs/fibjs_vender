@@ -41,16 +41,26 @@ class CodeStubGraphBuilderBase : public HGraphBuilder {
         info_(info),
         descriptor_(info->code_stub()),
         context_(NULL) {
-    int parameter_count = descriptor_.GetEnvironmentParameterCount();
+    int parameter_count = GetParameterCount();
     parameters_.Reset(new HParameter*[parameter_count]);
   }
   virtual bool BuildGraph();
 
  protected:
   virtual HValue* BuildCodeStub() = 0;
+  int GetParameterCount() const {
+    return descriptor_.GetRegisterParameterCount();
+  }
   HParameter* GetParameter(int parameter) {
-    DCHECK(parameter < descriptor_.GetEnvironmentParameterCount());
+    DCHECK(parameter < GetParameterCount());
     return parameters_[parameter];
+  }
+  Representation GetParameterRepresentation(int parameter) {
+    return RepresentationFromType(descriptor_.GetParameterType(parameter));
+  }
+  bool IsParameterCountRegister(int index) const {
+    return descriptor_.GetRegisterParameter(index)
+        .is(descriptor_.stack_parameter_count());
   }
   HValue* GetArgumentsLength() {
     // This is initialized in BuildGraph()
@@ -62,8 +72,7 @@ class CodeStubGraphBuilderBase : public HGraphBuilder {
   HContext* context() { return context_; }
   Isolate* isolate() { return info_->isolate(); }
 
-  HLoadNamedField* BuildLoadNamedField(HValue* object,
-                                       FieldIndex index);
+  HLoadNamedField* BuildLoadNamedField(HValue* object, FieldIndex index);
   void BuildStoreNamedField(HValue* object, HValue* value, FieldIndex index,
                             Representation representation,
                             bool transition_to_field);
@@ -93,6 +102,8 @@ class CodeStubGraphBuilderBase : public HGraphBuilder {
                                          IfBuilder* builder,
                                          HValue* optimized_map,
                                          HValue* map_index);
+  void BuildInstallOptimizedCode(HValue* js_function, HValue* native_context,
+                                 HValue* code_object, HValue* literals);
   void BuildInstallCode(HValue* js_function, HValue* shared_info);
 
   HInstruction* LoadFromOptimizedCodeMap(HValue* optimized_map,
@@ -126,7 +137,7 @@ bool CodeStubGraphBuilderBase::BuildGraph() {
     isolate()->GetHTracer()->TraceCompilation(info());
   }
 
-  int param_count = descriptor_.GetEnvironmentParameterCount();
+  int param_count = GetParameterCount();
   HEnvironment* start_environment = graph()->start_environment();
   HBasicBlock* next_block = CreateBasicBlock(start_environment);
   Goto(next_block);
@@ -136,13 +147,12 @@ bool CodeStubGraphBuilderBase::BuildGraph() {
   bool runtime_stack_params = descriptor_.stack_parameter_count().is_valid();
   HInstruction* stack_parameter_count = NULL;
   for (int i = 0; i < param_count; ++i) {
-    Representation r =
-        RepresentationFromType(descriptor_.GetEnvironmentParameterType(i));
+    Representation r = GetParameterRepresentation(i);
     HParameter* param = Add<HParameter>(i,
                                         HParameter::REGISTER_PARAMETER, r);
     start_environment->Bind(i, param);
     parameters_[i] = param;
-    if (descriptor_.IsEnvironmentParameterCountRegister(i)) {
+    if (IsParameterCountRegister(i)) {
       param->set_type(HType::Smi());
       stack_parameter_count = param;
       arguments_length_ = stack_parameter_count;
@@ -1651,6 +1661,16 @@ void CodeStubGraphBuilderBase::BuildCheckAndInstallOptimizedCode(
   HValue* literals = LoadFromOptimizedCodeMap(optimized_map,
       map_index, SharedFunctionInfo::kLiteralsOffset);
 
+  BuildInstallOptimizedCode(js_function, native_context, code_object, literals);
+
+  // The builder continues in the "then" after this function.
+}
+
+
+void CodeStubGraphBuilderBase::BuildInstallOptimizedCode(HValue* js_function,
+                                                         HValue* native_context,
+                                                         HValue* code_object,
+                                                         HValue* literals) {
   Counters* counters = isolate()->counters();
   AddIncrementCounter(counters->fast_new_closure_install_optimized());
 
@@ -1673,8 +1693,6 @@ void CodeStubGraphBuilderBase::BuildCheckAndInstallOptimizedCode(
   Add<HStoreNamedField>(native_context,
            HObjectAccess::ForContextSlot(Context::OPTIMIZED_FUNCTIONS_LIST),
            js_function);
-
-  // The builder continues in the "then" after this function.
 }
 
 
@@ -1712,6 +1730,7 @@ void CodeStubGraphBuilderBase::BuildInstallFromOptimizedCodeMap(
     HValue* shared_info,
     HValue* native_context) {
   Counters* counters = isolate()->counters();
+  Factory* factory = isolate()->factory();
   IfBuilder is_optimized(this);
   HInstruction* optimized_map = Add<HLoadNamedField>(
       shared_info, nullptr, HObjectAccess::ForOptimizedCodeMap());
@@ -1764,15 +1783,31 @@ void CodeStubGraphBuilderBase::BuildInstallFromOptimizedCodeMap(
       }
       loop_builder.EndBody();
 
-      // If slot_iterator equals first entry index, then we failed to find and
-      // install optimized code
+      // If slot_iterator equals first entry index, then we failed to find a
+      // context-dependent code and try context-independent code next.
       IfBuilder no_optimized_code_check(this);
       no_optimized_code_check.If<HCompareNumericAndBranch>(
           slot_iterator, first_entry_index, Token::EQ);
       no_optimized_code_check.Then();
       {
-        // Store the unoptimized code
-        BuildInstallCode(js_function, shared_info);
+        IfBuilder shared_code_check(this);
+        HValue* shared_code = Add<HLoadNamedField>(
+            optimized_map, nullptr,
+            HObjectAccess::ForOptimizedCodeMapSharedCode());
+        shared_code_check.IfNot<HCompareObjectEqAndBranch>(
+            shared_code, graph()->GetConstantUndefined());
+        shared_code_check.Then();
+        {
+          // Store the context-independent optimized code.
+          HValue* literals = Add<HConstant>(factory->empty_fixed_array());
+          BuildInstallOptimizedCode(js_function, native_context, shared_code,
+                                    literals);
+        }
+        shared_code_check.Else();
+        {
+          // Store the unoptimized code.
+          BuildInstallCode(js_function, shared_info);
+        }
       }
     }
   }
@@ -1898,7 +1933,8 @@ HValue* CodeStubGraphBuilder<LoadDictionaryElementStub>::BuildCodeStub() {
 
   HValue* hash = BuildElementIndexHash(key);
 
-  return BuildUncheckedDictionaryElementLoad(receiver, elements, key, hash);
+  return BuildUncheckedDictionaryElementLoad(receiver, elements, key, hash,
+                                             casted_stub()->language_mode());
 }
 
 
@@ -2012,7 +2048,6 @@ void CodeStubGraphBuilder<KeyedLoadGenericStub>::BuildExternalElementLoad(
 HValue* CodeStubGraphBuilder<KeyedLoadGenericStub>::BuildCodeStub() {
   HValue* receiver = GetParameter(LoadDescriptor::kReceiverIndex);
   HValue* key = GetParameter(LoadDescriptor::kNameIndex);
-
   // Split into a smi/integer case and unique string case.
   HIfContinuation index_name_split_continuation(graph()->CreateBasicBlock(),
                                                 graph()->CreateBasicBlock());
@@ -2056,13 +2091,16 @@ HValue* CodeStubGraphBuilder<KeyedLoadGenericStub>::BuildCodeStub() {
 
       HValue* hash = BuildElementIndexHash(key);
 
-      Push(BuildUncheckedDictionaryElementLoad(receiver, elements, key, hash));
+      Push(BuildUncheckedDictionaryElementLoad(receiver, elements, key, hash,
+                                               casted_stub()->language_mode()));
     }
     kind_if.Else();
 
-    // The SLOPPY_ARGUMENTS_ELEMENTS check generates a "kind_if.Then"
+    // The SLOW_SLOPPY_ARGUMENTS_ELEMENTS check generates a "kind_if.Then"
+    STATIC_ASSERT(FAST_SLOPPY_ARGUMENTS_ELEMENTS <
+                  SLOW_SLOPPY_ARGUMENTS_ELEMENTS);
     BuildElementsKindLimitCheck(&kind_if, bit_field2,
-                                SLOPPY_ARGUMENTS_ELEMENTS);
+                                SLOW_SLOPPY_ARGUMENTS_ELEMENTS);
     // Non-strict elements are not handled.
     Add<HDeoptimize>(Deoptimizer::kNonStrictElementsInKeyedLoadGenericStub,
                      Deoptimizer::EAGER);
@@ -2134,10 +2172,8 @@ HValue* CodeStubGraphBuilder<KeyedLoadGenericStub>::BuildCodeStub() {
 
       hash = AddUncasted<HShr>(hash, Add<HConstant>(Name::kHashShift));
 
-      HValue* value = BuildUncheckedDictionaryElementLoad(receiver,
-                                                          properties,
-                                                          key,
-                                                          hash);
+      HValue* value = BuildUncheckedDictionaryElementLoad(
+          receiver, properties, key, hash, casted_stub()->language_mode());
       Push(value);
     }
     if_dict_properties.Else();
@@ -2215,7 +2251,10 @@ HValue* CodeStubGraphBuilder<KeyedLoadGenericStub>::BuildCodeStub() {
         Add<HPushArguments>(receiver, key);
         Push(Add<HCallRuntime>(
             isolate()->factory()->empty_string(),
-            Runtime::FunctionForId(Runtime::kKeyedGetProperty), 2));
+            Runtime::FunctionForId(is_strong(casted_stub()->language_mode())
+                                       ? Runtime::kKeyedGetPropertyStrong
+                                       : Runtime::kKeyedGetProperty),
+            2));
       }
       inline_or_runtime.End();
     }

@@ -112,7 +112,7 @@ class LCodeGen : public LCodeGenBase {
   void DoDeferredStringCharFromCode(LStringCharFromCode* instr);
   void DoDeferredAllocate(LAllocate* instr);
   void DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
-                                       Label* map_check);
+                                       Label* map_check, Label* bool_load);
   void DoDeferredInstanceMigration(LCheckMaps* instr, Register object);
   void DoDeferredLoadMutableDouble(LLoadFieldByIndex* instr, Register result,
                                    Register object, Register index);
@@ -285,6 +285,8 @@ class LCodeGen : public LCodeGenBase {
 
   template <class T>
   void EmitVectorLoadICRegisters(T* instr);
+  template <class T>
+  void EmitVectorStoreICRegisters(T* instr);
 
   ZoneList<LEnvironment*> deoptimizations_;
   ZoneList<Deoptimizer::JumpTableEntry> jump_table_;

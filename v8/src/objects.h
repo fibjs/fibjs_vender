@@ -1168,7 +1168,8 @@ class Object {
   MUST_USE_RESULT static inline MaybeHandle<Smi> ToSmi(Isolate* isolate,
                                                        Handle<Object> object);
 
-  MUST_USE_RESULT static MaybeHandle<Object> GetProperty(LookupIterator* it);
+  MUST_USE_RESULT static MaybeHandle<Object> GetProperty(
+      LookupIterator* it, LanguageMode language_mode = SLOPPY);
 
   // Implementation of [[Put]], ECMA-262 5th edition, section 8.12.5.
   MUST_USE_RESULT static MaybeHandle<Object> SetProperty(
@@ -1184,10 +1185,15 @@ class Object {
       LookupIterator* it, Handle<Object> value, LanguageMode language_mode,
       StoreFromKeyed store_mode);
 
+  MUST_USE_RESULT static MaybeHandle<Object> ReadAbsentProperty(
+      LookupIterator* it, LanguageMode language_mode);
+  MUST_USE_RESULT static MaybeHandle<Object> ReadAbsentProperty(
+      Isolate* isolate, Handle<Object> receiver, Handle<Object> name,
+      LanguageMode language_mode);
   MUST_USE_RESULT static MaybeHandle<Object> WriteToReadOnlyProperty(
       LookupIterator* it, Handle<Object> value, LanguageMode language_mode);
   MUST_USE_RESULT static MaybeHandle<Object> WriteToReadOnlyProperty(
-      Isolate* isolate, Handle<Object> reciever, Handle<Object> name,
+      Isolate* isolate, Handle<Object> receiver, Handle<Object> name,
       Handle<Object> value, LanguageMode language_mode);
   MUST_USE_RESULT static MaybeHandle<Object> RedefineNonconfigurableProperty(
       Isolate* isolate, Handle<Object> name, Handle<Object> value,
@@ -1198,16 +1204,17 @@ class Object {
       LookupIterator* it, Handle<Object> value, PropertyAttributes attributes,
       LanguageMode language_mode, StoreFromKeyed store_mode);
   MUST_USE_RESULT static inline MaybeHandle<Object> GetPropertyOrElement(
-      Handle<Object> object, Handle<Name> name);
+      Handle<Object> object, Handle<Name> name,
+      LanguageMode language_mode = SLOPPY);
   MUST_USE_RESULT static inline MaybeHandle<Object> GetProperty(
-      Isolate* isolate,
-      Handle<Object> object,
-      const char* key);
+      Isolate* isolate, Handle<Object> object, const char* key,
+      LanguageMode language_mode = SLOPPY);
   MUST_USE_RESULT static inline MaybeHandle<Object> GetProperty(
-      Handle<Object> object, Handle<Name> name);
+      Handle<Object> object, Handle<Name> name,
+      LanguageMode language_mode = SLOPPY);
 
   MUST_USE_RESULT static MaybeHandle<Object> GetPropertyWithAccessor(
-      LookupIterator* it);
+      LookupIterator* it, LanguageMode language_mode);
   MUST_USE_RESULT static MaybeHandle<Object> SetPropertyWithAccessor(
       LookupIterator* it, Handle<Object> value, LanguageMode language_mode);
 
@@ -1220,9 +1227,8 @@ class Object {
       Handle<Object> value);
 
   MUST_USE_RESULT static inline MaybeHandle<Object> GetElement(
-      Isolate* isolate,
-      Handle<Object> object,
-      uint32_t index);
+      Isolate* isolate, Handle<Object> object, uint32_t index,
+      LanguageMode language_mode = SLOPPY);
 
   static inline Handle<Object> GetPrototypeSkipHiddenPrototypes(
       Isolate* isolate, Handle<Object> receiver);
@@ -1681,6 +1687,9 @@ class JSReceiver: public HeapObject {
       Handle<JSReceiver> object, uint32_t index);
 
   // Implementation of [[Delete]], ECMA-262 5th edition, section 8.12.7.
+  MUST_USE_RESULT static MaybeHandle<Object> DeletePropertyOrElement(
+      Handle<JSReceiver> object, Handle<Name> name,
+      LanguageMode language_mode = SLOPPY);
   MUST_USE_RESULT static MaybeHandle<Object> DeleteProperty(
       Handle<JSReceiver> object, Handle<Name> name,
       LanguageMode language_mode = SLOPPY);
@@ -1826,8 +1835,8 @@ class JSObject: public JSReceiver {
   inline bool HasFixedFloat32Elements();
   inline bool HasFixedFloat64Elements();
 
-  bool HasFastArgumentsElements();
-  bool HasDictionaryArgumentsElements();
+  inline bool HasFastArgumentsElements();
+  inline bool HasSlowArgumentsElements();
   inline SeededNumberDictionary* element_dictionary();  // Gets slow elements.
 
   // Requires: HasFastElements().
@@ -3179,6 +3188,7 @@ class StringTable: public HashTable<StringTable,
   // added. The return value is the string found.
   static Handle<String> LookupString(Isolate* isolate, Handle<String> key);
   static Handle<String> LookupKey(Isolate* isolate, HashTableKey* key);
+  static String* LookupKeyIfExists(Isolate* isolate, HashTableKey* key);
 
   // Tries to internalize given string and returns string handle on success
   // or an empty handle otherwise.
@@ -4022,7 +4032,6 @@ class ScopeInfo : public FixedArray {
   // context-allocated.  Otherwise returns a value < 0.
   int ReceiverContextSlotIndex();
 
-  bool block_scope_is_class_scope();
   FunctionKind function_kind();
 
   // Copies all the context locals into an object used to materialize a scope.
@@ -4150,10 +4159,8 @@ class ScopeInfo : public FixedArray {
   class AsmFunctionField : public BitField<bool, AsmModuleField::kNext, 1> {};
   class IsSimpleParameterListField
       : public BitField<bool, AsmFunctionField::kNext, 1> {};
-  class BlockScopeIsClassScopeField
-      : public BitField<bool, IsSimpleParameterListField::kNext, 1> {};
   class FunctionKindField
-      : public BitField<FunctionKind, BlockScopeIsClassScopeField::kNext, 8> {};
+      : public BitField<FunctionKind, IsSimpleParameterListField::kNext, 8> {};
 
   // BitFields representing the encoded information for context locals in the
   // ContextLocalInfoEntries part.
@@ -5701,7 +5708,7 @@ class Map: public HeapObject {
   }
 
   inline bool has_sloppy_arguments_elements() {
-    return elements_kind() == SLOPPY_ARGUMENTS_ELEMENTS;
+    return IsSloppyArgumentsElements(elements_kind());
   }
 
   inline bool has_external_array_elements() {
@@ -5714,11 +5721,6 @@ class Map: public HeapObject {
 
   inline bool has_dictionary_elements() {
     return IsDictionaryElementsKind(elements_kind());
-  }
-
-  inline bool has_slow_elements_kind() {
-    return elements_kind() == DICTIONARY_ELEMENTS
-        || elements_kind() == SLOPPY_ARGUMENTS_ELEMENTS;
   }
 
   static bool IsValidElementsTransition(ElementsKind from_kind,
@@ -6019,7 +6021,8 @@ class Map: public HeapObject {
   static void AppendCallbackDescriptors(Handle<Map> map,
                                         Handle<Object> descriptors);
 
-  static inline int SlackForArraySize(int old_size, int size_limit);
+  static inline int SlackForArraySize(bool is_prototype_map, int old_size,
+                                      int size_limit);
 
   static void EnsureDescriptorSlack(Handle<Map> map, int slack);
 
@@ -6045,7 +6048,8 @@ class Map: public HeapObject {
   // Returns the transitioned map for this map with the most generic
   // elements_kind that's found in |candidates|, or null handle if no match is
   // found at all.
-  Handle<Map> FindTransitionedMap(MapHandleList* candidates);
+  static Handle<Map> FindTransitionedMap(Handle<Map> map,
+                                         MapHandleList* candidates);
 
   bool CanTransition() {
     // Only JSObject and subtypes have map transitions and back pointers.
@@ -6554,7 +6558,7 @@ enum BuiltinFunctionId {
 
 
 // Result of searching in an optimized code map of a SharedFunctionInfo. Note
-// that {code == nullptr} indicates that no entry has been found.
+// that both {code} and {literals} can be NULL to pass search result status.
 struct CodeAndLiterals {
   Code* code;            // Cached optimized code.
   FixedArray* literals;  // Cached literals array.
@@ -6577,7 +6581,8 @@ class SharedFunctionInfo: public HeapObject {
   DECL_ACCESSORS(optimized_code_map, Object)
 
   // Returns entry from optimized code map for specified context and OSR entry.
-  // Note that {code == nullptr} indicates no matching entry has been found.
+  // Note that {code == nullptr} indicates no matching entry has been found,
+  // whereas {literals == nullptr} indicates the code is context-independent.
   CodeAndLiterals SearchOptimizedCodeMap(Context* native_context,
                                          BailoutId osr_ast_id);
 
@@ -6587,20 +6592,14 @@ class SharedFunctionInfo: public HeapObject {
   // Removed a specific optimized code object from the optimized code map.
   void EvictFromOptimizedCodeMap(Code* optimized_code, const char* reason);
 
-  // Unconditionally clear the type feedback vector (including vector ICs).
-  void ClearTypeFeedbackInfo();
-
-  // Clear the type feedback vector with a more subtle policy at GC time.
-  void ClearTypeFeedbackInfoAtGCTime();
-
   // Trims the optimized code map after entries have been removed.
   void TrimOptimizedCodeMap(int shrink_by);
 
-  // Initialize a SharedFunctionInfo from a parsed function literal.
-  static void InitFromFunctionLiteral(Handle<SharedFunctionInfo> shared_info,
-                                      FunctionLiteral* lit);
+  // Add a new entry to the optimized code map for context-independent code.
+  static void AddSharedCodeToOptimizedCodeMap(Handle<SharedFunctionInfo> shared,
+                                              Handle<Code> code);
 
-  // Add a new entry to the optimized code map.
+  // Add a new entry to the optimized code map for context-dependent code.
   static void AddToOptimizedCodeMap(Handle<SharedFunctionInfo> shared,
                                     Handle<Context> native_context,
                                     Handle<Code> code,
@@ -6614,7 +6613,8 @@ class SharedFunctionInfo: public HeapObject {
 
   // Layout description of the optimized code map.
   static const int kNextMapIndex = 0;
-  static const int kEntriesStart = 1;
+  static const int kSharedCodeIndex = 1;
+  static const int kEntriesStart = 2;
   static const int kContextOffset = 0;
   static const int kCachedCodeOffset = 1;
   static const int kLiteralsOffset = 2;
@@ -6654,6 +6654,12 @@ class SharedFunctionInfo: public HeapObject {
   // (increasingly) from crankshafted code where sufficient feedback isn't
   // available.
   DECL_ACCESSORS(feedback_vector, TypeFeedbackVector)
+
+  // Unconditionally clear the type feedback vector (including vector ICs).
+  void ClearTypeFeedbackInfo();
+
+  // Clear the type feedback vector with a more subtle policy at GC time.
+  void ClearTypeFeedbackInfoAtGCTime();
 
 #if TRACE_MAPS
   // [unique_id] - For --trace-maps purposes, an identifier that's persistent
@@ -6896,6 +6902,10 @@ class SharedFunctionInfo: public HeapObject {
   int CalculateInObjectProperties();
 
   inline bool is_simple_parameter_list();
+
+  // Initialize a SharedFunctionInfo from a parsed function literal.
+  static void InitFromFunctionLiteral(Handle<SharedFunctionInfo> shared_info,
+                                      FunctionLiteral* lit);
 
   // Dispatched behavior.
   DECLARE_PRINTER(SharedFunctionInfo)
@@ -7276,6 +7286,9 @@ class JSFunction: public JSObject {
 
   // Tells whether this function is defined in an extension script.
   inline bool IsFromExtensionScript();
+
+  // Tells whether this function should be subject to debugging.
+  inline bool IsSubjectToDebugging();
 
   // Tells whether or not the function needs arguments adaption.
   inline bool NeedsArgumentsAdaption();
@@ -10142,6 +10155,7 @@ class JSArray: public JSObject {
 
   // If the JSArray has fast elements, and new_length would result in
   // normalization, returns true.
+  bool SetLengthWouldNormalize(uint32_t new_length);
   static inline bool SetLengthWouldNormalize(Heap* heap, uint32_t new_length);
 
   // Initializes the array to a certain length.
@@ -10439,13 +10453,16 @@ class CallHandlerInfo: public Struct {
 class TemplateInfo: public Struct {
  public:
   DECL_ACCESSORS(tag, Object)
+  inline int number_of_properties() const;
+  inline void set_number_of_properties(int value);
   DECL_ACCESSORS(property_list, Object)
   DECL_ACCESSORS(property_accessors, Object)
 
   DECLARE_VERIFIER(TemplateInfo)
 
   static const int kTagOffset = HeapObject::kHeaderSize;
-  static const int kPropertyListOffset = kTagOffset + kPointerSize;
+  static const int kNumberOfProperties = kTagOffset + kPointerSize;
+  static const int kPropertyListOffset = kNumberOfProperties + kPointerSize;
   static const int kPropertyAccessorsOffset =
       kPropertyListOffset + kPointerSize;
   static const int kHeaderSize = kPropertyAccessorsOffset + kPointerSize;

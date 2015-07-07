@@ -147,6 +147,9 @@
     <ClInclude Include="src\assert-scope.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ast-literal-reindexer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\ast-numbering.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -358,6 +361,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\change-lowering.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\coalesced-live-ranges.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\code-generator-impl.h">
@@ -757,6 +763,9 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\mark-compact.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\memory-reducer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\objects-visiting-inl.h">
@@ -1361,6 +1370,9 @@
     <ClCompile Include="src\assert-scope.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ast-literal-reindexer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\ast-numbering.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1512,6 +1524,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\change-lowering.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\coalesced-live-ranges.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\code-generator.cc">
@@ -1863,6 +1878,9 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\mark-compact.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\memory-reducer.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\objects-visiting.cc">

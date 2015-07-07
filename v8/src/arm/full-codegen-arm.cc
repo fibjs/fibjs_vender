@@ -247,6 +247,10 @@ void FullCodeGenerator::Generate() {
   Variable* this_function_var = scope()->this_function_var();
   if (this_function_var != nullptr) {
     Comment cmnt(masm_, "[ This function");
+    if (!function_in_register) {
+      __ ldr(r1, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+      // The write barrier clobbers register again, keep is marked as such.
+    }
     SetVar(this_function_var, r1, r0, r2);
   }
 
@@ -2248,7 +2252,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       __ ldr(load_name, MemOperand(sp, 2 * kPointerSize));
       __ mov(LoadDescriptor::SlotRegister(),
              Operand(SmiFromSlot(expr->KeyedLoadFeedbackSlot())));
-      Handle<Code> ic = CodeFactory::KeyedLoadIC(isolate()).code();
+      Handle<Code> ic = CodeFactory::KeyedLoadIC(isolate(), SLOPPY).code();
       CallIC(ic, TypeFeedbackId::None());
       __ mov(r1, r0);
       __ str(r1, MemOperand(sp, 2 * kPointerSize));
@@ -2429,7 +2433,7 @@ void FullCodeGenerator::EmitNamedPropertyLoad(Property* prop) {
   __ mov(LoadDescriptor::NameRegister(), Operand(key->value()));
   __ mov(LoadDescriptor::SlotRegister(),
          Operand(SmiFromSlot(prop->PropertyFeedbackSlot())));
-  CallLoadIC(NOT_CONTEXTUAL);
+  CallLoadIC(NOT_CONTEXTUAL, language_mode());
 }
 
 
@@ -2441,13 +2445,14 @@ void FullCodeGenerator::EmitNamedSuperPropertyLoad(Property* prop) {
   DCHECK(prop->IsSuperAccess());
 
   __ Push(key->value());
-  __ CallRuntime(Runtime::kLoadFromSuper, 3);
+  __ Push(Smi::FromInt(language_mode()));
+  __ CallRuntime(Runtime::kLoadFromSuper, 4);
 }
 
 
 void FullCodeGenerator::EmitKeyedPropertyLoad(Property* prop) {
   SetSourcePosition(prop->position());
-  Handle<Code> ic = CodeFactory::KeyedLoadIC(isolate()).code();
+  Handle<Code> ic = CodeFactory::KeyedLoadIC(isolate(), language_mode()).code();
   __ mov(LoadDescriptor::SlotRegister(),
          Operand(SmiFromSlot(prop->PropertyFeedbackSlot())));
   CallIC(ic);
@@ -2456,9 +2461,10 @@ void FullCodeGenerator::EmitKeyedPropertyLoad(Property* prop) {
 
 void FullCodeGenerator::EmitKeyedSuperPropertyLoad(Property* prop) {
   // Stack: receiver, home_object, key.
+  __ Push(Smi::FromInt(language_mode()));
   SetSourcePosition(prop->position());
 
-  __ CallRuntime(Runtime::kLoadKeyedFromSuper, 3);
+  __ CallRuntime(Runtime::kLoadKeyedFromSuper, 4);
 }
 
 
@@ -2997,6 +3003,7 @@ void FullCodeGenerator::EmitSuperCallWithLoadIC(Call* expr) {
   __ ldr(scratch, MemOperand(sp, kPointerSize * 2));
   __ Push(scratch);
   __ Push(key->value());
+  __ Push(Smi::FromInt(language_mode()));
 
   // Stack here:
   //  - home_object
@@ -3004,7 +3011,8 @@ void FullCodeGenerator::EmitSuperCallWithLoadIC(Call* expr) {
   //  - this (receiver) <-- LoadFromSuper will pop here and below.
   //  - home_object
   //  - key
-  __ CallRuntime(Runtime::kLoadFromSuper, 3);
+  //  - language_mode
+  __ CallRuntime(Runtime::kLoadFromSuper, 4);
 
   // Replace home_object with target function.
   __ str(r0, MemOperand(sp, kPointerSize));
@@ -3057,6 +3065,7 @@ void FullCodeGenerator::EmitKeyedSuperCallWithLoadIC(Call* expr) {
   __ ldr(scratch, MemOperand(sp, kPointerSize * 2));
   __ Push(scratch);
   VisitForStackValue(prop->key());
+  __ Push(Smi::FromInt(language_mode()));
 
   // Stack here:
   //  - home_object
@@ -3064,7 +3073,8 @@ void FullCodeGenerator::EmitKeyedSuperCallWithLoadIC(Call* expr) {
   //  - this (receiver) <-- LoadKeyedFromSuper will pop here and below.
   //  - home_object
   //  - key
-  __ CallRuntime(Runtime::kLoadKeyedFromSuper, 3);
+  //  - language_mode
+  __ CallRuntime(Runtime::kLoadKeyedFromSuper, 4);
 
   // Replace home_object with target function.
   __ str(r0, MemOperand(sp, kPointerSize));
@@ -4752,6 +4762,7 @@ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
       VisitForStackValue(args->at(i));
     }
 
+    PrepareForBailoutForId(expr->CallId(), NO_REGISTERS);
     EmitCallJSRuntimeFunction(expr);
 
     // Restore context register.
@@ -4777,6 +4788,7 @@ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
         }
 
         // Call the C runtime function.
+        PrepareForBailoutForId(expr->CallId(), NO_REGISTERS);
         __ CallRuntime(expr->function(), arg_count);
         context()->Plug(r0);
       }
@@ -5022,9 +5034,11 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
     __ jmp(&stub_call);
     __ bind(&slow);
   }
-  ToNumberStub convert_stub(isolate());
-  __ CallStub(&convert_stub);
-  PrepareForBailoutForId(expr->ToNumberId(), TOS_REG);
+  if (!is_strong(language_mode())) {
+    ToNumberStub convert_stub(isolate());
+    __ CallStub(&convert_stub);
+    PrepareForBailoutForId(expr->ToNumberId(), TOS_REG);
+  }
 
   // Save result for postfix expressions.
   if (expr->is_postfix()) {
@@ -5066,6 +5080,9 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
   patch_site.EmitPatchInfo();
   __ bind(&done);
 
+  if (is_strong(language_mode())) {
+    PrepareForBailoutForId(expr->ToNumberId(), TOS_REG);
+  }
   // Store the value returned in r0.
   switch (assign_type) {
     case VARIABLE:
