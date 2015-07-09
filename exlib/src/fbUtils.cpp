@@ -15,15 +15,15 @@
 namespace exlib
 {
 
-void *_CompareAndSwap(void *volatile *Destination, void *Exchange, void *Comparand)
+void *_CompareAndSwap(void *volatile *ptr, void *old_value, void *new_value)
 {
-	return InterlockedCompareExchangePointer(Destination, Exchange, Comparand);
+	return InterlockedCompareExchangePointer(ptr, new_value, old_value);
 }
 
 #ifdef x64
-atomic_t CompareAndSwap(volatile atomic_t *Destination, atomic_t old_value, atomic_t new_value)
+atomic_t CompareAndSwap(volatile atomic_t *ptr, atomic_t old_value, atomic_t new_value)
 {
-	return InterlockedCompareExchange64((LONGLONG *)Destination, new_value, old_value);
+	return InterlockedCompareExchange64((LONGLONG *)ptr, new_value, old_value);
 }
 
 atomic_t atom_add(volatile atomic_t *dest, atomic_t incr)
@@ -46,9 +46,9 @@ atomic_t atom_xchg(volatile atomic_t *ptr, atomic_t new_value)
 	return InterlockedExchange64((LONGLONG *)ptr, new_value);
 }
 #else
-atomic_t CompareAndSwap(volatile atomic_t *Destination, atomic_t old_value, atomic_t new_value)
+atomic_t CompareAndSwap(volatile atomic_t *ptr, atomic_t old_value, atomic_t new_value)
 {
-	return InterlockedCompareExchange((LONG *)Destination, new_value, old_value);
+	return InterlockedCompareExchange((LONG *)ptr, new_value, old_value);
 }
 
 atomic_t atom_add(volatile atomic_t *dest, atomic_t incr)

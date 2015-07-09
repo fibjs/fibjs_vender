@@ -31,12 +31,12 @@ inline void MemoryBarrier()
 
 atomic_t CompareAndSwap(volatile atomic_t *ptr, atomic_t old_value, atomic_t new_value);
 
-void *_CompareAndSwap(void *volatile *Destination, void *Exchange, void *Comparand);
+void *_CompareAndSwap(void *volatile *ptr, void *old_value, void *new_value);
 
 template<typename T>
 inline T *CompareAndSwap(T *volatile *ptr, T *old_value, T *new_value)
 {
-    void *result = _CompareAndSwap((void *volatile *)ptr, (void *)new_value, (void *)old_value);
+    void *result = _CompareAndSwap((void *volatile *)ptr, (void *)old_value, (void *)new_value);
     return (T *)result;
 }
 
