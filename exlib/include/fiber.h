@@ -10,16 +10,17 @@
 #define _ex_fiber_h__
 
 #include "osconfig.h"
+#include <stdint.h>
 #include "event.h"
 
 namespace exlib
 {
 
+typedef intptr_t reg_type;
+
 #pragma pack (1)
 
 #if defined(x64)
-
-typedef unsigned long long reg_type;
 
 typedef struct
 {
@@ -39,9 +40,7 @@ typedef struct
 
 #elif defined(I386)
 
-typedef unsigned long reg_type;
-
-typedef struct __JUMP_BUFFER
+typedef struct
 {
     reg_type Ebp;
     reg_type Ebx;
@@ -55,9 +54,7 @@ typedef struct __JUMP_BUFFER
 
 #elif defined(arm)
 
-typedef unsigned long reg_type;
-
-typedef struct __JUMP_BUFFER
+typedef struct
 {
     reg_type r0;
     reg_type r1;
