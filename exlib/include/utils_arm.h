@@ -9,7 +9,6 @@
 namespace exlib
 {
 
-typedef long atomic_t;
 typedef void (*LinuxKernelMemoryBarrierFunc)(void);
 inline void MemoryBarrier()
 {

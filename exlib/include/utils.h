@@ -13,6 +13,11 @@
 #include <assert.h>
 #include "osconfig.h"
 
+namespace exlib
+{
+typedef intptr_t atomic_t;
+}
+
 #ifdef WIN32
 #include "utils_win.h"
 #elif defined(x64)

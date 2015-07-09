@@ -13,7 +13,6 @@
 namespace exlib
 {
 
-typedef long long atomic_t;
 #if defined(MacOS)
 inline void MemoryBarrier()
 {

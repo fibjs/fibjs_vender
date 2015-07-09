@@ -12,13 +12,11 @@ namespace exlib
 {
 
 #ifdef x64
-typedef LONGLONG atomic_t;
 inline void MemoryBarrier()
 {
     ::__faststorefence();
 }
 #else
-typedef LONG atomic_t;
 inline void MemoryBarrier()
 {
     LONG Barrier;
