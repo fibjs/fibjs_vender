@@ -112,6 +112,34 @@ public:
         return pNow;
     }
 
+    void remove(T* pThis)
+    {
+        T *p1, *p2;
+
+        assert(pThis->m_next != 0 || pThis->m_prev != 0);
+
+        p1 = pThis->m_next;
+        p2 = pThis->m_prev;
+
+        if (p1) {
+            p1->m_prev = p2;
+            pThis->m_next = 0;
+        }
+
+        if (p2) {
+            p2->m_next = p1;
+            pThis->m_prev = 0;
+        }
+
+        if (m_first == pThis)
+            m_first = p1;
+
+        if (m_last == pThis)
+            m_last = p2;
+
+        m_count --;
+    }
+
     bool empty() const
     {
         return m_count == 0;
