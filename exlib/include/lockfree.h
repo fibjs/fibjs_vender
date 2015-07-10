@@ -14,6 +14,7 @@
 #endif
 
 #include "utils.h"
+#include "list.h"
 
 namespace exlib
 {
@@ -44,25 +45,19 @@ template<typename T>
 class lockfree
 {
 public:
-    lockfree() :
-        m_first(0)
+    lockfree()
     {
     }
 
     bool empty()
     {
-        return m_first == 0;
+        return m_link.empty();
     }
 
     void put(T *o)
     {
-        assert(o->m_next == NULL);
-
         m_lock.lock();
-
-        o->m_next = m_first;
-        m_first = o;
-
+        m_link.putTail(o);
         m_lock.unlock();
     }
 
@@ -71,32 +66,16 @@ public:
         T *p;
 
         m_lock.lock();
-
-        p = m_first;
-        if (p)
-        {
-            m_first = (T *)p->m_next;
-            p->m_next = 0;
-
-            assert(p != m_first);
-        }
-
+        p = m_link.getHead();
         m_lock.unlock();
         return p;
     }
 
-    T *getList()
+    void getList(List<T> &link)
     {
-        T *p;
-
         m_lock.lock();
-
-        p = m_first;
-        m_first = 0;
-
-
+        m_link.getList(link);
         m_lock.unlock();
-        return p;
     }
 
     T *wait()
@@ -140,7 +119,7 @@ private:
     }
 
 private:
-    T *volatile  m_first;
+    List<T> m_link;
     spinlock m_lock;
 };
 
