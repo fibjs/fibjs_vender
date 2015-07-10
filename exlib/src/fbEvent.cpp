@@ -18,7 +18,7 @@ void Event::wait()
 
         if (pService)
         {
-            m_blocks.put(pService->m_running);
+            m_blocks.putTail(pService->m_running);
             pService->switchtonext();
         }
     }
@@ -30,7 +30,7 @@ void Event::pulse()
 
     if (pService)
         while (!m_blocks.empty())
-            pService->m_resume.put(m_blocks.get());
+            pService->m_resume.putTail(m_blocks.getHead());
 }
 
 void Event::set()

@@ -26,7 +26,7 @@ void Locker::lock()
 
         if (m_locker && current != m_locker)
         {
-            m_blocks.put(current);
+            m_blocks.putTail(current);
             pService->switchtonext();
         }
         else if (++m_count == 1)
@@ -73,8 +73,8 @@ void Locker::unlock()
                 else
                 {
                     m_count++;
-                    m_locker = m_blocks.get();
-                    pService->m_resume.put(m_locker);
+                    m_locker = m_blocks.getHead();
+                    pService->m_resume.putTail(m_locker);
                 }
             }
         }

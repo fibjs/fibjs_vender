@@ -144,7 +144,7 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
     fb->m_cntxt.r1 = (unsigned long) data;
 #endif
 
-    Service::root->m_resume.put(fb);
+    Service::root->m_resume.putTail(fb);
 
     fb->Ref();
     fb->Ref();
@@ -161,7 +161,7 @@ void Service::switchtonext()
         {
             Fiber *old = m_running;
 
-            m_running = m_resume.get();
+            m_running = m_resume.getHead();
 
             if (old != m_running)
                 fb_switch(&old->m_cntxt, &m_running->m_cntxt);
@@ -198,7 +198,7 @@ void Service::switchtonext()
         // if we still have time, weakup yield fiber.
         while (1)
         {
-            AsyncEvent *p = m_yieldList.get();
+            AsyncEvent *p = m_yieldList.getHead();
             if (p == NULL)
                 break;
 
@@ -216,7 +216,7 @@ void Service::switchtonext()
 void Service::yield()
 {
     AsyncEvent ae;
-    m_yieldList.put(&ae);
+    m_yieldList.putTail(&ae);
     ae.wait();
 }
 

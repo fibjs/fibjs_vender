@@ -19,7 +19,7 @@ void CondVar::wait(Locker &l)
     {
         l.unlock();
 
-        m_blocks.put(pService->m_running);
+        m_blocks.putTail(pService->m_running);
         pService->switchtonext();
 
         l.lock();
@@ -33,7 +33,7 @@ void CondVar::notify_one()
         Service *pService = Service::getFiberService();
 
         if (pService)
-            pService->m_resume.put(m_blocks.get());
+            pService->m_resume.putTail(m_blocks.getHead());
     }
 }
 
@@ -45,7 +45,7 @@ void CondVar::notify_all()
 
         if (pService)
             while (!m_blocks.empty())
-                pService->m_resume.put(m_blocks.get());
+                pService->m_resume.putTail(m_blocks.getHead());
     }
 }
 

@@ -9,6 +9,7 @@
 #ifndef _ex_event_h__
 #define _ex_event_h__
 
+#include <assert.h>
 #include "osconfig.h"
 
 namespace exlib
@@ -17,12 +18,13 @@ namespace exlib
 class linkitem
 {
 public:
-    linkitem() : m_next(0)
+    linkitem() : m_next(0), m_prev(0)
     {
     }
 
 public:
     linkitem *m_next;
+    linkitem *m_prev;
 };
 
 template<class T>
@@ -34,10 +36,32 @@ public:
     {
     }
 
-    void put(T *pNew)
+    void putHead(T *pNew)
     {
-        if (m_last)
+        assert(pNew->m_next == 0);
+        assert(pNew->m_prev == 0);
+
+        if (m_first) {
+            m_first->m_prev = pNew;
+            pNew->m_next = m_first;
+        }
+        else
+            m_last = pNew;
+
+        m_first = pNew;
+
+        m_count++;
+    }
+
+    void putTail(T *pNew)
+    {
+        assert(pNew->m_next == 0);
+        assert(pNew->m_prev == 0);
+
+        if (m_last) {
             m_last->m_next = pNew;
+            pNew->m_prev = m_last;
+        }
         else
             m_first = pNew;
 
@@ -46,17 +70,41 @@ public:
         m_count++;
     }
 
-    T *get()
+    T *getHead()
     {
         T *pNow = m_first;
 
         if (pNow)
         {
             m_first = (T *)pNow->m_next;
-            if (m_first == 0)
+            if (m_first) {
+                assert(m_first->m_prev == pNow);
+
+                m_first->m_prev = 0;
+                pNow->m_next = 0;
+            } else
                 m_last = 0;
 
-            pNow->m_next = 0;
+            m_count--;
+        }
+
+        return pNow;
+    }
+
+    T *getTail()
+    {
+        T *pNow = m_last;
+
+        if (pNow)
+        {
+            m_last = (T *)pNow->m_prev;
+            if (m_last) {
+                assert(m_last->m_next == pNow);
+
+                m_last->m_next = 0;
+                pNow->m_prev = 0;
+            } else
+                m_first = 0;
 
             m_count--;
         }
@@ -190,21 +238,21 @@ class Queue
 public:
     void put(T *pNew)
     {
-        m_list.put(pNew);
+        m_list.putTail(pNew);
         m_sem.post();
     }
 
     T *get()
     {
         m_sem.wait();
-        return m_list.get();
+        return m_list.getHead();
     }
 
     T *tryget()
     {
         if (!m_sem.trywait())
             return 0;
-        return m_list.get();
+        return m_list.getHead();
     }
 
     bool empty() const
