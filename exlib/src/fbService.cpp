@@ -89,6 +89,7 @@ Service::Service()
     m_recycle = NULL;
     m_running = &m_main;
     m_Idle = NULL;
+    m_InterCallback = NULL;
     memset(&m_main, 0, sizeof(m_main));
     memset(&m_tls, 0, sizeof(m_tls));
 
@@ -149,10 +150,56 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
     return fb;
 }
 
+void Service::doInterrupt()
+{
+    IDLE_PROC proc = m_InterCallback;
+
+    if (proc)
+    {
+        atom_xchg(&m_InterCallback, (IDLE_PROC)NULL);
+        proc();
+    }
+}
+
+void Service::waitEvent()
+{
+    int nCount = 0;
+    int time_0 = 0;
+    int time_1 = time_0 + 2000;
+    int time_2 = time_1 + 200;
+    int time_3 = time_2 + 20;
+    AsyncEvent* pEvent;
+
+    while (1)
+    {
+        doInterrupt();
+
+        if (nCount < 2000000)
+            nCount++;
+
+        pEvent = m_aEvents.get();
+        if (pEvent != 0)
+            break;
+
+        if (nCount > time_3)
+            OSThread::Sleep(100);
+        else if (nCount > time_2)
+            OSThread::Sleep(10);
+        else if (nCount > time_1)
+            OSThread::Sleep(1);
+        else if (nCount > time_0)
+            OSThread::Sleep(0);
+    }
+
+    pEvent->callback();
+}
+
 void Service::switchtonext()
 {
     while (1)
     {
+        doInterrupt();
+
         // First switch if we have work to do.
         if (!m_resume.empty())
         {
@@ -207,7 +254,7 @@ void Service::switchtonext()
             continue;
 
         // still no work, we wait, and wait, and wait.....
-        m_aEvents.wait()->callback();
+        waitEvent();
     }
 }
 

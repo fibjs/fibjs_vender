@@ -28,12 +28,21 @@ public:
     static Service *getFiberService();
     static bool hasService();
 
+    void RequestInterrupt(IDLE_PROC proc)
+    {
+        atom_xchg(&m_InterCallback, proc);
+    }
+
     IDLE_PROC onIdle(IDLE_PROC proc)
     {
         IDLE_PROC p = m_Idle;
         m_Idle = proc;
         return p;
     }
+
+private:
+    void waitEvent();
+    void doInterrupt();
 
 public:
     Fiber m_main;
@@ -46,6 +55,7 @@ public:
     List<AsyncEvent> m_yieldList;
 
     IDLE_PROC m_Idle;
+    IDLE_PROC m_InterCallback;
 
     static Service *root;
 };
