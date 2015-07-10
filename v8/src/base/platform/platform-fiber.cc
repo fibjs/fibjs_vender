@@ -87,6 +87,7 @@ void Thread::set_name(const char *name)
 void Thread::Start()
 {
     data_->thread_ = exlib::Fiber::Create(ThreadEntry, this);
+    data_->thread_->set_name(name_);
 }
 
 void Thread::Join()

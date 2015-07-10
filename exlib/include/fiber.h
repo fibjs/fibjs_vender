@@ -11,6 +11,7 @@
 
 #include "osconfig.h"
 #include <stdint.h>
+#include <string.h>
 #include "event.h"
 
 namespace exlib
@@ -139,6 +140,12 @@ public:
         m_joins.wait();
     }
 
+    void set_name(const char *name)
+    {
+        strncpy(name_, name, sizeof(name_));
+        name_[sizeof(name_) - 1] = '\0';
+    }
+
 public:
     static void sleep(int ms);
     static void yield();
@@ -160,6 +167,7 @@ public:
     linkitem m_link;
     Event m_joins;
     void *m_tls[TLS_SIZE];
+    char name_[16];
 };
 
 }

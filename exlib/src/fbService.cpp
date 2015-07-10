@@ -92,6 +92,7 @@ Service::Service()
     memset(&m_main, 0, sizeof(m_main));
     memset(&m_tls, 0, sizeof(m_tls));
 
+    m_main.set_name("main");
     m_fibers.putTail(&m_main.m_link);
 }
 
