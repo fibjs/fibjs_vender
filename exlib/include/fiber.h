@@ -157,6 +157,7 @@ private:
 public:
     reg_type refs_;
     context m_cntxt;
+    linkitem m_link;
     Event m_joins;
     void *m_tls[TLS_SIZE];
 };

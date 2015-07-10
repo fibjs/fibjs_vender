@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "osconfig.h"
 #include "service.h"
@@ -90,6 +91,8 @@ Service::Service()
     m_Idle = NULL;
     memset(&m_main, 0, sizeof(m_main));
     memset(&m_tls, 0, sizeof(m_tls));
+
+    m_fibers.putTail(&m_main.m_link);
 }
 
 static void fiber_proc(void *(*func)(void *), void *data)
@@ -145,6 +148,7 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
 #endif
 
     Service::root->m_resume.putTail(fb);
+    Service::root->m_fibers.putTail(&fb->m_link);
 
     fb->Ref();
     fb->Ref();
@@ -168,6 +172,8 @@ void Service::switchtonext()
 
             if (m_recycle)
             {
+                m_fibers.remove(&m_recycle->m_link);
+                puts("---------------------------------------");
                 m_recycle->m_joins.set();
                 m_recycle->Unref();
                 m_recycle = NULL;

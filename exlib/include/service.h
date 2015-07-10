@@ -37,6 +37,7 @@ public:
 
 public:
     Fiber m_main;
+    List<linkitem> m_fibers;
     Fiber *m_running;
     Fiber *m_recycle;
     char m_tls[TLS_SIZE];
