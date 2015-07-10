@@ -121,31 +121,23 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
 
     memset(fb, 0, sizeof(Fiber));
 
+    fb->m_cntxt.ip = (reg_type) fiber_proc;
+    fb->m_cntxt.sp = (reg_type) stack;
+
 #if defined(x64)
-    fb->m_cntxt.Rip = (unsigned long long) fiber_proc;
-    fb->m_cntxt.Rsp = (unsigned long long) stack;
-
 #ifdef _WIN32
-    fb->m_cntxt.Rcx = (unsigned long long) func;
-    fb->m_cntxt.Rdx = (unsigned long long) data;
+    fb->m_cntxt.Rcx = (reg_type) func;
+    fb->m_cntxt.Rdx = (reg_type) data;
 #else
-    fb->m_cntxt.Rdi = (unsigned long long) func;
-    fb->m_cntxt.Rsi = (unsigned long long) data;
+    fb->m_cntxt.Rdi = (reg_type) func;
+    fb->m_cntxt.Rsi = (reg_type) data;
 #endif
-
 #elif defined(I386)
-    fb->m_cntxt.Eip = (unsigned long) fiber_proc;
-    fb->m_cntxt.Esp = (unsigned long) stack;
-
     stack[1] = (void *)func;
     stack[2] = data;
-
 #elif defined(arm)
-    fb->m_cntxt.r14 = (unsigned long) fiber_proc;
-    fb->m_cntxt.r13 = (unsigned long) stack;
-
-    fb->m_cntxt.r0 = (unsigned long) func;
-    fb->m_cntxt.r1 = (unsigned long) data;
+    fb->m_cntxt.r0 = (reg_type) func;
+    fb->m_cntxt.r1 = (reg_type) data;
 #endif
 
     Service::root->m_resume.putTail(fb);

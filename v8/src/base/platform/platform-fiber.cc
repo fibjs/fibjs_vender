@@ -30,15 +30,9 @@ void Sampler::DoSample()
     exlib::Fiber *pFiber = exlib::Fiber::Current();
     RegisterState state;
 
-#if defined(x64)
-    state.pc = reinterpret_cast<Address>(pFiber->m_cntxt.Rip);
-    state.sp = reinterpret_cast<Address>(pFiber->m_cntxt.Rsp);
-    state.fp = reinterpret_cast<Address>(pFiber->m_cntxt.Rbp);
-#elif defined(x86)
-    state.pc = reinterpret_cast<Address>(pFiber->m_cntxt.Eip);
-    state.sp = reinterpret_cast<Address>(pFiber->m_cntxt.Esp);
-    state.fp = reinterpret_cast<Address>(pFiber->m_cntxt.Ebp);
-#endif
+    state.pc = reinterpret_cast<Address>(pFiber->m_cntxt.ip);
+    state.sp = reinterpret_cast<Address>(pFiber->m_cntxt.sp);
+    state.fp = reinterpret_cast<Address>(pFiber->m_cntxt.fp);
 
     SampleStack(state);
 }

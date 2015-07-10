@@ -25,7 +25,10 @@ typedef intptr_t reg_type;
 
 typedef struct
 {
-    reg_type Rbp;
+    union {
+        reg_type Rbp;
+        reg_type fp;
+    };
     reg_type Rbx;
     reg_type Rcx;
     reg_type Rdx;
@@ -35,22 +38,37 @@ typedef struct
     reg_type R13;
     reg_type R14;
     reg_type R15;
-    reg_type Rsp;
-    reg_type Rip;
+    union {
+        reg_type Rsp;
+        reg_type sp;
+    };
+    union {
+        reg_type Rip;
+        reg_type ip;
+    };
 } context;
 
 #elif defined(I386)
 
 typedef struct
 {
-    reg_type Ebp;
+    union {
+        reg_type Ebp;
+        reg_type fp;
+    };
     reg_type Ebx;
     reg_type Ecx;
     reg_type Edx;
     reg_type Esi;
     reg_type Edi;
-    reg_type Esp;
-    reg_type Eip;
+    union {
+        reg_type Esp;
+        reg_type sp;
+    };
+    union {
+        reg_type Eip;
+        reg_type ip;
+    };
 } context;
 
 #elif defined(arm)
@@ -64,14 +82,34 @@ typedef struct
     reg_type r4;
     reg_type r5;
     reg_type r6;
+#ifdef __thumb2__
+    union {
+        reg_type r7;
+        reg_type fp;
+    };
+#else
     reg_type r7;
+#endif
     reg_type r8;
     reg_type r9;
     reg_type r10;
+#ifndef __thumb2__
+    union {
+        reg_type r11;
+        reg_type fp;
+    };
+#else
     reg_type r11;
+#endif
     reg_type r12;
-    reg_type r13;
-    reg_type r14;
+    union {
+        reg_type r13;
+        reg_type sp;
+    };
+    union {
+        reg_type r14;
+        reg_type ip;
+    };
 } context;
 
 #endif
