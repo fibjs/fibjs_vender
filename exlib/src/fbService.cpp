@@ -173,7 +173,6 @@ void Service::switchtonext()
             if (m_recycle)
             {
                 m_fibers.remove(&m_recycle->m_link);
-                puts("---------------------------------------");
                 m_recycle->m_joins.set();
                 m_recycle->Unref();
                 m_recycle = NULL;
