@@ -184,9 +184,13 @@ public:
         name_[sizeof(name_) - 1] = '\0';
     }
 
+    const char* name()
+    {
+        return name_;
+    }
+
 public:
     static void sleep(int ms);
-    static void yield();
     static Fiber *Current();
     static Fiber *Create(void *(*func)(void *), void *data = 0,
                          int stacksize = FIBER_STACK_SIZE);
@@ -202,7 +206,6 @@ private:
 public:
     reg_type refs_;
     context m_cntxt;
-    linkitem m_link;
     Event m_joins;
     void *m_tls[TLS_SIZE];
     char name_[16];

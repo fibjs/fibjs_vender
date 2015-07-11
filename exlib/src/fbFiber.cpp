@@ -48,14 +48,6 @@ Fiber *Fiber::Current()
     return NULL;
 }
 
-void Fiber::yield()
-{
-    Service *pService = Service::getFiberService();
-
-    if (pService)
-        pService->yield();
-}
-
 void Fiber::destroy()
 {
 #ifdef WIN32
@@ -143,8 +135,12 @@ void Fiber::sleep(int ms)
 {
     if (Service::hasService())
     {
-        if (ms <= 0)
-            yield();
+        if (ms <= 0) {
+            Service *pService = Service::getFiberService();
+
+            if (pService)
+                pService->yield();
+        }
         else
         {
             AsyncEvent as;
