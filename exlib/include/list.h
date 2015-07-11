@@ -162,6 +162,14 @@ public:
         return m_count;
     }
 
+    T* head() {
+        return m_first;
+    }
+
+    T* tail() {
+        return m_last;
+    }
+
 private:
     T *m_first;
     T *m_last;
