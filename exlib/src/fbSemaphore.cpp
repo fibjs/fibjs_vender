@@ -17,11 +17,10 @@ void Semaphore::wait()
     {
         Service *pService = Service::getFiberService();
 
-        if (pService)
-        {
-            m_blocks.putTail(pService->m_running);
-            pService->switchtonext();
-        }
+        assert(pService != 0);
+
+        m_blocks.putTail(pService->m_running);
+        pService->switchtonext();
     }
     else
         m_count--;
@@ -33,8 +32,9 @@ void Semaphore::post()
     {
         Service *pService = Service::getFiberService();
 
-        if (pService)
-            pService->m_resume.putTail(m_blocks.getHead());
+        assert(pService != 0);
+
+        pService->m_resume.putTail(m_blocks.getHead());
     }
     else
         m_count++;

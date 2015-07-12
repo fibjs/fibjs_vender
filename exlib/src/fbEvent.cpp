@@ -16,11 +16,10 @@ void Event::wait()
     {
         Service *pService = Service::getFiberService();
 
-        if (pService)
-        {
-            m_blocks.putTail(pService->m_running);
-            pService->switchtonext();
-        }
+        assert(pService != 0);
+
+        m_blocks.putTail(pService->m_running);
+        pService->switchtonext();
     }
 }
 
@@ -28,9 +27,9 @@ void Event::pulse()
 {
     Service *pService = Service::getFiberService();
 
-    if (pService)
-        while (!m_blocks.empty())
-            pService->m_resume.putTail(m_blocks.getHead());
+    assert(pService != 0);
+    while (!m_blocks.empty())
+        pService->m_resume.putTail(m_blocks.getHead());
 }
 
 void Event::set()

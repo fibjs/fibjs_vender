@@ -133,24 +133,20 @@ void AsyncEvent::sleep(int ms)
 
 void Fiber::sleep(int ms)
 {
-    if (Service::hasService())
-    {
-        if (ms <= 0) {
-            Service *pService = Service::getFiberService();
+    if (ms <= 0) {
+        Service *pService = Service::getFiberService();
 
-            if (pService)
-                pService->yield();
-        }
-        else
-        {
-            AsyncEvent as;
+        assert(pService != 0);
 
-            as.sleep(ms);
-            as.wait();
-        }
+        pService->yield();
     }
     else
-        OSThread::Sleep(ms);
+    {
+        AsyncEvent as;
+
+        as.sleep(ms);
+        as.wait();
+    }
 }
 
 }

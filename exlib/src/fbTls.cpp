@@ -17,15 +17,14 @@ int Fiber::tlsAlloc()
 	Service* pService = Service::getFiberService();
 	int i;
 
-	if (pService)
-	{
-		for (i = 0; i < TLS_SIZE; i++)
-			if (pService->m_tls[i] == 0)
-			{
-				pService->m_tls[i] = 1;
-				return i;
-			}
-	}
+	assert(pService != 0);
+
+	for (i = 0; i < TLS_SIZE; i++)
+		if (pService->m_tls[i] == 0)
+		{
+			pService->m_tls[i] = 1;
+			return i;
+		}
 
 	return -1;
 }
@@ -34,26 +33,27 @@ void* Fiber::tlsGet(int idx)
 {
 	Service* pService = Service::getFiberService();
 
-	if (pService)
-		return pService->m_running->m_tls[idx];
+	assert(pService != 0);
 
-	return NULL;
+	return pService->m_running->m_tls[idx];
 }
 
 void Fiber::tlsPut(int idx, void* v)
 {
 	Service* pService = Service::getFiberService();
 
-	if (pService)
-		pService->m_running->m_tls[idx] = v;
+	assert(pService != 0);
+
+	pService->m_running->m_tls[idx] = v;
 }
 
 void Fiber::tlsFree(int idx)
 {
 	Service* pService = Service::getFiberService();
 
-	if (pService)
-		pService->m_tls[idx] = 0;
+	assert(pService != 0);
+
+	pService->m_tls[idx] = 0;
 }
 
 }
