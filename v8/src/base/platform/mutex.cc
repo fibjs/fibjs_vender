@@ -27,7 +27,9 @@ bool Mutex::TryLock() {
 }
 
 
-RecursiveMutex::RecursiveMutex() {
+RecursiveMutex::RecursiveMutex() :
+	native_handle_(true)
+{
 }
 
 
