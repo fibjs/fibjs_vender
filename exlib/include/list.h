@@ -18,12 +18,18 @@ class linkitem
 {
 public:
     linkitem() : m_next(0), m_prev(0)
+#ifdef DEBUG
+        , m_inlist(NULL)
+#endif
     {
     }
 
 public:
     linkitem *m_next;
     linkitem *m_prev;
+#ifdef DEBUG
+    void* m_inlist;
+#endif
 };
 
 template<class T>
@@ -37,6 +43,7 @@ public:
 
     void putHead(T *pNew)
     {
+        assert(pNew->m_inlist == NULL);
         assert(pNew->m_next == 0);
         assert(pNew->m_prev == 0);
 
@@ -49,11 +56,16 @@ public:
 
         m_first = pNew;
 
+#ifdef DEBUG
+        pNew->m_inlist = this;
+#endif
+
         m_count++;
     }
 
     void putTail(T *pNew)
     {
+        assert(pNew->m_inlist == NULL);
         assert(pNew->m_next == 0);
         assert(pNew->m_prev == 0);
 
@@ -66,6 +78,10 @@ public:
 
         m_last = pNew;
 
+#ifdef DEBUG
+        pNew->m_inlist = this;
+#endif
+
         m_count++;
     }
 
@@ -75,6 +91,8 @@ public:
 
         if (pNow)
         {
+            assert(pNow->m_inlist == this);
+
             m_first = (T *)pNow->m_next;
             if (m_first) {
                 assert(m_first->m_prev == pNow);
@@ -83,6 +101,10 @@ public:
                 pNow->m_next = 0;
             } else
                 m_last = 0;
+
+#ifdef DEBUG
+            pNow->m_inlist = NULL;
+#endif
 
             m_count--;
         }
@@ -96,6 +118,8 @@ public:
 
         if (pNow)
         {
+            assert(pNow->m_inlist == this);
+
             m_last = (T *)pNow->m_prev;
             if (m_last) {
                 assert(m_last->m_next == pNow);
@@ -104,6 +128,10 @@ public:
                 pNow->m_prev = 0;
             } else
                 m_first = 0;
+
+#ifdef DEBUG
+            pNow->m_inlist = NULL;
+#endif
 
             m_count--;
         }
@@ -115,6 +143,7 @@ public:
     {
         T *p1, *p2;
 
+        assert(pThis->m_inlist == this);
         assert(pThis->m_next != 0 || pThis->m_prev != 0);
 
         p1 = pThis->m_next;
@@ -136,6 +165,10 @@ public:
         if (m_last == pThis)
             m_last = p2;
 
+#ifdef DEBUG
+        pThis->m_inlist = NULL;
+#endif
+
         m_count --;
     }
 
@@ -146,6 +179,16 @@ public:
         list.m_first = m_first;
         list.m_last = m_last;
         list.m_count = m_count;
+
+#ifdef DEBUG
+        T *p = m_first;
+        while (p)
+        {
+            assert(p->m_inlist == this);
+            p->m_inlist = &list;
+            p = (T*)p->m_next;
+        }
+#endif
 
         m_first = 0;
         m_last = 0;
