@@ -19,7 +19,7 @@ class linkitem
 public:
     linkitem() : m_next(0), m_prev(0)
 #ifdef DEBUG
-        , m_inlist(NULL)
+        , m_inlist(0)
 #endif
     {
     }
@@ -43,7 +43,7 @@ public:
 
     void putHead(T *pNew)
     {
-        assert(pNew->m_inlist == NULL);
+        assert(pNew->m_inlist == 0);
         assert(pNew->m_next == 0);
         assert(pNew->m_prev == 0);
 
@@ -65,7 +65,7 @@ public:
 
     void putTail(T *pNew)
     {
-        assert(pNew->m_inlist == NULL);
+        assert(pNew->m_inlist == 0);
         assert(pNew->m_next == 0);
         assert(pNew->m_prev == 0);
 
@@ -103,7 +103,7 @@ public:
                 m_last = 0;
 
 #ifdef DEBUG
-            pNow->m_inlist = NULL;
+            pNow->m_inlist = 0;
 #endif
 
             m_count--;
@@ -130,7 +130,7 @@ public:
                 m_first = 0;
 
 #ifdef DEBUG
-            pNow->m_inlist = NULL;
+            pNow->m_inlist = 0;
 #endif
 
             m_count--;
@@ -166,7 +166,7 @@ public:
             m_last = p2;
 
 #ifdef DEBUG
-        pThis->m_inlist = NULL;
+        pThis->m_inlist = 0;
 #endif
 
         m_count --;
