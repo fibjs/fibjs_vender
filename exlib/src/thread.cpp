@@ -19,16 +19,11 @@ static void *ThreadEntry(void *arg)
     return NULL;
 }
 
-OSThread::OSThread() : thread_(0)
-{
-}
-
-OSThread::~OSThread()
-{
-    detach();
-}
-
 #ifdef _WIN32
+
+OSThread::OSThread() : thread_(0), threadid(0)
+{
+}
 
 OSSemaphore::OSSemaphore(int start_val)
 {
@@ -37,18 +32,26 @@ OSSemaphore::OSSemaphore(int start_val)
 
 void OSThread::detach()
 {
-    if (thread_)
-        CloseHandle(thread_);
+    assert(thread_ != 0);
+    assert(threadid != 0);
+
+    CloseHandle(thread_);
     thread_ = NULL;
+    threadid = 0;
 }
 
 void OSThread::start()
 {
+    assert(thread_ == 0);
+    assert(threadid == 0);
     thread_ = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadEntry, this, 0, &threadid);
 }
 
 void OSThread::join()
 {
+    assert(thread_ != 0);
+    assert(threadid != 0);
+
     WaitForSingleObject(thread_, INFINITE);
 }
 
@@ -350,24 +353,39 @@ void OSCondVar::SignalAll()
 
 #else
 
+OSThread::OSThread() : thread_(0)
+{
+}
+
 void OSThread::detach()
 {
-    if (thread_)
-        pthread_detach(thread_);
+    assert(thread_ != 0);
+
+    pthread_detach(thread_);
     thread_ = (pthread_t)NULL;
 }
 
 void OSThread::start()
 {
+    assert(thread_ == 0);
+
     pthread_create(&thread_, NULL, ThreadEntry, this);
 }
 
 void OSThread::join()
 {
+    assert(thread_ != 0);
+
     pthread_join(thread_, NULL);
 }
 
 #endif
+
+OSThread::~OSThread()
+{
+    if (thread_)
+        detach();
+}
 
 }
 
