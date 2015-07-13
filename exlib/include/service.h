@@ -47,7 +47,9 @@ public:
         linkitem* p = m_fibers.head();
         if (!p)
             return 0;
-        return (Fiber*)((intptr_t)p - (intptr_t)(&((Fiber*)0)->m_link));
+
+        Fiber* zfb = 0;
+        return (Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link));
     }
 
     Fiber* nextFiber(Fiber* pThis)
@@ -55,7 +57,9 @@ public:
         linkitem* p = pThis->m_link.m_next;
         if (!p)
             return 0;
-        return (Fiber*)((intptr_t)p - (intptr_t)(&((Fiber*)0)->m_link));
+
+        Fiber* zfb = 0;
+        return (Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link));
     }
 #endif
 
