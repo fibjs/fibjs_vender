@@ -14,6 +14,11 @@
 #include "service.h"
 #include "thread.h"
 
+#ifndef WIN32
+#include <cxxabi.h>
+#include <dlfcn.h>
+#endif
+
 namespace exlib
 {
 
@@ -80,12 +85,32 @@ public:
 
 void Service::dumpFibers()
 {
+#ifndef WIN32
     exlib::Fiber* fb = firstFiber();
     while (fb)
     {
-        puts(fb->m_traceInfo.c_str());
+        puts("\n==== C stack trace ===============================\n\n");
+
+        for (int32_t i = 0; i < fb->m_frame_count; i ++)
+        {
+            void * proc = fb->m_frames[i];
+
+            printf("%2d: ", i);
+
+            Dl_info info;
+            char* demangled = NULL;
+            if (!dladdr(proc, &info) || !info.dli_sname)
+                printf("%p\n", proc);
+            else if ((demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, 0))) {
+                printf("%s\n", demangled);
+                free(demangled);
+            } else
+                printf("%s\n", info.dli_sname);
+        }
+
         fb = nextFiber(fb);
     }
+#endif
 }
 #endif
 
@@ -127,10 +152,6 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
     stack = (void **) fb + stacksize / sizeof(void *) - 5;
 
     memset(fb, 0, sizeof(Fiber));
-
-#ifdef DEBUG
-    new (&fb->m_traceInfo) std::string();
-#endif
 
     fb->m_cntxt.ip = (reg_type) fiber_proc;
     fb->m_cntxt.sp = (reg_type) stack;

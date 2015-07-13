@@ -239,7 +239,8 @@ public:
 
 #ifdef DEBUG
     linkitem m_link;
-    std::string m_traceInfo;
+    void* m_frames[100];
+    int32_t m_frame_count;
 
     void trace();
 #endif
