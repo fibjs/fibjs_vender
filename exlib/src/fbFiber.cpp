@@ -17,6 +17,11 @@
 
 #include <map>
 
+#ifndef WIN32
+#include <cxxabi.h>
+#include <dlfcn.h>
+#endif
+
 namespace v8
 {
 namespace base
@@ -50,6 +55,10 @@ Fiber *Fiber::Current()
 
 void Fiber::destroy()
 {
+#ifdef DEBUG
+    m_traceInfo.~basic_string();
+#endif
+
 #ifdef WIN32
     VirtualFree(this, 0, MEM_RELEASE);
 #else
@@ -148,5 +157,48 @@ void Fiber::sleep(int ms)
         as.wait();
     }
 }
+
+#ifdef DEBUG
+void Fiber::trace()
+{
+#ifndef WIN32
+    fb_switch(&m_cntxt, &m_cntxt);
+
+    std::string msg;
+    int size = 0;
+    char buf[1024];
+    intptr_t* frame = (intptr_t*)m_cntxt.fp;
+    void* proc;
+
+    msg.append("\n\n==== C stack trace ===============================\n\n");
+
+    while (size < 100 && frame) {
+        proc = (void*)frame[1];
+        frame = (intptr_t*)frame[0];
+        if (!frame)
+            break;
+
+        sprintf(buf, "%2d: ", size++);
+        msg.append(buf);
+
+        Dl_info info;
+        char* demangled = NULL;
+        if (!dladdr(proc, &info) || !info.dli_sname) {
+            sprintf(buf, "%p\n", proc);
+            msg.append(buf);
+        } else if ((demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, 0))) {
+            sprintf(buf, "%s\n", demangled);
+            msg.append(buf);
+            free(demangled);
+        } else {
+            sprintf(buf, "%s\n", info.dli_sname);
+            msg.append(buf);
+        }
+    }
+
+    m_traceInfo = msg;
+#endif
+}
+#endif
 
 }

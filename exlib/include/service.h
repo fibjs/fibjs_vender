@@ -40,6 +40,25 @@ public:
         return p;
     }
 
+#ifdef DEBUG
+public:
+    Fiber* firstFiber()
+    {
+        linkitem* p = m_fibers.head();
+        if (!p)
+            return 0;
+        return (Fiber*)((intptr_t)p - (intptr_t)(&((Fiber*)0)->m_link));
+    }
+
+    Fiber* nextFiber(Fiber* pThis)
+    {
+        linkitem* p = pThis->m_link.m_next;
+        if (!p)
+            return 0;
+        return (Fiber*)((intptr_t)p - (intptr_t)(&((Fiber*)0)->m_link));
+    }
+#endif
+
 private:
     void waitEvent();
     void doInterrupt();
@@ -57,6 +76,10 @@ public:
     IDLE_PROC m_InterCallback;
 
     static Service *root;
+
+#ifdef DEBUG
+    List<linkitem> m_fibers;
+#endif
 };
 
 typedef lockfree<AsyncEvent> AsyncQueue;

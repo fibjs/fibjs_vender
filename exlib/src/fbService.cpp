@@ -19,14 +19,6 @@ namespace exlib
 
 #define FB_STK_ALIGN 256
 
-#ifdef _WIN32
-extern "C" int win_switch(context *from, context *to);
-#define fb_switch win_switch
-#else
-extern "C" int nix_switch(context *from, context *to);
-#define fb_switch nix_switch
-#endif
-
 Service *Service::root;
 
 #ifdef _WIN32
@@ -90,10 +82,12 @@ Service::Service()
     m_running = &m_main;
     m_Idle = NULL;
     m_InterCallback = NULL;
-    memset(&m_main, 0, sizeof(m_main));
     memset(&m_tls, 0, sizeof(m_tls));
 
     m_main.set_name("main");
+#ifdef DEBUG
+    m_fibers.putTail(&m_main.m_link);
+#endif
 }
 
 static void fiber_proc(void *(*func)(void *), void *data)
@@ -121,6 +115,10 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
 
     memset(fb, 0, sizeof(Fiber));
 
+#ifdef DEBUG
+    new (&fb->m_traceInfo) std::string();
+#endif
+
     fb->m_cntxt.ip = (reg_type) fiber_proc;
     fb->m_cntxt.sp = (reg_type) stack;
 
@@ -141,6 +139,9 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
 #endif
 
     Service::root->m_resume.putTail(fb);
+#ifdef DEBUG
+    Service::root->m_fibers.putTail(&fb->m_link);
+#endif
 
     fb->Ref();
     fb->Ref();
@@ -194,6 +195,10 @@ void Service::waitEvent()
 
 void Service::switchtonext()
 {
+#ifdef DEBUG
+    m_running->trace();
+#endif
+
     while (1)
     {
         doInterrupt();
@@ -210,6 +215,9 @@ void Service::switchtonext()
 
             if (m_recycle)
             {
+#ifdef DEBUG
+                m_fibers.remove(&m_recycle->m_link);
+#endif
                 m_recycle->m_joins.set();
                 m_recycle->Unref();
                 m_recycle = NULL;

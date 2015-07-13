@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "event.h"
+#include <string>
 
 namespace exlib
 {
@@ -115,6 +116,14 @@ typedef struct
 #endif
 #pragma pack ()
 
+#ifdef _WIN32
+extern "C" int win_switch(context *from, context *to);
+#define fb_switch win_switch
+#else
+extern "C" int nix_switch(context *from, context *to);
+#define fb_switch nix_switch
+#endif
+
 #define TLS_SIZE    8
 
 #define FIBER_STACK_SIZE    (65536 * 2)
@@ -161,6 +170,14 @@ private:
 
 class Fiber : public linkitem
 {
+public:
+    Fiber() : refs_(0)
+    {
+        memset(&m_cntxt, 0, sizeof(m_cntxt));
+        memset(&m_tls, 0, sizeof(m_tls));
+        memset(&name_, 0, sizeof(name_));
+    }
+
 public:
     void Ref()
     {
@@ -209,6 +226,13 @@ public:
     Event m_joins;
     void *m_tls[TLS_SIZE];
     char name_[16];
+
+#ifdef DEBUG
+    linkitem m_link;
+    std::string m_traceInfo;
+
+    void trace();
+#endif
 };
 
 }
