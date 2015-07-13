@@ -12,7 +12,7 @@ if(NOT flags)
 	set(flags " ")
 endif()
 
-set(flags "${flags} -fshort-wchar -fsigned-char -fmessage-length=0 -Wno-long-long -fdata-sections -Wno-strict-aliasing -ffunction-sections -fno-exceptions -fvisibility=hidden -D_FILE_OFFSET_BITS=64")
+set(flags "${flags} -fshort-wchar -fsigned-char -fmessage-length=0 -Wno-long-long -fdata-sections -Wno-strict-aliasing -ffunction-sections -fno-exceptions -D_FILE_OFFSET_BITS=64")
 set(link_flags " ")
 
 if(${OS} STREQUAL "Darwin")
@@ -20,7 +20,7 @@ if(${OS} STREQUAL "Darwin")
 endif()
 
 if(${BUILD_TYPE} STREQUAL "Release32")
-	set(flags "${flags} -m32")
+	set(flags "${flags} -m32 -fvisibility=hidden")
 	set(link_flags "${link_flags} -m32")
 	set(BUILD_TYPE "Release")
 endif()
@@ -32,7 +32,7 @@ if(${BUILD_TYPE} STREQUAL "Debug32")
 endif()
 
 if(${BUILD_TYPE} STREQUAL "Release")
-	set(flags "${flags} -O3")
+	set(flags "${flags} -O3 -fvisibility=hidden")
 	add_definitions(-DNDEBUG=1)
 endif()
 
