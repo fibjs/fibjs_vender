@@ -42,6 +42,8 @@ public:
 
 #ifdef DEBUG
 public:
+    void dumpFibers();
+
     Fiber* firstFiber()
     {
         linkitem* p = m_fibers.head();

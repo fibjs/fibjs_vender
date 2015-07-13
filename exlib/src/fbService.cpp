@@ -76,6 +76,19 @@ public:
     }
 } s_service_init;
 
+#ifdef DEBUG
+
+void Service::dumpFibers()
+{
+    exlib::Fiber* fb = firstFiber();
+    while (fb)
+    {
+        puts(fb->m_traceInfo.c_str());
+        fb = nextFiber(fb);
+    }
+}
+#endif
+
 Service::Service()
 {
     m_recycle = NULL;
