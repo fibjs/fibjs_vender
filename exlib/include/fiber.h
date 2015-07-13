@@ -117,11 +117,21 @@ typedef struct
 #pragma pack ()
 
 #ifdef _WIN32
-extern "C" int win_switch(context *from, context *to);
+
+extern "C" void win_switch(context *from, context *to);
 #define fb_switch win_switch
+
+extern "C" void win_save(context *now);
+#define fb_save win_save
+
 #else
-extern "C" int nix_switch(context *from, context *to);
+
+extern "C" void nix_switch(context *from, context *to);
 #define fb_switch nix_switch
+
+extern "C" void nix_save(context *now);
+#define fb_save nix_save
+
 #endif
 
 #define TLS_SIZE    8

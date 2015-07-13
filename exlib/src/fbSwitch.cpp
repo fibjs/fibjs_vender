@@ -2,9 +2,10 @@
 
 #if defined(_MSC_VER) && defined(I386)
 
-extern "C" int win_switch();
+extern "C" void win_switch();
+extern "C" void win_save();
 
-int __declspec(naked) win_switch()
+void __declspec(naked) win_switch()
 {
     __asm
     {
@@ -31,10 +32,26 @@ int __declspec(naked) win_switch()
         mov esp, [eax + 018h]
         mov eax, [eax + 01ch]
         push eax
-        xor eax, eax
         ret
     }
 }
+
+void __declspec(naked) win_save()
+{
+    __asm
+    {
+        mov eax, [esp + 4]
+        mov [eax], ebp
+        mov [eax + 004h], ebx
+        mov [eax + 008h], ecx
+        mov [eax + 00ch], edx
+        mov [eax + 010h], esi
+        mov [eax + 014h], edi
+
+        ret
+    }
+}
+
 #endif
 
 #ifndef _WIN32
@@ -45,11 +62,11 @@ asm(".section   __TEXT,__text");
 asm(".section   .text");
 #endif
 
+#if defined(x64)
+
 asm(".globl nix_switch, _nix_switch");
 asm("nix_switch:");
 asm("_nix_switch:");
-
-#if defined(x64)
 
 asm("    movq    %rbp,(%rdi)");
 
@@ -88,10 +105,31 @@ asm("    movq    0x58(%rdi), %rax");
 asm("    movq    0x28(%rdi), %rdi");
 
 asm("    pushq   %rax");
-asm("    xorq    %rax,%rax");
+asm("    ret");
+
+asm(".globl nix_save, _nix_save");
+asm("nix_save:");
+asm("_nix_save:");
+
+asm("    movq    %rbp,(%rdi)");
+
+asm("    movq    %rbx,0x08(%rdi)");
+asm("    movq    %rcx,0x10(%rdi)");
+asm("    movq    %rdx,0x18(%rdi)");
+asm("    movq    %rsi,0x20(%rdi)");
+asm("    movq    %rdi,0x28(%rdi)");
+asm("    movq    %r12,0x30(%rdi)");
+asm("    movq    %r13,0x38(%rdi)");
+asm("    movq    %r14,0x40(%rdi)");
+asm("    movq    %r15,0x48(%rdi)");
+
 asm("    ret");
 
 #elif defined(I386)
+
+asm(".globl nix_switch, _nix_switch");
+asm("nix_switch:");
+asm("_nix_switch:");
 
 asm("    movl    0x4(%esp), %eax");
 asm("    movl    %ebp, (%eax)");
@@ -116,10 +154,27 @@ asm("    movl    0x14(%eax), %edi");
 asm("    movl    0x18(%eax), %esp");
 asm("    movl    0x1c(%eax), %eax");
 asm("    pushl   %eax");
-asm("    xorl    %eax, %eax");
+asm("    ret");
+
+asm(".globl nix_save, _nix_save");
+asm("nix_save:");
+asm("_nix_save:");
+
+asm("    movl    0x4(%esp), %eax");
+asm("    movl    %ebp, (%eax)");
+asm("    movl    %ebx, 0x04(%eax)");
+asm("    movl    %ecx, 0x08(%eax)");
+asm("    movl    %edx, 0x0c(%eax)");
+asm("    movl    %esi, 0x10(%eax)");
+asm("    movl    %edi, 0x14(%eax)");
+
 asm("    ret");
 
 #elif defined(arm)
+
+asm(".globl nix_switch, _nix_switch");
+asm("nix_switch:");
+asm("_nix_switch:");
 
 asm("    str r0, [r0]");
 asm("    str r1, [r0,#4]");
@@ -154,6 +209,28 @@ asm("    ldr r12, [r0,#48]");
 asm("    ldr r13, [r0,#52]");
 asm("    ldr r14, [r0,#56]");
 asm("    ldr r0, [r0]");
+asm("    mov pc, lr");
+
+asm(".globl nix_save, _nix_save");
+asm("nix_save:");
+asm("_nix_save:");
+
+asm("    str r0, [r0]");
+asm("    str r1, [r0,#4]");
+asm("    str r2, [r0,#8]");
+asm("    str r3, [r0,#12]");
+asm("    str r4, [r0,#16]");
+asm("    str r5, [r0,#20]");
+asm("    str r6, [r0,#24]");
+asm("    str r7, [r0,#28]");
+asm("    str r8, [r0,#32]");
+asm("    str r9, [r0,#36]");
+asm("    str r10, [r0,#40]");
+asm("    str r11, [r0,#44]");
+asm("    str r12, [r0,#48]");
+asm("    str r13, [r0,#52]");
+asm("    str r14, [r0,#56]");
+
 asm("    mov pc, lr");
 
 #endif
