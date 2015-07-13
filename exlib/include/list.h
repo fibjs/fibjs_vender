@@ -144,7 +144,6 @@ public:
         T *p1, *p2;
 
         assert(pThis->m_inlist == this);
-        assert(pThis->m_next != 0 || pThis->m_prev != 0);
 
         p1 = pThis->m_next;
         p2 = pThis->m_prev;
