@@ -15,6 +15,11 @@ void Locker::lock()
 {
     Service *pService = Service::getFiberService();
 
+#ifdef WIN32
+    if (pService == 0)
+        return;
+#endif
+
     assert(pService != 0);
 
     Fiber *current = pService->m_running;
@@ -53,6 +58,11 @@ bool Locker::trylock()
 void Locker::unlock()
 {
     Service *pService = Service::getFiberService();
+
+#ifdef WIN32
+    if (pService == 0)
+        return;
+#endif
 
     assert(pService != 0);
 
