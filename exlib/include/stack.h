@@ -168,6 +168,17 @@ public:
 
     void dump();
 
+    static void test(bool v)
+    {
+        if (v)
+        {
+            trace tr;
+
+            tr.save();
+            tr.dump();
+        }
+    }
+
 private:
     void* m_frames[100];
     int32_t m_frame_count;
