@@ -17,6 +17,11 @@
 
 #include <map>
 
+#ifndef WIN32
+#include <cxxabi.h>
+#include <dlfcn.h>
+#endif
+
 namespace v8
 {
 namespace base
@@ -149,23 +154,31 @@ void Fiber::sleep(int ms)
     }
 }
 
-#ifdef DEBUG
-void Fiber::trace()
+void trace::dump()
 {
-    fb_save(&m_cntxt);
+#ifndef WIN32
+    if (m_frame_count)
+    {
+        puts("\n==== C stack trace ===============================\n\n");
 
-    intptr_t* frame = (intptr_t*)m_cntxt.fp;
+        for (int32_t i = 0; i < m_frame_count; i ++)
+        {
+            void * proc = m_frames[i];
 
-    m_frame_count = 0;
-    while (m_frame_count < ARRAYSIZE(m_frames) && frame != 0) {
-        void* proc = (void*)frame[1];
-        frame = (intptr_t*)frame[0];
-        if (!frame)
-            break;
+            printf("%2d: ", i);
 
-        m_frames[m_frame_count++] = proc;
+            Dl_info info;
+            char* demangled = NULL;
+            if (!dladdr(proc, &info) || !info.dli_sname)
+                printf("%p\n", proc);
+            else if ((demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, 0))) {
+                printf("%s\n", demangled);
+                free(demangled);
+            } else
+                printf("%s\n", info.dli_sname);
+        }
     }
-}
 #endif
+}
 
 }

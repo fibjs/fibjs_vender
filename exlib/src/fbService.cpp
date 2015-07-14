@@ -14,11 +14,6 @@
 #include "service.h"
 #include "thread.h"
 
-#ifndef WIN32
-#include <cxxabi.h>
-#include <dlfcn.h>
-#endif
-
 namespace exlib
 {
 
@@ -89,25 +84,7 @@ void Service::dumpFibers()
     exlib::Fiber* fb = firstFiber();
     while (fb)
     {
-        puts("\n==== C stack trace ===============================\n\n");
-
-        for (int32_t i = 0; i < fb->m_frame_count; i ++)
-        {
-            void * proc = fb->m_frames[i];
-
-            printf("%2d: ", i);
-
-            Dl_info info;
-            char* demangled = NULL;
-            if (!dladdr(proc, &info) || !info.dli_sname)
-                printf("%p\n", proc);
-            else if ((demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, 0))) {
-                printf("%s\n", demangled);
-                free(demangled);
-            } else
-                printf("%s\n", info.dli_sname);
-        }
-
+        fb->m_trace.dump();
         fb = nextFiber(fb);
     }
 #endif
@@ -153,23 +130,23 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
 
     memset(fb, 0, sizeof(Fiber));
 
-    fb->m_cntxt.ip = (reg_type) fiber_proc;
-    fb->m_cntxt.sp = (reg_type) stack;
+    fb->m_cntxt.ip = (intptr_t) fiber_proc;
+    fb->m_cntxt.sp = (intptr_t) stack;
 
 #if defined(x64)
 #ifdef _WIN32
-    fb->m_cntxt.Rcx = (reg_type) func;
-    fb->m_cntxt.Rdx = (reg_type) data;
+    fb->m_cntxt.Rcx = (intptr_t) func;
+    fb->m_cntxt.Rdx = (intptr_t) data;
 #else
-    fb->m_cntxt.Rdi = (reg_type) func;
-    fb->m_cntxt.Rsi = (reg_type) data;
+    fb->m_cntxt.Rdi = (intptr_t) func;
+    fb->m_cntxt.Rsi = (intptr_t) data;
 #endif
 #elif defined(I386)
     stack[1] = (void *)func;
     stack[2] = data;
 #elif defined(arm)
-    fb->m_cntxt.r0 = (reg_type) func;
-    fb->m_cntxt.r1 = (reg_type) data;
+    fb->m_cntxt.r0 = (intptr_t) func;
+    fb->m_cntxt.r1 = (intptr_t) data;
 #endif
 
     Service::root->m_resume.putTail(fb);
@@ -230,7 +207,7 @@ void Service::waitEvent()
 void Service::switchtonext()
 {
 #ifdef DEBUG
-    m_running->trace();
+    m_running->m_trace.save();
 #endif
 
     while (1)
@@ -245,7 +222,7 @@ void Service::switchtonext()
             m_running = m_resume.getHead();
 
             if (old != m_running)
-                fb_switch(&old->m_cntxt, &m_running->m_cntxt);
+                old->m_cntxt.switchto(&m_running->m_cntxt);
 
             if (m_recycle)
             {

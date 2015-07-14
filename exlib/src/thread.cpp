@@ -370,7 +370,7 @@ void OSThread::backtrace()
 {
     context ctx;
 
-    fb_save(&ctx);
+    ctx.save();
     intptr_t* frame = (intptr_t*)ctx.fp;
     int32_t n = 0;
 

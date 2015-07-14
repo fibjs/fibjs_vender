@@ -14,125 +14,10 @@
 #include <string.h>
 #include "event.h"
 #include <string>
+#include "stack.h"
 
 namespace exlib
 {
-
-typedef intptr_t reg_type;
-
-#pragma pack (1)
-
-#if defined(x64)
-
-typedef struct
-{
-    union {
-        reg_type Rbp;
-        reg_type fp;
-    };
-    reg_type Rbx;
-    reg_type Rcx;
-    reg_type Rdx;
-    reg_type Rsi;
-    reg_type Rdi;
-    reg_type R12;
-    reg_type R13;
-    reg_type R14;
-    reg_type R15;
-    union {
-        reg_type Rsp;
-        reg_type sp;
-    };
-    union {
-        reg_type Rip;
-        reg_type ip;
-    };
-} context;
-
-#elif defined(I386)
-
-typedef struct
-{
-    union {
-        reg_type Ebp;
-        reg_type fp;
-    };
-    reg_type Ebx;
-    reg_type Ecx;
-    reg_type Edx;
-    reg_type Esi;
-    reg_type Edi;
-    union {
-        reg_type Esp;
-        reg_type sp;
-    };
-    union {
-        reg_type Eip;
-        reg_type ip;
-    };
-} context;
-
-#elif defined(arm)
-
-typedef struct
-{
-    reg_type r0;
-    reg_type r1;
-    reg_type r2;
-    reg_type r3;
-    reg_type r4;
-    reg_type r5;
-    reg_type r6;
-#ifdef __thumb2__
-    union {
-        reg_type r7;
-        reg_type fp;
-    };
-#else
-    reg_type r7;
-#endif
-    reg_type r8;
-    reg_type r9;
-    reg_type r10;
-#ifndef __thumb2__
-    union {
-        reg_type r11;
-        reg_type fp;
-    };
-#else
-    reg_type r11;
-#endif
-    reg_type r12;
-    union {
-        reg_type r13;
-        reg_type sp;
-    };
-    union {
-        reg_type r14;
-        reg_type ip;
-    };
-} context;
-
-#endif
-#pragma pack ()
-
-#ifdef _WIN32
-
-extern "C" void win_switch(context *from, context *to);
-#define fb_switch win_switch
-
-extern "C" void win_save(context *now);
-#define fb_save win_save
-
-#else
-
-extern "C" void nix_switch(context *from, context *to);
-#define fb_switch nix_switch
-
-extern "C" void nix_save(context *now);
-#define fb_save nix_save
-
-#endif
 
 #define TLS_SIZE    8
 
@@ -231,7 +116,7 @@ private:
     void destroy();
 
 public:
-    reg_type refs_;
+    intptr_t refs_;
     context m_cntxt;
     Event m_joins;
     void *m_tls[TLS_SIZE];
@@ -239,10 +124,7 @@ public:
 
 #ifdef DEBUG
     linkitem m_link;
-    void* m_frames[100];
-    int32_t m_frame_count;
-
-    void trace();
+    trace m_trace;
 #endif
 };
 
