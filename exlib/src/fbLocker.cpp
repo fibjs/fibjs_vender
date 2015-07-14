@@ -32,10 +32,22 @@ void Locker::lock()
     if (m_locker && current != m_locker)
     {
         m_blocks.putTail(current);
+
+#ifdef DEBUG
+        if (m_blocks.count() > 200)
+        {
+            m_trace.dump();
+            m_trace.clear();
+        }
+#endif
         pService->switchtonext();
     }
-    else if (++m_count == 1)
+    else if (++m_count == 1) {
         m_locker = current;
+#ifdef DEBUG
+        m_trace.save();
+#endif
+    }
 }
 
 bool Locker::trylock()
@@ -46,11 +58,20 @@ bool Locker::trylock()
 
     Fiber *current = pService->m_running;
 
+    assert(m_recursive || current != m_locker);
+
+    if (!m_recursive && current == m_locker)
+        return false;
+
     if (m_locker && current != m_locker)
         return false;
 
-    if (++m_count == 1)
+    if (++m_count == 1) {
         m_locker = current;
+#ifdef DEBUG
+        m_trace.save();
+#endif
+    }
 
     return true;
 }
@@ -72,18 +93,18 @@ void Locker::unlock()
     assert(m_recursive || m_count == 1);
     assert(m_count >= 1);
 
-    if (current == m_locker)
+    if (--m_count == 0)
     {
-        if (--m_count == 0)
+        if (m_blocks.empty())
+            m_locker = NULL;
+        else
         {
-            if (m_blocks.empty())
-                m_locker = NULL;
-            else
-            {
-                m_count++;
-                m_locker = m_blocks.getHead();
-                pService->m_resume.putTail(m_locker);
-            }
+            m_count++;
+            m_locker = m_blocks.getHead();
+#ifdef DEBUG
+            m_trace = m_locker->m_trace;
+#endif
+            pService->m_resume.putTail(m_locker);
         }
     }
 }

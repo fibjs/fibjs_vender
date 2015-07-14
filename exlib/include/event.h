@@ -10,6 +10,7 @@
 #define _ex_event_h__
 
 #include "list.h"
+#include "stack.h"
 
 namespace exlib
 {
@@ -39,6 +40,9 @@ private:
     int m_count;
     Fiber *m_locker;
     List<Fiber> m_blocks;
+#ifdef DEBUG
+    trace m_trace;
+#endif
 };
 
 class autoLocker
