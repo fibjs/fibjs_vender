@@ -2,7 +2,7 @@
 #define V8_PLATFORM_SEMAPHORE_H_
 
 #include "src/base/lazy-instance.h"
-#include <exlib/include/event.h>
+#include <exlib/include/fiber.h>
 
 #if V8_OS_WIN
 #include "src/base/win32-headers.h"

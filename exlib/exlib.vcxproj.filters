@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\event.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\fiber.h">
       <Filter>Header Files</Filter>
     </ClInclude>

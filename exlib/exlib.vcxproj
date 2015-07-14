@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\event.h" />
     <ClInclude Include="include\fiber.h" />
     <ClInclude Include="include\lockfree.h" />
     <ClInclude Include="include\osconfig.h" />
