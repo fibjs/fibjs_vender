@@ -6,6 +6,8 @@
  *  lion@9465.net
  */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <stack>
 #include "thread.h"
 #include "fiber.h"
