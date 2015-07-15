@@ -9,7 +9,7 @@
 #ifndef _ex_link_h__
 #define _ex_link_h__
 
-#include <assert.h>
+#include "stack.h"
 
 namespace exlib
 {
@@ -43,9 +43,9 @@ public:
 
     void putHead(T *pNew)
     {
-        assert(pNew->m_inlist == 0);
-        assert(pNew->m_next == 0);
-        assert(pNew->m_prev == 0);
+        trace_assert(pNew->m_inlist == 0);
+        trace_assert(pNew->m_next == 0);
+        trace_assert(pNew->m_prev == 0);
 
         if (m_first) {
             m_first->m_prev = pNew;
@@ -65,9 +65,9 @@ public:
 
     void putTail(T *pNew)
     {
-        assert(pNew->m_inlist == 0);
-        assert(pNew->m_next == 0);
-        assert(pNew->m_prev == 0);
+        trace_assert(pNew->m_inlist == 0);
+        trace_assert(pNew->m_next == 0);
+        trace_assert(pNew->m_prev == 0);
 
         if (m_last) {
             m_last->m_next = pNew;
@@ -91,11 +91,11 @@ public:
 
         if (pNow)
         {
-            assert(pNow->m_inlist == this);
+            trace_assert(pNow->m_inlist == this);
 
             m_first = (T *)pNow->m_next;
             if (m_first) {
-                assert(m_first->m_prev == pNow);
+                trace_assert(m_first->m_prev == pNow);
 
                 m_first->m_prev = 0;
                 pNow->m_next = 0;
@@ -118,11 +118,11 @@ public:
 
         if (pNow)
         {
-            assert(pNow->m_inlist == this);
+            trace_assert(pNow->m_inlist == this);
 
             m_last = (T *)pNow->m_prev;
             if (m_last) {
-                assert(m_last->m_next == pNow);
+                trace_assert(m_last->m_next == pNow);
 
                 m_last->m_next = 0;
                 pNow->m_prev = 0;
@@ -143,9 +143,9 @@ public:
     {
         T *p1, *p2;
 
-        assert(pThis->m_inlist == this);
-        assert(pThis->m_next != 0 || pThis->m_prev != 0 ||
-               (m_first == pThis && m_last == pThis));
+        trace_assert(pThis->m_inlist == this);
+        trace_assert(pThis->m_next != 0 || pThis->m_prev != 0 ||
+                     (m_first == pThis && m_last == pThis));
 
         p1 = pThis->m_next;
         p2 = pThis->m_prev;
@@ -175,7 +175,7 @@ public:
 
     void getList(List<T> &list)
     {
-        assert(list.empty());
+        trace_assert(list.empty());
 
         list.m_first = m_first;
         list.m_last = m_last;
@@ -185,7 +185,7 @@ public:
         T *p = m_first;
         while (p)
         {
-            assert(p->m_inlist == this);
+            trace_assert(p->m_inlist == this);
             p->m_inlist = &list;
             p = (T*)p->m_next;
         }

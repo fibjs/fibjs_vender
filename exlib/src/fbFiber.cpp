@@ -141,7 +141,7 @@ void Fiber::sleep(int ms)
     if (ms <= 0) {
         Service *pService = Service::getFiberService();
 
-        assert(pService != 0);
+        trace_assert(pService != 0);
 
         pService->yield();
     }

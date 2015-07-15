@@ -16,7 +16,7 @@ void Event::wait()
     {
         Service *pService = Service::getFiberService();
 
-        assert(pService != 0);
+        trace_assert(pService != 0);
 
         m_blocks.putTail(pService->m_running);
         pService->switchtonext();
@@ -27,7 +27,7 @@ void Event::pulse()
 {
     Service *pService = Service::getFiberService();
 
-    assert(pService != 0);
+    trace_assert(pService != 0);
     while (!m_blocks.empty())
         pService->m_resume.putTail(m_blocks.getHead());
 }

@@ -15,7 +15,7 @@ void CondVar::wait(Locker &l)
 {
     Service *pService = Service::getFiberService();
 
-    assert(pService != 0);
+    trace_assert(pService != 0);
 
     l.unlock();
 
@@ -31,7 +31,7 @@ void CondVar::notify_one()
     {
         Service *pService = Service::getFiberService();
 
-        assert(pService != 0);
+        trace_assert(pService != 0);
 
         pService->m_resume.putTail(m_blocks.getHead());
     }
@@ -43,7 +43,7 @@ void CondVar::notify_all()
     {
         Service *pService = Service::getFiberService();
 
-        assert(pService != 0);
+        trace_assert(pService != 0);
 
         while (!m_blocks.empty())
             pService->m_resume.putTail(m_blocks.getHead());

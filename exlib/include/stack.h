@@ -168,21 +168,26 @@ public:
 
     void dump();
 
-    static void test(bool v)
+    static void test(const char *msg, const char *file, int line)
     {
-        if (v)
-        {
-            trace tr;
+        printf("Assertion failed: %s, file %s, line %d\n", msg, file, line);
 
-            tr.save();
-            tr.dump();
-        }
+        trace tr;
+
+        tr.save();
+        tr.dump();
     }
 
 private:
     void* m_frames[100];
     int32_t m_frame_count;
 };
+
+#ifdef NDEBUG
+# define trace_assert(EX)
+#else
+# define trace_assert(EX) (void)((EX) || (exlib::trace::test(#EX, __FILE__, __LINE__),0))
+#endif
 
 }
 

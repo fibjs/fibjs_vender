@@ -20,11 +20,11 @@ void Locker::lock()
         return;
 #endif
 
-    assert(pService != 0);
+    trace_assert(pService != 0);
 
     Fiber *current = pService->m_running;
 
-    assert(m_recursive || current != m_locker);
+    trace_assert(m_recursive || current != m_locker);
 
     if (!m_recursive && current == m_locker)
         return;
@@ -54,11 +54,11 @@ bool Locker::trylock()
 {
     Service *pService = Service::getFiberService();
 
-    assert(pService != 0);
+    trace_assert(pService != 0);
 
     Fiber *current = pService->m_running;
 
-    assert(m_recursive || current != m_locker);
+    trace_assert(m_recursive || current != m_locker);
 
     if (!m_recursive && current == m_locker)
         return false;
@@ -85,13 +85,13 @@ void Locker::unlock()
         return;
 #endif
 
-    assert(pService != 0);
+    trace_assert(pService != 0);
 
     Fiber *current = pService->m_running;
 
-    assert(current == m_locker);
-    assert(m_recursive || m_count == 1);
-    assert(m_count >= 1);
+    trace_assert(current == m_locker);
+    trace_assert(m_recursive || m_count == 1);
+    trace_assert(m_count >= 1);
 
     if (--m_count == 0)
     {
@@ -113,7 +113,7 @@ bool Locker::owned()
 {
     Service *pService = Service::getFiberService();
 
-    assert(pService != 0);
+    trace_assert(pService != 0);
 
     return pService->m_running == m_locker;
 }

@@ -40,8 +40,8 @@ OSSemaphore::OSSemaphore(int start_val)
 
 void OSThread::detach()
 {
-    assert(thread_ != 0);
-    assert(threadid != 0);
+    trace_assert(thread_ != 0);
+    trace_assert(threadid != 0);
 
     CloseHandle(thread_);
     thread_ = NULL;
@@ -50,15 +50,15 @@ void OSThread::detach()
 
 void OSThread::start()
 {
-    assert(thread_ == 0);
-    assert(threadid == 0);
+    trace_assert(thread_ == 0);
+    trace_assert(threadid == 0);
     thread_ = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadEntry, this, 0, &threadid);
 }
 
 void OSThread::join()
 {
-    assert(thread_ != 0);
-    assert(threadid != 0);
+    trace_assert(thread_ != 0);
+    trace_assert(threadid != 0);
 
     WaitForSingleObject(thread_, INFINITE);
 }
@@ -397,7 +397,7 @@ void OSThread::backtrace()
 
 void OSThread::detach()
 {
-    assert(thread_ != 0);
+    trace_assert(thread_ != 0);
 
     pthread_detach(thread_);
     thread_ = (pthread_t)NULL;
@@ -405,14 +405,14 @@ void OSThread::detach()
 
 void OSThread::start()
 {
-    assert(thread_ == 0);
+    trace_assert(thread_ == 0);
 
     pthread_create(&thread_, NULL, ThreadEntry, this);
 }
 
 void OSThread::join()
 {
-    assert(thread_ != 0);
+    trace_assert(thread_ != 0);
 
     pthread_join(thread_, NULL);
 }

@@ -13,7 +13,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <string>
-#include "stack.h"
 #include "list.h"
 
 namespace exlib
