@@ -7,9 +7,33 @@
  */
 
 #include "service.h"
+#include <map>
 
 namespace exlib
 {
+
+#ifdef DEBUG
+void Locker::dump()
+{
+    puts("lock chain...........................");
+
+    Locker* lock = this;
+    std::map<Locker*, bool> mapLocker;
+
+    while (lock && mapLocker.find(lock) == mapLocker.end()) {
+        mapLocker.insert(std::pair<Locker*, bool>(lock, true));
+
+        printf("\nLock %p locked by Fiber %p\n", lock, lock->m_locker);
+        lock->m_trace.dump();
+
+        printf("\nFiber %p blocked by Lock %p\n", lock->m_locker,
+               lock->m_locker->m_blocking);
+        lock->m_locker->m_trace.dump();
+        lock = lock->m_locker->m_blocking;
+    }
+    _exit(-1);
+}
+#endif
 
 void Locker::lock()
 {
@@ -35,12 +59,16 @@ void Locker::lock()
 
 #ifdef DEBUG
         if (m_blocks.count() > 200)
-        {
-            m_trace.dump();
-            m_trace.clear();
-        }
+            dump();
+
+        current->m_blocking = this;
 #endif
+
         pService->switchtonext();
+
+#ifdef DEBUG
+        current->m_blocking = 0;
+#endif
     }
     else if (++m_count == 1) {
         m_locker = current;

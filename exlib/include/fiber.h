@@ -45,6 +45,8 @@ private:
     List<Fiber> m_blocks;
 #ifdef DEBUG
     trace m_trace;
+
+    void dump();
 #endif
 };
 
@@ -215,6 +217,10 @@ public:
         memset(&m_cntxt, 0, sizeof(m_cntxt));
         memset(&m_tls, 0, sizeof(m_tls));
         memset(&name_, 0, sizeof(name_));
+
+#ifdef DEBUG
+        m_blocking = 0;
+#endif
     }
 
 public:
@@ -268,6 +274,7 @@ public:
 
 #ifdef DEBUG
     linkitem m_link;
+    Locker *m_blocking;
     trace m_trace;
 #endif
 };
