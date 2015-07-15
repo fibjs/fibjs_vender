@@ -3697,7 +3697,7 @@ static void gdImageAALine (gdImagePtr im, int x1, int y1, int x2, int y2, int co
 		return;
 	}
 
-	if (abs(dx) > abs(dy)) {
+	if (labs(dx) > labs(dy)) {
 		if (dx < 0) {
 			tmp = x1;
 			x1 = x2;
