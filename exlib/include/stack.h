@@ -8,6 +8,7 @@
 
 #include "osconfig.h"
 #include "utils.h"
+#include <stdio.h>
 
 #ifndef _ex_stack_h__
 #define _ex_stack_h__
