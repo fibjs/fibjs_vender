@@ -77,6 +77,9 @@
     <ClCompile Include="src\fbTls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\fbTrace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\fbUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

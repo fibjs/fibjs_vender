@@ -154,31 +154,4 @@ void Fiber::sleep(int ms)
     }
 }
 
-void trace::dump()
-{
-#ifndef WIN32
-    if (m_frame_count)
-    {
-        puts("\n==== C stack trace ===============================\n\n");
-
-        for (int32_t i = 0; i < m_frame_count; i ++)
-        {
-            void * proc = m_frames[i];
-
-            printf("%2d: ", i);
-
-            Dl_info info;
-            char* demangled = NULL;
-            if (!dladdr(proc, &info) || !info.dli_sname)
-                printf("%p\n", proc);
-            else if ((demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, 0))) {
-                printf("%s\n", demangled);
-                free(demangled);
-            } else
-                printf("%s\n", info.dli_sname);
-        }
-    }
-#endif
-}
-
 }

@@ -143,31 +143,14 @@ public:
         m_frame_count = 0;
     }
 
-    void save(intptr_t fp)
-    {
-        intptr_t* frame = (intptr_t*)fp;
+    void save(intptr_t fp = 0);
 
-        m_frame_count = 0;
-        while (m_frame_count < (int32_t)ARRAYSIZE(m_frames) && frame != 0) {
-            void* proc = (void*)frame[1];
-            frame = (intptr_t*)frame[0];
-            if (!frame)
-                break;
-
-            m_frames[m_frame_count++] = proc;
-        }
-
-    }
-
-    void save()
-    {
-        context ctx;
-
-        ctx.save();
-        save(ctx.fp);
-    }
-
+#ifndef WIN32
     void dump();
+#else
+    void dump()
+    {}
+#endif
 
     static void test(const char *msg, const char *file, int line)
     {
