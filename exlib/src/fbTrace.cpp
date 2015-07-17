@@ -246,6 +246,12 @@ extern "C" void* wrap(calloc)(size_t num, size_t sz)
 
 #endif
 
+#else
+
+void trace::save(intptr_t fp)
+{
+}
+
 #endif
 
 }
