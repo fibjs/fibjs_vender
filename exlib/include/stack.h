@@ -163,7 +163,7 @@ public:
         tr.dump();
     }
 
-private:
+public:
     void* m_frames[100];
     int32_t m_frame_count;
 };
@@ -172,6 +172,16 @@ private:
 # define trace_assert(EX)
 #else
 # define trace_assert(EX) (void)((EX) || (exlib::trace::test(#EX, __FILE__, __LINE__),0))
+#endif
+
+#if defined(DEBUG) && !defined(_WIN32)
+void mem_check();
+void mem_diff();
+#else
+inline void mem_check()
+{}
+inline void mem_diff()
+{}
 #endif
 
 }
