@@ -139,9 +139,24 @@ public:
         return pNow;
     }
 
+    bool has(T* pThis) const
+    {
+        linkitem *p = m_first;
+
+        while (p)
+        {
+            if (pThis == (T*)p)
+                return true;
+
+            p = p->m_next;
+        }
+
+        return false;
+    }
+
     void remove(T* pThis)
     {
-        T *p1, *p2;
+        linkitem *p1, *p2;
 
         trace_assert(pThis->m_inlist == this);
         trace_assert(pThis->m_next != 0 || pThis->m_prev != 0 ||
@@ -161,10 +176,10 @@ public:
         }
 
         if (m_first == pThis)
-            m_first = p1;
+            m_first = (T*)p1;
 
         if (m_last == pThis)
-            m_last = p2;
+            m_last = (T*)p2;
 
 #ifdef DEBUG
         pThis->m_inlist = 0;
