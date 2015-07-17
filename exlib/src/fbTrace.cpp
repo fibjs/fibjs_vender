@@ -138,11 +138,16 @@ public:
     bool m_mark;
 };
 
-static List<mstub> s_mems;
+inline List<mstub>& init_list()
+{
+    static List<mstub> s_mems;
+    return s_mems;
+}
 static spinlock s_lock;
 
 extern "C" void* wrap(malloc)(size_t sz)
 {
+    List<mstub> &s_mems = init_list();
     init_lib();
 
     void* p = __real_malloc(sz);
@@ -162,6 +167,7 @@ extern "C" void* wrap(malloc)(size_t sz)
 
 extern "C" void wrap(free)(void *p)
 {
+    List<mstub> &s_mems = init_list();
     init_lib();
 
     if (p != 0)
@@ -173,6 +179,7 @@ extern "C" void wrap(free)(void *p)
             ms = (mstub*)ms->m_next;
 
         if (ms) {
+            trace_assert(ms->m_p == p);
             s_mems.remove(ms);
             __real_free(ms);
         }
@@ -194,6 +201,7 @@ extern "C" void wrap(free)(void *p)
 
 extern "C" void* wrap(realloc)(void* p, size_t sz)
 {
+    List<mstub> &s_mems = init_list();
     init_lib();
 
     if (p == 0)
@@ -215,8 +223,10 @@ extern "C" void* wrap(realloc)(void* p, size_t sz)
         while (ms && ms->m_p != p)
             ms = (mstub*)ms->m_next;
 
-        if (ms)
+        if (ms) {
+            trace_assert(ms->m_p == p);
             ms->m_p = p1;
+        }
 
         s_lock.unlock();
 
@@ -245,12 +255,6 @@ extern "C" void* wrap(calloc)(size_t num, size_t sz)
 }
 
 #endif
-
-#else
-
-void trace::save(intptr_t fp)
-{
-}
 
 #endif
 

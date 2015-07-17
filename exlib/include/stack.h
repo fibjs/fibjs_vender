@@ -143,12 +143,13 @@ public:
         m_frame_count = 0;
     }
 
-    void save(intptr_t fp = 0);
-
 #ifndef WIN32
     void dump();
+    void save(intptr_t fp = 0);
 #else
     void dump()
+    {}
+    void save(intptr_t fp = 0)
     {}
 #endif
 
