@@ -77,6 +77,8 @@ struct stack_frame {
     void* ret;
 };
 
+const int32_t stack_align_mask = sizeof(intptr_t) - 1;
+
 void trace::save(intptr_t fp)
 {
     stack_frame* frame;
@@ -95,7 +97,9 @@ void trace::save(intptr_t fp)
         m_frames[m_frame_count++] = frame->ret;
 
         stack_frame* frame1 = frame->next;
-        if (frame1 < frame || frame1->ret == 0)
+        if (frame1 < frame ||
+                (((intptr_t)frame1 & stack_align_mask) != 0) ||
+                frame1->ret == 0)
             break;
         frame = frame1;
     }
