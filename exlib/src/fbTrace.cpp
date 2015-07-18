@@ -19,7 +19,7 @@
 #endif
 
 #include "stack.h"
-#include "List.h"
+#include "list.h"
 #include "lockfree.h"
 
 namespace exlib
