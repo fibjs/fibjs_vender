@@ -22,6 +22,8 @@ namespace exlib
 
 static void *ThreadEntry(void *arg)
 {
+    mem_savestack();
+
     OSThread *thread = reinterpret_cast<OSThread *>(arg);
     thread->Run();
     return NULL;

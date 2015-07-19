@@ -93,6 +93,8 @@ void Service::dumpFibers()
 
 Service::Service()
 {
+    mem_savestack();
+
     m_recycle = NULL;
     m_running = &m_main;
     m_Idle = NULL;

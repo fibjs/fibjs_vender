@@ -177,10 +177,13 @@ public:
 #if defined(DEBUG) && !defined(_WIN32)
 void mem_check();
 void mem_diff();
+void mem_savestack();
 #else
 inline void mem_check()
 {}
 inline void mem_diff()
+{}
+inline void mem_savestack()
 {}
 #endif
 

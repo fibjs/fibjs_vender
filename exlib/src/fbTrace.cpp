@@ -21,13 +21,10 @@
 #include "stack.h"
 #include "list.h"
 #include "lockfree.h"
+#include "fiber.h"
+#include "service.h"
 
-namespace exlib
-{
-
-#ifndef WIN32
-
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(_WIN32)
 
 #if !defined(__clang__)
 
@@ -59,18 +56,8 @@ inline void init_lib()
 }
 #endif
 
-#else
-
-#define wrap(str) __nouse_##str
-
-#define __real_malloc malloc
-#define __real_free free
-#define __real_realloc realloc
-
-inline void init_lib()
-{}
-
-#endif
+namespace exlib
+{
 
 struct stack_frame {
     struct stack_frame* next;
@@ -79,9 +66,49 @@ struct stack_frame {
 
 const int32_t stack_align_mask = sizeof(intptr_t) - 1;
 
+inline pthread_key_t initPTKey()
+{
+    static pthread_key_t keyStackTop;
+    static bool s_init = false;
+
+    if (!s_init) {
+        pthread_key_create(&keyStackTop, NULL);
+        s_init = true;
+    }
+
+    return keyStackTop;
+}
+
+void mem_savestack()
+{
+    int32_t v;
+    pthread_setspecific(initPTKey(), &v);
+}
+
+inline void* stacktop()
+{
+    void* st = 0;
+
+    if (Service::hasService())
+    {
+        Fiber* fb = Fiber::Current();
+        if (fb)
+            st = fb->m_stacktop;
+    }
+
+    if (!st)
+        st = pthread_getspecific(initPTKey());
+
+    if (!st)
+        st = sbrk(0);
+
+    return st;
+}
+
 void trace::save(intptr_t fp)
 {
     stack_frame* frame;
+    void* st = stacktop();
 
     if (fp == 0) {
         context ctx;
@@ -99,6 +126,7 @@ void trace::save(intptr_t fp)
         stack_frame* frame1 = frame->next;
         if (frame1 < frame ||
                 (((intptr_t)frame1 & stack_align_mask) != 0) ||
+                (st && frame1 >= st) ||
                 frame1->ret == 0)
             break;
         frame = frame1;
@@ -134,8 +162,6 @@ void trace::dump()
         puts("");
     }
 }
-
-#ifdef DEBUG
 
 // 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61,67, 71, 73, 79, 83, 89, 97
 #define POOL_SIZE   97
@@ -279,7 +305,7 @@ public:
         void put(void** frames, int32_t level)
         {
             num ++;
-            if (level) {
+            if (level > 0) {
                 int32_t i;
                 void* p = frames[0];
                 caller* sub;
@@ -330,10 +356,13 @@ public:
         std::vector<caller*> subs;
     };
 
+#define STACK_LEVEL 10
+
     void diff()
     {
         int32_t i;
         MemPool clone;
+        int32_t no_trace = 0;
 
         for (i = 0; i < POOL_SIZE; i ++)
         {
@@ -359,14 +388,19 @@ public:
             stub* s = clone.m_mems[i].head();
             while (s) {
                 int32_t num = s->m_trace.m_frame_count - 2;
-                if (num > 5)
-                    num = 5;
-                root.put(s->m_trace.m_frames + 2, num);
+                if (num > STACK_LEVEL)
+                    num = STACK_LEVEL;
+                if (num > 0)
+                    root.put(s->m_trace.m_frames + 2, num);
+                else
+                    no_trace ++;
                 s = (stub*)s->m_next;
             }
         }
 
         root.dump();
+        if (no_trace)
+            printf("%d times: UNKNOWN.\n", no_trace);
     }
 
 private:
@@ -421,11 +455,22 @@ extern "C" void* wrap(realloc)(void* p, size_t sz)
     init_lib();
 
     if (p == 0)
-        return malloc(sz);
+    {
+        p = __real_malloc(sz);
+        if (p == 0)
+            return p;
+
+        mpool.put(p);
+
+        return p;
+    }
 
     if (sz == 0)
     {
-        free(p);
+        if (p != 0)
+            mpool.remove(p);
+
+        __real_free(p);
         return 0;
     }
 
@@ -445,8 +490,56 @@ extern "C" void* wrap(calloc)(size_t num, size_t sz)
     return p;
 }
 
-#endif
-
-#endif
-
 }
+
+void* operator new (size_t sz)
+{
+    exlib::MemPool &mpool = exlib::init_mpool();
+    init_lib();
+
+    void* p = __real_malloc(sz);
+    if (p == 0)
+        return p;
+
+    mpool.put(p);
+
+    return p;
+}
+
+void* operator new[] (size_t sz)
+{
+    exlib::MemPool &mpool = exlib::init_mpool();
+    init_lib();
+
+    void* p = __real_malloc(sz);
+    if (p == 0)
+        return p;
+
+    mpool.put(p);
+
+    return p;
+}
+
+void operator delete (void* p)
+{
+    exlib::MemPool &mpool = exlib::init_mpool();
+    init_lib();
+
+    if (p != 0)
+        mpool.remove(p);
+
+    __real_free(p);
+}
+
+void operator delete[] (void* p)
+{
+    exlib::MemPool &mpool = exlib::init_mpool();
+    init_lib();
+
+    if (p != 0)
+        mpool.remove(p);
+
+    __real_free(p);
+}
+
+#endif
