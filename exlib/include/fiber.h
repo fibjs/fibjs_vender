@@ -220,6 +220,7 @@ public:
 
 #ifdef DEBUG
         m_blocking = 0;
+        m_stacktop = 0;
 #endif
     }
 
@@ -275,6 +276,7 @@ public:
 #ifdef DEBUG
     linkitem m_link;
     Locker *m_blocking;
+    void *m_stacktop;
     trace m_trace;
 #endif
 };

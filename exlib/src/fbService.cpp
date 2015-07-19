@@ -130,6 +130,10 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
 
     memset(fb, 0, sizeof(Fiber));
 
+#ifdef DEBUG
+    fb->m_stacktop = stack;
+#endif
+
     fb->m_cntxt.ip = (intptr_t) fiber_proc;
     fb->m_cntxt.sp = (intptr_t) stack;
 
