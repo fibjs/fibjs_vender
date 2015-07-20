@@ -18,64 +18,50 @@
 namespace v8 {
 namespace internal {
 
-// Patch the code at the current PC with a call to the target address.
-// Additional guard int3 instructions can be added if required.
-void PatchCodeWithCall(Address pc, Address target, int guard_bytes) {
-  int code_size = Assembler::kCallSequenceLength + guard_bytes;
-
-  // Create a code patcher.
-  CodePatcher patcher(pc, code_size);
-
-// Add a label for checking the size of the code used for returning.
-#ifdef DEBUG
-  Label check_codesize;
-  patcher.masm()->bind(&check_codesize);
-#endif
-
-  // Patch the code.
-  patcher.masm()->movp(kScratchRegister, reinterpret_cast<void*>(target),
-                       Assembler::RelocInfoNone());
-  patcher.masm()->call(kScratchRegister);
-
-  // Check that the size of the code generated is as expected.
-  DCHECK_EQ(Assembler::kCallSequenceLength,
-            patcher.masm()->SizeOfCodeGeneratedSince(&check_codesize));
-
-  // Add the requested number of int3 instructions after the call.
-  for (int i = 0; i < guard_bytes; i++) {
-    patcher.masm()->int3();
-  }
-
-  CpuFeatures::FlushICache(pc, code_size);
-}
-
-
-// Patch the JS frame exit code with a debug break call. See
-// CodeGenerator::VisitReturnStatement and VirtualFrame::Exit in codegen-x64.cc
-// for the precise return instructions sequence.
-void BreakLocation::SetDebugBreakAtReturn() {
-  DCHECK(Assembler::kJSReturnSequenceLength >= Assembler::kCallSequenceLength);
-  PatchCodeWithCall(
-      pc(), debug_info_->GetIsolate()->builtins()->Return_DebugBreak()->entry(),
-      Assembler::kJSReturnSequenceLength - Assembler::kCallSequenceLength);
-}
-
-
-void BreakLocation::SetDebugBreakAtSlot() {
-  DCHECK(IsDebugBreakSlot());
-  PatchCodeWithCall(
-      pc(), debug_info_->GetIsolate()->builtins()->Slot_DebugBreak()->entry(),
-      Assembler::kDebugBreakSlotLength - Assembler::kCallSequenceLength);
-}
-
-
 #define __ ACCESS_MASM(masm)
 
 
-static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
-                                          RegList object_regs,
-                                          RegList non_object_regs,
-                                          bool convert_call_to_jmp) {
+void EmitDebugBreakSlot(MacroAssembler* masm) {
+  Label check_codesize;
+  __ bind(&check_codesize);
+  __ Nop(Assembler::kDebugBreakSlotLength);
+  DCHECK_EQ(Assembler::kDebugBreakSlotLength,
+            masm->SizeOfCodeGeneratedSince(&check_codesize));
+}
+
+
+void DebugCodegen::GenerateSlot(MacroAssembler* masm, RelocInfo::Mode mode,
+                                int call_argc) {
+  // Generate enough nop's to make space for a call instruction.
+  masm->RecordDebugBreakSlot(mode, call_argc);
+  EmitDebugBreakSlot(masm);
+}
+
+
+void DebugCodegen::ClearDebugBreakSlot(Address pc) {
+  CodePatcher patcher(pc, Assembler::kDebugBreakSlotLength);
+  EmitDebugBreakSlot(patcher.masm());
+}
+
+
+void DebugCodegen::PatchDebugBreakSlot(Address pc, Handle<Code> code) {
+  DCHECK_EQ(Code::BUILTIN, code->kind());
+  static const int kSize = Assembler::kDebugBreakSlotLength;
+  CodePatcher patcher(pc, kSize);
+  Label check_codesize;
+  patcher.masm()->bind(&check_codesize);
+  patcher.masm()->movp(kScratchRegister, reinterpret_cast<void*>(code->entry()),
+                       Assembler::RelocInfoNone());
+  patcher.masm()->call(kScratchRegister);
+  // Check that the size of the code generated is as expected.
+  DCHECK_EQ(kSize, patcher.masm()->SizeOfCodeGeneratedSince(&check_codesize));
+}
+
+
+void DebugCodegen::GenerateDebugBreakStub(MacroAssembler* masm,
+                                          DebugBreakCallHelperMode mode) {
+  __ RecordComment("Debug break");
+
   // Enter an internal frame.
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
@@ -86,48 +72,22 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
     }
     __ Push(Smi::FromInt(LiveEdit::kFramePaddingInitialSize));
 
-    // Store the registers containing live values on the expression stack to
-    // make sure that these are correctly updated during GC. Non object values
-    // are stored as as two smis causing it to be untouched by GC.
-    DCHECK((object_regs & ~kJSCallerSaved) == 0);
-    DCHECK((non_object_regs & ~kJSCallerSaved) == 0);
-    DCHECK((object_regs & non_object_regs) == 0);
-    for (int i = 0; i < kNumJSCallerSaved; i++) {
-      int r = JSCallerSavedCode(i);
-      Register reg = { r };
-      DCHECK(!reg.is(kScratchRegister));
-      if ((object_regs & (1 << r)) != 0) {
-        __ Push(reg);
-      }
-      if ((non_object_regs & (1 << r)) != 0) {
-        __ PushRegisterAsTwoSmis(reg);
-      }
-    }
+    if (mode == SAVE_RESULT_REGISTER) __ Push(rax);
 
-#ifdef DEBUG
-    __ RecordComment("// Calling from debug break to runtime - come in - over");
-#endif
     __ Set(rax, 0);  // No arguments (argc == 0).
     __ Move(rbx, ExternalReference::debug_break(masm->isolate()));
 
     CEntryStub ceb(masm->isolate(), 1);
     __ CallStub(&ceb);
 
-    // Restore the register values from the expression stack.
-    for (int i = kNumJSCallerSaved - 1; i >= 0; i--) {
-      int r = JSCallerSavedCode(i);
-      Register reg = { r };
-      if (FLAG_debug_code) {
+    if (FLAG_debug_code) {
+      for (int i = 0; i < kNumJSCallerSaved; ++i) {
+        Register reg = {JSCallerSavedCode(i)};
         __ Set(reg, kDebugZapValue);
       }
-      if ((object_regs & (1 << r)) != 0) {
-        __ Pop(reg);
-      }
-      // Reconstruct the 64-bit value from two smis.
-      if ((non_object_regs & (1 << r)) != 0) {
-        __ PopRegisterAsTwoSmis(reg);
-      }
     }
+
+    if (mode == SAVE_RESULT_REGISTER) __ Pop(rax);
 
     // Read current padding counter and skip corresponding number of words.
     __ Pop(kScratchRegister);
@@ -137,11 +97,9 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
     // Get rid of the internal frame.
   }
 
-  // If this call did not replace a call but patched other code then there will
-  // be an unwanted return address left on the stack. Here we get rid of that.
-  if (convert_call_to_jmp) {
-    __ addp(rsp, Immediate(kPCOnStackSize));
-  }
+  // This call did not replace a call , so there will be an unwanted
+  // return address left on the stack. Here we get rid of that.
+  __ addp(rsp, Immediate(kPCOnStackSize));
 
   // Now that the break point has been handled, resume normal execution by
   // jumping to the target address intended by the caller and that was
@@ -150,124 +108,6 @@ static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
       ExternalReference::debug_after_break_target_address(masm->isolate());
   __ Move(kScratchRegister, after_break_target);
   __ Jump(Operand(kScratchRegister, 0));
-}
-
-
-void DebugCodegen::GenerateCallICStubDebugBreak(MacroAssembler* masm) {
-  // Register state for CallICStub
-  // ----------- S t a t e -------------
-  //  -- rdx    : type feedback slot (smi)
-  //  -- rdi    : function
-  // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, rdx.bit() | rdi.bit(), 0, false);
-}
-
-
-void DebugCodegen::GenerateLoadICDebugBreak(MacroAssembler* masm) {
-  // Register state for IC load call (from ic-x64.cc).
-  Register receiver = LoadDescriptor::ReceiverRegister();
-  Register name = LoadDescriptor::NameRegister();
-  Register slot = LoadDescriptor::SlotRegister();
-  RegList regs = receiver.bit() | name.bit() | slot.bit();
-  Generate_DebugBreakCallHelper(masm, regs, 0, false);
-}
-
-
-void DebugCodegen::GenerateStoreICDebugBreak(MacroAssembler* masm) {
-  // Register state for IC store call (from ic-x64.cc).
-  Register receiver = StoreDescriptor::ReceiverRegister();
-  Register name = StoreDescriptor::NameRegister();
-  Register value = StoreDescriptor::ValueRegister();
-  RegList regs = receiver.bit() | name.bit() | value.bit();
-  if (FLAG_vector_stores) {
-    regs |= VectorStoreICDescriptor::SlotRegister().bit();
-  }
-  Generate_DebugBreakCallHelper(masm, regs, 0, false);
-}
-
-
-void DebugCodegen::GenerateKeyedLoadICDebugBreak(MacroAssembler* masm) {
-  // Register state for keyed IC load call (from ic-x64.cc).
-  GenerateLoadICDebugBreak(masm);
-}
-
-
-void DebugCodegen::GenerateKeyedStoreICDebugBreak(MacroAssembler* masm) {
-  // Register state for keyed IC store call (from ic-x64.cc).
-  GenerateStoreICDebugBreak(masm);
-}
-
-
-void DebugCodegen::GenerateCompareNilICDebugBreak(MacroAssembler* masm) {
-  // Register state for CompareNil IC
-  // ----------- S t a t e -------------
-  //  -- rax    : value
-  // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, rax.bit(), 0, false);
-}
-
-
-void DebugCodegen::GenerateReturnDebugBreak(MacroAssembler* masm) {
-  // Register state just before return from JS function (from codegen-x64.cc).
-  // ----------- S t a t e -------------
-  //  -- rax: return value
-  // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, rax.bit(), 0, true);
-}
-
-
-void DebugCodegen::GenerateCallFunctionStubDebugBreak(MacroAssembler* masm) {
-  // Register state for CallFunctionStub (from code-stubs-x64.cc).
-  // ----------- S t a t e -------------
-  //  -- rdi : function
-  // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, rdi.bit(), 0, false);
-}
-
-
-void DebugCodegen::GenerateCallConstructStubDebugBreak(MacroAssembler* masm) {
-  // Register state for CallConstructStub (from code-stubs-x64.cc).
-  // rax is the actual number of arguments not encoded as a smi, see comment
-  // above IC call.
-  // ----------- S t a t e -------------
-  //  -- rax: number of arguments
-  // -----------------------------------
-  // The number of arguments in rax is not smi encoded.
-  Generate_DebugBreakCallHelper(masm, rdi.bit(), rax.bit(), false);
-}
-
-
-void DebugCodegen::GenerateCallConstructStubRecordDebugBreak(
-    MacroAssembler* masm) {
-  // Register state for CallConstructStub (from code-stubs-x64.cc).
-  // rax is the actual number of arguments not encoded as a smi, see comment
-  // above IC call.
-  // ----------- S t a t e -------------
-  //  -- rax: number of arguments
-  //  -- rbx: feedback array
-  //  -- rdx: feedback slot (smi)
-  // -----------------------------------
-  // The number of arguments in rax is not smi encoded.
-  Generate_DebugBreakCallHelper(masm, rbx.bit() | rdx.bit() | rdi.bit(),
-                                rax.bit(), false);
-}
-
-
-void DebugCodegen::GenerateSlot(MacroAssembler* masm) {
-  // Generate enough nop's to make space for a call instruction.
-  Label check_codesize;
-  __ bind(&check_codesize);
-  __ RecordDebugBreakSlot();
-  __ Nop(Assembler::kDebugBreakSlotLength);
-  DCHECK_EQ(Assembler::kDebugBreakSlotLength,
-            masm->SizeOfCodeGeneratedSince(&check_codesize));
-}
-
-
-void DebugCodegen::GenerateSlotDebugBreak(MacroAssembler* masm) {
-  // In the places where a debug break slot is inserted no registers can contain
-  // object pointers.
-  Generate_DebugBreakCallHelper(masm, 0, 0, true);
 }
 
 

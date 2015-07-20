@@ -822,36 +822,22 @@ void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
 }
 
 
-void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
-  X64OperandGenerator g(this);
-  Emit(kSSEFloat64ToFloat32, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
-}
-
-
-void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
-  X64OperandGenerator g(this);
-  Node* value = node->InputAt(0);
-  if (CanCover(node, value)) {
-    switch (value->opcode()) {
-      case IrOpcode::kWord64Sar:
-      case IrOpcode::kWord64Shr: {
-        Int64BinopMatcher m(value);
-        if (m.right().Is(32)) {
-          Emit(kX64Shr, g.DefineSameAsFirst(node),
-               g.UseRegister(m.left().node()), g.TempImmediate(32));
-          return;
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  }
-  Emit(kX64Movl, g.DefineAsRegister(node), g.Use(value));
-}
-
-
 namespace {
+
+void VisitRO(InstructionSelector* selector, Node* node,
+             InstructionCode opcode) {
+  X64OperandGenerator g(selector);
+  selector->Emit(opcode, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+}
+
+
+void VisitRR(InstructionSelector* selector, Node* node,
+             InstructionCode opcode) {
+  X64OperandGenerator g(selector);
+  selector->Emit(opcode, g.DefineAsRegister(node),
+                 g.UseRegister(node->InputAt(0)));
+}
+
 
 void VisitFloatBinop(InstructionSelector* selector, Node* node,
                      ArchOpcode avx_opcode, ArchOpcode sse_opcode) {
@@ -876,8 +862,46 @@ void VisitFloatUnop(InstructionSelector* selector, Node* node, Node* input,
   }
 }
 
-
 }  // namespace
+
+
+void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
+  VisitRO(this, node, kSSEFloat64ToFloat32);
+}
+
+
+void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
+  switch (TruncationModeOf(node->op())) {
+    case TruncationMode::kJavaScript:
+      return VisitRR(this, node, kArchTruncateDoubleToI);
+    case TruncationMode::kRoundToZero:
+      return VisitRO(this, node, kSSEFloat64ToInt32);
+  }
+  UNREACHABLE();
+}
+
+
+void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
+  X64OperandGenerator g(this);
+  Node* value = node->InputAt(0);
+  if (CanCover(node, value)) {
+    switch (value->opcode()) {
+      case IrOpcode::kWord64Sar:
+      case IrOpcode::kWord64Shr: {
+        Int64BinopMatcher m(value);
+        if (m.right().Is(32)) {
+          Emit(kX64Shr, g.DefineSameAsFirst(node),
+               g.UseRegister(m.left().node()), g.TempImmediate(32));
+          return;
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  Emit(kX64Movl, g.DefineAsRegister(node), g.Use(value));
+}
 
 
 void InstructionSelector::VisitFloat32Add(Node* node) {
@@ -918,14 +942,12 @@ void InstructionSelector::VisitFloat32Min(Node* node) {
 
 
 void InstructionSelector::VisitFloat32Abs(Node* node) {
-  X64OperandGenerator g(this);
   VisitFloatUnop(this, node, node->InputAt(0), kAVXFloat32Abs, kSSEFloat32Abs);
 }
 
 
 void InstructionSelector::VisitFloat32Sqrt(Node* node) {
-  X64OperandGenerator g(this);
-  Emit(kSSEFloat32Sqrt, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+  VisitRO(this, node, kSSEFloat32Sqrt);
 }
 
 
@@ -988,37 +1010,22 @@ void InstructionSelector::VisitFloat64Min(Node* node) {
 
 
 void InstructionSelector::VisitFloat64Abs(Node* node) {
-  X64OperandGenerator g(this);
   VisitFloatUnop(this, node, node->InputAt(0), kAVXFloat64Abs, kSSEFloat64Abs);
 }
 
 
 void InstructionSelector::VisitFloat64Sqrt(Node* node) {
-  X64OperandGenerator g(this);
-  Emit(kSSEFloat64Sqrt, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
+  VisitRO(this, node, kSSEFloat64Sqrt);
 }
-
-
-namespace {
-
-void VisitRRFloat64(InstructionSelector* selector, InstructionCode opcode,
-                    Node* node) {
-  X64OperandGenerator g(selector);
-  selector->Emit(opcode, g.DefineAsRegister(node),
-                 g.UseRegister(node->InputAt(0)));
-}
-
-}  // namespace
 
 
 void InstructionSelector::VisitFloat64RoundDown(Node* node) {
-  VisitRRFloat64(this, kSSEFloat64Round | MiscField::encode(kRoundDown), node);
+  VisitRR(this, node, kSSEFloat64Round | MiscField::encode(kRoundDown));
 }
 
 
 void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
-  VisitRRFloat64(this, kSSEFloat64Round | MiscField::encode(kRoundToZero),
-                 node);
+  VisitRR(this, node, kSSEFloat64Round | MiscField::encode(kRoundToZero));
 }
 
 
@@ -1126,6 +1133,7 @@ void InstructionSelector::VisitTailCall(Node* node) {
     InstructionCode opcode;
     switch (descriptor->kind()) {
       case CallDescriptor::kCallCodeObject:
+      case CallDescriptor::kInterpreterDispatch:
         opcode = kArchTailCallCodeObject;
         break;
       case CallDescriptor::kCallJSFunction:

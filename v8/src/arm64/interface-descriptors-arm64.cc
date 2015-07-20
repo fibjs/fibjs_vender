@@ -40,6 +40,17 @@ const Register VectorStoreICDescriptor::VectorRegister() { return x3; }
 const Register StoreTransitionDescriptor::MapRegister() { return x3; }
 
 
+const Register LoadGlobalViaContextDescriptor::DepthRegister() { return x1; }
+const Register LoadGlobalViaContextDescriptor::SlotRegister() { return x2; }
+const Register LoadGlobalViaContextDescriptor::NameRegister() { return x3; }
+
+
+const Register StoreGlobalViaContextDescriptor::DepthRegister() { return x1; }
+const Register StoreGlobalViaContextDescriptor::SlotRegister() { return x2; }
+const Register StoreGlobalViaContextDescriptor::NameRegister() { return x3; }
+const Register StoreGlobalViaContextDescriptor::ValueRegister() { return x0; }
+
+
 const Register ElementTransitionAndStoreDescriptor::MapRegister() { return x3; }
 
 
@@ -185,10 +196,11 @@ void CallConstructDescriptor::InitializePlatformSpecific(
   // x0 : number of arguments
   // x1 : the function to call
   // x2 : feedback vector
-  // x3 : slot in feedback vector (smi) (if r2 is not the megamorphic symbol)
+  // x3 : slot in feedback vector (Smi, for RecordCallTarget)
+  // x4 : original constructor (for IsSuperConstructorCall)
   // TODO(turbofan): So far we don't gather type feedback and hence skip the
   // slot parameter, but ArrayConstructStub needs the vector to be undefined.
-  Register registers[] = {x0, x1, x2};
+  Register registers[] = {x0, x1, x4, x2};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
@@ -393,11 +405,22 @@ void ApiAccessorDescriptor::InitializePlatformSpecific(
 }
 
 
-void MathRoundVariantDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
+void MathRoundVariantCallFromUnoptimizedCodeDescriptor::
+    InitializePlatformSpecific(CallInterfaceDescriptorData* data) {
   Register registers[] = {
       x1,  // math rounding function
       x3,  // vector slot id
+  };
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
+void MathRoundVariantCallFromOptimizedCodeDescriptor::
+    InitializePlatformSpecific(CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      x1,  // math rounding function
+      x3,  // vector slot id
+      x4,  // type vector
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }

@@ -81,6 +81,7 @@ enum BindingFlags {
   V(STRING_FUNCTION_INDEX, JSFunction, string_function)                        \
   V(STRING_FUNCTION_PROTOTYPE_MAP_INDEX, Map, string_function_prototype_map)   \
   V(SYMBOL_FUNCTION_INDEX, JSFunction, symbol_function)                        \
+  V(FLOAT32X4_FUNCTION_INDEX, JSFunction, float32x4_function)                  \
   V(OBJECT_FUNCTION_INDEX, JSFunction, object_function)                        \
   V(JS_OBJECT_STRONG_MAP_INDEX, Map, js_object_strong_map)                     \
   V(INTERNAL_ARRAY_FUNCTION_INDEX, JSFunction, internal_array_function)        \
@@ -226,6 +227,7 @@ class ScriptContextTable : public FixedArray {
     int context_index;
     int slot_index;
     VariableMode mode;
+    VariableLocation location;
     InitializationFlag init_flag;
     MaybeAssignedFlag maybe_assigned_flag;
   };
@@ -357,6 +359,7 @@ class Context: public FixedArray {
     STRING_FUNCTION_INDEX,
     STRING_FUNCTION_PROTOTYPE_MAP_INDEX,
     SYMBOL_FUNCTION_INDEX,
+    FLOAT32X4_FUNCTION_INDEX,
     OBJECT_FUNCTION_INDEX,
     JS_OBJECT_STRONG_MAP_INDEX,
     INTERNAL_ARRAY_FUNCTION_INDEX,
@@ -464,6 +467,7 @@ class Context: public FixedArray {
     TO_LENGTH_FUN_INDEX,
     NATIVES_UTILS_OBJECT_INDEX,
     EXTRAS_EXPORTS_OBJECT_INDEX,
+    CODE_STUB_EXPORTS_OBJECT_INDEX,
 
     // Properties from here are treated as weak references by the full GC.
     // Scavenge treats them as strong references.
@@ -557,6 +561,9 @@ class Context: public FixedArray {
     return this->global_object()->native_context()->security_token() ==
         that->global_object()->native_context()->security_token();
   }
+
+  // Initializes global variable bindings in given script context.
+  void InitializeGlobalSlots();
 
   // A native context holds a list of all functions with optimized code.
   void AddOptimizedFunction(JSFunction* function);

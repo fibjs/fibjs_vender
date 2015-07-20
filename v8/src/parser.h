@@ -754,7 +754,7 @@ class ParserTraits {
   Expression* NewTargetExpression(Scope* scope, AstNodeFactory* factory,
                                   int pos);
   Expression* DefaultConstructor(bool call_super, Scope* scope, int pos,
-                                 int end_pos);
+                                 int end_pos, LanguageMode language_mode);
   Literal* ExpressionFromLiteral(Token::Value token, int pos, Scanner* scanner,
                                  AstNodeFactory* factory);
   Expression* ExpressionFromIdentifier(const AstRawString* name,
@@ -794,9 +794,10 @@ class ParserTraits {
   Expression* ParseV8Intrinsic(bool* ok);
   FunctionLiteral* ParseFunctionLiteral(
       const AstRawString* name, Scanner::Location function_name_location,
-      bool name_is_strict_reserved, FunctionKind kind,
+      FunctionNameValidity function_name_validity, FunctionKind kind,
       int function_token_position, FunctionLiteral::FunctionType type,
-      FunctionLiteral::ArityRestriction arity_restriction, bool* ok);
+      FunctionLiteral::ArityRestriction arity_restriction,
+      LanguageMode language_mode, bool* ok);
   V8_INLINE void SkipLazyFunctionBody(
       int* materialized_literal_count, int* expected_property_count, bool* ok,
       Scanner::BookmarkScope* bookmark = nullptr);
@@ -1096,9 +1097,10 @@ class Parser : public ParserBase<ParserTraits> {
 
   FunctionLiteral* ParseFunctionLiteral(
       const AstRawString* name, Scanner::Location function_name_location,
-      bool name_is_strict_reserved, FunctionKind kind,
+      FunctionNameValidity function_name_validity, FunctionKind kind,
       int function_token_position, FunctionLiteral::FunctionType type,
-      FunctionLiteral::ArityRestriction arity_restriction, bool* ok);
+      FunctionLiteral::ArityRestriction arity_restriction,
+      LanguageMode language_mode, bool* ok);
 
 
   ClassLiteral* ParseClassLiteral(const AstRawString* name,
@@ -1138,7 +1140,7 @@ class Parser : public ParserBase<ParserTraits> {
 
   // Factory methods.
   FunctionLiteral* DefaultConstructor(bool call_super, Scope* scope, int pos,
-                                      int end_pos);
+                                      int end_pos, LanguageMode language_mode);
 
   // Skip over a lazy function, either using cached data if we have it, or
   // by parsing the function with PreParser. Consumes the ending }.
@@ -1153,6 +1155,8 @@ class Parser : public ParserBase<ParserTraits> {
   PreParser::PreParseResult ParseLazyFunctionBodyWithPreParser(
       SingletonLogger* logger, Scanner::BookmarkScope* bookmark = nullptr);
 
+  bool IsSimpleParameterList(
+      const ParserFormalParameterParsingState& formal_parameters);
   Block* BuildParameterInitializationBlock(
       const ParserFormalParameterParsingState& formal_parameters, bool* ok);
 
@@ -1336,6 +1340,7 @@ void ParserTraits::DeclareFormalParameter(
 void ParserTraits::AddParameterInitializationBlock(
     const ParserFormalParameterParsingState& formal_parameters,
     ZoneList<v8::internal::Statement*>* body, bool* ok) {
+  if (parser_->IsSimpleParameterList(formal_parameters)) return;
   auto* init_block =
       parser_->BuildParameterInitializationBlock(formal_parameters, ok);
   if (!*ok) return;

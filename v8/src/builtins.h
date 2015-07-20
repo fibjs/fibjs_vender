@@ -70,7 +70,6 @@ enum BuiltinExtraArguments {
   V(JSConstructStubGeneric, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
   V(JSConstructStubForDerived, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
   V(JSConstructStubApi, BUILTIN, UNINITIALIZED, kNoExtraICState)             \
-  V(JSConstructStubNewTarget, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
   V(JSEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)              \
   V(JSConstructEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
   V(CompileLazy, BUILTIN, UNINITIALIZED, kNoExtraICState)                    \
@@ -140,33 +139,11 @@ enum BuiltinExtraArguments {
   V(StoreIC_Normal,          STORE_IC)
 
 // Define list of builtins used by the debugger implemented in assembly.
-#define BUILTIN_LIST_DEBUG_A(V)                                               \
-  V(Return_DebugBreak,                         BUILTIN, DEBUG_STUB,           \
-                                               DEBUG_BREAK)                   \
-  V(CallFunctionStub_DebugBreak,               BUILTIN, DEBUG_STUB,           \
-                                               DEBUG_BREAK)                   \
-  V(CallConstructStub_DebugBreak,              BUILTIN, DEBUG_STUB,           \
-                                               DEBUG_BREAK)                   \
-  V(CallConstructStub_Recording_DebugBreak,    BUILTIN, DEBUG_STUB,           \
-                                               DEBUG_BREAK)                   \
-  V(CallICStub_DebugBreak,                     CALL_IC, DEBUG_STUB,           \
-                                               DEBUG_BREAK)                   \
-  V(LoadIC_DebugBreak,                         LOAD_IC, DEBUG_STUB,           \
-                                               DEBUG_BREAK)                   \
-  V(KeyedLoadIC_DebugBreak,                    KEYED_LOAD_IC, DEBUG_STUB,     \
-                                               DEBUG_BREAK)                   \
-  V(StoreIC_DebugBreak,                        STORE_IC, DEBUG_STUB,          \
-                                               DEBUG_BREAK)                   \
-  V(KeyedStoreIC_DebugBreak,                   KEYED_STORE_IC, DEBUG_STUB,    \
-                                               DEBUG_BREAK)                   \
-  V(CompareNilIC_DebugBreak,                   COMPARE_NIL_IC, DEBUG_STUB,    \
-                                               DEBUG_BREAK)                   \
-  V(Slot_DebugBreak,                           BUILTIN, DEBUG_STUB,           \
-                                               DEBUG_BREAK)                   \
-  V(PlainReturn_LiveEdit,                      BUILTIN, DEBUG_STUB,           \
-                                               DEBUG_BREAK)                   \
-  V(FrameDropper_LiveEdit,                     BUILTIN, DEBUG_STUB,           \
-                                               DEBUG_BREAK)
+#define BUILTIN_LIST_DEBUG_A(V)                                 \
+  V(Return_DebugBreak, BUILTIN, DEBUG_STUB, kNoExtraICState)    \
+  V(Slot_DebugBreak, BUILTIN, DEBUG_STUB, kNoExtraICState)      \
+  V(PlainReturn_LiveEdit, BUILTIN, DEBUG_STUB, kNoExtraICState) \
+  V(FrameDropper_LiveEdit, BUILTIN, DEBUG_STUB, kNoExtraICState)
 
 // Define list of builtins implemented in JavaScript.
 #define BUILTINS_LIST_JS(V)                \
@@ -327,7 +304,6 @@ class Builtins {
   static void Generate_JSConstructStubGeneric(MacroAssembler* masm);
   static void Generate_JSConstructStubForDerived(MacroAssembler* masm);
   static void Generate_JSConstructStubApi(MacroAssembler* masm);
-  static void Generate_JSConstructStubNewTarget(MacroAssembler* masm);
   static void Generate_JSEntryTrampoline(MacroAssembler* masm);
   static void Generate_JSConstructEntryTrampoline(MacroAssembler* masm);
   static void Generate_NotifyDeoptimized(MacroAssembler* masm);

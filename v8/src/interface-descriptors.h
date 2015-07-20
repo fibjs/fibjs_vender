@@ -57,11 +57,14 @@ class PlatformInterfaceDescriptor;
   V(ApiGetter)                                \
   V(ArgumentsAccessRead)                      \
   V(StoreArrayLiteralElement)                 \
+  V(LoadGlobalViaContext)                     \
+  V(StoreGlobalViaContext)                    \
   V(MathPowTagged)                            \
   V(MathPowInteger)                           \
   V(ContextOnly)                              \
   V(GrowArrayElements)                        \
-  V(MathRoundVariant)
+  V(MathRoundVariantCallFromUnoptimizedCode)  \
+  V(MathRoundVariantCallFromOptimizedCode)
 
 
 class CallInterfaceDescriptorData {
@@ -110,7 +113,7 @@ class CallInterfaceDescriptorData {
   // InterfaceDescriptor, and freed on destruction. This is because static
   // arrays of Registers cause creation of runtime static initializers
   // which we don't want.
-  SmartArrayPointer<Register> register_params_;
+  base::SmartArrayPointer<Register> register_params_;
 
   // Specifies types for parameters and return
   Type::FunctionType* function_type_;
@@ -425,6 +428,29 @@ class RegExpConstructResultDescriptor : public CallInterfaceDescriptor {
 };
 
 
+class LoadGlobalViaContextDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(LoadGlobalViaContextDescriptor,
+                                               CallInterfaceDescriptor)
+
+  static const Register DepthRegister();
+  static const Register SlotRegister();
+  static const Register NameRegister();
+};
+
+
+class StoreGlobalViaContextDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(StoreGlobalViaContextDescriptor,
+                                               CallInterfaceDescriptor)
+
+  static const Register DepthRegister();
+  static const Register SlotRegister();
+  static const Register NameRegister();
+  static const Register ValueRegister();
+};
+
+
 class TransitionElementsKindDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(TransitionElementsKindDescriptor, CallInterfaceDescriptor)
@@ -584,10 +610,20 @@ class MathPowIntegerDescriptor : public CallInterfaceDescriptor {
 };
 
 
-class MathRoundVariantDescriptor : public CallInterfaceDescriptor {
+class MathRoundVariantCallFromOptimizedCodeDescriptor
+    : public CallInterfaceDescriptor {
  public:
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(MathRoundVariantDescriptor,
-                                               CallInterfaceDescriptor)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+      MathRoundVariantCallFromOptimizedCodeDescriptor, CallInterfaceDescriptor)
+};
+
+
+class MathRoundVariantCallFromUnoptimizedCodeDescriptor
+    : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+      MathRoundVariantCallFromUnoptimizedCodeDescriptor,
+      CallInterfaceDescriptor)
 };
 
 

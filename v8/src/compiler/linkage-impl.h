@@ -233,6 +233,27 @@ class LinkageHelper {
         "c-call");
   }
 
+  static CallDescriptor* GetInterpreterDispatchDescriptor(
+      Zone* zone, const MachineSignature* msig) {
+    DCHECK_EQ(0U, msig->parameter_count());
+    LocationSignature::Builder locations(zone, msig->return_count(),
+                                         msig->parameter_count());
+    AddReturnLocations(&locations);
+    LinkageLocation target_loc = LinkageLocation::AnyRegister();
+    return new (zone) CallDescriptor(          // --
+        CallDescriptor::kInterpreterDispatch,  // kind
+        kMachNone,                             // target MachineType
+        target_loc,                            // target location
+        msig,                                  // machine_sig
+        locations.Build(),                     // location_sig
+        0,                                     // js_parameter_count
+        Operator::kNoProperties,               // properties
+        kNoCalleeSaved,                        // callee-saved registers
+        kNoCalleeSaved,                        // callee-saved fp regs
+        CallDescriptor::kSupportsTailCalls,    // flags
+        "interpreter-dispatch");
+  }
+
   static LinkageLocation regloc(Register reg) {
     return LinkageLocation(Register::ToAllocationIndex(reg));
   }
@@ -277,7 +298,12 @@ LinkageLocation Linkage::GetOsrValueLocation(int index) const {
   int parameter_count = static_cast<int>(incoming_->JSParameterCount() - 1);
   int first_stack_slot = OsrHelper::FirstStackSlotIndex(parameter_count);
 
-  if (index >= first_stack_slot) {
+  if (index == kOsrContextSpillSlotIndex) {
+    // Context. Use the parameter location of the context spill slot.
+    // Parameter (arity + 1) is special for the context of the function frame.
+    int context_index = 1 + 1 + parameter_count;  // target + receiver + params
+    return incoming_->GetInputLocation(context_index);
+  } else if (index >= first_stack_slot) {
     // Local variable stored in this (callee) stack.
     int spill_index =
         LinkageLocation::ANY_REGISTER + 1 + index - first_stack_slot;

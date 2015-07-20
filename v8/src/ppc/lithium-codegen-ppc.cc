@@ -421,6 +421,7 @@ Register LCodeGen::EmitLoadRegister(LOperand* op, Register scratch) {
     Handle<Object> literal = constant->handle(isolate());
     Representation r = chunk_->LookupLiteralRepresentation(const_op);
     if (r.IsInteger32()) {
+      AllowDeferredHandleDereference get_number;
       DCHECK(literal->IsNumber());
       __ LoadIntLiteral(scratch, static_cast<int32_t>(literal->Number()));
     } else if (r.IsDouble()) {
@@ -2308,6 +2309,12 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ beq(instr->TrueLabel(chunk_));
       }
 
+      if (expected.Contains(ToBooleanStub::SIMD_VALUE)) {
+        // SIMD value -> true.
+        __ CompareInstanceType(map, ip, FLOAT32X4_TYPE);
+        __ beq(instr->TrueLabel(chunk_));
+      }
+
       if (expected.Contains(ToBooleanStub::HEAP_NUMBER)) {
         // heap number -> false iff +0, -0, or NaN.
         Label not_heap_number;
@@ -3050,9 +3057,9 @@ void LCodeGen::DoLoadGlobalGeneric(LLoadGlobalGeneric* instr) {
 
   __ mov(LoadDescriptor::NameRegister(), Operand(instr->name()));
   EmitVectorLoadICRegisters<LLoadGlobalGeneric>(instr);
-  ContextualMode mode = instr->for_typeof() ? NOT_CONTEXTUAL : CONTEXTUAL;
-  Handle<Code> ic = CodeFactory::LoadICInOptimizedCode(isolate(), mode, SLOPPY,
-                                                       PREMONOMORPHIC).code();
+  Handle<Code> ic =
+      CodeFactory::LoadICInOptimizedCode(isolate(), instr->typeof_mode(),
+                                         SLOPPY, PREMONOMORPHIC).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -3169,7 +3176,7 @@ void LCodeGen::DoLoadNamedGeneric(LLoadNamedGeneric* instr) {
   EmitVectorLoadICRegisters<LLoadNamedGeneric>(instr);
   Handle<Code> ic =
       CodeFactory::LoadICInOptimizedCode(
-          isolate(), NOT_CONTEXTUAL, instr->hydrogen()->language_mode(),
+          isolate(), NOT_INSIDE_TYPEOF, instr->hydrogen()->language_mode(),
           instr->hydrogen()->initialization_state()).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
@@ -5968,6 +5975,11 @@ Condition LCodeGen::EmitTypeofIs(Label* true_label, Label* false_label,
     __ lbz(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
     __ ExtractBit(r0, scratch, Map::kIsUndetectable);
     __ cmpi(r0, Operand::Zero());
+    final_branch_condition = eq;
+
+  } else if (String::Equals(type_name, factory->float32x4_string())) {
+    __ JumpIfSmi(input, false_label);
+    __ CompareObjectType(input, scratch, no_reg, FLOAT32X4_TYPE);
     final_branch_condition = eq;
 
   } else {

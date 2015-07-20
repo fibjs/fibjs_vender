@@ -19,13 +19,13 @@ namespace internal {
 void MessageHandler::DefaultMessageReport(Isolate* isolate,
                                           const MessageLocation* loc,
                                           Handle<Object> message_obj) {
-  SmartArrayPointer<char> str = GetLocalizedMessage(isolate, message_obj);
+  base::SmartArrayPointer<char> str = GetLocalizedMessage(isolate, message_obj);
   if (loc == NULL) {
     PrintF("%s\n", str.get());
   } else {
     HandleScope scope(isolate);
     Handle<Object> data(loc->script()->name(), isolate);
-    SmartArrayPointer<char> data_str;
+    base::SmartArrayPointer<char> data_str;
     if (data->IsString())
       data_str = Handle<String>::cast(data)->ToCString(DISALLOW_NULLS);
     PrintF("%s:%i: %s\n", data_str.get() ? data_str.get() : "<unknown>",
@@ -133,9 +133,8 @@ Handle<String> MessageHandler::GetMessage(Isolate* isolate,
 }
 
 
-SmartArrayPointer<char> MessageHandler::GetLocalizedMessage(
-    Isolate* isolate,
-    Handle<Object> data) {
+base::SmartArrayPointer<char> MessageHandler::GetLocalizedMessage(
+    Isolate* isolate, Handle<Object> data) {
   HandleScope scope(isolate);
   return GetMessage(isolate, data)->ToCString(DISALLOW_NULLS);
 }
@@ -332,7 +331,6 @@ MaybeHandle<String> MessageTemplate::FormatMessage(int template_index,
                                                    Handle<String> arg0,
                                                    Handle<String> arg1,
                                                    Handle<String> arg2) {
-  static const int kMaxArgLength = 256;
   Isolate* isolate = arg0->GetIsolate();
   const char* template_string;
   switch (template_index) {
@@ -361,16 +359,7 @@ MaybeHandle<String> MessageTemplate::FormatMessage(int template_index,
       } else {
         DCHECK(i < arraysize(args));
         Handle<String> arg = args[i++];
-        int length = arg->length();
-        if (length > kMaxArgLength) {
-          builder.AppendString(
-              isolate->factory()->NewSubString(arg, 0, kMaxArgLength - 6));
-          builder.AppendCString("...");
-          builder.AppendString(
-              isolate->factory()->NewSubString(arg, length - 3, length));
-        } else {
-          builder.AppendString(arg);
-        }
+        builder.AppendString(arg);
       }
     } else {
       builder.AppendCharacter(*c);

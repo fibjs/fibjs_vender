@@ -412,9 +412,7 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
   os << " - type: " << TypeToString(instance_type()) << "\n";
   os << " - instance size: " << instance_size() << "\n";
   os << " - inobject properties: " << inobject_properties() << "\n";
-  os << " - elements kind: " << ElementsKindToString(elements_kind());
-  os << "\n - pre-allocated property fields: "
-     << pre_allocated_property_fields() << "\n";
+  os << " - elements kind: " << ElementsKindToString(elements_kind()) << "\n";
   os << " - unused property fields: " << unused_property_fields() << "\n";
   if (is_deprecated()) os << " - deprecated_map\n";
   if (is_stable()) os << " - stable_map\n";
@@ -499,6 +497,61 @@ void FixedDoubleArray::FixedDoubleArrayPrint(std::ostream& os) {  // NOLINT
       os << "<the hole>";
     } else {
       os << get_scalar(i);
+    }
+  }
+  os << "\n";
+}
+
+
+void TypeFeedbackVector::Print() {
+  OFStream os(stdout);
+  TypeFeedbackVectorPrint(os);
+  os << std::flush;
+}
+
+
+void TypeFeedbackVector::TypeFeedbackVectorPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "TypeFeedbackVector");
+  os << " - length: " << length();
+  if (length() == 0) {
+    os << " (empty)\n";
+    return;
+  }
+
+  os << "\n - ics with type info: " << ic_with_type_info_count();
+  os << "\n - generic ics: " << ic_generic_count();
+
+  if (Slots() > 0) {
+    for (int i = 0; i < Slots(); i++) {
+      FeedbackVectorSlot slot(i);
+      os << "\n Slot " << i << " [" << GetIndex(slot)
+         << "]: " << Brief(Get(slot));
+    }
+  }
+
+  if (ICSlots() > 0) {
+    DCHECK(elements_per_ic_slot() == 2);
+
+    for (int i = 0; i < ICSlots(); i++) {
+      FeedbackVectorICSlot slot(i);
+      Code::Kind kind = GetKind(slot);
+      os << "\n ICSlot " << i;
+      if (kind == Code::LOAD_IC) {
+        LoadICNexus nexus(this, slot);
+        os << " LOAD_IC " << Code::ICState2String(nexus.StateFromFeedback());
+      } else if (kind == Code::KEYED_LOAD_IC) {
+        KeyedLoadICNexus nexus(this, slot);
+        os << " KEYED_LOAD_IC "
+           << Code::ICState2String(nexus.StateFromFeedback());
+      } else {
+        DCHECK(kind == Code::CALL_IC);
+        CallICNexus nexus(this, slot);
+        os << " CALL_IC " << Code::ICState2String(nexus.StateFromFeedback());
+      }
+
+      os << "\n  [" << GetIndex(slot) << "]: " << Brief(Get(slot));
+      os << "\n  [" << (GetIndex(slot) + 1)
+         << "]: " << Brief(get(GetIndex(slot) + 1));
     }
   }
   os << "\n";
@@ -748,10 +801,8 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
     String* source = String::cast(Script::cast(script())->source());
     int start = start_position();
     int length = end_position() - start;
-    SmartArrayPointer<char> source_string =
-        source->ToCString(DISALLOW_NULLS,
-                          FAST_STRING_TRAVERSAL,
-                          start, length, NULL);
+    base::SmartArrayPointer<char> source_string = source->ToCString(
+        DISALLOW_NULLS, FAST_STRING_TRAVERSAL, start, length, NULL);
     os << source_string.get();
   }
   // Script files are often large, hard to read.
@@ -765,7 +816,7 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - length = " << length();
   os << "\n - optimized_code_map = " << Brief(optimized_code_map());
   os << "\n - feedback_vector = ";
-  feedback_vector()->FixedArrayPrint(os);
+  feedback_vector()->TypeFeedbackVectorPrint(os);
   os << "\n";
 }
 
@@ -992,7 +1043,6 @@ void Script::ScriptPrint(std::ostream& os) {  // NOLINT
 void DebugInfo::DebugInfoPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "DebugInfo");
   os << "\n - shared: " << Brief(shared());
-  os << "\n - original_code: " << Brief(original_code());
   os << "\n - code: " << Brief(code());
   os << "\n - break_points: ";
   break_points()->Print(os);

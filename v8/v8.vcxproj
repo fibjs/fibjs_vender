@@ -79,6 +79,7 @@
     <ClInclude Include="src\base\safe_conversions_impl.h" />
     <ClInclude Include="src\base\safe_math.h" />
     <ClInclude Include="src\base\safe_math_impl.h" />
+    <ClInclude Include="src\base\smart-pointers.h" />
     <ClInclude Include="src\base\sys-info.h" />
     <ClInclude Include="src\base\utils\random-number-generator.h" />
     <ClInclude Include="src\base\win32-headers.h" />
@@ -138,11 +139,13 @@
     <ClInclude Include="src\compiler\instruction.h" />
     <ClInclude Include="src\compiler\js-builtin-reducer.h" />
     <ClInclude Include="src\compiler\js-context-specialization.h" />
+    <ClInclude Include="src\compiler\js-frame-specialization.h" />
     <ClInclude Include="src\compiler\js-generic-lowering.h" />
     <ClInclude Include="src\compiler\js-graph.h" />
     <ClInclude Include="src\compiler\js-inlining.h" />
     <ClInclude Include="src\compiler\js-intrinsic-lowering.h" />
     <ClInclude Include="src\compiler\js-operator.h" />
+    <ClInclude Include="src\compiler\js-type-feedback-lowering.h" />
     <ClInclude Include="src\compiler\js-type-feedback.h" />
     <ClInclude Include="src\compiler\js-typed-lowering.h" />
     <ClInclude Include="src\compiler\jump-threading.h" />
@@ -169,6 +172,7 @@
     <ClInclude Include="src\compiler\pipeline-statistics.h" />
     <ClInclude Include="src\compiler\pipeline.h" />
     <ClInclude Include="src\compiler\ppc\instruction-codes-ppc.h" />
+    <ClInclude Include="src\compiler\raw-machine-assembler.h" />
     <ClInclude Include="src\compiler\register-allocator-verifier.h" />
     <ClInclude Include="src\compiler\register-allocator.h" />
     <ClInclude Include="src\compiler\register-configuration.h" />
@@ -225,6 +229,7 @@
     <ClInclude Include="src\frames.h" />
     <ClInclude Include="src\full-codegen.h" />
     <ClInclude Include="src\func-name-inferrer.h" />
+    <ClInclude Include="src\futex-emulation.h" />
     <ClInclude Include="src\gdb-jit.h" />
     <ClInclude Include="src\global-handles.h" />
     <ClInclude Include="src\globals.h" />
@@ -371,7 +376,6 @@
     <ClInclude Include="src\signature.h" />
     <ClInclude Include="src\simulator.h" />
     <ClInclude Include="src\small-pointer-list.h" />
-    <ClInclude Include="src\smart-pointers.h" />
     <ClInclude Include="src\snapshot\natives.h" />
     <ClInclude Include="src\snapshot\serialize.h" />
     <ClInclude Include="src\snapshot\snapshot-source-sink.h" />
@@ -523,11 +527,13 @@
     <ClCompile Include="src\compiler\instruction.cc" />
     <ClCompile Include="src\compiler\js-builtin-reducer.cc" />
     <ClCompile Include="src\compiler\js-context-specialization.cc" />
+    <ClCompile Include="src\compiler\js-frame-specialization.cc" />
     <ClCompile Include="src\compiler\js-generic-lowering.cc" />
     <ClCompile Include="src\compiler\js-graph.cc" />
     <ClCompile Include="src\compiler\js-inlining.cc" />
     <ClCompile Include="src\compiler\js-intrinsic-lowering.cc" />
     <ClCompile Include="src\compiler\js-operator.cc" />
+    <ClCompile Include="src\compiler\js-type-feedback-lowering.cc" />
     <ClCompile Include="src\compiler\js-type-feedback.cc" />
     <ClCompile Include="src\compiler\js-typed-lowering.cc" />
     <ClCompile Include="src\compiler\jump-threading.cc" />
@@ -554,6 +560,7 @@
     <ClCompile Include="src\compiler\ppc\code-generator-ppc.cc" />
     <ClCompile Include="src\compiler\ppc\instruction-selector-ppc.cc" />
     <ClCompile Include="src\compiler\ppc\linkage-ppc.cc" />
+    <ClCompile Include="src\compiler\raw-machine-assembler.cc" />
     <ClCompile Include="src\compiler\register-allocator-verifier.cc" />
     <ClCompile Include="src\compiler\register-allocator.cc" />
     <ClCompile Include="src\compiler\register-configuration.cc" />
@@ -602,7 +609,9 @@
     <ClCompile Include="src\frames.cc" />
     <ClCompile Include="src\full-codegen.cc" />
     <ClCompile Include="src\func-name-inferrer.cc" />
+    <ClCompile Include="src\futex-emulation.cc" />
     <ClCompile Include="src\gdb-jit.cc" />
+    <ClCompile Include="src\gen\code-stub-libraries.cc" />
     <ClCompile Include="src\gen\experimental-libraries.cc" />
     <ClCompile Include="src\gen\extras-libraries.cc" />
     <ClCompile Include="src\gen\libraries.cc" />
@@ -753,6 +762,7 @@
     <ClCompile Include="src\runtime\runtime-debug.cc" />
     <ClCompile Include="src\runtime\runtime-forin.cc" />
     <ClCompile Include="src\runtime\runtime-function.cc" />
+    <ClCompile Include="src\runtime\runtime-futex.cc" />
     <ClCompile Include="src\runtime\runtime-generator.cc" />
     <ClCompile Include="src\runtime\runtime-i18n.cc" />
     <ClCompile Include="src\runtime\runtime-internal.cc" />
@@ -766,6 +776,7 @@
     <ClCompile Include="src\runtime\runtime-proxy.cc" />
     <ClCompile Include="src\runtime\runtime-regexp.cc" />
     <ClCompile Include="src\runtime\runtime-scopes.cc" />
+    <ClCompile Include="src\runtime\runtime-simd.cc" />
     <ClCompile Include="src\runtime\runtime-strings.cc" />
     <ClCompile Include="src\runtime\runtime-symbol.cc" />
     <ClCompile Include="src\runtime\runtime-test.cc" />

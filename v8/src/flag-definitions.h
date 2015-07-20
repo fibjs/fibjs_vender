@@ -182,6 +182,8 @@ DEFINE_BOOL(harmony_shipping, true, "enable all shipped harmony fetaures")
 DEFINE_IMPLICATION(harmony, es_staging)
 DEFINE_IMPLICATION(es_staging, harmony)
 
+DEFINE_BOOL(legacy_const, true, "legacy semantics for const in sloppy mode")
+
 // Features that are still work in progress (behind individual flags).
 #define HARMONY_INPROGRESS(V)                                   \
   V(harmony_modules, "harmony modules")                         \
@@ -194,11 +196,14 @@ DEFINE_IMPLICATION(es_staging, harmony)
   V(harmony_destructuring, "harmony destructuring")             \
   V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")     \
   V(harmony_atomics, "harmony atomics")                         \
-  V(harmony_new_target, "harmony new.target")
+  V(harmony_simd, "harmony simd")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
-#define HARMONY_STAGED(V)                                      \
-  V(harmony_tostring, "harmony toString")
+#define HARMONY_STAGED(V)                                    \
+  V(harmony_tostring, "harmony toString")                    \
+  V(harmony_concat_spreadable, "harmony isConcatSpreadable") \
+  V(harmony_new_target, "harmony new.target")                \
+  V(harmony_rest_parameters, "harmony rest parameters")
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                             \
@@ -207,8 +212,7 @@ DEFINE_IMPLICATION(es_staging, harmony)
   V(harmony_spreadcalls, "harmony spread-calls")                        \
   V(harmony_spread_arrays, "harmony spread in array literals")          \
   V(harmony_unicode, "harmony unicode escapes")                         \
-  V(harmony_object, "harmony Object methods")                           \
-  V(harmony_rest_parameters, "harmony rest parameters")
+  V(harmony_object, "harmony Object methods")
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
 // from HARMONY_SHIPPING, all occurrences of the FLAG_ variable are removed,
@@ -662,6 +666,7 @@ DEFINE_BOOL(use_idle_notification, true,
 DEFINE_BOOL(use_ic, true, "use inline caching")
 DEFINE_BOOL(trace_ic, false, "trace inline cache state transitions")
 DEFINE_BOOL(vector_stores, false, "use vectors for store ics")
+DEFINE_BOOL(global_var_shortcuts, false, "use ic-less global loads and stores")
 
 // macro-assembler-ia32.cc
 DEFINE_BOOL(native_code_counters, false,

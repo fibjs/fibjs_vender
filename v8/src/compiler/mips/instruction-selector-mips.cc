@@ -395,6 +395,17 @@ void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
 }
 
 
+void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
+  switch (TruncationModeOf(node->op())) {
+    case TruncationMode::kJavaScript:
+      return VisitRR(this, kArchTruncateDoubleToI, node);
+    case TruncationMode::kRoundToZero:
+      return VisitRR(this, kMipsTruncWD, node);
+  }
+  UNREACHABLE();
+}
+
+
 void InstructionSelector::VisitFloat32Add(Node* node) {
   VisitRRR(this, kMipsAddS, node);
 }
@@ -603,6 +614,7 @@ void InstructionSelector::VisitTailCall(Node* node) {
     InstructionCode opcode;
     switch (descriptor->kind()) {
       case CallDescriptor::kCallCodeObject:
+      case CallDescriptor::kInterpreterDispatch:
         opcode = kArchTailCallCodeObject;
         break;
       case CallDescriptor::kCallJSFunction:

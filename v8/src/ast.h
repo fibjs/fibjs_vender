@@ -10,6 +10,8 @@
 #include "src/assembler.h"
 #include "src/ast-value-factory.h"
 #include "src/bailout-reason.h"
+#include "src/base/flags.h"
+#include "src/base/smart-pointers.h"
 #include "src/factory.h"
 #include "src/isolate.h"
 #include "src/jsregexp.h"
@@ -17,7 +19,6 @@
 #include "src/modules.h"
 #include "src/runtime/runtime.h"
 #include "src/small-pointer-list.h"
-#include "src/smart-pointers.h"
 #include "src/token.h"
 #include "src/types.h"
 #include "src/utils.h"
@@ -137,9 +138,6 @@ typedef ZoneList<Handle<Object>> ZoneObjectList;
   friend class AstNodeFactory;
 
 
-enum AstPropertiesFlag { kDontSelfOptimize, kDontCrankshaft };
-
-
 class FeedbackVectorRequirements {
  public:
   FeedbackVectorRequirements(int slots, int ic_slots)
@@ -175,11 +173,18 @@ typedef List<VariableICSlotPair> ICSlotCache;
 
 class AstProperties final BASE_EMBEDDED {
  public:
-  class Flags : public EnumSet<AstPropertiesFlag, int> {};
+  enum Flag {
+    kNoFlags = 0,
+    kDontSelfOptimize = 1 << 0,
+    kDontCrankshaft = 1 << 1
+  };
+
+  typedef base::Flags<Flag> Flags;
 
   explicit AstProperties(Zone* zone) : node_count_(0), spec_(zone) {}
 
-  Flags* flags() { return &flags_; }
+  Flags& flags() { return flags_; }
+  Flags flags() const { return flags_; }
   int node_count() { return node_count_; }
   void add_node_count(int count) { node_count_ += count; }
 
@@ -196,6 +201,8 @@ class AstProperties final BASE_EMBEDDED {
   int node_count_;
   ZoneFeedbackVectorSpec spec_;
 };
+
+DEFINE_OPERATORS_FOR_FLAGS(AstProperties::Flags)
 
 
 class AstNode: public ZoneObject {
@@ -332,6 +339,7 @@ class Expression : public AstNode {
     kTest
   };
 
+  // True iff the expression is a valid reference expression.
   virtual bool IsValidReferenceExpression() const { return false; }
 
   // Helpers for ToBoolean conversion.
@@ -354,6 +362,9 @@ class Expression : public AstNode {
 
   // True if we can prove that the expression is the undefined literal.
   bool IsUndefinedLiteral(Isolate* isolate) const;
+
+  // True iff the expression is a valid target for an assignment.
+  bool IsValidReferenceExpressionOrThis() const;
 
   // Expression type bounds
   Bounds bounds() const { return bounds_; }
@@ -1605,10 +1616,12 @@ class ArrayLiteral final : public MaterializedLiteral {
   };
 
  protected:
-  ArrayLiteral(Zone* zone, ZoneList<Expression*>* values, int literal_index,
-               bool is_strong, int pos)
+  ArrayLiteral(Zone* zone, ZoneList<Expression*>* values,
+               int first_spread_index, int literal_index, bool is_strong,
+               int pos)
       : MaterializedLiteral(zone, literal_index, is_strong, pos),
-        values_(values) {}
+        values_(values),
+        first_spread_index_(first_spread_index) {}
   static int parent_num_ids() { return MaterializedLiteral::num_ids(); }
 
  private:
@@ -1616,6 +1629,7 @@ class ArrayLiteral final : public MaterializedLiteral {
 
   Handle<FixedArray> constant_elements_;
   ZoneList<Expression*>* values_;
+  int first_spread_index_;
 };
 
 
@@ -1853,7 +1867,7 @@ class Call final : public Expression {
 
   bool global_call() const {
     VariableProxy* proxy = expression_->AsVariableProxy();
-    return proxy != NULL && proxy->var()->IsUnallocated();
+    return proxy != NULL && proxy->var()->IsUnallocatedOrGlobalSlot();
   }
 
   bool known_global_function() const {
@@ -2587,7 +2601,7 @@ class FunctionLiteral final : public Expression {
   FunctionKind kind() const { return FunctionKindBits::decode(bitfield_); }
 
   int ast_node_count() { return ast_properties_.node_count(); }
-  AstProperties::Flags* flags() { return ast_properties_.flags(); }
+  AstProperties::Flags flags() const { return ast_properties_.flags(); }
   void set_ast_properties(AstProperties* ast_properties) {
     ast_properties_ = *ast_properties;
   }
@@ -3445,8 +3459,15 @@ class AstNodeFactory final BASE_EMBEDDED {
                                 int literal_index,
                                 bool is_strong,
                                 int pos) {
-    return new (zone_) ArrayLiteral(zone_, values, literal_index, is_strong,
-                                    pos);
+    return new (zone_)
+        ArrayLiteral(zone_, values, -1, literal_index, is_strong, pos);
+  }
+
+  ArrayLiteral* NewArrayLiteral(ZoneList<Expression*>* values,
+                                int first_spread_index, int literal_index,
+                                bool is_strong, int pos) {
+    return new (zone_) ArrayLiteral(zone_, values, first_spread_index,
+                                    literal_index, is_strong, pos);
   }
 
   VariableProxy* NewVariableProxy(Variable* var,

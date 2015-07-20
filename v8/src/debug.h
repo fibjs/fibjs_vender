@@ -51,11 +51,7 @@ enum ExceptionBreakType {
 
 
 // Type of exception break.
-enum BreakLocatorType {
-  ALL_BREAK_LOCATIONS = 0,
-  SOURCE_BREAK_LOCATIONS = 1,
-  CALLS_AND_RETURNS = 2
-};
+enum BreakLocatorType { ALL_BREAK_LOCATIONS, CALLS_AND_RETURNS };
 
 
 // The different types of breakpoint position alignments.
@@ -82,14 +78,20 @@ class BreakLocation {
                                     BreakPositionAlignment alignment);
 
   bool IsDebugBreak() const;
-  inline bool IsExit() const { return RelocInfo::IsJSReturn(rmode_); }
-  inline bool IsConstructCall() const {
-    return RelocInfo::IsConstructCall(rmode_);
-  }
-  inline bool IsCodeTarget() const { return RelocInfo::IsCodeTarget(rmode_); }
 
-  Handle<Code> CodeTarget() const;
-  Handle<Code> OriginalCodeTarget() const;
+  inline bool IsReturn() const {
+    return RelocInfo::IsDebugBreakSlotAtReturn(rmode_);
+  }
+  inline bool IsCall() const {
+    return RelocInfo::IsDebugBreakSlotAtCall(rmode_);
+  }
+  inline bool IsConstructCall() const {
+    return RelocInfo::IsDebugBreakSlotAtConstructCall(rmode_);
+  }
+  inline int CallArgumentsCount() const {
+    DCHECK(IsCall());
+    return RelocInfo::DebugBreakCallArgumentsCount(data_);
+  }
 
   bool IsStepInLocation() const;
   inline bool HasBreakPoint() const {
@@ -104,32 +106,22 @@ class BreakLocation {
   void SetOneShot();
   void ClearOneShot();
 
+
   inline RelocInfo rinfo() const {
     return RelocInfo(pc(), rmode(), data_, code());
-  }
-
-  inline RelocInfo original_rinfo() const {
-    return RelocInfo(original_pc(), original_rmode(), original_data_,
-                     original_code());
   }
 
   inline int position() const { return position_; }
   inline int statement_position() const { return statement_position_; }
 
   inline Address pc() const { return code()->entry() + pc_offset_; }
-  inline Address original_pc() const {
-    return original_code()->entry() + original_pc_offset_;
-  }
 
   inline RelocInfo::Mode rmode() const { return rmode_; }
-  inline RelocInfo::Mode original_rmode() const { return original_rmode_; }
 
   inline Code* code() const { return debug_info_->code(); }
-  inline Code* original_code() const { return debug_info_->original_code(); }
 
  private:
-  BreakLocation(Handle<DebugInfo> debug_info, RelocInfo* rinfo,
-                RelocInfo* original_rinfo, int position,
+  BreakLocation(Handle<DebugInfo> debug_info, RelocInfo* rinfo, int position,
                 int statement_position);
 
   class Iterator {
@@ -137,11 +129,11 @@ class BreakLocation {
     Iterator(Handle<DebugInfo> debug_info, BreakLocatorType type);
 
     BreakLocation GetBreakLocation() {
-      return BreakLocation(debug_info_, rinfo(), original_rinfo(), position(),
+      return BreakLocation(debug_info_, rinfo(), position(),
                            statement_position());
     }
 
-    inline bool Done() const { return RinfoDone(); }
+    inline bool Done() const { return reloc_iterator_.done(); }
     void Next();
 
     void SkipTo(int count) {
@@ -149,35 +141,20 @@ class BreakLocation {
     }
 
     inline RelocInfo::Mode rmode() { return reloc_iterator_.rinfo()->rmode(); }
-    inline RelocInfo::Mode original_rmode() {
-      return reloc_iterator_.rinfo()->rmode();
-    }
-
     inline RelocInfo* rinfo() { return reloc_iterator_.rinfo(); }
-    inline RelocInfo* original_rinfo() {
-      return reloc_iterator_original_.rinfo();
-    }
-
     inline Address pc() { return rinfo()->pc(); }
-    inline Address original_pc() { return original_rinfo()->pc(); }
-
     int break_index() const { return break_index_; }
-
     inline int position() const { return position_; }
     inline int statement_position() const { return statement_position_; }
 
    private:
-    bool RinfoDone() const;
-    void RinfoNext();
+    static int GetModeMask(BreakLocatorType type);
 
     Handle<DebugInfo> debug_info_;
-    BreakLocatorType type_;
     RelocIterator reloc_iterator_;
-    RelocIterator reloc_iterator_original_;
     int break_index_;
     int position_;
     int statement_position_;
-    bool has_immediate_position_;
 
     DisallowHeapAllocation no_gc_;
 
@@ -189,13 +166,8 @@ class BreakLocation {
   static int BreakIndexFromAddress(Handle<DebugInfo> debug_info,
                                    BreakLocatorType type, Address pc);
 
-  void ClearDebugBreak();
-  void RestoreFromOriginal(int length_in_bytes);
-
   void SetDebugBreak();
-  void SetDebugBreakAtReturn();
-  void SetDebugBreakAtSlot();
-  void SetDebugBreakAtIC();
+  void ClearDebugBreak();
 
   inline bool IsDebuggerStatement() const {
     return RelocInfo::IsDebuggerStatement(rmode_);
@@ -206,11 +178,8 @@ class BreakLocation {
 
   Handle<DebugInfo> debug_info_;
   int pc_offset_;
-  int original_pc_offset_;
   RelocInfo::Mode rmode_;
-  RelocInfo::Mode original_rmode_;
   intptr_t data_;
-  intptr_t original_data_;
   int position_;
   int statement_position_;
 };
@@ -285,10 +254,10 @@ class MessageImpl: public v8::Debug::Message {
   virtual bool IsResponse() const;
   virtual DebugEvent GetEvent() const;
   virtual bool WillStartRunning() const;
-  virtual v8::Handle<v8::Object> GetExecutionState() const;
-  virtual v8::Handle<v8::Object> GetEventData() const;
-  virtual v8::Handle<v8::String> GetJSON() const;
-  virtual v8::Handle<v8::Context> GetEventContext() const;
+  virtual v8::Local<v8::Object> GetExecutionState() const;
+  virtual v8::Local<v8::Object> GetEventData() const;
+  virtual v8::Local<v8::String> GetJSON() const;
+  virtual v8::Local<v8::Context> GetEventContext() const;
   virtual v8::Debug::ClientData* GetClientData() const;
   virtual v8::Isolate* GetIsolate() const;
 
@@ -320,10 +289,10 @@ class EventDetailsImpl : public v8::Debug::EventDetails {
                    Handle<Object> callback_data,
                    v8::Debug::ClientData* client_data);
   virtual DebugEvent GetEvent() const;
-  virtual v8::Handle<v8::Object> GetExecutionState() const;
-  virtual v8::Handle<v8::Object> GetEventData() const;
-  virtual v8::Handle<v8::Context> GetEventContext() const;
-  virtual v8::Handle<v8::Value> GetCallbackData() const;
+  virtual v8::Local<v8::Object> GetExecutionState() const;
+  virtual v8::Local<v8::Object> GetEventData() const;
+  virtual v8::Local<v8::Context> GetEventContext() const;
+  virtual v8::Local<v8::Value> GetCallbackData() const;
   virtual v8::Debug::ClientData* GetClientData() const;
  private:
   DebugEvent event_;  // Debug event causing the break.
@@ -466,8 +435,7 @@ class Debug {
   bool IsStepping() { return thread_local_.step_count_ > 0; }
   bool StepNextContinue(BreakLocation* location, JavaScriptFrame* frame);
   bool StepInActive() { return thread_local_.step_into_fp_ != 0; }
-  void HandleStepIn(Handle<Object> function_obj, Handle<Object> holder,
-                    Address fp, bool is_constructor);
+  void HandleStepIn(Handle<Object> function_obj, bool is_constructor);
   bool StepOutActive() { return thread_local_.step_out_fp_ != 0; }
 
   // Purge all code objects that have no debug break slots.
@@ -808,18 +776,14 @@ class SuppressDebug BASE_EMBEDDED {
 // Code generator routines.
 class DebugCodegen : public AllStatic {
  public:
-  static void GenerateSlot(MacroAssembler* masm);
-  static void GenerateCallICStubDebugBreak(MacroAssembler* masm);
-  static void GenerateLoadICDebugBreak(MacroAssembler* masm);
-  static void GenerateStoreICDebugBreak(MacroAssembler* masm);
-  static void GenerateKeyedLoadICDebugBreak(MacroAssembler* masm);
-  static void GenerateKeyedStoreICDebugBreak(MacroAssembler* masm);
-  static void GenerateCompareNilICDebugBreak(MacroAssembler* masm);
-  static void GenerateReturnDebugBreak(MacroAssembler* masm);
-  static void GenerateCallFunctionStubDebugBreak(MacroAssembler* masm);
-  static void GenerateCallConstructStubDebugBreak(MacroAssembler* masm);
-  static void GenerateCallConstructStubRecordDebugBreak(MacroAssembler* masm);
-  static void GenerateSlotDebugBreak(MacroAssembler* masm);
+  enum DebugBreakCallHelperMode {
+    SAVE_RESULT_REGISTER,
+    IGNORE_RESULT_REGISTER
+  };
+
+  static void GenerateDebugBreakStub(MacroAssembler* masm,
+                                     DebugBreakCallHelperMode mode);
+
   static void GeneratePlainReturnLiveEdit(MacroAssembler* masm);
 
   // FrameDropper is a code replacement for a JavaScript frame with possibly
@@ -827,6 +791,13 @@ class DebugCodegen : public AllStatic {
   // There is no calling conventions here, because it never actually gets
   // called, it only gets returned to.
   static void GenerateFrameDropperLiveEdit(MacroAssembler* masm);
+
+
+  static void GenerateSlot(MacroAssembler* masm, RelocInfo::Mode mode,
+                           int call_argc = -1);
+
+  static void PatchDebugBreakSlot(Address pc, Handle<Code> code);
+  static void ClearDebugBreakSlot(Address pc);
 };
 
 

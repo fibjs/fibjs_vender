@@ -878,26 +878,31 @@ void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
 
 void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
   // TODO(mbrandy): inspect input to see if nop is appropriate.
-  PPCOperandGenerator g(this);
-  Emit(kPPC_Uint32ToUint64, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
+  VisitRR(this, kPPC_Uint32ToUint64, node);
 }
 #endif
 
 
 void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
-  PPCOperandGenerator g(this);
-  Emit(kPPC_DoubleToFloat32, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
+  VisitRR(this, kPPC_DoubleToFloat32, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
+  switch (TruncationModeOf(node->op())) {
+    case TruncationMode::kJavaScript:
+      return VisitRR(this, kArchTruncateDoubleToI, node);
+    case TruncationMode::kRoundToZero:
+      return VisitRR(this, kPPC_DoubleToInt32, node);
+  }
+  UNREACHABLE();
 }
 
 
 #if V8_TARGET_ARCH_PPC64
 void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
-  PPCOperandGenerator g(this);
   // TODO(mbrandy): inspect input to see if nop is appropriate.
-  Emit(kPPC_Int64ToInt32, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
+  VisitRR(this, kPPC_Int64ToInt32, node);
 }
 #endif
 
@@ -1390,6 +1395,12 @@ void InstructionSelector::VisitInt64LessThanOrEqual(Node* node) {
 }
 
 
+void InstructionSelector::VisitUint64LessThan(Node* node) {
+  FlagsContinuation cont(kUnsignedLessThan, node);
+  VisitWord64Compare(this, node, &cont);
+}
+
+
 void InstructionSelector::VisitUint64LessThanOrEqual(Node* node) {
   FlagsContinuation cont(kUnsignedLessThanOrEqual, node);
   VisitWord64Compare(this, node, &cont);
@@ -1540,6 +1551,7 @@ void InstructionSelector::VisitTailCall(Node* node) {
     InstructionCode opcode;
     switch (descriptor->kind()) {
       case CallDescriptor::kCallCodeObject:
+      case CallDescriptor::kInterpreterDispatch:
         opcode = kArchTailCallCodeObject;
         break;
       case CallDescriptor::kCallJSFunction:

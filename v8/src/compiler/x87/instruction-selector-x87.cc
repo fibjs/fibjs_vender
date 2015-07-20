@@ -651,6 +651,23 @@ void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
 }
 
 
+void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
+  X87OperandGenerator g(this);
+
+  switch (TruncationModeOf(node->op())) {
+    case TruncationMode::kJavaScript:
+      Emit(kArchTruncateDoubleToI, g.DefineAsRegister(node),
+           g.Use(node->InputAt(0)));
+      return;
+    case TruncationMode::kRoundToZero:
+      Emit(kX87Float64ToInt32, g.DefineAsRegister(node),
+           g.Use(node->InputAt(0)));
+      return;
+  }
+  UNREACHABLE();
+}
+
+
 void InstructionSelector::VisitFloat32Add(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
@@ -894,20 +911,18 @@ void InstructionSelector::VisitTailCall(Node* node) {
   DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kNeedsNopAfterCall);
 
   // TODO(turbofan): Relax restriction for stack parameters.
-  if (descriptor->UsesOnlyRegisters() &&
-      descriptor->HasSameReturnLocationsAs(
-          linkage()->GetIncomingDescriptor())) {
+
+  if (linkage()->GetIncomingDescriptor()->CanTailCall(node)) {
     CallBuffer buffer(zone(), descriptor, nullptr);
 
     // Compute InstructionOperands for inputs and outputs.
     InitializeCallBuffer(node, &buffer, true, true);
 
-    DCHECK_EQ(0u, buffer.pushed_nodes.size());
-
     // Select the appropriate opcode based on the call type.
     InstructionCode opcode;
     switch (descriptor->kind()) {
       case CallDescriptor::kCallCodeObject:
+      case CallDescriptor::kInterpreterDispatch:
         opcode = kArchTailCallCodeObject;
         break;
       case CallDescriptor::kCallJSFunction:
