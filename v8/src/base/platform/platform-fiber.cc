@@ -1,6 +1,7 @@
 #include "src/v8.h"
 #include "src/sampler.h"
 #include <exlib/include/fiber.h>
+#include <exlib/include/service.h>
 
 #ifdef _WIN32
 
@@ -26,15 +27,24 @@ namespace internal
 
 void Sampler::DoSample()
 {
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    exlib::Fiber *pFiber = exlib::Fiber::Current();
-    RegisterState state;
+    exlib::Service* pService = exlib::Service::getFiberService();
+    exlib::Fiber* fb = pService->firstFiber();
 
-    state.pc = reinterpret_cast<Address>(pFiber->m_cntxt.ip);
-    state.sp = reinterpret_cast<Address>(pFiber->m_cntxt.sp);
-    state.fp = reinterpret_cast<Address>(pFiber->m_cntxt.fp);
+    while (fb)
+    {
+        if (memcmp(fb->name_, "V8 WorkerThread", 16))
+        {
+            RegisterState state;
 
-    SampleStack(state);
+            state.pc = reinterpret_cast<Address>(fb->m_cntxt.ip);
+            state.sp = reinterpret_cast<Address>(fb->m_cntxt.sp);
+            state.fp = reinterpret_cast<Address>(fb->m_cntxt.fp);
+
+            SampleStack(state);
+        }
+
+        fb = pService->nextFiber(fb);
+    }
 }
 
 }
