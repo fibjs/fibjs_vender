@@ -10,6 +10,7 @@
 #define _ex_link_h__
 
 #include "stack.h"
+#include "utils.h"
 
 namespace exlib
 {
@@ -139,50 +140,35 @@ public:
         return pNow;
     }
 
-    bool has(T* pThis) const
-    {
-        linkitem *p = m_first;
-
-        while (p)
-        {
-            if (pThis == (T*)p)
-                return true;
-
-            p = p->m_next;
-        }
-
-        return false;
-    }
-
-    void remove(T* pThis)
+    void remove(T* o)
     {
         linkitem *p1, *p2;
 
-        trace_assert(pThis->m_inlist == this);
-        trace_assert(pThis->m_next != 0 || pThis->m_prev != 0 ||
-                     (m_first == pThis && m_last == pThis));
+        trace_assert(o->m_inlist == this);
+        trace_assert(o->m_next != 0 || o->m_prev != 0 ||
+                     (m_first == o && m_last == o));
 
-        p1 = pThis->m_next;
-        p2 = pThis->m_prev;
+        p1 = o->m_next;
+        p2 = o->m_prev;
 
         if (p1) {
             p1->m_prev = p2;
-            pThis->m_next = 0;
+            o->m_next = 0;
         }
 
         if (p2) {
             p2->m_next = p1;
-            pThis->m_prev = 0;
+            o->m_prev = 0;
         }
 
-        if (m_first == pThis)
+        if (m_first == o)
             m_first = (T*)p1;
 
-        if (m_last == pThis)
+        if (m_last == o)
             m_last = (T*)p2;
 
 #ifdef DEBUG
-        pThis->m_inlist = 0;
+        o->m_inlist = 0;
 #endif
 
         m_count --;
@@ -211,6 +197,21 @@ public:
         m_count = 0;
     }
 
+    bool has(T* o) const
+    {
+        linkitem *p = m_first;
+
+        while (p)
+        {
+            if (o == (T*)p)
+                return true;
+
+            p = p->m_next;
+        }
+
+        return false;
+    }
+
     bool empty() const
     {
         return m_count == 0;
@@ -221,12 +222,32 @@ public:
         return m_count;
     }
 
-    T* head() {
+    T* head() const
+    {
         return m_first;
     }
 
-    T* tail() {
+    T* tail() const
+    {
         return m_last;
+    }
+
+    T* next(T* o) const
+    {
+        trace_assert(o->m_inlist == this);
+        trace_assert(o->m_next != 0 || o->m_prev != 0 ||
+                     (m_first == o && m_last == o));
+
+        return (T*)o->m_next;
+    }
+
+    T* prev(T* o) const
+    {
+        trace_assert(o->m_inlist == this);
+        trace_assert(o->m_next != 0 || o->m_prev != 0 ||
+                     (m_first == o && m_last == o));
+
+        return (T*)o->m_prev;
     }
 
 private:
@@ -234,6 +255,120 @@ private:
     T *m_last;
     int m_count;
 };
+
+template<typename T>
+class LockedList : public List<T>
+{
+public:
+    void putHead(T *pNew)
+    {
+        m_lock.lock();
+        List<T>::putHead(pNew);
+        m_lock.unlock();
+    }
+
+    void putTail(T *pNew)
+    {
+        m_lock.lock();
+        List<T>::putTail(pNew);
+        m_lock.unlock();
+    }
+
+    T *getHead()
+    {
+        m_lock.lock();
+        T *pNow = List<T>::getHead();
+        m_lock.unlock();
+
+        return pNow;
+    }
+
+    T *getTail()
+    {
+        m_lock.lock();
+        T *pNow = List<T>::getTail();
+        m_lock.unlock();
+
+        return pNow;
+    }
+
+    bool has(T* o)
+    {
+        m_lock.lock();
+        bool r = List<T>::has(o);
+        m_lock.unlock();
+
+        return r;
+    }
+
+    void remove(T* o)
+    {
+        m_lock.lock();
+        List<T>::remove(o);
+        m_lock.unlock();
+    }
+
+    void getList(List<T> &list)
+    {
+        m_lock.lock();
+        List<T>::getList(list);
+        m_lock.unlock();
+    }
+
+    bool empty()
+    {
+        m_lock.lock();
+        bool r = List<T>::empty();
+        m_lock.unlock();
+
+        return r;
+    }
+
+    int count()
+    {
+        m_lock.lock();
+        int r = List<T>::count();
+        m_lock.unlock();
+
+        return r;
+    }
+
+    T* head() {
+        m_lock.lock();
+        T* r = List<T>::head();
+        m_lock.unlock();
+
+        return r;
+    }
+
+    T* tail() {
+        m_lock.lock();
+        T* r = List<T>::tail();
+        m_lock.unlock();
+
+        return r;
+    }
+
+    T* next(T* o) {
+        m_lock.lock();
+        T* r = List<T>::next(o);
+        m_lock.unlock();
+
+        return r;
+    }
+
+    T* prev(T* o) {
+        m_lock.lock();
+        T* r = List<T>::prev(o);
+        m_lock.unlock();
+
+        return r;
+    }
+
+private:
+    spinlock m_lock;
+};
+
 
 }
 

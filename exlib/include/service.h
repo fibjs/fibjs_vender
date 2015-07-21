@@ -10,7 +10,6 @@
 #define _ex_service_h__
 
 #include "fiber.h"
-#include "lockfree.h"
 
 namespace exlib
 {
@@ -75,7 +74,7 @@ public:
     Fiber *m_recycle;
     char m_tls[TLS_SIZE];
     List<Fiber> m_resume;
-    lockfree<AsyncEvent> m_aEvents;
+    LockedList<AsyncEvent> m_aEvents;
     List<AsyncEvent> m_yieldList;
 
     IDLE_PROC m_Idle;
@@ -88,7 +87,7 @@ public:
 #endif
 };
 
-typedef lockfree<AsyncEvent> AsyncQueue;
+typedef LockedList<AsyncEvent> AsyncQueue;
 
 }
 

@@ -20,7 +20,6 @@
 
 #include "stack.h"
 #include "list.h"
-#include "lockfree.h"
 #include "fiber.h"
 #include "service.h"
 

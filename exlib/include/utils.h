@@ -154,6 +154,28 @@ private:
 	T *volatile m_v;
 };
 
+class spinlock
+{
+public:
+	spinlock() {
+
+	}
+
+public:
+	void lock()
+	{
+		while (m_atom.CompareAndSwap(0, -1));
+	}
+
+	void unlock()
+	{
+		m_atom.xchg(0);
+	}
+
+private:
+	atomic m_atom;
+};
+
 }
 
 #ifndef ARRAYSIZE

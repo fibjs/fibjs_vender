@@ -72,7 +72,7 @@ static class _service_init
 public:
     _service_init()
     {
-        exlib::Service::getFiberService();
+        Service::getFiberService();
     }
 } s_service_init;
 
@@ -81,7 +81,7 @@ public:
 void Service::dumpFibers()
 {
 #ifndef WIN32
-    exlib::Fiber* fb = firstFiber();
+    Fiber* fb = firstFiber();
     while (fb)
     {
         fb->m_trace.dump();
@@ -193,7 +193,7 @@ void Service::waitEvent()
         if (nCount < 2000000)
             nCount++;
 
-        pEvent = m_aEvents.get();
+        pEvent = m_aEvents.getHead();
         if (pEvent != 0)
             break;
 
@@ -245,7 +245,7 @@ void Service::switchtonext()
         // Then weakup async event.
         while (1)
         {
-            AsyncEvent *p = m_aEvents.get();
+            AsyncEvent *p = m_aEvents.getHead();
             if (p == NULL)
                 break;
 

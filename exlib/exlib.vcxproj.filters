@@ -18,9 +18,6 @@
     <ClInclude Include="include\fiber.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\lockfree.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\osconfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>

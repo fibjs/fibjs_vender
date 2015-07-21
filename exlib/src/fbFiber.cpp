@@ -39,7 +39,7 @@ public:
 namespace exlib
 {
 
-exlib::lockfree<AsyncEvent> s_acSleep;
+LockedList<AsyncEvent> s_acSleep;
 std::multimap<double, AsyncEvent *> s_tms;
 
 
@@ -99,7 +99,7 @@ public:
 
             while (1)
             {
-                p = s_acSleep.get();
+                p = s_acSleep.getHead();
                 if (p == NULL)
                     break;
 
@@ -126,7 +126,7 @@ public:
 
 void _timerThread::post(AsyncEvent *p)
 {
-    s_acSleep.put(p);
+    s_acSleep.putTail(p);
     s_timer.m_sem.Post();
 }
 
