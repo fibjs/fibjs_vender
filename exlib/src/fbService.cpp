@@ -102,9 +102,7 @@ Service::Service() : m_main(this)
     memset(&m_tls, 0, sizeof(m_tls));
 
     m_main.set_name("main");
-#ifdef DEBUG
     m_fibers.putTail(&m_main.m_link);
-#endif
 }
 
 static void fiber_proc(void *(*func)(void *), void *data)
@@ -157,9 +155,7 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
 #endif
 
     Service::root->m_resume.putTail(fb);
-#ifdef DEBUG
     Service::root->m_fibers.putTail(&fb->m_link);
-#endif
 
     fb->Ref();
     fb->Ref();
@@ -233,9 +229,7 @@ void Service::switchConext()
 
             if (m_recycle)
             {
-#ifdef DEBUG
                 m_fibers.remove(&m_recycle->m_link);
-#endif
                 m_recycle->m_joins.set();
                 m_recycle->Unref();
                 m_recycle = NULL;

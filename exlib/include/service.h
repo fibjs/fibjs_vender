@@ -39,7 +39,6 @@ public:
         return p;
     }
 
-#ifdef DEBUG
 public:
     void dumpFibers();
 
@@ -62,7 +61,6 @@ public:
         Fiber* zfb = 0;
         return (Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link));
     }
-#endif
 
 private:
     void waitEvent();
@@ -82,9 +80,7 @@ public:
 
     static Service *root;
 
-#ifdef DEBUG
     List<linkitem> m_fibers;
-#endif
 };
 
 typedef LockedList<AsyncEvent> AsyncQueue;

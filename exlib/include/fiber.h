@@ -272,8 +272,9 @@ public:
     void *m_tls[TLS_SIZE];
     char name_[16];
 
-#ifdef DEBUG
     linkitem m_link;
+
+#ifdef DEBUG
     Locker *m_blocking;
     void *m_stacktop;
     trace m_trace;
