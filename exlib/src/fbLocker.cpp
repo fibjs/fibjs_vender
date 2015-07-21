@@ -9,6 +9,10 @@
 #include "service.h"
 #include <map>
 
+#ifndef WIN32
+#include <unistd.h>
+#endif
+
 namespace exlib
 {
 
@@ -35,19 +39,45 @@ void Locker::dump()
 }
 #endif
 
+void Blocker::suspend(Fiber* current)
+{
+    if (current == 0)
+        current = Fiber::Current();
+
+    trace_assert(current != 0);
+
+    m_blocks.putTail(current);
+    current->m_pService->switchtonext();
+}
+
+Fiber* Blocker::resume()
+{
+    Fiber* fb = m_blocks.getHead();
+
+    if (fb)
+        fb->m_pService->m_resume.putTail(fb);
+
+    return fb;
+}
+
+void Blocker::resumeAll()
+{
+    Fiber* fb;
+
+    while ((fb = m_blocks.getHead()) != 0)
+        fb->m_pService->m_resume.putTail(fb);
+}
+
 void Locker::lock()
 {
-    Service *pService = Service::getFiberService();
+    Fiber *current = Fiber::Current();
 
 #ifdef WIN32
-    if (pService == 0)
+    if (current == 0)
         return;
 #endif
 
-    trace_assert(pService != 0);
-
-    Fiber *current = pService->m_running;
-
+    trace_assert(current != 0);
     trace_assert(m_recursive || current != m_locker);
 
     if (!m_recursive && current == m_locker)
@@ -55,16 +85,14 @@ void Locker::lock()
 
     if (m_locker && current != m_locker)
     {
-        m_blocks.putTail(current);
-
 #ifdef DEBUG
-        if (m_blocks.count() > 200)
+        if (count() > 200)
             dump();
 
         current->m_blocking = this;
 #endif
 
-        pService->switchtonext();
+        suspend(current);
 
 #ifdef DEBUG
         current->m_blocking = 0;
@@ -80,12 +108,9 @@ void Locker::lock()
 
 bool Locker::trylock()
 {
-    Service *pService = Service::getFiberService();
+    Fiber *current = Fiber::Current();
 
-    trace_assert(pService != 0);
-
-    Fiber *current = pService->m_running;
-
+    trace_assert(current != 0);
     trace_assert(m_recursive || current != m_locker);
 
     if (!m_recursive && current == m_locker)
@@ -106,16 +131,14 @@ bool Locker::trylock()
 
 void Locker::unlock()
 {
-    Service *pService = Service::getFiberService();
+    Fiber *current = Fiber::Current();
 
 #ifdef WIN32
-    if (pService == 0)
+    if (current == 0)
         return;
 #endif
 
-    trace_assert(pService != 0);
-
-    Fiber *current = pService->m_running;
+    trace_assert(current != 0);
 
     trace_assert(current == m_locker);
     trace_assert(m_recursive || m_count == 1);
@@ -123,27 +146,23 @@ void Locker::unlock()
 
     if (--m_count == 0)
     {
-        if (m_blocks.empty())
-            m_locker = NULL;
-        else
+        if ((m_locker = resume()) != 0)
         {
-            m_count++;
-            m_locker = m_blocks.getHead();
+            m_count = 1;
 #ifdef DEBUG
             m_trace = m_locker->m_trace;
 #endif
-            pService->m_resume.putTail(m_locker);
         }
     }
 }
 
 bool Locker::owned()
 {
-    Service *pService = Service::getFiberService();
+    Fiber *current = Fiber::Current();
 
-    trace_assert(pService != 0);
+    trace_assert(current != 0);
 
-    return pService->m_running == m_locker;
+    return current == m_locker;
 }
 
 }

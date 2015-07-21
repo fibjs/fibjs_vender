@@ -13,23 +13,12 @@ namespace exlib
 void Event::wait()
 {
     if (!m_set)
-    {
-        Service *pService = Service::getFiberService();
-
-        trace_assert(pService != 0);
-
-        m_blocks.putTail(pService->m_running);
-        pService->switchtonext();
-    }
+        suspend();
 }
 
 void Event::pulse()
 {
-    Service *pService = Service::getFiberService();
-
-    trace_assert(pService != 0);
-    while (!m_blocks.empty())
-        pService->m_resume.putTail(m_blocks.getHead());
+    resumeAll();
 }
 
 void Event::set()

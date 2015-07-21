@@ -91,7 +91,7 @@ void Service::dumpFibers()
 }
 #endif
 
-Service::Service()
+Service::Service() : m_main(this)
 {
     mem_savestack();
 
@@ -131,6 +131,7 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
     stack = (void **) fb + stacksize / sizeof(void *) - 5;
 
     memset(fb, 0, sizeof(Fiber));
+    fb->m_pService = Service::root;
 
 #ifdef DEBUG
     fb->m_stacktop = stack;

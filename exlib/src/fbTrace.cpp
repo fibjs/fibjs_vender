@@ -16,6 +16,7 @@
 #ifndef WIN32
 #include <cxxabi.h>
 #include <dlfcn.h>
+#include <unistd.h>
 #endif
 
 #include "stack.h"

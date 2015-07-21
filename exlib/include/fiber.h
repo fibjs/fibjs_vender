@@ -19,7 +19,23 @@ namespace exlib
 {
 
 class Fiber;
-class Locker
+
+class Blocker
+{
+public:
+    void suspend(Fiber* current = 0);
+    Fiber* resume();
+    void resumeAll();
+    size_t count() const
+    {
+        return m_blocks.count();
+    }
+
+private:
+    List<Fiber> m_blocks;
+};
+
+class Locker : public Blocker
 {
 public:
     Locker(bool recursive = true) :
@@ -33,16 +49,10 @@ public:
     bool trylock();
     bool owned();
 
-    int blocked() const
-    {
-        return m_blocks.count();
-    }
-
 private:
     bool m_recursive;
     int m_count;
     Fiber *m_locker;
-    List<Fiber> m_blocks;
 #ifdef DEBUG
     trace m_trace;
 
@@ -68,7 +78,7 @@ private:
     Locker &m_l;
 };
 
-class Event
+class Event : public Blocker
 {
 public:
     Event()
@@ -85,26 +95,17 @@ public:
 
 private:
     bool m_set;
-    List<Fiber> m_blocks;
 };
 
-class CondVar
+class CondVar : public Blocker
 {
 public:
     void wait(Locker &l);
     void notify_one();
     void notify_all();
-
-    int blocked() const
-    {
-        return m_blocks.count();
-    }
-
-private:
-    List<Fiber> m_blocks;
 };
 
-class Semaphore
+class Semaphore : public Blocker
 {
 public:
     Semaphore(int count = 0) :
@@ -117,14 +118,8 @@ public:
     void post();
     bool trywait();
 
-    int blocked() const
-    {
-        return m_blocks.count();
-    }
-
 private:
     int m_count;
-    List<Fiber> m_blocks;
 };
 
 template<class T>
@@ -209,10 +204,13 @@ private:
     int m_v;
 };
 
+class Service;
+
 class Fiber : public linkitem
 {
 public:
-    Fiber() : refs_(0)
+    Fiber(Service* pService) :
+        refs_(0), m_pService(pService)
     {
         memset(&m_cntxt, 0, sizeof(m_cntxt));
         memset(&m_tls, 0, sizeof(m_tls));
@@ -270,6 +268,7 @@ public:
     intptr_t refs_;
     context m_cntxt;
     Event m_joins;
+    Service* m_pService;
     void *m_tls[TLS_SIZE];
     char name_[16];
 

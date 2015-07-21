@@ -14,29 +14,14 @@ namespace exlib
 void Semaphore::wait()
 {
     if (m_count == 0)
-    {
-        Service *pService = Service::getFiberService();
-
-        trace_assert(pService != 0);
-
-        m_blocks.putTail(pService->m_running);
-        pService->switchtonext();
-    }
+        suspend();
     else
         m_count--;
 }
 
 void Semaphore::post()
 {
-    if (!m_blocks.empty())
-    {
-        Service *pService = Service::getFiberService();
-
-        trace_assert(pService != 0);
-
-        pService->m_resume.putTail(m_blocks.getHead());
-    }
-    else
+    if (resume() == 0)
         m_count++;
 }
 
