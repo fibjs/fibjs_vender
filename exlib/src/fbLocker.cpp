@@ -47,7 +47,7 @@ void Blocker::suspend(Fiber* current)
     trace_assert(current != 0);
 
     m_blocks.putTail(current);
-    current->m_pService->switchtonext();
+    current->m_pService->switchConext();
 }
 
 Fiber* Blocker::resume()

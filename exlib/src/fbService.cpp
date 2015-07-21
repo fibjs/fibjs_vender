@@ -112,7 +112,7 @@ static void fiber_proc(void *(*func)(void *), void *data)
     func(data);
 
     Service::root->m_recycle = Service::root->m_running;
-    Service::root->switchtonext();
+    Service::root->switchConext();
 }
 
 Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
@@ -211,7 +211,7 @@ void Service::waitEvent()
     pEvent->callback();
 }
 
-void Service::switchtonext()
+void Service::switchConext()
 {
 #ifdef DEBUG
     m_running->m_trace.save();
