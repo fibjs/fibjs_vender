@@ -27,6 +27,73 @@
 #include <stdint.h>
 #include "utils.h"
 
+#ifdef MacOS
+
+class OSTls
+{
+public:
+    OSTls();
+
+    void* operator=(void* new_value)
+    {
+        pthread_setspecific(m_index, new_value);
+        return new_value;
+    }
+
+    template<class T>
+    operator T* () const
+    {
+        intptr_t result;
+
+#if defined(I386)
+        asm("movl %%gs:(%1,%2,4), %0;"
+            :"=r"(result)
+            :"r"(kMacTlsBaseOffset), "r"(m_index));
+#else
+        asm("movq %%gs:(%1,%2,8), %0;"
+            :"=r"(result)
+            :"r"(kMacTlsBaseOffset), "r"(m_index));
+#endif
+        return (T*)result;
+    }
+
+private:
+    pthread_key_t m_index;
+    static intptr_t kMacTlsBaseOffset;
+};
+
+#elif defined(OpenBSD)
+
+class OSTls
+{
+public:
+    OSTls()
+    {
+        pthread_key_create(&m_index, NULL);
+    }
+
+    void* operator=(void* new_value)
+    {
+        pthread_setspecific(m_index, new_value);
+        return new_value;
+    }
+
+    template<class T>
+    operator T* () const
+    {
+        return (T*)pthread_getspecific(m_index);
+    }
+
+private:
+    pthread_key_t m_index;
+};
+
+#elif defined(_MSC_VER)
+#define OSTls __declspec(thread) void *
+#else
+#define OSTls __thread void *
+#endif
+
 namespace exlib
 {
 
@@ -389,7 +456,6 @@ public:
     virtual ~OSThread();
 
     void start();
-    void detach();
     void join();
     virtual void Run() = 0;
 

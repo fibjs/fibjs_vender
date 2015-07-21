@@ -17,6 +17,53 @@
 #include <dlfcn.h>
 #endif
 
+#ifdef MacOS
+
+#include <mach/mach_init.h>
+#include <mach/task.h>
+#include <mach/semaphore.h>
+#include <sys/sysctl.h>
+#include <stdlib.h>
+OSTls::OSTls()
+{
+    static bool s_init = false;
+
+    if (!s_init)
+    {
+        const size_t kBufferSize = 128;
+        char buffer[kBufferSize];
+        size_t buffer_size = kBufferSize;
+        int ctl_name[] =
+        { CTL_KERN, KERN_OSRELEASE };
+        sysctl(ctl_name, 2, buffer, &buffer_size, NULL, 0);
+        buffer[kBufferSize - 1] = '\0';
+        char *period_pos = strchr(buffer, '.');
+        *period_pos = '\0';
+        int kernel_version_major = static_cast<int>(strtol(buffer, NULL, 10));
+
+        if (kernel_version_major < 11)
+        {
+#if defined(I386)
+            kMacTlsBaseOffset = 0x48;
+#else
+            kMacTlsBaseOffset = 0x60;
+#endif
+        }
+        else
+        {
+            kMacTlsBaseOffset = 0;
+        }
+
+        s_init = true;
+    }
+
+    pthread_key_create(&m_index, NULL);
+}
+
+intptr_t OSTls::kMacTlsBaseOffset;
+
+#endif
+
 namespace exlib
 {
 
@@ -26,6 +73,8 @@ static void *ThreadEntry(void *arg)
 
     OSThread *thread = reinterpret_cast<OSThread *>(arg);
     thread->Run();
+    delete thread;
+
     return NULL;
 }
 
@@ -38,16 +87,6 @@ OSThread::OSThread() : thread_(0), threadid(0)
 OSSemaphore::OSSemaphore(int start_val)
 {
     m_sem = ::CreateSemaphore(NULL, start_val, LONG_MAX, NULL);
-}
-
-void OSThread::detach()
-{
-    trace_assert(thread_ != 0);
-    trace_assert(threadid != 0);
-
-    CloseHandle(thread_);
-    thread_ = NULL;
-    threadid = 0;
 }
 
 void OSThread::start()
@@ -63,6 +102,16 @@ void OSThread::join()
     trace_assert(threadid != 0);
 
     WaitForSingleObject(thread_, INFINITE);
+}
+
+OSThread::~OSThread()
+{
+    if (thread_)
+    {
+        CloseHandle(thread_);
+        thread_ = NULL;
+        threadid = 0;
+    }
 }
 
 OSCondVarOld::OSCondVarOld(OSMutex *mu)
@@ -397,14 +446,6 @@ void OSThread::backtrace()
 }
 #endif
 
-void OSThread::detach()
-{
-    trace_assert(thread_ != 0);
-
-    pthread_detach(thread_);
-    thread_ = (pthread_t)NULL;
-}
-
 void OSThread::start()
 {
     trace_assert(thread_ == 0);
@@ -419,13 +460,16 @@ void OSThread::join()
     pthread_join(thread_, NULL);
 }
 
-#endif
-
 OSThread::~OSThread()
 {
     if (thread_)
-        detach();
+    {
+        pthread_detach(thread_);
+        thread_ = (pthread_t)NULL;
+    }
 }
+
+#endif
 
 }
 
