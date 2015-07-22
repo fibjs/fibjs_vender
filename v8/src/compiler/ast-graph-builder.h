@@ -35,7 +35,7 @@ class AstGraphBuilder : public AstVisitor {
                   JSTypeFeedbackTable* js_type_feedback = NULL);
 
   // Creates a graph by visiting the entire AST.
-  bool CreateGraph(bool constant_context, bool stack_check = true);
+  bool CreateGraph(bool stack_check = true);
 
   // Helpers to create new control nodes.
   Node* NewIfTrue() { return NewNode(common()->IfTrue()); }
@@ -150,12 +150,12 @@ class AstGraphBuilder : public AstVisitor {
   // Create the main graph body by visiting the AST.
   void CreateGraphBody(bool stack_check);
 
-  // Create the node that represents the outer context of the function.
-  void CreateFunctionContext(bool constant_context);
-
   // Get or create the node that represents the outer function closure.
   Node* GetFunctionClosureForContext();
   Node* GetFunctionClosure();
+
+  // Get or create the node that represents the outer function context.
+  Node* GetFunctionContext();
 
   // Node creation helpers.
   Node* NewNode(const Operator* op, bool incomplete = false) {
@@ -201,9 +201,6 @@ class AstGraphBuilder : public AstVisitor {
   // Creates a new Phi node having {count} input values.
   Node* NewPhi(int count, Node* input, Node* control);
   Node* NewEffectPhi(int count, Node* input, Node* control);
-
-  Node* NewOuterContextParam();
-  Node* NewCurrentContextOsrValue();
 
   // Helpers for merging control, effect or value dependencies.
   Node* MergeControl(Node* control, Node* other);
@@ -258,7 +255,7 @@ class AstGraphBuilder : public AstVisitor {
   Node* BuildPatchReceiverToGlobalProxy(Node* receiver);
 
   // Builders to create local function, script and block contexts.
-  Node* BuildLocalFunctionContext(Node* context, Node* patched_receiver);
+  Node* BuildLocalFunctionContext(Node* context);
   Node* BuildLocalScriptContext(Scope* scope);
   Node* BuildLocalBlockContext(Scope* scope);
 
@@ -268,8 +265,11 @@ class AstGraphBuilder : public AstVisitor {
   // Builder to create an array of rest parameters if used
   Node* BuildRestArgumentsArray(Variable* rest, int index);
 
-  // Builder that assigns to the .this_function internal variable if needed.
-  Node* BuildThisFunctionVar(Variable* this_function_var);
+  // Builder that assigns to the {.this_function} internal variable if needed.
+  Node* BuildThisFunctionVariable(Variable* this_function_var);
+
+  // Builder that assigns to the {new.target} internal variable if needed.
+  Node* BuildNewTargetVariable(Variable* new_target_var);
 
   // Builders for variable load and assignment.
   Node* BuildVariableAssignment(Variable* variable, Node* value,
@@ -284,7 +284,7 @@ class AstGraphBuilder : public AstVisitor {
                           FrameStateBeforeAndAfter& states,
                           const VectorSlotPair& feedback,
                           OutputFrameStateCombine framestate_combine,
-                          ContextualMode mode = CONTEXTUAL);
+                          TypeofMode typeof_mode = NOT_INSIDE_TYPEOF);
 
   // Builders for property loads and stores.
   Node* BuildKeyedLoad(Node* receiver, Node* key,
@@ -307,10 +307,12 @@ class AstGraphBuilder : public AstVisitor {
                             const VectorSlotPair& feedback);
 
   // Builders for global variable loads and stores.
-  Node* BuildGlobalLoad(Node* global, Handle<Name> name,
-                        const VectorSlotPair& feedback, ContextualMode mode);
-  Node* BuildGlobalStore(Node* global, Handle<Name> name, Node* value,
-                         const VectorSlotPair& feedback, TypeFeedbackId id);
+  Node* BuildGlobalLoad(Node* script_context, Node* global, Handle<Name> name,
+                        const VectorSlotPair& feedback, TypeofMode typeof_mode,
+                        int slot_index);
+  Node* BuildGlobalStore(Node* script_context, Node* global, Handle<Name> name,
+                         Node* value, const VectorSlotPair& feedback,
+                         TypeFeedbackId id, int slot_index);
 
   // Builders for accessing the function context.
   Node* BuildLoadBuiltinsObject();
@@ -341,11 +343,14 @@ class AstGraphBuilder : public AstVisitor {
   Node* BuildThrowReferenceError(Variable* var, BailoutId bailout_id);
   Node* BuildThrowConstAssignError(BailoutId bailout_id);
   Node* BuildThrowStaticPrototypeError(BailoutId bailout_id);
+  Node* BuildThrowUnsupportedSuperError(BailoutId bailout_id);
 
   // Builders for dynamic hole-checks at runtime.
   Node* BuildHoleCheckSilent(Node* value, Node* for_hole, Node* not_hole);
-  Node* BuildHoleCheckThrow(Node* value, Variable* var, Node* not_hole,
-                            BailoutId bailout_id);
+  Node* BuildHoleCheckThenThrow(Node* value, Variable* var, Node* not_hole,
+                                BailoutId bailout_id);
+  Node* BuildHoleCheckElseThrow(Node* value, Variable* var, Node* for_hole,
+                                BailoutId bailout_id);
 
   // Builders for conditional errors.
   Node* BuildThrowIfStaticPrototype(Node* name, BailoutId bailout_id);
@@ -383,6 +388,9 @@ class AstGraphBuilder : public AstVisitor {
 
   // Common for all IterationStatement bodies.
   void VisitIterationBody(IterationStatement* stmt, LoopBuilder* loop);
+
+  // Dispatched from VisitCall.
+  void VisitCallSuper(Call* expr);
 
   // Dispatched from VisitCallRuntime.
   void VisitCallJSRuntime(CallRuntime* expr);
@@ -435,6 +443,10 @@ class AstGraphBuilder::Environment : public ZoneObject {
   void Bind(Variable* variable, Node* node);
   Node* Lookup(Variable* variable);
   void MarkAllLocalsLive();
+
+  // Raw operations on parameter variables.
+  void RawParameterBind(int index, Node* node);
+  Node* RawParameterLookup(int index);
 
   // Operations on the context chain.
   Node* Context() const { return contexts_.back(); }

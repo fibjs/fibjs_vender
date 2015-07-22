@@ -1306,7 +1306,8 @@ bool Heap::PerformGarbageCollection(
     AllowHeapAllocation allow_allocation;
     GCTracer::Scope scope(tracer(), GCTracer::Scope::EXTERNAL);
     freed_global_handles =
-        isolate_->global_handles()->PostGarbageCollectionProcessing(collector);
+        isolate_->global_handles()->PostGarbageCollectionProcessing(
+            collector, gc_callback_flags);
   }
   gc_post_processing_depth_--;
 
@@ -2722,8 +2723,8 @@ AllocationResult Heap::AllocatePartialMap(InstanceType instance_type,
     reinterpret_cast<Map*>(result)
         ->set_layout_descriptor(LayoutDescriptor::FastPointerLayout());
   }
+  reinterpret_cast<Map*>(result)->clear_unused();
   reinterpret_cast<Map*>(result)->set_inobject_properties(0);
-  reinterpret_cast<Map*>(result)->set_pre_allocated_property_fields(0);
   reinterpret_cast<Map*>(result)->set_unused_property_fields(0);
   reinterpret_cast<Map*>(result)->set_bit_field(0);
   reinterpret_cast<Map*>(result)->set_bit_field2(0);
@@ -2749,8 +2750,8 @@ AllocationResult Heap::AllocateMap(InstanceType instance_type,
   map->set_prototype(null_value(), SKIP_WRITE_BARRIER);
   map->set_constructor_or_backpointer(null_value(), SKIP_WRITE_BARRIER);
   map->set_instance_size(instance_size);
+  map->clear_unused();
   map->set_inobject_properties(0);
-  map->set_pre_allocated_property_fields(0);
   map->set_code_cache(empty_fixed_array(), SKIP_WRITE_BARRIER);
   map->set_dependent_code(DependentCode::cast(empty_fixed_array()),
                           SKIP_WRITE_BARRIER);
@@ -3379,6 +3380,9 @@ void Heap::CreateInitialObjects() {
   set_extra_natives_source_cache(
       *factory->NewFixedArray(ExtraNatives::GetBuiltinsCount()));
 
+  set_code_stub_natives_source_cache(
+      *factory->NewFixedArray(CodeStubNatives::GetBuiltinsCount()));
+
   set_undefined_cell(*factory->NewCell(factory->undefined_value()));
 
   // The symbol registry is initialized lazily.
@@ -3434,6 +3438,10 @@ void Heap::CreateInitialObjects() {
   Handle<PropertyCell> cell = factory->NewPropertyCell();
   cell->set_value(Smi::FromInt(Isolate::kArrayProtectorValid));
   set_array_protector(*cell);
+
+  cell = factory->NewPropertyCell();
+  cell->set_value(the_hole_value());
+  set_empty_property_cell(*cell);
 
   set_weak_stack_trace_list(Smi::FromInt(0));
 
@@ -4186,8 +4194,7 @@ void Heap::InitializeJSObjectFromMap(JSObject* obj, FixedArray* properties,
 
 
 AllocationResult Heap::AllocateJSObjectFromMap(
-    Map* map, PretenureFlag pretenure, bool allocate_properties,
-    AllocationSite* allocation_site) {
+    Map* map, PretenureFlag pretenure, AllocationSite* allocation_site) {
   // JSFunctions should be allocated using AllocateFunction to be
   // properly initialized.
   DCHECK(map->instance_type() != JS_FUNCTION_TYPE);
@@ -4198,17 +4205,7 @@ AllocationResult Heap::AllocateJSObjectFromMap(
   DCHECK(map->instance_type() != JS_BUILTINS_OBJECT_TYPE);
 
   // Allocate the backing storage for the properties.
-  FixedArray* properties;
-  if (allocate_properties) {
-    int prop_size = map->InitialPropertiesLength();
-    DCHECK(prop_size >= 0);
-    {
-      AllocationResult allocation = AllocateFixedArray(prop_size, pretenure);
-      if (!allocation.To(&properties)) return allocation;
-    }
-  } else {
-    properties = empty_fixed_array();
-  }
+  FixedArray* properties = empty_fixed_array();
 
   // Allocate the JSObject.
   int size = map->instance_size();
@@ -4232,7 +4229,7 @@ AllocationResult Heap::AllocateJSObject(JSFunction* constructor,
 
   // Allocate the object based on the constructors initial map.
   AllocationResult allocation = AllocateJSObjectFromMap(
-      constructor->initial_map(), pretenure, true, allocation_site);
+      constructor->initial_map(), pretenure, allocation_site);
 #ifdef DEBUG
   // Make sure result is NOT a global object if valid.
   HeapObject* obj;
@@ -4952,6 +4949,19 @@ void Heap::IdleNotificationEpilogue(GCIdleTimeAction action,
 }
 
 
+void Heap::CheckAndNotifyBackgroundIdleNotification(double idle_time_in_ms,
+                                                    double now_ms) {
+  if (idle_time_in_ms >= GCIdleTimeHandler::kMinBackgroundIdleTime) {
+    MemoryReducer::Event event;
+    event.type = MemoryReducer::kBackgroundIdleNotification;
+    event.time_ms = now_ms;
+    event.can_start_incremental_gc = incremental_marking()->IsStopped() &&
+                                     incremental_marking()->CanBeActivated();
+    memory_reducer_.NotifyBackgroundIdleNotification(event);
+  }
+}
+
+
 double Heap::MonotonicallyIncreasingTimeInMs() {
   return V8::GetCurrentPlatform()->MonotonicallyIncreasingTime() *
          static_cast<double>(base::Time::kMillisecondsPerSecond);
@@ -4975,6 +4985,8 @@ bool Heap::IdleNotification(double deadline_in_seconds) {
       isolate_->counters()->gc_idle_notification());
   double start_ms = MonotonicallyIncreasingTimeInMs();
   double idle_time_in_ms = deadline_in_ms - start_ms;
+
+  CheckAndNotifyBackgroundIdleNotification(idle_time_in_ms, start_ms);
 
   tracer()->SampleAllocation(start_ms, NewSpaceAllocationCounter(),
                              OldGenerationAllocationCounter());
@@ -5145,11 +5157,6 @@ void Heap::Verify() {
   code_space_->Verify(&no_dirty_regions_visitor);
 
   lo_space_->Verify();
-
-  mark_compact_collector_.VerifyWeakEmbeddedObjectsInCode();
-  if (FLAG_omit_map_checks_for_leaf_maps) {
-    mark_compact_collector_.VerifyOmittedMapChecks();
-  }
 }
 #endif
 
@@ -5871,6 +5878,8 @@ void Heap::TearDown() {
   if (FLAG_verify_predictable) {
     PrintAlloctionsHash();
   }
+
+  memory_reducer_.TearDown();
 
   TearDownArrayBuffers();
 

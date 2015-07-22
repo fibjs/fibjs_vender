@@ -19,6 +19,12 @@ namespace v8 {
 namespace internal {
 
 
+RUNTIME_FUNCTION(UnexpectedStubMiss) {
+  FATAL("Unexpected deopt of a stub");
+  return Smi::FromInt(0);
+}
+
+
 CodeStubDescriptor::CodeStubDescriptor(CodeStub* stub)
     : call_descriptor_(stub->GetCallInterfaceDescriptor()),
       stack_parameter_count_(no_reg),
@@ -467,11 +473,8 @@ namespace {
 
 Handle<JSFunction> GetFunction(Isolate* isolate, const char* name) {
   v8::ExtensionConfiguration no_extensions;
-  Handle<Context> ctx = isolate->bootstrapper()->CreateEnvironment(
-      MaybeHandle<JSGlobalProxy>(), v8::Handle<v8::ObjectTemplate>(),
-      &no_extensions);
-  Handle<JSBuiltinsObject> builtins = handle(ctx->builtins());
-  MaybeHandle<Object> fun = Object::GetProperty(isolate, builtins, name);
+  MaybeHandle<Object> fun = Object::GetProperty(
+      isolate, isolate->factory()->code_stub_exports_object(), name);
   Handle<JSFunction> function = Handle<JSFunction>::cast(fun.ToHandleChecked());
   DCHECK(!function->IsUndefined() &&
          "JavaScript implementation of stub not found");
@@ -502,6 +505,7 @@ Handle<Code> TurboFanCodeStub::GenerateCode() {
   ParseInfo parse_info(&zone, inner);
   CompilationInfo info(&parse_info);
   info.SetFunctionType(GetCallInterfaceDescriptor().GetFunctionType());
+  info.MarkAsContextSpecializing();
   info.SetStub(this);
   return info.GenerateCodeStub();
 }
@@ -717,6 +721,20 @@ void RegExpConstructResultStub::InitializeDescriptor(
     CodeStubDescriptor* descriptor) {
   descriptor->Initialize(
       Runtime::FunctionForId(Runtime::kRegExpConstructResultRT)->entry);
+}
+
+
+void LoadGlobalViaContextStub::InitializeDescriptor(
+    CodeStubDescriptor* descriptor) {
+  // Must never deoptimize.
+  descriptor->Initialize(FUNCTION_ADDR(UnexpectedStubMiss));
+}
+
+
+void StoreGlobalViaContextStub::InitializeDescriptor(
+    CodeStubDescriptor* descriptor) {
+  // Must never deoptimize.
+  descriptor->Initialize(FUNCTION_ADDR(UnexpectedStubMiss));
 }
 
 
@@ -950,6 +968,7 @@ std::ostream& operator<<(std::ostream& os, const ToBooleanStub::Types& s) {
   if (s.Contains(ToBooleanStub::STRING)) p.Add("String");
   if (s.Contains(ToBooleanStub::SYMBOL)) p.Add("Symbol");
   if (s.Contains(ToBooleanStub::HEAP_NUMBER)) p.Add("HeapNumber");
+  if (s.Contains(ToBooleanStub::SIMD_VALUE)) p.Add("SimdValue");
   return os << ")";
 }
 
@@ -982,6 +1001,9 @@ bool ToBooleanStub::Types::UpdateStatus(Handle<Object> object) {
     Add(HEAP_NUMBER);
     double value = HeapNumber::cast(*object)->value();
     return value != 0 && !std::isnan(value);
+  } else if (object->IsFloat32x4()) {
+    Add(SIMD_VALUE);
+    return true;
   } else {
     // We should never see an internal object at runtime here!
     UNREACHABLE();
@@ -991,10 +1013,10 @@ bool ToBooleanStub::Types::UpdateStatus(Handle<Object> object) {
 
 
 bool ToBooleanStub::Types::NeedsMap() const {
-  return Contains(ToBooleanStub::SPEC_OBJECT)
-      || Contains(ToBooleanStub::STRING)
-      || Contains(ToBooleanStub::SYMBOL)
-      || Contains(ToBooleanStub::HEAP_NUMBER);
+  return Contains(ToBooleanStub::SPEC_OBJECT) ||
+         Contains(ToBooleanStub::STRING) || Contains(ToBooleanStub::SYMBOL) ||
+         Contains(ToBooleanStub::HEAP_NUMBER) ||
+         Contains(ToBooleanStub::SIMD_VALUE);
 }
 
 

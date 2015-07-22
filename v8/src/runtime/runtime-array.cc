@@ -472,9 +472,9 @@ static bool IterateElementsSlow(Isolate* isolate, Handle<JSObject> receiver,
     if (!maybe.IsJust()) return false;
     if (maybe.FromJust()) {
       Handle<Object> element_value;
-      ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-          isolate, element_value,
-          Runtime::GetElementOrCharAt(isolate, receiver, i), false);
+      ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, element_value,
+                                       Object::GetElement(isolate, receiver, i),
+                                       false);
       visitor->visit(i, element_value);
     }
   }
@@ -729,13 +729,15 @@ static bool IterateElements(Isolate* isolate, Handle<JSObject> receiver,
 static bool IsConcatSpreadable(Isolate* isolate, Handle<Object> obj) {
   HandleScope handle_scope(isolate);
   if (!obj->IsSpecObject()) return false;
-  Handle<Symbol> key(isolate->factory()->is_concat_spreadable_symbol());
-  Handle<Object> value;
-  MaybeHandle<Object> maybeValue =
-      i::Runtime::GetObjectProperty(isolate, obj, key);
-  if (maybeValue.ToHandle(&value)) {
-    if (!value->IsUndefined()) {
-      return value->BooleanValue();
+  if (FLAG_harmony_concat_spreadable) {
+    Handle<Symbol> key(isolate->factory()->is_concat_spreadable_symbol());
+    Handle<Object> value;
+    MaybeHandle<Object> maybeValue =
+        i::Runtime::GetObjectProperty(isolate, obj, key);
+    if (maybeValue.ToHandle(&value)) {
+      if (!value->IsUndefined()) {
+        return value->BooleanValue();
+      }
     }
   }
   return obj->IsJSArray();
@@ -1111,8 +1113,8 @@ static Object* ArrayConstructorCommon(Isolate* isolate,
       allocation_site = site;
     }
 
-    array = Handle<JSArray>::cast(factory->NewJSObjectFromMap(
-        initial_map, NOT_TENURED, true, allocation_site));
+    array = Handle<JSArray>::cast(
+        factory->NewJSObjectFromMap(initial_map, NOT_TENURED, allocation_site));
   } else {
     array = Handle<JSArray>::cast(factory->NewJSObject(constructor));
 

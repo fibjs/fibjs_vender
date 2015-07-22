@@ -318,13 +318,13 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kParameter: {
       // Parameters have the start node as inputs.
       CHECK_EQ(1, input_count);
-      CHECK_EQ(IrOpcode::kStart,
-               NodeProperties::GetValueInput(node, 0)->opcode());
       // Parameter has an input that produces enough values.
-      int index = OpParameter<int>(node);
-      Node* input = NodeProperties::GetValueInput(node, 0);
+      int const index = ParameterIndexOf(node->op());
+      Node* const start = NodeProperties::GetValueInput(node, 0);
+      CHECK_EQ(IrOpcode::kStart, start->opcode());
       // Currently, parameter indices start at -1 instead of 0.
-      CHECK_GT(input->op()->ValueOutputCount(), index + 1);
+      CHECK_LE(-1, index);
+      CHECK_LT(index + 1, start->op()->ValueOutputCount());
       // Type can be anything.
       CheckUpperIs(node, Type::Any());
       break;
@@ -584,7 +584,9 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
     case IrOpcode::kJSForInDone: {
-      CheckValueInputIs(node, 0, Type::UnsignedSmall());
+      // TODO(bmeurer): OSR breaks this invariant, although the node is not user
+      // visible, so we know it is safe (fullcodegen has an unsigned smi there).
+      // CheckValueInputIs(node, 0, Type::UnsignedSmall());
       break;
     }
     case IrOpcode::kJSForInNext: {
@@ -592,7 +594,9 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
     case IrOpcode::kJSForInStep: {
-      CheckValueInputIs(node, 0, Type::UnsignedSmall());
+      // TODO(bmeurer): OSR breaks this invariant, although the node is not user
+      // visible, so we know it is safe (fullcodegen has an unsigned smi there).
+      // CheckValueInputIs(node, 0, Type::UnsignedSmall());
       CheckUpperIs(node, Type::UnsignedSmall());
       break;
     }

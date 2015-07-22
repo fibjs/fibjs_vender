@@ -48,6 +48,15 @@ class Heap;
 //     - in the timer callback if the mutator allocation rate is high or
 //       incremental GC is in progress.
 //
+// WAIT n x -> WAIT (n+1) happens:
+//     - on background idle notification, which signals that we can start
+//       incremental marking even if the allocation rate is high.
+// The MemoryReducer starts incremental marking on this transition but still
+// has a pending timer task.
+//
+// WAIT n x -> DONE happens:
+//     - in the timer callback if n >= kMaxNumberOfGCs.
+//
 // WAIT n x -> RUN (n+1) happens:
 //     - in the timer callback if the mutator allocation rate is low
 //       and now_ms >= x and there is no incremental GC in progress.
@@ -81,6 +90,7 @@ class MemoryReducer {
     kTimer,
     kMarkCompact,
     kContextDisposed,
+    kBackgroundIdleNotification
   };
 
   struct Event {
@@ -91,18 +101,20 @@ class MemoryReducer {
     bool can_start_incremental_gc;
   };
 
-  explicit MemoryReducer(Heap* heap) : heap_(heap), state_(kDone, 0, 0.0) {}
+  explicit MemoryReducer(Heap* heap)
+      : heap_(heap), state_(kDone, 0, 0.0), pending_task_(nullptr) {}
   // Callbacks.
   void NotifyTimer(const Event& event);
   void NotifyMarkCompact(const Event& event);
-  void NotifyScavenge(const Event& event);
   void NotifyContextDisposed(const Event& event);
+  void NotifyBackgroundIdleNotification(const Event& event);
   // The step function that computes the next state from the current state and
   // the incoming event.
   static State Step(const State& state, const Event& event);
   // Posts a timer task that will call NotifyTimer after the given delay.
   void ScheduleTimer(double delay_ms);
-
+  void TearDown();
+  void ClearTask(v8::Task* task);
   static const int kLongDelayMs;
   static const int kShortDelayMs;
   static const int kMaxNumberOfGCs;
@@ -113,18 +125,24 @@ class MemoryReducer {
   class TimerTask : public v8::Task {
    public:
     explicit TimerTask(MemoryReducer* memory_reducer)
-        : memory_reducer_(memory_reducer) {}
-    virtual ~TimerTask() {}
+        : memory_reducer_(memory_reducer), heap_is_torn_down_(false) {}
+    virtual ~TimerTask() {
+      if (!heap_is_torn_down_) {
+        memory_reducer_->ClearTask(this);
+      }
+    }
+    void NotifyHeapTearDown() { heap_is_torn_down_ = true; }
 
    private:
     // v8::Task overrides.
     void Run() override;
     MemoryReducer* memory_reducer_;
+    bool heap_is_torn_down_;
     DISALLOW_COPY_AND_ASSIGN(TimerTask);
   };
-
   Heap* heap_;
   State state_;
+  TimerTask* pending_task_;
 
   DISALLOW_COPY_AND_ASSIGN(MemoryReducer);
 };

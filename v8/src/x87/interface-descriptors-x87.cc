@@ -39,6 +39,17 @@ const Register VectorStoreICDescriptor::VectorRegister() { return ebx; }
 const Register StoreTransitionDescriptor::MapRegister() { return ebx; }
 
 
+const Register LoadGlobalViaContextDescriptor::DepthRegister() { return edx; }
+const Register LoadGlobalViaContextDescriptor::SlotRegister() { return ebx; }
+const Register LoadGlobalViaContextDescriptor::NameRegister() { return ecx; }
+
+
+const Register StoreGlobalViaContextDescriptor::DepthRegister() { return edx; }
+const Register StoreGlobalViaContextDescriptor::SlotRegister() { return ebx; }
+const Register StoreGlobalViaContextDescriptor::NameRegister() { return ecx; }
+const Register StoreGlobalViaContextDescriptor::ValueRegister() { return eax; }
+
+
 const Register ElementTransitionAndStoreDescriptor::MapRegister() {
   return ebx;
 }
@@ -163,12 +174,12 @@ void CallConstructDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   // eax : number of arguments
   // ebx : feedback vector
-  // edx : (only if ebx is not the megamorphic symbol) slot in feedback
-  //       vector (Smi)
+  // ecx : original constructor (for IsSuperConstructorCall)
+  // edx : slot in feedback vector (Smi, for RecordCallTarget)
   // edi : constructor function
   // TODO(turbofan): So far we don't gather type feedback and hence skip the
   // slot parameter, but ArrayConstructStub needs the vector to be undefined.
-  Register registers[] = {eax, edi, ebx};
+  Register registers[] = {eax, edi, ecx, ebx};
   data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
 }
 
@@ -336,11 +347,22 @@ void ApiAccessorDescriptor::InitializePlatformSpecific(
 }
 
 
-void MathRoundVariantDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
+void MathRoundVariantCallFromUnoptimizedCodeDescriptor::
+    InitializePlatformSpecific(CallInterfaceDescriptorData* data) {
   Register registers[] = {
       edi,  // math rounding function
       edx,  // vector slot id
+  };
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
+void MathRoundVariantCallFromOptimizedCodeDescriptor::
+    InitializePlatformSpecific(CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      edi,  // math rounding function
+      edx,  // vector slot id
+      ebx   // type vector
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }

@@ -799,7 +799,7 @@ void Assembler::bind_to(Label* L, int pos) {
           trampoline_pos = get_trampoline_entry(fixup_pos);
           CHECK(trampoline_pos != kInvalidSlotPos);
         }
-        DCHECK((trampoline_pos - fixup_pos) <= kMaxBranchOffset);
+        CHECK((trampoline_pos - fixup_pos) <= kMaxBranchOffset);
         target_at_put(fixup_pos, trampoline_pos, false);
         fixup_pos = trampoline_pos;
         dist = pos - fixup_pos;
@@ -1410,11 +1410,11 @@ void Assembler::j(int32_t target) {
 #if DEBUG
   // Get pc of delay slot.
   uint32_t ipc = reinterpret_cast<uint32_t>(pc_ + 1 * kInstrSize);
-  bool in_range = (ipc ^ static_cast<uint32_t>(target) >>
-                  (kImm26Bits + kImmFieldShift)) == 0;
+  bool in_range = ((ipc ^ static_cast<uint32_t>(target)) >>
+                   (kImm26Bits + kImmFieldShift)) == 0;
   DCHECK(in_range && ((target & 3) == 0));
 #endif
-  GenInstrJump(J, target >> 2);
+  GenInstrJump(J, (target >> 2) & kImm26Mask);
 }
 
 
@@ -1436,12 +1436,12 @@ void Assembler::jal(int32_t target) {
 #ifdef DEBUG
   // Get pc of delay slot.
   uint32_t ipc = reinterpret_cast<uint32_t>(pc_ + 1 * kInstrSize);
-  bool in_range = (ipc ^ static_cast<uint32_t>(target) >>
-                  (kImm26Bits + kImmFieldShift)) == 0;
+  bool in_range = ((ipc ^ static_cast<uint32_t>(target)) >>
+                   (kImm26Bits + kImmFieldShift)) == 0;
   DCHECK(in_range && ((target & 3) == 0));
 #endif
   positions_recorder()->WriteRecordedPositions();
-  GenInstrJump(JAL, target >> 2);
+  GenInstrJump(JAL, (target >> 2) & kImm26Mask);
 }
 
 
@@ -2830,10 +2830,10 @@ void Assembler::emit_code_stub_address(Code* stub) {
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   // We do not try to reuse pool constants.
   RelocInfo rinfo(pc_, rmode, data, NULL);
-  if (rmode >= RelocInfo::JS_RETURN && rmode <= RelocInfo::DEBUG_BREAK_SLOT) {
+  if (rmode >= RelocInfo::COMMENT &&
+      rmode <= RelocInfo::DEBUG_BREAK_SLOT_AT_CONSTRUCT_CALL) {
     // Adjust code for new modes.
     DCHECK(RelocInfo::IsDebugBreakSlot(rmode)
-           || RelocInfo::IsJSReturn(rmode)
            || RelocInfo::IsComment(rmode)
            || RelocInfo::IsPosition(rmode));
     // These modes do not need an entry in the constant pool.
@@ -2860,6 +2860,7 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
 
 
 void Assembler::BlockTrampolinePoolFor(int instructions) {
+  CheckTrampolinePoolQuick(instructions);
   BlockTrampolinePoolBefore(pc_offset() + instructions * kInstrSize);
 }
 

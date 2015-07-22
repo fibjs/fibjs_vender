@@ -280,13 +280,12 @@ class Scope: public ZoneObject {
   bool is_block_scope() const { return scope_type_ == BLOCK_SCOPE; }
   bool is_with_scope() const { return scope_type_ == WITH_SCOPE; }
   bool is_arrow_scope() const { return scope_type_ == ARROW_SCOPE; }
-  bool is_declaration_scope() const {
-    return is_eval_scope() || is_function_scope() ||
-        is_module_scope() || is_script_scope();
-  }
+  bool is_declaration_scope() const { return is_declaration_scope_; }
   bool is_strict_eval_scope() const {
     return is_eval_scope() && is_strict(language_mode_);
   }
+
+  void set_is_declaration_scope() { is_declaration_scope_ = true; }
 
   // Information about which scopes calls eval.
   bool calls_eval() const { return scope_calls_eval_; }
@@ -442,6 +441,7 @@ class Scope: public ZoneObject {
   // handled separately.
   void CollectStackAndContextLocals(
       ZoneList<Variable*>* stack_locals, ZoneList<Variable*>* context_locals,
+      ZoneList<Variable*>* context_globals,
       ZoneList<Variable*>* strong_mode_free_variables = nullptr);
 
   // Current number of var or const locals.
@@ -450,9 +450,11 @@ class Scope: public ZoneObject {
   // Result of variable allocation.
   int num_stack_slots() const { return num_stack_slots_; }
   int num_heap_slots() const { return num_heap_slots_; }
+  int num_global_slots() const { return num_global_slots_; }
 
   int StackLocalCount() const;
   int ContextLocalCount() const;
+  int ContextGlobalCount() const;
 
   // For script scopes, the number of module literals (including nested ones).
   int num_modules() const { return num_modules_; }
@@ -611,12 +613,16 @@ class Scope: public ZoneObject {
   // constructed based on a serialized scope info or a catch context).
   bool already_resolved_;
 
+  // True if it holds 'var' declarations.
+  bool is_declaration_scope_;
+
   // Computed as variables are declared.
   int num_var_or_const_;
 
   // Computed via AllocateVariables; function, block and catch scopes only.
   int num_stack_slots_;
   int num_heap_slots_;
+  int num_global_slots_;
 
   // The number of modules (including nested ones).
   int num_modules_;
@@ -713,7 +719,8 @@ class Scope: public ZoneObject {
   void AllocateHeapSlot(Variable* var);
   void AllocateParameterLocals(Isolate* isolate);
   void AllocateNonParameterLocal(Isolate* isolate, Variable* var);
-  void AllocateNonParameterLocals(Isolate* isolate);
+  void AllocateDeclaredGlobal(Isolate* isolate, Variable* var);
+  void AllocateNonParameterLocalsAndDeclaredGlobals(Isolate* isolate);
   void AllocateVariablesRecursively(Isolate* isolate);
   void AllocateParameter(Variable* var, int index);
   void AllocateReceiver();

@@ -270,6 +270,9 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Label* slow,
     // Call runtime on identical symbols since we need to throw a TypeError.
     __ cmpi(r7, Operand(SYMBOL_TYPE));
     __ beq(slow);
+    // Call runtime on identical SIMD values since we must throw a TypeError.
+    __ cmpi(r7, Operand(FLOAT32X4_TYPE));
+    __ beq(slow);
     if (is_strong(strength)) {
       // Call the runtime on anything that is converted in the semantics, since
       // we need to throw a TypeError. Smis have already been ruled out.
@@ -287,6 +290,9 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Label* slow,
       __ bge(slow);
       // Call runtime on identical symbols since we need to throw a TypeError.
       __ cmpi(r7, Operand(SYMBOL_TYPE));
+      __ beq(slow);
+      // Call runtime on identical SIMD values since we must throw a TypeError.
+      __ cmpi(r7, Operand(FLOAT32X4_TYPE));
       __ beq(slow);
       if (is_strong(strength)) {
         // Call the runtime on anything that is converted in the semantics,
@@ -2786,18 +2792,25 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   // r3 : number of arguments
   // r4 : the function to call
   // r5 : feedback vector
-  // r6 : (only if r5 is not the megamorphic symbol) slot in feedback
-  //      vector (Smi)
+  // r6 : slot in feedback vector (Smi, for RecordCallTarget)
+  // r7 : original constructor (for IsSuperConstructorCall)
   Label slow, non_function_call;
 
   // Check that the function is not a smi.
   __ JumpIfSmi(r4, &non_function_call);
   // Check that the function is a JSFunction.
-  __ CompareObjectType(r4, r7, r7, JS_FUNCTION_TYPE);
+  __ CompareObjectType(r4, r8, r8, JS_FUNCTION_TYPE);
   __ bne(&slow);
 
   if (RecordCallTarget()) {
+    if (IsSuperConstructorCall()) {
+      __ push(r7);
+    }
+    // TODO(mstarzinger): Consider tweaking target recording to avoid push/pop.
     GenerateRecordCallTarget(masm);
+    if (IsSuperConstructorCall()) {
+      __ pop(r7);
+    }
 
     __ SmiToPtrArrayOffset(r8, r6);
     __ add(r8, r5, r8);
@@ -2827,9 +2840,7 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
 
   // Pass function as original constructor.
   if (IsSuperConstructorCall()) {
-    __ ShiftLeftImm(r7, r3, Operand(kPointerSizeLog2));
-    __ addi(r7, r7, Operand(kPointerSize));
-    __ LoadPX(r6, MemOperand(sp, r7));
+    __ mr(r6, r7);
   } else {
     __ mr(r6, r4);
   }
@@ -2844,11 +2855,11 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
 
   // r3: number of arguments
   // r4: called object
-  // r7: object type
+  // r8: object type
   Label do_call;
   __ bind(&slow);
   STATIC_ASSERT(JS_FUNCTION_PROXY_TYPE < 0xffffu);
-  __ cmpi(r7, Operand(JS_FUNCTION_PROXY_TYPE));
+  __ cmpi(r8, Operand(JS_FUNCTION_PROXY_TYPE));
   __ bne(&non_function_call);
   __ GetBuiltinFunction(r4, Builtins::CALL_FUNCTION_PROXY_AS_CONSTRUCTOR);
   __ b(&do_call);
@@ -3188,12 +3199,11 @@ void StringCharCodeAtGenerator::GenerateSlow(
 
 void StringCharFromCodeGenerator::GenerateFast(MacroAssembler* masm) {
   // Fast case of Heap::LookupSingleCharacterStringFromCode.
-  DCHECK(base::bits::IsPowerOfTwo32(String::kMaxOneByteCharCode + 1));
-  __ LoadSmiLiteral(r0, Smi::FromInt(~String::kMaxOneByteCharCode));
+  DCHECK(base::bits::IsPowerOfTwo32(String::kMaxOneByteCharCodeU + 1));
+  __ LoadSmiLiteral(r0, Smi::FromInt(~String::kMaxOneByteCharCodeU));
   __ ori(r0, r0, Operand(kSmiTagMask));
-  __ and_(r0, code_, r0);
-  __ cmpi(r0, Operand::Zero());
-  __ bne(&slow_case_);
+  __ and_(r0, code_, r0, SetRC);
+  __ bne(&slow_case_, cr0);
 
   __ LoadRoot(result_, Heap::kSingleCharacterStringCacheRootIndex);
   // At this point code register contains smi tagged one-byte char code.

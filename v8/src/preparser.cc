@@ -91,12 +91,13 @@ PreParserExpression PreParserTraits::ParseV8Intrinsic(bool* ok) {
 
 PreParserExpression PreParserTraits::ParseFunctionLiteral(
     PreParserIdentifier name, Scanner::Location function_name_location,
-    bool name_is_strict_reserved, FunctionKind kind,
+    FunctionNameValidity function_name_validity, FunctionKind kind,
     int function_token_position, FunctionLiteral::FunctionType type,
-    FunctionLiteral::ArityRestriction arity_restriction, bool* ok) {
+    FunctionLiteral::ArityRestriction arity_restriction,
+    LanguageMode language_mode, bool* ok) {
   return pre_parser_->ParseFunctionLiteral(
-      name, function_name_location, name_is_strict_reserved, kind,
-      function_token_position, type, arity_restriction, ok);
+      name, function_name_location, function_name_validity, kind,
+      function_token_position, type, arity_restriction, language_mode, ok);
 }
 
 
@@ -192,15 +193,19 @@ PreParser::Statement PreParser::ParseStatementListItem(bool* ok) {
     case Token::CLASS:
       return ParseClassDeclaration(ok);
     case Token::CONST:
-      return ParseVariableStatement(kStatementListItem, ok);
-    case Token::LET:
-      if (is_strict(language_mode())) {
+      if (allow_const()) {
         return ParseVariableStatement(kStatementListItem, ok);
       }
-      // Fall through.
+      break;
+    case Token::LET:
+      if (allow_let()) {
+        return ParseVariableStatement(kStatementListItem, ok);
+      }
+      break;
     default:
-      return ParseStatement(ok);
+      break;
   }
+  return ParseStatement(ok);
 }
 
 
@@ -392,7 +397,7 @@ PreParser::Statement PreParser::ParseSubStatement(bool* ok) {
       // In ES6 CONST is not allowed as a Statement, only as a
       // LexicalDeclaration, however we continue to allow it in sloppy mode for
       // backwards compatibility.
-      if (is_sloppy(language_mode())) {
+      if (is_sloppy(language_mode()) && allow_legacy_const()) {
         return ParseVariableStatement(kStatement, ok);
       }
 
@@ -415,11 +420,14 @@ PreParser::Statement PreParser::ParseFunctionDeclaration(bool* ok) {
   bool is_strict_reserved = false;
   Identifier name = ParseIdentifierOrStrictReservedWord(
       &is_strict_reserved, CHECK_OK);
-  ParseFunctionLiteral(name, scanner()->location(), is_strict_reserved,
+  ParseFunctionLiteral(name, scanner()->location(),
+                       is_strict_reserved ? kFunctionNameIsStrictReserved
+                                          : kFunctionNameValidityUnknown,
                        is_generator ? FunctionKind::kGeneratorFunction
                                     : FunctionKind::kNormalFunction,
                        pos, FunctionLiteral::DECLARATION,
-                       FunctionLiteral::NORMAL_ARITY, CHECK_OK);
+                       FunctionLiteral::NORMAL_ARITY, language_mode(),
+                       CHECK_OK);
   return Statement::FunctionDeclaration();
 }
 
@@ -452,7 +460,7 @@ PreParser::Statement PreParser::ParseBlock(bool* ok) {
   Expect(Token::LBRACE, CHECK_OK);
   Statement final = Statement::Default();
   while (peek() != Token::RBRACE) {
-    if (is_strict(language_mode())) {
+    if (is_strict(language_mode()) || allow_harmony_sloppy()) {
       final = ParseStatementListItem(CHECK_OK);
     } else {
       final = ParseStatement(CHECK_OK);
@@ -508,7 +516,7 @@ PreParser::Statement PreParser::ParseVariableDeclarations(
       return Statement::Default();
     }
     Consume(Token::VAR);
-  } else if (peek() == Token::CONST) {
+  } else if (peek() == Token::CONST && allow_const()) {
     // TODO(ES6): The ES6 Draft Rev4 section 12.2.2 reads:
     //
     // ConstDeclaration : const ConstBinding (',' ConstBinding)* ';'
@@ -520,12 +528,13 @@ PreParser::Statement PreParser::ParseVariableDeclarations(
     // existing pages. Therefore we keep allowing const with the old
     // non-harmony semantics in sloppy mode.
     Consume(Token::CONST);
-    if (is_strict(language_mode())) {
+    if (is_strict(language_mode()) ||
+        (allow_harmony_sloppy() && !allow_legacy_const())) {
       DCHECK(var_context != kStatement);
       is_strict_const = true;
       require_initializer = var_context != kForStatement;
     }
-  } else if (peek() == Token::LET && is_strict(language_mode())) {
+  } else if (peek() == Token::LET && allow_let()) {
     Consume(Token::LET);
     DCHECK(var_context != kStatement);
   } else {
@@ -864,8 +873,8 @@ PreParser::Statement PreParser::ParseForStatement(bool* ok) {
   bool is_let_identifier_expression = false;
   if (peek() != Token::SEMICOLON) {
     ForEachStatement::VisitMode mode;
-    if (peek() == Token::VAR || peek() == Token::CONST ||
-        (peek() == Token::LET && is_strict(language_mode()))) {
+    if (peek() == Token::VAR || (peek() == Token::CONST && allow_const()) ||
+        (peek() == Token::LET && allow_let())) {
       int decl_count;
       Scanner::Location first_initializer_loc = Scanner::Location::invalid();
       Scanner::Location bindings_loc = Scanner::Location::invalid();
@@ -1023,15 +1032,17 @@ PreParser::Statement PreParser::ParseDebuggerStatement(bool* ok) {
 
 PreParser::Expression PreParser::ParseFunctionLiteral(
     Identifier function_name, Scanner::Location function_name_location,
-    bool name_is_strict_reserved, FunctionKind kind, int function_token_pos,
-    FunctionLiteral::FunctionType function_type,
-    FunctionLiteral::ArityRestriction arity_restriction, bool* ok) {
+    FunctionNameValidity function_name_validity, FunctionKind kind,
+    int function_token_pos, FunctionLiteral::FunctionType function_type,
+    FunctionLiteral::ArityRestriction arity_restriction,
+    LanguageMode language_mode, bool* ok) {
   // Function ::
   //   '(' FormalParameterList? ')' '{' FunctionBody '}'
 
   // Parse function body.
   bool outer_is_script_scope = scope_->is_script_scope();
   Scope* function_scope = NewScope(scope_, FUNCTION_SCOPE, kind);
+  function_scope->SetLanguageMode(language_mode);
   PreParserFactory factory(NULL);
   FunctionState function_state(&function_state_, &scope_, function_scope, kind,
                                &factory);
@@ -1065,23 +1076,26 @@ PreParser::Expression PreParser::ParseFunctionLiteral(
   }
   Expect(Token::RBRACE, CHECK_OK);
 
+  // Parsing the body may change the language mode in our scope.
+  language_mode = function_scope->language_mode();
+
   // Validate name and parameter names. We can do this only after parsing the
   // function, since the function can declare itself strict.
-  CheckFunctionName(language_mode(), kind, function_name,
-                    name_is_strict_reserved, function_name_location, CHECK_OK);
+  CheckFunctionName(language_mode, function_name, function_name_validity,
+                    function_name_location, CHECK_OK);
   const bool strict_formal_parameters =
       !parsing_state.is_simple_parameter_list || IsConciseMethod(kind);
   const bool allow_duplicate_parameters =
-      is_sloppy(language_mode()) && !strict_formal_parameters;
-  ValidateFormalParameters(&formals_classifier, language_mode(),
+      is_sloppy(language_mode) && !strict_formal_parameters;
+  ValidateFormalParameters(&formals_classifier, language_mode,
                            allow_duplicate_parameters, CHECK_OK);
 
-  if (is_strict(language_mode())) {
+  if (is_strict(language_mode)) {
     int end_position = scanner()->location().end_pos;
     CheckStrictOctalLiteral(start_position, end_position, CHECK_OK);
   }
 
-  if (is_strong(language_mode()) && IsSubclassConstructor(kind)) {
+  if (is_strong(language_mode) && IsSubclassConstructor(kind)) {
     if (!function_state.super_location().IsValid()) {
       ReportMessageAt(function_name_location,
                       MessageTemplate::kStrongSuperCallMissing,

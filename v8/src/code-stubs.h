@@ -78,6 +78,7 @@ namespace internal {
   V(InternalArrayNoArgumentConstructor)     \
   V(InternalArraySingleArgumentConstructor) \
   V(KeyedLoadGeneric)                       \
+  V(LoadGlobalViaContext)                   \
   V(LoadScriptContextField)                 \
   V(LoadDictionaryElement)                  \
   V(NameDictionaryLookup)                   \
@@ -85,6 +86,7 @@ namespace internal {
   V(Typeof)                                 \
   V(RegExpConstructResult)                  \
   V(StoreFastElement)                       \
+  V(StoreGlobalViaContext)                  \
   V(StoreScriptContextField)                \
   V(StringAdd)                              \
   V(ToBoolean)                              \
@@ -94,6 +96,7 @@ namespace internal {
   /* TurboFanCodeStubs */                   \
   V(StringLengthTF)                         \
   V(StringAddTF)                            \
+  /* TurboFanICs */                         \
   V(MathFloor)                              \
   /* IC Handler stubs */                    \
   V(ArrayBufferViewLoadField)               \
@@ -216,7 +219,9 @@ class CodeStub BASE_EMBEDDED {
 
   virtual CallInterfaceDescriptor GetCallInterfaceDescriptor() const = 0;
 
-  virtual int GetStackParameterCount() const { return 0; }
+  virtual int GetStackParameterCount() const {
+    return GetCallInterfaceDescriptor().GetStackParameterCount();
+  }
 
   virtual void InitializeDescriptor(CodeStubDescriptor* descriptor) {}
 
@@ -358,6 +363,26 @@ struct FakeStubForTesting : public CodeStub {
  public:                                                              \
   void InitializeDescriptor(CodeStubDescriptor* descriptor) override; \
   Handle<Code> GenerateCode() override;                               \
+  DEFINE_CODE_STUB(NAME, SUPER)
+
+#define DEFINE_TURBOFAN_CODE_STUB(NAME, SUPER)                          \
+ public:                                                                \
+  CallInterfaceDescriptor GetCallInterfaceDescriptor() const override { \
+    return DESC##Descriptor(isolate());                                 \
+  };                                                                    \
+  DEFINE_CODE_STUB(NAME, SUPER)
+
+#define DEFINE_TURBOFAN_IC(NAME, SUPER, DESC)                           \
+ public:                                                                \
+  CallInterfaceDescriptor GetCallInterfaceDescriptor() const override { \
+    if (GetCallMode() == CALL_FROM_OPTIMIZED_CODE) {                    \
+      return DESC##CallFromOptimizedCodeDescriptor(isolate());          \
+    } else {                                                            \
+      return DESC##CallFromUnoptimizedCodeDescriptor(isolate());        \
+    }                                                                   \
+  };                                                                    \
+                                                                        \
+ protected:                                                             \
   DEFINE_CODE_STUB(NAME, SUPER)
 
 #define DEFINE_HANDLER_CODE_STUB(NAME, SUPER) \
@@ -544,6 +569,33 @@ class TurboFanCodeStub : public CodeStub {
 };
 
 
+class TurboFanIC : public TurboFanCodeStub {
+ public:
+  enum CallMode { CALL_FROM_UNOPTIMIZED_CODE, CALL_FROM_OPTIMIZED_CODE };
+
+ protected:
+  explicit TurboFanIC(Isolate* isolate, CallMode mode)
+      : TurboFanCodeStub(isolate) {
+    minor_key_ = CallModeBits::encode(mode);
+  }
+
+  CallMode GetCallMode() const { return CallModeBits::decode(minor_key_); }
+
+  void set_sub_minor_key(uint32_t key) {
+    minor_key_ = SubMinorKeyBits::update(minor_key_, key);
+  }
+
+  uint32_t sub_minor_key() const { return SubMinorKeyBits::decode(minor_key_); }
+
+  static const int kSubMinorKeyBits = kStubMinorKeyBits - 1;
+
+ private:
+  class CallModeBits : public BitField<CallMode, 0, 1> {};
+  class SubMinorKeyBits : public BitField<int, 1, kSubMinorKeyBits> {};
+  DEFINE_CODE_STUB_BASE(TurboFanIC, TurboFanCodeStub);
+};
+
+
 // Helper interface to prepare to/restore after making runtime calls.
 class RuntimeCallHelper {
  public:
@@ -610,13 +662,12 @@ class NopRuntimeCallHelper : public RuntimeCallHelper {
 };
 
 
-class MathFloorStub : public TurboFanCodeStub {
+class MathFloorStub : public TurboFanIC {
  public:
-  explicit MathFloorStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
-  int GetStackParameterCount() const override { return 1; }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(MathRoundVariant);
-  DEFINE_CODE_STUB(MathFloor, TurboFanCodeStub);
+  explicit MathFloorStub(Isolate* isolate, TurboFanIC::CallMode mode)
+      : TurboFanIC(isolate, mode) {}
+  Code::Kind GetCodeKind() const override { return Code::CALL_IC; }
+  DEFINE_TURBOFAN_IC(MathFloor, TurboFanIC, MathRoundVariant);
 };
 
 
@@ -962,11 +1013,6 @@ class CallICStub: public PlatformCodeStub {
   CallICStub(Isolate* isolate, const CallICState& state)
       : PlatformCodeStub(isolate) {
     minor_key_ = state.GetExtraICState();
-  }
-
-  static int ExtractArgcFromMinorKey(int minor_key) {
-    CallICState state(static_cast<ExtraICState>(minor_key));
-    return state.arg_count();
   }
 
   Code::Kind GetCodeKind() const override { return Code::CALL_IC; }
@@ -1338,6 +1384,60 @@ class StoreGlobalStub : public HandlerStub {
   class CheckGlobalBits : public BitField<bool, 12, 1> {};
 
   DEFINE_HANDLER_CODE_STUB(StoreGlobal, HandlerStub);
+};
+
+
+class LoadGlobalViaContextStub : public HydrogenCodeStub {
+ public:
+  // Use the loop version for depths higher than this one.
+  static const int kDynamicDepth = 7;
+
+  LoadGlobalViaContextStub(Isolate* isolate, int depth)
+      : HydrogenCodeStub(isolate) {
+    if (depth > kDynamicDepth) depth = kDynamicDepth;
+    set_sub_minor_key(DepthBits::encode(depth));
+  }
+
+  int depth() const { return DepthBits::decode(sub_minor_key()); }
+
+ private:
+  class DepthBits : public BitField<unsigned int, 0, 3> {};
+  STATIC_ASSERT(kDynamicDepth <= DepthBits::kMax);
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(LoadGlobalViaContext);
+  DEFINE_HYDROGEN_CODE_STUB(LoadGlobalViaContext, HydrogenCodeStub);
+};
+
+
+class StoreGlobalViaContextStub : public HydrogenCodeStub {
+ public:
+  // Use the loop version for depths higher than this one.
+  static const int kDynamicDepth = 7;
+
+  StoreGlobalViaContextStub(Isolate* isolate, int depth,
+                            LanguageMode language_mode)
+      : HydrogenCodeStub(isolate) {
+    if (depth > kDynamicDepth) depth = kDynamicDepth;
+    set_sub_minor_key(DepthBits::encode(depth) |
+                      LanguageModeBits::encode(language_mode));
+  }
+
+  int depth() const { return DepthBits::decode(sub_minor_key()); }
+
+  LanguageMode language_mode() const {
+    return LanguageModeBits::decode(sub_minor_key());
+  }
+
+ private:
+  class DepthBits : public BitField<unsigned int, 0, 4> {};
+  STATIC_ASSERT(kDynamicDepth <= DepthBits::kMax);
+
+  class LanguageModeBits : public BitField<LanguageMode, 4, 2> {};
+  STATIC_ASSERT(LANGUAGE_END == 3);
+
+ private:
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(StoreGlobalViaContext);
+  DEFINE_HYDROGEN_CODE_STUB(StoreGlobalViaContext, HydrogenCodeStub);
 };
 
 
@@ -1862,10 +1962,6 @@ class CallFunctionStub: public PlatformCodeStub {
       : PlatformCodeStub(isolate) {
     DCHECK(argc >= 0 && argc <= Code::kMaxArguments);
     minor_key_ = ArgcBits::encode(argc) | FlagBits::encode(flags);
-  }
-
-  static int ExtractArgcFromMinorKey(int minor_key) {
-    return ArgcBits::decode(minor_key);
   }
 
  private:
@@ -2753,6 +2849,7 @@ class ToBooleanStub: public HydrogenCodeStub {
     STRING,
     SYMBOL,
     HEAP_NUMBER,
+    SIMD_VALUE,
     NUMBER_OF_TYPES
   };
 

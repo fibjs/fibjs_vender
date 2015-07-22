@@ -1241,9 +1241,18 @@ void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
 
 
 void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
-  Arm64OperandGenerator g(this);
-  Emit(kArm64Float64ToFloat32, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
+  VisitRR(this, kArm64Float64ToFloat32, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
+  switch (TruncationModeOf(node->op())) {
+    case TruncationMode::kJavaScript:
+      return VisitRR(this, kArchTruncateDoubleToI, node);
+    case TruncationMode::kRoundToZero:
+      return VisitRR(this, kArm64Float64ToInt32, node);
+  }
+  UNREACHABLE();
 }
 
 
@@ -1487,6 +1496,7 @@ void InstructionSelector::VisitTailCall(Node* node) {
     InstructionCode opcode;
     switch (descriptor->kind()) {
       case CallDescriptor::kCallCodeObject:
+      case CallDescriptor::kInterpreterDispatch:
         opcode = kArchTailCallCodeObject;
         break;
       case CallDescriptor::kCallJSFunction:

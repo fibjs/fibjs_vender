@@ -233,11 +233,9 @@ void StaticMarkingVisitor<StaticVisitor>::VisitCell(Heap* heap,
 template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::VisitDebugTarget(Heap* heap,
                                                            RelocInfo* rinfo) {
-  DCHECK((RelocInfo::IsJSReturn(rinfo->rmode()) &&
-          rinfo->IsPatchedReturnSequence()) ||
-         (RelocInfo::IsDebugBreakSlot(rinfo->rmode()) &&
-          rinfo->IsPatchedDebugBreakSlotSequence()));
-  Code* target = Code::GetCodeFromTargetAddress(rinfo->call_address());
+  DCHECK(RelocInfo::IsDebugBreakSlot(rinfo->rmode()) &&
+         rinfo->IsPatchedDebugBreakSlotSequence());
+  Code* target = Code::GetCodeFromTargetAddress(rinfo->debug_call_address());
   heap->mark_compact_collector()->RecordRelocSlot(rinfo, target);
   StaticVisitor::MarkObject(heap, target);
 }
@@ -543,22 +541,25 @@ void StaticMarkingVisitor<StaticVisitor>::MarkMapContents(Heap* heap,
   }
 
   // Since descriptor arrays are potentially shared, ensure that only the
-  // descriptors that belong to this map are marked. The first time a
-  // non-empty descriptor array is marked, its header is also visited. The slot
-  // holding the descriptor array will be implicitly recorded when the pointer
-  // fields of this map are visited.
-  DescriptorArray* descriptors = map->instance_descriptors();
-  if (StaticVisitor::MarkObjectWithoutPush(heap, descriptors) &&
-      descriptors->length() > 0) {
-    StaticVisitor::VisitPointers(heap, descriptors->GetFirstElementAddress(),
-                                 descriptors->GetDescriptorEndSlot(0));
-  }
-  int start = 0;
-  int end = map->NumberOfOwnDescriptors();
-  if (start < end) {
-    StaticVisitor::VisitPointers(heap,
-                                 descriptors->GetDescriptorStartSlot(start),
-                                 descriptors->GetDescriptorEndSlot(end));
+  // descriptors that belong to this map are marked. The first time a non-empty
+  // descriptor array is marked, its header is also visited. The slot holding
+  // the descriptor array will be implicitly recorded when the pointer fields of
+  // this map are visited.  Prototype maps don't keep track of transitions, so
+  // just mark the entire descriptor array.
+  if (!map->is_prototype_map()) {
+    DescriptorArray* descriptors = map->instance_descriptors();
+    if (StaticVisitor::MarkObjectWithoutPush(heap, descriptors) &&
+        descriptors->length() > 0) {
+      StaticVisitor::VisitPointers(heap, descriptors->GetFirstElementAddress(),
+                                   descriptors->GetDescriptorEndSlot(0));
+    }
+    int start = 0;
+    int end = map->NumberOfOwnDescriptors();
+    if (start < end) {
+      StaticVisitor::VisitPointers(heap,
+                                   descriptors->GetDescriptorStartSlot(start),
+                                   descriptors->GetDescriptorEndSlot(end));
+    }
   }
 
   // Mark the pointer fields of the Map. Since the transitions array has
@@ -785,9 +786,8 @@ void Code::CodeIterateBody(ObjectVisitor* v) {
                   RelocInfo::ModeMask(RelocInfo::EXTERNAL_REFERENCE) |
                   RelocInfo::ModeMask(RelocInfo::INTERNAL_REFERENCE) |
                   RelocInfo::ModeMask(RelocInfo::INTERNAL_REFERENCE_ENCODED) |
-                  RelocInfo::ModeMask(RelocInfo::JS_RETURN) |
-                  RelocInfo::ModeMask(RelocInfo::DEBUG_BREAK_SLOT) |
-                  RelocInfo::ModeMask(RelocInfo::RUNTIME_ENTRY);
+                  RelocInfo::ModeMask(RelocInfo::RUNTIME_ENTRY) |
+                  RelocInfo::kDebugBreakSlotMask;
 
   // There are two places where we iterate code bodies: here and the
   // templated CodeIterateBody (below). They should be kept in sync.
@@ -813,9 +813,8 @@ void Code::CodeIterateBody(Heap* heap) {
                   RelocInfo::ModeMask(RelocInfo::EXTERNAL_REFERENCE) |
                   RelocInfo::ModeMask(RelocInfo::INTERNAL_REFERENCE) |
                   RelocInfo::ModeMask(RelocInfo::INTERNAL_REFERENCE_ENCODED) |
-                  RelocInfo::ModeMask(RelocInfo::JS_RETURN) |
-                  RelocInfo::ModeMask(RelocInfo::DEBUG_BREAK_SLOT) |
-                  RelocInfo::ModeMask(RelocInfo::RUNTIME_ENTRY);
+                  RelocInfo::ModeMask(RelocInfo::RUNTIME_ENTRY) |
+                  RelocInfo::kDebugBreakSlotMask;
 
   // There are two places where we iterate code bodies: here and the non-
   // templated CodeIterateBody (above). They should be kept in sync.

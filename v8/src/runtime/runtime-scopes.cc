@@ -230,6 +230,10 @@ RUNTIME_FUNCTION(Runtime_DeclareLookupSlot) {
   BindingFlags binding_flags;
   Handle<Object> holder =
       context->Lookup(name, flags, &index, &attributes, &binding_flags);
+  if (holder.is_null()) {
+    // In case of JSProxy, an exception might have been thrown.
+    if (isolate->has_pending_exception()) return isolate->heap()->exception();
+  }
 
   Handle<JSObject> object;
   Handle<Object> value =
@@ -308,6 +312,10 @@ RUNTIME_FUNCTION(Runtime_InitializeLegacyConstLookupSlot) {
   BindingFlags binding_flags;
   Handle<Object> holder =
       context->Lookup(name, flags, &index, &attributes, &binding_flags);
+  if (holder.is_null()) {
+    // In case of JSProxy, an exception might have been thrown.
+    if (isolate->has_pending_exception()) return isolate->heap()->exception();
+  }
 
   if (index >= 0) {
     DCHECK(holder->IsContext());
@@ -632,7 +640,6 @@ RUNTIME_FUNCTION(Runtime_NewScriptContext) {
   Handle<ScriptContextTable> script_context_table(
       native_context->script_context_table());
 
-  Handle<String> clashed_name;
   Object* name_clash_result =
       FindNameClash(scope_info, global_object, script_context_table);
   if (isolate->has_pending_exception()) return name_clash_result;
@@ -640,12 +647,16 @@ RUNTIME_FUNCTION(Runtime_NewScriptContext) {
   // Script contexts have a canonical empty function as their closure, not the
   // anonymous closure containing the global code.  See
   // FullCodeGenerator::PushFunctionArgumentForContextAllocation.
-  Handle<JSFunction> closure(native_context->closure());
+  Handle<JSFunction> closure(global_object->IsJSBuiltinsObject()
+                                 ? *function
+                                 : native_context->closure());
   Handle<Context> result =
       isolate->factory()->NewScriptContext(closure, scope_info);
 
+  result->InitializeGlobalSlots();
+
   DCHECK(function->context() == isolate->context());
-  DCHECK(function->context()->global_object() == result->global_object());
+  DCHECK(*global_object == result->global_object());
 
   Handle<ScriptContextTable> new_script_context_table =
       ScriptContextTable::Extend(script_context_table, result);
@@ -852,6 +863,8 @@ RUNTIME_FUNCTION(Runtime_DeleteLookupSlot) {
 
   // If the slot was not found the result is true.
   if (holder.is_null()) {
+    // In case of JSProxy, an exception might have been thrown.
+    if (isolate->has_pending_exception()) return isolate->heap()->exception();
     return isolate->heap()->true_value();
   }
 
@@ -1006,11 +1019,19 @@ RUNTIME_FUNCTION(Runtime_StoreLookupSlot) {
   BindingFlags binding_flags;
   Handle<Object> holder =
       context->Lookup(name, flags, &index, &attributes, &binding_flags);
-  // In case of JSProxy, an exception might have been thrown.
-  if (isolate->has_pending_exception()) return isolate->heap()->exception();
+  if (holder.is_null()) {
+    // In case of JSProxy, an exception might have been thrown.
+    if (isolate->has_pending_exception()) return isolate->heap()->exception();
+  }
 
   // The property was found in a context slot.
   if (index >= 0) {
+    if ((binding_flags == MUTABLE_CHECK_INITIALIZED ||
+         binding_flags == IMMUTABLE_CHECK_INITIALIZED_HARMONY) &&
+        Handle<Context>::cast(holder)->is_the_hole(index)) {
+      THROW_NEW_ERROR_RETURN_FAILURE(
+          isolate, NewReferenceError(MessageTemplate::kNotDefined, name));
+    }
     if ((attributes & READ_ONLY) == 0) {
       Handle<Context>::cast(holder)->set(index, *value);
     } else if (is_strict(language_mode)) {

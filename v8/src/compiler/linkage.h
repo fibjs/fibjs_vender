@@ -63,9 +63,10 @@ class CallDescriptor final : public ZoneObject {
  public:
   // Describes the kind of this call, which determines the target.
   enum Kind {
-    kCallCodeObject,  // target is a Code object
-    kCallJSFunction,  // target is a JSFunction object
-    kCallAddress      // target is a machine pointer
+    kCallCodeObject,      // target is a Code object
+    kCallJSFunction,      // target is a JSFunction object
+    kCallAddress,         // target is a machine pointer
+    kInterpreterDispatch  // target is an interpreter bytecode handler
   };
 
   enum Flag {
@@ -110,6 +111,8 @@ class CallDescriptor final : public ZoneObject {
 
   // Returns {true} if this descriptor is a call to a JSFunction.
   bool IsJSFunctionCall() const { return kind_ == kCallJSFunction; }
+
+  bool IsInterpreterDispatch() const { return kind_ == kInterpreterDispatch; }
 
   // The number of return values from this call.
   size_t ReturnCount() const { return machine_sig_->return_count(); }
@@ -235,6 +238,12 @@ class Linkage : public ZoneObject {
   static CallDescriptor* GetSimplifiedCDescriptor(Zone* zone,
                                                   const MachineSignature* sig);
 
+  // Creates a call descriptor for interpreter handler code stubs. These are not
+  // intended to be called directly but are instead dispatched to by the
+  // interpreter.
+  static CallDescriptor* GetInterpreterDispatchDescriptor(
+      Zone* zone, const MachineSignature* sig);
+
   // Get the location of an (incoming) parameter to this function.
   LinkageLocation GetParameterLocation(int index) const {
     return incoming_->GetInputLocation(index + 1);  // + 1 to skip target.
@@ -267,6 +276,9 @@ class Linkage : public ZoneObject {
 
   // A special parameter index for JSCalls that represents the closure.
   static const int kJSFunctionCallClosureParamIndex = -1;
+
+  // A special {OsrValue} index to indicate the context spill slot.
+  static const int kOsrContextSpillSlotIndex = -1;
 
  private:
   CallDescriptor* const incoming_;

@@ -695,8 +695,7 @@ bool Object::IsJSReceiver() const {
 
 bool Object::IsJSObject() const {
   STATIC_ASSERT(LAST_JS_OBJECT_TYPE == LAST_TYPE);
-  return IsHeapObject() &&
-      HeapObject::cast(this)->map()->instance_type() >= FIRST_JS_OBJECT_TYPE;
+  return IsHeapObject() && HeapObject::cast(this)->map()->IsJSObjectMap();
 }
 
 
@@ -1132,19 +1131,6 @@ bool Object::IsMinusZero() const {
 }
 
 
-MaybeHandle<Smi> Object::ToSmi(Isolate* isolate, Handle<Object> object) {
-  if (object->IsSmi()) return Handle<Smi>::cast(object);
-  if (object->IsHeapNumber()) {
-    double value = Handle<HeapNumber>::cast(object)->value();
-    int int_value = FastD2I(value);
-    if (value == FastI2D(int_value) && Smi::IsValid(int_value)) {
-      return handle(Smi::FromInt(int_value), isolate);
-    }
-  }
-  return Handle<Smi>();
-}
-
-
 MaybeHandle<JSReceiver> Object::ToObject(Isolate* isolate,
                                          Handle<Object> object) {
   return ToObject(
@@ -1170,6 +1156,14 @@ MaybeHandle<Object> Object::GetElement(Isolate* isolate, Handle<Object> object,
                                        LanguageMode language_mode) {
   LookupIterator it(isolate, object, index);
   return GetProperty(&it, language_mode);
+}
+
+
+MaybeHandle<Object> Object::SetElement(Isolate* isolate, Handle<Object> object,
+                                       uint32_t index, Handle<Object> value,
+                                       LanguageMode language_mode) {
+  LookupIterator it(isolate, object, index);
+  return SetProperty(&it, value, language_mode, MAY_BE_STORE_FROM_KEYED);
 }
 
 
@@ -1830,12 +1824,6 @@ void JSObject::EnsureCanContainElements(Handle<JSObject> object,
 }
 
 
-bool JSObject::WouldConvertToSlowElements(Handle<Object> key) {
-  uint32_t index = 0;
-  return key->ToArrayIndex(&index) && WouldConvertToSlowElements(index);
-}
-
-
 void JSObject::SetMapAndElements(Handle<JSObject> object,
                                  Handle<Map> new_map,
                                  Handle<FixedArrayBase> value) {
@@ -2148,7 +2136,8 @@ void JSObject::InitializeBody(Map* map,
   int size = map->instance_size();
   int offset = kHeaderSize;
   if (filler_value != pre_allocated_value) {
-    int pre_allocated = map->pre_allocated_property_fields();
+    int pre_allocated =
+        map->inobject_properties() - map->unused_property_fields();
     DCHECK(pre_allocated * kPointerSize + kHeaderSize <= size);
     for (int i = 0; i < pre_allocated; i++) {
       WRITE_FIELD(this, offset, pre_allocated_value);
@@ -2225,15 +2214,9 @@ bool Object::IsStringObjectWithCharacterAt(uint32_t index) {
 
 void Object::VerifyApiCallResultType() {
 #if DEBUG
-  if (!(IsSmi() ||
-        IsString() ||
-        IsSymbol() ||
-        IsSpecObject() ||
-        IsHeapNumber() ||
-        IsUndefined() ||
-        IsTrue() ||
-        IsFalse() ||
-        IsNull())) {
+  if (!(IsSmi() || IsString() || IsSymbol() || IsSpecObject() ||
+        IsHeapNumber() || IsFloat32x4() || IsUndefined() || IsTrue() ||
+        IsFalse() || IsNull())) {
     FATAL("API call returned invalid object");
   }
 #endif  // DEBUG
@@ -4083,11 +4066,6 @@ int Map::inobject_properties() {
 }
 
 
-int Map::pre_allocated_property_fields() {
-  return READ_BYTE_FIELD(this, kPreAllocatedPropertyFieldsOffset);
-}
-
-
 int Map::GetInObjectPropertyOffset(int index) {
   // Adjust for the number of properties stored in the object.
   index -= inobject_properties();
@@ -4161,12 +4139,7 @@ void Map::set_inobject_properties(int value) {
 }
 
 
-void Map::set_pre_allocated_property_fields(int value) {
-  DCHECK(0 <= value && value < 256);
-  WRITE_BYTE_FIELD(this,
-                   kPreAllocatedPropertyFieldsOffset,
-                   static_cast<byte>(value));
-}
+void Map::clear_unused() { WRITE_BYTE_FIELD(this, kUnusedOffset, 0); }
 
 
 InstanceType Map::instance_type() {
@@ -4527,61 +4500,61 @@ inline void Code::set_can_have_weak_objects(bool value) {
 
 bool Code::has_deoptimization_support() {
   DCHECK_EQ(FUNCTION, kind());
-  byte flags = READ_BYTE_FIELD(this, kFullCodeFlags);
+  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
   return FullCodeFlagsHasDeoptimizationSupportField::decode(flags);
 }
 
 
 void Code::set_has_deoptimization_support(bool value) {
   DCHECK_EQ(FUNCTION, kind());
-  byte flags = READ_BYTE_FIELD(this, kFullCodeFlags);
+  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
   flags = FullCodeFlagsHasDeoptimizationSupportField::update(flags, value);
-  WRITE_BYTE_FIELD(this, kFullCodeFlags, flags);
+  WRITE_UINT32_FIELD(this, kFullCodeFlags, flags);
 }
 
 
 bool Code::has_debug_break_slots() {
   DCHECK_EQ(FUNCTION, kind());
-  byte flags = READ_BYTE_FIELD(this, kFullCodeFlags);
+  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
   return FullCodeFlagsHasDebugBreakSlotsField::decode(flags);
 }
 
 
 void Code::set_has_debug_break_slots(bool value) {
   DCHECK_EQ(FUNCTION, kind());
-  byte flags = READ_BYTE_FIELD(this, kFullCodeFlags);
+  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
   flags = FullCodeFlagsHasDebugBreakSlotsField::update(flags, value);
-  WRITE_BYTE_FIELD(this, kFullCodeFlags, flags);
+  WRITE_UINT32_FIELD(this, kFullCodeFlags, flags);
 }
 
 
 bool Code::is_compiled_optimizable() {
   DCHECK_EQ(FUNCTION, kind());
-  byte flags = READ_BYTE_FIELD(this, kFullCodeFlags);
+  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
   return FullCodeFlagsIsCompiledOptimizable::decode(flags);
 }
 
 
 void Code::set_compiled_optimizable(bool value) {
   DCHECK_EQ(FUNCTION, kind());
-  byte flags = READ_BYTE_FIELD(this, kFullCodeFlags);
+  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
   flags = FullCodeFlagsIsCompiledOptimizable::update(flags, value);
-  WRITE_BYTE_FIELD(this, kFullCodeFlags, flags);
+  WRITE_UINT32_FIELD(this, kFullCodeFlags, flags);
 }
 
 
 bool Code::has_reloc_info_for_serialization() {
   DCHECK_EQ(FUNCTION, kind());
-  byte flags = READ_BYTE_FIELD(this, kFullCodeFlags);
+  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
   return FullCodeFlagsHasRelocInfoForSerialization::decode(flags);
 }
 
 
 void Code::set_has_reloc_info_for_serialization(bool value) {
   DCHECK_EQ(FUNCTION, kind());
-  byte flags = READ_BYTE_FIELD(this, kFullCodeFlags);
+  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
   flags = FullCodeFlagsHasRelocInfoForSerialization::update(flags, value);
-  WRITE_BYTE_FIELD(this, kFullCodeFlags, flags);
+  WRITE_UINT32_FIELD(this, kFullCodeFlags, flags);
 }
 
 
@@ -4603,14 +4576,16 @@ void Code::set_allow_osr_at_loop_nesting_level(int level) {
 
 int Code::profiler_ticks() {
   DCHECK_EQ(FUNCTION, kind());
-  return READ_BYTE_FIELD(this, kProfilerTicksOffset);
+  return ProfilerTicksField::decode(
+      READ_UINT32_FIELD(this, kKindSpecificFlags1Offset));
 }
 
 
 void Code::set_profiler_ticks(int ticks) {
-  DCHECK(ticks < 256);
   if (kind() == FUNCTION) {
-    WRITE_BYTE_FIELD(this, kProfilerTicksOffset, ticks);
+    unsigned previous = READ_UINT32_FIELD(this, kKindSpecificFlags1Offset);
+    unsigned updated = ProfilerTicksField::update(previous, ticks);
+    WRITE_UINT32_FIELD(this, kKindSpecificFlags1Offset, updated);
   }
 }
 
@@ -5176,8 +5151,7 @@ void Script::set_origin_options(ScriptOriginOptions origin_options) {
 
 
 ACCESSORS(DebugInfo, shared, SharedFunctionInfo, kSharedFunctionInfoIndex)
-ACCESSORS(DebugInfo, original_code, Code, kOriginalCodeIndex)
-ACCESSORS(DebugInfo, code, Code, kPatchedCodeIndex)
+ACCESSORS(DebugInfo, code, Code, kCodeIndex)
 ACCESSORS(DebugInfo, break_points, FixedArray, kBreakPointsStateIndex)
 
 ACCESSORS_TO_SMI(BreakPointInfo, code_position, kCodePositionIndex)
@@ -5584,29 +5558,22 @@ void SharedFunctionInfo::TryReenableOptimization() {
 }
 
 
+bool SharedFunctionInfo::IsSubjectToDebugging() {
+  Object* script_obj = script();
+  if (script_obj->IsUndefined()) return false;
+  Script* script = Script::cast(script_obj);
+  Script::Type type = static_cast<Script::Type>(script->type()->value());
+  return type == Script::TYPE_NORMAL;
+}
+
+
 bool JSFunction::IsBuiltin() {
   return context()->global_object()->IsJSBuiltinsObject();
 }
 
 
-bool JSFunction::IsFromNativeScript() {
-  Object* script = shared()->script();
-  bool native = script->IsScript() &&
-                Script::cast(script)->type()->value() == Script::TYPE_NATIVE;
-  DCHECK(!IsBuiltin() || native);  // All builtins are also native.
-  return native;
-}
-
-
-bool JSFunction::IsFromExtensionScript() {
-  Object* script = shared()->script();
-  return script->IsScript() &&
-         Script::cast(script)->type()->value() == Script::TYPE_EXTENSION;
-}
-
-
 bool JSFunction::IsSubjectToDebugging() {
-  return !IsFromNativeScript() && !IsFromExtensionScript();
+  return shared()->IsSubjectToDebugging();
 }
 
 
@@ -6946,12 +6913,13 @@ void Map::ClearCodeCache(Heap* heap) {
 }
 
 
-int Map::SlackForArraySize(bool is_prototype_map, int old_size,
-                           int size_limit) {
+int Map::SlackForArraySize(int old_size, int size_limit) {
   const int max_slack = size_limit - old_size;
   CHECK_LE(0, max_slack);
-  if (old_size < 4) return Min(max_slack, 1);
-  if (is_prototype_map) return Min(max_slack, 4);
+  if (old_size < 4) {
+    DCHECK_LE(1, max_slack);
+    return 1;
+  }
   return Min(max_slack, old_size / 4);
 }
 

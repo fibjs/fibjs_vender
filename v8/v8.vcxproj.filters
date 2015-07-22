@@ -273,6 +273,9 @@
     <ClInclude Include="src\base\safe_math_impl.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
+    <ClInclude Include="src\base\smart-pointers.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
     <ClInclude Include="src\base\sys-info.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
@@ -450,6 +453,9 @@
     <ClInclude Include="src\compiler\js-context-specialization.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\js-frame-specialization.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\js-generic-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -463,6 +469,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-operator.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\js-type-feedback-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-type-feedback.h">
@@ -542,6 +551,9 @@
     </ClInclude>
     <ClInclude Include="src\compiler\ppc\instruction-codes-ppc.h">
       <Filter>Source Files\compiler\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\raw-machine-assembler.h">
+      <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\register-allocator-verifier.h">
       <Filter>Source Files\compiler</Filter>
@@ -709,6 +721,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\func-name-inferrer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\futex-emulation.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\gdb-jit.h">
@@ -1147,9 +1162,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\small-pointer-list.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\smart-pointers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\snapshot\natives.h">
@@ -1601,6 +1613,9 @@
     <ClCompile Include="src\compiler\js-context-specialization.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\js-frame-specialization.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\js-generic-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -1614,6 +1629,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-operator.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\js-type-feedback-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-type-feedback.cc">
@@ -1693,6 +1711,9 @@
     </ClCompile>
     <ClCompile Include="src\compiler\ppc\linkage-ppc.cc">
       <Filter>Source Files\compiler\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\raw-machine-assembler.cc">
+      <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\register-allocator-verifier.cc">
       <Filter>Source Files\compiler</Filter>
@@ -1838,8 +1859,14 @@
     <ClCompile Include="src\func-name-inferrer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\futex-emulation.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\gdb-jit.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gen\code-stub-libraries.cc">
+      <Filter>Source Files\gen</Filter>
     </ClCompile>
     <ClCompile Include="src\gen\experimental-libraries.cc">
       <Filter>Source Files\gen</Filter>
@@ -2291,6 +2318,9 @@
     <ClCompile Include="src\runtime\runtime-function.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
+    <ClCompile Include="src\runtime\runtime-futex.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
     <ClCompile Include="src\runtime\runtime-generator.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
@@ -2328,6 +2358,9 @@
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-scopes.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\runtime-simd.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-strings.cc">

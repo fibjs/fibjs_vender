@@ -112,7 +112,8 @@ function cp_folder(path) {
 var gens = [
 	'libraries.cc',
 	'experimental-libraries.cc',
-	'extras-libraries.cc'
+	'extras-libraries.cc',
+	'code-stub-libraries.cc'
 ];
 
 function cp_gen() {

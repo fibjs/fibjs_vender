@@ -1154,7 +1154,7 @@ void MacroAssembler::DebugBreak() {
   mov(r4, Operand(ExternalReference(Runtime::kDebugBreak, isolate())));
   CEntryStub ces(isolate(), 1);
   DCHECK(AllowThisStubCall(&ces));
-  Call(ces.GetCode(), RelocInfo::DEBUG_BREAK);
+  Call(ces.GetCode(), RelocInfo::DEBUGGER_STATEMENT);
 }
 
 
@@ -1584,26 +1584,6 @@ void MacroAssembler::Allocate(Register object_size, Register result,
   if ((flags & TAG_OBJECT) != 0) {
     addi(result, result, Operand(kHeapObjectTag));
   }
-}
-
-
-void MacroAssembler::UndoAllocationInNewSpace(Register object,
-                                              Register scratch) {
-  ExternalReference new_space_allocation_top =
-      ExternalReference::new_space_allocation_top_address(isolate());
-
-  // Make sure the object has no tag before resetting top.
-  ClearRightImm(object, object, Operand(kHeapObjectTagSize));
-#ifdef DEBUG
-  // Check that the object un-allocated is below the current top.
-  mov(scratch, Operand(new_space_allocation_top));
-  LoadP(scratch, MemOperand(scratch));
-  cmp(object, scratch);
-  Check(lt, kUndoAllocationOfNonAllocatedMemory);
-#endif
-  // Write the address of the object to un-allocate as the current top.
-  mov(scratch, Operand(new_space_allocation_top));
-  StoreP(object, MemOperand(scratch));
 }
 
 
@@ -4561,23 +4541,35 @@ void MacroAssembler::JumpIfDictionaryInPrototypeChain(Register object,
                                                       Register scratch1,
                                                       Label* found) {
   DCHECK(!scratch1.is(scratch0));
-  Factory* factory = isolate()->factory();
   Register current = scratch0;
-  Label loop_again;
+  Label loop_again, end;
 
   // scratch contained elements pointer.
   mr(current, object);
+  LoadP(current, FieldMemOperand(current, HeapObject::kMapOffset));
+  LoadP(current, FieldMemOperand(current, Map::kPrototypeOffset));
+  CompareRoot(current, Heap::kNullValueRootIndex);
+  beq(&end);
 
   // Loop based on the map going up the prototype chain.
   bind(&loop_again);
   LoadP(current, FieldMemOperand(current, HeapObject::kMapOffset));
+
+  STATIC_ASSERT(JS_PROXY_TYPE < JS_OBJECT_TYPE);
+  STATIC_ASSERT(JS_VALUE_TYPE < JS_OBJECT_TYPE);
+  lbz(scratch1, FieldMemOperand(current, Map::kInstanceTypeOffset));
+  cmpi(scratch1, Operand(JS_OBJECT_TYPE));
+  blt(found);
+
   lbz(scratch1, FieldMemOperand(current, Map::kBitField2Offset));
   DecodeField<Map::ElementsKindBits>(scratch1);
   cmpi(scratch1, Operand(DICTIONARY_ELEMENTS));
   beq(found);
   LoadP(current, FieldMemOperand(current, Map::kPrototypeOffset));
-  Cmpi(current, Operand(factory->null_value()), r0);
+  CompareRoot(current, Heap::kNullValueRootIndex);
   bne(&loop_again);
+
+  bind(&end);
 }
 
 

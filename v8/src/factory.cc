@@ -689,7 +689,8 @@ Handle<Symbol> Factory::NewPrivateSymbol(Handle<Object> name) {
 
 
 Handle<Context> Factory::NewNativeContext() {
-  Handle<FixedArray> array = NewFixedArray(Context::NATIVE_CONTEXT_SLOTS);
+  Handle<FixedArray> array =
+      NewFixedArray(Context::NATIVE_CONTEXT_SLOTS, TENURED);
   array->set_map_no_write_barrier(*native_context_map());
   Handle<Context> context = Handle<Context>::cast(array);
   context->set_js_array_maps(*undefined_value());
@@ -1149,7 +1150,7 @@ Handle<String> Factory::EmergencyNewError(const char* message,
       if (space > 0) {
         Handle<String> arg_str = Handle<String>::cast(
             Object::GetElement(isolate(), args, i).ToHandleChecked());
-        SmartArrayPointer<char> arg = arg_str->ToCString();
+        base::SmartArrayPointer<char> arg = arg_str->ToCString();
         Vector<char> v2(p, static_cast<int>(space));
         StrNCpy(v2, arg.get(), space);
         space -= Min(space, strlen(arg.get()));
@@ -1595,14 +1596,12 @@ Handle<GlobalObject> Factory::NewGlobalObject(Handle<JSFunction> constructor) {
 Handle<JSObject> Factory::NewJSObjectFromMap(
     Handle<Map> map,
     PretenureFlag pretenure,
-    bool alloc_props,
     Handle<AllocationSite> allocation_site) {
   CALL_HEAP_FUNCTION(
       isolate(),
       isolate()->heap()->AllocateJSObjectFromMap(
           *map,
           pretenure,
-          alloc_props,
           allocation_site.is_null() ? NULL : *allocation_site),
       JSObject);
 }
@@ -2001,8 +2000,7 @@ void Factory::ReinitializeJSProxy(Handle<JSProxy> proxy, InstanceType type,
   DCHECK(size_difference >= 0);
 
   // Allocate the backing storage for the properties.
-  int prop_size = map->InitialPropertiesLength();
-  Handle<FixedArray> properties = NewFixedArray(prop_size, TENURED);
+  Handle<FixedArray> properties = empty_fixed_array();
 
   Heap* heap = isolate()->heap();
   MaybeHandle<SharedFunctionInfo> shared;
@@ -2055,9 +2053,9 @@ Handle<JSGlobalProxy> Factory::NewUninitializedJSGlobalProxy() {
   Handle<Map> map = NewMap(JS_GLOBAL_PROXY_TYPE, JSGlobalProxy::kSize);
   // Maintain invariant expected from any JSGlobalProxy.
   map->set_is_access_check_needed(true);
-  CALL_HEAP_FUNCTION(isolate(), isolate()->heap()->AllocateJSObjectFromMap(
-                                    *map, NOT_TENURED, false),
-                     JSGlobalProxy);
+  CALL_HEAP_FUNCTION(
+      isolate(), isolate()->heap()->AllocateJSObjectFromMap(*map, NOT_TENURED),
+      JSGlobalProxy);
 }
 
 
@@ -2075,8 +2073,7 @@ void Factory::ReinitializeJSGlobalProxy(Handle<JSGlobalProxy> object,
   DCHECK(map->instance_type() == object->map()->instance_type());
 
   // Allocate the backing storage for the properties.
-  int prop_size = map->InitialPropertiesLength();
-  Handle<FixedArray> properties = NewFixedArray(prop_size, TENURED);
+  Handle<FixedArray> properties = empty_fixed_array();
 
   // In order to keep heap in consistent state there must be no allocations
   // before object re-initialization is finished.
@@ -2272,13 +2269,6 @@ Handle<String> Factory::NumberToString(Handle<Object> number,
 
 
 Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
-  // Get the original code of the function.
-  Handle<Code> code(shared->code());
-
-  // Create a copy of the code before allocating the debug info object to avoid
-  // allocation while setting up the debug info object.
-  Handle<Code> original_code(*Factory::CopyCode(code));
-
   // Allocate initial fixed array for active break points before allocating the
   // debug info object to avoid allocation while setting up the debug info
   // object.
@@ -2291,8 +2281,7 @@ Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
   Handle<DebugInfo> debug_info =
       Handle<DebugInfo>::cast(NewStruct(DEBUG_INFO_TYPE));
   debug_info->set_shared(*shared);
-  debug_info->set_original_code(*original_code);
-  debug_info->set_code(*code);
+  debug_info->set_code(shared->code());
   debug_info->set_break_points(*break_points);
 
   // Link debug info to function.

@@ -499,7 +499,7 @@ void MacroAssembler::DebugBreak() {
   Move(eax, Immediate(0));
   mov(ebx, Immediate(ExternalReference(Runtime::kDebugBreak, isolate())));
   CEntryStub ces(isolate(), 1);
-  call(ces.GetCode(), RelocInfo::DEBUG_BREAK);
+  call(ces.GetCode(), RelocInfo::DEBUGGER_STATEMENT);
 }
 
 
@@ -1461,20 +1461,6 @@ void MacroAssembler::Allocate(Register object_size,
 
   // Update allocation top.
   UpdateAllocationTopHelper(result_end, scratch, flags);
-}
-
-
-void MacroAssembler::UndoAllocationInNewSpace(Register object) {
-  ExternalReference new_space_allocation_top =
-      ExternalReference::new_space_allocation_top_address(isolate());
-
-  // Make sure the object has no tag before resetting top.
-  and_(object, Immediate(~kHeapObjectTagMask));
-#ifdef DEBUG
-  cmp(object, Operand::StaticVariable(new_space_allocation_top));
-  Check(below, kUndoAllocationOfNonAllocatedMemory);
-#endif
-  mov(Operand::StaticVariable(new_space_allocation_top), object);
 }
 
 
@@ -3073,14 +3059,22 @@ void MacroAssembler::JumpIfDictionaryInPrototypeChain(
   DCHECK(!scratch1.is(scratch0));
   Factory* factory = isolate()->factory();
   Register current = scratch0;
-  Label loop_again;
+  Label loop_again, end;
 
   // scratch contained elements pointer.
   mov(current, object);
+  mov(current, FieldOperand(current, HeapObject::kMapOffset));
+  mov(current, FieldOperand(current, Map::kPrototypeOffset));
+  cmp(current, Immediate(factory->null_value()));
+  j(equal, &end);
 
   // Loop based on the map going up the prototype chain.
   bind(&loop_again);
   mov(current, FieldOperand(current, HeapObject::kMapOffset));
+  STATIC_ASSERT(JS_PROXY_TYPE < JS_OBJECT_TYPE);
+  STATIC_ASSERT(JS_VALUE_TYPE < JS_OBJECT_TYPE);
+  CmpInstanceType(current, JS_OBJECT_TYPE);
+  j(below, found);
   mov(scratch1, FieldOperand(current, Map::kBitField2Offset));
   DecodeField<Map::ElementsKindBits>(scratch1);
   cmp(scratch1, Immediate(DICTIONARY_ELEMENTS));
@@ -3088,6 +3082,8 @@ void MacroAssembler::JumpIfDictionaryInPrototypeChain(
   mov(current, FieldOperand(current, Map::kPrototypeOffset));
   cmp(current, Immediate(factory->null_value()));
   j(not_equal, &loop_again);
+
+  bind(&end);
 }
 
 

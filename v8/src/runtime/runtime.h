@@ -66,6 +66,13 @@ namespace internal {
   F(AtomicsIsLockFree, 1, 1)
 
 
+#define FOR_EACH_INTRINSIC_FUTEX(F)  \
+  F(AtomicsFutexWait, 4, 1)          \
+  F(AtomicsFutexWake, 3, 1)          \
+  F(AtomicsFutexWakeOrRequeue, 5, 1) \
+  F(AtomicsFutexNumWaitersForTesting, 2, 1)
+
+
 #define FOR_EACH_INTRINSIC_CLASSES(F)         \
   F(ThrowNonMethodError, 0, 1)                \
   F(ThrowUnsupportedSuperError, 0, 1)         \
@@ -76,6 +83,7 @@ namespace internal {
   F(ToMethod, 2, 1)                           \
   F(HomeObjectSymbol, 0, 1)                   \
   F(DefineClass, 6, 1)                        \
+  F(DefineClassStrong, 6, 1)                  \
   F(DefineClassMethod, 3, 1)                  \
   F(ClassGetSourceCode, 1, 1)                 \
   F(LoadFromSuper, 4, 1)                      \
@@ -85,8 +93,7 @@ namespace internal {
   F(StoreKeyedToSuper_Strict, 4, 1)           \
   F(StoreKeyedToSuper_Sloppy, 4, 1)           \
   F(HandleStepInForDerivedConstructors, 1, 1) \
-  F(DefaultConstructorCallSuper, 2, 1)        \
-  F(CallSuperWithSpread, 1, 1)
+  F(DefaultConstructorCallSuper, 2, 1)
 
 
 #define FOR_EACH_INTRINSIC_COLLECTIONS(F) \
@@ -239,6 +246,7 @@ namespace internal {
   F(Apply, 5, 1)                                            \
   F(GetFunctionDelegate, 1, 1)                              \
   F(GetConstructorDelegate, 1, 1)                           \
+  F(GetOriginalConstructor, 0, 1)                           \
   F(CallFunction, -1 /* receiver + n args + function */, 1) \
   F(IsConstructCall, 0, 1)                                  \
   F(IsFunction, 1, 1)
@@ -331,7 +339,8 @@ namespace internal {
   F(Unlikely, 1, 1)                           \
   F(HarmonyToString, 0, 1)                    \
   F(GetTypeFeedbackVector, 1, 1)              \
-  F(GetCallerJSFunction, 0, 1)
+  F(GetCallerJSFunction, 0, 1)                \
+  F(GetCodeStubExportsObject, 0, 1)
 
 
 #define FOR_EACH_INTRINSIC_JSON(F) \
@@ -437,6 +446,8 @@ namespace internal {
   F(GetPropertyStrong, 2, 1)                         \
   F(KeyedGetProperty, 2, 1)                          \
   F(KeyedGetPropertyStrong, 2, 1)                    \
+  F(LoadGlobalViaContext, 3, 1)                      \
+  F(StoreGlobalViaContext, 5, 1)                     \
   F(AddNamedProperty, 4, 1)                          \
   F(SetProperty, 4, 1)                               \
   F(AddElement, 3, 1)                                \
@@ -550,6 +561,16 @@ namespace internal {
   F(GetArgumentsProperty, 1, 1)                              \
   F(ArgumentsLength, 0, 1)                                   \
   F(Arguments, 1, 1)
+
+
+#define FOR_EACH_INTRINSIC_SIMD(F) \
+  F(CreateFloat32x4, 4, 1)         \
+  F(NewFloat32x4Wrapper, 1, 1)     \
+  F(Float32x4Check, 1, 1)          \
+  F(Float32x4ExtractLane, 2, 1)    \
+  F(Float32x4Equals, 2, 1)         \
+  F(Float32x4SameValue, 2, 1)      \
+  F(Float32x4SameValueZero, 2, 1)
 
 
 #define FOR_EACH_INTRINSIC_STRINGS(F)           \
@@ -714,6 +735,7 @@ namespace internal {
   FOR_EACH_INTRINSIC_DEBUG(F)               \
   FOR_EACH_INTRINSIC_FORIN(F)               \
   FOR_EACH_INTRINSIC_FUNCTION(F)            \
+  FOR_EACH_INTRINSIC_FUTEX(F)               \
   FOR_EACH_INTRINSIC_GENERATOR(F)           \
   FOR_EACH_INTRINSIC_I18N(F)                \
   FOR_EACH_INTRINSIC_INTERNAL(F)            \
@@ -727,6 +749,7 @@ namespace internal {
   FOR_EACH_INTRINSIC_PROXY(F)               \
   FOR_EACH_INTRINSIC_REGEXP(F)              \
   FOR_EACH_INTRINSIC_SCOPES(F)              \
+  FOR_EACH_INTRINSIC_SIMD(F)                \
   FOR_EACH_INTRINSIC_STRINGS(F)             \
   FOR_EACH_INTRINSIC_SYMBOL(F)              \
   FOR_EACH_INTRINSIC_TEST(F)                \
@@ -812,15 +835,6 @@ class Runtime : public AllStatic {
 
   // Get the intrinsic function with the given function entry address.
   static const Function* FunctionForEntry(Address ref);
-
-  // TODO(1240886): Some of the following methods are *not* handle safe, but
-  // accept handle arguments. This seems fragile.
-
-  // Support getting the characters in a string using [] notation as
-  // in Firefox/SpiderMonkey, Safari and Opera.
-  MUST_USE_RESULT static MaybeHandle<Object> GetElementOrCharAt(
-      Isolate* isolate, Handle<Object> object, uint32_t index,
-      LanguageMode language_mode = SLOPPY);
 
   MUST_USE_RESULT static MaybeHandle<Object> DeleteObjectProperty(
       Isolate* isolate, Handle<JSReceiver> receiver, Handle<Object> key,

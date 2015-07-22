@@ -163,6 +163,7 @@ class CallSite {
   T(NotTypedArray, "this is not a typed array.")                               \
   T(NotSharedTypedArray, "% is not a shared typed array.")                     \
   T(NotIntegerSharedTypedArray, "% is not an integer shared typed array.")     \
+  T(NotInt32SharedTypedArray, "% is not an int32 shared typed array.")         \
   T(ObjectGetterExpectingFunction,                                             \
     "Object.prototype.__defineGetter__: Expecting function")                   \
   T(ObjectGetterCallable, "Getter must be a function: %")                      \
@@ -229,7 +230,8 @@ class CallSite {
   T(StrongArity,                                                               \
     "In strong mode, calling a function with too few arguments is deprecated") \
   T(StrongDeleteProperty,                                                      \
-    "On strong object %, deletion of property % is deprecated")                \
+    "Deleting property '%' of strong object '%' is deprecated")                \
+  T(StrongExtendNull, "In strong mode, classes extending null are deprecated") \
   T(StrongImplicitConversion,                                                  \
     "In strong mode, implicit conversions are deprecated")                     \
   T(StrongRedefineDisallowed,                                                  \
@@ -242,6 +244,7 @@ class CallSite {
     "Cannot convert a Symbol wrapper object to a primitive value")             \
   T(SymbolToNumber, "Cannot convert a Symbol value to a number")               \
   T(SymbolToString, "Cannot convert a Symbol value to a string")               \
+  T(SimdToNumber, "Cannot convert a SIMD value to a number")                   \
   T(UndefinedOrNullToObject, "Cannot convert undefined or null to object")     \
   T(ValueAndAccessor,                                                          \
     "Invalid property.  A property cannot both have accessors and be "         \
@@ -296,8 +299,6 @@ class CallSite {
   T(ConstructorIsGenerator, "Class constructor may not be a generator")        \
   T(DerivedConstructorReturn,                                                  \
     "Derived constructors may only return object or undefined")                \
-  T(DuplicateArrawFunFormalParam,                                              \
-    "Arrow function may not have duplicate parameter names")                   \
   T(DuplicateConstructor, "A class may only have one constructor")             \
   T(DuplicateExport, "Duplicate export of '%'")                                \
   T(DuplicateProto,                                                            \
@@ -334,6 +335,7 @@ class CallSite {
   T(ParamAfterRest, "Rest parameter must be last formal parameter")            \
   T(BadSetterRestParameter,                                                    \
     "Setter function argument must not be a rest parameter")                   \
+  T(ParamDupe, "Duplicate parameter name not allowed in this context")         \
   T(ParenthesisInArgString, "Function arg string contains parenthesis")        \
   T(SingleFunctionLiteral, "Single function literal required")                 \
   T(SloppyLexical,                                                             \
@@ -345,8 +347,6 @@ class CallSite {
     "In strict mode code, functions can only be declared at top level or "     \
     "immediately within another function.")                                    \
   T(StrictOctalLiteral, "Octal literals are not allowed in strict mode.")      \
-  T(StrictParamDupe,                                                           \
-    "Strict mode function may not have duplicate parameter names")             \
   T(StrictWith, "Strict mode code may not include a with statement")           \
   T(StrongArguments,                                                           \
     "In strong mode, 'arguments' is deprecated, use '...args' instead")        \
@@ -410,6 +410,7 @@ class CallSite {
   T(UnexpectedTokenIdentifier, "Unexpected identifier")                        \
   T(UnexpectedTokenNumber, "Unexpected number")                                \
   T(UnexpectedTokenString, "Unexpected string")                                \
+  T(UnexpectedTokenRegExp, "Unexpected regular expression")                    \
   T(UnknownLabel, "Undefined label '%'")                                       \
   T(UnterminatedArgList, "missing ) after argument list")                      \
   T(UnterminatedRegExp, "Invalid regular expression: missing /")               \
@@ -455,8 +456,8 @@ class MessageHandler {
   static void DefaultMessageReport(Isolate* isolate, const MessageLocation* loc,
                                    Handle<Object> message_obj);
   static Handle<String> GetMessage(Isolate* isolate, Handle<Object> data);
-  static SmartArrayPointer<char> GetLocalizedMessage(Isolate* isolate,
-                                                     Handle<Object> data);
+  static base::SmartArrayPointer<char> GetLocalizedMessage(Isolate* isolate,
+                                                           Handle<Object> data);
 };
 } }  // namespace v8::internal
 

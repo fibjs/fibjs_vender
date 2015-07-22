@@ -28,7 +28,8 @@ void SetElementSloppy(Handle<JSObject> object,
   // Ignore return value from SetElement. It can only be a failure if there
   // are element setters causing exceptions and the debugger context has none
   // of these.
-  JSObject::SetElement(object, index, value, SLOPPY).Assert();
+  Object::SetElement(object->GetIsolate(), object, index, value, SLOPPY)
+      .Assert();
 }
 
 
@@ -764,7 +765,10 @@ class FunctionInfoListener {
       ZoneList<Variable*> stack_list(current_scope->StackLocalCount(), zone);
       ZoneList<Variable*> context_list(
           current_scope->ContextLocalCount(), zone);
-      current_scope->CollectStackAndContextLocals(&stack_list, &context_list);
+      ZoneList<Variable*> globals_list(current_scope->ContextGlobalCount(),
+                                       zone);
+      current_scope->CollectStackAndContextLocals(&stack_list, &context_list,
+                                                  &globals_list);
       context_list.Sort(&Variable::CompareIndex);
 
       for (int i = 0; i < context_list.length(); i++) {
@@ -1182,13 +1186,6 @@ void LiveEdit::ReplaceFunctionCode(
     if (!feedback_vector.is_null()) {
       shared_info->set_feedback_vector(*feedback_vector.ToHandleChecked());
     }
-  }
-
-  if (shared_info->debug_info()->IsDebugInfo()) {
-    Handle<DebugInfo> debug_info(DebugInfo::cast(shared_info->debug_info()));
-    Handle<Code> new_original_code =
-        isolate->factory()->CopyCode(compile_info_wrapper.GetFunctionCode());
-    debug_info->set_original_code(*new_original_code);
   }
 
   int start_position = compile_info_wrapper.GetStartPosition();

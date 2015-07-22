@@ -177,6 +177,7 @@ namespace internal {
   V(FixedArray, experimental_natives_source_cache,                             \
     ExperimentalNativesSourceCache)                                            \
   V(FixedArray, extra_natives_source_cache, ExtraNativesSourceCache)           \
+  V(FixedArray, code_stub_natives_source_cache, CodeStubNativesSourceCache)    \
   V(Script, empty_script, EmptyScript)                                         \
   V(NameDictionary, intrinsic_function_names, IntrinsicFunctionNames)          \
   V(Cell, undefined_cell, UndefinedCell)                                       \
@@ -193,7 +194,10 @@ namespace internal {
   V(ArrayList, retained_maps, RetainedMaps)                                    \
   V(WeakHashTable, weak_object_to_code_table, WeakObjectToCodeTable)           \
   V(PropertyCell, array_protector, ArrayProtector)                             \
-  V(Object, weak_stack_trace_list, WeakStackTraceList)
+  V(PropertyCell, empty_property_cell, EmptyPropertyCell)                      \
+  V(Object, weak_stack_trace_list, WeakStackTraceList)                         \
+  V(Object, code_stub_context, CodeStubContext)                                \
+  V(JSObject, code_stub_exports_object, CodeStubExportsObject)
 
 // Entries in this list are limited to Smis and are not visited during GC.
 #define SMI_ROOT_LIST(V)                                                   \
@@ -223,6 +227,8 @@ namespace internal {
   V(constructor_string, "constructor")                         \
   V(dot_result_string, ".result")                              \
   V(eval_string, "eval")                                       \
+  V(float32x4_string, "float32x4")                             \
+  V(Float32x4_string, "Float32x4")                             \
   V(function_string, "function")                               \
   V(Function_string, "Function")                               \
   V(length_string, "length")                                   \
@@ -1648,7 +1654,6 @@ class Heap {
   // points to the site.
   MUST_USE_RESULT AllocationResult
       AllocateJSObjectFromMap(Map* map, PretenureFlag pretenure = NOT_TENURED,
-                              bool alloc_props = true,
                               AllocationSite* allocation_site = NULL);
 
   // Allocates a HeapNumber from value.
@@ -2278,6 +2283,8 @@ class Heap {
   void IdleNotificationEpilogue(GCIdleTimeAction action,
                                 GCIdleTimeHandler::HeapState heap_state,
                                 double start_ms, double deadline_in_ms);
+  void CheckAndNotifyBackgroundIdleNotification(double idle_time_in_ms,
+                                                double now_ms);
 
   void ClearObjectStats(bool clear_last_time_stats = false);
 
@@ -2409,6 +2416,7 @@ class Heap {
   StrongRootsList* strong_roots_list_;
 
   friend class AlwaysAllocateScope;
+  friend class Bootstrapper;
   friend class Deserializer;
   friend class Factory;
   friend class GCCallbacksScope;

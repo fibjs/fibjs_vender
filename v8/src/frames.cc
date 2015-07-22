@@ -730,9 +730,24 @@ bool JavaScriptFrame::IsConstructor() const {
 }
 
 
+Object* JavaScriptFrame::GetOriginalConstructor() const {
+  Address fp = caller_fp();
+  if (has_adapted_arguments()) {
+    // Skip the arguments adaptor frame and look at the real caller.
+    fp = Memory::Address_at(fp + StandardFrameConstants::kCallerFPOffset);
+  }
+  DCHECK(IsConstructFrame(fp));
+  STATIC_ASSERT(ConstructFrameConstants::kOriginalConstructorOffset ==
+                StandardFrameConstants::kExpressionsOffset - 3 * kPointerSize);
+  return GetExpression(fp, 3);
+}
+
+
 int JavaScriptFrame::GetArgumentsLength() const {
   // If there is an arguments adaptor frame get the arguments length from it.
   if (has_adapted_arguments()) {
+    STATIC_ASSERT(ArgumentsAdaptorFrameConstants::kLengthOffset ==
+                  StandardFrameConstants::kExpressionsOffset);
     return Smi::cast(GetExpression(caller_fp(), 0))->value();
   } else {
     return GetNumberOfIncomingArguments();
@@ -804,7 +819,7 @@ void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
       Object* script_name_raw = script->name();
       if (script_name_raw->IsString()) {
         String* script_name = String::cast(script->name());
-        SmartArrayPointer<char> c_script_name =
+        base::SmartArrayPointer<char> c_script_name =
             script_name->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
         PrintF(file, " at %s:%d", c_script_name.get(), line);
       } else {
@@ -1431,9 +1446,7 @@ Code* InnerPointerToCodeCache::GcSafeFindCodeForInnerPointer(
   // after the inner pointer.
   Page* page = Page::FromAddress(inner_pointer);
 
-  page->skip_list()->Lock();
   Address addr = page->skip_list()->StartFor(inner_pointer);
-  page->skip_list()->Unlock();
 
   Address top = heap->code_space()->top();
   Address limit = heap->code_space()->limit();

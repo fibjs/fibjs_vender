@@ -411,6 +411,7 @@ Register LCodeGen::EmitLoadRegister(LOperand* op, Register scratch) {
     Handle<Object> literal = constant->handle(isolate());
     Representation r = chunk_->LookupLiteralRepresentation(const_op);
     if (r.IsInteger32()) {
+      AllowDeferredHandleDereference get_number;
       DCHECK(literal->IsNumber());
       __ li(scratch, Operand(static_cast<int32_t>(literal->Number())));
     } else if (r.IsSmi()) {
@@ -2285,6 +2286,14 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ Branch(instr->TrueLabel(chunk_), eq, scratch, Operand(SYMBOL_TYPE));
       }
 
+      if (expected.Contains(ToBooleanStub::SIMD_VALUE)) {
+        // Symbol value -> true.
+        const Register scratch = scratch1();
+        __ lbu(scratch, FieldMemOperand(map, Map::kInstanceTypeOffset));
+        __ Branch(instr->TrueLabel(chunk_), eq, scratch,
+                  Operand(FLOAT32X4_TYPE));
+      }
+
       if (expected.Contains(ToBooleanStub::HEAP_NUMBER)) {
         // heap number -> false iff +0, -0, or NaN.
         DoubleRegister dbl_scratch = double_scratch0();
@@ -2987,9 +2996,9 @@ void LCodeGen::DoLoadGlobalGeneric(LLoadGlobalGeneric* instr) {
 
   __ li(LoadDescriptor::NameRegister(), Operand(instr->name()));
   EmitVectorLoadICRegisters<LLoadGlobalGeneric>(instr);
-  ContextualMode mode = instr->for_typeof() ? NOT_CONTEXTUAL : CONTEXTUAL;
-  Handle<Code> ic = CodeFactory::LoadICInOptimizedCode(isolate(), mode, SLOPPY,
-                                                       PREMONOMORPHIC).code();
+  Handle<Code> ic =
+      CodeFactory::LoadICInOptimizedCode(isolate(), instr->typeof_mode(),
+                                         SLOPPY, PREMONOMORPHIC).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -3105,7 +3114,7 @@ void LCodeGen::DoLoadNamedGeneric(LLoadNamedGeneric* instr) {
   EmitVectorLoadICRegisters<LLoadNamedGeneric>(instr);
   Handle<Code> ic =
       CodeFactory::LoadICInOptimizedCode(
-          isolate(), NOT_CONTEXTUAL, instr->hydrogen()->language_mode(),
+          isolate(), NOT_INSIDE_TYPEOF, instr->hydrogen()->language_mode(),
           instr->hydrogen()->initialization_state()).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
@@ -5853,6 +5862,13 @@ Condition LCodeGen::EmitTypeofIs(Label* true_label,
     __ GetObjectType(input, input, scratch);
     *cmp1 = scratch;
     *cmp2 = Operand(SYMBOL_TYPE);
+    final_branch_condition = eq;
+
+  } else if (String::Equals(type_name, factory->float32x4_string())) {
+    __ JumpIfSmi(input, false_label);
+    __ GetObjectType(input, input, scratch);
+    *cmp1 = scratch;
+    *cmp2 = Operand(FLOAT32X4_TYPE);
     final_branch_condition = eq;
 
   } else if (String::Equals(type_name, factory->boolean_string())) {

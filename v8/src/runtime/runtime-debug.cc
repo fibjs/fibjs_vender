@@ -311,9 +311,8 @@ RUNTIME_FUNCTION(Runtime_DebugGetPropertyDetails) {
   if (name->AsArrayIndex(&index)) {
     Handle<FixedArray> details = isolate->factory()->NewFixedArray(2);
     Handle<Object> element_or_char;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, element_or_char,
-        Runtime::GetElementOrCharAt(isolate, obj, index));
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, element_or_char,
+                                       Object::GetElement(isolate, obj, index));
     details->set(0, *element_or_char);
     details->set(1, PropertyDetails::Empty().AsSmi());
     return *isolate->factory()->NewJSArrayWithElements(details);
@@ -681,11 +680,13 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
       if (scope_info->LocalIsSynthetic(i)) continue;
       Handle<String> name(scope_info->LocalName(i));
       VariableMode mode;
+      VariableLocation location;
       InitializationFlag init_flag;
       MaybeAssignedFlag maybe_assigned_flag;
       locals->set(local * 2, *name);
       int context_slot_index = ScopeInfo::ContextSlotIndex(
-          scope_info, name, &mode, &init_flag, &maybe_assigned_flag);
+          scope_info, name, &mode, &location, &init_flag, &maybe_assigned_flag);
+      DCHECK(VariableLocation::CONTEXT == location);
       Object* value = context->get(context_slot_index);
       locals->set(local * 2 + 1, value);
       local++;
@@ -856,10 +857,11 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
 static bool ParameterIsShadowedByContextLocal(Handle<ScopeInfo> info,
                                               Handle<String> parameter_name) {
   VariableMode mode;
+  VariableLocation location;
   InitializationFlag init_flag;
   MaybeAssignedFlag maybe_assigned_flag;
-  return ScopeInfo::ContextSlotIndex(info, parameter_name, &mode, &init_flag,
-                                     &maybe_assigned_flag) != -1;
+  return ScopeInfo::ContextSlotIndex(info, parameter_name, &mode, &location,
+                                     &init_flag, &maybe_assigned_flag) != -1;
 }
 
 
@@ -872,14 +874,15 @@ static Handle<Context> MaterializeReceiver(Isolate* isolate,
   Handle<Object> receiver;
   switch (scope_info->scope_type()) {
     case FUNCTION_SCOPE: {
-      VariableMode variable_mode;
+      VariableMode mode;
+      VariableLocation location;
       InitializationFlag init_flag;
       MaybeAssignedFlag maybe_assigned_flag;
 
       // Don't bother creating a fake context node if "this" is in the context
       // already.
       if (ScopeInfo::ContextSlotIndex(
-              scope_info, isolate->factory()->this_string(), &variable_mode,
+              scope_info, isolate->factory()->this_string(), &mode, &location,
               &init_flag, &maybe_assigned_flag) >= 0) {
         return target;
       }
@@ -1077,10 +1080,12 @@ static bool SetContextLocalValue(Isolate* isolate, Handle<ScopeInfo> scope_info,
     Handle<String> next_name(scope_info->ContextLocalName(i));
     if (String::Equals(variable_name, next_name)) {
       VariableMode mode;
+      VariableLocation location;
       InitializationFlag init_flag;
       MaybeAssignedFlag maybe_assigned_flag;
-      int context_index = ScopeInfo::ContextSlotIndex(
-          scope_info, next_name, &mode, &init_flag, &maybe_assigned_flag);
+      int context_index =
+          ScopeInfo::ContextSlotIndex(scope_info, next_name, &mode, &location,
+                                      &init_flag, &maybe_assigned_flag);
       context->set(context_index, *new_value);
       return true;
     }
@@ -1385,19 +1390,20 @@ class ScopeIterator {
       return;
     }
 
-    // Get the debug info (create it if it does not exist).
-    if (!isolate->debug()->EnsureDebugInfo(shared_info, function_)) {
-      // Return if ensuring debug info failed.
-      return;
-    }
-
     // Currently it takes too much time to find nested scopes due to script
     // parsing. Sometimes we want to run the ScopeIterator as fast as possible
     // (for example, while collecting async call stacks on every
     // addEventListener call), even if we drop some nested scopes.
     // Later we may optimize getting the nested scopes (cache the result?)
     // and include nested scopes into the "fast" iteration case as well.
-    if (!ignore_nested_scopes) {
+
+    if (!ignore_nested_scopes && !shared_info->debug_info()->IsUndefined()) {
+      // The source position at return is always the end of the function,
+      // which is not consistent with the current scope chain. Therefore all
+      // nested with, catch and block contexts are skipped, and we can only
+      // inspect the function scope.
+      // This can only happen if we set a break point inside right before the
+      // return, which requires a debug info to be available.
       Handle<DebugInfo> debug_info = Debug::GetDebugInfo(shared_info);
 
       // PC points to the instruction after the current one, possibly a break
@@ -1408,11 +1414,7 @@ class ScopeIterator {
       BreakLocation location =
           BreakLocation::FromAddress(debug_info, ALL_BREAK_LOCATIONS, call_pc);
 
-      // Within the return sequence at the moment it is not possible to
-      // get a source position which is consistent with the current scope chain.
-      // Thus all nested with, catch and block contexts are skipped and we only
-      // provide the function scope.
-      ignore_nested_scopes = location.IsExit();
+      ignore_nested_scopes = location.IsReturn();
     }
 
     if (ignore_nested_scopes) {
@@ -1860,8 +1862,8 @@ RUNTIME_FUNCTION(Runtime_GetStepInPositions) {
         Smi* position_value = Smi::FromInt(location.position());
         RETURN_FAILURE_ON_EXCEPTION(
             isolate,
-            JSObject::SetElement(array, index, handle(position_value, isolate),
-                                 SLOPPY));
+            Object::SetElement(isolate, array, index,
+                               handle(position_value, isolate), SLOPPY));
         index++;
       }
     }
@@ -2671,6 +2673,14 @@ RUNTIME_FUNCTION(Runtime_DebugEvaluate) {
 }
 
 
+static inline bool IsDebugContext(Isolate* isolate, Context* context) {
+  // Try to unwrap script context if it exist.
+  if (context->IsScriptContext()) context = context->previous();
+  DCHECK_NOT_NULL(context);
+  return context == *isolate->debug()->debug_context();
+}
+
+
 RUNTIME_FUNCTION(Runtime_DebugEvaluateGlobal) {
   HandleScope scope(isolate);
 
@@ -2690,7 +2700,7 @@ RUNTIME_FUNCTION(Runtime_DebugEvaluateGlobal) {
   // Enter the top context from before the debugger was invoked.
   SaveContext save(isolate);
   SaveContext* top = &save;
-  while (top != NULL && *top->context() == *isolate->debug()->debug_context()) {
+  while (top != NULL && IsDebugContext(isolate, *top->context())) {
     top = top->prev();
   }
   if (top != NULL) {
@@ -3195,6 +3205,17 @@ RUNTIME_FUNCTION(Runtime_DebugAsyncTaskEvent) {
 RUNTIME_FUNCTION(Runtime_DebugIsActive) {
   SealHandleScope shs(isolate);
   return Smi::FromInt(isolate->debug()->is_active());
+}
+
+
+RUNTIME_FUNCTION(Runtime_DebugHandleStepIntoAccessor) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 2);
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
+  Debug* debug = isolate->debug();
+  // Handle stepping into constructors if step into is active.
+  if (debug->StepInActive()) debug->HandleStepIn(function, false);
+  return *isolate->factory()->undefined_value();
 }
 
 

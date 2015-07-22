@@ -183,7 +183,7 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
          (info->IsOptimizing() && FLAG_print_opt_code));
   if (print_code) {
     const char* debug_name;
-    SmartArrayPointer<char> debug_name_holder;
+    base::SmartArrayPointer<char> debug_name_holder;
     if (info->IsStub()) {
       CodeStub::Major major_key = info->code_stub()->MajorKey();
       debug_name = CodeStub::MajorName(major_key, false);
@@ -237,20 +237,6 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
     os << "--- End code ---\n";
   }
 #endif  // ENABLE_DISASSEMBLER
-}
-
-
-bool CodeGenerator::RecordPositions(MacroAssembler* masm,
-                                    int pos,
-                                    bool right_here) {
-  if (pos != RelocInfo::kNoPosition) {
-    masm->positions_recorder()->RecordStatementPosition(pos);
-    masm->positions_recorder()->RecordPosition(pos);
-    if (right_here) {
-      return masm->positions_recorder()->WriteRecordedPositions();
-    }
-  }
-  return false;
 }
 
 }  // namespace internal

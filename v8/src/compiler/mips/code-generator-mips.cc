@@ -267,8 +267,8 @@ Condition FlagsConditionToConditionOvf(FlagsCondition condition) {
   return kNoCondition;
 }
 
-FPUCondition FlagsConditionToConditionCmpD(bool& predicate,
-                                           FlagsCondition condition) {
+FPUCondition FlagsConditionToConditionCmpFPU(bool& predicate,
+                                             FlagsCondition condition) {
   switch (condition) {
     case kEqual:
       predicate = true;
@@ -911,42 +911,32 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
     cc = FlagsConditionToConditionTst(branch->condition);
     __ And(at, i.InputRegister(0), i.InputOperand(1));
     __ Branch(tlabel, cc, at, Operand(zero_reg));
-
   } else if (instr->arch_opcode() == kMipsAddOvf ||
              instr->arch_opcode() == kMipsSubOvf) {
     // kMipsAddOvf, SubOvf emit negative result to 'kCompareReg' on overflow.
     cc = FlagsConditionToConditionOvf(branch->condition);
     __ Branch(tlabel, cc, kCompareReg, Operand(zero_reg));
-
   } else if (instr->arch_opcode() == kMipsCmp) {
     cc = FlagsConditionToConditionCmp(branch->condition);
     __ Branch(tlabel, cc, i.InputRegister(0), i.InputOperand(1));
-
-    if (!branch->fallthru) __ Branch(flabel);  // no fallthru to flabel.
-
   } else if (instr->arch_opcode() == kMipsCmpS) {
     if (!convertCondition(branch->condition, cc)) {
       UNSUPPORTED_COND(kMips64CmpS, branch->condition);
     }
     __ BranchF32(tlabel, NULL, cc, i.InputSingleRegister(0),
                  i.InputSingleRegister(1));
-
-    if (!branch->fallthru) __ Branch(flabel);  // no fallthru to flabel.
-
   } else if (instr->arch_opcode() == kMipsCmpD) {
     if (!convertCondition(branch->condition, cc)) {
       UNSUPPORTED_COND(kMips64CmpD, branch->condition);
     }
     __ BranchF64(tlabel, NULL, cc, i.InputDoubleRegister(0),
                  i.InputDoubleRegister(1));
-
-    if (!branch->fallthru) __ Branch(flabel);  // no fallthru to flabel.
-
   } else {
     PrintF("AssembleArchBranch Unimplemented arch_opcode: %d\n",
            instr->arch_opcode());
     UNIMPLEMENTED();
   }
+  if (!branch->fallthru) __ Branch(flabel);  // no fallthru to flabel.
 }
 
 
@@ -996,22 +986,33 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
     __ Branch(USE_DELAY_SLOT, &done, cc, left, right);
     __ li(result, Operand(1));  // In delay slot.
 
-  } else if (instr->arch_opcode() == kMipsCmpD) {
+  } else if (instr->arch_opcode() == kMipsCmpD ||
+             instr->arch_opcode() == kMipsCmpS) {
     FPURegister left = i.InputDoubleRegister(0);
     FPURegister right = i.InputDoubleRegister(1);
 
     bool predicate;
-    FPUCondition cc = FlagsConditionToConditionCmpD(predicate, condition);
+    FPUCondition cc = FlagsConditionToConditionCmpFPU(predicate, condition);
     if (!IsMipsArchVariant(kMips32r6)) {
       __ li(result, Operand(1));
-      __ c(cc, D, left, right);
+      if (instr->arch_opcode() == kMipsCmpD) {
+        __ c(cc, D, left, right);
+      } else {
+        DCHECK(instr->arch_opcode() == kMipsCmpS);
+        __ c(cc, S, left, right);
+      }
       if (predicate) {
         __ Movf(result, zero_reg);
       } else {
         __ Movt(result, zero_reg);
       }
     } else {
-      __ cmp(cc, L, kDoubleCompareReg, left, right);
+      if (instr->arch_opcode() == kMipsCmpD) {
+        __ cmp(cc, L, kDoubleCompareReg, left, right);
+      } else {
+        DCHECK(instr->arch_opcode() == kMipsCmpS);
+        __ cmp(cc, W, kDoubleCompareReg, left, right);
+      }
       __ mfc1(at, kDoubleCompareReg);
       __ srl(result, at, 31);  // Cmp returns all 1s for true.
       if (!predicate)          // Toggle result for not equal.

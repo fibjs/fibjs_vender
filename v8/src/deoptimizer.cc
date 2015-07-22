@@ -1221,6 +1221,12 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   DebugPrintOutputSlot(value, frame_index, output_offset, "code object\n");
 
+  // The allocation site.
+  output_offset -= kPointerSize;
+  value = reinterpret_cast<intptr_t>(isolate_->heap()->undefined_value());
+  output_frame->SetFrameSlot(output_offset, value);
+  DebugPrintOutputSlot(value, frame_index, output_offset, "allocation site\n");
+
   // Number of incoming arguments.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(Smi::FromInt(height - 1));
@@ -1229,6 +1235,12 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   if (trace_scope_ != nullptr) {
     PrintF(trace_scope_->file(), "(%d)\n", height - 1);
   }
+
+  // The original constructor.
+  output_offset -= kPointerSize;
+  value = reinterpret_cast<intptr_t>(isolate_->heap()->undefined_value());
+  output_frame->SetFrameSlot(output_offset, value);
+  DebugPrintOutputSlot(value, frame_index, output_offset, "new.target\n");
 
   // The newly allocated object was passed as receiver in the artificial
   // constructor stub environment created by HEnvironment::CopyForInlining().
@@ -2682,7 +2694,8 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
           SharedFunctionInfo::cast(literal_array->get(iterator->Next()));
       int height = iterator->Next();
       if (trace_file != nullptr) {
-        SmartArrayPointer<char> name = shared_info->DebugName()->ToCString();
+        base::SmartArrayPointer<char> name =
+            shared_info->DebugName()->ToCString();
         PrintF(trace_file, "  reading input frame %s", name.get());
         int arg_count = shared_info->internal_formal_parameter_count() + 1;
         PrintF(trace_file, " => node=%d, args=%d, height=%d; inputs:\n",
@@ -2696,7 +2709,8 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
           SharedFunctionInfo::cast(literal_array->get(iterator->Next()));
       int height = iterator->Next();
       if (trace_file != nullptr) {
-        SmartArrayPointer<char> name = shared_info->DebugName()->ToCString();
+        base::SmartArrayPointer<char> name =
+            shared_info->DebugName()->ToCString();
         PrintF(trace_file, "  reading arguments adaptor frame %s", name.get());
         PrintF(trace_file, " => height=%d; inputs:\n", height);
       }
@@ -2708,7 +2722,8 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
           SharedFunctionInfo::cast(literal_array->get(iterator->Next()));
       int height = iterator->Next();
       if (trace_file != nullptr) {
-        SmartArrayPointer<char> name = shared_info->DebugName()->ToCString();
+        base::SmartArrayPointer<char> name =
+            shared_info->DebugName()->ToCString();
         PrintF(trace_file, "  reading construct stub frame %s", name.get());
         PrintF(trace_file, " => height=%d; inputs:\n", height);
       }
@@ -2719,7 +2734,8 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       SharedFunctionInfo* shared_info =
           SharedFunctionInfo::cast(literal_array->get(iterator->Next()));
       if (trace_file != nullptr) {
-        SmartArrayPointer<char> name = shared_info->DebugName()->ToCString();
+        base::SmartArrayPointer<char> name =
+            shared_info->DebugName()->ToCString();
         PrintF(trace_file, "  reading getter frame %s; inputs:\n", name.get());
       }
       return TranslatedFrame::AccessorFrame(TranslatedFrame::kGetter,
@@ -2730,7 +2746,8 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       SharedFunctionInfo* shared_info =
           SharedFunctionInfo::cast(literal_array->get(iterator->Next()));
       if (trace_file != nullptr) {
-        SmartArrayPointer<char> name = shared_info->DebugName()->ToCString();
+        base::SmartArrayPointer<char> name =
+            shared_info->DebugName()->ToCString();
         PrintF(trace_file, "  reading setter frame %s; inputs:\n", name.get());
       }
       return TranslatedFrame::AccessorFrame(TranslatedFrame::kSetter,
@@ -3165,7 +3182,7 @@ Handle<Object> TranslatedState::MaterializeAt(int frame_index,
         }
         case JS_OBJECT_TYPE: {
           Handle<JSObject> object =
-              isolate_->factory()->NewJSObjectFromMap(map, NOT_TENURED, false);
+              isolate_->factory()->NewJSObjectFromMap(map, NOT_TENURED);
           slot->value_ = object;
           Handle<Object> properties = MaterializeAt(frame_index, value_index);
           Handle<Object> elements = MaterializeAt(frame_index, value_index);

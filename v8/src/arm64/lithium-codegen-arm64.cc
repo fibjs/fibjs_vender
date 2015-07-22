@@ -1930,6 +1930,12 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ B(eq, true_label);
       }
 
+      if (expected.Contains(ToBooleanStub::SIMD_VALUE)) {
+        // SIMD value -> true.
+        __ CompareInstanceType(map, scratch, FLOAT32X4_TYPE);
+        __ B(eq, true_label);
+      }
+
       if (expected.Contains(ToBooleanStub::HEAP_NUMBER)) {
         Label not_heap_number;
         __ JumpIfNotRoot(map, Heap::kHeapNumberMapRootIndex, &not_heap_number);
@@ -3366,9 +3372,9 @@ void LCodeGen::DoLoadGlobalGeneric(LLoadGlobalGeneric* instr) {
   DCHECK(ToRegister(instr->result()).Is(x0));
   __ Mov(LoadDescriptor::NameRegister(), Operand(instr->name()));
   EmitVectorLoadICRegisters<LLoadGlobalGeneric>(instr);
-  ContextualMode mode = instr->for_typeof() ? NOT_CONTEXTUAL : CONTEXTUAL;
-  Handle<Code> ic = CodeFactory::LoadICInOptimizedCode(isolate(), mode, SLOPPY,
-                                                       PREMONOMORPHIC).code();
+  Handle<Code> ic =
+      CodeFactory::LoadICInOptimizedCode(isolate(), instr->typeof_mode(),
+                                         SLOPPY, PREMONOMORPHIC).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -3696,7 +3702,7 @@ void LCodeGen::DoLoadNamedGeneric(LLoadNamedGeneric* instr) {
   EmitVectorLoadICRegisters<LLoadNamedGeneric>(instr);
   Handle<Code> ic =
       CodeFactory::LoadICInOptimizedCode(
-          isolate(), NOT_CONTEXTUAL, instr->hydrogen()->language_mode(),
+          isolate(), NOT_INSIDE_TYPEOF, instr->hydrogen()->language_mode(),
           instr->hydrogen()->initialization_state()).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 
@@ -5965,6 +5971,15 @@ void LCodeGen::DoTypeofIsAndBranch(LTypeofIsAndBranch* instr) {
     // Check for undetectable objects => false.
     __ Ldrb(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
     EmitTestAndBranch(instr, eq, scratch, 1 << Map::kIsUndetectable);
+
+  } else if (String::Equals(type_name, factory->float32x4_string())) {
+    DCHECK((instr->temp1() != NULL) && (instr->temp2() != NULL));
+    Register map = ToRegister(instr->temp1());
+    Register scratch = ToRegister(instr->temp2());
+
+    __ JumpIfSmi(value, false_label);
+    __ CompareObjectType(value, map, scratch, FLOAT32X4_TYPE);
+    EmitBranch(instr, eq);
 
   } else {
     __ B(false_label);
