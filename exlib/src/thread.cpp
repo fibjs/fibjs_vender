@@ -17,53 +17,6 @@
 #include <dlfcn.h>
 #endif
 
-#ifdef MacOS
-
-#include <mach/mach_init.h>
-#include <mach/task.h>
-#include <mach/semaphore.h>
-#include <sys/sysctl.h>
-#include <stdlib.h>
-OSTls::OSTls()
-{
-    static bool s_init = false;
-
-    if (!s_init)
-    {
-        const size_t kBufferSize = 128;
-        char buffer[kBufferSize];
-        size_t buffer_size = kBufferSize;
-        int ctl_name[] =
-        { CTL_KERN, KERN_OSRELEASE };
-        sysctl(ctl_name, 2, buffer, &buffer_size, NULL, 0);
-        buffer[kBufferSize - 1] = '\0';
-        char *period_pos = strchr(buffer, '.');
-        *period_pos = '\0';
-        int kernel_version_major = static_cast<int>(strtol(buffer, NULL, 10));
-
-        if (kernel_version_major < 11)
-        {
-#if defined(I386)
-            kMacTlsBaseOffset = 0x48;
-#else
-            kMacTlsBaseOffset = 0x60;
-#endif
-        }
-        else
-        {
-            kMacTlsBaseOffset = 0;
-        }
-
-        s_init = true;
-    }
-
-    pthread_key_create(&m_index, NULL);
-}
-
-intptr_t OSTls::kMacTlsBaseOffset;
-
-#endif
-
 namespace exlib
 {
 
@@ -82,11 +35,6 @@ static void *ThreadEntry(void *arg)
 
 OSThread::OSThread() : thread_(0), threadid(0)
 {
-}
-
-OSSemaphore::OSSemaphore(int start_val)
-{
-    m_sem = ::CreateSemaphore(NULL, start_val, LONG_MAX, NULL);
 }
 
 void OSThread::start()
@@ -112,302 +60,6 @@ OSThread::~OSThread()
         thread_ = NULL;
         threadid = 0;
     }
-}
-
-OSCondVarOld::OSCondVarOld(OSMutex *mu)
-    : user_lock_(*mu),
-      run_state_(RUNNING),
-      allocation_counter_(0),
-      recycling_list_size_(0)
-{
-}
-
-#ifndef Scoped_Lock_Protect
-#define Scoped_Lock_Protect(mu) AutoLock __auto_lock__(mu)
-#endif
-
-#ifndef Scoped_Unlock_Protect
-#define Scoped_Unlock_Protect(mu) AutoUnlock __auto_unlock__(mu)
-#endif
-
-OSCondVarOld::~OSCondVarOld()
-{
-    Scoped_Lock_Protect(internal_lock_);
-    run_state_ = SHUTDOWN;
-    if (recycling_list_size_ != allocation_counter_)
-    {
-        Scoped_Unlock_Protect(internal_lock_);
-        SignalAll();
-        Sleep(10);
-    }
-}
-
-void OSCondVarOld::TimedWait(DWORD dwMilliseconds)
-{
-    Event *waiting_event;
-    HANDLE handle;
-    {
-        Scoped_Lock_Protect(internal_lock_);
-        if (RUNNING != run_state_) return;
-        waiting_event = GetEventForWaiting();
-        handle = waiting_event->handle();
-    }
-
-    {
-        Scoped_Unlock_Protect(user_lock_);
-        WaitForSingleObject(handle, dwMilliseconds);
-
-        Scoped_Lock_Protect(internal_lock_);
-        RecycleEvent(waiting_event);
-    }
-}
-
-void OSCondVarOld::SignalAll()
-{
-    std::stack<HANDLE> handles;
-    {
-        Scoped_Lock_Protect(internal_lock_);
-        if (waiting_list_.IsEmpty())
-            return;
-        while (!waiting_list_.IsEmpty())
-            handles.push(waiting_list_.PopBack()->handle());
-    }
-    while (!handles.empty())
-    {
-        SetEvent(handles.top());
-        handles.pop();
-    }
-}
-
-void OSCondVarOld::Signal()
-{
-    HANDLE handle;
-    {
-        Scoped_Lock_Protect(internal_lock_);
-        if (waiting_list_.IsEmpty())
-            return;
-        handle = waiting_list_.PopBack()->handle();
-    }
-    SetEvent(handle);
-}
-
-OSCondVarOld::Event *OSCondVarOld::GetEventForWaiting()
-{
-    Event *cv_event;
-    if (0 == recycling_list_size_)
-    {
-        cv_event = new Event();
-        cv_event->InitListElement();
-        allocation_counter_++;
-    }
-    else
-    {
-        cv_event = recycling_list_.PopFront();
-        recycling_list_size_--;
-    }
-    waiting_list_.PushBack(cv_event);
-    return cv_event;
-}
-
-void OSCondVarOld::RecycleEvent(Event *used_event)
-{
-    used_event->Extract();
-    recycling_list_.PushBack(used_event);
-    recycling_list_size_++;
-}
-
-OSCondVarOld::Event::Event() : handle_(0)
-{
-    next_ = prev_ = this;
-}
-
-OSCondVarOld::Event::~Event()
-{
-    if (0 == handle_)
-    {
-        while (!IsEmpty())
-        {
-            Event *cv_event = PopFront();
-            delete cv_event;
-        }
-    }
-    if (0 != handle_)
-    {
-        int ret_val = CloseHandle(handle_);
-    }
-}
-
-void OSCondVarOld::Event::InitListElement()
-{
-    handle_ = CreateEvent(NULL, false, false, NULL);
-}
-
-bool OSCondVarOld::Event::IsEmpty() const
-{
-    return IsSingleton();
-}
-
-void OSCondVarOld::Event::PushBack(Event *other)
-{
-
-    other->prev_ = prev_;
-    other->next_ = this;
-
-    prev_->next_ = other;
-    prev_ = other;
-}
-
-OSCondVarOld::Event *OSCondVarOld::Event::PopFront()
-{
-    return next_->Extract();
-}
-
-OSCondVarOld::Event *OSCondVarOld::Event::PopBack()
-{
-    return prev_->Extract();
-}
-
-HANDLE OSCondVarOld::Event::handle() const
-{
-    return handle_;
-}
-
-OSCondVarOld::Event *OSCondVarOld::Event::Extract()
-{
-    if (!IsSingleton())
-    {
-        next_->prev_ = prev_;
-        prev_->next_ = next_;
-        prev_ = next_ = this;
-    }
-    return this;
-}
-
-bool OSCondVarOld::Event::IsSingleton() const
-{
-    return next_ == this;
-}
-
-bool OSCondVarOld::Event::ValidateAsDistinct(Event *other) const
-{
-    return ValidateLinks() && other->ValidateLinks() && (this != other);
-}
-
-bool OSCondVarOld::Event::ValidateAsItem() const
-{
-    return (0 != handle_) && ValidateLinks();
-}
-
-bool OSCondVarOld::Event::ValidateAsList() const
-{
-    return (0 == handle_) && ValidateLinks();
-}
-
-bool OSCondVarOld::Event::ValidateLinks() const
-{
-    return (next_->prev_ == this) && (prev_->next_ == this);
-}
-
-typedef VOID (WINAPI *CondProc)(PCONDITION_VARIABLE);
-
-static CondProc pInitializeConditionVariable;
-static CondProc pWakeAllConditionVariable;
-static CondProc pWakeConditionVariable;
-static BOOL (WINAPI *pSleepConditionVariableCS)(PCONDITION_VARIABLE, PCRITICAL_SECTION, DWORD);
-
-OSCondVarNew::OSCondVarNew(OSMutex *mu) : _mu(mu)
-{
-    pInitializeConditionVariable(&_cv);
-}
-
-OSCondVarNew::~OSCondVarNew()
-{
-    pWakeAllConditionVariable(&_cv);
-}
-
-void OSCondVarNew::Wait()
-{
-    pSleepConditionVariableCS(&_cv, &_mu->cs_, INFINITE);
-}
-
-void OSCondVarNew::Signal()
-{
-    pWakeConditionVariable(&_cv);
-}
-
-void OSCondVarNew::SignalAll()
-{
-    pWakeAllConditionVariable(&_cv);
-}
-
-static class _initConv
-{
-public:
-    _initConv()
-    {
-        HMODULE hKernel = GetModuleHandleA("KERNEL32");
-
-        if (hKernel)
-        {
-            pInitializeConditionVariable = (CondProc)GetProcAddress(hKernel, "InitializeConditionVariable");
-            pWakeAllConditionVariable = (CondProc)GetProcAddress(hKernel, "WakeAllConditionVariable");
-            pWakeConditionVariable = (CondProc)GetProcAddress(hKernel, "WakeConditionVariable");
-            pSleepConditionVariableCS = (BOOL (WINAPI *)(PCONDITION_VARIABLE, PCRITICAL_SECTION, DWORD))
-                                        GetProcAddress(hKernel, "SleepConditionVariableCS");
-
-            if (!pInitializeConditionVariable || !pWakeAllConditionVariable ||
-                    !pWakeConditionVariable || !pSleepConditionVariableCS)
-            {
-                pInitializeConditionVariable = NULL;
-                pWakeAllConditionVariable = NULL;
-                pWakeConditionVariable = NULL;
-                pSleepConditionVariableCS = NULL;
-            }
-        }
-
-    }
-} s_initConv;
-
-OSCondVar::OSCondVar(OSMutex *mu)
-{
-    if (pInitializeConditionVariable)
-        _cd = new OSCondVarNew(mu);
-    else
-        _cd = new OSCondVarOld(mu);
-}
-
-OSCondVar::~OSCondVar()
-{
-    if (pInitializeConditionVariable)
-        delete (OSCondVarNew *)_cd;
-    else
-        delete (OSCondVarOld *)_cd;
-
-    _cd = NULL;
-}
-
-void OSCondVar::Wait()
-{
-    if (pInitializeConditionVariable)
-        ((OSCondVarNew *)_cd)->Wait();
-    else
-        ((OSCondVarOld *)_cd)->Wait();
-}
-
-void OSCondVar::Signal()
-{
-    if (pInitializeConditionVariable)
-        ((OSCondVarNew *)_cd)->Signal();
-    else
-        ((OSCondVarOld *)_cd)->Signal();
-}
-
-void OSCondVar::SignalAll()
-{
-    if (pInitializeConditionVariable)
-        ((OSCondVarNew *)_cd)->SignalAll();
-    else
-        ((OSCondVarOld *)_cd)->SignalAll();
 }
 
 #else
@@ -470,6 +122,21 @@ OSThread::~OSThread()
 }
 
 #endif
+
+void OSThread::suspend()
+{
+
+}
+
+void OSThread::resume()
+{
+
+}
+
+void OSThread::destroy()
+{
+    delete this;
+}
 
 }
 
