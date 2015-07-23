@@ -137,7 +137,10 @@ inline void out_proc(void * proc)
 {
     Dl_info info;
     char* demangled = NULL;
-    if (!dladdr(proc, &info) || !info.dli_sname)
+
+    if (proc == 0)
+        puts("null");
+    else if (!dladdr(proc, &info) || !info.dli_sname)
         printf("%p\n", proc);
     else if ((demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, 0))) {
         printf("%s + %ld\n", demangled, (intptr_t)proc - (intptr_t)info.dli_saddr);
@@ -330,24 +333,40 @@ public:
             return (*(caller**)b)->num - (*(caller**)a)->num;
         }
 
-        void dump(int32_t level = 0)
+        void dumpSubs(int32_t level = 0)
         {
             int32_t i;
 
-            if (proc)
-            {
-                std::string str;
-
-                for (i = 1; i < level; i ++)
-                    str.append("  ", 2);
-
-                printf("%s%d times: ", str.c_str(), num);
-                out_proc(proc);
-            }
-
             qsort(&subs[0], subs.size(), sizeof(caller*), compare);
             for (i = 0; i < subs.size(); i ++)
-                subs[i]->dump(level + 1);
+                subs[i]->dump(level);
+        }
+
+        void dump(int32_t level)
+        {
+            int32_t i;
+            char numStr[16];
+            std::string str;
+            int32_t n;
+
+            str.append(level * 4, ' ');
+
+            n = sprintf(numStr, "%d times: ", num);
+            printf("%s%s", str.c_str(), numStr);
+            out_proc(proc);
+
+            str.append(n, ' ');
+
+            caller* p = this;
+            while (p->subs.size() == 1)
+            {
+                p = p->subs[0];
+                printf("%s", str.c_str());
+                out_proc(p->proc);
+            }
+
+            if (p && p->subs.size() > 0)
+                p->dumpSubs(level + 1);
         }
 
     public:
@@ -398,7 +417,7 @@ public:
             }
         }
 
-        root.dump();
+        root.dumpSubs();
         if (no_trace)
             printf("%d times: UNKNOWN.\n", no_trace);
     }

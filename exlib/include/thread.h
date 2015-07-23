@@ -6,6 +6,8 @@
  *  lion@9465.net
  */
 
+
+
 #ifndef _ex_thread_h__
 #define _ex_thread_h__
 
@@ -26,6 +28,7 @@
 
 #include <stdint.h>
 #include "utils.h"
+#include "fiber.h"
 
 #ifdef MacOS
 
@@ -449,12 +452,20 @@ private:
     OSMutex &_mu;
 };
 
-class OSThread
+class OSThread : public Thread_base
 {
 public:
     OSThread();
     virtual ~OSThread();
 
+public:
+    virtual void suspend();
+    virtual void resume();
+
+private:
+    virtual void destroy();
+
+public:
     void start();
     void join();
     virtual void Run() = 0;
