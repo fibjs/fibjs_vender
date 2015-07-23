@@ -39,7 +39,7 @@ void Locker::dump()
 }
 #endif
 
-void Blocker::suspend(Fiber* current)
+void Blocker::suspend(Thread_base* current)
 {
     if (current == 0)
         current = Fiber::Current();
@@ -47,30 +47,30 @@ void Blocker::suspend(Fiber* current)
     trace_assert(current != 0);
 
     m_blocks.putTail(current);
-    current->m_pService->switchConext();
+    current->suspend();
 }
 
-Fiber* Blocker::resume()
+Thread_base* Blocker::resume()
 {
-    Fiber* fb = m_blocks.getHead();
+    Thread_base* fb = m_blocks.getHead();
 
     if (fb)
-        fb->m_pService->m_resume.putTail(fb);
+        fb->resume();
 
     return fb;
 }
 
 void Blocker::resumeAll()
 {
-    Fiber* fb;
+    Thread_base* fb;
 
     while ((fb = m_blocks.getHead()) != 0)
-        fb->m_pService->m_resume.putTail(fb);
+        fb->resume();
 }
 
 void Locker::lock()
 {
-    Fiber *current = Fiber::Current();
+    Thread_base *current = Fiber::Current();
 
 #ifdef WIN32
     if (current == 0)
@@ -108,7 +108,7 @@ void Locker::lock()
 
 bool Locker::trylock()
 {
-    Fiber *current = Fiber::Current();
+    Thread_base *current = Fiber::Current();
 
     trace_assert(current != 0);
     trace_assert(m_recursive || current != m_locker);
@@ -131,7 +131,7 @@ bool Locker::trylock()
 
 void Locker::unlock()
 {
-    Fiber *current = Fiber::Current();
+    Thread_base *current = Fiber::Current();
 
 #ifdef WIN32
     if (current == 0)
@@ -158,7 +158,7 @@ void Locker::unlock()
 
 bool Locker::owned()
 {
-    Fiber *current = Fiber::Current();
+    Thread_base *current = Fiber::Current();
 
     trace_assert(current != 0);
 

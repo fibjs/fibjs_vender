@@ -18,13 +18,49 @@
 namespace exlib
 {
 
-class Fiber;
+class Locker;
+
+class Thread_base : public linkitem
+{
+public:
+    Thread_base() : refs_(0)
+    {}
+
+public:
+    void Ref()
+    {
+        refs_++;
+    }
+
+    void Unref()
+    {
+        if (--refs_ == 0)
+            destroy();
+    }
+
+public:
+    virtual void suspend() = 0;
+    virtual void resume() = 0;
+
+private:
+    virtual void destroy() = 0;
+
+private:
+    intptr_t refs_;
+
+#ifdef DEBUG
+public:
+    Locker *m_blocking;
+    void *m_stacktop;
+    trace m_trace;
+#endif
+};
 
 class Blocker
 {
 public:
-    void suspend(Fiber* current = 0);
-    Fiber* resume();
+    void suspend(Thread_base* current = 0);
+    Thread_base* resume();
     void resumeAll();
     size_t count() const
     {
@@ -32,7 +68,7 @@ public:
     }
 
 private:
-    List<Fiber> m_blocks;
+    List<Thread_base> m_blocks;
 };
 
 class Locker : public Blocker
@@ -52,7 +88,7 @@ public:
 private:
     bool m_recursive;
     int m_count;
-    Fiber *m_locker;
+    Thread_base *m_locker;
 #ifdef DEBUG
     trace m_trace;
 
@@ -206,11 +242,10 @@ private:
 
 class Service;
 
-class Fiber : public linkitem
+class Fiber : public Thread_base
 {
 public:
-    Fiber(Service* pService) :
-        refs_(0), m_pService(pService)
+    Fiber(Service* pService) : m_pService(pService)
     {
         memset(&m_cntxt, 0, sizeof(m_cntxt));
         memset(&m_tls, 0, sizeof(m_tls));
@@ -223,17 +258,13 @@ public:
     }
 
 public:
-    void Ref()
-    {
-        refs_++;
-    }
+    virtual void suspend();
+    virtual void resume();
 
-    void Unref()
-    {
-        if (--refs_ == 0)
-            destroy();
-    }
+private:
+    virtual void destroy();
 
+public:
     void join()
     {
         m_joins.wait();
@@ -261,11 +292,7 @@ public:
     static void tlsPut(int idx, void *v);
     static void tlsFree(int idx);
 
-private:
-    void destroy();
-
 public:
-    intptr_t refs_;
     context m_cntxt;
     Event m_joins;
     Service* m_pService;
@@ -273,12 +300,6 @@ public:
     char name_[16];
 
     linkitem m_link;
-
-#ifdef DEBUG
-    Locker *m_blocking;
-    void *m_stacktop;
-    trace m_trace;
-#endif
 };
 
 }

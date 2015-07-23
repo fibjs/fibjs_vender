@@ -128,8 +128,7 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
         return NULL;
     stack = (void **) fb + stacksize / sizeof(void *) - 5;
 
-    memset(fb, 0, sizeof(Fiber));
-    fb->m_pService = Service::root;
+    new(fb) Fiber(Service::root);
 
 #ifdef DEBUG
     fb->m_stacktop = stack;

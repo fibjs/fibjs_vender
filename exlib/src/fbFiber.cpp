@@ -62,6 +62,16 @@ void Fiber::destroy()
 #endif
 }
 
+void Fiber::suspend()
+{
+    m_pService->switchConext();
+}
+
+void Fiber::resume()
+{
+    m_pService->m_resume.putTail(this);
+}
+
 static class _timerThread: public OSThread
 {
 public:
