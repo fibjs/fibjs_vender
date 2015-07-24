@@ -102,6 +102,8 @@ Service::Service() : m_main(this)
     memset(&m_tls, 0, sizeof(m_tls));
 
     m_main.set_name("main");
+    m_main.Ref();
+
     m_fibers.putTail(&m_main.m_link);
 }
 
@@ -156,7 +158,6 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
     Service::root->m_resume.putTail(fb);
     Service::root->m_fibers.putTail(&fb->m_link);
 
-    fb->Ref();
     fb->Ref();
 
     return fb;
