@@ -151,14 +151,16 @@ inline void out_proc(void * proc)
 
 inline void out_size(size_t sz)
 {
-    if (sz < 1024 * 10)
+    double num = (double)sz;
+
+    if (num < 1024)
         printf("%lu bytes\n", sz);
-    else if (sz < 1024 * 1024 * 10)
-        printf("%lu KB\n", sz / 1024);
-    else if (sz / 10 < 1024 * 1024 * 1024)
-        printf("%lu MB\n", sz / (1024 * 1024));
+    else if (num < 1024 * 1024)
+        printf("%.1f KB\n", num / 1024);
+    else if (num < 1024 * 1024 * 1024)
+        printf("%.1f MB\n", num / (1024 * 1024));
     else
-        printf("%lu GB\n", sz / (1024 * 1024 * 1024));
+        printf("%.1f GB\n", num / (1024 * 1024 * 1024));
 }
 
 void trace::dump()
@@ -178,7 +180,6 @@ void trace::dump()
     }
 }
 
-// 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61,67, 71, 73, 79, 83, 89, 97
 #define POOL_SIZE   97
 
 class MemPool
