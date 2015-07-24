@@ -149,6 +149,18 @@ inline void out_proc(void * proc)
         printf("%s + %ld\n", info.dli_sname, (intptr_t)proc - (intptr_t)info.dli_saddr);
 }
 
+inline void out_size(size_t sz)
+{
+    if (sz < 1024 * 10)
+        printf("%lu bytes\n", sz);
+    else if (sz < 1024 * 1024 * 10)
+        printf("%lu KB\n", sz / 1024);
+    else if (sz / 10 < 1024 * 1024 * 1024)
+        printf("%lu MB\n", sz / (1024 * 1024));
+    else
+        printf("%lu GB\n", sz / (1024 * 1024 * 1024));
+}
+
 void trace::dump()
 {
     init_lib();
@@ -176,6 +188,7 @@ class MemPool
     public:
         trace m_trace;
         void *m_p;
+        size_t m_sz;
         bool m_mark;
     };
 
@@ -197,7 +210,7 @@ public:
     }
 
 public:
-    void put(void* p)
+    void put(void* p, size_t sz)
     {
         int32_t hash = (intptr_t)p % POOL_SIZE;
 
@@ -205,6 +218,7 @@ public:
         memset(s, 0, sizeof(stub));
 
         s->m_p = p;
+        s->m_sz = sz;
         s->m_trace.save();
 
         m_locks[hash].lock();
@@ -239,7 +253,7 @@ public:
         }
     }
 
-    void replace(void* p, void* p1)
+    void replace(void* p, void* p1, size_t sz)
     {
         int32_t hash = (intptr_t)p % POOL_SIZE;
         int32_t hash1 = (intptr_t)p1 % POOL_SIZE;
@@ -267,6 +281,7 @@ public:
         }
 
         s->m_p = p1;
+        s->m_sz = sz;
         s->m_trace.save();
 
         m_locks[hash1].lock();
@@ -293,7 +308,7 @@ public:
     class caller
     {
     public:
-        caller(void *p): proc(p), num(0)
+        caller(void *p): proc(p), m_times(0), m_sz(0)
         {
         }
 
@@ -305,9 +320,11 @@ public:
         }
 
     public:
-        void put(void** frames, int32_t level)
+        void put(size_t sz, void** frames, int32_t level)
         {
-            num ++;
+            m_times ++;
+            m_sz += sz;
+
             if (level > 0) {
                 int32_t i;
                 void* p = frames[0];
@@ -324,13 +341,13 @@ public:
                     sub = new caller(p);
                     subs.insert(subs.end(), sub);
                 }
-                sub->put(frames + 1, level - 1);
+                sub->put(sz, frames + 1, level - 1);
             }
         }
 
         static int compare (const void * a, const void * b)
         {
-            return (*(caller**)b)->num - (*(caller**)a)->num;
+            return (*(caller**)b)->m_times - (*(caller**)a)->m_times;
         }
 
         void dumpSubs(int32_t level = 0)
@@ -349,13 +366,18 @@ public:
             std::string str;
             int32_t n;
 
+            if (level == 0)
+                puts("");
+
             str.append(level * 4, ' ');
 
-            n = sprintf(numStr, "%d times: ", num);
-            printf("%s%s", str.c_str(), numStr);
-            out_proc(proc);
+            printf("%s%d times, total ", str.c_str(), m_times);
+            out_size(m_sz);
 
-            str.append(n, ' ');
+            str.append(4, ' ');
+            printf("%s", str.c_str());
+
+            out_proc(proc);
 
             caller* p = this;
             while (p->subs.size() == 1)
@@ -371,7 +393,8 @@ public:
 
     public:
         void * proc;
-        int32_t num;
+        int32_t m_times;
+        size_t m_sz;
         std::vector<caller*> subs;
     };
 
@@ -382,6 +405,7 @@ public:
         int32_t i;
         MemPool clone;
         int32_t no_trace = 0;
+        size_t no_trace_size = 0;
 
         for (i = 0; i < POOL_SIZE; i ++)
         {
@@ -393,6 +417,7 @@ public:
                     stub* s1 = (stub*)__real_malloc(sizeof(stub));
                     memset(s1, 0, sizeof(stub));
                     s1->m_trace = s->m_trace;
+                    s1->m_sz = s->m_sz;
                     clone.m_mems[i].putTail(s1);
                 }
                 s = (stub*)s->m_next;
@@ -406,20 +431,31 @@ public:
         {
             stub* s = clone.m_mems[i].head();
             while (s) {
-                int32_t num = s->m_trace.m_frame_count - 2;
-                if (num > STACK_LEVEL)
-                    num = STACK_LEVEL;
-                if (num > 0)
-                    root.put(s->m_trace.m_frames + 2, num);
+                int32_t level = s->m_trace.m_frame_count - 2;
+                if (level > STACK_LEVEL)
+                    level = STACK_LEVEL;
+                if (level > 0)
+                    root.put(s->m_sz, s->m_trace.m_frames + 2, level);
                 else
+                {
                     no_trace ++;
+                    no_trace_size += s->m_sz;
+                }
                 s = (stub*)s->m_next;
             }
         }
 
-        root.dumpSubs();
+        printf("\nfound %d times, total ", root.m_times);
+        out_size(root.m_sz);
         if (no_trace)
-            printf("%d times: UNKNOWN.\n", no_trace);
+        {
+            printf("unknown %d times, total ", no_trace);
+            out_size(no_trace_size);
+        }
+
+        root.dumpSubs();
+
+        puts("");
     }
 
 private:
@@ -452,7 +488,7 @@ extern "C" void* wrap(malloc)(size_t sz)
     if (p == 0)
         return p;
 
-    mpool.put(p);
+    mpool.put(p, sz);
 
     return p;
 }
@@ -479,7 +515,7 @@ extern "C" void* wrap(realloc)(void* p, size_t sz)
         if (p == 0)
             return p;
 
-        mpool.put(p);
+        mpool.put(p, sz);
 
         return p;
     }
@@ -495,7 +531,7 @@ extern "C" void* wrap(realloc)(void* p, size_t sz)
 
     void* p1 = __real_realloc(p, sz);
     if (p1)
-        mpool.replace(p, p1);
+        mpool.replace(p, p1, sz);
 
     return p1;
 }
@@ -520,7 +556,7 @@ void* operator new (size_t sz)
     if (p == 0)
         return p;
 
-    mpool.put(p);
+    mpool.put(p, sz);
 
     return p;
 }
@@ -534,7 +570,7 @@ void* operator new[] (size_t sz)
     if (p == 0)
         return p;
 
-    mpool.put(p);
+    mpool.put(p, sz);
 
     return p;
 }
