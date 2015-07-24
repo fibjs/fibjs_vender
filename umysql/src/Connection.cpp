@@ -64,10 +64,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <time.h>
 
-#if defined(sun) || defined(__sun)
-#include <alloca.h>
-#endif
-
 #ifdef _WIN32
 #define snprintf _snprintf
 #endif
@@ -525,6 +521,12 @@ bool Connection::connect(const char *_host, int _port, const char *_username, co
     m_dbgMethodProgress --;
     return false;
   }
+  if (result == 0xfe)
+  {
+    setError ("Old Authentication Method switch from server. Not supported by this client.", 4, UME_OTHER);
+    m_dbgMethodProgress --;
+    return false;
+  }
 
   m_reader.skip();
 
@@ -564,7 +566,7 @@ bool Connection::connect(const char *_host, int _port, const char *_username, co
   return true;
 }
 
-void *Connection::handleOKPacket(void* opt)
+void *Connection::handleOKPacket()
 {
   UINT64 affectedRows = m_reader.readLengthCodedInteger();
   UINT64 insertId = m_reader.readLengthCodedInteger();
@@ -573,7 +575,9 @@ void *Connection::handleOKPacket(void* opt)
   size_t len = m_reader.getBytesLeft();
   UINT8 *message = m_reader.readBytes(m_reader.getBytesLeft());
 
-  return m_capi.resultOK(affectedRows, insertId, serverStatus, (char *) message, len, opt);
+  m_reader.skip();
+
+  return m_capi.resultOK(affectedRows, insertId, serverStatus, (char *) message, len);
 }
 
 void Connection::handleErrorPacket()
@@ -590,7 +594,7 @@ void Connection::handleErrorPacket()
   setError (errorMessage.c_str (), (int) errnum, UME_MYSQL);
 }
 
-void *Connection::handleResultPacket(int _fieldCount, void* opt)
+void *Connection::handleResultPacket(int _fieldCount)
 {
   m_reader.rewind(1);
   UINT64 fieldCount = m_reader.readLengthCodedInteger();
@@ -598,11 +602,11 @@ void *Connection::handleResultPacket(int _fieldCount, void* opt)
 
   int iField = 0;
 
-  void *resultSet = m_capi.createResult(_fieldCount, opt);
+  void *resultSet = m_capi.createResult(_fieldCount);
 
   // Read Field packets
 
-  UMTypeInfo *typeInfo = (UMTypeInfo *) alloca((size_t)fieldCount * sizeof(UMTypeInfo));
+  UMTypeInfo *typeInfo = (UMTypeInfo *) alloca(fieldCount * sizeof(UMTypeInfo));
   int iTypeInfo = 0;
 
   while (true)
@@ -610,7 +614,7 @@ void *Connection::handleResultPacket(int _fieldCount, void* opt)
 
     if (!this->recvPacket())
     {
-      m_capi.destroyResult(resultSet, opt);
+      m_capi.destroyResult(resultSet);
       return NULL;
     }
 
@@ -646,13 +650,14 @@ void *Connection::handleResultPacket(int _fieldCount, void* opt)
     UINT8 decimals = m_reader.readByte();
     UINT16 filler2 = m_reader.readShort();
 
+    //UINT8 *def = m_reader.readLengthCodedBinary(&cb_default);
 
     typeInfo[iTypeInfo].type = type;
     typeInfo[iTypeInfo].flags = flags;
     typeInfo[iTypeInfo].charset = charset;
     iTypeInfo ++;
 
-    m_capi.resultSetField(resultSet, iField, &typeInfo[iTypeInfo - 1], name, cb_name, opt);
+    m_capi.resultSetField(resultSet, iField, &typeInfo[iTypeInfo - 1], name, cb_name);
     iField ++;
     m_reader.skip();
 
@@ -667,7 +672,7 @@ void *Connection::handleResultPacket(int _fieldCount, void* opt)
 
     if (!this->recvPacket())
     {
-      m_capi.destroyResult(resultSet, opt);
+      m_capi.destroyResult(resultSet);
       return NULL;
     }
 
@@ -684,23 +689,19 @@ void *Connection::handleResultPacket(int _fieldCount, void* opt)
     size_t cb_column;
 
 
-    m_capi.resultRowBegin(resultSet, opt);
+    m_capi.resultRowBegin(resultSet);
 
     for (int index = 0; index < _fieldCount; index ++)
     {
       UINT8 *columnValue = m_reader.readLengthCodedBinary(&cb_column);
-      if (!m_capi.resultRowValue (resultSet, index, &typeInfo[index], columnValue, cb_column, opt))
+      if (!m_capi.resultRowValue (resultSet, index, &typeInfo[index], columnValue, cb_column))
       {
-        m_capi.destroyResult(resultSet, opt);
+        m_capi.destroyResult(resultSet);
         return NULL;
       }
     }
 
-    if(!m_capi.resultRowEnd(resultSet, opt))
-    {
-        m_capi.destroyResult(resultSet, opt);
-        return NULL;
-    }
+    m_capi.resultRowEnd(resultSet);
     cRows ++;
     m_reader.skip();
 
@@ -711,7 +712,7 @@ void *Connection::handleResultPacket(int _fieldCount, void* opt)
 }
 
 
-void *Connection::query(const char *_query, size_t _cbQuery, void* opt)
+void *Connection::query(const char *_query, size_t _cbQuery)
 {
   m_dbgMethodProgress ++;
 
@@ -770,7 +771,7 @@ void *Connection::query(const char *_query, size_t _cbQuery, void* opt)
   case 0x00:
     PRINTMARK();
     m_dbgMethodProgress --;
-    return handleOKPacket(opt);
+    return handleOKPacket();
 
   case 0xff:
     PRINTMARK();
@@ -788,7 +789,7 @@ void *Connection::query(const char *_query, size_t _cbQuery, void* opt)
   default:
     PRINTMARK();
     m_dbgMethodProgress --;
-    return handleResultPacket((int)result, opt);
+    return handleResultPacket((int)result);
   }
 
   PRINTMARK();

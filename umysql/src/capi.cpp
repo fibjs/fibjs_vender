@@ -57,8 +57,10 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
-
+extern "C"
+{
 #include "umysql.h"
+}
 
 #include "Connection.h"
 
@@ -72,9 +74,9 @@ EXPORT_ATTR void UMConnection_Destroy(UMConnection conn)
   delete (Connection *)conn;
 }
 
-EXPORT_ATTR void * UMConnection_Query(UMConnection conn, const char *_query, size_t _cbQuery, void* opt)
+EXPORT_ATTR void * UMConnection_Query(UMConnection conn, const char *_query, size_t _cbQuery)
 {
-  return ((Connection *)conn)->query(_query, _cbQuery, opt);
+  return ((Connection *)conn)->query(_query, _cbQuery);
 }
 
 EXPORT_ATTR int UMConnection_Connect (UMConnection conn, const char *_host, int _port, const char *_username, const char *_password, const char *_database, int *_autoCommit, int _charset)
