@@ -73,36 +73,6 @@ OSThread::OSThread() : thread_(0)
 {
 }
 
-#ifdef DEBUG
-void OSThread::backtrace()
-{
-    context ctx;
-
-    ctx.save();
-    intptr_t* frame = (intptr_t*)ctx.fp;
-    int32_t n = 0;
-
-    while (frame != 0) {
-        void* proc = (void*)frame[1];
-        frame = (intptr_t*)frame[0];
-        if (!frame)
-            break;
-
-        printf("%2d: ", n ++);
-
-        Dl_info info;
-        char* demangled = NULL;
-        if (!dladdr(proc, &info) || !info.dli_sname)
-            printf("%p\n", proc);
-        else if ((demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, 0))) {
-            printf("%s\n", demangled);
-            free(demangled);
-        } else
-            printf("%s\n", info.dli_sname);
-    }
-}
-#endif
-
 void OSThread::start()
 {
     trace_assert(thread_ == 0);

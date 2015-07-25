@@ -480,9 +480,6 @@ public:
 #endif
     }
 
-#ifdef DEBUG
-    static void backtrace();
-#endif
 
 public:
 #ifdef _WIN32
