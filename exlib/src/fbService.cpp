@@ -257,29 +257,9 @@ void Service::switchConext()
         if (!m_resume.empty())
             continue;
 
-        // if we still have time, weakup yield fiber.
-        while (1)
-        {
-            AsyncEvent *p = m_yieldList.getHead();
-            if (p == NULL)
-                break;
-
-            p->callback();
-        }
-
-        if (!m_resume.empty())
-            continue;
-
         // still no work, we wait, and wait, and wait.....
         waitEvent();
     }
-}
-
-void Service::yield()
-{
-    AsyncEvent ae;
-    m_yieldList.putTail(&ae);
-    ae.wait();
 }
 
 }

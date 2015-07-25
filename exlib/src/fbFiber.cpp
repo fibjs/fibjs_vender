@@ -72,6 +72,12 @@ void Fiber::resume()
     m_pService->m_resume.putTail(this);
 }
 
+void Fiber::yield()
+{
+    m_pService->m_resume.putTail(this);
+    m_pService->switchConext();
+}
+
 static class _timerThread: public OSThread
 {
 public:
@@ -149,11 +155,8 @@ void AsyncEvent::sleep(int ms)
 void Fiber::sleep(int ms)
 {
     if (ms <= 0) {
-        Service *pService = Service::getFiberService();
-
-        trace_assert(pService != 0);
-
-        pService->yield();
+        trace_assert(Current() != 0);
+        Current()->yield();
     }
     else
     {

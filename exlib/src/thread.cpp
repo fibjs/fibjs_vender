@@ -27,6 +27,11 @@ static void *ThreadEntry(void *arg)
     OSThread *thread = reinterpret_cast<OSThread *>(arg);
     thread->Run();
     delete thread;
+void OSThread::yield()
+{
+    Sleep(0);
+}
+
 
     return NULL;
 }

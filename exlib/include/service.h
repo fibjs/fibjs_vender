@@ -23,7 +23,6 @@ public:
 
 public:
     void switchConext();
-    void yield();
     static Service *getFiberService();
     static bool hasService();
 
@@ -73,7 +72,6 @@ public:
     char m_tls[TLS_SIZE];
     List<Fiber> m_resume;
     LockedList<AsyncEvent> m_aEvents;
-    List<AsyncEvent> m_yieldList;
 
     IDLE_PROC m_Idle;
     IDLE_PROC m_InterCallback;

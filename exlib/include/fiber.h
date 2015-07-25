@@ -41,6 +41,7 @@ public:
 public:
     virtual void suspend() = 0;
     virtual void resume() = 0;
+    virtual void yield() = 0;
 
 private:
     virtual void destroy() = 0;
@@ -260,6 +261,7 @@ public:
 public:
     virtual void suspend();
     virtual void resume();
+    virtual void yield();
 
 private:
     virtual void destroy();

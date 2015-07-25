@@ -461,6 +461,7 @@ public:
 public:
     virtual void suspend();
     virtual void resume();
+    virtual void yield();
 
 private:
     virtual void destroy();
