@@ -43,8 +43,7 @@ public:
         return new_value;
     }
 
-    template<class T>
-    operator T* () const
+    operator intptr_t() const
     {
         intptr_t result;
 
@@ -57,7 +56,13 @@ public:
             :"=r"(result)
             :"r"(kMacTlsBaseOffset), "r"(m_index));
 #endif
-        return (T*)result;
+        return result;
+    }
+
+    template<class T>
+    operator T* () const
+    {
+        return (T*)operator intptr_t();
     }
 
 private:
@@ -79,6 +84,11 @@ public:
     {
         pthread_setspecific(m_index, new_value);
         return new_value;
+    }
+
+    operator void* () const
+    {
+        return pthread_getspecific(m_index);
     }
 
     template<class T>
