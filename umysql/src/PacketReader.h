@@ -81,6 +81,8 @@ public:
   char *getStartPtr();
   char *getEndPtr();
 
+  void shrink();
+
   size_t getSize();
   size_t setSize(size_t num);
 

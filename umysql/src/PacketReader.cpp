@@ -78,6 +78,16 @@ PacketReader::~PacketReader (void)
   delete[] m_buffStart;
 }
 
+void PacketReader::shrink()
+{
+  if (m_readCursor != m_buffStart)
+  {
+    memcpy(m_buffStart, m_readCursor, m_writeCursor - m_readCursor);
+    m_writeCursor -= m_readCursor - m_buffStart;
+    m_readCursor = m_buffStart;
+  }
+}
+
 void PacketReader::skip()
 {
   assert (m_packetEnd != NULL);

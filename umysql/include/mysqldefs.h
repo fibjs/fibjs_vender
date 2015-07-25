@@ -65,23 +65,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //-----------------------------------------------------------------------------
 // WIN32 stuff 
 //-----------------------------------------------------------------------------
-#include <windows.h>
+#include <Windows.h>
 
 #else
 //-----------------------------------------------------------------------------
 // POSIX stuff 
 //-----------------------------------------------------------------------------
 #include <sys/types.h>
+#include <stdint.h>
 
-typedef unsigned char UINT8;
-typedef unsigned short UINT16;
-typedef unsigned int UINT32;
-typedef unsigned long long UINT64;
+typedef uint8_t UINT8;
+typedef uint16_t UINT16;
+typedef uint32_t UINT32;
+typedef uint64_t UINT64;
 
-typedef char INT8;
-typedef short INT16;
-typedef int INT32;
-typedef long long INT64;
+typedef int8_t INT8;
+typedef int16_t INT16;
+typedef int32_t INT32;
+typedef int64_t INT64;
 #endif
 
 #include <string.h>
@@ -138,6 +139,14 @@ enum MYSQL_FIELDTYPE
   MFTYPE_STRING = 0xfe,
   MFTYPE_GEOMETRY = 0xff,
 };
+
+/**
+ * Field flags.
+ * See mysql_com.h
+ */
+#define UNSIGNED_FLAG         0x20
+
+#define isUnsigned(flags)    (0 != ((flags) & UNSIGNED_FLAG))
 
 enum MYSQL_CAPABILITIES
 {
@@ -379,9 +388,9 @@ enum MYSQL_FIELDFLAG
 
 #define MYSQL_PACKET_HEADER_SIZE 4
 #define MYSQL_PROTOCOL_VERSION 0x0a
-#define MYSQL_PACKET_SIZE (1024 * 1024 * 16)
+#define MYSQL_PACKET_SIZE (1024 * 1024 * 4)
 
-#define MYSQL_TX_BUFFER_SIZE ((1024 * 1024 * 4) + MYSQL_PACKET_HEADER_SIZE)
+#define MYSQL_TX_BUFFER_SIZE (MYSQL_PACKET_SIZE + MYSQL_PACKET_HEADER_SIZE)
 #define MYSQL_RX_BUFFER_SIZE (MYSQL_PACKET_SIZE + MYSQL_PACKET_HEADER_SIZE)
 
 #endif

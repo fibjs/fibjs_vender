@@ -135,7 +135,12 @@ void Connection::scramble(const char *_scramble1, const char *_scramble2, UINT8 
 bool Connection::readSocket()
 {
   size_t bytesToRecv = m_reader.getEndPtr() - m_reader.getWritePtr();
-  assert ((int)bytesToRecv <= m_reader.getEndPtr() - m_reader.getWritePtr()); 
+
+  if (bytesToRecv < 4096)
+  {
+    m_reader.shrink();
+    bytesToRecv = m_reader.getEndPtr() - m_reader.getWritePtr();
+  }
 
   if (bytesToRecv == 0)
   {
