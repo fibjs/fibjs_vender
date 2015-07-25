@@ -92,6 +92,11 @@ Service::Service() : m_main(this)
     m_fibers.putTail(&m_main.m_link);
 }
 
+const char* Service::type()
+{
+    return "Service";
+}
+
 #ifdef DEBUG
 void Service::dumpFibers()
 {

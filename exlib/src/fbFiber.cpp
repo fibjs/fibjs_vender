@@ -62,6 +62,11 @@ void Fiber::destroy()
 #endif
 }
 
+const char* Fiber::type()
+{
+    return "Fiber";
+}
+
 void Fiber::suspend()
 {
     m_pService->switchConext();

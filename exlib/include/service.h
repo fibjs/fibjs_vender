@@ -10,16 +10,22 @@
 #define _ex_service_h__
 
 #include "fiber.h"
+#include "thread.h"
 
 namespace exlib
 {
 
 typedef void (*IDLE_PROC)();
 
-class Service
+class Service : public OSThread
 {
 public:
     Service();
+
+public:
+    virtual const char* type();
+    virtual void Run()
+    {}
 
 public:
     void switchConext();

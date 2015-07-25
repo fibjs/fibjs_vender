@@ -469,9 +469,11 @@ public:
     virtual ~OSThread();
 
 public:
+    virtual const char* type();
     virtual void suspend();
     virtual void resume();
     virtual void yield();
+    virtual void Run() = 0;
 
 private:
     virtual void destroy();
@@ -479,7 +481,8 @@ private:
 public:
     void start();
     void join();
-    virtual void Run() = 0;
+    static OSThread *current();
+    void bindCurrent();
 
     static void Sleep(int ms)
     {
@@ -490,6 +493,8 @@ public:
 #endif
     }
 
+private:
+    static void *Entry(void *arg);
 
 public:
 #ifdef _WIN32
@@ -498,6 +503,7 @@ public:
 #else
     pthread_t thread_;
 #endif
+    OSSemaphore m_sem;
 };
 
 inline void InitOnce(atomic_t *once, void (*initializer)())

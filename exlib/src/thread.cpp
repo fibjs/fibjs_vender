@@ -20,20 +20,65 @@
 namespace exlib
 {
 
-static void *ThreadEntry(void *arg)
+OSTls th_current;
+
+void *OSThread::Entry(void *arg)
 {
     mem_savestack();
 
     OSThread *thread = reinterpret_cast<OSThread *>(arg);
+
+    th_current = thread;
     thread->Run();
-    delete thread;
+    thread->Unref();
+
+    return 0;
+}
+
+const char* OSThread::type()
+{
+    return "OSThread";
+}
+
+void OSThread::suspend()
+{
+    m_sem.Wait();
+}
+
+void OSThread::resume()
+{
+    m_sem.Post();
+}
+
 void OSThread::yield()
 {
     Sleep(0);
 }
 
+OSThread* OSThread::current()
+{
+    return (OSThread*)th_current;
+}
 
-    return NULL;
+void OSThread::bindCurrent()
+{
+    trace_assert(thread_ == 0);
+    trace_assert(th_current == 0);
+
+    Ref();
+    th_current = this;
+
+#ifdef _WIN32
+    threadid = GetCurrentThreadId();
+    thread_ = GetCurrentThread();
+#else
+    thread_ = pthread_self();
+#endif
+}
+
+void OSThread::destroy()
+{
+    delete this;
 }
 
 #ifdef _WIN32
@@ -46,7 +91,7 @@ void OSThread::start()
 {
     trace_assert(thread_ == 0);
     trace_assert(threadid == 0);
-    thread_ = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadEntry, this, 0, &threadid);
+    thread_ = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Entry, this, 0, &threadid);
 }
 
 void OSThread::join()
@@ -77,7 +122,7 @@ void OSThread::start()
 {
     trace_assert(thread_ == 0);
 
-    pthread_create(&thread_, NULL, ThreadEntry, this);
+    pthread_create(&thread_, NULL, Entry, this);
 }
 
 void OSThread::join()
@@ -97,21 +142,6 @@ OSThread::~OSThread()
 }
 
 #endif
-
-void OSThread::suspend()
-{
-
-}
-
-void OSThread::resume()
-{
-
-}
-
-void OSThread::destroy()
-{
-    delete this;
-}
 
 }
 
