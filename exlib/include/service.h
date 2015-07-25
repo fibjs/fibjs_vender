@@ -23,7 +23,7 @@ public:
 
 public:
     void switchConext();
-    static Service *getFiberService();
+    static Service *current();
     static bool hasService();
 
     void RequestInterrupt(IDLE_PROC proc)

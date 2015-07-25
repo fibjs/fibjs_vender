@@ -14,7 +14,7 @@ namespace exlib
 
 int Fiber::tlsAlloc()
 {
-	Service* pService = Service::getFiberService();
+	Service* pService = Service::current();
 	int i;
 
 	trace_assert(pService != 0);
@@ -31,25 +31,19 @@ int Fiber::tlsAlloc()
 
 void* Fiber::tlsGet(int idx)
 {
-	Service* pService = Service::getFiberService();
-
-	trace_assert(pService != 0);
-
-	return pService->m_running->m_tls[idx];
+	trace_assert(Current() != 0);
+	return Current()->m_tls[idx];
 }
 
 void Fiber::tlsPut(int idx, void* v)
 {
-	Service* pService = Service::getFiberService();
-
-	trace_assert(pService != 0);
-
-	pService->m_running->m_tls[idx] = v;
+	trace_assert(Current() != 0);
+	Current()->m_tls[idx] = v;
 }
 
 void Fiber::tlsFree(int idx)
 {
-	Service* pService = Service::getFiberService();
+	Service* pService = Service::current();
 
 	trace_assert(pService != 0);
 

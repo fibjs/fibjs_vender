@@ -25,7 +25,7 @@ Service *Service::root;
 
 static DWORD s_main;
 
-Service *Service::getFiberService()
+Service *Service::current()
 {
     if (!s_main)
     {
@@ -47,7 +47,7 @@ bool Service::hasService()
 
 static pthread_t s_main;
 
-Service *Service::getFiberService()
+Service *Service::current()
 {
     if (!s_main)
     {
@@ -72,24 +72,9 @@ static class _service_init
 public:
     _service_init()
     {
-        Service::getFiberService();
+        Service::current();
     }
 } s_service_init;
-
-#ifdef DEBUG
-
-void Service::dumpFibers()
-{
-#ifndef WIN32
-    Fiber* fb = firstFiber();
-    while (fb)
-    {
-        fb->m_trace.dump();
-        fb = nextFiber(fb);
-    }
-#endif
-}
-#endif
 
 Service::Service() : m_main(this)
 {
@@ -106,6 +91,20 @@ Service::Service() : m_main(this)
 
     m_fibers.putTail(&m_main.m_link);
 }
+
+#ifdef DEBUG
+void Service::dumpFibers()
+{
+#ifndef WIN32
+    Fiber* fb = firstFiber();
+    while (fb)
+    {
+        fb->m_trace.dump();
+        fb = nextFiber(fb);
+    }
+#endif
+}
+#endif
 
 static void fiber_proc(void *(*func)(void *), void *data)
 {

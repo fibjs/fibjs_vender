@@ -27,7 +27,7 @@ namespace internal
 
 void Sampler::DoSample()
 {
-    exlib::Service* pService = exlib::Service::getFiberService();
+    exlib::Service* pService = exlib::Service::current();
     exlib::Fiber* fb = pService->firstFiber();
 
     while (fb)

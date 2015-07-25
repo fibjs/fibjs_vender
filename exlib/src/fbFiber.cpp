@@ -45,7 +45,7 @@ std::multimap<double, AsyncEvent *> s_tms;
 
 Fiber *Fiber::Current()
 {
-    Service *pService = Service::getFiberService();
+    Service *pService = Service::current();
 
     if (pService)
         return pService->m_running;
