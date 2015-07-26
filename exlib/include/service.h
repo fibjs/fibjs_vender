@@ -86,8 +86,6 @@ public:
     List<linkitem> m_fibers;
 };
 
-typedef LockedList<AsyncEvent> AsyncQueue;
-
 }
 
 #endif
