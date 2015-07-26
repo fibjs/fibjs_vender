@@ -22,12 +22,13 @@ namespace exlib
 
 Service *root;
 
-static atomic s_service_count;
+static bool s_service_inited;
 
 Service *Service::current()
 {
     OSThread* thread_ = OSThread::current();
 
+    assert(s_service_inited);
     assert(thread_ != 0);
     assert(!strcmp(thread_->type(), "Service"));
 
@@ -36,7 +37,7 @@ Service *Service::current()
 
 bool Service::hasService()
 {
-    if (!s_service_count)
+    if (!s_service_inited)
         return false;
 
     assert(OSThread::current() != 0);
@@ -47,13 +48,13 @@ void Service::init()
 {
     root = new Service();
     root->bindCurrent();
+
+    s_service_inited = true;
 }
 
 Service::Service() : m_main(this)
 {
     mem_savestack();
-
-    s_service_count.inc();
 
     m_recycle = NULL;
     m_running = &m_main;
@@ -170,6 +171,9 @@ void Service::waitEvent()
 
         if (nCount < 2000000)
             nCount++;
+
+        if (!m_resume.empty())
+            return;
 
         pEvent = m_aEvents.getHead();
         if (pEvent != 0)

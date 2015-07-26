@@ -39,9 +39,17 @@ public:
 namespace exlib
 {
 
-LockedList<AsyncEvent> s_acSleep;
-std::multimap<double, AsyncEvent *> s_tms;
+class Sleeping : public linkitem
+{
+public:
+    Sleeping(Fiber* now, int32_t tm) :
+        m_now(now), m_tm(tm)
+    {}
 
+public:
+    Fiber* m_now;
+    int32_t m_tm;
+};
 
 Fiber *Fiber::Current()
 {
@@ -91,15 +99,12 @@ public:
         start();
     }
 
-    OSSemaphore m_sem;
-    double now;
-
     void wait()
     {
-        std::multimap<double, AsyncEvent *>::iterator e;
+        std::multimap<double, Sleeping *>::iterator e;
 
-        e = s_tms.begin();
-        if (e != s_tms.end())
+        e = m_tms.begin();
+        if (e != m_tms.end())
             m_sem.TimedWait((int32_t)(e->first - now));
         else
             m_sem.Wait();
@@ -111,8 +116,8 @@ public:
 
         while (1)
         {
-            AsyncEvent *p;
-            std::multimap<double, AsyncEvent *>::iterator e;
+            Sleeping *p;
+            std::multimap<double, Sleeping *>::iterator e;
 
             wait();
 
@@ -120,42 +125,41 @@ public:
 
             while (1)
             {
-                p = s_acSleep.getHead();
+                p = m_acSleep.getHead();
                 if (p == NULL)
                     break;
 
-                s_tms.insert(std::make_pair(now + p->result(), p));
+                m_tms.insert(std::make_pair(now + p->m_tm, p));
             }
 
             while (1)
             {
-                e = s_tms.begin();
-                if (e == s_tms.end())
+                e = m_tms.begin();
+                if (e == m_tms.end())
                     break;
                 if (e->first > now)
                     break;
 
-                e->second->apost(0);
-                s_tms.erase(e);
+                puts("find");
+                e->second->m_now->resume();
+                puts("resumed");
+                m_tms.erase(e);
             }
         }
     }
 
-    static void post(AsyncEvent *p);
+    void post(Sleeping *p)
+    {
+        m_acSleep.putTail(p);
+        m_sem.Post();
+    }
 
+private:
+    OSSemaphore m_sem;
+    double now;
+    LockedList<Sleeping> m_acSleep;
+    std::multimap<double, Sleeping *> m_tms;
 } s_timer;
-
-void _timerThread::post(AsyncEvent *p)
-{
-    s_acSleep.putTail(p);
-    s_timer.m_sem.Post();
-}
-
-void AsyncEvent::sleep(int ms)
-{
-    m_v = ms;
-    _timerThread::post(this);
-}
 
 void Fiber::sleep(int ms)
 {
@@ -165,10 +169,14 @@ void Fiber::sleep(int ms)
     }
     else
     {
-        AsyncEvent as;
+        Fiber* now = Current();
 
-        as.sleep(ms);
-        as.wait();
+        trace_assert(now != 0);
+
+        Sleeping as(now, ms);
+
+        s_timer.post(&as);
+        now->suspend();
     }
 }
 
