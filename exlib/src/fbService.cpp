@@ -20,8 +20,7 @@ namespace exlib
 
 #define FB_STK_ALIGN 256
 
-Service *root;
-
+void init_timer();
 static bool s_service_inited;
 
 Service *Service::current()
@@ -46,10 +45,11 @@ bool Service::hasService()
 
 void Service::init()
 {
-    root = new Service();
-    root->bindCurrent();
+    Service* service_ = new Service();
+    service_->bindCurrent();
 
     s_service_inited = true;
+    init_timer();
 }
 
 Service::Service() : m_main(this)
@@ -137,7 +137,7 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
     fb->m_cntxt.r1 = (intptr_t) data;
 #endif
 
-    now->m_resume.putTail(fb);
+    fb->resume();
     now->m_fibers.putTail(&fb->m_link);
 
     fb->Ref();
@@ -163,7 +163,6 @@ void Service::waitEvent()
     int time_1 = time_0 + 2000;
     int time_2 = time_1 + 200;
     int time_3 = time_2 + 20;
-    AsyncEvent* pEvent;
 
     while (1)
     {
@@ -175,10 +174,6 @@ void Service::waitEvent()
         if (!m_resume.empty())
             return;
 
-        pEvent = m_aEvents.getHead();
-        if (pEvent != 0)
-            break;
-
         if (nCount > time_3)
             OSThread::Sleep(100);
         else if (nCount > time_2)
@@ -188,8 +183,6 @@ void Service::waitEvent()
         else if (nCount > time_0)
             OSThread::Sleep(0);
     }
-
-    pEvent->callback();
 }
 
 void Service::switchConext()
@@ -220,16 +213,6 @@ void Service::switchConext()
                 m_recycle = NULL;
             }
             break;
-        }
-
-        // Then weakup async event.
-        while (1)
-        {
-            AsyncEvent *p = m_aEvents.getHead();
-            if (p == NULL)
-                break;
-
-            p->callback();
         }
 
         if (!m_resume.empty())

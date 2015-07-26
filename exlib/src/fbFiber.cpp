@@ -94,11 +94,6 @@ void Fiber::yield()
 static class _timerThread: public OSThread
 {
 public:
-    _timerThread()
-    {
-        start();
-    }
-
     void wait()
     {
         std::multimap<double, Sleeping *>::iterator e;
@@ -156,6 +151,11 @@ private:
     LockedList<Sleeping> m_acSleep;
     std::multimap<double, Sleeping *> m_tms;
 } s_timer;
+
+void init_timer()
+{
+    s_timer.start();
+}
 
 void Fiber::sleep(int ms)
 {
