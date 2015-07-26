@@ -29,12 +29,12 @@ public:
 public:
     void Ref()
     {
-        refs_++;
+        refs_.inc();
     }
 
     void Unref()
     {
-        if (--refs_ == 0)
+        if (refs_.dec() == 0)
             destroy();
     }
 
@@ -48,7 +48,7 @@ private:
     virtual void destroy() = 0;
 
 private:
-    intptr_t refs_;
+    exlib::atomic refs_;
 
 #ifdef DEBUG
 public:
