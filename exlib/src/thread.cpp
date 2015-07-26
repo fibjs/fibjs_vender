@@ -91,6 +91,7 @@ void OSThread::start()
 {
     trace_assert(thread_ == 0);
     trace_assert(threadid == 0);
+    Ref();
     thread_ = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Entry, this, 0, &threadid);
 }
 
@@ -121,7 +122,7 @@ OSThread::OSThread() : thread_(0)
 void OSThread::start()
 {
     trace_assert(thread_ == 0);
-
+    Ref();
     pthread_create(&thread_, NULL, Entry, this);
 }
 
