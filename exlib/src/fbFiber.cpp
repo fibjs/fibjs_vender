@@ -140,9 +140,7 @@ public:
                 if (e->first > now)
                     break;
 
-                puts("find");
                 e->second->m_now->resume();
-                puts("resumed");
                 m_tms.erase(e);
             }
         }
