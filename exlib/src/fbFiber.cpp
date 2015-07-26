@@ -105,15 +105,13 @@ public:
 
         e = m_tms.begin();
         if (e != m_tms.end())
-            m_sem.TimedWait((int32_t)(e->first - now));
+            m_sem.TimedWait((int32_t)(e->first - m_tm));
         else
             m_sem.Wait();
     }
 
     virtual void Run()
     {
-        now = v8::base::OS::TimeCurrentMillis();
-
         while (1)
         {
             Sleeping *p;
@@ -121,7 +119,7 @@ public:
 
             wait();
 
-            now = v8::base::OS::TimeCurrentMillis();
+            m_tm = v8::base::OS::TimeCurrentMillis();
 
             while (1)
             {
@@ -129,7 +127,7 @@ public:
                 if (p == NULL)
                     break;
 
-                m_tms.insert(std::make_pair(now + p->m_tm, p));
+                m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
             }
 
             while (1)
@@ -137,7 +135,7 @@ public:
                 e = m_tms.begin();
                 if (e == m_tms.end())
                     break;
-                if (e->first > now)
+                if (e->first > m_tm)
                     break;
 
                 e->second->m_now->resume();
@@ -154,7 +152,7 @@ public:
 
 private:
     OSSemaphore m_sem;
-    double now;
+    double m_tm;
     LockedList<Sleeping> m_acSleep;
     std::multimap<double, Sleeping *> m_tms;
 } s_timer;

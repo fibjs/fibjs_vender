@@ -70,12 +70,12 @@ void Blocker::resumeAll()
 
 void Locker::lock()
 {
-    Thread_base *current = Fiber::Current();
-
 #ifdef WIN32
-    if (current == 0)
+    if (!Service::hasService())
         return;
 #endif
+
+    Thread_base *current = Fiber::Current();
 
     trace_assert(current != 0);
     trace_assert(m_recursive || current != m_locker);
@@ -108,6 +108,11 @@ void Locker::lock()
 
 bool Locker::trylock()
 {
+#ifdef WIN32
+    if (!Service::hasService())
+        return true;
+#endif
+
     Thread_base *current = Fiber::Current();
 
     trace_assert(current != 0);
@@ -131,12 +136,12 @@ bool Locker::trylock()
 
 void Locker::unlock()
 {
-    Thread_base *current = Fiber::Current();
-
 #ifdef WIN32
-    if (current == 0)
+    if (!Service::hasService())
         return;
 #endif
+
+    Thread_base *current = Fiber::Current();
 
     trace_assert(current != 0);
 
