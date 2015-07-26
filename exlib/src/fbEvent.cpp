@@ -12,29 +12,50 @@ namespace exlib
 {
 void Event::wait()
 {
-    if (!m_set)
-        suspend();
+	m_lock.lock();
+	if (!m_set)
+		suspend(m_lock);
+	else
+		m_lock.unlock();
 }
 
 void Event::pulse()
 {
-    resumeAll();
+	m_lock.lock();
+
+	resumeAll();
+
+	m_lock.unlock();
 }
 
 void Event::set()
 {
-    m_set = true;
-    pulse();
+	m_lock.lock();
+
+	m_set = true;
+	resumeAll();
+
+	m_lock.unlock();
 }
 
 void Event::reset()
 {
-    m_set = false;
+	m_lock.lock();
+
+	m_set = false;
+
+	m_lock.unlock();
 }
 
 bool Event::isSet()
 {
-    return m_set;
+	m_lock.lock();
+
+	bool r = m_set;
+
+	m_lock.unlock();
+
+	return r;
 }
 
 }

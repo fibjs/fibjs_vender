@@ -13,24 +13,37 @@ namespace exlib
 
 void Semaphore::wait()
 {
+    m_lock.lock();
+
     if (m_count == 0)
-        suspend();
+        suspend(m_lock);
     else
+    {
         m_count--;
+        m_lock.unlock();
+    }
 }
 
 void Semaphore::post()
 {
+    m_lock.lock();
     if (resume() == 0)
         m_count++;
+    m_lock.unlock();
 }
 
 bool Semaphore::trywait()
 {
+    m_lock.lock();
     if (m_count == 0)
+    {
+        m_lock.unlock();
         return false;
+    }
 
     m_count--;
+    m_lock.unlock();
+
     return true;
 }
 

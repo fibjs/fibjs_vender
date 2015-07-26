@@ -39,7 +39,7 @@ void Locker::dump()
 }
 #endif
 
-void Blocker::suspend(Thread_base* current)
+void Blocker::suspend(spinlock& lock, Thread_base* current)
 {
     if (current == 0)
         current = Fiber::Current();
@@ -47,6 +47,9 @@ void Blocker::suspend(Thread_base* current)
     trace_assert(current != 0);
 
     m_blocks.putTail(current);
+
+    lock.unlock();
+
     current->suspend();
 }
 
@@ -80,8 +83,13 @@ void Locker::lock()
     trace_assert(current != 0);
     trace_assert(m_recursive || current != m_locker);
 
+    m_lock.lock();
+
     if (!m_recursive && current == m_locker)
+    {
+        m_lock.unlock();
         return;
+    }
 
     if (m_locker && current != m_locker)
     {
@@ -92,18 +100,22 @@ void Locker::lock()
         current->m_blocking = this;
 #endif
 
-        suspend(current);
+        suspend(m_lock, current);
 
 #ifdef DEBUG
         current->m_blocking = 0;
 #endif
+        return;
     }
-    else if (++m_count == 1) {
+
+    if (++m_count == 1) {
         m_locker = current;
 #ifdef DEBUG
         m_trace.save();
 #endif
     }
+
+    m_lock.unlock();
 }
 
 bool Locker::trylock()
@@ -118,11 +130,19 @@ bool Locker::trylock()
     trace_assert(current != 0);
     trace_assert(m_recursive || current != m_locker);
 
+    m_lock.lock();
+
     if (!m_recursive && current == m_locker)
+    {
+        m_lock.unlock();
         return false;
+    }
 
     if (m_locker && current != m_locker)
+    {
+        m_lock.unlock();
         return false;
+    }
 
     if (++m_count == 1) {
         m_locker = current;
@@ -130,6 +150,8 @@ bool Locker::trylock()
         m_trace.save();
 #endif
     }
+
+    m_lock.unlock();
 
     return true;
 }
@@ -149,6 +171,8 @@ void Locker::unlock()
     trace_assert(m_recursive || m_count == 1);
     trace_assert(m_count >= 1);
 
+    m_lock.lock();
+
     if (--m_count == 0)
     {
         if ((m_locker = resume()) != 0)
@@ -159,6 +183,8 @@ void Locker::unlock()
 #endif
         }
     }
+
+    m_lock.unlock();
 }
 
 bool Locker::owned()
@@ -167,7 +193,13 @@ bool Locker::owned()
 
     trace_assert(current != 0);
 
-    return current == m_locker;
+    m_lock.lock();
+
+    bool r = current == m_locker;
+
+    m_lock.unlock();
+
+    return r;
 }
 
 }

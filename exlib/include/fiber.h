@@ -61,7 +61,7 @@ public:
 class Blocker
 {
 public:
-    void suspend(Thread_base* current = 0);
+    void suspend(spinlock& lock, Thread_base* current = 0);
     Thread_base* resume();
     void resumeAll();
     size_t count() const
@@ -90,6 +90,7 @@ public:
 private:
     bool m_recursive;
     int m_count;
+    spinlock m_lock;
     Thread_base *m_locker;
 #ifdef DEBUG
     trace m_trace;
@@ -133,6 +134,7 @@ public:
 
 private:
     bool m_set;
+    spinlock m_lock;
 };
 
 class CondVar : public Blocker
@@ -141,6 +143,9 @@ public:
     void wait(Locker &l);
     void notify_one();
     void notify_all();
+
+private:
+    spinlock m_lock;
 };
 
 class Semaphore : public Blocker
@@ -158,6 +163,7 @@ public:
 
 private:
     int m_count;
+    spinlock m_lock;
 };
 
 template<class T>
@@ -183,18 +189,18 @@ public:
         return m_list.getHead();
     }
 
-    bool empty() const
+    bool empty()
     {
         return m_list.empty();
     }
 
-    int count() const
+    int count()
     {
         return m_list.count();
     }
 
 public:
-    List<T> m_list;
+    LockedList<T> m_list;
     Semaphore m_sem;
 };
 

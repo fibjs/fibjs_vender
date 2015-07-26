@@ -15,19 +15,28 @@ void CondVar::wait(Locker &l)
 {
 	l.unlock();
 
-	suspend();
+	m_lock.lock();
+	suspend(m_lock);
 
 	l.lock();
 }
 
 void CondVar::notify_one()
 {
+	m_lock.lock();
+
 	resume();
+
+	m_lock.unlock();
 }
 
 void CondVar::notify_all()
 {
+	m_lock.lock();
+
 	resumeAll();
+
+	m_lock.unlock();
 }
 
 }
