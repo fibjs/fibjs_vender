@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "osconfig.h"
 #include "service.h"
@@ -19,66 +20,40 @@ namespace exlib
 
 #define FB_STK_ALIGN 256
 
-Service *Service::root;
+Service *root;
 
-#ifdef _WIN32
-
-static DWORD s_main;
+static atomic s_service_count;
 
 Service *Service::current()
 {
-    if (!s_main)
-    {
-        root = new Service();
-        s_main = GetCurrentThreadId();
-    }
-    else if (s_main != GetCurrentThreadId())
-        return NULL;
+    OSThread* thread_ = OSThread::current();
 
-    return root;
+    assert(thread_ != 0);
+    assert(!strcmp(thread_->type(), "Service"));
+
+    return (Service*)thread_;
 }
 
 bool Service::hasService()
 {
-    return s_main == GetCurrentThreadId();
+    if (!s_service_count)
+        return false;
+
+    assert(OSThread::current() != 0);
+    return !strcmp(OSThread::current()->type(), "Service");
 }
 
-#else
-
-static pthread_t s_main;
-
-Service *Service::current()
+void Service::init()
 {
-    if (!s_main)
-    {
-        root = new Service();
-        s_main = pthread_self();
-    }
-    else if (s_main != pthread_self())
-        return NULL;
-
-    return root;
+    root = new Service();
+    root->bindCurrent();
 }
-
-bool Service::hasService()
-{
-    return s_main == pthread_self();
-}
-
-#endif
-
-static class _service_init
-{
-public:
-    _service_init()
-    {
-        Service::current();
-    }
-} s_service_init;
 
 Service::Service() : m_main(this)
 {
     mem_savestack();
+
+    s_service_count.inc();
 
     m_recycle = NULL;
     m_running = &m_main;
@@ -115,14 +90,16 @@ static void fiber_proc(void *(*func)(void *), void *data)
 {
     func(data);
 
-    Service::root->m_recycle = Service::root->m_running;
-    Service::root->switchConext();
+    Service* now = Service::current();
+    now->m_recycle = now->m_running;
+    now->switchConext();
 }
 
 Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
 {
     Fiber *fb;
     void **stack;
+    Service* now = Service::current();
 
     stacksize = (stacksize + FB_STK_ALIGN - 1) & ~(FB_STK_ALIGN - 1);
 #ifdef WIN32
@@ -134,7 +111,7 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
         return NULL;
     stack = (void **) fb + stacksize / sizeof(void *) - 5;
 
-    new(fb) Fiber(Service::root);
+    new(fb) Fiber(now);
 
 #ifdef DEBUG
     fb->m_stacktop = stack;
@@ -159,8 +136,8 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
     fb->m_cntxt.r1 = (intptr_t) data;
 #endif
 
-    Service::root->m_resume.putTail(fb);
-    Service::root->m_fibers.putTail(&fb->m_link);
+    now->m_resume.putTail(fb);
+    now->m_fibers.putTail(&fb->m_link);
 
     fb->Ref();
 

@@ -11,10 +11,12 @@
 namespace exlib
 {
 
+extern Service *root;
+
 int AsyncEvent::post(int v)
 {
 	m_v = v;
-	Service::root->m_aEvents.putTail(this);
+	root->m_aEvents.putTail(this);
 
 	return 0;
 }

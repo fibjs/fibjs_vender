@@ -31,6 +31,7 @@ public:
     void switchConext();
     static Service *current();
     static bool hasService();
+    static void init();
 
     void RequestInterrupt(IDLE_PROC proc)
     {
@@ -81,8 +82,6 @@ public:
 
     IDLE_PROC m_Idle;
     IDLE_PROC m_InterCallback;
-
-    static Service *root;
 
     List<linkitem> m_fibers;
 };
