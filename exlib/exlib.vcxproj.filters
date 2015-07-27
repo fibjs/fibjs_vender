@@ -47,6 +47,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\fbAsyncEvent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\fbCondVar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

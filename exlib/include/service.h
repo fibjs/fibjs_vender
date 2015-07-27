@@ -69,6 +69,7 @@ public:
     }
 
 private:
+    void waitEvent();
     void doInterrupt();
 
 public:
@@ -77,6 +78,7 @@ public:
     Fiber *m_recycle;
     char m_tls[TLS_SIZE];
     LockedList<Fiber> m_resume;
+    LockedList<AsyncEvent> m_aEvents;
 
     IDLE_PROC m_Idle;
     IDLE_PROC m_InterCallback;

@@ -21,6 +21,8 @@ namespace exlib
 #define FB_STK_ALIGN 256
 
 void init_timer();
+Service *root;
+
 static bool s_service_inited;
 
 Service *Service::current()
@@ -45,10 +47,11 @@ bool Service::hasService()
 
 void Service::init()
 {
-    Service* service_ = new Service();
-    service_->bindCurrent();
+    root = new Service();
+    root->bindCurrent();
 
     s_service_inited = true;
+
     init_timer();
 }
 
@@ -156,6 +159,42 @@ void Service::doInterrupt()
     }
 }
 
+void Service::waitEvent()
+{
+    int nCount = 0;
+    int time_0 = 0;
+    int time_1 = time_0 + 2000;
+    int time_2 = time_1 + 200;
+    int time_3 = time_2 + 20;
+    AsyncEvent* pEvent;
+
+    while (1)
+    {
+        doInterrupt();
+
+        if (nCount < 2000000)
+            nCount++;
+
+        if (!m_resume.empty())
+            return;
+
+        pEvent = m_aEvents.getHead();
+        if (pEvent != 0)
+            break;
+
+        if (nCount > time_3)
+            OSThread::Sleep(100);
+        else if (nCount > time_2)
+            OSThread::Sleep(10);
+        else if (nCount > time_1)
+            OSThread::Sleep(1);
+        else if (nCount > time_0)
+            OSThread::Sleep(0);
+    }
+
+    pEvent->callback();
+}
+
 void Service::switchConext()
 {
 #ifdef DEBUG
@@ -186,37 +225,28 @@ void Service::switchConext()
             break;
         }
 
-        int nCount = 0;
-        int time_0 = 0;
-        int time_1 = time_0 + 2000;
-        int time_2 = time_1 + 200;
-        int time_3 = time_2 + 20;
-
+        // Then weakup async event.
         while (1)
         {
-            if (!m_resume.empty())
+            AsyncEvent *p = m_aEvents.getHead();
+            if (p == NULL)
                 break;
 
-            if (m_Idle)
-                m_Idle();
-
-            if (!m_resume.empty())
-                break;
-
-            doInterrupt();
-
-            if (nCount < 2000000)
-                nCount++;
-
-            if (nCount > time_3)
-                OSThread::Sleep(100);
-            else if (nCount > time_2)
-                OSThread::Sleep(10);
-            else if (nCount > time_1)
-                OSThread::Sleep(1);
-            else if (nCount > time_0)
-                OSThread::Sleep(0);
+            p->callback();
         }
+
+        if (!m_resume.empty())
+            continue;
+
+        // doing smoething when we have time.
+        if (m_Idle)
+            m_Idle();
+
+        if (!m_resume.empty())
+            continue;
+
+        // still no work, we wait, and wait, and wait.....
+        waitEvent();
     }
 }
 
