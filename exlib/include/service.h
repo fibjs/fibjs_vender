@@ -69,7 +69,6 @@ public:
     }
 
 private:
-    void waitEvent();
     void doInterrupt();
 
 public:

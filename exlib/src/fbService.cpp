@@ -156,35 +156,6 @@ void Service::doInterrupt()
     }
 }
 
-void Service::waitEvent()
-{
-    int nCount = 0;
-    int time_0 = 0;
-    int time_1 = time_0 + 2000;
-    int time_2 = time_1 + 200;
-    int time_3 = time_2 + 20;
-
-    while (1)
-    {
-        doInterrupt();
-
-        if (nCount < 2000000)
-            nCount++;
-
-        if (!m_resume.empty())
-            return;
-
-        if (nCount > time_3)
-            OSThread::Sleep(100);
-        else if (nCount > time_2)
-            OSThread::Sleep(10);
-        else if (nCount > time_1)
-            OSThread::Sleep(1);
-        else if (nCount > time_0)
-            OSThread::Sleep(0);
-    }
-}
-
 void Service::switchConext()
 {
 #ifdef DEBUG
@@ -215,18 +186,37 @@ void Service::switchConext()
             break;
         }
 
-        if (!m_resume.empty())
-            continue;
+        int nCount = 0;
+        int time_0 = 0;
+        int time_1 = time_0 + 2000;
+        int time_2 = time_1 + 200;
+        int time_3 = time_2 + 20;
 
-        // doing smoething when we have time.
-        if (m_Idle)
-            m_Idle();
+        while (1)
+        {
+            if (!m_resume.empty())
+                break;
 
-        if (!m_resume.empty())
-            continue;
+            if (m_Idle)
+                m_Idle();
 
-        // still no work, we wait, and wait, and wait.....
-        waitEvent();
+            if (!m_resume.empty())
+                break;
+
+            doInterrupt();
+
+            if (nCount < 2000000)
+                nCount++;
+
+            if (nCount > time_3)
+                OSThread::Sleep(100);
+            else if (nCount > time_2)
+                OSThread::Sleep(10);
+            else if (nCount > time_1)
+                OSThread::Sleep(1);
+            else if (nCount > time_0)
+                OSThread::Sleep(0);
+        }
     }
 }
 
