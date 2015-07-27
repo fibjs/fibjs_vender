@@ -208,46 +208,6 @@ public:
 
 #define FIBER_STACK_SIZE    (65536 * 2)
 
-class AsyncEvent : public linkitem
-{
-public:
-    virtual ~AsyncEvent()
-    {}
-
-    virtual int32_t post(int32_t v);
-    virtual int32_t apost(int32_t v)
-    {
-        return post(v);
-    }
-
-    virtual void callback()
-    {
-        weak.set();
-    }
-
-    int32_t wait()
-    {
-        weak.wait();
-        return m_v;
-    }
-
-    bool isSet()
-    {
-        return weak.isSet();
-    }
-
-    int32_t result()
-    {
-        return m_v;
-    }
-
-    void sleep(int32_t ms);
-
-private:
-    Event weak;
-    int32_t m_v;
-};
-
 class Service;
 
 class Fiber : public Thread_base

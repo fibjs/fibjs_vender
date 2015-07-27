@@ -40,7 +40,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\fbAsyncEvent.cpp" />
     <ClCompile Include="src\fbCondVar.cpp" />
     <ClCompile Include="src\fbEvent.cpp" />
     <ClCompile Include="src\fbFiber.cpp" />
