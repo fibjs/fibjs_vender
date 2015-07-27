@@ -178,6 +178,12 @@ void Service::waitEvent()
         if (!m_resume.empty())
             return;
 
+        if (m_Idle)
+            m_Idle();
+
+        if (!m_resume.empty())
+            return;
+
         pEvent = m_aEvents.getHead();
         if (pEvent != 0)
             break;
