@@ -17,7 +17,7 @@
 namespace exlib
 {
 
-OSSemaphore::OSSemaphore(int start_val)
+OSSemaphore::OSSemaphore(int32_t start_val)
 {
     m_sem = ::CreateSemaphore(NULL, start_val, LONG_MAX, NULL);
 }
@@ -141,7 +141,7 @@ OSCondVarOld::Event::~Event()
     }
     if (0 != handle_)
     {
-        int ret_val = CloseHandle(handle_);
+        int32_t ret_val = CloseHandle(handle_);
     }
 }
 

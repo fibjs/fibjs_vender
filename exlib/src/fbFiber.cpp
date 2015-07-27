@@ -157,7 +157,7 @@ void init_timer()
     s_timer.start();
 }
 
-void Fiber::sleep(int ms)
+void Fiber::sleep(int32_t ms)
 {
     if (ms <= 0) {
         trace_assert(Current() != 0);

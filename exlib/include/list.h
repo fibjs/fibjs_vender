@@ -217,7 +217,7 @@ public:
         return m_count == 0;
     }
 
-    int count() const
+    int32_t count() const
     {
         return m_count;
     }
@@ -253,7 +253,7 @@ public:
 private:
     T *m_first;
     T *m_last;
-    int m_count;
+    int32_t m_count;
 };
 
 template<typename T>
@@ -324,10 +324,10 @@ public:
         return r;
     }
 
-    int count()
+    int32_t count()
     {
         m_lock.lock();
-        int r = List<T>::count();
+        int32_t r = List<T>::count();
         m_lock.unlock();
 
         return r;

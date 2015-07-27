@@ -346,7 +346,7 @@ public:
             }
         }
 
-        static int compare (const void * a, const void * b)
+        static int32_t compare (const void * a, const void * b)
         {
             return (*(caller**)b)->m_times - (*(caller**)a)->m_times;
         }

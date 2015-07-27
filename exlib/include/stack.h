@@ -153,7 +153,7 @@ public:
     {}
 #endif
 
-    static void test(const char *msg, const char *file, int line)
+    static void test(const char *msg, const char *file, int32_t line)
     {
         printf("Assertion failed: %s, file %s, line %d\n", msg, file, line);
 

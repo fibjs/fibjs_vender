@@ -12,10 +12,10 @@
 namespace exlib
 {
 
-int Fiber::tlsAlloc()
+int32_t Fiber::tlsAlloc()
 {
 	Service* pService = Service::current();
-	int i;
+	int32_t i;
 
 	trace_assert(pService != 0);
 
@@ -29,19 +29,19 @@ int Fiber::tlsAlloc()
 	return -1;
 }
 
-void* Fiber::tlsGet(int idx)
+void* Fiber::tlsGet(int32_t idx)
 {
 	trace_assert(Current() != 0);
 	return Current()->m_tls[idx];
 }
 
-void Fiber::tlsPut(int idx, void* v)
+void Fiber::tlsPut(int32_t idx, void* v)
 {
 	trace_assert(Current() != 0);
 	Current()->m_tls[idx] = v;
 }
 
-void Fiber::tlsFree(int idx)
+void Fiber::tlsFree(int32_t idx)
 {
 	Service* pService = Service::current();
 

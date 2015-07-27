@@ -99,7 +99,7 @@ static void fiber_proc(void *(*func)(void *), void *data)
     now->switchConext();
 }
 
-Fiber *Fiber::Create(void *(*func)(void *), void *data, int stacksize)
+Fiber *Fiber::Create(void *(*func)(void *), void *data, int32_t stacksize)
 {
     Fiber *fb;
     void **stack;
@@ -161,11 +161,11 @@ void Service::doInterrupt()
 
 void Service::waitEvent()
 {
-    int nCount = 0;
-    int time_0 = 0;
-    int time_1 = time_0 + 2000;
-    int time_2 = time_1 + 200;
-    int time_3 = time_2 + 20;
+    int32_t nCount = 0;
+    int32_t time_0 = 0;
+    int32_t time_1 = time_0 + 2000;
+    int32_t time_2 = time_1 + 200;
+    int32_t time_3 = time_2 + 20;
     AsyncEvent* pEvent;
 
     while (1)

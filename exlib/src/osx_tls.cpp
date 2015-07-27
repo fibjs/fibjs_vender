@@ -30,13 +30,13 @@ OSTls::OSTls()
         const size_t kBufferSize = 128;
         char buffer[kBufferSize];
         size_t buffer_size = kBufferSize;
-        int ctl_name[] =
+        int32_t ctl_name[] =
         { CTL_KERN, KERN_OSRELEASE };
         sysctl(ctl_name, 2, buffer, &buffer_size, NULL, 0);
         buffer[kBufferSize - 1] = '\0';
         char *period_pos = strchr(buffer, '.');
         *period_pos = '\0';
-        int kernel_version_major = static_cast<int>(strtol(buffer, NULL, 10));
+        int32_t kernel_version_major = static_cast<int32_t>(strtol(buffer, NULL, 10));
 
         if (kernel_version_major < 11)
         {

@@ -149,7 +149,7 @@ public:
 class OSSemaphore
 {
 public:
-    OSSemaphore(int start_val = 0);
+    OSSemaphore(int32_t start_val = 0);
 
     ~OSSemaphore()
     {
@@ -166,7 +166,7 @@ public:
         TimedWait(INFINITE);
     }
 
-    bool TimedWait(int ms)
+    bool TimedWait(int32_t ms)
     {
         return WaitForSingleObject(m_sem, ms) == WAIT_OBJECT_0;
     }
@@ -235,8 +235,8 @@ private:
     OSMutex &user_lock_;
     Event waiting_list_;
     Event recycling_list_;
-    int recycling_list_size_;
-    int allocation_counter_;
+    int32_t recycling_list_size_;
+    int32_t allocation_counter_;
 };
 
 class OSCondVarNew
@@ -308,7 +308,7 @@ public:
 class OSSemaphore
 {
 public:
-    OSSemaphore(int start_val = 0)
+    OSSemaphore(int32_t start_val = 0)
     {
         semaphore_create(mach_task_self(), &m_sem, SYNC_POLICY_FIFO, start_val);
     }
@@ -328,7 +328,7 @@ public:
         semaphore_wait(m_sem);
     }
 
-    bool TimedWait(int ms)
+    bool TimedWait(int32_t ms)
     {
         mach_timespec_t mts;
 
@@ -350,7 +350,7 @@ public:
 class OSSemaphore
 {
 public:
-    OSSemaphore(int start_val = 0)
+    OSSemaphore(int32_t start_val = 0)
     {
         sem_init(&m_sem, 0, start_val);
     }
@@ -375,7 +375,7 @@ public:
         return sem_trywait(&m_sem) == 0;
     }
 
-    bool TimedWait(int ms)
+    bool TimedWait(int32_t ms)
     {
         struct timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
@@ -484,7 +484,7 @@ public:
     static OSThread *current();
     void bindCurrent();
 
-    static void Sleep(int ms)
+    static void Sleep(int32_t ms)
     {
 #ifdef _WIN32
         ::Sleep(ms);

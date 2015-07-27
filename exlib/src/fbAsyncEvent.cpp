@@ -13,7 +13,7 @@ namespace exlib
 
 extern Service *root;
 
-int AsyncEvent::post(int v)
+int32_t AsyncEvent::post(int32_t v)
 {
 	m_v = v;
 	root->m_aEvents.putTail(this);

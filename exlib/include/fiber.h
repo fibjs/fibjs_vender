@@ -89,7 +89,7 @@ public:
 
 private:
     bool m_recursive;
-    int m_count;
+    int32_t m_count;
     spinlock m_lock;
     Thread_base *m_locker;
 #ifdef DEBUG
@@ -151,7 +151,7 @@ private:
 class Semaphore : public Blocker
 {
 public:
-    Semaphore(int count = 0) :
+    Semaphore(int32_t count = 0) :
         m_count(count)
     {
     }
@@ -162,7 +162,7 @@ public:
     bool trywait();
 
 private:
-    int m_count;
+    int32_t m_count;
     spinlock m_lock;
 };
 
@@ -194,7 +194,7 @@ public:
         return m_list.empty();
     }
 
-    int count()
+    int32_t count()
     {
         return m_list.count();
     }
@@ -214,8 +214,8 @@ public:
     virtual ~AsyncEvent()
     {}
 
-    virtual int post(int v);
-    virtual int apost(int v)
+    virtual int32_t post(int32_t v);
+    virtual int32_t apost(int32_t v)
     {
         return post(v);
     }
@@ -225,7 +225,7 @@ public:
         weak.set();
     }
 
-    int wait()
+    int32_t wait()
     {
         weak.wait();
         return m_v;
@@ -236,16 +236,16 @@ public:
         return weak.isSet();
     }
 
-    int result()
+    int32_t result()
     {
         return m_v;
     }
 
-    void sleep(int ms);
+    void sleep(int32_t ms);
 
 private:
     Event weak;
-    int m_v;
+    int32_t m_v;
 };
 
 class Service;
@@ -292,15 +292,15 @@ public:
     }
 
 public:
-    static void sleep(int ms);
+    static void sleep(int32_t ms);
     static Fiber *Current();
     static Fiber *Create(void *(*func)(void *), void *data = 0,
-                         int stacksize = FIBER_STACK_SIZE);
+                         int32_t stacksize = FIBER_STACK_SIZE);
 
-    static int tlsAlloc();
-    static void *tlsGet(int idx);
-    static void tlsPut(int idx, void *v);
-    static void tlsFree(int idx);
+    static int32_t tlsAlloc();
+    static void *tlsGet(int32_t idx);
+    static void tlsPut(int32_t idx, void *v);
+    static void tlsFree(int32_t idx);
 
 public:
     context m_cntxt;
