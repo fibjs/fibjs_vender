@@ -157,11 +157,6 @@ private:
 class spinlock
 {
 public:
-	spinlock() {
-
-	}
-
-public:
 	void lock()
 	{
 		while (m_atom.CompareAndSwap(0, -1));

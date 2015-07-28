@@ -39,38 +39,6 @@ void Locker::dump()
 }
 #endif
 
-void Blocker::suspend(spinlock& lock, Thread_base* current)
-{
-    if (current == 0)
-        current = Fiber::Current();
-
-    trace_assert(current != 0);
-
-    m_blocks.putTail(current);
-
-    lock.unlock();
-
-    current->suspend();
-}
-
-Thread_base* Blocker::resume()
-{
-    Thread_base* fb = m_blocks.getHead();
-
-    if (fb)
-        fb->resume();
-
-    return fb;
-}
-
-void Blocker::resumeAll()
-{
-    Thread_base* fb;
-
-    while ((fb = m_blocks.getHead()) != 0)
-        fb->resume();
-}
-
 void Locker::lock()
 {
 #ifdef WIN32
@@ -94,13 +62,16 @@ void Locker::lock()
     if (m_locker && current != m_locker)
     {
 #ifdef DEBUG
-        if (count() > 200)
+        if (m_blocks.count() > 200)
             dump();
 
         current->m_blocking = this;
 #endif
 
-        suspend(m_lock, current);
+        m_blocks.putTail(current);
+        m_lock.unlock();
+
+        current->suspend();
 
 #ifdef DEBUG
         current->m_blocking = 0;
@@ -164,6 +135,7 @@ void Locker::unlock()
 #endif
 
     Thread_base *current = Fiber::Current();
+    Thread_base *fb = 0;
 
     trace_assert(current != 0);
 
@@ -175,8 +147,9 @@ void Locker::unlock()
 
     if (--m_count == 0)
     {
-        if ((m_locker = resume()) != 0)
+        if ((m_locker = m_blocks.getHead()) != 0)
         {
+            fb = m_locker;
             m_count = 1;
 #ifdef DEBUG
             m_trace = m_locker->m_trace;
@@ -185,6 +158,9 @@ void Locker::unlock()
     }
 
     m_lock.unlock();
+
+    if (fb)
+        fb->resume();
 }
 
 bool Locker::owned()

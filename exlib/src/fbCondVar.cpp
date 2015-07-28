@@ -15,28 +15,41 @@ void CondVar::wait(Locker &l)
 {
 	l.unlock();
 
+	Thread_base* current = Fiber::Current();
+	trace_assert(current != 0);
+
 	m_lock.lock();
-	suspend(m_lock);
+	m_blocks.putTail(current);
+	m_lock.unlock();
+
+	current->suspend();
 
 	l.lock();
 }
 
 void CondVar::notify_one()
 {
+	Thread_base* fb;
+
 	m_lock.lock();
-
-	resume();
-
+	fb = m_blocks.getHead();
 	m_lock.unlock();
+
+	if (fb != 0)
+		fb->resume();
 }
 
 void CondVar::notify_all()
 {
+	List<Thread_base> blocks;
+
 	m_lock.lock();
-
-	resumeAll();
-
+	m_blocks.getList(blocks);
 	m_lock.unlock();
+
+	Thread_base* fb;
+	while ((fb = blocks.getHead()) != 0)
+		fb->resume();
 }
 
 }

@@ -58,22 +58,7 @@ public:
 #endif
 };
 
-class Blocker
-{
-public:
-    void suspend(spinlock& lock, Thread_base* current = 0);
-    Thread_base* resume();
-    void resumeAll();
-    size_t count() const
-    {
-        return m_blocks.count();
-    }
-
-private:
-    List<Thread_base> m_blocks;
-};
-
-class Locker : public Blocker
+class Locker
 {
 public:
     Locker(bool recursive = true) :
@@ -91,6 +76,7 @@ private:
     bool m_recursive;
     int32_t m_count;
     spinlock m_lock;
+    List<Thread_base> m_blocks;
     Thread_base *m_locker;
 #ifdef DEBUG
     trace m_trace;
@@ -117,7 +103,7 @@ private:
     Locker &m_l;
 };
 
-class Event : public Blocker
+class Event
 {
 public:
     Event()
@@ -135,9 +121,10 @@ public:
 private:
     bool m_set;
     spinlock m_lock;
+    List<Thread_base> m_blocks;
 };
 
-class CondVar : public Blocker
+class CondVar
 {
 public:
     void wait(Locker &l);
@@ -146,9 +133,10 @@ public:
 
 private:
     spinlock m_lock;
+    List<Thread_base> m_blocks;
 };
 
-class Semaphore : public Blocker
+class Semaphore
 {
 public:
     Semaphore(int32_t count = 0) :
@@ -164,6 +152,7 @@ public:
 private:
     int32_t m_count;
     spinlock m_lock;
+    List<Thread_base> m_blocks;
 };
 
 template<class T>

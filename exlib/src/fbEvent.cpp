@@ -14,45 +14,57 @@ void Event::wait()
 {
 	m_lock.lock();
 	if (!m_set)
-		suspend(m_lock);
+	{
+		Thread_base* current = Fiber::Current();
+		trace_assert(current != 0);
+
+		m_blocks.putTail(current);
+		m_lock.unlock();
+
+		current->suspend();
+	}
 	else
 		m_lock.unlock();
 }
 
 void Event::pulse()
 {
+	List<Thread_base> blocks;
+
 	m_lock.lock();
-
-	resumeAll();
-
+	m_blocks.getList(blocks);
 	m_lock.unlock();
+
+	Thread_base* fb;
+	while ((fb = blocks.getHead()) != 0)
+		fb->resume();
 }
 
 void Event::set()
 {
+	List<Thread_base> blocks;
+
 	m_lock.lock();
-
 	m_set = true;
-	resumeAll();
-
+	m_blocks.getList(blocks);
 	m_lock.unlock();
+
+	Thread_base* fb;
+	while ((fb = blocks.getHead()) != 0)
+		fb->resume();
 }
 
 void Event::reset()
 {
 	m_lock.lock();
-
 	m_set = false;
-
 	m_lock.unlock();
 }
 
 bool Event::isSet()
 {
 	m_lock.lock();
-
 	bool r = m_set;
-
 	m_lock.unlock();
 
 	return r;

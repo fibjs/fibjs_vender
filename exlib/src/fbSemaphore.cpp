@@ -16,7 +16,15 @@ void Semaphore::wait()
     m_lock.lock();
 
     if (m_count == 0)
-        suspend(m_lock);
+    {
+        Thread_base* current = Fiber::Current();
+        trace_assert(current != 0);
+
+        m_blocks.putTail(current);
+        m_lock.unlock();
+
+        current->suspend();
+    }
     else
     {
         m_count--;
@@ -26,10 +34,16 @@ void Semaphore::wait()
 
 void Semaphore::post()
 {
+    Thread_base* fb;
+
     m_lock.lock();
-    if (resume() == 0)
+    fb = m_blocks.getHead();
+    if (fb == 0)
         m_count++;
     m_lock.unlock();
+
+    if (fb != 0)
+        fb->resume();
 }
 
 bool Semaphore::trywait()
