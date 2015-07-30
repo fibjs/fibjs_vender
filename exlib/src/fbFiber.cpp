@@ -51,7 +51,7 @@ public:
     int32_t m_tm;
 };
 
-Fiber *Fiber::Current()
+Fiber *Fiber::current()
 {
     Service *pService = Service::current();
 
@@ -161,12 +161,12 @@ void init_timer()
 void Fiber::sleep(int32_t ms)
 {
     if (ms <= 0) {
-        trace_assert(Current() != 0);
-        Current()->yield();
+        trace_assert(current() != 0);
+        current()->yield();
     }
     else
     {
-        Fiber* now = Current();
+        Fiber* now = current();
 
         trace_assert(now != 0);
 

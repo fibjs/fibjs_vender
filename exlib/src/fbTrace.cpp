@@ -91,7 +91,7 @@ inline void* stacktop()
 
     if (Service::hasService())
     {
-        Fiber* fb = Fiber::Current();
+        Fiber* fb = Fiber::current();
         if (fb)
             st = fb->m_stacktop;
     }

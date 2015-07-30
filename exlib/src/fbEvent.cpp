@@ -15,7 +15,7 @@ void Event::wait()
 	m_lock.lock();
 	if (!m_set)
 	{
-		Thread_base* current = Fiber::Current();
+		Thread_base* current = Thread_base::current();
 		trace_assert(current != 0);
 
 		m_blocks.putTail(current);

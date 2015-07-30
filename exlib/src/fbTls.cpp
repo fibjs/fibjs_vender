@@ -31,14 +31,14 @@ int32_t Fiber::tlsAlloc()
 
 void* Fiber::tlsGet(int32_t idx)
 {
-	trace_assert(Current() != 0);
-	return Current()->m_tls[idx];
+	trace_assert(current() != 0);
+	return current()->m_tls[idx];
 }
 
 void Fiber::tlsPut(int32_t idx, void* v)
 {
-	trace_assert(Current() != 0);
-	Current()->m_tls[idx] = v;
+	trace_assert(current() != 0);
+	current()->m_tls[idx] = v;
 }
 
 void Fiber::tlsFree(int32_t idx)

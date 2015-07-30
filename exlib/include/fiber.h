@@ -38,6 +38,8 @@ public:
             destroy();
     }
 
+    static Thread_base* current();
+
 public:
     virtual bool is(const char* name) = 0;
     virtual void suspend() = 0;
@@ -242,7 +244,7 @@ public:
 
 public:
     static void sleep(int32_t ms);
-    static Fiber *Current();
+    static Fiber *current();
     static Fiber *Create(void *(*func)(void *), void *data = 0,
                          int32_t stacksize = FIBER_STACK_SIZE);
 

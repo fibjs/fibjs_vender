@@ -15,7 +15,7 @@ void CondVar::wait(Locker &l)
 {
 	l.unlock();
 
-	Thread_base* current = Fiber::Current();
+	Thread_base* current = Thread_base::current();
 	trace_assert(current != 0);
 
 	m_lock.lock();

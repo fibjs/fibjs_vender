@@ -24,6 +24,17 @@ void init_timer();
 
 static bool s_service_inited;
 
+Thread_base* Thread_base::current()
+{
+    OSThread* thread_ = OSThread::current();
+
+    assert(thread_ != 0);
+
+    if (thread_->is("Service"))
+        return ((Service*)thread_)->m_running;
+    return thread_;
+}
+
 Service *Service::current()
 {
     OSThread* thread_ = OSThread::current();

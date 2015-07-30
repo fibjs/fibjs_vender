@@ -46,7 +46,7 @@ void Locker::lock()
         return;
 #endif
 
-    Thread_base *current = Fiber::Current();
+    Thread_base *current = Thread_base::current();
 
     trace_assert(current != 0);
     trace_assert(m_recursive || current != m_locker);
@@ -96,7 +96,7 @@ bool Locker::trylock()
         return true;
 #endif
 
-    Thread_base *current = Fiber::Current();
+    Thread_base *current = Thread_base::current();
 
     trace_assert(current != 0);
     trace_assert(m_recursive || current != m_locker);
@@ -134,7 +134,7 @@ void Locker::unlock()
         return;
 #endif
 
-    Thread_base *current = Fiber::Current();
+    Thread_base *current = Thread_base::current();
     Thread_base *fb = 0;
 
     trace_assert(current != 0);
@@ -165,7 +165,7 @@ void Locker::unlock()
 
 bool Locker::owned()
 {
-    Thread_base *current = Fiber::Current();
+    Thread_base *current = Thread_base::current();
 
     trace_assert(current != 0);
 
