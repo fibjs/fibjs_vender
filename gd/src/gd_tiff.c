@@ -969,6 +969,7 @@ printf("type: %i\n", image_type);
 	}
 error:
 	TIFFClose(tif);
+	gdFree(th);
 	return im;
 }
 
