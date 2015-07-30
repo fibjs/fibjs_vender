@@ -35,9 +35,9 @@ void *OSThread::Entry(void *arg)
     return 0;
 }
 
-const char* OSThread::type()
+bool OSThread::is(const char* name)
 {
-    return "OSThread";
+    return !memcmp(name, "Thread", 7);
 }
 
 void OSThread::suspend()

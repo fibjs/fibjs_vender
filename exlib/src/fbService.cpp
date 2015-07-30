@@ -30,7 +30,7 @@ Service *Service::current()
 
     assert(s_service_inited);
     assert(thread_ != 0);
-    assert(!strcmp(thread_->type(), "Service"));
+    assert(thread_->is("Service"));
 
     return (Service*)thread_;
 }
@@ -41,7 +41,7 @@ bool Service::hasService()
         return false;
 
     assert(OSThread::current() != 0);
-    return !strcmp(OSThread::current()->type(), "Service");
+    return OSThread::current()->is("Service");
 }
 
 void Service::init()
@@ -70,9 +70,9 @@ Service::Service() : m_main(this)
     m_fibers.putTail(&m_main.m_link);
 }
 
-const char* Service::type()
+bool Service::is(const char* name)
 {
-    return "Service";
+    return !memcmp(name, "Service", 8) || OSThread::is(name);
 }
 
 #ifdef DEBUG

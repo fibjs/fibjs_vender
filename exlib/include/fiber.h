@@ -39,7 +39,7 @@ public:
     }
 
 public:
-    virtual const char* type() = 0;
+    virtual bool is(const char* name) = 0;
     virtual void suspend() = 0;
     virtual void resume() = 0;
     virtual void yield() = 0;
@@ -215,7 +215,7 @@ public:
     }
 
 public:
-    virtual const char* type();
+    virtual bool is(const char* name);
     virtual void suspend();
     virtual void resume();
     virtual void yield();

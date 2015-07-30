@@ -70,9 +70,10 @@ void Fiber::destroy()
 #endif
 }
 
-const char* Fiber::type()
+
+bool Fiber::is(const char* name)
 {
-    return "Fiber";
+    return !memcmp(name, "Fiber", 6);
 }
 
 void Fiber::suspend()

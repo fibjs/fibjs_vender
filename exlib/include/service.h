@@ -23,7 +23,7 @@ public:
     Service();
 
 public:
-    virtual const char* type();
+    virtual bool is(const char* name);
     virtual void Run()
     {}
 
