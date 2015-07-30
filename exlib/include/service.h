@@ -75,7 +75,6 @@ public:
     Fiber m_main;
     Fiber *m_running;
     Fiber *m_recycle;
-    char m_tls[TLS_SIZE];
     LockedList<Fiber> m_resume;
 
     IDLE_PROC m_Idle;

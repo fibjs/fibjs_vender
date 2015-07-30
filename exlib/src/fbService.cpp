@@ -73,7 +73,6 @@ Service::Service() : m_main(this)
     m_running = &m_main;
     m_Idle = NULL;
     m_InterCallback = NULL;
-    memset(&m_tls, 0, sizeof(m_tls));
 
     m_main.set_name("main");
     m_main.Ref();

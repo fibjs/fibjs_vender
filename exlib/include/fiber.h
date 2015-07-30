@@ -18,13 +18,16 @@
 namespace exlib
 {
 
-class Locker;
+#define TLS_SIZE    8
 
+class Locker;
 class Thread_base : public linkitem
 {
 public:
     Thread_base() : refs_(0)
-    {}
+    {
+        memset(&m_tls, 0, sizeof(m_tls));
+    }
 
 public:
     void Ref()
@@ -49,7 +52,14 @@ public:
 private:
     virtual void destroy() = 0;
 
+public:
+    static int32_t tlsAlloc();
+    static void *tlsGet(int32_t idx);
+    static void tlsPut(int32_t idx, void *v);
+    static void tlsFree(int32_t idx);
+
 private:
+    void *m_tls[TLS_SIZE];
     exlib::atomic refs_;
 
 #ifdef DEBUG
@@ -195,8 +205,6 @@ public:
     Semaphore m_sem;
 };
 
-#define TLS_SIZE    8
-
 #define FIBER_STACK_SIZE    (65536 * 2)
 
 class Service;
@@ -207,7 +215,6 @@ public:
     Fiber(Service* pService) : m_pService(pService)
     {
         memset(&m_cntxt, 0, sizeof(m_cntxt));
-        memset(&m_tls, 0, sizeof(m_tls));
         memset(&name_, 0, sizeof(name_));
 
 #ifdef DEBUG
@@ -248,16 +255,10 @@ public:
     static Fiber *Create(void *(*func)(void *), void *data = 0,
                          int32_t stacksize = FIBER_STACK_SIZE);
 
-    static int32_t tlsAlloc();
-    static void *tlsGet(int32_t idx);
-    static void tlsPut(int32_t idx, void *v);
-    static void tlsFree(int32_t idx);
-
 public:
     context m_cntxt;
     Event m_joins;
     Service* m_pService;
-    void *m_tls[TLS_SIZE];
     char name_[16];
 
     linkitem m_link;

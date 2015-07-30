@@ -12,42 +12,37 @@
 namespace exlib
 {
 
-int32_t Fiber::tlsAlloc()
+static char s_tls[TLS_SIZE];
+
+int32_t Thread_base::tlsAlloc()
 {
-	Service* pService = Service::current();
 	int32_t i;
 
-	trace_assert(pService != 0);
-
 	for (i = 0; i < TLS_SIZE; i++)
-		if (pService->m_tls[i] == 0)
+		if (s_tls[i] == 0)
 		{
-			pService->m_tls[i] = 1;
+			s_tls[i] = 1;
 			return i;
 		}
 
 	return -1;
 }
 
-void* Fiber::tlsGet(int32_t idx)
+void* Thread_base::tlsGet(int32_t idx)
 {
 	trace_assert(current() != 0);
 	return current()->m_tls[idx];
 }
 
-void Fiber::tlsPut(int32_t idx, void* v)
+void Thread_base::tlsPut(int32_t idx, void* v)
 {
 	trace_assert(current() != 0);
 	current()->m_tls[idx] = v;
 }
 
-void Fiber::tlsFree(int32_t idx)
+void Thread_base::tlsFree(int32_t idx)
 {
-	Service* pService = Service::current();
-
-	trace_assert(pService != 0);
-
-	pService->m_tls[idx] = 0;
+	s_tls[idx] = 0;
 }
 
 }
