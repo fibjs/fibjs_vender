@@ -472,6 +472,7 @@ public:
     virtual bool is(const char* name);
     virtual void suspend();
     virtual void resume();
+    virtual void join();
     virtual void yield();
     virtual void Run() = 0;
 
@@ -480,7 +481,6 @@ private:
 
 public:
     void start();
-    void join();
     static OSThread *current();
     void bindCurrent();
 

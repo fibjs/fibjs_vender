@@ -47,6 +47,7 @@ public:
     virtual bool is(const char* name) = 0;
     virtual void suspend() = 0;
     virtual void resume() = 0;
+    virtual void join() = 0;
     virtual void yield() = 0;
 
 private:
@@ -227,17 +228,13 @@ public:
     virtual bool is(const char* name);
     virtual void suspend();
     virtual void resume();
+    virtual void join();
     virtual void yield();
 
 private:
     virtual void destroy();
 
 public:
-    void join()
-    {
-        m_joins.wait();
-    }
-
     void set_name(const char *name)
     {
         strncpy(name_, name, sizeof(name_));

@@ -70,6 +70,10 @@ void Fiber::destroy()
 #endif
 }
 
+void Fiber::join()
+{
+    m_joins.wait();
+}
 
 bool Fiber::is(const char* name)
 {
