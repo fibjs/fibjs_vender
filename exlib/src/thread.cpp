@@ -52,7 +52,7 @@ void OSThread::resume()
 
 void OSThread::yield()
 {
-    Sleep(0);
+    sleep(0);
 }
 
 OSThread* OSThread::current()

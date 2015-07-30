@@ -221,13 +221,13 @@ void Service::switchConext()
                 break;
 
             if (nCount > time_3)
-                OSThread::Sleep(100);
+                OSThread::sleep(100);
             else if (nCount > time_2)
-                OSThread::Sleep(10);
+                OSThread::sleep(10);
             else if (nCount > time_1)
-                OSThread::Sleep(1);
+                OSThread::sleep(1);
             else if (nCount > time_0)
-                OSThread::Sleep(0);
+                OSThread::sleep(0);
         }
     }
 }

@@ -484,7 +484,7 @@ public:
     static OSThread *current();
     void bindCurrent();
 
-    static void Sleep(int32_t ms)
+    static void sleep(int32_t ms)
     {
 #ifdef _WIN32
         ::Sleep(ms);
@@ -517,7 +517,7 @@ inline void InitOnce(atomic_t *once, void (*initializer)())
     else if (state == 1)
     {
         while (*once != 2)
-            OSThread::Sleep(0);
+            OSThread::sleep(0);
     }
 }
 
