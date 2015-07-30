@@ -41,11 +41,6 @@ void Locker::dump()
 
 void Locker::lock()
 {
-#ifdef WIN32
-    if (!Service::hasService())
-        return;
-#endif
-
     Thread_base *current = Thread_base::current();
 
     trace_assert(current != 0);
@@ -91,11 +86,6 @@ void Locker::lock()
 
 bool Locker::trylock()
 {
-#ifdef WIN32
-    if (!Service::hasService())
-        return true;
-#endif
-
     Thread_base *current = Thread_base::current();
 
     trace_assert(current != 0);
@@ -129,11 +119,6 @@ bool Locker::trylock()
 
 void Locker::unlock()
 {
-#ifdef WIN32
-    if (!Service::hasService())
-        return;
-#endif
-
     Thread_base *current = Thread_base::current();
     Thread_base *fb = 0;
 
