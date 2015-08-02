@@ -230,6 +230,8 @@ void Service::switchConext()
                 OSThread::sleep(0);
         }
     }
+
+    m_switchTimes.inc();
 }
 
 }

@@ -81,6 +81,8 @@ public:
     IDLE_PROC m_InterCallback;
 
     List<linkitem> m_fibers;
+
+    atomic m_switchTimes;
 };
 
 }
