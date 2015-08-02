@@ -448,7 +448,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromJpegCtx(gdIOCtx *infile)
 	 * write one by calling gdImageInterlace(im, 1) yourself.
 	 * After all, we're not really supposed to rework JPEGs and
 	 * write them out again anyway. Lossy compression, remember? */
-#if 0
+#if 1
 	gdImageInterlace (im, cinfo.progressive_mode != 0);
 #endif
 	if(cinfo.out_color_space == JCS_RGB) {
