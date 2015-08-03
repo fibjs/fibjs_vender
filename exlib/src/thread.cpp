@@ -35,11 +35,6 @@ void *OSThread::Entry(void *arg)
     return 0;
 }
 
-bool OSThread::is(const char* name)
-{
-    return !memcmp(name, "Thread", 7);
-}
-
 void OSThread::suspend()
 {
     m_sem.Wait();

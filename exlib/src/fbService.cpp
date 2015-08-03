@@ -30,7 +30,7 @@ Thread_base* Thread_base::current()
 
     assert(thread_ != 0);
 
-    if (thread_->is("Service"))
+    if (thread_->is(Service::type))
         return ((Service*)thread_)->m_running;
     return thread_;
 }
@@ -41,7 +41,7 @@ Service *Service::current()
 
     assert(s_service_inited);
     assert(thread_ != 0);
-    assert(thread_->is("Service"));
+    assert(thread_->is(Service::type));
 
     return (Service*)thread_;
 }
@@ -52,7 +52,7 @@ bool Service::hasService()
         return false;
 
     assert(OSThread::current() != 0);
-    return OSThread::current()->is("Service");
+    return OSThread::current()->is(Service::type);
 }
 
 void Service::init()
@@ -78,11 +78,6 @@ Service::Service() : m_main(this)
     m_main.Ref();
 
     m_fibers.putTail(&m_main.m_link);
-}
-
-bool Service::is(const char* name)
-{
-    return !memcmp(name, "Service", 8) || OSThread::is(name);
 }
 
 #ifdef DEBUG

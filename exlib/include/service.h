@@ -23,7 +23,12 @@ public:
     Service();
 
 public:
-    virtual bool is(const char* name);
+    static const int32_t type = 2;
+    virtual bool is(int32_t t)
+    {
+        return t == type || OSThread::is(t);
+    }
+
     virtual void Run()
     {}
 

@@ -75,11 +75,6 @@ void Fiber::join()
     m_joins.wait();
 }
 
-bool Fiber::is(const char* name)
-{
-    return !memcmp(name, "Fiber", 6);
-}
-
 void Fiber::suspend()
 {
     m_pService->switchConext();

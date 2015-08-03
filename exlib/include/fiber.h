@@ -44,7 +44,7 @@ public:
     static Thread_base* current();
 
 public:
-    virtual bool is(const char* name) = 0;
+    virtual bool is(int32_t t) = 0;
     virtual void suspend() = 0;
     virtual void resume() = 0;
     virtual void join() = 0;
@@ -225,7 +225,12 @@ public:
     }
 
 public:
-    virtual bool is(const char* name);
+    static const int32_t type = 3;
+    virtual bool is(int32_t t)
+    {
+        return t == type;
+    }
+
     virtual void suspend();
     virtual void resume();
     virtual void join();
