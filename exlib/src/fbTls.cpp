@@ -7,6 +7,7 @@
  */
 
 #include <stdio.h>
+#include <assert.h>
 #include "service.h"
 
 namespace exlib
@@ -30,13 +31,13 @@ int32_t Thread_base::tlsAlloc()
 
 void* Thread_base::tlsGet(int32_t idx)
 {
-	trace_assert(current() != 0);
+	assert(current() != 0);
 	return current()->m_tls[idx];
 }
 
 void Thread_base::tlsPut(int32_t idx, void* v)
 {
-	trace_assert(current() != 0);
+	assert(current() != 0);
 	current()->m_tls[idx] = v;
 }
 

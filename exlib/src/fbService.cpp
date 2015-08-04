@@ -67,8 +67,6 @@ void Service::init()
 
 Service::Service() : m_main(this)
 {
-    mem_savestack();
-
     m_recycle = NULL;
     m_running = &m_main;
     m_Idle = NULL;
@@ -79,20 +77,6 @@ Service::Service() : m_main(this)
 
     m_fibers.putTail(&m_main.m_link);
 }
-
-#ifdef DEBUG
-void Service::dumpFibers()
-{
-#ifndef WIN32
-    Fiber* fb = firstFiber();
-    while (fb)
-    {
-        fb->m_trace.dump();
-        fb = nextFiber(fb);
-    }
-#endif
-}
-#endif
 
 static void fiber_proc(void *(*func)(void *), void *data)
 {
@@ -120,10 +104,6 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int32_t stacksize)
     stack = (void **) fb + stacksize / sizeof(void *) - 5;
 
     new(fb) Fiber(now);
-
-#ifdef DEBUG
-    fb->m_stacktop = stack;
-#endif
 
     fb->m_cntxt.ip = (intptr_t) fiber_proc;
     fb->m_cntxt.sp = (intptr_t) stack;
@@ -165,10 +145,6 @@ void Service::doInterrupt()
 
 void Service::switchConext()
 {
-#ifdef DEBUG
-    m_running->m_trace.save();
-#endif
-
     while (1)
     {
         doInterrupt();

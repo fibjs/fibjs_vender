@@ -62,13 +62,6 @@ public:
 private:
     void *m_tls[TLS_SIZE];
     exlib::atomic refs_;
-
-#ifdef DEBUG
-public:
-    Locker *m_blocking;
-    void *m_stacktop;
-    trace m_trace;
-#endif
 };
 
 class Locker
@@ -91,11 +84,6 @@ private:
     spinlock m_lock;
     List<Thread_base> m_blocks;
     Thread_base *m_locker;
-#ifdef DEBUG
-    trace m_trace;
-
-    void dump();
-#endif
 };
 
 class autoLocker
@@ -217,11 +205,6 @@ public:
     {
         memset(&m_cntxt, 0, sizeof(m_cntxt));
         memset(&name_, 0, sizeof(name_));
-
-#ifdef DEBUG
-        m_blocking = 0;
-        m_stacktop = 0;
-#endif
     }
 
 public:

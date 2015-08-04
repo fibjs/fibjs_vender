@@ -7,6 +7,7 @@
  */
 
 #include "service.h"
+#include <assert.h>
 
 namespace exlib
 {
@@ -18,7 +19,7 @@ void Semaphore::wait()
     if (m_count == 0)
     {
         Thread_base* current = Thread_base::current();
-        trace_assert(current != 0);
+        assert(current != 0);
 
         m_blocks.putTail(current);
         m_lock.unlock();

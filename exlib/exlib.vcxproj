@@ -48,7 +48,6 @@
     <ClCompile Include="src\fbService.cpp" />
     <ClCompile Include="src\fbSwitch.cpp" />
     <ClCompile Include="src\fbTls.cpp" />
-    <ClCompile Include="src\fbTrace.cpp" />
     <ClCompile Include="src\fbUtils.cpp" />
     <ClCompile Include="src\thread.cpp" />
     <ClCompile Include="src\win_lock.cpp" />

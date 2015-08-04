@@ -131,62 +131,6 @@ public:
 
 #pragma pack ()
 
-class trace
-{
-public:
-    trace() : m_frame_count(0)
-    {
-    }
-
-    void clear()
-    {
-        m_frame_count = 0;
-    }
-
-#ifndef WIN32
-    void dump();
-    void save(intptr_t fp = 0);
-#else
-    void dump()
-    {}
-    void save(intptr_t fp = 0)
-    {}
-#endif
-
-    static void test(const char *msg, const char *file, int32_t line)
-    {
-        printf("Assertion failed: %s, file %s, line %d\n", msg, file, line);
-
-        trace tr;
-
-        tr.save();
-        tr.dump();
-    }
-
-public:
-    void* m_frames[100];
-    int32_t m_frame_count;
-};
-
-#ifdef NDEBUG
-# define trace_assert(EX)
-#else
-# define trace_assert(EX) (void)((EX) || (exlib::trace::test(#EX, __FILE__, __LINE__),0))
-#endif
-
-#if defined(DEBUG) && !defined(_WIN32)
-void mem_check();
-void mem_diff();
-void mem_savestack();
-#else
-inline void mem_check()
-{}
-inline void mem_diff()
-{}
-inline void mem_savestack()
-{}
-#endif
-
 }
 
 #endif

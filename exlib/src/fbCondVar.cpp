@@ -7,6 +7,7 @@
  */
 
 #include "service.h"
+#include <assert.h>
 
 namespace exlib
 {
@@ -16,7 +17,7 @@ void CondVar::wait(Locker &l)
 	l.unlock();
 
 	Thread_base* current = Thread_base::current();
-	trace_assert(current != 0);
+	assert(current != 0);
 
 	m_lock.lock();
 	m_blocks.putTail(current);

@@ -8,7 +8,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <stack>
+
 #include "thread.h"
 #include "fiber.h"
 
@@ -24,8 +26,6 @@ OSTls th_current;
 
 void *OSThread::Entry(void *arg)
 {
-    mem_savestack();
-
     OSThread *thread = reinterpret_cast<OSThread *>(arg);
 
     th_current = thread;
@@ -57,8 +57,8 @@ OSThread* OSThread::current()
 
 void OSThread::bindCurrent()
 {
-    trace_assert(thread_ == 0);
-    trace_assert(th_current == 0);
+    assert(thread_ == 0);
+    assert(th_current == 0);
 
     Ref();
     th_current = this;
@@ -84,16 +84,16 @@ OSThread::OSThread() : thread_(0), threadid(0)
 
 void OSThread::start()
 {
-    trace_assert(thread_ == 0);
-    trace_assert(threadid == 0);
+    assert(thread_ == 0);
+    assert(threadid == 0);
     Ref();
     thread_ = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Entry, this, 0, &threadid);
 }
 
 void OSThread::join()
 {
-    trace_assert(thread_ != 0);
-    trace_assert(threadid != 0);
+    assert(thread_ != 0);
+    assert(threadid != 0);
 
     WaitForSingleObject(thread_, INFINITE);
 }
@@ -116,14 +116,14 @@ OSThread::OSThread() : thread_(0)
 
 void OSThread::start()
 {
-    trace_assert(thread_ == 0);
+    assert(thread_ == 0);
     Ref();
     pthread_create(&thread_, NULL, Entry, this);
 }
 
 void OSThread::join()
 {
-    trace_assert(thread_ != 0);
+    assert(thread_ != 0);
 
     pthread_join(thread_, NULL);
 }

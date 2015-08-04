@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <time.h>
+#include <assert.h>
 
 #include "osconfig.h"
 #include "service.h"
@@ -160,14 +161,14 @@ void init_timer()
 void Fiber::sleep(int32_t ms)
 {
     if (ms <= 0) {
-        trace_assert(current() != 0);
+        assert(current() != 0);
         current()->yield();
     }
     else
     {
         Fiber* now = current();
 
-        trace_assert(now != 0);
+        assert(now != 0);
 
         Sleeping as(now, ms);
 
