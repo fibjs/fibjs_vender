@@ -266,7 +266,7 @@
 /* #undef JEMALLOC_DEBUG */
 
 /* JEMALLOC_STATS enables statistics calculation. */
-#define JEMALLOC_STATS
+/* #undef JEMALLOC_STATS */
 
 /* JEMALLOC_PROF enables allocation profiling. */
 /* #undef JEMALLOC_PROF */
@@ -294,7 +294,7 @@
 /* #undef JEMALLOC_DSS */
 
 /* Support memory filling (junk/zero/quarantine/redzone). */
-#define JEMALLOC_FILL
+/* #undef JEMALLOC_FILL */
 
 /* Support utrace(2)-based tracing. */
 /* #undef JEMALLOC_UTRACE */
