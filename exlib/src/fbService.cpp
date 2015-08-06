@@ -26,6 +26,9 @@ static bool s_service_inited;
 
 Thread_base* Thread_base::current()
 {
+    if (!s_service_inited)
+        return 0;
+
     OSThread* thread_ = OSThread::current();
 
     assert(thread_ != 0);
@@ -74,15 +77,18 @@ Service::Service() : m_main(this)
 
     m_main.set_name("main");
     m_main.Ref();
+    m_main.saveStackGuard();
 
     m_fibers.putTail(&m_main.m_link);
 }
 
 static void fiber_proc(void *(*func)(void *), void *data)
 {
+    Service* now = Service::current();
+    now->m_running->saveStackGuard();
+
     func(data);
 
-    Service* now = Service::current();
     now->m_recycle = now->m_running;
     now->switchConext();
 }

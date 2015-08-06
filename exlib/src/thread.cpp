@@ -27,6 +27,7 @@ OSTls th_current;
 void *OSThread::Entry(void *arg)
 {
     OSThread *thread = reinterpret_cast<OSThread *>(arg);
+    thread->saveStackGuard();
 
     th_current = thread;
     thread->Run();
@@ -57,6 +58,8 @@ OSThread* OSThread::current()
 
 void OSThread::bindCurrent()
 {
+    saveStackGuard();
+
     assert(thread_ == 0);
     assert(th_current == 0);
 

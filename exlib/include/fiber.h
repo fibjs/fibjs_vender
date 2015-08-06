@@ -24,7 +24,7 @@ class Locker;
 class Thread_base : public linkitem
 {
 public:
-    Thread_base() : refs_(0)
+    Thread_base() : refs_(0), m_stackguard(0)
     {
         memset(&m_tls, 0, sizeof(m_tls));
     }
@@ -39,6 +39,20 @@ public:
     {
         if (refs_.dec() == 0)
             destroy();
+    }
+
+    void saveStackGuard()
+    {
+        assert(m_stackguard == 0);
+
+        intptr_t stack_value;
+        m_stackguard = (intptr_t)&stack_value + sizeof(stack_value) * 6;
+    }
+
+    intptr_t stackguard()
+    {
+        assert(m_stackguard != 0);
+        return m_stackguard;
     }
 
     static Thread_base* current();
@@ -62,6 +76,7 @@ public:
 private:
     void *m_tls[TLS_SIZE];
     exlib::atomic refs_;
+    intptr_t m_stackguard;
 };
 
 class Locker
