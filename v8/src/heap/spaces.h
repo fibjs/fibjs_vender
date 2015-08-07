@@ -452,10 +452,17 @@ class MemoryChunk {
     base::Release_Store(&parallel_sweeping_, state);
   }
 
-  bool TryParallelSweeping() {
-    return base::Acquire_CompareAndSwap(&parallel_sweeping_, SWEEPING_PENDING,
-                                        SWEEPING_IN_PROGRESS) ==
-           SWEEPING_PENDING;
+  bool TryLock() { return mutex_->TryLock(); }
+
+  base::Mutex* mutex() { return mutex_; }
+
+  // WaitUntilSweepingCompleted only works when concurrent sweeping is in
+  // progress. In particular, when we know that right before this call a
+  // sweeper thread was sweeping this page.
+  void WaitUntilSweepingCompleted() {
+    mutex_->Lock();
+    mutex_->Unlock();
+    DCHECK(SweepingCompleted());
   }
 
   bool SweepingCompleted() { return parallel_sweeping() <= SWEEPING_FINALIZE; }
@@ -515,11 +522,11 @@ class MemoryChunk {
            progress_bar();
   }
 
-  static void IncrementLiveBytesFromGC(Address address, int by) {
-    MemoryChunk::FromAddress(address)->IncrementLiveBytes(by);
+  static void IncrementLiveBytesFromGC(HeapObject* object, int by) {
+    MemoryChunk::FromAddress(object->address())->IncrementLiveBytes(by);
   }
 
-  static void IncrementLiveBytesFromMutator(Address address, int by);
+  static void IncrementLiveBytesFromMutator(HeapObject* object, int by);
 
   static const intptr_t kAlignment =
       (static_cast<uintptr_t>(1) << kPageSizeBits);
@@ -537,9 +544,15 @@ class MemoryChunk {
   static const size_t kWriteBarrierCounterOffset =
       kSlotsBufferOffset + kPointerSize + kPointerSize;
 
-  static const size_t kHeaderSize =
-      kWriteBarrierCounterOffset + kPointerSize + kIntSize + kIntSize +
-      kPointerSize + 5 * kPointerSize + kPointerSize + kPointerSize;
+  static const size_t kHeaderSize = kWriteBarrierCounterOffset +
+                                    kPointerSize +  // write_barrier_counter_
+                                    kIntSize +      // progress_bar_
+                                    kIntSize +      // high_water_mark_
+                                    kPointerSize +  // mutex_ page lock
+                                    kPointerSize +  // parallel_sweeping_
+                                    5 * kPointerSize +  // free list statistics
+                                    kPointerSize +      // next_chunk_
+                                    kPointerSize;       // prev_chunk_
 
   static const int kBodyOffset =
       CODE_POINTER_ALIGN(kHeaderSize + Bitmap::kSize);
@@ -675,6 +688,7 @@ class MemoryChunk {
   // count highest number of bytes ever allocated on the page.
   int high_water_mark_;
 
+  base::Mutex* mutex_;
   base::AtomicWord parallel_sweeping_;
 
   // PagedSpace free-list statistics.
@@ -2644,8 +2658,7 @@ class NewSpace : public Space {
   HistogramInfo* allocated_histogram_;
   HistogramInfo* promoted_histogram_;
 
-  MUST_USE_RESULT AllocationResult
-  SlowAllocateRaw(int size_in_bytes, AllocationAlignment alignment);
+  bool EnsureAllocation(int size_in_bytes, AllocationAlignment alignment);
 
   friend class SemiSpaceIterator;
 };

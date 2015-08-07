@@ -11,9 +11,10 @@
 #if V8_TARGET_ARCH_PPC
 
 #include "src/codegen.h"
-#include "src/debug.h"
+#include "src/debug/debug.h"
 #include "src/deoptimizer.h"
-#include "src/full-codegen.h"
+#include "src/full-codegen/full-codegen.h"
+#include "src/interpreter/bytecodes.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
@@ -859,6 +860,143 @@ void Builtins::Generate_JSConstructEntryTrampoline(MacroAssembler* masm) {
 }
 
 
+// Generate code for entering a JS function with the interpreter.
+// On entry to the function the receiver and arguments have been pushed on the
+// stack left to right.  The actual argument count matches the formal parameter
+// count expected by the function.
+//
+// The live registers are:
+//   o r4: the JS function object being called.
+//   o cp: our context
+//   o pp: the caller's constant pool pointer (if enabled)
+//   o fp: the caller's frame pointer
+//   o sp: stack pointer
+//   o lr: return address
+//
+// The function builds a JS frame.  Please see JavaScriptFrameConstants in
+// frames-ppc.h for its layout.
+// TODO(rmcilroy): We will need to include the current bytecode pointer in the
+// frame.
+void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
+  // Open a frame scope to indicate that there is a frame on the stack.  The
+  // MANUAL indicates that the scope shouldn't actually generate code to set up
+  // the frame (that is done below).
+  FrameScope frame_scope(masm, StackFrame::MANUAL);
+  __ PushFixedFrame(r4);
+  __ addi(fp, sp, Operand(StandardFrameConstants::kFixedFrameSizeFromFp));
+
+  // Get the bytecode array from the function object and load the pointer to the
+  // first entry into kInterpreterBytecodeRegister.
+  __ LoadP(r3, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
+  __ LoadP(kInterpreterBytecodeArrayRegister,
+           FieldMemOperand(r3, SharedFunctionInfo::kFunctionDataOffset));
+
+  if (FLAG_debug_code) {
+    // Check function data field is actually a BytecodeArray object.
+    __ TestIfSmi(kInterpreterBytecodeArrayRegister, r0);
+    __ Assert(ne, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
+    __ CompareObjectType(kInterpreterBytecodeArrayRegister, r3, no_reg,
+                         BYTECODE_ARRAY_TYPE);
+    __ Assert(eq, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
+  }
+
+  // Allocate the local and temporary register file on the stack.
+  {
+    // Load frame size from the BytecodeArray object.
+    __ LoadP(r5, FieldMemOperand(kInterpreterBytecodeArrayRegister,
+                                 BytecodeArray::kFrameSizeOffset));
+
+    // Do a stack check to ensure we don't go over the limit.
+    Label ok;
+    __ sub(r6, sp, r5);
+    __ LoadRoot(r0, Heap::kRealStackLimitRootIndex);
+    __ cmp(r6, r0);
+    __ bge(&ok);
+    __ InvokeBuiltin(Builtins::STACK_OVERFLOW, CALL_FUNCTION);
+    __ bind(&ok);
+
+    // If ok, push undefined as the initial value for all register file entries.
+    // Note: there should always be at least one stack slot for the return
+    // register in the register file.
+    // TODO(rmcilroy): Consider doing more than one push per loop iteration.
+    Label loop_header;
+    __ LoadRoot(r6, Heap::kUndefinedValueRootIndex);
+    __ ShiftRightImm(r5, r5, Operand(kPointerSizeLog2));
+    __ bind(&loop_header);
+    __ push(r6);
+    __ bdnz(&loop_header);
+  }
+
+  // TODO(rmcilroy): List of things not currently dealt with here but done in
+  // fullcodegen's prologue:
+  //  - Support profiler (specifically profiling_counter).
+  //  - Call ProfileEntryHookStub when isolate has a function_entry_hook.
+  //  - Allow simulator stop operations if FLAG_stop_at is set.
+  //  - Deal with sloppy mode functions which need to replace the
+  //    receiver with the global proxy when called as functions (without an
+  //    explicit receiver object).
+  //  - Code aging of the BytecodeArray object.
+  //  - Supporting FLAG_trace.
+  //
+  // The following items are also not done here, and will probably be done using
+  // explicit bytecodes instead:
+  //  - Allocating a new local context if applicable.
+  //  - Setting up a local binding to the this function, which is used in
+  //    derived constructors with super calls.
+  //  - Setting new.target if required.
+  //  - Dealing with REST parameters (only if
+  //    https://codereview.chromium.org/1235153006 doesn't land by then).
+  //  - Dealing with argument objects.
+
+  // Perform stack guard check.
+  {
+    Label ok;
+    __ LoadRoot(r0, Heap::kStackLimitRootIndex);
+    __ cmp(sp, r0);
+    __ bge(&ok);
+    __ CallRuntime(Runtime::kStackGuard, 0);
+    __ bind(&ok);
+  }
+
+  // Load bytecode offset and dispatch table into registers.
+  __ mov(kInterpreterBytecodeOffsetRegister,
+         Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
+  __ LoadRoot(kInterpreterDispatchTableRegister,
+              Heap::kInterpreterTableRootIndex);
+  __ addi(kInterpreterDispatchTableRegister, kInterpreterDispatchTableRegister,
+          Operand(FixedArray::kHeaderSize - kHeapObjectTag));
+
+  // Dispatch to the first bytecode handler for the function.
+  __ lbzx(r3, MemOperand(kInterpreterBytecodeArrayRegister,
+                         kInterpreterBytecodeOffsetRegister));
+  __ ShiftLeftImm(ip, r3, Operand(kPointerSizeLog2));
+  __ LoadPX(ip, MemOperand(kInterpreterDispatchTableRegister, ip));
+  // TODO(rmcilroy): Make dispatch table point to code entrys to avoid untagging
+  // and header removal.
+  __ addi(ip, ip, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ Jump(ip);
+}
+
+
+void Builtins::Generate_InterpreterExitTrampoline(MacroAssembler* masm) {
+  // TODO(rmcilroy): List of things not currently dealt with here but done in
+  // fullcodegen's EmitReturnSequence.
+  //  - Supporting FLAG_trace for Runtime::TraceExit.
+  //  - Support profiler (specifically decrementing profiling_counter
+  //    appropriately and calling out to HandleInterrupts if necessary).
+
+  // Load return value into r3.
+  __ LoadP(r3,
+           MemOperand(fp, -kPointerSize -
+                              StandardFrameConstants::kFixedFrameSizeFromFp));
+  // Leave the frame (also dropping the register file).
+  __ LeaveFrame(StackFrame::JAVA_SCRIPT);
+  // Drop receiver + arguments.
+  __ Drop(1);  // TODO(rmcilroy): Get number of arguments from BytecodeArray.
+  __ blr();
+}
+
+
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   CallRuntimePassFunction(masm, Runtime::kCompileLazy);
   GenerateTailCallToReturnedCode(masm);
@@ -1204,8 +1342,10 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
       // Enter an internal frame in order to preserve argument count.
       FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
       __ SmiTag(r3);
-      __ Push(r3, r5);
-      __ InvokeBuiltin(Builtins::TO_OBJECT, CALL_FUNCTION);
+      __ Push(r3);
+      __ mr(r3, r5);
+      ToObjectStub stub(masm->isolate());
+      __ CallStub(&stub);
       __ mr(r5, r3);
 
       __ pop(r3);
@@ -1342,7 +1482,8 @@ static void Generate_PushAppliedArguments(MacroAssembler* masm,
   __ LoadP(receiver, MemOperand(fp, argumentsOffset));
 
   // Use inline caching to speed up access to arguments.
-  FeedbackVectorSpec spec(0, Code::KEYED_LOAD_IC);
+  Code::Kind kinds[] = {Code::KEYED_LOAD_IC};
+  FeedbackVectorSpec spec(0, 1, kinds);
   Handle<TypeFeedbackVector> feedback_vector =
       masm->isolate()->factory()->NewTypeFeedbackVector(&spec);
   int index = feedback_vector->GetIndex(FeedbackVectorICSlot(0));
@@ -1458,8 +1599,8 @@ static void Generate_ApplyHelper(MacroAssembler* masm, bool targetIsArgument) {
     // Convert the receiver to a regular object.
     // r3: receiver
     __ bind(&call_to_object);
-    __ push(r3);
-    __ InvokeBuiltin(Builtins::TO_OBJECT, CALL_FUNCTION);
+    ToObjectStub stub(masm->isolate());
+    __ CallStub(&stub);
     __ b(&push_receiver);
 
     __ bind(&use_global_proxy);

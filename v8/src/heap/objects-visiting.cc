@@ -42,6 +42,9 @@ StaticVisitorBase::VisitorId StaticVisitorBase::GetVisitorId(
     case BYTE_ARRAY_TYPE:
       return kVisitByteArray;
 
+    case BYTECODE_ARRAY_TYPE:
+      return kVisitBytecodeArray;
+
     case FREE_SPACE_TYPE:
       return kVisitFreeSpace;
 
@@ -136,13 +139,14 @@ StaticVisitorBase::VisitorId StaticVisitorBase::GetVisitorId(
     case HEAP_NUMBER_TYPE:
     case MUTABLE_HEAP_NUMBER_TYPE:
     case FLOAT32X4_TYPE:
-#define EXTERNAL_ARRAY_CASE(Type, type, TYPE, ctype, size) \
-  case EXTERNAL_##TYPE##_ARRAY_TYPE:
-
-      TYPED_ARRAYS(EXTERNAL_ARRAY_CASE)
+    case INT32X4_TYPE:
+    case BOOL32X4_TYPE:
+    case INT16X8_TYPE:
+    case BOOL16X8_TYPE:
+    case INT8X16_TYPE:
+    case BOOL8X16_TYPE:
       return GetVisitorIdForSize(kVisitDataObject, kVisitDataObjectGeneric,
                                  instance_size, has_unboxed_fields);
-#undef EXTERNAL_ARRAY_CASE
 
     case FIXED_UINT8_ARRAY_TYPE:
     case FIXED_INT8_ARRAY_TYPE:
@@ -212,7 +216,7 @@ Object* VisitWeakList(Heap* heap, Object* list, WeakObjectRetainer* retainer) {
         if (record_slots) {
           Object** next_slot =
               HeapObject::RawField(tail, WeakListVisitor<T>::WeakNextOffset());
-          collector->RecordSlot(next_slot, next_slot, retained);
+          collector->RecordSlot(tail, next_slot, retained);
         }
       }
       // Retained object is new tail.
@@ -323,8 +327,7 @@ struct WeakListVisitor<Context> {
       // Record the updated slot if necessary.
       Object** head_slot =
           HeapObject::RawField(context, FixedArray::SizeFor(index));
-      heap->mark_compact_collector()->RecordSlot(head_slot, head_slot,
-                                                 list_head);
+      heap->mark_compact_collector()->RecordSlot(context, head_slot, list_head);
     }
   }
 

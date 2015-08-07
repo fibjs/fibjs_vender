@@ -569,6 +569,10 @@ class MacroAssembler : public Assembler {
             const CPURegister& src6 = NoReg, const CPURegister& src7 = NoReg);
   void Pop(const CPURegister& dst0, const CPURegister& dst1 = NoReg,
            const CPURegister& dst2 = NoReg, const CPURegister& dst3 = NoReg);
+  void Pop(const CPURegister& dst0, const CPURegister& dst1,
+           const CPURegister& dst2, const CPURegister& dst3,
+           const CPURegister& dst4, const CPURegister& dst5 = NoReg,
+           const CPURegister& dst6 = NoReg, const CPURegister& dst7 = NoReg);
   void Push(const Register& src0, const FPRegister& src1);
 
   // Alternative forms of Push and Pop, taking a RegList or CPURegList that
@@ -1765,7 +1769,7 @@ class MacroAssembler : public Assembler {
   // |object| is the object being stored into, |value| is the object being
   // stored.  value and scratch registers are clobbered by the operation.
   // The offset is the offset from the start of the object, not the offset from
-  // the tagged HeapObject pointer.  For use with FieldOperand(reg, off).
+  // the tagged HeapObject pointer.  For use with FieldMemOperand(reg, off).
   void RecordWriteField(
       Register object,
       int offset,
@@ -2229,7 +2233,7 @@ class UseScratchRegisterScope {
 };
 
 
-inline MemOperand ContextMemOperand(Register context, int index) {
+inline MemOperand ContextMemOperand(Register context, int index = 0) {
   return MemOperand(context, Context::SlotOffset(index));
 }
 

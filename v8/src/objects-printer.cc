@@ -7,6 +7,7 @@
 #include "src/disasm.h"
 #include "src/disassembler.h"
 #include "src/heap/objects-visiting.h"
+#include "src/interpreter/bytecodes.h"
 #include "src/jsregexp.h"
 #include "src/ostreams.h"
 
@@ -63,6 +64,24 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     case FLOAT32X4_TYPE:
       Float32x4::cast(this)->Float32x4Print(os);
       break;
+    case INT32X4_TYPE:
+      Int32x4::cast(this)->Int32x4Print(os);
+      break;
+    case BOOL32X4_TYPE:
+      Bool32x4::cast(this)->Bool32x4Print(os);
+      break;
+    case INT16X8_TYPE:
+      Int16x8::cast(this)->Int16x8Print(os);
+      break;
+    case BOOL16X8_TYPE:
+      Bool16x8::cast(this)->Bool16x8Print(os);
+      break;
+    case INT8X16_TYPE:
+      Int16x8::cast(this)->Int16x8Print(os);
+      break;
+    case BOOL8X16_TYPE:
+      Bool16x8::cast(this)->Bool16x8Print(os);
+      break;
     case FIXED_DOUBLE_ARRAY_TYPE:
       FixedDoubleArray::cast(this)->FixedDoubleArrayPrint(os);
       break;
@@ -72,17 +91,12 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     case BYTE_ARRAY_TYPE:
       ByteArray::cast(this)->ByteArrayPrint(os);
       break;
+    case BYTECODE_ARRAY_TYPE:
+      BytecodeArray::cast(this)->BytecodeArrayPrint(os);
+      break;
     case FREE_SPACE_TYPE:
       FreeSpace::cast(this)->FreeSpacePrint(os);
       break;
-
-#define PRINT_EXTERNAL_ARRAY(Type, type, TYPE, ctype, size)            \
-  case EXTERNAL_##TYPE##_ARRAY_TYPE:                                   \
-    External##Type##Array::cast(this)->External##Type##ArrayPrint(os); \
-    break;
-
-     TYPED_ARRAYS(PRINT_EXTERNAL_ARRAY)
-#undef PRINT_EXTERNAL_ARRAY
 
 #define PRINT_FIXED_TYPED_ARRAY(Type, type, TYPE, ctype, size) \
   case Fixed##Type##Array::kInstanceType:                      \
@@ -196,24 +210,87 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
 }
 
 
+void Float32x4::Float32x4Print(std::ostream& os) {  // NOLINT
+  char arr[100];
+  Vector<char> buffer(arr, arraysize(arr));
+  os << std::string(DoubleToCString(get_lane(0), buffer)) << ", "
+     << std::string(DoubleToCString(get_lane(1), buffer)) << ", "
+     << std::string(DoubleToCString(get_lane(2), buffer)) << ", "
+     << std::string(DoubleToCString(get_lane(3), buffer));
+}
+
+
+void Int32x4::Int32x4Print(std::ostream& os) {  // NOLINT
+  char arr[100];
+  Vector<char> buffer(arr, arraysize(arr));
+  os << std::string(IntToCString(get_lane(0), buffer)) << ", "
+     << std::string(IntToCString(get_lane(1), buffer)) << ", "
+     << std::string(IntToCString(get_lane(2), buffer)) << ", "
+     << std::string(IntToCString(get_lane(3), buffer));
+}
+
+
+void Bool32x4::Bool32x4Print(std::ostream& os) {  // NOLINT
+  os << std::string(get_lane(0) ? "true" : "false") << ", "
+     << std::string(get_lane(1) ? "true" : "false") << ", "
+     << std::string(get_lane(2) ? "true" : "false") << ", "
+     << std::string(get_lane(3) ? "true" : "false");
+}
+
+
+void Int16x8::Int16x8Print(std::ostream& os) {  // NOLINT
+  char arr[100];
+  Vector<char> buffer(arr, arraysize(arr));
+  os << std::string(IntToCString(get_lane(0), buffer));
+  for (int i = 1; i < 8; i++) {
+    os << ", " << std::string(IntToCString(get_lane(i), buffer));
+  }
+}
+
+
+void Bool16x8::Bool16x8Print(std::ostream& os) {  // NOLINT
+  char arr[100];
+  Vector<char> buffer(arr, arraysize(arr));
+  os << std::string(get_lane(0) ? "true" : "false");
+  for (int i = 1; i < 8; i++) {
+    os << ", " << std::string(get_lane(i) ? "true" : "false");
+  }
+}
+
+
+void Int8x16::Int8x16Print(std::ostream& os) {  // NOLINT
+  char arr[100];
+  Vector<char> buffer(arr, arraysize(arr));
+  os << std::string(IntToCString(get_lane(0), buffer));
+  for (int i = 1; i < 16; i++) {
+    os << ", " << std::string(IntToCString(get_lane(i), buffer));
+  }
+}
+
+
+void Bool8x16::Bool8x16Print(std::ostream& os) {  // NOLINT
+  char arr[100];
+  Vector<char> buffer(arr, arraysize(arr));
+  os << std::string(get_lane(0) ? "true" : "false");
+  for (int i = 1; i < 16; i++) {
+    os << ", " << std::string(get_lane(i) ? "true" : "false");
+  }
+}
+
+
 void ByteArray::ByteArrayPrint(std::ostream& os) {  // NOLINT
   os << "byte array, data starts at " << GetDataStartAddress();
+}
+
+
+void BytecodeArray::BytecodeArrayPrint(std::ostream& os) {  // NOLINT
+  Disassemble(os);
 }
 
 
 void FreeSpace::FreeSpacePrint(std::ostream& os) {  // NOLINT
   os << "free space, size " << Size();
 }
-
-
-#define EXTERNAL_ARRAY_PRINTER(Type, type, TYPE, ctype, size)                \
-  void External##Type##Array::External##Type##ArrayPrint(std::ostream& os) { \
-    os << "external " #type " array";                                        \
-  }
-
-TYPED_ARRAYS(EXTERNAL_ARRAY_PRINTER)
-
-#undef EXTERNAL_ARRAY_PRINTER
 
 
 template <class Traits>
@@ -311,19 +388,6 @@ void JSObject::PrintElements(std::ostream& os) {  // NOLINT
     DoPrintElements<Type>(os, elements()); \
     break;                                 \
   }
-
-    PRINT_ELEMENTS(EXTERNAL_UINT8_CLAMPED_ELEMENTS, ExternalUint8ClampedArray)
-    PRINT_ELEMENTS(EXTERNAL_INT8_ELEMENTS, ExternalInt8Array)
-    PRINT_ELEMENTS(EXTERNAL_UINT8_ELEMENTS,
-        ExternalUint8Array)
-    PRINT_ELEMENTS(EXTERNAL_INT16_ELEMENTS, ExternalInt16Array)
-    PRINT_ELEMENTS(EXTERNAL_UINT16_ELEMENTS,
-        ExternalUint16Array)
-    PRINT_ELEMENTS(EXTERNAL_INT32_ELEMENTS, ExternalInt32Array)
-    PRINT_ELEMENTS(EXTERNAL_UINT32_ELEMENTS,
-        ExternalUint32Array)
-    PRINT_ELEMENTS(EXTERNAL_FLOAT32_ELEMENTS, ExternalFloat32Array)
-    PRINT_ELEMENTS(EXTERNAL_FLOAT64_ELEMENTS, ExternalFloat64Array)
 
     PRINT_ELEMENTS(UINT8_ELEMENTS, FixedUint8Array)
     PRINT_ELEMENTS(UINT8_CLAMPED_ELEMENTS, FixedUint8ClampedArray)
@@ -817,6 +881,9 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - optimized_code_map = " << Brief(optimized_code_map());
   os << "\n - feedback_vector = ";
   feedback_vector()->TypeFeedbackVectorPrint(os);
+  if (HasBytecodeArray()) {
+    os << "\n - bytecode_array = " << bytecode_array();
+  }
   os << "\n";
 }
 

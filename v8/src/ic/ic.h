@@ -12,45 +12,11 @@
 namespace v8 {
 namespace internal {
 
-
-// IC_UTIL_LIST defines all utility functions called from generated
-// inline caching code. The argument for the macro, ICU, is the function name.
-#define IC_UTIL_LIST(ICU)              \
-  ICU(LoadIC_Miss)                     \
-  ICU(KeyedLoadIC_Miss)                \
-  ICU(CallIC_Miss)                     \
-  ICU(CallIC_Customization_Miss)       \
-  ICU(StoreIC_Miss)                    \
-  ICU(StoreIC_Slow)                    \
-  ICU(KeyedStoreIC_Miss)               \
-  ICU(KeyedStoreIC_Slow)               \
-  /* Utilities for IC stubs. */        \
-  ICU(StoreCallbackProperty)           \
-  ICU(LoadPropertyWithInterceptorOnly) \
-  ICU(LoadPropertyWithInterceptor)     \
-  ICU(LoadElementWithInterceptor)      \
-  ICU(StorePropertyWithInterceptor)    \
-  ICU(CompareIC_Miss)                  \
-  ICU(BinaryOpIC_Miss)                 \
-  ICU(CompareNilIC_Miss)               \
-  ICU(Unreachable)                     \
-  ICU(ToBooleanIC_Miss)
 //
 // IC is the base class for LoadIC, StoreIC, KeyedLoadIC, and KeyedStoreIC.
 //
 class IC {
  public:
-  // The ids for utility called from the generated code.
-  enum UtilityId {
-#define CONST_NAME(name) k##name,
-    IC_UTIL_LIST(CONST_NAME)
-#undef CONST_NAME
-    kUtilityCount
-  };
-
-  // Looks up the address of the named utility.
-  static Address AddressFromUtilityId(UtilityId id);
-
   // Alias the inline cache state type to make the IC code more readable.
   typedef InlineCacheState State;
 
@@ -60,8 +26,7 @@ class IC {
 
   // Construct the IC structure with the given number of extra
   // JavaScript frames on the stack.
-  IC(FrameDepth depth, Isolate* isolate, FeedbackNexus* nexus = NULL,
-     bool for_queries_only = false);
+  IC(FrameDepth depth, Isolate* isolate, FeedbackNexus* nexus = NULL);
   virtual ~IC() {}
 
   State state() const { return state_; }
@@ -308,23 +273,6 @@ class IC {
 };
 
 
-// An IC_Utility encapsulates IC::UtilityId. It exists mainly because you
-// cannot make forward declarations to an enum.
-class IC_Utility {
- public:
-  explicit IC_Utility(IC::UtilityId id)
-      : address_(IC::AddressFromUtilityId(id)), id_(id) {}
-
-  Address address() const { return address_; }
-
-  IC::UtilityId id() const { return id_; }
-
- private:
-  Address address_;
-  IC::UtilityId id_;
-};
-
-
 class CallIC : public IC {
  public:
   CallIC(Isolate* isolate, CallICNexus* nexus)
@@ -368,15 +316,6 @@ class LoadIC : public IC {
   LoadIC(FrameDepth depth, Isolate* isolate, FeedbackNexus* nexus = NULL)
       : IC(depth, isolate, nexus) {
     DCHECK(nexus != NULL);
-    DCHECK(IsLoadStub());
-  }
-
-  // TODO(mvstanton): The for_queries_only is because we have a case where we
-  // construct an IC only to gather the contextual mode, and we don't have
-  // vector/slot information. for_queries_only is a temporary hack to enable the
-  // strong DCHECK protection around vector/slot.
-  LoadIC(FrameDepth depth, Isolate* isolate, bool for_queries_only)
-      : IC(depth, isolate, NULL, for_queries_only) {
     DCHECK(IsLoadStub());
   }
 
@@ -738,25 +677,6 @@ class ToBooleanIC : public IC {
 enum InlinedSmiCheck { ENABLE_INLINED_SMI_CHECK, DISABLE_INLINED_SMI_CHECK };
 void PatchInlinedSmiCode(Address address, InlinedSmiCheck check);
 
-DECLARE_RUNTIME_FUNCTION(KeyedLoadIC_MissFromStubFailure);
-DECLARE_RUNTIME_FUNCTION(KeyedStoreIC_MissFromStubFailure);
-DECLARE_RUNTIME_FUNCTION(UnaryOpIC_Miss);
-DECLARE_RUNTIME_FUNCTION(StoreIC_MissFromStubFailure);
-DECLARE_RUNTIME_FUNCTION(ElementsTransitionAndStoreIC_Miss);
-DECLARE_RUNTIME_FUNCTION(BinaryOpIC_Miss);
-DECLARE_RUNTIME_FUNCTION(BinaryOpIC_MissWithAllocationSite);
-DECLARE_RUNTIME_FUNCTION(CompareNilIC_Miss);
-DECLARE_RUNTIME_FUNCTION(ToBooleanIC_Miss);
-DECLARE_RUNTIME_FUNCTION(LoadIC_MissFromStubFailure);
-
-// Support functions for callbacks handlers.
-DECLARE_RUNTIME_FUNCTION(StoreCallbackProperty);
-
-// Support functions for interceptor handlers.
-DECLARE_RUNTIME_FUNCTION(LoadPropertyWithInterceptorOnly);
-DECLARE_RUNTIME_FUNCTION(LoadPropertyWithInterceptor);
-DECLARE_RUNTIME_FUNCTION(LoadElementWithInterceptor);
-DECLARE_RUNTIME_FUNCTION(StorePropertyWithInterceptor);
 }
 }  // namespace v8::internal
 

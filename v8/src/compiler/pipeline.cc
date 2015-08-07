@@ -25,6 +25,7 @@
 #include "src/compiler/instruction.h"
 #include "src/compiler/instruction-selector.h"
 #include "src/compiler/js-builtin-reducer.h"
+#include "src/compiler/js-context-relaxation.h"
 #include "src/compiler/js-context-specialization.h"
 #include "src/compiler/js-frame-specialization.h"
 #include "src/compiler/js-generic-lowering.h"
@@ -41,6 +42,7 @@
 #include "src/compiler/move-optimizer.h"
 #include "src/compiler/osr.h"
 #include "src/compiler/pipeline-statistics.h"
+#include "src/compiler/preprocess-live-ranges.h"
 #include "src/compiler/register-allocator.h"
 #include "src/compiler/register-allocator-verifier.h"
 #include "src/compiler/schedule.h"
@@ -704,6 +706,7 @@ struct GenericLoweringPhase {
 
   void Run(PipelineData* data, Zone* temp_zone) {
     JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
+    JSContextRelaxation context_relaxing;
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
@@ -713,6 +716,7 @@ struct GenericLoweringPhase {
     SelectLowering select_lowering(data->jsgraph()->graph(),
                                    data->jsgraph()->common());
     TailCallOptimization tco(data->common(), data->graph());
+    AddReducer(data, &graph_reducer, &context_relaxing);
     AddReducer(data, &graph_reducer, &dead_code_elimination);
     AddReducer(data, &graph_reducer, &common_reducer);
     AddReducer(data, &graph_reducer, &generic_lowering);
@@ -778,6 +782,17 @@ struct BuildLiveRangesPhase {
   void Run(PipelineData* data, Zone* temp_zone) {
     LiveRangeBuilder builder(data->register_allocation_data(), temp_zone);
     builder.BuildLiveRanges();
+  }
+};
+
+
+struct PreprocessLiveRangesPhase {
+  static const char* phase_name() { return "preprocess live ranges"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    PreprocessLiveRanges live_range_preprocessor(
+        data->register_allocation_data(), temp_zone);
+    live_range_preprocessor.PreprocessRanges();
   }
 };
 
@@ -1317,6 +1332,11 @@ void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
   if (verifier != nullptr) {
     CHECK(!data->register_allocation_data()->ExistsUseWithoutDefinition());
   }
+
+  if (FLAG_turbo_preprocess_ranges) {
+    Run<PreprocessLiveRangesPhase>();
+  }
+
   if (FLAG_turbo_greedy_regalloc) {
     Run<AllocateGeneralRegistersPhase<GreedyAllocator>>();
     Run<AllocateDoubleRegistersPhase<GreedyAllocator>>();

@@ -33,7 +33,7 @@ void MarkCompactCollector::MarkObject(HeapObject* obj, MarkBit mark_bit) {
   DCHECK(Marking::MarkBitFrom(obj) == mark_bit);
   if (Marking::IsWhite(mark_bit)) {
     Marking::WhiteToBlack(mark_bit);
-    MemoryChunk::IncrementLiveBytesFromGC(obj->address(), obj->Size());
+    MemoryChunk::IncrementLiveBytesFromGC(obj, obj->Size());
     DCHECK(obj->GetIsolate()->heap()->Contains(obj));
     marking_deque_.PushBlack(obj);
   }
@@ -44,7 +44,7 @@ void MarkCompactCollector::SetMark(HeapObject* obj, MarkBit mark_bit) {
   DCHECK(Marking::IsWhite(mark_bit));
   DCHECK(Marking::MarkBitFrom(obj) == mark_bit);
   Marking::WhiteToBlack(mark_bit);
-  MemoryChunk::IncrementLiveBytesFromGC(obj->address(), obj->Size());
+  MemoryChunk::IncrementLiveBytesFromGC(obj, obj->Size());
 }
 
 
@@ -55,15 +55,15 @@ bool MarkCompactCollector::IsMarked(Object* obj) {
 }
 
 
-void MarkCompactCollector::RecordSlot(Object** anchor_slot, Object** slot,
-                                      Object* object,
+void MarkCompactCollector::RecordSlot(HeapObject* object, Object** slot,
+                                      Object* target,
                                       SlotsBuffer::AdditionMode mode) {
-  Page* object_page = Page::FromAddress(reinterpret_cast<Address>(object));
-  if (object_page->IsEvacuationCandidate() &&
-      !ShouldSkipEvacuationSlotRecording(anchor_slot)) {
+  Page* target_page = Page::FromAddress(reinterpret_cast<Address>(target));
+  if (target_page->IsEvacuationCandidate() &&
+      !ShouldSkipEvacuationSlotRecording(object)) {
     if (!SlotsBuffer::AddTo(&slots_buffer_allocator_,
-                            object_page->slots_buffer_address(), slot, mode)) {
-      EvictPopularEvacuationCandidate(object_page);
+                            target_page->slots_buffer_address(), slot, mode)) {
+      EvictPopularEvacuationCandidate(target_page);
     }
   }
 }

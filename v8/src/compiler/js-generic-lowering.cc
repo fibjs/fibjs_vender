@@ -307,7 +307,9 @@ void JSGenericLowering::LowerJSToName(Node* node) {
 
 
 void JSGenericLowering::LowerJSToObject(Node* node) {
-  ReplaceWithBuiltinCall(node, Builtins::TO_OBJECT, 1);
+  CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
+  Callable callable = CodeFactory::ToObject(isolate());
+  ReplaceWithStubCall(node, callable, flags);
 }
 
 
@@ -338,10 +340,10 @@ void JSGenericLowering::LowerJSLoadGlobal(Node* node) {
   if (p.slot_index() >= 0) {
     Callable callable = CodeFactory::LoadGlobalViaContext(isolate(), 0);
     Node* script_context = node->InputAt(0);
-    node->ReplaceInput(0, jsgraph()->SmiConstant(0));
-    node->ReplaceInput(1, jsgraph()->SmiConstant(p.slot_index()));
-    node->ReplaceInput(2, jsgraph()->HeapConstant(p.name()));
-    node->ReplaceInput(3, script_context);  // Replace old context.
+    node->ReplaceInput(0, jsgraph()->Int32Constant(p.slot_index()));
+    node->ReplaceInput(1, script_context);  // Set new context...
+    node->RemoveInput(2);
+    node->RemoveInput(2);  // ...instead of old one.
     ReplaceWithStubCall(node, callable, flags);
 
   } else {
@@ -359,10 +361,14 @@ void JSGenericLowering::LowerJSStoreProperty(Node* node) {
   CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
   const StorePropertyParameters& p = StorePropertyParametersOf(node->op());
   LanguageMode language_mode = OpParameter<LanguageMode>(node);
+  // We have a special case where we do keyed stores but don't have a type
+  // feedback vector slot allocated to support it. In this case, install
+  // the megamorphic keyed store stub which needs neither vector nor slot.
+  bool use_vector_slot = FLAG_vector_stores && p.feedback().index() != -1;
   Callable callable = CodeFactory::KeyedStoreICInOptimizedCode(
-      isolate(), language_mode, UNINITIALIZED);
-  if (FLAG_vector_stores) {
-    DCHECK(p.feedback().index() != -1);
+      isolate(), language_mode,
+      (use_vector_slot || !FLAG_vector_stores) ? UNINITIALIZED : MEGAMORPHIC);
+  if (use_vector_slot) {
     node->InsertInput(zone(), 3, jsgraph()->SmiConstant(p.feedback().index()));
   } else {
     node->RemoveInput(3);
@@ -397,15 +403,16 @@ void JSGenericLowering::LowerJSStoreGlobal(Node* node) {
         CodeFactory::StoreGlobalViaContext(isolate(), 0, p.language_mode());
     Node* script_context = node->InputAt(0);
     Node* value = node->InputAt(2);
-    node->ReplaceInput(0, jsgraph()->SmiConstant(0));
-    node->ReplaceInput(1, jsgraph()->SmiConstant(p.slot_index()));
-    node->ReplaceInput(2, jsgraph()->HeapConstant(p.name()));
-    node->ReplaceInput(3, value);
-    node->ReplaceInput(4, script_context);  // Replace old context.
+    node->ReplaceInput(0, jsgraph()->Int32Constant(p.slot_index()));
+    node->ReplaceInput(1, value);
+    node->ReplaceInput(2, script_context);  // Set new context...
+    node->RemoveInput(3);
+    node->RemoveInput(3);  // ...instead of old one.
     ReplaceWithStubCall(node, callable, flags);
 
   } else {
-    Callable callable = CodeFactory::StoreIC(isolate(), p.language_mode());
+    Callable callable = CodeFactory::StoreICInOptimizedCode(
+        isolate(), p.language_mode(), UNINITIALIZED);
     node->RemoveInput(0);  // script context
     node->InsertInput(zone(), 1, jsgraph()->HeapConstant(p.name()));
     if (FLAG_vector_stores) {

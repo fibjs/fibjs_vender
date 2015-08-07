@@ -119,10 +119,9 @@ static void PushInterceptorArguments(MacroAssembler* masm, Register receiver,
 
 static void CompileCallLoadPropertyWithInterceptor(
     MacroAssembler* masm, Register receiver, Register holder, Register name,
-    Handle<JSObject> holder_obj, IC::UtilityId id) {
+    Handle<JSObject> holder_obj, Runtime::FunctionId id) {
   PushInterceptorArguments(masm, receiver, holder, name, holder_obj);
-  __ CallExternalReference(ExternalReference(IC_Utility(id), masm->isolate()),
-                           NamedLoadHandlerCompiler::kInterceptorArgsLength);
+  __ CallRuntime(id, NamedLoadHandlerCompiler::kInterceptorArgsLength);
 }
 
 
@@ -325,8 +324,7 @@ void NamedStoreHandlerCompiler::GenerateSlow(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   // Do tail-call to runtime routine.
-  ExternalReference ref(IC_Utility(IC::kStoreIC_Slow), masm->isolate());
-  __ TailCallExternalReference(ref, 3, 1);
+  __ TailCallRuntime(Runtime::kStoreIC_Slow, 3, 1);
 }
 
 
@@ -335,8 +333,7 @@ void ElementHandlerCompiler::GenerateStoreSlow(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   // Do tail-call to runtime routine.
-  ExternalReference ref(IC_Utility(IC::kKeyedStoreIC_Slow), masm->isolate());
-  __ TailCallExternalReference(ref, 3, 1);
+  __ TailCallRuntime(Runtime::kKeyedStoreIC_Slow, 3, 1);
 }
 
 
@@ -358,11 +355,17 @@ void NamedStoreHandlerCompiler::GenerateRestoreName(Handle<Name> name) {
 }
 
 
+void NamedStoreHandlerCompiler::GeneratePushMap(Register map_reg,
+                                                Register scratch) {
+  DCHECK(false);  // Not implemented.
+}
+
+
 void NamedStoreHandlerCompiler::GenerateRestoreMap(Handle<Map> transition,
+                                                   Register map_reg,
                                                    Register scratch,
                                                    Label* miss) {
   Handle<WeakCell> cell = Map::WeakCellForMap(transition);
-  Register map_reg = StoreTransitionDescriptor::MapRegister();
   DCHECK(!map_reg.is(scratch));
   __ LoadWeakValue(map_reg, cell, miss);
   if (transition->CanBeDeprecated()) {
@@ -675,7 +678,7 @@ void NamedLoadHandlerCompiler::GenerateLoadInterceptorWithFollowup(
     // of this method.)
     CompileCallLoadPropertyWithInterceptor(
         masm(), receiver(), holder_reg, this->name(), holder(),
-        IC::kLoadPropertyWithInterceptorOnly);
+        Runtime::kLoadPropertyWithInterceptorOnly);
 
     // Check if interceptor provided a value for property.  If it's
     // the case, return immediately.
@@ -709,10 +712,8 @@ void NamedLoadHandlerCompiler::GenerateLoadInterceptor(Register holder_reg) {
                            holder());
   __ PushReturnAddressFrom(scratch2());
 
-  ExternalReference ref = ExternalReference(
-      IC_Utility(IC::kLoadPropertyWithInterceptor), isolate());
-  __ TailCallExternalReference(
-      ref, NamedLoadHandlerCompiler::kInterceptorArgsLength, 1);
+  __ TailCallRuntime(Runtime::kLoadPropertyWithInterceptor,
+                     NamedLoadHandlerCompiler::kInterceptorArgsLength, 1);
 }
 
 
@@ -737,9 +738,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreCallback(
   __ PushReturnAddressFrom(scratch1());
 
   // Do tail-call to the runtime system.
-  ExternalReference store_callback_property =
-      ExternalReference(IC_Utility(IC::kStoreCallbackProperty), isolate());
-  __ TailCallExternalReference(store_callback_property, 5, 1);
+  __ TailCallRuntime(Runtime::kStoreCallbackProperty, 5, 1);
 
   // Return the generated code.
   return GetCode(kind(), Code::FAST, name);
@@ -755,9 +754,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreInterceptor(
   __ PushReturnAddressFrom(scratch1());
 
   // Do tail-call to the runtime system.
-  ExternalReference store_ic_property = ExternalReference(
-      IC_Utility(IC::kStorePropertyWithInterceptor), isolate());
-  __ TailCallExternalReference(store_ic_property, 3, 1);
+  __ TailCallRuntime(Runtime::kStorePropertyWithInterceptor, 3, 1);
 
   // Return the generated code.
   return GetCode(kind(), Code::FAST, name);

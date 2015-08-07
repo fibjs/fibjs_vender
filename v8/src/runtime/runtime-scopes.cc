@@ -86,12 +86,12 @@ static Object* DeclareGlobals(Isolate* isolate, Handle<GlobalObject> global,
 
 RUNTIME_FUNCTION(Runtime_DeclareGlobals) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 3);
+  DCHECK_EQ(2, args.length());
   Handle<GlobalObject> global(isolate->global_object());
+  Handle<Context> context(isolate->context());
 
-  CONVERT_ARG_HANDLE_CHECKED(Context, context, 0);
-  CONVERT_ARG_HANDLE_CHECKED(FixedArray, pairs, 1);
-  CONVERT_SMI_ARG_CHECKED(flags, 2);
+  CONVERT_ARG_HANDLE_CHECKED(FixedArray, pairs, 0);
+  CONVERT_SMI_ARG_CHECKED(flags, 1);
 
   // Traverse the name/value pairs and set the properties.
   int length = pairs->length();
@@ -202,20 +202,16 @@ RUNTIME_FUNCTION(Runtime_InitializeConstGlobal) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_DeclareLookupSlot) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 4);
+namespace {
 
+Object* DeclareLookupSlot(Isolate* isolate, Handle<String> name,
+                          Handle<Object> initial_value,
+                          PropertyAttributes attr) {
   // Declarations are always made in a function, eval or script context. In
   // the case of eval code, the context passed is the context of the caller,
   // which may be some nested context and not the declaration context.
-  CONVERT_ARG_HANDLE_CHECKED(Context, context_arg, 0);
-  Handle<Context> context(context_arg->declaration_context());
-  CONVERT_ARG_HANDLE_CHECKED(String, name, 1);
-  CONVERT_SMI_ARG_CHECKED(attr_arg, 2);
-  PropertyAttributes attr = static_cast<PropertyAttributes>(attr_arg);
-  RUNTIME_ASSERT(attr == READ_ONLY || attr == NONE);
-  CONVERT_ARG_HANDLE_CHECKED(Object, initial_value, 3);
+  Handle<Context> context_arg(isolate->context(), isolate);
+  Handle<Context> context(context_arg->declaration_context(), isolate);
 
   // TODO(verwaest): Unify the encoding indicating "var" with DeclareGlobals.
   bool is_var = *initial_value == NULL;
@@ -292,6 +288,28 @@ RUNTIME_FUNCTION(Runtime_DeclareLookupSlot) {
                                            object, name, value, attr));
 
   return isolate->heap()->undefined_value();
+}
+
+}  // namespace
+
+
+RUNTIME_FUNCTION(Runtime_DeclareLookupSlot) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(String, name, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, initial_value, 1);
+
+  return DeclareLookupSlot(isolate, name, initial_value, NONE);
+}
+
+
+RUNTIME_FUNCTION(Runtime_DeclareReadOnlyLookupSlot) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(String, name, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, initial_value, 1);
+
+  return DeclareLookupSlot(isolate, name, initial_value, READ_ONLY);
 }
 
 
@@ -830,7 +848,6 @@ RUNTIME_FUNCTION(Runtime_DeclareModules) {
           USE(result);
           break;
         }
-        case INTERNAL:
         case TEMPORARY:
         case DYNAMIC:
         case DYNAMIC_GLOBAL:
@@ -1065,7 +1082,16 @@ RUNTIME_FUNCTION(Runtime_StoreLookupSlot) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_GetArgumentsProperty) {
+RUNTIME_FUNCTION(Runtime_ArgumentsLength) {
+  SealHandleScope shs(isolate);
+  DCHECK(args.length() == 0);
+  JavaScriptFrameIterator it(isolate);
+  JavaScriptFrame* frame = it.frame();
+  return Smi::FromInt(frame->GetArgumentsLength());
+}
+
+
+RUNTIME_FUNCTION(Runtime_Arguments) {
   SealHandleScope shs(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, raw_key, 0);
@@ -1139,21 +1165,6 @@ RUNTIME_FUNCTION(Runtime_GetArgumentsProperty) {
       isolate, result,
       Object::GetProperty(isolate->initial_object_prototype(), key));
   return *result;
-}
-
-
-RUNTIME_FUNCTION(Runtime_ArgumentsLength) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 0);
-  JavaScriptFrameIterator it(isolate);
-  JavaScriptFrame* frame = it.frame();
-  return Smi::FromInt(frame->GetArgumentsLength());
-}
-
-
-RUNTIME_FUNCTION(Runtime_Arguments) {
-  SealHandleScope shs(isolate);
-  return __RT_impl_Runtime_GetArgumentsProperty(args, isolate);
 }
 }  // namespace internal
 }  // namespace v8

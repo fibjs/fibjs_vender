@@ -292,6 +292,15 @@ const Register fp = {kRegister_fp_Code};
 const Register cp = {kRegister_r30_Code};  // JavaScript context pointer
 const Register kRootRegister = {kRegister_r29_Code};  // Roots array pointer.
 const Register kConstantPoolRegister = {kRegister_r28_Code};  // Constant pool
+const Register kInterpreterBytecodeOffsetRegister = {
+    kRegister_r14_Code  // Interpreter bytecode offset.
+};
+const Register kInterpreterBytecodeArrayRegister = {
+    kRegister_r15_Code  // Interpreter bytecode array pointer.
+};
+const Register kInterpreterDispatchTableRegister = {
+    kRegister_r16_Code  // Interpreter dispatch table.
+};
 
 // Double word FP register.
 struct DoubleRegister {
@@ -726,12 +735,12 @@ class Assembler : public AssemblerBase {
   void CodeTargetAlign();
 
   // Branch instructions
-  void bclr(BOfield bo, LKBit lk);
+  void bclr(BOfield bo, int condition_bit, LKBit lk);
   void blr();
   void bc(int branch_offset, BOfield bo, int condition_bit, LKBit lk = LeaveLK);
   void b(int branch_offset, LKBit lk);
 
-  void bcctr(BOfield bo, LKBit lk);
+  void bcctr(BOfield bo, int condition_bit, LKBit lk);
   void bctr();
   void bctrl();
 
@@ -813,6 +822,48 @@ class Assembler : public AssemblerBase {
         break;
       case nooverflow:
         bc(b_offset, BF, encode_crbit(cr, CR_SO), lk);
+        break;
+      default:
+        UNIMPLEMENTED();
+    }
+  }
+
+  void bclr(Condition cond, CRegister cr = cr7, LKBit lk = LeaveLK) {
+    DCHECK(cond != al);
+    DCHECK(cr.code() >= 0 && cr.code() <= 7);
+
+    cr = cmpi_optimization(cr);
+
+    switch (cond) {
+      case eq:
+        bclr(BT, encode_crbit(cr, CR_EQ), lk);
+        break;
+      case ne:
+        bclr(BF, encode_crbit(cr, CR_EQ), lk);
+        break;
+      case gt:
+        bclr(BT, encode_crbit(cr, CR_GT), lk);
+        break;
+      case le:
+        bclr(BF, encode_crbit(cr, CR_GT), lk);
+        break;
+      case lt:
+        bclr(BT, encode_crbit(cr, CR_LT), lk);
+        break;
+      case ge:
+        bclr(BF, encode_crbit(cr, CR_LT), lk);
+        break;
+      case unordered:
+        bclr(BT, encode_crbit(cr, CR_FU), lk);
+        break;
+      case ordered:
+        bclr(BF, encode_crbit(cr, CR_FU), lk);
+        break;
+      case overflow:
+        bclr(BT, encode_crbit(cr, CR_SO), lk);
+        break;
+      case nooverflow:
+        bclr(BF, encode_crbit(cr, CR_SO), lk);
         break;
       default:
         UNIMPLEMENTED();

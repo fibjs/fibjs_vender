@@ -124,6 +124,10 @@ class GCIdleTimeHandler {
   // no idle notification happens.
   static const size_t kTimeUntilNextIdleEvent = 100;
 
+  // An allocation throughput below kLowAllocationThroughput bytes/ms is
+  // considered low
+  static const size_t kLowAllocationThroughput = 1000;
+
   // If we haven't recorded any scavenger events yet, we use a conservative
   // lower bound for the scavenger speed.
   static const size_t kInitialConservativeScavengeSpeed = 100 * KB;
@@ -198,7 +202,7 @@ class GCIdleTimeHandler {
       size_t new_space_allocation_throughput_in_bytes_per_ms);
 
  private:
-  GCIdleTimeAction NothingOrDone();
+  GCIdleTimeAction NothingOrDone(double idle_time_in_ms);
 
   // Idle notifications with no progress.
   int idle_times_which_made_no_progress_;

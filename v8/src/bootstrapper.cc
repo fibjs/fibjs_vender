@@ -235,16 +235,12 @@ class Genesis BASE_EMBEDDED {
                                           ElementsKind elements_kind);
   bool InstallNatives(ContextType context_type);
 
-  void InstallTypedArray(
-      const char* name,
-      ElementsKind elements_kind,
-      Handle<JSFunction>* fun,
-      Handle<Map>* external_map);
+  void InstallTypedArray(const char* name, ElementsKind elements_kind,
+                         Handle<JSFunction>* fun);
   bool InstallExperimentalNatives();
   bool InstallExtraNatives();
   void InstallBuiltinFunctionIds();
   void InstallExperimentalBuiltinFunctionIds();
-  void InstallJSFunctionResultCaches();
   void InitializeNormalizedMapCaches();
 
   enum ExtensionTraversalState {
@@ -320,13 +316,6 @@ class Genesis BASE_EMBEDDED {
   void SetStrictFunctionInstanceDescriptor(Handle<Map> map,
                                            FunctionMode function_mode);
   void SetStrongFunctionInstanceDescriptor(Handle<Map> map);
-
-  static bool CompileBuiltin(Isolate* isolate, int index);
-  static bool CompileExperimentalBuiltin(Isolate* isolate, int index);
-  static bool CompileExtraBuiltin(Isolate* isolate, int index);
-  static bool CompileNative(Isolate* isolate, Vector<const char> name,
-                            Handle<String> source, int argc,
-                            Handle<Object> argv[]);
 
   static bool CallUtilsFunction(Isolate* isolate, const char* name);
 
@@ -1284,17 +1273,12 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   }
 
   {  // -- T y p e d A r r a y s
-#define INSTALL_TYPED_ARRAY(Type, type, TYPE, ctype, size)                    \
-    {                                                                         \
-      Handle<JSFunction> fun;                                                 \
-      Handle<Map> external_map;                                               \
-      InstallTypedArray(#Type "Array",                                        \
-          TYPE##_ELEMENTS,                                                    \
-          &fun,                                                               \
-          &external_map);                                                     \
-      native_context()->set_##type##_array_fun(*fun);                         \
-      native_context()->set_##type##_array_external_map(*external_map);       \
-    }
+#define INSTALL_TYPED_ARRAY(Type, type, TYPE, ctype, size)   \
+  {                                                          \
+    Handle<JSFunction> fun;                                  \
+    InstallTypedArray(#Type "Array", TYPE##_ELEMENTS, &fun); \
+    native_context()->set_##type##_array_fun(*fun);          \
+  }
     TYPED_ARRAYS(INSTALL_TYPED_ARRAY)
 #undef INSTALL_TYPED_ARRAY
 
@@ -1505,11 +1489,8 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
 }
 
 
-void Genesis::InstallTypedArray(
-    const char* name,
-    ElementsKind elements_kind,
-    Handle<JSFunction>* fun,
-    Handle<Map>* external_map) {
+void Genesis::InstallTypedArray(const char* name, ElementsKind elements_kind,
+                                Handle<JSFunction>* fun) {
   Handle<JSObject> global = Handle<JSObject>(native_context()->global_object());
   Handle<JSFunction> result = InstallFunction(
       global, name, JS_TYPED_ARRAY_TYPE, JSTypedArray::kSize,
@@ -1522,9 +1503,6 @@ void Genesis::InstallTypedArray(
   JSFunction::SetInitialMap(result, initial_map,
                             handle(initial_map->prototype(), isolate()));
   *fun = result;
-
-  ElementsKind external_kind = GetNextTransitionElementsKind(elements_kind);
-  *external_map = Map::AsElementsKind(initial_map, external_kind);
 }
 
 
@@ -1738,7 +1716,6 @@ void Genesis::InstallNativeFunctions() {
   INSTALL_NATIVE(JSFunction, "$toNumber", to_number_fun);
   INSTALL_NATIVE(JSFunction, "$toString", to_string_fun);
   INSTALL_NATIVE(JSFunction, "$toDetailString", to_detail_string_fun);
-  INSTALL_NATIVE(JSFunction, "$toObject", to_object_fun);
   INSTALL_NATIVE(JSFunction, "$toInteger", to_integer_fun);
   INSTALL_NATIVE(JSFunction, "$toUint32", to_uint32_fun);
   INSTALL_NATIVE(JSFunction, "$toInt32", to_int32_fun);
@@ -1819,7 +1796,8 @@ Data* SetBuiltinTypedArray(Isolate* isolate, Handle<JSBuiltinsObject> builtins,
   // Reset property cell type before (re)initializing.
   JSBuiltinsObject::InvalidatePropertyCell(builtins, name_string);
   JSObject::SetOwnPropertyIgnoreAttributes(builtins, name_string, typed_array,
-                                           DONT_DELETE).Assert();
+                                           FROZEN)
+      .Assert();
   return data;
 }
 
@@ -1864,14 +1842,14 @@ EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_regexps)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_arrow_functions)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_tostring)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_sloppy)
-EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_unicode)
+EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_sloppy_let)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_unicode_regexps)
-EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_computed_property_names)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_rest_parameters)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_reflect)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_spreadcalls)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_destructuring)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_object)
+EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_object_observe)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_spread_arrays)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_sharedarraybuffer)
 EMPTY_NATIVE_FUNCTIONS_FOR_FEATURE(harmony_atomics)
@@ -1900,12 +1878,12 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_array_includes)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_arrow_functions)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_proxies)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_sloppy)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_unicode)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_computed_property_names)
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_sloppy_let)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_rest_parameters)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_spreadcalls)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_destructuring)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_object)
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_object_observe)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_spread_arrays)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_atomics)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_new_target)
@@ -1935,22 +1913,21 @@ void Genesis::InitializeGlobal_harmony_unicode_regexps() {
 
 void Genesis::InitializeGlobal_harmony_reflect() {
   Handle<JSObject> builtins(native_context()->builtins());
-  // Install references to functions of the Reflect object
-  if (FLAG_harmony_reflect || FLAG_harmony_spreadcalls) {
-    Handle<JSFunction> apply = InstallFunction(
-        builtins, "$reflectApply", JS_OBJECT_TYPE, JSObject::kHeaderSize,
-        MaybeHandle<JSObject>(), Builtins::kReflectApply);
-    Handle<JSFunction> construct = InstallFunction(
-        builtins, "$reflectConstruct", JS_OBJECT_TYPE, JSObject::kHeaderSize,
-        MaybeHandle<JSObject>(), Builtins::kReflectConstruct);
-    apply->shared()->set_internal_formal_parameter_count(3);
-    apply->shared()->set_length(3);
 
-    construct->shared()->set_internal_formal_parameter_count(3);
-    construct->shared()->set_length(2);
-  }
+  Handle<JSFunction> apply = InstallFunction(
+      builtins, "$reflectApply", JS_OBJECT_TYPE, JSObject::kHeaderSize,
+      MaybeHandle<JSObject>(), Builtins::kReflectApply);
+  apply->shared()->set_internal_formal_parameter_count(3);
+  apply->shared()->set_length(3);
+
+  Handle<JSFunction> construct = InstallFunction(
+      builtins, "$reflectConstruct", JS_OBJECT_TYPE, JSObject::kHeaderSize,
+      MaybeHandle<JSObject>(), Builtins::kReflectConstruct);
+  construct->shared()->set_internal_formal_parameter_count(3);
+  construct->shared()->set_length(2);
 
   if (!FLAG_harmony_reflect) return;
+
   Handle<JSGlobalObject> global(JSGlobalObject::cast(
       native_context()->global_object()));
   Handle<String> reflect_string =
@@ -1987,6 +1964,8 @@ void Genesis::InitializeGlobal_harmony_sharedarraybuffer() {
 
 
 void Genesis::InitializeGlobal_harmony_simd() {
+  if (!FLAG_harmony_simd) return;
+
   Handle<JSGlobalObject> global(
       JSGlobalObject::cast(native_context()->global_object()));
   Isolate* isolate = global->GetIsolate();
@@ -2002,13 +1981,16 @@ void Genesis::InitializeGlobal_harmony_simd() {
   DCHECK(simd_object->IsJSObject());
   JSObject::AddProperty(global, name, simd_object, DONT_ENUM);
 
-  Handle<JSFunction> float32x4_function =
-      InstallFunction(simd_object, "Float32x4", JS_VALUE_TYPE, JSValue::kSize,
-                      isolate->initial_object_prototype(), Builtins::kIllegal);
-  // Set the instance class name since InstallFunction only does this when
-  // we install on the GlobalObject.
-  float32x4_function->SetInstanceClassName(*factory->Float32x4_string());
-  native_context()->set_float32x4_function(*float32x4_function);
+// Install SIMD type functions. Set the instance class names since
+// InstallFunction only does this when we install on the GlobalObject.
+#define SIMD128_INSTALL_FUNCTION(name, type, lane_count, lane_type) \
+  Handle<JSFunction> type##_function = InstallFunction(             \
+      simd_object, #name, JS_VALUE_TYPE, JSValue::kSize,            \
+      isolate->initial_object_prototype(), Builtins::kIllegal);     \
+  native_context()->set_##type##_function(*type##_function);        \
+  type##_function->SetInstanceClassName(*factory->name##_string());
+
+  SIMD128_TYPES(SIMD128_INSTALL_FUNCTION)
 }
 
 
@@ -2422,7 +2404,8 @@ bool Genesis::InstallNatives(ContextType context_type) {
   InstallNativeFunctions();
 
   auto function_cache =
-      ObjectHashTable::New(isolate(), ApiNatives::kInitialFunctionCacheSize);
+      ObjectHashTable::New(isolate(), ApiNatives::kInitialFunctionCacheSize,
+                           USE_CUSTOM_MINIMUM_CAPACITY);
   native_context()->set_function_cache(*function_cache);
 
   // Store the map for the string prototype after the natives has been compiled
@@ -2577,9 +2560,8 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_tostring_natives[] = {"native harmony-tostring.js",
                                                    nullptr};
   static const char* harmony_sloppy_natives[] = {nullptr};
-  static const char* harmony_unicode_natives[] = {nullptr};
+  static const char* harmony_sloppy_let_natives[] = {nullptr};
   static const char* harmony_unicode_regexps_natives[] = {nullptr};
-  static const char* harmony_computed_property_names_natives[] = {nullptr};
   static const char* harmony_rest_parameters_natives[] = {nullptr};
   static const char* harmony_reflect_natives[] = {"native harmony-reflect.js",
                                                   nullptr};
@@ -2588,6 +2570,8 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_destructuring_natives[] = {nullptr};
   static const char* harmony_object_natives[] = {"native harmony-object.js",
                                                  NULL};
+  static const char* harmony_object_observe_natives[] = {
+      "native harmony-object-observe.js", nullptr};
   static const char* harmony_spread_arrays_natives[] = {nullptr};
   static const char* harmony_sharedarraybuffer_natives[] = {
       "native harmony-sharedarraybuffer.js", NULL};
@@ -2703,50 +2687,6 @@ void Genesis::InstallExperimentalBuiltinFunctionIds() {
 
 
 #undef INSTALL_BUILTIN_ID
-
-
-// Do not forget to update macros.py with named constant
-// of cache id.
-#define JSFUNCTION_RESULT_CACHE_LIST(F) \
-  F(16, native_context()->regexp_function())
-
-
-static FixedArray* CreateCache(int size, Handle<JSFunction> factory_function) {
-  Factory* factory = factory_function->GetIsolate()->factory();
-  // Caches are supposed to live for a long time, allocate in old space.
-  int array_size = JSFunctionResultCache::kEntriesIndex + 2 * size;
-  // Cannot use cast as object is not fully initialized yet.
-  JSFunctionResultCache* cache = reinterpret_cast<JSFunctionResultCache*>(
-      *factory->NewFixedArrayWithHoles(array_size, TENURED));
-  cache->set(JSFunctionResultCache::kFactoryIndex, *factory_function);
-  cache->MakeZeroSize();
-  return cache;
-}
-
-
-void Genesis::InstallJSFunctionResultCaches() {
-  const int kNumberOfCaches = 0 +
-#define F(size, func) + 1
-    JSFUNCTION_RESULT_CACHE_LIST(F)
-#undef F
-  ;
-
-  Handle<FixedArray> caches =
-      factory()->NewFixedArray(kNumberOfCaches, TENURED);
-
-  int index = 0;
-
-#define F(size, func) do {                                              \
-    FixedArray* cache = CreateCache((size), Handle<JSFunction>(func));  \
-    caches->set(index++, cache);                                        \
-  } while (false)
-
-  JSFUNCTION_RESULT_CACHE_LIST(F);
-
-#undef F
-
-  native_context()->set_jsfunction_result_caches(*caches);
-}
 
 
 void Genesis::InitializeNormalizedMapCaches() {
@@ -3259,7 +3199,6 @@ Genesis::Genesis(Isolate* isolate,
         CreateNewGlobals(global_proxy_template, global_proxy);
     HookUpGlobalProxy(global_object, global_proxy);
     InitializeGlobal(global_object, empty_function, context_type);
-    InstallJSFunctionResultCaches();
     InitializeNormalizedMapCaches();
 
     if (!InstallNatives(context_type)) return;

@@ -6,7 +6,7 @@
 
 #include "src/arguments.h"
 #include "src/bootstrapper.h"
-#include "src/debug.h"
+#include "src/debug/debug.h"
 #include "src/messages.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/runtime-utils.h"
@@ -420,62 +420,67 @@ RUNTIME_FUNCTION(Runtime_ObjectSeal) {
 
 RUNTIME_FUNCTION(Runtime_LoadGlobalViaContext) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 3);
-  CONVERT_ARG_HANDLE_CHECKED(Context, script_context, 0);
-  CONVERT_SMI_ARG_CHECKED(index, 1);
-  CONVERT_ARG_HANDLE_CHECKED(Name, name, 2);
+  DCHECK_EQ(1, args.length());
+  CONVERT_SMI_ARG_CHECKED(slot, 0);
+
+  // Go up context chain to the script context.
+  Handle<Context> script_context(isolate->context()->script_context(), isolate);
   DCHECK(script_context->IsScriptContext());
-  DCHECK(script_context->get(index)->IsPropertyCell());
+  DCHECK(script_context->get(slot)->IsPropertyCell());
 
-  Handle<GlobalObject> global(script_context->global_object());
+  // Lookup the named property on the global object.
+  Handle<ScopeInfo> scope_info(ScopeInfo::cast(script_context->extension()),
+                               isolate);
+  Handle<Name> name(scope_info->ContextSlotName(slot), isolate);
+  Handle<GlobalObject> global_object(script_context->global_object(), isolate);
+  LookupIterator it(global_object, name, LookupIterator::HIDDEN);
 
-  LookupIterator it(global, name, LookupIterator::HIDDEN);
   // Switch to fast mode only if there is a data property and it's not on
   // a hidden prototype.
-  if (LookupIterator::DATA == it.state() &&
-      it.GetHolder<Object>()->IsJSGlobalObject()) {
-    // Now update cell in the script context.
+  if (it.state() == LookupIterator::DATA &&
+      it.GetHolder<Object>().is_identical_to(global_object)) {
+    // Now update the cell in the script context.
     Handle<PropertyCell> cell = it.GetPropertyCell();
-    script_context->set(index, *cell);
+    script_context->set(slot, *cell);
   } else {
     // This is not a fast case, so keep this access in a slow mode.
     // Store empty_property_cell here to release the outdated property cell.
-    script_context->set(index, isolate->heap()->empty_property_cell());
+    script_context->set(slot, isolate->heap()->empty_property_cell());
   }
 
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result, Object::GetProperty(&it));
-
   return *result;
 }
 
 
-RUNTIME_FUNCTION(Runtime_StoreGlobalViaContext) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 5);
-  CONVERT_ARG_HANDLE_CHECKED(Context, script_context, 0);
-  CONVERT_SMI_ARG_CHECKED(index, 1);
-  CONVERT_ARG_HANDLE_CHECKED(Name, name, 2);
-  CONVERT_ARG_HANDLE_CHECKED(Object, value, 3);
-  CONVERT_LANGUAGE_MODE_ARG_CHECKED(language_mode_arg, 4);
+namespace {
+
+Object* StoreGlobalViaContext(Isolate* isolate, int slot, Handle<Object> value,
+                              LanguageMode language_mode) {
+  // Go up context chain to the script context.
+  Handle<Context> script_context(isolate->context()->script_context(), isolate);
   DCHECK(script_context->IsScriptContext());
-  DCHECK(script_context->get(index)->IsPropertyCell());
-  LanguageMode language_mode = language_mode_arg;
+  DCHECK(script_context->get(slot)->IsPropertyCell());
 
-  Handle<GlobalObject> global(script_context->global_object());
+  // Lookup the named property on the global object.
+  Handle<ScopeInfo> scope_info(ScopeInfo::cast(script_context->extension()),
+                               isolate);
+  Handle<Name> name(scope_info->ContextSlotName(slot), isolate);
+  Handle<GlobalObject> global_object(script_context->global_object(), isolate);
+  LookupIterator it(global_object, name, LookupIterator::HIDDEN);
 
-  LookupIterator it(global, name, LookupIterator::HIDDEN);
   // Switch to fast mode only if there is a data property and it's not on
   // a hidden prototype.
-  if (LookupIterator::DATA == it.state() &&
-      it.GetHolder<Object>()->IsJSGlobalObject()) {
+  if (it.state() == LookupIterator::DATA &&
+      it.GetHolder<Object>().is_identical_to(global_object)) {
     // Now update cell in the script context.
     Handle<PropertyCell> cell = it.GetPropertyCell();
-    script_context->set(index, *cell);
+    script_context->set(slot, *cell);
   } else {
     // This is not a fast case, so keep this access in a slow mode.
     // Store empty_property_cell here to release the outdated property cell.
-    script_context->set(index, isolate->heap()->empty_property_cell());
+    script_context->set(slot, isolate->heap()->empty_property_cell());
   }
 
   Handle<Object> result;
@@ -483,8 +488,29 @@ RUNTIME_FUNCTION(Runtime_StoreGlobalViaContext) {
       isolate, result,
       Object::SetProperty(&it, value, language_mode,
                           Object::CERTAINLY_NOT_STORE_FROM_KEYED));
-
   return *result;
+}
+
+}  // namespace
+
+
+RUNTIME_FUNCTION(Runtime_StoreGlobalViaContext_Sloppy) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_SMI_ARG_CHECKED(slot, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, value, 1);
+
+  return StoreGlobalViaContext(isolate, slot, value, SLOPPY);
+}
+
+
+RUNTIME_FUNCTION(Runtime_StoreGlobalViaContext_Strict) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_SMI_ARG_CHECKED(slot, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, value, 1);
+
+  return StoreGlobalViaContext(isolate, slot, value, STRICT);
 }
 
 
@@ -1435,5 +1461,19 @@ RUNTIME_FUNCTION(Runtime_DefineSetterPropertyUnchecked) {
                                setter, attrs));
   return isolate->heap()->undefined_value();
 }
+
+
+RUNTIME_FUNCTION(Runtime_ToObject) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+  Handle<JSReceiver> receiver;
+  if (JSReceiver::ToObject(isolate, object).ToHandle(&receiver)) {
+    return *receiver;
+  }
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kUndefinedOrNullToObject));
+}
+
 }  // namespace internal
 }  // namespace v8

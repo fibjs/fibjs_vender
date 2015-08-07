@@ -385,7 +385,8 @@ class OptimizedFunctionVisitor BASE_EMBEDDED {
   V(kValueMismatch, "value mismatch")                                          \
   V(kWrongInstanceType, "wrong instance type")                                 \
   V(kWrongMap, "wrong map")                                                    \
-  V(kUndefinedOrNullInForIn, "null or undefined in for-in")
+  V(kUndefinedOrNullInForIn, "null or undefined in for-in")                    \
+  V(kUndefinedOrNullInToObject, "null or undefined in ToObject")
 
 
 class Deoptimizer : public Malloced {
@@ -615,7 +616,7 @@ class Deoptimizer : public Malloced {
   unsigned ComputeFixedSize(JSFunction* function) const;
 
   unsigned ComputeIncomingArgumentSize(JSFunction* function) const;
-  unsigned ComputeOutgoingArgumentSize() const;
+  static unsigned ComputeOutgoingArgumentSize(Code* code, unsigned bailout_id);
 
   Object* ComputeLiteral(int index) const;
 

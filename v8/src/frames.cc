@@ -12,7 +12,7 @@
 #include "src/base/bits.h"
 #include "src/deoptimizer.h"
 #include "src/frames-inl.h"
-#include "src/full-codegen.h"
+#include "src/full-codegen/full-codegen.h"
 #include "src/heap/mark-compact.h"
 #include "src/safepoint-table.h"
 #include "src/scopeinfo.h"
@@ -1445,6 +1445,9 @@ Code* InnerPointerToCodeCache::GcSafeFindCodeForInnerPointer(
   // Iterate through the page until we reach the end or find an object starting
   // after the inner pointer.
   Page* page = Page::FromAddress(inner_pointer);
+
+  DCHECK_EQ(page->owner(), heap->code_space());
+  heap->mark_compact_collector()->SweepOrWaitUntilSweepingCompleted(page);
 
   Address addr = page->skip_list()->StartFor(inner_pointer);
 

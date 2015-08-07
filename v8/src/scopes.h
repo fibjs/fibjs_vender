@@ -119,6 +119,9 @@ class Scope: public ZoneObject {
   // outer scope. Only possible for function scopes; at most one variable.
   void DeclareFunctionVar(VariableDeclaration* declaration) {
     DCHECK(is_function_scope());
+    // Handle implicit declaration of the function name in named function
+    // expressions before other declarations.
+    decls_.InsertAt(0, declaration, zone());
     function_ = declaration;
   }
 
@@ -165,16 +168,11 @@ class Scope: public ZoneObject {
   // such a variable again if it was added; otherwise this is a no-op.
   void RemoveUnresolved(VariableProxy* var);
 
-  // Creates a new internal variable in this scope.  The name is only used
-  // for printing and cannot be used to find the variable.  In particular,
-  // the only way to get hold of the temporary is by keeping the Variable*
-  // around.
-  Variable* NewInternal(const AstRawString* name);
-
-  // Creates a new temporary variable in this scope.  The name is only used
-  // for printing and cannot be used to find the variable.  In particular,
-  // the only way to get hold of the temporary is by keeping the Variable*
-  // around.  The name should not clash with a legitimate variable names.
+  // Creates a new temporary variable in this scope's TemporaryScope.  The
+  // name is only used for printing and cannot be used to find the variable.
+  // In particular, the only way to get hold of the temporary is by keeping the
+  // Variable* around.  The name should not clash with a legitimate variable
+  // names.
   Variable* NewTemporary(const AstRawString* name);
 
   // Adds the specific declaration node to the list of declarations in
@@ -480,14 +478,20 @@ class Scope: public ZoneObject {
   // The number of contexts between this and scope; zero if this == scope.
   int ContextChainLength(Scope* scope);
 
-  // Find the script scope.
-  // Used in modules implemenetation to find hosting scope.
-  // TODO(rossberg): is this needed?
-  Scope* ScriptScope();
-
-  // Find the first function, global, or eval scope.  This is the scope
-  // where var declarations will be hoisted to in the implementation.
+  // Find the first function, script, eval or (declaration) block scope. This is
+  // the scope where var declarations will be hoisted to in the implementation.
   Scope* DeclarationScope();
+
+  // Find the first non-block declaration scope. This should be either a script,
+  // function, or eval scope. Same as DeclarationScope(), but skips
+  // declaration "block" scopes. Used for differentiating associated
+  // function objects (i.e., the scope for which a function prologue allocates
+  // a context) or declaring temporaries.
+  Scope* ClosureScope();
+
+  // Find the first (non-arrow) function or script scope.  This is where
+  // 'this' is bound, and what determines the function kind.
+  Scope* ReceiverScope();
 
   Handle<ScopeInfo> GetScopeInfo(Isolate* isolate);
 
@@ -551,8 +555,6 @@ class Scope: public ZoneObject {
   // variables may be implicitly 'declared' by being used (possibly in
   // an inner scope) with no intervening with statements or eval calls.
   VariableMap variables_;
-  // Compiler-allocated (user-invisible) internals.
-  ZoneList<Variable*> internals_;
   // Compiler-allocated (user-invisible) temporaries.
   ZoneList<Variable*> temps_;
   // Parameter list in source order.
@@ -627,7 +629,7 @@ class Scope: public ZoneObject {
   // The number of modules (including nested ones).
   int num_modules_;
 
-  // For module scopes, the host scope's internal variable binding this module.
+  // For module scopes, the host scope's temporary variable binding this module.
   Variable* module_var_;
 
   // Rest parameter

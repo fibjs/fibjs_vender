@@ -49,7 +49,6 @@ namespace internal {
   V(kCopyBuffersOverlap, "Copy buffers overlap")                               \
   V(kCouldNotGenerateZero, "Could not generate +0.0")                          \
   V(kCouldNotGenerateNegativeZero, "Could not generate -0.0")                  \
-  V(kDebuggerHasBreakPoints, "Debugger has break points")                      \
   V(kDebuggerStatement, "DebuggerStatement")                                   \
   V(kDeclarationInCatchContext, "Declaration in catch context")                \
   V(kDeclarationInWithContext, "Declaration in with context")                  \
@@ -85,8 +84,11 @@ namespace internal {
     "ForInStatement with non-local each variable")                             \
   V(kForOfStatement, "ForOfStatement")                                         \
   V(kFrameIsExpectedToBeAligned, "Frame is expected to be aligned")            \
+  V(kFunctionBeingDebugged, "Function is being debugged")                      \
   V(kFunctionCallsEval, "Function calls eval")                                 \
   V(kFunctionWithIllegalRedeclaration, "Function with illegal redeclaration")  \
+  V(kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry,                      \
+    "The function_data field should be a BytecodeArray on interpreter entry")  \
   V(kGeneratedCodeIsTooLarge, "Generated code is too large")                   \
   V(kGeneratorFailedToResume, "Generator failed to resume")                    \
   V(kGenerator, "Generator")                                                   \
@@ -99,8 +101,6 @@ namespace internal {
   V(kIndexIsTooLarge, "Index is too large")                                    \
   V(kInlinedRuntimeFunctionFastOneByteArrayJoin,                               \
     "Inlined runtime function: FastOneByteArrayJoin")                          \
-  V(kInlinedRuntimeFunctionGetFromCache,                                       \
-    "Inlined runtime function: GetFromCache")                                  \
   V(kInliningBailedOut, "Inlining bailed out")                                 \
   V(kInputGPRIsExpectedToHaveUpper32Cleared,                                   \
     "Input GPR is expected to have upper32 cleared")                           \
