@@ -8,7 +8,7 @@
 #include "src/x64/assembler-x64.h"
 
 #include "src/base/cpu.h"
-#include "src/debug.h"
+#include "src/debug/debug.h"
 #include "src/v8memory.h"
 
 namespace v8 {
@@ -553,8 +553,7 @@ void RelocInfo::Visit(Isolate* isolate, ObjectVisitor* visitor) {
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     visitor->VisitCodeAgeSequence(this);
   } else if (RelocInfo::IsDebugBreakSlot(mode) &&
-             IsPatchedDebugBreakSlotSequence() &&
-             isolate->debug()->has_break_points()) {
+             IsPatchedDebugBreakSlotSequence()) {
     visitor->VisitDebugTarget(this);
   } else if (RelocInfo::IsRuntimeEntry(mode)) {
     visitor->VisitRuntimeEntry(this);
@@ -578,8 +577,7 @@ void RelocInfo::Visit(Heap* heap) {
     StaticVisitor::VisitInternalReference(this);
   } else if (RelocInfo::IsCodeAgeSequence(mode)) {
     StaticVisitor::VisitCodeAgeSequence(heap, this);
-  } else if (heap->isolate()->debug()->has_break_points() &&
-             RelocInfo::IsDebugBreakSlot(mode) &&
+  } else if (RelocInfo::IsDebugBreakSlot(mode) &&
              IsPatchedDebugBreakSlotSequence()) {
     StaticVisitor::VisitDebugTarget(heap, this);
   } else if (RelocInfo::IsRuntimeEntry(mode)) {

@@ -73,6 +73,7 @@
 //         - JSFunctionProxy
 //     - FixedArrayBase
 //       - ByteArray
+//       - BytecodeArray
 //       - FixedArray
 //         - DescriptorArray
 //         - HashTable
@@ -86,21 +87,11 @@
 //           - OrderedHashMap
 //         - Context
 //         - TypeFeedbackVector
-//         - JSFunctionResultCache
 //         - ScopeInfo
 //         - TransitionArray
 //         - ScriptContextTable
 //         - WeakFixedArray
 //       - FixedDoubleArray
-//       - ExternalArray
-//         - ExternalUint8ClampedArray
-//         - ExternalInt8Array
-//         - ExternalUint8Array
-//         - ExternalInt16Array
-//         - ExternalUint16Array
-//         - ExternalInt32Array
-//         - ExternalUint32Array
-//         - ExternalFloat32Array
 //     - Name
 //       - String
 //         - SeqString
@@ -121,7 +112,14 @@
 //             - ExternalTwoByteInternalizedString
 //       - Symbol
 //     - HeapNumber
-//     - Float32x4
+//     - Simd128Value
+//       - Float32x4
+//       - Int32x4
+//       - Bool32x4
+//       - Int16x8
+//       - Bool16x8
+//       - Int8x16
+//       - Bool8x16
 //     - Cell
 //     - PropertyCell
 //     - Code
@@ -378,6 +376,12 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
                                                                 \
   V(SYMBOL_TYPE)                                                \
   V(FLOAT32X4_TYPE)                                             \
+  V(INT32X4_TYPE)                                               \
+  V(BOOL32X4_TYPE)                                              \
+  V(INT16X8_TYPE)                                               \
+  V(BOOL16X8_TYPE)                                              \
+  V(INT8X16_TYPE)                                               \
+  V(BOOL8X16_TYPE)                                              \
                                                                 \
   V(MAP_TYPE)                                                   \
   V(CODE_TYPE)                                                  \
@@ -389,19 +393,8 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(MUTABLE_HEAP_NUMBER_TYPE)                                   \
   V(FOREIGN_TYPE)                                               \
   V(BYTE_ARRAY_TYPE)                                            \
+  V(BYTECODE_ARRAY_TYPE)                                        \
   V(FREE_SPACE_TYPE)                                            \
-  /* Note: the order of these external array */                 \
-  /* types is relied upon in */                                 \
-  /* Object::IsExternalArray(). */                              \
-  V(EXTERNAL_INT8_ARRAY_TYPE)                                   \
-  V(EXTERNAL_UINT8_ARRAY_TYPE)                                  \
-  V(EXTERNAL_INT16_ARRAY_TYPE)                                  \
-  V(EXTERNAL_UINT16_ARRAY_TYPE)                                 \
-  V(EXTERNAL_INT32_ARRAY_TYPE)                                  \
-  V(EXTERNAL_UINT32_ARRAY_TYPE)                                 \
-  V(EXTERNAL_FLOAT32_ARRAY_TYPE)                                \
-  V(EXTERNAL_FLOAT64_ARRAY_TYPE)                                \
-  V(EXTERNAL_UINT8_CLAMPED_ARRAY_TYPE)                          \
                                                                 \
   V(FIXED_INT8_ARRAY_TYPE)                                      \
   V(FIXED_UINT8_ARRAY_TYPE)                                     \
@@ -682,20 +675,18 @@ enum InstanceType {
   // objects.
   HEAP_NUMBER_TYPE,
   MUTABLE_HEAP_NUMBER_TYPE,
-  FLOAT32X4_TYPE,  // FIRST_SIMD_TYPE, LAST_SIMD_TYPE
+  FLOAT32X4_TYPE,  // FIRST_SIMD_VALUE_TYPE
+  INT32X4_TYPE,
+  BOOL32X4_TYPE,
+  INT16X8_TYPE,
+  BOOL16X8_TYPE,
+  INT8X16_TYPE,
+  BOOL8X16_TYPE,  // LAST_SIMD_VALUE_TYPE
   FOREIGN_TYPE,
   BYTE_ARRAY_TYPE,
+  BYTECODE_ARRAY_TYPE,
   FREE_SPACE_TYPE,
-  EXTERNAL_INT8_ARRAY_TYPE,  // FIRST_EXTERNAL_ARRAY_TYPE
-  EXTERNAL_UINT8_ARRAY_TYPE,
-  EXTERNAL_INT16_ARRAY_TYPE,
-  EXTERNAL_UINT16_ARRAY_TYPE,
-  EXTERNAL_INT32_ARRAY_TYPE,
-  EXTERNAL_UINT32_ARRAY_TYPE,
-  EXTERNAL_FLOAT32_ARRAY_TYPE,
-  EXTERNAL_FLOAT64_ARRAY_TYPE,
-  EXTERNAL_UINT8_CLAMPED_ARRAY_TYPE,  // LAST_EXTERNAL_ARRAY_TYPE
-  FIXED_INT8_ARRAY_TYPE,              // FIRST_FIXED_TYPED_ARRAY_TYPE
+  FIXED_INT8_ARRAY_TYPE,  // FIRST_FIXED_TYPED_ARRAY_TYPE
   FIXED_UINT8_ARRAY_TYPE,
   FIXED_INT16_ARRAY_TYPE,
   FIXED_UINT16_ARRAY_TYPE,
@@ -774,12 +765,9 @@ enum InstanceType {
   FIRST_UNIQUE_NAME_TYPE = INTERNALIZED_STRING_TYPE,
   LAST_UNIQUE_NAME_TYPE = SYMBOL_TYPE,
   FIRST_NONSTRING_TYPE = SYMBOL_TYPE,
-  // Boundaries for testing for a SIMD type.
-  FIRST_SIMD_TYPE = FLOAT32X4_TYPE,
-  LAST_SIMD_TYPE = FLOAT32X4_TYPE,
-  // Boundaries for testing for an external array.
-  FIRST_EXTERNAL_ARRAY_TYPE = EXTERNAL_INT8_ARRAY_TYPE,
-  LAST_EXTERNAL_ARRAY_TYPE = EXTERNAL_UINT8_CLAMPED_ARRAY_TYPE,
+  // Boundaries for testing for a SIMD types.
+  FIRST_SIMD_VALUE_TYPE = FLOAT32X4_TYPE,
+  LAST_SIMD_VALUE_TYPE = BOOL8X16_TYPE,
   // Boundaries for testing for a fixed typed array.
   FIRST_FIXED_TYPED_ARRAY_TYPE = FIXED_INT8_ARRAY_TYPE,
   LAST_FIXED_TYPED_ARRAY_TYPE = FIXED_UINT8_CLAMPED_ARRAY_TYPE,
@@ -808,9 +796,6 @@ enum InstanceType {
   // Define this so that we can put assertions on discrete checks.
   NUM_OF_CALLABLE_SPEC_OBJECT_TYPES = 2
 };
-
-const int kExternalArrayTypeCount =
-    LAST_EXTERNAL_ARRAY_TYPE - FIRST_EXTERNAL_ARRAY_TYPE + 1;
 
 STATIC_ASSERT(JS_OBJECT_TYPE == Internals::kJSObjectType);
 STATIC_ASSERT(FIRST_NONSTRING_TYPE == Internals::kFirstNonstringType);
@@ -915,7 +900,14 @@ template <class C> inline bool Is(Object* obj);
 #define HEAP_OBJECT_TYPE_LIST(V)   \
   V(HeapNumber)                    \
   V(MutableHeapNumber)             \
+  V(Simd128Value)                  \
   V(Float32x4)                     \
+  V(Int32x4)                       \
+  V(Bool32x4)                      \
+  V(Int16x8)                       \
+  V(Bool16x8)                      \
+  V(Int8x16)                       \
+  V(Bool8x16)                      \
   V(Name)                          \
   V(UniqueName)                    \
   V(String)                        \
@@ -930,16 +922,6 @@ template <class C> inline bool Is(Object* obj);
   V(InternalizedString)            \
   V(Symbol)                        \
                                    \
-  V(ExternalArray)                 \
-  V(ExternalInt8Array)             \
-  V(ExternalUint8Array)            \
-  V(ExternalInt16Array)            \
-  V(ExternalUint16Array)           \
-  V(ExternalInt32Array)            \
-  V(ExternalUint32Array)           \
-  V(ExternalFloat32Array)          \
-  V(ExternalFloat64Array)          \
-  V(ExternalUint8ClampedArray)     \
   V(FixedTypedArrayBase)           \
   V(FixedUint8Array)               \
   V(FixedInt8Array)                \
@@ -951,6 +933,7 @@ template <class C> inline bool Is(Object* obj);
   V(FixedFloat64Array)             \
   V(FixedUint8ClampedArray)        \
   V(ByteArray)                     \
+  V(BytecodeArray)                 \
   V(FreeSpace)                     \
   V(JSReceiver)                    \
   V(JSObject)                      \
@@ -1002,7 +985,6 @@ template <class C> inline bool Is(Object* obj);
   V(HashTable)                     \
   V(Dictionary)                    \
   V(StringTable)                   \
-  V(JSFunctionResultCache)         \
   V(NormalizedMapCache)            \
   V(CompilationCacheTable)         \
   V(CodeCacheHashTable)            \
@@ -1620,26 +1602,50 @@ class HeapNumber: public HeapObject {
 };
 
 
-// The Float32x4 class describes heap allocated SIMD values holding 4 32-bit
-// IEEE floats.
-class Float32x4 : public HeapObject {
+// The SimdValue128 class describes heap allocated 128 bit SIMD values.
+class Simd128Value : public HeapObject {
  public:
-  inline float get_lane(int lane) const;
-  inline void set_lane(int lane, float value);
+  DECLARE_CAST(Simd128Value)
 
-  DECLARE_CAST(Float32x4)
-
-  // Dispatched behavior.
-  void Float32x4Print(std::ostream& os);  // NOLINT
-  DECLARE_VERIFIER(Float32x4)
+  // Checks that another instance is bit-wise equal.
+  bool BitwiseEquals(const Simd128Value* other) const;
+  // Computes a hash from the 128 bit value, viewed as 4 32-bit integers.
+  uint32_t Hash() const;
 
   // Layout description.
   static const int kValueOffset = HeapObject::kHeaderSize;
   static const int kSize = kValueOffset + kSimd128Size;
 
  private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(Float32x4);
+  DISALLOW_IMPLICIT_CONSTRUCTORS(Simd128Value);
 };
+
+
+#define SIMD128_TYPES(V)            \
+  V(Float32x4, float32x4, 4, float) \
+  V(Int32x4, int32x4, 4, int32_t)   \
+  V(Bool32x4, bool32x4, 4, bool)    \
+  V(Int16x8, int16x8, 8, int16_t)   \
+  V(Bool16x8, bool16x8, 8, bool)    \
+  V(Int8x16, int8x16, 16, int8_t)   \
+  V(Bool8x16, bool8x16, 16, bool)
+
+#define SIMD128_VALUE_CLASS(name, type, lane_count, lane_type) \
+  class name : public Simd128Value {                           \
+   public:                                                     \
+    inline lane_type get_lane(int lane) const;                 \
+    inline void set_lane(int lane, lane_type value);           \
+                                                               \
+    DECLARE_CAST(name)                                         \
+                                                               \
+    DECLARE_PRINTER(name)                                      \
+    DECLARE_VERIFIER(name)                                     \
+                                                               \
+   private:                                                    \
+    DISALLOW_IMPLICIT_CONSTRUCTORS(name);                      \
+  };
+
+SIMD128_TYPES(SIMD128_VALUE_CLASS)
 
 
 enum EnsureElementsMode {
@@ -1768,9 +1774,8 @@ class JSObject: public JSReceiver {
   // writing to any element the array must be copied. Use
   // EnsureWritableFastElements in this case.
   //
-  // In the slow mode the elements is either a NumberDictionary, an
-  // ExternalArray, or a FixedArray parameter map for a (sloppy)
-  // arguments object.
+  // In the slow mode the elements is either a NumberDictionary, a
+  // FixedArray parameter map for a (sloppy) arguments object.
   DECL_ACCESSORS(elements, FixedArrayBase)
   inline void initialize_elements();
   static void ResetElements(Handle<JSObject> object);
@@ -1796,17 +1801,6 @@ class JSObject: public JSReceiver {
   inline bool HasFastHoleyElements();
   inline bool HasSloppyArgumentsElements();
   inline bool HasDictionaryElements();
-
-  inline bool HasExternalUint8ClampedElements();
-  inline bool HasExternalArrayElements();
-  inline bool HasExternalInt8Elements();
-  inline bool HasExternalUint8Elements();
-  inline bool HasExternalInt16Elements();
-  inline bool HasExternalUint16Elements();
-  inline bool HasExternalInt32Elements();
-  inline bool HasExternalUint32Elements();
-  inline bool HasExternalFloat32Elements();
-  inline bool HasExternalFloat64Elements();
 
   inline bool HasFixedTypedArrayElements();
 
@@ -2404,11 +2398,6 @@ class FixedArray: public FixedArrayBase {
   // Shrink length and insert filler objects.
   void Shrink(int length);
 
-  // Copy operation.
-  static Handle<FixedArray> CopySize(Handle<FixedArray> array,
-                                     int new_length,
-                                     PretenureFlag pretenure = NOT_TENURED);
-
   enum KeyFilter { ALL_KEYS, NON_SYMBOL_KEYS };
 
   // Add the elements of a JSArray to this FixedArray.
@@ -2960,9 +2949,6 @@ class HashTableBase : public FixedArray {
   // Computes the required capacity for a table holding the given
   // number of elements. May be more than HashTable::kMaxCapacity.
   static inline int ComputeCapacity(int at_least_space_for);
-
-  // Use a different heuristic to compute capacity when serializing.
-  static inline int ComputeCapacityForSerialization(int at_least_space_for);
 
   // Tells whether k is a real key.  The hole and undefined are not allowed
   // as keys and can be used to indicate missing or deleted elements.
@@ -3834,41 +3820,6 @@ class WeakValueHashTable : public ObjectHashTable {
 };
 
 
-// JSFunctionResultCache caches results of some JSFunction invocation.
-// It is a fixed array with fixed structure:
-//   [0]: factory function
-//   [1]: finger index
-//   [2]: current cache size
-//   [3]: dummy field.
-// The rest of array are key/value pairs.
-class JSFunctionResultCache : public FixedArray {
- public:
-  static const int kFactoryIndex = 0;
-  static const int kFingerIndex = kFactoryIndex + 1;
-  static const int kCacheSizeIndex = kFingerIndex + 1;
-  static const int kDummyIndex = kCacheSizeIndex + 1;
-  static const int kEntriesIndex = kDummyIndex + 1;
-
-  static const int kEntrySize = 2;  // key + value
-
-  static const int kFactoryOffset = kHeaderSize;
-  static const int kFingerOffset = kFactoryOffset + kPointerSize;
-  static const int kCacheSizeOffset = kFingerOffset + kPointerSize;
-
-  inline void MakeZeroSize();
-  inline void Clear();
-
-  inline int size();
-  inline void set_size(int size);
-  inline int finger_index();
-  inline void set_finger_index(int finger_index);
-
-  DECLARE_CAST(JSFunctionResultCache)
-
-  DECLARE_VERIFIER(JSFunctionResultCache)
-};
-
-
 // ScopeInfo represents information about different scopes of a source
 // program  and the allocation of the scope's variables. Scope information
 // is stored in a compressed form in ScopeInfo objects and is used
@@ -3988,6 +3939,9 @@ class ScopeInfo : public FixedArray {
                               InitializationFlag* init_flag,
                               MaybeAssignedFlag* maybe_assigned_flag);
 
+  // Lookup the name of a certain context slot by its index.
+  String* ContextSlotName(int slot_index);
+
   // Lookup support for serialized scope info. Returns the
   // parameter index for a given parameter name if the parameter is present;
   // otherwise returns a value < 0. The name must be an internalized string.
@@ -4005,12 +3959,6 @@ class ScopeInfo : public FixedArray {
   int ReceiverContextSlotIndex();
 
   FunctionKind function_kind();
-
-  // Copies all the context locals into an object used to materialize a scope.
-  static void CopyContextLocalsToScopeObject(Handle<ScopeInfo> scope_info,
-                                             Handle<Context> context,
-                                             Handle<JSObject> scope_object);
-
 
   static Handle<ScopeInfo> Create(Isolate* isolate, Zone* zone, Scope* scope);
   static Handle<ScopeInfo> CreateGlobalThisBinding(Isolate* isolate);
@@ -4147,6 +4095,8 @@ class ScopeInfo : public FixedArray {
   class ContextLocalInitFlag:  public BitField<InitializationFlag,   3, 1> {};
   class ContextLocalMaybeAssignedFlag
       : public BitField<MaybeAssignedFlag, 4, 1> {};
+
+  friend class ScopeIterator;
 };
 
 
@@ -4233,6 +4183,50 @@ class ByteArray: public FixedArrayBase {
 };
 
 
+// BytecodeArray represents a sequence of interpreter bytecodes.
+class BytecodeArray : public FixedArrayBase {
+ public:
+  static int SizeFor(int length) {
+    return OBJECT_POINTER_ALIGN(kHeaderSize + length);
+  }
+
+  // Setter and getter
+  inline byte get(int index);
+  inline void set(int index, byte value);
+
+  // Returns data start address.
+  inline Address GetFirstBytecodeAddress();
+
+  // Accessors for frame size and the number of locals
+  inline int frame_size() const;
+  inline void set_frame_size(int value);
+
+  DECLARE_CAST(BytecodeArray)
+
+  // Dispatched behavior.
+  inline int BytecodeArraySize() { return SizeFor(this->length()); }
+
+  DECLARE_PRINTER(BytecodeArray)
+  DECLARE_VERIFIER(BytecodeArray)
+
+  void Disassemble(std::ostream& os);
+
+  // Layout description.
+  static const int kFrameSizeOffset = FixedArrayBase::kHeaderSize;
+  static const int kHeaderSize = kFrameSizeOffset + kIntSize;
+
+  static const int kAlignedSize = OBJECT_POINTER_ALIGN(kHeaderSize);
+
+  // Maximal memory consumption for a single BytecodeArray.
+  static const int kMaxSize = 512 * MB;
+  // Maximal length of a single BytecodeArray.
+  static const int kMaxLength = kMaxSize - kHeaderSize;
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(BytecodeArray);
+};
+
+
 // FreeSpace are fixed-size free memory blocks used by the heap and GC.
 // They look like heap objects (are heap object tagged and have a map) so that
 // the heap remains iterable.  They have a size and a next pointer.
@@ -4283,258 +4277,15 @@ class FreeSpace: public HeapObject {
   V(Uint8Clamped, uint8_clamped, UINT8_CLAMPED, uint8_t, 1)
 
 
-
-// An ExternalArray represents a fixed-size array of primitive values
-// which live outside the JavaScript heap. Its subclasses are used to
-// implement the CanvasArray types being defined in the WebGL
-// specification. As of this writing the first public draft is not yet
-// available, but Khronos members can access the draft at:
-//   https://cvs.khronos.org/svn/repos/3dweb/trunk/doc/spec/WebGL-spec.html
-//
-// The semantics of these arrays differ from CanvasPixelArray.
-// Out-of-range values passed to the setter are converted via a C
-// cast, not clamping. Out-of-range indices cause exceptions to be
-// raised rather than being silently ignored.
-class ExternalArray: public FixedArrayBase {
- public:
-  inline bool is_the_hole(int index) { return false; }
-
-  // [external_pointer]: The pointer to the external memory area backing this
-  // external array.
-  DECL_ACCESSORS(external_pointer, void)  // Pointer to the data store.
-
-  DECLARE_CAST(ExternalArray)
-
-  // Maximal acceptable length for an external array.
-  static const int kMaxLength = 0x3fffffff;
-
-  // ExternalArray headers are not quadword aligned.
-  static const int kExternalPointerOffset =
-      POINTER_SIZE_ALIGN(FixedArrayBase::kLengthOffset + kPointerSize);
-  static const int kSize = kExternalPointerOffset + kPointerSize;
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalArray);
-};
-
-
-// A ExternalUint8ClampedArray represents a fixed-size byte array with special
-// semantics used for implementing the CanvasPixelArray object. Please see the
-// specification at:
-
-// http://www.whatwg.org/specs/web-apps/current-work/
-//                      multipage/the-canvas-element.html#canvaspixelarray
-// In particular, write access clamps the value written to 0 or 255 if the
-// value written is outside this range.
-class ExternalUint8ClampedArray: public ExternalArray {
- public:
-  inline uint8_t* external_uint8_clamped_pointer();
-
-  // Setter and getter.
-  inline uint8_t get_scalar(int index);
-  static inline Handle<Object> get(Handle<ExternalUint8ClampedArray> array,
-                                   int index);
-  inline void set(int index, uint8_t value);
-
-  // This accessor applies the correct conversion from Smi, HeapNumber
-  // and undefined and clamps the converted value between 0 and 255.
-  void SetValue(uint32_t index, Object* value);
-
-  DECLARE_CAST(ExternalUint8ClampedArray)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExternalUint8ClampedArray)
-  DECLARE_VERIFIER(ExternalUint8ClampedArray)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalUint8ClampedArray);
-};
-
-
-class ExternalInt8Array: public ExternalArray {
- public:
-  // Setter and getter.
-  inline int8_t get_scalar(int index);
-  static inline Handle<Object> get(Handle<ExternalInt8Array> array, int index);
-  inline void set(int index, int8_t value);
-
-  // This accessor applies the correct conversion from Smi, HeapNumber
-  // and undefined.
-  void SetValue(uint32_t index, Object* value);
-
-  DECLARE_CAST(ExternalInt8Array)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExternalInt8Array)
-  DECLARE_VERIFIER(ExternalInt8Array)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalInt8Array);
-};
-
-
-class ExternalUint8Array: public ExternalArray {
- public:
-  // Setter and getter.
-  inline uint8_t get_scalar(int index);
-  static inline Handle<Object> get(Handle<ExternalUint8Array> array, int index);
-  inline void set(int index, uint8_t value);
-
-  // This accessor applies the correct conversion from Smi, HeapNumber
-  // and undefined.
-  void SetValue(uint32_t index, Object* value);
-
-  DECLARE_CAST(ExternalUint8Array)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExternalUint8Array)
-  DECLARE_VERIFIER(ExternalUint8Array)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalUint8Array);
-};
-
-
-class ExternalInt16Array: public ExternalArray {
- public:
-  // Setter and getter.
-  inline int16_t get_scalar(int index);
-  static inline Handle<Object> get(Handle<ExternalInt16Array> array, int index);
-  inline void set(int index, int16_t value);
-
-  // This accessor applies the correct conversion from Smi, HeapNumber
-  // and undefined.
-  void SetValue(uint32_t index, Object* value);
-
-  DECLARE_CAST(ExternalInt16Array)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExternalInt16Array)
-  DECLARE_VERIFIER(ExternalInt16Array)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalInt16Array);
-};
-
-
-class ExternalUint16Array: public ExternalArray {
- public:
-  // Setter and getter.
-  inline uint16_t get_scalar(int index);
-  static inline Handle<Object> get(Handle<ExternalUint16Array> array,
-                                   int index);
-  inline void set(int index, uint16_t value);
-
-  // This accessor applies the correct conversion from Smi, HeapNumber
-  // and undefined.
-  void SetValue(uint32_t index, Object* value);
-
-  DECLARE_CAST(ExternalUint16Array)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExternalUint16Array)
-  DECLARE_VERIFIER(ExternalUint16Array)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalUint16Array);
-};
-
-
-class ExternalInt32Array: public ExternalArray {
- public:
-  // Setter and getter.
-  inline int32_t get_scalar(int index);
-  static inline Handle<Object> get(Handle<ExternalInt32Array> array, int index);
-  inline void set(int index, int32_t value);
-
-  // This accessor applies the correct conversion from Smi, HeapNumber
-  // and undefined.
-  void SetValue(uint32_t index, Object* value);
-
-  DECLARE_CAST(ExternalInt32Array)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExternalInt32Array)
-  DECLARE_VERIFIER(ExternalInt32Array)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalInt32Array);
-};
-
-
-class ExternalUint32Array: public ExternalArray {
- public:
-  // Setter and getter.
-  inline uint32_t get_scalar(int index);
-  static inline Handle<Object> get(Handle<ExternalUint32Array> array,
-                                   int index);
-  inline void set(int index, uint32_t value);
-
-  // This accessor applies the correct conversion from Smi, HeapNumber
-  // and undefined.
-  void SetValue(uint32_t index, Object* value);
-
-  DECLARE_CAST(ExternalUint32Array)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExternalUint32Array)
-  DECLARE_VERIFIER(ExternalUint32Array)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalUint32Array);
-};
-
-
-class ExternalFloat32Array: public ExternalArray {
- public:
-  // Setter and getter.
-  inline float get_scalar(int index);
-  static inline Handle<Object> get(Handle<ExternalFloat32Array> array,
-                                   int index);
-  inline void set(int index, float value);
-
-  // This accessor applies the correct conversion from Smi, HeapNumber
-  // and undefined.
-  void SetValue(uint32_t index, Object* value);
-
-  DECLARE_CAST(ExternalFloat32Array)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExternalFloat32Array)
-  DECLARE_VERIFIER(ExternalFloat32Array)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalFloat32Array);
-};
-
-
-class ExternalFloat64Array: public ExternalArray {
- public:
-  // Setter and getter.
-  inline double get_scalar(int index);
-  static inline Handle<Object> get(Handle<ExternalFloat64Array> array,
-                                   int index);
-  inline void set(int index, double value);
-
-  // This accessor applies the correct conversion from Smi, HeapNumber
-  // and undefined.
-  void SetValue(uint32_t index, Object* value);
-
-  DECLARE_CAST(ExternalFloat64Array)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(ExternalFloat64Array)
-  DECLARE_VERIFIER(ExternalFloat64Array)
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ExternalFloat64Array);
-};
-
-
 class FixedTypedArrayBase: public FixedArrayBase {
  public:
-  // [base_pointer]: For now, points to the FixedTypedArrayBase itself.
+  // [base_pointer]: Either points to the FixedTypedArrayBase itself or nullptr.
   DECL_ACCESSORS(base_pointer, Object)
+
+  // [external_pointer]: Contains the offset between base_pointer and the start
+  // of the data. If the base_pointer is a nullptr, the external_pointer
+  // therefore points to the actual backing store.
+  DECL_ACCESSORS(external_pointer, void)
 
   // Dispatched behavior.
   inline void FixedTypedArrayBaseIterateBody(ObjectVisitor* v);
@@ -4544,11 +4295,12 @@ class FixedTypedArrayBase: public FixedArrayBase {
 
   DECLARE_CAST(FixedTypedArrayBase)
 
-  static const int kBasePointerOffset =
-      FixedArrayBase::kHeaderSize + kPointerSize;
-  static const int kHeaderSize = kBasePointerOffset + kPointerSize;
+  static const int kBasePointerOffset = FixedArrayBase::kHeaderSize;
+  static const int kExternalPointerOffset = kBasePointerOffset + kPointerSize;
+  static const int kHeaderSize =
+      DOUBLE_POINTER_ALIGN(kExternalPointerOffset + kPointerSize);
 
-  static const int kDataOffset = DOUBLE_POINTER_ALIGN(kHeaderSize);
+  static const int kDataOffset = kHeaderSize;
 
   inline int size();
 
@@ -5004,11 +4756,6 @@ class Code: public HeapObject {
   inline bool has_debug_break_slots();
   inline void set_has_debug_break_slots(bool value);
 
-  // [compiled_with_optimizing]: For FUNCTION kind, tells if it has
-  // been compiled with IsOptimizing set to true.
-  inline bool is_compiled_optimizable();
-  inline void set_compiled_optimizable(bool value);
-
   // [has_reloc_info_for_serialization]: For FUNCTION kind, tells if its
   // reloc info includes runtime and external references to support
   // serialization/deserialization.
@@ -5246,6 +4993,7 @@ class Code: public HeapObject {
 #ifdef DEBUG
   enum VerifyMode { kNoContextSpecificPointers, kNoContextRetainingPointers };
   void VerifyEmbeddedObjects(VerifyMode mode = kNoContextRetainingPointers);
+  static void VerifyRecompiledCode(Code* old_code, Code* new_code);
 #endif  // DEBUG
 
   inline bool CanContainWeakObjects() {
@@ -5303,9 +5051,9 @@ class Code: public HeapObject {
   class FullCodeFlagsHasDeoptimizationSupportField:
       public BitField<bool, 0, 1> {};  // NOLINT
   class FullCodeFlagsHasDebugBreakSlotsField: public BitField<bool, 1, 1> {};
-  class FullCodeFlagsIsCompiledOptimizable: public BitField<bool, 2, 1> {};
   class FullCodeFlagsHasRelocInfoForSerialization
-      : public BitField<bool, 3, 1> {};
+      : public BitField<bool, 2, 1> {};
+  // Bit 3 in this bitfield is unused.
   class ProfilerTicksField : public BitField<int, 4, 28> {};
 
   // Flags layout.  BitField<type, shift, size>.
@@ -5346,7 +5094,7 @@ class Code: public HeapObject {
 
   // KindSpecificFlags2 layout (STUB and OPTIMIZED_FUNCTION)
   static const int kSafepointTableOffsetFirstBit = kIsCrankshaftedBit + 1;
-  static const int kSafepointTableOffsetBitCount = 24;
+  static const int kSafepointTableOffsetBitCount = 30;
 
   STATIC_ASSERT(kSafepointTableOffsetFirstBit +
                 kSafepointTableOffsetBitCount <= 32);
@@ -5686,10 +5434,6 @@ class Map: public HeapObject {
 
   inline bool has_sloppy_arguments_elements() {
     return IsSloppyArgumentsElements(elements_kind());
-  }
-
-  inline bool has_external_array_elements() {
-    return IsExternalArrayElementsKind(elements_kind());
   }
 
   inline bool has_fixed_typed_array_elements() {
@@ -6641,8 +6385,10 @@ class SharedFunctionInfo: public HeapObject {
   DECL_ACCESSORS(instance_class_name, Object)
 
   // [function data]: This field holds some additional data for function.
-  // Currently it either has FunctionTemplateInfo to make benefit the API
-  // or Smi identifying a builtin function.
+  // Currently it has one of:
+  //  - a FunctionTemplateInfo to make benefit the API [IsApiFunction()].
+  //  - a Smi identifying a builtin function [HasBuiltinFunctionId()].
+  //  - a BytecodeArray for the interpreter [HasBytecodeArray()].
   // In the long run we don't want all functions to have this field but
   // we can fix that when we have a better model for storing hidden data
   // on objects.
@@ -6652,6 +6398,8 @@ class SharedFunctionInfo: public HeapObject {
   inline FunctionTemplateInfo* get_api_func_data();
   inline bool HasBuiltinFunctionId();
   inline BuiltinFunctionId builtin_function_id();
+  inline bool HasBytecodeArray();
+  inline BytecodeArray* bytecode_array();
 
   // [script info]: Script from which the function originates.
   DECL_ACCESSORS(script, Object)
@@ -6667,6 +6415,13 @@ class SharedFunctionInfo: public HeapObject {
   // expression and the rest contains the source code position.
   inline int start_position_and_type() const;
   inline void set_start_position_and_type(int value);
+
+  // The function is subject to debugging if a debug info is attached.
+  inline bool HasDebugInfo();
+  inline DebugInfo* GetDebugInfo();
+
+  // A function has debug code if the compiled code has debug break slots.
+  inline bool HasDebugCode();
 
   // [debug info]: Debug information.
   DECL_ACCESSORS(debug_info, Object)
@@ -7252,6 +7007,9 @@ class JSFunction: public JSObject {
 
   // Tells whether this function is builtin.
   inline bool IsBuiltin();
+
+  // Tells whether this function inlines the given shared function info.
+  bool Inlines(SharedFunctionInfo* candidate);
 
   // Tells whether this function should be subject to debugging.
   inline bool IsSubjectToDebugging();

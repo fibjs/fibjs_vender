@@ -116,6 +116,10 @@ class Marking {
     markbit.Next().Set();
   }
 
+  static void SetAllMarkBitsInRange(MarkBit start, MarkBit end);
+  static void ClearAllMarkBitsOfCellsContainedInRange(MarkBit start,
+                                                      MarkBit end);
+
   void TransferMark(Address old_start, Address new_start);
 
 #ifdef DEBUG
@@ -207,7 +211,7 @@ class MarkingDeque {
     DCHECK(object->IsHeapObject());
     if (IsFull()) {
       Marking::BlackToGrey(object);
-      MemoryChunk::IncrementLiveBytesFromGC(object->address(), -object->Size());
+      MemoryChunk::IncrementLiveBytesFromGC(object, -object->Size());
       SetOverflowed();
     } else {
       array_[top_] = object;
@@ -248,7 +252,7 @@ class MarkingDeque {
     DCHECK(Marking::IsBlack(Marking::MarkBitFrom(object)));
     if (IsFull()) {
       Marking::BlackToGrey(object);
-      MemoryChunk::IncrementLiveBytesFromGC(object->address(), -object->Size());
+      MemoryChunk::IncrementLiveBytesFromGC(object, -object->Size());
       SetOverflowed();
     } else {
       bottom_ = ((bottom_ - 1) & mask_);
@@ -362,6 +366,8 @@ class SlotsBuffer {
 
   void UpdateSlots(Heap* heap);
 
+  void UpdateSlotsWithFilter(Heap* heap);
+
   SlotsBuffer* next() { return next_; }
 
   static int SizeOfChain(SlotsBuffer* buffer) {
@@ -376,7 +382,7 @@ class SlotsBuffer {
 
   static void UpdateSlotsRecordedIn(Heap* heap, SlotsBuffer* buffer) {
     while (buffer != NULL) {
-      buffer->UpdateSlots(heap);
+        buffer->UpdateSlots(heap);
       buffer = buffer->next();
     }
   }
@@ -634,11 +640,6 @@ class MarkCompactCollector {
   void VerifyOmittedMapChecks();
 #endif
 
-  INLINE(static bool ShouldSkipEvacuationSlotRecording(Object** anchor)) {
-    return Page::FromAddress(reinterpret_cast<Address>(anchor))
-        ->ShouldSkipEvacuationSlotRecording();
-  }
-
   INLINE(static bool ShouldSkipEvacuationSlotRecording(Object* host)) {
     return Page::FromAddress(reinterpret_cast<Address>(host))
         ->ShouldSkipEvacuationSlotRecording();
@@ -650,11 +651,11 @@ class MarkCompactCollector {
   }
 
   void RecordRelocSlot(RelocInfo* rinfo, Object* target);
-  void RecordCodeEntrySlot(Address slot, Code* target);
+  void RecordCodeEntrySlot(HeapObject* object, Address slot, Code* target);
   void RecordCodeTargetPatch(Address pc, Code* target);
 
   INLINE(void RecordSlot(
-      Object** anchor_slot, Object** slot, Object* object,
+      HeapObject* object, Object** slot, Object* target,
       SlotsBuffer::AdditionMode mode = SlotsBuffer::FAIL_ON_OVERFLOW));
 
   void MigrateObject(HeapObject* dst, HeapObject* src, int size,
@@ -665,6 +666,8 @@ class MarkCompactCollector {
   void MigrateObjectRaw(HeapObject* dst, HeapObject* src, int size);
 
   bool TryPromoteObject(HeapObject* object, int object_size);
+
+  void InvalidateCode(Code* code);
 
   void ClearMarkbits();
 
@@ -690,6 +693,8 @@ class MarkCompactCollector {
   int SweepInParallel(Page* page, PagedSpace* space);
 
   void EnsureSweepingCompleted();
+
+  void SweepOrWaitUntilSweepingCompleted(Page* page);
 
   // If sweeper threads are not active this method will return true. If
   // this is a latency issue we should be smarter here. Otherwise, it will
@@ -748,7 +753,10 @@ class MarkCompactCollector {
   explicit MarkCompactCollector(Heap* heap);
   ~MarkCompactCollector();
 
+  void RemoveDeoptimizedCodeSlots();
   bool WillBeDeoptimized(Code* code);
+  void RemoveDeadInvalidatedCode();
+  void ProcessInvalidatedCode(ObjectVisitor* visitor);
   void EvictPopularEvacuationCandidate(Page* page);
   void ClearInvalidSlotsBufferEntries(PagedSpace* space);
   void ClearInvalidStoreAndSlotsBufferEntries();
@@ -965,8 +973,11 @@ class MarkCompactCollector {
   bool have_code_to_deoptimize_;
 
   List<Page*> evacuation_candidates_;
+  List<Code*> invalidated_code_;
 
   base::SmartPointer<FreeList> free_list_old_space_;
+  base::SmartPointer<FreeList> free_list_code_space_;
+  base::SmartPointer<FreeList> free_list_map_space_;
 
   friend class Heap;
 };

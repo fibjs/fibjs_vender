@@ -127,13 +127,17 @@ class MacroAssembler : public Assembler {
   void Call(Handle<Code> code, RelocInfo::Mode rmode = RelocInfo::CODE_TARGET,
             TypeFeedbackId ast_id = TypeFeedbackId::None(),
             Condition cond = al);
-  void Ret(Condition cond = al);
+  void Ret() { blr(); }
+  void Ret(Condition cond, CRegister cr = cr7) { bclr(cond, cr); }
 
   // Emit code to discard a non-negative number of pointer-sized elements
   // from the stack, clobbering only the sp register.
-  void Drop(int count, Condition cond = al);
+  void Drop(int count);
 
-  void Ret(int drop, Condition cond = al);
+  void Ret(int drop) {
+    Drop(drop);
+    blr();
+  }
 
   void Call(Label* target);
 
@@ -148,8 +152,11 @@ class MacroAssembler : public Assembler {
   void Move(Register dst, Register src, Condition cond = al);
   void Move(DoubleRegister dst, DoubleRegister src);
 
-  void MultiPush(RegList regs);
-  void MultiPop(RegList regs);
+  void MultiPush(RegList regs, Register location = sp);
+  void MultiPop(RegList regs, Register location = sp);
+
+  void MultiPushDoubles(RegList dregs, Register location = sp);
+  void MultiPopDoubles(RegList dregs, Register location = sp);
 
   // Load an object from the root table.
   void LoadRoot(Register destination, Heap::RootListIndex index,
@@ -213,7 +220,7 @@ class MacroAssembler : public Assembler {
   // |object| is the object being stored into, |value| is the object being
   // stored.  value and scratch registers are clobbered by the operation.
   // The offset is the offset from the start of the object, not the offset from
-  // the tagged HeapObject pointer.  For use with FieldOperand(reg, off).
+  // the tagged HeapObject pointer.  For use with FieldMemOperand(reg, off).
   void RecordWriteField(
       Register object, int offset, Register value, Register scratch,
       LinkRegisterStatus lr_status, SaveFPRegsMode save_fp,
@@ -884,12 +891,6 @@ class MacroAssembler : public Assembler {
     bind(&label);
   }
 
-  // Pushes <count> double values to <location>, starting from d<first>.
-  void SaveFPRegs(Register location, int first, int count);
-
-  // Pops <count> double values from <location>, starting from d<first>.
-  void RestoreFPRegs(Register location, int first, int count);
-
   // ---------------------------------------------------------------------------
   // Runtime calls
 
@@ -1549,7 +1550,7 @@ class CodePatcher {
 // -----------------------------------------------------------------------------
 // Static helper functions.
 
-inline MemOperand ContextOperand(Register context, int index) {
+inline MemOperand ContextOperand(Register context, int index = 0) {
   return MemOperand(context, Context::SlotOffset(index));
 }
 

@@ -20,17 +20,18 @@
 #include "src/compiler.h"
 #include "src/cpu-profiler.h"
 #include "src/date.h"
-#include "src/debug.h"
+#include "src/debug/debug.h"
 #include "src/deoptimizer.h"
 #include "src/elements.h"
 #include "src/execution.h"
 #include "src/field-index-inl.h"
 #include "src/field-index.h"
-#include "src/full-codegen.h"
+#include "src/full-codegen/full-codegen.h"
 #include "src/heap/mark-compact.h"
 #include "src/heap/objects-visiting-inl.h"
 #include "src/hydrogen.h"
 #include "src/ic/ic.h"
+#include "src/interpreter/bytecodes.h"
 #include "src/log.h"
 #include "src/lookup.h"
 #include "src/macro-assembler.h"
@@ -81,8 +82,24 @@ MaybeHandle<JSReceiver> Object::ToObject(Isolate* isolate,
     constructor = handle(native_context->string_function(), isolate);
   } else if (object->IsSymbol()) {
     constructor = handle(native_context->symbol_function(), isolate);
-  } else if (object->IsFloat32x4()) {
-    constructor = handle(native_context->float32x4_function(), isolate);
+  } else if (object->IsSimd128Value()) {
+    if (object->IsFloat32x4()) {
+      constructor = handle(native_context->float32x4_function(), isolate);
+    } else if (object->IsInt32x4()) {
+      constructor = handle(native_context->int32x4_function(), isolate);
+    } else if (object->IsBool32x4()) {
+      constructor = handle(native_context->bool32x4_function(), isolate);
+    } else if (object->IsInt16x8()) {
+      constructor = handle(native_context->int16x8_function(), isolate);
+    } else if (object->IsBool16x8()) {
+      constructor = handle(native_context->bool16x8_function(), isolate);
+    } else if (object->IsInt8x16()) {
+      constructor = handle(native_context->int8x16_function(), isolate);
+    } else if (object->IsBool8x16()) {
+      constructor = handle(native_context->bool8x16_function(), isolate);
+    } else {
+      UNREACHABLE();
+    }
   } else {
     return MaybeHandle<JSReceiver>();
   }
@@ -99,7 +116,7 @@ bool Object::BooleanValue() {
   if (IsUndetectableObject()) return false;   // Undetectable object is false.
   if (IsString()) return String::cast(this)->length() != 0;
   if (IsHeapNumber()) return HeapNumber::cast(this)->HeapNumberBooleanValue();
-  if (IsFloat32x4()) return true;  // Simd value types always evaluate to true.
+  if (IsSimd128Value()) return true;  // Simd value types evaluate to true.
   return true;
 }
 
@@ -628,8 +645,24 @@ Map* Object::GetRootMap(Isolate* isolate) {
   if (heap_object->IsBoolean()) {
     return context->boolean_function()->initial_map();
   }
-  if (heap_object->IsFloat32x4()) {
-    return context->float32x4_function()->initial_map();
+  if (heap_object->IsSimd128Value()) {
+    if (heap_object->IsFloat32x4()) {
+      return context->float32x4_function()->initial_map();
+    } else if (heap_object->IsInt32x4()) {
+      return context->int32x4_function()->initial_map();
+    } else if (heap_object->IsBool32x4()) {
+      return context->bool32x4_function()->initial_map();
+    } else if (heap_object->IsInt16x8()) {
+      return context->int16x8_function()->initial_map();
+    } else if (heap_object->IsBool16x8()) {
+      return context->bool16x8_function()->initial_map();
+    } else if (heap_object->IsInt8x16()) {
+      return context->int8x16_function()->initial_map();
+    } else if (heap_object->IsBool8x16()) {
+      return context->bool8x16_function()->initial_map();
+    } else {
+      UNREACHABLE();
+    }
   }
   return isolate->heap()->null_value()->map();
 }
@@ -669,14 +702,8 @@ Object* Object::GetSimpleHash() {
     uint32_t hash = Oddball::cast(this)->to_string()->Hash();
     return Smi::FromInt(hash);
   }
-  if (IsFloat32x4()) {
-    Float32x4* simd = Float32x4::cast(this);
-    uint32_t seed = v8::internal::kZeroHashSeed;
-    uint32_t hash;
-    hash = ComputeIntegerHash(bit_cast<uint32_t>(simd->get_lane(0)), seed);
-    hash = ComputeIntegerHash(bit_cast<uint32_t>(simd->get_lane(1)), hash * 31);
-    hash = ComputeIntegerHash(bit_cast<uint32_t>(simd->get_lane(2)), hash * 31);
-    hash = ComputeIntegerHash(bit_cast<uint32_t>(simd->get_lane(3)), hash * 31);
+  if (IsSimd128Value()) {
+    uint32_t hash = Simd128Value::cast(this)->Hash();
     return Smi::FromInt(hash & Smi::kMaxValue);
   }
   DCHECK(IsJSReceiver());
@@ -700,18 +727,37 @@ bool Object::SameValue(Object* other) {
   // The object is either a number, a name, an odd-ball,
   // a real JS object, or a Harmony proxy.
   if (IsNumber() && other->IsNumber()) {
-    return v8::internal::SameValue(Number(), other->Number());
+    double this_value = Number();
+    double other_value = other->Number();
+    // SameValue(NaN, NaN) is true.
+    if (this_value != other_value) {
+      return std::isnan(this_value) && std::isnan(other_value);
+    }
+    // SameValue(0.0, -0.0) is false.
+    return (std::signbit(this_value) == std::signbit(other_value));
   }
   if (IsString() && other->IsString()) {
     return String::cast(this)->Equals(String::cast(other));
   }
-  if (IsFloat32x4() && other->IsFloat32x4()) {
-    Float32x4* x = Float32x4::cast(this);
-    Float32x4* y = Float32x4::cast(other);
-    return v8::internal::SameValue(x->get_lane(0), y->get_lane(0)) &&
-           v8::internal::SameValue(x->get_lane(1), y->get_lane(1)) &&
-           v8::internal::SameValue(x->get_lane(2), y->get_lane(2)) &&
-           v8::internal::SameValue(x->get_lane(3), y->get_lane(3));
+  if (IsSimd128Value() && other->IsSimd128Value()) {
+    if (IsFloat32x4() && other->IsFloat32x4()) {
+      Float32x4* a = Float32x4::cast(this);
+      Float32x4* b = Float32x4::cast(other);
+      for (int i = 0; i < 4; i++) {
+        float x = a->get_lane(i);
+        float y = b->get_lane(i);
+        // Implements the ES5 SameValue operation for floating point types.
+        // http://www.ecma-international.org/ecma-262/6.0/#sec-samevalue
+        if (x != y && !(std::isnan(x) && std::isnan(y))) return false;
+        if (std::signbit(x) != std::signbit(y)) return false;
+      }
+      return true;
+    } else {
+      Simd128Value* a = Simd128Value::cast(this);
+      Simd128Value* b = Simd128Value::cast(other);
+      return a->map()->instance_type() == b->map()->instance_type() &&
+             a->BitwiseEquals(b);
+    }
   }
   return false;
 }
@@ -723,18 +769,34 @@ bool Object::SameValueZero(Object* other) {
   // The object is either a number, a name, an odd-ball,
   // a real JS object, or a Harmony proxy.
   if (IsNumber() && other->IsNumber()) {
-    return v8::internal::SameValueZero(Number(), other->Number());
+    double this_value = Number();
+    double other_value = other->Number();
+    // +0 == -0 is true
+    return this_value == other_value ||
+           (std::isnan(this_value) && std::isnan(other_value));
   }
   if (IsString() && other->IsString()) {
     return String::cast(this)->Equals(String::cast(other));
   }
-  if (IsFloat32x4() && other->IsFloat32x4()) {
-    Float32x4* x = Float32x4::cast(this);
-    Float32x4* y = Float32x4::cast(other);
-    return v8::internal::SameValueZero(x->get_lane(0), y->get_lane(0)) &&
-           v8::internal::SameValueZero(x->get_lane(1), y->get_lane(1)) &&
-           v8::internal::SameValueZero(x->get_lane(2), y->get_lane(2)) &&
-           v8::internal::SameValueZero(x->get_lane(3), y->get_lane(3));
+  if (IsSimd128Value() && other->IsSimd128Value()) {
+    if (IsFloat32x4() && other->IsFloat32x4()) {
+      Float32x4* a = Float32x4::cast(this);
+      Float32x4* b = Float32x4::cast(other);
+      for (int i = 0; i < 4; i++) {
+        float x = a->get_lane(i);
+        float y = b->get_lane(i);
+        // Implements the ES6 SameValueZero operation for floating point types.
+        // http://www.ecma-international.org/ecma-262/6.0/#sec-samevaluezero
+        if (x != y && !(std::isnan(x) && std::isnan(y))) return false;
+        // SameValueZero doesn't distinguish between 0 and -0.
+      }
+      return true;
+    } else {
+      Simd128Value* a = Simd128Value::cast(this);
+      Simd128Value* b = Simd128Value::cast(other);
+      return a->map()->instance_type() == b->map()->instance_type() &&
+             a->BitwiseEquals(b);
+    }
   }
   return false;
 }
@@ -884,8 +946,7 @@ bool String::MakeExternal(v8::String::ExternalStringResource* resource) {
   self->set_resource(resource);
   if (is_internalized) self->Hash();  // Force regeneration of the hash value.
 
-  heap->AdjustLiveBytes(this->address(), new_size - size,
-                        Heap::CONCURRENT_TO_SWEEPER);
+  heap->AdjustLiveBytes(this, new_size - size, Heap::CONCURRENT_TO_SWEEPER);
   return true;
 }
 
@@ -945,8 +1006,7 @@ bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
   self->set_resource(resource);
   if (is_internalized) self->Hash();  // Force regeneration of the hash value.
 
-  heap->AdjustLiveBytes(this->address(), new_size - size,
-                        Heap::CONCURRENT_TO_SWEEPER);
+  heap->AdjustLiveBytes(this, new_size - size, Heap::CONCURRENT_TO_SWEEPER);
   return true;
 }
 
@@ -1273,14 +1333,13 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
     case BYTE_ARRAY_TYPE:
       os << "<ByteArray[" << ByteArray::cast(this)->length() << "]>";
       break;
+    case BYTECODE_ARRAY_TYPE:
+      os << "<BytecodeArray[" << BytecodeArray::cast(this)->length() << "]>";
+      break;
     case FREE_SPACE_TYPE:
       os << "<FreeSpace[" << FreeSpace::cast(this)->Size() << "]>";
       break;
 #define TYPED_ARRAY_SHORT_PRINT(Type, type, TYPE, ctype, size)                \
-  case EXTERNAL_##TYPE##_ARRAY_TYPE:                                          \
-    os << "<External" #Type "Array["                                          \
-       << External##Type##Array::cast(this)->length() << "]>";                \
-    break;                                                                    \
   case FIXED_##TYPE##_ARRAY_TYPE:                                             \
     os << "<Fixed" #Type "Array[" << Fixed##Type##Array::cast(this)->length() \
        << "]>";                                                               \
@@ -1347,12 +1406,27 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       os << '>';
       break;
     }
-    case FLOAT32X4_TYPE: {
-      os << "<Float32x4: ";
-      Float32x4::cast(this)->Float32x4Print(os);
-      os << ">";
+    case FLOAT32X4_TYPE:
+      os << "<Float32x4>";
       break;
-    }
+    case INT32X4_TYPE:
+      os << "<Int32x4>";
+      break;
+    case BOOL32X4_TYPE:
+      os << "<Bool32x4>";
+      break;
+    case INT16X8_TYPE:
+      os << "<Int16x8>";
+      break;
+    case BOOL16X8_TYPE:
+      os << "<Bool16x8>";
+      break;
+    case INT8X16_TYPE:
+      os << "<Int8x16>";
+      break;
+    case BOOL8X16_TYPE:
+      os << "<Bool8x16>";
+      break;
     case JS_PROXY_TYPE:
       os << "<JSProxy>";
       break;
@@ -1497,15 +1571,19 @@ void HeapObject::IterateBody(InstanceType type, int object_size,
     case HEAP_NUMBER_TYPE:
     case MUTABLE_HEAP_NUMBER_TYPE:
     case FLOAT32X4_TYPE:
+    case INT32X4_TYPE:
+    case BOOL32X4_TYPE:
+    case INT16X8_TYPE:
+    case BOOL16X8_TYPE:
+    case INT8X16_TYPE:
+    case BOOL8X16_TYPE:
     case FILLER_TYPE:
     case BYTE_ARRAY_TYPE:
+    case BYTECODE_ARRAY_TYPE:
     case FREE_SPACE_TYPE:
       break;
 
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
-  case EXTERNAL_##TYPE##_ARRAY_TYPE:                    \
-    break;                                              \
-                                                        \
   case FIXED_##TYPE##_ARRAY_TYPE:                       \
     reinterpret_cast<FixedTypedArrayBase*>(this)        \
         ->FixedTypedArrayBaseIterateBody(v);            \
@@ -1547,13 +1625,35 @@ void HeapNumber::HeapNumberPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void Float32x4::Float32x4Print(std::ostream& os) {  // NOLINT
-  char arr[100];
-  Vector<char> buffer(arr, arraysize(arr));
-  os << std::string(DoubleToCString(get_lane(0), buffer)) << ", "
-     << std::string(DoubleToCString(get_lane(1), buffer)) << ", "
-     << std::string(DoubleToCString(get_lane(2), buffer)) << ", "
-     << std::string(DoubleToCString(get_lane(3), buffer));
+#define FIELD_ADDR_CONST(p, offset) \
+  (reinterpret_cast<const byte*>(p) + offset - kHeapObjectTag)
+
+#define READ_INT32_FIELD(p, offset) \
+  (*reinterpret_cast<const int32_t*>(FIELD_ADDR_CONST(p, offset)))
+
+#define READ_INT64_FIELD(p, offset) \
+  (*reinterpret_cast<const int64_t*>(FIELD_ADDR_CONST(p, offset)))
+
+
+bool Simd128Value::BitwiseEquals(const Simd128Value* other) const {
+  return READ_INT64_FIELD(this, kValueOffset) ==
+             READ_INT64_FIELD(other, kValueOffset) &&
+         READ_INT64_FIELD(this, kValueOffset + kInt64Size) ==
+             READ_INT64_FIELD(other, kValueOffset + kInt64Size);
+}
+
+
+uint32_t Simd128Value::Hash() const {
+  uint32_t seed = v8::internal::kZeroHashSeed;
+  uint32_t hash;
+  hash = ComputeIntegerHash(READ_INT32_FIELD(this, kValueOffset), seed);
+  hash = ComputeIntegerHash(
+      READ_INT32_FIELD(this, kValueOffset + 1 * kInt32Size), hash * 31);
+  hash = ComputeIntegerHash(
+      READ_INT32_FIELD(this, kValueOffset + 2 * kInt32Size), hash * 31);
+  hash = ComputeIntegerHash(
+      READ_INT32_FIELD(this, kValueOffset + 3 * kInt32Size), hash * 31);
+  return hash;
 }
 
 
@@ -1915,9 +2015,10 @@ void JSObject::MigrateFastToFast(Handle<JSObject> object, Handle<Map> new_map) {
     DCHECK(number_of_fields == old_number_of_fields + 1);
     // This migration is a transition from a map that has run out of property
     // space. Therefore it could be done by extending the backing store.
+    int grow_by = external - object->properties()->length();
     Handle<FixedArray> old_storage = handle(object->properties(), isolate);
     Handle<FixedArray> new_storage =
-        FixedArray::CopySize(old_storage, external);
+        isolate->factory()->CopyFixedArrayAndGrow(old_storage, grow_by);
 
     // Properly initialize newly added property.
     Handle<Object> value;
@@ -2047,7 +2148,7 @@ void JSObject::MigrateFastToFast(Handle<JSObject> object, Handle<Map> new_map) {
     Address address = object->address();
     heap->CreateFillerObjectAt(
         address + new_instance_size, instance_size_delta);
-    heap->AdjustLiveBytes(address, -instance_size_delta,
+    heap->AdjustLiveBytes(*object, -instance_size_delta,
                           Heap::CONCURRENT_TO_SWEEPER);
   }
 
@@ -3313,8 +3414,7 @@ MaybeHandle<Object> Object::SetDataProperty(LookupIterator* it,
 
   Handle<Object> to_assign = value;
   // Convert the incoming value to a number for storing into typed arrays.
-  if (it->IsElement() && (receiver->HasExternalArrayElements() ||
-                          receiver->HasFixedTypedArrayElements())) {
+  if (it->IsElement() && receiver->HasFixedTypedArrayElements()) {
     if (!value->IsNumber() && !value->IsUndefined()) {
       ASSIGN_RETURN_ON_EXCEPTION(it->isolate(), to_assign,
                                  Execution::ToNumber(it->isolate(), value),
@@ -3325,6 +3425,12 @@ MaybeHandle<Object> Object::SetDataProperty(LookupIterator* it,
       // have been invalidated since typed array elements cannot be reconfigured
       // in any way.
       it->ReloadHolderMap();
+
+      // We have to recheck the length. However, it can only change if the
+      // underlying buffer was neutered, so just check that.
+      if (Handle<JSArrayBufferView>::cast(receiver)->WasNeutered()) {
+        return value;
+      }
     }
   }
 
@@ -3426,13 +3532,11 @@ MaybeHandle<Object> Object::AddDataProperty(LookupIterator* it,
       }
 
       if (FLAG_trace_external_array_abuse &&
-          (array->HasExternalArrayElements() ||
-           array->HasFixedTypedArrayElements())) {
+          array->HasFixedTypedArrayElements()) {
         CheckArrayAbuse(array, "typed elements write", it->index(), true);
       }
 
-      if (FLAG_trace_js_array_abuse && !array->HasExternalArrayElements() &&
-          !array->HasFixedTypedArrayElements()) {
+      if (FLAG_trace_js_array_abuse && !array->HasFixedTypedArrayElements()) {
         CheckArrayAbuse(array, "elements write", it->index(), false);
       }
     }
@@ -3648,19 +3752,6 @@ Handle<Map> Map::FindTransitionedMap(Handle<Map> map,
 
 static Map* FindClosestElementsTransition(Map* map, ElementsKind to_kind) {
   Map* current_map = map;
-
-  // Support for legacy API: SetIndexedPropertiesTo{External,Pixel}Data
-  // allows to change elements from arbitrary kind to any ExternalArray
-  // elements kind. Satisfy its requirements, checking whether we already
-  // have the cached transition.
-  if (IsExternalArrayElementsKind(to_kind) &&
-      !IsFixedTypedArrayElementsKind(map->elements_kind())) {
-    Map* next_map = map->ElementsTransitionMap();
-    if (next_map != NULL && next_map->elements_kind() == to_kind) {
-      return next_map;
-    }
-    return map;
-  }
 
   ElementsKind kind = map->elements_kind();
   while (kind != to_kind) {
@@ -4274,8 +4365,7 @@ MaybeHandle<Object> JSObject::DefineOwnPropertyIgnoreAttributes(
 
         // Special case: properties of typed arrays cannot be reconfigured to
         // non-writable nor to non-enumerable.
-        if (it->IsElement() && (object->HasExternalArrayElements() ||
-                                object->HasFixedTypedArrayElements())) {
+        if (it->IsElement() && object->HasFixedTypedArrayElements()) {
           return RedefineNonconfigurableProperty(it->isolate(), it->GetName(),
                                                  value, STRICT);
         }
@@ -4596,7 +4686,7 @@ void JSObject::MigrateFastToSlow(Handle<JSObject> object,
     Heap* heap = isolate->heap();
     heap->CreateFillerObjectAt(object->address() + new_instance_size,
                                instance_size_delta);
-    heap->AdjustLiveBytes(object->address(), -instance_size_delta,
+    heap->AdjustLiveBytes(*object, -instance_size_delta,
                           Heap::CONCURRENT_TO_SWEEPER);
   }
 
@@ -4663,20 +4753,32 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
     }
   }
 
-  int inobject_props = object->map()->inobject_properties();
+  Handle<Map> old_map(object->map(), isolate);
+
+  int inobject_props = old_map->inobject_properties();
 
   // Allocate new map.
-  Handle<Map> new_map = Map::CopyDropDescriptors(handle(object->map()));
+  Handle<Map> new_map = Map::CopyDropDescriptors(old_map);
   new_map->set_dictionary_map(false);
 
-  if (object->map()->is_prototype_map()) {
+  if (old_map->is_prototype_map() && FLAG_track_prototype_users) {
     DCHECK(new_map->is_prototype_map());
-    new_map->set_prototype_info(object->map()->prototype_info());
-    object->map()->set_prototype_info(Smi::FromInt(0));
+
+    Object* maybe_old_prototype = old_map->prototype();
+    if (maybe_old_prototype->IsJSObject()) {
+      Handle<JSObject> old_prototype(JSObject::cast(maybe_old_prototype));
+      bool was_registered =
+          JSObject::UnregisterPrototypeUser(old_prototype, old_map);
+      if (was_registered) {
+        JSObject::LazyRegisterPrototypeUser(new_map, isolate);
+      }
+    }
+    new_map->set_prototype_info(old_map->prototype_info());
+    old_map->set_prototype_info(Smi::FromInt(0));
     if (FLAG_trace_prototype_users) {
       PrintF("Moving prototype_info %p from map %p to map %p.\n",
              reinterpret_cast<void*>(new_map->prototype_info()),
-             reinterpret_cast<void*>(object->map()),
+             reinterpret_cast<void*>(*old_map),
              reinterpret_cast<void*>(*new_map));
     }
   }
@@ -4684,8 +4786,8 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
 #if TRACE_MAPS
   if (FLAG_trace_maps) {
     PrintF("[TraceMaps: SlowToFast from= %p to= %p reason= %s ]\n",
-           reinterpret_cast<void*>(object->map()),
-           reinterpret_cast<void*>(*new_map), reason);
+           reinterpret_cast<void*>(*old_map), reinterpret_cast<void*>(*new_map),
+           reason);
   }
 #endif
 
@@ -4858,8 +4960,7 @@ Handle<SeededNumberDictionary> JSObject::GetNormalizedElementDictionary(
 
 Handle<SeededNumberDictionary> JSObject::NormalizeElements(
     Handle<JSObject> object) {
-  DCHECK(!object->HasExternalArrayElements() &&
-         !object->HasFixedTypedArrayElements());
+  DCHECK(!object->HasFixedTypedArrayElements());
   Isolate* isolate = object->GetIsolate();
 
   // Find the backing store.
@@ -5364,7 +5465,6 @@ bool JSObject::ReferencesObject(Object* obj) {
     // Raw pixels and external arrays do not reference other
     // objects.
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size)                        \
-    case EXTERNAL_##TYPE##_ELEMENTS:                                           \
     case TYPE##_ELEMENTS:                                                      \
       break;
 
@@ -5474,8 +5574,7 @@ MaybeHandle<Object> JSObject::PreventExtensions(Handle<JSObject> object) {
   }
 
   // It's not possible to seal objects with external array elements
-  if (object->HasExternalArrayElements() ||
-      object->HasFixedTypedArrayElements()) {
+  if (object->HasFixedTypedArrayElements()) {
     THROW_NEW_ERROR(
         isolate, NewTypeError(MessageTemplate::kCannotPreventExtExternalArray),
         Object);
@@ -5568,8 +5667,7 @@ MaybeHandle<Object> JSObject::PreventExtensionsWithTransition(
   }
 
   // It's not possible to seal or freeze objects with external array elements
-  if (object->HasExternalArrayElements() ||
-      object->HasFixedTypedArrayElements()) {
+  if (object->HasFixedTypedArrayElements()) {
     THROW_NEW_ERROR(
         isolate, NewTypeError(MessageTemplate::kCannotPreventExtExternalArray),
         Object);
@@ -5838,7 +5936,7 @@ MaybeHandle<JSObject> JSObjectWalkVisitor<ContextObject>::StructureWalk(
 
     // Deep copy own elements.
     // Pixel elements cannot be created using an object literal.
-    DCHECK(!copy->HasExternalArrayElements());
+    DCHECK(!copy->HasFixedTypedArrayElements());
     switch (kind) {
       case FAST_SMI_ELEMENTS:
       case FAST_ELEMENTS:
@@ -5900,7 +5998,6 @@ MaybeHandle<JSObject> JSObjectWalkVisitor<ContextObject>::StructureWalk(
 
 
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size)                        \
-      case EXTERNAL_##TYPE##_ELEMENTS:                                         \
       case TYPE##_ELEMENTS:                                                    \
 
       TYPED_ARRAYS(TYPED_ARRAY_CASE)
@@ -6303,8 +6400,7 @@ MaybeHandle<Object> JSObject::DefineAccessor(Handle<JSObject> object,
   }
 
   // Ignore accessors on typed arrays.
-  if (it.IsElement() && (object->HasFixedTypedArrayElements() ||
-                         object->HasExternalArrayElements())) {
+  if (it.IsElement() && object->HasFixedTypedArrayElements()) {
     return it.factory()->undefined_value();
   }
 
@@ -6367,8 +6463,7 @@ MaybeHandle<Object> JSObject::SetAccessor(Handle<JSObject> object,
   }
 
   // Ignore accessors on typed arrays.
-  if (it.IsElement() && (object->HasFixedTypedArrayElements() ||
-                         object->HasExternalArrayElements())) {
+  if (it.IsElement() && object->HasFixedTypedArrayElements()) {
     return it.factory()->undefined_value();
   }
 
@@ -6785,13 +6880,10 @@ Handle<Map> Map::CopyAsElementsKind(Handle<Map> map, ElementsKind kind,
   Map* maybe_elements_transition_map = NULL;
   if (flag == INSERT_TRANSITION) {
     maybe_elements_transition_map = map->ElementsTransitionMap();
-    DCHECK(
-        maybe_elements_transition_map == NULL ||
-        ((maybe_elements_transition_map->elements_kind() ==
-              DICTIONARY_ELEMENTS ||
-          IsExternalArrayElementsKind(
-              maybe_elements_transition_map->elements_kind())) &&
-         (kind == DICTIONARY_ELEMENTS || IsExternalArrayElementsKind(kind))));
+    DCHECK(maybe_elements_transition_map == NULL ||
+           (maybe_elements_transition_map->elements_kind() ==
+                DICTIONARY_ELEMENTS &&
+            kind == DICTIONARY_ELEMENTS));
     DCHECK(!IsFastElementsKind(kind) ||
            IsMoreGeneralElementsKindTransition(map->elements_kind(), kind));
     DCHECK(kind != map->elements_kind());
@@ -7405,10 +7497,11 @@ void CodeCache::UpdateDefaultCache(
 
   // Extend the code cache with some new entries (at least one). Must be a
   // multiple of the entry size.
-  int new_length = length + ((length >> 1)) + kCodeCacheEntrySize;
+  Isolate* isolate = cache->GetIsolate();
+  int new_length = length + (length >> 1) + kCodeCacheEntrySize;
   new_length = new_length - new_length % kCodeCacheEntrySize;
   DCHECK((new_length % kCodeCacheEntrySize) == 0);
-  cache = FixedArray::CopySize(cache, new_length);
+  cache = isolate->factory()->CopyFixedArrayAndGrow(cache, new_length - length);
 
   // Add the (name, code) pair to the new cache.
   cache->set(length + kCodeCacheEntryNameOffset, *name);
@@ -7801,27 +7894,6 @@ MaybeHandle<FixedArray> FixedArray::UnionOfKeys(Handle<FixedArray> first,
 }
 
 
-Handle<FixedArray> FixedArray::CopySize(
-    Handle<FixedArray> array, int new_length, PretenureFlag pretenure) {
-  Isolate* isolate = array->GetIsolate();
-  if (new_length == 0) return isolate->factory()->empty_fixed_array();
-  Handle<FixedArray> result =
-      isolate->factory()->NewFixedArray(new_length, pretenure);
-  // Copy the content
-  DisallowHeapAllocation no_gc;
-  int len = array->length();
-  if (new_length < len) len = new_length;
-  // We are taking the map from the old fixed array so the map is sure to
-  // be an immortal immutable object.
-  result->set_map_no_write_barrier(array->map());
-  WriteBarrierMode mode = result->GetWriteBarrierMode(no_gc);
-  for (int i = 0; i < len; i++) {
-    result->set(i, array->get(i), mode);
-  }
-  return result;
-}
-
-
 void FixedArray::CopyTo(int pos, FixedArray* dest, int dest_pos, int len) {
   DisallowHeapAllocation no_gc;
   WriteBarrierMode mode = dest->GetWriteBarrierMode(no_gc);
@@ -8006,9 +8078,12 @@ Handle<ArrayList> ArrayList::EnsureSpace(Handle<ArrayList> array, int length) {
   int capacity = array->length();
   bool empty = (capacity == 0);
   if (capacity < kFirstIndex + length) {
-    capacity = kFirstIndex + length;
-    capacity = capacity + Max(capacity / 2, 2);
-    array = Handle<ArrayList>::cast(FixedArray::CopySize(array, capacity));
+    Isolate* isolate = array->GetIsolate();
+    int new_capacity = kFirstIndex + length;
+    new_capacity = new_capacity + Max(new_capacity / 2, 2);
+    int grow_by = new_capacity - capacity;
+    array = Handle<ArrayList>::cast(
+        isolate->factory()->CopyFixedArrayAndGrow(array, grow_by));
     if (empty) array->SetLength(0);
   }
   return array;
@@ -9141,7 +9216,7 @@ Handle<String> SeqString::Truncate(Handle<SeqString> string, int new_length) {
     // that are a multiple of pointer size.
     heap->CreateFillerObjectAt(start_of_string + new_size, delta);
   }
-  heap->AdjustLiveBytes(start_of_string, -delta, Heap::CONCURRENT_TO_SWEEPER);
+  heap->AdjustLiveBytes(*string, -delta, Heap::CONCURRENT_TO_SWEEPER);
 
   // We are storing the new length using release store after creating a filler
   // for the left-over space to avoid races with the sweeper thread.
@@ -9328,11 +9403,32 @@ void JSFunction::JSFunctionIterateBody(int object_size, ObjectVisitor* v) {
 }
 
 
+bool JSFunction::Inlines(SharedFunctionInfo* candidate) {
+  DisallowHeapAllocation no_gc;
+  if (shared() == candidate) return true;
+  if (code()->kind() != Code::OPTIMIZED_FUNCTION) return false;
+  DeoptimizationInputData* const data =
+      DeoptimizationInputData::cast(code()->deoptimization_data());
+  if (data->length() == 0) return false;
+  FixedArray* const literals = data->LiteralArray();
+  int const inlined_count = data->InlinedFunctionCount()->value();
+  for (int i = 0; i < inlined_count; ++i) {
+    if (SharedFunctionInfo::cast(literals->get(i)) == candidate) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
 void JSFunction::MarkForOptimization() {
   Isolate* isolate = GetIsolate();
+  // Do not optimize if function contains break points.
+  if (shared()->HasDebugInfo()) return;
   DCHECK(!IsOptimized());
   DCHECK(shared()->allows_lazy_compilation() ||
          !shared()->optimization_disabled());
+  DCHECK(!shared()->HasDebugInfo());
   set_code_no_write_barrier(
       isolate->builtins()->builtin(Builtins::kCompileOptimized));
   // No write barrier required, since the builtin is part of the root set.
@@ -9427,9 +9523,9 @@ void SharedFunctionInfo::AddToOptimizedCodeMap(
     // Copy old map and append one new entry.
     Handle<FixedArray> old_code_map = Handle<FixedArray>::cast(value);
     DCHECK(!shared->SearchOptimizedCodeMap(*native_context, osr_ast_id).code);
+    new_code_map =
+        isolate->factory()->CopyFixedArrayAndGrow(old_code_map, kEntryLength);
     old_length = old_code_map->length();
-    new_code_map = FixedArray::CopySize(
-        old_code_map, old_length + kEntryLength);
     // Zap the old map for the sake of the heap verifier.
     if (Heap::ShouldZapGarbage()) {
       Object** data = old_code_map->data_start();
@@ -9521,7 +9617,10 @@ void SharedFunctionInfo::EvictFromOptimizedCodeMap(Code* optimized_code,
     // Always trim even when array is cleared because of heap verifier.
     GetHeap()->RightTrimFixedArray<Heap::CONCURRENT_TO_SWEEPER>(code_map,
                                                                 length - dst);
-    if (code_map->length() == kEntriesStart) ClearOptimizedCodeMap();
+    if (code_map->length() == kEntriesStart &&
+        code_map->get(kSharedCodeIndex)->IsUndefined()) {
+      ClearOptimizedCodeMap();
+    }
   }
 }
 
@@ -9533,7 +9632,8 @@ void SharedFunctionInfo::TrimOptimizedCodeMap(int shrink_by) {
   // Always trim even when array is cleared because of heap verifier.
   GetHeap()->RightTrimFixedArray<Heap::SEQUENTIAL_TO_SWEEPER>(code_map,
                                                               shrink_by);
-  if (code_map->length() == kEntriesStart) {
+  if (code_map->length() == kEntriesStart &&
+      code_map->get(kSharedCodeIndex)->IsUndefined()) {
     ClearOptimizedCodeMap();
   }
 }
@@ -11600,6 +11700,26 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
 #endif  // ENABLE_DISASSEMBLER
 
 
+void BytecodeArray::Disassemble(std::ostream& os) {
+  os << "Frame size " << frame_size() << "\n";
+  Vector<char> buf = Vector<char>::New(50);
+
+  const uint8_t* first_bytecode_address = GetFirstBytecodeAddress();
+  int bytecode_size = 0;
+  for (int i = 0; i < this->length(); i += bytecode_size) {
+    const uint8_t* bytecode_start = &first_bytecode_address[i];
+    interpreter::Bytecode bytecode =
+        interpreter::Bytecodes::FromByte(bytecode_start[0]);
+    bytecode_size = interpreter::Bytecodes::Size(bytecode);
+
+    SNPrintF(buf, "%p", bytecode_start);
+    os << buf.start() << " : ";
+    interpreter::Bytecodes::Decode(os, bytecode_start);
+    os << "\n";
+  }
+}
+
+
 // static
 void JSArray::Initialize(Handle<JSArray> array, int capacity, int length) {
   DCHECK(capacity >= 0);
@@ -11793,9 +11913,10 @@ Handle<DependentCode> DependentCode::Insert(Handle<DependentCode> entries,
 
 Handle<DependentCode> DependentCode::EnsureSpace(
     Handle<DependentCode> entries) {
+  Isolate* isolate = entries->GetIsolate();
   if (entries->length() == 0) {
     entries = Handle<DependentCode>::cast(
-        FixedArray::CopySize(entries, kCodesStartIndex + 1, TENURED));
+        isolate->factory()->NewFixedArray(kCodesStartIndex + 1, TENURED));
     for (int g = 0; g < kGroupCount; g++) {
       entries->set_number_of_entries(static_cast<DependencyGroup>(g), 0);
     }
@@ -11805,8 +11926,9 @@ Handle<DependentCode> DependentCode::EnsureSpace(
   GroupStartIndexes starts(*entries);
   int capacity =
       kCodesStartIndex + DependentCode::Grow(starts.number_of_entries());
+  int grow_by = capacity - entries->length();
   return Handle<DependentCode>::cast(
-      FixedArray::CopySize(entries, capacity, TENURED));
+      isolate->factory()->CopyFixedArrayAndGrow(entries, grow_by, TENURED));
 }
 
 
@@ -12560,7 +12682,6 @@ int JSObject::GetFastElementsUsage() {
     case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
     case DICTIONARY_ELEMENTS:
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size)                      \
-    case EXTERNAL_##TYPE##_ELEMENTS:                                         \
     case TYPE##_ELEMENTS:                                                    \
 
     TYPED_ARRAYS(TYPED_ARRAY_CASE)
@@ -12994,7 +13115,6 @@ int JSObject::GetOwnElementKeys(FixedArray* storage,
     }
 
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size)                      \
-    case EXTERNAL_##TYPE##_ELEMENTS:                                         \
     case TYPE##_ELEMENTS:                                                    \
 
     TYPED_ARRAYS(TYPED_ARRAY_CASE)
@@ -13013,7 +13133,7 @@ int JSObject::GetOwnElementKeys(FixedArray* storage,
 
     case DICTIONARY_ELEMENTS: {
       if (storage != NULL) {
-        element_dictionary()->CopyKeysTo(storage, 0, filter,
+        element_dictionary()->CopyKeysTo(storage, counter, filter,
                                          SeededNumberDictionary::SORTED);
       }
       counter += element_dictionary()->NumberOfElementsFilterAttributes(filter);
@@ -13030,7 +13150,7 @@ int JSObject::GetOwnElementKeys(FixedArray* storage,
         SeededNumberDictionary* dictionary =
             SeededNumberDictionary::cast(arguments);
         if (storage != NULL) {
-          dictionary->CopyKeysTo(storage, 0, filter,
+          dictionary->CopyKeysTo(storage, counter, filter,
                                  SeededNumberDictionary::UNSORTED);
         }
         counter += dictionary->NumberOfElementsFilterAttributes(filter);
@@ -13318,9 +13438,7 @@ Handle<Derived> HashTable<Derived, Shape, Key>::New(
 
   int capacity = (capacity_option == USE_CUSTOM_MINIMUM_CAPACITY)
                      ? at_least_space_for
-                     : isolate->creating_default_snapshot()
-                           ? ComputeCapacityForSerialization(at_least_space_for)
-                           : ComputeCapacity(at_least_space_for);
+                     : ComputeCapacity(at_least_space_for);
   if (capacity > HashTable::kMaxCapacity) {
     v8::internal::Heap::FatalProcessOutOfMemory("invalid table size", true);
   }
@@ -13816,8 +13934,7 @@ Handle<Object> JSObject::PrepareElementsForSort(Handle<JSObject> object,
     JSObject::ValidateElements(object);
 
     JSObject::SetMapAndElements(object, new_map, fast_elements);
-  } else if (object->HasExternalArrayElements() ||
-             object->HasFixedTypedArrayElements()) {
+  } else if (object->HasFixedTypedArrayElements()) {
     // Typed arrays cannot have holes or undefined elements.
     return handle(Smi::FromInt(
         FixedArrayBase::cast(object->elements())->length()), isolate);
@@ -13920,7 +14037,6 @@ Handle<Object> JSObject::PrepareElementsForSort(Handle<JSObject> object,
 ExternalArrayType JSTypedArray::type() {
   switch (elements()->map()->instance_type()) {
 #define INSTANCE_TYPE_TO_ARRAY_TYPE(Type, type, TYPE, ctype, size)            \
-    case EXTERNAL_##TYPE##_ARRAY_TYPE:                                        \
     case FIXED_##TYPE##_ARRAY_TYPE:                                           \
       return kExternal##Type##Array;
 
@@ -13936,9 +14052,9 @@ ExternalArrayType JSTypedArray::type() {
 
 size_t JSTypedArray::element_size() {
   switch (elements()->map()->instance_type()) {
-#define INSTANCE_TYPE_TO_ELEMENT_SIZE(Type, type, TYPE, ctype, size)          \
-    case EXTERNAL_##TYPE##_ARRAY_TYPE:                                        \
-      return size;
+#define INSTANCE_TYPE_TO_ELEMENT_SIZE(Type, type, TYPE, ctype, size) \
+  case FIXED_##TYPE##_ARRAY_TYPE:                                    \
+    return size;
 
     TYPED_ARRAYS(INSTANCE_TYPE_TO_ELEMENT_SIZE)
 #undef INSTANCE_TYPE_TO_ELEMENT_SIZE
@@ -13956,131 +14072,6 @@ void FixedArray::SetValue(uint32_t index, Object* value) { set(index, value); }
 void FixedDoubleArray::SetValue(uint32_t index, Object* value) {
   set(index, value->Number());
 }
-
-
-void ExternalUint8ClampedArray::SetValue(uint32_t index, Object* value) {
-  uint8_t clamped_value = 0;
-  if (value->IsSmi()) {
-    int int_value = Smi::cast(value)->value();
-    if (int_value < 0) {
-      clamped_value = 0;
-    } else if (int_value > 255) {
-      clamped_value = 255;
-    } else {
-      clamped_value = static_cast<uint8_t>(int_value);
-    }
-  } else if (value->IsHeapNumber()) {
-    double double_value = HeapNumber::cast(value)->value();
-    if (!(double_value > 0)) {
-      // NaN and less than zero clamp to zero.
-      clamped_value = 0;
-    } else if (double_value > 255) {
-      // Greater than 255 clamp to 255.
-      clamped_value = 255;
-    } else {
-      // Other doubles are rounded to the nearest integer.
-      clamped_value = static_cast<uint8_t>(lrint(double_value));
-    }
-  } else {
-    // Clamp undefined to zero (default). All other types have been
-    // converted to a number type further up in the call chain.
-    DCHECK(value->IsUndefined());
-  }
-  set(index, clamped_value);
-}
-
-
-template <typename ExternalArrayClass, typename ValueType>
-static void ExternalArrayIntSetter(ExternalArrayClass* receiver, uint32_t index,
-                                   Object* value) {
-  ValueType cast_value = 0;
-  if (value->IsSmi()) {
-    int int_value = Smi::cast(value)->value();
-    cast_value = static_cast<ValueType>(int_value);
-  } else if (value->IsHeapNumber()) {
-    double double_value = HeapNumber::cast(value)->value();
-    cast_value = static_cast<ValueType>(DoubleToInt32(double_value));
-  } else {
-    // Clamp undefined to zero (default). All other types have been
-    // converted to a number type further up in the call chain.
-    DCHECK(value->IsUndefined());
-  }
-  receiver->set(index, cast_value);
-}
-
-
-void ExternalInt8Array::SetValue(uint32_t index, Object* value) {
-  ExternalArrayIntSetter<ExternalInt8Array, int8_t>(this, index, value);
-}
-
-
-void ExternalUint8Array::SetValue(uint32_t index, Object* value) {
-  ExternalArrayIntSetter<ExternalUint8Array, uint8_t>(this, index, value);
-}
-
-
-void ExternalInt16Array::SetValue(uint32_t index, Object* value) {
-  ExternalArrayIntSetter<ExternalInt16Array, int16_t>(this, index, value);
-}
-
-
-void ExternalUint16Array::SetValue(uint32_t index, Object* value) {
-  ExternalArrayIntSetter<ExternalUint16Array, uint16_t>(this, index, value);
-}
-
-
-void ExternalInt32Array::SetValue(uint32_t index, Object* value) {
-  ExternalArrayIntSetter<ExternalInt32Array, int32_t>(this, index, value);
-}
-
-
-void ExternalUint32Array::SetValue(uint32_t index, Object* value) {
-  uint32_t cast_value = 0;
-  if (value->IsSmi()) {
-    int int_value = Smi::cast(value)->value();
-    cast_value = static_cast<uint32_t>(int_value);
-  } else if (value->IsHeapNumber()) {
-    double double_value = HeapNumber::cast(value)->value();
-    cast_value = static_cast<uint32_t>(DoubleToUint32(double_value));
-  } else {
-    // Clamp undefined to zero (default). All other types have been
-    // converted to a number type further up in the call chain.
-    DCHECK(value->IsUndefined());
-  }
-  set(index, cast_value);
-}
-
-
-void ExternalFloat32Array::SetValue(uint32_t index, Object* value) {
-  float cast_value = std::numeric_limits<float>::quiet_NaN();
-  if (value->IsSmi()) {
-    int int_value = Smi::cast(value)->value();
-    cast_value = static_cast<float>(int_value);
-  } else if (value->IsHeapNumber()) {
-    double double_value = HeapNumber::cast(value)->value();
-    cast_value = static_cast<float>(double_value);
-  } else {
-    // Clamp undefined to NaN (default). All other types have been
-    // converted to a number type further up in the call chain.
-    DCHECK(value->IsUndefined());
-  }
-  set(index, cast_value);
-}
-
-
-void ExternalFloat64Array::SetValue(uint32_t index, Object* value) {
-  double double_value = std::numeric_limits<double>::quiet_NaN();
-  if (value->IsNumber()) {
-    double_value = value->Number();
-  } else {
-    // Clamp undefined to NaN (default). All other types have been
-    // converted to a number type further up in the call chain.
-    DCHECK(value->IsUndefined());
-  }
-  set(index, double_value);
-}
-
-
 void GlobalObject::InvalidatePropertyCell(Handle<GlobalObject> global,
                                           Handle<Name> name) {
   DCHECK(!global->HasFastProperties());
@@ -15692,21 +15683,6 @@ void JSArrayBuffer::Neuter() {
 }
 
 
-static ElementsKind FixedToExternalElementsKind(ElementsKind elements_kind) {
-  switch (elements_kind) {
-#define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size)                       \
-    case TYPE##_ELEMENTS: return EXTERNAL_##TYPE##_ELEMENTS;
-
-    TYPED_ARRAYS(TYPED_ARRAY_CASE)
-#undef TYPED_ARRAY_CASE
-
-    default:
-      UNREACHABLE();
-      return FIRST_EXTERNAL_ARRAY_ELEMENTS_KIND;
-  }
-}
-
-
 Handle<JSArrayBuffer> JSTypedArray::MaterializeArrayBuffer(
     Handle<JSTypedArray> typed_array) {
 
@@ -15714,10 +15690,6 @@ Handle<JSArrayBuffer> JSTypedArray::MaterializeArrayBuffer(
   Isolate* isolate = typed_array->GetIsolate();
 
   DCHECK(IsFixedTypedArrayElementsKind(map->elements_kind()));
-
-  Handle<Map> new_map = Map::TransitionElementsTo(
-          map,
-          FixedToExternalElementsKind(map->elements_kind()));
 
   Handle<FixedTypedArrayBase> fixed_typed_array(
       FixedTypedArrayBase::cast(typed_array->elements()));
@@ -15735,21 +15707,23 @@ Handle<JSArrayBuffer> JSTypedArray::MaterializeArrayBuffer(
   memcpy(buffer->backing_store(),
          fixed_typed_array->DataPtr(),
          fixed_typed_array->DataSize());
-  Handle<ExternalArray> new_elements =
-      isolate->factory()->NewExternalArray(
+  Handle<FixedTypedArrayBase> new_elements =
+      isolate->factory()->NewFixedTypedArrayWithExternalPointer(
           fixed_typed_array->length(), typed_array->type(),
           static_cast<uint8_t*>(buffer->backing_store()));
 
-  JSObject::SetMapAndElements(typed_array, new_map, new_elements);
+  typed_array->set_elements(*new_elements);
 
   return buffer;
 }
 
 
 Handle<JSArrayBuffer> JSTypedArray::GetBuffer() {
-  if (IsExternalArrayElementsKind(map()->elements_kind())) {
-    Handle<Object> result(buffer(), GetIsolate());
-    return Handle<JSArrayBuffer>::cast(result);
+  Handle<JSArrayBuffer> array_buffer(JSArrayBuffer::cast(buffer()),
+                                     GetIsolate());
+  if (array_buffer->was_neutered() ||
+      array_buffer->backing_store() != nullptr) {
+    return array_buffer;
   }
   Handle<JSTypedArray> self(this);
   return MaterializeArrayBuffer(self);
@@ -15777,6 +15751,8 @@ Handle<PropertyCell> PropertyCell::InvalidateEntry(
   } else {
     cell->set_value(isolate->heap()->the_hole_value());
   }
+  details = details.set_cell_type(PropertyCellType::kInvalidated);
+  cell->set_property_details(details);
   cell->dependent_code()->DeoptimizeDependentCodeGroup(
       isolate, DependentCode::kPropertyCellChangedGroup);
   return new_cell;
@@ -15871,8 +15847,9 @@ void PropertyCell::UpdateCell(Handle<GlobalDictionary> dictionary, int entry,
   cell->set_value(*value);
 
   // Deopt when transitioning from a constant type.
-  if (!invalidate && (old_type != new_type)) {
-    auto isolate = dictionary->GetIsolate();
+  if (!invalidate && (old_type != new_type ||
+                      original_details.IsReadOnly() != details.IsReadOnly())) {
+    Isolate* isolate = dictionary->GetIsolate();
     cell->dependent_code()->DeoptimizeDependentCodeGroup(
         isolate, DependentCode::kPropertyCellChangedGroup);
   }
@@ -15889,5 +15866,6 @@ void PropertyCell::SetValueWithInvalidation(Handle<PropertyCell> cell,
         isolate, DependentCode::kPropertyCellChangedGroup);
   }
 }
+
 }  // namespace internal
 }  // namespace v8

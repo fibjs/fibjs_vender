@@ -423,7 +423,6 @@ class CodeGenerator;
 class CodeStub;
 class Context;
 class Debug;
-class Debugger;
 class DebugInfo;
 class Descriptor;
 class DescriptorArray;
@@ -810,9 +809,6 @@ enum VariableMode {
   IMPORT,          // declared via 'import' declarations (last lexical)
 
   // Variables introduced by the compiler:
-  INTERNAL,        // like VAR, but not user-visible (may or may not
-                   // be in a context)
-
   TEMPORARY,       // temporary variables (not user-visible), stack-allocated
                    // unless the scope as a whole has forced context allocation
 

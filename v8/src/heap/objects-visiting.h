@@ -29,6 +29,7 @@ class StaticVisitorBase : public AllStatic {
   V(SeqTwoByteString)      \
   V(ShortcutCandidate)     \
   V(ByteArray)             \
+  V(BytecodeArray)         \
   V(FreeSpace)             \
   V(FixedArray)            \
   V(FixedDoubleArray)      \
@@ -214,7 +215,7 @@ class BodyVisitorBase : public AllStatic {
  private:
   INLINE(static void IterateRawPointers(Heap* heap, HeapObject* object,
                                         int start_offset, int end_offset)) {
-    StaticVisitor::VisitPointers(heap,
+    StaticVisitor::VisitPointers(heap, object,
                                  HeapObject::RawField(object, start_offset),
                                  HeapObject::RawField(object, end_offset));
   }
@@ -296,28 +297,33 @@ class StaticNewSpaceVisitor : public StaticVisitorBase {
     return table_.GetVisitor(map)(map, obj);
   }
 
-  INLINE(static void VisitPointers(Heap* heap, Object** start, Object** end)) {
+  INLINE(static void VisitPointers(Heap* heap, HeapObject* object,
+                                   Object** start, Object** end)) {
     for (Object** p = start; p < end; p++) StaticVisitor::VisitPointer(heap, p);
   }
 
  private:
   INLINE(static int VisitJSFunction(Map* map, HeapObject* object)) {
     Heap* heap = map->GetHeap();
-    VisitPointers(heap,
+    VisitPointers(heap, object,
                   HeapObject::RawField(object, JSFunction::kPropertiesOffset),
                   HeapObject::RawField(object, JSFunction::kCodeEntryOffset));
 
     // Don't visit code entry. We are using this visitor only during scavenges.
 
     VisitPointers(
-        heap, HeapObject::RawField(object,
-                                   JSFunction::kCodeEntryOffset + kPointerSize),
+        heap, object, HeapObject::RawField(
+                          object, JSFunction::kCodeEntryOffset + kPointerSize),
         HeapObject::RawField(object, JSFunction::kNonWeakFieldsEndOffset));
     return JSFunction::kSize;
   }
 
   INLINE(static int VisitByteArray(Map* map, HeapObject* object)) {
     return reinterpret_cast<ByteArray*>(object)->ByteArraySize();
+  }
+
+  INLINE(static int VisitBytecodeArray(Map* map, HeapObject* object)) {
+    return reinterpret_cast<BytecodeArray*>(object)->BytecodeArraySize();
   }
 
   INLINE(static int VisitFixedDoubleArray(Map* map, HeapObject* object)) {
@@ -405,7 +411,8 @@ class StaticMarkingVisitor : public StaticVisitorBase {
 
   INLINE(static void VisitPropertyCell(Map* map, HeapObject* object));
   INLINE(static void VisitWeakCell(Map* map, HeapObject* object));
-  INLINE(static void VisitCodeEntry(Heap* heap, Address entry_address));
+  INLINE(static void VisitCodeEntry(Heap* heap, HeapObject* object,
+                                    Address entry_address));
   INLINE(static void VisitEmbeddedPointer(Heap* heap, RelocInfo* rinfo));
   INLINE(static void VisitCell(Heap* heap, RelocInfo* rinfo));
   INLINE(static void VisitDebugTarget(Heap* heap, RelocInfo* rinfo));
@@ -417,7 +424,6 @@ class StaticMarkingVisitor : public StaticVisitorBase {
   // Skip the weak next code link in a code object.
   INLINE(static void VisitNextCodeLink(Heap* heap, Object** slot)) {}
 
-  // TODO(mstarzinger): This should be made protected once refactoring is done.
   // Mark non-optimize code for functions inlined into the given optimized
   // code. This will prevent it from being flushed.
   static void MarkInlinedFunctionsCode(Heap* heap, Code* code);
@@ -439,6 +445,10 @@ class StaticMarkingVisitor : public StaticVisitorBase {
   // treating transitions or back pointers weak.
   static void MarkMapContents(Heap* heap, Map* map);
   static void MarkTransitionArray(Heap* heap, TransitionArray* transitions);
+
+  // Mark pointers in the optimized code map that should act as strong
+  // references, possibly treating some entries weak.
+  static void MarkOptimizedCodeMap(Heap* heap, FixedArray* code_map);
 
   // Code flushing support.
   INLINE(static bool IsFlushable(Heap* heap, JSFunction* function));

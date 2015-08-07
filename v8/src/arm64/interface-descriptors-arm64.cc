@@ -40,18 +40,11 @@ const Register VectorStoreICDescriptor::VectorRegister() { return x3; }
 const Register StoreTransitionDescriptor::MapRegister() { return x3; }
 
 
-const Register LoadGlobalViaContextDescriptor::DepthRegister() { return x1; }
 const Register LoadGlobalViaContextDescriptor::SlotRegister() { return x2; }
-const Register LoadGlobalViaContextDescriptor::NameRegister() { return x3; }
 
 
-const Register StoreGlobalViaContextDescriptor::DepthRegister() { return x1; }
 const Register StoreGlobalViaContextDescriptor::SlotRegister() { return x2; }
-const Register StoreGlobalViaContextDescriptor::NameRegister() { return x3; }
 const Register StoreGlobalViaContextDescriptor::ValueRegister() { return x0; }
-
-
-const Register ElementTransitionAndStoreDescriptor::MapRegister() { return x3; }
 
 
 const Register InstanceofDescriptor::left() {
@@ -83,6 +76,14 @@ const Register GrowArrayElementsDescriptor::ObjectRegister() { return x0; }
 const Register GrowArrayElementsDescriptor::KeyRegister() { return x3; }
 
 
+void StoreTransitionDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {ReceiverRegister(), NameRegister(), ValueRegister(),
+                          MapRegister()};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
 void FastNewClosureDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   // x2: function info
@@ -105,6 +106,10 @@ void ToNumberDescriptor::InitializePlatformSpecific(
   Register registers[] = {x0};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
+
+
+// static
+const Register ToObjectDescriptor::ReceiverRegister() { return x0; }
 
 
 void NumberToStringDescriptor::InitializePlatformSpecific(

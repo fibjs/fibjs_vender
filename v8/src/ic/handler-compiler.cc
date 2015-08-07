@@ -109,6 +109,18 @@ Register NamedLoadHandlerCompiler::FrontendHeader(Register object_reg,
     function_index = Context::NUMBER_FUNCTION_INDEX;
   } else if (map()->instance_type() == FLOAT32X4_TYPE) {
     function_index = Context::FLOAT32X4_FUNCTION_INDEX;
+  } else if (map()->instance_type() == INT32X4_TYPE) {
+    function_index = Context::INT32X4_FUNCTION_INDEX;
+  } else if (map()->instance_type() == BOOL32X4_TYPE) {
+    function_index = Context::BOOL32X4_FUNCTION_INDEX;
+  } else if (map()->instance_type() == INT16X8_TYPE) {
+    function_index = Context::INT16X8_FUNCTION_INDEX;
+  } else if (map()->instance_type() == BOOL16X8_TYPE) {
+    function_index = Context::BOOL16X8_FUNCTION_INDEX;
+  } else if (map()->instance_type() == INT8X16_TYPE) {
+    function_index = Context::INT8X16_FUNCTION_INDEX;
+  } else if (map()->instance_type() == BOOL8X16_TYPE) {
+    function_index = Context::BOOL8X16_FUNCTION_INDEX;
   } else if (*map() == isolate()->heap()->boolean_map()) {
     function_index = Context::BOOLEAN_FUNCTION_INDEX;
   } else {
@@ -465,11 +477,17 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreTransition(
   DCHECK(!transition->is_access_check_needed());
 
   // Call to respective StoreTransitionStub.
+  Register transition_map_reg = StoreTransitionDescriptor::MapRegister();
+  bool push_map_on_stack = transition_map_reg.is(no_reg);
+  Register map_reg = push_map_on_stack ? scratch1() : transition_map_reg;
+
   if (details.type() == DATA_CONSTANT) {
-    GenerateRestoreMap(transition, scratch2(), &miss);
     DCHECK(descriptors->GetValue(descriptor)->IsJSFunction());
-    Register map_reg = StoreTransitionDescriptor::MapRegister();
+    GenerateRestoreMap(transition, map_reg, scratch2(), &miss);
     GenerateConstantCheck(map_reg, descriptor, value(), scratch2(), &miss);
+    if (push_map_on_stack) {
+      GeneratePushMap(map_reg, scratch2());
+    }
     GenerateRestoreName(name);
     StoreTransitionStub stub(isolate());
     GenerateTailCall(masm(), stub.GetCode());
@@ -484,7 +502,10 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreTransition(
             ? StoreTransitionStub::ExtendStorageAndStoreMapAndValue
             : StoreTransitionStub::StoreMapAndValue;
 
-    GenerateRestoreMap(transition, scratch2(), &miss);
+    GenerateRestoreMap(transition, map_reg, scratch2(), &miss);
+    if (push_map_on_stack) {
+      GeneratePushMap(map_reg, scratch2());
+    }
     GenerateRestoreName(name);
     StoreTransitionStub stub(isolate(),
                              FieldIndex::ForDescriptor(*transition, descriptor),
@@ -568,7 +589,6 @@ void ElementHandlerCompiler::CompileElementHandlers(
       } else if (IsSloppyArgumentsElements(elements_kind)) {
         cached_stub = KeyedLoadSloppyArgumentsStub(isolate()).GetCode();
       } else if (IsFastElementsKind(elements_kind) ||
-                 IsExternalArrayElementsKind(elements_kind) ||
                  IsFixedTypedArrayElementsKind(elements_kind)) {
         cached_stub = LoadFastElementStub(isolate(), is_js_array, elements_kind,
                                           convert_hole_to_undefined).GetCode();

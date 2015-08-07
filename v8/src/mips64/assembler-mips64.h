@@ -324,6 +324,9 @@ const FPURegister f31 = { 31 };
 #define cp s7
 #define kLithiumScratchReg s3
 #define kLithiumScratchReg2 s4
+#define kInterpreterBytecodeOffsetRegister t0
+#define kInterpreterBytecodeArrayRegister t1
+#define kInterpreterDispatchTableRegister t2
 #define kLithiumScratchDouble f30
 #define kDoubleRegZero f28
 // Used on mips64r6 for compare operations.
@@ -481,6 +484,7 @@ class Assembler : public AssemblerBase {
     return o >> 2;
   }
   uint64_t jump_address(Label* L);
+  uint64_t jump_offset(Label* L);
 
   // Puts a labels target address at the given position.
   // The high 8 bits are set to zero.
@@ -733,6 +737,8 @@ class Assembler : public AssemblerBase {
   // Jump targets must be in the current 256 MB-aligned region. i.e. 28 bits.
   void j(int64_t target);
   void jal(int64_t target);
+  void j(Label* target);
+  void jal(Label* target);
   void jalr(Register rs, Register rd = ra);
   void jr(Register target);
   void jic(Register rt, int16_t offset);

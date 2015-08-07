@@ -14,11 +14,15 @@ namespace internal {
 
 const int MemoryReducer::kLongDelayMs = 5000;
 const int MemoryReducer::kShortDelayMs = 500;
+const int MemoryReducer::kWatchdogDelayMs = 100000;
 const int MemoryReducer::kMaxNumberOfGCs = 3;
 
+MemoryReducer::TimerTask::TimerTask(MemoryReducer* memory_reducer)
+    : CancelableTask(memory_reducer->heap()->isolate()),
+      memory_reducer_(memory_reducer) {}
 
-void MemoryReducer::TimerTask::Run() {
-  if (heap_is_torn_down_) return;
+
+void MemoryReducer::TimerTask::RunInternal() {
   Heap* heap = memory_reducer_->heap();
   Event event;
   event.type = kTimer;
@@ -32,10 +36,8 @@ void MemoryReducer::TimerTask::Run() {
 
 
 void MemoryReducer::NotifyTimer(const Event& event) {
-  DCHECK(nullptr != pending_task_);
   DCHECK_EQ(kTimer, event.type);
   DCHECK_EQ(kWait, state_.action);
-  pending_task_ = nullptr;
   state_ = Step(state_, event);
   if (state_.action == kRun) {
     DCHECK(heap()->incremental_marking()->IsStopped());
@@ -93,15 +95,28 @@ void MemoryReducer::NotifyBackgroundIdleNotification(const Event& event) {
   if (old_action == kWait && state_.action == kWait &&
       old_started_gcs + 1 == state_.started_gcs) {
     DCHECK(heap()->incremental_marking()->IsStopped());
-    DCHECK(FLAG_incremental_marking);
-    heap()->StartIdleIncrementalMarking();
-    if (FLAG_trace_gc_verbose) {
-      PrintIsolate(heap()->isolate(),
-                   "Memory reducer: started GC #%d"
-                   " (background idle)\n",
-                   state_.started_gcs);
+    // TODO(ulan): Replace it with incremental marking GC once
+    // chromium:490559 is fixed.
+    if (event.time_ms > state_.last_gc_time_ms + kLongDelayMs) {
+      heap()->CollectAllGarbage(Heap::kReduceMemoryFootprintMask,
+                                "memory reducer background GC");
+    } else {
+      DCHECK(FLAG_incremental_marking);
+      heap()->StartIdleIncrementalMarking();
+      if (FLAG_trace_gc_verbose) {
+        PrintIsolate(heap()->isolate(),
+                     "Memory reducer: started GC #%d"
+                     " (background idle)\n",
+                     state_.started_gcs);
+      }
     }
   }
+}
+
+
+bool MemoryReducer::WatchdogGC(const State& state, const Event& event) {
+  return state.last_gc_time_ms != 0 &&
+         event.time_ms > state.last_gc_time_ms + kWatchdogDelayMs;
 }
 
 
@@ -109,7 +124,7 @@ void MemoryReducer::NotifyBackgroundIdleNotification(const Event& event) {
 MemoryReducer::State MemoryReducer::Step(const State& state,
                                          const Event& event) {
   if (!FLAG_incremental_marking) {
-    return State(kDone, 0, 0);
+    return State(kDone, 0, 0, state.last_gc_time_ms);
   }
   switch (state.action) {
     case kDone:
@@ -117,7 +132,9 @@ MemoryReducer::State MemoryReducer::Step(const State& state,
         return state;
       } else {
         DCHECK(event.type == kContextDisposed || event.type == kMarkCompact);
-        return State(kWait, 0, event.time_ms + kLongDelayMs);
+        return State(
+            kWait, 0, event.time_ms + kLongDelayMs,
+            event.type == kMarkCompact ? event.time_ms : state.last_gc_time_ms);
       }
     case kWait:
       switch (event.type) {
@@ -125,28 +142,30 @@ MemoryReducer::State MemoryReducer::Step(const State& state,
           return state;
         case kTimer:
           if (state.started_gcs >= kMaxNumberOfGCs) {
-            return State(kDone, 0, 0.0);
+            return State(kDone, kMaxNumberOfGCs, 0.0, state.last_gc_time_ms);
           } else if (event.can_start_incremental_gc &&
-                     event.low_allocation_rate) {
+                     (event.low_allocation_rate || WatchdogGC(state, event))) {
             if (state.next_gc_start_ms <= event.time_ms) {
-              return State(kRun, state.started_gcs + 1, 0.0);
+              return State(kRun, state.started_gcs + 1, 0.0,
+                           state.last_gc_time_ms);
             } else {
               return state;
             }
           } else {
-            return State(kWait, state.started_gcs,
-                         event.time_ms + kLongDelayMs);
+            return State(kWait, state.started_gcs, event.time_ms + kLongDelayMs,
+                         state.last_gc_time_ms);
           }
         case kBackgroundIdleNotification:
           if (event.can_start_incremental_gc &&
               state.started_gcs < kMaxNumberOfGCs) {
             return State(kWait, state.started_gcs + 1,
-                         event.time_ms + kLongDelayMs);
+                         event.time_ms + kLongDelayMs, state.last_gc_time_ms);
           } else {
             return state;
           }
         case kMarkCompact:
-          return State(kWait, state.started_gcs, event.time_ms + kLongDelayMs);
+          return State(kWait, state.started_gcs, event.time_ms + kLongDelayMs,
+                       event.time_ms);
       }
     case kRun:
       if (event.type != kMarkCompact) {
@@ -154,14 +173,15 @@ MemoryReducer::State MemoryReducer::Step(const State& state,
       } else {
         if (state.started_gcs < kMaxNumberOfGCs &&
             (event.next_gc_likely_to_collect_more || state.started_gcs == 1)) {
-          return State(kWait, state.started_gcs, event.time_ms + kShortDelayMs);
+          return State(kWait, state.started_gcs, event.time_ms + kShortDelayMs,
+                       event.time_ms);
         } else {
-          return State(kDone, 0, 0.0);
+          return State(kDone, kMaxNumberOfGCs, 0.0, event.time_ms);
         }
       }
   }
   UNREACHABLE();
-  return State(kDone, 0, 0);  // Make the compiler happy.
+  return State(kDone, 0, 0, 0.0);  // Make the compiler happy.
 }
 
 
@@ -170,27 +190,13 @@ void MemoryReducer::ScheduleTimer(double delay_ms) {
   // Leave some room for precision error in task scheduler.
   const double kSlackMs = 100;
   v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(heap()->isolate());
-  DCHECK(nullptr == pending_task_);
-  pending_task_ = new MemoryReducer::TimerTask(this);
+  auto timer_task = new MemoryReducer::TimerTask(this);
   V8::GetCurrentPlatform()->CallDelayedOnForegroundThread(
-      isolate, pending_task_, (delay_ms + kSlackMs) / 1000.0);
+      isolate, timer_task, (delay_ms + kSlackMs) / 1000.0);
 }
 
 
-void MemoryReducer::ClearTask(v8::Task* task) {
-  if (pending_task_ == task) {
-    pending_task_ = nullptr;
-  }
-}
-
-
-void MemoryReducer::TearDown() {
-  if (pending_task_ != nullptr) {
-    pending_task_->NotifyHeapTearDown();
-    pending_task_ = nullptr;
-  }
-  state_ = State(kDone, 0, 0);
-}
+void MemoryReducer::TearDown() { state_ = State(kDone, 0, 0, 0.0); }
 
 }  // internal
 }  // v8

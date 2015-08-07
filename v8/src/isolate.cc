@@ -19,12 +19,13 @@
 #include "src/compilation-cache.h"
 #include "src/compilation-statistics.h"
 #include "src/cpu-profiler.h"
-#include "src/debug.h"
+#include "src/debug/debug.h"
 #include "src/deoptimizer.h"
 #include "src/heap/spaces.h"
 #include "src/heap-profiler.h"
 #include "src/hydrogen.h"
 #include "src/ic/stub-cache.h"
+#include "src/interpreter/interpreter.h"
 #include "src/lithium-allocator.h"
 #include "src/log.h"
 #include "src/messages.h"
@@ -1759,7 +1760,6 @@ Isolate::Isolate(bool enable_serializer)
       eternal_handles_(NULL),
       thread_manager_(NULL),
       has_installed_extensions_(false),
-      string_tracker_(NULL),
       regexp_stack_(NULL),
       date_cache_(NULL),
       call_descriptor_data_(NULL),
@@ -1891,6 +1891,9 @@ void Isolate::Deinit() {
   Sampler* sampler = logger_->sampler();
   if (sampler && sampler->IsActive()) sampler->Stop();
 
+  delete interpreter_;
+  interpreter_ = NULL;
+
   delete deoptimizer_data_;
   deoptimizer_data_ = NULL;
   builtins_.TearDown();
@@ -1903,6 +1906,11 @@ void Isolate::Deinit() {
 
   delete basic_block_profiler_;
   basic_block_profiler_ = NULL;
+
+  for (Cancelable* task : cancelable_tasks_) {
+    task->Cancel();
+  }
+  cancelable_tasks_.clear();
 
   heap_.TearDown();
   logger_->TearDown();
@@ -1985,9 +1993,6 @@ Isolate::~Isolate() {
 
   delete thread_manager_;
   thread_manager_ = NULL;
-
-  delete string_tracker_;
-  string_tracker_ = NULL;
 
   delete memory_allocator_;
   memory_allocator_ = NULL;
@@ -2095,8 +2100,6 @@ bool Isolate::Init(Deserializer* des) {
   FOR_EACH_ISOLATE_ADDRESS_NAME(ASSIGN_ELEMENT)
 #undef ASSIGN_ELEMENT
 
-  string_tracker_ = new StringTracker();
-  string_tracker_->isolate_ = this;
   compilation_cache_ = new CompilationCache(this);
   keyed_lookup_cache_ = new KeyedLookupCache();
   context_slot_cache_ = new ContextSlotCache();
@@ -2116,6 +2119,7 @@ bool Isolate::Init(Deserializer* des) {
       new CallInterfaceDescriptorData[CallDescriptors::NUMBER_OF_DESCRIPTORS];
   cpu_profiler_ = new CpuProfiler(this);
   heap_profiler_ = new HeapProfiler(heap());
+  interpreter_ = new interpreter::Interpreter(this);
 
   // Enable logging before setting up the heap
   logger_->SetUp(this);
@@ -2162,6 +2166,10 @@ bool Isolate::Init(Deserializer* des) {
 
   bootstrapper_->Initialize(create_heap_objects);
   builtins_.SetUp(this, create_heap_objects);
+
+  if (FLAG_ignition) {
+    interpreter_->Initialize(create_heap_objects);
+  }
 
   if (FLAG_log_internal_timer_events) {
     set_event_logger(Logger::DefaultEventLoggerSentinel);
@@ -2629,7 +2637,7 @@ void Isolate::EnqueueMicrotask(Handle<Object> microtask) {
     queue = factory()->NewFixedArray(8);
     heap()->set_microtask_queue(*queue);
   } else if (num_tasks == queue->length()) {
-    queue = FixedArray::CopySize(queue, num_tasks * 2);
+    queue = factory()->CopyFixedArrayAndGrow(queue, num_tasks);
     heap()->set_microtask_queue(*queue);
   }
   DCHECK(queue->get(num_tasks)->IsUndefined());
@@ -2639,13 +2647,6 @@ void Isolate::EnqueueMicrotask(Handle<Object> microtask) {
 
 
 void Isolate::RunMicrotasks() {
-  // %RunMicrotasks may be called in mjsunit tests, which violates
-  // this assertion, hence the check for --allow-natives-syntax.
-  // TODO(adamk): However, this also fails some layout tests.
-  //
-  // DCHECK(FLAG_allow_natives_syntax ||
-  //        handle_scope_implementer()->CallDepthIsZero());
-
   // Increase call depth to prevent recursive callbacks.
   v8::Isolate::SuppressMicrotaskExecutionScope suppress(
       reinterpret_cast<v8::Isolate*>(this));
@@ -2737,7 +2738,7 @@ void Isolate::AddDetachedContext(Handle<Context> context) {
   Handle<WeakCell> cell = factory()->NewWeakCell(context);
   Handle<FixedArray> detached_contexts(heap()->detached_contexts());
   int length = detached_contexts->length();
-  detached_contexts = FixedArray::CopySize(detached_contexts, length + 2);
+  detached_contexts = factory()->CopyFixedArrayAndGrow(detached_contexts, 2);
   detached_contexts->set(length, Smi::FromInt(0));
   detached_contexts->set(length + 1, *cell);
   heap()->set_detached_contexts(*detached_contexts);
@@ -2780,6 +2781,18 @@ void Isolate::CheckDetachedContextsAfterGC() {
     heap()->RightTrimFixedArray<Heap::CONCURRENT_TO_SWEEPER>(
         *detached_contexts, length - new_length);
   }
+}
+
+
+void Isolate::RegisterCancelableTask(Cancelable* task) {
+  cancelable_tasks_.insert(task);
+}
+
+
+void Isolate::RemoveCancelableTask(Cancelable* task) {
+  auto removed = cancelable_tasks_.erase(task);
+  USE(removed);
+  DCHECK(removed == 1);
 }
 
 

@@ -21,15 +21,11 @@ struct IA32LinkageHelperTraits {
   static Register ReturnValue2Reg() { return edx; }
   static Register JSCallFunctionReg() { return edi; }
   static Register ContextReg() { return esi; }
+  static Register InterpreterBytecodeOffsetReg() { return ecx; }
+  static Register InterpreterBytecodeArrayReg() { return edi; }
+  static Register InterpreterDispatchTableReg() { return ebx; }
   static Register RuntimeCallFunctionReg() { return ebx; }
   static Register RuntimeCallArgCountReg() { return eax; }
-  static RegList CCalleeSaveRegisters() {
-    return esi.bit() | edi.bit() | ebx.bit();
-  }
-  static RegList CCalleeSaveFPRegisters() { return 0; }
-  static Register CRegisterParameter(int i) { return no_reg; }
-  static int CRegisterParametersLength() { return 0; }
-  static int CStackBackingStoreLength() { return 0; }
 };
 
 typedef LinkageHelper<IA32LinkageHelperTraits> LH;
@@ -59,15 +55,8 @@ CallDescriptor* Linkage::GetStubCallDescriptor(
 }
 
 
-CallDescriptor* Linkage::GetSimplifiedCDescriptor(Zone* zone,
-                                                  const MachineSignature* sig) {
-  return LH::GetSimplifiedCDescriptor(zone, sig);
-}
-
-
-CallDescriptor* Linkage::GetInterpreterDispatchDescriptor(
-    Zone* zone, const MachineSignature* sig) {
-  return LH::GetInterpreterDispatchDescriptor(zone, sig);
+CallDescriptor* Linkage::GetInterpreterDispatchDescriptor(Zone* zone) {
+  return LH::GetInterpreterDispatchDescriptor(zone);
 }
 
 }  // namespace compiler

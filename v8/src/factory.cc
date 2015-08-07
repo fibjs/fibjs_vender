@@ -873,18 +873,24 @@ Handle<ByteArray> Factory::NewByteArray(int length, PretenureFlag pretenure) {
 }
 
 
-Handle<ExternalArray> Factory::NewExternalArray(int length,
-                                                ExternalArrayType array_type,
-                                                void* external_pointer,
-                                                PretenureFlag pretenure) {
+Handle<BytecodeArray> Factory::NewBytecodeArray(int length,
+                                                const byte* raw_bytecodes,
+                                                int frame_size) {
+  DCHECK(0 <= length);
+  CALL_HEAP_FUNCTION(isolate(), isolate()->heap()->AllocateBytecodeArray(
+                                    length, raw_bytecodes, frame_size),
+                     BytecodeArray);
+}
+
+
+Handle<FixedTypedArrayBase> Factory::NewFixedTypedArrayWithExternalPointer(
+    int length, ExternalArrayType array_type, void* external_pointer,
+    PretenureFlag pretenure) {
   DCHECK(0 <= length && length <= Smi::kMaxValue);
   CALL_HEAP_FUNCTION(
-      isolate(),
-      isolate()->heap()->AllocateExternalArray(length,
-                                               array_type,
-                                               external_pointer,
-                                               pretenure),
-      ExternalArray);
+      isolate(), isolate()->heap()->AllocateFixedTypedArrayWithExternalPointer(
+                     length, array_type, external_pointer, pretenure),
+      FixedTypedArrayBase);
 }
 
 
@@ -972,6 +978,15 @@ Handle<FixedArray> Factory::CopyFixedArrayWithMap(Handle<FixedArray> array,
 }
 
 
+Handle<FixedArray> Factory::CopyFixedArrayAndGrow(Handle<FixedArray> array,
+                                                  int grow_by,
+                                                  PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(isolate(), isolate()->heap()->CopyFixedArrayAndGrow(
+                                    *array, grow_by, pretenure),
+                     FixedArray);
+}
+
+
 Handle<FixedArray> Factory::CopyFixedArray(Handle<FixedArray> array) {
   CALL_HEAP_FUNCTION(isolate(),
                      isolate()->heap()->CopyFixedArray(*array),
@@ -1041,11 +1056,50 @@ Handle<HeapNumber> Factory::NewHeapNumber(double value,
 }
 
 
-Handle<Float32x4> Factory::NewFloat32x4(float w, float x, float y, float z,
+Handle<Float32x4> Factory::NewFloat32x4(float lanes[4],
                                         PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocateFloat32x4(lanes, pretenure),
+                     Float32x4);
+}
+
+
+Handle<Int32x4> Factory::NewInt32x4(int32_t lanes[4], PretenureFlag pretenure) {
   CALL_HEAP_FUNCTION(
-      isolate(), isolate()->heap()->AllocateFloat32x4(w, x, y, z, pretenure),
-      Float32x4);
+      isolate(), isolate()->heap()->AllocateInt32x4(lanes, pretenure), Int32x4);
+}
+
+
+Handle<Bool32x4> Factory::NewBool32x4(bool lanes[4], PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocateBool32x4(lanes, pretenure),
+                     Bool32x4);
+}
+
+
+Handle<Int16x8> Factory::NewInt16x8(int16_t lanes[8], PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(
+      isolate(), isolate()->heap()->AllocateInt16x8(lanes, pretenure), Int16x8);
+}
+
+
+Handle<Bool16x8> Factory::NewBool16x8(bool lanes[8], PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocateBool16x8(lanes, pretenure),
+                     Bool16x8);
+}
+
+
+Handle<Int8x16> Factory::NewInt8x16(int8_t lanes[16], PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(
+      isolate(), isolate()->heap()->AllocateInt8x16(lanes, pretenure), Int8x16);
+}
+
+
+Handle<Bool8x16> Factory::NewBool8x16(bool lanes[16], PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocateBool8x16(lanes, pretenure),
+                     Bool8x16);
 }
 
 
@@ -1755,11 +1809,11 @@ ElementsKind GetExternalArrayElementsKind(ExternalArrayType type) {
   switch (type) {
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
   case kExternal##Type##Array:                          \
-    return EXTERNAL_##TYPE##_ELEMENTS;
+    return TYPE##_ELEMENTS;
     TYPED_ARRAYS(TYPED_ARRAY_CASE)
   }
   UNREACHABLE();
-  return FIRST_EXTERNAL_ARRAY_ELEMENTS_KIND;
+  return FIRST_FIXED_TYPED_ARRAY_ELEMENTS_KIND;
 #undef TYPED_ARRAY_CASE
 }
 
@@ -1901,7 +1955,7 @@ Handle<JSTypedArray> Factory::NewJSTypedArray(ExternalArrayType type,
   Handle<Object> length_object = NewNumberFromSize(length);
   obj->set_length(*length_object);
 
-  Handle<ExternalArray> elements = NewExternalArray(
+  Handle<FixedTypedArrayBase> elements = NewFixedTypedArrayWithExternalPointer(
       static_cast<int>(length), type,
       static_cast<uint8_t*>(buffer->backing_store()) + byte_offset);
   Handle<Map> map = JSObject::GetElementsTransitionMap(obj, elements_kind);
@@ -2019,7 +2073,7 @@ void Factory::ReinitializeJSProxy(Handle<JSProxy> proxy, InstanceType type,
   if (size_difference > 0) {
     Address address = proxy->address();
     heap->CreateFillerObjectAt(address + map->instance_size(), size_difference);
-    heap->AdjustLiveBytes(address, -size_difference,
+    heap->AdjustLiveBytes(*proxy, -size_difference,
                           Heap::CONCURRENT_TO_SWEEPER);
   }
 

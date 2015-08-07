@@ -9,7 +9,7 @@
 #include "src/cpu-profiler.h"
 #include "src/deoptimizer.h"
 #include "src/disasm.h"
-#include "src/full-codegen.h"
+#include "src/full-codegen/full-codegen.h"
 #include "src/global-handles.h"
 #include "src/macro-assembler.h"
 #include "src/prettyprinter.h"
@@ -154,8 +154,11 @@ DeoptimizedFrameInfo* Deoptimizer::DebuggerInspectableFrame(
   // Always use the actual stack slots when calculating the fp to sp
   // delta adding two for the function and context.
   unsigned stack_slots = code->stack_slots();
+  unsigned arguments_stack_height =
+      Deoptimizer::ComputeOutgoingArgumentSize(code, deoptimization_index);
   unsigned fp_to_sp_delta = (stack_slots * kPointerSize) +
-      StandardFrameConstants::kFixedFrameSizeFromFp;
+                            StandardFrameConstants::kFixedFrameSizeFromFp +
+                            arguments_stack_height;
 
   Deoptimizer* deoptimizer = new Deoptimizer(isolate,
                                              function,
@@ -414,11 +417,9 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
     PatchCodeForDeoptimization(isolate, codes[i]);
 
     // We might be in the middle of incremental marking with compaction.
-    // Ignore all slots that might have been recorded in the body of the
-    // deoptimized code object.
-    Code* code = codes[i];
-    isolate->heap()->mark_compact_collector()->RemoveObjectSlots(
-        code->instruction_start(), code->address() + code->Size());
+    // Tell collector to treat this code object in a special way and
+    // ignore all slots that might have been recorded on it.
+    isolate->heap()->mark_compact_collector()->InvalidateCode(codes[i]);
   }
 }
 
@@ -1423,6 +1424,9 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   //                                         reg = saved frame
   //                                         reg = JSFunction context
   //
+  // Caller stack params contain the register parameters to the stub first,
+  // and then, if the descriptor specifies a constant number of stack
+  // parameters, the stack parameters as well.
 
   TranslatedFrame* translated_frame =
       &(translated_state_.frames()[frame_index]);
@@ -1438,11 +1442,12 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   // object to the callee and optionally the space to pass the argument
   // object to the stub failure handler.
   int param_count = descriptor.GetRegisterParameterCount();
+  int stack_param_count = descriptor.GetStackParameterCount();
   CHECK_EQ(translated_frame->height(), param_count);
   CHECK_GE(param_count, 0);
 
-  int height_in_bytes = kPointerSize * param_count + sizeof(Arguments) +
-      kPointerSize;
+  int height_in_bytes = kPointerSize * (param_count + stack_param_count) +
+                        sizeof(Arguments) + kPointerSize;
   int fixed_frame_size = StandardFrameConstants::kFixedFrameSize;
   int input_frame_size = input_->GetFrameSize();
   int output_frame_size = height_in_bytes + fixed_frame_size;
@@ -1515,7 +1520,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   DebugPrintOutputSlot(value, frame_index, output_frame_offset,
                        "function (stub failure sentinel)\n");
 
-  intptr_t caller_arg_count = 0;
+  intptr_t caller_arg_count = stack_param_count;
   bool arg_count_known = !descriptor.stack_parameter_count().is_valid();
 
   // Build the Arguments object for the caller's parameters and a pointer to it.
@@ -1563,6 +1568,20 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
     }
   }
 
+  // Copy constant stack parameters to the failure frame. If the number of stack
+  // parameters is not known in the descriptor, the arguments object is the way
+  // to access them.
+  for (int i = 0; i < stack_param_count; i++) {
+    output_frame_offset -= kPointerSize;
+    Object** stack_parameter = reinterpret_cast<Object**>(
+        frame_ptr + StandardFrameConstants::kCallerSPOffset +
+        (stack_param_count - i - 1) * kPointerSize);
+    value = reinterpret_cast<intptr_t>(*stack_parameter);
+    output_frame->SetFrameSlot(output_frame_offset, value);
+    DebugPrintOutputSlot(value, frame_index, output_frame_offset,
+                         "stack parameter\n");
+  }
+
   CHECK_EQ(0u, output_frame_offset);
 
   if (!arg_count_known) {
@@ -1592,8 +1611,8 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   // Compute this frame's PC, state, and continuation.
   Code* trampoline = NULL;
   StubFunctionMode function_mode = descriptor.function_mode();
-  StubFailureTrampolineStub(isolate_,
-                            function_mode).FindCodeInCache(&trampoline);
+  StubFailureTrampolineStub(isolate_, function_mode)
+      .FindCodeInCache(&trampoline);
   DCHECK(trampoline != NULL);
   output_frame->SetPc(reinterpret_cast<intptr_t>(
       trampoline->instruction_start()));
@@ -1754,7 +1773,8 @@ unsigned Deoptimizer::ComputeInputFrameSize() const {
                     StandardFrameConstants::kFixedFrameSizeFromFp;
   if (compiled_code_->kind() == Code::OPTIMIZED_FUNCTION) {
     unsigned stack_slots = compiled_code_->stack_slots();
-    unsigned outgoing_size = ComputeOutgoingArgumentSize();
+    unsigned outgoing_size =
+        ComputeOutgoingArgumentSize(compiled_code_, bailout_id_);
     CHECK(result == fixed_size + (stack_slots * kPointerSize) + outgoing_size);
   }
   return result;
@@ -1782,10 +1802,12 @@ unsigned Deoptimizer::ComputeIncomingArgumentSize(JSFunction* function) const {
 }
 
 
-unsigned Deoptimizer::ComputeOutgoingArgumentSize() const {
+// static
+unsigned Deoptimizer::ComputeOutgoingArgumentSize(Code* code,
+                                                  unsigned bailout_id) {
   DeoptimizationInputData* data =
-      DeoptimizationInputData::cast(compiled_code_->deoptimization_data());
-  unsigned height = data->ArgumentsStackHeight(bailout_id_)->value();
+      DeoptimizationInputData::cast(code->deoptimization_data());
+  unsigned height = data->ArgumentsStackHeight(bailout_id)->value();
   return height * kPointerSize;
 }
 
@@ -2250,7 +2272,12 @@ DeoptimizedFrameInfo::DeoptimizedFrameInfo(Deoptimizer* deoptimizer,
   source_position_ = code->SourcePosition(pc);
 
   for (int i = 0; i < expression_count_; i++) {
-    SetExpression(i, output_frame->GetExpression(i));
+    Object* value = output_frame->GetExpression(i);
+    // Replace materialization markers with the undefined value.
+    if (value == deoptimizer->isolate()->heap()->arguments_marker()) {
+      value = deoptimizer->isolate()->heap()->undefined_value();
+    }
+    SetExpression(i, value);
   }
 
   if (has_arguments_adaptor) {
@@ -2261,7 +2288,12 @@ DeoptimizedFrameInfo::DeoptimizedFrameInfo(Deoptimizer* deoptimizer,
   parameters_count_ = output_frame->ComputeParametersCount();
   parameters_ = new Object* [parameters_count_];
   for (int i = 0; i < parameters_count_; i++) {
-    SetParameter(i, output_frame->GetParameter(i));
+    Object* value = output_frame->GetParameter(i);
+    // Replace materialization markers with the undefined value.
+    if (value == deoptimizer->isolate()->heap()->arguments_marker()) {
+      value = deoptimizer->isolate()->heap()->undefined_value();
+    }
+    SetParameter(i, value);
   }
 }
 

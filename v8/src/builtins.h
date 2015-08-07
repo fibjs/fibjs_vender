@@ -72,6 +72,8 @@ enum BuiltinExtraArguments {
   V(JSConstructStubApi, BUILTIN, UNINITIALIZED, kNoExtraICState)             \
   V(JSEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)              \
   V(JSConstructEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
+  V(InterpreterEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
+  V(InterpreterExitTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
   V(CompileLazy, BUILTIN, UNINITIALIZED, kNoExtraICState)                    \
   V(CompileOptimized, BUILTIN, UNINITIALIZED, kNoExtraICState)               \
   V(CompileOptimizedConcurrent, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
@@ -180,7 +182,6 @@ enum BuiltinExtraArguments {
   V(CALL_NON_FUNCTION_AS_CONSTRUCTOR, 0)   \
   V(CALL_FUNCTION_PROXY, 1)                \
   V(CALL_FUNCTION_PROXY_AS_CONSTRUCTOR, 1) \
-  V(TO_OBJECT, 0)                          \
   V(TO_NUMBER, 0)                          \
   V(TO_STRING, 0)                          \
   V(TO_NAME, 0)                            \
@@ -306,6 +307,8 @@ class Builtins {
   static void Generate_JSConstructStubApi(MacroAssembler* masm);
   static void Generate_JSEntryTrampoline(MacroAssembler* masm);
   static void Generate_JSConstructEntryTrampoline(MacroAssembler* masm);
+  static void Generate_InterpreterEntryTrampoline(MacroAssembler* masm);
+  static void Generate_InterpreterExitTrampoline(MacroAssembler* masm);
   static void Generate_NotifyDeoptimized(MacroAssembler* masm);
   static void Generate_NotifySoftDeoptimized(MacroAssembler* masm);
   static void Generate_NotifyLazyDeoptimized(MacroAssembler* masm);

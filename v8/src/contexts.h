@@ -82,6 +82,12 @@ enum BindingFlags {
   V(STRING_FUNCTION_PROTOTYPE_MAP_INDEX, Map, string_function_prototype_map)   \
   V(SYMBOL_FUNCTION_INDEX, JSFunction, symbol_function)                        \
   V(FLOAT32X4_FUNCTION_INDEX, JSFunction, float32x4_function)                  \
+  V(INT32X4_FUNCTION_INDEX, JSFunction, int32x4_function)                      \
+  V(BOOL32X4_FUNCTION_INDEX, JSFunction, bool32x4_function)                    \
+  V(INT16X8_FUNCTION_INDEX, JSFunction, int16x8_function)                      \
+  V(BOOL16X8_FUNCTION_INDEX, JSFunction, bool16x8_function)                    \
+  V(INT8X16_FUNCTION_INDEX, JSFunction, int8x16_function)                      \
+  V(BOOL8X16_FUNCTION_INDEX, JSFunction, bool8x16_function)                    \
   V(OBJECT_FUNCTION_INDEX, JSFunction, object_function)                        \
   V(JS_OBJECT_STRONG_MAP_INDEX, Map, js_object_strong_map)                     \
   V(INTERNAL_ARRAY_FUNCTION_INDEX, JSFunction, internal_array_function)        \
@@ -97,7 +103,6 @@ enum BindingFlags {
   V(TO_NUMBER_FUN_INDEX, JSFunction, to_number_fun)                            \
   V(TO_STRING_FUN_INDEX, JSFunction, to_string_fun)                            \
   V(TO_DETAIL_STRING_FUN_INDEX, JSFunction, to_detail_string_fun)              \
-  V(TO_OBJECT_FUN_INDEX, JSFunction, to_object_fun)                            \
   V(TO_INTEGER_FUN_INDEX, JSFunction, to_integer_fun)                          \
   V(TO_UINT32_FUN_INDEX, JSFunction, to_uint32_fun)                            \
   V(TO_INT32_FUN_INDEX, JSFunction, to_int32_fun)                              \
@@ -115,16 +120,6 @@ enum BindingFlags {
   V(FLOAT32_ARRAY_FUN_INDEX, JSFunction, float32_array_fun)                    \
   V(FLOAT64_ARRAY_FUN_INDEX, JSFunction, float64_array_fun)                    \
   V(UINT8_CLAMPED_ARRAY_FUN_INDEX, JSFunction, uint8_clamped_array_fun)        \
-  V(INT8_ARRAY_EXTERNAL_MAP_INDEX, Map, int8_array_external_map)               \
-  V(UINT8_ARRAY_EXTERNAL_MAP_INDEX, Map, uint8_array_external_map)             \
-  V(INT16_ARRAY_EXTERNAL_MAP_INDEX, Map, int16_array_external_map)             \
-  V(UINT16_ARRAY_EXTERNAL_MAP_INDEX, Map, uint16_array_external_map)           \
-  V(INT32_ARRAY_EXTERNAL_MAP_INDEX, Map, int32_array_external_map)             \
-  V(UINT32_ARRAY_EXTERNAL_MAP_INDEX, Map, uint32_array_external_map)           \
-  V(FLOAT32_ARRAY_EXTERNAL_MAP_INDEX, Map, float32_array_external_map)         \
-  V(FLOAT64_ARRAY_EXTERNAL_MAP_INDEX, Map, float64_array_external_map)         \
-  V(UINT8_CLAMPED_ARRAY_EXTERNAL_MAP_INDEX, Map,                               \
-    uint8_clamped_array_external_map)                                          \
   V(DATA_VIEW_FUN_INDEX, JSFunction, data_view_fun)                            \
   V(SLOPPY_FUNCTION_MAP_INDEX, Map, sloppy_function_map)                       \
   V(SLOPPY_FUNCTION_WITH_READONLY_PROTOTYPE_MAP_INDEX, Map,                    \
@@ -147,7 +142,6 @@ enum BindingFlags {
   V(GET_STACK_TRACE_LINE_INDEX, JSFunction, get_stack_trace_line_fun)          \
   V(CONFIGURE_GLOBAL_INDEX, JSFunction, configure_global_fun)                  \
   V(FUNCTION_CACHE_INDEX, ObjectHashTable, function_cache)                     \
-  V(JSFUNCTION_RESULT_CACHES_INDEX, FixedArray, jsfunction_result_caches)      \
   V(NORMALIZED_MAP_CACHE_INDEX, Object, normalized_map_cache)                  \
   V(RUNTIME_CONTEXT_INDEX, Context, runtime_context)                           \
   V(CALL_AS_FUNCTION_DELEGATE_INDEX, JSFunction, call_as_function_delegate)    \
@@ -360,6 +354,12 @@ class Context: public FixedArray {
     STRING_FUNCTION_PROTOTYPE_MAP_INDEX,
     SYMBOL_FUNCTION_INDEX,
     FLOAT32X4_FUNCTION_INDEX,
+    INT32X4_FUNCTION_INDEX,
+    BOOL32X4_FUNCTION_INDEX,
+    INT16X8_FUNCTION_INDEX,
+    BOOL16X8_FUNCTION_INDEX,
+    INT8X16_FUNCTION_INDEX,
+    BOOL8X16_FUNCTION_INDEX,
     OBJECT_FUNCTION_INDEX,
     JS_OBJECT_STRONG_MAP_INDEX,
     INTERNAL_ARRAY_FUNCTION_INDEX,
@@ -373,7 +373,6 @@ class Context: public FixedArray {
     TO_NUMBER_FUN_INDEX,
     TO_STRING_FUN_INDEX,
     TO_DETAIL_STRING_FUN_INDEX,
-    TO_OBJECT_FUN_INDEX,
     TO_INTEGER_FUN_INDEX,
     TO_UINT32_FUN_INDEX,
     TO_INT32_FUN_INDEX,
@@ -406,7 +405,6 @@ class Context: public FixedArray {
     GET_STACK_TRACE_LINE_INDEX,
     CONFIGURE_GLOBAL_INDEX,
     FUNCTION_CACHE_INDEX,
-    JSFUNCTION_RESULT_CACHES_INDEX,
     NORMALIZED_MAP_CACHE_INDEX,
     RUNTIME_CONTEXT_INDEX,
     CALL_AS_FUNCTION_DELEGATE_INDEX,

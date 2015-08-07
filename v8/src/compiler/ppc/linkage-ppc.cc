@@ -21,21 +21,17 @@ struct PPCLinkageHelperTraits {
   static Register ReturnValue2Reg() { return r4; }
   static Register JSCallFunctionReg() { return r4; }
   static Register ContextReg() { return cp; }
+  static Register InterpreterBytecodeOffsetReg() {
+    return kInterpreterBytecodeOffsetRegister;
+  }
+  static Register InterpreterBytecodeArrayReg() {
+    return kInterpreterBytecodeArrayRegister;
+  }
+  static Register InterpreterDispatchTableReg() {
+    return kInterpreterDispatchTableRegister;
+  }
   static Register RuntimeCallFunctionReg() { return r4; }
   static Register RuntimeCallArgCountReg() { return r3; }
-  static RegList CCalleeSaveRegisters() {
-    return r14.bit() | r15.bit() | r16.bit() | r17.bit() | r18.bit() |
-           r19.bit() | r20.bit() | r21.bit() | r22.bit() | r23.bit() |
-           r24.bit() | r25.bit() | r26.bit() | r27.bit() | r28.bit() |
-           r29.bit() | r30.bit() | fp.bit();
-  }
-  static RegList CCalleeSaveFPRegisters() { return 0; }
-  static Register CRegisterParameter(int i) {
-    static Register register_parameters[] = {r3, r4, r5, r6, r7, r8, r9, r10};
-    return register_parameters[i];
-  }
-  static int CRegisterParametersLength() { return 8; }
-  static int CStackBackingStoreLength() { return 0; }
 };
 
 
@@ -66,15 +62,8 @@ CallDescriptor* Linkage::GetStubCallDescriptor(
 }
 
 
-CallDescriptor* Linkage::GetSimplifiedCDescriptor(Zone* zone,
-                                                  const MachineSignature* sig) {
-  return LH::GetSimplifiedCDescriptor(zone, sig);
-}
-
-
-CallDescriptor* Linkage::GetInterpreterDispatchDescriptor(
-    Zone* zone, const MachineSignature* sig) {
-  return LH::GetInterpreterDispatchDescriptor(zone, sig);
+CallDescriptor* Linkage::GetInterpreterDispatchDescriptor(Zone* zone) {
+  return LH::GetInterpreterDispatchDescriptor(zone);
 }
 
 }  // namespace compiler

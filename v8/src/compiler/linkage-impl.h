@@ -67,7 +67,7 @@ class LinkageHelper {
         target_loc,                       // target location
         types.Build(),                    // machine_sig
         locations.Build(),                // location_sig
-        js_parameter_count,               // js_parameter_count
+        js_parameter_count,               // stack_parameter_count
         Operator::kNoProperties,          // properties
         kNoCalleeSaved,                   // callee-saved
         kNoCalleeSaved,                   // callee-saved fp
@@ -122,14 +122,14 @@ class LinkageHelper {
 
     // The target for runtime calls is a code object.
     MachineType target_type = kMachAnyTagged;
-    LinkageLocation target_loc = LinkageLocation::AnyRegister();
+    LinkageLocation target_loc = LinkageLocation::ForAnyRegister();
     return new (zone) CallDescriptor(     // --
         CallDescriptor::kCallCodeObject,  // kind
         target_type,                      // target MachineType
         target_loc,                       // target location
         types.Build(),                    // machine_sig
         locations.Build(),                // location_sig
-        js_parameter_count,               // js_parameter_count
+        js_parameter_count,               // stack_parameter_count
         properties,                       // properties
         kNoCalleeSaved,                   // callee-saved
         kNoCalleeSaved,                   // callee-saved fp
@@ -182,14 +182,14 @@ class LinkageHelper {
 
     // The target for stub calls is a code object.
     MachineType target_type = kMachAnyTagged;
-    LinkageLocation target_loc = LinkageLocation::AnyRegister();
+    LinkageLocation target_loc = LinkageLocation::ForAnyRegister();
     return new (zone) CallDescriptor(     // --
         CallDescriptor::kCallCodeObject,  // kind
         target_type,                      // target MachineType
         target_loc,                       // target location
         types.Build(),                    // machine_sig
         locations.Build(),                // location_sig
-        js_parameter_count,               // js_parameter_count
+        stack_parameter_count,            // stack_parameter_count
         properties,                       // properties
         kNoCalleeSaved,                   // callee-saved registers
         kNoCalleeSaved,                   // callee-saved fp
@@ -197,56 +197,31 @@ class LinkageHelper {
         descriptor.DebugName(isolate));
   }
 
-  static CallDescriptor* GetSimplifiedCDescriptor(
-      Zone* zone, const MachineSignature* msig) {
-    LocationSignature::Builder locations(zone, msig->return_count(),
-                                         msig->parameter_count());
-    // Add return location(s).
-    AddReturnLocations(&locations);
+  static CallDescriptor* GetInterpreterDispatchDescriptor(Zone* zone) {
+    MachineSignature::Builder types(zone, 0, 3);
+    LocationSignature::Builder locations(zone, 0, 3);
 
-    // Add register and/or stack parameter(s).
-    const int parameter_count = static_cast<int>(msig->parameter_count());
-    int stack_offset = LinkageTraits::CStackBackingStoreLength();
-    for (int i = 0; i < parameter_count; i++) {
-      if (i < LinkageTraits::CRegisterParametersLength()) {
-        locations.AddParam(regloc(LinkageTraits::CRegisterParameter(i)));
-      } else {
-        locations.AddParam(stackloc(-1 - stack_offset));
-        stack_offset++;
-      }
-    }
+    // Add registers for fixed parameters passed via interpreter dispatch.
+    STATIC_ASSERT(0 == Linkage::kInterpreterBytecodeOffsetParameter);
+    types.AddParam(kMachIntPtr);
+    locations.AddParam(regloc(LinkageTraits::InterpreterBytecodeOffsetReg()));
 
-    // The target for C calls is always an address (i.e. machine pointer).
-    MachineType target_type = kMachPtr;
-    LinkageLocation target_loc = LinkageLocation::AnyRegister();
-    return new (zone) CallDescriptor(             // --
-        CallDescriptor::kCallAddress,             // kind
-        target_type,                              // target MachineType
-        target_loc,                               // target location
-        msig,                                     // machine_sig
-        locations.Build(),                        // location_sig
-        0,                                        // js_parameter_count
-        Operator::kNoProperties,                  // properties
-        LinkageTraits::CCalleeSaveRegisters(),    // callee-saved registers
-        LinkageTraits::CCalleeSaveFPRegisters(),  // callee-saved fp regs
-        CallDescriptor::kNoFlags,                 // flags
-        "c-call");
-  }
+    STATIC_ASSERT(1 == Linkage::kInterpreterBytecodeArrayParameter);
+    types.AddParam(kMachAnyTagged);
+    locations.AddParam(regloc(LinkageTraits::InterpreterBytecodeArrayReg()));
 
-  static CallDescriptor* GetInterpreterDispatchDescriptor(
-      Zone* zone, const MachineSignature* msig) {
-    DCHECK_EQ(0U, msig->parameter_count());
-    LocationSignature::Builder locations(zone, msig->return_count(),
-                                         msig->parameter_count());
-    AddReturnLocations(&locations);
-    LinkageLocation target_loc = LinkageLocation::AnyRegister();
+    STATIC_ASSERT(2 == Linkage::kInterpreterDispatchTableParameter);
+    types.AddParam(kMachPtr);
+    locations.AddParam(regloc(LinkageTraits::InterpreterDispatchTableReg()));
+
+    LinkageLocation target_loc = LinkageLocation::ForAnyRegister();
     return new (zone) CallDescriptor(          // --
         CallDescriptor::kInterpreterDispatch,  // kind
         kMachNone,                             // target MachineType
         target_loc,                            // target location
-        msig,                                  // machine_sig
+        types.Build(),                         // machine_sig
         locations.Build(),                     // location_sig
-        0,                                     // js_parameter_count
+        0,                                     // stack_parameter_count
         Operator::kNoProperties,               // properties
         kNoCalleeSaved,                        // callee-saved registers
         kNoCalleeSaved,                        // callee-saved fp regs
@@ -255,12 +230,11 @@ class LinkageHelper {
   }
 
   static LinkageLocation regloc(Register reg) {
-    return LinkageLocation(Register::ToAllocationIndex(reg));
+    return LinkageLocation::ForRegister(Register::ToAllocationIndex(reg));
   }
 
   static LinkageLocation stackloc(int i) {
-    DCHECK_LT(i, 0);
-    return LinkageLocation(i);
+    return LinkageLocation::ForCallerFrameSlot(i);
   }
 
   static MachineType reptyp(Representation representation) {
@@ -305,11 +279,8 @@ LinkageLocation Linkage::GetOsrValueLocation(int index) const {
     return incoming_->GetInputLocation(context_index);
   } else if (index >= first_stack_slot) {
     // Local variable stored in this (callee) stack.
-    int spill_index =
-        LinkageLocation::ANY_REGISTER + 1 + index - first_stack_slot;
-    // TODO(titzer): bailout instead of crashing here.
-    CHECK(spill_index <= LinkageLocation::MAX_STACK_SLOT);
-    return LinkageLocation(spill_index);
+    int spill_index = index - first_stack_slot;
+    return LinkageLocation::ForCalleeFrameSlot(spill_index);
   } else {
     // Parameter. Use the assigned location from the incoming call descriptor.
     int parameter_index = 1 + index;  // skip index 0, which is the target.

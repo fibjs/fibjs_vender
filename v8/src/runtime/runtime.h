@@ -84,6 +84,7 @@ namespace internal {
   F(HomeObjectSymbol, 0, 1)                   \
   F(DefineClass, 6, 1)                        \
   F(DefineClassStrong, 6, 1)                  \
+  F(FinalizeClassDefinition, 2, 1)            \
   F(DefineClassMethod, 3, 1)                  \
   F(ClassGetSourceCode, 1, 1)                 \
   F(LoadFromSuper, 4, 1)                      \
@@ -152,6 +153,7 @@ namespace internal {
 
 
 #define FOR_EACH_INTRINSIC_DEBUG(F)            \
+  F(HandleDebuggerStatement, 0, 1)             \
   F(DebugBreak, 0, 1)                          \
   F(SetDebugEventListener, 2, 1)               \
   F(ScheduleBreak, 0, 1)                       \
@@ -318,7 +320,6 @@ namespace internal {
   F(AllocateInTargetSpace, 2, 1)              \
   F(CollectStackTrace, 2, 1)                  \
   F(RenderCallSite, 0, 1)                     \
-  F(GetFromCacheRT, 2, 1)                     \
   F(MessageGetStartPosition, 1, 1)            \
   F(MessageGetScript, 1, 1)                   \
   F(FormatMessageString, 4, 1)                \
@@ -333,7 +334,6 @@ namespace internal {
   F(CallSiteIsEvalRT, 3, 1)                   \
   F(CallSiteIsConstructorRT, 3, 1)            \
   F(IS_VAR, 1, 1)                             \
-  F(GetFromCache, 2, 1)                       \
   F(IncrementStatsCounter, 1, 1)              \
   F(Likely, 1, 1)                             \
   F(Unlikely, 1, 1)                           \
@@ -383,12 +383,11 @@ namespace internal {
   F(MathExpRT, 1, 1)                \
   F(MathClz32, 1, 1)                \
   F(MathFloor, 1, 1)                \
-  F(MathPowSlow, 2, 1)              \
+  F(MathPow, 2, 1)                  \
   F(MathPowRT, 2, 1)                \
   F(RoundNumber, 1, 1)              \
   F(MathSqrt, 1, 1)                 \
   F(MathFround, 1, 1)               \
-  F(MathPow, 2, 1)                  \
   F(IsMinusZero, 1, 1)
 
 
@@ -401,7 +400,7 @@ namespace internal {
   F(StringToNumber, 1, 1)              \
   F(StringParseInt, 2, 1)              \
   F(StringParseFloat, 1, 1)            \
-  F(NumberToStringRT, 1, 1)            \
+  F(NumberToString, 1, 1)              \
   F(NumberToStringSkipCache, 1, 1)     \
   F(NumberToInteger, 1, 1)             \
   F(NumberToIntegerMapMinusZero, 1, 1) \
@@ -425,7 +424,6 @@ namespace internal {
   F(NumberCompare, 3, 1)               \
   F(SmiLexicographicCompare, 2, 1)     \
   F(MaxSmi, 0, 1)                      \
-  F(NumberToString, 1, 1)              \
   F(IsSmi, 1, 1)                       \
   F(IsNonNegativeSmi, 1, 1)            \
   F(GetRootNaN, 0, 1)
@@ -446,8 +444,9 @@ namespace internal {
   F(GetPropertyStrong, 2, 1)                         \
   F(KeyedGetProperty, 2, 1)                          \
   F(KeyedGetPropertyStrong, 2, 1)                    \
-  F(LoadGlobalViaContext, 3, 1)                      \
-  F(StoreGlobalViaContext, 5, 1)                     \
+  F(LoadGlobalViaContext, 1, 1)                      \
+  F(StoreGlobalViaContext_Sloppy, 2, 1)              \
+  F(StoreGlobalViaContext_Strict, 2, 1)              \
   F(AddNamedProperty, 4, 1)                          \
   F(SetProperty, 4, 1)                               \
   F(AddElement, 3, 1)                                \
@@ -493,7 +492,8 @@ namespace internal {
   F(IsStrong, 1, 1)                                  \
   F(ClassOf, 1, 1)                                   \
   F(DefineGetterPropertyUnchecked, 4, 1)             \
-  F(DefineSetterPropertyUnchecked, 4, 1)
+  F(DefineSetterPropertyUnchecked, 4, 1)             \
+  F(ToObject, 1, 1)
 
 
 #define FOR_EACH_INTRINSIC_OBSERVE(F)            \
@@ -525,7 +525,6 @@ namespace internal {
   F(StringReplaceGlobalRegExpWithString, 4, 1) \
   F(StringSplit, 3, 1)                         \
   F(RegExpExec, 4, 1)                          \
-  F(RegExpConstructResultRT, 3, 1)             \
   F(RegExpConstructResult, 3, 1)               \
   F(RegExpInitializeAndCompile, 3, 1)          \
   F(MaterializeRegExpLiteral, 4, 1)            \
@@ -536,10 +535,11 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_SCOPES(F)                         \
   F(ThrowConstAssignError, 0, 1)                             \
-  F(DeclareGlobals, 3, 1)                                    \
+  F(DeclareGlobals, 2, 1)                                    \
   F(InitializeVarGlobal, 3, 1)                               \
   F(InitializeConstGlobal, 2, 1)                             \
-  F(DeclareLookupSlot, 4, 1)                                 \
+  F(DeclareLookupSlot, 2, 1)                                 \
+  F(DeclareReadOnlyLookupSlot, 2, 1)                         \
   F(InitializeLegacyConstLookupSlot, 3, 1)                   \
   F(NewArguments, 1, 1) /* TODO(turbofan): Only temporary */ \
   F(NewSloppyArguments, 3, 1)                                \
@@ -558,19 +558,46 @@ namespace internal {
   F(DeclareModules, 1, 1)                                    \
   F(DeleteLookupSlot, 2, 1)                                  \
   F(StoreLookupSlot, 4, 1)                                   \
-  F(GetArgumentsProperty, 1, 1)                              \
   F(ArgumentsLength, 0, 1)                                   \
   F(Arguments, 1, 1)
 
 
-#define FOR_EACH_INTRINSIC_SIMD(F) \
-  F(CreateFloat32x4, 4, 1)         \
-  F(NewFloat32x4Wrapper, 1, 1)     \
-  F(Float32x4Check, 1, 1)          \
-  F(Float32x4ExtractLane, 2, 1)    \
-  F(Float32x4Equals, 2, 1)         \
-  F(Float32x4SameValue, 2, 1)      \
-  F(Float32x4SameValueZero, 2, 1)
+#define FOR_EACH_INTRINSIC_SIMD(F)    \
+  F(IsSimdValue, 1, 1)                \
+  F(SimdToObject, 1, 1)               \
+  F(SimdEquals, 2, 1)                 \
+  F(SimdSameValue, 2, 1)              \
+  F(SimdSameValueZero, 2, 1)          \
+  F(CreateFloat32x4, 4, 1)            \
+  F(CreateInt32x4, 4, 1)              \
+  F(CreateBool32x4, 4, 1)             \
+  F(CreateInt16x8, 8, 1)              \
+  F(CreateBool16x8, 8, 1)             \
+  F(CreateInt8x16, 16, 1)             \
+  F(CreateBool8x16, 16, 1)            \
+  F(Float32x4Check, 1, 1)             \
+  F(Int32x4Check, 1, 1)               \
+  F(Bool32x4Check, 1, 1)              \
+  F(Int16x8Check, 1, 1)               \
+  F(Bool16x8Check, 1, 1)              \
+  F(Int8x16Check, 1, 1)               \
+  F(Bool8x16Check, 1, 1)              \
+  F(Float32x4ExtractLane, 2, 1)       \
+  F(Int32x4ExtractLane, 2, 1)         \
+  F(Bool32x4ExtractLane, 2, 1)        \
+  F(Int16x8ExtractLane, 2, 1)         \
+  F(Int16x8UnsignedExtractLane, 2, 1) \
+  F(Bool16x8ExtractLane, 2, 1)        \
+  F(Int8x16ExtractLane, 2, 1)         \
+  F(Int8x16UnsignedExtractLane, 2, 1) \
+  F(Bool8x16ExtractLane, 2, 1)        \
+  F(Float32x4ReplaceLane, 3, 1)       \
+  F(Int32x4ReplaceLane, 3, 1)         \
+  F(Bool32x4ReplaceLane, 3, 1)        \
+  F(Int16x8ReplaceLane, 3, 1)         \
+  F(Bool16x8ReplaceLane, 3, 1)        \
+  F(Int8x16ReplaceLane, 3, 1)         \
+  F(Bool8x16ReplaceLane, 3, 1)
 
 
 #define FOR_EACH_INTRINSIC_STRINGS(F)           \
@@ -578,15 +605,12 @@ namespace internal {
   F(StringIndexOf, 3, 1)                        \
   F(StringLastIndexOf, 3, 1)                    \
   F(StringLocaleCompare, 2, 1)                  \
-  F(SubStringRT, 3, 1)                          \
   F(SubString, 3, 1)                            \
-  F(StringAddRT, 2, 1)                          \
   F(StringAdd, 2, 1)                            \
   F(InternalizeString, 1, 1)                    \
   F(StringMatch, 3, 1)                          \
   F(StringCharCodeAtRT, 2, 1)                   \
   F(CharFromCode, 1, 1)                         \
-  F(StringCompareRT, 2, 1)                      \
   F(StringCompare, 2, 1)                        \
   F(StringBuilderConcat, 3, 1)                  \
   F(StringBuilderJoin, 3, 1)                    \
@@ -615,7 +639,6 @@ namespace internal {
   F(CreateSymbol, 1, 1)              \
   F(CreatePrivateSymbol, 1, 1)       \
   F(CreateGlobalPrivateSymbol, 1, 1) \
-  F(NewSymbolWrapper, 1, 1)          \
   F(SymbolDescription, 1, 1)         \
   F(SymbolRegistry, 0, 1)            \
   F(SymbolIsPrivate, 1, 1)
@@ -656,17 +679,8 @@ namespace internal {
   F(HasFastHoleyElements, 1, 1)               \
   F(HasDictionaryElements, 1, 1)              \
   F(HasSloppyArgumentsElements, 1, 1)         \
-  F(HasExternalArrayElements, 1, 1)           \
+  F(HasFixedTypedArrayElements, 1, 1)         \
   F(HasFastProperties, 1, 1)                  \
-  F(HasExternalUint8Elements, 1, 1)           \
-  F(HasExternalInt8Elements, 1, 1)            \
-  F(HasExternalUint16Elements, 1, 1)          \
-  F(HasExternalInt16Elements, 1, 1)           \
-  F(HasExternalUint32Elements, 1, 1)          \
-  F(HasExternalInt32Elements, 1, 1)           \
-  F(HasExternalFloat32Elements, 1, 1)         \
-  F(HasExternalFloat64Elements, 1, 1)         \
-  F(HasExternalUint8ClampedElements, 1, 1)    \
   F(HasFixedUint8Elements, 1, 1)              \
   F(HasFixedInt8Elements, 1, 1)               \
   F(HasFixedUint16Elements, 1, 1)             \
@@ -725,7 +739,37 @@ namespace internal {
   F(LoadLookupSlotNoReferenceError, 2, 2)
 
 
+// Most intrinsics are implemented in the runtime/ directory, but ICs are
+// implemented in ic.cc for now.
+#define FOR_EACH_INTRINSIC_IC(F)             \
+  F(LoadIC_Miss, 3, 1)                       \
+  F(KeyedLoadIC_Miss, 3, 1)                  \
+  F(CallIC_Miss, 3, 1)                       \
+  F(CallIC_Customization_Miss, 3, 1)         \
+  F(StoreIC_Miss, 3, 1)                      \
+  F(StoreIC_Slow, 3, 1)                      \
+  F(KeyedStoreIC_Miss, 3, 1)                 \
+  F(KeyedStoreIC_Slow, 3, 1)                 \
+  F(StoreCallbackProperty, 5, 1)             \
+  F(LoadPropertyWithInterceptorOnly, 3, 1)   \
+  F(LoadPropertyWithInterceptor, 3, 1)       \
+  F(LoadElementWithInterceptor, 2, 1)        \
+  F(StorePropertyWithInterceptor, 3, 1)      \
+  F(CompareIC_Miss, 3, 1)                    \
+  F(BinaryOpIC_Miss, 2, 1)                   \
+  F(CompareNilIC_Miss, 1, 1)                 \
+  F(Unreachable, 0, 1)                       \
+  F(ToBooleanIC_Miss, 1, 1)                  \
+  F(KeyedLoadIC_MissFromStubFailure, 4, 1)   \
+  F(KeyedStoreIC_MissFromStubFailure, 3, 1)  \
+  F(StoreIC_MissFromStubFailure, 3, 1)       \
+  F(ElementsTransitionAndStoreIC_Miss, 4, 1) \
+  F(BinaryOpIC_MissWithAllocationSite, 3, 1) \
+  F(LoadIC_MissFromStubFailure, 0, 1)
+
+
 #define FOR_EACH_INTRINSIC_RETURN_OBJECT(F) \
+  FOR_EACH_INTRINSIC_IC(F)                  \
   FOR_EACH_INTRINSIC_ARRAY(F)               \
   FOR_EACH_INTRINSIC_ATOMICS(F)             \
   FOR_EACH_INTRINSIC_CLASSES(F)             \
@@ -762,6 +806,12 @@ namespace internal {
   FOR_EACH_INTRINSIC_RETURN_PAIR(F) \
   FOR_EACH_INTRINSIC_RETURN_OBJECT(F)
 
+
+#define F(name, nargs, ressize)                                 \
+  Object* Runtime_##name(int args_length, Object** args_object, \
+                         Isolate* isolate);
+FOR_EACH_INTRINSIC_RETURN_OBJECT(F)
+#undef F
 
 //---------------------------------------------------------------------------
 // Runtime provides access to all C++ runtime functions.
@@ -871,8 +921,6 @@ class Runtime : public AllStatic {
 
   static void NeuterArrayBuffer(Handle<JSArrayBuffer> array_buffer);
 
-  static int FindIndexedNonNativeFrame(JavaScriptFrameIterator* it, int index);
-
   enum TypedArrayId {
     // arrayIds below should be synchromized with typedarray.js natives.
     ARRAY_ID_UINT8 = 1,
@@ -889,7 +937,6 @@ class Runtime : public AllStatic {
   };
 
   static void ArrayIdToTypeAndSize(int array_id, ExternalArrayType* type,
-                                   ElementsKind* external_elements_kind,
                                    ElementsKind* fixed_elements_kind,
                                    size_t* element_size);
 

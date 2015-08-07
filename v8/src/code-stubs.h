@@ -54,6 +54,7 @@ namespace internal {
   V(StubFailureTrampoline)                  \
   V(SubString)                              \
   V(ToNumber)                               \
+  V(ToObject)                               \
   V(VectorStoreICTrampoline)                \
   V(VectorKeyedStoreICTrampoline)           \
   V(VectorStoreIC)                          \
@@ -423,7 +424,6 @@ class PlatformCodeStub : public CodeStub {
 
 
 enum StubFunctionMode { NOT_JS_FUNCTION_STUB_MODE, JS_FUNCTION_STUB_MODE };
-enum HandlerArgumentsMode { DONT_PASS_ARGUMENTS, PASS_ARGUMENTS };
 
 
 class CodeStubDescriptor {
@@ -438,8 +438,7 @@ class CodeStubDescriptor {
   void Initialize(Register stack_parameter_count,
                   Address deoptimization_handler = NULL,
                   int hint_stack_parameter_count = -1,
-                  StubFunctionMode function_mode = NOT_JS_FUNCTION_STUB_MODE,
-                  HandlerArgumentsMode handler_mode = DONT_PASS_ARGUMENTS);
+                  StubFunctionMode function_mode = NOT_JS_FUNCTION_STUB_MODE);
 
   void SetMissHandler(ExternalReference handler) {
     miss_handler_ = handler;
@@ -454,6 +453,14 @@ class CodeStubDescriptor {
 
   int GetRegisterParameterCount() const {
     return call_descriptor().GetRegisterParameterCount();
+  }
+
+  int GetStackParameterCount() const {
+    return call_descriptor().GetStackParameterCount();
+  }
+
+  int GetParameterCount() const {
+    return call_descriptor().GetParameterCount();
   }
 
   Register GetRegisterParameter(int index) const {
@@ -474,8 +481,8 @@ class CodeStubDescriptor {
   }
 
   int GetHandlerParameterCount() const {
-    int params = GetRegisterParameterCount();
-    if (handler_arguments_mode_ == PASS_ARGUMENTS) {
+    int params = GetParameterCount();
+    if (PassesArgumentsToDeoptimizationHandler()) {
       params += 1;
     }
     return params;
@@ -487,6 +494,10 @@ class CodeStubDescriptor {
   Address deoptimization_handler() const { return deoptimization_handler_; }
 
  private:
+  bool PassesArgumentsToDeoptimizationHandler() const {
+    return stack_parameter_count_.is_valid();
+  }
+
   CallInterfaceDescriptor call_descriptor_;
   Register stack_parameter_count_;
   // If hint_stack_parameter_count_ > 0, the code stub can optimize the
@@ -495,7 +506,6 @@ class CodeStubDescriptor {
   StubFunctionMode function_mode_;
 
   Address deoptimization_handler_;
-  HandlerArgumentsMode handler_arguments_mode_;
 
   ExternalReference miss_handler_;
   bool has_miss_handler_;
@@ -1387,57 +1397,50 @@ class StoreGlobalStub : public HandlerStub {
 };
 
 
-class LoadGlobalViaContextStub : public HydrogenCodeStub {
+class LoadGlobalViaContextStub final : public PlatformCodeStub {
  public:
-  // Use the loop version for depths higher than this one.
-  static const int kDynamicDepth = 7;
+  static const int kMaximumDepth = 15;
 
   LoadGlobalViaContextStub(Isolate* isolate, int depth)
-      : HydrogenCodeStub(isolate) {
-    if (depth > kDynamicDepth) depth = kDynamicDepth;
-    set_sub_minor_key(DepthBits::encode(depth));
+      : PlatformCodeStub(isolate) {
+    minor_key_ = DepthBits::encode(depth);
   }
 
-  int depth() const { return DepthBits::decode(sub_minor_key()); }
+  int depth() const { return DepthBits::decode(minor_key_); }
 
  private:
-  class DepthBits : public BitField<unsigned int, 0, 3> {};
-  STATIC_ASSERT(kDynamicDepth <= DepthBits::kMax);
+  class DepthBits : public BitField<int, 0, 4> {};
+  STATIC_ASSERT(DepthBits::kMax == kMaximumDepth);
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(LoadGlobalViaContext);
-  DEFINE_HYDROGEN_CODE_STUB(LoadGlobalViaContext, HydrogenCodeStub);
+  DEFINE_PLATFORM_CODE_STUB(LoadGlobalViaContext, PlatformCodeStub);
 };
 
 
-class StoreGlobalViaContextStub : public HydrogenCodeStub {
+class StoreGlobalViaContextStub final : public PlatformCodeStub {
  public:
-  // Use the loop version for depths higher than this one.
-  static const int kDynamicDepth = 7;
+  static const int kMaximumDepth = 15;
 
   StoreGlobalViaContextStub(Isolate* isolate, int depth,
                             LanguageMode language_mode)
-      : HydrogenCodeStub(isolate) {
-    if (depth > kDynamicDepth) depth = kDynamicDepth;
-    set_sub_minor_key(DepthBits::encode(depth) |
-                      LanguageModeBits::encode(language_mode));
+      : PlatformCodeStub(isolate) {
+    minor_key_ =
+        DepthBits::encode(depth) | LanguageModeBits::encode(language_mode);
   }
 
-  int depth() const { return DepthBits::decode(sub_minor_key()); }
-
+  int depth() const { return DepthBits::decode(minor_key_); }
   LanguageMode language_mode() const {
-    return LanguageModeBits::decode(sub_minor_key());
+    return LanguageModeBits::decode(minor_key_);
   }
 
  private:
-  class DepthBits : public BitField<unsigned int, 0, 4> {};
-  STATIC_ASSERT(kDynamicDepth <= DepthBits::kMax);
-
+  class DepthBits : public BitField<int, 0, 4> {};
+  STATIC_ASSERT(DepthBits::kMax == kMaximumDepth);
   class LanguageModeBits : public BitField<LanguageMode, 4, 2> {};
   STATIC_ASSERT(LANGUAGE_END == 3);
 
- private:
   DEFINE_CALL_INTERFACE_DESCRIPTOR(StoreGlobalViaContext);
-  DEFINE_HYDROGEN_CODE_STUB(StoreGlobalViaContext, HydrogenCodeStub);
+  DEFINE_PLATFORM_CODE_STUB(StoreGlobalViaContext, PlatformCodeStub);
 };
 
 
@@ -2946,35 +2949,13 @@ class ElementsTransitionAndStoreStub : public HydrogenCodeStub {
     return StoreModeBits::decode(sub_minor_key());
   }
 
-  // Parameters accessed via CodeStubGraphBuilder::GetParameter()
-  enum ParameterIndices {
-    kValueIndex,
-    kMapIndex,
-    kKeyIndex,
-    kObjectIndex,
-    kParameterCount
-  };
-
-  static const Register ValueRegister() {
-    return ElementTransitionAndStoreDescriptor::ValueRegister();
-  }
-  static const Register MapRegister() {
-    return ElementTransitionAndStoreDescriptor::MapRegister();
-  }
-  static const Register KeyRegister() {
-    return ElementTransitionAndStoreDescriptor::NameRegister();
-  }
-  static const Register ObjectRegister() {
-    return ElementTransitionAndStoreDescriptor::ReceiverRegister();
-  }
-
  private:
   class FromBits : public BitField<ElementsKind, 0, 8> {};
   class ToBits : public BitField<ElementsKind, 8, 8> {};
   class IsJSArrayBits : public BitField<bool, 16, 1> {};
   class StoreModeBits : public BitField<KeyedAccessStoreMode, 17, 4> {};
 
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(ElementTransitionAndStore);
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(StoreTransition);
   DEFINE_HYDROGEN_CODE_STUB(ElementsTransitionAndStore, HydrogenCodeStub);
 };
 
@@ -3067,6 +3048,15 @@ class ToNumberStub final : public PlatformCodeStub {
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(ToNumber);
   DEFINE_PLATFORM_CODE_STUB(ToNumber, PlatformCodeStub);
+};
+
+
+class ToObjectStub final : public HydrogenCodeStub {
+ public:
+  explicit ToObjectStub(Isolate* isolate) : HydrogenCodeStub(isolate) {}
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(ToObject);
+  DEFINE_HYDROGEN_CODE_STUB(ToObject, HydrogenCodeStub);
 };
 
 

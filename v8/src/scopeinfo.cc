@@ -340,7 +340,7 @@ int ScopeInfo::ContextLength() {
                        scope_type() == MODULE_SCOPE;
 
     if (has_context) {
-      return Context::MIN_CONTEXT_SLOTS + context_locals + 2 * context_globals +
+      return Context::MIN_CONTEXT_SLOTS + context_locals + context_globals +
              (function_name_context_slot ? 1 : 0);
     }
   }
@@ -553,7 +553,7 @@ int ScopeInfo::ContextSlotIndex(Handle<ScopeInfo> scope_info,
           var -= scope_info->ContextLocalCount();
           *location = VariableLocation::GLOBAL;
           result = Context::MIN_CONTEXT_SLOTS +
-                   scope_info->ContextLocalCount() + 2 * var;
+                   scope_info->ContextLocalCount() + var;
         }
 
         context_slot_cache->Update(scope_info, name, *mode, *location,
@@ -564,11 +564,19 @@ int ScopeInfo::ContextSlotIndex(Handle<ScopeInfo> scope_info,
     }
     // Cache as not found. Mode, location, init flag and maybe assigned flag
     // don't matter.
-    context_slot_cache->Update(scope_info, name, INTERNAL,
+    context_slot_cache->Update(scope_info, name, TEMPORARY,
                                VariableLocation::CONTEXT, kNeedsInitialization,
                                kNotAssigned, -1);
   }
   return -1;
+}
+
+
+String* ScopeInfo::ContextSlotName(int slot_index) {
+  int const var = slot_index - Context::MIN_CONTEXT_SLOTS;
+  DCHECK_LE(0, var);
+  DCHECK_LT(var, ContextLocalCount() + ContextGlobalCount());
+  return ContextLocalName(var);
 }
 
 
@@ -615,30 +623,6 @@ int ScopeInfo::FunctionContextSlotIndex(String* name, VariableMode* mode) {
 
 FunctionKind ScopeInfo::function_kind() {
   return FunctionKindField::decode(Flags());
-}
-
-
-void ScopeInfo::CopyContextLocalsToScopeObject(Handle<ScopeInfo> scope_info,
-                                               Handle<Context> context,
-                                               Handle<JSObject> scope_object) {
-  Isolate* isolate = scope_info->GetIsolate();
-  int local_count = scope_info->ContextLocalCount();
-  if (local_count == 0) return;
-  // Fill all context locals to the context extension.
-  int first_context_var = scope_info->StackLocalCount();
-  int start = scope_info->ContextLocalNameEntriesIndex();
-  for (int i = 0; i < local_count; ++i) {
-    if (scope_info->LocalIsSynthetic(first_context_var + i)) continue;
-    int context_index = Context::MIN_CONTEXT_SLOTS + i;
-    Handle<Object> value = Handle<Object>(context->get(context_index), isolate);
-    // Reflect variables under TDZ as undefined in scope object.
-    if (value->IsTheHole()) continue;
-    // This should always succeed.
-    // TODO(verwaest): Use AddDataProperty instead.
-    JSObject::SetOwnPropertyIgnoreAttributes(
-        scope_object, handle(String::cast(scope_info->get(i + start))), value,
-        ::NONE).Check();
-  }
 }
 
 

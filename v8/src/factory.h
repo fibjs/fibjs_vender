@@ -283,10 +283,11 @@ class Factory final {
   Handle<ByteArray> NewByteArray(int length,
                                  PretenureFlag pretenure = NOT_TENURED);
 
-  Handle<ExternalArray> NewExternalArray(
-      int length,
-      ExternalArrayType array_type,
-      void* external_pointer,
+  Handle<BytecodeArray> NewBytecodeArray(int length, const byte* raw_bytecodes,
+                                         int frame_size);
+
+  Handle<FixedTypedArrayBase> NewFixedTypedArrayWithExternalPointer(
+      int length, ExternalArrayType array_type, void* external_pointer,
       PretenureFlag pretenure = NOT_TENURED);
 
   Handle<FixedTypedArrayBase> NewFixedTypedArray(
@@ -321,6 +322,10 @@ class Factory final {
   Handle<FixedArray> CopyFixedArrayWithMap(Handle<FixedArray> array,
                                            Handle<Map> map);
 
+  Handle<FixedArray> CopyFixedArrayAndGrow(
+      Handle<FixedArray> array, int grow_by,
+      PretenureFlag pretenure = NOT_TENURED);
+
   Handle<FixedArray> CopyFixedArray(Handle<FixedArray> array);
 
   // This method expects a COW array in new space, and creates a copy
@@ -350,8 +355,20 @@ class Factory final {
   Handle<HeapNumber> NewHeapNumber(double value,
                                    MutableMode mode = IMMUTABLE,
                                    PretenureFlag pretenure = NOT_TENURED);
-  Handle<Float32x4> NewFloat32x4(float w, float x, float y, float z,
+  Handle<Float32x4> NewFloat32x4(float lanes[4],
                                  PretenureFlag pretenure = NOT_TENURED);
+  Handle<Int32x4> NewInt32x4(int32_t lanes[4],
+                             PretenureFlag pretenure = NOT_TENURED);
+  Handle<Bool32x4> NewBool32x4(bool lanes[4],
+                               PretenureFlag pretenure = NOT_TENURED);
+  Handle<Int16x8> NewInt16x8(int16_t lanes[8],
+                             PretenureFlag pretenure = NOT_TENURED);
+  Handle<Bool16x8> NewBool16x8(bool lanes[8],
+                               PretenureFlag pretenure = NOT_TENURED);
+  Handle<Int8x16> NewInt8x16(int8_t lanes[16],
+                             PretenureFlag pretenure = NOT_TENURED);
+  Handle<Bool8x16> NewBool8x16(bool lanes[16],
+                               PretenureFlag pretenure = NOT_TENURED);
 
   // These objects are used by the api to create env-independent data
   // structures in the heap.

@@ -141,8 +141,7 @@ int PropertyDetails::field_width_in_words() const {
 
 
 bool Object::IsFixedArrayBase() const {
-  return IsFixedArray() || IsFixedDoubleArray() || IsFixedTypedArrayBase() ||
-         IsExternalArray();
+  return IsFixedArray() || IsFixedDoubleArray() || IsFixedTypedArrayBase();
 }
 
 
@@ -169,8 +168,24 @@ bool Object::IsHeapObject() const {
 
 TYPE_CHECKER(HeapNumber, HEAP_NUMBER_TYPE)
 TYPE_CHECKER(MutableHeapNumber, MUTABLE_HEAP_NUMBER_TYPE)
-TYPE_CHECKER(Float32x4, FLOAT32X4_TYPE)
 TYPE_CHECKER(Symbol, SYMBOL_TYPE)
+
+
+bool Object::IsSimd128Value() const {
+  if (!Object::IsHeapObject()) return false;
+  InstanceType instance_type = HeapObject::cast(this)->map()->instance_type();
+  return (instance_type >= FIRST_SIMD_VALUE_TYPE &&
+          instance_type <= LAST_SIMD_VALUE_TYPE);
+}
+
+
+TYPE_CHECKER(Float32x4, FLOAT32X4_TYPE)
+TYPE_CHECKER(Int32x4, INT32X4_TYPE)
+TYPE_CHECKER(Bool32x4, BOOL32X4_TYPE)
+TYPE_CHECKER(Int16x8, INT16X8_TYPE)
+TYPE_CHECKER(Bool16x8, BOOL16X8_TYPE)
+TYPE_CHECKER(Int8x16, INT8X16_TYPE)
+TYPE_CHECKER(Bool8x16, BOOL8X16_TYPE)
 
 
 bool Object::IsString() const {
@@ -270,8 +285,7 @@ bool Object::IsExternalTwoByteString() const {
 
 bool Object::HasValidElements() {
   // Dictionary is covered under FixedArray.
-  return IsFixedArray() || IsFixedDoubleArray() || IsExternalArray() ||
-         IsFixedTypedArrayBase();
+  return IsFixedArray() || IsFixedDoubleArray() || IsFixedTypedArrayBase();
 }
 
 
@@ -648,6 +662,7 @@ bool Object::IsNumber() const {
 
 
 TYPE_CHECKER(ByteArray, BYTE_ARRAY_TYPE)
+TYPE_CHECKER(BytecodeArray, BYTECODE_ARRAY_TYPE)
 TYPE_CHECKER(FreeSpace, FREE_SPACE_TYPE)
 
 
@@ -658,18 +673,8 @@ bool Object::IsFiller() const {
 }
 
 
-bool Object::IsExternalArray() const {
-  if (!Object::IsHeapObject())
-    return false;
-  InstanceType instance_type =
-      HeapObject::cast(this)->map()->instance_type();
-  return (instance_type >= FIRST_EXTERNAL_ARRAY_TYPE &&
-          instance_type <= LAST_EXTERNAL_ARRAY_TYPE);
-}
-
 
 #define TYPED_ARRAY_TYPE_CHECKER(Type, type, TYPE, ctype, size)               \
-  TYPE_CHECKER(External##Type##Array, EXTERNAL_##TYPE##_ARRAY_TYPE)           \
   TYPE_CHECKER(Fixed##Type##Array, FIXED_##TYPE##_ARRAY_TYPE)
 
 TYPED_ARRAYS(TYPED_ARRAY_TYPE_CHECKER)
@@ -918,28 +923,6 @@ bool Object::IsUnseededNumberDictionary() const {
 
 bool Object::IsStringTable() const {
   return IsHashTable();
-}
-
-
-bool Object::IsJSFunctionResultCache() const {
-  if (!IsFixedArray()) return false;
-  const FixedArray* self = FixedArray::cast(this);
-  int length = self->length();
-  if (length < JSFunctionResultCache::kEntriesIndex) return false;
-  if ((length - JSFunctionResultCache::kEntriesIndex)
-      % JSFunctionResultCache::kEntrySize != 0) {
-    return false;
-  }
-#ifdef VERIFY_HEAP
-  if (FLAG_verify_heap) {
-    // TODO(svenpanne) We use const_cast here and below to break our dependency
-    // cycle between the predicates and the verifiers. This can be removed when
-    // the verifiers are const-correct, too.
-    reinterpret_cast<JSFunctionResultCache*>(const_cast<Object*>(this))->
-        JSFunctionResultCacheVerify();
-  }
-#endif
-  return true;
 }
 
 
@@ -1254,6 +1237,18 @@ MaybeHandle<Object> Object::GetProperty(Isolate* isolate, Handle<Object> object,
 #define WRITE_INTPTR_FIELD(p, offset, value) \
   (*reinterpret_cast<intptr_t*>(FIELD_ADDR(p, offset)) = value)
 
+#define READ_UINT16_FIELD(p, offset) \
+  (*reinterpret_cast<const uint16_t*>(FIELD_ADDR_CONST(p, offset)))
+
+#define WRITE_UINT16_FIELD(p, offset, value) \
+  (*reinterpret_cast<uint16_t*>(FIELD_ADDR(p, offset)) = value)
+
+#define READ_INT16_FIELD(p, offset) \
+  (*reinterpret_cast<const int16_t*>(FIELD_ADDR_CONST(p, offset)))
+
+#define WRITE_INT16_FIELD(p, offset, value) \
+  (*reinterpret_cast<int16_t*>(FIELD_ADDR(p, offset)) = value)
+
 #define READ_UINT32_FIELD(p, offset) \
   (*reinterpret_cast<const uint32_t*>(FIELD_ADDR_CONST(p, offset)))
 
@@ -1283,12 +1278,6 @@ MaybeHandle<Object> Object::GetProperty(Isolate* isolate, Handle<Object> object,
 
 #define WRITE_INT64_FIELD(p, offset, value) \
   (*reinterpret_cast<int64_t*>(FIELD_ADDR(p, offset)) = value)
-
-#define READ_SHORT_FIELD(p, offset) \
-  (*reinterpret_cast<const uint16_t*>(FIELD_ADDR_CONST(p, offset)))
-
-#define WRITE_SHORT_FIELD(p, offset, value) \
-  (*reinterpret_cast<uint16_t*>(FIELD_ADDR(p, offset)) = value)
 
 #define READ_BYTE_FIELD(p, offset) \
   (*reinterpret_cast<const byte*>(FIELD_ADDR_CONST(p, offset)))
@@ -1565,6 +1554,162 @@ void Float32x4::set_lane(int lane, float value) {
   WRITE_FLOAT_FIELD(this, kValueOffset + lane * kFloatSize, value);
 #elif defined(V8_TARGET_BIG_ENDIAN)
   WRITE_FLOAT_FIELD(this, kValueOffset + (3 - lane) * kFloatSize, value);
+#else
+#error Unknown byte ordering
+#endif
+}
+
+
+int32_t Int32x4::get_lane(int lane) const {
+  DCHECK(lane < 4 && lane >= 0);
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  return READ_INT32_FIELD(this, kValueOffset + lane * kInt32Size);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  return READ_INT32_FIELD(this, kValueOffset + (3 - lane) * kInt32Size);
+#else
+#error Unknown byte ordering
+#endif
+}
+
+
+void Int32x4::set_lane(int lane, int32_t value) {
+  DCHECK(lane < 4 && lane >= 0);
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  WRITE_INT32_FIELD(this, kValueOffset + lane * kInt32Size, value);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  WRITE_INT32_FIELD(this, kValueOffset + (3 - lane) * kInt32Size, value);
+#else
+#error Unknown byte ordering
+#endif
+}
+
+
+bool Bool32x4::get_lane(int lane) const {
+  DCHECK(lane < 4 && lane >= 0);
+  int32_t value;
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  value = READ_INT32_FIELD(this, kValueOffset + lane * kInt32Size);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  value = READ_INT32_FIELD(this, kValueOffset + (3 - lane) * kInt32Size);
+#else
+#error Unknown byte ordering
+#endif
+  DCHECK(value == 0 || value == -1);
+  return value != 0;
+}
+
+
+void Bool32x4::set_lane(int lane, bool value) {
+  DCHECK(lane < 4 && lane >= 0);
+  int32_t int_val = value ? -1 : 0;
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  WRITE_INT32_FIELD(this, kValueOffset + lane * kInt32Size, int_val);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  WRITE_INT32_FIELD(this, kValueOffset + (3 - lane) * kInt32Size, int_val);
+#else
+#error Unknown byte ordering
+#endif
+}
+
+
+int16_t Int16x8::get_lane(int lane) const {
+  DCHECK(lane < 8 && lane >= 0);
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  return READ_INT16_FIELD(this, kValueOffset + lane * kShortSize);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  return READ_INT16_FIELD(this, kValueOffset + (7 - lane) * kShortSize);
+#else
+#error Unknown byte ordering
+#endif
+}
+
+
+void Int16x8::set_lane(int lane, int16_t value) {
+  DCHECK(lane < 8 && lane >= 0);
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  WRITE_INT16_FIELD(this, kValueOffset + lane * kShortSize, value);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  WRITE_INT16_FIELD(this, kValueOffset + (7 - lane) * kShortSize, value);
+#else
+#error Unknown byte ordering
+#endif
+}
+
+
+bool Bool16x8::get_lane(int lane) const {
+  DCHECK(lane < 8 && lane >= 0);
+  int16_t value;
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  return READ_INT16_FIELD(this, kValueOffset + lane * kShortSize);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  return READ_INT16_FIELD(this, kValueOffset + (7 - lane) * kShortSize);
+#else
+#error Unknown byte ordering
+#endif
+  DCHECK(value == 0 || value == -1);
+  return value != 0;
+}
+
+
+void Bool16x8::set_lane(int lane, bool value) {
+  DCHECK(lane < 8 && lane >= 0);
+  int16_t int_val = value ? -1 : 0;
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  WRITE_INT16_FIELD(this, kValueOffset + lane * kShortSize, int_val);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  WRITE_INT16_FIELD(this, kValueOffset + (7 - lane) * kShortSize, int_val);
+#else
+#error Unknown byte ordering
+#endif
+}
+
+
+int8_t Int8x16::get_lane(int lane) const {
+  DCHECK(lane < 16 && lane >= 0);
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  return READ_BYTE_FIELD(this, kValueOffset + lane * kCharSize);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  return READ_BYTE_FIELD(this, kValueOffset + (15 - lane) * kCharSize);
+#else
+#error Unknown byte ordering
+#endif
+}
+
+
+void Int8x16::set_lane(int lane, int8_t value) {
+  DCHECK(lane < 16 && lane >= 0);
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  WRITE_BYTE_FIELD(this, kValueOffset + lane * kCharSize, value);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  WRITE_BYTE_FIELD(this, kValueOffset + (15 - lane) * kCharSize, value);
+#else
+#error Unknown byte ordering
+#endif
+}
+
+
+bool Bool8x16::get_lane(int lane) const {
+  DCHECK(lane < 16 && lane >= 0);
+  int8_t value;
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  value = READ_BYTE_FIELD(this, kValueOffset + lane * kCharSize);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  value = READ_BYTE_FIELD(this, kValueOffset + (15 - lane) * kCharSize);
+#else
+#error Unknown byte ordering
+#endif
+  DCHECK(value == 0 || value == -1);
+  return value != 0;
+}
+
+
+void Bool8x16::set_lane(int lane, bool value) {
+  DCHECK(lane < 16 && lane >= 0);
+  int8_t int_val = value ? -1 : 0;
+#if defined(V8_TARGET_LITTLE_ENDIAN)
+  WRITE_BYTE_FIELD(this, kValueOffset + lane * kCharSize, int_val);
+#elif defined(V8_TARGET_BIG_ENDIAN)
+  WRITE_BYTE_FIELD(this, kValueOffset + (15 - lane) * kCharSize, int_val);
 #else
 #error Unknown byte ordering
 #endif
@@ -2215,7 +2360,7 @@ bool Object::IsStringObjectWithCharacterAt(uint32_t index) {
 void Object::VerifyApiCallResultType() {
 #if DEBUG
   if (!(IsSmi() || IsString() || IsSymbol() || IsSpecObject() ||
-        IsHeapNumber() || IsFloat32x4() || IsUndefined() || IsTrue() ||
+        IsHeapNumber() || IsSimd128Value() || IsUndefined() || IsTrue() ||
         IsFalse() || IsNull())) {
     FATAL("API call returned invalid object");
   }
@@ -2407,7 +2552,7 @@ AllocationAlignment HeapObject::RequiredAlignment() {
     return kDoubleAligned;
   }
   if (IsHeapNumber()) return kDoubleUnaligned;
-  if (IsFloat32x4()) return kSimd128Unaligned;
+  if (IsSimd128Value()) return kSimd128Unaligned;
 #endif  // V8_HOST_ARCH_32_BIT
   return kWordAligned;
 }
@@ -2642,10 +2787,6 @@ FixedArrayBase* Map::GetInitialElements() {
       has_fast_double_elements()) {
     DCHECK(!GetHeap()->InNewSpace(GetHeap()->empty_fixed_array()));
     return GetHeap()->empty_fixed_array();
-  } else if (has_external_array_elements()) {
-    ExternalArray* empty_array = GetHeap()->EmptyExternalArrayForMap(this);
-    DCHECK(!GetHeap()->InNewSpace(empty_array));
-    return empty_array;
   } else if (has_fixed_typed_array_elements()) {
     FixedTypedArrayBase* empty_array =
         GetHeap()->EmptyFixedTypedArrayForMap(this);
@@ -2855,13 +2996,6 @@ int HashTableBase::ComputeCapacity(int at_least_space_for) {
 }
 
 
-int HashTableBase::ComputeCapacityForSerialization(int at_least_space_for) {
-  const int kMinCapacity = 1;
-  int capacity = base::bits::RoundUpToPowerOfTwo32(at_least_space_for);
-  return Max(capacity, kMinCapacity);
-}
-
-
 template <typename Derived, typename Shape, typename Key>
 int HashTable<Derived, Shape, Key>::FindEntry(Key key) {
   return FindEntry(GetIsolate(), key);
@@ -2923,7 +3057,11 @@ void SeededNumberDictionary::set_requires_slow_elements() {
 
 CAST_ACCESSOR(AccessorInfo)
 CAST_ACCESSOR(ArrayList)
+CAST_ACCESSOR(Bool16x8)
+CAST_ACCESSOR(Bool32x4)
+CAST_ACCESSOR(Bool8x16)
 CAST_ACCESSOR(ByteArray)
+CAST_ACCESSOR(BytecodeArray)
 CAST_ACCESSOR(Cell)
 CAST_ACCESSOR(Code)
 CAST_ACCESSOR(CodeCacheHashTable)
@@ -2933,19 +3071,9 @@ CAST_ACCESSOR(DeoptimizationInputData)
 CAST_ACCESSOR(DeoptimizationOutputData)
 CAST_ACCESSOR(DependentCode)
 CAST_ACCESSOR(DescriptorArray)
-CAST_ACCESSOR(ExternalArray)
 CAST_ACCESSOR(ExternalOneByteString)
-CAST_ACCESSOR(ExternalFloat32Array)
-CAST_ACCESSOR(ExternalFloat64Array)
-CAST_ACCESSOR(ExternalInt16Array)
-CAST_ACCESSOR(ExternalInt32Array)
-CAST_ACCESSOR(ExternalInt8Array)
 CAST_ACCESSOR(ExternalString)
 CAST_ACCESSOR(ExternalTwoByteString)
-CAST_ACCESSOR(ExternalUint16Array)
-CAST_ACCESSOR(ExternalUint32Array)
-CAST_ACCESSOR(ExternalUint8Array)
-CAST_ACCESSOR(ExternalUint8ClampedArray)
 CAST_ACCESSOR(FixedArray)
 CAST_ACCESSOR(FixedArrayBase)
 CAST_ACCESSOR(FixedDoubleArray)
@@ -2956,6 +3084,9 @@ CAST_ACCESSOR(GlobalDictionary)
 CAST_ACCESSOR(GlobalObject)
 CAST_ACCESSOR(HandlerTable)
 CAST_ACCESSOR(HeapObject)
+CAST_ACCESSOR(Int16x8)
+CAST_ACCESSOR(Int32x4)
+CAST_ACCESSOR(Int8x16)
 CAST_ACCESSOR(JSArray)
 CAST_ACCESSOR(JSArrayBuffer)
 CAST_ACCESSOR(JSArrayBufferView)
@@ -2964,7 +3095,6 @@ CAST_ACCESSOR(JSDataView)
 CAST_ACCESSOR(JSDate)
 CAST_ACCESSOR(JSFunction)
 CAST_ACCESSOR(JSFunctionProxy)
-CAST_ACCESSOR(JSFunctionResultCache)
 CAST_ACCESSOR(JSGeneratorObject)
 CAST_ACCESSOR(JSGlobalObject)
 CAST_ACCESSOR(JSGlobalProxy)
@@ -3000,6 +3130,7 @@ CAST_ACCESSOR(SeqOneByteString)
 CAST_ACCESSOR(SeqString)
 CAST_ACCESSOR(SeqTwoByteString)
 CAST_ACCESSOR(SharedFunctionInfo)
+CAST_ACCESSOR(Simd128Value)
 CAST_ACCESSOR(SlicedString)
 CAST_ACCESSOR(Smi)
 CAST_ACCESSOR(String)
@@ -3335,13 +3466,13 @@ uc16* SeqTwoByteString::GetChars() {
 
 uint16_t SeqTwoByteString::SeqTwoByteStringGet(int index) {
   DCHECK(index >= 0 && index < length());
-  return READ_SHORT_FIELD(this, kHeaderSize + index * kShortSize);
+  return READ_UINT16_FIELD(this, kHeaderSize + index * kShortSize);
 }
 
 
 void SeqTwoByteString::SeqTwoByteStringSet(int index, uint16_t value) {
   DCHECK(index >= 0 && index < length());
-  WRITE_SHORT_FIELD(this, kHeaderSize + index * kShortSize, value);
+  WRITE_UINT16_FIELD(this, kHeaderSize + index * kShortSize, value);
 }
 
 
@@ -3560,42 +3691,6 @@ void StringCharacterStream::VisitTwoByteString(
 }
 
 
-void JSFunctionResultCache::MakeZeroSize() {
-  set_finger_index(kEntriesIndex);
-  set_size(kEntriesIndex);
-}
-
-
-void JSFunctionResultCache::Clear() {
-  int cache_size = size();
-  Object** entries_start = RawFieldOfElementAt(kEntriesIndex);
-  MemsetPointer(entries_start,
-                GetHeap()->the_hole_value(),
-                cache_size - kEntriesIndex);
-  MakeZeroSize();
-}
-
-
-int JSFunctionResultCache::size() {
-  return Smi::cast(get(kCacheSizeIndex))->value();
-}
-
-
-void JSFunctionResultCache::set_size(int size) {
-  set(kCacheSizeIndex, Smi::FromInt(size));
-}
-
-
-int JSFunctionResultCache::finger_index() {
-  return Smi::cast(get(kFingerIndex))->value();
-}
-
-
-void JSFunctionResultCache::set_finger_index(int finger_index) {
-  set(kFingerIndex, Smi::FromInt(finger_index));
-}
-
-
 byte ByteArray::get(int index) {
   DCHECK(index >= 0 && index < this->length());
   return READ_BYTE_FIELD(this, kHeaderSize + index * kCharSize);
@@ -3625,216 +3720,55 @@ Address ByteArray::GetDataStartAddress() {
 }
 
 
-uint8_t* ExternalUint8ClampedArray::external_uint8_clamped_pointer() {
-  return reinterpret_cast<uint8_t*>(external_pointer());
+byte BytecodeArray::get(int index) {
+  DCHECK(index >= 0 && index < this->length());
+  return READ_BYTE_FIELD(this, kHeaderSize + index * kCharSize);
 }
 
 
-uint8_t ExternalUint8ClampedArray::get_scalar(int index) {
-  DCHECK((index >= 0) && (index < this->length()));
-  uint8_t* ptr = external_uint8_clamped_pointer();
-  return ptr[index];
+void BytecodeArray::set(int index, byte value) {
+  DCHECK(index >= 0 && index < this->length());
+  WRITE_BYTE_FIELD(this, kHeaderSize + index * kCharSize, value);
 }
 
 
-Handle<Object> ExternalUint8ClampedArray::get(
-    Handle<ExternalUint8ClampedArray> array,
-    int index) {
-  return Handle<Smi>(Smi::FromInt(array->get_scalar(index)),
-                     array->GetIsolate());
+void BytecodeArray::set_frame_size(int frame_size) {
+  DCHECK_GE(frame_size, 0);
+  DCHECK(IsAligned(frame_size, static_cast<unsigned>(kPointerSize)));
+  WRITE_INT_FIELD(this, kFrameSizeOffset, frame_size);
 }
 
 
-void ExternalUint8ClampedArray::set(int index, uint8_t value) {
-  DCHECK((index >= 0) && (index < this->length()));
-  uint8_t* ptr = external_uint8_clamped_pointer();
-  ptr[index] = value;
+int BytecodeArray::frame_size() const {
+  return READ_INT_FIELD(this, kFrameSizeOffset);
 }
 
 
-void* ExternalArray::external_pointer() const {
-  intptr_t ptr = READ_INTPTR_FIELD(this, kExternalPointerOffset);
-  return reinterpret_cast<void*>(ptr);
-}
-
-
-void ExternalArray::set_external_pointer(void* value, WriteBarrierMode mode) {
-  intptr_t ptr = reinterpret_cast<intptr_t>(value);
-  WRITE_INTPTR_FIELD(this, kExternalPointerOffset, ptr);
-}
-
-
-int8_t ExternalInt8Array::get_scalar(int index) {
-  DCHECK((index >= 0) && (index < this->length()));
-  int8_t* ptr = static_cast<int8_t*>(external_pointer());
-  return ptr[index];
-}
-
-
-Handle<Object> ExternalInt8Array::get(Handle<ExternalInt8Array> array,
-                                      int index) {
-  return Handle<Smi>(Smi::FromInt(array->get_scalar(index)),
-                     array->GetIsolate());
-}
-
-
-void ExternalInt8Array::set(int index, int8_t value) {
-  DCHECK((index >= 0) && (index < this->length()));
-  int8_t* ptr = static_cast<int8_t*>(external_pointer());
-  ptr[index] = value;
-}
-
-
-uint8_t ExternalUint8Array::get_scalar(int index) {
-  DCHECK((index >= 0) && (index < this->length()));
-  uint8_t* ptr = static_cast<uint8_t*>(external_pointer());
-  return ptr[index];
-}
-
-
-Handle<Object> ExternalUint8Array::get(Handle<ExternalUint8Array> array,
-                                       int index) {
-  return Handle<Smi>(Smi::FromInt(array->get_scalar(index)),
-                     array->GetIsolate());
-}
-
-
-void ExternalUint8Array::set(int index, uint8_t value) {
-  DCHECK((index >= 0) && (index < this->length()));
-  uint8_t* ptr = static_cast<uint8_t*>(external_pointer());
-  ptr[index] = value;
-}
-
-
-int16_t ExternalInt16Array::get_scalar(int index) {
-  DCHECK((index >= 0) && (index < this->length()));
-  int16_t* ptr = static_cast<int16_t*>(external_pointer());
-  return ptr[index];
-}
-
-
-Handle<Object> ExternalInt16Array::get(Handle<ExternalInt16Array> array,
-                                       int index) {
-  return Handle<Smi>(Smi::FromInt(array->get_scalar(index)),
-                     array->GetIsolate());
-}
-
-
-void ExternalInt16Array::set(int index, int16_t value) {
-  DCHECK((index >= 0) && (index < this->length()));
-  int16_t* ptr = static_cast<int16_t*>(external_pointer());
-  ptr[index] = value;
-}
-
-
-uint16_t ExternalUint16Array::get_scalar(int index) {
-  DCHECK((index >= 0) && (index < this->length()));
-  uint16_t* ptr = static_cast<uint16_t*>(external_pointer());
-  return ptr[index];
-}
-
-
-Handle<Object> ExternalUint16Array::get(Handle<ExternalUint16Array> array,
-                                        int index) {
-  return Handle<Smi>(Smi::FromInt(array->get_scalar(index)),
-                     array->GetIsolate());
-}
-
-
-void ExternalUint16Array::set(int index, uint16_t value) {
-  DCHECK((index >= 0) && (index < this->length()));
-  uint16_t* ptr = static_cast<uint16_t*>(external_pointer());
-  ptr[index] = value;
-}
-
-
-int32_t ExternalInt32Array::get_scalar(int index) {
-  DCHECK((index >= 0) && (index < this->length()));
-  int32_t* ptr = static_cast<int32_t*>(external_pointer());
-  return ptr[index];
-}
-
-
-Handle<Object> ExternalInt32Array::get(Handle<ExternalInt32Array> array,
-                                       int index) {
-  return array->GetIsolate()->factory()->
-      NewNumberFromInt(array->get_scalar(index));
-}
-
-
-void ExternalInt32Array::set(int index, int32_t value) {
-  DCHECK((index >= 0) && (index < this->length()));
-  int32_t* ptr = static_cast<int32_t*>(external_pointer());
-  ptr[index] = value;
-}
-
-
-uint32_t ExternalUint32Array::get_scalar(int index) {
-  DCHECK((index >= 0) && (index < this->length()));
-  uint32_t* ptr = static_cast<uint32_t*>(external_pointer());
-  return ptr[index];
-}
-
-
-Handle<Object> ExternalUint32Array::get(Handle<ExternalUint32Array> array,
-                                        int index) {
-  return array->GetIsolate()->factory()->
-      NewNumberFromUint(array->get_scalar(index));
-}
-
-
-void ExternalUint32Array::set(int index, uint32_t value) {
-  DCHECK((index >= 0) && (index < this->length()));
-  uint32_t* ptr = static_cast<uint32_t*>(external_pointer());
-  ptr[index] = value;
-}
-
-
-float ExternalFloat32Array::get_scalar(int index) {
-  DCHECK((index >= 0) && (index < this->length()));
-  float* ptr = static_cast<float*>(external_pointer());
-  return ptr[index];
-}
-
-
-Handle<Object> ExternalFloat32Array::get(Handle<ExternalFloat32Array> array,
-                                         int index) {
-  return array->GetIsolate()->factory()->NewNumber(array->get_scalar(index));
-}
-
-
-void ExternalFloat32Array::set(int index, float value) {
-  DCHECK((index >= 0) && (index < this->length()));
-  float* ptr = static_cast<float*>(external_pointer());
-  ptr[index] = value;
-}
-
-
-double ExternalFloat64Array::get_scalar(int index) {
-  DCHECK((index >= 0) && (index < this->length()));
-  double* ptr = static_cast<double*>(external_pointer());
-  return ptr[index];
-}
-
-
-Handle<Object> ExternalFloat64Array::get(Handle<ExternalFloat64Array> array,
-                                         int index) {
-  return array->GetIsolate()->factory()->NewNumber(array->get_scalar(index));
-}
-
-
-void ExternalFloat64Array::set(int index, double value) {
-  DCHECK((index >= 0) && (index < this->length()));
-  double* ptr = static_cast<double*>(external_pointer());
-  ptr[index] = value;
+Address BytecodeArray::GetFirstBytecodeAddress() {
+  return reinterpret_cast<Address>(this) - kHeapObjectTag + kHeaderSize;
 }
 
 
 ACCESSORS(FixedTypedArrayBase, base_pointer, Object, kBasePointerOffset)
 
 
+void* FixedTypedArrayBase::external_pointer() const {
+  intptr_t ptr = READ_INTPTR_FIELD(this, kExternalPointerOffset);
+  return reinterpret_cast<void*>(ptr);
+}
+
+
+void FixedTypedArrayBase::set_external_pointer(void* value,
+                                               WriteBarrierMode mode) {
+  intptr_t ptr = reinterpret_cast<intptr_t>(value);
+  WRITE_INTPTR_FIELD(this, kExternalPointerOffset, ptr);
+}
+
+
 void* FixedTypedArrayBase::DataPtr() {
-  return FIELD_ADDR(this, kDataOffset);
+  return reinterpret_cast<void*>(
+      reinterpret_cast<intptr_t>(base_pointer()) +
+      reinterpret_cast<intptr_t>(external_pointer()));
 }
 
 
@@ -3857,6 +3791,7 @@ int FixedTypedArrayBase::ElementSize(InstanceType type) {
 
 
 int FixedTypedArrayBase::DataSize(InstanceType type) {
+  if (base_pointer() == Smi::FromInt(0)) return 0;
   return length() * ElementSize(type);
 }
 
@@ -3915,8 +3850,7 @@ double Float64ArrayTraits::defaultValue() {
 template <class Traits>
 typename Traits::ElementType FixedTypedArray<Traits>::get_scalar(int index) {
   DCHECK((index >= 0) && (index < this->length()));
-  ElementType* ptr = reinterpret_cast<ElementType*>(
-      FIELD_ADDR(this, kDataOffset));
+  ElementType* ptr = reinterpret_cast<ElementType*>(DataPtr());
   return ptr[index];
 }
 
@@ -3924,8 +3858,7 @@ typename Traits::ElementType FixedTypedArray<Traits>::get_scalar(int index) {
 template <class Traits>
 void FixedTypedArray<Traits>::set(int index, ElementType value) {
   DCHECK((index >= 0) && (index < this->length()));
-  ElementType* ptr = reinterpret_cast<ElementType*>(
-      FIELD_ADDR(this, kDataOffset));
+  ElementType* ptr = reinterpret_cast<ElementType*>(DataPtr());
   ptr[index] = value;
 }
 
@@ -4099,6 +4032,9 @@ int HeapObject::SizeFromMap(Map* map) {
   }
   if (instance_type == BYTE_ARRAY_TYPE) {
     return reinterpret_cast<ByteArray*>(this)->ByteArraySize();
+  }
+  if (instance_type == BYTECODE_ARRAY_TYPE) {
+    return reinterpret_cast<BytecodeArray*>(this)->BytecodeArraySize();
   }
   if (instance_type == FREE_SPACE_TYPE) {
     return reinterpret_cast<FreeSpace*>(this)->nobarrier_size();
@@ -4524,21 +4460,6 @@ void Code::set_has_debug_break_slots(bool value) {
   DCHECK_EQ(FUNCTION, kind());
   unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
   flags = FullCodeFlagsHasDebugBreakSlotsField::update(flags, value);
-  WRITE_UINT32_FIELD(this, kFullCodeFlags, flags);
-}
-
-
-bool Code::is_compiled_optimizable() {
-  DCHECK_EQ(FUNCTION, kind());
-  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
-  return FullCodeFlagsIsCompiledOptimizable::decode(flags);
-}
-
-
-void Code::set_compiled_optimizable(bool value) {
-  DCHECK_EQ(FUNCTION, kind());
-  unsigned flags = READ_UINT32_FIELD(this, kFullCodeFlags);
-  flags = FullCodeFlagsIsCompiledOptimizable::update(flags, value);
   WRITE_UINT32_FIELD(this, kFullCodeFlags, flags);
 }
 
@@ -5462,6 +5383,24 @@ bool SharedFunctionInfo::is_simple_parameter_list() {
 }
 
 
+bool SharedFunctionInfo::HasDebugInfo() {
+  bool has_debug_info = debug_info()->IsStruct();
+  DCHECK(!has_debug_info || HasDebugCode());
+  return has_debug_info;
+}
+
+
+DebugInfo* SharedFunctionInfo::GetDebugInfo() {
+  DCHECK(HasDebugInfo());
+  return DebugInfo::cast(debug_info());
+}
+
+
+bool SharedFunctionInfo::HasDebugCode() {
+  return code()->kind() == Code::FUNCTION && code()->has_debug_break_slots();
+}
+
+
 bool SharedFunctionInfo::IsApiFunction() {
   return function_data()->IsFunctionTemplateInfo();
 }
@@ -5481,6 +5420,17 @@ bool SharedFunctionInfo::HasBuiltinFunctionId() {
 BuiltinFunctionId SharedFunctionInfo::builtin_function_id() {
   DCHECK(HasBuiltinFunctionId());
   return static_cast<BuiltinFunctionId>(Smi::cast(function_data())->value());
+}
+
+
+bool SharedFunctionInfo::HasBytecodeArray() {
+  return function_data()->IsBytecodeArray();
+}
+
+
+BytecodeArray* SharedFunctionInfo::bytecode_array() {
+  DCHECK(HasBytecodeArray());
+  return BytecodeArray::cast(function_data());
 }
 
 
@@ -6249,27 +6199,6 @@ bool JSObject::HasSloppyArgumentsElements() {
 }
 
 
-bool JSObject::HasExternalArrayElements() {
-  HeapObject* array = elements();
-  DCHECK(array != NULL);
-  return array->IsExternalArray();
-}
-
-
-#define EXTERNAL_ELEMENTS_CHECK(Type, type, TYPE, ctype, size)          \
-bool JSObject::HasExternal##Type##Elements() {                          \
-  HeapObject* array = elements();                                       \
-  DCHECK(array != NULL);                                                \
-  if (!array->IsHeapObject())                                           \
-    return false;                                                       \
-  return array->map()->instance_type() == EXTERNAL_##TYPE##_ARRAY_TYPE; \
-}
-
-TYPED_ARRAYS(EXTERNAL_ELEMENTS_CHECK)
-
-#undef EXTERNAL_ELEMENTS_CHECK
-
-
 bool JSObject::HasFixedTypedArrayElements() {
   HeapObject* array = elements();
   DCHECK(array != NULL);
@@ -6941,7 +6870,7 @@ bool JSArray::SetLengthWouldNormalize(Heap* heap, uint32_t new_length) {
 
 bool JSArray::AllowsSetLength() {
   bool result = elements()->IsFixedArray() || elements()->IsFixedDoubleArray();
-  DCHECK(result == !HasExternalArrayElements());
+  DCHECK(result == !HasFixedTypedArrayElements());
   return result;
 }
 
@@ -7277,10 +7206,20 @@ String::SubStringRange::iterator String::SubStringRange::end() {
 #undef WRITE_INT_FIELD
 #undef READ_INTPTR_FIELD
 #undef WRITE_INTPTR_FIELD
+#undef READ_UINT16_FIELD
+#undef WRITE_UINT16_FIELD
+#undef READ_INT16_FIELD
+#undef WRITE_INT16_FIELD
 #undef READ_UINT32_FIELD
 #undef WRITE_UINT32_FIELD
-#undef READ_SHORT_FIELD
-#undef WRITE_SHORT_FIELD
+#undef READ_INT32_FIELD
+#undef WRITE_INT32_FIELD
+#undef READ_FLOAT_FIELD
+#undef WRITE_FLOAT_FIELD
+#undef READ_UINT64_FIELD
+#undef WRITE_UINT64_FIELD
+#undef READ_INT64_FIELD
+#undef WRITE_INT64_FIELD
 #undef READ_BYTE_FIELD
 #undef WRITE_BYTE_FIELD
 #undef NOBARRIER_READ_BYTE_FIELD

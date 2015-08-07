@@ -140,6 +140,10 @@ class LifetimePosition final {
     return LifetimePosition(kMaxInt);
   }
 
+  static inline LifetimePosition FromInt(int value) {
+    return LifetimePosition(value);
+  }
+
  private:
   static const int kHalfStep = 2;
   static const int kStep = 2 * kHalfStep;
@@ -625,6 +629,12 @@ class RegisterAllocationData final : public ZoneObject {
                                 PhiInstruction* phi);
   PhiMapValue* GetPhiMapValueFor(int virtual_register);
   bool IsBlockBoundary(LifetimePosition pos) const;
+
+  void Print(const InstructionSequence* instructionSequence);
+  void Print(const Instruction* instruction);
+  void Print(const LiveRange* range, bool with_children = false);
+  void Print(const InstructionOperand& op);
+  void Print(const MoveOperands* move);
 
  private:
   Zone* const allocation_zone_;

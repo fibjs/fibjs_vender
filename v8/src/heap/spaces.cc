@@ -6,7 +6,7 @@
 
 #include "src/base/bits.h"
 #include "src/base/platform/platform.h"
-#include "src/full-codegen.h"
+#include "src/full-codegen/full-codegen.h"
 #include "src/heap/mark-compact.h"
 #include "src/macro-assembler.h"
 #include "src/msan.h"
@@ -75,6 +75,8 @@ bool HeapObjectIterator::AdvanceToNextPage() {
   }
   cur_page = cur_page->next_page();
   if (cur_page == space_->anchor()) return false;
+  cur_page->heap()->mark_compact_collector()->SweepOrWaitUntilSweepingCompleted(
+      cur_page);
   cur_addr_ = cur_page->area_start();
   cur_end_ = cur_page->area_end();
   DCHECK(cur_page->WasSwept() || cur_page->SweepingCompleted());
@@ -499,6 +501,7 @@ MemoryChunk* MemoryChunk::Initialize(Heap* heap, Address base, size_t size,
   chunk->progress_bar_ = 0;
   chunk->high_water_mark_ = static_cast<int>(area_start - base);
   chunk->set_parallel_sweeping(SWEEPING_DONE);
+  chunk->mutex_ = NULL;
   chunk->available_in_small_free_list_ = 0;
   chunk->available_in_medium_free_list_ = 0;
   chunk->available_in_large_free_list_ = 0;
@@ -765,6 +768,7 @@ void MemoryAllocator::Free(MemoryChunk* chunk) {
 
   delete chunk->slots_buffer();
   delete chunk->skip_list();
+  delete chunk->mutex();
 
   base::VirtualMemory* reservation = chunk->reserved_memory();
   if (reservation->IsReserved()) {
@@ -918,8 +922,8 @@ bool MemoryAllocator::CommitExecutableMemory(base::VirtualMemory* vm,
 // -----------------------------------------------------------------------------
 // MemoryChunk implementation
 
-void MemoryChunk::IncrementLiveBytesFromMutator(Address address, int by) {
-  MemoryChunk* chunk = MemoryChunk::FromAddress(address);
+void MemoryChunk::IncrementLiveBytesFromMutator(HeapObject* object, int by) {
+  MemoryChunk* chunk = MemoryChunk::FromAddress(object->address());
   if (!chunk->InNewSpace() && !static_cast<Page*>(chunk)->WasSwept()) {
     static_cast<PagedSpace*>(chunk->owner())->IncrementUnsweptFreeBytes(-by);
   }
@@ -1465,14 +1469,34 @@ bool NewSpace::AddFreshPage() {
 }
 
 
-AllocationResult NewSpace::SlowAllocateRaw(int size_in_bytes,
-                                           AllocationAlignment alignment) {
+bool NewSpace::EnsureAllocation(int size_in_bytes,
+                                AllocationAlignment alignment) {
   Address old_top = allocation_info_.top();
   Address high = to_space_.page_high();
-  if (allocation_info_.limit() < high) {
-    int alignment_size = Heap::GetFillToAlign(old_top, alignment);
-    int aligned_size_in_bytes = size_in_bytes + alignment_size;
+  int filler_size = Heap::GetFillToAlign(old_top, alignment);
+  int aligned_size_in_bytes = size_in_bytes + filler_size;
 
+  if (old_top + aligned_size_in_bytes >= high) {
+    // Not enough room in the page, try to allocate a new one.
+    if (!AddFreshPage()) {
+      return false;
+    }
+
+    // Do a step for the bytes allocated on the last page.
+    int bytes_allocated = static_cast<int>(old_top - top_on_previous_step_);
+    heap()->incremental_marking()->Step(bytes_allocated,
+                                        IncrementalMarking::GC_VIA_STACK_GUARD);
+    old_top = allocation_info_.top();
+    top_on_previous_step_ = old_top;
+
+    high = to_space_.page_high();
+    filler_size = Heap::GetFillToAlign(old_top, alignment);
+    aligned_size_in_bytes = size_in_bytes + filler_size;
+  }
+
+  DCHECK(old_top + aligned_size_in_bytes < high);
+
+  if (allocation_info_.limit() < high) {
     // Either the limit has been lowered because linear allocation was disabled
     // or because incremental marking wants to get a chance to do a step. Set
     // the new limit accordingly.
@@ -1482,19 +1506,8 @@ AllocationResult NewSpace::SlowAllocateRaw(int size_in_bytes,
                                         IncrementalMarking::GC_VIA_STACK_GUARD);
     UpdateInlineAllocationLimit(aligned_size_in_bytes);
     top_on_previous_step_ = new_top;
-    if (alignment == kWordAligned) return AllocateRawUnaligned(size_in_bytes);
-    return AllocateRawAligned(size_in_bytes, alignment);
-  } else if (AddFreshPage()) {
-    // Switched to new page. Try allocating again.
-    int bytes_allocated = static_cast<int>(old_top - top_on_previous_step_);
-    heap()->incremental_marking()->Step(bytes_allocated,
-                                        IncrementalMarking::GC_VIA_STACK_GUARD);
-    top_on_previous_step_ = to_space_.page_low();
-    if (alignment == kWordAligned) return AllocateRawUnaligned(size_in_bytes);
-    return AllocateRawAligned(size_in_bytes, alignment);
-  } else {
-    return AllocationResult::Retry();
   }
+  return true;
 }
 
 

@@ -15,7 +15,7 @@
 #include "src/compiler/node-properties.h"
 #include "src/compiler/operator-properties.h"
 #include "src/compiler/state-values-utils.h"
-#include "src/full-codegen.h"
+#include "src/full-codegen/full-codegen.h"
 #include "src/parser.h"
 #include "src/scopes.h"
 
@@ -449,24 +449,24 @@ AstGraphBuilder::AstGraphBuilder(Zone* local_zone, CompilationInfo* info,
       liveness_analyzer_(static_cast<size_t>(info->scope()->num_stack_slots()),
                          local_zone),
       frame_state_function_info_(common()->CreateFrameStateFunctionInfo(
-          FrameStateType::kJavaScriptFunction,
-          info->num_parameters_including_this(),
-          info->scope()->num_stack_slots(), info->shared_info())),
+          FrameStateType::kJavaScriptFunction, info->num_parameters() + 1,
+          info->scope()->num_stack_slots(), info->shared_info(),
+          CALL_MAINTAINS_NATIVE_CONTEXT)),
       js_type_feedback_(js_type_feedback) {
   InitializeAstVisitor(info->isolate(), local_zone);
 }
 
 
 Node* AstGraphBuilder::GetFunctionClosureForContext() {
-  Scope* declaration_scope = current_scope()->DeclarationScope();
-  if (declaration_scope->is_script_scope() ||
-      declaration_scope->is_module_scope()) {
+  Scope* closure_scope = current_scope()->ClosureScope();
+  if (closure_scope->is_script_scope() ||
+      closure_scope->is_module_scope()) {
     // Contexts nested in the native context have a canonical empty function as
     // their closure, not the anonymous closure containing the global code.
     // Pass a SMI sentinel and let the runtime look up the empty function.
     return jsgraph()->SmiConstant(0);
   } else {
-    DCHECK(declaration_scope->is_function_scope());
+    DCHECK(closure_scope->is_function_scope());
     return GetFunctionClosure();
   }
 }
@@ -519,6 +519,13 @@ bool AstGraphBuilder::CreateGraph(bool stack_check) {
 
   // Initialize control scope.
   ControlScope control(this);
+
+  // TODO(mstarzinger): For now we cannot assume that the {this} parameter is
+  // not {the_hole}, because for derived classes {this} has a TDZ and the
+  // JSConstructStubForDerived magically passes {the_hole} as a receiver.
+  if (scope->has_this_declaration() && scope->receiver()->is_const_mode()) {
+    env.RawParameterBind(0, jsgraph()->TheHoleConstant());
+  }
 
   // Build receiver check for sloppy mode if necessary.
   // TODO(mstarzinger/verwaest): Should this be moved back into the CallIC?
@@ -582,11 +589,6 @@ void AstGraphBuilder::CreateGraphBody(bool stack_check) {
     AstEffectContext for_effect(this);
     scope->VisitIllegalRedeclaration(this);
     return;
-  }
-
-  // Visit implicit declaration of the function name.
-  if (scope->is_function_scope() && scope->function() != NULL) {
-    VisitVariableDeclaration(scope->function());
   }
 
   // Visit declarations within the function scope.
@@ -1505,7 +1507,8 @@ void AstGraphBuilder::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
 
 
 void AstGraphBuilder::VisitDebuggerStatement(DebuggerStatement* stmt) {
-  Node* node = NewNode(javascript()->CallRuntime(Runtime::kDebugBreak, 0));
+  Node* node =
+      NewNode(javascript()->CallRuntime(Runtime::kHandleDebuggerStatement, 0));
   PrepareFrameState(node, stmt->DebugBreakId());
   environment()->MarkAllLocalsLive();
 }
@@ -1636,33 +1639,23 @@ void AstGraphBuilder::VisitClassLiteralContents(ClassLiteral* expr) {
     }
   }
 
-  // Transform both the class literal and the prototype to fast properties.
-  const Operator* op = javascript()->CallRuntime(Runtime::kToFastProperties, 1);
-  NewNode(op, environment()->Pop());  // prototype
-  NewNode(op, environment()->Pop());  // literal
-  if (is_strong(language_mode())) {
-    // TODO(conradw): It would be more efficient to define the properties with
-    // the right attributes the first time round.
-    // Freeze the prototype.
-    proto =
-        NewNode(javascript()->CallRuntime(Runtime::kObjectFreeze, 1), proto);
-    // Freezing the prototype should never deopt.
-    PrepareFrameState(proto, BailoutId::None());
-    // Freeze the constructor.
-    literal =
-        NewNode(javascript()->CallRuntime(Runtime::kObjectFreeze, 1), literal);
-    // Freezing the constructor should never deopt.
-    PrepareFrameState(literal, BailoutId::None());
-  }
+  // Set both the prototype and constructor to have fast properties, and also
+  // freeze them in strong mode.
+  environment()->Pop();  // proto
+  environment()->Pop();  // literal
+  const Operator* op =
+      javascript()->CallRuntime(Runtime::kFinalizeClassDefinition, 2);
+  literal = NewNode(op, literal, proto);
 
   // Assign to class variable.
   if (expr->scope() != NULL) {
     DCHECK_NOT_NULL(expr->class_variable_proxy());
     Variable* var = expr->class_variable_proxy()->var();
     FrameStateBeforeAndAfter states(this, BailoutId::None());
-    VectorSlotPair feedback = CreateVectorSlotPair(
-        FLAG_vector_stores ? expr->GetNthSlot(store_slot_index++)
-                           : FeedbackVectorICSlot::Invalid());
+    VectorSlotPair feedback =
+        CreateVectorSlotPair(FLAG_vector_stores && var->IsUnallocated()
+                                 ? expr->GetNthSlot(store_slot_index++)
+                                 : FeedbackVectorICSlot::Invalid());
     BuildVariableAssignment(var, literal, Token::INIT_CONST, feedback,
                             BailoutId::None(), states);
   }
@@ -1969,6 +1962,9 @@ void AstGraphBuilder::VisitArrayLiteral(ArrayLiteral* expr) {
       FrameStateBeforeAndAfter states(this, subexpr->id());
       Node* value = environment()->Pop();
       Node* index = jsgraph()->Constant(array_index);
+      // TODO(turbofan): More efficient code could be generated here. Consider
+      // that the store will be generic because we don't have a feedback vector
+      // slot.
       Node* store = BuildKeyedStore(literal, index, value, VectorSlotPair(),
                                     TypeFeedbackId::None());
       states.AddToNode(store, expr->GetIdForElement(array_index),
@@ -2583,8 +2579,7 @@ void AstGraphBuilder::VisitCallRuntime(CallRuntime* expr) {
 
   // TODO(mstarzinger): This bailout is a gigantic hack, the owner is ashamed.
   if (function->function_id == Runtime::kInlineGeneratorNext ||
-      function->function_id == Runtime::kInlineGeneratorThrow ||
-      function->function_id == Runtime::kInlineDefaultConstructorCallSuper) {
+      function->function_id == Runtime::kInlineGeneratorThrow) {
     ast_context()->ProduceValue(jsgraph()->TheHoleConstant());
     return SetStackOverflow();
   }
@@ -2911,8 +2906,8 @@ void AstGraphBuilder::VisitDeclarations(ZoneList<Declaration*>* declarations) {
                       DeclareGlobalsLanguageMode::encode(language_mode());
   Node* flags = jsgraph()->Constant(encoded_flags);
   Node* pairs = jsgraph()->Constant(data);
-  const Operator* op = javascript()->CallRuntime(Runtime::kDeclareGlobals, 3);
-  Node* call = NewNode(op, current_context(), pairs, flags);
+  const Operator* op = javascript()->CallRuntime(Runtime::kDeclareGlobals, 2);
+  Node* call = NewNode(op, pairs, flags);
   PrepareFrameState(call, BailoutId::Declarations());
   globals()->clear();
 }
@@ -3328,7 +3323,6 @@ Node* AstGraphBuilder::BuildVariableLoad(Variable* variable,
       int slot_index = -1;
       if (variable->index() > 0) {
         DCHECK(variable->IsStaticGlobalObjectProperty());
-        // Each var occupies two slots in the context: for reads and writes.
         slot_index = variable->index();
         int depth = current_scope()->ContextChainLength(variable->scope());
         if (depth > 0) {
@@ -3358,12 +3352,9 @@ Node* AstGraphBuilder::BuildVariableLoad(Variable* variable,
         }
       } else if (mode == LET || mode == CONST) {
         // Perform check for uninitialized let/const variables.
-        // TODO(mstarzinger): For now we cannot use the below optimization for
-        // the {this} parameter, because JSConstructStubForDerived magically
-        // passes {the_hole} as a receiver.
         if (value->op() == the_hole->op()) {
           value = BuildThrowReferenceError(variable, bailout_id);
-        } else if (value->opcode() == IrOpcode::kPhi || variable->is_this()) {
+        } else if (value->opcode() == IrOpcode::kPhi) {
           value = BuildHoleCheckThenThrow(value, variable, value, bailout_id);
         }
       }
@@ -3482,7 +3473,6 @@ Node* AstGraphBuilder::BuildVariableAssignment(
       int slot_index = -1;
       if (variable->index() > 0) {
         DCHECK(variable->IsStaticGlobalObjectProperty());
-        // Each var occupies two slots in the context: for reads and writes.
         slot_index = variable->index();
         int depth = current_scope()->ContextChainLength(variable->scope());
         if (depth > 0) {
