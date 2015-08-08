@@ -75,7 +75,7 @@ public:
 
 private:
     void *m_tls[TLS_SIZE];
-    exlib::atomic refs_;
+    atomic refs_;
     intptr_t m_stackguard;
 };
 

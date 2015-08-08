@@ -27,7 +27,7 @@ inline void MemoryBarrier()
 }
 #endif
 
-atomic_t CompareAndSwap(volatile atomic_t *ptr, atomic_t old_value, atomic_t new_value);
+intptr_t CompareAndSwap(volatile intptr_t *ptr, intptr_t old_value, intptr_t new_value);
 
 void *_CompareAndSwap(void *volatile *ptr, void *old_value, void *new_value);
 
@@ -57,9 +57,9 @@ inline void *atom_xchg(void *volatile *ptr, void *new_value)
     return _atom_xchg(ptr, new_value);
 }
 
-atomic_t atom_add(volatile atomic_t *dest, atomic_t incr);
-atomic_t atom_inc(volatile atomic_t *dest);
-atomic_t atom_dec(volatile atomic_t *dest);
-atomic_t atom_xchg(volatile atomic_t *ptr, atomic_t new_value);
+intptr_t atom_add(volatile intptr_t *dest, intptr_t incr);
+intptr_t atom_inc(volatile intptr_t *dest);
+intptr_t atom_dec(volatile intptr_t *dest);
+intptr_t atom_xchg(volatile intptr_t *ptr, intptr_t new_value);
 
 }

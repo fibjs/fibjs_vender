@@ -34,7 +34,7 @@ static const bool kLittleEndian = false;
 typedef exlib::OSMutex Mutex;
 typedef exlib::OSCondVar CondVar;
 
-typedef exlib::atomic_t OnceType;
+typedef intptr_t OnceType;
 #define LEVELDB_ONCE_INIT 0
 inline void InitOnce(port::OnceType *once, void (*initializer)())
 {

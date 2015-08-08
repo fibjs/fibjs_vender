@@ -12,11 +12,6 @@
 #include <stdint.h>
 #include "osconfig.h"
 
-namespace exlib
-{
-typedef intptr_t atomic_t;
-}
-
 #ifdef WIN32
 #include "utils_win.h"
 #elif defined(x64)
@@ -37,7 +32,7 @@ public:
 	{
 	}
 
-	atomic(atomic_t new_value) : m_v(new_value)
+	atomic(intptr_t new_value) : m_v(new_value)
 	{
 	}
 
@@ -46,57 +41,57 @@ public:
 	}
 
 public:
-	atomic_t operator=(atomic_t new_value)
+	intptr_t operator=(intptr_t new_value)
 	{
 		xchg(new_value);
 		return new_value;
 	}
 
-	atomic_t operator=(const atomic &new_value)
+	intptr_t operator=(const atomic &new_value)
 	{
-		atomic_t v = new_value.m_v;
+		intptr_t v = new_value.m_v;
 
 		xchg(v);
 		return v;
 	}
 
-	operator atomic_t () const
+	operator intptr_t () const
 	{
 		return m_v;
 	}
 
-	atomic_t value() const
+	intptr_t value() const
 	{
 		return m_v;
 	}
 
-	atomic_t CompareAndSwap(atomic_t old_value, atomic_t new_value)
+	intptr_t CompareAndSwap(intptr_t old_value, intptr_t new_value)
 	{
 		return exlib::CompareAndSwap(&m_v, old_value, new_value);
 	}
 
-	inline atomic_t add(atomic_t incr)
+	inline intptr_t add(intptr_t incr)
 	{
 		return atom_add(&m_v, incr);
 	}
 
-	inline atomic_t xchg(atomic_t new_value)
+	inline intptr_t xchg(intptr_t new_value)
 	{
 		return atom_xchg(&m_v, new_value);
 	}
 
-	inline atomic_t inc()
+	inline intptr_t inc()
 	{
 		return add(1);
 	}
 
-	inline atomic_t dec()
+	inline intptr_t dec()
 	{
 		return add(-1);
 	}
 
 private:
-	volatile atomic_t m_v;
+	volatile intptr_t m_v;
 };
 
 template<class T>

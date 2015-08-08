@@ -37,9 +37,9 @@ inline T *CompareAndSwap(T *volatile *ptr, T *old_value, T *new_value)
     return prev;
 }
 
-inline atomic_t CompareAndSwap(volatile atomic_t *ptr, atomic_t old_value, atomic_t new_value)
+inline intptr_t CompareAndSwap(volatile intptr_t *ptr, intptr_t old_value, intptr_t new_value)
 {
-    atomic_t prev;
+    intptr_t prev;
     __asm__ volatile(
         "lock; cmpxchgq %1,%2"
         : "=a" (prev)
@@ -48,9 +48,9 @@ inline atomic_t CompareAndSwap(volatile atomic_t *ptr, atomic_t old_value, atomi
     return prev;
 }
 
-inline atomic_t atom_add(volatile atomic_t *dest, atomic_t incr)
+inline intptr_t atom_add(volatile intptr_t *dest, intptr_t incr)
 {
-    atomic_t ret;
+    intptr_t ret;
     __asm__ volatile(
         "lock; xaddq %0,(%1)"
         : "=r"(ret)
@@ -59,9 +59,9 @@ inline atomic_t atom_add(volatile atomic_t *dest, atomic_t incr)
     return ret + incr;
 }
 
-inline atomic_t atom_xchg(volatile atomic_t *ptr, atomic_t new_value)
+inline intptr_t atom_xchg(volatile intptr_t *ptr, intptr_t new_value)
 {
-    atomic_t prev;
+    intptr_t prev;
 
     __asm__ volatile(
         "lock xchgq %2,(%1)"
@@ -86,12 +86,12 @@ inline T *atom_xchg(T *volatile *ptr, T *new_value)
     return prev;
 }
 
-inline atomic_t atom_inc(volatile atomic_t *dest)
+inline intptr_t atom_inc(volatile intptr_t *dest)
 {
     return atom_add(dest, 1);
 }
 
-inline atomic_t atom_dec(volatile atomic_t *dest)
+inline intptr_t atom_dec(volatile intptr_t *dest)
 {
     return atom_add(dest, -1);
 }

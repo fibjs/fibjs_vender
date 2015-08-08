@@ -511,9 +511,9 @@ public:
     OSSemaphore m_sem;
 };
 
-inline void InitOnce(atomic_t *once, void (*initializer)())
+inline void InitOnce(intptr_t *once, void (*initializer)())
 {
-    atomic_t state = CompareAndSwap(once, 0, 1);
+    intptr_t state = CompareAndSwap(once, 0, 1);
     if (state == 0)
     {
         initializer();
