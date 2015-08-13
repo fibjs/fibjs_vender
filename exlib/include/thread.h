@@ -479,7 +479,8 @@ public:
     virtual void resume();
     virtual void join();
     virtual void yield();
-    virtual void Run() = 0;
+    virtual void Run()
+    {};
 
 private:
     virtual void destroy();
