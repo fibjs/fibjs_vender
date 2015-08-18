@@ -219,6 +219,12 @@ function patch_samp() {
 	fs.writeFile(fname, txt1);
 }
 
+function patch_macro() {
+	var fname = "src/macro-assembler.h";
+	var txt = fs.readFile(fname);
+	fs.writeFile(fname, '#include "src/v8.h"\n\n' + txt);
+}
+
 save_plat();
 
 clean_folder('include');
@@ -237,6 +243,7 @@ patch_samp();
 
 patch_src('src');
 patch_plat();
+patch_macro();
 
 //fs.unlink('src/version_gen.cc');
 

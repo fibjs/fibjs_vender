@@ -11,10 +11,12 @@
 #include "src/cpu-profiler.h"
 #include "src/deoptimizer.h"
 #include "src/execution.h"
+#include "src/frames-inl.h"
 #include "src/gdb-jit.h"
 #include "src/global-handles.h"
 #include "src/heap/incremental-marking.h"
 #include "src/heap/mark-compact.h"
+#include "src/heap/mark-compact-inl.h"
 #include "src/heap/objects-visiting.h"
 #include "src/heap/objects-visiting-inl.h"
 #include "src/heap/spaces-inl.h"
@@ -169,7 +171,7 @@ class VerifyEvacuationVisitor : public ObjectVisitor {
 
 static void VerifyEvacuation(Page* page) {
   VerifyEvacuationVisitor visitor;
-  HeapObjectIterator iterator(page, NULL);
+  HeapObjectIterator iterator(page);
   for (HeapObject* heap_object = iterator.Next(); heap_object != NULL;
        heap_object = iterator.Next()) {
     // We skip free space objects.
@@ -293,8 +295,6 @@ void MarkCompactCollector::ClearInvalidSlotsBufferEntries(PagedSpace* space) {
 
 void MarkCompactCollector::ClearInvalidStoreAndSlotsBufferEntries() {
   heap_->store_buffer()->ClearInvalidStoreBufferEntries();
-
-  RemoveDeoptimizedCodeSlots();
 
   ClearInvalidSlotsBufferEntries(heap_->old_space());
   ClearInvalidSlotsBufferEntries(heap_->code_space());
@@ -588,12 +588,12 @@ void MarkCompactCollector::RefillFreeList(PagedSpace* space) {
 }
 
 
-void Marking::TransferMark(Address old_start, Address new_start) {
+void Marking::TransferMark(Heap* heap, Address old_start, Address new_start) {
   // This is only used when resizing an object.
   DCHECK(MemoryChunk::FromAddress(old_start) ==
          MemoryChunk::FromAddress(new_start));
 
-  if (!heap_->incremental_marking()->IsMarking()) return;
+  if (!heap->incremental_marking()->IsMarking()) return;
 
   // If the mark doesn't move, we don't check the color of the object.
   // It doesn't matter whether the object is black, since it hasn't changed
@@ -613,9 +613,9 @@ void Marking::TransferMark(Address old_start, Address new_start) {
     return;
   } else if (Marking::IsGrey(old_mark_bit)) {
     Marking::GreyToWhite(old_mark_bit);
-    heap_->incremental_marking()->WhiteToGreyAndPush(
+    heap->incremental_marking()->WhiteToGreyAndPush(
         HeapObject::FromAddress(new_start), new_mark_bit);
-    heap_->incremental_marking()->RestartIfNotMarking();
+    heap->incremental_marking()->RestartIfNotMarking();
   }
 
 #ifdef DEBUG
@@ -780,7 +780,6 @@ void MarkCompactCollector::AbortCompaction() {
     }
     compacting_ = false;
     evacuation_candidates_.Rewind(0);
-    invalidated_code_.Rewind(0);
   }
   DCHECK_EQ(0, evacuation_candidates_.length());
 }
@@ -803,7 +802,7 @@ void MarkCompactCollector::Prepare() {
 
   // Clear marking bits if incremental marking is aborted.
   if (was_marked_incrementally_ && abort_incremental_marking_) {
-    heap()->incremental_marking()->Abort();
+    heap()->incremental_marking()->Stop();
     ClearMarkbits();
     AbortWeakCollections();
     AbortWeakCells();
@@ -2242,7 +2241,7 @@ void MarkCompactCollector::MarkLiveObjects() {
     incremental_marking->Finalize();
   } else {
     // Abort any pending incremental activities e.g. incremental sweeping.
-    incremental_marking->Abort();
+    incremental_marking->Stop();
     if (marking_deque_.in_use()) {
       marking_deque_.Uninitialize(true);
     }
@@ -3569,7 +3568,11 @@ void MarkCompactCollector::InvalidateCode(Code* code) {
     MarkBit mark_bit = Marking::MarkBitFrom(code);
     if (Marking::IsWhite(mark_bit)) return;
 
-    invalidated_code_.Add(code);
+    // Ignore all slots that might have been recorded in the body of the
+    // deoptimized code object. Assumption: no slots will be recorded for
+    // this object after invalidating it.
+    RemoveObjectSlots(code->instruction_start(),
+                      code->address() + code->Size());
   }
 }
 
@@ -3577,42 +3580,6 @@ void MarkCompactCollector::InvalidateCode(Code* code) {
 // Return true if the given code is deoptimized or will be deoptimized.
 bool MarkCompactCollector::WillBeDeoptimized(Code* code) {
   return code->is_optimized_code() && code->marked_for_deoptimization();
-}
-
-
-void MarkCompactCollector::RemoveDeoptimizedCodeSlots() {
-  int length = invalidated_code_.length();
-  for (int i = 0; i < length; i++) {
-    Code* code = invalidated_code_[i];
-    Page* p = Page::FromAddress(code->address());
-    if (!p->IsEvacuationCandidate() &&
-        !p->IsFlagSet(Page::RESCAN_ON_EVACUATION)) {
-      // Ignore all slots that might have been recorded in the body of the
-      // deoptimized code object.
-      RemoveObjectSlots(code->instruction_start(),
-                        code->address() + code->Size());
-    }
-  }
-}
-
-
-void MarkCompactCollector::RemoveDeadInvalidatedCode() {
-  int length = invalidated_code_.length();
-  for (int i = 0; i < length; i++) {
-    if (!IsMarked(invalidated_code_[i])) invalidated_code_[i] = NULL;
-  }
-}
-
-
-void MarkCompactCollector::ProcessInvalidatedCode(ObjectVisitor* visitor) {
-  int length = invalidated_code_.length();
-  for (int i = 0; i < length; i++) {
-    Code* code = invalidated_code_[i];
-    if (code != NULL) {
-      code->Iterate(visitor);
-    }
-  }
-  invalidated_code_.Rewind(0);
 }
 
 
@@ -3657,8 +3624,7 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
     GCTracer::Scope gc_scope(heap()->tracer(),
                              GCTracer::Scope::MC_UPDATE_NEW_TO_NEW_POINTERS);
     // Update pointers in to space.
-    SemiSpaceIterator to_it(heap()->new_space()->bottom(),
-                            heap()->new_space()->top());
+    SemiSpaceIterator to_it(heap()->new_space());
     for (HeapObject* object = to_it.Next(); object != NULL;
          object = to_it.Next()) {
       Map* map = object->map();
@@ -3776,10 +3742,6 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
 
   EvacuationWeakObjectRetainer evacuation_object_retainer;
   heap()->ProcessAllWeakReferences(&evacuation_object_retainer);
-
-  // Visit invalidated code (we ignored all slots on it) and clear mark-bits
-  // under it.
-  ProcessInvalidatedCode(&updating_visitor);
 
   heap_->isolate()->inner_pointer_to_code_cache()->Flush();
 
@@ -4415,8 +4377,6 @@ void MarkCompactCollector::SweepSpaces() {
       StartSweeperThreads();
     }
   }
-
-  RemoveDeadInvalidatedCode();
 
   EvacuateNewSpaceAndCandidates();
 

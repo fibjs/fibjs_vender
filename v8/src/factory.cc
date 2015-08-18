@@ -55,18 +55,18 @@ Handle<PrototypeInfo> Factory::NewPrototypeInfo() {
   Handle<PrototypeInfo> result =
       Handle<PrototypeInfo>::cast(NewStruct(PROTOTYPE_INFO_TYPE));
   result->set_prototype_users(WeakFixedArray::Empty());
+  result->set_registry_slot(PrototypeInfo::UNREGISTERED);
   result->set_validity_cell(Smi::FromInt(0));
   result->set_constructor_name(Smi::FromInt(0));
   return result;
 }
 
 
-Handle<Oddball> Factory::NewOddball(Handle<Map> map,
-                                    const char* to_string,
+Handle<Oddball> Factory::NewOddball(Handle<Map> map, const char* to_string,
                                     Handle<Object> to_number,
-                                    byte kind) {
+                                    const char* type_of, byte kind) {
   Handle<Oddball> oddball = New<Oddball>(map, OLD_SPACE);
-  Oddball::Initialize(isolate(), oddball, to_string, to_number, kind);
+  Oddball::Initialize(isolate(), oddball, to_string, to_number, type_of, kind);
   return oddball;
 }
 
@@ -1239,11 +1239,9 @@ Handle<Object> Factory::NewError(const char* maker, const char* message,
   // running the factory method, use the exception as the result.
   Handle<Object> result;
   MaybeHandle<Object> exception;
-  if (!Execution::TryCall(fun,
-                          isolate()->js_builtins_object(),
-                          arraysize(argv),
-                          argv,
-                          &exception).ToHandle(&result)) {
+  if (!Execution::TryCall(fun, undefined_value(), arraysize(argv), argv,
+                          &exception)
+           .ToHandle(&result)) {
     Handle<Object> exception_obj;
     if (exception.ToHandle(&exception_obj)) return exception_obj;
     return undefined_value();
@@ -1252,22 +1250,17 @@ Handle<Object> Factory::NewError(const char* maker, const char* message,
 }
 
 
-Handle<Object> Factory::NewError(const char* constructor,
+Handle<Object> Factory::NewError(Handle<JSFunction> constructor,
                                  Handle<String> message) {
-  Handle<String> constr = InternalizeUtf8String(constructor);
-  Handle<JSFunction> fun = Handle<JSFunction>::cast(Object::GetProperty(
-      isolate()->js_builtins_object(), constr).ToHandleChecked());
   Handle<Object> argv[] = { message };
 
   // Invoke the JavaScript factory method. If an exception is thrown while
   // running the factory method, use the exception as the result.
   Handle<Object> result;
   MaybeHandle<Object> exception;
-  if (!Execution::TryCall(fun,
-                          isolate()->js_builtins_object(),
-                          arraysize(argv),
-                          argv,
-                          &exception).ToHandle(&result)) {
+  if (!Execution::TryCall(constructor, undefined_value(), arraysize(argv), argv,
+                          &exception)
+           .ToHandle(&result)) {
     Handle<Object> exception_obj;
     if (exception.ToHandle(&exception_obj)) return exception_obj;
     return undefined_value();
@@ -1601,7 +1594,7 @@ Handle<GlobalObject> Factory::NewGlobalObject(Handle<JSFunction> constructor) {
   // Make sure we don't have a ton of pre-allocated slots in the
   // global objects. They will be unused once we normalize the object.
   DCHECK(map->unused_property_fields() == 0);
-  DCHECK(map->inobject_properties() == 0);
+  DCHECK(map->GetInObjectProperties() == 0);
 
   // Initial size of the backing store to avoid resize of the storage during
   // bootstrapping. The size differs between the JS global object ad the
@@ -2348,10 +2341,9 @@ Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
 Handle<JSObject> Factory::NewArgumentsObject(Handle<JSFunction> callee,
                                              int length) {
   bool strict_mode_callee = is_strict(callee->shared()->language_mode()) ||
-                            !callee->is_simple_parameter_list();
+                            !callee->has_simple_parameters();
   Handle<Map> map = strict_mode_callee ? isolate()->strict_arguments_map()
                                        : isolate()->sloppy_arguments_map();
-
   AllocationSiteUsageContext context(isolate(), Handle<AllocationSite>(),
                                      false);
   DCHECK(!isolate()->has_pending_exception());

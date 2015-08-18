@@ -5,8 +5,6 @@
 #ifndef V8_PREPARSER_H
 #define V8_PREPARSER_H
 
-#include "src/v8.h"
-
 #include "src/bailout-reason.h"
 #include "src/expression-classifier.h"
 #include "src/func-name-inferrer.h"
@@ -110,6 +108,7 @@ class ParserBase : public Traits {
         allow_natives_(false),
         allow_harmony_arrow_functions_(false),
         allow_harmony_sloppy_(false),
+        allow_harmony_sloppy_function_(false),
         allow_harmony_sloppy_let_(false),
         allow_harmony_rest_parameters_(false),
         allow_harmony_spreadcalls_(false),
@@ -127,6 +126,7 @@ class ParserBase : public Traits {
   ALLOW_ACCESSORS(natives);
   ALLOW_ACCESSORS(harmony_arrow_functions);
   ALLOW_ACCESSORS(harmony_sloppy);
+  ALLOW_ACCESSORS(harmony_sloppy_function);
   ALLOW_ACCESSORS(harmony_sloppy_let);
   ALLOW_ACCESSORS(harmony_rest_parameters);
   ALLOW_ACCESSORS(harmony_spreadcalls);
@@ -700,8 +700,7 @@ class ParserBase : public Traits {
   ExpressionT ParseStrongSuperCallExpression(ExpressionClassifier* classifier,
                                              bool* ok);
 
-  void ParseFormalParameter(bool is_rest,
-                            FormalParametersT* parameters,
+  void ParseFormalParameter(FormalParametersT* parameters,
                             ExpressionClassifier* classifier, bool* ok);
   void ParseFormalParameterList(FormalParametersT* parameters,
                                 ExpressionClassifier* classifier, bool* ok);
@@ -713,8 +712,11 @@ class ParserBase : public Traits {
   // left-hand side of assignments). Although ruled out by ECMA as early errors,
   // we allow calls for web compatibility and rewrite them to a runtime throw.
   ExpressionT CheckAndRewriteReferenceExpression(
-      ExpressionT expression, Scanner::Location location,
+      ExpressionT expression, int beg_pos, int end_pos,
       MessageTemplate::Template message, bool* ok);
+  ExpressionT CheckAndRewriteReferenceExpression(
+      ExpressionT expression, int beg_pos, int end_pos,
+      MessageTemplate::Template message, ParseErrorType type, bool* ok);
 
   // Used to validate property names in object literals and class literals
   enum PropertyKind {
@@ -800,6 +802,7 @@ class ParserBase : public Traits {
   bool allow_natives_;
   bool allow_harmony_arrow_functions_;
   bool allow_harmony_sloppy_;
+  bool allow_harmony_sloppy_function_;
   bool allow_harmony_sloppy_let_;
   bool allow_harmony_rest_parameters_;
   bool allow_harmony_spreadcalls_;
@@ -2283,9 +2286,8 @@ ParserBase<Traits>::ParsePrimaryExpression(ExpressionClassifier* classifier,
         FormalParametersT formals(scope);
         scope->set_start_position(beg_pos);
         ExpressionClassifier formals_classifier;
-        const bool is_rest = true;
-        this->ParseFormalParameter(is_rest, &formals, &formals_classifier,
-                                   CHECK_OK);
+        formals.has_rest = true;
+        this->ParseFormalParameter(&formals, &formals_classifier, CHECK_OK);
         Traits::DeclareFormalParameter(
             formals.scope, formals.at(0), formals.is_simple,
             &formals_classifier);
@@ -2506,7 +2508,8 @@ typename ParserBase<Traits>::ExpressionT ParserBase<Traits>::ParsePropertyName(
       ExpressionClassifier computed_name_classifier;
       ExpressionT expression =
           ParseAssignmentExpression(true, &computed_name_classifier, CHECK_OK);
-      classifier->AccumulateReclassifyingAsPattern(computed_name_classifier);
+      classifier->Accumulate(computed_name_classifier,
+                             ExpressionClassifier::ExpressionProduction);
       Expect(Token::RBRACK, CHECK_OK);
       return expression;
     }
@@ -2651,7 +2654,8 @@ ParserBase<Traits>::ParsePropertyDefinition(
       ExpressionClassifier rhs_classifier;
       ExpressionT rhs = this->ParseAssignmentExpression(
           true, &rhs_classifier, CHECK_OK_CUSTOM(EmptyObjectLiteralProperty));
-      classifier->AccumulateReclassifyingAsPattern(rhs_classifier);
+      classifier->Accumulate(rhs_classifier,
+                             ExpressionClassifier::ExpressionProduction);
       value = factory()->NewAssignment(Token::ASSIGN, lhs, rhs,
                                        RelocInfo::kNoPosition);
     } else {
@@ -2818,7 +2822,7 @@ ParserBase<Traits>::ParseAssignmentExpression(bool accept_IN,
   //   YieldExpression
   //   LeftHandSideExpression AssignmentOperator AssignmentExpression
 
-  Scanner::Location lhs_location = scanner()->peek_location();
+  int lhs_beg_pos = peek_position();
 
   if (peek() == Token::YIELD && is_generator()) {
     return this->ParseYieldExpression(classifier, ok);
@@ -2838,13 +2842,13 @@ ParserBase<Traits>::ParseAssignmentExpression(bool accept_IN,
     BindingPatternUnexpectedToken(classifier);
     ValidateArrowFormalParameters(&arrow_formals_classifier, expression,
                                   parenthesized_formals, CHECK_OK);
-    Scanner::Location loc(lhs_location.beg_pos, scanner()->location().end_pos);
+    Scanner::Location loc(lhs_beg_pos, scanner()->location().end_pos);
     Scope* scope =
         this->NewScope(scope_, ARROW_SCOPE, FunctionKind::kArrowFunction);
     FormalParametersT parameters(scope);
     checkpoint.Restore(&parameters.materialized_literals_count);
 
-    scope->set_start_position(lhs_location.beg_pos);
+    scope->set_start_position(lhs_beg_pos);
     Scanner::Location duplicate_loc = Scanner::Location::invalid();
     this->ParseArrowFunctionFormalParameterList(&parameters, expression, loc,
                                                 &duplicate_loc, CHECK_OK);
@@ -2874,8 +2878,8 @@ ParserBase<Traits>::ParseAssignmentExpression(bool accept_IN,
   }
 
   expression = this->CheckAndRewriteReferenceExpression(
-      expression, lhs_location, MessageTemplate::kInvalidLhsInAssignment,
-      CHECK_OK);
+      expression, lhs_beg_pos, scanner()->location().end_pos,
+      MessageTemplate::kInvalidLhsInAssignment, CHECK_OK);
   expression = this->MarkExpressionAsAssigned(expression);
 
   Token::Value op = Next();  // Get assignment operator.
@@ -2889,7 +2893,8 @@ ParserBase<Traits>::ParseAssignmentExpression(bool accept_IN,
   ExpressionClassifier rhs_classifier;
   ExpressionT right =
       this->ParseAssignmentExpression(accept_IN, &rhs_classifier, CHECK_OK);
-  classifier->AccumulateReclassifyingAsPattern(rhs_classifier);
+  classifier->Accumulate(rhs_classifier,
+                         ExpressionClassifier::ExpressionProduction);
 
   // TODO(1231235): We try to estimate the set of properties set by
   // constructors. We define a new property whenever there is an
@@ -3090,11 +3095,11 @@ ParserBase<Traits>::ParseUnaryExpression(ExpressionClassifier* classifier,
   } else if (Token::IsCountOp(op)) {
     BindingPatternUnexpectedToken(classifier);
     op = Next();
-    Scanner::Location lhs_location = scanner()->peek_location();
+    int beg_pos = peek_position();
     ExpressionT expression = this->ParseUnaryExpression(classifier, CHECK_OK);
     expression = this->CheckAndRewriteReferenceExpression(
-        expression, lhs_location, MessageTemplate::kInvalidLhsInPrefixOp,
-        CHECK_OK);
+        expression, beg_pos, scanner()->location().end_pos,
+        MessageTemplate::kInvalidLhsInPrefixOp, CHECK_OK);
     this->MarkExpressionAsAssigned(expression);
 
     return factory()->NewCountOperation(op,
@@ -3115,7 +3120,7 @@ ParserBase<Traits>::ParsePostfixExpression(ExpressionClassifier* classifier,
   // PostfixExpression ::
   //   LeftHandSideExpression ('++' | '--')?
 
-  Scanner::Location lhs_location = scanner()->peek_location();
+  int lhs_beg_pos = peek_position();
   ExpressionT expression =
       this->ParseLeftHandSideExpression(classifier, CHECK_OK);
   if (!scanner()->HasAnyLineTerminatorBeforeNext() &&
@@ -3123,8 +3128,8 @@ ParserBase<Traits>::ParsePostfixExpression(ExpressionClassifier* classifier,
     BindingPatternUnexpectedToken(classifier);
 
     expression = this->CheckAndRewriteReferenceExpression(
-        expression, lhs_location, MessageTemplate::kInvalidLhsInPostfixOp,
-        CHECK_OK);
+        expression, lhs_beg_pos, scanner()->location().end_pos,
+        MessageTemplate::kInvalidLhsInPostfixOp, CHECK_OK);
     expression = this->MarkExpressionAsAssigned(expression);
 
     Token::Value next = Next();
@@ -3621,10 +3626,10 @@ ParserBase<Traits>::ParseMemberExpressionContinuation(
 
 template <class Traits>
 void ParserBase<Traits>::ParseFormalParameter(
-    bool is_rest, FormalParametersT* parameters,
-    ExpressionClassifier* classifier, bool* ok) {
+    FormalParametersT* parameters, ExpressionClassifier* classifier, bool* ok) {
   // FormalParameter[Yield,GeneratorParameter] :
   //   BindingElement[?Yield, ?GeneratorParameter]
+  bool is_rest = parameters->has_rest;
 
   Token::Value next = peek();
   ExpressionT pattern = ParsePrimaryExpression(classifier, ok);
@@ -3678,8 +3683,9 @@ void ParserBase<Traits>::ParseFormalParameterList(
         *ok = false;
         return;
       }
-      bool is_rest = allow_harmony_rest_parameters() && Check(Token::ELLIPSIS);
-      ParseFormalParameter(is_rest, parameters, classifier, ok);
+      parameters->has_rest =
+          allow_harmony_rest_parameters() && Check(Token::ELLIPSIS);
+      ParseFormalParameter(parameters, classifier, ok);
       if (!*ok) return;
     } while (!parameters->has_rest && Check(Token::COMMA));
 
@@ -3932,8 +3938,19 @@ ParserBase<Traits>::ParseTemplateLiteral(ExpressionT tag, int start,
 template <typename Traits>
 typename ParserBase<Traits>::ExpressionT
 ParserBase<Traits>::CheckAndRewriteReferenceExpression(
-    ExpressionT expression, Scanner::Location location,
+    ExpressionT expression, int beg_pos, int end_pos,
     MessageTemplate::Template message, bool* ok) {
+  return this->CheckAndRewriteReferenceExpression(expression, beg_pos, end_pos,
+                                                  message, kReferenceError, ok);
+}
+
+
+template <typename Traits>
+typename ParserBase<Traits>::ExpressionT
+ParserBase<Traits>::CheckAndRewriteReferenceExpression(
+    ExpressionT expression, int beg_pos, int end_pos,
+    MessageTemplate::Template message, ParseErrorType type, bool* ok) {
+  Scanner::Location location(beg_pos, end_pos);
   if (this->IsIdentifier(expression)) {
     if (is_strict(language_mode()) &&
         this->IsEvalOrArguments(this->AsIdentifier(expression))) {
@@ -3959,7 +3976,7 @@ ParserBase<Traits>::CheckAndRewriteReferenceExpression(
     ExpressionT error = this->NewThrowReferenceError(message, pos);
     return factory()->NewProperty(expression, error, pos);
   } else {
-    this->ReportMessageAt(location, message, kReferenceError);
+    this->ReportMessageAt(location, message, type);
     *ok = false;
     return this->EmptyExpression();
   }

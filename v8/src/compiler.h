@@ -154,6 +154,7 @@ class CompilationInfo {
   Handle<Context> context() const;
   Handle<SharedFunctionInfo> shared_info() const;
   bool has_shared_info() const;
+  bool has_context() const;
   // -----------------------------------------------------------
 
   Isolate* isolate() const {
@@ -400,7 +401,7 @@ class CompilationInfo {
   void PrintAstForTesting();
 #endif
 
-  bool is_simple_parameter_list();
+  bool has_simple_parameters();
 
   Handle<Code> GenerateCodeStub();
 

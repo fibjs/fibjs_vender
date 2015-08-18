@@ -6,8 +6,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
-
 #if V8_TARGET_ARCH_IA32
 
 #include "src/base/bits.h"
@@ -16,6 +14,7 @@
 #include "src/codegen.h"
 #include "src/cpu-profiler.h"
 #include "src/debug/debug.h"
+#include "src/ia32/frames-ia32.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {

@@ -8,8 +8,6 @@
 
 #include <sstream>
 
-#include "src/v8.h"
-
 #if V8_TARGET_ARCH_X87
 
 #include "src/hydrogen-osr.h"

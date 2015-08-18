@@ -1385,15 +1385,13 @@ class V8_EXPORT ScriptCompiler {
   /**
    * Compile an ES6 module.
    *
-   * This is an experimental feature.
+   * This is an unfinished experimental feature, and is only exposed
+   * here for internal testing purposes.
+   * Only parsing works at the moment. Do not use.
    *
    * TODO(adamk): Script is likely the wrong return value for this;
    * should return some new Module type.
    */
-  static V8_DEPRECATE_SOON(
-      "Use maybe version",
-      Local<Script> CompileModule(Isolate* isolate, Source* source,
-                                  CompileOptions options = kNoCompileOptions));
   static V8_WARN_UNUSED_RESULT MaybeLocal<Script> CompileModule(
       Local<Context> context, Source* source,
       CompileOptions options = kNoCompileOptions);
@@ -4967,9 +4965,9 @@ enum GCType {
 
 enum GCCallbackFlags {
   kNoGCCallbackFlags = 0,
-  kGCCallbackFlagCompacted = 1 << 0,
   kGCCallbackFlagConstructRetainedObjectInfos = 1 << 1,
-  kGCCallbackFlagForced = 1 << 2
+  kGCCallbackFlagForced = 1 << 2,
+  kGCCallbackFlagSynchronousPhantomCallbackProcessing = 1 << 3
 };
 
 typedef void (*GCPrologueCallback)(GCType type, GCCallbackFlags flags);
@@ -6222,6 +6220,25 @@ class V8_EXPORT V8 {
   static bool InitializeICU(const char* icu_data_file = NULL);
 
   /**
+   * Initialize the external startup data. The embedder only needs to
+   * invoke this method when external startup data was enabled in a build.
+   *
+   * If V8 was compiled with the startup data in an external file, then
+   * V8 needs to be given those external files during startup. There are
+   * three ways to do this:
+   * - InitializeExternalStartupData(const char*)
+   *   This will look in the given directory for files "natives_blob.bin"
+   *   and "snapshot_blob.bin" - which is what the default build calls them.
+   * - InitializeExternalStartupData(const char*, const char*)
+   *   As above, but will directly use the two given file names.
+   * - Call SetNativesDataBlob, SetNativesDataBlob.
+   *   This will read the blobs from the given data structures and will
+   *   not perform any file IO.
+   */
+  static void InitializeExternalStartupData(const char* directory_path);
+  static void InitializeExternalStartupData(const char* natives_blob,
+                                            const char* snapshot_blob);
+  /**
    * Sets the v8::Platform to use. This should be invoked before V8 is
    * initialized.
    */
@@ -6606,10 +6623,12 @@ class V8_EXPORT Context {
   V8_INLINE Local<Value> GetEmbedderData(int index);
 
   /**
-   * Gets the exports object used by V8 extras. Extra natives get a reference
-   * to this object and can use it to export functionality.
+   * Gets the binding object used by V8 extras. Extra natives get a reference
+   * to this object and can use it to "export" functionality by adding
+   * properties. Extra natives can also "import" functionality by accessing
+   * properties added by the embedder using the V8 API.
    */
-  Local<Object> GetExtrasExportsObject();
+  Local<Object> GetExtrasBindingObject();
 
   /**
    * Sets the embedder data with the given index, growing the data as
@@ -6913,12 +6932,12 @@ class Internals {
       1 * kApiPointerSize + kApiIntSize;
   static const int kStringResourceOffset = 3 * kApiPointerSize;
 
-  static const int kOddballKindOffset = 3 * kApiPointerSize;
+  static const int kOddballKindOffset = 4 * kApiPointerSize;
   static const int kForeignAddressOffset = kApiPointerSize;
   static const int kJSObjectHeaderSize = 3 * kApiPointerSize;
   static const int kFixedArrayHeaderSize = 2 * kApiPointerSize;
   static const int kContextHeaderSize = 2 * kApiPointerSize;
-  static const int kContextEmbedderDataIndex = 86;
+  static const int kContextEmbedderDataIndex = 27;
   static const int kFullStringRepresentationMask = 0x07;
   static const int kStringEncodingMask = 0x4;
   static const int kExternalTwoByteRepresentationTag = 0x02;
@@ -6951,10 +6970,10 @@ class Internals {
   static const int kNodeIsIndependentShift = 3;
   static const int kNodeIsPartiallyDependentShift = 4;
 
-  static const int kJSObjectType = 0xbc;
+  static const int kJSObjectType = 0xb6;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x83;
-  static const int kForeignType = 0x8d;
+  static const int kForeignType = 0x87;
 
   static const int kUndefinedOddballKind = 5;
   static const int kNullOddballKind = 3;
