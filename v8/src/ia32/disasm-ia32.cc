@@ -10,8 +10,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "src/v8.h"
-
 #if V8_TARGET_ARCH_IA32
 
 #include "src/disasm.h"
@@ -1622,11 +1620,7 @@ int DisassemblerIA32::InstructionDecode(v8::internal::Vector<char> out_buffer,
               data++;
             } else if (*data == 0x2A) {
               // movntdqa
-              data++;
-              int mod, regop, rm;
-              get_modrm(*data, &mod, &regop, &rm);
-              AppendToBuffer("movntdqa %s,", NameOfXMMRegister(regop));
-              data += PrintRightOperand(data);
+              UnimplementedInstruction();
             } else {
               UnimplementedInstruction();
             }
@@ -1831,9 +1825,8 @@ int DisassemblerIA32::InstructionDecode(v8::internal::Vector<char> out_buffer,
             int mod, regop, rm;
             get_modrm(*data, &mod, &regop, &rm);
             if (mod == 3) {
-              AppendToBuffer("movntdq ");
-              data += PrintRightOperand(data);
-              AppendToBuffer(",%s", NameOfXMMRegister(regop));
+              // movntdq
+              UnimplementedInstruction();
             } else {
               UnimplementedInstruction();
             }

@@ -6,10 +6,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
-
 #if V8_TARGET_ARCH_ARM64
 
+#include "src/arm64/frames-arm64.h"
 #include "src/bootstrapper.h"
 #include "src/code-stubs.h"
 #include "src/codegen.h"
@@ -17,8 +16,8 @@
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
 #include "src/isolate.h"
-#include "src/jsregexp.h"
-#include "src/regexp-macro-assembler.h"
+#include "src/regexp/jsregexp.h"
+#include "src/regexp/regexp-macro-assembler.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
@@ -225,7 +224,6 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Register left,
   // Smis.  If it's not a heap number, then return equal.
   Register right_type = scratch;
   if ((cond == lt) || (cond == gt)) {
-    Label not_simd;
     // Call runtime on identical JSObjects.  Otherwise return equal.
     __ JumpIfObjectType(right, right_type, right_type, FIRST_SPEC_OBJECT_TYPE,
                         slow, ge);
@@ -233,11 +231,8 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Register left,
     __ Cmp(right_type, SYMBOL_TYPE);
     __ B(eq, slow);
     // Call runtime on identical SIMD values since we must throw a TypeError.
-    __ Cmp(right_type, FIRST_SIMD_VALUE_TYPE);
-    __ B(lt, &not_simd);
-    __ Cmp(right_type, LAST_SIMD_VALUE_TYPE);
-    __ B(le, slow);
-    __ Bind(&not_simd);
+    __ Cmp(right_type, SIMD128_VALUE_TYPE);
+    __ B(eq, slow);
     if (is_strong(strength)) {
       // Call the runtime on anything that is converted in the semantics, since
       // we need to throw a TypeError. Smis have already been ruled out.
@@ -249,7 +244,6 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Register left,
   } else if (cond == eq) {
     __ JumpIfHeapNumber(right, &heap_number);
   } else {
-    Label not_simd;
     __ JumpIfObjectType(right, right_type, right_type, HEAP_NUMBER_TYPE,
                         &heap_number);
     // Comparing JS objects with <=, >= is complicated.
@@ -259,11 +253,8 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Register left,
     __ Cmp(right_type, SYMBOL_TYPE);
     __ B(eq, slow);
     // Call runtime on identical SIMD values since we must throw a TypeError.
-    __ Cmp(right_type, FIRST_SIMD_VALUE_TYPE);
-    __ B(lt, &not_simd);
-    __ Cmp(right_type, LAST_SIMD_VALUE_TYPE);
-    __ B(le, slow);
-    __ Bind(&not_simd);
+    __ Cmp(right_type, SIMD128_VALUE_TYPE);
+    __ B(eq, slow);
     if (is_strong(strength)) {
       // Call the runtime on anything that is converted in the semantics,
       // since we need to throw a TypeError. Smis and heap numbers have
@@ -663,26 +654,30 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
 
   __ Push(lhs, rhs);
   // Figure out which native to call and setup the arguments.
-  Builtins::JavaScript native;
-  if (cond == eq) {
-    native = strict() ? Builtins::STRICT_EQUALS : Builtins::EQUALS;
+  if (cond == eq && strict()) {
+    __ TailCallRuntime(Runtime::kStrictEquals, 2, 1);
   } else {
-    native =
-        is_strong(strength()) ? Builtins::COMPARE_STRONG : Builtins::COMPARE;
-    int ncr;  // NaN compare result
-    if ((cond == lt) || (cond == le)) {
-      ncr = GREATER;
+    Builtins::JavaScript native;
+    if (cond == eq) {
+      native = Builtins::EQUALS;
     } else {
-      DCHECK((cond == gt) || (cond == ge));  // remaining cases
-      ncr = LESS;
+      native =
+          is_strong(strength()) ? Builtins::COMPARE_STRONG : Builtins::COMPARE;
+      int ncr;  // NaN compare result
+      if ((cond == lt) || (cond == le)) {
+        ncr = GREATER;
+      } else {
+        DCHECK((cond == gt) || (cond == ge));  // remaining cases
+        ncr = LESS;
+      }
+      __ Mov(x10, Smi::FromInt(ncr));
+      __ Push(x10);
     }
-    __ Mov(x10, Smi::FromInt(ncr));
-    __ Push(x10);
-  }
 
-  // Call the native; it returns -1 (less), 0 (equal), or 1 (greater)
-  // tagged as a small integer.
-  __ InvokeBuiltin(native, JUMP_FUNCTION);
+    // Call the native; it returns -1 (less), 0 (equal), or 1 (greater)
+    // tagged as a small integer.
+    __ InvokeBuiltin(native, JUMP_FUNCTION);
+  }
 
   __ Bind(&miss);
   GenerateMiss(masm);

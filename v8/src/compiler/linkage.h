@@ -17,8 +17,11 @@ namespace v8 {
 namespace internal {
 
 class CallInterfaceDescriptor;
+class CompilationInfo;
 
 namespace compiler {
+
+const RegList kNoCalleeSaved = 0;
 
 class Node;
 class OsrHelper;
@@ -110,7 +113,6 @@ class CallDescriptor final : public ZoneObject {
     kCallCodeObject,      // target is a Code object
     kCallJSFunction,      // target is a JSFunction object
     kCallAddress,         // target is a machine pointer
-    kInterpreterDispatch  // target is an interpreter bytecode handler
   };
 
   enum Flag {
@@ -121,6 +123,7 @@ class CallDescriptor final : public ZoneObject {
     kHasExceptionHandler = 1u << 3,
     kHasLocalCatchHandler = 1u << 4,
     kSupportsTailCalls = 1u << 5,
+    kCanUseRoots = 1u << 6,
     kPatchableCallSiteWithNop = kPatchableCallSite | kNeedsNopAfterCall
   };
   typedef base::Flags<Flag> Flags;
@@ -155,8 +158,6 @@ class CallDescriptor final : public ZoneObject {
 
   // Returns {true} if this descriptor is a call to a JSFunction.
   bool IsJSFunctionCall() const { return kind_ == kCallJSFunction; }
-
-  bool IsInterpreterDispatch() const { return kind_ == kInterpreterDispatch; }
 
   // The number of return values from this call.
   size_t ReturnCount() const { return machine_sig_->return_count(); }
@@ -313,9 +314,8 @@ class Linkage : public ZoneObject {
   // Get the frame offset for a given spill slot. The location depends on the
   // calling convention and the specific frame layout, and may thus be
   // architecture-specific. Negative spill slots indicate arguments on the
-  // caller's frame. The {extra} parameter indicates an additional offset from
-  // the frame offset, e.g. to index into part of a double slot.
-  FrameOffset GetFrameOffset(int spill_slot, Frame* frame, int extra = 0) const;
+  // caller's frame.
+  FrameOffset GetFrameOffset(int spill_slot, Frame* frame) const;
 
   static int FrameStateInputCount(Runtime::FunctionId function);
 

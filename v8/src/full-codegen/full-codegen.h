@@ -5,8 +5,6 @@
 #ifndef V8_FULL_CODEGEN_FULL_CODEGEN_H_
 #define V8_FULL_CODEGEN_FULL_CODEGEN_H_
 
-#include "src/v8.h"
-
 #include "src/allocation.h"
 #include "src/assert-scope.h"
 #include "src/ast.h"
@@ -511,7 +509,6 @@ class FullCodeGenerator: public AstVisitor {
   F(ObjectEquals)                         \
   F(IsObject)                             \
   F(IsFunction)                           \
-  F(IsUndetectableObject)                 \
   F(IsSpecObject)                         \
   F(IsSimdValue)                          \
   F(IsStringWrapperSafeForDefaultValueOf) \
@@ -700,7 +697,7 @@ class FullCodeGenerator: public AstVisitor {
   bool is_eval() { return info_->is_eval(); }
   bool is_native() { return info_->is_native(); }
   LanguageMode language_mode() { return function()->language_mode(); }
-  bool is_simple_parameter_list() { return info_->is_simple_parameter_list(); }
+  bool has_simple_parameters() { return info_->has_simple_parameters(); }
   FunctionLiteral* function() { return info_->function(); }
   Scope* scope() { return scope_; }
 

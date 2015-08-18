@@ -16,9 +16,8 @@ class FeedbackVectorSpec;
 // Interface for handle based allocation.
 class Factory final {
  public:
-  Handle<Oddball> NewOddball(Handle<Map> map,
-                             const char* to_string,
-                             Handle<Object> to_number,
+  Handle<Oddball> NewOddball(Handle<Map> map, const char* to_string,
+                             Handle<Object> to_number, const char* type_of,
                              byte kind);
 
   // Allocates a fixed array initialized with undefined values.
@@ -552,7 +551,8 @@ class Factory final {
                           Handle<JSArray> args);
   Handle<String> EmergencyNewError(const char* message, Handle<JSArray> args);
 
-  Handle<Object> NewError(const char* constructor, Handle<String> message);
+  Handle<Object> NewError(Handle<JSFunction> constructor,
+                          Handle<String> message);
 
   Handle<Object> NewInvalidStringLengthError() {
     return NewRangeError(MessageTemplate::kInvalidStringLength);

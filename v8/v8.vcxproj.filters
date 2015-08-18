@@ -103,6 +103,21 @@
     <Filter Include="Source Files\ppc">
       <UniqueIdentifier>{b1b3c0c3-7b01-ce70-48fd-66ced6e79f09}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\regexp">
+      <UniqueIdentifier>{1fca4211-b235-8c94-0541-18980fd84596}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\regexp\ia32">
+      <UniqueIdentifier>{f7d2dab6-6027-791d-1f54-6e8ca352eba6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\regexp\ppc">
+      <UniqueIdentifier>{5fad0ab9-8d84-64b9-3087-2ac536ff4e34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\regexp\x64">
+      <UniqueIdentifier>{063176f1-b16b-9fb0-9798-0aed437124d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\regexp\x87">
+      <UniqueIdentifier>{1df9da08-8891-ff31-9009-92c2505ec67e}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\runtime">
       <UniqueIdentifier>{103f0e8f-8587-2131-6779-fa0e8e7a0c4f}</UniqueIdentifier>
     </Filter>
@@ -336,9 +351,6 @@
     <ClInclude Include="src\builtins.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bytecodes-irregexp.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\cached-powers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -520,9 +532,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\jump-threading.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\linkage-impl.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\linkage.h">
@@ -966,9 +975,6 @@
     <ClInclude Include="src\ia32\macro-assembler-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
-    <ClInclude Include="src\ia32\regexp-macro-assembler-ia32.h">
-      <Filter>Source Files\ia32</Filter>
-    </ClInclude>
     <ClInclude Include="src\ia32\simulator-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
@@ -1002,9 +1008,6 @@
     <ClInclude Include="src\interface-descriptors.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\interpreter-irregexp.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-array-builder.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -1021,12 +1024,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\json-stringifier.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\jsregexp-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\jsregexp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\layout-descriptor-inl.h">
@@ -1140,9 +1137,6 @@
     <ClInclude Include="src\ppc\macro-assembler-ppc.h">
       <Filter>Source Files\ppc</Filter>
     </ClInclude>
-    <ClInclude Include="src\ppc\regexp-macro-assembler-ppc.h">
-      <Filter>Source Files\ppc</Filter>
-    </ClInclude>
     <ClInclude Include="src\ppc\simulator-ppc.h">
       <Filter>Source Files\ppc</Filter>
     </ClInclude>
@@ -1173,20 +1167,44 @@
     <ClInclude Include="src\prototype.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\regexp-macro-assembler-irregexp-inl.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\regexp\bytecodes-irregexp.h">
+      <Filter>Source Files\regexp</Filter>
     </ClInclude>
-    <ClInclude Include="src\regexp-macro-assembler-irregexp.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\regexp\ia32\regexp-macro-assembler-ia32.h">
+      <Filter>Source Files\regexp\ia32</Filter>
     </ClInclude>
-    <ClInclude Include="src\regexp-macro-assembler-tracer.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\regexp\interpreter-irregexp.h">
+      <Filter>Source Files\regexp</Filter>
     </ClInclude>
-    <ClInclude Include="src\regexp-macro-assembler.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\regexp\jsregexp-inl.h">
+      <Filter>Source Files\regexp</Filter>
     </ClInclude>
-    <ClInclude Include="src\regexp-stack.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\regexp\jsregexp.h">
+      <Filter>Source Files\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\regexp\ppc\regexp-macro-assembler-ppc.h">
+      <Filter>Source Files\regexp\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\regexp\regexp-macro-assembler-irregexp-inl.h">
+      <Filter>Source Files\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\regexp\regexp-macro-assembler-irregexp.h">
+      <Filter>Source Files\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\regexp\regexp-macro-assembler-tracer.h">
+      <Filter>Source Files\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\regexp\regexp-macro-assembler.h">
+      <Filter>Source Files\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\regexp\regexp-stack.h">
+      <Filter>Source Files\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\regexp\x64\regexp-macro-assembler-x64.h">
+      <Filter>Source Files\regexp\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="src\regexp\x87\regexp-macro-assembler-x87.h">
+      <Filter>Source Files\regexp\x87</Filter>
     </ClInclude>
     <ClInclude Include="src\rewriter.h">
       <Filter>Source Files</Filter>
@@ -1368,9 +1386,6 @@
     <ClInclude Include="src\x64\macro-assembler-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
-    <ClInclude Include="src\x64\regexp-macro-assembler-x64.h">
-      <Filter>Source Files\x64</Filter>
-    </ClInclude>
     <ClInclude Include="src\x64\simulator-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
@@ -1399,9 +1414,6 @@
       <Filter>Source Files\x87</Filter>
     </ClInclude>
     <ClInclude Include="src\x87\macro-assembler-x87.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\regexp-macro-assembler-x87.h">
       <Filter>Source Files\x87</Filter>
     </ClInclude>
     <ClInclude Include="src\x87\simulator-x87.h">
@@ -1559,9 +1571,6 @@
     <ClCompile Include="src\char-predicates.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\checks.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\code-factory.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1665,9 +1674,6 @@
       <Filter>Source Files\compiler\ia32</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\ia32\instruction-selector-ia32.cc">
-      <Filter>Source Files\compiler\ia32</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\ia32\linkage-ia32.cc">
       <Filter>Source Files\compiler\ia32</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\instruction-selector.cc">
@@ -1784,9 +1790,6 @@
     <ClCompile Include="src\compiler\ppc\instruction-selector-ppc.cc">
       <Filter>Source Files\compiler\ppc</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\ppc\linkage-ppc.cc">
-      <Filter>Source Files\compiler\ppc</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\preprocess-live-ranges.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -1844,16 +1847,10 @@
     <ClCompile Include="src\compiler\x64\instruction-selector-x64.cc">
       <Filter>Source Files\compiler\x64</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\x64\linkage-x64.cc">
-      <Filter>Source Files\compiler\x64</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\x87\code-generator-x87.cc">
       <Filter>Source Files\compiler\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\x87\instruction-selector-x87.cc">
-      <Filter>Source Files\compiler\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\x87\linkage-x87.cc">
       <Filter>Source Files\compiler\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\zone-pool.cc">
@@ -2150,9 +2147,6 @@
     <ClCompile Include="src\ia32\macro-assembler-ia32.cc">
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
-    <ClCompile Include="src\ia32\regexp-macro-assembler-ia32.cc">
-      <Filter>Source Files\ia32</Filter>
-    </ClCompile>
     <ClCompile Include="src\ia32\simulator-ia32.cc">
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
@@ -2243,9 +2237,6 @@
     <ClCompile Include="src\interface-descriptors.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\interpreter-irregexp.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -2256,9 +2247,6 @@
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\isolate.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\jsregexp.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\layout-descriptor.cc">
@@ -2363,9 +2351,6 @@
     <ClCompile Include="src\ppc\macro-assembler-ppc.cc">
       <Filter>Source Files\ppc</Filter>
     </ClCompile>
-    <ClCompile Include="src\ppc\regexp-macro-assembler-ppc.cc">
-      <Filter>Source Files\ppc</Filter>
-    </ClCompile>
     <ClCompile Include="src\ppc\simulator-ppc.cc">
       <Filter>Source Files\ppc</Filter>
     </ClCompile>
@@ -2384,17 +2369,35 @@
     <ClCompile Include="src\property.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\regexp-macro-assembler-irregexp.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\regexp\ia32\regexp-macro-assembler-ia32.cc">
+      <Filter>Source Files\regexp\ia32</Filter>
     </ClCompile>
-    <ClCompile Include="src\regexp-macro-assembler-tracer.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\regexp\interpreter-irregexp.cc">
+      <Filter>Source Files\regexp</Filter>
     </ClCompile>
-    <ClCompile Include="src\regexp-macro-assembler.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\regexp\jsregexp.cc">
+      <Filter>Source Files\regexp</Filter>
     </ClCompile>
-    <ClCompile Include="src\regexp-stack.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\regexp\ppc\regexp-macro-assembler-ppc.cc">
+      <Filter>Source Files\regexp\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="src\regexp\regexp-macro-assembler-irregexp.cc">
+      <Filter>Source Files\regexp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\regexp\regexp-macro-assembler-tracer.cc">
+      <Filter>Source Files\regexp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\regexp\regexp-macro-assembler.cc">
+      <Filter>Source Files\regexp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\regexp\regexp-stack.cc">
+      <Filter>Source Files\regexp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\regexp\x64\regexp-macro-assembler-x64.cc">
+      <Filter>Source Files\regexp\x64</Filter>
+    </ClCompile>
+    <ClCompile Include="src\regexp\x87\regexp-macro-assembler-x87.cc">
+      <Filter>Source Files\regexp\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\rewriter.cc">
       <Filter>Source Files</Filter>
@@ -2621,9 +2624,6 @@
     <ClCompile Include="src\x64\macro-assembler-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
-    <ClCompile Include="src\x64\regexp-macro-assembler-x64.cc">
-      <Filter>Source Files\x64</Filter>
-    </ClCompile>
     <ClCompile Include="src\x64\simulator-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
@@ -2664,9 +2664,6 @@
       <Filter>Source Files\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\x87\macro-assembler-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\regexp-macro-assembler-x87.cc">
       <Filter>Source Files\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\x87\simulator-x87.cc">
