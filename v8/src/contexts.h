@@ -159,6 +159,7 @@ enum BindingFlags {
   V(SYNTAX_ERROR_FUNCTION_INDEX, JSFunction, syntax_error_function)            \
   V(TYPE_ERROR_FUNCTION_INDEX, JSFunction, type_error_function)                \
   V(URI_ERROR_FUNCTION_INDEX, JSFunction, uri_error_function)                  \
+  V(MAKE_ERROR_FUNCTION_INDEX, JSFunction, make_error_function)                \
   V(PROMISE_STATUS_INDEX, Symbol, promise_status)                              \
   V(PROMISE_VALUE_INDEX, Symbol, promise_value)                                \
   V(PROMISE_CREATE_INDEX, JSFunction, promise_create)                          \
@@ -171,6 +172,13 @@ enum BindingFlags {
     promise_has_user_defined_reject_handler)                                   \
   V(TO_COMPLETE_PROPERTY_DESCRIPTOR_INDEX, JSFunction,                         \
     to_complete_property_descriptor)                                           \
+  V(OBJECT_DEFINE_OWN_PROPERTY_INDEX, JSFunction, object_define_own_property)  \
+  V(OBJECT_GET_OWN_PROPERTY_DESCROPTOR_INDEX, JSFunction,                      \
+    object_get_own_property_descriptor)                                        \
+  V(MESSAGE_GET_LINE_NUMBER_INDEX, JSFunction, message_get_line_number)        \
+  V(MESSAGE_GET_COLUMN_NUMBER_INDEX, JSFunction, message_get_column_number)    \
+  V(MESSAGE_GET_SOURCE_LINE_INDEX, JSFunction, message_get_source_line)        \
+  V(STACK_OVERFLOW_BOILERPLATE_INDEX, JSObject, stack_overflow_boilerplate)    \
   V(JSON_SERIALIZE_ADAPTER_INDEX, JSFunction, json_serialize_adapter)          \
   V(DERIVED_HAS_TRAP_INDEX, JSFunction, derived_has_trap)                      \
   V(DERIVED_GET_TRAP_INDEX, JSFunction, derived_get_trap)                      \

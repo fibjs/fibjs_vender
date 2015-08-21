@@ -2,11 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
+#include "src/messages.h"
 
 #include "src/api.h"
 #include "src/execution.h"
-#include "src/messages.h"
 #include "src/string-builder.h"
 
 namespace v8 {
@@ -322,23 +321,29 @@ Handle<String> MessageTemplate::FormatMessage(Isolate* isolate,
 }
 
 
+const char* MessageTemplate::TemplateString(int template_index) {
+  switch (template_index) {
+#define CASE(NAME, STRING) \
+  case k##NAME:            \
+    return STRING;
+    MESSAGE_TEMPLATES(CASE)
+#undef CASE
+    case kLastMessage:
+    default:
+      return NULL;
+  }
+}
+
+
 MaybeHandle<String> MessageTemplate::FormatMessage(int template_index,
                                                    Handle<String> arg0,
                                                    Handle<String> arg1,
                                                    Handle<String> arg2) {
   Isolate* isolate = arg0->GetIsolate();
-  const char* template_string;
-  switch (template_index) {
-#define CASE(NAME, STRING)    \
-  case k##NAME:               \
-    template_string = STRING; \
-    break;
-    MESSAGE_TEMPLATES(CASE)
-#undef CASE
-    case kLastMessage:
-    default:
-      isolate->ThrowIllegalOperation();
-      return MaybeHandle<String>();
+  const char* template_string = TemplateString(template_index);
+  if (template_string == NULL) {
+    isolate->ThrowIllegalOperation();
+    return MaybeHandle<String>();
   }
 
   IncrementalStringBuilder builder(isolate);

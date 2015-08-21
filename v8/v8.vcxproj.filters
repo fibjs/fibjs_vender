@@ -1011,6 +1011,9 @@
     <ClInclude Include="src\interpreter\bytecode-array-builder.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-generator.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\bytecodes.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -1318,6 +1321,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\unbound-queue.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\unicode-cache-inl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\unicode-cache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\unicode-decoder.h">
@@ -1647,6 +1656,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\frame-states.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\frame.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\gap-resolver.cc">
@@ -1982,6 +1994,9 @@
     <ClCompile Include="src\gen\code-stub-libraries.cc">
       <Filter>Source Files\gen</Filter>
     </ClCompile>
+    <ClCompile Include="src\gen\experimental-extras-libraries.cc">
+      <Filter>Source Files\gen</Filter>
+    </ClCompile>
     <ClCompile Include="src\gen\experimental-libraries.cc">
       <Filter>Source Files\gen</Filter>
     </ClCompile>
@@ -2238,6 +2253,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-generator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecodes.cc">
@@ -2513,6 +2531,9 @@
     <ClCompile Include="src\scopes.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\snapshot\natives-common.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
     <ClCompile Include="src\snapshot\serialize.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
@@ -2529,9 +2550,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\string-builder.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\string-search.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\string-stream.cc">

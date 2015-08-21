@@ -2,12 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <algorithm>
+#include "src/heap/store-buffer.h"
 
-#include "src/v8.h"
+#include <algorithm>
 
 #include "src/counters.h"
 #include "src/heap/store-buffer-inl.h"
+#include "src/isolate.h"
+#include "src/objects-inl.h"
+#include "src/v8.h"
 
 namespace v8 {
 namespace internal {
@@ -92,9 +95,6 @@ void StoreBuffer::SetUp() {
   hash_sets_are_empty_ = false;
 
   ClearFilteringHashSets();
-
-  heap_->isolate()->set_store_buffer_hash_set_1_address(hash_set_1_);
-  heap_->isolate()->set_store_buffer_hash_set_2_address(hash_set_2_);
 }
 
 
@@ -529,9 +529,6 @@ void StoreBuffer::IteratePointersToNewSpace(ObjectSlotCallback slot_callback) {
 
 
 void StoreBuffer::Compact() {
-  CHECK(hash_set_1_ == heap_->isolate()->store_buffer_hash_set_1_address());
-  CHECK(hash_set_2_ == heap_->isolate()->store_buffer_hash_set_2_address());
-
   Address* top = reinterpret_cast<Address*>(heap_->store_buffer_top());
 
   if (top == start_) return;

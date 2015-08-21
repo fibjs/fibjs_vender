@@ -11,6 +11,7 @@
 #define V8_MESSAGES_H_
 
 #include "src/base/smart-pointers.h"
+#include "src/handles.h"
 #include "src/list.h"
 
 namespace v8 {
@@ -412,6 +413,8 @@ class MessageTemplate {
 #undef TEMPLATE
         kLastMessage
   };
+
+  static const char* TemplateString(int template_index);
 
   static MaybeHandle<String> FormatMessage(int template_index,
                                            Handle<String> arg0,

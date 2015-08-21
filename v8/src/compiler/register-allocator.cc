@@ -196,8 +196,11 @@ void UsePosition::ResolveHint(UsePosition* use_pos) {
 
 void UsePosition::set_type(UsePositionType type, bool register_beneficial) {
   DCHECK_IMPLIES(type == UsePositionType::kRequiresSlot, !register_beneficial);
+  DCHECK_EQ(kUnassignedRegister, AssignedRegisterField::decode(flags_));
   flags_ = TypeField::encode(type) |
-           RegisterBeneficialField::encode(register_beneficial);
+           RegisterBeneficialField::encode(register_beneficial) |
+           HintTypeField::encode(HintTypeField::decode(flags_)) |
+           AssignedRegisterField::encode(kUnassignedRegister);
 }
 
 
@@ -1364,7 +1367,7 @@ void ConstraintBuilder::MeetConstraintsAfter(int instr_index) {
       // This value is produced on the stack, we never need to spill it.
       if (first_output->IsStackSlot()) {
         DCHECK(StackSlotOperand::cast(first_output)->index() <
-               data()->frame()->GetSpillSlotCount());
+               data()->frame()->GetTotalFrameSlotCount());
         range->SetSpillOperand(StackSlotOperand::cast(first_output));
         range->SetSpillStartIndex(instr_index + 1);
         assigned = true;

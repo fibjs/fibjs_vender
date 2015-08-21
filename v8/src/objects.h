@@ -19,7 +19,7 @@
 #include "src/flags.h"
 #include "src/list.h"
 #include "src/property-details.h"
-#include "src/unicode-inl.h"
+#include "src/unicode.h"
 #include "src/unicode-decoder.h"
 #include "src/zone.h"
 
@@ -991,7 +991,6 @@ template <class C> inline bool Is(Object* obj);
   V(WeakCell)                      \
   V(ObjectHashTable)               \
   V(WeakHashTable)                 \
-  V(WeakValueHashTable)            \
   V(OrderedHashTable)
 
 // Object is the abstract superclass for all classes in the
@@ -3742,26 +3741,6 @@ class WeakHashTable: public HashTable<WeakHashTable,
 };
 
 
-class WeakValueHashTable : public ObjectHashTable {
- public:
-  DECLARE_CAST(WeakValueHashTable)
-
-#ifdef DEBUG
-  // Looks up the value associated with the given key. The hole value is
-  // returned in case the key is not present.
-  Object* LookupWeak(Handle<Object> key);
-#endif  // DEBUG
-
-  // Adds (or overwrites) the value associated with the given key. Mapping a
-  // key to the hole value causes removal of the whole entry.
-  MUST_USE_RESULT static Handle<WeakValueHashTable> PutWeak(
-      Handle<WeakValueHashTable> table, Handle<Object> key,
-      Handle<HeapObject> value);
-
-  static Handle<FixedArray> GetWeakValues(Handle<WeakValueHashTable> table);
-};
-
-
 // ScopeInfo represents information about different scopes of a source
 // program  and the allocation of the scope's variables. Scope information
 // is stored in a compressed form in ScopeInfo objects and is used
@@ -4615,6 +4594,7 @@ class Code: public HeapObject {
   inline bool embeds_maps_weakly();
 
   inline bool IsCodeStubOrIC();
+  inline bool IsJavaScriptCode();
 
   inline void set_raw_kind_specific_flags1(int value);
   inline void set_raw_kind_specific_flags2(int value);

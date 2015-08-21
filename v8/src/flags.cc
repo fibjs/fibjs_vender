@@ -2,16 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/flags.h"
+
 #include <cctype>
 #include <cstdlib>
 #include <sstream>
 
-#include "src/v8.h"
-
+#include "src/allocation.h"
 #include "src/assembler.h"
 #include "src/base/functional.h"
 #include "src/base/platform/platform.h"
+#include "src/objects-inl.h"  // TODO(mstarzinger): Temporary cycle breaker!
 #include "src/ostreams.h"
+#include "src/utils.h"
 
 namespace v8 {
 namespace internal {
@@ -517,23 +520,8 @@ void FlagList::ResetAllFlags() {
 // static
 void FlagList::PrintHelp() {
   CpuFeatures::Probe(false);
-  CpuFeatures::PrintTarget();
-  CpuFeatures::PrintFeatures();
-
   OFStream os(stdout);
-  os << "Usage:\n"
-     << "  shell [options] -e string\n"
-     << "    execute string in V8\n"
-     << "  shell [options] file1 file2 ... filek\n"
-     << "    run JavaScript scripts in file1, file2, ..., filek\n"
-     << "  shell [options]\n"
-     << "  shell [options] --shell [file1 file2 ... filek]\n"
-     << "    run an interactive JavaScript shell\n"
-     << "  d8 [options] file1 file2 ... filek\n"
-     << "  d8 [options]\n"
-     << "  d8 [options] --shell [file1 file2 ... filek]\n"
-     << "    run the new debugging shell\n\n"
-     << "Options:\n";
+  os << "Options:\n";
   for (size_t i = 0; i < num_flags; ++i) {
     Flag* f = &flags[i];
     os << "  --" << f->name() << " (" << f->comment() << ")\n"
