@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
-
 #include "src/heap/incremental-marking.h"
 
 #include "src/code-stubs.h"
@@ -199,10 +197,10 @@ class IncrementalMarkingMarkingVisitor
       chunk->set_progress_bar(start_offset);
       if (start_offset < object_size) {
         if (Marking::IsGrey(Marking::MarkBitFrom(object))) {
-          heap->mark_compact_collector()->marking_deque()->UnshiftGrey(object);
+          heap->mark_compact_collector()->marking_deque()->Unshift(object);
         } else {
           DCHECK(Marking::IsBlack(Marking::MarkBitFrom(object)));
-          heap->mark_compact_collector()->marking_deque()->UnshiftBlack(object);
+          heap->mark_compact_collector()->UnshiftBlack(object);
         }
         heap->incremental_marking()->NotifyIncompleteScanOfObject(
             object_size - (start_offset - already_scanned_offset));

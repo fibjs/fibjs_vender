@@ -10,6 +10,7 @@
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
+#include "src/compiler/osr.h"
 #include "src/mips/macro-assembler-mips.h"
 #include "src/scopes.h"
 
@@ -794,14 +795,23 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ sdc1(i.InputDoubleRegister(2), i.MemoryOperand());
       break;
     case kMipsPush:
-      __ Push(i.InputRegister(0));
+      if (instr->InputAt(0)->IsDoubleRegister()) {
+        __ sdc1(i.InputDoubleRegister(0), MemOperand(sp, -kDoubleSize));
+        __ Subu(sp, sp, Operand(kDoubleSize));
+      } else {
+        __ Push(i.InputRegister(0));
+      }
       break;
     case kMipsStackClaim: {
       __ Subu(sp, sp, Operand(i.InputInt32(0)));
       break;
     }
     case kMipsStoreToStackSlot: {
-      __ sw(i.InputRegister(0), MemOperand(sp, i.InputInt32(1)));
+      if (instr->InputAt(0)->IsDoubleRegister()) {
+        __ sdc1(i.InputDoubleRegister(0), MemOperand(sp, i.InputInt32(1)));
+      } else {
+        __ sw(i.InputRegister(0), MemOperand(sp, i.InputInt32(1)));
+      }
       break;
     }
     case kMipsStoreWriteBarrier: {
@@ -1072,38 +1082,17 @@ void CodeGenerator::AssembleDeoptimizerCall(
 
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  int stack_slots = frame()->GetSpillSlotCount();
+  int stack_shrink_slots = frame()->GetSpillSlotCount();
   if (descriptor->kind() == CallDescriptor::kCallAddress) {
     __ Push(ra, fp);
     __ mov(fp, sp);
-
-    const RegList saves = descriptor->CalleeSavedRegisters();
-    // Save callee-saved registers.
-    __ MultiPush(saves);
-    // kNumCalleeSaved includes the fp register, but the fp register
-    // is saved separately in TF.
-    DCHECK(kNumCalleeSaved == base::bits::CountPopulation32(saves) + 1);
-    int register_save_area_size =
-        base::bits::CountPopulation32(saves) * kPointerSize;
-
-    const RegList saves_fpu = descriptor->CalleeSavedFPRegisters();
-    // Save callee-saved FPU registers.
-    __ MultiPushFPU(saves_fpu);
-    DCHECK(kNumCalleeSavedFPU == base::bits::CountPopulation32(saves_fpu));
-    register_save_area_size += kNumCalleeSavedFPU * kDoubleSize;
-
-    frame()->SetRegisterSaveAreaSize(register_save_area_size);
   } else if (descriptor->IsJSFunctionCall()) {
     CompilationInfo* info = this->info();
     __ Prologue(info->IsCodePreAgingActive());
-    frame()->SetRegisterSaveAreaSize(
-        StandardFrameConstants::kFixedFrameSizeFromFp);
   } else if (needs_frame_) {
     __ StubPrologue();
-    frame()->SetRegisterSaveAreaSize(
-        StandardFrameConstants::kFixedFrameSizeFromFp);
   } else {
-    frame()->SetPCOnStack(false);
+    frame()->SetElidedFrameSizeInSlots(0);
   }
 
   if (info()->is_osr()) {
@@ -1118,34 +1107,56 @@ void CodeGenerator::AssemblePrologue() {
     osr_pc_offset_ = __ pc_offset();
     // TODO(titzer): cannot address target function == local #-1
     __ lw(a1, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-    DCHECK(stack_slots >= frame()->GetOsrStackSlotCount());
-    stack_slots -= frame()->GetOsrStackSlotCount();
+    stack_shrink_slots -= OsrHelper(info()).UnoptimizedFrameSlots();
   }
 
-  if (stack_slots > 0) {
-    __ Subu(sp, sp, Operand(stack_slots * kPointerSize));
+  const RegList saves_fpu = descriptor->CalleeSavedFPRegisters();
+  if (saves_fpu != 0) {
+    stack_shrink_slots += frame()->AlignSavedCalleeRegisterSlots();
+  }
+  if (stack_shrink_slots > 0) {
+    __ Subu(sp, sp, Operand(stack_shrink_slots * kPointerSize));
+  }
+
+  // Save callee-saved FPU registers.
+  if (saves_fpu != 0) {
+    __ MultiPushFPU(saves_fpu);
+    int count = base::bits::CountPopulation32(saves_fpu);
+    DCHECK(kNumCalleeSavedFPU == count);
+    frame()->AllocateSavedCalleeRegisterSlots(count *
+                                              (kDoubleSize / kPointerSize));
+  }
+
+  const RegList saves = descriptor->CalleeSavedRegisters();
+  if (saves != 0) {
+    // Save callee-saved registers.
+    __ MultiPush(saves);
+    // kNumCalleeSaved includes the fp register, but the fp register
+    // is saved separately in TF.
+    int count = base::bits::CountPopulation32(saves);
+    DCHECK(kNumCalleeSaved == count + 1);
+    frame()->AllocateSavedCalleeRegisterSlots(count);
   }
 }
 
 
 void CodeGenerator::AssembleReturn() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  int stack_slots = frame()->GetSpillSlotCount();
   int pop_count = static_cast<int>(descriptor->StackParameterCount());
-  if (descriptor->kind() == CallDescriptor::kCallAddress) {
-    if (frame()->GetRegisterSaveAreaSize() > 0) {
-      // Remove this frame's spill slots first.
-      if (stack_slots > 0) {
-        __ Addu(sp, sp, Operand(stack_slots * kPointerSize));
-      }
-      // Restore FPU registers.
-      const RegList saves_fpu = descriptor->CalleeSavedFPRegisters();
-      __ MultiPopFPU(saves_fpu);
 
-      // Restore GP registers.
-      const RegList saves = descriptor->CalleeSavedRegisters();
-      __ MultiPop(saves);
-    }
+  // Restore GP registers.
+  const RegList saves = descriptor->CalleeSavedRegisters();
+  if (saves != 0) {
+    __ MultiPop(saves);
+  }
+
+  // Restore FPU registers.
+  const RegList saves_fpu = descriptor->CalleeSavedFPRegisters();
+  if (saves_fpu != 0) {
+    __ MultiPopFPU(saves_fpu);
+  }
+
+  if (descriptor->kind() == CallDescriptor::kCallAddress) {
     __ mov(sp, fp);
     __ Pop(ra, fp);
   } else if (descriptor->IsJSFunctionCall() || needs_frame_) {

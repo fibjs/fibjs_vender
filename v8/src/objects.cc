@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/objects.h"
+
 #include <iomanip>
 #include <sstream>
-
-#include "src/v8.h"
 
 #include "src/accessors.h"
 #include "src/allocation-site-scopes.h"
@@ -7856,28 +7856,22 @@ Handle<WeakFixedArray> WeakFixedArray::Allocate(
   DCHECK(0 <= size);
   Handle<FixedArray> result =
       isolate->factory()->NewUninitializedFixedArray(size + kFirstIndex);
-  Handle<WeakFixedArray> casted_result = Handle<WeakFixedArray>::cast(result);
-  if (initialize_from.is_null()) {
-    for (int i = 0; i < result->length(); ++i) {
-      result->set(i, Smi::FromInt(0));
-    }
-  } else {
+  int index = 0;
+  if (!initialize_from.is_null()) {
     DCHECK(initialize_from->Length() <= size);
     Handle<FixedArray> raw_source = Handle<FixedArray>::cast(initialize_from);
-    int target_index = kFirstIndex;
-    for (int source_index = kFirstIndex; source_index < raw_source->length();
-         ++source_index) {
-      // The act of allocating might have caused entries in the source array
-      // to be cleared. Copy only what's needed.
-      if (initialize_from->IsEmptySlot(source_index - kFirstIndex)) continue;
-      result->set(target_index++, raw_source->get(source_index));
-    }
-    casted_result->set_last_used_index(target_index - 1 - kFirstIndex);
-    for (; target_index < result->length(); ++target_index) {
-      result->set(target_index, Smi::FromInt(0));
+    // Copy the entries without compacting, since the PrototypeInfo relies on
+    // the index of the entries not to change.
+    while (index < raw_source->length()) {
+      result->set(index, raw_source->get(index));
+      index++;
     }
   }
-  return casted_result;
+  while (index < result->length()) {
+    result->set(index, Smi::FromInt(0));
+    index++;
+  }
+  return Handle<WeakFixedArray>::cast(result);
 }
 
 
@@ -14840,49 +14834,6 @@ void WeakHashTable::AddEntry(int entry, Handle<WeakCell> key_cell,
   set(EntryToIndex(entry), *key_cell);
   set(EntryToValueIndex(entry), *value);
   ElementAdded();
-}
-
-
-#ifdef DEBUG
-Object* WeakValueHashTable::LookupWeak(Handle<Object> key) {
-  Object* value = Lookup(key);
-  if (value->IsWeakCell() && !WeakCell::cast(value)->cleared()) {
-    value = WeakCell::cast(value)->value();
-  }
-  return value;
-}
-#endif  // DEBUG
-
-
-Handle<WeakValueHashTable> WeakValueHashTable::PutWeak(
-    Handle<WeakValueHashTable> table, Handle<Object> key,
-    Handle<HeapObject> value) {
-  Handle<WeakCell> cell = value->GetIsolate()->factory()->NewWeakCell(value);
-  return Handle<WeakValueHashTable>::cast(
-      Put(Handle<ObjectHashTable>::cast(table), key, cell));
-}
-
-
-Handle<FixedArray> WeakValueHashTable::GetWeakValues(
-    Handle<WeakValueHashTable> table) {
-  Isolate* isolate = table->GetIsolate();
-  uint32_t capacity = table->Capacity();
-  Handle<FixedArray> results = isolate->factory()->NewFixedArray(capacity);
-  int length = 0;
-  for (uint32_t i = 0; i < capacity; i++) {
-    uint32_t key_index = table->EntryToIndex(i);
-    Object* key = table->get(key_index);
-    if (!table->IsKey(key)) continue;
-    uint32_t value_index = table->EntryToValueIndex(i);
-    WeakCell* value_cell = WeakCell::cast(table->get(value_index));
-    if (value_cell->cleared()) {
-      table->RemoveEntry(i);
-    } else {
-      results->set(length++, value_cell->value());
-    }
-  }
-  results->Shrink(length);
-  return results;
 }
 
 

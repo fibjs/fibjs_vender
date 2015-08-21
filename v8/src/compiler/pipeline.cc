@@ -259,10 +259,17 @@ class PipelineData {
   }
 
   void InitializeRegisterAllocationData(const RegisterConfiguration* config,
+                                        CallDescriptor* descriptor,
                                         const char* debug_name) {
     DCHECK(frame_ == nullptr);
     DCHECK(register_allocation_data_ == nullptr);
-    frame_ = new (instruction_zone()) Frame();
+    int fixed_frame_size = 0;
+    if (descriptor != nullptr) {
+      fixed_frame_size = (descriptor->kind() == CallDescriptor::kCallAddress)
+                             ? StandardFrameConstants::kFixedSlotCountAboveFp
+                             : StandardFrameConstants::kFixedSlotCount;
+    }
+    frame_ = new (instruction_zone()) Frame(fixed_frame_size);
     register_allocation_data_ = new (register_allocation_zone())
         RegisterAllocationData(config, register_allocation_zone(), frame(),
                                sequence(), debug_name);
@@ -352,7 +359,7 @@ base::SmartArrayPointer<char> GetDebugName(CompilationInfo* info) {
     return name;
   } else {
     AllowHandleDereference allow_deref;
-    return info->function()->debug_name()->ToCString();
+    return info->literal()->debug_name()->ToCString();
   }
 }
 
@@ -1007,7 +1014,7 @@ Handle<Code> Pipeline::GenerateCode() {
     if (json_file != nullptr) {
       OFStream json_of(json_file);
       Handle<Script> script = info()->script();
-      FunctionLiteral* function = info()->function();
+      FunctionLiteral* function = info()->literal();
       base::SmartArrayPointer<char> function_name =
           info()->shared_info()->DebugName()->ToCString();
       int pos = info()->shared_info()->start_position();
@@ -1190,7 +1197,7 @@ bool Pipeline::AllocateRegistersForTesting(const RegisterConfiguration* config,
   PipelineData data(&zone_pool, &info, sequence);
   Pipeline pipeline(&info);
   pipeline.data_ = &data;
-  pipeline.AllocateRegisters(config, run_verifier);
+  pipeline.AllocateRegisters(config, nullptr, run_verifier);
   return !data.compilation_failed();
 }
 
@@ -1234,7 +1241,8 @@ Handle<Code> Pipeline::ScheduleAndGenerateCode(
 
   bool run_verifier = FLAG_turbo_verify_allocation;
   // Allocate registers.
-  AllocateRegisters(RegisterConfiguration::ArchDefault(), run_verifier);
+  AllocateRegisters(RegisterConfiguration::ArchDefault(), call_descriptor,
+                    run_verifier);
   if (data->compilation_failed()) {
     info()->AbortOptimization(kNotEnoughVirtualRegistersRegalloc);
     return Handle<Code>();
@@ -1293,6 +1301,7 @@ Handle<Code> Pipeline::ScheduleAndGenerateCode(
 
 
 void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
+                                 CallDescriptor* descriptor,
                                  bool run_verifier) {
   PipelineData* data = this->data_;
 
@@ -1310,7 +1319,7 @@ void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
   debug_name = GetDebugName(data->info());
 #endif
 
-  data->InitializeRegisterAllocationData(config, debug_name.get());
+  data->InitializeRegisterAllocationData(config, descriptor, debug_name.get());
   if (info()->is_osr()) {
     OsrHelper osr_helper(info());
     osr_helper.SetupFrame(data->frame());

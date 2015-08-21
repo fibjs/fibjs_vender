@@ -6,6 +6,7 @@
 #define V8_OBJECTS_VISITING_H_
 
 #include "src/allocation.h"
+#include "src/heap/spaces.h"
 #include "src/layout-descriptor.h"
 
 // This file provides base classes and auxiliary methods for defining
@@ -147,12 +148,10 @@ class VisitorDispatchTable {
     }
   }
 
+  inline Callback GetVisitor(Map* map);
+
   inline Callback GetVisitorById(StaticVisitorBase::VisitorId id) {
     return reinterpret_cast<Callback>(callbacks_[id]);
-  }
-
-  inline Callback GetVisitor(Map* map) {
-    return reinterpret_cast<Callback>(callbacks_[map->visitor_id()]);
   }
 
   void Register(StaticVisitorBase::VisitorId id, Callback callback) {

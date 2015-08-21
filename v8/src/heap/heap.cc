@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
+#include "src/heap/heap.h"
 
 #include "src/accessors.h"
 #include "src/api.h"
@@ -33,25 +33,9 @@
 #include "src/snapshot/serialize.h"
 #include "src/snapshot/snapshot.h"
 #include "src/utils.h"
+#include "src/v8.h"
 #include "src/v8threads.h"
 #include "src/vm-state-inl.h"
-
-#if V8_TARGET_ARCH_PPC && !V8_INTERPRETED_REGEXP
-#include "src/regexp/ppc/regexp-macro-assembler-ppc.h"
-#include "src/regexp/regexp-macro-assembler.h"
-#endif
-#if V8_TARGET_ARCH_ARM && !V8_INTERPRETED_REGEXP
-#include "src/regexp/arm/regexp-macro-assembler-arm.h"
-#include "src/regexp/regexp-macro-assembler.h"
-#endif
-#if V8_TARGET_ARCH_MIPS && !V8_INTERPRETED_REGEXP
-#include "src/regexp/mips/regexp-macro-assembler-mips.h"
-#include "src/regexp/regexp-macro-assembler.h"
-#endif
-#if V8_TARGET_ARCH_MIPS64 && !V8_INTERPRETED_REGEXP
-#include "src/regexp/mips64/regexp-macro-assembler-mips64.h"
-#include "src/regexp/regexp-macro-assembler.h"
-#endif
 
 namespace v8 {
 namespace internal {
@@ -87,7 +71,6 @@ Heap::Heap()
       maximum_committed_(0),
       survived_since_last_expansion_(0),
       survived_last_scavenge_(0),
-      sweep_generation_(0),
       always_allocate_scope_depth_(0),
       contexts_disposed_(0),
       global_ic_age_(0),
@@ -105,7 +88,6 @@ Heap::Heap()
       ms_count_(0),
       gc_count_(0),
       remembered_unmapped_pages_index_(0),
-      unflattened_strings_length_(0),
 #ifdef DEBUG
       allocation_timeout_(0),
 #endif  // DEBUG
@@ -418,7 +400,6 @@ void Heap::GarbageCollectionPrologue() {
   {
     AllowHeapAllocation for_the_first_part_of_prologue;
     gc_count_++;
-    unflattened_strings_length_ = 0;
 
     if (FLAG_flush_code) {
       mark_compact_collector()->EnableCodeFlushing(true);
@@ -788,6 +769,8 @@ void Heap::OverApproximateWeakClosure(const char* gc_reason) {
       GCTracer::Scope scope(tracer(), GCTracer::Scope::EXTERNAL);
       VMState<EXTERNAL> state(isolate_);
       HandleScope handle_scope(isolate_);
+      // TODO(mlippautz): Report kGCTypeIncremental once blink updates its
+      // filtering.
       CallGCPrologueCallbacks(kGCTypeMarkSweepCompact, kNoGCCallbackFlags);
     }
   }
@@ -799,6 +782,8 @@ void Heap::OverApproximateWeakClosure(const char* gc_reason) {
       GCTracer::Scope scope(tracer(), GCTracer::Scope::EXTERNAL);
       VMState<EXTERNAL> state(isolate_);
       HandleScope handle_scope(isolate_);
+      // TODO(mlippautz): Report kGCTypeIncremental once blink updates its
+      // filtering.
       CallGCEpilogueCallbacks(kGCTypeMarkSweepCompact, kNoGCCallbackFlags);
     }
   }
@@ -1220,7 +1205,6 @@ bool Heap::PerformGarbageCollection(
     UpdateOldGenerationAllocationCounter();
     // Perform mark-sweep with optional compaction.
     MarkCompact();
-    sweep_generation_++;
     old_gen_exhausted_ = false;
     old_generation_size_configured_ = true;
     // This should be updated before PostGarbageCollectionProcessing, which can
@@ -1304,10 +1288,9 @@ bool Heap::PerformGarbageCollection(
 void Heap::CallGCPrologueCallbacks(GCType gc_type, GCCallbackFlags flags) {
   for (int i = 0; i < gc_prologue_callbacks_.length(); ++i) {
     if (gc_type & gc_prologue_callbacks_[i].gc_type) {
-      if (!gc_prologue_callbacks_[i].pass_isolate_) {
-        v8::GCPrologueCallback callback =
-            reinterpret_cast<v8::GCPrologueCallback>(
-                gc_prologue_callbacks_[i].callback);
+      if (!gc_prologue_callbacks_[i].pass_isolate) {
+        v8::GCCallback callback = reinterpret_cast<v8::GCCallback>(
+            gc_prologue_callbacks_[i].callback);
         callback(gc_type, flags);
       } else {
         v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
@@ -1322,10 +1305,9 @@ void Heap::CallGCEpilogueCallbacks(GCType gc_type,
                                    GCCallbackFlags gc_callback_flags) {
   for (int i = 0; i < gc_epilogue_callbacks_.length(); ++i) {
     if (gc_type & gc_epilogue_callbacks_[i].gc_type) {
-      if (!gc_epilogue_callbacks_[i].pass_isolate_) {
-        v8::GCPrologueCallback callback =
-            reinterpret_cast<v8::GCPrologueCallback>(
-                gc_epilogue_callbacks_[i].callback);
+      if (!gc_epilogue_callbacks_[i].pass_isolate) {
+        v8::GCCallback callback = reinterpret_cast<v8::GCCallback>(
+            gc_epilogue_callbacks_[i].callback);
         callback(gc_type, gc_callback_flags);
       } else {
         v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
@@ -2531,7 +2513,7 @@ class ScavengingVisitor : public StaticVisitorBase {
         return;
       }
 
-      heap->DoScavengeObject(first->map(), slot, first);
+      Heap::ScavengeObjectSlow(slot, first);
       object->set_map_word(MapWord::FromForwardingAddress(*slot));
       return;
     }
@@ -2621,7 +2603,7 @@ void Heap::ScavengeObjectSlow(HeapObject** p, HeapObject* object) {
   MapWord first_word = object->map_word();
   SLOW_DCHECK(!first_word.IsForwardingAddress());
   Map* map = first_word.ToMap();
-  map->GetHeap()->DoScavengeObject(map, p, object);
+  map->GetHeap()->scavenging_visitors_table_.GetVisitor(map)(map, p, object);
 }
 
 
@@ -3323,6 +3305,9 @@ void Heap::CreateInitialObjects() {
   set_extra_natives_source_cache(
       *factory->NewFixedArray(ExtraNatives::GetBuiltinsCount()));
 
+  set_experimental_extra_natives_source_cache(
+      *factory->NewFixedArray(ExperimentalExtraNatives::GetBuiltinsCount()));
+
   set_code_stub_natives_source_cache(
       *factory->NewFixedArray(CodeStubNatives::GetBuiltinsCount()));
 
@@ -3359,6 +3344,8 @@ void Heap::CreateInitialObjects() {
   set_weak_object_to_code_table(
       *WeakHashTable::New(isolate(), 16, USE_DEFAULT_MINIMUM_CAPACITY,
                           TENURED));
+
+  set_script_list(Smi::FromInt(0));
 
   Handle<SeededNumberDictionary> slow_element_dictionary =
       SeededNumberDictionary::New(isolate(), 0, TENURED);
@@ -3428,6 +3415,7 @@ bool Heap::RootCanBeWrittenAfterInitialization(Heap::RootListIndex root_index) {
     case kPolymorphicCodeCacheRootIndex:
     case kEmptyScriptRootIndex:
     case kSymbolRegistryRootIndex:
+    case kScriptListRootIndex:
     case kMaterializedObjectsRootIndex:
     case kAllocationSitesScratchpadRootIndex:
     case kMicrotaskQueueRootIndex:
@@ -5967,16 +5955,16 @@ void Heap::TearDown() {
 }
 
 
-void Heap::AddGCPrologueCallback(v8::Isolate::GCPrologueCallback callback,
+void Heap::AddGCPrologueCallback(v8::Isolate::GCCallback callback,
                                  GCType gc_type, bool pass_isolate) {
   DCHECK(callback != NULL);
-  GCPrologueCallbackPair pair(callback, gc_type, pass_isolate);
+  GCCallbackPair pair(callback, gc_type, pass_isolate);
   DCHECK(!gc_prologue_callbacks_.Contains(pair));
   return gc_prologue_callbacks_.Add(pair);
 }
 
 
-void Heap::RemoveGCPrologueCallback(v8::Isolate::GCPrologueCallback callback) {
+void Heap::RemoveGCPrologueCallback(v8::Isolate::GCCallback callback) {
   DCHECK(callback != NULL);
   for (int i = 0; i < gc_prologue_callbacks_.length(); ++i) {
     if (gc_prologue_callbacks_[i].callback == callback) {
@@ -5988,16 +5976,16 @@ void Heap::RemoveGCPrologueCallback(v8::Isolate::GCPrologueCallback callback) {
 }
 
 
-void Heap::AddGCEpilogueCallback(v8::Isolate::GCEpilogueCallback callback,
+void Heap::AddGCEpilogueCallback(v8::Isolate::GCCallback callback,
                                  GCType gc_type, bool pass_isolate) {
   DCHECK(callback != NULL);
-  GCEpilogueCallbackPair pair(callback, gc_type, pass_isolate);
+  GCCallbackPair pair(callback, gc_type, pass_isolate);
   DCHECK(!gc_epilogue_callbacks_.Contains(pair));
   return gc_epilogue_callbacks_.Add(pair);
 }
 
 
-void Heap::RemoveGCEpilogueCallback(v8::Isolate::GCEpilogueCallback callback) {
+void Heap::RemoveGCEpilogueCallback(v8::Isolate::GCCallback callback) {
   DCHECK(callback != NULL);
   for (int i = 0; i < gc_epilogue_callbacks_.length(); ++i) {
     if (gc_epilogue_callbacks_[i].callback == callback) {

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
+#include "src/heap/spaces.h"
 
 #include "src/base/bits.h"
 #include "src/base/platform/platform.h"
@@ -2812,6 +2812,9 @@ LargeObjectSpace::LargeObjectSpace(Heap* heap, AllocationSpace id)
       page_count_(0),
       objects_size_(0),
       chunk_map_(ComparePointers, 1024) {}
+
+
+LargeObjectSpace::~LargeObjectSpace() {}
 
 
 bool LargeObjectSpace::SetUp() {

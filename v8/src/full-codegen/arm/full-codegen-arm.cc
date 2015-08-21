@@ -116,7 +116,7 @@ void FullCodeGenerator::Generate() {
 
 #ifdef DEBUG
   if (strlen(FLAG_stop_at) > 0 &&
-      info->function()->name()->IsUtf8EqualTo(CStrVector(FLAG_stop_at))) {
+      info->literal()->name()->IsUtf8EqualTo(CStrVector(FLAG_stop_at))) {
     __ stop("stop-at");
   }
 #endif
@@ -152,7 +152,7 @@ void FullCodeGenerator::Generate() {
   { Comment cmnt(masm_, "[ Allocate locals");
     int locals_count = info->scope()->num_stack_slots();
     // Generators allocate locals, if any, in context slots.
-    DCHECK(!IsGeneratorFunction(info->function()->kind()) || locals_count == 0);
+    DCHECK(!IsGeneratorFunction(info->literal()->kind()) || locals_count == 0);
     if (locals_count > 0) {
       if (locals_count >= 128) {
         Label ok;
@@ -846,8 +846,8 @@ void FullCodeGenerator::VisitVariableDeclaration(
     case VariableLocation::LOCAL:
       if (hole_init) {
         Comment cmnt(masm_, "[ VariableDeclaration");
-        __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-        __ str(ip, StackOperand(variable));
+        __ LoadRoot(r0, Heap::kTheHoleValueRootIndex);
+        __ str(r0, StackOperand(variable));
       }
       break;
 
@@ -855,8 +855,8 @@ void FullCodeGenerator::VisitVariableDeclaration(
       if (hole_init) {
         Comment cmnt(masm_, "[ VariableDeclaration");
         EmitDebugCheckDeclarationContext(variable);
-        __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
-        __ str(ip, ContextOperand(cp, variable->index()));
+        __ LoadRoot(r0, Heap::kTheHoleValueRootIndex);
+        __ str(r0, ContextOperand(cp, variable->index()));
         // No write barrier since the_hole_value is in old space.
         PrepareForBailoutForId(proxy->id(), NO_REGISTERS);
       }
@@ -1486,8 +1486,8 @@ void FullCodeGenerator::EmitVariableLoad(VariableProxy* proxy,
         if (var->scope()->DeclarationScope() != scope()->DeclarationScope()) {
           skip_init_check = false;
         } else if (var->is_this()) {
-          CHECK(info_->function() != nullptr &&
-                (info_->function()->kind() & kSubclassConstructor) != 0);
+          CHECK(info_->has_literal() &&
+                (info_->literal()->kind() & kSubclassConstructor) != 0);
           // TODO(dslomov): implement 'this' hole check elimination.
           skip_init_check = false;
         } else {

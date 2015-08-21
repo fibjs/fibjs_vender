@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/v8.h"
+#include "src/runtime/runtime-utils.h"
 
 #include "src/arguments.h"
 #include "src/bootstrapper.h"
+#include "src/conversions.h"
 #include "src/debug/debug.h"
 #include "src/frames-inl.h"
 #include "src/messages.h"
 #include "src/parser.h"
 #include "src/prettyprinter.h"
-#include "src/runtime/runtime-utils.h"
 
 namespace v8 {
 namespace internal {
@@ -40,6 +40,16 @@ RUNTIME_FUNCTION(Runtime_ImportExperimentalToRuntime) {
   CONVERT_ARG_HANDLE_CHECKED(JSObject, container, 0);
   RUNTIME_ASSERT(isolate->bootstrapper()->IsActive());
   Bootstrapper::ImportExperimentalNatives(isolate, container);
+  return isolate->heap()->undefined_value();
+}
+
+
+RUNTIME_FUNCTION(Runtime_InstallJSBuiltins) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, container, 0);
+  RUNTIME_ASSERT(isolate->bootstrapper()->IsActive());
+  Bootstrapper::InstallJSBuiltins(isolate, container);
   return isolate->heap()->undefined_value();
 }
 
@@ -253,7 +263,7 @@ RUNTIME_FUNCTION(Runtime_RenderCallSite) {
     return isolate->heap()->empty_string();
   }
   CallPrinter printer(isolate, &zone);
-  const char* string = printer.Print(info->function(), location.start_pos());
+  const char* string = printer.Print(info->literal(), location.start_pos());
   return *isolate->factory()->NewStringFromAsciiChecked(string);
 }
 

@@ -113,7 +113,8 @@ var gens = [
 	'libraries.cc',
 	'experimental-libraries.cc',
 	'extras-libraries.cc',
-	'code-stub-libraries.cc'
+	'code-stub-libraries.cc',
+	'experimental-extras-libraries.cc'
 ];
 
 function cp_gen() {
@@ -225,6 +226,23 @@ function patch_macro() {
 	fs.writeFile(fname, '#include "src/v8.h"\n\n' + txt);
 }
 
+function patch_flag() {
+	var fname = "src/flags.cc";
+	var txt = fs.readFile(fname);
+
+	var idx1 = txt.lastIndexOf("CpuFeatures::PrintTarget();");
+	var idx2 = txt.lastIndexOf("<< \"Options:\\n\";");
+	if (idx1 < 0 || idx2 < 0)
+		return;
+
+	var txt1 = txt.substr(0, idx1);
+	txt1 += "OFStream os(stdout);\n";
+	txt1 += "  os ";
+	txt1 += txt.substr(idx2);
+
+	fs.writeFile(fname, txt1);
+}
+
 save_plat();
 
 clean_folder('include');
@@ -244,6 +262,7 @@ patch_samp();
 patch_src('src');
 patch_plat();
 patch_macro();
+patch_flag();
 
 //fs.unlink('src/version_gen.cc');
 

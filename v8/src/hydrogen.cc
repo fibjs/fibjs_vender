@@ -6,8 +6,6 @@
 
 #include <sstream>
 
-#include "src/v8.h"
-
 #include "src/allocation-site-scopes.h"
 #include "src/ast-numbering.h"
 #include "src/full-codegen/full-codegen.h"
@@ -4411,7 +4409,7 @@ void HOptimizedGraphBuilder::VisitExpressions(ZoneList<Expression*>* exprs,
 
 
 bool HOptimizedGraphBuilder::BuildGraph() {
-  if (IsSubclassConstructor(current_info()->function()->kind())) {
+  if (IsSubclassConstructor(current_info()->literal()->kind())) {
     Bailout(kSuperReference);
     return false;
   }
@@ -4451,7 +4449,7 @@ bool HOptimizedGraphBuilder::BuildGraph() {
 
   Add<HStackCheck>(HStackCheck::kFunctionEntry);
 
-  VisitStatements(current_info()->function()->body());
+  VisitStatements(current_info()->literal()->body());
   if (HasStackOverflow()) return false;
 
   if (current_block() != NULL) {
@@ -8281,7 +8279,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
     TraceInline(target, caller, "target has context-allocated variables");
     return false;
   }
-  FunctionLiteral* function = target_info.function();
+  FunctionLiteral* function = target_info.literal();
 
   // The following conditions must be checked again after re-parsing, because
   // earlier the information might not have been complete due to lazy parsing.
@@ -13111,7 +13109,7 @@ std::ostream& operator<<(std::ostream& os, const HEnvironment& env) {
 void HTracer::TraceCompilation(CompilationInfo* info) {
   Tag tag(this, "compilation");
   if (info->IsOptimizing()) {
-    Handle<String> name = info->function()->debug_name();
+    Handle<String> name = info->literal()->debug_name();
     PrintStringProperty("name", name->ToCString().get());
     PrintIndent();
     trace_.Add("method \"%s:%d\"\n",

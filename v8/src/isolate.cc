@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/isolate.h"
+
 #include <stdlib.h>
 
 #include <fstream>  // NOLINT(readability/streams)
 #include <sstream>
-
-#include "src/v8.h"
 
 #include "src/ast.h"
 #include "src/base/platform/platform.h"
@@ -36,6 +36,7 @@
 #include "src/scopeinfo.h"
 #include "src/simulator.h"
 #include "src/snapshot/serialize.h"
+#include "src/v8.h"
 #include "src/version.h"
 #include "src/vm-state-inl.h"
 
@@ -845,17 +846,19 @@ Object* Isolate::StackOverflow() {
   // At this point we cannot create an Error object using its javascript
   // constructor.  Instead, we copy the pre-constructed boilerplate and
   // attach the stack trace as a hidden property.
-  Handle<String> key = factory()->stack_overflow_string();
-  Handle<Object> boilerplate =
-      Object::GetProperty(js_builtins_object(), key).ToHandleChecked();
-  if (boilerplate->IsUndefined()) {
-    return Throw(heap()->undefined_value(), nullptr);
+  Handle<Object> exception;
+  if (bootstrapper()->IsActive()) {
+    // There is no boilerplate to use during bootstrapping.
+    exception = factory()->NewStringFromAsciiChecked(
+        MessageTemplate::TemplateString(MessageTemplate::kStackOverflow));
+  } else {
+    Handle<JSObject> boilerplate = stack_overflow_boilerplate();
+    Handle<JSObject> copy = factory()->CopyJSObject(boilerplate);
+    CaptureAndSetSimpleStackTrace(copy, factory()->undefined_value());
+    exception = copy;
   }
-  Handle<JSObject> exception =
-      factory()->CopyJSObject(Handle<JSObject>::cast(boilerplate));
   Throw(*exception, nullptr);
 
-  CaptureAndSetSimpleStackTrace(exception, factory()->undefined_value());
 #ifdef VERIFY_HEAP
   if (FLAG_verify_heap && FLAG_stress_compaction) {
     heap()->CollectAllAvailableGarbage("trigger compaction");
@@ -1758,8 +1761,6 @@ Isolate::Isolate(bool enable_serializer)
       // TODO(bmeurer) Initialized lazily because it depends on flags; can
       // be fixed once the default isolate cleanup is done.
       random_number_generator_(NULL),
-      store_buffer_hash_set_1_address_(NULL),
-      store_buffer_hash_set_2_address_(NULL),
       serializer_enabled_(enable_serializer),
       has_fatal_error_(false),
       initialized_from_snapshot_(false),
@@ -2159,10 +2160,6 @@ bool Isolate::Init(Deserializer* des) {
   bootstrapper_->Initialize(create_heap_objects);
   builtins_.SetUp(this, create_heap_objects);
 
-  if (FLAG_ignition) {
-    interpreter_->Initialize();
-  }
-
   if (FLAG_log_internal_timer_events) {
     set_event_logger(Logger::DefaultEventLoggerSentinel);
   }
@@ -2188,6 +2185,10 @@ bool Isolate::Init(Deserializer* des) {
     des->Deserialize(this);
   }
   stub_cache_->Initialize();
+
+  if (FLAG_ignition) {
+    interpreter_->Initialize();
+  }
 
   // Finish initialization of ThreadLocal after deserialization is done.
   clear_pending_exception();

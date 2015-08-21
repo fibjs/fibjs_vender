@@ -162,12 +162,15 @@ namespace internal {
   V(FixedArray, experimental_natives_source_cache,                             \
     ExperimentalNativesSourceCache)                                            \
   V(FixedArray, extra_natives_source_cache, ExtraNativesSourceCache)           \
+  V(FixedArray, experimental_extra_natives_source_cache,                       \
+    ExperimentalExtraNativesSourceCache)                                       \
   V(FixedArray, code_stub_natives_source_cache, CodeStubNativesSourceCache)    \
   V(Script, empty_script, EmptyScript)                                         \
   V(NameDictionary, intrinsic_function_names, IntrinsicFunctionNames)          \
   V(Cell, undefined_cell, UndefinedCell)                                       \
   V(JSObject, observation_state, ObservationState)                             \
   V(Object, symbol_registry, SymbolRegistry)                                   \
+  V(Object, script_list, ScriptList)                                           \
   V(SeededNumberDictionary, empty_slow_element_dictionary,                     \
     EmptySlowElementDictionary)                                                \
   V(FixedArray, materialized_objects, MaterializedObjects)                     \
@@ -275,7 +278,6 @@ namespace internal {
   V(toJSON_string, "toJSON")                                   \
   V(KeyedLoadMonomorphic_string, "KeyedLoadMonomorphic")       \
   V(KeyedStoreMonomorphic_string, "KeyedStoreMonomorphic")     \
-  V(stack_overflow_string, "$stackOverflowBoilerplate")        \
   V(illegal_access_string, "illegal access")                   \
   V(cell_value_string, "%cell_value")                          \
   V(illegal_argument_string, "illegal argument")               \
@@ -883,44 +885,40 @@ class Heap {
 
   PromotionQueue* promotion_queue() { return &promotion_queue_; }
 
-  void AddGCPrologueCallback(v8::Isolate::GCPrologueCallback callback,
+  void AddGCPrologueCallback(v8::Isolate::GCCallback callback,
                              GCType gc_type_filter, bool pass_isolate = true);
-  void RemoveGCPrologueCallback(v8::Isolate::GCPrologueCallback callback);
+  void RemoveGCPrologueCallback(v8::Isolate::GCCallback callback);
 
-  void AddGCEpilogueCallback(v8::Isolate::GCEpilogueCallback callback,
+  void AddGCEpilogueCallback(v8::Isolate::GCCallback callback,
                              GCType gc_type_filter, bool pass_isolate = true);
-  void RemoveGCEpilogueCallback(v8::Isolate::GCEpilogueCallback callback);
+  void RemoveGCEpilogueCallback(v8::Isolate::GCCallback callback);
 
 // Heap root getters.  We have versions with and without type::cast() here.
 // You can't use type::cast during GC because the assert fails.
 // TODO(1490): Try removing the unchecked accessors, now that GC marking does
 // not corrupt the map.
-#define ROOT_ACCESSOR(type, name, camel_name)                           \
-  type* name() { return type::cast(roots_[k##camel_name##RootIndex]); } \
-  type* raw_unchecked_##name() {                                        \
-    return reinterpret_cast<type*>(roots_[k##camel_name##RootIndex]);   \
+#define ROOT_ACCESSOR(type, name, camel_name)                         \
+  inline type* name();                                                \
+  type* raw_unchecked_##name() {                                      \
+    return reinterpret_cast<type*>(roots_[k##camel_name##RootIndex]); \
   }
   ROOT_LIST(ROOT_ACCESSOR)
 #undef ROOT_ACCESSOR
 
 // Utility type maps
-#define STRUCT_MAP_ACCESSOR(NAME, Name, name) \
-  Map* name##_map() { return Map::cast(roots_[k##Name##MapRootIndex]); }
+#define STRUCT_MAP_ACCESSOR(NAME, Name, name) inline Map* name##_map();
   STRUCT_LIST(STRUCT_MAP_ACCESSOR)
 #undef STRUCT_MAP_ACCESSOR
 
-#define STRING_ACCESSOR(name, str) \
-  String* name() { return String::cast(roots_[k##name##RootIndex]); }
+#define STRING_ACCESSOR(name, str) inline String* name();
   INTERNALIZED_STRING_LIST(STRING_ACCESSOR)
 #undef STRING_ACCESSOR
 
-#define SYMBOL_ACCESSOR(name) \
-  Symbol* name() { return Symbol::cast(roots_[k##name##RootIndex]); }
+#define SYMBOL_ACCESSOR(name) inline Symbol* name();
   PRIVATE_SYMBOL_LIST(SYMBOL_ACCESSOR)
 #undef SYMBOL_ACCESSOR
 
-#define SYMBOL_ACCESSOR(name, varname, description) \
-  Symbol* name() { return Symbol::cast(roots_[k##name##RootIndex]); }
+#define SYMBOL_ACCESSOR(name, varname, description) inline Symbol* name();
   PUBLIC_SYMBOL_LIST(SYMBOL_ACCESSOR)
 #undef SYMBOL_ACCESSOR
 
@@ -954,7 +952,7 @@ class Heap {
   Object* encountered_weak_cells() const { return encountered_weak_cells_; }
 
   // Number of mark-sweeps.
-  unsigned int ms_count() { return ms_count_; }
+  int ms_count() const { return ms_count_; }
 
   // Iterates over all roots in the heap.
   void IterateRoots(ObjectVisitor* v, VisitMode mode);
@@ -1101,6 +1099,9 @@ class Heap {
   // the heap's from space.
   static inline void ScavengePointer(HeapObject** p);
   static inline void ScavengeObject(HeapObject** p, HeapObject* object);
+
+  // Slow part of scavenge object.
+  static void ScavengeObjectSlow(HeapObject** p, HeapObject* object);
 
   enum ScratchpadSlotMode { IGNORE_SCRATCHPAD_SLOT, RECORD_SCRATCHPAD_SLOT };
 
@@ -1421,9 +1422,6 @@ class Heap {
     return &external_string_table_;
   }
 
-  // Returns the current sweep generation.
-  int sweep_generation() { return sweep_generation_; }
-
   bool concurrent_sweeping_enabled() { return concurrent_sweeping_enabled_; }
 
   inline Isolate* isolate();
@@ -1432,10 +1430,6 @@ class Heap {
   void CallGCEpilogueCallbacks(GCType gc_type, GCCallbackFlags flags);
 
   inline bool OldGenerationAllocationLimitReached();
-
-  inline void DoScavengeObject(Map* map, HeapObject** slot, HeapObject* obj) {
-    scavenging_visitors_table_.GetVisitor(map)(map, slot, obj);
-  }
 
   void QueueMemoryChunkForFree(MemoryChunk* chunk);
   void FreeQueuedChunks();
@@ -1451,39 +1445,14 @@ class Heap {
   // The roots that have an index less than this are always in old space.
   static const int kOldSpaceRoots = 0x20;
 
-  uint32_t HashSeed() {
-    uint32_t seed = static_cast<uint32_t>(hash_seed()->value());
-    DCHECK(FLAG_randomize_hashes || seed == 0);
-    return seed;
-  }
+  inline uint32_t HashSeed();
 
-  Smi* NextScriptId() {
-    int next_id = last_script_id()->value() + 1;
-    if (!Smi::IsValid(next_id) || next_id < 0) next_id = 1;
-    Smi* next_id_smi = Smi::FromInt(next_id);
-    set_last_script_id(next_id_smi);
-    return next_id_smi;
-  }
+  inline Smi* NextScriptId();
 
-  void SetArgumentsAdaptorDeoptPCOffset(int pc_offset) {
-    DCHECK(arguments_adaptor_deopt_pc_offset() == Smi::FromInt(0));
-    set_arguments_adaptor_deopt_pc_offset(Smi::FromInt(pc_offset));
-  }
-
-  void SetConstructStubDeoptPCOffset(int pc_offset) {
-    DCHECK(construct_stub_deopt_pc_offset() == Smi::FromInt(0));
-    set_construct_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
-  }
-
-  void SetGetterStubDeoptPCOffset(int pc_offset) {
-    DCHECK(getter_stub_deopt_pc_offset() == Smi::FromInt(0));
-    set_getter_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
-  }
-
-  void SetSetterStubDeoptPCOffset(int pc_offset) {
-    DCHECK(setter_stub_deopt_pc_offset() == Smi::FromInt(0));
-    set_setter_stub_deopt_pc_offset(Smi::FromInt(pc_offset));
-  }
+  inline void SetArgumentsAdaptorDeoptPCOffset(int pc_offset);
+  inline void SetConstructStubDeoptPCOffset(int pc_offset);
+  inline void SetGetterStubDeoptPCOffset(int pc_offset);
+  inline void SetSetterStubDeoptPCOffset(int pc_offset);
 
   // For post mortem debugging.
   void RememberUnmappedPage(Address page, bool compacted);
@@ -1733,9 +1702,6 @@ class Heap {
   // ... and since the last scavenge.
   int survived_last_scavenge_;
 
-  // For keeping track on when to flush RegExp code.
-  int sweep_generation_;
-
   int always_allocate_scope_depth_;
 
   // For keeping track of context disposals.
@@ -1777,18 +1743,8 @@ class Heap {
   int remembered_unmapped_pages_index_;
   Address remembered_unmapped_pages_[kRememberedUnmappedPages];
 
-  // Total length of the strings we failed to flatten since the last GC.
-  int unflattened_strings_length_;
-
-#define ROOT_ACCESSOR(type, name, camel_name)                                 \
-  inline void set_##name(type* value) {                                       \
-    /* The deserializer makes use of the fact that these common roots are */  \
-    /* never in new space and never on a page that is being compacted.    */  \
-    DCHECK(!deserialization_complete() ||                                     \
-           RootCanBeWrittenAfterInitialization(k##camel_name##RootIndex));    \
-    DCHECK(k##camel_name##RootIndex >= kOldSpaceRoots || !InNewSpace(value)); \
-    roots_[k##camel_name##RootIndex] = value;                                 \
-  }
+#define ROOT_ACCESSOR(type, name, camel_name) \
+  inline void set_##name(type* value);
   ROOT_LIST(ROOT_ACCESSOR)
 #undef ROOT_ACCESSOR
 
@@ -1858,35 +1814,22 @@ class Heap {
 
   void AddPrivateGlobalSymbols(Handle<Object> private_intern_table);
 
-  // GC callback function, called before and after mark-compact GC.
-  // Allocations in the callback function are disallowed.
-  struct GCPrologueCallbackPair {
-    GCPrologueCallbackPair(v8::Isolate::GCPrologueCallback callback,
-                           GCType gc_type, bool pass_isolate)
-        : callback(callback), gc_type(gc_type), pass_isolate_(pass_isolate) {}
-    bool operator==(const GCPrologueCallbackPair& pair) const {
-      return pair.callback == callback;
-    }
-    v8::Isolate::GCPrologueCallback callback;
-    GCType gc_type;
-    // TODO(dcarney): remove variable
-    bool pass_isolate_;
-  };
-  List<GCPrologueCallbackPair> gc_prologue_callbacks_;
+  struct GCCallbackPair {
+    GCCallbackPair(v8::Isolate::GCCallback callback, GCType gc_type,
+                   bool pass_isolate)
+        : callback(callback), gc_type(gc_type), pass_isolate(pass_isolate) {}
 
-  struct GCEpilogueCallbackPair {
-    GCEpilogueCallbackPair(v8::Isolate::GCPrologueCallback callback,
-                           GCType gc_type, bool pass_isolate)
-        : callback(callback), gc_type(gc_type), pass_isolate_(pass_isolate) {}
-    bool operator==(const GCEpilogueCallbackPair& pair) const {
-      return pair.callback == callback;
+    bool operator==(const GCCallbackPair& other) const {
+      return other.callback == callback;
     }
-    v8::Isolate::GCPrologueCallback callback;
+
+    v8::Isolate::GCCallback callback;
     GCType gc_type;
-    // TODO(dcarney): remove variable
-    bool pass_isolate_;
+    bool pass_isolate;
   };
-  List<GCEpilogueCallbackPair> gc_epilogue_callbacks_;
+
+  List<GCCallbackPair> gc_epilogue_callbacks_;
+  List<GCCallbackPair> gc_prologue_callbacks_;
 
   // Code that should be run before and after each GC.  Includes some
   // reporting/verification activities when compiled with DEBUG set.
@@ -2155,9 +2098,6 @@ class Heap {
   // Record statistics before and after garbage collection.
   void ReportStatisticsBeforeGC();
   void ReportStatisticsAfterGC();
-
-  // Slow part of scavenge object.
-  static void ScavengeObjectSlow(HeapObject** p, HeapObject* object);
 
   // Total RegExp code ever generated
   double total_regexp_code_generated_;

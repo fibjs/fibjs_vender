@@ -916,6 +916,7 @@ Parser::Parser(ParseInfo* info)
   set_allow_harmony_sloppy_function(FLAG_harmony_sloppy_function);
   set_allow_harmony_sloppy_let(FLAG_harmony_sloppy_let);
   set_allow_harmony_rest_parameters(FLAG_harmony_rest_parameters);
+  set_allow_harmony_default_parameters(FLAG_harmony_default_parameters);
   set_allow_harmony_spreadcalls(FLAG_harmony_spreadcalls);
   set_allow_harmony_destructuring(FLAG_harmony_destructuring);
   set_allow_harmony_spread_arrays(FLAG_harmony_spread_arrays);
@@ -3910,7 +3911,19 @@ void ParserTraits::ParseArrowFunctionFormalParameters(
     parser_->scope_->RemoveUnresolved(expr->AsVariableProxy());
   }
 
-  AddFormalParameter(parameters, expr, is_rest);
+  Expression* initializer = nullptr;
+  if (!is_rest && parser_->allow_harmony_default_parameters() &&
+      parser_->Check(Token::ASSIGN)) {
+    ExpressionClassifier init_classifier;
+    initializer =
+        parser_->ParseAssignmentExpression(true, &init_classifier, ok);
+    if (!*ok) return;
+    parser_->ValidateExpression(&init_classifier, ok);
+    if (!*ok) return;
+    parameters->is_simple = false;
+  }
+
+  AddFormalParameter(parameters, expr, initializer, is_rest);
 }
 
 
@@ -4329,9 +4342,22 @@ Block* Parser::BuildParameterInitializationBlock(
     descriptor.declaration_pos = parameter.pattern->position();
     descriptor.initialization_pos = parameter.pattern->position();
     descriptor.init_op = Token::INIT_LET;
+    Expression* initial_value =
+        factory()->NewVariableProxy(parameters.scope->parameter(i));
+    if (parameter.initializer != nullptr) {
+      // IS_UNDEFINED($param) ? initializer : $param
+      auto condition = factory()->NewCompareOperation(
+          Token::EQ_STRICT,
+          factory()->NewVariableProxy(parameters.scope->parameter(i)),
+          factory()->NewUndefinedLiteral(RelocInfo::kNoPosition),
+          RelocInfo::kNoPosition);
+      initial_value = factory()->NewConditional(
+          condition, parameter.initializer, initial_value,
+          RelocInfo::kNoPosition);
+      descriptor.initialization_pos = parameter.initializer->position();
+    }
     DeclarationParsingResult::Declaration decl(
-        parameter.pattern, parameter.pattern->position(),
-        factory()->NewVariableProxy(parameters.scope->parameter(i)));
+        parameter.pattern, parameter.pattern->position(), initial_value);
     PatternRewriter::DeclareAndInitializeVariables(init_block, &descriptor,
                                                    &decl, nullptr, CHECK_OK);
   }
@@ -4497,6 +4523,7 @@ PreParser::PreParseResult Parser::ParseLazyFunctionBodyWithPreParser(
     SET_ALLOW(harmony_sloppy);
     SET_ALLOW(harmony_sloppy_let);
     SET_ALLOW(harmony_rest_parameters);
+    SET_ALLOW(harmony_default_parameters);
     SET_ALLOW(harmony_spreadcalls);
     SET_ALLOW(harmony_destructuring);
     SET_ALLOW(harmony_spread_arrays);
@@ -5700,7 +5727,7 @@ bool RegExpParser::ParseRegExp(Isolate* isolate, Zone* zone,
 bool Parser::ParseStatic(ParseInfo* info) {
   Parser parser(info);
   if (parser.Parse(info)) {
-    info->set_language_mode(info->function()->language_mode());
+    info->set_language_mode(info->literal()->language_mode());
     return true;
   }
   return false;
@@ -5708,7 +5735,7 @@ bool Parser::ParseStatic(ParseInfo* info) {
 
 
 bool Parser::Parse(ParseInfo* info) {
-  DCHECK(info->function() == NULL);
+  DCHECK(info->literal() == NULL);
   FunctionLiteral* result = NULL;
   // Ok to use Isolate here; this function is only called in the main thread.
   DCHECK(parsing_on_main_thread_);
@@ -5743,7 +5770,7 @@ bool Parser::Parse(ParseInfo* info) {
 void Parser::ParseOnBackground(ParseInfo* info) {
   parsing_on_main_thread_ = false;
 
-  DCHECK(info->function() == NULL);
+  DCHECK(info->literal() == NULL);
   FunctionLiteral* result = NULL;
   fni_ = new (zone()) FuncNameInferrer(ast_value_factory(), zone());
 

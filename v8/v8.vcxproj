@@ -309,6 +309,7 @@
     <ClInclude Include="src\icu_util.h" />
     <ClInclude Include="src\interface-descriptors.h" />
     <ClInclude Include="src\interpreter\bytecode-array-builder.h" />
+    <ClInclude Include="src\interpreter\bytecode-generator.h" />
     <ClInclude Include="src\interpreter\bytecodes.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
     <ClInclude Include="src\isolate.h" />
@@ -412,6 +413,8 @@
     <ClInclude Include="src\typing.h" />
     <ClInclude Include="src\unbound-queue-inl.h" />
     <ClInclude Include="src\unbound-queue.h" />
+    <ClInclude Include="src\unicode-cache-inl.h" />
+    <ClInclude Include="src\unicode-cache.h" />
     <ClInclude Include="src\unicode-decoder.h" />
     <ClInclude Include="src\unicode-inl.h" />
     <ClInclude Include="src\unicode.h" />
@@ -523,6 +526,7 @@
     <ClCompile Include="src\compiler\dead-code-elimination.cc" />
     <ClCompile Include="src\compiler\frame-elider.cc" />
     <ClCompile Include="src\compiler\frame-states.cc" />
+    <ClCompile Include="src\compiler\frame.cc" />
     <ClCompile Include="src\compiler\gap-resolver.cc" />
     <ClCompile Include="src\compiler\graph-reducer.cc" />
     <ClCompile Include="src\compiler\graph-replay.cc" />
@@ -634,6 +638,7 @@
     <ClCompile Include="src\futex-emulation.cc" />
     <ClCompile Include="src\gdb-jit.cc" />
     <ClCompile Include="src\gen\code-stub-libraries.cc" />
+    <ClCompile Include="src\gen\experimental-extras-libraries.cc" />
     <ClCompile Include="src\gen\experimental-libraries.cc" />
     <ClCompile Include="src\gen\extras-libraries.cc" />
     <ClCompile Include="src\gen\libraries.cc" />
@@ -720,6 +725,7 @@
     <ClCompile Include="src\icu_util.cc" />
     <ClCompile Include="src\interface-descriptors.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc" />
+    <ClCompile Include="src\interpreter\bytecode-generator.cc" />
     <ClCompile Include="src\interpreter\bytecodes.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
     <ClCompile Include="src\isolate.cc" />
@@ -811,13 +817,13 @@
     <ClCompile Include="src\scanner.cc" />
     <ClCompile Include="src\scopeinfo.cc" />
     <ClCompile Include="src\scopes.cc" />
+    <ClCompile Include="src\snapshot\natives-common.cc" />
     <ClCompile Include="src\snapshot\serialize.cc" />
     <ClCompile Include="src\snapshot\snapshot-common.cc" />
     <ClCompile Include="src\snapshot\snapshot-empty.cc" />
     <ClCompile Include="src\snapshot\snapshot-source-sink.cc" />
     <ClCompile Include="src\startup-data-util.cc" />
     <ClCompile Include="src\string-builder.cc" />
-    <ClCompile Include="src\string-search.cc" />
     <ClCompile Include="src\string-stream.cc" />
     <ClCompile Include="src\strings-storage.cc" />
     <ClCompile Include="src\strtod.cc" />
