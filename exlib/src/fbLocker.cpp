@@ -80,12 +80,10 @@ bool Locker::trylock()
 
 void Locker::unlock()
 {
-    Thread_base *current = Thread_base::current();
     Thread_base *fb = 0;
 
-    assert(current != 0);
-
-    assert(current == m_locker);
+    assert(Thread_base::current() != 0);
+    assert(Thread_base::current() == m_locker);
     assert(m_recursive || m_count == 1);
     assert(m_count >= 1);
 
