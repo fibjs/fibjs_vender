@@ -477,8 +477,10 @@ public:
 
     virtual void suspend();
     virtual void resume();
-    virtual void join();
-    virtual void yield();
+
+    void join();
+    void yield();
+
     virtual void Run()
     {};
 

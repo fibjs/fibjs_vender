@@ -43,12 +43,12 @@ namespace exlib
 class Sleeping : public linkitem
 {
 public:
-    Sleeping(Fiber* now, int32_t tm) :
+    Sleeping(Thread_base* now, int32_t tm) :
         m_now(now), m_tm(tm)
     {}
 
 public:
-    Fiber* m_now;
+    Thread_base* m_now;
     int32_t m_tm;
 };
 

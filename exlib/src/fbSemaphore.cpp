@@ -18,7 +18,7 @@ void Semaphore::wait()
 
     if (m_count == 0)
     {
-        Thread_base* current = Thread_base::current();
+        Task_base* current = Thread_base::current();
         assert(current != 0);
 
         m_blocks.putTail(current);
@@ -35,7 +35,7 @@ void Semaphore::wait()
 
 void Semaphore::post()
 {
-    Thread_base* fb;
+    Task_base* fb;
 
     m_lock.lock();
     fb = m_blocks.getHead();

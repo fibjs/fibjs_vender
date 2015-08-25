@@ -16,7 +16,7 @@ void CondVar::wait(Locker &l)
 {
 	l.unlock();
 
-	Thread_base* current = Thread_base::current();
+	Task_base* current = Thread_base::current();
 	assert(current != 0);
 
 	m_lock.lock();
@@ -30,7 +30,7 @@ void CondVar::wait(Locker &l)
 
 void CondVar::notify_one()
 {
-	Thread_base* fb;
+	Task_base* fb;
 
 	m_lock.lock();
 	fb = m_blocks.getHead();
@@ -42,13 +42,13 @@ void CondVar::notify_one()
 
 void CondVar::notify_all()
 {
-	List<Thread_base> blocks;
+	List<Task_base> blocks;
 
 	m_lock.lock();
 	m_blocks.getList(blocks);
 	m_lock.unlock();
 
-	Thread_base* fb;
+	Task_base* fb;
 	while ((fb = blocks.getHead()) != 0)
 		fb->resume();
 }

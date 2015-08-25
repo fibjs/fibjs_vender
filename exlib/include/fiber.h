@@ -21,25 +21,24 @@ namespace exlib
 #define TLS_SIZE    8
 
 class Locker;
-class Thread_base : public linkitem
+
+class Task_base : public linkitem
 {
 public:
-    Thread_base() : refs_(0), m_stackguard(0)
+    virtual void suspend() = 0;
+    virtual void resume() = 0;
+};
+
+class Thread_base : public Task_base
+{
+public:
+    Thread_base() : m_stackguard(0)
     {
         memset(&m_tls, 0, sizeof(m_tls));
     }
 
 public:
-    void Ref()
-    {
-        refs_.inc();
-    }
-
-    void Unref()
-    {
-        if (refs_.dec() == 0)
-            destroy();
-    }
+    virtual bool is(int32_t t) = 0;
 
     void saveStackGuard()
     {
@@ -58,14 +57,16 @@ public:
     static Thread_base* current();
 
 public:
-    virtual bool is(int32_t t) = 0;
-    virtual void suspend() = 0;
-    virtual void resume() = 0;
-    virtual void join() = 0;
-    virtual void yield() = 0;
+    void Ref()
+    {
+        refs_.inc();
+    }
 
-private:
-    virtual void destroy() = 0;
+    void Unref()
+    {
+        if (refs_.dec() == 0)
+            destroy();
+    }
 
 public:
     static int32_t tlsAlloc();
@@ -74,9 +75,12 @@ public:
     static void tlsFree(int32_t idx);
 
 private:
+    virtual void destroy() = 0;
+
+private:
     void *m_tls[TLS_SIZE];
-    atomic refs_;
     intptr_t m_stackguard;
+    atomic refs_;
 };
 
 class Locker
@@ -97,8 +101,8 @@ private:
     bool m_recursive;
     int32_t m_count;
     spinlock m_lock;
-    List<Thread_base> m_blocks;
-    Thread_base *m_locker;
+    List<Task_base> m_blocks;
+    Task_base *m_locker;
 };
 
 class autoLocker
@@ -137,7 +141,7 @@ public:
 private:
     bool m_set;
     spinlock m_lock;
-    List<Thread_base> m_blocks;
+    List<Task_base> m_blocks;
 };
 
 class CondVar
@@ -149,7 +153,7 @@ public:
 
 private:
     spinlock m_lock;
-    List<Thread_base> m_blocks;
+    List<Task_base> m_blocks;
 };
 
 class Semaphore
@@ -168,7 +172,7 @@ public:
 private:
     int32_t m_count;
     spinlock m_lock;
-    List<Thread_base> m_blocks;
+    List<Task_base> m_blocks;
 };
 
 template<class T>
@@ -231,8 +235,9 @@ public:
 
     virtual void suspend();
     virtual void resume();
-    virtual void join();
-    virtual void yield();
+
+    void join();
+    void yield();
 
 private:
     virtual void destroy();

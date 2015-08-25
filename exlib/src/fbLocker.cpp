@@ -19,7 +19,7 @@ namespace exlib
 
 void Locker::lock()
 {
-    Thread_base *current = Thread_base::current();
+    Task_base *current = Thread_base::current();
 
     assert(current != 0);
     assert(m_recursive || current != m_locker);
@@ -50,7 +50,7 @@ void Locker::lock()
 
 bool Locker::trylock()
 {
-    Thread_base *current = Thread_base::current();
+    Task_base *current = Thread_base::current();
 
     assert(current != 0);
     assert(m_recursive || current != m_locker);
@@ -80,7 +80,7 @@ bool Locker::trylock()
 
 void Locker::unlock()
 {
-    Thread_base *fb = 0;
+    Task_base *fb = 0;
 
     assert(Thread_base::current() != 0);
     assert(Thread_base::current() == m_locker);
@@ -106,7 +106,7 @@ void Locker::unlock()
 
 bool Locker::owned()
 {
-    Thread_base *current = Thread_base::current();
+    Task_base *current = Thread_base::current();
 
     assert(current != 0);
 
