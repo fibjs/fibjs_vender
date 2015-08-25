@@ -43,12 +43,12 @@ namespace exlib
 class Sleeping : public linkitem
 {
 public:
-    Sleeping(Thread_base* now, int32_t tm) :
+    Sleeping(Task_base* now, int32_t tm) :
         m_now(now), m_tm(tm)
     {}
 
 public:
-    Thread_base* m_now;
+    Task_base* m_now;
     int32_t m_tm;
 };
 
@@ -135,6 +135,7 @@ public:
                     break;
 
                 e->second->m_now->resume();
+                delete e->second;
                 m_tms.erase(e);
             }
         }
@@ -158,23 +159,18 @@ void init_timer()
     s_timer.start();
 }
 
-void Fiber::sleep(int32_t ms)
+void Fiber::sleep(int32_t ms, Task_base* now)
 {
-    if (ms <= 0) {
-        assert(current() != 0);
-        current()->yield();
-    }
-    else
-    {
-        Fiber* now = current();
+    if (now == 0)
+        now = current();
 
-        assert(now != 0);
+    assert(now != 0);
 
-        Sleeping as(now, ms);
+    if (ms < 0)
+        ms = 0;
 
-        s_timer.post(&as);
-        now->suspend();
-    }
+    s_timer.post(new Sleeping(now, ms));
+    now->suspend();
 }
 
 }

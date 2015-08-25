@@ -25,6 +25,10 @@ class Locker;
 class Task_base : public linkitem
 {
 public:
+    virtual ~Task_base()
+    {}
+
+public:
     virtual void suspend() = 0;
     virtual void resume() = 0;
 };
@@ -255,7 +259,7 @@ public:
     }
 
 public:
-    static void sleep(int32_t ms);
+    static void sleep(int32_t ms, Task_base* now = 0);
     static Fiber *current();
     static Fiber *Create(void *(*func)(void *), void *data = 0,
                          int32_t stacksize = FIBER_STACK_SIZE);
