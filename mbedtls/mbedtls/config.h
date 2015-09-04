@@ -181,7 +181,7 @@
  *
  * Uncomment to get errors on using deprecated functions.
  */
-//#define MBEDTLS_DEPRECATED_REMOVED
+#define MBEDTLS_DEPRECATED_REMOVED
 
 /* \} name SECTION: System support */
 
@@ -390,7 +390,7 @@
  *
  * Uncomment this macro to enable weak ciphersuites
  */
-//#define MBEDTLS_ENABLE_WEAK_CIPHERSUITES
+#define MBEDTLS_ENABLE_WEAK_CIPHERSUITES
 
 /**
  * \def MBEDTLS_REMOVE_ARC4_CIPHERSUITES
