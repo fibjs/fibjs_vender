@@ -91,13 +91,13 @@ class Isolate;
 #define DCHECK_MAP_PAGE_INDEX(index) \
   DCHECK((0 <= index) && (index <= MapSpace::kMaxMapPageIndex))
 
-
-class PagedSpace;
-class MemoryAllocator;
 class AllocationInfo;
-class Space;
+class CompactionSpace;
 class FreeList;
+class MemoryAllocator;
 class MemoryChunk;
+class PagedSpace;
+class Space;
 
 class MarkBit {
  public:
@@ -386,6 +386,10 @@ class MemoryChunk {
     // candidates selection cycle.
     FORCE_EVACUATION_CANDIDATE_FOR_TESTING,
 
+    // The memory chunk is already logically freed, however the actual freeing
+    // still has to be performed.
+    PRE_FREED,
+
     // Last flag, keep at bottom.
     NUM_MEMORY_CHUNK_FLAGS
   };
@@ -657,6 +661,9 @@ class MemoryChunk {
   // Approximate amount of physical memory committed for this chunk.
   size_t CommittedPhysicalMemory() { return high_water_mark_; }
 
+  // Should be called when memory chunk is about to be freed.
+  void ReleaseAllocatedMemory();
+
   static inline void UpdateHighWaterMark(Address mark) {
     if (mark == NULL) return;
     // Need to subtract one from the mark because when a chunk is full the
@@ -924,10 +931,6 @@ class CodeRange {
   // Returns false on failure.
   bool SetUp(size_t requested_size);
 
-  // Frees the range of virtual memory, and frees the data structures used to
-  // manage it.
-  void TearDown();
-
   bool valid() { return code_range_ != NULL; }
   Address start() {
     DCHECK(valid());
@@ -957,6 +960,10 @@ class CodeRange {
   void ReleaseEmergencyBlock();
 
  private:
+  // Frees the range of virtual memory, and frees the data structures used to
+  // manage it.
+  void TearDown();
+
   Isolate* isolate_;
 
   // The reserved range of virtual memory that all code objects are put in.
@@ -980,10 +987,15 @@ class CodeRange {
     size_t size;
   };
 
+  // All access to free_list_ require to take the free_list_mutex_. GC threads
+  // may access the free_list_ concurrently to the main thread.
+  base::Mutex free_list_mutex_;
+
   // Freed blocks of memory are added to the free list.  When the allocation
   // list is exhausted, the free list is sorted and merged to make the new
   // allocation list.
   List<FreeBlock> free_list_;
+
   // Memory is allocated from the free blocks on the allocation list.
   // The block at current_allocation_block_index_ is the current block.
   List<FreeBlock> allocation_list_;
@@ -1079,6 +1091,15 @@ class MemoryAllocator {
   LargePage* AllocateLargePage(intptr_t object_size, Space* owner,
                                Executability executable);
 
+  // PreFree logically frees the object, i.e., it takes care of the size
+  // bookkeeping and calls the allocation callback.
+  void PreFreeMemory(MemoryChunk* chunk);
+
+  // FreeMemory can be called concurrently when PreFree was executed before.
+  void PerformFreeMemory(MemoryChunk* chunk);
+
+  // Free is a wrapper method, which calls PreFree and PerformFreeMemory
+  // together.
   void Free(MemoryChunk* chunk);
 
   // Returns the maximum available bytes of heaps.
@@ -1128,6 +1149,8 @@ class MemoryAllocator {
 
   bool CommitMemory(Address addr, size_t size, Executability executable);
 
+  void FreeNewSpaceMemory(Address addr, base::VirtualMemory* reservation,
+                          Executability executable);
   void FreeMemory(base::VirtualMemory* reservation, Executability executable);
   void FreeMemory(Address addr, size_t size, Executability executable);
 
@@ -1443,6 +1466,16 @@ class AllocationStats BASE_EMBEDDED {
     waste_ += size_in_bytes;
   }
 
+  // Merge {other} into {this}.
+  void Merge(const AllocationStats& other) {
+    capacity_ += other.capacity_;
+    size_ += other.size_;
+    waste_ += other.waste_;
+    if (other.max_capacity_ > max_capacity_) {
+      max_capacity_ = other.max_capacity_;
+    }
+  }
+
  private:
   intptr_t capacity_;
   intptr_t max_capacity_;
@@ -1558,7 +1591,7 @@ class FreeList {
   // This method returns how much memory can be allocated after freeing
   // maximum_freed memory.
   static inline int GuaranteedAllocatable(int maximum_freed) {
-    if (maximum_freed < kSmallListMin) {
+    if (maximum_freed <= kSmallListMin) {
       return 0;
     } else if (maximum_freed <= kSmallListMax) {
       return kSmallAllocationMax;
@@ -1598,24 +1631,23 @@ class FreeList {
   FreeListCategory* large_list() { return &large_list_; }
   FreeListCategory* huge_list() { return &huge_list_; }
 
-  static const int kSmallListMin = 0x20 * kPointerSize;
-
  private:
   // The size range of blocks, in bytes.
   static const int kMinBlockSize = 3 * kPointerSize;
   static const int kMaxBlockSize = Page::kMaxRegularHeapObjectSize;
 
+  static const int kSmallListMin = 0x1f * kPointerSize;
+  static const int kSmallListMax = 0xff * kPointerSize;
+  static const int kMediumListMax = 0x7ff * kPointerSize;
+  static const int kLargeListMax = 0x3fff * kPointerSize;
+  static const int kSmallAllocationMax = kSmallListMin;
+  static const int kMediumAllocationMax = kSmallListMax;
+  static const int kLargeAllocationMax = kMediumListMax;
+
   FreeSpace* FindNodeFor(int size_in_bytes, int* node_size);
 
   PagedSpace* owner_;
   Heap* heap_;
-
-  static const int kSmallListMax = 0xff * kPointerSize;
-  static const int kMediumListMax = 0x7ff * kPointerSize;
-  static const int kLargeListMax = 0x3fff * kPointerSize;
-  static const int kSmallAllocationMax = kSmallListMin - kPointerSize;
-  static const int kMediumAllocationMax = kSmallListMax;
-  static const int kLargeAllocationMax = kMediumListMax;
   FreeListCategory small_list_;
   FreeListCategory medium_list_;
   FreeListCategory large_list_;
@@ -1673,7 +1705,7 @@ class PagedSpace : public Space {
   // Creates a space with an id.
   PagedSpace(Heap* heap, AllocationSpace id, Executability executable);
 
-  virtual ~PagedSpace() {}
+  virtual ~PagedSpace() { TearDown(); }
 
   // Set up the space using the given address range of virtual memory (from
   // the memory allocator's initial chunk) if possible.  If the block of
@@ -1684,10 +1716,6 @@ class PagedSpace : public Space {
   // Returns true if the space has been successfully set up and not
   // subsequently torn down.
   bool HasBeenSetUp();
-
-  // Cleans up the space, frees all pages in this space except those belonging
-  // to the initial chunk, uncommits addresses in the initial chunk.
-  void TearDown();
 
   // Checks whether an object/address is in this space.
   inline bool Contains(Address a);
@@ -1775,6 +1803,9 @@ class PagedSpace : public Space {
   // Allocate the requested number of bytes in the space if possible, return a
   // failure object if not.
   MUST_USE_RESULT inline AllocationResult AllocateRawUnaligned(
+      int size_in_bytes);
+
+  MUST_USE_RESULT inline AllocationResult AllocateRawUnalignedSynchronized(
       int size_in_bytes);
 
   // Allocate the requested number of bytes in the space double aligned if
@@ -1888,7 +1919,7 @@ class PagedSpace : public Space {
 
   void EvictEvacuationCandidatesFromFreeLists();
 
-  bool CanExpand();
+  bool CanExpand(size_t size);
 
   // Returns the number of total pages in this space.
   int CountTotalPages();
@@ -1903,8 +1934,46 @@ class PagedSpace : public Space {
 
   bool HasEmergencyMemory() { return emergency_memory_ != NULL; }
 
+  // Merges {other} into the current space. Note that this modifies {other},
+  // e.g., removes its bump pointer area and resets statistics.
+  void MergeCompactionSpace(CompactionSpace* other);
+
  protected:
+  // PagedSpaces that should be included in snapshots have different, i.e.,
+  // smaller, initial pages.
+  virtual bool snapshotable() { return true; }
+
   FreeList* free_list() { return &free_list_; }
+
+  bool HasPages() { return anchor_.next_page() != &anchor_; }
+
+  // Cleans up the space, frees all pages in this space except those belonging
+  // to the initial chunk, uncommits addresses in the initial chunk.
+  void TearDown();
+
+  // Expands the space by allocating a fixed number of pages. Returns false if
+  // it cannot allocate requested number of pages from OS, or if the hard heap
+  // size limit has been hit.
+  bool Expand();
+
+  // Generic fast case allocation function that tries linear allocation at the
+  // address denoted by top in allocation_info_.
+  inline HeapObject* AllocateLinearly(int size_in_bytes);
+
+  // Generic fast case allocation function that tries aligned linear allocation
+  // at the address denoted by top in allocation_info_. Writes the aligned
+  // allocation size, which includes the filler size, to size_in_bytes.
+  inline HeapObject* AllocateLinearlyAligned(int* size_in_bytes,
+                                             AllocationAlignment alignment);
+
+  // If sweeping is still in progress try to sweep unswept pages. If that is
+  // not successful, wait for the sweeper threads and re-try free-list
+  // allocation.
+  MUST_USE_RESULT HeapObject* WaitForSweeperThreadsAndRetryAllocation(
+      int size_in_bytes);
+
+  // Slow path of AllocateRaw.  This function is space-dependent.
+  MUST_USE_RESULT HeapObject* SlowAllocateRaw(int size_in_bytes);
 
   int area_size_;
 
@@ -1935,32 +2004,11 @@ class PagedSpace : public Space {
   // If not used, the emergency memory is released after compaction.
   MemoryChunk* emergency_memory_;
 
-  // Expands the space by allocating a fixed number of pages. Returns false if
-  // it cannot allocate requested number of pages from OS, or if the hard heap
-  // size limit has been hit.
-  bool Expand();
+  // Mutex guarding any concurrent access to the space.
+  base::Mutex space_mutex_;
 
-  // Generic fast case allocation function that tries linear allocation at the
-  // address denoted by top in allocation_info_.
-  inline HeapObject* AllocateLinearly(int size_in_bytes);
-
-  // Generic fast case allocation function that tries aligned linear allocation
-  // at the address denoted by top in allocation_info_. Writes the aligned
-  // allocation size, which includes the filler size, to size_in_bytes.
-  inline HeapObject* AllocateLinearlyAligned(int* size_in_bytes,
-                                             AllocationAlignment alignment);
-
-  // If sweeping is still in progress try to sweep unswept pages. If that is
-  // not successful, wait for the sweeper threads and re-try free-list
-  // allocation.
-  MUST_USE_RESULT HeapObject* WaitForSweeperThreadsAndRetryAllocation(
-      int size_in_bytes);
-
-  // Slow path of AllocateRaw.  This function is space-dependent.
-  MUST_USE_RESULT HeapObject* SlowAllocateRaw(int size_in_bytes);
-
-  friend class PageIterator;
   friend class MarkCompactCollector;
+  friend class PageIterator;
 };
 
 
@@ -2634,6 +2682,25 @@ class NewSpace : public Space {
   friend class SemiSpaceIterator;
 };
 
+// -----------------------------------------------------------------------------
+// Compaction space that is used temporarily during compaction.
+
+class CompactionSpace : public PagedSpace {
+ public:
+  CompactionSpace(Heap* heap, AllocationSpace id, Executability executable)
+      : PagedSpace(heap, id, executable) {}
+
+  // Adds external memory starting at {start} of {size_in_bytes} to the space.
+  void AddExternalMemory(Address start, int size_in_bytes) {
+    IncreaseCapacity(size_in_bytes);
+    Free(start, size_in_bytes);
+  }
+
+ protected:
+  // The space is temporary and not included in any snapshots.
+  virtual bool snapshotable() { return false; }
+};
+
 
 // -----------------------------------------------------------------------------
 // Old object space (includes the old space of objects and code space)
@@ -2743,6 +2810,9 @@ class LargeObjectSpace : public Space {
   // Finds a large object page containing the given address, returns NULL
   // if such a page doesn't exist.
   LargePage* FindPage(Address a);
+
+  // Clears the marking state of live objects.
+  void ClearMarkingStateOfLiveObjects();
 
   // Frees unmarked objects.
   void FreeUnmarkedObjects();

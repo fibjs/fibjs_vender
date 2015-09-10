@@ -16,6 +16,7 @@
 #include "src/frames-inl.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/global-handles.h"
+#include "src/isolate-inl.h"
 #include "src/list.h"
 #include "src/log.h"
 #include "src/messages.h"
@@ -1424,17 +1425,17 @@ Handle<Object> Debug::FindSharedFunctionInfoInScript(Handle<Script> script,
   while (true) {
     // Go through all shared function infos associated with this script to
     // find the inner most function containing this position.
+    // If there is no shared function info for this script at all, there is
+    // no point in looking for it by walking the heap.
     if (!script->shared_function_infos()->IsWeakFixedArray()) break;
-    WeakFixedArray* array =
-        WeakFixedArray::cast(script->shared_function_infos());
 
     SharedFunctionInfo* shared;
     {
       SharedFunctionInfoFinder finder(position);
-      for (int i = 0; i < array->Length(); i++) {
-        Object* item = array->Get(i);
-        if (!item->IsSharedFunctionInfo()) continue;
-        finder.NewCandidate(SharedFunctionInfo::cast(item));
+      WeakFixedArray::Iterator iterator(script->shared_function_infos());
+      SharedFunctionInfo* candidate;
+      while ((candidate = iterator.Next<SharedFunctionInfo>())) {
+        finder.NewCandidate(candidate);
       }
       shared = finder.Result();
       if (shared == NULL) break;
@@ -1493,7 +1494,7 @@ bool Debug::EnsureDebugInfo(Handle<SharedFunctionInfo> shared,
 
   if (function.is_null()) {
     DCHECK(shared->HasDebugCode());
-  } else if (!Compiler::EnsureCompiled(function, CLEAR_EXCEPTION)) {
+  } else if (!Compiler::Compile(function, CLEAR_EXCEPTION)) {
     return false;
   }
 
@@ -1608,8 +1609,7 @@ void Debug::ClearMirrorCache() {
 
 
 Handle<FixedArray> Debug::GetLoadedScripts() {
-  isolate_->heap()->CollectAllGarbage(Heap::kNoGCFlags,
-                                      "Debug::GetLoadedScripts");
+  isolate_->heap()->CollectAllGarbage();
   Factory* factory = isolate_->factory();
   if (!factory->script_list()->IsWeakFixedArray()) {
     return factory->empty_fixed_array();
@@ -1618,10 +1618,11 @@ Handle<FixedArray> Debug::GetLoadedScripts() {
       Handle<WeakFixedArray>::cast(factory->script_list());
   Handle<FixedArray> results = factory->NewFixedArray(array->Length());
   int length = 0;
-  for (int i = 0; i < array->Length(); ++i) {
-    Object* item = array->Get(i);
-    if (item->IsScript() && Script::cast(item)->HasValidSource()) {
-      results->set(length++, item);
+  {
+    Script::Iterator iterator(isolate_);
+    Script* script;
+    while ((script = iterator.Next())) {
+      if (script->HasValidSource()) results->set(length++, script);
     }
   }
   results->Shrink(length);
@@ -1813,28 +1814,6 @@ void Debug::OnException(Handle<Object> exception, Handle<Object> promise) {
 }
 
 
-void Debug::OnCompileError(Handle<Script> script) {
-  if (ignore_events()) return;
-
-  if (in_debug_scope()) {
-    ProcessCompileEventInDebugScope(v8::CompileError, script);
-    return;
-  }
-
-  HandleScope scope(isolate_);
-  DebugScope debug_scope(this);
-  if (debug_scope.failed()) return;
-
-  // Create the compile state object.
-  Handle<Object> event_data;
-  // Bail out and don't call debugger if exception.
-  if (!MakeCompileEvent(script, v8::CompileError).ToHandle(&event_data)) return;
-
-  // Process debug event.
-  ProcessDebugEvent(v8::CompileError, Handle<JSObject>::cast(event_data), true);
-}
-
-
 void Debug::OnDebugBreak(Handle<Object> break_points_hit,
                             bool auto_continue) {
   // The caller provided for DebugScope.
@@ -1855,54 +1834,19 @@ void Debug::OnDebugBreak(Handle<Object> break_points_hit,
 }
 
 
+void Debug::OnCompileError(Handle<Script> script) {
+  ProcessCompileEvent(v8::CompileError, script);
+}
+
+
 void Debug::OnBeforeCompile(Handle<Script> script) {
-  if (in_debug_scope() || ignore_events()) return;
-
-  HandleScope scope(isolate_);
-  DebugScope debug_scope(this);
-  if (debug_scope.failed()) return;
-
-  // Create the event data object.
-  Handle<Object> event_data;
-  // Bail out and don't call debugger if exception.
-  if (!MakeCompileEvent(script, v8::BeforeCompile).ToHandle(&event_data))
-    return;
-
-  // Process debug event.
-  ProcessDebugEvent(v8::BeforeCompile,
-                    Handle<JSObject>::cast(event_data),
-                    true);
+  ProcessCompileEvent(v8::BeforeCompile, script);
 }
 
 
 // Handle debugger actions when a new script is compiled.
 void Debug::OnAfterCompile(Handle<Script> script) {
-  if (ignore_events()) return;
-
-  if (in_debug_scope()) {
-    ProcessCompileEventInDebugScope(v8::AfterCompile, script);
-    return;
-  }
-
-  HandleScope scope(isolate_);
-  DebugScope debug_scope(this);
-  if (debug_scope.failed()) return;
-
-  // If debugging there might be script break points registered for this
-  // script. Make sure that these break points are set.
-  Handle<Object> argv[] = {Script::GetWrapper(script)};
-  if (CallFunction("UpdateScriptBreakPoints", arraysize(argv), argv)
-          .is_null()) {
-    return;
-  }
-
-  // Create the compile state object.
-  Handle<Object> event_data;
-  // Bail out and don't call debugger if exception.
-  if (!MakeCompileEvent(script, v8::AfterCompile).ToHandle(&event_data)) return;
-
-  // Process debug event.
-  ProcessDebugEvent(v8::AfterCompile, Handle<JSObject>::cast(event_data), true);
+  ProcessCompileEvent(v8::AfterCompile, script);
 }
 
 
@@ -1974,6 +1918,9 @@ void Debug::CallEventCallback(v8::DebugEvent event,
                               Handle<Object> exec_state,
                               Handle<Object> event_data,
                               v8::Debug::ClientData* client_data) {
+  // Prevent other interrupts from triggering, for example API callbacks,
+  // while dispatching event listners.
+  PostponeInterruptsScope postpone(isolate_);
   bool previous = in_debug_event_listener_;
   in_debug_event_listener_ = true;
   if (event_listener_->IsForeign()) {
@@ -2003,24 +1950,44 @@ void Debug::CallEventCallback(v8::DebugEvent event,
 }
 
 
-void Debug::ProcessCompileEventInDebugScope(v8::DebugEvent event,
-                                            Handle<Script> script) {
-  if (event_listener_.is_null()) return;
-
+void Debug::ProcessCompileEvent(v8::DebugEvent event, Handle<Script> script) {
+  if (ignore_events()) return;
   SuppressDebug while_processing(this);
+
+  bool in_nested_debug_scope = in_debug_scope();
+  HandleScope scope(isolate_);
   DebugScope debug_scope(this);
   if (debug_scope.failed()) return;
 
+  if (event == v8::AfterCompile) {
+    // If debugging there might be script break points registered for this
+    // script. Make sure that these break points are set.
+    Handle<Object> argv[] = {Script::GetWrapper(script)};
+    if (CallFunction("UpdateScriptBreakPoints", arraysize(argv), argv)
+            .is_null()) {
+      return;
+    }
+  }
+
+  // Create the compile state object.
   Handle<Object> event_data;
   // Bail out and don't call debugger if exception.
   if (!MakeCompileEvent(script, event).ToHandle(&event_data)) return;
 
-  // Create the execution state.
-  Handle<Object> exec_state;
-  // Bail out and don't call debugger if exception.
-  if (!MakeExecutionState().ToHandle(&exec_state)) return;
+  // Don't call NotifyMessageHandler if already in debug scope to avoid running
+  // nested command loop.
+  if (in_nested_debug_scope) {
+    if (event_listener_.is_null()) return;
+    // Create the execution state.
+    Handle<Object> exec_state;
+    // Bail out and don't call debugger if exception.
+    if (!MakeExecutionState().ToHandle(&exec_state)) return;
 
-  CallEventCallback(event, exec_state, event_data, NULL);
+    CallEventCallback(event, exec_state, event_data, NULL);
+  } else {
+    // Process debug event.
+    ProcessDebugEvent(event, Handle<JSObject>::cast(event_data), true);
+  }
 }
 
 
@@ -2148,7 +2115,7 @@ void Debug::NotifyMessageHandler(v8::DebugEvent event,
       Handle<Object> exception;
       if (!maybe_exception.ToHandle(&exception)) break;
       Handle<Object> result;
-      if (!Execution::ToString(isolate_, exception).ToHandle(&result)) break;
+      if (!Object::ToString(isolate_, exception).ToHandle(&result)) break;
       answer = Handle<String>::cast(result);
     }
 
@@ -2277,7 +2244,7 @@ void Debug::HandleDebugBreak() {
     Object* fun = it.frame()->function();
     if (fun && fun->IsJSFunction()) {
       // Don't stop in builtin functions.
-      if (JSFunction::cast(fun)->IsBuiltin()) return;
+      if (!JSFunction::cast(fun)->IsSubjectToDebugging()) return;
       GlobalObject* global = JSFunction::cast(fun)->context()->global_object();
       // Don't stop in debugger functions.
       if (IsDebugGlobal(global)) return;

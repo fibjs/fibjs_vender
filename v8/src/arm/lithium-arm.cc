@@ -6,6 +6,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/arm/lithium-arm.h"
+
 #include <sstream>
 
 #include "src/arm/lithium-codegen-arm.h"
@@ -169,13 +171,6 @@ void LCompareNumericAndBranch::PrintDataTo(StringStream* stream) {
   stream->Add(" %s ", Token::String(op()));
   right()->PrintTo(stream);
   stream->Add(" then B%d else B%d", true_block_id(), false_block_id());
-}
-
-
-void LIsObjectAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if is_object(");
-  value()->PrintTo(stream);
-  stream->Add(") then B%d else B%d", true_block_id(), false_block_id());
 }
 
 
@@ -925,25 +920,22 @@ void LChunkBuilder::AddInstruction(LInstruction* instr,
   }
   chunk_->AddInstruction(instr, current_block_);
 
-  if (instr->IsCall()) {
+  if (instr->IsCall() || instr->IsPrologue()) {
     HValue* hydrogen_value_for_lazy_bailout = hydrogen_val;
-    LInstruction* instruction_needing_environment = NULL;
     if (hydrogen_val->HasObservableSideEffects()) {
       HSimulate* sim = HSimulate::cast(hydrogen_val->next());
-      instruction_needing_environment = instr;
       sim->ReplayEnvironment(current_block_->last_environment());
       hydrogen_value_for_lazy_bailout = sim;
     }
     LInstruction* bailout = AssignEnvironment(new(zone()) LLazyBailout());
     bailout->set_hydrogen_value(hydrogen_value_for_lazy_bailout);
     chunk_->AddInstruction(bailout, current_block_);
-    if (instruction_needing_environment != NULL) {
-      // Store the lazy deopt environment with the instruction if needed.
-      // Right now it is only used for LInstanceOfKnownGlobal.
-      instruction_needing_environment->
-          SetDeferredLazyDeoptimizationEnvironment(bailout->environment());
-    }
   }
+}
+
+
+LInstruction* LChunkBuilder::DoPrologue(HPrologue* instr) {
+  return new (zone()) LPrologue();
 }
 
 
@@ -998,22 +990,21 @@ LInstruction* LChunkBuilder::DoArgumentsElements(HArgumentsElements* elems) {
 
 
 LInstruction* LChunkBuilder::DoInstanceOf(HInstanceOf* instr) {
+  LOperand* left =
+      UseFixed(instr->left(), InstanceOfDescriptor::LeftRegister());
+  LOperand* right =
+      UseFixed(instr->right(), InstanceOfDescriptor::RightRegister());
   LOperand* context = UseFixed(instr->context(), cp);
-  LInstanceOf* result =
-      new(zone()) LInstanceOf(context, UseFixed(instr->left(), r0),
-                              UseFixed(instr->right(), r1));
+  LInstanceOf* result = new (zone()) LInstanceOf(context, left, right);
   return MarkAsCall(DefineFixed(result, r0), instr);
 }
 
 
-LInstruction* LChunkBuilder::DoInstanceOfKnownGlobal(
-    HInstanceOfKnownGlobal* instr) {
-  LInstanceOfKnownGlobal* result =
-      new(zone()) LInstanceOfKnownGlobal(
-          UseFixed(instr->context(), cp),
-          UseFixed(instr->left(), r0),
-          FixedTemp(r4));
-  return MarkAsCall(DefineFixed(result, r0), instr);
+LInstruction* LChunkBuilder::DoHasInPrototypeChainAndBranch(
+    HHasInPrototypeChainAndBranch* instr) {
+  LOperand* object = UseRegister(instr->object());
+  LOperand* prototype = UseRegister(instr->prototype());
+  return new (zone()) LHasInPrototypeChainAndBranch(object, prototype);
 }
 
 
@@ -1786,14 +1777,6 @@ LInstruction* LChunkBuilder::DoCompareMinusZeroAndBranch(
   LOperand* value = UseRegister(instr->value());
   LOperand* scratch = TempRegister();
   return new(zone()) LCompareMinusZeroAndBranch(value, scratch);
-}
-
-
-LInstruction* LChunkBuilder::DoIsObjectAndBranch(HIsObjectAndBranch* instr) {
-  DCHECK(instr->value()->representation().IsTagged());
-  LOperand* value = UseRegisterAtStart(instr->value());
-  LOperand* temp = TempRegister();
-  return new(zone()) LIsObjectAndBranch(value, temp);
 }
 
 

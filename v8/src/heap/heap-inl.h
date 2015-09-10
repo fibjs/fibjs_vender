@@ -19,7 +19,7 @@
 #include "src/list-inl.h"
 #include "src/log.h"
 #include "src/msan.h"
-#include "src/objects.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -66,7 +66,7 @@ INTERNALIZED_STRING_LIST(STRING_ACCESSOR)
 PRIVATE_SYMBOL_LIST(SYMBOL_ACCESSOR)
 #undef SYMBOL_ACCESSOR
 
-#define SYMBOL_ACCESSOR(name, varname, description) \
+#define SYMBOL_ACCESSOR(name, description) \
   Symbol* Heap::name() { return Symbol::cast(roots_[k##name##RootIndex]); }
 PUBLIC_SYMBOL_LIST(SYMBOL_ACCESSOR)
 #undef SYMBOL_ACCESSOR
@@ -323,9 +323,8 @@ void Heap::UpdateAllocationsHash(uint32_t value) {
 }
 
 
-void Heap::PrintAlloctionsHash() {
-  uint32_t hash = StringHasher::GetHashCore(raw_allocations_hash_);
-  PrintF("\n### Allocations = %u, hash = 0x%08x\n", allocations_count_, hash);
+void Heap::RegisterExternalString(String* string) {
+  external_string_table_.AddString(string);
 }
 
 
@@ -614,7 +613,7 @@ Isolate* Heap::isolate() {
   CALL_AND_RETRY_OR_DIE(ISOLATE, FUNCTION_CALL, return, return)
 
 
-void ExternalStringTable::AddString(String* string) {
+void Heap::ExternalStringTable::AddString(String* string) {
   DCHECK(string->IsExternalString());
   if (heap_->InNewSpace(string)) {
     new_space_strings_.Add(string);
@@ -624,7 +623,7 @@ void ExternalStringTable::AddString(String* string) {
 }
 
 
-void ExternalStringTable::Iterate(ObjectVisitor* v) {
+void Heap::ExternalStringTable::Iterate(ObjectVisitor* v) {
   if (!new_space_strings_.is_empty()) {
     Object** start = &new_space_strings_[0];
     v->VisitPointers(start, start + new_space_strings_.length());
@@ -638,7 +637,7 @@ void ExternalStringTable::Iterate(ObjectVisitor* v) {
 
 // Verify() is inline to avoid ifdef-s around its calls in release
 // mode.
-void ExternalStringTable::Verify() {
+void Heap::ExternalStringTable::Verify() {
 #ifdef DEBUG
   for (int i = 0; i < new_space_strings_.length(); ++i) {
     Object* obj = Object::cast(new_space_strings_[i]);
@@ -654,14 +653,14 @@ void ExternalStringTable::Verify() {
 }
 
 
-void ExternalStringTable::AddOldString(String* string) {
+void Heap::ExternalStringTable::AddOldString(String* string) {
   DCHECK(string->IsExternalString());
   DCHECK(!heap_->InNewSpace(string));
   old_space_strings_.Add(string);
 }
 
 
-void ExternalStringTable::ShrinkNewStrings(int position) {
+void Heap::ExternalStringTable::ShrinkNewStrings(int position) {
   new_space_strings_.Rewind(position);
 #ifdef VERIFY_HEAP
   if (FLAG_verify_heap) {
@@ -750,12 +749,12 @@ void Heap::SetSetterStubDeoptPCOffset(int pc_offset) {
 
 AlwaysAllocateScope::AlwaysAllocateScope(Isolate* isolate)
     : heap_(isolate->heap()), daf_(isolate) {
-  heap_->always_allocate_scope_depth_++;
+  heap_->always_allocate_scope_count_.Increment(1);
 }
 
 
 AlwaysAllocateScope::~AlwaysAllocateScope() {
-  heap_->always_allocate_scope_depth_--;
+  heap_->always_allocate_scope_count_.Increment(-1);
 }
 
 

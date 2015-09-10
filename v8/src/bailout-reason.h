@@ -180,7 +180,6 @@ namespace internal {
   V(kRegisterDidNotMatchExpectedRoot, "Register did not match expected root")  \
   V(kRegisterWasClobbered, "Register was clobbered")                           \
   V(kRememberedSetPointerInNewSpace, "Remembered set pointer is in new space") \
-  V(kRestParameter, "Rest parameters")                                         \
   V(kReturnAddressNotFoundInFrame, "Return address not found in frame")        \
   V(kScriptContext, "Allocation of script context")                            \
   V(kSmiAdditionOverflow, "Smi addition overflow")                             \
@@ -197,8 +196,6 @@ namespace internal {
   V(kTheInstructionShouldBeAnOris, "The instruction should be an oris")        \
   V(kTheInstructionShouldBeALi, "The instruction should be a li")              \
   V(kTheInstructionShouldBeASldi, "The instruction should be a sldi")          \
-  V(kTheInstructionToPatchShouldBeALoadFromConstantPool,                       \
-    "The instruction to patch should be a load from the constant pool")        \
   V(kTheInstructionToPatchShouldBeAnLdrLiteral,                                \
     "The instruction to patch should be a ldr literal")                        \
   V(kTheInstructionToPatchShouldBeALis,                                        \

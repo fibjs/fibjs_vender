@@ -12,7 +12,6 @@
 
 #include "src/arm64/utils-arm64.h"
 #include "src/assembler.h"
-#include "src/objects-inl.h"  // TODO(mstarzinger): Temporary cycle breaker!
 
 namespace v8 {
 namespace internal {

@@ -19,6 +19,7 @@
 #include "src/gdb-jit.h"
 #include "src/hydrogen.h"
 #include "src/interpreter/interpreter.h"
+#include "src/isolate-inl.h"
 #include "src/lithium.h"
 #include "src/log-inl.h"
 #include "src/messages.h"
@@ -119,7 +120,7 @@ bool CompilationInfo::has_scope() const {
 
 
 CompilationInfo::CompilationInfo(ParseInfo* parse_info)
-    : CompilationInfo(parse_info, nullptr, BASE, parse_info->isolate(),
+    : CompilationInfo(parse_info, nullptr, nullptr, BASE, parse_info->isolate(),
                       parse_info->zone()) {
   // Compiling for the snapshot typically results in different code than
   // compiling later on. This means that code recompiled with deoptimization
@@ -148,11 +149,16 @@ CompilationInfo::CompilationInfo(ParseInfo* parse_info)
 
 
 CompilationInfo::CompilationInfo(CodeStub* stub, Isolate* isolate, Zone* zone)
-    : CompilationInfo(nullptr, stub, STUB, isolate, zone) {}
+    : CompilationInfo(nullptr, stub, CodeStub::MajorName(stub->MajorKey()),
+                      STUB, isolate, zone) {}
 
+CompilationInfo::CompilationInfo(const char* debug_name, Isolate* isolate,
+                                 Zone* zone)
+    : CompilationInfo(nullptr, nullptr, debug_name, STUB, isolate, zone) {}
 
 CompilationInfo::CompilationInfo(ParseInfo* parse_info, CodeStub* code_stub,
-                                 Mode mode, Isolate* isolate, Zone* zone)
+                                 const char* debug_name, Mode mode,
+                                 Isolate* isolate, Zone* zone)
     : parse_info_(parse_info),
       isolate_(isolate),
       flags_(0),
@@ -173,7 +179,17 @@ CompilationInfo::CompilationInfo(ParseInfo* parse_info, CodeStub* code_stub,
       parameter_count_(0),
       optimization_id_(-1),
       osr_expr_stack_height_(0),
-      function_type_(nullptr) {}
+      function_type_(nullptr),
+      debug_name_(debug_name) {
+  // Parameter count is number of stack parameters.
+  if (code_stub_ != NULL) {
+    CodeStubDescriptor descriptor(code_stub_);
+    parameter_count_ = descriptor.GetStackParameterCount();
+    if (descriptor.function_mode() == NOT_JS_FUNCTION_STUB_MODE) {
+      parameter_count_--;
+    }
+  }
+}
 
 
 CompilationInfo::~CompilationInfo() {
@@ -185,6 +201,13 @@ CompilationInfo::~CompilationInfo() {
   // been rolled back or committed.
   DCHECK(dependencies()->IsEmpty());
 #endif  // DEBUG
+}
+
+
+void CompilationInfo::SetStub(CodeStub* code_stub) {
+  SetMode(STUB);
+  code_stub_ = code_stub;
+  debug_name_ = CodeStub::MajorName(code_stub->MajorKey());
 }
 
 
@@ -203,15 +226,6 @@ bool CompilationInfo::is_this_defined() const { return !IsStub(); }
 
 int CompilationInfo::num_heap_slots() const {
   return has_scope() ? scope()->num_heap_slots() : 0;
-}
-
-
-Code::Flags CompilationInfo::flags() const {
-  return code_stub() != nullptr
-             ? Code::ComputeFlags(
-                   code_stub()->GetCodeKind(), code_stub()->GetICState(),
-                   code_stub()->GetExtraICState(), code_stub()->GetStubType())
-             : Code::ComputeFlags(Code::OPTIMIZED_FUNCTION);
 }
 
 
@@ -241,11 +255,6 @@ void CompilationInfo::EnsureFeedbackVector() {
 
 bool CompilationInfo::has_simple_parameters() {
   return scope()->has_simple_parameters();
-}
-
-
-bool CompilationInfo::MayUseThis() const {
-  return scope()->has_this_declaration() && scope()->receiver()->is_used();
 }
 
 
@@ -302,11 +311,22 @@ void CompilationInfo::LogDeoptCallPosition(int pc_offset, int inlining_id) {
 }
 
 
-Handle<Code> CompilationInfo::GenerateCodeStub() {
-  // Run a "mini pipeline", extracted from compiler.cc.
-  CHECK(Parser::ParseStatic(parse_info()));
-  CHECK(Compiler::Analyze(parse_info()));
-  return compiler::Pipeline(this).GenerateCode();
+base::SmartArrayPointer<char> CompilationInfo::GetDebugName() const {
+  if (parse_info()) {
+    AllowHandleDereference allow_deref;
+    return parse_info()->literal()->debug_name()->ToCString();
+  }
+  const char* str = debug_name_ ? debug_name_ : "unknown";
+  size_t len = strlen(str) + 1;
+  base::SmartArrayPointer<char> name(new char[len]);
+  memcpy(name.get(), str, len);
+  return name;
+}
+
+
+bool CompilationInfo::MustReplaceUndefinedReceiverWithGlobalProxy() {
+  return is_sloppy(language_mode()) && !is_native() &&
+         scope()->has_this_declaration() && scope()->receiver()->is_used();
 }
 
 
@@ -468,7 +488,9 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
   }
 
   // Type-check the function.
-  AstTyper::Run(info());
+  AstTyper(info()->isolate(), info()->zone(), info()->closure(),
+           info()->scope(), info()->osr_ast_id(), info()->literal())
+      .Run();
 
   // Optimization could have been disabled by the parser. Note that this check
   // is only needed because the Hydrogen graph builder is missing some bailouts.
@@ -940,8 +962,24 @@ MaybeHandle<Code> Compiler::GetLazyCode(Handle<JSFunction> function) {
 }
 
 
-bool Compiler::EnsureCompiled(Handle<JSFunction> function,
-                              ClearExceptionFlag flag) {
+MaybeHandle<Code> Compiler::GetStubCode(Handle<JSFunction> function,
+                                        CodeStub* stub) {
+  // Build a "hybrid" CompilationInfo for a JSFunction/CodeStub pair.
+  Zone zone;
+  ParseInfo parse_info(&zone, function);
+  CompilationInfo info(&parse_info);
+  info.SetFunctionType(stub->GetCallInterfaceDescriptor().GetFunctionType());
+  info.MarkAsContextSpecializing();
+  info.MarkAsDeoptimizationEnabled();
+  info.SetStub(stub);
+
+  // Run a "mini pipeline", extracted from compiler.cc.
+  if (!ParseAndAnalyze(&parse_info)) return MaybeHandle<Code>();
+  return compiler::Pipeline(&info).GenerateCode();
+}
+
+
+bool Compiler::Compile(Handle<JSFunction> function, ClearExceptionFlag flag) {
   if (function->is_compiled()) return true;
   MaybeHandle<Code> maybe_code = Compiler::GetLazyCode(function);
   Handle<Code> code;
@@ -1352,6 +1390,7 @@ Handle<SharedFunctionInfo> Compiler::CompileScript(
     Handle<Script> script = isolate->factory()->NewScript(source);
     if (natives == NATIVES_CODE) {
       script->set_type(Smi::FromInt(Script::TYPE_NATIVE));
+      script->set_hide_source(true);
     }
     if (!script_name.is_null()) {
       script->set_name(*script_name);
@@ -1714,7 +1753,6 @@ bool CompilationPhase::ShouldProduceTraceOutput() const {
   return (tracing_on &&
       base::OS::StrChr(const_cast<char*>(FLAG_trace_phase), name_[0]) != NULL);
 }
-
 
 #if DEBUG
 void CompilationInfo::PrintAstForTesting() {

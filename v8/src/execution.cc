@@ -7,7 +7,10 @@
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
 #include "src/deoptimizer.h"
+#include "src/isolate-inl.h"
 #include "src/messages.h"
+#include "src/parser.h"
+#include "src/prettyprinter.h"
 #include "src/vm-state-inl.h"
 
 namespace v8 {
@@ -159,8 +162,8 @@ MaybeHandle<Object> Execution::Call(Isolate* isolate,
                                     Handle<Object> argv[],
                                     bool convert_receiver) {
   if (!callable->IsJSFunction()) {
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, callable, TryGetFunctionDelegate(isolate, callable), Object);
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, callable,
+                               GetFunctionDelegate(isolate, callable), Object);
   }
   Handle<JSFunction> func = Handle<JSFunction>::cast(callable);
 
@@ -231,121 +234,95 @@ MaybeHandle<Object> Execution::TryCall(Handle<JSFunction> func,
 }
 
 
-Handle<Object> Execution::GetFunctionDelegate(Isolate* isolate,
-                                              Handle<Object> object) {
+// static
+MaybeHandle<JSFunction> Execution::GetFunctionDelegate(Isolate* isolate,
+                                                       Handle<Object> object) {
   DCHECK(!object->IsJSFunction());
-  Factory* factory = isolate->factory();
+  if (object->IsHeapObject()) {
+    DisallowHeapAllocation no_gc;
 
-  // If you return a function from here, it will be called when an
-  // attempt is made to call the given object as a function.
+    // If object is a function proxy, get its handler. Iterate if necessary.
+    Object* fun = *object;
+    while (fun->IsJSFunctionProxy()) {
+      fun = JSFunctionProxy::cast(fun)->call_trap();
+    }
+    if (fun->IsJSFunction()) {
+      return handle(JSFunction::cast(fun), isolate);
+    }
 
-  // If object is a function proxy, get its handler. Iterate if necessary.
-  Object* fun = *object;
-  while (fun->IsJSFunctionProxy()) {
-    fun = JSFunctionProxy::cast(fun)->call_trap();
-  }
-  if (fun->IsJSFunction()) return Handle<Object>(fun, isolate);
-
-  // Objects created through the API can have an instance-call handler
-  // that should be used when calling the object as a function.
-  if (fun->IsHeapObject() &&
-      HeapObject::cast(fun)->map()->has_instance_call_handler()) {
-    return Handle<JSFunction>(
-        isolate->native_context()->call_as_function_delegate());
-  }
-
-  return factory->undefined_value();
-}
-
-
-MaybeHandle<Object> Execution::TryGetFunctionDelegate(Isolate* isolate,
-                                                      Handle<Object> object) {
-  DCHECK(!object->IsJSFunction());
-
-  // If object is a function proxy, get its handler. Iterate if necessary.
-  Object* fun = *object;
-  while (fun->IsJSFunctionProxy()) {
-    fun = JSFunctionProxy::cast(fun)->call_trap();
-  }
-  if (fun->IsJSFunction()) return Handle<Object>(fun, isolate);
-
-  // Objects created through the API can have an instance-call handler
-  // that should be used when calling the object as a function.
-  if (fun->IsHeapObject() &&
-      HeapObject::cast(fun)->map()->has_instance_call_handler()) {
-    return Handle<JSFunction>(
-        isolate->native_context()->call_as_function_delegate());
+    // We can also have exotic objects with [[Call]] internal methods.
+    if (fun->IsCallable()) {
+      return handle(isolate->native_context()->call_as_function_delegate(),
+                    isolate);
+    }
   }
 
   // If the Object doesn't have an instance-call handler we should
   // throw a non-callable exception.
+  Handle<String> callsite = RenderCallSite(isolate, object);
   THROW_NEW_ERROR(isolate,
-                  NewTypeError(MessageTemplate::kCalledNonCallable, object),
-                  Object);
+                  NewTypeError(MessageTemplate::kCalledNonCallable, callsite),
+                  JSFunction);
 }
 
 
-Handle<Object> Execution::GetConstructorDelegate(Isolate* isolate,
-                                                 Handle<Object> object) {
-  DCHECK(!object->IsJSFunction());
-
-  // If you return a function from here, it will be called when an
-  // attempt is made to call the given object as a constructor.
-
-  // If object is a function proxies, get its handler. Iterate if necessary.
-  Object* fun = *object;
-  while (fun->IsJSFunctionProxy()) {
-    fun = JSFunctionProxy::cast(fun)->call_trap();
-  }
-  if (fun->IsJSFunction()) return Handle<Object>(fun, isolate);
-
-  // Objects created through the API can have an instance-call handler
-  // that should be used when calling the object as a function.
-  if (fun->IsHeapObject() &&
-      HeapObject::cast(fun)->map()->has_instance_call_handler()) {
-    return Handle<JSFunction>(
-        isolate->native_context()->call_as_constructor_delegate());
-  }
-
-  return isolate->factory()->undefined_value();
-}
-
-
-MaybeHandle<Object> Execution::TryGetConstructorDelegate(
+// static
+MaybeHandle<JSFunction> Execution::GetConstructorDelegate(
     Isolate* isolate, Handle<Object> object) {
-  DCHECK(!object->IsJSFunction());
-
   // If you return a function from here, it will be called when an
   // attempt is made to call the given object as a constructor.
 
-  // If object is a function proxies, get its handler. Iterate if necessary.
-  Object* fun = *object;
-  while (fun->IsJSFunctionProxy()) {
-    fun = JSFunctionProxy::cast(fun)->call_trap();
-  }
-  if (fun->IsJSFunction()) return Handle<Object>(fun, isolate);
+  DCHECK(!object->IsJSFunction());
+  if (object->IsHeapObject()) {
+    DisallowHeapAllocation no_gc;
 
-  // Objects created through the API can have an instance-call handler
-  // that should be used when calling the object as a function.
-  if (fun->IsHeapObject() &&
-      HeapObject::cast(fun)->map()->has_instance_call_handler()) {
-    return Handle<JSFunction>(
-        isolate->native_context()->call_as_constructor_delegate());
+    // If object is a function proxies, get its handler. Iterate if necessary.
+    Object* fun = *object;
+    while (fun->IsJSFunctionProxy()) {
+      // TODO(bmeurer): This should work based on [[Construct]]; our proxies
+      // are screwed.
+      fun = JSFunctionProxy::cast(fun)->call_trap();
+    }
+    if (fun->IsJSFunction()) {
+      return handle(JSFunction::cast(fun), isolate);
+    }
+
+    // We can also have exotic objects with [[Construct]] internal methods.
+    // TODO(bmeurer): This should use IsConstructor() as dictacted by the spec.
+    if (fun->IsCallable()) {
+      return handle(isolate->native_context()->call_as_constructor_delegate(),
+                    isolate);
+    }
   }
 
   // If the Object doesn't have an instance-call handler we should
   // throw a non-callable exception.
+  Handle<String> callsite = RenderCallSite(isolate, object);
   THROW_NEW_ERROR(isolate,
-                  NewTypeError(MessageTemplate::kCalledNonCallable, object),
-                  Object);
+                  NewTypeError(MessageTemplate::kCalledNonCallable, callsite),
+                  JSFunction);
 }
 
 
-void StackGuard::EnableInterrupts() {
-  ExecutionAccess access(isolate_);
-  if (has_pending_interrupts(access)) {
-    set_interrupt_limits(access);
+// static
+Handle<String> Execution::RenderCallSite(Isolate* isolate,
+                                         Handle<Object> object) {
+  MessageLocation location;
+  if (isolate->ComputeLocation(&location)) {
+    Zone zone;
+    base::SmartPointer<ParseInfo> info(
+        location.function()->shared()->is_function()
+            ? new ParseInfo(&zone, location.function())
+            : new ParseInfo(&zone, location.script()));
+    if (Parser::ParseStatic(info.get())) {
+      CallPrinter printer(isolate, &zone);
+      const char* string = printer.Print(info->literal(), location.start_pos());
+      return isolate->factory()->NewStringFromAsciiChecked(string);
+    } else {
+      isolate->clear_pending_exception();
+    }
   }
+  return Object::TypeOf(isolate, object);
 }
 
 
@@ -362,6 +339,27 @@ void StackGuard::SetStackLimit(uintptr_t limit) {
   }
   thread_local_.real_climit_ = limit;
   thread_local_.real_jslimit_ = jslimit;
+}
+
+
+void StackGuard::AdjustStackLimitForSimulator() {
+  ExecutionAccess access(isolate_);
+  uintptr_t climit = thread_local_.real_climit_;
+  // If the current limits are special (e.g. due to a pending interrupt) then
+  // leave them alone.
+  uintptr_t jslimit = SimulatorStack::JsLimitFromCLimit(isolate_, climit);
+  if (thread_local_.jslimit() == thread_local_.real_jslimit_) {
+    thread_local_.set_jslimit(jslimit);
+    isolate_->heap()->SetStackLimits();
+  }
+}
+
+
+void StackGuard::EnableInterrupts() {
+  ExecutionAccess access(isolate_);
+  if (has_pending_interrupts(access)) {
+    set_interrupt_limits(access);
+  }
 }
 
 
@@ -413,6 +411,9 @@ void StackGuard::RequestInterrupt(InterruptFlag flag) {
   // Not intercepted.  Set as active interrupt flag.
   thread_local_.interrupt_flags_ |= flag;
   set_interrupt_limits(access);
+
+  // If this isolate is waiting in a futex, notify it to wake up.
+  isolate_->futex_wait_list_node()->NotifyWake();
 }
 
 
@@ -528,18 +529,6 @@ void StackGuard::InitThread(const ExecutionAccess& lock) {
   } while (false)
 
 
-MaybeHandle<Object> Execution::ToNumber(
-    Isolate* isolate, Handle<Object> obj) {
-  RETURN_NATIVE_CALL(to_number, { obj });
-}
-
-
-MaybeHandle<Object> Execution::ToString(
-    Isolate* isolate, Handle<Object> obj) {
-  RETURN_NATIVE_CALL(to_string, { obj });
-}
-
-
 MaybeHandle<Object> Execution::ToDetailString(
     Isolate* isolate, Handle<Object> obj) {
   RETURN_NATIVE_CALL(to_detail_string, { obj });
@@ -568,7 +557,7 @@ MaybeHandle<Object> Execution::NewDate(Isolate* isolate, double time) {
 
 
 MaybeHandle<Object> Execution::ToInt32(Isolate* isolate, Handle<Object> obj) {
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, obj, Execution::ToNumber(isolate, obj),
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, obj, Object::ToNumber(isolate, obj),
                              Object);
   return isolate->factory()->NewNumberFromInt(DoubleToInt32(obj->Number()));
 }
@@ -585,7 +574,7 @@ MaybeHandle<Object> Execution::ToObject(Isolate* isolate, Handle<Object> obj) {
 
 
 MaybeHandle<Object> Execution::ToUint32(Isolate* isolate, Handle<Object> obj) {
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, obj, Execution::ToNumber(isolate, obj),
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, obj, Object::ToNumber(isolate, obj),
                              Object);
   return isolate->factory()->NewNumberFromUint(DoubleToUint32(obj->Number()));
 }
@@ -623,7 +612,7 @@ Handle<String> Execution::GetStackTraceLine(Handle<Object> recv,
 }
 
 
-void StackGuard::CheckAndHandleGCInterrupt() {
+void StackGuard::HandleGCInterrupt() {
   if (CheckAndClearInterrupt(GC_REQUEST)) {
     isolate_->heap()->HandleGCRequest();
   }

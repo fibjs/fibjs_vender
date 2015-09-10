@@ -26,6 +26,9 @@ const Register kInterpreterDispatchTableRegister = {kRegister_ebx_Code};
 const Register kRuntimeCallFunctionRegister = {kRegister_ebx_Code};
 const Register kRuntimeCallArgCountRegister = {kRegister_eax_Code};
 
+// Spill slots used by interpreter dispatch calling convention.
+const int kInterpreterContextSpillSlot = -1;
+
 // Convenience for platform-independent signatures.  We do not normally
 // distinguish memory operands from other operands on ia32.
 typedef Operand MemOperand;
@@ -354,17 +357,15 @@ class MacroAssembler: public Assembler {
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
 
-  // Invoke specified builtin JavaScript function. Adds an entry to
-  // the unresolved list if the name does not resolve.
-  void InvokeBuiltin(Builtins::JavaScript id,
-                     InvokeFlag flag,
+  // Invoke specified builtin JavaScript function.
+  void InvokeBuiltin(int native_context_index, InvokeFlag flag,
                      const CallWrapper& call_wrapper = NullCallWrapper());
 
   // Store the function for the given builtin in the target register.
-  void GetBuiltinFunction(Register target, Builtins::JavaScript id);
+  void GetBuiltinFunction(Register target, int native_context_index);
 
   // Store the code object for the given builtin in the target register.
-  void GetBuiltinEntry(Register target, Builtins::JavaScript id);
+  void GetBuiltinEntry(Register target, int native_context_index);
 
   // Expression support
   // cvtsi2sd instruction only writes to the low 64-bit of dst register, which
@@ -450,18 +451,6 @@ class MacroAssembler: public Assembler {
   Condition IsObjectNameType(Register heap_object,
                              Register map,
                              Register instance_type);
-
-  // Check if a heap object's type is in the JSObject range, not including
-  // JSFunction.  The object's map will be loaded in the map register.
-  // Any or all of the three registers may be the same.
-  // The contents of the scratch register will always be overwritten.
-  void IsObjectJSObjectType(Register heap_object,
-                            Register map,
-                            Register scratch,
-                            Label* fail);
-
-  // The contents of the scratch register will be overwritten.
-  void IsInstanceJSObjectType(Register map, Register scratch, Label* fail);
 
   // FCmp is similar to integer cmp, but requires unsigned
   // jcc instructions (je, ja, jae, jb, jbe, je, and jz).
@@ -728,11 +717,8 @@ class MacroAssembler: public Assembler {
   // function and jumps to the miss label if the fast checks fail. The
   // function register will be untouched; the other registers may be
   // clobbered.
-  void TryGetFunctionPrototype(Register function,
-                               Register result,
-                               Register scratch,
-                               Label* miss,
-                               bool miss_on_bound_function = false);
+  void TryGetFunctionPrototype(Register function, Register result,
+                               Register scratch, Label* miss);
 
   // Picks out an array index from the hash field.
   // Register use:

@@ -286,6 +286,9 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
     case kRepWord32:
       opcode = kCheckedLoadWord32;
       break;
+    case kRepWord64:
+      opcode = kCheckedLoadWord64;
+      break;
     case kRepFloat32:
       opcode = kCheckedLoadFloat32;
       break;
@@ -320,6 +323,9 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
       break;
     case kRepWord32:
       opcode = kCheckedStoreWord32;
+      break;
+    case kRepWord64:
+      opcode = kCheckedStoreWord64;
       break;
     case kRepFloat32:
       opcode = kCheckedStoreFloat32;
@@ -1481,14 +1487,16 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
     int num_slots = static_cast<int>(descriptor->StackParameterCount());
     int slot = 0;
     for (Node* input : buffer.pushed_nodes) {
-      // Skip any alignment holes in pushed nodes.
-      if (input == nullptr) continue;
       if (slot == 0) {
+        DCHECK(input);
         Emit(kPPC_PushFrame, g.NoOutput(), g.UseRegister(input),
              g.TempImmediate(num_slots));
       } else {
-        Emit(kPPC_StoreToStackSlot, g.NoOutput(), g.UseRegister(input),
-             g.TempImmediate(slot));
+        // Skip any alignment holes in pushed nodes.
+        if (input) {
+          Emit(kPPC_StoreToStackSlot, g.NoOutput(), g.UseRegister(input),
+               g.TempImmediate(slot));
+        }
       }
       ++slot;
     }
@@ -1584,9 +1592,17 @@ void InstructionSelector::VisitTailCall(Node* node) {
     InitializeCallBuffer(node, &buffer, true, false);
 
     // Push any stack arguments.
-    for (Node* input : base::Reversed(buffer.pushed_nodes)) {
-      if (input == nullptr) continue;
-      Emit(kPPC_Push, g.NoOutput(), g.UseRegister(input));
+    int num_slots = static_cast<int>(descriptor->StackParameterCount());
+    int slot = 0;
+    for (Node* input : buffer.pushed_nodes) {
+      if (slot == 0) {
+        Emit(kPPC_PushFrame, g.NoOutput(), g.UseRegister(input),
+             g.TempImmediate(num_slots));
+      } else {
+        Emit(kPPC_StoreToStackSlot, g.NoOutput(), g.UseRegister(input),
+             g.TempImmediate(slot));
+      }
+      ++slot;
     }
 
     // Select the appropriate opcode based on the call type.

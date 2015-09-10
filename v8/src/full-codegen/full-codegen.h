@@ -488,7 +488,6 @@ class FullCodeGenerator: public AstVisitor {
 
 #define FOR_EACH_FULL_CODE_INTRINSIC(F)   \
   F(IsSmi)                                \
-  F(IsNonNegativeSmi)                     \
   F(IsArray)                              \
   F(IsTypedArray)                         \
   F(IsRegExp)                             \
@@ -507,7 +506,6 @@ class FullCodeGenerator: public AstVisitor {
   F(OneByteSeqStringSetChar)              \
   F(TwoByteSeqStringSetChar)              \
   F(ObjectEquals)                         \
-  F(IsObject)                             \
   F(IsFunction)                           \
   F(IsSpecObject)                         \
   F(IsSimdValue)                          \
@@ -528,8 +526,11 @@ class FullCodeGenerator: public AstVisitor {
   F(RegExpExec)                           \
   F(RegExpConstructResult)                \
   F(NumberToString)                       \
+  F(ToString)                             \
+  F(ToName)                               \
   F(ToObject)                             \
-  F(DebugIsActive)
+  F(DebugIsActive)                        \
+  F(CreateIterResultObject)
 
 #define GENERATOR_DECLARATION(Name) void Emit##Name(CallRuntime* call);
   FOR_EACH_FULL_CODE_INTRINSIC(GENERATOR_DECLARATION)
@@ -551,6 +552,8 @@ class FullCodeGenerator: public AstVisitor {
                         TypeofMode typeof_mode = NOT_INSIDE_TYPEOF);
 
   void EmitAccessor(Expression* expression);
+
+  bool NeedsHoleCheckForLoad(VariableProxy* proxy);
 
   // Expects the arguments and the function already pushed.
   void EmitResolvePossiblyDirectEval(int arg_count);
@@ -696,10 +699,9 @@ class FullCodeGenerator: public AstVisitor {
   Handle<Script> script() { return info_->script(); }
   bool is_eval() { return info_->is_eval(); }
   bool is_native() { return info_->is_native(); }
-  LanguageMode language_mode() { return function()->language_mode(); }
+  LanguageMode language_mode() { return literal()->language_mode(); }
   bool has_simple_parameters() { return info_->has_simple_parameters(); }
-  // TODO(titzer): rename this to literal().
-  FunctionLiteral* function() { return info_->literal(); }
+  FunctionLiteral* literal() { return info_->literal(); }
   Scope* scope() { return scope_; }
 
   static Register result_register();

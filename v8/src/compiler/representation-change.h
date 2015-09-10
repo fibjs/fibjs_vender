@@ -75,7 +75,7 @@ class RepresentationChanger {
         return node;  // No change necessary.
       case IrOpcode::kInt32Constant:
         if (output_type & kTypeUint32) {
-          uint32_t value = OpParameter<uint32_t>(node);
+          uint32_t value = static_cast<uint32_t>(OpParameter<int32_t>(node));
           return jsgraph()->Constant(static_cast<double>(value));
         } else if (output_type & kTypeInt32) {
           int32_t value = OpParameter<int32_t>(node);
@@ -125,7 +125,7 @@ class RepresentationChanger {
             DoubleToFloat32(OpParameter<double>(node)));
       case IrOpcode::kInt32Constant:
         if (output_type & kTypeUint32) {
-          uint32_t value = OpParameter<uint32_t>(node);
+          uint32_t value = static_cast<uint32_t>(OpParameter<int32_t>(node));
           return jsgraph()->Float32Constant(static_cast<float>(value));
         } else {
           int32_t value = OpParameter<int32_t>(node);
@@ -169,7 +169,7 @@ class RepresentationChanger {
         return jsgraph()->Float64Constant(OpParameter<double>(node));
       case IrOpcode::kInt32Constant:
         if (output_type & kTypeUint32) {
-          uint32_t value = OpParameter<uint32_t>(node);
+          uint32_t value = static_cast<uint32_t>(OpParameter<int32_t>(node));
           return jsgraph()->Float64Constant(static_cast<double>(value));
         } else {
           int32_t value = OpParameter<int32_t>(node);
@@ -292,7 +292,7 @@ class RepresentationChanger {
     // Eagerly fold representation changes for constants.
     switch (node->opcode()) {
       case IrOpcode::kHeapConstant: {
-        Handle<Object> value = OpParameter<Unique<Object> >(node).handle();
+        Handle<HeapObject> value = OpParameter<Handle<HeapObject>>(node);
         DCHECK(value.is_identical_to(factory()->true_value()) ||
                value.is_identical_to(factory()->false_value()));
         return jsgraph()->Int32Constant(

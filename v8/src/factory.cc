@@ -8,6 +8,7 @@
 #include "src/base/bits.h"
 #include "src/bootstrapper.h"
 #include "src/conversions.h"
+#include "src/isolate-inl.h"
 #include "src/macro-assembler.h"
 
 namespace v8 {
@@ -58,6 +59,19 @@ Handle<PrototypeInfo> Factory::NewPrototypeInfo() {
   result->set_registry_slot(PrototypeInfo::UNREGISTERED);
   result->set_validity_cell(Smi::FromInt(0));
   result->set_constructor_name(Smi::FromInt(0));
+  return result;
+}
+
+
+Handle<SloppyBlockWithEvalContextExtension>
+Factory::NewSloppyBlockWithEvalContextExtension(
+    Handle<ScopeInfo> scope_info, Handle<JSObject> extension) {
+  DCHECK(scope_info->is_declaration_scope());
+  Handle<SloppyBlockWithEvalContextExtension> result =
+      Handle<SloppyBlockWithEvalContextExtension>::cast(
+          NewStruct(SLOPPY_BLOCK_WITH_EVAL_CONTEXT_EXTENSION_TYPE));
+  result->set_scope_info(*scope_info);
+  result->set_extension(*extension);
   return result;
 }
 
@@ -874,12 +888,13 @@ Handle<ByteArray> Factory::NewByteArray(int length, PretenureFlag pretenure) {
 }
 
 
-Handle<BytecodeArray> Factory::NewBytecodeArray(int length,
-                                                const byte* raw_bytecodes,
-                                                int frame_size) {
+Handle<BytecodeArray> Factory::NewBytecodeArray(
+    int length, const byte* raw_bytecodes, int frame_size, int parameter_count,
+    Handle<FixedArray> constant_pool) {
   DCHECK(0 <= length);
   CALL_HEAP_FUNCTION(isolate(), isolate()->heap()->AllocateBytecodeArray(
-                                    length, raw_bytecodes, frame_size),
+                                    length, raw_bytecodes, frame_size,
+                                    parameter_count, *constant_pool),
                      BytecodeArray);
 }
 
@@ -1120,6 +1135,22 @@ Handle<Object> Factory::NewError(Handle<JSFunction> constructor,
   }
   return result;
 }
+
+
+#define DEFINE_ERROR(NAME, name)                                              \
+  Handle<Object> Factory::New##NAME(MessageTemplate::Template template_index, \
+                                    Handle<Object> arg0, Handle<Object> arg1, \
+                                    Handle<Object> arg2) {                    \
+    return NewError(isolate()->name##_function(), template_index, arg0, arg1, \
+                    arg2);                                                    \
+  }
+DEFINE_ERROR(Error, error)
+DEFINE_ERROR(EvalError, eval_error)
+DEFINE_ERROR(RangeError, range_error)
+DEFINE_ERROR(ReferenceError, reference_error)
+DEFINE_ERROR(SyntaxError, syntax_error)
+DEFINE_ERROR(TypeError, type_error)
+#undef DEFINE_ERROR
 
 
 void Factory::InitializeFunction(Handle<JSFunction> function,
@@ -1620,7 +1651,7 @@ Handle<JSDataView> Factory::NewJSDataView() {
 Handle<JSMap> Factory::NewJSMap() {
   Handle<Map> map(isolate()->native_context()->js_map_map());
   Handle<JSMap> js_map = Handle<JSMap>::cast(NewJSObjectFromMap(map));
-  Runtime::JSMapInitialize(isolate(), js_map);
+  JSMap::Initialize(js_map, isolate());
   return js_map;
 }
 
@@ -1628,7 +1659,7 @@ Handle<JSMap> Factory::NewJSMap() {
 Handle<JSSet> Factory::NewJSSet() {
   Handle<Map> map(isolate()->native_context()->js_set_map());
   Handle<JSSet> js_set = Handle<JSSet>::cast(NewJSObjectFromMap(map));
-  Runtime::JSSetInitialize(isolate(), js_set);
+  JSSet::Initialize(js_set, isolate());
   return js_set;
 }
 
@@ -1646,6 +1677,16 @@ Handle<JSSetIterator> Factory::NewJSSetIterator() {
   CALL_HEAP_FUNCTION(isolate(),
                      isolate()->heap()->AllocateJSObjectFromMap(*map),
                      JSSetIterator);
+}
+
+
+Handle<JSIteratorResult> Factory::NewJSIteratorResult(Handle<Object> value,
+                                                      Handle<Object> done) {
+  Handle<JSIteratorResult> result = Handle<JSIteratorResult>::cast(
+      NewJSObjectFromMap(isolate()->iterator_result_map()));
+  result->set_value(*value);
+  result->set_done(*done);
+  return result;
 }
 
 
@@ -1830,8 +1871,8 @@ Handle<JSTypedArray> Factory::NewJSTypedArray(ElementsKind elements_kind,
   obj->set_length(*length_object);
 
   Handle<JSArrayBuffer> buffer = isolate()->factory()->NewJSArrayBuffer();
-  Runtime::SetupArrayBuffer(isolate(), buffer, true, NULL, byte_length,
-                            SharedFlag::kNotShared);
+  JSArrayBuffer::Setup(buffer, isolate(), true, NULL, byte_length,
+                       SharedFlag::kNotShared);
   obj->set_buffer(*buffer);
   Handle<FixedTypedArrayBase> elements =
       isolate()->factory()->NewFixedTypedArray(
@@ -1868,7 +1909,7 @@ Handle<JSProxy> Factory::NewJSProxy(Handle<Object> handler,
 
 
 Handle<JSProxy> Factory::NewJSFunctionProxy(Handle<Object> handler,
-                                            Handle<Object> call_trap,
+                                            Handle<JSReceiver> call_trap,
                                             Handle<Object> construct_trap,
                                             Handle<Object> prototype) {
   // Allocate map.
@@ -1876,6 +1917,7 @@ Handle<JSProxy> Factory::NewJSFunctionProxy(Handle<Object> handler,
   // maps. Will probably depend on the identity of the handler object, too.
   Handle<Map> map = NewMap(JS_FUNCTION_PROXY_TYPE, JSFunctionProxy::kSize);
   Map::SetPrototype(map, prototype);
+  map->set_is_callable();
 
   // Allocate the proxy object.
   Handle<JSFunctionProxy> result = New<JSFunctionProxy>(map, NEW_SPACE);
@@ -1938,6 +1980,7 @@ void Factory::ReinitializeJSProxy(Handle<JSProxy> proxy, InstanceType type,
   // Functions require some minimal initialization.
   if (type == JS_FUNCTION_TYPE) {
     map->set_function_with_prototype(true);
+    map->set_is_callable();
     Handle<JSFunction> js_function = Handle<JSFunction>::cast(proxy);
     InitializeFunction(js_function, shared.ToHandleChecked(), context);
   } else {

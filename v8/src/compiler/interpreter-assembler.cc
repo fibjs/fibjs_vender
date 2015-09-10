@@ -14,6 +14,7 @@
 #include "src/compiler/raw-machine-assembler.h"
 #include "src/compiler/schedule.h"
 #include "src/frames.h"
+#include "src/interface-descriptors.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/macro-assembler.h"
 #include "src/zone.h"
@@ -44,15 +45,17 @@ Handle<Code> InterpreterAssembler::GenerateCode() {
 
   End();
 
+  const char* bytecode_name = interpreter::Bytecodes::ToString(bytecode_);
   Schedule* schedule = raw_assembler_->Export();
   // TODO(rmcilroy): use a non-testing code generator.
-  Handle<Code> code = Pipeline::GenerateCodeForTesting(
-      isolate(), raw_assembler_->call_descriptor(), graph(), schedule);
+  Handle<Code> code = Pipeline::GenerateCodeForInterpreter(
+      isolate(), raw_assembler_->call_descriptor(), graph(), schedule,
+      bytecode_name);
 
 #ifdef ENABLE_DISASSEMBLER
   if (FLAG_trace_ignition_codegen) {
     OFStream os(stdout);
-    code->Disassemble(interpreter::Bytecodes::ToString(bytecode_), os);
+    code->Disassemble(bytecode_name, os);
     os << std::flush;
   }
 #endif
@@ -69,6 +72,11 @@ Node* InterpreterAssembler::GetAccumulator() {
 
 void InterpreterAssembler::SetAccumulator(Node* value) {
   accumulator_ = value;
+}
+
+
+Node* InterpreterAssembler::ContextTaggedPointer() {
+  return raw_assembler_->Parameter(Linkage::kInterpreterContextParameter);
 }
 
 
@@ -99,13 +107,13 @@ Node* InterpreterAssembler::RegisterFrameOffset(Node* index) {
 
 
 Node* InterpreterAssembler::LoadRegister(Node* reg_index) {
-  return raw_assembler_->Load(kMachPtr, RegisterFileRawPointer(),
+  return raw_assembler_->Load(kMachAnyTagged, RegisterFileRawPointer(),
                               RegisterFrameOffset(reg_index));
 }
 
 
 Node* InterpreterAssembler::StoreRegister(Node* value, Node* reg_index) {
-  return raw_assembler_->Store(kMachPtr, RegisterFileRawPointer(),
+  return raw_assembler_->Store(kMachAnyTagged, RegisterFileRawPointer(),
                                RegisterFrameOffset(reg_index), value);
 }
 
@@ -140,6 +148,13 @@ Node* InterpreterAssembler::BytecodeOperandImm8(int operand_index) {
 }
 
 
+Node* InterpreterAssembler::BytecodeOperandIdx(int operand_index) {
+  DCHECK_EQ(interpreter::OperandType::kIdx,
+            interpreter::Bytecodes::GetOperandType(bytecode_, operand_index));
+  return BytecodeOperand(operand_index);
+}
+
+
 Node* InterpreterAssembler::BytecodeOperandReg(int operand_index) {
   DCHECK_EQ(interpreter::OperandType::kReg,
             interpreter::Bytecodes::GetOperandType(bytecode_, operand_index));
@@ -152,12 +167,17 @@ Node* InterpreterAssembler::Int32Constant(int value) {
 }
 
 
+Node* InterpreterAssembler::IntPtrConstant(intptr_t value) {
+  return raw_assembler_->IntPtrConstant(value);
+}
+
+
 Node* InterpreterAssembler::NumberConstant(double value) {
   return raw_assembler_->NumberConstant(value);
 }
 
 
-Node* InterpreterAssembler::HeapConstant(Unique<HeapObject> object) {
+Node* InterpreterAssembler::HeapConstant(Handle<HeapObject> object) {
   return raw_assembler_->HeapConstant(object);
 }
 
@@ -177,20 +197,113 @@ Node* InterpreterAssembler::SmiUntag(Node* value) {
 }
 
 
+Node* InterpreterAssembler::LoadConstantPoolEntry(Node* index) {
+  Node* constant_pool = LoadObjectField(BytecodeArrayTaggedPointer(),
+                                        BytecodeArray::kConstantPoolOffset);
+  Node* entry_offset = raw_assembler_->IntPtrAdd(
+      IntPtrConstant(FixedArray::kHeaderSize - kHeapObjectTag),
+      raw_assembler_->WordShl(index, Int32Constant(kPointerSizeLog2)));
+  return raw_assembler_->Load(kMachAnyTagged, constant_pool, entry_offset);
+}
+
+
+Node* InterpreterAssembler::LoadObjectField(Node* object, int offset) {
+  return raw_assembler_->Load(kMachAnyTagged, object,
+                              IntPtrConstant(offset - kHeapObjectTag));
+}
+
+
+Node* InterpreterAssembler::LoadContextSlot(Node* context, int slot_index) {
+  return raw_assembler_->Load(kMachAnyTagged, context,
+                              IntPtrConstant(Context::SlotOffset(slot_index)));
+}
+
+
+Node* InterpreterAssembler::LoadContextSlot(int slot_index) {
+  return LoadContextSlot(ContextTaggedPointer(), slot_index);
+}
+
+
+Node* InterpreterAssembler::LoadTypeFeedbackVector() {
+  Node* function = raw_assembler_->Load(
+      kMachAnyTagged, RegisterFileRawPointer(),
+      IntPtrConstant(InterpreterFrameConstants::kFunctionFromRegisterPointer));
+  Node* shared_info =
+      LoadObjectField(function, JSFunction::kSharedFunctionInfoOffset);
+  Node* vector =
+      LoadObjectField(shared_info, SharedFunctionInfo::kFeedbackVectorOffset);
+  return vector;
+}
+
+
+Node* InterpreterAssembler::CallIC(CallInterfaceDescriptor descriptor,
+                                   Node* target, Node* arg1, Node* arg2,
+                                   Node* arg3, Node* arg4) {
+  CallDescriptor* call_descriptor = Linkage::GetStubCallDescriptor(
+      isolate(), zone(), descriptor, 0, CallDescriptor::kNoFlags);
+
+  Node** args = zone()->NewArray<Node*>(5);
+  args[0] = arg1;
+  args[1] = arg2;
+  args[2] = arg3;
+  args[3] = arg4;
+  args[4] = ContextTaggedPointer();
+
+  return raw_assembler_->CallN(call_descriptor, target, args);
+}
+
+
+Node* InterpreterAssembler::CallJSBuiltin(int context_index, Node* receiver,
+                                          Node** js_args, int js_arg_count) {
+  Node* global_object = LoadContextSlot(Context::GLOBAL_OBJECT_INDEX);
+  Node* native_context =
+      LoadObjectField(global_object, GlobalObject::kNativeContextOffset);
+  Node* function = LoadContextSlot(native_context, context_index);
+  Node* context = LoadObjectField(function, JSFunction::kContextOffset);
+
+  int index = 0;
+  Node** args = zone()->NewArray<Node*>(js_arg_count + 2);
+  args[index++] = receiver;
+  for (int i = 0; i < js_arg_count; i++) {
+    args[index++] = js_args[i];
+  }
+  args[index++] = context;
+
+  CallDescriptor* descriptor = Linkage::GetJSCallDescriptor(
+      zone(), false, js_arg_count + 1, CallDescriptor::kNoFlags);
+  return raw_assembler_->CallN(descriptor, function, args);
+}
+
+
+Node* InterpreterAssembler::CallJSBuiltin(int context_index, Node* receiver) {
+  return CallJSBuiltin(context_index, receiver, nullptr, 0);
+}
+
+
+Node* InterpreterAssembler::CallJSBuiltin(int context_index, Node* receiver,
+                                          Node* arg1) {
+  return CallJSBuiltin(context_index, receiver, &arg1, 1);
+}
+
+
 void InterpreterAssembler::Return() {
   Node* exit_trampoline_code_object =
-      HeapConstant(Unique<HeapObject>::CreateImmovable(
-          isolate()->builtins()->InterpreterExitTrampoline()));
+      HeapConstant(isolate()->builtins()->InterpreterExitTrampoline());
   // If the order of the parameters you need to change the call signature below.
   STATIC_ASSERT(0 == Linkage::kInterpreterAccumulatorParameter);
   STATIC_ASSERT(1 == Linkage::kInterpreterRegisterFileParameter);
   STATIC_ASSERT(2 == Linkage::kInterpreterBytecodeOffsetParameter);
   STATIC_ASSERT(3 == Linkage::kInterpreterBytecodeArrayParameter);
   STATIC_ASSERT(4 == Linkage::kInterpreterDispatchTableParameter);
-  Node* tail_call = raw_assembler_->TailCallInterpreterDispatch(
-      call_descriptor(), exit_trampoline_code_object, GetAccumulator(),
-      RegisterFileRawPointer(), BytecodeOffset(), BytecodeArrayTaggedPointer(),
-      DispatchTableRawPointer());
+  STATIC_ASSERT(5 == Linkage::kInterpreterContextParameter);
+  Node* args[] = { GetAccumulator(),
+                   RegisterFileRawPointer(),
+                   BytecodeOffset(),
+                   BytecodeArrayTaggedPointer(),
+                   DispatchTableRawPointer(),
+                   ContextTaggedPointer() };
+  Node* tail_call = raw_assembler_->TailCallN(
+      call_descriptor(), exit_trampoline_code_object, args);
   // This should always be the end node.
   SetEndInput(tail_call);
 }
@@ -219,10 +332,15 @@ void InterpreterAssembler::Dispatch() {
   STATIC_ASSERT(2 == Linkage::kInterpreterBytecodeOffsetParameter);
   STATIC_ASSERT(3 == Linkage::kInterpreterBytecodeArrayParameter);
   STATIC_ASSERT(4 == Linkage::kInterpreterDispatchTableParameter);
-  Node* tail_call = raw_assembler_->TailCallInterpreterDispatch(
-      call_descriptor(), target_code_object, GetAccumulator(),
-      RegisterFileRawPointer(), new_bytecode_offset,
-      BytecodeArrayTaggedPointer(), DispatchTableRawPointer());
+  STATIC_ASSERT(5 == Linkage::kInterpreterContextParameter);
+  Node* args[] = { GetAccumulator(),
+                   RegisterFileRawPointer(),
+                   new_bytecode_offset,
+                   BytecodeArrayTaggedPointer(),
+                   DispatchTableRawPointer(),
+                   ContextTaggedPointer() };
+  Node* tail_call =
+      raw_assembler_->TailCallN(call_descriptor(), target_code_object, args);
   // This should always be the end node.
   SetEndInput(tail_call);
 }
@@ -258,6 +376,8 @@ Schedule* InterpreterAssembler::schedule() {
   return raw_assembler_->schedule();
 }
 
+
+Zone* InterpreterAssembler::zone() { return raw_assembler_->zone(); }
 
 
 }  // namespace interpreter

@@ -126,6 +126,7 @@ class StandardFrameConstants : public AllStatic {
   static const int kFixedSlotCountAboveFp =
       kFixedFrameSizeAboveFp / kPointerSize;
   static const int kFixedSlotCount = kFixedFrameSize / kPointerSize;
+  static const int kCPSlotCount = kCPSlotSize / kPointerSize;
   static const int kExpressionsOffset = -3 * kPointerSize - kCPSlotSize;
   static const int kMarkerOffset = -2 * kPointerSize - kCPSlotSize;
   static const int kContextOffset = -1 * kPointerSize - kCPSlotSize;
@@ -171,6 +172,15 @@ class ConstructFrameConstants : public AllStatic {
 
   static const int kFrameSize =
       StandardFrameConstants::kFixedFrameSize + 5 * kPointerSize;
+};
+
+
+class InterpreterFrameConstants : public AllStatic {
+ public:
+  // Register file pointer relative.
+  static const int kLastParamFromRegisterPointer =
+      StandardFrameConstants::kFixedFrameSize + kPointerSize;
+  static const int kFunctionFromRegisterPointer = kPointerSize;
 };
 
 
@@ -514,16 +524,9 @@ class StandardFrame: public StackFrame {
 
 class FrameSummary BASE_EMBEDDED {
  public:
-  FrameSummary(Object* receiver,
-               JSFunction* function,
-               Code* code,
-               int offset,
-               bool is_constructor)
-      : receiver_(receiver, function->GetIsolate()),
-        function_(function),
-        code_(code),
-        offset_(offset),
-        is_constructor_(is_constructor) { }
+  FrameSummary(Object* receiver, JSFunction* function, Code* code, int offset,
+               bool is_constructor);
+
   Handle<Object> receiver() { return receiver_; }
   Handle<JSFunction> function() { return function_; }
   Handle<Code> code() { return code_; }

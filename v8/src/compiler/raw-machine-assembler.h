@@ -12,6 +12,7 @@
 #include "src/compiler/machine-operator.h"
 #include "src/compiler/node.h"
 #include "src/compiler/operator.h"
+#include "src/factory.h"
 
 namespace v8 {
 namespace internal {
@@ -72,9 +73,8 @@ class RawMachineAssembler {
   // hence will not switch the current basic block.
 
   Node* UndefinedConstant() {
-    Unique<HeapObject> unique = Unique<HeapObject>::CreateImmovable(
-        isolate()->factory()->undefined_value());
-    return NewNode(common()->HeapConstant(unique));
+    Handle<HeapObject> undefined = isolate()->factory()->undefined_value();
+    return NewNode(common()->HeapConstant(undefined));
   }
 
   // Constants.
@@ -102,10 +102,6 @@ class RawMachineAssembler {
     return NewNode(common()->Float64Constant(value));
   }
   Node* HeapConstant(Handle<HeapObject> object) {
-    Unique<HeapObject> val = Unique<HeapObject>::CreateUninitialized(object);
-    return NewNode(common()->HeapConstant(val));
-  }
-  Node* HeapConstant(Unique<HeapObject> object) {
     return NewNode(common()->HeapConstant(object));
   }
   Node* ExternalConstant(ExternalReference address) {
@@ -481,13 +477,14 @@ class RawMachineAssembler {
 
   // Call a given call descriptor and the given arguments.
   Node* CallN(CallDescriptor* desc, Node* function, Node** args);
-
+  // Call a given call descriptor and the given arguments and frame-state.
+  Node* CallNWithFrameState(CallDescriptor* desc, Node* function, Node** args,
+                            Node* frame_state);
+  // Tail call the given call descriptor and the given arguments.
+  Node* TailCallN(CallDescriptor* call_descriptor, Node* function, Node** args);
   // Call through CallFunctionStub with lazy deopt and frame-state.
   Node* CallFunctionStub0(Node* function, Node* receiver, Node* context,
                           Node* frame_state, CallFunctionFlags flags);
-  // Call to a JS function with zero arguments.
-  Node* CallJS0(Node* function, Node* receiver, Node* context,
-                Node* frame_state);
   // Call to a runtime function with zero arguments.
   Node* CallRuntime1(Runtime::FunctionId function, Node* arg0, Node* context,
                      Node* frame_state);
@@ -508,9 +505,6 @@ class RawMachineAssembler {
                        MachineType arg7_type, Node* function, Node* arg0,
                        Node* arg1, Node* arg2, Node* arg3, Node* arg4,
                        Node* arg5, Node* arg6, Node* arg7);
-  Node* TailCallInterpreterDispatch(const CallDescriptor* call_descriptor,
-                                    Node* target, Node* arg1, Node* arg2,
-                                    Node* arg3, Node* arg4, Node* arg5);
 
   // ===========================================================================
   // The following utility methods deal with control flow, hence might switch

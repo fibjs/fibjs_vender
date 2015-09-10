@@ -193,30 +193,29 @@ DEFINE_BOOL(legacy_const, true, "legacy semantics for const in sloppy mode")
   V(harmony_regexps, "harmony regular expression extensions")         \
   V(harmony_proxies, "harmony proxies")                               \
   V(harmony_sloppy_function, "harmony sloppy function block scoping") \
-  V(harmony_sloppy_let, "harmony let in sloppy mode")                 \
   V(harmony_unicode_regexps, "harmony unicode regexps")               \
   V(harmony_reflect, "harmony Reflect API")                           \
   V(harmony_destructuring, "harmony destructuring")                   \
   V(harmony_default_parameters, "harmony default parameters")         \
   V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")           \
-  V(harmony_atomics, "harmony atomics")                               \
   V(harmony_simd, "harmony simd")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED(V)                                       \
-  V(harmony_array_includes, "harmony Array.prototype.includes") \
   V(harmony_tostring, "harmony toString")                       \
   V(harmony_concat_spreadable, "harmony isConcatSpreadable")    \
   V(harmony_rest_parameters, "harmony rest parameters")         \
-  V(harmony_sloppy, "harmony features in sloppy mode")
+  V(harmony_sloppy, "harmony features in sloppy mode")          \
+  V(harmony_sloppy_let, "harmony let in sloppy mode")
 
 // Features that are shipping (turned on by default, but internal flag remains).
-#define HARMONY_SHIPPING(V)                                    \
-  V(harmony_arrow_functions, "harmony arrow functions")        \
-  V(harmony_new_target, "harmony new.target")                  \
-  V(harmony_object_observe, "harmony Object.observe")          \
-  V(harmony_spreadcalls, "harmony spread-calls")               \
-  V(harmony_spread_arrays, "harmony spread in array literals") \
+#define HARMONY_SHIPPING(V)                                     \
+  V(harmony_arrow_functions, "harmony arrow functions")         \
+  V(harmony_array_includes, "harmony Array.prototype.includes") \
+  V(harmony_new_target, "harmony new.target")                   \
+  V(harmony_object_observe, "harmony Object.observe")           \
+  V(harmony_spreadcalls, "harmony spread-calls")                \
+  V(harmony_spread_arrays, "harmony spread in array literals")  \
   V(harmony_object, "harmony Object methods")
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
@@ -245,7 +244,11 @@ HARMONY_SHIPPING(FLAG_SHIPPING_FEATURES)
 
 // Feature dependencies.
 DEFINE_IMPLICATION(harmony_sloppy_let, harmony_sloppy)
+DEFINE_IMPLICATION(harmony_sloppy_function, harmony_sloppy)
 
+// Destructuring shares too much parsing architecture with default parameters
+// to be enabled on its own.
+DEFINE_IMPLICATION(harmony_destructuring, harmony_default_parameters)
 
 // Flags for experimental implementation features.
 DEFINE_BOOL(compiled_keyed_generic_loads, false,
@@ -402,9 +405,10 @@ DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
 DEFINE_BOOL(turbo, false, "enable TurboFan compiler")
 DEFINE_BOOL(turbo_shipping, true, "enable TurboFan compiler on subset")
 DEFINE_BOOL(turbo_greedy_regalloc, false, "use the greedy register allocator")
-DEFINE_BOOL(turbo_preprocess_ranges, false,
+DEFINE_BOOL(turbo_preprocess_ranges, true,
             "run pre-register allocation heuristics")
-DEFINE_IMPLICATION(turbo_greedy_regalloc, turbo_preprocess_ranges)
+DEFINE_BOOL(turbo_loop_stackcheck, true, "enable stack checks in loops")
+
 DEFINE_IMPLICATION(turbo, turbo_asm_deoptimization)
 DEFINE_STRING(turbo_filter, "~~", "optimization filter for TurboFan compiler")
 DEFINE_BOOL(trace_turbo, false, "trace generated TurboFan IR")
@@ -659,6 +663,7 @@ DEFINE_INT(min_progress_during_object_groups_marking, 128,
 DEFINE_INT(max_object_groups_marking_rounds, 3,
            "at most try this many times to over approximate the weak closure")
 DEFINE_BOOL(concurrent_sweeping, true, "use concurrent sweeping")
+DEFINE_BOOL(parallel_compaction, false, "use parallel compaction")
 DEFINE_BOOL(trace_incremental_marking, false,
             "trace progress of the incremental marking")
 DEFINE_BOOL(track_gc_object_stats, false,
@@ -674,6 +679,7 @@ DEFINE_IMPLICATION(trace_detached_contexts, track_detached_contexts)
 #ifdef VERIFY_HEAP
 DEFINE_BOOL(verify_heap, false, "verify heap pointers before and after GC")
 #endif
+DEFINE_BOOL(move_object_start, false, "enable moving of object starts")
 
 // counters.cc
 DEFINE_INT(histogram_interval, 600000,
@@ -807,6 +813,7 @@ DEFINE_BOOL(predictable, false, "enable predictable mode")
 DEFINE_NEG_IMPLICATION(predictable, concurrent_recompilation)
 DEFINE_NEG_IMPLICATION(predictable, concurrent_osr)
 DEFINE_NEG_IMPLICATION(predictable, concurrent_sweeping)
+DEFINE_NEG_IMPLICATION(predictable, parallel_compaction)
 
 // mark-compact.cc
 DEFINE_BOOL(force_marking_deque_overflows, false,

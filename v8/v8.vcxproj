@@ -37,10 +37,12 @@
     <ClInclude Include="src\arguments.h" />
     <ClInclude Include="src\assembler.h" />
     <ClInclude Include="src\assert-scope.h" />
+    <ClInclude Include="src\ast-expression-visitor.h" />
     <ClInclude Include="src\ast-literal-reindexer.h" />
     <ClInclude Include="src\ast-numbering.h" />
     <ClInclude Include="src\ast-value-factory.h" />
     <ClInclude Include="src\ast.h" />
+    <ClInclude Include="src\atomic-utils.h" />
     <ClInclude Include="src\background-parsing-task.h" />
     <ClInclude Include="src\bailout-reason.h" />
     <ClInclude Include="src\base\adapters.h" />
@@ -98,7 +100,6 @@
     <ClInclude Include="src\circular-queue.h" />
     <ClInclude Include="src\code-factory.h" />
     <ClInclude Include="src\code-stubs.h" />
-    <ClInclude Include="src\code.h" />
     <ClInclude Include="src\codegen.h" />
     <ClInclude Include="src\compilation-cache.h" />
     <ClInclude Include="src\compilation-dependencies.h" />
@@ -151,6 +152,7 @@
     <ClInclude Include="src\compiler\js-typed-lowering.h" />
     <ClInclude Include="src\compiler\jump-threading.h" />
     <ClInclude Include="src\compiler\linkage.h" />
+    <ClInclude Include="src\compiler\live-range-separator.h" />
     <ClInclude Include="src\compiler\liveness-analyzer.h" />
     <ClInclude Include="src\compiler\load-elimination.h" />
     <ClInclude Include="src\compiler\loop-analysis.h" />
@@ -172,7 +174,6 @@
     <ClInclude Include="src\compiler\pipeline-statistics.h" />
     <ClInclude Include="src\compiler\pipeline.h" />
     <ClInclude Include="src\compiler\ppc\instruction-codes-ppc.h" />
-    <ClInclude Include="src\compiler\preprocess-live-ranges.h" />
     <ClInclude Include="src\compiler\raw-machine-assembler.h" />
     <ClInclude Include="src\compiler\register-allocator-verifier.h" />
     <ClInclude Include="src\compiler\register-allocator.h" />
@@ -194,6 +195,7 @@
     <ClInclude Include="src\compiler\x87\instruction-codes-x87.h" />
     <ClInclude Include="src\compiler\zone-pool.h" />
     <ClInclude Include="src\context-measure.h" />
+    <ClInclude Include="src\contexts-inl.h" />
     <ClInclude Include="src\contexts.h" />
     <ClInclude Include="src\conversions-inl.h" />
     <ClInclude Include="src\conversions.h" />
@@ -249,12 +251,12 @@
     <ClInclude Include="src\heap\gc-tracer.h" />
     <ClInclude Include="src\heap\heap-inl.h" />
     <ClInclude Include="src\heap\heap.h" />
-    <ClInclude Include="src\heap\identity-map.h" />
     <ClInclude Include="src\heap\incremental-marking-inl.h" />
     <ClInclude Include="src\heap\incremental-marking.h" />
     <ClInclude Include="src\heap\mark-compact-inl.h" />
     <ClInclude Include="src\heap\mark-compact.h" />
     <ClInclude Include="src\heap\memory-reducer.h" />
+    <ClInclude Include="src\heap\object-stats.h" />
     <ClInclude Include="src\heap\objects-visiting-inl.h" />
     <ClInclude Include="src\heap\objects-visiting.h" />
     <ClInclude Include="src\heap\spaces-inl.h" />
@@ -307,11 +309,13 @@
     <ClInclude Include="src\ic\ic.h" />
     <ClInclude Include="src\ic\stub-cache.h" />
     <ClInclude Include="src\icu_util.h" />
+    <ClInclude Include="src\identity-map.h" />
     <ClInclude Include="src\interface-descriptors.h" />
     <ClInclude Include="src\interpreter\bytecode-array-builder.h" />
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
     <ClInclude Include="src\interpreter\bytecodes.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
+    <ClInclude Include="src\isolate-inl.h" />
     <ClInclude Include="src\isolate.h" />
     <ClInclude Include="src\json-parser.h" />
     <ClInclude Include="src\json-stringifier.h" />
@@ -410,6 +414,8 @@
     <ClInclude Include="src\type-info.h" />
     <ClInclude Include="src\types-inl.h" />
     <ClInclude Include="src\types.h" />
+    <ClInclude Include="src\typing-asm.h" />
+    <ClInclude Include="src\typing-reset.h" />
     <ClInclude Include="src\typing.h" />
     <ClInclude Include="src\unbound-queue-inl.h" />
     <ClInclude Include="src\unbound-queue.h" />
@@ -450,6 +456,7 @@
     <ClInclude Include="src\x87\simulator-x87.h" />
     <ClInclude Include="src\zone-allocator.h" />
     <ClInclude Include="src\zone-containers.h" />
+    <ClInclude Include="src\zone-type-cache.h" />
     <ClInclude Include="src\zone.h" />
   </ItemGroup>
   <ItemGroup>
@@ -462,6 +469,7 @@
     <ClCompile Include="src\arguments.cc" />
     <ClCompile Include="src\assembler.cc" />
     <ClCompile Include="src\assert-scope.cc" />
+    <ClCompile Include="src\ast-expression-visitor.cc" />
     <ClCompile Include="src\ast-literal-reindexer.cc" />
     <ClCompile Include="src\ast-numbering.cc" />
     <ClCompile Include="src\ast-value-factory.cc" />
@@ -553,6 +561,7 @@
     <ClCompile Include="src\compiler\js-typed-lowering.cc" />
     <ClCompile Include="src\compiler\jump-threading.cc" />
     <ClCompile Include="src\compiler\linkage.cc" />
+    <ClCompile Include="src\compiler\live-range-separator.cc" />
     <ClCompile Include="src\compiler\liveness-analyzer.cc" />
     <ClCompile Include="src\compiler\load-elimination.cc" />
     <ClCompile Include="src\compiler\loop-analysis.cc" />
@@ -574,7 +583,6 @@
     <ClCompile Include="src\compiler\pipeline.cc" />
     <ClCompile Include="src\compiler\ppc\code-generator-ppc.cc" />
     <ClCompile Include="src\compiler\ppc\instruction-selector-ppc.cc" />
-    <ClCompile Include="src\compiler\preprocess-live-ranges.cc" />
     <ClCompile Include="src\compiler\raw-machine-assembler.cc" />
     <ClCompile Include="src\compiler\register-allocator-verifier.cc" />
     <ClCompile Include="src\compiler\register-allocator.cc" />
@@ -649,10 +657,10 @@
     <ClCompile Include="src\heap\gc-idle-time-handler.cc" />
     <ClCompile Include="src\heap\gc-tracer.cc" />
     <ClCompile Include="src\heap\heap.cc" />
-    <ClCompile Include="src\heap\identity-map.cc" />
     <ClCompile Include="src\heap\incremental-marking.cc" />
     <ClCompile Include="src\heap\mark-compact.cc" />
     <ClCompile Include="src\heap\memory-reducer.cc" />
+    <ClCompile Include="src\heap\object-stats.cc" />
     <ClCompile Include="src\heap\objects-visiting.cc" />
     <ClCompile Include="src\heap\spaces.cc" />
     <ClCompile Include="src\heap\store-buffer.cc" />
@@ -723,6 +731,7 @@
     <ClCompile Include="src\ic\x87\ic-x87.cc" />
     <ClCompile Include="src\ic\x87\stub-cache-x87.cc" />
     <ClCompile Include="src\icu_util.cc" />
+    <ClCompile Include="src\identity-map.cc" />
     <ClCompile Include="src\interface-descriptors.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc" />
     <ClCompile Include="src\interpreter\bytecode-generator.cc" />
@@ -833,6 +842,8 @@
     <ClCompile Include="src\type-feedback-vector.cc" />
     <ClCompile Include="src\type-info.cc" />
     <ClCompile Include="src\types.cc" />
+    <ClCompile Include="src\typing-asm.cc" />
+    <ClCompile Include="src\typing-reset.cc" />
     <ClCompile Include="src\typing.cc" />
     <ClCompile Include="src\unicode-decoder.cc" />
     <ClCompile Include="src\unicode.cc" />

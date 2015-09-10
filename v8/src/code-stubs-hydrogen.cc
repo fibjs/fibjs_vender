@@ -131,7 +131,7 @@ bool CodeStubGraphBuilderBase::BuildGraph() {
   isolate()->counters()->code_stubs()->Increment();
 
   if (FLAG_trace_hydrogen_stubs) {
-    const char* name = CodeStub::MajorName(stub()->MajorKey(), false);
+    const char* name = CodeStub::MajorName(stub()->MajorKey());
     PrintF("-----------------------------------------------------------\n");
     PrintF("Compiling stub %s using hydrogen\n", name);
     isolate()->GetHTracer()->TraceCompilation(info());
@@ -155,8 +155,8 @@ bool CodeStubGraphBuilderBase::BuildGraph() {
                               HParameter::STACK_PARAMETER, r);
     } else {
       param = Add<HParameter>(i, HParameter::REGISTER_PARAMETER, r);
+      start_environment->Bind(i, param);
     }
-    start_environment->Bind(i, param);
     parameters_[i] = param;
     if (i < register_param_count && IsParameterCountRegister(i)) {
       param->set_type(HType::Smi());
@@ -367,14 +367,16 @@ HValue* CodeStubGraphBuilder<TypeofStub>::BuildCodeStub() {
           { Push(Add<HConstant>(factory->symbol_string())); }
           is_symbol.Else();
           {
+            HValue* bit_field = Add<HLoadNamedField>(
+                map, nullptr, HObjectAccess::ForMapBitField());
+            HValue* bit_field_masked = AddUncasted<HBitwise>(
+                Token::BIT_AND, bit_field,
+                Add<HConstant>((1 << Map::kIsCallable) |
+                               (1 << Map::kIsUndetectable)));
             IfBuilder is_function(this);
-            HConstant* js_function = Add<HConstant>(JS_FUNCTION_TYPE);
-            HConstant* js_function_proxy =
-                Add<HConstant>(JS_FUNCTION_PROXY_TYPE);
-            is_function.If<HCompareNumericAndBranch>(instance_type, js_function,
-                                                     Token::EQ);
-            is_function.OrIf<HCompareNumericAndBranch>(
-                instance_type, js_function_proxy, Token::EQ);
+            is_function.If<HCompareNumericAndBranch>(
+                bit_field_masked, Add<HConstant>(1 << Map::kIsCallable),
+                Token::EQ);
             is_function.Then();
             { Push(Add<HConstant>(factory->function_string())); }
             is_function.Else();
@@ -390,7 +392,9 @@ HValue* CodeStubGraphBuilder<TypeofStub>::BuildCodeStub() {
 #undef SIMD128_BUILDER_OPEN
               // Is it an undetectable object?
               IfBuilder is_undetectable(this);
-              is_undetectable.If<HIsUndetectableAndBranch>(object);
+              is_undetectable.If<HCompareNumericAndBranch>(
+                  bit_field_masked, Add<HConstant>(1 << Map::kIsUndetectable),
+                  Token::EQ);
               is_undetectable.Then();
               {
                 // typeof an undetectable object is 'undefined'.
@@ -1015,7 +1019,7 @@ Handle<Code> StoreFieldStub::GenerateCode() { return DoGenerateCode(this); }
 
 template <>
 HValue* CodeStubGraphBuilder<StoreTransitionStub>::BuildCodeStub() {
-  HValue* object = GetParameter(StoreTransitionDescriptor::kReceiverIndex);
+  HValue* object = GetParameter(StoreTransitionHelper::ReceiverIndex());
 
   switch (casted_stub()->store_mode()) {
     case StoreTransitionStub::ExtendStorageAndStoreMapAndValue: {
@@ -1046,17 +1050,17 @@ HValue* CodeStubGraphBuilder<StoreTransitionStub>::BuildCodeStub() {
     case StoreTransitionStub::StoreMapAndValue:
       // Store the new value into the "extended" object.
       BuildStoreNamedField(
-          object, GetParameter(StoreTransitionDescriptor::kValueIndex),
+          object, GetParameter(StoreTransitionHelper::ValueIndex()),
           casted_stub()->index(), casted_stub()->representation(), true);
     // Fall through.
 
     case StoreTransitionStub::StoreMapOnly:
       // And finally update the map.
       Add<HStoreNamedField>(object, HObjectAccess::ForMap(),
-                            GetParameter(StoreTransitionDescriptor::kMapIndex));
+                            GetParameter(StoreTransitionHelper::MapIndex()));
       break;
   }
-  return GetParameter(StoreTransitionDescriptor::kValueIndex);
+  return GetParameter(StoreTransitionHelper::ValueIndex());
 }
 
 
@@ -1609,10 +1613,10 @@ Handle<Code> StoreGlobalStub::GenerateCode() {
 
 template <>
 HValue* CodeStubGraphBuilder<ElementsTransitionAndStoreStub>::BuildCodeStub() {
-  HValue* object = GetParameter(StoreTransitionDescriptor::kReceiverIndex);
-  HValue* key = GetParameter(StoreTransitionDescriptor::kNameIndex);
-  HValue* value = GetParameter(StoreTransitionDescriptor::kValueIndex);
-  HValue* map = GetParameter(StoreTransitionDescriptor::kMapIndex);
+  HValue* object = GetParameter(StoreTransitionHelper::ReceiverIndex());
+  HValue* key = GetParameter(StoreTransitionHelper::NameIndex());
+  HValue* value = GetParameter(StoreTransitionHelper::ValueIndex());
+  HValue* map = GetParameter(StoreTransitionHelper::MapIndex());
 
   if (FLAG_trace_elements_transitions) {
     // Tracing elements transitions is the job of the runtime.
@@ -2191,7 +2195,6 @@ HValue* CodeStubGraphBuilder<KeyedLoadGenericStub>::BuildCodeStub() {
         // KeyedLookupCache miss; call runtime.
         Add<HPushArguments>(receiver, key);
         Push(Add<HCallRuntime>(
-            isolate()->factory()->empty_string(),
             Runtime::FunctionForId(is_strong(casted_stub()->language_mode())
                                        ? Runtime::kKeyedGetPropertyStrong
                                        : Runtime::kKeyedGetProperty),

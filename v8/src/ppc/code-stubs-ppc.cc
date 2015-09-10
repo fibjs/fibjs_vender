@@ -16,6 +16,7 @@
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
 #include "src/isolate.h"
+#include "src/ppc/code-stubs-ppc.h"
 #include "src/regexp/jsregexp.h"
 #include "src/regexp/regexp-macro-assembler.h"
 #include "src/runtime/runtime.h"
@@ -262,7 +263,6 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Label* slow,
   // They are both equal and they are not both Smis so both of them are not
   // Smis.  If it's not a heap number, then return equal.
   if (cond == lt || cond == gt) {
-    Label not_simd;
     // Call runtime on identical JSObjects.
     __ CompareObjectType(r3, r7, r7, FIRST_SPEC_OBJECT_TYPE);
     __ bge(slow);
@@ -270,11 +270,8 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Label* slow,
     __ cmpi(r7, Operand(SYMBOL_TYPE));
     __ beq(slow);
     // Call runtime on identical SIMD values since we must throw a TypeError.
-    __ cmpi(r7, Operand(FIRST_SIMD_VALUE_TYPE));
-    __ blt(&not_simd);
-    __ cmpi(r7, Operand(LAST_SIMD_VALUE_TYPE));
-    __ ble(slow);
-    __ bind(&not_simd);
+    __ cmpi(r7, Operand(SIMD128_VALUE_TYPE));
+    __ beq(slow);
     if (is_strong(strength)) {
       // Call the runtime on anything that is converted in the semantics, since
       // we need to throw a TypeError. Smis have already been ruled out.
@@ -288,18 +285,14 @@ static void EmitIdenticalObjectComparison(MacroAssembler* masm, Label* slow,
     __ beq(&heap_number);
     // Comparing JS objects with <=, >= is complicated.
     if (cond != eq) {
-      Label not_simd;
       __ cmpi(r7, Operand(FIRST_SPEC_OBJECT_TYPE));
       __ bge(slow);
       // Call runtime on identical symbols since we need to throw a TypeError.
       __ cmpi(r7, Operand(SYMBOL_TYPE));
       __ beq(slow);
       // Call runtime on identical SIMD values since we must throw a TypeError.
-      __ cmpi(r7, Operand(FIRST_SIMD_VALUE_TYPE));
-      __ blt(&not_simd);
-      __ cmpi(r7, Operand(LAST_SIMD_VALUE_TYPE));
-      __ ble(slow);
-      __ bind(&not_simd);
+      __ cmpi(r7, Operand(SIMD128_VALUE_TYPE));
+      __ beq(slow);
       if (is_strong(strength)) {
         // Call the runtime on anything that is converted in the semantics,
         // since we need to throw a TypeError. Smis and heap numbers have
@@ -721,12 +714,13 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
   if (cc == eq && strict()) {
     __ TailCallRuntime(Runtime::kStrictEquals, 2, 1);
   } else {
-    Builtins::JavaScript native;
+    int context_index;
     if (cc == eq) {
-      native = Builtins::EQUALS;
+      context_index = Context::EQUALS_BUILTIN_INDEX;
     } else {
-      native =
-          is_strong(strength()) ? Builtins::COMPARE_STRONG : Builtins::COMPARE;
+      context_index = is_strong(strength())
+                          ? Context::COMPARE_STRONG_BUILTIN_INDEX
+                          : Context::COMPARE_BUILTIN_INDEX;
       int ncr;  // NaN compare result
       if (cc == lt || cc == le) {
         ncr = GREATER;
@@ -740,7 +734,7 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
 
     // Call the native; it returns -1 (less), 0 (equal), or 1 (greater)
     // tagged as a small integer.
-    __ InvokeBuiltin(native, JUMP_FUNCTION);
+    __ InvokeBuiltin(context_index, JUMP_FUNCTION);
   }
 
   __ bind(&miss);
@@ -1378,216 +1372,115 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 }
 
 
-// Uses registers r3 to r7.
-// Expected input (depending on whether args are in registers or on the stack):
-// * object: r3 or at sp + 1 * kPointerSize.
-// * function: r4 or at sp.
-//
-// An inlined call site may have been generated before calling this stub.
-// In this case the offset to the inline site to patch is passed in r8.
-// (See LCodeGen::DoInstanceOfKnownGlobal)
-void InstanceofStub::Generate(MacroAssembler* masm) {
-  // Call site inlining and patching implies arguments in registers.
-  DCHECK(HasArgsInRegisters() || !HasCallSiteInlineCheck());
+void InstanceOfStub::Generate(MacroAssembler* masm) {
+  Register const object = r4;              // Object (lhs).
+  Register const function = r3;            // Function (rhs).
+  Register const object_map = r5;          // Map of {object}.
+  Register const function_map = r6;        // Map of {function}.
+  Register const function_prototype = r7;  // Prototype of {function}.
+  Register const scratch = r8;
 
-  // Fixed register usage throughout the stub:
-  const Register object = r3;     // Object (lhs).
-  Register map = r6;              // Map of the object.
-  const Register function = r4;   // Function (rhs).
-  const Register prototype = r7;  // Prototype of the function.
-  // The map_check_delta was stored in r8
-  // The bool_load_delta was stored in r9
-  //   (See LCodeGen::DoDeferredLInstanceOfKnownGlobal).
-  const Register map_check_delta = r8;
-  const Register bool_load_delta = r9;
-  const Register inline_site = r10;
-  const Register scratch = r5;
-  Register scratch3 = no_reg;
-  Label slow, loop, is_instance, is_not_instance, not_js_object;
+  DCHECK(object.is(InstanceOfDescriptor::LeftRegister()));
+  DCHECK(function.is(InstanceOfDescriptor::RightRegister()));
 
-  if (!HasArgsInRegisters()) {
-    __ LoadP(object, MemOperand(sp, 1 * kPointerSize));
-    __ LoadP(function, MemOperand(sp, 0));
-  }
+  // Check if {object} is a smi.
+  Label object_is_smi;
+  __ JumpIfSmi(object, &object_is_smi);
 
-  // Check that the left hand is a JS object and load map.
-  __ JumpIfSmi(object, &not_js_object);
-  __ IsObjectJSObjectType(object, map, scratch, &not_js_object);
+  // Lookup the {function} and the {object} map in the global instanceof cache.
+  // Note: This is safe because we clear the global instanceof cache whenever
+  // we change the prototype of any object.
+  Label fast_case, slow_case;
+  __ LoadP(object_map, FieldMemOperand(object, HeapObject::kMapOffset));
+  __ CompareRoot(function, Heap::kInstanceofCacheFunctionRootIndex);
+  __ bne(&fast_case);
+  __ CompareRoot(object_map, Heap::kInstanceofCacheMapRootIndex);
+  __ bne(&fast_case);
+  __ LoadRoot(r3, Heap::kInstanceofCacheAnswerRootIndex);
+  __ Ret();
 
-  // If there is a call site cache don't look in the global cache, but do the
-  // real lookup and update the call site cache.
-  if (!HasCallSiteInlineCheck() && !ReturnTrueFalseObject()) {
-    Label miss;
-    __ CompareRoot(function, Heap::kInstanceofCacheFunctionRootIndex);
-    __ bne(&miss);
-    __ CompareRoot(map, Heap::kInstanceofCacheMapRootIndex);
-    __ bne(&miss);
-    __ LoadRoot(r3, Heap::kInstanceofCacheAnswerRootIndex);
-    __ Ret(HasArgsInRegisters() ? 0 : 2);
+  // If {object} is a smi we can safely return false if {function} is a JS
+  // function, otherwise we have to miss to the runtime and throw an exception.
+  __ bind(&object_is_smi);
+  __ JumpIfSmi(function, &slow_case);
+  __ CompareObjectType(function, function_map, scratch, JS_FUNCTION_TYPE);
+  __ bne(&slow_case);
+  __ LoadRoot(r3, Heap::kFalseValueRootIndex);
+  __ Ret();
 
-    __ bind(&miss);
-  }
+  // Fast-case: The {function} must be a valid JSFunction.
+  __ bind(&fast_case);
+  __ JumpIfSmi(function, &slow_case);
+  __ CompareObjectType(function, function_map, scratch, JS_FUNCTION_TYPE);
+  __ bne(&slow_case);
 
-  // Get the prototype of the function.
-  __ TryGetFunctionPrototype(function, prototype, scratch, &slow, true);
+  // Ensure that {function} has an instance prototype.
+  __ lbz(scratch, FieldMemOperand(function_map, Map::kBitFieldOffset));
+  __ TestBit(scratch, Map::kHasNonInstancePrototype, r0);
+  __ bne(&slow_case, cr0);
 
-  // Check that the function prototype is a JS object.
-  __ JumpIfSmi(prototype, &slow);
-  __ IsObjectJSObjectType(prototype, scratch, scratch, &slow);
+  // Ensure that {function} is not bound.
+  Register const shared_info = scratch;
+  __ LoadP(shared_info,
+           FieldMemOperand(function, JSFunction::kSharedFunctionInfoOffset));
+  __ lwz(scratch, FieldMemOperand(shared_info,
+                                  SharedFunctionInfo::kCompilerHintsOffset));
+  __ TestBit(scratch,
+#if V8_TARGET_ARCH_PPC64
+             SharedFunctionInfo::kBoundFunction,
+#else
+             SharedFunctionInfo::kBoundFunction + kSmiTagSize,
+#endif
+             r0);
+  __ bne(&slow_case, cr0);
 
-  // Update the global instanceof or call site inlined cache with the current
-  // map and function. The cached answer will be set when it is known below.
-  if (!HasCallSiteInlineCheck()) {
-    __ StoreRoot(function, Heap::kInstanceofCacheFunctionRootIndex);
-    __ StoreRoot(map, Heap::kInstanceofCacheMapRootIndex);
-  } else {
-    DCHECK(HasArgsInRegisters());
-    // Patch the (relocated) inlined map check.
+  // Get the "prototype" (or initial map) of the {function}.
+  __ LoadP(function_prototype,
+           FieldMemOperand(function, JSFunction::kPrototypeOrInitialMapOffset));
+  __ AssertNotSmi(function_prototype);
 
-    const Register offset = map_check_delta;
-    __ mflr(inline_site);
-    __ sub(inline_site, inline_site, offset);
-    // Get the map location in offset and patch it.
-    __ GetRelocatedValue(inline_site, offset, scratch);
-    __ StoreP(map, FieldMemOperand(offset, Cell::kValueOffset), r0);
+  // Resolve the prototype if the {function} has an initial map.  Afterwards the
+  // {function_prototype} will be either the JSReceiver prototype object or the
+  // hole value, which means that no instances of the {function} were created so
+  // far and hence we should return false.
+  Label function_prototype_valid;
+  __ CompareObjectType(function_prototype, scratch, scratch, MAP_TYPE);
+  __ bne(&function_prototype_valid);
+  __ LoadP(function_prototype,
+           FieldMemOperand(function_prototype, Map::kPrototypeOffset));
+  __ bind(&function_prototype_valid);
+  __ AssertNotSmi(function_prototype);
 
-    __ mr(r11, map);
-    __ RecordWriteField(offset, Cell::kValueOffset, r11, function,
-                        kLRHasNotBeenSaved, kDontSaveFPRegs,
-                        OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
-  }
+  // Update the global instanceof cache with the current {object} map and
+  // {function}.  The cached answer will be set when it is known below.
+  __ StoreRoot(function, Heap::kInstanceofCacheFunctionRootIndex);
+  __ StoreRoot(object_map, Heap::kInstanceofCacheMapRootIndex);
 
-  // Register mapping: r6 is object map and r7 is function prototype.
-  // Get prototype of object into r5.
-  __ LoadP(scratch, FieldMemOperand(map, Map::kPrototypeOffset));
-
-  // We don't need map any more. Use it as a scratch register.
-  scratch3 = map;
-  map = no_reg;
-
-  // Loop through the prototype chain looking for the function prototype.
-  __ LoadRoot(scratch3, Heap::kNullValueRootIndex);
+  // Loop through the prototype chain looking for the {function} prototype.
+  // Assume true, and change to false if not found.
+  Register const object_prototype = object_map;
+  Register const null = scratch;
+  Label done, loop;
+  __ LoadRoot(r3, Heap::kTrueValueRootIndex);
+  __ LoadRoot(null, Heap::kNullValueRootIndex);
   __ bind(&loop);
-  __ cmp(scratch, prototype);
-  __ beq(&is_instance);
-  __ cmp(scratch, scratch3);
-  __ beq(&is_not_instance);
-  __ LoadP(scratch, FieldMemOperand(scratch, HeapObject::kMapOffset));
-  __ LoadP(scratch, FieldMemOperand(scratch, Map::kPrototypeOffset));
-  __ b(&loop);
-  Factory* factory = isolate()->factory();
+  __ LoadP(object_prototype,
+           FieldMemOperand(object_map, Map::kPrototypeOffset));
+  __ cmp(object_prototype, function_prototype);
+  __ beq(&done);
+  __ cmp(object_prototype, null);
+  __ LoadP(object_map,
+           FieldMemOperand(object_prototype, HeapObject::kMapOffset));
+  __ bne(&loop);
+  __ LoadRoot(r3, Heap::kFalseValueRootIndex);
+  __ bind(&done);
+  __ StoreRoot(r3, Heap::kInstanceofCacheAnswerRootIndex);
+  __ Ret();
 
-  __ bind(&is_instance);
-  if (!HasCallSiteInlineCheck()) {
-    __ LoadSmiLiteral(r3, Smi::FromInt(0));
-    __ StoreRoot(r3, Heap::kInstanceofCacheAnswerRootIndex);
-    if (ReturnTrueFalseObject()) {
-      __ Move(r3, factory->true_value());
-    }
-  } else {
-    // Patch the call site to return true.
-    __ LoadRoot(r3, Heap::kTrueValueRootIndex);
-    __ add(inline_site, inline_site, bool_load_delta);
-    // Get the boolean result location in scratch and patch it.
-    __ SetRelocatedValue(inline_site, scratch, r3);
-
-    if (!ReturnTrueFalseObject()) {
-      __ LoadSmiLiteral(r3, Smi::FromInt(0));
-    }
-  }
-  __ Ret(HasArgsInRegisters() ? 0 : 2);
-
-  __ bind(&is_not_instance);
-  if (!HasCallSiteInlineCheck()) {
-    __ LoadSmiLiteral(r3, Smi::FromInt(1));
-    __ StoreRoot(r3, Heap::kInstanceofCacheAnswerRootIndex);
-    if (ReturnTrueFalseObject()) {
-      __ Move(r3, factory->false_value());
-    }
-  } else {
-    // Patch the call site to return false.
-    __ LoadRoot(r3, Heap::kFalseValueRootIndex);
-    __ add(inline_site, inline_site, bool_load_delta);
-    // Get the boolean result location in scratch and patch it.
-    __ SetRelocatedValue(inline_site, scratch, r3);
-
-    if (!ReturnTrueFalseObject()) {
-      __ LoadSmiLiteral(r3, Smi::FromInt(1));
-    }
-  }
-  __ Ret(HasArgsInRegisters() ? 0 : 2);
-
-  Label object_not_null, object_not_null_or_smi;
-  __ bind(&not_js_object);
-  // Before null, smi and string value checks, check that the rhs is a function
-  // as for a non-function rhs an exception needs to be thrown.
-  __ JumpIfSmi(function, &slow);
-  __ CompareObjectType(function, scratch3, scratch, JS_FUNCTION_TYPE);
-  __ bne(&slow);
-
-  // Null is not instance of anything.
-  __ Cmpi(object, Operand(isolate()->factory()->null_value()), r0);
-  __ bne(&object_not_null);
-  if (ReturnTrueFalseObject()) {
-    __ Move(r3, factory->false_value());
-  } else {
-    __ LoadSmiLiteral(r3, Smi::FromInt(1));
-  }
-  __ Ret(HasArgsInRegisters() ? 0 : 2);
-
-  __ bind(&object_not_null);
-  // Smi values are not instances of anything.
-  __ JumpIfNotSmi(object, &object_not_null_or_smi);
-  if (ReturnTrueFalseObject()) {
-    __ Move(r3, factory->false_value());
-  } else {
-    __ LoadSmiLiteral(r3, Smi::FromInt(1));
-  }
-  __ Ret(HasArgsInRegisters() ? 0 : 2);
-
-  __ bind(&object_not_null_or_smi);
-  // String values are not instances of anything.
-  __ IsObjectJSStringType(object, scratch, &slow);
-  if (ReturnTrueFalseObject()) {
-    __ Move(r3, factory->false_value());
-  } else {
-    __ LoadSmiLiteral(r3, Smi::FromInt(1));
-  }
-  __ Ret(HasArgsInRegisters() ? 0 : 2);
-
-  // Slow-case.  Tail call builtin.
-  __ bind(&slow);
-  if (!ReturnTrueFalseObject()) {
-    if (HasArgsInRegisters()) {
-      __ Push(r3, r4);
-    }
-    __ InvokeBuiltin(Builtins::INSTANCE_OF, JUMP_FUNCTION);
-  } else {
-    {
-      FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
-      __ Push(r3, r4);
-      __ InvokeBuiltin(Builtins::INSTANCE_OF, CALL_FUNCTION);
-    }
-    if (CpuFeatures::IsSupported(ISELECT)) {
-      __ cmpi(r3, Operand::Zero());
-      __ LoadRoot(r3, Heap::kTrueValueRootIndex);
-      __ LoadRoot(r4, Heap::kFalseValueRootIndex);
-      __ isel(eq, r3, r3, r4);
-    } else {
-      Label true_value, done;
-      __ cmpi(r3, Operand::Zero());
-      __ beq(&true_value);
-
-      __ LoadRoot(r3, Heap::kFalseValueRootIndex);
-      __ b(&done);
-
-      __ bind(&true_value);
-      __ LoadRoot(r3, Heap::kTrueValueRootIndex);
-
-      __ bind(&done);
-    }
-    __ Ret(HasArgsInRegisters() ? 0 : 2);
-  }
+  // Slow-case: Call the runtime function.
+  __ bind(&slow_case);
+  __ Push(object, function);
+  __ TailCallRuntime(Runtime::kInstanceOf, 2, 1);
 }
 
 
@@ -2093,32 +1986,6 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // Do the runtime call to allocate the arguments object.
   __ bind(&runtime);
   __ TailCallRuntime(Runtime::kNewStrictArguments, 3, 1);
-}
-
-
-void RestParamAccessStub::GenerateNew(MacroAssembler* masm) {
-  // Stack layout on entry.
-  //  sp[0] : language mode
-  //  sp[4] : index of rest parameter
-  //  sp[8] : number of parameters
-  //  sp[12] : receiver displacement
-
-  Label runtime;
-  __ LoadP(r5, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-  __ LoadP(r6, MemOperand(r5, StandardFrameConstants::kContextOffset));
-  __ CmpSmiLiteral(r6, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR), r0);
-  __ bne(&runtime);
-
-  // Patch the arguments.length and the parameters pointer.
-  __ LoadP(r4, MemOperand(r5, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ StoreP(r4, MemOperand(sp, 2 * kPointerSize));
-  __ SmiToPtrArrayOffset(r6, r4);
-  __ add(r6, r5, r6);
-  __ addi(r6, r6, Operand(StandardFrameConstants::kCallerSPOffset));
-  __ StoreP(r6, MemOperand(sp, 3 * kPointerSize));
-
-  __ bind(&runtime);
-  __ TailCallRuntime(Runtime::kNewRestParam, 4, 1);
 }
 
 
@@ -2712,7 +2579,7 @@ static void EmitSlowCase(MacroAssembler* masm, int argc, Label* non_function) {
   __ push(r4);  // put proxy as additional argument
   __ li(r3, Operand(argc + 1));
   __ li(r5, Operand::Zero());
-  __ GetBuiltinFunction(r4, Builtins::CALL_FUNCTION_PROXY);
+  __ GetBuiltinFunction(r4, Context::CALL_FUNCTION_PROXY_BUILTIN_INDEX);
   {
     Handle<Code> adaptor =
         masm->isolate()->builtins()->ArgumentsAdaptorTrampoline();
@@ -2725,7 +2592,7 @@ static void EmitSlowCase(MacroAssembler* masm, int argc, Label* non_function) {
   __ StoreP(r4, MemOperand(sp, argc * kPointerSize), r0);
   __ li(r3, Operand(argc));  // Set up the number of arguments.
   __ li(r5, Operand::Zero());
-  __ GetBuiltinFunction(r4, Builtins::CALL_NON_FUNCTION);
+  __ GetBuiltinFunction(r4, Context::CALL_NON_FUNCTION_BUILTIN_INDEX);
   __ Jump(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
           RelocInfo::CODE_TARGET);
 }
@@ -2870,11 +2737,13 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(JS_FUNCTION_PROXY_TYPE < 0xffffu);
   __ cmpi(r8, Operand(JS_FUNCTION_PROXY_TYPE));
   __ bne(&non_function_call);
-  __ GetBuiltinFunction(r4, Builtins::CALL_FUNCTION_PROXY_AS_CONSTRUCTOR);
+  __ GetBuiltinFunction(
+      r4, Context::CALL_FUNCTION_PROXY_AS_CONSTRUCTOR_BUILTIN_INDEX);
   __ b(&do_call);
 
   __ bind(&non_function_call);
-  __ GetBuiltinFunction(r4, Builtins::CALL_NON_FUNCTION_AS_CONSTRUCTOR);
+  __ GetBuiltinFunction(
+      r4, Context::CALL_NON_FUNCTION_AS_CONSTRUCTOR_BUILTIN_INDEX);
   __ bind(&do_call);
   // Set expected number of arguments to zero (not changing r3).
   __ li(r5, Operand::Zero());
@@ -3511,15 +3380,10 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ blr();
   __ bind(&not_smi);
 
-  Label not_heap_number;
-  __ LoadP(r4, FieldMemOperand(r3, HeapObject::kMapOffset));
-  __ lbz(r4, FieldMemOperand(r4, Map::kInstanceTypeOffset));
-  // r3: object
-  // r4: instance type.
-  __ cmpi(r4, Operand(HEAP_NUMBER_TYPE));
-  __ bne(&not_heap_number);
-  __ blr();
-  __ bind(&not_heap_number);
+  __ CompareObjectType(r3, r4, r4, HEAP_NUMBER_TYPE);
+  // r3: receiver
+  // r4: receiver instance type
+  __ Ret(eq);
 
   Label not_string, slow_string;
   __ cmpli(r4, Operand(FIRST_NONSTRING_TYPE));
@@ -3543,7 +3407,37 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ bind(&not_oddball);
 
   __ push(r3);  // Push argument.
-  __ InvokeBuiltin(Builtins::TO_NUMBER, JUMP_FUNCTION);
+  __ TailCallRuntime(Runtime::kToNumber, 1, 1);
+}
+
+
+void ToStringStub::Generate(MacroAssembler* masm) {
+  // The ToString stub takes one argument in r3.
+  Label is_number;
+  __ JumpIfSmi(r3, &is_number);
+
+  __ CompareObjectType(r3, r4, r4, FIRST_NONSTRING_TYPE);
+  // r3: receiver
+  // r4: receiver instance type
+  __ Ret(lt);
+
+  Label not_heap_number;
+  __ cmpi(r4, Operand(HEAP_NUMBER_TYPE));
+  __ bne(&not_heap_number);
+  __ bind(&is_number);
+  NumberToStringStub stub(isolate());
+  __ TailCallStub(&stub);
+  __ bind(&not_heap_number);
+
+  Label not_oddball;
+  __ cmpi(r4, Operand(ODDBALL_TYPE));
+  __ bne(&not_oddball);
+  __ LoadP(r3, FieldMemOperand(r3, Oddball::kToStringOffset));
+  __ Ret();
+  __ bind(&not_oddball);
+
+  __ push(r3);  // Push argument.
+  __ TailCallRuntime(Runtime::kToString, 1, 1);
 }
 
 
@@ -4654,11 +4548,10 @@ void LoadICStub::GenerateForTrampoline(MacroAssembler* masm) {
 }
 
 
-static void HandleArrayCases(MacroAssembler* masm, Register receiver,
-                             Register key, Register vector, Register slot,
-                             Register feedback, Register receiver_map,
-                             Register scratch1, Register scratch2,
-                             bool is_polymorphic, Label* miss) {
+static void HandleArrayCases(MacroAssembler* masm, Register feedback,
+                             Register receiver_map, Register scratch1,
+                             Register scratch2, bool is_polymorphic,
+                             Label* miss) {
   // feedback initially contains the feedback array
   Label next_loop, prepare_next;
   Label start_polymorphic;
@@ -4775,8 +4668,7 @@ void LoadICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   __ LoadP(scratch1, FieldMemOperand(feedback, HeapObject::kMapOffset));
   __ CompareRoot(scratch1, Heap::kFixedArrayMapRootIndex);
   __ bne(&not_array);
-  HandleArrayCases(masm, receiver, name, vector, slot, feedback, receiver_map,
-                   scratch1, r10, true, &miss);
+  HandleArrayCases(masm, feedback, receiver_map, scratch1, r10, true, &miss);
 
   __ bind(&not_array);
   __ CompareRoot(feedback, Heap::kmegamorphic_symbolRootIndex);
@@ -4784,7 +4676,7 @@ void LoadICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   Code::Flags code_flags = Code::RemoveTypeAndHolderFromFlags(
       Code::ComputeHandlerFlags(Code::LOAD_IC));
   masm->isolate()->stub_cache()->GenerateProbe(masm, Code::LOAD_IC, code_flags,
-                                               false, receiver, name, feedback,
+                                               receiver, name, feedback,
                                                receiver_map, scratch1, r10);
 
   __ bind(&miss);
@@ -4836,8 +4728,7 @@ void KeyedLoadICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   // We have a polymorphic element handler.
   Label polymorphic, try_poly_name;
   __ bind(&polymorphic);
-  HandleArrayCases(masm, receiver, key, vector, slot, feedback, receiver_map,
-                   scratch1, r10, true, &miss);
+  HandleArrayCases(masm, feedback, receiver_map, scratch1, r10, true, &miss);
 
   __ bind(&not_array);
   // Is it generic?
@@ -4857,8 +4748,7 @@ void KeyedLoadICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   __ add(feedback, vector, r0);
   __ LoadP(feedback,
            FieldMemOperand(feedback, FixedArray::kHeaderSize + kPointerSize));
-  HandleArrayCases(masm, receiver, key, vector, slot, feedback, receiver_map,
-                   scratch1, r10, false, &miss);
+  HandleArrayCases(masm, feedback, receiver_map, scratch1, r10, false, &miss);
 
   __ bind(&miss);
   KeyedLoadIC::GenerateMiss(masm);

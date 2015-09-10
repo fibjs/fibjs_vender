@@ -174,7 +174,7 @@ Handle<Code> CodeStub::GetCode() {
               Handle<UnseededNumberDictionary>(heap->code_stubs()),
               GetKey(),
               new_object);
-      heap->public_set_code_stubs(*dict);
+      heap->SetRootCodeStubs(*dict);
     }
     code = *new_object;
   }
@@ -187,8 +187,7 @@ Handle<Code> CodeStub::GetCode() {
 }
 
 
-const char* CodeStub::MajorName(CodeStub::Major major_key,
-                                bool allow_unknown_keys) {
+const char* CodeStub::MajorName(CodeStub::Major major_key) {
   switch (major_key) {
 #define DEF_CASE(name) case name: return #name "Stub";
     CODE_STUB_LIST(DEF_CASE)
@@ -204,7 +203,7 @@ const char* CodeStub::MajorName(CodeStub::Major major_key,
 
 
 void CodeStub::PrintBaseName(std::ostream& os) const {  // NOLINT
-  os << MajorName(MajorKey(), false);
+  os << MajorName(MajorKey());
 }
 
 
@@ -481,7 +480,7 @@ Handle<JSFunction> GetFunction(Isolate* isolate, const char* name) {
 
 Handle<Code> TurboFanCodeStub::GenerateCode() {
   // Get the outer ("stub generator") function.
-  const char* name = CodeStub::MajorName(MajorKey(), false);
+  const char* name = CodeStub::MajorName(MajorKey());
   Handle<JSFunction> outer = GetFunction(isolate(), name);
   DCHECK_EQ(2, outer->shared()->length());
 
@@ -496,15 +495,7 @@ Handle<Code> TurboFanCodeStub::GenerateCode() {
   // Just to make sure nobody calls this...
   inner->set_code(isolate()->builtins()->builtin(Builtins::kIllegal));
 
-  Zone zone;
-  // Build a "hybrid" CompilationInfo for a JSFunction/CodeStub pair.
-  ParseInfo parse_info(&zone, inner);
-  CompilationInfo info(&parse_info);
-  info.SetFunctionType(GetCallInterfaceDescriptor().GetFunctionType());
-  info.MarkAsContextSpecializing();
-  info.MarkAsDeoptimizationEnabled();
-  info.SetStub(this);
-  return info.GenerateCodeStub();
+  return Compiler::GetStubCode(inner, this).ToHandleChecked();
 }
 
 
@@ -603,14 +594,6 @@ void CallICStub::PrintState(std::ostream& os) const {  // NOLINT
 }
 
 
-void InstanceofStub::PrintName(std::ostream& os) const {  // NOLINT
-  os << "InstanceofStub";
-  if (HasArgsInRegisters()) os << "_REGS";
-  if (HasCallSiteInlineCheck()) os << "_INLINE";
-  if (ReturnTrueFalseObject()) os << "_TRUEFALSE";
-}
-
-
 void JSEntryStub::FinishCode(Handle<Code> code) {
   Handle<FixedArray> handler_table =
       code->GetIsolate()->factory()->NewFixedArray(1, TENURED);
@@ -653,7 +636,8 @@ CallInterfaceDescriptor HandlerStub::GetCallInterfaceDescriptor() const {
     return LoadWithVectorDescriptor(isolate());
   } else {
     DCHECK(kind() == Code::STORE_IC || kind() == Code::KEYED_STORE_IC);
-    return StoreDescriptor(isolate());
+    return FLAG_vector_stores ? VectorStoreICDescriptor(isolate())
+                              : StoreDescriptor(isolate());
   }
 }
 
@@ -679,6 +663,18 @@ void ToObjectStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
 
 CallInterfaceDescriptor StoreTransitionStub::GetCallInterfaceDescriptor()
     const {
+  if (FLAG_vector_stores) {
+    return VectorStoreTransitionDescriptor(isolate());
+  }
+  return StoreTransitionDescriptor(isolate());
+}
+
+
+CallInterfaceDescriptor
+ElementsTransitionAndStoreStub::GetCallInterfaceDescriptor() const {
+  if (FLAG_vector_stores) {
+    return VectorStoreTransitionDescriptor(isolate());
+  }
   return StoreTransitionDescriptor(isolate());
 }
 
@@ -862,11 +858,6 @@ void ArgumentsAccessStub::Generate(MacroAssembler* masm) {
 }
 
 
-void RestParamAccessStub::Generate(MacroAssembler* masm) {
-  GenerateNew(masm);
-}
-
-
 void ArgumentsAccessStub::PrintName(std::ostream& os) const {  // NOLINT
   os << "ArgumentsAccessStub_";
   switch (type()) {
@@ -884,11 +875,6 @@ void ArgumentsAccessStub::PrintName(std::ostream& os) const {  // NOLINT
       break;
   }
   return;
-}
-
-
-void RestParamAccessStub::PrintName(std::ostream& os) const {  // NOLINT
-  os << "RestParamAccessStub_";
 }
 
 

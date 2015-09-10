@@ -22,6 +22,7 @@
 #include "src/compiler/schedule.h"
 #include "src/compiler/simplified-operator.h"
 #include "src/ostreams.h"
+#include "src/types-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -590,7 +591,7 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
     case IrOpcode::kJSForInNext: {
-      CheckUpperIs(node, Type::Union(Type::Name(), Type::Undefined()));
+      CheckUpperIs(node, Type::Union(Type::Name(), Type::Undefined(), zone));
       break;
     }
     case IrOpcode::kJSForInStep: {
@@ -680,10 +681,6 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
     case IrOpcode::kObjectIsSmi:
-      CheckValueInputIs(node, 0, Type::Any());
-      CheckUpperIs(node, Type::Boolean());
-      break;
-    case IrOpcode::kObjectIsNonNegativeSmi:
       CheckValueInputIs(node, 0, Type::Any());
       CheckUpperIs(node, Type::Boolean());
       break;

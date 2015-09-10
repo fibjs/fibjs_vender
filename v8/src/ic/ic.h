@@ -122,6 +122,11 @@ class IC {
   // Configure the vector for POLYMORPHIC.
   void ConfigureVectorState(Handle<Name> name, MapHandleList* maps,
                             CodeHandleList* handlers);
+  // Configure the vector for POLYMORPHIC with transitions (only for element
+  // keyed stores).
+  void ConfigureVectorState(MapHandleList* maps,
+                            MapHandleList* transitioned_maps,
+                            CodeHandleList* handlers);
 
   char TransitionMarkFromState(IC::State state);
   void TraceIC(const char* type, Handle<Object> name);
@@ -525,9 +530,9 @@ class KeyedStoreIC : public StoreIC {
   // When more language modes are added, these BitFields need to move too.
   STATIC_ASSERT(i::LANGUAGE_END == 3);
   class ExtraICStateKeyedAccessStoreMode
-      : public BitField<KeyedAccessStoreMode, 3, 4> {};  // NOLINT
+      : public BitField<KeyedAccessStoreMode, 3, 3> {};  // NOLINT
 
-  class IcCheckTypeField : public BitField<IcCheckType, 7, 1> {};
+  class IcCheckTypeField : public BitField<IcCheckType, 6, 1> {};
 
   static ExtraICState ComputeExtraICState(LanguageMode flag,
                                           KeyedAccessStoreMode mode) {
@@ -538,10 +543,17 @@ class KeyedStoreIC : public StoreIC {
 
   static KeyedAccessStoreMode GetKeyedAccessStoreMode(
       ExtraICState extra_state) {
+    DCHECK(!FLAG_vector_stores);
     return ExtraICStateKeyedAccessStoreMode::decode(extra_state);
   }
 
+  KeyedAccessStoreMode GetKeyedAccessStoreMode() {
+    DCHECK(FLAG_vector_stores);
+    return casted_nexus<KeyedStoreICNexus>()->GetKeyedAccessStoreMode();
+  }
+
   static IcCheckType GetKeyType(ExtraICState extra_state) {
+    DCHECK(!FLAG_vector_stores);
     return IcCheckTypeField::decode(extra_state);
   }
 
@@ -571,6 +583,8 @@ class KeyedStoreIC : public StoreIC {
 
   static Handle<Code> initialize_stub_in_optimized_code(
       Isolate* isolate, LanguageMode language_mode, State initialization_state);
+  static Handle<Code> ChooseMegamorphicStub(Isolate* isolate,
+                                            ExtraICState extra_state);
 
   static void Clear(Isolate* isolate, Code* host, KeyedStoreICNexus* nexus);
 
@@ -587,7 +601,7 @@ class KeyedStoreIC : public StoreIC {
     }
   }
 
-  Handle<Code> StoreElementStub(Handle<JSObject> receiver,
+  Handle<Code> StoreElementStub(Handle<Map> receiver_map,
                                 KeyedAccessStoreMode store_mode);
 
  private:
@@ -599,6 +613,8 @@ class KeyedStoreIC : public StoreIC {
   Handle<Map> ComputeTransitionedMap(Handle<Map> map,
                                      KeyedAccessStoreMode store_mode);
 
+  void ValidateStoreMode(Handle<Code> stub);
+
   friend class IC;
 };
 
@@ -608,8 +624,7 @@ class BinaryOpIC : public IC {
  public:
   explicit BinaryOpIC(Isolate* isolate) : IC(EXTRA_CALL_FRAME, isolate) {}
 
-  static Builtins::JavaScript TokenToJSBuiltin(Token::Value op,
-                                               Strength strength);
+  static int TokenToContextIndex(Token::Value op, Strength strength);
 
   MaybeHandle<Object> Transition(Handle<AllocationSite> allocation_site,
                                  Handle<Object> left,

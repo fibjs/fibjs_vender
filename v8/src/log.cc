@@ -1606,8 +1606,7 @@ void Logger::LogCodeObject(Object* object) {
     case Code::COMPARE_NIL_IC:   // fall through
     case Code::TO_BOOLEAN_IC:  // fall through
     case Code::STUB:
-      description =
-          CodeStub::MajorName(CodeStub::GetMajorKey(code_object), true);
+      description = CodeStub::MajorName(CodeStub::GetMajorKey(code_object));
       if (description == NULL)
         description = "A stub from the snapshot";
       tag = Logger::STUB_TAG;
@@ -1643,6 +1642,10 @@ void Logger::LogCodeObject(Object* object) {
     case Code::KEYED_STORE_IC:
       description = "A keyed store IC from the snapshot";
       tag = Logger::KEYED_STORE_IC_TAG;
+      break;
+    case Code::PLACEHOLDER:
+      description = "A placeholder for linking later code";
+      tag = Logger::STUB_TAG;
       break;
     case Code::NUMBER_OF_KINDS:
       break;

@@ -8,9 +8,13 @@ namespace v8 {
 namespace internal {
 namespace interpreter {
 
-BytecodeArrayBuilder::BytecodeArrayBuilder(Isolate* isolate)
+BytecodeArrayBuilder::BytecodeArrayBuilder(Isolate* isolate, Zone* zone)
     : isolate_(isolate),
+      bytecodes_(zone),
       bytecode_generated_(false),
+      constants_map_(isolate->heap(), zone),
+      constants_(zone),
+      parameter_count_(-1),
       local_register_count_(-1),
       temporary_register_count_(0),
       temporary_register_next_(0) {}
@@ -25,14 +29,40 @@ void BytecodeArrayBuilder::set_locals_count(int number_of_locals) {
 int BytecodeArrayBuilder::locals_count() const { return local_register_count_; }
 
 
+void BytecodeArrayBuilder::set_parameter_count(int number_of_parameters) {
+  parameter_count_ = number_of_parameters;
+}
+
+
+int BytecodeArrayBuilder::parameter_count() const { return parameter_count_; }
+
+
+Register BytecodeArrayBuilder::Parameter(int parameter_index) {
+  DCHECK_GE(parameter_index, 0);
+  DCHECK_LT(parameter_index, parameter_count_);
+  return Register::FromParameterIndex(parameter_index, parameter_count_);
+}
+
+
 Handle<BytecodeArray> BytecodeArrayBuilder::ToBytecodeArray() {
   DCHECK_EQ(bytecode_generated_, false);
+  DCHECK_GE(parameter_count_, 0);
   DCHECK_GE(local_register_count_, 0);
   int bytecode_size = static_cast<int>(bytecodes_.size());
   int register_count = local_register_count_ + temporary_register_count_;
   int frame_size = register_count * kPointerSize;
-  Handle<BytecodeArray> output = isolate_->factory()->NewBytecodeArray(
-      bytecode_size, &bytecodes_.front(), frame_size);
+
+  Factory* factory = isolate_->factory();
+  int constants_count = static_cast<int>(constants_.size());
+  Handle<FixedArray> constant_pool =
+      factory->NewFixedArray(constants_count, TENURED);
+  for (int i = 0; i < constants_count; i++) {
+    constant_pool->set(i, *constants_[i]);
+  }
+
+  Handle<BytecodeArray> output =
+      factory->NewBytecodeArray(bytecode_size, &bytecodes_.front(), frame_size,
+                                parameter_count_, constant_pool);
   bytecode_generated_ = true;
   return output;
 }
@@ -53,7 +83,17 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadLiteral(
   } else if (raw_smi >= -128 && raw_smi <= 127) {
     Output(Bytecode::kLdaSmi8, static_cast<uint8_t>(raw_smi));
   } else {
-    // TODO(oth): Put Smi in constant pool.
+    LoadLiteral(Handle<Object>(smi, isolate_));
+  }
+  return *this;
+}
+
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::LoadLiteral(Handle<Object> object) {
+  size_t entry = GetConstantPoolEntry(object);
+  if (FitsInByteOperand(entry)) {
+    Output(Bytecode::kLdaConstant, static_cast<uint8_t>(entry));
+  } else {
     UNIMPLEMENTED();
   }
   return *this;
@@ -104,9 +144,61 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreAccumulatorInRegister(
 }
 
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::LoadNamedProperty(
+    Register object, int feedback_slot, LanguageMode language_mode) {
+  if (is_strong(language_mode)) {
+    UNIMPLEMENTED();
+  }
+
+  if (FitsInByteOperand(feedback_slot)) {
+    Output(Bytecode::kLoadIC, object.ToOperand(),
+           static_cast<uint8_t>(feedback_slot));
+  } else {
+    UNIMPLEMENTED();
+  }
+  return *this;
+}
+
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::LoadKeyedProperty(
+    Register object, int feedback_slot, LanguageMode language_mode) {
+  if (is_strong(language_mode)) {
+    UNIMPLEMENTED();
+  }
+
+  if (FitsInByteOperand(feedback_slot)) {
+    Output(Bytecode::kKeyedLoadIC, object.ToOperand(),
+           static_cast<uint8_t>(feedback_slot));
+  } else {
+    UNIMPLEMENTED();
+  }
+  return *this;
+}
+
+
 BytecodeArrayBuilder& BytecodeArrayBuilder::Return() {
   Output(Bytecode::kReturn);
   return *this;
+}
+
+
+size_t BytecodeArrayBuilder::GetConstantPoolEntry(Handle<Object> object) {
+  // These constants shouldn't be added to the constant pool, the should use
+  // specialzed bytecodes instead.
+  DCHECK(!object.is_identical_to(isolate_->factory()->undefined_value()));
+  DCHECK(!object.is_identical_to(isolate_->factory()->null_value()));
+  DCHECK(!object.is_identical_to(isolate_->factory()->the_hole_value()));
+  DCHECK(!object.is_identical_to(isolate_->factory()->true_value()));
+  DCHECK(!object.is_identical_to(isolate_->factory()->false_value()));
+
+  size_t* entry = constants_map_.Find(object);
+  if (!entry) {
+    entry = constants_map_.Get(object);
+    *entry = constants_.size();
+    constants_.push_back(object);
+  }
+  DCHECK(constants_[*entry].is_identical_to(object));
+  return *entry;
 }
 
 
@@ -134,10 +226,17 @@ bool BytecodeArrayBuilder::OperandIsValid(Bytecode bytecode, int operand_index,
     case OperandType::kNone:
       return false;
     case OperandType::kImm8:
+    case OperandType::kIdx:
       return true;
-    case OperandType::kReg:
-      return Register::FromOperand(operand_value).index() <
-             temporary_register_next_;
+    case OperandType::kReg: {
+      Register reg = Register::FromOperand(operand_value);
+      if (reg.is_parameter()) {
+        int parameter_index = reg.ToParameterIndex(parameter_count_);
+        return parameter_index >= 0 && parameter_index < parameter_count_;
+      } else {
+        return (reg.index() >= 0 && reg.index() < temporary_register_next_);
+      }
+    }
   }
   UNREACHABLE();
   return false;
@@ -193,10 +292,24 @@ Bytecode BytecodeArrayBuilder::BytecodeForBinaryOperation(Token::Value op) {
       return Bytecode::kMul;
     case Token::Value::DIV:
       return Bytecode::kDiv;
+    case Token::Value::MOD:
+      return Bytecode::kMod;
     default:
       UNIMPLEMENTED();
       return static_cast<Bytecode>(-1);
   }
+}
+
+
+// static
+bool BytecodeArrayBuilder::FitsInByteOperand(int value) {
+  return 0 <= value && value <= 255;
+}
+
+
+// static
+bool BytecodeArrayBuilder::FitsInByteOperand(size_t value) {
+  return value <= 255;
 }
 
 
