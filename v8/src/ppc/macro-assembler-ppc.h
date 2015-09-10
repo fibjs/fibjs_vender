@@ -18,9 +18,11 @@ const Register kReturnRegister0 = {kRegister_r3_Code};
 const Register kReturnRegister1 = {kRegister_r4_Code};
 const Register kJSFunctionRegister = {kRegister_r4_Code};
 const Register kContextRegister = {kRegister_r30_Code};
-const Register kInterpreterBytecodeOffsetRegister = {kRegister_r14_Code};
-const Register kInterpreterBytecodeArrayRegister = {kRegister_r15_Code};
-const Register kInterpreterDispatchTableRegister = {kRegister_r16_Code};
+const Register kInterpreterAccumulatorRegister = {kRegister_r3_Code};
+const Register kInterpreterRegisterFileRegister = {kRegister_r14_Code};
+const Register kInterpreterBytecodeOffsetRegister = {kRegister_r15_Code};
+const Register kInterpreterBytecodeArrayRegister = {kRegister_r16_Code};
+const Register kInterpreterDispatchTableRegister = {kRegister_r17_Code};
 const Register kRuntimeCallFunctionRegister = {kRegister_r4_Code};
 const Register kRuntimeCallArgCountRegister = {kRegister_r3_Code};
 
@@ -547,11 +549,6 @@ class MacroAssembler : public Assembler {
                       const ParameterCount& actual, InvokeFlag flag,
                       const CallWrapper& call_wrapper);
 
-  void IsObjectJSObjectType(Register heap_object, Register map,
-                            Register scratch, Label* fail);
-
-  void IsInstanceJSObjectType(Register map, Register scratch, Label* fail);
-
   void IsObjectJSStringType(Register object, Register scratch, Label* fail);
 
   void IsObjectNameType(Register object, Register scratch, Label* fail);
@@ -702,8 +699,7 @@ class MacroAssembler : public Assembler {
   // function register will be untouched; the other registers may be
   // clobbered.
   void TryGetFunctionPrototype(Register function, Register result,
-                               Register scratch, Label* miss,
-                               bool miss_on_bound_function = false);
+                               Register scratch, Label* miss);
 
   // Compare object type for heap object.  heap_object contains a non-Smi
   // whose object type should be compared with the given type.  This both
@@ -715,13 +711,6 @@ class MacroAssembler : public Assembler {
   // Type_reg can be no_reg. In that case ip is used.
   void CompareObjectType(Register heap_object, Register map, Register type_reg,
                          InstanceType type);
-
-  // Compare object type for heap object. Branch to false_label if type
-  // is lower than min_type or greater than max_type.
-  // Load map into the register map.
-  void CheckObjectTypeRange(Register heap_object, Register map,
-                            InstanceType min_type, InstanceType max_type,
-                            Label* false_label);
 
   // Compare instance type in a map.  map contains a valid map object whose
   // object type should be compared with the given type.  This both
@@ -886,21 +875,9 @@ class MacroAssembler : public Assembler {
 
   void BranchOnNoOverflow(Label* label) { bge(label, cr0); }
 
-  void RetOnOverflow(void) {
-    Label label;
+  void RetOnOverflow(void) { Ret(lt, cr0); }
 
-    blt(&label, cr0);
-    Ret();
-    bind(&label);
-  }
-
-  void RetOnNoOverflow(void) {
-    Label label;
-
-    bge(&label, cr0);
-    Ret();
-    bind(&label);
-  }
+  void RetOnNoOverflow(void) { Ret(ge, cr0); }
 
   // ---------------------------------------------------------------------------
   // Runtime calls
@@ -982,17 +959,16 @@ class MacroAssembler : public Assembler {
   // Jump to a runtime routine.
   void JumpToExternalReference(const ExternalReference& builtin);
 
-  // Invoke specified builtin JavaScript function. Adds an entry to
-  // the unresolved list if the name does not resolve.
-  void InvokeBuiltin(Builtins::JavaScript id, InvokeFlag flag,
+  // Invoke specified builtin JavaScript function.
+  void InvokeBuiltin(int native_context_index, InvokeFlag flag,
                      const CallWrapper& call_wrapper = NullCallWrapper());
 
   // Store the code object for the given builtin in the target register and
   // setup the function in r1.
-  void GetBuiltinEntry(Register target, Builtins::JavaScript id);
+  void GetBuiltinEntry(Register target, int native_context_index);
 
   // Store the function for the given builtin in the target register.
-  void GetBuiltinFunction(Register target, Builtins::JavaScript id);
+  void GetBuiltinFunction(Register target, int native_context_index);
 
   Handle<Object> CodeObject() {
     DCHECK(!code_object_.is_null());
@@ -1375,11 +1351,6 @@ class MacroAssembler : public Assembler {
   // Decode offset from constant pool load instruction(s).
   // Caller must place the instruction word at <location> in <result>.
   void DecodeConstantPoolOffset(Register result, Register location);
-
-  // Retrieve/patch the relocated value (lis/ori pair or constant pool load).
-  void GetRelocatedValue(Register location, Register result, Register scratch);
-  void SetRelocatedValue(Register location, Register scratch,
-                         Register new_value);
 
   void ClampUint8(Register output_reg, Register input_reg);
 

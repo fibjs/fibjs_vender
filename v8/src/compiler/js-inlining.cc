@@ -6,6 +6,7 @@
 
 #include "src/ast.h"
 #include "src/ast-numbering.h"
+#include "src/compiler.h"
 #include "src/compiler/all-nodes.h"
 #include "src/compiler/ast-graph-builder.h"
 #include "src/compiler/common-operator.h"
@@ -243,9 +244,8 @@ Reduction JSInliner::Reduce(Node* node) {
   HeapObjectMatcher match(call.jsfunction());
   if (!match.HasValue()) return NoChange();
 
-  if (!match.Value().handle()->IsJSFunction()) return NoChange();
-  Handle<JSFunction> function =
-      Handle<JSFunction>::cast(match.Value().handle());
+  if (!match.Value()->IsJSFunction()) return NoChange();
+  Handle<JSFunction> function = Handle<JSFunction>::cast(match.Value());
   if (mode_ == kRestrictedInlining && !function->shared()->force_inline()) {
     return NoChange();
   }

@@ -374,6 +374,14 @@ class SlotsBuffer {
     return buffer != NULL && buffer->chain_length_ >= kChainLengthThreshold;
   }
 
+  INLINE(static bool AddToSynchronized(SlotsBufferAllocator* allocator,
+                                       SlotsBuffer** buffer_address,
+                                       base::Mutex* buffer_mutex,
+                                       ObjectSlot slot, AdditionMode mode)) {
+    base::LockGuard<base::Mutex> lock_guard(buffer_mutex);
+    return AddTo(allocator, buffer_address, slot, mode);
+  }
+
   INLINE(static bool AddTo(SlotsBufferAllocator* allocator,
                            SlotsBuffer** buffer_address, ObjectSlot slot,
                            AdditionMode mode)) {
@@ -391,6 +399,11 @@ class SlotsBuffer {
   }
 
   static bool IsTypedSlot(ObjectSlot slot);
+
+  static bool AddToSynchronized(SlotsBufferAllocator* allocator,
+                                SlotsBuffer** buffer_address,
+                                base::Mutex* buffer_mutex, SlotType type,
+                                Address addr, AdditionMode mode);
 
   static bool AddTo(SlotsBufferAllocator* allocator,
                     SlotsBuffer** buffer_address, SlotType type, Address addr,
@@ -504,9 +517,6 @@ class ThreadLocalTop;
 // Mark-Compact collector
 class MarkCompactCollector {
  public:
-  // Set the global flags, it must be called before Prepare to take effect.
-  inline void SetFlags(int flags);
-
   static void Initialize();
 
   void SetUp();
@@ -562,6 +572,7 @@ class MarkCompactCollector {
   enum SweepingParallelism { SWEEP_ON_MAIN_THREAD, SWEEP_IN_PARALLEL };
 
 #ifdef VERIFY_HEAP
+  void VerifyValidStoreAndSlotsBufferEntries();
   void VerifyMarkbitsAreClean();
   static void VerifyMarkbitsAreClean(PagedSpace* space);
   static void VerifyMarkbitsAreClean(NewSpace* space);
@@ -599,12 +610,6 @@ class MarkCompactCollector {
   void InvalidateCode(Code* code);
 
   void ClearMarkbits();
-
-  bool abort_incremental_marking() const { return abort_incremental_marking_; }
-
-  bool finalize_incremental_marking() const {
-    return finalize_incremental_marking_;
-  }
 
   bool is_compacting() const { return compacting_; }
 
@@ -677,6 +682,7 @@ class MarkCompactCollector {
   void RemoveObjectSlots(Address start_slot, Address end_slot);
 
  private:
+  class CompactionTask;
   class SweeperTask;
 
   explicit MarkCompactCollector(Heap* heap);
@@ -703,12 +709,6 @@ class MarkCompactCollector {
   CollectorState state_;
 #endif
 
-  bool reduce_memory_footprint_;
-
-  bool abort_incremental_marking_;
-
-  bool finalize_incremental_marking_;
-
   MarkingParity marking_parity_;
 
   // True if we are collecting slots to perform evacuation from evacuation
@@ -720,13 +720,22 @@ class MarkCompactCollector {
   // True if concurrent or parallel sweeping is currently in progress.
   bool sweeping_in_progress_;
 
+  // True if parallel compaction is currently in progress.
+  bool parallel_compaction_in_progress_;
+
+  // Synchronize sweeper threads.
   base::Semaphore pending_sweeper_jobs_semaphore_;
+
+  // Synchronize compaction threads.
+  base::Semaphore pending_compaction_jobs_semaphore_;
 
   bool evacuation_;
 
   SlotsBufferAllocator slots_buffer_allocator_;
 
   SlotsBuffer* migration_slots_buffer_;
+
+  base::Mutex migration_slots_buffer_mutex_;
 
   // Finishes GC, performs heap verification if enabled.
   void Finish();
@@ -880,6 +889,10 @@ class MarkCompactCollector {
 
   void EvacuatePages();
 
+  void EvacuatePagesInParallel();
+
+  void WaitUntilCompactionCompleted();
+
   void EvacuateNewSpaceAndCandidates();
 
   void ReleaseEvacuationCandidates();
@@ -898,6 +911,12 @@ class MarkCompactCollector {
 
   // Updates store buffer and slot buffer for a pointer in a migrating object.
   void RecordMigratedSlot(Object* value, Address slot);
+
+  // Adds the code entry slot to the slots buffer.
+  void RecordMigratedCodeEntrySlot(Address code_entry, Address code_entry_slot);
+
+  // Adds the slot of a moved code object.
+  void RecordMigratedCodeObjectSlot(Address code_object);
 
 #ifdef DEBUG
   friend class MarkObjectVisitor;

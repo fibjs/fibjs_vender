@@ -526,7 +526,7 @@ static void Generate_CheckStackOverflow(MacroAssembler* masm,
     __ SmiTag(eax);
   }
   __ push(eax);
-  __ InvokeBuiltin(Builtins::STACK_OVERFLOW, CALL_FUNCTION);
+  __ InvokeBuiltin(Context::STACK_OVERFLOW_BUILTIN_INDEX, CALL_FUNCTION);
 
   __ bind(&okay);
 }
@@ -664,7 +664,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
         ExternalReference::address_of_real_stack_limit(masm->isolate());
     __ cmp(ecx, Operand::StaticVariable(stack_limit));
     __ j(above_equal, &ok);
-    __ InvokeBuiltin(Builtins::STACK_OVERFLOW, CALL_FUNCTION);
+    __ InvokeBuiltin(Context::STACK_OVERFLOW_BUILTIN_INDEX, CALL_FUNCTION);
     __ bind(&ok);
 
     // If ok, push undefined as the initial value for all register file entries.
@@ -729,8 +729,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ add(kInterpreterDispatchTableRegister,
          Immediate(FixedArray::kHeaderSize - kHeapObjectTag));
 
-  // TODO(rmcilroy) Push our context as a stack located parameter of the
-  // bytecode handler.
+  // Push context as a stack located parameter to the bytecode handler.
+  DCHECK_EQ(-1, kInterpreterContextSpillSlot);
+  __ push(esi);
 
   // Dispatch to the first bytecode handler for the function.
   __ movzx_b(esi, Operand(kInterpreterBytecodeArrayRegister,
@@ -755,9 +756,14 @@ void Builtins::Generate_InterpreterExitTrampoline(MacroAssembler* masm) {
 
   // Leave the frame (also dropping the register file).
   __ leave();
-  // Return droping receiver + arguments.
-  // TODO(rmcilroy): Get number of arguments from BytecodeArray.
-  __ Ret(1 * kPointerSize, ecx);
+
+  // Drop receiver + arguments and return.
+  __ mov(ebx, FieldOperand(kInterpreterBytecodeArrayRegister,
+                           BytecodeArray::kParameterSizeOffset));
+  __ pop(ecx);
+  __ add(esp, ebx);
+  __ push(ecx);
+  __ ret(0);
 }
 
 
@@ -1084,12 +1090,12 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ push(edi);  // re-add proxy object as additional argument
     __ push(edx);
     __ inc(eax);
-    __ GetBuiltinEntry(edx, Builtins::CALL_FUNCTION_PROXY);
+    __ GetBuiltinEntry(edx, Context::CALL_FUNCTION_PROXY_BUILTIN_INDEX);
     __ jmp(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
            RelocInfo::CODE_TARGET);
 
     __ bind(&non_proxy);
-    __ GetBuiltinEntry(edx, Builtins::CALL_NON_FUNCTION);
+    __ GetBuiltinEntry(edx, Context::CALL_NON_FUNCTION_BUILTIN_INDEX);
     __ jmp(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
            RelocInfo::CODE_TARGET);
     __ bind(&function);
@@ -1186,9 +1192,10 @@ static void Generate_ApplyHelper(MacroAssembler* masm, bool targetIsArgument) {
     __ push(Operand(ebp, kFunctionOffset));  // push this
     __ push(Operand(ebp, kArgumentsOffset));  // push arguments
     if (targetIsArgument) {
-      __ InvokeBuiltin(Builtins::REFLECT_APPLY_PREPARE, CALL_FUNCTION);
+      __ InvokeBuiltin(Context::REFLECT_APPLY_PREPARE_BUILTIN_INDEX,
+                       CALL_FUNCTION);
     } else {
-      __ InvokeBuiltin(Builtins::APPLY_PREPARE, CALL_FUNCTION);
+      __ InvokeBuiltin(Context::APPLY_PREPARE_BUILTIN_INDEX, CALL_FUNCTION);
     }
 
     Generate_CheckStackOverflow(masm, kFunctionOffset, kEaxIsSmiTagged);
@@ -1275,7 +1282,7 @@ static void Generate_ApplyHelper(MacroAssembler* masm, bool targetIsArgument) {
     __ push(edi);  // add function proxy as last argument
     __ inc(eax);
     __ Move(ebx, Immediate(0));
-    __ GetBuiltinEntry(edx, Builtins::CALL_FUNCTION_PROXY);
+    __ GetBuiltinEntry(edx, Context::CALL_FUNCTION_PROXY_BUILTIN_INDEX);
     __ call(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
             RelocInfo::CODE_TARGET);
 
@@ -1320,7 +1327,8 @@ static void Generate_ConstructHelper(MacroAssembler* masm) {
     __ push(Operand(ebp, kFunctionOffset));
     __ push(Operand(ebp, kArgumentsOffset));
     __ push(Operand(ebp, kNewTargetOffset));
-    __ InvokeBuiltin(Builtins::REFLECT_CONSTRUCT_PREPARE, CALL_FUNCTION);
+    __ InvokeBuiltin(Context::REFLECT_CONSTRUCT_PREPARE_BUILTIN_INDEX,
+                     CALL_FUNCTION);
 
     Generate_CheckStackOverflow(masm, kFunctionOffset, kEaxIsSmiTagged);
 
@@ -1523,8 +1531,8 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ push(edi);  // Preserve the function.
-    __ push(eax);
-    __ InvokeBuiltin(Builtins::TO_STRING, CALL_FUNCTION);
+    ToStringStub stub(masm->isolate());
+    __ CallStub(&stub);
     __ pop(edi);
   }
   __ mov(ebx, eax);
@@ -1639,16 +1647,17 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
 
     // Copy receiver and all expected arguments.
     const int offset = StandardFrameConstants::kCallerSPOffset;
-    __ lea(eax, Operand(ebp, eax, times_4, offset));
-    __ mov(edi, -1);  // account for receiver
+    __ lea(edi, Operand(ebp, eax, times_4, offset));
+    __ mov(eax, -1);  // account for receiver
 
     Label copy;
     __ bind(&copy);
-    __ inc(edi);
-    __ push(Operand(eax, 0));
-    __ sub(eax, Immediate(kPointerSize));
-    __ cmp(edi, ebx);
+    __ inc(eax);
+    __ push(Operand(edi, 0));
+    __ sub(edi, Immediate(kPointerSize));
+    __ cmp(eax, ebx);
     __ j(less, &copy);
+    // eax now contains the expected number of arguments.
     __ jmp(&invoke);
   }
 
@@ -1677,6 +1686,9 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ bind(&no_strong_error);
     EnterArgumentsAdaptorFrame(masm);
 
+    // Remember expected arguments in ecx.
+    __ mov(ecx, ebx);
+
     // Copy receiver and all actual arguments.
     const int offset = StandardFrameConstants::kCallerSPOffset;
     __ lea(edi, Operand(ebp, eax, times_4, offset));
@@ -1701,12 +1713,17 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     __ push(Immediate(masm->isolate()->factory()->undefined_value()));
     __ cmp(eax, ebx);
     __ j(less, &fill);
+
+    // Restore expected arguments.
+    __ mov(eax, ecx);
   }
 
   // Call the entry point.
   __ bind(&invoke);
   // Restore function pointer.
   __ mov(edi, Operand(ebp, JavaScriptFrameConstants::kFunctionOffset));
+  // eax : expected number of arguments
+  // edi : function (passed through to callee)
   __ call(edx);
 
   // Store offset of return address for deoptimizer.
@@ -1726,7 +1743,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   {
     FrameScope frame(masm, StackFrame::MANUAL);
     EnterArgumentsAdaptorFrame(masm);
-    __ InvokeBuiltin(Builtins::STACK_OVERFLOW, CALL_FUNCTION);
+    __ InvokeBuiltin(Context::STACK_OVERFLOW_BUILTIN_INDEX, CALL_FUNCTION);
     __ int3();
   }
 }

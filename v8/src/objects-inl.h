@@ -14,7 +14,7 @@
 
 #include "src/base/atomicops.h"
 #include "src/base/bits.h"
-#include "src/contexts.h"
+#include "src/contexts-inl.h"
 #include "src/conversions-inl.h"
 #include "src/factory.h"
 #include "src/field-index-inl.h"
@@ -187,12 +187,18 @@ bool Object::IsUniqueName() const {
 }
 
 
+bool Object::IsCallable() const {
+  return Object::IsHeapObject() && HeapObject::cast(this)->map()->is_callable();
+}
+
+
 bool Object::IsSpecObject() const {
   return Object::IsHeapObject()
     && HeapObject::cast(this)->map()->instance_type() >= FIRST_SPEC_OBJECT_TYPE;
 }
 
 
+// TODO(rossberg): Remove this and use the spec compliant IsCallable instead.
 bool Object::IsSpecFunction() const {
   if (!Object::IsHeapObject()) return false;
   InstanceType type = HeapObject::cast(this)->map()->instance_type();
@@ -698,6 +704,7 @@ TYPE_CHECKER(JSSet, JS_SET_TYPE)
 TYPE_CHECKER(JSMap, JS_MAP_TYPE)
 TYPE_CHECKER(JSSetIterator, JS_SET_ITERATOR_TYPE)
 TYPE_CHECKER(JSMapIterator, JS_MAP_ITERATOR_TYPE)
+TYPE_CHECKER(JSIteratorResult, JS_ITERATOR_RESULT_TYPE)
 TYPE_CHECKER(JSWeakMap, JS_WEAK_MAP_TYPE)
 TYPE_CHECKER(JSWeakSet, JS_WEAK_SET_TYPE)
 TYPE_CHECKER(JSContextExtensionObject, JS_CONTEXT_EXTENSION_OBJECT_TYPE)
@@ -1132,10 +1139,26 @@ bool Object::FitsRepresentation(Representation representation) {
 }
 
 
+// static
 MaybeHandle<JSReceiver> Object::ToObject(Isolate* isolate,
                                          Handle<Object> object) {
   return ToObject(
       isolate, object, handle(isolate->context()->native_context(), isolate));
+}
+
+
+// static
+MaybeHandle<Name> Object::ToName(Isolate* isolate, Handle<Object> input) {
+  if (input->IsName()) return Handle<Name>::cast(input);
+  return ToString(isolate, input);
+}
+
+
+// static
+MaybeHandle<Object> Object::ToPrimitive(Handle<Object> input,
+                                        ToPrimitiveHint hint) {
+  if (input->IsPrimitive()) return input;
+  return JSReceiver::ToPrimitive(Handle<JSReceiver>::cast(input), hint);
 }
 
 
@@ -1477,6 +1500,8 @@ HeapObjectContents HeapObject::ContentType() {
   } else if (type == JS_FUNCTION_TYPE) {
     return HeapObjectContents::kMixedValues;
 #endif
+  } else if (type == BYTECODE_ARRAY_TYPE) {
+    return HeapObjectContents::kMixedValues;
   } else if (type >= FIRST_FIXED_TYPED_ARRAY_TYPE &&
              type <= LAST_FIXED_TYPED_ARRAY_TYPE) {
     return HeapObjectContents::kMixedValues;
@@ -1591,8 +1616,11 @@ SIMD128_TYPES(SIMD128_VALUE_EQUALS)
 
 SIMD128_NUMERIC_LANE_FNS(Float32x4, float, 4, FLOAT, kFloatSize)
 SIMD128_NUMERIC_LANE_FNS(Int32x4, int32_t, 4, INT32, kInt32Size)
+SIMD128_NUMERIC_LANE_FNS(Uint32x4, uint32_t, 4, UINT32, kInt32Size)
 SIMD128_NUMERIC_LANE_FNS(Int16x8, int16_t, 8, INT16, kShortSize)
+SIMD128_NUMERIC_LANE_FNS(Uint16x8, uint16_t, 8, UINT16, kShortSize)
 SIMD128_NUMERIC_LANE_FNS(Int8x16, int8_t, 16, INT8, kCharSize)
+SIMD128_NUMERIC_LANE_FNS(Uint8x16, uint8_t, 16, UINT8, kCharSize)
 #undef SIMD128_NUMERIC_LANE_FNS
 
 
@@ -2123,6 +2151,8 @@ int JSObject::GetHeaderSize() {
       return JSSetIterator::kSize;
     case JS_MAP_ITERATOR_TYPE:
       return JSMapIterator::kSize;
+    case JS_ITERATOR_RESULT_TYPE:
+      return JSIteratorResult::kSize;
     case JS_WEAK_MAP_TYPE:
       return JSWeakMap::kSize;
     case JS_WEAK_SET_TYPE:
@@ -2520,6 +2550,21 @@ int WeakFixedArray::last_used_index() const {
 
 void WeakFixedArray::set_last_used_index(int index) {
   FixedArray::cast(this)->set(kLastUsedIndexIndex, Smi::FromInt(index));
+}
+
+
+template <class T>
+T* WeakFixedArray::Iterator::Next() {
+  if (list_ != NULL) {
+    // Assert that list did not change during iteration.
+    DCHECK_EQ(last_used_index_, list_->last_used_index());
+    while (index_ < list_->Length()) {
+      Object* item = list_->Get(index_++);
+      if (item != Empty()) return T::cast(item);
+    }
+    list_ = NULL;
+  }
+  return NULL;
 }
 
 
@@ -3195,8 +3240,8 @@ int HashTable<Derived, Shape, Key>::FindEntry(Isolate* isolate, Key key,
     Object* element = KeyAt(entry);
     // Empty entry. Uses raw unchecked accessors because it is called by the
     // string table during bootstrapping.
-    if (element == isolate->heap()->raw_unchecked_undefined_value()) break;
-    if (element != isolate->heap()->raw_unchecked_the_hole_value() &&
+    if (element == isolate->heap()->root(Heap::kUndefinedValueRootIndex)) break;
+    if (element != isolate->heap()->root(Heap::kTheHoleValueRootIndex) &&
         Shape::IsMatch(key, element)) return entry;
     entry = NextProbe(entry, count++, capacity);
   }
@@ -3283,6 +3328,7 @@ CAST_ACCESSOR(JSReceiver)
 CAST_ACCESSOR(JSRegExp)
 CAST_ACCESSOR(JSSet)
 CAST_ACCESSOR(JSSetIterator)
+CAST_ACCESSOR(JSIteratorResult)
 CAST_ACCESSOR(JSTypedArray)
 CAST_ACCESSOR(JSValue)
 CAST_ACCESSOR(JSWeakMap)
@@ -3312,6 +3358,9 @@ CAST_ACCESSOR(String)
 CAST_ACCESSOR(StringTable)
 CAST_ACCESSOR(Struct)
 CAST_ACCESSOR(Symbol)
+CAST_ACCESSOR(Uint16x8)
+CAST_ACCESSOR(Uint32x4)
+CAST_ACCESSOR(Uint8x16)
 CAST_ACCESSOR(UnseededNumberDictionary)
 CAST_ACCESSOR(WeakCell)
 CAST_ACCESSOR(WeakFixedArray)
@@ -3488,7 +3537,7 @@ int FreeSpace::Size() { return size(); }
 
 
 FreeSpace* FreeSpace::next() {
-  DCHECK(map() == GetHeap()->raw_unchecked_free_space_map() ||
+  DCHECK(map() == GetHeap()->root(Heap::kFreeSpaceMapRootIndex) ||
          (!GetHeap()->deserialization_complete() && map() == NULL));
   DCHECK_LE(kNextOffset + kPointerSize, nobarrier_size());
   return reinterpret_cast<FreeSpace*>(
@@ -3497,7 +3546,7 @@ FreeSpace* FreeSpace::next() {
 
 
 FreeSpace** FreeSpace::next_address() {
-  DCHECK(map() == GetHeap()->raw_unchecked_free_space_map() ||
+  DCHECK(map() == GetHeap()->root(Heap::kFreeSpaceMapRootIndex) ||
          (!GetHeap()->deserialization_complete() && map() == NULL));
   DCHECK_LE(kNextOffset + kPointerSize, nobarrier_size());
   return reinterpret_cast<FreeSpace**>(address() + kNextOffset);
@@ -3505,7 +3554,7 @@ FreeSpace** FreeSpace::next_address() {
 
 
 void FreeSpace::set_next(FreeSpace* next) {
-  DCHECK(map() == GetHeap()->raw_unchecked_free_space_map() ||
+  DCHECK(map() == GetHeap()->root(Heap::kFreeSpaceMapRootIndex) ||
          (!GetHeap()->deserialization_complete() && map() == NULL));
   DCHECK_LE(kNextOffset + kPointerSize, nobarrier_size());
   base::NoBarrier_Store(
@@ -4013,6 +4062,11 @@ Address ByteArray::GetDataStartAddress() {
 }
 
 
+void BytecodeArray::BytecodeArrayIterateBody(ObjectVisitor* v) {
+  IteratePointer(v, kConstantPoolOffset);
+}
+
+
 byte BytecodeArray::get(int index) {
   DCHECK(index >= 0 && index < this->length());
   return READ_BYTE_FIELD(this, kHeaderSize + index * kCharSize);
@@ -4035,6 +4089,25 @@ void BytecodeArray::set_frame_size(int frame_size) {
 int BytecodeArray::frame_size() const {
   return READ_INT_FIELD(this, kFrameSizeOffset);
 }
+
+
+void BytecodeArray::set_parameter_count(int number_of_parameters) {
+  DCHECK_GE(number_of_parameters, 0);
+  // Parameter count is stored as the size on stack of the parameters to allow
+  // it to be used directly by generated code.
+  WRITE_INT_FIELD(this, kParameterSizeOffset,
+                  (number_of_parameters << kPointerSizeLog2));
+}
+
+
+int BytecodeArray::parameter_count() const {
+  // Parameter count is stored as the size on stack of the parameters to allow
+  // it to be used directly by generated code.
+  return READ_INT_FIELD(this, kParameterSizeOffset) >> kPointerSizeLog2;
+}
+
+
+ACCESSORS(BytecodeArray, constant_pool, FixedArray, kConstantPoolOffset)
 
 
 Address BytecodeArray::GetFirstBytecodeAddress() {
@@ -4461,12 +4534,12 @@ bool Map::function_with_prototype() {
 
 
 void Map::set_is_hidden_prototype() {
-  set_bit_field(bit_field() | (1 << kIsHiddenPrototype));
+  set_bit_field3(IsHiddenPrototype::update(bit_field3(), true));
 }
 
 
-bool Map::is_hidden_prototype() {
-  return ((1 << kIsHiddenPrototype) & bit_field()) != 0;
+bool Map::is_hidden_prototype() const {
+  return IsHiddenPrototype::decode(bit_field3());
 }
 
 
@@ -4612,13 +4685,11 @@ bool Map::owns_descriptors() {
 }
 
 
-void Map::set_has_instance_call_handler() {
-  set_bit_field3(HasInstanceCallHandler::update(bit_field3(), true));
-}
+void Map::set_is_callable() { set_bit_field(bit_field() | (1 << kIsCallable)); }
 
 
-bool Map::has_instance_call_handler() {
-  return HasInstanceCallHandler::decode(bit_field3());
+bool Map::is_callable() const {
+  return ((1 << kIsCallable) & bit_field()) != 0;
 }
 
 
@@ -5450,6 +5521,11 @@ SMI_ACCESSORS(PrototypeInfo, registry_slot, kRegistrySlotOffset)
 ACCESSORS(PrototypeInfo, validity_cell, Object, kValidityCellOffset)
 ACCESSORS(PrototypeInfo, constructor_name, Object, kConstructorNameOffset)
 
+ACCESSORS(SloppyBlockWithEvalContextExtension, scope_info, ScopeInfo,
+          kScopeInfoOffset)
+ACCESSORS(SloppyBlockWithEvalContextExtension, extension, JSObject,
+          kExtensionOffset)
+
 ACCESSORS(AccessorPair, getter, Object, kGetterOffset)
 ACCESSORS(AccessorPair, setter, Object, kSetterOffset)
 
@@ -5536,6 +5612,10 @@ Script::CompilationType Script::compilation_type() {
 void Script::set_compilation_type(CompilationType type) {
   set_flags(BooleanBit::set(flags(), kCompilationTypeBit,
       type == COMPILATION_TYPE_EVAL));
+}
+bool Script::hide_source() { return BooleanBit::get(flags(), kHideSourceBit); }
+void Script::set_hide_source(bool value) {
+  set_flags(BooleanBit::set(flags(), kHideSourceBit, value));
 }
 Script::CompilationState Script::compilation_state() {
   return BooleanBit::get(flags(), kCompilationStateBit) ?
@@ -6002,18 +6082,19 @@ void SharedFunctionInfo::set_disable_optimization_reason(BailoutReason reason) {
 }
 
 
-bool SharedFunctionInfo::IsSubjectToDebugging() {
+bool SharedFunctionInfo::IsBuiltin() {
   Object* script_obj = script();
-  if (script_obj->IsUndefined()) return false;
+  if (script_obj->IsUndefined()) return true;
   Script* script = Script::cast(script_obj);
   Script::Type type = static_cast<Script::Type>(script->type()->value());
-  return type == Script::TYPE_NORMAL;
+  return type != Script::TYPE_NORMAL;
 }
 
 
-bool JSFunction::IsBuiltin() {
-  return context()->global_object()->IsJSBuiltinsObject();
-}
+bool SharedFunctionInfo::IsSubjectToDebugging() { return !IsBuiltin(); }
+
+
+bool JSFunction::IsBuiltin() { return shared()->IsBuiltin(); }
 
 
 bool JSFunction::IsSubjectToDebugging() {
@@ -6218,23 +6299,9 @@ int JSFunction::NumberOfLiterals() {
 }
 
 
-Object* JSBuiltinsObject::javascript_builtin(Builtins::JavaScript id) {
-  DCHECK(id < kJSBuiltinsCount);  // id is unsigned.
-  return READ_FIELD(this, OffsetOfFunctionWithId(id));
-}
-
-
-void JSBuiltinsObject::set_javascript_builtin(Builtins::JavaScript id,
-                                              Object* value) {
-  DCHECK(id < kJSBuiltinsCount);  // id is unsigned.
-  WRITE_FIELD(this, OffsetOfFunctionWithId(id), value);
-  WRITE_BARRIER(GetHeap(), this, OffsetOfFunctionWithId(id), value);
-}
-
-
 ACCESSORS(JSProxy, handler, Object, kHandlerOffset)
 ACCESSORS(JSProxy, hash, Object, kHashOffset)
-ACCESSORS(JSFunctionProxy, call_trap, Object, kCallTrapOffset)
+ACCESSORS(JSFunctionProxy, call_trap, JSReceiver, kCallTrapOffset)
 ACCESSORS(JSFunctionProxy, construct_trap, Object, kConstructTrapOffset)
 
 
@@ -6358,6 +6425,8 @@ void Code::WipeOutHeader() {
   if (!READ_FIELD(this, kTypeFeedbackInfoOffset)->IsSmi()) {
     WRITE_FIELD(this, kTypeFeedbackInfoOffset, NULL);
   }
+  WRITE_FIELD(this, kNextCodeLinkOffset, NULL);
+  WRITE_FIELD(this, kGCMetadataOffset, NULL);
 }
 
 
@@ -7733,6 +7802,10 @@ Object* JSMapIterator::CurrentValue() {
   DCHECK(!value->IsTheHole());
   return value;
 }
+
+
+ACCESSORS(JSIteratorResult, done, Object, kDoneOffset)
+ACCESSORS(JSIteratorResult, value, Object, kValueOffset)
 
 
 String::SubStringRange::SubStringRange(String* string, int first, int length)

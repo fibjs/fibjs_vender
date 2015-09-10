@@ -144,6 +144,9 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     case JS_MAP_ITERATOR_TYPE:
       JSMapIterator::cast(this)->JSMapIteratorPrint(os);
       break;
+    case JS_ITERATOR_RESULT_TYPE:
+      JSIteratorResult::cast(this)->JSIteratorResultPrint(os);
+      break;
     case JS_WEAK_MAP_TYPE:
       JSWeakMap::cast(this)->JSWeakMapPrint(os);
       break;
@@ -221,8 +224,11 @@ void Float32x4::Float32x4Print(std::ostream& os) {  // NOLINT
     }                                                               \
   }
 SIMD128_INT_PRINT_FUNCTION(Int32x4, 4)
+SIMD128_INT_PRINT_FUNCTION(Uint32x4, 4)
 SIMD128_INT_PRINT_FUNCTION(Int16x8, 8)
+SIMD128_INT_PRINT_FUNCTION(Uint16x8, 8)
 SIMD128_INT_PRINT_FUNCTION(Int8x16, 16)
+SIMD128_INT_PRINT_FUNCTION(Uint8x16, 16)
 #undef SIMD128_INT_PRINT_FUNCTION
 
 
@@ -450,7 +456,7 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
   if (has_named_interceptor()) os << " - named_interceptor\n";
   if (has_indexed_interceptor()) os << " - indexed_interceptor\n";
   if (is_undetectable()) os << " - undetectable\n";
-  if (has_instance_call_handler()) os << " - instance_call_handler\n";
+  if (is_callable()) os << " - callable\n";
   if (is_access_check_needed()) os << " - access_check_needed\n";
   if (!is_extensible()) os << " - non-extensible\n";
   if (is_observed()) os << " - observed\n";
@@ -572,10 +578,17 @@ void TypeFeedbackVector::TypeFeedbackVectorPrint(std::ostream& os) {  // NOLINT
         KeyedLoadICNexus nexus(this, slot);
         os << " KEYED_LOAD_IC "
            << Code::ICState2String(nexus.StateFromFeedback());
-      } else {
-        DCHECK(kind == Code::CALL_IC);
+      } else if (kind == Code::CALL_IC) {
         CallICNexus nexus(this, slot);
         os << " CALL_IC " << Code::ICState2String(nexus.StateFromFeedback());
+      } else if (kind == Code::STORE_IC) {
+        StoreICNexus nexus(this, slot);
+        os << " STORE_IC " << Code::ICState2String(nexus.StateFromFeedback());
+      } else {
+        DCHECK(kind == Code::KEYED_STORE_IC);
+        KeyedStoreICNexus nexus(this, slot);
+        os << " KEYED_STORE_IC "
+           << Code::ICState2String(nexus.StateFromFeedback());
       }
 
       os << "\n  [" << GetIndex(slot) << "]: " << Brief(Get(slot));
@@ -743,6 +756,15 @@ void JSSetIterator::JSSetIteratorPrint(std::ostream& os) {  // NOLINT
 void JSMapIterator::JSMapIteratorPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "JSMapIterator");
   OrderedHashTableIteratorPrint(os);
+}
+
+
+void JSIteratorResult::JSIteratorResultPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "JSIteratorResult");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - done = " << Brief(done()) << "\n";
+  os << " - value = " << Brief(value()) << "\n";
+  os << "\n";
 }
 
 
@@ -935,6 +957,15 @@ void PrototypeInfo::PrototypeInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - registry slot: " << registry_slot();
   os << "\n - validity cell: " << Brief(validity_cell());
   os << "\n - constructor name: " << Brief(constructor_name());
+  os << "\n";
+}
+
+
+void SloppyBlockWithEvalContextExtension::
+    SloppyBlockWithEvalContextExtensionPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "SloppyBlockWithEvalContextExtension");
+  os << "\n - scope_info: " << Brief(scope_info());
+  os << "\n - extension: " << Brief(extension());
   os << "\n";
 }
 

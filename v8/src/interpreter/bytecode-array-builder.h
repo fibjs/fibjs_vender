@@ -8,7 +8,10 @@
 #include <vector>
 
 #include "src/ast.h"
+#include "src/identity-map.h"
 #include "src/interpreter/bytecodes.h"
+#include "src/zone.h"
+#include "src/zone-containers.h"
 
 namespace v8 {
 namespace internal {
@@ -21,15 +24,22 @@ class Register;
 
 class BytecodeArrayBuilder {
  public:
-  explicit BytecodeArrayBuilder(Isolate* isolate);
+  BytecodeArrayBuilder(Isolate* isolate, Zone* zone);
   Handle<BytecodeArray> ToBytecodeArray();
+
+  // Set number of parameters expected by function.
+  void set_parameter_count(int number_of_params);
+  int parameter_count() const;
 
   // Set number of locals required for bytecode array.
   void set_locals_count(int number_of_locals);
   int locals_count() const;
 
+  Register Parameter(int parameter_index);
+
   // Constant loads to accumulator.
   BytecodeArrayBuilder& LoadLiteral(v8::internal::Smi* value);
+  BytecodeArrayBuilder& LoadLiteral(Handle<Object> object);
   BytecodeArrayBuilder& LoadUndefined();
   BytecodeArrayBuilder& LoadNull();
   BytecodeArrayBuilder& LoadTheHole();
@@ -40,6 +50,12 @@ class BytecodeArrayBuilder {
   BytecodeArrayBuilder& LoadAccumulatorWithRegister(Register reg);
   BytecodeArrayBuilder& StoreAccumulatorInRegister(Register reg);
 
+  // Load properties. The property name should be in the accumulator.
+  BytecodeArrayBuilder& LoadNamedProperty(Register object, int feedback_slot,
+                                          LanguageMode language_mode);
+  BytecodeArrayBuilder& LoadKeyedProperty(Register object, int feedback_slot,
+                                          LanguageMode language_mode);
+
   // Operators.
   BytecodeArrayBuilder& BinaryOperation(Token::Value binop, Register reg);
 
@@ -48,6 +64,8 @@ class BytecodeArrayBuilder {
 
  private:
   static Bytecode BytecodeForBinaryOperation(Token::Value op);
+  static bool FitsInByteOperand(int value);
+  static bool FitsInByteOperand(size_t value);
 
   void Output(Bytecode bytecode, uint8_t r0, uint8_t r1, uint8_t r2);
   void Output(Bytecode bytecode, uint8_t r0, uint8_t r1);
@@ -57,42 +75,25 @@ class BytecodeArrayBuilder {
   bool OperandIsValid(Bytecode bytecode, int operand_index,
                       uint8_t operand_value) const;
 
+  size_t GetConstantPoolEntry(Handle<Object> object);
+
   int BorrowTemporaryRegister();
   void ReturnTemporaryRegister(int reg_index);
 
   Isolate* isolate_;
-  std::vector<uint8_t> bytecodes_;
+  ZoneVector<uint8_t> bytecodes_;
   bool bytecode_generated_;
 
+  IdentityMap<size_t> constants_map_;
+  ZoneVector<Handle<Object>> constants_;
+
+  int parameter_count_;
   int local_register_count_;
   int temporary_register_count_;
   int temporary_register_next_;
 
   friend class TemporaryRegisterScope;
   DISALLOW_IMPLICIT_CONSTRUCTORS(BytecodeArrayBuilder);
-};
-
-// An interpreter register which is located in the function's regsiter file
-// in its stack-frame.
-class Register {
- public:
-  static const int kMaxRegisterIndex = 128;
-
-  explicit Register(int index) : index_(index) {
-    DCHECK_LE(index_, kMaxRegisterIndex);
-  }
-
-  int index() { return index_; }
-  uint8_t ToOperand() { return static_cast<uint8_t>(-index_); }
-  static Register FromOperand(uint8_t operand) {
-    return Register(-static_cast<int8_t>(operand));
-  }
-
- private:
-  void* operator new(size_t size);
-  void operator delete(void* p);
-
-  int index_;
 };
 
 // A stack-allocated class than allows the instantiator to allocate

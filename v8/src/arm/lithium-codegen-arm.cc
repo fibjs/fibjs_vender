@@ -122,8 +122,7 @@ bool LCodeGen::GeneratePrologue() {
     // Sloppy mode functions and builtins need to replace the receiver with the
     // global proxy when called as functions (without an explicit receiver
     // object).
-    if (is_sloppy(info_->language_mode()) && info()->MayUseThis() &&
-        !info_->is_native() && info_->scope()->has_this_declaration()) {
+    if (info()->MustReplaceUndefinedReceiverWithGlobalProxy()) {
       Label ok;
       int receiver_offset = info_->scope()->num_parameters() * kPointerSize;
       __ ldr(r2, MemOperand(sp, receiver_offset));
@@ -175,16 +174,27 @@ bool LCodeGen::GeneratePrologue() {
   if (info()->saves_caller_doubles()) {
     SaveCallerDoubles();
   }
+  return !is_aborted();
+}
+
+
+void LCodeGen::DoPrologue(LPrologue* instr) {
+  Comment(";;; Prologue begin");
 
   // Possibly allocate a local context.
-  int heap_slots = info()->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
-  if (heap_slots > 0) {
+  if (info()->scope()->num_heap_slots() > 0) {
     Comment(";;; Allocate local context");
     bool need_write_barrier = true;
     // Argument to NewContext is the function, which is in r1.
-    DCHECK(!info()->scope()->is_script_scope());
-    if (heap_slots <= FastNewContextStub::kMaximumSlots) {
-      FastNewContextStub stub(isolate(), heap_slots);
+    int slots = info()->scope()->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
+    Safepoint::DeoptMode deopt_mode = Safepoint::kNoLazyDeopt;
+    if (info()->scope()->is_script_scope()) {
+      __ push(r1);
+      __ Push(info()->scope()->GetScopeInfo(info()->isolate()));
+      __ CallRuntime(Runtime::kNewScriptContext, 2);
+      deopt_mode = Safepoint::kLazyDeopt;
+    } else if (slots <= FastNewContextStub::kMaximumSlots) {
+      FastNewContextStub stub(isolate(), slots);
       __ CallStub(&stub);
       // Result of FastNewContextStub is always in new space.
       need_write_barrier = false;
@@ -192,7 +202,8 @@ bool LCodeGen::GeneratePrologue() {
       __ push(r1);
       __ CallRuntime(Runtime::kNewFunctionContext, 1);
     }
-    RecordSafepoint(Safepoint::kNoLazyDeopt);
+    RecordSafepoint(deopt_mode);
+
     // Context is returned in both r0 and cp.  It replaces the context
     // passed to us.  It's saved in the stack and kept live in cp.
     __ mov(cp, r0);
@@ -230,13 +241,7 @@ bool LCodeGen::GeneratePrologue() {
     Comment(";;; End allocate local context");
   }
 
-  // Trace the call.
-  if (FLAG_trace && info()->IsOptimizing()) {
-    // We have not executed any compiled code yet, so cp still holds the
-    // incoming context.
-    __ CallRuntime(Runtime::kTraceEnter, 0);
-  }
-  return !is_aborted();
+  Comment(";;; Prologue end");
 }
 
 
@@ -811,7 +816,6 @@ void LCodeGen::DeoptimizeIf(Condition condition, LInstruction* instr,
   RegisterEnvironmentForDeoptimization(environment, Safepoint::kNoLazyDeopt);
   DCHECK(environment->HasBeenRegistered());
   int id = environment->deoptimization_index();
-  DCHECK(info()->IsOptimizing() || info()->IsStub());
   Address entry =
       Deoptimizer::GetDeoptimizationEntry(isolate(), id, bailout_type);
   if (entry == NULL) {
@@ -2154,7 +2158,14 @@ void LCodeGen::EmitBranch(InstrType instr, Condition condition) {
 }
 
 
-template<class InstrType>
+template <class InstrType>
+void LCodeGen::EmitTrueBranch(InstrType instr, Condition condition) {
+  int true_block = instr->TrueDestination(chunk_);
+  __ b(condition, chunk_->GetAssemblyLabel(true_block));
+}
+
+
+template <class InstrType>
 void LCodeGen::EmitFalseBranch(InstrType instr, Condition condition) {
   int false_block = instr->FalseDestination(chunk_);
   __ b(condition, chunk_->GetAssemblyLabel(false_block));
@@ -2457,45 +2468,6 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
 }
 
 
-Condition LCodeGen::EmitIsObject(Register input,
-                                 Register temp1,
-                                 Label* is_not_object,
-                                 Label* is_object) {
-  Register temp2 = scratch0();
-  __ JumpIfSmi(input, is_not_object);
-
-  __ LoadRoot(temp2, Heap::kNullValueRootIndex);
-  __ cmp(input, temp2);
-  __ b(eq, is_object);
-
-  // Load map.
-  __ ldr(temp1, FieldMemOperand(input, HeapObject::kMapOffset));
-  // Undetectable objects behave like undefined.
-  __ ldrb(temp2, FieldMemOperand(temp1, Map::kBitFieldOffset));
-  __ tst(temp2, Operand(1 << Map::kIsUndetectable));
-  __ b(ne, is_not_object);
-
-  // Load instance type and check that it is in object type range.
-  __ ldrb(temp2, FieldMemOperand(temp1, Map::kInstanceTypeOffset));
-  __ cmp(temp2, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
-  __ b(lt, is_not_object);
-  __ cmp(temp2, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE));
-  return le;
-}
-
-
-void LCodeGen::DoIsObjectAndBranch(LIsObjectAndBranch* instr) {
-  Register reg = ToRegister(instr->value());
-  Register temp1 = ToRegister(instr->temp());
-
-  Condition true_cond =
-      EmitIsObject(reg, temp1,
-          instr->FalseLabel(chunk_), instr->TrueLabel(chunk_));
-
-  EmitBranch(instr, true_cond);
-}
-
-
 Condition LCodeGen::EmitIsString(Register input,
                                  Register temp1,
                                  Label* is_not_string,
@@ -2729,160 +2701,40 @@ void LCodeGen::DoCmpMapAndBranch(LCmpMapAndBranch* instr) {
 
 void LCodeGen::DoInstanceOf(LInstanceOf* instr) {
   DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(ToRegister(instr->left()).is(r0));  // Object is in r0.
-  DCHECK(ToRegister(instr->right()).is(r1));  // Function is in r1.
-
-  InstanceofStub stub(isolate(), InstanceofStub::kArgsInRegisters);
+  DCHECK(ToRegister(instr->left()).is(InstanceOfDescriptor::LeftRegister()));
+  DCHECK(ToRegister(instr->right()).is(InstanceOfDescriptor::RightRegister()));
+  DCHECK(ToRegister(instr->result()).is(r0));
+  InstanceOfStub stub(isolate());
   CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
-
-  __ cmp(r0, Operand::Zero());
-  __ mov(r0, Operand(factory()->false_value()), LeaveCC, ne);
-  __ mov(r0, Operand(factory()->true_value()), LeaveCC, eq);
 }
 
 
-void LCodeGen::DoInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr) {
-  class DeferredInstanceOfKnownGlobal final : public LDeferredCode {
-   public:
-    DeferredInstanceOfKnownGlobal(LCodeGen* codegen,
-                                  LInstanceOfKnownGlobal* instr)
-        : LDeferredCode(codegen), instr_(instr) { }
-    void Generate() override {
-      codegen()->DoDeferredInstanceOfKnownGlobal(instr_, &map_check_,
-                                                 &load_bool_);
-    }
-    LInstruction* instr() override { return instr_; }
-    Label* map_check() { return &map_check_; }
-    Label* load_bool() { return &load_bool_; }
+void LCodeGen::DoHasInPrototypeChainAndBranch(
+    LHasInPrototypeChainAndBranch* instr) {
+  Register const object = ToRegister(instr->object());
+  Register const object_map = scratch0();
+  Register const object_prototype = object_map;
+  Register const prototype = ToRegister(instr->prototype());
 
-   private:
-    LInstanceOfKnownGlobal* instr_;
-    Label map_check_;
-    Label load_bool_;
-  };
-
-  DeferredInstanceOfKnownGlobal* deferred;
-  deferred = new(zone()) DeferredInstanceOfKnownGlobal(this, instr);
-
-  Label done, false_result;
-  Register object = ToRegister(instr->value());
-  Register temp = ToRegister(instr->temp());
-  Register result = ToRegister(instr->result());
-
-  // A Smi is not instance of anything.
-  __ JumpIfSmi(object, &false_result);
-
-  // This is the inlined call site instanceof cache. The two occurences of the
-  // hole value will be patched to the last map/result pair generated by the
-  // instanceof stub.
-  Label cache_miss;
-  Register map = temp;
-  __ ldr(map, FieldMemOperand(object, HeapObject::kMapOffset));
-  {
-    // Block constant pool emission to ensure the positions of instructions are
-    // as expected by the patcher. See InstanceofStub::Generate().
-    Assembler::BlockConstPoolScope block_const_pool(masm());
-    __ bind(deferred->map_check());  // Label for calculating code patching.
-    // We use Factory::the_hole_value() on purpose instead of loading from the
-    // root array to force relocation to be able to later patch with
-    // the cached map.
-    Handle<Cell> cell = factory()->NewCell(factory()->the_hole_value());
-    __ mov(ip, Operand(cell));
-    __ ldr(ip, FieldMemOperand(ip, Cell::kValueOffset));
-    __ cmp(map, Operand(ip));
-    __ b(ne, &cache_miss);
-    __ bind(deferred->load_bool());  // Label for calculating code patching.
-    // We use Factory::the_hole_value() on purpose instead of loading from the
-    // root array to force relocation to be able to later patch
-    // with true or false.
-    __ mov(result, Operand(factory()->the_hole_value()));
+  // The {object} must be a spec object.  It's sufficient to know that {object}
+  // is not a smi, since all other non-spec objects have {null} prototypes and
+  // will be ruled out below.
+  if (instr->hydrogen()->ObjectNeedsSmiCheck()) {
+    __ SmiTst(object);
+    EmitFalseBranch(instr, eq);
   }
-  __ b(&done);
 
-  // The inlined call site cache did not match. Check null and string before
-  // calling the deferred code.
-  __ bind(&cache_miss);
-  // Null is not instance of anything.
-  __ LoadRoot(ip, Heap::kNullValueRootIndex);
-  __ cmp(object, Operand(ip));
-  __ b(eq, &false_result);
-
-  // String values is not instance of anything.
-  Condition is_string = masm_->IsObjectStringType(object, temp);
-  __ b(is_string, &false_result);
-
-  // Go to the deferred code.
-  __ b(deferred->entry());
-
-  __ bind(&false_result);
-  __ LoadRoot(result, Heap::kFalseValueRootIndex);
-
-  // Here result has either true or false. Deferred code also produces true or
-  // false object.
-  __ bind(deferred->exit());
-  __ bind(&done);
-}
-
-
-void LCodeGen::DoDeferredInstanceOfKnownGlobal(LInstanceOfKnownGlobal* instr,
-                                               Label* map_check,
-                                               Label* bool_load) {
-  InstanceofStub::Flags flags = InstanceofStub::kNoFlags;
-  flags = static_cast<InstanceofStub::Flags>(
-      flags | InstanceofStub::kArgsInRegisters);
-  flags = static_cast<InstanceofStub::Flags>(
-      flags | InstanceofStub::kCallSiteInlineCheck);
-  flags = static_cast<InstanceofStub::Flags>(
-      flags | InstanceofStub::kReturnTrueFalseObject);
-  InstanceofStub stub(isolate(), flags);
-
-  PushSafepointRegistersScope scope(this);
-  LoadContextFromDeferred(instr->context());
-
-  __ Move(InstanceofStub::right(), instr->function());
-
-  int call_size = CallCodeSize(stub.GetCode(), RelocInfo::CODE_TARGET);
-  int additional_delta = (call_size / Assembler::kInstrSize) + 4;
-  {
-    // Make sure that code size is predicable, since we use specific constants
-    // offsets in the code to find embedded values..
-    PredictableCodeSizeScope predictable(
-        masm_, additional_delta * Assembler::kInstrSize);
-    // The labels must be already bound since the code has predictabel size up
-    // to the call instruction.
-    DCHECK(map_check->is_bound());
-    DCHECK(bool_load->is_bound());
-    // Make sure we don't emit any additional entries in the constant pool
-    // before the call to ensure that the CallCodeSize() calculated the
-    // correct number of instructions for the constant pool load.
-    {
-      ConstantPoolUnavailableScope constant_pool_unavailable(masm_);
-      int map_check_delta =
-          masm_->InstructionsGeneratedSince(map_check) + additional_delta;
-      int bool_load_delta =
-          masm_->InstructionsGeneratedSince(bool_load) + additional_delta;
-      Label before_push_delta;
-      __ bind(&before_push_delta);
-      __ BlockConstPoolFor(additional_delta);
-      // r5 is used to communicate the offset to the location of the map check.
-      __ mov(r5, Operand(map_check_delta * kPointerSize));
-      // r6 is used to communicate the offset to the location of the bool load.
-      __ mov(r6, Operand(bool_load_delta * kPointerSize));
-      // The mov above can generate one or two instructions. The delta was
-      // computed for two instructions, so we need to pad here in case of one
-      // instruction.
-      while (masm_->InstructionsGeneratedSince(&before_push_delta) != 4) {
-        __ nop();
-      }
-    }
-    CallCodeGeneric(stub.GetCode(), RelocInfo::CODE_TARGET, instr,
-                    RECORD_SAFEPOINT_WITH_REGISTERS_AND_NO_ARGUMENTS);
-  }
-  LEnvironment* env = instr->GetDeferredLazyDeoptimizationEnvironment();
-  safepoints_.RecordLazyDeoptimizationIndex(env->deoptimization_index());
-  // Put the result value (r0) into the result register slot and
-  // restore all registers.
-  __ StoreToSafepointRegisterSlot(r0, ToRegister(instr->result()));
+  // Loop through the {object}s prototype chain looking for the {prototype}.
+  __ ldr(object_map, FieldMemOperand(object, HeapObject::kMapOffset));
+  Label loop;
+  __ bind(&loop);
+  __ ldr(object_prototype, FieldMemOperand(object_map, Map::kPrototypeOffset));
+  __ cmp(object_prototype, prototype);
+  EmitTrueBranch(instr, eq);
+  __ CompareRoot(object_prototype, Heap::kNullValueRootIndex);
+  EmitFalseBranch(instr, eq);
+  __ ldr(object_map, FieldMemOperand(object_prototype, HeapObject::kMapOffset));
+  __ b(&loop);
 }
 
 
@@ -5686,27 +5538,25 @@ Condition LCodeGen::EmitTypeofIs(Label* true_label,
     final_branch_condition = ne;
 
   } else if (String::Equals(type_name, factory->function_string())) {
-    STATIC_ASSERT(NUM_OF_CALLABLE_SPEC_OBJECT_TYPES == 2);
-    Register type_reg = scratch;
     __ JumpIfSmi(input, false_label);
-    __ CompareObjectType(input, scratch, type_reg, JS_FUNCTION_TYPE);
-    __ b(eq, true_label);
-    __ cmp(type_reg, Operand(JS_FUNCTION_PROXY_TYPE));
+    __ ldr(scratch, FieldMemOperand(input, HeapObject::kMapOffset));
+    __ ldrb(scratch, FieldMemOperand(scratch, Map::kBitFieldOffset));
+    __ and_(scratch, scratch,
+            Operand((1 << Map::kIsCallable) | (1 << Map::kIsUndetectable)));
+    __ cmp(scratch, Operand(1 << Map::kIsCallable));
     final_branch_condition = eq;
 
   } else if (String::Equals(type_name, factory->object_string())) {
-    Register map = scratch;
     __ JumpIfSmi(input, false_label);
     __ CompareRoot(input, Heap::kNullValueRootIndex);
     __ b(eq, true_label);
-    __ CheckObjectTypeRange(input,
-                            map,
-                            FIRST_NONCALLABLE_SPEC_OBJECT_TYPE,
-                            LAST_NONCALLABLE_SPEC_OBJECT_TYPE,
-                            false_label);
-    // Check for undetectable objects => false.
-    __ ldrb(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
-    __ tst(scratch, Operand(1 << Map::kIsUndetectable));
+    STATIC_ASSERT(LAST_SPEC_OBJECT_TYPE == LAST_TYPE);
+    __ CompareObjectType(input, scratch, ip, FIRST_SPEC_OBJECT_TYPE);
+    __ b(lt, false_label);
+    // Check for callable or undetectable objects => false.
+    __ ldrb(scratch, FieldMemOperand(scratch, Map::kBitFieldOffset));
+    __ tst(scratch,
+           Operand((1 << Map::kIsCallable) | (1 << Map::kIsUndetectable)));
     final_branch_condition = eq;
 
 // clang-format off
@@ -5753,7 +5603,7 @@ void LCodeGen::EmitIsConstructCall(Register temp1, Register temp2) {
 
 
 void LCodeGen::EnsureSpaceForLazyDeopt(int space_needed) {
-  if (!info()->IsStub()) {
+  if (info()->ShouldEnsureSpaceForLazyDeopt()) {
     // Ensure that we have enough space after the previous lazy-bailout
     // instruction for patching the code here.
     int current_pc = masm()->pc_offset();

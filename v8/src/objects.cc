@@ -30,6 +30,7 @@
 #include "src/hydrogen.h"
 #include "src/ic/ic.h"
 #include "src/interpreter/bytecodes.h"
+#include "src/isolate-inl.h"
 #include "src/log.h"
 #include "src/lookup.h"
 #include "src/macro-assembler.h"
@@ -37,6 +38,7 @@
 #include "src/objects-inl.h"
 #include "src/prototype.h"
 #include "src/safepoint-table.h"
+#include "src/string-builder.h"
 #include "src/string-search.h"
 #include "src/string-stream.h"
 #include "src/utils.h"
@@ -90,6 +92,61 @@ MaybeHandle<JSReceiver> Object::ToObject(Isolate* isolate,
 }
 
 
+// static
+MaybeHandle<Object> Object::ToNumber(Isolate* isolate, Handle<Object> input) {
+  while (true) {
+    if (input->IsNumber()) {
+      return input;
+    }
+    if (input->IsOddball()) {
+      return handle(Handle<Oddball>::cast(input)->to_number(), isolate);
+    }
+    if (input->IsString()) {
+      return String::ToNumber(Handle<String>::cast(input));
+    }
+    if (input->IsSymbol()) {
+      THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kSymbolToNumber),
+                      Object);
+    }
+    if (input->IsSimd128Value()) {
+      THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kSimdToNumber),
+                      Object);
+    }
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, input, JSReceiver::ToPrimitive(Handle<JSReceiver>::cast(input),
+                                                ToPrimitiveHint::kNumber),
+        Object);
+  }
+}
+
+
+// static
+MaybeHandle<String> Object::ToString(Isolate* isolate, Handle<Object> input) {
+  while (true) {
+    if (input->IsString()) {
+      return Handle<String>::cast(input);
+    }
+    if (input->IsOddball()) {
+      return handle(Handle<Oddball>::cast(input)->to_string(), isolate);
+    }
+    if (input->IsNumber()) {
+      return isolate->factory()->NumberToString(input);
+    }
+    if (input->IsSymbol()) {
+      THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kSymbolToString),
+                      String);
+    }
+    if (input->IsSimd128Value()) {
+      return Simd128Value::ToString(Handle<Simd128Value>::cast(input));
+    }
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, input, JSReceiver::ToPrimitive(Handle<JSReceiver>::cast(input),
+                                                ToPrimitiveHint::kString),
+        String);
+  }
+}
+
+
 bool Object::BooleanValue() {
   if (IsBoolean()) return IsTrue();
   if (IsSmi()) return Smi::cast(this)->value() != 0;
@@ -97,7 +154,6 @@ bool Object::BooleanValue() {
   if (IsUndetectableObject()) return false;   // Undetectable object is false.
   if (IsString()) return String::cast(this)->length() != 0;
   if (IsHeapNumber()) return HeapNumber::cast(this)->HeapNumberBooleanValue();
-  if (IsSimd128Value()) return true;  // Simd value types evaluate to true.
   return true;
 }
 
@@ -120,14 +176,20 @@ bool Object::StrictEquals(Object* that) {
 }
 
 
-bool Object::IsCallable() const {
-  const Object* fun = this;
-  while (fun->IsJSFunctionProxy()) {
-    fun = JSFunctionProxy::cast(fun)->call_trap();
+// static
+Handle<String> Object::TypeOf(Isolate* isolate, Handle<Object> object) {
+  if (object->IsNumber()) return isolate->factory()->number_string();
+  if (object->IsUndefined() || object->IsUndetectableObject()) {
+    return isolate->factory()->undefined_string();
   }
-  return fun->IsJSFunction() ||
-         (fun->IsHeapObject() &&
-          HeapObject::cast(fun)->map()->has_instance_call_handler());
+  if (object->IsBoolean()) return isolate->factory()->boolean_string();
+  if (object->IsSymbol()) return isolate->factory()->symbol_string();
+#define SIMD128_TYPE(TYPE, Type, type, lane_count, lane_type) \
+  if (object->Is##Type()) return isolate->factory()->type##_string();
+  SIMD128_TYPES(SIMD128_TYPE)
+#undef SIMD128_TYPE
+  if (object->IsCallable()) return isolate->factory()->function_string();
+  return isolate->factory()->object_string();
 }
 
 
@@ -139,9 +201,29 @@ bool Object::IsPromise(Handle<Object> object) {
   auto isolate = js_object->GetIsolate();
   // TODO(dcarney): this should just be read from the symbol registry so as not
   // to be context dependent.
-  auto key = isolate->promise_status();
+  auto key = isolate->factory()->promise_status_symbol();
   // Shouldn't be possible to throw here.
   return JSObject::HasRealNamedProperty(js_object, key).FromJust();
+}
+
+
+// static
+MaybeHandle<Object> Object::GetMethod(Handle<JSReceiver> receiver,
+                                      Handle<Name> name) {
+  Handle<Object> func;
+  Isolate* isolate = receiver->GetIsolate();
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, func,
+                             JSReceiver::GetProperty(receiver, name), Object);
+  if (func->IsNull() || func->IsUndefined()) {
+    return isolate->factory()->undefined_value();
+  }
+  if (!func->IsCallable()) {
+    // TODO(bmeurer): Better error message here?
+    THROW_NEW_ERROR(isolate,
+                    NewTypeError(MessageTemplate::kCalledNonCallable, func),
+                    Object);
+  }
+  return func;
 }
 
 
@@ -1473,6 +1555,73 @@ void HeapNumber::HeapNumberPrint(std::ostream& os) {  // NOLINT
   (*reinterpret_cast<const byte*>(FIELD_ADDR_CONST(p, offset)))
 
 
+// static
+Handle<String> Simd128Value::ToString(Handle<Simd128Value> input) {
+#define SIMD128_TYPE(TYPE, Type, type, lane_count, lane_type) \
+  if (input->Is##Type()) return Type::ToString(Handle<Type>::cast(input));
+  SIMD128_TYPES(SIMD128_TYPE)
+#undef SIMD128_TYPE
+  UNREACHABLE();
+  return Handle<String>::null();
+}
+
+
+// static
+Handle<String> Float32x4::ToString(Handle<Float32x4> input) {
+  Isolate* const isolate = input->GetIsolate();
+  char arr[100];
+  Vector<char> buffer(arr, arraysize(arr));
+  std::ostringstream os;
+  os << "SIMD.Float32x4("
+     << std::string(DoubleToCString(input->get_lane(0), buffer)) << ", "
+     << std::string(DoubleToCString(input->get_lane(1), buffer)) << ", "
+     << std::string(DoubleToCString(input->get_lane(2), buffer)) << ", "
+     << std::string(DoubleToCString(input->get_lane(3), buffer)) << ")";
+  return isolate->factory()->NewStringFromAsciiChecked(os.str().c_str());
+}
+
+
+#define SIMD128_BOOL_TO_STRING(Type, lane_count)                            \
+  Handle<String> Type::ToString(Handle<Type> input) {                       \
+    Isolate* const isolate = input->GetIsolate();                           \
+    std::ostringstream os;                                                  \
+    os << "SIMD." #Type "(";                                                \
+    os << (input->get_lane(0) ? "true" : "false");                          \
+    for (int i = 1; i < lane_count; i++) {                                  \
+      os << ", " << (input->get_lane(i) ? "true" : "false");                \
+    }                                                                       \
+    os << ")";                                                              \
+    return isolate->factory()->NewStringFromAsciiChecked(os.str().c_str()); \
+  }
+SIMD128_BOOL_TO_STRING(Bool32x4, 4)
+SIMD128_BOOL_TO_STRING(Bool16x8, 8)
+SIMD128_BOOL_TO_STRING(Bool8x16, 16)
+#undef SIMD128_BOOL_TO_STRING
+
+
+#define SIMD128_INT_TO_STRING(Type, lane_count)                             \
+  Handle<String> Type::ToString(Handle<Type> input) {                       \
+    Isolate* const isolate = input->GetIsolate();                           \
+    char arr[100];                                                          \
+    Vector<char> buffer(arr, arraysize(arr));                               \
+    std::ostringstream os;                                                  \
+    os << "SIMD." #Type "(";                                                \
+    os << IntToCString(input->get_lane(0), buffer);                         \
+    for (int i = 1; i < lane_count; i++) {                                  \
+      os << ", " << IntToCString(input->get_lane(i), buffer);               \
+    }                                                                       \
+    os << ")";                                                              \
+    return isolate->factory()->NewStringFromAsciiChecked(os.str().c_str()); \
+  }
+SIMD128_INT_TO_STRING(Int32x4, 4)
+SIMD128_INT_TO_STRING(Uint32x4, 4)
+SIMD128_INT_TO_STRING(Int16x8, 8)
+SIMD128_INT_TO_STRING(Uint16x8, 8)
+SIMD128_INT_TO_STRING(Int8x16, 16)
+SIMD128_INT_TO_STRING(Uint8x16, 16)
+#undef SIMD128_INT_TO_STRING
+
+
 bool Simd128Value::BitwiseEquals(const Simd128Value* other) const {
   return READ_INT64_FIELD(this, kValueOffset) ==
              READ_INT64_FIELD(other, kValueOffset) &&
@@ -1776,6 +1925,8 @@ void JSObject::MigrateToMap(Handle<JSObject> object, Handle<Map> new_map,
     if (!new_map->is_dictionary_map()) {
       MigrateFastToFast(object, new_map);
       if (old_map->is_prototype_map()) {
+        DCHECK(!old_map->is_stable());
+        DCHECK(new_map->is_stable());
         // Clear out the old descriptor array to avoid problems to sharing
         // the descriptor array without using an explicit.
         old_map->InitializeDescriptors(
@@ -3265,7 +3416,7 @@ MaybeHandle<Object> Object::SetDataProperty(LookupIterator* it,
   if (it->IsElement() && receiver->HasFixedTypedArrayElements()) {
     if (!value->IsNumber() && !value->IsUndefined()) {
       ASSIGN_RETURN_ON_EXCEPTION(it->isolate(), to_assign,
-                                 Execution::ToNumber(it->isolate(), value),
+                                 Object::ToNumber(it->isolate(), value),
                                  Object);
       // ToNumber above might modify the receiver, causing the cached
       // holder_map to mismatch the actual holder->map() after this point.
@@ -4763,7 +4914,7 @@ void JSObject::RequireSlowElements(SeededNumberDictionary* dictionary) {
   dictionary->set_requires_slow_elements();
   // TODO(verwaest): Remove this hack.
   if (map()->is_prototype_map()) {
-    GetHeap()->ClearAllICsByKind(Code::KEYED_STORE_IC);
+    GetHeap()->ClearAllKeyedStoreICs();
   }
 }
 
@@ -5364,13 +5515,13 @@ bool JSObject::ReferencesObject(Object* obj) {
 
     // Check the context extension (if any) if it can have references.
     if (context->has_extension() && !context->IsCatchContext()) {
-      // With harmony scoping, a JSFunction may have a global context.
+      // With harmony scoping, a JSFunction may have a script context.
       // TODO(mvstanton): walk into the ScopeInfo.
       if (context->IsScriptContext()) {
         return false;
       }
 
-      return JSObject::cast(context->extension())->ReferencesObject(obj);
+      return context->extension_object()->ReferencesObject(obj);
     }
   }
 
@@ -5864,6 +6015,76 @@ MaybeHandle<JSObject> JSObject::DeepCopy(
   Handle<JSObject> for_assert;
   DCHECK(!copy.ToHandle(&for_assert) || !for_assert.is_identical_to(object));
   return copy;
+}
+
+
+// static
+MaybeHandle<Object> JSReceiver::ToPrimitive(Handle<JSReceiver> receiver,
+                                            ToPrimitiveHint hint) {
+  Isolate* const isolate = receiver->GetIsolate();
+  Handle<Object> exotic_to_prim;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, exotic_to_prim,
+      GetMethod(receiver, isolate->factory()->to_primitive_symbol()), Object);
+  if (!exotic_to_prim->IsUndefined()) {
+    Handle<Object> hint_string;
+    switch (hint) {
+      case ToPrimitiveHint::kDefault:
+        hint_string = isolate->factory()->default_string();
+        break;
+      case ToPrimitiveHint::kNumber:
+        hint_string = isolate->factory()->number_string();
+        break;
+      case ToPrimitiveHint::kString:
+        hint_string = isolate->factory()->string_string();
+        break;
+    }
+    Handle<Object> result;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, result,
+        Execution::Call(isolate, exotic_to_prim, receiver, 1, &hint_string),
+        Object);
+    if (result->IsPrimitive()) return result;
+    THROW_NEW_ERROR(isolate,
+                    NewTypeError(MessageTemplate::kCannotConvertToPrimitive),
+                    Object);
+  }
+  return OrdinaryToPrimitive(receiver, (hint == ToPrimitiveHint::kString)
+                                           ? OrdinaryToPrimitiveHint::kString
+                                           : OrdinaryToPrimitiveHint::kNumber);
+}
+
+
+// static
+MaybeHandle<Object> JSReceiver::OrdinaryToPrimitive(
+    Handle<JSReceiver> receiver, OrdinaryToPrimitiveHint hint) {
+  Isolate* const isolate = receiver->GetIsolate();
+  Handle<String> method_names[2];
+  switch (hint) {
+    case OrdinaryToPrimitiveHint::kNumber:
+      method_names[0] = isolate->factory()->valueOf_string();
+      method_names[1] = isolate->factory()->toString_string();
+      break;
+    case OrdinaryToPrimitiveHint::kString:
+      method_names[0] = isolate->factory()->toString_string();
+      method_names[1] = isolate->factory()->valueOf_string();
+      break;
+  }
+  for (Handle<String> name : method_names) {
+    Handle<Object> method;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, method,
+                               JSReceiver::GetProperty(receiver, name), Object);
+    if (method->IsCallable()) {
+      Handle<Object> result;
+      ASSIGN_RETURN_ON_EXCEPTION(
+          isolate, result, Execution::Call(isolate, method, receiver, 0, NULL),
+          Object);
+      if (result->IsPrimitive()) return result;
+    }
+  }
+  THROW_NEW_ERROR(isolate,
+                  NewTypeError(MessageTemplate::kCannotConvertToPrimitive),
+                  Object);
 }
 
 
@@ -7816,6 +8037,17 @@ void WeakFixedArray::Compact() {
 }
 
 
+void WeakFixedArray::Iterator::Reset(Object* maybe_array) {
+  if (maybe_array->IsWeakFixedArray()) {
+    list_ = WeakFixedArray::cast(maybe_array);
+    index_ = 0;
+#ifdef DEBUG
+    last_used_index_ = list_->last_used_index();
+#endif  // DEBUG
+  }
+}
+
+
 void JSObject::PrototypeRegistryCompactionCallback::Callback(Object* value,
                                                              int old_index,
                                                              int new_index) {
@@ -8124,6 +8356,110 @@ bool DescriptorArray::IsEqualTo(DescriptorArray* other) {
 bool String::LooksValid() {
   if (!GetIsolate()->heap()->Contains(this)) return false;
   return true;
+}
+
+
+// static
+MaybeHandle<String> Name::ToFunctionName(Handle<Name> name) {
+  if (name->IsString()) return Handle<String>::cast(name);
+  // ES6 section 9.2.11 SetFunctionName, step 4.
+  Isolate* const isolate = name->GetIsolate();
+  Handle<Object> description(Handle<Symbol>::cast(name)->name(), isolate);
+  if (description->IsUndefined()) return isolate->factory()->empty_string();
+  IncrementalStringBuilder builder(isolate);
+  builder.AppendCharacter('[');
+  builder.AppendString(Handle<String>::cast(description));
+  builder.AppendCharacter(']');
+  return builder.Finish();
+}
+
+
+namespace {
+
+bool AreDigits(const uint8_t* s, int from, int to) {
+  for (int i = from; i < to; i++) {
+    if (s[i] < '0' || s[i] > '9') return false;
+  }
+
+  return true;
+}
+
+
+int ParseDecimalInteger(const uint8_t* s, int from, int to) {
+  DCHECK(to - from < 10);  // Overflow is not possible.
+  DCHECK(from < to);
+  int d = s[from] - '0';
+
+  for (int i = from + 1; i < to; i++) {
+    d = 10 * d + (s[i] - '0');
+  }
+
+  return d;
+}
+
+}  // namespace
+
+
+// static
+Handle<Object> String::ToNumber(Handle<String> subject) {
+  Isolate* const isolate = subject->GetIsolate();
+
+  // Flatten {subject} string first.
+  subject = String::Flatten(subject);
+
+  // Fast array index case.
+  uint32_t index;
+  if (subject->AsArrayIndex(&index)) {
+    return isolate->factory()->NewNumberFromUint(index);
+  }
+
+  // Fast case: short integer or some sorts of junk values.
+  if (subject->IsSeqOneByteString()) {
+    int len = subject->length();
+    if (len == 0) return handle(Smi::FromInt(0), isolate);
+
+    DisallowHeapAllocation no_gc;
+    uint8_t const* data = Handle<SeqOneByteString>::cast(subject)->GetChars();
+    bool minus = (data[0] == '-');
+    int start_pos = (minus ? 1 : 0);
+
+    if (start_pos == len) {
+      return isolate->factory()->nan_value();
+    } else if (data[start_pos] > '9') {
+      // Fast check for a junk value. A valid string may start from a
+      // whitespace, a sign ('+' or '-'), the decimal point, a decimal digit
+      // or the 'I' character ('Infinity'). All of that have codes not greater
+      // than '9' except 'I' and &nbsp;.
+      if (data[start_pos] != 'I' && data[start_pos] != 0xa0) {
+        return isolate->factory()->nan_value();
+      }
+    } else if (len - start_pos < 10 && AreDigits(data, start_pos, len)) {
+      // The maximal/minimal smi has 10 digits. If the string has less digits
+      // we know it will fit into the smi-data type.
+      int d = ParseDecimalInteger(data, start_pos, len);
+      if (minus) {
+        if (d == 0) return isolate->factory()->minus_zero_value();
+        d = -d;
+      } else if (!subject->HasHashCode() && len <= String::kMaxArrayIndexSize &&
+                 (len == 1 || data[0] != '0')) {
+        // String hash is not calculated yet but all the data are present.
+        // Update the hash field to speed up sequential convertions.
+        uint32_t hash = StringHasher::MakeArrayIndexHash(d, len);
+#ifdef DEBUG
+        subject->Hash();  // Force hash calculation.
+        DCHECK_EQ(static_cast<int>(subject->hash_field()),
+                  static_cast<int>(hash));
+#endif
+        subject->set_hash_field(hash);
+      }
+      return handle(Smi::FromInt(d), isolate);
+    }
+  }
+
+  // Slower case.
+  int flags = ALLOW_HEX | ALLOW_OCTAL | ALLOW_BINARY;
+  return isolate->factory()->NewNumber(
+      StringToDouble(isolate->unicode_cache(), subject, flags));
 }
 
 
@@ -9197,16 +9533,19 @@ int Map::Hash() {
 }
 
 
-static bool CheckEquivalent(Map* first, Map* second) {
+namespace {
+
+bool CheckEquivalent(Map* first, Map* second) {
   return first->GetConstructor() == second->GetConstructor() &&
          first->prototype() == second->prototype() &&
          first->instance_type() == second->instance_type() &&
          first->bit_field() == second->bit_field() &&
          first->is_extensible() == second->is_extensible() &&
          first->is_strong() == second->is_strong() &&
-         first->has_instance_call_handler() ==
-             second->has_instance_call_handler();
+         first->is_hidden_prototype() == second->is_hidden_prototype();
 }
+
+}  // namespace
 
 
 bool Map::EquivalentToForTransition(Map* other) {
@@ -9666,16 +10005,10 @@ static void InvalidatePrototypeChainsInternal(Map* map) {
     cell->set_value(Smi::FromInt(Map::kPrototypeChainInvalid));
   }
 
-  Object* maybe_array = proto_info->prototype_users();
-  if (!maybe_array->IsWeakFixedArray()) return;
-
-  WeakFixedArray* users = WeakFixedArray::cast(maybe_array);
-  for (int i = 0; i < users->Length(); ++i) {
-    Object* maybe_user = users->Get(i);
-    if (maybe_user->IsSmi()) continue;
-
-    // For now, only maps register themselves as users.
-    Map* user = Map::cast(maybe_user);
+  WeakFixedArray::Iterator iterator(proto_info->prototype_users());
+  // For now, only maps register themselves as users.
+  Map* user;
+  while ((user = iterator.Next<Map>())) {
     // Walk the prototype chain (backwards, towards leaf objects) if necessary.
     InvalidatePrototypeChainsInternal(user);
   }
@@ -10179,19 +10512,45 @@ Handle<JSObject> Script::GetWrapper(Handle<Script> script) {
 
 MaybeHandle<SharedFunctionInfo> Script::FindSharedFunctionInfo(
     FunctionLiteral* fun) {
-  if (shared_function_infos()->IsWeakFixedArray()) {
-    WeakFixedArray* array = WeakFixedArray::cast(shared_function_infos());
-    for (int i = 0; i < array->Length(); i++) {
-      Object* obj = array->Get(i);
-      if (!obj->IsSharedFunctionInfo()) continue;
-      SharedFunctionInfo* shared = SharedFunctionInfo::cast(obj);
-      if (fun->function_token_position() == shared->function_token_position() &&
-          fun->start_position() == shared->start_position()) {
-        return Handle<SharedFunctionInfo>(shared);
-      }
+  WeakFixedArray::Iterator iterator(shared_function_infos());
+  SharedFunctionInfo* shared;
+  while ((shared = iterator.Next<SharedFunctionInfo>())) {
+    if (fun->function_token_position() == shared->function_token_position() &&
+        fun->start_position() == shared->start_position()) {
+      return Handle<SharedFunctionInfo>(shared);
     }
   }
   return MaybeHandle<SharedFunctionInfo>();
+}
+
+
+Script::Iterator::Iterator(Isolate* isolate)
+    : iterator_(isolate->heap()->script_list()) {}
+
+
+Script* Script::Iterator::Next() { return iterator_.Next<Script>(); }
+
+
+SharedFunctionInfo::Iterator::Iterator(Isolate* isolate)
+    : script_iterator_(isolate), sfi_iterator_(NULL) {
+  NextScript();
+}
+
+
+bool SharedFunctionInfo::Iterator::NextScript() {
+  Script* script = script_iterator_.Next();
+  if (script == NULL) return false;
+  sfi_iterator_.Reset(script->shared_function_infos());
+  return true;
+}
+
+
+SharedFunctionInfo* SharedFunctionInfo::Iterator::Next() {
+  do {
+    SharedFunctionInfo* next = sfi_iterator_.Next<SharedFunctionInfo>();
+    if (next != NULL) return next;
+  } while (NextScript());
+  return NULL;
 }
 
 
@@ -10212,10 +10571,11 @@ void SharedFunctionInfo::SetScript(Handle<SharedFunctionInfo> shared,
     Handle<Script> script = Handle<Script>::cast(script_object);
     Handle<Object> list(script->shared_function_infos(), shared->GetIsolate());
 #ifdef DEBUG
-    if (list->IsWeakFixedArray()) {
-      Handle<WeakFixedArray> array = Handle<WeakFixedArray>::cast(list);
-      for (int i = 0; i < array->Length(); ++i) {
-        DCHECK(array->Get(i) != *shared);
+    {
+      WeakFixedArray::Iterator iterator(*list);
+      SharedFunctionInfo* next;
+      while ((next = iterator.Next<SharedFunctionInfo>())) {
+        DCHECK_NE(next, *shared);
       }
     }
 #endif  // DEBUG
@@ -11406,7 +11766,7 @@ void Code::PrintExtraICState(std::ostream& os,  // NOLINT
 void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
   os << "kind = " << Kind2String(kind()) << "\n";
   if (IsCodeStubOrIC()) {
-    const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this), true);
+    const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this));
     os << "major_key = " << (n == NULL ? "null" : n) << "\n";
   }
   if (is_inline_cache_stub()) {
@@ -11551,6 +11911,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
 
 
 void BytecodeArray::Disassemble(std::ostream& os) {
+  os << "Parameter count " << parameter_count() << "\n";
   os << "Frame size " << frame_size() << "\n";
   Vector<char> buf = Vector<char>::New(50);
 
@@ -11564,9 +11925,12 @@ void BytecodeArray::Disassemble(std::ostream& os) {
 
     SNPrintF(buf, "%p", bytecode_start);
     os << buf.start() << " : ";
-    interpreter::Bytecodes::Decode(os, bytecode_start);
+    interpreter::Bytecodes::Decode(os, bytecode_start, parameter_count());
     os << "\n";
   }
+
+  os << "Constant pool (size = " << constant_pool()->length() << ")\n";
+  constant_pool()->Print();
 }
 
 
@@ -12074,7 +12438,7 @@ MaybeHandle<Object> JSObject::SetPrototype(Handle<JSObject> object,
     // If the prototype chain didn't previously have element callbacks, then
     // KeyedStoreICs need to be cleared to ensure any that involve this
     // map go generic.
-    object->GetHeap()->ClearAllICsByKind(Code::KEYED_STORE_IC);
+    object->GetHeap()->ClearAllKeyedStoreICs();
   }
 
   heap->ClearInstanceofCache();
@@ -13917,12 +14281,6 @@ size_t JSTypedArray::element_size() {
 }
 
 
-void FixedArray::SetValue(uint32_t index, Object* value) { set(index, value); }
-
-
-void FixedDoubleArray::SetValue(uint32_t index, Object* value) {
-  set(index, value->Number());
-}
 void GlobalObject::InvalidatePropertyCell(Handle<GlobalObject> global,
                                           Handle<Name> name) {
   DCHECK(!global->HasFastProperties());
@@ -14073,7 +14431,7 @@ void StringTable::EnsureCapacityForDeserialization(Isolate* isolate,
   // We need a key instance for the virtual hash function.
   InternalizedStringKey dummy_key(Handle<String>::null());
   table = StringTable::EnsureCapacity(table, expected, &dummy_key);
-  isolate->factory()->set_string_table(table);
+  isolate->heap()->SetRootStringTable(*table);
 }
 
 
@@ -14107,7 +14465,7 @@ Handle<String> StringTable::LookupKey(Isolate* isolate, HashTableKey* key) {
   table->set(EntryToIndex(entry), *string);
   table->ElementAdded();
 
-  isolate->factory()->set_string_table(table);
+  isolate->heap()->SetRootStringTable(*table);
   return Handle<String>::cast(string);
 }
 
@@ -14488,7 +14846,7 @@ void SeededNumberDictionary::UpdateMaxNumberKey(uint32_t key,
   if (key > kRequiresSlowElementsLimit) {
     if (used_as_prototype) {
       // TODO(verwaest): Remove this hack.
-      GetHeap()->ClearAllICsByKind(Code::KEYED_STORE_IC);
+      GetHeap()->ClearAllKeyedStoreICs();
     }
     set_requires_slow_elements();
     return;
@@ -15093,6 +15451,75 @@ template void
 OrderedHashTableIterator<JSMapIterator, OrderedHashMap>::Transition();
 
 
+void JSSet::Initialize(Handle<JSSet> set, Isolate* isolate) {
+  Handle<OrderedHashSet> table = isolate->factory()->NewOrderedHashSet();
+  set->set_table(*table);
+}
+
+
+void JSSet::Clear(Handle<JSSet> set) {
+  Handle<OrderedHashSet> table(OrderedHashSet::cast(set->table()));
+  table = OrderedHashSet::Clear(table);
+  set->set_table(*table);
+}
+
+
+void JSMap::Initialize(Handle<JSMap> map, Isolate* isolate) {
+  Handle<OrderedHashMap> table = isolate->factory()->NewOrderedHashMap();
+  map->set_table(*table);
+}
+
+
+void JSMap::Clear(Handle<JSMap> map) {
+  Handle<OrderedHashMap> table(OrderedHashMap::cast(map->table()));
+  table = OrderedHashMap::Clear(table);
+  map->set_table(*table);
+}
+
+
+void JSWeakCollection::Initialize(Handle<JSWeakCollection> weak_collection,
+                                  Isolate* isolate) {
+  DCHECK_EQ(0, weak_collection->map()->GetInObjectProperties());
+  Handle<ObjectHashTable> table = ObjectHashTable::New(isolate, 0);
+  weak_collection->set_table(*table);
+}
+
+
+void JSWeakCollection::Set(Handle<JSWeakCollection> weak_collection,
+                           Handle<Object> key, Handle<Object> value,
+                           int32_t hash) {
+  DCHECK(key->IsJSReceiver() || key->IsSymbol());
+  Handle<ObjectHashTable> table(
+      ObjectHashTable::cast(weak_collection->table()));
+  DCHECK(table->IsKey(*key));
+  Handle<ObjectHashTable> new_table =
+      ObjectHashTable::Put(table, key, value, hash);
+  weak_collection->set_table(*new_table);
+  if (*table != *new_table) {
+    // Zap the old table since we didn't record slots for its elements.
+    table->FillWithHoles(0, table->length());
+  }
+}
+
+
+bool JSWeakCollection::Delete(Handle<JSWeakCollection> weak_collection,
+                              Handle<Object> key, int32_t hash) {
+  DCHECK(key->IsJSReceiver() || key->IsSymbol());
+  Handle<ObjectHashTable> table(
+      ObjectHashTable::cast(weak_collection->table()));
+  DCHECK(table->IsKey(*key));
+  bool was_present = false;
+  Handle<ObjectHashTable> new_table =
+      ObjectHashTable::Remove(table, key, &was_present, hash);
+  weak_collection->set_table(*new_table);
+  if (*table != *new_table) {
+    // Zap the old table since we didn't record slots for its elements.
+    table->FillWithHoles(0, table->length());
+  }
+  return was_present;
+}
+
+
 // Check if there is a break point at this code position.
 bool DebugInfo::HasBreakPoint(int code_position) {
   // Get the break point info object for this code position.
@@ -15460,6 +15887,27 @@ void JSDate::SetValue(Object* value, bool is_value_nan) {
 }
 
 
+// static
+MaybeHandle<Object> JSDate::ToPrimitive(Handle<JSReceiver> receiver,
+                                        Handle<Object> hint) {
+  Isolate* const isolate = receiver->GetIsolate();
+  if (hint->IsString()) {
+    Handle<String> hint_string = Handle<String>::cast(hint);
+    if (hint_string->Equals(isolate->heap()->number_string())) {
+      return JSReceiver::OrdinaryToPrimitive(receiver,
+                                             OrdinaryToPrimitiveHint::kNumber);
+    }
+    if (hint_string->Equals(isolate->heap()->default_string()) ||
+        hint_string->Equals(isolate->heap()->string_string())) {
+      return JSReceiver::OrdinaryToPrimitive(receiver,
+                                             OrdinaryToPrimitiveHint::kString);
+    }
+  }
+  THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kInvalidHint, hint),
+                  Object);
+}
+
+
 void JSDate::SetCachedFields(int64_t local_time_ms, DateCache* date_cache) {
   int days = DateCache::DaysFromTime(local_time_ms);
   int time_in_day_ms = DateCache::TimeInDay(local_time_ms, days);
@@ -15486,6 +15934,58 @@ void JSArrayBuffer::Neuter() {
   set_backing_store(NULL);
   set_byte_length(Smi::FromInt(0));
   set_was_neutered(true);
+}
+
+
+void JSArrayBuffer::Setup(Handle<JSArrayBuffer> array_buffer, Isolate* isolate,
+                          bool is_external, void* data, size_t allocated_length,
+                          SharedFlag shared) {
+  DCHECK(array_buffer->GetInternalFieldCount() ==
+         v8::ArrayBuffer::kInternalFieldCount);
+  for (int i = 0; i < v8::ArrayBuffer::kInternalFieldCount; i++) {
+    array_buffer->SetInternalField(i, Smi::FromInt(0));
+  }
+  array_buffer->set_backing_store(data);
+  array_buffer->set_bit_field(0);
+  array_buffer->set_is_external(is_external);
+  array_buffer->set_is_neuterable(shared == SharedFlag::kNotShared);
+  array_buffer->set_is_shared(shared == SharedFlag::kShared);
+
+  if (data && !is_external) {
+    isolate->heap()->RegisterNewArrayBuffer(
+        isolate->heap()->InNewSpace(*array_buffer), data, allocated_length);
+  }
+
+  Handle<Object> byte_length =
+      isolate->factory()->NewNumberFromSize(allocated_length);
+  CHECK(byte_length->IsSmi() || byte_length->IsHeapNumber());
+  array_buffer->set_byte_length(*byte_length);
+}
+
+
+bool JSArrayBuffer::SetupAllocatingData(Handle<JSArrayBuffer> array_buffer,
+                                        Isolate* isolate,
+                                        size_t allocated_length,
+                                        bool initialize, SharedFlag shared) {
+  void* data;
+  CHECK(isolate->array_buffer_allocator() != NULL);
+  // Prevent creating array buffers when serializing.
+  DCHECK(!isolate->serializer_enabled());
+  if (allocated_length != 0) {
+    if (initialize) {
+      data = isolate->array_buffer_allocator()->Allocate(allocated_length);
+    } else {
+      data = isolate->array_buffer_allocator()->AllocateUninitialized(
+          allocated_length);
+    }
+    if (data == NULL) return false;
+  } else {
+    data = NULL;
+  }
+
+  JSArrayBuffer::Setup(array_buffer, isolate, false, data, allocated_length,
+                       shared);
+  return true;
 }
 
 

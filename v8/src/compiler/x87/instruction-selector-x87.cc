@@ -44,9 +44,9 @@ class X87OperandGenerator final : public OperandGenerator {
       case IrOpcode::kHeapConstant: {
         // Constants in new space cannot be used as immediates in V8 because
         // the GC does not scan code objects when collecting the new generation.
-        Unique<HeapObject> value = OpParameter<Unique<HeapObject> >(node);
-        Isolate* isolate = value.handle()->GetIsolate();
-        return !isolate->heap()->InNewSpace(*value.handle());
+        Handle<HeapObject> value = OpParameter<Handle<HeapObject>>(node);
+        Isolate* isolate = value->GetIsolate();
+        return !isolate->heap()->InNewSpace(*value);
       }
       default:
         return false;
@@ -857,10 +857,14 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
     // Push any stack arguments.
     for (Node* input : base::Reversed(buffer.pushed_nodes)) {
       // TODO(titzer): handle pushing double parameters.
+      if (input == nullptr) continue;
       InstructionOperand value =
           g.CanBeImmediate(input)
               ? g.UseImmediate(input)
-              : IsSupported(ATOM) ? g.UseRegister(input) : g.Use(input);
+              : IsSupported(ATOM) ||
+                        sequence()->IsFloat(GetVirtualRegister(input))
+                    ? g.UseRegister(input)
+                    : g.Use(input);
       Emit(kX87Push, g.NoOutput(), value);
     }
   }

@@ -10,6 +10,7 @@
 #include "src/cpu-profiler.h"
 #include "src/deoptimizer.h"
 #include "src/frames-inl.h"
+#include "src/isolate-inl.h"
 #include "src/messages.h"
 
 namespace v8 {
@@ -21,10 +22,10 @@ RUNTIME_FUNCTION(Runtime_IsSloppyModeFunction) {
   CONVERT_ARG_CHECKED(JSReceiver, callable, 0);
   if (!callable->IsJSFunction()) {
     HandleScope scope(isolate);
-    Handle<Object> delegate;
+    Handle<JSFunction> delegate;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, delegate, Execution::TryGetFunctionDelegate(
-                               isolate, Handle<JSReceiver>(callable)));
+        isolate, delegate,
+        Execution::GetFunctionDelegate(isolate, Handle<JSReceiver>(callable)));
     callable = JSFunction::cast(*delegate);
   }
   JSFunction* function = JSFunction::cast(callable);
@@ -192,12 +193,15 @@ RUNTIME_FUNCTION(Runtime_FunctionIsAPIFunction) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_FunctionIsBuiltin) {
+RUNTIME_FUNCTION(Runtime_FunctionHidesSource) {
   SealHandleScope shs(isolate);
   DCHECK(args.length() == 1);
-
   CONVERT_ARG_CHECKED(JSFunction, f, 0);
-  return isolate->heap()->ToBoolean(f->IsBuiltin());
+
+  SharedFunctionInfo* shared = f->shared();
+  bool hide_source = !shared->script()->IsScript() ||
+                     Script::cast(shared->script())->hide_source();
+  return isolate->heap()->ToBoolean(hide_source);
 }
 
 
@@ -212,7 +216,7 @@ RUNTIME_FUNCTION(Runtime_SetCode) {
   Handle<SharedFunctionInfo> source_shared(source->shared());
   RUNTIME_ASSERT(!source_shared->bound());
 
-  if (!Compiler::EnsureCompiled(source, KEEP_EXCEPTION)) {
+  if (!Compiler::Compile(source, KEEP_EXCEPTION)) {
     return isolate->heap()->exception();
   }
 
@@ -511,7 +515,7 @@ RUNTIME_FUNCTION(Runtime_NewObjectFromBound) {
   if (!bound_function->IsJSFunction()) {
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
         isolate, bound_function,
-        Execution::TryGetConstructorDelegate(isolate, bound_function));
+        Execution::GetConstructorDelegate(isolate, bound_function));
   }
   DCHECK(bound_function->IsJSFunction());
 
@@ -598,7 +602,10 @@ RUNTIME_FUNCTION(Runtime_GetFunctionDelegate) {
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
   RUNTIME_ASSERT(!object->IsJSFunction());
-  return *Execution::GetFunctionDelegate(isolate, object);
+  Handle<JSFunction> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, result, Execution::GetFunctionDelegate(isolate, object));
+  return *result;
 }
 
 
@@ -607,7 +614,10 @@ RUNTIME_FUNCTION(Runtime_GetConstructorDelegate) {
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
   RUNTIME_ASSERT(!object->IsJSFunction());
-  return *Execution::GetConstructorDelegate(isolate, object);
+  Handle<JSFunction> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, result, Execution::GetConstructorDelegate(isolate, object));
+  return *result;
 }
 
 

@@ -19,8 +19,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "v8-version.h"
-#include "v8config.h"
+#include "v8-version.h"  // NOLINT(build/include)
+#include "v8config.h"    // NOLINT(build/include)
 
 // We reserve the V8_* prefix for macros defined in V8 public API and
 // assume there are no name conflicts with the embedder's code.
@@ -112,8 +112,8 @@ class MaybeLocal;
 template <class T> class Eternal;
 template<class T> class NonCopyablePersistentTraits;
 template<class T> class PersistentBase;
-template<class T,
-         class M = NonCopyablePersistentTraits<T> > class Persistent;
+template <class T, class M = NonCopyablePersistentTraits<T> >
+class Persistent;
 template <class T>
 class Global;
 template<class K, class V, class T> class PersistentValueMap;
@@ -6948,7 +6948,7 @@ class Internals {
   static const int kJSObjectHeaderSize = 3 * kApiPointerSize;
   static const int kFixedArrayHeaderSize = 2 * kApiPointerSize;
   static const int kContextHeaderSize = 2 * kApiPointerSize;
-  static const int kContextEmbedderDataIndex = 27;
+  static const int kContextEmbedderDataIndex = 5;
   static const int kFullStringRepresentationMask = 0x07;
   static const int kStringEncodingMask = 0x4;
   static const int kExternalTwoByteRepresentationTag = 0x02;
@@ -6981,7 +6981,7 @@ class Internals {
   static const int kNodeIsIndependentShift = 3;
   static const int kNodeIsPartiallyDependentShift = 4;
 
-  static const int kJSObjectType = 0xb6;
+  static const int kJSObjectType = 0xb7;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x83;
   static const int kForeignType = 0x87;

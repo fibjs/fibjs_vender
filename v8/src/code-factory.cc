@@ -153,9 +153,8 @@ Callable CodeFactory::StoreGlobalViaContext(Isolate* isolate, int depth,
 
 
 // static
-Callable CodeFactory::Instanceof(Isolate* isolate,
-                                 InstanceofStub::Flags flags) {
-  InstanceofStub stub(isolate, flags);
+Callable CodeFactory::InstanceOf(Isolate* isolate) {
+  InstanceOfStub stub(isolate);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 
@@ -172,6 +171,13 @@ Callable CodeFactory::ToBoolean(Isolate* isolate,
 // static
 Callable CodeFactory::ToNumber(Isolate* isolate) {
   ToNumberStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+
+// static
+Callable CodeFactory::ToString(Isolate* isolate) {
+  ToStringStub stub(isolate);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 

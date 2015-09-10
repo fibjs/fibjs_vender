@@ -7,6 +7,8 @@
 #include "src/compiler/access-builder.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/node-properties.h"
+#include "src/objects-inl.h"  // TODO(mstarzinger): Temporary cycle breaker!
+#include "src/type-feedback-vector.h"
 
 namespace v8 {
 namespace internal {
@@ -41,10 +43,9 @@ Reduction JSTypeFeedbackLowering::ReduceJSLoadNamed(Node* node) {
   // We need to make optimistic assumptions to continue.
   if (!(flags() & kDeoptimizationEnabled)) return NoChange();
   LoadNamedParameters const& p = LoadNamedParametersOf(node->op());
-  Handle<TypeFeedbackVector> vector;
-  if (!p.feedback().vector().ToHandle(&vector)) return NoChange();
-  if (p.name().handle().is_identical_to(factory()->length_string())) {
-    LoadICNexus nexus(vector, p.feedback().slot());
+  if (p.feedback().vector().is_null()) return NoChange();
+  if (p.name().is_identical_to(factory()->length_string())) {
+    LoadICNexus nexus(p.feedback().vector(), p.feedback().slot());
     MapHandleList maps;
     if (nexus.ExtractMaps(&maps) > 0) {
       for (Handle<Map> map : maps) {

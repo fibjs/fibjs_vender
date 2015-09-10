@@ -230,12 +230,6 @@ class AstGraphBuilder : public AstVisitor {
   // frame states with the undefined values.
   void ClearNonLiveSlotsInFrameStates();
 
-  // Helper to wrap a Handle<T> into a Unique<T>.
-  template <class T>
-  Unique<T> MakeUnique(Handle<T> object) {
-    return Unique<T>::CreateUninitialized(object);
-  }
-
   Node** EnsureInputBufferSize(int size);
 
   // Named and keyed loads require a VectorSlotPair for successful lowering.
@@ -261,9 +255,6 @@ class AstGraphBuilder : public AstVisitor {
 
   // Builder to create an arguments object if it is used.
   Node* BuildArgumentsObject(Variable* arguments);
-
-  // Builder to create an array of rest parameters if used
-  Node* BuildRestArgumentsArray(Variable* rest, int index);
 
   // Builder that assigns to the {.this_function} internal variable if needed.
   Node* BuildThisFunctionVariable(Variable* this_function_var);
@@ -315,8 +306,8 @@ class AstGraphBuilder : public AstVisitor {
                          TypeFeedbackId id, int slot_index);
 
   // Builders for accessing the function context.
-  Node* BuildLoadBuiltinsObject();
   Node* BuildLoadGlobalObject();
+  Node* BuildLoadNativeContextField(int index);
   Node* BuildLoadGlobalProxy();
   Node* BuildLoadFeedbackVector();
 

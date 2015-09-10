@@ -1265,7 +1265,7 @@ void V8HeapExplorer::ExtractContextReferences(int entry, Context* context) {
     TagObject(context->normalized_map_cache(), "(context norm. map cache)");
     TagObject(context->runtime_context(), "(runtime context)");
     TagObject(context->embedder_data(), "(context data)");
-    NATIVE_CONTEXT_FIELDS(EXTRACT_CONTEXT_FIELD);
+    NATIVE_CONTEXT_FIELDS(EXTRACT_CONTEXT_FIELD)
     EXTRACT_CONTEXT_FIELD(OPTIMIZED_FUNCTIONS_LIST, unused,
                           optimized_functions_list);
     EXTRACT_CONTEXT_FIELD(OPTIMIZED_CODE_LIST, unused, optimized_code_list);
@@ -1472,8 +1472,8 @@ void V8HeapExplorer::TagBuiltinCodeObject(Code* code, const char* name) {
 void V8HeapExplorer::TagCodeObject(Code* code) {
   if (code->kind() == Code::STUB) {
     TagObject(code, names_->GetFormatted(
-                        "(%s code)", CodeStub::MajorName(
-                                         CodeStub::GetMajorKey(code), true)));
+                        "(%s code)",
+                        CodeStub::MajorName(CodeStub::GetMajorKey(code))));
   }
 }
 
@@ -2162,7 +2162,7 @@ const char* V8HeapExplorer::GetStrongGcSubrootName(Object* object) {
 #define SYMBOL_NAME(name) NAME_ENTRY(name)
     PRIVATE_SYMBOL_LIST(SYMBOL_NAME)
 #undef SYMBOL_NAME
-#define SYMBOL_NAME(name, varname, description) NAME_ENTRY(name)
+#define SYMBOL_NAME(name, description) NAME_ENTRY(name)
     PUBLIC_SYMBOL_LIST(SYMBOL_NAME)
 #undef SYMBOL_NAME
 #undef NAME_ENTRY

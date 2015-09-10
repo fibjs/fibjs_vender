@@ -105,10 +105,9 @@ class LChunkBuilder;
   V(HasInstanceTypeAndBranch)                 \
   V(InnerAllocatedObject)                     \
   V(InstanceOf)                               \
-  V(InstanceOfKnownGlobal)                    \
   V(InvokeFunction)                           \
   V(IsConstructCallAndBranch)                 \
-  V(IsObjectAndBranch)                        \
+  V(HasInPrototypeChainAndBranch)             \
   V(IsStringAndBranch)                        \
   V(IsSmiAndBranch)                           \
   V(IsUndetectableAndBranch)                  \
@@ -132,6 +131,7 @@ class LChunkBuilder;
   V(OsrEntry)                                 \
   V(Parameter)                                \
   V(Power)                                    \
+  V(Prologue)                                 \
   V(PushArguments)                            \
   V(RegExpLiteral)                            \
   V(Return)                                   \
@@ -1282,6 +1282,18 @@ class HDebugBreak final : public HTemplateInstruction<0> {
   }
 
   DECLARE_CONCRETE_INSTRUCTION(DebugBreak)
+};
+
+
+class HPrologue final : public HTemplateInstruction<0> {
+ public:
+  static HPrologue* New(Zone* zone) { return new (zone) HPrologue(); }
+
+  Representation RequiredInputRepresentation(int index) override {
+    return Representation::None();
+  }
+
+  DECLARE_CONCRETE_INSTRUCTION(Prologue)
 };
 
 
@@ -2473,16 +2485,13 @@ class HCallNewArray final : public HBinaryCall {
 
 class HCallRuntime final : public HCall<1> {
  public:
-  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P3(HCallRuntime,
-                                              Handle<String>,
-                                              const Runtime::Function*,
-                                              int);
+  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P2(HCallRuntime,
+                                              const Runtime::Function*, int);
 
   std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
 
   HValue* context() { return OperandAt(0); }
   const Runtime::Function* function() const { return c_function_; }
-  Handle<String> name() const { return name_; }
   SaveFPRegsMode save_doubles() const { return save_doubles_; }
   void set_save_doubles(SaveFPRegsMode save_doubles) {
     save_doubles_ = save_doubles;
@@ -2495,17 +2504,15 @@ class HCallRuntime final : public HCall<1> {
   DECLARE_CONCRETE_INSTRUCTION(CallRuntime)
 
  private:
-  HCallRuntime(HValue* context,
-               Handle<String> name,
-               const Runtime::Function* c_function,
+  HCallRuntime(HValue* context, const Runtime::Function* c_function,
                int argument_count)
-      : HCall<1>(argument_count), c_function_(c_function), name_(name),
+      : HCall<1>(argument_count),
+        c_function_(c_function),
         save_doubles_(kDontSaveFPRegs) {
     SetOperandAt(0, context);
   }
 
   const Runtime::Function* c_function_;
-  Handle<String> name_;
   SaveFPRegsMode save_doubles_;
 };
 
@@ -2635,7 +2642,12 @@ class HUnaryMathOperation final : public HTemplateInstruction<2> {
     SetFlag(kAllowUndefinedAsNaN);
   }
 
-  bool IsDeletable() const override { return true; }
+  bool IsDeletable() const override {
+    // TODO(crankshaft): This should be true, however the semantics of this
+    // instruction also include the ToNumber conversion that is mentioned in the
+    // spec, which is of course observable.
+    return false;
+  }
 
   HValue* SimplifiedDividendForMathFloorOfDiv(HDiv* hdiv);
   HValue* SimplifiedDivisorForMathFloorOfDiv(HDiv* hdiv);
@@ -3258,14 +3270,7 @@ class InductionVariableData final : public ZoneObject {
 class HPhi final : public HValue {
  public:
   HPhi(int merged_index, Zone* zone)
-      : inputs_(2, zone),
-        merged_index_(merged_index),
-        phi_id_(-1),
-        induction_variable_data_(NULL) {
-    for (int i = 0; i < Representation::kNumRepresentations; i++) {
-      non_phi_uses_[i] = 0;
-      indirect_uses_[i] = 0;
-    }
+      : inputs_(2, zone), merged_index_(merged_index) {
     DCHECK(merged_index >= 0 || merged_index == kInvalidMergedIndex);
     SetFlag(kFlexibleRepresentation);
     SetFlag(kAllowUndefinedAsNaN);
@@ -3318,32 +3323,15 @@ class HPhi final : public HValue {
 
   void InitRealUses(int id);
   void AddNonPhiUsesFrom(HPhi* other);
-  void AddIndirectUsesTo(int* use_count);
 
-  int tagged_non_phi_uses() const {
-    return non_phi_uses_[Representation::kTagged];
+  Representation representation_from_indirect_uses() const {
+    return representation_from_indirect_uses_;
   }
-  int smi_non_phi_uses() const {
-    return non_phi_uses_[Representation::kSmi];
+
+  bool has_type_feedback_from_uses() const {
+    return has_type_feedback_from_uses_;
   }
-  int int32_non_phi_uses() const {
-    return non_phi_uses_[Representation::kInteger32];
-  }
-  int double_non_phi_uses() const {
-    return non_phi_uses_[Representation::kDouble];
-  }
-  int tagged_indirect_uses() const {
-    return indirect_uses_[Representation::kTagged];
-  }
-  int smi_indirect_uses() const {
-    return indirect_uses_[Representation::kSmi];
-  }
-  int int32_indirect_uses() const {
-    return indirect_uses_[Representation::kInteger32];
-  }
-  int double_indirect_uses() const {
-    return indirect_uses_[Representation::kDouble];
-  }
+
   int phi_id() { return phi_id_; }
 
   static HPhi* cast(HValue* value) {
@@ -3364,13 +3352,19 @@ class HPhi final : public HValue {
   }
 
  private:
-  ZoneList<HValue*> inputs_;
-  int merged_index_;
+  Representation representation_from_non_phi_uses() const {
+    return representation_from_non_phi_uses_;
+  }
 
-  int non_phi_uses_[Representation::kNumRepresentations];
-  int indirect_uses_[Representation::kNumRepresentations];
-  int phi_id_;
-  InductionVariableData* induction_variable_data_;
+  ZoneList<HValue*> inputs_;
+  int merged_index_ = 0;
+
+  int phi_id_ = -1;
+  InductionVariableData* induction_variable_data_ = nullptr;
+
+  Representation representation_from_indirect_uses_ = Representation::None();
+  Representation representation_from_non_phi_uses_ = Representation::None();
+  bool has_type_feedback_from_uses_ = false;
 
   // TODO(titzer): we can't eliminate the receiver for generating backtraces
   bool IsDeletable() const override { return !IsReceiver(); }
@@ -3629,6 +3623,7 @@ class HConstant final : public HTemplateInstruction<0> {
 
   bool HasBooleanValue() const { return type_.IsBoolean(); }
   bool BooleanValue() const { return BooleanValueField::decode(bit_field_); }
+  bool IsCallable() const { return IsCallableField::decode(bit_field_); }
   bool IsUndetectable() const {
     return IsUndetectableField::decode(bit_field_);
   }
@@ -3761,9 +3756,10 @@ class HConstant final : public HTemplateInstruction<0> {
   class IsNotInNewSpaceField : public BitField<bool, 5, 1> {};
   class BooleanValueField : public BitField<bool, 6, 1> {};
   class IsUndetectableField : public BitField<bool, 7, 1> {};
+  class IsCallableField : public BitField<bool, 8, 1> {};
 
   static const InstanceType kUnknownInstanceType = FILLER_TYPE;
-  class InstanceTypeField : public BitField<InstanceType, 8, 8> {};
+  class InstanceTypeField : public BitField<InstanceType, 16, 8> {};
 
   // If this is a numerical constant, object_ either points to the
   // HeapObject the constant originated from or is null.  If the
@@ -4454,28 +4450,6 @@ class HCompareObjectEqAndBranch : public HTemplateControlInstruction<2, 2> {
 };
 
 
-class HIsObjectAndBranch final : public HUnaryControlInstruction {
- public:
-  DECLARE_INSTRUCTION_FACTORY_P1(HIsObjectAndBranch, HValue*);
-  DECLARE_INSTRUCTION_FACTORY_P3(HIsObjectAndBranch, HValue*,
-                                 HBasicBlock*, HBasicBlock*);
-
-  Representation RequiredInputRepresentation(int index) override {
-    return Representation::Tagged();
-  }
-
-  bool KnownSuccessorBlock(HBasicBlock** block) override;
-
-  DECLARE_CONCRETE_INSTRUCTION(IsObjectAndBranch)
-
- private:
-  HIsObjectAndBranch(HValue* value,
-                     HBasicBlock* true_target = NULL,
-                     HBasicBlock* false_target = NULL)
-    : HUnaryControlInstruction(value, true_target, false_target) {}
-};
-
-
 class HIsStringAndBranch final : public HUnaryControlInstruction {
  public:
   DECLARE_INSTRUCTION_FACTORY_P1(HIsStringAndBranch, HValue*);
@@ -4760,34 +4734,32 @@ class HInstanceOf final : public HBinaryOperation {
 };
 
 
-class HInstanceOfKnownGlobal final : public HTemplateInstruction<2> {
+class HHasInPrototypeChainAndBranch final
+    : public HTemplateControlInstruction<2, 2> {
  public:
-  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P2(HInstanceOfKnownGlobal,
-                                              HValue*,
-                                              Handle<JSFunction>);
+  DECLARE_INSTRUCTION_FACTORY_P2(HHasInPrototypeChainAndBranch, HValue*,
+                                 HValue*);
 
-  HValue* context() { return OperandAt(0); }
-  HValue* left() { return OperandAt(1); }
-  Handle<JSFunction> function() { return function_; }
+  HValue* object() const { return OperandAt(0); }
+  HValue* prototype() const { return OperandAt(1); }
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::Tagged();
   }
 
-  DECLARE_CONCRETE_INSTRUCTION(InstanceOfKnownGlobal)
-
- private:
-  HInstanceOfKnownGlobal(HValue* context,
-                         HValue* left,
-                         Handle<JSFunction> right)
-      : HTemplateInstruction<2>(HType::Boolean()), function_(right) {
-    SetOperandAt(0, context);
-    SetOperandAt(1, left);
-    set_representation(Representation::Tagged());
-    SetAllSideEffects();
+  bool ObjectNeedsSmiCheck() const {
+    return !object()->type().IsHeapObject() &&
+           !object()->representation().IsHeapObject();
   }
 
-  Handle<JSFunction> function_;
+  DECLARE_CONCRETE_INSTRUCTION(HasInPrototypeChainAndBranch)
+
+ private:
+  HHasInPrototypeChainAndBranch(HValue* object, HValue* prototype) {
+    SetOperandAt(0, object);
+    SetOperandAt(1, prototype);
+    SetDependsOnFlag(kCalls);
+  }
 };
 
 

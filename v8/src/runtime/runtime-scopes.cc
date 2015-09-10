@@ -7,6 +7,7 @@
 #include "src/accessors.h"
 #include "src/arguments.h"
 #include "src/frames-inl.h"
+#include "src/isolate-inl.h"
 #include "src/messages.h"
 #include "src/scopeinfo.h"
 #include "src/scopes.h"
@@ -206,8 +207,9 @@ namespace {
 Object* DeclareLookupSlot(Isolate* isolate, Handle<String> name,
                           Handle<Object> initial_value,
                           PropertyAttributes attr) {
-  // Declarations are always made in a function, eval or script context. In
-  // the case of eval code, the context passed is the context of the caller,
+  // Declarations are always made in a function, eval or script context, or
+  // a declaration block scope.
+  // In the case of eval code, the context passed is the context of the caller,
   // which may be some nested context and not the declaration context.
   Handle<Context> context_arg(isolate->context(), isolate);
   Handle<Context> context(context_arg->declaration_context(), isolate);
@@ -241,8 +243,7 @@ Object* DeclareLookupSlot(Isolate* isolate, Handle<String> name,
     return DeclareGlobals(isolate, Handle<JSGlobalObject>::cast(holder), name,
                           value, attr, is_var, is_const, is_function);
   }
-  if (context_arg->has_extension() &&
-      context_arg->extension()->IsJSGlobalObject()) {
+  if (context_arg->extension()->IsJSGlobalObject()) {
     Handle<JSGlobalObject> global(
         JSGlobalObject::cast(context_arg->extension()), isolate);
     return DeclareGlobals(isolate, global, name, value, attr, is_var, is_const,
@@ -265,7 +266,7 @@ Object* DeclareLookupSlot(Isolate* isolate, Handle<String> name,
     if (is_var) return isolate->heap()->undefined_value();
 
     DCHECK(is_function);
-    if (index >= 0) {
+    if (index != Context::kNotFound) {
       DCHECK(holder.is_identical_to(context));
       context->set(index, *initial_value);
       return isolate->heap()->undefined_value();
@@ -274,7 +275,19 @@ Object* DeclareLookupSlot(Isolate* isolate, Handle<String> name,
     object = Handle<JSObject>::cast(holder);
 
   } else if (context->has_extension()) {
-    object = handle(JSObject::cast(context->extension()));
+    // Sloppy varblock contexts might not have an extension object yet,
+    // in which case their extension is a ScopeInfo.
+    if (context->extension()->IsScopeInfo()) {
+      DCHECK(context->IsBlockContext());
+      object = isolate->factory()->NewJSObject(
+          isolate->context_extension_function());
+      Handle<Object> extension =
+          isolate->factory()->NewSloppyBlockWithEvalContextExtension(
+              handle(context->scope_info()), object);
+      context->set_extension(*extension);
+    } else {
+      object = handle(context->extension_object(), isolate);
+    }
     DCHECK(object->IsJSContextExtensionObject() || object->IsJSGlobalObject());
   } else {
     DCHECK(context->IsFunctionContext());
@@ -334,7 +347,7 @@ RUNTIME_FUNCTION(Runtime_InitializeLegacyConstLookupSlot) {
     if (isolate->has_pending_exception()) return isolate->heap()->exception();
   }
 
-  if (index >= 0) {
+  if (index != Context::kNotFound) {
     DCHECK(holder->IsContext());
     // Property was found in a context.  Perform the assignment if the constant
     // was uninitialized.
@@ -357,8 +370,8 @@ RUNTIME_FUNCTION(Runtime_InitializeLegacyConstLookupSlot) {
     if (declaration_context->IsScriptContext()) {
       holder = handle(declaration_context->global_object(), isolate);
     } else {
-      DCHECK(declaration_context->has_extension());
-      holder = handle(declaration_context->extension(), isolate);
+      holder = handle(declaration_context->extension_object(), isolate);
+      DCHECK(!holder.is_null());
     }
     CHECK(holder->IsJSObject());
   } else {
@@ -540,54 +553,6 @@ RUNTIME_FUNCTION(Runtime_NewStrictArguments) {
   Object** parameters = reinterpret_cast<Object**>(args[1]);
   CONVERT_SMI_ARG_CHECKED(argument_count, 2);
   return *NewStrictArguments(isolate, callee, parameters, argument_count);
-}
-
-
-static Handle<JSArray> NewRestParam(Isolate* isolate, Object** parameters,
-                                    int num_params, int rest_index,
-                                    LanguageMode language_mode) {
-  parameters -= rest_index;
-  int num_elements = std::max(0, num_params - rest_index);
-  Handle<FixedArray> elements =
-      isolate->factory()->NewUninitializedFixedArray(num_elements);
-  for (int i = 0; i < num_elements; ++i) {
-    elements->set(i, *--parameters);
-  }
-  return isolate->factory()->NewJSArrayWithElements(
-      elements, FAST_ELEMENTS, num_elements, strength(language_mode));
-}
-
-
-RUNTIME_FUNCTION(Runtime_NewRestParam) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 4);
-  Object** parameters = reinterpret_cast<Object**>(args[0]);
-  CONVERT_SMI_ARG_CHECKED(num_params, 1);
-  CONVERT_SMI_ARG_CHECKED(rest_index, 2);
-  CONVERT_SMI_ARG_CHECKED(language_mode, 3);
-
-  return *NewRestParam(isolate, parameters, num_params, rest_index,
-                       static_cast<LanguageMode>(language_mode));
-}
-
-
-RUNTIME_FUNCTION(Runtime_NewRestParamSlow) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-  CONVERT_SMI_ARG_CHECKED(rest_index, 0);
-  CONVERT_SMI_ARG_CHECKED(language_mode, 1);
-
-  JavaScriptFrameIterator it(isolate);
-
-  // Find the frame that holds the actual arguments passed to the function.
-  it.AdvanceToArgumentsFrame();
-  JavaScriptFrame* frame = it.frame();
-
-  int argument_count = frame->GetArgumentsLength();
-  Object** parameters = reinterpret_cast<Object**>(frame->GetParameterSlot(-1));
-
-  return *NewRestParam(isolate, parameters, argument_count, rest_index,
-                       static_cast<LanguageMode>(language_mode));
 }
 
 
@@ -938,8 +903,7 @@ static ObjectPair LoadLookupSlotHelper(Arguments args, Isolate* isolate,
     return MakePair(isolate->heap()->exception(), NULL);
   }
 
-  // If the index is non-negative, the slot has been found in a context.
-  if (index >= 0) {
+  if (index != Context::kNotFound) {
     DCHECK(holder->IsContext());
     // If the "property" we were looking for is a local variable, the
     // receiver is the global object; see ECMA-262, 3rd., 10.1.6 and 10.2.3.
@@ -1041,7 +1005,7 @@ RUNTIME_FUNCTION(Runtime_StoreLookupSlot) {
   }
 
   // The property was found in a context slot.
-  if (index >= 0) {
+  if (index != Context::kNotFound) {
     if ((binding_flags == MUTABLE_CHECK_INITIALIZED ||
          binding_flags == IMMUTABLE_CHECK_INITIALIZED_HARMONY) &&
         Handle<Context>::cast(holder)->is_the_hole(index)) {
@@ -1128,7 +1092,7 @@ RUNTIME_FUNCTION(Runtime_Arguments) {
   // Convert the key to a string.
   Handle<Object> converted;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, converted,
-                                     Execution::ToString(isolate, raw_key));
+                                     Object::ToString(isolate, raw_key));
   Handle<String> key = Handle<String>::cast(converted);
 
   // Try to convert the string key into an array index.

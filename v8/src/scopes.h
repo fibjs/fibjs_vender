@@ -128,8 +128,9 @@ class Scope: public ZoneObject {
   // Declare a parameter in this scope.  When there are duplicated
   // parameters the rightmost one 'wins'.  However, the implementation
   // expects all parameters to be declared and from left to right.
-  Variable* DeclareParameter(const AstRawString* name, VariableMode mode,
-                             bool is_rest, bool* is_duplicate);
+  Variable* DeclareParameter(
+      const AstRawString* name, VariableMode mode,
+      bool is_optional, bool is_rest, bool* is_duplicate);
 
   // Declare a local variable in this scope. If the variable has been
   // declared before, the previously declared variable is returned.
@@ -224,6 +225,17 @@ class Scope: public ZoneObject {
   // Set the ASM module flag.
   void SetAsmModule() { asm_module_ = true; }
 
+  // Inform the scope that the scope may execute declarations nonlinearly.
+  // Currently, the only nonlinear scope is a switch statement. The name is
+  // more general in case something else comes up with similar control flow,
+  // for example the ability to break out of something which does not have
+  // its own lexical scope.
+  // The bit does not need to be stored on the ScopeInfo because none of
+  // the three compilers will perform hole check elimination on a variable
+  // located in VariableLocation::CONTEXT. So, direct eval and closures
+  // will not expose holes.
+  void SetNonlinear() { scope_nonlinear_ = true; }
+
   // Position in the source where this scope begins and ends.
   //
   // * For the scope of a with statement
@@ -246,6 +258,10 @@ class Scope: public ZoneObject {
   //     for (let x ...) stmt
   //   start position: start position of '('
   //   end position: end position of last token of 'stmt'
+  // * For the scope of a switch statement
+  //     switch (tag) { cases }
+  //   start position: start position of '{'
+  //   end position: end position of '}'
   int start_position() const { return start_position_; }
   void set_start_position(int statement_pos) {
     start_position_ = statement_pos;
@@ -284,7 +300,7 @@ class Scope: public ZoneObject {
 
   // Information about which scopes calls eval.
   bool calls_eval() const { return scope_calls_eval_; }
-  bool calls_sloppy_eval() {
+  bool calls_sloppy_eval() const {
     return scope_calls_eval_ && is_sloppy(language_mode_);
   }
   bool outer_scope_calls_sloppy_eval() const {
@@ -304,6 +320,11 @@ class Scope: public ZoneObject {
   bool inner_uses_arguments() const { return inner_scope_uses_arguments_; }
   // Does this scope access "super" property (super.foo).
   bool uses_super_property() const { return scope_uses_super_property_; }
+  // Does this scope have the potential to execute declarations non-linearly?
+  bool is_nonlinear() const { return scope_nonlinear_; }
+
+  // Whether this needs to be represented by a runtime context.
+  bool NeedsContext() const { return num_heap_slots() > 0; }
 
   bool NeedsHomeObject() const {
     return scope_uses_super_property_ ||
@@ -362,16 +383,8 @@ class Scope: public ZoneObject {
     return params_[index];
   }
 
-  // Returns the default function arity --- does not include rest parameters.
-  int default_function_length() const {
-    int count = params_.length();
-    if (rest_index_ >= 0) {
-      DCHECK(count > 0);
-      DCHECK(is_function_scope());
-      --count;
-    }
-    return count;
-  }
+  // Returns the default function arity excluding default or rest parameters.
+  int default_function_length() const { return arity_; }
 
   int num_parameters() const { return params_.length(); }
 
@@ -387,8 +400,23 @@ class Scope: public ZoneObject {
   }
 
   bool has_simple_parameters() const {
-    DCHECK(is_function_scope());
     return has_simple_parameters_;
+  }
+
+  // TODO(caitp): manage this state in a better way. PreParser must be able to
+  // communicate that the scope is non-simple, without allocating any parameters
+  // as the Parser does. This is necessary to ensure that TC39's proposed early
+  // error can be reported consistently regardless of whether lazily parsed or
+  // not.
+  void SetHasNonSimpleParameters() {
+    DCHECK(is_function_scope());
+    has_simple_parameters_ = false;
+  }
+
+  // Retrieve `IsSimpleParameterList` of current or outer function.
+  bool HasSimpleParameters() {
+    Scope* scope = ClosureScope();
+    return !scope->is_function_scope() || scope->has_simple_parameters();
   }
 
   // The local variable 'arguments' if we need to allocate it; NULL otherwise.
@@ -594,6 +622,8 @@ class Scope: public ZoneObject {
   bool asm_module_;
   // This scope's outer context is an asm module.
   bool asm_function_;
+  // This scope's declarations might not be executed in order (e.g., switch).
+  bool scope_nonlinear_;
   // The language mode of this scope.
   LanguageMode language_mode_;
   // Source positions.
@@ -629,6 +659,7 @@ class Scope: public ZoneObject {
   Variable* module_var_;
 
   // Info about the parameter list of a function.
+  int arity_;
   bool has_simple_parameters_;
   Variable* rest_parameter_;
   int rest_index_;

@@ -16,6 +16,7 @@
 #include "src/heap-profiler.h"
 #include "src/ic/handler-compiler.h"
 #include "src/ic/ic.h"
+#include "src/isolate-inl.h"
 #include "src/messages.h"
 #include "src/prototype.h"
 #include "src/vm-state-inl.h"
@@ -90,7 +91,6 @@ void BuiltinArguments<NEEDS_CALLED_FUNCTION>::Verify() {
 BUILTIN_LIST_C(DEF_ARG_TYPE)
 #undef DEF_ARG_TYPE
 
-}  // namespace
 
 // ----------------------------------------------------------------------------
 // Support macro for defining builtins in C++.
@@ -135,7 +135,7 @@ BUILTIN_LIST_C(DEF_ARG_TYPE)
 
 
 #ifdef DEBUG
-static inline bool CalledAsConstructor(Isolate* isolate) {
+inline bool CalledAsConstructor(Isolate* isolate) {
   // Calculate the result using a full stack frame iterator and check
   // that the state of the stack is as we assume it to be in the
   // code below.
@@ -165,26 +165,53 @@ static inline bool CalledAsConstructor(Isolate* isolate) {
 
 // ----------------------------------------------------------------------------
 
-BUILTIN(Illegal) {
-  UNREACHABLE();
-  return isolate->heap()->undefined_value();  // Make compiler happy.
+
+inline bool ClampedToInteger(Object* object, int* out) {
+  // This is an extended version of ECMA-262 7.1.11 handling signed values
+  // Try to convert object to a number and clamp values to [kMinInt, kMaxInt]
+  if (object->IsSmi()) {
+    *out = Smi::cast(object)->value();
+    return true;
+  } else if (object->IsHeapNumber()) {
+    double value = HeapNumber::cast(object)->value();
+    if (std::isnan(value)) {
+      *out = 0;
+    } else if (value > kMaxInt) {
+      *out = kMaxInt;
+    } else if (value < kMinInt) {
+      *out = kMinInt;
+    } else {
+      *out = static_cast<int>(value);
+    }
+    return true;
+  } else if (object->IsUndefined() || object->IsNull()) {
+    *out = 0;
+    return true;
+  } else if (object->IsBoolean()) {
+    *out = object->IsTrue();
+    return true;
+  }
+  return false;
 }
 
 
-BUILTIN(EmptyFunction) {
-  return isolate->heap()->undefined_value();
+inline bool GetSloppyArgumentsLength(Isolate* isolate, Handle<JSObject> object,
+                                     int* out) {
+  Map* arguments_map =
+      isolate->context()->native_context()->sloppy_arguments_map();
+  if (object->map() != arguments_map || !object->HasFastElements()) {
+    return false;
+  }
+  Object* len_obj = object->InObjectPropertyAt(Heap::kArgumentsLengthIndex);
+  if (!len_obj->IsSmi()) {
+    return false;
+  }
+  *out = Smi::cast(len_obj)->value();
+  return *out <= object->elements()->length();
 }
 
 
-static void MoveDoubleElements(FixedDoubleArray* dst, int dst_index,
-                               FixedDoubleArray* src, int src_index, int len) {
-  if (len == 0) return;
-  MemMove(dst->data_start() + dst_index, src->data_start() + src_index,
-          len * kDoubleSize);
-}
-
-
-static bool ArrayPrototypeHasNoElements(PrototypeIterator* iter) {
+inline bool PrototypeHasNoElements(PrototypeIterator* iter) {
   DisallowHeapAllocation no_gc;
   for (; !iter->IsAtEnd(); iter->Advance()) {
     if (iter->GetCurrent()->IsJSProxy()) return false;
@@ -197,8 +224,8 @@ static bool ArrayPrototypeHasNoElements(PrototypeIterator* iter) {
 }
 
 
-static inline bool IsJSArrayFastElementMovingAllowed(Isolate* isolate,
-                                                     JSArray* receiver) {
+inline bool IsJSArrayFastElementMovingAllowed(Isolate* isolate,
+                                              JSArray* receiver) {
   DisallowHeapAllocation no_gc;
   // If the array prototype chain is intact (and free of elements), and if the
   // receiver's prototype is the array prototype, then we are done.
@@ -211,16 +238,14 @@ static inline bool IsJSArrayFastElementMovingAllowed(Isolate* isolate,
 
   // Slow case.
   PrototypeIterator iter(isolate, receiver);
-  return ArrayPrototypeHasNoElements(&iter);
+  return PrototypeHasNoElements(&iter);
 }
 
 
 // Returns empty handle if not applicable.
 MUST_USE_RESULT
-static inline MaybeHandle<FixedArrayBase> EnsureJSArrayWithWritableFastElements(
-    Isolate* isolate,
-    Handle<Object> receiver,
-    Arguments* args,
+inline MaybeHandle<FixedArrayBase> EnsureJSArrayWithWritableFastElements(
+    Isolate* isolate, Handle<Object> receiver, Arguments* args,
     int first_added_arg) {
   if (!receiver->IsJSArray()) return MaybeHandle<FixedArrayBase>();
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
@@ -283,17 +308,10 @@ static inline MaybeHandle<FixedArrayBase> EnsureJSArrayWithWritableFastElements(
 }
 
 
-MUST_USE_RESULT static Object* CallJsBuiltin(
-    Isolate* isolate,
-    const char* name,
+MUST_USE_RESULT static Object* CallJsIntrinsic(
+    Isolate* isolate, Handle<JSFunction> function,
     BuiltinArguments<NO_EXTRA_ARGUMENTS> args) {
   HandleScope handleScope(isolate);
-
-  Handle<Object> js_builtin = Object::GetProperty(
-      isolate,
-      handle(isolate->native_context()->builtins(), isolate),
-      name).ToHandleChecked();
-  Handle<JSFunction> function = Handle<JSFunction>::cast(js_builtin);
   int argc = args.length() - 1;
   ScopedVector<Handle<Object> > argv(argc);
   for (int i = 0; i < argc; ++i) {
@@ -311,6 +329,18 @@ MUST_USE_RESULT static Object* CallJsBuiltin(
 }
 
 
+}  // namespace
+
+
+BUILTIN(Illegal) {
+  UNREACHABLE();
+  return isolate->heap()->undefined_value();  // Make compiler happy.
+}
+
+
+BUILTIN(EmptyFunction) { return isolate->heap()->undefined_value(); }
+
+
 BUILTIN(ArrayPush) {
   HandleScope scope(isolate);
   Handle<Object> receiver = args.receiver();
@@ -318,7 +348,7 @@ BUILTIN(ArrayPush) {
       EnsureJSArrayWithWritableFastElements(isolate, receiver, &args, 1);
   Handle<FixedArrayBase> elms_obj;
   if (!maybe_elms_obj.ToHandle(&elms_obj)) {
-    return CallJsBuiltin(isolate, "$arrayPush", args);
+    return CallJsIntrinsic(isolate, isolate->array_push(), args);
   }
   // Fast Elements Path
   int push_size = args.length() - 1;
@@ -329,12 +359,11 @@ BUILTIN(ArrayPush) {
   }
   if (push_size > 0 &&
       JSArray::WouldChangeReadOnlyLength(array, len + push_size)) {
-    return CallJsBuiltin(isolate, "$arrayPush", args);
+    return CallJsIntrinsic(isolate, isolate->array_push(), args);
   }
   DCHECK(!array->map()->is_observed());
   ElementsAccessor* accessor = array->GetElementsAccessor();
-  int new_length = accessor->Push(array, elms_obj, &args[1], push_size,
-                                  ElementsAccessor::kDirectionReverse);
+  int new_length = accessor->Push(array, elms_obj, &args, push_size);
   return Smi::FromInt(new_length);
 }
 
@@ -346,7 +375,7 @@ BUILTIN(ArrayPop) {
       EnsureJSArrayWithWritableFastElements(isolate, receiver, NULL, 0);
   Handle<FixedArrayBase> elms_obj;
   if (!maybe_elms_obj.ToHandle(&elms_obj)) {
-    return CallJsBuiltin(isolate, "$arrayPop", args);
+    return CallJsIntrinsic(isolate, isolate->array_pop(), args);
   }
 
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
@@ -356,16 +385,21 @@ BUILTIN(ArrayPop) {
   if (len == 0) return isolate->heap()->undefined_value();
 
   if (JSArray::HasReadOnlyLength(array)) {
-    return CallJsBuiltin(isolate, "$arrayPop", args);
+    return CallJsIntrinsic(isolate, isolate->array_pop(), args);
   }
 
-  uint32_t new_length = len - 1;
-  Handle<Object> element;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, element, Object::GetElement(isolate, array, new_length));
-
-  JSArray::SetLength(array, new_length);
-  return *element;
+  Handle<Object> result;
+  if (IsJSArrayFastElementMovingAllowed(isolate, JSArray::cast(*receiver))) {
+    // Fast Elements Path
+    result = array->GetElementsAccessor()->Pop(array, elms_obj);
+  } else {
+    // Use Slow Lookup otherwise
+    uint32_t new_length = len - 1;
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+        isolate, result, Object::GetElement(isolate, array, new_length));
+    JSArray::SetLength(array, new_length);
+  }
+  return *result;
 }
 
 
@@ -378,7 +412,7 @@ BUILTIN(ArrayShift) {
   Handle<FixedArrayBase> elms_obj;
   if (!maybe_elms_obj.ToHandle(&elms_obj) ||
       !IsJSArrayFastElementMovingAllowed(isolate, JSArray::cast(*receiver))) {
-    return CallJsBuiltin(isolate, "$arrayShift", args);
+    return CallJsIntrinsic(isolate, isolate->array_shift(), args);
   }
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
   DCHECK(!array->map()->is_observed());
@@ -387,33 +421,10 @@ BUILTIN(ArrayShift) {
   if (len == 0) return heap->undefined_value();
 
   if (JSArray::HasReadOnlyLength(array)) {
-    return CallJsBuiltin(isolate, "$arrayShift", args);
+    return CallJsIntrinsic(isolate, isolate->array_shift(), args);
   }
 
-  // Get first element
-  Handle<Object> first;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, first,
-                                     Object::GetElement(isolate, array, 0));
-
-  if (heap->CanMoveObjectStart(*elms_obj)) {
-    array->set_elements(heap->LeftTrimFixedArray(*elms_obj, 1));
-  } else {
-    // Shift the elements.
-    if (elms_obj->IsFixedArray()) {
-      Handle<FixedArray> elms = Handle<FixedArray>::cast(elms_obj);
-      DisallowHeapAllocation no_gc;
-      heap->MoveElements(*elms, 0, 1, len - 1);
-      elms->set(len - 1, heap->the_hole_value());
-    } else {
-      Handle<FixedDoubleArray> elms = Handle<FixedDoubleArray>::cast(elms_obj);
-      MoveDoubleElements(*elms, 0, *elms, 1, len - 1);
-      elms->set_the_hole(len - 1);
-    }
-  }
-
-  // Set the length.
-  array->set_length(Smi::FromInt(len - 1));
-
+  Handle<Object> first = array->GetElementsAccessor()->Shift(array, elms_obj);
   return *first;
 }
 
@@ -425,55 +436,24 @@ BUILTIN(ArrayUnshift) {
       EnsureJSArrayWithWritableFastElements(isolate, receiver, &args, 1);
   Handle<FixedArrayBase> elms_obj;
   if (!maybe_elms_obj.ToHandle(&elms_obj)) {
-    return CallJsBuiltin(isolate, "$arrayUnshift", args);
+    return CallJsIntrinsic(isolate, isolate->array_unshift(), args);
   }
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
   DCHECK(!array->map()->is_observed());
-  if (!array->HasFastSmiOrObjectElements()) {
-    return CallJsBuiltin(isolate, "$arrayUnshift", args);
-  }
-  int len = Smi::cast(array->length())->value();
   int to_add = args.length() - 1;
-  int new_length = len + to_add;
+  if (to_add == 0) {
+    return array->length();
+  }
   // Currently fixed arrays cannot grow too big, so
   // we should never hit this case.
-  DCHECK(to_add <= (Smi::kMaxValue - len));
+  DCHECK(to_add <= (Smi::kMaxValue - Smi::cast(array->length())->value()));
 
-  if (to_add > 0 && JSArray::WouldChangeReadOnlyLength(array, len + to_add)) {
-    return CallJsBuiltin(isolate, "$arrayUnshift", args);
+  if (to_add > 0 && JSArray::HasReadOnlyLength(array)) {
+    return CallJsIntrinsic(isolate, isolate->array_unshift(), args);
   }
 
-  Handle<FixedArray> elms = Handle<FixedArray>::cast(elms_obj);
-
-  if (new_length > elms->length()) {
-    // New backing storage is needed.
-    int capacity = new_length + (new_length >> 1) + 16;
-    Handle<FixedArray> new_elms =
-        isolate->factory()->NewUninitializedFixedArray(capacity);
-
-    ElementsKind kind = array->GetElementsKind();
-    ElementsAccessor* accessor = array->GetElementsAccessor();
-    accessor->CopyElements(
-        elms, 0, kind, new_elms, to_add,
-        ElementsAccessor::kCopyToEndAndInitializeToHole);
-
-    elms = new_elms;
-    array->set_elements(*elms);
-  } else {
-    DisallowHeapAllocation no_gc;
-    Heap* heap = isolate->heap();
-    heap->MoveElements(*elms, to_add, 0, len);
-  }
-
-  // Add the provided values.
-  DisallowHeapAllocation no_gc;
-  WriteBarrierMode mode = elms->GetWriteBarrierMode(no_gc);
-  for (int i = 0; i < to_add; i++) {
-    elms->set(i, args[i + 1], mode);
-  }
-
-  // Set the length.
-  array->set_length(Smi::FromInt(new_length));
+  ElementsAccessor* accessor = array->GetElementsAccessor();
+  int new_length = accessor->Unshift(array, elms_obj, &args, to_add);
   return Smi::FromInt(new_length);
 }
 
@@ -481,359 +461,145 @@ BUILTIN(ArrayUnshift) {
 BUILTIN(ArraySlice) {
   HandleScope scope(isolate);
   Handle<Object> receiver = args.receiver();
+  Handle<JSObject> object;
+  Handle<FixedArrayBase> elms_obj;
   int len = -1;
   int relative_start = 0;
   int relative_end = 0;
-  {
+  bool is_sloppy_arguments = false;
+
+  if (receiver->IsJSArray()) {
     DisallowHeapAllocation no_gc;
-    if (receiver->IsJSArray()) {
-      JSArray* array = JSArray::cast(*receiver);
-      if (!IsJSArrayFastElementMovingAllowed(isolate, array)) {
-        AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arraySlice", args);
-      }
-
-      if (!array->HasFastElements()) {
-        AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arraySlice", args);
-      }
-
-      len = Smi::cast(array->length())->value();
-    } else {
-      // Array.slice(arguments, ...) is quite a common idiom (notably more
-      // than 50% of invocations in Web apps).  Treat it in C++ as well.
-      Map* arguments_map =
-          isolate->context()->native_context()->sloppy_arguments_map();
-
-      bool is_arguments_object_with_fast_elements =
-          receiver->IsJSObject() &&
-          JSObject::cast(*receiver)->map() == arguments_map;
-      if (!is_arguments_object_with_fast_elements) {
-        AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arraySlice", args);
-      }
-      JSObject* object = JSObject::cast(*receiver);
-
-      if (!object->HasFastElements()) {
-        AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arraySlice", args);
-      }
-
-      Object* len_obj = object->InObjectPropertyAt(Heap::kArgumentsLengthIndex);
-      if (!len_obj->IsSmi()) {
-        AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arraySlice", args);
-      }
-      len = Smi::cast(len_obj)->value();
-      if (len > object->elements()->length()) {
-        AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arraySlice", args);
-      }
+    JSArray* array = JSArray::cast(*receiver);
+    if (!array->HasFastElements() ||
+        !IsJSArrayFastElementMovingAllowed(isolate, array)) {
+      AllowHeapAllocation allow_allocation;
+      return CallJsIntrinsic(isolate, isolate->array_slice(), args);
     }
-
-    DCHECK(len >= 0);
-    int n_arguments = args.length() - 1;
-
-    // Note carefully choosen defaults---if argument is missing,
-    // it's undefined which gets converted to 0 for relative_start
-    // and to len for relative_end.
-    relative_start = 0;
-    relative_end = len;
-    if (n_arguments > 0) {
-      Object* arg1 = args[1];
-      if (arg1->IsSmi()) {
-        relative_start = Smi::cast(arg1)->value();
-      } else if (arg1->IsHeapNumber()) {
-        double start = HeapNumber::cast(arg1)->value();
-        if (start < kMinInt || start > kMaxInt) {
-          AllowHeapAllocation allow_allocation;
-          return CallJsBuiltin(isolate, "$arraySlice", args);
-        }
-        relative_start = std::isnan(start) ? 0 : static_cast<int>(start);
-      } else if (!arg1->IsUndefined()) {
+    len = Smi::cast(array->length())->value();
+    object = Handle<JSObject>::cast(receiver);
+    elms_obj = handle(array->elements(), isolate);
+  } else if (receiver->IsJSObject() &&
+             GetSloppyArgumentsLength(isolate, Handle<JSObject>::cast(receiver),
+                                      &len)) {
+    // Array.prototype.slice(arguments, ...) is quite a common idiom
+    // (notably more than 50% of invocations in Web apps).
+    // Treat it in C++ as well.
+    is_sloppy_arguments = true;
+    object = Handle<JSObject>::cast(receiver);
+    elms_obj = handle(object->elements(), isolate);
+  } else {
+    AllowHeapAllocation allow_allocation;
+    return CallJsIntrinsic(isolate, isolate->array_slice(), args);
+  }
+  DCHECK(len >= 0);
+  int argument_count = args.length() - 1;
+  // Note carefully chosen defaults---if argument is missing,
+  // it's undefined which gets converted to 0 for relative_start
+  // and to len for relative_end.
+  relative_start = 0;
+  relative_end = len;
+  if (argument_count > 0) {
+    DisallowHeapAllocation no_gc;
+    if (!ClampedToInteger(args[1], &relative_start)) {
+      AllowHeapAllocation allow_allocation;
+      return CallJsIntrinsic(isolate, isolate->array_slice(), args);
+    }
+    if (argument_count > 1) {
+      Object* end_arg = args[2];
+      // slice handles the end_arg specially
+      if (end_arg->IsUndefined()) {
+        relative_end = len;
+      } else if (!ClampedToInteger(end_arg, &relative_end)) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arraySlice", args);
-      }
-      if (n_arguments > 1) {
-        Object* arg2 = args[2];
-        if (arg2->IsSmi()) {
-          relative_end = Smi::cast(arg2)->value();
-        } else if (arg2->IsHeapNumber()) {
-          double end = HeapNumber::cast(arg2)->value();
-          if (end < kMinInt || end > kMaxInt) {
-            AllowHeapAllocation allow_allocation;
-            return CallJsBuiltin(isolate, "$arraySlice", args);
-          }
-          relative_end = std::isnan(end) ? 0 : static_cast<int>(end);
-        } else if (!arg2->IsUndefined()) {
-          AllowHeapAllocation allow_allocation;
-          return CallJsBuiltin(isolate, "$arraySlice", args);
-        }
+        return CallJsIntrinsic(isolate, isolate->array_slice(), args);
       }
     }
   }
 
   // ECMAScript 232, 3rd Edition, Section 15.4.4.10, step 6.
-  int k = (relative_start < 0) ? Max(len + relative_start, 0)
-                               : Min(relative_start, len);
+  uint32_t actual_start = (relative_start < 0) ? Max(len + relative_start, 0)
+                                               : Min(relative_start, len);
 
   // ECMAScript 232, 3rd Edition, Section 15.4.4.10, step 8.
-  int final = (relative_end < 0) ? Max(len + relative_end, 0)
-                                 : Min(relative_end, len);
+  uint32_t actual_end =
+      (relative_end < 0) ? Max(len + relative_end, 0) : Min(relative_end, len);
 
-  // Calculate the length of result array.
-  int result_len = Max(final - k, 0);
-
-  Handle<JSObject> object = Handle<JSObject>::cast(receiver);
-  Handle<FixedArrayBase> elms(object->elements(), isolate);
-
-  ElementsKind kind = object->GetElementsKind();
-  if (IsHoleyElementsKind(kind)) {
-    DisallowHeapAllocation no_gc;
-    bool packed = true;
-    ElementsAccessor* accessor = ElementsAccessor::ForKind(kind);
-    for (int i = k; i < final; i++) {
-      if (!accessor->HasElement(object, i, elms)) {
-        packed = false;
-        break;
-      }
-    }
-    if (packed) {
-      kind = GetPackedElementsKind(kind);
-    } else if (!receiver->IsJSArray()) {
-      AllowHeapAllocation allow_allocation;
-      return CallJsBuiltin(isolate, "$arraySlice", args);
-    }
+  if (actual_end <= actual_start) {
+    Handle<JSArray> result_array =
+        isolate->factory()->NewJSArray(GetInitialFastElementsKind(), 0, 0);
+    return *result_array;
   }
 
-  Handle<JSArray> result_array =
-      isolate->factory()->NewJSArray(kind, result_len, result_len);
-
-  DisallowHeapAllocation no_gc;
-  if (result_len == 0) return *result_array;
-
   ElementsAccessor* accessor = object->GetElementsAccessor();
-  accessor->CopyElements(
-      elms, k, kind, handle(result_array->elements(), isolate), 0, result_len);
+  if (is_sloppy_arguments &&
+      !accessor->IsPacked(object, elms_obj, actual_start, actual_end)) {
+    // Don't deal with arguments with holes in C++
+    AllowHeapAllocation allow_allocation;
+    return CallJsIntrinsic(isolate, isolate->array_slice(), args);
+  }
+  Handle<JSArray> result_array =
+      accessor->Slice(object, elms_obj, actual_start, actual_end);
   return *result_array;
 }
 
 
 BUILTIN(ArraySplice) {
   HandleScope scope(isolate);
-  Heap* heap = isolate->heap();
   Handle<Object> receiver = args.receiver();
   MaybeHandle<FixedArrayBase> maybe_elms_obj =
       EnsureJSArrayWithWritableFastElements(isolate, receiver, &args, 3);
   Handle<FixedArrayBase> elms_obj;
   if (!maybe_elms_obj.ToHandle(&elms_obj)) {
-    return CallJsBuiltin(isolate, "$arraySplice", args);
+    return CallJsIntrinsic(isolate, isolate->array_splice(), args);
   }
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
   DCHECK(!array->map()->is_observed());
 
-  int len = Smi::cast(array->length())->value();
-
-  int n_arguments = args.length() - 1;
-
+  int argument_count = args.length() - 1;
   int relative_start = 0;
-  if (n_arguments > 0) {
+  if (argument_count > 0) {
     DisallowHeapAllocation no_gc;
-    Object* arg1 = args[1];
-    if (arg1->IsSmi()) {
-      relative_start = Smi::cast(arg1)->value();
-    } else if (arg1->IsHeapNumber()) {
-      double start = HeapNumber::cast(arg1)->value();
-      if (start < kMinInt || start > kMaxInt) {
-        AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arraySplice", args);
-      }
-      relative_start = std::isnan(start) ? 0 : static_cast<int>(start);
-    } else if (!arg1->IsUndefined()) {
+    if (!ClampedToInteger(args[1], &relative_start)) {
       AllowHeapAllocation allow_allocation;
-      return CallJsBuiltin(isolate, "$arraySplice", args);
+      return CallJsIntrinsic(isolate, isolate->array_splice(), args);
     }
   }
+  int len = Smi::cast(array->length())->value();
+  // clip relative start to [0, len]
   int actual_start = (relative_start < 0) ? Max(len + relative_start, 0)
                                           : Min(relative_start, len);
 
-  // SpiderMonkey, TraceMonkey and JSC treat the case where no delete count is
-  // given as a request to delete all the elements from the start.
-  // And it differs from the case of undefined delete count.
-  // This does not follow ECMA-262, but we do the same for
-  // compatibility.
   int actual_delete_count;
-  if (n_arguments == 1) {
+  if (argument_count == 1) {
+    // SpiderMonkey, TraceMonkey and JSC treat the case where no delete count is
+    // given as a request to delete all the elements from the start.
+    // And it differs from the case of undefined delete count.
+    // This does not follow ECMA-262, but we do the same for compatibility.
     DCHECK(len - actual_start >= 0);
     actual_delete_count = len - actual_start;
   } else {
-    int value = 0;  // ToInteger(undefined) == 0
-    if (n_arguments > 1) {
-      DisallowHeapAllocation no_gc;
-      Object* arg2 = args[2];
-      if (arg2->IsSmi()) {
-        value = Smi::cast(arg2)->value();
-      } else {
+    int delete_count = 0;
+    DisallowHeapAllocation no_gc;
+    if (argument_count > 1) {
+      if (!ClampedToInteger(args[2], &delete_count)) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arraySplice", args);
+        return CallJsIntrinsic(isolate, isolate->array_splice(), args);
       }
     }
-    actual_delete_count = Min(Max(value, 0), len - actual_start);
+    actual_delete_count = Min(Max(delete_count, 0), len - actual_start);
   }
 
-  ElementsKind elements_kind = array->GetElementsKind();
-
-  int item_count = (n_arguments > 1) ? (n_arguments - 2) : 0;
-  int new_length = len - actual_delete_count + item_count;
-
-  // For double mode we do not support changing the length.
-  if (new_length > len && IsFastDoubleElementsKind(elements_kind)) {
-    return CallJsBuiltin(isolate, "$arraySplice", args);
-  }
+  int add_count = (argument_count > 1) ? (argument_count - 2) : 0;
+  int new_length = len - actual_delete_count + add_count;
 
   if (new_length != len && JSArray::HasReadOnlyLength(array)) {
     AllowHeapAllocation allow_allocation;
-    return CallJsBuiltin(isolate, "$arraySplice", args);
+    return CallJsIntrinsic(isolate, isolate->array_splice(), args);
   }
-
-  if (new_length == 0) {
-    Handle<JSArray> result = isolate->factory()->NewJSArrayWithElements(
-        elms_obj, elements_kind, actual_delete_count);
-    array->set_elements(heap->empty_fixed_array());
-    array->set_length(Smi::FromInt(0));
-    return *result;
-  }
-
-  Handle<JSArray> result_array =
-      isolate->factory()->NewJSArray(elements_kind,
-                                     actual_delete_count,
-                                     actual_delete_count);
-
-  if (actual_delete_count > 0) {
-    DisallowHeapAllocation no_gc;
-    ElementsAccessor* accessor = array->GetElementsAccessor();
-    accessor->CopyElements(
-        elms_obj, actual_start, elements_kind,
-        handle(result_array->elements(), isolate), 0, actual_delete_count);
-  }
-
-  bool elms_changed = false;
-  if (item_count < actual_delete_count) {
-    // Shrink the array.
-    const bool trim_array = !heap->lo_space()->Contains(*elms_obj) &&
-      ((actual_start + item_count) <
-          (len - actual_delete_count - actual_start));
-    if (trim_array) {
-      const int delta = actual_delete_count - item_count;
-
-      if (elms_obj->IsFixedDoubleArray()) {
-        Handle<FixedDoubleArray> elms =
-            Handle<FixedDoubleArray>::cast(elms_obj);
-        MoveDoubleElements(*elms, delta, *elms, 0, actual_start);
-      } else {
-        Handle<FixedArray> elms = Handle<FixedArray>::cast(elms_obj);
-        DisallowHeapAllocation no_gc;
-        heap->MoveElements(*elms, delta, 0, actual_start);
-      }
-
-      if (heap->CanMoveObjectStart(*elms_obj)) {
-        // On the fast path we move the start of the object in memory.
-        elms_obj = handle(heap->LeftTrimFixedArray(*elms_obj, delta));
-      } else {
-        // This is the slow path. We are going to move the elements to the left
-        // by copying them. For trimmed values we store the hole.
-        if (elms_obj->IsFixedDoubleArray()) {
-          Handle<FixedDoubleArray> elms =
-              Handle<FixedDoubleArray>::cast(elms_obj);
-          MoveDoubleElements(*elms, 0, *elms, delta, len - delta);
-          elms->FillWithHoles(len - delta, len);
-        } else {
-          Handle<FixedArray> elms = Handle<FixedArray>::cast(elms_obj);
-          DisallowHeapAllocation no_gc;
-          heap->MoveElements(*elms, 0, delta, len - delta);
-          elms->FillWithHoles(len - delta, len);
-        }
-      }
-      elms_changed = true;
-    } else {
-      if (elms_obj->IsFixedDoubleArray()) {
-        Handle<FixedDoubleArray> elms =
-            Handle<FixedDoubleArray>::cast(elms_obj);
-        MoveDoubleElements(*elms, actual_start + item_count,
-                           *elms, actual_start + actual_delete_count,
-                           (len - actual_delete_count - actual_start));
-        elms->FillWithHoles(new_length, len);
-      } else {
-        Handle<FixedArray> elms = Handle<FixedArray>::cast(elms_obj);
-        DisallowHeapAllocation no_gc;
-        heap->MoveElements(*elms, actual_start + item_count,
-                           actual_start + actual_delete_count,
-                           (len - actual_delete_count - actual_start));
-        elms->FillWithHoles(new_length, len);
-      }
-    }
-  } else if (item_count > actual_delete_count) {
-    Handle<FixedArray> elms = Handle<FixedArray>::cast(elms_obj);
-    // Currently fixed arrays cannot grow too big, so
-    // we should never hit this case.
-    DCHECK((item_count - actual_delete_count) <= (Smi::kMaxValue - len));
-
-    // Check if array need to grow.
-    if (new_length > elms->length()) {
-      // New backing storage is needed.
-      int capacity = new_length + (new_length >> 1) + 16;
-      Handle<FixedArray> new_elms =
-          isolate->factory()->NewUninitializedFixedArray(capacity);
-
-      DisallowHeapAllocation no_gc;
-
-      ElementsKind kind = array->GetElementsKind();
-      ElementsAccessor* accessor = array->GetElementsAccessor();
-      if (actual_start > 0) {
-        // Copy the part before actual_start as is.
-        accessor->CopyElements(
-            elms, 0, kind, new_elms, 0, actual_start);
-      }
-      accessor->CopyElements(
-          elms, actual_start + actual_delete_count, kind,
-          new_elms, actual_start + item_count,
-          ElementsAccessor::kCopyToEndAndInitializeToHole);
-
-      elms_obj = new_elms;
-      elms_changed = true;
-    } else {
-      DisallowHeapAllocation no_gc;
-      heap->MoveElements(*elms, actual_start + item_count,
-                         actual_start + actual_delete_count,
-                         (len - actual_delete_count - actual_start));
-    }
-  }
-
-  if (IsFastDoubleElementsKind(elements_kind)) {
-    Handle<FixedDoubleArray> elms = Handle<FixedDoubleArray>::cast(elms_obj);
-    for (int k = actual_start; k < actual_start + item_count; k++) {
-      Object* arg = args[3 + k - actual_start];
-      if (arg->IsSmi()) {
-        elms->set(k, Smi::cast(arg)->value());
-      } else {
-        elms->set(k, HeapNumber::cast(arg)->value());
-      }
-    }
-  } else {
-    Handle<FixedArray> elms = Handle<FixedArray>::cast(elms_obj);
-    DisallowHeapAllocation no_gc;
-    WriteBarrierMode mode = elms->GetWriteBarrierMode(no_gc);
-    for (int k = actual_start; k < actual_start + item_count; k++) {
-      elms->set(k, args[3 + k - actual_start], mode);
-    }
-  }
-
-  if (elms_changed) {
-    array->set_elements(*elms_obj);
-  }
-  // Set the length.
-  array->set_length(Smi::FromInt(new_length));
-
+  ElementsAccessor* accessor = array->GetElementsAccessor();
+  Handle<JSArray> result_array = accessor->Splice(
+      array, elms_obj, actual_start, actual_delete_count, &args, add_count);
   return *result_array;
 }
 
@@ -851,9 +617,9 @@ BUILTIN(ArrayConcat) {
     Object* array_proto = native_context->array_function()->prototype();
     PrototypeIterator iter(isolate, array_proto,
                            PrototypeIterator::START_AT_RECEIVER);
-    if (!ArrayPrototypeHasNoElements(&iter)) {
+    if (!PrototypeHasNoElements(&iter)) {
       AllowHeapAllocation allow_allocation;
-      return CallJsBuiltin(isolate, "$arrayConcat", args);
+      return CallJsIntrinsic(isolate, isolate->array_concat(), args);
     }
 
     // Iterate through all the arguments performing checks
@@ -865,7 +631,7 @@ BUILTIN(ArrayConcat) {
       if (!arg->IsJSArray() || !JSArray::cast(arg)->HasFastElements() ||
           iter.GetCurrent() != array_proto) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arrayConcat", args);
+        return CallJsIntrinsic(isolate, isolate->array_concat(), args);
       }
       int len = Smi::cast(JSArray::cast(arg)->length())->value();
 
@@ -878,7 +644,7 @@ BUILTIN(ArrayConcat) {
 
       if (result_len > FixedDoubleArray::kMaxLength) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "$arrayConcat", args);
+        return CallJsIntrinsic(isolate, isolate->array_concat(), args);
       }
 
       ElementsKind arg_kind = JSArray::cast(arg)->map()->elements_kind();
@@ -919,6 +685,30 @@ BUILTIN(ArrayConcat) {
   DCHECK(j == result_len);
 
   return *result_array;
+}
+
+
+// -----------------------------------------------------------------------------
+//
+
+
+// 20.3.4.45 Date.prototype [ @@toPrimitive ] ( hint )
+BUILTIN(DateToPrimitive) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  if (!args.receiver()->IsJSReceiver()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kIncompatibleMethodReceiver,
+                              isolate->factory()->NewStringFromAsciiChecked(
+                                  "Date.prototype [ @@toPrimitive ]"),
+                              args.receiver()));
+  }
+  Handle<JSReceiver> receiver = args.at<JSReceiver>(0);
+  Handle<Object> hint = args.at<Object>(1);
+  Handle<Object> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
+                                     JSDate::ToPrimitive(receiver, hint));
+  return *result;
 }
 
 
@@ -1116,7 +906,7 @@ MUST_USE_RESULT static Object* HandleApiCallAsFunctionOrConstructor(
 
   // Get the invocation callback from the function descriptor that was
   // used to create the called object.
-  DCHECK(obj->map()->has_instance_call_handler());
+  DCHECK(obj->map()->is_callable());
   JSFunction* constructor = JSFunction::cast(obj->map()->GetConstructor());
   // TODO(ishell): turn this back to a DCHECK.
   CHECK(constructor->shared()->IsApiFunction());
@@ -1324,17 +1114,6 @@ Address const Builtins::c_functions_[cfunction_count] = {
 };
 #undef DEF_ENUM_C
 
-#define DEF_JS_NAME(name, ignore) #name,
-#define DEF_JS_ARGC(ignore, argc) argc,
-const char* const Builtins::javascript_names_[id_count] = {
-  BUILTINS_LIST_JS(DEF_JS_NAME)
-};
-
-int const Builtins::javascript_argc_[id_count] = {
-  BUILTINS_LIST_JS(DEF_JS_ARGC)
-};
-#undef DEF_JS_NAME
-#undef DEF_JS_ARGC
 
 struct BuiltinDesc {
   byte* generator;

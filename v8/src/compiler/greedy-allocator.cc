@@ -21,12 +21,19 @@ const float GreedyAllocator::kAllocatedRangeMultiplier = 10.0;
 
 namespace {
 
-
 void UpdateOperands(LiveRange* range, RegisterAllocationData* data) {
   int reg_id = range->assigned_register();
   range->SetUseHints(reg_id);
-  if (range->is_phi()) {
-    data->GetPhiMapValueFor(range->id())->set_assigned_register(reg_id);
+  if (range->IsTopLevel() && range->TopLevel()->is_phi()) {
+    data->GetPhiMapValueFor(range->TopLevel())->set_assigned_register(reg_id);
+  }
+}
+
+
+void UnsetOperands(LiveRange* range, RegisterAllocationData* data) {
+  range->UnsetUseHints();
+  if (range->IsTopLevel() && range->TopLevel()->is_phi()) {
+    data->GetPhiMapValueFor(range->TopLevel())->UnsetAssignedRegister();
   }
 }
 
@@ -38,15 +45,13 @@ LiveRange* Split(LiveRange* range, RegisterAllocationData* data,
          (data->code()
               ->GetInstructionBlock(pos.ToInstructionIndex())
               ->last_instruction_index() != pos.ToInstructionIndex()));
-  LiveRange* result = data->NewChildRangeFor(range);
-  range->SplitAt(pos, result, data->allocation_zone());
+  LiveRange* result = range->SplitAt(pos, data->allocation_zone());
   return result;
 }
 
 
 // TODO(mtrofin): explain why splitting in gap START is always OK.
 LifetimePosition GetSplitPositionForInstruction(const LiveRange* range,
-                                                const InstructionSequence* code,
                                                 int instruction_index) {
   LifetimePosition ret = LifetimePosition::Invalid();
 
@@ -89,11 +94,11 @@ LifetimePosition GetLastResortSplitPosition(const LiveRange* range,
   for (UsePosition* pos = range->first_pos(); pos != nullptr;
        pos = pos->next()) {
     if (pos->type() != UsePositionType::kRequiresRegister) continue;
-    LifetimePosition before = GetSplitPositionForInstruction(
-        range, code, pos->pos().ToInstructionIndex());
+    LifetimePosition before =
+        GetSplitPositionForInstruction(range, pos->pos().ToInstructionIndex());
     if (before.IsValid()) return before;
     LifetimePosition after = GetSplitPositionForInstruction(
-        range, code, pos->pos().ToInstructionIndex() + 1);
+        range, pos->pos().ToInstructionIndex() + 1);
     if (after.IsValid()) return after;
   }
   return LifetimePosition::Invalid();
@@ -117,7 +122,8 @@ AllocationCandidate AllocationScheduler::GetNext() {
 
 
 void AllocationScheduler::Schedule(LiveRange* range) {
-  TRACE("Scheduling live range %d.\n", range->id());
+  TRACE("Scheduling live range %d:%d.\n", range->TopLevel()->vreg(),
+        range->relative_id());
   queue_.push(AllocationCandidate(range));
 }
 
@@ -130,15 +136,17 @@ GreedyAllocator::GreedyAllocator(RegisterAllocationData* data,
 
 
 void GreedyAllocator::AssignRangeToRegister(int reg_id, LiveRange* range) {
-  TRACE("Assigning register %s to live range %d\n", RegisterName(reg_id),
-        range->id());
+  TRACE("Assigning register %s to live range %d:%d\n", RegisterName(reg_id),
+        range->TopLevel()->vreg(), range->relative_id());
 
   DCHECK(!range->HasRegisterAssigned());
 
   AllocateRegisterToRange(reg_id, range);
 
-  TRACE("Assigning %s to range %d\n", RegisterName(reg_id), range->id());
+  TRACE("Assigning %s to range %d%d.\n", RegisterName(reg_id),
+        range->TopLevel()->vreg(), range->relative_id());
   range->set_assigned_register(reg_id);
+  UpdateOperands(range, data());
 }
 
 
@@ -151,7 +159,7 @@ void GreedyAllocator::PreallocateFixedRanges() {
   for (LiveRange* fixed_range : GetFixedRegisters()) {
     if (fixed_range != nullptr) {
       DCHECK_EQ(mode(), fixed_range->kind());
-      DCHECK(fixed_range->IsFixed());
+      DCHECK(fixed_range->TopLevel()->IsFixed());
 
       int reg_nr = fixed_range->assigned_register();
       EnsureValidRangeWeight(fixed_range);
@@ -163,8 +171,12 @@ void GreedyAllocator::PreallocateFixedRanges() {
 
 void GreedyAllocator::ScheduleAllocationCandidates() {
   for (auto range : data()->live_ranges()) {
-    if (CanProcessRange(range) && !range->spilled()) {
-      scheduler().Schedule(range);
+    if (CanProcessRange(range)) {
+      for (LiveRange* child = range; child != nullptr; child = child->next()) {
+        if (!child->spilled()) {
+          scheduler().Schedule(child);
+        }
+      }
     }
   }
 }
@@ -180,34 +192,54 @@ void GreedyAllocator::TryAllocateCandidate(
 void GreedyAllocator::TryAllocateLiveRange(LiveRange* range) {
   // TODO(mtrofin): once we introduce groups, we'll want to first try and
   // allocate at the preferred register.
-  TRACE("Attempting to allocate live range %d\n", range->id());
+  TRACE("Attempting to allocate live range %d:%d.\n", range->TopLevel()->vreg(),
+        range->relative_id());
   int free_reg = -1;
   int evictable_reg = -1;
+  int hinted_reg = -1;
+
   EnsureValidRangeWeight(range);
   DCHECK(range->weight() != LiveRange::kInvalidWeight);
 
-  float smallest_weight = LiveRange::kMaxWeight;
-
-  // Seek either the first free register, or, from the set of registers
-  // where the maximum conflict is lower than the candidate's weight, the one
-  // with the smallest such weight.
-  for (int i = 0; i < num_registers(); i++) {
-    float max_conflict_weight = GetMaximumConflictingWeight(i, range);
+  // Can we allocate at the hinted register?
+  if (range->FirstHintPosition(&hinted_reg) != nullptr) {
+    DCHECK(hinted_reg >= 0);
+    float max_conflict_weight = GetMaximumConflictingWeight(hinted_reg, range);
     if (max_conflict_weight == LiveRange::kInvalidWeight) {
-      free_reg = i;
-      break;
+      free_reg = hinted_reg;
+    } else if (max_conflict_weight < range->weight()) {
+      evictable_reg = hinted_reg;
     }
-    if (max_conflict_weight < range->weight() &&
-        max_conflict_weight < smallest_weight) {
-      smallest_weight = max_conflict_weight;
-      evictable_reg = i;
+  }
+
+  if (free_reg < 0 && evictable_reg < 0) {
+    // There was no hinted reg, or we cannot allocate there.
+    float smallest_weight = LiveRange::kMaxWeight;
+
+    // Seek either the first free register, or, from the set of registers
+    // where the maximum conflict is lower than the candidate's weight, the one
+    // with the smallest such weight.
+    for (int i = 0; i < num_registers(); i++) {
+      // Skip unnecessarily re-visiting the hinted register, if any.
+      if (i == hinted_reg) continue;
+      float max_conflict_weight = GetMaximumConflictingWeight(i, range);
+      if (max_conflict_weight == LiveRange::kInvalidWeight) {
+        free_reg = i;
+        break;
+      }
+      if (max_conflict_weight < range->weight() &&
+          max_conflict_weight < smallest_weight) {
+        smallest_weight = max_conflict_weight;
+        evictable_reg = i;
+      }
     }
   }
 
   // We have a free register, so we use it.
   if (free_reg >= 0) {
-    TRACE("Found free register %s for live range %d\n", RegisterName(free_reg),
-          range->id());
+    TRACE("Found free register %s for live range %d:%d.\n",
+          RegisterName(free_reg), range->TopLevel()->vreg(),
+          range->relative_id());
     AssignRangeToRegister(free_reg, range);
     return;
   }
@@ -215,8 +247,9 @@ void GreedyAllocator::TryAllocateLiveRange(LiveRange* range) {
   // We found a register to perform evictions, so we evict and allocate our
   // candidate.
   if (evictable_reg >= 0) {
-    TRACE("Found evictable register %s for live range %d\n",
-          RegisterName(free_reg), range->id());
+    TRACE("Found evictable register %s for live range %d:%d.\n",
+          RegisterName(free_reg), range->TopLevel()->vreg(),
+          range->relative_id());
     EvictAndRescheduleConflicts(evictable_reg, range);
     AssignRangeToRegister(evictable_reg, range);
     return;
@@ -233,11 +266,13 @@ void GreedyAllocator::EvictAndRescheduleConflicts(unsigned reg_id,
   for (LiveRange* conflict = conflicts.Current(); conflict != nullptr;
        conflict = conflicts.RemoveCurrentAndGetNext()) {
     DCHECK(conflict->HasRegisterAssigned());
-    CHECK(!conflict->IsFixed());
+    CHECK(!conflict->TopLevel()->IsFixed());
     conflict->UnsetAssignedRegister();
+    UnsetOperands(conflict, data());
     UpdateWeightAtEviction(conflict);
     scheduler().Schedule(conflict);
-    TRACE("Evicted range %d.\n", conflict->id());
+    TRACE("Evicted range %d%d.\n", conflict->TopLevel()->vreg(),
+          conflict->relative_id());
   }
 }
 
@@ -247,10 +282,11 @@ void GreedyAllocator::SplitAndSpillRangesDefinedByMemoryOperand() {
   for (size_t i = 0; i < initial_range_count; ++i) {
     auto range = data()->live_ranges()[i];
     if (!CanProcessRange(range)) continue;
-    if (range->HasNoSpillType()) continue;
+    if (!range->HasSpillOperand()) continue;
 
     LifetimePosition start = range->Start();
-    TRACE("Live range %d is defined by a spill operand.\n", range->id());
+    TRACE("Live range %d:%d is defined by a spill operand.\n",
+          range->TopLevel()->vreg(), range->relative_id());
     auto next_pos = start;
     if (next_pos.IsGapPosition()) {
       next_pos = next_pos.NextStart();
@@ -263,12 +299,14 @@ void GreedyAllocator::SplitAndSpillRangesDefinedByMemoryOperand() {
     } else if (pos->pos() > range->Start().NextStart()) {
       // Do not spill live range eagerly if use position that can benefit from
       // the register is too close to the start of live range.
-      auto split_pos = pos->pos();
-      if (data()->IsBlockBoundary(split_pos.Start())) {
-        split_pos = split_pos.Start();
-      } else {
-        split_pos = split_pos.PrevStart().End();
-      }
+      auto split_pos = GetSplitPositionForInstruction(
+          range, pos->pos().ToInstructionIndex());
+      // There is no place to split, so we can't split and spill.
+      if (!split_pos.IsValid()) continue;
+
+      split_pos =
+          FindOptimalSplitPos(range->Start().NextFullStart(), split_pos);
+
       Split(range, data(), split_pos);
       Spill(range);
     }
@@ -290,15 +328,6 @@ void GreedyAllocator::AllocateRegisters() {
   while (!scheduler().empty()) {
     AllocationCandidate candidate = scheduler().GetNext();
     TryAllocateCandidate(candidate);
-  }
-
-
-  // We do not rely on the hint mechanism used by LinearScan, so no need to
-  // actively update/reset operands until the end.
-  for (auto range : data()->live_ranges()) {
-    if (CanProcessRange(range) && range->HasRegisterAssigned()) {
-      UpdateOperands(range, data());
-    }
   }
 
   for (size_t i = 0; i < allocations_.size(); ++i) {
@@ -335,7 +364,7 @@ void GreedyAllocator::EnsureValidRangeWeight(LiveRange* range) {
   // unallocated.
   if (range->weight() != LiveRange::kInvalidWeight) return;
 
-  if (range->IsFixed()) {
+  if (range->TopLevel()->IsFixed()) {
     range->set_weight(LiveRange::kMaxWeight);
     return;
   }
@@ -361,10 +390,111 @@ void GreedyAllocator::SpillRangeAsLastResort(LiveRange* range) {
 }
 
 
+LiveRange* GreedyAllocator::GetRemainderAfterSplittingAroundFirstCall(
+    LiveRange* range) {
+  LiveRange* ret = range;
+  for (UseInterval* interval = range->first_interval(); interval != nullptr;
+       interval = interval->next()) {
+    LifetimePosition start = interval->start();
+    LifetimePosition end = interval->end();
+    // If the interval starts at instruction end, then the first instruction
+    // in the interval is the next one.
+    int first_full_instruction = (start.IsGapPosition() || start.IsStart())
+                                     ? start.ToInstructionIndex()
+                                     : start.ToInstructionIndex() + 1;
+    // If the interval ends in a gap or at instruction start, then the last
+    // instruction is the previous one.
+    int last_full_instruction = (end.IsGapPosition() || end.IsStart())
+                                    ? end.ToInstructionIndex() - 1
+                                    : end.ToInstructionIndex();
+
+    for (int instruction_index = first_full_instruction;
+         instruction_index <= last_full_instruction; ++instruction_index) {
+      if (!code()->InstructionAt(instruction_index)->IsCall()) continue;
+
+      LifetimePosition before =
+          GetSplitPositionForInstruction(range, instruction_index);
+      LiveRange* second_part =
+          before.IsValid() ? Split(range, data(), before) : range;
+
+      if (range != second_part) scheduler().Schedule(range);
+
+      LifetimePosition after =
+          FindSplitPositionAfterCall(second_part, instruction_index);
+
+      if (after.IsValid()) {
+        ret = Split(second_part, data(), after);
+      } else {
+        ret = nullptr;
+      }
+      Spill(second_part);
+      return ret;
+    }
+  }
+  return ret;
+}
+
+
+bool GreedyAllocator::TrySplitAroundCalls(LiveRange* range) {
+  bool modified = false;
+
+  while (range != nullptr) {
+    LiveRange* remainder = GetRemainderAfterSplittingAroundFirstCall(range);
+    // If we performed no modification, we're done.
+    if (remainder == range) {
+      break;
+    }
+    // We performed a modification.
+    modified = true;
+    range = remainder;
+  }
+  // If we have a remainder and we made modifications, it means the remainder
+  // has no calls and we should schedule it for further processing. If we made
+  // no modifications, we will just return false, because we want the algorithm
+  // to make progress by trying some other heuristic.
+  if (modified && range != nullptr) {
+    DCHECK(!range->spilled());
+    DCHECK(!range->HasRegisterAssigned());
+    scheduler().Schedule(range);
+  }
+  return modified;
+}
+
+
+LifetimePosition GreedyAllocator::FindSplitPositionAfterCall(
+    const LiveRange* range, int call_index) {
+  LifetimePosition after_call =
+      Max(range->Start(),
+          LifetimePosition::GapFromInstructionIndex(call_index + 1));
+  UsePosition* next_use = range->NextRegisterPosition(after_call);
+  if (!next_use) return LifetimePosition::Invalid();
+
+  LifetimePosition split_pos = FindOptimalSplitPos(after_call, next_use->pos());
+  split_pos =
+      GetSplitPositionForInstruction(range, split_pos.ToInstructionIndex());
+  return split_pos;
+}
+
+
+LifetimePosition GreedyAllocator::FindSplitPositionBeforeLoops(
+    LiveRange* range) {
+  LifetimePosition end = range->End();
+  if (end.ToInstructionIndex() >= code()->LastInstructionIndex()) {
+    end =
+        LifetimePosition::GapFromInstructionIndex(end.ToInstructionIndex() - 1);
+  }
+  LifetimePosition pos = FindOptimalSplitPos(range->Start(), end);
+  pos = GetSplitPositionForInstruction(range, pos.ToInstructionIndex());
+  return pos;
+}
+
+
 void GreedyAllocator::SplitOrSpillBlockedRange(LiveRange* range) {
-  // TODO(mtrofin): replace the call below with the entry point selecting
-  // heuristics, once they exist, out of which GLRSP is the last one.
-  auto pos = GetLastResortSplitPosition(range, code());
+  if (TrySplitAroundCalls(range)) return;
+
+  LifetimePosition pos = FindSplitPositionBeforeLoops(range);
+
+  if (!pos.IsValid()) pos = GetLastResortSplitPosition(range, code());
   if (pos.IsValid()) {
     LiveRange* tail = Split(range, data(), pos);
     DCHECK(tail != range);

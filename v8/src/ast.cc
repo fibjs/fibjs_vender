@@ -343,12 +343,14 @@ FeedbackVectorRequirements ObjectLiteral::ComputeFeedbackRequirements(
   // This logic that computes the number of slots needed for vector store
   // ics must mirror FullCodeGenerator::VisitObjectLiteral.
   int ic_slots = 0;
+  bool saw_computed_name = false;
   for (int i = 0; i < properties()->length(); i++) {
     ObjectLiteral::Property* property = properties()->at(i);
     if (property->IsCompileTimeValue()) continue;
+    saw_computed_name |= property->is_computed_name();
 
     Expression* value = property->value();
-    if (property->is_computed_name() &&
+    if (saw_computed_name &&
         property->kind() != ObjectLiteral::Property::PROTOTYPE) {
       if (FunctionLiteral::NeedsHomeObject(value)) ic_slots++;
     } else if (property->emit_store()) {
@@ -446,6 +448,7 @@ void ObjectLiteral::BuildConstantProperties(Isolate* isolate) {
 
     if (position == boilerplate_properties_ * 2) {
       DCHECK(property->is_computed_name());
+      is_simple = false;
       break;
     }
     DCHECK(!property->is_computed_name());

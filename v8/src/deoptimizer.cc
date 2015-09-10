@@ -1455,7 +1455,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
            "  translating %s => StubFailureTrampolineStub, height=%d\n",
-           CodeStub::MajorName(static_cast<CodeStub::Major>(major_key), false),
+           CodeStub::MajorName(static_cast<CodeStub::Major>(major_key)),
            height_in_bytes);
   }
 
@@ -2252,7 +2252,7 @@ Handle<FixedArray> MaterializedObjectStore::EnsureStackEntries(int length) {
   for (int i = array->length(); i < length; i++) {
     new_array->set(i, isolate()->heap()->undefined_value());
   }
-  isolate()->heap()->public_set_materialized_objects(*new_array);
+  isolate()->heap()->SetRootMaterializedObjects(*new_array);
   return new_array;
 }
 

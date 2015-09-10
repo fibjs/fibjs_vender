@@ -228,7 +228,6 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
     case Runtime::kNewArguments:
     case Runtime::kNewClosure:
     case Runtime::kNewFunctionContext:
-    case Runtime::kNewRestParamSlow:
     case Runtime::kPushBlockContext:
     case Runtime::kPushCatchContext:
     case Runtime::kReThrow:
@@ -245,6 +244,12 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
     case Runtime::kInlineGetPrototype:
     case Runtime::kInlineRegExpExec:
     case Runtime::kInlineToObject:
+    case Runtime::kInlineToPrimitive:
+    case Runtime::kInlineToPrimitive_Number:
+    case Runtime::kInlineToPrimitive_String:
+    case Runtime::kInlineToNumber:
+    case Runtime::kInlineToString:
+    case Runtime::kInlineToName:
       return 1;
     case Runtime::kInlineDeoptimizeNow:
     case Runtime::kInlineThrowNotDateError:
@@ -387,8 +392,8 @@ CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
 
 
 CallDescriptor* Linkage::GetInterpreterDispatchDescriptor(Zone* zone) {
-  MachineSignature::Builder types(zone, 0, 5);
-  LocationSignature::Builder locations(zone, 0, 5);
+  MachineSignature::Builder types(zone, 0, 6);
+  LocationSignature::Builder locations(zone, 0, 6);
 
   // Add registers for fixed parameters passed via interpreter dispatch.
   STATIC_ASSERT(0 == Linkage::kInterpreterAccumulatorParameter);
@@ -410,6 +415,15 @@ CallDescriptor* Linkage::GetInterpreterDispatchDescriptor(Zone* zone) {
   STATIC_ASSERT(4 == Linkage::kInterpreterDispatchTableParameter);
   types.AddParam(kMachPtr);
   locations.AddParam(regloc(kInterpreterDispatchTableRegister));
+
+  STATIC_ASSERT(5 == Linkage::kInterpreterContextParameter);
+  types.AddParam(kMachAnyTagged);
+#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_X87)
+  locations.AddParam(
+      LinkageLocation::ForCallerFrameSlot(kInterpreterContextSpillSlot));
+#else
+  locations.AddParam(regloc(kContextRegister));
+#endif
 
   LinkageLocation target_loc = LinkageLocation::ForAnyRegister();
   return new (zone) CallDescriptor(         // --

@@ -12,6 +12,7 @@
 #include "src/frames.h"
 #include "src/mips64/assembler-mips64-inl.h"
 #include "src/mips64/assembler-mips64.h"
+#include "src/mips64/frames-mips64.h"
 
 namespace v8 {
 namespace internal {

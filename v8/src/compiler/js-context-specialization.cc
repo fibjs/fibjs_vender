@@ -10,6 +10,7 @@
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/node-properties.h"
 #include "src/contexts.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -35,8 +36,7 @@ MaybeHandle<Context> JSContextSpecialization::GetSpecializationContext(
   Node* const object = NodeProperties::GetValueInput(node, 0);
   switch (object->opcode()) {
     case IrOpcode::kHeapConstant:
-      return Handle<Context>::cast(
-          OpParameter<Unique<HeapObject>>(object).handle());
+      return Handle<Context>::cast(OpParameter<Handle<HeapObject>>(object));
     case IrOpcode::kParameter: {
       Node* const start = NodeProperties::GetValueInput(object, 0);
       DCHECK_EQ(IrOpcode::kStart, start->opcode());

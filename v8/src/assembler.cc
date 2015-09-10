@@ -980,14 +980,13 @@ ExternalReference::ExternalReference(Builtins::Name name, Isolate* isolate)
   : address_(isolate->builtins()->builtin_address(name)) {}
 
 
-ExternalReference::ExternalReference(Runtime::FunctionId id,
-                                     Isolate* isolate)
-  : address_(Redirect(isolate, Runtime::FunctionForId(id)->entry)) {}
+ExternalReference::ExternalReference(Runtime::FunctionId id, Isolate* isolate)
+    : address_(Redirect(isolate, Runtime::FunctionForId(id)->entry)) {}
 
 
 ExternalReference::ExternalReference(const Runtime::Function* f,
                                      Isolate* isolate)
-  : address_(Redirect(isolate, f->entry)) {}
+    : address_(Redirect(isolate, f->entry)) {}
 
 
 ExternalReference ExternalReference::isolate_address(Isolate* isolate) {
@@ -1141,7 +1140,7 @@ ExternalReference ExternalReference::new_space_start(Isolate* isolate) {
 
 
 ExternalReference ExternalReference::store_buffer_top(Isolate* isolate) {
-  return ExternalReference(isolate->heap()->store_buffer()->TopAddress());
+  return ExternalReference(isolate->heap()->store_buffer_top_address());
 }
 
 

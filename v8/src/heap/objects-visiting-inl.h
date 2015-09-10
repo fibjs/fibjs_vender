@@ -126,6 +126,17 @@ int StaticNewSpaceVisitor<StaticVisitor>::VisitJSDataView(Map* map,
 
 
 template <typename StaticVisitor>
+int StaticNewSpaceVisitor<StaticVisitor>::VisitBytecodeArray(
+    Map* map, HeapObject* object) {
+  VisitPointers(
+      map->GetHeap(), object,
+      HeapObject::RawField(object, BytecodeArray::kConstantPoolOffset),
+      HeapObject::RawField(object, BytecodeArray::kHeaderSize));
+  return reinterpret_cast<BytecodeArray*>(object)->BytecodeArraySize();
+}
+
+
+template <typename StaticVisitor>
 void StaticMarkingVisitor<StaticVisitor>::Initialize() {
   table_.Register(kVisitShortcutCandidate,
                   &FixedBodyVisitor<StaticVisitor, ConsString::BodyDescriptor,
@@ -157,7 +168,7 @@ void StaticMarkingVisitor<StaticVisitor>::Initialize() {
 
   table_.Register(kVisitByteArray, &DataObjectVisitor::Visit);
 
-  table_.Register(kVisitBytecodeArray, &DataObjectVisitor::Visit);
+  table_.Register(kVisitBytecodeArray, &VisitBytecodeArray);
 
   table_.Register(kVisitFreeSpace, &DataObjectVisitor::Visit);
 
@@ -521,7 +532,8 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSArrayBuffer(
       heap, object,
       HeapObject::RawField(object, JSArrayBuffer::BodyDescriptor::kStartOffset),
       HeapObject::RawField(object, JSArrayBuffer::kSizeWithInternalFields));
-  if (!JSArrayBuffer::cast(object)->is_external()) {
+  if (!JSArrayBuffer::cast(object)->is_external() &&
+      !heap->InNewSpace(object)) {
     heap->RegisterLiveArrayBuffer(false,
                                   JSArrayBuffer::cast(object)->backing_store());
   }
@@ -545,6 +557,16 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSDataView(Map* map,
       map->GetHeap(), object,
       HeapObject::RawField(object, JSDataView::BodyDescriptor::kStartOffset),
       HeapObject::RawField(object, JSDataView::kSizeWithInternalFields));
+}
+
+
+template <typename StaticVisitor>
+void StaticMarkingVisitor<StaticVisitor>::VisitBytecodeArray(
+    Map* map, HeapObject* object) {
+  StaticVisitor::VisitPointers(
+      map->GetHeap(), object,
+      HeapObject::RawField(object, BytecodeArray::kConstantPoolOffset),
+      HeapObject::RawField(object, BytecodeArray::kHeaderSize));
 }
 
 

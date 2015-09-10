@@ -14,8 +14,10 @@
 #include "src/frames-inl.h"
 #include "src/gdb-jit.h"
 #include "src/global-handles.h"
+#include "src/heap/gc-tracer.h"
 #include "src/heap/incremental-marking.h"
 #include "src/heap/mark-compact-inl.h"
+#include "src/heap/object-stats.h"
 #include "src/heap/objects-visiting.h"
 #include "src/heap/objects-visiting-inl.h"
 #include "src/heap/spaces-inl.h"
@@ -42,14 +44,13 @@ MarkCompactCollector::MarkCompactCollector(Heap* heap)
 #ifdef DEBUG
       state_(IDLE),
 #endif
-      reduce_memory_footprint_(false),
-      abort_incremental_marking_(false),
-      finalize_incremental_marking_(false),
       marking_parity_(ODD_MARKING_PARITY),
       compacting_(false),
       was_marked_incrementally_(false),
       sweeping_in_progress_(false),
+      parallel_compaction_in_progress_(false),
       pending_sweeper_jobs_semaphore_(0),
+      pending_compaction_jobs_semaphore_(0),
       evacuation_(false),
       migration_slots_buffer_(NULL),
       heap_(heap),
@@ -305,17 +306,17 @@ static void VerifyValidSlotsBufferEntries(Heap* heap, PagedSpace* space) {
 }
 
 
-static void VerifyValidStoreAndSlotsBufferEntries(Heap* heap) {
-  heap->store_buffer()->VerifyValidStoreBufferEntries();
+void MarkCompactCollector::VerifyValidStoreAndSlotsBufferEntries() {
+  heap()->store_buffer()->VerifyValidStoreBufferEntries();
 
-  VerifyValidSlotsBufferEntries(heap, heap->old_space());
-  VerifyValidSlotsBufferEntries(heap, heap->code_space());
-  VerifyValidSlotsBufferEntries(heap, heap->map_space());
+  VerifyValidSlotsBufferEntries(heap(), heap()->old_space());
+  VerifyValidSlotsBufferEntries(heap(), heap()->code_space());
+  VerifyValidSlotsBufferEntries(heap(), heap()->map_space());
 
-  LargeObjectIterator it(heap->lo_space());
+  LargeObjectIterator it(heap()->lo_space());
   for (HeapObject* object = it.Next(); object != NULL; object = it.Next()) {
     MemoryChunk* chunk = MemoryChunk::FromAddress(object->address());
-    SlotsBuffer::VerifySlots(heap, chunk->slots_buffer());
+    SlotsBuffer::VerifySlots(heap(), chunk->slots_buffer());
   }
 }
 #endif
@@ -351,7 +352,7 @@ void MarkCompactCollector::CollectGarbage() {
 
 #ifdef VERIFY_HEAP
   if (FLAG_verify_heap) {
-    VerifyValidStoreAndSlotsBufferEntries(heap_);
+    VerifyValidStoreAndSlotsBufferEntries();
   }
 #endif
 
@@ -461,6 +462,28 @@ void MarkCompactCollector::ClearMarkbits() {
 }
 
 
+class MarkCompactCollector::CompactionTask : public v8::Task {
+ public:
+  explicit CompactionTask(Heap* heap) : heap_(heap) {}
+
+  virtual ~CompactionTask() {}
+
+ private:
+  // v8::Task overrides.
+  void Run() override {
+    // TODO(mlippautz, hpayer): EvacuatePages is not thread-safe and can just be
+    // called by one thread concurrently.
+    heap_->mark_compact_collector()->EvacuatePages();
+    heap_->mark_compact_collector()
+        ->pending_compaction_jobs_semaphore_.Signal();
+  }
+
+  Heap* heap_;
+
+  DISALLOW_COPY_AND_ASSIGN(CompactionTask);
+};
+
+
 class MarkCompactCollector::SweeperTask : public v8::Task {
  public:
   SweeperTask(Heap* heap, PagedSpace* space) : heap_(heap), space_(space) {}
@@ -521,12 +544,13 @@ void MarkCompactCollector::EnsureSweepingCompleted() {
     SweepInParallel(heap()->paged_space(CODE_SPACE), 0);
     SweepInParallel(heap()->paged_space(MAP_SPACE), 0);
   }
-  // Wait twice for both jobs.
+
   if (heap()->concurrent_sweeping_enabled()) {
     pending_sweeper_jobs_semaphore_.Wait();
     pending_sweeper_jobs_semaphore_.Wait();
     pending_sweeper_jobs_semaphore_.Wait();
   }
+
   ParallelSweepSpacesComplete();
   sweeping_in_progress_ = false;
   RefillFreeList(heap()->paged_space(OLD_SPACE));
@@ -666,7 +690,7 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
   int total_live_bytes = 0;
 
   bool reduce_memory =
-      reduce_memory_footprint_ || heap()->HasLowAllocationRate();
+      heap()->ShouldReduceMemory() || heap()->HasLowAllocationRate();
   if (FLAG_manual_evacuation_candidates_selection) {
     for (size_t i = 0; i < pages.size(); i++) {
       Page* p = pages[i].second;
@@ -787,8 +811,12 @@ void MarkCompactCollector::Prepare() {
     EnsureSweepingCompleted();
   }
 
+  // If concurrent unmapping tasks are still running, we should wait for
+  // them here.
+  heap()->WaitUntilUnmappingOfFreeChunksCompleted();
+
   // Clear marking bits if incremental marking is aborted.
-  if (was_marked_incrementally_ && abort_incremental_marking_) {
+  if (was_marked_incrementally_ && heap_->ShouldAbortIncrementalMarking()) {
     heap()->incremental_marking()->Stop();
     ClearMarkbits();
     AbortWeakCollections();
@@ -1201,19 +1229,6 @@ MarkCompactCollector::~MarkCompactCollector() {
 class MarkCompactMarkingVisitor
     : public StaticMarkingVisitor<MarkCompactMarkingVisitor> {
  public:
-  static void ObjectStatsVisitBase(StaticVisitorBase::VisitorId id, Map* map,
-                                   HeapObject* obj);
-
-  static void ObjectStatsCountFixedArray(
-      FixedArrayBase* fixed_array, FixedArraySubInstanceType fast_type,
-      FixedArraySubInstanceType dictionary_type);
-
-  template <MarkCompactMarkingVisitor::VisitorId id>
-  class ObjectStatsTracker {
-   public:
-    static inline void Visit(Map* map, HeapObject* obj);
-  };
-
   static void Initialize();
 
   INLINE(static void VisitPointer(Heap* heap, HeapObject* object, Object** p)) {
@@ -1376,132 +1391,6 @@ class MarkCompactMarkingVisitor
     // Visit the fields of the RegExp, including the updated FixedArray.
     VisitJSRegExp(map, object);
   }
-
-  static VisitorDispatchTable<Callback> non_count_table_;
-};
-
-
-void MarkCompactMarkingVisitor::ObjectStatsCountFixedArray(
-    FixedArrayBase* fixed_array, FixedArraySubInstanceType fast_type,
-    FixedArraySubInstanceType dictionary_type) {
-  Heap* heap = fixed_array->map()->GetHeap();
-  if (fixed_array->map() != heap->fixed_cow_array_map() &&
-      fixed_array->map() != heap->fixed_double_array_map() &&
-      fixed_array != heap->empty_fixed_array()) {
-    if (fixed_array->IsDictionary()) {
-      heap->RecordFixedArraySubTypeStats(dictionary_type, fixed_array->Size());
-    } else {
-      heap->RecordFixedArraySubTypeStats(fast_type, fixed_array->Size());
-    }
-  }
-}
-
-
-void MarkCompactMarkingVisitor::ObjectStatsVisitBase(
-    MarkCompactMarkingVisitor::VisitorId id, Map* map, HeapObject* obj) {
-  Heap* heap = map->GetHeap();
-  int object_size = obj->Size();
-  heap->RecordObjectStats(map->instance_type(), object_size);
-  non_count_table_.GetVisitorById(id)(map, obj);
-  if (obj->IsJSObject()) {
-    JSObject* object = JSObject::cast(obj);
-    ObjectStatsCountFixedArray(object->elements(), DICTIONARY_ELEMENTS_SUB_TYPE,
-                               FAST_ELEMENTS_SUB_TYPE);
-    ObjectStatsCountFixedArray(object->properties(),
-                               DICTIONARY_PROPERTIES_SUB_TYPE,
-                               FAST_PROPERTIES_SUB_TYPE);
-  }
-}
-
-
-template <MarkCompactMarkingVisitor::VisitorId id>
-void MarkCompactMarkingVisitor::ObjectStatsTracker<id>::Visit(Map* map,
-                                                              HeapObject* obj) {
-  ObjectStatsVisitBase(id, map, obj);
-}
-
-
-template <>
-class MarkCompactMarkingVisitor::ObjectStatsTracker<
-    MarkCompactMarkingVisitor::kVisitMap> {
- public:
-  static inline void Visit(Map* map, HeapObject* obj) {
-    Heap* heap = map->GetHeap();
-    Map* map_obj = Map::cast(obj);
-    DCHECK(map->instance_type() == MAP_TYPE);
-    DescriptorArray* array = map_obj->instance_descriptors();
-    if (map_obj->owns_descriptors() &&
-        array != heap->empty_descriptor_array()) {
-      int fixed_array_size = array->Size();
-      heap->RecordFixedArraySubTypeStats(DESCRIPTOR_ARRAY_SUB_TYPE,
-                                         fixed_array_size);
-    }
-    if (TransitionArray::IsFullTransitionArray(map_obj->raw_transitions())) {
-      int fixed_array_size =
-          TransitionArray::cast(map_obj->raw_transitions())->Size();
-      heap->RecordFixedArraySubTypeStats(TRANSITION_ARRAY_SUB_TYPE,
-                                         fixed_array_size);
-    }
-    if (map_obj->has_code_cache()) {
-      CodeCache* cache = CodeCache::cast(map_obj->code_cache());
-      heap->RecordFixedArraySubTypeStats(MAP_CODE_CACHE_SUB_TYPE,
-                                         cache->default_cache()->Size());
-      if (!cache->normal_type_cache()->IsUndefined()) {
-        heap->RecordFixedArraySubTypeStats(
-            MAP_CODE_CACHE_SUB_TYPE,
-            FixedArray::cast(cache->normal_type_cache())->Size());
-      }
-    }
-    ObjectStatsVisitBase(kVisitMap, map, obj);
-  }
-};
-
-
-template <>
-class MarkCompactMarkingVisitor::ObjectStatsTracker<
-    MarkCompactMarkingVisitor::kVisitCode> {
- public:
-  static inline void Visit(Map* map, HeapObject* obj) {
-    Heap* heap = map->GetHeap();
-    int object_size = obj->Size();
-    DCHECK(map->instance_type() == CODE_TYPE);
-    Code* code_obj = Code::cast(obj);
-    heap->RecordCodeSubTypeStats(code_obj->kind(), code_obj->GetAge(),
-                                 object_size);
-    ObjectStatsVisitBase(kVisitCode, map, obj);
-  }
-};
-
-
-template <>
-class MarkCompactMarkingVisitor::ObjectStatsTracker<
-    MarkCompactMarkingVisitor::kVisitSharedFunctionInfo> {
- public:
-  static inline void Visit(Map* map, HeapObject* obj) {
-    Heap* heap = map->GetHeap();
-    SharedFunctionInfo* sfi = SharedFunctionInfo::cast(obj);
-    if (sfi->scope_info() != heap->empty_fixed_array()) {
-      heap->RecordFixedArraySubTypeStats(
-          SCOPE_INFO_SUB_TYPE, FixedArray::cast(sfi->scope_info())->Size());
-    }
-    ObjectStatsVisitBase(kVisitSharedFunctionInfo, map, obj);
-  }
-};
-
-
-template <>
-class MarkCompactMarkingVisitor::ObjectStatsTracker<
-    MarkCompactMarkingVisitor::kVisitFixedArray> {
- public:
-  static inline void Visit(Map* map, HeapObject* obj) {
-    Heap* heap = map->GetHeap();
-    FixedArray* fixed_array = FixedArray::cast(obj);
-    if (fixed_array == heap->string_table()) {
-      heap->RecordFixedArraySubTypeStats(STRING_TABLE_SUB_TYPE,
-                                         fixed_array->Size());
-    }
-    ObjectStatsVisitBase(kVisitFixedArray, map, obj);
-  }
 };
 
 
@@ -1511,18 +1400,9 @@ void MarkCompactMarkingVisitor::Initialize() {
   table_.Register(kVisitJSRegExp, &VisitRegExpAndFlushCode);
 
   if (FLAG_track_gc_object_stats) {
-    // Copy the visitor table to make call-through possible.
-    non_count_table_.CopyFrom(&table_);
-#define VISITOR_ID_COUNT_FUNCTION(id) \
-  table_.Register(kVisit##id, ObjectStatsTracker<kVisit##id>::Visit);
-    VISITOR_ID_LIST(VISITOR_ID_COUNT_FUNCTION)
-#undef VISITOR_ID_COUNT_FUNCTION
+    ObjectStatsVisitor::Initialize(&table_);
   }
 }
-
-
-VisitorDispatchTable<MarkCompactMarkingVisitor::Callback>
-    MarkCompactMarkingVisitor::non_count_table_;
 
 
 class CodeMarkingVisitor : public ThreadVisitor {
@@ -1840,6 +1720,10 @@ int MarkCompactCollector::DiscoverAndEvacuateBlackObjectsOnPage(
       Object* target = allocation.ToObjectChecked();
 
       MigrateObject(HeapObject::cast(target), object, size, NEW_SPACE);
+      if (V8_UNLIKELY(target->IsJSArrayBuffer())) {
+        heap()->RegisterLiveArrayBuffer(
+            true, JSArrayBuffer::cast(target)->backing_store());
+      }
       heap()->IncrementSemiSpaceCopiedObjectSize(size);
     }
     *cells = 0;
@@ -2060,7 +1944,7 @@ void MarkCompactCollector::ProcessTopOptimizedFrame(ObjectVisitor* visitor) {
 
 
 void MarkCompactCollector::RetainMaps() {
-  if (reduce_memory_footprint_ || abort_incremental_marking_ ||
+  if (heap()->ShouldReduceMemory() || heap()->ShouldAbortIncrementalMarking() ||
       FLAG_retain_maps_for_n_gc == 0) {
     // Do not retain dead maps if flag disables it or there is
     // - memory pressure (reduce_memory_footprint_),
@@ -2312,9 +2196,9 @@ void MarkCompactCollector::AfterMarking() {
 
   if (FLAG_track_gc_object_stats) {
     if (FLAG_trace_gc_object_stats) {
-      heap()->TraceObjectStats();
+      heap()->object_stats_->TraceObjectStats();
     }
-    heap()->CheckpointObjectStats();
+    heap()->object_stats_->CheckpointObjectStats();
   }
 }
 
@@ -2665,11 +2549,55 @@ void MarkCompactCollector::AbortWeakCells() {
 
 
 void MarkCompactCollector::RecordMigratedSlot(Object* value, Address slot) {
+  // When parallel compaction is in progress, store and slots buffer entries
+  // require synchronization.
   if (heap_->InNewSpace(value)) {
-    heap_->store_buffer()->Mark(slot);
+    if (parallel_compaction_in_progress_) {
+      heap_->store_buffer()->MarkSynchronized(slot);
+    } else {
+      heap_->store_buffer()->Mark(slot);
+    }
   } else if (value->IsHeapObject() && IsOnEvacuationCandidate(value)) {
+    if (parallel_compaction_in_progress_) {
+      SlotsBuffer::AddToSynchronized(
+          &slots_buffer_allocator_, &migration_slots_buffer_,
+          &migration_slots_buffer_mutex_, reinterpret_cast<Object**>(slot),
+          SlotsBuffer::IGNORE_OVERFLOW);
+    } else {
+      SlotsBuffer::AddTo(&slots_buffer_allocator_, &migration_slots_buffer_,
+                         reinterpret_cast<Object**>(slot),
+                         SlotsBuffer::IGNORE_OVERFLOW);
+    }
+  }
+}
+
+
+void MarkCompactCollector::RecordMigratedCodeEntrySlot(
+    Address code_entry, Address code_entry_slot) {
+  if (Page::FromAddress(code_entry)->IsEvacuationCandidate()) {
+    if (parallel_compaction_in_progress_) {
+      SlotsBuffer::AddToSynchronized(
+          &slots_buffer_allocator_, &migration_slots_buffer_,
+          &migration_slots_buffer_mutex_, SlotsBuffer::CODE_ENTRY_SLOT,
+          code_entry_slot, SlotsBuffer::IGNORE_OVERFLOW);
+    } else {
+      SlotsBuffer::AddTo(&slots_buffer_allocator_, &migration_slots_buffer_,
+                         SlotsBuffer::CODE_ENTRY_SLOT, code_entry_slot,
+                         SlotsBuffer::IGNORE_OVERFLOW);
+    }
+  }
+}
+
+
+void MarkCompactCollector::RecordMigratedCodeObjectSlot(Address code_object) {
+  if (parallel_compaction_in_progress_) {
+    SlotsBuffer::AddToSynchronized(
+        &slots_buffer_allocator_, &migration_slots_buffer_,
+        &migration_slots_buffer_mutex_, SlotsBuffer::RELOCATED_CODE_OBJECT,
+        code_object, SlotsBuffer::IGNORE_OVERFLOW);
+  } else {
     SlotsBuffer::AddTo(&slots_buffer_allocator_, &migration_slots_buffer_,
-                       reinterpret_cast<Object**>(slot),
+                       SlotsBuffer::RELOCATED_CODE_OBJECT, code_object,
                        SlotsBuffer::IGNORE_OVERFLOW);
   }
 }
@@ -2714,19 +2642,12 @@ void MarkCompactCollector::MigrateObject(HeapObject* dst, HeapObject* src,
     if (compacting_ && dst->IsJSFunction()) {
       Address code_entry_slot = dst->address() + JSFunction::kCodeEntryOffset;
       Address code_entry = Memory::Address_at(code_entry_slot);
-
-      if (Page::FromAddress(code_entry)->IsEvacuationCandidate()) {
-        SlotsBuffer::AddTo(&slots_buffer_allocator_, &migration_slots_buffer_,
-                           SlotsBuffer::CODE_ENTRY_SLOT, code_entry_slot,
-                           SlotsBuffer::IGNORE_OVERFLOW);
-      }
+      RecordMigratedCodeEntrySlot(code_entry, code_entry_slot);
     }
   } else if (dest == CODE_SPACE) {
     PROFILE(isolate(), CodeMoveEvent(src_addr, dst_addr));
     heap()->MoveBlock(dst_addr, src_addr, size);
-    SlotsBuffer::AddTo(&slots_buffer_allocator_, &migration_slots_buffer_,
-                       SlotsBuffer::RELOCATED_CODE_OBJECT, dst_addr,
-                       SlotsBuffer::IGNORE_OVERFLOW);
+    RecordMigratedCodeObjectSlot(dst_addr);
     Code::cast(dst)->Relocate(dst_addr - src_addr);
   } else {
     DCHECK(dest == NEW_SPACE);
@@ -2758,6 +2679,12 @@ void MarkCompactCollector::MigrateObjectMixed(HeapObject* dst, HeapObject* src,
     Address base_pointer_slot =
         dst->address() + FixedTypedArrayBase::kBasePointerOffset;
     RecordMigratedSlot(Memory::Object_at(base_pointer_slot), base_pointer_slot);
+  } else if (src->IsBytecodeArray()) {
+    heap()->MoveBlock(dst->address(), src->address(), size);
+    Address constant_pool_slot =
+        dst->address() + BytecodeArray::kConstantPoolOffset;
+    RecordMigratedSlot(Memory::Object_at(constant_pool_slot),
+                       constant_pool_slot);
   } else if (FLAG_unbox_double_fields) {
     Address dst_addr = dst->address();
     Address src_addr = src->address();
@@ -3181,6 +3108,9 @@ bool MarkCompactCollector::IsSlotInLiveObject(Address slot) {
         if (object->IsFixedTypedArrayBase()) {
           return static_cast<int>(slot - object->address()) ==
                  FixedTypedArrayBase::kBasePointerOffset;
+        } else if (object->IsBytecodeArray()) {
+          return static_cast<int>(slot - object->address()) ==
+                 BytecodeArray::kConstantPoolOffset;
         } else if (FLAG_unbox_double_fields) {
           // Filter out slots that happen to point to unboxed double fields.
           LayoutDescriptorHelper helper(object->map());
@@ -3285,6 +3215,19 @@ void MarkCompactCollector::EvacuateLiveObjectsFromPage(Page* p) {
     *cell = 0;
   }
   p->ResetLiveBytes();
+}
+
+
+void MarkCompactCollector::EvacuatePagesInParallel() {
+  parallel_compaction_in_progress_ = true;
+  V8::GetCurrentPlatform()->CallOnBackgroundThread(
+      new CompactionTask(heap()), v8::Platform::kShortRunningTask);
+}
+
+
+void MarkCompactCollector::WaitUntilCompactionCompleted() {
+  pending_compaction_jobs_semaphore_.Wait();
+  parallel_compaction_in_progress_ = false;
 }
 
 
@@ -3594,7 +3537,12 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
     GCTracer::Scope gc_scope(heap()->tracer(),
                              GCTracer::Scope::MC_EVACUATE_PAGES);
     EvacuationScope evacuation_scope(this);
-    EvacuatePages();
+    if (FLAG_parallel_compaction) {
+      EvacuatePagesInParallel();
+      WaitUntilCompactionCompleted();
+    } else {
+      EvacuatePages();
+    }
   }
 
   // Second pass: find pointers to new space and update them.
@@ -3635,24 +3583,6 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
     if (FLAG_trace_fragmentation_verbose) {
       PrintF("  migration slots buffer: %d\n",
              SlotsBuffer::SizeOfChain(migration_slots_buffer_));
-    }
-
-    if (compacting_ && was_marked_incrementally_) {
-      GCTracer::Scope gc_scope(heap()->tracer(),
-                               GCTracer::Scope::MC_RESCAN_LARGE_OBJECTS);
-      // It's difficult to filter out slots recorded for large objects.
-      LargeObjectIterator it(heap_->lo_space());
-      for (HeapObject* obj = it.Next(); obj != NULL; obj = it.Next()) {
-        // LargeObjectSpace is not swept yet thus we have to skip
-        // dead objects explicitly.
-        if (!IsMarked(obj)) continue;
-
-        Page* p = Page::FromAddress(obj->address());
-        if (p->IsFlagSet(Page::RESCAN_ON_EVACUATION)) {
-          obj->Iterate(&updating_visitor);
-          p->ClearFlag(Page::RESCAN_ON_EVACUATION);
-        }
-      }
     }
   }
 
@@ -3760,6 +3690,7 @@ void MarkCompactCollector::ReleaseEvacuationCandidates() {
   }
   evacuation_candidates_.Rewind(0);
   compacting_ = false;
+  heap()->FilterStoreBufferEntriesOnAboutToBeFreedPages();
   heap()->FreeQueuedChunks();
 }
 
@@ -4312,9 +4243,6 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
     PrintF("SweepSpace: %s (%d pages swept)\n",
            AllocationSpaceName(space->identity()), pages_swept);
   }
-
-  // Give pages that are queued to be freed back to the OS.
-  heap()->FreeQueuedChunks();
 }
 
 
@@ -4331,11 +4259,6 @@ void MarkCompactCollector::SweepSpaces() {
 
   MoveEvacuationCandidatesToEndOfPagesList();
 
-  // Noncompacting collections simply sweep the spaces to clear the mark
-  // bits and free the nonlive blocks (for old and map spaces).  We sweep
-  // the map space last because freeing non-live maps overwrites them and
-  // the other spaces rely on possibly non-live maps to get the sizes for
-  // non-live objects.
   {
     {
       GCTracer::Scope sweep_scope(heap()->tracer(),
@@ -4358,12 +4281,22 @@ void MarkCompactCollector::SweepSpaces() {
     }
   }
 
+  // Deallocate unmarked large objects.
+  heap_->lo_space()->FreeUnmarkedObjects();
+
+  // Give pages that are queued to be freed back to the OS. Invalid store
+  // buffer entries are already filter out. We can just release the memory.
+  heap()->FreeQueuedChunks();
+
   EvacuateNewSpaceAndCandidates();
 
+  // EvacuateNewSpaceAndCandidates iterates over new space objects and for
+  // ArrayBuffers either re-registers them as live or promotes them. This is
+  // needed to properly free them.
   heap()->FreeDeadArrayBuffers(false);
 
-  // Deallocate unmarked objects and clear marked bits for marked objects.
-  heap_->lo_space()->FreeUnmarkedObjects();
+  // Clear the marking state of live large objects.
+  heap_->lo_space()->ClearMarkingStateOfLiveObjects();
 
   // Deallocate evacuated candidate pages.
   ReleaseEvacuationCandidates();
@@ -4449,6 +4382,15 @@ bool SlotsBuffer::IsTypedSlot(ObjectSlot slot) {
 }
 
 
+bool SlotsBuffer::AddToSynchronized(SlotsBufferAllocator* allocator,
+                                    SlotsBuffer** buffer_address,
+                                    base::Mutex* buffer_mutex, SlotType type,
+                                    Address addr, AdditionMode mode) {
+  base::LockGuard<base::Mutex> lock_guard(buffer_mutex);
+  return AddTo(allocator, buffer_address, type, addr, mode);
+}
+
+
 bool SlotsBuffer::AddTo(SlotsBufferAllocator* allocator,
                         SlotsBuffer** buffer_address, SlotType type,
                         Address addr, AdditionMode mode) {
@@ -4484,9 +4426,18 @@ void SlotsBuffer::RemoveInvalidSlots(Heap* heap, SlotsBuffer* buffer) {
       ObjectSlot slot = slots[slot_idx];
       if (!IsTypedSlot(slot)) {
         Object* object = *slot;
-        if ((object->IsHeapObject() && heap->InNewSpace(object)) ||
+        // Slots are invalid when they currently:
+        // - do not point to a heap object (SMI)
+        // - point to a heap object in new space
+        // - are not within a live heap object on a valid pointer slot
+        // - point to a heap object not on an evacuation candidate
+        if (!object->IsHeapObject() || heap->InNewSpace(object) ||
             !heap->mark_compact_collector()->IsSlotInLiveObject(
-                reinterpret_cast<Address>(slot))) {
+                reinterpret_cast<Address>(slot)) ||
+            !Page::FromAddress(reinterpret_cast<Address>(object))
+                 ->IsEvacuationCandidate()) {
+          // TODO(hpayer): Instead of replacing slots with kRemovedEntry we
+          // could shrink the slots buffer in-place.
           slots[slot_idx] = kRemovedEntry;
         }
       } else {
@@ -4518,6 +4469,8 @@ void SlotsBuffer::RemoveObjectSlots(Heap* heap, SlotsBuffer* buffer,
       if (!IsTypedSlot(slot)) {
         Address slot_address = reinterpret_cast<Address>(slot);
         if (slot_address >= start_slot && slot_address < end_slot) {
+          // TODO(hpayer): Instead of replacing slots with kRemovedEntry we
+          // could shrink the slots buffer in-place.
           slots[slot_idx] = kRemovedEntry;
           if (is_typed_slot) {
             slots[slot_idx - 1] = kRemovedEntry;

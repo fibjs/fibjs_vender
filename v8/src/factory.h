@@ -54,6 +54,11 @@ class Factory final {
   // Create a new PrototypeInfo struct.
   Handle<PrototypeInfo> NewPrototypeInfo();
 
+  // Create a new SloppyBlockWithEvalContextExtension struct.
+  Handle<SloppyBlockWithEvalContextExtension>
+  NewSloppyBlockWithEvalContextExtension(Handle<ScopeInfo> scope_info,
+                                         Handle<JSObject> extension);
+
   // Create a pre-tenured empty AccessorPair.
   Handle<AccessorPair> NewAccessorPair();
 
@@ -283,7 +288,8 @@ class Factory final {
                                  PretenureFlag pretenure = NOT_TENURED);
 
   Handle<BytecodeArray> NewBytecodeArray(int length, const byte* raw_bytecodes,
-                                         int frame_size);
+                                         int frame_size, int parameter_count,
+                                         Handle<FixedArray> constant_pool);
 
   Handle<FixedTypedArrayBase> NewFixedTypedArrayWithExternalPointer(
       int length, ExternalArrayType array_type, void* external_pointer,
@@ -469,12 +475,17 @@ class Factory final {
   Handle<JSMapIterator> NewJSMapIterator();
   Handle<JSSetIterator> NewJSSetIterator();
 
+  // Creates a new JSIteratorResult object with the arguments {value} and
+  // {done}.  Implemented according to ES6 section 7.4.7 CreateIterResultObject.
+  Handle<JSIteratorResult> NewJSIteratorResult(Handle<Object> value,
+                                               Handle<Object> done);
+
   // Allocates a Harmony proxy.
   Handle<JSProxy> NewJSProxy(Handle<Object> handler, Handle<Object> prototype);
 
   // Allocates a Harmony function proxy.
   Handle<JSProxy> NewJSFunctionProxy(Handle<Object> handler,
-                                     Handle<Object> call_trap,
+                                     Handle<JSReceiver> call_trap,
                                      Handle<Object> construct_trap,
                                      Handle<Object> prototype);
 
@@ -551,21 +562,17 @@ class Factory final {
                           Handle<Object> arg1 = Handle<Object>(),
                           Handle<Object> arg2 = Handle<Object>());
 
-#define DEFINE_ERROR(NAME, name)                                              \
-  Handle<Object> New##NAME(MessageTemplate::Template template_index,          \
-                           Handle<Object> arg0 = Handle<Object>(),            \
-                           Handle<Object> arg1 = Handle<Object>(),            \
-                           Handle<Object> arg2 = Handle<Object>()) {          \
-    return NewError(isolate()->name##_function(), template_index, arg0, arg1, \
-                    arg2);                                                    \
-  }
-
-  DEFINE_ERROR(Error, error)
-  DEFINE_ERROR(EvalError, eval_error)
-  DEFINE_ERROR(RangeError, range_error)
-  DEFINE_ERROR(ReferenceError, reference_error)
-  DEFINE_ERROR(SyntaxError, syntax_error)
-  DEFINE_ERROR(TypeError, type_error)
+#define DECLARE_ERROR(NAME)                                          \
+  Handle<Object> New##NAME(MessageTemplate::Template template_index, \
+                           Handle<Object> arg0 = Handle<Object>(),   \
+                           Handle<Object> arg1 = Handle<Object>(),   \
+                           Handle<Object> arg2 = Handle<Object>());
+  DECLARE_ERROR(Error)
+  DECLARE_ERROR(EvalError)
+  DECLARE_ERROR(RangeError)
+  DECLARE_ERROR(ReferenceError)
+  DECLARE_ERROR(SyntaxError)
+  DECLARE_ERROR(TypeError)
 #undef DEFINE_ERROR
 
   Handle<String> NumberToString(Handle<Object> number,
@@ -609,25 +616,13 @@ class Factory final {
   PRIVATE_SYMBOL_LIST(SYMBOL_ACCESSOR)
 #undef SYMBOL_ACCESSOR
 
-#define SYMBOL_ACCESSOR(name, varname, description)             \
+#define SYMBOL_ACCESSOR(name, description)                      \
   inline Handle<Symbol> name() {                                \
     return Handle<Symbol>(bit_cast<Symbol**>(                   \
         &isolate()->heap()->roots_[Heap::k##name##RootIndex])); \
   }
   PUBLIC_SYMBOL_LIST(SYMBOL_ACCESSOR)
 #undef SYMBOL_ACCESSOR
-
-  inline void set_string_table(Handle<StringTable> table) {
-    isolate()->heap()->set_string_table(*table);
-  }
-
-  inline void set_weak_stack_trace_list(Handle<WeakFixedArray> list) {
-    isolate()->heap()->set_weak_stack_trace_list(*list);
-  }
-
-  Handle<String> hidden_string() {
-    return Handle<String>(&isolate()->heap()->hidden_string_);
-  }
 
   // Allocates a new SharedFunctionInfo object.
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(

@@ -526,7 +526,7 @@ static void Generate_CheckStackOverflow(MacroAssembler* masm,
     __ SmiTag(eax);
   }
   __ push(eax);
-  __ InvokeBuiltin(Builtins::STACK_OVERFLOW, CALL_FUNCTION);
+  __ InvokeBuiltin(Context::STACK_OVERFLOW_BUILTIN_INDEX, CALL_FUNCTION);
 
   __ bind(&okay);
 }
@@ -638,20 +638,23 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
 
   // Get the bytecode array from the function object and load the pointer to the
   // first entry into edi (InterpreterBytecodeRegister).
-  __ mov(edi, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
-  __ mov(edi, FieldOperand(edi, SharedFunctionInfo::kFunctionDataOffset));
+  __ mov(eax, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
+  __ mov(kInterpreterBytecodeArrayRegister,
+         FieldOperand(eax, SharedFunctionInfo::kFunctionDataOffset));
 
   if (FLAG_debug_code) {
     // Check function data field is actually a BytecodeArray object.
-    __ AssertNotSmi(edi);
-    __ CmpObjectType(edi, BYTECODE_ARRAY_TYPE, eax);
+    __ AssertNotSmi(kInterpreterBytecodeArrayRegister);
+    __ CmpObjectType(kInterpreterBytecodeArrayRegister, BYTECODE_ARRAY_TYPE,
+                     eax);
     __ Assert(equal, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
   }
 
   // Allocate the local and temporary register file on the stack.
   {
     // Load frame size from the BytecodeArray object.
-    __ mov(ebx, FieldOperand(edi, BytecodeArray::kFrameSizeOffset));
+    __ mov(ebx, FieldOperand(kInterpreterBytecodeArrayRegister,
+                             BytecodeArray::kFrameSizeOffset));
 
     // Do a stack check to ensure we don't go over the limit.
     Label ok;
@@ -660,21 +663,22 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     ExternalReference stack_limit =
         ExternalReference::address_of_real_stack_limit(masm->isolate());
     __ cmp(ecx, Operand::StaticVariable(stack_limit));
-    __ j(above_equal, &ok, Label::kNear);
-    __ InvokeBuiltin(Builtins::STACK_OVERFLOW, CALL_FUNCTION);
+    __ j(above_equal, &ok);
+    __ InvokeBuiltin(Context::STACK_OVERFLOW_BUILTIN_INDEX, CALL_FUNCTION);
     __ bind(&ok);
 
     // If ok, push undefined as the initial value for all register file entries.
-    // Note: there should always be at least one stack slot for the return
-    // register in the register file.
     Label loop_header;
+    Label loop_check;
     __ mov(eax, Immediate(masm->isolate()->factory()->undefined_value()));
+    __ jmp(&loop_check);
     __ bind(&loop_header);
     // TODO(rmcilroy): Consider doing more than one push per loop iteration.
     __ push(eax);
     // Continue loop if not done.
+    __ bind(&loop_check);
     __ sub(ebx, Immediate(kPointerSize));
-    __ j(not_equal, &loop_header, Label::kNear);
+    __ j(greater_equal, &loop_header);
   }
 
   // TODO(rmcilroy): List of things not currently dealt with here but done in
@@ -704,25 +708,40 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     ExternalReference stack_limit =
         ExternalReference::address_of_stack_limit(masm->isolate());
     __ cmp(esp, Operand::StaticVariable(stack_limit));
-    __ j(above_equal, &ok, Label::kNear);
+    __ j(above_equal, &ok);
     __ CallRuntime(Runtime::kStackGuard, 0);
     __ bind(&ok);
   }
 
-  // Load bytecode offset and dispatch table into registers.
-  __ mov(ecx, Immediate(BytecodeArray::kHeaderSize - kHeapObjectTag));
+  // Load accumulator, register file, bytecode offset, dispatch table into
+  // registers.
+  __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
+  __ mov(kInterpreterRegisterFileRegister, ebp);
+  __ sub(
+      kInterpreterRegisterFileRegister,
+      Immediate(kPointerSize + StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ mov(kInterpreterBytecodeOffsetRegister,
+         Immediate(BytecodeArray::kHeaderSize - kHeapObjectTag));
   // Since the dispatch table root might be set after builtins are generated,
   // load directly from the roots table.
-  __ LoadRoot(ebx, Heap::kInterpreterTableRootIndex);
-  __ add(ebx, Immediate(FixedArray::kHeaderSize - kHeapObjectTag));
+  __ LoadRoot(kInterpreterDispatchTableRegister,
+              Heap::kInterpreterTableRootIndex);
+  __ add(kInterpreterDispatchTableRegister,
+         Immediate(FixedArray::kHeaderSize - kHeapObjectTag));
+
+  // Push context as a stack located parameter to the bytecode handler.
+  DCHECK_EQ(-1, kInterpreterContextSpillSlot);
+  __ push(esi);
 
   // Dispatch to the first bytecode handler for the function.
-  __ movzx_b(eax, Operand(edi, ecx, times_1, 0));
-  __ mov(eax, Operand(ebx, eax, times_pointer_size, 0));
+  __ movzx_b(esi, Operand(kInterpreterBytecodeArrayRegister,
+                          kInterpreterBytecodeOffsetRegister, times_1, 0));
+  __ mov(esi, Operand(kInterpreterDispatchTableRegister, esi,
+                      times_pointer_size, 0));
   // TODO(rmcilroy): Make dispatch table point to code entrys to avoid untagging
   // and header removal.
-  __ add(eax, Immediate(Code::kHeaderSize - kHeapObjectTag));
-  __ jmp(eax);
+  __ add(esi, Immediate(Code::kHeaderSize - kHeapObjectTag));
+  __ call(esi);
 }
 
 
@@ -733,14 +752,18 @@ void Builtins::Generate_InterpreterExitTrampoline(MacroAssembler* masm) {
   //  - Support profiler (specifically decrementing profiling_counter
   //    appropriately and calling out to HandleInterrupts if necessary).
 
-  // Load return value into r0.
-  __ mov(eax, Operand(ebp, -kPointerSize -
-                               StandardFrameConstants::kFixedFrameSizeFromFp));
+  // The return value is in accumulator, which is already in rax.
+
   // Leave the frame (also dropping the register file).
   __ leave();
-  // Return droping receiver + arguments.
-  // TODO(rmcilroy): Get number of arguments from BytecodeArray.
-  __ Ret(1 * kPointerSize, ecx);
+
+  // Drop receiver + arguments and return.
+  __ mov(ebx, FieldOperand(kInterpreterBytecodeArrayRegister,
+                           BytecodeArray::kParameterSizeOffset));
+  __ pop(ecx);
+  __ add(esp, ebx);
+  __ push(ecx);
+  __ ret(0);
 }
 
 
@@ -1067,12 +1090,12 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ push(edi);  // re-add proxy object as additional argument
     __ push(edx);
     __ inc(eax);
-    __ GetBuiltinEntry(edx, Builtins::CALL_FUNCTION_PROXY);
+    __ GetBuiltinEntry(edx, Context::CALL_FUNCTION_PROXY_BUILTIN_INDEX);
     __ jmp(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
            RelocInfo::CODE_TARGET);
 
     __ bind(&non_proxy);
-    __ GetBuiltinEntry(edx, Builtins::CALL_NON_FUNCTION);
+    __ GetBuiltinEntry(edx, Context::CALL_NON_FUNCTION_BUILTIN_INDEX);
     __ jmp(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
            RelocInfo::CODE_TARGET);
     __ bind(&function);
@@ -1169,9 +1192,10 @@ static void Generate_ApplyHelper(MacroAssembler* masm, bool targetIsArgument) {
     __ push(Operand(ebp, kFunctionOffset));  // push this
     __ push(Operand(ebp, kArgumentsOffset));  // push arguments
     if (targetIsArgument) {
-      __ InvokeBuiltin(Builtins::REFLECT_APPLY_PREPARE, CALL_FUNCTION);
+      __ InvokeBuiltin(Context::REFLECT_APPLY_PREPARE_BUILTIN_INDEX,
+                       CALL_FUNCTION);
     } else {
-      __ InvokeBuiltin(Builtins::APPLY_PREPARE, CALL_FUNCTION);
+      __ InvokeBuiltin(Context::APPLY_PREPARE_BUILTIN_INDEX, CALL_FUNCTION);
     }
 
     Generate_CheckStackOverflow(masm, kFunctionOffset, kEaxIsSmiTagged);
@@ -1258,7 +1282,7 @@ static void Generate_ApplyHelper(MacroAssembler* masm, bool targetIsArgument) {
     __ push(edi);  // add function proxy as last argument
     __ inc(eax);
     __ Move(ebx, Immediate(0));
-    __ GetBuiltinEntry(edx, Builtins::CALL_FUNCTION_PROXY);
+    __ GetBuiltinEntry(edx, Context::CALL_FUNCTION_PROXY_BUILTIN_INDEX);
     __ call(masm->isolate()->builtins()->ArgumentsAdaptorTrampoline(),
             RelocInfo::CODE_TARGET);
 
@@ -1303,7 +1327,8 @@ static void Generate_ConstructHelper(MacroAssembler* masm) {
     __ push(Operand(ebp, kFunctionOffset));
     __ push(Operand(ebp, kArgumentsOffset));
     __ push(Operand(ebp, kNewTargetOffset));
-    __ InvokeBuiltin(Builtins::REFLECT_CONSTRUCT_PREPARE, CALL_FUNCTION);
+    __ InvokeBuiltin(Context::REFLECT_CONSTRUCT_PREPARE_BUILTIN_INDEX,
+                     CALL_FUNCTION);
 
     Generate_CheckStackOverflow(masm, kFunctionOffset, kEaxIsSmiTagged);
 
@@ -1506,8 +1531,8 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ push(edi);  // Preserve the function.
-    __ push(eax);
-    __ InvokeBuiltin(Builtins::TO_STRING, CALL_FUNCTION);
+    ToStringStub stub(masm->isolate());
+    __ CallStub(&stub);
     __ pop(edi);
   }
   __ mov(ebx, eax);
@@ -1709,7 +1734,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   {
     FrameScope frame(masm, StackFrame::MANUAL);
     EnterArgumentsAdaptorFrame(masm);
-    __ InvokeBuiltin(Builtins::STACK_OVERFLOW, CALL_FUNCTION);
+    __ InvokeBuiltin(Context::STACK_OVERFLOW_BUILTIN_INDEX, CALL_FUNCTION);
     __ int3();
   }
 }
