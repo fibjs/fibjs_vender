@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -5,12 +9,13 @@
 
 #include "gd_tga.h"
 #include "gd.h"
+#include "gd_errors.h"
 #include "gdhelpers.h"
 
 /*!	\brief Creates a gdImage from a TGA file
  *	Creates a gdImage from a TGA binary file via a gdIOCtx.
  *	\param infile Pointer to TGA binary file
- *	\return gdImagePtr	
+ *	\return gdImagePtr
  */
 BGD_DECLARE(gdImagePtr) gdImageCreateFromTga(FILE *fp)
 {
@@ -36,14 +41,14 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTgaPtr(int size, void *data)
 /*!	\brief Creates a gdImage from a gdIOCtx
  *	Creates a gdImage from a gdIOCtx referencing a TGA binary file.
  *	\param ctx Pointer to a gdIOCtx structure
- *	\return gdImagePtr	
+ *	\return gdImagePtr
  */
 BGD_DECLARE(gdImagePtr) gdImageCreateFromTgaCtx(gdIOCtx* ctx)
 {
 	int bitmap_caret = 0;
 	oTga *tga = NULL;
-/*	int pixel_block_size = 0;
-	int image_block_size = 0; */
+	/*	int pixel_block_size = 0;
+		int image_block_size = 0; */
 	volatile gdImagePtr image = NULL;
 	int x = 0;
 	int y = 0;
@@ -58,13 +63,13 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTgaCtx(gdIOCtx* ctx)
 
 	if (!read_header_tga(ctx, tga)) {
 		free_tga(tga);
-		return NULL;    
+		return NULL;
 	}
 
-/*TODO: Will this be used?
-	pixel_block_size = tga->bits / 8;
-	image_block_size = (tga->width * tga->height) * pixel_block_size;
-*/
+	/*TODO: Will this be used?
+		pixel_block_size = tga->bits / 8;
+		image_block_size = (tga->width * tga->height) * pixel_block_size;
+	*/
 
 	if (read_image_tga(ctx, tga)) {
 		free_tga(tga);
@@ -98,7 +103,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTgaCtx(gdIOCtx* ctx)
 				register int a = tga->bitmap[bitmap_caret + 3];
 
 				*tpix = gdTrueColorAlpha(tga->bitmap[bitmap_caret + 2], tga->bitmap[bitmap_caret + 1], tga->bitmap[bitmap_caret], gdAlphaMax - (a >> 1));
-				bitmap_caret += 4; 
+				bitmap_caret += 4;
 			}
 		}
 	}
@@ -110,7 +115,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTgaCtx(gdIOCtx* ctx)
 	} else if (tga->fliph) {
 		gdImageFlipHorizontal(image);
 	}
- 
+
 	free_tga(tga);
 
 	return image;
@@ -120,15 +125,16 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTgaCtx(gdIOCtx* ctx)
  *	Reads the header block from a binary TGA file populating the referenced TGA structure.
  *	\param ctx Pointer to TGA binary file
  *	\param tga Pointer to TGA structure
- *	\return int 1 on sucess, -1 on failure	
+ *	\return int 1 on sucess, -1 on failure
  */
-int read_header_tga(gdIOCtx *ctx, oTga *tga) {
+int read_header_tga(gdIOCtx *ctx, oTga *tga)
+{
 
 	unsigned char header[18];
 
 	if (gdGetBuf(header, sizeof(header), ctx) < 18) {
-		fprintf(stderr, "fail to read header");
-		return -1;	
+		gd_error("fail to read header");
+		return -1;
 	}
 
 	tga->identsize = header[0];
@@ -146,23 +152,23 @@ int read_header_tga(gdIOCtx *ctx, oTga *tga) {
 	tga->fliph = (header[17] & 0x10) ? 1 : 0;
 	tga->flipv = (header[17] & 0x20) ? 0 : 1;
 
-#if DEBUG 
+#if DEBUG
 	printf("format bps: %i\n", tga->bits);
 	printf("flip h/v: %i / %i\n", tga->fliph, tga->flipv);
 	printf("alpha: %i\n", tga->alphabits);
 	printf("wxh: %i %i\n", tga->width, tga->height);
-#endif 
+#endif
 
 	switch(tga->bits) {
-		case 8:
-		case 16:
-		case 24:
-		case 32:
-			break;
-		default:
-			fprintf(stderr, "bps %i not supported", tga->bits);
-			return -1;
-			break;
+	case 8:
+	case 16:
+	case 24:
+	case 32:
+		break;
+	default:
+		gd_error("bps %i not supported", tga->bits);
+		return -1;
+		break;
 	}
 
 	tga->ident = NULL;
@@ -183,18 +189,19 @@ int read_header_tga(gdIOCtx *ctx, oTga *tga) {
  *	Reads the image data block from a binary TGA file populating the referenced TGA structure.
  *	\param ctx Pointer to TGA binary file
  *	\param tga Pointer to TGA structure
- *	\return int 0 on sucess, -1 on failure	
+ *	\return int 0 on sucess, -1 on failure
  */
-int read_image_tga( gdIOCtx *ctx, oTga *tga ) {
+int read_image_tga( gdIOCtx *ctx, oTga *tga )
+{
 	int pixel_block_size = (tga->bits / 8);
 	int image_block_size = (tga->width * tga->height) * pixel_block_size;
-	byte* decompression_buffer = NULL;
+	uint8_t* decompression_buffer = NULL;
 	unsigned char* conversion_buffer = NULL;
 	int buffer_caret = 0;
 	int bitmap_caret = 0;
 	int i = 0;
 	int j = 0;
-	byte encoded_pixels;
+	uint8_t encoded_pixels;
 
 	if(overflow2(tga->width, tga->height)) {
 		return -1;
@@ -204,14 +211,14 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga ) {
 		return -1;
 	}
 
-	if(overflow2(image_block_size, sizeof(byte))) {
+	if(overflow2(image_block_size, sizeof(uint8_t))) {
 		return -1;
 	}
 
 	/*!	\brief Allocate memmory for image block
 	 *  Allocate a chunk of memory for the image block to be passed into.
 	 */
-	tga->bitmap = (int *) gdMalloc(image_block_size * sizeof(byte));
+	tga->bitmap = (int *) gdMalloc(image_block_size * sizeof(uint8_t));
 	if (tga->bitmap == NULL) {
 		return -1;
 	}
@@ -242,7 +249,7 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga ) {
 
 		gdGetBuf(conversion_buffer, image_block_size, ctx);
 
-		while (buffer_caret < image_block_size) { 
+		while (buffer_caret < image_block_size) {
 			tga->bitmap[buffer_caret] = (int) conversion_buffer[buffer_caret];
 			buffer_caret++;
 		}
@@ -254,12 +261,12 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga ) {
 	 *  Chunk load the pixel data from an RLE compressed RGB type TGA.
 	 */
 	if (tga->imagetype == TGA_TYPE_RGB_RLE) {
-		decompression_buffer = (byte*) gdMalloc(image_block_size * sizeof(byte));
+		decompression_buffer = (uint8_t*) gdMalloc(image_block_size * sizeof(uint8_t));
 		if (decompression_buffer == NULL) {
 			gdFree( decompression_buffer );
 			return -1;
 		}
-		conversion_buffer = (unsigned char *) gdMalloc(image_block_size * sizeof(unsigned char));  
+		conversion_buffer = (unsigned char *) gdMalloc(image_block_size * sizeof(unsigned char));
 		if (conversion_buffer == NULL) {
 			gdFree( decompression_buffer );
 			gdFree( conversion_buffer );
@@ -270,7 +277,7 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga ) {
 
 		buffer_caret = 0;
 
-		while( buffer_caret < image_block_size ) { 
+		while( buffer_caret < image_block_size ) {
 			decompression_buffer[buffer_caret] = (int)conversion_buffer[buffer_caret];
 			buffer_caret++;
 		}
@@ -328,7 +335,8 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga ) {
  *	Dereferences the bitmap referenced in a TGA structure, then the structure itself
  *	\param tga Pointer to TGA structure
  */
-void free_tga(oTga * tga) {
+void free_tga(oTga * tga)
+{
 	if (tga) {
 		if (tga->ident) {
 			gdFree(tga->ident);

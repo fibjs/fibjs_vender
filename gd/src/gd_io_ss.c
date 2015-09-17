@@ -20,7 +20,9 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
 #	include "config.h"
+#endif
 
 #include <math.h>
 #include <string.h>
@@ -30,8 +32,7 @@
 
 /* this is used for creating images in main memory */
 
-typedef struct ssIOCtx
-{
+typedef struct ssIOCtx {
 	gdIOCtx ctx;
 	gdSourcePtr src;
 	gdSinkPtr snk;

@@ -17,7 +17,7 @@
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
  * that this copyright notice remain intact.
- * 
+ *
  *
  * Modified to process 32bit RGBA images.
  * Stuart Coyle 2004-2007
@@ -27,16 +27,21 @@
  * (and make it thread safety by droping static and  global variables)
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include <stdlib.h>
 #include <string.h>
-#include <gd.h>
+#include "gd.h"
 #include "gdhelpers.h"
+#include "gd_errors.h"
 
 #include "gd_nnquant.h"
 
 /* Network Definitions
    ------------------- */
-   
+
 #define maxnetpos	(MAXNETSIZE-1)
 #define netbiasshift	4			/* bias for colour values */
 #define ncycles		100			/* no. of learning cycles */
@@ -55,12 +60,12 @@
 #define radiusbiasshift	6			/* at 32.0 biased by 6 bits */
 #define radiusbias	(((int) 1)<<radiusbiasshift)
 #define initradius	(initrad*radiusbias)	/* and decreases by a */
-#define radiusdec	30			/* factor of 1/30 each cycle */ 
+#define radiusdec	30			/* factor of 1/30 each cycle */
 
 /* defs for decreasing alpha factor */
 #define alphabiasshift	10			/* alpha starts at 1.0 */
 #define initalpha	(((int) 1)<<alphabiasshift)
-int alphadec;					
+int alphadec;
 
 /* radbias and alpharadbias used for radpower calculation */
 #define radbiasshift	8
@@ -73,7 +78,7 @@ int alphadec;
 #define BLUE 2
 #define GREEN 3
 
-typedef int nq_pixel[5];				
+typedef int nq_pixel[5];
 
 typedef struct {
 	/* biased by 10 bits */
@@ -108,12 +113,12 @@ typedef struct {
 
 /* Initialise network in range (0,0,0,0) to (255,255,255,255) and set parameters
    ----------------------------------------------------------------------- */
-void initnet(nnq, thepic, len, sample, colours)	
-	nn_quant *nnq;
-	unsigned char *thepic;
-	int len;
-	int sample;
-	int colours;
+void initnet(nnq, thepic, len, sample, colours)
+nn_quant *nnq;
+unsigned char *thepic;
+int len;
+int sample;
+int colours;
 {
 	register int i;
 	register int *p;
@@ -125,7 +130,7 @@ void initnet(nnq, thepic, len, sample, colours)
 	nnq->thepicture = thepic;
 	nnq->lengthcount = len;
 	nnq->samplefac = sample;
-	nnq->netsize = colours; 
+	nnq->netsize = colours;
 
 	for (i=0; i < nnq->netsize; i++) {
 		p = nnq->network[i];
@@ -136,7 +141,7 @@ void initnet(nnq, thepic, len, sample, colours)
 }
 
 /* -------------------------- */
-	
+
 /* Unbias network to give byte values 0..255 and record
  * position i to prepare for sort
  */
@@ -161,24 +166,24 @@ void unbiasnet(nn_quant *nnq)
 /* Output colour map
 	 ----------------- */
 void writecolourmap(nnq, f)
-	nn_quant *nnq;
-	FILE *f;
+nn_quant *nnq;
+FILE *f;
 {
 	int i,j;
 
-	for (i=3; i>=0; i--) 
-		for (j=0; j < nnq->netsize; j++) 
+	for (i=3; i>=0; i--)
+		for (j=0; j < nnq->netsize; j++)
 			putc(nnq->network[j][i], f);
-}	          
+}
 
 /* Output colormap to unsigned char ptr in RGBA format */
 void getcolormap(nnq, map)
-	nn_quant *nnq;
-	unsigned char *map;
+nn_quant *nnq;
+unsigned char *map;
 {
 	int i,j;
-	for(j=0; j < nnq->netsize; j++){
-		for (i=3; i>=0; i--){
+	for(j=0; j < nnq->netsize; j++) {
+		for (i=3; i>=0; i--) {
 			*map = nnq->network[j][i];
 			map++;
 		}
@@ -210,11 +215,21 @@ void inxbuild(nn_quant *nnq)
 		q = nnq->network[smallpos];
 		/* swap p (i) and q (smallpos) entries */
 		if (i != smallpos) {
-			j = q[0];   q[0] = p[0];   p[0] = j;
-			j = q[1];   q[1] = p[1];   p[1] = j;
-			j = q[2];   q[2] = p[2];   p[2] = j;
-			j = q[3];   q[3] = p[3];   p[3] = j;
-			j = q[4];   q[4] = p[4];   p[4] = j;
+			j = q[0];
+			q[0] = p[0];
+			p[0] = j;
+			j = q[1];
+			q[1] = p[1];
+			p[1] = j;
+			j = q[2];
+			q[2] = p[2];
+			p[2] = j;
+			j = q[3];
+			q[3] = p[3];
+			p[3] = j;
+			j = q[4];
+			q[4] = p[4];
+			p[4] = j;
 		}
 		/* smallval entry is now in position i */
 		if (smallval != previouscol) {
@@ -232,8 +247,8 @@ void inxbuild(nn_quant *nnq)
 /* Search for ABGR values 0..255 (after net is unbiased) and return colour index
 	 ---------------------------------------------------------------------------- */
 int inxsearch(nnq, al,b,g,r)
-	nn_quant *nnq;
-	register int al, b, g, r;
+nn_quant *nnq;
+register int al, b, g, r;
 {
 	register int i, j, dist, a, bestd;
 	register int *p;
@@ -252,17 +267,23 @@ int inxsearch(nnq, al,b,g,r)
 			else {
 				i++;
 				if (dist<0) dist = -dist;
-				a = p[1] - b;   if (a<0) a = -a;
+				a = p[1] - b;
+				if (a<0) a = -a;
 				dist += a;
 				if (dist<bestd) {
-					a = p[3] - r;   if (a<0) a = -a;
+					a = p[3] - r;
+					if (a<0) a = -a;
 					dist += a;
 				}
 				if(dist<bestd) {
-					a = p[0] - al; if (a<0) a = -a;
+					a = p[0] - al;
+					if (a<0) a = -a;
 					dist += a;
 				}
-				if (dist<bestd) {bestd=dist; best=p[4];}
+				if (dist<bestd) {
+					bestd=dist;
+					best=p[4];
+				}
 			}
 		}
 
@@ -273,17 +294,23 @@ int inxsearch(nnq, al,b,g,r)
 			else {
 				j--;
 				if (dist<0) dist = -dist;
-				a = p[1] - b;   if (a<0) a = -a;
+				a = p[1] - b;
+				if (a<0) a = -a;
 				dist += a;
 				if (dist<bestd) {
-					a = p[3] - r;   if (a<0) a = -a;
+					a = p[3] - r;
+					if (a<0) a = -a;
 					dist += a;
 				}
 				if(dist<bestd) {
-					a = p[0] - al; if (a<0) a = -a;
+					a = p[0] - al;
+					if (a<0) a = -a;
 					dist += a;
-				}			
-				if (dist<bestd) {bestd=dist; best=p[4];}
+				}
+				if (dist<bestd) {
+					bestd=dist;
+					best=p[4];
+				}
 			}
 		}
 	}
@@ -294,8 +321,8 @@ int inxsearch(nnq, al,b,g,r)
 /* Search for biased ABGR values
    ---------------------------- */
 int contest(nnq, al,b,g,r)
-	nn_quant *nnq;
-	register int al,b,g,r;
+nn_quant *nnq;
+register int al,b,g,r;
 {
 	/* finds closest neuron (min dist) and updates freq */
 	/* finds best neuron (min dist-bias) and returns position */
@@ -315,16 +342,26 @@ int contest(nnq, al,b,g,r)
 
 	for (i=0; i< nnq->netsize; i++) {
 		n = nnq->network[i];
-		dist = n[0] - al;   if (dist<0) dist = -dist;
-		a = n[1] - b;   if (a<0) a = -a;
+		dist = n[0] - al;
+		if (dist<0) dist = -dist;
+		a = n[1] - b;
+		if (a<0) a = -a;
 		dist += a;
-		a = n[2] - g;   if (a<0) a = -a;
+		a = n[2] - g;
+		if (a<0) a = -a;
 		dist += a;
-		a = n[3] - r;   if (a<0) a = -a;
+		a = n[3] - r;
+		if (a<0) a = -a;
 		dist += a;
-		if (dist<bestd) {bestd=dist; bestpos=i;}
+		if (dist<bestd) {
+			bestd=dist;
+			bestpos=i;
+		}
 		biasdist = dist - ((*p)>>(intbiasshift-netbiasshift));
-		if (biasdist<bestbiasd) {bestbiasd=biasdist; bestbiaspos=i;}
+		if (biasdist<bestbiasd) {
+			bestbiasd=biasdist;
+			bestbiaspos=i;
+		}
 		betafreq = (*f >> betashift);
 		*f++ -= betafreq;
 		*p++ += (betafreq<<gammashift);
@@ -339,8 +376,8 @@ int contest(nnq, al,b,g,r)
 	 ---------------------------------------------------- */
 
 void altersingle(nnq, alpha,i,al,b,g,r)
-	nn_quant *nnq;
-	register int alpha,i,al,b,g,r;
+nn_quant *nnq;
+register int alpha,i,al,b,g,r;
 {
 	register int *n;
 
@@ -359,15 +396,17 @@ void altersingle(nnq, alpha,i,al,b,g,r)
 	 --------------------------------------------------------------------------------- */
 
 void alterneigh(nnq, rad,i,al,b,g,r)
-	nn_quant *nnq;
-	int rad,i;
-	register int al,b,g,r;
+nn_quant *nnq;
+int rad,i;
+register int al,b,g,r;
 {
 	register int j,k,lo,hi,a;
 	register int *p, *q;
 
-	lo = i-rad;   if (lo<-1) lo=-1;
-	hi = i+rad;   if (hi>nnq->netsize) hi=nnq->netsize;
+	lo = i-rad;
+	if (lo<-1) lo=-1;
+	hi = i+rad;
+	if (hi>nnq->netsize) hi=nnq->netsize;
 
 	j = i+1;
 	k = i-1;
@@ -404,8 +443,8 @@ void alterneigh(nnq, rad,i,al,b,g,r)
    ------------------ */
 
 void learn(nnq, verbose) /* Stu: N.B. added parameter so that main() could control verbosity. */
-	nn_quant *nnq;
-	int verbose;
+nn_quant *nnq;
+int verbose;
 {
 	register int i,j,al,b,g,r;
 	int radius,rad,alpha,step,delta,samplepixels;
@@ -415,20 +454,20 @@ void learn(nnq, verbose) /* Stu: N.B. added parameter so that main() could contr
 	nnq->alphadec = 30 + ((nnq->samplefac-1)/3);
 	p = nnq->thepicture;
 	lim = nnq->thepicture + nnq->lengthcount;
-	samplepixels = nnq->lengthcount/(4 * nnq->samplefac); 
+	samplepixels = nnq->lengthcount/(4 * nnq->samplefac);
 	/* here's a problem with small images: samplepixels < ncycles => delta = 0 */
-	delta = samplepixels/ncycles; 
+	delta = samplepixels/ncycles;
 	/* kludge to fix */
-	if(delta==0) delta = 1; 
+	if(delta==0) delta = 1;
 	alpha = initalpha;
 	radius = initradius;
 
 	rad = radius >> radiusbiasshift;
 	if (rad <= 1) rad = 0;
-	for (i=0; i<rad; i++) 
+	for (i=0; i<rad; i++)
 		nnq->radpower[i] = alpha*(((rad*rad - i*i)*radbias)/(rad*rad));
 
-	if(verbose) fprintf(stderr,"beginning 1D learning: initial radius=%d\n", rad);
+	if (verbose) gd_error_ex(GD_NOTICE, "beginning 1D learning: initial radius=%d\n", rad);
 
 	if ((nnq->lengthcount%prime1) != 0) step = 4*prime1;
 	else {
@@ -454,16 +493,16 @@ void learn(nnq, verbose) /* Stu: N.B. added parameter so that main() could contr
 		while (p >= lim) p -= nnq->lengthcount;
 
 		i++;
-		if (i%delta == 0) {                    /* FPE here if delta=0*/	
+		if (i%delta == 0) {                    /* FPE here if delta=0*/
 			alpha -= alpha / nnq->alphadec;
 			radius -= radius / radiusdec;
 			rad = radius >> radiusbiasshift;
 			if (rad <= 1) rad = 0;
-			for (j=0; j<rad; j++) 
+			for (j=0; j<rad; j++)
 				nnq->radpower[j] = alpha*(((rad*rad - j*j)*radbias)/(rad*rad));
 		}
 	}
-	if(verbose) fprintf(stderr,"finished 1D learning: final alpha=%f !\n",((float)alpha)/initalpha);
+	if (verbose) gd_error_ex(GD_NOTICE, "finished 1D learning: final alpha=%f !\n",((float)alpha)/initalpha);
 }
 
 BGD_DECLARE(gdImagePtr) gdImageNeuQuant(gdImagePtr im, const int max_color, int sample_factor)
@@ -471,9 +510,9 @@ BGD_DECLARE(gdImagePtr) gdImageNeuQuant(gdImagePtr im, const int max_color, int 
 	const int newcolors = max_color;
 	const int verbose = 1;
 
-  int bot_idx, top_idx; /* for remapping of indices */
-  int remap[MAXNETSIZE];
-  int i,x;
+	int bot_idx, top_idx; /* for remapping of indices */
+	int remap[MAXNETSIZE];
+	int i,x;
 
 	unsigned char map[MAXNETSIZE][4];
 	unsigned char *d;
@@ -482,7 +521,7 @@ BGD_DECLARE(gdImagePtr) gdImageNeuQuant(gdImagePtr im, const int max_color, int 
 
 	int row;
 	unsigned char *rgba = NULL;
-	gdImagePtr dst;
+	gdImagePtr dst = NULL;
 
 	/* Default it to 3 */
 	if (sample_factor < 1) {
@@ -497,7 +536,7 @@ BGD_DECLARE(gdImagePtr) gdImageNeuQuant(gdImagePtr im, const int max_color, int 
 	 * a palette
 	 */
 	if (overflow2(gdImageSX(im), gdImageSY(im))
-		|| overflow2(gdImageSX(im) * gdImageSY(im), 4)) {
+	        || overflow2(gdImageSX(im) * gdImageSY(im), 4)) {
 		goto done;
 	}
 	rgba = (unsigned char *) gdMalloc(gdImageSX(im) * gdImageSY(im) * 4);
@@ -530,7 +569,7 @@ BGD_DECLARE(gdImagePtr) gdImageNeuQuant(gdImagePtr im, const int max_color, int 
 	learn(nnq, verbose);
 	unbiasnet(nnq);
 	getcolormap(nnq, (unsigned char*)map);
-	inxbuild(nnq); 
+	inxbuild(nnq);
 	/* remapping colormap to eliminate opaque tRNS-chunk entries... */
 	for (top_idx = newcolors-1, bot_idx = x = 0;  x < newcolors;  ++x) {
 		if (map[x][3] == 255) { /* maxval */
@@ -540,10 +579,8 @@ BGD_DECLARE(gdImagePtr) gdImageNeuQuant(gdImagePtr im, const int max_color, int 
 		}
 	}
 	if (bot_idx != top_idx + 1) {
-		fprintf(stderr,
-				"  internal logic error: remapped bot_idx = %d, top_idx = %d\n",
-				bot_idx, top_idx);
-		fflush(stderr);
+		gd_error("  internal logic error: remapped bot_idx = %d, top_idx = %d\n",
+			 bot_idx, top_idx);
 		goto done;
 	}
 
@@ -568,13 +605,13 @@ BGD_DECLARE(gdImagePtr) gdImageNeuQuant(gdImagePtr im, const int max_color, int 
 
 		/* Assign the new colors */
 		offset = row * gdImageSX(im) * 4;
-		for(i=0; i < gdImageSX(im); i++){
+		for(i=0; i < gdImageSX(im); i++) {
 			p[i] = remap[
-						inxsearch(nnq, rgba[i * 4 + offset + ALPHA],
-						rgba[i * 4 + offset + BLUE],
-						rgba[i * 4 + offset + GREEN],
-						rgba[i * 4 + offset + RED])
-					];
+			           inxsearch(nnq, rgba[i * 4 + offset + ALPHA],
+			                     rgba[i * 4 + offset + BLUE],
+			                     rgba[i * 4 + offset + GREEN],
+			                     rgba[i * 4 + offset + RED])
+			       ];
 		}
 	}
 

@@ -29,10 +29,13 @@
  */
 /* $Id$ */
 
+#ifdef HAVE_CONFIG_H
 #	include "config.h"
+#endif
 
-#include <gd.h>
-#include <gdfonts.h>
+#include "gd.h"
+#include "gd_errors.h"
+#include "gdfonts.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -64,8 +67,7 @@
 #define MAX(a,b) (a > b) ? a : b;
 
 
-typedef struct tiff_handle
-{
+typedef struct tiff_handle {
 	int size;
 	int pos;
 	gdIOCtx *ctx;
@@ -90,13 +92,13 @@ tiff_handle * new_tiff_handle(gdIOCtx *g)
 	tiff_handle * t;
 
 	if (!g) {
-		fprintf(stderr, "Cannot create a new tiff handle, missing Ctx argument");
+		gd_error("Cannot create a new tiff handle, missing Ctx argument");
 		return NULL;
 	}
 
 	t = (tiff_handle *) gdMalloc(sizeof(tiff_handle));
 	if (!t) {
-		fprintf(stderr, "Failed to allocate a new tiff handle");
+		gd_error("Failed to allocate a new tiff handle");
 		return NULL;
 	}
 
@@ -145,21 +147,21 @@ static toff_t tiff_seekproc(thandle_t clientdata, toff_t offset, int from)
 	int result;
 
 	switch(from) {
-		default:
-		case SEEK_SET:
-			/* just use offset */
+	default:
+	case SEEK_SET:
+		/* just use offset */
 		break;
 
-		case SEEK_END:
-			/* invert offset, so that it is from start, not end as supplied */
-			offset = th->size + offset;
+	case SEEK_END:
+		/* invert offset, so that it is from start, not end as supplied */
+		offset = th->size + offset;
 		break;
 
-		case SEEK_CUR:
-			/* add current position to translate it to 'from start',
-			 * not from durrent as supplied
-			 */
-			offset += th->pos;
+	case SEEK_CUR:
+		/* add current position to translate it to 'from start',
+		 * not from durrent as supplied
+		 */
+		offset += th->pos;
 		break;
 	}
 
@@ -168,12 +170,13 @@ static toff_t tiff_seekproc(thandle_t clientdata, toff_t offset, int from)
 		th->pos = offset;
 	}
 
-	return result ? offset : -1;
+	return result ? offset : (toff_t)-1;
 }
 
 /* TIFFCloseProc tiff_closeproc - used to finally close the TIFF file */
 static int tiff_closeproc(thandle_t clientdata)
 {
+	(void)clientdata;
 	/*tiff_handle *th = (tiff_handle *)clientdata;
 	gdIOCtx *ctx = th->ctx;
 
@@ -192,13 +195,18 @@ static toff_t tiff_sizeproc(thandle_t clientdata)
 /* TIFFMapFileProc tiff_mapproc() */
 static int tiff_mapproc(thandle_t h, tdata_t *d, toff_t *o)
 {
+	(void)h;
+	(void)d;
+	(void)o;
 	return 0;
 }
 
 /* TIFFUnmapFileProc tiff_unmapproc */
 static void tiff_unmapproc(thandle_t h, tdata_t d, toff_t o)
 {
-
+	(void)h;
+	(void)d;
+	(void)o;
 }
 
 
@@ -210,7 +218,7 @@ static void tiff_unmapproc(thandle_t h, tdata_t d, toff_t o)
  *  out:      the stream where to write
  *  bitDepth: depth in bits of each pixel
  */
-BGD_DECLARE(void) tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
+void tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
 {
 	int x, y;
 	int i;
@@ -225,9 +233,9 @@ BGD_DECLARE(void) tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
 	int transparentColorG = -1;
 	int transparentColorB = -1;
 	uint16 extraSamples[1];
-	uint16 *colorMapRed;
-	uint16 *colorMapGreen;
-	uint16 *colorMapBlue;
+	uint16 *colorMapRed = NULL;
+	uint16 *colorMapGreen = NULL;
+	uint16 *colorMapBlue = NULL;
 
 	tiff_handle *th;
 
@@ -245,7 +253,7 @@ BGD_DECLARE(void) tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
 	gdImageSetClip(image, 0, 0, width, height);
 
 	/* handle old-style single-colour mapping to 100% transparency */
-	if(image->transparent != 0xffffffff) {
+	if(image->transparent != -1) {
 		/* set our 100% transparent colour value */
 		transparentColorR = gdImageRed(image, image->transparent);
 		transparentColorG = gdImageGreen(image, image->transparent);
@@ -257,19 +265,19 @@ BGD_DECLARE(void) tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
 	 * correct areas of file opened and modifieable by the gdIOCtx functions
 	 */
 	tiff = TIFFClientOpen("", "w", th,	tiff_readproc,
-										tiff_writeproc,
-										tiff_seekproc,
-										tiff_closeproc,
-										tiff_sizeproc,
-										tiff_mapproc,
-										tiff_unmapproc);
+			      tiff_writeproc,
+			      tiff_seekproc,
+			      tiff_closeproc,
+			      tiff_sizeproc,
+			      tiff_mapproc,
+			      tiff_unmapproc);
 
 	TIFFSetField(tiff, TIFFTAG_IMAGEWIDTH, width);
 	TIFFSetField(tiff, TIFFTAG_IMAGELENGTH, height);
 	TIFFSetField(tiff, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE);
 	TIFFSetField(tiff, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
 	TIFFSetField(tiff, TIFFTAG_PHOTOMETRIC,
-					(bitDepth == 24) ? PHOTOMETRIC_RGB : PHOTOMETRIC_PALETTE);
+		     (bitDepth == 24) ? PHOTOMETRIC_RGB : PHOTOMETRIC_PALETTE);
 
 	bitsPerSample = (bitDepth == 24 || bitDepth == 8) ? 8 : 1;
 	TIFFSetField(tiff, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
@@ -282,10 +290,13 @@ BGD_DECLARE(void) tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
 		}
 		colorMapGreen = (uint16 *) gdMalloc(3 * (1 << bitsPerSample));
 		if (!colorMapGreen) {
+			gdFree(colorMapRed);
 			return;
 		}
 		colorMapBlue  = (uint16 *) gdMalloc(3 *  (1 << bitsPerSample));
 		if (!colorMapBlue) {
+			gdFree(colorMapRed);
+			gdFree(colorMapGreen);
 			return;
 		}
 
@@ -296,13 +307,13 @@ BGD_DECLARE(void) tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
 		}
 
 		TIFFSetField(tiff, TIFFTAG_COLORMAP, colorMapRed, colorMapGreen,
-															colorMapBlue);
+			     colorMapBlue);
 		samplesPerPixel = 1;
 	}
 
 	/* here, we check if the 'save alpha' flag is set on the source gd image */
-	if(	(bitDepth == 24) &&
-		(image->saveAlphaFlag || image->transparent != 0xffffffff)) {
+	if ((bitDepth == 24) &&
+	    (image->saveAlphaFlag || image->transparent != -1)) {
 		/* so, we need to store the alpha values too!
 		 * Also, tell TIFF what the extra sample means (associated alpha) */
 		samplesPerPixel = 4;
@@ -336,10 +347,9 @@ BGD_DECLARE(void) tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
 
 			/* if this pixel has the same RGB as the transparent colour,
 			 * then set alpha fully transparent */
-			if(	transparentColorR == r &&
-				transparentColorG == g &&
-				transparentColorB == b
-			) {
+			if (transparentColorR == r &&
+			    transparentColorG == g &&
+			    transparentColorB == b) {
 				a = 0x00;
 			}
 
@@ -349,7 +359,7 @@ BGD_DECLARE(void) tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
 				scan[(x * samplesPerPixel) + 0] = color;
 			} else {
 				/* write out 24 bit value in 3 (or 4 if transparent) bytes */
-				if(image->saveAlphaFlag || image->transparent != 0xffffffff) {
+				if(image->saveAlphaFlag || image->transparent != -1) {
 					scan[(x * samplesPerPixel) + 3] = a;
 				}
 
@@ -360,9 +370,9 @@ BGD_DECLARE(void) tiffWriter(gdImagePtr image, gdIOCtx *out, int bitDepth)
 		}
 
 		/* Write the scan line to the tiff */
-		if(TIFFWriteEncodedStrip(tiff, y, scan, width * samplesPerPixel) == -1){
+		if(TIFFWriteEncodedStrip(tiff, y, scan, width * samplesPerPixel) == -1) {
 			/* error handler here */
-			fprintf(stderr, "Could not create TIFF\n");
+			gd_error("Could not create TIFF\n");
 			return;
 		}
 	}
@@ -412,8 +422,8 @@ BGD_DECLARE(void) gdImageTiffCtx(gdImagePtr image, gdIOCtx *out)
 
 /* Check if we are really in 8bit mode */
 static int checkColorMap(n, r, g, b)
-	int n;
-	uint16 *r, *g, *b;
+int n;
+uint16 *r, *g, *b;
 {
 	while (n-- > 0)
 		if (*r++ >= 256 || *g++ >= 256 || *b++ >= 256)
@@ -447,7 +457,7 @@ static int readTiffColorMap(gdImagePtr im, TIFF *tif, char is_bw, int photometri
 			max_sample_val = 255;
 		}
 
-		if (photometric == PHOTOMETRIC_MINISBLACK || photometric == PHOTOMETRIC_MINISWHITE){
+		if (photometric == PHOTOMETRIC_MINISBLACK || photometric == PHOTOMETRIC_MINISWHITE) {
 			/* TODO: use TIFFTAG_MINSAMPLEVALUE and TIFFTAG_MAXSAMPLEVALUE */
 			/* Gray level palette */
 			for (i=min_sample_val; i <= max_sample_val; i++) {
@@ -456,7 +466,7 @@ static int readTiffColorMap(gdImagePtr im, TIFF *tif, char is_bw, int photometri
 			return GD_SUCCESS;
 
 		} else if (!TIFFGetField(tif, TIFFTAG_COLORMAP, &redcmap, &greencmap, &bluecmap)) {
-			fprintf(stderr, "Cannot read the color map");
+			gd_error("Cannot read the color map");
 			return GD_FAILURE;
 		}
 
@@ -479,132 +489,128 @@ static int readTiffColorMap(gdImagePtr im, TIFF *tif, char is_bw, int photometri
 }
 
 static void readTiffBw (const unsigned char *src,
-		gdImagePtr im,
-		uint16       photometric,
-		int          startx,
-		int          starty,
-		int          width,
-		int          height,
-		char         has_alpha,
-		int          extra,
-		int          align)
+			gdImagePtr im,
+			uint16       photometric,
+			int          startx,
+			int          starty,
+			int          width,
+			int          height,
+			char         has_alpha,
+			int          extra,
+			int          align)
 {
 	int x = startx, y = starty;
-	int src_x, src_y;
-	int k;
 
-	for (src_y = 0; src_y < height; ++src_y) {
-		k = 0;
-		while (k < width) {
+	(void)has_alpha;
+	(void)extra;
+	(void)align;
+
+	for (y = starty; y < starty + height; y++) {
+		for (x = startx; x < startx + width; x++) {
 			register unsigned char curr = *src++;
 			register unsigned char mask;
 
 			if (photometric == PHOTOMETRIC_MINISWHITE) {
 				curr = ~curr;
 			}
-			for (mask = 0x80; mask != 0 && k < width; mask >>= 1){
-				if((curr & mask) != 0) {
-					gdImageSetPixel(im, x, y, 0);
-				} else {
-					gdImageSetPixel(im, x, y, 1);
-				}
-				++x;
-				++k;
+			for (mask = 0x80; mask != 0 && x < startx + width; mask >>= 1) {
+				gdImageSetPixel(im, x, y, ((curr & mask) != 0)?0:1);
 			}
-			++src_x;
 		}
-		y++;
 	}
 }
 
 static void readTiff8bit (const unsigned char *src,
-		gdImagePtr im,
-		uint16       photometric,
-		int          startx,
-		int          starty,
-		int          width,
-		int          height,
-		char         has_alpha,
-		int          extra,
-		int          align)
+                          gdImagePtr im,
+                          uint16       photometric,
+                          int          startx,
+                          int          starty,
+                          int          width,
+                          int          height,
+                          char         has_alpha,
+                          int          extra,
+                          int          align)
 {
 	int    red, green, blue, alpha;
 	int    x, y;
 
+	(void)extra;
+	(void)align;
+
 	switch (photometric) {
-		case PHOTOMETRIC_PALETTE:
-			/* Palette has no alpha (see TIFF specs for more details */
+	case PHOTOMETRIC_PALETTE:
+		/* Palette has no alpha (see TIFF specs for more details */
+		for (y = starty; y < starty + height; y++) {
+			for (x = startx; x < startx + width; x++) {
+				gdImageSetPixel(im, x, y,*(src++));
+			}
+		}
+		break;
+
+	case PHOTOMETRIC_RGB:
+		if (has_alpha) {
+			gdImageAlphaBlending(im, 0);
+			gdImageSaveAlpha(im, 1);
+
 			for (y = starty; y < starty + height; y++) {
 				for (x = startx; x < startx + width; x++) {
-					gdImageSetPixel(im, x, y,*(src++));
-				}
-			}
-			break;
+					red   = *src++;
+					green = *src++;
+					blue  = *src++;
+					alpha = *src++;
+					red   = MIN (red, alpha);
+					blue  = MIN (blue, alpha);
+					green = MIN (green, alpha);
 
-		case PHOTOMETRIC_RGB:
-			if (has_alpha) {
-				gdImageAlphaBlending(im, 0);
-				gdImageSaveAlpha(im, 1);
-
-				for (y = starty; y < starty + height; y++) {
-					for (x = startx; x < startx + width; x++) {
-						red   = *src++;
-						green = *src++;
-						blue  = *src++;
-						alpha = *src++;
-						red   = MIN (red, alpha);
-						blue  = MIN (blue, alpha);
-						green = MIN (green, alpha);
-
-						if (alpha) {
-							gdImageSetPixel(im, x, y, gdTrueColorAlpha(red * 255 / alpha, green * 255 / alpha, blue * 255 /alpha, gdAlphaMax - (alpha >> 1)));
-						} else {
-							gdImageSetPixel(im, x, y, gdTrueColorAlpha(red, green, blue, gdAlphaMax - (alpha >> 1)));
-						}
-					}
-				}
-
-			} else {
-				for (y = 0; y < height; y++) {
-					for (x = 0; x < width; x++) {
-						register unsigned char r = *src++;
-						register unsigned char g = *src++;
-						register unsigned char b = *src++;
-
-						gdImageSetPixel(im, x, y, gdTrueColor(r, g, b));
+					if (alpha) {
+						gdImageSetPixel(im, x, y, gdTrueColorAlpha(red * 255 / alpha, green * 255 / alpha, blue * 255 /alpha, gdAlphaMax - (alpha >> 1)));
+					} else {
+						gdImageSetPixel(im, x, y, gdTrueColorAlpha(red, green, blue, gdAlphaMax - (alpha >> 1)));
 					}
 				}
 			}
-			break;
 
-		case PHOTOMETRIC_MINISWHITE:
-			if (has_alpha) {
-				/* We don't process the extra yet */
-			} else {
-				for (y = starty; y < starty + height; y++) {
-					for (x = startx; x < startx + width; x++) {
-						gdImageSetPixel(im, x, y, ~(*src++));
-					}
+		} else {
+			for (y = 0; y < height; y++) {
+				for (x = 0; x < width; x++) {
+					register unsigned char r = *src++;
+					register unsigned char g = *src++;
+					register unsigned char b = *src++;
+
+					gdImageSetPixel(im, x, y, gdTrueColor(r, g, b));
 				}
 			}
-			break;
+		}
+		break;
 
-		case PHOTOMETRIC_MINISBLACK:
-			if (has_alpha) {
-				/* We don't process the extra yet */
-			} else{
-				for (y = starty; y < height; y++) {
-					for (x = 0; x < width; x++) {
-						gdImageSetPixel(im, x, y, *src++);
-					}
+	case PHOTOMETRIC_MINISWHITE:
+		if (has_alpha) {
+			/* We don't process the extra yet */
+		} else {
+			for (y = starty; y < starty + height; y++) {
+				for (x = startx; x < startx + width; x++) {
+					gdImageSetPixel(im, x, y, ~(*src++));
 				}
 			}
-			break;
+		}
+		break;
+
+	case PHOTOMETRIC_MINISBLACK:
+		if (has_alpha) {
+			/* We don't process the extra yet */
+		} else {
+			for (y = starty; y < height; y++) {
+				for (x = 0; x < width; x++) {
+					gdImageSetPixel(im, x, y, *src++);
+				}
+			}
+		}
+		break;
 	}
 }
 
 static int createFromTiffTiles(TIFF *tif, gdImagePtr im, uint16 bps, uint16 photometric,
-		char has_alpha, char is_bw, int extra)
+                               char has_alpha, char is_bw, int extra)
 {
 	uint16  planar;
 	int im_width, im_height;
@@ -636,7 +642,7 @@ static int createFromTiffTiles(TIFF *tif, gdImagePtr im, uint16 bps, uint16 phot
 			} else if (is_bw) {
 				readTiffBw(buffer, im, photometric, x, y, width, height, has_alpha, extra, 0);
 			} else {
-					/* TODO: implement some default reader or detect this case earlier use force_rgb */
+				/* TODO: implement some default reader or detect this case earlier use force_rgb */
 			}
 		}
 	}
@@ -644,11 +650,10 @@ static int createFromTiffTiles(TIFF *tif, gdImagePtr im, uint16 bps, uint16 phot
 }
 
 static int createFromTiffLines(TIFF *tif, gdImagePtr im, uint16 bps, uint16 photometric,
-		char has_alpha, char is_bw, int extra)
+                               char has_alpha, char is_bw, int extra)
 {
 	uint16  planar;
-	uint32 im_height, im_width, im_line_size;
-	int y;
+	uint32 im_height, im_width, y;
 
 	unsigned char *buffer;
 
@@ -657,16 +662,14 @@ static int createFromTiffLines(TIFF *tif, gdImagePtr im, uint16 bps, uint16 phot
 	}
 
 	if (!TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &im_height)) {
-		fprintf(stderr, "Can't fetch TIFF height\n");
+		gd_error("Can't fetch TIFF height\n");
 		return FALSE;
 	}
 
 	if (!TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &im_width)) {
-		fprintf(stderr, "Can't fetch TIFF width \n");
+		gd_error("Can't fetch TIFF width \n");
 		return FALSE;
 	}
-
-	im_line_size = TIFFScanlineSize(tif);
 
 	buffer = (unsigned char *)gdMalloc(im_width * 4);
 	if (!buffer) {
@@ -674,40 +677,40 @@ static int createFromTiffLines(TIFF *tif, gdImagePtr im, uint16 bps, uint16 phot
 	}
 	if (planar == PLANARCONFIG_CONTIG) {
 		switch (bps) {
-			case 16:
-					/* TODO
-					 * or simply use force_rgba
-					 */
-				break;
+		case 16:
+			/* TODO
+			 * or simply use force_rgba
+			 */
+			break;
 
-			case 8:
-					for (y = 0; y < im_height; y++ ) {
-						if (!TIFFReadScanline (tif, buffer, y, 0)) {
-							fprintf(stderr, "Error while reading scanline %i", y);
-							break;
-						}
-						/* reading one line at a time */
-						readTiff8bit(buffer, im, photometric, 0, y, im_width, 1, has_alpha, extra, 0);
-					}
+		case 8:
+			for (y = 0; y < im_height; y++ ) {
+				if (!TIFFReadScanline (tif, buffer, y, 0)) {
+					gd_error("Error while reading scanline %i", y);
 					break;
-
-			default:
-				if (is_bw) {
-					for (y = 0; y < im_height; y++ ) {
-						if (!TIFFReadScanline (tif, buffer, y, 0)) {
-							fprintf(stderr, "Error while reading scanline %i", y);
-							break;
-						}
-						/* reading one line at a time */
-						readTiffBw(buffer, im, photometric, 0, y, im_width, 1, has_alpha, extra, 0);
-					}
-				} else {
-					/* TODO: implement some default reader or detect this case earlier > force_rgb */
 				}
-				break;
+				/* reading one line at a time */
+				readTiff8bit(buffer, im, photometric, 0, y, im_width, 1, has_alpha, extra, 0);
+			}
+			break;
+
+		default:
+			if (is_bw) {
+				for (y = 0; y < im_height; y++ ) {
+					if (!TIFFReadScanline (tif, buffer, y, 0)) {
+						gd_error("Error while reading scanline %i", y);
+						break;
+					}
+					/* reading one line at a time */
+					readTiffBw(buffer, im, photometric, 0, y, im_width, 1, has_alpha, extra, 0);
+				}
+			} else {
+				/* TODO: implement some default reader or detect this case earlier > force_rgb */
+			}
+			break;
 		}
 	} else {
-			/* TODO: implement a reader for separate panes. We detect this case earlier for now and use force_rgb */
+		/* TODO: implement a reader for separate panes. We detect this case earlier for now and use force_rgb */
 	}
 
 	gdFree(buffer);
@@ -773,7 +776,6 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffCtx(gdIOCtx *infile)
 	uint16 extra, *extra_types;
 	uint16 planar;
 	char	has_alpha, is_bw, is_gray;
-	char	flip_horizontal, flip_vertical;
 	char	force_rgba = FALSE;
 	char	save_transparent;
 	int		image_type;
@@ -787,25 +789,25 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffCtx(gdIOCtx *infile)
 	}
 
 	tif = TIFFClientOpen("", "rb", th, tiff_readproc,
-										tiff_writeproc,
-										tiff_seekproc,
-										tiff_closeproc,
-										tiff_sizeproc,
-										tiff_mapproc,
-										tiff_unmapproc);
+	                     tiff_writeproc,
+	                     tiff_seekproc,
+	                     tiff_closeproc,
+	                     tiff_sizeproc,
+	                     tiff_mapproc,
+	                     tiff_unmapproc);
 
 	if (!tif) {
-		fprintf(stderr, "Cannot open TIFF image");
+		gd_error("Cannot open TIFF image");
 		return NULL;
 	}
 
 	if (!TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width)) {
-		fprintf(stderr, "TIFF error, Cannot read image width");
+		gd_error("TIFF error, Cannot read image width");
 		goto error;
 	}
 
 	if (!TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height)) {
-		fprintf(stderr, "TIFF error, Cannot read image width");
+		gd_error("TIFF error, Cannot read image width");
 		goto error;
 	}
 
@@ -825,17 +827,16 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffCtx(gdIOCtx *infile)
 	if (!TIFFGetField (tif, TIFFTAG_PHOTOMETRIC, &photometric)) {
 		uint16 compression;
 		if (TIFFGetField(tif, TIFFTAG_COMPRESSION, &compression) &&
-				(compression == COMPRESSION_CCITTFAX3 ||
-				 compression == COMPRESSION_CCITTFAX4 ||
-				 compression == COMPRESSION_CCITTRLE ||
-				 compression == COMPRESSION_CCITTRLEW))
-		{
-			fprintf(stderr, "Could not get photometric. "
-					"Image is CCITT compressed, assuming min-is-white");
+		        (compression == COMPRESSION_CCITTFAX3 ||
+		         compression == COMPRESSION_CCITTFAX4 ||
+		         compression == COMPRESSION_CCITTRLE ||
+		         compression == COMPRESSION_CCITTRLEW)) {
+			gd_error("Could not get photometric. "
+			        "Image is CCITT compressed, assuming min-is-white");
 			photometric = PHOTOMETRIC_MINISWHITE;
 		} else {
-			fprintf(stderr, "Could not get photometric. "
-					"Assuming min-is-black");
+			gd_error("Could not get photometric. "
+			        "Assuming min-is-black");
 
 			photometric = PHOTOMETRIC_MINISBLACK;
 		}
@@ -853,7 +854,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffCtx(gdIOCtx *infile)
 		--extra;
 	} else if (extra > 0 && (extra_types[0] == EXTRASAMPLE_UNSPECIFIED)) {
 		/* assuming unassociated alpha if unspecified */
-		fprintf(stderr, "alpha channel type not defined, assuming alpha is not premultiplied");
+		gd_error("alpha channel type not defined, assuming alpha is not premultiplied");
 		has_alpha = TRUE;
 		save_transparent = TRUE;
 		--extra;
@@ -873,27 +874,27 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffCtx(gdIOCtx *infile)
 	is_gray = FALSE;
 
 	switch (photometric) {
-		case PHOTOMETRIC_MINISBLACK:
-		case PHOTOMETRIC_MINISWHITE:
-			if (!has_alpha && bps == 1 && spp == 1) {
-				image_type = GD_INDEXED;
-				is_bw = TRUE;
-			} else {
-				image_type = GD_GRAY;
-			}
-			break;
-
-		case PHOTOMETRIC_RGB:
-			image_type = GD_RGB;
-			break;
-
-		case PHOTOMETRIC_PALETTE:
+	case PHOTOMETRIC_MINISBLACK:
+	case PHOTOMETRIC_MINISWHITE:
+		if (!has_alpha && bps == 1 && spp == 1) {
 			image_type = GD_INDEXED;
-			break;
+			is_bw = TRUE;
+		} else {
+			image_type = GD_GRAY;
+		}
+		break;
 
-		default:
-			force_rgba = TRUE;
-			break;
+	case PHOTOMETRIC_RGB:
+		image_type = GD_RGB;
+		break;
+
+	case PHOTOMETRIC_PALETTE:
+		image_type = GD_INDEXED;
+		break;
+
+	default:
+		force_rgba = TRUE;
+		break;
 	}
 
 	if (!TIFFGetField (tif, TIFFTAG_PLANARCONFIG, &planar)) {
@@ -901,12 +902,12 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffCtx(gdIOCtx *infile)
 	}
 
 	/* Force rgba if image plans are not contiguous */
-	if (force_rgba || planar != PLANARCONFIG_CONTIG){
+	if (force_rgba || planar != PLANARCONFIG_CONTIG) {
 		image_type = GD_RGB;
 	}
 
 	if (!force_rgba &&
-			(image_type == GD_PALETTE || image_type == GD_INDEXED || image_type == GD_GRAY)) {
+	        (image_type == GD_PALETTE || image_type == GD_INDEXED || image_type == GD_GRAY)) {
 		im = gdImageCreate(width, height);
 		if (!im) goto error;
 		readTiffColorMap(im, tif, is_bw, photometric);
@@ -916,12 +917,15 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromTiffCtx(gdIOCtx *infile)
 	}
 
 #ifdef DEBUG
-printf("force rgba: %i\n", force_rgba);
-printf("has_alpha: %i\n", has_alpha);
-printf("save trans: %i\n", save_transparent);
-printf("is_bw: %i\n", is_bw);
-printf("is_gray: %i\n", is_gray);
-printf("type: %i\n", image_type);
+	printf("force rgba: %i\n", force_rgba);
+	printf("has_alpha: %i\n", has_alpha);
+	printf("save trans: %i\n", save_transparent);
+	printf("is_bw: %i\n", is_bw);
+	printf("is_gray: %i\n", is_gray);
+	printf("type: %i\n", image_type);
+#else
+	(void)is_gray;
+	(void)save_transparent;
 #endif
 
 	if (force_rgba) {
@@ -940,31 +944,15 @@ printf("type: %i\n", image_type);
 
 	if (TIFFGetField (tif, TIFFTAG_ORIENTATION, &orientation)) {
 		switch (orientation) {
-			case ORIENTATION_TOPLEFT:
-				flip_horizontal = FALSE;
-				flip_vertical   = FALSE;
-				break;
+		case ORIENTATION_TOPLEFT:
+		case ORIENTATION_TOPRIGHT:
+		case ORIENTATION_BOTRIGHT:
+		case ORIENTATION_BOTLEFT:
+			break;
 
-			case ORIENTATION_TOPRIGHT:
-				flip_horizontal = TRUE;
-				flip_vertical   = FALSE;
-				break;
-
-			case ORIENTATION_BOTRIGHT:
-				flip_horizontal = TRUE;
-				flip_vertical   = TRUE;
-				break;
-
-			case ORIENTATION_BOTLEFT:
-				flip_horizontal = FALSE;
-				flip_vertical   = TRUE;
-				break;
-
-			default:
-				flip_horizontal = FALSE;
-				flip_vertical   = FALSE;
-				fprintf (stderr, "Orientation %d not handled yet!", orientation);
-				break;
+		default:
+			gd_error("Orientation %d not handled yet!", orientation);
+			break;
 		}
 	}
 error:

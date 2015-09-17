@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -50,29 +54,31 @@ static int set_verbose(void)
 /* We may eventually want to use this information, but def it out for now */
 #if 0
 static struct {
-       unsigned int    Width;
-       unsigned int    Height;
-       unsigned char   ColorMap[3][MAXCOLORMAPSIZE];
-       unsigned int    BitPixel;
-       unsigned int    ColorResolution;
-       unsigned int    Background;
-       unsigned int    AspectRatio;
+	unsigned int    Width;
+	unsigned int    Height;
+	unsigned char   ColorMap[3][MAXCOLORMAPSIZE];
+	unsigned int    BitPixel;
+	unsigned int    ColorResolution;
+	unsigned int    Background;
+	unsigned int    AspectRatio;
 } GifScreen;
 #endif
 
 #if 0
 static struct {
-       int     transparent;
-       int     delayTime;
-       int     inputFlag;
-       int     disposal;
+	int     transparent;
+	int     delayTime;
+	int     inputFlag;
+	int     disposal;
 } Gif89 = { -1, -1, -1, 0 };
 #endif
 
 #define STACK_SIZE ((1<<(MAX_LWZ_BITS))*2)
 
+#define CSD_BUF_SIZE 280
+
 typedef struct {
-	unsigned char buf[280];
+	unsigned char buf[CSD_BUF_SIZE];
 	int curbit;
 	int lastbit;
 	int done;
@@ -98,6 +104,49 @@ static int LWZReadByte (gdIOCtx *fd, LZW_STATIC_DATA *sd, char flag, int input_c
 
 static void ReadImage (gdImagePtr im, gdIOCtx *fd, int len, int height, unsigned char (*cmap)[256], int interlace, int *ZeroDataBlockP); /*1.4//, int ignore); */
 
+/*
+  Function: gdImageCreateFromGif
+
+    <gdImageCreateFromGif> is called to load images from GIF format
+    files. Invoke <gdImageCreateFromGif> with an already opened
+    pointer to a file containing the desired
+    image.
+
+    <gdImageCreateFromGif> returns a <gdImagePtr> to the new image, or
+    NULL if unable to load the image (most often because the file is
+    corrupt or does not contain a GIF image). <gdImageCreateFromGif>
+    does not close the file. You can inspect the sx and sy members of
+    the image to determine its size. The image must eventually be
+    destroyed using <gdImageDestroy>.
+
+  Variants:
+
+    <gdImageCreateFromGifPtr> creates an image from GIF data (i.e. the
+    contents of a GIF file) already in memory.
+
+    <gdImageCreateFromGifCtx> reads in an image using the functions in
+    a <gdIOCtx> struct.
+
+  Parameters:
+
+    infile - The input FILE pointer
+
+  Returns:
+
+    A pointer to the new image or NULL if an error occurred.
+
+  Example:
+
+    > gdImagePtr im;
+    > ... inside a function ...
+    > FILE *in;
+    > in = fopen("mygif.gif", "rb");
+    > im = gdImageCreateFromGif(in);
+    > fclose(in);
+    > // ... Use the image ... 
+    > gdImageDestroy(im);
+
+*/
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGif(FILE *fdFile)
 {
 	gdIOCtx *fd = gdNewFileCtx(fdFile);
@@ -111,6 +160,16 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromGif(FILE *fdFile)
 	return im;
 }
 
+/*
+  Function: gdImageCreateFromGifPtr
+
+  Parameters:
+
+    size - size of GIF data in bytes.
+    data - GIF data (i.e. contents of a GIF file).
+
+  See <gdImageCreateFromGif>.
+*/
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGifPtr (int size, void *data)
 {
 	gdImagePtr im;
@@ -123,6 +182,11 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromGifPtr (int size, void *data)
 	return im;
 }
 
+/*
+  Function: gdImageCreateFromGifCtx
+
+  See <gdImageCreateFromGif>.
+*/
 BGD_DECLARE(gdImagePtr) gdImageCreateFromGifCtx(gdIOCtxPtr fd)
 {
 	int BitPixel;
@@ -137,7 +201,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromGifCtx(gdIOCtxPtr fd)
 	unsigned char ColorMap[3][MAXCOLORMAPSIZE];
 	unsigned char localColorMap[3][MAXCOLORMAPSIZE];
 	int imw, imh, screen_width, screen_height;
-	int gif87a, useGlobalColormap;
+	int useGlobalColormap;
 	int bitPixel, i;
 	/*1.4//int             imageCount = 0; */
 	/* 2.0.28: threadsafe storage */
@@ -155,9 +219,9 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromGifCtx(gdIOCtxPtr fd)
 	}
 
 	if(memcmp((char *)buf + 3, "87a", 3) == 0) {
-		gif87a = 1;
+		/* GIF87a */
 	} else if(memcmp((char *)buf + 3, "89a", 3) == 0) {
-		gif87a = 0;
+		/* GIF89a */
 	} else {
 		return 0;
 	}
@@ -234,12 +298,12 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromGifCtx(gdIOCtxPtr fd)
 
 		im->interlace = BitSet(buf[8], INTERLACE);
 		if(!useGlobalColormap) {
-			if(ReadColorMap(fd, bitPixel, localColorMap)) { 
+			if(ReadColorMap(fd, bitPixel, localColorMap)) {
 				gdImageDestroy(im);
 				return 0;
 			}
 
-			ReadImage(im, fd, width, height, localColorMap, BitSet(buf[8], INTERLACE), &ZeroDataBlock); 
+			ReadImage(im, fd, width, height, localColorMap, BitSet(buf[8], INTERLACE), &ZeroDataBlock);
 		} else {
 			if(!haveGlobalColormap) {
 				gdImageDestroy(im);
@@ -251,7 +315,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromGifCtx(gdIOCtxPtr fd)
 
 		if(Transparent != (-1)) {
 			gdImageColorTransparent(im, Transparent);
-		}	   
+		}
 
 		goto terminated;
 	}
@@ -276,7 +340,7 @@ terminated:
 		} else {
 			break;
 		}
-	} 
+	}
 
 	return im;
 }
@@ -306,24 +370,24 @@ DoExtension(gdIOCtx *fd, int label, int *Transparent, int *ZeroDataBlockP)
 	unsigned char buf[256];
 
 	switch(label) {
-		case 0xf9: /* Graphic Control Extension */
-			memset(buf, 0, 4); /* initialize a few bytes in the case the next function fails */
-			(void) GetDataBlock(fd, (unsigned char*) buf, ZeroDataBlockP);
+	case 0xf9: /* Graphic Control Extension */
+		memset(buf, 0, 4); /* initialize a few bytes in the case the next function fails */
+		(void) GetDataBlock(fd, (unsigned char*) buf, ZeroDataBlockP);
 #if 0
-			Gif89.disposal  = (buf[0] >> 2) & 0x7;
-			Gif89.inputFlag = (buf[0] >> 1) & 0x1;
-			Gif89.delayTime = LM_to_uint(buf[1], buf[2]);
+		Gif89.disposal  = (buf[0] >> 2) & 0x7;
+		Gif89.inputFlag = (buf[0] >> 1) & 0x1;
+		Gif89.delayTime = LM_to_uint(buf[1], buf[2]);
 #endif
-			if((buf[0] & 0x1) != 0) {
-				*Transparent = buf[3];
-			}
+		if((buf[0] & 0x1) != 0) {
+			*Transparent = buf[3];
+		}
 
-			while(GetDataBlock(fd, (unsigned char*) buf, ZeroDataBlockP) > 0);
+		while(GetDataBlock(fd, (unsigned char*) buf, ZeroDataBlockP) > 0);
 
-			return FALSE;
+		return FALSE;
 
-			default:
-			break;
+	default:
+		break;
 	}
 
 	while(GetDataBlock(fd, (unsigned char*) buf, ZeroDataBlockP) > 0);
@@ -388,7 +452,7 @@ GetCode_(gdIOCtx *fd, CODE_STATIC_DATA *scd, int code_size, int flag, int *ZeroD
 		if(scd->done) {
 			if(scd->curbit >= scd->lastbit) {
 				/* Oh well */
-			}                        
+			}
 			return -1;
 		}
 
@@ -404,9 +468,13 @@ GetCode_(gdIOCtx *fd, CODE_STATIC_DATA *scd, int code_size, int flag, int *ZeroD
 		scd->lastbit = (2 + count) * 8;
 	}
 
-	ret = 0;
-	for (i = scd->curbit, j = 0; j < code_size; ++i, ++j) {
-		ret |= ((scd->buf[i / 8] & (1 << (i % 8))) != 0) << j;
+	if ((scd->curbit + code_size - 1) >= (CSD_BUF_SIZE * 8)) {
+		ret = -1;
+	} else {
+		ret = 0;
+		for (i = scd->curbit, j = 0; j < code_size; ++i, ++j) {
+			ret |= ((scd->buf[i / 8] & (1 << (i % 8))) != 0) << j;
+		}
 	}
 
 	scd->curbit += code_size;
@@ -442,7 +510,7 @@ LWZReadByte_(gdIOCtx *fd, LZW_STATIC_DATA *sd, char flag, int input_code_size, i
 		sd->max_code = sd->clear_code + 2;
 
 		GetCode(fd, &sd->scd, 0, TRUE, ZeroDataBlockP);
-               
+
 		sd->fresh = TRUE;
 
 		for(i = 0; i < sd->clear_code; ++i) {
@@ -460,10 +528,10 @@ LWZReadByte_(gdIOCtx *fd, LZW_STATIC_DATA *sd, char flag, int input_code_size, i
 
 	} else if(sd->fresh) {
 		sd->fresh = FALSE;
-		
+
 		do {
 			sd->firstcode = sd->oldcode =
-				GetCode(fd, &sd->scd, sd->code_size, FALSE, ZeroDataBlockP);
+			                    GetCode(fd, &sd->scd, sd->code_size, FALSE, ZeroDataBlockP);
 		} while(sd->firstcode == sd->clear_code);
 
 		return sd->firstcode;
@@ -489,7 +557,7 @@ LWZReadByte_(gdIOCtx *fd, LZW_STATIC_DATA *sd, char flag, int input_code_size, i
 			sd->max_code = sd->clear_code + 2;
 			sd->sp = sd->stack;
 			sd->firstcode = sd->oldcode =
-				GetCode(fd, &sd->scd, sd->code_size, FALSE, ZeroDataBlockP);
+			                    GetCode(fd, &sd->scd, sd->code_size, FALSE, ZeroDataBlockP);
 
 			return sd->firstcode;
 		} else if(code == sd->end_code) {
@@ -526,7 +594,7 @@ LWZReadByte_(gdIOCtx *fd, LZW_STATIC_DATA *sd, char flag, int input_code_size, i
 			}
 
 			*sd->sp++ = sd->table[1][code];
-			
+
 			if(code == sd->table[0][code]) {
 				/* Oh well */
 			}
@@ -574,25 +642,25 @@ LWZReadByte(gdIOCtx *fd, LZW_STATIC_DATA *sd, char flag, int input_code_size, in
 static void
 ReadImage(gdImagePtr im, gdIOCtx *fd, int len, int height, unsigned char (*cmap)[256], int interlace, int *ZeroDataBlockP) /*1.4//, int ignore) */
 {
-	unsigned char c;      
+	unsigned char c;
 	int xpos = 0, ypos = 0, pass = 0;
 	int v, i;
 	LZW_STATIC_DATA sd;
 
 	/* Initialize the Compression routines */
 	if(!ReadOK(fd, &c, 1)) {
-		return; 
+		return;
 	}
 
 	if(c > MAX_LWZ_BITS) {
-		return;	
+		return;
 	}
 
 	/* Stash the color map into the image */
 	for(i=0; (i < gdMaxColors); i++) {
-		im->red[i] = cmap[CM_RED][i];	
-		im->green[i] = cmap[CM_GREEN][i];	
-		im->blue[i] = cmap[CM_BLUE][i];	
+		im->red[i] = cmap[CM_RED][i];
+		im->green[i] = cmap[CM_GREEN][i];
+		im->blue[i] = cmap[CM_BLUE][i];
 		im->open[i] = 1;
 	}
 
@@ -629,39 +697,39 @@ ReadImage(gdImagePtr im, gdIOCtx *fd, int len, int height, unsigned char (*cmap)
 			xpos = 0;
 			if(interlace) {
 				switch (pass) {
-					case 0:
-					case 1:
-						ypos += 8;
-						break;
-					case 2:
-						ypos += 4;
-						break;
-					case 3:
-						ypos += 2;
-						break;
+				case 0:
+				case 1:
+					ypos += 8;
+					break;
+				case 2:
+					ypos += 4;
+					break;
+				case 3:
+					ypos += 2;
+					break;
 				}
 
 				if(ypos >= height) {
 					++pass;
 					switch (pass) {
-						case 1:
-							ypos = 4;
-							break;
-						case 2:
-							ypos = 2;
-							break;
-						case 3:
-							ypos = 1;
-							break;
-						default:
-							goto fini;
+					case 1:
+						ypos = 4;
+						break;
+					case 2:
+						ypos = 2;
+						break;
+					case 3:
+						ypos = 1;
+						break;
+					default:
+						goto fini;
 					}
 				}
 			} else {
 				++ypos;
 			}
 		}
-		
+
 		if(ypos >= height) {
 			break;
 		}

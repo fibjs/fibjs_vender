@@ -1,65 +1,28 @@
-/*
- * TGA Image read support
- * Copyright (C) 2005  Andrew Ireland, Jon Keto, Michael Beal
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
- */
-
-#define TGA_LINE_LENGTH	1024
-
 #ifndef __TGA_H
 #define __TGA_H	1
-
 
 #include "gd.h"
 #include "gdhelpers.h"
 
-#ifndef BGDWIN32
-#ifndef O_BYTE
-#define O_BYTE	1
-#endif
-#endif
+#include "gd_intern.h"
 
-#ifndef _WIN32
-typedef char byte;
-#endif
-
-#ifndef O_SHORT_INT
-#define O_SHORT_INT	1
-	typedef int short_int;
-#endif
-
-typedef struct oTga_
-{
-	byte  identsize;	// size of ID field that follows 18 byte header (0 usually)
-	byte  colormaptype;	// type of colour map 0=none, 1=has palette					[IGNORED] Adrian requested no support
-	byte  imagetype;	// type of image 0=none,1=indexed,2=rgb,3=grey,+8=rle packed
+typedef struct oTga_ {
+	uint8_t  identsize;	// size of ID field that follows 18 uint8_t header (0 usually)
+	uint8_t  colormaptype;	// type of colour map 0=none, 1=has palette					[IGNORED] Adrian requested no support
+	uint8_t  imagetype;	// type of image 0=none,1=indexed,2=rgb,3=grey,+8=rle packed
 
 	int colormapstart;	// first colour map entry in palette						[IGNORED] Adrian requested no support
 	int colormaplength;	// number of colours in palette								[IGNORED] Adrian requested no support
-	byte  colormapbits;	// number of bits per palette entry 15,16,24,32				[IGNORED] Adrian requested no support
+	uint8_t  colormapbits;	// number of bits per palette entry 15,16,24,32				[IGNORED] Adrian requested no support
 
 	int xstart;			// image x origin
 	int ystart;			// image y origin
 	int width;			// image width in pixels
 	int height;			// image height in pixels
-	byte  bits;			// image bits per pixel 8,16,24,32
-	byte alphabits;		// alpha bits (low 4bits of header 17)
-	byte fliph;			// horizontal or vertical
-	byte flipv;			// flip
+	uint8_t  bits;			// image bits per pixel 8,16,24,32
+	uint8_t alphabits;		// alpha bits (low 4bits of header 17)
+	uint8_t fliph;			// horizontal or vertical
+	uint8_t flipv;			// flip
 	char *ident;		// identifcation tag string
 	int *bitmap;		// bitmap data
 

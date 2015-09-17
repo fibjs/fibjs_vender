@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include "gd.h"
 
 BGD_DECLARE(void) gdImageFlipVertical(gdImagePtr im)
@@ -34,7 +38,7 @@ BGD_DECLARE(void) gdImageFlipHorizontal(gdImagePtr im)
 	int x, y;
 
 	if (im->trueColor) {
-   		int *px1, *px2, tmp;
+		int *px1, *px2, tmp;
 
 		for (y = 0; y < im->sy; y++) {
 			px1 = im->tpixels[y];

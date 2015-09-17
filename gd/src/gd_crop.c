@@ -8,6 +8,10 @@
  * granularity).
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 #include "gd.h"
 #include "gd_color.h"
@@ -25,13 +29,13 @@ BGD_DECLARE(gdImagePtr) gdImageCrop(gdImagePtr src, const gdRect *crop)
 	return dst;
 }
 
-BGD_DECLARE(gdImagePtr) gdImageAutoCrop(gdImagePtr im, const unsigned int mode)
+BGD_DECLARE(gdImagePtr) gdImageCropAuto(gdImagePtr im, const unsigned int mode)
 {
 	const int width = gdImageSX(im);
 	const int height = gdImageSY(im);
 
 	int x,y;
-	int color, corners, match;
+	int color, match;
 	gdRect crop;
 
 	crop.x = 0;
@@ -40,26 +44,26 @@ BGD_DECLARE(gdImagePtr) gdImageAutoCrop(gdImagePtr im, const unsigned int mode)
 	crop.height = 0;
 
 	switch (mode) {
-		case GD_CROP_TRANSPARENT:
-			color = gdImageGetTransparent(im);
-			break;
+	case GD_CROP_TRANSPARENT:
+		color = gdImageGetTransparent(im);
+		break;
 
-		case GD_CROP_BLACK:
-			color = gdImageColorClosestAlpha(im, 0, 0, 0, 0);
-			break;
+	case GD_CROP_BLACK:
+		color = gdImageColorClosestAlpha(im, 0, 0, 0, 0);
+		break;
 
-		case GD_CROP_WHITE:
-			color = gdImageColorClosestAlpha(im, 255, 255, 255, 0);
-			break;
+	case GD_CROP_WHITE:
+		color = gdImageColorClosestAlpha(im, 255, 255, 255, 0);
+		break;
 
-		case GD_CROP_SIDES:
-			corners = gdGuessBackgroundColorFromCorners(im, &color);
-			break;
+	case GD_CROP_SIDES:
+		gdGuessBackgroundColorFromCorners(im, &color);
+		break;
 
-		case GD_CROP_DEFAULT:
-		default:
-			color = gdImageGetTransparent(im);
-			break;
+	case GD_CROP_DEFAULT:
+	default:
+		color = gdImageGetTransparent(im);
+		break;
 	}
 
 	/* TODO: Add gdImageGetRowPtr and works with ptr at the row level
@@ -73,7 +77,7 @@ BGD_DECLARE(gdImagePtr) gdImageAutoCrop(gdImagePtr im, const unsigned int mode)
 		}
 	}
 
-	/* Nothing to do > bye 
+	/* Nothing to do > bye
 	 * Duplicate the image?
 	 */
 	if (y == height - 1) {
@@ -113,7 +117,7 @@ BGD_DECLARE(gdImagePtr) gdImageAutoCrop(gdImagePtr im, const unsigned int mode)
 	return gdImageCrop(im, &crop);
 }
 
-BGD_DECLARE(gdImagePtr) gdImageThresholdCrop(gdImagePtr im, const unsigned int color, const float threshold)
+BGD_DECLARE(gdImagePtr) gdImageCropThreshold(gdImagePtr im, const unsigned int color, const float threshold)
 {
 	const int width = gdImageSX(im);
 	const int height = gdImageSY(im);
@@ -144,7 +148,7 @@ BGD_DECLARE(gdImagePtr) gdImageThresholdCrop(gdImagePtr im, const unsigned int c
 	}
 
 	/* Pierre
-	 * Nothing to do > bye 
+	 * Nothing to do > bye
 	 * Duplicate the image?
 	 */
 	if (y == height - 1) {
@@ -212,7 +216,7 @@ static int gdGuessBackgroundColorFromCorners(gdImagePtr im, int *color)
 	} else if (tl == tr  || tl == bl || tl == br) {
 		*color = tl;
 		return 2;
-	} else if (tr == bl || tr == bl) {
+	} else if (tr == bl) {
 		*color = tr;
 		return 2;
 	} else if (br == bl) {
