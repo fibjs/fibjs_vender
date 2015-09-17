@@ -1,4 +1,6 @@
+#ifdef HAVE_CONFIG_H
 #	include "config.h"
+#endif
 
 #include "gd.h"
 #include "gdhelpers.h"
@@ -59,9 +61,9 @@
 
 /* create a new cache */
 gdCache_head_t *gdCacheCreate(int size,
-	gdCacheTestFn_t gdCacheTest,
-	gdCacheFetchFn_t gdCacheFetch,
-	gdCacheReleaseFn_t gdCacheRelease)
+                              gdCacheTestFn_t gdCacheTest,
+                              gdCacheFetchFn_t gdCacheFetch,
+                              gdCacheReleaseFn_t gdCacheRelease)
 {
 	gdCache_head_t *head;
 
@@ -132,7 +134,7 @@ void * gdCacheGet(gdCache_head_t *head, void *keydata)
 		if(!elem) {
 			(*(head->gdCacheRelease)) (userdata);
 			return NULL;
- 		}
+		}
 	} else {
 		/* cache full - replace least-recently-used */
 		/* preveprev becomes new end of list */
@@ -157,8 +159,7 @@ void * gdCacheGet(gdCache_head_t *head, void *keydata)
 
 #include <stdio.h>
 
-typedef struct
-{
+typedef struct {
 	int key;
 	int value;
 }

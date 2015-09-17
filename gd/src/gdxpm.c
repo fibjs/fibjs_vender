@@ -5,7 +5,9 @@
  * http://www.csn.ul.ie/~caolan
  */
 
+#ifdef HAVE_CONFIG_H
 #	include "config.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,22 +15,58 @@
 #include "gd.h"
 #include "gdhelpers.h"
 #include "gd_color_map.h"
+#include "gd_errors.h"
 
 #ifndef HAVE_LIBXPM
 BGD_DECLARE(gdImagePtr) gdImageCreateFromXpm(char *filename)
 {
-	fprintf(stderr, "libgd was not built with xpm support\n");
+	(void)filename;
+	gd_error_ex(GD_ERROR, "libgd was not built with xpm support\n");
 	return NULL;
 }
 #else
 
 #include <X11/xpm.h>
 
+/*
+  Function: gdImageCreateFromXpm
+
+    <gdImageCreateFromXbm> is called to load images from XPM X Window
+    System color bitmap format files. This function is available only
+    if HAVE_XPM is selected in the Makefile and the Xpm library is
+    linked with the application. Unlike most gd file functions, the
+    Xpm functions *require filenames*, not file
+    pointers. <gdImageCreateFromXpm> returns a <gdImagePtr> to the new
+    image, or NULL if unable to load the image (most often because the
+    file is corrupt or does not contain an XPM bitmap format
+    image). You can inspect the sx and sy members of the image to
+    determine its size. The image must eventually be destroyed using
+    <gdImageDestroy>.
+
+  Parameters:
+
+    filename - The input filename (*not* FILE pointer)
+
+  Returns:
+
+    A pointer to the new image or NULL if an error occurred.
+
+  Example:
+
+    > gdImagePtr im;
+    > FILE *in;
+    > in = fopen("myxpm.xpm", "rb");
+    > im = gdImageCreateFromXpm(in);
+    > fclose(in);
+    > // ... Use the image ...
+    > gdImageDestroy(im);
+
+*/
 BGD_DECLARE(gdImagePtr) gdImageCreateFromXpm(char *filename)
 {
 	XpmInfo info;
 	XpmImage image;
-	int i, j, k, number, len;
+	unsigned int i, j, k, number, len;
 	char buf[5];
 	gdImagePtr im = 0;
 	int *pointer;
@@ -45,6 +83,16 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromXpm(char *filename)
 	if(overflow2(sizeof(int), number)) {
 		goto done;
 	}
+	for(i = 0; i < number; i++) {
+		/*
+		   avoid NULL pointer dereference
+		   TODO better fix need to manage monochrome/monovisual
+		   see m_color or g4_color or g_color
+		*/
+		if (!image.colorTable[i].c_color) {
+			goto done;
+		}
+	}
 
 	colors = (int *)gdMalloc(sizeof(int) * number);
 	if(colors == NULL) {
@@ -59,10 +107,10 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromXpm(char *filename)
 	for(i = 0; i < number; i++) {
 		char *c_color = image.colorTable[i].c_color;
 		if(strcmp(c_color, "None") == 0) {
-		  colors[i] = gdImageGetTransparent(im);
-		  if(colors[i] == -1) colors[i] = gdImageColorAllocate(im, 0, 0, 0);
-		  if(colors[i] != -1) gdImageColorTransparent(im, colors[i]);
-		  continue;
+			colors[i] = gdImageGetTransparent(im);
+			if(colors[i] == -1) colors[i] = gdImageColorAllocate(im, 0, 0, 0);
+			if(colors[i] != -1) gdImageColorTransparent(im, colors[i]);
+			continue;
 		}
 		len = strlen(c_color);
 		if(len < 1) continue;
@@ -158,7 +206,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromXpm(char *filename)
 
 	gdFree(colors);
 
- done:
+done:
 	XpmFreeXpmImage(&image);
 	XpmFreeXpmInfo(&info);
 	return im;

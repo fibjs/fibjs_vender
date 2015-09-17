@@ -185,9 +185,6 @@
     <ClCompile Include="src\gdhelpers.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\gdkanji.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\gdtables.c">
       <Filter>Source Files</Filter>
     </ClCompile>

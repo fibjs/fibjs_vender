@@ -9,7 +9,9 @@
  * Written (or, at least, moved) 1999, Philip Warner.
  */
 
+#ifdef HAVE_CONFIG_H
 #	include "config.h"
+#endif
 
 #include <math.h>
 #include <string.h>
@@ -107,15 +109,15 @@ int gdGetWord(int *result, gdIOCtx *ctx)
 
 int gdGetWordLSB(signed short int *result, gdIOCtx *ctx)
 {
-	unsigned int high = 0, low = 0;
+	int high = 0, low = 0;
 	low = (ctx->getC) (ctx);
 	if (low == EOF) {
- 		return 0;
+		return 0;
 	}
 
 	high = (ctx->getC) (ctx);
 	if (high == EOF) {
- 		return 0;
+		return 0;
 	}
 
 	if (result) {
@@ -167,28 +169,28 @@ int gdGetIntLSB(signed int *result, gdIOCtx *ctx)
 
 	c = (ctx->getC) (ctx);
 	if (c == EOF) {
- 		return 0;
+		return 0;
 	}
 	r |= (c << 24);
 	r >>= 8;
 
 	c = (ctx->getC) (ctx);
 	if (c == EOF) {
- 		return 0;
+		return 0;
 	}
 	r |= (c << 24);
 	r >>= 8;
 
 	c = (ctx->getC) (ctx);
 	if (c == EOF) {
- 		return 0;
+		return 0;
 	}
 	r |= (c << 24);
 	r >>= 8;
 
 	c = (ctx->getC) (ctx);
 	if (c == EOF) {
- 		return 0;
+		return 0;
 	}
 	r |= (c << 24);
 

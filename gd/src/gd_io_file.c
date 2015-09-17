@@ -12,7 +12,9 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
 #	include "config.h"
+#endif
 
 /* For platforms with incomplete ANSI defines. Fortunately,
  * SEEK_SET is defined to be zero by the standard. */
@@ -29,8 +31,7 @@
 
 /* this is used for creating images in main memory */
 
-typedef struct fileIOCtx
-{
+typedef struct fileIOCtx {
 	gdIOCtx ctx;
 	FILE *f;
 }

@@ -15,7 +15,9 @@
  * Written/Modified 1999, Philip Warner.
  */
 
+#ifdef HAVE_CONFIG_H
 #	include "config.h"
+#endif
 
 #include <math.h>
 #include <string.h>
@@ -27,8 +29,7 @@
 #define FALSE	0
 
 /* this is used for creating images in main memory */
-typedef struct dpStruct
-{
+typedef struct dpStruct {
 	void *data;
 	int logicalSize;
 	int realSize;
@@ -38,8 +39,7 @@ typedef struct dpStruct
 }
 dynamicPtr;
 
-typedef struct dpIOCtx
-{
+typedef struct dpIOCtx {
 	gdIOCtx ctx;
 	dynamicPtr *dp;
 }
