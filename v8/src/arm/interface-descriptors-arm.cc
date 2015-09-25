@@ -56,6 +56,10 @@ const Register InstanceOfDescriptor::LeftRegister() { return r1; }
 const Register InstanceOfDescriptor::RightRegister() { return r0; }
 
 
+const Register StringCompareDescriptor::LeftRegister() { return r1; }
+const Register StringCompareDescriptor::RightRegister() { return r0; }
+
+
 const Register ArgumentsAccessReadDescriptor::index() { return r1; }
 const Register ArgumentsAccessReadDescriptor::parameter_count() { return r0; }
 
@@ -192,6 +196,15 @@ void CallConstructDescriptor::InitializePlatformSpecific(
   // TODO(turbofan): So far we don't gather type feedback and hence skip the
   // slot parameter, but ArrayConstructStub needs the vector to be undefined.
   Register registers[] = {r0, r1, r4, r2};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
+void CallTrampolineDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  // r0 : number of arguments
+  // r1 : the target to call
+  Register registers[] = {r1, r0};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
@@ -401,6 +414,18 @@ void MathRoundVariantCallFromOptimizedCodeDescriptor::
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
+
+
+void PushArgsAndCallDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      r0,  // argument count (including receiver)
+      r2,  // address of first argument
+      r1   // the target callable to be call
+  };
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
 }  // namespace internal
 }  // namespace v8
 

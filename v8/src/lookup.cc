@@ -94,7 +94,7 @@ Handle<JSObject> LookupIterator::GetStoreTarget() const {
   if (receiver_->IsJSGlobalProxy()) {
     PrototypeIterator iter(isolate(), receiver_);
     if (iter.IsAtEnd()) return Handle<JSGlobalProxy>::cast(receiver_);
-    return Handle<JSGlobalObject>::cast(PrototypeIterator::GetCurrent(iter));
+    return PrototypeIterator::GetCurrent<JSGlobalObject>(iter);
   }
   return Handle<JSObject>::cast(receiver_);
 }
@@ -134,7 +134,7 @@ void LookupIterator::PrepareForDataProperty(Handle<Object> value) {
     ElementsKind kind = holder_map_->elements_kind();
     ElementsKind to = value->OptimalElementsKind();
     if (IsHoleyElementsKind(kind)) to = GetHoleyElementsKind(to);
-    to = IsMoreGeneralElementsKindTransition(kind, to) ? to : kind;
+    to = GetMoreGeneralElementsKind(kind, to);
     JSObject::TransitionElementsKind(holder, to);
     holder_map_ = handle(holder->map(), isolate_);
 
@@ -178,6 +178,13 @@ void LookupIterator::ReconfigureDataProperty(Handle<Object> value,
   }
 
   ReloadPropertyInformation();
+  WriteDataValue(value);
+
+#if VERIFY_HEAP
+  if (FLAG_verify_heap) {
+    holder->JSObjectVerify();
+  }
+#endif
 }
 
 
@@ -290,6 +297,12 @@ void LookupIterator::TransitionToAccessorProperty(
   }
 
   TransitionToAccessorPair(pair, attributes);
+
+#if VERIFY_HEAP
+  if (FLAG_verify_heap) {
+    receiver->JSObjectVerify();
+  }
+#endif
 }
 
 
@@ -359,7 +372,7 @@ bool LookupIterator::InternalHolderIsReceiverOrHiddenPrototype() const {
   PrototypeIterator iter(isolate(), current,
                          PrototypeIterator::START_AT_RECEIVER);
   do {
-    if (JSReceiver::cast(iter.GetCurrent()) == holder) return true;
+    if (iter.GetCurrent<JSReceiver>() == holder) return true;
     DCHECK(!current->IsJSProxy());
     iter.Advance();
   } while (!iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN));

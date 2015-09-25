@@ -11,6 +11,7 @@
 #include "src/base/macros.h"
 #include "src/builtins.h"
 #include "src/interpreter/bytecodes.h"
+#include "src/runtime/runtime.h"
 
 namespace v8 {
 namespace internal {
@@ -48,12 +49,16 @@ class Interpreter {
   BYTECODE_LIST(DECLARE_BYTECODE_HANDLER_GENERATOR)
 #undef DECLARE_BYTECODE_HANDLER_GENERATOR
 
-  // Generates code to perform the binary operations via |binop_builtin|.
-  void DoBinaryOp(int builtin_context_index,
+  // Generates code to perform the binary operations via |function_id|.
+  void DoBinaryOp(Runtime::FunctionId function_id,
                   compiler::InterpreterAssembler* assembler);
 
   // Generates code to perform a property load via |ic|.
   void DoPropertyLoadIC(Callable ic, compiler::InterpreterAssembler* assembler);
+
+  // Generates code to perform a property store via |ic|.
+  void DoPropertyStoreIC(Callable ic,
+                         compiler::InterpreterAssembler* assembler);
 
   bool IsInterpreterTableInitialized(Handle<FixedArray> handler_table);
 

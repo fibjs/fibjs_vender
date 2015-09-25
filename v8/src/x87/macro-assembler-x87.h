@@ -71,6 +71,16 @@ class MacroAssembler: public Assembler {
   void Load(Register dst, const Operand& src, Representation r);
   void Store(Register src, const Operand& dst, Representation r);
 
+  // Load a register with a long value as efficiently as possible.
+  void Set(Register dst, int32_t x) {
+    if (x == 0) {
+      xor_(dst, dst);
+    } else {
+      mov(dst, Immediate(x));
+    }
+  }
+  void Set(const Operand& dst, int32_t x) { mov(dst, Immediate(x)); }
+
   // Operations on roots in the root-array.
   void LoadRoot(Register destination, Heap::RootListIndex index);
   void StoreRoot(Register source, Register scratch, Heap::RootListIndex index);
@@ -79,6 +89,22 @@ class MacroAssembler: public Assembler {
   // and not in new space).
   void CompareRoot(Register with, Heap::RootListIndex index);
   void CompareRoot(const Operand& with, Heap::RootListIndex index);
+  void PushRoot(Heap::RootListIndex index);
+
+  // Compare the object in a register to a value and jump if they are equal.
+  void JumpIfRoot(Register with, Heap::RootListIndex index, Label* if_equal,
+                  Label::Distance if_equal_distance = Label::kNear) {
+    CompareRoot(with, index);
+    j(equal, if_equal, if_equal_distance);
+  }
+
+  // Compare the object in a register to a value and jump if they are not equal.
+  void JumpIfNotRoot(Register with, Heap::RootListIndex index,
+                     Label* if_not_equal,
+                     Label::Distance if_not_equal_distance = Label::kNear) {
+    CompareRoot(with, index);
+    j(not_equal, if_not_equal, if_not_equal_distance);
+  }
 
   // ---------------------------------------------------------------------------
   // GC Support
@@ -239,6 +265,9 @@ class MacroAssembler: public Assembler {
 
   // Find the function context up the context chain.
   void LoadContext(Register dst, int context_chain_length);
+
+  // Load the global proxy from the current context.
+  void LoadGlobalProxy(Register dst);
 
   // Conditionally load the cached Array transitioned map of type
   // transitioned_kind from the native context if the map in register
@@ -418,18 +447,6 @@ class MacroAssembler: public Assembler {
                              Register map,
                              Register instance_type);
 
-  // Check if a heap object's type is in the JSObject range, not including
-  // JSFunction.  The object's map will be loaded in the map register.
-  // Any or all of the three registers may be the same.
-  // The contents of the scratch register will always be overwritten.
-  void IsObjectJSObjectType(Register heap_object,
-                            Register map,
-                            Register scratch,
-                            Label* fail);
-
-  // The contents of the scratch register will be overwritten.
-  void IsInstanceJSObjectType(Register map, Register scratch, Label* fail);
-
   // FCmp is similar to integer cmp, but requires unsigned
   // jcc instructions (je, ja, jae, jb, jbe, je, and jz).
   void FCmp();
@@ -541,6 +558,9 @@ class MacroAssembler: public Assembler {
 
   // Abort execution if argument is not a name, enabled via --debug-code.
   void AssertName(Register object);
+
+  // Abort execution if argument is not a JSFunction, enabled via --debug-code.
+  void AssertFunction(Register object);
 
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
@@ -778,8 +798,14 @@ class MacroAssembler: public Assembler {
   void Drop(int element_count);
 
   void Call(Label* target) { call(target); }
+  void Call(Handle<Code> target, RelocInfo::Mode rmode) { call(target, rmode); }
+  void Jump(Handle<Code> target, RelocInfo::Mode rmode) { jmp(target, rmode); }
   void Push(Register src) { push(src); }
+  void Push(const Operand& src) { push(src); }
+  void Push(Immediate value) { push(value); }
   void Pop(Register dst) { pop(dst); }
+  void PushReturnAddressFrom(Register src) { push(src); }
+  void PopReturnAddressTo(Register dst) { pop(dst); }
 
   void Lzcnt(Register dst, Register src) { Lzcnt(dst, Operand(src)); }
   void Lzcnt(Register dst, const Operand& src);
@@ -850,17 +876,6 @@ class MacroAssembler: public Assembler {
 
   // ---------------------------------------------------------------------------
   // String utilities.
-
-  // Generate code to do a lookup in the number string cache. If the number in
-  // the register object is found in the cache the generated code falls through
-  // with the result in the result register. The object and the result register
-  // can be the same. If the number is not found in the cache the code jumps to
-  // the label not_found with only the content of register object unchanged.
-  void LookupNumberStringCache(Register object,
-                               Register result,
-                               Register scratch1,
-                               Register scratch2,
-                               Label* not_found);
 
   // Check whether the instance type represents a flat one-byte string. Jump to
   // the label if not. If the instance type can be scratched specify same

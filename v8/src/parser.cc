@@ -359,7 +359,7 @@ FunctionLiteral* Parser::DefaultConstructor(bool call_super, Scope* scope,
     body = new (zone()) ZoneList<Statement*>(call_super ? 2 : 1, zone());
     AddAssertIsConstruct(body, pos);
     if (call_super) {
-      // %_DefaultConstructorCallSuper(new.target, .this_function)
+      // %_DefaultConstructorCallSuper(new.target, %GetPrototype(<this-fun>))
       ZoneList<Expression*>* args =
           new (zone()) ZoneList<Expression*>(2, zone());
       VariableProxy* new_target_proxy = scope_->NewUnresolved(
@@ -369,7 +369,12 @@ FunctionLiteral* Parser::DefaultConstructor(bool call_super, Scope* scope,
       VariableProxy* this_function_proxy = scope_->NewUnresolved(
           factory(), ast_value_factory()->this_function_string(),
           Variable::NORMAL, pos);
-      args->Add(this_function_proxy, zone());
+      ZoneList<Expression*>* tmp =
+          new (zone()) ZoneList<Expression*>(1, zone());
+      tmp->Add(this_function_proxy, zone());
+      Expression* get_prototype =
+          factory()->NewCallRuntime(Runtime::kGetPrototype, tmp, pos);
+      args->Add(get_prototype, zone());
       CallRuntime* call = factory()->NewCallRuntime(
           Runtime::kInlineDefaultConstructorCallSuper, args, pos);
       body->Add(factory()->NewReturnStatement(call, pos), zone());
@@ -2254,7 +2259,16 @@ Statement* Parser::ParseFunctionDeclaration(
       factory()->NewFunctionDeclaration(proxy, mode, fun, scope_, pos);
   Declare(declaration, DeclarationDescriptor::NORMAL, true, CHECK_OK);
   if (names) names->Add(name, zone());
-  return factory()->NewEmptyStatement(RelocInfo::kNoPosition);
+  EmptyStatement* empty = factory()->NewEmptyStatement(RelocInfo::kNoPosition);
+  if (is_sloppy(language_mode()) && allow_harmony_sloppy_function() &&
+      !scope_->is_declaration_scope()) {
+    SloppyBlockFunctionStatement* delegate =
+        factory()->NewSloppyBlockFunctionStatement(empty, scope_);
+    scope_->DeclarationScope()->sloppy_block_function_map()->Declare(name,
+                                                                     delegate);
+    return delegate;
+  }
+  return empty;
 }
 
 
@@ -2708,7 +2722,8 @@ Statement* Parser::ParseExpressionOrLabelledStatement(
 
   // Parsed expression statement, followed by semicolon.
   // Detect attempts at 'let' declarations in sloppy mode.
-  if (peek() == Token::IDENTIFIER && expr->AsVariableProxy() != NULL &&
+  if (!allow_harmony_sloppy_let() && peek() == Token::IDENTIFIER &&
+      expr->AsVariableProxy() != NULL &&
       expr->AsVariableProxy()->raw_name() ==
           ast_value_factory()->let_string()) {
     ReportMessage(MessageTemplate::kSloppyLexical, NULL);
@@ -3787,8 +3802,8 @@ Statement* Parser::ParseForStatement(ZoneList<const AstRawString*>* labels,
 
   // Parsed initializer at this point.
   // Detect attempts at 'let' declarations in sloppy mode.
-  if (peek() == Token::IDENTIFIER && is_sloppy(language_mode()) &&
-      is_let_identifier_expression) {
+  if (!allow_harmony_sloppy_let() && peek() == Token::IDENTIFIER &&
+      is_sloppy(language_mode()) && is_let_identifier_expression) {
     ReportMessage(MessageTemplate::kSloppyLexical, NULL);
     *ok = false;
     return NULL;
@@ -4184,16 +4199,14 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     // try to lazy parse in the first place, we'll have to parse eagerly.
     Scanner::BookmarkScope bookmark(scanner());
     if (is_lazily_parsed) {
-      // Deactivate bookmarks for now because they result
-      // race conditions while parsing.
-      Scanner::BookmarkScope* maybe_bookmark = nullptr;
+      Scanner::BookmarkScope* maybe_bookmark =
+          bookmark.Set() ? &bookmark : nullptr;
       SkipLazyFunctionBody(&materialized_literal_count,
                            &expected_property_count, /*CHECK_OK*/ ok,
                            maybe_bookmark);
 
-      if (formals.materialized_literals_count > 0) {
-        materialized_literal_count += formals.materialized_literals_count;
-      }
+      materialized_literal_count += formals.materialized_literals_count +
+                                    function_state.materialized_literal_count();
 
       if (bookmark.HasBeenReset()) {
         // Trigger eager (re-)parsing, just below this block.
@@ -4207,10 +4220,44 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
       }
     }
     if (!is_lazily_parsed) {
-      body = ParseEagerFunctionBody(function_name, pos, formals, kind,
-                                    function_type, CHECK_OK);
+      // Determine whether the function body can be discarded after parsing.
+      // The preconditions are:
+      // - Lazy compilation has to be enabled.
+      // - Neither V8 natives nor native function declarations can be allowed,
+      //   since parsing one would retroactively force the function to be
+      //   eagerly compiled.
+      // - The invoker of this parser can't depend on the AST being eagerly
+      //   built (either because the function is about to be compiled, or
+      //   because the AST is going to be inspected for some reason).
+      // - Because of the above, we can't be attempting to parse a
+      //   FunctionExpression; even without enclosing parentheses it might be
+      //   immediately invoked.
+      // - The function literal shouldn't be hinted to eagerly compile.
+      bool use_temp_zone =
+          FLAG_lazy && !allow_natives() && extension_ == NULL && allow_lazy() &&
+          function_type == FunctionLiteral::DECLARATION &&
+          eager_compile_hint != FunctionLiteral::kShouldEagerCompile;
+      // Open a new BodyScope, which sets our AstNodeFactory to allocate in the
+      // new temporary zone if the preconditions are satisfied, and ensures that
+      // the previous zone is always restored after parsing the body.
+      // For the purpose of scope analysis, some ZoneObjects allocated by the
+      // factory must persist after the function body is thrown away and
+      // temp_zone is deallocated. These objects are instead allocated in a
+      // parser-persistent zone (see parser_zone_ in AstNodeFactory).
+      {
+        Zone temp_zone;
+        AstNodeFactory::BodyScope inner(factory(), &temp_zone, use_temp_zone);
+
+        body = ParseEagerFunctionBody(function_name, pos, formals, kind,
+                                      function_type, CHECK_OK);
+      }
       materialized_literal_count = function_state.materialized_literal_count();
       expected_property_count = function_state.expected_property_count();
+      if (use_temp_zone) {
+        // If the preconditions are correct the function body should never be
+        // accessed, but do this anyway for better behaviour if they're wrong.
+        body = NULL;
+      }
     }
 
     // Parsing the body may change the language mode in our scope.
@@ -4238,6 +4285,9 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     if (is_strict(language_mode)) {
       CheckStrictOctalLiteral(scope->start_position(), scope->end_position(),
                               CHECK_OK);
+    }
+    if (is_sloppy(language_mode) && allow_harmony_sloppy_function()) {
+      InsertSloppyBlockFunctionVarBindings(scope, CHECK_OK);
     }
     if (is_strict(language_mode) || allow_harmony_sloppy()) {
       CheckConflictingVarDeclarations(scope, CHECK_OK);
@@ -4897,6 +4947,41 @@ void Parser::CheckConflictingVarDeclarations(Scope* scope, bool* ok) {
     ParserTraits::ReportMessageAt(location, MessageTemplate::kVarRedeclaration,
                                   name);
     *ok = false;
+  }
+}
+
+
+void Parser::InsertSloppyBlockFunctionVarBindings(Scope* scope, bool* ok) {
+  // For each variable which is used as a function declaration in a sloppy
+  // block,
+  DCHECK(scope->is_declaration_scope());
+  SloppyBlockFunctionMap* map = scope->sloppy_block_function_map();
+  for (ZoneHashMap::Entry* p = map->Start(); p != nullptr; p = map->Next(p)) {
+    AstRawString* name = static_cast<AstRawString*>(p->key);
+    // If the variable wouldn't conflict with a lexical declaration,
+    Variable* var = scope->LookupLocal(name);
+    if (var == nullptr || !IsLexicalVariableMode(var->mode())) {
+      // Declare a var-style binding for the function in the outer scope
+      VariableProxy* proxy = scope->NewUnresolved(factory(), name);
+      Declaration* declaration = factory()->NewVariableDeclaration(
+          proxy, VAR, scope, RelocInfo::kNoPosition);
+      Declare(declaration, DeclarationDescriptor::NORMAL, true, ok, scope);
+      DCHECK(ok);  // Based on the preceding check, this should not fail
+      if (!ok) return;
+
+      // Write in assignments to var for each block-scoped function declaration
+      auto delegates = static_cast<SloppyBlockFunctionMap::Vector*>(p->value);
+      for (SloppyBlockFunctionStatement* delegate : *delegates) {
+        // Read from the local lexical scope and write to the function scope
+        VariableProxy* to = scope->NewUnresolved(factory(), name);
+        VariableProxy* from = delegate->scope()->NewUnresolved(factory(), name);
+        Expression* assignment = factory()->NewAssignment(
+            Token::ASSIGN, to, from, RelocInfo::kNoPosition);
+        Statement* statement = factory()->NewExpressionStatement(
+            assignment, RelocInfo::kNoPosition);
+        delegate->set_statement(statement);
+      }
+    }
   }
 }
 
@@ -6017,8 +6102,8 @@ Expression* Parser::CloseTemplateLiteral(TemplateLiteralState* state, int start,
       ZoneList<Expression*>* args =
           new (zone()) ZoneList<Expression*>(1, zone());
       args->Add(sub, zone());
-      Expression* middle = factory()->NewCallRuntime(
-          Context::TO_STRING_FUN_INDEX, args, sub->position());
+      Expression* middle = factory()->NewCallRuntime(Runtime::kInlineToString,
+                                                     args, sub->position());
 
       expr = factory()->NewBinaryOperation(
           Token::ADD, factory()->NewBinaryOperation(

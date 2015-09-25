@@ -84,7 +84,6 @@ class LCodeGen;
   V(FlooringDivI)                            \
   V(ForInCacheArray)                         \
   V(ForInPrepareMap)                         \
-  V(FunctionLiteral)                         \
   V(GetCachedArrayIndex)                     \
   V(Goto)                                    \
   V(HasCachedArrayIndexAndBranch)            \
@@ -134,6 +133,7 @@ class LCodeGen;
   V(OsrEntry)                                \
   V(Parameter)                               \
   V(Power)                                   \
+  V(Prologue)                                \
   V(PushArgument)                            \
   V(RegExpLiteral)                           \
   V(Return)                                  \
@@ -407,6 +407,12 @@ class LGoto final : public LTemplateInstruction<0, 0, 0> {
 
  private:
   HBasicBlock* block_;
+};
+
+
+class LPrologue final : public LTemplateInstruction<0, 0, 0> {
+ public:
+  DECLARE_CONCRETE_INSTRUCTION(Prologue, "prologue")
 };
 
 
@@ -1061,7 +1067,7 @@ class LStringCompareAndBranch final : public LControlInstruction<3, 0> {
     inputs_[2] = right;
   }
 
-  LOperand* context() { return inputs_[1]; }
+  LOperand* context() { return inputs_[0]; }
   LOperand* left() { return inputs_[1]; }
   LOperand* right() { return inputs_[2]; }
 
@@ -2574,19 +2580,6 @@ class LRegExpLiteral final : public LTemplateInstruction<1, 1, 0> {
 
   DECLARE_CONCRETE_INSTRUCTION(RegExpLiteral, "regexp-literal")
   DECLARE_HYDROGEN_ACCESSOR(RegExpLiteral)
-};
-
-
-class LFunctionLiteral final : public LTemplateInstruction<1, 1, 0> {
- public:
-  explicit LFunctionLiteral(LOperand* context) {
-    inputs_[0] = context;
-  }
-
-  LOperand* context() { return inputs_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(FunctionLiteral, "function-literal")
-  DECLARE_HYDROGEN_ACCESSOR(FunctionLiteral)
 };
 
 

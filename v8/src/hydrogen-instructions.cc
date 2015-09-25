@@ -861,7 +861,6 @@ bool HInstruction::CanDeoptimize() {
     case HValue::kDiv:
     case HValue::kForInCacheArray:
     case HValue::kForInPrepareMap:
-    case HValue::kFunctionLiteral:
     case HValue::kInvokeFunction:
     case HValue::kLoadContextSlot:
     case HValue::kLoadFunctionPrototype:
@@ -927,8 +926,7 @@ std::ostream& HCallJSFunction::PrintDataTo(std::ostream& os) const {  // NOLINT
 
 HCallJSFunction* HCallJSFunction::New(Isolate* isolate, Zone* zone,
                                       HValue* context, HValue* function,
-                                      int argument_count,
-                                      bool pass_argument_count) {
+                                      int argument_count) {
   bool has_stack_check = false;
   if (function->IsConstant()) {
     HConstant* fun_const = HConstant::cast(function);
@@ -939,9 +937,7 @@ HCallJSFunction* HCallJSFunction::New(Isolate* isolate, Zone* zone,
          jsfun->code()->kind() == Code::OPTIMIZED_FUNCTION);
   }
 
-  return new(zone) HCallJSFunction(
-      function, argument_count, pass_argument_count,
-      has_stack_check);
+  return new (zone) HCallJSFunction(function, argument_count, has_stack_check);
 }
 
 
@@ -4001,7 +3997,7 @@ DEFINE_NEW_H_SIMPLE_ARITHMETIC_INSTR(HSub, -)
 
 
 HInstruction* HStringAdd::New(Isolate* isolate, Zone* zone, HValue* context,
-                              HValue* left, HValue* right, Strength strength,
+                              HValue* left, HValue* right,
                               PretenureFlag pretenure_flag,
                               StringAddFlags flags,
                               Handle<AllocationSite> allocation_site) {
@@ -4019,8 +4015,8 @@ HInstruction* HStringAdd::New(Isolate* isolate, Zone* zone, HValue* context,
       }
     }
   }
-  return new (zone) HStringAdd(context, left, right, strength, pretenure_flag,
-                               flags, allocation_site);
+  return new (zone)
+      HStringAdd(context, left, right, pretenure_flag, flags, allocation_site);
 }
 
 
@@ -4593,7 +4589,7 @@ HObjectAccess HObjectAccess::ForBackingStoreOffset(int offset,
 
 HObjectAccess HObjectAccess::ForField(Handle<Map> map, int index,
                                       Representation representation,
-                                      Handle<String> name) {
+                                      Handle<Name> name) {
   if (index < 0) {
     // Negative property indices are in-object properties, indexed
     // from the end of the fixed part of the object.

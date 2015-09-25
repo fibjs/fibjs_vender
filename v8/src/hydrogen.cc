@@ -4789,6 +4789,12 @@ void HOptimizedGraphBuilder::VisitEmptyStatement(EmptyStatement* stmt) {
 }
 
 
+void HOptimizedGraphBuilder::VisitSloppyBlockFunctionStatement(
+    SloppyBlockFunctionStatement* stmt) {
+  Visit(stmt->statement());
+}
+
+
 void HOptimizedGraphBuilder::VisitIfStatement(IfStatement* stmt) {
   DCHECK(!HasStackOverflow());
   DCHECK(current_block() != NULL);
@@ -5473,8 +5479,25 @@ void HOptimizedGraphBuilder::VisitFunctionLiteral(FunctionLiteral* expr) {
       expr, current_info()->script(), top_info());
   // We also have a stack overflow if the recursive compilation did.
   if (HasStackOverflow()) return;
-  HFunctionLiteral* instr =
-      New<HFunctionLiteral>(shared_info, expr->pretenure());
+  // Use the fast case closure allocation code that allocates in new
+  // space for nested functions that don't need literals cloning.
+  HConstant* shared_info_value = Add<HConstant>(shared_info);
+  HInstruction* instr;
+  if (!expr->pretenure() && shared_info->num_literals() == 0) {
+    FastNewClosureStub stub(isolate(), shared_info->language_mode(),
+                            shared_info->kind());
+    FastNewClosureDescriptor descriptor(isolate());
+    HValue* values[] = {context(), shared_info_value};
+    HConstant* stub_value = Add<HConstant>(stub.GetCode());
+    instr = New<HCallWithDescriptor>(stub_value, 0, descriptor,
+                                     Vector<HValue*>(values, arraysize(values)),
+                                     NORMAL_CALL);
+  } else {
+    Add<HPushArguments>(shared_info_value);
+    Runtime::FunctionId function_id =
+        expr->pretenure() ? Runtime::kNewClosure_Tenured : Runtime::kNewClosure;
+    instr = New<HCallRuntime>(Runtime::FunctionForId(function_id), 1);
+  }
   return ast_context()->ReturnInstruction(instr, expr->id());
 }
 
@@ -5877,7 +5900,6 @@ void HOptimizedGraphBuilder::VisitObjectLiteral(ObjectLiteral* expr) {
   // The object is expected in the bailout environment during computation
   // of the property values and is the value of the entire expression.
   Push(literal);
-  int store_slot_index = 0;
   for (int i = 0; i < expr->properties()->length(); i++) {
     ObjectLiteral::Property* property = expr->properties()->at(i);
     if (property->is_computed_name()) return Bailout(kComputedPropertyName);
@@ -5901,7 +5923,7 @@ void HOptimizedGraphBuilder::VisitObjectLiteral(ObjectLiteral* expr) {
             Handle<Map> map = property->GetReceiverType();
             Handle<String> name = key->AsPropertyName();
             HValue* store;
-            FeedbackVectorICSlot slot = expr->GetNthSlot(store_slot_index++);
+            FeedbackVectorICSlot slot = property->GetSlot();
             if (map.is_null()) {
               // If we don't know the monomorphic type, do a generic store.
               CHECK_ALIVE(store = BuildNamedGeneric(STORE, NULL, slot, literal,
@@ -5929,8 +5951,7 @@ void HOptimizedGraphBuilder::VisitObjectLiteral(ObjectLiteral* expr) {
             if (FunctionLiteral::NeedsHomeObject(property->value())) {
               Handle<Symbol> sym = isolate()->factory()->home_object_symbol();
               HInstruction* store_home = BuildNamedGeneric(
-                  STORE, NULL, expr->GetNthSlot(store_slot_index++), value, sym,
-                  literal);
+                  STORE, NULL, property->GetSlot(1), value, sym, literal);
               AddInstruction(store_home);
               DCHECK(store_home->HasObservableSideEffects());
               Add<HSimulate>(property->value()->id(), REMOVABLE_SIMULATE);
@@ -5948,9 +5969,6 @@ void HOptimizedGraphBuilder::VisitObjectLiteral(ObjectLiteral* expr) {
       default: UNREACHABLE();
     }
   }
-
-  // Crankshaft may not consume all the slots because it doesn't emit accessors.
-  DCHECK(!FLAG_vector_stores || store_slot_index <= expr->slot_count());
 
   if (expr->has_function()) {
     // Return the result of the transformation to fast properties
@@ -6391,8 +6409,8 @@ bool HOptimizedGraphBuilder::PropertyAccessInfo::LookupInPrototypes() {
 
 bool HOptimizedGraphBuilder::PropertyAccessInfo::IsIntegerIndexedExotic() {
   InstanceType instance_type = map_->instance_type();
-  return instance_type == JS_TYPED_ARRAY_TYPE &&
-         IsSpecialIndex(isolate()->unicode_cache(), *name_);
+  return instance_type == JS_TYPED_ARRAY_TYPE && name_->IsString() &&
+         IsSpecialIndex(isolate()->unicode_cache(), String::cast(*name_));
 }
 
 
@@ -7351,7 +7369,7 @@ HInstruction* HOptimizedGraphBuilder::BuildMonomorphicElementAccess(
     PrototypeIterator iter(map);
     JSObject* holder = NULL;
     while (!iter.IsAtEnd()) {
-      holder = JSObject::cast(*PrototypeIterator::GetCurrent(iter));
+      holder = *PrototypeIterator::GetCurrent<JSObject>(iter);
       iter.Advance();
     }
     DCHECK(holder && holder->IsJSObject());
@@ -7433,11 +7451,45 @@ HInstruction* HOptimizedGraphBuilder::TryBuildConsolidatedElementLoad(
   ElementsKind consolidated_elements_kind = has_seen_holey_elements
       ? GetHoleyElementsKind(most_general_consolidated_map->elements_kind())
       : most_general_consolidated_map->elements_kind();
+  LoadKeyedHoleMode load_mode = NEVER_RETURN_HOLE;
+  if (has_seen_holey_elements) {
+    // Make sure that all of the maps we are handling have the initial array
+    // prototype.
+    bool saw_non_array_prototype = false;
+    for (int i = 0; i < maps->length(); ++i) {
+      Handle<Map> map = maps->at(i);
+      if (map->prototype() != *isolate()->initial_array_prototype()) {
+        // We can't guarantee that loading the hole is safe. The prototype may
+        // have an element at this position.
+        saw_non_array_prototype = true;
+        break;
+      }
+    }
+
+    if (!saw_non_array_prototype) {
+      Handle<Map> holey_map = handle(
+          isolate()->get_initial_js_array_map(consolidated_elements_kind));
+      load_mode = BuildKeyedHoleMode(holey_map);
+      if (load_mode != NEVER_RETURN_HOLE) {
+        for (int i = 0; i < maps->length(); ++i) {
+          Handle<Map> map = maps->at(i);
+          // The prototype check was already done for the holey map in
+          // BuildKeyedHoleMode.
+          if (!map.is_identical_to(holey_map)) {
+            Handle<JSObject> prototype(JSObject::cast(map->prototype()),
+                                       isolate());
+            Handle<JSObject> object_prototype =
+                isolate()->initial_object_prototype();
+            BuildCheckPrototypeMaps(prototype, object_prototype);
+          }
+        }
+      }
+    }
+  }
   HInstruction* instr = BuildUncheckedMonomorphicElementAccess(
       checked_object, key, val,
       most_general_consolidated_map->instance_type() == JS_ARRAY_TYPE,
-      consolidated_elements_kind,
-      LOAD, NEVER_RETURN_HOLE, STANDARD_STORE);
+      consolidated_elements_kind, LOAD, load_mode, STANDARD_STORE);
   return instr;
 }
 
@@ -7880,15 +7932,13 @@ HInstruction* HGraphBuilder::BuildCheckPrototypeMaps(Handle<JSObject> prototype,
                          PrototypeIterator::START_AT_RECEIVER);
   while (holder.is_null() ||
          !PrototypeIterator::GetCurrent(iter).is_identical_to(holder)) {
-    BuildConstantMapCheck(
-        Handle<JSObject>::cast(PrototypeIterator::GetCurrent(iter)));
+    BuildConstantMapCheck(PrototypeIterator::GetCurrent<JSObject>(iter));
     iter.Advance();
     if (iter.IsAtEnd()) {
       return NULL;
     }
   }
-  return BuildConstantMapCheck(
-      Handle<JSObject>::cast(PrototypeIterator::GetCurrent(iter)));
+  return BuildConstantMapCheck(PrototypeIterator::GetCurrent<JSObject>(iter));
 }
 
 
@@ -7901,9 +7951,9 @@ void HOptimizedGraphBuilder::AddCheckPrototypeMaps(Handle<JSObject> holder,
 }
 
 
-HInstruction* HOptimizedGraphBuilder::NewPlainFunctionCall(
-    HValue* fun, int argument_count, bool pass_argument_count) {
-  return New<HCallJSFunction>(fun, argument_count, pass_argument_count);
+HInstruction* HOptimizedGraphBuilder::NewPlainFunctionCall(HValue* fun,
+                                                           int argument_count) {
+  return New<HCallJSFunction>(fun, argument_count);
 }
 
 
@@ -7941,7 +7991,7 @@ HInstruction* HOptimizedGraphBuilder::BuildCallConstantFunction(
     if (jsfun.is_identical_to(current_info()->closure())) {
       graph()->MarkRecursive();
     }
-    return NewPlainFunctionCall(target, argument_count, dont_adapt_arguments);
+    return NewPlainFunctionCall(target, argument_count);
   } else {
     HValue* param_count_value = Add<HConstant>(formal_parameter_count);
     HValue* context = Add<HLoadNamedField>(
@@ -8962,7 +9012,7 @@ bool HOptimizedGraphBuilder::TryInlineBuiltinMethodCall(
           if_inline.Else();
           {
             Add<HPushArguments>(receiver);
-            result = Add<HCallJSFunction>(function, 1, true);
+            result = Add<HCallJSFunction>(function, 1);
             if (!ast_context()->IsEffect()) Push(result);
           }
           if_inline.End();
@@ -9864,16 +9914,6 @@ void HOptimizedGraphBuilder::VisitCallNew(CallNew* expr) {
     // Allocate an instance of the implicit receiver object.
     HValue* size_in_bytes = Add<HConstant>(instance_size);
     HAllocationMode allocation_mode;
-    if (FLAG_pretenuring_call_new) {
-      if (FLAG_allocation_site_pretenuring) {
-        // Try to use pretenuring feedback.
-        Handle<AllocationSite> allocation_site = expr->allocation_site();
-        allocation_mode = HAllocationMode(allocation_site);
-        // Take a dependency on allocation site.
-        top_info()->dependencies()->AssumeTenuringDecision(allocation_site);
-      }
-    }
-
     HAllocate* receiver = BuildAllocate(
         size_in_bytes, HType::JSObject(), JS_OBJECT_TYPE, allocation_mode);
     receiver->set_known_initial_map(initial_map);
@@ -10951,10 +10991,9 @@ HValue* HGraphBuilder::BuildBinaryOperation(
         left = BuildNumberToString(left, left_type);
       } else if (!left_type->Is(Type::String())) {
         DCHECK(right_type->Is(Type::String()));
-        HValue* function =
-            AddLoadJSBuiltin(Context::STRING_ADD_RIGHT_BUILTIN_INDEX);
-        Add<HPushArguments>(left, right);
-        return AddUncasted<HInvokeFunction>(function, 2);
+        return AddUncasted<HStringAdd>(
+            left, right, allocation_mode.GetPretenureMode(),
+            STRING_ADD_CONVERT_LEFT, allocation_mode.feedback_site());
       }
 
       // Convert right argument as necessary.
@@ -10963,10 +11002,9 @@ HValue* HGraphBuilder::BuildBinaryOperation(
         right = BuildNumberToString(right, right_type);
       } else if (!right_type->Is(Type::String())) {
         DCHECK(left_type->Is(Type::String()));
-        HValue* function =
-            AddLoadJSBuiltin(Context::STRING_ADD_LEFT_BUILTIN_INDEX);
-        Add<HPushArguments>(left, right);
-        return AddUncasted<HInvokeFunction>(function, 2);
+        return AddUncasted<HStringAdd>(
+            left, right, allocation_mode.GetPretenureMode(),
+            STRING_ADD_CONVERT_RIGHT, allocation_mode.feedback_site());
       }
     }
 
@@ -10983,7 +11021,7 @@ HValue* HGraphBuilder::BuildBinaryOperation(
     if (!right_string.is_null() && right_string->length() == 0) return left;
     if (!left_string.is_null() && !right_string.is_null()) {
       return AddUncasted<HStringAdd>(
-          left, right, strength, allocation_mode.GetPretenureMode(),
+          left, right, allocation_mode.GetPretenureMode(),
           STRING_ADD_CHECK_NONE, allocation_mode.feedback_site());
     }
 
@@ -11012,8 +11050,8 @@ HValue* HGraphBuilder::BuildBinaryOperation(
 
     // Fallback to using the string add stub.
     return AddUncasted<HStringAdd>(
-        left, right, strength, allocation_mode.GetPretenureMode(),
-        STRING_ADD_CHECK_NONE, allocation_mode.feedback_site());
+        left, right, allocation_mode.GetPretenureMode(), STRING_ADD_CHECK_NONE,
+        allocation_mode.feedback_site());
   }
 
   if (graph()->info()->IsStub()) {
@@ -11031,10 +11069,57 @@ HValue* HGraphBuilder::BuildBinaryOperation(
   // inline several instructions (including the two pushes) for every tagged
   // operation in optimized code, which is more expensive, than a stub call.
   if (graph()->info()->IsStub() && is_non_primitive) {
-    HValue* function =
-        AddLoadJSBuiltin(BinaryOpIC::TokenToContextIndex(op, strength));
+    Runtime::FunctionId function_id;
+    switch (op) {
+      default:
+        UNREACHABLE();
+      case Token::ADD:
+        function_id =
+            is_strong(strength) ? Runtime::kAdd_Strong : Runtime::kAdd;
+        break;
+      case Token::SUB:
+        function_id = is_strong(strength) ? Runtime::kSubtract_Strong
+                                          : Runtime::kSubtract;
+        break;
+      case Token::MUL:
+        function_id = is_strong(strength) ? Runtime::kMultiply_Strong
+                                          : Runtime::kMultiply;
+        break;
+      case Token::DIV:
+        function_id =
+            is_strong(strength) ? Runtime::kDivide_Strong : Runtime::kDivide;
+        break;
+      case Token::MOD:
+        function_id =
+            is_strong(strength) ? Runtime::kModulus_Strong : Runtime::kModulus;
+        break;
+      case Token::BIT_OR:
+        function_id = is_strong(strength) ? Runtime::kBitwiseOr_Strong
+                                          : Runtime::kBitwiseOr;
+        break;
+      case Token::BIT_AND:
+        function_id = is_strong(strength) ? Runtime::kBitwiseAnd_Strong
+                                          : Runtime::kBitwiseAnd;
+        break;
+      case Token::BIT_XOR:
+        function_id = is_strong(strength) ? Runtime::kBitwiseXor_Strong
+                                          : Runtime::kBitwiseXor;
+        break;
+      case Token::SAR:
+        function_id = is_strong(strength) ? Runtime::kShiftRight_Strong
+                                          : Runtime::kShiftRight;
+        break;
+      case Token::SHR:
+        function_id = is_strong(strength) ? Runtime::kShiftRightLogical_Strong
+                                          : Runtime::kShiftRightLogical;
+        break;
+      case Token::SHL:
+        function_id = is_strong(strength) ? Runtime::kShiftLeft_Strong
+                                          : Runtime::kShiftLeft;
+        break;
+    }
     Add<HPushArguments>(left, right);
-    instr = AddUncasted<HInvokeFunction>(function, 2);
+    instr = AddUncasted<HCallRuntime>(Runtime::FunctionForId(function_id), 2);
   } else {
     if (is_strong(strength) && Token::IsBitOp(op)) {
       // TODO(conradw): This is not efficient, but is necessary to prevent
@@ -11084,7 +11169,7 @@ HValue* HGraphBuilder::BuildBinaryOperation(
         instr = AddUncasted<HBitwise>(op, left, right, strength);
         break;
       case Token::BIT_OR: {
-        HValue* operand, *shift_amount;
+        HValue *operand, *shift_amount;
         if (left_type->Is(Type::Signed32()) &&
             right_type->Is(Type::Signed32()) &&
             MatchRotateRight(left, right, &operand, &shift_amount)) {
@@ -11466,6 +11551,51 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
         return result;
       }
     } else {
+      if (combined_type->IsClass()) {
+        // TODO(bmeurer): This is an optimized version of an x < y, x > y,
+        // x <= y or x >= y, where both x and y are spec objects with the
+        // same map. The CompareIC collects this map for us. So if we know
+        // that there's no @@toPrimitive on the map (including the prototype
+        // chain), and both valueOf and toString are the default initial
+        // implementations (on the %ObjectPrototype%), then we can reduce
+        // the comparison to map checks on x and y, because the comparison
+        // will turn into a comparison of "[object CLASS]" to itself (the
+        // default outcome of toString, since valueOf returns a spec object).
+        // This is pretty much adhoc, so in TurboFan we could do a lot better
+        // and inline the interesting parts of ToPrimitive (actually we could
+        // even do that in Crankshaft but we don't want to waste too much
+        // time on this now).
+        DCHECK(Token::IsOrderedRelationalCompareOp(op));
+        Handle<Map> map = combined_type->AsClass()->Map();
+        PropertyAccessInfo value_of(this, LOAD, map,
+                                    isolate()->factory()->valueOf_string());
+        PropertyAccessInfo to_primitive(
+            this, LOAD, map, isolate()->factory()->to_primitive_symbol());
+        PropertyAccessInfo to_string(this, LOAD, map,
+                                     isolate()->factory()->toString_string());
+        PropertyAccessInfo to_string_tag(
+            this, LOAD, map, isolate()->factory()->to_string_tag_symbol());
+        if (to_primitive.CanAccessMonomorphic() && !to_primitive.IsFound() &&
+            to_string_tag.CanAccessMonomorphic() &&
+            (!to_string_tag.IsFound() || to_string_tag.IsData() ||
+             to_string_tag.IsDataConstant()) &&
+            value_of.CanAccessMonomorphic() && value_of.IsDataConstant() &&
+            value_of.constant().is_identical_to(isolate()->object_value_of()) &&
+            to_string.CanAccessMonomorphic() && to_string.IsDataConstant() &&
+            to_string.constant().is_identical_to(
+                isolate()->object_to_string())) {
+          // We depend on the prototype chain to stay the same, because we
+          // also need to deoptimize when someone installs @@toPrimitive
+          // or @@toStringTag somewhere in the prototype chain.
+          BuildCheckPrototypeMaps(handle(JSObject::cast(map->prototype())),
+                                  Handle<JSObject>::null());
+          AddCheckMap(left, map);
+          AddCheckMap(right, map);
+          // The caller expects a branch instruction, so make it happy.
+          return New<HBranch>(
+              graph()->GetConstantBool(op == Token::LTE || op == Token::GTE));
+        }
+      }
       Bailout(kUnsupportedNonPrimitiveCompare);
       return NULL;
     }
@@ -11496,6 +11626,23 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
     Add<HCheckInstanceType>(right, HCheckInstanceType::IS_STRING);
     HStringCompareAndBranch* result =
         New<HStringCompareAndBranch>(left, right, op);
+    return result;
+  } else if (combined_type->Is(Type::Boolean())) {
+    AddCheckMap(left, isolate()->factory()->boolean_map());
+    AddCheckMap(right, isolate()->factory()->boolean_map());
+    if (Token::IsEqualityOp(op)) {
+      HCompareObjectEqAndBranch* result =
+          New<HCompareObjectEqAndBranch>(left, right);
+      return result;
+    }
+    left = Add<HLoadNamedField>(
+        left, nullptr,
+        HObjectAccess::ForOddballToNumber(Representation::Smi()));
+    right = Add<HLoadNamedField>(
+        right, nullptr,
+        HObjectAccess::ForOddballToNumber(Representation::Smi()));
+    HCompareNumericAndBranch* result =
+        New<HCompareNumericAndBranch>(left, right, op);
     return result;
   } else {
     if (combined_rep.IsTagged() || combined_rep.IsNone()) {
@@ -12379,8 +12526,7 @@ void HOptimizedGraphBuilder::GenerateStringAdd(CallRuntime* call) {
   CHECK_ALIVE(VisitForValue(call->arguments()->at(1)));
   HValue* right = Pop();
   HValue* left = Pop();
-  HInstruction* result =
-      NewUncasted<HStringAdd>(left, right, strength(function_language_mode()));
+  HInstruction* result = NewUncasted<HStringAdd>(left, right);
   return ast_context()->ReturnInstruction(result, call->id());
 }
 
@@ -12391,16 +12537,6 @@ void HOptimizedGraphBuilder::GenerateSubString(CallRuntime* call) {
   CHECK_ALIVE(VisitExpressions(call->arguments()));
   PushArgumentsFromEnvironment(call->arguments()->length());
   HCallStub* result = New<HCallStub>(CodeStub::SubString, 3);
-  return ast_context()->ReturnInstruction(result, call->id());
-}
-
-
-// Fast support for StringCompare.
-void HOptimizedGraphBuilder::GenerateStringCompare(CallRuntime* call) {
-  DCHECK_EQ(2, call->arguments()->length());
-  CHECK_ALIVE(VisitExpressions(call->arguments()));
-  PushArgumentsFromEnvironment(call->arguments()->length());
-  HCallStub* result = New<HCallStub>(CodeStub::StringCompare, 2);
   return ast_context()->ReturnInstruction(result, call->id());
 }
 
@@ -12474,6 +12610,23 @@ void HOptimizedGraphBuilder::GenerateNumberToString(CallRuntime* call) {
   HValue* number = Pop();
   HValue* result = BuildNumberToString(number, Type::Any(zone()));
   return ast_context()->ReturnValue(result);
+}
+
+
+// Fast support for calls.
+void HOptimizedGraphBuilder::GenerateCall(CallRuntime* call) {
+  DCHECK_LE(2, call->arguments()->length());
+  CHECK_ALIVE(VisitExpressions(call->arguments()));
+  CallTrampolineDescriptor descriptor(isolate());
+  PushArgumentsFromEnvironment(call->arguments()->length() - 1);
+  HValue* trampoline = Add<HConstant>(isolate()->builtins()->Call());
+  HValue* target = Pop();
+  HValue* values[] = {context(), target,
+                      Add<HConstant>(call->arguments()->length() - 2)};
+  HInstruction* result = New<HCallWithDescriptor>(
+      trampoline, call->arguments()->length() - 1, descriptor,
+      Vector<HValue*>(values, arraysize(values)));
+  return ast_context()->ReturnInstruction(result, call->id());
 }
 
 
@@ -13363,7 +13516,7 @@ void HTracer::FlushToFile() {
 
 
 void HStatistics::Initialize(CompilationInfo* info) {
-  if (info->shared_info().is_null()) return;
+  if (!info->has_shared_info()) return;
   source_size_ += info->shared_info()->SourceSize();
 }
 

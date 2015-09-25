@@ -35,6 +35,9 @@ class BytecodeArrayBuilder {
   void set_locals_count(int number_of_locals);
   int locals_count() const;
 
+  // Returns true if the bytecode has an explicit return at the end.
+  bool HasExplicitReturn();
+
   Register Parameter(int parameter_index);
 
   // Constant loads to accumulator.
@@ -55,6 +58,21 @@ class BytecodeArrayBuilder {
                                           LanguageMode language_mode);
   BytecodeArrayBuilder& LoadKeyedProperty(Register object, int feedback_slot,
                                           LanguageMode language_mode);
+
+  // Store properties. The value to be stored should be in the accumulator.
+  BytecodeArrayBuilder& StoreNamedProperty(Register object, Register name,
+                                           int feedback_slot,
+                                           LanguageMode language_mode);
+  BytecodeArrayBuilder& StoreKeyedProperty(Register object, Register key,
+                                           int feedback_slot,
+                                           LanguageMode language_mode);
+
+  // Call a JS function. The JSFunction or Callable to be called should be in
+  // |callable|, the receiver should be in |receiver| and all subsequent
+  // arguments should be in registers <receiver + 1> to
+  // <receiver + 1 + arg_count>.
+  BytecodeArrayBuilder& Call(Register callable, Register receiver,
+                             size_t arg_count);
 
   // Operators.
   BytecodeArrayBuilder& BinaryOperation(Token::Value binop, Register reg);

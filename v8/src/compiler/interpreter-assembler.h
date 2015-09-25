@@ -12,6 +12,7 @@
 #include "src/builtins.h"
 #include "src/frames.h"
 #include "src/interpreter/bytecodes.h"
+#include "src/runtime/runtime.h"
 
 namespace v8 {
 namespace internal {
@@ -37,7 +38,10 @@ class InterpreterAssembler {
 
   Handle<Code> GenerateCode();
 
-  // Returns the Idx immediate for bytecode operand |operand_index| in the
+  // Returns the count immediate for bytecode operand |operand_index| in the
+  // current bytecode.
+  Node* BytecodeOperandCount(int operand_index);
+  // Returns the index immediate for bytecode operand |operand_index| in the
   // current bytecode.
   Node* BytecodeOperandIdx(int operand_index);
   // Returns the Imm8 immediate for bytecode operand |operand_index| in the
@@ -55,6 +59,10 @@ class InterpreterAssembler {
   Node* LoadRegister(Node* reg_index);
   Node* StoreRegister(Node* value, Node* reg_index);
 
+  // Returns the location in memory of the register |reg_index| in the
+  // interpreter register file.
+  Node* RegisterLocation(Node* reg_index);
+
   // Constants.
   Node* Int32Constant(int value);
   Node* IntPtrConstant(intptr_t value);
@@ -64,6 +72,11 @@ class InterpreterAssembler {
   // Tag and untag Smi values.
   Node* SmiTag(Node* value);
   Node* SmiUntag(Node* value);
+
+  // Basic arithmetic operations.
+  Node* IntPtrAdd(Node* a, Node* b);
+  Node* IntPtrSub(Node* a, Node* b);
+  Node* WordShl(Node* value, int shift);
 
   // Load constant at |index| in the constant pool.
   Node* LoadConstantPoolEntry(Node* index);
@@ -80,13 +93,18 @@ class InterpreterAssembler {
   // Load the TypeFeedbackVector for the current function.
   Node* LoadTypeFeedbackVector();
 
+  // Call JSFunction or Callable |function| with |arg_count| (not including
+  // receiver) and the first argument located at |first_arg|.
+  Node* CallJS(Node* function, Node* first_arg, Node* arg_count);
+
   // Call an IC code stub.
   Node* CallIC(CallInterfaceDescriptor descriptor, Node* target, Node* arg1,
                Node* arg2, Node* arg3, Node* arg4);
+  Node* CallIC(CallInterfaceDescriptor descriptor, Node* target, Node* arg1,
+               Node* arg2, Node* arg3, Node* arg4, Node* arg5);
 
-  // Call JS builtin.
-  Node* CallJSBuiltin(int context_index, Node* receiver);
-  Node* CallJSBuiltin(int context_index, Node* receiver, Node* arg1);
+  // Call runtime function.
+  Node* CallRuntime(Runtime::FunctionId function_id, Node* arg1, Node* arg2);
 
   // Returns from the function.
   void Return();
@@ -121,6 +139,7 @@ class InterpreterAssembler {
   Node* BytecodeOperand(int operand_index);
   Node* BytecodeOperandSignExtended(int operand_index);
 
+  Node* CallIC(CallInterfaceDescriptor descriptor, Node* target, Node** args);
   Node* CallJSBuiltin(int context_index, Node* receiver, Node** js_args,
                       int js_arg_count);
 

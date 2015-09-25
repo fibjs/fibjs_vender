@@ -167,6 +167,13 @@ void InstanceOfDescriptor::InitializePlatformSpecific(
 }
 
 
+void StringCompareDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {LeftRegister(), RightRegister()};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
 void ToStringDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {ReceiverRegister()};
@@ -350,6 +357,19 @@ CreateWeakCellDescriptor::BuildCallInterfaceDescriptorFunctionType(
   function->InitParameter(0, AnyTagged(zone));
   function->InitParameter(1, SmiType(zone));
   function->InitParameter(2, AnyTagged(zone));
+  return function;
+}
+
+
+Type::FunctionType*
+CallTrampolineDescriptor::BuildCallInterfaceDescriptorFunctionType(
+    Isolate* isolate, int paramater_count) {
+  Zone* zone = isolate->interface_descriptor_zone();
+  Type::FunctionType* function =
+      Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 2, zone);
+  function->InitParameter(0, AnyTagged(zone));  // target
+  function->InitParameter(
+      1, UntaggedSigned32(zone));  // actual number of arguments
   return function;
 }
 

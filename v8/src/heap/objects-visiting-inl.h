@@ -5,6 +5,7 @@
 #ifndef V8_OBJECTS_VISITING_INL_H_
 #define V8_OBJECTS_VISITING_INL_H_
 
+#include "src/heap/array-buffer-tracker.h"
 #include "src/heap/objects-visiting.h"
 #include "src/ic/ic-state.h"
 #include "src/macro-assembler.h"
@@ -91,13 +92,10 @@ int StaticNewSpaceVisitor<StaticVisitor>::VisitJSArrayBuffer(
     Map* map, HeapObject* object) {
   Heap* heap = map->GetHeap();
 
-  VisitPointers(
-      heap, object,
-      HeapObject::RawField(object, JSArrayBuffer::BodyDescriptor::kStartOffset),
-      HeapObject::RawField(object, JSArrayBuffer::kSizeWithInternalFields));
+  JSArrayBuffer::JSArrayBufferIterateBody<
+      StaticNewSpaceVisitor<StaticVisitor> >(heap, object);
   if (!JSArrayBuffer::cast(object)->is_external()) {
-    heap->RegisterLiveArrayBuffer(true,
-                                  JSArrayBuffer::cast(object)->backing_store());
+    heap->array_buffer_tracker()->MarkLive(JSArrayBuffer::cast(object));
   }
   return JSArrayBuffer::kSizeWithInternalFields;
 }
@@ -356,9 +354,21 @@ void StaticMarkingVisitor<StaticVisitor>::VisitWeakCell(Map* map,
   // We can ignore weak cells with cleared values because they will always
   // contain smi zero.
   if (weak_cell->next_cleared() && !weak_cell->cleared()) {
-    weak_cell->set_next(heap->encountered_weak_cells(),
-                        UPDATE_WEAK_WRITE_BARRIER);
-    heap->set_encountered_weak_cells(weak_cell);
+    HeapObject* value = HeapObject::cast(weak_cell->value());
+    if (MarkCompactCollector::IsMarked(value)) {
+      // Weak cells with live values are directly processed here to reduce
+      // the processing time of weak cells during the main GC pause.
+      Object** slot = HeapObject::RawField(weak_cell, WeakCell::kValueOffset);
+      map->GetHeap()->mark_compact_collector()->RecordSlot(weak_cell, slot,
+                                                           *slot);
+    } else {
+      // If we do not know about liveness of values of weak cells, we have to
+      // process them when we know the liveness of the whole transitive
+      // closure.
+      weak_cell->set_next(heap->encountered_weak_cells(),
+                          UPDATE_WEAK_WRITE_BARRIER);
+      heap->set_encountered_weak_cells(weak_cell);
+    }
   }
 }
 
@@ -528,14 +538,10 @@ void StaticMarkingVisitor<StaticVisitor>::VisitJSArrayBuffer(
     Map* map, HeapObject* object) {
   Heap* heap = map->GetHeap();
 
-  StaticVisitor::VisitPointers(
-      heap, object,
-      HeapObject::RawField(object, JSArrayBuffer::BodyDescriptor::kStartOffset),
-      HeapObject::RawField(object, JSArrayBuffer::kSizeWithInternalFields));
+  JSArrayBuffer::JSArrayBufferIterateBody<StaticVisitor>(heap, object);
   if (!JSArrayBuffer::cast(object)->is_external() &&
       !heap->InNewSpace(object)) {
-    heap->RegisterLiveArrayBuffer(false,
-                                  JSArrayBuffer::cast(object)->backing_store());
+    heap->array_buffer_tracker()->MarkLive(JSArrayBuffer::cast(object));
   }
 }
 

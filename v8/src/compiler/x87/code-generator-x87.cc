@@ -1073,6 +1073,28 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       }
       break;
     }
+    case kX87BitcastFI: {
+      __ fstp(0);
+      __ mov(i.OutputRegister(), MemOperand(esp, 0));
+      __ lea(esp, Operand(esp, kFloatSize));
+      break;
+    }
+    case kX87BitcastIF: {
+      if (instr->InputAt(0)->IsRegister()) {
+        __ lea(esp, Operand(esp, -kFloatSize));
+        __ mov(MemOperand(esp, 0), i.InputRegister(0));
+        __ fstp(0);
+        __ fld_s(MemOperand(esp, 0));
+        __ lea(esp, Operand(esp, kFloatSize));
+      } else {
+        __ lea(esp, Operand(esp, -kDoubleSize));
+        __ mov(MemOperand(esp, 0), i.InputRegister(0));
+        __ fstp(0);
+        __ fld_d(MemOperand(esp, 0));
+        __ lea(esp, Operand(esp, kDoubleSize));
+      }
+      break;
+    }
     case kX87Lea: {
       AddressingMode mode = AddressingModeField::decode(instr->opcode());
       // Shorten "leal" to "addl", "subl" or "shll" if the register allocation
@@ -1286,6 +1308,9 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
     case kNotOverflow:
       __ j(no_overflow, tlabel);
       break;
+    default:
+      UNREACHABLE();
+      break;
   }
   // Add a jump if not falling through to the next block.
   if (!branch->fallthru) __ jmp(flabel);
@@ -1355,6 +1380,9 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
       break;
     case kNotOverflow:
       cc = no_overflow;
+      break;
+    default:
+      UNREACHABLE();
       break;
   }
   __ bind(&check);

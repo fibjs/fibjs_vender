@@ -2382,6 +2382,7 @@ void Assembler::lwc1(FPURegister fd, const MemOperand& src) {
 
 
 void Assembler::ldc1(FPURegister fd, const MemOperand& src) {
+  DCHECK(!src.rm().is(at));
   if (is_int16(src.offset_)) {
     GenInstrImmediate(LDC1, src.rm(), fd, src.offset_);
   } else {  // Offset > 16 bits, use multiple instructions to load.
@@ -2402,6 +2403,7 @@ void Assembler::swc1(FPURegister fd, const MemOperand& src) {
 
 
 void Assembler::sdc1(FPURegister fd, const MemOperand& src) {
+  DCHECK(!src.rm().is(at));
   if (is_int16(src.offset_)) {
     GenInstrImmediate(SDC1, src.rm(), fd, src.offset_);
   } else {  // Offset > 16 bits, use multiple instructions to load.
@@ -2636,7 +2638,7 @@ void Assembler::mov_d(FPURegister fd, FPURegister fs) {
 
 
 void Assembler::mov_s(FPURegister fd, FPURegister fs) {
-  GenInstrRegister(COP1, S, f0, fs, fd, MOV_D);
+  GenInstrRegister(COP1, S, f0, fs, fd, MOV_S);
 }
 
 

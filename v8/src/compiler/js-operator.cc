@@ -391,6 +391,35 @@ const StorePropertyParameters& StorePropertyParametersOf(const Operator* op) {
 }
 
 
+bool operator==(CreateArgumentsParameters const& lhs,
+                CreateArgumentsParameters const& rhs) {
+  return lhs.type() == rhs.type() && lhs.start_index() == rhs.start_index();
+}
+
+
+bool operator!=(CreateArgumentsParameters const& lhs,
+                CreateArgumentsParameters const& rhs) {
+  return !(lhs == rhs);
+}
+
+
+size_t hash_value(CreateArgumentsParameters const& p) {
+  return base::hash_combine(p.type(), p.start_index());
+}
+
+
+std::ostream& operator<<(std::ostream& os, CreateArgumentsParameters const& p) {
+  return os << p.type() << ", " << p.start_index();
+}
+
+
+const CreateArgumentsParameters& CreateArgumentsParametersOf(
+    const Operator* op) {
+  DCHECK_EQ(IrOpcode::kJSCreateArguments, op->opcode());
+  return OpParameter<CreateArgumentsParameters>(op);
+}
+
+
 bool operator==(CreateClosureParameters const& lhs,
                 CreateClosureParameters const& rhs) {
   return lhs.pretenure() == rhs.pretenure() &&
@@ -705,13 +734,25 @@ const Operator* JSOperatorBuilder::LoadDynamicContext(
 }
 
 
+const Operator* JSOperatorBuilder::CreateArguments(
+    CreateArgumentsParameters::Type type, int start_index) {
+  DCHECK_IMPLIES(start_index, type == CreateArgumentsParameters::kRestArray);
+  CreateArgumentsParameters parameters(type, start_index);
+  return new (zone()) Operator1<CreateArgumentsParameters>(  // --
+      IrOpcode::kJSCreateArguments, Operator::kNoThrow,      // opcode
+      "JSCreateArguments",                                   // name
+      1, 1, 1, 1, 1, 0,                                      // counts
+      parameters);                                           // parameter
+}
+
+
 const Operator* JSOperatorBuilder::CreateClosure(
     Handle<SharedFunctionInfo> shared_info, PretenureFlag pretenure) {
   CreateClosureParameters parameters(shared_info, pretenure);
   return new (zone()) Operator1<CreateClosureParameters>(  // --
       IrOpcode::kJSCreateClosure, Operator::kNoThrow,      // opcode
       "JSCreateClosure",                                   // name
-      1, 1, 1, 1, 1, 0,                                    // counts
+      0, 1, 1, 1, 1, 0,                                    // counts
       parameters);                                         // parameter
 }
 

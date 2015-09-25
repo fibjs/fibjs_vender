@@ -220,7 +220,7 @@ void Interpreter::DoLoadIC(compiler::InterpreterAssembler* assembler) {
 
 // KeyedLoadIC <object> <slot>
 //
-// Calls the LoadIC at FeedBackVector slot <slot> for <object> and the key
+// Calls the KeyedLoadIC at FeedBackVector slot <slot> for <object> and the key
 // in the accumulator.
 void Interpreter::DoKeyedLoadIC(compiler::InterpreterAssembler* assembler) {
   Callable ic =
@@ -229,14 +229,54 @@ void Interpreter::DoKeyedLoadIC(compiler::InterpreterAssembler* assembler) {
 }
 
 
-void Interpreter::DoBinaryOp(int builtin_context_index,
+void Interpreter::DoPropertyStoreIC(Callable ic,
+                                    compiler::InterpreterAssembler* assembler) {
+  Node* code_target = __ HeapConstant(ic.code());
+  Node* object_reg_index = __ BytecodeOperandReg(0);
+  Node* object = __ LoadRegister(object_reg_index);
+  Node* name_reg_index = __ BytecodeOperandReg(1);
+  Node* name = __ LoadRegister(name_reg_index);
+  Node* value = __ GetAccumulator();
+  Node* raw_slot = __ BytecodeOperandIdx(2);
+  Node* smi_slot = __ SmiTag(raw_slot);
+  Node* type_feedback_vector = __ LoadTypeFeedbackVector();
+  Node* result = __ CallIC(ic.descriptor(), code_target, object, name, value,
+                           smi_slot, type_feedback_vector);
+  __ SetAccumulator(result);
+  __ Dispatch();
+}
+
+
+// StoreIC <object> <name> <slot>
+//
+// Calls the StoreIC at FeedBackVector slot <slot> for <object> and the name
+// <name> with the value in the accumulator.
+void Interpreter::DoStoreIC(compiler::InterpreterAssembler* assembler) {
+  Callable ic =
+      CodeFactory::StoreICInOptimizedCode(isolate_, SLOPPY, UNINITIALIZED);
+  DoPropertyStoreIC(ic, assembler);
+}
+
+
+// KeyedStoreIC <object> <key> <slot>
+//
+// Calls the KeyStoreIC at FeedBackVector slot <slot> for <object> and the key
+// <key> with the value in the accumulator.
+void Interpreter::DoKeyedStoreIC(compiler::InterpreterAssembler* assembler) {
+  Callable ic =
+      CodeFactory::KeyedStoreICInOptimizedCode(isolate_, SLOPPY, UNINITIALIZED);
+  DoPropertyStoreIC(ic, assembler);
+}
+
+
+void Interpreter::DoBinaryOp(Runtime::FunctionId function_id,
                              compiler::InterpreterAssembler* assembler) {
   // TODO(rmcilroy): Call ICs which back-patch bytecode with type specialized
   // operations, instead of calling builtins directly.
   Node* reg_index = __ BytecodeOperandReg(0);
   Node* lhs = __ LoadRegister(reg_index);
   Node* rhs = __ GetAccumulator();
-  Node* result = __ CallJSBuiltin(builtin_context_index, lhs, rhs);
+  Node* result = __ CallRuntime(function_id, lhs, rhs);
   __ SetAccumulator(result);
   __ Dispatch();
 }
@@ -246,7 +286,7 @@ void Interpreter::DoBinaryOp(int builtin_context_index,
 //
 // Add register <src> to accumulator.
 void Interpreter::DoAdd(compiler::InterpreterAssembler* assembler) {
-  DoBinaryOp(Context::ADD_BUILTIN_INDEX, assembler);
+  DoBinaryOp(Runtime::kAdd, assembler);
 }
 
 
@@ -254,7 +294,7 @@ void Interpreter::DoAdd(compiler::InterpreterAssembler* assembler) {
 //
 // Subtract register <src> from accumulator.
 void Interpreter::DoSub(compiler::InterpreterAssembler* assembler) {
-  DoBinaryOp(Context::SUB_BUILTIN_INDEX, assembler);
+  DoBinaryOp(Runtime::kSubtract, assembler);
 }
 
 
@@ -262,7 +302,7 @@ void Interpreter::DoSub(compiler::InterpreterAssembler* assembler) {
 //
 // Multiply accumulator by register <src>.
 void Interpreter::DoMul(compiler::InterpreterAssembler* assembler) {
-  DoBinaryOp(Context::MUL_BUILTIN_INDEX, assembler);
+  DoBinaryOp(Runtime::kMultiply, assembler);
 }
 
 
@@ -270,7 +310,7 @@ void Interpreter::DoMul(compiler::InterpreterAssembler* assembler) {
 //
 // Divide register <src> by accumulator.
 void Interpreter::DoDiv(compiler::InterpreterAssembler* assembler) {
-  DoBinaryOp(Context::DIV_BUILTIN_INDEX, assembler);
+  DoBinaryOp(Runtime::kDivide, assembler);
 }
 
 
@@ -278,7 +318,23 @@ void Interpreter::DoDiv(compiler::InterpreterAssembler* assembler) {
 //
 // Modulo register <src> by accumulator.
 void Interpreter::DoMod(compiler::InterpreterAssembler* assembler) {
-  DoBinaryOp(Context::MOD_BUILTIN_INDEX, assembler);
+  DoBinaryOp(Runtime::kModulus, assembler);
+}
+
+
+// Call <receiver> <arg_count>
+//
+// Call a JS function with receiver and |arg_count| arguments in subsequent
+// registers. The JSfunction or Callable to call is in the accumulator.
+void Interpreter::DoCall(compiler::InterpreterAssembler* assembler) {
+  Node* function_reg = __ BytecodeOperandReg(0);
+  Node* function = __ LoadRegister(function_reg);
+  Node* receiver_reg = __ BytecodeOperandReg(1);
+  Node* first_arg = __ RegisterLocation(receiver_reg);
+  Node* args_count = __ BytecodeOperandCount(2);
+  Node* result = __ CallJS(function, first_arg, args_count);
+  __ SetAccumulator(result);
+  __ Dispatch();
 }
 
 

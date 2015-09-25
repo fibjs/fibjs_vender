@@ -414,6 +414,9 @@
     <ClInclude Include="src\compiler\basic-block-instrumentor.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\bytecode-graph-builder.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\change-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -825,6 +828,9 @@
     <ClInclude Include="src\heap-snapshot-generator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\array-buffer-tracker.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\gc-idle-time-handler.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -838,6 +844,9 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\incremental-marking-inl.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\incremental-marking-job.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\incremental-marking.h">
@@ -859,6 +868,15 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\objects-visiting.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\scavenger-inl.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\scavenger.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\slots-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\spaces-inl.h">
@@ -1018,6 +1036,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-array-builder.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-array-iterator.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-generator.h">
@@ -1643,6 +1664,9 @@
     <ClCompile Include="src\compiler\basic-block-instrumentor.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\bytecode-graph-builder.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\c-linkage.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2042,6 +2066,9 @@
     <ClCompile Include="src\heap-snapshot-generator.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\heap\array-buffer-tracker.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
     <ClCompile Include="src\heap\gc-idle-time-handler.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
@@ -2049,6 +2076,9 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\heap.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\incremental-marking-job.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\incremental-marking.cc">
@@ -2064,6 +2094,12 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\objects-visiting.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\scavenger.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\slots-buffer.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\spaces.cc">
@@ -2280,6 +2316,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-array-iterator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-generator.cc">
@@ -2508,6 +2547,9 @@
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-observe.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\runtime-operators.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-proxy.cc">

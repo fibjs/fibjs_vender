@@ -9,13 +9,6 @@
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
 
-
-#ifndef _STLP_VENDOR_CSTD
-// STLPort doesn't import fpclassify and isless into the std namespace.
-using std::fpclassify;
-using std::isless;
-#endif
-
 namespace v8 {
 namespace internal {
 
@@ -220,65 +213,6 @@ RUNTIME_FUNCTION(Runtime_NumberToSmi) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_NumberAdd) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_DOUBLE_ARG_CHECKED(x, 0);
-  CONVERT_DOUBLE_ARG_CHECKED(y, 1);
-  return *isolate->factory()->NewNumber(x + y);
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberSub) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_DOUBLE_ARG_CHECKED(x, 0);
-  CONVERT_DOUBLE_ARG_CHECKED(y, 1);
-  return *isolate->factory()->NewNumber(x - y);
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberMul) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_DOUBLE_ARG_CHECKED(x, 0);
-  CONVERT_DOUBLE_ARG_CHECKED(y, 1);
-  return *isolate->factory()->NewNumber(x * y);
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberUnaryMinus) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-
-  CONVERT_DOUBLE_ARG_CHECKED(x, 0);
-  return *isolate->factory()->NewNumber(-x);
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberDiv) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_DOUBLE_ARG_CHECKED(x, 0);
-  CONVERT_DOUBLE_ARG_CHECKED(y, 1);
-  return *isolate->factory()->NewNumber(x / y);
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberMod) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_DOUBLE_ARG_CHECKED(x, 0);
-  CONVERT_DOUBLE_ARG_CHECKED(y, 1);
-  return *isolate->factory()->NewNumber(modulo(x, y));
-}
-
-
 RUNTIME_FUNCTION(Runtime_NumberImul) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
@@ -289,100 +223,6 @@ RUNTIME_FUNCTION(Runtime_NumberImul) {
   CONVERT_NUMBER_CHECKED(uint32_t, y, Int32, args[1]);
   int32_t product = static_cast<int32_t>(x * y);
   return *isolate->factory()->NewNumberFromInt(product);
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberOr) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_NUMBER_CHECKED(int32_t, x, Int32, args[0]);
-  CONVERT_NUMBER_CHECKED(int32_t, y, Int32, args[1]);
-  return *isolate->factory()->NewNumberFromInt(x | y);
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberAnd) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_NUMBER_CHECKED(int32_t, x, Int32, args[0]);
-  CONVERT_NUMBER_CHECKED(int32_t, y, Int32, args[1]);
-  return *isolate->factory()->NewNumberFromInt(x & y);
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberXor) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_NUMBER_CHECKED(int32_t, x, Int32, args[0]);
-  CONVERT_NUMBER_CHECKED(int32_t, y, Int32, args[1]);
-  return *isolate->factory()->NewNumberFromInt(x ^ y);
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberShl) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_NUMBER_CHECKED(int32_t, x, Int32, args[0]);
-  CONVERT_NUMBER_CHECKED(int32_t, y, Int32, args[1]);
-  return *isolate->factory()->NewNumberFromInt(x << (y & 0x1f));
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberShr) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_NUMBER_CHECKED(uint32_t, x, Uint32, args[0]);
-  CONVERT_NUMBER_CHECKED(int32_t, y, Int32, args[1]);
-  return *isolate->factory()->NewNumberFromUint(x >> (y & 0x1f));
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberSar) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_NUMBER_CHECKED(int32_t, x, Int32, args[0]);
-  CONVERT_NUMBER_CHECKED(int32_t, y, Int32, args[1]);
-  return *isolate->factory()->NewNumberFromInt(
-      ArithmeticShiftRight(x, y & 0x1f));
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberEquals) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_DOUBLE_ARG_CHECKED(x, 0);
-  CONVERT_DOUBLE_ARG_CHECKED(y, 1);
-  if (std::isnan(x)) return Smi::FromInt(NOT_EQUAL);
-  if (std::isnan(y)) return Smi::FromInt(NOT_EQUAL);
-  if (x == y) return Smi::FromInt(EQUAL);
-  Object* result;
-  if ((fpclassify(x) == FP_ZERO) && (fpclassify(y) == FP_ZERO)) {
-    result = Smi::FromInt(EQUAL);
-  } else {
-    result = Smi::FromInt(NOT_EQUAL);
-  }
-  return result;
-}
-
-
-RUNTIME_FUNCTION(Runtime_NumberCompare) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 3);
-
-  CONVERT_DOUBLE_ARG_CHECKED(x, 0);
-  CONVERT_DOUBLE_ARG_CHECKED(y, 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, uncomparable_result, 2)
-  if (std::isnan(x) || std::isnan(y)) return *uncomparable_result;
-  if (x == y) return Smi::FromInt(EQUAL);
-  if (isless(x, y)) return Smi::FromInt(LESS);
-  return Smi::FromInt(GREATER);
 }
 
 
@@ -482,5 +322,6 @@ RUNTIME_FUNCTION(Runtime_GetRootNaN) {
   DCHECK(args.length() == 0);
   return isolate->heap()->nan_value();
 }
+
 }  // namespace internal
 }  // namespace v8

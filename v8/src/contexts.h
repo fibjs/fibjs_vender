@@ -79,60 +79,22 @@ enum BindingFlags {
   V(MAKE_RANGE_ERROR_INDEX, JSFunction, make_range_error)                 \
   V(MAKE_TYPE_ERROR_INDEX, JSFunction, make_type_error)                   \
   V(NON_NUMBER_TO_NUMBER_INDEX, JSFunction, non_number_to_number)         \
-  V(NON_STRING_TO_STRING_INDEX, JSFunction, non_string_to_string)         \
   V(REFLECT_APPLY_INDEX, JSFunction, reflect_apply)                       \
   V(REFLECT_CONSTRUCT_INDEX, JSFunction, reflect_construct)               \
   V(SPREAD_ARGUMENTS_INDEX, JSFunction, spread_arguments)                 \
   V(SPREAD_ITERABLE_INDEX, JSFunction, spread_iterable)                   \
   V(TO_LENGTH_FUN_INDEX, JSFunction, to_length_fun)                       \
-  V(TO_NUMBER_FUN_INDEX, JSFunction, to_number_fun)                       \
-  V(TO_PRIMITIVE_INDEX, JSFunction, to_primitive)                         \
-  V(TO_STRING_FUN_INDEX, JSFunction, to_string_fun)
+  V(TO_NUMBER_FUN_INDEX, JSFunction, to_number_fun)
 
 
-#define NATIVE_CONTEXT_JS_BUILTINS(V)                                       \
-  V(ADD_BUILTIN_INDEX, JSFunction, add_builtin)                             \
-  V(ADD_STRONG_BUILTIN_INDEX, JSFunction, add_strong_builtin)               \
-  V(APPLY_PREPARE_BUILTIN_INDEX, JSFunction, apply_prepare_builtin)         \
-  V(BIT_AND_BUILTIN_INDEX, JSFunction, bit_and_builtin)                     \
-  V(BIT_AND_STRONG_BUILTIN_INDEX, JSFunction, bit_and_strong_builtin)       \
-  V(BIT_OR_BUILTIN_INDEX, JSFunction, bit_or_builtin)                       \
-  V(BIT_OR_STRONG_BUILTIN_INDEX, JSFunction, bit_or_strong_builtin)         \
-  V(BIT_XOR_BUILTIN_INDEX, JSFunction, bit_xor_builtin)                     \
-  V(BIT_XOR_STRONG_BUILTIN_INDEX, JSFunction, bit_xor_strong_builtin)       \
-  V(CALL_FUNCTION_PROXY_AS_CONSTRUCTOR_BUILTIN_INDEX, JSFunction,           \
-    call_function_proxy_as_constructor_builtin)                             \
-  V(CALL_FUNCTION_PROXY_BUILTIN_INDEX, JSFunction,                          \
-    call_function_proxy_builtin)                                            \
-  V(CALL_NON_FUNCTION_AS_CONSTRUCTOR_BUILTIN_INDEX, JSFunction,             \
-    call_non_function_as_constructor_builtin)                               \
-  V(CALL_NON_FUNCTION_BUILTIN_INDEX, JSFunction, call_non_function_builtin) \
-  V(COMPARE_BUILTIN_INDEX, JSFunction, compare_builtin)                     \
-  V(COMPARE_STRONG_BUILTIN_INDEX, JSFunction, compare_strong_builtin)       \
-  V(CONCAT_ITERABLE_TO_ARRAY_BUILTIN_INDEX, JSFunction,                     \
-    concat_iterable_to_array_builtin)                                       \
-  V(DIV_BUILTIN_INDEX, JSFunction, div_builtin)                             \
-  V(DIV_STRONG_BUILTIN_INDEX, JSFunction, div_strong_builtin)               \
-  V(EQUALS_BUILTIN_INDEX, JSFunction, equals_builtin)                       \
-  V(MOD_BUILTIN_INDEX, JSFunction, mod_builtin)                             \
-  V(MOD_STRONG_BUILTIN_INDEX, JSFunction, mod_strong_builtin)               \
-  V(MUL_BUILTIN_INDEX, JSFunction, mul_builtin)                             \
-  V(MUL_STRONG_BUILTIN_INDEX, JSFunction, mul_strong_builtin)               \
-  V(REFLECT_APPLY_PREPARE_BUILTIN_INDEX, JSFunction,                        \
-    reflect_apply_prepare_builtin)                                          \
-  V(REFLECT_CONSTRUCT_PREPARE_BUILTIN_INDEX, JSFunction,                    \
-    reflect_construct_prepare_builtin)                                      \
-  V(SAR_BUILTIN_INDEX, JSFunction, sar_builtin)                             \
-  V(SAR_STRONG_BUILTIN_INDEX, JSFunction, sar_strong_builtin)               \
-  V(SHL_BUILTIN_INDEX, JSFunction, shl_builtin)                             \
-  V(SHL_STRONG_BUILTIN_INDEX, JSFunction, shl_strong_builtin)               \
-  V(SHR_BUILTIN_INDEX, JSFunction, shr_builtin)                             \
-  V(SHR_STRONG_BUILTIN_INDEX, JSFunction, shr_strong_builtin)               \
-  V(STACK_OVERFLOW_BUILTIN_INDEX, JSFunction, stack_overflow_builtin)       \
-  V(STRING_ADD_LEFT_BUILTIN_INDEX, JSFunction, string_add_left_builtin)     \
-  V(STRING_ADD_RIGHT_BUILTIN_INDEX, JSFunction, string_add_right_builtin)   \
-  V(SUB_BUILTIN_INDEX, JSFunction, sub_builtin)                             \
-  V(SUB_STRONG_BUILTIN_INDEX, JSFunction, sub_strong_builtin)
+#define NATIVE_CONTEXT_JS_BUILTINS(V)                                 \
+  V(APPLY_PREPARE_BUILTIN_INDEX, JSFunction, apply_prepare_builtin)   \
+  V(CONCAT_ITERABLE_TO_ARRAY_BUILTIN_INDEX, JSFunction,               \
+    concat_iterable_to_array_builtin)                                 \
+  V(REFLECT_APPLY_PREPARE_BUILTIN_INDEX, JSFunction,                  \
+    reflect_apply_prepare_builtin)                                    \
+  V(REFLECT_CONSTRUCT_PREPARE_BUILTIN_INDEX, JSFunction,              \
+    reflect_construct_prepare_builtin)
 
 
 #define NATIVE_CONTEXT_IMPORTED_FIELDS(V)                                     \
@@ -168,6 +130,8 @@ enum BindingFlags {
   V(NATIVE_OBJECT_OBSERVE_INDEX, JSFunction, native_object_observe)           \
   V(NO_SIDE_EFFECT_TO_STRING_FUN_INDEX, JSFunction,                           \
     no_side_effect_to_string_fun)                                             \
+  V(OBJECT_VALUE_OF, JSFunction, object_value_of)                             \
+  V(OBJECT_TO_STRING, JSFunction, object_to_string)                           \
   V(OBJECT_DEFINE_OWN_PROPERTY_INDEX, JSFunction, object_define_own_property) \
   V(OBJECT_GET_OWN_PROPERTY_DESCROPTOR_INDEX, JSFunction,                     \
     object_get_own_property_descriptor)                                       \
@@ -221,6 +185,7 @@ enum BindingFlags {
   V(ERROR_MESSAGE_FOR_CODE_GEN_FROM_STRINGS_INDEX, Object,                     \
     error_message_for_code_gen_from_strings)                                   \
   V(EXTRAS_EXPORTS_OBJECT_INDEX, JSObject, extras_binding_object)              \
+  V(EXTRAS_UTILS_OBJECT_INDEX, JSObject, extras_utils_object)                  \
   V(FAST_ALIASED_ARGUMENTS_MAP_INDEX, Map, fast_aliased_arguments_map)         \
   V(FLOAT32_ARRAY_FUN_INDEX, JSFunction, float32_array_fun)                    \
   V(FLOAT32X4_FUNCTION_INDEX, JSFunction, float32x4_function)                  \
@@ -252,6 +217,7 @@ enum BindingFlags {
   V(NORMALIZED_MAP_CACHE_INDEX, Object, normalized_map_cache)                  \
   V(NUMBER_FUNCTION_INDEX, JSFunction, number_function)                        \
   V(OBJECT_FUNCTION_INDEX, JSFunction, object_function)                        \
+  V(OBJECT_FUNCTION_PROTOTYPE_MAP_INDEX, Map, object_function_prototype_map)   \
   V(OPAQUE_REFERENCE_FUNCTION_INDEX, JSFunction, opaque_reference_function)    \
   V(REGEXP_FUNCTION_INDEX, JSFunction, regexp_function)                        \
   V(REGEXP_RESULT_MAP_INDEX, Map, regexp_result_map)                           \
@@ -305,7 +271,6 @@ class ScriptContextTable : public FixedArray {
     int context_index;
     int slot_index;
     VariableMode mode;
-    VariableLocation location;
     InitializationFlag init_flag;
     MaybeAssignedFlag maybe_assigned_flag;
   };

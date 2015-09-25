@@ -294,11 +294,12 @@ class CompilationInfo {
   bool IsOptimizing() const { return mode_ == OPTIMIZE; }
   bool IsStub() const { return mode_ == STUB; }
   void SetOptimizing(BailoutId osr_ast_id, Handle<Code> unoptimized) {
-    DCHECK(!shared_info().is_null());
+    DCHECK(has_shared_info());
     SetMode(OPTIMIZE);
     osr_ast_id_ = osr_ast_id;
     unoptimized_code_ = unoptimized;
     optimization_id_ = isolate()->NextOptimizationId();
+    set_output_code_kind(Code::OPTIMIZED_FUNCTION);
   }
 
   void SetFunctionType(Type::FunctionType* function_type) {
@@ -412,6 +413,10 @@ class CompilationInfo {
 
   base::SmartArrayPointer<char> GetDebugName() const;
 
+  Code::Kind output_code_kind() const { return output_code_kind_; }
+
+  void set_output_code_kind(Code::Kind kind) { output_code_kind_ = kind; }
+
  protected:
   ParseInfo* parse_info_;
 
@@ -450,6 +455,8 @@ class CompilationInfo {
   bool GetFlag(Flag flag) const { return (flags_ & flag) != 0; }
 
   unsigned flags_;
+
+  Code::Kind output_code_kind_;
 
   // For compiled stubs, the stub object
   CodeStub* code_stub_;

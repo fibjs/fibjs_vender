@@ -11,6 +11,7 @@
 #include "src/heap/mark-compact-inl.h"
 #include "src/heap/objects-visiting.h"
 #include "src/heap/objects-visiting-inl.h"
+#include "src/v8.h"
 
 namespace v8 {
 namespace internal {
@@ -486,6 +487,7 @@ void IncrementalMarking::Start(const char* reason) {
   }
 
   heap_->new_space()->LowerInlineAllocationLimit(kAllocatedThreshold);
+  incremental_marking_job()->Start(heap_);
 }
 
 
@@ -899,6 +901,8 @@ intptr_t IncrementalMarking::Step(intptr_t allocated_bytes,
                                   CompletionAction action,
                                   ForceMarkingAction marking,
                                   ForceCompletionAction completion) {
+  DCHECK(allocated_bytes >= 0);
+
   if (heap_->gc_state() != Heap::NOT_IN_GC || !FLAG_incremental_marking ||
       (state_ != SWEEPING && state_ != MARKING)) {
     return 0;

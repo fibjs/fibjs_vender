@@ -49,9 +49,10 @@ MaybeHandle<Object> Runtime::GetObjectProperty(Isolate* isolate,
 }
 
 
-MaybeHandle<Object> Runtime::KeyedGetObjectProperty(
-    Isolate* isolate, Handle<Object> receiver_obj, Handle<Object> key_obj,
-    LanguageMode language_mode) {
+static MaybeHandle<Object> KeyedGetObjectProperty(Isolate* isolate,
+                                                  Handle<Object> receiver_obj,
+                                                  Handle<Object> key_obj,
+                                                  LanguageMode language_mode) {
   // Fast cases for getting named properties of the receiver JSObject
   // itself.
   //
@@ -125,7 +126,8 @@ MaybeHandle<Object> Runtime::KeyedGetObjectProperty(
   }
 
   // Fall back to GetObjectProperty.
-  return GetObjectProperty(isolate, receiver_obj, key_obj, language_mode);
+  return Runtime::GetObjectProperty(isolate, receiver_obj, key_obj,
+                                    language_mode);
 }
 
 
@@ -175,34 +177,24 @@ MaybeHandle<Object> Runtime::SetObjectProperty(Isolate* isolate,
 }
 
 
-MaybeHandle<Object> Runtime::GetPrototype(Isolate* isolate,
-                                          Handle<Object> obj) {
+RUNTIME_FUNCTION(Runtime_GetPrototype) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(Object, obj, 0);
   // We don't expect access checks to be needed on JSProxy objects.
   DCHECK(!obj->IsAccessCheckNeeded() || obj->IsJSObject());
   PrototypeIterator iter(isolate, obj, PrototypeIterator::START_AT_RECEIVER);
   do {
     if (PrototypeIterator::GetCurrent(iter)->IsAccessCheckNeeded() &&
-        !isolate->MayAccess(
-            Handle<JSObject>::cast(PrototypeIterator::GetCurrent(iter)))) {
-      return isolate->factory()->null_value();
+        !isolate->MayAccess(PrototypeIterator::GetCurrent<JSObject>(iter))) {
+      return isolate->heap()->null_value();
     }
     iter.AdvanceIgnoringProxies();
     if (PrototypeIterator::GetCurrent(iter)->IsJSProxy()) {
-      return PrototypeIterator::GetCurrent(iter);
+      return *PrototypeIterator::GetCurrent(iter);
     }
   } while (!iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN));
-  return PrototypeIterator::GetCurrent(iter);
-}
-
-
-RUNTIME_FUNCTION(Runtime_GetPrototype) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, obj, 0);
-  Handle<Object> result;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
-                                     Runtime::GetPrototype(isolate, obj));
-  return *result;
+  return *PrototypeIterator::GetCurrent(iter);
 }
 
 
@@ -529,7 +521,7 @@ RUNTIME_FUNCTION(Runtime_KeyedGetProperty) {
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, result,
-      Runtime::KeyedGetObjectProperty(isolate, receiver_obj, key_obj, SLOPPY));
+      KeyedGetObjectProperty(isolate, receiver_obj, key_obj, SLOPPY));
   return *result;
 }
 
@@ -544,7 +536,7 @@ RUNTIME_FUNCTION(Runtime_KeyedGetPropertyStrong) {
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, result,
-      Runtime::KeyedGetObjectProperty(isolate, receiver_obj, key_obj, STRONG));
+      KeyedGetObjectProperty(isolate, receiver_obj, key_obj, STRONG));
   return *result;
 }
 
@@ -1004,17 +996,24 @@ RUNTIME_FUNCTION(Runtime_OwnKeys) {
   // a fresh clone on each invocation.
   int length = contents->length();
   Handle<FixedArray> copy = isolate->factory()->NewFixedArray(length);
-  for (int i = 0; i < length; i++) {
-    Object* entry = contents->get(i);
-    if (entry->IsString()) {
-      copy->set(i, entry);
-    } else {
-      DCHECK(entry->IsNumber());
-      HandleScope scope(isolate);
-      Handle<Object> entry_handle(entry, isolate);
-      Handle<Object> entry_str =
-          isolate->factory()->NumberToString(entry_handle);
-      copy->set(i, *entry_str);
+  int offset = 0;
+  // Use an outer loop to avoid creating too many handles in the current
+  // handle scope.
+  while (offset < length) {
+    HandleScope scope(isolate);
+    offset += 100;
+    int end = Min(offset, length);
+    for (int i = offset - 100; i < end; i++) {
+      Object* entry = contents->get(i);
+      if (entry->IsString()) {
+        copy->set(i, entry);
+      } else {
+        DCHECK(entry->IsNumber());
+        Handle<Object> entry_handle(entry, isolate);
+        Handle<Object> entry_str =
+            isolate->factory()->NumberToString(entry_handle);
+        copy->set(i, *entry_str);
+      }
     }
   }
   return *isolate->factory()->NewJSArrayWithElements(copy);
@@ -1030,14 +1029,6 @@ RUNTIME_FUNCTION(Runtime_ToFastProperties) {
                                 "RuntimeToFastProperties");
   }
   return *object;
-}
-
-
-RUNTIME_FUNCTION(Runtime_NewStringWrapper) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(String, value, 0);
-  return *Object::ToObject(isolate, value).ToHandleChecked();
 }
 
 
@@ -1133,22 +1124,6 @@ RUNTIME_FUNCTION(Runtime_NewObject) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_NewObjectWithAllocationSite) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 3);
-  CONVERT_ARG_HANDLE_CHECKED(Object, original_constructor, 2);
-  CONVERT_ARG_HANDLE_CHECKED(Object, constructor, 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, feedback, 0);
-  Handle<AllocationSite> site;
-  if (feedback->IsAllocationSite()) {
-    // The feedback can be an AllocationSite or undefined.
-    site = Handle<AllocationSite>::cast(feedback);
-  }
-  return Runtime_NewObjectHelper(isolate, constructor, original_constructor,
-                                 site);
-}
-
-
 RUNTIME_FUNCTION(Runtime_FinalizeInstanceSize) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
@@ -1229,7 +1204,7 @@ RUNTIME_FUNCTION(Runtime_IsJSGlobalProxy) {
 
 
 static bool IsValidAccessor(Handle<Object> obj) {
-  return obj->IsUndefined() || obj->IsSpecFunction() || obj->IsNull();
+  return obj->IsUndefined() || obj->IsCallable() || obj->IsNull();
 }
 
 
@@ -1467,8 +1442,7 @@ RUNTIME_FUNCTION(Runtime_ToNumber) {
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, input, 0);
   Handle<Object> result;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
-                                     Object::ToNumber(isolate, input));
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result, Object::ToNumber(input));
   return *result;
 }
 
@@ -1495,6 +1469,18 @@ RUNTIME_FUNCTION(Runtime_ToName) {
 }
 
 
+RUNTIME_FUNCTION(Runtime_Equals) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, x, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, y, 1);
+  Maybe<bool> result = Object::Equals(x, y);
+  if (!result.IsJust()) return isolate->heap()->exception();
+  // TODO(bmeurer): Change this at some point to return true/false instead.
+  return Smi::FromInt(result.FromJust() ? EQUAL : NOT_EQUAL);
+}
+
+
 RUNTIME_FUNCTION(Runtime_StrictEquals) {
   SealHandleScope scope(isolate);
   DCHECK_EQ(2, args.length());
@@ -1502,6 +1488,58 @@ RUNTIME_FUNCTION(Runtime_StrictEquals) {
   CONVERT_ARG_CHECKED(Object, y, 1);
   // TODO(bmeurer): Change this at some point to return true/false instead.
   return Smi::FromInt(x->StrictEquals(y) ? EQUAL : NOT_EQUAL);
+}
+
+
+// TODO(bmeurer): Kill this special wrapper and use TF compatible LessThan,
+// GreaterThan, etc. which return true or false.
+RUNTIME_FUNCTION(Runtime_Compare) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(3, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, x, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, y, 1);
+  CONVERT_ARG_HANDLE_CHECKED(Object, ncr, 2);
+  Maybe<ComparisonResult> result = Object::Compare(x, y);
+  if (result.IsJust()) {
+    switch (result.FromJust()) {
+      case ComparisonResult::kLessThan:
+        return Smi::FromInt(LESS);
+      case ComparisonResult::kEqual:
+        return Smi::FromInt(EQUAL);
+      case ComparisonResult::kGreaterThan:
+        return Smi::FromInt(GREATER);
+      case ComparisonResult::kUndefined:
+        return *ncr;
+    }
+    UNREACHABLE();
+  }
+  return isolate->heap()->exception();
+}
+
+
+// TODO(bmeurer): Kill this special wrapper and use TF compatible LessThan,
+// GreaterThan, etc. which return true or false.
+RUNTIME_FUNCTION(Runtime_Compare_Strong) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(3, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, x, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, y, 1);
+  CONVERT_ARG_HANDLE_CHECKED(Object, ncr, 2);
+  Maybe<ComparisonResult> result = Object::Compare(x, y, Strength::STRONG);
+  if (result.IsJust()) {
+    switch (result.FromJust()) {
+      case ComparisonResult::kLessThan:
+        return Smi::FromInt(LESS);
+      case ComparisonResult::kEqual:
+        return Smi::FromInt(EQUAL);
+      case ComparisonResult::kGreaterThan:
+        return Smi::FromInt(GREATER);
+      case ComparisonResult::kUndefined:
+        return *ncr;
+    }
+    UNREACHABLE();
+  }
+  return isolate->heap()->exception();
 }
 
 
@@ -1567,6 +1605,15 @@ RUNTIME_FUNCTION(Runtime_CreateIterResultObject) {
   CONVERT_ARG_HANDLE_CHECKED(Object, done, 1);
   return *isolate->factory()->NewJSIteratorResult(value, done);
 }
+
+
+RUNTIME_FUNCTION(Runtime_IsAccessCheckNeeded) {
+  SealHandleScope shs(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_CHECKED(Object, object, 0);
+  return isolate->heap()->ToBoolean(object->IsAccessCheckNeeded());
+}
+
 
 }  // namespace internal
 }  // namespace v8

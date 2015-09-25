@@ -1118,12 +1118,13 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   }
 
   {  // --- S t r i n g ---
-    Handle<JSFunction> string_fun =
-        InstallFunction(global, "String", JS_VALUE_TYPE, JSValue::kSize,
-                        isolate->initial_object_prototype(),
-                        Builtins::kIllegal);
-    string_fun->shared()->set_construct_stub(
-        isolate->builtins()->builtin(Builtins::kStringConstructCode));
+    Handle<JSFunction> string_fun = InstallFunction(
+        global, "String", JS_VALUE_TYPE, JSValue::kSize,
+        isolate->initial_object_prototype(), Builtins::kStringConstructor);
+    string_fun->shared()->set_construct_stub(isolate->builtins()->builtin(
+        Builtins::kStringConstructor_ConstructStub));
+    string_fun->shared()->DontAdaptArguments();
+    string_fun->shared()->set_length(1);
     native_context()->set_string_function(*string_fun);
 
     Handle<Map> string_map =
@@ -1146,7 +1147,11 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
     // --- S y m b o l ---
     Handle<JSFunction> symbol_fun = InstallFunction(
         global, "Symbol", JS_VALUE_TYPE, JSValue::kSize,
-        isolate->initial_object_prototype(), Builtins::kIllegal);
+        isolate->initial_object_prototype(), Builtins::kSymbolConstructor);
+    symbol_fun->shared()->set_construct_stub(isolate->builtins()->builtin(
+        Builtins::kSymbolConstructor_ConstructStub));
+    symbol_fun->shared()->set_internal_formal_parameter_count(1);
+    symbol_fun->shared()->set_length(1);
     native_context()->set_symbol_function(*symbol_fun);
   }
 
@@ -1521,9 +1526,13 @@ bool Bootstrapper::CompileBuiltin(Isolate* isolate, int index) {
   Vector<const char> name = Natives::GetScriptName(index);
   Handle<String> source_code =
       isolate->bootstrapper()->SourceLookup<Natives>(index);
+
+  // We pass in extras_utils so that builtin code can set it up for later use
+  // by actual extras code, compiled with CompileExtraBuiltin.
   Handle<Object> global = isolate->global_object();
   Handle<Object> utils = isolate->natives_utils_object();
-  Handle<Object> args[] = {global, utils};
+  Handle<Object> extras_utils = isolate->extras_utils_object();
+  Handle<Object> args[] = {global, utils, extras_utils};
 
   return Bootstrapper::CompileNative(
       isolate, name, Handle<JSObject>(isolate->native_context()->builtins()),
@@ -1552,7 +1561,8 @@ bool Bootstrapper::CompileExtraBuiltin(Isolate* isolate, int index) {
       isolate->bootstrapper()->SourceLookup<ExtraNatives>(index);
   Handle<Object> global = isolate->global_object();
   Handle<Object> binding = isolate->extras_binding_object();
-  Handle<Object> args[] = {global, binding};
+  Handle<Object> extras_utils = isolate->extras_utils_object();
+  Handle<Object> args[] = {global, binding, extras_utils};
   return Bootstrapper::CompileNative(
       isolate, name, Handle<JSObject>(isolate->native_context()->builtins()),
       source_code, arraysize(args), args);
@@ -1567,7 +1577,8 @@ bool Bootstrapper::CompileExperimentalExtraBuiltin(Isolate* isolate,
       isolate->bootstrapper()->SourceLookup<ExperimentalExtraNatives>(index);
   Handle<Object> global = isolate->global_object();
   Handle<Object> binding = isolate->extras_binding_object();
-  Handle<Object> args[] = {global, binding};
+  Handle<Object> extras_utils = isolate->extras_utils_object();
+  Handle<Object> args[] = {global, binding, extras_utils};
   return Bootstrapper::CompileNative(
       isolate, name, Handle<JSObject>(isolate->native_context()->builtins()),
       source_code, arraysize(args), args);
@@ -1719,18 +1730,21 @@ static Handle<JSObject> ResolveBuiltinIdHolder(Handle<Context> native_context,
 template <typename Data>
 Data* SetBuiltinTypedArray(Isolate* isolate, Handle<JSBuiltinsObject> builtins,
                            ExternalArrayType type, Data* data,
-                           size_t num_elements, const char* name) {
+                           size_t num_elements, const char* name,
+                           const SharedFlag shared = SharedFlag::kNotShared,
+                           const PretenureFlag pretenure = TENURED) {
   size_t byte_length = num_elements * sizeof(*data);
-  Handle<JSArrayBuffer> buffer = isolate->factory()->NewJSArrayBuffer();
+  Handle<JSArrayBuffer> buffer =
+      isolate->factory()->NewJSArrayBuffer(shared, pretenure);
   bool is_external = data != nullptr;
   if (!is_external) {
     data = reinterpret_cast<Data*>(
         isolate->array_buffer_allocator()->Allocate(byte_length));
   }
-  JSArrayBuffer::Setup(buffer, isolate, is_external, data, byte_length);
+  JSArrayBuffer::Setup(buffer, isolate, is_external, data, byte_length, shared);
 
-  Handle<JSTypedArray> typed_array =
-      isolate->factory()->NewJSTypedArray(type, buffer, 0, num_elements);
+  Handle<JSTypedArray> typed_array = isolate->factory()->NewJSTypedArray(
+      type, buffer, 0, num_elements, pretenure);
   Handle<String> name_string = isolate->factory()->InternalizeUtf8String(name);
   // Reset property cell type before (re)initializing.
   JSBuiltinsObject::InvalidatePropertyCell(builtins, name_string);
@@ -1796,6 +1810,8 @@ void Bootstrapper::ExportFromRuntime(Isolate* isolate,
       MaybeHandle<JSObject>(), Builtins::kReflectApply);
   apply->shared()->set_internal_formal_parameter_count(3);
   apply->shared()->set_length(3);
+  apply->shared()->set_feedback_vector(
+      *TypeFeedbackVector::CreatePushAppliedArgumentsVector(isolate));
   isolate->native_context()->set_reflect_apply(*apply);
 
   Handle<JSFunction> construct = InstallFunction(
@@ -1803,6 +1819,8 @@ void Bootstrapper::ExportFromRuntime(Isolate* isolate,
       MaybeHandle<JSObject>(), Builtins::kReflectConstruct);
   construct->shared()->set_internal_formal_parameter_count(3);
   construct->shared()->set_length(2);
+  construct->shared()->set_feedback_vector(
+      *TypeFeedbackVector::CreatePushAppliedArgumentsVector(isolate));
   isolate->native_context()->set_reflect_construct(*construct);
 }
 
@@ -1841,7 +1859,6 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_rest_parameters)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_default_parameters)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_spreadcalls)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_destructuring)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_object)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_object_observe)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_spread_arrays)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_new_target)
@@ -1849,6 +1866,15 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_concat_spreadable)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexps)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_unicode_regexps)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_tostring)
+
+
+void Genesis::InitializeGlobal_harmony_tolength() {
+  Handle<JSObject> builtins(native_context()->builtins());
+  Handle<Object> flag(factory()->ToBoolean(FLAG_harmony_tolength));
+  Runtime::SetObjectProperty(isolate(), builtins,
+                             factory()->harmony_tolength_string(), flag,
+                             STRICT).Assert();
+}
 
 
 void Genesis::InitializeGlobal_harmony_reflect() {
@@ -2006,6 +2032,14 @@ bool Genesis::InstallNatives(ContextType context_type) {
   JSObject::NormalizeProperties(utils, CLEAR_INOBJECT_PROPERTIES, 16,
                                 "utils container for native scripts");
   native_context()->set_natives_utils_object(*utils);
+
+  // Set up the extras utils object as a shared container between native
+  // scripts and extras. (Extras consume things added there by native scripts.)
+  Handle<JSObject> extras_utils =
+      factory()->NewJSObject(isolate()->object_function());
+  native_context()->set_extras_utils_object(*extras_utils);
+
+  InstallInternalArray(extras_utils, "InternalPackedArray", FAST_ELEMENTS);
 
   int builtin_index = Natives::GetDebuggerCount();
   // Only run prologue.js and runtime.js at this point.
@@ -2300,7 +2334,15 @@ bool Genesis::InstallNatives(ContextType context_type) {
                            USE_CUSTOM_MINIMUM_CAPACITY);
   native_context()->set_function_cache(*function_cache);
 
-  // Store the map for the string prototype after the natives has been compiled
+  // Store the map for the %ObjectPrototype% after the natives has been compiled
+  // and the Object function has been set up.
+  Handle<JSFunction> object_function(native_context()->object_function());
+  DCHECK(JSObject::cast(object_function->initial_map()->prototype())
+             ->HasFastProperties());
+  native_context()->set_object_function_prototype_map(
+      HeapObject::cast(object_function->initial_map()->prototype())->map());
+
+  // Store the map for the %StringPrototype% after the natives has been compiled
   // and the String function has been set up.
   Handle<JSFunction> string_function(native_context()->string_function());
   DCHECK(JSObject::cast(
@@ -2331,6 +2373,40 @@ bool Genesis::InstallNatives(ContextType context_type) {
     to_primitive->shared()->set_length(1);
   }
 
+  // Install Array.prototype.concat
+  {
+    Handle<JSFunction> array_constructor(native_context()->array_function());
+    Handle<JSObject> proto(JSObject::cast(array_constructor->prototype()));
+    Handle<JSFunction> concat =
+        InstallFunction(proto, "concat", JS_OBJECT_TYPE, JSObject::kHeaderSize,
+                        MaybeHandle<JSObject>(), Builtins::kArrayConcat);
+
+    // Make sure that Array.prototype.concat appears to be compiled.
+    // The code will never be called, but inline caching for call will
+    // only work if it appears to be compiled.
+    concat->shared()->DontAdaptArguments();
+    DCHECK(concat->is_compiled());
+    // Set the lengths for the functions to satisfy ECMA-262.
+    concat->shared()->set_length(1);
+  }
+
+  // Install InternalArray.prototype.concat
+  {
+    Handle<JSFunction> array_constructor(
+        native_context()->internal_array_function());
+    Handle<JSObject> proto(JSObject::cast(array_constructor->prototype()));
+    Handle<JSFunction> concat =
+        InstallFunction(proto, "concat", JS_OBJECT_TYPE, JSObject::kHeaderSize,
+                        MaybeHandle<JSObject>(), Builtins::kArrayConcat);
+
+    // Make sure that InternalArray.prototype.concat appears to be compiled.
+    // The code will never be called, but inline caching for call will
+    // only work if it appears to be compiled.
+    concat->shared()->DontAdaptArguments();
+    DCHECK(concat->is_compiled());
+    // Set the lengths for the functions to satisfy ECMA-262.
+    concat->shared()->set_length(1);
+  }
   // Install Function.prototype.call and apply.
   {
     Handle<String> key = factory()->Function_string();
@@ -2347,6 +2423,8 @@ bool Genesis::InstallNatives(ContextType context_type) {
     Handle<JSFunction> apply =
         InstallFunction(proto, "apply", JS_OBJECT_TYPE, JSObject::kHeaderSize,
                         MaybeHandle<JSObject>(), Builtins::kFunctionApply);
+    apply->shared()->set_feedback_vector(
+        *TypeFeedbackVector::CreatePushAppliedArgumentsVector(isolate()));
 
     // Make sure that Function.prototype.call appears to be compiled.
     // The code will never be called, but inline caching for call will
@@ -2485,8 +2563,6 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_spreadcalls_natives[] = {
       "native harmony-spread.js", nullptr};
   static const char* harmony_destructuring_natives[] = {nullptr};
-  static const char* harmony_object_natives[] = {"native harmony-object.js",
-                                                 NULL};
   static const char* harmony_object_observe_natives[] = {
       "native harmony-object-observe.js", nullptr};
   static const char* harmony_spread_arrays_natives[] = {nullptr};
@@ -2497,6 +2573,7 @@ bool Genesis::InstallExperimentalNatives() {
       "native harmony-concat-spreadable.js", nullptr};
   static const char* harmony_simd_natives[] = {"native harmony-simd.js",
                                                nullptr};
+  static const char* harmony_tolength_natives[] = {nullptr};
 
   for (int i = ExperimentalNatives::GetDebuggerCount();
        i < ExperimentalNatives::GetBuiltinsCount(); i++) {
@@ -2530,8 +2607,6 @@ bool Genesis::InstallExtraNatives() {
 
   Handle<JSObject> extras_binding =
       factory()->NewJSObject(isolate()->object_function());
-  JSObject::NormalizeProperties(extras_binding, CLEAR_INOBJECT_PROPERTIES, 2,
-                                "container for binding to/from extra natives");
   native_context()->set_extras_binding_object(*extras_binding);
 
   for (int i = ExtraNatives::GetDebuggerCount();
