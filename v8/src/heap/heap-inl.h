@@ -126,7 +126,7 @@ AllocationResult Heap::AllocateOneByteInternalizedString(
   AllocationSpace space = SelectSpace(size, TENURED);
 
   // Allocate string.
-  HeapObject* result;
+  HeapObject* result = nullptr;
   {
     AllocationResult allocation = AllocateRaw(size, space, OLD_SPACE);
     if (!allocation.To(&result)) return allocation;
@@ -158,7 +158,7 @@ AllocationResult Heap::AllocateTwoByteInternalizedString(Vector<const uc16> str,
   AllocationSpace space = SelectSpace(size, TENURED);
 
   // Allocate string.
-  HeapObject* result;
+  HeapObject* result = nullptr;
   {
     AllocationResult allocation = AllocateRaw(size, space, OLD_SPACE);
     if (!allocation.To(&result)) return allocation;
@@ -198,7 +198,7 @@ AllocationResult Heap::AllocateRaw(int size_in_bytes, AllocationSpace space,
   DCHECK(AllowHeapAllocation::IsAllowed());
   DCHECK(gc_state_ == NOT_IN_GC);
 #ifdef DEBUG
-  if (FLAG_gc_interval >= 0 && AllowAllocationFailure::IsAllowed(isolate_) &&
+  if (FLAG_gc_interval >= 0 && !always_allocate() &&
       Heap::allocation_timeout_-- <= 0) {
     return AllocationResult::Retry(space);
   }
@@ -206,7 +206,7 @@ AllocationResult Heap::AllocateRaw(int size_in_bytes, AllocationSpace space,
   isolate_->counters()->objs_since_last_young()->Increment();
 #endif
 
-  HeapObject* object;
+  HeapObject* object = nullptr;
   AllocationResult allocation;
   if (NEW_SPACE == space) {
     allocation = new_space_.AllocateRaw(size_in_bytes, alignment);
@@ -460,9 +460,6 @@ void Heap::MoveBlock(Address dst, Address src, int byte_size) {
 }
 
 
-void Heap::ScavengePointer(HeapObject** p) { ScavengeObject(p, *p); }
-
-
 AllocationMemento* Heap::FindAllocationMemento(HeapObject* object) {
   // Check if there is potentially a memento behind the object. If
   // the last word of the memento is on another page we return
@@ -517,33 +514,6 @@ void Heap::UpdateAllocationSiteFeedback(HeapObject* object,
   if (memento->GetAllocationSite()->IncrementMementoFoundCount()) {
     heap->AddAllocationSiteToScratchpad(memento->GetAllocationSite(), mode);
   }
-}
-
-
-void Heap::ScavengeObject(HeapObject** p, HeapObject* object) {
-  DCHECK(object->GetIsolate()->heap()->InFromSpace(object));
-
-  // We use the first word (where the map pointer usually is) of a heap
-  // object to record the forwarding pointer.  A forwarding pointer can
-  // point to an old space, the code space, or the to space of the new
-  // generation.
-  MapWord first_word = object->map_word();
-
-  // If the first word is a forwarding address, the object has already been
-  // copied.
-  if (first_word.IsForwardingAddress()) {
-    HeapObject* dest = first_word.ToForwardingAddress();
-    DCHECK(object->GetIsolate()->heap()->InFromSpace(*p));
-    *p = dest;
-    return;
-  }
-
-  UpdateAllocationSiteFeedback(object, IGNORE_SCRATCHPAD_SLOT);
-
-  // AllocationMementos are unrooted and shouldn't survive a scavenge
-  DCHECK(object->map() != object->GetHeap()->allocation_memento_map());
-  // Call the slow part of scavenge object.
-  return ScavengeObjectSlow(p, object);
 }
 
 
@@ -748,26 +718,13 @@ void Heap::SetSetterStubDeoptPCOffset(int pc_offset) {
 
 
 AlwaysAllocateScope::AlwaysAllocateScope(Isolate* isolate)
-    : heap_(isolate->heap()), daf_(isolate) {
+    : heap_(isolate->heap()) {
   heap_->always_allocate_scope_count_.Increment(1);
 }
 
 
 AlwaysAllocateScope::~AlwaysAllocateScope() {
   heap_->always_allocate_scope_count_.Increment(-1);
-}
-
-
-GCCallbacksScope::GCCallbacksScope(Heap* heap) : heap_(heap) {
-  heap_->gc_callbacks_depth_++;
-}
-
-
-GCCallbacksScope::~GCCallbacksScope() { heap_->gc_callbacks_depth_--; }
-
-
-bool GCCallbacksScope::CheckReenter() {
-  return heap_->gc_callbacks_depth_ == 1;
 }
 
 

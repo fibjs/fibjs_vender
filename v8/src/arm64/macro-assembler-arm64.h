@@ -959,6 +959,9 @@ class MacroAssembler : public Assembler {
   // Abort execution if argument is not a name, enabled via --debug-code.
   void AssertName(Register object);
 
+  // Abort execution if argument is not a JSFunction, enabled via --debug-code.
+  void AssertFunction(Register object);
+
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object, Register scratch);
@@ -980,18 +983,6 @@ class MacroAssembler : public Assembler {
   // Jump to label if the input integer register contains the double precision
   // floating point representation of -0.0.
   void JumpIfMinusZero(Register input, Label* on_negative_zero);
-
-  // Generate code to do a lookup in the number string cache. If the number in
-  // the register object is found in the cache the generated code falls through
-  // with the result in the result register. The object and the result register
-  // can be the same. If the number is not found in the cache the code jumps to
-  // the label not_found with only the content of register object unchanged.
-  void LookupNumberStringCache(Register object,
-                               Register result,
-                               Register scratch1,
-                               Register scratch2,
-                               Register scratch3,
-                               Label* not_found);
 
   // Saturate a signed 32-bit integer in input to an unsigned 8-bit integer in
   // output.
@@ -1158,9 +1149,9 @@ class MacroAssembler : public Assembler {
   void GetBuiltinFunction(Register target, int native_context_index);
 
   void Jump(Register target);
-  void Jump(Address target, RelocInfo::Mode rmode);
-  void Jump(Handle<Code> code, RelocInfo::Mode rmode);
-  void Jump(intptr_t target, RelocInfo::Mode rmode);
+  void Jump(Address target, RelocInfo::Mode rmode, Condition cond = al);
+  void Jump(Handle<Code> code, RelocInfo::Mode rmode, Condition cond = al);
+  void Jump(intptr_t target, RelocInfo::Mode rmode, Condition cond = al);
 
   void Call(Register target);
   void Call(Label* target);
@@ -1689,6 +1680,9 @@ class MacroAssembler : public Assembler {
                       bool restore_context);
 
   void LoadContext(Register dst, int context_chain_length);
+
+  // Load the global proxy from the current context.
+  void LoadGlobalProxy(Register dst);
 
   // Emit code for a truncating division by a constant. The dividend register is
   // unchanged. Dividend and result must be different.

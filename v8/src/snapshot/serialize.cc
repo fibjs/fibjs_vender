@@ -121,8 +121,6 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "InvokeFunctionCallback");
   Add(ExternalReference::invoke_accessor_getter_callback(isolate).address(),
       "InvokeAccessorGetterCallback");
-  Add(ExternalReference::flush_icache_function(isolate).address(),
-      "CpuFeatures::FlushICache");
   Add(ExternalReference::log_enter_external_function(isolate).address(),
       "Logger::EnterExternal");
   Add(ExternalReference::log_leave_external_function(isolate).address(),
@@ -131,6 +129,8 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "double_constants.minus_one_half");
   Add(ExternalReference::stress_deopt_count(isolate).address(),
       "Isolate::stress_deopt_count_address()");
+  Add(ExternalReference::vector_store_virtual_register(isolate).address(),
+      "Isolate::vector_store_virtual_register()");
 
   // Debug addresses
   Add(ExternalReference::debug_after_break_target_address(isolate).address(),
@@ -505,7 +505,8 @@ void Deserializer::FlushICacheForNewIsolate() {
   PageIterator it(isolate_->heap()->code_space());
   while (it.has_next()) {
     Page* p = it.next();
-    CpuFeatures::FlushICache(p->area_start(), p->area_end() - p->area_start());
+    Assembler::FlushICache(isolate_, p->area_start(),
+                           p->area_end() - p->area_start());
   }
 }
 
@@ -513,8 +514,8 @@ void Deserializer::FlushICacheForNewIsolate() {
 void Deserializer::FlushICacheForNewCodeObjects() {
   DCHECK(deserializing_user_code_);
   for (Code* code : new_code_objects_) {
-    CpuFeatures::FlushICache(code->instruction_start(),
-                             code->instruction_size());
+    Assembler::FlushICache(isolate_, code->instruction_start(),
+                           code->instruction_size());
   }
 }
 
@@ -2480,7 +2481,7 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
           SerializeGeneric(code_object, how_to_code, where_to_point);
         }
         return;
-      case Code::PLACEHOLDER:
+      case Code::WASM_FUNCTION:
         UNREACHABLE();
     }
     UNREACHABLE();

@@ -220,15 +220,30 @@ bool LCodeGen::GeneratePrologue() {
     }
   }
 
+  // Initailize FPU state.
+  __ fninit();
+
+  return !is_aborted();
+}
+
+
+void LCodeGen::DoPrologue(LPrologue* instr) {
+  Comment(";;; Prologue begin");
+
   // Possibly allocate a local context.
-  int heap_slots = info_->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
-  if (heap_slots > 0) {
+  if (info_->num_heap_slots() > 0) {
     Comment(";;; Allocate local context");
     bool need_write_barrier = true;
     // Argument to NewContext is the function, which is still in edi.
-    DCHECK(!info()->scope()->is_script_scope());
-    if (heap_slots <= FastNewContextStub::kMaximumSlots) {
-      FastNewContextStub stub(isolate(), heap_slots);
+    int slots = info_->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
+    Safepoint::DeoptMode deopt_mode = Safepoint::kNoLazyDeopt;
+    if (info()->scope()->is_script_scope()) {
+      __ push(edi);
+      __ Push(info()->scope()->GetScopeInfo(info()->isolate()));
+      __ CallRuntime(Runtime::kNewScriptContext, 2);
+      deopt_mode = Safepoint::kLazyDeopt;
+    } else if (slots <= FastNewContextStub::kMaximumSlots) {
+      FastNewContextStub stub(isolate(), slots);
       __ CallStub(&stub);
       // Result of FastNewContextStub is always in new space.
       need_write_barrier = false;
@@ -236,7 +251,8 @@ bool LCodeGen::GeneratePrologue() {
       __ push(edi);
       __ CallRuntime(Runtime::kNewFunctionContext, 1);
     }
-    RecordSafepoint(Safepoint::kNoLazyDeopt);
+    RecordSafepoint(deopt_mode);
+
     // Context is returned in eax.  It replaces the context passed to us.
     // It's saved in the stack and kept live in esi.
     __ mov(esi, eax);
@@ -270,15 +286,7 @@ bool LCodeGen::GeneratePrologue() {
     Comment(";;; End allocate local context");
   }
 
-  // Initailize FPU state.
-  __ fninit();
-  // Trace the call.
-  if (FLAG_trace && info()->IsOptimizing()) {
-    // We have not executed any compiled code yet, so esi still holds the
-    // incoming context.
-    __ CallRuntime(Runtime::kTraceEnter, 0);
-  }
-  return !is_aborted();
+  Comment(";;; Prologue end");
 }
 
 
@@ -1365,11 +1373,6 @@ void LCodeGen::DoCallStub(LCallStub* instr) {
     }
     case CodeStub::SubString: {
       SubStringStub stub(isolate());
-      CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
-      break;
-    }
-    case CodeStub::StringCompare: {
-      StringCompareStub stub(isolate());
       CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
       break;
     }
@@ -2720,16 +2723,15 @@ static Condition ComputeCompareCondition(Token::Value op) {
 
 
 void LCodeGen::DoStringCompareAndBranch(LStringCompareAndBranch* instr) {
-  Token::Value op = instr->op();
+  DCHECK(ToRegister(instr->context()).is(esi));
+  DCHECK(ToRegister(instr->left()).is(edx));
+  DCHECK(ToRegister(instr->right()).is(eax));
 
-  Handle<Code> ic =
-      CodeFactory::CompareIC(isolate(), op, Strength::WEAK).code();
-  CallCode(ic, RelocInfo::CODE_TARGET, instr);
+  Handle<Code> code = CodeFactory::StringCompare(isolate()).code();
+  CallCode(code, RelocInfo::CODE_TARGET, instr);
+  __ test(eax, eax);
 
-  Condition condition = ComputeCompareCondition(op);
-  __ test(eax, Operand(eax));
-
-  EmitBranch(instr, condition);
+  EmitBranch(instr, ComputeCompareCondition(instr->op()));
 }
 
 
@@ -3607,11 +3609,8 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ mov(esi, FieldOperand(function_reg, JSFunction::kContextOffset));
 
-    // Set eax to arguments count if adaption is not needed. Assumes that eax
-    // is available to write to at this point.
-    if (dont_adapt_arguments) {
-      __ mov(eax, arity);
-    }
+    // Always initialize eax to the number of actual arguments.
+    __ mov(eax, arity);
 
     // Invoke function directly.
     if (function.is_identical_to(info()->closure())) {
@@ -3673,9 +3672,7 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(ToRegister(instr->function()).is(edi));
   DCHECK(ToRegister(instr->result()).is(eax));
 
-  if (instr->hydrogen()->pass_argument_count()) {
-    __ mov(eax, instr->arity());
-  }
+  __ mov(eax, instr->arity());
 
   // Change context.
   __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
@@ -5943,26 +5940,6 @@ void LCodeGen::DoRegExpLiteral(LRegExpLiteral* instr) {
 }
 
 
-void LCodeGen::DoFunctionLiteral(LFunctionLiteral* instr) {
-  DCHECK(ToRegister(instr->context()).is(esi));
-  // Use the fast case closure allocation code that allocates in new
-  // space for nested functions that don't need literals cloning.
-  bool pretenure = instr->hydrogen()->pretenure();
-  if (!pretenure && instr->hydrogen()->has_no_literals()) {
-    FastNewClosureStub stub(isolate(), instr->hydrogen()->language_mode(),
-                            instr->hydrogen()->kind());
-    __ mov(ebx, Immediate(instr->hydrogen()->shared_info()));
-    CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
-  } else {
-    __ push(esi);
-    __ push(Immediate(instr->hydrogen()->shared_info()));
-    __ push(Immediate(pretenure ? factory()->true_value()
-                                : factory()->false_value()));
-    CallRuntime(Runtime::kNewClosure, 3, instr);
-  }
-}
-
-
 void LCodeGen::DoTypeof(LTypeof* instr) {
   DCHECK(ToRegister(instr->context()).is(esi));
   DCHECK(ToRegister(instr->value()).is(ebx));
@@ -6033,24 +6010,24 @@ Condition LCodeGen::EmitTypeofIs(LTypeofIsAndBranch* instr, Register input) {
     final_branch_condition = not_zero;
 
   } else if (String::Equals(type_name, factory()->function_string())) {
-    STATIC_ASSERT(NUM_OF_CALLABLE_SPEC_OBJECT_TYPES == 2);
     __ JumpIfSmi(input, false_label, false_distance);
-    __ CmpObjectType(input, JS_FUNCTION_TYPE, input);
-    __ j(equal, true_label, true_distance);
-    __ CmpInstanceType(input, JS_FUNCTION_PROXY_TYPE);
+    // Check for callable and not undetectable objects => true.
+    __ mov(input, FieldOperand(input, HeapObject::kMapOffset));
+    __ movzx_b(input, FieldOperand(input, Map::kBitFieldOffset));
+    __ and_(input, (1 << Map::kIsCallable) | (1 << Map::kIsUndetectable));
+    __ cmp(input, 1 << Map::kIsCallable);
     final_branch_condition = equal;
 
   } else if (String::Equals(type_name, factory()->object_string())) {
     __ JumpIfSmi(input, false_label, false_distance);
     __ cmp(input, factory()->null_value());
     __ j(equal, true_label, true_distance);
-    __ CmpObjectType(input, FIRST_NONCALLABLE_SPEC_OBJECT_TYPE, input);
+    STATIC_ASSERT(LAST_SPEC_OBJECT_TYPE == LAST_TYPE);
+    __ CmpObjectType(input, FIRST_SPEC_OBJECT_TYPE, input);
     __ j(below, false_label, false_distance);
-    __ CmpInstanceType(input, LAST_NONCALLABLE_SPEC_OBJECT_TYPE);
-    __ j(above, false_label, false_distance);
-    // Check for undetectable objects => false.
+    // Check for callable or undetectable objects => false.
     __ test_b(FieldOperand(input, Map::kBitFieldOffset),
-              1 << Map::kIsUndetectable);
+              (1 << Map::kIsCallable) | (1 << Map::kIsUndetectable));
     final_branch_condition = zero;
 
 // clang-format off

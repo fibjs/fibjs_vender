@@ -29,7 +29,6 @@ namespace internal {
   V(CallConstruct)                          \
   V(CallFunction)                           \
   V(CallIC)                                 \
-  V(CallIC_Array)                           \
   V(CEntry)                                 \
   V(CompareIC)                              \
   V(DoubleToI)                              \
@@ -40,7 +39,6 @@ namespace internal {
   V(KeyedLoadICTrampoline)                  \
   V(LoadICTrampoline)                       \
   V(CallICTrampoline)                       \
-  V(CallIC_ArrayTrampoline)                 \
   V(LoadIndexedInterceptor)                 \
   V(LoadIndexedString)                      \
   V(MathPow)                                \
@@ -678,7 +676,11 @@ enum StringAddFlags {
   // Check right parameter.
   STRING_ADD_CHECK_RIGHT = 1 << 1,
   // Check both parameters.
-  STRING_ADD_CHECK_BOTH = STRING_ADD_CHECK_LEFT | STRING_ADD_CHECK_RIGHT
+  STRING_ADD_CHECK_BOTH = STRING_ADD_CHECK_LEFT | STRING_ADD_CHECK_RIGHT,
+  // Convert parameters when check fails (instead of throwing an exception).
+  STRING_ADD_CONVERT = 1 << 2,
+  STRING_ADD_CONVERT_LEFT = STRING_ADD_CHECK_LEFT | STRING_ADD_CONVERT,
+  STRING_ADD_CONVERT_RIGHT = STRING_ADD_CHECK_RIGHT | STRING_ADD_CONVERT
 };
 
 
@@ -703,8 +705,8 @@ class StringAddTFStub : public TurboFanCodeStub {
   }
 
  private:
-  class StringAddFlagsBits : public BitField<StringAddFlags, 0, 2> {};
-  class PretenureFlagBits : public BitField<PretenureFlag, 2, 1> {};
+  class StringAddFlagsBits : public BitField<StringAddFlags, 0, 3> {};
+  class PretenureFlagBits : public BitField<PretenureFlag, 3, 1> {};
 
   void PrintBaseName(std::ostream& os) const override;  // NOLINT
 
@@ -989,26 +991,13 @@ class CallICStub: public PlatformCodeStub {
 
   // Code generation helpers.
   void GenerateMiss(MacroAssembler* masm);
+  void HandleArrayCase(MacroAssembler* masm, Label* miss);
 
  private:
   void PrintState(std::ostream& os) const override;  // NOLINT
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(CallFunctionWithFeedbackAndVector);
   DEFINE_PLATFORM_CODE_STUB(CallIC, PlatformCodeStub);
-};
-
-
-class CallIC_ArrayStub: public CallICStub {
- public:
-  CallIC_ArrayStub(Isolate* isolate, const CallICState& state_in)
-      : CallICStub(isolate, state_in) {}
-
-  InlineCacheState GetICState() const final { return MONOMORPHIC; }
-
- private:
-  void PrintState(std::ostream& os) const override;  // NOLINT
-
-  DEFINE_PLATFORM_CODE_STUB(CallIC_Array, CallICStub);
 };
 
 
@@ -1662,8 +1651,8 @@ class StringAddStub final : public HydrogenCodeStub {
   static const int kRight = 1;
 
  private:
-  class StringAddFlagsBits: public BitField<StringAddFlags, 0, 2> {};
-  class PretenureFlagBits: public BitField<PretenureFlag, 2, 1> {};
+  class StringAddFlagsBits : public BitField<StringAddFlags, 0, 3> {};
+  class PretenureFlagBits : public BitField<PretenureFlag, 3, 1> {};
 
   void PrintBaseName(std::ostream& os) const override;  // NOLINT
 
@@ -1708,6 +1697,7 @@ class CompareICStub : public PlatformCodeStub {
  private:
   Code::Kind GetCodeKind() const override { return Code::COMPARE_IC; }
 
+  void GenerateBooleans(MacroAssembler* masm);
   void GenerateSmis(MacroAssembler* masm);
   void GenerateNumbers(MacroAssembler* masm);
   void GenerateInternalizedStrings(MacroAssembler* masm);
@@ -1953,6 +1943,8 @@ class RegExpConstructResultStub final : public HydrogenCodeStub {
 };
 
 
+// TODO(bmeurer): Deprecate the CallFunctionStub in favor of the more general
+// Invoke family of builtins.
 class CallFunctionStub: public PlatformCodeStub {
  public:
   CallFunctionStub(Isolate* isolate, int argc, CallFunctionFlags flags)
@@ -2334,16 +2326,6 @@ class CallICTrampolineStub : public PlatformCodeStub {
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(CallFunctionWithFeedback);
   DEFINE_PLATFORM_CODE_STUB(CallICTrampoline, PlatformCodeStub);
-};
-
-
-class CallIC_ArrayTrampolineStub : public CallICTrampolineStub {
- public:
-  CallIC_ArrayTrampolineStub(Isolate* isolate, const CallICState& state)
-      : CallICTrampolineStub(isolate, state) {}
-
- private:
-  DEFINE_PLATFORM_CODE_STUB(CallIC_ArrayTrampoline, CallICTrampolineStub);
 };
 
 
@@ -3087,7 +3069,7 @@ class StringCompareStub : public PlatformCodeStub {
  public:
   explicit StringCompareStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
 
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(ContextOnly);
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(StringCompare);
   DEFINE_PLATFORM_CODE_STUB(StringCompare, PlatformCodeStub);
 };
 
@@ -3100,6 +3082,8 @@ class StringCompareStub : public PlatformCodeStub {
 #undef DEFINE_CODE_STUB_BASE
 
 extern Representation RepresentationFromType(Type* type);
-} }  // namespace v8::internal
+
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_CODE_STUBS_H_

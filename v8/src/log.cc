@@ -501,6 +501,7 @@ class JitLogger : public CodeEventLogger {
                                  int length);
 
   JitCodeEventHandler code_event_handler_;
+  base::Mutex logger_mutex_;
 };
 
 
@@ -530,6 +531,7 @@ void JitLogger::LogRecordedBuffer(Code* code,
 
 
 void JitLogger::CodeMoveEvent(Address from, Address to) {
+  base::LockGuard<base::Mutex> guard(&logger_mutex_);
   Code* from_code = Code::cast(HeapObject::FromAddress(from));
 
   JitCodeEvent event;
@@ -1643,8 +1645,8 @@ void Logger::LogCodeObject(Object* object) {
       description = "A keyed store IC from the snapshot";
       tag = Logger::KEYED_STORE_IC_TAG;
       break;
-    case Code::PLACEHOLDER:
-      description = "A placeholder for linking later code";
+    case Code::WASM_FUNCTION:
+      description = "A wasm function";
       tag = Logger::STUB_TAG;
       break;
     case Code::NUMBER_OF_KINDS:

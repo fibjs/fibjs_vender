@@ -45,6 +45,13 @@ Handle<BytecodeArray> BytecodeGenerator::MakeBytecode(CompilationInfo* info) {
   // Visit statements in the function body.
   VisitStatements(info->literal()->body());
 
+  // If the last bytecode wasn't a return, then return 'undefined' to avoid
+  // falling off the end.
+  if (!builder_.HasExplicitReturn()) {
+    builder_.LoadUndefined();
+    builder_.Return();
+  }
+
   set_scope(nullptr);
   set_info(nullptr);
   return builder_.ToBytecodeArray();
@@ -112,6 +119,12 @@ void BytecodeGenerator::VisitEmptyStatement(EmptyStatement* stmt) {
 
 
 void BytecodeGenerator::VisitIfStatement(IfStatement* stmt) { UNIMPLEMENTED(); }
+
+
+void BytecodeGenerator::VisitSloppyBlockFunctionStatement(
+    SloppyBlockFunctionStatement* stmt) {
+  Visit(stmt->statement());
+}
 
 
 void BytecodeGenerator::VisitContinueStatement(ContinueStatement* stmt) {
@@ -263,14 +276,49 @@ void BytecodeGenerator::VisitVariableProxy(VariableProxy* proxy) {
 
 void BytecodeGenerator::VisitAssignment(Assignment* expr) {
   DCHECK(expr->target()->IsValidReferenceExpression());
+  TemporaryRegisterScope temporary_register_scope(&builder_);
+  Register object, key;
 
   // Left-hand side can only be a property, a global or a variable slot.
   Property* property = expr->target()->AsProperty();
   LhsKind assign_type = Property::GetAssignType(property);
 
-  DCHECK(!expr->is_compound());
-  Visit(expr->value());
+  // Evaluate LHS expression.
+  switch (assign_type) {
+    case VARIABLE:
+      // Nothing to do to evaluate variable assignment LHS.
+      break;
+    case NAMED_PROPERTY:
+      object = temporary_register_scope.NewRegister();
+      key = temporary_register_scope.NewRegister();
+      Visit(property->obj());
+      builder().StoreAccumulatorInRegister(object);
+      builder().LoadLiteral(property->key()->AsLiteral()->AsPropertyName());
+      builder().StoreAccumulatorInRegister(key);
+      break;
+    case KEYED_PROPERTY:
+      object = temporary_register_scope.NewRegister();
+      key = temporary_register_scope.NewRegister();
+      Visit(property->obj());
+      builder().StoreAccumulatorInRegister(object);
+      Visit(property->key());
+      builder().StoreAccumulatorInRegister(key);
+      break;
+    case NAMED_SUPER_PROPERTY:
+    case KEYED_SUPER_PROPERTY:
+      UNIMPLEMENTED();
+  }
 
+  // Evaluate the value and potentially handle compound assignments by loading
+  // the left-hand side value and performing a binary operation.
+  if (expr->is_compound()) {
+    UNIMPLEMENTED();
+  } else {
+    Visit(expr->value());
+  }
+
+  // Store the value.
+  FeedbackVectorICSlot slot = expr->AssignmentSlot();
   switch (assign_type) {
     case VARIABLE: {
       Variable* variable = expr->target()->AsVariableProxy()->var();
@@ -280,7 +328,13 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
       break;
     }
     case NAMED_PROPERTY:
+      builder().StoreNamedProperty(object, key, feedback_index(slot),
+                                   language_mode());
+      break;
     case KEYED_PROPERTY:
+      builder().StoreKeyedProperty(object, key, feedback_index(slot),
+                                   language_mode());
+      break;
     case NAMED_SUPER_PROPERTY:
     case KEYED_SUPER_PROPERTY:
       UNIMPLEMENTED();
@@ -294,27 +348,18 @@ void BytecodeGenerator::VisitYield(Yield* expr) { UNIMPLEMENTED(); }
 void BytecodeGenerator::VisitThrow(Throw* expr) { UNIMPLEMENTED(); }
 
 
-void BytecodeGenerator::VisitProperty(Property* expr) {
+void BytecodeGenerator::VisitPropertyLoad(Register obj, Property* expr) {
   LhsKind property_kind = Property::GetAssignType(expr);
   FeedbackVectorICSlot slot = expr->PropertyFeedbackSlot();
   switch (property_kind) {
     case VARIABLE:
       UNREACHABLE();
-      break;
     case NAMED_PROPERTY: {
-      TemporaryRegisterScope temporary_register_scope(&builder_);
-      Register obj = temporary_register_scope.NewRegister();
-      Visit(expr->obj());
-      builder().StoreAccumulatorInRegister(obj);
       builder().LoadLiteral(expr->key()->AsLiteral()->AsPropertyName());
       builder().LoadNamedProperty(obj, feedback_index(slot), language_mode());
       break;
     }
     case KEYED_PROPERTY: {
-      TemporaryRegisterScope temporary_register_scope(&builder_);
-      Register obj = temporary_register_scope.NewRegister();
-      Visit(expr->obj());
-      builder().StoreAccumulatorInRegister(obj);
       Visit(expr->key());
       builder().LoadKeyedProperty(obj, feedback_index(slot), language_mode());
       break;
@@ -326,7 +371,60 @@ void BytecodeGenerator::VisitProperty(Property* expr) {
 }
 
 
-void BytecodeGenerator::VisitCall(Call* expr) { UNIMPLEMENTED(); }
+void BytecodeGenerator::VisitProperty(Property* expr) {
+  TemporaryRegisterScope temporary_register_scope(&builder_);
+  Register obj = temporary_register_scope.NewRegister();
+  Visit(expr->obj());
+  builder().StoreAccumulatorInRegister(obj);
+  VisitPropertyLoad(obj, expr);
+}
+
+
+void BytecodeGenerator::VisitCall(Call* expr) {
+  Expression* callee_expr = expr->expression();
+  Call::CallType call_type = expr->GetCallType(isolate());
+
+  // Prepare the callee and the receiver to the function call. This depends on
+  // the semantics of the underlying call type.
+  TemporaryRegisterScope temporary_register_scope(&builder_);
+  Register callee = temporary_register_scope.NewRegister();
+  Register receiver = temporary_register_scope.NewRegister();
+
+  switch (call_type) {
+    case Call::PROPERTY_CALL: {
+      Property* property = callee_expr->AsProperty();
+      if (property->IsSuperAccess()) {
+        UNIMPLEMENTED();
+      }
+      Visit(property->obj());
+      builder().StoreAccumulatorInRegister(receiver);
+      // Perform a property load of the callee.
+      VisitPropertyLoad(receiver, property);
+      builder().StoreAccumulatorInRegister(callee);
+      break;
+    }
+    case Call::GLOBAL_CALL:
+    case Call::LOOKUP_SLOT_CALL:
+    case Call::SUPER_CALL:
+    case Call::POSSIBLY_EVAL_CALL:
+    case Call::OTHER_CALL:
+      UNIMPLEMENTED();
+  }
+
+  // Evaluate all arguments to the function call and store in sequential
+  // registers.
+  ZoneList<Expression*>* args = expr->arguments();
+  for (int i = 0; i < args->length(); ++i) {
+    Visit(args->at(i));
+    Register arg = temporary_register_scope.NewRegister();
+    DCHECK(arg.index() - i == receiver.index() + 1);
+    builder().StoreAccumulatorInRegister(arg);
+  }
+
+  // TODO(rmcilroy): Deal with possible direct eval here?
+  // TODO(rmcilroy): Use CallIC to allow call type feedback.
+  builder().Call(callee, receiver, args->length());
+}
 
 
 void BytecodeGenerator::VisitCallNew(CallNew* expr) { UNIMPLEMENTED(); }

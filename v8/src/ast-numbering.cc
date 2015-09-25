@@ -113,6 +113,13 @@ void AstNumberingVisitor::VisitEmptyStatement(EmptyStatement* node) {
 }
 
 
+void AstNumberingVisitor::VisitSloppyBlockFunctionStatement(
+    SloppyBlockFunctionStatement* node) {
+  IncrementNodeCount();
+  Visit(node->statement());
+}
+
+
 void AstNumberingVisitor::VisitContinueStatement(ContinueStatement* node) {
   IncrementNodeCount();
 }
@@ -463,6 +470,7 @@ void AstNumberingVisitor::VisitClassLiteral(ClassLiteral* node) {
     VisitObjectLiteralProperty(node->properties()->at(i));
   }
   ReserveFeedbackSlots(node);
+  node->LayoutFeedbackSlots();
 }
 
 
@@ -478,6 +486,7 @@ void AstNumberingVisitor::VisitObjectLiteral(ObjectLiteral* node) {
   // marked expressions, no store code will be is emitted.
   node->CalculateEmitStore(zone());
   ReserveFeedbackSlots(node);
+  node->LayoutFeedbackSlots();
 }
 
 
@@ -558,7 +567,7 @@ bool AstNumberingVisitor::Renumber(FunctionLiteral* node) {
   Scope* scope = node->scope();
 
   if (scope->HasIllegalRedeclaration()) {
-    scope->VisitIllegalRedeclaration(this);
+    Visit(scope->GetIllegalRedeclaration());
     DisableOptimization(kFunctionWithIllegalRedeclaration);
     return Finish(node);
   }

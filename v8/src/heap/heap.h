@@ -15,7 +15,6 @@
 #include "src/heap/gc-idle-time-handler.h"
 #include "src/heap/incremental-marking.h"
 #include "src/heap/mark-compact.h"
-#include "src/heap/objects-visiting.h"
 #include "src/heap/spaces.h"
 #include "src/heap/store-buffer.h"
 #include "src/list.h"
@@ -259,6 +258,7 @@ namespace internal {
   V(multiline_string, "multiline")                             \
   V(sticky_string, "sticky")                                   \
   V(unicode_string, "unicode")                                 \
+  V(harmony_tolength_string, "harmony_tolength")               \
   V(input_string, "input")                                     \
   V(index_string, "index")                                     \
   V(last_index_string, "lastIndex")                            \
@@ -421,11 +421,13 @@ namespace internal {
   PRIVATE_SYMBOL_LIST(V)
 
 // Forward declarations.
+class ArrayBufferTracker;
 class HeapObjectsFilter;
 class HeapStats;
 class Isolate;
 class MemoryReducer;
 class ObjectStats;
+class Scavenger;
 class WeakObjectRetainer;
 
 
@@ -532,10 +534,6 @@ class PromotionQueue {
 
   DISALLOW_COPY_AND_ASSIGN(PromotionQueue);
 };
-
-
-typedef void (*ScavengingCallback)(Map* map, HeapObject** slot,
-                                   HeapObject* object);
 
 
 enum ArrayStorageAllocationMode {
@@ -701,6 +699,9 @@ class Heap {
   // The roots that have an index less than this are always in old space.
   static const int kOldSpaceRoots = 0x20;
 
+  // The minimum size of a HeapObject on the heap.
+  static const int kMinObjectSizeInWords = 2;
+
   STATIC_ASSERT(kUndefinedValueRootIndex ==
                 Internals::kUndefinedValueRootIndex);
   STATIC_ASSERT(kNullValueRootIndex == Internals::kNullValueRootIndex);
@@ -717,16 +718,6 @@ class Heap {
 
   template <typename T>
   static inline bool IsOneByte(T t, int chars);
-
-  // Callback function passed to Heap::Iterate etc.  Copies an object if
-  // necessary, the object might be promoted to an old space.  The caller must
-  // ensure the precondition that the object is (a) a heap object and (b) in
-  // the heap's from space.
-  static inline void ScavengePointer(HeapObject** p);
-  static inline void ScavengeObject(HeapObject** p, HeapObject* object);
-
-  // Slow part of scavenge object.
-  static void ScavengeObjectSlow(HeapObject** p, HeapObject* object);
 
   static void FatalProcessOutOfMemory(const char* location,
                                       bool take_snapshot = false);
@@ -768,6 +759,10 @@ class Heap {
   // Optimized version of memmove for blocks with pointer size aligned sizes and
   // pointer size aligned addresses.
   static inline void MoveBlock(Address dst, Address src, int byte_size);
+
+  // Determines a static visitor id based on the given {map} that can then be
+  // stored on the map to facilitate fast dispatch for {StaticVisitorBase}.
+  static int GetStaticVisitorIdForMap(Map* map);
 
   // Notifies the heap that is ok to start marking or other activities that
   // should not happen during deserialization.
@@ -982,6 +977,10 @@ class Heap {
     return amount_of_external_allocated_memory_;
   }
 
+  void update_amount_of_external_allocated_memory(int64_t delta) {
+    amount_of_external_allocated_memory_ += delta;
+  }
+
   void DeoptMarkedAllocationSites();
 
   bool DeoptMaybeTenuredAllocationSites() {
@@ -1006,29 +1005,6 @@ class Heap {
                           int size_in_bytes);
 
   bool deserialization_complete() const { return deserialization_complete_; }
-
-  // The following methods are used to track raw C++ pointers to externally
-  // allocated memory used as backing store in live array buffers.
-
-  // A new ArrayBuffer was created with |data| as backing store.
-  void RegisterNewArrayBuffer(bool in_new_space, void* data, size_t length);
-
-  // The backing store |data| is no longer owned by V8.
-  void UnregisterArrayBuffer(bool in_new_space, void* data);
-
-  // A live ArrayBuffer was discovered during marking/scavenge.
-  void RegisterLiveArrayBuffer(bool in_new_space, void* data);
-
-  // Frees all backing store pointers that weren't discovered in the previous
-  // marking or scavenge phase.
-  void FreeDeadArrayBuffers(bool from_scavenge);
-
-  // Prepare for a new scavenge phase. A new marking phase is implicitly
-  // prepared by finishing the previous one.
-  void PrepareArrayBufferDiscoveryInNewSpace();
-
-  // An ArrayBuffer moved from new space to old space.
-  void PromoteArrayBuffer(Object* buffer);
 
   bool HasLowAllocationRate();
   bool HasHighFragmentation();
@@ -1296,6 +1272,8 @@ class Heap {
 
   void FinalizeIncrementalMarkingIfComplete(const char* comment);
 
+  bool TryFinalizeIdleIncrementalMarking(double idle_time_in_ms);
+
   IncrementalMarking* incremental_marking() { return &incremental_marking_; }
 
   // ===========================================================================
@@ -1523,6 +1501,17 @@ class Heap {
                                               int object_size,
                                               int allocation_size,
                                               AllocationAlignment alignment);
+
+  // ===========================================================================
+  // ArrayBuffer tracking. =====================================================
+  // ===========================================================================
+
+  void RegisterNewArrayBuffer(JSArrayBuffer* buffer);
+  void UnregisterArrayBuffer(JSArrayBuffer* buffer);
+
+  inline ArrayBufferTracker* array_buffer_tracker() {
+    return array_buffer_tracker_;
+  }
 
 // =============================================================================
 
@@ -1757,9 +1746,6 @@ class Heap {
   // the old space.
   void EvaluateOldSpaceLocalPretenuring(uint64_t size_of_objects_before_gc);
 
-  // Called on heap tear-down. Frees all remaining ArrayBuffer backing stores.
-  void TearDownArrayBuffers();
-
   // Record statistics before and after garbage collection.
   void ReportStatisticsBeforeGC();
   void ReportStatisticsAfterGC();
@@ -1784,8 +1770,6 @@ class Heap {
   bool IsHighSurvivalRate() { return high_survival_rate_period_length_ > 0; }
 
   void ConfigureInitialOldGenerationSize();
-
-  void SelectScavengingVisitorsTable();
 
   bool HasLowYoungGenerationAllocationRate();
   bool HasLowOldGenerationAllocationRate();
@@ -2268,6 +2252,8 @@ class Heap {
   // Last time a garbage collection happened.
   double last_gc_time_;
 
+  Scavenger* scavenge_collector_;
+
   MarkCompactCollector mark_compact_collector_;
 
   StoreBuffer store_buffer_;
@@ -2327,8 +2313,6 @@ class Heap {
 
   ExternalStringTable external_string_table_;
 
-  VisitorDispatchTable<ScavengingCallback> scavenging_visitors_table_;
-
   MemoryChunk* chunks_queued_for_free_;
 
   size_t concurrent_unmapping_tasks_active_;
@@ -2343,26 +2327,9 @@ class Heap {
 
   bool concurrent_sweeping_enabled_;
 
-  // |live_array_buffers_| maps externally allocated memory used as backing
-  // store for ArrayBuffers to the length of the respective memory blocks.
-  //
-  // At the beginning of mark/compact, |not_yet_discovered_array_buffers_| is
-  // a copy of |live_array_buffers_| and we remove pointers as we discover live
-  // ArrayBuffer objects during marking. At the end of mark/compact, the
-  // remaining memory blocks can be freed.
-  std::map<void*, size_t> live_array_buffers_;
-  std::map<void*, size_t> not_yet_discovered_array_buffers_;
-
-  // To be able to free memory held by ArrayBuffers during scavenge as well, we
-  // have a separate list of allocated memory held by ArrayBuffers in new space.
-  //
-  // Since mark/compact also evacuates the new space, all pointers in the
-  // |live_array_buffers_for_scavenge_| list are also in the
-  // |live_array_buffers_| list.
-  std::map<void*, size_t> live_array_buffers_for_scavenge_;
-  std::map<void*, size_t> not_yet_discovered_array_buffers_for_scavenge_;
-
   StrongRootsList* strong_roots_list_;
+
+  ArrayBufferTracker* array_buffer_tracker_;
 
   // Classes in "heap" can be friends.
   friend class AlwaysAllocateScope;
@@ -2374,6 +2341,7 @@ class Heap {
   friend class MarkCompactMarkingVisitor;
   friend class ObjectStatsVisitor;
   friend class Page;
+  friend class Scavenger;
   friend class StoreBuffer;
 
   // The allocator interface.
@@ -2424,20 +2392,6 @@ class AlwaysAllocateScope {
  public:
   explicit inline AlwaysAllocateScope(Isolate* isolate);
   inline ~AlwaysAllocateScope();
-
- private:
-  // Implicitly disable artificial allocation failures.
-  Heap* heap_;
-  DisallowAllocationFailure daf_;
-};
-
-
-class GCCallbacksScope {
- public:
-  explicit inline GCCallbacksScope(Heap* heap);
-  inline ~GCCallbacksScope();
-
-  inline bool CheckReenter();
 
  private:
   Heap* heap_;

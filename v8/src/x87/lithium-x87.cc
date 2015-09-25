@@ -977,7 +977,7 @@ void LChunkBuilder::AddInstruction(LInstruction* instr,
   }
   chunk_->AddInstruction(instr, current_block_);
 
-  if (instr->IsCall()) {
+  if (instr->IsCall() || instr->IsPrologue()) {
     HValue* hydrogen_value_for_lazy_bailout = hydrogen_val;
     if (hydrogen_val->HasObservableSideEffects()) {
       HSimulate* sim = HSimulate::cast(hydrogen_val->next());
@@ -988,6 +988,11 @@ void LChunkBuilder::AddInstruction(LInstruction* instr,
     bailout->set_hydrogen_value(hydrogen_value_for_lazy_bailout);
     chunk_->AddInstruction(bailout, current_block_);
   }
+}
+
+
+LInstruction* LChunkBuilder::DoPrologue(HPrologue* instr) {
+  return new (zone()) LPrologue();
 }
 
 
@@ -2538,13 +2543,6 @@ LInstruction* LChunkBuilder::DoRegExpLiteral(HRegExpLiteral* instr) {
   LOperand* context = UseFixed(instr->context(), esi);
   return MarkAsCall(
       DefineFixed(new(zone()) LRegExpLiteral(context), eax), instr);
-}
-
-
-LInstruction* LChunkBuilder::DoFunctionLiteral(HFunctionLiteral* instr) {
-  LOperand* context = UseFixed(instr->context(), esi);
-  return MarkAsCall(
-      DefineFixed(new(zone()) LFunctionLiteral(context), eax), instr);
 }
 
 

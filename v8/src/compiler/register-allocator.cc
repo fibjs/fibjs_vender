@@ -247,7 +247,8 @@ LiveRange::LiveRange(int relative_id, MachineType machine_type,
       last_processed_use_(nullptr),
       current_hint_position_(nullptr),
       size_(kInvalidSize),
-      weight_(kInvalidWeight) {
+      weight_(kInvalidWeight),
+      group_(nullptr) {
   DCHECK(AllocatedOperand::IsSupportedMachineType(machine_type));
   bits_ = AssignedRegisterField::encode(kUnassignedRegister) |
           MachineTypeField::encode(machine_type);
@@ -871,6 +872,9 @@ void TopLevelLiveRange::Splinter(LifetimePosition start, LifetimePosition end,
   result->top_level_ = result;
 
   result->SetSplinteredFrom(this);
+  // Ensure the result's relative ID is unique within the IDs used for this
+  // virtual register's children and splinters.
+  result->relative_id_ = GetNextChildId();
 }
 
 

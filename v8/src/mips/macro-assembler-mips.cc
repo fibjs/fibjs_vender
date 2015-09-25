@@ -2,6 +2,7 @@
 
 #if V8_TARGET_ARCH_MIPS
 
+
 // Copyright 2012 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -1220,21 +1221,6 @@ void MacroAssembler::MultiPopReversedFPU(RegList regs) {
     }
   }
   addiu(sp, sp, stack_offset);
-}
-
-
-void MacroAssembler::FlushICache(Register address, unsigned instructions) {
-  RegList saved_regs = kJSCallerSaved | ra.bit();
-  MultiPush(saved_regs);
-  AllowExternalCallThatCantCauseGC scope(this);
-
-  // Save to a0 in case address == t0.
-  Move(a0, address);
-  PrepareCallCFunction(2, t0);
-
-  li(a1, instructions * kInstrSize);
-  CallCFunction(ExternalReference::flush_icache_function(isolate()), 2);
-  MultiPop(saved_regs);
 }
 
 
@@ -4085,10 +4071,10 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
   if (expected.is_immediate()) {
     DCHECK(actual.is_immediate());
+    li(a0, Operand(actual.immediate()));
     if (expected.immediate() == actual.immediate()) {
       definitely_matches = true;
     } else {
-      li(a0, Operand(actual.immediate()));
       const int sentinel = SharedFunctionInfo::kDontAdaptArgumentsSentinel;
       if (expected.immediate() == sentinel) {
         // Don't worry about adapting arguments for builtins that
@@ -4102,8 +4088,8 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
       }
     }
   } else if (actual.is_immediate()) {
-    Branch(&regular_invoke, eq, expected.reg(), Operand(actual.immediate()));
     li(a0, Operand(actual.immediate()));
+    Branch(&regular_invoke, eq, expected.reg(), Operand(a0));
   } else {
     Branch(&regular_invoke, eq, expected.reg(), Operand(actual.reg()));
   }
@@ -4747,6 +4733,12 @@ void MacroAssembler::LoadContext(Register dst, int context_chain_length) {
 }
 
 
+void MacroAssembler::LoadGlobalProxy(Register dst) {
+  lw(dst, GlobalObjectOperand());
+  lw(dst, FieldMemOperand(dst, GlobalObject::kGlobalProxyOffset));
+}
+
+
 void MacroAssembler::LoadTransitionedArrayMapConditional(
     ElementsKind expected_kind,
     ElementsKind transitioned_kind,
@@ -4946,7 +4938,7 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles, Register argument_count,
     lw(t8, MemOperand(fp, ExitFrameConstants::kSPOffset));
     for (int i = 0; i < FPURegister::kMaxNumRegisters; i+=2) {
       FPURegister reg = FPURegister::from_code(i);
-      ldc1(reg, MemOperand(t8, i  * kDoubleSize + kPointerSize));
+      ldc1(reg, MemOperand(t8, i * kDoubleSize + kPointerSize));
     }
   }
 
@@ -5147,13 +5139,10 @@ void MacroAssembler::AssertSmi(Register object) {
 void MacroAssembler::AssertString(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
-    SmiTst(object, t0);
-    Check(ne, kOperandIsASmiAndNotAString, t0, Operand(zero_reg));
-    push(object);
-    lw(object, FieldMemOperand(object, HeapObject::kMapOffset));
-    lbu(object, FieldMemOperand(object, Map::kInstanceTypeOffset));
-    Check(lo, kOperandIsNotAString, object, Operand(FIRST_NONSTRING_TYPE));
-    pop(object);
+    SmiTst(object, t8);
+    Check(ne, kOperandIsASmiAndNotAString, t8, Operand(zero_reg));
+    GetObjectType(object, t8, t8);
+    Check(lo, kOperandIsNotAString, t8, Operand(FIRST_NONSTRING_TYPE));
   }
 }
 
@@ -5161,13 +5150,21 @@ void MacroAssembler::AssertString(Register object) {
 void MacroAssembler::AssertName(Register object) {
   if (emit_debug_code()) {
     STATIC_ASSERT(kSmiTag == 0);
-    SmiTst(object, t0);
-    Check(ne, kOperandIsASmiAndNotAName, t0, Operand(zero_reg));
-    push(object);
-    lw(object, FieldMemOperand(object, HeapObject::kMapOffset));
-    lbu(object, FieldMemOperand(object, Map::kInstanceTypeOffset));
-    Check(le, kOperandIsNotAName, object, Operand(LAST_NAME_TYPE));
-    pop(object);
+    SmiTst(object, t8);
+    Check(ne, kOperandIsASmiAndNotAName, t8, Operand(zero_reg));
+    GetObjectType(object, t8, t8);
+    Check(le, kOperandIsNotAName, t8, Operand(LAST_NAME_TYPE));
+  }
+}
+
+
+void MacroAssembler::AssertFunction(Register object) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    SmiTst(object, t8);
+    Check(ne, kOperandIsASmiAndNotAFunction, t8, Operand(zero_reg));
+    GetObjectType(object, t8, t8);
+    Check(eq, kOperandIsNotAFunction, t8, Operand(JS_FUNCTION_TYPE));
   }
 }
 
@@ -5179,11 +5176,9 @@ void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
     AssertNotSmi(object);
     LoadRoot(scratch, Heap::kUndefinedValueRootIndex);
     Branch(&done_checking, eq, object, Operand(scratch));
-    push(object);
-    lw(object, FieldMemOperand(object, HeapObject::kMapOffset));
+    lw(t8, FieldMemOperand(object, HeapObject::kMapOffset));
     LoadRoot(scratch, Heap::kAllocationSiteMapRootIndex);
-    Assert(eq, kExpectedUndefinedOrCell, object, Operand(scratch));
-    pop(object);
+    Assert(eq, kExpectedUndefinedOrCell, t8, Operand(scratch));
     bind(&done_checking);
   }
 }
@@ -5205,86 +5200,6 @@ void MacroAssembler::JumpIfNotHeapNumber(Register object,
   lw(scratch, FieldMemOperand(object, HeapObject::kMapOffset));
   AssertIsRoot(heap_number_map, Heap::kHeapNumberMapRootIndex);
   Branch(on_not_heap_number, ne, scratch, Operand(heap_number_map));
-}
-
-
-void MacroAssembler::LookupNumberStringCache(Register object,
-                                             Register result,
-                                             Register scratch1,
-                                             Register scratch2,
-                                             Register scratch3,
-                                             Label* not_found) {
-  // Use of registers. Register result is used as a temporary.
-  Register number_string_cache = result;
-  Register mask = scratch3;
-
-  // Load the number string cache.
-  LoadRoot(number_string_cache, Heap::kNumberStringCacheRootIndex);
-
-  // Make the hash mask from the length of the number string cache. It
-  // contains two elements (number and string) for each cache entry.
-  lw(mask, FieldMemOperand(number_string_cache, FixedArray::kLengthOffset));
-  // Divide length by two (length is a smi).
-  sra(mask, mask, kSmiTagSize + 1);
-  Addu(mask, mask, -1);  // Make mask.
-
-  // Calculate the entry in the number string cache. The hash value in the
-  // number string cache for smis is just the smi value, and the hash for
-  // doubles is the xor of the upper and lower words. See
-  // Heap::GetNumberStringCache.
-  Label is_smi;
-  Label load_result_from_cache;
-  JumpIfSmi(object, &is_smi);
-  CheckMap(object,
-           scratch1,
-           Heap::kHeapNumberMapRootIndex,
-           not_found,
-           DONT_DO_SMI_CHECK);
-
-  STATIC_ASSERT(8 == kDoubleSize);
-  Addu(scratch1,
-       object,
-       Operand(HeapNumber::kValueOffset - kHeapObjectTag));
-  lw(scratch2, MemOperand(scratch1, kPointerSize));
-  lw(scratch1, MemOperand(scratch1, 0));
-  Xor(scratch1, scratch1, Operand(scratch2));
-  And(scratch1, scratch1, Operand(mask));
-
-  // Calculate address of entry in string cache: each entry consists
-  // of two pointer sized fields.
-  sll(scratch1, scratch1, kPointerSizeLog2 + 1);
-  Addu(scratch1, number_string_cache, scratch1);
-
-  Register probe = mask;
-  lw(probe, FieldMemOperand(scratch1, FixedArray::kHeaderSize));
-  JumpIfSmi(probe, not_found);
-  ldc1(f12, FieldMemOperand(object, HeapNumber::kValueOffset));
-  ldc1(f14, FieldMemOperand(probe, HeapNumber::kValueOffset));
-  BranchF(&load_result_from_cache, NULL, eq, f12, f14);
-  Branch(not_found);
-
-  bind(&is_smi);
-  Register scratch = scratch1;
-  sra(scratch, object, 1);   // Shift away the tag.
-  And(scratch, mask, Operand(scratch));
-
-  // Calculate address of entry in string cache: each entry consists
-  // of two pointer sized fields.
-  sll(scratch, scratch, kPointerSizeLog2 + 1);
-  Addu(scratch, number_string_cache, scratch);
-
-  // Check if the entry is the smi we are looking for.
-  lw(probe, FieldMemOperand(scratch, FixedArray::kHeaderSize));
-  Branch(not_found, ne, object, Operand(probe));
-
-  // Get the result from the cache.
-  bind(&load_result_from_cache);
-  lw(result, FieldMemOperand(scratch, FixedArray::kHeaderSize + kPointerSize));
-
-  IncrementCounter(isolate()->counters()->number_to_string_native(),
-                   1,
-                   scratch1,
-                   scratch2);
 }
 
 

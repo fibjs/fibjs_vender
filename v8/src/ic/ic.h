@@ -285,13 +285,7 @@ class CallIC : public IC {
     DCHECK(nexus != NULL);
   }
 
-  void PatchMegamorphic(Handle<Object> function);
-
   void HandleMiss(Handle<Object> function);
-
-  // Returns true if a custom handler was installed.
-  bool DoCustomHandler(Handle<Object> function,
-                       const CallICState& callic_state);
 
   // Code generator routines.
   static Handle<Code> initialize_stub(Isolate* isolate, int argc,
@@ -329,6 +323,7 @@ class LoadIC : public IC {
   }
 
   // Code generator routines.
+
   static void GenerateInitialize(MacroAssembler* masm) { GenerateMiss(masm); }
   static void GenerateMiss(MacroAssembler* masm);
   static void GenerateRuntimeGetProperty(MacroAssembler* masm,
@@ -623,8 +618,6 @@ class KeyedStoreIC : public StoreIC {
 class BinaryOpIC : public IC {
  public:
   explicit BinaryOpIC(Isolate* isolate) : IC(EXTRA_CALL_FRAME, isolate) {}
-
-  static int TokenToContextIndex(Token::Value op, Strength strength);
 
   MaybeHandle<Object> Transition(Handle<AllocationSite> allocation_site,
                                  Handle<Object> left,

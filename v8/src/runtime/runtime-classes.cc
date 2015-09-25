@@ -142,13 +142,6 @@ static MaybeHandle<Object> DefineClass(Isolate* isolate, Handle<Object> name,
       THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kStrongExtendNull),
                       Object);
     }
-  } else {
-    if (Handle<HeapObject>::cast(super_class)->map()->is_strong()) {
-      // Weak class is not permitted to extend strong class.
-      THROW_NEW_ERROR(isolate,
-                      NewTypeError(MessageTemplate::kStrongWeakExtend, name),
-                      Object);
-    }
   }
   Map::SetPrototype(map, prototype_parent);
   map->SetConstructor(*constructor);
@@ -517,40 +510,22 @@ RUNTIME_FUNCTION(Runtime_DefaultConstructorCallSuper) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, original_constructor, 0);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, actual_constructor, 1);
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, super_constructor, 1);
   JavaScriptFrameIterator it(isolate);
 
-  // Prepare the callee to the super call. The super constructor is stored as
-  // the prototype of the constructor we are currently executing.
-  Handle<Object> super_constructor;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, super_constructor,
-      Runtime::GetPrototype(isolate, actual_constructor));
+  // Determine the actual arguments passed to the function.
+  int argument_count = 0;
+  base::SmartArrayPointer<Handle<Object>> arguments =
+      Runtime::GetCallerArguments(isolate, 0, &argument_count);
 
-  // Find the frame that holds the actual arguments passed to the function.
-  it.AdvanceToArgumentsFrame();
-  JavaScriptFrame* frame = it.frame();
-
-  // Prepare the array containing all passed arguments.
-  int argument_count = frame->GetArgumentsLength();
-  Handle<FixedArray> elements =
-      isolate->factory()->NewUninitializedFixedArray(argument_count);
-  for (int i = 0; i < argument_count; ++i) {
-    elements->set(i, frame->GetParameter(i));
-  }
-  Handle<JSArray> arguments = isolate->factory()->NewJSArrayWithElements(
-      elements, FAST_ELEMENTS, argument_count);
-
-  // Call %reflect_construct(<super>, <args>, <new.target>) now.
-  Handle<JSFunction> reflect = isolate->reflect_construct();
-  Handle<Object> argv[] = {super_constructor, arguments, original_constructor};
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, result,
-      Execution::Call(isolate, reflect, isolate->factory()->undefined_value(),
-                      arraysize(argv), argv));
+      Execution::New(isolate, super_constructor, original_constructor,
+                     argument_count, arguments.get()));
 
   return *result;
 }
+
 }  // namespace internal
 }  // namespace v8

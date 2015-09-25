@@ -24,6 +24,8 @@ class CodeFlusher;
 class MarkCompactCollector;
 class MarkingVisitor;
 class RootMarkingVisitor;
+class SlotsBuffer;
+class SlotsBufferAllocator;
 
 
 class Marking : public AllStatic {
@@ -116,10 +118,6 @@ class Marking : public AllStatic {
     markbit.Set();
     markbit.Next().Set();
   }
-
-  static void SetAllMarkBitsInRange(MarkBit start, MarkBit end);
-  static void ClearAllMarkBitsOfCellsContainedInRange(MarkBit start,
-                                                      MarkBit end);
 
   static void TransferMark(Heap* heap, Address old_start, Address new_start);
 
@@ -259,178 +257,6 @@ class MarkingDeque {
   bool in_use_;
 
   DISALLOW_COPY_AND_ASSIGN(MarkingDeque);
-};
-
-
-class SlotsBufferAllocator {
- public:
-  SlotsBuffer* AllocateBuffer(SlotsBuffer* next_buffer);
-  void DeallocateBuffer(SlotsBuffer* buffer);
-
-  void DeallocateChain(SlotsBuffer** buffer_address);
-};
-
-
-// SlotsBuffer records a sequence of slots that has to be updated
-// after live objects were relocated from evacuation candidates.
-// All slots are either untyped or typed:
-//    - Untyped slots are expected to contain a tagged object pointer.
-//      They are recorded by an address.
-//    - Typed slots are expected to contain an encoded pointer to a heap
-//      object where the way of encoding depends on the type of the slot.
-//      They are recorded as a pair (SlotType, slot address).
-// We assume that zero-page is never mapped this allows us to distinguish
-// untyped slots from typed slots during iteration by a simple comparison:
-// if element of slots buffer is less than NUMBER_OF_SLOT_TYPES then it
-// is the first element of typed slot's pair.
-class SlotsBuffer {
- public:
-  typedef Object** ObjectSlot;
-
-  explicit SlotsBuffer(SlotsBuffer* next_buffer)
-      : idx_(0), chain_length_(1), next_(next_buffer) {
-    if (next_ != NULL) {
-      chain_length_ = next_->chain_length_ + 1;
-    }
-  }
-
-  ~SlotsBuffer() {}
-
-  void Add(ObjectSlot slot) {
-    DCHECK(0 <= idx_ && idx_ < kNumberOfElements);
-#ifdef DEBUG
-    if (slot >= reinterpret_cast<ObjectSlot>(NUMBER_OF_SLOT_TYPES)) {
-      DCHECK_NOT_NULL(*slot);
-    }
-#endif
-    slots_[idx_++] = slot;
-  }
-
-  // Should be used for testing only.
-  ObjectSlot Get(intptr_t i) {
-    DCHECK(i >= 0 && i < kNumberOfElements);
-    return slots_[i];
-  }
-
-  enum SlotType {
-    EMBEDDED_OBJECT_SLOT,
-    OBJECT_SLOT,
-    RELOCATED_CODE_OBJECT,
-    CELL_TARGET_SLOT,
-    CODE_TARGET_SLOT,
-    CODE_ENTRY_SLOT,
-    DEBUG_TARGET_SLOT,
-    NUMBER_OF_SLOT_TYPES
-  };
-
-  static const char* SlotTypeToString(SlotType type) {
-    switch (type) {
-      case EMBEDDED_OBJECT_SLOT:
-        return "EMBEDDED_OBJECT_SLOT";
-      case OBJECT_SLOT:
-        return "OBJECT_SLOT";
-      case RELOCATED_CODE_OBJECT:
-        return "RELOCATED_CODE_OBJECT";
-      case CELL_TARGET_SLOT:
-        return "CELL_TARGET_SLOT";
-      case CODE_TARGET_SLOT:
-        return "CODE_TARGET_SLOT";
-      case CODE_ENTRY_SLOT:
-        return "CODE_ENTRY_SLOT";
-      case DEBUG_TARGET_SLOT:
-        return "DEBUG_TARGET_SLOT";
-      case NUMBER_OF_SLOT_TYPES:
-        return "NUMBER_OF_SLOT_TYPES";
-    }
-    return "UNKNOWN SlotType";
-  }
-
-  void UpdateSlots(Heap* heap);
-
-  void UpdateSlotsWithFilter(Heap* heap);
-
-  SlotsBuffer* next() { return next_; }
-
-  static int SizeOfChain(SlotsBuffer* buffer) {
-    if (buffer == NULL) return 0;
-    return static_cast<int>(buffer->idx_ +
-                            (buffer->chain_length_ - 1) * kNumberOfElements);
-  }
-
-  inline bool IsFull() { return idx_ == kNumberOfElements; }
-
-  inline bool HasSpaceForTypedSlot() { return idx_ < kNumberOfElements - 1; }
-
-  static void UpdateSlotsRecordedIn(Heap* heap, SlotsBuffer* buffer) {
-    while (buffer != NULL) {
-        buffer->UpdateSlots(heap);
-      buffer = buffer->next();
-    }
-  }
-
-  enum AdditionMode { FAIL_ON_OVERFLOW, IGNORE_OVERFLOW };
-
-  static bool ChainLengthThresholdReached(SlotsBuffer* buffer) {
-    return buffer != NULL && buffer->chain_length_ >= kChainLengthThreshold;
-  }
-
-  INLINE(static bool AddToSynchronized(SlotsBufferAllocator* allocator,
-                                       SlotsBuffer** buffer_address,
-                                       base::Mutex* buffer_mutex,
-                                       ObjectSlot slot, AdditionMode mode)) {
-    base::LockGuard<base::Mutex> lock_guard(buffer_mutex);
-    return AddTo(allocator, buffer_address, slot, mode);
-  }
-
-  INLINE(static bool AddTo(SlotsBufferAllocator* allocator,
-                           SlotsBuffer** buffer_address, ObjectSlot slot,
-                           AdditionMode mode)) {
-    SlotsBuffer* buffer = *buffer_address;
-    if (buffer == NULL || buffer->IsFull()) {
-      if (mode == FAIL_ON_OVERFLOW && ChainLengthThresholdReached(buffer)) {
-        allocator->DeallocateChain(buffer_address);
-        return false;
-      }
-      buffer = allocator->AllocateBuffer(buffer);
-      *buffer_address = buffer;
-    }
-    buffer->Add(slot);
-    return true;
-  }
-
-  static bool IsTypedSlot(ObjectSlot slot);
-
-  static bool AddToSynchronized(SlotsBufferAllocator* allocator,
-                                SlotsBuffer** buffer_address,
-                                base::Mutex* buffer_mutex, SlotType type,
-                                Address addr, AdditionMode mode);
-
-  static bool AddTo(SlotsBufferAllocator* allocator,
-                    SlotsBuffer** buffer_address, SlotType type, Address addr,
-                    AdditionMode mode);
-
-  // Eliminates all stale entries from the slots buffer, i.e., slots that
-  // are not part of live objects anymore. This method must be called after
-  // marking, when the whole transitive closure is known and must be called
-  // before sweeping when mark bits are still intact.
-  static void RemoveInvalidSlots(Heap* heap, SlotsBuffer* buffer);
-
-  // Eliminate all slots that are within the given address range.
-  static void RemoveObjectSlots(Heap* heap, SlotsBuffer* buffer,
-                                Address start_slot, Address end_slot);
-
-  // Ensures that there are no invalid slots in the chain of slots buffers.
-  static void VerifySlots(Heap* heap, SlotsBuffer* buffer);
-
-  static const int kNumberOfElements = 1021;
-
- private:
-  static const int kChainLengthThreshold = 15;
-
-  intptr_t idx_;
-  intptr_t chain_length_;
-  SlotsBuffer* next_;
-  ObjectSlot slots_[kNumberOfElements];
 };
 
 
@@ -593,16 +419,21 @@ class MarkCompactCollector {
   void RecordRelocSlot(RelocInfo* rinfo, Object* target);
   void RecordCodeEntrySlot(HeapObject* object, Address slot, Code* target);
   void RecordCodeTargetPatch(Address pc, Code* target);
+  INLINE(void RecordSlot(HeapObject* object, Object** slot, Object* target));
+  INLINE(void ForceRecordSlot(HeapObject* object, Object** slot,
+                              Object* target));
 
-  INLINE(void RecordSlot(
-      HeapObject* object, Object** slot, Object* target,
-      SlotsBuffer::AdditionMode mode = SlotsBuffer::FAIL_ON_OVERFLOW));
+  void UpdateSlots(SlotsBuffer* buffer);
+  void UpdateSlotsRecordedIn(SlotsBuffer* buffer);
 
   void MigrateObject(HeapObject* dst, HeapObject* src, int size,
-                     AllocationSpace to_old_space);
+                     AllocationSpace to_old_space,
+                     SlotsBuffer** evacuation_slots_buffer);
 
-  void MigrateObjectTagged(HeapObject* dst, HeapObject* src, int size);
-  void MigrateObjectMixed(HeapObject* dst, HeapObject* src, int size);
+  void MigrateObjectTagged(HeapObject* dst, HeapObject* src, int size,
+                           SlotsBuffer** evacuation_slots_buffer);
+  void MigrateObjectMixed(HeapObject* dst, HeapObject* src, int size,
+                          SlotsBuffer** evacuation_slots_buffer);
   void MigrateObjectRaw(HeapObject* dst, HeapObject* src, int size);
 
   bool TryPromoteObject(HeapObject* object, int object_size);
@@ -711,31 +542,13 @@ class MarkCompactCollector {
 
   MarkingParity marking_parity_;
 
-  // True if we are collecting slots to perform evacuation from evacuation
-  // candidates.
-  bool compacting_;
-
   bool was_marked_incrementally_;
-
-  // True if concurrent or parallel sweeping is currently in progress.
-  bool sweeping_in_progress_;
-
-  // True if parallel compaction is currently in progress.
-  bool parallel_compaction_in_progress_;
-
-  // Synchronize sweeper threads.
-  base::Semaphore pending_sweeper_jobs_semaphore_;
-
-  // Synchronize compaction threads.
-  base::Semaphore pending_compaction_jobs_semaphore_;
 
   bool evacuation_;
 
-  SlotsBufferAllocator slots_buffer_allocator_;
+  SlotsBufferAllocator* slots_buffer_allocator_;
 
   SlotsBuffer* migration_slots_buffer_;
-
-  base::Mutex migration_slots_buffer_mutex_;
 
   // Finishes GC, performs heap verification if enabled.
   void Finish();
@@ -885,11 +698,22 @@ class MarkCompactCollector {
 
   void EvacuateNewSpace();
 
-  void EvacuateLiveObjectsFromPage(Page* p);
+  bool EvacuateLiveObjectsFromPage(Page* p, PagedSpace* target_space,
+                                   SlotsBuffer** evacuation_slots_buffer);
 
-  void EvacuatePages();
+  void AddEvacuationSlotsBufferSynchronized(
+      SlotsBuffer* evacuation_slots_buffer);
+
+  void EvacuatePages(CompactionSpaceCollection* compaction_spaces,
+                     SlotsBuffer** evacuation_slots_buffer);
 
   void EvacuatePagesInParallel();
+
+  int NumberOfParallelCompactionTasks() {
+    // TODO(hpayer, mlippautz): Figure out some logic to determine the number
+    // of compaction tasks.
+    return 1;
+  }
 
   void WaitUntilCompactionCompleted();
 
@@ -910,13 +734,16 @@ class MarkCompactCollector {
   void ParallelSweepSpaceComplete(PagedSpace* space);
 
   // Updates store buffer and slot buffer for a pointer in a migrating object.
-  void RecordMigratedSlot(Object* value, Address slot);
+  void RecordMigratedSlot(Object* value, Address slot,
+                          SlotsBuffer** evacuation_slots_buffer);
 
   // Adds the code entry slot to the slots buffer.
-  void RecordMigratedCodeEntrySlot(Address code_entry, Address code_entry_slot);
+  void RecordMigratedCodeEntrySlot(Address code_entry, Address code_entry_slot,
+                                   SlotsBuffer** evacuation_slots_buffer);
 
   // Adds the slot of a moved code object.
-  void RecordMigratedCodeObjectSlot(Address code_object);
+  void RecordMigratedCodeObjectSlot(Address code_object,
+                                    SlotsBuffer** evacuation_slots_buffer);
 
 #ifdef DEBUG
   friend class MarkObjectVisitor;
@@ -935,9 +762,36 @@ class MarkCompactCollector {
 
   List<Page*> evacuation_candidates_;
 
+  // The evacuation_slots_buffers_ are used by the compaction threads.
+  // When a compaction task finishes, it uses
+  // AddEvacuationSlotsbufferSynchronized to adds its slots buffer to the
+  // evacuation_slots_buffers_ list using the evacuation_slots_buffers_mutex_
+  // lock.
+  base::Mutex evacuation_slots_buffers_mutex_;
+  List<SlotsBuffer*> evacuation_slots_buffers_;
+
   base::SmartPointer<FreeList> free_list_old_space_;
   base::SmartPointer<FreeList> free_list_code_space_;
   base::SmartPointer<FreeList> free_list_map_space_;
+
+  // True if we are collecting slots to perform evacuation from evacuation
+  // candidates.
+  bool compacting_;
+
+  // True if concurrent or parallel sweeping is currently in progress.
+  bool sweeping_in_progress_;
+
+  // True if parallel compaction is currently in progress.
+  bool compaction_in_progress_;
+
+  // Semaphore used to synchronize sweeper tasks.
+  base::Semaphore pending_sweeper_tasks_semaphore_;
+
+  // Semaphore used to synchronize compaction tasks.
+  base::Semaphore pending_compaction_tasks_semaphore_;
+
+  // Number of active compaction tasks (including main thread).
+  intptr_t concurrent_compaction_tasks_active_;
 
   friend class Heap;
 };

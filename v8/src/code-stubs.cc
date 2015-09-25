@@ -324,6 +324,12 @@ std::ostream& operator<<(std::ostream& os, const StringAddFlags& flags) {
       return os << "CheckRight";
     case STRING_ADD_CHECK_BOTH:
       return os << "CheckBoth";
+    case STRING_ADD_CONVERT_LEFT:
+      return os << "ConvertLeft";
+    case STRING_ADD_CONVERT_RIGHT:
+      return os << "ConvertRight";
+    case STRING_ADD_CONVERT:
+      break;
   }
   UNREACHABLE();
   return os;
@@ -345,6 +351,7 @@ InlineCacheState CompareICStub::GetICState() const {
   switch (state) {
     case CompareICState::UNINITIALIZED:
       return ::v8::internal::UNINITIALIZED;
+    case CompareICState::BOOLEAN:
     case CompareICState::SMI:
     case CompareICState::NUMBER:
     case CompareICState::INTERNALIZED_STRING:
@@ -383,7 +390,6 @@ bool CompareICStub::FindCodeInSpecialCache(Code** code_out) {
   Code::Flags flags = Code::ComputeFlags(
       GetCodeKind(),
       UNINITIALIZED);
-  DCHECK(op() == Token::EQ || op() == Token::EQ_STRICT);
   Handle<Object> probe(
       known_map_->FindInCodeCache(
         strict() ?
@@ -410,6 +416,9 @@ void CompareICStub::Generate(MacroAssembler* masm) {
   switch (state()) {
     case CompareICState::UNINITIALIZED:
       GenerateMiss(masm);
+      break;
+    case CompareICState::BOOLEAN:
+      GenerateBooleans(masm);
       break;
     case CompareICState::SMI:
       GenerateSmis(masm);
@@ -489,8 +498,8 @@ Handle<Code> TurboFanCodeStub::GenerateCode() {
   Handle<Object> call_conv = factory->InternalizeUtf8String(name);
   Handle<Object> minor_key = factory->NewNumber(MinorKey());
   Handle<Object> args[] = {call_conv, minor_key};
-  MaybeHandle<Object> result = Execution::Call(
-      isolate(), outer, factory->undefined_value(), 2, args, false);
+  MaybeHandle<Object> result =
+      Execution::Call(isolate(), outer, factory->undefined_value(), 2, args);
   Handle<JSFunction> inner = Handle<JSFunction>::cast(result.ToHandleChecked());
   // Just to make sure nobody calls this...
   inner->set_code(isolate()->builtins()->builtin(Builtins::kIllegal));
@@ -581,11 +590,6 @@ Type* CompareNilICStub::GetInputType(Zone* zone, Handle<Map> map) {
   Type* nil_type =
       nil_value() == kNullValue ? Type::Null(zone) : Type::Undefined(zone);
   return Type::Union(output_type, nil_type, zone);
-}
-
-
-void CallIC_ArrayStub::PrintState(std::ostream& os) const {  // NOLINT
-  os << state() << " (Array)";
 }
 
 
@@ -680,8 +684,7 @@ ElementsTransitionAndStoreStub::GetCallInterfaceDescriptor() const {
 
 
 void FastNewClosureStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
-  descriptor->Initialize(
-      Runtime::FunctionForId(Runtime::kNewClosureFromStubFailure)->entry);
+  descriptor->Initialize(Runtime::FunctionForId(Runtime::kNewClosure)->entry);
 }
 
 

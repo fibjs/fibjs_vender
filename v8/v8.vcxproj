@@ -110,6 +110,7 @@
     <ClInclude Include="src\compiler\ast-graph-builder.h" />
     <ClInclude Include="src\compiler\ast-loop-assignment-analyzer.h" />
     <ClInclude Include="src\compiler\basic-block-instrumentor.h" />
+    <ClInclude Include="src\compiler\bytecode-graph-builder.h" />
     <ClInclude Include="src\compiler\change-lowering.h" />
     <ClInclude Include="src\compiler\coalesced-live-ranges.h" />
     <ClInclude Include="src\compiler\code-generator-impl.h" />
@@ -247,11 +248,13 @@
     <ClInclude Include="src\heap-profiler.h" />
     <ClInclude Include="src\heap-snapshot-generator-inl.h" />
     <ClInclude Include="src\heap-snapshot-generator.h" />
+    <ClInclude Include="src\heap\array-buffer-tracker.h" />
     <ClInclude Include="src\heap\gc-idle-time-handler.h" />
     <ClInclude Include="src\heap\gc-tracer.h" />
     <ClInclude Include="src\heap\heap-inl.h" />
     <ClInclude Include="src\heap\heap.h" />
     <ClInclude Include="src\heap\incremental-marking-inl.h" />
+    <ClInclude Include="src\heap\incremental-marking-job.h" />
     <ClInclude Include="src\heap\incremental-marking.h" />
     <ClInclude Include="src\heap\mark-compact-inl.h" />
     <ClInclude Include="src\heap\mark-compact.h" />
@@ -259,6 +262,9 @@
     <ClInclude Include="src\heap\object-stats.h" />
     <ClInclude Include="src\heap\objects-visiting-inl.h" />
     <ClInclude Include="src\heap\objects-visiting.h" />
+    <ClInclude Include="src\heap\scavenger-inl.h" />
+    <ClInclude Include="src\heap\scavenger.h" />
+    <ClInclude Include="src\heap\slots-buffer.h" />
     <ClInclude Include="src\heap\spaces-inl.h" />
     <ClInclude Include="src\heap\spaces.h" />
     <ClInclude Include="src\heap\store-buffer-inl.h" />
@@ -312,6 +318,7 @@
     <ClInclude Include="src\identity-map.h" />
     <ClInclude Include="src\interface-descriptors.h" />
     <ClInclude Include="src\interpreter\bytecode-array-builder.h" />
+    <ClInclude Include="src\interpreter\bytecode-array-iterator.h" />
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
     <ClInclude Include="src\interpreter\bytecodes.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
@@ -521,6 +528,7 @@
     <ClCompile Include="src\compiler\ast-graph-builder.cc" />
     <ClCompile Include="src\compiler\ast-loop-assignment-analyzer.cc" />
     <ClCompile Include="src\compiler\basic-block-instrumentor.cc" />
+    <ClCompile Include="src\compiler\bytecode-graph-builder.cc" />
     <ClCompile Include="src\compiler\c-linkage.cc" />
     <ClCompile Include="src\compiler\change-lowering.cc" />
     <ClCompile Include="src\compiler\coalesced-live-ranges.cc" />
@@ -654,14 +662,18 @@
     <ClCompile Include="src\handles.cc" />
     <ClCompile Include="src\heap-profiler.cc" />
     <ClCompile Include="src\heap-snapshot-generator.cc" />
+    <ClCompile Include="src\heap\array-buffer-tracker.cc" />
     <ClCompile Include="src\heap\gc-idle-time-handler.cc" />
     <ClCompile Include="src\heap\gc-tracer.cc" />
     <ClCompile Include="src\heap\heap.cc" />
+    <ClCompile Include="src\heap\incremental-marking-job.cc" />
     <ClCompile Include="src\heap\incremental-marking.cc" />
     <ClCompile Include="src\heap\mark-compact.cc" />
     <ClCompile Include="src\heap\memory-reducer.cc" />
     <ClCompile Include="src\heap\object-stats.cc" />
     <ClCompile Include="src\heap\objects-visiting.cc" />
+    <ClCompile Include="src\heap\scavenger.cc" />
+    <ClCompile Include="src\heap\slots-buffer.cc" />
     <ClCompile Include="src\heap\spaces.cc" />
     <ClCompile Include="src\heap\store-buffer.cc" />
     <ClCompile Include="src\hydrogen-bce.cc" />
@@ -734,6 +746,7 @@
     <ClCompile Include="src\identity-map.cc" />
     <ClCompile Include="src\interface-descriptors.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc" />
+    <ClCompile Include="src\interpreter\bytecode-array-iterator.cc" />
     <ClCompile Include="src\interpreter\bytecode-generator.cc" />
     <ClCompile Include="src\interpreter\bytecodes.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
@@ -810,6 +823,7 @@
     <ClCompile Include="src\runtime\runtime-numbers.cc" />
     <ClCompile Include="src\runtime\runtime-object.cc" />
     <ClCompile Include="src\runtime\runtime-observe.cc" />
+    <ClCompile Include="src\runtime\runtime-operators.cc" />
     <ClCompile Include="src\runtime\runtime-proxy.cc" />
     <ClCompile Include="src\runtime\runtime-regexp.cc" />
     <ClCompile Include="src\runtime\runtime-scopes.cc" />

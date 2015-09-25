@@ -198,14 +198,6 @@ bool Object::IsSpecObject() const {
 }
 
 
-// TODO(rossberg): Remove this and use the spec compliant IsCallable instead.
-bool Object::IsSpecFunction() const {
-  if (!Object::IsHeapObject()) return false;
-  InstanceType type = HeapObject::cast(this)->map()->instance_type();
-  return type == JS_FUNCTION_TYPE || type == JS_FUNCTION_PROXY_TYPE;
-}
-
-
 bool Object::IsTemplateInfo() const {
   return IsObjectTemplateInfo() || IsFunctionTemplateInfo();
 }
@@ -1082,11 +1074,11 @@ bool Object::IsArgumentsMarker() const {
 }
 
 
-double Object::Number() {
+double Object::Number() const {
   DCHECK(IsNumber());
   return IsSmi()
-    ? static_cast<double>(reinterpret_cast<Smi*>(this)->value())
-    : reinterpret_cast<HeapNumber*>(this)->value();
+             ? static_cast<double>(reinterpret_cast<const Smi*>(this)->value())
+             : reinterpret_cast<const HeapNumber*>(this)->value();
 }
 
 
@@ -1505,6 +1497,8 @@ HeapObjectContents HeapObject::ContentType() {
   } else if (type >= FIRST_FIXED_TYPED_ARRAY_TYPE &&
              type <= LAST_FIXED_TYPED_ARRAY_TYPE) {
     return HeapObjectContents::kMixedValues;
+  } else if (type == JS_ARRAY_BUFFER_TYPE) {
+    return HeapObjectContents::kMixedValues;
   } else if (type <= LAST_DATA_TYPE) {
     // TODO(jochen): Why do we claim that Code and Map contain only raw values?
     return HeapObjectContents::kRawValues;
@@ -1564,6 +1558,12 @@ bool Simd128Value::Equals(Simd128Value* that) {
   SIMD128_TYPES(SIMD128_VALUE)
 #undef SIMD128_VALUE
   return false;
+}
+
+
+// static
+bool Simd128Value::Equals(Handle<Simd128Value> one, Handle<Simd128Value> two) {
+  return one->Equals(*two);
 }
 
 
@@ -1743,8 +1743,7 @@ bool AllocationSite::SitePointsToLiteral() {
 // elements kind is the initial elements kind.
 AllocationSiteMode AllocationSite::GetMode(
     ElementsKind boilerplate_elements_kind) {
-  if (FLAG_pretenuring_call_new ||
-      IsFastSmiElementsKind(boilerplate_elements_kind)) {
+  if (IsFastSmiElementsKind(boilerplate_elements_kind)) {
     return TRACK_ALLOCATION_SITE;
   }
 
@@ -1754,9 +1753,8 @@ AllocationSiteMode AllocationSite::GetMode(
 
 AllocationSiteMode AllocationSite::GetMode(ElementsKind from,
                                            ElementsKind to) {
-  if (FLAG_pretenuring_call_new ||
-      (IsFastSmiElementsKind(from) &&
-       IsMoreGeneralElementsKindTransition(from, to))) {
+  if (IsFastSmiElementsKind(from) &&
+      IsMoreGeneralElementsKindTransition(from, to)) {
     return TRACK_ALLOCATION_SITE;
   }
 
@@ -1812,7 +1810,7 @@ inline void AllocationSite::set_memento_found_count(int count) {
   // Verify that we can count more mementos than we can possibly find in one
   // new space collection.
   DCHECK((GetHeap()->MaxSemiSpaceSize() /
-          (StaticVisitorBase::kMinObjectSizeInWords * kPointerSize +
+          (Heap::kMinObjectSizeInWords * kPointerSize +
            AllocationMemento::kSize)) < MementoFoundCountBits::kMax);
   DCHECK(count < MementoFoundCountBits::kMax);
   set_pretenure_data(
@@ -2050,6 +2048,12 @@ byte Oddball::kind() const {
 
 void Oddball::set_kind(byte value) {
   WRITE_FIELD(this, kKindOffset, Smi::FromInt(value));
+}
+
+
+// static
+Handle<Object> Oddball::ToNumber(Handle<Oddball> input) {
+  return handle(input->to_number(), input->GetIsolate());
 }
 
 
@@ -2793,7 +2797,7 @@ int BinarySearch(T* array, Name* name, int low, int high, int valid_entries,
   DCHECK(low <= high);
 
   while (low != high) {
-    int mid = (low + high) / 2;
+    int mid = low + (high - low) / 2;
     Name* mid_name = array->GetSortedKey(mid);
     uint32_t mid_hash = mid_name->Hash();
 
@@ -4091,6 +4095,11 @@ int BytecodeArray::frame_size() const {
 }
 
 
+int BytecodeArray::register_count() const {
+  return frame_size() / kPointerSize;
+}
+
+
 void BytecodeArray::set_parameter_count(int number_of_parameters) {
   DCHECK_GE(number_of_parameters, 0);
   // Parameter count is stored as the size on stack of the parameters to allow
@@ -5357,11 +5366,11 @@ void Map::UpdateDescriptors(DescriptorArray* descriptors,
     // TODO(ishell): remove these checks from VERIFY_HEAP mode.
     if (FLAG_verify_heap) {
       CHECK(layout_descriptor()->IsConsistentWithMap(this));
-      CHECK(visitor_id() == StaticVisitorBase::GetVisitorId(this));
+      CHECK(visitor_id() == Heap::GetStaticVisitorIdForMap(this));
     }
 #else
     SLOW_DCHECK(layout_descriptor()->IsConsistentWithMap(this));
-    DCHECK(visitor_id() == StaticVisitorBase::GetVisitorId(this));
+    DCHECK(visitor_id() == Heap::GetStaticVisitorIdForMap(this));
 #endif
   }
 }
@@ -5383,7 +5392,7 @@ void Map::InitializeDescriptors(DescriptorArray* descriptors,
 #else
     SLOW_DCHECK(layout_descriptor()->IsConsistentWithMap(this));
 #endif
-    set_visitor_id(StaticVisitorBase::GetVisitorId(this));
+    set_visitor_id(Heap::GetStaticVisitorIdForMap(this));
   }
 }
 
@@ -6581,6 +6590,32 @@ void JSArrayBuffer::set_is_shared(bool value) {
 }
 
 
+// static
+template <typename StaticVisitor>
+void JSArrayBuffer::JSArrayBufferIterateBody(Heap* heap, HeapObject* obj) {
+  StaticVisitor::VisitPointers(
+      heap, obj,
+      HeapObject::RawField(obj, JSArrayBuffer::BodyDescriptor::kStartOffset),
+      HeapObject::RawField(obj,
+                           JSArrayBuffer::kByteLengthOffset + kPointerSize));
+  StaticVisitor::VisitPointers(
+      heap, obj, HeapObject::RawField(obj, JSArrayBuffer::kSize),
+      HeapObject::RawField(obj, JSArrayBuffer::kSizeWithInternalFields));
+}
+
+
+void JSArrayBuffer::JSArrayBufferIterateBody(HeapObject* obj,
+                                             ObjectVisitor* v) {
+  v->VisitPointers(
+      HeapObject::RawField(obj, JSArrayBuffer::BodyDescriptor::kStartOffset),
+      HeapObject::RawField(obj,
+                           JSArrayBuffer::kByteLengthOffset + kPointerSize));
+  v->VisitPointers(
+      HeapObject::RawField(obj, JSArrayBuffer::kSize),
+      HeapObject::RawField(obj, JSArrayBuffer::kSizeWithInternalFields));
+}
+
+
 Object* JSArrayBufferView::byte_offset() const {
   if (WasNeutered()) return Smi::FromInt(0);
   return Object::cast(READ_FIELD(this, kByteOffsetOffset));
@@ -7033,6 +7068,78 @@ String* String::GetForwardedInternalizedString() {
 }
 
 
+// static
+Maybe<bool> Object::GreaterThan(Handle<Object> x, Handle<Object> y,
+                                Strength strength) {
+  Maybe<ComparisonResult> result = Compare(x, y, strength);
+  if (result.IsJust()) {
+    switch (result.FromJust()) {
+      case ComparisonResult::kGreaterThan:
+        return Just(true);
+      case ComparisonResult::kLessThan:
+      case ComparisonResult::kEqual:
+      case ComparisonResult::kUndefined:
+        return Just(false);
+    }
+  }
+  return Nothing<bool>();
+}
+
+
+// static
+Maybe<bool> Object::GreaterThanOrEqual(Handle<Object> x, Handle<Object> y,
+                                       Strength strength) {
+  Maybe<ComparisonResult> result = Compare(x, y, strength);
+  if (result.IsJust()) {
+    switch (result.FromJust()) {
+      case ComparisonResult::kEqual:
+      case ComparisonResult::kGreaterThan:
+        return Just(true);
+      case ComparisonResult::kLessThan:
+      case ComparisonResult::kUndefined:
+        return Just(false);
+    }
+  }
+  return Nothing<bool>();
+}
+
+
+// static
+Maybe<bool> Object::LessThan(Handle<Object> x, Handle<Object> y,
+                             Strength strength) {
+  Maybe<ComparisonResult> result = Compare(x, y, strength);
+  if (result.IsJust()) {
+    switch (result.FromJust()) {
+      case ComparisonResult::kLessThan:
+        return Just(true);
+      case ComparisonResult::kEqual:
+      case ComparisonResult::kGreaterThan:
+      case ComparisonResult::kUndefined:
+        return Just(false);
+    }
+  }
+  return Nothing<bool>();
+}
+
+
+// static
+Maybe<bool> Object::LessThanOrEqual(Handle<Object> x, Handle<Object> y,
+                                    Strength strength) {
+  Maybe<ComparisonResult> result = Compare(x, y, strength);
+  if (result.IsJust()) {
+    switch (result.FromJust()) {
+      case ComparisonResult::kEqual:
+      case ComparisonResult::kLessThan:
+        return Just(true);
+      case ComparisonResult::kGreaterThan:
+      case ComparisonResult::kUndefined:
+        return Just(false);
+    }
+  }
+  return Nothing<bool>();
+}
+
+
 MaybeHandle<Object> Object::GetPropertyOrElement(Handle<Object> object,
                                                  Handle<Name> name,
                                                  LanguageMode language_mode) {
@@ -7244,7 +7351,7 @@ bool AccessorPair::ContainsAccessor() {
 
 
 bool AccessorPair::IsJSAccessor(Object* obj) {
-  return obj->IsSpecFunction() || obj->IsUndefined();
+  return obj->IsCallable() || obj->IsUndefined();
 }
 
 

@@ -78,6 +78,7 @@ class CodeFactory final {
 
   static Callable StringAdd(Isolate* isolate, StringAddFlags flags,
                             PretenureFlag pretenure_flag);
+  static Callable StringCompare(Isolate* isolate);
 
   static Callable Typeof(Isolate* isolate);
 
@@ -91,6 +92,8 @@ class CodeFactory final {
 
   static Callable CallFunction(Isolate* isolate, int argc,
                                CallFunctionFlags flags);
+
+  static Callable PushArgsAndCall(Isolate* isolate);
 };
 
 }  // namespace internal

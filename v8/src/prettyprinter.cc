@@ -114,6 +114,12 @@ void CallPrinter::VisitExpressionStatement(ExpressionStatement* node) {
 void CallPrinter::VisitEmptyStatement(EmptyStatement* node) {}
 
 
+void CallPrinter::VisitSloppyBlockFunctionStatement(
+    SloppyBlockFunctionStatement* node) {
+  Find(node->statement());
+}
+
+
 void CallPrinter::VisitIfStatement(IfStatement* node) {
   Find(node->condition());
   Find(node->then_statement());
@@ -496,6 +502,12 @@ void PrettyPrinter::VisitExpressionStatement(ExpressionStatement* node) {
 
 void PrettyPrinter::VisitEmptyStatement(EmptyStatement* node) {
   Print(";");
+}
+
+
+void PrettyPrinter::VisitSloppyBlockFunctionStatement(
+    SloppyBlockFunctionStatement* node) {
+  Visit(node->statement());
 }
 
 
@@ -895,7 +907,7 @@ const char* PrettyPrinter::PrintProgram(FunctionLiteral* program) {
 
 void PrettyPrinter::PrintOut(Isolate* isolate, Zone* zone, AstNode* node) {
   PrettyPrinter printer(isolate, zone);
-  PrintF("%s", printer.Print(node));
+  PrintF("%s\n", printer.Print(node));
 }
 
 
@@ -1216,6 +1228,12 @@ void AstPrinter::VisitEmptyStatement(EmptyStatement* node) {
 }
 
 
+void AstPrinter::VisitSloppyBlockFunctionStatement(
+    SloppyBlockFunctionStatement* node) {
+  Visit(node->statement());
+}
+
+
 void AstPrinter::VisitIfStatement(IfStatement* node) {
   IndentedScope indent(this, "IF");
   PrintIndentedVisit("CONDITION", node->condition());
@@ -1532,8 +1550,8 @@ void AstPrinter::VisitCallNew(CallNew* node) {
 
 void AstPrinter::VisitCallRuntime(CallRuntime* node) {
   EmbeddedVector<char, 128> buf;
+  SNPrintF(buf, "CALL RUNTIME %s", node->debug_name());
   IndentedScope indent(this, buf.start());
-  Print("NAME %s\n", node->debug_name());
   PrintArguments(node->arguments());
 }
 

@@ -2000,11 +2000,8 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ Ldr(cp, FieldMemOperand(function_reg, JSFunction::kContextOffset));
 
-    // Set the arguments count if adaption is not needed. Assumes that x0 is
-    // available to write to at this point.
-    if (dont_adapt_arguments) {
-      __ Mov(arity_reg, arity);
-    }
+    // Always initialize x0 to the number of actual arguments.
+    __ Mov(arity_reg, arity);
 
     // Invoke function.
     __ Ldr(x10, FieldMemOperand(function_reg, JSFunction::kCodeEntryOffset));
@@ -2071,9 +2068,7 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(instr->IsMarkedAsCall());
   DCHECK(ToRegister(instr->function()).is(x1));
 
-  if (instr->hydrogen()->pass_argument_count()) {
-    __ Mov(x0, Operand(instr->arity()));
-  }
+  __ Mov(x0, Operand(instr->arity()));
 
   // Change context.
   __ Ldr(cp, FieldMemOperand(x1, JSFunction::kContextOffset));
@@ -2104,11 +2099,6 @@ void LCodeGen::DoCallStub(LCallStub* instr) {
     }
     case CodeStub::SubString: {
       SubStringStub stub(isolate());
-      CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
-      break;
-    }
-    case CodeStub::StringCompare: {
-      StringCompareStub stub(isolate());
       CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
       break;
     }
@@ -2835,29 +2825,6 @@ void LCodeGen::DoDummy(LDummy* instr) {
 
 void LCodeGen::DoDummyUse(LDummyUse* instr) {
   // Nothing to see here, move on!
-}
-
-
-void LCodeGen::DoFunctionLiteral(LFunctionLiteral* instr) {
-  DCHECK(ToRegister(instr->context()).is(cp));
-  // FunctionLiteral instruction is marked as call, we can trash any register.
-  DCHECK(instr->IsMarkedAsCall());
-
-  // Use the fast case closure allocation code that allocates in new
-  // space for nested functions that don't need literals cloning.
-  bool pretenure = instr->hydrogen()->pretenure();
-  if (!pretenure && instr->hydrogen()->has_no_literals()) {
-    FastNewClosureStub stub(isolate(), instr->hydrogen()->language_mode(),
-                            instr->hydrogen()->kind());
-    __ Mov(x2, Operand(instr->hydrogen()->shared_info()));
-    CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
-  } else {
-    __ Mov(x2, Operand(instr->hydrogen()->shared_info()));
-    __ Mov(x1, Operand(pretenure ? factory()->true_value()
-                                 : factory()->false_value()));
-    __ Push(cp, x2, x1);
-    CallRuntime(Runtime::kNewClosure, 3, instr);
-  }
 }
 
 
@@ -5535,16 +5502,13 @@ void LCodeGen::DoDeferredStringCharFromCode(LStringCharFromCode* instr) {
 
 void LCodeGen::DoStringCompareAndBranch(LStringCompareAndBranch* instr) {
   DCHECK(ToRegister(instr->context()).is(cp));
-  Token::Value op = instr->op();
+  DCHECK(ToRegister(instr->left()).is(x1));
+  DCHECK(ToRegister(instr->right()).is(x0));
 
-  Handle<Code> ic =
-      CodeFactory::CompareIC(isolate(), op, Strength::WEAK).code();
-  CallCode(ic, RelocInfo::CODE_TARGET, instr);
-  InlineSmiCheckInfo::EmitNotInlined(masm());
+  Handle<Code> code = CodeFactory::StringCompare(isolate()).code();
+  CallCode(code, RelocInfo::CODE_TARGET, instr);
 
-  Condition condition = TokenToCondition(op, false);
-
-  EmitCompareAndBranch(instr, condition, x0, 0);
+  EmitCompareAndBranch(instr, TokenToCondition(instr->op(), false), x0, 0);
 }
 
 

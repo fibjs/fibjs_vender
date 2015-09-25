@@ -1003,11 +1003,6 @@ void LCodeGen::DoCallStub(LCallStub* instr) {
       CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
       break;
     }
-    case CodeStub::StringCompare: {
-      StringCompareStub stub(isolate());
-      CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
-      break;
-    }
     default:
       UNREACHABLE();
   }
@@ -2495,16 +2490,14 @@ void LCodeGen::DoIsUndetectableAndBranch(LIsUndetectableAndBranch* instr) {
 
 void LCodeGen::DoStringCompareAndBranch(LStringCompareAndBranch* instr) {
   DCHECK(ToRegister(instr->context()).is(rsi));
-  Token::Value op = instr->op();
+  DCHECK(ToRegister(instr->left()).is(rdx));
+  DCHECK(ToRegister(instr->right()).is(rax));
 
-  Handle<Code> ic =
-      CodeFactory::CompareIC(isolate(), op, Strength::WEAK).code();
-  CallCode(ic, RelocInfo::CODE_TARGET, instr);
-
-  Condition condition = TokenToCondition(op, false);
+  Handle<Code> code = CodeFactory::StringCompare(isolate()).code();
+  CallCode(code, RelocInfo::CODE_TARGET, instr);
   __ testp(rax, rax);
 
-  EmitBranch(instr, condition);
+  EmitBranch(instr, TokenToCondition(instr->op(), false));
 }
 
 
@@ -3415,11 +3408,8 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ movp(rsi, FieldOperand(function_reg, JSFunction::kContextOffset));
 
-    // Set rax to arguments count if adaption is not needed. Assumes that rax
-    // is available to write to at this point.
-    if (dont_adapt_arguments) {
-      __ Set(rax, arity);
-    }
+    // Always initialize rax to the number of actual arguments.
+    __ Set(rax, arity);
 
     // Invoke function.
     if (function.is_identical_to(info()->closure())) {
@@ -3482,9 +3472,7 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(ToRegister(instr->function()).is(rdi));
   DCHECK(ToRegister(instr->result()).is(rax));
 
-  if (instr->hydrogen()->pass_argument_count()) {
-    __ Set(rax, instr->arity());
-  }
+  __ Set(rax, instr->arity());
 
   // Change context.
   __ movp(rsi, FieldOperand(rdi, JSFunction::kContextOffset));
@@ -5513,26 +5501,6 @@ void LCodeGen::DoRegExpLiteral(LRegExpLiteral* instr) {
   if ((size % (2 * kPointerSize)) != 0) {
     __ movp(rdx, FieldOperand(rbx, size - kPointerSize));
     __ movp(FieldOperand(rax, size - kPointerSize), rdx);
-  }
-}
-
-
-void LCodeGen::DoFunctionLiteral(LFunctionLiteral* instr) {
-  DCHECK(ToRegister(instr->context()).is(rsi));
-  // Use the fast case closure allocation code that allocates in new
-  // space for nested functions that don't need literals cloning.
-  bool pretenure = instr->hydrogen()->pretenure();
-  if (!pretenure && instr->hydrogen()->has_no_literals()) {
-    FastNewClosureStub stub(isolate(), instr->hydrogen()->language_mode(),
-                            instr->hydrogen()->kind());
-    __ Move(rbx, instr->hydrogen()->shared_info());
-    CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
-  } else {
-    __ Push(rsi);
-    __ Push(instr->hydrogen()->shared_info());
-    __ PushRoot(pretenure ? Heap::kTrueValueRootIndex :
-                            Heap::kFalseValueRootIndex);
-    CallRuntime(Runtime::kNewClosure, 3, instr);
   }
 }
 

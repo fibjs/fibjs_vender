@@ -1738,25 +1738,16 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
   __ Push(rax);
 
   // Figure out which native to call and setup the arguments.
-  if (cc == equal && strict()) {
+  if (cc == equal) {
     __ PushReturnAddressFrom(rcx);
-    __ TailCallRuntime(Runtime::kStrictEquals, 2, 1);
+    __ TailCallRuntime(strict() ? Runtime::kStrictEquals : Runtime::kEquals, 2,
+                       1);
   } else {
-    int context_index;
-    if (cc == equal) {
-      context_index = Context::EQUALS_BUILTIN_INDEX;
-    } else {
-      context_index = is_strong(strength())
-                          ? Context::COMPARE_STRONG_BUILTIN_INDEX
-                          : Context::COMPARE_BUILTIN_INDEX;
-      __ Push(Smi::FromInt(NegativeComparisonResult(cc)));
-    }
-
+    __ Push(Smi::FromInt(NegativeComparisonResult(cc)));
     __ PushReturnAddressFrom(rcx);
-
-    // Call the native; it returns -1 (less), 0 (equal), or 1 (greater)
-    // tagged as a small integer.
-    __ InvokeBuiltin(context_index, JUMP_FUNCTION);
+    __ TailCallRuntime(
+        is_strong(strength()) ? Runtime::kCompare_Strong : Runtime::kCompare, 3,
+        1);
   }
 
   __ bind(&miss);
@@ -1827,28 +1818,26 @@ static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
   __ j(equal, &done, Label::kFar);
   __ CompareRoot(FieldOperand(r11, HeapObject::kMapOffset),
                  Heap::kWeakCellMapRootIndex);
-  __ j(not_equal, FLAG_pretenuring_call_new ? &miss : &check_allocation_site);
+  __ j(not_equal, &check_allocation_site);
 
   // If the weak cell is cleared, we have a new chance to become monomorphic.
   __ CheckSmi(FieldOperand(r11, WeakCell::kValueOffset));
   __ j(equal, &initialize);
   __ jmp(&megamorphic);
 
-  if (!FLAG_pretenuring_call_new) {
-    __ bind(&check_allocation_site);
-    // If we came here, we need to see if we are the array function.
-    // If we didn't have a matching function, and we didn't find the megamorph
-    // sentinel, then we have in the slot either some other function or an
-    // AllocationSite.
-    __ CompareRoot(FieldOperand(r11, 0), Heap::kAllocationSiteMapRootIndex);
-    __ j(not_equal, &miss);
+  __ bind(&check_allocation_site);
+  // If we came here, we need to see if we are the array function.
+  // If we didn't have a matching function, and we didn't find the megamorph
+  // sentinel, then we have in the slot either some other function or an
+  // AllocationSite.
+  __ CompareRoot(FieldOperand(r11, 0), Heap::kAllocationSiteMapRootIndex);
+  __ j(not_equal, &miss);
 
-    // Make sure the function is the Array() function
-    __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, r11);
-    __ cmpp(rdi, r11);
-    __ j(not_equal, &megamorphic);
-    __ jmp(&done);
-  }
+  // Make sure the function is the Array() function
+  __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, r11);
+  __ cmpp(rdi, r11);
+  __ j(not_equal, &megamorphic);
+  __ jmp(&done);
 
   __ bind(&miss);
 
@@ -1867,21 +1856,18 @@ static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
   // indicate the ElementsKind if function is the Array constructor.
   __ bind(&initialize);
 
-  if (!FLAG_pretenuring_call_new) {
-    // Make sure the function is the Array() function
-    __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, r11);
-    __ cmpp(rdi, r11);
-    __ j(not_equal, &not_array_function);
+  // Make sure the function is the Array() function
+  __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, r11);
+  __ cmpp(rdi, r11);
+  __ j(not_equal, &not_array_function);
 
-    CreateAllocationSiteStub create_stub(isolate);
-    CallStubInRecordCallTarget(masm, &create_stub, is_super);
-    __ jmp(&done_no_smi_convert);
-
-    __ bind(&not_array_function);
-  }
-
-  CreateWeakCellStub create_stub(isolate);
+  CreateAllocationSiteStub create_stub(isolate);
   CallStubInRecordCallTarget(masm, &create_stub, is_super);
+  __ jmp(&done_no_smi_convert);
+
+  __ bind(&not_array_function);
+  CreateWeakCellStub weak_cell_stub(isolate);
+  CallStubInRecordCallTarget(masm, &weak_cell_stub, is_super);
   __ jmp(&done_no_smi_convert);
 
   __ bind(&done);
@@ -1906,36 +1892,10 @@ static void EmitContinueIfStrictOrNative(MacroAssembler* masm, Label* cont) {
 }
 
 
-static void EmitSlowCase(Isolate* isolate,
-                         MacroAssembler* masm,
-                         StackArgumentsAccessor* args,
-                         int argc,
-                         Label* non_function) {
-  // Check for function proxy.
-  __ CmpInstanceType(rcx, JS_FUNCTION_PROXY_TYPE);
-  __ j(not_equal, non_function);
-  __ PopReturnAddressTo(rcx);
-  __ Push(rdi);  // put proxy as additional argument under return address
-  __ PushReturnAddressFrom(rcx);
-  __ Set(rax, argc + 1);
-  __ Set(rbx, 0);
-  __ GetBuiltinEntry(rdx, Context::CALL_FUNCTION_PROXY_BUILTIN_INDEX);
-  {
-    Handle<Code> adaptor =
-        masm->isolate()->builtins()->ArgumentsAdaptorTrampoline();
-    __ jmp(adaptor, RelocInfo::CODE_TARGET);
-  }
-
-  // CALL_NON_FUNCTION expects the non-function callee as receiver (instead
-  // of the original receiver from the call site).
-  __ bind(non_function);
-  __ movp(args->GetReceiverOperand(), rdi);
+static void EmitSlowCase(MacroAssembler* masm, StackArgumentsAccessor* args,
+                         int argc) {
   __ Set(rax, argc);
-  __ Set(rbx, 0);
-  __ GetBuiltinEntry(rdx, Context::CALL_NON_FUNCTION_BUILTIN_INDEX);
-  Handle<Code> adaptor =
-      isolate->builtins()->ArgumentsAdaptorTrampoline();
-  __ Jump(adaptor, RelocInfo::CODE_TARGET);
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 }
 
 
@@ -1960,13 +1920,12 @@ static void CallFunctionNoFeedback(MacroAssembler* masm,
   // rdi : the function to call
 
   // wrap_and_call can only be true if we are compiling a monomorphic method.
-  Isolate* isolate = masm->isolate();
-  Label slow, non_function, wrap, cont;
+  Label slow, wrap, cont;
   StackArgumentsAccessor args(rsp, argc);
 
   if (needs_checks) {
     // Check that the function really is a JavaScript function.
-    __ JumpIfSmi(rdi, &non_function);
+    __ JumpIfSmi(rdi, &slow);
 
     // Goto slow case if we do not have a function.
     __ CmpObjectType(rdi, JS_FUNCTION_TYPE, rcx);
@@ -2001,7 +1960,7 @@ static void CallFunctionNoFeedback(MacroAssembler* masm,
   if (needs_checks) {
     // Slow-case: Non-function called.
     __ bind(&slow);
-    EmitSlowCase(isolate, masm, &args, argc, &non_function);
+    EmitSlowCase(masm, &args, argc);
   }
 
   if (call_as_method) {
@@ -2022,34 +1981,26 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   // rcx : original constructor (for IsSuperConstructorCall)
   // rdx : slot in feedback vector (Smi, for RecordCallTarget)
   // rdi : constructor function
-  Label slow, non_function_call;
 
-  // Check that function is not a smi.
-  __ JumpIfSmi(rdi, &non_function_call);
-  // Check that function is a JSFunction.
+  Label non_function;
+  // Check that the constructor is not a smi.
+  __ JumpIfSmi(rdi, &non_function);
+  // Check that constructor is a JSFunction.
   __ CmpObjectType(rdi, JS_FUNCTION_TYPE, r11);
-  __ j(not_equal, &slow);
+  __ j(not_equal, &non_function);
 
   if (RecordCallTarget()) {
     GenerateRecordCallTarget(masm, IsSuperConstructorCall());
 
     __ SmiToInteger32(rdx, rdx);
-    if (FLAG_pretenuring_call_new) {
-      // Put the AllocationSite from the feedback vector into ebx.
-      // By adding kPointerSize we encode that we know the AllocationSite
-      // entry is at the feedback vector slot given by rdx + 1.
-      __ movp(rbx, FieldOperand(rbx, rdx, times_pointer_size,
-                                FixedArray::kHeaderSize + kPointerSize));
-    } else {
-      Label feedback_register_initialized;
-      // Put the AllocationSite from the feedback vector into rbx, or undefined.
-      __ movp(rbx, FieldOperand(rbx, rdx, times_pointer_size,
-                                FixedArray::kHeaderSize));
-      __ CompareRoot(FieldOperand(rbx, 0), Heap::kAllocationSiteMapRootIndex);
-      __ j(equal, &feedback_register_initialized);
-      __ LoadRoot(rbx, Heap::kUndefinedValueRootIndex);
-      __ bind(&feedback_register_initialized);
-    }
+    Label feedback_register_initialized;
+    // Put the AllocationSite from the feedback vector into rbx, or undefined.
+    __ movp(rbx, FieldOperand(rbx, rdx, times_pointer_size,
+                              FixedArray::kHeaderSize));
+    __ CompareRoot(FieldOperand(rbx, 0), Heap::kAllocationSiteMapRootIndex);
+    __ j(equal, &feedback_register_initialized);
+    __ LoadRoot(rbx, Heap::kUndefinedValueRootIndex);
+    __ bind(&feedback_register_initialized);
 
     __ AssertUndefinedOrAllocationSite(rbx);
   }
@@ -2061,33 +2012,16 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
     __ movp(rdx, rdi);
   }
 
-  // Jump to the function-specific construct stub.
-  Register jmp_reg = rcx;
-  __ movp(jmp_reg, FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
-  __ movp(jmp_reg, FieldOperand(jmp_reg,
-                                SharedFunctionInfo::kConstructStubOffset));
-  __ leap(jmp_reg, FieldOperand(jmp_reg, Code::kHeaderSize));
-  __ jmp(jmp_reg);
+  // Tail call to the function-specific construct stub (still in the caller
+  // context at this point).
+  __ movp(rcx, FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
+  __ movp(rcx, FieldOperand(rcx, SharedFunctionInfo::kConstructStubOffset));
+  __ leap(rcx, FieldOperand(rcx, Code::kHeaderSize));
+  __ jmp(rcx);
 
-  // rdi: called object
-  // rax: number of arguments
-  // r11: object map
-  Label do_call;
-  __ bind(&slow);
-  __ CmpInstanceType(r11, JS_FUNCTION_PROXY_TYPE);
-  __ j(not_equal, &non_function_call);
-  __ GetBuiltinEntry(rdx,
-                     Context::CALL_FUNCTION_PROXY_AS_CONSTRUCTOR_BUILTIN_INDEX);
-  __ jmp(&do_call);
-
-  __ bind(&non_function_call);
-  __ GetBuiltinEntry(rdx,
-                     Context::CALL_NON_FUNCTION_AS_CONSTRUCTOR_BUILTIN_INDEX);
-  __ bind(&do_call);
-  // Set expected number of arguments to zero (not changing rax).
-  __ Set(rbx, 0);
-  __ Jump(isolate()->builtins()->ArgumentsAdaptorTrampoline(),
-          RelocInfo::CODE_TARGET);
+  __ bind(&non_function);
+  __ movp(rdx, rdi);
+  __ Jump(isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
 }
 
 
@@ -2099,28 +2033,16 @@ static void EmitLoadTypeFeedbackVector(MacroAssembler* masm, Register vector) {
 }
 
 
-void CallIC_ArrayStub::Generate(MacroAssembler* masm) {
+void CallICStub::HandleArrayCase(MacroAssembler* masm, Label* miss) {
   // rdi - function
-  // rdx - slot id (as integer)
+  // rdx - slot id
   // rbx - vector
-  Label miss;
-  int argc = arg_count();
-  ParameterCount actual(argc);
-
-  __ SmiToInteger32(rdx, rdx);
-
-  __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, rcx);
-  __ cmpp(rdi, rcx);
-  __ j(not_equal, &miss);
+  // rcx - allocation site (loaded from vector[slot]).
+  __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, r8);
+  __ cmpp(rdi, r8);
+  __ j(not_equal, miss);
 
   __ movp(rax, Immediate(arg_count()));
-  __ movp(rcx, FieldOperand(rbx, rdx, times_pointer_size,
-                            FixedArray::kHeaderSize));
-  // Verify that ecx contains an AllocationSite
-  Factory* factory = masm->isolate()->factory();
-  __ Cmp(FieldOperand(rcx, HeapObject::kMapOffset),
-         factory->allocation_site_map());
-  __ j(not_equal, &miss);
 
   // Increment the call count for monomorphic function calls.
   __ SmiAddConstant(FieldOperand(rbx, rdx, times_pointer_size,
@@ -2131,18 +2053,6 @@ void CallIC_ArrayStub::Generate(MacroAssembler* masm) {
   __ movp(rdx, rdi);
   ArrayConstructorStub stub(masm->isolate(), arg_count());
   __ TailCallStub(&stub);
-
-  __ bind(&miss);
-  GenerateMiss(masm);
-
-  // The slow case, we need this no matter what to complete a call after a miss.
-  CallFunctionNoFeedback(masm,
-                         arg_count(),
-                         true,
-                         CallAsMethod());
-
-  // Unreachable.
-  __ int3();
 }
 
 
@@ -2156,7 +2066,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   const int generic_offset =
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kGenericCountIndex);
   Label extra_checks_or_miss, slow_start;
-  Label slow, non_function, wrap, cont;
+  Label slow, wrap, cont;
   Label have_js_function;
   int argc = arg_count();
   StackArgumentsAccessor args(rsp, argc);
@@ -2211,7 +2121,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ InvokeFunction(rdi, actual, JUMP_FUNCTION, NullCallWrapper());
 
   __ bind(&slow);
-  EmitSlowCase(isolate, masm, &args, argc, &non_function);
+  EmitSlowCase(masm, &args, argc);
 
   if (CallAsMethod()) {
     __ bind(&wrap);
@@ -2219,10 +2129,20 @@ void CallICStub::Generate(MacroAssembler* masm) {
   }
 
   __ bind(&extra_checks_or_miss);
-  Label uninitialized, miss;
+  Label uninitialized, miss, not_allocation_site;
 
   __ Cmp(rcx, TypeFeedbackVector::MegamorphicSentinel(isolate));
   __ j(equal, &slow_start);
+
+  // Check if we have an allocation site.
+  __ CompareRoot(FieldOperand(rcx, HeapObject::kMapOffset),
+                 Heap::kAllocationSiteMapRootIndex);
+  __ j(not_equal, &not_allocation_site);
+
+  // We have an allocation site.
+  HandleArrayCase(masm, &miss);
+
+  __ bind(&not_allocation_site);
 
   // The following cases attempt to handle MISS cases without going to the
   // runtime.
@@ -2292,7 +2212,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   // the slow case
   __ bind(&slow_start);
   // Check that function is not a smi.
-  __ JumpIfSmi(rdi, &non_function);
+  __ JumpIfSmi(rdi, &slow);
   // Check that function is a JSFunction.
   __ CmpObjectType(rdi, JS_FUNCTION_TYPE, rcx);
   __ j(not_equal, &slow);
@@ -2313,10 +2233,7 @@ void CallICStub::GenerateMiss(MacroAssembler* masm) {
   __ Push(rdx);
 
   // Call the entry.
-  Runtime::FunctionId id = GetICState() == DEFAULT
-                               ? Runtime::kCallIC_Miss
-                               : Runtime::kCallIC_Customization_Miss;
-  __ CallRuntime(id, 3);
+  __ CallRuntime(Runtime::kCallIC_Miss, 3);
 
   // Move result to edi and exit the internal frame.
   __ movp(rdi, rax);
@@ -3219,7 +3136,7 @@ void ToStringStub::Generate(MacroAssembler* masm) {
   __ bind(&not_string);
 
   Label not_heap_number;
-  __ CompareRoot(rax, Heap::kHeapNumberMapRootIndex);
+  __ CompareRoot(rdi, Heap::kHeapNumberMapRootIndex);
   __ j(not_equal, &not_heap_number, Label::kNear);
   __ bind(&is_number);
   NumberToStringStub stub(isolate());
@@ -3377,43 +3294,40 @@ void StringHelper::GenerateOneByteCharsCompareLoop(
 
 
 void StringCompareStub::Generate(MacroAssembler* masm) {
-  Label runtime;
-
-  // Stack frame on entry.
-  //  rsp[0]  : return address
-  //  rsp[8]  : right string
-  //  rsp[16] : left string
-
-  StackArgumentsAccessor args(rsp, 2, ARGUMENTS_DONT_CONTAIN_RECEIVER);
-  __ movp(rdx, args.GetArgumentOperand(0));  // left
-  __ movp(rax, args.GetArgumentOperand(1));  // right
+  // ----------- S t a t e -------------
+  //  -- rdx    : left string
+  //  -- rax    : right string
+  //  -- rsp[0] : return address
+  // -----------------------------------
+  __ AssertString(rdx);
+  __ AssertString(rax);
 
   // Check for identity.
   Label not_same;
   __ cmpp(rdx, rax);
   __ j(not_equal, &not_same, Label::kNear);
   __ Move(rax, Smi::FromInt(EQUAL));
-  Counters* counters = isolate()->counters();
-  __ IncrementCounter(counters->string_compare_native(), 1);
-  __ ret(2 * kPointerSize);
+  __ IncrementCounter(isolate()->counters()->string_compare_native(), 1);
+  __ Ret();
 
   __ bind(&not_same);
 
   // Check that both are sequential one-byte strings.
+  Label runtime;
   __ JumpIfNotBothSequentialOneByteStrings(rdx, rax, rcx, rbx, &runtime);
 
   // Inline comparison of one-byte strings.
-  __ IncrementCounter(counters->string_compare_native(), 1);
-  // Drop arguments from the stack
-  __ PopReturnAddressTo(rcx);
-  __ addp(rsp, Immediate(2 * kPointerSize));
-  __ PushReturnAddressFrom(rcx);
+  __ IncrementCounter(isolate()->counters()->string_compare_native(), 1);
   StringHelper::GenerateCompareFlatOneByteStrings(masm, rdx, rax, rcx, rbx, rdi,
                                                   r8);
 
   // Call the runtime; it returns -1 (less), 0 (equal), or 1 (greater)
   // tagged as a small integer.
   __ bind(&runtime);
+  __ PopReturnAddressTo(rcx);
+  __ Push(rdx);
+  __ Push(rax);
+  __ PushReturnAddressFrom(rcx);
   __ TailCallRuntime(Runtime::kStringCompare, 2, 1);
 }
 
@@ -3443,6 +3357,37 @@ void BinaryOpICWithAllocationSiteStub::Generate(MacroAssembler* masm) {
   // sites.
   BinaryOpWithAllocationSiteStub stub(isolate(), state());
   __ TailCallStub(&stub);
+}
+
+
+void CompareICStub::GenerateBooleans(MacroAssembler* masm) {
+  DCHECK_EQ(CompareICState::BOOLEAN, state());
+  Label miss;
+  Label::Distance const miss_distance =
+      masm->emit_debug_code() ? Label::kFar : Label::kNear;
+
+  __ JumpIfSmi(rdx, &miss, miss_distance);
+  __ movp(rcx, FieldOperand(rdx, HeapObject::kMapOffset));
+  __ JumpIfSmi(rax, &miss, miss_distance);
+  __ movp(rbx, FieldOperand(rax, HeapObject::kMapOffset));
+  __ JumpIfNotRoot(rcx, Heap::kBooleanMapRootIndex, &miss, miss_distance);
+  __ JumpIfNotRoot(rbx, Heap::kBooleanMapRootIndex, &miss, miss_distance);
+  if (op() != Token::EQ_STRICT && is_strong(strength())) {
+    __ TailCallRuntime(Runtime::kThrowStrongModeImplicitConversion, 0, 1);
+  } else {
+    if (!Token::IsEqualityOp(op())) {
+      __ movp(rax, FieldOperand(rax, Oddball::kToNumberOffset));
+      __ AssertSmi(rax);
+      __ movp(rdx, FieldOperand(rdx, Oddball::kToNumberOffset));
+      __ AssertSmi(rdx);
+      __ xchgp(rax, rdx);
+    }
+    __ subp(rax, rdx);
+    __ Ret();
+  }
+
+  __ bind(&miss);
+  GenerateMiss(masm);
 }
 
 
@@ -3747,15 +3692,24 @@ void CompareICStub::GenerateKnownObjects(MacroAssembler* masm) {
   __ j(either_smi, &miss, Label::kNear);
 
   __ GetWeakValue(rdi, cell);
-  __ movp(rcx, FieldOperand(rax, HeapObject::kMapOffset));
-  __ movp(rbx, FieldOperand(rdx, HeapObject::kMapOffset));
-  __ cmpp(rcx, rdi);
+  __ cmpp(FieldOperand(rdx, HeapObject::kMapOffset), rdi);
   __ j(not_equal, &miss, Label::kNear);
-  __ cmpp(rbx, rdi);
+  __ cmpp(FieldOperand(rax, HeapObject::kMapOffset), rdi);
   __ j(not_equal, &miss, Label::kNear);
 
-  __ subp(rax, rdx);
-  __ ret(0);
+  if (Token::IsEqualityOp(op())) {
+    __ subp(rax, rdx);
+    __ ret(0);
+  } else if (is_strong(strength())) {
+    __ TailCallRuntime(Runtime::kThrowStrongModeImplicitConversion, 0, 1);
+  } else {
+    __ PopReturnAddressTo(rcx);
+    __ Push(rdx);
+    __ Push(rax);
+    __ Push(Smi::FromInt(NegativeComparisonResult(GetCondition())));
+    __ PushReturnAddressFrom(rcx);
+    __ TailCallRuntime(Runtime::kCompare, 3, 1);
+  }
 
   __ bind(&miss);
   GenerateMiss(masm);
@@ -4680,13 +4634,6 @@ void VectorKeyedStoreICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
 void CallICTrampolineStub::Generate(MacroAssembler* masm) {
   EmitLoadTypeFeedbackVector(masm, rbx);
   CallICStub stub(isolate(), state());
-  __ jmp(stub.GetCode(), RelocInfo::CODE_TARGET);
-}
-
-
-void CallIC_ArrayTrampolineStub::Generate(MacroAssembler* masm) {
-  EmitLoadTypeFeedbackVector(masm, rbx);
-  CallIC_ArrayStub stub(isolate(), state());
   __ jmp(stub.GetCode(), RelocInfo::CODE_TARGET);
 }
 

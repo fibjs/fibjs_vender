@@ -19,32 +19,25 @@ class JSRegExp;
 class Execution final : public AllStatic {
  public:
   // Call a function, the caller supplies a receiver and an array
-  // of arguments. Arguments are Object* type. After function returns,
-  // pointers in 'args' might be invalid.
+  // of arguments.
   //
-  // *pending_exception tells whether the invoke resulted in
-  // a pending exception.
+  // When the function called is not in strict mode, receiver is
+  // converted to an object.
   //
-  // When convert_receiver is set, and the receiver is not an object,
-  // and the function called is not in strict mode, receiver is converted to
-  // an object.
-  //
-  MUST_USE_RESULT static MaybeHandle<Object> Call(
-      Isolate* isolate,
-      Handle<Object> callable,
-      Handle<Object> receiver,
-      int argc,
-      Handle<Object> argv[],
-      bool convert_receiver = false);
+  MUST_USE_RESULT static MaybeHandle<Object> Call(Isolate* isolate,
+                                                  Handle<Object> callable,
+                                                  Handle<Object> receiver,
+                                                  int argc,
+                                                  Handle<Object> argv[]);
 
   // Construct object from function, the caller supplies an array of
-  // arguments. Arguments are Object* type. After function returns,
-  // pointers in 'args' might be invalid.
-  //
-  // *pending_exception tells whether the invoke resulted in
-  // a pending exception.
-  //
-  MUST_USE_RESULT static MaybeHandle<Object> New(Handle<JSFunction> func,
+  // arguments.
+  MUST_USE_RESULT static MaybeHandle<Object> New(Handle<JSFunction> constructor,
+                                                 int argc,
+                                                 Handle<Object> argv[]);
+  MUST_USE_RESULT static MaybeHandle<Object> New(Isolate* isolate,
+                                                 Handle<Object> constructor,
+                                                 Handle<Object> new_target,
                                                  int argc,
                                                  Handle<Object> argv[]);
 
@@ -96,20 +89,6 @@ class Execution final : public AllStatic {
                                           Handle<JSFunction> fun,
                                           Handle<Object> pos,
                                           Handle<Object> is_global);
-
-  // Get a function delegate for the given non-function object.
-  // Used for support calling objects as functions.
-  MUST_USE_RESULT static MaybeHandle<JSFunction> GetFunctionDelegate(
-      Isolate* isolate, Handle<Object> object);
-
-  // Get a function delegate (or undefined) for the given non-function
-  // object. Used for support calling objects as constructors.
-  MUST_USE_RESULT static MaybeHandle<JSFunction> GetConstructorDelegate(
-      Isolate* isolate, Handle<Object> object);
-
- private:
-  MUST_USE_RESULT static Handle<String> RenderCallSite(Isolate* isolate,
-                                                       Handle<Object> object);
 };
 
 

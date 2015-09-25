@@ -37,6 +37,14 @@ void BytecodeArrayBuilder::set_parameter_count(int number_of_parameters) {
 int BytecodeArrayBuilder::parameter_count() const { return parameter_count_; }
 
 
+bool BytecodeArrayBuilder::HasExplicitReturn() {
+  // TODO(rmcilroy): When we have control flow we should return false here if
+  // there is an outstanding jump target, even if the last bytecode is kReturn.
+  return !bytecodes_.empty() &&
+         bytecodes_.back() == Bytecodes::ToByte(Bytecode::kReturn);
+}
+
+
 Register BytecodeArrayBuilder::Parameter(int parameter_index) {
   DCHECK_GE(parameter_index, 0);
   DCHECK_LT(parameter_index, parameter_count_);
@@ -146,7 +154,7 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreAccumulatorInRegister(
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadNamedProperty(
     Register object, int feedback_slot, LanguageMode language_mode) {
-  if (is_strong(language_mode)) {
+  if (!is_sloppy(language_mode)) {
     UNIMPLEMENTED();
   }
 
@@ -162,7 +170,7 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadNamedProperty(
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadKeyedProperty(
     Register object, int feedback_slot, LanguageMode language_mode) {
-  if (is_strong(language_mode)) {
+  if (!is_sloppy(language_mode)) {
     UNIMPLEMENTED();
   }
 
@@ -176,8 +184,55 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadKeyedProperty(
 }
 
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::StoreNamedProperty(
+    Register object, Register name, int feedback_slot,
+    LanguageMode language_mode) {
+  if (!is_sloppy(language_mode)) {
+    UNIMPLEMENTED();
+  }
+
+  if (FitsInByteOperand(feedback_slot)) {
+    Output(Bytecode::kStoreIC, object.ToOperand(), name.ToOperand(),
+           static_cast<uint8_t>(feedback_slot));
+  } else {
+    UNIMPLEMENTED();
+  }
+  return *this;
+}
+
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::StoreKeyedProperty(
+    Register object, Register key, int feedback_slot,
+    LanguageMode language_mode) {
+  if (!is_sloppy(language_mode)) {
+    UNIMPLEMENTED();
+  }
+
+  if (FitsInByteOperand(feedback_slot)) {
+    Output(Bytecode::kKeyedStoreIC, object.ToOperand(), key.ToOperand(),
+           static_cast<uint8_t>(feedback_slot));
+  } else {
+    UNIMPLEMENTED();
+  }
+  return *this;
+}
+
+
 BytecodeArrayBuilder& BytecodeArrayBuilder::Return() {
   Output(Bytecode::kReturn);
+  return *this;
+}
+
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::Call(Register callable,
+                                                 Register receiver,
+                                                 size_t arg_count) {
+  if (FitsInByteOperand(arg_count)) {
+    Output(Bytecode::kCall, callable.ToOperand(), receiver.ToOperand(),
+           static_cast<uint8_t>(arg_count));
+  } else {
+    UNIMPLEMENTED();
+  }
   return *this;
 }
 
@@ -225,6 +280,7 @@ bool BytecodeArrayBuilder::OperandIsValid(Bytecode bytecode, int operand_index,
   switch (operand_type) {
     case OperandType::kNone:
       return false;
+    case OperandType::kCount:
     case OperandType::kImm8:
     case OperandType::kIdx:
       return true;

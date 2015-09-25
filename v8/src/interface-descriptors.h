@@ -37,6 +37,8 @@ class PlatformInterfaceDescriptor;
   V(CallFunctionWithFeedback)                 \
   V(CallFunctionWithFeedbackAndVector)        \
   V(CallConstruct)                            \
+  V(CallTrampoline)                           \
+  V(PushArgsAndCall)                          \
   V(RegExpConstructResult)                    \
   V(TransitionElementsKind)                   \
   V(AllocateHeapNumber)                       \
@@ -50,6 +52,7 @@ class PlatformInterfaceDescriptor;
   V(BinaryOp)                                 \
   V(BinaryOpWithAllocationSite)               \
   V(StringAdd)                                \
+  V(StringCompare)                            \
   V(Keyed)                                    \
   V(Named)                                    \
   V(CallHandler)                              \
@@ -430,6 +433,13 @@ class CreateWeakCellDescriptor : public CallInterfaceDescriptor {
 };
 
 
+class CallTrampolineDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(CallTrampolineDescriptor,
+                                               CallInterfaceDescriptor)
+};
+
+
 class CallFunctionDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(CallFunctionDescriptor, CallInterfaceDescriptor)
@@ -561,6 +571,16 @@ class StringAddDescriptor : public CallInterfaceDescriptor {
 };
 
 
+class StringCompareDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(StringCompareDescriptor, CallInterfaceDescriptor)
+
+  enum ParameterIndices { kLeftIndex, kRightIndex, kParameterCount };
+  static const Register LeftRegister();
+  static const Register RightRegister();
+};
+
+
 class KeyedDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(KeyedDescriptor, CallInterfaceDescriptor)
@@ -671,6 +691,12 @@ class GrowArrayElementsDescriptor : public CallInterfaceDescriptor {
   enum RegisterInfo { kObjectIndex, kKeyIndex };
   static const Register ObjectRegister();
   static const Register KeyRegister();
+};
+
+
+class PushArgsAndCallDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(PushArgsAndCallDescriptor, CallInterfaceDescriptor)
 };
 
 #undef DECLARE_DESCRIPTOR

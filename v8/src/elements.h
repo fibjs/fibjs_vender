@@ -100,9 +100,9 @@ class ElementsAccessor {
   virtual void GrowCapacityAndConvert(Handle<JSObject> object,
                                       uint32_t capacity) = 0;
 
-  virtual Handle<FixedArray> AddElementsToFixedArray(
-      Handle<JSObject> receiver, Handle<FixedArray> to,
-      FixedArray::KeyFilter filter) = 0;
+  virtual void AddElementsToKeyAccumulator(Handle<JSObject> receiver,
+                                           KeyAccumulator* accumulator,
+                                           FixedArray::KeyFilter filter) = 0;
 
   // Returns a shared ElementsAccessor for the specified ElementsKind.
   static ElementsAccessor* ForKind(ElementsKind elements_kind) {
@@ -127,8 +127,9 @@ class ElementsAccessor {
                    Handle<Object> value, PropertyAttributes attributes,
                    uint32_t new_capacity) = 0;
 
-  // TODO(cbruni): Consider passing Arguments* instead of Object** depending on
-  // the requirements of future callers.
+  static Handle<JSArray> Concat(Isolate* isolate, Arguments* args,
+                                uint32_t concat_size);
+
   virtual uint32_t Push(Handle<JSArray> receiver,
                         Handle<FixedArrayBase> backing_store, Arguments* args,
                         uint32_t push_size) = 0;

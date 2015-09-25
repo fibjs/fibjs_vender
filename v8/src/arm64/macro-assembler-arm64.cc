@@ -1617,6 +1617,19 @@ void MacroAssembler::AssertName(Register object) {
 }
 
 
+void MacroAssembler::AssertFunction(Register object) {
+  if (emit_debug_code()) {
+    AssertNotSmi(object, kOperandIsASmiAndNotAFunction);
+
+    UseScratchRegisterScope temps(this);
+    Register temp = temps.AcquireX();
+
+    CompareObjectType(object, temp, temp, JS_FUNCTION_TYPE);
+    Check(eq, kOperandIsNotAFunction);
+  }
+}
+
+
 void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
                                                      Register scratch) {
   if (emit_debug_code()) {
@@ -1868,24 +1881,31 @@ void MacroAssembler::Jump(Register target) {
 }
 
 
-void MacroAssembler::Jump(intptr_t target, RelocInfo::Mode rmode) {
+void MacroAssembler::Jump(intptr_t target, RelocInfo::Mode rmode,
+                          Condition cond) {
+  if (cond == nv) return;
   UseScratchRegisterScope temps(this);
   Register temp = temps.AcquireX();
+  Label done;
+  if (cond != al) B(NegateCondition(cond), &done);
   Mov(temp, Operand(target, rmode));
   Br(temp);
+  Bind(&done);
 }
 
 
-void MacroAssembler::Jump(Address target, RelocInfo::Mode rmode) {
+void MacroAssembler::Jump(Address target, RelocInfo::Mode rmode,
+                          Condition cond) {
   DCHECK(!RelocInfo::IsCodeTarget(rmode));
-  Jump(reinterpret_cast<intptr_t>(target), rmode);
+  Jump(reinterpret_cast<intptr_t>(target), rmode, cond);
 }
 
 
-void MacroAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode) {
+void MacroAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
+                          Condition cond) {
   DCHECK(RelocInfo::IsCodeTarget(rmode));
   AllowDeferredHandleDereference embedding_raw_address;
-  Jump(reinterpret_cast<intptr_t>(code.location()), rmode);
+  Jump(reinterpret_cast<intptr_t>(code.location()), rmode, cond);
 }
 
 
@@ -2053,79 +2073,6 @@ void MacroAssembler::JumpIfNotHeapNumber(Register object,
   Register temp = temps.AcquireX();
   Ldr(temp, FieldMemOperand(object, HeapObject::kMapOffset));
   JumpIfNotRoot(temp, Heap::kHeapNumberMapRootIndex, on_not_heap_number);
-}
-
-
-void MacroAssembler::LookupNumberStringCache(Register object,
-                                             Register result,
-                                             Register scratch1,
-                                             Register scratch2,
-                                             Register scratch3,
-                                             Label* not_found) {
-  DCHECK(!AreAliased(object, result, scratch1, scratch2, scratch3));
-
-  // Use of registers. Register result is used as a temporary.
-  Register number_string_cache = result;
-  Register mask = scratch3;
-
-  // Load the number string cache.
-  LoadRoot(number_string_cache, Heap::kNumberStringCacheRootIndex);
-
-  // Make the hash mask from the length of the number string cache. It
-  // contains two elements (number and string) for each cache entry.
-  Ldrsw(mask, UntagSmiFieldMemOperand(number_string_cache,
-                                      FixedArray::kLengthOffset));
-  Asr(mask, mask, 1);  // Divide length by two.
-  Sub(mask, mask, 1);  // Make mask.
-
-  // Calculate the entry in the number string cache. The hash value in the
-  // number string cache for smis is just the smi value, and the hash for
-  // doubles is the xor of the upper and lower words. See
-  // Heap::GetNumberStringCache.
-  Label is_smi;
-  Label load_result_from_cache;
-
-  JumpIfSmi(object, &is_smi);
-  JumpIfNotHeapNumber(object, not_found);
-
-  STATIC_ASSERT(kDoubleSize == (kWRegSize * 2));
-  Add(scratch1, object, HeapNumber::kValueOffset - kHeapObjectTag);
-  Ldp(scratch1.W(), scratch2.W(), MemOperand(scratch1));
-  Eor(scratch1, scratch1, scratch2);
-  And(scratch1, scratch1, mask);
-
-  // Calculate address of entry in string cache: each entry consists of two
-  // pointer sized fields.
-  Add(scratch1, number_string_cache,
-      Operand(scratch1, LSL, kPointerSizeLog2 + 1));
-
-  Register probe = mask;
-  Ldr(probe, FieldMemOperand(scratch1, FixedArray::kHeaderSize));
-  JumpIfSmi(probe, not_found);
-  Ldr(d0, FieldMemOperand(object, HeapNumber::kValueOffset));
-  Ldr(d1, FieldMemOperand(probe, HeapNumber::kValueOffset));
-  Fcmp(d0, d1);
-  B(ne, not_found);
-  B(&load_result_from_cache);
-
-  Bind(&is_smi);
-  Register scratch = scratch1;
-  And(scratch, mask, Operand::UntagSmi(object));
-  // Calculate address of entry in string cache: each entry consists
-  // of two pointer sized fields.
-  Add(scratch, number_string_cache,
-      Operand(scratch, LSL, kPointerSizeLog2 + 1));
-
-  // Check if the entry is the smi we are looking for.
-  Ldr(probe, FieldMemOperand(scratch, FixedArray::kHeaderSize));
-  Cmp(object, probe);
-  B(ne, not_found);
-
-  // Get the result from the cache.
-  Bind(&load_result_from_cache);
-  Ldr(result, FieldMemOperand(scratch, FixedArray::kHeaderSize + kPointerSize));
-  IncrementCounter(isolate()->counters()->number_to_string_native(), 1,
-                   scratch1, scratch2);
 }
 
 
@@ -2562,11 +2509,11 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
   if (expected.is_immediate()) {
     DCHECK(actual.is_immediate());
+    Mov(x0, actual.immediate());
     if (expected.immediate() == actual.immediate()) {
       definitely_matches = true;
 
     } else {
-      Mov(x0, actual.immediate());
       if (expected.immediate() ==
           SharedFunctionInfo::kDontAdaptArgumentsSentinel) {
         // Don't worry about adapting arguments for builtins that
@@ -2584,11 +2531,10 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
   } else {  // expected is a register.
     Operand actual_op = actual.is_immediate() ? Operand(actual.immediate())
                                               : Operand(actual.reg());
+    Mov(x0, actual_op);
     // If actual == expected perform a regular invocation.
     Cmp(expected.reg(), actual_op);
     B(eq, &regular_invoke);
-    // Otherwise set up x0 for the argument adaptor.
-    Mov(x0, actual_op);
   }
 
   // If the argument counts may mismatch, generate a call to the argument
@@ -3046,6 +2992,12 @@ void MacroAssembler::LoadContext(Register dst, int context_chain_length) {
     // cannot be allowed to destroy the context in cp).
     Mov(dst, cp);
   }
+}
+
+
+void MacroAssembler::LoadGlobalProxy(Register dst) {
+  Ldr(dst, GlobalObjectMemOperand());
+  Ldr(dst, FieldMemOperand(dst, GlobalObject::kGlobalProxyOffset));
 }
 
 

@@ -54,6 +54,10 @@ const Register InstanceOfDescriptor::LeftRegister() { return a1; }
 const Register InstanceOfDescriptor::RightRegister() { return a0; }
 
 
+const Register StringCompareDescriptor::LeftRegister() { return a1; }
+const Register StringCompareDescriptor::RightRegister() { return a0; }
+
+
 const Register ArgumentsAccessReadDescriptor::index() { return a1; }
 const Register ArgumentsAccessReadDescriptor::parameter_count() { return a0; }
 
@@ -191,6 +195,15 @@ void CallConstructDescriptor::InitializePlatformSpecific(
   // slot parameter, but ArrayConstructStub needs the vector to be undefined.
   Register registers[] = {a0, a1, a4, a2};
   data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
+}
+
+
+void CallTrampolineDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  // a1: target
+  // a0: number of arguments
+  Register registers[] = {a1, a0};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
 
@@ -376,6 +389,18 @@ void MathRoundVariantCallFromOptimizedCodeDescriptor::
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
+
+
+void PushArgsAndCallDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      a0,  // argument count (including receiver)
+      a2,  // address of first argument
+      a1   // the target callable to be call
+  };
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
 }  // namespace internal
 }  // namespace v8
 

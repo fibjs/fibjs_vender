@@ -1255,10 +1255,10 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
   if (expected.is_immediate()) {
     DCHECK(actual.is_immediate());
+    mov(r0, Operand(actual.immediate()));
     if (expected.immediate() == actual.immediate()) {
       definitely_matches = true;
     } else {
-      mov(r0, Operand(actual.immediate()));
       const int sentinel = SharedFunctionInfo::kDontAdaptArgumentsSentinel;
       if (expected.immediate() == sentinel) {
         // Don't worry about adapting arguments for builtins that
@@ -1273,9 +1273,9 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
     }
   } else {
     if (actual.is_immediate()) {
+      mov(r0, Operand(actual.immediate()));
       cmp(expected.reg(), Operand(actual.immediate()));
       b(eq, &regular_invoke);
-      mov(r0, Operand(actual.immediate()));
     } else {
       cmp(expected.reg(), Operand(actual.reg()));
       b(eq, &regular_invoke);
@@ -2645,6 +2645,12 @@ void MacroAssembler::LoadContext(Register dst, int context_chain_length) {
 }
 
 
+void MacroAssembler::LoadGlobalProxy(Register dst) {
+  ldr(dst, GlobalObjectOperand());
+  ldr(dst, FieldMemOperand(dst, GlobalObject::kGlobalProxyOffset));
+}
+
+
 void MacroAssembler::LoadTransitionedArrayMapConditional(
     ElementsKind expected_kind,
     ElementsKind transitioned_kind,
@@ -2806,6 +2812,19 @@ void MacroAssembler::AssertName(Register object) {
 }
 
 
+void MacroAssembler::AssertFunction(Register object) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    tst(object, Operand(kSmiTagMask));
+    Check(ne, kOperandIsASmiAndNotAFunction);
+    push(object);
+    CompareObjectType(object, object, object, JS_FUNCTION_TYPE);
+    pop(object);
+    Check(eq, kOperandIsNotAFunction);
+  }
+}
+
+
 void MacroAssembler::AssertUndefinedOrAllocationSite(Register object,
                                                      Register scratch) {
   if (emit_debug_code()) {
@@ -2837,88 +2856,6 @@ void MacroAssembler::JumpIfNotHeapNumber(Register object,
   AssertIsRoot(heap_number_map, Heap::kHeapNumberMapRootIndex);
   cmp(scratch, heap_number_map);
   b(ne, on_not_heap_number);
-}
-
-
-void MacroAssembler::LookupNumberStringCache(Register object,
-                                             Register result,
-                                             Register scratch1,
-                                             Register scratch2,
-                                             Register scratch3,
-                                             Label* not_found) {
-  // Use of registers. Register result is used as a temporary.
-  Register number_string_cache = result;
-  Register mask = scratch3;
-
-  // Load the number string cache.
-  LoadRoot(number_string_cache, Heap::kNumberStringCacheRootIndex);
-
-  // Make the hash mask from the length of the number string cache. It
-  // contains two elements (number and string) for each cache entry.
-  ldr(mask, FieldMemOperand(number_string_cache, FixedArray::kLengthOffset));
-  // Divide length by two (length is a smi).
-  mov(mask, Operand(mask, ASR, kSmiTagSize + 1));
-  sub(mask, mask, Operand(1));  // Make mask.
-
-  // Calculate the entry in the number string cache. The hash value in the
-  // number string cache for smis is just the smi value, and the hash for
-  // doubles is the xor of the upper and lower words. See
-  // Heap::GetNumberStringCache.
-  Label is_smi;
-  Label load_result_from_cache;
-  JumpIfSmi(object, &is_smi);
-  CheckMap(object,
-           scratch1,
-           Heap::kHeapNumberMapRootIndex,
-           not_found,
-           DONT_DO_SMI_CHECK);
-
-  STATIC_ASSERT(8 == kDoubleSize);
-  add(scratch1,
-      object,
-      Operand(HeapNumber::kValueOffset - kHeapObjectTag));
-  ldm(ia, scratch1, scratch1.bit() | scratch2.bit());
-  eor(scratch1, scratch1, Operand(scratch2));
-  and_(scratch1, scratch1, Operand(mask));
-
-  // Calculate address of entry in string cache: each entry consists
-  // of two pointer sized fields.
-  add(scratch1,
-      number_string_cache,
-      Operand(scratch1, LSL, kPointerSizeLog2 + 1));
-
-  Register probe = mask;
-  ldr(probe, FieldMemOperand(scratch1, FixedArray::kHeaderSize));
-  JumpIfSmi(probe, not_found);
-  sub(scratch2, object, Operand(kHeapObjectTag));
-  vldr(d0, scratch2, HeapNumber::kValueOffset);
-  sub(probe, probe, Operand(kHeapObjectTag));
-  vldr(d1, probe, HeapNumber::kValueOffset);
-  VFPCompareAndSetFlags(d0, d1);
-  b(ne, not_found);  // The cache did not contain this value.
-  b(&load_result_from_cache);
-
-  bind(&is_smi);
-  Register scratch = scratch1;
-  and_(scratch, mask, Operand(object, ASR, 1));
-  // Calculate address of entry in string cache: each entry consists
-  // of two pointer sized fields.
-  add(scratch,
-      number_string_cache,
-      Operand(scratch, LSL, kPointerSizeLog2 + 1));
-
-  // Check if the entry is the smi we are looking for.
-  ldr(probe, FieldMemOperand(scratch, FixedArray::kHeaderSize));
-  cmp(object, probe);
-  b(ne, not_found);
-
-  // Get the result from the cache.
-  bind(&load_result_from_cache);
-  ldr(result, FieldMemOperand(scratch, FixedArray::kHeaderSize + kPointerSize));
-  IncrementCounter(isolate()->counters()->number_to_string_native(),
-                   1,
-                   scratch1,
-                   scratch2);
 }
 
 
@@ -3732,7 +3669,7 @@ CodePatcher::CodePatcher(byte* address,
 CodePatcher::~CodePatcher() {
   // Indicate that code has changed.
   if (flush_cache_ == FLUSH) {
-    CpuFeatures::FlushICache(address_, size_);
+    Assembler::FlushICacheWithoutIsolate(address_, size_);
   }
 
   // Check that the code was patched as expected.

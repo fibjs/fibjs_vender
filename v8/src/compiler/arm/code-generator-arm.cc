@@ -228,8 +228,7 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
       return vs;
     case kNotOverflow:
       return vc;
-    case kUnorderedEqual:
-    case kUnorderedNotEqual:
+    default:
       break;
   }
   UNREACHABLE();

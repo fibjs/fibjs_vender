@@ -160,6 +160,7 @@ class CallSite {
   T(ObserveCallbackFrozen,                                                     \
     "Object.observe cannot deliver to a frozen function object")               \
   T(ObserveGlobalProxy, "% cannot be called on the global proxy object")       \
+  T(ObserveAccessChecked, "% cannot be called on access-checked objects")      \
   T(ObserveInvalidAccept,                                                      \
     "Third argument to Object.observe must be an array of strings.")           \
   T(ObserveNonFunction, "Object.% cannot deliver to non-function")             \
@@ -225,7 +226,6 @@ class CallSite {
     "to be non-writable is deprecated")                                        \
   T(StrongSetProto,                                                            \
     "On strong object %, redefining the internal prototype is deprecated")     \
-  T(StrongWeakExtend, "Non-strong class % cannot extend a strong object")      \
   T(SymbolKeyFor, "% is not a symbol")                                         \
   T(SymbolToNumber, "Cannot convert a Symbol value to a number")               \
   T(SymbolToString, "Cannot convert a Symbol value to a string")               \
