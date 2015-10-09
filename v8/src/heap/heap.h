@@ -8,12 +8,13 @@
 #include <cmath>
 #include <map>
 
+// Clients of this interface shouldn't depend on lots of heap internals.
+// Do not include anything from src/heap here!
 #include "src/allocation.h"
 #include "src/assert-scope.h"
 #include "src/atomic-utils.h"
 #include "src/globals.h"
-#include "src/heap/gc-idle-time-handler.h"
-#include "src/heap/incremental-marking.h"
+// TODO(mstarzinger): Three more includes to kill!
 #include "src/heap/mark-compact.h"
 #include "src/heap/spaces.h"
 #include "src/heap/store-buffer.h"
@@ -178,7 +179,7 @@ namespace internal {
   V(FixedArray, materialized_objects, MaterializedObjects)                     \
   V(FixedArray, allocation_sites_scratchpad, AllocationSitesScratchpad)        \
   V(FixedArray, microtask_queue, MicrotaskQueue)                               \
-  V(FixedArray, dummy_vector, DummyVector)                                     \
+  V(TypeFeedbackVector, dummy_vector, DummyVector)                             \
   V(FixedArray, detached_contexts, DetachedContexts)                           \
   V(ArrayList, retained_maps, RetainedMaps)                                    \
   V(WeakHashTable, weak_object_to_code_table, WeakObjectToCodeTable)           \
@@ -303,7 +304,8 @@ namespace internal {
   V(minus_zero_string, "-0")                                   \
   V(Array_string, "Array")                                     \
   V(Error_string, "Error")                                     \
-  V(RegExp_string, "RegExp")
+  V(RegExp_string, "RegExp")                                   \
+  V(anonymous_string, "anonymous")
 
 #define PRIVATE_SYMBOL_LIST(V)              \
   V(array_iteration_kind_symbol)            \
@@ -348,12 +350,18 @@ namespace internal {
 
 #define PUBLIC_SYMBOL_LIST(V)                               \
   V(has_instance_symbol, Symbol.hasInstance)                \
-  V(is_concat_spreadable_symbol, Symbol.isConcatSpreadable) \
   V(is_regexp_symbol, Symbol.isRegExp)                      \
   V(iterator_symbol, Symbol.iterator)                       \
   V(to_primitive_symbol, Symbol.toPrimitive)                \
   V(to_string_tag_symbol, Symbol.toStringTag)               \
   V(unscopables_symbol, Symbol.unscopables)
+
+// Well-Known Symbols are "Public" symbols, which have a bit set which causes
+// them to produce an undefined value when a load results in a failed access
+// check. Because this behaviour is not specified properly as of yet, it only
+// applies to a subset of spec-defined Well-Known Symbols.
+#define WELL_KNOWN_SYMBOL_LIST(V) \
+  V(is_concat_spreadable_symbol, Symbol.isConcatSpreadable)
 
 // Heap roots that are known to be immortal immovable, for which we can safely
 // skip write barriers. This list is not complete and has omissions.
@@ -422,12 +430,18 @@ namespace internal {
 
 // Forward declarations.
 class ArrayBufferTracker;
+class GCIdleTimeAction;
+class GCIdleTimeHandler;
+class GCIdleTimeHeapState;
+class GCTracer;
 class HeapObjectsFilter;
 class HeapStats;
+class HistogramTimer;
 class Isolate;
 class MemoryReducer;
 class ObjectStats;
 class Scavenger;
+class ScavengeJob;
 class WeakObjectRetainer;
 
 
@@ -560,13 +574,14 @@ class Heap {
 
 #define SYMBOL_INDEX_DECLARATION(name, description) k##name##RootIndex,
                 PUBLIC_SYMBOL_LIST(SYMBOL_INDEX_DECLARATION)
+                    WELL_KNOWN_SYMBOL_LIST(SYMBOL_INDEX_DECLARATION)
 #undef SYMBOL_INDEX_DECLARATION
 
 // Utility type maps
 #define DECLARE_STRUCT_MAP(NAME, Name, name) k##Name##MapRootIndex,
-                    STRUCT_LIST(DECLARE_STRUCT_MAP)
+                        STRUCT_LIST(DECLARE_STRUCT_MAP)
 #undef DECLARE_STRUCT_MAP
-                        kStringTableRootIndex,
+                            kStringTableRootIndex,
 
 #define ROOT_INDEX_DECLARATION(type, name, camel_name) k##camel_name##RootIndex,
     SMI_ROOT_LIST(ROOT_INDEX_DECLARATION)
@@ -955,7 +970,7 @@ class Heap {
 
   inline uint32_t HashSeed();
 
-  inline Smi* NextScriptId();
+  inline int NextScriptId();
 
   inline void SetArgumentsAdaptorDeoptPCOffset(int pc_offset);
   inline void SetConstructStubDeoptPCOffset(int pc_offset);
@@ -1120,6 +1135,7 @@ class Heap {
 
 #define SYMBOL_ACCESSOR(name, description) inline Symbol* name();
   PUBLIC_SYMBOL_LIST(SYMBOL_ACCESSOR)
+  WELL_KNOWN_SYMBOL_LIST(SYMBOL_ACCESSOR)
 #undef SYMBOL_ACCESSOR
 
   Object* root(RootListIndex index) { return roots_[index]; }
@@ -1209,6 +1225,10 @@ class Heap {
   // Last hope GC, should try to squeeze as much as possible.
   void CollectAllAvailableGarbage(const char* gc_reason = NULL);
 
+  // Reports and external memory pressure event, either performs a major GC or
+  // completes incremental marking in order to free external resources.
+  void ReportExternalMemoryPressure(const char* gc_reason = NULL);
+
   // Invoked when GC was requested via the stack guard.
   void HandleGCRequest();
 
@@ -1261,20 +1281,11 @@ class Heap {
                                    GCCallbackFlags::kNoGCCallbackFlags,
                                const char* reason = nullptr);
 
-  // Performs incremental marking steps of step_size_in_bytes as long as
-  // deadline_ins_ms is not reached. step_size_in_bytes can be 0 to compute
-  // an estimate increment. Returns the remaining time that cannot be used
-  // for incremental marking anymore because a single step would exceed the
-  // deadline.
-  double AdvanceIncrementalMarking(
-      intptr_t step_size_in_bytes, double deadline_in_ms,
-      IncrementalMarking::StepActions step_actions);
-
   void FinalizeIncrementalMarkingIfComplete(const char* comment);
 
   bool TryFinalizeIdleIncrementalMarking(double idle_time_in_ms);
 
-  IncrementalMarking* incremental_marking() { return &incremental_marking_; }
+  IncrementalMarking* incremental_marking() { return incremental_marking_; }
 
   // ===========================================================================
   // External string table API. ================================================
@@ -1640,10 +1651,8 @@ class Heap {
   static void ScavengeStoreBufferCallback(Heap* heap, MemoryChunk* page,
                                           StoreBufferEvent event);
 
-  // Selects the proper allocation space depending on the given object
-  // size and pretenuring decision.
-  static AllocationSpace SelectSpace(int object_size, PretenureFlag pretenure) {
-    if (object_size > Page::kMaxRegularHeapObjectSize) return LO_SPACE;
+  // Selects the proper allocation space based on the pretenuring decision.
+  static AllocationSpace SelectSpace(PretenureFlag pretenure) {
     return (pretenure == TENURED) ? OLD_SPACE : NEW_SPACE;
   }
 
@@ -1782,15 +1791,15 @@ class Heap {
       double idle_time_in_ms, size_t size_of_objects,
       size_t mark_compact_speed_in_bytes_per_ms);
 
-  GCIdleTimeHandler::HeapState ComputeHeapState();
+  GCIdleTimeHeapState ComputeHeapState();
 
   bool PerformIdleTimeAction(GCIdleTimeAction action,
-                             GCIdleTimeHandler::HeapState heap_state,
+                             GCIdleTimeHeapState heap_state,
                              double deadline_in_ms);
 
   void IdleNotificationEpilogue(GCIdleTimeAction action,
-                                GCIdleTimeHandler::HeapState heap_state,
-                                double start_ms, double deadline_in_ms);
+                                GCIdleTimeHeapState heap_state, double start_ms,
+                                double deadline_in_ms);
   void CheckAndNotifyBackgroundIdleNotification(double idle_time_in_ms,
                                                 double now_ms);
 
@@ -1806,6 +1815,14 @@ class Heap {
   // marking. If we continue to mark incrementally, we might have marked
   // objects that die later.
   void OverApproximateWeakClosure(const char* gc_reason);
+
+  // Returns the timer used for a given GC type.
+  // - GCScavenger: young generation GC
+  // - GCCompactor: full GC
+  // - GCFinalzeMC: finalization of incremental full GC
+  // - GCFinalizeMCReduceMemory: finalization of incremental full GC with
+  // memory reduction
+  HistogramTimer* GCTypeTimer(GarbageCollector collector);
 
   // ===========================================================================
   // Actual GC. ================================================================
@@ -1883,10 +1900,18 @@ class Heap {
                                        double mutator_speed);
 
   // ===========================================================================
+  // Inline allocation. ========================================================
+  // ===========================================================================
+
+  void LowerInlineAllocationLimit(intptr_t step);
+  void ResetInlineAllocationLimit();
+
+  // ===========================================================================
   // Idle notification. ========================================================
   // ===========================================================================
 
   bool RecentIdleNotificationHappened();
+  void ScheduleIdleScavengeIfNeeded(int bytes_allocated);
 
   // ===========================================================================
   // Allocation methods. =======================================================
@@ -1955,7 +1980,7 @@ class Heap {
   // performed by the runtime and should not be bypassed (to extend this to
   // inlined allocations, use the Heap::DisableInlineAllocation() support).
   MUST_USE_RESULT inline AllocationResult AllocateRaw(
-      int size_in_bytes, AllocationSpace space, AllocationSpace retry_space,
+      int size_in_bytes, AllocationSpace space,
       AllocationAlignment aligment = kWordAligned);
 
   // Allocates a heap object based on the map.
@@ -2258,13 +2283,15 @@ class Heap {
 
   StoreBuffer store_buffer_;
 
-  IncrementalMarking incremental_marking_;
+  IncrementalMarking* incremental_marking_;
 
-  GCIdleTimeHandler gc_idle_time_handler_;
+  GCIdleTimeHandler* gc_idle_time_handler_;
 
   MemoryReducer* memory_reducer_;
 
   ObjectStats* object_stats_;
+
+  ScavengeJob* scavenge_job_;
 
   // These two counters are monotomically increasing and never reset.
   size_t full_codegen_bytes_generated_;
@@ -2339,6 +2366,7 @@ class Heap {
   friend class IncrementalMarking;
   friend class MarkCompactCollector;
   friend class MarkCompactMarkingVisitor;
+  friend class NewSpace;
   friend class ObjectStatsVisitor;
   friend class Page;
   friend class Scavenger;
@@ -2703,7 +2731,7 @@ class PathTracer : public ObjectVisitor {
   DISALLOW_IMPLICIT_CONSTRUCTORS(PathTracer);
 };
 #endif  // DEBUG
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_HEAP_HEAP_H_

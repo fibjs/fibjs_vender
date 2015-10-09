@@ -16,7 +16,7 @@ class AstNumberingVisitor final : public AstVisitor {
       : AstVisitor(),
         next_id_(BailoutId::FirstUsable().ToInt()),
         properties_(zone),
-        ic_slot_cache_(zone),
+        slot_cache_(zone),
         dont_optimize_reason_(kNoReason) {
     InitializeAstVisitor(isolate, zone);
   }
@@ -65,29 +65,16 @@ class AstNumberingVisitor final : public AstVisitor {
 
   template <typename Node>
   void ReserveFeedbackSlots(Node* node) {
-    FeedbackVectorRequirements reqs =
-        node->ComputeFeedbackRequirements(isolate(), &ic_slot_cache_);
-    if (reqs.slots() > 0) {
-      node->SetFirstFeedbackSlot(FeedbackVectorSlot(properties_.slots()));
-      properties_.increase_slots(reqs.slots());
-    }
-    if (reqs.ic_slots() > 0) {
-      int ic_slots = properties_.ic_slots();
-      node->SetFirstFeedbackICSlot(FeedbackVectorICSlot(ic_slots),
-                                   &ic_slot_cache_);
-      properties_.increase_ic_slots(reqs.ic_slots());
-      for (int i = 0; i < reqs.ic_slots(); i++) {
-        properties_.SetKind(ic_slots + i, node->FeedbackICSlotKind(i));
-      }
-    }
+    node->AssignFeedbackVectorSlots(isolate(), properties_.get_spec(),
+                                    &slot_cache_);
   }
 
   BailoutReason dont_optimize_reason() const { return dont_optimize_reason_; }
 
   int next_id_;
   AstProperties properties_;
-  // The slot cache allows us to reuse certain vector IC slots.
-  ICSlotCache ic_slot_cache_;
+  // The slot cache allows us to reuse certain feedback vector slots.
+  FeedbackVectorSlotCache slot_cache_;
   BailoutReason dont_optimize_reason_;
 
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
@@ -470,7 +457,6 @@ void AstNumberingVisitor::VisitClassLiteral(ClassLiteral* node) {
     VisitObjectLiteralProperty(node->properties()->at(i));
   }
   ReserveFeedbackSlots(node);
-  node->LayoutFeedbackSlots();
 }
 
 
@@ -486,7 +472,6 @@ void AstNumberingVisitor::VisitObjectLiteral(ObjectLiteral* node) {
   // marked expressions, no store code will be is emitted.
   node->CalculateEmitStore(zone());
   ReserveFeedbackSlots(node);
-  node->LayoutFeedbackSlots();
 }
 
 

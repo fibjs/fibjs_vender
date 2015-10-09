@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_HEAP_PROFILER_H_
-#define V8_HEAP_PROFILER_H_
+#ifndef V8_PROFILER_HEAP_PROFILER_H_
+#define V8_PROFILER_HEAP_PROFILER_H_
 
 #include "src/base/smart-pointers.h"
 #include "src/isolate.h"
@@ -79,6 +79,7 @@ class HeapProfiler {
   base::Mutex profiler_mutex_;
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
-#endif  // V8_HEAP_PROFILER_H_
+#endif  // V8_PROFILER_HEAP_PROFILER_H_

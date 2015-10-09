@@ -103,6 +103,9 @@
     <Filter Include="Source Files\ppc">
       <UniqueIdentifier>{b1b3c0c3-7b01-ce70-48fd-66ced6e79f09}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\profiler">
+      <UniqueIdentifier>{7971ce5c-1cd6-dd16-0bdd-fdb3d0aca8e3}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\regexp">
       <UniqueIdentifier>{1fca4211-b235-8c94-0541-18980fd84596}</UniqueIdentifier>
     </Filter>
@@ -172,9 +175,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\allocation-site-scopes.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\allocation-tracker.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\allocation.h">
@@ -372,12 +372,6 @@
     <ClInclude Include="src\checks.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\circular-queue-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\circular-queue.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\code-factory.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -516,7 +510,13 @@
     <ClInclude Include="src\compiler\js-generic-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\js-global-specialization.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\js-graph.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\js-inlining-heuristic.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-inlining.h">
@@ -618,9 +618,6 @@
     <ClInclude Include="src\compiler\register-allocator.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\register-configuration.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\representation-change.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -685,12 +682,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\counters.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpu-profiler-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpu-profiler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\date.h">
@@ -819,15 +810,6 @@
     <ClInclude Include="src\hashmap.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\heap-profiler.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\heap-snapshot-generator-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\heap-snapshot-generator.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\heap\array-buffer-tracker.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -868,6 +850,9 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\objects-visiting.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\scavenge-job.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\scavenger-inl.h">
@@ -1044,7 +1029,13 @@
     <ClInclude Include="src\interpreter\bytecode-generator.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-traits.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\bytecodes.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\control-flow-builders.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\interpreter.h">
@@ -1105,9 +1096,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\log.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lookup-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\lookup.h">
@@ -1188,11 +1176,47 @@
     <ClInclude Include="src\prettyprinter.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\profile-generator-inl.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\profiler\allocation-tracker.h">
+      <Filter>Source Files\profiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\profile-generator.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\profiler\circular-queue-inl.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\circular-queue.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\cpu-profiler-inl.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\cpu-profiler.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\heap-profiler.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\heap-snapshot-generator-inl.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\heap-snapshot-generator.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\profile-generator-inl.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\profile-generator.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\sampler.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\strings-storage.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\unbound-queue-inl.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\unbound-queue.h">
+      <Filter>Source Files\profiler</Filter>
     </ClInclude>
     <ClInclude Include="src\property-details.h">
       <Filter>Source Files</Filter>
@@ -1242,6 +1266,9 @@
     <ClInclude Include="src\regexp\x87\regexp-macro-assembler-x87.h">
       <Filter>Source Files\regexp\x87</Filter>
     </ClInclude>
+    <ClInclude Include="src\register-configuration.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\rewriter.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1255,9 +1282,6 @@
       <Filter>Source Files\runtime</Filter>
     </ClInclude>
     <ClInclude Include="src\safepoint-table.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\sampler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\scanner-character-streams.h">
@@ -1311,9 +1335,6 @@
     <ClInclude Include="src\string-stream.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\strings-storage.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\strtod.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1354,12 +1375,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\typing.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\unbound-queue-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\unbound-queue.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\unicode-cache-inl.h">
@@ -1485,9 +1500,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\allocation-site-scopes.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\allocation-tracker.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\allocation.cc">
@@ -1760,7 +1772,13 @@
     <ClCompile Include="src\compiler\js-generic-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\js-global-specialization.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\js-graph.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\js-inlining-heuristic.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-inlining.cc">
@@ -1862,9 +1880,6 @@
     <ClCompile Include="src\compiler\register-allocator.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\register-configuration.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\schedule.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -1926,9 +1941,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\counters.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpu-profiler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\date.cc">
@@ -2060,12 +2072,6 @@
     <ClCompile Include="src\handles.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\heap-profiler.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\heap-snapshot-generator.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\heap\array-buffer-tracker.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
@@ -2094,6 +2100,9 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\objects-visiting.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\heap\scavenge-job.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\scavenger.cc">
@@ -2327,6 +2336,9 @@
     <ClCompile Include="src\interpreter\bytecodes.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\control-flow-builders.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\interpreter.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -2447,8 +2459,26 @@
     <ClCompile Include="src\prettyprinter.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\profile-generator.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\profiler\allocation-tracker.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\cpu-profiler.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\heap-profiler.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\heap-snapshot-generator.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\profile-generator.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\sampler.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\strings-storage.cc">
+      <Filter>Source Files\profiler</Filter>
     </ClCompile>
     <ClCompile Include="src\property.cc">
       <Filter>Source Files</Filter>
@@ -2482,6 +2512,9 @@
     </ClCompile>
     <ClCompile Include="src\regexp\x87\regexp-macro-assembler-x87.cc">
       <Filter>Source Files\regexp\x87</Filter>
+    </ClCompile>
+    <ClCompile Include="src\register-configuration.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rewriter.cc">
       <Filter>Source Files</Filter>
@@ -2526,6 +2559,9 @@
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-internal.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\runtime-interpreter.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-json.cc">
@@ -2585,9 +2621,6 @@
     <ClCompile Include="src\safepoint-table.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\sampler.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\scanner-character-streams.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2622,9 +2655,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\string-stream.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\strings-storage.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\strtod.cc">

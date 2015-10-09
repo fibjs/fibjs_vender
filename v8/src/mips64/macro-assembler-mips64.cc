@@ -13,9 +13,9 @@
 #include "src/base/division-by-constant.h"
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
-#include "src/cpu-profiler.h"
 #include "src/debug/debug.h"
 #include "src/mips64/macro-assembler-mips64.h"
+#include "src/register-configuration.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
@@ -153,7 +153,7 @@ MemOperand MacroAssembler::SafepointRegisterSlot(Register reg) {
 MemOperand MacroAssembler::SafepointRegistersAndDoublesSlot(Register reg) {
   UNIMPLEMENTED_MIPS();
   // General purpose registers are pushed last on the stack.
-  int doubles_size = FPURegister::NumAllocatableRegisters() * kDoubleSize;
+  int doubles_size = DoubleRegister::kMaxNumRegisters * kDoubleSize;
   int register_offset = SafepointRegisterStackIndex(reg.code()) * kPointerSize;
   return MemOperand(sp, doubles_size + register_offset);
 }
@@ -1214,7 +1214,24 @@ void MacroAssembler::Uld(Register rd, const MemOperand& rs, Register scratch) {
   // Assert fail if the offset from start of object IS actually aligned.
   // ONLY use with known misalignment, since there is performance cost.
   DCHECK((rs.offset() + kHeapObjectTag) & (kPointerSize - 1));
-  // TODO(plind): endian dependency.
+  if (kArchEndian == kLittle) {
+    lwu(rd, rs);
+    lw(scratch, MemOperand(rs.rm(), rs.offset() + kPointerSize / 2));
+    dsll32(scratch, scratch, 0);
+  } else {
+    lw(rd, rs);
+    lwu(scratch, MemOperand(rs.rm(), rs.offset() + kPointerSize / 2));
+    dsll32(rd, rd, 0);
+  }
+  Daddu(rd, rd, scratch);
+}
+
+
+// Load consequent 32-bit word pair in 64-bit reg. and put first word in low
+// bits,
+// second word in high bits.
+void MacroAssembler::LoadWordPair(Register rd, const MemOperand& rs,
+                                  Register scratch) {
   lwu(rd, rs);
   lw(scratch, MemOperand(rs.rm(), rs.offset() + kPointerSize / 2));
   dsll32(scratch, scratch, 0);
@@ -1228,7 +1245,21 @@ void MacroAssembler::Usd(Register rd, const MemOperand& rs, Register scratch) {
   // Assert fail if the offset from start of object IS actually aligned.
   // ONLY use with known misalignment, since there is performance cost.
   DCHECK((rs.offset() + kHeapObjectTag) & (kPointerSize - 1));
-  // TODO(plind): endian dependency.
+  if (kArchEndian == kLittle) {
+    sw(rd, rs);
+    dsrl32(scratch, rd, 0);
+    sw(scratch, MemOperand(rs.rm(), rs.offset() + kPointerSize / 2));
+  } else {
+    sw(rd, MemOperand(rs.rm(), rs.offset() + kPointerSize / 2));
+    dsrl32(scratch, rd, 0);
+    sw(scratch, rs);
+  }
+}
+
+
+// Do 64-bit store as two consequent 32-bit stores to unaligned address.
+void MacroAssembler::StoreWordPair(Register rd, const MemOperand& rs,
+                                   Register scratch) {
   sw(rd, rs);
   dsrl32(scratch, rd, 0);
   sw(scratch, MemOperand(rs.rm(), rs.offset() + kPointerSize / 2));
@@ -3735,7 +3766,7 @@ void MacroAssembler::CopyFields(Register dst,
   // Find a temp register in temps list.
   for (int i = 0; i < kNumRegisters; i++) {
     if ((temps & (1 << i)) != 0) {
-      tmp.code_ = i;
+      tmp.reg_code = i;
       break;
     }
   }
@@ -3779,21 +3810,39 @@ void MacroAssembler::CopyBytes(Register src,
 
   // TODO(kalmard) check if this can be optimized to use sw in most cases.
   // Can't use unaligned access - copy byte by byte.
-  sb(scratch, MemOperand(dst, 0));
-  dsrl(scratch, scratch, 8);
-  sb(scratch, MemOperand(dst, 1));
-  dsrl(scratch, scratch, 8);
-  sb(scratch, MemOperand(dst, 2));
-  dsrl(scratch, scratch, 8);
-  sb(scratch, MemOperand(dst, 3));
-  dsrl(scratch, scratch, 8);
-  sb(scratch, MemOperand(dst, 4));
-  dsrl(scratch, scratch, 8);
-  sb(scratch, MemOperand(dst, 5));
-  dsrl(scratch, scratch, 8);
-  sb(scratch, MemOperand(dst, 6));
-  dsrl(scratch, scratch, 8);
-  sb(scratch, MemOperand(dst, 7));
+  if (kArchEndian == kLittle) {
+    sb(scratch, MemOperand(dst, 0));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 1));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 2));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 3));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 4));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 5));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 6));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 7));
+  } else {
+    sb(scratch, MemOperand(dst, 7));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 6));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 5));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 4));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 3));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 2));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 1));
+    dsrl(scratch, scratch, 8);
+    sb(scratch, MemOperand(dst, 0));
+  }
   Daddu(dst, dst, 8);
 
   Dsubu(length, length, Operand(kPointerSize));
@@ -3991,7 +4040,11 @@ void MacroAssembler::LoadWeakValue(Register value, Handle<WeakCell> cell,
 
 void MacroAssembler::MovFromFloatResult(const DoubleRegister dst) {
   if (IsMipsSoftFloatABI) {
-    Move(dst, v0, v1);
+    if (kArchEndian == kLittle) {
+      Move(dst, v0, v1);
+    } else {
+      Move(dst, v1, v0);
+    }
   } else {
     Move(dst, f0);  // Reg f0 is o32 ABI FP return value.
   }
@@ -4000,9 +4053,13 @@ void MacroAssembler::MovFromFloatResult(const DoubleRegister dst) {
 
 void MacroAssembler::MovFromFloatParameter(const DoubleRegister dst) {
   if (IsMipsSoftFloatABI) {
-    Move(dst, a0, a1);
+    if (kArchEndian == kLittle) {
+      Move(dst, a0, a1);
+    } else {
+      Move(dst, a1, a0);
+    }
   } else {
-    Move(dst, f12);  // Reg f12 is o32 ABI FP first argument value.
+    Move(dst, f12);  // Reg f12 is n64 ABI FP first argument value.
   }
 }
 
@@ -4011,7 +4068,11 @@ void MacroAssembler::MovToFloatParameter(DoubleRegister src) {
   if (!IsMipsSoftFloatABI) {
     Move(f12, src);
   } else {
-    Move(a0, a1, src);
+    if (kArchEndian == kLittle) {
+      Move(a0, a1, src);
+    } else {
+      Move(a1, a0, src);
+    }
   }
 }
 
@@ -4020,7 +4081,11 @@ void MacroAssembler::MovToFloatResult(DoubleRegister src) {
   if (!IsMipsSoftFloatABI) {
     Move(f0, src);
   } else {
-    Move(v0, v1, src);
+    if (kArchEndian == kLittle) {
+      Move(v0, v1, src);
+    } else {
+      Move(v1, v0, src);
+    }
   }
 }
 
@@ -4038,8 +4103,13 @@ void MacroAssembler::MovToFloatParameters(DoubleRegister src1,
       Move(fparg2, src2);
     }
   } else {
-    Move(a0, a1, src1);
-    Move(a2, a3, src2);
+    if (kArchEndian == kLittle) {
+      Move(a0, a1, src1);
+      Move(a2, a3, src2);
+    } else {
+      Move(a1, a0, src1);
+      Move(a3, a2, src2);
+    }
   }
 }
 
@@ -4960,6 +5030,14 @@ void MacroAssembler::Prologue(bool code_pre_aging) {
 }
 
 
+void MacroAssembler::EmitLoadTypeFeedbackVector(Register vector) {
+  ld(vector, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  ld(vector, FieldMemOperand(vector, JSFunction::kSharedFunctionInfoOffset));
+  ld(vector,
+     FieldMemOperand(vector, SharedFunctionInfo::kFeedbackVectorOffset));
+}
+
+
 void MacroAssembler::EnterFrame(StackFrame::Type type,
                                 bool load_constant_pool_pointer_reg) {
   // Out-of-line constant pool not implemented on mips64.
@@ -5030,7 +5108,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles,
   if (save_doubles) {
     // The stack is already aligned to 0 modulo 8 for stores with sdc1.
     int kNumOfSavedRegisters = FPURegister::kMaxNumRegisters / 2;
-    int space = kNumOfSavedRegisters * kDoubleSize ;
+    int space = kNumOfSavedRegisters * kDoubleSize;
     Dsubu(sp, sp, Operand(space));
     // Remember: we only need to save every 2nd double FPU value.
     for (int i = 0; i < kNumOfSavedRegisters; i++) {
@@ -5118,7 +5196,7 @@ void MacroAssembler::InitializeNewString(Register string,
   sd(scratch1, FieldMemOperand(string, String::kLengthOffset));
   li(scratch1, Operand(String::kEmptyHashField));
   sd(scratch2, FieldMemOperand(string, HeapObject::kMapOffset));
-  sd(scratch1, FieldMemOperand(string, String::kHashFieldOffset));
+  sw(scratch1, FieldMemOperand(string, String::kHashFieldOffset));
 }
 
 
@@ -5647,8 +5725,8 @@ void MacroAssembler::HasColor(Register object,
   GetMarkBits(object, bitmap_scratch, mask_scratch);
 
   Label other_color;
-  // Note that we are using a 4-byte aligned 8-byte load.
-  Uld(t9, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  // Note that we are using two 4-byte aligned loads.
+  LoadWordPair(t9, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   And(t8, t9, Operand(mask_scratch));
   Branch(&other_color, first_bit == 1 ? eq : ne, t8, Operand(zero_reg));
   // Shift left 1 by adding.
@@ -5721,7 +5799,12 @@ void MacroAssembler::EnsureNotWhite(
   // Since both black and grey have a 1 in the first position and white does
   // not have a 1 there we only need to check one bit.
   // Note that we are using a 4-byte aligned 8-byte load.
-  Uld(load_scratch, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  if (emit_debug_code()) {
+    LoadWordPair(load_scratch,
+                 MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  } else {
+    lwu(load_scratch, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  }
   And(t8, mask_scratch, load_scratch);
   Branch(&done, ne, t8, Operand(zero_reg));
 
@@ -5800,14 +5883,14 @@ void MacroAssembler::EnsureNotWhite(
   bind(&is_data_object);
   // Value is a data object, and it is white.  Mark it black.  Since we know
   // that the object is white we can make it black by flipping one bit.
-  Uld(t8, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  lw(t8, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
   Or(t8, t8, Operand(mask_scratch));
-  Usd(t8, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
+  sw(t8, MemOperand(bitmap_scratch, MemoryChunk::kHeaderSize));
 
   And(bitmap_scratch, bitmap_scratch, Operand(~Page::kPageAlignmentMask));
-  Uld(t8, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
-  Daddu(t8, t8, Operand(length));
-  Usd(t8, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
+  lw(t8, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
+  Addu(t8, t8, Operand(length));
+  sw(t8, MemOperand(bitmap_scratch, MemoryChunk::kLiveBytesOffset));
 
   bind(&done);
 }
@@ -5820,14 +5903,14 @@ void MacroAssembler::LoadInstanceDescriptors(Register map,
 
 
 void MacroAssembler::NumberOfOwnDescriptors(Register dst, Register map) {
-  ld(dst, FieldMemOperand(map, Map::kBitField3Offset));
+  lwu(dst, FieldMemOperand(map, Map::kBitField3Offset));
   DecodeField<Map::NumberOfOwnDescriptorsBits>(dst);
 }
 
 
 void MacroAssembler::EnumLength(Register dst, Register map) {
   STATIC_ASSERT(Map::EnumLengthBits::kShift == 0);
-  ld(dst, FieldMemOperand(map, Map::kBitField3Offset));
+  lwu(dst, FieldMemOperand(map, Map::kBitField3Offset));
   And(dst, dst, Operand(Map::EnumLengthBits::kMask));
   SmiTag(dst);
 }
@@ -5968,8 +6051,10 @@ Register GetRegisterThatIsNotOneOf(Register reg1,
   if (reg5.is_valid()) regs |= reg5.bit();
   if (reg6.is_valid()) regs |= reg6.bit();
 
-  for (int i = 0; i < Register::NumAllocatableRegisters(); i++) {
-    Register candidate = Register::FromAllocationIndex(i);
+  const RegisterConfiguration* config = RegisterConfiguration::ArchDefault();
+  for (int i = 0; i < config->num_allocatable_general_registers(); ++i) {
+    int code = config->GetAllocatableGeneralCode(i);
+    Register candidate = Register::from_code(code);
     if (regs & candidate.bit()) continue;
     return candidate;
   }

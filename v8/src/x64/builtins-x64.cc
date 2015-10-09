@@ -25,12 +25,13 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
                                 BuiltinExtraArguments extra_args) {
   // ----------- S t a t e -------------
   //  -- rax                 : number of arguments excluding receiver
-  //  -- rdi                 : called function (only guaranteed when
-  //                           extra_args requires it)
+  //                           (only guaranteed when the called function
+  //                            is not marked as DontAdaptArguments)
+  //  -- rdi                 : called function
   //  -- rsp[0]              : return address
   //  -- rsp[8]              : last argument
   //  -- ...
-  //  -- rsp[8 * argc]       : first argument (argc == rax)
+  //  -- rsp[8 * argc]       : first argument
   //  -- rsp[8 * (argc + 1)] : receiver
   // -----------------------------------
   __ AssertFunction(rdi);
@@ -54,8 +55,21 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
   }
 
   // JumpToExternalReference expects rax to contain the number of arguments
-  // including the receiver and the extra arguments.
+  // including the receiver and the extra arguments.  But rax is only valid
+  // if the called function is marked as DontAdaptArguments, otherwise we
+  // need to load the argument count from the SharedFunctionInfo.
+  Label argc, done_argc;
+  __ movp(rdx, FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
+  __ LoadSharedFunctionInfoSpecialField(
+      rbx, rdx, SharedFunctionInfo::kFormalParameterCountOffset);
+  __ cmpp(rbx, Immediate(SharedFunctionInfo::kDontAdaptArgumentsSentinel));
+  __ j(equal, &argc, Label::kNear);
+  __ leap(rax, Operand(rbx, num_extra_args + 1));
+  __ jmp(&done_argc, Label::kNear);
+  __ bind(&argc);
   __ addp(rax, Immediate(num_extra_args + 1));
+  __ bind(&done_argc);
+
   __ JumpToExternalReference(ExternalReference(id, masm->isolate()), 1);
 }
 
@@ -772,6 +786,41 @@ void Builtins::Generate_InterpreterExitTrampoline(MacroAssembler* masm) {
   __ addp(rsp, rbx);
   __ PushReturnAddressFrom(rcx);
   __ ret(0);
+}
+
+
+// static
+void Builtins::Generate_InterpreterPushArgsAndCall(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- rax : the number of arguments (not including the receiver)
+  //  -- rbx : the address of the first argument to be pushed. Subsequent
+  //           arguments should be consecutive above this, in the same order as
+  //           they are to be pushed onto the stack.
+  //  -- rdi : the target to call (can be any Object).
+
+  // Pop return address to allow tail-call after pushing arguments.
+  __ Pop(rdx);
+
+  // Find the address of the last argument.
+  __ movp(rcx, rax);
+  __ addp(rcx, Immediate(1));  // Add one for receiver.
+  __ shlp(rcx, Immediate(kPointerSizeLog2));
+  __ negp(rcx);
+  __ addp(rcx, rbx);
+
+  // Push the arguments.
+  Label loop_header, loop_check;
+  __ j(always, &loop_check);
+  __ bind(&loop_header);
+  __ Push(Operand(rbx, 0));
+  __ subp(rbx, Immediate(kPointerSize));
+  __ bind(&loop_check);
+  __ cmpp(rbx, rcx);
+  __ j(greater, &loop_header, Label::kNear);
+
+  // Call the target.
+  __ Push(rdx);  // Re-push return address.
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 }
 
 
@@ -1775,6 +1824,21 @@ void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
 
 
 // static
+void Builtins::Generate_ConstructProxy(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- rax : the number of arguments (not including the receiver)
+  //  -- rdx : the original constructor (either the same as the constructor or
+  //           the JSFunction on which new was invoked initially)
+  //  -- rdi : the constructor to call (checked to be a JSFunctionProxy)
+  // -----------------------------------
+
+  // TODO(neis): This doesn't match the ES6 spec for [[Construct]] on proxies.
+  __ movp(rdi, FieldOperand(rdi, JSFunctionProxy::kConstructTrapOffset));
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+}
+
+
+// static
 void Builtins::Generate_Construct(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- rax : the number of arguments (not including the receiver)
@@ -1784,75 +1848,40 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   // -----------------------------------
   StackArgumentsAccessor args(rsp, rax);
 
-  Label non_callable, non_function;
-  __ JumpIfSmi(rdi, &non_callable);
-  __ CmpObjectType(rdi, JS_FUNCTION_TYPE, rcx);
+  // Check if target has a [[Construct]] internal method.
+  Label non_constructor;
+  __ JumpIfSmi(rdi, &non_constructor, Label::kNear);
+  __ movp(rcx, FieldOperand(rdi, HeapObject::kMapOffset));
+  __ testb(FieldOperand(rcx, Map::kBitFieldOffset),
+           Immediate(1 << Map::kIsConstructor));
+  __ j(zero, &non_constructor, Label::kNear);
+
+  // Dispatch based on instance type.
+  __ CmpInstanceType(rcx, JS_FUNCTION_TYPE);
   __ j(equal, masm->isolate()->builtins()->ConstructFunction(),
        RelocInfo::CODE_TARGET);
   __ CmpInstanceType(rcx, JS_FUNCTION_PROXY_TYPE);
-  __ j(not_equal, &non_function, Label::kNear);
+  __ j(equal, masm->isolate()->builtins()->ConstructProxy(),
+       RelocInfo::CODE_TARGET);
 
-  // 1. Construct of function proxy.
-  // TODO(neis): This doesn't match the ES6 spec for [[Construct]] on proxies.
-  __ movp(rdi, FieldOperand(rdi, JSFunctionProxy::kConstructTrapOffset));
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+  // Called Construct on an exotic Object with a [[Construct]] internal method.
+  {
+    // Overwrite the original receiver with the (original) target.
+    __ movp(args.GetReceiverOperand(), rdi);
+    // Let the "call_as_constructor_delegate" take care of the rest.
+    __ LoadGlobalFunction(Context::CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, rdi);
+    __ Jump(masm->isolate()->builtins()->CallFunction(),
+            RelocInfo::CODE_TARGET);
+  }
 
-  // 2. Construct of something else, which might have a [[Construct]] internal
-  // method (if not we raise an exception).
-  __ bind(&non_function);
-  // Check if target has a [[Call]] internal method.
-  // TODO(bmeurer): This shoud use IsConstructor once available.
-  __ testb(FieldOperand(rcx, Map::kBitFieldOffset),
-           Immediate(1 << Map::kIsCallable));
-  __ j(zero, &non_callable, Label::kNear);
-  // Overwrite the original receiver with the (original) target.
-  __ movp(args.GetReceiverOperand(), rdi);
-  // Let the "call_as_constructor_delegate" take care of the rest.
-  __ LoadGlobalFunction(Context::CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, rdi);
-  __ Jump(masm->isolate()->builtins()->CallFunction(), RelocInfo::CODE_TARGET);
-
-  // 3. Construct of something that is not callable.
-  __ bind(&non_callable);
+  // Called Construct on an Object that doesn't have a [[Construct]] internal
+  // method.
+  __ bind(&non_constructor);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ Push(rdi);
     __ CallRuntime(Runtime::kThrowCalledNonCallable, 1);
   }
-}
-
-
-// static
-void Builtins::Generate_PushArgsAndCall(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- rax : the number of arguments (not including the receiver)
-  //  -- rbx : the address of the first argument to be pushed. Subsequent
-  //           arguments should be consecutive above this, in the same order as
-  //           they are to be pushed onto the stack.
-  //  -- rdi : the target to call (can be any Object).
-
-  // Pop return address to allow tail-call after pushing arguments.
-  __ Pop(rdx);
-
-  // Find the address of the last argument.
-  __ movp(rcx, rax);
-  __ addp(rcx, Immediate(1));  // Add one for receiver.
-  __ shlp(rcx, Immediate(kPointerSizeLog2));
-  __ negp(rcx);
-  __ addp(rcx, rbx);
-
-  // Push the arguments.
-  Label loop_header, loop_check;
-  __ j(always, &loop_check);
-  __ bind(&loop_header);
-  __ Push(Operand(rbx, 0));
-  __ subp(rbx, Immediate(kPointerSize));
-  __ bind(&loop_check);
-  __ cmpp(rbx, rcx);
-  __ j(greater, &loop_header, Label::kNear);
-
-  // Call the target.
-  __ Push(rdx);  // Re-push return address.
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 }
 
 

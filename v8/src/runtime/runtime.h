@@ -80,7 +80,6 @@ namespace internal {
   F(ThrowArrayNotSubclassableError, 0, 1)     \
   F(ThrowStaticPrototypeError, 0, 1)          \
   F(ThrowIfStaticPrototype, 1, 1)             \
-  F(ToMethod, 2, 1)                           \
   F(HomeObjectSymbol, 0, 1)                   \
   F(DefineClass, 5, 1)                        \
   F(FinalizeClassDefinition, 2, 1)            \
@@ -215,6 +214,20 @@ namespace internal {
   F(ForInFilter, 2, 1)              \
   F(ForInNext, 4, 1)                \
   F(ForInStep, 1, 1)
+
+
+#define FOR_EACH_INTRINSIC_INTERPRETER(F) \
+  F(InterpreterEquals, 2, 1)              \
+  F(InterpreterNotEquals, 2, 1)           \
+  F(InterpreterStrictEquals, 2, 1)        \
+  F(InterpreterStrictNotEquals, 2, 1)     \
+  F(InterpreterLessThan, 2, 1)            \
+  F(InterpreterGreaterThan, 2, 1)         \
+  F(InterpreterLessThanOrEqual, 2, 1)     \
+  F(InterpreterGreaterThanOrEqual, 2, 1)  \
+  F(InterpreterToBoolean, 1, 1)           \
+  F(InterpreterLogicalNot, 1, 1)          \
+  F(InterpreterTypeOf, 1, 1)
 
 
 #define FOR_EACH_INTRINSIC_FUNCTION(F)                      \
@@ -402,7 +415,6 @@ namespace internal {
   F(StringParseFloat, 1, 1)            \
   F(NumberToString, 1, 1)              \
   F(NumberToStringSkipCache, 1, 1)     \
-  F(NumberToInteger, 1, 1)             \
   F(NumberToIntegerMapMinusZero, 1, 1) \
   F(NumberToSmi, 1, 1)                 \
   F(NumberImul, 2, 1)                  \
@@ -474,6 +486,8 @@ namespace internal {
   F(ToPrimitive_Number, 1, 1)                        \
   F(ToPrimitive_String, 1, 1)                        \
   F(ToNumber, 1, 1)                                  \
+  F(ToInteger, 1, 1)                                 \
+  F(ToLength, 1, 1)                                  \
   F(ToString, 1, 1)                                  \
   F(ToName, 1, 1)                                    \
   F(Equals, 2, 1)                                    \
@@ -903,7 +917,6 @@ namespace internal {
   F(StringTrim, 3, 1)                           \
   F(TruncateString, 2, 1)                       \
   F(NewString, 2, 1)                            \
-  F(NewConsString, 4, 1)                        \
   F(StringEquals, 2, 1)                         \
   F(FlattenString, 1, 1)                        \
   F(StringCharFromCode, 1, 1)                   \
@@ -1059,6 +1072,7 @@ namespace internal {
   FOR_EACH_INTRINSIC_DATE(F)                \
   FOR_EACH_INTRINSIC_DEBUG(F)               \
   FOR_EACH_INTRINSIC_FORIN(F)               \
+  FOR_EACH_INTRINSIC_INTERPRETER(F)         \
   FOR_EACH_INTRINSIC_FUNCTION(F)            \
   FOR_EACH_INTRINSIC_FUTEX(F)               \
   FOR_EACH_INTRINSIC_GENERATOR(F)           \
@@ -1097,27 +1111,6 @@ FOR_EACH_INTRINSIC_RETURN_OBJECT(F)
 
 //---------------------------------------------------------------------------
 // Runtime provides access to all C++ runtime functions.
-
-class RuntimeState {
- public:
-  unibrow::Mapping<unibrow::ToUppercase, 128>* to_upper_mapping() {
-    return &to_upper_mapping_;
-  }
-  unibrow::Mapping<unibrow::ToLowercase, 128>* to_lower_mapping() {
-    return &to_lower_mapping_;
-  }
-
- private:
-  RuntimeState() {}
-  unibrow::Mapping<unibrow::ToUppercase, 128> to_upper_mapping_;
-  unibrow::Mapping<unibrow::ToLowercase, 128> to_lower_mapping_;
-
-  friend class Isolate;
-  friend class Runtime;
-
-  DISALLOW_COPY_AND_ASSIGN(RuntimeState);
-};
-
 
 class Runtime : public AllStatic {
  public:
@@ -1167,6 +1160,9 @@ class Runtime : public AllStatic {
   // Get the intrinsic function with the given function entry address.
   static const Function* FunctionForEntry(Address ref);
 
+  // Get the runtime intrinsic function table.
+  static const Function* RuntimeFunctionTable(Isolate* isolate);
+
   MUST_USE_RESULT static MaybeHandle<Object> DeleteObjectProperty(
       Isolate* isolate, Handle<JSReceiver> receiver, Handle<Object> key,
       LanguageMode language_mode);
@@ -1200,7 +1196,7 @@ class Runtime : public AllStatic {
 
   // Used in runtime.cc and hydrogen's VisitArrayLiteral.
   MUST_USE_RESULT static MaybeHandle<Object> CreateArrayLiteralBoilerplate(
-      Isolate* isolate, Handle<FixedArray> literals,
+      Isolate* isolate, Handle<LiteralsArray> literals,
       Handle<FixedArray> elements, bool is_strong);
 
   static MaybeHandle<JSArray> GetInternalProperties(Isolate* isolate,
@@ -1214,6 +1210,38 @@ class Runtime : public AllStatic {
   // runtime-scopes.cc then.
   static base::SmartArrayPointer<Handle<Object>> GetCallerArguments(
       Isolate* isolate, int prefix_argc, int* total_argc);
+};
+
+
+class RuntimeState {
+ public:
+  unibrow::Mapping<unibrow::ToUppercase, 128>* to_upper_mapping() {
+    return &to_upper_mapping_;
+  }
+  unibrow::Mapping<unibrow::ToLowercase, 128>* to_lower_mapping() {
+    return &to_lower_mapping_;
+  }
+
+  Runtime::Function* redirected_intrinsic_functions() {
+    return redirected_intrinsic_functions_.get();
+  }
+
+  void set_redirected_intrinsic_functions(
+      Runtime::Function* redirected_intrinsic_functions) {
+    redirected_intrinsic_functions_.Reset(redirected_intrinsic_functions);
+  }
+
+ private:
+  RuntimeState() {}
+  unibrow::Mapping<unibrow::ToUppercase, 128> to_upper_mapping_;
+  unibrow::Mapping<unibrow::ToLowercase, 128> to_lower_mapping_;
+
+  base::SmartArrayPointer<Runtime::Function> redirected_intrinsic_functions_;
+
+  friend class Isolate;
+  friend class Runtime;
+
+  DISALLOW_COPY_AND_ASSIGN(RuntimeState);
 };
 
 

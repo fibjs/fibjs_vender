@@ -146,7 +146,7 @@ template<typename T> class CustomArguments;
 class PropertyCallbackArguments;
 class FunctionCallbackArguments;
 class GlobalHandles;
-}
+}  // namespace internal
 
 
 /**
@@ -2465,6 +2465,7 @@ class V8_EXPORT Symbol : public Name {
   static Local<Symbol> GetIterator(Isolate* isolate);
   static Local<Symbol> GetUnscopables(Isolate* isolate);
   static Local<Symbol> GetToStringTag(Isolate* isolate);
+  static Local<Symbol> GetIsConcatSpreadable(Isolate* isolate);
 
   V8_INLINE static Symbol* Cast(v8::Value* obj);
 
@@ -4027,6 +4028,13 @@ class V8_EXPORT Template : public Data {
      PropertyAttribute attribute = None,
      AccessControl settings = DEFAULT);
 
+#ifdef V8_JS_ACCESSORS
+  void SetAccessorProperty(Local<Name> name,
+                           Local<Function> getter = Local<Function>(),
+                           Local<Function> setter = Local<Function>(),
+                           PropertyAttribute attribute = None);
+#endif  // V8_JS_ACCESSORS
+
   /**
    * Whenever the property with the given name is accessed on objects
    * created from this Template the getter and setter callbacks
@@ -5371,6 +5379,19 @@ class V8_EXPORT Isolate {
   static Isolate* GetCurrent();
 
   /**
+   * Custom callback used by embedders to help V8 determine if it should abort
+   * when it throws and no internal handler is predicted to catch the
+   * exception. If --abort-on-uncaught-exception is used on the command line,
+   * then V8 will abort if either:
+   * - no custom callback is set.
+   * - the custom callback set returns true.
+   * Otherwise, the custom callback will not be called and V8 will not abort.
+   */
+  typedef bool (*AbortOnUncaughtExceptionCallback)(Isolate*);
+  void SetAbortOnUncaughtExceptionCallback(
+      AbortOnUncaughtExceptionCallback callback);
+
+  /**
    * Methods below this point require holding a lock (using Locker) in
    * a multi-threaded environment.
    */
@@ -5912,7 +5933,7 @@ class V8_EXPORT Isolate {
   void SetObjectGroupId(internal::Object** object, UniqueId id);
   void SetReferenceFromGroup(UniqueId id, internal::Object** object);
   void SetReference(internal::Object** parent, internal::Object** child);
-  void CollectAllGarbage(const char* gc_reason);
+  void ReportExternalAllocationLimitReached();
 };
 
 class V8_EXPORT StartupData {
@@ -8163,7 +8184,7 @@ int64_t Isolate::AdjustAmountOfExternalAllocatedMemory(
   if (change_in_bytes > 0 &&
       amount - *amount_of_external_allocated_memory_at_last_global_gc >
           I::kExternalAllocationLimit) {
-    CollectAllGarbage("external memory allocation limit reached.");
+    ReportExternalAllocationLimitReached();
   }
   *amount_of_external_allocated_memory = amount;
   return *amount_of_external_allocated_memory;

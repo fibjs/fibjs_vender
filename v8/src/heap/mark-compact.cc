@@ -6,9 +6,9 @@
 
 #include "src/base/atomicops.h"
 #include "src/base/bits.h"
+#include "src/base/sys-info.h"
 #include "src/code-stubs.h"
 #include "src/compilation-cache.h"
-#include "src/cpu-profiler.h"
 #include "src/deoptimizer.h"
 #include "src/execution.h"
 #include "src/frames-inl.h"
@@ -23,9 +23,9 @@
 #include "src/heap/objects-visiting-inl.h"
 #include "src/heap/slots-buffer.h"
 #include "src/heap/spaces-inl.h"
-#include "src/heap-profiler.h"
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
+#include "src/profiler/cpu-profiler.h"
 #include "src/v8.h"
 
 namespace v8 {
@@ -702,8 +702,7 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
   int candidate_count = 0;
   int total_live_bytes = 0;
 
-  bool reduce_memory =
-      heap()->ShouldReduceMemory() || heap()->HasLowAllocationRate();
+  bool reduce_memory = heap()->ShouldReduceMemory();
   if (FLAG_manual_evacuation_candidates_selection) {
     for (size_t i = 0; i < pages.size(); i++) {
       Page* p = pages[i].second;
@@ -3370,13 +3369,24 @@ bool MarkCompactCollector::EvacuateLiveObjectsFromPage(
 }
 
 
+int MarkCompactCollector::NumberOfParallelCompactionTasks() {
+  if (!FLAG_parallel_compaction) return 1;
+  // We cap the number of parallel compaction tasks by
+  // - (#cores - 1)
+  // - a value depending on the list of evacuation candidates
+  // - a hard limit
+  const int kPagesPerCompactionTask = 4;
+  const int kMaxCompactionTasks = 8;
+  return Min(kMaxCompactionTasks,
+             Min(1 + evacuation_candidates_.length() / kPagesPerCompactionTask,
+                 Max(1, base::SysInfo::NumberOfProcessors() - 1)));
+}
+
+
 void MarkCompactCollector::EvacuatePagesInParallel() {
   if (evacuation_candidates_.length() == 0) return;
 
-  int num_tasks = 1;
-  if (FLAG_parallel_compaction) {
-    num_tasks = NumberOfParallelCompactionTasks();
-  }
+  const int num_tasks = NumberOfParallelCompactionTasks();
 
   // Set up compaction spaces.
   CompactionSpaceCollection** compaction_spaces_for_tasks =
@@ -3542,7 +3552,6 @@ static intptr_t Free(PagedSpace* space, FreeList* free_list, Address start,
     DCHECK(free_list == NULL);
     return space->Free(start, size);
   } else {
-    // TODO(hpayer): account for wasted bytes in concurrent sweeping too.
     return size - free_list->Free(start, size);
   }
 }
@@ -3773,6 +3782,14 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
         SkipList* list = p->skip_list();
         if (list != NULL) list->Clear();
       }
+
+      if (p->IsEvacuationCandidate() &&
+          p->IsFlagSet(Page::RESCAN_ON_EVACUATION)) {
+        // Case where we've aborted compacting a page. Clear the flag here to
+        // avoid release the page later on.
+        p->ClearEvacuationCandidate();
+      }
+
       if (p->IsFlagSet(Page::RESCAN_ON_EVACUATION)) {
         if (FLAG_gc_verbose) {
           PrintF("Sweeping 0x%" V8PRIxPTR " during evacuation.\n",
@@ -3802,12 +3819,6 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
             UNREACHABLE();
             break;
         }
-      }
-      if (p->IsEvacuationCandidate() &&
-          p->IsFlagSet(Page::RESCAN_ON_EVACUATION)) {
-        // Case where we've aborted compacting a page. Clear the flag here to
-        // avoid release the page later on.
-        p->ClearEvacuationCandidate();
       }
     }
   }

@@ -41,7 +41,6 @@ class JSTypedLowering final : public AdvancedReducer {
   Reduction ReduceJSBitwiseOr(Node* node);
   Reduction ReduceJSMultiply(Node* node);
   Reduction ReduceJSComparison(Node* node);
-  Reduction ReduceJSLoadGlobal(Node* node);
   Reduction ReduceJSLoadNamed(Node* node);
   Reduction ReduceJSLoadProperty(Node* node);
   Reduction ReduceJSStoreProperty(Node* node);
@@ -57,9 +56,11 @@ class JSTypedLowering final : public AdvancedReducer {
   Reduction ReduceJSToNumber(Node* node);
   Reduction ReduceJSToStringInput(Node* input);
   Reduction ReduceJSToString(Node* node);
+  Reduction ReduceJSCreateArguments(Node* node);
   Reduction ReduceJSCreateClosure(Node* node);
   Reduction ReduceJSCreateLiteralArray(Node* node);
   Reduction ReduceJSCreateLiteralObject(Node* node);
+  Reduction ReduceJSCreateFunctionContext(Node* node);
   Reduction ReduceJSCreateWithContext(Node* node);
   Reduction ReduceJSCreateBlockContext(Node* node);
   Reduction ReduceJSCallFunction(Node* node);
@@ -84,6 +85,7 @@ class JSTypedLowering final : public AdvancedReducer {
   MachineOperatorBuilder* machine() const;
 
   // Limits up to which context allocations are inlined.
+  static const int kFunctionContextAllocationLimit = 16;
   static const int kBlockContextAllocationLimit = 16;
 
   JSGraph* jsgraph_;

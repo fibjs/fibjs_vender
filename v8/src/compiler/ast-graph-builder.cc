@@ -535,10 +535,10 @@ bool AstGraphBuilder::CreateGraph(bool stack_check) {
     env.RawParameterBind(0, patched_receiver);
   }
 
-  // Build function context only if there are context allocated variables.
+  // Build local context only if there are context allocated variables.
   if (info()->num_heap_slots() > 0) {
-    // Push a new inner context scope for the function.
-    Node* inner_context = BuildLocalFunctionContext(GetFunctionContext());
+    // Push a new inner context scope for the current activation.
+    Node* inner_context = BuildLocalActivationContext(GetFunctionContext());
     ContextScope top_context(this, scope, inner_context);
     CreateGraphBody(stack_check);
   } else {
@@ -1644,7 +1644,7 @@ void AstGraphBuilder::VisitClassLiteralContents(ClassLiteral* expr) {
     FrameStateBeforeAndAfter states(this, BailoutId::None());
     VectorSlotPair feedback = CreateVectorSlotPair(
         expr->NeedsProxySlot() ? expr->ProxySlot()
-                               : FeedbackVectorICSlot::Invalid());
+                               : FeedbackVectorSlot::Invalid());
     BuildVariableAssignment(var, literal, Token::INIT_CONST, feedback,
                             BailoutId::None(), states);
   }
@@ -3017,7 +3017,7 @@ LanguageMode AstGraphBuilder::language_mode() const {
 
 
 VectorSlotPair AstGraphBuilder::CreateVectorSlotPair(
-    FeedbackVectorICSlot slot) const {
+    FeedbackVectorSlot slot) const {
   return VectorSlotPair(handle(info()->shared_info()->feedback_vector()), slot);
 }
 
@@ -3093,15 +3093,13 @@ Node* AstGraphBuilder::BuildPatchReceiverToGlobalProxy(Node* receiver) {
 }
 
 
-Node* AstGraphBuilder::BuildLocalFunctionContext(Node* context) {
+Node* AstGraphBuilder::BuildLocalActivationContext(Node* context) {
   Scope* scope = info()->scope();
-  Node* closure = GetFunctionClosure();
 
   // Allocate a new local context.
-  Node* local_context =
-      scope->is_script_scope()
-          ? BuildLocalScriptContext(scope)
-          : NewNode(javascript()->CreateFunctionContext(), closure);
+  Node* local_context = scope->is_script_scope()
+                            ? BuildLocalScriptContext(scope)
+                            : BuildLocalFunctionContext(scope);
 
   if (scope->has_this_declaration() && scope->receiver()->IsContextSlot()) {
     Node* receiver = environment()->RawParameterLookup(0);
@@ -3128,13 +3126,25 @@ Node* AstGraphBuilder::BuildLocalFunctionContext(Node* context) {
 }
 
 
+Node* AstGraphBuilder::BuildLocalFunctionContext(Scope* scope) {
+  DCHECK(scope->is_function_scope());
+
+  // Allocate a new local context.
+  int slot_count = scope->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
+  const Operator* op = javascript()->CreateFunctionContext(slot_count);
+  Node* local_context = NewNode(op, GetFunctionClosure());
+
+  return local_context;
+}
+
+
 Node* AstGraphBuilder::BuildLocalScriptContext(Scope* scope) {
   DCHECK(scope->is_script_scope());
 
   // Allocate a new local context.
-  const Operator* op = javascript()->CreateScriptContext();
-  Node* scope_info = jsgraph()->Constant(scope->GetScopeInfo(isolate()));
-  Node* local_context = NewNode(op, GetFunctionClosure(), scope_info);
+  Handle<ScopeInfo> scope_info = scope->GetScopeInfo(isolate());
+  const Operator* op = javascript()->CreateScriptContext(scope_info);
+  Node* local_context = NewNode(op, GetFunctionClosure());
   PrepareFrameState(local_context, BailoutId::Prologue());
 
   return local_context;
@@ -3145,9 +3155,9 @@ Node* AstGraphBuilder::BuildLocalBlockContext(Scope* scope) {
   DCHECK(scope->is_block_scope());
 
   // Allocate a new local context.
-  const Operator* op = javascript()->CreateBlockContext();
-  Node* scope_info = jsgraph()->Constant(scope->GetScopeInfo(isolate()));
-  Node* local_context = NewNode(op, scope_info, GetFunctionClosureForContext());
+  Handle<ScopeInfo> scope_info = scope->GetScopeInfo(isolate());
+  const Operator* op = javascript()->CreateBlockContext(scope_info);
+  Node* local_context = NewNode(op, GetFunctionClosureForContext());
 
   return local_context;
 }
@@ -3279,6 +3289,13 @@ Node* AstGraphBuilder::BuildVariableLoad(Variable* variable,
     case VariableLocation::GLOBAL:
     case VariableLocation::UNALLOCATED: {
       // Global var, const, or let variable.
+      Handle<Name> name = variable->name();
+      Handle<Object> constant_value =
+          jsgraph()->isolate()->factory()->GlobalConstantFor(name);
+      if (!constant_value.is_null()) {
+        // Optimize global constants like "undefined", "Infinity", and "NaN".
+        return jsgraph()->Constant(constant_value);
+      }
       Node* script_context = current_context();
       int slot_index = -1;
       if (variable->index() > 0) {
@@ -3292,7 +3309,6 @@ Node* AstGraphBuilder::BuildVariableLoad(Variable* variable,
         }
       }
       Node* global = BuildLoadGlobalObject();
-      Handle<Name> name = variable->name();
       Node* value = BuildGlobalLoad(script_context, global, name, feedback,
                                     typeof_mode, slot_index);
       states.AddToNode(value, bailout_id, combine);
@@ -3557,7 +3573,7 @@ Node* AstGraphBuilder::BuildVariableAssignment(
 
 
 static inline Node* Record(JSTypeFeedbackTable* js_type_feedback, Node* node,
-                           FeedbackVectorICSlot slot) {
+                           FeedbackVectorSlot slot) {
   if (js_type_feedback) {
     js_type_feedback->Record(node, slot);
   }
@@ -4219,12 +4235,12 @@ Node* AstGraphBuilder::MergeControl(Node* control, Node* other) {
     // Control node for loop exists, add input.
     const Operator* op = common()->Loop(inputs);
     control->AppendInput(graph_zone(), other);
-    control->set_op(op);
+    NodeProperties::ChangeOp(control, op);
   } else if (control->opcode() == IrOpcode::kMerge) {
     // Control node for merge exists, add input.
     const Operator* op = common()->Merge(inputs);
     control->AppendInput(graph_zone(), other);
-    control->set_op(op);
+    NodeProperties::ChangeOp(control, op);
   } else {
     // Control node is a singleton, introduce a merge.
     const Operator* op = common()->Merge(inputs);
@@ -4240,8 +4256,8 @@ Node* AstGraphBuilder::MergeEffect(Node* value, Node* other, Node* control) {
   if (value->opcode() == IrOpcode::kEffectPhi &&
       NodeProperties::GetControlInput(value) == control) {
     // Phi already exists, add input.
-    value->set_op(common()->EffectPhi(inputs));
     value->InsertInput(graph_zone(), inputs - 1, other);
+    NodeProperties::ChangeOp(value, common()->EffectPhi(inputs));
   } else if (value != other) {
     // Phi does not exist yet, introduce one.
     value = NewEffectPhi(inputs, value, control);
@@ -4256,8 +4272,8 @@ Node* AstGraphBuilder::MergeValue(Node* value, Node* other, Node* control) {
   if (value->opcode() == IrOpcode::kPhi &&
       NodeProperties::GetControlInput(value) == control) {
     // Phi already exists, add input.
-    value->set_op(common()->Phi(kMachAnyTagged, inputs));
     value->InsertInput(graph_zone(), inputs - 1, other);
+    NodeProperties::ChangeOp(value, common()->Phi(kMachAnyTagged, inputs));
   } else if (value != other) {
     // Phi does not exist yet, introduce one.
     value = NewPhi(inputs, value, control);

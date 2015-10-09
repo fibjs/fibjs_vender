@@ -77,8 +77,8 @@ Reduction JSContextSpecialization::ReduceJSLoadContext(Node* node) {
     }
     const Operator* op = jsgraph_->javascript()->LoadContext(
         0, access.index(), access.immutable());
-    node->set_op(op);
     node->ReplaceInput(0, jsgraph_->Constant(context));
+    NodeProperties::ChangeOp(node, op);
     return Changed(node);
   }
   Handle<Object> value =
@@ -95,6 +95,9 @@ Reduction JSContextSpecialization::ReduceJSLoadContext(Node* node) {
   // Success. The context load can be replaced with the constant.
   // TODO(titzer): record the specialization for sharing code across multiple
   // contexts that have the same value in the corresponding context slot.
+  if (value->IsConsString()) {
+    value = String::Flatten(Handle<String>::cast(value), TENURED);
+  }
   Node* constant = jsgraph_->Constant(value);
   ReplaceWithValue(node, constant);
   return Replace(constant);
@@ -119,8 +122,8 @@ Reduction JSContextSpecialization::ReduceJSStoreContext(Node* node) {
     context = handle(context->previous(), isolate());
   }
 
-  node->set_op(javascript()->StoreContext(0, access.index()));
   node->ReplaceInput(0, jsgraph_->Constant(context));
+  NodeProperties::ChangeOp(node, javascript()->StoreContext(0, access.index()));
   return Changed(node);
 }
 

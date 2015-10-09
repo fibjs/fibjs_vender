@@ -1,5 +1,5 @@
 #include "src/v8.h"
-#include "src/sampler.h"
+#include "src/profiler/sampler.h"
 #include <exlib/include/fiber.h>
 #include <exlib/include/service.h>
 

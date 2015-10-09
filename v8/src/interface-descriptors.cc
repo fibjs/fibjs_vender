@@ -29,7 +29,7 @@ Type* AnyTagged(Zone* zone) {
 Type* ExternalPointer(Zone* zone) {
   return Type::Intersect(Type::Internal(), Type::UntaggedPointer(), zone);
 }
-}
+}  // namespace
 
 
 Type::FunctionType* CallInterfaceDescriptor::BuildDefaultFunctionType(
@@ -306,6 +306,26 @@ void ApiGetterDescriptor::InitializePlatformSpecific(
 void ArgumentsAccessReadDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {index(), parameter_count()};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
+Type::FunctionType*
+ArgumentsAccessNewDescriptor::BuildCallInterfaceDescriptorFunctionType(
+    Isolate* isolate, int paramater_count) {
+  Zone* zone = isolate->interface_descriptor_zone();
+  Type::FunctionType* function =
+      Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 3, zone);
+  function->InitParameter(0, AnyTagged(zone));
+  function->InitParameter(1, SmiType(zone));
+  function->InitParameter(2, ExternalPointer(zone));
+  return function;
+}
+
+
+void ArgumentsAccessNewDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {function(), parameter_count(), parameter_pointer()};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 

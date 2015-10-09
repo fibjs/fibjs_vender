@@ -1591,6 +1591,9 @@ class MacroAssembler : public Assembler {
   // ---------------------------------------------------------------------------
   // Frames.
 
+  // Load the type feedback vector from a JavaScript frame.
+  void EmitLoadTypeFeedbackVector(Register vector);
+
   // Activation support.
   void EnterFrame(StackFrame::Type type);
   void EnterFrame(StackFrame::Type type, bool load_constant_pool_pointer_reg);
@@ -2275,7 +2278,8 @@ class InlineSmiCheckInfo {
   class DeltaBits : public BitField<uint32_t, 5, 32-5> {};
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #ifdef GENERATED_CODE_COVERAGE
 #error "Unsupported option"

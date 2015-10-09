@@ -442,8 +442,9 @@ HValue* CodeStubGraphBuilder<FastCloneShallowArrayStub>::BuildCodeStub() {
   // so that it doesn't build and eager frame.
   info()->MarkMustNotHaveEagerFrame();
 
-  HInstruction* allocation_site =
-      Add<HLoadKeyed>(GetParameter(0), GetParameter(1), nullptr, FAST_ELEMENTS);
+  HInstruction* allocation_site = Add<HLoadKeyed>(
+      GetParameter(0), GetParameter(1), nullptr, FAST_ELEMENTS,
+      NEVER_RETURN_HOLE, LiteralsArray::kOffsetToFirstLiteral - kHeapObjectTag);
   IfBuilder checker(this);
   checker.IfNot<HCompareObjectEqAndBranch, HValue*>(allocation_site,
                                                     undefined);
@@ -504,8 +505,9 @@ template <>
 HValue* CodeStubGraphBuilder<FastCloneShallowObjectStub>::BuildCodeStub() {
   HValue* undefined = graph()->GetConstantUndefined();
 
-  HInstruction* allocation_site =
-      Add<HLoadKeyed>(GetParameter(0), GetParameter(1), nullptr, FAST_ELEMENTS);
+  HInstruction* allocation_site = Add<HLoadKeyed>(
+      GetParameter(0), GetParameter(1), nullptr, FAST_ELEMENTS,
+      NEVER_RETURN_HOLE, LiteralsArray::kOffsetToFirstLiteral - kHeapObjectTag);
 
   IfBuilder checker(this);
   checker.IfNot<HCompareObjectEqAndBranch, HValue*>(allocation_site,
@@ -1213,7 +1215,7 @@ HValue* CodeStubGraphBuilderBase::BuildArrayNArgumentsConstructor(
   // trigger it.
   HValue* length = GetArgumentsLength();
   HConstant* max_alloc_length =
-      Add<HConstant>(JSObject::kInitialMaxFastElementArray);
+      Add<HConstant>(JSArray::kInitialMaxFastElementArray);
   HValue* checked_length = Add<HBoundsCheck>(length, max_alloc_length);
 
   // We need to fill with the hole if it's a smi array in the multi-argument

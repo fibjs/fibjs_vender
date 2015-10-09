@@ -32,8 +32,8 @@ enum LoadOrStore { LOAD, STORE };
 JSTypeFeedbackTable::JSTypeFeedbackTable(Zone* zone)
     : type_feedback_id_map_(TypeFeedbackIdMap::key_compare(),
                             TypeFeedbackIdMap::allocator_type(zone)),
-      feedback_vector_ic_slot_map_(TypeFeedbackIdMap::key_compare(),
-                                   TypeFeedbackIdMap::allocator_type(zone)) {}
+      feedback_vector_slot_map_(TypeFeedbackIdMap::key_compare(),
+                                TypeFeedbackIdMap::allocator_type(zone)) {}
 
 
 void JSTypeFeedbackTable::Record(Node* node, TypeFeedbackId id) {
@@ -41,8 +41,8 @@ void JSTypeFeedbackTable::Record(Node* node, TypeFeedbackId id) {
 }
 
 
-void JSTypeFeedbackTable::Record(Node* node, FeedbackVectorICSlot slot) {
-  feedback_vector_ic_slot_map_.insert(std::make_pair(node->id(), slot));
+void JSTypeFeedbackTable::Record(Node* node, FeedbackVectorSlot slot) {
+  feedback_vector_slot_map_.insert(std::make_pair(node->id(), slot));
 }
 
 
@@ -148,7 +148,7 @@ Reduction JSTypeFeedbackSpecializer::ReduceJSLoadNamed(Node* node) {
   const LoadNamedParameters& p = LoadNamedParametersOf(node->op());
   SmallMapList maps;
 
-  FeedbackVectorICSlot slot = js_type_feedback_->FindFeedbackVectorICSlot(node);
+  FeedbackVectorSlot slot = js_type_feedback_->FindFeedbackVectorSlot(node);
   if (slot.IsInvalid() ||
       oracle()->LoadInlineCacheState(slot) == UNINITIALIZED) {
     // No type feedback ids or the load is uninitialized.
@@ -191,16 +191,6 @@ Reduction JSTypeFeedbackSpecializer::ReduceJSLoadGlobal(Node* node) {
   DCHECK(node->opcode() == IrOpcode::kJSLoadGlobal);
   Handle<String> name =
       Handle<String>::cast(LoadGlobalParametersOf(node->op()).name());
-  // Try to optimize loads from the global object.
-  Handle<Object> constant_value =
-      jsgraph()->isolate()->factory()->GlobalConstantFor(name);
-  if (!constant_value.is_null()) {
-    // Always optimize global constants.
-    Node* constant = jsgraph()->Constant(constant_value);
-    ReplaceWithValue(node, constant);
-    return Replace(constant);
-  }
-
   if (global_object_.is_null()) {
     // Nothing else can be done if we don't have a global object.
     return NoChange();

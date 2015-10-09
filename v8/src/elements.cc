@@ -210,9 +210,7 @@ static void CopyDictionaryToObjectElements(
 static void CopyDoubleToObjectElements(FixedArrayBase* from_base,
                                        uint32_t from_start,
                                        FixedArrayBase* to_base,
-                                       ElementsKind to_kind, uint32_t to_start,
-                                       int raw_copy_size) {
-  DCHECK(IsFastSmiOrObjectElementsKind(to_kind));
+                                       uint32_t to_start, int raw_copy_size) {
   int copy_size = raw_copy_size;
   if (raw_copy_size < 0) {
     DisallowHeapAllocation no_allocation;
@@ -252,13 +250,8 @@ static void CopyDoubleToObjectElements(FixedArrayBase* from_base,
     HandleScope scope(isolate);
     offset += 100;
     for (int i = offset - 100; i < offset && i < copy_size; ++i) {
-      if (IsFastSmiElementsKind(to_kind)) {
-        UNIMPLEMENTED();
-      } else {
-        DCHECK(IsFastObjectElementsKind(to_kind));
-        Handle<Object> value = FixedDoubleArray::get(from, i + from_start);
-        to->set(i + to_start, *value, UPDATE_WRITE_BARRIER);
-      }
+      Handle<Object> value = FixedDoubleArray::get(from, i + from_start);
+      to->set(i + to_start, *value, UPDATE_WRITE_BARRIER);
     }
   }
 }
@@ -877,7 +870,7 @@ class ElementsAccessorBase : public ElementsAccessor {
 
   virtual void AddElementsToKeyAccumulator(Handle<JSObject> receiver,
                                            KeyAccumulator* accumulator,
-                                           FixedArray::KeyFilter filter) final {
+                                           KeyFilter filter) final {
     Handle<FixedArrayBase> from(receiver->elements());
     uint32_t add_length =
         ElementsAccessorSubclass::GetCapacityImpl(*receiver, *from);
@@ -890,7 +883,7 @@ class ElementsAccessorBase : public ElementsAccessor {
       DCHECK(!value->IsTheHole());
       DCHECK(!value->IsAccessorPair());
       DCHECK(!value->IsExecutableAccessorInfo());
-      if (filter == FixedArray::NON_SYMBOL_KEYS && value->IsSymbol()) {
+      if (filter == SKIP_SYMBOLS && value->IsSymbol()) {
         continue;
       }
       accumulator->AddKey(value, prev_key_count);
@@ -1550,8 +1543,8 @@ class FastSmiOrObjectElementsAccessor
       case FAST_DOUBLE_ELEMENTS:
       case FAST_HOLEY_DOUBLE_ELEMENTS: {
         AllowHeapAllocation allow_allocation;
-        CopyDoubleToObjectElements(
-            from, from_start, to, to_kind, to_start, copy_size);
+        DCHECK(IsFastObjectElementsKind(to_kind));
+        CopyDoubleToObjectElements(from, from_start, to, to_start, copy_size);
         break;
       }
       case DICTIONARY_ELEMENTS:
@@ -2177,7 +2170,7 @@ MaybeHandle<Object> ArrayConstructInitializeElements(Handle<JSArray> array,
 
     // Optimize the case where there is one argument and the argument is a small
     // smi.
-    if (length > 0 && length < JSObject::kInitialMaxFastElementArray) {
+    if (length > 0 && length < JSArray::kInitialMaxFastElementArray) {
       ElementsKind elements_kind = array->GetElementsKind();
       JSArray::Initialize(array, length, length);
 

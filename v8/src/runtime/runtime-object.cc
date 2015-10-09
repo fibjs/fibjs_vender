@@ -26,26 +26,12 @@ MaybeHandle<Object> Runtime::GetObjectProperty(Isolate* isolate,
         Object);
   }
 
-  // Check if the given key is an array index.
-  uint32_t index = 0;
-  if (key->ToArrayIndex(&index)) {
-    return Object::GetElement(isolate, object, index, language_mode);
-  }
+  bool success = false;
+  LookupIterator it =
+      LookupIterator::PropertyOrElement(isolate, object, key, &success);
+  if (!success) return MaybeHandle<Object>();
 
-  // Convert the key to a name - possibly by calling back into JavaScript.
-  Handle<Name> name;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, name, Object::ToName(isolate, key),
-                             Object);
-
-  // Check if the name is trivially convertible to an index and get
-  // the element if so.
-  // TODO(verwaest): Make sure GetProperty(LookupIterator*) can handle this, and
-  // remove the special casing here.
-  if (name->AsArrayIndex(&index)) {
-    return Object::GetElement(isolate, object, index);
-  } else {
-    return Object::GetProperty(object, name, language_mode);
-  }
+  return Object::GetProperty(&it, language_mode);
 }
 
 
@@ -135,17 +121,12 @@ MaybeHandle<Object> Runtime::DeleteObjectProperty(Isolate* isolate,
                                                   Handle<JSReceiver> receiver,
                                                   Handle<Object> key,
                                                   LanguageMode language_mode) {
-  // Check if the given key is an array index.
-  uint32_t index = 0;
-  if (key->ToArrayIndex(&index)) {
-    return JSReceiver::DeleteElement(receiver, index, language_mode);
-  }
+  bool success = false;
+  LookupIterator it = LookupIterator::PropertyOrElement(
+      isolate, receiver, key, &success, LookupIterator::HIDDEN);
+  if (!success) return MaybeHandle<Object>();
 
-  Handle<Name> name;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, name, Object::ToName(isolate, key),
-                             Object);
-
-  return JSReceiver::DeletePropertyOrElement(receiver, name, language_mode);
+  return JSReceiver::DeleteProperty(&it, language_mode);
 }
 
 
@@ -162,16 +143,11 @@ MaybeHandle<Object> Runtime::SetObjectProperty(Isolate* isolate,
   }
 
   // Check if the given key is an array index.
-  uint32_t index = 0;
-  if (key->ToArrayIndex(&index)) {
-    return Object::SetElement(isolate, object, index, value, language_mode);
-  }
+  bool success = false;
+  LookupIterator it =
+      LookupIterator::PropertyOrElement(isolate, object, key, &success);
+  if (!success) return MaybeHandle<Object>();
 
-  Handle<Name> name;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, name, Object::ToName(isolate, key),
-                             Object);
-
-  LookupIterator it = LookupIterator::PropertyOrElement(isolate, object, name);
   return Object::SetProperty(&it, value, language_mode,
                              Object::MAY_BE_STORE_FROM_KEYED);
 }
@@ -334,10 +310,10 @@ RUNTIME_FUNCTION(Runtime_PreventExtensions) {
 
 
 RUNTIME_FUNCTION(Runtime_IsExtensible) {
-  SealHandleScope shs(isolate);
+  HandleScope scope(isolate);
   DCHECK(args.length() == 1);
-  CONVERT_ARG_CHECKED(JSObject, obj, 0);
-  return isolate->heap()->ToBoolean(obj->IsExtensible());
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
+  return isolate->heap()->ToBoolean(JSObject::IsExtensible(obj));
 }
 
 
@@ -920,11 +896,23 @@ RUNTIME_FUNCTION(Runtime_GetOwnElementNames) {
   if (!args[0]->IsJSObject()) {
     return isolate->heap()->undefined_value();
   }
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
 
-  int n = obj->NumberOfOwnElements(NONE);
+  // TODO(cbruni): implement proper prototype lookup like in GetOwnPropertyNames
+  if (object->IsJSGlobalProxy()) {
+    // All the elements are stored on the globa_object and not directly on the
+    // global object proxy.
+    PrototypeIterator iter(isolate, object,
+                           PrototypeIterator::START_AT_PROTOTYPE);
+    if (iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN)) {
+      return *isolate->factory()->NewJSArray(0);
+    }
+    object = PrototypeIterator::GetCurrent<JSObject>(iter);
+  }
+
+  int n = object->NumberOfOwnElements(NONE);
   Handle<FixedArray> names = isolate->factory()->NewFixedArray(n);
-  obj->GetOwnElementKeys(*names, NONE);
+  object->GetOwnElementKeys(*names, NONE);
   return *isolate->factory()->NewJSArrayWithElements(names);
 }
 
@@ -1056,9 +1044,8 @@ static Object* Runtime_NewObjectHelper(Isolate* isolate,
       Handle<JSFunction>::cast(original_constructor);
 
 
-  // If function should not have prototype, construction is not allowed. In this
-  // case generated code bailouts here, since function has no initial_map.
-  if (!function->should_have_prototype() && !function->shared()->bound()) {
+  // Check that function is a constructor.
+  if (!function->IsConstructor()) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kNotConstructor, constructor));
   }
@@ -1447,6 +1434,28 @@ RUNTIME_FUNCTION(Runtime_ToNumber) {
 }
 
 
+RUNTIME_FUNCTION(Runtime_ToInteger) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, input, 0);
+  Handle<Object> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
+                                     Object::ToInteger(isolate, input));
+  return *result;
+}
+
+
+RUNTIME_FUNCTION(Runtime_ToLength) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, input, 0);
+  Handle<Object> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
+                                     Object::ToLength(isolate, input));
+  return *result;
+}
+
+
 RUNTIME_FUNCTION(Runtime_ToString) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
@@ -1565,9 +1574,8 @@ RUNTIME_FUNCTION(Runtime_InstanceOf) {
   if (callable->IsJSFunction()) {
     Handle<JSFunction> function = Handle<JSFunction>::cast(callable);
     if (function->shared()->bound()) {
-      Handle<FixedArray> bindings(function->function_bindings(), isolate);
-      callable =
-          handle(bindings->get(JSFunction::kBoundFunctionIndex), isolate);
+      Handle<BindingsArray> bindings(function->function_bindings(), isolate);
+      callable = handle(bindings->bound_function(), isolate);
     }
   }
   DCHECK(callable->IsCallable());

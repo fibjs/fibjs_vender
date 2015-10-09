@@ -559,8 +559,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ Call(code, RelocInfo::CODE_TARGET);
       } else {
         Register reg = i.InputRegister(0);
-        int entry = Code::kHeaderSize - kHeapObjectTag;
-        __ Call(Operand(reg, entry));
+        __ addp(reg, Immediate(Code::kHeaderSize - kHeapObjectTag));
+        __ call(reg);
       }
       RecordCallPosition(instr);
       break;
@@ -1622,7 +1622,7 @@ void CodeGenerator::AssembleReturn() {
   }
   size_t pop_size = descriptor->StackParameterCount() * kPointerSize;
   // Might need rcx for scratch if pop_size is too big.
-  DCHECK_EQ(0, descriptor->CalleeSavedRegisters() & rcx.bit());
+  DCHECK_EQ(0u, descriptor->CalleeSavedRegisters() & rcx.bit());
   __ Ret(static_cast<int>(pop_size), rcx);
 }
 
@@ -1820,8 +1820,8 @@ void CodeGenerator::EnsureSpaceForLazyDeopt() {
 
 #undef __
 
-}  // namespace internal
 }  // namespace compiler
+}  // namespace internal
 }  // namespace v8
 
 

@@ -709,11 +709,8 @@ class MarkCompactCollector {
 
   void EvacuatePagesInParallel();
 
-  int NumberOfParallelCompactionTasks() {
-    // TODO(hpayer, mlippautz): Figure out some logic to determine the number
-    // of compaction tasks.
-    return 1;
-  }
+  // The number of parallel compaction tasks, including the main thread.
+  int NumberOfParallelCompactionTasks();
 
   void WaitUntilCompactionCompleted();
 
@@ -853,7 +850,7 @@ class EvacuationScope BASE_EMBEDDED {
 
 
 const char* AllocationSpaceName(AllocationSpace space);
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_HEAP_MARK_COMPACT_H_

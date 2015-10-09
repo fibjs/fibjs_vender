@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_SAMPLER_H_
-#define V8_SAMPLER_H_
+#ifndef V8_PROFILER_SAMPLER_H_
+#define V8_PROFILER_SAMPLER_H_
 
 #include "include/v8.h"
 
@@ -130,6 +130,7 @@ class Sampler {
 };
 
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
-#endif  // V8_SAMPLER_H_
+#endif  // V8_PROFILER_SAMPLER_H_

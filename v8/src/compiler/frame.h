@@ -110,9 +110,9 @@ class Frame : public ZoneObject {
 
   int AlignSavedCalleeRegisterSlots() {
     DCHECK_EQ(0, spilled_callee_register_slot_count_);
-    int frame_slot_count_before = frame_slot_count_;
-    frame_slot_count_ = RoundUp(frame_slot_count_, 2);
-    return frame_slot_count_before - frame_slot_count_;
+    int delta = frame_slot_count_ & 1;
+    frame_slot_count_ += delta;
+    return delta;
   }
 
   void AllocateSavedCalleeRegisterSlots(int count) {
@@ -184,8 +184,8 @@ class FrameOffset {
   static const int kFromSp = 1;
   static const int kFromFp = 0;
 };
-}
-}
-}  // namespace v8::internal::compiler
+}  // namespace compiler
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_COMPILER_FRAME_H_

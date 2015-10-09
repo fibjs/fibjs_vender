@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/profile-generator.h"
+#include "src/profiler/profile-generator.h"
 
-#include "src/compiler.h"
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
 #include "src/global-handles.h"
-#include "src/profile-generator-inl.h"
-#include "src/sampler.h"
+#include "src/profiler/profile-generator-inl.h"
+#include "src/profiler/sampler.h"
 #include "src/scopeinfo.h"
 #include "src/splay-tree-inl.h"
 #include "src/unicode.h"
@@ -50,7 +49,6 @@ const char* const CodeEntry::kNoDeoptReason = "";
 
 
 CodeEntry::~CodeEntry() {
-  delete no_frame_ranges_;
   delete line_info_;
 }
 
@@ -106,7 +104,7 @@ int CodeEntry::GetSourceLine(int pc_offset) const {
 void CodeEntry::FillFunctionInfo(SharedFunctionInfo* shared) {
   if (!shared->script()->IsScript()) return;
   Script* script = Script::cast(shared->script());
-  set_script_id(script->id()->value());
+  set_script_id(script->id());
   set_position(shared->start_position());
   set_bailout_reason(GetBailoutReason(shared->disable_optimization_reason()));
 }
@@ -611,17 +609,8 @@ void ProfileGenerator::RecordTickSample(const TickSample& sample) {
       // ebp contains return address of the current function and skips caller's
       // frame. Check for this case and just skip such samples.
       if (pc_entry) {
-        List<OffsetRange>* ranges = pc_entry->no_frame_ranges();
         int pc_offset =
             static_cast<int>(sample.pc - pc_entry->instruction_start());
-        if (ranges) {
-          for (int i = 0; i < ranges->length(); i++) {
-            OffsetRange& range = ranges->at(i);
-            if (range.from <= pc_offset && pc_offset < range.to) {
-              return;
-            }
-          }
-        }
         src_line = pc_entry->GetSourceLine(pc_offset);
         if (src_line == v8::CpuProfileNode::kNoLineNumberInfo) {
           src_line = pc_entry->line_number();

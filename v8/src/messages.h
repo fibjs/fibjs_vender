@@ -92,6 +92,7 @@ class CallSite {
   T(CalledOnNonObject, "% called on non-object")                               \
   T(CalledOnNullOrUndefined, "% called on null or undefined")                  \
   T(CannotConvertToPrimitive, "Cannot convert object to primitive value")      \
+  T(CannotPreventExt, "Cannot prevent extensions")                             \
   T(CannotPreventExtExternalArray,                                             \
     "Cannot prevent extension of an object with external array elements")      \
   T(CircularStructure, "Converting circular structure to JSON")                \
@@ -267,6 +268,7 @@ class CallSite {
   T(InvalidTypedArrayAlignment, "% of % should be a multiple of %")            \
   T(InvalidTypedArrayLength, "Invalid typed array length")                     \
   T(InvalidTypedArrayOffset, "Start offset is too large:")                     \
+  T(LetInLexicalBinding, "let is disallowed as a lexically bound name")        \
   T(LocaleMatcher, "Illegal value for localeMatcher:%")                        \
   T(NormalizationForm, "The normalization form should be one of %.")           \
   T(NumberFormatRange, "% argument must be between 0 and 20")                  \
@@ -490,6 +492,7 @@ class ErrorToStringHelper {
 
   List<Handle<JSObject> > visited_;
 };
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_MESSAGES_H_

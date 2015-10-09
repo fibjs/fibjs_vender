@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_PROFILE_GENERATOR_INL_H_
-#define V8_PROFILE_GENERATOR_INL_H_
+#ifndef V8_PROFILER_PROFILE_GENERATOR_INL_H_
+#define V8_PROFILER_PROFILE_GENERATOR_INL_H_
 
-#include "src/profile-generator.h"
+#include "src/profiler/profile-generator.h"
 
 namespace v8 {
 namespace internal {
@@ -23,7 +23,6 @@ CodeEntry::CodeEntry(Logger::LogEventsAndTags tag, const char* name,
       column_number_(column_number),
       script_id_(v8::UnboundScript::kNoScriptId),
       position_(0),
-      no_frame_ranges_(NULL),
       bailout_reason_(kEmptyBailoutReason),
       deopt_reason_(kNoDeoptReason),
       deopt_position_(SourcePosition::Unknown()),
@@ -43,6 +42,7 @@ ProfileNode::ProfileNode(ProfileTree* tree, CodeEntry* entry)
 inline unsigned ProfileNode::function_id() const {
   return tree_->GetFunctionId(this);
 }
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
-#endif  // V8_PROFILE_GENERATOR_INL_H_
+#endif  // V8_PROFILER_PROFILE_GENERATOR_INL_H_
