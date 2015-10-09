@@ -12,8 +12,8 @@
 #include "src/base/division-by-constant.h"
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
-#include "src/cpu-profiler.h"
 #include "src/debug/debug.h"
+#include "src/register-configuration.h"
 #include "src/runtime/runtime.h"
 
 #include "src/arm64/frames-arm64.h"
@@ -2784,6 +2784,14 @@ void MacroAssembler::Prologue(bool code_pre_aging) {
 }
 
 
+void MacroAssembler::EmitLoadTypeFeedbackVector(Register vector) {
+  Ldr(vector, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
+  Ldr(vector, FieldMemOperand(vector, JSFunction::kSharedFunctionInfoOffset));
+  Ldr(vector,
+      FieldMemOperand(vector, SharedFunctionInfo::kFeedbackVectorOffset));
+}
+
+
 void MacroAssembler::EnterFrame(StackFrame::Type type,
                                 bool load_constant_pool_pointer_reg) {
   // Out-of-line constant pool not implemented on arm64.
@@ -3981,14 +3989,16 @@ void MacroAssembler::PushSafepointRegisters() {
 
 void MacroAssembler::PushSafepointRegistersAndDoubles() {
   PushSafepointRegisters();
-  PushCPURegList(CPURegList(CPURegister::kFPRegister, kDRegSizeInBits,
-                            FPRegister::kAllocatableFPRegisters));
+  PushCPURegList(CPURegList(
+      CPURegister::kFPRegister, kDRegSizeInBits,
+      RegisterConfiguration::ArchDefault()->allocatable_double_codes_mask()));
 }
 
 
 void MacroAssembler::PopSafepointRegistersAndDoubles() {
-  PopCPURegList(CPURegList(CPURegister::kFPRegister, kDRegSizeInBits,
-                           FPRegister::kAllocatableFPRegisters));
+  PopCPURegList(CPURegList(
+      CPURegister::kFPRegister, kDRegSizeInBits,
+      RegisterConfiguration::ArchDefault()->allocatable_double_codes_mask()));
   PopSafepointRegisters();
 }
 

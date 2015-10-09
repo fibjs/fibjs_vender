@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_HEAP_SNAPSHOT_GENERATOR_INL_H_
-#define V8_HEAP_SNAPSHOT_GENERATOR_INL_H_
+#ifndef V8_PROFILER_HEAP_SNAPSHOT_GENERATOR_INL_H_
+#define V8_PROFILER_HEAP_SNAPSHOT_GENERATOR_INL_H_
 
-#include "src/heap-snapshot-generator.h"
+#include "src/profiler/heap-snapshot-generator.h"
 
 namespace v8 {
 namespace internal {
@@ -43,6 +43,7 @@ HeapGraphEdge** HeapEntry::children_arr() {
 }
 
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
-#endif  // V8_HEAP_SNAPSHOT_GENERATOR_INL_H_
+#endif  // V8_PROFILER_HEAP_SNAPSHOT_GENERATOR_INL_H_

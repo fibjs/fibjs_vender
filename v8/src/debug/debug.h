@@ -474,7 +474,7 @@ class Debug {
 
   void set_live_edit_enabled(bool v) { live_edit_enabled_ = v; }
   bool live_edit_enabled() const {
-    return FLAG_enable_liveedit && live_edit_enabled_ ;
+    return FLAG_enable_liveedit && live_edit_enabled_;
   }
 
   inline bool is_active() const { return is_active_; }
@@ -592,7 +592,6 @@ class Debug {
   bool is_active_;
   bool is_suppressed_;
   bool live_edit_enabled_;
-  bool has_break_points_;
   bool break_disabled_;
   bool in_debug_event_listener_;
   bool break_on_exception_;
@@ -763,6 +762,7 @@ class DebugCodegen : public AllStatic {
 };
 
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_DEBUG_DEBUG_H_

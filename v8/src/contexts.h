@@ -78,13 +78,10 @@ enum BindingFlags {
   V(GET_TEMPLATE_CALL_SITE_INDEX, JSFunction, get_template_call_site)     \
   V(MAKE_RANGE_ERROR_INDEX, JSFunction, make_range_error)                 \
   V(MAKE_TYPE_ERROR_INDEX, JSFunction, make_type_error)                   \
-  V(NON_NUMBER_TO_NUMBER_INDEX, JSFunction, non_number_to_number)         \
   V(REFLECT_APPLY_INDEX, JSFunction, reflect_apply)                       \
   V(REFLECT_CONSTRUCT_INDEX, JSFunction, reflect_construct)               \
   V(SPREAD_ARGUMENTS_INDEX, JSFunction, spread_arguments)                 \
-  V(SPREAD_ITERABLE_INDEX, JSFunction, spread_iterable)                   \
-  V(TO_LENGTH_FUN_INDEX, JSFunction, to_length_fun)                       \
-  V(TO_NUMBER_FUN_INDEX, JSFunction, to_number_fun)
+  V(SPREAD_ITERABLE_INDEX, JSFunction, spread_iterable)
 
 
 #define NATIVE_CONTEXT_JS_BUILTINS(V)                                 \
@@ -159,7 +156,6 @@ enum BindingFlags {
   V(TO_COMPLETE_PROPERTY_DESCRIPTOR_INDEX, JSFunction,                        \
     to_complete_property_descriptor)                                          \
   V(TO_DETAIL_STRING_FUN_INDEX, JSFunction, to_detail_string_fun)             \
-  V(TO_INTEGER_FUN_INDEX, JSFunction, to_integer_fun)                         \
   V(TYPE_ERROR_FUNCTION_INDEX, JSFunction, type_error_function)               \
   V(URI_ERROR_FUNCTION_INDEX, JSFunction, uri_error_function)                 \
   NATIVE_CONTEXT_JS_BUILTINS(V)
@@ -176,7 +172,10 @@ enum BindingFlags {
   V(BOOL32X4_FUNCTION_INDEX, JSFunction, bool32x4_function)                    \
   V(BOOL8X16_FUNCTION_INDEX, JSFunction, bool8x16_function)                    \
   V(BOOLEAN_FUNCTION_INDEX, JSFunction, boolean_function)                      \
-  V(BOUND_FUNCTION_MAP_INDEX, Map, bound_function_map)                         \
+  V(BOUND_FUNCTION_WITH_CONSTRUCTOR_MAP_INDEX, Map,                            \
+    bound_function_with_constructor_map)                                       \
+  V(BOUND_FUNCTION_WITHOUT_CONSTRUCTOR_MAP_INDEX, Map,                         \
+    bound_function_without_constructor_map)                                    \
   V(CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, JSFunction,                            \
     call_as_constructor_delegate)                                              \
   V(CALL_AS_FUNCTION_DELEGATE_INDEX, JSFunction, call_as_function_delegate)    \
@@ -513,7 +512,7 @@ class Context: public FixedArray {
                                       : SLOPPY_GENERATOR_FUNCTION_MAP_INDEX;
     }
 
-    if (IsConstructor(kind)) {
+    if (IsClassConstructor(kind)) {
       // Use strict function map (no own "caller" / "arguments")
       return is_strong(language_mode) ? STRONG_CONSTRUCTOR_MAP_INDEX
                                       : STRICT_FUNCTION_MAP_INDEX;
@@ -554,6 +553,7 @@ class Context: public FixedArray {
   STATIC_ASSERT(EMBEDDER_DATA_INDEX == Internals::kContextEmbedderDataIndex);
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_CONTEXTS_H_

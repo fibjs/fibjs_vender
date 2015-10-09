@@ -199,7 +199,7 @@ function patch_plat() {
 }
 
 function patch_samp() {
-	var fname = "src/sampler.cc";
+	var fname = "src/profiler/sampler.cc";
 	var txt = fs.readFile(fname);
 
 	var idx = txt.lastIndexOf("#if defined(USE_SIGNALS)");

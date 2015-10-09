@@ -62,6 +62,11 @@ const Register ArgumentsAccessReadDescriptor::index() { return rdx; }
 const Register ArgumentsAccessReadDescriptor::parameter_count() { return rax; }
 
 
+const Register ArgumentsAccessNewDescriptor::function() { return rdi; }
+const Register ArgumentsAccessNewDescriptor::parameter_count() { return rcx; }
+const Register ArgumentsAccessNewDescriptor::parameter_pointer() { return rdx; }
+
+
 const Register ApiGetterDescriptor::function_address() { return r8; }
 
 
@@ -391,12 +396,23 @@ void MathRoundVariantCallFromOptimizedCodeDescriptor::
 }
 
 
-void PushArgsAndCallDescriptor::InitializePlatformSpecific(
+void InterpreterPushArgsAndCallDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
-      rax,  // argument count (including receiver)
+      rax,  // argument count (not including receiver)
       rbx,  // address of first argument
       rdi   // the target callable to be call
+  };
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
+void InterpreterCEntryDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      rax,  // argument count (argc)
+      r15,  // address of first argument (argv)
+      rbx   // the runtime function to call
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }

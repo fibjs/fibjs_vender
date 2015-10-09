@@ -19,7 +19,6 @@
 #include "src/codegen.h"
 #include "src/compilation-dependencies.h"
 #include "src/compiler.h"
-#include "src/cpu-profiler.h"
 #include "src/date.h"
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
@@ -37,6 +36,7 @@
 #include "src/macro-assembler.h"
 #include "src/messages.h"
 #include "src/objects-inl.h"
+#include "src/profiler/cpu-profiler.h"
 #include "src/prototype.h"
 #include "src/safepoint-table.h"
 #include "src/string-builder.h"
@@ -94,6 +94,16 @@ MaybeHandle<JSReceiver> Object::ToObject(Isolate* isolate,
 
 
 // static
+MaybeHandle<Name> Object::ToName(Isolate* isolate, Handle<Object> input) {
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, input, Object::ToPrimitive(input, ToPrimitiveHint::kString),
+      Name);
+  if (input->IsName()) return Handle<Name>::cast(input);
+  return ToString(isolate, input);
+}
+
+
+// static
 MaybeHandle<Object> Object::ToNumber(Handle<Object> input) {
   while (true) {
     if (input->IsNumber()) {
@@ -123,6 +133,27 @@ MaybeHandle<Object> Object::ToNumber(Handle<Object> input) {
 
 
 // static
+MaybeHandle<Object> Object::ToInteger(Isolate* isolate, Handle<Object> input) {
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, input, ToNumber(input), Object);
+  return isolate->factory()->NewNumber(DoubleToInteger(input->Number()));
+}
+
+
+// static
+MaybeHandle<Object> Object::ToInt32(Isolate* isolate, Handle<Object> input) {
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, input, ToNumber(input), Object);
+  return isolate->factory()->NewNumberFromInt(DoubleToInt32(input->Number()));
+}
+
+
+// static
+MaybeHandle<Object> Object::ToUint32(Isolate* isolate, Handle<Object> input) {
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, input, ToNumber(input), Object);
+  return isolate->factory()->NewNumberFromUint(DoubleToUint32(input->Number()));
+}
+
+
+// static
 MaybeHandle<String> Object::ToString(Isolate* isolate, Handle<Object> input) {
   while (true) {
     if (input->IsString()) {
@@ -146,6 +177,19 @@ MaybeHandle<String> Object::ToString(Isolate* isolate, Handle<Object> input) {
                                                 ToPrimitiveHint::kString),
         String);
   }
+}
+
+
+// static
+MaybeHandle<Object> Object::ToLength(Isolate* isolate, Handle<Object> input) {
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, input, ToNumber(input), Object);
+  double len = DoubleToInteger(input->Number());
+  if (len <= 0.0) {
+    len = 0.0;
+  } else if (len >= kMaxSafeInteger) {
+    len = kMaxSafeInteger;
+  }
+  return isolate->factory()->NewNumber(len);
 }
 
 
@@ -337,6 +381,7 @@ Handle<String> Object::TypeOf(Isolate* isolate, Handle<Object> object) {
     return isolate->factory()->undefined_string();
   }
   if (object->IsBoolean()) return isolate->factory()->boolean_string();
+  if (object->IsString()) return isolate->factory()->string_string();
   if (object->IsSymbol()) return isolate->factory()->symbol_string();
 #define SIMD128_TYPE(TYPE, Type, type, lane_count, lane_type) \
   if (object->Is##Type()) return isolate->factory()->type##_string();
@@ -950,6 +995,14 @@ MaybeHandle<Object> JSObject::GetPropertyWithFailedAccessCheck(
                                GetPropertyWithInterceptor(it, &done), Object);
     if (done) return result;
   }
+
+  // Cross-Origin [[Get]] of Well-Known Symbols does not throw, and returns
+  // undefined.
+  Handle<Name> name = it->GetName();
+  if (name->IsSymbol() && Symbol::cast(*name)->is_well_known_symbol()) {
+    return it->factory()->undefined_value();
+  }
+
   it->isolate()->ReportFailedAccessCheck(checked);
   RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(it->isolate(), Object);
   return it->factory()->undefined_value();
@@ -1496,6 +1549,41 @@ void String::PrintUC16(std::ostream& os, int start, int end) {  // NOLINT
   for (int i = start; i < end && stream.HasMore(); i++) {
     os << AsUC16(stream.GetNext());
   }
+}
+
+
+// The filter is a pattern that matches string names in this way:
+//   "*"      all; the default
+//   "-name"  all but "name"
+//   "name"   only the function "name"
+//   "name*"  only functions starting with "name"
+//   "~"      none; the tilde is not an identifier
+bool String::PassesFilter(const char* raw_filter) {
+  if (*raw_filter == '*') return true;
+
+  Vector<const char> filter = CStrVector(raw_filter);
+  if (filter.length() == 0) return length() == 0;
+  if (filter[0] == '-') {
+    // Negative filter.
+    if (filter.length() == 1) {
+      return (length() != 0);
+    } else if (IsUtf8EqualTo(filter.SubVector(1, filter.length()))) {
+      return false;
+    }
+    if (filter[filter.length() - 1] == '*' &&
+        IsUtf8EqualTo(filter.SubVector(1, filter.length() - 1), true)) {
+      return false;
+    }
+    return true;
+
+  } else if (IsUtf8EqualTo(filter)) {
+    return true;
+  }
+  if (filter[filter.length() - 1] == '*' &&
+      IsUtf8EqualTo(filter.SubVector(0, filter.length() - 1), true)) {
+    return true;
+  }
+  return false;
 }
 
 
@@ -4823,7 +4911,8 @@ Maybe<bool> JSObject::CreateDataProperty(LookupIterator* it,
   if (it->IsFound()) {
     if (!it->IsConfigurable()) return Just(false);
   } else {
-    if (!JSObject::cast(*it->GetReceiver())->IsExtensible()) return Just(false);
+    if (!JSObject::IsExtensible(Handle<JSObject>::cast(it->GetReceiver())))
+      return Just(false);
   }
 
   RETURN_ON_EXCEPTION_VALUE(
@@ -5769,7 +5858,7 @@ MaybeHandle<Object> JSReceiver::DeleteProperty(Handle<JSReceiver> object,
                                                Handle<Name> name,
                                                LanguageMode language_mode) {
   LookupIterator it(object, name, LookupIterator::HIDDEN);
-  return JSObject::DeleteProperty(&it, language_mode);
+  return DeleteProperty(&it, language_mode);
 }
 
 
@@ -5777,7 +5866,7 @@ MaybeHandle<Object> JSReceiver::DeletePropertyOrElement(
     Handle<JSReceiver> object, Handle<Name> name, LanguageMode language_mode) {
   LookupIterator it = LookupIterator::PropertyOrElement(
       name->GetIsolate(), object, name, LookupIterator::HIDDEN);
-  return JSObject::DeleteProperty(&it, language_mode);
+  return DeleteProperty(&it, language_mode);
 }
 
 
@@ -5916,33 +6005,35 @@ bool JSObject::ReferencesObject(Object* obj) {
 }
 
 
-MaybeHandle<Object> JSObject::PreventExtensions(Handle<JSObject> object) {
-  if (!object->map()->is_extensible()) return object;
+Maybe<bool> JSObject::PreventExtensionsInternal(Handle<JSObject> object) {
+  Isolate* isolate = object->GetIsolate();
+
+  if (!object->map()->is_extensible()) return Just(true);
 
   if (!object->HasSloppyArgumentsElements() && !object->map()->is_observed()) {
     return PreventExtensionsWithTransition<NONE>(object);
   }
 
-  Isolate* isolate = object->GetIsolate();
-
   if (object->IsAccessCheckNeeded() && !isolate->MayAccess(object)) {
     isolate->ReportFailedAccessCheck(object);
-    RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate, Object);
-    return isolate->factory()->false_value();
+    RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate, Nothing<bool>());
+    UNREACHABLE();
+    return Just(false);
   }
 
   if (object->IsJSGlobalProxy()) {
     PrototypeIterator iter(isolate, object);
-    if (iter.IsAtEnd()) return object;
+    if (iter.IsAtEnd()) return Just(true);
     DCHECK(PrototypeIterator::GetCurrent(iter)->IsJSGlobalObject());
-    return PreventExtensions(PrototypeIterator::GetCurrent<JSObject>(iter));
+    return PreventExtensionsInternal(
+        PrototypeIterator::GetCurrent<JSObject>(iter));
   }
 
   // It's not possible to seal objects with external array elements
   if (object->HasFixedTypedArrayElements()) {
-    THROW_NEW_ERROR(
-        isolate, NewTypeError(MessageTemplate::kCannotPreventExtExternalArray),
-        Object);
+    isolate->Throw(*isolate->factory()->NewTypeError(
+        MessageTemplate::kCannotPreventExtExternalArray));
+    return Nothing<bool>();
   }
 
   // If there are fast elements we normalize.
@@ -5962,24 +6053,43 @@ MaybeHandle<Object> JSObject::PreventExtensions(Handle<JSObject> object) {
   DCHECK(!object->map()->is_extensible());
 
   if (object->map()->is_observed()) {
-    RETURN_ON_EXCEPTION(
+    RETURN_ON_EXCEPTION_VALUE(
         isolate,
         EnqueueChangeRecord(object, "preventExtensions", Handle<Name>(),
                             isolate->factory()->the_hole_value()),
-        Object);
+        Nothing<bool>());
   }
-  return object;
+  return Just(true);
 }
 
 
-bool JSObject::IsExtensible() {
-  if (IsJSGlobalProxy()) {
-    PrototypeIterator iter(GetIsolate(), this);
+static MaybeHandle<Object> ReturnObjectOrThrowTypeError(
+    Handle<JSObject> object, Maybe<bool> maybe, MessageTemplate::Template msg) {
+  if (!maybe.IsJust()) return MaybeHandle<Object>();
+  if (maybe.FromJust()) return object;
+  Isolate* isolate = object->GetIsolate();
+  THROW_NEW_ERROR(isolate, NewTypeError(msg), Object);
+}
+
+
+MaybeHandle<Object> JSObject::PreventExtensions(Handle<JSObject> object) {
+  return ReturnObjectOrThrowTypeError(object, PreventExtensionsInternal(object),
+                                      MessageTemplate::kCannotPreventExt);
+}
+
+
+bool JSObject::IsExtensible(Handle<JSObject> object) {
+  Isolate* isolate = object->GetIsolate();
+  if (object->IsAccessCheckNeeded() && !isolate->MayAccess(object)) {
+    return true;
+  }
+  if (object->IsJSGlobalProxy()) {
+    PrototypeIterator iter(isolate, *object);
     if (iter.IsAtEnd()) return false;
     DCHECK(iter.GetCurrent()->IsJSGlobalObject());
     return iter.GetCurrent<JSObject>()->map()->is_extensible();
   }
-  return map()->is_extensible();
+  return object->map()->is_extensible();
 }
 
 
@@ -6008,8 +6118,7 @@ static void ApplyAttributesToDictionary(Dictionary* dictionary,
 
 
 template <PropertyAttributes attrs>
-MaybeHandle<Object> JSObject::PreventExtensionsWithTransition(
-    Handle<JSObject> object) {
+Maybe<bool> JSObject::PreventExtensionsWithTransition(Handle<JSObject> object) {
   STATIC_ASSERT(attrs == NONE || attrs == SEALED || attrs == FROZEN);
 
   // Sealing/freezing sloppy arguments should be handled elsewhere.
@@ -6019,13 +6128,13 @@ MaybeHandle<Object> JSObject::PreventExtensionsWithTransition(
   Isolate* isolate = object->GetIsolate();
   if (object->IsAccessCheckNeeded() && !isolate->MayAccess(object)) {
     isolate->ReportFailedAccessCheck(object);
-    RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate, Object);
-    return isolate->factory()->false_value();
+    RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate, Nothing<bool>());
+    UNREACHABLE();
   }
 
   if (object->IsJSGlobalProxy()) {
     PrototypeIterator iter(isolate, object);
-    if (iter.IsAtEnd()) return object;
+    if (iter.IsAtEnd()) return Just(true);
     DCHECK(PrototypeIterator::GetCurrent(iter)->IsJSGlobalObject());
     return PreventExtensionsWithTransition<attrs>(
         PrototypeIterator::GetCurrent<JSObject>(iter));
@@ -6033,9 +6142,9 @@ MaybeHandle<Object> JSObject::PreventExtensionsWithTransition(
 
   // It's not possible to seal or freeze objects with external array elements
   if (object->HasFixedTypedArrayElements()) {
-    THROW_NEW_ERROR(
-        isolate, NewTypeError(MessageTemplate::kCannotPreventExtExternalArray),
-        Object);
+    isolate->Throw(*isolate->factory()->NewTypeError(
+        MessageTemplate::kCannotPreventExtExternalArray));
+    return Nothing<bool>();
   }
 
   Handle<SeededNumberDictionary> new_element_dictionary;
@@ -6110,17 +6219,21 @@ MaybeHandle<Object> JSObject::PreventExtensionsWithTransition(
     }
   }
 
-  return object;
+  return Just(true);
 }
 
 
 MaybeHandle<Object> JSObject::Freeze(Handle<JSObject> object) {
-  return PreventExtensionsWithTransition<FROZEN>(object);
+  return ReturnObjectOrThrowTypeError(
+      object, PreventExtensionsWithTransition<FROZEN>(object),
+      MessageTemplate::kCannotPreventExt);
 }
 
 
 MaybeHandle<Object> JSObject::Seal(Handle<JSObject> object) {
-  return PreventExtensionsWithTransition<SEALED>(object);
+  return ReturnObjectOrThrowTypeError(
+      object, PreventExtensionsWithTransition<SEALED>(object),
+      MessageTemplate::kCannotPreventExt);
 }
 
 
@@ -6568,91 +6681,90 @@ static Handle<FixedArray> ReduceFixedArrayTo(
 }
 
 
+namespace {
+
+Handle<FixedArray> GetFastEnumPropertyKeys(Isolate* isolate,
+                                           Handle<JSObject> object,
+                                           bool cache_enum_length) {
+  Handle<Map> map(object->map());
+  Handle<DescriptorArray> descs =
+      Handle<DescriptorArray>(map->instance_descriptors(), isolate);
+  int own_property_count = map->EnumLength();
+  // If the enum length of the given map is set to kInvalidEnumCache, this
+  // means that the map itself has never used the present enum cache. The
+  // first step to using the cache is to set the enum length of the map by
+  // counting the number of own descriptors that are not DONT_ENUM or
+  // SYMBOLIC.
+  if (own_property_count == kInvalidEnumCacheSentinel) {
+    own_property_count =
+        map->NumberOfDescribedProperties(OWN_DESCRIPTORS, DONT_SHOW);
+  } else {
+    DCHECK(own_property_count ==
+           map->NumberOfDescribedProperties(OWN_DESCRIPTORS, DONT_SHOW));
+  }
+
+  if (descs->HasEnumCache()) {
+    Handle<FixedArray> keys(descs->GetEnumCache(), isolate);
+    // In case the number of properties required in the enum are actually
+    // present, we can reuse the enum cache. Otherwise, this means that the
+    // enum cache was generated for a previous (smaller) version of the
+    // Descriptor Array. In that case we regenerate the enum cache.
+    if (own_property_count <= keys->length()) {
+      isolate->counters()->enum_cache_hits()->Increment();
+      if (cache_enum_length) map->SetEnumLength(own_property_count);
+      return ReduceFixedArrayTo(keys, own_property_count);
+    }
+  }
+
+  if (descs->IsEmpty()) {
+    isolate->counters()->enum_cache_hits()->Increment();
+    if (cache_enum_length) map->SetEnumLength(0);
+    return isolate->factory()->empty_fixed_array();
+  }
+
+  isolate->counters()->enum_cache_misses()->Increment();
+
+  Handle<FixedArray> storage =
+      isolate->factory()->NewFixedArray(own_property_count);
+  Handle<FixedArray> indices =
+      isolate->factory()->NewFixedArray(own_property_count);
+
+  int size = map->NumberOfOwnDescriptors();
+  int index = 0;
+
+  for (int i = 0; i < size; i++) {
+    PropertyDetails details = descs->GetDetails(i);
+    Object* key = descs->GetKey(i);
+    if (details.IsDontEnum() || key->IsSymbol()) continue;
+    storage->set(index, key);
+    if (!indices.is_null()) {
+      if (details.type() != DATA) {
+        indices = Handle<FixedArray>();
+      } else {
+        FieldIndex field_index = FieldIndex::ForDescriptor(*map, i);
+        int load_by_field_index = field_index.GetLoadByFieldIndex();
+        indices->set(index, Smi::FromInt(load_by_field_index));
+      }
+    }
+    index++;
+  }
+  DCHECK(index == storage->length());
+
+  DescriptorArray::SetEnumCache(descs, isolate, storage, indices);
+  if (cache_enum_length) {
+    map->SetEnumLength(own_property_count);
+  }
+  return storage;
+}
+
+}  // namespace
+
+
 Handle<FixedArray> JSObject::GetEnumPropertyKeys(Handle<JSObject> object,
-                                                 bool cache_result) {
+                                                 bool cache_enum_length) {
   Isolate* isolate = object->GetIsolate();
   if (object->HasFastProperties()) {
-    int own_property_count = object->map()->EnumLength();
-    // If the enum length of the given map is set to kInvalidEnumCache, this
-    // means that the map itself has never used the present enum cache. The
-    // first step to using the cache is to set the enum length of the map by
-    // counting the number of own descriptors that are not DONT_ENUM or
-    // SYMBOLIC.
-    if (own_property_count == kInvalidEnumCacheSentinel) {
-      own_property_count = object->map()->NumberOfDescribedProperties(
-          OWN_DESCRIPTORS, DONT_SHOW);
-    } else {
-      DCHECK(own_property_count == object->map()->NumberOfDescribedProperties(
-          OWN_DESCRIPTORS, DONT_SHOW));
-    }
-
-    if (object->map()->instance_descriptors()->HasEnumCache()) {
-      DescriptorArray* desc = object->map()->instance_descriptors();
-      Handle<FixedArray> keys(desc->GetEnumCache(), isolate);
-
-      // In case the number of properties required in the enum are actually
-      // present, we can reuse the enum cache. Otherwise, this means that the
-      // enum cache was generated for a previous (smaller) version of the
-      // Descriptor Array. In that case we regenerate the enum cache.
-      if (own_property_count <= keys->length()) {
-        if (cache_result) object->map()->SetEnumLength(own_property_count);
-        isolate->counters()->enum_cache_hits()->Increment();
-        return ReduceFixedArrayTo(keys, own_property_count);
-      }
-    }
-
-    Handle<Map> map(object->map());
-
-    if (map->instance_descriptors()->IsEmpty()) {
-      isolate->counters()->enum_cache_hits()->Increment();
-      if (cache_result) map->SetEnumLength(0);
-      return isolate->factory()->empty_fixed_array();
-    }
-
-    isolate->counters()->enum_cache_misses()->Increment();
-
-    Handle<FixedArray> storage = isolate->factory()->NewFixedArray(
-        own_property_count);
-    Handle<FixedArray> indices = isolate->factory()->NewFixedArray(
-        own_property_count);
-
-    Handle<DescriptorArray> descs =
-        Handle<DescriptorArray>(object->map()->instance_descriptors(), isolate);
-
-    int size = map->NumberOfOwnDescriptors();
-    int index = 0;
-
-    for (int i = 0; i < size; i++) {
-      PropertyDetails details = descs->GetDetails(i);
-      Object* key = descs->GetKey(i);
-      if (!(details.IsDontEnum() || key->IsSymbol())) {
-        storage->set(index, key);
-        if (!indices.is_null()) {
-          if (details.type() != DATA) {
-            indices = Handle<FixedArray>();
-          } else {
-            FieldIndex field_index = FieldIndex::ForDescriptor(*map, i);
-            int load_by_field_index = field_index.GetLoadByFieldIndex();
-            indices->set(index, Smi::FromInt(load_by_field_index));
-          }
-        }
-        index++;
-      }
-    }
-    DCHECK(index == storage->length());
-
-    Handle<FixedArray> bridge_storage =
-        isolate->factory()->NewFixedArray(
-            DescriptorArray::kEnumCacheBridgeLength);
-    DescriptorArray* desc = object->map()->instance_descriptors();
-    desc->SetEnumCache(*bridge_storage,
-                       *storage,
-                       indices.is_null() ? Object::cast(Smi::FromInt(0))
-                                         : Object::cast(*indices));
-    if (cache_result) {
-      object->map()->SetEnumLength(own_property_count);
-    }
-    return storage;
+    return GetFastEnumPropertyKeys(isolate, object, cache_enum_length);
   } else if (object->IsGlobalObject()) {
     Handle<GlobalDictionary> dictionary(object->global_dictionary());
     int length = dictionary->NumberOfEnumElements();
@@ -6716,11 +6828,10 @@ void KeyAccumulator::AddKey(Handle<Object> key, int check_limit) {
 }
 
 
-void KeyAccumulator::AddKeys(Handle<FixedArray> array,
-                             FixedArray::KeyFilter filter) {
+void KeyAccumulator::AddKeys(Handle<FixedArray> array, KeyFilter filter) {
   int add_length = array->length();
   if (add_length == 0) return;
-  if (keys_.is_null() && filter == FixedArray::ALL_KEYS) {
+  if (keys_.is_null() && filter == INCLUDE_SYMBOLS) {
     keys_ = array;
     length_ = keys_->length();
     return;
@@ -6729,14 +6840,13 @@ void KeyAccumulator::AddKeys(Handle<FixedArray> array,
   int previous_key_count = length_;
   for (int i = 0; i < add_length; i++) {
     Handle<Object> current(array->get(i), isolate_);
-    if (filter == FixedArray::NON_SYMBOL_KEYS && current->IsSymbol()) continue;
+    if (filter == SKIP_SYMBOLS && current->IsSymbol()) continue;
     AddKey(current, previous_key_count);
   }
 }
 
 
-void KeyAccumulator::AddKeys(Handle<JSObject> array_like,
-                             FixedArray::KeyFilter filter) {
+void KeyAccumulator::AddKeys(Handle<JSObject> array_like, KeyFilter filter) {
   DCHECK(array_like->IsJSArray() || array_like->HasSloppyArgumentsElements());
   ElementsAccessor* accessor = array_like->GetElementsAccessor();
   accessor->AddElementsToKeyAccumulator(array_like, this, filter);
@@ -6748,8 +6858,10 @@ void KeyAccumulator::PrepareForComparisons(int count) {
   // hash-table-based checks which have a one-time overhead for
   // initializing but O(1) for HasKey checks.
   if (!set_.is_null()) return;
-  // This limit was obtained through evaluation of a microbench.
-  if (length_ * count < 50) return;
+  // These limits were obtained through evaluation of several microbenchmarks.
+  if (length_ * count < 100) return;
+  // Don't use a set for few elements
+  if (length_ < 100 && count < 20) return;
   set_ = OrderedHashSet::Allocate(isolate_, length_);
   for (int i = 0; i < length_; i++) {
     Handle<Object> value(keys_->get(i), isolate_);
@@ -6788,7 +6900,8 @@ void KeyAccumulator::Grow() {
 
 
 MaybeHandle<FixedArray> JSReceiver::GetKeys(Handle<JSReceiver> object,
-                                            KeyCollectionType type) {
+                                            KeyCollectionType type,
+                                            KeyFilter filter) {
   USE(ContainsOnlyValidKeys);
   Isolate* isolate = object->GetIsolate();
   KeyAccumulator accumulator(isolate);
@@ -6814,7 +6927,7 @@ MaybeHandle<FixedArray> JSReceiver::GetKeys(Handle<JSReceiver> object,
                           arraysize(args),
                           args),
           FixedArray);
-      accumulator.AddKeys(Handle<JSObject>::cast(names), FixedArray::ALL_KEYS);
+      accumulator.AddKeys(Handle<JSObject>::cast(names), filter);
       break;
     }
 
@@ -6833,7 +6946,7 @@ MaybeHandle<FixedArray> JSReceiver::GetKeys(Handle<JSReceiver> object,
     Handle<FixedArray> element_keys =
         isolate->factory()->NewFixedArray(current->NumberOfEnumElements());
     current->GetEnumElementKeys(*element_keys);
-    accumulator.AddKeys(element_keys, FixedArray::ALL_KEYS);
+    accumulator.AddKeys(element_keys, filter);
     DCHECK(ContainsOnlyValidKeys(accumulator.GetKeys()));
 
     // Add the element keys from the interceptor.
@@ -6841,38 +6954,49 @@ MaybeHandle<FixedArray> JSReceiver::GetKeys(Handle<JSReceiver> object,
       Handle<JSObject> result;
       if (JSObject::GetKeysForIndexedInterceptor(
               current, object).ToHandle(&result)) {
-        accumulator.AddKeys(result, FixedArray::ALL_KEYS);
+        accumulator.AddKeys(result, filter);
       }
       DCHECK(ContainsOnlyValidKeys(accumulator.GetKeys()));
     }
 
-    // We can cache the computed property keys if access checks are
-    // not needed and no interceptors are involved.
-    //
-    // We do not use the cache if the object has elements and
-    // therefore it does not make sense to cache the property names
-    // for arguments objects.  Arguments objects will always have
-    // elements.
-    // Wrapped strings have elements, but don't have an elements
-    // array or dictionary.  So the fast inline test for whether to
-    // use the cache says yes, so we should not create a cache.
-    bool cache_enum_keys =
-        ((current->map()->GetConstructor() != *arguments_function) &&
-         !current->IsJSValue() && !current->IsAccessCheckNeeded() &&
-         !current->HasNamedInterceptor() && !current->HasIndexedInterceptor());
-    // Compute the property keys and cache them if possible.
+    if (filter == SKIP_SYMBOLS) {
+      // We can cache the computed property keys if access checks are
+      // not needed and no interceptors are involved.
+      //
+      // We do not use the cache if the object has elements and
+      // therefore it does not make sense to cache the property names
+      // for arguments objects.  Arguments objects will always have
+      // elements.
+      // Wrapped strings have elements, but don't have an elements
+      // array or dictionary.  So the fast inline test for whether to
+      // use the cache says yes, so we should not create a cache.
+      bool cache_enum_length =
+          ((current->map()->GetConstructor() != *arguments_function) &&
+           !current->IsJSValue() && !current->IsAccessCheckNeeded() &&
+           !current->HasNamedInterceptor() &&
+           !current->HasIndexedInterceptor());
+      // Compute the property keys and cache them if possible.
 
-    Handle<FixedArray> enum_keys =
-        JSObject::GetEnumPropertyKeys(current, cache_enum_keys);
-    accumulator.AddKeys(enum_keys, FixedArray::ALL_KEYS);
+      Handle<FixedArray> enum_keys =
+          JSObject::GetEnumPropertyKeys(current, cache_enum_length);
+      accumulator.AddKeys(enum_keys, filter);
+    } else {
+      DCHECK(filter == INCLUDE_SYMBOLS);
+      PropertyAttributes attr_filter =
+          static_cast<PropertyAttributes>(DONT_ENUM | PRIVATE_SYMBOL);
+      Handle<FixedArray> property_keys = isolate->factory()->NewFixedArray(
+          current->NumberOfOwnProperties(attr_filter));
+      current->GetOwnPropertyNames(*property_keys, 0, attr_filter);
+      accumulator.AddKeys(property_keys, filter);
+    }
     DCHECK(ContainsOnlyValidKeys(accumulator.GetKeys()));
 
-    // Add the non-symbol property keys from the interceptor.
+    // Add the property keys from the interceptor.
     if (current->HasNamedInterceptor()) {
       Handle<JSObject> result;
       if (JSObject::GetKeysForNamedInterceptor(
               current, object).ToHandle(&result)) {
-        accumulator.AddKeys(result, FixedArray::NON_SYMBOL_KEYS);
+        accumulator.AddKeys(result, filter);
       }
       DCHECK(ContainsOnlyValidKeys(accumulator.GetKeys()));
     }
@@ -8616,18 +8740,27 @@ void DescriptorArray::Replace(int index, Descriptor* descriptor) {
 }
 
 
-void DescriptorArray::SetEnumCache(FixedArray* bridge_storage,
-                                   FixedArray* new_cache,
-                                   Object* new_index_cache) {
-  DCHECK(bridge_storage->length() >= kEnumCacheBridgeLength);
-  DCHECK(new_index_cache->IsSmi() || new_index_cache->IsFixedArray());
-  DCHECK(!IsEmpty());
-  DCHECK(!HasEnumCache() || new_cache->length() > GetEnumCache()->length());
-  FixedArray::cast(bridge_storage)->
-    set(kEnumCacheBridgeCacheIndex, new_cache);
-  FixedArray::cast(bridge_storage)->
-    set(kEnumCacheBridgeIndicesCacheIndex, new_index_cache);
-  set(kEnumCacheIndex, bridge_storage);
+// static
+void DescriptorArray::SetEnumCache(Handle<DescriptorArray> descriptors,
+                                   Isolate* isolate,
+                                   Handle<FixedArray> new_cache,
+                                   Handle<FixedArray> new_index_cache) {
+  DCHECK(!descriptors->IsEmpty());
+  FixedArray* bridge_storage;
+  bool needs_new_enum_cache = !descriptors->HasEnumCache();
+  if (needs_new_enum_cache) {
+    bridge_storage = *isolate->factory()->NewFixedArray(
+        DescriptorArray::kEnumCacheBridgeLength);
+  } else {
+    bridge_storage = FixedArray::cast(descriptors->get(kEnumCacheIndex));
+  }
+  bridge_storage->set(kEnumCacheBridgeCacheIndex, *new_cache);
+  bridge_storage->set(kEnumCacheBridgeIndicesCacheIndex,
+                      new_index_cache.is_null() ? Object::cast(Smi::FromInt(0))
+                                                : *new_index_cache);
+  if (needs_new_enum_cache) {
+    descriptors->set(kEnumCacheIndex, bridge_storage);
+  }
 }
 
 
@@ -8735,6 +8868,60 @@ Handle<DeoptimizationOutputData> DeoptimizationOutputData::New(
         LengthOfFixedArray(number_of_deopt_points), pretenure);
   }
   return Handle<DeoptimizationOutputData>::cast(result);
+}
+
+
+// static
+Handle<LiteralsArray> LiteralsArray::New(Isolate* isolate,
+                                         Handle<TypeFeedbackVector> vector,
+                                         int number_of_literals,
+                                         PretenureFlag pretenure) {
+  Handle<FixedArray> literals = isolate->factory()->NewFixedArray(
+      number_of_literals + kFirstLiteralIndex, pretenure);
+  Handle<LiteralsArray> casted_literals = Handle<LiteralsArray>::cast(literals);
+  casted_literals->set_feedback_vector(*vector);
+  return casted_literals;
+}
+
+
+// static
+Handle<BindingsArray> BindingsArray::New(Isolate* isolate,
+                                         Handle<TypeFeedbackVector> vector,
+                                         Handle<JSReceiver> bound_function,
+                                         Handle<Object> bound_this,
+                                         int number_of_bindings) {
+  Handle<FixedArray> bindings = isolate->factory()->NewFixedArray(
+      number_of_bindings + kFirstBindingIndex);
+  Handle<BindingsArray> casted_bindings = Handle<BindingsArray>::cast(bindings);
+  casted_bindings->set_feedback_vector(*vector);
+  casted_bindings->set_bound_function(*bound_function);
+  casted_bindings->set_bound_this(*bound_this);
+  return casted_bindings;
+}
+
+
+// static
+Handle<JSArray> BindingsArray::CreateBoundArguments(
+    Handle<BindingsArray> bindings) {
+  int bound_argument_count = bindings->bindings_count();
+  Factory* factory = bindings->GetIsolate()->factory();
+  Handle<FixedArray> arguments = factory->NewFixedArray(bound_argument_count);
+  bindings->CopyTo(kFirstBindingIndex, *arguments, 0, bound_argument_count);
+  return factory->NewJSArrayWithElements(arguments);
+}
+
+
+// static
+Handle<JSArray> BindingsArray::CreateRuntimeBindings(
+    Handle<BindingsArray> bindings) {
+  Factory* factory = bindings->GetIsolate()->factory();
+  // A runtime bindings array consists of
+  // [bound function, bound this, [arg0, arg1, ...]].
+  Handle<FixedArray> runtime_bindings =
+      factory->NewFixedArray(2 + bindings->bindings_count());
+  bindings->CopyTo(kBoundFunctionIndex, *runtime_bindings, 0,
+                   2 + bindings->bindings_count());
+  return factory->NewJSArrayWithElements(runtime_bindings);
 }
 
 
@@ -9871,16 +10058,9 @@ Handle<String> SeqString::Truncate(Handle<SeqString> string, int new_length) {
   DCHECK_OBJECT_ALIGNED(start_of_string + new_size);
 
   Heap* heap = string->GetHeap();
-  NewSpace* newspace = heap->new_space();
-  if (newspace->Contains(start_of_string) &&
-      newspace->top() == start_of_string + old_size) {
-    // Last allocated object in new space.  Simply lower allocation top.
-    newspace->set_top(start_of_string + new_size);
-  } else {
-    // Sizes are pointer size aligned, so that we can use filler objects
-    // that are a multiple of pointer size.
-    heap->CreateFillerObjectAt(start_of_string + new_size, delta);
-  }
+  // Sizes are pointer size aligned, so that we can use filler objects
+  // that are a multiple of pointer size.
+  heap->CreateFillerObjectAt(start_of_string + new_size, delta);
   heap->AdjustLiveBytes(*string, -delta, Heap::CONCURRENT_TO_SWEEPER);
 
   // We are storing the new length using release store after creating a filler
@@ -10134,30 +10314,6 @@ void JSFunction::AttemptConcurrentOptimization() {
 }
 
 
-Handle<JSFunction> JSFunction::CloneClosure(Handle<JSFunction> function) {
-  Isolate* isolate = function->GetIsolate();
-  Handle<Map> map(function->map());
-  Handle<SharedFunctionInfo> shared(function->shared());
-  Handle<Context> context(function->context());
-  Handle<JSFunction> clone =
-      isolate->factory()->NewFunctionFromSharedFunctionInfo(shared, context);
-
-  if (shared->bound()) {
-    clone->set_function_bindings(function->function_bindings());
-  }
-
-  // In typical case, __proto__ of ``function`` is the default Function
-  // prototype, which means that SetPrototype below is a no-op.
-  // In rare cases when that is not true, we mutate the clone's __proto__.
-  Handle<Object> original_prototype(map->prototype(), isolate);
-  if (*original_prototype != clone->map()->prototype()) {
-    JSObject::SetPrototype(clone, original_prototype, false).Assert();
-  }
-
-  return clone;
-}
-
-
 void SharedFunctionInfo::AddSharedCodeToOptimizedCodeMap(
     Handle<SharedFunctionInfo> shared, Handle<Code> code) {
   Isolate* isolate = shared->GetIsolate();
@@ -10171,7 +10327,7 @@ void SharedFunctionInfo::AddSharedCodeToOptimizedCodeMap(
 
 void SharedFunctionInfo::AddToOptimizedCodeMap(
     Handle<SharedFunctionInfo> shared, Handle<Context> native_context,
-    Handle<HeapObject> code, Handle<FixedArray> literals,
+    Handle<HeapObject> code, Handle<LiteralsArray> literals,
     BailoutId osr_ast_id) {
   Isolate* isolate = shared->GetIsolate();
   DCHECK(*code == isolate->heap()->undefined_value() ||
@@ -10719,7 +10875,7 @@ void JSFunction::SetInstancePrototype(Handle<JSFunction> function,
 
 void JSFunction::SetPrototype(Handle<JSFunction> function,
                               Handle<Object> value) {
-  DCHECK(function->should_have_prototype());
+  DCHECK(function->IsConstructor());
   Handle<Object> construct_prototype = value;
 
   // If the value is not a JSReceiver, store the value in the map's
@@ -10737,7 +10893,7 @@ void JSFunction::SetPrototype(Handle<JSFunction> function,
     new_map->set_non_instance_prototype(true);
     Isolate* isolate = new_map->GetIsolate();
     construct_prototype = handle(
-        isolate->context()->native_context()->initial_object_prototype(),
+        function->context()->native_context()->initial_object_prototype(),
         isolate);
   } else {
     function->map()->set_non_instance_prototype(false);
@@ -10851,31 +11007,8 @@ void JSFunction::PrintName(FILE* out) {
 //   "name*"  only functions starting with "name"
 //   "~"      none; the tilde is not an identifier
 bool JSFunction::PassesFilter(const char* raw_filter) {
-  if (*raw_filter == '*') return true;
   String* name = shared()->DebugName();
-  Vector<const char> filter = CStrVector(raw_filter);
-  if (filter.length() == 0) return name->length() == 0;
-  if (filter[0] == '-') {
-    // Negative filter.
-    if (filter.length() == 1) {
-      return (name->length() != 0);
-    } else if (name->IsUtf8EqualTo(filter.SubVector(1, filter.length()))) {
-      return false;
-    }
-    if (filter[filter.length() - 1] == '*' &&
-        name->IsUtf8EqualTo(filter.SubVector(1, filter.length() - 1), true)) {
-      return false;
-    }
-    return true;
-
-  } else if (name->IsUtf8EqualTo(filter)) {
-    return true;
-  }
-  if (filter[filter.length() - 1] == '*' &&
-      name->IsUtf8EqualTo(filter.SubVector(0, filter.length() - 1), true)) {
-    return true;
-  }
-  return false;
+  return name->PassesFilter(raw_filter);
 }
 
 
@@ -10934,8 +11067,8 @@ int Script::GetColumnNumber(Handle<Script> script, int code_pos) {
 
   DisallowHeapAllocation no_allocation;
   FixedArray* line_ends_array = FixedArray::cast(script->line_ends());
-  line_number = line_number - script->line_offset()->value();
-  if (line_number == 0) return code_pos + script->column_offset()->value();
+  line_number = line_number - script->line_offset();
+  if (line_number == 0) return code_pos + script->column_offset();
   int prev_line_end_pos =
       Smi::cast(line_ends_array->get(line_number - 1))->value();
   return code_pos - (prev_line_end_pos + 1);
@@ -10950,7 +11083,7 @@ int Script::GetLineNumberWithArray(int code_pos) {
   if (line_ends_len == 0) return -1;
 
   if ((Smi::cast(line_ends_array->get(0)))->value() >= code_pos) {
-    return line_offset()->value();
+    return line_offset();
   }
 
   int left = 0;
@@ -10962,7 +11095,7 @@ int Script::GetLineNumberWithArray(int code_pos) {
       left += half;
     }
   }
-  return right + line_offset()->value();
+  return right + line_offset();
 }
 
 
@@ -11361,7 +11494,7 @@ CodeAndLiterals SharedFunctionInfo::SearchOptimizedCodeMap(
       DCHECK_LE(entry + kEntryLength, code_map->length());
       Object* code = code_map->get(entry + kCachedCodeOffset);
       result = {code->IsUndefined() ? nullptr : Code::cast(code),
-                FixedArray::cast(code_map->get(entry + kLiteralsOffset))};
+                LiteralsArray::cast(code_map->get(entry + kLiteralsOffset))};
     }
   }
   if (FLAG_trace_opt && !optimized_code_map()->IsSmi() &&
@@ -11780,13 +11913,11 @@ void Code::ClearInlineCaches(Code::Kind* kind) {
 
 void SharedFunctionInfo::ClearTypeFeedbackInfo() {
   feedback_vector()->ClearSlots(this);
-  feedback_vector()->ClearICSlots(this);
 }
 
 
 void SharedFunctionInfo::ClearTypeFeedbackInfoAtGCTime() {
   feedback_vector()->ClearSlotsAtGCTime(this);
-  feedback_vector()->ClearICSlotsAtGCTime(this);
 }
 
 
@@ -12162,7 +12293,7 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
 
         case Translation::DOUBLE_REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << DoubleRegister::AllocationIndexToString(reg_code)
+          os << "{input=" << DoubleRegister::from_code(reg_code).ToString()
              << "}";
           break;
         }
@@ -12472,6 +12603,16 @@ void BytecodeArray::Disassemble(std::ostream& os) {
     SNPrintF(buf, "%p", bytecode_start);
     os << buf.start() << " : ";
     interpreter::Bytecodes::Decode(os, bytecode_start, parameter_count());
+    if (interpreter::Bytecodes::IsJump(bytecode)) {
+      int offset = static_cast<int8_t>(bytecode_start[1]);
+      SNPrintF(buf, " (%p)", bytecode_start + offset);
+      os << buf.start();
+    } else if (interpreter::Bytecodes::IsJumpConstant(bytecode)) {
+      int index = static_cast<int>(bytecode_start[1]);
+      int offset = Smi::cast(constant_pool()->get(index))->value();
+      SNPrintF(buf, " (%p)", bytecode_start + offset);
+      os << buf.start();
+    }
     os << "\n";
   }
 
@@ -13799,20 +13940,21 @@ int JSObject::GetOwnPropertyNames(FixedArray* storage, int index,
 
 
 int JSObject::NumberOfOwnElements(PropertyAttributes filter) {
+  // Fast case for objects with no elements.
+  if (!IsJSValue() && HasFastElements()) {
+    uint32_t length =
+        IsJSArray()
+            ? static_cast<uint32_t>(
+                  Smi::cast(JSArray::cast(this)->length())->value())
+            : static_cast<uint32_t>(FixedArrayBase::cast(elements())->length());
+    if (length == 0) return 0;
+  }
+  // Compute the number of enumerable elements.
   return GetOwnElementKeys(NULL, filter);
 }
 
 
 int JSObject::NumberOfEnumElements() {
-  // Fast case for objects with no elements.
-  if (!IsJSValue() && HasFastObjectElements()) {
-    uint32_t length = IsJSArray() ?
-        static_cast<uint32_t>(
-            Smi::cast(JSArray::cast(this)->length())->value()) :
-        static_cast<uint32_t>(FixedArray::cast(elements())->length());
-    if (length == 0) return 0;
-  }
-  // Compute the number of enumerable elements.
   return NumberOfOwnElements(static_cast<PropertyAttributes>(DONT_ENUM));
 }
 
@@ -14710,7 +14852,7 @@ Handle<Object> JSObject::PrepareElementsForSort(Handle<JSObject> object,
   Handle<FixedArrayBase> elements_base(object->elements());
   uint32_t elements_length = static_cast<uint32_t>(elements_base->length());
   if (limit > elements_length) {
-    limit = elements_length ;
+    limit = elements_length;
   }
   if (limit == 0) {
     return handle(Smi::FromInt(0), isolate);
@@ -16193,10 +16335,9 @@ void DebugInfo::SetBreakPoint(Handle<DebugInfo> debug_info,
   // Allocate new BreakPointInfo object and set the break point.
   Handle<BreakPointInfo> new_break_point_info = Handle<BreakPointInfo>::cast(
       isolate->factory()->NewStruct(BREAK_POINT_INFO_TYPE));
-  new_break_point_info->set_code_position(Smi::FromInt(code_position));
-  new_break_point_info->set_source_position(Smi::FromInt(source_position));
-  new_break_point_info->
-      set_statement_position(Smi::FromInt(statement_position));
+  new_break_point_info->set_code_position(code_position);
+  new_break_point_info->set_source_position(source_position);
+  new_break_point_info->set_statement_position(statement_position);
   new_break_point_info->set_break_point_objects(
       isolate->heap()->undefined_value());
   BreakPointInfo::SetBreakPoint(new_break_point_info, break_point_object);
@@ -16258,7 +16399,7 @@ int DebugInfo::GetBreakPointInfoIndex(int code_position) {
     if (!break_points()->get(i)->IsUndefined()) {
       BreakPointInfo* break_point_info =
           BreakPointInfo::cast(break_points()->get(i));
-      if (break_point_info->code_position()->value() == code_position) {
+      if (break_point_info->code_position() == code_position) {
         return i;
       }
     }

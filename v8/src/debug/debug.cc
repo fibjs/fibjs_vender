@@ -690,8 +690,8 @@ void Debug::ClearBreakPoint(Handle<Object> break_point_object) {
       Handle<DebugInfo> debug_info = node->debug_info();
 
       // Find the break point and clear it.
-      Address pc = debug_info->code()->entry() +
-                   break_point_info->code_position()->value();
+      Address pc =
+          debug_info->code()->entry() + break_point_info->code_position();
 
       BreakLocation location =
           BreakLocation::FromAddress(debug_info, ALL_BREAK_LOCATIONS, pc);
@@ -746,9 +746,8 @@ void Debug::FloodWithOneShot(Handle<JSFunction> function,
 
 
 void Debug::FloodBoundFunctionWithOneShot(Handle<JSFunction> function) {
-  Handle<FixedArray> new_bindings(function->function_bindings());
-  Handle<Object> bindee(new_bindings->get(JSFunction::kBoundFunctionIndex),
-                        isolate_);
+  Handle<BindingsArray> new_bindings(function->function_bindings());
+  Handle<Object> bindee(new_bindings->bound_function(), isolate_);
 
   if (!bindee.is_null() && bindee->IsJSFunction()) {
     Handle<JSFunction> bindee_function(JSFunction::cast(*bindee));
@@ -1071,10 +1070,10 @@ Handle<Object> Debug::GetSourceBreakLocations(
       Smi* position = NULL;
       switch (position_alignment) {
         case STATEMENT_ALIGNED:
-          position = break_point_info->statement_position();
+          position = Smi::FromInt(break_point_info->statement_position());
           break;
         case BREAK_POSITION_ALIGNED:
-          position = break_point_info->source_position();
+          position = Smi::FromInt(break_point_info->source_position());
           break;
       }
       for (int j = 0; j < break_points; ++j) locations->set(count++, position);
@@ -1503,7 +1502,7 @@ bool Debug::EnsureDebugInfo(Handle<SharedFunctionInfo> shared,
   // Make sure IC state is clean. This is so that we correctly flood
   // accessor pairs when stepping in.
   shared->code()->ClearInlineCaches();
-  shared->feedback_vector()->ClearICSlots(*shared);
+  shared->ClearTypeFeedbackInfo();
 
   // Create the debug info object.
   DCHECK(shared->HasDebugCode());
@@ -1678,7 +1677,7 @@ void Debug::RecordEvalCaller(Handle<Script> script) {
     Code* code = it.frame()->LookupCode();
     int offset = static_cast<int>(
         it.frame()->pc() - code->instruction_start());
-    script->set_eval_from_instructions_offset(Smi::FromInt(offset));
+    script->set_eval_from_instructions_offset(offset);
   }
 }
 

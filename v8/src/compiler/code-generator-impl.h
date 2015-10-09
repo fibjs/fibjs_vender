@@ -37,6 +37,8 @@ class InstructionOperandConverter {
 
   double InputDouble(size_t index) { return ToDouble(instr_->InputAt(index)); }
 
+  float InputFloat32(size_t index) { return ToFloat32(instr_->InputAt(index)); }
+
   int32_t InputInt32(size_t index) {
     return ToConstant(instr_->InputAt(index)).ToInt32();
   }
@@ -94,12 +96,11 @@ class InstructionOperandConverter {
   }
 
   Register ToRegister(InstructionOperand* op) {
-    return Register::FromAllocationIndex(RegisterOperand::cast(op)->index());
+    return RegisterOperand::cast(op)->GetRegister();
   }
 
   DoubleRegister ToDoubleRegister(InstructionOperand* op) {
-    return DoubleRegister::FromAllocationIndex(
-        DoubleRegisterOperand::cast(op)->index());
+    return DoubleRegisterOperand::cast(op)->GetDoubleRegister();
   }
 
   Constant ToConstant(InstructionOperand* op) {
@@ -111,6 +112,8 @@ class InstructionOperandConverter {
   }
 
   double ToDouble(InstructionOperand* op) { return ToConstant(op).ToFloat64(); }
+
+  float ToFloat32(InstructionOperand* op) { return ToConstant(op).ToFloat32(); }
 
   ExternalReference ToExternalReference(InstructionOperand* op) {
     return ToConstant(op).ToExternalReference();

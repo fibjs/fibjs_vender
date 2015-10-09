@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/sampler.h"
+#include "src/profiler/sampler.h"
 
 #if V8_OS_POSIX && !V8_OS_CYGWIN
 
@@ -43,10 +43,10 @@
 #endif
 
 #include "src/base/platform/platform.h"
-#include "src/cpu-profiler-inl.h"
 #include "src/flags.h"
 #include "src/frames-inl.h"
 #include "src/log.h"
+#include "src/profiler/cpu-profiler-inl.h"
 #include "src/simulator.h"
 #include "src/v8threads.h"
 #include "src/vm-state-inl.h"
@@ -682,6 +682,9 @@ DISABLE_ASAN void TickSample::Init(Isolate* isolate,
     external_callback = scope->callback();
     has_external_callback = true;
   } else {
+    // sp register may point at an arbitrary place in memory, make
+    // sure MSAN doesn't complain about it.
+    MSAN_MEMORY_IS_INITIALIZED(regs.sp, sizeof(Address));
     // Sample potential return address value for frameless invocation of
     // stubs (we'll figure out later, if this value makes sense).
     tos = Memory::Address_at(reinterpret_cast<Address>(regs.sp));

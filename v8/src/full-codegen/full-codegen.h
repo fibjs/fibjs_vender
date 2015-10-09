@@ -420,22 +420,11 @@ class FullCodeGenerator: public AstVisitor {
   void PrepareForBailout(Expression* node, State state);
   void PrepareForBailoutForId(BailoutId id, State state);
 
-  // Feedback slot support. The feedback vector will be cleared during gc and
-  // collected by the type-feedback oracle.
-  Handle<TypeFeedbackVector> FeedbackVector() const {
-    return info_->feedback_vector();
-  }
-  void EnsureSlotContainsAllocationSite(FeedbackVectorSlot slot);
-  void EnsureSlotContainsAllocationSite(FeedbackVectorICSlot slot);
-
   // Returns a smi for the index into the FixedArray that backs the feedback
   // vector
   Smi* SmiFromSlot(FeedbackVectorSlot slot) const {
-    return Smi::FromInt(FeedbackVector()->GetIndex(slot));
-  }
-
-  Smi* SmiFromSlot(FeedbackVectorICSlot slot) const {
-    return Smi::FromInt(FeedbackVector()->GetIndex(slot));
+    return Smi::FromInt(TypeFeedbackVector::GetIndexFromSpec(
+        literal()->feedback_vector_spec(), slot));
   }
 
   // Record a call's return site offset, used to rebuild the frame if the
@@ -486,49 +475,51 @@ class FullCodeGenerator: public AstVisitor {
   void EmitKeyedCallWithLoadIC(Call* expr, Expression* key);
   void EmitKeyedSuperCallWithLoadIC(Call* expr);
 
-#define FOR_EACH_FULL_CODE_INTRINSIC(F)   \
-  F(IsSmi)                                \
-  F(IsArray)                              \
-  F(IsTypedArray)                         \
-  F(IsRegExp)                             \
-  F(IsJSProxy)                            \
-  F(IsConstructCall)                      \
-  F(Call)                                 \
-  F(CallFunction)                         \
-  F(DefaultConstructorCallSuper)          \
-  F(ArgumentsLength)                      \
-  F(Arguments)                            \
-  F(ValueOf)                              \
-  F(SetValueOf)                           \
-  F(IsDate)                               \
-  F(DateField)                            \
-  F(StringCharFromCode)                   \
-  F(StringCharAt)                         \
-  F(OneByteSeqStringSetChar)              \
-  F(TwoByteSeqStringSetChar)              \
-  F(ObjectEquals)                         \
-  F(IsFunction)                           \
-  F(IsSpecObject)                         \
-  F(IsSimdValue)                          \
-  F(MathPow)                              \
-  F(IsMinusZero)                          \
-  F(HasCachedArrayIndex)                  \
-  F(GetCachedArrayIndex)                  \
-  F(FastOneByteArrayJoin)                 \
-  F(GeneratorNext)                        \
-  F(GeneratorThrow)                       \
-  F(DebugBreakInOptimizedCode)            \
-  F(ClassOf)                              \
-  F(StringCharCodeAt)                     \
-  F(StringAdd)                            \
-  F(SubString)                            \
-  F(RegExpExec)                           \
-  F(RegExpConstructResult)                \
-  F(NumberToString)                       \
-  F(ToString)                             \
-  F(ToName)                               \
-  F(ToObject)                             \
-  F(DebugIsActive)                        \
+#define FOR_EACH_FULL_CODE_INTRINSIC(F) \
+  F(IsSmi)                              \
+  F(IsArray)                            \
+  F(IsTypedArray)                       \
+  F(IsRegExp)                           \
+  F(IsJSProxy)                          \
+  F(IsConstructCall)                    \
+  F(Call)                               \
+  F(CallFunction)                       \
+  F(DefaultConstructorCallSuper)        \
+  F(ArgumentsLength)                    \
+  F(Arguments)                          \
+  F(ValueOf)                            \
+  F(SetValueOf)                         \
+  F(IsDate)                             \
+  F(DateField)                          \
+  F(StringCharFromCode)                 \
+  F(StringCharAt)                       \
+  F(OneByteSeqStringSetChar)            \
+  F(TwoByteSeqStringSetChar)            \
+  F(ObjectEquals)                       \
+  F(IsFunction)                         \
+  F(IsSpecObject)                       \
+  F(IsSimdValue)                        \
+  F(MathPow)                            \
+  F(IsMinusZero)                        \
+  F(HasCachedArrayIndex)                \
+  F(GetCachedArrayIndex)                \
+  F(FastOneByteArrayJoin)               \
+  F(GeneratorNext)                      \
+  F(GeneratorThrow)                     \
+  F(DebugBreakInOptimizedCode)          \
+  F(ClassOf)                            \
+  F(StringCharCodeAt)                   \
+  F(StringAdd)                          \
+  F(SubString)                          \
+  F(RegExpExec)                         \
+  F(RegExpConstructResult)              \
+  F(ToInteger)                          \
+  F(NumberToString)                     \
+  F(ToString)                           \
+  F(ToNumber)                           \
+  F(ToName)                             \
+  F(ToObject)                           \
+  F(DebugIsActive)                      \
   F(CreateIterResultObject)
 
 #define GENERATOR_DECLARATION(Name) void Emit##Name(CallRuntime* call);
@@ -603,12 +594,12 @@ class FullCodeGenerator: public AstVisitor {
   // Assign to the given expression as if via '='. The right-hand-side value
   // is expected in the accumulator. slot is only used if FLAG_vector_stores
   // is true.
-  void EmitAssignment(Expression* expr, FeedbackVectorICSlot slot);
+  void EmitAssignment(Expression* expr, FeedbackVectorSlot slot);
 
   // Complete a variable assignment.  The right-hand-side value is expected
   // in the accumulator.
   void EmitVariableAssignment(Variable* var, Token::Value op,
-                              FeedbackVectorICSlot slot);
+                              FeedbackVectorSlot slot);
 
   // Helper functions to EmitVariableAssignment
   void EmitStoreToStackLocalOrContextSlot(Variable* var,
@@ -639,10 +630,10 @@ class FullCodeGenerator: public AstVisitor {
   // The value of the initializer is expected to be at the top of the stack.
   // |offset| is the offset in the stack where the home object can be found.
   void EmitSetHomeObject(Expression* initializer, int offset,
-                         FeedbackVectorICSlot slot);
+                         FeedbackVectorSlot slot);
 
   void EmitSetHomeObjectAccumulator(Expression* initializer, int offset,
-                                    FeedbackVectorICSlot slot);
+                                    FeedbackVectorSlot slot);
 
   void EmitLoadSuperConstructor(SuperCallReference* super_call_ref);
 
@@ -702,7 +693,7 @@ class FullCodeGenerator: public AstVisitor {
   bool is_native() { return info_->is_native(); }
   LanguageMode language_mode() { return literal()->language_mode(); }
   bool has_simple_parameters() { return info_->has_simple_parameters(); }
-  FunctionLiteral* literal() { return info_->literal(); }
+  FunctionLiteral* literal() const { return info_->literal(); }
   Scope* scope() { return scope_; }
 
   static Register result_register();
@@ -741,7 +732,7 @@ class FullCodeGenerator: public AstVisitor {
   bool MustCreateObjectLiteralWithRuntime(ObjectLiteral* expr) const;
   bool MustCreateArrayLiteralWithRuntime(ArrayLiteral* expr) const;
 
-  void EmitLoadStoreICSlot(FeedbackVectorICSlot slot);
+  void EmitLoadStoreICSlot(FeedbackVectorSlot slot);
 
   int NewHandlerTableEntry();
 
@@ -1086,6 +1077,7 @@ class BackEdgeTable {
 };
 
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_FULL_CODEGEN_FULL_CODEGEN_H_

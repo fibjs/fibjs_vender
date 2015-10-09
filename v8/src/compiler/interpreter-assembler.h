@@ -13,6 +13,7 @@
 #include "src/frames.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/runtime/runtime.h"
+#include "src/zone-containers.h"
 
 namespace v8 {
 namespace internal {
@@ -40,16 +41,20 @@ class InterpreterAssembler {
 
   // Returns the count immediate for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandCount(int operand_index);
+  Node* BytecodeOperandCount8(int operand_index);
   // Returns the index immediate for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandIdx(int operand_index);
+  Node* BytecodeOperandIdx8(int operand_index);
   // Returns the Imm8 immediate for bytecode operand |operand_index| in the
   // current bytecode.
   Node* BytecodeOperandImm8(int operand_index);
   // Returns the register index for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandReg(int operand_index);
+  Node* BytecodeOperandReg8(int operand_index);
+
+  // Returns the index immediate for the short (16 bit) bytecode operand
+  // |operand_index| in the current bytecode.
+  Node* BytecodeOperandIdx16(int operand_index);
 
   // Accumulator.
   Node* GetAccumulator();
@@ -68,6 +73,7 @@ class InterpreterAssembler {
   Node* IntPtrConstant(intptr_t value);
   Node* NumberConstant(double value);
   Node* HeapConstant(Handle<HeapObject> object);
+  Node* BooleanConstant(bool value);
 
   // Tag and untag Smi values.
   Node* SmiTag(Node* value);
@@ -104,7 +110,16 @@ class InterpreterAssembler {
                Node* arg2, Node* arg3, Node* arg4, Node* arg5);
 
   // Call runtime function.
+  Node* CallRuntime(Node* function_id, Node* first_arg, Node* arg_count);
+  Node* CallRuntime(Runtime::FunctionId function_id, Node* arg1);
   Node* CallRuntime(Runtime::FunctionId function_id, Node* arg1, Node* arg2);
+
+  // Jump relative to the current bytecode by |jump_offset|.
+  void Jump(Node* jump_offset);
+
+  // Jump relative to the current bytecode by |jump_offset| if the
+  // word values |lhs| and |rhs| are equal.
+  void JumpIfWordEqual(Node* lhs, Node* rhs, Node* jump_offset);
 
   // Returns from the function.
   void Return();
@@ -115,6 +130,8 @@ class InterpreterAssembler {
  protected:
   // Close the graph.
   void End();
+
+  static bool TargetSupportsUnalignedAccess();
 
   // Protected helpers (for testing) which delegate to RawMachineAssembler.
   CallDescriptor* call_descriptor() const;
@@ -138,7 +155,9 @@ class InterpreterAssembler {
   Node* SmiShiftBitsConstant();
   Node* BytecodeOperand(int operand_index);
   Node* BytecodeOperandSignExtended(int operand_index);
+  Node* BytecodeOperandShort(int operand_index);
 
+  Node* CallN(CallDescriptor* descriptor, Node* code_target, Node** args);
   Node* CallIC(CallInterfaceDescriptor descriptor, Node* target, Node** args);
   Node* CallJSBuiltin(int context_index, Node* receiver, Node** js_args,
                       int js_arg_count);
@@ -146,9 +165,16 @@ class InterpreterAssembler {
   // Returns BytecodeOffset() advanced by delta bytecodes. Note: this does not
   // update BytecodeOffset() itself.
   Node* Advance(int delta);
+  Node* Advance(Node* delta);
 
-  // Sets the end node of the graph.
-  void SetEndInput(Node* input);
+  // Starts next instruction dispatch at |new_bytecode_offset|.
+  void DispatchTo(Node* new_bytecode_offset);
+
+  // Abort operations for debug code.
+  void AbortIfWordNotEqual(Node* lhs, Node* rhs, BailoutReason bailout_reason);
+
+  // Adds an end node of the graph.
+  void AddEndInput(Node* input);
 
   // Private helpers which delegate to RawMachineAssembler.
   Isolate* isolate();
@@ -157,14 +183,14 @@ class InterpreterAssembler {
 
   interpreter::Bytecode bytecode_;
   base::SmartPointer<RawMachineAssembler> raw_assembler_;
-  Node* end_node_;
+  ZoneVector<Node*> end_nodes_;
   Node* accumulator_;
   bool code_generated_;
 
   DISALLOW_COPY_AND_ASSIGN(InterpreterAssembler);
 };
 
-}  // namespace interpreter
+}  // namespace compiler
 }  // namespace internal
 }  // namespace v8
 

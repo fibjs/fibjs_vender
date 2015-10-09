@@ -6,9 +6,9 @@
 #define V8_HEAP_SPACES_INL_H_
 
 #include "src/heap/spaces.h"
-#include "src/heap-profiler.h"
 #include "src/isolate.h"
 #include "src/msan.h"
+#include "src/profiler/heap-profiler.h"
 #include "src/v8memory.h"
 
 namespace v8 {
@@ -188,7 +188,7 @@ Page* Page::Initialize(Heap* heap, MemoryChunk* chunk, Executability executable,
                        PagedSpace* owner) {
   Page* page = reinterpret_cast<Page*>(chunk);
   page->mutex_ = new base::Mutex();
-  DCHECK(page->area_size() <= kMaxRegularHeapObjectSize);
+  DCHECK(page->area_size() <= kAllocatableMemory);
   DCHECK(chunk->owner() == owner);
   owner->IncreaseCapacity(page->area_size());
   owner->Free(page->area_start(), page->area_size());
@@ -487,7 +487,7 @@ intptr_t LargeObjectSpace::Available() {
   return ObjectSizeFor(heap()->isolate()->memory_allocator()->Available());
 }
 
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_HEAP_SPACES_INL_H_

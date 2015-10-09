@@ -9,7 +9,6 @@
 #include "src/base/platform/platform.h"
 #include "src/bootstrapper.h"
 #include "src/code-stubs.h"
-#include "src/cpu-profiler.h"
 #include "src/deoptimizer.h"
 #include "src/execution.h"
 #include "src/global-handles.h"
@@ -17,6 +16,7 @@
 #include "src/ic/stub-cache.h"
 #include "src/objects.h"
 #include "src/parser.h"
+#include "src/profiler/cpu-profiler.h"
 #include "src/runtime/runtime.h"
 #include "src/snapshot/natives.h"
 #include "src/snapshot/snapshot.h"
@@ -131,6 +131,8 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "Isolate::stress_deopt_count_address()");
   Add(ExternalReference::vector_store_virtual_register(isolate).address(),
       "Isolate::vector_store_virtual_register()");
+  Add(ExternalReference::runtime_function_table_address(isolate).address(),
+      "Runtime::runtime_function_table_address()");
 
   // Debug addresses
   Add(ExternalReference::debug_after_break_target_address(isolate).address(),

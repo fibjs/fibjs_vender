@@ -137,7 +137,7 @@ class LCodeGen : public LCodeGenBase {
 
   Scope* scope() const { return scope_; }
 
-  Register scratch0() { return r11; }
+  Register scratch0() { return kLithiumScratch; }
   DoubleRegister double_scratch0() { return kScratchDoubleReg; }
 
   LInstruction* GetNextInstruction();
@@ -358,7 +358,7 @@ class LDeferredCode : public ZoneObject {
   Label* external_exit_;
   int instruction_index_;
 };
-}
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_PPC_LITHIUM_CODEGEN_PPC_H_

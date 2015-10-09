@@ -179,9 +179,8 @@ Reduction JSInliner::InlineCall(Node* call, Node* context, Node* frame_state,
       case IrOpcode::kDeoptimize:
       case IrOpcode::kTerminate:
       case IrOpcode::kThrow:
-        jsgraph_->graph()->end()->AppendInput(jsgraph_->zone(), input);
-        jsgraph_->graph()->end()->set_op(
-            jsgraph_->common()->End(jsgraph_->graph()->end()->InputCount()));
+        NodeProperties::MergeControlToEnd(jsgraph_->graph(), jsgraph_->common(),
+                                          input);
         break;
       default:
         UNREACHABLE();
@@ -247,11 +246,23 @@ Reduction JSInliner::Reduce(Node* node) {
 
   JSCallFunctionAccessor call(node);
   HeapObjectMatcher match(call.jsfunction());
-  if (!match.HasValue()) return NoChange();
-
-  if (!match.Value()->IsJSFunction()) return NoChange();
+  if (!match.HasValue() || !match.Value()->IsJSFunction()) return NoChange();
   Handle<JSFunction> function = Handle<JSFunction>::cast(match.Value());
-  if (mode_ == kRestrictedInlining && !function->shared()->force_inline()) {
+
+  return ReduceJSCallFunction(node, function);
+}
+
+
+Reduction JSInliner::ReduceJSCallFunction(Node* node,
+                                          Handle<JSFunction> function) {
+  DCHECK_EQ(IrOpcode::kJSCallFunction, node->opcode());
+  JSCallFunctionAccessor call(node);
+
+  if (!function->shared()->IsInlineable()) {
+    // Function must be inlineable.
+    TRACE("Not inlining %s into %s because callee is not inlineable\n",
+          function->shared()->DebugName()->ToCString().get(),
+          info_->shared_info()->DebugName()->ToCString().get());
     return NoChange();
   }
 

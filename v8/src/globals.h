@@ -443,6 +443,7 @@ class String;
 class Symbol;
 class Name;
 class Struct;
+class TypeFeedbackVector;
 class Variable;
 class RelocInfo;
 class Deserializer;
@@ -774,6 +775,10 @@ const uint64_t kHoleNanInt64 =
     (static_cast<uint64_t>(kHoleNanUpper32) << 32) | kHoleNanLower32;
 
 
+// ES6 section 20.1.2.6 Number.MAX_SAFE_INTEGER
+const double kMaxSafeInteger = 9007199254740991.0;  // 2^53-1
+
+
 // The order of this enum has to be kept in sync with the predicates below.
 enum VariableMode {
   // User declared variables:
@@ -997,7 +1002,7 @@ inline bool IsSubclassConstructor(FunctionKind kind) {
 }
 
 
-inline bool IsConstructor(FunctionKind kind) {
+inline bool IsClassConstructor(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
   return kind &
          (FunctionKind::kBaseConstructor | FunctionKind::kSubclassConstructor |
@@ -1016,7 +1021,8 @@ inline FunctionKind WithObjectLiteralBit(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
   return kind;
 }
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 namespace i = v8::internal;
 

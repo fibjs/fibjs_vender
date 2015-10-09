@@ -26,12 +26,13 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
                                 BuiltinExtraArguments extra_args) {
   // ----------- S t a t e -------------
   //  -- eax                : number of arguments excluding receiver
-  //  -- edi                : called function (only guaranteed when
-  //                          extra_args requires it)
+  //                          (only guaranteed when the called function
+  //                           is not marked as DontAdaptArguments)
+  //  -- edi                : called function
   //  -- esp[0]             : return address
   //  -- esp[4]             : last argument
   //  -- ...
-  //  -- esp[4 * argc]      : first argument (argc == eax)
+  //  -- esp[4 * argc]      : first argument
   //  -- esp[4 * (argc +1)] : receiver
   // -----------------------------------
   __ AssertFunction(edi);
@@ -56,8 +57,22 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
   }
 
   // JumpToExternalReference expects eax to contain the number of arguments
-  // including the receiver and the extra arguments.
+  // including the receiver and the extra arguments.  But eax is only valid
+  // if the called function is marked as DontAdaptArguments, otherwise we
+  // need to load the argument count from the SharedFunctionInfo.
+  Label argc, done_argc;
+  __ mov(edx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
+  __ mov(ebx,
+         FieldOperand(edx, SharedFunctionInfo::kFormalParameterCountOffset));
+  __ SmiUntag(ebx);
+  __ cmp(ebx, SharedFunctionInfo::kDontAdaptArgumentsSentinel);
+  __ j(equal, &argc, Label::kNear);
+  __ lea(eax, Operand(ebx, num_extra_args + 1));
+  __ jmp(&done_argc, Label::kNear);
+  __ bind(&argc);
   __ add(eax, Immediate(num_extra_args + 1));
+  __ bind(&done_argc);
+
   __ JumpToExternalReference(ExternalReference(id, masm->isolate()));
 }
 
@@ -709,6 +724,41 @@ void Builtins::Generate_InterpreterExitTrampoline(MacroAssembler* masm) {
   __ add(esp, ebx);
   __ push(ecx);
   __ ret(0);
+}
+
+
+// static
+void Builtins::Generate_InterpreterPushArgsAndCall(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- eax : the number of arguments (not including the receiver)
+  //  -- ebx : the address of the first argument to be pushed. Subsequent
+  //           arguments should be consecutive above this, in the same order as
+  //           they are to be pushed onto the stack.
+  //  -- edi : the target to call (can be any Object).
+
+  // Pop return address to allow tail-call after pushing arguments.
+  __ Pop(edx);
+
+  // Find the address of the last argument.
+  __ mov(ecx, eax);
+  __ add(ecx, Immediate(1));  // Add one for receiver.
+  __ shl(ecx, kPointerSizeLog2);
+  __ neg(ecx);
+  __ add(ecx, ebx);
+
+  // Push the arguments.
+  Label loop_header, loop_check;
+  __ jmp(&loop_check);
+  __ bind(&loop_header);
+  __ Push(Operand(ebx, 0));
+  __ sub(ebx, Immediate(kPointerSize));
+  __ bind(&loop_check);
+  __ cmp(ebx, ecx);
+  __ j(greater, &loop_header, Label::kNear);
+
+  // Call the target.
+  __ Push(edx);  // Re-push return address.
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 }
 
 
@@ -1571,6 +1621,21 @@ void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
 
 
 // static
+void Builtins::Generate_ConstructProxy(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- eax : the number of arguments (not including the receiver)
+  //  -- edx : the original constructor (either the same as the constructor or
+  //           the JSFunction on which new was invoked initially)
+  //  -- edi : the constructor to call (checked to be a JSFunctionProxy)
+  // -----------------------------------
+
+  // TODO(neis): This doesn't match the ES6 spec for [[Construct]] on proxies.
+  __ mov(edi, FieldOperand(edi, JSFunctionProxy::kConstructTrapOffset));
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+}
+
+
+// static
 void Builtins::Generate_Construct(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax : the number of arguments (not including the receiver)
@@ -1579,74 +1644,39 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   //  -- edi : the constructor to call (can be any Object)
   // -----------------------------------
 
-  Label non_callable, non_function;
-  __ JumpIfSmi(edi, &non_callable);
-  __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
+  // Check if target has a [[Construct]] internal method.
+  Label non_constructor;
+  __ JumpIfSmi(edi, &non_constructor, Label::kNear);
+  __ mov(ecx, FieldOperand(edi, HeapObject::kMapOffset));
+  __ test_b(FieldOperand(ecx, Map::kBitFieldOffset), 1 << Map::kIsConstructor);
+  __ j(zero, &non_constructor, Label::kNear);
+
+  // Dispatch based on instance type.
+  __ CmpInstanceType(ecx, JS_FUNCTION_TYPE);
   __ j(equal, masm->isolate()->builtins()->ConstructFunction(),
        RelocInfo::CODE_TARGET);
   __ CmpInstanceType(ecx, JS_FUNCTION_PROXY_TYPE);
-  __ j(not_equal, &non_function, Label::kNear);
+  __ j(equal, masm->isolate()->builtins()->ConstructProxy(),
+       RelocInfo::CODE_TARGET);
 
-  // 1. Construct of function proxy.
-  // TODO(neis): This doesn't match the ES6 spec for [[Construct]] on proxies.
-  __ mov(edi, FieldOperand(edi, JSFunctionProxy::kConstructTrapOffset));
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+  // Called Construct on an exotic Object with a [[Construct]] internal method.
+  {
+    // Overwrite the original receiver with the (original) target.
+    __ mov(Operand(esp, eax, times_pointer_size, kPointerSize), edi);
+    // Let the "call_as_constructor_delegate" take care of the rest.
+    __ LoadGlobalFunction(Context::CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, edi);
+    __ Jump(masm->isolate()->builtins()->CallFunction(),
+            RelocInfo::CODE_TARGET);
+  }
 
-  // 2. Construct of something else, which might have a [[Construct]] internal
-  // method (if not we raise an exception).
-  __ bind(&non_function);
-  // Check if target has a [[Call]] internal method.
-  // TODO(bmeurer): This shoud use IsConstructor once available.
-  __ test_b(FieldOperand(ecx, Map::kBitFieldOffset), 1 << Map::kIsCallable);
-  __ j(zero, &non_callable, Label::kNear);
-  // Overwrite the original receiver with the (original) target.
-  __ mov(Operand(esp, eax, times_pointer_size, kPointerSize), edi);
-  // Let the "call_as_constructor_delegate" take care of the rest.
-  __ LoadGlobalFunction(Context::CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, edi);
-  __ Jump(masm->isolate()->builtins()->CallFunction(), RelocInfo::CODE_TARGET);
-
-  // 3. Construct of something that is not callable.
-  __ bind(&non_callable);
+  // Called Construct on an Object that doesn't have a [[Construct]] internal
+  // method.
+  __ bind(&non_constructor);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ Push(edi);
     __ CallRuntime(Runtime::kThrowCalledNonCallable, 1);
   }
-}
-
-
-// static
-void Builtins::Generate_PushArgsAndCall(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- eax : the number of arguments (not including the receiver)
-  //  -- ebx : the address of the first argument to be pushed. Subsequent
-  //           arguments should be consecutive above this, in the same order as
-  //           they are to be pushed onto the stack.
-  //  -- edi : the target to call (can be any Object).
-
-  // Pop return address to allow tail-call after pushing arguments.
-  __ Pop(edx);
-
-  // Find the address of the last argument.
-  __ mov(ecx, eax);
-  __ add(ecx, Immediate(1));  // Add one for receiver.
-  __ shl(ecx, kPointerSizeLog2);
-  __ neg(ecx);
-  __ add(ecx, ebx);
-
-  // Push the arguments.
-  Label loop_header, loop_check;
-  __ jmp(&loop_check);
-  __ bind(&loop_header);
-  __ Push(Operand(ebx, 0));
-  __ sub(ebx, Immediate(kPointerSize));
-  __ bind(&loop_check);
-  __ cmp(ebx, ecx);
-  __ j(greater, &loop_header, Label::kNear);
-
-  // Call the target.
-  __ Push(edx);  // Re-push return address.
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 }
 
 

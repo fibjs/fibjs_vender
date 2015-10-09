@@ -12,10 +12,10 @@
 #include "src/base/bits.h"
 #include "src/code-factory.h"
 #include "src/code-stubs.h"
-#include "src/cpu-profiler.h"
 #include "src/hydrogen-osr.h"
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
+#include "src/profiler/cpu-profiler.h"
 
 namespace v8 {
 namespace internal {
@@ -597,7 +597,7 @@ void LCodeGen::SaveCallerDoubles() {
   while (!iterator.Done()) {
     // TODO(all): Is this supposed to save just the callee-saved doubles? It
     // looks like it's saving all of them.
-    FPRegister value = FPRegister::FromAllocationIndex(iterator.Current());
+    FPRegister value = FPRegister::from_code(iterator.Current());
     __ Poke(value, count * kDoubleSize);
     iterator.Advance();
     count++;
@@ -615,7 +615,7 @@ void LCodeGen::RestoreCallerDoubles() {
   while (!iterator.Done()) {
     // TODO(all): Is this supposed to restore just the callee-saved doubles? It
     // looks like it's restoring all of them.
-    FPRegister value = FPRegister::FromAllocationIndex(iterator.Current());
+    FPRegister value = FPRegister::from_code(iterator.Current());
     __ Peek(value, count * kDoubleSize);
     iterator.Advance();
     count++;
@@ -657,7 +657,6 @@ bool LCodeGen::GeneratePrologue() {
       __ Prologue(info()->IsCodePreAgingActive());
     }
     frame_is_built_ = true;
-    info_->AddNoFrameRange(0, masm_->pc_offset());
   }
 
   // Reserve space for the stack slots needed by the code.
@@ -1162,7 +1161,7 @@ void LCodeGen::EnsureSpaceForLazyDeopt(int space_needed) {
 Register LCodeGen::ToRegister(LOperand* op) const {
   // TODO(all): support zero register results, as ToRegister32.
   DCHECK((op != NULL) && op->IsRegister());
-  return Register::FromAllocationIndex(op->index());
+  return Register::from_code(op->index());
 }
 
 
@@ -1186,7 +1185,7 @@ Smi* LCodeGen::ToSmi(LConstantOperand* op) const {
 
 DoubleRegister LCodeGen::ToDoubleRegister(LOperand* op) const {
   DCHECK((op != NULL) && op->IsDoubleRegister());
-  return DoubleRegister::FromAllocationIndex(op->index());
+  return DoubleRegister::from_code(op->index());
 }
 
 
@@ -3205,7 +3204,7 @@ void LCodeGen::EmitVectorLoadICRegisters(T* instr) {
   Handle<TypeFeedbackVector> vector = instr->hydrogen()->feedback_vector();
   __ Mov(vector_register, vector);
   // No need to allocate this register.
-  FeedbackVectorICSlot slot = instr->hydrogen()->slot();
+  FeedbackVectorSlot slot = instr->hydrogen()->slot();
   int index = vector->GetIndex(slot);
   __ Mov(slot_register, Smi::FromInt(index));
 }
@@ -3219,7 +3218,7 @@ void LCodeGen::EmitVectorStoreICRegisters(T* instr) {
   AllowDeferredHandleDereference vector_structure_check;
   Handle<TypeFeedbackVector> vector = instr->hydrogen()->feedback_vector();
   __ Mov(vector_register, vector);
-  FeedbackVectorICSlot slot = instr->hydrogen()->slot();
+  FeedbackVectorSlot slot = instr->hydrogen()->slot();
   int index = vector->GetIndex(slot);
   __ Mov(slot_register, Smi::FromInt(index));
 }
@@ -4199,7 +4198,7 @@ void LCodeGen::DoMulConstIS(LMulConstIS* instr) {
   Register result =
       is_smi ? ToRegister(instr->result()) : ToRegister32(instr->result());
   Register left =
-      is_smi ? ToRegister(instr->left()) : ToRegister32(instr->left()) ;
+      is_smi ? ToRegister(instr->left()) : ToRegister32(instr->left());
   int32_t right = ToInteger32(instr->right());
   DCHECK((right > -kMaxInt) && (right < kMaxInt));
 
@@ -4626,11 +4625,9 @@ void LCodeGen::DoReturn(LReturn* instr) {
     RestoreCallerDoubles();
   }
 
-  int no_frame_start = -1;
   if (NeedsEagerFrame()) {
     Register stack_pointer = masm()->StackPointer();
     __ Mov(stack_pointer, fp);
-    no_frame_start = masm_->pc_offset();
     __ Pop(fp, lr);
   }
 
@@ -4643,10 +4640,6 @@ void LCodeGen::DoReturn(LReturn* instr) {
     __ DropBySMI(parameter_count);
   }
   __ Ret();
-
-  if (no_frame_start != -1) {
-    info_->AddNoFrameRange(no_frame_start, masm_->pc_offset());
-  }
 }
 
 
@@ -5652,7 +5645,7 @@ void LCodeGen::DoRegExpLiteral(LRegExpLiteral* instr) {
   // x0 = regexp literal clone.
   // x10-x12 are used as temporaries.
   int literal_offset =
-      FixedArray::OffsetOfElementAt(instr->hydrogen()->literal_index());
+      LiteralsArray::OffsetOfLiteralAt(instr->hydrogen()->literal_index());
   __ LoadObject(x7, instr->hydrogen()->literals());
   __ Ldr(x1, FieldMemOperand(x7, literal_offset));
   __ JumpIfNotRoot(x1, Heap::kUndefinedValueRootIndex, &materialized);

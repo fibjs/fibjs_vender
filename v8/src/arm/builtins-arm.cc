@@ -26,11 +26,12 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
                                 BuiltinExtraArguments extra_args) {
   // ----------- S t a t e -------------
   //  -- r0                 : number of arguments excluding receiver
-  //  -- r1                 : called function (only guaranteed when
-  //                          extra_args requires it)
+  //                          (only guaranteed when the called function
+  //                           is not marked as DontAdaptArguments)
+  //  -- r1                 : called function
   //  -- sp[0]              : last argument
   //  -- ...
-  //  -- sp[4 * (argc - 1)] : first argument (argc == r0)
+  //  -- sp[4 * (argc - 1)] : first argument
   //  -- sp[4 * argc]       : receiver
   // -----------------------------------
   __ AssertFunction(r1);
@@ -52,8 +53,17 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
   }
 
   // JumpToExternalReference expects r0 to contain the number of arguments
-  // including the receiver and the extra arguments.
+  // including the receiver and the extra arguments.  But r0 is only valid
+  // if the called function is marked as DontAdaptArguments, otherwise we
+  // need to load the argument count from the SharedFunctionInfo.
+  __ ldr(r2, FieldMemOperand(r1, JSFunction::kSharedFunctionInfoOffset));
+  __ ldr(r2,
+         FieldMemOperand(r2, SharedFunctionInfo::kFormalParameterCountOffset));
+  __ SmiUntag(r2);
+  __ cmp(r2, Operand(SharedFunctionInfo::kDontAdaptArgumentsSentinel));
+  __ mov(r0, r2, LeaveCC, ne);
   __ add(r0, r0, Operand(num_extra_args + 1));
+
   __ JumpToExternalReference(ExternalReference(id, masm->isolate()));
 }
 
@@ -970,6 +980,35 @@ void Builtins::Generate_InterpreterExitTrampoline(MacroAssembler* masm) {
 }
 
 
+// static
+void Builtins::Generate_InterpreterPushArgsAndCall(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- r0 : the number of arguments (not including the receiver)
+  //  -- r2 : the address of the first argument to be pushed. Subsequent
+  //          arguments should be consecutive above this, in the same order as
+  //          they are to be pushed onto the stack.
+  //  -- r1 : the target to call (can be any Object).
+
+  // Find the address of the last argument.
+  __ add(r3, r0, Operand(1));  // Add one for receiver.
+  __ mov(r3, Operand(r3, LSL, kPointerSizeLog2));
+  __ sub(r3, r2, r3);
+
+  // Push the arguments.
+  Label loop_header, loop_check;
+  __ b(al, &loop_check);
+  __ bind(&loop_header);
+  __ ldr(r4, MemOperand(r2, -kPointerSize, PostIndex));
+  __ push(r4);
+  __ bind(&loop_check);
+  __ cmp(r2, r3);
+  __ b(gt, &loop_header);
+
+  // Call the target.
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+}
+
+
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   CallRuntimePassFunction(masm, Runtime::kCompileLazy);
   GenerateTailCallToReturnedCode(masm);
@@ -1640,6 +1679,21 @@ void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
 
 
 // static
+void Builtins::Generate_ConstructProxy(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- r0 : the number of arguments (not including the receiver)
+  //  -- r1 : the constructor to call (checked to be a JSFunctionProxy)
+  //  -- r3 : the original constructor (either the same as the constructor or
+  //          the JSFunction on which new was invoked initially)
+  // -----------------------------------
+
+  // TODO(neis): This doesn't match the ES6 spec for [[Construct]] on proxies.
+  __ ldr(r1, FieldMemOperand(r1, JSFunctionProxy::kConstructTrapOffset));
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+}
+
+
+// static
 void Builtins::Generate_Construct(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- r0 : the number of arguments (not including the receiver)
@@ -1648,69 +1702,40 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   //          the JSFunction on which new was invoked initially)
   // -----------------------------------
 
-  Label non_callable, non_function;
-  __ JumpIfSmi(r1, &non_callable);
-  __ CompareObjectType(r1, r4, r5, JS_FUNCTION_TYPE);
+  // Check if target has a [[Construct]] internal method.
+  Label non_constructor;
+  __ JumpIfSmi(r1, &non_constructor);
+  __ ldr(r4, FieldMemOperand(r1, HeapObject::kMapOffset));
+  __ ldrb(r2, FieldMemOperand(r4, Map::kBitFieldOffset));
+  __ tst(r2, Operand(1 << Map::kIsConstructor));
+  __ b(eq, &non_constructor);
+
+  // Dispatch based on instance type.
+  __ CompareInstanceType(r4, r5, JS_FUNCTION_TYPE);
   __ Jump(masm->isolate()->builtins()->ConstructFunction(),
           RelocInfo::CODE_TARGET, eq);
   __ cmp(r5, Operand(JS_FUNCTION_PROXY_TYPE));
-  __ b(ne, &non_function);
+  __ Jump(masm->isolate()->builtins()->ConstructProxy(), RelocInfo::CODE_TARGET,
+          eq);
 
-  // 1. Construct of function proxy.
-  // TODO(neis): This doesn't match the ES6 spec for [[Construct]] on proxies.
-  __ ldr(r1, FieldMemOperand(r1, JSFunctionProxy::kConstructTrapOffset));
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+  // Called Construct on an exotic Object with a [[Construct]] internal method.
+  {
+    // Overwrite the original receiver with the (original) target.
+    __ str(r1, MemOperand(sp, r0, LSL, kPointerSizeLog2));
+    // Let the "call_as_constructor_delegate" take care of the rest.
+    __ LoadGlobalFunction(Context::CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, r1);
+    __ Jump(masm->isolate()->builtins()->CallFunction(),
+            RelocInfo::CODE_TARGET);
+  }
 
-  // 2. Construct of something that else, which might have a [[Construct]]
-  // internal method (if not we raise an exception).
-  __ bind(&non_function);
-  // Check if target has a [[Call]] internal method.
-  // TODO(bmeurer): This shoud use IsConstructor once available.
-  __ ldrb(r4, FieldMemOperand(r4, Map::kBitFieldOffset));
-  __ tst(r4, Operand(1 << Map::kIsCallable));
-  __ b(eq, &non_callable);
-  // Overwrite the original receiver the (original) target.
-  __ str(r1, MemOperand(sp, r0, LSL, kPointerSizeLog2));
-  // Let the "call_as_constructor_delegate" take care of the rest.
-  __ LoadGlobalFunction(Context::CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, r1);
-  __ Jump(masm->isolate()->builtins()->CallFunction(), RelocInfo::CODE_TARGET);
-
-  // 3. Construct of something that is not callable.
-  __ bind(&non_callable);
+  // Called Construct on an Object that doesn't have a [[Construct]] internal
+  // method.
+  __ bind(&non_constructor);
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
     __ Push(r1);
     __ CallRuntime(Runtime::kThrowCalledNonCallable, 1);
   }
-}
-
-
-// static
-void Builtins::Generate_PushArgsAndCall(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- r0 : the number of arguments (not including the receiver)
-  //  -- r2 : the address of the first argument to be pushed. Subsequent
-  //          arguments should be consecutive above this, in the same order as
-  //          they are to be pushed onto the stack.
-  //  -- r1 : the target to call (can be any Object).
-
-  // Find the address of the last argument.
-  __ add(r3, r0, Operand(1));  // Add one for receiver.
-  __ mov(r3, Operand(r3, LSL, kPointerSizeLog2));
-  __ sub(r3, r2, r3);
-
-  // Push the arguments.
-  Label loop_header, loop_check;
-  __ b(al, &loop_check);
-  __ bind(&loop_header);
-  __ ldr(r4, MemOperand(r2, -kPointerSize, PostIndex));
-  __ push(r4);
-  __ bind(&loop_check);
-  __ cmp(r2, r3);
-  __ b(gt, &loop_header);
-
-  // Call the target.
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 }
 
 

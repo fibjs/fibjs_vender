@@ -347,7 +347,7 @@ class Scope: public ZoneObject {
     return scope_uses_super_property_ ||
            (scope_calls_eval_ && (IsConciseMethod(function_kind()) ||
                                   IsAccessorFunction(function_kind()) ||
-                                  IsConstructor(function_kind())));
+                                  IsClassConstructor(function_kind())));
   }
 
   const Scope* NearestOuterEvalScope() const {
@@ -445,7 +445,7 @@ class Scope: public ZoneObject {
   Variable* this_function_var() const {
     // This is only used in derived constructors atm.
     DCHECK(this_function_ == nullptr ||
-           (is_function_scope() && (IsConstructor(function_kind()) ||
+           (is_function_scope() && (IsClassConstructor(function_kind()) ||
                                     IsConciseMethod(function_kind()) ||
                                     IsAccessorFunction(function_kind()))));
     return this_function_;
@@ -821,6 +821,7 @@ class Scope: public ZoneObject {
   int class_declaration_group_start_;
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_SCOPES_H_

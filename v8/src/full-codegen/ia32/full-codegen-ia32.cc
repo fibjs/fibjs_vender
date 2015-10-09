@@ -11,7 +11,6 @@
 #include "src/code-factory.h"
 #include "src/code-stubs.h"
 #include "src/codegen.h"
-#include "src/compiler.h"
 #include "src/debug/debug.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/ia32/frames-ia32.h"
@@ -137,7 +136,6 @@ void FullCodeGenerator::Generate() {
 
   info->set_prologue_offset(masm_->pc_offset());
   __ Prologue(info->IsCodePreAgingActive());
-  info->AddNoFrameRange(0, masm_->pc_offset());
 
   { Comment cmnt(masm_, "[ Allocate locals");
     int locals_count = info->scope()->num_stack_slots();
@@ -287,31 +285,25 @@ void FullCodeGenerator::Generate() {
   if (arguments != NULL) {
     // Function uses arguments object.
     Comment cmnt(masm_, "[ Allocate arguments object");
-    if (function_in_register) {
-      __ push(edi);
-    } else {
-      __ push(Operand(ebp, JavaScriptFrameConstants::kFunctionOffset));
+    DCHECK(edi.is(ArgumentsAccessNewDescriptor::function()));
+    if (!function_in_register) {
+      __ mov(edi, Operand(ebp, JavaScriptFrameConstants::kFunctionOffset));
     }
     // Receiver is just before the parameters on the caller's stack.
     int num_parameters = info->scope()->num_parameters();
     int offset = num_parameters * kPointerSize;
-    __ lea(edx,
+    __ mov(ArgumentsAccessNewDescriptor::parameter_count(),
+           Immediate(Smi::FromInt(num_parameters)));
+    __ lea(ArgumentsAccessNewDescriptor::parameter_pointer(),
            Operand(ebp, StandardFrameConstants::kCallerSPOffset + offset));
-    __ push(edx);
-    __ push(Immediate(Smi::FromInt(num_parameters)));
-    // Arguments to ArgumentsAccessStub:
-    //   function, receiver address, parameter count.
-    // The stub will rewrite receiver and parameter count if the previous
-    // stack frame was an arguments adapter frame.
-    ArgumentsAccessStub::Type type;
-    if (is_strict(language_mode()) || !has_simple_parameters()) {
-      type = ArgumentsAccessStub::NEW_STRICT;
-    } else if (literal()->has_duplicate_parameters()) {
-      type = ArgumentsAccessStub::NEW_SLOPPY_SLOW;
-    } else {
-      type = ArgumentsAccessStub::NEW_SLOPPY_FAST;
-    }
 
+    // Arguments to ArgumentsAccessStub:
+    //   function, parameter pointer, parameter count.
+    // The stub will rewrite parameter pointer and parameter count if the
+    // previous stack frame was an arguments adapter frame.
+    bool is_unmapped = is_strict(language_mode()) || !has_simple_parameters();
+    ArgumentsAccessStub::Type type = ArgumentsAccessStub::ComputeType(
+        is_unmapped, literal()->has_duplicate_parameters());
     ArgumentsAccessStub stub(isolate(), type);
     __ CallStub(&stub);
 
@@ -446,13 +438,11 @@ void FullCodeGenerator::EmitReturnSequence() {
     __ bind(&ok);
 
     SetReturnPosition(literal());
-    int no_frame_start = masm_->pc_offset();
     __ leave();
 
     int arg_count = info_->scope()->num_parameters() + 1;
     int arguments_bytes = arg_count * kPointerSize;
     __ Ret(arguments_bytes, ecx);
-    info_->AddNoFrameRange(no_frame_start, masm_->pc_offset());
   }
 }
 
@@ -1068,8 +1058,8 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ bind(&fixed_array);
 
   // No need for a write barrier, we are storing a Smi in the feedback vector.
-  __ LoadHeapObject(ebx, FeedbackVector());
-  int vector_index = FeedbackVector()->GetIndex(slot);
+  __ EmitLoadTypeFeedbackVector(ebx);
+  int vector_index = SmiFromSlot(slot)->value();
   __ mov(FieldOperand(ebx, FixedArray::OffsetOfElementAt(vector_index)),
          Immediate(TypeFeedbackVector::MegamorphicSentinel(isolate())));
 
@@ -1185,7 +1175,7 @@ void FullCodeGenerator::EmitNewClosure(Handle<SharedFunctionInfo> info,
 
 
 void FullCodeGenerator::EmitSetHomeObject(Expression* initializer, int offset,
-                                          FeedbackVectorICSlot slot) {
+                                          FeedbackVectorSlot slot) {
   DCHECK(NeedsHomeObject(initializer));
   __ mov(StoreDescriptor::ReceiverRegister(), Operand(esp, 0));
   __ mov(StoreDescriptor::NameRegister(),
@@ -1196,8 +1186,9 @@ void FullCodeGenerator::EmitSetHomeObject(Expression* initializer, int offset,
 }
 
 
-void FullCodeGenerator::EmitSetHomeObjectAccumulator(
-    Expression* initializer, int offset, FeedbackVectorICSlot slot) {
+void FullCodeGenerator::EmitSetHomeObjectAccumulator(Expression* initializer,
+                                                     int offset,
+                                                     FeedbackVectorSlot slot) {
   DCHECK(NeedsHomeObject(initializer));
   __ mov(StoreDescriptor::ReceiverRegister(), eax);
   __ mov(StoreDescriptor::NameRegister(),
@@ -1432,8 +1423,7 @@ void FullCodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
   // eax = regexp literal clone.
   __ mov(edi, Operand(ebp, JavaScriptFrameConstants::kFunctionOffset));
   __ mov(ecx, FieldOperand(edi, JSFunction::kLiteralsOffset));
-  int literal_offset =
-      FixedArray::kHeaderSize + expr->literal_index() * kPointerSize;
+  int literal_offset = LiteralsArray::OffsetOfLiteralAt(expr->literal_index());
   __ mov(ebx, FieldOperand(ecx, literal_offset));
   __ cmp(ebx, isolate()->factory()->undefined_value());
   __ j(not_equal, &materialized, Label::kNear);
@@ -2428,7 +2418,7 @@ void FullCodeGenerator::EmitBinaryOp(BinaryOperation* expr, Token::Value op) {
 
 
 void FullCodeGenerator::EmitAssignment(Expression* expr,
-                                       FeedbackVectorICSlot slot) {
+                                       FeedbackVectorSlot slot) {
   DCHECK(expr->IsValidReferenceExpressionOrThis());
 
   Property* prop = expr->AsProperty();
@@ -2519,7 +2509,7 @@ void FullCodeGenerator::EmitStoreToStackLocalOrContextSlot(
 
 
 void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
-                                               FeedbackVectorICSlot slot) {
+                                               FeedbackVectorSlot slot) {
   if (var->IsUnallocated()) {
     // Global var, const, or let.
     __ mov(StoreDescriptor::NameRegister(), var->name());
@@ -3084,7 +3074,7 @@ void FullCodeGenerator::VisitCallNew(CallNew* expr) {
   __ mov(edi, Operand(esp, arg_count * kPointerSize));
 
   // Record call targets in unoptimized code.
-  __ LoadHeapObject(ebx, FeedbackVector());
+  __ EmitLoadTypeFeedbackVector(ebx);
   __ mov(edx, Immediate(SmiFromSlot(expr->CallNewFeedbackSlot())));
 
   CallConstructStub stub(isolate(), RECORD_CONSTRUCTOR_TARGET);
@@ -3124,7 +3114,7 @@ void FullCodeGenerator::EmitSuperConstructorCall(Call* expr) {
   __ mov(edi, Operand(esp, arg_count * kPointerSize));
 
   // Record call targets in unoptimized code.
-  __ LoadHeapObject(ebx, FeedbackVector());
+  __ EmitLoadTypeFeedbackVector(ebx);
   __ mov(edx, Immediate(SmiFromSlot(expr->CallFeedbackSlot())));
 
   CallConstructStub stub(isolate(), SUPER_CALL_RECORD_TARGET);
@@ -3674,6 +3664,23 @@ void FullCodeGenerator::EmitSetValueOf(CallRuntime* expr) {
 }
 
 
+void FullCodeGenerator::EmitToInteger(CallRuntime* expr) {
+  ZoneList<Expression*>* args = expr->arguments();
+  DCHECK_EQ(1, args->length());
+
+  // Load the argument into eax and convert it.
+  VisitForAccumulatorValue(args->at(0));
+
+  // Convert the object to an integer.
+  Label done_convert;
+  __ JumpIfSmi(eax, &done_convert, Label::kNear);
+  __ Push(eax);
+  __ CallRuntime(Runtime::kToInteger, 1);
+  __ bind(&done_convert);
+  context()->Plug(eax);
+}
+
+
 void FullCodeGenerator::EmitNumberToString(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   DCHECK_EQ(args->length(), 1);
@@ -3700,6 +3707,19 @@ void FullCodeGenerator::EmitToString(CallRuntime* expr) {
 }
 
 
+void FullCodeGenerator::EmitToNumber(CallRuntime* expr) {
+  ZoneList<Expression*>* args = expr->arguments();
+  DCHECK_EQ(1, args->length());
+
+  // Load the argument into eax and convert it.
+  VisitForAccumulatorValue(args->at(0));
+
+  ToNumberStub stub(isolate());
+  __ CallStub(&stub);
+  context()->Plug(eax);
+}
+
+
 void FullCodeGenerator::EmitToName(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   DCHECK_EQ(1, args->length());
@@ -3714,8 +3734,8 @@ void FullCodeGenerator::EmitToName(CallRuntime* expr) {
   __ CmpObjectType(eax, LAST_NAME_TYPE, ecx);
   __ j(below_equal, &done_convert, Label::kNear);
   __ bind(&convert);
-  ToStringStub stub(isolate());
-  __ CallStub(&stub);
+  __ Push(eax);
+  __ CallRuntime(Runtime::kToName, 1);
   __ bind(&done_convert);
   context()->Plug(eax);
 }
@@ -5052,7 +5072,7 @@ void FullCodeGenerator::ClearPendingMessage() {
 }
 
 
-void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorICSlot slot) {
+void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorSlot slot) {
   DCHECK(FLAG_vector_stores && !slot.IsInvalid());
   __ mov(VectorStoreICTrampolineDescriptor::SlotRegister(),
          Immediate(SmiFromSlot(slot)));

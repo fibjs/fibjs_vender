@@ -85,15 +85,20 @@ class CodeFactory final {
   static Callable FastCloneShallowArray(Isolate* isolate);
   static Callable FastCloneShallowObject(Isolate* isolate, int length);
 
+  static Callable FastNewContext(Isolate* isolate, int slot_count);
   static Callable FastNewClosure(Isolate* isolate, LanguageMode language_mode,
                                  FunctionKind kind);
+
+  static Callable ArgumentsAccess(Isolate* isolate, bool is_unmapped_arguments,
+                                  bool has_duplicate_parameters);
 
   static Callable AllocateHeapNumber(Isolate* isolate);
 
   static Callable CallFunction(Isolate* isolate, int argc,
                                CallFunctionFlags flags);
 
-  static Callable PushArgsAndCall(Isolate* isolate);
+  static Callable InterpreterPushArgsAndCall(Isolate* isolate);
+  static Callable InterpreterCEntry(Isolate* isolate);
 };
 
 }  // namespace internal

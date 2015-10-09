@@ -19,7 +19,6 @@
 #include "src/code-factory.h"
 #include "src/code-stubs.h"
 #include "src/codegen.h"
-#include "src/compiler.h"
 #include "src/debug/debug.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/ic/ic.h"
@@ -154,7 +153,6 @@ void FullCodeGenerator::Generate() {
 
   info->set_prologue_offset(masm_->pc_offset());
   __ Prologue(info->IsCodePreAgingActive());
-  info->AddNoFrameRange(0, masm_->pc_offset());
 
   { Comment cmnt(masm_, "[ Allocate locals");
     int locals_count = info->scope()->num_stack_slots();
@@ -303,32 +301,26 @@ void FullCodeGenerator::Generate() {
   if (arguments != NULL) {
     // Function uses arguments object.
     Comment cmnt(masm_, "[ Allocate arguments object");
+    DCHECK(a1.is(ArgumentsAccessNewDescriptor::function()));
     if (!function_in_register_a1) {
       // Load this again, if it's used by the local context below.
-      __ lw(a3, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-    } else {
-      __ mov(a3, a1);
+      __ lw(a1, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
     }
     // Receiver is just before the parameters on the caller's stack.
     int num_parameters = info->scope()->num_parameters();
     int offset = num_parameters * kPointerSize;
-    __ Addu(a2, fp,
-           Operand(StandardFrameConstants::kCallerSPOffset + offset));
-    __ li(a1, Operand(Smi::FromInt(num_parameters)));
-    __ Push(a3, a2, a1);
+    __ li(ArgumentsAccessNewDescriptor::parameter_count(),
+          Operand(Smi::FromInt(num_parameters)));
+    __ Addu(ArgumentsAccessNewDescriptor::parameter_pointer(), fp,
+            Operand(StandardFrameConstants::kCallerSPOffset + offset));
 
     // Arguments to ArgumentsAccessStub:
-    //   function, receiver address, parameter count.
-    // The stub will rewrite receiever and parameter count if the previous
-    // stack frame was an arguments adapter frame.
-    ArgumentsAccessStub::Type type;
-    if (is_strict(language_mode()) || !has_simple_parameters()) {
-      type = ArgumentsAccessStub::NEW_STRICT;
-    } else if (literal()->has_duplicate_parameters()) {
-      type = ArgumentsAccessStub::NEW_SLOPPY_SLOW;
-    } else {
-      type = ArgumentsAccessStub::NEW_SLOPPY_FAST;
-    }
+    //   function, parameter pointer, parameter count.
+    // The stub will rewrite parameter pointer and parameter count if the
+    // previous stack frame was an arguments adapter frame.
+    bool is_unmapped = is_strict(language_mode()) || !has_simple_parameters();
+    ArgumentsAccessStub::Type type = ArgumentsAccessStub::ComputeType(
+        is_unmapped, literal()->has_duplicate_parameters());
     ArgumentsAccessStub stub(isolate(), type);
     __ CallStub(&stub);
 
@@ -484,11 +476,9 @@ void FullCodeGenerator::EmitReturnSequence() {
       int32_t sp_delta = arg_count * kPointerSize;
       SetReturnPosition(literal());
       masm_->mov(sp, fp);
-      int no_frame_start = masm_->pc_offset();
       masm_->MultiPop(static_cast<RegList>(fp.bit() | ra.bit()));
       masm_->Addu(sp, sp, Operand(sp_delta));
       masm_->Jump(ra);
-      info_->AddNoFrameRange(no_frame_start, masm_->pc_offset());
     }
   }
 }
@@ -1134,9 +1124,9 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   Label non_proxy;
   __ bind(&fixed_array);
 
-  __ li(a1, FeedbackVector());
+  __ EmitLoadTypeFeedbackVector(a1);
   __ li(a2, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
-  int vector_index = FeedbackVector()->GetIndex(slot);
+  int vector_index = SmiFromSlot(slot)->value();
   __ sw(a2, FieldMemOperand(a1, FixedArray::OffsetOfElementAt(vector_index)));
 
   __ li(a1, Operand(Smi::FromInt(1)));  // Smi indicates slow check
@@ -1254,7 +1244,7 @@ void FullCodeGenerator::EmitNewClosure(Handle<SharedFunctionInfo> info,
 
 
 void FullCodeGenerator::EmitSetHomeObject(Expression* initializer, int offset,
-                                          FeedbackVectorICSlot slot) {
+                                          FeedbackVectorSlot slot) {
   DCHECK(NeedsHomeObject(initializer));
   __ lw(StoreDescriptor::ReceiverRegister(), MemOperand(sp));
   __ li(StoreDescriptor::NameRegister(),
@@ -1266,8 +1256,9 @@ void FullCodeGenerator::EmitSetHomeObject(Expression* initializer, int offset,
 }
 
 
-void FullCodeGenerator::EmitSetHomeObjectAccumulator(
-    Expression* initializer, int offset, FeedbackVectorICSlot slot) {
+void FullCodeGenerator::EmitSetHomeObjectAccumulator(Expression* initializer,
+                                                     int offset,
+                                                     FeedbackVectorSlot slot) {
   DCHECK(NeedsHomeObject(initializer));
   __ Move(StoreDescriptor::ReceiverRegister(), v0);
   __ li(StoreDescriptor::NameRegister(),
@@ -1507,8 +1498,7 @@ void FullCodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
   // a0 = RegExp literal clone
   __ lw(a0, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ lw(t0, FieldMemOperand(a0, JSFunction::kLiteralsOffset));
-  int literal_offset =
-      FixedArray::kHeaderSize + expr->literal_index() * kPointerSize;
+  int literal_offset = LiteralsArray::OffsetOfLiteralAt(expr->literal_index());
   __ lw(t1, FieldMemOperand(t0, literal_offset));
   __ LoadRoot(at, Heap::kUndefinedValueRootIndex);
   __ Branch(&materialized, ne, t1, Operand(at));
@@ -2512,7 +2502,7 @@ void FullCodeGenerator::EmitBinaryOp(BinaryOperation* expr, Token::Value op) {
 
 
 void FullCodeGenerator::EmitAssignment(Expression* expr,
-                                       FeedbackVectorICSlot slot) {
+                                       FeedbackVectorSlot slot) {
   DCHECK(expr->IsValidReferenceExpressionOrThis());
 
   Property* prop = expr->AsProperty();
@@ -2605,7 +2595,7 @@ void FullCodeGenerator::EmitStoreToStackLocalOrContextSlot(
 
 
 void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
-                                               FeedbackVectorICSlot slot) {
+                                               FeedbackVectorSlot slot) {
   if (var->IsUnallocated()) {
     // Global var, const, or let.
     __ mov(StoreDescriptor::ValueRegister(), result_register());
@@ -3187,7 +3177,7 @@ void FullCodeGenerator::VisitCallNew(CallNew* expr) {
   __ lw(a1, MemOperand(sp, arg_count * kPointerSize));
 
   // Record call targets in unoptimized code.
-  __ li(a2, FeedbackVector());
+  __ EmitLoadTypeFeedbackVector(a2);
   __ li(a3, Operand(SmiFromSlot(expr->CallNewFeedbackSlot())));
 
   CallConstructStub stub(isolate(), RECORD_CONSTRUCTOR_TARGET);
@@ -3227,7 +3217,7 @@ void FullCodeGenerator::EmitSuperConstructorCall(Call* expr) {
   __ lw(a1, MemOperand(sp, arg_count * kPointerSize));
 
   // Record call targets in unoptimized code.
-  __ li(a2, FeedbackVector());
+  __ EmitLoadTypeFeedbackVector(a2);
   __ li(a3, Operand(SmiFromSlot(expr->CallFeedbackSlot())));
 
   CallConstructStub stub(isolate(), SUPER_CALL_RECORD_TARGET);
@@ -3788,6 +3778,23 @@ void FullCodeGenerator::EmitSetValueOf(CallRuntime* expr) {
 }
 
 
+void FullCodeGenerator::EmitToInteger(CallRuntime* expr) {
+  ZoneList<Expression*>* args = expr->arguments();
+  DCHECK_EQ(1, args->length());
+
+  // Load the argument into v0 and convert it.
+  VisitForAccumulatorValue(args->at(0));
+
+  // Convert the object to an integer.
+  Label done_convert;
+  __ JumpIfSmi(v0, &done_convert);
+  __ Push(v0);
+  __ CallRuntime(Runtime::kToInteger, 1);
+  __ bind(&done_convert);
+  context()->Plug(v0);
+}
+
+
 void FullCodeGenerator::EmitNumberToString(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   DCHECK_EQ(args->length(), 1);
@@ -3816,6 +3823,20 @@ void FullCodeGenerator::EmitToString(CallRuntime* expr) {
 }
 
 
+void FullCodeGenerator::EmitToNumber(CallRuntime* expr) {
+  ZoneList<Expression*>* args = expr->arguments();
+  DCHECK_EQ(1, args->length());
+
+  // Load the argument into a0 and convert it.
+  VisitForAccumulatorValue(args->at(0));
+  __ mov(a0, result_register());
+
+  ToNumberStub stub(isolate());
+  __ CallStub(&stub);
+  context()->Plug(v0);
+}
+
+
 void FullCodeGenerator::EmitToName(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   DCHECK_EQ(1, args->length());
@@ -3829,9 +3850,8 @@ void FullCodeGenerator::EmitToName(CallRuntime* expr) {
   __ GetObjectType(v0, a1, a1);
   __ Branch(&done_convert, le, a1, Operand(LAST_NAME_TYPE));
   __ bind(&convert);
-  ToStringStub stub(isolate());
-  __ mov(a0, v0);
-  __ CallStub(&stub);
+  __ Push(v0);
+  __ CallRuntime(Runtime::kToName, 1);
   __ bind(&done_convert);
   context()->Plug(v0);
 }
@@ -5151,7 +5171,7 @@ void FullCodeGenerator::ClearPendingMessage() {
 }
 
 
-void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorICSlot slot) {
+void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorSlot slot) {
   DCHECK(FLAG_vector_stores && !slot.IsInvalid());
   __ li(VectorStoreICTrampolineDescriptor::SlotRegister(),
         Operand(SmiFromSlot(slot)));

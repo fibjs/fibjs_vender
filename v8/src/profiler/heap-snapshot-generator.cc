@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/heap-snapshot-generator.h"
+#include "src/profiler/heap-snapshot-generator.h"
 
-#include "src/allocation-tracker.h"
 #include "src/code-stubs.h"
 #include "src/conversions.h"
 #include "src/debug/debug.h"
-#include "src/heap-profiler.h"
-#include "src/heap-snapshot-generator-inl.h"
+#include "src/profiler/allocation-tracker.h"
+#include "src/profiler/heap-profiler.h"
+#include "src/profiler/heap-snapshot-generator-inl.h"
 #include "src/types.h"
 
 namespace v8 {
@@ -1593,18 +1593,14 @@ void V8HeapExplorer::ExtractClosureReferences(JSObject* js_obj, int entry) {
 
   JSFunction* func = JSFunction::cast(js_obj);
   if (func->shared()->bound()) {
-    FixedArray* bindings = func->function_bindings();
-    SetNativeBindReference(js_obj, entry, "bound_this",
-                           bindings->get(JSFunction::kBoundThisIndex));
+    BindingsArray* bindings = func->function_bindings();
+    SetNativeBindReference(js_obj, entry, "bound_this", bindings->bound_this());
     SetNativeBindReference(js_obj, entry, "bound_function",
-                           bindings->get(JSFunction::kBoundFunctionIndex));
-    for (int i = JSFunction::kBoundArgumentsStartIndex;
-         i < bindings->length(); i++) {
-      const char* reference_name = names_->GetFormatted(
-          "bound_argument_%d",
-          i - JSFunction::kBoundArgumentsStartIndex);
+                           bindings->bound_function());
+    for (int i = 0; i < bindings->bindings_count(); i++) {
+      const char* reference_name = names_->GetFormatted("bound_argument_%d", i);
       SetNativeBindReference(js_obj, entry, reference_name,
-                             bindings->get(i));
+                             bindings->binding(i));
     }
   }
 }
@@ -2164,6 +2160,7 @@ const char* V8HeapExplorer::GetStrongGcSubrootName(Object* object) {
 #undef SYMBOL_NAME
 #define SYMBOL_NAME(name, description) NAME_ENTRY(name)
     PUBLIC_SYMBOL_LIST(SYMBOL_NAME)
+    WELL_KNOWN_SYMBOL_LIST(SYMBOL_NAME)
 #undef SYMBOL_NAME
 #undef NAME_ENTRY
     CHECK(!strong_gc_subroot_names_.is_empty());

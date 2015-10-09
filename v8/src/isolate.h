@@ -655,6 +655,9 @@ class Isolate {
       int frame_limit,
       StackTrace::StackTraceOptions options);
 
+  void SetAbortOnUncaughtExceptionCallback(
+      v8::Isolate::AbortOnUncaughtExceptionCallback callback);
+
   enum PrintStackMode { kPrintStackConcise, kPrintStackVerbose };
   void PrintCurrentStackTrace(FILE* out);
   void PrintStack(StringStream* accumulator,
@@ -1325,6 +1328,9 @@ class Isolate {
 
   std::set<Cancelable*> cancelable_tasks_;
 
+  v8::Isolate::AbortOnUncaughtExceptionCallback
+      abort_on_uncaught_exception_callback_;
+
   friend class ExecutionAccess;
   friend class HandleScopeImplementer;
   friend class OptimizingCompileDispatcher;
@@ -1550,6 +1556,7 @@ class CodeTracer final : public Malloced {
   int scope_depth_;
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_ISOLATE_H_

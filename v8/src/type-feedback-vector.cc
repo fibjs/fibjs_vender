@@ -13,134 +13,165 @@
 namespace v8 {
 namespace internal {
 
-// static
-TypeFeedbackVector::VectorICKind TypeFeedbackVector::FromCodeKind(
-    Code::Kind kind) {
-  switch (kind) {
-    case Code::CALL_IC:
-      return KindCallIC;
-    case Code::LOAD_IC:
-      return KindLoadIC;
-    case Code::KEYED_LOAD_IC:
-      return KindKeyedLoadIC;
-    case Code::STORE_IC:
-      return KindStoreIC;
-    case Code::KEYED_STORE_IC:
-      return KindKeyedStoreIC;
-    default:
-      // Shouldn't get here.
-      UNREACHABLE();
-  }
-
-  return KindUnused;
+std::ostream& operator<<(std::ostream& os, FeedbackVectorSlotKind kind) {
+  return os << TypeFeedbackMetadata::Kind2String(kind);
 }
 
 
-// static
-Code::Kind TypeFeedbackVector::FromVectorICKind(VectorICKind kind) {
-  switch (kind) {
-    case KindCallIC:
-      return Code::CALL_IC;
-    case KindLoadIC:
-      return Code::LOAD_IC;
-    case KindKeyedLoadIC:
-      return Code::KEYED_LOAD_IC;
-    case KindStoreIC:
-      DCHECK(FLAG_vector_stores);
-      return Code::STORE_IC;
-    case KindKeyedStoreIC:
-      DCHECK(FLAG_vector_stores);
-      return Code::KEYED_STORE_IC;
-    case KindUnused:
-      break;
-  }
-  // Sentinel for no information.
-  return Code::NUMBER_OF_KINDS;
-}
-
-
-Code::Kind TypeFeedbackVector::GetKind(FeedbackVectorICSlot slot) const {
+FeedbackVectorSlotKind TypeFeedbackMetadata::GetKind(
+    FeedbackVectorSlot slot) const {
   int index = VectorICComputer::index(kReservedIndexCount, slot.ToInt());
   int data = Smi::cast(get(index))->value();
-  VectorICKind b = VectorICComputer::decode(data, slot.ToInt());
-  return FromVectorICKind(b);
+  return VectorICComputer::decode(data, slot.ToInt());
 }
 
 
-void TypeFeedbackVector::SetKind(FeedbackVectorICSlot slot, Code::Kind kind) {
-  VectorICKind b = FromCodeKind(kind);
+void TypeFeedbackMetadata::SetKind(FeedbackVectorSlot slot,
+                                   FeedbackVectorSlotKind kind) {
   int index = VectorICComputer::index(kReservedIndexCount, slot.ToInt());
   int data = Smi::cast(get(index))->value();
-  int new_data = VectorICComputer::encode(data, slot.ToInt(), b);
+  int new_data = VectorICComputer::encode(data, slot.ToInt(), kind);
   set(index, Smi::FromInt(new_data));
 }
 
 
-template Handle<TypeFeedbackVector> TypeFeedbackVector::Allocate(
+template Handle<TypeFeedbackMetadata> TypeFeedbackMetadata::New(
+    Isolate* isolate, const StaticFeedbackVectorSpec* spec);
+template Handle<TypeFeedbackMetadata> TypeFeedbackMetadata::New(
     Isolate* isolate, const FeedbackVectorSpec* spec);
-template Handle<TypeFeedbackVector> TypeFeedbackVector::Allocate(
-    Isolate* isolate, const ZoneFeedbackVectorSpec* spec);
 
 
 // static
 template <typename Spec>
-Handle<TypeFeedbackVector> TypeFeedbackVector::Allocate(Isolate* isolate,
-                                                        const Spec* spec) {
+Handle<TypeFeedbackMetadata> TypeFeedbackMetadata::New(Isolate* isolate,
+                                                       const Spec* spec) {
   const int slot_count = spec->slots();
-  const int ic_slot_count = spec->ic_slots();
-  const int index_count = VectorICComputer::word_count(ic_slot_count);
-  const int length = slot_count + (ic_slot_count * elements_per_ic_slot()) +
-                     index_count + kReservedIndexCount;
+  const int slot_kinds_length = VectorICComputer::word_count(slot_count);
+  const int length = slot_kinds_length + kReservedIndexCount;
   if (length == kReservedIndexCount) {
-    return Handle<TypeFeedbackVector>::cast(
+    return Handle<TypeFeedbackMetadata>::cast(
         isolate->factory()->empty_fixed_array());
   }
+#ifdef DEBUG
+  for (int i = 0; i < slot_count;) {
+    FeedbackVectorSlotKind kind = spec->GetKind(i);
+    int entry_size = TypeFeedbackMetadata::GetSlotSize(kind);
+    for (int j = 1; j < entry_size; j++) {
+      FeedbackVectorSlotKind kind = spec->GetKind(i + j);
+      DCHECK_EQ(FeedbackVectorSlotKind::INVALID, kind);
+    }
+    i += entry_size;
+  }
+#endif
 
   Handle<FixedArray> array = isolate->factory()->NewFixedArray(length, TENURED);
-  if (ic_slot_count > 0) {
-    array->set(kFirstICSlotIndex,
-               Smi::FromInt(slot_count + index_count + kReservedIndexCount));
-  } else {
-    array->set(kFirstICSlotIndex, Smi::FromInt(length));
-  }
-  array->set(kWithTypesIndex, Smi::FromInt(0));
-  array->set(kGenericCountIndex, Smi::FromInt(0));
-  // Fill the indexes with zeros.
-  for (int i = 0; i < index_count; i++) {
+  array->set(kSlotsCountIndex, Smi::FromInt(slot_count));
+  // Fill the bit-vector part with zeros.
+  for (int i = 0; i < slot_kinds_length; i++) {
     array->set(kReservedIndexCount + i, Smi::FromInt(0));
   }
 
+  Handle<TypeFeedbackMetadata> metadata =
+      Handle<TypeFeedbackMetadata>::cast(array);
+  for (int i = 0; i < slot_count; i++) {
+    metadata->SetKind(FeedbackVectorSlot(i), spec->GetKind(i));
+  }
+  return metadata;
+}
+
+
+bool TypeFeedbackMetadata::SpecDiffersFrom(
+    const FeedbackVectorSpec* other_spec) const {
+  if (other_spec->slots() != slot_count()) {
+    return true;
+  }
+
+  int slots = slot_count();
+  for (int i = 0; i < slots; i++) {
+    if (GetKind(FeedbackVectorSlot(i)) != other_spec->GetKind(i)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+const char* TypeFeedbackMetadata::Kind2String(FeedbackVectorSlotKind kind) {
+  switch (kind) {
+    case FeedbackVectorSlotKind::INVALID:
+      return "INVALID";
+    case FeedbackVectorSlotKind::CALL_IC:
+      return "CALL_IC";
+    case FeedbackVectorSlotKind::LOAD_IC:
+      return "LOAD_IC";
+    case FeedbackVectorSlotKind::KEYED_LOAD_IC:
+      return "KEYED_LOAD_IC";
+    case FeedbackVectorSlotKind::STORE_IC:
+      return "STORE_IC";
+    case FeedbackVectorSlotKind::KEYED_STORE_IC:
+      return "KEYED_STORE_IC";
+    case FeedbackVectorSlotKind::GENERAL:
+      return "STUB";
+    case FeedbackVectorSlotKind::KINDS_NUMBER:
+      break;
+  }
+  UNREACHABLE();
+  return "?";
+}
+
+
+// static
+Handle<TypeFeedbackVector> TypeFeedbackVector::New(
+    Isolate* isolate, Handle<TypeFeedbackMetadata> metadata) {
+  Factory* factory = isolate->factory();
+
+  const int slot_count = metadata->slot_count();
+  const int length = slot_count + kReservedIndexCount;
+  if (length == kReservedIndexCount) {
+    return Handle<TypeFeedbackVector>::cast(factory->empty_fixed_array());
+  }
+
+  Handle<FixedArray> array = factory->NewFixedArray(length, TENURED);
+  array->set(kMetadataIndex, *metadata);
+  array->set(kWithTypesIndex, Smi::FromInt(0));
+  array->set(kGenericCountIndex, Smi::FromInt(0));
+
   // Ensure we can skip the write barrier
   Handle<Object> uninitialized_sentinel = UninitializedSentinel(isolate);
-  DCHECK_EQ(isolate->heap()->uninitialized_symbol(), *uninitialized_sentinel);
-  for (int i = kReservedIndexCount + index_count; i < length; i++) {
+  DCHECK_EQ(*factory->uninitialized_symbol(), *uninitialized_sentinel);
+  for (int i = kReservedIndexCount; i < length; i++) {
     array->set(i, *uninitialized_sentinel, SKIP_WRITE_BARRIER);
   }
 
-  Handle<TypeFeedbackVector> vector = Handle<TypeFeedbackVector>::cast(array);
-  for (int i = 0; i < ic_slot_count; i++) {
-    vector->SetKind(FeedbackVectorICSlot(i), spec->GetKind(i));
-  }
-  return vector;
+  return Handle<TypeFeedbackVector>::cast(array);
+}
+
+
+// static
+int TypeFeedbackVector::GetIndexFromSpec(const FeedbackVectorSpec* spec,
+                                         FeedbackVectorSlot slot) {
+  return kReservedIndexCount + slot.ToInt();
 }
 
 
 // static
 int TypeFeedbackVector::PushAppliedArgumentsIndex() {
-  const int index_count = VectorICComputer::word_count(1);
-  return kReservedIndexCount + index_count;
+  return kReservedIndexCount;
 }
 
 
 // static
 Handle<TypeFeedbackVector> TypeFeedbackVector::CreatePushAppliedArgumentsVector(
     Isolate* isolate) {
-  Code::Kind kinds[] = {Code::KEYED_LOAD_IC};
-  FeedbackVectorSpec spec(0, 1, kinds);
+  StaticFeedbackVectorSpec spec;
+  FeedbackVectorSlot slot = spec.AddKeyedLoadICSlot();
+  // TODO(ishell): allocate this metadata only once.
+  Handle<TypeFeedbackMetadata> feedback_metadata =
+      TypeFeedbackMetadata::New(isolate, &spec);
   Handle<TypeFeedbackVector> feedback_vector =
-      isolate->factory()->NewTypeFeedbackVector(&spec);
-  DCHECK(PushAppliedArgumentsIndex() ==
-         feedback_vector->GetIndex(FeedbackVectorICSlot(0)));
+      TypeFeedbackVector::New(isolate, feedback_metadata);
+  DCHECK_EQ(PushAppliedArgumentsIndex(), feedback_vector->GetIndex(slot));
+  USE(slot);
   return feedback_vector;
 }
 
@@ -155,88 +186,74 @@ Handle<TypeFeedbackVector> TypeFeedbackVector::Copy(
 }
 
 
-bool TypeFeedbackVector::SpecDiffersFrom(
-    const ZoneFeedbackVectorSpec* other_spec) const {
-  if (other_spec->slots() != Slots() || other_spec->ic_slots() != ICSlots()) {
-    return true;
-  }
-
-  int ic_slots = ICSlots();
-  for (int i = 0; i < ic_slots; i++) {
-    if (GetKind(FeedbackVectorICSlot(i)) != other_spec->GetKind(i)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-
 // This logic is copied from
 // StaticMarkingVisitor<StaticVisitor>::VisitCodeTarget.
-static bool ClearLogic(Heap* heap) {
-  return FLAG_cleanup_code_caches_at_gc &&
-         heap->isolate()->serializer_enabled();
+static bool ClearLogic(Isolate* isolate) {
+  return FLAG_cleanup_code_caches_at_gc && isolate->serializer_enabled();
 }
 
 
 void TypeFeedbackVector::ClearSlotsImpl(SharedFunctionInfo* shared,
                                         bool force_clear) {
-  int slots = Slots();
-  Heap* heap = GetIsolate()->heap();
+  Isolate* isolate = GetIsolate();
 
-  if (!force_clear && !ClearLogic(heap)) return;
+  if (!force_clear && !ClearLogic(isolate)) return;
 
   Object* uninitialized_sentinel =
-      TypeFeedbackVector::RawUninitializedSentinel(heap);
-  for (int i = 0; i < slots; i++) {
-    FeedbackVectorSlot slot(i);
-    Object* obj = Get(slot);
-    if (obj->IsHeapObject()) {
-      InstanceType instance_type =
-          HeapObject::cast(obj)->map()->instance_type();
-      // AllocationSites are exempt from clearing. They don't store Maps
-      // or Code pointers which can cause memory leaks if not cleared
-      // regularly.
-      if (instance_type != ALLOCATION_SITE_TYPE) {
-        Set(slot, uninitialized_sentinel, SKIP_WRITE_BARRIER);
-      }
-    }
-  }
-}
+      TypeFeedbackVector::RawUninitializedSentinel(isolate);
 
+  TypeFeedbackMetadataIterator iter(metadata());
+  while (iter.HasNext()) {
+    FeedbackVectorSlot slot = iter.Next();
+    FeedbackVectorSlotKind kind = iter.kind();
 
-void TypeFeedbackVector::ClearICSlotsImpl(SharedFunctionInfo* shared,
-                                          bool force_clear) {
-  Heap* heap = GetIsolate()->heap();
-
-  if (!force_clear && !ClearLogic(heap)) return;
-
-  int slots = ICSlots();
-  Code* host = shared->code();
-  Object* uninitialized_sentinel =
-      TypeFeedbackVector::RawUninitializedSentinel(heap);
-  for (int i = 0; i < slots; i++) {
-    FeedbackVectorICSlot slot(i);
     Object* obj = Get(slot);
     if (obj != uninitialized_sentinel) {
-      Code::Kind kind = GetKind(slot);
-      if (kind == Code::CALL_IC) {
-        CallICNexus nexus(this, slot);
-        nexus.Clear(host);
-      } else if (kind == Code::LOAD_IC) {
-        LoadICNexus nexus(this, slot);
-        nexus.Clear(host);
-      } else if (kind == Code::KEYED_LOAD_IC) {
-        KeyedLoadICNexus nexus(this, slot);
-        nexus.Clear(host);
-      } else if (kind == Code::STORE_IC) {
-        DCHECK(FLAG_vector_stores);
-        StoreICNexus nexus(this, slot);
-        nexus.Clear(host);
-      } else if (kind == Code::KEYED_STORE_IC) {
-        DCHECK(FLAG_vector_stores);
-        KeyedStoreICNexus nexus(this, slot);
-        nexus.Clear(host);
+      switch (kind) {
+        case FeedbackVectorSlotKind::CALL_IC: {
+          CallICNexus nexus(this, slot);
+          nexus.Clear(shared->code());
+          break;
+        }
+        case FeedbackVectorSlotKind::LOAD_IC: {
+          LoadICNexus nexus(this, slot);
+          nexus.Clear(shared->code());
+          break;
+        }
+        case FeedbackVectorSlotKind::KEYED_LOAD_IC: {
+          KeyedLoadICNexus nexus(this, slot);
+          nexus.Clear(shared->code());
+          break;
+        }
+        case FeedbackVectorSlotKind::STORE_IC: {
+          DCHECK(FLAG_vector_stores);
+          StoreICNexus nexus(this, slot);
+          nexus.Clear(shared->code());
+          break;
+        }
+        case FeedbackVectorSlotKind::KEYED_STORE_IC: {
+          DCHECK(FLAG_vector_stores);
+          KeyedStoreICNexus nexus(this, slot);
+          nexus.Clear(shared->code());
+          break;
+        }
+        case FeedbackVectorSlotKind::GENERAL: {
+          if (obj->IsHeapObject()) {
+            InstanceType instance_type =
+                HeapObject::cast(obj)->map()->instance_type();
+            // AllocationSites are exempt from clearing. They don't store Maps
+            // or Code pointers which can cause memory leaks if not cleared
+            // regularly.
+            if (instance_type != ALLOCATION_SITE_TYPE) {
+              Set(slot, uninitialized_sentinel, SKIP_WRITE_BARRIER);
+            }
+          }
+          break;
+        }
+        case FeedbackVectorSlotKind::INVALID:
+        case FeedbackVectorSlotKind::KINDS_NUMBER:
+          UNREACHABLE();
+          break;
       }
     }
   }
@@ -256,22 +273,22 @@ void TypeFeedbackVector::ClearAllKeyedStoreICs(Isolate* isolate) {
 
 
 void TypeFeedbackVector::ClearKeyedStoreICs(SharedFunctionInfo* shared) {
-  Heap* heap = GetIsolate()->heap();
+  Isolate* isolate = GetIsolate();
 
-  int slots = ICSlots();
   Code* host = shared->code();
   Object* uninitialized_sentinel =
-      TypeFeedbackVector::RawUninitializedSentinel(heap);
-  for (int i = 0; i < slots; i++) {
-    FeedbackVectorICSlot slot(i);
+      TypeFeedbackVector::RawUninitializedSentinel(isolate);
+
+  TypeFeedbackMetadataIterator iter(metadata());
+  while (iter.HasNext()) {
+    FeedbackVectorSlot slot = iter.Next();
+    FeedbackVectorSlotKind kind = iter.kind();
+    if (kind != FeedbackVectorSlotKind::KEYED_STORE_IC) continue;
     Object* obj = Get(slot);
     if (obj != uninitialized_sentinel) {
-      Code::Kind kind = GetKind(slot);
-      if (kind == Code::KEYED_STORE_IC) {
-        DCHECK(FLAG_vector_stores);
-        KeyedStoreICNexus nexus(this, slot);
-        nexus.Clear(host);
-      }
+      DCHECK(FLAG_vector_stores);
+      KeyedStoreICNexus nexus(this, slot);
+      nexus.Clear(host);
     }
   }
 }
@@ -279,7 +296,7 @@ void TypeFeedbackVector::ClearKeyedStoreICs(SharedFunctionInfo* shared) {
 
 // static
 Handle<TypeFeedbackVector> TypeFeedbackVector::DummyVector(Isolate* isolate) {
-  return Handle<TypeFeedbackVector>::cast(isolate->factory()->dummy_vector());
+  return isolate->factory()->dummy_vector();
 }
 
 

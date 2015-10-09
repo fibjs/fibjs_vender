@@ -30,7 +30,6 @@
     <ClInclude Include="include\v8config.h" />
     <ClInclude Include="src\accessors.h" />
     <ClInclude Include="src\allocation-site-scopes.h" />
-    <ClInclude Include="src\allocation-tracker.h" />
     <ClInclude Include="src\allocation.h" />
     <ClInclude Include="src\api-natives.h" />
     <ClInclude Include="src\api.h" />
@@ -96,8 +95,6 @@
     <ClInclude Include="src\char-predicates-inl.h" />
     <ClInclude Include="src\char-predicates.h" />
     <ClInclude Include="src\checks.h" />
-    <ClInclude Include="src\circular-queue-inl.h" />
-    <ClInclude Include="src\circular-queue.h" />
     <ClInclude Include="src\code-factory.h" />
     <ClInclude Include="src\code-stubs.h" />
     <ClInclude Include="src\codegen.h" />
@@ -144,7 +141,9 @@
     <ClInclude Include="src\compiler\js-context-specialization.h" />
     <ClInclude Include="src\compiler\js-frame-specialization.h" />
     <ClInclude Include="src\compiler\js-generic-lowering.h" />
+    <ClInclude Include="src\compiler\js-global-specialization.h" />
     <ClInclude Include="src\compiler\js-graph.h" />
+    <ClInclude Include="src\compiler\js-inlining-heuristic.h" />
     <ClInclude Include="src\compiler\js-inlining.h" />
     <ClInclude Include="src\compiler\js-intrinsic-lowering.h" />
     <ClInclude Include="src\compiler\js-operator.h" />
@@ -178,7 +177,6 @@
     <ClInclude Include="src\compiler\raw-machine-assembler.h" />
     <ClInclude Include="src\compiler\register-allocator-verifier.h" />
     <ClInclude Include="src\compiler\register-allocator.h" />
-    <ClInclude Include="src\compiler\register-configuration.h" />
     <ClInclude Include="src\compiler\representation-change.h" />
     <ClInclude Include="src\compiler\schedule.h" />
     <ClInclude Include="src\compiler\scheduler.h" />
@@ -201,8 +199,6 @@
     <ClInclude Include="src\conversions-inl.h" />
     <ClInclude Include="src\conversions.h" />
     <ClInclude Include="src\counters.h" />
-    <ClInclude Include="src\cpu-profiler-inl.h" />
-    <ClInclude Include="src\cpu-profiler.h" />
     <ClInclude Include="src\date.h" />
     <ClInclude Include="src\dateparser-inl.h" />
     <ClInclude Include="src\dateparser.h" />
@@ -245,9 +241,6 @@
     <ClInclude Include="src\handles-inl.h" />
     <ClInclude Include="src\handles.h" />
     <ClInclude Include="src\hashmap.h" />
-    <ClInclude Include="src\heap-profiler.h" />
-    <ClInclude Include="src\heap-snapshot-generator-inl.h" />
-    <ClInclude Include="src\heap-snapshot-generator.h" />
     <ClInclude Include="src\heap\array-buffer-tracker.h" />
     <ClInclude Include="src\heap\gc-idle-time-handler.h" />
     <ClInclude Include="src\heap\gc-tracer.h" />
@@ -262,6 +255,7 @@
     <ClInclude Include="src\heap\object-stats.h" />
     <ClInclude Include="src\heap\objects-visiting-inl.h" />
     <ClInclude Include="src\heap\objects-visiting.h" />
+    <ClInclude Include="src\heap\scavenge-job.h" />
     <ClInclude Include="src\heap\scavenger-inl.h" />
     <ClInclude Include="src\heap\scavenger.h" />
     <ClInclude Include="src\heap\slots-buffer.h" />
@@ -320,7 +314,9 @@
     <ClInclude Include="src\interpreter\bytecode-array-builder.h" />
     <ClInclude Include="src\interpreter\bytecode-array-iterator.h" />
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
+    <ClInclude Include="src\interpreter\bytecode-traits.h" />
     <ClInclude Include="src\interpreter\bytecodes.h" />
+    <ClInclude Include="src\interpreter\control-flow-builders.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
     <ClInclude Include="src\isolate-inl.h" />
     <ClInclude Include="src\isolate.h" />
@@ -341,7 +337,6 @@
     <ClInclude Include="src\log-inl.h" />
     <ClInclude Include="src\log-utils.h" />
     <ClInclude Include="src\log.h" />
-    <ClInclude Include="src\lookup-inl.h" />
     <ClInclude Include="src\lookup.h" />
     <ClInclude Include="src\macro-assembler.h" />
     <ClInclude Include="src\messages.h" />
@@ -368,8 +363,20 @@
     <ClInclude Include="src\preparse-data.h" />
     <ClInclude Include="src\preparser.h" />
     <ClInclude Include="src\prettyprinter.h" />
-    <ClInclude Include="src\profile-generator-inl.h" />
-    <ClInclude Include="src\profile-generator.h" />
+    <ClInclude Include="src\profiler\allocation-tracker.h" />
+    <ClInclude Include="src\profiler\circular-queue-inl.h" />
+    <ClInclude Include="src\profiler\circular-queue.h" />
+    <ClInclude Include="src\profiler\cpu-profiler-inl.h" />
+    <ClInclude Include="src\profiler\cpu-profiler.h" />
+    <ClInclude Include="src\profiler\heap-profiler.h" />
+    <ClInclude Include="src\profiler\heap-snapshot-generator-inl.h" />
+    <ClInclude Include="src\profiler\heap-snapshot-generator.h" />
+    <ClInclude Include="src\profiler\profile-generator-inl.h" />
+    <ClInclude Include="src\profiler\profile-generator.h" />
+    <ClInclude Include="src\profiler\sampler.h" />
+    <ClInclude Include="src\profiler\strings-storage.h" />
+    <ClInclude Include="src\profiler\unbound-queue-inl.h" />
+    <ClInclude Include="src\profiler\unbound-queue.h" />
     <ClInclude Include="src\property-details.h" />
     <ClInclude Include="src\property.h" />
     <ClInclude Include="src\prototype.h" />
@@ -386,12 +393,12 @@
     <ClInclude Include="src\regexp\regexp-stack.h" />
     <ClInclude Include="src\regexp\x64\regexp-macro-assembler-x64.h" />
     <ClInclude Include="src\regexp\x87\regexp-macro-assembler-x87.h" />
+    <ClInclude Include="src\register-configuration.h" />
     <ClInclude Include="src\rewriter.h" />
     <ClInclude Include="src\runtime-profiler.h" />
     <ClInclude Include="src\runtime\runtime-utils.h" />
     <ClInclude Include="src\runtime\runtime.h" />
     <ClInclude Include="src\safepoint-table.h" />
-    <ClInclude Include="src\sampler.h" />
     <ClInclude Include="src\scanner-character-streams.h" />
     <ClInclude Include="src\scanner.h" />
     <ClInclude Include="src\scopeinfo.h" />
@@ -409,7 +416,6 @@
     <ClInclude Include="src\string-builder.h" />
     <ClInclude Include="src\string-search.h" />
     <ClInclude Include="src\string-stream.h" />
-    <ClInclude Include="src\strings-storage.h" />
     <ClInclude Include="src\strtod.h" />
     <ClInclude Include="src\third_party\fdlibm\fdlibm.h" />
     <ClInclude Include="src\third_party\valgrind\valgrind.h" />
@@ -424,8 +430,6 @@
     <ClInclude Include="src\typing-asm.h" />
     <ClInclude Include="src\typing-reset.h" />
     <ClInclude Include="src\typing.h" />
-    <ClInclude Include="src\unbound-queue-inl.h" />
-    <ClInclude Include="src\unbound-queue.h" />
     <ClInclude Include="src\unicode-cache-inl.h" />
     <ClInclude Include="src\unicode-cache.h" />
     <ClInclude Include="src\unicode-decoder.h" />
@@ -469,7 +473,6 @@
   <ItemGroup>
     <ClCompile Include="src\accessors.cc" />
     <ClCompile Include="src\allocation-site-scopes.cc" />
-    <ClCompile Include="src\allocation-tracker.cc" />
     <ClCompile Include="src\allocation.cc" />
     <ClCompile Include="src\api-natives.cc" />
     <ClCompile Include="src\api.cc" />
@@ -560,7 +563,9 @@
     <ClCompile Include="src\compiler\js-context-specialization.cc" />
     <ClCompile Include="src\compiler\js-frame-specialization.cc" />
     <ClCompile Include="src\compiler\js-generic-lowering.cc" />
+    <ClCompile Include="src\compiler\js-global-specialization.cc" />
     <ClCompile Include="src\compiler\js-graph.cc" />
+    <ClCompile Include="src\compiler\js-inlining-heuristic.cc" />
     <ClCompile Include="src\compiler\js-inlining.cc" />
     <ClCompile Include="src\compiler\js-intrinsic-lowering.cc" />
     <ClCompile Include="src\compiler\js-operator.cc" />
@@ -594,7 +599,6 @@
     <ClCompile Include="src\compiler\raw-machine-assembler.cc" />
     <ClCompile Include="src\compiler\register-allocator-verifier.cc" />
     <ClCompile Include="src\compiler\register-allocator.cc" />
-    <ClCompile Include="src\compiler\register-configuration.cc" />
     <ClCompile Include="src\compiler\schedule.cc" />
     <ClCompile Include="src\compiler\scheduler.cc" />
     <ClCompile Include="src\compiler\select-lowering.cc" />
@@ -616,7 +620,6 @@
     <ClCompile Include="src\contexts.cc" />
     <ClCompile Include="src\conversions.cc" />
     <ClCompile Include="src\counters.cc" />
-    <ClCompile Include="src\cpu-profiler.cc" />
     <ClCompile Include="src\date.cc" />
     <ClCompile Include="src\dateparser.cc" />
     <ClCompile Include="src\debug\debug-evaluate.cc" />
@@ -660,8 +663,6 @@
     <ClCompile Include="src\gen\libraries.cc" />
     <ClCompile Include="src\global-handles.cc" />
     <ClCompile Include="src\handles.cc" />
-    <ClCompile Include="src\heap-profiler.cc" />
-    <ClCompile Include="src\heap-snapshot-generator.cc" />
     <ClCompile Include="src\heap\array-buffer-tracker.cc" />
     <ClCompile Include="src\heap\gc-idle-time-handler.cc" />
     <ClCompile Include="src\heap\gc-tracer.cc" />
@@ -672,6 +673,7 @@
     <ClCompile Include="src\heap\memory-reducer.cc" />
     <ClCompile Include="src\heap\object-stats.cc" />
     <ClCompile Include="src\heap\objects-visiting.cc" />
+    <ClCompile Include="src\heap\scavenge-job.cc" />
     <ClCompile Include="src\heap\scavenger.cc" />
     <ClCompile Include="src\heap\slots-buffer.cc" />
     <ClCompile Include="src\heap\spaces.cc" />
@@ -749,6 +751,7 @@
     <ClCompile Include="src\interpreter\bytecode-array-iterator.cc" />
     <ClCompile Include="src\interpreter\bytecode-generator.cc" />
     <ClCompile Include="src\interpreter\bytecodes.cc" />
+    <ClCompile Include="src\interpreter\control-flow-builders.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
     <ClCompile Include="src\isolate.cc" />
     <ClCompile Include="src\layout-descriptor.cc" />
@@ -789,7 +792,13 @@
     <ClCompile Include="src\preparse-data.cc" />
     <ClCompile Include="src\preparser.cc" />
     <ClCompile Include="src\prettyprinter.cc" />
-    <ClCompile Include="src\profile-generator.cc" />
+    <ClCompile Include="src\profiler\allocation-tracker.cc" />
+    <ClCompile Include="src\profiler\cpu-profiler.cc" />
+    <ClCompile Include="src\profiler\heap-profiler.cc" />
+    <ClCompile Include="src\profiler\heap-snapshot-generator.cc" />
+    <ClCompile Include="src\profiler\profile-generator.cc" />
+    <ClCompile Include="src\profiler\sampler.cc" />
+    <ClCompile Include="src\profiler\strings-storage.cc" />
     <ClCompile Include="src\property.cc" />
     <ClCompile Include="src\regexp\ia32\regexp-macro-assembler-ia32.cc" />
     <ClCompile Include="src\regexp\interpreter-irregexp.cc" />
@@ -801,6 +810,7 @@
     <ClCompile Include="src\regexp\regexp-stack.cc" />
     <ClCompile Include="src\regexp\x64\regexp-macro-assembler-x64.cc" />
     <ClCompile Include="src\regexp\x87\regexp-macro-assembler-x87.cc" />
+    <ClCompile Include="src\register-configuration.cc" />
     <ClCompile Include="src\rewriter.cc" />
     <ClCompile Include="src\runtime-profiler.cc" />
     <ClCompile Include="src\runtime\runtime-array.cc" />
@@ -816,6 +826,7 @@
     <ClCompile Include="src\runtime\runtime-generator.cc" />
     <ClCompile Include="src\runtime\runtime-i18n.cc" />
     <ClCompile Include="src\runtime\runtime-internal.cc" />
+    <ClCompile Include="src\runtime\runtime-interpreter.cc" />
     <ClCompile Include="src\runtime\runtime-json.cc" />
     <ClCompile Include="src\runtime\runtime-literals.cc" />
     <ClCompile Include="src\runtime\runtime-liveedit.cc" />
@@ -835,7 +846,6 @@
     <ClCompile Include="src\runtime\runtime-uri.cc" />
     <ClCompile Include="src\runtime\runtime.cc" />
     <ClCompile Include="src\safepoint-table.cc" />
-    <ClCompile Include="src\sampler.cc" />
     <ClCompile Include="src\scanner-character-streams.cc" />
     <ClCompile Include="src\scanner.cc" />
     <ClCompile Include="src\scopeinfo.cc" />
@@ -848,7 +858,6 @@
     <ClCompile Include="src\startup-data-util.cc" />
     <ClCompile Include="src\string-builder.cc" />
     <ClCompile Include="src\string-stream.cc" />
-    <ClCompile Include="src\strings-storage.cc" />
     <ClCompile Include="src\strtod.cc" />
     <ClCompile Include="src\third_party\fdlibm\fdlibm.cc" />
     <ClCompile Include="src\token.cc" />

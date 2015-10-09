@@ -227,10 +227,28 @@ Callable CodeFactory::FastCloneShallowObject(Isolate* isolate, int length) {
 
 
 // static
+Callable CodeFactory::FastNewContext(Isolate* isolate, int slot_count) {
+  FastNewContextStub stub(isolate, slot_count);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+
+// static
 Callable CodeFactory::FastNewClosure(Isolate* isolate,
                                      LanguageMode language_mode,
                                      FunctionKind kind) {
   FastNewClosureStub stub(isolate, language_mode, kind);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+
+// static
+Callable CodeFactory::ArgumentsAccess(Isolate* isolate,
+                                      bool is_unmapped_arguments,
+                                      bool has_duplicate_parameters) {
+  ArgumentsAccessStub::Type type = ArgumentsAccessStub::ComputeType(
+      is_unmapped_arguments, has_duplicate_parameters);
+  ArgumentsAccessStub stub(isolate, type);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 
@@ -251,9 +269,19 @@ Callable CodeFactory::CallFunction(Isolate* isolate, int argc,
 
 
 // static
-Callable CodeFactory::PushArgsAndCall(Isolate* isolate) {
-  return Callable(isolate->builtins()->PushArgsAndCall(),
-                  PushArgsAndCallDescriptor(isolate));
+Callable CodeFactory::InterpreterPushArgsAndCall(Isolate* isolate) {
+  return Callable(isolate->builtins()->InterpreterPushArgsAndCall(),
+                  InterpreterPushArgsAndCallDescriptor(isolate));
+}
+
+
+// static
+Callable CodeFactory::InterpreterCEntry(Isolate* isolate) {
+  // TODO(rmcilroy): Deal with runtime functions that return two values.
+  // Note: If we ever use fpregs in the interpreter then we will need to
+  // save fpregs too.
+  CEntryStub stub(isolate, 1, kDontSaveFPRegs, kArgvInRegister);
+  return Callable(stub.GetCode(), InterpreterCEntryDescriptor(isolate));
 }
 
 }  // namespace internal

@@ -11,8 +11,6 @@
 namespace v8 {
 namespace internal {
 
-class FeedbackVectorSpec;
-
 // Interface for handle based allocation.
 class Factory final {
  public:
@@ -156,24 +154,21 @@ class Factory final {
 
   // Allocates an internalized string in old space based on the character
   // stream.
-  MUST_USE_RESULT Handle<String> NewInternalizedStringFromUtf8(
-      Vector<const char> str,
-      int chars,
-      uint32_t hash_field);
+  Handle<String> NewInternalizedStringFromUtf8(Vector<const char> str,
+                                               int chars, uint32_t hash_field);
 
-  MUST_USE_RESULT Handle<String> NewOneByteInternalizedString(
-      Vector<const uint8_t> str, uint32_t hash_field);
+  Handle<String> NewOneByteInternalizedString(Vector<const uint8_t> str,
+                                              uint32_t hash_field);
 
-  MUST_USE_RESULT Handle<String> NewOneByteInternalizedSubString(
+  Handle<String> NewOneByteInternalizedSubString(
       Handle<SeqOneByteString> string, int offset, int length,
       uint32_t hash_field);
 
-  MUST_USE_RESULT Handle<String> NewTwoByteInternalizedString(
-        Vector<const uc16> str,
-        uint32_t hash_field);
+  Handle<String> NewTwoByteInternalizedString(Vector<const uc16> str,
+                                              uint32_t hash_field);
 
-  MUST_USE_RESULT Handle<String> NewInternalizedStringImpl(
-      Handle<String> string, int chars, uint32_t hash_field);
+  Handle<String> NewInternalizedStringImpl(Handle<String> string, int chars,
+                                           uint32_t hash_field);
 
   // Compute the matching internalized string map for a string if possible.
   // Empty handle is returned if string is in new space or not flattened.
@@ -197,14 +192,6 @@ class Factory final {
   // Create a new cons string object which consists of a pair of strings.
   MUST_USE_RESULT MaybeHandle<String> NewConsString(Handle<String> left,
                                                     Handle<String> right);
-  MUST_USE_RESULT MaybeHandle<String> NewOneByteConsString(
-      int length, Handle<String> left, Handle<String> right);
-  MUST_USE_RESULT MaybeHandle<String> NewTwoByteConsString(
-      int length, Handle<String> left, Handle<String> right);
-  MUST_USE_RESULT MaybeHandle<String> NewRawConsString(Handle<Map> map,
-                                                       int length,
-                                                       Handle<String> left,
-                                                       Handle<String> right);
 
   // Create a new string object which holds a proper substring of a string.
   Handle<String> NewProperSubString(Handle<String> str,
@@ -627,6 +614,7 @@ class Factory final {
         &isolate()->heap()->roots_[Heap::k##name##RootIndex])); \
   }
   PUBLIC_SYMBOL_LIST(SYMBOL_ACCESSOR)
+  WELL_KNOWN_SYMBOL_LIST(SYMBOL_ACCESSOR)
 #undef SYMBOL_ACCESSOR
 
   // Allocates a new SharedFunctionInfo object.
@@ -636,10 +624,6 @@ class Factory final {
       Handle<TypeFeedbackVector> feedback_vector);
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(Handle<String> name,
                                                    MaybeHandle<Code> code);
-
-  // Allocate a new type feedback vector
-  template <typename Spec>
-  Handle<TypeFeedbackVector> NewTypeFeedbackVector(const Spec* spec);
 
   // Allocates a new JSMessageObject object.
   Handle<JSMessageObject> NewJSMessageObject(MessageTemplate::Template message,
@@ -731,6 +715,7 @@ class Factory final {
   void ReinitializeJSProxy(Handle<JSProxy> proxy, InstanceType type, int size);
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_FACTORY_H_

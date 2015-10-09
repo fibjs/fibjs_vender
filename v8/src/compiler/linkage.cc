@@ -18,7 +18,7 @@ namespace compiler {
 
 namespace {
 LinkageLocation regloc(Register reg) {
-  return LinkageLocation::ForRegister(Register::ToAllocationIndex(reg));
+  return LinkageLocation::ForRegister(reg.code());
 }
 
 
@@ -246,6 +246,8 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
     case Runtime::kInlineGetPrototype:
     case Runtime::kInlineRegExpExec:
     case Runtime::kInlineSubString:
+    case Runtime::kInlineToInteger:
+    case Runtime::kInlineToLength:
     case Runtime::kInlineToName:
     case Runtime::kInlineToNumber:
     case Runtime::kInlineToObject:

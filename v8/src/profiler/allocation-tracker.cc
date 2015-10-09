@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/allocation-tracker.h"
+#include "src/profiler/allocation-tracker.h"
 
 #include "src/frames-inl.h"
-#include "src/heap-snapshot-generator-inl.h"
 #include "src/objects-inl.h"
+#include "src/profiler/heap-snapshot-generator-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -273,7 +273,7 @@ unsigned AllocationTracker::AddFunctionInfo(SharedFunctionInfo* shared,
         Name* name = Name::cast(script->name());
         info->script_name = names_->GetName(name);
       }
-      info->script_id = script->id()->value();
+      info->script_id = script->id();
       // Converting start offset into line and column may cause heap
       // allocations so we postpone them until snapshot serialization.
       unresolved_locations_.Add(new UnresolvedLocation(

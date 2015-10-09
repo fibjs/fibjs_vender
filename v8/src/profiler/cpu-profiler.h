@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_CPU_PROFILER_H_
-#define V8_CPU_PROFILER_H_
+#ifndef V8_PROFILER_CPU_PROFILER_H_
+#define V8_PROFILER_CPU_PROFILER_H_
 
 #include "src/allocation.h"
 #include "src/base/atomicops.h"
 #include "src/base/platform/time.h"
-#include "src/circular-queue.h"
 #include "src/compiler.h"
-#include "src/sampler.h"
-#include "src/unbound-queue.h"
+#include "src/profiler/circular-queue.h"
+#include "src/profiler/sampler.h"
+#include "src/profiler/unbound-queue.h"
 
 namespace v8 {
 namespace internal {
@@ -270,7 +270,8 @@ class CpuProfiler : public CodeEventListener {
   DISALLOW_COPY_AND_ASSIGN(CpuProfiler);
 };
 
-} }  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 
-#endif  // V8_CPU_PROFILER_H_
+#endif  // V8_PROFILER_CPU_PROFILER_H_

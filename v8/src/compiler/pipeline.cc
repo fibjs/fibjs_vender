@@ -30,7 +30,8 @@
 #include "src/compiler/js-context-specialization.h"
 #include "src/compiler/js-frame-specialization.h"
 #include "src/compiler/js-generic-lowering.h"
-#include "src/compiler/js-inlining.h"
+#include "src/compiler/js-global-specialization.h"
+#include "src/compiler/js-inlining-heuristic.h"
 #include "src/compiler/js-intrinsic-lowering.h"
 #include "src/compiler/js-type-feedback.h"
 #include "src/compiler/js-type-feedback-lowering.h"
@@ -57,6 +58,7 @@
 #include "src/compiler/verifier.h"
 #include "src/compiler/zone-pool.h"
 #include "src/ostreams.h"
+#include "src/register-configuration.h"
 #include "src/type-info.h"
 #include "src/utils.h"
 
@@ -504,22 +506,41 @@ struct InliningPhase {
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
     JSContextSpecialization context_specialization(
-        &graph_reducer, data->jsgraph(), data->info()->is_context_specializing()
-                                             ? data->info()->context()
-                                             : MaybeHandle<Context>());
+        &graph_reducer, data->jsgraph(),
+        data->info()->is_function_context_specializing()
+            ? data->info()->context()
+            : MaybeHandle<Context>());
     JSFrameSpecialization frame_specialization(data->info()->osr_frame(),
                                                data->jsgraph());
-    JSInliner inliner(&graph_reducer, data->info()->is_inlining_enabled()
-                                          ? JSInliner::kGeneralInlining
-                                          : JSInliner::kRestrictedInlining,
-                      temp_zone, data->info(), data->jsgraph());
+    JSGlobalSpecialization::Flags global_flags =
+        JSGlobalSpecialization::kNoFlags;
+    if (data->info()->is_deoptimization_enabled()) {
+      global_flags |= JSGlobalSpecialization::kDeoptimizationEnabled;
+    }
+    if (data->info()->is_typing_enabled()) {
+      global_flags |= JSGlobalSpecialization::kTypingEnabled;
+    }
+    JSGlobalSpecialization global_specialization(
+        &graph_reducer, data->jsgraph(), global_flags,
+        data->info()->has_global_object()
+            ? handle(data->info()->global_object())
+            : Handle<GlobalObject>(),
+        data->info()->dependencies());
+    JSInliningHeuristic inlining(&graph_reducer,
+                                 data->info()->is_inlining_enabled()
+                                     ? JSInliningHeuristic::kGeneralInlining
+                                     : JSInliningHeuristic::kRestrictedInlining,
+                                 temp_zone, data->info(), data->jsgraph());
     AddReducer(data, &graph_reducer, &dead_code_elimination);
     AddReducer(data, &graph_reducer, &common_reducer);
     if (data->info()->is_frame_specializing()) {
       AddReducer(data, &graph_reducer, &frame_specialization);
     }
+    if (data->info()->is_native_context_specializing()) {
+      AddReducer(data, &graph_reducer, &global_specialization);
+    }
     AddReducer(data, &graph_reducer, &context_specialization);
-    AddReducer(data, &graph_reducer, &inliner);
+    AddReducer(data, &graph_reducer, &inlining);
     graph_reducer.ReduceGraph();
   }
 };
