@@ -316,7 +316,8 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ call(code, RelocInfo::CODE_TARGET);
       } else {
         Register reg = i.InputRegister(0);
-        __ call(Operand(reg, Code::kHeaderSize - kHeapObjectTag));
+        __ add(reg, Immediate(Code::kHeaderSize - kHeapObjectTag));
+        __ call(reg);
       }
       RecordCallPosition(instr);
       bool double_result =
@@ -380,6 +381,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       }
       AssembleDeconstructActivationRecord();
       __ jmp(FieldOperand(func, JSFunction::kCodeEntryOffset));
+      break;
+    }
+    case kArchLazyBailout: {
+      EnsureSpaceForLazyDeopt();
+      RecordCallPosition(instr);
       break;
     }
     case kArchPrepareCallCFunction: {

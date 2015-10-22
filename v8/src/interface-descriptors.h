@@ -25,6 +25,7 @@ class PlatformInterfaceDescriptor;
   V(FastNewClosure)                           \
   V(FastNewContext)                           \
   V(ToNumber)                                 \
+  V(ToLength)                                 \
   V(ToString)                                 \
   V(ToObject)                                 \
   V(NumberToString)                           \
@@ -41,6 +42,7 @@ class PlatformInterfaceDescriptor;
   V(RegExpConstructResult)                    \
   V(TransitionElementsKind)                   \
   V(AllocateHeapNumber)                       \
+  V(AllocateInNewSpace)                       \
   V(ArrayConstructorConstantArgCount)         \
   V(ArrayConstructor)                         \
   V(InternalArrayConstructorConstantArgCount) \
@@ -71,6 +73,7 @@ class PlatformInterfaceDescriptor;
   V(MathRoundVariantCallFromUnoptimizedCode)  \
   V(MathRoundVariantCallFromOptimizedCode)    \
   V(InterpreterPushArgsAndCall)               \
+  V(InterpreterPushArgsAndConstruct)          \
   V(InterpreterCEntry)
 
 
@@ -281,19 +284,21 @@ class VectorStoreTransitionDescriptor : public StoreDescriptor {
 
   // Extends StoreDescriptor with Map parameter.
   enum ParameterIndices {
-    kReceiverIndex,
-    kNameIndex,
-    kValueIndex,
-    kSlotIndex,
-    kVectorIndex,
-    kMapIndex,
-    kParameterCount
+    kReceiverIndex = 0,
+    kNameIndex = 1,
+    kValueIndex = 2,
+
+    kMapIndex = 3,
+
+    kSlotIndex = 4,  // not present on ia32.
+    kVirtualSlotVectorIndex = 4,
+
+    kVectorIndex = 5
   };
 
-  // These registers are no_reg for ia32, using the stack instead.
+  static const Register MapRegister();
   static const Register SlotRegister();
   static const Register VectorRegister();
-  static const Register MapRegister();
 };
 
 
@@ -366,6 +371,16 @@ class FastNewContextDescriptor : public CallInterfaceDescriptor {
 class ToNumberDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(ToNumberDescriptor, CallInterfaceDescriptor)
+};
+
+
+class ToLengthDescriptor : public CallInterfaceDescriptor {
+ public:
+  enum ParameterIndices { kReceiverIndex };
+
+  DECLARE_DESCRIPTOR(ToLengthDescriptor, CallInterfaceDescriptor)
+
+  static const Register ReceiverRegister();
 };
 
 
@@ -503,6 +518,12 @@ class TransitionElementsKindDescriptor : public CallInterfaceDescriptor {
 class AllocateHeapNumberDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(AllocateHeapNumberDescriptor, CallInterfaceDescriptor)
+};
+
+
+class AllocateInNewSpaceDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(AllocateInNewSpaceDescriptor, CallInterfaceDescriptor)
 };
 
 
@@ -710,6 +731,14 @@ class GrowArrayElementsDescriptor : public CallInterfaceDescriptor {
 class InterpreterPushArgsAndCallDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(InterpreterPushArgsAndCallDescriptor,
+                     CallInterfaceDescriptor)
+};
+
+
+class InterpreterPushArgsAndConstructDescriptor
+    : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(InterpreterPushArgsAndConstructDescriptor,
                      CallInterfaceDescriptor)
 };
 

@@ -302,15 +302,15 @@ class Scope: public ZoneObject {
 
   // Specific scope types.
   bool is_eval_scope() const { return scope_type_ == EVAL_SCOPE; }
-  bool is_function_scope() const {
-    return scope_type_ == FUNCTION_SCOPE || scope_type_ == ARROW_SCOPE;
-  }
+  bool is_function_scope() const { return scope_type_ == FUNCTION_SCOPE; }
   bool is_module_scope() const { return scope_type_ == MODULE_SCOPE; }
   bool is_script_scope() const { return scope_type_ == SCRIPT_SCOPE; }
   bool is_catch_scope() const { return scope_type_ == CATCH_SCOPE; }
   bool is_block_scope() const { return scope_type_ == BLOCK_SCOPE; }
   bool is_with_scope() const { return scope_type_ == WITH_SCOPE; }
-  bool is_arrow_scope() const { return scope_type_ == ARROW_SCOPE; }
+  bool is_arrow_scope() const {
+    return is_function_scope() && IsArrowFunction(function_kind_);
+  }
   bool is_declaration_scope() const { return is_declaration_scope_; }
 
   void set_is_declaration_scope() { is_declaration_scope_ = true; }
@@ -341,7 +341,12 @@ class Scope: public ZoneObject {
   bool is_nonlinear() const { return scope_nonlinear_; }
 
   // Whether this needs to be represented by a runtime context.
-  bool NeedsContext() const { return num_heap_slots() > 0; }
+  bool NeedsContext() const {
+    // Catch and module scopes always have heap slots.
+    DCHECK(!is_catch_scope() || num_heap_slots() > 0);
+    DCHECK(!is_module_scope() || num_heap_slots() > 0);
+    return is_with_scope() || num_heap_slots() > 0;
+  }
 
   bool NeedsHomeObject() const {
     return scope_uses_super_property_ ||
@@ -519,6 +524,10 @@ class Scope: public ZoneObject {
   // The number of contexts between this and scope; zero if this == scope.
   int ContextChainLength(Scope* scope);
 
+  // The maximum number of nested contexts required for this scope and any inner
+  // scopes.
+  int MaxNestedContextChainLength();
+
   // Find the first function, script, eval or (declaration) block scope. This is
   // the scope where var declarations will be hoisted to in the implementation.
   Scope* DeclarationScope();
@@ -579,9 +588,7 @@ class Scope: public ZoneObject {
 
   // ---------------------------------------------------------------------------
   // Implementation.
- protected:
-  friend class ParserFactory;
-
+ private:
   // Scope tree.
   Scope* outer_scope_;  // the immediately enclosing outer scope, or NULL
   ZoneList<Scope*> inner_scopes_;  // the immediately enclosed inner scopes
@@ -791,7 +798,6 @@ class Scope: public ZoneObject {
   MUST_USE_RESULT
   bool AllocateVariables(ParseInfo* info, AstNodeFactory* factory);
 
- private:
   // Construct a scope based on the scope info.
   Scope(Zone* zone, Scope* inner_scope, ScopeType type,
         Handle<ScopeInfo> scope_info, AstValueFactory* value_factory);

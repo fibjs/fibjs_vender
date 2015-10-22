@@ -2485,7 +2485,7 @@ void Simulator::DecodeTypeRegisterSRsType() {
         } else if (fabs(fs) < fabs(ft)) {
           result = fs;
         } else {
-          result = (fs > ft ? fs : ft);
+          result = (fs < ft ? fs : ft);
         }
         set_fpu_register_float(fd_reg(), result);
       }
@@ -2694,7 +2694,7 @@ void Simulator::DecodeTypeRegisterDRsType() {
         } else if (fabs(fs) < fabs(ft)) {
           result = fs;
         } else {
-          result = (fs > ft ? fs : ft);
+          result = (fs < ft ? fs : ft);
         }
         set_fpu_register_double(fd_reg(), result);
       }

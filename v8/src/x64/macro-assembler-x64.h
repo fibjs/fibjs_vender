@@ -806,11 +806,21 @@ class MacroAssembler: public Assembler {
   void Set(Register dst, int64_t x);
   void Set(const Operand& dst, intptr_t x);
 
+  void Cvtss2sd(XMMRegister dst, XMMRegister src);
+  void Cvtss2sd(XMMRegister dst, const Operand& src);
+  void Cvtsd2ss(XMMRegister dst, XMMRegister src);
+  void Cvtsd2ss(XMMRegister dst, const Operand& src);
+
   // cvtsi2sd instruction only writes to the low 64-bit of dst register, which
   // hinders register renaming and makes dependence chains longer. So we use
-  // xorps to clear the dst register before cvtsi2sd to solve this issue.
+  // xorpd to clear the dst register before cvtsi2sd to solve this issue.
   void Cvtlsi2sd(XMMRegister dst, Register src);
   void Cvtlsi2sd(XMMRegister dst, const Operand& src);
+
+  void Cvttsd2si(Register dst, XMMRegister src);
+  void Cvttsd2si(Register dst, const Operand& src);
+  void Cvttsd2siq(Register dst, XMMRegister src);
+  void Cvttsd2siq(Register dst, const Operand& src);
 
   // Move if the registers are not identical.
   void Move(Register target, Register source);
@@ -894,6 +904,26 @@ class MacroAssembler: public Assembler {
   void Move(XMMRegister dst, float src) { Move(dst, bit_cast<uint32_t>(src)); }
   void Move(XMMRegister dst, double src) { Move(dst, bit_cast<uint64_t>(src)); }
 
+  void Movapd(XMMRegister dst, XMMRegister src);
+  void Movsd(XMMRegister dst, XMMRegister src);
+  void Movsd(XMMRegister dst, const Operand& src);
+  void Movsd(const Operand& dst, XMMRegister src);
+
+  void Movd(XMMRegister dst, Register src);
+  void Movd(XMMRegister dst, const Operand& src);
+  void Movd(Register dst, XMMRegister src);
+  void Movq(XMMRegister dst, Register src);
+  void Movq(Register dst, XMMRegister src);
+
+  void Movmskpd(Register dst, XMMRegister src);
+
+  void Ucomiss(XMMRegister src1, XMMRegister src2);
+  void Ucomiss(XMMRegister src1, const Operand& src2);
+  void Ucomisd(XMMRegister src1, XMMRegister src2);
+  void Ucomisd(XMMRegister src1, const Operand& src2);
+
+  void Xorpd(XMMRegister dst, XMMRegister src);
+
   // Control Flow
   void Jump(Address destination, RelocInfo::Mode rmode);
   void Jump(ExternalReference ext);
@@ -938,6 +968,12 @@ class MacroAssembler: public Assembler {
 
   void Lzcntl(Register dst, Register src);
   void Lzcntl(Register dst, const Operand& src);
+
+  void Tzcntl(Register dst, Register src);
+  void Tzcntl(Register dst, const Operand& src);
+
+  void Popcntl(Register dst, Register src);
+  void Popcntl(Register dst, const Operand& src);
 
   // Non-x64 instructions.
   // Push/pop all general purpose registers.

@@ -99,6 +99,16 @@ class GCTracer {
     enum ScopeId {
       EXTERNAL,
       MC_MARK,
+      MC_MARK_FINISH_INCREMENTAL,
+      MC_MARK_PREPARE_CODE_FLUSH,
+      MC_MARK_ROOT,
+      MC_MARK_TOPOPT,
+      MC_MARK_RETAIN_MAPS,
+      MC_MARK_WEAK_CLOSURE,
+      MC_MARK_STRING_TABLE,
+      MC_MARK_WEAK_REFERENCES,
+      MC_MARK_GLOBAL_HANDLES,
+      MC_MARK_CODE_FLUSH,
       MC_SWEEP,
       MC_SWEEP_NEWSPACE,
       MC_SWEEP_OLDSPACE,
@@ -217,6 +227,9 @@ class GCTracer {
 
     // Timestamp set in the destructor.
     double end_time;
+
+    // Memory reduction flag set.
+    bool reduce_memory;
 
     // Size of objects in heap set in constructor.
     intptr_t start_object_size;

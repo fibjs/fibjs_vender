@@ -853,10 +853,8 @@ void FullCodeGenerator::VisitVariableDeclaration(
         __ mov(a0, zero_reg);  // Smi::FromInt(0) indicates no initial value.
       }
       __ Push(a2, a0);
-      __ CallRuntime(IsImmutableVariableMode(mode)
-                         ? Runtime::kDeclareReadOnlyLookupSlot
-                         : Runtime::kDeclareLookupSlot,
-                     2);
+      __ Push(Smi::FromInt(variable->DeclarationPropertyAttributes()));
+      __ CallRuntime(Runtime::kDeclareLookupSlot, 3);
       break;
     }
   }
@@ -912,7 +910,8 @@ void FullCodeGenerator::VisitFunctionDeclaration(
       __ Push(a2);
       // Push initial value for function declaration.
       VisitForStackValue(declaration->fun());
-      __ CallRuntime(Runtime::kDeclareLookupSlot, 2);
+      __ Push(Smi::FromInt(variable->DeclarationPropertyAttributes()));
+      __ CallRuntime(Runtime::kDeclareLookupSlot, 3);
       break;
     }
   }
@@ -1752,8 +1751,6 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   Comment cmnt(masm_, "[ ArrayLiteral");
 
-  expr->BuildConstantElements(isolate());
-
   Handle<FixedArray> constant_elements = expr->constant_elements();
   bool has_fast_elements =
       IsFastObjectElementsKind(expr->constant_elements_kind());
@@ -1803,7 +1800,16 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
 
     VisitForAccumulatorValue(subexpr);
 
-    if (has_fast_elements) {
+    if (FLAG_vector_stores) {
+      __ li(StoreDescriptor::NameRegister(),
+            Operand(Smi::FromInt(array_index)));
+      __ ld(StoreDescriptor::ReceiverRegister(), MemOperand(sp, kPointerSize));
+      __ mov(StoreDescriptor::ValueRegister(), result_register());
+      EmitLoadStoreICSlot(expr->LiteralFeedbackSlot());
+      Handle<Code> ic =
+          CodeFactory::KeyedStoreIC(isolate(), language_mode()).code();
+      CallIC(ic);
+    } else if (has_fast_elements) {
       int offset = FixedArray::kHeaderSize + (array_index * kPointerSize);
       __ ld(a6, MemOperand(sp, kPointerSize));  // Copy of array literal.
       __ ld(a1, FieldMemOperand(a6, JSObject::kElementsOffset));
@@ -3812,6 +3818,20 @@ void FullCodeGenerator::EmitNumberToString(CallRuntime* expr) {
 }
 
 
+void FullCodeGenerator::EmitToLength(CallRuntime* expr) {
+  ZoneList<Expression*>* args = expr->arguments();
+  DCHECK_EQ(1, args->length());
+
+  // Load the argument into a0 and convert it.
+  VisitForAccumulatorValue(args->at(0));
+  __ mov(a0, result_register());
+
+  ToLengthStub stub(isolate());
+  __ CallStub(&stub);
+  context()->Plug(v0);
+}
+
+
 void FullCodeGenerator::EmitToString(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   DCHECK_EQ(1, args->length());
@@ -4276,6 +4296,10 @@ void FullCodeGenerator::EmitFastOneByteArrayJoin(CallRuntime* expr) {
   __ SmiUntag(string_length);
   __ AdduAndCheckForOverflow(string_length, string_length, scratch2, scratch3);
   __ BranchOnOverflow(&bailout, scratch3);
+
+  // Bailout for large object allocations.
+  __ Branch(&bailout, gt, string_length,
+            Operand(Page::kMaxRegularHeapObjectSize));
 
   // Get first element in the array to free up the elements register to be used
   // for the result.

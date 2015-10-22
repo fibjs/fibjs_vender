@@ -52,6 +52,7 @@ namespace internal {
   V(StubFailureTrampoline)                  \
   V(SubString)                              \
   V(ToNumber)                               \
+  V(ToLength)                               \
   V(ToString)                               \
   V(ToObject)                               \
   V(VectorStoreICTrampoline)                \
@@ -60,6 +61,7 @@ namespace internal {
   V(VectorKeyedStoreIC)                     \
   /* HydrogenCodeStubs */                   \
   V(AllocateHeapNumber)                     \
+  V(AllocateInNewSpace)                     \
   V(ArrayNArgumentsConstructor)             \
   V(ArrayNoArgumentConstructor)             \
   V(ArraySingleArgumentConstructor)         \
@@ -1244,8 +1246,10 @@ class StoreTransitionHelper {
   }
 
   static Register MapRegister() {
-    return FLAG_vector_stores ? VectorStoreTransitionDescriptor::MapRegister()
-                              : StoreTransitionDescriptor::MapRegister();
+    if (FLAG_vector_stores) {
+      return VectorStoreTransitionDescriptor::MapRegister();
+    }
+    return StoreTransitionDescriptor::MapRegister();
   }
 
   static int ReceiverIndex() {
@@ -1256,26 +1260,25 @@ class StoreTransitionHelper {
 
   static int ValueIndex() { return StoreTransitionDescriptor::kValueIndex; }
 
-  static int SlotIndex() {
-    DCHECK(FLAG_vector_stores);
-    return VectorStoreTransitionDescriptor::kSlotIndex;
+  static int MapIndex() {
+    DCHECK(static_cast<int>(VectorStoreTransitionDescriptor::kMapIndex) ==
+           static_cast<int>(StoreTransitionDescriptor::kMapIndex));
+    return StoreTransitionDescriptor::kMapIndex;
   }
 
   static int VectorIndex() {
     DCHECK(FLAG_vector_stores);
+    if (HasVirtualSlotArg()) {
+      return VectorStoreTransitionDescriptor::kVirtualSlotVectorIndex;
+    }
     return VectorStoreTransitionDescriptor::kVectorIndex;
   }
 
-  static int MapIndex() {
-    if (FLAG_vector_stores) {
-      return VectorStoreTransitionDescriptor::kMapIndex;
-    }
-    return StoreTransitionDescriptor::kMapIndex;
+  // Some platforms don't have a slot arg.
+  static bool HasVirtualSlotArg() {
+    if (!FLAG_vector_stores) return false;
+    return SlotRegister().is(no_reg);
   }
-
-  // Some platforms push Slot, Vector, Map on the stack instead of in
-  // registers.
-  static bool UsesStackArgs() { return MapRegister().is(no_reg); }
 };
 
 
@@ -2655,6 +2658,17 @@ class AllocateHeapNumberStub final : public HydrogenCodeStub {
 };
 
 
+class AllocateInNewSpaceStub final : public HydrogenCodeStub {
+ public:
+  explicit AllocateInNewSpaceStub(Isolate* isolate)
+      : HydrogenCodeStub(isolate) {}
+
+ private:
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(AllocateInNewSpace);
+  DEFINE_HYDROGEN_CODE_STUB(AllocateInNewSpace, HydrogenCodeStub);
+};
+
+
 class ArrayConstructorStubBase : public HydrogenCodeStub {
  public:
   ArrayConstructorStubBase(Isolate* isolate,
@@ -3060,6 +3074,15 @@ class ToNumberStub final : public PlatformCodeStub {
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(ToNumber);
   DEFINE_PLATFORM_CODE_STUB(ToNumber, PlatformCodeStub);
+};
+
+
+class ToLengthStub final : public PlatformCodeStub {
+ public:
+  explicit ToLengthStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(ToLength);
+  DEFINE_PLATFORM_CODE_STUB(ToLength, PlatformCodeStub);
 };
 
 

@@ -353,6 +353,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ jmp(FieldOperand(func, JSFunction::kCodeEntryOffset));
       break;
     }
+    case kArchLazyBailout: {
+      EnsureSpaceForLazyDeopt();
+      RecordCallPosition(instr);
+      break;
+    }
     case kArchPrepareCallCFunction: {
       int const num_parameters = MiscField::decode(instr->opcode());
       __ PrepareCallCFunction(num_parameters, i.TempRegister(0));
@@ -512,6 +517,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kIA32Lzcnt:
       __ Lzcnt(i.OutputRegister(), i.InputOperand(0));
+      break;
+    case kIA32Tzcnt:
+      __ Tzcnt(i.OutputRegister(), i.InputOperand(0));
+      break;
+    case kIA32Popcnt:
+      __ Popcnt(i.OutputRegister(), i.InputOperand(0));
       break;
     case kSSEFloat32Cmp:
       __ ucomiss(i.InputDoubleRegister(0), i.InputOperand(1));

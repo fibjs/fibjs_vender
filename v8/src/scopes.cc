@@ -765,12 +765,23 @@ int Scope::ContextChainLength(Scope* scope) {
   int n = 0;
   for (Scope* s = this; s != scope; s = s->outer_scope_) {
     DCHECK(s != NULL);  // scope must be in the scope chain
-    if (s->is_with_scope() || s->num_heap_slots() > 0) n++;
-    // Catch and module scopes always have heap slots.
-    DCHECK(!s->is_catch_scope() || s->num_heap_slots() > 0);
-    DCHECK(!s->is_module_scope() || s->num_heap_slots() > 0);
+    if (s->NeedsContext()) n++;
   }
   return n;
+}
+
+
+int Scope::MaxNestedContextChainLength() {
+  int max_context_chain_length = 0;
+  for (int i = 0; i < inner_scopes_.length(); i++) {
+    Scope* scope = inner_scopes_[i];
+    max_context_chain_length = std::max(scope->MaxNestedContextChainLength(),
+                                        max_context_chain_length);
+  }
+  if (NeedsContext()) {
+    max_context_chain_length += 1;
+  }
+  return max_context_chain_length;
 }
 
 
@@ -844,16 +855,18 @@ void Scope::ReportMessage(int start_position, int end_position,
 
 
 #ifdef DEBUG
-static const char* Header(ScopeType scope_type, bool is_declaration_scope) {
+static const char* Header(ScopeType scope_type, FunctionKind function_kind,
+                          bool is_declaration_scope) {
   switch (scope_type) {
     case EVAL_SCOPE: return "eval";
-    case FUNCTION_SCOPE: return "function";
+    // TODO(adamk): Should we print concise method scopes specially?
+    case FUNCTION_SCOPE:
+      return IsArrowFunction(function_kind) ? "arrow" : "function";
     case MODULE_SCOPE: return "module";
     case SCRIPT_SCOPE: return "global";
     case CATCH_SCOPE: return "catch";
     case BLOCK_SCOPE: return is_declaration_scope ? "varblock" : "block";
     case WITH_SCOPE: return "with";
-    case ARROW_SCOPE: return "arrow";
   }
   UNREACHABLE();
   return NULL;
@@ -935,8 +948,8 @@ void Scope::Print(int n) {
   int n1 = n0 + 2;  // indentation
 
   // Print header.
-  Indent(n0, Header(scope_type_, is_declaration_scope()));
-  if (!scope_name_->IsEmpty()) {
+  Indent(n0, Header(scope_type_, function_kind_, is_declaration_scope()));
+  if (scope_name_ != nullptr && !scope_name_->IsEmpty()) {
     PrintF(" ");
     PrintName(scope_name_);
   }

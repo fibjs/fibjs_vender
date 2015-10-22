@@ -92,7 +92,7 @@ void LCodeGen::SaveCallerDoubles() {
   BitVector* doubles = chunk()->allocated_double_registers();
   BitVector::Iterator save_iterator(doubles);
   while (!save_iterator.Done()) {
-    __ movsd(MemOperand(rsp, count * kDoubleSize),
+    __ Movsd(MemOperand(rsp, count * kDoubleSize),
              XMMRegister::from_code(save_iterator.Current()));
     save_iterator.Advance();
     count++;
@@ -108,7 +108,7 @@ void LCodeGen::RestoreCallerDoubles() {
   BitVector::Iterator save_iterator(doubles);
   int count = 0;
   while (!save_iterator.Done()) {
-    __ movsd(XMMRegister::from_code(save_iterator.Current()),
+    __ Movsd(XMMRegister::from_code(save_iterator.Current()),
              MemOperand(rsp, count * kDoubleSize));
     save_iterator.Advance();
     count++;
@@ -1971,7 +1971,7 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     Condition condition = (operation == HMathMinMax::kMathMin) ? below : above;
     XMMRegister left_reg = ToDoubleRegister(left);
     XMMRegister right_reg = ToDoubleRegister(right);
-    __ ucomisd(left_reg, right_reg);
+    __ Ucomisd(left_reg, right_reg);
     __ j(parity_even, &check_nan_left, Label::kNear);  // At least one NaN.
     __ j(equal, &check_zero, Label::kNear);  // left == right.
     __ j(condition, &return_left, Label::kNear);
@@ -1979,8 +1979,8 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
 
     __ bind(&check_zero);
     XMMRegister xmm_scratch = double_scratch0();
-    __ xorps(xmm_scratch, xmm_scratch);
-    __ ucomisd(left_reg, xmm_scratch);
+    __ Xorpd(xmm_scratch, xmm_scratch);
+    __ Ucomisd(left_reg, xmm_scratch);
     __ j(not_equal, &return_left, Label::kNear);  // left == right != 0.
     // At this point, both left and right are either 0 or -0.
     if (operation == HMathMinMax::kMathMin) {
@@ -1992,10 +1992,10 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     __ jmp(&return_left, Label::kNear);
 
     __ bind(&check_nan_left);
-    __ ucomisd(left_reg, left_reg);  // NaN check.
+    __ Ucomisd(left_reg, left_reg);  // NaN check.
     __ j(parity_even, &return_left, Label::kNear);
     __ bind(&return_right);
-    __ movaps(left_reg, right_reg);
+    __ Movapd(left_reg, right_reg);
 
     __ bind(&return_left);
   }
@@ -2044,16 +2044,16 @@ void LCodeGen::DoArithmeticD(LArithmeticD* instr) {
       }
       // Don't delete this mov. It may improve performance on some CPUs,
       // when there is a (v)mulsd depending on the result
-      __ movaps(result, result);
+      __ Movapd(result, result);
       break;
     case Token::MOD: {
       XMMRegister xmm_scratch = double_scratch0();
       __ PrepareCallCFunction(2);
-      __ movaps(xmm_scratch, left);
+      __ Movapd(xmm_scratch, left);
       DCHECK(right.is(xmm1));
       __ CallCFunction(
           ExternalReference::mod_two_doubles_operation(isolate()), 2);
-      __ movaps(result, xmm_scratch);
+      __ Movapd(result, xmm_scratch);
       break;
     }
     default:
@@ -2132,8 +2132,8 @@ void LCodeGen::DoBranch(LBranch* instr) {
     DCHECK(!info()->IsStub());
     XMMRegister reg = ToDoubleRegister(instr->value());
     XMMRegister xmm_scratch = double_scratch0();
-    __ xorps(xmm_scratch, xmm_scratch);
-    __ ucomisd(reg, xmm_scratch);
+    __ Xorpd(xmm_scratch, xmm_scratch);
+    __ Ucomisd(reg, xmm_scratch);
     EmitBranch(instr, not_equal);
   } else {
     DCHECK(r.IsTagged());
@@ -2153,8 +2153,8 @@ void LCodeGen::DoBranch(LBranch* instr) {
     } else if (type.IsHeapNumber()) {
       DCHECK(!info()->IsStub());
       XMMRegister xmm_scratch = double_scratch0();
-      __ xorps(xmm_scratch, xmm_scratch);
-      __ ucomisd(xmm_scratch, FieldOperand(reg, HeapNumber::kValueOffset));
+      __ Xorpd(xmm_scratch, xmm_scratch);
+      __ Ucomisd(xmm_scratch, FieldOperand(reg, HeapNumber::kValueOffset));
       EmitBranch(instr, not_equal);
     } else if (type.IsString()) {
       DCHECK(!info()->IsStub());
@@ -2242,8 +2242,8 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ CompareRoot(map, Heap::kHeapNumberMapRootIndex);
         __ j(not_equal, &not_heap_number, Label::kNear);
         XMMRegister xmm_scratch = double_scratch0();
-        __ xorps(xmm_scratch, xmm_scratch);
-        __ ucomisd(xmm_scratch, FieldOperand(reg, HeapNumber::kValueOffset));
+        __ Xorpd(xmm_scratch, xmm_scratch);
+        __ Ucomisd(xmm_scratch, FieldOperand(reg, HeapNumber::kValueOffset));
         __ j(zero, instr->FalseLabel(chunk_));
         __ jmp(instr->TrueLabel(chunk_));
         __ bind(&not_heap_number);
@@ -2323,7 +2323,7 @@ void LCodeGen::DoCompareNumericAndBranch(LCompareNumericAndBranch* instr) {
     if (instr->is_double()) {
       // Don't base result on EFLAGS when a NaN is involved. Instead
       // jump to the false block.
-      __ ucomisd(ToDoubleRegister(left), ToDoubleRegister(right));
+      __ Ucomisd(ToDoubleRegister(left), ToDoubleRegister(right));
       __ j(parity_even, instr->FalseLabel(chunk_));
     } else {
       int32_t value;
@@ -2391,11 +2391,11 @@ void LCodeGen::DoCmpHoleAndBranch(LCmpHoleAndBranch* instr) {
   }
 
   XMMRegister input_reg = ToDoubleRegister(instr->object());
-  __ ucomisd(input_reg, input_reg);
+  __ Ucomisd(input_reg, input_reg);
   EmitFalseBranch(instr, parity_odd);
 
   __ subp(rsp, Immediate(kDoubleSize));
-  __ movsd(MemOperand(rsp, 0), input_reg);
+  __ Movsd(MemOperand(rsp, 0), input_reg);
   __ addp(rsp, Immediate(kDoubleSize));
 
   int offset = sizeof(kHoleNanUpper32);
@@ -2411,10 +2411,10 @@ void LCodeGen::DoCompareMinusZeroAndBranch(LCompareMinusZeroAndBranch* instr) {
   if (rep.IsDouble()) {
     XMMRegister value = ToDoubleRegister(instr->value());
     XMMRegister xmm_scratch = double_scratch0();
-    __ xorps(xmm_scratch, xmm_scratch);
-    __ ucomisd(xmm_scratch, value);
+    __ Xorpd(xmm_scratch, xmm_scratch);
+    __ Ucomisd(xmm_scratch, value);
     EmitFalseBranch(instr, not_equal);
-    __ movmskpd(kScratchRegister, value);
+    __ Movmskpd(kScratchRegister, value);
     __ testl(kScratchRegister, Immediate(1));
     EmitBranch(instr, not_zero);
   } else {
@@ -2873,7 +2873,7 @@ void LCodeGen::DoLoadNamedField(LLoadNamedField* instr) {
   if (instr->hydrogen()->representation().IsDouble()) {
     DCHECK(access.IsInobject());
     XMMRegister result = ToDoubleRegister(instr->result());
-    __ movsd(result, FieldOperand(object, offset));
+    __ Movsd(result, FieldOperand(object, offset));
     return;
   }
 
@@ -3003,10 +3003,9 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
 
   if (elements_kind == FLOAT32_ELEMENTS) {
     XMMRegister result(ToDoubleRegister(instr->result()));
-    __ movss(result, operand);
-    __ cvtss2sd(result, result);
+    __ Cvtss2sd(result, operand);
   } else if (elements_kind == FLOAT64_ELEMENTS) {
-    __ movsd(ToDoubleRegister(instr->result()), operand);
+    __ Movsd(ToDoubleRegister(instr->result()), operand);
   } else {
     Register result(ToRegister(instr->result()));
     switch (elements_kind) {
@@ -3077,7 +3076,7 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
       instr->hydrogen()->key()->representation(),
       FAST_DOUBLE_ELEMENTS,
       instr->base_offset());
-  __ movsd(result, double_load_operand);
+  __ Movsd(result, double_load_operand);
 }
 
 
@@ -3580,7 +3579,7 @@ void LCodeGen::DoMathAbs(LMathAbs* instr) {
   if (r.IsDouble()) {
     XMMRegister scratch = double_scratch0();
     XMMRegister input_reg = ToDoubleRegister(instr->value());
-    __ xorps(scratch, scratch);
+    __ Xorpd(scratch, scratch);
     __ subsd(scratch, input_reg);
     __ andps(input_reg, scratch);
   } else if (r.IsInteger32()) {
@@ -3608,19 +3607,19 @@ void LCodeGen::DoMathFloor(LMathFloor* instr) {
     CpuFeatureScope scope(masm(), SSE4_1);
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       // Deoptimize if minus zero.
-      __ movq(output_reg, input_reg);
+      __ Movq(output_reg, input_reg);
       __ subq(output_reg, Immediate(1));
       DeoptimizeIf(overflow, instr, Deoptimizer::kMinusZero);
     }
     __ roundsd(xmm_scratch, input_reg, kRoundDown);
-    __ cvttsd2si(output_reg, xmm_scratch);
+    __ Cvttsd2si(output_reg, xmm_scratch);
     __ cmpl(output_reg, Immediate(0x1));
     DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
   } else {
     Label negative_sign, done;
     // Deoptimize on unordered.
-    __ xorps(xmm_scratch, xmm_scratch);  // Zero the register.
-    __ ucomisd(input_reg, xmm_scratch);
+    __ Xorpd(xmm_scratch, xmm_scratch);  // Zero the register.
+    __ Ucomisd(input_reg, xmm_scratch);
     DeoptimizeIf(parity_even, instr, Deoptimizer::kNaN);
     __ j(below, &negative_sign, Label::kNear);
 
@@ -3628,8 +3627,8 @@ void LCodeGen::DoMathFloor(LMathFloor* instr) {
       // Check for negative zero.
       Label positive_sign;
       __ j(above, &positive_sign, Label::kNear);
-      __ movmskpd(output_reg, input_reg);
-      __ testq(output_reg, Immediate(1));
+      __ Movmskpd(output_reg, input_reg);
+      __ testl(output_reg, Immediate(1));
       DeoptimizeIf(not_zero, instr, Deoptimizer::kMinusZero);
       __ Set(output_reg, 0);
       __ jmp(&done);
@@ -3637,7 +3636,7 @@ void LCodeGen::DoMathFloor(LMathFloor* instr) {
     }
 
     // Use truncating instruction (OK because input is positive).
-    __ cvttsd2si(output_reg, input_reg);
+    __ Cvttsd2si(output_reg, input_reg);
     // Overflow is signalled with minint.
     __ cmpl(output_reg, Immediate(0x1));
     DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
@@ -3646,9 +3645,9 @@ void LCodeGen::DoMathFloor(LMathFloor* instr) {
     // Non-zero negative reaches here.
     __ bind(&negative_sign);
     // Truncate, then compare and compensate.
-    __ cvttsd2si(output_reg, input_reg);
+    __ Cvttsd2si(output_reg, input_reg);
     __ Cvtlsi2sd(xmm_scratch, output_reg);
-    __ ucomisd(input_reg, xmm_scratch);
+    __ Ucomisd(input_reg, xmm_scratch);
     __ j(equal, &done, Label::kNear);
     __ subl(output_reg, Immediate(1));
     DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
@@ -3669,13 +3668,13 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
   Label done, round_to_zero, below_one_half;
   Label::Distance dist = DeoptEveryNTimes() ? Label::kFar : Label::kNear;
   __ movq(kScratchRegister, one_half);
-  __ movq(xmm_scratch, kScratchRegister);
-  __ ucomisd(xmm_scratch, input_reg);
+  __ Movq(xmm_scratch, kScratchRegister);
+  __ Ucomisd(xmm_scratch, input_reg);
   __ j(above, &below_one_half, Label::kNear);
 
   // CVTTSD2SI rounds towards zero, since 0.5 <= x, we use floor(0.5 + x).
   __ addsd(xmm_scratch, input_reg);
-  __ cvttsd2si(output_reg, xmm_scratch);
+  __ Cvttsd2si(output_reg, xmm_scratch);
   // Overflow is signalled with minint.
   __ cmpl(output_reg, Immediate(0x1));
   DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
@@ -3683,21 +3682,21 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
 
   __ bind(&below_one_half);
   __ movq(kScratchRegister, minus_one_half);
-  __ movq(xmm_scratch, kScratchRegister);
-  __ ucomisd(xmm_scratch, input_reg);
+  __ Movq(xmm_scratch, kScratchRegister);
+  __ Ucomisd(xmm_scratch, input_reg);
   __ j(below_equal, &round_to_zero, Label::kNear);
 
   // CVTTSD2SI rounds towards zero, we use ceil(x - (-0.5)) and then
   // compare and compensate.
-  __ movq(input_temp, input_reg);  // Do not alter input_reg.
+  __ Movapd(input_temp, input_reg);  // Do not alter input_reg.
   __ subsd(input_temp, xmm_scratch);
-  __ cvttsd2si(output_reg, input_temp);
+  __ Cvttsd2si(output_reg, input_temp);
   // Catch minint due to overflow, and to prevent overflow when compensating.
   __ cmpl(output_reg, Immediate(0x1));
   DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
 
   __ Cvtlsi2sd(xmm_scratch, output_reg);
-  __ ucomisd(xmm_scratch, input_temp);
+  __ Ucomisd(xmm_scratch, input_temp);
   __ j(equal, &done, dist);
   __ subl(output_reg, Immediate(1));
   // No overflow because we already ruled out minint.
@@ -3707,7 +3706,7 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
   // We return 0 for the input range [+0, 0.5[, or [-0.5, 0.5[ if
   // we can ignore the difference between a result of -0 and +0.
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
-    __ movq(output_reg, input_reg);
+    __ Movq(output_reg, input_reg);
     __ testq(output_reg, output_reg);
     DeoptimizeIf(negative, instr, Deoptimizer::kMinusZero);
   }
@@ -3719,8 +3718,8 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
 void LCodeGen::DoMathFround(LMathFround* instr) {
   XMMRegister input_reg = ToDoubleRegister(instr->value());
   XMMRegister output_reg = ToDoubleRegister(instr->result());
-  __ cvtsd2ss(output_reg, input_reg);
-  __ cvtss2sd(output_reg, output_reg);
+  __ Cvtsd2ss(output_reg, input_reg);
+  __ Cvtss2sd(output_reg, output_reg);
 }
 
 
@@ -3748,20 +3747,20 @@ void LCodeGen::DoMathPowHalf(LMathPowHalf* instr) {
   // Check base for -Infinity.  According to IEEE-754, double-precision
   // -Infinity has the highest 12 bits set and the lowest 52 bits cleared.
   __ movq(kScratchRegister, V8_INT64_C(0xFFF0000000000000));
-  __ movq(xmm_scratch, kScratchRegister);
-  __ ucomisd(xmm_scratch, input_reg);
+  __ Movq(xmm_scratch, kScratchRegister);
+  __ Ucomisd(xmm_scratch, input_reg);
   // Comparing -Infinity with NaN results in "unordered", which sets the
   // zero flag as if both were equal.  However, it also sets the carry flag.
   __ j(not_equal, &sqrt, Label::kNear);
   __ j(carry, &sqrt, Label::kNear);
   // If input is -Infinity, return Infinity.
-  __ xorps(input_reg, input_reg);
+  __ Xorpd(input_reg, input_reg);
   __ subsd(input_reg, xmm_scratch);
   __ jmp(&done, Label::kNear);
 
   // Square root.
   __ bind(&sqrt);
-  __ xorps(xmm_scratch, xmm_scratch);
+  __ Xorpd(xmm_scratch, xmm_scratch);
   __ addsd(input_reg, xmm_scratch);  // Convert -0 to +0.
   __ sqrtsd(input_reg, input_reg);
   __ bind(&done);
@@ -3819,8 +3818,8 @@ void LCodeGen::DoMathLog(LMathLog* instr) {
   XMMRegister input_reg = ToDoubleRegister(instr->value());
   XMMRegister xmm_scratch = double_scratch0();
   Label positive, done, zero;
-  __ xorps(xmm_scratch, xmm_scratch);
-  __ ucomisd(input_reg, xmm_scratch);
+  __ Xorpd(xmm_scratch, xmm_scratch);
+  __ Ucomisd(input_reg, xmm_scratch);
   __ j(above, &positive, Label::kNear);
   __ j(not_carry, &zero, Label::kNear);
   __ pcmpeqd(input_reg, input_reg);
@@ -3829,16 +3828,16 @@ void LCodeGen::DoMathLog(LMathLog* instr) {
   ExternalReference ninf =
       ExternalReference::address_of_negative_infinity();
   Operand ninf_operand = masm()->ExternalOperand(ninf);
-  __ movsd(input_reg, ninf_operand);
+  __ Movsd(input_reg, ninf_operand);
   __ jmp(&done, Label::kNear);
   __ bind(&positive);
   __ fldln2();
   __ subp(rsp, Immediate(kDoubleSize));
-  __ movsd(Operand(rsp, 0), input_reg);
+  __ Movsd(Operand(rsp, 0), input_reg);
   __ fld_d(Operand(rsp, 0));
   __ fyl2x();
   __ fstp_d(Operand(rsp, 0));
-  __ movsd(input_reg, Operand(rsp, 0));
+  __ Movsd(input_reg, Operand(rsp, 0));
   __ addp(rsp, Immediate(kDoubleSize));
   __ bind(&done);
 }
@@ -4029,7 +4028,7 @@ void LCodeGen::DoStoreNamedField(LStoreNamedField* instr) {
     DCHECK(!hinstr->has_transition());
     DCHECK(!hinstr->NeedsWriteBarrier());
     XMMRegister value = ToDoubleRegister(instr->value());
-    __ movsd(FieldOperand(object, offset), value);
+    __ Movsd(FieldOperand(object, offset), value);
     return;
   }
 
@@ -4077,7 +4076,7 @@ void LCodeGen::DoStoreNamedField(LStoreNamedField* instr) {
   if (FLAG_unbox_double_fields && representation.IsDouble()) {
     DCHECK(access.IsInobject());
     XMMRegister value = ToDoubleRegister(instr->value());
-    __ movsd(operand, value);
+    __ Movsd(operand, value);
 
   } else if (instr->value()->IsRegister()) {
     Register value = ToRegister(instr->value());
@@ -4247,10 +4246,10 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
 
   if (elements_kind == FLOAT32_ELEMENTS) {
     XMMRegister value(ToDoubleRegister(instr->value()));
-    __ cvtsd2ss(value, value);
+    __ Cvtsd2ss(value, value);
     __ movss(operand, value);
   } else if (elements_kind == FLOAT64_ELEMENTS) {
-    __ movsd(operand, ToDoubleRegister(instr->value()));
+    __ Movsd(operand, ToDoubleRegister(instr->value()));
   } else {
     Register value(ToRegister(instr->value()));
     switch (elements_kind) {
@@ -4297,7 +4296,7 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
   if (instr->NeedsCanonicalization()) {
     XMMRegister xmm_scratch = double_scratch0();
     // Turn potential sNaN value into qNaN.
-    __ xorps(xmm_scratch, xmm_scratch);
+    __ Xorpd(xmm_scratch, xmm_scratch);
     __ subsd(value, xmm_scratch);
   }
 
@@ -4308,7 +4307,7 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
       FAST_DOUBLE_ELEMENTS,
       instr->base_offset());
 
-  __ movsd(double_store_operand, value);
+  __ Movsd(double_store_operand, value);
 }
 
 
@@ -4778,7 +4777,7 @@ void LCodeGen::DoDeferredNumberTagIU(LInstruction* instr,
     // the value in there. If that fails, call the runtime system.
     __ SmiToInteger32(reg, reg);
     __ xorl(reg, Immediate(0x80000000));
-    __ cvtlsi2sd(temp_xmm, reg);
+    __ Cvtlsi2sd(temp_xmm, reg);
   } else {
     DCHECK(signedness == UNSIGNED_INT32);
     __ LoadUint32(temp_xmm, reg);
@@ -4815,7 +4814,7 @@ void LCodeGen::DoDeferredNumberTagIU(LInstruction* instr,
   // Done. Put the value in temp_xmm into the value of the allocated heap
   // number.
   __ bind(&done);
-  __ movsd(FieldOperand(reg, HeapNumber::kValueOffset), temp_xmm);
+  __ Movsd(FieldOperand(reg, HeapNumber::kValueOffset), temp_xmm);
 }
 
 
@@ -4842,7 +4841,7 @@ void LCodeGen::DoNumberTagD(LNumberTagD* instr) {
     __ jmp(deferred->entry());
   }
   __ bind(deferred->exit());
-  __ movsd(FieldOperand(reg, HeapNumber::kValueOffset), input_reg);
+  __ Movsd(FieldOperand(reg, HeapNumber::kValueOffset), input_reg);
 }
 
 
@@ -4918,7 +4917,7 @@ void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
 
     // On x64 it is safe to load at heap number offset before evaluating the map
     // check, since all heap objects are at least two words long.
-    __ movsd(result_reg, FieldOperand(input_reg, HeapNumber::kValueOffset));
+    __ Movsd(result_reg, FieldOperand(input_reg, HeapNumber::kValueOffset));
 
     if (can_convert_undefined_to_nan) {
       __ j(not_equal, &convert, Label::kNear);
@@ -4928,11 +4927,11 @@ void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
 
     if (deoptimize_on_minus_zero) {
       XMMRegister xmm_scratch = double_scratch0();
-      __ xorps(xmm_scratch, xmm_scratch);
-      __ ucomisd(xmm_scratch, result_reg);
+      __ Xorpd(xmm_scratch, xmm_scratch);
+      __ Ucomisd(xmm_scratch, result_reg);
       __ j(not_equal, &done, Label::kNear);
-      __ movmskpd(kScratchRegister, result_reg);
-      __ testq(kScratchRegister, Immediate(1));
+      __ Movmskpd(kScratchRegister, result_reg);
+      __ testl(kScratchRegister, Immediate(1));
       DeoptimizeIf(not_zero, instr, Deoptimizer::kMinusZero);
     }
     __ jmp(&done, Label::kNear);
@@ -4997,16 +4996,16 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr, Label* done) {
     __ CompareRoot(FieldOperand(input_reg, HeapObject::kMapOffset),
                    Heap::kHeapNumberMapRootIndex);
     DeoptimizeIf(not_equal, instr, Deoptimizer::kNotAHeapNumber);
-    __ movsd(xmm0, FieldOperand(input_reg, HeapNumber::kValueOffset));
-    __ cvttsd2si(input_reg, xmm0);
+    __ Movsd(xmm0, FieldOperand(input_reg, HeapNumber::kValueOffset));
+    __ Cvttsd2si(input_reg, xmm0);
     __ Cvtlsi2sd(scratch, input_reg);
-    __ ucomisd(xmm0, scratch);
+    __ Ucomisd(xmm0, scratch);
     DeoptimizeIf(not_equal, instr, Deoptimizer::kLostPrecision);
     DeoptimizeIf(parity_even, instr, Deoptimizer::kNaN);
     if (instr->hydrogen()->GetMinusZeroMode() == FAIL_ON_MINUS_ZERO) {
       __ testl(input_reg, input_reg);
       __ j(not_zero, done);
-      __ movmskpd(input_reg, xmm0);
+      __ Movmskpd(input_reg, xmm0);
       __ andl(input_reg, Immediate(1));
       DeoptimizeIf(not_zero, instr, Deoptimizer::kMinusZero);
     }
@@ -5309,7 +5308,7 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
 
   // Heap number
   __ bind(&heap_number);
-  __ movsd(xmm_scratch, FieldOperand(input_reg, HeapNumber::kValueOffset));
+  __ Movsd(xmm_scratch, FieldOperand(input_reg, HeapNumber::kValueOffset));
   __ ClampDoubleToUint8(xmm_scratch, temp_xmm_reg, input_reg);
   __ jmp(&done, Label::kNear);
 
@@ -5326,10 +5325,10 @@ void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
   XMMRegister value_reg = ToDoubleRegister(instr->value());
   Register result_reg = ToRegister(instr->result());
   if (instr->hydrogen()->bits() == HDoubleBits::HIGH) {
-    __ movq(result_reg, value_reg);
+    __ Movq(result_reg, value_reg);
     __ shrq(result_reg, Immediate(32));
   } else {
-    __ movd(result_reg, value_reg);
+    __ Movd(result_reg, value_reg);
   }
 }
 
@@ -5339,9 +5338,9 @@ void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
   Register lo_reg = ToRegister(instr->lo());
   XMMRegister result_reg = ToDoubleRegister(instr->result());
   XMMRegister xmm_scratch = double_scratch0();
-  __ movd(result_reg, hi_reg);
+  __ Movd(result_reg, hi_reg);
   __ psllq(result_reg, 32);
-  __ movd(xmm_scratch, lo_reg);
+  __ Movd(xmm_scratch, lo_reg);
   __ orps(result_reg, xmm_scratch);
 }
 
@@ -5376,11 +5375,8 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
 
   if (instr->size()->IsConstantOperand()) {
     int32_t size = ToInteger32(LConstantOperand::cast(instr->size()));
-    if (size <= Page::kMaxRegularHeapObjectSize) {
-      __ Allocate(size, result, temp, no_reg, deferred->entry(), flags);
-    } else {
-      __ jmp(deferred->entry());
-    }
+    CHECK(size <= Page::kMaxRegularHeapObjectSize);
+    __ Allocate(size, result, temp, no_reg, deferred->entry(), flags);
   } else {
     Register size = ToRegister(instr->size());
     __ Allocate(size, result, temp, no_reg, deferred->entry(), flags);

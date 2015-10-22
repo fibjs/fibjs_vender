@@ -184,7 +184,7 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
 
     bool stash_exponent_copy = !input_reg.is(rsp);
     __ movl(scratch1, mantissa_operand);
-    __ movsd(xmm0, mantissa_operand);
+    __ Movsd(xmm0, mantissa_operand);
     __ movl(rcx, exponent_operand);
     if (stash_exponent_copy) __ pushq(rcx);
 
@@ -204,7 +204,7 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
     __ jmp(&check_negative);
 
     __ bind(&process_64_bits);
-    __ cvttsd2siq(result_reg, xmm0);
+    __ Cvttsd2siq(result_reg, xmm0);
     __ jmp(&done, Label::kNear);
 
     // If the double was negative, negate the integer result.
@@ -241,14 +241,14 @@ void FloatingPointHelper::LoadSSE2UnknownOperands(MacroAssembler* masm,
   __ JumpIfSmi(rdx, &load_smi_rdx);
   __ cmpp(FieldOperand(rdx, HeapObject::kMapOffset), rcx);
   __ j(not_equal, not_numbers);  // Argument in rdx is not a number.
-  __ movsd(xmm0, FieldOperand(rdx, HeapNumber::kValueOffset));
+  __ Movsd(xmm0, FieldOperand(rdx, HeapNumber::kValueOffset));
   // Load operand in rax into xmm1, or branch to not_numbers.
   __ JumpIfSmi(rax, &load_smi_rax);
 
   __ bind(&load_nonsmi_rax);
   __ cmpp(FieldOperand(rax, HeapObject::kMapOffset), rcx);
   __ j(not_equal, not_numbers);
-  __ movsd(xmm1, FieldOperand(rax, HeapNumber::kValueOffset));
+  __ Movsd(xmm1, FieldOperand(rax, HeapNumber::kValueOffset));
   __ jmp(&done);
 
   __ bind(&load_smi_rdx);
@@ -292,7 +292,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
                    Heap::kHeapNumberMapRootIndex);
     __ j(not_equal, &call_runtime);
 
-    __ movsd(double_base, FieldOperand(base, HeapNumber::kValueOffset));
+    __ Movsd(double_base, FieldOperand(base, HeapNumber::kValueOffset));
     __ jmp(&unpack_exponent, Label::kNear);
 
     __ bind(&base_is_smi);
@@ -308,14 +308,14 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ CompareRoot(FieldOperand(exponent, HeapObject::kMapOffset),
                    Heap::kHeapNumberMapRootIndex);
     __ j(not_equal, &call_runtime);
-    __ movsd(double_exponent, FieldOperand(exponent, HeapNumber::kValueOffset));
+    __ Movsd(double_exponent, FieldOperand(exponent, HeapNumber::kValueOffset));
   } else if (exponent_type() == TAGGED) {
     __ JumpIfNotSmi(exponent, &exponent_not_smi, Label::kNear);
     __ SmiToInteger32(exponent, exponent);
     __ jmp(&int_exponent);
 
     __ bind(&exponent_not_smi);
-    __ movsd(double_exponent, FieldOperand(exponent, HeapNumber::kValueOffset));
+    __ Movsd(double_exponent, FieldOperand(exponent, HeapNumber::kValueOffset));
   }
 
   if (exponent_type() != INTEGER) {
@@ -328,7 +328,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ jmp(&int_exponent);
 
     __ bind(&try_arithmetic_simplification);
-    __ cvttsd2si(exponent, double_exponent);
+    __ Cvttsd2si(exponent, double_exponent);
     // Skip to runtime if possibly NaN (indicated by the indefinite integer).
     __ cmpl(exponent, Immediate(0x1));
     __ j(overflow, &call_runtime);
@@ -341,9 +341,9 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       // Test for 0.5.
       // Load double_scratch with 0.5.
       __ movq(scratch, V8_UINT64_C(0x3FE0000000000000));
-      __ movq(double_scratch, scratch);
+      __ Movq(double_scratch, scratch);
       // Already ruled out NaNs for exponent.
-      __ ucomisd(double_scratch, double_exponent);
+      __ Ucomisd(double_scratch, double_exponent);
       __ j(not_equal, &not_plus_half, Label::kNear);
 
       // Calculates square root of base.  Check for the special case of
@@ -351,21 +351,21 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       // According to IEEE-754, double-precision -Infinity has the highest
       // 12 bits set and the lowest 52 bits cleared.
       __ movq(scratch, V8_UINT64_C(0xFFF0000000000000));
-      __ movq(double_scratch, scratch);
-      __ ucomisd(double_scratch, double_base);
+      __ Movq(double_scratch, scratch);
+      __ Ucomisd(double_scratch, double_base);
       // Comparing -Infinity with NaN results in "unordered", which sets the
       // zero flag as if both were equal.  However, it also sets the carry flag.
       __ j(not_equal, &continue_sqrt, Label::kNear);
       __ j(carry, &continue_sqrt, Label::kNear);
 
       // Set result to Infinity in the special case.
-      __ xorps(double_result, double_result);
+      __ Xorpd(double_result, double_result);
       __ subsd(double_result, double_scratch);
       __ jmp(&done);
 
       __ bind(&continue_sqrt);
       // sqrtsd returns -0 when input is -0.  ECMA spec requires +0.
-      __ xorps(double_scratch, double_scratch);
+      __ Xorpd(double_scratch, double_scratch);
       __ addsd(double_scratch, double_base);  // Convert -0 to 0.
       __ sqrtsd(double_result, double_scratch);
       __ jmp(&done);
@@ -375,7 +375,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       // Load double_scratch with -0.5 by substracting 1.
       __ subsd(double_scratch, double_result);
       // Already ruled out NaNs for exponent.
-      __ ucomisd(double_scratch, double_exponent);
+      __ Ucomisd(double_scratch, double_exponent);
       __ j(not_equal, &fast_power, Label::kNear);
 
       // Calculates reciprocal of square root of base.  Check for the special
@@ -383,20 +383,20 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       // According to IEEE-754, double-precision -Infinity has the highest
       // 12 bits set and the lowest 52 bits cleared.
       __ movq(scratch, V8_UINT64_C(0xFFF0000000000000));
-      __ movq(double_scratch, scratch);
-      __ ucomisd(double_scratch, double_base);
+      __ Movq(double_scratch, scratch);
+      __ Ucomisd(double_scratch, double_base);
       // Comparing -Infinity with NaN results in "unordered", which sets the
       // zero flag as if both were equal.  However, it also sets the carry flag.
       __ j(not_equal, &continue_rsqrt, Label::kNear);
       __ j(carry, &continue_rsqrt, Label::kNear);
 
       // Set result to 0 in the special case.
-      __ xorps(double_result, double_result);
+      __ Xorpd(double_result, double_result);
       __ jmp(&done);
 
       __ bind(&continue_rsqrt);
       // sqrtsd returns -0 when input is -0.  ECMA spec requires +0.
-      __ xorps(double_exponent, double_exponent);
+      __ Xorpd(double_exponent, double_exponent);
       __ addsd(double_exponent, double_base);  // Convert -0 to +0.
       __ sqrtsd(double_exponent, double_exponent);
       __ divsd(double_result, double_exponent);
@@ -409,9 +409,9 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ fnclex();  // Clear flags to catch exceptions later.
     // Transfer (B)ase and (E)xponent onto the FPU register stack.
     __ subp(rsp, Immediate(kDoubleSize));
-    __ movsd(Operand(rsp, 0), double_exponent);
+    __ Movsd(Operand(rsp, 0), double_exponent);
     __ fld_d(Operand(rsp, 0));  // E
-    __ movsd(Operand(rsp, 0), double_base);
+    __ Movsd(Operand(rsp, 0), double_base);
     __ fld_d(Operand(rsp, 0));  // B, E
 
     // Exponent is in st(1) and base is in st(0)
@@ -434,7 +434,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     __ testb(rax, Immediate(0x5F));  // Check for all but precision exception.
     __ j(not_zero, &fast_power_failed, Label::kNear);
     __ fstp_d(Operand(rsp, 0));
-    __ movsd(double_result, Operand(rsp, 0));
+    __ Movsd(double_result, Operand(rsp, 0));
     __ addp(rsp, Immediate(kDoubleSize));
     __ jmp(&done);
 
@@ -449,8 +449,8 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   const XMMRegister double_scratch2 = double_exponent;
   // Back up exponent as we need to check if exponent is negative later.
   __ movp(scratch, exponent);  // Back up exponent.
-  __ movsd(double_scratch, double_base);  // Back up base.
-  __ movsd(double_scratch2, double_result);  // Load double_exponent with 1.
+  __ Movsd(double_scratch, double_base);     // Back up base.
+  __ Movsd(double_scratch2, double_result);  // Load double_exponent with 1.
 
   // Get absolute value of exponent.
   Label no_neg, while_true, while_false;
@@ -464,7 +464,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   // Above condition means CF==0 && ZF==0.  This means that the
   // bit that has been shifted out is 0 and the result is not 0.
   __ j(above, &while_true, Label::kNear);
-  __ movsd(double_result, double_scratch);
+  __ Movsd(double_result, double_scratch);
   __ j(zero, &while_false, Label::kNear);
 
   __ bind(&while_true);
@@ -479,11 +479,11 @@ void MathPowStub::Generate(MacroAssembler* masm) {
   __ testl(exponent, exponent);
   __ j(greater, &done);
   __ divsd(double_scratch2, double_result);
-  __ movsd(double_result, double_scratch2);
+  __ Movsd(double_result, double_scratch2);
   // Test whether result is zero.  Bail out to check for subnormal result.
   // Due to subnormals, x^-y == (1/x)^y does not hold in all cases.
-  __ xorps(double_scratch2, double_scratch2);
-  __ ucomisd(double_scratch2, double_result);
+  __ Xorpd(double_scratch2, double_scratch2);
+  __ Ucomisd(double_scratch2, double_result);
   // double_exponent aliased as double_scratch2 has already been overwritten
   // and may not have contained the exponent value in the first place when the
   // input was a smi.  We reset it with exponent value before bailing out.
@@ -501,13 +501,13 @@ void MathPowStub::Generate(MacroAssembler* masm) {
     // as heap number in rax.
     __ bind(&done);
     __ AllocateHeapNumber(rax, rcx, &call_runtime);
-    __ movsd(FieldOperand(rax, HeapNumber::kValueOffset), double_result);
+    __ Movsd(FieldOperand(rax, HeapNumber::kValueOffset), double_result);
     __ IncrementCounter(counters->math_pow(), 1);
     __ ret(2 * kPointerSize);
   } else {
     __ bind(&call_runtime);
     // Move base to the correct argument register.  Exponent is already in xmm1.
-    __ movsd(xmm0, double_base);
+    __ Movsd(xmm0, double_base);
     DCHECK(double_exponent.is(xmm1));
     {
       AllowExternalCallThatCantCauseGC scope(masm);
@@ -516,7 +516,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
           ExternalReference::power_double_double_function(isolate()), 2);
     }
     // Return value is in xmm0.
-    __ movsd(double_result, xmm0);
+    __ Movsd(double_result, xmm0);
 
     __ bind(&done);
     __ IncrementCounter(counters->math_pow(), 1);
@@ -1569,8 +1569,8 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
     // greater-equal.  Return -1 for them, so the comparison yields
     // false for all conditions except not-equal.
     __ Set(rax, EQUAL);
-    __ movsd(xmm0, FieldOperand(rdx, HeapNumber::kValueOffset));
-    __ ucomisd(xmm0, xmm0);
+    __ Movsd(xmm0, FieldOperand(rdx, HeapNumber::kValueOffset));
+    __ Ucomisd(xmm0, xmm0);
     __ setcc(parity_even, rax);
     // rax is 0 for equal non-NaN heapnumbers, 1 for NaNs.
     if (cc == greater_equal || cc == greater) {
@@ -1645,7 +1645,7 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
   FloatingPointHelper::LoadSSE2UnknownOperands(masm, &non_number_comparison);
   __ xorl(rax, rax);
   __ xorl(rcx, rcx);
-  __ ucomisd(xmm0, xmm1);
+  __ Ucomisd(xmm0, xmm1);
 
   // Don't base result on EFLAGS when a NaN is involved.
   __ j(parity_even, &unordered, Label::kNear);
@@ -3126,6 +3126,25 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
 }
 
 
+void ToLengthStub::Generate(MacroAssembler* masm) {
+  // The ToLength stub takes on argument in rax.
+  Label not_smi, positive_smi;
+  __ JumpIfNotSmi(rax, &not_smi, Label::kNear);
+  STATIC_ASSERT(kSmiTag == 0);
+  __ testp(rax, rax);
+  __ j(greater_equal, &positive_smi, Label::kNear);
+  __ xorl(rax, rax);
+  __ bind(&positive_smi);
+  __ Ret();
+  __ bind(&not_smi);
+
+  __ PopReturnAddressTo(rcx);     // Pop return address.
+  __ Push(rax);                   // Push argument.
+  __ PushReturnAddressFrom(rcx);  // Push return address.
+  __ TailCallRuntime(Runtime::kToLength, 1, 1);
+}
+
+
 void ToStringStub::Generate(MacroAssembler* masm) {
   // The ToString stub takes one argument in rax.
   Label is_number;
@@ -3438,7 +3457,7 @@ void CompareICStub::GenerateNumbers(MacroAssembler* masm) {
   __ JumpIfSmi(rax, &right_smi, Label::kNear);
   __ CompareMap(rax, isolate()->factory()->heap_number_map());
   __ j(not_equal, &maybe_undefined1, Label::kNear);
-  __ movsd(xmm1, FieldOperand(rax, HeapNumber::kValueOffset));
+  __ Movsd(xmm1, FieldOperand(rax, HeapNumber::kValueOffset));
   __ jmp(&left, Label::kNear);
   __ bind(&right_smi);
   __ SmiToInteger32(rcx, rax);  // Can't clobber rax yet.
@@ -3448,7 +3467,7 @@ void CompareICStub::GenerateNumbers(MacroAssembler* masm) {
   __ JumpIfSmi(rdx, &left_smi, Label::kNear);
   __ CompareMap(rdx, isolate()->factory()->heap_number_map());
   __ j(not_equal, &maybe_undefined2, Label::kNear);
-  __ movsd(xmm0, FieldOperand(rdx, HeapNumber::kValueOffset));
+  __ Movsd(xmm0, FieldOperand(rdx, HeapNumber::kValueOffset));
   __ jmp(&done);
   __ bind(&left_smi);
   __ SmiToInteger32(rcx, rdx);  // Can't clobber rdx yet.
@@ -3456,7 +3475,7 @@ void CompareICStub::GenerateNumbers(MacroAssembler* masm) {
 
   __ bind(&done);
   // Compare operands
-  __ ucomisd(xmm0, xmm1);
+  __ Ucomisd(xmm0, xmm1);
 
   // Don't base result on EFLAGS when a NaN is involved.
   __ j(parity_even, &unordered, Label::kNear);

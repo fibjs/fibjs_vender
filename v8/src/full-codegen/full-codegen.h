@@ -35,6 +35,8 @@ class FullCodeGenerator: public AstVisitor {
   FullCodeGenerator(MacroAssembler* masm, CompilationInfo* info)
       : masm_(masm),
         info_(info),
+        isolate_(info->isolate()),
+        zone_(info->zone()),
         scope_(info->scope()),
         nesting_stack_(NULL),
         loop_depth_(0),
@@ -516,6 +518,7 @@ class FullCodeGenerator: public AstVisitor {
   F(ToInteger)                          \
   F(NumberToString)                     \
   F(ToString)                           \
+  F(ToLength)                           \
   F(ToNumber)                           \
   F(ToName)                             \
   F(ToObject)                           \
@@ -688,6 +691,8 @@ class FullCodeGenerator: public AstVisitor {
   const ExpressionContext* context() { return context_; }
   void set_new_context(const ExpressionContext* context) { context_ = context; }
 
+  Isolate* isolate() const { return isolate_; }
+  Zone* zone() const { return zone_; }
   Handle<Script> script() { return info_->script(); }
   bool is_eval() { return info_->is_eval(); }
   bool is_native() { return info_->is_native(); }
@@ -949,6 +954,8 @@ class FullCodeGenerator: public AstVisitor {
 
   MacroAssembler* masm_;
   CompilationInfo* info_;
+  Isolate* isolate_;
+  Zone* zone_;
   Scope* scope_;
   Label return_label_;
   NestedStatement* nesting_stack_;
@@ -969,28 +976,6 @@ class FullCodeGenerator: public AstVisitor {
 
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
   DISALLOW_COPY_AND_ASSIGN(FullCodeGenerator);
-};
-
-
-// A map from property names to getter/setter pairs allocated in the zone.
-class AccessorTable: public TemplateHashMap<Literal,
-                                            ObjectLiteral::Accessors,
-                                            ZoneAllocationPolicy> {
- public:
-  explicit AccessorTable(Zone* zone) :
-      TemplateHashMap<Literal, ObjectLiteral::Accessors,
-                      ZoneAllocationPolicy>(Literal::Match,
-                                            ZoneAllocationPolicy(zone)),
-      zone_(zone) { }
-
-  Iterator lookup(Literal* literal) {
-    Iterator it = find(literal, true, ZoneAllocationPolicy(zone_));
-    if (it->second == NULL) it->second = new(zone_) ObjectLiteral::Accessors();
-    return it;
-  }
-
- private:
-  Zone* zone_;
 };
 
 

@@ -813,10 +813,8 @@ void FullCodeGenerator::VisitVariableDeclaration(
       } else {
         __ Push(Smi::FromInt(0));  // Indicates no initial value.
       }
-      __ CallRuntime(IsImmutableVariableMode(mode)
-                         ? Runtime::kDeclareReadOnlyLookupSlot
-                         : Runtime::kDeclareLookupSlot,
-                     2);
+      __ Push(Smi::FromInt(variable->DeclarationPropertyAttributes()));
+      __ CallRuntime(Runtime::kDeclareLookupSlot, 3);
       break;
     }
   }
@@ -869,7 +867,8 @@ void FullCodeGenerator::VisitFunctionDeclaration(
       Comment cmnt(masm_, "[ FunctionDeclaration");
       __ Push(variable->name());
       VisitForStackValue(declaration->fun());
-      __ CallRuntime(Runtime::kDeclareLookupSlot, 2);
+      __ Push(Smi::FromInt(variable->DeclarationPropertyAttributes()));
+      __ CallRuntime(Runtime::kDeclareLookupSlot, 3);
       break;
     }
   }
@@ -1706,7 +1705,6 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   Comment cmnt(masm_, "[ ArrayLiteral");
 
-  expr->BuildConstantElements(isolate());
   Handle<FixedArray> constant_elements = expr->constant_elements();
   bool has_constant_fast_elements =
       IsFastObjectElementsKind(expr->constant_elements_kind());
@@ -1757,7 +1755,14 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
     }
     VisitForAccumulatorValue(subexpr);
 
-    if (has_constant_fast_elements) {
+    if (FLAG_vector_stores) {
+      __ Move(StoreDescriptor::NameRegister(), Smi::FromInt(array_index));
+      __ movp(StoreDescriptor::ReceiverRegister(), Operand(rsp, kPointerSize));
+      EmitLoadStoreICSlot(expr->LiteralFeedbackSlot());
+      Handle<Code> ic =
+          CodeFactory::KeyedStoreIC(isolate(), language_mode()).code();
+      CallIC(ic);
+    } else if (has_constant_fast_elements) {
       // Fast-case array literal with ElementsKind of FAST_*_ELEMENTS, they
       // cannot transition and don't need to call the runtime stub.
       int offset = FixedArray::kHeaderSize + (array_index * kPointerSize);
@@ -3703,6 +3708,19 @@ void FullCodeGenerator::EmitToString(CallRuntime* expr) {
 }
 
 
+void FullCodeGenerator::EmitToLength(CallRuntime* expr) {
+  ZoneList<Expression*>* args = expr->arguments();
+  DCHECK_EQ(1, args->length());
+
+  // Load the argument into rax and convert it.
+  VisitForAccumulatorValue(args->at(0));
+
+  ToLengthStub stub(isolate());
+  __ CallStub(&stub);
+  context()->Plug(rax);
+}
+
+
 void FullCodeGenerator::EmitToNumber(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   DCHECK_EQ(1, args->length());
@@ -4165,6 +4183,11 @@ void FullCodeGenerator::EmitFastOneByteArrayJoin(CallRuntime* expr) {
   __ j(overflow, &bailout);
   __ addl(string_length, scratch);
   __ j(overflow, &bailout);
+  __ jmp(&bailout);
+
+  // Bailout for large object allocations.
+  __ cmpl(string_length, Immediate(Page::kMaxRegularHeapObjectSize));
+  __ j(greater, &bailout);
 
   // Live registers and stack values:
   //   string_length: Total length of result string.

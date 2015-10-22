@@ -24,15 +24,37 @@ class BytecodeGenerator : public AstVisitor {
   AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
 
+  // Visiting function for declarations list is overridden.
+  void VisitDeclarations(ZoneList<Declaration*>* declarations) override;
+
  private:
+  class ContextScope;
   class ControlScope;
   class ControlScopeForIteration;
 
+  void MakeBytecodeBody();
+  Register NextContextRegister() const;
+
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 
+  Register VisitArguments(ZoneList<Expression*>* arguments,
+                          TemporaryRegisterScope* caller_scope);
   void VisitArithmeticExpression(BinaryOperation* binop);
+  void VisitCommaExpression(BinaryOperation* binop);
+  void VisitLogicalOrExpression(BinaryOperation* binop);
+  void VisitLogicalAndExpression(BinaryOperation* binop);
   void VisitPropertyLoad(Register obj, Property* expr);
-  void VisitVariableLoad(Variable* variable);
+  void VisitVariableLoad(Variable* variable, FeedbackVectorSlot slot);
+  void VisitVariableAssignment(Variable* variable, FeedbackVectorSlot slot);
+  void VisitNewLocalFunctionContext();
+  void VisitBuildLocalActivationContext();
+  void VisitNewLocalBlockContext(Scope* scope);
+  void VisitFunctionClosureForContext();
+  void VisitSetHomeObject(Register value, Register home_object,
+                          ObjectLiteralProperty* property, int slot_number = 0);
+  void VisitObjectLiteralAccessor(Register home_object,
+                                  ObjectLiteralProperty* property,
+                                  Register value_out);
 
   // Dispatched from VisitUnaryOperation.
   void VisitVoid(UnaryOperation* expr);
@@ -40,21 +62,37 @@ class BytecodeGenerator : public AstVisitor {
   void VisitNot(UnaryOperation* expr);
 
   inline BytecodeArrayBuilder* builder() { return &builder_; }
+
+  inline Isolate* isolate() const { return isolate_; }
+  inline Zone* zone() const { return zone_; }
+
   inline Scope* scope() const { return scope_; }
   inline void set_scope(Scope* scope) { scope_ = scope; }
-  inline ControlScope* control_scope() const { return control_scope_; }
-  inline void set_control_scope(ControlScope* scope) { control_scope_ = scope; }
   inline CompilationInfo* info() const { return info_; }
   inline void set_info(CompilationInfo* info) { info_ = info; }
 
-  LanguageMode language_mode() const;
+  inline ControlScope* execution_control() const { return execution_control_; }
+  inline void set_execution_control(ControlScope* scope) {
+    execution_control_ = scope;
+  }
+  inline ContextScope* execution_context() const { return execution_context_; }
+  inline void set_execution_context(ContextScope* context) {
+    execution_context_ = context;
+  }
+
+  ZoneVector<Handle<Object>>* globals() { return &globals_; }
+  inline LanguageMode language_mode() const;
   Strength language_mode_strength() const;
   int feedback_index(FeedbackVectorSlot slot) const;
 
+  Isolate* isolate_;
+  Zone* zone_;
   BytecodeArrayBuilder builder_;
   CompilationInfo* info_;
   Scope* scope_;
-  ControlScope* control_scope_;
+  ZoneVector<Handle<Object>> globals_;
+  ControlScope* execution_control_;
+  ContextScope* execution_context_;
 };
 
 }  // namespace interpreter

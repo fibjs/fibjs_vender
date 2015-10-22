@@ -554,13 +554,13 @@ Type* Typer::Visitor::TypeEffectSet(Node* node) {
 }
 
 
-Type* Typer::Visitor::TypeValueEffect(Node* node) {
+Type* Typer::Visitor::TypeBeginRegion(Node* node) {
   UNREACHABLE();
   return nullptr;
 }
 
 
-Type* Typer::Visitor::TypeFinish(Node* node) { return Operand(node, 0); }
+Type* Typer::Visitor::TypeFinishRegion(Node* node) { return Operand(node, 0); }
 
 
 Type* Typer::Visitor::TypeFrameState(Node* node) {
@@ -1657,7 +1657,13 @@ Type* Typer::Visitor::TypeStoreElement(Node* node) {
 }
 
 
-Type* Typer::Visitor::TypeObjectIsSmi(Node* node) { return Type::Boolean(); }
+Type* Typer::Visitor::TypeObjectIsSmi(Node* node) {
+  Type* arg = Operand(node, 0);
+  if (arg->Is(Type::None())) return Type::None();
+  if (arg->Is(Type::TaggedSigned())) return typer_->singleton_true_;
+  if (arg->Is(Type::TaggedPointer())) return typer_->singleton_false_;
+  return Type::Boolean();
+}
 
 
 // Machine operators.
@@ -1696,6 +1702,14 @@ Type* Typer::Visitor::TypeWord32Equal(Node* node) { return Type::Boolean(); }
 
 
 Type* Typer::Visitor::TypeWord32Clz(Node* node) { return Type::Integral32(); }
+
+
+Type* Typer::Visitor::TypeWord32Ctz(Node* node) { return Type::Integral32(); }
+
+
+Type* Typer::Visitor::TypeWord32Popcnt(Node* node) {
+  return Type::Integral32();
+}
 
 
 Type* Typer::Visitor::TypeWord64And(Node* node) { return Type::Internal(); }

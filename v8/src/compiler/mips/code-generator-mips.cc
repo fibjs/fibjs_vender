@@ -461,6 +461,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ Jump(at);
       break;
     }
+    case kArchLazyBailout: {
+      EnsureSpaceForLazyDeopt();
+      RecordCallPosition(instr);
+      break;
+    }
     case kArchPrepareCallCFunction: {
       int const num_parameters = MiscField::decode(instr->opcode());
       __ PrepareCallCFunction(num_parameters, kScratchReg);
@@ -972,19 +977,10 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   if (instr->arch_opcode() == kMipsTst) {
     cc = FlagsConditionToConditionTst(condition);
     __ And(kScratchReg, i.InputRegister(0), i.InputOperand(1));
-    __ xori(result, zero_reg, 1);  // Create 1 for true.
-    if (IsMipsArchVariant(kMips32r6)) {
-      if (cc == eq) {
-        __ seleqz(result, result, kScratchReg);
-      } else {
-        __ selnez(result, result, kScratchReg);
-      }
-    } else {
-      if (cc == eq) {
-        __ Movn(result, zero_reg, kScratchReg);
-      } else {
-        __ Movz(result, zero_reg, kScratchReg);
-      }
+    __ Sltu(result, zero_reg, kScratchReg);
+    if (cc == eq) {
+      // Sltu produces 0 for equality, invert the result.
+      __ xori(result, result, 1);
     }
     return;
   } else if (instr->arch_opcode() == kMipsAddOvf ||
@@ -1003,20 +999,18 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
       case ne: {
         Register left = i.InputRegister(0);
         Operand right = i.InputOperand(1);
-        __ Subu(kScratchReg, left, right);
-        __ xori(result, zero_reg, 1);
-        if (IsMipsArchVariant(kMips32r6)) {
-          if (cc == eq) {
-            __ seleqz(result, result, kScratchReg);
-          } else {
-            __ selnez(result, result, kScratchReg);
-          }
+        Register select;
+        if (instr->InputAt(1)->IsImmediate() && right.immediate() == 0) {
+          // Pass left operand if right is zero.
+          select = left;
         } else {
-          if (cc == eq) {
-            __ Movn(result, zero_reg, kScratchReg);
-          } else {
-            __ Movz(result, zero_reg, kScratchReg);
-          }
+          __ Subu(kScratchReg, left, right);
+          select = kScratchReg;
+        }
+        __ Sltu(result, zero_reg, select);
+        if (cc == eq) {
+          // Sltu produces 0 for equality, invert the result.
+          __ xori(result, result, 1);
         }
       } break;
       case lt:

@@ -741,6 +741,16 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 }
 
 
+void InstructionSelector::VisitWord32Popcnt(Node* node) {
+  PPCOperandGenerator g(this);
+  Emit(kPPC_Popcnt32, g.DefineAsRegister(node),
+       g.UseRegister(node->InputAt(0)));
+}
+
+
+void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
+
+
 void InstructionSelector::VisitInt32Add(Node* node) {
   VisitBinop<Int32BinopMatcher>(this, node, kPPC_Add, kInt16Imm);
 }
@@ -1539,7 +1549,7 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
   }
 
   // Select the appropriate opcode based on the call type.
-  InstructionCode opcode;
+  InstructionCode opcode = kArchNop;
   switch (descriptor->kind()) {
     case CallDescriptor::kCallAddress:
       opcode =
@@ -1552,9 +1562,9 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
     case CallDescriptor::kCallJSFunction:
       opcode = kArchCallJSFunction | MiscField::encode(flags);
       break;
-    default:
-      UNREACHABLE();
-      return;
+    case CallDescriptor::kLazyBailout:
+      opcode = kArchLazyBailout | MiscField::encode(flags);
+      break;
   }
 
   // Emit the call instruction.
@@ -1706,7 +1716,8 @@ MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
   return MachineOperatorBuilder::kFloat64RoundDown |
          MachineOperatorBuilder::kFloat64RoundTruncate |
-         MachineOperatorBuilder::kFloat64RoundTiesAway;
+         MachineOperatorBuilder::kFloat64RoundTiesAway |
+         MachineOperatorBuilder::kWord32Popcnt;
   // We omit kWord32ShiftIsSafe as s[rl]w use 0x3f as a mask rather than 0x1f.
 }
 

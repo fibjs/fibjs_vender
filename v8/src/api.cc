@@ -3498,7 +3498,8 @@ Maybe<bool> v8::Object::DefineOwnProperty(v8::Local<v8::Context> context,
   auto key_obj = Utils::OpenHandle(*key);
   auto value_obj = Utils::OpenHandle(*value);
 
-  if (self->IsAccessCheckNeeded() && !isolate->MayAccess(self)) {
+  if (self->IsAccessCheckNeeded() &&
+      !isolate->MayAccess(handle(isolate->context()), self)) {
     isolate->ReportFailedAccessCheck(self);
     return Nothing<bool>();
   }
@@ -6091,6 +6092,33 @@ MaybeLocal<Object> Array::CloneElementAt(Local<Context> context,
 Local<Object> Array::CloneElementAt(uint32_t index) {
   auto context = ContextFromHeapObject(Utils::OpenHandle(this));
   RETURN_TO_LOCAL_UNCHECKED(CloneElementAt(context, index), Object);
+}
+
+
+Local<Function> Array::GetKeysIterator(Isolate* isolate) {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Handle<i::JSFunction> keys(
+      i_isolate->native_context()->array_keys_iterator(), i_isolate);
+  DCHECK(!keys.is_null());
+  return Utils::ToLocal(keys);
+}
+
+
+Local<Function> Array::GetValuesIterator(Isolate* isolate) {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Handle<i::JSFunction> values(
+      i_isolate->native_context()->array_values_iterator(), i_isolate);
+  DCHECK(!values.is_null());
+  return Utils::ToLocal(values);
+}
+
+
+Local<Function> Array::GetEntriesIterator(Isolate* isolate) {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Handle<i::JSFunction> entries(
+      i_isolate->native_context()->array_entries_iterator(), i_isolate);
+  DCHECK(!entries.is_null());
+  return Utils::ToLocal(entries);
 }
 
 

@@ -48,11 +48,10 @@ class MipsOperandGenerator final : public OperandGenerator {
         return is_uint16(value);
       case kMipsLdc1:
       case kMipsSdc1:
-      case kCheckedLoadFloat32:
       case kCheckedLoadFloat64:
-      case kCheckedStoreFloat32:
       case kCheckedStoreFloat64:
-        return is_int16(value + kIntSize);
+        return std::numeric_limits<int16_t>::min() <= (value + kIntSize) &&
+               std::numeric_limits<int16_t>::max() >= (value + kIntSize);
       default:
         return is_int16(value);
     }
@@ -272,6 +271,12 @@ void InstructionSelector::VisitWord32Ror(Node* node) {
 void InstructionSelector::VisitWord32Clz(Node* node) {
   VisitRR(this, kMipsClz, node);
 }
+
+
+void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
+
+
+void InstructionSelector::VisitWord32Popcnt(Node* node) { UNREACHABLE(); }
 
 
 void InstructionSelector::VisitInt32Add(Node* node) {
@@ -583,7 +588,7 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
   }
 
   // Select the appropriate opcode based on the call type.
-  InstructionCode opcode;
+  InstructionCode opcode = kArchNop;
   switch (descriptor->kind()) {
     case CallDescriptor::kCallAddress:
       opcode =
@@ -596,9 +601,9 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
     case CallDescriptor::kCallJSFunction:
       opcode = kArchCallJSFunction | MiscField::encode(flags);
       break;
-    default:
-      UNREACHABLE();
-      return;
+    case CallDescriptor::kLazyBailout:
+      opcode = kArchLazyBailout | MiscField::encode(flags);
+      break;
   }
 
   // Emit the call instruction.
@@ -830,6 +835,16 @@ void VisitWordCompare(InstructionSelector* selector, Node* node,
   // Match immediates on left or right side of comparison.
   if (g.CanBeImmediate(right, opcode)) {
     switch (cont->condition()) {
+      case kEqual:
+      case kNotEqual:
+        if (cont->IsSet()) {
+          VisitCompare(selector, opcode, g.UseRegister(left),
+                       g.UseImmediate(right), cont);
+        } else {
+          VisitCompare(selector, opcode, g.UseRegister(left),
+                       g.UseRegister(right), cont);
+        }
+        break;
       case kSignedLessThan:
       case kSignedGreaterThanOrEqual:
       case kUnsignedLessThan:
@@ -844,6 +859,16 @@ void VisitWordCompare(InstructionSelector* selector, Node* node,
   } else if (g.CanBeImmediate(left, opcode)) {
     if (!commutative) cont->Commute();
     switch (cont->condition()) {
+      case kEqual:
+      case kNotEqual:
+        if (cont->IsSet()) {
+          VisitCompare(selector, opcode, g.UseRegister(right),
+                       g.UseImmediate(left), cont);
+        } else {
+          VisitCompare(selector, opcode, g.UseRegister(right),
+                       g.UseRegister(left), cont);
+        }
+        break;
       case kSignedLessThan:
       case kSignedGreaterThanOrEqual:
       case kUnsignedLessThan:

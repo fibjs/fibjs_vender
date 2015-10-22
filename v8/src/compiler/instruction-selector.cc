@@ -345,6 +345,10 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
           g.UseLocation(callee, buffer->descriptor->GetInputLocation(0),
                         buffer->descriptor->GetInputType(0)));
       break;
+    case CallDescriptor::kLazyBailout:
+      // The target is ignored, but we still need to pass a value here.
+      buffer->instruction_args.push_back(g.UseImmediate(callee));
+      break;
   }
   DCHECK_EQ(1u, buffer->instruction_args.size());
 
@@ -504,7 +508,7 @@ void InstructionSelector::VisitControl(BasicBlock* block) {
     }
     case BasicBlock::kReturn: {
       DCHECK_EQ(IrOpcode::kReturn, input->opcode());
-      return VisitReturn(input->InputAt(0));
+      return VisitReturn(input);
     }
     case BasicBlock::kDeoptimize: {
       // If the result itself is a return, return its input.
@@ -545,12 +549,13 @@ void InstructionSelector::VisitNode(Node* node) {
     case IrOpcode::kEffectPhi:
     case IrOpcode::kMerge:
     case IrOpcode::kTerminate:
+    case IrOpcode::kBeginRegion:
       // No code needed for these graph artifacts.
       return;
     case IrOpcode::kIfException:
       return MarkAsReference(node), VisitIfException(node);
-    case IrOpcode::kFinish:
-      return MarkAsReference(node), VisitFinish(node);
+    case IrOpcode::kFinishRegion:
+      return MarkAsReference(node), VisitFinishRegion(node);
     case IrOpcode::kParameter: {
       MachineType type =
           linkage()->GetParameterType(ParameterIndexOf(node->op()));
@@ -611,6 +616,10 @@ void InstructionSelector::VisitNode(Node* node) {
       return VisitWord32Equal(node);
     case IrOpcode::kWord32Clz:
       return MarkAsWord32(node), VisitWord32Clz(node);
+    case IrOpcode::kWord32Ctz:
+      return MarkAsWord32(node), VisitWord32Ctz(node);
+    case IrOpcode::kWord32Popcnt:
+      return MarkAsWord32(node), VisitWord32Popcnt(node);
     case IrOpcode::kWord64And:
       return MarkAsWord64(node), VisitWord64And(node);
     case IrOpcode::kWord64Or:
@@ -925,7 +934,7 @@ void InstructionSelector::VisitBitcastInt64ToFloat64(Node* node) {
 #endif  // V8_TARGET_ARCH_32_BIT
 
 
-void InstructionSelector::VisitFinish(Node* node) {
+void InstructionSelector::VisitFinishRegion(Node* node) {
   OperandGenerator g(this);
   Node* value = node->InputAt(0);
   Emit(kArchNop, g.DefineSameAsFirst(node), g.Use(value));
@@ -1009,15 +1018,19 @@ void InstructionSelector::VisitGoto(BasicBlock* target) {
 }
 
 
-void InstructionSelector::VisitReturn(Node* value) {
-  DCHECK_NOT_NULL(value);
+void InstructionSelector::VisitReturn(Node* ret) {
   OperandGenerator g(this);
   if (linkage()->GetIncomingDescriptor()->ReturnCount() == 0) {
     Emit(kArchRet, g.NoOutput());
   } else {
-    Emit(kArchRet, g.NoOutput(),
-         g.UseLocation(value, linkage()->GetReturnLocation(),
-                       linkage()->GetReturnType()));
+    const int ret_count = ret->op()->ValueInputCount();
+    auto value_locations = zone()->NewArray<InstructionOperand>(ret_count);
+    for (int i = 0; i < ret_count; ++i) {
+      value_locations[i] =
+          g.UseLocation(ret->InputAt(i), linkage()->GetReturnLocation(i),
+                        linkage()->GetReturnType(i));
+    }
+    Emit(kArchRet, 0, nullptr, ret_count, value_locations);
   }
 }
 
@@ -1091,7 +1104,7 @@ InstructionOperand InstructionSelector::OperandForDeopt(
         case FrameStateInputKind::kStackSlot:
           return g->UseUniqueSlot(input);
         case FrameStateInputKind::kAny:
-          return g->Use(input);
+          return g->UseAny(input);
       }
       UNREACHABLE();
       return InstructionOperand();

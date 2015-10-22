@@ -14,8 +14,7 @@
 #include "src/assert-scope.h"
 #include "src/atomic-utils.h"
 #include "src/globals.h"
-// TODO(mstarzinger): Three more includes to kill!
-#include "src/heap/mark-compact.h"
+// TODO(mstarzinger): Two more includes to kill!
 #include "src/heap/spaces.h"
 #include "src/heap/store-buffer.h"
 #include "src/list.h"
@@ -209,103 +208,107 @@ namespace internal {
   SMI_ROOT_LIST(V)    \
   V(StringTable, string_table, StringTable)
 
-#define INTERNALIZED_STRING_LIST(V)                            \
-  V(Object_string, "Object")                                   \
-  V(proto_string, "__proto__")                                 \
-  V(arguments_string, "arguments")                             \
-  V(Arguments_string, "Arguments")                             \
-  V(caller_string, "caller")                                   \
-  V(boolean_string, "boolean")                                 \
-  V(Boolean_string, "Boolean")                                 \
-  V(callee_string, "callee")                                   \
-  V(constructor_string, "constructor")                         \
-  V(default_string, "default")                                 \
-  V(dot_result_string, ".result")                              \
-  V(eval_string, "eval")                                       \
-  V(float32x4_string, "float32x4")                             \
-  V(Float32x4_string, "Float32x4")                             \
-  V(int32x4_string, "int32x4")                                 \
-  V(Int32x4_string, "Int32x4")                                 \
-  V(uint32x4_string, "uint32x4")                               \
-  V(Uint32x4_string, "Uint32x4")                               \
-  V(bool32x4_string, "bool32x4")                               \
-  V(Bool32x4_string, "Bool32x4")                               \
-  V(int16x8_string, "int16x8")                                 \
-  V(Int16x8_string, "Int16x8")                                 \
-  V(uint16x8_string, "uint16x8")                               \
-  V(Uint16x8_string, "Uint16x8")                               \
-  V(bool16x8_string, "bool16x8")                               \
-  V(Bool16x8_string, "Bool16x8")                               \
-  V(int8x16_string, "int8x16")                                 \
-  V(Int8x16_string, "Int8x16")                                 \
-  V(uint8x16_string, "uint8x16")                               \
-  V(Uint8x16_string, "Uint8x16")                               \
-  V(bool8x16_string, "bool8x16")                               \
-  V(Bool8x16_string, "Bool8x16")                               \
-  V(function_string, "function")                               \
-  V(Function_string, "Function")                               \
-  V(length_string, "length")                                   \
-  V(name_string, "name")                                       \
-  V(null_string, "null")                                       \
-  V(number_string, "number")                                   \
-  V(Number_string, "Number")                                   \
-  V(nan_string, "NaN")                                         \
-  V(source_string, "source")                                   \
-  V(source_url_string, "source_url")                           \
-  V(source_mapping_url_string, "source_mapping_url")           \
-  V(this_string, "this")                                       \
-  V(global_string, "global")                                   \
-  V(ignore_case_string, "ignoreCase")                          \
-  V(multiline_string, "multiline")                             \
-  V(sticky_string, "sticky")                                   \
-  V(unicode_string, "unicode")                                 \
-  V(harmony_tolength_string, "harmony_tolength")               \
-  V(input_string, "input")                                     \
-  V(index_string, "index")                                     \
-  V(last_index_string, "lastIndex")                            \
-  V(object_string, "object")                                   \
-  V(prototype_string, "prototype")                             \
-  V(string_string, "string")                                   \
-  V(String_string, "String")                                   \
-  V(symbol_string, "symbol")                                   \
-  V(Symbol_string, "Symbol")                                   \
-  V(Map_string, "Map")                                         \
-  V(Set_string, "Set")                                         \
-  V(WeakMap_string, "WeakMap")                                 \
-  V(WeakSet_string, "WeakSet")                                 \
-  V(for_string, "for")                                         \
-  V(for_api_string, "for_api")                                 \
-  V(Date_string, "Date")                                       \
-  V(char_at_string, "CharAt")                                  \
-  V(undefined_string, "undefined")                             \
-  V(valueOf_string, "valueOf")                                 \
-  V(stack_string, "stack")                                     \
-  V(toString_string, "toString")                               \
-  V(toJSON_string, "toJSON")                                   \
-  V(KeyedLoadMonomorphic_string, "KeyedLoadMonomorphic")       \
-  V(KeyedStoreMonomorphic_string, "KeyedStoreMonomorphic")     \
-  V(illegal_access_string, "illegal access")                   \
-  V(cell_value_string, "%cell_value")                          \
-  V(illegal_argument_string, "illegal argument")               \
-  V(closure_string, "(closure)")                               \
-  V(dot_string, ".")                                           \
-  V(compare_ic_string, "==")                                   \
-  V(strict_compare_ic_string, "===")                           \
-  V(infinity_string, "Infinity")                               \
-  V(minus_infinity_string, "-Infinity")                        \
-  V(query_colon_string, "(?:)")                                \
-  V(Generator_string, "Generator")                             \
-  V(throw_string, "throw")                                     \
-  V(done_string, "done")                                       \
-  V(value_string, "value")                                     \
-  V(next_string, "next")                                       \
-  V(byte_length_string, "byteLength")                          \
-  V(byte_offset_string, "byteOffset")                          \
-  V(minus_zero_string, "-0")                                   \
-  V(Array_string, "Array")                                     \
-  V(Error_string, "Error")                                     \
-  V(RegExp_string, "RegExp")                                   \
-  V(anonymous_string, "anonymous")
+#define INTERNALIZED_STRING_LIST(V)                        \
+  V(anonymous_string, "anonymous")                         \
+  V(arguments_string, "arguments")                         \
+  V(Arguments_string, "Arguments")                         \
+  V(Array_string, "Array")                                 \
+  V(bool16x8_string, "bool16x8")                           \
+  V(Bool16x8_string, "Bool16x8")                           \
+  V(bool32x4_string, "bool32x4")                           \
+  V(Bool32x4_string, "Bool32x4")                           \
+  V(bool8x16_string, "bool8x16")                           \
+  V(Bool8x16_string, "Bool8x16")                           \
+  V(boolean_string, "boolean")                             \
+  V(Boolean_string, "Boolean")                             \
+  V(byte_length_string, "byteLength")                      \
+  V(byte_offset_string, "byteOffset")                      \
+  V(callee_string, "callee")                               \
+  V(caller_string, "caller")                               \
+  V(cell_value_string, "%cell_value")                      \
+  V(char_at_string, "CharAt")                              \
+  V(closure_string, "(closure)")                           \
+  V(compare_ic_string, "==")                               \
+  V(configurable_string, "configurable")                   \
+  V(constructor_string, "constructor")                     \
+  V(Date_string, "Date")                                   \
+  V(default_string, "default")                             \
+  V(done_string, "done")                                   \
+  V(dot_result_string, ".result")                          \
+  V(dot_string, ".")                                       \
+  V(enumerable_string, "enumerable")                       \
+  V(Error_string, "Error")                                 \
+  V(eval_string, "eval")                                   \
+  V(float32x4_string, "float32x4")                         \
+  V(Float32x4_string, "Float32x4")                         \
+  V(for_api_string, "for_api")                             \
+  V(for_string, "for")                                     \
+  V(function_string, "function")                           \
+  V(Function_string, "Function")                           \
+  V(Generator_string, "Generator")                         \
+  V(get_string, "get")                                     \
+  V(global_string, "global")                               \
+  V(ignore_case_string, "ignoreCase")                      \
+  V(illegal_access_string, "illegal access")               \
+  V(illegal_argument_string, "illegal argument")           \
+  V(index_string, "index")                                 \
+  V(infinity_string, "Infinity")                           \
+  V(input_string, "input")                                 \
+  V(int16x8_string, "int16x8")                             \
+  V(Int16x8_string, "Int16x8")                             \
+  V(int32x4_string, "int32x4")                             \
+  V(Int32x4_string, "Int32x4")                             \
+  V(int8x16_string, "int8x16")                             \
+  V(Int8x16_string, "Int8x16")                             \
+  V(KeyedLoadMonomorphic_string, "KeyedLoadMonomorphic")   \
+  V(KeyedStoreMonomorphic_string, "KeyedStoreMonomorphic") \
+  V(last_index_string, "lastIndex")                        \
+  V(length_string, "length")                               \
+  V(Map_string, "Map")                                     \
+  V(minus_infinity_string, "-Infinity")                    \
+  V(minus_zero_string, "-0")                               \
+  V(multiline_string, "multiline")                         \
+  V(name_string, "name")                                   \
+  V(nan_string, "NaN")                                     \
+  V(next_string, "next")                                   \
+  V(null_string, "null")                                   \
+  V(number_string, "number")                               \
+  V(Number_string, "Number")                               \
+  V(object_string, "object")                               \
+  V(Object_string, "Object")                               \
+  V(proto_string, "__proto__")                             \
+  V(prototype_string, "prototype")                         \
+  V(query_colon_string, "(?:)")                            \
+  V(RegExp_string, "RegExp")                               \
+  V(set_string, "set")                                     \
+  V(Set_string, "Set")                                     \
+  V(source_mapping_url_string, "source_mapping_url")       \
+  V(source_string, "source")                               \
+  V(source_url_string, "source_url")                       \
+  V(stack_string, "stack")                                 \
+  V(sticky_string, "sticky")                               \
+  V(strict_compare_ic_string, "===")                       \
+  V(string_string, "string")                               \
+  V(String_string, "String")                               \
+  V(symbol_string, "symbol")                               \
+  V(Symbol_string, "Symbol")                               \
+  V(this_string, "this")                                   \
+  V(throw_string, "throw")                                 \
+  V(toJSON_string, "toJSON")                               \
+  V(toString_string, "toString")                           \
+  V(uint16x8_string, "uint16x8")                           \
+  V(Uint16x8_string, "Uint16x8")                           \
+  V(uint32x4_string, "uint32x4")                           \
+  V(Uint32x4_string, "Uint32x4")                           \
+  V(uint8x16_string, "uint8x16")                           \
+  V(Uint8x16_string, "Uint8x16")                           \
+  V(undefined_string, "undefined")                         \
+  V(unicode_string, "unicode")                             \
+  V(valueOf_string, "valueOf")                             \
+  V(value_string, "value")                                 \
+  V(WeakMap_string, "WeakMap")                             \
+  V(WeakSet_string, "WeakSet")                             \
+  V(writable_string, "writable")
 
 #define PRIVATE_SYMBOL_LIST(V)              \
   V(array_iteration_kind_symbol)            \
@@ -1108,7 +1111,7 @@ class Heap {
   inline Isolate* isolate();
 
   MarkCompactCollector* mark_compact_collector() {
-    return &mark_compact_collector_;
+    return mark_compact_collector_;
   }
 
   // ===========================================================================
@@ -2279,7 +2282,7 @@ class Heap {
 
   Scavenger* scavenge_collector_;
 
-  MarkCompactCollector mark_compact_collector_;
+  MarkCompactCollector* mark_compact_collector_;
 
   StoreBuffer store_buffer_;
 

@@ -183,6 +183,13 @@ Callable CodeFactory::ToString(Isolate* isolate) {
 
 
 // static
+Callable CodeFactory::ToLength(Isolate* isolate) {
+  ToLengthStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+
+// static
 Callable CodeFactory::ToObject(Isolate* isolate) {
   ToObjectStub stub(isolate);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
@@ -261,6 +268,13 @@ Callable CodeFactory::AllocateHeapNumber(Isolate* isolate) {
 
 
 // static
+Callable CodeFactory::AllocateInNewSpace(Isolate* isolate) {
+  AllocateInNewSpaceStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+
+// static
 Callable CodeFactory::CallFunction(Isolate* isolate, int argc,
                                    CallFunctionFlags flags) {
   CallFunctionStub stub(isolate, argc, flags);
@@ -272,6 +286,13 @@ Callable CodeFactory::CallFunction(Isolate* isolate, int argc,
 Callable CodeFactory::InterpreterPushArgsAndCall(Isolate* isolate) {
   return Callable(isolate->builtins()->InterpreterPushArgsAndCall(),
                   InterpreterPushArgsAndCallDescriptor(isolate));
+}
+
+
+// static
+Callable CodeFactory::InterpreterPushArgsAndConstruct(Isolate* isolate) {
+  return Callable(isolate->builtins()->InterpreterPushArgsAndConstruct(),
+                  InterpreterPushArgsAndConstructDescriptor(isolate));
 }
 
 

@@ -84,14 +84,6 @@ const Register GrowArrayElementsDescriptor::ObjectRegister() { return r0; }
 const Register GrowArrayElementsDescriptor::KeyRegister() { return r3; }
 
 
-void VectorStoreTransitionDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {ReceiverRegister(), NameRegister(),   ValueRegister(),
-                          SlotRegister(),     VectorRegister(), MapRegister()};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
 void FastNewClosureDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {r2};
@@ -111,6 +103,10 @@ void ToNumberDescriptor::InitializePlatformSpecific(
   Register registers[] = {r0};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
+
+
+// static
+const Register ToLengthDescriptor::ReceiverRegister() { return r0; }
 
 
 // static
@@ -231,6 +227,13 @@ void TransitionElementsKindDescriptor::InitializePlatformSpecific(
 void AllocateHeapNumberDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   data->InitializePlatformSpecific(0, nullptr, nullptr);
+}
+
+
+void AllocateInNewSpaceDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {r0};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
 
@@ -427,6 +430,18 @@ void InterpreterPushArgsAndCallDescriptor::InitializePlatformSpecific(
       r0,  // argument count (not including receiver)
       r2,  // address of first argument
       r1   // the target callable to be call
+  };
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+
+void InterpreterPushArgsAndConstructDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      r0,  // argument count (not including receiver)
+      r3,  // original constructor
+      r1,  // constructor to call
+      r2   // address of the first argument
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
