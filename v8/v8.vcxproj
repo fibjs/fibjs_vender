@@ -107,6 +107,7 @@
     <ClInclude Include="src\compiler\ast-graph-builder.h" />
     <ClInclude Include="src\compiler\ast-loop-assignment-analyzer.h" />
     <ClInclude Include="src\compiler\basic-block-instrumentor.h" />
+    <ClInclude Include="src\compiler\branch-elimination.h" />
     <ClInclude Include="src\compiler\bytecode-graph-builder.h" />
     <ClInclude Include="src\compiler\change-lowering.h" />
     <ClInclude Include="src\compiler\coalesced-live-ranges.h" />
@@ -141,11 +142,11 @@
     <ClInclude Include="src\compiler\js-context-specialization.h" />
     <ClInclude Include="src\compiler\js-frame-specialization.h" />
     <ClInclude Include="src\compiler\js-generic-lowering.h" />
-    <ClInclude Include="src\compiler\js-global-specialization.h" />
     <ClInclude Include="src\compiler\js-graph.h" />
     <ClInclude Include="src\compiler\js-inlining-heuristic.h" />
     <ClInclude Include="src\compiler\js-inlining.h" />
     <ClInclude Include="src\compiler\js-intrinsic-lowering.h" />
+    <ClInclude Include="src\compiler\js-native-context-specialization.h" />
     <ClInclude Include="src\compiler\js-operator.h" />
     <ClInclude Include="src\compiler\js-type-feedback-lowering.h" />
     <ClInclude Include="src\compiler\js-type-feedback.h" />
@@ -377,6 +378,7 @@
     <ClInclude Include="src\profiler\strings-storage.h" />
     <ClInclude Include="src\profiler\unbound-queue-inl.h" />
     <ClInclude Include="src\profiler\unbound-queue.h" />
+    <ClInclude Include="src\property-descriptor.h" />
     <ClInclude Include="src\property-details.h" />
     <ClInclude Include="src\property.h" />
     <ClInclude Include="src\prototype.h" />
@@ -531,6 +533,7 @@
     <ClCompile Include="src\compiler\ast-graph-builder.cc" />
     <ClCompile Include="src\compiler\ast-loop-assignment-analyzer.cc" />
     <ClCompile Include="src\compiler\basic-block-instrumentor.cc" />
+    <ClCompile Include="src\compiler\branch-elimination.cc" />
     <ClCompile Include="src\compiler\bytecode-graph-builder.cc" />
     <ClCompile Include="src\compiler\c-linkage.cc" />
     <ClCompile Include="src\compiler\change-lowering.cc" />
@@ -563,11 +566,11 @@
     <ClCompile Include="src\compiler\js-context-specialization.cc" />
     <ClCompile Include="src\compiler\js-frame-specialization.cc" />
     <ClCompile Include="src\compiler\js-generic-lowering.cc" />
-    <ClCompile Include="src\compiler\js-global-specialization.cc" />
     <ClCompile Include="src\compiler\js-graph.cc" />
     <ClCompile Include="src\compiler\js-inlining-heuristic.cc" />
     <ClCompile Include="src\compiler\js-inlining.cc" />
     <ClCompile Include="src\compiler\js-intrinsic-lowering.cc" />
+    <ClCompile Include="src\compiler\js-native-context-specialization.cc" />
     <ClCompile Include="src\compiler\js-operator.cc" />
     <ClCompile Include="src\compiler\js-type-feedback-lowering.cc" />
     <ClCompile Include="src\compiler\js-type-feedback.cc" />
@@ -799,6 +802,7 @@
     <ClCompile Include="src\profiler\profile-generator.cc" />
     <ClCompile Include="src\profiler\sampler.cc" />
     <ClCompile Include="src\profiler\strings-storage.cc" />
+    <ClCompile Include="src\property-descriptor.cc" />
     <ClCompile Include="src\property.cc" />
     <ClCompile Include="src\regexp\ia32\regexp-macro-assembler-ia32.cc" />
     <ClCompile Include="src\regexp\interpreter-irregexp.cc" />

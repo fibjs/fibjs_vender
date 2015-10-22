@@ -200,7 +200,7 @@ class InstructionSelector final {
   MACHINE_OP_LIST(DECLARE_GENERATOR)
 #undef DECLARE_GENERATOR
 
-  void VisitFinish(Node* node);
+  void VisitFinishRegion(Node* node);
   void VisitParameter(Node* node);
   void VisitIfException(Node* node);
   void VisitOsrValue(Node* node);
@@ -213,7 +213,7 @@ class InstructionSelector final {
   void VisitBranch(Node* input, BasicBlock* tbranch, BasicBlock* fbranch);
   void VisitSwitch(Node* node, const SwitchInfo& sw);
   void VisitDeoptimize(Node* value);
-  void VisitReturn(Node* value);
+  void VisitReturn(Node* ret);
   void VisitThrow(Node* value);
 
   // ===========================================================================

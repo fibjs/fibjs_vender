@@ -860,6 +860,7 @@ class LookupIterator;
 class ObjectHashTable;
 class ObjectVisitor;
 class PropertyCell;
+class PropertyDescriptor;
 class SafepointEntry;
 class SharedFunctionInfo;
 class StringStream;
@@ -1234,6 +1235,11 @@ class Object {
   MUST_USE_RESULT static MaybeHandle<Object> ReadAbsentProperty(
       Isolate* isolate, Handle<Object> receiver, Handle<Object> name,
       LanguageMode language_mode);
+  MUST_USE_RESULT static MaybeHandle<Object> CannotCreateProperty(
+      LookupIterator* it, Handle<Object> value, LanguageMode language_mode);
+  MUST_USE_RESULT static MaybeHandle<Object> CannotCreateProperty(
+      Isolate* isolate, Handle<Object> receiver, Handle<Object> name,
+      Handle<Object> value, LanguageMode language_mode);
   MUST_USE_RESULT static MaybeHandle<Object> WriteToReadOnlyProperty(
       LookupIterator* it, Handle<Object> value, LanguageMode language_mode);
   MUST_USE_RESULT static MaybeHandle<Object> WriteToReadOnlyProperty(
@@ -1249,6 +1255,9 @@ class Object {
       LanguageMode language_mode, StoreFromKeyed store_mode);
   MUST_USE_RESULT static inline MaybeHandle<Object> GetPropertyOrElement(
       Handle<Object> object, Handle<Name> name,
+      LanguageMode language_mode = SLOPPY);
+  MUST_USE_RESULT static inline MaybeHandle<Object> GetPropertyOrElement(
+      Handle<JSReceiver> holder, Handle<Name> name, Handle<Object> receiver,
       LanguageMode language_mode = SLOPPY);
   MUST_USE_RESULT static inline MaybeHandle<Object> GetProperty(
       Isolate* isolate, Handle<Object> object, const char* key,
@@ -1782,6 +1791,9 @@ enum AccessorComponent {
 enum KeyFilter { SKIP_SYMBOLS, INCLUDE_SYMBOLS };
 
 
+enum ShouldThrow { THROW_ON_ERROR, DONT_THROW };
+
+
 // JSReceiver includes types on which properties can be defined, i.e.,
 // JSObject and JSProxy.
 class JSReceiver: public HeapObject {
@@ -1817,6 +1829,35 @@ class JSReceiver: public HeapObject {
   MUST_USE_RESULT static MaybeHandle<Object> DeleteElement(
       Handle<JSReceiver> object, uint32_t index,
       LanguageMode language_mode = SLOPPY);
+
+  MUST_USE_RESULT static Object* DefineProperty(Isolate* isolate,
+                                                Handle<Object> object,
+                                                Handle<Object> name,
+                                                Handle<Object> attributes);
+  MUST_USE_RESULT static Object* DefineProperties(Isolate* isolate,
+                                                  Handle<Object> object,
+                                                  Handle<Object> properties);
+
+  // "virtual" dispatcher to the correct [[DefineOwnProperty]] implementation.
+  static bool DefineOwnProperty(Isolate* isolate, Handle<JSObject> object,
+                                Handle<Object> key, PropertyDescriptor* desc,
+                                ShouldThrow should_throw);
+
+  static bool OrdinaryDefineOwnProperty(Isolate* isolate,
+                                        Handle<JSObject> object,
+                                        Handle<Object> key,
+                                        PropertyDescriptor* desc,
+                                        ShouldThrow should_throw);
+  static bool OrdinaryDefineOwnProperty(LookupIterator* it,
+                                        PropertyDescriptor* desc,
+                                        ShouldThrow should_throw);
+
+  static bool GetOwnPropertyDescriptor(Isolate* isolate,
+                                       Handle<JSObject> object,
+                                       Handle<Object> key,
+                                       PropertyDescriptor* desc);
+  static bool GetOwnPropertyDescriptor(LookupIterator* it,
+                                       PropertyDescriptor* desc);
 
   // Tests for the fast common case for property enumeration.
   bool IsSimpleEnum();
@@ -2061,6 +2102,10 @@ class JSObject: public JSReceiver {
   // TODO(mstarzinger): Rename to SetAccessor().
   static MaybeHandle<Object> DefineAccessor(Handle<JSObject> object,
                                             Handle<Name> name,
+                                            Handle<Object> getter,
+                                            Handle<Object> setter,
+                                            PropertyAttributes attributes);
+  static MaybeHandle<Object> DefineAccessor(LookupIterator* it,
                                             Handle<Object> getter,
                                             Handle<Object> setter,
                                             PropertyAttributes attributes);
@@ -4854,6 +4899,7 @@ class Code: public HeapObject {
   inline bool is_to_boolean_ic_stub();
   inline bool is_keyed_stub();
   inline bool is_optimized_code();
+  inline bool is_interpreter_entry_trampoline();
   inline bool embeds_maps_weakly();
 
   inline bool IsCodeStubOrIC();
@@ -5832,6 +5878,7 @@ class Map: public HeapObject {
   inline bool IsJSProxyMap();
   inline bool IsJSGlobalProxyMap();
   inline bool IsJSGlobalObjectMap();
+  inline bool IsJSTypedArrayMap();
   inline bool IsGlobalObjectMap();
 
   inline bool CanOmitMapChecks();
@@ -7289,8 +7336,6 @@ class JSFunction: public JSObject {
   inline int NumberOfLiterals();
 
   // Used for flags such as --hydrogen-filter.
-  // TODO(rmcilroy/mstarzinger): Move this back to JSFunction when compiler.cc
-  // is refactored to allow use of JSFunction::PassesFilter for top-level code.
   bool PassesFilter(const char* raw_filter);
 
   // The function's name if it is configured, otherwise shared function info
@@ -8693,9 +8738,6 @@ class String: public Name {
   // For use during stack traces.  Performs rudimentary sanity check.
   bool LooksValid();
 
-  // Used for flags such as --hydrogen-filter.
-  bool PassesFilter(const char* raw_filter);
-
   // Dispatched behavior.
   void StringShortPrint(StringStream* accumulator);
   void PrintUC16(std::ostream& os, int start = 0, int end = -1);  // NOLINT
@@ -10032,6 +10074,17 @@ class JSArray: public JSObject {
   static inline void SetContent(Handle<JSArray> array,
                                 Handle<FixedArrayBase> storage);
 
+  static bool DefineOwnProperty(Isolate* isolate, Handle<JSArray> o,
+                                Handle<Object> name, PropertyDescriptor* desc,
+                                ShouldThrow should_throw);
+
+  static bool AnythingToArrayLength(Isolate* isolate,
+                                    Handle<Object> length_object,
+                                    uint32_t* output);
+  static bool ArraySetLength(Isolate* isolate, Handle<JSArray> a,
+                             PropertyDescriptor* desc,
+                             ShouldThrow should_throw);
+
   DECLARE_CAST(JSArray)
 
   // Dispatched behavior.
@@ -10045,9 +10098,13 @@ class JSArray: public JSObject {
   static const int kLengthOffset = JSObject::kHeaderSize;
   static const int kSize = kLengthOffset + kPointerSize;
 
-  // Note that Page::kMaxRegularHeapObjectSize puts a limit on
-  // permissible values (see the DCHECK in heap.cc).
-  static const int kInitialMaxFastElementArray = 100000;
+  // 600 * KB is the Page::kMaxRegularHeapObjectSize defined in spaces.h which
+  // we do not want to include in objects.h
+  // Note that Page::kMaxRegularHeapObjectSize has to be in sync with
+  // kInitialMaxFastElementArray which is checked in a DCHECK in heap.cc.
+  static const int kInitialMaxFastElementArray =
+      (600 * KB - FixedArray::kHeaderSize - kSize - AllocationMemento::kSize) /
+      kPointerSize;
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSArray);

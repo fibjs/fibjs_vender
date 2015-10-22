@@ -629,7 +629,12 @@ bool LCodeGen::GeneratePrologue() {
   if (info()->IsOptimizing()) {
     ProfileEntryHookStub::MaybeCallEntryHook(masm_);
 
-    // TODO(all): Add support for stop_t FLAG in DEBUG mode.
+#ifdef DEBUG
+    if (strlen(FLAG_stop_at) > 0 &&
+        info()->literal()->name()->IsUtf8EqualTo(CStrVector(FLAG_stop_at))) {
+      __ Debug("stop-at", __LINE__, BREAK);
+    }
+#endif
 
     // Sloppy mode functions and builtins need to replace the receiver with the
     // global proxy when called as functions (without an explicit receiver
@@ -1561,11 +1566,8 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
 
   if (instr->size()->IsConstantOperand()) {
     int32_t size = ToInteger32(LConstantOperand::cast(instr->size()));
-    if (size <= Page::kMaxRegularHeapObjectSize) {
-      __ Allocate(size, result, temp1, temp2, deferred->entry(), flags);
-    } else {
-      __ B(deferred->entry());
-    }
+    CHECK(size <= Page::kMaxRegularHeapObjectSize);
+    __ Allocate(size, result, temp1, temp2, deferred->entry(), flags);
   } else {
     Register size = ToRegister32(instr->size());
     __ Sxtw(size.X(), size);
@@ -2814,6 +2816,8 @@ void LCodeGen::DoDoubleToIntOrSmi(LDoubleToIntOrSmi* instr) {
 
 void LCodeGen::DoDrop(LDrop* instr) {
   __ Drop(instr->count());
+
+  RecordPushedArgumentsDelta(instr->hydrogen_value()->argument_delta());
 }
 
 

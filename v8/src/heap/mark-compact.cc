@@ -286,8 +286,8 @@ bool MarkCompactCollector::StartCompaction(CompactionMode mode) {
       TraceFragmentation(heap()->map_space());
     }
 
-    heap()->old_space()->EvictEvacuationCandidatesFromFreeLists();
-    heap()->code_space()->EvictEvacuationCandidatesFromFreeLists();
+    heap()->old_space()->EvictEvacuationCandidatesFromLinearAllocationArea();
+    heap()->code_space()->EvictEvacuationCandidatesFromLinearAllocationArea();
 
     compacting_ = evacuation_candidates_.length() > 0;
   }
@@ -569,9 +569,6 @@ void MarkCompactCollector::EnsureSweepingCompleted() {
   RefillFreeList(heap()->paged_space(OLD_SPACE));
   RefillFreeList(heap()->paged_space(CODE_SPACE));
   RefillFreeList(heap()->paged_space(MAP_SPACE));
-  heap()->paged_space(OLD_SPACE)->ResetUnsweptFreeBytes();
-  heap()->paged_space(CODE_SPACE)->ResetUnsweptFreeBytes();
-  heap()->paged_space(MAP_SPACE)->ResetUnsweptFreeBytes();
 
 #ifdef VERIFY_HEAP
   if (FLAG_verify_heap && !evacuation()) {
@@ -606,9 +603,8 @@ void MarkCompactCollector::RefillFreeList(PagedSpace* space) {
     return;
   }
 
-  intptr_t freed_bytes = space->free_list()->Concatenate(free_list);
-  space->AddToAccountingStats(freed_bytes);
-  space->DecrementUnsweptFreeBytes(freed_bytes);
+  intptr_t added = space->free_list()->Concatenate(free_list);
+  space->accounting_stats_.IncreaseCapacity(added);
 }
 
 
@@ -2111,14 +2107,18 @@ void MarkCompactCollector::MarkLiveObjects() {
   // with the C stack limit check.
   PostponeInterruptsScope postpone(isolate());
 
-  IncrementalMarking* incremental_marking = heap_->incremental_marking();
-  if (was_marked_incrementally_) {
-    incremental_marking->Finalize();
-  } else {
-    // Abort any pending incremental activities e.g. incremental sweeping.
-    incremental_marking->Stop();
-    if (marking_deque_.in_use()) {
-      marking_deque_.Uninitialize(true);
+  {
+    GCTracer::Scope gc_scope(heap()->tracer(),
+                             GCTracer::Scope::MC_MARK_FINISH_INCREMENTAL);
+    IncrementalMarking* incremental_marking = heap_->incremental_marking();
+    if (was_marked_incrementally_) {
+      incremental_marking->Finalize();
+    } else {
+      // Abort any pending incremental activities e.g. incremental sweeping.
+      incremental_marking->Stop();
+      if (marking_deque_.in_use()) {
+        marking_deque_.Uninitialize(true);
+      }
     }
   }
 
@@ -2130,20 +2130,36 @@ void MarkCompactCollector::MarkLiveObjects() {
   EnsureMarkingDequeIsCommittedAndInitialize(
       MarkCompactCollector::kMaxMarkingDequeSize);
 
-  PrepareForCodeFlushing();
+  {
+    GCTracer::Scope gc_scope(heap()->tracer(),
+                             GCTracer::Scope::MC_MARK_PREPARE_CODE_FLUSH);
+    PrepareForCodeFlushing();
+  }
 
   RootMarkingVisitor root_visitor(heap());
-  MarkRoots(&root_visitor);
 
-  ProcessTopOptimizedFrame(&root_visitor);
+  {
+    GCTracer::Scope gc_scope(heap()->tracer(), GCTracer::Scope::MC_MARK_ROOT);
+    MarkRoots(&root_visitor);
+  }
+
+  {
+    GCTracer::Scope gc_scope(heap()->tracer(), GCTracer::Scope::MC_MARK_TOPOPT);
+    ProcessTopOptimizedFrame(&root_visitor);
+  }
 
   // Retaining dying maps should happen before or during ephemeral marking
   // because a map could keep the key of an ephemeron alive. Note that map
   // aging is imprecise: maps that are kept alive only by ephemerons will age.
-  RetainMaps();
+  {
+    GCTracer::Scope gc_scope(heap()->tracer(),
+                             GCTracer::Scope::MC_MARK_RETAIN_MAPS);
+    RetainMaps();
+  }
 
   {
-    GCTracer::Scope gc_scope(heap()->tracer(), GCTracer::Scope::MC_WEAKCLOSURE);
+    GCTracer::Scope gc_scope(heap()->tracer(),
+                             GCTracer::Scope::MC_MARK_WEAK_CLOSURE);
 
     // The objects reachable from the roots are marked, yet unreachable
     // objects are unmarked.  Mark objects reachable due to host
@@ -2180,28 +2196,45 @@ void MarkCompactCollector::MarkLiveObjects() {
 
 
 void MarkCompactCollector::AfterMarking() {
-  // Prune the string table removing all strings only pointed to by the
-  // string table.  Cannot use string_table() here because the string
-  // table is marked.
-  StringTable* string_table = heap()->string_table();
-  InternalizedStringTableCleaner internalized_visitor(heap());
-  string_table->IterateElements(&internalized_visitor);
-  string_table->ElementsRemoved(internalized_visitor.PointersRemoved());
+  {
+    GCTracer::Scope gc_scope(heap()->tracer(),
+                             GCTracer::Scope::MC_MARK_STRING_TABLE);
 
-  ExternalStringTableCleaner external_visitor(heap());
-  heap()->external_string_table_.Iterate(&external_visitor);
-  heap()->external_string_table_.CleanUp();
+    // Prune the string table removing all strings only pointed to by the
+    // string table.  Cannot use string_table() here because the string
+    // table is marked.
+    StringTable* string_table = heap()->string_table();
+    InternalizedStringTableCleaner internalized_visitor(heap());
+    string_table->IterateElements(&internalized_visitor);
+    string_table->ElementsRemoved(internalized_visitor.PointersRemoved());
 
-  // Process the weak references.
-  MarkCompactWeakObjectRetainer mark_compact_object_retainer;
-  heap()->ProcessAllWeakReferences(&mark_compact_object_retainer);
+    ExternalStringTableCleaner external_visitor(heap());
+    heap()->external_string_table_.Iterate(&external_visitor);
+    heap()->external_string_table_.CleanUp();
+  }
 
-  // Remove object groups after marking phase.
-  heap()->isolate()->global_handles()->RemoveObjectGroups();
-  heap()->isolate()->global_handles()->RemoveImplicitRefGroups();
+  {
+    GCTracer::Scope gc_scope(heap()->tracer(),
+                             GCTracer::Scope::MC_MARK_WEAK_REFERENCES);
+
+    // Process the weak references.
+    MarkCompactWeakObjectRetainer mark_compact_object_retainer;
+    heap()->ProcessAllWeakReferences(&mark_compact_object_retainer);
+  }
+
+  {
+    GCTracer::Scope gc_scope(heap()->tracer(),
+                             GCTracer::Scope::MC_MARK_GLOBAL_HANDLES);
+
+    // Remove object groups after marking phase.
+    heap()->isolate()->global_handles()->RemoveObjectGroups();
+    heap()->isolate()->global_handles()->RemoveImplicitRefGroups();
+  }
 
   // Flush code from collected candidates.
   if (is_code_flushing_enabled()) {
+    GCTracer::Scope gc_scope(heap()->tracer(),
+                             GCTracer::Scope::MC_MARK_CODE_FLUSH);
     code_flusher_->ProcessCandidates();
   }
 
@@ -2667,8 +2700,9 @@ void MarkCompactCollector::MigrateObject(
   Address dst_addr = dst->address();
   Address src_addr = src->address();
   DCHECK(heap()->AllowedToBeMigrated(src, dest));
-  DCHECK(dest != LO_SPACE && size <= Page::kMaxRegularHeapObjectSize);
+  DCHECK(dest != LO_SPACE);
   if (dest == OLD_SPACE) {
+    DCHECK_OBJECT_SIZE(size);
     DCHECK(evacuation_slots_buffer != nullptr);
     DCHECK(IsAligned(size, kPointerSize));
     switch (src->ContentType()) {
@@ -2692,12 +2726,14 @@ void MarkCompactCollector::MigrateObject(
                                   evacuation_slots_buffer);
     }
   } else if (dest == CODE_SPACE) {
+    DCHECK_CODEOBJECT_SIZE(size, heap()->code_space());
     DCHECK(evacuation_slots_buffer != nullptr);
     PROFILE(isolate(), CodeMoveEvent(src_addr, dst_addr));
     heap()->MoveBlock(dst_addr, src_addr, size);
     RecordMigratedCodeObjectSlot(dst_addr, evacuation_slots_buffer);
     Code::cast(dst)->Relocate(dst_addr - src_addr);
   } else {
+    DCHECK_OBJECT_SIZE(size);
     DCHECK(evacuation_slots_buffer == nullptr);
     DCHECK(dest == NEW_SPACE);
     heap()->MoveBlock(dst_addr, src_addr, size);
@@ -3081,8 +3117,6 @@ static String* UpdateReferenceInExternalStringTableEntry(Heap* heap,
 
 bool MarkCompactCollector::TryPromoteObject(HeapObject* object,
                                             int object_size) {
-  DCHECK(object_size <= Page::kMaxRegularHeapObjectSize);
-
   OldSpace* old_space = heap()->old_space();
 
   HeapObject* target = nullptr;
@@ -3353,6 +3387,12 @@ bool MarkCompactCollector::EvacuateLiveObjectsFromPage(
       HeapObject* target_object = nullptr;
       AllocationResult allocation = target_space->AllocateRaw(size, alignment);
       if (!allocation.To(&target_object)) {
+        // We need to abort compaction for this page. Make sure that we reset
+        // the mark bits for objects that have already been migrated.
+        if (i > 0) {
+          p->markbits()->ClearRange(p->AddressToMarkbitIndex(p->area_start()),
+                                    p->AddressToMarkbitIndex(object_addr));
+        }
         return false;
       }
 
@@ -3864,6 +3904,7 @@ void MarkCompactCollector::ReleaseEvacuationCandidates() {
     space->Free(p->area_start(), p->area_size());
     p->set_scan_on_scavenge(false);
     p->ResetLiveBytes();
+    CHECK(p->WasSwept());
     space->ReleasePage(p);
   }
   evacuation_candidates_.Rewind(0);
@@ -4355,9 +4396,6 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
           PrintF("Sweeping 0x%" V8PRIxPTR " released page.\n",
                  reinterpret_cast<intptr_t>(p));
         }
-        // Adjust unswept free bytes because releasing a page expects said
-        // counter to be accurate for unswept pages.
-        space->IncreaseUnsweptFreeBytes(p);
         space->ReleasePage(p);
         continue;
       }
@@ -4391,7 +4429,8 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
                    reinterpret_cast<intptr_t>(p));
           }
           p->parallel_sweeping_state().SetValue(MemoryChunk::kSweepingPending);
-          space->IncreaseUnsweptFreeBytes(p);
+          int to_sweep = p->area_size() - p->LiveBytes();
+          space->accounting_stats_.ShrinkSpace(to_sweep);
         }
         space->set_end_of_unswept_pages(p);
         break;

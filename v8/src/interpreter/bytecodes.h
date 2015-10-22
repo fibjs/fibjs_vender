@@ -43,8 +43,16 @@ namespace interpreter {
   V(LdaTrue, OperandType::kNone)                                               \
   V(LdaFalse, OperandType::kNone)                                              \
                                                                                \
-  /* Load globals */                                                           \
+  /* Globals */                                                                \
   V(LdaGlobal, OperandType::kIdx8)                                             \
+  V(StaGlobalSloppy, OperandType::kIdx8)                                       \
+  V(StaGlobalStrict, OperandType::kIdx8)                                       \
+                                                                               \
+  /* Context operations */                                                     \
+  V(PushContext, OperandType::kReg8)                                           \
+  V(PopContext, OperandType::kReg8)                                            \
+  V(LdaContextSlot, OperandType::kReg8, OperandType::kIdx8)                    \
+  V(StaContextSlot, OperandType::kReg8, OperandType::kIdx8)                    \
                                                                                \
   /* Register-accumulator transfers */                                         \
   V(Ldar, OperandType::kReg8)                                                  \
@@ -70,15 +78,24 @@ namespace interpreter {
   V(Mul, OperandType::kReg8)                                                   \
   V(Div, OperandType::kReg8)                                                   \
   V(Mod, OperandType::kReg8)                                                   \
+  V(BitwiseOr, OperandType::kReg8)                                             \
+  V(BitwiseXor, OperandType::kReg8)                                            \
+  V(BitwiseAnd, OperandType::kReg8)                                            \
+  V(ShiftLeft, OperandType::kReg8)                                             \
+  V(ShiftRight, OperandType::kReg8)                                            \
+  V(ShiftRightLogical, OperandType::kReg8)                                     \
                                                                                \
   /* Unary Operators */                                                        \
   V(LogicalNot, OperandType::kNone)                                            \
   V(TypeOf, OperandType::kNone)                                                \
                                                                                \
-  /* Call operations. */                                                       \
+  /* Call operations */                                                        \
   V(Call, OperandType::kReg8, OperandType::kReg8, OperandType::kCount8)        \
   V(CallRuntime, OperandType::kIdx16, OperandType::kReg8,                      \
     OperandType::kCount8)                                                      \
+                                                                               \
+  /* New operator */                                                           \
+  V(New, OperandType::kReg8, OperandType::kReg8, OperandType::kCount8)         \
                                                                                \
   /* Test Operators */                                                         \
   V(TestEqual, OperandType::kReg8)                                             \
@@ -94,6 +111,15 @@ namespace interpreter {
                                                                                \
   /* Cast operators */                                                         \
   V(ToBoolean, OperandType::kNone)                                             \
+  V(ToName, OperandType::kNone)                                                \
+                                                                               \
+  /* Literals */                                                               \
+  V(CreateRegExpLiteral, OperandType::kIdx8, OperandType::kReg8)               \
+  V(CreateArrayLiteral, OperandType::kIdx8, OperandType::kImm8)                \
+  V(CreateObjectLiteral, OperandType::kIdx8, OperandType::kImm8)               \
+                                                                               \
+  /* Closure allocation */                                                     \
+  V(CreateClosure, OperandType::kImm8)                                         \
                                                                                \
   /* Control Flow */                                                           \
   V(Jump, OperandType::kImm8)                                                  \
@@ -102,6 +128,10 @@ namespace interpreter {
   V(JumpIfTrueConstant, OperandType::kIdx8)                                    \
   V(JumpIfFalse, OperandType::kImm8)                                           \
   V(JumpIfFalseConstant, OperandType::kIdx8)                                   \
+  V(JumpIfToBooleanTrue, OperandType::kImm8)                                   \
+  V(JumpIfToBooleanTrueConstant, OperandType::kIdx8)                           \
+  V(JumpIfToBooleanFalse, OperandType::kImm8)                                  \
+  V(JumpIfToBooleanFalseConstant, OperandType::kIdx8)                          \
   V(Return, OperandType::kNone)
 
 
@@ -158,13 +188,30 @@ class Register {
     return index_;
   }
   bool is_parameter() const { return index() < 0; }
+  bool is_valid() const { return index_ != kIllegalIndex; }
 
   static Register FromParameterIndex(int index, int parameter_count);
   int ToParameterIndex(int parameter_count) const;
   static int MaxParameterIndex();
 
+  // Returns the register for the function's closure object.
+  static Register function_closure();
+  bool is_function_closure() const;
+
+  // Returns the register for the function's outer context.
+  static Register function_context();
+  bool is_function_context() const;
+
   static Register FromOperand(uint8_t operand);
   uint8_t ToOperand() const;
+
+  static bool AreContiguous(Register reg1, Register reg2,
+                            Register reg3 = Register(),
+                            Register reg4 = Register(),
+                            Register reg5 = Register());
+
+  bool operator==(const Register& o) const { return o.index() == index(); }
+  bool operator!=(const Register& o) const { return o.index() != index(); }
 
  private:
   static const int kIllegalIndex = kMaxInt;

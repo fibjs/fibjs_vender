@@ -12,6 +12,7 @@
 #include "src/compiler/ast-graph-builder.h"
 #include "src/compiler/ast-loop-assignment-analyzer.h"
 #include "src/compiler/basic-block-instrumentor.h"
+#include "src/compiler/branch-elimination.h"
 #include "src/compiler/bytecode-graph-builder.h"
 #include "src/compiler/change-lowering.h"
 #include "src/compiler/code-generator.h"
@@ -30,9 +31,9 @@
 #include "src/compiler/js-context-specialization.h"
 #include "src/compiler/js-frame-specialization.h"
 #include "src/compiler/js-generic-lowering.h"
-#include "src/compiler/js-global-specialization.h"
 #include "src/compiler/js-inlining-heuristic.h"
 #include "src/compiler/js-intrinsic-lowering.h"
+#include "src/compiler/js-native-context-specialization.h"
 #include "src/compiler/js-type-feedback.h"
 #include "src/compiler/js-type-feedback-lowering.h"
 #include "src/compiler/js-typed-lowering.h"
@@ -51,6 +52,7 @@
 #include "src/compiler/scheduler.h"
 #include "src/compiler/select-lowering.h"
 #include "src/compiler/simplified-lowering.h"
+#include "src/compiler/simplified-operator.h"
 #include "src/compiler/simplified-operator-reducer.h"
 #include "src/compiler/tail-call-optimization.h"
 #include "src/compiler/typer.h"
@@ -82,6 +84,7 @@ class PipelineData {
         graph_zone_(graph_zone_scope_.zone()),
         graph_(nullptr),
         loop_assignment_(nullptr),
+        simplified_(nullptr),
         machine_(nullptr),
         common_(nullptr),
         javascript_(nullptr),
@@ -98,13 +101,14 @@ class PipelineData {
     PhaseScope scope(pipeline_statistics, "init pipeline data");
     graph_ = new (graph_zone_) Graph(graph_zone_);
     source_positions_.Reset(new SourcePositionTable(graph_));
+    simplified_ = new (graph_zone_) SimplifiedOperatorBuilder(graph_zone_);
     machine_ = new (graph_zone_) MachineOperatorBuilder(
         graph_zone_, kMachPtr,
         InstructionSelector::SupportedMachineOperatorFlags());
     common_ = new (graph_zone_) CommonOperatorBuilder(graph_zone_);
     javascript_ = new (graph_zone_) JSOperatorBuilder(graph_zone_);
     jsgraph_ = new (graph_zone_)
-        JSGraph(isolate_, graph_, common_, javascript_, machine_);
+        JSGraph(isolate_, graph_, common_, javascript_, simplified_, machine_);
   }
 
   // For machine graph testing entry point.
@@ -122,6 +126,7 @@ class PipelineData {
         graph_(graph),
         source_positions_(new SourcePositionTable(graph_)),
         loop_assignment_(nullptr),
+        simplified_(nullptr),
         machine_(nullptr),
         common_(nullptr),
         javascript_(nullptr),
@@ -150,6 +155,7 @@ class PipelineData {
         graph_zone_(nullptr),
         graph_(nullptr),
         loop_assignment_(nullptr),
+        simplified_(nullptr),
         machine_(nullptr),
         common_(nullptr),
         javascript_(nullptr),
@@ -229,6 +235,7 @@ class PipelineData {
     graph_zone_ = nullptr;
     graph_ = nullptr;
     loop_assignment_ = nullptr;
+    simplified_ = nullptr;
     machine_ = nullptr;
     common_ = nullptr;
     javascript_ = nullptr;
@@ -296,6 +303,7 @@ class PipelineData {
   // TODO(dcarney): make this into a ZoneObject.
   base::SmartPointer<SourcePositionTable> source_positions_;
   LoopAssignmentAnalysis* loop_assignment_;
+  SimplifiedOperatorBuilder* simplified_;
   MachineOperatorBuilder* machine_;
   CommonOperatorBuilder* common_;
   JSOperatorBuilder* javascript_;
@@ -496,6 +504,30 @@ struct GraphBuilderPhase {
 };
 
 
+struct NativeContextSpecializationPhase {
+  static const char* phase_name() { return "native context specialization"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
+    DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
+                                              data->common());
+    CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
+                                         data->common(), data->machine());
+    JSNativeContextSpecialization native_context_specialization(
+        &graph_reducer, data->jsgraph(),
+        data->info()->is_deoptimization_enabled()
+            ? JSNativeContextSpecialization::kDeoptimizationEnabled
+            : JSNativeContextSpecialization::kNoFlags,
+        handle(data->info()->global_object(), data->isolate()),
+        data->info()->dependencies(), temp_zone);
+    AddReducer(data, &graph_reducer, &dead_code_elimination);
+    AddReducer(data, &graph_reducer, &common_reducer);
+    AddReducer(data, &graph_reducer, &native_context_specialization);
+    graph_reducer.ReduceGraph();
+  }
+};
+
+
 struct InliningPhase {
   static const char* phase_name() { return "inlining"; }
 
@@ -512,20 +544,6 @@ struct InliningPhase {
             : MaybeHandle<Context>());
     JSFrameSpecialization frame_specialization(data->info()->osr_frame(),
                                                data->jsgraph());
-    JSGlobalSpecialization::Flags global_flags =
-        JSGlobalSpecialization::kNoFlags;
-    if (data->info()->is_deoptimization_enabled()) {
-      global_flags |= JSGlobalSpecialization::kDeoptimizationEnabled;
-    }
-    if (data->info()->is_typing_enabled()) {
-      global_flags |= JSGlobalSpecialization::kTypingEnabled;
-    }
-    JSGlobalSpecialization global_specialization(
-        &graph_reducer, data->jsgraph(), global_flags,
-        data->info()->has_global_object()
-            ? handle(data->info()->global_object())
-            : Handle<GlobalObject>(),
-        data->info()->dependencies());
     JSInliningHeuristic inlining(&graph_reducer,
                                  data->info()->is_inlining_enabled()
                                      ? JSInliningHeuristic::kGeneralInlining
@@ -536,12 +554,10 @@ struct InliningPhase {
     if (data->info()->is_frame_specializing()) {
       AddReducer(data, &graph_reducer, &frame_specialization);
     }
-    if (data->info()->is_native_context_specializing()) {
-      AddReducer(data, &graph_reducer, &global_specialization);
-    }
     AddReducer(data, &graph_reducer, &context_specialization);
     AddReducer(data, &graph_reducer, &inlining);
     graph_reducer.ReduceGraph();
+    inlining.ProcessCandidates();
   }
 };
 
@@ -624,6 +640,22 @@ struct TypedLoweringPhase {
     AddReducer(data, &graph_reducer, &type_feedback_lowering);
     AddReducer(data, &graph_reducer, &load_elimination);
     AddReducer(data, &graph_reducer, &common_reducer);
+    graph_reducer.ReduceGraph();
+  }
+};
+
+
+struct BranchEliminationPhase {
+  static const char* phase_name() { return "branch condition elimination"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
+    BranchElimination branch_condition_elimination(&graph_reducer,
+                                                   data->jsgraph(), temp_zone);
+    DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
+                                              data->common());
+    AddReducer(data, &graph_reducer, &branch_condition_elimination);
+    AddReducer(data, &graph_reducer, &dead_code_elimination);
     graph_reducer.ReduceGraph();
   }
 };
@@ -1095,7 +1127,13 @@ Handle<Code> Pipeline::GenerateCode() {
     RunPrintAndVerify("OSR deconstruction", true);
   }
 
-  // Perform context specialization and inlining (if enabled).
+  // Perform native context specialization (if enabled).
+  if (info()->is_native_context_specializing()) {
+    Run<NativeContextSpecializationPhase>();
+    RunPrintAndVerify("Native context specialized", true);
+  }
+
+  // Perform function context specialization and inlining (if enabled).
   Run<InliningPhase>();
   RunPrintAndVerify("Inlined", true);
 
@@ -1136,6 +1174,9 @@ Handle<Code> Pipeline::GenerateCode() {
     // Lower simplified operators and insert changes.
     Run<SimplifiedLoweringPhase>();
     RunPrintAndVerify("Lowered simplified");
+
+    Run<BranchEliminationPhase>();
+    RunPrintAndVerify("Branch conditions eliminated");
 
     // Optimize control flow.
     if (FLAG_turbo_cf_optimization) {

@@ -3196,6 +3196,25 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
 }
 
 
+void ToLengthStub::Generate(MacroAssembler* masm) {
+  // The ToLength stub takes on argument in eax.
+  Label not_smi, positive_smi;
+  __ JumpIfNotSmi(eax, &not_smi, Label::kNear);
+  STATIC_ASSERT(kSmiTag == 0);
+  __ test(eax, eax);
+  __ j(greater_equal, &positive_smi, Label::kNear);
+  __ xor_(eax, eax);
+  __ bind(&positive_smi);
+  __ Ret();
+  __ bind(&not_smi);
+
+  __ pop(ecx);   // Pop return address.
+  __ push(eax);  // Push argument.
+  __ push(ecx);  // Push return address.
+  __ TailCallRuntime(Runtime::kToLength, 1, 1);
+}
+
+
 void ToStringStub::Generate(MacroAssembler* masm) {
   // The ToString stub takes one argument in eax.
   Label is_number;
@@ -4583,7 +4602,7 @@ static void HandlePolymorphicStoreCase(MacroAssembler* masm, Register receiver,
   Label load_smi_map, compare_map;
   Label start_polymorphic;
   ExternalReference virtual_register =
-      ExternalReference::vector_store_virtual_register(masm->isolate());
+      ExternalReference::virtual_handler_register(masm->isolate());
 
   __ push(receiver);
   __ push(vector);
@@ -4664,7 +4683,7 @@ static void HandleMonomorphicStoreCase(MacroAssembler* masm, Register receiver,
   // The store ic value is on the stack.
   DCHECK(weak_cell.is(VectorStoreICDescriptor::ValueRegister()));
   ExternalReference virtual_register =
-      ExternalReference::vector_store_virtual_register(masm->isolate());
+      ExternalReference::virtual_handler_register(masm->isolate());
 
   // feedback initially contains the feedback array
   Label compare_smi_map;
@@ -4771,13 +4790,16 @@ static void HandlePolymorphicKeyedStoreCase(MacroAssembler* masm,
   Label transition_call;
   Label pop_and_miss;
   ExternalReference virtual_register =
-      ExternalReference::vector_store_virtual_register(masm->isolate());
+      ExternalReference::virtual_handler_register(masm->isolate());
+  ExternalReference virtual_slot =
+      ExternalReference::virtual_slot_register(masm->isolate());
 
   __ push(receiver);
   __ push(vector);
 
   Register receiver_map = receiver;
   Register cached_map = vector;
+  Register value = StoreDescriptor::ValueRegister();
 
   // Receiver might not be a heap object.
   __ JumpIfSmi(receiver, &load_smi_map);
@@ -4786,11 +4808,17 @@ static void HandlePolymorphicKeyedStoreCase(MacroAssembler* masm,
 
   // Polymorphic, we have to loop from 0 to N - 1
   __ push(key);
-  // On the stack we have:
-  // key (esp)
-  // vector
-  // receiver
-  // value
+  // Current stack layout:
+  // - esp[0]    -- key
+  // - esp[4]    -- vector
+  // - esp[8]    -- receiver
+  // - esp[12]   -- value
+  // - esp[16]   -- return address
+  //
+  // Required stack layout for handler call:
+  // - esp[0]    -- return address
+  // - receiver, key, value, vector, slot in registers.
+  // - handler in virtual register.
   Register counter = key;
   __ mov(counter, Immediate(Smi::FromInt(0)));
   __ bind(&next_loop);
@@ -4809,32 +4837,39 @@ static void HandlePolymorphicKeyedStoreCase(MacroAssembler* masm,
   __ pop(receiver);
   __ lea(feedback, FieldOperand(feedback, Code::kHeaderSize));
   __ mov(Operand::StaticVariable(virtual_register), feedback);
-  __ pop(feedback);  // Pop "value".
+  __ pop(value);
   __ jmp(Operand::StaticVariable(virtual_register));
 
   __ bind(&transition_call);
-  // Oh holy hell this will be tough.
-  // The map goes in vector register.
-  __ mov(receiver, FieldOperand(cached_map, WeakCell::kValueOffset));
-  // The weak cell may have been cleared.
-  __ JumpIfSmi(receiver, &pop_and_miss);
-  // slot goes on the stack, and holds return address.
-  __ xchg(slot, Operand(esp, 4 * kPointerSize));
-  // Get the handler in value.
+  // Current stack layout:
+  // - esp[0]    -- key
+  // - esp[4]    -- vector
+  // - esp[8]    -- receiver
+  // - esp[12]   -- value
+  // - esp[16]   -- return address
+  //
+  // Required stack layout for handler call:
+  // - esp[0]    -- return address
+  // - receiver, key, value, map, vector in registers.
+  // - handler and slot in virtual registers.
+  __ mov(Operand::StaticVariable(virtual_slot), slot);
   __ mov(feedback, FieldOperand(feedback, counter, times_half_pointer_size,
                                 FixedArray::kHeaderSize + 2 * kPointerSize));
   __ lea(feedback, FieldOperand(feedback, Code::kHeaderSize));
+  __ mov(Operand::StaticVariable(virtual_register), feedback);
+
+  __ mov(cached_map, FieldOperand(cached_map, WeakCell::kValueOffset));
+  // The weak cell may have been cleared.
+  __ JumpIfSmi(cached_map, &pop_and_miss);
+  DCHECK(!cached_map.is(VectorStoreTransitionDescriptor::MapRegister()));
+  __ mov(VectorStoreTransitionDescriptor::MapRegister(), cached_map);
+
   // Pop key into place.
   __ pop(key);
-  // Put the return address on top of stack, vector goes in slot.
-  __ xchg(slot, Operand(esp, 0));
-  // put the map on the stack, receiver holds receiver.
-  __ xchg(receiver, Operand(esp, 1 * kPointerSize));
-  // put the vector on the stack, slot holds value.
-  __ xchg(slot, Operand(esp, 2 * kPointerSize));
-  // feedback (value) = value, slot = handler.
-  __ xchg(feedback, slot);
-  __ jmp(slot);
+  __ pop(vector);
+  __ pop(receiver);
+  __ pop(value);
+  __ jmp(Operand::StaticVariable(virtual_register));
 
   __ bind(&prepare_next);
   __ add(counter, Immediate(Smi::FromInt(3)));

@@ -63,6 +63,9 @@ std::ostream& operator<<(std::ostream& os, const CallDescriptor::Kind& k) {
     case CallDescriptor::kCallAddress:
       os << "Addr";
       break;
+    case CallDescriptor::kLazyBailout:
+      os << "LazyBail";
+      break;
   }
   return os;
 }
@@ -351,6 +354,31 @@ CallDescriptor* Linkage::GetRuntimeCallDescriptor(
 }
 
 
+CallDescriptor* Linkage::GetLazyBailoutDescriptor(Zone* zone) {
+  const size_t return_count = 0;
+  const size_t parameter_count = 0;
+
+  LocationSignature::Builder locations(zone, return_count, parameter_count);
+  MachineSignature::Builder types(zone, return_count, parameter_count);
+
+  // The target is ignored, but we need to give some values here.
+  MachineType target_type = kMachAnyTagged;
+  LinkageLocation target_loc = regloc(kJSFunctionRegister);
+  return new (zone) CallDescriptor(      // --
+      CallDescriptor::kLazyBailout,      // kind
+      target_type,                       // target MachineType
+      target_loc,                        // target location
+      types.Build(),                     // machine_sig
+      locations.Build(),                 // location_sig
+      0,                                 // stack_parameter_count
+      Operator::kNoThrow,                // properties
+      kNoCalleeSaved,                    // callee-saved
+      kNoCalleeSaved,                    // callee-saved fp
+      CallDescriptor::kNeedsFrameState,  // flags
+      "lazy-bailout");
+}
+
+
 CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
                                              int js_parameter_count,
                                              CallDescriptor::Flags flags) {
@@ -420,16 +448,18 @@ CallDescriptor* Linkage::GetInterpreterDispatchDescriptor(Zone* zone) {
 
   STATIC_ASSERT(4 == Linkage::kInterpreterDispatchTableParameter);
   types.AddParam(kMachPtr);
+#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_X87)
+  // TODO(rmcilroy): Make the context param the one spilled to the stack once
+  // Turbofan supports modified stack arguments in tail calls.
+  locations.AddParam(
+      LinkageLocation::ForCallerFrameSlot(kInterpreterDispatchTableSpillSlot));
+#else
   locations.AddParam(regloc(kInterpreterDispatchTableRegister));
+#endif
 
   STATIC_ASSERT(5 == Linkage::kInterpreterContextParameter);
   types.AddParam(kMachAnyTagged);
-#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_X87)
-  locations.AddParam(
-      LinkageLocation::ForCallerFrameSlot(kInterpreterContextSpillSlot));
-#else
   locations.AddParam(regloc(kContextRegister));
-#endif
 
   LinkageLocation target_loc = LinkageLocation::ForAnyRegister();
   return new (zone) CallDescriptor(         // --

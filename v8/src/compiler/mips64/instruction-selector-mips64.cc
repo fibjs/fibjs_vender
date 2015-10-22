@@ -325,6 +325,12 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 }
 
 
+void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
+
+
+void InstructionSelector::VisitWord32Popcnt(Node* node) { UNREACHABLE(); }
+
+
 void InstructionSelector::VisitWord64Ror(Node* node) {
   VisitRRO(this, kMips64Dror, node);
 }
@@ -769,7 +775,7 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
   }
 
   // Select the appropriate opcode based on the call type.
-  InstructionCode opcode;
+  InstructionCode opcode = kArchNop;
   switch (descriptor->kind()) {
     case CallDescriptor::kCallAddress:
       opcode =
@@ -782,9 +788,9 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
     case CallDescriptor::kCallJSFunction:
       opcode = kArchCallJSFunction | MiscField::encode(flags);
       break;
-    default:
-      UNREACHABLE();
-      return;
+    case CallDescriptor::kLazyBailout:
+      opcode = kArchLazyBailout | MiscField::encode(flags);
+      break;
   }
   opcode |= MiscField::encode(flags);
 
@@ -1023,6 +1029,16 @@ void VisitWordCompare(InstructionSelector* selector, Node* node,
   // Match immediates on left or right side of comparison.
   if (g.CanBeImmediate(right, opcode)) {
     switch (cont->condition()) {
+      case kEqual:
+      case kNotEqual:
+        if (cont->IsSet()) {
+          VisitCompare(selector, opcode, g.UseRegister(left),
+                       g.UseImmediate(right), cont);
+        } else {
+          VisitCompare(selector, opcode, g.UseRegister(left),
+                       g.UseRegister(right), cont);
+        }
+        break;
       case kSignedLessThan:
       case kSignedGreaterThanOrEqual:
       case kUnsignedLessThan:
@@ -1037,6 +1053,16 @@ void VisitWordCompare(InstructionSelector* selector, Node* node,
   } else if (g.CanBeImmediate(left, opcode)) {
     if (!commutative) cont->Commute();
     switch (cont->condition()) {
+      case kEqual:
+      case kNotEqual:
+        if (cont->IsSet()) {
+          VisitCompare(selector, opcode, g.UseRegister(right),
+                       g.UseImmediate(left), cont);
+        } else {
+          VisitCompare(selector, opcode, g.UseRegister(right),
+                       g.UseRegister(left), cont);
+        }
+        break;
       case kSignedLessThan:
       case kSignedGreaterThanOrEqual:
       case kUnsignedLessThan:

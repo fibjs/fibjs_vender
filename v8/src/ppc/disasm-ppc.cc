@@ -613,6 +613,10 @@ void Decoder::DecodeExt2(Instruction* instr) {
       Format(instr, "stfdux   'rs, 'ra, 'rb");
       return;
     }
+    case POPCNTW: {
+      Format(instr, "popcntw  'ra, 'rs");
+      return;
+    }
   }
 
   switch (instr->Bits(10, 2) << 2) {

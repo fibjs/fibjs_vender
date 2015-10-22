@@ -439,6 +439,10 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
     if (info()->shared_info()->asm_function()) {
       if (info()->osr_frame()) info()->MarkAsFrameSpecializing();
       info()->MarkAsFunctionContextSpecializing();
+    } else if (info()->has_global_object() &&
+               FLAG_native_context_specialization) {
+      info()->MarkAsNativeContextSpecializing();
+      info()->MarkAsTypingEnabled();
     } else if (FLAG_turbo_type_feedback) {
       info()->MarkAsTypeFeedbackEnabled();
       info()->EnsureFeedbackVector();
@@ -446,9 +450,6 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
     if (!info()->shared_info()->asm_function() ||
         FLAG_turbo_asm_deoptimization) {
       info()->MarkAsDeoptimizationEnabled();
-    }
-    if (info()->has_global_object() && FLAG_native_context_specialization) {
-      info()->MarkAsNativeContextSpecializing();
     }
 
     Timer t(this, &time_taken_to_create_graph_);
@@ -694,6 +695,24 @@ static void RecordFunctionCompilation(Logger::LogEventsAndTags tag,
 }
 
 
+// Checks whether top level functions should be passed by {raw_filter}.
+// TODO(rmcilroy): Remove filtering once ignition can handle test262 harness.
+static bool TopLevelFunctionPassesFilter(const char* raw_filter) {
+  Vector<const char> filter = CStrVector(raw_filter);
+  return (filter.length() == 0) || (filter.length() == 1 && filter[0] == '*');
+}
+
+
+// Checks whether the passed {raw_filter} is a prefix of the given scripts name.
+// TODO(rmcilroy): Remove filtering once ignition can handle test262 harness.
+static bool ScriptPassesFilter(const char* raw_filter, Handle<Script> script) {
+  Vector<const char> filter = CStrVector(raw_filter);
+  if (!script->name()->IsString()) return filter.length() == 0;
+  String* name = String::cast(script->name());
+  return name->IsUtf8EqualTo(filter, true);
+}
+
+
 static bool CompileUnoptimizedCode(CompilationInfo* info) {
   DCHECK(AllowCompilation::IsAllowed(info->isolate()));
   if (!Compiler::Analyze(info->parse_info()) ||
@@ -731,7 +750,8 @@ MUST_USE_RESULT static MaybeHandle<Code> GetUnoptimizedCodeCommon(
   SetExpectedNofPropertiesFromEstimate(shared, lit->expected_property_count());
   MaybeDisableOptimization(shared, lit->dont_optimize_reason());
 
-  if (FLAG_ignition && info->closure()->PassesFilter(FLAG_ignition_filter)) {
+  if (FLAG_ignition && info->closure()->PassesFilter(FLAG_ignition_filter) &&
+      ScriptPassesFilter(FLAG_ignition_script_filter, info->script())) {
     // Compile bytecode for the interpreter.
     if (!GenerateBytecode(info)) return MaybeHandle<Code>();
   } else {
@@ -792,13 +812,11 @@ static void InsertCodeIntoOptimizedCodeMap(CompilationInfo* info) {
   if (function->shared()->bound()) return;
 
   // Cache optimized context-specific code.
-  if (FLAG_cache_optimized_code) {
-    Handle<SharedFunctionInfo> shared(function->shared());
-    Handle<LiteralsArray> literals(function->literals());
-    Handle<Context> native_context(function->context()->native_context());
-    SharedFunctionInfo::AddToOptimizedCodeMap(shared, native_context, code,
-                                              literals, info->osr_ast_id());
-  }
+  Handle<SharedFunctionInfo> shared(function->shared());
+  Handle<LiteralsArray> literals(function->literals());
+  Handle<Context> native_context(function->context()->native_context());
+  SharedFunctionInfo::AddToOptimizedCodeMap(shared, native_context, code,
+                                            literals, info->osr_ast_id());
 
   // Do not cache (native) context-independent code compiled for OSR.
   if (code->is_turbofanned() && info->is_osr()) return;
@@ -1215,13 +1233,9 @@ static Handle<SharedFunctionInfo> CompileToplevel(CompilationInfo* info) {
           : info->isolate()->counters()->compile();
     HistogramTimerScope timer(rate);
 
-    Handle<String> script_name =
-        script->name()->IsString()
-            ? Handle<String>(String::cast(script->name()))
-            : isolate->factory()->empty_string();
-
     // Compile the code.
-    if (FLAG_ignition && script_name->PassesFilter(FLAG_ignition_filter)) {
+    if (FLAG_ignition && TopLevelFunctionPassesFilter(FLAG_ignition_filter) &&
+        ScriptPassesFilter(FLAG_ignition_script_filter, script)) {
       if (!GenerateBytecode(info)) {
         return Handle<SharedFunctionInfo>::null();
       }
@@ -1252,6 +1266,10 @@ static Handle<SharedFunctionInfo> CompileToplevel(CompilationInfo* info) {
       result->set_allows_lazy_compilation_without_context(false);
     }
 
+    Handle<String> script_name =
+        script->name()->IsString()
+            ? Handle<String>(String::cast(script->name()))
+            : isolate->factory()->empty_string();
     Logger::LogEventsAndTags log_tag = info->is_eval()
         ? Logger::EVAL_TAG
         : Logger::ToNativeByScript(Logger::SCRIPT_TAG, *script);
@@ -1553,13 +1571,6 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
                     !LiveEditFunctionTracker::IsActive(isolate) &&
                     (!info.is_debug() || allow_lazy_without_ctx);
 
-  if (outer_info->parse_info()->is_toplevel() && outer_info->will_serialize()) {
-    // Make sure that if the toplevel code (possibly to be serialized),
-    // the inner function must be allowed to be compiled lazily.
-    // This is necessary to serialize toplevel code without inner functions.
-    DCHECK(allow_lazy);
-  }
-
   bool lazy = FLAG_lazy && allow_lazy && !literal->should_eager_compile();
 
   // Generate code
@@ -1782,7 +1793,7 @@ bool CompilationPhase::ShouldProduceTraceOutput() const {
 #if DEBUG
 void CompilationInfo::PrintAstForTesting() {
   PrintF("--- Source from AST ---\n%s\n",
-         PrettyPrinter(isolate(), zone()).PrintProgram(literal()));
+         PrettyPrinter(isolate()).PrintProgram(literal()));
 }
 #endif
 }  // namespace internal

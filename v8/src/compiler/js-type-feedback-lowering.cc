@@ -16,10 +16,7 @@ namespace compiler {
 
 JSTypeFeedbackLowering::JSTypeFeedbackLowering(Editor* editor, Flags flags,
                                                JSGraph* jsgraph)
-    : AdvancedReducer(editor),
-      flags_(flags),
-      jsgraph_(jsgraph),
-      simplified_(graph()->zone()) {}
+    : AdvancedReducer(editor), flags_(flags), jsgraph_(jsgraph) {}
 
 
 Reduction JSTypeFeedbackLowering::Reduce(Node* node) {
@@ -43,7 +40,7 @@ Reduction JSTypeFeedbackLowering::ReduceJSLoadNamed(Node* node) {
   // We need to make optimistic assumptions to continue.
   if (!(flags() & kDeoptimizationEnabled)) return NoChange();
   LoadNamedParameters const& p = LoadNamedParametersOf(node->op());
-  if (p.feedback().vector().is_null()) return NoChange();
+  if (!p.feedback().IsValid()) return NoChange();  // No feedback.
   if (p.name().is_identical_to(factory()->length_string())) {
     LoadICNexus nexus(p.feedback().vector(), p.feedback().slot());
     MapHandleList maps;
@@ -112,6 +109,11 @@ Isolate* JSTypeFeedbackLowering::isolate() const {
 
 MachineOperatorBuilder* JSTypeFeedbackLowering::machine() const {
   return jsgraph()->machine();
+}
+
+
+SimplifiedOperatorBuilder* JSTypeFeedbackLowering::simplified() const {
+  return jsgraph()->simplified();
 }
 
 }  // namespace compiler

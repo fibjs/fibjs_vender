@@ -2411,55 +2411,65 @@ HValue* HGraphBuilder::BuildUncheckedStringAdd(
       STATIC_ASSERT((SeqString::kHeaderSize & kObjectAlignmentMask) == 0);
       HValue* size = BuildObjectSizeAlignment(Pop(), SeqString::kHeaderSize);
 
-      // Allocate the string object. HAllocate does not care whether we pass
-      // STRING_TYPE or ONE_BYTE_STRING_TYPE here, so we just use STRING_TYPE.
-      HAllocate* result = BuildAllocate(
-          size, HType::String(), STRING_TYPE, allocation_mode);
-      Add<HStoreNamedField>(result, HObjectAccess::ForMap(), map);
-
-      // Initialize the string fields.
-      Add<HStoreNamedField>(result, HObjectAccess::ForStringHashField(),
-                            Add<HConstant>(String::kEmptyHashField));
-      Add<HStoreNamedField>(result, HObjectAccess::ForStringLength(), length);
-
-      // Copy characters to the result string.
-      IfBuilder if_twobyte(this);
-      if_twobyte.If<HCompareObjectEqAndBranch>(map, string_map);
-      if_twobyte.Then();
+      IfBuilder if_size(this);
+      if_size.If<HCompareNumericAndBranch>(
+          size, Add<HConstant>(Page::kMaxRegularHeapObjectSize), Token::LT);
+      if_size.Then();
       {
-        // Copy characters from the left string.
-        BuildCopySeqStringChars(
-            left, graph()->GetConstant0(), String::TWO_BYTE_ENCODING,
-            result, graph()->GetConstant0(), String::TWO_BYTE_ENCODING,
-            left_length);
+        // Allocate the string object. HAllocate does not care whether we pass
+        // STRING_TYPE or ONE_BYTE_STRING_TYPE here, so we just use STRING_TYPE.
+        HAllocate* result =
+            BuildAllocate(size, HType::String(), STRING_TYPE, allocation_mode);
+        Add<HStoreNamedField>(result, HObjectAccess::ForMap(), map);
 
-        // Copy characters from the right string.
-        BuildCopySeqStringChars(
-            right, graph()->GetConstant0(), String::TWO_BYTE_ENCODING,
-            result, left_length, String::TWO_BYTE_ENCODING,
-            right_length);
+        // Initialize the string fields.
+        Add<HStoreNamedField>(result, HObjectAccess::ForStringHashField(),
+                              Add<HConstant>(String::kEmptyHashField));
+        Add<HStoreNamedField>(result, HObjectAccess::ForStringLength(), length);
+
+        // Copy characters to the result string.
+        IfBuilder if_twobyte(this);
+        if_twobyte.If<HCompareObjectEqAndBranch>(map, string_map);
+        if_twobyte.Then();
+        {
+          // Copy characters from the left string.
+          BuildCopySeqStringChars(
+              left, graph()->GetConstant0(), String::TWO_BYTE_ENCODING, result,
+              graph()->GetConstant0(), String::TWO_BYTE_ENCODING, left_length);
+
+          // Copy characters from the right string.
+          BuildCopySeqStringChars(
+              right, graph()->GetConstant0(), String::TWO_BYTE_ENCODING, result,
+              left_length, String::TWO_BYTE_ENCODING, right_length);
+        }
+        if_twobyte.Else();
+        {
+          // Copy characters from the left string.
+          BuildCopySeqStringChars(
+              left, graph()->GetConstant0(), String::ONE_BYTE_ENCODING, result,
+              graph()->GetConstant0(), String::ONE_BYTE_ENCODING, left_length);
+
+          // Copy characters from the right string.
+          BuildCopySeqStringChars(
+              right, graph()->GetConstant0(), String::ONE_BYTE_ENCODING, result,
+              left_length, String::ONE_BYTE_ENCODING, right_length);
+        }
+        if_twobyte.End();
+
+        // Count the native string addition.
+        AddIncrementCounter(isolate()->counters()->string_add_native());
+
+        // Return the sequential string.
+        Push(result);
       }
-      if_twobyte.Else();
+      if_size.Else();
       {
-        // Copy characters from the left string.
-        BuildCopySeqStringChars(
-            left, graph()->GetConstant0(), String::ONE_BYTE_ENCODING,
-            result, graph()->GetConstant0(), String::ONE_BYTE_ENCODING,
-            left_length);
-
-        // Copy characters from the right string.
-        BuildCopySeqStringChars(
-            right, graph()->GetConstant0(), String::ONE_BYTE_ENCODING,
-            result, left_length, String::ONE_BYTE_ENCODING,
-            right_length);
+        // Fallback to the runtime to add the two strings. The string has to be
+        // allocated in LO space.
+        Add<HPushArguments>(left, right);
+        Push(Add<HCallRuntime>(Runtime::FunctionForId(Runtime::kStringAdd), 2));
       }
-      if_twobyte.End();
-
-      // Count the native string addition.
-      AddIncrementCounter(isolate()->counters()->string_add_native());
-
-      // Return the sequential string.
-      Push(result);
+      if_size.End();
     }
     if_sameencodingandsequential.Else();
     {
@@ -3504,6 +3514,11 @@ HAllocate* HGraphBuilder::JSArrayBuilder::AllocateArray(
   HValue* elements_size =
       builder()->BuildCalculateElementsSize(kind_, capacity);
 
+  // Bail out for large objects.
+  HValue* max_regular_heap_object_size =
+      builder()->Add<HConstant>(Page::kMaxRegularHeapObjectSize);
+  builder()->Add<HBoundsCheck>(elements_size, max_regular_heap_object_size);
+
   // Allocate (dealing with failure appropriately)
   HAllocate* array_object = builder()->AllocateJSArrayObject(mode_);
 
@@ -3566,7 +3581,7 @@ HOptimizedGraphBuilder::HOptimizedGraphBuilder(CompilationInfo* info)
   // constructor for the initial state relies on function_state_ == NULL
   // to know it's the initial state.
   function_state_ = &initial_function_state_;
-  InitializeAstVisitor(info->isolate(), info->zone());
+  InitializeAstVisitor(info->isolate());
   if (top_info()->is_tracking_positions()) {
     SetSourcePosition(info->shared_info()->start_position());
   }
@@ -5989,7 +6004,6 @@ void HOptimizedGraphBuilder::VisitArrayLiteral(ArrayLiteral* expr) {
   DCHECK(!HasStackOverflow());
   DCHECK(current_block() != NULL);
   DCHECK(current_block()->HasPredecessor());
-  expr->BuildConstantElements(isolate());
   ZoneList<Expression*>* subexprs = expr->values();
   int length = subexprs->length();
   HInstruction* literal;
@@ -8264,11 +8278,12 @@ int HOptimizedGraphBuilder::InliningAstSize(Handle<JSFunction> target) {
   }
 
   // Target must be inlineable.
-  if (!target_shared->IsInlineable()) {
+  BailoutReason noopt_reason = target_shared->disable_optimization_reason();
+  if (!target_shared->IsInlineable() && noopt_reason != kHydrogenFilter) {
     TraceInline(target, caller, "target not inlineable");
     return kNotInlinable;
   }
-  if (target_shared->disable_optimization_reason() != kNoReason) {
+  if (noopt_reason != kNoReason && noopt_reason != kHydrogenFilter) {
     TraceInline(target, caller, "target contains unsupported syntax [early]");
     return kNotInlinable;
   }
@@ -12267,6 +12282,20 @@ void HOptimizedGraphBuilder::GenerateToString(CallRuntime* call) {
                                  Vector<HValue*>(values, arraysize(values)));
     return ast_context()->ReturnInstruction(result, call->id());
   }
+}
+
+
+void HOptimizedGraphBuilder::GenerateToLength(CallRuntime* call) {
+  DCHECK_EQ(1, call->arguments()->length());
+  CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
+  Callable callable = CodeFactory::ToLength(isolate());
+  HValue* input = Pop();
+  HValue* stub = Add<HConstant>(callable.code());
+  HValue* values[] = {context(), input};
+  HInstruction* result =
+      New<HCallWithDescriptor>(stub, 0, callable.descriptor(),
+                               Vector<HValue*>(values, arraysize(values)));
+  return ast_context()->ReturnInstruction(result, call->id());
 }
 
 

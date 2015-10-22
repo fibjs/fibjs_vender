@@ -74,6 +74,7 @@ class CodeFactory final {
 
   static Callable ToNumber(Isolate* isolate);
   static Callable ToString(Isolate* isolate);
+  static Callable ToLength(Isolate* isolate);
   static Callable ToObject(Isolate* isolate);
 
   static Callable StringAdd(Isolate* isolate, StringAddFlags flags,
@@ -93,11 +94,13 @@ class CodeFactory final {
                                   bool has_duplicate_parameters);
 
   static Callable AllocateHeapNumber(Isolate* isolate);
+  static Callable AllocateInNewSpace(Isolate* isolate);
 
   static Callable CallFunction(Isolate* isolate, int argc,
                                CallFunctionFlags flags);
 
   static Callable InterpreterPushArgsAndCall(Isolate* isolate);
+  static Callable InterpreterPushArgsAndConstruct(Isolate* isolate);
   static Callable InterpreterCEntry(Isolate* isolate);
 };
 

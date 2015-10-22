@@ -97,6 +97,9 @@
     <Filter Include="Source Files\interpreter">
       <UniqueIdentifier>{59810ce5-926b-7a85-f08d-bf58feae40cd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\js">
+      <UniqueIdentifier>{4095546e-99a4-8ecb-612c-1651eaa2cbc8}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\libplatform">
       <UniqueIdentifier>{d55c839e-d9e9-0541-edc0-1b7cf01a3405}</UniqueIdentifier>
     </Filter>
@@ -408,6 +411,9 @@
     <ClInclude Include="src\compiler\basic-block-instrumentor.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\branch-elimination.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\bytecode-graph-builder.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -510,9 +516,6 @@
     <ClInclude Include="src\compiler\js-generic-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\js-global-specialization.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\js-graph.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -523,6 +526,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-intrinsic-lowering.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\js-native-context-specialization.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-operator.h">
@@ -1218,6 +1224,9 @@
     <ClInclude Include="src\profiler\unbound-queue.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\property-descriptor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\property-details.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1676,6 +1685,9 @@
     <ClCompile Include="src\compiler\basic-block-instrumentor.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\branch-elimination.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\bytecode-graph-builder.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -1772,9 +1784,6 @@
     <ClCompile Include="src\compiler\js-generic-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\js-global-specialization.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\js-graph.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -1785,6 +1794,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-intrinsic-lowering.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\js-native-context-specialization.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-operator.cc">
@@ -2479,6 +2491,9 @@
     </ClCompile>
     <ClCompile Include="src\profiler\strings-storage.cc">
       <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\property-descriptor.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\property.cc">
       <Filter>Source Files</Filter>

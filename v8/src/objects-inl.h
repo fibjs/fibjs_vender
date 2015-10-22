@@ -2365,27 +2365,11 @@ void Struct::InitializeBody(int object_size) {
 }
 
 
-bool Object::ToArrayLength(uint32_t* index) {
-  if (IsSmi()) {
-    int value = Smi::cast(this)->value();
-    if (value < 0) return false;
-    *index = value;
-    return true;
-  }
-  if (IsHeapNumber()) {
-    double value = HeapNumber::cast(this)->value();
-    uint32_t uint_value = static_cast<uint32_t>(value);
-    if (value == static_cast<double>(uint_value)) {
-      *index = uint_value;
-      return true;
-    }
-  }
-  return false;
-}
+bool Object::ToArrayLength(uint32_t* index) { return Object::ToUint32(index); }
 
 
 bool Object::ToArrayIndex(uint32_t* index) {
-  return ToArrayLength(index) && *index != kMaxUInt32;
+  return Object::ToUint32(index) && *index != kMaxUInt32;
 }
 
 
@@ -4921,6 +4905,7 @@ bool Map::IsJSGlobalProxyMap() {
 bool Map::IsJSGlobalObjectMap() {
   return instance_type() == JS_GLOBAL_OBJECT_TYPE;
 }
+bool Map::IsJSTypedArrayMap() { return instance_type() == JS_TYPED_ARRAY_TYPE; }
 bool Map::IsGlobalObjectMap() {
   const InstanceType type = instance_type();
   return type == JS_GLOBAL_OBJECT_TYPE || type == JS_BUILTINS_OBJECT_TYPE;
@@ -4994,12 +4979,8 @@ bool Code::IsCodeStubOrIC() {
 
 
 bool Code::IsJavaScriptCode() {
-  if (kind() == FUNCTION || kind() == OPTIMIZED_FUNCTION) {
-    return true;
-  }
-  Handle<Code> interpreter_entry =
-      GetIsolate()->builtins()->InterpreterEntryTrampoline();
-  return interpreter_entry.location() != nullptr && *interpreter_entry == this;
+  return kind() == FUNCTION || kind() == OPTIMIZED_FUNCTION ||
+         is_interpreter_entry_trampoline();
 }
 
 
@@ -5047,6 +5028,12 @@ inline bool Code::is_hydrogen_stub() {
   return is_crankshafted() && kind() != OPTIMIZED_FUNCTION;
 }
 
+
+inline bool Code::is_interpreter_entry_trampoline() {
+  Handle<Code> interpreter_entry =
+      GetIsolate()->builtins()->InterpreterEntryTrampoline();
+  return interpreter_entry.location() != nullptr && *interpreter_entry == this;
+}
 
 inline void Code::set_is_crankshafted(bool value) {
   int previous = READ_UINT32_FIELD(this, kKindSpecificFlags2Offset);
@@ -7255,6 +7242,16 @@ MaybeHandle<Object> Object::GetPropertyOrElement(Handle<Object> object,
                                                  LanguageMode language_mode) {
   LookupIterator it =
       LookupIterator::PropertyOrElement(name->GetIsolate(), object, name);
+  return GetProperty(&it, language_mode);
+}
+
+
+MaybeHandle<Object> Object::GetPropertyOrElement(Handle<JSReceiver> holder,
+                                                 Handle<Name> name,
+                                                 Handle<Object> receiver,
+                                                 LanguageMode language_mode) {
+  LookupIterator it = LookupIterator::PropertyOrElement(
+      name->GetIsolate(), receiver, name, holder);
   return GetProperty(&it, language_mode);
 }
 

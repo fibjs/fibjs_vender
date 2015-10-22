@@ -10,11 +10,14 @@
 #include "src/compiler/all-nodes.h"
 #include "src/compiler/ast-graph-builder.h"
 #include "src/compiler/common-operator.h"
+#include "src/compiler/common-operator-reducer.h"
+#include "src/compiler/dead-code-elimination.h"
+#include "src/compiler/graph-reducer.h"
+#include "src/compiler/js-native-context-specialization.h"
 #include "src/compiler/js-operator.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/node-properties.h"
 #include "src/compiler/operator-properties.h"
-#include "src/full-codegen/full-codegen.h"
 #include "src/isolate-inl.h"
 #include "src/parser.h"
 #include "src/rewriter.h"
@@ -307,10 +310,23 @@ Reduction JSInliner::ReduceJSCallFunction(Node* node,
     }
   }
 
+  // TODO(turbofan): Inlining into a try-block is not yet supported.
+  if (NodeProperties::IsExceptionalCall(node)) {
+    TRACE("Not inlining %s into %s because of surrounding try-block\n",
+          function->shared()->DebugName()->ToCString().get(),
+          info_->shared_info()->DebugName()->ToCString().get());
+    return NoChange();
+  }
+
   Zone zone;
   ParseInfo parse_info(&zone, function);
   CompilationInfo info(&parse_info);
-  if (info_->is_deoptimization_enabled()) info.MarkAsDeoptimizationEnabled();
+  if (info_->is_deoptimization_enabled()) {
+    info.MarkAsDeoptimizationEnabled();
+  }
+  if (info_->is_native_context_specializing()) {
+    info.MarkAsNativeContextSpecializing();
+  }
 
   if (!Compiler::ParseAndAnalyze(info.parse_info())) {
     TRACE("Not inlining %s into %s because parsing failed\n",
@@ -335,9 +351,31 @@ Reduction JSInliner::ReduceJSCallFunction(Node* node,
 
   Graph graph(info.zone());
   JSGraph jsgraph(info.isolate(), &graph, jsgraph_->common(),
-                  jsgraph_->javascript(), jsgraph_->machine());
+                  jsgraph_->javascript(), jsgraph_->simplified(),
+                  jsgraph_->machine());
   AstGraphBuilder graph_builder(local_zone_, &info, &jsgraph);
   graph_builder.CreateGraph(false);
+
+  // TODO(mstarzinger): Unify this with the Pipeline once JSInliner refactoring
+  // starts.
+  if (info.is_native_context_specializing()) {
+    GraphReducer graph_reducer(local_zone_, &graph, jsgraph.Dead());
+    DeadCodeElimination dead_code_elimination(&graph_reducer, &graph,
+                                              jsgraph.common());
+    CommonOperatorReducer common_reducer(&graph_reducer, &graph,
+                                         jsgraph.common(), jsgraph.machine());
+    JSNativeContextSpecialization native_context_specialization(
+        &graph_reducer, &jsgraph,
+        info.is_deoptimization_enabled()
+            ? JSNativeContextSpecialization::kDeoptimizationEnabled
+            : JSNativeContextSpecialization::kNoFlags,
+        handle(info.global_object(), info.isolate()), info_->dependencies(),
+        local_zone_);
+    graph_reducer.AddReducer(&dead_code_elimination);
+    graph_reducer.AddReducer(&common_reducer);
+    graph_reducer.AddReducer(&native_context_specialization);
+    graph_reducer.ReduceGraph();
+  }
 
   // The inlinee specializes to the context from the JSFunction object.
   // TODO(turbofan): We might want to load the context from the JSFunction at

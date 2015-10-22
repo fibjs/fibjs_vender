@@ -318,6 +318,7 @@ RUNTIME_FUNCTION(Runtime_FormatMessageString) {
     CONVERT_ARG_HANDLE_CHECKED(JSObject, call_site_obj, 0); \
     Handle<String> result;                                  \
     CallSite call_site(isolate, call_site_obj);             \
+    RUNTIME_ASSERT(call_site.IsValid())                     \
     return RETURN(call_site.NAME(), isolate);               \
   }
 
@@ -423,7 +424,7 @@ Handle<String> RenderCallSite(Isolate* isolate, Handle<Object> object) {
             ? new ParseInfo(&zone, location.function())
             : new ParseInfo(&zone, location.script()));
     if (Parser::ParseStatic(info.get())) {
-      CallPrinter printer(isolate, &zone);
+      CallPrinter printer(isolate);
       const char* string = printer.Print(info->literal(), location.start_pos());
       return isolate->factory()->NewStringFromAsciiChecked(string);
     } else {

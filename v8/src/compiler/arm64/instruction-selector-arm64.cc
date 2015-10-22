@@ -41,6 +41,15 @@ class Arm64OperandGenerator final : public OperandGenerator {
     return UseRegister(node);
   }
 
+  // Use the zero register if the node has the immediate value zero, otherwise
+  // assign a register.
+  InstructionOperand UseRegisterOrImmediateZero(Node* node) {
+    if (IsIntegerConstant(node) && (GetIntegerConstantValue(node) == 0)) {
+      return UseImmediate(node);
+    }
+    return UseRegister(node);
+  }
+
   // Use the provided node if it has the required value, or create a
   // TempImmediate otherwise.
   InstructionOperand UseImmediateOrTemp(Node* node, int32_t value) {
@@ -251,18 +260,18 @@ void VisitBinop(InstructionSelector* selector, Node* node,
   } else if (TryMatchAnyShift(selector, node, right_node, &opcode,
                               !is_add_sub)) {
     Matcher m_shift(right_node);
-    inputs[input_count++] = g.UseRegister(left_node);
+    inputs[input_count++] = g.UseRegisterOrImmediateZero(left_node);
     inputs[input_count++] = g.UseRegister(m_shift.left().node());
     inputs[input_count++] = g.UseImmediate(m_shift.right().node());
   } else if (can_commute && TryMatchAnyShift(selector, node, left_node, &opcode,
                                              !is_add_sub)) {
     if (is_cmp) cont->Commute();
     Matcher m_shift(left_node);
-    inputs[input_count++] = g.UseRegister(right_node);
+    inputs[input_count++] = g.UseRegisterOrImmediateZero(right_node);
     inputs[input_count++] = g.UseRegister(m_shift.left().node());
     inputs[input_count++] = g.UseImmediate(m_shift.right().node());
   } else {
-    inputs[input_count++] = g.UseRegister(left_node);
+    inputs[input_count++] = g.UseRegisterOrImmediateZero(left_node);
     inputs[input_count++] = g.UseRegister(right_node);
   }
 
@@ -922,6 +931,12 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 }
 
 
+void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
+
+
+void InstructionSelector::VisitWord32Popcnt(Node* node) { UNREACHABLE(); }
+
+
 void InstructionSelector::VisitInt32Add(Node* node) {
   Arm64OperandGenerator g(this);
   Int32BinopMatcher m(node);
@@ -1001,12 +1016,7 @@ void InstructionSelector::VisitInt32Sub(Node* node) {
     }
   }
 
-  if (m.left().Is(0)) {
-    Emit(kArm64Neg32, g.DefineAsRegister(node),
-         g.UseRegister(m.right().node()));
-  } else {
-    VisitAddSub<Int32BinopMatcher>(this, node, kArm64Sub32, kArm64Add32);
-  }
+  VisitAddSub<Int32BinopMatcher>(this, node, kArm64Sub32, kArm64Add32);
 }
 
 
@@ -1027,11 +1037,7 @@ void InstructionSelector::VisitInt64Sub(Node* node) {
     }
   }
 
-  if (m.left().Is(0)) {
-    Emit(kArm64Neg, g.DefineAsRegister(node), g.UseRegister(m.right().node()));
-  } else {
-    VisitAddSub<Int64BinopMatcher>(this, node, kArm64Sub, kArm64Add);
-  }
+  VisitAddSub<Int64BinopMatcher>(this, node, kArm64Sub, kArm64Add);
 }
 
 
@@ -1475,7 +1481,7 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
   }
 
   // Select the appropriate opcode based on the call type.
-  InstructionCode opcode;
+  InstructionCode opcode = kArchNop;
   switch (descriptor->kind()) {
     case CallDescriptor::kCallAddress:
       opcode =
@@ -1488,9 +1494,9 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
     case CallDescriptor::kCallJSFunction:
       opcode = kArchCallJSFunction | MiscField::encode(flags);
       break;
-    default:
-      UNREACHABLE();
-      return;
+    case CallDescriptor::kLazyBailout:
+      opcode = kArchLazyBailout | MiscField::encode(flags);
+      break;
   }
 
   // Emit the call instruction.
