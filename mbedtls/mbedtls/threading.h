@@ -40,7 +40,6 @@ extern "C" {
 #define MBEDTLS_ERR_THREADING_MUTEX_ERROR                 -0x001E  /**< Locking / unlocking / free failed with error code. */
 
 #if defined(MBEDTLS_THREADING_PTHREAD)
-
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>

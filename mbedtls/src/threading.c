@@ -172,6 +172,6 @@ void mbedtls_threading_free_alt( void )
 #endif
 mbedtls_threading_mutex_t mbedtls_threading_readdir_mutex MUTEX_INIT;
 mbedtls_threading_mutex_t mbedtls_threading_gmtime_mutex MUTEX_INIT;
-#endif
 
 #endif /* MBEDTLS_THREADING_C */
+#endif

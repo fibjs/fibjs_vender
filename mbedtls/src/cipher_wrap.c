@@ -1302,6 +1302,7 @@ static const mbedtls_cipher_info_t arc4_64_info = {
     1,
     &arc4_base_info
 };
+
 static const mbedtls_cipher_info_t arc4_128_info = {
     MBEDTLS_CIPHER_ARC4_128,
     MBEDTLS_MODE_STREAM,
@@ -1411,9 +1412,9 @@ const mbedtls_cipher_definition_t mbedtls_cipher_definitions[] =
 #endif /* MBEDTLS_AES_C */
 
 #if defined(MBEDTLS_ARC4_C)
-    { MBEDTLS_CIPHER_ARC4_40,             &arc4_40_info },
-    { MBEDTLS_CIPHER_ARC4_56,             &arc4_56_info },
-    { MBEDTLS_CIPHER_ARC4_64,             &arc4_64_info },
+    { MBEDTLS_CIPHER_ARC4_40,              &arc4_40_info },
+    { MBEDTLS_CIPHER_ARC4_56,              &arc4_56_info },
+    { MBEDTLS_CIPHER_ARC4_64,              &arc4_64_info },
     { MBEDTLS_CIPHER_ARC4_128,             &arc4_128_info },
 #endif
 
