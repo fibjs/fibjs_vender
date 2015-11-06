@@ -19,7 +19,6 @@ namespace compiler {
 
 class ControlBuilder;
 class Graph;
-class JSTypeFeedbackTable;
 class LoopAssignmentAnalysis;
 class LoopBuilder;
 class Node;
@@ -31,8 +30,7 @@ class Node;
 class AstGraphBuilder : public AstVisitor {
  public:
   AstGraphBuilder(Zone* local_zone, CompilationInfo* info, JSGraph* jsgraph,
-                  LoopAssignmentAnalysis* loop_assignment = NULL,
-                  JSTypeFeedbackTable* js_type_feedback = NULL);
+                  LoopAssignmentAnalysis* loop_assignment = NULL);
 
   // Creates a graph by visiting the entire AST.
   bool CreateGraph(bool stack_check = true);
@@ -115,9 +113,6 @@ class AstGraphBuilder : public AstVisitor {
 
   // Function info for frame state construction.
   const FrameStateFunctionInfo* const frame_state_function_info_;
-
-  // Type feedback table.
-  JSTypeFeedbackTable* js_type_feedback_;
 
   // Growth increment for the temporary buffer used to construct input lists to
   // new nodes.
@@ -247,9 +242,6 @@ class AstGraphBuilder : public AstVisitor {
   // resulting node. The operand stack height remains the same, variables and
   // other dependencies tracked by the environment might be mutated though.
 
-  // Builder to create a receiver check for sloppy mode.
-  Node* BuildPatchReceiverToGlobalProxy(Node* receiver);
-
   // Builders to create local function, script and block contexts.
   Node* BuildLocalActivationContext(Node* context);
   Node* BuildLocalFunctionContext(Scope* scope);
@@ -286,27 +278,25 @@ class AstGraphBuilder : public AstVisitor {
   Node* BuildNamedLoad(Node* receiver, Handle<Name> name,
                        const VectorSlotPair& feedback);
   Node* BuildKeyedStore(Node* receiver, Node* key, Node* value,
-                        const VectorSlotPair& feedback, TypeFeedbackId id);
+                        const VectorSlotPair& feedback);
   Node* BuildNamedStore(Node* receiver, Handle<Name> name, Node* value,
-                        const VectorSlotPair& feedback, TypeFeedbackId id);
+                        const VectorSlotPair& feedback);
 
   // Builders for super property loads and stores.
   Node* BuildKeyedSuperStore(Node* receiver, Node* home_object, Node* key,
-                             Node* value, TypeFeedbackId id);
+                             Node* value);
   Node* BuildNamedSuperStore(Node* receiver, Node* home_object,
-                             Handle<Name> name, Node* value, TypeFeedbackId id);
+                             Handle<Name> name, Node* value);
   Node* BuildNamedSuperLoad(Node* receiver, Node* home_object,
                             Handle<Name> name, const VectorSlotPair& feedback);
   Node* BuildKeyedSuperLoad(Node* receiver, Node* home_object, Node* key,
                             const VectorSlotPair& feedback);
 
   // Builders for global variable loads and stores.
-  Node* BuildGlobalLoad(Node* script_context, Node* global, Handle<Name> name,
-                        const VectorSlotPair& feedback, TypeofMode typeof_mode,
-                        int slot_index);
-  Node* BuildGlobalStore(Node* script_context, Node* global, Handle<Name> name,
-                         Node* value, const VectorSlotPair& feedback,
-                         TypeFeedbackId id, int slot_index);
+  Node* BuildGlobalLoad(Handle<Name> name, const VectorSlotPair& feedback,
+                        TypeofMode typeof_mode);
+  Node* BuildGlobalStore(Handle<Name> name, Node* value,
+                         const VectorSlotPair& feedback);
 
   // Builders for accessing the function context.
   Node* BuildLoadGlobalObject();
@@ -360,6 +350,28 @@ class AstGraphBuilder : public AstVisitor {
   // Process arguments to a call by popping {arity} elements off the operand
   // stack and build a call node using the given call operator.
   Node* ProcessArguments(const Operator* op, int arity);
+
+  // ===========================================================================
+  // The following build methods have the same contract as the above ones, but
+  // they can also return {NULL} to indicate that no fragment was built. Note
+  // that these are optimizations, disabling any of them should still produce
+  // correct graphs.
+
+  // Optimization for variable load from global object.
+  Node* TryLoadGlobalConstant(Handle<Name> name);
+
+  // Optimization for variable load of dynamic lookup slot that is most likely
+  // to resolve to a global slot or context slot (inferred from scope chain).
+  Node* TryLoadDynamicVariable(Variable* variable, Handle<String> name,
+                               BailoutId bailout_id,
+                               FrameStateBeforeAndAfter& states,
+                               const VectorSlotPair& feedback,
+                               OutputFrameStateCombine combine,
+                               TypeofMode typeof_mode);
+
+  // Optimizations for automatic type conversion.
+  Node* TryFastToBoolean(Node* input);
+  Node* TryFastToName(Node* input);
 
   // ===========================================================================
   // The following visitation methods all recursively visit a subtree of the

@@ -897,7 +897,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   // Get the arguments map from the current native context into edi.
   Label has_mapped_parameters, instantiate;
   __ mov(edi, Operand(esi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ mov(edi, FieldOperand(edi, GlobalObject::kNativeContextOffset));
+  __ mov(edi, FieldOperand(edi, JSGlobalObject::kNativeContextOffset));
   __ mov(ebx, Operand(esp, 0 * kPointerSize));
   __ test(ebx, ebx);
   __ j(not_zero, &has_mapped_parameters, Label::kNear);
@@ -1101,7 +1101,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
 
   // Get the arguments map from the current native context.
   __ mov(edi, Operand(esi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ mov(edi, FieldOperand(edi, GlobalObject::kNativeContextOffset));
+  __ mov(edi, FieldOperand(edi, JSGlobalObject::kNativeContextOffset));
   const int offset = Context::SlotOffset(Context::STRICT_ARGUMENTS_MAP_INDEX);
   __ mov(edi, Operand(edi, offset));
 
@@ -2033,97 +2033,6 @@ static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
 }
 
 
-static void EmitContinueIfStrictOrNative(MacroAssembler* masm, Label* cont) {
-  // Do not transform the receiver for strict mode functions.
-  __ mov(ecx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
-  __ test_b(FieldOperand(ecx, SharedFunctionInfo::kStrictModeByteOffset),
-            1 << SharedFunctionInfo::kStrictModeBitWithinByte);
-  __ j(not_equal, cont);
-
-  // Do not transform the receiver for natives (shared already in ecx).
-  __ test_b(FieldOperand(ecx, SharedFunctionInfo::kNativeByteOffset),
-            1 << SharedFunctionInfo::kNativeBitWithinByte);
-  __ j(not_equal, cont);
-}
-
-
-static void EmitSlowCase(Isolate* isolate, MacroAssembler* masm, int argc) {
-  __ Set(eax, argc);
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
-}
-
-
-static void EmitWrapCase(MacroAssembler* masm, int argc, Label* cont) {
-  // Wrap the receiver and patch it back onto the stack.
-  { FrameScope frame_scope(masm, StackFrame::INTERNAL);
-    __ push(edi);
-    ToObjectStub stub(masm->isolate());
-    __ CallStub(&stub);
-    __ pop(edi);
-  }
-  __ mov(Operand(esp, (argc + 1) * kPointerSize), eax);
-  __ jmp(cont);
-}
-
-
-static void CallFunctionNoFeedback(MacroAssembler* masm,
-                                   int argc, bool needs_checks,
-                                   bool call_as_method) {
-  // edi : the function to call
-  Label slow, wrap, cont;
-
-  if (needs_checks) {
-    // Check that the function really is a JavaScript function.
-    __ JumpIfSmi(edi, &slow);
-
-    // Goto slow case if we do not have a function.
-    __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
-    __ j(not_equal, &slow);
-  }
-
-  // Fast-case: Just invoke the function.
-  ParameterCount actual(argc);
-
-  if (call_as_method) {
-    if (needs_checks) {
-      EmitContinueIfStrictOrNative(masm, &cont);
-    }
-
-    // Load the receiver from the stack.
-    __ mov(eax, Operand(esp, (argc + 1) * kPointerSize));
-
-    if (needs_checks) {
-      __ JumpIfSmi(eax, &wrap);
-
-      __ CmpObjectType(eax, FIRST_SPEC_OBJECT_TYPE, ecx);
-      __ j(below, &wrap);
-    } else {
-      __ jmp(&wrap);
-    }
-
-    __ bind(&cont);
-  }
-
-  __ InvokeFunction(edi, actual, JUMP_FUNCTION, NullCallWrapper());
-
-  if (needs_checks) {
-    // Slow-case: Non-function called.
-    __ bind(&slow);
-    EmitSlowCase(masm->isolate(), masm, argc);
-  }
-
-  if (call_as_method) {
-    __ bind(&wrap);
-    EmitWrapCase(masm, argc, &cont);
-  }
-}
-
-
-void CallFunctionStub::Generate(MacroAssembler* masm) {
-  CallFunctionNoFeedback(masm, argc(), NeedsChecks(), CallAsMethod());
-}
-
-
 void CallConstructStub::Generate(MacroAssembler* masm) {
   // eax : number of arguments
   // ebx : feedback vector
@@ -2216,9 +2125,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kWithTypesIndex);
   const int generic_offset =
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kGenericCountIndex);
-  Label extra_checks_or_miss, slow_start;
-  Label slow, wrap, cont;
-  Label have_js_function;
+  Label extra_checks_or_miss, call;
   int argc = arg_count();
   ParameterCount actual(argc);
 
@@ -2252,36 +2159,15 @@ void CallICStub::Generate(MacroAssembler* masm) {
                       FixedArray::kHeaderSize + kPointerSize),
          Immediate(Smi::FromInt(CallICNexus::kCallCountIncrement)));
 
-  __ bind(&have_js_function);
-  if (CallAsMethod()) {
-    EmitContinueIfStrictOrNative(masm, &cont);
-
-    // Load the receiver from the stack.
-    __ mov(eax, Operand(esp, (argc + 1) * kPointerSize));
-
-    __ JumpIfSmi(eax, &wrap);
-
-    __ CmpObjectType(eax, FIRST_SPEC_OBJECT_TYPE, ecx);
-    __ j(below, &wrap);
-
-    __ bind(&cont);
-  }
-
-  __ InvokeFunction(edi, actual, JUMP_FUNCTION, NullCallWrapper());
-
-  __ bind(&slow);
-  EmitSlowCase(isolate, masm, argc);
-
-  if (CallAsMethod()) {
-    __ bind(&wrap);
-    EmitWrapCase(masm, argc, &cont);
-  }
+  __ bind(&call);
+  __ Set(eax, argc);
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 
   __ bind(&extra_checks_or_miss);
   Label uninitialized, miss, not_allocation_site;
 
   __ cmp(ecx, Immediate(TypeFeedbackVector::MegamorphicSentinel(isolate)));
-  __ j(equal, &slow_start);
+  __ j(equal, &call);
 
   // Check if we have an allocation site.
   __ CompareRoot(FieldOperand(ecx, HeapObject::kMapOffset),
@@ -2313,7 +2199,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   // We have to update statistics for runtime profiling.
   __ sub(FieldOperand(ebx, with_types_offset), Immediate(Smi::FromInt(1)));
   __ add(FieldOperand(ebx, generic_offset), Immediate(Smi::FromInt(1)));
-  __ jmp(&slow_start);
+  __ jmp(&call);
 
   __ bind(&uninitialized);
 
@@ -2350,23 +2236,14 @@ void CallICStub::Generate(MacroAssembler* masm) {
     __ pop(edi);
   }
 
-  __ jmp(&have_js_function);
+  __ jmp(&call);
 
   // We are here because tracing is on or we encountered a MISS case we can't
   // handle here.
   __ bind(&miss);
   GenerateMiss(masm);
 
-  // the slow case
-  __ bind(&slow_start);
-
-  // Check that the function really is a JavaScript function.
-  __ JumpIfSmi(edi, &slow);
-
-  // Goto slow case if we do not have a function.
-  __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
-  __ j(not_equal, &slow);
-  __ jmp(&have_js_function);
+  __ jmp(&call);
 
   // Unreachable
   __ int3();
@@ -4596,11 +4473,12 @@ void VectorStoreICStub::GenerateForTrampoline(MacroAssembler* masm) {
 static void HandlePolymorphicStoreCase(MacroAssembler* masm, Register receiver,
                                        Register key, Register vector,
                                        Register slot, Register feedback,
-                                       Label* miss) {
+                                       bool is_polymorphic, Label* miss) {
   // feedback initially contains the feedback array
   Label next, next_loop, prepare_next;
   Label load_smi_map, compare_map;
   Label start_polymorphic;
+  Label pop_and_miss;
   ExternalReference virtual_register =
       ExternalReference::virtual_handler_register(masm->isolate());
 
@@ -4634,16 +4512,18 @@ static void HandlePolymorphicStoreCase(MacroAssembler* masm, Register receiver,
   __ jmp(Operand::StaticVariable(virtual_register));
 
   // Polymorphic, we have to loop from 2 to N
-
-  // TODO(mvstanton): I think there is a bug here, we are assuming the
-  // array has more than one map/handler pair, but we call this function in the
-  // keyed store with a string key case, where it might be just an array of two
-  // elements.
-
   __ bind(&start_polymorphic);
   __ push(key);
   Register counter = key;
   __ mov(counter, Immediate(Smi::FromInt(2)));
+
+  if (!is_polymorphic) {
+    // If is_polymorphic is false, we may only have a two element array.
+    // Check against length now in that case.
+    __ cmp(counter, FieldOperand(feedback, FixedArray::kLengthOffset));
+    __ j(greater_equal, &pop_and_miss);
+  }
+
   __ bind(&next_loop);
   __ mov(cached_map, FieldOperand(feedback, counter, times_half_pointer_size,
                                   FixedArray::kHeaderSize));
@@ -4665,6 +4545,7 @@ static void HandlePolymorphicStoreCase(MacroAssembler* masm, Register receiver,
   __ j(less, &next_loop);
 
   // We exhausted our array of map handler pairs.
+  __ bind(&pop_and_miss);
   __ pop(key);
   __ pop(vector);
   __ pop(receiver);
@@ -4745,7 +4626,8 @@ void VectorStoreICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   __ bind(&try_array);
   __ CompareRoot(FieldOperand(scratch, 0), Heap::kFixedArrayMapRootIndex);
   __ j(not_equal, &not_array);
-  HandlePolymorphicStoreCase(masm, receiver, key, vector, slot, scratch, &miss);
+  HandlePolymorphicStoreCase(masm, receiver, key, vector, slot, scratch, true,
+                             &miss);
 
   __ bind(&not_array);
   __ CompareRoot(scratch, Heap::kmegamorphic_symbolRootIndex);
@@ -4936,7 +4818,8 @@ void VectorKeyedStoreICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   // at least one map/handler pair.
   __ mov(scratch, FieldOperand(vector, slot, times_half_pointer_size,
                                FixedArray::kHeaderSize + kPointerSize));
-  HandlePolymorphicStoreCase(masm, receiver, key, vector, slot, scratch, &miss);
+  HandlePolymorphicStoreCase(masm, receiver, key, vector, slot, scratch, false,
+                             &miss);
 
   __ bind(&miss);
   __ pop(value);

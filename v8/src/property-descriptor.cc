@@ -4,6 +4,7 @@
 
 #include "src/property-descriptor.h"
 
+#include "src/bootstrapper.h"
 #include "src/factory.h"
 #include "src/isolate-inl.h"
 #include "src/lookup.h"
@@ -43,6 +44,9 @@ bool ToPropertyDescriptorFastPath(Isolate* isolate, Handle<Object> obj,
   if (map->instance_type() != JS_OBJECT_TYPE) return false;
   if (map->is_access_check_needed()) return false;
   if (map->prototype() != *isolate->initial_object_prototype()) return false;
+  // During bootstrapping, the object_function_prototype_map hasn't been
+  // set up yet.
+  if (isolate->bootstrapper()->IsActive()) return false;
   if (JSObject::cast(map->prototype())->map() !=
       isolate->native_context()->object_function_prototype_map()) {
     return false;
@@ -94,6 +98,45 @@ bool ToPropertyDescriptorFastPath(Isolate* isolate, Handle<Object> obj,
     return false;
   }
   return true;
+}
+
+
+static void CreateDataProperty(Isolate* isolate, Handle<JSObject> object,
+                               Handle<String> name, Handle<Object> value) {
+  LookupIterator it(object, name);
+  Maybe<bool> result = JSObject::CreateDataProperty(&it, value);
+  CHECK(result.IsJust() && result.FromJust());
+}
+
+
+// ES6 6.2.4.4 "FromPropertyDescriptor"
+Handle<Object> PropertyDescriptor::ToObject(Isolate* isolate) {
+  DCHECK(!(PropertyDescriptor::IsAccessorDescriptor(this) &&
+           PropertyDescriptor::IsDataDescriptor(this)));
+  Factory* factory = isolate->factory();
+  Handle<JSObject> result = factory->NewJSObject(isolate->object_function());
+  if (has_value()) {
+    CreateDataProperty(isolate, result, factory->value_string(), value());
+  }
+  if (has_writable()) {
+    CreateDataProperty(isolate, result, factory->writable_string(),
+                       factory->ToBoolean(writable()));
+  }
+  if (has_get()) {
+    CreateDataProperty(isolate, result, factory->get_string(), get());
+  }
+  if (has_set()) {
+    CreateDataProperty(isolate, result, factory->set_string(), set());
+  }
+  if (has_enumerable()) {
+    CreateDataProperty(isolate, result, factory->enumerable_string(),
+                       factory->ToBoolean(enumerable()));
+  }
+  if (has_configurable()) {
+    CreateDataProperty(isolate, result, factory->configurable_string(),
+                       factory->ToBoolean(configurable()));
+  }
+  return result;
 }
 
 
@@ -210,7 +253,11 @@ bool PropertyDescriptor::ToPropertyDescriptor(Isolate* isolate,
     }
   } else {
     DCHECK(obj->IsJSProxy());
-    UNIMPLEMENTED();
+    // Having an UNIMPLEMENTED() here would upset ClusterFuzz, because
+    // --harmony-proxies makes it possible to reach this branch.
+    isolate->Throw(
+        *isolate->factory()->NewTypeError(MessageTemplate::kUnsupported));
+    return false;
   }
   // 23. Return desc.
   return true;

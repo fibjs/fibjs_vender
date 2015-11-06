@@ -57,8 +57,6 @@ class IC {
   bool IsCallStub() const { return target()->is_call_stub(); }
 #endif
 
-  static inline JSFunction* GetRootConstructor(Map* receiver_map,
-                                               Context* native_context);
   static inline Handle<Map> GetHandlerCacheHolder(Handle<Map> receiver_map,
                                                   bool receiver_is_holder,
                                                   Isolate* isolate,
@@ -288,10 +286,9 @@ class CallIC : public IC {
   void HandleMiss(Handle<Object> function);
 
   // Code generator routines.
-  static Handle<Code> initialize_stub(Isolate* isolate, int argc,
-                                      CallICState::CallType call_type);
-  static Handle<Code> initialize_stub_in_optimized_code(
-      Isolate* isolate, int argc, CallICState::CallType call_type);
+  static Handle<Code> initialize_stub(Isolate* isolate, int argc);
+  static Handle<Code> initialize_stub_in_optimized_code(Isolate* isolate,
+                                                        int argc);
 
   static void Clear(Isolate* isolate, Code* host, CallICNexus* nexus);
 };
@@ -319,7 +316,7 @@ class LoadIC : public IC {
   }
 
   bool ShouldThrowReferenceError(Handle<Object> receiver) {
-    return receiver->IsGlobalObject() && typeof_mode() == NOT_INSIDE_TYPEOF;
+    return receiver->IsJSGlobalObject() && typeof_mode() == NOT_INSIDE_TYPEOF;
   }
 
   // Code generator routines.
@@ -362,9 +359,8 @@ class LoadIC : public IC {
   // lookup result.
   void UpdateCaches(LookupIterator* lookup);
 
-  virtual Handle<Code> CompileHandler(LookupIterator* lookup,
-                                      Handle<Object> unused,
-                                      CacheHolderFlag cache_holder) override;
+  Handle<Code> CompileHandler(LookupIterator* lookup, Handle<Object> unused,
+                              CacheHolderFlag cache_holder) override;
 
  private:
   Handle<Code> SimpleFieldLoad(FieldIndex index);
@@ -498,9 +494,8 @@ class StoreIC : public IC {
   // lookup result.
   void UpdateCaches(LookupIterator* lookup, Handle<Object> value,
                     JSReceiver::StoreFromKeyed store_mode);
-  virtual Handle<Code> CompileHandler(LookupIterator* lookup,
-                                      Handle<Object> value,
-                                      CacheHolderFlag cache_holder) override;
+  Handle<Code> CompileHandler(LookupIterator* lookup, Handle<Object> value,
+                              CacheHolderFlag cache_holder) override;
 
  private:
   inline void set_target(Code* code);

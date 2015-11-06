@@ -75,6 +75,10 @@ class RawMachineAssembler {
   // place them into the current basic block. They don't perform control flow,
   // hence will not switch the current basic block.
 
+  Node* NullConstant() {
+    return HeapConstant(isolate()->factory()->null_value());
+  }
+
   Node* UndefinedConstant() {
     return HeapConstant(isolate()->factory()->undefined_value());
   }
@@ -126,11 +130,13 @@ class RawMachineAssembler {
     return AddNode(machine()->Load(rep), base, index, graph()->start(),
                    graph()->start());
   }
-  Node* Store(MachineType rep, Node* base, Node* value) {
-    return Store(rep, base, IntPtrConstant(0), value);
+  Node* Store(MachineType rep, Node* base, Node* value,
+              WriteBarrierKind write_barrier) {
+    return Store(rep, base, IntPtrConstant(0), value, write_barrier);
   }
-  Node* Store(MachineType rep, Node* base, Node* index, Node* value) {
-    return AddNode(machine()->Store(StoreRepresentation(rep, kNoWriteBarrier)),
+  Node* Store(MachineType rep, Node* base, Node* index, Node* value,
+              WriteBarrierKind write_barrier) {
+    return AddNode(machine()->Store(StoreRepresentation(rep, write_barrier)),
                    base, index, value, graph()->start(), graph()->start());
   }
 
@@ -355,6 +361,12 @@ class RawMachineAssembler {
   Node* Float32Div(Node* a, Node* b) {
     return AddNode(machine()->Float32Div(), a, b);
   }
+  Node* Float32Max(Node* a, Node* b) {
+    return AddNode(machine()->Float32Max().op(), a, b);
+  }
+  Node* Float32Min(Node* a, Node* b) {
+    return AddNode(machine()->Float32Min().op(), a, b);
+  }
   Node* Float32Abs(Node* a) { return AddNode(machine()->Float32Abs(), a); }
   Node* Float32Sqrt(Node* a) { return AddNode(machine()->Float32Sqrt(), a); }
   Node* Float32Equal(Node* a, Node* b) {
@@ -388,6 +400,12 @@ class RawMachineAssembler {
   }
   Node* Float64Mod(Node* a, Node* b) {
     return AddNode(machine()->Float64Mod(), a, b);
+  }
+  Node* Float64Max(Node* a, Node* b) {
+    return AddNode(machine()->Float64Max().op(), a, b);
+  }
+  Node* Float64Min(Node* a, Node* b) {
+    return AddNode(machine()->Float64Min().op(), a, b);
   }
   Node* Float64Abs(Node* a) { return AddNode(machine()->Float64Abs(), a); }
   Node* Float64Sqrt(Node* a) { return AddNode(machine()->Float64Sqrt(), a); }
@@ -439,6 +457,9 @@ class RawMachineAssembler {
   Node* TruncateInt64ToInt32(Node* a) {
     return AddNode(machine()->TruncateInt64ToInt32(), a);
   }
+  Node* RoundInt64ToFloat64(Node* a) {
+    return AddNode(machine()->RoundInt64ToFloat64(), a);
+  }
   Node* BitcastFloat32ToInt32(Node* a) {
     return AddNode(machine()->BitcastFloat32ToInt32(), a);
   }
@@ -487,7 +508,7 @@ class RawMachineAssembler {
     return Load(rep, PointerConstant(address), Int32Constant(offset));
   }
   Node* StoreToPointer(void* address, MachineType rep, Node* node) {
-    return Store(rep, PointerConstant(address), node);
+    return Store(rep, PointerConstant(address), node, kNoWriteBarrier);
   }
   Node* StringConstant(const char* string) {
     return HeapConstant(isolate()->factory()->InternalizeUtf8String(string));
@@ -500,9 +521,6 @@ class RawMachineAssembler {
                             Node* frame_state);
   // Tail call the given call descriptor and the given arguments.
   Node* TailCallN(CallDescriptor* call_descriptor, Node* function, Node** args);
-  // Call through CallFunctionStub with lazy deopt and frame-state.
-  Node* CallFunctionStub0(Node* function, Node* receiver, Node* context,
-                          Node* frame_state, CallFunctionFlags flags);
   // Call to a runtime function with one arguments.
   Node* CallRuntime1(Runtime::FunctionId function, Node* arg0, Node* context);
   // Call to a runtime function with two arguments.
@@ -584,7 +602,7 @@ class RawMachineAssembler {
   MachineOperatorBuilder machine_;
   CommonOperatorBuilder common_;
   CallDescriptor* call_descriptor_;
-  Node** parameters_;
+  NodeVector parameters_;
   BasicBlock* current_block_;
 
   DISALLOW_COPY_AND_ASSIGN(RawMachineAssembler);

@@ -1605,7 +1605,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
       Context::SlotOffset(Context::FAST_ALIASED_ARGUMENTS_MAP_INDEX);
 
   __ ldr(r4, MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ ldr(r4, FieldMemOperand(r4, GlobalObject::kNativeContextOffset));
+  __ ldr(r4, FieldMemOperand(r4, JSGlobalObject::kNativeContextOffset));
   __ cmp(r6, Operand::Zero());
   __ ldr(r4, MemOperand(r4, kNormalOffset), eq);
   __ ldr(r4, MemOperand(r4, kAliasedOffset), ne);
@@ -1798,7 +1798,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
 
   // Get the arguments boilerplate from the current native context.
   __ ldr(r4, MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ ldr(r4, FieldMemOperand(r4, GlobalObject::kNativeContextOffset));
+  __ ldr(r4, FieldMemOperand(r4, JSGlobalObject::kNativeContextOffset));
   __ ldr(r4, MemOperand(
                  r4, Context::SlotOffset(Context::STRICT_ARGUMENTS_MAP_INDEX)));
 
@@ -2383,99 +2383,6 @@ static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
 }
 
 
-static void EmitContinueIfStrictOrNative(MacroAssembler* masm, Label* cont) {
-  // Do not transform the receiver for strict mode functions.
-  __ ldr(r3, FieldMemOperand(r1, JSFunction::kSharedFunctionInfoOffset));
-  __ ldr(r4, FieldMemOperand(r3, SharedFunctionInfo::kCompilerHintsOffset));
-  __ tst(r4, Operand(1 << (SharedFunctionInfo::kStrictModeFunction +
-                           kSmiTagSize)));
-  __ b(ne, cont);
-
-  // Do not transform the receiver for native (Compilerhints already in r3).
-  __ tst(r4, Operand(1 << (SharedFunctionInfo::kNative + kSmiTagSize)));
-  __ b(ne, cont);
-}
-
-
-static void EmitSlowCase(MacroAssembler* masm, int argc) {
-  __ mov(r0, Operand(argc));
-  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
-}
-
-
-static void EmitWrapCase(MacroAssembler* masm, int argc, Label* cont) {
-  // Wrap the receiver and patch it back onto the stack.
-  { FrameAndConstantPoolScope frame_scope(masm, StackFrame::INTERNAL);
-    __ push(r1);
-    __ mov(r0, r3);
-    ToObjectStub stub(masm->isolate());
-    __ CallStub(&stub);
-    __ pop(r1);
-  }
-  __ str(r0, MemOperand(sp, argc * kPointerSize));
-  __ jmp(cont);
-}
-
-
-static void CallFunctionNoFeedback(MacroAssembler* masm,
-                                   int argc, bool needs_checks,
-                                   bool call_as_method) {
-  // r1 : the function to call
-  Label slow, wrap, cont;
-
-  if (needs_checks) {
-    // Check that the function is really a JavaScript function.
-    // r1: pushed function (to be verified)
-    __ JumpIfSmi(r1, &slow);
-
-    // Goto slow case if we do not have a function.
-    __ CompareObjectType(r1, r4, r4, JS_FUNCTION_TYPE);
-    __ b(ne, &slow);
-  }
-
-  // Fast-case: Invoke the function now.
-  // r1: pushed function
-  ParameterCount actual(argc);
-
-  if (call_as_method) {
-    if (needs_checks) {
-      EmitContinueIfStrictOrNative(masm, &cont);
-    }
-
-    // Compute the receiver in sloppy mode.
-    __ ldr(r3, MemOperand(sp, argc * kPointerSize));
-
-    if (needs_checks) {
-      __ JumpIfSmi(r3, &wrap);
-      __ CompareObjectType(r3, r4, r4, FIRST_SPEC_OBJECT_TYPE);
-      __ b(lt, &wrap);
-    } else {
-      __ jmp(&wrap);
-    }
-
-    __ bind(&cont);
-  }
-
-  __ InvokeFunction(r1, actual, JUMP_FUNCTION, NullCallWrapper());
-
-  if (needs_checks) {
-    // Slow-case: Non-function called.
-    __ bind(&slow);
-    EmitSlowCase(masm, argc);
-  }
-
-  if (call_as_method) {
-    __ bind(&wrap);
-    EmitWrapCase(masm, argc, &cont);
-  }
-}
-
-
-void CallFunctionStub::Generate(MacroAssembler* masm) {
-  CallFunctionNoFeedback(masm, argc(), NeedsChecks(), CallAsMethod());
-}
-
-
 void CallConstructStub::Generate(MacroAssembler* masm) {
   // r0 : number of arguments
   // r1 : the function to call
@@ -2558,9 +2465,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kWithTypesIndex);
   const int generic_offset =
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kGenericCountIndex);
-  Label extra_checks_or_miss, slow_start;
-  Label slow, wrap, cont;
-  Label have_js_function;
+  Label extra_checks_or_miss, call;
   int argc = arg_count();
   ParameterCount actual(argc);
 
@@ -2597,34 +2502,15 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ add(r3, r3, Operand(Smi::FromInt(CallICNexus::kCallCountIncrement)));
   __ str(r3, FieldMemOperand(r2, 0));
 
-  __ bind(&have_js_function);
-  if (CallAsMethod()) {
-    EmitContinueIfStrictOrNative(masm, &cont);
-    // Compute the receiver in sloppy mode.
-    __ ldr(r3, MemOperand(sp, argc * kPointerSize));
-
-    __ JumpIfSmi(r3, &wrap);
-    __ CompareObjectType(r3, r4, r4, FIRST_SPEC_OBJECT_TYPE);
-    __ b(lt, &wrap);
-
-    __ bind(&cont);
-  }
-
-  __ InvokeFunction(r1, actual, JUMP_FUNCTION, NullCallWrapper());
-
-  __ bind(&slow);
-  EmitSlowCase(masm, argc);
-
-  if (CallAsMethod()) {
-    __ bind(&wrap);
-    EmitWrapCase(masm, argc, &cont);
-  }
+  __ bind(&call);
+  __ mov(r0, Operand(argc));
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
 
   __ bind(&extra_checks_or_miss);
   Label uninitialized, miss, not_allocation_site;
 
   __ CompareRoot(r4, Heap::kmegamorphic_symbolRootIndex);
-  __ b(eq, &slow_start);
+  __ b(eq, &call);
 
   // Verify that r4 contains an AllocationSite
   __ ldr(r5, FieldMemOperand(r4, HeapObject::kMapOffset));
@@ -2660,7 +2546,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ ldr(r4, FieldMemOperand(r2, generic_offset));
   __ add(r4, r4, Operand(Smi::FromInt(1)));
   __ str(r4, FieldMemOperand(r2, generic_offset));
-  __ jmp(&slow_start);
+  __ jmp(&call);
 
   __ bind(&uninitialized);
 
@@ -2699,23 +2585,14 @@ void CallICStub::Generate(MacroAssembler* masm) {
     __ Pop(r1);
   }
 
-  __ jmp(&have_js_function);
+  __ jmp(&call);
 
   // We are here because tracing is on or we encountered a MISS case we can't
   // handle here.
   __ bind(&miss);
   GenerateMiss(masm);
 
-  // the slow case
-  __ bind(&slow_start);
-  // Check that the function is really a JavaScript function.
-  // r1: pushed function (to be verified)
-  __ JumpIfSmi(r1, &slow);
-
-  // Goto slow case if we do not have a function.
-  __ CompareObjectType(r1, r4, r4, JS_FUNCTION_TYPE);
-  __ b(ne, &slow);
-  __ jmp(&have_js_function);
+  __ jmp(&call);
 }
 
 

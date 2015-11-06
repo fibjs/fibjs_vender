@@ -1235,6 +1235,8 @@ static const char* F0Mnem(byte f0byte) {
     case 0xAD: return "shrd";
     case 0xAC: return "shrd";  // 3-operand version.
     case 0xAB: return "bts";
+    case 0xBC:
+      return "bsf";
     case 0xBD: return "bsr";
     default: return NULL;
   }
@@ -1486,6 +1488,12 @@ int DisassemblerIA32::InstructionDecode(v8::internal::Vector<char> out_buffer,
             } else {
               AppendToBuffer(",%s,cl", NameOfCPURegister(regop));
             }
+          } else if (f0byte == 0xBC) {
+            data += 2;
+            int mod, regop, rm;
+            get_modrm(*data, &mod, &regop, &rm);
+            AppendToBuffer("%s %s,", f0mnem, NameOfCPURegister(regop));
+            data += PrintRightOperand(data);
           } else if (f0byte == 0xBD) {
             data += 2;
             int mod, regop, rm;

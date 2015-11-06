@@ -73,6 +73,7 @@ namespace compiler {
   V(Mips64TruncWD)                  \
   V(Mips64TruncUwD)                 \
   V(Mips64CvtDW)                    \
+  V(Mips64CvtDL)                    \
   V(Mips64CvtDUw)                   \
   V(Mips64Lb)                       \
   V(Mips64Lbu)                      \
@@ -94,6 +95,10 @@ namespace compiler {
   V(Mips64Float64ExtractHighWord32) \
   V(Mips64Float64InsertLowWord32)   \
   V(Mips64Float64InsertHighWord32)  \
+  V(Mips64Float64Max)               \
+  V(Mips64Float64Min)               \
+  V(Mips64Float32Max)               \
+  V(Mips64Float32Min)               \
   V(Mips64Push)                     \
   V(Mips64StoreToStackSlot)         \
   V(Mips64StackClaim)               \

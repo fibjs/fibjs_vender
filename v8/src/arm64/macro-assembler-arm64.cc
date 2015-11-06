@@ -40,8 +40,8 @@ MacroAssembler::MacroAssembler(Isolate* arg_isolate,
       tmp_list_(DefaultTmpList()),
       fptmp_list_(DefaultFPTmpList()) {
   if (isolate() != NULL) {
-    code_object_ = Handle<Object>(isolate()->heap()->undefined_value(),
-                                  isolate());
+    code_object_ =
+        Handle<Object>::New(isolate()->heap()->undefined_value(), isolate());
   }
 }
 
@@ -1709,7 +1709,7 @@ void MacroAssembler::GetBuiltinFunction(Register target,
                                         int native_context_index) {
   // Load the builtins object into target register.
   Ldr(target, GlobalObjectMemOperand());
-  Ldr(target, FieldMemOperand(target, GlobalObject::kNativeContextOffset));
+  Ldr(target, FieldMemOperand(target, JSGlobalObject::kNativeContextOffset));
   // Load the JavaScript builtin function from the builtins object.
   Ldr(target, ContextMemOperand(target, native_context_index));
 }
@@ -3006,7 +3006,7 @@ void MacroAssembler::LoadContext(Register dst, int context_chain_length) {
 
 void MacroAssembler::LoadGlobalProxy(Register dst) {
   Ldr(dst, GlobalObjectMemOperand());
-  Ldr(dst, FieldMemOperand(dst, GlobalObject::kGlobalProxyOffset));
+  Ldr(dst, FieldMemOperand(dst, JSGlobalObject::kGlobalProxyOffset));
 }
 
 
@@ -3576,6 +3576,14 @@ void MacroAssembler::TryGetFunctionPrototype(Register function, Register result,
 }
 
 
+void MacroAssembler::PushRoot(Heap::RootListIndex index) {
+  UseScratchRegisterScope temps(this);
+  Register temp = temps.AcquireX();
+  LoadRoot(temp, index);
+  Push(temp);
+}
+
+
 void MacroAssembler::CompareRoot(const Register& obj,
                                  Heap::RootListIndex index) {
   UseScratchRegisterScope temps(this);
@@ -3778,7 +3786,8 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
   int offset =
       Context::kHeaderSize + Context::GLOBAL_OBJECT_INDEX * kPointerSize;
   Ldr(scratch1, FieldMemOperand(scratch1, offset));
-  Ldr(scratch1, FieldMemOperand(scratch1, GlobalObject::kNativeContextOffset));
+  Ldr(scratch1,
+      FieldMemOperand(scratch1, JSGlobalObject::kNativeContextOffset));
 
   // Check the context is a native context.
   if (emit_debug_code()) {
@@ -3992,14 +4001,16 @@ void MacroAssembler::PushSafepointRegistersAndDoubles() {
   PushSafepointRegisters();
   PushCPURegList(CPURegList(
       CPURegister::kFPRegister, kDRegSizeInBits,
-      RegisterConfiguration::ArchDefault()->allocatable_double_codes_mask()));
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT)
+          ->allocatable_double_codes_mask()));
 }
 
 
 void MacroAssembler::PopSafepointRegistersAndDoubles() {
   PopCPURegList(CPURegList(
       CPURegister::kFPRegister, kDRegSizeInBits,
-      RegisterConfiguration::ArchDefault()->allocatable_double_codes_mask()));
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT)
+          ->allocatable_double_codes_mask()));
   PopSafepointRegisters();
 }
 
@@ -4610,7 +4621,8 @@ void MacroAssembler::LoadTransitionedArrayMapConditional(
     Label* no_map_match) {
   // Load the global or builtins object from the current context.
   Ldr(scratch1, GlobalObjectMemOperand());
-  Ldr(scratch1, FieldMemOperand(scratch1, GlobalObject::kNativeContextOffset));
+  Ldr(scratch1,
+      FieldMemOperand(scratch1, JSGlobalObject::kNativeContextOffset));
 
   // Check that the function's map is the same as the expected cached map.
   Ldr(scratch1, ContextMemOperand(scratch1, Context::JS_ARRAY_MAPS_INDEX));
@@ -4629,8 +4641,8 @@ void MacroAssembler::LoadGlobalFunction(int index, Register function) {
   // Load the global or builtins object from the current context.
   Ldr(function, GlobalObjectMemOperand());
   // Load the native context from the global or builtins object.
-  Ldr(function, FieldMemOperand(function,
-                                GlobalObject::kNativeContextOffset));
+  Ldr(function,
+      FieldMemOperand(function, JSGlobalObject::kNativeContextOffset));
   // Load the function from the native context.
   Ldr(function, ContextMemOperand(function, index));
 }

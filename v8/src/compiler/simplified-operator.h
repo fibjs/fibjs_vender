@@ -140,6 +140,9 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* NumberMultiply();
   const Operator* NumberDivide();
   const Operator* NumberModulus();
+  const Operator* NumberBitwiseOr();
+  const Operator* NumberBitwiseXor();
+  const Operator* NumberBitwiseAnd();
   const Operator* NumberShiftLeft();
   const Operator* NumberShiftRight();
   const Operator* NumberShiftRightLogical();
@@ -163,6 +166,7 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* ChangeBoolToBit();
   const Operator* ChangeBitToBool();
 
+  const Operator* ObjectIsNumber();
   const Operator* ObjectIsSmi();
 
   const Operator* Allocate(PretenureFlag pretenure = NOT_TENURED);

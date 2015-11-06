@@ -228,14 +228,15 @@ namespace internal {
   F(InterpreterToBoolean, 1, 1)           \
   F(InterpreterLogicalNot, 1, 1)          \
   F(InterpreterTypeOf, 1, 1)              \
-  F(InterpreterNewClosure, 2, 1)
+  F(InterpreterNewClosure, 2, 1)          \
+  F(InterpreterForInPrepare, 1, 1)
 
 
 #define FOR_EACH_INTRINSIC_FUNCTION(F)                      \
   F(FunctionGetName, 1, 1)                                  \
   F(FunctionSetName, 2, 1)                                  \
   F(FunctionNameShouldPrintAsAnonymous, 1, 1)               \
-  F(FunctionMarkNameShouldPrintAsAnonymous, 1, 1)           \
+  F(CompleteFunctionConstruction, 3, 1)                     \
   F(FunctionIsArrow, 1, 1)                                  \
   F(FunctionIsConciseMethod, 1, 1)                          \
   F(FunctionRemovePrototype, 1, 1)                          \
@@ -259,7 +260,7 @@ namespace internal {
   F(Call, -1 /* >= 2 */, 1)                                 \
   F(Apply, 5, 1)                                            \
   F(GetOriginalConstructor, 0, 1)                           \
-  F(CallFunction, -1 /* receiver + n args + function */, 1) \
+  F(ConvertReceiver, 1, 1)                                  \
   F(IsConstructCall, 0, 1)                                  \
   F(IsFunction, 1, 1)
 
@@ -348,8 +349,6 @@ namespace internal {
   F(CallSiteIsConstructorRT, 1, 1)            \
   F(IS_VAR, 1, 1)                             \
   F(IncrementStatsCounter, 1, 1)              \
-  F(Likely, 1, 1)                             \
-  F(Unlikely, 1, 1)                           \
   F(HarmonyToString, 0, 1)                    \
   F(GetTypeFeedbackVector, 1, 1)              \
   F(GetCallerJSFunction, 0, 1)                \
@@ -402,7 +401,8 @@ namespace internal {
   F(RoundNumber, 1, 1)              \
   F(MathSqrt, 1, 1)                 \
   F(MathFround, 1, 1)               \
-  F(IsMinusZero, 1, 1)
+  F(IsMinusZero, 1, 1)              \
+  F(InitializeRNG, 0, 1)
 
 
 #define FOR_EACH_INTRINSIC_NUMBERS(F)  \
@@ -556,6 +556,8 @@ namespace internal {
   F(StringReplaceGlobalRegExpWithString, 4, 1) \
   F(StringSplit, 3, 1)                         \
   F(RegExpExec, 4, 1)                          \
+  F(RegExpFlags, 1, 1)                         \
+  F(RegExpSource, 1, 1)                        \
   F(RegExpConstructResult, 3, 1)               \
   F(RegExpInitializeAndCompile, 3, 1)          \
   F(MaterializeRegExpLiteral, 4, 1)            \

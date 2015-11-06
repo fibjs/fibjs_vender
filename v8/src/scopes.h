@@ -112,6 +112,15 @@ class Scope: public ZoneObject {
   // tree and its children are reparented.
   Scope* FinalizeBlockScope();
 
+  // Inserts outer_scope into this scope's scope chain (and removes this
+  // from the current outer_scope_'s inner_scopes_).
+  // Assumes outer_scope_ is non-null.
+  void ReplaceOuterScope(Scope* outer_scope);
+
+  // Propagates any eagerly-gathered scope usage flags (such as calls_eval())
+  // to the passed-in scope.
+  void PropagateUsageFlagsToScope(Scope* other);
+
   Zone* zone() const { return zone_; }
 
   // ---------------------------------------------------------------------------
@@ -178,13 +187,19 @@ class Scope: public ZoneObject {
     return proxy;
   }
 
+  void AddUnresolved(VariableProxy* proxy) {
+    DCHECK(!already_resolved());
+    DCHECK(!proxy->is_resolved());
+    unresolved_.Add(proxy, zone_);
+  }
+
   // Remove a unresolved variable. During parsing, an unresolved variable
   // may have been added optimistically, but then only the variable name
   // was used (typically for labels). If the variable was not declared, the
   // addition introduced a new unresolved variable which may end up being
   // allocated globally as a "ghost" variable. RemoveUnresolved removes
   // such a variable again if it was added; otherwise this is a no-op.
-  void RemoveUnresolved(VariableProxy* var);
+  bool RemoveUnresolved(VariableProxy* var);
 
   // Creates a new temporary variable in this scope's TemporaryScope.  The
   // name is only used for printing and cannot be used to find the variable.
@@ -226,7 +241,7 @@ class Scope: public ZoneObject {
   void RecordWithStatement() { scope_contains_with_ = true; }
 
   // Inform the scope that the corresponding code contains an eval call.
-  void RecordEvalCall() { if (!is_script_scope()) scope_calls_eval_ = true; }
+  void RecordEvalCall() { scope_calls_eval_ = true; }
 
   // Inform the scope that the corresponding code uses "arguments".
   void RecordArgumentsUsage() { scope_uses_arguments_ = true; }
@@ -328,13 +343,9 @@ class Scope: public ZoneObject {
 
   // Is this scope inside a with statement.
   bool inside_with() const { return scope_inside_with_; }
-  // Does this scope contain a with statement.
-  bool contains_with() const { return scope_contains_with_; }
 
   // Does this scope access "arguments".
   bool uses_arguments() const { return scope_uses_arguments_; }
-  // Does any inner scope access "arguments".
-  bool inner_uses_arguments() const { return inner_scope_uses_arguments_; }
   // Does this scope access "super" property (super.foo).
   bool uses_super_property() const { return scope_uses_super_property_; }
   // Does this scope have the potential to execute declarations non-linearly?
@@ -350,9 +361,10 @@ class Scope: public ZoneObject {
 
   bool NeedsHomeObject() const {
     return scope_uses_super_property_ ||
-           (scope_calls_eval_ && (IsConciseMethod(function_kind()) ||
-                                  IsAccessorFunction(function_kind()) ||
-                                  IsClassConstructor(function_kind())));
+           ((scope_calls_eval_ || inner_scope_calls_eval_) &&
+            (IsConciseMethod(function_kind()) ||
+             IsAccessorFunction(function_kind()) ||
+             IsClassConstructor(function_kind())));
   }
 
   const Scope* NearestOuterEvalScope() const {
@@ -378,8 +390,6 @@ class Scope: public ZoneObject {
     DCHECK_NOT_NULL(receiver_);
     return receiver_;
   }
-
-  Variable* LookupThis() { return Lookup(ast_value_factory_->this_string()); }
 
   // TODO(wingo): Add a GLOBAL_SCOPE scope type which will lexically allocate
   // "this" (and no other variable) on the native context.  Script scopes then
@@ -664,7 +674,6 @@ class Scope: public ZoneObject {
   // Computed via PropagateScopeInfo.
   bool outer_scope_calls_sloppy_eval_;
   bool inner_scope_calls_eval_;
-  bool inner_scope_uses_arguments_;
   bool force_eager_compilation_;
   bool force_context_allocation_;
 
@@ -810,6 +819,16 @@ class Scope: public ZoneObject {
     if (inner_scope != NULL) {
       inner_scopes_.Add(inner_scope, zone_);
       inner_scope->outer_scope_ = this;
+    }
+  }
+
+  void RemoveInnerScope(Scope* inner_scope) {
+    DCHECK_NOT_NULL(inner_scope);
+    for (int i = 0; i < inner_scopes_.length(); i++) {
+      if (inner_scopes_[i] == inner_scope) {
+        inner_scopes_.Remove(i);
+        break;
+      }
     }
   }
 

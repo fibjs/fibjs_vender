@@ -22,6 +22,7 @@ const Register kInterpreterRegisterFileRegister = {Register::kCode_a7};
 const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_t0};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_t1};
 const Register kInterpreterDispatchTableRegister = {Register::kCode_t2};
+const Register kJavaScriptCallArgCountRegister = {Register::kCode_a0};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_a1};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_a0};
 
@@ -1718,6 +1719,8 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
   // Jumps to found label if a prototype map has dictionary elements.
   void JumpIfDictionaryInPrototypeChain(Register object, Register scratch0,
                                         Register scratch1, Label* found);
+
+  bool IsDoubleZeroRegSet() { return has_double_zero_reg_set_; }
 
  private:
   void CallCFunctionHelper(Register function,

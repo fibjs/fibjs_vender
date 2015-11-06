@@ -123,6 +123,7 @@ static MaybeHandle<Object> DefineClass(Isolate* isolate, Handle<Object> name,
 
   Handle<Map> map =
       isolate->factory()->NewMap(JS_OBJECT_TYPE, JSObject::kHeaderSize);
+  map->set_is_prototype_map(true);
   if (constructor->map()->is_strong()) {
     map->set_is_strong();
     if (super_class->IsNull()) {
@@ -162,9 +163,8 @@ static MaybeHandle<Object> DefineClass(Isolate* isolate, Handle<Object> name,
       Object);
 
   if (!constructor_parent.is_null()) {
-    RETURN_ON_EXCEPTION(
-        isolate, JSObject::SetPrototype(constructor, constructor_parent, false),
-        Object);
+    MAYBE_RETURN_NULL(JSObject::SetPrototype(constructor, constructor_parent,
+                                             false, Object::THROW_ON_ERROR));
   }
 
   JSObject::AddProperty(prototype, isolate->factory()->constructor_string(),
@@ -224,7 +224,6 @@ RUNTIME_FUNCTION(Runtime_FinalizeClassDefinition) {
   CONVERT_ARG_HANDLE_CHECKED(JSObject, constructor, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, prototype, 1);
 
-  JSObject::MigrateSlowToFast(prototype, 0, "RuntimeToFastProperties");
   JSObject::MigrateSlowToFast(constructor, 0, "RuntimeToFastProperties");
 
   if (constructor->map()->is_strong()) {
@@ -382,12 +381,10 @@ static Object* StoreToSuper(Isolate* isolate, Handle<JSObject> home_object,
   if (!proto->IsJSReceiver()) return isolate->heap()->undefined_value();
 
   LookupIterator it(receiver, name, Handle<JSReceiver>::cast(proto));
-  Handle<Object> result;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result,
-      Object::SetSuperProperty(&it, value, language_mode,
-                               Object::CERTAINLY_NOT_STORE_FROM_KEYED));
-  return *result;
+  MAYBE_RETURN(Object::SetSuperProperty(&it, value, language_mode,
+                                        Object::CERTAINLY_NOT_STORE_FROM_KEYED),
+               isolate->heap()->exception());
+  return *value;
 }
 
 
@@ -407,12 +404,10 @@ static Object* StoreElementToSuper(Isolate* isolate,
   if (!proto->IsJSReceiver()) return isolate->heap()->undefined_value();
 
   LookupIterator it(isolate, receiver, index, Handle<JSReceiver>::cast(proto));
-  Handle<Object> result;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result,
-      Object::SetSuperProperty(&it, value, language_mode,
-                               Object::MAY_BE_STORE_FROM_KEYED));
-  return *result;
+  MAYBE_RETURN(Object::SetSuperProperty(&it, value, language_mode,
+                                        Object::MAY_BE_STORE_FROM_KEYED),
+               isolate->heap()->exception());
+  return *value;
 }
 
 

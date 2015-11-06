@@ -105,7 +105,7 @@ class MachineOperatorBuilder final : public ZoneObject {
   // for operations that are unsupported by some back-ends.
   enum Flag {
     kNoFlags = 0u,
-    // Note that Float*Max behaves like `(a < b) ? b : a`, not like Math.max().
+    // Note that Float*Max behaves like `(b < a) ? a : b`, not like Math.max().
     // Note that Float*Min behaves like `(a < b) ? a : b`, not like Math.min().
     kFloat32Max = 1u << 0,
     kFloat32Min = 1u << 1,
@@ -193,11 +193,12 @@ class MachineOperatorBuilder final : public ZoneObject {
   const Operator* ChangeUint32ToFloat64();
   const Operator* ChangeUint32ToUint64();
 
-  // These operators truncate numbers, both changing the representation of
-  // the number and mapping multiple input values onto the same output value.
+  // These operators truncate or round numbers, both changing the representation
+  // of the number and mapping multiple input values onto the same output value.
   const Operator* TruncateFloat64ToFloat32();
   const Operator* TruncateFloat64ToInt32(TruncationMode);
   const Operator* TruncateInt64ToInt32();
+  const Operator* RoundInt64ToFloat64();
 
   // These operators reinterpret the bits of a floating point number as an
   // integer and vice versa.

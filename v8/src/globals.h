@@ -217,6 +217,20 @@ F FUNCTION_CAST(Address addr) {
 }
 
 
+// Determine whether the architecture uses function descriptors
+// which provide a level of indirection between the function pointer
+// and the function entrypoint.
+#if V8_HOST_ARCH_PPC && \
+    (V8_OS_AIX || (V8_TARGET_ARCH_PPC64 && V8_TARGET_BIG_ENDIAN))
+#define USES_FUNCTION_DESCRIPTORS 1
+#define FUNCTION_ENTRYPOINT_ADDRESS(f)       \
+  (reinterpret_cast<v8::internal::Address*>( \
+      &(reinterpret_cast<intptr_t*>(f)[0])))
+#else
+#define USES_FUNCTION_DESCRIPTORS 0
+#endif
+
+
 // -----------------------------------------------------------------------------
 // Forward declarations for frequently used classes
 // (sorted alphabetically)
@@ -581,20 +595,7 @@ enum InlineCacheState {
   // A generic handler is installed and no extra typefeedback is recorded.
   GENERIC,
   // Special state for debug break or step in prepare stubs.
-  DEBUG_STUB,
-  // Type-vector-based ICs have a default state, with the full calculation
-  // of IC state only determined by a look at the IC and the typevector
-  // together.
-  DEFAULT
-};
-
-
-enum CallFunctionFlags {
-  NO_CALL_FUNCTION_FLAGS,
-  CALL_AS_METHOD,
-  // Always wrap the receiver and call to the JSFunction. Only use this flag
-  // both the receiver type and the target method are statically known.
-  WRAP_AND_CALL
+  DEBUG_STUB
 };
 
 
@@ -935,6 +936,8 @@ enum FunctionKind {
   kInObjectLiteral = 1 << 7,
   kDefaultBaseConstructor = kDefaultConstructor | kBaseConstructor,
   kDefaultSubclassConstructor = kDefaultConstructor | kSubclassConstructor,
+  kClassConstructor =
+      kBaseConstructor | kSubclassConstructor | kDefaultConstructor,
   kConciseMethodInObjectLiteral = kConciseMethod | kInObjectLiteral,
   kConciseGeneratorMethodInObjectLiteral =
       kConciseGeneratorMethod | kInObjectLiteral,
@@ -1003,9 +1006,7 @@ inline bool IsSubclassConstructor(FunctionKind kind) {
 
 inline bool IsClassConstructor(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind &
-         (FunctionKind::kBaseConstructor | FunctionKind::kSubclassConstructor |
-          FunctionKind::kDefaultConstructor);
+  return kind & FunctionKind::kClassConstructor;
 }
 
 

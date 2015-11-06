@@ -106,9 +106,7 @@ enum BindingFlags {
   V(ARRAY_SPLICE_INDEX, JSFunction, array_splice)                             \
   V(ARRAY_SLICE_INDEX, JSFunction, array_slice)                               \
   V(ARRAY_UNSHIFT_INDEX, JSFunction, array_unshift)                           \
-  V(ARRAY_KEYS_ITERATOR_INDEX, JSFunction, array_keys_iterator)               \
   V(ARRAY_VALUES_ITERATOR_INDEX, JSFunction, array_values_iterator)           \
-  V(ARRAY_ENTRIES_ITERATOR_INDEX, JSFunction, array_entries_iterator)         \
   V(CREATE_DATE_FUN_INDEX, JSFunction, create_date_fun)                       \
   V(DERIVED_GET_TRAP_INDEX, JSFunction, derived_get_trap)                     \
   V(DERIVED_HAS_TRAP_INDEX, JSFunction, derived_has_trap)                     \
@@ -135,7 +133,6 @@ enum BindingFlags {
     no_side_effect_to_string_fun)                                             \
   V(OBJECT_VALUE_OF, JSFunction, object_value_of)                             \
   V(OBJECT_TO_STRING, JSFunction, object_to_string)                           \
-  V(OBJECT_DEFINE_OWN_PROPERTY_INDEX, JSFunction, object_define_own_property) \
   V(OBJECT_GET_OWN_PROPERTY_DESCROPTOR_INDEX, JSFunction,                     \
     object_get_own_property_descriptor)                                       \
   V(OBSERVERS_BEGIN_SPLICE_INDEX, JSFunction, observers_begin_perform_splice) \
@@ -422,15 +419,12 @@ class Context: public FixedArray {
   Context* declaration_context();
   bool is_declaration_context();
 
-  inline GlobalObject* global_object();
-  inline void set_global_object(GlobalObject* object);
+  inline JSGlobalObject* global_object();
+  inline void set_global_object(JSGlobalObject* object);
 
   // Returns a JSGlobalProxy object or null.
   JSObject* global_proxy();
   void set_global_proxy(JSObject* global);
-
-  // The builtins object.
-  JSBuiltinsObject* builtins();
 
   // Get the script context by traversing the context chain.
   Context* script_context();

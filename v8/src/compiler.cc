@@ -11,15 +11,16 @@
 #include "src/codegen.h"
 #include "src/compilation-cache.h"
 #include "src/compiler/pipeline.h"
+#include "src/crankshaft/hydrogen.h"
+#include "src/crankshaft/lithium.h"
+#include "src/crankshaft/typing.h"
 #include "src/debug/debug.h"
 #include "src/debug/liveedit.h"
 #include "src/deoptimizer.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/gdb-jit.h"
-#include "src/hydrogen.h"
 #include "src/interpreter/interpreter.h"
 #include "src/isolate-inl.h"
-#include "src/lithium.h"
 #include "src/log-inl.h"
 #include "src/messages.h"
 #include "src/parser.h"
@@ -31,7 +32,6 @@
 #include "src/scopeinfo.h"
 #include "src/scopes.h"
 #include "src/snapshot/serialize.h"
-#include "src/typing.h"
 #include "src/vm-state-inl.h"
 
 namespace v8 {
@@ -328,9 +328,8 @@ base::SmartArrayPointer<char> CompilationInfo::GetDebugName() const {
 }
 
 
-bool CompilationInfo::MustReplaceUndefinedReceiverWithGlobalProxy() {
-  return is_sloppy(language_mode()) && !is_native() &&
-         scope()->has_this_declaration() && scope()->receiver()->is_used();
+bool CompilationInfo::ExpectsJSReceiverAsReceiver() {
+  return is_sloppy(language_mode()) && !is_native();
 }
 
 
@@ -443,9 +442,6 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
                FLAG_native_context_specialization) {
       info()->MarkAsNativeContextSpecializing();
       info()->MarkAsTypingEnabled();
-    } else if (FLAG_turbo_type_feedback) {
-      info()->MarkAsTypeFeedbackEnabled();
-      info()->EnsureFeedbackVector();
     }
     if (!info()->shared_info()->asm_function() ||
         FLAG_turbo_asm_deoptimization) {
@@ -750,7 +746,8 @@ MUST_USE_RESULT static MaybeHandle<Code> GetUnoptimizedCodeCommon(
   SetExpectedNofPropertiesFromEstimate(shared, lit->expected_property_count());
   MaybeDisableOptimization(shared, lit->dont_optimize_reason());
 
-  if (FLAG_ignition && info->closure()->PassesFilter(FLAG_ignition_filter) &&
+  if (FLAG_ignition && !shared->HasBuiltinFunctionId() &&
+      info->closure()->PassesFilter(FLAG_ignition_filter) &&
       ScriptPassesFilter(FLAG_ignition_script_filter, info->script())) {
     // Compile bytecode for the interpreter.
     if (!GenerateBytecode(info)) return MaybeHandle<Code>();
@@ -866,9 +863,12 @@ bool Compiler::ParseAndAnalyze(ParseInfo* info) {
 
 
 static bool GetOptimizedCodeNow(CompilationInfo* info) {
+  Isolate* isolate = info->isolate();
+  CanonicalHandleScope canonical(isolate);
+
   if (!Compiler::ParseAndAnalyze(info->parse_info())) return false;
 
-  TimerEventScope<TimerEventRecompileSynchronous> timer(info->isolate());
+  TimerEventScope<TimerEventRecompileSynchronous> timer(isolate);
 
   OptimizedCompileJob job(info);
   if (job.CreateGraph() != OptimizedCompileJob::SUCCEEDED ||
@@ -883,7 +883,7 @@ static bool GetOptimizedCodeNow(CompilationInfo* info) {
   }
 
   // Success!
-  DCHECK(!info->isolate()->has_pending_exception());
+  DCHECK(!isolate->has_pending_exception());
   InsertCodeIntoOptimizedCodeMap(info);
   RecordFunctionCompilation(Logger::LAZY_COMPILE_TAG, info,
                             info->shared_info());
@@ -893,6 +893,8 @@ static bool GetOptimizedCodeNow(CompilationInfo* info) {
 
 static bool GetOptimizedCodeLater(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
+  CanonicalHandleScope canonical(isolate);
+
   if (!isolate->optimizing_compile_dispatcher()->IsQueueAvailable()) {
     if (FLAG_trace_concurrent_recompilation) {
       PrintF("  ** Compilation queue full, will retry optimizing ");

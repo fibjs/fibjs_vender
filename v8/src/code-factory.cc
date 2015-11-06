@@ -58,19 +58,16 @@ Callable CodeFactory::KeyedLoadICInOptimizedCode(
 
 
 // static
-Callable CodeFactory::CallIC(Isolate* isolate, int argc,
-                             CallICState::CallType call_type) {
-  return Callable(CallIC::initialize_stub(isolate, argc, call_type),
+Callable CodeFactory::CallIC(Isolate* isolate, int argc) {
+  return Callable(CallIC::initialize_stub(isolate, argc),
                   CallFunctionWithFeedbackDescriptor(isolate));
 }
 
 
 // static
-Callable CodeFactory::CallICInOptimizedCode(Isolate* isolate, int argc,
-                                            CallICState::CallType call_type) {
-  return Callable(
-      CallIC::initialize_stub_in_optimized_code(isolate, argc, call_type),
-      CallFunctionWithFeedbackAndVectorDescriptor(isolate));
+Callable CodeFactory::CallICInOptimizedCode(Isolate* isolate, int argc) {
+  return Callable(CallIC::initialize_stub_in_optimized_code(isolate, argc),
+                  CallFunctionWithFeedbackAndVectorDescriptor(isolate));
 }
 
 
@@ -130,24 +127,16 @@ Callable CodeFactory::CompareIC(Isolate* isolate, Token::Value op,
 
 
 // static
+Callable CodeFactory::CompareNilIC(Isolate* isolate, NilValue nil_value) {
+  Handle<Code> code = CompareNilICStub::GetUninitialized(isolate, nil_value);
+  return Callable(code, CompareNilDescriptor(isolate));
+}
+
+
+// static
 Callable CodeFactory::BinaryOpIC(Isolate* isolate, Token::Value op,
                                  Strength strength) {
   BinaryOpICStub stub(isolate, op, strength);
-  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
-}
-
-
-// static
-Callable CodeFactory::LoadGlobalViaContext(Isolate* isolate, int depth) {
-  LoadGlobalViaContextStub stub(isolate, depth);
-  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
-}
-
-
-// static
-Callable CodeFactory::StoreGlobalViaContext(Isolate* isolate, int depth,
-                                            LanguageMode language_mode) {
-  StoreGlobalViaContextStub stub(isolate, depth, language_mode);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 
@@ -192,6 +181,20 @@ Callable CodeFactory::ToLength(Isolate* isolate) {
 // static
 Callable CodeFactory::ToObject(Isolate* isolate) {
   ToObjectStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+
+// static
+Callable CodeFactory::NumberToString(Isolate* isolate) {
+  NumberToStringStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+
+// static
+Callable CodeFactory::RegExpConstructResult(Isolate* isolate) {
+  RegExpConstructResultStub stub(isolate);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 
@@ -268,6 +271,13 @@ Callable CodeFactory::AllocateHeapNumber(Isolate* isolate) {
 
 
 // static
+Callable CodeFactory::AllocateMutableHeapNumber(Isolate* isolate) {
+  AllocateMutableHeapNumberStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+
+// static
 Callable CodeFactory::AllocateInNewSpace(Isolate* isolate) {
   AllocateInNewSpaceStub stub(isolate);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
@@ -275,10 +285,23 @@ Callable CodeFactory::AllocateInNewSpace(Isolate* isolate) {
 
 
 // static
-Callable CodeFactory::CallFunction(Isolate* isolate, int argc,
-                                   CallFunctionFlags flags) {
-  CallFunctionStub stub(isolate, argc, flags);
-  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+Callable CodeFactory::ArgumentAdaptor(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArgumentsAdaptorTrampoline(),
+                  ArgumentAdaptorDescriptor(isolate));
+}
+
+
+// static
+Callable CodeFactory::Call(Isolate* isolate) {
+  return Callable(isolate->builtins()->Call(),
+                  CallTrampolineDescriptor(isolate));
+}
+
+
+// static
+Callable CodeFactory::CallFunction(Isolate* isolate) {
+  return Callable(isolate->builtins()->CallFunction(),
+                  CallTrampolineDescriptor(isolate));
 }
 
 

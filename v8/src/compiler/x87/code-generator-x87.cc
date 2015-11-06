@@ -419,6 +419,25 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kArchDeoptimize: {
       int deopt_state_id =
           BuildTranslation(instr, -1, 0, OutputFrameStateCombine::Ignore());
+      int double_register_param_count = 0;
+      int x87_layout = 0;
+      for (size_t i = 0; i < instr->InputCount(); i++) {
+        if (instr->InputAt(i)->IsDoubleRegister()) {
+          double_register_param_count++;
+        }
+      }
+      // Currently we use only one X87 register. If double_register_param_count
+      // is bigger than 1, it means duplicated double register is added to input
+      // of this instruction.
+      if (double_register_param_count > 0) {
+        x87_layout = (0 << 3) | 1;
+      }
+      // The layout of x87 register stack is loaded on the top of FPU register
+      // stack for deoptimization.
+      __ push(Immediate(x87_layout));
+      __ fild_s(MemOperand(esp, 0));
+      __ lea(esp, Operand(esp, kPointerSize));
+
       AssembleDeoptimizerCall(deopt_state_id, Deoptimizer::EAGER);
       break;
     }
@@ -547,6 +566,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kX87Lzcnt:
       __ Lzcnt(i.OutputRegister(), i.InputOperand(0));
+      break;
+    case kX87Popcnt:
+      __ Popcnt(i.OutputRegister(), i.InputOperand(0));
       break;
     case kX87LoadFloat64Constant: {
       InstructionOperand* source = instr->InputAt(0);
@@ -973,10 +995,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kX87Float64Sqrt: {
+      __ X87SetFPUCW(0x027F);
       __ fstp(0);
       __ fld_d(MemOperand(esp, 0));
       __ fsqrt();
       __ lea(esp, Operand(esp, kDoubleSize));
+      __ X87SetFPUCW(0x037F);
       break;
     }
     case kX87Float64Round: {

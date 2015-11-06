@@ -1008,6 +1008,13 @@ class Assembler : public AssemblerBase {
   void ucomiss(XMMRegister dst, XMMRegister src);
   void ucomiss(XMMRegister dst, const Operand& src);
   void movaps(XMMRegister dst, XMMRegister src);
+
+  // Don't use this unless it's important to keep the
+  // top half of the destination register unchanged.
+  // Use movaps when moving float values and movd for integer
+  // values in xmm registers.
+  void movss(XMMRegister dst, XMMRegister src);
+
   void movss(XMMRegister dst, const Operand& src);
   void movss(const Operand& dst, XMMRegister src);
   void shufps(XMMRegister dst, XMMRegister src, byte imm8);
@@ -1044,7 +1051,7 @@ class Assembler : public AssemblerBase {
 
   // Don't use this unless it's important to keep the
   // top half of the destination register unchanged.
-  // Used movaps when moving double values and movq for integer
+  // Use movapd when moving double values and movq for integer
   // values in xmm registers.
   void movsd(XMMRegister dst, XMMRegister src);
 
@@ -1281,48 +1288,63 @@ class Assembler : public AssemblerBase {
   void vmovq(XMMRegister dst, const Operand& src);
   void vmovq(Register dst, XMMRegister src);
 
+  void vmovsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vsd(0x10, dst, src1, src2);
+  }
   void vmovsd(XMMRegister dst, const Operand& src) {
     vsd(0x10, dst, xmm0, src);
   }
-  void vmovsd(XMMRegister dst, XMMRegister src) { vsd(0x10, dst, xmm0, src); }
   void vmovsd(const Operand& dst, XMMRegister src) {
     vsd(0x11, src, xmm0, dst);
   }
-  void vaddsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vsd(0x58, dst, src1, src2);
+
+#define AVX_SP_3(instr, opcode) \
+  AVX_S_3(instr, opcode)        \
+  AVX_P_3(instr, opcode)
+
+#define AVX_S_3(instr, opcode)  \
+  AVX_3(instr##ss, opcode, vss) \
+  AVX_3(instr##sd, opcode, vsd)
+
+#define AVX_P_3(instr, opcode)  \
+  AVX_3(instr##ps, opcode, vps) \
+  AVX_3(instr##pd, opcode, vpd)
+
+#define AVX_3(instr, opcode, impl)                                     \
+  void instr(XMMRegister dst, XMMRegister src1, XMMRegister src2) {    \
+    impl(opcode, dst, src1, src2);                                     \
+  }                                                                    \
+  void instr(XMMRegister dst, XMMRegister src1, const Operand& src2) { \
+    impl(opcode, dst, src1, src2);                                     \
   }
-  void vaddsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vsd(0x58, dst, src1, src2);
+
+  AVX_SP_3(vsqrt, 0x51);
+  AVX_SP_3(vadd, 0x58);
+  AVX_SP_3(vsub, 0x5c);
+  AVX_SP_3(vmul, 0x59);
+  AVX_SP_3(vdiv, 0x5e);
+  AVX_SP_3(vmin, 0x5d);
+  AVX_SP_3(vmax, 0x5f);
+  AVX_P_3(vand, 0x54);
+  AVX_P_3(vor, 0x56);
+  AVX_P_3(vxor, 0x57);
+  AVX_3(vpcmpeqd, 0x76, vpd);
+  AVX_3(vcvtsd2ss, 0x5a, vsd);
+
+#undef AVX_3
+#undef AVX_S_3
+#undef AVX_P_3
+#undef AVX_SP_3
+
+  void vpsrlq(XMMRegister dst, XMMRegister src, byte imm8) {
+    XMMRegister iop = {2};
+    vpd(0x73, iop, dst, src);
+    emit(imm8);
   }
-  void vsubsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vsd(0x5c, dst, src1, src2);
-  }
-  void vsubsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vsd(0x5c, dst, src1, src2);
-  }
-  void vmulsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vsd(0x59, dst, src1, src2);
-  }
-  void vmulsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vsd(0x59, dst, src1, src2);
-  }
-  void vdivsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vsd(0x5e, dst, src1, src2);
-  }
-  void vdivsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vsd(0x5e, dst, src1, src2);
-  }
-  void vmaxsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vsd(0x5f, dst, src1, src2);
-  }
-  void vmaxsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vsd(0x5f, dst, src1, src2);
-  }
-  void vminsd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vsd(0x5d, dst, src1, src2);
-  }
-  void vminsd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vsd(0x5d, dst, src1, src2);
+  void vpsllq(XMMRegister dst, XMMRegister src, byte imm8) {
+    XMMRegister iop = {6};
+    vpd(0x73, iop, dst, src);
+    emit(imm8);
   }
   void vcvtss2sd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
     vsd(0x5a, dst, src1, src2, kF3, k0F, kWIG);
@@ -1330,18 +1352,19 @@ class Assembler : public AssemblerBase {
   void vcvtss2sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
     vsd(0x5a, dst, src1, src2, kF3, k0F, kWIG);
   }
-  void vcvtsd2ss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vsd(0x5a, dst, src1, src2);
-  }
-  void vcvtsd2ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vsd(0x5a, dst, src1, src2);
-  }
   void vcvtlsi2sd(XMMRegister dst, XMMRegister src1, Register src2) {
     XMMRegister isrc2 = {src2.code()};
     vsd(0x2a, dst, src1, isrc2, kF2, k0F, kW0);
   }
   void vcvtlsi2sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
     vsd(0x2a, dst, src1, src2, kF2, k0F, kW0);
+  }
+  void vcvtqsi2sd(XMMRegister dst, XMMRegister src1, Register src2) {
+    XMMRegister isrc2 = {src2.code()};
+    vsd(0x2a, dst, src1, isrc2, kF2, k0F, kW1);
+  }
+  void vcvtqsi2sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vsd(0x2a, dst, src1, src2, kF2, k0F, kW1);
   }
   void vcvttsd2si(Register dst, XMMRegister src) {
     XMMRegister idst = {dst.code()};
@@ -1359,11 +1382,20 @@ class Assembler : public AssemblerBase {
     XMMRegister idst = {dst.code()};
     vsd(0x2c, idst, xmm0, src, kF2, k0F, kW1);
   }
+  void vcvtsd2si(Register dst, XMMRegister src) {
+    XMMRegister idst = {dst.code()};
+    vsd(0x2d, idst, xmm0, src, kF2, k0F, kW0);
+  }
   void vucomisd(XMMRegister dst, XMMRegister src) {
     vsd(0x2e, dst, xmm0, src, k66, k0F, kWIG);
   }
   void vucomisd(XMMRegister dst, const Operand& src) {
     vsd(0x2e, dst, xmm0, src, k66, k0F, kWIG);
+  }
+  void vroundsd(XMMRegister dst, XMMRegister src1, XMMRegister src2,
+                RoundingMode mode) {
+    vsd(0x0b, dst, src1, src2, k66, k0F3A, kWIG);
+    emit(static_cast<byte>(mode) | 0x8);  // Mask precision exception.
   }
 
   void vsd(byte op, XMMRegister dst, XMMRegister src1, XMMRegister src2) {
@@ -1377,46 +1409,31 @@ class Assembler : public AssemblerBase {
   void vsd(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2,
            SIMDPrefix pp, LeadingOpcode m, VexW w);
 
-  void vaddss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vss(0x58, dst, src1, src2);
+  void vmovss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
+    vss(0x10, dst, src1, src2);
   }
-  void vaddss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vss(0x58, dst, src1, src2);
+  void vmovss(XMMRegister dst, const Operand& src) {
+    vss(0x10, dst, xmm0, src);
   }
-  void vsubss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vss(0x5c, dst, src1, src2);
-  }
-  void vsubss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vss(0x5c, dst, src1, src2);
-  }
-  void vmulss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vss(0x59, dst, src1, src2);
-  }
-  void vmulss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vss(0x59, dst, src1, src2);
-  }
-  void vdivss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vss(0x5e, dst, src1, src2);
-  }
-  void vdivss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vss(0x5e, dst, src1, src2);
-  }
-  void vmaxss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vss(0x5f, dst, src1, src2);
-  }
-  void vmaxss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vss(0x5f, dst, src1, src2);
-  }
-  void vminss(XMMRegister dst, XMMRegister src1, XMMRegister src2) {
-    vss(0x5d, dst, src1, src2);
-  }
-  void vminss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vss(0x5d, dst, src1, src2);
+  void vmovss(const Operand& dst, XMMRegister src) {
+    vss(0x11, src, xmm0, dst);
   }
   void vucomiss(XMMRegister dst, XMMRegister src);
   void vucomiss(XMMRegister dst, const Operand& src);
   void vss(byte op, XMMRegister dst, XMMRegister src1, XMMRegister src2);
   void vss(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2);
+
+  void vmovaps(XMMRegister dst, XMMRegister src) { vps(0x28, dst, xmm0, src); }
+  void vmovapd(XMMRegister dst, XMMRegister src) { vpd(0x28, dst, xmm0, src); }
+  void vmovmskpd(Register dst, XMMRegister src) {
+    XMMRegister idst = {dst.code()};
+    vpd(0x50, idst, xmm0, src);
+  }
+
+  void vps(byte op, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vps(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2);
+  void vpd(byte op, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpd(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2);
 
   // BMI instruction
   void andnq(Register dst, Register src1, Register src2) {
@@ -1594,36 +1611,6 @@ class Assembler : public AssemblerBase {
   void rorxq(Register dst, const Operand& src, byte imm8);
   void rorxl(Register dst, Register src, byte imm8);
   void rorxl(Register dst, const Operand& src, byte imm8);
-
-  void vmovapd(XMMRegister dst, XMMRegister src) { vpd(0x28, dst, xmm0, src); }
-  void vmovmskpd(Register dst, XMMRegister src) {
-    XMMRegister idst = {dst.code()};
-    vpd(0x50, idst, xmm0, src);
-  }
-
-#define PACKED_OP_LIST(V) \
-  V(and, 0x54)            \
-  V(xor, 0x57)
-
-#define AVX_PACKED_OP_DECLARE(name, opcode)                                  \
-  void v##name##ps(XMMRegister dst, XMMRegister src1, XMMRegister src2) {    \
-    vps(opcode, dst, src1, src2);                                            \
-  }                                                                          \
-  void v##name##ps(XMMRegister dst, XMMRegister src1, const Operand& src2) { \
-    vps(opcode, dst, src1, src2);                                            \
-  }                                                                          \
-  void v##name##pd(XMMRegister dst, XMMRegister src1, XMMRegister src2) {    \
-    vpd(opcode, dst, src1, src2);                                            \
-  }                                                                          \
-  void v##name##pd(XMMRegister dst, XMMRegister src1, const Operand& src2) { \
-    vpd(opcode, dst, src1, src2);                                            \
-  }
-
-  PACKED_OP_LIST(AVX_PACKED_OP_DECLARE);
-  void vps(byte op, XMMRegister dst, XMMRegister src1, XMMRegister src2);
-  void vps(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2);
-  void vpd(byte op, XMMRegister dst, XMMRegister src1, XMMRegister src2);
-  void vpd(byte op, XMMRegister dst, XMMRegister src1, const Operand& src2);
 
   // Debugging
   void Print();

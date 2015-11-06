@@ -57,6 +57,18 @@ class MipsOperandConverter final : public InstructionOperandConverter {
     return ToDoubleRegister(op);
   }
 
+  DoubleRegister InputOrZeroDoubleRegister(size_t index) {
+    if (instr_->InputAt(index)->IsImmediate()) return kDoubleRegZero;
+
+    return InputDoubleRegister(index);
+  }
+
+  DoubleRegister InputOrZeroSingleRegister(size_t index) {
+    if (instr_->InputAt(index)->IsImmediate()) return kDoubleRegZero;
+
+    return InputSingleRegister(index);
+  }
+
   Operand InputImmediate(size_t index) {
     Constant constant = ToConstant(instr_->InputAt(index));
     switch (constant.type()) {
@@ -778,6 +790,62 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_ROUND_DOUBLE_TO_DOUBLE(ceil_l_d, Ceil);
       break;
     }
+    case kMips64Float64Max: {
+      // (b < a) ? a : b
+      if (kArchVariant == kMips64r6) {
+        __ cmp_d(OLT, i.OutputDoubleRegister(), i.InputDoubleRegister(1),
+                 i.InputDoubleRegister(0));
+        __ sel_d(i.OutputDoubleRegister(), i.InputDoubleRegister(1),
+                 i.InputDoubleRegister(0));
+      } else {
+        __ c_d(OLT, i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+        // Left operand is result, passthrough if false.
+        __ movt_d(i.OutputDoubleRegister(), i.InputDoubleRegister(1));
+      }
+      break;
+    }
+    case kMips64Float64Min: {
+      // (a < b) ? a : b
+      if (kArchVariant == kMips64r6) {
+        __ cmp_d(OLT, i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                 i.InputDoubleRegister(1));
+        __ sel_d(i.OutputDoubleRegister(), i.InputDoubleRegister(1),
+                 i.InputDoubleRegister(0));
+      } else {
+        __ c_d(OLT, i.InputDoubleRegister(1), i.InputDoubleRegister(0));
+        // Right operand is result, passthrough if false.
+        __ movt_d(i.OutputDoubleRegister(), i.InputDoubleRegister(1));
+      }
+      break;
+    }
+    case kMips64Float32Max: {
+      // (b < a) ? a : b
+      if (kArchVariant == kMips64r6) {
+        __ cmp_s(OLT, i.OutputDoubleRegister(), i.InputDoubleRegister(1),
+                 i.InputDoubleRegister(0));
+        __ sel_s(i.OutputDoubleRegister(), i.InputDoubleRegister(1),
+                 i.InputDoubleRegister(0));
+      } else {
+        __ c_s(OLT, i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+        // Left operand is result, passthrough if false.
+        __ movt_s(i.OutputDoubleRegister(), i.InputDoubleRegister(1));
+      }
+      break;
+    }
+    case kMips64Float32Min: {
+      // (a < b) ? a : b
+      if (kArchVariant == kMips64r6) {
+        __ cmp_s(OLT, i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                 i.InputDoubleRegister(1));
+        __ sel_s(i.OutputDoubleRegister(), i.InputDoubleRegister(1),
+                 i.InputDoubleRegister(0));
+      } else {
+        __ c_s(OLT, i.InputDoubleRegister(1), i.InputDoubleRegister(0));
+        // Right operand is result, passthrough if false.
+        __ movt_s(i.OutputDoubleRegister(), i.InputDoubleRegister(1));
+      }
+      break;
+    }
     case kMips64CvtSD:
       __ cvt_s_d(i.OutputSingleRegister(), i.InputDoubleRegister(0));
       break;
@@ -788,6 +856,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       FPURegister scratch = kScratchDoubleReg;
       __ mtc1(i.InputRegister(0), scratch);
       __ cvt_d_w(i.OutputDoubleRegister(), scratch);
+      break;
+    }
+    case kMips64CvtDL: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ dmtc1(i.InputRegister(0), scratch);
+      __ cvt_d_l(i.OutputDoubleRegister(), scratch);
       break;
     }
     case kMips64CvtDUw: {
@@ -1014,14 +1088,24 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
     if (!convertCondition(branch->condition, cc)) {
       UNSUPPORTED_COND(kMips64CmpS, branch->condition);
     }
-    __ BranchF32(tlabel, NULL, cc, i.InputSingleRegister(0),
-                 i.InputSingleRegister(1));
+    FPURegister left = i.InputOrZeroSingleRegister(0);
+    FPURegister right = i.InputOrZeroSingleRegister(1);
+    if ((left.is(kDoubleRegZero) || right.is(kDoubleRegZero)) &&
+        !__ IsDoubleZeroRegSet()) {
+      __ Move(kDoubleRegZero, 0.0);
+    }
+    __ BranchF32(tlabel, NULL, cc, left, right);
   } else if (instr->arch_opcode() == kMips64CmpD) {
     if (!convertCondition(branch->condition, cc)) {
       UNSUPPORTED_COND(kMips64CmpD, branch->condition);
     }
-    __ BranchF64(tlabel, NULL, cc, i.InputDoubleRegister(0),
-                 i.InputDoubleRegister(1));
+    FPURegister left = i.InputOrZeroDoubleRegister(0);
+    FPURegister right = i.InputOrZeroDoubleRegister(1);
+    if ((left.is(kDoubleRegZero) || right.is(kDoubleRegZero)) &&
+        !__ IsDoubleZeroRegSet()) {
+      __ Move(kDoubleRegZero, 0.0);
+    }
+    __ BranchF64(tlabel, NULL, cc, left, right);
   } else {
     PrintF("AssembleArchBranch Unimplemented arch_opcode: %d\n",
            instr->arch_opcode());
@@ -1134,8 +1218,12 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
     return;
   } else if (instr->arch_opcode() == kMips64CmpD ||
              instr->arch_opcode() == kMips64CmpS) {
-    FPURegister left = i.InputDoubleRegister(0);
-    FPURegister right = i.InputDoubleRegister(1);
+    FPURegister left = i.InputOrZeroDoubleRegister(0);
+    FPURegister right = i.InputOrZeroDoubleRegister(1);
+    if ((left.is(kDoubleRegZero) || right.is(kDoubleRegZero)) &&
+        !__ IsDoubleZeroRegSet()) {
+      __ Move(kDoubleRegZero, 0.0);
+    }
     bool predicate;
     FPUCondition cc = FlagsConditionToConditionCmpFPU(predicate, condition);
     if (kArchVariant != kMips64r6) {
@@ -1158,9 +1246,10 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
         DCHECK(instr->arch_opcode() == kMips64CmpS);
         __ cmp(cc, W, kDoubleCompareReg, left, right);
       }
-      __ dmfc1(at, kDoubleCompareReg);
-      __ dsrl32(result, at, 31);  // Cmp returns all 1s for true.
-      if (!predicate)             // Toggle result for not equal.
+      __ dmfc1(result, kDoubleCompareReg);
+      __ andi(result, result, 1);  // Cmp returns all 1's/0's, use only LSB.
+
+      if (!predicate)  // Toggle result for not equal.
         __ xori(result, result, 1);
     }
     return;

@@ -4,6 +4,7 @@
 
 #include "src/compiler/js-inlining-heuristic.h"
 
+#include "src/compiler.h"
 #include "src/compiler/dead-code-elimination.h"  // TODO(mstarzinger): Remove!
 #include "src/compiler/node-matchers.h"
 #include "src/objects-inl.h"
@@ -54,6 +55,10 @@ Reduction JSInliningHeuristic::Reduce(Node* node) {
     return NoChange();
   }
 
+  // Avoid inlining within or across the boundary of asm.js code.
+  if (info_->shared_info()->asm_function()) return NoChange();
+  if (function->shared()->asm_function()) return NoChange();
+
   // Gather feedback on how often this call site has been hit before.
   CallFunctionParameters p = CallFunctionParametersOf(node->op());
   int calls = -1;  // Same default as CallICNexus::ExtractCallCount.
@@ -67,14 +72,13 @@ Reduction JSInliningHeuristic::Reduce(Node* node) {
   // ---------------------------------------------------------------------------
 
   // In the general case we remember the candidate for later.
-  candidates_.push_back({function, node, calls});
+  candidates_.insert({function, node, calls});
   return NoChange();
 }
 
 
 void JSInliningHeuristic::ProcessCandidates() {
   if (candidates_.empty()) return;  // Nothing to do without candidates.
-  std::sort(candidates_.begin(), candidates_.end(), Compare);
   if (FLAG_trace_turbo_inlining) PrintCandidates();
 
   int cumulative_count = 0;
@@ -94,10 +98,9 @@ void JSInliningHeuristic::ProcessCandidates() {
 }
 
 
-// static
-bool JSInliningHeuristic::Compare(const Candidate& left,
-                                  const Candidate& right) {
-  return left.calls > right.calls;
+bool JSInliningHeuristic::CandidateCompare::operator()(
+    const Candidate& left, const Candidate& right) const {
+  return left.node != right.node && left.calls >= right.calls;
 }
 
 

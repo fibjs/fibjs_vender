@@ -26,8 +26,7 @@ namespace internal {
 static void GenerateLoadArrayFunction(MacroAssembler* masm, Register result) {
   // Load the native context.
   __ Ldr(result, GlobalObjectMemOperand());
-  __ Ldr(result,
-         FieldMemOperand(result, GlobalObject::kNativeContextOffset));
+  __ Ldr(result, FieldMemOperand(result, JSGlobalObject::kNativeContextOffset));
   // Load the InternalArray function from the native context.
   __ Ldr(result,
          MemOperand(result,
@@ -40,8 +39,7 @@ static void GenerateLoadInternalArrayFunction(MacroAssembler* masm,
                                               Register result) {
   // Load the native context.
   __ Ldr(result, GlobalObjectMemOperand());
-  __ Ldr(result,
-         FieldMemOperand(result, GlobalObject::kNativeContextOffset));
+  __ Ldr(result, FieldMemOperand(result, JSGlobalObject::kNativeContextOffset));
   // Load the InternalArray function from the native context.
   __ Ldr(result, ContextMemOperand(result,
                                    Context::INTERNAL_ARRAY_FUNCTION_INDEX));
@@ -213,6 +211,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- x0                     : number of arguments
   //  -- x1                     : constructor function
+  //  -- x3                     : original constructor
   //  -- lr                     : return address
   //  -- sp[(argc - n - 1) * 8] : arg[n] (zero based)
   //  -- sp[argc * 8]           : receiver
@@ -238,16 +237,16 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   {
     Label convert, done_convert;
     __ JumpIfSmi(x2, &convert);
-    __ JumpIfObjectType(x2, x3, x3, FIRST_NONSTRING_TYPE, &done_convert, lo);
+    __ JumpIfObjectType(x2, x4, x4, FIRST_NONSTRING_TYPE, &done_convert, lo);
     __ Bind(&convert);
     {
       FrameScope scope(masm, StackFrame::INTERNAL);
       ToStringStub stub(masm->isolate());
-      __ Push(x1);
+      __ Push(x1, x3);
       __ Move(x0, x2);
       __ CallStub(&stub);
       __ Move(x2, x0);
-      __ Pop(x1);
+      __ Pop(x1, x3);
     }
     __ Bind(&done_convert);
   }
@@ -255,12 +254,18 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   // 3. Allocate a JSValue wrapper for the string.
   {
     // ----------- S t a t e -------------
-    //  -- x1 : constructor function
     //  -- x2 : the first argument
+    //  -- x1 : constructor function
+    //  -- x3 : original constructor
     //  -- lr : return address
     // -----------------------------------
 
-    Label allocate, done_allocate;
+    Label allocate, done_allocate, rt_call;
+
+    // Fall back to runtime if the original constructor and function differ.
+    __ cmp(x1, x3);
+    __ B(ne, &rt_call);
+
     __ Allocate(JSValue::kSize, x0, x3, x4, &allocate, TAG_OBJECT);
     __ Bind(&done_allocate);
 
@@ -284,6 +289,17 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
       __ Pop(x2, x1);
     }
     __ B(&done_allocate);
+
+    // Fallback to the runtime to create new object.
+    __ bind(&rt_call);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ Push(x1, x2, x1, x3);  // constructor function, original constructor
+      __ CallRuntime(Runtime::kNewObject, 2);
+      __ Pop(x2, x1);
+    }
+    __ Str(x2, FieldMemOperand(x0, JSValue::kValueOffset));
+    __ Ret();
   }
 }
 
@@ -340,7 +356,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
   //  -- x0     : number of arguments
   //  -- x1     : constructor function
   //  -- x2     : allocation site or undefined
-  //  -- x3    : original constructor
+  //  -- x3     : original constructor
   //  -- lr     : return address
   //  -- sp[...]: constructor arguments
   // -----------------------------------
@@ -940,24 +956,15 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   //    receiver with the global proxy when called as functions (without an
   //    explicit receiver object).
   //  - Code aging of the BytecodeArray object.
-  //  - Supporting FLAG_trace.
-  //
-  // The following items are also not done here, and will probably be done using
-  // explicit bytecodes instead:
-  //  - Allocating a new local context if applicable.
-  //  - Setting up a local binding to the this function, which is used in
-  //    derived constructors with super calls.
-  //  - Setting new.target if required.
-  //  - Dealing with REST parameters (only if
-  //    https://codereview.chromium.org/1235153006 doesn't land by then).
-  //  - Dealing with argument objects.
 
   // Perform stack guard check.
   {
     Label ok;
     __ CompareRoot(jssp, Heap::kStackLimitRootIndex);
     __ B(hs, &ok);
+    __ Push(kInterpreterBytecodeArrayRegister);
     __ CallRuntime(Runtime::kStackGuard, 0);
+    __ Pop(kInterpreterBytecodeArrayRegister);
     __ Bind(&ok);
   }
 
@@ -1559,19 +1566,34 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm) {
   //  -- x0 : the number of arguments (not including the receiver)
   //  -- x1 : the function to call (checked to be a JSFunction)
   // -----------------------------------
+  // See ES6 section 9.2.1 [[Call]] ( thisArgument, argumentsList)
 
   Label convert, convert_global_proxy, convert_to_object, done_convert;
   __ AssertFunction(x1);
-  // TODO(bmeurer): Throw a TypeError if function's [[FunctionKind]] internal
-  // slot is "classConstructor".
+
+  __ Ldr(x2, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
+  {
+    Label non_class_constructor;
+    // Check whether the current function is a classConstructor
+    __ Ldr(w3, FieldMemOperand(x2, SharedFunctionInfo::kCompilerHintsOffset));
+    __ TestAndBranchIfAllClear(
+        w3, (1 << SharedFunctionInfo::kIsDefaultConstructor) |
+                (1 << SharedFunctionInfo::kIsSubclassConstructor) |
+                (1 << SharedFunctionInfo::kIsBaseConstructor),
+        &non_class_constructor);
+    // Step: 2, If we call a classConstructor Function throw a TypeError.
+    {
+      FrameScope frame(masm, StackFrame::INTERNAL);
+      __ CallRuntime(Runtime::kThrowConstructorNonCallableError, 0);
+    }
+    __ bind(&non_class_constructor);
+  }
+
   // Enter the context of the function; ToObject has to run in the function
   // context, and we also need to take the global proxy from the function
   // context in case of conversion.
-  // See ES6 section 9.2.1 [[Call]] ( thisArgument, argumentsList)
   __ Ldr(cp, FieldMemOperand(x1, JSFunction::kContextOffset));
-  __ Ldr(x2, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
   // We need to convert the receiver for non-native sloppy mode functions.
-  __ Ldr(w3, FieldMemOperand(x2, SharedFunctionInfo::kCompilerHintsOffset));
   __ TestAndBranchIfAnySet(w3,
                            (1 << SharedFunctionInfo::kNative) |
                                (1 << SharedFunctionInfo::kStrictModeFunction),
