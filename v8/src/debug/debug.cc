@@ -575,7 +575,7 @@ MaybeHandle<Object> Debug::CallFunction(const char* name, int argc,
   Handle<JSFunction> fun = Handle<JSFunction>::cast(
       Object::GetProperty(isolate_, holder, name, STRICT).ToHandleChecked());
   Handle<Object> undefined = isolate_->factory()->undefined_value();
-  return Execution::TryCall(fun, undefined, argc, args);
+  return Execution::TryCall(isolate_, fun, undefined, argc, args);
 }
 
 
@@ -923,7 +923,7 @@ void Debug::PrepareStep(StepAction step_action,
     }
     // Skip native and extension functions on the stack.
     while (!frames_it.done() &&
-           !frames_it.frame()->function()->IsSubjectToDebugging()) {
+           !frames_it.frame()->function()->shared()->IsSubjectToDebugging()) {
       frames_it.Advance();
     }
     // Step out: If there is a JavaScript caller frame, we need to
@@ -1596,7 +1596,7 @@ void Debug::FramesHaveBeenDropped(StackFrame::Id new_break_frame_id,
 }
 
 
-bool Debug::IsDebugGlobal(GlobalObject* global) {
+bool Debug::IsDebugGlobal(JSGlobalObject* global) {
   return is_loaded() && global == debug_context()->global_object();
 }
 
@@ -1943,7 +1943,7 @@ void Debug::CallEventCallback(v8::DebugEvent event,
                               event_data,
                               event_listener_data_ };
     Handle<JSReceiver> global(isolate_->global_proxy());
-    Execution::TryCall(Handle<JSFunction>::cast(event_listener_),
+    Execution::TryCall(isolate_, Handle<JSFunction>::cast(event_listener_),
                        global, arraysize(argv), argv);
   }
   in_debug_event_listener_ = previous;
@@ -2089,7 +2089,7 @@ void Debug::NotifyMessageHandler(v8::DebugEvent event,
     Handle<String> answer;
     MaybeHandle<Object> maybe_exception;
     MaybeHandle<Object> maybe_result =
-        Execution::TryCall(process_debug_request, cmd_processor, 1,
+        Execution::TryCall(isolate_, process_debug_request, cmd_processor, 1,
                            request_args, &maybe_exception);
 
     if (maybe_result.ToHandle(&answer_value)) {
@@ -2208,7 +2208,7 @@ void Debug::EnqueueCommandMessage(Vector<const uint16_t> command,
 }
 
 
-MaybeHandle<Object> Debug::Call(Handle<JSFunction> fun, Handle<Object> data) {
+MaybeHandle<Object> Debug::Call(Handle<Object> fun, Handle<Object> data) {
   DebugScope debug_scope(this);
   if (debug_scope.failed()) return isolate_->factory()->undefined_value();
 
@@ -2244,8 +2244,9 @@ void Debug::HandleDebugBreak() {
     Object* fun = it.frame()->function();
     if (fun && fun->IsJSFunction()) {
       // Don't stop in builtin functions.
-      if (!JSFunction::cast(fun)->IsSubjectToDebugging()) return;
-      GlobalObject* global = JSFunction::cast(fun)->context()->global_object();
+      if (!JSFunction::cast(fun)->shared()->IsSubjectToDebugging()) return;
+      JSGlobalObject* global =
+          JSFunction::cast(fun)->context()->global_object();
       // Don't stop in debugger functions.
       if (IsDebugGlobal(global)) return;
     }
@@ -2419,7 +2420,7 @@ v8::Local<v8::String> MessageImpl::GetJSON() const {
     }
 
     MaybeHandle<Object> maybe_json =
-        Execution::TryCall(Handle<JSFunction>::cast(fun), event_data_, 0, NULL);
+        Execution::TryCall(isolate, fun, event_data_, 0, NULL);
     Handle<Object> json;
     if (!maybe_json.ToHandle(&json) || !json->IsString()) {
       return v8::Local<v8::String>();

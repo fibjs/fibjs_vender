@@ -826,12 +826,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
               i.InputFloat32Register(1));
       break;
     case kArm64Float32Max:
-      __ Fmax(i.OutputFloat32Register(), i.InputFloat32Register(0),
-              i.InputFloat32Register(1));
+      // (b < a) ? a : b
+      __ Fcmp(i.InputFloat32Register(1), i.InputFloat32Register(0));
+      __ Fcsel(i.OutputFloat32Register(), i.InputFloat32Register(0),
+               i.InputFloat32Register(1), lo);
       break;
     case kArm64Float32Min:
-      __ Fmin(i.OutputFloat32Register(), i.InputFloat32Register(0),
-              i.InputFloat32Register(1));
+      // (a < b) ? a : b
+      __ Fcmp(i.InputFloat32Register(0), i.InputFloat32Register(1));
+      __ Fcsel(i.OutputFloat32Register(), i.InputFloat32Register(0),
+               i.InputFloat32Register(1), lo);
       break;
     case kArm64Float32Abs:
       __ Fabs(i.OutputFloat32Register(), i.InputFloat32Register(0));
@@ -877,12 +881,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kArm64Float64Max:
-      __ Fmax(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-              i.InputDoubleRegister(1));
+      // (b < a) ? a : b
+      __ Fcmp(i.InputDoubleRegister(1), i.InputDoubleRegister(0));
+      __ Fcsel(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+               i.InputDoubleRegister(1), lo);
       break;
     case kArm64Float64Min:
-      __ Fmin(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-              i.InputDoubleRegister(1));
+      // (a < b) ? a : b
+      __ Fcmp(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+      __ Fcsel(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+               i.InputDoubleRegister(1), lo);
       break;
     case kArm64Float64Abs:
       __ Fabs(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
@@ -907,6 +915,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kArm64Int32ToFloat64:
       __ Scvtf(i.OutputDoubleRegister(), i.InputRegister32(0));
+      break;
+    case kArm64Int64ToFloat64:
+      __ Scvtf(i.OutputDoubleRegister(), i.InputRegister64(0));
       break;
     case kArm64Uint32ToFloat64:
       __ Ucvtf(i.OutputDoubleRegister(), i.InputRegister32(0));

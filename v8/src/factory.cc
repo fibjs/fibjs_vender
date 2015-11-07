@@ -244,6 +244,12 @@ Handle<String> Factory::InternalizeStringWithKey(StringTableKey* key) {
 }
 
 
+Handle<Name> Factory::InternalizeName(Handle<Name> name) {
+  if (name->IsUniqueName()) return name;
+  return InternalizeString(Handle<String>::cast(name));
+}
+
+
 MaybeHandle<String> Factory::NewStringFromOneByte(Vector<const uint8_t> string,
                                                   PretenureFlag pretenure) {
   int length = string.length();
@@ -708,14 +714,9 @@ Handle<Symbol> Factory::NewSymbol() {
 }
 
 
-Handle<Symbol> Factory::NewPrivateSymbol(Handle<Object> name) {
+Handle<Symbol> Factory::NewPrivateSymbol() {
   Handle<Symbol> symbol = NewSymbol();
   symbol->set_is_private(true);
-  if (name->IsString()) {
-    symbol->set_name(*name);
-  } else {
-    DCHECK(name->IsUndefined());
-  }
   return symbol;
 }
 
@@ -1122,8 +1123,8 @@ Handle<Object> Factory::NewError(Handle<JSFunction> constructor,
   // running the factory method, use the exception as the result.
   Handle<Object> result;
   MaybeHandle<Object> exception;
-  if (!Execution::TryCall(fun, undefined_value(), arraysize(argv), argv,
-                          &exception)
+  if (!Execution::TryCall(isolate(), fun, undefined_value(), arraysize(argv),
+                          argv, &exception)
            .ToHandle(&result)) {
     Handle<Object> exception_obj;
     if (exception.ToHandle(&exception_obj)) {
@@ -1144,8 +1145,8 @@ Handle<Object> Factory::NewError(Handle<JSFunction> constructor,
   // running the factory method, use the exception as the result.
   Handle<Object> result;
   MaybeHandle<Object> exception;
-  if (!Execution::TryCall(constructor, undefined_value(), arraysize(argv), argv,
-                          &exception)
+  if (!Execution::TryCall(isolate(), constructor, undefined_value(),
+                          arraysize(argv), argv, &exception)
            .ToHandle(&result)) {
     Handle<Object> exception_obj;
     if (exception.ToHandle(&exception_obj)) return exception_obj;
@@ -1317,8 +1318,19 @@ Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
     PretenureFlag pretenure) {
   int map_index =
       Context::FunctionMapIndex(info->language_mode(), info->kind());
-  Handle<Map> map(Map::cast(context->native_context()->get(map_index)));
-  Handle<JSFunction> result = NewFunction(map, info, context, pretenure);
+  Handle<Map> initial_map(Map::cast(context->native_context()->get(map_index)));
+
+  return NewFunctionFromSharedFunctionInfo(initial_map, info, context,
+                                           pretenure);
+}
+
+
+Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
+    Handle<Map> initial_map, Handle<SharedFunctionInfo> info,
+    Handle<Context> context, PretenureFlag pretenure) {
+  DCHECK_EQ(JS_FUNCTION_TYPE, initial_map->instance_type());
+  Handle<JSFunction> result =
+      NewFunction(initial_map, info, context, pretenure);
 
   if (info->ic_age() != isolate()->heap()->global_ic_age()) {
     info->ResetForNewContext(isolate()->heap()->global_ic_age());
@@ -1491,7 +1503,8 @@ Handle<JSModule> Factory::NewJSModule(Handle<Context> context,
 }
 
 
-Handle<GlobalObject> Factory::NewGlobalObject(Handle<JSFunction> constructor) {
+Handle<JSGlobalObject> Factory::NewJSGlobalObject(
+    Handle<JSFunction> constructor) {
   DCHECK(constructor->has_initial_map());
   Handle<Map> map(constructor->initial_map());
   DCHECK(map->is_dictionary_map());
@@ -1509,7 +1522,7 @@ Handle<GlobalObject> Factory::NewGlobalObject(Handle<JSFunction> constructor) {
   // Initial size of the backing store to avoid resize of the storage during
   // bootstrapping. The size differs between the JS global object ad the
   // builtins object.
-  int initial_size = map->instance_type() == JS_GLOBAL_OBJECT_TYPE ? 64 : 512;
+  int initial_size = 64;
 
   // Allocate a dictionary object for backing storage.
   int at_least_space_for = map->NumberOfOwnDescriptors() * 2 + initial_size;
@@ -1533,7 +1546,7 @@ Handle<GlobalObject> Factory::NewGlobalObject(Handle<JSFunction> constructor) {
   }
 
   // Allocate the global object and initialize it with the backing store.
-  Handle<GlobalObject> global = New<GlobalObject>(map, OLD_SPACE);
+  Handle<JSGlobalObject> global = New<JSGlobalObject>(map, OLD_SPACE);
   isolate()->heap()->InitializeJSObjectFromMap(*global, *dictionary, *map);
 
   // Create a new map for the global object.
@@ -1545,7 +1558,7 @@ Handle<GlobalObject> Factory::NewGlobalObject(Handle<JSFunction> constructor) {
   global->set_properties(*dictionary);
 
   // Make sure result is a global object with properties in dictionary.
-  DCHECK(global->IsGlobalObject() && !global->HasFastProperties());
+  DCHECK(global->IsJSGlobalObject() && !global->HasFastProperties());
   return global;
 }
 
@@ -2161,6 +2174,11 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   share->set_compiler_hints(0);
   share->set_opt_count_and_bailout_reason(0);
 
+  // Link into the list.
+  Handle<Object> new_noscript_list =
+      WeakFixedArray::Add(noscript_shared_function_infos(), share);
+  isolate()->heap()->set_noscript_shared_function_infos(*new_noscript_list);
+
   return share;
 }
 
@@ -2260,7 +2278,7 @@ Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
 Handle<JSObject> Factory::NewArgumentsObject(Handle<JSFunction> callee,
                                              int length) {
   bool strict_mode_callee = is_strict(callee->shared()->language_mode()) ||
-                            !callee->has_simple_parameters();
+                            !callee->shared()->has_simple_parameters();
   Handle<Map> map = strict_mode_callee ? isolate()->strict_arguments_map()
                                        : isolate()->sloppy_arguments_map();
   AllocationSiteUsageContext context(isolate(), Handle<AllocationSite>(),

@@ -34,6 +34,21 @@
     <Filter Include="Source Files\compiler\x87">
       <UniqueIdentifier>{6beedc22-e6df-e570-a793-e05223c73897}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\crankshaft">
+      <UniqueIdentifier>{52fbcec1-1211-8b04-297b-f53a46beebef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crankshaft\ia32">
+      <UniqueIdentifier>{e10327e3-f5e2-afe4-a4cf-4bca606095da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crankshaft\ppc">
+      <UniqueIdentifier>{1816900e-285a-c8b1-18b6-5f2448edc074}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crankshaft\x64">
+      <UniqueIdentifier>{ece323aa-3aa8-aa37-18ef-4dc21d62389a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crankshaft\x87">
+      <UniqueIdentifier>{fa813165-026b-4a94-2a00-f0b83c177b08}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\d8.xcodeproj">
       <UniqueIdentifier>{21b6a2cb-ceaf-378e-a76c-933ad5762d5c}</UniqueIdentifier>
     </Filter>
@@ -175,6 +190,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\accessors.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\address-map.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\allocation-site-scopes.h">
@@ -399,6 +417,9 @@
     <ClInclude Include="src\compiler\access-builder.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\access-info.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\all-nodes.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -516,6 +537,9 @@
     <ClInclude Include="src\compiler\js-generic-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\js-global-object-specialization.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\js-graph.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -532,12 +556,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-operator.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\js-type-feedback-lowering.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\js-type-feedback.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-typed-lowering.h">
@@ -689,6 +707,144 @@
     </ClInclude>
     <ClInclude Include="src\counters.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-alias-analysis.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-bce.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-bch.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-canonicalize.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-check-elimination.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-dce.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-dehoist.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-environment-liveness.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-escape-analysis.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-flow-engine.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-gvn.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-infer-representation.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-infer-types.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-instructions.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-load-elimination.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-mark-deoptimize.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-mark-unreachable.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-osr.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-range-analysis.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-redundant-phi.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-removable-simulates.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-representation-changes.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-sce.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-store-elimination.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-types.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen-uint32-analysis.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\hydrogen.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\ia32\lithium-codegen-ia32.h">
+      <Filter>Source Files\crankshaft\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\ia32\lithium-gap-resolver-ia32.h">
+      <Filter>Source Files\crankshaft\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\ia32\lithium-ia32.h">
+      <Filter>Source Files\crankshaft\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\lithium-allocator-inl.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\lithium-allocator.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\lithium-codegen.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\lithium-inl.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\lithium.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\ppc\lithium-codegen-ppc.h">
+      <Filter>Source Files\crankshaft\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\ppc\lithium-gap-resolver-ppc.h">
+      <Filter>Source Files\crankshaft\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\ppc\lithium-ppc.h">
+      <Filter>Source Files\crankshaft\ppc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\typing.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\unique.h">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\x64\lithium-codegen-x64.h">
+      <Filter>Source Files\crankshaft\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\x64\lithium-gap-resolver-x64.h">
+      <Filter>Source Files\crankshaft\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\x64\lithium-x64.h">
+      <Filter>Source Files\crankshaft\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\x87\lithium-codegen-x87.h">
+      <Filter>Source Files\crankshaft\x87</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\x87\lithium-gap-resolver-x87.h">
+      <Filter>Source Files\crankshaft\x87</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\x87\lithium-x87.h">
+      <Filter>Source Files\crankshaft\x87</Filter>
     </ClInclude>
     <ClInclude Include="src\date.h">
       <Filter>Source Files</Filter>
@@ -882,87 +1038,6 @@
     <ClInclude Include="src\heap\store-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
-    <ClInclude Include="src\hydrogen-alias-analysis.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-bce.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-bch.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-canonicalize.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-check-elimination.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-dce.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-dehoist.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-environment-liveness.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-escape-analysis.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-flow-engine.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-gvn.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-infer-representation.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-infer-types.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-instructions.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-load-elimination.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-mark-deoptimize.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-mark-unreachable.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-osr.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-range-analysis.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-redundant-phi.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-removable-simulates.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-representation-changes.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-sce.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-store-elimination.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-types.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen-uint32-analysis.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hydrogen.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\ia32\assembler-ia32-inl.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
@@ -976,15 +1051,6 @@
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
     <ClInclude Include="src\ia32\frames-ia32.h">
-      <Filter>Source Files\ia32</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ia32\lithium-codegen-ia32.h">
-      <Filter>Source Files\ia32</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ia32\lithium-gap-resolver-ia32.h">
-      <Filter>Source Files\ia32</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ia32\lithium-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
     <ClInclude Include="src\ia32\macro-assembler-ia32.h">
@@ -1059,6 +1125,9 @@
     <ClInclude Include="src\json-stringifier.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\key-accumulator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\layout-descriptor-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1078,21 +1147,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\list.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lithium-allocator-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lithium-allocator.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lithium-codegen.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lithium-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lithium.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\log-inl.h">
@@ -1131,6 +1185,9 @@
     <ClInclude Include="src\ostreams.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\parameter-initializer-rewriter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\parser.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1153,15 +1210,6 @@
       <Filter>Source Files\ppc</Filter>
     </ClInclude>
     <ClInclude Include="src\ppc\frames-ppc.h">
-      <Filter>Source Files\ppc</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ppc\lithium-codegen-ppc.h">
-      <Filter>Source Files\ppc</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ppc\lithium-gap-resolver-ppc.h">
-      <Filter>Source Files\ppc</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ppc\lithium-ppc.h">
       <Filter>Source Files\ppc</Filter>
     </ClInclude>
     <ClInclude Include="src\ppc\macro-assembler-ppc.h">
@@ -1362,6 +1410,9 @@
     <ClInclude Include="src\transitions.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\type-cache.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\type-feedback-vector-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1383,9 +1434,6 @@
     <ClInclude Include="src\typing-reset.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\typing.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\unicode-cache-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1399,9 +1447,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\unicode.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\unique.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\utils.h">
@@ -1446,15 +1491,6 @@
     <ClInclude Include="src\x64\frames-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
-    <ClInclude Include="src\x64\lithium-codegen-x64.h">
-      <Filter>Source Files\x64</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x64\lithium-gap-resolver-x64.h">
-      <Filter>Source Files\x64</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x64\lithium-x64.h">
-      <Filter>Source Files\x64</Filter>
-    </ClInclude>
     <ClInclude Include="src\x64\macro-assembler-x64.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
@@ -1476,15 +1512,6 @@
     <ClInclude Include="src\x87\frames-x87.h">
       <Filter>Source Files\x87</Filter>
     </ClInclude>
-    <ClInclude Include="src\x87\lithium-codegen-x87.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\lithium-gap-resolver-x87.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
-    <ClInclude Include="src\x87\lithium-x87.h">
-      <Filter>Source Files\x87</Filter>
-    </ClInclude>
     <ClInclude Include="src\x87\macro-assembler-x87.h">
       <Filter>Source Files\x87</Filter>
     </ClInclude>
@@ -1497,15 +1524,15 @@
     <ClInclude Include="src\zone-containers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\zone-type-cache.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\zone.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\accessors.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\address-map.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\allocation-site-scopes.cc">
@@ -1673,6 +1700,9 @@
     <ClCompile Include="src\compiler\access-builder.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\access-info.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\all-nodes.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -1784,6 +1814,9 @@
     <ClCompile Include="src\compiler\js-generic-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\js-global-object-specialization.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\js-graph.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -1800,12 +1833,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-operator.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\js-type-feedback-lowering.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\js-type-feedback.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-typed-lowering.cc">
@@ -1954,6 +1981,129 @@
     </ClCompile>
     <ClCompile Include="src\counters.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-bce.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-bch.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-canonicalize.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-check-elimination.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-dce.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-dehoist.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-environment-liveness.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-escape-analysis.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-gvn.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-infer-representation.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-infer-types.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-instructions.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-load-elimination.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-mark-deoptimize.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-mark-unreachable.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-osr.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-range-analysis.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-redundant-phi.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-removable-simulates.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-representation-changes.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-sce.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-store-elimination.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-types.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen-uint32-analysis.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\hydrogen.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\ia32\lithium-codegen-ia32.cc">
+      <Filter>Source Files\crankshaft\ia32</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\ia32\lithium-gap-resolver-ia32.cc">
+      <Filter>Source Files\crankshaft\ia32</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\ia32\lithium-ia32.cc">
+      <Filter>Source Files\crankshaft\ia32</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\lithium-allocator.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\lithium-codegen.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\lithium.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\ppc\lithium-codegen-ppc.cc">
+      <Filter>Source Files\crankshaft\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\ppc\lithium-gap-resolver-ppc.cc">
+      <Filter>Source Files\crankshaft\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\ppc\lithium-ppc.cc">
+      <Filter>Source Files\crankshaft\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\typing.cc">
+      <Filter>Source Files\crankshaft</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\x64\lithium-codegen-x64.cc">
+      <Filter>Source Files\crankshaft\x64</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\x64\lithium-gap-resolver-x64.cc">
+      <Filter>Source Files\crankshaft\x64</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\x64\lithium-x64.cc">
+      <Filter>Source Files\crankshaft\x64</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\x87\lithium-codegen-x87.cc">
+      <Filter>Source Files\crankshaft\x87</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\x87\lithium-gap-resolver-x87.cc">
+      <Filter>Source Files\crankshaft\x87</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\x87\lithium-x87.cc">
+      <Filter>Source Files\crankshaft\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\date.cc">
       <Filter>Source Files</Filter>
@@ -2129,81 +2279,6 @@
     <ClCompile Include="src\heap\store-buffer.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
-    <ClCompile Include="src\hydrogen-bce.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-bch.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-canonicalize.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-check-elimination.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-dce.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-dehoist.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-environment-liveness.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-escape-analysis.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-gvn.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-infer-representation.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-infer-types.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-instructions.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-load-elimination.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-mark-deoptimize.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-mark-unreachable.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-osr.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-range-analysis.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-redundant-phi.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-removable-simulates.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-representation-changes.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-sce.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-store-elimination.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-types.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen-uint32-analysis.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\hydrogen.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ia32\assembler-ia32.cc">
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
@@ -2229,15 +2304,6 @@
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
     <ClCompile Include="src\ia32\interface-descriptors-ia32.cc">
-      <Filter>Source Files\ia32</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ia32\lithium-codegen-ia32.cc">
-      <Filter>Source Files\ia32</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ia32\lithium-gap-resolver-ia32.cc">
-      <Filter>Source Files\ia32</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ia32\lithium-ia32.cc">
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
     <ClCompile Include="src\ia32\macro-assembler-ia32.cc">
@@ -2357,6 +2423,9 @@
     <ClCompile Include="src\isolate.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\key-accumulator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\layout-descriptor.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2368,15 +2437,6 @@
     </ClCompile>
     <ClCompile Include="src\libplatform\worker-thread.cc">
       <Filter>Source Files\libplatform</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lithium-allocator.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lithium-codegen.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lithium.cc">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\log-utils.cc">
       <Filter>Source Files</Filter>
@@ -2406,6 +2466,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ostreams.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parameter-initializer-rewriter.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\parser.cc">
@@ -2445,15 +2508,6 @@
       <Filter>Source Files\ppc</Filter>
     </ClCompile>
     <ClCompile Include="src\ppc\interface-descriptors-ppc.cc">
-      <Filter>Source Files\ppc</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ppc\lithium-codegen-ppc.cc">
-      <Filter>Source Files\ppc</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ppc\lithium-gap-resolver-ppc.cc">
-      <Filter>Source Files\ppc</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ppc\lithium-ppc.cc">
       <Filter>Source Files\ppc</Filter>
     </ClCompile>
     <ClCompile Include="src\ppc\macro-assembler-ppc.cc">
@@ -2684,6 +2738,9 @@
     <ClCompile Include="src\transitions.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\type-cache.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\type-feedback-vector.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2697,9 +2754,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\typing-reset.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\typing.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\unicode-decoder.cc">
@@ -2750,15 +2804,6 @@
     <ClCompile Include="src\x64\interface-descriptors-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
-    <ClCompile Include="src\x64\lithium-codegen-x64.cc">
-      <Filter>Source Files\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x64\lithium-gap-resolver-x64.cc">
-      <Filter>Source Files\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x64\lithium-x64.cc">
-      <Filter>Source Files\x64</Filter>
-    </ClCompile>
     <ClCompile Include="src\x64\macro-assembler-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
@@ -2790,15 +2835,6 @@
       <Filter>Source Files\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\x87\interface-descriptors-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\lithium-codegen-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\lithium-gap-resolver-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\lithium-x87.cc">
       <Filter>Source Files\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\x87\macro-assembler-x87.cc">

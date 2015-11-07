@@ -77,6 +77,12 @@ void ALAA::VisitSuperCallReference(SuperCallReference* leaf) {}
 void ALAA::VisitBlock(Block* stmt) { VisitStatements(stmt->statements()); }
 
 
+void ALAA::VisitDoExpression(DoExpression* expr) {
+  Visit(expr->block());
+  Visit(expr->result());
+}
+
+
 void ALAA::VisitExpressionStatement(ExpressionStatement* stmt) {
   Visit(stmt->expression());
 }
@@ -255,7 +261,9 @@ void ALAA::VisitForInStatement(ForInStatement* loop) {
 
 
 void ALAA::VisitForOfStatement(ForOfStatement* loop) {
+  Visit(loop->assign_iterator());
   Enter(loop);
+  Visit(loop->assign_each());
   Visit(loop->each());
   Visit(loop->subject());
   Visit(loop->body());

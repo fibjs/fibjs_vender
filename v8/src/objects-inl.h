@@ -286,6 +286,24 @@ bool Object::KeyEquals(Object* second) {
 }
 
 
+bool Object::FilterKey(PropertyAttributes filter) {
+  if ((filter & SYMBOLIC) && IsSymbol()) {
+    return true;
+  }
+
+  if ((filter & PRIVATE_SYMBOL) && IsSymbol() &&
+      Symbol::cast(this)->is_private()) {
+    return true;
+  }
+
+  if ((filter & STRING) && !IsSymbol()) {
+    return true;
+  }
+
+  return false;
+}
+
+
 Handle<Object> Object::NewStorageFor(Isolate* isolate,
                                      Handle<Object> object,
                                      Representation representation) {
@@ -992,14 +1010,7 @@ bool Object::IsJSGlobalProxy() const {
 }
 
 
-bool Object::IsGlobalObject() const {
-  if (!IsHeapObject()) return false;
-  return HeapObject::cast(this)->map()->IsGlobalObjectMap();
-}
-
-
 TYPE_CHECKER(JSGlobalObject, JS_GLOBAL_OBJECT_TYPE)
-TYPE_CHECKER(JSBuiltinsObject, JS_BUILTINS_OBJECT_TYPE)
 
 
 bool Object::IsUndetectableObject() const {
@@ -1012,7 +1023,7 @@ bool Object::IsAccessCheckNeeded() const {
   if (!IsHeapObject()) return false;
   if (IsJSGlobalProxy()) {
     const JSGlobalProxy* proxy = JSGlobalProxy::cast(this);
-    GlobalObject* global = proxy->GetIsolate()->context()->global_object();
+    JSGlobalObject* global = proxy->GetIsolate()->context()->global_object();
     return proxy->IsDetachedFrom(global);
   }
   return HeapObject::cast(this)->map()->is_access_check_needed();
@@ -1177,19 +1188,28 @@ MaybeHandle<Object> Object::SetElement(Isolate* isolate, Handle<Object> object,
                                        uint32_t index, Handle<Object> value,
                                        LanguageMode language_mode) {
   LookupIterator it(isolate, object, index);
-  return SetProperty(&it, value, language_mode, MAY_BE_STORE_FROM_KEYED);
+  MAYBE_RETURN_NULL(
+      SetProperty(&it, value, language_mode, MAY_BE_STORE_FROM_KEYED));
+  return value;
 }
 
 
-Handle<Object> Object::GetPrototypeSkipHiddenPrototypes(
-    Isolate* isolate, Handle<Object> receiver) {
-  PrototypeIterator iter(isolate, receiver);
-  while (!iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN)) {
+Handle<Object> Object::GetPrototype(Isolate* isolate, Handle<Object> obj) {
+  // We don't expect access checks to be needed on JSProxy objects.
+  DCHECK(!obj->IsAccessCheckNeeded() || obj->IsJSObject());
+  Handle<Context> context(isolate->context());
+  if (obj->IsAccessCheckNeeded() &&
+      !isolate->MayAccess(context, Handle<JSObject>::cast(obj))) {
+    return isolate->factory()->null_value();
+  }
+
+  PrototypeIterator iter(isolate, obj, PrototypeIterator::START_AT_RECEIVER);
+  do {
+    iter.AdvanceIgnoringProxies();
     if (PrototypeIterator::GetCurrent(iter)->IsJSProxy()) {
       return PrototypeIterator::GetCurrent(iter);
     }
-    iter.Advance();
-  }
+  } while (!iter.IsAtEnd(PrototypeIterator::END_AT_NON_HIDDEN));
   return PrototypeIterator::GetCurrent(iter);
 }
 
@@ -2107,8 +2127,10 @@ void WeakCell::clear_next(Heap* heap) {
 bool WeakCell::next_cleared() { return next()->IsTheHole(); }
 
 
-int JSObject::GetHeaderSize() {
-  InstanceType type = map()->instance_type();
+int JSObject::GetHeaderSize() { return GetHeaderSize(map()->instance_type()); }
+
+
+int JSObject::GetHeaderSize(InstanceType type) {
   // Check for the most common kind of JavaScript object before
   // falling into the generic switch. This speeds up the internal
   // field operations considerably on average.
@@ -2122,8 +2144,6 @@ int JSObject::GetHeaderSize() {
       return JSGlobalProxy::kSize;
     case JS_GLOBAL_OBJECT_TYPE:
       return JSGlobalObject::kSize;
-    case JS_BUILTINS_OBJECT_TYPE:
-      return JSBuiltinsObject::kSize;
     case JS_FUNCTION_TYPE:
       return JSFunction::kSize;
     case JS_VALUE_TYPE:
@@ -2165,13 +2185,16 @@ int JSObject::GetHeaderSize() {
 }
 
 
-int JSObject::GetInternalFieldCount() {
-  DCHECK(1 << kPointerSizeLog2 == kPointerSize);
-  // Make sure to adjust for the number of in-object properties. These
-  // properties do contribute to the size, but are not internal fields.
-  return ((Size() - GetHeaderSize()) >> kPointerSizeLog2) -
-         map()->GetInObjectProperties();
+int JSObject::GetInternalFieldCount(Map* map) {
+  int instance_size = map->instance_size();
+  if (instance_size == kVariableSizeSentinel) return 0;
+  InstanceType instance_type = map->instance_type();
+  return ((instance_size - GetHeaderSize(instance_type)) >> kPointerSizeLog2) -
+         map->GetInObjectProperties();
 }
+
+
+int JSObject::GetInternalFieldCount() { return GetInternalFieldCount(map()); }
 
 
 int JSObject::GetInternalFieldOffset(int index) {
@@ -3280,7 +3303,6 @@ CAST_ACCESSOR(FixedTypedArrayBase)
 CAST_ACCESSOR(Float32x4)
 CAST_ACCESSOR(Foreign)
 CAST_ACCESSOR(GlobalDictionary)
-CAST_ACCESSOR(GlobalObject)
 CAST_ACCESSOR(HandlerTable)
 CAST_ACCESSOR(HeapObject)
 CAST_ACCESSOR(Int16x8)
@@ -3289,7 +3311,6 @@ CAST_ACCESSOR(Int8x16)
 CAST_ACCESSOR(JSArray)
 CAST_ACCESSOR(JSArrayBuffer)
 CAST_ACCESSOR(JSArrayBufferView)
-CAST_ACCESSOR(JSBuiltinsObject)
 CAST_ACCESSOR(JSDataView)
 CAST_ACCESSOR(JSDate)
 CAST_ACCESSOR(JSFunction)
@@ -3639,14 +3660,6 @@ FreeSpace* FreeSpace::next() {
   DCHECK_LE(kNextOffset + kPointerSize, nobarrier_size());
   return reinterpret_cast<FreeSpace*>(
       Memory::Address_at(address() + kNextOffset));
-}
-
-
-FreeSpace** FreeSpace::next_address() {
-  DCHECK(map() == GetHeap()->root(Heap::kFreeSpaceMapRootIndex) ||
-         (!GetHeap()->deserialization_complete() && map() == NULL));
-  DCHECK_LE(kNextOffset + kPointerSize, nobarrier_size());
-  return reinterpret_cast<FreeSpace**>(address() + kNextOffset);
 }
 
 
@@ -4884,6 +4897,7 @@ bool Map::CanTransition() {
 }
 
 
+bool Map::IsBooleanMap() { return this == GetHeap()->boolean_map(); }
 bool Map::IsPrimitiveMap() {
   STATIC_ASSERT(FIRST_PRIMITIVE_TYPE == FIRST_TYPE);
   return instance_type() <= LAST_PRIMITIVE_TYPE;
@@ -4906,10 +4920,6 @@ bool Map::IsJSGlobalObjectMap() {
   return instance_type() == JS_GLOBAL_OBJECT_TYPE;
 }
 bool Map::IsJSTypedArrayMap() { return instance_type() == JS_TYPED_ARRAY_TYPE; }
-bool Map::IsGlobalObjectMap() {
-  const InstanceType type = instance_type();
-  return type == JS_GLOBAL_OBJECT_TYPE || type == JS_BUILTINS_OBJECT_TYPE;
-}
 
 
 bool Map::CanOmitMapChecks() {
@@ -5605,13 +5615,18 @@ void Map::SetConstructor(Object* constructor, WriteBarrierMode mode) {
 }
 
 
+Handle<Map> Map::CopyInitialMap(Handle<Map> map) {
+  return CopyInitialMap(map, map->instance_size(), map->GetInObjectProperties(),
+                        map->unused_property_fields());
+}
+
+
 ACCESSORS(JSFunction, shared, SharedFunctionInfo, kSharedFunctionInfoOffset)
 ACCESSORS(JSFunction, literals_or_bindings, FixedArray, kLiteralsOffset)
 ACCESSORS(JSFunction, next_function_link, Object, kNextFunctionLinkOffset)
 
-ACCESSORS(GlobalObject, builtins, JSBuiltinsObject, kBuiltinsOffset)
-ACCESSORS(GlobalObject, native_context, Context, kNativeContextOffset)
-ACCESSORS(GlobalObject, global_proxy, JSObject, kGlobalProxyOffset)
+ACCESSORS(JSGlobalObject, native_context, Context, kNativeContextOffset)
+ACCESSORS(JSGlobalObject, global_proxy, JSObject, kGlobalProxyOffset)
 
 ACCESSORS(JSGlobalProxy, native_context, Object, kNativeContextOffset)
 ACCESSORS(JSGlobalProxy, hash, Object, kHashOffset)
@@ -5642,6 +5657,7 @@ ACCESSORS(AccessorPair, setter, Object, kSetterOffset)
 
 ACCESSORS(AccessCheckInfo, named_callback, Object, kNamedCallbackOffset)
 ACCESSORS(AccessCheckInfo, indexed_callback, Object, kIndexedCallbackOffset)
+ACCESSORS(AccessCheckInfo, callback, Object, kCallbackOffset)
 ACCESSORS(AccessCheckInfo, data, Object, kDataOffset)
 
 ACCESSORS(InterceptorInfo, getter, Object, kGetterOffset)
@@ -6205,20 +6221,6 @@ bool SharedFunctionInfo::IsBuiltin() {
 bool SharedFunctionInfo::IsSubjectToDebugging() { return !IsBuiltin(); }
 
 
-bool JSFunction::IsBuiltin() { return shared()->IsBuiltin(); }
-
-
-bool JSFunction::IsSubjectToDebugging() {
-  return shared()->IsSubjectToDebugging();
-}
-
-
-bool JSFunction::NeedsArgumentsAdaption() {
-  return shared()->internal_formal_parameter_count() !=
-         SharedFunctionInfo::kDontAdaptArgumentsSentinel;
-}
-
-
 bool JSFunction::IsOptimized() {
   return code()->kind() == Code::OPTIMIZED_FUNCTION;
 }
@@ -6363,11 +6365,6 @@ bool JSFunction::is_compiled() {
   return code() != builtins->builtin(Builtins::kCompileLazy) &&
          code() != builtins->builtin(Builtins::kCompileOptimized) &&
          code() != builtins->builtin(Builtins::kCompileOptimizedConcurrent);
-}
-
-
-bool JSFunction::has_simple_parameters() {
-  return shared()->has_simple_parameters();
 }
 
 
@@ -6775,6 +6772,8 @@ ACCESSORS(JSTypedArray, raw_length, Object, kLengthOffset)
 
 
 ACCESSORS(JSRegExp, data, Object, kDataOffset)
+ACCESSORS(JSRegExp, flags, Object, kFlagsOffset)
+ACCESSORS(JSRegExp, source, Object, kSourceOffset)
 
 
 JSRegExp::Type JSRegExp::TypeTag() {
@@ -6938,14 +6937,14 @@ bool JSObject::HasIndexedInterceptor() {
 
 NameDictionary* JSObject::property_dictionary() {
   DCHECK(!HasFastProperties());
-  DCHECK(!IsGlobalObject());
+  DCHECK(!IsJSGlobalObject());
   return NameDictionary::cast(properties());
 }
 
 
 GlobalDictionary* JSObject::global_dictionary() {
   DCHECK(!HasFastProperties());
-  DCHECK(IsGlobalObject());
+  DCHECK(IsJSGlobalObject());
   return GlobalDictionary::cast(properties());
 }
 
@@ -7258,27 +7257,17 @@ MaybeHandle<Object> Object::GetPropertyOrElement(Handle<JSReceiver> holder,
 
 Maybe<bool> JSReceiver::HasProperty(Handle<JSReceiver> object,
                                     Handle<Name> name) {
-  // Call the "has" trap on proxies.
-  if (object->IsJSProxy()) {
-    Handle<JSProxy> proxy = Handle<JSProxy>::cast(object);
-    return JSProxy::HasPropertyWithHandler(proxy, name);
-  }
-
-  Maybe<PropertyAttributes> result = GetPropertyAttributes(object, name);
-  return result.IsJust() ? Just(result.FromJust() != ABSENT) : Nothing<bool>();
+  LookupIterator it =
+      LookupIterator::PropertyOrElement(object->GetIsolate(), object, name);
+  return HasProperty(&it);
 }
 
 
 Maybe<bool> JSReceiver::HasOwnProperty(Handle<JSReceiver> object,
                                        Handle<Name> name) {
-  // Call the "has" trap on proxies.
-  if (object->IsJSProxy()) {
-    Handle<JSProxy> proxy = Handle<JSProxy>::cast(object);
-    return JSProxy::HasPropertyWithHandler(proxy, name);
-  }
-
-  Maybe<PropertyAttributes> result = GetOwnPropertyAttributes(object, name);
-  return result.IsJust() ? Just(result.FromJust() != ABSENT) : Nothing<bool>();
+  LookupIterator it = LookupIterator::PropertyOrElement(
+      object->GetIsolate(), object, name, LookupIterator::HIDDEN);
+  return HasProperty(&it);
 }
 
 
@@ -7299,31 +7288,16 @@ Maybe<PropertyAttributes> JSReceiver::GetOwnPropertyAttributes(
 
 
 Maybe<bool> JSReceiver::HasElement(Handle<JSReceiver> object, uint32_t index) {
-  // Call the "has" trap on proxies.
-  if (object->IsJSProxy()) {
-    Isolate* isolate = object->GetIsolate();
-    Handle<Name> name = isolate->factory()->Uint32ToString(index);
-    Handle<JSProxy> proxy = Handle<JSProxy>::cast(object);
-    return JSProxy::HasPropertyWithHandler(proxy, name);
-  }
-
-  Maybe<PropertyAttributes> result = GetElementAttributes(object, index);
-  return result.IsJust() ? Just(result.FromJust() != ABSENT) : Nothing<bool>();
+  LookupIterator it(object->GetIsolate(), object, index);
+  return HasProperty(&it);
 }
 
 
 Maybe<bool> JSReceiver::HasOwnElement(Handle<JSReceiver> object,
                                       uint32_t index) {
-  // Call the "has" trap on proxies.
-  if (object->IsJSProxy()) {
-    Isolate* isolate = object->GetIsolate();
-    Handle<Name> name = isolate->factory()->Uint32ToString(index);
-    Handle<JSProxy> proxy = Handle<JSProxy>::cast(object);
-    return JSProxy::HasPropertyWithHandler(proxy, name);
-  }
-
-  Maybe<PropertyAttributes> result = GetOwnElementAttributes(object, index);
-  return result.IsJust() ? Just(result.FromJust() != ABSENT) : Nothing<bool>();
+  LookupIterator it(object->GetIsolate(), object, index,
+                    LookupIterator::HIDDEN);
+  return HasProperty(&it);
 }
 
 
@@ -7348,7 +7322,7 @@ bool JSGlobalObject::IsDetached() {
 }
 
 
-bool JSGlobalProxy::IsDetachedFrom(GlobalObject* global) const {
+bool JSGlobalProxy::IsDetachedFrom(JSGlobalObject* global) const {
   const PrototypeIterator iter(this->GetIsolate(),
                                const_cast<JSGlobalProxy*>(this));
   return iter.GetCurrent() != global;
@@ -7869,7 +7843,8 @@ Relocatable::~Relocatable() {
 
 
 // static
-int JSObject::BodyDescriptor::SizeOf(Map* map, HeapObject* object) {
+template <int start_offset>
+int FlexibleBodyDescriptor<start_offset>::SizeOf(Map* map, HeapObject* object) {
   return map->instance_size();
 }
 
@@ -7877,12 +7852,6 @@ int JSObject::BodyDescriptor::SizeOf(Map* map, HeapObject* object) {
 // static
 int FixedArray::BodyDescriptor::SizeOf(Map* map, HeapObject* object) {
   return SizeFor(reinterpret_cast<FixedArray*>(object)->synchronized_length());
-}
-
-
-// static
-int StructBodyDescriptor::SizeOf(Map* map, HeapObject* object) {
-  return map->instance_size();
 }
 
 
@@ -7942,48 +7911,54 @@ void ExternalTwoByteString::ExternalTwoByteStringIterateBody() {
 }
 
 
-static inline void IterateBodyUsingLayoutDescriptor(HeapObject* object,
-                                                    int start_offset,
-                                                    int end_offset,
-                                                    ObjectVisitor* v) {
-  DCHECK(FLAG_unbox_double_fields);
-  DCHECK(IsAligned(start_offset, kPointerSize) &&
-         IsAligned(end_offset, kPointerSize));
+void BodyDescriptorBase::IterateBodyImpl(HeapObject* obj, int start_offset,
+                                         int end_offset, ObjectVisitor* v) {
+  if (!FLAG_unbox_double_fields || obj->map()->HasFastPointerLayout()) {
+    v->VisitPointers(HeapObject::RawField(obj, start_offset),
+                     HeapObject::RawField(obj, end_offset));
+  } else {
+    DCHECK(FLAG_unbox_double_fields);
+    DCHECK(IsAligned(start_offset, kPointerSize) &&
+           IsAligned(end_offset, kPointerSize));
 
-  LayoutDescriptorHelper helper(object->map());
-  DCHECK(!helper.all_fields_tagged());
-
-  for (int offset = start_offset; offset < end_offset; offset += kPointerSize) {
-    // Visit all tagged fields.
-    if (helper.IsTagged(offset)) {
-      v->VisitPointer(HeapObject::RawField(object, offset));
+    LayoutDescriptorHelper helper(obj->map());
+    DCHECK(!helper.all_fields_tagged());
+    for (int offset = start_offset; offset < end_offset;) {
+      int end_of_region_offset;
+      if (helper.IsTagged(offset, end_offset, &end_of_region_offset)) {
+        v->VisitPointers(HeapObject::RawField(obj, offset),
+                         HeapObject::RawField(obj, end_of_region_offset));
+      }
+      offset = end_of_region_offset;
     }
   }
 }
 
 
-template<int start_offset, int end_offset, int size>
-void FixedBodyDescriptor<start_offset, end_offset, size>::IterateBody(
-    HeapObject* obj,
-    ObjectVisitor* v) {
+template <typename StaticVisitor>
+void BodyDescriptorBase::IterateBodyImpl(HeapObject* obj, int start_offset,
+                                         int end_offset) {
+  Heap* heap = obj->GetHeap();
   if (!FLAG_unbox_double_fields || obj->map()->HasFastPointerLayout()) {
-    v->VisitPointers(HeapObject::RawField(obj, start_offset),
-                     HeapObject::RawField(obj, end_offset));
+    StaticVisitor::VisitPointers(heap, obj,
+                                 HeapObject::RawField(obj, start_offset),
+                                 HeapObject::RawField(obj, end_offset));
   } else {
-    IterateBodyUsingLayoutDescriptor(obj, start_offset, end_offset, v);
-  }
-}
+    DCHECK(FLAG_unbox_double_fields);
+    DCHECK(IsAligned(start_offset, kPointerSize) &&
+           IsAligned(end_offset, kPointerSize));
 
-
-template<int start_offset>
-void FlexibleBodyDescriptor<start_offset>::IterateBody(HeapObject* obj,
-                                                       int object_size,
-                                                       ObjectVisitor* v) {
-  if (!FLAG_unbox_double_fields || obj->map()->HasFastPointerLayout()) {
-    v->VisitPointers(HeapObject::RawField(obj, start_offset),
-                     HeapObject::RawField(obj, object_size));
-  } else {
-    IterateBodyUsingLayoutDescriptor(obj, start_offset, object_size, v);
+    LayoutDescriptorHelper helper(obj->map());
+    DCHECK(!helper.all_fields_tagged());
+    for (int offset = start_offset; offset < end_offset;) {
+      int end_of_region_offset;
+      if (helper.IsTagged(offset, end_offset, &end_of_region_offset)) {
+        StaticVisitor::VisitPointers(
+            heap, obj, HeapObject::RawField(obj, offset),
+            HeapObject::RawField(obj, end_of_region_offset));
+      }
+      offset = end_of_region_offset;
+    }
   }
 }
 

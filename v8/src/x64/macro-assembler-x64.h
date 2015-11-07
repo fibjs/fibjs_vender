@@ -25,6 +25,7 @@ const Register kInterpreterRegisterFileRegister = {Register::kCode_r11};
 const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r12};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r14};
 const Register kInterpreterDispatchTableRegister = {Register::kCode_r15};
+const Register kJavaScriptCallArgCountRegister = {Register::kCode_rax};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_rbx};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_rax};
 
@@ -816,6 +817,10 @@ class MacroAssembler: public Assembler {
   // xorpd to clear the dst register before cvtsi2sd to solve this issue.
   void Cvtlsi2sd(XMMRegister dst, Register src);
   void Cvtlsi2sd(XMMRegister dst, const Operand& src);
+  void Cvtqsi2sd(XMMRegister dst, Register src);
+  void Cvtqsi2sd(XMMRegister dst, const Operand& src);
+
+  void Cvtsd2si(Register dst, XMMRegister src);
 
   void Cvttsd2si(Register dst, XMMRegister src);
   void Cvttsd2si(Register dst, const Operand& src);
@@ -904,10 +909,45 @@ class MacroAssembler: public Assembler {
   void Move(XMMRegister dst, float src) { Move(dst, bit_cast<uint32_t>(src)); }
   void Move(XMMRegister dst, double src) { Move(dst, bit_cast<uint64_t>(src)); }
 
-  void Movapd(XMMRegister dst, XMMRegister src);
+#define AVX_OP2_WITH_TYPE(macro_name, name, src_type) \
+  void macro_name(XMMRegister dst, src_type src) {    \
+    if (CpuFeatures::IsSupported(AVX)) {              \
+      CpuFeatureScope scope(this, AVX);               \
+      v##name(dst, dst, src);                         \
+    } else {                                          \
+      name(dst, src);                                 \
+    }                                                 \
+  }
+#define AVX_OP2_X(macro_name, name) \
+  AVX_OP2_WITH_TYPE(macro_name, name, XMMRegister)
+#define AVX_OP2_O(macro_name, name) \
+  AVX_OP2_WITH_TYPE(macro_name, name, const Operand&)
+#define AVX_OP2_XO(macro_name, name) \
+  AVX_OP2_X(macro_name, name)        \
+  AVX_OP2_O(macro_name, name)
+
+  AVX_OP2_XO(Addsd, addsd)
+  AVX_OP2_XO(Subsd, subsd)
+  AVX_OP2_XO(Mulsd, mulsd)
+  AVX_OP2_XO(Divsd, divsd)
+  AVX_OP2_X(Andpd, andpd)
+  AVX_OP2_X(Orpd, orpd)
+  AVX_OP2_X(Xorpd, xorpd)
+  AVX_OP2_X(Pcmpeqd, pcmpeqd)
+  AVX_OP2_WITH_TYPE(Psllq, psllq, byte)
+  AVX_OP2_WITH_TYPE(Psrlq, psrlq, byte)
+
+#undef AVX_OP2_O
+#undef AVX_OP2_X
+#undef AVX_OP2_XO
+#undef AVX_OP2_WITH_TYPE
+
   void Movsd(XMMRegister dst, XMMRegister src);
   void Movsd(XMMRegister dst, const Operand& src);
   void Movsd(const Operand& dst, XMMRegister src);
+  void Movss(XMMRegister dst, XMMRegister src);
+  void Movss(XMMRegister dst, const Operand& src);
+  void Movss(const Operand& dst, XMMRegister src);
 
   void Movd(XMMRegister dst, Register src);
   void Movd(XMMRegister dst, const Operand& src);
@@ -915,14 +955,18 @@ class MacroAssembler: public Assembler {
   void Movq(XMMRegister dst, Register src);
   void Movq(Register dst, XMMRegister src);
 
+  void Movaps(XMMRegister dst, XMMRegister src);
+  void Movapd(XMMRegister dst, XMMRegister src);
   void Movmskpd(Register dst, XMMRegister src);
+
+  void Roundsd(XMMRegister dst, XMMRegister src, RoundingMode mode);
+  void Sqrtsd(XMMRegister dst, XMMRegister src);
+  void Sqrtsd(XMMRegister dst, const Operand& src);
 
   void Ucomiss(XMMRegister src1, XMMRegister src2);
   void Ucomiss(XMMRegister src1, const Operand& src2);
   void Ucomisd(XMMRegister src1, XMMRegister src2);
   void Ucomisd(XMMRegister src1, const Operand& src2);
-
-  void Xorpd(XMMRegister dst, XMMRegister src);
 
   // Control Flow
   void Jump(Address destination, RelocInfo::Mode rmode);

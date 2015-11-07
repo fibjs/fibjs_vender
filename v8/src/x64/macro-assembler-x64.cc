@@ -27,8 +27,8 @@ MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size)
       has_frame_(false),
       root_array_available_(true) {
   if (isolate() != NULL) {
-    code_object_ = Handle<Object>(isolate()->heap()->undefined_value(),
-                                  isolate());
+    code_object_ =
+        Handle<Object>::New(isolate()->heap()->undefined_value(), isolate());
   }
 }
 
@@ -720,7 +720,7 @@ void MacroAssembler::GetBuiltinFunction(Register target,
                                         int native_context_index) {
   // Load the builtins object into target register.
   movp(target, Operand(rsi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  movp(target, FieldOperand(target, GlobalObject::kNativeContextOffset));
+  movp(target, FieldOperand(target, JSGlobalObject::kNativeContextOffset));
   movp(target, ContextOperand(target, native_context_index));
 }
 
@@ -851,6 +851,40 @@ void MacroAssembler::Cvtlsi2sd(XMMRegister dst, const Operand& src) {
   } else {
     xorpd(dst, dst);
     cvtlsi2sd(dst, src);
+  }
+}
+
+
+void MacroAssembler::Cvtqsi2sd(XMMRegister dst, Register src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vxorpd(dst, dst, dst);
+    vcvtqsi2sd(dst, dst, src);
+  } else {
+    xorpd(dst, dst);
+    cvtqsi2sd(dst, src);
+  }
+}
+
+
+void MacroAssembler::Cvtqsi2sd(XMMRegister dst, const Operand& src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vxorpd(dst, dst, dst);
+    vcvtqsi2sd(dst, dst, src);
+  } else {
+    xorpd(dst, dst);
+    cvtqsi2sd(dst, src);
+  }
+}
+
+
+void MacroAssembler::Cvtsd2si(Register dst, XMMRegister src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vcvtsd2si(dst, src);
+  } else {
+    cvtsd2si(dst, src);
   }
 }
 
@@ -2494,7 +2528,7 @@ void MacroAssembler::Move(XMMRegister dst, uint32_t src) {
     unsigned pop = base::bits::CountPopulation32(src);
     DCHECK_NE(0u, pop);
     if (pop == 32) {
-      pcmpeqd(dst, dst);
+      Pcmpeqd(dst, dst);
     } else {
       movl(kScratchRegister, Immediate(src));
       Movq(dst, kScratchRegister);
@@ -2512,13 +2546,13 @@ void MacroAssembler::Move(XMMRegister dst, uint64_t src) {
     unsigned pop = base::bits::CountPopulation64(src);
     DCHECK_NE(0u, pop);
     if (pop == 64) {
-      pcmpeqd(dst, dst);
+      Pcmpeqd(dst, dst);
     } else if (pop + ntz == 64) {
-      pcmpeqd(dst, dst);
-      psllq(dst, ntz);
+      Pcmpeqd(dst, dst);
+      Psllq(dst, ntz);
     } else if (pop + nlz == 64) {
-      pcmpeqd(dst, dst);
-      psrlq(dst, nlz);
+      Pcmpeqd(dst, dst);
+      Psrlq(dst, nlz);
     } else {
       uint32_t lower = static_cast<uint32_t>(src);
       uint32_t upper = static_cast<uint32_t>(src >> 32);
@@ -2529,6 +2563,16 @@ void MacroAssembler::Move(XMMRegister dst, uint64_t src) {
         Movq(dst, kScratchRegister);
       }
     }
+  }
+}
+
+
+void MacroAssembler::Movaps(XMMRegister dst, XMMRegister src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vmovaps(dst, src);
+  } else {
+    movaps(dst, src);
   }
 }
 
@@ -2546,7 +2590,7 @@ void MacroAssembler::Movapd(XMMRegister dst, XMMRegister src) {
 void MacroAssembler::Movsd(XMMRegister dst, XMMRegister src) {
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
-    vmovsd(dst, src);
+    vmovsd(dst, dst, src);
   } else {
     movsd(dst, src);
   }
@@ -2569,6 +2613,36 @@ void MacroAssembler::Movsd(const Operand& dst, XMMRegister src) {
     vmovsd(dst, src);
   } else {
     movsd(dst, src);
+  }
+}
+
+
+void MacroAssembler::Movss(XMMRegister dst, XMMRegister src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vmovss(dst, dst, src);
+  } else {
+    movss(dst, src);
+  }
+}
+
+
+void MacroAssembler::Movss(XMMRegister dst, const Operand& src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vmovss(dst, src);
+  } else {
+    movss(dst, src);
+  }
+}
+
+
+void MacroAssembler::Movss(const Operand& dst, XMMRegister src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vmovss(dst, src);
+  } else {
+    movss(dst, src);
   }
 }
 
@@ -2633,6 +2707,37 @@ void MacroAssembler::Movmskpd(Register dst, XMMRegister src) {
 }
 
 
+void MacroAssembler::Roundsd(XMMRegister dst, XMMRegister src,
+                             RoundingMode mode) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vroundsd(dst, dst, src, mode);
+  } else {
+    roundsd(dst, src, mode);
+  }
+}
+
+
+void MacroAssembler::Sqrtsd(XMMRegister dst, XMMRegister src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vsqrtsd(dst, dst, src);
+  } else {
+    sqrtsd(dst, src);
+  }
+}
+
+
+void MacroAssembler::Sqrtsd(XMMRegister dst, const Operand& src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vsqrtsd(dst, dst, src);
+  } else {
+    sqrtsd(dst, src);
+  }
+}
+
+
 void MacroAssembler::Ucomiss(XMMRegister src1, XMMRegister src2) {
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
@@ -2669,16 +2774,6 @@ void MacroAssembler::Ucomisd(XMMRegister src1, const Operand& src2) {
     vucomisd(src1, src2);
   } else {
     ucomisd(src1, src2);
-  }
-}
-
-
-void MacroAssembler::Xorpd(XMMRegister dst, XMMRegister src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vxorpd(dst, dst, src);
-  } else {
-    xorpd(dst, src);
   }
 }
 
@@ -3016,9 +3111,7 @@ void MacroAssembler::Pinsrd(XMMRegister dst, Register src, int8_t imm8) {
     punpckldq(dst, xmm0);
   } else {
     DCHECK_EQ(0, imm8);
-    psrlq(dst, 32);
-    punpckldq(xmm0, dst);
-    movaps(dst, xmm0);
+    Movss(dst, xmm0);
   }
 }
 
@@ -3035,9 +3128,7 @@ void MacroAssembler::Pinsrd(XMMRegister dst, const Operand& src, int8_t imm8) {
     punpckldq(dst, xmm0);
   } else {
     DCHECK_EQ(0, imm8);
-    psrlq(dst, 32);
-    punpckldq(xmm0, dst);
-    movaps(dst, xmm0);
+    Movss(dst, xmm0);
   }
 }
 
@@ -3379,7 +3470,7 @@ void MacroAssembler::ClampDoubleToUint8(XMMRegister input_reg,
   Label done;
   Label conv_failure;
   Xorpd(temp_xmm_reg, temp_xmm_reg);
-  cvtsd2si(result_reg, input_reg);
+  Cvtsd2si(result_reg, input_reg);
   testl(result_reg, Immediate(0xFFFFFF00));
   j(zero, &done, Label::kNear);
   cmpl(result_reg, Immediate(1));
@@ -3404,7 +3495,7 @@ void MacroAssembler::LoadUint32(XMMRegister dst,
     cmpq(src, Immediate(0xffffffff));
     Assert(below_equal, kInputGPRIsExpectedToHaveUpper32Cleared);
   }
-  cvtqsi2sd(dst, src);
+  Cvtqsi2sd(dst, src);
 }
 
 
@@ -3747,6 +3838,43 @@ void MacroAssembler::DebugBreak() {
 }
 
 
+void MacroAssembler::InvokeFunction(Register function,
+                                    const ParameterCount& actual,
+                                    InvokeFlag flag,
+                                    const CallWrapper& call_wrapper) {
+  movp(rdx, FieldOperand(function, JSFunction::kSharedFunctionInfoOffset));
+  LoadSharedFunctionInfoSpecialField(
+      rbx, rdx, SharedFunctionInfo::kFormalParameterCountOffset);
+
+  ParameterCount expected(rbx);
+  InvokeFunction(function, expected, actual, flag, call_wrapper);
+}
+
+
+void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
+                                    const ParameterCount& expected,
+                                    const ParameterCount& actual,
+                                    InvokeFlag flag,
+                                    const CallWrapper& call_wrapper) {
+  Move(rdi, function);
+  InvokeFunction(rdi, expected, actual, flag, call_wrapper);
+}
+
+
+void MacroAssembler::InvokeFunction(Register function,
+                                    const ParameterCount& expected,
+                                    const ParameterCount& actual,
+                                    InvokeFlag flag,
+                                    const CallWrapper& call_wrapper) {
+  DCHECK(function.is(rdi));
+  movp(rsi, FieldOperand(function, JSFunction::kContextOffset));
+  // Advances rdx to the end of the Code object header, to the start of
+  // the executable code.
+  movp(rdx, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
+  InvokeCode(rdx, expected, actual, flag, call_wrapper);
+}
+
+
 void MacroAssembler::InvokeCode(Register code,
                                 const ParameterCount& expected,
                                 const ParameterCount& actual,
@@ -3777,55 +3905,6 @@ void MacroAssembler::InvokeCode(Register code,
     }
     bind(&done);
   }
-}
-
-
-void MacroAssembler::InvokeFunction(Register function,
-                                    const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
-  // You can't call a function without a valid frame.
-  DCHECK(flag == JUMP_FUNCTION || has_frame());
-
-  DCHECK(function.is(rdi));
-  movp(rdx, FieldOperand(function, JSFunction::kSharedFunctionInfoOffset));
-  movp(rsi, FieldOperand(function, JSFunction::kContextOffset));
-  LoadSharedFunctionInfoSpecialField(rbx, rdx,
-      SharedFunctionInfo::kFormalParameterCountOffset);
-  // Advances rdx to the end of the Code object header, to the start of
-  // the executable code.
-  movp(rdx, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
-
-  ParameterCount expected(rbx);
-  InvokeCode(rdx, expected, actual, flag, call_wrapper);
-}
-
-
-void MacroAssembler::InvokeFunction(Register function,
-                                    const ParameterCount& expected,
-                                    const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
-  // You can't call a function without a valid frame.
-  DCHECK(flag == JUMP_FUNCTION || has_frame());
-
-  DCHECK(function.is(rdi));
-  movp(rsi, FieldOperand(function, JSFunction::kContextOffset));
-  // Advances rdx to the end of the Code object header, to the start of
-  // the executable code.
-  movp(rdx, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
-
-  InvokeCode(rdx, expected, actual, flag, call_wrapper);
-}
-
-
-void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
-                                    const ParameterCount& expected,
-                                    const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
-  Move(rdi, function);
-  InvokeFunction(rdi, expected, actual, flag, call_wrapper);
 }
 
 
@@ -4010,7 +4089,8 @@ void MacroAssembler::EnterExitFrameEpilogue(int arg_stack_space,
                 arg_stack_space * kRegisterSize;
     subp(rsp, Immediate(space));
     int offset = -2 * kPointerSize;
-    const RegisterConfiguration* config = RegisterConfiguration::ArchDefault();
+    const RegisterConfiguration* config =
+        RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
     for (int i = 0; i < config->num_allocatable_double_registers(); ++i) {
       DoubleRegister reg =
           DoubleRegister::from_code(config->GetAllocatableDoubleCode(i));
@@ -4056,7 +4136,8 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles, bool pop_arguments) {
   // r15 : argv
   if (save_doubles) {
     int offset = -2 * kPointerSize;
-    const RegisterConfiguration* config = RegisterConfiguration::ArchDefault();
+    const RegisterConfiguration* config =
+        RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
     for (int i = 0; i < config->num_allocatable_double_registers(); ++i) {
       DoubleRegister reg =
           DoubleRegister::from_code(config->GetAllocatableDoubleCode(i));
@@ -4129,7 +4210,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
   int offset =
       Context::kHeaderSize + Context::GLOBAL_OBJECT_INDEX * kPointerSize;
   movp(scratch, FieldOperand(scratch, offset));
-  movp(scratch, FieldOperand(scratch, GlobalObject::kNativeContextOffset));
+  movp(scratch, FieldOperand(scratch, JSGlobalObject::kNativeContextOffset));
 
   // Check the context is a native context.
   if (emit_debug_code()) {
@@ -4787,7 +4868,7 @@ void MacroAssembler::LoadContext(Register dst, int context_chain_length) {
 
 void MacroAssembler::LoadGlobalProxy(Register dst) {
   movp(dst, GlobalObjectOperand());
-  movp(dst, FieldOperand(dst, GlobalObject::kGlobalProxyOffset));
+  movp(dst, FieldOperand(dst, JSGlobalObject::kGlobalProxyOffset));
 }
 
 
@@ -4800,7 +4881,7 @@ void MacroAssembler::LoadTransitionedArrayMapConditional(
   // Load the global or builtins object from the current context.
   movp(scratch,
        Operand(rsi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  movp(scratch, FieldOperand(scratch, GlobalObject::kNativeContextOffset));
+  movp(scratch, FieldOperand(scratch, JSGlobalObject::kNativeContextOffset));
 
   // Check that the function's map is the same as the expected cached map.
   movp(scratch, Operand(scratch,
@@ -4829,7 +4910,7 @@ void MacroAssembler::LoadGlobalFunction(int index, Register function) {
   movp(function,
        Operand(rsi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
   // Load the native context from the global or builtins object.
-  movp(function, FieldOperand(function, GlobalObject::kNativeContextOffset));
+  movp(function, FieldOperand(function, JSGlobalObject::kNativeContextOffset));
   // Load the function from the native context.
   movp(function, Operand(function, Context::SlotOffset(index)));
 }

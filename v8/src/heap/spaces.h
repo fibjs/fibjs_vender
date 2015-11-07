@@ -19,6 +19,7 @@
 namespace v8 {
 namespace internal {
 
+class CompactionSpaceCollection;
 class Isolate;
 
 // -----------------------------------------------------------------------------
@@ -325,6 +326,10 @@ class MemoryChunk {
     // The memory chunk is already logically freed, however the actual freeing
     // still has to be performed.
     PRE_FREED,
+
+    // |COMPACTION_WAS_ABORTED|: Indicates that the compaction in this page
+    //   has been aborted and needs special handling by the sweeper.
+    COMPACTION_WAS_ABORTED,
 
     // Last flag, keep at bottom.
     NUM_MEMORY_CHUNK_FLAGS
@@ -904,6 +909,23 @@ class Page : public MemoryChunk {
     }
   }
 
+  intptr_t available_in_free_list(FreeListCategoryType type) {
+    switch (type) {
+      case kSmall:
+        return available_in_small_free_list();
+      case kMedium:
+        return available_in_medium_free_list();
+      case kLarge:
+        return available_in_large_free_list();
+      case kHuge:
+        return available_in_huge_free_list();
+      default:
+        UNREACHABLE();
+    }
+    UNREACHABLE();
+    return 0;
+  }
+
 #ifdef DEBUG
   void Print();
 #endif  // DEBUG
@@ -1400,7 +1422,7 @@ class HeapObjectIterator : public ObjectIterator {
   // skipping the special garbage section of which there is one per space.
   // Returns NULL when the iteration has ended.
   inline HeapObject* Next();
-  virtual inline HeapObject* next_object();
+  inline HeapObject* next_object() override;
 
  private:
   enum PageMode { kOnePageOnly, kAllPagesInSpace };
@@ -1731,6 +1753,14 @@ class FreeList {
            large_list_.available() + huge_list_.available();
   }
 
+  // The method tries to find a {FreeSpace} node of at least {size_in_bytes}
+  // size in the free list category exactly matching the size. If no suitable
+  // node could be found, the method falls back to retrieving a {FreeSpace}
+  // from the large or huge free list category.
+  //
+  // Can be used concurrently.
+  MUST_USE_RESULT FreeSpace* TryRemoveMemory(intptr_t hint_size_in_bytes);
+
   bool IsEmpty() {
     return small_list_.IsEmpty() && medium_list_.IsEmpty() &&
            large_list_.IsEmpty() && huge_list_.IsEmpty();
@@ -1842,10 +1872,12 @@ STATIC_ASSERT(sizeof(AllocationResult) == kPointerSize);
 
 class PagedSpace : public Space {
  public:
+  static const intptr_t kCompactionMemoryWanted = 500 * KB;
+
   // Creates a space with an id.
   PagedSpace(Heap* heap, AllocationSpace id, Executability executable);
 
-  virtual ~PagedSpace() { TearDown(); }
+  ~PagedSpace() override { TearDown(); }
 
   // Set up the space using the given address range of virtual memory (from
   // the memory allocator's initial chunk) if possible.  If the block of
@@ -2043,15 +2075,26 @@ class PagedSpace : public Space {
   // Return size of allocatable area on a page in this space.
   inline int AreaSize() { return area_size_; }
 
+  virtual bool is_local() { return false; }
+
   // Merges {other} into the current space. Note that this modifies {other},
   // e.g., removes its bump pointer area and resets statistics.
   void MergeCompactionSpace(CompactionSpace* other);
 
-  void MoveOverFreeMemory(PagedSpace* other);
+  void DivideUponCompactionSpaces(CompactionSpaceCollection** other, int num,
+                                  intptr_t limit = kCompactionMemoryWanted);
 
-  virtual bool is_local() { return false; }
+  // Refills the free list from the corresponding free list filled by the
+  // sweeper.
+  virtual void RefillFreeList();
 
  protected:
+  void AddMemory(Address start, intptr_t size);
+
+  FreeSpace* TryRemoveMemory(intptr_t size_in_bytes);
+
+  void MoveOverFreeMemory(PagedSpace* other);
+
   // PagedSpaces that should be included in snapshots have different, i.e.,
   // smaller, initial pages.
   virtual bool snapshotable() { return true; }
@@ -2082,7 +2125,7 @@ class PagedSpace : public Space {
   // If sweeping is still in progress try to sweep unswept pages. If that is
   // not successful, wait for the sweeper threads and re-try free-list
   // allocation.
-  MUST_USE_RESULT HeapObject* WaitForSweeperThreadsAndRetryAllocation(
+  MUST_USE_RESULT virtual HeapObject* SweepAndRetryAllocation(
       int size_in_bytes);
 
   // Slow path of AllocateRaw.  This function is space-dependent.
@@ -2112,6 +2155,9 @@ class PagedSpace : public Space {
 
   friend class MarkCompactCollector;
   friend class PageIterator;
+
+  // Used in cctest.
+  friend class HeapTester;
 };
 
 
@@ -2424,7 +2470,7 @@ class SemiSpaceIterator : public ObjectIterator {
   inline HeapObject* Next();
 
   // Implementation of the ObjectIterator functions.
-  virtual inline HeapObject* next_object();
+  inline HeapObject* next_object() override;
 
  private:
   void Initialize(Address start, Address end);
@@ -2463,6 +2509,43 @@ class NewSpacePageIterator BASE_EMBEDDED {
   NewSpacePage* last_page_;
 };
 
+// -----------------------------------------------------------------------------
+// Allows observation of inline allocation in the new space.
+class InlineAllocationObserver {
+ public:
+  explicit InlineAllocationObserver(intptr_t step_size)
+      : step_size_(step_size), bytes_to_next_step_(step_size) {
+    DCHECK(step_size >= kPointerSize && (step_size & kHeapObjectTagMask) == 0);
+  }
+  virtual ~InlineAllocationObserver() {}
+
+ private:
+  intptr_t step_size() const { return step_size_; }
+
+  // Pure virtual method provided by the subclasses that gets called when more
+  // than step_size byte have been allocated.
+  virtual void Step(int bytes_allocated) = 0;
+
+  // Called each time the new space does an inline allocation step. This may be
+  // more frequently than the step_size we are monitoring (e.g. when there are
+  // multiple observers, or when page or space boundary is encountered.) The
+  // Step method is only called once more than step_size bytes have been
+  // allocated.
+  void InlineAllocationStep(int bytes_allocated) {
+    bytes_to_next_step_ -= bytes_allocated;
+    if (bytes_to_next_step_ <= 0) {
+      Step(static_cast<int>(step_size_ - bytes_to_next_step_));
+      bytes_to_next_step_ = step_size_;
+    }
+  }
+
+  intptr_t step_size_;
+  intptr_t bytes_to_next_step_;
+
+  friend class NewSpace;
+
+  DISALLOW_COPY_AND_ASSIGN(InlineAllocationObserver);
+};
 
 // -----------------------------------------------------------------------------
 // The young generation space.
@@ -2652,10 +2735,21 @@ class NewSpace : public Space {
   void ResetAllocationInfo();
 
   void UpdateInlineAllocationLimit(int size_in_bytes);
-  void LowerInlineAllocationLimit(intptr_t step) {
-    inline_allocation_limit_step_ = step;
+  void UpdateInlineAllocationLimitStep();
+
+  // Allows observation of inline allocation. The observer->Step() method gets
+  // called after every step_size bytes have been allocated (approximately).
+  // This works by adjusting the allocation limit to a lower value and adjusting
+  // it after each step.
+  void AddInlineAllocationObserver(InlineAllocationObserver* observer);
+
+  // Removes a previously installed observer.
+  void RemoveInlineAllocationObserver(InlineAllocationObserver* observer);
+
+  void DisableInlineAllocationSteps() {
+    inline_allocation_limit_step_ = 0;
+    top_on_previous_step_ = 0;
     UpdateInlineAllocationLimit(0);
-    top_on_previous_step_ = step ? allocation_info_.top() : 0;
   }
 
   // Get the extent of the inactive semispace (for use as a marking stack,
@@ -2750,11 +2844,13 @@ class NewSpace : public Space {
   // mark-compact collection.
   AllocationInfo allocation_info_;
 
-  // When incremental marking is active we will set allocation_info_.limit
-  // to be lower than actual limit and then will gradually increase it
-  // in steps to guarantee that we do incremental marking steps even
-  // when all allocation is performed from inlined generated code.
+  // When inline allocation stepping is active, either because of incremental
+  // marking or because of idle scavenge, we 'interrupt' inline allocation every
+  // once in a while. This is done by setting allocation_info_.limit to be lower
+  // than the actual limit and and increasing it in steps to guarantee that the
+  // observers are notified periodically.
   intptr_t inline_allocation_limit_step_;
+  List<InlineAllocationObserver*> inline_allocation_observers_;
 
   Address top_on_previous_step_;
 
@@ -2764,8 +2860,7 @@ class NewSpace : public Space {
   bool EnsureAllocation(int size_in_bytes, AllocationAlignment alignment);
 
   // If we are doing inline allocation in steps, this method performs the 'step'
-  // operation. Right now incremental marking is the only consumer of inline
-  // allocation steps. top is the memory address of the bump pointer at the last
+  // operation. top is the memory address of the bump pointer at the last
   // inline allocation (i.e. it determines the numbers of bytes actually
   // allocated since the last step.) new_top is the address of the bump pointer
   // where the next byte is going to be allocated from. top and new_top may be
@@ -2789,11 +2884,16 @@ class CompactionSpace : public PagedSpace {
     Free(start, size_in_bytes);
   }
 
-  virtual bool is_local() { return true; }
+  bool is_local() override { return true; }
+
+  void RefillFreeList() override;
 
  protected:
   // The space is temporary and not included in any snapshots.
-  virtual bool snapshotable() { return false; }
+  bool snapshotable() override { return false; }
+
+  MUST_USE_RESULT HeapObject* SweepAndRetryAllocation(
+      int size_in_bytes) override;
 };
 
 
@@ -2802,7 +2902,9 @@ class CompactionSpaceCollection : public Malloced {
  public:
   explicit CompactionSpaceCollection(Heap* heap)
       : old_space_(heap, OLD_SPACE, Executability::NOT_EXECUTABLE),
-        code_space_(heap, CODE_SPACE, Executability::EXECUTABLE) {}
+        code_space_(heap, CODE_SPACE, Executability::EXECUTABLE),
+        duration_(0.0),
+        bytes_compacted_(0) {}
 
   CompactionSpace* Get(AllocationSpace space) {
     switch (space) {
@@ -2817,9 +2919,21 @@ class CompactionSpaceCollection : public Malloced {
     return nullptr;
   }
 
+  void ReportCompactionProgress(double duration, intptr_t bytes_compacted) {
+    duration_ += duration;
+    bytes_compacted_ += bytes_compacted;
+  }
+
+  double duration() const { return duration_; }
+  intptr_t bytes_compacted() const { return bytes_compacted_; }
+
  private:
   CompactionSpace old_space_;
   CompactionSpace code_space_;
+
+  // Book keeping.
+  double duration_;
+  intptr_t bytes_compacted_;
 };
 
 
@@ -2857,7 +2971,7 @@ class MapSpace : public PagedSpace {
   // TODO(1600): this limit is artifical just to keep code compilable
   static const int kMaxMapPageIndex = 1 << 16;
 
-  virtual int RoundSizeDownToObjectAlignment(int size) {
+  int RoundSizeDownToObjectAlignment(int size) override {
     if (base::bits::IsPowerOfTwo32(Map::kSize)) {
       return RoundDown(size, Map::kSize);
     } else {
@@ -2865,8 +2979,9 @@ class MapSpace : public PagedSpace {
     }
   }
 
- protected:
-  virtual void VerifyObject(HeapObject* obj);
+#ifdef VERIFY_HEAP
+  void VerifyObject(HeapObject* obj) override;
+#endif
 
  private:
   static const int kMapsPerPage = Page::kAllocatableMemory / Map::kSize;

@@ -413,6 +413,9 @@ void Verifier::Visitor::Check(Node* node) {
       CHECK_LT(1, effect_count);
       break;
     }
+    case IrOpcode::kGuard:
+      // TODO(bmeurer): what are the constraints on these?
+      break;
     case IrOpcode::kBeginRegion:
       // TODO(rossberg): what are the constraints on these?
       break;
@@ -541,8 +544,7 @@ void Verifier::Visitor::Check(Node* node) {
       break;
 
     case IrOpcode::kJSLoadContext:
-    case IrOpcode::kJSLoadDynamicGlobal:
-    case IrOpcode::kJSLoadDynamicContext:
+    case IrOpcode::kJSLoadDynamic:
       // Type can be anything.
       CheckUpperIs(node, Type::Any());
       break;
@@ -566,6 +568,7 @@ void Verifier::Visitor::Check(Node* node) {
     }
 
     case IrOpcode::kJSCallConstruct:
+    case IrOpcode::kJSConvertReceiver:
       // Type is Receiver.
       CheckUpperIs(node, Type::Receiver());
       break;
@@ -635,6 +638,14 @@ void Verifier::Visitor::Check(Node* node) {
       // TODO(rossberg): activate once we retype after opcode changes.
       // CheckUpperIs(node, Type::Number());
       break;
+    case IrOpcode::kNumberBitwiseOr:
+    case IrOpcode::kNumberBitwiseXor:
+    case IrOpcode::kNumberBitwiseAnd:
+      // (Signed32, Signed32) -> Signed32
+      CheckValueInputIs(node, 0, Type::Signed32());
+      CheckValueInputIs(node, 1, Type::Signed32());
+      CheckUpperIs(node, Type::Signed32());
+      break;
     case IrOpcode::kNumberShiftLeft:
     case IrOpcode::kNumberShiftRight:
       // (Signed32, Unsigned32) -> Signed32
@@ -677,6 +688,7 @@ void Verifier::Visitor::Check(Node* node) {
       CheckUpperIs(node, Type::Boolean());
       break;
     }
+    case IrOpcode::kObjectIsNumber:
     case IrOpcode::kObjectIsSmi:
       CheckValueInputIs(node, 0, Type::Any());
       CheckUpperIs(node, Type::Boolean());
@@ -866,6 +878,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kFloat64LessThan:
     case IrOpcode::kFloat64LessThanOrEqual:
     case IrOpcode::kTruncateInt64ToInt32:
+    case IrOpcode::kRoundInt64ToFloat64:
     case IrOpcode::kTruncateFloat64ToFloat32:
     case IrOpcode::kTruncateFloat64ToInt32:
     case IrOpcode::kBitcastFloat32ToInt32:

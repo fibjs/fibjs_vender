@@ -11,6 +11,7 @@
 #include "src/codegen.h"
 #include "src/deoptimizer.h"
 #include "src/full-codegen/full-codegen.h"
+#include "src/register-configuration.h"
 #include "src/safepoint-table.h"
 #include "src/x87/frames-x87.h"
 
@@ -185,7 +186,7 @@ void Deoptimizer::FillInputFrame(Address tos, JavaScriptFrame* frame) {
   }
   input_->SetRegister(esp.code(), reinterpret_cast<intptr_t>(frame->sp()));
   input_->SetRegister(ebp.code(), reinterpret_cast<intptr_t>(frame->fp()));
-  for (int i = 0; i < DoubleRegister::NumAllocatableRegisters(); i++) {
+  for (int i = 0; i < X87Register::kMaxNumRegisters; i++) {
     input_->SetDoubleRegister(i, 0.0);
   }
 
@@ -207,7 +208,7 @@ void Deoptimizer::SetPlatformCompiledStubRegisters(
 
 
 void Deoptimizer::CopyDoubleRegisters(FrameDescription* output_frame) {
-  for (int i = 0; i < X87Register::kMaxNumAllocatableRegisters; ++i) {
+  for (int i = 0; i < X87Register::kMaxNumRegisters; ++i) {
     double double_value = input_->GetDoubleRegister(i);
     output_frame->SetDoubleRegister(i, double_value);
   }
@@ -237,8 +238,7 @@ void Deoptimizer::TableEntryGenerator::Generate() {
   // Save all general purpose registers before messing with them.
   const int kNumberOfRegisters = Register::kNumRegisters;
 
-  const int kDoubleRegsSize =
-      kDoubleSize * X87Register::kMaxNumAllocatableRegisters;
+  const int kDoubleRegsSize = kDoubleSize * X87Register::kMaxNumRegisters;
 
   // Reserve space for x87 fp registers.
   __ sub(esp, Immediate(kDoubleRegsSize));
@@ -316,10 +316,13 @@ void Deoptimizer::TableEntryGenerator::Generate() {
   }
 
   int double_regs_offset = FrameDescription::double_registers_offset();
+  const RegisterConfiguration* config =
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
   // Fill in the double input registers.
   for (int i = 0; i < X87Register::kMaxNumAllocatableRegisters; ++i) {
-    int dst_offset = i * kDoubleSize + double_regs_offset;
-    int src_offset = i * kDoubleSize;
+    int code = config->GetAllocatableDoubleCode(i);
+    int dst_offset = code * kDoubleSize + double_regs_offset;
+    int src_offset = code * kDoubleSize;
     __ fld_d(Operand(esp, src_offset));
     __ fstp_d(Operand(ebx, dst_offset));
   }

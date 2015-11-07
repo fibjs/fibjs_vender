@@ -368,7 +368,7 @@ class Debug {
   void SetMessageHandler(v8::Debug::MessageHandler handler);
   void EnqueueCommandMessage(Vector<const uint16_t> command,
                              v8::Debug::ClientData* client_data = NULL);
-  MUST_USE_RESULT MaybeHandle<Object> Call(Handle<JSFunction> fun,
+  MUST_USE_RESULT MaybeHandle<Object> Call(Handle<Object> fun,
                                            Handle<Object> data);
   Handle<Context> GetDebugContext();
   void HandleDebugBreak();
@@ -441,7 +441,7 @@ class Debug {
       BreakPositionAlignment position_aligment);
 
   // Check whether a global object is the debug global object.
-  bool IsDebugGlobal(GlobalObject* global);
+  bool IsDebugGlobal(JSGlobalObject* global);
 
   // Check whether this frame is just about to return.
   bool IsBreakAtReturn(JavaScriptFrame* frame);

@@ -41,20 +41,16 @@ class InterpreterAssembler {
 
   // Returns the count immediate for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandCount8(int operand_index);
+  Node* BytecodeOperandCount(int operand_index);
   // Returns the index immediate for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandIdx8(int operand_index);
+  Node* BytecodeOperandIdx(int operand_index);
   // Returns the Imm8 immediate for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandImm8(int operand_index);
+  Node* BytecodeOperandImm(int operand_index);
   // Returns the register index for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandReg8(int operand_index);
-
-  // Returns the index immediate for the short (16 bit) bytecode operand
-  // |operand_index| in the current bytecode.
-  Node* BytecodeOperandIdx16(int operand_index);
+  Node* BytecodeOperandReg(int operand_index);
 
   // Accumulator.
   Node* GetAccumulator();
@@ -92,10 +88,14 @@ class InterpreterAssembler {
   // Load constant at |index| in the constant pool.
   Node* LoadConstantPoolEntry(Node* index);
 
+  // Load an element from a fixed array on the heap.
+  Node* LoadFixedArrayElement(Node* fixed_array, int index);
+
   // Load a field from an object on the heap.
   Node* LoadObjectField(Node* object, int offset);
 
   // Load |slot_index| from |context|.
+  Node* LoadContextSlot(Node* context, int slot_index);
   Node* LoadContextSlot(Node* context, Node* slot_index);
   // Stores |value| into |slot_index| of |context|.
   Node* StoreContextSlot(Node* context, Node* slot_index, Node* value);
@@ -143,6 +143,9 @@ class InterpreterAssembler {
 
   // Dispatch to the bytecode.
   void Dispatch();
+
+  // Abort with the given bailout reason.
+  void Abort(BailoutReason bailout_reason);
 
  protected:
   // Close the graph.

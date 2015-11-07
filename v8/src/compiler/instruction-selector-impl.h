@@ -120,6 +120,11 @@ class OperandGenerator {
                                   reg.code(), GetVReg(node)));
   }
 
+  InstructionOperand UseExplicit(Register reg) {
+    MachineType machine_type = InstructionSequence::DefaultRepresentation();
+    return ExplicitOperand(LocationOperand::REGISTER, machine_type, reg.code());
+  }
+
   InstructionOperand UseImmediate(Node* node) {
     return sequence()->AddImmediate(ToConstant(node));
   }
@@ -316,33 +321,6 @@ class FlagsContinuation final {
   Node* result_;             // Only valid if mode_ == kFlags_set.
   BasicBlock* true_block_;   // Only valid if mode_ == kFlags_branch.
   BasicBlock* false_block_;  // Only valid if mode_ == kFlags_branch.
-};
-
-
-// An internal helper class for generating the operands to calls.
-// TODO(bmeurer): Get rid of the CallBuffer business and make
-// InstructionSelector::VisitCall platform independent instead.
-struct CallBuffer {
-  CallBuffer(Zone* zone, const CallDescriptor* descriptor,
-             FrameStateDescriptor* frame_state);
-
-  const CallDescriptor* descriptor;
-  FrameStateDescriptor* frame_state_descriptor;
-  NodeVector output_nodes;
-  InstructionOperandVector outputs;
-  InstructionOperandVector instruction_args;
-  NodeVector pushed_nodes;
-
-  size_t input_count() const { return descriptor->InputCount(); }
-
-  size_t frame_state_count() const { return descriptor->FrameStateCount(); }
-
-  size_t frame_state_value_count() const {
-    return (frame_state_descriptor == NULL)
-               ? 0
-               : (frame_state_descriptor->GetTotalSize() +
-                  1);  // Include deopt id.
-  }
 };
 
 }  // namespace compiler

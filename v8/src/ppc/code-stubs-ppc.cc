@@ -1434,13 +1434,7 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
            FieldMemOperand(function, JSFunction::kSharedFunctionInfoOffset));
   __ lwz(scratch, FieldMemOperand(shared_info,
                                   SharedFunctionInfo::kCompilerHintsOffset));
-  __ TestBit(scratch,
-#if V8_TARGET_ARCH_PPC64
-             SharedFunctionInfo::kBoundFunction,
-#else
-             SharedFunctionInfo::kBoundFunction + kSmiTagSize,
-#endif
-             r0);
+  __ TestBit(scratch, SharedFunctionInfo::kBoundBit, r0);
   __ bne(&slow_case, cr0);
 
   // Get the "prototype" (or initial map) of the {function}.
@@ -1715,7 +1709,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
 
   __ LoadP(r7,
            MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ LoadP(r7, FieldMemOperand(r7, GlobalObject::kNativeContextOffset));
+  __ LoadP(r7, FieldMemOperand(r7, JSGlobalObject::kNativeContextOffset));
   __ cmpi(r9, Operand::Zero());
   if (CpuFeatures::IsSupported(ISELECT)) {
     __ LoadP(r11, MemOperand(r7, kNormalOffset));
@@ -1932,7 +1926,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
   // Get the arguments boilerplate from the current native context.
   __ LoadP(r7,
            MemOperand(cp, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ LoadP(r7, FieldMemOperand(r7, GlobalObject::kNativeContextOffset));
+  __ LoadP(r7, FieldMemOperand(r7, JSGlobalObject::kNativeContextOffset));
   __ LoadP(
       r7,
       MemOperand(r7, Context::SlotOffset(Context::STRICT_ARGUMENTS_MAP_INDEX)));
@@ -2540,26 +2534,14 @@ static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
 
 
 static void EmitContinueIfStrictOrNative(MacroAssembler* masm, Label* cont) {
+  // ----------- S t a t e -------------
+  // -- r4 : the function to call
+  // -- r6 : the function's shared function info
+  // -----------------------------------
   // Do not transform the receiver for strict mode functions and natives.
-  __ LoadP(r6, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
   __ lwz(r7, FieldMemOperand(r6, SharedFunctionInfo::kCompilerHintsOffset));
-  __ TestBit(r7,
-#if V8_TARGET_ARCH_PPC64
-             SharedFunctionInfo::kStrictModeFunction,
-#else
-             SharedFunctionInfo::kStrictModeFunction + kSmiTagSize,
-#endif
-             r0);
-  __ bne(cont, cr0);
-
-  // Do not transform the receiver for native.
-  __ TestBit(r7,
-#if V8_TARGET_ARCH_PPC64
-             SharedFunctionInfo::kNative,
-#else
-             SharedFunctionInfo::kNative + kSmiTagSize,
-#endif
-             r0);
+  __ andi(r0, r7, Operand((1 << SharedFunctionInfo::kStrictModeBit) |
+                          (1 << SharedFunctionInfo::kNativeBit)));
   __ bne(cont, cr0);
 }
 
@@ -2585,6 +2567,24 @@ static void EmitWrapCase(MacroAssembler* masm, int argc, Label* cont) {
 }
 
 
+static void EmitClassConstructorCallCheck(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  // -- r4 : the function to call
+  // -- r6 : the function's shared function info
+  // -----------------------------------
+  // ClassConstructor Check: ES6 section 9.2.1 [[Call]]
+  Label non_class_constructor;
+  // Check whether the current function is a classConstructor.
+  __ lwz(r7, FieldMemOperand(r6, SharedFunctionInfo::kCompilerHintsOffset));
+  __ TestBitMask(r7, SharedFunctionInfo::kClassConstructorBits, r0);
+  __ beq(&non_class_constructor, cr0);
+  // If we call a classConstructor Function throw a TypeError
+  // indirectly via the CallFunction builtin.
+  __ Jump(masm->isolate()->builtins()->CallFunction(), RelocInfo::CODE_TARGET);
+  __ bind(&non_class_constructor);
+}
+
+
 static void CallFunctionNoFeedback(MacroAssembler* masm, int argc,
                                    bool needs_checks, bool call_as_method) {
   // r4 : the function to call
@@ -2599,6 +2599,9 @@ static void CallFunctionNoFeedback(MacroAssembler* masm, int argc,
     __ CompareObjectType(r4, r7, r7, JS_FUNCTION_TYPE);
     __ bne(&slow);
   }
+
+  __ LoadP(r6, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
+  EmitClassConstructorCallCheck(masm);
 
   // Fast-case: Invoke the function now.
   // r4: pushed function
@@ -2773,6 +2776,10 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ StoreP(r6, FieldMemOperand(r9, count_offset), r0);
 
   __ bind(&have_js_function);
+
+  __ LoadP(r6, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
+  EmitClassConstructorCallCheck(masm);
+
   if (CallAsMethod()) {
     EmitContinueIfStrictOrNative(masm, &cont);
     // Compute the receiver in sloppy mode.
@@ -3335,6 +3342,28 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
 
   __ push(r3);  // Push argument.
   __ TailCallRuntime(Runtime::kToNumber, 1, 1);
+}
+
+
+void ToLengthStub::Generate(MacroAssembler* masm) {
+  // The ToLength stub takes one argument in r3.
+  Label not_smi;
+  __ JumpIfNotSmi(r3, &not_smi);
+  STATIC_ASSERT(kSmiTag == 0);
+  __ cmpi(r3, Operand::Zero());
+  if (CpuFeatures::IsSupported(ISELECT)) {
+    __ isel(lt, r3, r0, r3);
+  } else {
+    Label positive;
+    __ bgt(&positive);
+    __ li(r3, Operand::Zero());
+    __ bind(&positive);
+  }
+  __ Ret();
+  __ bind(&not_smi);
+
+  __ push(r3);  // Push argument.
+  __ TailCallRuntime(Runtime::kToLength, 1, 1);
 }
 
 

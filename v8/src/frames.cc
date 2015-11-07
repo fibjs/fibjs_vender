@@ -334,11 +334,8 @@ void SafeStackFrameIterator::Advance() {
       // ExternalCallbackScope, just skip them as we cannot collect any useful
       // information about them.
       if (external_callback_scope_->scope_address() < frame_->fp()) {
-        Address* callback_address =
-            external_callback_scope_->callback_address();
-        if (*callback_address != NULL) {
-          frame_->state_.pc_address = callback_address;
-        }
+        frame_->state_.pc_address =
+            external_callback_scope_->callback_entrypoint_address();
         external_callback_scope_ = external_callback_scope_->previous();
         DCHECK(external_callback_scope_ == NULL ||
                external_callback_scope_->scope_address() > frame_->fp());
@@ -666,9 +663,10 @@ void StandardFrame::IterateCompiledFrame(ObjectVisitor* v) const {
   if (safepoint_entry.has_doubles()) {
     // Number of doubles not known at snapshot time.
     DCHECK(!isolate()->serializer_enabled());
-    parameters_base += RegisterConfiguration::ArchDefault()
-                           ->num_allocatable_double_registers() *
-                       kDoubleSize / kPointerSize;
+    parameters_base +=
+        RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT)
+            ->num_allocatable_double_registers() *
+        kDoubleSize / kPointerSize;
   }
 
   // Visit the registers that contain pointers if any.
@@ -751,7 +749,7 @@ bool JavaScriptFrame::IsConstructor() const {
 }
 
 
-bool JavaScriptFrame::HasInlinedFrames() {
+bool JavaScriptFrame::HasInlinedFrames() const {
   List<JSFunction*> functions(1);
   GetFunctions(&functions);
   return functions.length() > 1;
@@ -759,6 +757,7 @@ bool JavaScriptFrame::HasInlinedFrames() {
 
 
 Object* JavaScriptFrame::GetOriginalConstructor() const {
+  DCHECK(!HasInlinedFrames());
   Address fp = caller_fp();
   if (has_adapted_arguments()) {
     // Skip the arguments adaptor frame and look at the real caller.
@@ -801,7 +800,7 @@ Address JavaScriptFrame::GetCallerStackPointer() const {
 }
 
 
-void JavaScriptFrame::GetFunctions(List<JSFunction*>* functions) {
+void JavaScriptFrame::GetFunctions(List<JSFunction*>* functions) const {
   DCHECK(functions->length() == 0);
   functions->Add(function());
 }
@@ -1043,7 +1042,7 @@ int OptimizedFrame::LookupExceptionHandlerInTable(
 
 
 DeoptimizationInputData* OptimizedFrame::GetDeoptimizationData(
-    int* deopt_index) {
+    int* deopt_index) const {
   DCHECK(is_optimized());
 
   JSFunction* opt_function = function();
@@ -1067,7 +1066,7 @@ DeoptimizationInputData* OptimizedFrame::GetDeoptimizationData(
 }
 
 
-void OptimizedFrame::GetFunctions(List<JSFunction*>* functions) {
+void OptimizedFrame::GetFunctions(List<JSFunction*>* functions) const {
   DCHECK(functions->length() == 0);
   DCHECK(is_optimized());
 

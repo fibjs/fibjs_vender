@@ -170,7 +170,7 @@ class OutOfLineLoadNaN final : public OutOfLineCode {
   OutOfLineLoadNaN(CodeGenerator* gen, XMMRegister result)
       : OutOfLineCode(gen), result_(result) {}
 
-  void Generate() final { __ pcmpeqd(result_, result_); }
+  void Generate() final { __ Pcmpeqd(result_, result_); }
 
  private:
   XMMRegister const result_;
@@ -339,7 +339,7 @@ class OutOfLineTruncateDoubleToI final : public OutOfLineCode {
                                                                              \
         void Generate() final {                                              \
           __ leal(kScratchRegister, Operand(index1_, index2_));              \
-          __ pcmpeqd(result_, result_);                                      \
+          __ Pcmpeqd(result_, result_);                                      \
           __ cmpl(kScratchRegister, Immediate(length_));                     \
           __ j(above_equal, exit());                                         \
           __ asm_instr(result_,                                              \
@@ -853,7 +853,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_SSE_BINOP(divsd);
       // Don't delete this mov. It may improve performance on some CPUs,
       // when there is a (v)mulsd depending on the result.
-      __ movaps(i.OutputDoubleRegister(), i.OutputDoubleRegister());
+      __ Movapd(i.OutputDoubleRegister(), i.OutputDoubleRegister());
       break;
     case kSSEFloat64Mod: {
       __ subq(rsp, Immediate(kDoubleSize));
@@ -914,7 +914,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       CpuFeatureScope sse_scope(masm(), SSE4_1);
       RoundingMode const mode =
           static_cast<RoundingMode>(MiscField::decode(instr->opcode()));
-      __ roundsd(i.OutputDoubleRegister(), i.InputDoubleRegister(0), mode);
+      __ Roundsd(i.OutputDoubleRegister(), i.InputDoubleRegister(0), mode);
       break;
     }
     case kSSEFloat64ToFloat32:
@@ -943,13 +943,20 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ Cvtlsi2sd(i.OutputDoubleRegister(), i.InputOperand(0));
       }
       break;
+    case kSSEInt64ToFloat64:
+      if (instr->InputAt(0)->IsRegister()) {
+        __ Cvtqsi2sd(i.OutputDoubleRegister(), i.InputRegister(0));
+      } else {
+        __ Cvtqsi2sd(i.OutputDoubleRegister(), i.InputOperand(0));
+      }
+      break;
     case kSSEUint32ToFloat64:
       if (instr->InputAt(0)->IsRegister()) {
         __ movl(kScratchRegister, i.InputRegister(0));
       } else {
         __ movl(kScratchRegister, i.InputOperand(0));
       }
-      __ cvtqsi2sd(i.OutputDoubleRegister(), kScratchRegister);
+      __ Cvtqsi2sd(i.OutputDoubleRegister(), kScratchRegister);
       break;
     case kSSEFloat64ExtractLowWord32:
       if (instr->InputAt(0)->IsDoubleStackSlot()) {
@@ -1008,7 +1015,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_AVX_BINOP(vdivss);
       // Don't delete this mov. It may improve performance on some CPUs,
       // when there is a (v)mulss depending on the result.
-      __ movaps(i.OutputDoubleRegister(), i.OutputDoubleRegister());
+      __ Movaps(i.OutputDoubleRegister(), i.OutputDoubleRegister());
       break;
     case kAVXFloat32Max:
       ASSEMBLE_AVX_BINOP(vmaxss);
@@ -1038,7 +1045,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_AVX_BINOP(vdivsd);
       // Don't delete this mov. It may improve performance on some CPUs,
       // when there is a (v)mulsd depending on the result.
-      __ movaps(i.OutputDoubleRegister(), i.OutputDoubleRegister());
+      __ Movapd(i.OutputDoubleRegister(), i.OutputDoubleRegister());
       break;
     case kAVXFloat64Max:
       ASSEMBLE_AVX_BINOP(vmaxsd);
@@ -1048,9 +1055,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kAVXFloat32Abs: {
       // TODO(bmeurer): Use RIP relative 128-bit constants.
-      __ pcmpeqd(kScratchDoubleReg, kScratchDoubleReg);
-      __ psrlq(kScratchDoubleReg, 33);
       CpuFeatureScope avx_scope(masm(), AVX);
+      __ vpcmpeqd(kScratchDoubleReg, kScratchDoubleReg, kScratchDoubleReg);
+      __ vpsrlq(kScratchDoubleReg, kScratchDoubleReg, 33);
       if (instr->InputAt(0)->IsDoubleRegister()) {
         __ vandps(i.OutputDoubleRegister(), kScratchDoubleReg,
                   i.InputDoubleRegister(0));
@@ -1062,9 +1069,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     }
     case kAVXFloat32Neg: {
       // TODO(bmeurer): Use RIP relative 128-bit constants.
-      __ pcmpeqd(kScratchDoubleReg, kScratchDoubleReg);
-      __ psllq(kScratchDoubleReg, 31);
       CpuFeatureScope avx_scope(masm(), AVX);
+      __ vpcmpeqd(kScratchDoubleReg, kScratchDoubleReg, kScratchDoubleReg);
+      __ vpsllq(kScratchDoubleReg, kScratchDoubleReg, 31);
       if (instr->InputAt(0)->IsDoubleRegister()) {
         __ vxorps(i.OutputDoubleRegister(), kScratchDoubleReg,
                   i.InputDoubleRegister(0));
@@ -1076,9 +1083,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     }
     case kAVXFloat64Abs: {
       // TODO(bmeurer): Use RIP relative 128-bit constants.
-      __ pcmpeqd(kScratchDoubleReg, kScratchDoubleReg);
-      __ psrlq(kScratchDoubleReg, 1);
       CpuFeatureScope avx_scope(masm(), AVX);
+      __ vpcmpeqd(kScratchDoubleReg, kScratchDoubleReg, kScratchDoubleReg);
+      __ vpsrlq(kScratchDoubleReg, kScratchDoubleReg, 1);
       if (instr->InputAt(0)->IsDoubleRegister()) {
         __ vandpd(i.OutputDoubleRegister(), kScratchDoubleReg,
                   i.InputDoubleRegister(0));
@@ -1090,9 +1097,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     }
     case kAVXFloat64Neg: {
       // TODO(bmeurer): Use RIP relative 128-bit constants.
-      __ pcmpeqd(kScratchDoubleReg, kScratchDoubleReg);
-      __ psllq(kScratchDoubleReg, 63);
       CpuFeatureScope avx_scope(masm(), AVX);
+      __ vpcmpeqd(kScratchDoubleReg, kScratchDoubleReg, kScratchDoubleReg);
+      __ vpsllq(kScratchDoubleReg, kScratchDoubleReg, 63);
       if (instr->InputAt(0)->IsDoubleRegister()) {
         __ vxorpd(i.OutputDoubleRegister(), kScratchDoubleReg,
                   i.InputDoubleRegister(0));
@@ -1326,7 +1333,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_CHECKED_LOAD_INTEGER(movq);
       break;
     case kCheckedLoadFloat32:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(movss);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(Movss);
       break;
     case kCheckedLoadFloat64:
       ASSEMBLE_CHECKED_LOAD_FLOAT(Movsd);
@@ -1344,7 +1351,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_CHECKED_STORE_INTEGER(movq);
       break;
     case kCheckedStoreFloat32:
-      ASSEMBLE_CHECKED_STORE_FLOAT(movss);
+      ASSEMBLE_CHECKED_STORE_FLOAT(Movss);
       break;
     case kCheckedStoreFloat64:
       ASSEMBLE_CHECKED_STORE_FLOAT(Movsd);
@@ -1743,7 +1750,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
     XMMRegister src = g.ToDoubleRegister(source);
     if (destination->IsDoubleRegister()) {
       XMMRegister dst = g.ToDoubleRegister(destination);
-      __ movaps(dst, src);
+      __ Movapd(dst, src);
     } else {
       DCHECK(destination->IsDoubleStackSlot());
       Operand dst = g.ToOperand(destination);
@@ -1794,9 +1801,9 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
     // available as a fixed scratch register.
     XMMRegister src = g.ToDoubleRegister(source);
     XMMRegister dst = g.ToDoubleRegister(destination);
-    __ movaps(xmm0, src);
-    __ movaps(src, dst);
-    __ movaps(dst, xmm0);
+    __ Movapd(xmm0, src);
+    __ Movapd(src, dst);
+    __ Movapd(dst, xmm0);
   } else if (source->IsDoubleRegister() && destination->IsDoubleStackSlot()) {
     // XMM register-memory swap.  We rely on having xmm0
     // available as a fixed scratch register.

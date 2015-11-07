@@ -12,9 +12,7 @@ namespace internal {
 namespace compiler {
 
 Node* JSGraph::ImmovableHeapConstant(Handle<HeapObject> value) {
-  if (value->IsConsString()) {
-    value = String::Flatten(Handle<String>::cast(value), TENURED);
-  }
+  // TODO(bmeurer): Flatten cons strings here before we canonicalize them?
   return graph()->NewNode(common()->HeapConstant(value));
 }
 
@@ -29,6 +27,12 @@ Node* JSGraph::CEntryStubConstant(int result_size) {
                   ImmovableHeapConstant(CEntryStub(isolate(), 1).GetCode()));
   }
   return ImmovableHeapConstant(CEntryStub(isolate(), result_size).GetCode());
+}
+
+
+Node* JSGraph::EmptyFixedArrayConstant() {
+  return CACHED(kEmptyFixedArrayConstant,
+                ImmovableHeapConstant(factory()->empty_fixed_array()));
 }
 
 

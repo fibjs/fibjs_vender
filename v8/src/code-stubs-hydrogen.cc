@@ -5,10 +5,10 @@
 #include "src/code-stubs.h"
 
 #include "src/bailout-reason.h"
+#include "src/crankshaft/hydrogen.h"
+#include "src/crankshaft/lithium.h"
 #include "src/field-index.h"
-#include "src/hydrogen.h"
 #include "src/ic/ic.h"
-#include "src/lithium.h"
 
 namespace v8 {
 namespace internal {
@@ -1141,6 +1141,21 @@ Handle<Code> AllocateHeapNumberStub::GenerateCode() {
 
 
 template <>
+HValue* CodeStubGraphBuilder<AllocateMutableHeapNumberStub>::BuildCodeStub() {
+  HValue* result =
+      Add<HAllocate>(Add<HConstant>(HeapNumber::kSize), HType::HeapObject(),
+                     NOT_TENURED, MUTABLE_HEAP_NUMBER_TYPE);
+  AddStoreMapConstant(result, isolate()->factory()->mutable_heap_number_map());
+  return result;
+}
+
+
+Handle<Code> AllocateMutableHeapNumberStub::GenerateCode() {
+  return DoGenerateCode(this);
+}
+
+
+template <>
 HValue* CodeStubGraphBuilder<AllocateInNewSpaceStub>::BuildCodeStub() {
   HValue* result = Add<HAllocate>(GetParameter(0), HType::Tagged(), NOT_TENURED,
                                   JS_OBJECT_TYPE);
@@ -1356,12 +1371,11 @@ HValue* CodeStubGraphBuilder<CompareNilICStub>::BuildCodeInitializedStub() {
   if_nil.Then();
   if (continuation.IsFalseReachable()) {
     if_nil.Else();
-    if_nil.Return(graph()->GetConstant0());
+    if_nil.Return(graph()->GetConstantFalse());
   }
   if_nil.End();
-  return continuation.IsTrueReachable()
-      ? graph()->GetConstant1()
-      : graph()->GetConstantUndefined();
+  return continuation.IsTrueReachable() ? graph()->GetConstantTrue()
+                                        : graph()->GetConstantUndefined();
 }
 
 

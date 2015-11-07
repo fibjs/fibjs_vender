@@ -309,6 +309,13 @@ void GCTracer::AddContextDisposalTime(double time) {
 }
 
 
+void GCTracer::AddCompactionEvent(double duration,
+                                  intptr_t live_bytes_compacted) {
+  compaction_events_.push_front(
+      CompactionEvent(duration, live_bytes_compacted));
+}
+
+
 void GCTracer::AddSurvivalRatio(double promotion_ratio) {
   survival_events_.push_front(SurvivalEvent(promotion_ratio));
 }
@@ -401,7 +408,7 @@ void GCTracer::PrintNVP() const {
   switch (current_.type) {
     case Event::SCAVENGER:
       PrintIsolate(heap_->isolate(),
-                   "[I:%p] %8.0f ms: "
+                   "%8.0f ms: "
                    "pause=%.1f "
                    "mutator=%.1f "
                    "gc=%s "
@@ -415,14 +422,22 @@ void GCTracer::PrintNVP() const {
                    "object_groups=%.2f "
                    "steps_count=%d "
                    "steps_took=%.1f "
-                   "scavenge_throughput=%" V8_PTR_PREFIX "d "
-                   "total_size_before=%" V8_PTR_PREFIX "d "
-                   "total_size_after=%" V8_PTR_PREFIX "d "
-                   "holes_size_before=%" V8_PTR_PREFIX "d "
-                   "holes_size_after=%" V8_PTR_PREFIX "d "
-                   "allocated=%" V8_PTR_PREFIX "d "
-                   "promoted=%" V8_PTR_PREFIX "d "
-                   "semi_space_copied=%" V8_PTR_PREFIX "d "
+                   "scavenge_throughput=%" V8_PTR_PREFIX
+                   "d "
+                   "total_size_before=%" V8_PTR_PREFIX
+                   "d "
+                   "total_size_after=%" V8_PTR_PREFIX
+                   "d "
+                   "holes_size_before=%" V8_PTR_PREFIX
+                   "d "
+                   "holes_size_after=%" V8_PTR_PREFIX
+                   "d "
+                   "allocated=%" V8_PTR_PREFIX
+                   "d "
+                   "promoted=%" V8_PTR_PREFIX
+                   "d "
+                   "semi_space_copied=%" V8_PTR_PREFIX
+                   "d "
                    "nodes_died_in_new=%d "
                    "nodes_copied_in_new=%d "
                    "nodes_promoted=%d "
@@ -430,13 +445,11 @@ void GCTracer::PrintNVP() const {
                    "average_survival_ratio=%.1f%% "
                    "promotion_rate=%.1f%% "
                    "semi_space_copy_rate=%.1f%% "
-                   "new_space_allocation_throughput=%" V8_PTR_PREFIX "d "
+                   "new_space_allocation_throughput=%" V8_PTR_PREFIX
+                   "d "
                    "context_disposal_rate=%.1f\n",
-                   heap_->isolate(),
-                   heap_->isolate()->time_millis_since_init(),
-                   duration,
-                   spent_in_mutator,
-                   current_.TypeName(true),
+                   heap_->isolate()->time_millis_since_init(), duration,
+                   spent_in_mutator, current_.TypeName(true),
                    current_.reduce_memory,
                    current_.scopes[Scope::SCAVENGER_SCAVENGE],
                    current_.scopes[Scope::SCAVENGER_OLD_TO_NEW_POINTERS],
@@ -462,7 +475,7 @@ void GCTracer::PrintNVP() const {
     case Event::MARK_COMPACTOR:
     case Event::INCREMENTAL_MARK_COMPACTOR:
       PrintIsolate(heap_->isolate(),
-                   "[I:%p] %8.0f ms: "
+                   "%8.0f ms: "
                    "pause=%.1f "
                    "mutator=%.1f "
                    "gc=%s "
@@ -479,12 +492,15 @@ void GCTracer::PrintNVP() const {
                    "mark_weakrefs=%.1f "
                    "mark_globalhandles=%.1f "
                    "mark_codeflush=%.1f "
+                   "store_buffer_clear=%.1f "
+                   "slots_buffer_clear=%.1f "
                    "sweep=%.2f "
                    "sweepns=%.2f "
                    "sweepos=%.2f "
                    "sweepcode=%.2f "
                    "sweepcell=%.2f "
                    "sweepmap=%.2f "
+                   "sweepaborted=%.2f "
                    "evacuate=%.1f "
                    "new_new=%.1f "
                    "root_new=%.1f "
@@ -492,7 +508,6 @@ void GCTracer::PrintNVP() const {
                    "compaction_ptrs=%.1f "
                    "intracompaction_ptrs=%.1f "
                    "misc_compaction=%.1f "
-                   "weak_closure=%.1f "
                    "inc_weak_closure=%.1f "
                    "weakcollection_process=%.1f "
                    "weakcollection_clear=%.1f "
@@ -527,9 +542,10 @@ void GCTracer::PrintNVP() const {
                    "semi_space_copy_rate=%.1f%% "
                    "new_space_allocation_throughput=%" V8_PTR_PREFIX
                    "d "
-                   "context_disposal_rate=%.1f\n",
-                   heap_->isolate(), heap_->isolate()->time_millis_since_init(),
-                   duration, spent_in_mutator, current_.TypeName(true),
+                   "context_disposal_rate=%.1f "
+                   "compaction_speed=%" V8_PTR_PREFIX "d\n",
+                   heap_->isolate()->time_millis_since_init(), duration,
+                   spent_in_mutator, current_.TypeName(true),
                    current_.reduce_memory, current_.scopes[Scope::EXTERNAL],
                    current_.scopes[Scope::MC_MARK],
                    current_.scopes[Scope::MC_MARK_FINISH_INCREMENTAL],
@@ -542,12 +558,15 @@ void GCTracer::PrintNVP() const {
                    current_.scopes[Scope::MC_MARK_WEAK_REFERENCES],
                    current_.scopes[Scope::MC_MARK_GLOBAL_HANDLES],
                    current_.scopes[Scope::MC_MARK_CODE_FLUSH],
+                   current_.scopes[Scope::MC_STORE_BUFFER_CLEAR],
+                   current_.scopes[Scope::MC_SLOTS_BUFFER_CLEAR],
                    current_.scopes[Scope::MC_SWEEP],
                    current_.scopes[Scope::MC_SWEEP_NEWSPACE],
                    current_.scopes[Scope::MC_SWEEP_OLDSPACE],
                    current_.scopes[Scope::MC_SWEEP_CODE],
                    current_.scopes[Scope::MC_SWEEP_CELL],
                    current_.scopes[Scope::MC_SWEEP_MAP],
+                   current_.scopes[Scope::MC_SWEEP_ABORTED],
                    current_.scopes[Scope::MC_EVACUATE_PAGES],
                    current_.scopes[Scope::MC_UPDATE_NEW_TO_NEW_POINTERS],
                    current_.scopes[Scope::MC_UPDATE_ROOT_TO_NEW_POINTERS],
@@ -555,8 +574,7 @@ void GCTracer::PrintNVP() const {
                    current_.scopes[Scope::MC_UPDATE_POINTERS_TO_EVACUATED],
                    current_.scopes[Scope::MC_UPDATE_POINTERS_BETWEEN_EVACUATED],
                    current_.scopes[Scope::MC_UPDATE_MISC_POINTERS],
-                   current_.scopes[Scope::MC_WEAKCLOSURE],
-                   current_.scopes[Scope::MC_INCREMENTAL_WEAKCLOSURE],
+                   current_.scopes[Scope::MC_INCREMENTAL_FINALIZE],
                    current_.scopes[Scope::MC_WEAKCOLLECTION_PROCESS],
                    current_.scopes[Scope::MC_WEAKCOLLECTION_CLEAR],
                    current_.scopes[Scope::MC_WEAKCOLLECTION_ABORT],
@@ -575,7 +593,8 @@ void GCTracer::PrintNVP() const {
                    heap_->promotion_ratio_, AverageSurvivalRatio(),
                    heap_->promotion_rate_, heap_->semi_space_copied_rate_,
                    NewSpaceAllocationThroughputInBytesPerMillisecond(),
-                   ContextDisposalRateInMilliseconds());
+                   ContextDisposalRateInMilliseconds(),
+                   CompactionSpeedInBytesPerMillisecond());
       break;
     case Event::START:
       break;
@@ -693,6 +712,23 @@ intptr_t GCTracer::ScavengeSpeedInBytesPerMillisecond(
   if (durations == 0.0) return 0;
   // Make sure the result is at least 1.
   return Max<size_t>(static_cast<size_t>(bytes / durations + 0.5), 1);
+}
+
+
+intptr_t GCTracer::CompactionSpeedInBytesPerMillisecond() const {
+  if (compaction_events_.size() < kRingBufferMaxSize) return 0.0;
+  intptr_t bytes = 0;
+  double durations = 0.0;
+  CompactionEventBuffer::const_iterator iter = compaction_events_.begin();
+  while (iter != compaction_events_.end()) {
+    bytes += iter->live_bytes_compacted;
+    durations += iter->duration;
+    ++iter;
+  }
+
+  if (durations == 0.0) return 0;
+  // Make sure the result is at least 1.
+  return Max<intptr_t>(static_cast<intptr_t>(bytes / durations + 0.5), 1);
 }
 
 

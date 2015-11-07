@@ -57,6 +57,7 @@ namespace internal {
   V(kDestinationOfCopyNotAligned, "Destination of copy not aligned")           \
   V(kDontDeleteCellsCannotContainTheHole,                                      \
     "DontDelete cells can't contain the hole")                                 \
+  V(kDoExpression, "Do expression encountered")                                \
   V(kDoPushArgumentNotImplementedForDoubleType,                                \
     "DoPushArgument not implemented for double type")                          \
   V(kEliminatedBoundsCheckFailed, "Eliminated bounds check failed")            \
@@ -174,6 +175,8 @@ namespace internal {
   V(kRegisterWasClobbered, "Register was clobbered")                           \
   V(kRememberedSetPointerInNewSpace, "Remembered set pointer is in new space") \
   V(kReturnAddressNotFoundInFrame, "Return address not found in frame")        \
+  V(kSloppyFunctionExpectsJSReceiverReceiver,                                  \
+    "Sloppy function expects JSReceiver as receiver.")                         \
   V(kSmiAdditionOverflow, "Smi addition overflow")                             \
   V(kSmiSubtractionOverflow, "Smi subtraction overflow")                       \
   V(kSpread, "Spread in array literal")                                        \
@@ -246,6 +249,7 @@ namespace internal {
   V(kUnsupportedPhiUseOfArguments, "Unsupported phi use of arguments")         \
   V(kUnsupportedPhiUseOfConstVariable,                                         \
     "Unsupported phi use of const variable")                                   \
+  V(kUnexpectedReturnFromThrow, "Unexpectedly returned from a throw")          \
   V(kUnsupportedTaggedImmediate, "Unsupported tagged immediate")               \
   V(kVariableResolvedToWithContext, "Variable resolved to with context")       \
   V(kWeShouldNotHaveAnEmptyLexicalContext,                                     \

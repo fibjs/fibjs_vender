@@ -46,8 +46,6 @@ class JSTypedLowering final : public AdvancedReducer {
   Reduction ReduceJSStoreProperty(Node* node);
   Reduction ReduceJSLoadContext(Node* node);
   Reduction ReduceJSStoreContext(Node* node);
-  Reduction ReduceJSLoadDynamicGlobal(Node* node);
-  Reduction ReduceJSLoadDynamicContext(Node* node);
   Reduction ReduceJSEqual(Node* node, bool invert);
   Reduction ReduceJSStrictEqual(Node* node, bool invert);
   Reduction ReduceJSUnaryNot(Node* node);
@@ -56,6 +54,8 @@ class JSTypedLowering final : public AdvancedReducer {
   Reduction ReduceJSToNumber(Node* node);
   Reduction ReduceJSToStringInput(Node* input);
   Reduction ReduceJSToString(Node* node);
+  Reduction ReduceJSToObject(Node* node);
+  Reduction ReduceJSConvertReceiver(Node* node);
   Reduction ReduceJSCreateArguments(Node* node);
   Reduction ReduceJSCreateClosure(Node* node);
   Reduction ReduceJSCreateLiteralArray(Node* node);
@@ -74,6 +74,10 @@ class JSTypedLowering final : public AdvancedReducer {
                             const Operator* shift_op);
 
   Node* Word32Shl(Node* const lhs, int32_t const rhs);
+  Node* AllocateArguments(Node* effect, Node* control, Node* frame_state);
+  Node* AllocateAliasedArguments(Node* effect, Node* control, Node* frame_state,
+                                 Node* context, Handle<SharedFunctionInfo>,
+                                 bool* has_aliased_arguments);
 
   Factory* factory() const;
   Graph* graph() const;

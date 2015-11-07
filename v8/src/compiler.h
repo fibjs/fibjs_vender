@@ -122,7 +122,6 @@ class CompilationInfo {
     kTypingEnabled = 1 << 12,
     kDisableFutureOptimization = 1 << 13,
     kSplittingEnabled = 1 << 14,
-    kTypeFeedbackEnabled = 1 << 15,
     kDeoptimizationEnabled = 1 << 16,
     kSourcePositionsEnabled = 1 << 17,
     kFirstCompile = 1 << 18,
@@ -239,12 +238,6 @@ class CompilationInfo {
     return GetFlag(kNativeContextSpecializing);
   }
 
-  void MarkAsTypeFeedbackEnabled() { SetFlag(kTypeFeedbackEnabled); }
-
-  bool is_type_feedback_enabled() const {
-    return GetFlag(kTypeFeedbackEnabled);
-  }
-
   void MarkAsDeoptimizationEnabled() { SetFlag(kDeoptimizationEnabled); }
 
   bool is_deoptimization_enabled() const {
@@ -300,7 +293,7 @@ class CompilationInfo {
         (closure()->context()->global_object() != NULL);
   }
 
-  GlobalObject* global_object() const {
+  JSGlobalObject* global_object() const {
     return has_global_object() ? closure()->context()->global_object() : NULL;
   }
 
@@ -333,7 +326,7 @@ class CompilationInfo {
   }
   bool ShouldEnsureSpaceForLazyDeopt() { return !IsStub(); }
 
-  bool MustReplaceUndefinedReceiverWithGlobalProxy();
+  bool ExpectsJSReceiverAsReceiver();
 
   // Determines whether or not to insert a self-optimization header.
   bool ShouldSelfOptimize();
@@ -404,12 +397,27 @@ class CompilationInfo {
 
   bool has_simple_parameters();
 
-  typedef std::vector<Handle<SharedFunctionInfo>> InlinedFunctionList;
+  struct InlinedFunctionHolder {
+    Handle<SharedFunctionInfo> shared_info;
+
+    // Root that holds the unoptimized code of the inlined function alive
+    // (and out of reach of code flushing) until we finish compilation.
+    // Do not remove.
+    Handle<Code> inlined_code_object_root;
+
+    explicit InlinedFunctionHolder(
+        Handle<SharedFunctionInfo> inlined_shared_info)
+        : shared_info(inlined_shared_info),
+          inlined_code_object_root(inlined_shared_info->code()) {}
+  };
+
+  typedef std::vector<InlinedFunctionHolder> InlinedFunctionList;
   InlinedFunctionList const& inlined_functions() const {
     return inlined_functions_;
   }
+
   void AddInlinedFunction(Handle<SharedFunctionInfo> inlined_function) {
-    inlined_functions_.push_back(inlined_function);
+    inlined_functions_.push_back(InlinedFunctionHolder(inlined_function));
   }
 
   base::SmartArrayPointer<char> GetDebugName() const;

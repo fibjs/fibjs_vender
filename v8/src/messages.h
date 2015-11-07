@@ -95,8 +95,8 @@ class CallSite {
   T(CalledOnNullOrUndefined, "% called on null or undefined")                  \
   T(CannotConvertToPrimitive, "Cannot convert object to primitive value")      \
   T(CannotPreventExt, "Cannot prevent extensions")                             \
-  T(CannotPreventExtExternalArray,                                             \
-    "Cannot prevent extension of an object with external array elements")      \
+  T(CannotFreezeArrayBufferView,                                               \
+    "Cannot freeze array buffer views with elements")                          \
   T(CircularStructure, "Converting circular structure to JSON")                \
   T(ConstAssign, "Assignment to constant variable.")                           \
   T(ConstructorNonCallable,                                                    \
@@ -108,6 +108,7 @@ class CallSite {
   T(DateType, "this is not a Date object.")                                    \
   T(DebuggerFrame, "Debugger: Invalid frame index.")                           \
   T(DebuggerType, "Debugger: Parameters have wrong types.")                    \
+  T(DeclarationMissingInitializer, "Missing initializer in % declaration")     \
   T(DefineDisallowed, "Cannot define property:%, object is not extensible.")   \
   T(DuplicateTemplateProperty, "Object template has duplicate property '%'")   \
   T(ExtendsValueGenerator,                                                     \
@@ -116,8 +117,6 @@ class CallSite {
     "Class extends value % is not a function or null")                         \
   T(FirstArgumentNotRegExp,                                                    \
     "First argument to % must not be a regular expression")                    \
-  T(FlagsGetterNonObject,                                                      \
-    "RegExp.prototype.flags getter called on non-object %")                    \
   T(FunctionBind, "Bind must be called on a function")                         \
   T(GeneratorRunning, "Generator is already running")                          \
   T(IllegalInvocation, "Illegal invocation")                                   \
@@ -202,6 +201,8 @@ class CallSite {
   T(ReduceNoInitial, "Reduce of empty array with no initial value")            \
   T(RegExpFlags,                                                               \
     "Cannot supply flags when constructing one RegExp from another")           \
+  T(RegExpNonObject, "% getter called on non-object %")                        \
+  T(RegExpNonRegExp, "% getter called on non-RegExp object")                   \
   T(ReinitializeIntl, "Trying to re-initialize % object.")                     \
   T(ResolvedOptionsCalledOnNonObject,                                          \
     "resolvedOptions method called on a non-object or on a object that is "    \
@@ -326,6 +327,9 @@ class CallSite {
   T(NoCatchOrFinally, "Missing catch or finally after try")                    \
   T(NotIsvar, "builtin %%IS_VAR: not a variable")                              \
   T(ParamAfterRest, "Rest parameter must be last formal parameter")            \
+  T(PushPastSafeLength,                                                        \
+    "Pushing % elements on an array-like of length % "                         \
+    "is disallowed, as the total surpasses 2**53-1")                           \
   T(BadSetterRestParameter,                                                    \
     "Setter function argument must not be a rest parameter")                   \
   T(ParamDupe, "Duplicate parameter name not allowed in this context")         \
