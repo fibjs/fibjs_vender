@@ -136,7 +136,7 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "4.15"
+#define VERSION "4.20"
 
 #ifndef NDEBUG
 #define NDEBUG

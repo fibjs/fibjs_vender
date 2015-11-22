@@ -228,14 +228,17 @@ epoll_poll (EV_P_ ev_tstamp timeout)
       if (anfds [fd].emask & EV_EMASK_EPERM && events)
         fd_event (EV_A_ fd, events);
       else
-        epoll_eperms [i] = epoll_eperms [--epoll_epermcnt];
+        {
+          epoll_eperms [i] = epoll_eperms [--epoll_epermcnt];
+          anfds [fd].emask = 0;
+        }
     }
 }
 
 int inline_size
 epoll_init (EV_P_ int flags)
 {
-#if 0
+#ifdef EPOLL_CLOEXEC
   backend_fd = epoll_create1 (EPOLL_CLOEXEC);
 
   if (backend_fd < 0 && (errno == EINVAL || errno == ENOSYS))
