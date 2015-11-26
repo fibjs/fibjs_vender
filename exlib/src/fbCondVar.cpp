@@ -7,7 +7,6 @@
  */
 
 #include "service.h"
-#include <assert.h>
 
 namespace exlib
 {

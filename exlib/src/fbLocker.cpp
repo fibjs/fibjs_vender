@@ -8,7 +8,6 @@
 
 #include "service.h"
 #include <map>
-#include <assert.h>
 
 #ifndef WIN32
 #include <unistd.h>
