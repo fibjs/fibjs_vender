@@ -109,6 +109,7 @@ class GCTracer {
       MC_MARK_WEAK_REFERENCES,
       MC_MARK_GLOBAL_HANDLES,
       MC_MARK_CODE_FLUSH,
+      MC_MARK_OPTIMIZED_CODE_MAPS,
       MC_STORE_BUFFER_CLEAR,
       MC_SLOTS_BUFFER_CLEAR,
       MC_SWEEP,
@@ -130,7 +131,9 @@ class GCTracer {
       MC_WEAKCOLLECTION_CLEAR,
       MC_WEAKCOLLECTION_ABORT,
       MC_WEAKCELL,
+      MC_EXTRACT_DEPENDENT_CODE,
       MC_NONLIVEREFERENCES,
+      MC_DEOPT_DEPENDENT_CODE,
       MC_FLUSH_CODE,
       SCAVENGER_CODE_FLUSH_CANDIDATES,
       SCAVENGER_OBJECT_GROUPS,
@@ -142,15 +145,8 @@ class GCTracer {
       NUMBER_OF_SCOPES
     };
 
-    Scope(GCTracer* tracer, ScopeId scope) : tracer_(tracer), scope_(scope) {
-      start_time_ = base::OS::TimeCurrentMillis();
-    }
-
-    ~Scope() {
-      DCHECK(scope_ < NUMBER_OF_SCOPES);  // scope_ is unsigned.
-      tracer_->current_.scopes[scope_] +=
-          base::OS::TimeCurrentMillis() - start_time_;
-    }
+    Scope(GCTracer* tracer, ScopeId scope);
+    ~Scope();
 
    private:
     GCTracer* tracer_;

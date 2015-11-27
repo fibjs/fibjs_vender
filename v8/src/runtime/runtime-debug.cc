@@ -1232,13 +1232,12 @@ RUNTIME_FUNCTION(Runtime_PrepareStep) {
   // Get the step action and check validity.
   StepAction step_action = static_cast<StepAction>(NumberToInt32(args[1]));
   if (step_action != StepIn && step_action != StepNext &&
-      step_action != StepOut && step_action != StepInMin &&
-      step_action != StepMin && step_action != StepFrame) {
+      step_action != StepOut && step_action != StepFrame) {
     return isolate->Throw(isolate->heap()->illegal_argument_string());
   }
 
   if (frame_id != StackFrame::NO_ID && step_action != StepNext &&
-      step_action != StepMin && step_action != StepOut) {
+      step_action != StepOut) {
     return isolate->ThrowIllegalOperation();
   }
 
@@ -1449,7 +1448,12 @@ RUNTIME_FUNCTION(Runtime_DebugGetPrototype) {
   HandleScope shs(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
-  return *Object::GetPrototype(isolate, obj);
+  Handle<Object> prototype;
+  // TODO(1543): Come up with a solution for clients to handle potential errors
+  // thrown by an intermediate proxy.
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, prototype,
+                                     Object::GetPrototype(isolate, obj));
+  return *prototype;
 }
 
 
@@ -1478,6 +1482,16 @@ RUNTIME_FUNCTION(Runtime_FunctionGetInferredName) {
 
   CONVERT_ARG_CHECKED(JSFunction, f, 0);
   return f->shared()->inferred_name();
+}
+
+
+RUNTIME_FUNCTION(Runtime_FunctionGetDebugName) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, f, 0);
+  Handle<Object> name = JSFunction::GetDebugName(f);
+  return *name;
 }
 
 
@@ -1618,50 +1632,15 @@ bool DebugStepInIsActive(Debug* debug) {
 }
 
 
-// Check whether debugger is about to step into the callback that is passed
-// to a built-in function such as Array.forEach. This check is done before
-// %DebugPrepareStepInIfStepping and is not strictly necessary. However, if it
-// returns false, we can skip %DebugPrepareStepInIfStepping, useful in loops.
-RUNTIME_FUNCTION(Runtime_DebugCallbackSupportsStepping) {
-  SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
-  if (!DebugStepInIsActive(isolate->debug())) {
-    return isolate->heap()->false_value();
-  }
-  CONVERT_ARG_CHECKED(Object, object, 0);
-  RUNTIME_ASSERT(object->IsJSFunction() || object->IsJSGeneratorObject());
-  // We do not step into the callback if it's a builtin other than a bound,
-  // or not even a function.
-  JSFunction* fun;
-  if (object->IsJSFunction()) {
-    fun = JSFunction::cast(object);
-  } else {
-    fun = JSGeneratorObject::cast(object)->function();
-  }
-  return isolate->heap()->ToBoolean(fun->shared()->IsSubjectToDebugging() ||
-                                    fun->shared()->bound());
-}
-
-
-void FloodDebugSubjectWithOneShot(Debug* debug, Handle<JSFunction> function) {
-  if (function->shared()->IsSubjectToDebugging() ||
-      function->shared()->bound()) {
-    // When leaving the function, step out has been activated, but not performed
-    // if we do not leave the builtin.  To be able to step into the function
-    // again, we need to clear the step out at this point.
-    debug->ClearStepOut();
-    debug->FloodWithOneShotGeneric(function);
-  }
-}
-
-
 // Set one shot breakpoints for the callback function that is passed to a
 // built-in function such as Array.forEach to enable stepping into the callback,
 // if we are indeed stepping and the callback is subject to debugging.
 RUNTIME_FUNCTION(Runtime_DebugPrepareStepInIfStepping) {
   DCHECK(args.length() == 1);
   Debug* debug = isolate->debug();
-  if (!DebugStepInIsActive(debug)) return isolate->heap()->undefined_value();
+  if (debug->in_debug_scope() || !DebugStepInIsActive(debug)) {
+    return isolate->heap()->undefined_value();
+  }
 
   HandleScope scope(isolate);
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
@@ -1674,22 +1653,18 @@ RUNTIME_FUNCTION(Runtime_DebugPrepareStepInIfStepping) {
         Handle<JSGeneratorObject>::cast(object)->function(), isolate);
   }
 
-  FloodDebugSubjectWithOneShot(debug, fun);
+  debug->ClearStepOut();
+  debug->FloodWithOneShotGeneric(fun);
   return isolate->heap()->undefined_value();
 }
 
 
 RUNTIME_FUNCTION(Runtime_DebugPushPromise) {
-  DCHECK(args.length() == 3);
+  DCHECK(args.length() == 2);
   HandleScope scope(isolate);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, handler, 2);
   isolate->PushPromise(promise, function);
-  Debug* debug = isolate->debug();
-  if (handler->IsJSFunction() && DebugStepInIsActive(debug)) {
-    FloodDebugSubjectWithOneShot(debug, Handle<JSFunction>::cast(handler));
-  }
   return isolate->heap()->undefined_value();
 }
 
@@ -1732,7 +1707,7 @@ RUNTIME_FUNCTION(Runtime_DebugHandleStepIntoAccessor) {
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
   Debug* debug = isolate->debug();
   // Handle stepping into constructors if step into is active.
-  if (debug->StepInActive()) debug->HandleStepIn(function, false);
+  if (debug->StepInActive()) debug->HandleStepIn(function);
   return *isolate->factory()->undefined_value();
 }
 

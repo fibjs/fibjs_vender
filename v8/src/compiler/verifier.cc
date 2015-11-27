@@ -250,12 +250,12 @@ void Verifier::Visitor::Check(Node* node) {
             break;
           }
           default: {
-            UNREACHABLE();
+            V8_Fatal(__FILE__, __LINE__, "Switch #%d illegally used by #%d:%s",
+                     node->id(), use->id(), use->op()->mnemonic());
             break;
           }
         }
       }
-      CHECK_LE(1, count_case);
       CHECK_EQ(1, count_default);
       CHECK_EQ(node->op()->ControlOutputCount(), count_case + count_default);
       // Type is empty.
@@ -511,12 +511,17 @@ void Verifier::Visitor::Check(Node* node) {
       // Type is OtherObject.
       CheckUpperIs(node, Type::OtherObject());
       break;
+    case IrOpcode::kJSCreateArray:
+      // Type is OtherObject.
+      CheckUpperIs(node, Type::OtherObject());
+      break;
     case IrOpcode::kJSCreateClosure:
       // Type is Function.
       CheckUpperIs(node, Type::OtherObject());
       break;
     case IrOpcode::kJSCreateLiteralArray:
     case IrOpcode::kJSCreateLiteralObject:
+    case IrOpcode::kJSCreateLiteralRegExp:
       // Type is OtherObject.
       CheckUpperIs(node, Type::OtherObject());
       break;
@@ -545,6 +550,7 @@ void Verifier::Visitor::Check(Node* node) {
 
     case IrOpcode::kJSLoadContext:
     case IrOpcode::kJSLoadDynamic:
+    case IrOpcode::kJSLoadNativeContext:
       // Type can be anything.
       CheckUpperIs(node, Type::Any());
       break;
@@ -601,6 +607,10 @@ void Verifier::Visitor::Check(Node* node) {
       CheckUpperIs(node, Type::UnsignedSmall());
       break;
     }
+
+    case IrOpcode::kJSLoadMessage:
+    case IrOpcode::kJSStoreMessage:
+      break;
 
     case IrOpcode::kJSStackCheck:
       // Type is empty.
@@ -668,6 +678,11 @@ void Verifier::Visitor::Check(Node* node) {
       // Number -> Unsigned32
       CheckValueInputIs(node, 0, Type::Number());
       CheckUpperIs(node, Type::Unsigned32());
+      break;
+    case IrOpcode::kNumberIsHoleNaN:
+      // Number -> Boolean
+      CheckValueInputIs(node, 0, Type::Number());
+      CheckUpperIs(node, Type::Boolean());
       break;
     case IrOpcode::kPlainPrimitiveToNumber:
       // PlainPrimitive -> Number
@@ -824,6 +839,9 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kWord64Shr:
     case IrOpcode::kWord64Sar:
     case IrOpcode::kWord64Ror:
+    case IrOpcode::kWord64Clz:
+    case IrOpcode::kWord64Popcnt:
+    case IrOpcode::kWord64Ctz:
     case IrOpcode::kWord64Equal:
     case IrOpcode::kInt32Add:
     case IrOpcode::kInt32AddWithOverflow:
@@ -871,14 +889,23 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kFloat64Min:
     case IrOpcode::kFloat64Abs:
     case IrOpcode::kFloat64Sqrt:
+    case IrOpcode::kFloat32RoundDown:
     case IrOpcode::kFloat64RoundDown:
+    case IrOpcode::kFloat32RoundUp:
+    case IrOpcode::kFloat64RoundUp:
+    case IrOpcode::kFloat32RoundTruncate:
     case IrOpcode::kFloat64RoundTruncate:
     case IrOpcode::kFloat64RoundTiesAway:
+    case IrOpcode::kFloat32RoundTiesEven:
+    case IrOpcode::kFloat64RoundTiesEven:
     case IrOpcode::kFloat64Equal:
     case IrOpcode::kFloat64LessThan:
     case IrOpcode::kFloat64LessThanOrEqual:
     case IrOpcode::kTruncateInt64ToInt32:
+    case IrOpcode::kRoundInt64ToFloat32:
     case IrOpcode::kRoundInt64ToFloat64:
+    case IrOpcode::kRoundUint64ToFloat64:
+    case IrOpcode::kRoundUint64ToFloat32:
     case IrOpcode::kTruncateFloat64ToFloat32:
     case IrOpcode::kTruncateFloat64ToInt32:
     case IrOpcode::kBitcastFloat32ToInt32:
@@ -892,6 +919,9 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kChangeFloat32ToFloat64:
     case IrOpcode::kChangeFloat64ToInt32:
     case IrOpcode::kChangeFloat64ToUint32:
+    case IrOpcode::kTruncateFloat32ToInt64:
+    case IrOpcode::kTruncateFloat64ToInt64:
+    case IrOpcode::kTruncateFloat64ToUint64:
     case IrOpcode::kFloat64ExtractLowWord32:
     case IrOpcode::kFloat64ExtractHighWord32:
     case IrOpcode::kFloat64InsertLowWord32:

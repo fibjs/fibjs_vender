@@ -276,6 +276,7 @@ void Assembler::GetCode(CodeDesc* desc) {
   desc->reloc_size =
       static_cast<int>((buffer_ + buffer_size_) - reloc_info_writer.pos());
   desc->origin = this;
+  desc->constant_pool_size = 0;
 }
 
 
@@ -1348,9 +1349,11 @@ void Assembler::bgezalc(Register rt, int16_t offset) {
 
 
 void Assembler::bgezall(Register rs, int16_t offset) {
-  DCHECK(kArchVariant == kMips64r6);
+  DCHECK(kArchVariant != kMips64r6);
   DCHECK(!(rs.is(zero_reg)));
+  BlockTrampolinePoolScope block_trampoline_pool(this);
   GenInstrImmediate(REGIMM, rs, BGEZALL, offset);
+  BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
 
 
@@ -1413,15 +1416,19 @@ void Assembler::bnezc(Register rs, int32_t offset) {
 
 
 void Assembler::j(int64_t target) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
   GenInstrJump(J, static_cast<uint32_t>(target >> 2) & kImm26Mask);
+  BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
 
 
 void Assembler::j(Label* target) {
   uint64_t imm = jump_offset(target);
   if (target->is_bound()) {
+    BlockTrampolinePoolScope block_trampoline_pool(this);
     GenInstrJump(static_cast<Opcode>(kJRawMark),
                  static_cast<uint32_t>(imm >> 2) & kImm26Mask);
+    BlockTrampolinePoolFor(1);  // For associated delay slot.
   } else {
     j(imm);
   }
@@ -1431,8 +1438,11 @@ void Assembler::j(Label* target) {
 void Assembler::jal(Label* target) {
   uint64_t imm = jump_offset(target);
   if (target->is_bound()) {
+    BlockTrampolinePoolScope block_trampoline_pool(this);
+    positions_recorder()->WriteRecordedPositions();
     GenInstrJump(static_cast<Opcode>(kJalRawMark),
                  static_cast<uint32_t>(imm >> 2) & kImm26Mask);
+    BlockTrampolinePoolFor(1);  // For associated delay slot.
   } else {
     jal(imm);
   }
@@ -1454,8 +1464,10 @@ void Assembler::jr(Register rs) {
 
 
 void Assembler::jal(int64_t target) {
+  BlockTrampolinePoolScope block_trampoline_pool(this);
   positions_recorder()->WriteRecordedPositions();
   GenInstrJump(JAL, static_cast<uint32_t>(target >> 2) & kImm26Mask);
+  BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
 
 
@@ -2282,6 +2294,16 @@ void Assembler::clz(Register rd, Register rs) {
     GenInstrRegister(SPECIAL2, rs, rd, rd, 0, CLZ);
   } else {
     GenInstrRegister(SPECIAL, rs, zero_reg, rd, 1, CLZ_R6);
+  }
+}
+
+
+void Assembler::dclz(Register rd, Register rs) {
+  if (kArchVariant != kMips64r6) {
+    // dclz instr requires same GPR number in 'rd' and 'rt' fields.
+    GenInstrRegister(SPECIAL2, rs, rd, rd, 0, DCLZ);
+  } else {
+    GenInstrRegister(SPECIAL, rs, zero_reg, rd, 1, DCLZ_R6);
   }
 }
 
@@ -3256,7 +3278,7 @@ void Assembler::set_target_address_at(Address pc,
       | (itarget & kImm16Mask);
 
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-    CpuFeatures::FlushICache(pc, 4 * Assembler::kInstrSize);
+    Assembler::FlushICacheWithoutIsolate(pc, 4 * Assembler::kInstrSize);
   }
 }
 

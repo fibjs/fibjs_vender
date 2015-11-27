@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "src/ast.h"
+#include "src/ast/ast.h"
 #include "src/identity-map.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/zone.h"
@@ -97,6 +97,9 @@ class BytecodeArrayBuilder {
   BytecodeArrayBuilder& LoadAccumulatorWithRegister(Register reg);
   BytecodeArrayBuilder& StoreAccumulatorInRegister(Register reg);
 
+  // Register-register transfer.
+  BytecodeArrayBuilder& MoveRegister(Register from, Register to);
+
   // Named load property.
   BytecodeArrayBuilder& LoadNamedProperty(Register object, size_t name_index,
                                           int feedback_slot,
@@ -113,14 +116,15 @@ class BytecodeArrayBuilder {
                                            int feedback_slot,
                                            LanguageMode language_mode);
 
-  // Create a new closure for the SharedFunctionInfo in the accumulator.
-  BytecodeArrayBuilder& CreateClosure(PretenureFlag tenured);
+  // Create a new closure for the SharedFunctionInfo.
+  BytecodeArrayBuilder& CreateClosure(Handle<SharedFunctionInfo> shared_info,
+                                      PretenureFlag tenured);
 
   // Create a new arguments object in the accumulator.
   BytecodeArrayBuilder& CreateArguments(CreateArgumentsType type);
 
   // Literals creation.  Constant elements should be in the accumulator.
-  BytecodeArrayBuilder& CreateRegExpLiteral(int literal_index, Register flags);
+  BytecodeArrayBuilder& CreateRegExpLiteral(int literal_index, int flags);
   BytecodeArrayBuilder& CreateArrayLiteral(int literal_index, int flags);
   BytecodeArrayBuilder& CreateObjectLiteral(int literal_index, int flags);
 
@@ -136,7 +140,7 @@ class BytecodeArrayBuilder {
   // arguments should be in registers <receiver + 1> to
   // <receiver + 1 + arg_count>.
   BytecodeArrayBuilder& Call(Register callable, Register receiver,
-                             size_t arg_count);
+                             size_t arg_count, int feedback_slot);
 
   // Call the new operator. The |constructor| register is followed by
   // |arg_count| consecutive registers containing arguments to be
@@ -233,6 +237,8 @@ class BytecodeArrayBuilder {
   template <size_t N>
   INLINE(void Output(Bytecode bytecode, uint32_t(&oprands)[N]));
   void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1,
+              uint32_t operand2, uint32_t operand3);
+  void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1,
               uint32_t operand2);
   void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1);
   void Output(Bytecode bytecode, uint32_t operand0);
@@ -251,6 +257,7 @@ class BytecodeArrayBuilder {
   bool LastBytecodeInSameBlock() const;
 
   bool NeedToBooleanCast();
+  bool IsRegisterInAccumulator(Register reg);
 
   int BorrowTemporaryRegister();
   void ReturnTemporaryRegister(int reg_index);

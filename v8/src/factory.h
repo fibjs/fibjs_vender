@@ -476,10 +476,12 @@ class Factory final {
                                                Handle<Object> done);
 
   // Allocates a Harmony proxy.
-  Handle<JSProxy> NewJSProxy(Handle<Object> handler, Handle<Object> prototype);
+  Handle<JSProxy> NewJSProxy(Handle<JSReceiver> target,
+                             Handle<JSReceiver> handler);
 
   // Allocates a Harmony function proxy.
-  Handle<JSProxy> NewJSFunctionProxy(Handle<Object> handler,
+  Handle<JSProxy> NewJSFunctionProxy(Handle<JSReceiver> target,
+                                     Handle<JSReceiver> handler,
                                      Handle<JSReceiver> call_trap,
                                      Handle<Object> construct_trap,
                                      Handle<Object> prototype);
@@ -492,10 +494,6 @@ class Factory final {
                                  Handle<JSFunction> constructor);
 
   Handle<JSGlobalProxy> NewUninitializedJSGlobalProxy();
-
-  // Change the type of the argument into a JS object/function and reinitialize.
-  void BecomeJSObject(Handle<JSProxy> object);
-  void BecomeJSFunction(Handle<JSProxy> object);
 
   Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
                                  Handle<Object> prototype,
@@ -629,7 +627,8 @@ class Factory final {
       Handle<Code> code, Handle<ScopeInfo> scope_info,
       Handle<TypeFeedbackVector> feedback_vector);
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(Handle<String> name,
-                                                   MaybeHandle<Code> code);
+                                                   MaybeHandle<Code> code,
+                                                   bool is_constructor);
 
   // Allocates a new JSMessageObject object.
   Handle<JSMessageObject> NewJSMessageObject(MessageTemplate::Template message,
@@ -696,14 +695,6 @@ class Factory final {
   // Update the cache with a new number-string pair.
   void SetNumberStringCache(Handle<Object> number, Handle<String> string);
 
-  // Initializes a function with a shared part and prototype.
-  // Note: this code was factored out of NewFunction such that other parts of
-  // the VM could use it. Specifically, a function that creates instances of
-  // type JS_FUNCTION_TYPE benefit from the use of this function.
-  inline void InitializeFunction(Handle<JSFunction> function,
-                                 Handle<SharedFunctionInfo> info,
-                                 Handle<Context> context);
-
   // Creates a function initialized with a shared part.
   Handle<JSFunction> NewFunction(Handle<Map> map,
                                  Handle<SharedFunctionInfo> info,
@@ -713,12 +704,6 @@ class Factory final {
   Handle<JSFunction> NewFunction(Handle<Map> map,
                                  Handle<String> name,
                                  MaybeHandle<Code> maybe_code);
-
-  // Reinitialize a JSProxy into an (empty) JS object of respective type and
-  // size, but keeping the original prototype.  The receiver must have at least
-  // the size of the new object.  The object is reinitialized and behaves as an
-  // object that has been freshly allocated.
-  void ReinitializeJSProxy(Handle<JSProxy> proxy, InstanceType type, int size);
 };
 
 }  // namespace internal

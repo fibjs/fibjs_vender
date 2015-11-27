@@ -62,7 +62,6 @@ class LChunkBuilder;
   V(CallWithDescriptor)                       \
   V(CallJSFunction)                           \
   V(CallFunction)                             \
-  V(CallNew)                                  \
   V(CallNewArray)                             \
   V(CallRuntime)                              \
   V(CallStub)                                 \
@@ -131,7 +130,6 @@ class LChunkBuilder;
   V(Power)                                    \
   V(Prologue)                                 \
   V(PushArguments)                            \
-  V(RegExpLiteral)                            \
   V(Return)                                   \
   V(Ror)                                      \
   V(Sar)                                      \
@@ -2394,11 +2392,13 @@ class HInvokeFunction final : public HBinaryCall {
 
 class HCallFunction final : public HBinaryCall {
  public:
-  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P2(HCallFunction, HValue*, int);
+  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P3(HCallFunction, HValue*, int,
+                                              ConvertReceiverMode);
 
   HValue* context() const { return first(); }
   HValue* function() const { return second(); }
 
+  ConvertReceiverMode convert_mode() const { return convert_mode_; }
   FeedbackVectorSlot slot() const { return slot_; }
   Handle<TypeFeedbackVector> feedback_vector() const {
     return feedback_vector_;
@@ -2417,25 +2417,13 @@ class HCallFunction final : public HBinaryCall {
   int argument_delta() const override { return -argument_count(); }
 
  private:
-  HCallFunction(HValue* context, HValue* function, int argument_count)
-      : HBinaryCall(context, function, argument_count) {}
+  HCallFunction(HValue* context, HValue* function, int argument_count,
+                ConvertReceiverMode convert_mode)
+      : HBinaryCall(context, function, argument_count),
+        convert_mode_(convert_mode) {}
   Handle<TypeFeedbackVector> feedback_vector_;
   FeedbackVectorSlot slot_;
-};
-
-
-class HCallNew final : public HBinaryCall {
- public:
-  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P2(HCallNew, HValue*, int);
-
-  HValue* context() { return first(); }
-  HValue* constructor() { return second(); }
-
-  DECLARE_CONCRETE_INSTRUCTION(CallNew)
-
- private:
-  HCallNew(HValue* context, HValue* constructor, int argument_count)
-      : HBinaryCall(context, constructor, argument_count) {}
+  ConvertReceiverMode convert_mode_;
 };
 
 
@@ -6949,7 +6937,7 @@ class HStoreNamedGeneric final : public HTemplateInstruction<3> {
   Handle<TypeFeedbackVector> feedback_vector() const {
     return feedback_vector_;
   }
-  bool HasVectorAndSlot() const { return FLAG_vector_stores; }
+  bool HasVectorAndSlot() const { return true; }
   void SetVectorAndSlot(Handle<TypeFeedbackVector> vector,
                         FeedbackVectorSlot slot) {
     feedback_vector_ = vector;
@@ -7175,8 +7163,6 @@ class HStoreKeyedGeneric final : public HTemplateInstruction<4> {
     return feedback_vector_;
   }
   bool HasVectorAndSlot() const {
-    DCHECK(!(FLAG_vector_stores && initialization_state_ != MEGAMORPHIC) ||
-           !feedback_vector_.is_null());
     return !feedback_vector_.is_null();
   }
   void SetVectorAndSlot(Handle<TypeFeedbackVector> vector,
@@ -7412,75 +7398,6 @@ class HStringCharFromCode final : public HTemplateInstruction<2> {
   bool IsDeletable() const override {
     return !value()->ToNumberCanBeObserved();
   }
-};
-
-
-template <int V>
-class HMaterializedLiteral : public HTemplateInstruction<V> {
- public:
-  HMaterializedLiteral<V>(int index, int depth, AllocationSiteMode mode)
-      : literal_index_(index), depth_(depth), allocation_site_mode_(mode) {
-    this->set_representation(Representation::Tagged());
-  }
-
-  HMaterializedLiteral<V>(int index, int depth)
-      : literal_index_(index), depth_(depth),
-        allocation_site_mode_(DONT_TRACK_ALLOCATION_SITE) {
-    this->set_representation(Representation::Tagged());
-  }
-
-  int literal_index() const { return literal_index_; }
-  int depth() const { return depth_; }
-  AllocationSiteMode allocation_site_mode() const {
-    return allocation_site_mode_;
-  }
-
- private:
-  bool IsDeletable() const final { return true; }
-
-  int literal_index_;
-  int depth_;
-  AllocationSiteMode allocation_site_mode_;
-};
-
-
-class HRegExpLiteral final : public HMaterializedLiteral<1> {
- public:
-  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P4(HRegExpLiteral,
-                                              Handle<FixedArray>,
-                                              Handle<String>,
-                                              Handle<String>,
-                                              int);
-
-  HValue* context() { return OperandAt(0); }
-  Handle<FixedArray> literals() { return literals_; }
-  Handle<String> pattern() { return pattern_; }
-  Handle<String> flags() { return flags_; }
-
-  Representation RequiredInputRepresentation(int index) override {
-    return Representation::Tagged();
-  }
-
-  DECLARE_CONCRETE_INSTRUCTION(RegExpLiteral)
-
- private:
-  HRegExpLiteral(HValue* context,
-                 Handle<FixedArray> literals,
-                 Handle<String> pattern,
-                 Handle<String> flags,
-                 int literal_index)
-      : HMaterializedLiteral<1>(literal_index, 0),
-        literals_(literals),
-        pattern_(pattern),
-        flags_(flags) {
-    SetOperandAt(0, context);
-    SetAllSideEffects();
-    set_type(HType::JSObject());
-  }
-
-  Handle<FixedArray> literals_;
-  Handle<String> pattern_;
-  Handle<String> flags_;
 };
 
 

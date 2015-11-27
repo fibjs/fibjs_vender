@@ -45,6 +45,7 @@ namespace internal {
 #define kInterpreterBytecodeArrayRegister x20
 #define kInterpreterDispatchTableRegister x21
 #define kJavaScriptCallArgCountRegister x0
+#define kJavaScriptCallNewTargetRegister x3
 #define kRuntimeCallFunctionRegister x1
 #define kRuntimeCallArgCountRegister x0
 
@@ -145,7 +146,8 @@ enum SeqStringSetCharCheckIndexType { kIndexIsSmi, kIndexIsInteger32 };
 
 class MacroAssembler : public Assembler {
  public:
-  MacroAssembler(Isolate* isolate, byte * buffer, unsigned buffer_size);
+  MacroAssembler(Isolate* isolate, byte* buffer, unsigned buffer_size,
+                 CodeObjectRequired create_code_object);
 
   inline Handle<Object> CodeObject();
 
@@ -1027,22 +1029,11 @@ class MacroAssembler : public Assembler {
 
   // ---- Object Utilities ----
 
-  // Copy fields from 'src' to 'dst', where both are tagged objects.
-  // The 'temps' list is a list of X registers which can be used for scratch
-  // values. The temps list must include at least one register.
-  //
-  // Currently, CopyFields cannot make use of more than three registers from
-  // the 'temps' list.
-  //
-  // CopyFields expects to be able to take at least two registers from
-  // MacroAssembler::TmpList().
-  void CopyFields(Register dst, Register src, CPURegList temps, unsigned count);
-
-  // Starting at address in dst, initialize field_count 64-bit fields with
-  // 64-bit value in register filler. Register dst is corrupted.
-  void FillFields(Register dst,
-                  Register field_count,
-                  Register filler);
+  // Initialize fields with filler values.  Fields starting at |current_address|
+  // not including |end_address| are overwritten with the value in |filler|.  At
+  // the end the loop, |current_address| takes the value of |end_address|.
+  void InitializeFieldsWithFiller(Register current_address,
+                                  Register end_address, Register filler);
 
   // Copies a number of bytes from src to dst. All passed registers are
   // clobbered. On exit src and dst will point to the place just after where the
@@ -1179,20 +1170,21 @@ class MacroAssembler : public Assembler {
   // 'call_kind' must be x5.
   void InvokePrologue(const ParameterCount& expected,
                       const ParameterCount& actual,
-                      Handle<Code> code_constant,
-                      Register code_reg,
                       Label* done,
                       InvokeFlag flag,
                       bool* definitely_mismatches,
                       const CallWrapper& call_wrapper);
-  void InvokeCode(Register code,
-                  const ParameterCount& expected,
-                  const ParameterCount& actual,
-                  InvokeFlag flag,
-                  const CallWrapper& call_wrapper);
+  void FloodFunctionIfStepping(Register fun, Register new_target,
+                               const ParameterCount& expected,
+                               const ParameterCount& actual);
+  void InvokeFunctionCode(Register function, Register new_target,
+                          const ParameterCount& expected,
+                          const ParameterCount& actual, InvokeFlag flag,
+                          const CallWrapper& call_wrapper);
   // Invoke the JavaScript function in the given register.
   // Changes the current context to the context in the function before invoking.
   void InvokeFunction(Register function,
+                      Register new_target,
                       const ParameterCount& actual,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
@@ -1297,12 +1289,8 @@ class MacroAssembler : public Assembler {
   // If the new space is exhausted control continues at the gc_required label.
   // In this case, the result and scratch registers may still be clobbered.
   // If flags includes TAG_OBJECT, the result is tagged as as a heap object.
-  void Allocate(Register object_size,
-                Register result,
-                Register scratch1,
-                Register scratch2,
-                Label* gc_required,
-                AllocationFlags flags);
+  void Allocate(Register object_size, Register result, Register result_end,
+                Register scratch, Label* gc_required, AllocationFlags flags);
 
   void Allocate(int object_size,
                 Register result,
@@ -2013,19 +2001,6 @@ class MacroAssembler : public Assembler {
   void PopPostamble(int count, int size) { PopPostamble(count * size); }
 
  private:
-  // Helpers for CopyFields.
-  // These each implement CopyFields in a different way.
-  void CopyFieldsLoopPairsHelper(Register dst, Register src, unsigned count,
-                                 Register scratch1, Register scratch2,
-                                 Register scratch3, Register scratch4,
-                                 Register scratch5);
-  void CopyFieldsUnrolledPairsHelper(Register dst, Register src, unsigned count,
-                                     Register scratch1, Register scratch2,
-                                     Register scratch3, Register scratch4);
-  void CopyFieldsUnrolledHelper(Register dst, Register src, unsigned count,
-                                Register scratch1, Register scratch2,
-                                Register scratch3);
-
   // The actual Push and Pop implementations. These don't generate any code
   // other than that required for the push or pop. This allows
   // (Push|Pop)CPURegList to bundle together run-time assertions for a large

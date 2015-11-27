@@ -197,16 +197,12 @@ inline bool ClampedToInteger(Object* object, int* out) {
 
 inline bool GetSloppyArgumentsLength(Isolate* isolate, Handle<JSObject> object,
                                      int* out) {
-  Map* arguments_map =
-      isolate->context()->native_context()->sloppy_arguments_map();
-  if (object->map() != arguments_map || !object->HasFastElements()) {
-    return false;
-  }
+  Map* arguments_map = isolate->native_context()->sloppy_arguments_map();
+  if (object->map() != arguments_map) return false;
+  DCHECK(object->HasFastElements());
   Object* len_obj = object->InObjectPropertyAt(Heap::kArgumentsLengthIndex);
-  if (!len_obj->IsSmi()) {
-    return false;
-  }
-  *out = Smi::cast(len_obj)->value();
+  if (!len_obj->IsSmi()) return false;
+  *out = Max(0, Smi::cast(len_obj)->value());
   return *out <= object->elements()->length();
 }
 
@@ -993,11 +989,11 @@ bool IterateElements(Isolate* isolate, Handle<JSObject> receiver,
   uint32_t length = 0;
 
   if (receiver->IsJSArray()) {
-    Handle<JSArray> array(Handle<JSArray>::cast(receiver));
+    Handle<JSArray> array = Handle<JSArray>::cast(receiver);
     length = static_cast<uint32_t>(array->length()->Number());
   } else {
     Handle<Object> val;
-    Handle<Object> key(isolate->heap()->length_string(), isolate);
+    Handle<Object> key = isolate->factory()->length_string();
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
         isolate, val, Runtime::GetObjectProperty(isolate, receiver, key),
         false);
@@ -1504,12 +1500,10 @@ BUILTIN(ReflectDeleteProperty) {
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, name,
                                      Object::ToName(isolate, key));
 
-  Handle<Object> result;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result, JSReceiver::DeletePropertyOrElement(
-                           Handle<JSReceiver>::cast(target), name));
-
-  return *result;
+  Maybe<bool> result = JSReceiver::DeletePropertyOrElement(
+      Handle<JSReceiver>::cast(target), name, SLOPPY);
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return *isolate->factory()->ToBoolean(result.FromJust());
 }
 
 
@@ -1580,8 +1574,10 @@ BUILTIN(ReflectGetPrototypeOf) {
                               isolate->factory()->NewStringFromAsciiChecked(
                                   "Reflect.getPrototypeOf")));
   }
-
-  return *Object::GetPrototype(isolate, target);
+  Handle<Object> prototype;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, prototype,
+                                     Object::GetPrototype(isolate, target));
+  return *prototype;
 }
 
 
@@ -1623,20 +1619,33 @@ BUILTIN(ReflectIsExtensible) {
                                   "Reflect.isExtensible")));
   }
 
-  // TODO(neis): For now, we ignore proxies.  Once proxies are fully
-  // implemented, do something like the following:
-  /*
-  Maybe<bool> maybe = JSReceiver::IsExtensible(
-      Handle<JSReceiver>::cast(target));
-  if (!maybe.IsJust()) return isolate->heap()->exception();
-  return *isolate->factory()->ToBoolean(maybe.FromJust());
-  */
+  Maybe<bool> result =
+      JSReceiver::IsExtensible(Handle<JSReceiver>::cast(target));
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return *isolate->factory()->ToBoolean(result.FromJust());
+}
 
-  if (target->IsJSObject()) {
-    return *isolate->factory()->ToBoolean(
-        JSObject::IsExtensible(Handle<JSObject>::cast(target)));
+
+// ES6 section 26.1.11 Reflect.ownKeys
+BUILTIN(ReflectOwnKeys) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  Handle<Object> target = args.at<Object>(1);
+
+  if (!target->IsJSReceiver()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
+                              isolate->factory()->NewStringFromAsciiChecked(
+                                  "Reflect.ownKeys")));
   }
-  return *isolate->factory()->false_value();
+
+  Handle<FixedArray> keys;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, keys,
+      JSReceiver::GetKeys(Handle<JSReceiver>::cast(target),
+                          JSReceiver::OWN_ONLY, INCLUDE_SYMBOLS,
+                          CONVERT_TO_STRING, IGNORE_ENUMERABILITY));
+  return *isolate->factory()->NewJSArrayWithElements(keys);
 }
 
 
@@ -1655,8 +1664,8 @@ BUILTIN(ReflectPreventExtensions) {
 
   Maybe<bool> result = JSReceiver::PreventExtensions(
       Handle<JSReceiver>::cast(target), Object::DONT_THROW);
-  return result.IsJust() ? *isolate->factory()->ToBoolean(result.FromJust())
-                         : isolate->heap()->exception();
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return *isolate->factory()->ToBoolean(result.FromJust());
 }
 
 
@@ -1879,6 +1888,34 @@ BUILTIN(HandleApiCallConstruct) {
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
                                      HandleApiCallHelper<true>(isolate, args));
   return *result;
+}
+
+
+Handle<Code> Builtins::CallFunction(ConvertReceiverMode mode) {
+  switch (mode) {
+    case ConvertReceiverMode::kNullOrUndefined:
+      return CallFunction_ReceiverIsNullOrUndefined();
+    case ConvertReceiverMode::kNotNullOrUndefined:
+      return CallFunction_ReceiverIsNotNullOrUndefined();
+    case ConvertReceiverMode::kAny:
+      return CallFunction_ReceiverIsAny();
+  }
+  UNREACHABLE();
+  return Handle<Code>::null();
+}
+
+
+Handle<Code> Builtins::Call(ConvertReceiverMode mode) {
+  switch (mode) {
+    case ConvertReceiverMode::kNullOrUndefined:
+      return Call_ReceiverIsNullOrUndefined();
+    case ConvertReceiverMode::kNotNullOrUndefined:
+      return Call_ReceiverIsNotNullOrUndefined();
+    case ConvertReceiverMode::kAny:
+      return Call_ReceiverIsAny();
+  }
+  UNREACHABLE();
+  return Handle<Code>::null();
 }
 
 
@@ -2267,7 +2304,8 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
   // separate code object for each one.
   for (int i = 0; i < builtin_count; i++) {
     if (create_heap_objects) {
-      MacroAssembler masm(isolate, u.buffer, sizeof u.buffer);
+      MacroAssembler masm(isolate, u.buffer, sizeof u.buffer,
+                          CodeObjectRequired::kYes);
       // Generate the code/adaptor.
       typedef void (*Generator)(MacroAssembler*, int, BuiltinExtraArguments);
       Generator g = FUNCTION_CAST<Generator>(functions[i].generator);

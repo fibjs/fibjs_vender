@@ -227,14 +227,14 @@ void VisitBinop(InstructionSelector* selector, Node* node,
   size_t input_count = 0;
   InstructionOperand outputs[2];
   size_t output_count = 0;
-  bool is_cmp = opcode == kArm64Cmp32;
+  bool is_cmp = (opcode == kArm64Cmp32) || (opcode == kArm64Cmn32);
 
   // We can commute cmp by switching the inputs and commuting the flags
   // continuation.
   bool can_commute = m.HasProperty(Operator::kCommutative) || is_cmp;
 
-  // The cmp instruction is encoded as sub with zero output register, and
-  // therefore supports the same operand modes.
+  // The cmp and cmn instructions are encoded as sub or add with zero output
+  // register, and therefore support the same operand modes.
   bool is_add_sub = m.IsInt32Add() || m.IsInt64Add() || m.IsInt32Sub() ||
                     m.IsInt64Sub() || is_cmp;
 
@@ -397,58 +397,80 @@ void InstructionSelector::VisitStore(Node* node) {
   Node* value = node->InputAt(2);
 
   StoreRepresentation store_rep = OpParameter<StoreRepresentation>(node);
+  WriteBarrierKind write_barrier_kind = store_rep.write_barrier_kind();
   MachineType rep = RepresentationOf(store_rep.machine_type());
-  if (store_rep.write_barrier_kind() == kFullWriteBarrier) {
-    DCHECK(rep == kRepTagged);
-    // TODO(dcarney): refactor RecordWrite function to take temp registers
-    //                and pass them here instead of using fixed regs
-    // TODO(dcarney): handle immediate indices.
-    InstructionOperand temps[] = {g.TempRegister(x11), g.TempRegister(x12)};
-    Emit(kArm64StoreWriteBarrier, g.NoOutput(), g.UseFixed(base, x10),
-         g.UseFixed(index, x11), g.UseFixed(value, x12), arraysize(temps),
-         temps);
-    return;
-  }
-  DCHECK_EQ(kNoWriteBarrier, store_rep.write_barrier_kind());
-  ArchOpcode opcode;
-  ImmediateMode immediate_mode = kNoImmediate;
-  switch (rep) {
-    case kRepFloat32:
-      opcode = kArm64StrS;
-      immediate_mode = kLoadStoreImm32;
-      break;
-    case kRepFloat64:
-      opcode = kArm64StrD;
-      immediate_mode = kLoadStoreImm64;
-      break;
-    case kRepBit:  // Fall through.
-    case kRepWord8:
-      opcode = kArm64Strb;
-      immediate_mode = kLoadStoreImm8;
-      break;
-    case kRepWord16:
-      opcode = kArm64Strh;
-      immediate_mode = kLoadStoreImm16;
-      break;
-    case kRepWord32:
-      opcode = kArm64StrW;
-      immediate_mode = kLoadStoreImm32;
-      break;
-    case kRepTagged:  // Fall through.
-    case kRepWord64:
-      opcode = kArm64Str;
-      immediate_mode = kLoadStoreImm64;
-      break;
-    default:
-      UNREACHABLE();
-      return;
-  }
-  if (g.CanBeImmediate(index, immediate_mode)) {
-    Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-         g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
+
+  // TODO(arm64): I guess this could be done in a better way.
+  if (write_barrier_kind != kNoWriteBarrier) {
+    DCHECK_EQ(kRepTagged, rep);
+    InstructionOperand inputs[3];
+    size_t input_count = 0;
+    inputs[input_count++] = g.UseUniqueRegister(base);
+    inputs[input_count++] = g.UseUniqueRegister(index);
+    inputs[input_count++] = (write_barrier_kind == kMapWriteBarrier)
+                                ? g.UseRegister(value)
+                                : g.UseUniqueRegister(value);
+    RecordWriteMode record_write_mode = RecordWriteMode::kValueIsAny;
+    switch (write_barrier_kind) {
+      case kNoWriteBarrier:
+        UNREACHABLE();
+        break;
+      case kMapWriteBarrier:
+        record_write_mode = RecordWriteMode::kValueIsMap;
+        break;
+      case kPointerWriteBarrier:
+        record_write_mode = RecordWriteMode::kValueIsPointer;
+        break;
+      case kFullWriteBarrier:
+        record_write_mode = RecordWriteMode::kValueIsAny;
+        break;
+    }
+    InstructionOperand temps[] = {g.TempRegister(), g.TempRegister()};
+    size_t const temp_count = arraysize(temps);
+    InstructionCode code = kArchStoreWithWriteBarrier;
+    code |= MiscField::encode(static_cast<int>(record_write_mode));
+    Emit(code, 0, nullptr, input_count, inputs, temp_count, temps);
   } else {
-    Emit(opcode | AddressingModeField::encode(kMode_MRR), g.NoOutput(),
-         g.UseRegister(base), g.UseRegister(index), g.UseRegister(value));
+    ArchOpcode opcode;
+    ImmediateMode immediate_mode = kNoImmediate;
+    switch (rep) {
+      case kRepFloat32:
+        opcode = kArm64StrS;
+        immediate_mode = kLoadStoreImm32;
+        break;
+      case kRepFloat64:
+        opcode = kArm64StrD;
+        immediate_mode = kLoadStoreImm64;
+        break;
+      case kRepBit:  // Fall through.
+      case kRepWord8:
+        opcode = kArm64Strb;
+        immediate_mode = kLoadStoreImm8;
+        break;
+      case kRepWord16:
+        opcode = kArm64Strh;
+        immediate_mode = kLoadStoreImm16;
+        break;
+      case kRepWord32:
+        opcode = kArm64StrW;
+        immediate_mode = kLoadStoreImm32;
+        break;
+      case kRepTagged:  // Fall through.
+      case kRepWord64:
+        opcode = kArm64Str;
+        immediate_mode = kLoadStoreImm64;
+        break;
+      default:
+        UNREACHABLE();
+        return;
+    }
+    if (g.CanBeImmediate(index, immediate_mode)) {
+      Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
+           g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
+    } else {
+      Emit(opcode | AddressingModeField::encode(kMode_MRR), g.NoOutput(),
+           g.UseRegister(base), g.UseRegister(index), g.UseRegister(value));
+    }
   }
 }
 
@@ -925,6 +947,12 @@ void InstructionSelector::VisitWord64Ror(Node* node) {
 }
 
 
+void InstructionSelector::VisitWord64Clz(Node* node) {
+  Arm64OperandGenerator g(this);
+  Emit(kArm64Clz, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
+}
+
+
 void InstructionSelector::VisitWord32Clz(Node* node) {
   Arm64OperandGenerator g(this);
   Emit(kArm64Clz32, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
@@ -934,7 +962,13 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
 
 
+void InstructionSelector::VisitWord64Ctz(Node* node) { UNREACHABLE(); }
+
+
 void InstructionSelector::VisitWord32Popcnt(Node* node) { UNREACHABLE(); }
+
+
+void InstructionSelector::VisitWord64Popcnt(Node* node) { UNREACHABLE(); }
 
 
 void InstructionSelector::VisitInt32Add(Node* node) {
@@ -1207,6 +1241,21 @@ void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
 }
 
 
+void InstructionSelector::VisitTruncateFloat32ToInt64(Node* node) {
+  VisitRR(this, kArm64Float32ToInt64, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat64ToInt64(Node* node) {
+  VisitRR(this, kArm64Float64ToInt64, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat64ToUint64(Node* node) {
+  VisitRR(this, kArm64Float64ToUint64, node);
+}
+
+
 void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
   VisitRR(this, kArm64Sxtw, node);
 }
@@ -1286,8 +1335,23 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundInt64ToFloat32(Node* node) {
+  VisitRR(this, kArm64Int64ToFloat32, node);
+}
+
+
 void InstructionSelector::VisitRoundInt64ToFloat64(Node* node) {
   VisitRR(this, kArm64Int64ToFloat64, node);
+}
+
+
+void InstructionSelector::VisitRoundUint64ToFloat32(Node* node) {
+  VisitRR(this, kArm64Uint64ToFloat32, node);
+}
+
+
+void InstructionSelector::VisitRoundUint64ToFloat64(Node* node) {
+  VisitRR(this, kArm64Uint64ToFloat64, node);
 }
 
 
@@ -1418,8 +1482,28 @@ void InstructionSelector::VisitFloat64Sqrt(Node* node) {
 }
 
 
+void InstructionSelector::VisitFloat32RoundDown(Node* node) {
+  VisitRR(this, kArm64Float32RoundDown, node);
+}
+
+
 void InstructionSelector::VisitFloat64RoundDown(Node* node) {
   VisitRR(this, kArm64Float64RoundDown, node);
+}
+
+
+void InstructionSelector::VisitFloat32RoundUp(Node* node) {
+  VisitRR(this, kArm64Float32RoundUp, node);
+}
+
+
+void InstructionSelector::VisitFloat64RoundUp(Node* node) {
+  VisitRR(this, kArm64Float64RoundUp, node);
+}
+
+
+void InstructionSelector::VisitFloat32RoundTruncate(Node* node) {
+  VisitRR(this, kArm64Float32RoundTruncate, node);
 }
 
 
@@ -1430,6 +1514,16 @@ void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
 
 void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
   VisitRR(this, kArm64Float64RoundTiesAway, node);
+}
+
+
+void InstructionSelector::VisitFloat32RoundTiesEven(Node* node) {
+  VisitRR(this, kArm64Float32RoundTiesEven, node);
+}
+
+
+void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
+  VisitRR(this, kArm64Float64RoundTiesEven, node);
 }
 
 
@@ -1447,7 +1541,8 @@ void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
   if (aligned_push_count > 0) {
     // TODO(dcarney): it would be better to bump the csp here only
     //                and emit paired stores with increment for non c frames.
-    Emit(kArm64Claim, g.NoOutput(), g.TempImmediate(aligned_push_count));
+    Emit(kArm64ClaimForCallArguments, g.NoOutput(),
+         g.TempImmediate(aligned_push_count));
   }
   // Move arguments to the stack.
   {
@@ -1514,8 +1609,29 @@ void VisitWordCompare(InstructionSelector* selector, Node* node,
 
 void VisitWord32Compare(InstructionSelector* selector, Node* node,
                         FlagsContinuation* cont) {
-  VisitBinop<Int32BinopMatcher>(selector, node, kArm64Cmp32, kArithmeticImm,
-                                cont);
+  Int32BinopMatcher m(node);
+  ArchOpcode opcode = kArm64Cmp32;
+
+  // Select negated compare for comparisons with negated right input.
+  if (m.right().IsInt32Sub()) {
+    Node* sub = m.right().node();
+    Int32BinopMatcher msub(sub);
+    if (msub.left().Is(0)) {
+      bool can_cover = selector->CanCover(node, sub);
+      node->ReplaceInput(1, msub.right().node());
+      // Even if the comparison node covers the subtraction, after the input
+      // replacement above, the node still won't cover the input to the
+      // subtraction; the subtraction still uses it.
+      // In order to get shifted operations to work, we must remove the rhs
+      // input to the subtraction, as TryMatchAnyShift requires this node to
+      // cover the input shift. We do this by setting it to the lhs input,
+      // as we know it's zero, and the result of the subtraction isn't used by
+      // any other node.
+      if (can_cover) sub->ReplaceInput(1, msub.left().node());
+      opcode = kArm64Cmn32;
+    }
+  }
+  VisitBinop<Int32BinopMatcher>(selector, node, opcode, kArithmeticImm, cont);
 }
 
 
@@ -1977,11 +2093,17 @@ MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
   return MachineOperatorBuilder::kFloat32Max |
          MachineOperatorBuilder::kFloat32Min |
+         MachineOperatorBuilder::kFloat32RoundDown |
          MachineOperatorBuilder::kFloat64Max |
          MachineOperatorBuilder::kFloat64Min |
          MachineOperatorBuilder::kFloat64RoundDown |
+         MachineOperatorBuilder::kFloat32RoundUp |
+         MachineOperatorBuilder::kFloat64RoundUp |
+         MachineOperatorBuilder::kFloat32RoundTruncate |
          MachineOperatorBuilder::kFloat64RoundTruncate |
          MachineOperatorBuilder::kFloat64RoundTiesAway |
+         MachineOperatorBuilder::kFloat32RoundTiesEven |
+         MachineOperatorBuilder::kFloat64RoundTiesEven |
          MachineOperatorBuilder::kWord32ShiftIsSafe |
          MachineOperatorBuilder::kInt32DivIsSafe |
          MachineOperatorBuilder::kUint32DivIsSafe;

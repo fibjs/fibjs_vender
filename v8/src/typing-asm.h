@@ -6,7 +6,7 @@
 #define V8_TYPING_ASM_H_
 
 #include "src/allocation.h"
-#include "src/ast.h"
+#include "src/ast/ast.h"
 #include "src/effects.h"
 #include "src/type-info.h"
 #include "src/types.h"
@@ -65,13 +65,14 @@ class AsmTyper : public AstVisitor {
   void VisitDeclarations(ZoneList<Declaration*>* d) override;
   void VisitStatements(ZoneList<Statement*>* s) override;
 
-  void VisitExpressionAnnotation(Expression* e);
+  void VisitExpressionAnnotation(Expression* e, bool is_return);
   void VisitFunctionAnnotation(FunctionLiteral* f);
   void VisitAsmModule(FunctionLiteral* f);
 
   void VisitHeapAccess(Property* expr);
 
   int ElementShiftSize(Type* type);
+  Type* StorageType(Type* type);
 
   void SetType(Variable* variable, Type* type);
   Type* GetType(Variable* variable);
@@ -83,6 +84,8 @@ class AsmTyper : public AstVisitor {
 
   void VisitWithExpectation(Expression* expr, Type* expected_type,
                             const char* msg);
+
+  void VisitLiteral(Literal* expr, bool is_return);
 
   void VisitIntegerBitwiseOperator(BinaryOperation* expr, Type* left_expected,
                                    Type* right_expected, Type* result_type,

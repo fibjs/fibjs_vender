@@ -2663,10 +2663,10 @@ class V8_EXPORT Object : public Value {
   // will only be returned if the interceptor doesn't return a value.
   //
   // Note also that this only works for named properties.
-  V8_DEPRECATE_SOON("Use CreateDataProperty",
+  V8_DEPRECATE_SOON("Use CreateDataProperty / DefineOwnProperty",
                     bool ForceSet(Local<Value> key, Local<Value> value,
                                   PropertyAttribute attribs = None));
-  V8_DEPRECATE_SOON("Use CreateDataProperty",
+  V8_DEPRECATE_SOON("Use CreateDataProperty / DefineOwnProperty",
                     Maybe<bool> ForceSet(Local<Context> context,
                                          Local<Value> key, Local<Value> value,
                                          PropertyAttribute attribs = None));
@@ -2919,12 +2919,12 @@ class V8_EXPORT Object : public Value {
    */
   int GetIdentityHash();
 
-  V8_DEPRECATE_SOON("Use v8::Object::SetPrivate instead.",
-                    bool SetHiddenValue(Local<String> key, Local<Value> value));
-  V8_DEPRECATE_SOON("Use v8::Object::GetHidden instead.",
-                    Local<Value> GetHiddenValue(Local<String> key));
-  V8_DEPRECATE_SOON("Use v8::Object::DeletePrivate instead.",
-                    bool DeleteHiddenValue(Local<String> key));
+  V8_DEPRECATED("Use v8::Object::SetPrivate instead.",
+                bool SetHiddenValue(Local<String> key, Local<Value> value));
+  V8_DEPRECATED("Use v8::Object::GetPrivate instead.",
+                Local<Value> GetHiddenValue(Local<String> key));
+  V8_DEPRECATED("Use v8::Object::DeletePrivate instead.",
+                bool DeleteHiddenValue(Local<String> key));
 
   /**
    * Clone this object with a fast but shallow copy.  Values will point
@@ -3042,15 +3042,6 @@ class V8_EXPORT Map : public Object {
    */
   static Local<Map> New(Isolate* isolate);
 
-  /**
-   * Creates a new Map containing the elements of array, which must be formatted
-   * in the same manner as the array returned from AsArray().
-   * Guaranteed to be side-effect free if the array contains no holes.
-   */
-  static V8_WARN_UNUSED_RESULT V8_DEPRECATED(
-      "Use mutation methods instead",
-      MaybeLocal<Map> FromArray(Local<Context> context, Local<Array> array));
-
   V8_INLINE static Map* Cast(Value* obj);
 
  private:
@@ -3082,14 +3073,6 @@ class V8_EXPORT Set : public Object {
    * Creates a new empty Set.
    */
   static Local<Set> New(Isolate* isolate);
-
-  /**
-   * Creates a new Set containing the items in array.
-   * Guaranteed to be side-effect free if the array contains no holes.
-   */
-  static V8_WARN_UNUSED_RESULT V8_DEPRECATED(
-      "Use mutation methods instead",
-      MaybeLocal<Set> FromArray(Local<Context> context, Local<Array> array));
 
   V8_INLINE static Set* Cast(Value* obj);
 
@@ -3267,6 +3250,12 @@ class V8_EXPORT Function : public Object {
    * to object properties.
    */
   Local<Value> GetInferredName() const;
+
+  /**
+   * displayName if it is set, otherwise name if it is configured, otherwise
+   * function name, otherwise inferred name.
+   */
+  Local<Value> GetDebugName() const;
 
   /**
    * User-defined name assigned to the "displayName" property of this function.
@@ -4084,13 +4073,6 @@ class V8_EXPORT Template : public Data {
      PropertyAttribute attribute = None,
      AccessControl settings = DEFAULT);
 
-#ifdef V8_JS_ACCESSORS
-  void SetAccessorProperty(Local<Name> name,
-                           Local<Function> getter = Local<Function>(),
-                           Local<Function> setter = Local<Function>(),
-                           PropertyAttribute attribute = None);
-#endif  // V8_JS_ACCESSORS
-
   /**
    * Whenever the property with the given name is accessed on objects
    * created from this Template the getter and setter callbacks
@@ -4429,6 +4411,15 @@ class V8_EXPORT FunctionTemplate : public Template {
       Local<Value> data = Local<Value>(),
       Local<Signature> signature = Local<Signature>(), int length = 0);
 
+  /**
+   * Creates a function template with a fast handler. If a fast handler is set,
+   * the callback cannot be null.
+   */
+  static Local<FunctionTemplate> NewWithFastHandler(
+      Isolate* isolate, FunctionCallback callback, Local<Value> fast_handler,
+      Local<Value> data = Local<Value>(),
+      Local<Signature> signature = Local<Signature>(), int length = 0);
+
   /** Returns the unique function instance in the current execution context.*/
   V8_DEPRECATE_SOON("Use maybe version", Local<Function> GetFunction());
   V8_WARN_UNUSED_RESULT MaybeLocal<Function> GetFunction(
@@ -4440,7 +4431,8 @@ class V8_EXPORT FunctionTemplate : public Template {
    * FunctionTemplate is called.
    */
   void SetCallHandler(FunctionCallback callback,
-                      Local<Value> data = Local<Value>());
+                      Local<Value> data = Local<Value>(),
+                      Local<Value> fast_handler = Local<Value>());
 
   /** Set the predefined length property for the FunctionTemplate. */
   void SetLength(int length);
@@ -4939,7 +4931,10 @@ class V8_EXPORT Exception {
    * Will try to reconstruct the original stack trace from the exception value,
    * or capture the current stack trace if not available.
    */
-  static Local<Message> CreateMessage(Local<Value> exception);
+  static Local<Message> CreateMessage(Isolate* isolate, Local<Value> exception);
+  V8_DEPRECATE_SOON(
+      "Use version with an Isolate*",
+      static Local<Message> CreateMessage(Local<Value> exception));
 
   /**
    * Returns the original stack trace that was captured at the creation time
@@ -5004,8 +4999,10 @@ class PromiseRejectMessage {
   V8_INLINE PromiseRejectEvent GetEvent() const { return event_; }
   V8_INLINE Local<Value> GetValue() const { return value_; }
 
-  // DEPRECATED. Use v8::Exception::CreateMessage(GetValue())->GetStackTrace()
-  V8_INLINE Local<StackTrace> GetStackTrace() const { return stack_trace_; }
+  V8_DEPRECATED("Use v8::Exception::CreateMessage(GetValue())->GetStackTrace()",
+                V8_INLINE Local<StackTrace> GetStackTrace() const) {
+    return stack_trace_;
+  }
 
  private:
   Local<Promise> promise_;
@@ -6316,7 +6313,7 @@ class V8_EXPORT V8 {
    * guarantee that visited objects are still alive.
    */
   V8_INLINE static V8_DEPRECATE_SOON(
-      "Use isoalte version",
+      "Use isolate version",
       void VisitExternalResources(ExternalResourceVisitor* visitor));
 
   /**

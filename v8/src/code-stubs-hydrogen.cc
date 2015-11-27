@@ -250,7 +250,7 @@ Handle<Code> HydrogenCodeStub::GenerateLightweightMissCode(
   Factory* factory = isolate()->factory();
 
   // Generate the new code.
-  MacroAssembler masm(isolate(), NULL, 256);
+  MacroAssembler masm(isolate(), NULL, 256, CodeObjectRequired::kYes);
 
   {
     // Update the static counter each time a new code stub is generated.
@@ -433,18 +433,79 @@ Handle<Code> TypeofStub::GenerateCode() { return DoGenerateCode(this); }
 
 
 template <>
-HValue* CodeStubGraphBuilder<FastCloneShallowArrayStub>::BuildCodeStub() {
-  Factory* factory = isolate()->factory();
-  HValue* undefined = graph()->GetConstantUndefined();
-  AllocationSiteMode alloc_site_mode = casted_stub()->allocation_site_mode();
+HValue* CodeStubGraphBuilder<FastCloneRegExpStub>::BuildCodeStub() {
+  HValue* closure = GetParameter(0);
+  HValue* literal_index = GetParameter(1);
 
   // This stub is very performance sensitive, the generated code must be tuned
   // so that it doesn't build and eager frame.
   info()->MarkMustNotHaveEagerFrame();
 
+  HValue* literals_array = Add<HLoadNamedField>(
+      closure, nullptr, HObjectAccess::ForLiteralsPointer());
+  HInstruction* boilerplate = Add<HLoadKeyed>(
+      literals_array, literal_index, nullptr, FAST_ELEMENTS, NEVER_RETURN_HOLE,
+      LiteralsArray::kOffsetToFirstLiteral - kHeapObjectTag);
+
+  IfBuilder if_notundefined(this);
+  if_notundefined.IfNot<HCompareObjectEqAndBranch>(
+      boilerplate, graph()->GetConstantUndefined());
+  if_notundefined.Then();
+  {
+    int result_size =
+        JSRegExp::kSize + JSRegExp::kInObjectFieldCount * kPointerSize;
+    HValue* result =
+        Add<HAllocate>(Add<HConstant>(result_size), HType::JSObject(),
+                       NOT_TENURED, JS_REGEXP_TYPE);
+    Add<HStoreNamedField>(
+        result, HObjectAccess::ForMap(),
+        Add<HLoadNamedField>(boilerplate, nullptr, HObjectAccess::ForMap()));
+    Add<HStoreNamedField>(
+        result, HObjectAccess::ForPropertiesPointer(),
+        Add<HLoadNamedField>(boilerplate, nullptr,
+                             HObjectAccess::ForPropertiesPointer()));
+    Add<HStoreNamedField>(
+        result, HObjectAccess::ForElementsPointer(),
+        Add<HLoadNamedField>(boilerplate, nullptr,
+                             HObjectAccess::ForElementsPointer()));
+    for (int offset = JSObject::kHeaderSize; offset < result_size;
+         offset += kPointerSize) {
+      HObjectAccess access = HObjectAccess::ForObservableJSObjectOffset(offset);
+      Add<HStoreNamedField>(result, access,
+                            Add<HLoadNamedField>(boilerplate, nullptr, access));
+    }
+    Push(result);
+  }
+  if_notundefined.ElseDeopt(Deoptimizer::kUninitializedBoilerplateInFastClone);
+  if_notundefined.End();
+
+  return Pop();
+}
+
+
+Handle<Code> FastCloneRegExpStub::GenerateCode() {
+  return DoGenerateCode(this);
+}
+
+
+template <>
+HValue* CodeStubGraphBuilder<FastCloneShallowArrayStub>::BuildCodeStub() {
+  Factory* factory = isolate()->factory();
+  HValue* undefined = graph()->GetConstantUndefined();
+  AllocationSiteMode alloc_site_mode = casted_stub()->allocation_site_mode();
+  HValue* closure = GetParameter(0);
+  HValue* literal_index = GetParameter(1);
+
+  // This stub is very performance sensitive, the generated code must be tuned
+  // so that it doesn't build and eager frame.
+  info()->MarkMustNotHaveEagerFrame();
+
+  HValue* literals_array = Add<HLoadNamedField>(
+      closure, nullptr, HObjectAccess::ForLiteralsPointer());
+
   HInstruction* allocation_site = Add<HLoadKeyed>(
-      GetParameter(0), GetParameter(1), nullptr, FAST_ELEMENTS,
-      NEVER_RETURN_HOLE, LiteralsArray::kOffsetToFirstLiteral - kHeapObjectTag);
+      literals_array, literal_index, nullptr, FAST_ELEMENTS, NEVER_RETURN_HOLE,
+      LiteralsArray::kOffsetToFirstLiteral - kHeapObjectTag);
   IfBuilder checker(this);
   checker.IfNot<HCompareObjectEqAndBranch, HValue*>(allocation_site,
                                                     undefined);
@@ -504,10 +565,15 @@ Handle<Code> FastCloneShallowArrayStub::GenerateCode() {
 template <>
 HValue* CodeStubGraphBuilder<FastCloneShallowObjectStub>::BuildCodeStub() {
   HValue* undefined = graph()->GetConstantUndefined();
+  HValue* closure = GetParameter(0);
+  HValue* literal_index = GetParameter(1);
+
+  HValue* literals_array = Add<HLoadNamedField>(
+      closure, nullptr, HObjectAccess::ForLiteralsPointer());
 
   HInstruction* allocation_site = Add<HLoadKeyed>(
-      GetParameter(0), GetParameter(1), nullptr, FAST_ELEMENTS,
-      NEVER_RETURN_HOLE, LiteralsArray::kOffsetToFirstLiteral - kHeapObjectTag);
+      literals_array, literal_index, nullptr, FAST_ELEMENTS, NEVER_RETURN_HOLE,
+      LiteralsArray::kOffsetToFirstLiteral - kHeapObjectTag);
 
   IfBuilder checker(this);
   checker.IfNot<HCompareObjectEqAndBranch, HValue*>(allocation_site,

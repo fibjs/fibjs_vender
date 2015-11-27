@@ -137,6 +137,14 @@ void BytecodeArrayBuilder::Output(Bytecode bytecode, uint32_t(&operands)[N]) {
 
 
 void BytecodeArrayBuilder::Output(Bytecode bytecode, uint32_t operand0,
+                                  uint32_t operand1, uint32_t operand2,
+                                  uint32_t operand3) {
+  uint32_t operands[] = {operand0, operand1, operand2, operand3};
+  Output(bytecode, operands);
+}
+
+
+void BytecodeArrayBuilder::Output(Bytecode bytecode, uint32_t operand0,
                                   uint32_t operand1, uint32_t operand2) {
   uint32_t operands[] = {operand0, operand1, operand2};
   Output(bytecode, operands);
@@ -271,9 +279,9 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadFalse() {
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadAccumulatorWithRegister(
     Register reg) {
-  // TODO(oth): Avoid loading the accumulator with the register if the
-  // previous bytecode stored the accumulator with the same register.
-  Output(Bytecode::kLdar, reg.ToOperand());
+  if (!IsRegisterInAccumulator(reg)) {
+    Output(Bytecode::kLdar, reg.ToOperand());
+  }
   return *this;
 }
 
@@ -282,7 +290,22 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreAccumulatorInRegister(
     Register reg) {
   // TODO(oth): Avoid storing the accumulator in the register if the
   // previous bytecode loaded the accumulator with the same register.
+  //
+  // TODO(oth): If the previous bytecode is a MOV into this register,
+  // the previous instruction can be removed. The logic for determining
+  // these redundant MOVs appears complex.
   Output(Bytecode::kStar, reg.ToOperand());
+  if (!IsRegisterInAccumulator(reg)) {
+    Output(Bytecode::kStar, reg.ToOperand());
+  }
+  return *this;
+}
+
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::MoveRegister(Register from,
+                                                         Register to) {
+  DCHECK(from != to);
+  Output(Bytecode::kMov, from.ToOperand(), to.ToOperand());
   return *this;
 }
 
@@ -421,9 +444,18 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreKeyedProperty(
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CreateClosure(
-    PretenureFlag tenured) {
+    Handle<SharedFunctionInfo> shared_info, PretenureFlag tenured) {
+  size_t entry = GetConstantPoolEntry(shared_info);
   DCHECK(FitsInImm8Operand(tenured));
-  Output(Bytecode::kCreateClosure, static_cast<uint8_t>(tenured));
+  if (FitsInIdx8Operand(entry)) {
+    Output(Bytecode::kCreateClosure, static_cast<uint8_t>(entry),
+           static_cast<uint8_t>(tenured));
+  } else if (FitsInIdx16Operand(entry)) {
+    Output(Bytecode::kCreateClosureWide, static_cast<uint16_t>(entry),
+           static_cast<uint8_t>(tenured));
+  } else {
+    UNIMPLEMENTED();
+  }
   return *this;
 }
 
@@ -440,10 +472,11 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CreateArguments(
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CreateRegExpLiteral(
-    int literal_index, Register flags) {
+    int literal_index, int flags) {
+  DCHECK(FitsInImm8Operand(flags));  // Flags should fit in 8 bits.
   if (FitsInIdx8Operand(literal_index)) {
     Output(Bytecode::kCreateRegExpLiteral, static_cast<uint8_t>(literal_index),
-           flags.ToOperand());
+           static_cast<uint8_t>(flags));
   } else {
     UNIMPLEMENTED();
   }
@@ -453,7 +486,7 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CreateRegExpLiteral(
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CreateArrayLiteral(
     int literal_index, int flags) {
-  DCHECK(FitsInImm8Operand(flags));  // Flags should fit in 8 bytes.
+  DCHECK(FitsInImm8Operand(flags));  // Flags should fit in 8 bits.
   if (FitsInIdx8Operand(literal_index)) {
     Output(Bytecode::kCreateArrayLiteral, static_cast<uint8_t>(literal_index),
            static_cast<uint8_t>(flags));
@@ -466,7 +499,7 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CreateArrayLiteral(
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CreateObjectLiteral(
     int literal_index, int flags) {
-  DCHECK(FitsInImm8Operand(flags));  // Flags should fit in 8 bytes.
+  DCHECK(FitsInImm8Operand(flags));  // Flags should fit in 8 bits.
   if (FitsInIdx8Operand(literal_index)) {
     Output(Bytecode::kCreateObjectLiteral, static_cast<uint8_t>(literal_index),
            static_cast<uint8_t>(flags));
@@ -768,10 +801,17 @@ void BytecodeArrayBuilder::EnsureReturn() {
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::Call(Register callable,
                                                  Register receiver,
-                                                 size_t arg_count) {
-  if (FitsInIdx8Operand(arg_count)) {
+                                                 size_t arg_count,
+                                                 int feedback_slot) {
+  if (FitsInIdx8Operand(arg_count) && FitsInIdx8Operand(feedback_slot)) {
     Output(Bytecode::kCall, callable.ToOperand(), receiver.ToOperand(),
-           static_cast<uint8_t>(arg_count));
+           static_cast<uint8_t>(arg_count),
+           static_cast<uint8_t>(feedback_slot));
+  } else if (FitsInIdx16Operand(arg_count) &&
+             FitsInIdx16Operand(feedback_slot)) {
+    Output(Bytecode::kCallWide, callable.ToOperand(), receiver.ToOperand(),
+           static_cast<uint16_t>(arg_count),
+           static_cast<uint16_t>(feedback_slot));
   } else {
     UNIMPLEMENTED();
   }
@@ -923,6 +963,7 @@ bool BytecodeArrayBuilder::OperandIsValid(Bytecode bytecode, int operand_index,
   switch (operand_type) {
     case OperandType::kNone:
       return false;
+    case OperandType::kCount16:
     case OperandType::kIdx16:
       return static_cast<uint16_t>(operand_value) == operand_value;
     case OperandType::kCount8:
@@ -936,7 +977,8 @@ bool BytecodeArrayBuilder::OperandIsValid(Bytecode bytecode, int operand_index,
     // Fall-through to kReg8 case.
     case OperandType::kReg8: {
       Register reg = Register::FromOperand(static_cast<uint8_t>(operand_value));
-      if (reg.is_function_context() || reg.is_function_closure()) {
+      if (reg.is_function_context() || reg.is_function_closure() ||
+          reg.is_new_target()) {
         return true;
       } else if (reg.is_parameter()) {
         int parameter_index = reg.ToParameterIndex(parameter_count_);
@@ -952,9 +994,26 @@ bool BytecodeArrayBuilder::OperandIsValid(Bytecode bytecode, int operand_index,
   return false;
 }
 
+
 bool BytecodeArrayBuilder::LastBytecodeInSameBlock() const {
   return last_bytecode_start_ < bytecodes()->size() &&
          last_bytecode_start_ >= last_block_end_;
+}
+
+
+bool BytecodeArrayBuilder::IsRegisterInAccumulator(Register reg) {
+  if (!LastBytecodeInSameBlock()) return false;
+  Bytecode previous_bytecode =
+      Bytecodes::FromByte(bytecodes()->at(last_bytecode_start_));
+  if (previous_bytecode == Bytecode::kLdar ||
+      previous_bytecode == Bytecode::kStar) {
+    size_t operand_offset = last_bytecode_start_ +
+                            Bytecodes::GetOperandOffset(previous_bytecode, 0);
+    if (reg == Register::FromOperand(bytecodes()->at(operand_offset))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 

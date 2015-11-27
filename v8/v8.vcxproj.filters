@@ -10,6 +10,9 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{ba03e055-4fa2-fce3-8a1c-d348547d379c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\ast">
+      <UniqueIdentifier>{99089531-8444-8631-8c0b-ba54a721a684}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\base">
       <UniqueIdentifier>{68529cf3-5a67-0bb1-84a4-c91e13c58f94}</UniqueIdentifier>
     </Filter>
@@ -118,6 +121,9 @@
     <Filter Include="Source Files\libplatform">
       <UniqueIdentifier>{d55c839e-d9e9-0541-edc0-1b7cf01a3405}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\parsing">
+      <UniqueIdentifier>{9ed8203f-a302-00ef-2289-9b0854c4f2cd}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\ppc">
       <UniqueIdentifier>{b1b3c0c3-7b01-ce70-48fd-66ced6e79f09}</UniqueIdentifier>
     </Filter>
@@ -216,20 +222,35 @@
     <ClInclude Include="src\assert-scope.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast-expression-visitor.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\ast\ast-expression-visitor.h">
+      <Filter>Source Files\ast</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast-literal-reindexer.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\ast\ast-literal-reindexer.h">
+      <Filter>Source Files\ast</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast-numbering.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\ast\ast-numbering.h">
+      <Filter>Source Files\ast</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast-value-factory.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\ast\ast-value-factory.h">
+      <Filter>Source Files\ast</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\ast\ast.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\modules.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\prettyprinter.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\scopeinfo.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\scopes.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\variables.h">
+      <Filter>Source Files\ast</Filter>
     </ClInclude>
     <ClInclude Include="src\atomic-utils.h">
       <Filter>Source Files</Filter>
@@ -523,6 +544,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-builtin-reducer.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\js-call-reducer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-context-relaxation.h">
@@ -900,9 +924,6 @@
     <ClInclude Include="src\execution.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\expression-classifier.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\extensions\externalize-string-extension.h">
       <Filter>Source Files\extensions</Filter>
     </ClInclude>
@@ -947,9 +968,6 @@
     </ClInclude>
     <ClInclude Include="src\full-codegen\full-codegen.h">
       <Filter>Source Files\full-codegen</Filter>
-    </ClInclude>
-    <ClInclude Include="src\func-name-inferrer.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\futex-emulation.h">
       <Filter>Source Files</Filter>
@@ -1119,9 +1137,6 @@
     <ClInclude Include="src\isolate.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\json-parser.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\json-stringifier.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1149,6 +1164,12 @@
     <ClInclude Include="src\list.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\locked-queue-inl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\locked-queue.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\log-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1167,10 +1188,13 @@
     <ClInclude Include="src\messages.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\modules.h">
+    <ClInclude Include="src\msan.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\msan.h">
+    <ClInclude Include="src\objects-body-descriptors-inl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects-body-descriptors.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\objects-inl.h">
@@ -1185,11 +1209,41 @@
     <ClInclude Include="src\ostreams.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\parameter-initializer-rewriter.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\parsing\expression-classifier.h">
+      <Filter>Source Files\parsing</Filter>
     </ClInclude>
-    <ClInclude Include="src\parser.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\parsing\func-name-inferrer.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\json-parser.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\parameter-initializer-rewriter.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\parser.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\preparse-data-format.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\preparse-data.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\preparser.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\rewriter.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\scanner-character-streams.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\scanner.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\token.h">
+      <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\pending-compilation-error-handler.h">
       <Filter>Source Files</Filter>
@@ -1217,18 +1271,6 @@
     </ClInclude>
     <ClInclude Include="src\ppc\simulator-ppc.h">
       <Filter>Source Files\ppc</Filter>
-    </ClInclude>
-    <ClInclude Include="src\preparse-data-format.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\preparse-data.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\preparser.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\prettyprinter.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\profiler\allocation-tracker.h">
       <Filter>Source Files\profiler</Filter>
@@ -1326,9 +1368,6 @@
     <ClInclude Include="src\register-configuration.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rewriter.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\runtime-profiler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1339,18 +1378,6 @@
       <Filter>Source Files\runtime</Filter>
     </ClInclude>
     <ClInclude Include="src\safepoint-table.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\scanner-character-streams.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\scanner.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\scopeinfo.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\scopes.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\signature.h">
@@ -1400,9 +1427,6 @@
     </ClInclude>
     <ClInclude Include="src\third_party\valgrind\valgrind.h">
       <Filter>Source Files\third_party\valgrind</Filter>
-    </ClInclude>
-    <ClInclude Include="src\token.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\transitions-inl.h">
       <Filter>Source Files</Filter>
@@ -1459,9 +1483,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\v8threads.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\variables.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\vector.h">
@@ -1556,20 +1577,35 @@
     <ClCompile Include="src\assert-scope.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast-expression-visitor.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\ast\ast-expression-visitor.cc">
+      <Filter>Source Files\ast</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast-literal-reindexer.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\ast\ast-literal-reindexer.cc">
+      <Filter>Source Files\ast</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast-numbering.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\ast\ast-numbering.cc">
+      <Filter>Source Files\ast</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast-value-factory.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\ast\ast-value-factory.cc">
+      <Filter>Source Files\ast</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\ast\ast.cc">
+      <Filter>Source Files\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\modules.cc">
+      <Filter>Source Files\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\prettyprinter.cc">
+      <Filter>Source Files\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\scopeinfo.cc">
+      <Filter>Source Files\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\scopes.cc">
+      <Filter>Source Files\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\variables.cc">
+      <Filter>Source Files\ast</Filter>
     </ClCompile>
     <ClCompile Include="src\background-parsing-task.cc">
       <Filter>Source Files</Filter>
@@ -1802,6 +1838,9 @@
     <ClCompile Include="src\compiler\js-builtin-reducer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\js-call-reducer.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\js-context-relaxation.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -1917,6 +1956,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\register-allocator.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\representation-change.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\schedule.cc">
@@ -2204,9 +2246,6 @@
     <ClCompile Include="src\full-codegen\x87\full-codegen-x87.cc">
       <Filter>Source Files\full-codegen\x87</Filter>
     </ClCompile>
-    <ClCompile Include="src\func-name-inferrer.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\futex-emulation.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2450,9 +2489,6 @@
     <ClCompile Include="src\messages.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\modules.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\objects-debug.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2468,14 +2504,35 @@
     <ClCompile Include="src\ostreams.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\parameter-initializer-rewriter.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\parsing\func-name-inferrer.cc">
+      <Filter>Source Files\parsing</Filter>
     </ClCompile>
-    <ClCompile Include="src\parser.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\parsing\parameter-initializer-rewriter.cc">
+      <Filter>Source Files\parsing</Filter>
     </ClCompile>
-    <ClCompile Include="src\pattern-rewriter.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\parsing\parser.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\pattern-rewriter.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\preparse-data.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\preparser.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\rewriter.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\scanner-character-streams.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\scanner.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\token.cc">
+      <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="src\pending-compilation-error-handler.cc">
       <Filter>Source Files</Filter>
@@ -2515,15 +2572,6 @@
     </ClCompile>
     <ClCompile Include="src\ppc\simulator-ppc.cc">
       <Filter>Source Files\ppc</Filter>
-    </ClCompile>
-    <ClCompile Include="src\preparse-data.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\preparser.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\prettyprinter.cc">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\profiler\allocation-tracker.cc">
       <Filter>Source Files\profiler</Filter>
@@ -2583,9 +2631,6 @@
       <Filter>Source Files\regexp\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\register-configuration.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rewriter.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime-profiler.cc">
@@ -2690,18 +2735,6 @@
     <ClCompile Include="src\safepoint-table.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\scanner-character-streams.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\scanner.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\scopeinfo.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\scopes.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\snapshot\natives-common.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
@@ -2731,9 +2764,6 @@
     </ClCompile>
     <ClCompile Include="src\third_party\fdlibm\fdlibm.cc">
       <Filter>Source Files\third_party\fdlibm</Filter>
-    </ClCompile>
-    <ClCompile Include="src\token.cc">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\transitions.cc">
       <Filter>Source Files</Filter>
@@ -2769,9 +2799,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\v8threads.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\variables.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\version.cc">

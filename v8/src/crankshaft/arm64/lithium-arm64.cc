@@ -86,13 +86,6 @@ void LCallWithDescriptor::PrintDataTo(StringStream* stream) {
 }
 
 
-void LCallNew::PrintDataTo(StringStream* stream) {
-  stream->Add("= ");
-  constructor()->PrintTo(stream);
-  stream->Add(" #%d / ", arity());
-}
-
-
 void LCallNewArray::PrintDataTo(StringStream* stream) {
   stream->Add("= ");
   constructor()->PrintTo(stream);
@@ -1080,15 +1073,6 @@ LInstruction* LChunkBuilder::DoCallFunction(HCallFunction* instr) {
 }
 
 
-LInstruction* LChunkBuilder::DoCallNew(HCallNew* instr) {
-  LOperand* context = UseFixed(instr->context(), cp);
-  // The call to CallConstructStub will expect the constructor to be in x1.
-  LOperand* constructor = UseFixed(instr->constructor(), x1);
-  LCallNew* result = new(zone()) LCallNew(context, constructor);
-  return MarkAsCall(DefineFixed(result, x0), instr);
-}
-
-
 LInstruction* LChunkBuilder::DoCallNewArray(HCallNewArray* instr) {
   LOperand* context = UseFixed(instr->context(), cp);
   // The call to ArrayConstructCode will expect the constructor to be in x1.
@@ -2041,13 +2025,6 @@ LInstruction* LChunkBuilder::DoPushArguments(HPushArguments* instr) {
   }
 
   return push_args;
-}
-
-
-LInstruction* LChunkBuilder::DoRegExpLiteral(HRegExpLiteral* instr) {
-  LOperand* context = UseFixed(instr->context(), cp);
-  return MarkAsCall(
-      DefineFixed(new(zone()) LRegExpLiteral(context), x0), instr);
 }
 
 

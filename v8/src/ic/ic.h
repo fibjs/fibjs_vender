@@ -77,9 +77,8 @@ class IC {
 
   static bool ICUseVector(Code::Kind kind) {
     return kind == Code::LOAD_IC || kind == Code::KEYED_LOAD_IC ||
-           kind == Code::CALL_IC ||
-           (FLAG_vector_stores &&
-            (kind == Code::STORE_IC || kind == Code::KEYED_STORE_IC));
+           kind == Code::CALL_IC || kind == Code::STORE_IC ||
+           kind == Code::KEYED_STORE_IC;
   }
 
  protected:
@@ -286,9 +285,10 @@ class CallIC : public IC {
   void HandleMiss(Handle<Object> function);
 
   // Code generator routines.
-  static Handle<Code> initialize_stub(Isolate* isolate, int argc);
-  static Handle<Code> initialize_stub_in_optimized_code(Isolate* isolate,
-                                                        int argc);
+  static Handle<Code> initialize_stub(Isolate* isolate, int argc,
+                                      ConvertReceiverMode mode);
+  static Handle<Code> initialize_stub_in_optimized_code(
+      Isolate* isolate, int argc, ConvertReceiverMode mode);
 
   static void Clear(Isolate* isolate, Code* host, CallICNexus* nexus);
 };
@@ -531,20 +531,8 @@ class KeyedStoreIC : public StoreIC {
            IcCheckTypeField::encode(ELEMENT);
   }
 
-  static KeyedAccessStoreMode GetKeyedAccessStoreMode(
-      ExtraICState extra_state) {
-    DCHECK(!FLAG_vector_stores);
-    return ExtraICStateKeyedAccessStoreMode::decode(extra_state);
-  }
-
   KeyedAccessStoreMode GetKeyedAccessStoreMode() {
-    DCHECK(FLAG_vector_stores);
     return casted_nexus<KeyedStoreICNexus>()->GetKeyedAccessStoreMode();
-  }
-
-  static IcCheckType GetKeyType(ExtraICState extra_state) {
-    DCHECK(!FLAG_vector_stores);
-    return IcCheckTypeField::decode(extra_state);
   }
 
   KeyedStoreIC(FrameDepth depth, Isolate* isolate,
@@ -602,8 +590,6 @@ class KeyedStoreIC : public StoreIC {
 
   Handle<Map> ComputeTransitionedMap(Handle<Map> map,
                                      KeyedAccessStoreMode store_mode);
-
-  void ValidateStoreMode(Handle<Code> stub);
 
   friend class IC;
 };

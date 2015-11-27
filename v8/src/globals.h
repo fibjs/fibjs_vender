@@ -599,19 +599,6 @@ enum InlineCacheState {
 };
 
 
-enum CallConstructorFlags {
-  NO_CALL_CONSTRUCTOR_FLAGS = 0,
-  // The call target is cached in the instruction stream.
-  RECORD_CONSTRUCTOR_TARGET = 1,
-  // TODO(bmeurer): Kill these SUPER_* modes and use the Construct builtin
-  // directly instead; also there's no point in collecting any "targets" for
-  // super constructor calls, since these are known when we optimize the
-  // constructor that contains the super call.
-  SUPER_CONSTRUCTOR_CALL = 1 << 1,
-  SUPER_CALL_RECORD_TARGET = SUPER_CONSTRUCTOR_CALL | RECORD_CONSTRUCTOR_TARGET
-};
-
-
 enum CacheHolderFlag {
   kCacheOnPrototype,
   kCacheOnPrototypeReceiverIsDictionary,
@@ -741,6 +728,31 @@ enum CpuFeature {
   ISELECT,
   NUMBER_OF_CPU_FEATURES
 };
+
+
+// Defines hints about receiver values based on structural knowledge.
+enum class ConvertReceiverMode : unsigned {
+  kNullOrUndefined,     // Guaranteed to be null or undefined.
+  kNotNullOrUndefined,  // Guaranteed to never be null or undefined.
+  kAny                  // No specific knowledge about receiver.
+};
+
+inline size_t hash_value(ConvertReceiverMode mode) {
+  return bit_cast<unsigned>(mode);
+}
+
+inline std::ostream& operator<<(std::ostream& os, ConvertReceiverMode mode) {
+  switch (mode) {
+    case ConvertReceiverMode::kNullOrUndefined:
+      return os << "NULL_OR_UNDEFINED";
+    case ConvertReceiverMode::kNotNullOrUndefined:
+      return os << "NOT_NULL_OR_UNDEFINED";
+    case ConvertReceiverMode::kAny:
+      return os << "ANY";
+  }
+  UNREACHABLE();
+  return os;
+}
 
 
 // Used to specify if a macro instruction must perform a smi check on tagged
@@ -1007,6 +1019,15 @@ inline bool IsSubclassConstructor(FunctionKind kind) {
 inline bool IsClassConstructor(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
   return kind & FunctionKind::kClassConstructor;
+}
+
+
+inline bool IsConstructable(FunctionKind kind, LanguageMode mode) {
+  if (IsAccessorFunction(kind)) return false;
+  if (IsConciseMethod(kind) && !IsGeneratorFunction(kind)) return false;
+  if (IsArrowFunction(kind)) return false;
+  if (is_strong(mode)) return IsClassConstructor(kind);
+  return true;
 }
 
 

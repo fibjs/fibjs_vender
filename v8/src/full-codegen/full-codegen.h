@@ -7,7 +7,8 @@
 
 #include "src/allocation.h"
 #include "src/assert-scope.h"
-#include "src/ast.h"
+#include "src/ast/ast.h"
+#include "src/ast/scopes.h"
 #include "src/bit-vector.h"
 #include "src/code-factory.h"
 #include "src/code-stubs.h"
@@ -15,7 +16,6 @@
 #include "src/compiler.h"
 #include "src/globals.h"
 #include "src/objects.h"
-#include "src/scopes.h"
 
 namespace v8 {
 namespace internal {
@@ -463,7 +463,7 @@ class FullCodeGenerator: public AstVisitor {
   void EmitReturnSequence();
 
   // Platform-specific code sequences for calls
-  void EmitCall(Call* expr);
+  void EmitCall(Call* expr, ConvertReceiverMode = ConvertReceiverMode::kAny);
   void EmitSuperConstructorCall(Call* expr);
   void EmitCallWithLoadIC(Call* expr);
   void EmitSuperCallWithLoadIC(Call* expr);
@@ -662,7 +662,7 @@ class FullCodeGenerator: public AstVisitor {
 
   void SetCallPosition(Expression* expr, int argc);
 
-  void SetConstructCallPosition(Expression* expr);
+  void SetConstructCallPosition(Expression* expr, int argc);
 
   // Non-local control flow support.
   void EnterTryBlock(int handler_index, Label* handler);

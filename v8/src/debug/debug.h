@@ -31,16 +31,13 @@ class DebugScope;
 
 
 // Step actions. NOTE: These values are in macros.py as well.
-enum StepAction {
+enum StepAction : int8_t {
   StepNone = -1,  // Stepping not prepared.
   StepOut = 0,    // Step out of the current function.
   StepNext = 1,   // Step to the next statement in the current function.
   StepIn = 2,     // Step into new functions invoked or the next statement
                   // in the current function.
-  StepMin = 3,    // Perform a minimum step in the current function.
-  StepInMin = 4,  // Step into new functions invoked or perform a minimum step
-                  // in the current function.
-  StepFrame = 5   // Step into a new frame or return to previous frame.
+  StepFrame = 3   // Step into a new frame or return to previous frame.
 };
 
 
@@ -90,7 +87,7 @@ class BreakLocation {
     return RelocInfo::IsDebugBreakSlotAtConstructCall(rmode_);
   }
   inline int CallArgumentsCount() const {
-    DCHECK(IsCall());
+    DCHECK(IsStepInLocation());
     return RelocInfo::DebugBreakCallArgumentsCount(data_);
   }
 
@@ -343,6 +340,28 @@ class LockingCommandMessageQueue BASE_EMBEDDED {
 };
 
 
+class DebugFeatureTracker {
+ public:
+  enum Feature {
+    kActive = 1,
+    kBreakPoint = 2,
+    kStepping = 3,
+    kHeapSnapshot = 4,
+    kAllocationTracking = 5,
+    kProfiler = 6,
+    kLiveEdit = 7,
+  };
+
+  explicit DebugFeatureTracker(Isolate* isolate)
+      : isolate_(isolate), bitfield_(0) {}
+  void Track(Feature feature);
+
+ private:
+  Isolate* isolate_;
+  uint32_t bitfield_;
+};
+
+
 // This class contains the debugger support. The main purpose is to handle
 // setting break points in the code.
 //
@@ -411,7 +430,7 @@ class Debug {
   bool IsStepping() { return thread_local_.step_count_ > 0; }
   bool StepNextContinue(BreakLocation* location, JavaScriptFrame* frame);
   bool StepInActive() { return thread_local_.step_into_fp_ != 0; }
-  void HandleStepIn(Handle<Object> function_obj, bool is_constructor);
+  void HandleStepIn(Handle<Object> function_obj);
   bool StepOutActive() { return thread_local_.step_out_fp_ != 0; }
 
   void GetStepinPositions(JavaScriptFrame* frame, StackFrame::Id frame_id,
@@ -424,6 +443,7 @@ class Debug {
   // function needs to be compiled already.
   bool EnsureDebugInfo(Handle<SharedFunctionInfo> shared,
                        Handle<JSFunction> function);
+  void CreateDebugInfo(Handle<SharedFunctionInfo> shared);
   static Handle<DebugInfo> GetDebugInfo(Handle<SharedFunctionInfo> shared);
 
   template <typename C>
@@ -501,11 +521,13 @@ class Debug {
     return reinterpret_cast<Address>(address);
   }
 
-  Address step_in_fp_addr() {
-    return reinterpret_cast<Address>(&thread_local_.step_into_fp_);
+  Address last_step_action_addr() {
+    return reinterpret_cast<Address>(&thread_local_.last_step_action_);
   }
 
   StepAction last_step_action() { return thread_local_.last_step_action_; }
+
+  DebugFeatureTracker* feature_tracker() { return &feature_tracker_; }
 
  private:
   explicit Debug(Isolate* isolate);
@@ -604,6 +626,9 @@ class Debug {
   // Note that this address is not GC safe.  It should be computed immediately
   // before returning to the DebugBreakCallHelper.
   Address after_break_target_;
+
+  // Used to collect histogram data on debugger feature usage.
+  DebugFeatureTracker feature_tracker_;
 
   // Per-thread data.
   class ThreadLocal {

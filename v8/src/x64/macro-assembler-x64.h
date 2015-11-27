@@ -26,6 +26,7 @@ const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r12};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r14};
 const Register kInterpreterDispatchTableRegister = {Register::kCode_r15};
 const Register kJavaScriptCallArgCountRegister = {Register::kCode_rax};
+const Register kJavaScriptCallNewTargetRegister = {Register::kCode_rdx};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_rbx};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_rax};
 
@@ -84,11 +85,8 @@ struct SmiIndex {
 // MacroAssembler implements a collection of frequently used macros.
 class MacroAssembler: public Assembler {
  public:
-  // The isolate parameter can be NULL if the macro assembler should
-  // not use isolate-dependent functionality. In this case, it's the
-  // responsibility of the caller to never invoke such function on the
-  // macro assembler.
-  MacroAssembler(Isolate* isolate, void* buffer, int size);
+  MacroAssembler(Isolate* isolate, void* buffer, int size,
+                 CodeObjectRequired create_code_object);
 
   // Prevent the use of the RootArray during the lifetime of this
   // scope object.
@@ -370,20 +368,21 @@ class MacroAssembler: public Assembler {
   // JavaScript invokes
 
   // Invoke the JavaScript function code by either calling or jumping.
-  void InvokeCode(Register code,
-                  const ParameterCount& expected,
-                  const ParameterCount& actual,
-                  InvokeFlag flag,
-                  const CallWrapper& call_wrapper);
+  void InvokeFunctionCode(Register function, Register new_target,
+                          const ParameterCount& expected,
+                          const ParameterCount& actual, InvokeFlag flag,
+                          const CallWrapper& call_wrapper);
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
   void InvokeFunction(Register function,
+                      Register new_target,
                       const ParameterCount& actual,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
 
   void InvokeFunction(Register function,
+                      Register new_target,
                       const ParameterCount& expected,
                       const ParameterCount& actual,
                       InvokeFlag flag,
@@ -401,10 +400,6 @@ class MacroAssembler: public Assembler {
 
   // Store the function for the given builtin in the target register.
   void GetBuiltinFunction(Register target, int native_context_index);
-
-  // Store the code object for the given builtin in the target register.
-  void GetBuiltinEntry(Register target, int native_context_index);
-
 
   // ---------------------------------------------------------------------------
   // Smi tagging, untagging and operations on tagged smis.
@@ -817,13 +812,22 @@ class MacroAssembler: public Assembler {
   // xorpd to clear the dst register before cvtsi2sd to solve this issue.
   void Cvtlsi2sd(XMMRegister dst, Register src);
   void Cvtlsi2sd(XMMRegister dst, const Operand& src);
+
+  void Cvtqsi2ss(XMMRegister dst, Register src);
+  void Cvtqsi2ss(XMMRegister dst, const Operand& src);
+
   void Cvtqsi2sd(XMMRegister dst, Register src);
   void Cvtqsi2sd(XMMRegister dst, const Operand& src);
+
+  void Cvtqui2ss(XMMRegister dst, Register src, Register tmp);
+  void Cvtqui2sd(XMMRegister dst, Register src, Register tmp);
 
   void Cvtsd2si(Register dst, XMMRegister src);
 
   void Cvttsd2si(Register dst, XMMRegister src);
   void Cvttsd2si(Register dst, const Operand& src);
+  void Cvttss2siq(Register dst, XMMRegister src);
+  void Cvttss2siq(Register dst, const Operand& src);
   void Cvttsd2siq(Register dst, XMMRegister src);
   void Cvttsd2siq(Register dst, const Operand& src);
 
@@ -959,6 +963,7 @@ class MacroAssembler: public Assembler {
   void Movapd(XMMRegister dst, XMMRegister src);
   void Movmskpd(Register dst, XMMRegister src);
 
+  void Roundss(XMMRegister dst, XMMRegister src, RoundingMode mode);
   void Roundsd(XMMRegister dst, XMMRegister src, RoundingMode mode);
   void Sqrtsd(XMMRegister dst, XMMRegister src);
   void Sqrtsd(XMMRegister dst, const Operand& src);
@@ -1010,14 +1015,23 @@ class MacroAssembler: public Assembler {
   void Pinsrd(XMMRegister dst, Register src, int8_t imm8);
   void Pinsrd(XMMRegister dst, const Operand& src, int8_t imm8);
 
+  void Lzcntq(Register dst, Register src);
+  void Lzcntq(Register dst, const Operand& src);
+
   void Lzcntl(Register dst, Register src);
   void Lzcntl(Register dst, const Operand& src);
+
+  void Tzcntq(Register dst, Register src);
+  void Tzcntq(Register dst, const Operand& src);
 
   void Tzcntl(Register dst, Register src);
   void Tzcntl(Register dst, const Operand& src);
 
   void Popcntl(Register dst, Register src);
   void Popcntl(Register dst, const Operand& src);
+
+  void Popcntq(Register dst, Register src);
+  void Popcntq(Register dst, const Operand& src);
 
   // Non-x64 instructions.
   // Push/pop all general purpose registers.
@@ -1457,12 +1471,11 @@ class MacroAssembler: public Assembler {
                  int min_length = 0,
                  Register scratch = kScratchRegister);
 
-  // Initialize fields with filler values.  Fields starting at |start_offset|
-  // not including end_offset are overwritten with the value in |filler|.  At
-  // the end the loop, |start_offset| takes the value of |end_offset|.
-  void InitializeFieldsWithFiller(Register start_offset,
-                                  Register end_offset,
-                                  Register filler);
+  // Initialize fields with filler values.  Fields starting at |current_address|
+  // not including |end_address| are overwritten with the value in |filler|.  At
+  // the end the loop, |current_address| takes the value of |end_address|.
+  void InitializeFieldsWithFiller(Register current_address,
+                                  Register end_address, Register filler);
 
 
   // Emit code for a truncating division by a constant. The dividend register is
@@ -1569,13 +1582,15 @@ class MacroAssembler: public Assembler {
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
                       const ParameterCount& actual,
-                      Handle<Code> code_constant,
-                      Register code_register,
                       Label* done,
                       bool* definitely_mismatches,
                       InvokeFlag flag,
-                      Label::Distance near_jump = Label::kFar,
-                      const CallWrapper& call_wrapper = NullCallWrapper());
+                      Label::Distance near_jump,
+                      const CallWrapper& call_wrapper);
+
+  void FloodFunctionIfStepping(Register fun, Register new_target,
+                               const ParameterCount& expected,
+                               const ParameterCount& actual);
 
   void EnterExitFramePrologue(bool save_rax);
 

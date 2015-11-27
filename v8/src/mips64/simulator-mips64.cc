@@ -523,7 +523,7 @@ void MipsDebugger::Debug() {
                  reinterpret_cast<intptr_t>(cur), *cur, *cur);
           HeapObject* obj = reinterpret_cast<HeapObject*>(*cur);
           int64_t value = *cur;
-          Heap* current_heap = v8::internal::Isolate::Current()->heap();
+          Heap* current_heap = sim_->isolate_->heap();
           if (((value & 1) == 0) || current_heap->Contains(obj)) {
             PrintF(" (");
             if ((value & 1) == 0) {
@@ -930,12 +930,12 @@ Simulator::~Simulator() { free(stack_); }
 // offset from the swi instruction so the simulator knows what to call.
 class Redirection {
  public:
-  Redirection(void* external_function, ExternalReference::Type type)
+  Redirection(Isolate* isolate, void* external_function,
+              ExternalReference::Type type)
       : external_function_(external_function),
         swi_instruction_(rtCallRedirInstr),
         type_(type),
         next_(NULL) {
-    Isolate* isolate = Isolate::Current();
     next_ = isolate->simulator_redirection();
     Simulator::current(isolate)->
         FlushICache(isolate->simulator_i_cache(),
@@ -951,14 +951,13 @@ class Redirection {
   void* external_function() { return external_function_; }
   ExternalReference::Type type() { return type_; }
 
-  static Redirection* Get(void* external_function,
+  static Redirection* Get(Isolate* isolate, void* external_function,
                           ExternalReference::Type type) {
-    Isolate* isolate = Isolate::Current();
     Redirection* current = isolate->simulator_redirection();
     for (; current != NULL; current = current->next_) {
       if (current->external_function_ == external_function) return current;
     }
-    return new Redirection(external_function, type);
+    return new Redirection(isolate, external_function, type);
   }
 
   static Redirection* FromSwiInstruction(Instruction* swi_instruction) {
@@ -1003,9 +1002,10 @@ void Simulator::TearDown(HashMap* i_cache, Redirection* first) {
 }
 
 
-void* Simulator::RedirectExternalReference(void* external_function,
+void* Simulator::RedirectExternalReference(Isolate* isolate,
+                                           void* external_function,
                                            ExternalReference::Type type) {
-  Redirection* redirection = Redirection::Get(external_function, type);
+  Redirection* redirection = Redirection::Get(isolate, external_function, type);
   return redirection->address_of_swi_instruction();
 }
 
@@ -2263,10 +2263,12 @@ void Simulator::DecodeTypeRegisterSRsType() {
       set_fpu_register_float(fd_reg(), -fs);
       break;
     case SQRT_S:
-      set_fpu_register_float(fd_reg(), fast_sqrt(fs));
+      lazily_initialize_fast_sqrt(isolate_);
+      set_fpu_register_float(fd_reg(), fast_sqrt(fs, isolate_));
       break;
     case RSQRT_S: {
-      float result = 1.0 / fast_sqrt(fs);
+      lazily_initialize_fast_sqrt(isolate_);
+      float result = 1.0 / fast_sqrt(fs, isolate_);
       set_fpu_register_float(fd_reg(), result);
       break;
     }
@@ -2768,10 +2770,12 @@ void Simulator::DecodeTypeRegisterDRsType() {
       set_fpu_register_double(fd_reg(), -fs);
       break;
     case SQRT_D:
-      set_fpu_register_double(fd_reg(), fast_sqrt(fs));
+      lazily_initialize_fast_sqrt(isolate_);
+      set_fpu_register_double(fd_reg(), fast_sqrt(fs, isolate_));
       break;
     case RSQRT_D: {
-      double result = 1.0 / fast_sqrt(fs);
+      lazily_initialize_fast_sqrt(isolate_);
+      double result = 1.0 / fast_sqrt(fs, isolate_);
       set_fpu_register_double(fd_reg(), result);
       break;
     }
@@ -3368,8 +3372,17 @@ void Simulator::DecodeTypeRegisterSPECIAL() {
       }
       SetResult(rd_reg(), alu_out);
       break;
-    case MFLO:
-      SetResult(rd_reg(), get_register(LO));
+    case MFLO:  // MFLO == DCLZ on R6.
+      if (kArchVariant != kMips64r6) {
+        DCHECK(sa() == 0);
+        alu_out = get_register(LO);
+      } else {
+        // MIPS spec: If no bits were set in GPR rs(), the result written to
+        // GPR rd() is 64.
+        DCHECK(sa() == 1);
+        alu_out = base::bits::CountLeadingZeros64(static_cast<int64_t>(rs_u()));
+      }
+      SetResult(rd_reg(), alu_out);
       break;
     // Instructions using HI and LO registers.
     case MULT: {  // MULT == D_MUL_MUH.
@@ -3669,7 +3682,13 @@ void Simulator::DecodeTypeRegisterSPECIAL2() {
       // MIPS32 spec: If no bits were set in GPR rs(), the result written to
       // GPR rd is 32.
       alu_out = base::bits::CountLeadingZeros32(static_cast<uint32_t>(rs_u()));
-      set_register(rd_reg(), alu_out);
+      SetResult(rd_reg(), alu_out);
+      break;
+    case DCLZ:
+      // MIPS64 spec: If no bits were set in GPR rs(), the result written to
+      // GPR rd is 64.
+      alu_out = base::bits::CountLeadingZeros64(static_cast<uint64_t>(rs_u()));
+      SetResult(rd_reg(), alu_out);
       break;
     default:
       alu_out = 0x12345678;

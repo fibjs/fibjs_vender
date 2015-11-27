@@ -5,14 +5,14 @@
 #include "src/runtime/runtime-utils.h"
 
 #include "src/arguments.h"
+#include "src/ast/prettyprinter.h"
 #include "src/bootstrapper.h"
 #include "src/conversions.h"
 #include "src/debug/debug.h"
 #include "src/frames-inl.h"
 #include "src/isolate-inl.h"
 #include "src/messages.h"
-#include "src/parser.h"
-#include "src/prettyprinter.h"
+#include "src/parsing/parser.h"
 
 namespace v8 {
 namespace internal {
@@ -150,6 +150,14 @@ RUNTIME_FUNCTION(Runtime_NewSyntaxError) {
   auto message_template =
       static_cast<MessageTemplate::Template>(template_index);
   return *isolate->factory()->NewSyntaxError(message_template, arg0);
+}
+
+
+RUNTIME_FUNCTION(Runtime_ThrowIllegalInvocation) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 0);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kIllegalInvocation));
 }
 
 
@@ -307,6 +315,7 @@ RUNTIME_FUNCTION(Runtime_FormatMessageString) {
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, result,
       MessageTemplate::FormatMessage(template_index, arg0, arg1, arg2));
+  isolate->native_context()->IncrementErrorsThrown();
   return *result;
 }
 
@@ -432,6 +441,16 @@ RUNTIME_FUNCTION(Runtime_ThrowCalledNonCallable) {
   Handle<String> callsite = RenderCallSite(isolate, object);
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate, NewTypeError(MessageTemplate::kCalledNonCallable, callsite));
+}
+
+
+RUNTIME_FUNCTION(Runtime_ThrowConstructedNonConstructable) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+  Handle<String> callsite = RenderCallSite(isolate, object);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kNotConstructor, callsite));
 }
 
 }  // namespace internal

@@ -416,6 +416,16 @@ class Assembler : public AssemblerBase {
   bool is_near(Label* L);
   bool is_near(Label* L, OffsetSize bits);
   bool is_near_branch(Label* L);
+  inline bool is_near_pre_r6(Label* L) {
+    DCHECK(!IsMipsArchVariant(kMips32r6));
+    return pc_offset() - L->pos() < kMaxBranchOffset - 4 * kInstrSize;
+  }
+  inline bool is_near_r6(Label* L) {
+    DCHECK(IsMipsArchVariant(kMips32r6));
+    return pc_offset() - L->pos() < kMaxCompactBranchOffset - 4 * kInstrSize;
+  }
+
+  int BranchOffset(Instr instr);
 
   // Returns the branch offset to the given label from the current code
   // position. Links the label to the current position if it is still unbound.
@@ -476,8 +486,6 @@ class Assembler : public AssemblerBase {
   // Return the code target address at a call site from the return address
   // of that call in the instruction stream.
   inline static Address target_address_from_return_address(Address pc);
-
-  static void JumpToJumpRegister(Address pc);
 
   static void QuietNaN(HeapObject* nan);
 
@@ -1135,6 +1143,8 @@ class Assembler : public AssemblerBase {
     UNREACHABLE();
   }
 
+  bool IsPrevInstrCompactBranch() { return prev_instr_compact_branch_; }
+
  protected:
   // Relocation for a type-recording IC has the AST id added to it.  This
   // member variable is a way to pass the information from the call site to
@@ -1198,7 +1208,7 @@ class Assembler : public AssemblerBase {
     return block_buffer_growth_;
   }
 
-  bool IsPrevInstrCompactBranch() { return prev_instr_compact_branch_; }
+  inline void CheckTrampolinePoolQuick(int extra_instructions = 0);
 
  private:
   inline static void set_target_internal_reference_encoded_at(Address pc,
@@ -1250,7 +1260,6 @@ class Assembler : public AssemblerBase {
   void GrowBuffer();
   inline void emit(Instr x,
                    CompactBranchType is_compact_branch = CompactBranchType::NO);
-  inline void CheckTrampolinePoolQuick(int extra_instructions = 0);
 
   // Instruction generation.
   // We have 3 different kind of encoding layout on MIPS.

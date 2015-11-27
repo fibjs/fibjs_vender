@@ -29,6 +29,7 @@ namespace interpreter {
   V(MaybeReg8, OperandSize::kByte) \
                                    \
   /* Short operands. */            \
+  V(Count16, OperandSize::kShort)  \
   V(Idx16, OperandSize::kShort)
 
 // The list of bytecodes which are interpreted by the interpreter.
@@ -68,6 +69,9 @@ namespace interpreter {
   /* Register-accumulator transfers */                                         \
   V(Ldar, OperandType::kReg8)                                                  \
   V(Star, OperandType::kReg8)                                                  \
+                                                                               \
+  /* Register-register transfers */                                            \
+  V(Mov, OperandType::kReg8, OperandType::kReg8)                               \
                                                                                \
   /* LoadIC operations */                                                      \
   V(LoadICSloppy, OperandType::kReg8, OperandType::kIdx8, OperandType::kIdx8)  \
@@ -121,7 +125,10 @@ namespace interpreter {
   V(DeletePropertySloppy, OperandType::kReg8)                                  \
                                                                                \
   /* Call operations */                                                        \
-  V(Call, OperandType::kReg8, OperandType::kReg8, OperandType::kCount8)        \
+  V(Call, OperandType::kReg8, OperandType::kReg8, OperandType::kCount8,        \
+    OperandType::kIdx8)                                                        \
+  V(CallWide, OperandType::kReg8, OperandType::kReg8, OperandType::kCount16,   \
+    OperandType::kIdx16)                                                       \
   V(CallRuntime, OperandType::kIdx16, OperandType::kMaybeReg8,                 \
     OperandType::kCount8)                                                      \
   V(CallJSRuntime, OperandType::kIdx16, OperandType::kReg8,                    \
@@ -149,12 +156,13 @@ namespace interpreter {
   V(ToObject, OperandType::kNone)                                              \
                                                                                \
   /* Literals */                                                               \
-  V(CreateRegExpLiteral, OperandType::kIdx8, OperandType::kReg8)               \
+  V(CreateRegExpLiteral, OperandType::kIdx8, OperandType::kImm8)               \
   V(CreateArrayLiteral, OperandType::kIdx8, OperandType::kImm8)                \
   V(CreateObjectLiteral, OperandType::kIdx8, OperandType::kImm8)               \
                                                                                \
   /* Closure allocation */                                                     \
-  V(CreateClosure, OperandType::kImm8)                                         \
+  V(CreateClosure, OperandType::kIdx8, OperandType::kImm8)                     \
+  V(CreateClosureWide, OperandType::kIdx16, OperandType::kImm8)                \
                                                                                \
   /* Arguments allocation */                                                   \
   V(CreateMappedArguments, OperandType::kNone)                                 \
@@ -252,6 +260,10 @@ class Register {
   // Returns the register for the function's outer context.
   static Register function_context();
   bool is_function_context() const;
+
+  // Returns the register for the incoming new target value.
+  static Register new_target();
+  bool is_new_target() const;
 
   static Register FromOperand(uint8_t operand);
   uint8_t ToOperand() const;

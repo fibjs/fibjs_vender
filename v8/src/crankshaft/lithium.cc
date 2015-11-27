@@ -4,7 +4,7 @@
 
 #include "src/crankshaft/lithium.h"
 
-#include "src/scopes.h"
+#include "src/ast/scopes.h"
 
 #if V8_TARGET_ARCH_IA32
 #include "src/crankshaft/ia32/lithium-ia32.h"  // NOLINT
@@ -441,8 +441,7 @@ void LChunk::RegisterWeakObjectsInOptimizedCode(Handle<Code> code) const {
     }
   }
   for (int i = 0; i < maps.length(); i++) {
-    if (maps.at(i)->dependent_code()->number_of_entries(
-            DependentCode::kWeakCodeGroup) == 0) {
+    if (maps.at(i)->dependent_code()->IsEmpty(DependentCode::kWeakCodeGroup)) {
       isolate()->heap()->AddRetainedMap(maps.at(i));
     }
     Map::AddDependentCode(maps.at(i), DependentCode::kWeakCodeGroup, code);
@@ -503,7 +502,8 @@ LChunk* LChunk::NewChunk(HGraph* graph) {
 
 
 Handle<Code> LChunk::Codegen() {
-  MacroAssembler assembler(info()->isolate(), NULL, 0);
+  MacroAssembler assembler(info()->isolate(), NULL, 0,
+                           CodeObjectRequired::kYes);
   LOG_CODE_EVENT(info()->isolate(),
                  CodeStartLinePosInfoRecordEvent(
                      assembler.positions_recorder()));

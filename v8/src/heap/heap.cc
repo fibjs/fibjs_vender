@@ -6,6 +6,7 @@
 
 #include "src/accessors.h"
 #include "src/api.h"
+#include "src/ast/scopeinfo.h"
 #include "src/base/bits.h"
 #include "src/base/once.h"
 #include "src/base/utils/random-number-generator.h"
@@ -32,7 +33,6 @@
 #include "src/interpreter/interpreter.h"
 #include "src/profiler/cpu-profiler.h"
 #include "src/runtime-profiler.h"
-#include "src/scopeinfo.h"
 #include "src/snapshot/natives.h"
 #include "src/snapshot/serialize.h"
 #include "src/snapshot/snapshot.h"
@@ -57,7 +57,7 @@ class IdleScavengeObserver : public InlineAllocationObserver {
   IdleScavengeObserver(Heap& heap, intptr_t step_size)
       : InlineAllocationObserver(step_size), heap_(heap) {}
 
-  virtual void Step(int bytes_allocated) {
+  void Step(int bytes_allocated, Address, size_t) override {
     heap_.ScheduleIdleScavengeIfNeeded(bytes_allocated);
   }
 
@@ -91,6 +91,7 @@ Heap::Heap()
       survived_last_scavenge_(0),
       always_allocate_scope_count_(0),
       contexts_disposed_(0),
+      number_of_disposed_maps_(0),
       global_ic_age_(0),
       scan_on_scavenge_pages_(0),
       new_space_(this),
@@ -102,7 +103,6 @@ Heap::Heap()
       gc_post_processing_depth_(0),
       allocations_count_(0),
       raw_allocations_hash_(0),
-      dump_allocations_hash_countdown_(FLAG_dump_allocations_digest_at_alloc),
       ms_count_(0),
       gc_count_(0),
       remembered_unmapped_pages_index_(0),
@@ -497,27 +497,6 @@ const char* Heap::GetSpaceName(int idx) {
       UNREACHABLE();
   }
   return nullptr;
-}
-
-
-void Heap::ClearAllKeyedStoreICs() {
-  if (FLAG_vector_stores) {
-    TypeFeedbackVector::ClearAllKeyedStoreICs(isolate_);
-    return;
-  }
-
-  // TODO(mvstanton): Remove this function when FLAG_vector_stores is turned on
-  // permanently, and divert all callers to KeyedStoreIC::ClearAllKeyedStoreICs.
-  HeapObjectIterator it(code_space());
-
-  for (Object* object = it.Next(); object != NULL; object = it.Next()) {
-    Code* code = Code::cast(object);
-    Code::Kind current_kind = code->kind();
-    if (current_kind == Code::FUNCTION ||
-        current_kind == Code::OPTIMIZED_FUNCTION) {
-      code->ClearInlineCaches(Code::KEYED_STORE_IC);
-    }
-  }
 }
 
 
@@ -1049,18 +1028,18 @@ int Heap::NotifyContextDisposed(bool dependant_context) {
   if (!dependant_context) {
     tracer()->ResetSurvivalEvents();
     old_generation_size_configured_ = false;
+    MemoryReducer::Event event;
+    event.type = MemoryReducer::kContextDisposed;
+    event.time_ms = MonotonicallyIncreasingTimeInMs();
+    memory_reducer_->NotifyContextDisposed(event);
   }
   if (isolate()->concurrent_recompilation_enabled()) {
     // Flush the queued recompilation tasks.
     isolate()->optimizing_compile_dispatcher()->Flush();
   }
   AgeInlineCaches();
-  set_retained_maps(ArrayList::cast(empty_fixed_array()));
-  tracer()->AddContextDisposalTime(base::OS::TimeCurrentMillis());
-  MemoryReducer::Event event;
-  event.type = MemoryReducer::kContextDisposed;
-  event.time_ms = MonotonicallyIncreasingTimeInMs();
-  memory_reducer_->NotifyContextDisposed(event);
+  number_of_disposed_maps_ = retained_maps()->Length();
+  tracer()->AddContextDisposalTime(MonotonicallyIncreasingTimeInMs());
   return ++contexts_disposed_;
 }
 
@@ -1605,6 +1584,10 @@ void Heap::Scavenge() {
   // trigger one during scavenge: scavenges allocation should always succeed.
   AlwaysAllocateScope scope(isolate());
 
+  // Bump-pointer allocations done during scavenge are not real allocations.
+  // Pause the inline allocation steps.
+  new_space()->PauseInlineAllocationObservers();
+
 #ifdef VERIFY_HEAP
   if (FLAG_verify_heap) VerifyNonPointerSpacePointers(this);
 #endif
@@ -1734,9 +1717,7 @@ void Heap::Scavenge() {
   // Set age mark.
   new_space_.set_age_mark(new_space_.top());
 
-  // We start a new step without accounting the objects copied into to space
-  // as those are not allocations.
-  new_space_.UpdateInlineAllocationLimitStep();
+  new_space()->ResumeInlineAllocationObservers();
 
   array_buffer_tracker()->FreeDead(true);
 
@@ -2786,6 +2767,14 @@ void Heap::CreateInitialObjects() {
     set_dummy_vector(*dummy_vector);
   }
 
+  {
+    Handle<FixedArray> cleared_optimized_code_map =
+        factory->NewFixedArray(SharedFunctionInfo::kEntriesStart, TENURED);
+    STATIC_ASSERT(SharedFunctionInfo::kEntriesStart == 1 &&
+                  SharedFunctionInfo::kSharedCodeIndex == 0);
+    set_cleared_optimized_code_map(*cleared_optimized_code_map);
+  }
+
   set_detached_contexts(empty_fixed_array());
   set_retained_maps(ArrayList::cast(empty_fixed_array()));
 
@@ -3077,24 +3066,6 @@ void Heap::CreateFillerObjectAt(Address addr, int size) {
 }
 
 
-bool Heap::CanMoveObjectStart(HeapObject* object) {
-  if (!FLAG_move_object_start) return false;
-
-  Address address = object->address();
-
-  if (lo_space()->Contains(object)) return false;
-
-  Page* page = Page::FromAddress(address);
-  // We can move the object start if:
-  // (1) the object is not in old space,
-  // (2) the page of the object was already swept,
-  // (3) the page was already concurrently swept. This case is an optimization
-  // for concurrent sweeping. The WasSwept predicate for concurrently swept
-  // pages is set after sweeping all pages.
-  return !InOldSpace(address) || page->WasSwept() || page->SweepingCompleted();
-}
-
-
 void Heap::AdjustLiveBytes(HeapObject* object, int by, InvocationMode mode) {
   if (incremental_marking()->IsMarking() &&
       Marking::IsBlack(Marking::MarkBitFrom(object->address()))) {
@@ -3104,55 +3075,6 @@ void Heap::AdjustLiveBytes(HeapObject* object, int by, InvocationMode mode) {
       MemoryChunk::IncrementLiveBytesFromMutator(object, by);
     }
   }
-}
-
-
-FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
-                                         int elements_to_trim) {
-  DCHECK(!object->IsFixedTypedArrayBase());
-  const int element_size = object->IsFixedArray() ? kPointerSize : kDoubleSize;
-  const int bytes_to_trim = elements_to_trim * element_size;
-  Map* map = object->map();
-
-  // For now this trick is only applied to objects in new and paged space.
-  // In large object space the object's start must coincide with chunk
-  // and thus the trick is just not applicable.
-  DCHECK(!lo_space()->Contains(object));
-  DCHECK(object->map() != fixed_cow_array_map());
-
-  STATIC_ASSERT(FixedArrayBase::kMapOffset == 0);
-  STATIC_ASSERT(FixedArrayBase::kLengthOffset == kPointerSize);
-  STATIC_ASSERT(FixedArrayBase::kHeaderSize == 2 * kPointerSize);
-
-  const int len = object->length();
-  DCHECK(elements_to_trim <= len);
-
-  // Calculate location of new array start.
-  Address new_start = object->address() + bytes_to_trim;
-
-  // Technically in new space this write might be omitted (except for
-  // debug mode which iterates through the heap), but to play safer
-  // we still do it.
-  CreateFillerObjectAt(object->address(), bytes_to_trim);
-
-  // Initialize header of the trimmed array. Since left trimming is only
-  // performed on pages which are not concurrently swept creating a filler
-  // object does not require synchronization.
-  DCHECK(CanMoveObjectStart(object));
-  Object** former_start = HeapObject::RawField(object, 0);
-  int new_start_index = elements_to_trim * (element_size / kPointerSize);
-  former_start[new_start_index] = map;
-  former_start[new_start_index + 1] = Smi::FromInt(len - elements_to_trim);
-  FixedArrayBase* new_object =
-      FixedArrayBase::cast(HeapObject::FromAddress(new_start));
-
-  // Maintain consistency of live bytes during incremental marking
-  Marking::TransferMark(this, object->address(), new_start);
-  AdjustLiveBytes(new_object, -bytes_to_trim, Heap::CONCURRENT_TO_SWEEPER);
-
-  // Notify the heap profiler of change in object layout.
-  OnMoveEvent(new_object, object, new_object->Size());
-  return new_object;
 }
 
 
@@ -3443,6 +3365,14 @@ void Heap::InitializeJSObjectFromMap(JSObject* obj, FixedArray* properties,
   // fixed array (e.g. Heap::empty_fixed_array()).  Currently, the object
   // verification code has to cope with (temporarily) invalid objects.  See
   // for example, JSArray::JSArrayVerify).
+  InitializeJSObjectBody(obj, map, JSObject::kHeaderSize);
+}
+
+
+void Heap::InitializeJSObjectBody(JSObject* obj, Map* map, int start_offset) {
+  if (start_offset == map->instance_size()) return;
+  DCHECK_LT(start_offset, map->instance_size());
+
   Object* filler;
   // We cannot always fill with one_pointer_filler_map because objects
   // created from API functions expect their internal fields to be initialized
@@ -3459,7 +3389,7 @@ void Heap::InitializeJSObjectFromMap(JSObject* obj, FixedArray* properties,
   } else {
     filler = Heap::undefined_value();
   }
-  obj->InitializeBody(map, Heap::undefined_value(), filler);
+  obj->InitializeBody(map, start_offset, Heap::undefined_value(), filler);
 }
 
 
@@ -3510,9 +3440,10 @@ AllocationResult Heap::CopyJSObject(JSObject* source, AllocationSite* site) {
   // Make the clone.
   Map* map = source->map();
 
-  // We can only clone normal objects or arrays. Copying anything else
+  // We can only clone regexps, normal objects or arrays. Copying anything else
   // will break invariants.
-  CHECK(map->instance_type() == JS_OBJECT_TYPE ||
+  CHECK(map->instance_type() == JS_REGEXP_TYPE ||
+        map->instance_type() == JS_OBJECT_TYPE ||
         map->instance_type() == JS_ARRAY_TYPE);
 
   int object_size = map->instance_size();
@@ -4380,11 +4311,16 @@ bool Heap::IsValidAllocationSpace(AllocationSpace space) {
 
 bool Heap::RootIsImmortalImmovable(int root_index) {
   switch (root_index) {
-#define CASE(name)               \
-  case Heap::k##name##RootIndex: \
+#define IMMORTAL_IMMOVABLE_ROOT(name) case Heap::k##name##RootIndex:
+    IMMORTAL_IMMOVABLE_ROOT_LIST(IMMORTAL_IMMOVABLE_ROOT)
+#undef IMMORTAL_IMMOVABLE_ROOT
+#define INTERNALIZED_STRING(name, value) case Heap::k##name##RootIndex:
+    INTERNALIZED_STRING_LIST(INTERNALIZED_STRING)
+#undef INTERNALIZED_STRING
+#define STRING_TYPE(NAME, size, name, Name) case Heap::k##Name##MapRootIndex:
+    STRING_TYPE_LIST(STRING_TYPE)
+#undef STRING_TYPE
     return true;
-    IMMORTAL_IMMOVABLE_ROOT_LIST(CASE);
-#undef CASE
     default:
       return false;
   }
@@ -4475,10 +4411,34 @@ void Heap::IterateAndMarkPointersToFromSpace(HeapObject* object, Address start,
 }
 
 
+class IteratePointersToFromSpaceVisitor final : public ObjectVisitor {
+ public:
+  IteratePointersToFromSpaceVisitor(Heap* heap, HeapObject* target,
+                                    bool record_slots,
+                                    ObjectSlotCallback callback)
+      : heap_(heap),
+        target_(target),
+        record_slots_(record_slots),
+        callback_(callback) {}
+
+  V8_INLINE void VisitPointers(Object** start, Object** end) override {
+    heap_->IterateAndMarkPointersToFromSpace(
+        target_, reinterpret_cast<Address>(start),
+        reinterpret_cast<Address>(end), record_slots_, callback_);
+  }
+
+  V8_INLINE void VisitCodeEntry(Address code_entry_slot) override {}
+
+ private:
+  Heap* heap_;
+  HeapObject* target_;
+  bool record_slots_;
+  ObjectSlotCallback callback_;
+};
+
+
 void Heap::IteratePointersToFromSpace(HeapObject* target, int size,
                                       ObjectSlotCallback callback) {
-  Address obj_address = target->address();
-
   // We are not collecting slots on new space objects during mutation
   // thus we have to scan for pointers to evacuation candidates when we
   // promote objects. But we should not record any slots in non-black
@@ -4491,53 +4451,9 @@ void Heap::IteratePointersToFromSpace(HeapObject* target, int size,
     record_slots = Marking::IsBlack(mark_bit);
   }
 
-  // Do not scavenge JSArrayBuffer's contents
-  switch (target->ContentType()) {
-    case HeapObjectContents::kTaggedValues: {
-      IterateAndMarkPointersToFromSpace(target, obj_address, obj_address + size,
-                                        record_slots, callback);
-      break;
-    }
-    case HeapObjectContents::kMixedValues: {
-      if (target->IsFixedTypedArrayBase()) {
-        IterateAndMarkPointersToFromSpace(
-            target, obj_address + FixedTypedArrayBase::kBasePointerOffset,
-            obj_address + FixedTypedArrayBase::kHeaderSize, record_slots,
-            callback);
-      } else if (target->IsBytecodeArray()) {
-        IterateAndMarkPointersToFromSpace(
-            target, obj_address + BytecodeArray::kConstantPoolOffset,
-            obj_address + BytecodeArray::kHeaderSize, record_slots, callback);
-      } else if (target->IsJSArrayBuffer()) {
-        IterateAndMarkPointersToFromSpace(
-            target, obj_address,
-            obj_address + JSArrayBuffer::kByteLengthOffset + kPointerSize,
-            record_slots, callback);
-        IterateAndMarkPointersToFromSpace(
-            target, obj_address + JSArrayBuffer::kSize, obj_address + size,
-            record_slots, callback);
-#if V8_DOUBLE_FIELDS_UNBOXING
-      } else if (FLAG_unbox_double_fields) {
-        LayoutDescriptorHelper helper(target->map());
-        DCHECK(!helper.all_fields_tagged());
-
-        for (int offset = 0; offset < size;) {
-          int end_of_region_offset;
-          if (helper.IsTagged(offset, size, &end_of_region_offset)) {
-            IterateAndMarkPointersToFromSpace(
-                target, obj_address + offset,
-                obj_address + end_of_region_offset, record_slots, callback);
-          }
-          offset = end_of_region_offset;
-        }
-#endif
-      }
-      break;
-    }
-    case HeapObjectContents::kRawValues: {
-      break;
-    }
-  }
+  IteratePointersToFromSpaceVisitor visitor(this, target, record_slots,
+                                            callback);
+  target->IterateBody(target->map()->instance_type(), size, &visitor);
 }
 
 
@@ -4856,7 +4772,11 @@ void Heap::RecordStats(HeapStats* stats, bool take_snapshot) {
   if (stats->js_stacktrace != NULL) {
     FixedStringAllocator fixed(stats->js_stacktrace, kStacktraceBufferSize - 1);
     StringStream accumulator(&fixed, StringStream::kPrintObjectConcise);
-    isolate()->PrintStack(&accumulator, Isolate::kPrintStackVerbose);
+    if (gc_state() == Heap::NOT_IN_GC) {
+      isolate()->PrintStack(&accumulator, Isolate::kPrintStackVerbose);
+    } else {
+      accumulator.Add("Cannot get stack trace in GC.");
+    }
   }
 }
 
@@ -5389,7 +5309,6 @@ DependentCode* Heap::LookupWeakObjectToCodeDependency(Handle<HeapObject> obj) {
 
 
 void Heap::AddRetainedMap(Handle<Map> map) {
-  if (FLAG_retain_maps_for_n_gc == 0) return;
   Handle<WeakCell> cell = Map::WeakCellForMap(map);
   Handle<ArrayList> array(retained_maps(), isolate());
   array = ArrayList::Add(

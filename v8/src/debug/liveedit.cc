@@ -4,6 +4,8 @@
 
 #include "src/debug/liveedit.h"
 
+#include "src/ast/scopeinfo.h"
+#include "src/ast/scopes.h"
 #include "src/code-stubs.h"
 #include "src/compilation-cache.h"
 #include "src/compiler.h"
@@ -13,9 +15,7 @@
 #include "src/global-handles.h"
 #include "src/isolate-inl.h"
 #include "src/messages.h"
-#include "src/parser.h"
-#include "src/scopeinfo.h"
-#include "src/scopes.h"
+#include "src/parsing/parser.h"
 #include "src/v8.h"
 #include "src/v8memory.h"
 
@@ -1145,9 +1145,6 @@ void LiveEdit::ReplaceFunctionCode(
   shared_info->set_end_position(end_position);
 
   LiteralFixer::PatchLiterals(&compile_info_wrapper, shared_info, isolate);
-
-  shared_info->set_construct_stub(
-      isolate->builtins()->builtin(Builtins::kJSConstructStubGeneric));
 
   DeoptimizeDependentFunctions(*shared_info);
   isolate->compilation_cache()->Remove(shared_info);

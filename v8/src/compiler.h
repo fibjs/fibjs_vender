@@ -6,7 +6,7 @@
 #define V8_COMPILER_H_
 
 #include "src/allocation.h"
-#include "src/ast.h"
+#include "src/ast/ast.h"
 #include "src/bailout-reason.h"
 #include "src/compilation-dependencies.h"
 #include "src/signature.h"
@@ -295,6 +295,12 @@ class CompilationInfo {
 
   JSGlobalObject* global_object() const {
     return has_global_object() ? closure()->context()->global_object() : NULL;
+  }
+
+  bool has_native_context() const { return has_global_object(); }
+
+  Context* native_context() const {
+    return has_native_context() ? global_object()->native_context() : nullptr;
   }
 
   // Accessors for the different compilation modes.

@@ -209,13 +209,15 @@ std::ostream& Bytecodes::Decode(std::ostream& os, const uint8_t* bytecode_start,
       case interpreter::OperandType::kCount8:
         os << "#" << static_cast<unsigned int>(*operand_start);
         break;
+      case interpreter::OperandType::kCount16:
+        os << '#' << ReadUnalignedUInt16(operand_start);
+        break;
       case interpreter::OperandType::kIdx8:
         os << "[" << static_cast<unsigned int>(*operand_start) << "]";
         break;
-      case interpreter::OperandType::kIdx16: {
+      case interpreter::OperandType::kIdx16:
         os << "[" << ReadUnalignedUInt16(operand_start) << "]";
         break;
-      }
       case interpreter::OperandType::kImm8:
         os << "#" << static_cast<int>(static_cast<int8_t>(*operand_start));
         break;
@@ -226,6 +228,8 @@ std::ostream& Bytecodes::Decode(std::ostream& os, const uint8_t* bytecode_start,
           os << "<context>";
         } else if (reg.is_function_closure()) {
           os << "<closure>";
+        } else if (reg.is_new_target()) {
+          os << "<new.target>";
         } else if (reg.is_parameter()) {
           int parameter_index = reg.ToParameterIndex(parameter_count);
           if (parameter_index == 0) {
@@ -271,6 +275,8 @@ static const int kFunctionClosureRegisterIndex =
     -InterpreterFrameConstants::kFunctionFromRegisterPointer / kPointerSize;
 static const int kFunctionContextRegisterIndex =
     -InterpreterFrameConstants::kContextFromRegisterPointer / kPointerSize;
+static const int kNewTargetRegisterIndex =
+    -InterpreterFrameConstants::kNewTargetFromRegisterPointer / kPointerSize;
 
 
 // Registers occupy range 0-127 in 8-bit value leaving 128 unused values.
@@ -313,6 +319,14 @@ Register Register::function_context() {
 
 bool Register::is_function_context() const {
   return index() == kFunctionContextRegisterIndex;
+}
+
+
+Register Register::new_target() { return Register(kNewTargetRegisterIndex); }
+
+
+bool Register::is_new_target() const {
+  return index() == kNewTargetRegisterIndex;
 }
 
 

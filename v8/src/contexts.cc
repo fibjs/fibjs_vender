@@ -4,10 +4,10 @@
 
 #include "src/contexts.h"
 
+#include "src/ast/scopeinfo.h"
 #include "src/bootstrapper.h"
 #include "src/debug/debug.h"
 #include "src/isolate-inl.h"
-#include "src/scopeinfo.h"
 
 namespace v8 {
 namespace internal {
@@ -576,6 +576,17 @@ bool Context::IsBootstrappingOrGlobalObject(Isolate* isolate, Object* object) {
          isolate->bootstrapper()->IsActive() || object->IsJSGlobalObject();
 }
 #endif
+
+
+void Context::IncrementErrorsThrown() {
+  DCHECK(IsNativeContext());
+
+  int previous_value = errors_thrown()->value();
+  set_errors_thrown(Smi::FromInt(previous_value + 1));
+}
+
+
+int Context::GetErrorsThrown() { return errors_thrown()->value(); }
 
 }  // namespace internal
 }  // namespace v8

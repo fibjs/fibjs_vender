@@ -200,6 +200,18 @@ void Interpreter::DoStar(compiler::InterpreterAssembler* assembler) {
 }
 
 
+// Mov <src> <dst>
+//
+// Stores the value of register <src> to register <dst>.
+void Interpreter::DoMov(compiler::InterpreterAssembler* assembler) {
+  Node* src_index = __ BytecodeOperandReg(0);
+  Node* src_value = __ LoadRegister(src_index);
+  Node* dst_index = __ BytecodeOperandReg(1);
+  __ StoreRegister(src_value, dst_index);
+  __ Dispatch();
+}
+
+
 void Interpreter::DoLoadGlobal(Callable ic,
                                compiler::InterpreterAssembler* assembler) {
   // Get the global object.
@@ -216,7 +228,6 @@ void Interpreter::DoLoadGlobal(Callable ic,
   Node* result = __ CallIC(ic.descriptor(), code_target, global, name, smi_slot,
                            type_feedback_vector);
   __ SetAccumulator(result);
-
   __ Dispatch();
 }
 
@@ -882,19 +893,34 @@ void Interpreter::DoDeletePropertySloppy(
 }
 
 
-// Call <callable> <receiver> <arg_count>
-//
-// Call a JSfunction or Callable in |callable| with the |receiver| and
-// |arg_count| arguments in subsequent registers.
-void Interpreter::DoCall(compiler::InterpreterAssembler* assembler) {
+void Interpreter::DoJSCall(compiler::InterpreterAssembler* assembler) {
   Node* function_reg = __ BytecodeOperandReg(0);
   Node* function = __ LoadRegister(function_reg);
   Node* receiver_reg = __ BytecodeOperandReg(1);
   Node* first_arg = __ RegisterLocation(receiver_reg);
   Node* args_count = __ BytecodeOperandCount(2);
+  // TODO(rmcilroy): Use the call type feedback slot to call via CallIC.
   Node* result = __ CallJS(function, first_arg, args_count);
   __ SetAccumulator(result);
   __ Dispatch();
+}
+
+
+// Call <callable> <receiver> <arg_count>
+//
+// Call a JSfunction or Callable in |callable| with the |receiver| and
+// |arg_count| arguments in subsequent registers.
+void Interpreter::DoCall(compiler::InterpreterAssembler* assembler) {
+  DoJSCall(assembler);
+}
+
+
+// CallWide <callable> <receiver> <arg_count>
+//
+// Call a JSfunction or Callable in |callable| with the |receiver| and
+// |arg_count| arguments in subsequent registers.
+void Interpreter::DoCallWide(compiler::InterpreterAssembler* assembler) {
+  DoJSCall(assembler);
 }
 
 
@@ -938,7 +964,7 @@ void Interpreter::DoCallJSRuntime(compiler::InterpreterAssembler* assembler) {
 }
 
 
-// New <constructor> <arg_count>
+// New <constructor> <first_arg> <arg_count>
 //
 // Call operator new with |constructor| and the first argument in
 // register |first_arg| and |arg_count| arguments in subsequent
@@ -1285,27 +1311,6 @@ void Interpreter::DoJumpIfUndefinedConstant(
 }
 
 
-// CreateRegExpLiteral <idx> <flags_reg>
-//
-// Creates a regular expression literal for literal index <idx> with flags held
-// in <flags_reg> and the pattern in the accumulator.
-void Interpreter::DoCreateRegExpLiteral(
-    compiler::InterpreterAssembler* assembler) {
-  Node* pattern = __ GetAccumulator();
-  Node* literal_index_raw = __ BytecodeOperandIdx(0);
-  Node* literal_index = __ SmiTag(literal_index_raw);
-  Node* flags_reg = __ BytecodeOperandReg(1);
-  Node* flags = __ LoadRegister(flags_reg);
-  Node* closure = __ LoadRegister(Register::function_closure());
-  Node* literals_array =
-      __ LoadObjectField(closure, JSFunction::kLiteralsOffset);
-  Node* result = __ CallRuntime(Runtime::kMaterializeRegExpLiteral,
-                                literals_array, literal_index, pattern, flags);
-  __ SetAccumulator(result);
-  __ Dispatch();
-}
-
-
 void Interpreter::DoCreateLiteral(Runtime::FunctionId function_id,
                                   compiler::InterpreterAssembler* assembler) {
   Node* constant_elements = __ GetAccumulator();
@@ -1314,12 +1319,20 @@ void Interpreter::DoCreateLiteral(Runtime::FunctionId function_id,
   Node* flags_raw = __ BytecodeOperandImm(1);
   Node* flags = __ SmiTag(flags_raw);
   Node* closure = __ LoadRegister(Register::function_closure());
-  Node* literals_array =
-      __ LoadObjectField(closure, JSFunction::kLiteralsOffset);
-  Node* result = __ CallRuntime(function_id, literals_array, literal_index,
+  Node* result = __ CallRuntime(function_id, closure, literal_index,
                                 constant_elements, flags);
   __ SetAccumulator(result);
   __ Dispatch();
+}
+
+
+// CreateRegExpLiteral <idx> <flags>
+//
+// Creates a regular expression literal for literal index <idx> with <flags> and
+// the pattern in the accumulator.
+void Interpreter::DoCreateRegExpLiteral(
+    compiler::InterpreterAssembler* assembler) {
+  DoCreateLiteral(Runtime::kCreateRegExpLiteral, assembler);
 }
 
 
@@ -1343,20 +1356,31 @@ void Interpreter::DoCreateObjectLiteral(
 }
 
 
-// CreateClosure <tenured>
+// CreateClosure <index> <tenured>
 //
-// Creates a new closure for SharedFunctionInfo in the accumulator with the
-// PretenureFlag <tenured>.
+// Creates a new closure for SharedFunctionInfo at position |index| in the
+// constant pool and with the PretenureFlag <tenured>.
 void Interpreter::DoCreateClosure(compiler::InterpreterAssembler* assembler) {
   // TODO(rmcilroy): Possibly call FastNewClosureStub when possible instead of
   // calling into the runtime.
-  Node* shared = __ GetAccumulator();
-  Node* tenured_raw = __ BytecodeOperandImm(0);
+  Node* index = __ BytecodeOperandIdx(0);
+  Node* shared = __ LoadConstantPoolEntry(index);
+  Node* tenured_raw = __ BytecodeOperandImm(1);
   Node* tenured = __ SmiTag(tenured_raw);
   Node* result =
       __ CallRuntime(Runtime::kInterpreterNewClosure, shared, tenured);
   __ SetAccumulator(result);
   __ Dispatch();
+}
+
+
+// CreateClosureWide <index> <tenured>
+//
+// Creates a new closure for SharedFunctionInfo at position |index| in the
+// constant pool and with the PretenureFlag <tenured>.
+void Interpreter::DoCreateClosureWide(
+    compiler::InterpreterAssembler* assembler) {
+  return DoCreateClosure(assembler);
 }
 
 

@@ -118,7 +118,6 @@ enum BindingFlags {
   V(JSON_SERIALIZE_ADAPTER_INDEX, JSFunction, json_serialize_adapter)         \
   V(MAKE_ERROR_FUNCTION_INDEX, JSFunction, make_error_function)               \
   V(MAP_DELETE_METHOD_INDEX, JSFunction, map_delete)                          \
-  V(MAP_FROM_ARRAY_INDEX, JSFunction, map_from_array)                         \
   V(MAP_GET_METHOD_INDEX, JSFunction, map_get)                                \
   V(MAP_HAS_METHOD_INDEX, JSFunction, map_has)                                \
   V(MAP_SET_METHOD_INDEX, JSFunction, map_set)                                \
@@ -152,7 +151,6 @@ enum BindingFlags {
   V(REFERENCE_ERROR_FUNCTION_INDEX, JSFunction, reference_error_function)     \
   V(SET_ADD_METHOD_INDEX, JSFunction, set_add)                                \
   V(SET_DELETE_METHOD_INDEX, JSFunction, set_delete)                          \
-  V(SET_FROM_ARRAY_INDEX, JSFunction, set_from_array)                         \
   V(SET_HAS_METHOD_INDEX, JSFunction, set_has)                                \
   V(STACK_OVERFLOW_BOILERPLATE_INDEX, JSObject, stack_overflow_boilerplate)   \
   V(SYNTAX_ERROR_FUNCTION_INDEX, JSFunction, syntax_error_function)           \
@@ -186,6 +184,7 @@ enum BindingFlags {
   V(DATA_VIEW_FUN_INDEX, JSFunction, data_view_fun)                            \
   V(ERROR_MESSAGE_FOR_CODE_GEN_FROM_STRINGS_INDEX, Object,                     \
     error_message_for_code_gen_from_strings)                                   \
+  V(ERRORS_THROWN_INDEX, Smi, errors_thrown)                                   \
   V(EXTRAS_EXPORTS_OBJECT_INDEX, JSObject, extras_binding_object)              \
   V(EXTRAS_UTILS_OBJECT_INDEX, JSObject, extras_utils_object)                  \
   V(FAST_ALIASED_ARGUMENTS_MAP_INDEX, Map, fast_aliased_arguments_map)         \
@@ -221,6 +220,7 @@ enum BindingFlags {
   V(OBJECT_FUNCTION_INDEX, JSFunction, object_function)                        \
   V(OBJECT_FUNCTION_PROTOTYPE_MAP_INDEX, Map, object_function_prototype_map)   \
   V(OPAQUE_REFERENCE_FUNCTION_INDEX, JSFunction, opaque_reference_function)    \
+  V(PROXY_FUNCTION_INDEX, JSFunction, proxy_function)                          \
   V(REGEXP_FUNCTION_INDEX, JSFunction, regexp_function)                        \
   V(REGEXP_RESULT_MAP_INDEX, Map, regexp_result_map)                           \
   V(RUNTIME_CONTEXT_INDEX, Context, runtime_context)                           \
@@ -395,6 +395,9 @@ class Context: public FixedArray {
     // This slot holds the thrown value in catch contexts.
     THROWN_OBJECT_INDEX = MIN_CONTEXT_SLOTS,
   };
+
+  void IncrementErrorsThrown();
+  int GetErrorsThrown();
 
   // Direct slot access.
   inline JSFunction* closure();
