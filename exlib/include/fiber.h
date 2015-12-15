@@ -260,6 +260,8 @@ public:
 
 public:
     static void sleep(int32_t ms, Task_base* now = 0);
+    static void cancel_sleep(Task_base* now);
+
     static Fiber *current();
     static Fiber *Create(void *(*func)(void *), void *data = 0,
                          int32_t stacksize = FIBER_STACK_SIZE);

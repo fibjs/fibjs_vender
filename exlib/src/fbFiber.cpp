@@ -51,6 +51,16 @@ public:
     int32_t m_tm;
 };
 
+class Canceling : public linkitem
+{
+public:
+    Canceling(Task_base* now) : m_now(now)
+    {}
+
+public:
+    Task_base* m_now;
+};
+
 Fiber *Fiber::current()
 {
     Service *pService = Service::current();
@@ -110,19 +120,35 @@ public:
         while (1)
         {
             Sleeping *p;
+            Canceling *p1;
             std::multimap<double, Sleeping *>::iterator e;
 
             wait();
 
             m_tm = v8::base::OS::TimeCurrentMillis();
 
-            while (1)
+            while (p = m_acSleep.getHead())
             {
-                p = m_acSleep.getHead();
-                if (p == NULL)
-                    break;
-
                 m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
+            }
+
+            while (p1 = m_acCancel.getHead())
+            {
+                e = m_tms.begin();
+                while (e != m_tms.end())
+                {
+                    if (e->second->m_now == p1->m_now)
+                    {
+                        e->second->m_now->resume();
+                        delete e->second;
+                        m_tms.erase(e);
+                        break;
+                    }
+
+                    e++;
+                }
+
+                delete p1;
             }
 
             while (1)
@@ -140,9 +166,16 @@ public:
         }
     }
 
-    void post(Sleeping *p)
+    void sleep(Task_base* now, int32_t ms)
     {
-        m_acSleep.putTail(p);
+        m_acSleep.putTail(new Sleeping(now, ms));
+        m_sem.Post();
+        now->suspend();
+    }
+
+    void cancel(Task_base* now)
+    {
+        m_acCancel.putTail(new Canceling(now));
         m_sem.Post();
     }
 
@@ -150,6 +183,7 @@ private:
     OSSemaphore m_sem;
     double m_tm;
     LockedList<Sleeping> m_acSleep;
+    LockedList<Canceling> m_acCancel;
     std::multimap<double, Sleeping *> m_tms;
 } s_timer;
 
@@ -168,8 +202,12 @@ void Fiber::sleep(int32_t ms, Task_base* now)
     if (ms < 0)
         ms = 0;
 
-    s_timer.post(new Sleeping(now, ms));
-    now->suspend();
+    s_timer.sleep(now, ms);
+}
+
+void Fiber::cancel_sleep(Task_base* now)
+{
+    s_timer.cancel(now);
 }
 
 }
