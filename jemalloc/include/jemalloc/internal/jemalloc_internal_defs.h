@@ -2,6 +2,8 @@
 #ifndef JEMALLOC_INTERNAL_DEFS_H_
 #define	JEMALLOC_INTERNAL_DEFS_H_
 
+#include <stdint.h>
+
 
 #ifdef __APPLE__
 
@@ -161,12 +163,12 @@
 /*
  * Defined if __builtin_clz() and __builtin_clzl() are available.
  */
-#define JEMALLOC_HAVE_BUILTIN_CLZ 
+#define JEMALLOC_HAVE_BUILTIN_CLZ
 
 /*
  * Defined if madvise(2) is available.
  */
-#define JEMALLOC_HAVE_MADVISE 
+#define JEMALLOC_HAVE_MADVISE
 
 /*
  * Defined if OSSpin*() functions are available, as provided by Darwin, and
@@ -182,7 +184,7 @@
 /*
  * Defined if issetugid(2) is available.
  */
-#define JEMALLOC_HAVE_ISSETUGID 
+#define JEMALLOC_HAVE_ISSETUGID
 
 /*
  * Defined if _malloc_thread_cleanup() exists.  At least in the case of
@@ -191,7 +193,7 @@
  * _malloc_thread_cleanup() exists, use it as the basis for thread cleanup in
  * malloc_tsd.
  */
-#define JEMALLOC_MALLOC_THREAD_CLEANUP 
+#define JEMALLOC_MALLOC_THREAD_CLEANUP
 
 /*
  * Defined if threaded initialization is known to be safe on this platform.
@@ -211,7 +213,7 @@
 #define JEMALLOC_TLS_MODEL __attribute__((tls_model("initial-exec")))
 
 /* JEMALLOC_CC_SILENCE enables code that silences unuseful compiler warnings. */
-#define JEMALLOC_CC_SILENCE 
+#define JEMALLOC_CC_SILENCE
 
 /* JEMALLOC_CODE_COVERAGE enables test code coverage analysis. */
 /* #undef JEMALLOC_CODE_COVERAGE */
@@ -223,7 +225,7 @@
 /* #undef JEMALLOC_DEBUG */
 
 /* JEMALLOC_STATS enables statistics calculation. */
-#define JEMALLOC_STATS 
+#define JEMALLOC_STATS
 
 /* JEMALLOC_PROF enables allocation profiling. */
 /* #undef JEMALLOC_PROF */
@@ -242,16 +244,16 @@
  * This makes it possible to allocate/deallocate objects without any locking
  * when the cache is in the steady state.
  */
-#define JEMALLOC_TCACHE 
+#define JEMALLOC_TCACHE
 
 /*
  * JEMALLOC_DSS enables use of sbrk(2) to allocate chunks from the data storage
  * segment (DSS).
  */
-#define JEMALLOC_DSS 
+#define JEMALLOC_DSS
 
 /* Support memory filling (junk/zero/quarantine/redzone). */
-#define JEMALLOC_FILL 
+#define JEMALLOC_FILL
 
 /* Support utrace(2)-based tracing. */
 /* #undef JEMALLOC_UTRACE */
@@ -263,7 +265,7 @@
 /* #undef JEMALLOC_XMALLOC */
 
 /* Support lazy locking (avoid locking unless a second thread is launched). */
-#define JEMALLOC_LAZY_LOCK 
+#define JEMALLOC_LAZY_LOCK
 
 /* Minimum size class to support is 2^LG_TINY_MIN bytes. */
 #define LG_TINY_MIN 3
@@ -275,17 +277,17 @@
  * VirtualAlloc()/VirtualFree() operations must be precisely matched, i.e.
  * mappings do *not* coalesce/fragment.
  */
-#define JEMALLOC_MAPS_COALESCE 
+#define JEMALLOC_MAPS_COALESCE
 
 /*
  * If defined, use munmap() to unmap freed chunks, rather than storing them for
  * later reuse.  This is disabled by default on Linux because common sequences
  * of mmap()/munmap() calls will cause virtual memory map holes.
  */
-#define JEMALLOC_MUNMAP 
+#define JEMALLOC_MUNMAP
 
 /* TLS is used to map arenas and magazine caches to threads. */
-#define JEMALLOC_TLS 
+#define JEMALLOC_TLS
 
 /*
  * ffs()/ffsl() functions to use for bitmapping.  Don't use these directly;
@@ -304,7 +306,7 @@
  * If defined, explicitly attempt to more uniformly distribute large allocation
  * pointer alignments across all cache indices.
  */
-#define JEMALLOC_CACHE_OBLIVIOUS 
+#define JEMALLOC_CACHE_OBLIVIOUS
 
 /*
  * Darwin (OS X) uses zones to work around Mach-O symbol override shortcomings.
@@ -323,7 +325,7 @@
  *                             than swapped out.
  */
 /* #undef JEMALLOC_PURGE_MADVISE_DONTNEED */
-#define JEMALLOC_PURGE_MADVISE_FREE 
+#define JEMALLOC_PURGE_MADVISE_FREE
 
 /* Define if operating system has alloca.h header. */
 /* #undef JEMALLOC_HAS_ALLOCA_H */
@@ -334,15 +336,6 @@
 /* For use by hash code. */
 /* #undef JEMALLOC_BIG_ENDIAN */
 
-/* sizeof(int) == 2^LG_SIZEOF_INT. */
-#define LG_SIZEOF_INT 2
-
-/* sizeof(long) == 2^LG_SIZEOF_LONG. */
-#define LG_SIZEOF_LONG 3
-
-/* sizeof(intmax_t) == 2^LG_SIZEOF_INTMAX_T. */
-#define LG_SIZEOF_INTMAX_T 3
-
 /* glibc malloc hooks (__malloc_hook, __realloc_hook, __free_hook). */
 /* #undef JEMALLOC_GLIBC_MALLOC_HOOK */
 
@@ -350,7 +343,7 @@
 /* #undef JEMALLOC_GLIBC_MEMALIGN_HOOK */
 
 /* Adaptive mutex support in pthreads. */
-#define JEMALLOC_HAVE_PTHREAD_MUTEX_ADAPTIVE_NP 
+#define JEMALLOC_HAVE_PTHREAD_MUTEX_ADAPTIVE_NP
 
 /*
  * Define if operating system has alloca.h header.
@@ -555,12 +548,19 @@
 /* #undef JEMALLOC_BIG_ENDIAN */
 
 /* sizeof(int) == 2^LG_SIZEOF_INT. */
+#if UINT_MAX == UINT32_MAX
 #define LG_SIZEOF_INT 2
+#elif UINT_MAX == UINT64_MAX
+#define LG_SIZEOF_INT 3
+#endif
 
 /* sizeof(long) == 2^LG_SIZEOF_LONG. */
+#if ULONG_MAX == UINT32_MAX
+#define LG_SIZEOF_LONG 2
+#define LG_SIZEOF_INTMAX_T 2
+#elif ULONG_MAX == UINT64_MAX
 #define LG_SIZEOF_LONG 3
-
-/* sizeof(intmax_t) == 2^LG_SIZEOF_INTMAX_T. */
 #define LG_SIZEOF_INTMAX_T 3
+#endif
 
 #endif /* JEMALLOC_INTERNAL_DEFS_H_ */
