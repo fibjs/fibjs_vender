@@ -847,12 +847,8 @@ class Assembler : public AssemblerBase {
   // Bit operations.
   void bt(const Operand& dst, Register src);
   void bts(const Operand& dst, Register src);
-  void bsrq(Register dst, Register src);
-  void bsrq(Register dst, const Operand& src);
   void bsrl(Register dst, Register src);
   void bsrl(Register dst, const Operand& src);
-  void bsfq(Register dst, Register src);
-  void bsfq(Register dst, const Operand& src);
   void bsfl(Register dst, Register src);
   void bsfl(Register dst, const Operand& src);
 
@@ -1077,17 +1073,11 @@ class Assembler : public AssemblerBase {
 
   void cvttsd2si(Register dst, const Operand& src);
   void cvttsd2si(Register dst, XMMRegister src);
-  void cvttss2siq(Register dst, XMMRegister src);
-  void cvttss2siq(Register dst, const Operand& src);
   void cvttsd2siq(Register dst, XMMRegister src);
   void cvttsd2siq(Register dst, const Operand& src);
 
   void cvtlsi2sd(XMMRegister dst, const Operand& src);
   void cvtlsi2sd(XMMRegister dst, Register src);
-
-  void cvtqsi2ss(XMMRegister dst, const Operand& src);
-  void cvtqsi2ss(XMMRegister dst, Register src);
-
   void cvtqsi2sd(XMMRegister dst, const Operand& src);
   void cvtqsi2sd(XMMRegister dst, Register src);
 
@@ -1138,7 +1128,6 @@ class Assembler : public AssemblerBase {
   void pinsrd(XMMRegister dst, Register src, int8_t imm8);
   void pinsrd(XMMRegister dst, const Operand& src, int8_t imm8);
 
-  void roundss(XMMRegister dst, XMMRegister src, RoundingMode mode);
   void roundsd(XMMRegister dst, XMMRegister src, RoundingMode mode);
 
   // AVX instruction
@@ -1370,20 +1359,6 @@ class Assembler : public AssemblerBase {
   void vcvtlsi2sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
     vsd(0x2a, dst, src1, src2, kF2, k0F, kW0);
   }
-  void vcvtqsi2ss(XMMRegister dst, XMMRegister src1, Register src2) {
-    XMMRegister isrc2 = {src2.code()};
-    vsd(0x2a, dst, src1, isrc2, kF3, k0F, kW1);
-  }
-  void vcvtqsi2ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vsd(0x2a, dst, src1, src2, kF3, k0F, kW1);
-  }
-  void vcvtqsi2sd(XMMRegister dst, XMMRegister src1, Register src2) {
-    XMMRegister isrc2 = {src2.code()};
-    vsd(0x2a, dst, src1, isrc2, kF2, k0F, kW1);
-  }
-  void vcvtqsi2sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
-    vsd(0x2a, dst, src1, src2, kF2, k0F, kW1);
-  }
   void vcvttsd2si(Register dst, XMMRegister src) {
     XMMRegister idst = {dst.code()};
     vsd(0x2c, idst, xmm0, src, kF2, k0F, kW0);
@@ -1391,14 +1366,6 @@ class Assembler : public AssemblerBase {
   void vcvttsd2si(Register dst, const Operand& src) {
     XMMRegister idst = {dst.code()};
     vsd(0x2c, idst, xmm0, src, kF2, k0F, kW0);
-  }
-  void vcvttss2siq(Register dst, XMMRegister src) {
-    XMMRegister idst = {dst.code()};
-    vsd(0x2c, idst, xmm0, src, kF3, k0F, kW1);
-  }
-  void vcvttss2siq(Register dst, const Operand& src) {
-    XMMRegister idst = {dst.code()};
-    vsd(0x2c, idst, xmm0, src, kF3, k0F, kW1);
   }
   void vcvttsd2siq(Register dst, XMMRegister src) {
     XMMRegister idst = {dst.code()};
@@ -1408,20 +1375,11 @@ class Assembler : public AssemblerBase {
     XMMRegister idst = {dst.code()};
     vsd(0x2c, idst, xmm0, src, kF2, k0F, kW1);
   }
-  void vcvtsd2si(Register dst, XMMRegister src) {
-    XMMRegister idst = {dst.code()};
-    vsd(0x2d, idst, xmm0, src, kF2, k0F, kW0);
-  }
   void vucomisd(XMMRegister dst, XMMRegister src) {
     vsd(0x2e, dst, xmm0, src, k66, k0F, kWIG);
   }
   void vucomisd(XMMRegister dst, const Operand& src) {
     vsd(0x2e, dst, xmm0, src, k66, k0F, kWIG);
-  }
-  void vroundss(XMMRegister dst, XMMRegister src1, XMMRegister src2,
-                RoundingMode mode) {
-    vsd(0x0a, dst, src1, src2, k66, k0F3A, kWIG);
-    emit(static_cast<byte>(mode) | 0x8);  // Mask precision exception.
   }
   void vroundsd(XMMRegister dst, XMMRegister src1, XMMRegister src2,
                 RoundingMode mode) {
@@ -1642,6 +1600,9 @@ class Assembler : public AssemblerBase {
   void rorxq(Register dst, const Operand& src, byte imm8);
   void rorxl(Register dst, Register src, byte imm8);
   void rorxl(Register dst, const Operand& src, byte imm8);
+
+  // Debugging
+  void Print();
 
   // Check the code size generated from label to here.
   int SizeOfCodeGeneratedSince(Label* label) {

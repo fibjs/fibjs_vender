@@ -37,34 +37,16 @@ void StubRuntimeCallHelper::AfterCall(MacroAssembler* masm) const {
 
 #define __ masm.
 
-UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
-  return nullptr;
+
+UnaryMathFunction CreateExpFunction() {
+  // No SSE2 support
+  return &std::exp;
 }
 
 
-UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
-  size_t actual_size;
-  // Allocate buffer in executable space.
-  byte* buffer =
-      static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return nullptr;
-
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
-  // Load double input into registers.
-  __ fld_d(MemOperand(esp, 4));
-  __ X87SetFPUCW(0x027F);
-  __ fsqrt();
-  __ X87SetFPUCW(0x037F);
-  __ Ret();
-
-  CodeDesc desc;
-  masm.GetCode(&desc);
-  DCHECK(!RelocInfo::RequiresRelocation(desc));
-
-  Assembler::FlushICache(isolate, buffer, actual_size);
-  base::OS::ProtectCode(buffer, actual_size);
-  return FUNCTION_CAST<UnaryMathFunctionWithIsolate>(buffer);
+UnaryMathFunction CreateSqrtFunction() {
+  // No SSE2 support
+  return &std::sqrt;
 }
 
 
@@ -98,14 +80,13 @@ class LabelConverter {
 };
 
 
-MemMoveFunction CreateMemMoveFunction(Isolate* isolate) {
+MemMoveFunction CreateMemMoveFunction() {
   size_t actual_size;
   // Allocate buffer in executable space.
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return nullptr;
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  if (buffer == NULL) return NULL;
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
   LabelConverter conv(buffer);
 
   // Generated code is put into a fixed, unmovable buffer, and not into
@@ -205,7 +186,7 @@ MemMoveFunction CreateMemMoveFunction(Isolate* isolate) {
   CodeDesc desc;
   masm.GetCode(&desc);
   DCHECK(!RelocInfo::RequiresRelocation(desc));
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  Assembler::FlushICacheWithoutIsolate(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
   // TODO(jkummerow): It would be nice to register this code creation event
   // with the PROFILE / GDBJIT system.
@@ -594,8 +575,7 @@ void StringCharLoadGenerator::Generate(MacroAssembler* masm,
 #undef __
 
 
-CodeAgingHelper::CodeAgingHelper(Isolate* isolate) {
-  USE(isolate);
+CodeAgingHelper::CodeAgingHelper() {
   DCHECK(young_sequence_.length() == kNoCodeAgeSequenceLength);
   CodePatcher patcher(young_sequence_.start(), young_sequence_.length());
   patcher.masm()->push(ebp);

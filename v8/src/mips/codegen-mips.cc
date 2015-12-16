@@ -22,22 +22,23 @@ namespace internal {
 
 
 #if defined(USE_SIMULATOR)
-byte* fast_exp_mips_machine_code = nullptr;
-double fast_exp_simulator(double x, Isolate* isolate) {
-  return Simulator::current(isolate)->CallFP(fast_exp_mips_machine_code, x, 0);
+byte* fast_exp_mips_machine_code = NULL;
+double fast_exp_simulator(double x) {
+  return Simulator::current(Isolate::Current())->CallFP(
+      fast_exp_mips_machine_code, x, 0);
 }
 #endif
 
 
-UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
+UnaryMathFunction CreateExpFunction() {
+  if (!FLAG_fast_math) return &std::exp;
   size_t actual_size;
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return nullptr;
+  if (buffer == NULL) return &std::exp;
   ExternalReference::InitializeMathExpData();
 
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
 
   {
     DoubleRegister input = f12;
@@ -62,11 +63,11 @@ UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
   masm.GetCode(&desc);
   DCHECK(!RelocInfo::RequiresRelocation(desc));
 
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  CpuFeatures::FlushICache(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
 
 #if !defined(USE_SIMULATOR)
-  return FUNCTION_CAST<UnaryMathFunctionWithIsolate>(buffer);
+  return FUNCTION_CAST<UnaryMathFunction>(buffer);
 #else
   fast_exp_mips_machine_code = buffer;
   return &fast_exp_simulator;
@@ -75,8 +76,7 @@ UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
 
 
 #if defined(V8_HOST_ARCH_MIPS)
-MemCopyUint8Function CreateMemCopyUint8Function(Isolate* isolate,
-                                                MemCopyUint8Function stub) {
+MemCopyUint8Function CreateMemCopyUint8Function(MemCopyUint8Function stub) {
 #if defined(USE_SIMULATOR) || defined(_MIPS_ARCH_MIPS32R6) || \
     defined(_MIPS_ARCH_MIPS32RX)
   return stub;
@@ -84,12 +84,11 @@ MemCopyUint8Function CreateMemCopyUint8Function(Isolate* isolate,
   size_t actual_size;
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(3 * KB, &actual_size, true));
-  if (buffer == nullptr) return stub;
+  if (buffer == NULL) return stub;
 
   // This code assumes that cache lines are 32 bytes and if the cache line is
   // larger it will not work correctly.
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
 
   {
     Label lastb, unaligned, aligned, chkw,
@@ -602,24 +601,23 @@ MemCopyUint8Function CreateMemCopyUint8Function(Isolate* isolate,
   masm.GetCode(&desc);
   DCHECK(!RelocInfo::RequiresRelocation(desc));
 
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  CpuFeatures::FlushICache(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
   return FUNCTION_CAST<MemCopyUint8Function>(buffer);
 #endif
 }
 #endif
 
-UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
+UnaryMathFunction CreateSqrtFunction() {
 #if defined(USE_SIMULATOR)
-  return nullptr;
+  return &std::sqrt;
 #else
   size_t actual_size;
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return nullptr;
+  if (buffer == NULL) return &std::sqrt;
 
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
 
   __ MovFromFloatParameter(f12);
   __ sqrt_d(f0, f12);
@@ -630,9 +628,9 @@ UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
   masm.GetCode(&desc);
   DCHECK(!RelocInfo::RequiresRelocation(desc));
 
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  CpuFeatures::FlushICache(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
-  return FUNCTION_CAST<UnaryMathFunctionWithIsolate>(buffer);
+  return FUNCTION_CAST<UnaryMathFunction>(buffer);
 #endif
 }
 
@@ -1193,8 +1191,7 @@ static const uint32_t kCodeAgePatchFirstInstruction = 0x00010180;
 #endif
 
 
-CodeAgingHelper::CodeAgingHelper(Isolate* isolate) {
-  USE(isolate);
+CodeAgingHelper::CodeAgingHelper() {
   DCHECK(young_sequence_.length() == kNoCodeAgeSequenceLength);
   // Since patcher is a large object, allocate it dynamically when needed,
   // to avoid overloading the stack in stress conditions.
@@ -1246,7 +1243,7 @@ void Code::PatchPlatformCodeAge(Isolate* isolate,
   uint32_t young_length = isolate->code_aging_helper()->young_sequence_length();
   if (age == kNoAgeCodeAge) {
     isolate->code_aging_helper()->CopyYoungSequenceTo(sequence);
-    Assembler::FlushICache(isolate, sequence, young_length);
+    CpuFeatures::FlushICache(sequence, young_length);
   } else {
     Code* stub = GetCodeAgeStub(isolate, age, parity);
     CodePatcher patcher(sequence, young_length / Assembler::kInstrSize);

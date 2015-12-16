@@ -145,7 +145,7 @@ class RegisteredExtension {
   V(TypeSwitch, TypeSwitchInfo)              \
   V(Data, Object)                            \
   V(RegExp, JSRegExp)                        \
-  V(Object, JSReceiver)                      \
+  V(Object, JSObject)                        \
   V(Array, JSArray)                          \
   V(Map, JSMap)                              \
   V(Set, JSSet)                              \
@@ -168,7 +168,7 @@ class RegisteredExtension {
   V(Symbol, Symbol)                          \
   V(Script, JSFunction)                      \
   V(UnboundScript, SharedFunctionInfo)       \
-  V(Function, JSReceiver)                    \
+  V(Function, JSFunction)                    \
   V(Message, JSMessageObject)                \
   V(Context, Context)                        \
   V(External, Object)                        \
@@ -192,6 +192,8 @@ class Utils {
       v8::internal::Handle<v8::internal::Context> obj);
   static inline Local<Value> ToLocal(
       v8::internal::Handle<v8::internal::Object> obj);
+  static inline Local<Function> ToLocal(
+      v8::internal::Handle<v8::internal::JSFunction> obj);
   static inline Local<Name> ToLocal(
       v8::internal::Handle<v8::internal::Name> obj);
   static inline Local<String> ToLocal(
@@ -201,11 +203,7 @@ class Utils {
   static inline Local<RegExp> ToLocal(
       v8::internal::Handle<v8::internal::JSRegExp> obj);
   static inline Local<Object> ToLocal(
-      v8::internal::Handle<v8::internal::JSReceiver> obj);
-  static inline Local<Object> ToLocal(
       v8::internal::Handle<v8::internal::JSObject> obj);
-  static inline Local<Object> ToLocal(
-      v8::internal::Handle<v8::internal::JSProxy> obj);
   static inline Local<Array> ToLocal(
       v8::internal::Handle<v8::internal::JSArray> obj);
   static inline Local<Map> ToLocal(
@@ -271,8 +269,6 @@ class Utils {
       v8::internal::Handle<v8::internal::JSObject> obj);
   static inline Local<NativeWeakMap> NativeWeakMapToLocal(
       v8::internal::Handle<v8::internal::JSWeakMap> obj);
-  static inline Local<Function> CallableToLocal(
-      v8::internal::Handle<v8::internal::JSReceiver> obj);
 
 #define DECLARE_OPEN_HANDLE(From, To) \
   static inline v8::internal::Handle<v8::internal::To> \
@@ -353,13 +349,12 @@ inline bool ToLocal(v8::internal::MaybeHandle<v8::internal::Object> maybe,
 
 MAKE_TO_LOCAL(ToLocal, Context, Context)
 MAKE_TO_LOCAL(ToLocal, Object, Value)
+MAKE_TO_LOCAL(ToLocal, JSFunction, Function)
 MAKE_TO_LOCAL(ToLocal, Name, Name)
 MAKE_TO_LOCAL(ToLocal, String, String)
 MAKE_TO_LOCAL(ToLocal, Symbol, Symbol)
 MAKE_TO_LOCAL(ToLocal, JSRegExp, RegExp)
-MAKE_TO_LOCAL(ToLocal, JSReceiver, Object)
 MAKE_TO_LOCAL(ToLocal, JSObject, Object)
-MAKE_TO_LOCAL(ToLocal, JSProxy, Object)
 MAKE_TO_LOCAL(ToLocal, JSArray, Array)
 MAKE_TO_LOCAL(ToLocal, JSMap, Map)
 MAKE_TO_LOCAL(ToLocal, JSSet, Set)
@@ -385,7 +380,6 @@ MAKE_TO_LOCAL(IntegerToLocal, Object, Integer)
 MAKE_TO_LOCAL(Uint32ToLocal, Object, Uint32)
 MAKE_TO_LOCAL(ExternalToLocal, JSObject, External)
 MAKE_TO_LOCAL(NativeWeakMapToLocal, JSWeakMap, NativeWeakMap)
-MAKE_TO_LOCAL(CallableToLocal, JSReceiver, Function)
 
 #undef MAKE_TO_LOCAL_TYPED_ARRAY
 #undef MAKE_TO_LOCAL

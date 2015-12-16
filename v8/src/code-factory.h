@@ -43,10 +43,9 @@ class CodeFactory final {
       Isolate* isolate, LanguageMode language_mode,
       InlineCacheState initialization_state);
   static Callable CallIC(Isolate* isolate, int argc,
-                         ConvertReceiverMode mode = ConvertReceiverMode::kAny);
-  static Callable CallICInOptimizedCode(
-      Isolate* isolate, int argc,
-      ConvertReceiverMode mode = ConvertReceiverMode::kAny);
+                         CallICState::CallType call_type);
+  static Callable CallICInOptimizedCode(Isolate* isolate, int argc,
+                                        CallICState::CallType call_type);
   static Callable StoreIC(Isolate* isolate, LanguageMode mode);
   static Callable StoreICInOptimizedCode(Isolate* isolate, LanguageMode mode,
                                          InlineCacheState initialization_state);
@@ -57,7 +56,6 @@ class CodeFactory final {
 
   static Callable CompareIC(Isolate* isolate, Token::Value op,
                             Strength strength);
-  static Callable CompareNilIC(Isolate* isolate, NilValue nil_value);
 
   static Callable BinaryOpIC(Isolate* isolate, Token::Value op,
                              Strength strength);
@@ -84,7 +82,6 @@ class CodeFactory final {
 
   static Callable Typeof(Isolate* isolate);
 
-  static Callable FastCloneRegExp(Isolate* isolate);
   static Callable FastCloneShallowArray(Isolate* isolate);
   static Callable FastCloneShallowObject(Isolate* isolate, int length);
 
@@ -96,15 +93,10 @@ class CodeFactory final {
                                   bool has_duplicate_parameters);
 
   static Callable AllocateHeapNumber(Isolate* isolate);
-  static Callable AllocateMutableHeapNumber(Isolate* isolate);
   static Callable AllocateInNewSpace(Isolate* isolate);
 
-  static Callable ArgumentAdaptor(Isolate* isolate);
-  static Callable Call(Isolate* isolate,
-                       ConvertReceiverMode mode = ConvertReceiverMode::kAny);
-  static Callable CallFunction(
-      Isolate* isolate, ConvertReceiverMode mode = ConvertReceiverMode::kAny);
-  static Callable Construct(Isolate* isolate);
+  static Callable CallFunction(Isolate* isolate, int argc,
+                               CallFunctionFlags flags);
 
   static Callable InterpreterPushArgsAndCall(Isolate* isolate);
   static Callable InterpreterPushArgsAndConstruct(Isolate* isolate);

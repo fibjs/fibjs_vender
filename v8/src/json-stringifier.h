@@ -82,8 +82,7 @@ class BasicJsonStringifier BASE_EMBEDDED {
   INLINE(Result SerializeJSArray(Handle<JSArray> object));
   INLINE(Result SerializeJSObject(Handle<JSObject> object));
 
-  Result SerializeJSArraySlow(Handle<JSArray> object, uint32_t start,
-                              uint32_t length);
+  Result SerializeJSArraySlow(Handle<JSArray> object, uint32_t length);
 
   void SerializeString(Handle<String> object);
 
@@ -223,7 +222,6 @@ MaybeHandle<Object> BasicJsonStringifier::StringifyString(
     SerializeStringUnchecked_(object->GetFlatContent().ToOneByteVector(),
                               &no_extend);
     no_extend.Append('\"');
-    return no_extend.Finalize();
   } else {
     result = isolate->factory()
                  ->NewRawTwoByteString(worst_case_length)
@@ -234,8 +232,8 @@ MaybeHandle<Object> BasicJsonStringifier::StringifyString(
     SerializeStringUnchecked_(object->GetFlatContent().ToUC16Vector(),
                               &no_extend);
     no_extend.Append('\"');
-    return no_extend.Finalize();
   }
+  return result;
 }
 
 
@@ -438,8 +436,8 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
   builder_.AppendCharacter('[');
   switch (object->GetElementsKind()) {
     case FAST_SMI_ELEMENTS: {
-      Handle<FixedArray> elements(FixedArray::cast(object->elements()),
-                                  isolate_);
+      Handle<FixedArray> elements(
+          FixedArray::cast(object->elements()), isolate_);
       for (uint32_t i = 0; i < length; i++) {
         if (i > 0) builder_.AppendCharacter(',');
         SerializeSmi(Smi::cast(elements->get(i)));
@@ -458,20 +456,14 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
       break;
     }
     case FAST_ELEMENTS: {
-      Handle<Object> old_length(object->length(), isolate_);
+      Handle<FixedArray> elements(
+          FixedArray::cast(object->elements()), isolate_);
       for (uint32_t i = 0; i < length; i++) {
-        if (object->length() != *old_length ||
-            object->GetElementsKind() != FAST_ELEMENTS) {
-          Result result = SerializeJSArraySlow(object, i, length);
-          if (result != SUCCESS) return result;
-          break;
-        }
         if (i > 0) builder_.AppendCharacter(',');
-        Result result = SerializeElement(
-            isolate_,
-            Handle<Object>(FixedArray::cast(object->elements())->get(i),
-                           isolate_),
-            i);
+        Result result =
+            SerializeElement(isolate_,
+                             Handle<Object>(elements->get(i), isolate_),
+                             i);
         if (result == SUCCESS) continue;
         if (result == UNCHANGED) {
           builder_.AppendCString("null");
@@ -481,10 +473,11 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
       }
       break;
     }
-    // The FAST_HOLEY_* cases could be handled in a faster way. They resemble
-    // the non-holey cases except that a lookup is necessary for holes.
+    // TODO(yangguo):  The FAST_HOLEY_* cases could be handled in a faster way.
+    // They resemble the non-holey cases except that a prototype chain lookup
+    // is necessary for holes.
     default: {
-      Result result = SerializeJSArraySlow(object, 0, length);
+      Result result = SerializeJSArraySlow(object, length);
       if (result != SUCCESS) return result;
       break;
     }
@@ -496,8 +489,8 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
 
 
 BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArraySlow(
-    Handle<JSArray> object, uint32_t start, uint32_t length) {
-  for (uint32_t i = start; i < length; i++) {
+    Handle<JSArray> object, uint32_t length) {
+  for (uint32_t i = 0; i < length; i++) {
     if (i > 0) builder_.AppendCharacter(',');
     Handle<Object> element;
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -525,7 +518,7 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSObject(
   HandleScope handle_scope(isolate_);
   Result stack_push = StackPush(object);
   if (stack_push != SUCCESS) return stack_push;
-  DCHECK(!object->IsJSGlobalProxy() && !object->IsJSGlobalObject());
+  DCHECK(!object->IsJSGlobalProxy() && !object->IsGlobalObject());
 
   builder_.AppendCharacter('{');
   bool comma = false;

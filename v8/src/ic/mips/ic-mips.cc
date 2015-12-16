@@ -29,6 +29,7 @@ static void GenerateGlobalInstanceTypeCheck(MacroAssembler* masm, Register type,
   // Register usage:
   //   type: holds the receiver instance type on entry.
   __ Branch(global_object, eq, type, Operand(JS_GLOBAL_OBJECT_TYPE));
+  __ Branch(global_object, eq, type, Operand(JS_BUILTINS_OBJECT_TYPE));
   __ Branch(global_object, eq, type, Operand(JS_GLOBAL_PROXY_TYPE));
 }
 
@@ -679,17 +680,19 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   __ lb(t0, FieldMemOperand(t0, Map::kInstanceTypeOffset));
   __ JumpIfNotUniqueNameInstanceType(t0, &slow);
 
-  // The handlers in the stub cache expect a vector and slot. Since we won't
-  // change the IC from any downstream misses, a dummy vector can be used.
-  Register vector = VectorStoreICDescriptor::VectorRegister();
-  Register slot = VectorStoreICDescriptor::SlotRegister();
-  DCHECK(!AreAliased(vector, slot, t1, t2, t4, t5));
-  Handle<TypeFeedbackVector> dummy_vector =
-      TypeFeedbackVector::DummyVector(masm->isolate());
-  int slot_index = dummy_vector->GetIndex(
-      FeedbackVectorSlot(TypeFeedbackVector::kDummyKeyedStoreICSlot));
-  __ LoadRoot(vector, Heap::kDummyVectorRootIndex);
-  __ li(slot, Operand(Smi::FromInt(slot_index)));
+  if (FLAG_vector_stores) {
+    // The handlers in the stub cache expect a vector and slot. Since we won't
+    // change the IC from any downstream misses, a dummy vector can be used.
+    Register vector = VectorStoreICDescriptor::VectorRegister();
+    Register slot = VectorStoreICDescriptor::SlotRegister();
+    DCHECK(!AreAliased(vector, slot, t1, t2, t4, t5));
+    Handle<TypeFeedbackVector> dummy_vector =
+        TypeFeedbackVector::DummyVector(masm->isolate());
+    int slot_index = dummy_vector->GetIndex(
+        FeedbackVectorSlot(TypeFeedbackVector::kDummyKeyedStoreICSlot));
+    __ LoadRoot(vector, Heap::kDummyVectorRootIndex);
+    __ li(slot, Operand(Smi::FromInt(slot_index)));
+  }
 
   Code::Flags flags = Code::RemoveTypeAndHolderFromFlags(
       Code::ComputeHandlerFlags(Code::STORE_IC));
@@ -743,17 +746,23 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
 
 
 static void StoreIC_PushArgs(MacroAssembler* masm) {
-  __ Push(StoreDescriptor::ReceiverRegister(), StoreDescriptor::NameRegister(),
-          StoreDescriptor::ValueRegister(),
-          VectorStoreICDescriptor::SlotRegister(),
-          VectorStoreICDescriptor::VectorRegister());
+  if (FLAG_vector_stores) {
+    __ Push(StoreDescriptor::ReceiverRegister(),
+            StoreDescriptor::NameRegister(), StoreDescriptor::ValueRegister(),
+            VectorStoreICDescriptor::SlotRegister(),
+            VectorStoreICDescriptor::VectorRegister());
+  } else {
+    __ Push(StoreDescriptor::ReceiverRegister(),
+            StoreDescriptor::NameRegister(), StoreDescriptor::ValueRegister());
+  }
 }
 
 
 void KeyedStoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
-  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss, 5, 1);
+  int args = FLAG_vector_stores ? 5 : 3;
+  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss, args, 1);
 }
 
 
@@ -779,7 +788,8 @@ void StoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   // Perform tail call to the entry.
-  __ TailCallRuntime(Runtime::kStoreIC_Miss, 5, 1);
+  int args = FLAG_vector_stores ? 5 : 3;
+  __ TailCallRuntime(Runtime::kStoreIC_Miss, args, 1);
 }
 
 
@@ -874,6 +884,8 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   Address patch_address =
       andi_instruction_address - delta * Instruction::kInstrSize;
   Instr instr_at_patch = Assembler::instr_at(patch_address);
+  Instr branch_instr =
+      Assembler::instr_at(patch_address + Instruction::kInstrSize);
   // This is patching a conditional "jump if not smi/jump if smi" site.
   // Enabling by changing from
   //   andi at, rx, 0
@@ -893,44 +905,13 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
     DCHECK(Assembler::IsAndImmediate(instr_at_patch));
     patcher.masm()->andi(at, reg, 0);
   }
-  Instr branch_instr =
-      Assembler::instr_at(patch_address + Instruction::kInstrSize);
   DCHECK(Assembler::IsBranch(branch_instr));
-
-  uint32_t opcode = Assembler::GetOpcodeField(branch_instr);
-  // Currently only the 'eq' and 'ne' cond values are supported and the simple
-  // branch instructions and their r6 variants (with opcode being the branch
-  // type). There are some special cases (see Assembler::IsBranch()) so
-  // extending this would be tricky.
-  DCHECK(opcode == BEQ ||    // BEQ
-         opcode == BNE ||    // BNE
-         opcode == POP10 ||  // BEQC
-         opcode == POP30 ||  // BNEC
-         opcode == POP66 ||  // BEQZC
-         opcode == POP76);   // BNEZC
-  switch (opcode) {
-    case BEQ:
-      opcode = BNE;  // change BEQ to BNE.
-      break;
-    case POP10:
-      opcode = POP30;  // change BEQC to BNEC.
-      break;
-    case POP66:
-      opcode = POP76;  // change BEQZC to BNEZC.
-      break;
-    case BNE:
-      opcode = BEQ;  // change BNE to BEQ.
-      break;
-    case POP30:
-      opcode = POP10;  // change BNEC to BEQC.
-      break;
-    case POP76:
-      opcode = POP66;  // change BNEZC to BEQZC.
-      break;
-    default:
-      UNIMPLEMENTED();
+  if (Assembler::IsBeq(branch_instr)) {
+    patcher.ChangeBranchCondition(ne);
+  } else {
+    DCHECK(Assembler::IsBne(branch_instr));
+    patcher.ChangeBranchCondition(eq);
   }
-  patcher.ChangeBranchCondition(branch_instr, opcode);
 }
 }  // namespace internal
 }  // namespace v8

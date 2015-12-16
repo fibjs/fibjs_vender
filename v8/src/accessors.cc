@@ -161,8 +161,7 @@ void Accessors::ArgumentsIteratorSetter(
     const v8::PropertyCallbackInfo<void>& info) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(info.GetIsolate());
   HandleScope scope(isolate);
-  Handle<JSObject> object_handle =
-      Handle<JSObject>::cast(Utils::OpenHandle(*info.This()));
+  Handle<JSObject> object_handle = Utils::OpenHandle(*info.This());
   Handle<Object> value_handle = Utils::OpenHandle(*val);
   Handle<Name> name_handle = Utils::OpenHandle(*name);
 
@@ -206,7 +205,7 @@ void Accessors::ArrayLengthSetter(
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(info.GetIsolate());
   HandleScope scope(isolate);
 
-  Handle<JSReceiver> object = Utils::OpenHandle(*info.This());
+  Handle<JSObject> object = Utils::OpenHandle(*info.This());
   Handle<JSArray> array = Handle<JSArray>::cast(object);
   Handle<Object> length_obj = Utils::OpenHandle(*val);
 
@@ -1176,7 +1175,20 @@ Handle<Object> GetFunctionArguments(Isolate* isolate,
       return ArgumentsForInlinedFunction(frame, function, function_index);
     }
 
-    // Find the frame that holds the actual arguments passed to the function.
+    if (!frame->is_optimized()) {
+      // If there is an arguments variable in the stack, we return that.
+      Handle<ScopeInfo> scope_info(function->shared()->scope_info());
+      int index = scope_info->StackSlotIndex(
+          isolate->heap()->arguments_string());
+      if (index >= 0) {
+        Handle<Object> arguments(frame->GetExpression(index), isolate);
+        if (!arguments->IsArgumentsMarker()) return arguments;
+      }
+    }
+
+    // If there is no arguments variable in the stack or we have an
+    // optimized frame, we find the frame that holds the actual arguments
+    // passed to the function.
     it.AdvanceToArgumentsFrame();
     frame = it.frame();
 
@@ -1322,7 +1334,7 @@ MaybeHandle<JSFunction> FindCaller(Isolate* isolate,
   // If caller is a built-in function and caller's caller is also built-in,
   // use that instead.
   JSFunction* potential_caller = caller;
-  while (potential_caller != NULL && potential_caller->shared()->IsBuiltin()) {
+  while (potential_caller != NULL && potential_caller->IsBuiltin()) {
     caller = potential_caller;
     potential_caller = it.next();
   }

@@ -7,8 +7,7 @@
 
 #include "src/allocation.h"
 #include "src/assert-scope.h"
-#include "src/ast/ast.h"
-#include "src/ast/scopes.h"
+#include "src/ast.h"
 #include "src/bit-vector.h"
 #include "src/code-factory.h"
 #include "src/code-stubs.h"
@@ -16,6 +15,7 @@
 #include "src/compiler.h"
 #include "src/globals.h"
 #include "src/objects.h"
+#include "src/scopes.h"
 
 namespace v8 {
 namespace internal {
@@ -153,9 +153,10 @@ class FullCodeGenerator: public AstVisitor {
     Breakable(FullCodeGenerator* codegen, BreakableStatement* statement)
         : NestedStatement(codegen), statement_(statement) {
     }
+    virtual ~Breakable() {}
 
-    Breakable* AsBreakable() override { return this; }
-    bool IsBreakTarget(Statement* target) override {
+    virtual Breakable* AsBreakable() { return this; }
+    virtual bool IsBreakTarget(Statement* target) {
       return statement() == target;
     }
 
@@ -173,9 +174,10 @@ class FullCodeGenerator: public AstVisitor {
     Iteration(FullCodeGenerator* codegen, IterationStatement* statement)
         : Breakable(codegen, statement) {
     }
+    virtual ~Iteration() {}
 
-    Iteration* AsIteration() override { return this; }
-    bool IsContinueTarget(Statement* target) override {
+    virtual Iteration* AsIteration() { return this; }
+    virtual bool IsContinueTarget(Statement* target) {
       return statement() == target;
     }
 
@@ -191,8 +193,9 @@ class FullCodeGenerator: public AstVisitor {
     NestedBlock(FullCodeGenerator* codegen, Block* block)
         : Breakable(codegen, block) {
     }
+    virtual ~NestedBlock() {}
 
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
+    virtual NestedStatement* Exit(int* stack_depth, int* context_length) {
       auto block_scope = statement()->AsBlock()->scope();
       if (block_scope != nullptr) {
         if (block_scope->ContextLocalCount() > 0) ++(*context_length);
@@ -207,12 +210,13 @@ class FullCodeGenerator: public AstVisitor {
     static const int kElementCount = TryBlockConstant::kElementCount;
 
     explicit TryCatch(FullCodeGenerator* codegen) : NestedStatement(codegen) {}
+    virtual ~TryCatch() {}
 
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
+    virtual NestedStatement* Exit(int* stack_depth, int* context_length) {
       *stack_depth += kElementCount;
       return previous_;
     }
-    NestedStatement* AccumulateDepth(int* stack_depth) override {
+    virtual NestedStatement* AccumulateDepth(int* stack_depth) {
       *stack_depth += kElementCount;
       return previous_;
     }
@@ -226,9 +230,10 @@ class FullCodeGenerator: public AstVisitor {
     TryFinally(FullCodeGenerator* codegen, Label* finally_entry)
         : NestedStatement(codegen), finally_entry_(finally_entry) {
     }
+    virtual ~TryFinally() {}
 
-    NestedStatement* Exit(int* stack_depth, int* context_length) override;
-    NestedStatement* AccumulateDepth(int* stack_depth) override {
+    virtual NestedStatement* Exit(int* stack_depth, int* context_length);
+    virtual NestedStatement* AccumulateDepth(int* stack_depth) {
       *stack_depth += kElementCount;
       return previous_;
     }
@@ -243,12 +248,13 @@ class FullCodeGenerator: public AstVisitor {
     static const int kElementCount = 3;
 
     explicit Finally(FullCodeGenerator* codegen) : NestedStatement(codegen) {}
+    virtual ~Finally() {}
 
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
+    virtual NestedStatement* Exit(int* stack_depth, int* context_length) {
       *stack_depth += kElementCount;
       return previous_;
     }
-    NestedStatement* AccumulateDepth(int* stack_depth) override {
+    virtual NestedStatement* AccumulateDepth(int* stack_depth) {
       *stack_depth += kElementCount;
       return previous_;
     }
@@ -262,12 +268,13 @@ class FullCodeGenerator: public AstVisitor {
     ForIn(FullCodeGenerator* codegen, ForInStatement* statement)
         : Iteration(codegen, statement) {
     }
+    virtual ~ForIn() {}
 
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
+    virtual NestedStatement* Exit(int* stack_depth, int* context_length) {
       *stack_depth += kElementCount;
       return previous_;
     }
-    NestedStatement* AccumulateDepth(int* stack_depth) override {
+    virtual NestedStatement* AccumulateDepth(int* stack_depth) {
       *stack_depth += kElementCount;
       return previous_;
     }
@@ -280,8 +287,9 @@ class FullCodeGenerator: public AstVisitor {
     explicit WithOrCatch(FullCodeGenerator* codegen)
         : NestedStatement(codegen) {
     }
+    virtual ~WithOrCatch() {}
 
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
+    virtual NestedStatement* Exit(int* stack_depth, int* context_length) {
       ++(*context_length);
       return previous_;
     }
@@ -463,13 +471,12 @@ class FullCodeGenerator: public AstVisitor {
   void EmitReturnSequence();
 
   // Platform-specific code sequences for calls
-  void EmitCall(Call* expr, ConvertReceiverMode = ConvertReceiverMode::kAny);
+  void EmitCall(Call* expr, CallICState::CallType = CallICState::FUNCTION);
   void EmitSuperConstructorCall(Call* expr);
   void EmitCallWithLoadIC(Call* expr);
   void EmitSuperCallWithLoadIC(Call* expr);
   void EmitKeyedCallWithLoadIC(Call* expr, Expression* key);
   void EmitKeyedSuperCallWithLoadIC(Call* expr);
-  void EmitPossiblyEvalCall(Call* expr);
 
 #define FOR_EACH_FULL_CODE_INTRINSIC(F) \
   F(IsSmi)                              \
@@ -479,6 +486,7 @@ class FullCodeGenerator: public AstVisitor {
   F(IsJSProxy)                          \
   F(IsConstructCall)                    \
   F(Call)                               \
+  F(CallFunction)                       \
   F(DefaultConstructorCallSuper)        \
   F(ArgumentsLength)                    \
   F(Arguments)                          \
@@ -504,6 +512,7 @@ class FullCodeGenerator: public AstVisitor {
   F(DebugBreakInOptimizedCode)          \
   F(ClassOf)                            \
   F(StringCharCodeAt)                   \
+  F(StringAdd)                          \
   F(SubString)                          \
   F(RegExpExec)                         \
   F(RegExpConstructResult)              \
@@ -662,7 +671,7 @@ class FullCodeGenerator: public AstVisitor {
 
   void SetCallPosition(Expression* expr, int argc);
 
-  void SetConstructCallPosition(Expression* expr, int argc);
+  void SetConstructCallPosition(Expression* expr);
 
   // Non-local control flow support.
   void EnterTryBlock(int handler_index, Label* handler);
@@ -713,7 +722,7 @@ class FullCodeGenerator: public AstVisitor {
   void PushCalleeAndWithBaseObject(Call* expr);
 
   // AST node visit functions.
-#define DECLARE_VISIT(type) void Visit##type(type* node) override;
+#define DECLARE_VISIT(type) virtual void Visit##type(type* node) override;
   AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
 
@@ -827,18 +836,20 @@ class FullCodeGenerator: public AstVisitor {
     explicit AccumulatorValueContext(FullCodeGenerator* codegen)
         : ExpressionContext(codegen) { }
 
-    void Plug(bool flag) const override;
-    void Plug(Register reg) const override;
-    void Plug(Label* materialize_true, Label* materialize_false) const override;
-    void Plug(Variable* var) const override;
-    void Plug(Handle<Object> lit) const override;
-    void Plug(Heap::RootListIndex) const override;
-    void PlugTOS() const override;
-    void DropAndPlug(int count, Register reg) const override;
-    void PrepareTest(Label* materialize_true, Label* materialize_false,
-                     Label** if_true, Label** if_false,
-                     Label** fall_through) const override;
-    bool IsAccumulatorValue() const override { return true; }
+    virtual void Plug(bool flag) const;
+    virtual void Plug(Register reg) const;
+    virtual void Plug(Label* materialize_true, Label* materialize_false) const;
+    virtual void Plug(Variable* var) const;
+    virtual void Plug(Handle<Object> lit) const;
+    virtual void Plug(Heap::RootListIndex) const;
+    virtual void PlugTOS() const;
+    virtual void DropAndPlug(int count, Register reg) const;
+    virtual void PrepareTest(Label* materialize_true,
+                             Label* materialize_false,
+                             Label** if_true,
+                             Label** if_false,
+                             Label** fall_through) const;
+    virtual bool IsAccumulatorValue() const { return true; }
   };
 
   class StackValueContext : public ExpressionContext {
@@ -846,18 +857,20 @@ class FullCodeGenerator: public AstVisitor {
     explicit StackValueContext(FullCodeGenerator* codegen)
         : ExpressionContext(codegen) { }
 
-    void Plug(bool flag) const override;
-    void Plug(Register reg) const override;
-    void Plug(Label* materialize_true, Label* materialize_false) const override;
-    void Plug(Variable* var) const override;
-    void Plug(Handle<Object> lit) const override;
-    void Plug(Heap::RootListIndex) const override;
-    void PlugTOS() const override;
-    void DropAndPlug(int count, Register reg) const override;
-    void PrepareTest(Label* materialize_true, Label* materialize_false,
-                     Label** if_true, Label** if_false,
-                     Label** fall_through) const override;
-    bool IsStackValue() const override { return true; }
+    virtual void Plug(bool flag) const;
+    virtual void Plug(Register reg) const;
+    virtual void Plug(Label* materialize_true, Label* materialize_false) const;
+    virtual void Plug(Variable* var) const;
+    virtual void Plug(Handle<Object> lit) const;
+    virtual void Plug(Heap::RootListIndex) const;
+    virtual void PlugTOS() const;
+    virtual void DropAndPlug(int count, Register reg) const;
+    virtual void PrepareTest(Label* materialize_true,
+                             Label* materialize_false,
+                             Label** if_true,
+                             Label** if_false,
+                             Label** fall_through) const;
+    virtual bool IsStackValue() const { return true; }
   };
 
   class TestContext : public ExpressionContext {
@@ -883,18 +896,20 @@ class FullCodeGenerator: public AstVisitor {
     Label* false_label() const { return false_label_; }
     Label* fall_through() const { return fall_through_; }
 
-    void Plug(bool flag) const override;
-    void Plug(Register reg) const override;
-    void Plug(Label* materialize_true, Label* materialize_false) const override;
-    void Plug(Variable* var) const override;
-    void Plug(Handle<Object> lit) const override;
-    void Plug(Heap::RootListIndex) const override;
-    void PlugTOS() const override;
-    void DropAndPlug(int count, Register reg) const override;
-    void PrepareTest(Label* materialize_true, Label* materialize_false,
-                     Label** if_true, Label** if_false,
-                     Label** fall_through) const override;
-    bool IsTest() const override { return true; }
+    virtual void Plug(bool flag) const;
+    virtual void Plug(Register reg) const;
+    virtual void Plug(Label* materialize_true, Label* materialize_false) const;
+    virtual void Plug(Variable* var) const;
+    virtual void Plug(Handle<Object> lit) const;
+    virtual void Plug(Heap::RootListIndex) const;
+    virtual void PlugTOS() const;
+    virtual void DropAndPlug(int count, Register reg) const;
+    virtual void PrepareTest(Label* materialize_true,
+                             Label* materialize_false,
+                             Label** if_true,
+                             Label** if_false,
+                             Label** fall_through) const;
+    virtual bool IsTest() const { return true; }
 
    private:
     Expression* condition_;
@@ -908,18 +923,20 @@ class FullCodeGenerator: public AstVisitor {
     explicit EffectContext(FullCodeGenerator* codegen)
         : ExpressionContext(codegen) { }
 
-    void Plug(bool flag) const override;
-    void Plug(Register reg) const override;
-    void Plug(Label* materialize_true, Label* materialize_false) const override;
-    void Plug(Variable* var) const override;
-    void Plug(Handle<Object> lit) const override;
-    void Plug(Heap::RootListIndex) const override;
-    void PlugTOS() const override;
-    void DropAndPlug(int count, Register reg) const override;
-    void PrepareTest(Label* materialize_true, Label* materialize_false,
-                     Label** if_true, Label** if_false,
-                     Label** fall_through) const override;
-    bool IsEffect() const override { return true; }
+    virtual void Plug(bool flag) const;
+    virtual void Plug(Register reg) const;
+    virtual void Plug(Label* materialize_true, Label* materialize_false) const;
+    virtual void Plug(Variable* var) const;
+    virtual void Plug(Handle<Object> lit) const;
+    virtual void Plug(Heap::RootListIndex) const;
+    virtual void PlugTOS() const;
+    virtual void DropAndPlug(int count, Register reg) const;
+    virtual void PrepareTest(Label* materialize_true,
+                             Label* materialize_false,
+                             Label** if_true,
+                             Label** if_false,
+                             Label** fall_through) const;
+    virtual bool IsEffect() const { return true; }
   };
 
   class EnterBlockScopeIfNeeded {

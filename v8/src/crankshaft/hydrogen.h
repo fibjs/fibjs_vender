@@ -7,11 +7,11 @@
 
 #include "src/accessors.h"
 #include "src/allocation.h"
-#include "src/ast/ast.h"
-#include "src/ast/scopes.h"
+#include "src/ast.h"
 #include "src/bailout-reason.h"
 #include "src/compiler.h"
 #include "src/crankshaft/hydrogen-instructions.h"
+#include "src/scopes.h"
 #include "src/zone.h"
 
 namespace v8 {
@@ -788,13 +788,15 @@ class EffectContext final : public AstContext {
   explicit EffectContext(HOptimizedGraphBuilder* owner)
       : AstContext(owner, Expression::kEffect) {
   }
-  ~EffectContext() override;
+  virtual ~EffectContext();
 
   void ReturnValue(HValue* value) override;
-  void ReturnInstruction(HInstruction* instr, BailoutId ast_id) override;
-  void ReturnControl(HControlInstruction* instr, BailoutId ast_id) override;
-  void ReturnContinuation(HIfContinuation* continuation,
-                          BailoutId ast_id) override;
+  virtual void ReturnInstruction(HInstruction* instr,
+                                 BailoutId ast_id) override;
+  virtual void ReturnControl(HControlInstruction* instr,
+                             BailoutId ast_id) override;
+  virtual void ReturnContinuation(HIfContinuation* continuation,
+                                  BailoutId ast_id) override;
 };
 
 
@@ -803,13 +805,15 @@ class ValueContext final : public AstContext {
   ValueContext(HOptimizedGraphBuilder* owner, ArgumentsAllowedFlag flag)
       : AstContext(owner, Expression::kValue), flag_(flag) {
   }
-  ~ValueContext() override;
+  virtual ~ValueContext();
 
   void ReturnValue(HValue* value) override;
-  void ReturnInstruction(HInstruction* instr, BailoutId ast_id) override;
-  void ReturnControl(HControlInstruction* instr, BailoutId ast_id) override;
-  void ReturnContinuation(HIfContinuation* continuation,
-                          BailoutId ast_id) override;
+  virtual void ReturnInstruction(HInstruction* instr,
+                                 BailoutId ast_id) override;
+  virtual void ReturnControl(HControlInstruction* instr,
+                             BailoutId ast_id) override;
+  virtual void ReturnContinuation(HIfContinuation* continuation,
+                                  BailoutId ast_id) override;
 
   bool arguments_allowed() { return flag_ == ARGUMENTS_ALLOWED; }
 
@@ -831,10 +835,12 @@ class TestContext final : public AstContext {
   }
 
   void ReturnValue(HValue* value) override;
-  void ReturnInstruction(HInstruction* instr, BailoutId ast_id) override;
-  void ReturnControl(HControlInstruction* instr, BailoutId ast_id) override;
-  void ReturnContinuation(HIfContinuation* continuation,
-                          BailoutId ast_id) override;
+  virtual void ReturnInstruction(HInstruction* instr,
+                                 BailoutId ast_id) override;
+  virtual void ReturnControl(HControlInstruction* instr,
+                             BailoutId ast_id) override;
+  virtual void ReturnContinuation(HIfContinuation* continuation,
+                                  BailoutId ast_id) override;
 
   static TestContext* cast(AstContext* context) {
     DCHECK(context->IsTest());
@@ -2204,6 +2210,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   F(IsJSProxy)                         \
   F(IsConstructCall)                   \
   F(Call)                              \
+  F(CallFunction)                      \
   F(ArgumentsLength)                   \
   F(Arguments)                         \
   F(ValueOf)                           \
@@ -2230,13 +2237,14 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   F(FastOneByteArrayJoin)              \
   F(DebugBreakInOptimizedCode)         \
   F(StringCharCodeAt)                  \
+  F(StringAdd)                         \
   F(SubString)                         \
   F(RegExpExec)                        \
   F(RegExpConstructResult)             \
-  F(RegExpFlags)                       \
-  F(RegExpSource)                      \
   F(NumberToString)                    \
   F(DebugIsActive)                     \
+  F(Likely)                            \
+  F(Unlikely)                          \
   F(HasInPrototypeChain)               \
   /* Typed Arrays */                   \
   F(TypedArrayInitialize)              \
@@ -2384,7 +2392,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   void SetUpScope(Scope* scope);
   void VisitStatements(ZoneList<Statement*>* statements) override;
 
-#define DECLARE_VISIT(type) void Visit##type(type* node) override;
+#define DECLARE_VISIT(type) virtual void Visit##type(type* node) override;
   AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
 
@@ -2485,7 +2493,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   void HandlePolymorphicNamedFieldAccess(
       PropertyAccessType access_type, Expression* expr, FeedbackVectorSlot slot,
       BailoutId ast_id, BailoutId return_id, HValue* object, HValue* value,
-      SmallMapList* types, Handle<Name> name);
+      SmallMapList* types, Handle<String> name);
 
   HValue* BuildAllocateExternalElements(
       ExternalArrayType array_type,
@@ -2735,7 +2743,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   HValue* BuildNamedAccess(PropertyAccessType access, BailoutId ast_id,
                            BailoutId reutrn_id, Expression* expr,
                            FeedbackVectorSlot slot, HValue* object,
-                           Handle<Name> name, HValue* value,
+                           Handle<String> name, HValue* value,
                            bool is_uninitialized = false);
 
   void HandlePolymorphicCallNamed(Call* expr,
@@ -2830,7 +2838,6 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
 
   HValue* BuildContextChainWalk(Variable* var);
 
-  HValue* AddThisFunction();
   HInstruction* BuildThisFunction();
 
   HInstruction* BuildFastLiteral(Handle<JSObject> boilerplate_object,

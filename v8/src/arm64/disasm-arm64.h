@@ -14,11 +14,11 @@ namespace v8 {
 namespace internal {
 
 
-class DisassemblingDecoder : public DecoderVisitor {
+class Disassembler: public DecoderVisitor {
  public:
-  DisassemblingDecoder();
-  DisassemblingDecoder(char* text_buffer, int buffer_size);
-  virtual ~DisassemblingDecoder();
+  Disassembler();
+  Disassembler(char* text_buffer, int buffer_size);
+  virtual ~Disassembler();
   char* GetOutput();
 
   // Declare all Visitor functions.
@@ -73,7 +73,7 @@ class DisassemblingDecoder : public DecoderVisitor {
 };
 
 
-class PrintDisassembler : public DisassemblingDecoder {
+class PrintDisassembler: public Disassembler {
  public:
   explicit PrintDisassembler(FILE* stream) : stream_(stream) { }
   ~PrintDisassembler() { }

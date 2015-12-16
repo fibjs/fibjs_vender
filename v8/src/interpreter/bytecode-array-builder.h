@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "src/ast/ast.h"
+#include "src/ast.h"
 #include "src/identity-map.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/zone.h"
@@ -82,8 +82,7 @@ class BytecodeArrayBuilder {
 
   // Global loads to the accumulator and stores from the accumulator.
   BytecodeArrayBuilder& LoadGlobal(size_t name_index, int feedback_slot,
-                                   LanguageMode language_mode,
-                                   TypeofMode typeof_mode);
+                                   LanguageMode language_mode);
   BytecodeArrayBuilder& StoreGlobal(size_t name_index, int feedback_slot,
                                     LanguageMode language_mode);
 
@@ -96,9 +95,6 @@ class BytecodeArrayBuilder {
   // Register-accumulator transfers.
   BytecodeArrayBuilder& LoadAccumulatorWithRegister(Register reg);
   BytecodeArrayBuilder& StoreAccumulatorInRegister(Register reg);
-
-  // Register-register transfer.
-  BytecodeArrayBuilder& MoveRegister(Register from, Register to);
 
   // Named load property.
   BytecodeArrayBuilder& LoadNamedProperty(Register object, size_t name_index,
@@ -116,15 +112,14 @@ class BytecodeArrayBuilder {
                                            int feedback_slot,
                                            LanguageMode language_mode);
 
-  // Create a new closure for the SharedFunctionInfo.
-  BytecodeArrayBuilder& CreateClosure(Handle<SharedFunctionInfo> shared_info,
-                                      PretenureFlag tenured);
+  // Create a new closure for the SharedFunctionInfo in the accumulator.
+  BytecodeArrayBuilder& CreateClosure(PretenureFlag tenured);
 
   // Create a new arguments object in the accumulator.
   BytecodeArrayBuilder& CreateArguments(CreateArgumentsType type);
 
   // Literals creation.  Constant elements should be in the accumulator.
-  BytecodeArrayBuilder& CreateRegExpLiteral(int literal_index, int flags);
+  BytecodeArrayBuilder& CreateRegExpLiteral(int literal_index, Register flags);
   BytecodeArrayBuilder& CreateArrayLiteral(int literal_index, int flags);
   BytecodeArrayBuilder& CreateObjectLiteral(int literal_index, int flags);
 
@@ -140,7 +135,7 @@ class BytecodeArrayBuilder {
   // arguments should be in registers <receiver + 1> to
   // <receiver + 1 + arg_count>.
   BytecodeArrayBuilder& Call(Register callable, Register receiver,
-                             size_t arg_count, int feedback_slot);
+                             size_t arg_count);
 
   // Call the new operator. The |constructor| register is followed by
   // |arg_count| consecutive registers containing arguments to be
@@ -154,12 +149,6 @@ class BytecodeArrayBuilder {
   BytecodeArrayBuilder& CallRuntime(Runtime::FunctionId function_id,
                                     Register first_arg, size_t arg_count);
 
-  // Call the JS runtime function with |context_index|. The the receiver should
-  // be in |receiver| and all subsequent arguments should be in registers
-  // <receiver + 1> to <receiver + 1 + arg_count>.
-  BytecodeArrayBuilder& CallJSRuntime(int context_index, Register receiver,
-                                      size_t arg_count);
-
   // Operators (register holds the lhs value, accumulator holds the rhs value).
   BytecodeArrayBuilder& BinaryOperation(Token::Value binop, Register reg,
                                         Strength strength);
@@ -171,17 +160,12 @@ class BytecodeArrayBuilder {
   BytecodeArrayBuilder& LogicalNot();
   BytecodeArrayBuilder& TypeOf();
 
-  // Deletes property from an object. This expects that accumulator contains
-  // the key to be deleted and the register contains a reference to the object.
-  BytecodeArrayBuilder& Delete(Register object, LanguageMode language_mode);
-
   // Tests.
   BytecodeArrayBuilder& CompareOperation(Token::Value op, Register reg,
                                          Strength strength);
 
   // Casts.
   BytecodeArrayBuilder& CastAccumulatorToBoolean();
-  BytecodeArrayBuilder& CastAccumulatorToJSObject();
   BytecodeArrayBuilder& CastAccumulatorToName();
   BytecodeArrayBuilder& CastAccumulatorToNumber();
 
@@ -192,16 +176,17 @@ class BytecodeArrayBuilder {
   BytecodeArrayBuilder& Jump(BytecodeLabel* label);
   BytecodeArrayBuilder& JumpIfTrue(BytecodeLabel* label);
   BytecodeArrayBuilder& JumpIfFalse(BytecodeLabel* label);
-  BytecodeArrayBuilder& JumpIfNull(BytecodeLabel* label);
-  BytecodeArrayBuilder& JumpIfUndefined(BytecodeLabel* label);
+  // TODO(mythria) The following two functions should be merged into
+  // JumpIfTrue/False. These bytecodes should be automatically chosen rather
+  // than explicitly using them.
+  BytecodeArrayBuilder& JumpIfToBooleanTrue(BytecodeLabel* label);
+  BytecodeArrayBuilder& JumpIfToBooleanFalse(BytecodeLabel* label);
 
   BytecodeArrayBuilder& Throw();
   BytecodeArrayBuilder& Return();
 
-  // Complex flow control.
-  BytecodeArrayBuilder& ForInPrepare(Register receiver);
-  BytecodeArrayBuilder& ForInNext(Register for_in_state, Register index);
-  BytecodeArrayBuilder& ForInDone(Register for_in_state);
+  BytecodeArrayBuilder& EnterBlock();
+  BytecodeArrayBuilder& LeaveBlock();
 
   // Accessors
   Zone* zone() const { return zone_; }
@@ -214,30 +199,23 @@ class BytecodeArrayBuilder {
   static Bytecode BytecodeForBinaryOperation(Token::Value op);
   static Bytecode BytecodeForCountOperation(Token::Value op);
   static Bytecode BytecodeForCompareOperation(Token::Value op);
-  static Bytecode BytecodeForWideOperands(Bytecode bytecode);
   static Bytecode BytecodeForLoadIC(LanguageMode language_mode);
   static Bytecode BytecodeForKeyedLoadIC(LanguageMode language_mode);
   static Bytecode BytecodeForStoreIC(LanguageMode language_mode);
   static Bytecode BytecodeForKeyedStoreIC(LanguageMode language_mode);
-  static Bytecode BytecodeForLoadGlobal(LanguageMode language_mode,
-                                        TypeofMode typeof_mode);
+  static Bytecode BytecodeForLoadGlobal(LanguageMode language_mode);
   static Bytecode BytecodeForStoreGlobal(LanguageMode language_mode);
   static Bytecode BytecodeForCreateArguments(CreateArgumentsType type);
-  static Bytecode BytecodeForDelete(LanguageMode language_mode);
 
   static bool FitsInIdx8Operand(int value);
   static bool FitsInIdx8Operand(size_t value);
   static bool FitsInImm8Operand(int value);
   static bool FitsInIdx16Operand(int value);
-  static bool FitsInIdx16Operand(size_t value);
 
   static Bytecode GetJumpWithConstantOperand(Bytecode jump_with_smi8_operand);
-  static Bytecode GetJumpWithToBoolean(Bytecode jump);
 
   template <size_t N>
   INLINE(void Output(Bytecode bytecode, uint32_t(&oprands)[N]));
-  void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1,
-              uint32_t operand2, uint32_t operand3);
   void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1,
               uint32_t operand2);
   void Output(Bytecode bytecode, uint32_t operand0, uint32_t operand1);
@@ -249,15 +227,11 @@ class BytecodeArrayBuilder {
   void PatchJump(const ZoneVector<uint8_t>::iterator& jump_target,
                  ZoneVector<uint8_t>::iterator jump_location);
 
-  void LeaveBasicBlock();
   void EnsureReturn();
 
   bool OperandIsValid(Bytecode bytecode, int operand_index,
                       uint32_t operand_value) const;
   bool LastBytecodeInSameBlock() const;
-
-  bool NeedToBooleanCast();
-  bool IsRegisterInAccumulator(Register reg);
 
   int BorrowTemporaryRegister();
   void ReturnTemporaryRegister(int reg_index);
@@ -299,8 +273,6 @@ class BytecodeLabel final {
  public:
   BytecodeLabel() : bound_(false), offset_(kInvalidOffset) {}
 
-  INLINE(bool is_bound() const) { return bound_; }
-
  private:
   static const size_t kInvalidOffset = static_cast<size_t>(-1);
 
@@ -310,10 +282,11 @@ class BytecodeLabel final {
     bound_ = true;
   }
   INLINE(void set_referrer(size_t offset)) {
-    DCHECK(!bound_ && offset != kInvalidOffset && offset_ == kInvalidOffset);
+    DCHECK(!bound_ && offset != kInvalidOffset);
     offset_ = offset;
   }
   INLINE(size_t offset() const) { return offset_; }
+  INLINE(bool is_bound() const) { return bound_; }
   INLINE(bool is_forward_target() const) {
     return offset() != kInvalidOffset && !is_bound();
   }
@@ -342,8 +315,6 @@ class TemporaryRegisterScope {
 
   void PrepareForConsecutiveAllocations(size_t count);
   Register NextConsecutiveRegister();
-
-  bool RegisterIsAllocatedInThisScope(Register reg) const;
 
  private:
   void* operator new(size_t size);

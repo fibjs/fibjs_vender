@@ -6,7 +6,7 @@
 #define V8_TYPING_ASM_H_
 
 #include "src/allocation.h"
-#include "src/ast/ast.h"
+#include "src/ast.h"
 #include "src/effects.h"
 #include "src/type-info.h"
 #include "src/types.h"
@@ -15,7 +15,7 @@
 namespace v8 {
 namespace internal {
 
-class TypeCache;
+class ZoneTypeCache;
 
 class AsmTyper : public AstVisitor {
  public:
@@ -52,7 +52,7 @@ class AsmTyper : public AstVisitor {
   bool in_function_;  // In module function?
   bool building_function_tables_;
 
-  TypeCache const& cache_;
+  ZoneTypeCache const& cache_;
 
   static const int kErrorMessageLimit = 100;
   char error_message_[kErrorMessageLimit];
@@ -65,14 +65,13 @@ class AsmTyper : public AstVisitor {
   void VisitDeclarations(ZoneList<Declaration*>* d) override;
   void VisitStatements(ZoneList<Statement*>* s) override;
 
-  void VisitExpressionAnnotation(Expression* e, bool is_return);
+  void VisitExpressionAnnotation(Expression* e);
   void VisitFunctionAnnotation(FunctionLiteral* f);
   void VisitAsmModule(FunctionLiteral* f);
 
   void VisitHeapAccess(Property* expr);
 
   int ElementShiftSize(Type* type);
-  Type* StorageType(Type* type);
 
   void SetType(Variable* variable, Type* type);
   Type* GetType(Variable* variable);
@@ -85,15 +84,9 @@ class AsmTyper : public AstVisitor {
   void VisitWithExpectation(Expression* expr, Type* expected_type,
                             const char* msg);
 
-  void VisitLiteral(Literal* expr, bool is_return);
-
-  void VisitIntegerBitwiseOperator(BinaryOperation* expr, Type* left_expected,
-                                   Type* right_expected, Type* result_type,
-                                   bool conversion);
-
   Zone* zone() const { return zone_; }
 
-#define DECLARE_VISIT(type) void Visit##type(type* node) override;
+#define DECLARE_VISIT(type) virtual void Visit##type(type* node) override;
   AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
 

@@ -106,34 +106,11 @@ void CompilationDependencies::Rollback() {
 }
 
 
-void CompilationDependencies::AssumeMapNotDeprecated(Handle<Map> map) {
-  DCHECK(!map->is_deprecated());
-  // Do nothing if the map cannot be deprecated.
-  if (map->CanBeDeprecated()) {
-    Insert(DependentCode::kTransitionGroup, map);
-  }
-}
-
-
 void CompilationDependencies::AssumeMapStable(Handle<Map> map) {
   DCHECK(map->is_stable());
   // Do nothing if the map cannot transition.
   if (map->CanTransition()) {
     Insert(DependentCode::kPrototypeCheckGroup, map);
-  }
-}
-
-
-void CompilationDependencies::AssumePrototypeMapsStable(
-    Handle<Map> map, MaybeHandle<JSReceiver> prototype) {
-  for (PrototypeIterator i(map); !i.IsAtEnd(); i.Advance()) {
-    Handle<JSReceiver> const current =
-        PrototypeIterator::GetCurrent<JSReceiver>(i);
-    AssumeMapStable(handle(current->map()));
-    Handle<JSReceiver> last;
-    if (prototype.ToHandle(&last) && last.is_identical_to(current)) {
-      break;
-    }
   }
 }
 
@@ -149,6 +126,5 @@ void CompilationDependencies::AssumeTransitionStable(
     Insert(DependentCode::kAllocationSiteTransitionChangedGroup, site);
   }
 }
-
 }  // namespace internal
 }  // namespace v8

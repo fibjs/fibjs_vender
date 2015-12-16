@@ -466,11 +466,13 @@ void Simulator::RunFrom(Instruction* start) {
 // offset from the svc instruction so the simulator knows what to call.
 class Redirection {
  public:
-  Redirection(Isolate* isolate, void* external_function,
-              ExternalReference::Type type)
-      : external_function_(external_function), type_(type), next_(NULL) {
+  Redirection(void* external_function, ExternalReference::Type type)
+      : external_function_(external_function),
+        type_(type),
+        next_(NULL) {
     redirect_call_.SetInstructionBits(
         HLT | Assembler::ImmException(kImmExceptionIsRedirectedCall));
+    Isolate* isolate = Isolate::Current();
     next_ = isolate->simulator_redirection();
     // TODO(all): Simulator flush I cache
     isolate->set_simulator_redirection(this);
@@ -485,8 +487,9 @@ class Redirection {
 
   ExternalReference::Type type() { return type_; }
 
-  static Redirection* Get(Isolate* isolate, void* external_function,
+  static Redirection* Get(void* external_function,
                           ExternalReference::Type type) {
+    Isolate* isolate = Isolate::Current();
     Redirection* current = isolate->simulator_redirection();
     for (; current != NULL; current = current->next_) {
       if (current->external_function_ == external_function) {
@@ -494,7 +497,7 @@ class Redirection {
         return current;
       }
     }
-    return new Redirection(isolate, external_function, type);
+    return new Redirection(external_function, type);
   }
 
   static Redirection* FromHltInstruction(Instruction* redirect_call) {
@@ -749,10 +752,9 @@ void Simulator::DoRuntimeCall(Instruction* instr) {
 }
 
 
-void* Simulator::RedirectExternalReference(Isolate* isolate,
-                                           void* external_function,
+void* Simulator::RedirectExternalReference(void* external_function,
                                            ExternalReference::Type type) {
-  Redirection* redirection = Redirection::Get(isolate, external_function, type);
+  Redirection* redirection = Redirection::Get(external_function, type);
   return redirection->address_of_redirect_call();
 }
 
@@ -2763,7 +2765,7 @@ double Simulator::FPRoundInt(double value, FPRounding round_mode) {
       // If the error is greater than 0.5, or is equal to 0.5 and the integer
       // result is odd, round up.
       } else if ((error > 0.5) ||
-                 ((error == 0.5) && (modulo(int_result, 2) != 0))) {
+          ((error == 0.5) && (fmod(int_result, 2) != 0))) {
         int_result++;
       }
       break;
@@ -3109,8 +3111,7 @@ T Simulator::FPSqrt(T op) {
   } else if (op < 0.0) {
     return FPDefaultNaN<T>();
   } else {
-    lazily_initialize_fast_sqrt(isolate_);
-    return fast_sqrt(op, isolate_);
+    return fast_sqrt(op);
   }
 }
 
@@ -3513,7 +3514,7 @@ void Simulator::Debug() {
                  reinterpret_cast<uint64_t>(cur), *cur, *cur);
           HeapObject* obj = reinterpret_cast<HeapObject*>(*cur);
           int64_t value = *cur;
-          Heap* current_heap = isolate_->heap();
+          Heap* current_heap = v8::internal::Isolate::Current()->heap();
           if (((value & 1) == 0) || current_heap->Contains(obj)) {
             PrintF(" (");
             if ((value & kSmiTagMask) == 0) {

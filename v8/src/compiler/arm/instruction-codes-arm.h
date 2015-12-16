@@ -65,15 +65,10 @@ namespace compiler {
   V(ArmVabsF64)                    \
   V(ArmVnegF64)                    \
   V(ArmVsqrtF64)                   \
-  V(ArmVrintmF32)                  \
   V(ArmVrintmF64)                  \
-  V(ArmVrintpF32)                  \
   V(ArmVrintpF64)                  \
-  V(ArmVrintzF32)                  \
   V(ArmVrintzF64)                  \
   V(ArmVrintaF64)                  \
-  V(ArmVrintnF32)                  \
-  V(ArmVrintnF64)                  \
   V(ArmVcvtF32F64)                 \
   V(ArmVcvtF64F32)                 \
   V(ArmVcvtF64S32)                 \
@@ -98,7 +93,8 @@ namespace compiler {
   V(ArmLdr)                        \
   V(ArmStr)                        \
   V(ArmPush)                       \
-  V(ArmPoke)
+  V(ArmPoke)                       \
+  V(ArmStoreWriteBarrier)
 
 
 // Addressing modes represent the "shape" of inputs to an instruction.

@@ -36,15 +36,15 @@ void StubRuntimeCallHelper::AfterCall(MacroAssembler* masm) const {
 #define __ masm.
 
 
-UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
+UnaryMathFunction CreateExpFunction() {
+  if (!FLAG_fast_math) return &std::exp;
   size_t actual_size;
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return nullptr;
+  if (buffer == NULL) return &std::exp;
   ExternalReference::InitializeMathExpData();
 
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
   // xmm0: raw double input.
   XMMRegister input = xmm0;
   XMMRegister result = xmm1;
@@ -62,21 +62,20 @@ UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
   masm.GetCode(&desc);
   DCHECK(!RelocInfo::RequiresRelocation(desc));
 
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  Assembler::FlushICacheWithoutIsolate(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
-  return FUNCTION_CAST<UnaryMathFunctionWithIsolate>(buffer);
+  return FUNCTION_CAST<UnaryMathFunction>(buffer);
 }
 
 
-UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
+UnaryMathFunction CreateSqrtFunction() {
   size_t actual_size;
   // Allocate buffer in executable space.
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return nullptr;
+  if (buffer == NULL) return &std::sqrt;
 
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
   // xmm0: raw double input.
   // Move double input into registers.
   __ Sqrtsd(xmm0, xmm0);
@@ -86,10 +85,100 @@ UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
   masm.GetCode(&desc);
   DCHECK(!RelocInfo::RequiresRelocation(desc));
 
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  Assembler::FlushICacheWithoutIsolate(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
-  return FUNCTION_CAST<UnaryMathFunctionWithIsolate>(buffer);
+  return FUNCTION_CAST<UnaryMathFunction>(buffer);
 }
+
+
+#ifdef _WIN64
+typedef double (*ModuloFunction)(double, double);
+// Define custom fmod implementation.
+ModuloFunction CreateModuloFunction() {
+  size_t actual_size;
+  byte* buffer = static_cast<byte*>(
+      base::OS::Allocate(Assembler::kMinimalBufferSize, &actual_size, true));
+  CHECK(buffer);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
+  // Generated code is put into a fixed, unmovable, buffer, and not into
+  // the V8 heap. We can't, and don't, refer to any relocatable addresses
+  // (e.g. the JavaScript nan-object).
+
+  // Windows 64 ABI passes double arguments in xmm0, xmm1 and
+  // returns result in xmm0.
+  // Argument backing space is allocated on the stack above
+  // the return address.
+
+  // Compute x mod y.
+  // Load y and x (use argument backing store as temporary storage).
+  __ Movsd(Operand(rsp, kRegisterSize * 2), xmm1);
+  __ Movsd(Operand(rsp, kRegisterSize), xmm0);
+  __ fld_d(Operand(rsp, kRegisterSize * 2));
+  __ fld_d(Operand(rsp, kRegisterSize));
+
+  // Clear exception flags before operation.
+  {
+    Label no_exceptions;
+    __ fwait();
+    __ fnstsw_ax();
+    // Clear if Illegal Operand or Zero Division exceptions are set.
+    __ testb(rax, Immediate(5));
+    __ j(zero, &no_exceptions);
+    __ fnclex();
+    __ bind(&no_exceptions);
+  }
+
+  // Compute st(0) % st(1)
+  {
+    Label partial_remainder_loop;
+    __ bind(&partial_remainder_loop);
+    __ fprem();
+    __ fwait();
+    __ fnstsw_ax();
+    __ testl(rax, Immediate(0x400 /* C2 */));
+    // If C2 is set, computation only has partial result. Loop to
+    // continue computation.
+    __ j(not_zero, &partial_remainder_loop);
+  }
+
+  Label valid_result;
+  Label return_result;
+  // If Invalid Operand or Zero Division exceptions are set,
+  // return NaN.
+  __ testb(rax, Immediate(5));
+  __ j(zero, &valid_result);
+  __ fstp(0);  // Drop result in st(0).
+  int64_t kNaNValue = V8_INT64_C(0x7ff8000000000000);
+  __ movq(rcx, kNaNValue);
+  __ movq(Operand(rsp, kRegisterSize), rcx);
+  __ Movsd(xmm0, Operand(rsp, kRegisterSize));
+  __ jmp(&return_result);
+
+  // If result is valid, return that.
+  __ bind(&valid_result);
+  __ fstp_d(Operand(rsp, kRegisterSize));
+  __ Movsd(xmm0, Operand(rsp, kRegisterSize));
+
+  // Clean up FPU stack and exceptions and return xmm0
+  __ bind(&return_result);
+  __ fstp(0);  // Unload y.
+
+  Label clear_exceptions;
+  __ testb(rax, Immediate(0x3f /* Any Exception*/));
+  __ j(not_zero, &clear_exceptions);
+  __ ret(0);
+  __ bind(&clear_exceptions);
+  __ fnclex();
+  __ ret(0);
+
+  CodeDesc desc;
+  masm.GetCode(&desc);
+  base::OS::ProtectCode(buffer, actual_size);
+  // Call the function from C++ through this pointer.
+  return FUNCTION_CAST<ModuloFunction>(buffer);
+}
+
+#endif
 
 #undef __
 
@@ -527,29 +616,29 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
   __ j(above_equal, &done);
   __ Movsd(double_scratch, Operand(kScratchRegister, 3 * kDoubleSize));
   __ Movsd(result, Operand(kScratchRegister, 4 * kDoubleSize));
-  __ Mulsd(double_scratch, input);
-  __ Addsd(double_scratch, result);
+  __ mulsd(double_scratch, input);
+  __ addsd(double_scratch, result);
   __ Movq(temp2, double_scratch);
-  __ Subsd(double_scratch, result);
+  __ subsd(double_scratch, result);
   __ Movsd(result, Operand(kScratchRegister, 6 * kDoubleSize));
   __ leaq(temp1, Operand(temp2, 0x1ff800));
   __ andq(temp2, Immediate(0x7ff));
   __ shrq(temp1, Immediate(11));
-  __ Mulsd(double_scratch, Operand(kScratchRegister, 5 * kDoubleSize));
+  __ mulsd(double_scratch, Operand(kScratchRegister, 5 * kDoubleSize));
   __ Move(kScratchRegister, ExternalReference::math_exp_log_table());
   __ shlq(temp1, Immediate(52));
   __ orq(temp1, Operand(kScratchRegister, temp2, times_8, 0));
   __ Move(kScratchRegister, ExternalReference::math_exp_constants(0));
-  __ Subsd(double_scratch, input);
+  __ subsd(double_scratch, input);
   __ Movsd(input, double_scratch);
-  __ Subsd(result, double_scratch);
-  __ Mulsd(input, double_scratch);
-  __ Mulsd(result, input);
+  __ subsd(result, double_scratch);
+  __ mulsd(input, double_scratch);
+  __ mulsd(result, input);
   __ Movq(input, temp1);
-  __ Mulsd(result, Operand(kScratchRegister, 7 * kDoubleSize));
-  __ Subsd(result, double_scratch);
-  __ Addsd(result, Operand(kScratchRegister, 8 * kDoubleSize));
-  __ Mulsd(result, input);
+  __ mulsd(result, Operand(kScratchRegister, 7 * kDoubleSize));
+  __ subsd(result, double_scratch);
+  __ addsd(result, Operand(kScratchRegister, 8 * kDoubleSize));
+  __ mulsd(result, input);
 
   __ bind(&done);
 }
@@ -557,8 +646,7 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
 #undef __
 
 
-CodeAgingHelper::CodeAgingHelper(Isolate* isolate) {
-  USE(isolate);
+CodeAgingHelper::CodeAgingHelper() {
   DCHECK(young_sequence_.length() == kNoCodeAgeSequenceLength);
   // The sequence of instructions that is patched out for aging code is the
   // following boilerplate stack-building prologue that is found both in

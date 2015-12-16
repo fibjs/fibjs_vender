@@ -103,7 +103,6 @@ class String;
 class StringObject;
 class Symbol;
 class SymbolObject;
-class Private;
 class Uint32;
 class Utils;
 class Value;
@@ -312,7 +311,6 @@ class Local {
   friend class String;
   friend class Object;
   friend class Context;
-  friend class Private;
   template<class F> friend class internal::CustomArguments;
   friend Local<Primitive> Undefined(Isolate* isolate);
   friend Local<Primitive> Null(Isolate* isolate);
@@ -604,13 +602,6 @@ template <class T> class PersistentBase {
    * garbage collection.
    */
   V8_INLINE void MarkPartiallyDependent();
-
-  /**
-   * Marks the reference to this object as active. The scavenge garbage
-   * collection should not reclaim the objects marked as active.
-   * This bit is cleared after the each garbage collection pass.
-   */
-  V8_INLINE void MarkActive();
 
   V8_INLINE bool IsIndependent() const;
 
@@ -975,8 +966,8 @@ class V8_EXPORT SealHandleScope {
   void operator delete(void*, size_t);
 
   internal::Isolate* isolate_;
+  int prev_level_;
   internal::Object** prev_limit_;
-  int prev_sealed_level_;
 };
 
 
@@ -2485,34 +2476,6 @@ class V8_EXPORT Symbol : public Name {
 
 
 /**
- * A private symbol
- *
- * This is an experimental feature. Use at your own risk.
- */
-class V8_EXPORT Private : public Data {
- public:
-  // Returns the print name string of the private symbol, or undefined if none.
-  Local<Value> Name() const;
-
-  // Create a private symbol. If name is not empty, it will be the description.
-  static Local<Private> New(Isolate* isolate,
-                            Local<String> name = Local<String>());
-
-  // Retrieve a global private symbol. If a symbol with this name has not
-  // been retrieved in the same isolate before, it is created.
-  // Note that private symbols created this way are never collected, so
-  // they should only be used for statically fixed properties.
-  // Also, there is only one global name space for the names used as keys.
-  // To minimize the potential for clashes, use qualified names as keys,
-  // e.g., "Class#property".
-  static Local<Private> ForApi(Isolate* isolate, Local<String> name);
-
- private:
-  Private();
-};
-
-
-/**
  * A JavaScript number value (ECMA-262, 4.3.20)
  */
 class V8_EXPORT Number : public Primitive {
@@ -2663,10 +2626,10 @@ class V8_EXPORT Object : public Value {
   // will only be returned if the interceptor doesn't return a value.
   //
   // Note also that this only works for named properties.
-  V8_DEPRECATE_SOON("Use CreateDataProperty / DefineOwnProperty",
+  V8_DEPRECATE_SOON("Use CreateDataProperty",
                     bool ForceSet(Local<Value> key, Local<Value> value,
                                   PropertyAttribute attribs = None));
-  V8_DEPRECATE_SOON("Use CreateDataProperty / DefineOwnProperty",
+  V8_DEPRECATE_SOON("Use CreateDataProperty",
                     Maybe<bool> ForceSet(Local<Context> context,
                                          Local<Value> key, Local<Value> value,
                                          PropertyAttribute attribs = None));
@@ -2738,18 +2701,6 @@ class V8_EXPORT Object : public Value {
                            Local<Function> setter = Local<Function>(),
                            PropertyAttribute attribute = None,
                            AccessControl settings = DEFAULT);
-
-  /**
-   * Functionality for private properties.
-   * This is an experimental feature, use at your own risk.
-   * Note: Private properties are not inherited. Do not rely on this, since it
-   * may change.
-   */
-  Maybe<bool> HasPrivate(Local<Context> context, Local<Private> key);
-  Maybe<bool> SetPrivate(Local<Context> context, Local<Private> key,
-                         Local<Value> value);
-  Maybe<bool> DeletePrivate(Local<Context> context, Local<Private> key);
-  MaybeLocal<Value> GetPrivate(Local<Context> context, Local<Private> key);
 
   /**
    * Returns an array containing the names of the enumerable properties
@@ -2919,12 +2870,16 @@ class V8_EXPORT Object : public Value {
    */
   int GetIdentityHash();
 
-  V8_DEPRECATED("Use v8::Object::SetPrivate instead.",
-                bool SetHiddenValue(Local<String> key, Local<Value> value));
-  V8_DEPRECATED("Use v8::Object::GetPrivate instead.",
-                Local<Value> GetHiddenValue(Local<String> key));
-  V8_DEPRECATED("Use v8::Object::DeletePrivate instead.",
-                bool DeleteHiddenValue(Local<String> key));
+  /**
+   * Access hidden properties on JavaScript objects. These properties are
+   * hidden from the executing JavaScript and only accessible through the V8
+   * C++ API. Hidden properties introduced by V8 internally (for example the
+   * identity hash) are prefixed with "v8::".
+   */
+  // TODO(dcarney): convert these to take a isolate and optionally bailout?
+  bool SetHiddenValue(Local<String> key, Local<Value> value);
+  Local<Value> GetHiddenValue(Local<String> key);
+  bool DeleteHiddenValue(Local<String> key);
 
   /**
    * Clone this object with a fast but shallow copy.  Values will point
@@ -3042,6 +2997,15 @@ class V8_EXPORT Map : public Object {
    */
   static Local<Map> New(Isolate* isolate);
 
+  /**
+   * Creates a new Map containing the elements of array, which must be formatted
+   * in the same manner as the array returned from AsArray().
+   * Guaranteed to be side-effect free if the array contains no holes.
+   */
+  static V8_WARN_UNUSED_RESULT V8_DEPRECATED(
+      "Use mutation methods instead",
+      MaybeLocal<Map> FromArray(Local<Context> context, Local<Array> array));
+
   V8_INLINE static Map* Cast(Value* obj);
 
  private:
@@ -3073,6 +3037,14 @@ class V8_EXPORT Set : public Object {
    * Creates a new empty Set.
    */
   static Local<Set> New(Isolate* isolate);
+
+  /**
+   * Creates a new Set containing the items in array.
+   * Guaranteed to be side-effect free if the array contains no holes.
+   */
+  static V8_WARN_UNUSED_RESULT V8_DEPRECATED(
+      "Use mutation methods instead",
+      MaybeLocal<Set> FromArray(Local<Context> context, Local<Array> array));
 
   V8_INLINE static Set* Cast(Value* obj);
 
@@ -3250,12 +3222,6 @@ class V8_EXPORT Function : public Object {
    * to object properties.
    */
   Local<Value> GetInferredName() const;
-
-  /**
-   * displayName if it is set, otherwise name if it is configured, otherwise
-   * function name, otherwise inferred name.
-   */
-  Local<Value> GetDebugName() const;
 
   /**
    * User-defined name assigned to the "displayName" property of this function.
@@ -3990,9 +3956,7 @@ class V8_EXPORT RegExp : public Object {
     kNone = 0,
     kGlobal = 1,
     kIgnoreCase = 2,
-    kMultiline = 4,
-    kSticky = 8,
-    kUnicode = 16
+    kMultiline = 4
   };
 
   /**
@@ -4072,6 +4036,13 @@ class V8_EXPORT Template : public Data {
      Local<FunctionTemplate> setter = Local<FunctionTemplate>(),
      PropertyAttribute attribute = None,
      AccessControl settings = DEFAULT);
+
+#ifdef V8_JS_ACCESSORS
+  void SetAccessorProperty(Local<Name> name,
+                           Local<Function> getter = Local<Function>(),
+                           Local<Function> setter = Local<Function>(),
+                           PropertyAttribute attribute = None);
+#endif  // V8_JS_ACCESSORS
 
   /**
    * Whenever the property with the given name is accessed on objects
@@ -4281,14 +4252,6 @@ enum AccessType {
 
 
 /**
- * Returns true if the given context should be allowed to access the given
- * object.
- */
-typedef bool (*AccessCheckCallback)(Local<Context> accessing_context,
-                                    Local<Object> accessed_object);
-
-
-/**
  * Returns true if cross-context access should be allowed to the named
  * property with the given key on the host object.
  */
@@ -4411,15 +4374,6 @@ class V8_EXPORT FunctionTemplate : public Template {
       Local<Value> data = Local<Value>(),
       Local<Signature> signature = Local<Signature>(), int length = 0);
 
-  /**
-   * Creates a function template with a fast handler. If a fast handler is set,
-   * the callback cannot be null.
-   */
-  static Local<FunctionTemplate> NewWithFastHandler(
-      Isolate* isolate, FunctionCallback callback, Local<Value> fast_handler,
-      Local<Value> data = Local<Value>(),
-      Local<Signature> signature = Local<Signature>(), int length = 0);
-
   /** Returns the unique function instance in the current execution context.*/
   V8_DEPRECATE_SOON("Use maybe version", Local<Function> GetFunction());
   V8_WARN_UNUSED_RESULT MaybeLocal<Function> GetFunction(
@@ -4431,8 +4385,7 @@ class V8_EXPORT FunctionTemplate : public Template {
    * FunctionTemplate is called.
    */
   void SetCallHandler(FunctionCallback callback,
-                      Local<Value> data = Local<Value>(),
-                      Local<Value> fast_handler = Local<Value>());
+                      Local<Value> data = Local<Value>());
 
   /** Set the predefined length property for the FunctionTemplate. */
   void SetLength(int length);
@@ -4706,21 +4659,16 @@ class V8_EXPORT ObjectTemplate : public Template {
   void MarkAsUndetectable();
 
   /**
-   * Sets access check callback on the object template and enables access
-   * checks.
+   * Sets access check callbacks on the object template and enables
+   * access checks.
    *
    * When accessing properties on instances of this object template,
    * the access check callback will be called to determine whether or
    * not to allow cross-context access to the properties.
    */
-  void SetAccessCheckCallback(AccessCheckCallback callback,
-                              Local<Value> data = Local<Value>());
-
-  V8_DEPRECATE_SOON(
-      "Use SetAccessCheckCallback instead",
-      void SetAccessCheckCallbacks(NamedSecurityCallback named_handler,
-                                   IndexedSecurityCallback indexed_handler,
-                                   Local<Value> data = Local<Value>()));
+  void SetAccessCheckCallbacks(NamedSecurityCallback named_handler,
+                               IndexedSecurityCallback indexed_handler,
+                               Local<Value> data = Local<Value>());
 
   /**
    * Gets the number of internal fields for objects generated from
@@ -4931,10 +4879,7 @@ class V8_EXPORT Exception {
    * Will try to reconstruct the original stack trace from the exception value,
    * or capture the current stack trace if not available.
    */
-  static Local<Message> CreateMessage(Isolate* isolate, Local<Value> exception);
-  V8_DEPRECATE_SOON(
-      "Use version with an Isolate*",
-      static Local<Message> CreateMessage(Local<Value> exception));
+  static Local<Message> CreateMessage(Local<Value> exception);
 
   /**
    * Returns the original stack trace that was captured at the creation time
@@ -4999,10 +4944,8 @@ class PromiseRejectMessage {
   V8_INLINE PromiseRejectEvent GetEvent() const { return event_; }
   V8_INLINE Local<Value> GetValue() const { return value_; }
 
-  V8_DEPRECATED("Use v8::Exception::CreateMessage(GetValue())->GetStackTrace()",
-                V8_INLINE Local<StackTrace> GetStackTrace() const) {
-    return stack_trace_;
-  }
+  // DEPRECATED. Use v8::Exception::CreateMessage(GetValue())->GetStackTrace()
+  V8_INLINE Local<StackTrace> GetStackTrace() const { return stack_trace_; }
 
  private:
   Local<Promise> promise_;
@@ -5080,7 +5023,6 @@ class V8_EXPORT HeapStatistics {
   size_t total_available_size() { return total_available_size_; }
   size_t used_heap_size() { return used_heap_size_; }
   size_t heap_size_limit() { return heap_size_limit_; }
-  size_t does_zap_garbage() { return does_zap_garbage_; }
 
  private:
   size_t total_heap_size_;
@@ -5089,7 +5031,6 @@ class V8_EXPORT HeapStatistics {
   size_t total_available_size_;
   size_t used_heap_size_;
   size_t heap_size_limit_;
-  bool does_zap_garbage_;
 
   friend class V8;
   friend class Isolate;
@@ -5427,9 +5368,6 @@ class V8_EXPORT Isolate {
     kSlotsBufferOverflow = 5,
     kObjectObserve = 6,
     kForcedGC = 7,
-    kSloppyMode = 8,
-    kStrictMode = 9,
-    kStrongMode = 10,
     kUseCounterFeatureCount  // This enum value must be last.
   };
 
@@ -5600,10 +5538,7 @@ class V8_EXPORT Isolate {
   /** Returns true if this isolate has a current context. */
   bool InContext();
 
-  /**
-   * Returns the context of the currently running JavaScript, or the context
-   * on the top of the stack if no JavaScript is running.
-   */
+  /** Returns the context that is on the top of the stack. */
   Local<Context> GetCurrentContext();
 
   /**
@@ -5611,12 +5546,9 @@ class V8_EXPORT Isolate {
    * context of the top-most JavaScript frame.  If there are no
    * JavaScript frames an empty handle is returned.
    */
-  V8_DEPRECATE_SOON(
-      "Calling context concept is not compatible with tail calls, and will be "
-      "removed.",
-      Local<Context> GetCallingContext());
+  Local<Context> GetCallingContext();
 
-  /** Returns the last context entered through V8's C++ API. */
+  /** Returns the last entered context. */
   Local<Context> GetEnteredContext();
 
   /**
@@ -6015,13 +5947,6 @@ class V8_EXPORT Isolate {
    */
   void VisitHandlesForPartialDependence(PersistentHandleVisitor* visitor);
 
-  /**
-   * Iterates through all the persistent handles in the current isolate's heap
-   * that have class_ids and are weak to be marked as inactive if there is no
-   * pending activity for the handle.
-   */
-  void VisitWeakHandles(PersistentHandleVisitor* visitor);
-
  private:
   template <class K, class V, class Traits>
   friend class PersistentValueMapBase;
@@ -6313,7 +6238,7 @@ class V8_EXPORT V8 {
    * guarantee that visited objects are still alive.
    */
   V8_INLINE static V8_DEPRECATE_SOON(
-      "Use isolate version",
+      "Use isoalte version",
       void VisitExternalResources(ExternalResourceVisitor* visitor));
 
   /**
@@ -7104,7 +7029,6 @@ class Internals {
   static const int kNodeStateIsNearDeathValue = 4;
   static const int kNodeIsIndependentShift = 3;
   static const int kNodeIsPartiallyDependentShift = 4;
-  static const int kNodeIsActiveShift = 4;
 
   static const int kJSObjectType = 0xb7;
   static const int kFirstNonstringType = 0x80;
@@ -7428,15 +7352,6 @@ void PersistentBase<T>::MarkPartiallyDependent() {
   I::UpdateNodeFlag(reinterpret_cast<internal::Object**>(this->val_),
                     true,
                     I::kNodeIsPartiallyDependentShift);
-}
-
-
-template <class T>
-void PersistentBase<T>::MarkActive() {
-  typedef internal::Internals I;
-  if (this->IsEmpty()) return;
-  I::UpdateNodeFlag(reinterpret_cast<internal::Object**>(this->val_), true,
-                    I::kNodeIsActiveShift);
 }
 
 

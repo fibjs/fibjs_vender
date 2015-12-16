@@ -38,8 +38,8 @@
 #include "src/allocation.h"
 #include "src/builtins.h"
 #include "src/isolate.h"
-#include "src/parsing/token.h"
 #include "src/runtime/runtime.h"
+#include "src/token.h"
 
 namespace v8 {
 
@@ -54,9 +54,6 @@ class StatsCounter;
 
 // -----------------------------------------------------------------------------
 // Platform independent assembler base class.
-
-enum class CodeObjectRequired { kNo, kYes };
-
 
 class AssemblerBase: public Malloced {
  public:
@@ -102,9 +99,6 @@ class AssemblerBase: public Malloced {
   // This function is called when code generation is aborted, so that
   // the assembler could clean up internal data structures.
   virtual void AbortedCodeGeneration() { }
-
-  // Debugging
-  void Print();
 
   static const int kMinimalBufferSize = 4*KB;
 
@@ -236,18 +230,17 @@ class CpuFeatures : public AllStatic {
   static void PrintTarget();
   static void PrintFeatures();
 
- private:
-  friend class ExternalReference;
-  friend class AssemblerBase;
   // Flush instruction cache.
   static void FlushICache(void* start, size_t size);
 
+ private:
   // Platform-dependent implementation.
   static void ProbeImpl(bool cross_compile);
 
   static unsigned supported_;
   static unsigned cache_line_size_;
   static bool initialized_;
+  friend class ExternalReference;
   DISALLOW_COPY_AND_ASSIGN(CpuFeatures);
 };
 
@@ -669,6 +662,11 @@ class RelocInfo {
   Mode rmode_;
   intptr_t data_;
   Code* host_;
+  // External-reference pointers are also split across instruction-pairs
+  // on some platforms, but are accessed via indirect pointers. This location
+  // provides a place for that pointer to exist naturally. Its address
+  // is returned by RelocInfo::target_reference_address().
+  Address reconstructed_adr_ptr_;
   friend class RelocIterator;
 };
 
@@ -870,8 +868,7 @@ class ExternalReference BASE_EMBEDDED {
   static void InitializeMathExpData();
   static void TearDownMathExpData();
 
-  typedef void* ExternalReferenceRedirector(Isolate* isolate, void* original,
-                                            Type type);
+  typedef void* ExternalReferenceRedirector(void* original, Type type);
 
   ExternalReference() : address_(NULL) {}
 
@@ -1004,7 +1001,7 @@ class ExternalReference BASE_EMBEDDED {
   Address address() const { return reinterpret_cast<Address>(address_); }
 
   // Used to check if single stepping is enabled in generated code.
-  static ExternalReference debug_last_step_action_address(Isolate* isolate);
+  static ExternalReference debug_step_in_fp_address(Isolate* isolate);
 
 #ifndef V8_INTERPRETED_REGEXP
   // C functions called from RegExp generated code.
@@ -1048,8 +1045,9 @@ class ExternalReference BASE_EMBEDDED {
         reinterpret_cast<ExternalReferenceRedirector*>(
             isolate->external_reference_redirector());
     void* address = reinterpret_cast<void*>(address_arg);
-    void* answer =
-        (redirector == NULL) ? address : (*redirector)(isolate, address, type);
+    void* answer = (redirector == NULL) ?
+                   address :
+                   (*redirector)(address, type);
     return answer;
   }
 
@@ -1138,7 +1136,7 @@ inline int NumberOfBitsSet(uint32_t x) {
 bool EvalComparison(Token::Value op, double op1, double op2);
 
 // Computes pow(x, y) with the special cases in the spec for Math.pow.
-double power_helper(Isolate* isolate, double x, double y);
+double power_helper(double x, double y);
 double power_double_int(double x, int y);
 double power_double_double(double x, double y);
 
@@ -1154,10 +1152,7 @@ class CallWrapper {
   virtual void BeforeCall(int call_size) const = 0;
   // Called just after emitting a call, i.e., at the return site for the call.
   virtual void AfterCall() const = 0;
-  // Return whether call needs to check for debug stepping.
-  virtual bool NeedsDebugStepCheck() const { return false; }
 };
-
 
 class NullCallWrapper : public CallWrapper {
  public:
@@ -1165,16 +1160,6 @@ class NullCallWrapper : public CallWrapper {
   virtual ~NullCallWrapper() { }
   virtual void BeforeCall(int call_size) const { }
   virtual void AfterCall() const { }
-};
-
-
-class CheckDebugStepCallWrapper : public CallWrapper {
- public:
-  CheckDebugStepCallWrapper() {}
-  virtual ~CheckDebugStepCallWrapper() {}
-  virtual void BeforeCall(int call_size) const {}
-  virtual void AfterCall() const {}
-  virtual bool NeedsDebugStepCheck() const { return true; }
 };
 
 

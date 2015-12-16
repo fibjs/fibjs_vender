@@ -5,13 +5,13 @@
 #include "src/deoptimizer.h"
 
 #include "src/accessors.h"
-#include "src/ast/prettyprinter.h"
 #include "src/codegen.h"
 #include "src/disasm.h"
 #include "src/frames-inl.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/global-handles.h"
 #include "src/macro-assembler.h"
+#include "src/prettyprinter.h"
 #include "src/profiler/cpu-profiler.h"
 #include "src/v8.h"
 
@@ -736,7 +736,7 @@ void Deoptimizer::DoComputeOutputFrames() {
 
   TranslationIterator state_iterator(translations, translation_index);
   translated_state_.Init(
-      input_->GetFramePointerAddress(), &state_iterator,
+      input_->GetFramePointerAddress(), function_, &state_iterator,
       input_data->LiteralArray(), input_->GetRegisterValues(),
       trace_scope_ == nullptr ? nullptr : trace_scope_->file());
 
@@ -760,23 +760,23 @@ void Deoptimizer::DoComputeOutputFrames() {
     int frame_index = static_cast<int>(i);
     switch (translated_state_.frames()[i].kind()) {
       case TranslatedFrame::kFunction:
-        DoComputeJSFrame(frame_index);
+        DoComputeJSFrame(nullptr, frame_index);
         jsframe_count_++;
         break;
       case TranslatedFrame::kArgumentsAdaptor:
-        DoComputeArgumentsAdaptorFrame(frame_index);
+        DoComputeArgumentsAdaptorFrame(nullptr, frame_index);
         break;
       case TranslatedFrame::kConstructStub:
-        DoComputeConstructStubFrame(frame_index);
+        DoComputeConstructStubFrame(nullptr, frame_index);
         break;
       case TranslatedFrame::kGetter:
-        DoComputeAccessorStubFrame(frame_index, false);
+        DoComputeAccessorStubFrame(nullptr, frame_index, false);
         break;
       case TranslatedFrame::kSetter:
-        DoComputeAccessorStubFrame(frame_index, true);
+        DoComputeAccessorStubFrame(nullptr, frame_index, true);
         break;
       case TranslatedFrame::kCompiledStub:
-        DoComputeCompiledStubFrame(frame_index);
+        DoComputeCompiledStubFrame(nullptr, frame_index);
         break;
       case TranslatedFrame::kInvalid:
         FATAL("invalid frame");
@@ -806,7 +806,8 @@ void Deoptimizer::DoComputeOutputFrames() {
 }
 
 
-void Deoptimizer::DoComputeJSFrame(int frame_index) {
+void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
+                                   int frame_index) {
   TranslatedFrame* translated_frame =
       &(translated_state_.frames()[frame_index]);
   TranslatedFrame::iterator value_iterator = translated_frame->begin();
@@ -1022,7 +1023,8 @@ void Deoptimizer::DoComputeJSFrame(int frame_index) {
 }
 
 
-void Deoptimizer::DoComputeArgumentsAdaptorFrame(int frame_index) {
+void Deoptimizer::DoComputeArgumentsAdaptorFrame(TranslationIterator* iterator,
+                                                 int frame_index) {
   TranslatedFrame* translated_frame =
       &(translated_state_.frames()[frame_index]);
   TranslatedFrame::iterator value_iterator = translated_frame->begin();
@@ -1128,7 +1130,8 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(int frame_index) {
 }
 
 
-void Deoptimizer::DoComputeConstructStubFrame(int frame_index) {
+void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
+                                              int frame_index) {
   TranslatedFrame* translated_frame =
       &(translated_state_.frames()[frame_index]);
   TranslatedFrame::iterator value_iterator = translated_frame->begin();
@@ -1235,7 +1238,7 @@ void Deoptimizer::DoComputeConstructStubFrame(int frame_index) {
     PrintF(trace_scope_->file(), "(%d)\n", height - 1);
   }
 
-  // The new target.
+  // The original constructor.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(isolate_->heap()->undefined_value());
   output_frame->SetFrameSlot(output_offset, value);
@@ -1263,7 +1266,8 @@ void Deoptimizer::DoComputeConstructStubFrame(int frame_index) {
 }
 
 
-void Deoptimizer::DoComputeAccessorStubFrame(int frame_index,
+void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
+                                             int frame_index,
                                              bool is_setter_stub_frame) {
   TranslatedFrame* translated_frame =
       &(translated_state_.frames()[frame_index]);
@@ -1388,7 +1392,8 @@ void Deoptimizer::DoComputeAccessorStubFrame(int frame_index,
 }
 
 
-void Deoptimizer::DoComputeCompiledStubFrame(int frame_index) {
+void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
+                                             int frame_index) {
   //
   //               FROM                                  TO
   //    |          ....           |          |          ....           |
@@ -1831,7 +1836,7 @@ void Deoptimizer::EnsureCodeForDeoptimizationEntry(Isolate* isolate,
   while (max_entry_id >= entry_count) entry_count *= 2;
   CHECK(entry_count <= Deoptimizer::kMaxNumberOfEntries);
 
-  MacroAssembler masm(isolate, NULL, 16 * KB, CodeObjectRequired::kYes);
+  MacroAssembler masm(isolate, NULL, 16 * KB);
   masm.set_emit_debug_code(false);
   GenerateDeoptimizationEntries(&masm, entry_count, type);
   CodeDesc desc;
@@ -2486,6 +2491,16 @@ Object* TranslatedValue::GetRawValue() const {
       break;
     }
 
+    case kDouble: {
+      int int_value = FastD2IChecked(double_value());
+      bool is_smi = !IsMinusZero(double_value()) &&
+                    double_value() == int_value && Smi::IsValid(int_value);
+      if (is_smi) {
+        return Smi::FromInt(static_cast<int32_t>(int_value));
+      }
+      break;
+    }
+
     case kBoolBit: {
       if (uint32_value() == 0) {
         return isolate()->heap()->false_value();
@@ -2686,7 +2701,7 @@ void TranslatedFrame::Handlify() {
 
 TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
     TranslationIterator* iterator, FixedArray* literal_array, Address fp,
-    FILE* trace_file) {
+    JSFunction* frame_function, FILE* trace_file) {
   Translation::Opcode opcode =
       static_cast<Translation::Opcode>(iterator->Next());
   switch (opcode) {
@@ -2701,7 +2716,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
         PrintF(trace_file, "  reading input frame %s", name.get());
         int arg_count = shared_info->internal_formal_parameter_count() + 1;
         PrintF(trace_file, " => node=%d, args=%d, height=%d; inputs:\n",
-               node_id.ToInt(), arg_count, height);
+               arg_count, node_id.ToInt(), height);
       }
       return TranslatedFrame::JSFrame(node_id, shared_info, height);
     }
@@ -3009,8 +3024,8 @@ TranslatedState::TranslatedState(JavaScriptFrame* frame)
       static_cast<OptimizedFrame*>(frame)->GetDeoptimizationData(&deopt_index);
   TranslationIterator it(data->TranslationByteArray(),
                          data->TranslationIndex(deopt_index)->value());
-  Init(frame->fp(), &it, data->LiteralArray(), nullptr /* registers */,
-       nullptr /* trace file */);
+  Init(frame->fp(), frame->function(), &it, data->LiteralArray(),
+       nullptr /* registers */, nullptr /* trace file */);
 }
 
 
@@ -3021,6 +3036,7 @@ TranslatedState::TranslatedState()
 
 
 void TranslatedState::Init(Address input_frame_pointer,
+                           JSFunction* input_frame_function,
                            TranslationIterator* iterator,
                            FixedArray* literal_array, RegisterValues* registers,
                            FILE* trace_file) {
@@ -3042,8 +3058,9 @@ void TranslatedState::Init(Address input_frame_pointer,
   // Read the frames
   for (int i = 0; i < count; i++) {
     // Read the frame descriptor.
-    frames_.push_back(CreateNextTranslatedFrame(
-        iterator, literal_array, input_frame_pointer, trace_file));
+    frames_.push_back(
+        CreateNextTranslatedFrame(iterator, literal_array, input_frame_pointer,
+                                  input_frame_function, trace_file));
     TranslatedFrame& frame = frames_.back();
 
     // Read the values.

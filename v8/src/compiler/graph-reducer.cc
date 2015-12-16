@@ -23,9 +23,6 @@ enum class GraphReducer::State : uint8_t {
 };
 
 
-void Reducer::Finalize() {}
-
-
 GraphReducer::GraphReducer(Zone* zone, Graph* graph, Node* dead)
     : graph_(graph),
       dead_(dead),
@@ -61,11 +58,7 @@ void GraphReducer::ReduceNode(Node* node) {
         Push(node);
       }
     } else {
-      // Run all finalizers.
-      for (Reducer* const reducer : reducers_) reducer->Finalize();
-
-      // Check if we have new nodes to revisit.
-      if (revisit_.empty()) break;
+      break;
     }
   }
   DCHECK(revisit_.empty());

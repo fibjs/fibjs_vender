@@ -4,8 +4,6 @@
 
 #include "src/debug/liveedit.h"
 
-#include "src/ast/scopeinfo.h"
-#include "src/ast/scopes.h"
 #include "src/code-stubs.h"
 #include "src/compilation-cache.h"
 #include "src/compiler.h"
@@ -15,7 +13,9 @@
 #include "src/global-handles.h"
 #include "src/isolate-inl.h"
 #include "src/messages.h"
-#include "src/parsing/parser.h"
+#include "src/parser.h"
+#include "src/scopeinfo.h"
+#include "src/scopes.h"
 #include "src/v8.h"
 #include "src/v8memory.h"
 
@@ -910,7 +910,7 @@ class ReplacingVisitor : public ObjectVisitor {
     : original_(original), substitution_(substitution) {
   }
 
-  void VisitPointers(Object** start, Object** end) override {
+  virtual void VisitPointers(Object** start, Object** end) {
     for (Object** p = start; p < end; p++) {
       if (*p == original_) {
         *p = substitution_;
@@ -918,14 +918,14 @@ class ReplacingVisitor : public ObjectVisitor {
     }
   }
 
-  void VisitCodeEntry(Address entry) override {
+  virtual void VisitCodeEntry(Address entry) {
     if (Code::GetObjectFromEntryAddress(entry) == original_) {
       Address substitution_entry = substitution_->instruction_start();
       Memory::Address_at(entry) = substitution_entry;
     }
   }
 
-  void VisitCodeTarget(RelocInfo* rinfo) override {
+  virtual void VisitCodeTarget(RelocInfo* rinfo) {
     if (RelocInfo::IsCodeTarget(rinfo->rmode()) &&
         Code::GetCodeFromTargetAddress(rinfo->target_address()) == original_) {
       Address substitution_entry = substitution_->instruction_start();
@@ -933,7 +933,9 @@ class ReplacingVisitor : public ObjectVisitor {
     }
   }
 
-  void VisitDebugTarget(RelocInfo* rinfo) override { VisitCodeTarget(rinfo); }
+  virtual void VisitDebugTarget(RelocInfo* rinfo) {
+    VisitCodeTarget(rinfo);
+  }
 
  private:
   Code* original_;
@@ -1145,6 +1147,9 @@ void LiveEdit::ReplaceFunctionCode(
   shared_info->set_end_position(end_position);
 
   LiteralFixer::PatchLiterals(&compile_info_wrapper, shared_info, isolate);
+
+  shared_info->set_construct_stub(
+      isolate->builtins()->builtin(Builtins::kJSConstructStubGeneric));
 
   DeoptimizeDependentFunctions(*shared_info);
   isolate->compilation_cache()->Remove(shared_info);

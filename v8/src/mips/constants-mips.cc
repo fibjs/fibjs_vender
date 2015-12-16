@@ -130,28 +130,24 @@ int FPURegisters::Number(const char* name) {
 // -----------------------------------------------------------------------------
 // Instructions.
 
-bool Instruction::IsForbiddenAfterBranchInstr(Instr instr) {
-  Opcode opcode = static_cast<Opcode>(instr & kOpcodeMask);
-  switch (opcode) {
+bool Instruction::IsForbiddenInBranchDelay() const {
+  const int op = OpcodeFieldRaw();
+  switch (op) {
     case J:
     case JAL:
     case BEQ:
     case BNE:
-    case BLEZ:  // POP06 bgeuc/bleuc, blezalc, bgezalc
-    case BGTZ:  // POP07 bltuc/bgtuc, bgtzalc, bltzalc
+    case BLEZ:
+    case BGTZ:
     case BEQL:
     case BNEL:
-    case BLEZL:  // POP26 bgezc, blezc, bgec/blec
-    case BGTZL:  // POP27 bgtzc, bltzc, bltc/bgtc
+    case BLEZL:
+    case BGTZL:
     case BC:
     case BALC:
-    case POP10:  // beqzalc, bovc, beqc
-    case POP30:  // bnezalc, bvnc, bnec
-    case POP66:  // beqzc, jic
-    case POP76:  // bnezc, jialc
       return true;
     case REGIMM:
-      switch (instr & kRtFieldMask) {
+      switch (RtFieldRaw()) {
         case BLTZ:
         case BGEZ:
         case BLTZAL:
@@ -162,21 +158,10 @@ bool Instruction::IsForbiddenAfterBranchInstr(Instr instr) {
       }
       break;
     case SPECIAL:
-      switch (instr & kFunctionFieldMask) {
+      switch (FunctionFieldRaw()) {
         case JR:
         case JALR:
           return true;
-        default:
-          return false;
-      }
-      break;
-    case COP1:
-      switch (instr & kRsFieldMask) {
-        case BC1:
-        case BC1EQZ:
-        case BC1NEZ:
-          return true;
-          break;
         default:
           return false;
       }
@@ -188,7 +173,8 @@ bool Instruction::IsForbiddenAfterBranchInstr(Instr instr) {
 
 
 bool Instruction::IsLinkingInstruction() const {
-  switch (OpcodeFieldRaw()) {
+  const int op = OpcodeFieldRaw();
+  switch (op) {
     case JAL:
       return true;
     case POP76:

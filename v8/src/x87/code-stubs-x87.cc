@@ -598,7 +598,7 @@ void ArgumentsAccessStub::GenerateNewSloppyFast(MacroAssembler* masm) {
   // Get the arguments map from the current native context into edi.
   Label has_mapped_parameters, instantiate;
   __ mov(edi, Operand(esi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ mov(edi, FieldOperand(edi, JSGlobalObject::kNativeContextOffset));
+  __ mov(edi, FieldOperand(edi, GlobalObject::kNativeContextOffset));
   __ mov(ebx, Operand(esp, 0 * kPointerSize));
   __ test(ebx, ebx);
   __ j(not_zero, &has_mapped_parameters, Label::kNear);
@@ -802,7 +802,7 @@ void ArgumentsAccessStub::GenerateNewStrict(MacroAssembler* masm) {
 
   // Get the arguments map from the current native context.
   __ mov(edi, Operand(esi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ mov(edi, FieldOperand(edi, JSGlobalObject::kNativeContextOffset));
+  __ mov(edi, FieldOperand(edi, GlobalObject::kNativeContextOffset));
   const int offset = Context::SlotOffset(Context::STRICT_ARGUMENTS_MAP_INDEX);
   __ mov(edi, Operand(edi, offset));
 
@@ -1614,11 +1614,16 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
 }
 
 
-static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub) {
+static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub,
+                                       bool is_super) {
   // eax : number of arguments to the construct function
   // ebx : feedback vector
   // edx : slot in feedback vector (Smi)
   // edi : the function to call
+  // esp[0]: original receiver (for IsSuperConstructorCall)
+  if (is_super) {
+    __ pop(ecx);
+  }
 
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
@@ -1629,19 +1634,29 @@ static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub) {
     __ push(edi);
     __ push(edx);
     __ push(ebx);
+    if (is_super) {
+      __ push(ecx);
+    }
 
     __ CallStub(stub);
 
+    if (is_super) {
+      __ pop(ecx);
+    }
     __ pop(ebx);
     __ pop(edx);
     __ pop(edi);
     __ pop(eax);
     __ SmiUntag(eax);
   }
+
+  if (is_super) {
+    __ push(ecx);
+  }
 }
 
 
-static void GenerateRecordCallTarget(MacroAssembler* masm) {
+static void GenerateRecordCallTarget(MacroAssembler* masm, bool is_super) {
   // Cache the called function in a feedback vector slot.  Cache states
   // are uninitialized, monomorphic (indicated by a JSFunction), and
   // megamorphic.
@@ -1649,6 +1664,7 @@ static void GenerateRecordCallTarget(MacroAssembler* masm) {
   // ebx : feedback vector
   // edx : slot in feedback vector (Smi)
   // edi : the function to call
+  // esp[0]: original receiver (for IsSuperConstructorCall)
   Isolate* isolate = masm->isolate();
   Label initialize, done, miss, megamorphic, not_array_function;
 
@@ -1714,21 +1730,117 @@ static void GenerateRecordCallTarget(MacroAssembler* masm) {
   // Create an AllocationSite if we don't already have it, store it in the
   // slot.
   CreateAllocationSiteStub create_stub(isolate);
-  CallStubInRecordCallTarget(masm, &create_stub);
+  CallStubInRecordCallTarget(masm, &create_stub, is_super);
   __ jmp(&done);
 
   __ bind(&not_array_function);
   CreateWeakCellStub weak_cell_stub(isolate);
-  CallStubInRecordCallTarget(masm, &weak_cell_stub);
+  CallStubInRecordCallTarget(masm, &weak_cell_stub, is_super);
   __ bind(&done);
+}
+
+
+static void EmitContinueIfStrictOrNative(MacroAssembler* masm, Label* cont) {
+  // Do not transform the receiver for strict mode functions.
+  __ mov(ecx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
+  __ test_b(FieldOperand(ecx, SharedFunctionInfo::kStrictModeByteOffset),
+            1 << SharedFunctionInfo::kStrictModeBitWithinByte);
+  __ j(not_equal, cont);
+
+  // Do not transform the receiver for natives (shared already in ecx).
+  __ test_b(FieldOperand(ecx, SharedFunctionInfo::kNativeByteOffset),
+            1 << SharedFunctionInfo::kNativeBitWithinByte);
+  __ j(not_equal, cont);
+}
+
+
+static void EmitSlowCase(Isolate* isolate, MacroAssembler* masm, int argc) {
+  __ Set(eax, argc);
+  __ Jump(masm->isolate()->builtins()->Call(), RelocInfo::CODE_TARGET);
+}
+
+
+static void EmitWrapCase(MacroAssembler* masm, int argc, Label* cont) {
+  // Wrap the receiver and patch it back onto the stack.
+  { FrameScope frame_scope(masm, StackFrame::INTERNAL);
+    __ push(edi);
+    ToObjectStub stub(masm->isolate());
+    __ CallStub(&stub);
+    __ pop(edi);
+  }
+  __ mov(Operand(esp, (argc + 1) * kPointerSize), eax);
+  __ jmp(cont);
+}
+
+
+static void CallFunctionNoFeedback(MacroAssembler* masm,
+                                   int argc, bool needs_checks,
+                                   bool call_as_method) {
+  // edi : the function to call
+  Label slow, wrap, cont;
+
+  if (needs_checks) {
+    // Check that the function really is a JavaScript function.
+    __ JumpIfSmi(edi, &slow);
+
+    // Goto slow case if we do not have a function.
+    __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
+    __ j(not_equal, &slow);
+  }
+
+  // Fast-case: Just invoke the function.
+  ParameterCount actual(argc);
+
+  if (call_as_method) {
+    if (needs_checks) {
+      EmitContinueIfStrictOrNative(masm, &cont);
+    }
+
+    // Load the receiver from the stack.
+    __ mov(eax, Operand(esp, (argc + 1) * kPointerSize));
+
+    if (needs_checks) {
+      __ JumpIfSmi(eax, &wrap);
+
+      __ CmpObjectType(eax, FIRST_SPEC_OBJECT_TYPE, ecx);
+      __ j(below, &wrap);
+    } else {
+      __ jmp(&wrap);
+    }
+
+    __ bind(&cont);
+  }
+
+  __ InvokeFunction(edi, actual, JUMP_FUNCTION, NullCallWrapper());
+
+  if (needs_checks) {
+    // Slow-case: Non-function called.
+    __ bind(&slow);
+    EmitSlowCase(masm->isolate(), masm, argc);
+  }
+
+  if (call_as_method) {
+    __ bind(&wrap);
+    EmitWrapCase(masm, argc, &cont);
+  }
+}
+
+
+void CallFunctionStub::Generate(MacroAssembler* masm) {
+  CallFunctionNoFeedback(masm, argc(), NeedsChecks(), CallAsMethod());
 }
 
 
 void CallConstructStub::Generate(MacroAssembler* masm) {
   // eax : number of arguments
   // ebx : feedback vector
+  // ecx : original constructor (for IsSuperConstructorCall)
   // edx : slot in feedback vector (Smi, for RecordCallTarget)
   // edi : constructor function
+
+  if (IsSuperConstructorCall()) {
+    __ push(ecx);
+  }
 
   Label non_function;
   // Check that function is not a smi.
@@ -1737,22 +1849,29 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
   __ j(not_equal, &non_function);
 
-  GenerateRecordCallTarget(masm);
+  if (RecordCallTarget()) {
+    GenerateRecordCallTarget(masm, IsSuperConstructorCall());
 
-  Label feedback_register_initialized;
-  // Put the AllocationSite from the feedback vector into ebx, or undefined.
-  __ mov(ebx, FieldOperand(ebx, edx, times_half_pointer_size,
-                           FixedArray::kHeaderSize));
-  Handle<Map> allocation_site_map = isolate()->factory()->allocation_site_map();
-  __ cmp(FieldOperand(ebx, 0), Immediate(allocation_site_map));
-  __ j(equal, &feedback_register_initialized);
-  __ mov(ebx, isolate()->factory()->undefined_value());
-  __ bind(&feedback_register_initialized);
+    Label feedback_register_initialized;
+    // Put the AllocationSite from the feedback vector into ebx, or undefined.
+    __ mov(ebx, FieldOperand(ebx, edx, times_half_pointer_size,
+                             FixedArray::kHeaderSize));
+    Handle<Map> allocation_site_map =
+        isolate()->factory()->allocation_site_map();
+    __ cmp(FieldOperand(ebx, 0), Immediate(allocation_site_map));
+    __ j(equal, &feedback_register_initialized);
+    __ mov(ebx, isolate()->factory()->undefined_value());
+    __ bind(&feedback_register_initialized);
 
-  __ AssertUndefinedOrAllocationSite(ebx);
+    __ AssertUndefinedOrAllocationSite(ebx);
+  }
 
-  // Pass new target to construct stub.
-  __ mov(edx, edi);
+  if (IsSuperConstructorCall()) {
+    __ pop(edx);
+  } else {
+    // Pass original constructor to construct stub.
+    __ mov(edx, edi);
+  }
 
   // Tail call to the function-specific construct stub (still in the caller
   // context at this point).
@@ -1762,6 +1881,7 @@ void CallConstructStub::Generate(MacroAssembler* masm) {
   __ jmp(ecx);
 
   __ bind(&non_function);
+  if (IsSuperConstructorCall()) __ Drop(1);
   __ mov(edx, edi);
   __ Jump(isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
 }
@@ -1803,7 +1923,9 @@ void CallICStub::Generate(MacroAssembler* masm) {
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kWithTypesIndex);
   const int generic_offset =
       FixedArray::OffsetOfElementAt(TypeFeedbackVector::kGenericCountIndex);
-  Label extra_checks_or_miss, call, call_function;
+  Label extra_checks_or_miss, slow_start;
+  Label slow, wrap, cont;
+  Label have_js_function;
   int argc = arg_count();
   ParameterCount actual(argc);
 
@@ -1837,16 +1959,36 @@ void CallICStub::Generate(MacroAssembler* masm) {
                       FixedArray::kHeaderSize + kPointerSize),
          Immediate(Smi::FromInt(CallICNexus::kCallCountIncrement)));
 
-  __ bind(&call_function);
-  __ Set(eax, argc);
-  __ Jump(masm->isolate()->builtins()->CallFunction(convert_mode()),
-          RelocInfo::CODE_TARGET);
+  __ bind(&have_js_function);
+  if (CallAsMethod()) {
+    EmitContinueIfStrictOrNative(masm, &cont);
+
+    // Load the receiver from the stack.
+    __ mov(eax, Operand(esp, (argc + 1) * kPointerSize));
+
+    __ JumpIfSmi(eax, &wrap);
+
+    __ CmpObjectType(eax, FIRST_SPEC_OBJECT_TYPE, ecx);
+    __ j(below, &wrap);
+
+    __ bind(&cont);
+  }
+
+  __ InvokeFunction(edi, actual, JUMP_FUNCTION, NullCallWrapper());
+
+  __ bind(&slow);
+  EmitSlowCase(isolate, masm, argc);
+
+  if (CallAsMethod()) {
+    __ bind(&wrap);
+    EmitWrapCase(masm, argc, &cont);
+  }
 
   __ bind(&extra_checks_or_miss);
   Label uninitialized, miss, not_allocation_site;
 
   __ cmp(ecx, Immediate(TypeFeedbackVector::MegamorphicSentinel(isolate)));
-  __ j(equal, &call);
+  __ j(equal, &slow_start);
 
   // Check if we have an allocation site.
   __ CompareRoot(FieldOperand(ecx, HeapObject::kMapOffset),
@@ -1878,11 +2020,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   // We have to update statistics for runtime profiling.
   __ sub(FieldOperand(ebx, with_types_offset), Immediate(Smi::FromInt(1)));
   __ add(FieldOperand(ebx, generic_offset), Immediate(Smi::FromInt(1)));
-
-  __ bind(&call);
-  __ Set(eax, argc);
-  __ Jump(masm->isolate()->builtins()->Call(convert_mode()),
-          RelocInfo::CODE_TARGET);
+  __ jmp(&slow_start);
 
   __ bind(&uninitialized);
 
@@ -1898,13 +2036,6 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ LoadGlobalFunction(Context::ARRAY_FUNCTION_INDEX, ecx);
   __ cmp(edi, ecx);
   __ j(equal, &miss);
-
-  // Make sure the function belongs to the same native context (which implies
-  // the same global object).
-  __ mov(ecx, FieldOperand(edi, JSFunction::kContextOffset));
-  __ mov(ecx, ContextOperand(ecx, Context::GLOBAL_OBJECT_INDEX));
-  __ cmp(ecx, GlobalObjectOperand());
-  __ j(not_equal, &miss);
 
   // Update stats.
   __ add(FieldOperand(ebx, with_types_offset), Immediate(Smi::FromInt(1)));
@@ -1926,14 +2057,23 @@ void CallICStub::Generate(MacroAssembler* masm) {
     __ pop(edi);
   }
 
-  __ jmp(&call_function);
+  __ jmp(&have_js_function);
 
   // We are here because tracing is on or we encountered a MISS case we can't
   // handle here.
   __ bind(&miss);
   GenerateMiss(masm);
 
-  __ jmp(&call);
+  // the slow case
+  __ bind(&slow_start);
+
+  // Check that the function really is a JavaScript function.
+  __ JumpIfSmi(edi, &slow);
+
+  // Goto slow case if we do not have a function.
+  __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
+  __ j(not_equal, &slow);
+  __ jmp(&have_js_function);
 
   // Unreachable
   __ int3();
@@ -2001,23 +2141,11 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // esp: stack pointer  (restored after C call)
   // esi: current context (C callee-saved)
   // edi: JS function of the caller (C callee-saved)
-  //
-  // If argv_in_register():
-  // ecx: pointer to the first argument
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
   // Enter the exit frame that transitions from JavaScript to C++.
-  if (argv_in_register()) {
-    DCHECK(!save_doubles());
-    __ EnterApiExitFrame(3);
-
-    // Move argc and argv into the correct registers.
-    __ mov(esi, ecx);
-    __ mov(edi, eax);
-  } else {
-    __ EnterExitFrame(save_doubles());
-  }
+  __ EnterExitFrame(save_doubles());
 
   // ebx: pointer to C function  (C callee-saved)
   // ebp: frame pointer  (restored after C call)
@@ -2062,7 +2190,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   }
 
   // Exit the JavaScript to C++ exit frame.
-  __ LeaveExitFrame(save_doubles(), !argv_in_register());
+  __ LeaveExitFrame(save_doubles());
   __ ret(0);
 
   // Handling of exception.
@@ -2454,7 +2582,7 @@ void StringCharFromCodeGenerator::GenerateSlow(
   __ bind(&slow_case_);
   call_helper.BeforeCall(masm);
   __ push(code_);
-  __ CallRuntime(Runtime::kStringCharFromCode, 1);
+  __ CallRuntime(Runtime::kCharFromCode, 1);
   if (!result_.is(eax)) {
     __ mov(result_, eax);
   }
@@ -2763,25 +2891,6 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ push(eax);  // Push argument.
   __ push(ecx);  // Push return address.
   __ TailCallRuntime(Runtime::kToNumber, 1, 1);
-}
-
-
-void ToLengthStub::Generate(MacroAssembler* masm) {
-  // The ToLength stub takes on argument in eax.
-  Label not_smi, positive_smi;
-  __ JumpIfNotSmi(eax, &not_smi, Label::kNear);
-  STATIC_ASSERT(kSmiTag == 0);
-  __ test(eax, eax);
-  __ j(greater_equal, &positive_smi, Label::kNear);
-  __ xor_(eax, eax);
-  __ bind(&positive_smi);
-  __ Ret();
-  __ bind(&not_smi);
-
-  __ pop(ecx);   // Pop return address.
-  __ push(eax);  // Push argument.
-  __ push(ecx);  // Push return address.
-  __ TailCallRuntime(Runtime::kToLength, 1, 1);
 }
 
 
@@ -3779,6 +3888,89 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
 }
 
 
+void StoreArrayLiteralElementStub::Generate(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- eax    : element value to store
+  //  -- ecx    : element index as smi
+  //  -- esp[0] : return address
+  //  -- esp[4] : array literal index in function
+  //  -- esp[8] : array literal
+  // clobbers ebx, edx, edi
+  // -----------------------------------
+
+  Label element_done;
+  Label double_elements;
+  Label smi_element;
+  Label slow_elements;
+  Label slow_elements_from_double;
+  Label fast_elements;
+
+  // Get array literal index, array literal and its map.
+  __ mov(edx, Operand(esp, 1 * kPointerSize));
+  __ mov(ebx, Operand(esp, 2 * kPointerSize));
+  __ mov(edi, FieldOperand(ebx, JSObject::kMapOffset));
+
+  __ CheckFastElements(edi, &double_elements);
+
+  // Check for FAST_*_SMI_ELEMENTS or FAST_*_ELEMENTS elements
+  __ JumpIfSmi(eax, &smi_element);
+  __ CheckFastSmiElements(edi, &fast_elements, Label::kNear);
+
+  // Store into the array literal requires a elements transition. Call into
+  // the runtime.
+
+  __ bind(&slow_elements);
+  __ pop(edi);  // Pop return address and remember to put back later for tail
+                // call.
+  __ push(ebx);
+  __ push(ecx);
+  __ push(eax);
+  __ mov(ebx, Operand(ebp, JavaScriptFrameConstants::kFunctionOffset));
+  __ push(FieldOperand(ebx, JSFunction::kLiteralsOffset));
+  __ push(edx);
+  __ push(edi);  // Return return address so that tail call returns to right
+                 // place.
+  __ TailCallRuntime(Runtime::kStoreArrayLiteralElement, 5, 1);
+
+  __ bind(&slow_elements_from_double);
+  __ pop(edx);
+  __ jmp(&slow_elements);
+
+  // Array literal has ElementsKind of FAST_*_ELEMENTS and value is an object.
+  __ bind(&fast_elements);
+  __ mov(ebx, FieldOperand(ebx, JSObject::kElementsOffset));
+  __ lea(ecx, FieldOperand(ebx, ecx, times_half_pointer_size,
+                           FixedArrayBase::kHeaderSize));
+  __ mov(Operand(ecx, 0), eax);
+  // Update the write barrier for the array store.
+  __ RecordWrite(ebx, ecx, eax, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
+                 OMIT_SMI_CHECK);
+  __ ret(0);
+
+  // Array literal has ElementsKind of FAST_*_SMI_ELEMENTS or FAST_*_ELEMENTS,
+  // and value is Smi.
+  __ bind(&smi_element);
+  __ mov(ebx, FieldOperand(ebx, JSObject::kElementsOffset));
+  __ mov(FieldOperand(ebx, ecx, times_half_pointer_size,
+                      FixedArrayBase::kHeaderSize), eax);
+  __ ret(0);
+
+  // Array literal has ElementsKind of FAST_*_DOUBLE_ELEMENTS.
+  __ bind(&double_elements);
+
+  __ push(edx);
+  __ mov(edx, FieldOperand(ebx, JSObject::kElementsOffset));
+  __ StoreNumberToDoubleElements(eax,
+                                 edx,
+                                 ecx,
+                                 edi,
+                                 &slow_elements_from_double,
+                                 false);
+  __ pop(edx);
+  __ ret(0);
+}
+
+
 void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
   CEntryStub ces(isolate(), 1, kSaveFPRegs);
   __ call(ces.GetCode(), RelocInfo::CODE_TARGET);
@@ -4060,7 +4252,7 @@ static void HandlePolymorphicStoreCase(MacroAssembler* masm, Register receiver,
   Label start_polymorphic;
   Label pop_and_miss;
   ExternalReference virtual_register =
-      ExternalReference::virtual_handler_register(masm->isolate());
+      ExternalReference::vector_store_virtual_register(masm->isolate());
 
   __ push(receiver);
   __ push(vector);
@@ -4144,7 +4336,7 @@ static void HandleMonomorphicStoreCase(MacroAssembler* masm, Register receiver,
   // The store ic value is on the stack.
   DCHECK(weak_cell.is(VectorStoreICDescriptor::ValueRegister()));
   ExternalReference virtual_register =
-      ExternalReference::virtual_handler_register(masm->isolate());
+      ExternalReference::vector_store_virtual_register(masm->isolate());
 
   // feedback initially contains the feedback array
   Label compare_smi_map;
@@ -4252,16 +4444,13 @@ static void HandlePolymorphicKeyedStoreCase(MacroAssembler* masm,
   Label transition_call;
   Label pop_and_miss;
   ExternalReference virtual_register =
-      ExternalReference::virtual_handler_register(masm->isolate());
-  ExternalReference virtual_slot =
-      ExternalReference::virtual_slot_register(masm->isolate());
+      ExternalReference::vector_store_virtual_register(masm->isolate());
 
   __ push(receiver);
   __ push(vector);
 
   Register receiver_map = receiver;
   Register cached_map = vector;
-  Register value = StoreDescriptor::ValueRegister();
 
   // Receiver might not be a heap object.
   __ JumpIfSmi(receiver, &load_smi_map);
@@ -4270,17 +4459,11 @@ static void HandlePolymorphicKeyedStoreCase(MacroAssembler* masm,
 
   // Polymorphic, we have to loop from 0 to N - 1
   __ push(key);
-  // Current stack layout:
-  // - esp[0]    -- key
-  // - esp[4]    -- vector
-  // - esp[8]    -- receiver
-  // - esp[12]   -- value
-  // - esp[16]   -- return address
-  //
-  // Required stack layout for handler call:
-  // - esp[0]    -- return address
-  // - receiver, key, value, vector, slot in registers.
-  // - handler in virtual register.
+  // On the stack we have:
+  // key (esp)
+  // vector
+  // receiver
+  // value
   Register counter = key;
   __ mov(counter, Immediate(Smi::FromInt(0)));
   __ bind(&next_loop);
@@ -4299,39 +4482,32 @@ static void HandlePolymorphicKeyedStoreCase(MacroAssembler* masm,
   __ pop(receiver);
   __ lea(feedback, FieldOperand(feedback, Code::kHeaderSize));
   __ mov(Operand::StaticVariable(virtual_register), feedback);
-  __ pop(value);
+  __ pop(feedback);  // Pop "value".
   __ jmp(Operand::StaticVariable(virtual_register));
 
   __ bind(&transition_call);
-  // Current stack layout:
-  // - esp[0]    -- key
-  // - esp[4]    -- vector
-  // - esp[8]    -- receiver
-  // - esp[12]   -- value
-  // - esp[16]   -- return address
-  //
-  // Required stack layout for handler call:
-  // - esp[0]    -- return address
-  // - receiver, key, value, map, vector in registers.
-  // - handler and slot in virtual registers.
-  __ mov(Operand::StaticVariable(virtual_slot), slot);
+  // Oh holy hell this will be tough.
+  // The map goes in vector register.
+  __ mov(receiver, FieldOperand(cached_map, WeakCell::kValueOffset));
+  // The weak cell may have been cleared.
+  __ JumpIfSmi(receiver, &pop_and_miss);
+  // slot goes on the stack, and holds return address.
+  __ xchg(slot, Operand(esp, 4 * kPointerSize));
+  // Get the handler in value.
   __ mov(feedback, FieldOperand(feedback, counter, times_half_pointer_size,
                                 FixedArray::kHeaderSize + 2 * kPointerSize));
   __ lea(feedback, FieldOperand(feedback, Code::kHeaderSize));
-  __ mov(Operand::StaticVariable(virtual_register), feedback);
-
-  __ mov(cached_map, FieldOperand(cached_map, WeakCell::kValueOffset));
-  // The weak cell may have been cleared.
-  __ JumpIfSmi(cached_map, &pop_and_miss);
-  DCHECK(!cached_map.is(VectorStoreTransitionDescriptor::MapRegister()));
-  __ mov(VectorStoreTransitionDescriptor::MapRegister(), cached_map);
-
   // Pop key into place.
   __ pop(key);
-  __ pop(vector);
-  __ pop(receiver);
-  __ pop(value);
-  __ jmp(Operand::StaticVariable(virtual_register));
+  // Put the return address on top of stack, vector goes in slot.
+  __ xchg(slot, Operand(esp, 0));
+  // put the map on the stack, receiver holds receiver.
+  __ xchg(receiver, Operand(esp, 1 * kPointerSize));
+  // put the vector on the stack, slot holds value.
+  __ xchg(slot, Operand(esp, 2 * kPointerSize));
+  // feedback (value) = value, slot = handler.
+  __ xchg(feedback, slot);
+  __ jmp(slot);
 
   __ bind(&prepare_next);
   __ add(counter, Immediate(Smi::FromInt(3)));
@@ -4681,26 +4857,27 @@ void ArrayConstructorStub::Generate(MacroAssembler* masm) {
 
   // Subclassing.
   __ bind(&subclassing);
+  __ pop(ecx);  // return address.
+  __ push(edi);
+  __ push(edx);
+
+  // Adjust argc.
   switch (argument_count()) {
     case ANY:
     case MORE_THAN_ONE:
-      __ mov(Operand(esp, eax, times_pointer_size, kPointerSize), edi);
-      __ add(eax, Immediate(3));
+      __ add(eax, Immediate(2));
       break;
     case NONE:
-      __ mov(Operand(esp, 1 * kPointerSize), edi);
-      __ mov(eax, Immediate(3));
+      __ mov(eax, Immediate(2));
       break;
     case ONE:
-      __ mov(Operand(esp, 2 * kPointerSize), edi);
-      __ mov(eax, Immediate(4));
+      __ mov(eax, Immediate(3));
       break;
   }
-  __ PopReturnAddressTo(ecx);
-  __ Push(edx);
-  __ Push(ebx);
-  __ PushReturnAddressFrom(ecx);
-  __ JumpToExternalReference(ExternalReference(Runtime::kNewArray, isolate()));
+
+  __ push(ecx);
+  __ JumpToExternalReference(
+      ExternalReference(Runtime::kArrayConstructorWithSubclassing, isolate()));
 }
 
 

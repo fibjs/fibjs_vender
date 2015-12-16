@@ -7,7 +7,7 @@
 
 #include "src/allocation.h"
 #include "src/char-predicates.h"
-#include "src/parsing/scanner.h"
+#include "src/scanner.h"
 
 namespace v8 {
 namespace internal {

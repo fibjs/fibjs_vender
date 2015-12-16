@@ -23,8 +23,6 @@ const Register kInterpreterRegisterFileRegister = {Register::kCode_r4};
 const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r5};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r6};
 const Register kInterpreterDispatchTableRegister = {Register::kCode_r8};
-const Register kJavaScriptCallArgCountRegister = {Register::kCode_r0};
-const Register kJavaScriptCallNewTargetRegister = {Register::kCode_r3};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_r1};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_r0};
 
@@ -88,8 +86,11 @@ enum TargetAddressStorageMode {
 // MacroAssembler implements a collection of frequently used macros.
 class MacroAssembler: public Assembler {
  public:
-  MacroAssembler(Isolate* isolate, void* buffer, int size,
-                 CodeObjectRequired create_code_object);
+  // The isolate parameter can be NULL if the macro assembler should
+  // not use isolate-dependent functionality. In this case, it's the
+  // responsibility of the caller to never invoke such function on the
+  // macro assembler.
+  MacroAssembler(Isolate* isolate, void* buffer, int size);
 
 
   // Returns the size of a call in instructions. Note, the value returned is
@@ -640,15 +641,15 @@ class MacroAssembler: public Assembler {
   // JavaScript invokes
 
   // Invoke the JavaScript function code by either calling or jumping.
-  void InvokeFunctionCode(Register function, Register new_target,
-                          const ParameterCount& expected,
-                          const ParameterCount& actual, InvokeFlag flag,
-                          const CallWrapper& call_wrapper);
+  void InvokeCode(Register code,
+                  const ParameterCount& expected,
+                  const ParameterCount& actual,
+                  InvokeFlag flag,
+                  const CallWrapper& call_wrapper);
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
   void InvokeFunction(Register function,
-                      Register new_target,
                       const ParameterCount& actual,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
@@ -761,8 +762,12 @@ class MacroAssembler: public Assembler {
                 Label* gc_required,
                 AllocationFlags flags);
 
-  void Allocate(Register object_size, Register result, Register result_end,
-                Register scratch, Label* gc_required, AllocationFlags flags);
+  void Allocate(Register object_size,
+                Register result,
+                Register scratch1,
+                Register scratch2,
+                Label* gc_required,
+                AllocationFlags flags);
 
   void AllocateTwoByteString(Register result,
                              Register length,
@@ -807,6 +812,12 @@ class MacroAssembler: public Assembler {
                                    Register heap_number_map,
                                    Label* gc_required);
 
+  // Copies a fixed number of fields of heap objects from src to dst.
+  void CopyFields(Register dst,
+                  Register src,
+                  LowDwVfpRegister double_scratch,
+                  int field_count);
+
   // Copies a number of bytes from src to dst. All registers are clobbered. On
   // exit src and dst will point to the place just after where the last byte was
   // read or written and length will be zero.
@@ -815,11 +826,12 @@ class MacroAssembler: public Assembler {
                  Register length,
                  Register scratch);
 
-  // Initialize fields with filler values.  Fields starting at |current_address|
-  // not including |end_address| are overwritten with the value in |filler|.  At
-  // the end the loop, |current_address| takes the value of |end_address|.
-  void InitializeFieldsWithFiller(Register current_address,
-                                  Register end_address, Register filler);
+  // Initialize fields with filler values.  Fields starting at |start_offset|
+  // not including end_offset are overwritten with the value in |filler|.  At
+  // the end the loop, |start_offset| takes the value of |end_offset|.
+  void InitializeFieldsWithFiller(Register start_offset,
+                                  Register end_offset,
+                                  Register filler);
 
   // ---------------------------------------------------------------------------
   // Support functions.
@@ -1449,14 +1461,12 @@ class MacroAssembler: public Assembler {
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
                       const ParameterCount& actual,
+                      Handle<Code> code_constant,
+                      Register code_reg,
                       Label* done,
                       bool* definitely_mismatches,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
-
-  void FloodFunctionIfStepping(Register fun, Register new_target,
-                               const ParameterCount& expected,
-                               const ParameterCount& actual);
 
   void InitializeNewString(Register string,
                            Register length,

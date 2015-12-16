@@ -58,7 +58,7 @@ MUST_USE_RESULT MaybeHandle<Object> Invoke(Isolate* isolate, bool is_construct,
                                            Handle<Object> receiver, int argc,
                                            Handle<Object> args[],
                                            Handle<Object> new_target) {
-  DCHECK(!receiver->IsJSGlobalObject());
+  DCHECK(!receiver->IsGlobalObject());
 
   // Entering JavaScript.
   VMState<JS> state(isolate);
@@ -95,8 +95,7 @@ MUST_USE_RESULT MaybeHandle<Object> Invoke(Isolate* isolate, bool is_construct,
     if (FLAG_profile_deserialization && target->IsJSFunction()) {
       PrintDeserializedCodeInfo(Handle<JSFunction>::cast(target));
     }
-    value = CALL_GENERATED_CODE(isolate, stub_entry, orig_func, func, recv,
-                                argc, argv);
+    value = CALL_GENERATED_CODE(stub_entry, orig_func, func, recv, argc, argv);
   }
 
 #ifdef VERIFY_HEAP
@@ -132,9 +131,9 @@ MaybeHandle<Object> Execution::Call(Isolate* isolate, Handle<Object> callable,
   // Convert calls on global objects to be calls on the global
   // receiver instead to avoid having a 'this' pointer which refers
   // directly to a global object.
-  if (receiver->IsJSGlobalObject()) {
+  if (receiver->IsGlobalObject()) {
     receiver =
-        handle(Handle<JSGlobalObject>::cast(receiver)->global_proxy(), isolate);
+        handle(Handle<GlobalObject>::cast(receiver)->global_proxy(), isolate);
   }
 
   // api callbacks can be called directly.
@@ -153,7 +152,7 @@ MaybeHandle<Object> Execution::Call(Isolate* isolate, Handle<Object> callable,
             isolate, receiver, Execution::ToObject(isolate, receiver), Object);
       }
     }
-    DCHECK(function->context()->global_object()->IsJSGlobalObject());
+    DCHECK(function->context()->global_object()->IsGlobalObject());
     auto value = Builtins::InvokeApiFunction(function, receiver, argc, argv);
     bool has_exception = value.is_null();
     DCHECK(has_exception == isolate->has_pending_exception());
@@ -186,12 +185,12 @@ MaybeHandle<Object> Execution::New(Isolate* isolate, Handle<Object> constructor,
 }
 
 
-MaybeHandle<Object> Execution::TryCall(Isolate* isolate,
-                                       Handle<Object> callable,
+MaybeHandle<Object> Execution::TryCall(Handle<JSFunction> func,
                                        Handle<Object> receiver, int argc,
                                        Handle<Object> args[],
                                        MaybeHandle<Object>* exception_out) {
   bool is_termination = false;
+  Isolate* isolate = func->GetIsolate();
   MaybeHandle<Object> maybe_result;
   if (exception_out != NULL) *exception_out = MaybeHandle<Object>();
   // Enter a try-block while executing the JavaScript code. To avoid
@@ -203,7 +202,7 @@ MaybeHandle<Object> Execution::TryCall(Isolate* isolate,
     catcher.SetVerbose(false);
     catcher.SetCaptureMessage(false);
 
-    maybe_result = Call(isolate, callable, receiver, argc, args);
+    maybe_result = Call(isolate, func, receiver, argc, args);
 
     if (maybe_result.is_null()) {
       DCHECK(catcher.HasCaught());
@@ -458,6 +457,20 @@ MaybeHandle<Object> Execution::ToObject(Isolate* isolate, Handle<Object> obj) {
 }
 
 
+MaybeHandle<JSRegExp> Execution::NewJSRegExp(Handle<String> pattern,
+                                             Handle<String> flags) {
+  Isolate* isolate = pattern->GetIsolate();
+  Handle<JSFunction> function = Handle<JSFunction>(
+      isolate->native_context()->regexp_function());
+  Handle<Object> re_obj;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, re_obj,
+      RegExpImpl::CreateRegExpLiteral(function, pattern, flags),
+      JSRegExp);
+  return Handle<JSRegExp>::cast(re_obj);
+}
+
+
 Handle<String> Execution::GetStackTraceLine(Handle<Object> recv,
                                             Handle<JSFunction> fun,
                                             Handle<Object> pos,
@@ -465,7 +478,7 @@ Handle<String> Execution::GetStackTraceLine(Handle<Object> recv,
   Isolate* isolate = fun->GetIsolate();
   Handle<Object> args[] = { recv, fun, pos, is_global };
   MaybeHandle<Object> maybe_result =
-      TryCall(isolate, isolate->get_stack_trace_line_fun(),
+      TryCall(isolate->get_stack_trace_line_fun(),
               isolate->factory()->undefined_value(), arraysize(args), args);
   Handle<Object> result;
   if (!maybe_result.ToHandle(&result) || !result->IsString()) {
@@ -484,11 +497,6 @@ void StackGuard::HandleGCInterrupt() {
 
 
 Object* StackGuard::HandleInterrupts() {
-  if (FLAG_verify_predictable) {
-    // Advance synthetic time by making a time request.
-    isolate_->heap()->MonotonicallyIncreasingTimeInMs();
-  }
-
   if (CheckAndClearInterrupt(GC_REQUEST)) {
     isolate_->heap()->HandleGCRequest();
   }

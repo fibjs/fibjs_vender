@@ -36,11 +36,9 @@ RUNTIME_FUNCTION(Runtime_ThrowUnsupportedSuperError) {
 
 RUNTIME_FUNCTION(Runtime_ThrowConstructorNonCallableError) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, constructor, 0);
-  Handle<Object> name(constructor->shared()->name(), isolate);
+  DCHECK(args.length() == 0);
   THROW_NEW_ERROR_RETURN_FAILURE(
-      isolate, NewTypeError(MessageTemplate::kConstructorNonCallable, name));
+      isolate, NewTypeError(MessageTemplate::kConstructorNonCallable));
 }
 
 
@@ -125,7 +123,6 @@ static MaybeHandle<Object> DefineClass(Isolate* isolate, Handle<Object> name,
 
   Handle<Map> map =
       isolate->factory()->NewMap(JS_OBJECT_TYPE, JSObject::kHeaderSize);
-  map->set_is_prototype_map(true);
   if (constructor->map()->is_strong()) {
     map->set_is_strong();
     if (super_class->IsNull()) {
@@ -144,11 +141,7 @@ static MaybeHandle<Object> DefineClass(Isolate* isolate, Handle<Object> name,
   constructor->shared()->set_name(*name_string);
 
   if (!super_class->IsTheHole()) {
-    // Derived classes, just like builtins, don't create implicit receivers in
-    // [[construct]]. Instead they just set up new.target and call into the
-    // constructor. Hence we can reuse the builtins construct stub for derived
-    // classes.
-    Handle<Code> stub(isolate->builtins()->JSBuiltinsConstructStub());
+    Handle<Code> stub(isolate->builtins()->JSConstructStubForDerived());
     constructor->shared()->set_construct_stub(*stub);
   }
 
@@ -170,7 +163,7 @@ static MaybeHandle<Object> DefineClass(Isolate* isolate, Handle<Object> name,
 
   if (!constructor_parent.is_null()) {
     MAYBE_RETURN_NULL(JSObject::SetPrototype(constructor, constructor_parent,
-                                             false, Object::THROW_ON_ERROR));
+                                             false, THROW_ON_ERROR));
   }
 
   JSObject::AddProperty(prototype, isolate->factory()->constructor_string(),
@@ -230,6 +223,7 @@ RUNTIME_FUNCTION(Runtime_FinalizeClassDefinition) {
   CONVERT_ARG_HANDLE_CHECKED(JSObject, constructor, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, prototype, 1);
 
+  JSObject::MigrateSlowToFast(prototype, 0, "RuntimeToFastProperties");
   JSObject::MigrateSlowToFast(constructor, 0, "RuntimeToFastProperties");
 
   if (constructor->map()->is_strong()) {
@@ -387,10 +381,12 @@ static Object* StoreToSuper(Isolate* isolate, Handle<JSObject> home_object,
   if (!proto->IsJSReceiver()) return isolate->heap()->undefined_value();
 
   LookupIterator it(receiver, name, Handle<JSReceiver>::cast(proto));
-  MAYBE_RETURN(Object::SetSuperProperty(&it, value, language_mode,
-                                        Object::CERTAINLY_NOT_STORE_FROM_KEYED),
-               isolate->heap()->exception());
-  return *value;
+  Handle<Object> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, result,
+      Object::SetSuperProperty(&it, value, language_mode,
+                               Object::CERTAINLY_NOT_STORE_FROM_KEYED));
+  return *result;
 }
 
 
@@ -410,10 +406,12 @@ static Object* StoreElementToSuper(Isolate* isolate,
   if (!proto->IsJSReceiver()) return isolate->heap()->undefined_value();
 
   LookupIterator it(isolate, receiver, index, Handle<JSReceiver>::cast(proto));
-  MAYBE_RETURN(Object::SetSuperProperty(&it, value, language_mode,
-                                        Object::MAY_BE_STORE_FROM_KEYED),
-               isolate->heap()->exception());
-  return *value;
+  Handle<Object> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, result,
+      Object::SetSuperProperty(&it, value, language_mode,
+                               Object::MAY_BE_STORE_FROM_KEYED));
+  return *result;
 }
 
 
@@ -488,10 +486,21 @@ RUNTIME_FUNCTION(Runtime_StoreKeyedToSuper_Sloppy) {
 }
 
 
+RUNTIME_FUNCTION(Runtime_HandleStepInForDerivedConstructors) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
+  Debug* debug = isolate->debug();
+  // Handle stepping into constructors if step into is active.
+  if (debug->StepInActive()) debug->HandleStepIn(function, true);
+  return *isolate->factory()->undefined_value();
+}
+
+
 RUNTIME_FUNCTION(Runtime_DefaultConstructorCallSuper) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, new_target, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, original_constructor, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, super_constructor, 1);
   JavaScriptFrameIterator it(isolate);
 
@@ -502,8 +511,9 @@ RUNTIME_FUNCTION(Runtime_DefaultConstructorCallSuper) {
 
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result, Execution::New(isolate, super_constructor, new_target,
-                                      argument_count, arguments.get()));
+      isolate, result,
+      Execution::New(isolate, super_constructor, original_constructor,
+                     argument_count, arguments.get()));
 
   return *result;
 }

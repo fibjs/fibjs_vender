@@ -29,6 +29,8 @@ static void GenerateGlobalInstanceTypeCheck(MacroAssembler* masm, Register type,
   //   type: holds the receiver instance type on entry.
   __ cmpb(type, Immediate(JS_GLOBAL_OBJECT_TYPE));
   __ j(equal, global_object);
+  __ cmpb(type, Immediate(JS_BUILTINS_OBJECT_TYPE));
+  __ j(equal, global_object);
   __ cmpb(type, Immediate(JS_GLOBAL_PROXY_TYPE));
   __ j(equal, global_object);
 }
@@ -568,16 +570,18 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   __ movzxbp(r9, FieldOperand(r9, Map::kInstanceTypeOffset));
   __ JumpIfNotUniqueNameInstanceType(r9, &slow_with_tagged_index);
 
-  Register vector = VectorStoreICDescriptor::VectorRegister();
-  Register slot = VectorStoreICDescriptor::SlotRegister();
-  // The handlers in the stub cache expect a vector and slot. Since we won't
-  // change the IC from any downstream misses, a dummy vector can be used.
-  Handle<TypeFeedbackVector> dummy_vector =
-      TypeFeedbackVector::DummyVector(masm->isolate());
-  int slot_index = dummy_vector->GetIndex(
-      FeedbackVectorSlot(TypeFeedbackVector::kDummyKeyedStoreICSlot));
-  __ Move(vector, dummy_vector);
-  __ Move(slot, Smi::FromInt(slot_index));
+  if (FLAG_vector_stores) {
+    Register vector = VectorStoreICDescriptor::VectorRegister();
+    Register slot = VectorStoreICDescriptor::SlotRegister();
+    // The handlers in the stub cache expect a vector and slot. Since we won't
+    // change the IC from any downstream misses, a dummy vector can be used.
+    Handle<TypeFeedbackVector> dummy_vector =
+        TypeFeedbackVector::DummyVector(masm->isolate());
+    int slot_index = dummy_vector->GetIndex(
+        FeedbackVectorSlot(TypeFeedbackVector::kDummyKeyedStoreICSlot));
+    __ Move(vector, dummy_vector);
+    __ Move(slot, Smi::FromInt(slot_index));
+  }
 
   Code::Flags flags = Code::RemoveTypeAndHolderFromFlags(
       Code::ComputeHandlerFlags(Code::STORE_IC));
@@ -735,8 +739,22 @@ void KeyedLoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm,
 
 
 void StoreIC::GenerateMegamorphic(MacroAssembler* masm) {
-  // This shouldn't be called.
-  __ int3();
+  if (FLAG_vector_stores) {
+    // This shouldn't be called.
+    __ int3();
+    return;
+  }
+
+  // The return address is on the stack.
+  // Get the receiver from the stack and probe the stub cache.
+  Code::Flags flags = Code::RemoveTypeAndHolderFromFlags(
+      Code::ComputeHandlerFlags(Code::STORE_IC));
+  masm->isolate()->stub_cache()->GenerateProbe(
+      masm, Code::STORE_IC, flags, StoreDescriptor::ReceiverRegister(),
+      StoreDescriptor::NameRegister(), rbx, no_reg);
+
+  // Cache miss: Jump to runtime.
+  GenerateMiss(masm);
 }
 
 
@@ -751,11 +769,13 @@ static void StoreIC_PushArgs(MacroAssembler* masm) {
   __ Push(receiver);
   __ Push(name);
   __ Push(value);
-  Register slot = VectorStoreICDescriptor::SlotRegister();
-  Register vector = VectorStoreICDescriptor::VectorRegister();
-  DCHECK(!temp.is(slot) && !temp.is(vector));
-  __ Push(slot);
-  __ Push(vector);
+  if (FLAG_vector_stores) {
+    Register slot = VectorStoreICDescriptor::SlotRegister();
+    Register vector = VectorStoreICDescriptor::VectorRegister();
+    DCHECK(!temp.is(slot) && !temp.is(vector));
+    __ Push(slot);
+    __ Push(vector);
+  }
   __ PushReturnAddressFrom(temp);
 }
 
@@ -765,7 +785,8 @@ void StoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   // Perform tail call to the entry.
-  __ TailCallRuntime(Runtime::kStoreIC_Miss, 5, 1);
+  int args = FLAG_vector_stores ? 5 : 3;
+  __ TailCallRuntime(Runtime::kStoreIC_Miss, args, 1);
 }
 
 
@@ -774,7 +795,8 @@ void StoreIC::GenerateNormal(MacroAssembler* masm) {
   Register name = StoreDescriptor::NameRegister();
   Register value = StoreDescriptor::ValueRegister();
   Register dictionary = r11;
-  DCHECK(!AreAliased(dictionary, VectorStoreICDescriptor::VectorRegister(),
+  DCHECK(!FLAG_vector_stores ||
+         !AreAliased(dictionary, VectorStoreICDescriptor::VectorRegister(),
                      VectorStoreICDescriptor::SlotRegister()));
 
   Label miss;
@@ -796,7 +818,8 @@ void KeyedStoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   // Do tail-call to runtime routine.
-  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss, 5, 1);
+  int args = FLAG_vector_stores ? 5 : 3;
+  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss, args, 1);
 }
 
 

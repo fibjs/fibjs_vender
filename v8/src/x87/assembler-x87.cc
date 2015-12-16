@@ -257,7 +257,6 @@ void Assembler::GetCode(CodeDesc* desc) {
   desc->instr_size = pc_offset();
   desc->reloc_size = (buffer_ + buffer_size_) - reloc_info_writer.pos();
   desc->origin = this;
-  desc->constant_pool_size = 0;
 }
 
 
@@ -1179,14 +1178,6 @@ void Assembler::bsr(Register dst, const Operand& src) {
   EnsureSpace ensure_space(this);
   EMIT(0x0F);
   EMIT(0xBD);
-  emit_operand(dst, src);
-}
-
-
-void Assembler::bsf(Register dst, const Operand& src) {
-  EnsureSpace ensure_space(this);
-  EMIT(0x0F);
-  EMIT(0xBC);
   emit_operand(dst, src);
 }
 

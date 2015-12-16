@@ -22,8 +22,6 @@ const Register kInterpreterAccumulatorRegister = {Register::kCode_eax};
 const Register kInterpreterRegisterFileRegister = {Register::kCode_edx};
 const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_ecx};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_edi};
-const Register kJavaScriptCallArgCountRegister = {Register::kCode_eax};
-const Register kJavaScriptCallNewTargetRegister = {Register::kCode_edx};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_ebx};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_eax};
 
@@ -63,8 +61,11 @@ bool AreAliased(Register reg1,
 // MacroAssembler implements a collection of frequently used macros.
 class MacroAssembler: public Assembler {
  public:
-  MacroAssembler(Isolate* isolate, void* buffer, int size,
-                 CodeObjectRequired create_code_object);
+  // The isolate parameter can be NULL if the macro assembler should
+  // not use isolate-dependent functionality. In this case, it's the
+  // responsibility of the caller to never invoke such function on the
+  // macro assembler.
+  MacroAssembler(Isolate* isolate, void* buffer, int size);
 
   void Load(Register dst, const Operand& src, Representation r);
   void Store(Register src, const Operand& dst, Representation r);
@@ -254,8 +255,8 @@ class MacroAssembler: public Assembler {
 
   // Leave the current exit frame. Expects the return value in
   // register eax:edx (untouched) and the pointer to the first
-  // argument in register esi (if pop_arguments == true).
-  void LeaveExitFrame(bool save_doubles, bool pop_arguments = true);
+  // argument in register esi.
+  void LeaveExitFrame(bool save_doubles);
 
   // Leave the current exit frame. Expects the return value in
   // register eax (untouched).
@@ -329,17 +330,20 @@ class MacroAssembler: public Assembler {
                   const ParameterCount& actual,
                   InvokeFlag flag,
                   const CallWrapper& call_wrapper) {
-    InvokeCode(Operand(code), no_reg, expected, actual, flag, call_wrapper);
+    InvokeCode(Operand(code), expected, actual, flag, call_wrapper);
   }
 
-  void InvokeCode(const Operand& code, Register new_target,
-                  const ParameterCount& expected, const ParameterCount& actual,
-                  InvokeFlag flag, const CallWrapper& call_wrapper);
+  void InvokeCode(const Operand& code,
+                  const ParameterCount& expected,
+                  const ParameterCount& actual,
+                  InvokeFlag flag,
+                  const CallWrapper& call_wrapper);
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
-  void InvokeFunction(Register function, Register new_target,
-                      const ParameterCount& actual, InvokeFlag flag,
+  void InvokeFunction(Register function,
+                      const ParameterCount& actual,
+                      InvokeFlag flag,
                       const CallWrapper& call_wrapper);
 
   void InvokeFunction(Register function,
@@ -679,11 +683,12 @@ class MacroAssembler: public Assembler {
                  Register length,
                  Register scratch);
 
-  // Initialize fields with filler values.  Fields starting at |current_address|
-  // not including |end_address| are overwritten with the value in |filler|.  At
-  // the end the loop, |current_address| takes the value of |end_address|.
-  void InitializeFieldsWithFiller(Register current_address,
-                                  Register end_address, Register filler);
+  // Initialize fields with filler values.  Fields starting at |start_offset|
+  // not including end_offset are overwritten with the value in |filler|.  At
+  // the end the loop, |start_offset| takes the value of |end_offset|.
+  void InitializeFieldsWithFiller(Register start_offset,
+                                  Register end_offset,
+                                  Register filler);
 
   // ---------------------------------------------------------------------------
   // Support functions.
@@ -798,18 +803,11 @@ class MacroAssembler: public Assembler {
   void Push(const Operand& src) { push(src); }
   void Push(Immediate value) { push(value); }
   void Pop(Register dst) { pop(dst); }
-  void Pop(const Operand& dst) { pop(dst); }
   void PushReturnAddressFrom(Register src) { push(src); }
   void PopReturnAddressTo(Register dst) { pop(dst); }
 
   void Lzcnt(Register dst, Register src) { Lzcnt(dst, Operand(src)); }
   void Lzcnt(Register dst, const Operand& src);
-
-  void Tzcnt(Register dst, Register src) { Tzcnt(dst, Operand(src)); }
-  void Tzcnt(Register dst, const Operand& src);
-
-  void Popcnt(Register dst, Register src) { Popcnt(dst, Operand(src)); }
-  void Popcnt(Register dst, const Operand& src);
 
   // Emit call to the code we are currently generating.
   void CallSelf() {
@@ -953,10 +951,14 @@ class MacroAssembler: public Assembler {
 
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
-                      const ParameterCount& actual, Label* done,
-                      bool* definitely_mismatches, InvokeFlag flag,
+                      const ParameterCount& actual,
+                      Handle<Code> code_constant,
+                      const Operand& code_operand,
+                      Label* done,
+                      bool* definitely_mismatches,
+                      InvokeFlag flag,
                       Label::Distance done_distance,
-                      const CallWrapper& call_wrapper);
+                      const CallWrapper& call_wrapper = NullCallWrapper());
 
   void EnterExitFramePrologue();
   void EnterExitFrameEpilogue(int argc, bool save_doubles);

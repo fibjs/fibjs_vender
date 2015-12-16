@@ -22,23 +22,23 @@ namespace internal {
 
 
 #if defined(USE_SIMULATOR)
-byte* fast_exp_arm_machine_code = nullptr;
-double fast_exp_simulator(double x, Isolate* isolate) {
-  return Simulator::current(isolate)
-      ->CallFPReturnsDouble(fast_exp_arm_machine_code, x, 0);
+byte* fast_exp_arm_machine_code = NULL;
+double fast_exp_simulator(double x) {
+  return Simulator::current(Isolate::Current())->CallFPReturnsDouble(
+      fast_exp_arm_machine_code, x, 0);
 }
 #endif
 
 
-UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
+UnaryMathFunction CreateExpFunction() {
+  if (!FLAG_fast_math) return &std::exp;
   size_t actual_size;
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return nullptr;
+  if (buffer == NULL) return &std::exp;
   ExternalReference::InitializeMathExpData();
 
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
 
   {
     DwVfpRegister input = d0;
@@ -71,11 +71,11 @@ UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
   masm.GetCode(&desc);
   DCHECK(!RelocInfo::RequiresRelocation(desc));
 
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  Assembler::FlushICacheWithoutIsolate(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
 
 #if !defined(USE_SIMULATOR)
-  return FUNCTION_CAST<UnaryMathFunctionWithIsolate>(buffer);
+  return FUNCTION_CAST<UnaryMathFunction>(buffer);
 #else
   fast_exp_arm_machine_code = buffer;
   return &fast_exp_simulator;
@@ -83,8 +83,7 @@ UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
 }
 
 #if defined(V8_HOST_ARCH_ARM)
-MemCopyUint8Function CreateMemCopyUint8Function(Isolate* isolate,
-                                                MemCopyUint8Function stub) {
+MemCopyUint8Function CreateMemCopyUint8Function(MemCopyUint8Function stub) {
 #if defined(USE_SIMULATOR)
   return stub;
 #else
@@ -92,10 +91,9 @@ MemCopyUint8Function CreateMemCopyUint8Function(Isolate* isolate,
   size_t actual_size;
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return stub;
+  if (buffer == NULL) return stub;
 
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
 
   Register dest = r0;
   Register src = r1;
@@ -233,7 +231,7 @@ MemCopyUint8Function CreateMemCopyUint8Function(Isolate* isolate,
   masm.GetCode(&desc);
   DCHECK(!RelocInfo::RequiresRelocation(desc));
 
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  Assembler::FlushICacheWithoutIsolate(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
   return FUNCTION_CAST<MemCopyUint8Function>(buffer);
 #endif
@@ -242,7 +240,7 @@ MemCopyUint8Function CreateMemCopyUint8Function(Isolate* isolate,
 
 // Convert 8 to 16. The number of character to copy must be at least 8.
 MemCopyUint16Uint8Function CreateMemCopyUint16Uint8Function(
-    Isolate* isolate, MemCopyUint16Uint8Function stub) {
+    MemCopyUint16Uint8Function stub) {
 #if defined(USE_SIMULATOR)
   return stub;
 #else
@@ -250,10 +248,9 @@ MemCopyUint16Uint8Function CreateMemCopyUint16Uint8Function(
   size_t actual_size;
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return stub;
+  if (buffer == NULL) return stub;
 
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
 
   Register dest = r0;
   Register src = r1;
@@ -321,7 +318,7 @@ MemCopyUint16Uint8Function CreateMemCopyUint16Uint8Function(
   CodeDesc desc;
   masm.GetCode(&desc);
 
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  Assembler::FlushICacheWithoutIsolate(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
 
   return FUNCTION_CAST<MemCopyUint16Uint8Function>(buffer);
@@ -329,17 +326,16 @@ MemCopyUint16Uint8Function CreateMemCopyUint16Uint8Function(
 }
 #endif
 
-UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
+UnaryMathFunction CreateSqrtFunction() {
 #if defined(USE_SIMULATOR)
-  return nullptr;
+  return &std::sqrt;
 #else
   size_t actual_size;
   byte* buffer =
       static_cast<byte*>(base::OS::Allocate(1 * KB, &actual_size, true));
-  if (buffer == nullptr) return nullptr;
+  if (buffer == NULL) return &std::sqrt;
 
-  MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
-                      CodeObjectRequired::kNo);
+  MacroAssembler masm(NULL, buffer, static_cast<int>(actual_size));
 
   __ MovFromFloatParameter(d0);
   __ vsqrt(d0, d0);
@@ -350,9 +346,9 @@ UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
   masm.GetCode(&desc);
   DCHECK(!RelocInfo::RequiresRelocation(desc));
 
-  Assembler::FlushICache(isolate, buffer, actual_size);
+  Assembler::FlushICacheWithoutIsolate(buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);
-  return FUNCTION_CAST<UnaryMathFunctionWithIsolate>(buffer);
+  return FUNCTION_CAST<UnaryMathFunction>(buffer);
 #endif
 }
 
@@ -890,8 +886,7 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
 static const uint32_t kCodeAgePatchFirstInstruction = 0xe24f0008;
 #endif
 
-CodeAgingHelper::CodeAgingHelper(Isolate* isolate) {
-  USE(isolate);
+CodeAgingHelper::CodeAgingHelper() {
   DCHECK(young_sequence_.length() == kNoCodeAgeSequenceLength);
   // Since patcher is a large object, allocate it dynamically when needed,
   // to avoid overloading the stack in stress conditions.

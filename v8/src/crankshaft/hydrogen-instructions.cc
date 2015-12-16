@@ -776,6 +776,7 @@ bool HInstruction::CanDeoptimize() {
     case HValue::kBlockEntry:
     case HValue::kBoundsCheckBaseIndexInformation:
     case HValue::kCallFunction:
+    case HValue::kCallNew:
     case HValue::kCallNewArray:
     case HValue::kCallStub:
     case HValue::kCapturedObject:
@@ -818,6 +819,7 @@ bool HInstruction::CanDeoptimize() {
     case HValue::kParameter:
     case HValue::kPhi:
     case HValue::kPushArguments:
+    case HValue::kRegExpLiteral:
     case HValue::kReturn:
     case HValue::kSeqStringGetChar:
     case HValue::kStoreCodeEntry:
@@ -947,7 +949,6 @@ std::ostream& HCallFunction::PrintDataTo(std::ostream& os) const {  // NOLINT
   if (HasVectorAndSlot()) {
     os << " (type-feedback-vector icslot " << slot().ToInt() << ")";
   }
-  os << " (convert mode" << convert_mode() << ")";
   return os;
 }
 
@@ -4079,13 +4080,11 @@ HInstruction* HUnaryMathOperation::New(Isolate* isolate, Zone* zone,
     }
     switch (op) {
       case kMathExp:
-        lazily_initialize_fast_exp(isolate);
-        return H_CONSTANT_DOUBLE(fast_exp(d, isolate));
+        return H_CONSTANT_DOUBLE(fast_exp(d));
       case kMathLog:
         return H_CONSTANT_DOUBLE(std::log(d));
       case kMathSqrt:
-        lazily_initialize_fast_sqrt(isolate);
-        return H_CONSTANT_DOUBLE(fast_sqrt(d, isolate));
+        return H_CONSTANT_DOUBLE(fast_sqrt(d));
       case kMathPowHalf:
         return H_CONSTANT_DOUBLE(power_double_double(d, 0.5));
       case kMathAbs:
@@ -4157,8 +4156,8 @@ HInstruction* HPower::New(Isolate* isolate, Zone* zone, HValue* context,
     HConstant* c_left = HConstant::cast(left);
     HConstant* c_right = HConstant::cast(right);
     if (c_left->HasNumberValue() && c_right->HasNumberValue()) {
-      double result =
-          power_helper(isolate, c_left->DoubleValue(), c_right->DoubleValue());
+      double result = power_helper(c_left->DoubleValue(),
+                                   c_right->DoubleValue());
       return H_CONSTANT_DOUBLE(std::isnan(result)
                                    ? std::numeric_limits<double>::quiet_NaN()
                                    : result);
@@ -4681,13 +4680,13 @@ std::ostream& operator<<(std::ostream& os, const HObjectAccess& access) {
       break;
     case HObjectAccess::kDouble:  // fall through
     case HObjectAccess::kInobject:
-      if (!access.name().is_null() && access.name()->IsString()) {
+      if (!access.name().is_null()) {
         os << Handle<String>::cast(access.name())->ToCString().get();
       }
       os << "[in-object]";
       break;
     case HObjectAccess::kBackingStore:
-      if (!access.name().is_null() && access.name()->IsString()) {
+      if (!access.name().is_null()) {
         os << Handle<String>::cast(access.name())->ToCString().get();
       }
       os << "[backing-store]";

@@ -5,7 +5,7 @@
 #ifndef V8_COMPILER_AST_GRAPH_BUILDER_H_
 #define V8_COMPILER_AST_GRAPH_BUILDER_H_
 
-#include "src/ast/ast.h"
+#include "src/ast.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/liveness-analyzer.h"
 #include "src/compiler/state-values-utils.h"
@@ -87,7 +87,6 @@ class AstGraphBuilder : public AstVisitor {
   // Nodes representing values in the activation record.
   SetOncePointer<Node> function_closure_;
   SetOncePointer<Node> function_context_;
-  SetOncePointer<Node> new_target_;
 
   // Tracks how many try-blocks are currently entered.
   int try_catch_nesting_level_;
@@ -148,15 +147,12 @@ class AstGraphBuilder : public AstVisitor {
   // Create the main graph body by visiting the AST.
   void CreateGraphBody(bool stack_check);
 
-  // Get or create the node that represents the incoming function closure.
+  // Get or create the node that represents the outer function closure.
   Node* GetFunctionClosureForContext();
   Node* GetFunctionClosure();
 
-  // Get or create the node that represents the incoming function context.
+  // Get or create the node that represents the outer function context.
   Node* GetFunctionContext();
-
-  // Get or create the node that represents the incoming new target value.
-  Node* GetNewTarget();
 
   // Node creation helpers.
   Node* NewNode(const Operator* op, bool incomplete = false) {
@@ -246,6 +242,9 @@ class AstGraphBuilder : public AstVisitor {
   // resulting node. The operand stack height remains the same, variables and
   // other dependencies tracked by the environment might be mutated though.
 
+  // Builder to create a receiver check for sloppy mode.
+  Node* BuildPatchReceiverToGlobalProxy(Node* receiver);
+
   // Builders to create local function, script and block contexts.
   Node* BuildLocalActivationContext(Node* context);
   Node* BuildLocalFunctionContext(Scope* scope);
@@ -305,11 +304,16 @@ class AstGraphBuilder : public AstVisitor {
   // Builders for accessing the function context.
   Node* BuildLoadGlobalObject();
   Node* BuildLoadNativeContextField(int index);
+  Node* BuildLoadGlobalProxy();
   Node* BuildLoadFeedbackVector();
 
   // Builder for accessing a (potentially immutable) object field.
   Node* BuildLoadObjectField(Node* object, int offset);
   Node* BuildLoadImmutableObjectField(Node* object, int offset);
+
+  // Builders for accessing external references.
+  Node* BuildLoadExternal(ExternalReference ref, MachineType type);
+  Node* BuildStoreExternal(ExternalReference ref, MachineType type, Node* val);
 
   // Builders for automatic type conversion.
   Node* BuildToBoolean(Node* input);
@@ -349,28 +353,6 @@ class AstGraphBuilder : public AstVisitor {
   // Process arguments to a call by popping {arity} elements off the operand
   // stack and build a call node using the given call operator.
   Node* ProcessArguments(const Operator* op, int arity);
-
-  // ===========================================================================
-  // The following build methods have the same contract as the above ones, but
-  // they can also return {NULL} to indicate that no fragment was built. Note
-  // that these are optimizations, disabling any of them should still produce
-  // correct graphs.
-
-  // Optimization for variable load from global object.
-  Node* TryLoadGlobalConstant(Handle<Name> name);
-
-  // Optimization for variable load of dynamic lookup slot that is most likely
-  // to resolve to a global slot or context slot (inferred from scope chain).
-  Node* TryLoadDynamicVariable(Variable* variable, Handle<String> name,
-                               BailoutId bailout_id,
-                               FrameStateBeforeAndAfter& states,
-                               const VectorSlotPair& feedback,
-                               OutputFrameStateCombine combine,
-                               TypeofMode typeof_mode);
-
-  // Optimizations for automatic type conversion.
-  Node* TryFastToBoolean(Node* input);
-  Node* TryFastToName(Node* input);
 
   // ===========================================================================
   // The following visitation methods all recursively visit a subtree of the

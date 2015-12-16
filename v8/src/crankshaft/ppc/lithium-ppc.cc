@@ -315,6 +315,13 @@ void LInvokeFunction::PrintDataTo(StringStream* stream) {
 }
 
 
+void LCallNew::PrintDataTo(StringStream* stream) {
+  stream->Add("= ");
+  constructor()->PrintTo(stream);
+  stream->Add(" #%d / ", arity());
+}
+
+
 void LCallNewArray::PrintDataTo(StringStream* stream) {
   stream->Add("= ");
   constructor()->PrintTo(stream);
@@ -1216,6 +1223,14 @@ LInstruction* LChunkBuilder::DoMathPowHalf(HUnaryMathOperation* instr) {
   LOperand* input = UseRegisterAtStart(instr->value());
   LMathPowHalf* result = new (zone()) LMathPowHalf(input);
   return DefineAsRegister(result);
+}
+
+
+LInstruction* LChunkBuilder::DoCallNew(HCallNew* instr) {
+  LOperand* context = UseFixed(instr->context(), cp);
+  LOperand* constructor = UseFixed(instr->constructor(), r4);
+  LCallNew* result = new (zone()) LCallNew(context, constructor);
+  return MarkAsCall(DefineFixed(result, r3), instr);
 }
 
 
@@ -2391,6 +2406,13 @@ LInstruction* LChunkBuilder::DoAllocate(HAllocate* instr) {
   LOperand* temp2 = TempRegister();
   LAllocate* result = new (zone()) LAllocate(context, size, temp1, temp2);
   return AssignPointerMap(DefineAsRegister(result));
+}
+
+
+LInstruction* LChunkBuilder::DoRegExpLiteral(HRegExpLiteral* instr) {
+  LOperand* context = UseFixed(instr->context(), cp);
+  return MarkAsCall(DefineFixed(new (zone()) LRegExpLiteral(context), r3),
+                    instr);
 }
 
 

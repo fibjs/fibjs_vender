@@ -30,7 +30,6 @@ class PlatformInterfaceDescriptor;
   V(ToObject)                                 \
   V(NumberToString)                           \
   V(Typeof)                                   \
-  V(FastCloneRegExp)                          \
   V(FastCloneShallowArray)                    \
   V(FastCloneShallowObject)                   \
   V(CreateAllocationSite)                     \
@@ -40,11 +39,9 @@ class PlatformInterfaceDescriptor;
   V(CallFunctionWithFeedbackAndVector)        \
   V(CallConstruct)                            \
   V(CallTrampoline)                           \
-  V(ConstructTrampoline)                      \
   V(RegExpConstructResult)                    \
   V(TransitionElementsKind)                   \
   V(AllocateHeapNumber)                       \
-  V(AllocateMutableHeapNumber)                \
   V(AllocateInNewSpace)                       \
   V(ArrayConstructorConstantArgCount)         \
   V(ArrayConstructor)                         \
@@ -226,12 +223,12 @@ class CallInterfaceDescriptor {
   static inline CallDescriptors::Key key();
 
 
-#define DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(name, base) \
-  DECLARE_DESCRIPTOR(name, base)                                 \
- protected:                                                      \
-  Type::FunctionType* BuildCallInterfaceDescriptorFunctionType(  \
-      Isolate* isolate, int register_param_count) override;      \
-                                                                 \
+#define DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(name, base)        \
+  DECLARE_DESCRIPTOR(name, base)                                        \
+ protected:                                                             \
+  virtual Type::FunctionType* BuildCallInterfaceDescriptorFunctionType( \
+      Isolate* isolate, int register_param_count) override;             \
+                                                                        \
  public:
 // LoadDescriptor is used by all stubs that implement Load/KeyedLoad ICs.
 class LoadDescriptor : public CallInterfaceDescriptor {
@@ -419,13 +416,6 @@ class TypeofDescriptor : public CallInterfaceDescriptor {
 };
 
 
-class FastCloneRegExpDescriptor : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(FastCloneRegExpDescriptor,
-                                               CallInterfaceDescriptor)
-};
-
-
 class FastCloneShallowArrayDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(FastCloneShallowArrayDescriptor,
@@ -463,13 +453,6 @@ class CreateWeakCellDescriptor : public CallInterfaceDescriptor {
 class CallTrampolineDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(CallTrampolineDescriptor,
-                                               CallInterfaceDescriptor)
-};
-
-
-class ConstructTrampolineDescriptor : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(ConstructTrampolineDescriptor,
                                                CallInterfaceDescriptor)
 };
 
@@ -535,13 +518,6 @@ class TransitionElementsKindDescriptor : public CallInterfaceDescriptor {
 class AllocateHeapNumberDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(AllocateHeapNumberDescriptor, CallInterfaceDescriptor)
-};
-
-
-class AllocateMutableHeapNumberDescriptor : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR(AllocateMutableHeapNumberDescriptor,
-                     CallInterfaceDescriptor)
 };
 
 

@@ -21,19 +21,6 @@ static intptr_t CountTotalHolesSize(Heap* heap) {
 }
 
 
-GCTracer::Scope::Scope(GCTracer* tracer, ScopeId scope)
-    : tracer_(tracer), scope_(scope) {
-  start_time_ = tracer_->heap_->MonotonicallyIncreasingTimeInMs();
-}
-
-
-GCTracer::Scope::~Scope() {
-  DCHECK(scope_ < NUMBER_OF_SCOPES);  // scope_ is unsigned.
-  tracer_->current_.scopes[scope_] +=
-      tracer_->heap_->MonotonicallyIncreasingTimeInMs() - start_time_;
-}
-
-
 GCTracer::AllocationEvent::AllocationEvent(double duration,
                                            size_t allocation_in_bytes) {
   duration_ = duration;
@@ -124,7 +111,7 @@ GCTracer::GCTracer(Heap* heap)
       combined_mark_compact_speed_cache_(0.0),
       start_counter_(0) {
   current_ = Event(Event::START, NULL, NULL);
-  current_.end_time = heap_->MonotonicallyIncreasingTimeInMs();
+  current_.end_time = base::OS::TimeCurrentMillis();
   previous_ = previous_incremental_mark_compactor_event_ = current_;
 }
 
@@ -322,13 +309,6 @@ void GCTracer::AddContextDisposalTime(double time) {
 }
 
 
-void GCTracer::AddCompactionEvent(double duration,
-                                  intptr_t live_bytes_compacted) {
-  compaction_events_.push_front(
-      CompactionEvent(duration, live_bytes_compacted));
-}
-
-
 void GCTracer::AddSurvivalRatio(double promotion_ratio) {
   survival_events_.push_front(SurvivalEvent(promotion_ratio));
 }
@@ -505,16 +485,12 @@ void GCTracer::PrintNVP() const {
                    "mark_weakrefs=%.1f "
                    "mark_globalhandles=%.1f "
                    "mark_codeflush=%.1f "
-                   "mark_optimizedcodemaps=%.1f "
-                   "store_buffer_clear=%.1f "
-                   "slots_buffer_clear=%.1f "
                    "sweep=%.2f "
                    "sweepns=%.2f "
                    "sweepos=%.2f "
                    "sweepcode=%.2f "
                    "sweepcell=%.2f "
                    "sweepmap=%.2f "
-                   "sweepaborted=%.2f "
                    "evacuate=%.1f "
                    "new_new=%.1f "
                    "root_new=%.1f "
@@ -522,14 +498,13 @@ void GCTracer::PrintNVP() const {
                    "compaction_ptrs=%.1f "
                    "intracompaction_ptrs=%.1f "
                    "misc_compaction=%.1f "
+                   "weak_closure=%.1f "
                    "inc_weak_closure=%.1f "
                    "weakcollection_process=%.1f "
                    "weakcollection_clear=%.1f "
                    "weakcollection_abort=%.1f "
                    "weakcells=%.1f "
                    "nonlive_refs=%.1f "
-                   "extract_dependent_code=%.1f "
-                   "deopt_dependent_code=%.1f "
                    "steps_count=%d "
                    "steps_took=%.1f "
                    "longest_step=%.1f "
@@ -558,8 +533,7 @@ void GCTracer::PrintNVP() const {
                    "semi_space_copy_rate=%.1f%% "
                    "new_space_allocation_throughput=%" V8_PTR_PREFIX
                    "d "
-                   "context_disposal_rate=%.1f "
-                   "compaction_speed=%" V8_PTR_PREFIX "d\n",
+                   "context_disposal_rate=%.1f\n",
                    heap_->isolate()->time_millis_since_init(), duration,
                    spent_in_mutator, current_.TypeName(true),
                    current_.reduce_memory, current_.scopes[Scope::EXTERNAL],
@@ -574,16 +548,12 @@ void GCTracer::PrintNVP() const {
                    current_.scopes[Scope::MC_MARK_WEAK_REFERENCES],
                    current_.scopes[Scope::MC_MARK_GLOBAL_HANDLES],
                    current_.scopes[Scope::MC_MARK_CODE_FLUSH],
-                   current_.scopes[Scope::MC_MARK_OPTIMIZED_CODE_MAPS],
-                   current_.scopes[Scope::MC_STORE_BUFFER_CLEAR],
-                   current_.scopes[Scope::MC_SLOTS_BUFFER_CLEAR],
                    current_.scopes[Scope::MC_SWEEP],
                    current_.scopes[Scope::MC_SWEEP_NEWSPACE],
                    current_.scopes[Scope::MC_SWEEP_OLDSPACE],
                    current_.scopes[Scope::MC_SWEEP_CODE],
                    current_.scopes[Scope::MC_SWEEP_CELL],
                    current_.scopes[Scope::MC_SWEEP_MAP],
-                   current_.scopes[Scope::MC_SWEEP_ABORTED],
                    current_.scopes[Scope::MC_EVACUATE_PAGES],
                    current_.scopes[Scope::MC_UPDATE_NEW_TO_NEW_POINTERS],
                    current_.scopes[Scope::MC_UPDATE_ROOT_TO_NEW_POINTERS],
@@ -591,14 +561,13 @@ void GCTracer::PrintNVP() const {
                    current_.scopes[Scope::MC_UPDATE_POINTERS_TO_EVACUATED],
                    current_.scopes[Scope::MC_UPDATE_POINTERS_BETWEEN_EVACUATED],
                    current_.scopes[Scope::MC_UPDATE_MISC_POINTERS],
-                   current_.scopes[Scope::MC_INCREMENTAL_FINALIZE],
+                   current_.scopes[Scope::MC_WEAKCLOSURE],
+                   current_.scopes[Scope::MC_INCREMENTAL_WEAKCLOSURE],
                    current_.scopes[Scope::MC_WEAKCOLLECTION_PROCESS],
                    current_.scopes[Scope::MC_WEAKCOLLECTION_CLEAR],
                    current_.scopes[Scope::MC_WEAKCOLLECTION_ABORT],
                    current_.scopes[Scope::MC_WEAKCELL],
                    current_.scopes[Scope::MC_NONLIVEREFERENCES],
-                   current_.scopes[Scope::MC_EXTRACT_DEPENDENT_CODE],
-                   current_.scopes[Scope::MC_DEOPT_DEPENDENT_CODE],
                    current_.incremental_marking_steps,
                    current_.incremental_marking_duration,
                    current_.longest_incremental_marking_step,
@@ -612,8 +581,7 @@ void GCTracer::PrintNVP() const {
                    heap_->promotion_ratio_, AverageSurvivalRatio(),
                    heap_->promotion_rate_, heap_->semi_space_copied_rate_,
                    NewSpaceAllocationThroughputInBytesPerMillisecond(),
-                   ContextDisposalRateInMilliseconds(),
-                   CompactionSpeedInBytesPerMillisecond());
+                   ContextDisposalRateInMilliseconds());
       break;
     case Event::START:
       break;
@@ -734,23 +702,6 @@ intptr_t GCTracer::ScavengeSpeedInBytesPerMillisecond(
 }
 
 
-intptr_t GCTracer::CompactionSpeedInBytesPerMillisecond() const {
-  if (compaction_events_.size() == 0) return 0;
-  intptr_t bytes = 0;
-  double durations = 0.0;
-  CompactionEventBuffer::const_iterator iter = compaction_events_.begin();
-  while (iter != compaction_events_.end()) {
-    bytes += iter->live_bytes_compacted;
-    durations += iter->duration;
-    ++iter;
-  }
-
-  if (durations == 0.0) return 0;
-  // Make sure the result is at least 1.
-  return Max<intptr_t>(static_cast<intptr_t>(bytes / durations + 0.5), 1);
-}
-
-
 intptr_t GCTracer::MarkCompactSpeedInBytesPerMillisecond() const {
   intptr_t bytes = 0;
   double durations = 0.0;
@@ -868,7 +819,7 @@ size_t GCTracer::CurrentOldGenerationAllocationThroughputInBytesPerMillisecond()
 double GCTracer::ContextDisposalRateInMilliseconds() const {
   if (context_disposal_events_.size() < kRingBufferMaxSize) return 0.0;
 
-  double begin = heap_->MonotonicallyIncreasingTimeInMs();
+  double begin = base::OS::TimeCurrentMillis();
   double end = 0.0;
   ContextDisposalEventBuffer::const_iterator iter =
       context_disposal_events_.begin();

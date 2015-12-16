@@ -48,7 +48,7 @@ uint32_t BytecodeArrayIterator::GetRawOperand(int operand_index,
     case OperandSize::kByte:
       return static_cast<uint32_t>(*operand_start);
     case OperandSize::kShort:
-      return ReadUnalignedUInt16(operand_start);
+      return Bytecodes::ShortOperandFromBytes(operand_start);
   }
 }
 
@@ -60,11 +60,7 @@ int8_t BytecodeArrayIterator::GetImmediateOperand(int operand_index) const {
 
 
 int BytecodeArrayIterator::GetCountOperand(int operand_index) const {
-  OperandSize size =
-      Bytecodes::GetOperandSize(current_bytecode(), operand_index);
-  OperandType type = (size == OperandSize::kByte) ? OperandType::kCount8
-                                                  : OperandType::kCount16;
-  uint32_t operand = GetRawOperand(operand_index, type);
+  uint32_t operand = GetRawOperand(operand_index, OperandType::kCount8);
   return static_cast<int>(operand);
 }
 
@@ -80,11 +76,7 @@ int BytecodeArrayIterator::GetIndexOperand(int operand_index) const {
 
 
 Register BytecodeArrayIterator::GetRegisterOperand(int operand_index) const {
-  OperandType operand_type =
-      Bytecodes::GetOperandType(current_bytecode(), operand_index);
-  DCHECK(operand_type == OperandType::kReg8 ||
-         operand_type == OperandType::kMaybeReg8);
-  uint32_t operand = GetRawOperand(operand_index, operand_type);
+  uint32_t operand = GetRawOperand(operand_index, OperandType::kReg8);
   return Register::FromOperand(operand);
 }
 

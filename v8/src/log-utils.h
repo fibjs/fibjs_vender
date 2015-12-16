@@ -5,8 +5,6 @@
 #ifndef V8_LOG_UTILS_H_
 #define V8_LOG_UTILS_H_
 
-#include <stdio.h>
-
 #include <cstdarg>
 
 #include "src/allocation.h"

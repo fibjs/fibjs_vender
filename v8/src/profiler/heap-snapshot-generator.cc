@@ -7,7 +7,6 @@
 #include "src/code-stubs.h"
 #include "src/conversions.h"
 #include "src/debug/debug.h"
-#include "src/objects-body-descriptors.h"
 #include "src/profiler/allocation-tracker.h"
 #include "src/profiler/heap-profiler.h"
 #include "src/profiler/heap-snapshot-generator-inl.h"
@@ -837,10 +836,7 @@ HeapEntry* V8HeapExplorer::AddEntry(HeapObject* object) {
                     HeapEntry::kString,
                     names_->GetName(String::cast(object)));
   } else if (object->IsSymbol()) {
-    if (Symbol::cast(object)->is_private())
-      return AddEntry(object, HeapEntry::kHidden, "private symbol");
-    else
-      return AddEntry(object, HeapEntry::kSymbol, "symbol");
+    return AddEntry(object, HeapEntry::kSymbol, "symbol");
   } else if (object->IsCode()) {
     return AddEntry(object, HeapEntry::kCode, "");
   } else if (object->IsSharedFunctionInfo()) {
@@ -996,12 +992,12 @@ class IndexedReferencesExtractor : public ObjectVisitor {
         parent_(parent),
         next_index_(0) {
   }
-  void VisitCodeEntry(Address entry_address) override {
+  void VisitCodeEntry(Address entry_address) {
      Code* code = Code::cast(Code::GetObjectFromEntryAddress(entry_address));
      generator_->SetInternalReference(parent_obj_, parent_, "code", code);
      generator_->TagCodeObject(code);
   }
-  void VisitPointers(Object** start, Object** end) override {
+  void VisitPointers(Object** start, Object** end) {
     for (Object** p = start; p < end; p++) {
       ++next_index_;
       if (CheckVisitedAndUnmark(p)) continue;
@@ -1159,23 +1155,23 @@ void V8HeapExplorer::ExtractJSObjectReferences(
     SetWeakReference(js_fun, entry,
                      "next_function_link", js_fun->next_function_link(),
                      JSFunction::kNextFunctionLinkOffset);
-    // Ensure no new weak references appeared in JSFunction.
-    STATIC_ASSERT(JSFunction::kCodeEntryOffset ==
-                  JSFunction::kNonWeakFieldsEndOffset);
-    STATIC_ASSERT(JSFunction::kCodeEntryOffset + kPointerSize ==
-                  JSFunction::kNextFunctionLinkOffset);
+    STATIC_ASSERT(JSFunction::kNextFunctionLinkOffset
+                 == JSFunction::kNonWeakFieldsEndOffset);
     STATIC_ASSERT(JSFunction::kNextFunctionLinkOffset + kPointerSize
                  == JSFunction::kSize);
-  } else if (obj->IsJSGlobalObject()) {
-    JSGlobalObject* global_obj = JSGlobalObject::cast(obj);
-    SetInternalReference(global_obj, entry, "native_context",
-                         global_obj->native_context(),
-                         JSGlobalObject::kNativeContextOffset);
-    SetInternalReference(global_obj, entry, "global_proxy",
-                         global_obj->global_proxy(),
-                         JSGlobalObject::kGlobalProxyOffset);
-    STATIC_ASSERT(JSGlobalObject::kSize - JSObject::kHeaderSize ==
-                  2 * kPointerSize);
+  } else if (obj->IsGlobalObject()) {
+    GlobalObject* global_obj = GlobalObject::cast(obj);
+    SetInternalReference(global_obj, entry,
+                         "builtins", global_obj->builtins(),
+                         GlobalObject::kBuiltinsOffset);
+    SetInternalReference(global_obj, entry,
+                         "native_context", global_obj->native_context(),
+                         GlobalObject::kNativeContextOffset);
+    SetInternalReference(global_obj, entry,
+                         "global_proxy", global_obj->global_proxy(),
+                         GlobalObject::kGlobalProxyOffset);
+    STATIC_ASSERT(GlobalObject::kHeaderSize - JSObject::kHeaderSize ==
+                 3 * kPointerSize);
   } else if (obj->IsJSArrayBufferView()) {
     JSArrayBufferView* view = JSArrayBufferView::cast(obj);
     SetInternalReference(view, entry, "buffer", view->buffer(),
@@ -1264,7 +1260,7 @@ void V8HeapExplorer::ExtractContextReferences(int entry, Context* context) {
   EXTRACT_CONTEXT_FIELD(CLOSURE_INDEX, JSFunction, closure);
   EXTRACT_CONTEXT_FIELD(PREVIOUS_INDEX, Context, previous);
   EXTRACT_CONTEXT_FIELD(EXTENSION_INDEX, Object, extension);
-  EXTRACT_CONTEXT_FIELD(GLOBAL_OBJECT_INDEX, JSGlobalObject, global);
+  EXTRACT_CONTEXT_FIELD(GLOBAL_OBJECT_INDEX, GlobalObject, global);
   if (context->IsNativeContext()) {
     TagObject(context->normalized_map_cache(), "(context norm. map cache)");
     TagObject(context->runtime_context(), "(runtime context)");
@@ -1543,7 +1539,7 @@ void V8HeapExplorer::ExtractAllocationSiteReferences(int entry,
   // Do not visit weak_next as it is not visited by the StaticVisitor,
   // and we're not very interested in weak_next field here.
   STATIC_ASSERT(AllocationSite::kWeakNextOffset >=
-                AllocationSite::BodyDescriptor::kEndOffset);
+               AllocationSite::BodyDescriptor::kEndOffset);
 }
 
 
@@ -1644,7 +1640,7 @@ void V8HeapExplorer::ExtractPropertyReferences(JSObject* js_obj, int entry) {
           break;
       }
     }
-  } else if (js_obj->IsJSGlobalObject()) {
+  } else if (js_obj->IsGlobalObject()) {
     // We assume that global objects can only have slow properties.
     GlobalDictionary* dictionary = js_obj->global_dictionary();
     int length = dictionary->Capacity();
@@ -1773,7 +1769,7 @@ class RootsReferencesExtractor : public ObjectVisitor {
         heap_(heap) {
   }
 
-  void VisitPointers(Object** start, Object** end) override {
+  void VisitPointers(Object** start, Object** end) {
     if (collecting_all_references_) {
       for (Object** p = start; p < end; p++) all_references_.Add(*p);
     } else {
@@ -1806,7 +1802,7 @@ class RootsReferencesExtractor : public ObjectVisitor {
     }
   }
 
-  void Synchronize(VisitorSynchronization::SyncTag tag) override {
+  void Synchronize(VisitorSynchronization::SyncTag tag) {
     if (collecting_all_references_ &&
         previous_reference_count_ != all_references_.length()) {
       previous_reference_count_ = all_references_.length();
@@ -2133,7 +2129,7 @@ void V8HeapExplorer::SetGcSubrootReference(
     // Add a shortcut to JS global object reference at snapshot root.
     if (child_obj->IsNativeContext()) {
       Context* context = Context::cast(child_obj);
-      JSGlobalObject* global = context->global_object();
+      GlobalObject* global = context->global_object();
       if (global->IsJSGlobalObject()) {
         bool is_debug_object = false;
         is_debug_object = heap_->isolate()->debug()->IsDebugGlobal(global);
@@ -2192,7 +2188,7 @@ void V8HeapExplorer::MarkAsWeakContainer(Object* object) {
 
 class GlobalObjectsEnumerator : public ObjectVisitor {
  public:
-  void VisitPointers(Object** start, Object** end) override {
+  virtual void VisitPointers(Object** start, Object** end) {
     for (Object** p = start; p < end; p++) {
       if ((*p)->IsNativeContext()) {
         Context* context = Context::cast(*p);
@@ -2245,9 +2241,11 @@ class GlobalHandlesExtractor : public ObjectVisitor {
  public:
   explicit GlobalHandlesExtractor(NativeObjectsExplorer* explorer)
       : explorer_(explorer) {}
-  ~GlobalHandlesExtractor() override {}
-  void VisitPointers(Object** start, Object** end) override { UNREACHABLE(); }
-  void VisitEmbedderReference(Object** p, uint16_t class_id) override {
+  virtual ~GlobalHandlesExtractor() {}
+  virtual void VisitPointers(Object** start, Object** end) {
+    UNREACHABLE();
+  }
+  virtual void VisitEmbedderReference(Object** p, uint16_t class_id) {
     explorer_->VisitSubtreeWrapper(p, class_id);
   }
  private:

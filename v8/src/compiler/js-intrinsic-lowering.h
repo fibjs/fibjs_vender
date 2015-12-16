@@ -10,11 +10,6 @@
 
 namespace v8 {
 namespace internal {
-
-// Forward declarations.
-class TypeCache;
-
-
 namespace compiler {
 
 // Forward declarations.
@@ -46,29 +41,24 @@ class JSIntrinsicLowering final : public AdvancedReducer {
   Reduction ReduceIncrementStatsCounter(Node* node);
   Reduction ReduceIsMinusZero(Node* node);
   Reduction ReduceIsInstanceType(Node* node, InstanceType instance_type);
-  Reduction ReduceIsSpecObject(Node* node);
   Reduction ReduceIsSmi(Node* node);
   Reduction ReduceJSValueGetValue(Node* node);
   Reduction ReduceMapGetInstanceType(Node* node);
   Reduction ReduceMathClz32(Node* node);
   Reduction ReduceMathFloor(Node* node);
   Reduction ReduceMathSqrt(Node* node);
+  Reduction ReduceSeqStringGetChar(Node* node, String::Encoding encoding);
+  Reduction ReduceSeqStringSetChar(Node* node, String::Encoding encoding);
   Reduction ReduceStringGetLength(Node* node);
+  Reduction ReduceUnLikely(Node* node, BranchHint hint);
   Reduction ReduceValueOf(Node* node);
   Reduction ReduceFixedArrayGet(Node* node);
   Reduction ReduceFixedArraySet(Node* node);
   Reduction ReduceGetTypeFeedbackVector(Node* node);
   Reduction ReduceGetCallerJSFunction(Node* node);
   Reduction ReduceThrowNotDateError(Node* node);
-  Reduction ReduceToInteger(Node* node);
-  Reduction ReduceToLength(Node* node);
-  Reduction ReduceToName(Node* node);
-  Reduction ReduceToNumber(Node* node);
   Reduction ReduceToObject(Node* node);
-  Reduction ReduceToPrimitive(Node* node);
-  Reduction ReduceToString(Node* node);
-  Reduction ReduceCall(Node* node);
-  Reduction ReduceTailCall(Node* node);
+  Reduction ReduceCallFunction(Node* node);
 
   Reduction Change(Node* node, const Operator* op);
   Reduction Change(Node* node, const Operator* op, Node* a, Node* b);
@@ -79,17 +69,14 @@ class JSIntrinsicLowering final : public AdvancedReducer {
 
   Graph* graph() const;
   JSGraph* jsgraph() const { return jsgraph_; }
-  Isolate* isolate() const;
   CommonOperatorBuilder* common() const;
   JSOperatorBuilder* javascript() const;
   MachineOperatorBuilder* machine() const;
   SimplifiedOperatorBuilder* simplified() const;
   DeoptimizationMode mode() const { return mode_; }
-  TypeCache const& type_cache() const { return type_cache_; }
 
   JSGraph* const jsgraph_;
   DeoptimizationMode const mode_;
-  TypeCache const& type_cache_;
 };
 
 }  // namespace compiler

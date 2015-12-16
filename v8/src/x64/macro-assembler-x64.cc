@@ -21,15 +21,14 @@
 namespace v8 {
 namespace internal {
 
-MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size,
-                               CodeObjectRequired create_code_object)
+MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size)
     : Assembler(arg_isolate, buffer, size),
       generating_stub_(false),
       has_frame_(false),
       root_array_available_(true) {
-  if (create_code_object == CodeObjectRequired::kYes) {
-    code_object_ =
-        Handle<Object>::New(isolate()->heap()->undefined_value(), isolate());
+  if (isolate() != NULL) {
+    code_object_ = Handle<Object>(isolate()->heap()->undefined_value(),
+                                  isolate());
   }
 }
 
@@ -712,8 +711,8 @@ void MacroAssembler::InvokeBuiltin(int native_context_index, InvokeFlag flag,
   // arguments match the expected number of arguments. Fake a
   // parameter count to avoid emitting code to do the check.
   ParameterCount expected(0);
-  GetBuiltinFunction(rdi, native_context_index);
-  InvokeFunctionCode(rdi, no_reg, expected, expected, flag, call_wrapper);
+  GetBuiltinEntry(rdx, native_context_index);
+  InvokeCode(rdx, expected, expected, flag, call_wrapper);
 }
 
 
@@ -721,8 +720,17 @@ void MacroAssembler::GetBuiltinFunction(Register target,
                                         int native_context_index) {
   // Load the builtins object into target register.
   movp(target, Operand(rsi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  movp(target, FieldOperand(target, JSGlobalObject::kNativeContextOffset));
+  movp(target, FieldOperand(target, GlobalObject::kNativeContextOffset));
   movp(target, ContextOperand(target, native_context_index));
+}
+
+
+void MacroAssembler::GetBuiltinEntry(Register target,
+                                     int native_context_index) {
+  DCHECK(!target.is(rdi));
+  // Load the JavaScript builtin function from the builtins object.
+  GetBuiltinFunction(rdi, native_context_index);
+  movp(target, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
 }
 
 
@@ -847,101 +855,6 @@ void MacroAssembler::Cvtlsi2sd(XMMRegister dst, const Operand& src) {
 }
 
 
-void MacroAssembler::Cvtqsi2ss(XMMRegister dst, Register src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vxorps(dst, dst, dst);
-    vcvtqsi2ss(dst, dst, src);
-  } else {
-    xorps(dst, dst);
-    cvtqsi2ss(dst, src);
-  }
-}
-
-
-void MacroAssembler::Cvtqsi2ss(XMMRegister dst, const Operand& src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vxorps(dst, dst, dst);
-    vcvtqsi2ss(dst, dst, src);
-  } else {
-    xorps(dst, dst);
-    cvtqsi2ss(dst, src);
-  }
-}
-
-
-void MacroAssembler::Cvtqsi2sd(XMMRegister dst, Register src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vxorpd(dst, dst, dst);
-    vcvtqsi2sd(dst, dst, src);
-  } else {
-    xorpd(dst, dst);
-    cvtqsi2sd(dst, src);
-  }
-}
-
-
-void MacroAssembler::Cvtqsi2sd(XMMRegister dst, const Operand& src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vxorpd(dst, dst, dst);
-    vcvtqsi2sd(dst, dst, src);
-  } else {
-    xorpd(dst, dst);
-    cvtqsi2sd(dst, src);
-  }
-}
-
-
-void MacroAssembler::Cvtqui2ss(XMMRegister dst, Register src, Register tmp) {
-  Label msb_set_src;
-  Label jmp_return;
-  testq(src, src);
-  j(sign, &msb_set_src, Label::kNear);
-  Cvtqsi2ss(dst, src);
-  jmp(&jmp_return, Label::kNear);
-  bind(&msb_set_src);
-  movq(tmp, src);
-  shrq(src, Immediate(1));
-  // Recover the least significant bit to avoid rounding errors.
-  andq(tmp, Immediate(1));
-  orq(src, tmp);
-  Cvtqsi2ss(dst, src);
-  addss(dst, dst);
-  bind(&jmp_return);
-}
-
-
-void MacroAssembler::Cvtqui2sd(XMMRegister dst, Register src, Register tmp) {
-  Label msb_set_src;
-  Label jmp_return;
-  testq(src, src);
-  j(sign, &msb_set_src, Label::kNear);
-  Cvtqsi2sd(dst, src);
-  jmp(&jmp_return, Label::kNear);
-  bind(&msb_set_src);
-  movq(tmp, src);
-  shrq(src, Immediate(1));
-  andq(tmp, Immediate(1));
-  orq(src, tmp);
-  Cvtqsi2sd(dst, src);
-  addsd(dst, dst);
-  bind(&jmp_return);
-}
-
-
-void MacroAssembler::Cvtsd2si(Register dst, XMMRegister src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vcvtsd2si(dst, src);
-  } else {
-    cvtsd2si(dst, src);
-  }
-}
-
-
 void MacroAssembler::Cvttsd2si(Register dst, XMMRegister src) {
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
@@ -958,26 +871,6 @@ void MacroAssembler::Cvttsd2si(Register dst, const Operand& src) {
     vcvttsd2si(dst, src);
   } else {
     cvttsd2si(dst, src);
-  }
-}
-
-
-void MacroAssembler::Cvttss2siq(Register dst, XMMRegister src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vcvttss2siq(dst, src);
-  } else {
-    cvttss2siq(dst, src);
-  }
-}
-
-
-void MacroAssembler::Cvttss2siq(Register dst, const Operand& src) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vcvttss2siq(dst, src);
-  } else {
-    cvttss2siq(dst, src);
   }
 }
 
@@ -2780,17 +2673,6 @@ void MacroAssembler::Movmskpd(Register dst, XMMRegister src) {
 }
 
 
-void MacroAssembler::Roundss(XMMRegister dst, XMMRegister src,
-                             RoundingMode mode) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vroundss(dst, dst, src, mode);
-  } else {
-    roundss(dst, src, mode);
-  }
-}
-
-
 void MacroAssembler::Roundsd(XMMRegister dst, XMMRegister src,
                              RoundingMode mode) {
   if (CpuFeatures::IsSupported(AVX)) {
@@ -2858,6 +2740,66 @@ void MacroAssembler::Ucomisd(XMMRegister src1, const Operand& src2) {
     vucomisd(src1, src2);
   } else {
     ucomisd(src1, src2);
+  }
+}
+
+
+void MacroAssembler::Andpd(XMMRegister dst, XMMRegister src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vandpd(dst, dst, src);
+  } else {
+    andpd(dst, src);
+  }
+}
+
+
+void MacroAssembler::Orpd(XMMRegister dst, XMMRegister src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vorpd(dst, dst, src);
+  } else {
+    orpd(dst, src);
+  }
+}
+
+
+void MacroAssembler::Xorpd(XMMRegister dst, XMMRegister src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vxorpd(dst, dst, src);
+  } else {
+    xorpd(dst, src);
+  }
+}
+
+
+void MacroAssembler::Pcmpeqd(XMMRegister dst, XMMRegister src) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vpcmpeqd(dst, dst, src);
+  } else {
+    pcmpeqd(dst, src);
+  }
+}
+
+
+void MacroAssembler::Psllq(XMMRegister dst, byte imm8) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vpsllq(dst, dst, imm8);
+  } else {
+    psllq(dst, imm8);
+  }
+}
+
+
+void MacroAssembler::Psrlq(XMMRegister dst, byte imm8) {
+  if (CpuFeatures::IsSupported(AVX)) {
+    CpuFeatureScope scope(this, AVX);
+    vpsrlq(dst, dst, imm8);
+  } else {
+    psrlq(dst, imm8);
   }
 }
 
@@ -3247,66 +3189,6 @@ void MacroAssembler::Lzcntl(Register dst, const Operand& src) {
 }
 
 
-void MacroAssembler::Lzcntq(Register dst, Register src) {
-  if (CpuFeatures::IsSupported(LZCNT)) {
-    CpuFeatureScope scope(this, LZCNT);
-    lzcntq(dst, src);
-    return;
-  }
-  Label not_zero_src;
-  bsrq(dst, src);
-  j(not_zero, &not_zero_src, Label::kNear);
-  Set(dst, 127);  // 127^63 == 64
-  bind(&not_zero_src);
-  xorl(dst, Immediate(63));  // for x in [0..63], 63^x == 63 - x
-}
-
-
-void MacroAssembler::Lzcntq(Register dst, const Operand& src) {
-  if (CpuFeatures::IsSupported(LZCNT)) {
-    CpuFeatureScope scope(this, LZCNT);
-    lzcntq(dst, src);
-    return;
-  }
-  Label not_zero_src;
-  bsrq(dst, src);
-  j(not_zero, &not_zero_src, Label::kNear);
-  Set(dst, 127);  // 127^63 == 64
-  bind(&not_zero_src);
-  xorl(dst, Immediate(63));  // for x in [0..63], 63^x == 63 - x
-}
-
-
-void MacroAssembler::Tzcntq(Register dst, Register src) {
-  if (CpuFeatures::IsSupported(BMI1)) {
-    CpuFeatureScope scope(this, BMI1);
-    tzcntq(dst, src);
-    return;
-  }
-  Label not_zero_src;
-  bsfq(dst, src);
-  j(not_zero, &not_zero_src, Label::kNear);
-  // Define the result of tzcnt(0) separately, because bsf(0) is undefined.
-  Set(dst, 64);
-  bind(&not_zero_src);
-}
-
-
-void MacroAssembler::Tzcntq(Register dst, const Operand& src) {
-  if (CpuFeatures::IsSupported(BMI1)) {
-    CpuFeatureScope scope(this, BMI1);
-    tzcntq(dst, src);
-    return;
-  }
-  Label not_zero_src;
-  bsfq(dst, src);
-  j(not_zero, &not_zero_src, Label::kNear);
-  // Define the result of tzcnt(0) separately, because bsf(0) is undefined.
-  Set(dst, 64);
-  bind(&not_zero_src);
-}
-
-
 void MacroAssembler::Tzcntl(Register dst, Register src) {
   if (CpuFeatures::IsSupported(BMI1)) {
     CpuFeatureScope scope(this, BMI1);
@@ -3349,26 +3231,6 @@ void MacroAssembler::Popcntl(Register dst, const Operand& src) {
   if (CpuFeatures::IsSupported(POPCNT)) {
     CpuFeatureScope scope(this, POPCNT);
     popcntl(dst, src);
-    return;
-  }
-  UNREACHABLE();
-}
-
-
-void MacroAssembler::Popcntq(Register dst, Register src) {
-  if (CpuFeatures::IsSupported(POPCNT)) {
-    CpuFeatureScope scope(this, POPCNT);
-    popcntq(dst, src);
-    return;
-  }
-  UNREACHABLE();
-}
-
-
-void MacroAssembler::Popcntq(Register dst, const Operand& src) {
-  if (CpuFeatures::IsSupported(POPCNT)) {
-    CpuFeatureScope scope(this, POPCNT);
-    popcntq(dst, src);
     return;
   }
   UNREACHABLE();
@@ -3634,7 +3496,7 @@ void MacroAssembler::ClampDoubleToUint8(XMMRegister input_reg,
   Label done;
   Label conv_failure;
   Xorpd(temp_xmm_reg, temp_xmm_reg);
-  Cvtsd2si(result_reg, input_reg);
+  cvtsd2si(result_reg, input_reg);
   testl(result_reg, Immediate(0xFFFFFF00));
   j(zero, &done, Label::kNear);
   cmpl(result_reg, Immediate(1));
@@ -3659,7 +3521,7 @@ void MacroAssembler::LoadUint32(XMMRegister dst,
     cmpq(src, Immediate(0xffffffff));
     Assert(below_equal, kInputGPRIsExpectedToHaveUpper32Cleared);
   }
-  Cvtqsi2sd(dst, src);
+  cvtqsi2sd(dst, src);
 }
 
 
@@ -4002,75 +3864,26 @@ void MacroAssembler::DebugBreak() {
 }
 
 
-void MacroAssembler::InvokeFunction(Register function,
-                                    Register new_target,
-                                    const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
-  movp(rbx, FieldOperand(function, JSFunction::kSharedFunctionInfoOffset));
-  LoadSharedFunctionInfoSpecialField(
-      rbx, rbx, SharedFunctionInfo::kFormalParameterCountOffset);
-
-  ParameterCount expected(rbx);
-  InvokeFunction(function, new_target, expected, actual, flag, call_wrapper);
-}
-
-
-void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
-                                    const ParameterCount& expected,
-                                    const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
-  Move(rdi, function);
-  InvokeFunction(rdi, no_reg, expected, actual, flag, call_wrapper);
-}
-
-
-void MacroAssembler::InvokeFunction(Register function,
-                                    Register new_target,
-                                    const ParameterCount& expected,
-                                    const ParameterCount& actual,
-                                    InvokeFlag flag,
-                                    const CallWrapper& call_wrapper) {
-  DCHECK(function.is(rdi));
-  movp(rsi, FieldOperand(function, JSFunction::kContextOffset));
-  InvokeFunctionCode(rdi, new_target, expected, actual, flag, call_wrapper);
-}
-
-
-void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
-                                        const ParameterCount& expected,
-                                        const ParameterCount& actual,
-                                        InvokeFlag flag,
-                                        const CallWrapper& call_wrapper) {
+void MacroAssembler::InvokeCode(Register code,
+                                const ParameterCount& expected,
+                                const ParameterCount& actual,
+                                InvokeFlag flag,
+                                const CallWrapper& call_wrapper) {
   // You can't call a function without a valid frame.
   DCHECK(flag == JUMP_FUNCTION || has_frame());
-  DCHECK(function.is(rdi));
-  DCHECK_IMPLIES(new_target.is_valid(), new_target.is(rdx));
-
-  if (call_wrapper.NeedsDebugStepCheck()) {
-    FloodFunctionIfStepping(function, new_target, expected, actual);
-  }
-
-  // Clear the new.target register if not given.
-  if (!new_target.is_valid()) {
-    LoadRoot(rdx, Heap::kUndefinedValueRootIndex);
-  }
 
   Label done;
   bool definitely_mismatches = false;
   InvokePrologue(expected,
                  actual,
+                 Handle<Code>::null(),
+                 code,
                  &done,
                  &definitely_mismatches,
                  flag,
                  Label::kNear,
                  call_wrapper);
   if (!definitely_mismatches) {
-    // We call indirectly through the code field in the function to
-    // allow recompilation to take effect without changing any of the
-    // call sites.
-    Operand code = FieldOperand(function, JSFunction::kCodeEntryOffset);
     if (flag == CALL_FUNCTION) {
       call_wrapper.BeforeCall(CallSize(code));
       call(code);
@@ -4084,8 +3897,59 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
 }
 
 
+void MacroAssembler::InvokeFunction(Register function,
+                                    const ParameterCount& actual,
+                                    InvokeFlag flag,
+                                    const CallWrapper& call_wrapper) {
+  // You can't call a function without a valid frame.
+  DCHECK(flag == JUMP_FUNCTION || has_frame());
+
+  DCHECK(function.is(rdi));
+  movp(rdx, FieldOperand(function, JSFunction::kSharedFunctionInfoOffset));
+  movp(rsi, FieldOperand(function, JSFunction::kContextOffset));
+  LoadSharedFunctionInfoSpecialField(rbx, rdx,
+      SharedFunctionInfo::kFormalParameterCountOffset);
+  // Advances rdx to the end of the Code object header, to the start of
+  // the executable code.
+  movp(rdx, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
+
+  ParameterCount expected(rbx);
+  InvokeCode(rdx, expected, actual, flag, call_wrapper);
+}
+
+
+void MacroAssembler::InvokeFunction(Register function,
+                                    const ParameterCount& expected,
+                                    const ParameterCount& actual,
+                                    InvokeFlag flag,
+                                    const CallWrapper& call_wrapper) {
+  // You can't call a function without a valid frame.
+  DCHECK(flag == JUMP_FUNCTION || has_frame());
+
+  DCHECK(function.is(rdi));
+  movp(rsi, FieldOperand(function, JSFunction::kContextOffset));
+  // Advances rdx to the end of the Code object header, to the start of
+  // the executable code.
+  movp(rdx, FieldOperand(rdi, JSFunction::kCodeEntryOffset));
+
+  InvokeCode(rdx, expected, actual, flag, call_wrapper);
+}
+
+
+void MacroAssembler::InvokeFunction(Handle<JSFunction> function,
+                                    const ParameterCount& expected,
+                                    const ParameterCount& actual,
+                                    InvokeFlag flag,
+                                    const CallWrapper& call_wrapper) {
+  Move(rdi, function);
+  InvokeFunction(rdi, expected, actual, flag, call_wrapper);
+}
+
+
 void MacroAssembler::InvokePrologue(const ParameterCount& expected,
                                     const ParameterCount& actual,
+                                    Handle<Code> code_constant,
+                                    Register code_register,
                                     Label* done,
                                     bool* definitely_mismatches,
                                     InvokeFlag flag,
@@ -4135,6 +3999,13 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
 
   if (!definitely_matches) {
     Handle<Code> adaptor = isolate()->builtins()->ArgumentsAdaptorTrampoline();
+    if (!code_constant.is_null()) {
+      Move(rdx, code_constant, RelocInfo::EMBEDDED_OBJECT);
+      addp(rdx, Immediate(Code::kHeaderSize - kHeapObjectTag));
+    } else if (!code_register.is(rdx)) {
+      movp(rdx, code_register);
+    }
+
     if (flag == CALL_FUNCTION) {
       call_wrapper.BeforeCall(CallSize(adaptor));
       Call(adaptor, RelocInfo::CODE_TARGET);
@@ -4147,49 +4018,6 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
     }
     bind(&invoke);
   }
-}
-
-
-void MacroAssembler::FloodFunctionIfStepping(Register fun, Register new_target,
-                                             const ParameterCount& expected,
-                                             const ParameterCount& actual) {
-  Label skip_flooding;
-  ExternalReference debug_step_action =
-      ExternalReference::debug_last_step_action_address(isolate());
-  Operand debug_step_action_operand = ExternalOperand(debug_step_action);
-  cmpb(debug_step_action_operand, Immediate(StepIn));
-  j(not_equal, &skip_flooding);
-  {
-    FrameScope frame(this,
-                     has_frame() ? StackFrame::NONE : StackFrame::INTERNAL);
-    if (expected.is_reg()) {
-      Integer32ToSmi(expected.reg(), expected.reg());
-      Push(expected.reg());
-    }
-    if (actual.is_reg()) {
-      Integer32ToSmi(actual.reg(), actual.reg());
-      Push(actual.reg());
-    }
-    if (new_target.is_valid()) {
-      Push(new_target);
-    }
-    Push(fun);
-    Push(fun);
-    CallRuntime(Runtime::kDebugPrepareStepInIfStepping, 1);
-    Pop(fun);
-    if (new_target.is_valid()) {
-      Pop(new_target);
-    }
-    if (actual.is_reg()) {
-      Pop(actual.reg());
-      SmiToInteger64(actual.reg(), actual.reg());
-    }
-    if (expected.is_reg()) {
-      Pop(expected.reg());
-      SmiToInteger64(expected.reg(), expected.reg());
-    }
-  }
-  bind(&skip_flooding);
 }
 
 
@@ -4420,7 +4248,7 @@ void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
   int offset =
       Context::kHeaderSize + Context::GLOBAL_OBJECT_INDEX * kPointerSize;
   movp(scratch, FieldOperand(scratch, offset));
-  movp(scratch, FieldOperand(scratch, JSGlobalObject::kNativeContextOffset));
+  movp(scratch, FieldOperand(scratch, GlobalObject::kNativeContextOffset));
 
   // Check the context is a native context.
   if (emit_debug_code()) {
@@ -5036,16 +4864,16 @@ void MacroAssembler::CopyBytes(Register destination,
 }
 
 
-void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
-                                                Register end_address,
+void MacroAssembler::InitializeFieldsWithFiller(Register start_offset,
+                                                Register end_offset,
                                                 Register filler) {
   Label loop, entry;
   jmp(&entry);
   bind(&loop);
-  movp(Operand(current_address, 0), filler);
-  addp(current_address, Immediate(kPointerSize));
+  movp(Operand(start_offset, 0), filler);
+  addp(start_offset, Immediate(kPointerSize));
   bind(&entry);
-  cmpp(current_address, end_address);
+  cmpp(start_offset, end_offset);
   j(below, &loop);
 }
 
@@ -5078,7 +4906,7 @@ void MacroAssembler::LoadContext(Register dst, int context_chain_length) {
 
 void MacroAssembler::LoadGlobalProxy(Register dst) {
   movp(dst, GlobalObjectOperand());
-  movp(dst, FieldOperand(dst, JSGlobalObject::kGlobalProxyOffset));
+  movp(dst, FieldOperand(dst, GlobalObject::kGlobalProxyOffset));
 }
 
 
@@ -5091,7 +4919,7 @@ void MacroAssembler::LoadTransitionedArrayMapConditional(
   // Load the global or builtins object from the current context.
   movp(scratch,
        Operand(rsi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  movp(scratch, FieldOperand(scratch, JSGlobalObject::kNativeContextOffset));
+  movp(scratch, FieldOperand(scratch, GlobalObject::kNativeContextOffset));
 
   // Check that the function's map is the same as the expected cached map.
   movp(scratch, Operand(scratch,
@@ -5120,7 +4948,7 @@ void MacroAssembler::LoadGlobalFunction(int index, Register function) {
   movp(function,
        Operand(rsi, Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
   // Load the native context from the global or builtins object.
-  movp(function, FieldOperand(function, JSGlobalObject::kNativeContextOffset));
+  movp(function, FieldOperand(function, GlobalObject::kNativeContextOffset));
   // Load the function from the native context.
   movp(function, Operand(function, Context::SlotOffset(index)));
 }
@@ -5264,7 +5092,7 @@ bool AreAliased(Register reg1,
 CodePatcher::CodePatcher(byte* address, int size)
     : address_(address),
       size_(size),
-      masm_(NULL, address, size + Assembler::kGap, CodeObjectRequired::kNo) {
+      masm_(NULL, address, size + Assembler::kGap) {
   // Create a new macro assembler pointing to the address of the code to patch.
   // The size is adjusted with kGap on order for the assembler to generate size
   // bytes of instructions without failing with buffer size constraints.

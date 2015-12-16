@@ -12,7 +12,7 @@
 #include "src/ic/handler-compiler.h"
 #include "src/ic/ic.h"
 #include "src/macro-assembler.h"
-#include "src/parsing/parser.h"
+#include "src/parser.h"
 #include "src/profiler/cpu-profiler.h"
 
 namespace v8 {
@@ -108,7 +108,7 @@ Handle<Code> PlatformCodeStub::GenerateCode() {
   Factory* factory = isolate()->factory();
 
   // Generate the new code.
-  MacroAssembler masm(isolate(), NULL, 256, CodeObjectRequired::kYes);
+  MacroAssembler masm(isolate(), NULL, 256);
 
   {
     // Update the static counter each time a new code stub is generated.
@@ -640,7 +640,8 @@ CallInterfaceDescriptor HandlerStub::GetCallInterfaceDescriptor() const {
     return LoadWithVectorDescriptor(isolate());
   } else {
     DCHECK(kind() == Code::STORE_IC || kind() == Code::KEYED_STORE_IC);
-    return VectorStoreICDescriptor(isolate());
+    return FLAG_vector_stores ? VectorStoreICDescriptor(isolate())
+                              : StoreDescriptor(isolate());
   }
 }
 
@@ -666,13 +667,19 @@ void ToObjectStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
 
 CallInterfaceDescriptor StoreTransitionStub::GetCallInterfaceDescriptor()
     const {
-  return VectorStoreTransitionDescriptor(isolate());
+  if (FLAG_vector_stores) {
+    return VectorStoreTransitionDescriptor(isolate());
+  }
+  return StoreTransitionDescriptor(isolate());
 }
 
 
 CallInterfaceDescriptor
 ElementsTransitionAndStoreStub::GetCallInterfaceDescriptor() const {
-  return VectorStoreTransitionDescriptor(isolate());
+  if (FLAG_vector_stores) {
+    return VectorStoreTransitionDescriptor(isolate());
+  }
+  return StoreTransitionDescriptor(isolate());
 }
 
 
@@ -691,13 +698,6 @@ void NumberToStringStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
   NumberToStringDescriptor call_descriptor(isolate());
   descriptor->Initialize(
       Runtime::FunctionForId(Runtime::kNumberToString)->entry);
-}
-
-
-void FastCloneRegExpStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
-  FastCloneRegExpDescriptor call_descriptor(isolate());
-  descriptor->Initialize(
-      Runtime::FunctionForId(Runtime::kCreateRegExpLiteral)->entry);
 }
 
 
@@ -741,12 +741,6 @@ void AllocateHeapNumberStub::InitializeDescriptor(
     CodeStubDescriptor* descriptor) {
   descriptor->Initialize(
       Runtime::FunctionForId(Runtime::kAllocateHeapNumber)->entry);
-}
-
-
-void AllocateMutableHeapNumberStub::InitializeDescriptor(
-    CodeStubDescriptor* descriptor) {
-  descriptor->Initialize();
 }
 
 
@@ -890,6 +884,17 @@ void ArgumentsAccessStub::PrintName(std::ostream& os) const {  // NOLINT
       break;
   }
   return;
+}
+
+
+void CallFunctionStub::PrintName(std::ostream& os) const {  // NOLINT
+  os << "CallFunctionStub_Args" << argc();
+}
+
+
+void CallConstructStub::PrintName(std::ostream& os) const {  // NOLINT
+  os << "CallConstructStub";
+  if (RecordCallTarget()) os << "_Recording";
 }
 
 
@@ -1050,7 +1055,7 @@ InternalArrayConstructorStub::InternalArrayConstructorStub(
 
 
 Representation RepresentationFromType(Type* type) {
-  if (type->Is(Type::UntaggedIntegral())) {
+  if (type->Is(Type::UntaggedSigned()) || type->Is(Type::UntaggedUnsigned())) {
     return Representation::Integer32();
   }
 
@@ -1065,6 +1070,5 @@ Representation RepresentationFromType(Type* type) {
   DCHECK(!type->Is(Type::Untagged()));
   return Representation::Tagged();
 }
-
 }  // namespace internal
 }  // namespace v8

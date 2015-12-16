@@ -41,16 +41,20 @@ class InterpreterAssembler {
 
   // Returns the count immediate for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandCount(int operand_index);
+  Node* BytecodeOperandCount8(int operand_index);
   // Returns the index immediate for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandIdx(int operand_index);
+  Node* BytecodeOperandIdx8(int operand_index);
   // Returns the Imm8 immediate for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandImm(int operand_index);
+  Node* BytecodeOperandImm8(int operand_index);
   // Returns the register index for bytecode operand |operand_index| in the
   // current bytecode.
-  Node* BytecodeOperandReg(int operand_index);
+  Node* BytecodeOperandReg8(int operand_index);
+
+  // Returns the index immediate for the short (16 bit) bytecode operand
+  // |operand_index| in the current bytecode.
+  Node* BytecodeOperandIdx16(int operand_index);
 
   // Accumulator.
   Node* GetAccumulator();
@@ -88,9 +92,6 @@ class InterpreterAssembler {
   // Load constant at |index| in the constant pool.
   Node* LoadConstantPoolEntry(Node* index);
 
-  // Load an element from a fixed array on the heap.
-  Node* LoadFixedArrayElement(Node* fixed_array, int index);
-
   // Load a field from an object on the heap.
   Node* LoadObjectField(Node* object, int offset);
 
@@ -105,11 +106,11 @@ class InterpreterAssembler {
 
   // Call constructor |constructor| with |arg_count| arguments (not
   // including receiver) and the first argument located at
-  // |first_arg|. The |new_target| is the same as the
+  // |first_arg|. The |original_constructor| is the same as the
   // |constructor| for the new keyword, but differs for the super
   // keyword.
-  Node* CallConstruct(Node* new_target, Node* constructor, Node* first_arg,
-                      Node* arg_count);
+  Node* CallConstruct(Node* original_constructor, Node* constructor,
+                      Node* first_arg, Node* arg_count);
 
   // Call JSFunction or Callable |function| with |arg_count|
   // arguments (not including receiver) and the first argument
@@ -196,6 +197,7 @@ class InterpreterAssembler {
 
   // Private helpers which delegate to RawMachineAssembler.
   Isolate* isolate();
+  Schedule* schedule();
   Zone* zone();
 
   interpreter::Bytecode bytecode_;

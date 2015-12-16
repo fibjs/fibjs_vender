@@ -16,7 +16,6 @@ namespace internal {
 namespace compiler {
 
 // Forward declarations.
-class FrameAccessState;
 class Linkage;
 class OutOfLineCode;
 
@@ -38,8 +37,7 @@ class CodeGenerator final : public GapResolver::Assembler {
   Handle<Code> GenerateCode();
 
   InstructionSequence* code() const { return code_; }
-  FrameAccessState* frame_access_state() const { return frame_access_state_; }
-  Frame* const frame() const { return frame_access_state_->frame(); }
+  Frame* frame() const { return frame_; }
   Isolate* isolate() const { return info_->isolate(); }
   Linkage* linkage() const { return linkage_; }
 
@@ -96,10 +94,7 @@ class CodeGenerator final : public GapResolver::Assembler {
   void AssembleReturn();
 
   // Generates code to deconstruct a the caller's frame, including arguments.
-  void AssembleDeconstructActivationRecord(int stack_param_delta);
-
-  // Generates code to manipulate the stack in preparation for a tail call.
-  void AssemblePrepareTailCall(int stack_param_delta);
+  void AssembleDeconstructActivationRecord();
 
   // ===========================================================================
   // ============== Architecture-specific gap resolver methods. ================
@@ -130,26 +125,20 @@ class CodeGenerator final : public GapResolver::Assembler {
   void RecordCallPosition(Instruction* instr);
   void PopulateDeoptimizationData(Handle<Code> code);
   int DefineDeoptimizationLiteral(Handle<Object> literal);
-  FrameStateDescriptor* GetFrameStateDescriptor(
-      Instruction* instr, size_t frame_access_state_offset);
+  FrameStateDescriptor* GetFrameStateDescriptor(Instruction* instr,
+                                                size_t frame_state_offset);
   int BuildTranslation(Instruction* instr, int pc_offset,
-                       size_t frame_access_state_offset,
+                       size_t frame_state_offset,
                        OutputFrameStateCombine state_combine);
   void BuildTranslationForFrameStateDescriptor(
       FrameStateDescriptor* descriptor, Instruction* instr,
-      Translation* translation, size_t frame_access_state_offset,
+      Translation* translation, size_t frame_state_offset,
       OutputFrameStateCombine state_combine);
   void AddTranslationForOperand(Translation* translation, Instruction* instr,
                                 InstructionOperand* op, MachineType type);
   void AddNopForSmiCodeInlining();
   void EnsureSpaceForLazyDeopt();
   void MarkLazyDeoptSite();
-
-  // Converts the delta in the number of stack parameter passed from a tail
-  // caller to the callee into the distance (in pointers) the SP must be
-  // adjusted, taking frame elision and other relevant factors into
-  // consideration.
-  int TailCallFrameStackSlotDelta(int stack_param_delta);
 
   // ===========================================================================
 
@@ -178,7 +167,7 @@ class CodeGenerator final : public GapResolver::Assembler {
 
   friend class OutOfLineCode;
 
-  FrameAccessState* frame_access_state_;
+  Frame* const frame_;
   Linkage* const linkage_;
   InstructionSequence* const code_;
   CompilationInfo* const info_;
@@ -198,6 +187,7 @@ class CodeGenerator final : public GapResolver::Assembler {
   JumpTable* jump_tables_;
   OutOfLineCode* ools_;
   int osr_pc_offset_;
+  bool needs_frame_;
 };
 
 }  // namespace compiler

@@ -296,7 +296,6 @@ void Assembler::GetCode(CodeDesc* desc) {
   desc->reloc_size =
       static_cast<int>((buffer_ + buffer_size_) - reloc_info_writer.pos());
   desc->origin = this;
-  desc->constant_pool_size = 0;
 }
 
 
@@ -750,24 +749,6 @@ void Assembler::bsrl(Register dst, const Operand& src) {
 }
 
 
-void Assembler::bsrq(Register dst, Register src) {
-  EnsureSpace ensure_space(this);
-  emit_rex_64(dst, src);
-  emit(0x0F);
-  emit(0xBD);
-  emit_modrm(dst, src);
-}
-
-
-void Assembler::bsrq(Register dst, const Operand& src) {
-  EnsureSpace ensure_space(this);
-  emit_rex_64(dst, src);
-  emit(0x0F);
-  emit(0xBD);
-  emit_operand(dst, src);
-}
-
-
 void Assembler::bsfl(Register dst, Register src) {
   EnsureSpace ensure_space(this);
   emit_optional_rex_32(dst, src);
@@ -780,24 +761,6 @@ void Assembler::bsfl(Register dst, Register src) {
 void Assembler::bsfl(Register dst, const Operand& src) {
   EnsureSpace ensure_space(this);
   emit_optional_rex_32(dst, src);
-  emit(0x0F);
-  emit(0xBC);
-  emit_operand(dst, src);
-}
-
-
-void Assembler::bsfq(Register dst, Register src) {
-  EnsureSpace ensure_space(this);
-  emit_rex_64(dst, src);
-  emit(0x0F);
-  emit(0xBC);
-  emit_modrm(dst, src);
-}
-
-
-void Assembler::bsfq(Register dst, const Operand& src) {
-  EnsureSpace ensure_space(this);
-  emit_rex_64(dst, src);
   emit(0x0F);
   emit(0xBC);
   emit_operand(dst, src);
@@ -3116,28 +3079,6 @@ void Assembler::cvttsd2si(Register dst, XMMRegister src) {
 }
 
 
-void Assembler::cvttss2siq(Register dst, XMMRegister src) {
-  DCHECK(!IsEnabled(AVX));
-  EnsureSpace ensure_space(this);
-  emit(0xF3);
-  emit_rex_64(dst, src);
-  emit(0x0F);
-  emit(0x2C);
-  emit_sse_operand(dst, src);
-}
-
-
-void Assembler::cvttss2siq(Register dst, const Operand& src) {
-  DCHECK(!IsEnabled(AVX));
-  EnsureSpace ensure_space(this);
-  emit(0xF3);
-  emit_rex_64(dst, src);
-  emit(0x0F);
-  emit(0x2C);
-  emit_sse_operand(dst, src);
-}
-
-
 void Assembler::cvttsd2siq(Register dst, XMMRegister src) {
   DCHECK(!IsEnabled(AVX));
   EnsureSpace ensure_space(this);
@@ -3192,30 +3133,7 @@ void Assembler::cvtlsi2ss(XMMRegister dst, Register src) {
 }
 
 
-void Assembler::cvtqsi2ss(XMMRegister dst, const Operand& src) {
-  DCHECK(!IsEnabled(AVX));
-  EnsureSpace ensure_space(this);
-  emit(0xF3);
-  emit_rex_64(dst, src);
-  emit(0x0F);
-  emit(0x2A);
-  emit_sse_operand(dst, src);
-}
-
-
-void Assembler::cvtqsi2ss(XMMRegister dst, Register src) {
-  DCHECK(!IsEnabled(AVX));
-  EnsureSpace ensure_space(this);
-  emit(0xF3);
-  emit_rex_64(dst, src);
-  emit(0x0F);
-  emit(0x2A);
-  emit_sse_operand(dst, src);
-}
-
-
 void Assembler::cvtqsi2sd(XMMRegister dst, const Operand& src) {
-  DCHECK(!IsEnabled(AVX));
   EnsureSpace ensure_space(this);
   emit(0xF2);
   emit_rex_64(dst, src);
@@ -3226,7 +3144,6 @@ void Assembler::cvtqsi2sd(XMMRegister dst, const Operand& src) {
 
 
 void Assembler::cvtqsi2sd(XMMRegister dst, Register src) {
-  DCHECK(!IsEnabled(AVX));
   EnsureSpace ensure_space(this);
   emit(0xF2);
   emit_rex_64(dst, src);
@@ -3281,7 +3198,6 @@ void Assembler::cvtsd2ss(XMMRegister dst, const Operand& src) {
 
 
 void Assembler::cvtsd2si(Register dst, XMMRegister src) {
-  DCHECK(!IsEnabled(AVX));
   EnsureSpace ensure_space(this);
   emit(0xF2);
   emit_optional_rex_32(dst, src);
@@ -3292,7 +3208,6 @@ void Assembler::cvtsd2si(Register dst, XMMRegister src) {
 
 
 void Assembler::cvtsd2siq(Register dst, XMMRegister src) {
-  DCHECK(!IsEnabled(AVX));
   EnsureSpace ensure_space(this);
   emit(0xF2);
   emit_rex_64(dst, src);
@@ -3505,21 +3420,6 @@ void Assembler::cmpltsd(XMMRegister dst, XMMRegister src) {
   emit(0xC2);
   emit_sse_operand(dst, src);
   emit(0x01);  // LT == 1
-}
-
-
-void Assembler::roundss(XMMRegister dst, XMMRegister src, RoundingMode mode) {
-  DCHECK(!IsEnabled(AVX));
-  DCHECK(IsEnabled(SSE4_1));
-  EnsureSpace ensure_space(this);
-  emit(0x66);
-  emit_optional_rex_32(dst, src);
-  emit(0x0f);
-  emit(0x3a);
-  emit(0x0a);
-  emit_sse_operand(dst, src);
-  // Mask precision exception.
-  emit(static_cast<byte>(mode) | 0x8);
 }
 
 

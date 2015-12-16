@@ -79,21 +79,14 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
 
 static void CallRuntimePassFunction(
     MacroAssembler* masm, Runtime::FunctionId function_id) {
-  // ----------- S t a t e -------------
-  //  -- edx : new target (preserved for callee)
-  //  -- edi : target function (preserved for callee)
-  // -----------------------------------
-
   FrameScope scope(masm, StackFrame::INTERNAL);
-  // Push a copy of the target function and the new target.
+  // Push a copy of the function.
   __ push(edi);
-  __ push(edx);
   // Function is also the parameter to the runtime call.
   __ push(edi);
 
   __ CallRuntime(function_id, 1);
-  // Restore target function and new target.
-  __ pop(edx);
+  // Restore receiver.
   __ pop(edi);
 }
 
@@ -133,13 +126,12 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
 
 
 static void Generate_JSConstructStubHelper(MacroAssembler* masm,
-                                           bool is_api_function,
-                                           bool create_implicit_receiver) {
+                                           bool is_api_function) {
   // ----------- S t a t e -------------
   //  -- eax: number of arguments
   //  -- edi: constructor function
   //  -- ebx: allocation site or undefined
-  //  -- edx: new target
+  //  -- edx: original constructor
   // -----------------------------------
 
   // Enter a construct frame.
@@ -151,178 +143,173 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ push(ebx);
     __ SmiTag(eax);
     __ push(eax);
+    __ push(edi);
+    __ push(edx);
 
-    if (create_implicit_receiver) {
-      __ push(edi);
-      __ push(edx);
+    // Try to allocate the object without transitioning into C code. If any of
+    // the preconditions is not met, the code bails out to the runtime call.
+    Label rt_call, allocated;
+    if (FLAG_inline_new) {
+      ExternalReference debug_step_in_fp =
+          ExternalReference::debug_step_in_fp_address(masm->isolate());
+      __ cmp(Operand::StaticVariable(debug_step_in_fp), Immediate(0));
+      __ j(not_equal, &rt_call);
 
-      // Try to allocate the object without transitioning into C code. If any of
-      // the preconditions is not met, the code bails out to the runtime call.
-      Label rt_call, allocated;
-      if (FLAG_inline_new) {
-        // Verify that the new target is a JSFunction.
-        __ CmpObjectType(edx, JS_FUNCTION_TYPE, ebx);
-        __ j(not_equal, &rt_call);
+      // Fall back to runtime if the original constructor and function differ.
+      __ cmp(edx, edi);
+      __ j(not_equal, &rt_call);
 
-        // Load the initial map and verify that it is in fact a map.
-        // edx: new target
-        __ mov(eax,
-               FieldOperand(edx, JSFunction::kPrototypeOrInitialMapOffset));
-        // Will both indicate a NULL and a Smi
-        __ JumpIfSmi(eax, &rt_call);
-        // edi: constructor
-        // eax: initial map (if proven valid below)
-        __ CmpObjectType(eax, MAP_TYPE, ebx);
-        __ j(not_equal, &rt_call);
+      // Verified that the constructor is a JSFunction.
+      // Load the initial map and verify that it is in fact a map.
+      // edi: constructor
+      __ mov(eax, FieldOperand(edi, JSFunction::kPrototypeOrInitialMapOffset));
+      // Will both indicate a NULL and a Smi
+      __ JumpIfSmi(eax, &rt_call);
+      // edi: constructor
+      // eax: initial map (if proven valid below)
+      __ CmpObjectType(eax, MAP_TYPE, ebx);
+      __ j(not_equal, &rt_call);
 
-        // Fall back to runtime if the expected base constructor and base
-        // constructor differ.
-        __ cmp(edi, FieldOperand(eax, Map::kConstructorOrBackPointerOffset));
-        __ j(not_equal, &rt_call);
+      // Check that the constructor is not constructing a JSFunction (see
+      // comments in Runtime_NewObject in runtime.cc). In which case the
+      // initial map's instance type would be JS_FUNCTION_TYPE.
+      // edi: constructor
+      // eax: initial map
+      __ CmpInstanceType(eax, JS_FUNCTION_TYPE);
+      __ j(equal, &rt_call);
 
-        // Check that the constructor is not constructing a JSFunction (see
-        // comments in Runtime_NewObject in runtime.cc). In which case the
-        // initial map's instance type would be JS_FUNCTION_TYPE.
-        // edi: constructor
-        // eax: initial map
-        __ CmpInstanceType(eax, JS_FUNCTION_TYPE);
-        __ j(equal, &rt_call);
+      if (!is_api_function) {
+        Label allocate;
+        // The code below relies on these assumptions.
+        STATIC_ASSERT(Map::Counter::kShift + Map::Counter::kSize == 32);
+        // Check if slack tracking is enabled.
+        __ mov(esi, FieldOperand(eax, Map::kBitField3Offset));
+        __ shr(esi, Map::Counter::kShift);
+        __ cmp(esi, Map::kSlackTrackingCounterEnd);
+        __ j(less, &allocate);
+        // Decrease generous allocation count.
+        __ sub(FieldOperand(eax, Map::kBitField3Offset),
+               Immediate(1 << Map::Counter::kShift));
 
-        if (!is_api_function) {
-          Label allocate;
-          // The code below relies on these assumptions.
-          STATIC_ASSERT(Map::Counter::kShift + Map::Counter::kSize == 32);
-          // Check if slack tracking is enabled.
-          __ mov(esi, FieldOperand(eax, Map::kBitField3Offset));
-          __ shr(esi, Map::Counter::kShift);
-          __ cmp(esi, Map::kSlackTrackingCounterEnd);
-          __ j(less, &allocate);
-          // Decrease generous allocation count.
-          __ sub(FieldOperand(eax, Map::kBitField3Offset),
-                 Immediate(1 << Map::Counter::kShift));
+        __ cmp(esi, Map::kSlackTrackingCounterEnd);
+        __ j(not_equal, &allocate);
 
-          __ cmp(esi, Map::kSlackTrackingCounterEnd);
-          __ j(not_equal, &allocate);
+        __ push(eax);
+        __ push(edx);
+        __ push(edi);
 
-          __ push(eax);
-          __ push(edx);
-          __ push(edi);
+        __ push(edi);  // constructor
+        __ CallRuntime(Runtime::kFinalizeInstanceSize, 1);
 
-          __ push(eax);  // initial map
-          __ CallRuntime(Runtime::kFinalizeInstanceSize, 1);
+        __ pop(edi);
+        __ pop(edx);
+        __ pop(eax);
+        __ mov(esi, Map::kSlackTrackingCounterEnd - 1);
 
-          __ pop(edi);
-          __ pop(edx);
-          __ pop(eax);
-          __ mov(esi, Map::kSlackTrackingCounterEnd - 1);
-
-          __ bind(&allocate);
-        }
-
-        // Now allocate the JSObject on the heap.
-        // edi: constructor
-        // eax: initial map
-        __ movzx_b(edi, FieldOperand(eax, Map::kInstanceSizeOffset));
-        __ shl(edi, kPointerSizeLog2);
-
-        __ Allocate(edi, ebx, edi, no_reg, &rt_call, NO_ALLOCATION_FLAGS);
-
-        Factory* factory = masm->isolate()->factory();
-
-        // Allocated the JSObject, now initialize the fields.
-        // eax: initial map
-        // ebx: JSObject
-        // edi: start of next object
-        __ mov(Operand(ebx, JSObject::kMapOffset), eax);
-        __ mov(ecx, factory->empty_fixed_array());
-        __ mov(Operand(ebx, JSObject::kPropertiesOffset), ecx);
-        __ mov(Operand(ebx, JSObject::kElementsOffset), ecx);
-        // Set extra fields in the newly allocated object.
-        // eax: initial map
-        // ebx: JSObject
-        // edi: start of next object
-        // esi: slack tracking counter (non-API function case)
-        __ mov(edx, factory->undefined_value());
-        __ lea(ecx, Operand(ebx, JSObject::kHeaderSize));
-        if (!is_api_function) {
-          Label no_inobject_slack_tracking;
-
-          // Check if slack tracking is enabled.
-          __ cmp(esi, Map::kSlackTrackingCounterEnd);
-          __ j(less, &no_inobject_slack_tracking);
-
-          // Allocate object with a slack.
-          __ movzx_b(esi, FieldOperand(eax, Map::kUnusedPropertyFieldsOffset));
-          __ neg(esi);
-          __ lea(esi, Operand(edi, esi, times_pointer_size, 0));
-          // esi: offset of first field after pre-allocated fields
-          if (FLAG_debug_code) {
-            __ cmp(ecx, esi);
-            __ Assert(less_equal,
-                      kUnexpectedNumberOfPreAllocatedPropertyFields);
-          }
-          __ InitializeFieldsWithFiller(ecx, esi, edx);
-
-          // To allow truncation fill the remaining fields with one pointer
-          // filler map.
-          __ mov(edx, factory->one_pointer_filler_map());
-
-          __ bind(&no_inobject_slack_tracking);
-        }
-
-        __ InitializeFieldsWithFiller(ecx, edi, edx);
-
-        // Add the object tag to make the JSObject real, so that we can continue
-        // and jump into the continuation code at any time from now on.
-        // ebx: JSObject (untagged)
-        __ or_(ebx, Immediate(kHeapObjectTag));
-
-        // Continue with JSObject being successfully allocated
-        // ebx: JSObject (tagged)
-        __ jmp(&allocated);
+        __ bind(&allocate);
       }
 
-      // Allocate the new receiver object using the runtime call.
-      // edx: new target
-      __ bind(&rt_call);
-      int offset = kPointerSize;
+      // Now allocate the JSObject on the heap.
+      // edi: constructor
+      // eax: initial map
+      __ movzx_b(edi, FieldOperand(eax, Map::kInstanceSizeOffset));
+      __ shl(edi, kPointerSizeLog2);
 
-      // Must restore esi (context) and edi (constructor) before calling
-      // runtime.
-      __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
-      __ mov(edi, Operand(esp, offset));
-      __ push(edi);  // constructor function
-      __ push(edx);  // new target
-      __ CallRuntime(Runtime::kNewObject, 2);
-      __ mov(ebx, eax);  // store result in ebx
+      __ Allocate(edi, ebx, edi, no_reg, &rt_call, NO_ALLOCATION_FLAGS);
 
-      // New object allocated.
-      // ebx: newly allocated object
-      __ bind(&allocated);
+      Factory* factory = masm->isolate()->factory();
 
-      // Restore the parameters.
-      __ pop(edx);  // new.target
-      __ pop(edi);  // Constructor function.
+      // Allocated the JSObject, now initialize the fields.
+      // eax: initial map
+      // ebx: JSObject
+      // edi: start of next object
+      __ mov(Operand(ebx, JSObject::kMapOffset), eax);
+      __ mov(ecx, factory->empty_fixed_array());
+      __ mov(Operand(ebx, JSObject::kPropertiesOffset), ecx);
+      __ mov(Operand(ebx, JSObject::kElementsOffset), ecx);
+      // Set extra fields in the newly allocated object.
+      // eax: initial map
+      // ebx: JSObject
+      // edi: start of next object
+      // esi: slack tracking counter (non-API function case)
+      __ mov(edx, factory->undefined_value());
+      __ lea(ecx, Operand(ebx, JSObject::kHeaderSize));
+      if (!is_api_function) {
+        Label no_inobject_slack_tracking;
 
-      // Retrieve smi-tagged arguments count from the stack.
-      __ mov(eax, Operand(esp, 0));
+        // Check if slack tracking is enabled.
+        __ cmp(esi, Map::kSlackTrackingCounterEnd);
+        __ j(less, &no_inobject_slack_tracking);
+
+        // Allocate object with a slack.
+        __ movzx_b(
+            esi,
+            FieldOperand(
+                eax, Map::kInObjectPropertiesOrConstructorFunctionIndexOffset));
+        __ movzx_b(eax, FieldOperand(eax, Map::kUnusedPropertyFieldsOffset));
+        __ sub(esi, eax);
+        __ lea(esi,
+               Operand(ebx, esi, times_pointer_size, JSObject::kHeaderSize));
+        // esi: offset of first field after pre-allocated fields
+        if (FLAG_debug_code) {
+          __ cmp(esi, edi);
+          __ Assert(less_equal,
+                    kUnexpectedNumberOfPreAllocatedPropertyFields);
+        }
+        __ InitializeFieldsWithFiller(ecx, esi, edx);
+        __ mov(edx, factory->one_pointer_filler_map());
+        // Fill the remaining fields with one pointer filler map.
+
+        __ bind(&no_inobject_slack_tracking);
+      }
+
+      __ InitializeFieldsWithFiller(ecx, edi, edx);
+
+      // Add the object tag to make the JSObject real, so that we can continue
+      // and jump into the continuation code at any time from now on.
+      // ebx: JSObject (untagged)
+      __ or_(ebx, Immediate(kHeapObjectTag));
+
+      // Continue with JSObject being successfully allocated
+      // ebx: JSObject (tagged)
+      __ jmp(&allocated);
     }
 
+    // Allocate the new receiver object using the runtime call.
+    // edx: original constructor
+    __ bind(&rt_call);
+    int offset = kPointerSize;
+
+    // Must restore esi (context) and edi (constructor) before calling
+    // runtime.
+    __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
+    __ mov(edi, Operand(esp, offset));
+    __ push(edi);  // argument 2/1: constructor function
+    __ push(edx);  // argument 3/2: original constructor
+    __ CallRuntime(Runtime::kNewObject, 2);
+    __ mov(ebx, eax);  // store result in ebx
+
+    // New object allocated.
+    // ebx: newly allocated object
+    __ bind(&allocated);
+
+    // Restore the parameters.
+    __ pop(edx);  // new.target
+    __ pop(edi);  // Constructor function.
+
+    // Retrieve smi-tagged arguments count from the stack.
+    __ mov(eax, Operand(esp, 0));
     __ SmiUntag(eax);
 
     // Push new.target onto the construct frame. This is stored just below the
     // receiver on the stack.
     __ push(edx);
 
-    if (create_implicit_receiver) {
-      // Push the allocated receiver to the stack. We need two copies
-      // because we may have to return the original one and the calling
-      // conventions dictate that the called function pops the receiver.
-      __ push(ebx);
-      __ push(ebx);
-    } else {
-      __ PushRoot(Heap::kTheHoleValueRootIndex);
-    }
+    // Push the allocated receiver to the stack. We need two copies
+    // because we may have to return the original one and the calling
+    // conventions dictate that the called function pops the receiver.
+    __ push(ebx);
+    __ push(ebx);
 
     // Set up pointer to last argument.
     __ lea(ebx, Operand(ebp, StandardFrameConstants::kCallerSPOffset));
@@ -345,45 +332,40 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       __ call(code, RelocInfo::CODE_TARGET);
     } else {
       ParameterCount actual(eax);
-      __ InvokeFunction(edi, edx, actual, CALL_FUNCTION,
-                        CheckDebugStepCallWrapper());
+      __ InvokeFunction(edi, actual, CALL_FUNCTION,
+                        NullCallWrapper());
     }
 
     // Store offset of return address for deoptimizer.
-    if (create_implicit_receiver && !is_api_function) {
+    if (!is_api_function) {
       masm->isolate()->heap()->SetConstructStubDeoptPCOffset(masm->pc_offset());
     }
 
     // Restore context from the frame.
     __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
 
-    if (create_implicit_receiver) {
-      // If the result is an object (in the ECMA sense), we should get rid
-      // of the receiver and use the result; see ECMA-262 section 13.2.2-7
-      // on page 74.
-      Label use_receiver, exit;
+    // If the result is an object (in the ECMA sense), we should get rid
+    // of the receiver and use the result; see ECMA-262 section 13.2.2-7
+    // on page 74.
+    Label use_receiver, exit;
 
-      // If the result is a smi, it is *not* an object in the ECMA sense.
-      __ JumpIfSmi(eax, &use_receiver);
+    // If the result is a smi, it is *not* an object in the ECMA sense.
+    __ JumpIfSmi(eax, &use_receiver);
 
-      // If the type of the result (stored in its map) is less than
-      // FIRST_SPEC_OBJECT_TYPE, it is not an object in the ECMA sense.
-      __ CmpObjectType(eax, FIRST_SPEC_OBJECT_TYPE, ecx);
-      __ j(above_equal, &exit);
+    // If the type of the result (stored in its map) is less than
+    // FIRST_SPEC_OBJECT_TYPE, it is not an object in the ECMA sense.
+    __ CmpObjectType(eax, FIRST_SPEC_OBJECT_TYPE, ecx);
+    __ j(above_equal, &exit);
 
-      // Throw away the result of the constructor invocation and use the
-      // on-stack receiver as the result.
-      __ bind(&use_receiver);
-      __ mov(eax, Operand(esp, 0));
+    // Throw away the result of the constructor invocation and use the
+    // on-stack receiver as the result.
+    __ bind(&use_receiver);
+    __ mov(eax, Operand(esp, 0));
 
-      // Restore the arguments count and leave the construct frame. The
-      // arguments
-      // count is stored below the reciever and the new.target.
-      __ bind(&exit);
-      __ mov(ebx, Operand(esp, 2 * kPointerSize));
-    } else {
-      __ mov(ebx, Operand(esp, kPointerSize));
-    }
+    // Restore the arguments count and leave the construct frame. The arguments
+    // count is stored below the reciever and the new.target.
+    __ bind(&exit);
+    __ mov(ebx, Operand(esp, 2 * kPointerSize));
 
     // Leave construct frame.
   }
@@ -393,32 +375,91 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
   __ pop(ecx);
   __ lea(esp, Operand(esp, ebx, times_2, 1 * kPointerSize));  // 1 ~ receiver
   __ push(ecx);
-  if (create_implicit_receiver) {
-    __ IncrementCounter(masm->isolate()->counters()->constructed_objects(), 1);
-  }
+  __ IncrementCounter(masm->isolate()->counters()->constructed_objects(), 1);
   __ ret(0);
 }
 
 
 void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, false, true);
+  Generate_JSConstructStubHelper(masm, false);
 }
 
 
 void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, true, true);
+  Generate_JSConstructStubHelper(masm, true);
 }
 
 
-void Builtins::Generate_JSBuiltinsConstructStub(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, false, false);
-}
+void Builtins::Generate_JSConstructStubForDerived(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- eax: number of arguments
+  //  -- edi: constructor function
+  //  -- ebx: allocation site or undefined
+  //  -- edx: original constructor
+  // -----------------------------------
 
+  {
+    FrameScope frame_scope(masm, StackFrame::CONSTRUCT);
 
-void Builtins::Generate_ConstructedNonConstructable(MacroAssembler* masm) {
-  FrameScope scope(masm, StackFrame::INTERNAL);
-  __ push(edi);
-  __ CallRuntime(Runtime::kThrowConstructedNonConstructable, 1);
+    // Preserve allocation site.
+    __ AssertUndefinedOrAllocationSite(ebx);
+    __ push(ebx);
+
+    // Preserve actual arguments count.
+    __ SmiTag(eax);
+    __ push(eax);
+    __ SmiUntag(eax);
+
+    // Push new.target.
+    __ push(edx);
+
+    // receiver is the hole.
+    __ push(Immediate(masm->isolate()->factory()->the_hole_value()));
+
+    // Set up pointer to last argument.
+    __ lea(ebx, Operand(ebp, StandardFrameConstants::kCallerSPOffset));
+
+    // Copy arguments and receiver to the expression stack.
+    Label loop, entry;
+    __ mov(ecx, eax);
+    __ jmp(&entry);
+    __ bind(&loop);
+    __ push(Operand(ebx, ecx, times_4, 0));
+    __ bind(&entry);
+    __ dec(ecx);
+    __ j(greater_equal, &loop);
+
+    // Handle step in.
+    Label skip_step_in;
+    ExternalReference debug_step_in_fp =
+        ExternalReference::debug_step_in_fp_address(masm->isolate());
+    __ cmp(Operand::StaticVariable(debug_step_in_fp), Immediate(0));
+    __ j(equal, &skip_step_in);
+
+    __ push(eax);
+    __ push(edi);
+    __ push(edi);
+    __ CallRuntime(Runtime::kHandleStepInForDerivedConstructors, 1);
+    __ pop(edi);
+    __ pop(eax);
+
+    __ bind(&skip_step_in);
+
+    // Invoke function.
+    ParameterCount actual(eax);
+    __ InvokeFunction(edi, actual, CALL_FUNCTION, NullCallWrapper());
+
+    // Restore context from the frame.
+    __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
+
+    // Get arguments count, skipping over new.target.
+    __ mov(ebx, Operand(esp, kPointerSize));
+  }
+
+  __ pop(ecx);  // Return address.
+  __ lea(esp, Operand(esp, ebx, times_2, 1 * kPointerSize));
+  __ push(ecx);
+  __ ret(0);
 }
 
 
@@ -537,7 +578,6 @@ void Builtins::Generate_JSConstructEntryTrampoline(MacroAssembler* masm) {
 //
 // The live registers are:
 //   o edi: the JS function object being called
-//   o edx: the new target
 //   o esi: our context
 //   o ebp: the caller's frame pointer
 //   o esp: stack pointer (pointing to return address)
@@ -555,7 +595,6 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ mov(ebp, esp);
   __ push(esi);  // Callee's context.
   __ push(edi);  // Callee's JS function.
-  __ push(edx);  // Callee's new target.
 
   // Get the bytecode array from the function object and load the pointer to the
   // first entry into edi (InterpreterBytecodeRegister).
@@ -607,6 +646,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   //  - Support profiler (specifically profiling_counter).
   //  - Call ProfileEntryHookStub when isolate has a function_entry_hook.
   //  - Allow simulator stop operations if FLAG_stop_at is set.
+  //  - Deal with sloppy mode functions which need to replace the
+  //    receiver with the global proxy when called as functions (without an
+  //    explicit receiver object).
   //  - Code aging of the BytecodeArray object.
 
   // Perform stack guard check.
@@ -616,9 +658,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
         ExternalReference::address_of_stack_limit(masm->isolate());
     __ cmp(esp, Operand::StaticVariable(stack_limit));
     __ j(above_equal, &ok);
-    __ push(kInterpreterBytecodeArrayRegister);
     __ CallRuntime(Runtime::kStackGuard, 0);
-    __ pop(kInterpreterBytecodeArrayRegister);
     __ bind(&ok);
   }
 
@@ -626,9 +666,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
   __ mov(kInterpreterRegisterFileRegister, ebp);
-  __ sub(kInterpreterRegisterFileRegister,
-         Immediate(2 * kPointerSize +
-                   StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ sub(
+      kInterpreterRegisterFileRegister,
+      Immediate(kPointerSize + StandardFrameConstants::kFixedFrameSizeFromFp));
   __ mov(kInterpreterBytecodeOffsetRegister,
          Immediate(BytecodeArray::kHeaderSize - kHeapObjectTag));
   // Since the dispatch table root might be set after builtins are generated,
@@ -727,7 +767,7 @@ void Builtins::Generate_InterpreterPushArgsAndCall(MacroAssembler* masm) {
 void Builtins::Generate_InterpreterPushArgsAndConstruct(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax : the number of arguments (not including the receiver)
-  //  -- edx : the new target
+  //  -- edx : the original constructor
   //  -- edi : the constructor
   //  -- ebx : the address of the first argument to be pushed. Subsequent
   //           arguments should be consecutive above this, in the same order as
@@ -770,14 +810,29 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
 }
 
 
+static void CallCompileOptimized(MacroAssembler* masm, bool concurrent) {
+  FrameScope scope(masm, StackFrame::INTERNAL);
+  // Push a copy of the function.
+  __ push(edi);
+  // Function is also the parameter to the runtime call.
+  __ push(edi);
+  // Whether to compile in a background thread.
+  __ Push(masm->isolate()->factory()->ToBoolean(concurrent));
+
+  __ CallRuntime(Runtime::kCompileOptimized, 2);
+  // Restore receiver.
+  __ pop(edi);
+}
+
+
 void Builtins::Generate_CompileOptimized(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileOptimized_NotConcurrent);
+  CallCompileOptimized(masm, false);
   GenerateTailCallToReturnedCode(masm);
 }
 
 
 void Builtins::Generate_CompileOptimizedConcurrent(MacroAssembler* masm) {
-  CallRuntimePassFunction(masm, Runtime::kCompileOptimized_Concurrent);
+  CallCompileOptimized(masm, true);
   GenerateTailCallToReturnedCode(masm);
 }
 
@@ -1103,7 +1158,7 @@ static void Generate_ConstructHelper(MacroAssembler* masm) {
 
   // Stack at entry:
   // esp     : return address
-  // esp[4]  : new target
+  // esp[4]  : original constructor (new.target)
   // esp[8]  : arguments
   // esp[16] : constructor
   {
@@ -1111,7 +1166,7 @@ static void Generate_ConstructHelper(MacroAssembler* masm) {
     // Stack frame:
     // ebp     : Old base pointer
     // ebp[4]  : return address
-    // ebp[8]  : new target
+    // ebp[8]  : original constructor (new.target)
     // ebp[12] : arguments
     // ebp[16] : constructor
     static const int kNewTargetOffset = kFPOnStackSize + kPCOnStackSize;
@@ -1158,11 +1213,11 @@ static void Generate_ConstructHelper(MacroAssembler* masm) {
     // Use undefined feedback vector
     __ LoadRoot(ebx, Heap::kUndefinedValueRootIndex);
     __ mov(edi, Operand(ebp, kFunctionOffset));
-    __ mov(edx, Operand(ebp, kNewTargetOffset));
+    __ mov(ecx, Operand(ebp, kNewTargetOffset));
 
     // Call the function.
-    __ Call(masm->isolate()->builtins()->Construct(),
-            RelocInfo::CONSTRUCT_CALL);
+    CallConstructStub stub(masm->isolate(), SUPER_CONSTRUCTOR_CALL);
+    __ call(stub.GetCode(), RelocInfo::CONSTRUCT_CALL);
 
     // Leave internal frame.
   }
@@ -1310,7 +1365,6 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax                 : number of arguments
   //  -- edi                 : constructor function
-  //  -- edx                 : new target
   //  -- esp[0]              : return address
   //  -- esp[(argc - n) * 4] : arg[n] (zero-based)
   //  -- esp[(argc + 1) * 4] : receiver
@@ -1336,36 +1390,31 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   {
     Label convert, done_convert;
     __ JumpIfSmi(ebx, &convert, Label::kNear);
-    __ CmpObjectType(ebx, FIRST_NONSTRING_TYPE, ecx);
+    __ CmpObjectType(ebx, FIRST_NONSTRING_TYPE, edx);
     __ j(below, &done_convert);
     __ bind(&convert);
     {
       FrameScope scope(masm, StackFrame::INTERNAL);
       ToStringStub stub(masm->isolate());
       __ Push(edi);
-      __ Push(edx);
       __ Move(eax, ebx);
       __ CallStub(&stub);
       __ Move(ebx, eax);
-      __ Pop(edx);
       __ Pop(edi);
     }
     __ bind(&done_convert);
   }
 
-  // 3. Check if new target and constructor differ.
-  Label new_object;
-  __ cmp(edx, edi);
-  __ j(not_equal, &new_object);
-
-  // 4. Allocate a JSValue wrapper for the string.
+  // 3. Allocate a JSValue wrapper for the string.
   {
     // ----------- S t a t e -------------
     //  -- ebx : the first argument
     //  -- edi : constructor function
-    //  -- edx : new target
     // -----------------------------------
-    __ Allocate(JSValue::kSize, eax, ecx, no_reg, &new_object, TAG_OBJECT);
+
+    Label allocate, done_allocate;
+    __ Allocate(JSValue::kSize, eax, ecx, no_reg, &allocate, TAG_OBJECT);
+    __ bind(&done_allocate);
 
     // Initialize the JSValue in eax.
     __ LoadGlobalFunctionInitialMap(edi, ecx);
@@ -1377,19 +1426,20 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ mov(FieldOperand(eax, JSValue::kValueOffset), ebx);
     STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
     __ Ret();
-  }
 
-  // 5. Fallback to the runtime to create new object.
-  __ bind(&new_object);
-  {
-    FrameScope scope(masm, StackFrame::INTERNAL);
-    __ Push(ebx);  // the first argument
-    __ Push(edi);  // constructor function
-    __ Push(edx);  // new target
-    __ CallRuntime(Runtime::kNewObject, 2);
-    __ Pop(FieldOperand(eax, JSValue::kValueOffset));
+    // Fallback to the runtime to allocate in new space.
+    __ bind(&allocate);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ Push(ebx);
+      __ Push(edi);
+      __ Push(Smi::FromInt(JSValue::kSize));
+      __ CallRuntime(Runtime::kAllocateInNewSpace, 1);
+      __ Pop(edi);
+      __ Pop(ebx);
+    }
+    __ jmp(&done_allocate);
   }
-  __ Ret();
 }
 
 
@@ -1398,24 +1448,24 @@ static void ArgumentsAdaptorStackCheck(MacroAssembler* masm,
   // ----------- S t a t e -------------
   //  -- eax : actual number of arguments
   //  -- ebx : expected number of arguments
-  //  -- edx : new target (passed through to callee)
+  //  -- edi : function (passed through to callee)
   // -----------------------------------
   // Check the stack for overflow. We are not trying to catch
   // interruptions (e.g. debug break and preemption) here, so the "real stack
   // limit" is checked.
   ExternalReference real_stack_limit =
       ExternalReference::address_of_real_stack_limit(masm->isolate());
-  __ mov(edi, Operand::StaticVariable(real_stack_limit));
+  __ mov(edx, Operand::StaticVariable(real_stack_limit));
   // Make ecx the space we have left. The stack might already be overflowed
   // here which will cause ecx to become negative.
   __ mov(ecx, esp);
-  __ sub(ecx, edi);
-  // Make edi the space we need for the array when it is unrolled onto the
+  __ sub(ecx, edx);
+  // Make edx the space we need for the array when it is unrolled onto the
   // stack.
-  __ mov(edi, ebx);
-  __ shl(edi, kPointerSizeLog2);
+  __ mov(edx, ebx);
+  __ shl(edx, kPointerSizeLog2);
   // Check if the arguments will overflow the stack.
-  __ cmp(ecx, edi);
+  __ cmp(ecx, edx);
   __ j(less_equal, stack_overflow);  // Signed comparison.
 }
 
@@ -1455,85 +1505,74 @@ static void LeaveArgumentsAdaptorFrame(MacroAssembler* masm) {
 
 
 // static
-void Builtins::Generate_CallFunction(MacroAssembler* masm,
-                                     ConvertReceiverMode mode) {
+void Builtins::Generate_CallFunction(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax : the number of arguments (not including the receiver)
   //  -- edi : the function to call (checked to be a JSFunction)
   // -----------------------------------
+
+  Label convert, convert_global_proxy, convert_to_object, done_convert;
   __ AssertFunction(edi);
-
-  // See ES6 section 9.2.1 [[Call]] ( thisArgument, argumentsList)
-  // Check that the function is not a "classConstructor".
-  Label class_constructor;
-  __ mov(edx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
-  __ test_b(FieldOperand(edx, SharedFunctionInfo::kFunctionKindByteOffset),
-            SharedFunctionInfo::kClassConstructorBitsWithinByte);
-  __ j(not_zero, &class_constructor);
-
+  // TODO(bmeurer): Throw a TypeError if function's [[FunctionKind]] internal
+  // slot is "classConstructor".
   // Enter the context of the function; ToObject has to run in the function
   // context, and we also need to take the global proxy from the function
   // context in case of conversion.
+  // See ES6 section 9.2.1 [[Call]] ( thisArgument, argumentsList)
   STATIC_ASSERT(SharedFunctionInfo::kNativeByteOffset ==
                 SharedFunctionInfo::kStrictModeByteOffset);
   __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
+  __ mov(edx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
   // We need to convert the receiver for non-native sloppy mode functions.
-  Label done_convert;
   __ test_b(FieldOperand(edx, SharedFunctionInfo::kNativeByteOffset),
             (1 << SharedFunctionInfo::kNativeBitWithinByte) |
                 (1 << SharedFunctionInfo::kStrictModeBitWithinByte));
   __ j(not_zero, &done_convert);
   {
+    __ mov(ecx, Operand(esp, eax, times_pointer_size, kPointerSize));
+
     // ----------- S t a t e -------------
     //  -- eax : the number of arguments (not including the receiver)
+    //  -- ecx : the receiver
     //  -- edx : the shared function info.
     //  -- edi : the function to call (checked to be a JSFunction)
     //  -- esi : the function context.
     // -----------------------------------
 
-    if (mode == ConvertReceiverMode::kNullOrUndefined) {
+    Label convert_receiver;
+    __ JumpIfSmi(ecx, &convert_to_object, Label::kNear);
+    STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
+    __ CmpObjectType(ecx, FIRST_JS_RECEIVER_TYPE, ebx);
+    __ j(above_equal, &done_convert);
+    __ JumpIfRoot(ecx, Heap::kUndefinedValueRootIndex, &convert_global_proxy,
+                  Label::kNear);
+    __ JumpIfNotRoot(ecx, Heap::kNullValueRootIndex, &convert_to_object,
+                     Label::kNear);
+    __ bind(&convert_global_proxy);
+    {
       // Patch receiver to global proxy.
       __ LoadGlobalProxy(ecx);
-    } else {
-      Label convert_to_object, convert_receiver;
-      __ mov(ecx, Operand(esp, eax, times_pointer_size, kPointerSize));
-      __ JumpIfSmi(ecx, &convert_to_object, Label::kNear);
-      STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
-      __ CmpObjectType(ecx, FIRST_JS_RECEIVER_TYPE, ebx);
-      __ j(above_equal, &done_convert);
-      if (mode != ConvertReceiverMode::kNotNullOrUndefined) {
-        Label convert_global_proxy;
-        __ JumpIfRoot(ecx, Heap::kUndefinedValueRootIndex,
-                      &convert_global_proxy, Label::kNear);
-        __ JumpIfNotRoot(ecx, Heap::kNullValueRootIndex, &convert_to_object,
-                         Label::kNear);
-        __ bind(&convert_global_proxy);
-        {
-          // Patch receiver to global proxy.
-          __ LoadGlobalProxy(ecx);
-        }
-        __ jmp(&convert_receiver);
-      }
-      __ bind(&convert_to_object);
-      {
-        // Convert receiver using ToObject.
-        // TODO(bmeurer): Inline the allocation here to avoid building the frame
-        // in the fast case? (fall back to AllocateInNewSpace?)
-        FrameScope scope(masm, StackFrame::INTERNAL);
-        __ SmiTag(eax);
-        __ Push(eax);
-        __ Push(edi);
-        __ mov(eax, ecx);
-        ToObjectStub stub(masm->isolate());
-        __ CallStub(&stub);
-        __ mov(ecx, eax);
-        __ Pop(edi);
-        __ Pop(eax);
-        __ SmiUntag(eax);
-      }
-      __ mov(edx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
-      __ bind(&convert_receiver);
     }
+    __ jmp(&convert_receiver);
+    __ bind(&convert_to_object);
+    {
+      // Convert receiver using ToObject.
+      // TODO(bmeurer): Inline the allocation here to avoid building the frame
+      // in the fast case? (fall back to AllocateInNewSpace?)
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ SmiTag(eax);
+      __ Push(eax);
+      __ Push(edi);
+      __ mov(eax, ecx);
+      ToObjectStub stub(masm->isolate());
+      __ CallStub(&stub);
+      __ mov(ecx, eax);
+      __ Pop(edi);
+      __ Pop(eax);
+      __ SmiUntag(eax);
+    }
+    __ mov(edx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
+    __ bind(&convert_receiver);
     __ mov(Operand(esp, eax, times_pointer_size, kPointerSize), ecx);
   }
   __ bind(&done_convert);
@@ -1550,20 +1589,13 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
   __ SmiUntag(ebx);
   ParameterCount actual(eax);
   ParameterCount expected(ebx);
-  __ InvokeFunctionCode(edi, no_reg, expected, actual, JUMP_FUNCTION,
-                        CheckDebugStepCallWrapper());
-  // The function is a "classConstructor", need to raise an exception.
-  __ bind(&class_constructor);
-  {
-    FrameScope frame(masm, StackFrame::INTERNAL);
-    __ push(edi);
-    __ CallRuntime(Runtime::kThrowConstructorNonCallableError, 1);
-  }
+  __ InvokeCode(FieldOperand(edi, JSFunction::kCodeEntryOffset), expected,
+                actual, JUMP_FUNCTION, NullCallWrapper());
 }
 
 
 // static
-void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
+void Builtins::Generate_Call(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax : the number of arguments (not including the receiver)
   //  -- edi : the target to call (can be any Object).
@@ -1573,7 +1605,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   __ JumpIfSmi(edi, &non_callable);
   __ bind(&non_smi);
   __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
-  __ j(equal, masm->isolate()->builtins()->CallFunction(mode),
+  __ j(equal, masm->isolate()->builtins()->CallFunction(),
        RelocInfo::CODE_TARGET);
   __ CmpInstanceType(ecx, JS_FUNCTION_PROXY_TYPE);
   __ j(not_equal, &non_function);
@@ -1594,9 +1626,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
   __ mov(Operand(esp, eax, times_pointer_size, kPointerSize), edi);
   // Let the "call_as_function_delegate" take care of the rest.
   __ LoadGlobalFunction(Context::CALL_AS_FUNCTION_DELEGATE_INDEX, edi);
-  __ Jump(masm->isolate()->builtins()->CallFunction(
-              ConvertReceiverMode::kNotNullOrUndefined),
-          RelocInfo::CODE_TARGET);
+  __ Jump(masm->isolate()->builtins()->CallFunction(), RelocInfo::CODE_TARGET);
 
   // 3. Call to something that is not callable.
   __ bind(&non_callable);
@@ -1612,7 +1642,7 @@ void Builtins::Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode) {
 void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax : the number of arguments (not including the receiver)
-  //  -- edx : the new target (checked to be a JSFunction)
+  //  -- edx : the original constructor (checked to be a JSFunction)
   //  -- edi : the constructor to call (checked to be a JSFunction)
   // -----------------------------------
   __ AssertFunction(edx);
@@ -1635,7 +1665,7 @@ void Builtins::Generate_ConstructFunction(MacroAssembler* masm) {
 void Builtins::Generate_ConstructProxy(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax : the number of arguments (not including the receiver)
-  //  -- edx : the new target (either the same as the constructor or
+  //  -- edx : the original constructor (either the same as the constructor or
   //           the JSFunction on which new was invoked initially)
   //  -- edi : the constructor to call (checked to be a JSFunctionProxy)
   // -----------------------------------
@@ -1650,26 +1680,25 @@ void Builtins::Generate_ConstructProxy(MacroAssembler* masm) {
 void Builtins::Generate_Construct(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax : the number of arguments (not including the receiver)
-  //  -- edx : the new target (either the same as the constructor or
+  //  -- edx : the original constructor (either the same as the constructor or
   //           the JSFunction on which new was invoked initially)
   //  -- edi : the constructor to call (can be any Object)
   // -----------------------------------
 
-  // Check if target is a Smi.
+  // Check if target has a [[Construct]] internal method.
   Label non_constructor;
   __ JumpIfSmi(edi, &non_constructor, Label::kNear);
+  __ mov(ecx, FieldOperand(edi, HeapObject::kMapOffset));
+  __ test_b(FieldOperand(ecx, Map::kBitFieldOffset), 1 << Map::kIsConstructor);
+  __ j(zero, &non_constructor, Label::kNear);
 
   // Dispatch based on instance type.
-  __ CmpObjectType(edi, JS_FUNCTION_TYPE, ecx);
+  __ CmpInstanceType(ecx, JS_FUNCTION_TYPE);
   __ j(equal, masm->isolate()->builtins()->ConstructFunction(),
        RelocInfo::CODE_TARGET);
   __ CmpInstanceType(ecx, JS_FUNCTION_PROXY_TYPE);
   __ j(equal, masm->isolate()->builtins()->ConstructProxy(),
        RelocInfo::CODE_TARGET);
-
-  // Check if target has a [[Construct]] internal method.
-  __ test_b(FieldOperand(ecx, Map::kBitFieldOffset), 1 << Map::kIsConstructor);
-  __ j(zero, &non_constructor, Label::kNear);
 
   // Called Construct on an exotic Object with a [[Construct]] internal method.
   {
@@ -1684,8 +1713,11 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   // Called Construct on an Object that doesn't have a [[Construct]] internal
   // method.
   __ bind(&non_constructor);
-  __ Jump(masm->isolate()->builtins()->ConstructedNonConstructable(),
-          RelocInfo::CODE_TARGET);
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ Push(edi);
+    __ CallRuntime(Runtime::kThrowCalledNonCallable, 1);
+  }
 }
 
 
@@ -1693,14 +1725,17 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax : actual number of arguments
   //  -- ebx : expected number of arguments
-  //  -- edx : new target (passed through to callee)
   //  -- edi : function (passed through to callee)
   // -----------------------------------
 
-  Label invoke, dont_adapt_arguments, stack_overflow;
+  Label invoke, dont_adapt_arguments;
   __ IncrementCounter(masm->isolate()->counters()->arguments_adaptors(), 1);
 
+  Label stack_overflow;
+  ArgumentsAdaptorStackCheck(masm, &stack_overflow);
+
   Label enough, too_few;
+  __ mov(edx, FieldOperand(edi, JSFunction::kCodeEntryOffset));
   __ cmp(eax, ebx);
   __ j(less, &too_few);
   __ cmp(ebx, SharedFunctionInfo::kDontAdaptArgumentsSentinel);
@@ -1709,7 +1744,6 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   {  // Enough parameters: Actual >= expected.
     __ bind(&enough);
     EnterArgumentsAdaptorFrame(masm);
-    ArgumentsAdaptorStackCheck(masm, &stack_overflow);
 
     // Copy receiver and all expected arguments.
     const int offset = StandardFrameConstants::kCallerSPOffset;
@@ -1751,7 +1785,6 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
 
     __ bind(&no_strong_error);
     EnterArgumentsAdaptorFrame(masm);
-    ArgumentsAdaptorStackCheck(masm, &stack_overflow);
 
     // Remember expected arguments in ecx.
     __ mov(ecx, ebx);
@@ -1790,10 +1823,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   // Restore function pointer.
   __ mov(edi, Operand(ebp, JavaScriptFrameConstants::kFunctionOffset));
   // eax : expected number of arguments
-  // edx : new target (passed through to callee)
   // edi : function (passed through to callee)
-  __ mov(ecx, FieldOperand(edi, JSFunction::kCodeEntryOffset));
-  __ call(ecx);
+  __ call(edx);
 
   // Store offset of return address for deoptimizer.
   masm->isolate()->heap()->SetArgumentsAdaptorDeoptPCOffset(masm->pc_offset());
@@ -1806,142 +1837,14 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
   // Dont adapt arguments.
   // -------------------------------------------
   __ bind(&dont_adapt_arguments);
-  __ mov(ecx, FieldOperand(edi, JSFunction::kCodeEntryOffset));
-  __ jmp(ecx);
+  __ jmp(edx);
 
   __ bind(&stack_overflow);
   {
     FrameScope frame(masm, StackFrame::MANUAL);
+    EnterArgumentsAdaptorFrame(masm);
     __ CallRuntime(Runtime::kThrowStackOverflow, 0);
     __ int3();
-  }
-}
-
-
-static void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
-                                    Register function_template_info,
-                                    Register scratch0, Register scratch1,
-                                    Label* receiver_check_failed) {
-  // If receiver is not an object, jump to receiver_check_failed.
-  __ CmpObjectType(receiver, FIRST_JS_OBJECT_TYPE, scratch0);
-  __ j(below, receiver_check_failed);
-
-  // If there is no signature, return the holder.
-  __ CompareRoot(FieldOperand(function_template_info,
-                              FunctionTemplateInfo::kSignatureOffset),
-                 Heap::kUndefinedValueRootIndex);
-  Label receiver_check_passed;
-  __ j(equal, &receiver_check_passed, Label::kNear);
-
-  // Walk the prototype chain.
-  Label prototype_loop_start;
-  __ bind(&prototype_loop_start);
-
-  // End if receiver is null or if it's a hidden prototype.
-  __ CompareRoot(receiver, Heap::kNullValueRootIndex);
-  __ j(equal, receiver_check_failed, Label::kNear);
-  __ mov(scratch0, FieldOperand(receiver, HeapObject::kMapOffset));
-  __ test(FieldOperand(scratch0, Map::kBitField3Offset),
-          Immediate(Map::IsHiddenPrototype::kMask));
-  __ j(not_zero, receiver_check_failed, Label::kNear);
-
-  // Get the constructor, if any.
-  __ GetMapConstructor(scratch0, scratch0, scratch1);
-  __ CmpInstanceType(scratch1, JS_FUNCTION_TYPE);
-  Label next_prototype;
-  __ j(not_equal, &next_prototype, Label::kNear);
-
-  // Get the constructor's signature.
-  __ mov(scratch0,
-         FieldOperand(scratch0, JSFunction::kSharedFunctionInfoOffset));
-  __ mov(scratch0,
-         FieldOperand(scratch0, SharedFunctionInfo::kFunctionDataOffset));
-
-  // Loop through the chain of inheriting function templates.
-  Label function_template_loop;
-  __ bind(&function_template_loop);
-
-  // If the signatures match, we have a compatible receiver.
-  __ cmp(scratch0, FieldOperand(function_template_info,
-                                FunctionTemplateInfo::kSignatureOffset));
-  __ j(equal, &receiver_check_passed, Label::kNear);
-
-  // If the current type is not a FunctionTemplateInfo, load the next prototype
-  // in the chain.
-  __ JumpIfSmi(scratch0, &next_prototype, Label::kNear);
-  __ CmpObjectType(scratch0, FUNCTION_TEMPLATE_INFO_TYPE, scratch1);
-  __ j(not_equal, &next_prototype, Label::kNear);
-
-  // Otherwise load the parent function template and iterate.
-  __ mov(scratch0,
-         FieldOperand(scratch0, FunctionTemplateInfo::kParentTemplateOffset));
-  __ jmp(&function_template_loop, Label::kNear);
-
-  // Load the next prototype and iterate.
-  __ bind(&next_prototype);
-  __ mov(receiver, FieldOperand(receiver, HeapObject::kMapOffset));
-  __ mov(receiver, FieldOperand(receiver, Map::kPrototypeOffset));
-  __ jmp(&prototype_loop_start, Label::kNear);
-
-  __ bind(&receiver_check_passed);
-}
-
-
-void Builtins::Generate_HandleFastApiCall(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- eax                : number of arguments (not including the receiver)
-  //  -- edi                : callee
-  //  -- esi                : context
-  //  -- esp[0]             : return address
-  //  -- esp[4]             : last argument
-  //  -- ...
-  //  -- esp[eax * 4]       : first argument
-  //  -- esp[(eax + 1) * 4] : receiver
-  // -----------------------------------
-
-  // Load the receiver.
-  Operand receiver_operand(esp, eax, times_pointer_size, kPCOnStackSize);
-  __ mov(ecx, receiver_operand);
-
-  // Update the receiver if this is a contextual call.
-  Label set_global_proxy, valid_receiver;
-  __ CompareRoot(ecx, Heap::kUndefinedValueRootIndex);
-  __ j(equal, &set_global_proxy);
-  __ bind(&valid_receiver);
-
-  // Load the FunctionTemplateInfo.
-  __ mov(ebx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
-  __ mov(ebx, FieldOperand(ebx, SharedFunctionInfo::kFunctionDataOffset));
-
-  // Do the compatible receiver check.
-  Label receiver_check_failed;
-  __ Push(eax);
-  CompatibleReceiverCheck(masm, ecx, ebx, edx, eax, &receiver_check_failed);
-  __ Pop(eax);
-  // Get the callback offset from the FunctionTemplateInfo, and jump to the
-  // beginning of the code.
-  __ mov(edx, FieldOperand(ebx, FunctionTemplateInfo::kCallCodeOffset));
-  __ mov(edx, FieldOperand(edx, CallHandlerInfo::kFastHandlerOffset));
-  __ add(edx, Immediate(Code::kHeaderSize - kHeapObjectTag));
-  __ jmp(edx);
-
-  __ bind(&set_global_proxy);
-  __ mov(ecx, GlobalObjectOperand());
-  __ mov(ecx, FieldOperand(ecx, JSGlobalObject::kGlobalProxyOffset));
-  __ mov(receiver_operand, ecx);
-  __ jmp(&valid_receiver, Label::kNear);
-
-  // Compatible receiver check failed: pop return address, arguments and
-  // receiver and throw an Illegal Invocation exception.
-  __ bind(&receiver_check_failed);
-  __ Pop(eax);
-  __ PopReturnAddressTo(ebx);
-  __ lea(eax, Operand(eax, times_pointer_size, 1 * kPointerSize));
-  __ add(esp, eax);
-  __ PushReturnAddressFrom(ebx);
-  {
-    FrameScope scope(masm, StackFrame::INTERNAL);
-    __ TailCallRuntime(Runtime::kThrowIllegalInvocation, 0, 1);
   }
 }
 

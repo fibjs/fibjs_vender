@@ -163,9 +163,7 @@ bool Bytecodes::IsJump(Bytecode bytecode) {
   return bytecode == Bytecode::kJump || bytecode == Bytecode::kJumpIfTrue ||
          bytecode == Bytecode::kJumpIfFalse ||
          bytecode == Bytecode::kJumpIfToBooleanTrue ||
-         bytecode == Bytecode::kJumpIfToBooleanFalse ||
-         bytecode == Bytecode::kJumpIfNull ||
-         bytecode == Bytecode::kJumpIfUndefined;
+         bytecode == Bytecode::kJumpIfToBooleanFalse;
 }
 
 
@@ -175,9 +173,19 @@ bool Bytecodes::IsJumpConstant(Bytecode bytecode) {
          bytecode == Bytecode::kJumpIfTrueConstant ||
          bytecode == Bytecode::kJumpIfFalseConstant ||
          bytecode == Bytecode::kJumpIfToBooleanTrueConstant ||
-         bytecode == Bytecode::kJumpIfToBooleanFalseConstant ||
-         bytecode == Bytecode::kJumpIfNull ||
-         bytecode == Bytecode::kJumpIfUndefinedConstant;
+         bytecode == Bytecode::kJumpIfToBooleanFalseConstant;
+}
+
+
+// static
+uint16_t Bytecodes::ShortOperandFromBytes(const uint8_t* bytes) {
+  return *reinterpret_cast<const uint16_t*>(bytes);
+}
+
+
+// static
+void Bytecodes::ShortOperandToBytes(uint16_t operand, uint8_t* bytes_out) {
+  *reinterpret_cast<uint16_t*>(bytes_out) = operand;
 }
 
 
@@ -209,27 +217,22 @@ std::ostream& Bytecodes::Decode(std::ostream& os, const uint8_t* bytecode_start,
       case interpreter::OperandType::kCount8:
         os << "#" << static_cast<unsigned int>(*operand_start);
         break;
-      case interpreter::OperandType::kCount16:
-        os << '#' << ReadUnalignedUInt16(operand_start);
-        break;
       case interpreter::OperandType::kIdx8:
         os << "[" << static_cast<unsigned int>(*operand_start) << "]";
         break;
-      case interpreter::OperandType::kIdx16:
-        os << "[" << ReadUnalignedUInt16(operand_start) << "]";
+      case interpreter::OperandType::kIdx16: {
+        os << "[" << Bytecodes::ShortOperandFromBytes(operand_start) << "]";
         break;
+      }
       case interpreter::OperandType::kImm8:
         os << "#" << static_cast<int>(static_cast<int8_t>(*operand_start));
         break;
-      case interpreter::OperandType::kReg8:
-      case interpreter::OperandType::kMaybeReg8: {
+      case interpreter::OperandType::kReg8: {
         Register reg = Register::FromOperand(*operand_start);
         if (reg.is_function_context()) {
           os << "<context>";
         } else if (reg.is_function_closure()) {
           os << "<closure>";
-        } else if (reg.is_new_target()) {
-          os << "<new.target>";
         } else if (reg.is_parameter()) {
           int parameter_index = reg.ToParameterIndex(parameter_count);
           if (parameter_index == 0) {
@@ -275,8 +278,6 @@ static const int kFunctionClosureRegisterIndex =
     -InterpreterFrameConstants::kFunctionFromRegisterPointer / kPointerSize;
 static const int kFunctionContextRegisterIndex =
     -InterpreterFrameConstants::kContextFromRegisterPointer / kPointerSize;
-static const int kNewTargetRegisterIndex =
-    -InterpreterFrameConstants::kNewTargetFromRegisterPointer / kPointerSize;
 
 
 // Registers occupy range 0-127 in 8-bit value leaving 128 unused values.
@@ -319,14 +320,6 @@ Register Register::function_context() {
 
 bool Register::is_function_context() const {
   return index() == kFunctionContextRegisterIndex;
-}
-
-
-Register Register::new_target() { return Register(kNewTargetRegisterIndex); }
-
-
-bool Register::is_new_target() const {
-  return index() == kNewTargetRegisterIndex;
 }
 
 

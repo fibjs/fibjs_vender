@@ -194,22 +194,6 @@ class UseInterval final : public ZoneObject {
     return start_ <= point && point < end_;
   }
 
-  int FirstInstructionIndex() const {
-    int ret = start_.ToInstructionIndex();
-    if (start_.IsInstructionPosition() && start_.IsEnd()) {
-      ++ret;
-    }
-    return ret;
-  }
-
-  int LastInstructionIndex() const {
-    int ret = end_.ToInstructionIndex();
-    if (end_.IsGapPosition() || end_.IsStart()) {
-      --ret;
-    }
-    return ret;
-  }
-
  private:
   LifetimePosition start_;
   LifetimePosition end_;
@@ -548,16 +532,16 @@ class TopLevelLiveRange final : public LiveRange {
 
   AllocatedOperand GetSpillRangeOperand() const;
 
-  void RecordSpillLocation(Zone* zone, int gap_index,
-                           InstructionOperand* operand);
+  void SpillAtDefinition(Zone* zone, int gap_index,
+                         InstructionOperand* operand);
   void SetSpillOperand(InstructionOperand* operand);
   void SetSpillStartIndex(int start) {
     spill_start_index_ = Min(start, spill_start_index_);
   }
 
-  void CommitSpillMoves(InstructionSequence* sequence,
-                        const InstructionOperand& operand,
-                        bool might_be_duplicated);
+  void CommitSpillsAtDefinition(InstructionSequence* sequence,
+                                const InstructionOperand& operand,
+                                bool might_be_duplicated);
 
   // If all the children of this range are spilled in deferred blocks, and if
   // for any non-spilled child with a use position requiring a slot, that range
@@ -566,12 +550,6 @@ class TopLevelLiveRange final : public LiveRange {
   // and instead let the LiveRangeConnector perform the spills within the
   // deferred blocks. If so, we insert here spills for non-spilled ranges
   // with slot use positions.
-  void MarkSpilledInDeferredBlock() {
-    spill_start_index_ = -1;
-    spilled_in_deferred_blocks_ = true;
-    spill_move_insertion_locations_ = nullptr;
-  }
-
   bool TryCommitSpillInDeferredBlock(InstructionSequence* code,
                                      const InstructionOperand& spill_operand);
 
@@ -584,25 +562,19 @@ class TopLevelLiveRange final : public LiveRange {
   void UpdateSpillRangePostMerge(TopLevelLiveRange* merged);
   int vreg() const { return vreg_; }
 
-#if DEBUG
-  int debug_virt_reg() const;
-#endif
-
   int GetNextChildId() {
     return IsSplinter() ? splintered_from()->GetNextChildId()
                         : ++last_child_id_;
   }
 
-  int GetChildCount() const { return last_child_id_ + 1; }
-
   bool IsSpilledOnlyInDeferredBlocks() const {
     return spilled_in_deferred_blocks_;
   }
 
-  struct SpillMoveInsertionList;
+  struct SpillAtDefinitionList;
 
-  SpillMoveInsertionList* spill_move_insertion_locations() const {
-    return spill_move_insertion_locations_;
+  SpillAtDefinitionList* spills_at_definition() const {
+    return spills_at_definition_;
   }
   void set_last_child(LiveRange* range) { last_child_ = range; }
   LiveRange* last_child() const { return last_child_; }
@@ -616,9 +588,6 @@ class TopLevelLiveRange final : public LiveRange {
     splinter->set_spill_type(spill_type());
     splinter->SetSplinteredFrom(this);
   }
-
-  void MarkHasPreassignedSlot() { has_preassigned_slot_ = true; }
-  bool has_preassigned_slot() const { return has_preassigned_slot_; }
 
  private:
   void SetSplinteredFrom(TopLevelLiveRange* splinter_parent);
@@ -636,7 +605,7 @@ class TopLevelLiveRange final : public LiveRange {
     InstructionOperand* spill_operand_;
     SpillRange* spill_range_;
   };
-  SpillMoveInsertionList* spill_move_insertion_locations_;
+  SpillAtDefinitionList* spills_at_definition_;
   // TODO(mtrofin): generalize spilling after definition, currently specialized
   // just for spill in a single deferred block.
   bool spilled_in_deferred_blocks_;
@@ -644,7 +613,6 @@ class TopLevelLiveRange final : public LiveRange {
   LiveRange* last_child_;
   UsePosition* last_pos_;
   TopLevelLiveRange* splinter_;
-  bool has_preassigned_slot_;
 
   DISALLOW_COPY_AND_ASSIGN(TopLevelLiveRange);
 };
@@ -792,7 +760,6 @@ class RegisterAllocationData final : public ZoneObject {
   }
 
   bool ExistsUseWithoutDefinition();
-  bool RangesDefinedInDeferredStayInDeferred();
 
   void MarkAllocated(RegisterKind kind, int index);
 
@@ -942,15 +909,7 @@ class RegisterAllocator : public ZoneObject {
     return allocatable_register_codes_[allocatable_index];
   }
 
-  // TODO(mtrofin): explain why splitting in gap START is always OK.
-  LifetimePosition GetSplitPositionForInstruction(const LiveRange* range,
-                                                  int instruction_index);
-
   Zone* allocation_zone() const { return data()->allocation_zone(); }
-
-  // Find the optimal split for ranges defined by a memory operand, e.g.
-  // constants or function parameters passed on the stack.
-  void SplitAndSpillRangesDefinedByMemoryOperand(bool operands_only);
 
   // Split the given range at the given position.
   // If range starts at or after the given position then the
@@ -959,11 +918,6 @@ class RegisterAllocator : public ZoneObject {
   // all uses from the original range that follow pos. Uses at pos will
   // still be owned by the original range after splitting.
   LiveRange* SplitRangeAt(LiveRange* range, LifetimePosition pos);
-
-  bool CanProcessRange(LiveRange* range) const {
-    return range != nullptr && !range->IsEmpty() && range->kind() == mode();
-  }
-
 
   // Split the given range in a position from the interval [start, end].
   LiveRange* SplitBetween(LiveRange* range, LifetimePosition start,

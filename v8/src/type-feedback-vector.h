@@ -375,9 +375,9 @@ class FeedbackNexus {
   inline Object* GetFeedback() const;
   inline Object* GetFeedbackExtra() const;
 
+ protected:
   inline Isolate* GetIsolate() const;
 
- protected:
   inline void SetFeedback(Object* feedback,
                           WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
   inline void SetFeedbackExtra(Object* feedback_extra,
@@ -399,7 +399,7 @@ class FeedbackNexus {
 };
 
 
-class CallICNexus final : public FeedbackNexus {
+class CallICNexus : public FeedbackNexus {
  public:
   // Monomorphic call ics store call counts. Platform code needs to increment
   // the count appropriately (ie, by 2).
@@ -418,19 +418,17 @@ class CallICNexus final : public FeedbackNexus {
 
   void ConfigureMonomorphicArray();
   void ConfigureMonomorphic(Handle<JSFunction> function);
-  void ConfigureMegamorphic() final;
-  void ConfigureMegamorphic(int call_count);
 
-  InlineCacheState StateFromFeedback() const final;
+  InlineCacheState StateFromFeedback() const override;
 
-  int ExtractMaps(MapHandleList* maps) const final {
+  int ExtractMaps(MapHandleList* maps) const override {
     // CallICs don't record map feedback.
     return 0;
   }
-  MaybeHandle<Code> FindHandlerForMap(Handle<Map> map) const final {
+  MaybeHandle<Code> FindHandlerForMap(Handle<Map> map) const override {
     return MaybeHandle<Code>();
   }
-  bool FindHandlers(CodeHandleList* code_list, int length = -1) const final {
+  bool FindHandlers(CodeHandleList* code_list, int length = -1) const override {
     return length == 0;
   }
 

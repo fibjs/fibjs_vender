@@ -89,19 +89,22 @@ class CodeGenerator {
 // Results of the library implementation of transcendental functions may differ
 // from the one we use in our generated code.  Therefore we use the same
 // generated code both in runtime and compiled code.
-typedef double (*UnaryMathFunctionWithIsolate)(double x, Isolate* isolate);
+typedef double (*UnaryMathFunction)(double x);
 
-UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate);
-UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate);
+UnaryMathFunction CreateExpFunction();
+UnaryMathFunction CreateSqrtFunction();
 
 
 double modulo(double x, double y);
 
 // Custom implementation of math functions.
-double fast_exp(double input, Isolate* isolate);
-double fast_sqrt(double input, Isolate* isolate);
-void lazily_initialize_fast_exp(Isolate* isolate);
-void lazily_initialize_fast_sqrt(Isolate* isolate);
+double fast_exp(double input);
+double fast_sqrt(double input);
+#ifdef _WIN64
+void init_modulo_function();
+#endif
+void lazily_initialize_fast_exp();
+void init_fast_sqrt_function();
 
 
 class ElementsTransitionGenerator : public AllStatic {
@@ -142,7 +145,7 @@ static const int kNumberDictionaryProbes = 4;
 
 class CodeAgingHelper {
  public:
-  explicit CodeAgingHelper(Isolate* isolate);
+  CodeAgingHelper();
 
   uint32_t young_sequence_length() const { return young_sequence_.length(); }
   bool IsYoung(byte* candidate) const {

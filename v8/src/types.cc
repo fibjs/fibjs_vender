@@ -173,7 +173,7 @@ TypeImpl<Config>::BitsetType::Lub(TypeImpl* type) {
   if (type->IsRange()) return type->AsRange()->Lub();
   if (type->IsContext()) return kInternal & kTaggedPointer;
   if (type->IsArray()) return kOtherObject;
-  if (type->IsFunction()) return kFunction;
+  if (type->IsFunction()) return kOtherObject;  // TODO(rossberg): kFunction
   UNREACHABLE();
   return kNone;
 }
@@ -231,6 +231,7 @@ TypeImpl<Config>::BitsetType::Lub(i::Map* map) {
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
     case JS_GENERATOR_OBJECT_TYPE:
     case JS_MODULE_TYPE:
+    case JS_BUILTINS_OBJECT_TYPE:
     case JS_GLOBAL_OBJECT_TYPE:
     case JS_GLOBAL_PROXY_TYPE:
     case JS_ARRAY_BUFFER_TYPE:
@@ -244,12 +245,10 @@ TypeImpl<Config>::BitsetType::Lub(i::Map* map) {
     case JS_ITERATOR_RESULT_TYPE:
     case JS_WEAK_MAP_TYPE:
     case JS_WEAK_SET_TYPE:
-    case JS_PROMISE_TYPE:
       if (map->is_undetectable()) return kUndetectable;
       return kOtherObject;
     case JS_FUNCTION_TYPE:
-      if (map->is_undetectable()) return kUndetectable;
-      return kFunction;
+      return kOtherObject;  // TODO(rossberg): there should be a Function type.
     case JS_REGEXP_TYPE:
       return kOtherObject;  // TODO(rossberg): there should be a RegExp type.
     case JS_PROXY_TYPE:
@@ -266,7 +265,6 @@ TypeImpl<Config>::BitsetType::Lub(i::Map* map) {
       // We ought to find a cleaner solution for compiling stubs parameterised
       // over type or class variables, esp ones with bounds...
       return kDetectable & kTaggedPointer;
-    case ALLOCATION_SITE_TYPE:
     case DECLARED_ACCESSOR_INFO_TYPE:
     case EXECUTABLE_ACCESSOR_INFO_TYPE:
     case SHARED_FUNCTION_INFO_TYPE:
@@ -299,6 +297,7 @@ TypeImpl<Config>::BitsetType::Lub(i::Map* map) {
     case OBJECT_TEMPLATE_INFO_TYPE:
     case SIGNATURE_INFO_TYPE:
     case TYPE_SWITCH_INFO_TYPE:
+    case ALLOCATION_SITE_TYPE:
     case ALLOCATION_MEMENTO_TYPE:
     case CODE_CACHE_TYPE:
     case POLYMORPHIC_CODE_CACHE_TYPE:

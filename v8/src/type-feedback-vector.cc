@@ -13,13 +13,6 @@
 namespace v8 {
 namespace internal {
 
-
-static bool IsPropertyNameFeedback(Object* feedback) {
-  return feedback->IsString() ||
-         (feedback->IsSymbol() && !Symbol::cast(feedback)->is_private());
-}
-
-
 std::ostream& operator<<(std::ostream& os, FeedbackVectorSlotKind kind) {
   return os << TypeFeedbackMetadata::Kind2String(kind);
 }
@@ -233,11 +226,13 @@ void TypeFeedbackVector::ClearSlotsImpl(SharedFunctionInfo* shared,
           break;
         }
         case FeedbackVectorSlotKind::STORE_IC: {
+          DCHECK(FLAG_vector_stores);
           StoreICNexus nexus(this, slot);
           nexus.Clear(shared->code());
           break;
         }
         case FeedbackVectorSlotKind::KEYED_STORE_IC: {
+          DCHECK(FLAG_vector_stores);
           KeyedStoreICNexus nexus(this, slot);
           nexus.Clear(shared->code());
           break;
@@ -267,6 +262,7 @@ void TypeFeedbackVector::ClearSlotsImpl(SharedFunctionInfo* shared,
 
 // static
 void TypeFeedbackVector::ClearAllKeyedStoreICs(Isolate* isolate) {
+  DCHECK(FLAG_vector_stores);
   SharedFunctionInfo::Iterator iterator(isolate);
   SharedFunctionInfo* shared;
   while ((shared = iterator.Next())) {
@@ -290,6 +286,7 @@ void TypeFeedbackVector::ClearKeyedStoreICs(SharedFunctionInfo* shared) {
     if (kind != FeedbackVectorSlotKind::KEYED_STORE_IC) continue;
     Object* obj = Get(slot);
     if (obj != uninitialized_sentinel) {
+      DCHECK(FLAG_vector_stores);
       KeyedStoreICNexus nexus(this, slot);
       nexus.Clear(host);
     }
@@ -516,19 +513,6 @@ void CallICNexus::ConfigureMonomorphic(Handle<JSFunction> function) {
 }
 
 
-void CallICNexus::ConfigureMegamorphic() {
-  FeedbackNexus::ConfigureMegamorphic();
-}
-
-
-void CallICNexus::ConfigureMegamorphic(int call_count) {
-  SetFeedback(*TypeFeedbackVector::MegamorphicSentinel(GetIsolate()),
-              SKIP_WRITE_BARRIER);
-  SetFeedbackExtra(Smi::FromInt(call_count * kCallCountIncrement),
-                   SKIP_WRITE_BARRIER);
-}
-
-
 void LoadICNexus::ConfigureMonomorphic(Handle<Map> receiver_map,
                                        Handle<Code> handler) {
   Handle<WeakCell> cell = Map::WeakCellForMap(receiver_map);
@@ -666,10 +650,9 @@ void KeyedStoreICNexus::ConfigurePolymorphic(MapHandleList* maps,
 int FeedbackNexus::ExtractMaps(MapHandleList* maps) const {
   Isolate* isolate = GetIsolate();
   Object* feedback = GetFeedback();
-  bool is_named_feedback = IsPropertyNameFeedback(feedback);
-  if (feedback->IsFixedArray() || is_named_feedback) {
+  if (feedback->IsFixedArray() || feedback->IsString()) {
     int found = 0;
-    if (is_named_feedback) {
+    if (feedback->IsString()) {
       feedback = GetFeedbackExtra();
     }
     FixedArray* array = FixedArray::cast(feedback);
@@ -704,9 +687,8 @@ int FeedbackNexus::ExtractMaps(MapHandleList* maps) const {
 
 MaybeHandle<Code> FeedbackNexus::FindHandlerForMap(Handle<Map> map) const {
   Object* feedback = GetFeedback();
-  bool is_named_feedback = IsPropertyNameFeedback(feedback);
-  if (feedback->IsFixedArray() || is_named_feedback) {
-    if (is_named_feedback) {
+  if (feedback->IsFixedArray() || feedback->IsString()) {
+    if (feedback->IsString()) {
       feedback = GetFeedbackExtra();
     }
     FixedArray* array = FixedArray::cast(feedback);
@@ -743,9 +725,8 @@ MaybeHandle<Code> FeedbackNexus::FindHandlerForMap(Handle<Map> map) const {
 bool FeedbackNexus::FindHandlers(CodeHandleList* code_list, int length) const {
   Object* feedback = GetFeedback();
   int count = 0;
-  bool is_named_feedback = IsPropertyNameFeedback(feedback);
-  if (feedback->IsFixedArray() || is_named_feedback) {
-    if (is_named_feedback) {
+  if (feedback->IsFixedArray() || feedback->IsString()) {
+    if (feedback->IsString()) {
       feedback = GetFeedbackExtra();
     }
     FixedArray* array = FixedArray::cast(feedback);
@@ -789,7 +770,7 @@ void KeyedLoadICNexus::Clear(Code* host) {
 
 Name* KeyedLoadICNexus::FindFirstName() const {
   Object* feedback = GetFeedback();
-  if (IsPropertyNameFeedback(feedback)) {
+  if (feedback->IsString()) {
     return Name::cast(feedback);
   }
   return NULL;
@@ -798,7 +779,7 @@ Name* KeyedLoadICNexus::FindFirstName() const {
 
 Name* KeyedStoreICNexus::FindFirstName() const {
   Object* feedback = GetFeedback();
-  if (IsPropertyNameFeedback(feedback)) {
+  if (feedback->IsString()) {
     return Name::cast(feedback);
   }
   return NULL;

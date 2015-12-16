@@ -14,8 +14,8 @@ Type* SmiType(Zone* zone) {
 }
 
 
-Type* UntaggedIntegral32(Zone* zone) {
-  return Type::Intersect(Type::Signed32(), Type::UntaggedIntegral32(), zone);
+Type* UntaggedSigned32(Zone* zone) {
+  return Type::Intersect(Type::Signed32(), Type::UntaggedSigned32(), zone);
 }
 
 
@@ -72,12 +72,6 @@ const char* CallInterfaceDescriptor::DebugName(Isolate* isolate) const {
       break;
   }
   return "";
-}
-
-
-void AllocateMutableHeapNumberDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  data->InitializePlatformSpecific(0, nullptr, nullptr);
 }
 
 
@@ -150,7 +144,7 @@ LoadGlobalViaContextDescriptor::BuildCallInterfaceDescriptorFunctionType(
   Zone* zone = isolate->interface_descriptor_zone();
   Type::FunctionType* function =
       Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 1, zone);
-  function->InitParameter(0, UntaggedIntegral32(zone));
+  function->InitParameter(0, UntaggedSigned32(zone));
   return function;
 }
 
@@ -168,7 +162,7 @@ StoreGlobalViaContextDescriptor::BuildCallInterfaceDescriptorFunctionType(
   Zone* zone = isolate->interface_descriptor_zone();
   Type::FunctionType* function =
       Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 2, zone);
-  function->InitParameter(0, UntaggedIntegral32(zone));
+  function->InitParameter(0, UntaggedSigned32(zone));
   function->InitParameter(1, AnyTagged(zone));
   return function;
 }
@@ -377,20 +371,6 @@ void GrowArrayElementsDescriptor::InitializePlatformSpecific(
 
 
 Type::FunctionType*
-FastCloneRegExpDescriptor::BuildCallInterfaceDescriptorFunctionType(
-    Isolate* isolate, int paramater_count) {
-  Zone* zone = isolate->interface_descriptor_zone();
-  Type::FunctionType* function =
-      Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 4, zone);
-  function->InitParameter(0, AnyTagged(zone));  // closure
-  function->InitParameter(1, SmiType(zone));    // literal_index
-  function->InitParameter(2, AnyTagged(zone));  // pattern
-  function->InitParameter(3, AnyTagged(zone));  // flags
-  return function;
-}
-
-
-Type::FunctionType*
 FastCloneShallowArrayDescriptor::BuildCallInterfaceDescriptorFunctionType(
     Isolate* isolate, int paramater_count) {
   Zone* zone = isolate->interface_descriptor_zone();
@@ -434,21 +414,9 @@ CallTrampolineDescriptor::BuildCallInterfaceDescriptorFunctionType(
   Zone* zone = isolate->interface_descriptor_zone();
   Type::FunctionType* function =
       Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 2, zone);
-  function->InitParameter(0, AnyTagged(zone));           // target
-  function->InitParameter(1, UntaggedIntegral32(zone));  // actual #arguments
-  return function;
-}
-
-
-Type::FunctionType*
-ConstructTrampolineDescriptor::BuildCallInterfaceDescriptorFunctionType(
-    Isolate* isolate, int paramater_count) {
-  Zone* zone = isolate->interface_descriptor_zone();
-  Type::FunctionType* function =
-      Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 3, zone);
-  function->InitParameter(0, AnyTagged(zone));           // target
-  function->InitParameter(1, AnyTagged(zone));           // new.target
-  function->InitParameter(2, UntaggedIntegral32(zone));  // actual #arguments
+  function->InitParameter(0, AnyTagged(zone));  // target
+  function->InitParameter(
+      1, UntaggedSigned32(zone));  // actual number of arguments
   return function;
 }
 
@@ -486,7 +454,7 @@ ArrayConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
       Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 3, zone);
   function->InitParameter(0, Type::Receiver());  // JSFunction
   function->InitParameter(1, AnyTagged(zone));
-  function->InitParameter(2, UntaggedIntegral32(zone));
+  function->InitParameter(2, UntaggedSigned32(zone));
   return function;
 }
 
@@ -498,7 +466,7 @@ InternalArrayConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
   Type::FunctionType* function =
       Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 2, zone);
   function->InitParameter(0, Type::Receiver());  // JSFunction
-  function->InitParameter(1, UntaggedIntegral32(zone));
+  function->InitParameter(1, UntaggedSigned32(zone));
   return function;
 }
 
@@ -508,11 +476,13 @@ ArgumentAdaptorDescriptor::BuildCallInterfaceDescriptorFunctionType(
     Isolate* isolate, int paramater_count) {
   Zone* zone = isolate->interface_descriptor_zone();
   Type::FunctionType* function =
-      Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 4, zone);
-  function->InitParameter(0, Type::Receiver());          // JSFunction
-  function->InitParameter(1, AnyTagged(zone));           // the new target
-  function->InitParameter(2, UntaggedIntegral32(zone));  // actual #arguments
-  function->InitParameter(3, UntaggedIntegral32(zone));  // expected #arguments
+      Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 3, zone);
+  function->InitParameter(0, Type::Receiver());    // JSFunction
+  function->InitParameter(
+      1, UntaggedSigned32(zone));  // actual number of arguments
+  function->InitParameter(
+      2,
+      UntaggedSigned32(zone));  // expected number of arguments
   return function;
 }
 
@@ -523,11 +493,12 @@ ApiFunctionDescriptor::BuildCallInterfaceDescriptorFunctionType(
   Zone* zone = isolate->interface_descriptor_zone();
   Type::FunctionType* function =
       Type::FunctionType::New(AnyTagged(zone), Type::Undefined(), 5, zone);
-  function->InitParameter(0, AnyTagged(zone));           // callee
-  function->InitParameter(1, AnyTagged(zone));           // call_data
-  function->InitParameter(2, AnyTagged(zone));           // holder
-  function->InitParameter(3, ExternalPointer(zone));     // api_function_address
-  function->InitParameter(4, UntaggedIntegral32(zone));  // actual #arguments
+  function->InitParameter(0, AnyTagged(zone));        // callee
+  function->InitParameter(1, AnyTagged(zone));        // call_data
+  function->InitParameter(2, AnyTagged(zone));        // holder
+  function->InitParameter(3, ExternalPointer(zone));  // api_function_address
+  function->InitParameter(
+      4, UntaggedSigned32(zone));  // actual number of arguments
   return function;
 }
 

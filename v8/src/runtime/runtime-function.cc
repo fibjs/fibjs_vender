@@ -47,41 +47,12 @@ RUNTIME_FUNCTION(Runtime_FunctionNameShouldPrintAsAnonymous) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_CompleteFunctionConstruction) {
+RUNTIME_FUNCTION(Runtime_FunctionMarkNameShouldPrintAsAnonymous) {
   SealHandleScope shs(isolate);
-  DCHECK(args.length() == 3);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, func, 0);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, constructor, 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, unchecked_new_target, 2);
-  func->shared()->set_name_should_print_as_anonymous(true);
-
-  // If new.target is equal to |constructor| then the function |func| created
-  // is already correctly setup and nothing else should be done here.
-  // But if new.target is not equal to |constructor| then we are have a
-  // Function builtin subclassing case and therefore the function |func|
-  // has wrong initial map. To fix that we create a new function object with
-  // correct initial map.
-  if (unchecked_new_target->IsUndefined() ||
-      *constructor == *unchecked_new_target) {
-    return *func;
-  }
-
-  // Create a new JSFunction object with correct initial map.
-  HandleScope handle_scope(isolate);
-  Handle<JSFunction> new_target =
-      Handle<JSFunction>::cast(unchecked_new_target);
-
-  DCHECK(constructor->has_initial_map());
-  Handle<Map> initial_map =
-      JSFunction::EnsureDerivedHasInitialMap(new_target, constructor);
-
-  Handle<SharedFunctionInfo> shared_info(func->shared(), isolate);
-  Handle<Context> context(func->context(), isolate);
-  Handle<JSFunction> result =
-      isolate->factory()->NewFunctionFromSharedFunctionInfo(
-          initial_map, shared_info, context, NOT_TENURED);
-  DCHECK_EQ(func->IsConstructor(), result->IsConstructor());
-  return *result;
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_CHECKED(JSFunction, f, 0);
+  f->shared()->set_name_should_print_as_anonymous(true);
+  return isolate->heap()->undefined_value();
 }
 
 
@@ -107,8 +78,6 @@ RUNTIME_FUNCTION(Runtime_FunctionRemovePrototype) {
 
   CONVERT_ARG_CHECKED(JSFunction, f, 0);
   RUNTIME_ASSERT(f->RemovePrototype());
-  f->shared()->set_construct_stub(
-      *isolate->builtins()->ConstructedNonConstructable());
 
   return isolate->heap()->undefined_value();
 }
@@ -166,7 +135,7 @@ RUNTIME_FUNCTION(Runtime_FunctionSetInstanceClassName) {
 
   CONVERT_ARG_CHECKED(JSFunction, fun, 0);
   CONVERT_ARG_CHECKED(String, name, 1);
-  fun->shared()->set_instance_class_name(name);
+  fun->SetInstanceClassName(name);
   return isolate->heap()->undefined_value();
 }
 
@@ -394,11 +363,8 @@ RUNTIME_FUNCTION(Runtime_FunctionBindArguments) {
 
   // TODO(lrn): Create bound function in C++ code from premade shared info.
   bound_function->shared()->set_bound(true);
-  bound_function->shared()->set_optimized_code_map(
-      isolate->heap()->cleared_optimized_code_map());
+  bound_function->shared()->set_optimized_code_map(Smi::FromInt(0));
   bound_function->shared()->set_inferred_name(isolate->heap()->empty_string());
-  bound_function->shared()->set_construct_stub(
-      *isolate->builtins()->JSBuiltinsConstructStub());
   // Get all arguments of calling function (Function.prototype.bind).
   int argc = 0;
   base::SmartArrayPointer<Handle<Object>> arguments =
@@ -534,24 +500,6 @@ RUNTIME_FUNCTION(Runtime_Call) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_TailCall) {
-  HandleScope scope(isolate);
-  DCHECK_LE(2, args.length());
-  int const argc = args.length() - 2;
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, target, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, receiver, 1);
-  ScopedVector<Handle<Object>> argv(argc);
-  for (int i = 0; i < argc; ++i) {
-    argv[i] = args.at<Object>(2 + i);
-  }
-  Handle<Object> result;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result,
-      Execution::Call(isolate, target, receiver, argc, argv.start()));
-  return *result;
-}
-
-
 RUNTIME_FUNCTION(Runtime_Apply) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 5);
@@ -589,26 +537,55 @@ RUNTIME_FUNCTION(Runtime_Apply) {
 }
 
 
-// ES6 section 9.2.1.2, OrdinaryCallBindThis for sloppy callee.
-RUNTIME_FUNCTION(Runtime_ConvertReceiver) {
+RUNTIME_FUNCTION(Runtime_GetOriginalConstructor) {
+  SealHandleScope shs(isolate);
+  DCHECK(args.length() == 0);
+  JavaScriptFrameIterator it(isolate);
+  JavaScriptFrame* frame = it.frame();
+  return frame->IsConstructor() ? frame->GetOriginalConstructor()
+                                : isolate->heap()->undefined_value();
+}
+
+
+// TODO(bmeurer): Kill %_CallFunction ASAP as it is almost never used
+// correctly because of the weird semantics underneath.
+RUNTIME_FUNCTION(Runtime_CallFunction) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, receiver, 0);
-  if (receiver->IsNull() || receiver->IsUndefined()) {
-    return isolate->global_proxy();
+  DCHECK(args.length() >= 2);
+  int argc = args.length() - 2;
+  CONVERT_ARG_CHECKED(JSReceiver, fun, argc + 1);
+  Object* receiver = args[0];
+
+  // If there are too many arguments, allocate argv via malloc.
+  const int argv_small_size = 10;
+  Handle<Object> argv_small_buffer[argv_small_size];
+  base::SmartArrayPointer<Handle<Object>> argv_large_buffer;
+  Handle<Object>* argv = argv_small_buffer;
+  if (argc > argv_small_size) {
+    argv = new Handle<Object>[argc];
+    if (argv == NULL) return isolate->StackOverflow();
+    argv_large_buffer = base::SmartArrayPointer<Handle<Object>>(argv);
   }
-  return *Object::ToObject(isolate, receiver).ToHandleChecked();
+
+  for (int i = 0; i < argc; ++i) {
+    argv[i] = Handle<Object>(args[1 + i], isolate);
+  }
+
+  Handle<JSReceiver> hfun(fun);
+  Handle<Object> hreceiver(receiver, isolate);
+  Handle<Object> result;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, result, Execution::Call(isolate, hfun, hreceiver, argc, argv));
+  return *result;
 }
 
 
 RUNTIME_FUNCTION(Runtime_IsConstructCall) {
-  HandleScope scope(isolate);
+  SealHandleScope shs(isolate);
   DCHECK(args.length() == 0);
   JavaScriptFrameIterator it(isolate);
-  List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
-  it.frame()->Summarize(&frames);
-  FrameSummary& summary = frames.last();
-  return isolate->heap()->ToBoolean(summary.is_constructor());
+  JavaScriptFrame* frame = it.frame();
+  return isolate->heap()->ToBoolean(frame->IsConstructor());
 }
 
 
@@ -626,6 +603,5 @@ RUNTIME_FUNCTION(Runtime_ThrowStrongModeTooFewArguments) {
   THROW_NEW_ERROR_RETURN_FAILURE(isolate,
                                  NewTypeError(MessageTemplate::kStrongArity));
 }
-
 }  // namespace internal
 }  // namespace v8

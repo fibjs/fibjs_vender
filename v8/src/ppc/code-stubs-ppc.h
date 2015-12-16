@@ -127,8 +127,8 @@ class RecordWriteStub : public PlatformCodeStub {
   }
 
   static void Patch(Code* stub, Mode mode) {
-    MacroAssembler masm(stub->GetIsolate(), stub->instruction_start(),
-                        stub->instruction_size(), CodeObjectRequired::kNo);
+    MacroAssembler masm(NULL, stub->instruction_start(),
+                        stub->instruction_size());
     switch (mode) {
       case STORE_BUFFER_ONLY:
         DCHECK(GetMode(stub) == INCREMENTAL ||

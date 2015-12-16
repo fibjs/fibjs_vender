@@ -95,12 +95,12 @@ class CallSite {
   T(CalledOnNullOrUndefined, "% called on null or undefined")                  \
   T(CannotConvertToPrimitive, "Cannot convert object to primitive value")      \
   T(CannotPreventExt, "Cannot prevent extensions")                             \
-  T(CannotFreezeArrayBufferView,                                               \
-    "Cannot freeze array buffer views with elements")                          \
+  T(CannotPreventExtExternalArray,                                             \
+    "Cannot prevent extension of an object with external array elements")      \
   T(CircularStructure, "Converting circular structure to JSON")                \
   T(ConstAssign, "Assignment to constant variable.")                           \
   T(ConstructorNonCallable,                                                    \
-    "Class constructor % cannot be invoked without 'new'")                     \
+    "Class constructors cannot be invoked without 'new'")                      \
   T(ConstructorNotFunction, "Constructor % requires 'new'")                    \
   T(CurrencyCode, "Currency code is required with currency style.")            \
   T(DataViewNotArrayBuffer,                                                    \
@@ -108,7 +108,6 @@ class CallSite {
   T(DateType, "this is not a Date object.")                                    \
   T(DebuggerFrame, "Debugger: Invalid frame index.")                           \
   T(DebuggerType, "Debugger: Parameters have wrong types.")                    \
-  T(DeclarationMissingInitializer, "Missing initializer in % declaration")     \
   T(DefineDisallowed, "Cannot define property:%, object is not extensible.")   \
   T(DuplicateTemplateProperty, "Object template has duplicate property '%'")   \
   T(ExtendsValueGenerator,                                                     \
@@ -117,6 +116,8 @@ class CallSite {
     "Class extends value % is not a function or null")                         \
   T(FirstArgumentNotRegExp,                                                    \
     "First argument to % must not be a regular expression")                    \
+  T(FlagsGetterNonObject,                                                      \
+    "RegExp.prototype.flags getter called on non-object %")                    \
   T(FunctionBind, "Bind must be called on a function")                         \
   T(GeneratorRunning, "Generator is already running")                          \
   T(IllegalInvocation, "Illegal invocation")                                   \
@@ -127,7 +128,6 @@ class CallSite {
     "Function has non-object prototype '%' in instanceof check")               \
   T(InvalidArgument, "invalid_argument")                                       \
   T(InvalidInOperatorUse, "Cannot use 'in' operator to search for '%' in %")   \
-  T(InvalidSimdOperation, "% is not a valid type for this SIMD operation.")    \
   T(IteratorResultNotAnObject, "Iterator result % is not an object")           \
   T(IteratorValueNotAnObject, "Iterator value % is not an entry object")       \
   T(LanguageID, "Language ID should be string or object.")                     \
@@ -181,29 +181,19 @@ class CallSite {
   T(ProtoObjectOrNull, "Object prototype may only be an Object or null: %")    \
   T(PrototypeParentNotAnObject,                                                \
     "Class extends value does not have valid prototype property %")            \
-  T(ProxyDeletePropertyViolatesInvariant,                                      \
-    "Trap 'deleteProperty' returned true but property '%' is not configurable" \
-    " in the proxy target")                                                    \
-  T(ProxyHandlerNonObject, "Cannot create proxy with non-object as handler")   \
+  T(ProxyHandlerDeleteFailed,                                                  \
+    "Proxy handler % did not return a boolean value from 'delete' trap")       \
+  T(ProxyHandlerNonObject, "Proxy.% called with non-object as handler")        \
   T(ProxyHandlerReturned, "Proxy handler % returned % from '%' trap")          \
   T(ProxyHandlerTrapMissing, "Proxy handler % has no '%' trap")                \
   T(ProxyHandlerTrapMustBeCallable,                                            \
     "Proxy handler %0 has non-callable '%' trap")                              \
-  T(ProxyIsExtensibleViolatesInvariant,                                        \
-    "Result of trap 'isExtensible' is inconsistent with proxy's target")       \
   T(ProxyNonObjectPropNames, "Trap '%' returned non-object %")                 \
-  T(ProxyPreventExtensionsViolatesInvariant,                                   \
-    "Trap 'preventExtensions' returned true but the proxy's target is "        \
-    "extensible")                                                              \
+  T(ProxyProtoNonObject, "Proxy.create called with no-object as prototype")    \
   T(ProxyPropNotConfigurable,                                                  \
     "Proxy handler % returned non-configurable descriptor for property '%' "   \
     "from '%' trap")                                                           \
   T(ProxyRepeatedPropName, "Trap '%' returned repeated property name '%'")     \
-  T(ProxyRevoked, "Cannot perform '%' on a proxy that has been revoked")       \
-  T(ProxyTargetNotExtensible, "Proxy target is not extensible")                \
-  T(ProxyTargetNonObject, "Proxy target is non-object")                        \
-  T(ProxyTargetPropNotConfigurable,                                            \
-    "Proxy target property '%' is not configurable")                           \
   T(ProxyTrapFunctionExpected,                                                 \
     "Proxy.createFunction called with non-function for '%' trap")              \
   T(RedefineDisallowed, "Cannot redefine property: %")                         \
@@ -212,8 +202,6 @@ class CallSite {
   T(ReduceNoInitial, "Reduce of empty array with no initial value")            \
   T(RegExpFlags,                                                               \
     "Cannot supply flags when constructing one RegExp from another")           \
-  T(RegExpNonObject, "% getter called on non-object %")                        \
-  T(RegExpNonRegExp, "% getter called on non-RegExp object")                   \
   T(ReinitializeIntl, "Trying to re-initialize % object.")                     \
   T(ResolvedOptionsCalledOnNonObject,                                          \
     "resolvedOptions method called on a non-object or on a object that is "    \
@@ -252,6 +240,7 @@ class CallSite {
     "Invalid property descriptor. Cannot both specify accessors and a value "  \
     "or writable attribute, %")                                                \
   T(VarRedeclaration, "Identifier '%' has already been declared")              \
+  T(WithExpression, "% has no properties")                                     \
   T(WrongArgs, "%: Arguments list has wrong type")                             \
   /* ReferenceError */                                                         \
   T(NonMethod, "'super' is referenced from non-method")                        \
@@ -319,7 +308,6 @@ class CallSite {
   T(IllegalLanguageModeDirective,                                              \
     "Illegal '%' directive in function with non-simple parameter list")        \
   T(IllegalReturn, "Illegal return statement")                                 \
-  T(InvalidEscapedReservedWord, "Keyword must not contain escaped characters") \
   T(InvalidLhsInAssignment, "Invalid left-hand side in assignment")            \
   T(InvalidLhsInFor, "Invalid left-hand side in for-loop")                     \
   T(InvalidLhsInPostfixOp,                                                     \
@@ -338,9 +326,6 @@ class CallSite {
   T(NoCatchOrFinally, "Missing catch or finally after try")                    \
   T(NotIsvar, "builtin %%IS_VAR: not a variable")                              \
   T(ParamAfterRest, "Rest parameter must be last formal parameter")            \
-  T(PushPastSafeLength,                                                        \
-    "Pushing % elements on an array-like of length % "                         \
-    "is disallowed, as the total surpasses 2**53-1")                           \
   T(BadSetterRestParameter,                                                    \
     "Setter function argument must not be a rest parameter")                   \
   T(ParamDupe, "Duplicate parameter name not allowed in this context")         \

@@ -142,6 +142,24 @@ bool LCodeGen::GeneratePrologue() {
     // cp: Callee's context.
     // fp: Caller's frame pointer.
     // lr: Caller's pc.
+
+    // Sloppy mode functions and builtins need to replace the receiver with the
+    // global proxy when called as functions (without an explicit receiver
+    // object).
+    if (info()->MustReplaceUndefinedReceiverWithGlobalProxy()) {
+      Label ok;
+      int receiver_offset = info_->scope()->num_parameters() * kPointerSize;
+      __ LoadRoot(at, Heap::kUndefinedValueRootIndex);
+      __ lw(a2, MemOperand(sp, receiver_offset));
+      __ Branch(&ok, ne, a2, Operand(at));
+
+      __ lw(a2, GlobalObjectOperand());
+      __ lw(a2, FieldMemOperand(a2, GlobalObject::kGlobalProxyOffset));
+
+      __ sw(a2, MemOperand(sp, receiver_offset));
+
+      __ bind(&ok);
+    }
   }
 
   info()->set_prologue_offset(masm_->pc_offset());
@@ -3247,7 +3265,8 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
   __ lw(result, FieldMemOperand(function, JSFunction::kContextOffset));
   __ lw(result,
         ContextOperand(result, Context::GLOBAL_OBJECT_INDEX));
-  __ lw(result, FieldMemOperand(result, JSGlobalObject::kGlobalProxyOffset));
+  __ lw(result,
+        FieldMemOperand(result, GlobalObject::kGlobalProxyOffset));
 
   if (result.is(receiver)) {
     __ bind(&result_in_receiver);
@@ -3306,8 +3325,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // The number of arguments is stored in receiver which is a0, as expected
   // by InvokeFunction.
   ParameterCount actual(receiver);
-  __ InvokeFunction(function, no_reg, actual, CALL_FUNCTION,
-                    safepoint_generator);
+  __ InvokeFunction(function, actual, CALL_FUNCTION, safepoint_generator);
 }
 
 
@@ -3369,8 +3387,7 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ lw(cp, FieldMemOperand(function_reg, JSFunction::kContextOffset));
 
-    // Always initialize new target and number of actual arguments.
-    __ LoadRoot(a3, Heap::kUndefinedValueRootIndex);
+    // Always initialize a0 to the number of actual arguments.
     __ li(a0, Operand(arity));
 
     // Invoke function.
@@ -3728,7 +3745,7 @@ void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
     LPointerMap* pointers = instr->pointer_map();
     SafepointGenerator generator(this, pointers, Safepoint::kLazyDeopt);
     ParameterCount count(instr->arity());
-    __ InvokeFunction(a1, no_reg, count, CALL_FUNCTION, generator);
+    __ InvokeFunction(a1, count, CALL_FUNCTION, generator);
   } else {
     CallKnownFunction(known_function,
                       instr->hydrogen()->formal_parameter_count(),
@@ -3778,12 +3795,10 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(ToRegister(instr->function()).is(a1));
   DCHECK(ToRegister(instr->result()).is(v0));
 
+  __ li(a0, Operand(instr->arity()));
+
   // Change context.
   __ lw(cp, FieldMemOperand(a1, JSFunction::kContextOffset));
-
-  // Always initialize new target and number of actual arguments.
-  __ LoadRoot(a3, Heap::kUndefinedValueRootIndex);
-  __ li(a0, Operand(instr->arity()));
 
   // Load the code entry address
   __ lw(at, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
@@ -3799,7 +3814,7 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
   DCHECK(ToRegister(instr->result()).is(v0));
 
   int arity = instr->arity();
-  ConvertReceiverMode mode = instr->hydrogen()->convert_mode();
+  CallFunctionFlags flags = instr->hydrogen()->function_flags();
   if (instr->hydrogen()->HasVectorAndSlot()) {
     Register slot_register = ToRegister(instr->temp_slot());
     Register vector_register = ToRegister(instr->temp_vector());
@@ -3813,13 +3828,29 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ li(vector_register, vector);
     __ li(slot_register, Operand(Smi::FromInt(index)));
 
+    CallICState::CallType call_type =
+        (flags & CALL_AS_METHOD) ? CallICState::METHOD : CallICState::FUNCTION;
+
     Handle<Code> ic =
-        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
+        CodeFactory::CallICInOptimizedCode(isolate(), arity, call_type).code();
     CallCode(ic, RelocInfo::CODE_TARGET, instr);
   } else {
-    __ li(a0, Operand(arity));
-    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
+    CallFunctionStub stub(isolate(), arity, flags);
+    CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
   }
+}
+
+
+void LCodeGen::DoCallNew(LCallNew* instr) {
+  DCHECK(ToRegister(instr->context()).is(cp));
+  DCHECK(ToRegister(instr->constructor()).is(a1));
+  DCHECK(ToRegister(instr->result()).is(v0));
+
+  __ li(a0, Operand(instr->arity()));
+  // No cell in a2 for construct type feedback in optimized code
+  __ LoadRoot(a2, Heap::kUndefinedValueRootIndex);
+  CallConstructStub stub(isolate(), NO_CALL_CONSTRUCTOR_FLAGS);
+  CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
 }
 
 
@@ -4485,8 +4516,7 @@ void LCodeGen::DoDeferredStringCharFromCode(LStringCharFromCode* instr) {
   PushSafepointRegistersScope scope(this);
   __ SmiTag(char_code);
   __ push(char_code);
-  CallRuntimeFromDeferred(Runtime::kStringCharFromCode, 1, instr,
-                          instr->context());
+  CallRuntimeFromDeferred(Runtime::kCharFromCode, 1, instr, instr->context());
   __ StoreToSafepointRegisterSlot(v0, result);
 }
 
@@ -5325,6 +5355,59 @@ void LCodeGen::DoToFastProperties(LToFastProperties* instr) {
   DCHECK(ToRegister(instr->result()).is(v0));
   __ push(a0);
   CallRuntime(Runtime::kToFastProperties, 1, instr);
+}
+
+
+void LCodeGen::DoRegExpLiteral(LRegExpLiteral* instr) {
+  DCHECK(ToRegister(instr->context()).is(cp));
+  Label materialized;
+  // Registers will be used as follows:
+  // t3 = literals array.
+  // a1 = regexp literal.
+  // a0 = regexp literal clone.
+  // a2 and t0-t2 are used as temporaries.
+  int literal_offset =
+      LiteralsArray::OffsetOfLiteralAt(instr->hydrogen()->literal_index());
+  __ li(t3, instr->hydrogen()->literals());
+  __ lw(a1, FieldMemOperand(t3, literal_offset));
+  __ LoadRoot(at, Heap::kUndefinedValueRootIndex);
+  __ Branch(&materialized, ne, a1, Operand(at));
+
+  // Create regexp literal using runtime function
+  // Result will be in v0.
+  __ li(t2, Operand(Smi::FromInt(instr->hydrogen()->literal_index())));
+  __ li(t1, Operand(instr->hydrogen()->pattern()));
+  __ li(t0, Operand(instr->hydrogen()->flags()));
+  __ Push(t3, t2, t1, t0);
+  CallRuntime(Runtime::kMaterializeRegExpLiteral, 4, instr);
+  __ mov(a1, v0);
+
+  __ bind(&materialized);
+  int size = JSRegExp::kSize + JSRegExp::kInObjectFieldCount * kPointerSize;
+  Label allocated, runtime_allocate;
+
+  __ Allocate(size, v0, a2, a3, &runtime_allocate, TAG_OBJECT);
+  __ jmp(&allocated);
+
+  __ bind(&runtime_allocate);
+  __ li(a0, Operand(Smi::FromInt(size)));
+  __ Push(a1, a0);
+  CallRuntime(Runtime::kAllocateInNewSpace, 1, instr);
+  __ pop(a1);
+
+  __ bind(&allocated);
+  // Copy the content into the newly allocated memory.
+  // (Unroll copy loop once for better throughput).
+  for (int i = 0; i < size - kPointerSize; i += 2 * kPointerSize) {
+    __ lw(a3, FieldMemOperand(a1, i));
+    __ lw(a2, FieldMemOperand(a1, i + kPointerSize));
+    __ sw(a3, FieldMemOperand(v0, i));
+    __ sw(a2, FieldMemOperand(v0, i + kPointerSize));
+  }
+  if ((size % (2 * kPointerSize)) != 0) {
+    __ lw(a3, FieldMemOperand(a1, size - kPointerSize));
+    __ sw(a3, FieldMemOperand(v0, size - kPointerSize));
+  }
 }
 
 

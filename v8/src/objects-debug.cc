@@ -96,7 +96,6 @@ void HeapObject::HeapObjectVerify() {
       break;
     case JS_OBJECT_TYPE:
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
-    case JS_PROMISE_TYPE:
       JSObject::cast(this)->JSObjectVerify();
       break;
     case JS_GENERATOR_OBJECT_TYPE:
@@ -119,6 +118,9 @@ void HeapObject::HeapObjectVerify() {
       break;
     case JS_GLOBAL_OBJECT_TYPE:
       JSGlobalObject::cast(this)->JSGlobalObjectVerify();
+      break;
+    case JS_BUILTINS_OBJECT_TYPE:
+      JSBuiltinsObject::cast(this)->JSBuiltinsObjectVerify();
       break;
     case CELL_TYPE:
       Cell::cast(this)->CellVerify();
@@ -351,7 +353,8 @@ void Map::VerifyOmittedMapChecks() {
   if (!is_stable() ||
       is_deprecated() ||
       is_dictionary_map()) {
-    CHECK(dependent_code()->IsEmpty(DependentCode::kPrototypeCheckGroup));
+    CHECK_EQ(0, dependent_code()->number_of_entries(
+        DependentCode::kPrototypeCheckGroup));
   }
 }
 
@@ -567,12 +570,23 @@ void JSGlobalProxy::JSGlobalProxyVerify() {
 
 void JSGlobalObject::JSGlobalObjectVerify() {
   CHECK(IsJSGlobalObject());
-  // Do not check the dummy global object for the builtins.
-  if (GlobalDictionary::cast(properties())->NumberOfElements() == 0 &&
-      elements()->length() == 0) {
-    return;
-  }
   JSObjectVerify();
+  for (int i = GlobalObject::kBuiltinsOffset;
+       i < JSGlobalObject::kSize;
+       i += kPointerSize) {
+    VerifyObjectField(i);
+  }
+}
+
+
+void JSBuiltinsObject::JSBuiltinsObjectVerify() {
+  CHECK(IsJSBuiltinsObject());
+  JSObjectVerify();
+  for (int i = GlobalObject::kBuiltinsOffset;
+       i < JSBuiltinsObject::kSize;
+       i += kPointerSize) {
+    VerifyObjectField(i);
+  }
 }
 
 
@@ -915,7 +929,6 @@ void AccessCheckInfo::AccessCheckInfoVerify() {
   CHECK(IsAccessCheckInfo());
   VerifyPointer(named_callback());
   VerifyPointer(indexed_callback());
-  VerifyPointer(callback());
   VerifyPointer(data());
 }
 
@@ -1034,7 +1047,7 @@ void JSObject::IncrementSpillStatistics(SpillInformation* info) {
     info->number_of_objects_with_fast_properties_++;
     info->number_of_fast_used_fields_   += map()->NextFreePropertyIndex();
     info->number_of_fast_unused_fields_ += map()->unused_property_fields();
-  } else if (IsJSGlobalObject()) {
+  } else if (IsGlobalObject()) {
     GlobalDictionary* dict = global_dictionary();
     info->number_of_slow_used_properties_ += dict->NumberOfElements();
     info->number_of_slow_unused_properties_ +=

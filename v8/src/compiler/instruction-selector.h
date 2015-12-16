@@ -164,23 +164,23 @@ class InstructionSelector final {
   // operand {op}.
   void MarkAsRepresentation(MachineType rep, const InstructionOperand& op);
 
-  enum CallBufferFlag {
-    kCallCodeImmediate = 1u << 0,
-    kCallAddressImmediate = 1u << 1,
-    kCallTail = 1u << 2
-  };
-  typedef base::Flags<CallBufferFlag> CallBufferFlags;
-
   // Initialize the call buffer with the InstructionOperands, nodes, etc,
   // corresponding
   // to the inputs and outputs of the call.
   // {call_code_immediate} to generate immediate operands to calls of code.
   // {call_address_immediate} to generate immediate operands to address calls.
   void InitializeCallBuffer(Node* call, CallBuffer* buffer,
-                            CallBufferFlags flags, int stack_param_delta = 0);
-  bool IsTailCallAddressImmediate();
+                            bool call_code_immediate,
+                            bool call_address_immediate);
 
   FrameStateDescriptor* GetFrameStateDescriptor(Node* node);
+
+  enum class FrameStateInputKind { kAny, kStackSlot };
+  void AddFrameStateInputs(Node* state, InstructionOperandVector* inputs,
+                           FrameStateDescriptor* descriptor,
+                           FrameStateInputKind kind);
+  static InstructionOperand OperandForDeopt(OperandGenerator* g, Node* input,
+                                            FrameStateInputKind kind);
 
   // ===========================================================================
   // ============= Architecture-specific graph covering methods. ===============
@@ -201,7 +201,6 @@ class InstructionSelector final {
 #undef DECLARE_GENERATOR
 
   void VisitFinishRegion(Node* node);
-  void VisitGuard(Node* node);
   void VisitParameter(Node* node);
   void VisitIfException(Node* node);
   void VisitOsrValue(Node* node);
@@ -216,9 +215,6 @@ class InstructionSelector final {
   void VisitDeoptimize(Node* value);
   void VisitReturn(Node* ret);
   void VisitThrow(Node* value);
-
-  void EmitPrepareArguments(NodeVector* arguments,
-                            const CallDescriptor* descriptor, Node* node);
 
   // ===========================================================================
 

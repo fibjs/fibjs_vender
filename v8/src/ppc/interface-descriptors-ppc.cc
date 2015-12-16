@@ -129,13 +129,6 @@ void TypeofDescriptor::InitializePlatformSpecific(
 }
 
 
-void FastCloneRegExpDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {r6, r5, r4, r3};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
 void FastCloneShallowArrayDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {r6, r5, r4};
@@ -198,7 +191,7 @@ void CallConstructDescriptor::InitializePlatformSpecific(
   // r4 : the function to call
   // r5 : feedback vector
   // r6 : slot in feedback vector (Smi, for RecordCallTarget)
-  // r7 : new target (for IsSuperConstructorCall)
+  // r7 : original constructor (for IsSuperConstructorCall)
   // TODO(turbofan): So far we don't gather type feedback and hence skip the
   // slot parameter, but ArrayConstructStub needs the vector to be undefined.
   Register registers[] = {r3, r4, r7, r5};
@@ -211,16 +204,6 @@ void CallTrampolineDescriptor::InitializePlatformSpecific(
   // r3 : number of arguments
   // r4 : the target to call
   Register registers[] = {r4, r3};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
-void ConstructTrampolineDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  // r3 : number of arguments
-  // r4 : the target to call
-  // r6 : the new target
-  Register registers[] = {r4, r6, r3};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
@@ -362,7 +345,6 @@ void ArgumentAdaptorDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
       r4,  // JSFunction
-      r6,  // the new target
       r3,  // actual number of arguments
       r5,  // expected number of arguments
   };
@@ -431,7 +413,7 @@ void InterpreterPushArgsAndConstructDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
       r3,  // argument count (not including receiver)
-      r6,  // new target
+      r6,  // original constructor
       r4,  // constructor to call
       r5   // address of the first argument
   };

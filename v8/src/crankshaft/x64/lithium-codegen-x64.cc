@@ -129,6 +129,24 @@ bool LCodeGen::GeneratePrologue() {
       __ int3();
     }
 #endif
+
+    // Sloppy mode functions need to replace the receiver with the global proxy
+    // when called as functions (without an explicit receiver object).
+    if (info()->MustReplaceUndefinedReceiverWithGlobalProxy()) {
+      Label ok;
+      StackArgumentsAccessor args(rsp, scope()->num_parameters());
+      __ movp(rcx, args.GetReceiverOperand());
+
+      __ CompareRoot(rcx, Heap::kUndefinedValueRootIndex);
+      __ j(not_equal, &ok, Label::kNear);
+
+      __ movp(rcx, GlobalObjectOperand());
+      __ movp(rcx, FieldOperand(rcx, GlobalObject::kGlobalProxyOffset));
+
+      __ movp(args.GetReceiverOperand(), rcx);
+
+      __ bind(&ok);
+    }
   }
 
   info()->set_prologue_offset(masm_->pc_offset());
@@ -3273,7 +3291,7 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
   __ movp(receiver,
           Operand(receiver,
                   Context::SlotOffset(Context::GLOBAL_OBJECT_INDEX)));
-  __ movp(receiver, FieldOperand(receiver, JSGlobalObject::kGlobalProxyOffset));
+  __ movp(receiver, FieldOperand(receiver, GlobalObject::kGlobalProxyOffset));
 
   __ bind(&receiver_ok);
 }
@@ -3317,8 +3335,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   SafepointGenerator safepoint_generator(
       this, pointers, Safepoint::kLazyDeopt);
   ParameterCount actual(rax);
-  __ InvokeFunction(function, no_reg, actual, CALL_FUNCTION,
-                    safepoint_generator);
+  __ InvokeFunction(function, actual, CALL_FUNCTION, safepoint_generator);
 }
 
 
@@ -3373,8 +3390,7 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ movp(rsi, FieldOperand(function_reg, JSFunction::kContextOffset));
 
-    // Always initialize new target and number of actual arguments.
-    __ LoadRoot(rdx, Heap::kUndefinedValueRootIndex);
+    // Always initialize rax to the number of actual arguments.
     __ Set(rax, arity);
 
     // Invoke function.
@@ -3392,8 +3408,7 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
         this, pointers, Safepoint::kLazyDeopt);
     ParameterCount count(arity);
     ParameterCount expected(formal_parameter_count);
-    __ InvokeFunction(function_reg, no_reg, expected, count, CALL_FUNCTION,
-                      generator);
+    __ InvokeFunction(function_reg, expected, count, CALL_FUNCTION, generator);
   }
 }
 
@@ -3439,12 +3454,10 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(ToRegister(instr->function()).is(rdi));
   DCHECK(ToRegister(instr->result()).is(rax));
 
+  __ Set(rax, instr->arity());
+
   // Change context.
   __ movp(rsi, FieldOperand(rdi, JSFunction::kContextOffset));
-
-  // Always initialize new target and number of actual arguments.
-  __ LoadRoot(rdx, Heap::kUndefinedValueRootIndex);
-  __ Set(rax, instr->arity());
 
   LPointerMap* pointers = instr->pointer_map();
   SafepointGenerator generator(this, pointers, Safepoint::kLazyDeopt);
@@ -3556,8 +3569,8 @@ void LCodeGen::DoMathAbs(LMathAbs* instr) {
     XMMRegister scratch = double_scratch0();
     XMMRegister input_reg = ToDoubleRegister(instr->value());
     __ Xorpd(scratch, scratch);
-    __ Subsd(scratch, input_reg);
-    __ Andpd(input_reg, scratch);
+    __ subsd(scratch, input_reg);
+    __ andps(input_reg, scratch);
   } else if (r.IsInteger32()) {
     EmitIntegerMathAbs(instr);
   } else if (r.IsSmi()) {
@@ -3649,7 +3662,7 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
   __ j(above, &below_one_half, Label::kNear);
 
   // CVTTSD2SI rounds towards zero, since 0.5 <= x, we use floor(0.5 + x).
-  __ Addsd(xmm_scratch, input_reg);
+  __ addsd(xmm_scratch, input_reg);
   __ Cvttsd2si(output_reg, xmm_scratch);
   // Overflow is signalled with minint.
   __ cmpl(output_reg, Immediate(0x1));
@@ -3665,7 +3678,7 @@ void LCodeGen::DoMathRound(LMathRound* instr) {
   // CVTTSD2SI rounds towards zero, we use ceil(x - (-0.5)) and then
   // compare and compensate.
   __ Movapd(input_temp, input_reg);  // Do not alter input_reg.
-  __ Subsd(input_temp, xmm_scratch);
+  __ subsd(input_temp, xmm_scratch);
   __ Cvttsd2si(output_reg, input_temp);
   // Catch minint due to overflow, and to prevent overflow when compensating.
   __ cmpl(output_reg, Immediate(0x1));
@@ -3731,13 +3744,13 @@ void LCodeGen::DoMathPowHalf(LMathPowHalf* instr) {
   __ j(carry, &sqrt, Label::kNear);
   // If input is -Infinity, return Infinity.
   __ Xorpd(input_reg, input_reg);
-  __ Subsd(input_reg, xmm_scratch);
+  __ subsd(input_reg, xmm_scratch);
   __ jmp(&done, Label::kNear);
 
   // Square root.
   __ bind(&sqrt);
   __ Xorpd(xmm_scratch, xmm_scratch);
-  __ Addsd(input_reg, xmm_scratch);  // Convert -0 to +0.
+  __ addsd(input_reg, xmm_scratch);  // Convert -0 to +0.
   __ Sqrtsd(input_reg, input_reg);
   __ bind(&done);
 }
@@ -3837,7 +3850,7 @@ void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
     LPointerMap* pointers = instr->pointer_map();
     SafepointGenerator generator(this, pointers, Safepoint::kLazyDeopt);
     ParameterCount count(instr->arity());
-    __ InvokeFunction(rdi, no_reg, count, CALL_FUNCTION, generator);
+    __ InvokeFunction(rdi, count, CALL_FUNCTION, generator);
   } else {
     CallKnownFunction(known_function,
                       instr->hydrogen()->formal_parameter_count(),
@@ -3852,7 +3865,7 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
   DCHECK(ToRegister(instr->result()).is(rax));
 
   int arity = instr->arity();
-  ConvertReceiverMode mode = instr->hydrogen()->convert_mode();
+  CallFunctionFlags flags = instr->hydrogen()->function_flags();
   if (instr->hydrogen()->HasVectorAndSlot()) {
     Register slot_register = ToRegister(instr->temp_slot());
     Register vector_register = ToRegister(instr->temp_vector());
@@ -3866,13 +3879,29 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ Move(vector_register, vector);
     __ Move(slot_register, Smi::FromInt(index));
 
+    CallICState::CallType call_type =
+        (flags & CALL_AS_METHOD) ? CallICState::METHOD : CallICState::FUNCTION;
+
     Handle<Code> ic =
-        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
+        CodeFactory::CallICInOptimizedCode(isolate(), arity, call_type).code();
     CallCode(ic, RelocInfo::CODE_TARGET, instr);
   } else {
-    __ Set(rax, arity);
-    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
+    CallFunctionStub stub(isolate(), arity, flags);
+    CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
   }
+}
+
+
+void LCodeGen::DoCallNew(LCallNew* instr) {
+  DCHECK(ToRegister(instr->context()).is(rsi));
+  DCHECK(ToRegister(instr->constructor()).is(rdi));
+  DCHECK(ToRegister(instr->result()).is(rax));
+
+  __ Set(rax, instr->arity());
+  // No cell in ebx for construct type feedback in optimized code
+  __ LoadRoot(rbx, Heap::kUndefinedValueRootIndex);
+  CallConstructStub stub(isolate(), NO_CALL_CONSTRUCTOR_FLAGS);
+  CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
 }
 
 
@@ -4234,7 +4263,7 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
     XMMRegister xmm_scratch = double_scratch0();
     // Turn potential sNaN value into qNaN.
     __ Xorpd(xmm_scratch, xmm_scratch);
-    __ Subsd(value, xmm_scratch);
+    __ subsd(value, xmm_scratch);
   }
 
   Operand double_store_operand = BuildFastArrayOperand(
@@ -4610,8 +4639,7 @@ void LCodeGen::DoDeferredStringCharFromCode(LStringCharFromCode* instr) {
   PushSafepointRegistersScope scope(this);
   __ Integer32ToSmi(char_code, char_code);
   __ Push(char_code);
-  CallRuntimeFromDeferred(Runtime::kStringCharFromCode, 1, instr,
-                          instr->context());
+  CallRuntimeFromDeferred(Runtime::kCharFromCode, 1, instr, instr->context());
   __ StoreToSafepointRegisterSlot(result, rax);
 }
 
@@ -5378,6 +5406,57 @@ void LCodeGen::DoToFastProperties(LToFastProperties* instr) {
   DCHECK(ToRegister(instr->value()).is(rax));
   __ Push(rax);
   CallRuntime(Runtime::kToFastProperties, 1, instr);
+}
+
+
+void LCodeGen::DoRegExpLiteral(LRegExpLiteral* instr) {
+  DCHECK(ToRegister(instr->context()).is(rsi));
+  Label materialized;
+  // Registers will be used as follows:
+  // rcx = literals array.
+  // rbx = regexp literal.
+  // rax = regexp literal clone.
+  int literal_offset =
+      LiteralsArray::OffsetOfLiteralAt(instr->hydrogen()->literal_index());
+  __ Move(rcx, instr->hydrogen()->literals());
+  __ movp(rbx, FieldOperand(rcx, literal_offset));
+  __ CompareRoot(rbx, Heap::kUndefinedValueRootIndex);
+  __ j(not_equal, &materialized, Label::kNear);
+
+  // Create regexp literal using runtime function
+  // Result will be in rax.
+  __ Push(rcx);
+  __ Push(Smi::FromInt(instr->hydrogen()->literal_index()));
+  __ Push(instr->hydrogen()->pattern());
+  __ Push(instr->hydrogen()->flags());
+  CallRuntime(Runtime::kMaterializeRegExpLiteral, 4, instr);
+  __ movp(rbx, rax);
+
+  __ bind(&materialized);
+  int size = JSRegExp::kSize + JSRegExp::kInObjectFieldCount * kPointerSize;
+  Label allocated, runtime_allocate;
+  __ Allocate(size, rax, rcx, rdx, &runtime_allocate, TAG_OBJECT);
+  __ jmp(&allocated, Label::kNear);
+
+  __ bind(&runtime_allocate);
+  __ Push(rbx);
+  __ Push(Smi::FromInt(size));
+  CallRuntime(Runtime::kAllocateInNewSpace, 1, instr);
+  __ Pop(rbx);
+
+  __ bind(&allocated);
+  // Copy the content into the newly allocated memory.
+  // (Unroll copy loop once for better throughput).
+  for (int i = 0; i < size - kPointerSize; i += 2 * kPointerSize) {
+    __ movp(rdx, FieldOperand(rbx, i));
+    __ movp(rcx, FieldOperand(rbx, i + kPointerSize));
+    __ movp(FieldOperand(rax, i), rdx);
+    __ movp(FieldOperand(rax, i + kPointerSize), rcx);
+  }
+  if ((size % (2 * kPointerSize)) != 0) {
+    __ movp(rdx, FieldOperand(rbx, size - kPointerSize));
+    __ movp(FieldOperand(rax, size - kPointerSize), rdx);
+  }
 }
 
 

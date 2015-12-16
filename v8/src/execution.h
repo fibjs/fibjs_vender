@@ -47,7 +47,7 @@ class Execution final : public AllStatic {
   // that occurred (if caught exception is true).
   // In the exception case, exception_out holds the caught exceptions, unless
   // it is a termination exception.
-  static MaybeHandle<Object> TryCall(Isolate* isolate, Handle<Object> callable,
+  static MaybeHandle<Object> TryCall(Handle<JSFunction> func,
                                      Handle<Object> receiver, int argc,
                                      Handle<Object> argv[],
                                      MaybeHandle<Object>* exception_out = NULL);
@@ -63,6 +63,10 @@ class Execution final : public AllStatic {
   // Create a new date object from 'time'.
   MUST_USE_RESULT static MaybeHandle<Object> NewDate(
       Isolate* isolate, double time);
+
+  // Create a new regular expression object from 'pattern' and 'flags'.
+  MUST_USE_RESULT static MaybeHandle<JSRegExp> NewJSRegExp(
+      Handle<String> pattern, Handle<String> flags);
 
   static Handle<String> GetStackTraceLine(Handle<Object> recv,
                                           Handle<JSFunction> fun,

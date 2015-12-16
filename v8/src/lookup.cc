@@ -245,11 +245,11 @@ void LookupIterator::PrepareTransitionToDataProperty(
   state_ = TRANSITION;
   transition_ = transition;
 
-  if (receiver->IsJSGlobalObject()) {
+  if (receiver->IsGlobalObject()) {
     // Install a property cell.
     InternalizeName();
-    auto cell = JSGlobalObject::EnsurePropertyCell(
-        Handle<JSGlobalObject>::cast(receiver), name());
+    auto cell = GlobalObject::EnsurePropertyCell(
+        Handle<GlobalObject>::cast(receiver), name());
     DCHECK(cell->value()->IsTheHole());
     transition_ = cell;
   } else if (!transition->is_dictionary_map()) {
@@ -263,7 +263,7 @@ void LookupIterator::ApplyTransitionToDataProperty() {
   DCHECK_EQ(TRANSITION, state_);
 
   Handle<JSObject> receiver = GetStoreTarget();
-  if (receiver->IsJSGlobalObject()) return;
+  if (receiver->IsGlobalObject()) return;
   holder_ = receiver;
   holder_map_ = transition_map();
   JSObject::MigrateToMap(receiver, holder_map_);
@@ -427,7 +427,7 @@ Handle<Object> LookupIterator::FetchValue() const {
 
     ElementsAccessor* accessor = holder->GetElementsAccessor();
     return accessor->Get(handle(holder->elements()), number_);
-  } else if (holder_map_->IsJSGlobalObjectMap()) {
+  } else if (holder_map_->IsGlobalObjectMap()) {
     result = holder->global_dictionary()->ValueAt(number_);
     DCHECK(result->IsPropertyCell());
     result = PropertyCell::cast(result)->value();
@@ -486,7 +486,7 @@ Handle<HeapType> LookupIterator::GetFieldType() const {
 Handle<PropertyCell> LookupIterator::GetPropertyCell() const {
   DCHECK(!IsElement());
   Handle<JSObject> holder = GetHolder<JSObject>();
-  Handle<JSGlobalObject> global = Handle<JSGlobalObject>::cast(holder);
+  Handle<GlobalObject> global = Handle<GlobalObject>::cast(holder);
   Object* value = global->global_dictionary()->ValueAt(dictionary_entry());
   DCHECK(value->IsPropertyCell());
   return handle(PropertyCell::cast(value));
@@ -512,7 +512,7 @@ void LookupIterator::WriteDataValue(Handle<Object> value) {
   if (IsElement()) {
     ElementsAccessor* accessor = holder->GetElementsAccessor();
     accessor->Set(holder->elements(), number_, *value);
-  } else if (holder->IsJSGlobalObject()) {
+  } else if (holder->IsGlobalObject()) {
     Handle<GlobalDictionary> property_dictionary =
         handle(holder->global_dictionary());
     PropertyCell::UpdateCell(property_dictionary, dictionary_entry(), value,
@@ -601,7 +601,7 @@ JSReceiver* LookupIterator::NextHolder(Map* map) {
   if (!map->prototype()->IsJSReceiver()) return NULL;
 
   JSReceiver* next = JSReceiver::cast(map->prototype());
-  DCHECK(!next->map()->IsJSGlobalObjectMap() ||
+  DCHECK(!next->map()->IsGlobalObjectMap() ||
          next->map()->is_hidden_prototype());
 
   if (!check_prototype_chain() &&
@@ -668,7 +668,7 @@ LookupIterator::State LookupIterator::LookupInHolder(Map* const map,
         if (number == DescriptorArray::kNotFound) return NOT_FOUND;
         number_ = static_cast<uint32_t>(number);
         property_details_ = descriptors->GetDetails(number_);
-      } else if (map->IsJSGlobalObjectMap()) {
+      } else if (map->IsGlobalObjectMap()) {
         GlobalDictionary* dict = JSObject::cast(holder)->global_dictionary();
         int number = dict->FindEntry(name_);
         if (number == GlobalDictionary::kNotFound) return NOT_FOUND;

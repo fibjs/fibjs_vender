@@ -65,6 +65,7 @@ class ArmOperandGenerator : public OperandGenerator {
       case kArmStrb:
       case kArmLdr:
       case kArmStr:
+      case kArmStoreWriteBarrier:
         return value >= -4095 && value <= 4095;
 
       case kArmLdrh:
@@ -354,70 +355,49 @@ void InstructionSelector::VisitStore(Node* node) {
   Node* value = node->InputAt(2);
 
   StoreRepresentation store_rep = OpParameter<StoreRepresentation>(node);
-  WriteBarrierKind write_barrier_kind = store_rep.write_barrier_kind();
   MachineType rep = RepresentationOf(store_rep.machine_type());
+  if (store_rep.write_barrier_kind() == kFullWriteBarrier) {
+    DCHECK(rep == kRepTagged);
+    // TODO(dcarney): refactor RecordWrite function to take temp registers
+    //                and pass them here instead of using fixed regs
+    // TODO(dcarney): handle immediate indices.
+    InstructionOperand temps[] = {g.TempRegister(r5), g.TempRegister(r6)};
+    Emit(kArmStoreWriteBarrier, g.NoOutput(), g.UseFixed(base, r4),
+         g.UseFixed(index, r5), g.UseFixed(value, r6), arraysize(temps), temps);
+    return;
+  }
+  DCHECK_EQ(kNoWriteBarrier, store_rep.write_barrier_kind());
 
-  if (write_barrier_kind != kNoWriteBarrier) {
-    DCHECK_EQ(kRepTagged, rep);
-    InstructionOperand inputs[3];
-    size_t input_count = 0;
-    inputs[input_count++] = g.UseUniqueRegister(base);
-    inputs[input_count++] = g.UseUniqueRegister(index);
-    inputs[input_count++] = (write_barrier_kind == kMapWriteBarrier)
-                                ? g.UseRegister(value)
-                                : g.UseUniqueRegister(value);
-    RecordWriteMode record_write_mode = RecordWriteMode::kValueIsAny;
-    switch (write_barrier_kind) {
-      case kNoWriteBarrier:
-        UNREACHABLE();
-        break;
-      case kMapWriteBarrier:
-        record_write_mode = RecordWriteMode::kValueIsMap;
-        break;
-      case kPointerWriteBarrier:
-        record_write_mode = RecordWriteMode::kValueIsPointer;
-        break;
-      case kFullWriteBarrier:
-        record_write_mode = RecordWriteMode::kValueIsAny;
-        break;
-    }
-    InstructionOperand temps[] = {g.TempRegister(), g.TempRegister()};
-    size_t const temp_count = arraysize(temps);
-    InstructionCode code = kArchStoreWithWriteBarrier;
-    code |= MiscField::encode(static_cast<int>(record_write_mode));
-    Emit(code, 0, nullptr, input_count, inputs, temp_count, temps);
+  ArchOpcode opcode;
+  switch (rep) {
+    case kRepFloat32:
+      opcode = kArmVstrF32;
+      break;
+    case kRepFloat64:
+      opcode = kArmVstrF64;
+      break;
+    case kRepBit:  // Fall through.
+    case kRepWord8:
+      opcode = kArmStrb;
+      break;
+    case kRepWord16:
+      opcode = kArmStrh;
+      break;
+    case kRepTagged:  // Fall through.
+    case kRepWord32:
+      opcode = kArmStr;
+      break;
+    default:
+      UNREACHABLE();
+      return;
+  }
+
+  if (g.CanBeImmediate(index, opcode)) {
+    Emit(opcode | AddressingModeField::encode(kMode_Offset_RI), g.NoOutput(),
+         g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
   } else {
-    ArchOpcode opcode;
-    switch (rep) {
-      case kRepFloat32:
-        opcode = kArmVstrF32;
-        break;
-      case kRepFloat64:
-        opcode = kArmVstrF64;
-        break;
-      case kRepBit:  // Fall through.
-      case kRepWord8:
-        opcode = kArmStrb;
-        break;
-      case kRepWord16:
-        opcode = kArmStrh;
-        break;
-      case kRepTagged:  // Fall through.
-      case kRepWord32:
-        opcode = kArmStr;
-        break;
-      default:
-        UNREACHABLE();
-        return;
-    }
-
-    if (g.CanBeImmediate(index, opcode)) {
-      Emit(opcode | AddressingModeField::encode(kMode_Offset_RI), g.NoOutput(),
-           g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
-    } else {
-      Emit(opcode | AddressingModeField::encode(kMode_Offset_RR), g.NoOutput(),
-           g.UseRegister(base), g.UseRegister(index), g.UseRegister(value));
-    }
+    Emit(opcode | AddressingModeField::encode(kMode_Offset_RR), g.NoOutput(),
+         g.UseRegister(base), g.UseRegister(index), g.UseRegister(value));
   }
 }
 
@@ -1119,28 +1099,8 @@ void InstructionSelector::VisitFloat64Sqrt(Node* node) {
 }
 
 
-void InstructionSelector::VisitFloat32RoundDown(Node* node) {
-  VisitRR(this, kArmVrintmF32, node);
-}
-
-
 void InstructionSelector::VisitFloat64RoundDown(Node* node) {
   VisitRR(this, kArmVrintmF64, node);
-}
-
-
-void InstructionSelector::VisitFloat32RoundUp(Node* node) {
-  VisitRR(this, kArmVrintpF32, node);
-}
-
-
-void InstructionSelector::VisitFloat64RoundUp(Node* node) {
-  VisitRR(this, kArmVrintpF64, node);
-}
-
-
-void InstructionSelector::VisitFloat32RoundTruncate(Node* node) {
-  VisitRR(this, kArmVrintzF32, node);
 }
 
 
@@ -1154,20 +1114,23 @@ void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
 }
 
 
-void InstructionSelector::VisitFloat32RoundTiesEven(Node* node) {
-  VisitRR(this, kArmVrintnF32, node);
-}
-
-
-void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
-  VisitRR(this, kArmVrintnF64, node);
-}
-
-
-void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
-                                               const CallDescriptor* descriptor,
-                                               Node* node) {
+void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
   ArmOperandGenerator g(this);
+  const CallDescriptor* descriptor = OpParameter<const CallDescriptor*>(node);
+
+  FrameStateDescriptor* frame_state_descriptor = nullptr;
+  if (descriptor->NeedsFrameState()) {
+    frame_state_descriptor =
+        GetFrameStateDescriptor(node->InputAt(descriptor->InputCount()));
+  }
+
+  CallBuffer buffer(zone(), descriptor, frame_state_descriptor);
+
+  // Compute InstructionOperands for inputs and outputs.
+  // TODO(turbofan): on ARM it's probably better to use the code object in a
+  // register if there are multiple uses of it. Improve constant pool and the
+  // heuristics in the register allocator for where to emit constants.
+  InitializeCallBuffer(node, &buffer, true, true);
 
   // Prepare for C function call.
   if (descriptor->IsCFunctionCall()) {
@@ -1176,8 +1139,8 @@ void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
          0, nullptr, 0, nullptr);
 
     // Poke any stack arguments.
-    for (size_t n = 0; n < arguments->size(); ++n) {
-      if (Node* input = (*arguments)[n]) {
+    for (size_t n = 0; n < buffer.pushed_nodes.size(); ++n) {
+      if (Node* input = buffer.pushed_nodes[n]) {
         int slot = static_cast<int>(n);
         Emit(kArmPoke | MiscField::encode(slot), g.NoOutput(),
              g.UseRegister(input));
@@ -1185,16 +1148,131 @@ void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
     }
   } else {
     // Push any stack arguments.
-    for (Node* input : base::Reversed(*arguments)) {
+    for (Node* input : base::Reversed(buffer.pushed_nodes)) {
       // Skip any alignment holes in pushed nodes.
       if (input == nullptr) continue;
       Emit(kArmPush, g.NoOutput(), g.UseRegister(input));
     }
   }
+
+  // Pass label of exception handler block.
+  CallDescriptor::Flags flags = descriptor->flags();
+  if (handler) {
+    DCHECK_EQ(IrOpcode::kIfException, handler->front()->opcode());
+    IfExceptionHint hint = OpParameter<IfExceptionHint>(handler->front());
+    if (hint == IfExceptionHint::kLocallyCaught) {
+      flags |= CallDescriptor::kHasLocalCatchHandler;
+    }
+    flags |= CallDescriptor::kHasExceptionHandler;
+    buffer.instruction_args.push_back(g.Label(handler));
+  }
+
+  // Select the appropriate opcode based on the call type.
+  InstructionCode opcode = kArchNop;
+  switch (descriptor->kind()) {
+    case CallDescriptor::kCallAddress:
+      opcode =
+          kArchCallCFunction |
+          MiscField::encode(static_cast<int>(descriptor->CParameterCount()));
+      break;
+    case CallDescriptor::kCallCodeObject:
+      opcode = kArchCallCodeObject | MiscField::encode(flags);
+      break;
+    case CallDescriptor::kCallJSFunction:
+      opcode = kArchCallJSFunction | MiscField::encode(flags);
+      break;
+    case CallDescriptor::kLazyBailout:
+      opcode = kArchLazyBailout | MiscField::encode(flags);
+      break;
+  }
+
+  // Emit the call instruction.
+  size_t const output_count = buffer.outputs.size();
+  auto* outputs = output_count ? &buffer.outputs.front() : nullptr;
+  Emit(opcode, output_count, outputs, buffer.instruction_args.size(),
+       &buffer.instruction_args.front())->MarkAsCall();
 }
 
 
-bool InstructionSelector::IsTailCallAddressImmediate() { return false; }
+void InstructionSelector::VisitTailCall(Node* node) {
+  ArmOperandGenerator g(this);
+  CallDescriptor const* descriptor = OpParameter<CallDescriptor const*>(node);
+  DCHECK_NE(0, descriptor->flags() & CallDescriptor::kSupportsTailCalls);
+  DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kPatchableCallSite);
+  DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kNeedsNopAfterCall);
+
+  // TODO(turbofan): Relax restriction for stack parameters.
+  if (linkage()->GetIncomingDescriptor()->CanTailCall(node)) {
+    CallBuffer buffer(zone(), descriptor, nullptr);
+
+    // Compute InstructionOperands for inputs and outputs.
+    // TODO(turbofan): on ARM it's probably better to use the code object in a
+    // register if there are multiple uses of it. Improve constant pool and the
+    // heuristics in the register allocator for where to emit constants.
+    InitializeCallBuffer(node, &buffer, true, false);
+
+    // Select the appropriate opcode based on the call type.
+    InstructionCode opcode;
+    switch (descriptor->kind()) {
+      case CallDescriptor::kCallCodeObject:
+        opcode = kArchTailCallCodeObject;
+        break;
+      case CallDescriptor::kCallJSFunction:
+        opcode = kArchTailCallJSFunction;
+        break;
+      default:
+        UNREACHABLE();
+        return;
+    }
+    opcode |= MiscField::encode(descriptor->flags());
+
+    // Emit the tailcall instruction.
+    Emit(opcode, 0, nullptr, buffer.instruction_args.size(),
+         &buffer.instruction_args.front());
+  } else {
+    FrameStateDescriptor* frame_state_descriptor =
+        descriptor->NeedsFrameState()
+            ? GetFrameStateDescriptor(
+                  node->InputAt(static_cast<int>(descriptor->InputCount())))
+            : nullptr;
+
+    CallBuffer buffer(zone(), descriptor, frame_state_descriptor);
+
+    // Compute InstructionOperands for inputs and outputs.
+    // TODO(turbofan): on ARM it's probably better to use the code object in a
+    // register if there are multiple uses of it. Improve constant pool and the
+    // heuristics in the register allocator for where to emit constants.
+    InitializeCallBuffer(node, &buffer, true, false);
+
+    // Push any stack arguments.
+    for (Node* input : base::Reversed(buffer.pushed_nodes)) {
+      Emit(kArmPush, g.NoOutput(), g.UseRegister(input));
+    }
+
+    // Select the appropriate opcode based on the call type.
+    InstructionCode opcode;
+    switch (descriptor->kind()) {
+      case CallDescriptor::kCallCodeObject: {
+        opcode = kArchCallCodeObject;
+        break;
+      }
+      case CallDescriptor::kCallJSFunction:
+        opcode = kArchCallJSFunction;
+        break;
+      default:
+        UNREACHABLE();
+        return;
+    }
+    opcode |= MiscField::encode(descriptor->flags());
+
+    // Emit the call instruction.
+    size_t const output_count = buffer.outputs.size();
+    auto* outputs = output_count ? &buffer.outputs.front() : nullptr;
+    Emit(opcode, output_count, outputs, buffer.instruction_args.size(),
+         &buffer.instruction_args.front())->MarkAsCall();
+    Emit(kArchRet, 0, nullptr, output_count, outputs);
+  }
+}
 
 
 namespace {
@@ -1589,15 +1667,9 @@ InstructionSelector::SupportedMachineOperatorFlags() {
       MachineOperatorBuilder::kInt32DivIsSafe |
       MachineOperatorBuilder::kUint32DivIsSafe;
   if (CpuFeatures::IsSupported(ARMv8)) {
-    flags |= MachineOperatorBuilder::kFloat32RoundDown |
-             MachineOperatorBuilder::kFloat64RoundDown |
-             MachineOperatorBuilder::kFloat32RoundUp |
-             MachineOperatorBuilder::kFloat64RoundUp |
-             MachineOperatorBuilder::kFloat32RoundTruncate |
+    flags |= MachineOperatorBuilder::kFloat64RoundDown |
              MachineOperatorBuilder::kFloat64RoundTruncate |
-             MachineOperatorBuilder::kFloat64RoundTiesAway |
-             MachineOperatorBuilder::kFloat32RoundTiesEven |
-             MachineOperatorBuilder::kFloat64RoundTiesEven;
+             MachineOperatorBuilder::kFloat64RoundTiesAway;
   }
   return flags;
 }

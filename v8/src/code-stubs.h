@@ -27,6 +27,7 @@ namespace internal {
   V(CallApiAccessor)                        \
   V(CallApiGetter)                          \
   V(CallConstruct)                          \
+  V(CallFunction)                           \
   V(CallIC)                                 \
   V(CEntry)                                 \
   V(CompareIC)                              \
@@ -44,6 +45,7 @@ namespace internal {
   V(ProfileEntryHook)                       \
   V(RecordWrite)                            \
   V(RegExpExec)                             \
+  V(StoreArrayLiteralElement)               \
   V(StoreBufferOverflow)                    \
   V(StoreElement)                           \
   V(StringCompare)                          \
@@ -59,7 +61,6 @@ namespace internal {
   V(VectorKeyedStoreIC)                     \
   /* HydrogenCodeStubs */                   \
   V(AllocateHeapNumber)                     \
-  V(AllocateMutableHeapNumber)              \
   V(AllocateInNewSpace)                     \
   V(ArrayNArgumentsConstructor)             \
   V(ArrayNoArgumentConstructor)             \
@@ -70,7 +71,6 @@ namespace internal {
   V(CreateAllocationSite)                   \
   V(CreateWeakCell)                         \
   V(ElementsTransitionAndStore)             \
-  V(FastCloneRegExp)                        \
   V(FastCloneShallowArray)                  \
   V(FastCloneShallowObject)                 \
   V(FastNewClosure)                         \
@@ -541,7 +541,7 @@ class TurboFanCodeStub : public CodeStub {
   // Retrieve the code for the stub. Generate the code if needed.
   Handle<Code> GenerateCode() override;
 
-  int GetStackParameterCount() const override {
+  virtual int GetStackParameterCount() const override {
     return GetCallInterfaceDescriptor().GetStackParameterCount();
   }
 
@@ -632,9 +632,9 @@ class StubRuntimeCallHelper : public RuntimeCallHelper {
  public:
   StubRuntimeCallHelper() {}
 
-  void BeforeCall(MacroAssembler* masm) const override;
+  virtual void BeforeCall(MacroAssembler* masm) const;
 
-  void AfterCall(MacroAssembler* masm) const override;
+  virtual void AfterCall(MacroAssembler* masm) const;
 };
 
 
@@ -643,9 +643,9 @@ class NopRuntimeCallHelper : public RuntimeCallHelper {
  public:
   NopRuntimeCallHelper() {}
 
-  void BeforeCall(MacroAssembler* masm) const override {}
+  virtual void BeforeCall(MacroAssembler* masm) const {}
 
-  void AfterCall(MacroAssembler* masm) const override {}
+  virtual void AfterCall(MacroAssembler* masm) const {}
 };
 
 
@@ -791,16 +791,6 @@ class FastNewContextStub final : public HydrogenCodeStub {
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewContext);
   DEFINE_HYDROGEN_CODE_STUB(FastNewContext, HydrogenCodeStub);
-};
-
-
-class FastCloneRegExpStub final : public HydrogenCodeStub {
- public:
-  explicit FastCloneRegExpStub(Isolate* isolate) : HydrogenCodeStub(isolate) {}
-
- private:
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastCloneRegExp);
-  DEFINE_HYDROGEN_CODE_STUB(FastCloneRegExp, HydrogenCodeStub);
 };
 
 
@@ -985,15 +975,18 @@ class CallICStub: public PlatformCodeStub {
 
   Code::Kind GetCodeKind() const override { return Code::CALL_IC; }
 
-  InlineCacheState GetICState() const override { return GENERIC; }
+  InlineCacheState GetICState() const override { return DEFAULT; }
 
   ExtraICState GetExtraICState() const final {
     return static_cast<ExtraICState>(minor_key_);
   }
 
  protected:
-  int arg_count() const { return state().argc(); }
-  ConvertReceiverMode convert_mode() const { return state().convert_mode(); }
+  bool CallAsMethod() const {
+    return state().call_type() == CallICState::METHOD;
+  }
+
+  int arg_count() const { return state().arg_count(); }
 
   CallICState state() const {
     return CallICState(static_cast<ExtraICState>(minor_key_));
@@ -1243,15 +1236,20 @@ class StoreTransitionHelper {
   }
 
   static Register SlotRegister() {
+    DCHECK(FLAG_vector_stores);
     return VectorStoreTransitionDescriptor::SlotRegister();
   }
 
   static Register VectorRegister() {
+    DCHECK(FLAG_vector_stores);
     return VectorStoreTransitionDescriptor::VectorRegister();
   }
 
   static Register MapRegister() {
-    return VectorStoreTransitionDescriptor::MapRegister();
+    if (FLAG_vector_stores) {
+      return VectorStoreTransitionDescriptor::MapRegister();
+    }
+    return StoreTransitionDescriptor::MapRegister();
   }
 
   static int ReceiverIndex() {
@@ -1269,6 +1267,7 @@ class StoreTransitionHelper {
   }
 
   static int VectorIndex() {
+    DCHECK(FLAG_vector_stores);
     if (HasVirtualSlotArg()) {
       return VectorStoreTransitionDescriptor::kVirtualSlotVectorIndex;
     }
@@ -1277,6 +1276,7 @@ class StoreTransitionHelper {
 
   // Some platforms don't have a slot arg.
   static bool HasVirtualSlotArg() {
+    if (!FLAG_vector_stores) return false;
     return SlotRegister().is(no_reg);
   }
 };
@@ -1357,7 +1357,7 @@ class StoreGlobalStub : public HandlerStub {
     return isolate->factory()->termination_exception();
   }
 
-  Handle<Code> GetCodeCopyFromTemplate(Handle<JSGlobalObject> global,
+  Handle<Code> GetCodeCopyFromTemplate(Handle<GlobalObject> global,
                                        Handle<PropertyCell> cell) {
     Code::FindAndReplacePattern pattern;
     if (check_global()) {
@@ -1962,10 +1962,63 @@ class RegExpConstructResultStub final : public HydrogenCodeStub {
 };
 
 
-// TODO(bmeurer/mvstanton): Turn CallConstructStub into ConstructICStub.
-class CallConstructStub final : public PlatformCodeStub {
+// TODO(bmeurer): Deprecate the CallFunctionStub in favor of the more general
+// Invoke family of builtins.
+class CallFunctionStub: public PlatformCodeStub {
  public:
-  explicit CallConstructStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
+  CallFunctionStub(Isolate* isolate, int argc, CallFunctionFlags flags)
+      : PlatformCodeStub(isolate) {
+    DCHECK(argc >= 0 && argc <= Code::kMaxArguments);
+    minor_key_ = ArgcBits::encode(argc) | FlagBits::encode(flags);
+  }
+
+ private:
+  int argc() const { return ArgcBits::decode(minor_key_); }
+  int flags() const { return FlagBits::decode(minor_key_); }
+
+  bool CallAsMethod() const {
+    return flags() == CALL_AS_METHOD || flags() == WRAP_AND_CALL;
+  }
+
+  bool NeedsChecks() const { return flags() != WRAP_AND_CALL; }
+
+  void PrintName(std::ostream& os) const override;  // NOLINT
+
+  // Minor key encoding in 32 bits with Bitfield <Type, shift, size>.
+  class FlagBits : public BitField<CallFunctionFlags, 0, 2> {};
+  class ArgcBits : public BitField<unsigned, 2, Code::kArgumentsBits> {};
+  STATIC_ASSERT(Code::kArgumentsBits + 2 <= kStubMinorKeyBits);
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(CallFunction);
+  DEFINE_PLATFORM_CODE_STUB(CallFunction, PlatformCodeStub);
+};
+
+
+class CallConstructStub: public PlatformCodeStub {
+ public:
+  CallConstructStub(Isolate* isolate, CallConstructorFlags flags)
+      : PlatformCodeStub(isolate) {
+    minor_key_ = FlagBits::encode(flags);
+  }
+
+  void FinishCode(Handle<Code> code) override {
+    code->set_has_function_cache(RecordCallTarget());
+  }
+
+ private:
+  CallConstructorFlags flags() const { return FlagBits::decode(minor_key_); }
+
+  bool RecordCallTarget() const {
+    return (flags() & RECORD_CONSTRUCTOR_TARGET) != 0;
+  }
+
+  bool IsSuperConstructorCall() const {
+    return (flags() & SUPER_CONSTRUCTOR_CALL) != 0;
+  }
+
+  void PrintName(std::ostream& os) const override;  // NOLINT
+
+  class FlagBits : public BitField<CallConstructorFlags, 0, 2> {};
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(CallConstruct);
   DEFINE_PLATFORM_CODE_STUB(CallConstruct, PlatformCodeStub);
@@ -2205,7 +2258,7 @@ class LoadICTrampolineStub : public PlatformCodeStub {
 
   Code::Kind GetCodeKind() const override { return Code::LOAD_IC; }
 
-  InlineCacheState GetICState() const final { return GENERIC; }
+  InlineCacheState GetICState() const final { return DEFAULT; }
 
   ExtraICState GetExtraICState() const final {
     return static_cast<ExtraICState>(minor_key_);
@@ -2241,7 +2294,7 @@ class VectorStoreICTrampolineStub : public PlatformCodeStub {
 
   Code::Kind GetCodeKind() const override { return Code::STORE_IC; }
 
-  InlineCacheState GetICState() const final { return GENERIC; }
+  InlineCacheState GetICState() const final { return DEFAULT; }
 
   ExtraICState GetExtraICState() const final {
     return static_cast<ExtraICState>(minor_key_);
@@ -2279,7 +2332,7 @@ class CallICTrampolineStub : public PlatformCodeStub {
 
   Code::Kind GetCodeKind() const override { return Code::CALL_IC; }
 
-  InlineCacheState GetICState() const final { return GENERIC; }
+  InlineCacheState GetICState() const final { return DEFAULT; }
 
   ExtraICState GetExtraICState() const final {
     return static_cast<ExtraICState>(minor_key_);
@@ -2305,7 +2358,7 @@ class LoadICStub : public PlatformCodeStub {
   void GenerateForTrampoline(MacroAssembler* masm);
 
   Code::Kind GetCodeKind() const override { return Code::LOAD_IC; }
-  InlineCacheState GetICState() const final { return GENERIC; }
+  InlineCacheState GetICState() const final { return DEFAULT; }
   ExtraICState GetExtraICState() const final {
     return static_cast<ExtraICState>(minor_key_);
   }
@@ -2328,7 +2381,7 @@ class KeyedLoadICStub : public PlatformCodeStub {
   void GenerateForTrampoline(MacroAssembler* masm);
 
   Code::Kind GetCodeKind() const override { return Code::KEYED_LOAD_IC; }
-  InlineCacheState GetICState() const final { return GENERIC; }
+  InlineCacheState GetICState() const final { return DEFAULT; }
   ExtraICState GetExtraICState() const final {
     return static_cast<ExtraICState>(minor_key_);
   }
@@ -2351,7 +2404,7 @@ class VectorStoreICStub : public PlatformCodeStub {
   void GenerateForTrampoline(MacroAssembler* masm);
 
   Code::Kind GetCodeKind() const final { return Code::STORE_IC; }
-  InlineCacheState GetICState() const final { return GENERIC; }
+  InlineCacheState GetICState() const final { return DEFAULT; }
   ExtraICState GetExtraICState() const final {
     return static_cast<ExtraICState>(minor_key_);
   }
@@ -2374,8 +2427,8 @@ class VectorKeyedStoreICStub : public PlatformCodeStub {
   void GenerateForTrampoline(MacroAssembler* masm);
 
   Code::Kind GetCodeKind() const final { return Code::KEYED_STORE_IC; }
-  InlineCacheState GetICState() const final { return GENERIC; }
-  ExtraICState GetExtraICState() const final {
+  InlineCacheState GetICState() const final { return DEFAULT; }
+  virtual ExtraICState GetExtraICState() const final {
     return static_cast<ExtraICState>(minor_key_);
   }
 
@@ -2549,7 +2602,10 @@ class StoreFastElementStub : public HydrogenCodeStub {
   }
 
   CallInterfaceDescriptor GetCallInterfaceDescriptor() const override {
-    return VectorStoreICDescriptor(isolate());
+    if (FLAG_vector_stores) {
+      return VectorStoreICDescriptor(isolate());
+    }
+    return StoreDescriptor(isolate());
   }
 
   Code::Kind GetCodeKind() const override { return Code::HANDLER; }
@@ -2599,17 +2655,6 @@ class AllocateHeapNumberStub final : public HydrogenCodeStub {
  private:
   DEFINE_CALL_INTERFACE_DESCRIPTOR(AllocateHeapNumber);
   DEFINE_HYDROGEN_CODE_STUB(AllocateHeapNumber, HydrogenCodeStub);
-};
-
-
-class AllocateMutableHeapNumberStub final : public HydrogenCodeStub {
- public:
-  explicit AllocateMutableHeapNumberStub(Isolate* isolate)
-      : HydrogenCodeStub(isolate) {}
-
- private:
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(AllocateMutableHeapNumber);
-  DEFINE_HYDROGEN_CODE_STUB(AllocateMutableHeapNumber, HydrogenCodeStub);
 };
 
 
@@ -2800,7 +2845,10 @@ class StoreElementStub : public PlatformCodeStub {
   }
 
   CallInterfaceDescriptor GetCallInterfaceDescriptor() const override {
-    return VectorStoreICDescriptor(isolate());
+    if (FLAG_vector_stores) {
+      return VectorStoreICDescriptor(isolate());
+    }
+    return StoreDescriptor(isolate());
   }
 
   Code::Kind GetCodeKind() const override { return Code::HANDLER; }
@@ -2935,6 +2983,16 @@ class ElementsTransitionAndStoreStub : public HydrogenCodeStub {
   class IsJSArrayBits : public BitField<bool, 19, 1> {};
 
   DEFINE_HYDROGEN_CODE_STUB(ElementsTransitionAndStore, HydrogenCodeStub);
+};
+
+
+class StoreArrayLiteralElementStub : public PlatformCodeStub {
+ public:
+  explicit StoreArrayLiteralElementStub(Isolate* isolate)
+      : PlatformCodeStub(isolate) { }
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(StoreArrayLiteralElement);
+  DEFINE_PLATFORM_CODE_STUB(StoreArrayLiteralElement, PlatformCodeStub);
 };
 
 

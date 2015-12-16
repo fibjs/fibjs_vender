@@ -1183,16 +1183,7 @@ void Decoder::DecodeTypeRegisterSPECIAL(Instruction* instr) {
       }
       break;
     case MFLO:
-      if (instr->Bits(25, 16) == 0) {
-        Format(instr, "mflo    'rd");
-      } else {
-        if ((instr->FunctionFieldRaw() == DCLZ_R6) && (instr->FdValue() == 1)) {
-          Format(instr, "dclz    'rd, 'rs");
-        } else if ((instr->FunctionFieldRaw() == DCLO_R6) &&
-                   (instr->FdValue() == 1)) {
-          Format(instr, "dclo     'rd, 'rs");
-        }
-      }
+      Format(instr, "mflo    'rd");
       break;
     case D_MUL_MUH_U:  // Equals to DMULTU.
       if (kArchVariant != kMips64r6) {
@@ -1371,11 +1362,6 @@ void Decoder::DecodeTypeRegisterSPECIAL2(Instruction* instr) {
     case CLZ:
       if (kArchVariant != kMips64r6) {
         Format(instr, "clz     'rd, 'rs");
-      }
-      break;
-    case DCLZ:
-      if (kArchVariant != kMips64r6) {
-        Format(instr, "dclz    'rd, 'rs");
       }
       break;
     default:

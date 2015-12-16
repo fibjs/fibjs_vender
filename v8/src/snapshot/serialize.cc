@@ -15,7 +15,7 @@
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
 #include "src/objects.h"
-#include "src/parsing/parser.h"
+#include "src/parser.h"
 #include "src/profiler/cpu-profiler.h"
 #include "src/runtime/runtime.h"
 #include "src/snapshot/natives.h"
@@ -60,8 +60,8 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "Heap::NewSpaceAllocationLimitAddress()");
   Add(ExternalReference::new_space_allocation_top_address(isolate).address(),
       "Heap::NewSpaceAllocationTopAddress()");
-  Add(ExternalReference::debug_last_step_action_address(isolate).address(),
-      "Debug::last_step_action_addr()");
+  Add(ExternalReference::debug_step_in_fp_address(isolate).address(),
+      "Debug::step_in_fp_addr()");
   Add(ExternalReference::mod_two_doubles_operation(isolate).address(),
       "mod_two_doubles");
   // Keyed lookup cache.
@@ -354,6 +354,31 @@ const char* ExternalReferenceEncoder::NameOfAddress(Isolate* isolate,
 }
 
 
+RootIndexMap::RootIndexMap(Isolate* isolate) {
+  map_ = isolate->root_index_map();
+  if (map_ != NULL) return;
+  map_ = new HashMap(HashMap::PointersMatch);
+  for (uint32_t i = 0; i < Heap::kStrongRootListLength; i++) {
+    Heap::RootListIndex root_index = static_cast<Heap::RootListIndex>(i);
+    Object* root = isolate->heap()->root(root_index);
+    // Omit root entries that can be written after initialization. They must
+    // not be referenced through the root list in the snapshot.
+    if (root->IsHeapObject() &&
+        isolate->heap()->RootCanBeTreatedAsConstant(root_index)) {
+      HeapObject* heap_object = HeapObject::cast(root);
+      HashMap::Entry* entry = LookupEntry(map_, heap_object, false);
+      if (entry != NULL) {
+        // Some are initialized to a previous value in the root list.
+        DCHECK_LT(GetValue(entry), i);
+      } else {
+        SetValue(LookupEntry(map_, heap_object, true), i);
+      }
+    }
+  }
+  isolate->set_root_index_map(map_);
+}
+
+
 class CodeAddressMap: public CodeEventLogger {
  public:
   explicit CodeAddressMap(Isolate* isolate)
@@ -361,17 +386,18 @@ class CodeAddressMap: public CodeEventLogger {
     isolate->logger()->addCodeEventListener(this);
   }
 
-  ~CodeAddressMap() override {
+  virtual ~CodeAddressMap() {
     isolate_->logger()->removeCodeEventListener(this);
   }
 
-  void CodeMoveEvent(Address from, Address to) override {
+  virtual void CodeMoveEvent(Address from, Address to) {
     address_to_name_map_.Move(from, to);
   }
 
-  void CodeDisableOptEvent(Code* code, SharedFunctionInfo* shared) override {}
+  virtual void CodeDisableOptEvent(Code* code, SharedFunctionInfo* shared) {
+  }
 
-  void CodeDeleteEvent(Address from) override {
+  virtual void CodeDeleteEvent(Address from) {
     address_to_name_map_.Remove(from);
   }
 
@@ -451,8 +477,10 @@ class CodeAddressMap: public CodeEventLogger {
     DISALLOW_COPY_AND_ASSIGN(NameMap);
   };
 
-  void LogRecordedBuffer(Code* code, SharedFunctionInfo*, const char* name,
-                         int length) override {
+  virtual void LogRecordedBuffer(Code* code,
+                                 SharedFunctionInfo*,
+                                 const char* name,
+                                 int length) {
     address_to_name_map_.Insert(code->address(), name, length);
   }
 
@@ -636,27 +664,18 @@ void Deserializer::VisitPointers(Object** start, Object** end) {
 
 void Deserializer::DeserializeDeferredObjects() {
   for (int code = source_.Get(); code != kSynchronize; code = source_.Get()) {
-    switch (code) {
-      case kAlignmentPrefix:
-      case kAlignmentPrefix + 1:
-      case kAlignmentPrefix + 2:
-        SetAlignment(code);
-        break;
-      default: {
-        int space = code & kSpaceMask;
-        DCHECK(space <= kNumberOfSpaces);
-        DCHECK(code - space == kNewObject);
-        HeapObject* object = GetBackReferencedObject(space);
-        int size = source_.GetInt() << kPointerSizeLog2;
-        Address obj_address = object->address();
-        Object** start = reinterpret_cast<Object**>(obj_address + kPointerSize);
-        Object** end = reinterpret_cast<Object**>(obj_address + size);
-        bool filled = ReadData(start, end, space, obj_address);
-        CHECK(filled);
-        DCHECK(CanBeDeferred(object));
-        PostProcessNewObject(object, space);
-      }
-    }
+    int space = code & kSpaceMask;
+    DCHECK(space <= kNumberOfSpaces);
+    DCHECK(code - space == kNewObject);
+    HeapObject* object = GetBackReferencedObject(space);
+    int size = source_.GetInt() << kPointerSizeLog2;
+    Address obj_address = object->address();
+    Object** start = reinterpret_cast<Object**>(obj_address + kPointerSize);
+    Object** end = reinterpret_cast<Object**>(obj_address + size);
+    bool filled = ReadData(start, end, space, obj_address);
+    CHECK(filled);
+    DCHECK(CanBeDeferred(object));
+    PostProcessNewObject(object, space);
   }
 }
 
@@ -683,7 +702,7 @@ class StringTableInsertionKey : public HashTableKey {
     return String::cast(key)->Hash();
   }
 
-  MUST_USE_RESULT Handle<Object> AsHandle(Isolate* isolate) override {
+  MUST_USE_RESULT virtual Handle<Object> AsHandle(Isolate* isolate) override {
     return handle(string_, isolate);
   }
 
@@ -1197,9 +1216,12 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
 
       case kAlignmentPrefix:
       case kAlignmentPrefix + 1:
-      case kAlignmentPrefix + 2:
-        SetAlignment(data);
+      case kAlignmentPrefix + 2: {
+        DCHECK_EQ(kWordAligned, next_alignment_);
+        next_alignment_ =
+            static_cast<AllocationAlignment>(data - (kAlignmentPrefix - 1));
         break;
+      }
 
       STATIC_ASSERT(kNumberOfRootArrayConstants == Heap::kOldSpaceRoots);
       STATIC_ASSERT(kNumberOfRootArrayConstants == 32);
@@ -1373,21 +1395,21 @@ class Serializer::ObjectSerializer : public ObjectVisitor {
         code_has_been_output_(false) {}
   void Serialize();
   void SerializeDeferred();
-  void VisitPointers(Object** start, Object** end) override;
-  void VisitEmbeddedPointer(RelocInfo* target) override;
-  void VisitExternalReference(Address* p) override;
-  void VisitExternalReference(RelocInfo* rinfo) override;
-  void VisitInternalReference(RelocInfo* rinfo) override;
-  void VisitCodeTarget(RelocInfo* target) override;
-  void VisitCodeEntry(Address entry_address) override;
-  void VisitCell(RelocInfo* rinfo) override;
-  void VisitRuntimeEntry(RelocInfo* reloc) override;
+  void VisitPointers(Object** start, Object** end);
+  void VisitEmbeddedPointer(RelocInfo* target);
+  void VisitExternalReference(Address* p);
+  void VisitExternalReference(RelocInfo* rinfo);
+  void VisitInternalReference(RelocInfo* rinfo);
+  void VisitCodeTarget(RelocInfo* target);
+  void VisitCodeEntry(Address entry_address);
+  void VisitCell(RelocInfo* rinfo);
+  void VisitRuntimeEntry(RelocInfo* reloc);
   // Used for seralizing the external strings that hold the natives source.
   void VisitExternalOneByteString(
-      v8::String::ExternalOneByteStringResource** resource) override;
+      v8::String::ExternalOneByteStringResource** resource);
   // We can't serialize a heap with external two byte strings.
   void VisitExternalTwoByteString(
-      v8::String::ExternalStringResource** resource) override {
+      v8::String::ExternalStringResource** resource) {
     UNREACHABLE();
   }
 
@@ -1480,6 +1502,7 @@ void PartialSerializer::Serialize(Object** o) {
       context->set(Context::NEXT_CONTEXT_LINK,
                    isolate_->heap()->undefined_value());
       DCHECK(!context->global_object()->IsUndefined());
+      DCHECK(!context->builtins()->IsUndefined());
     }
   }
   VisitPointer(o);
@@ -2063,7 +2086,6 @@ void Serializer::ObjectSerializer::SerializeDeferred() {
   CHECK_EQ(0, bytes_processed_so_far_);
   bytes_processed_so_far_ = kPointerSize;
 
-  serializer_->PutAlignmentPrefix(object_);
   sink_->Put(kNewObject + reference.space(), "deferred object");
   serializer_->PutBackReference(object_, reference);
   sink_->PutInt(size >> kPointerSizeLog2, "deferred object size");
@@ -2465,7 +2487,7 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
   // Past this point we should not see any (context-specific) maps anymore.
   CHECK(!obj->IsMap());
   // There should be no references to the global object embedded.
-  CHECK(!obj->IsJSGlobalProxy() && !obj->IsJSGlobalObject());
+  CHECK(!obj->IsJSGlobalProxy() && !obj->IsGlobalObject());
   // There should be no hash table embedded. They would require rehashing.
   CHECK(!obj->IsHashTable());
   // We expect no instantiated function objects or contexts.

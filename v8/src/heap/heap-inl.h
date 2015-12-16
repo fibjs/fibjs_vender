@@ -257,21 +257,20 @@ void Heap::OnAllocationEvent(HeapObject* object, int size_in_bytes) {
     profiler->AllocationEvent(object->address(), size_in_bytes);
   }
 
-  if (FLAG_verify_predictable) {
-    ++allocations_count_;
-    // Advance synthetic time by making a time request.
-    MonotonicallyIncreasingTimeInMs();
+  ++allocations_count_;
 
+  if (FLAG_verify_predictable) {
     UpdateAllocationsHash(object);
     UpdateAllocationsHash(size_in_bytes);
 
-    if (allocations_count_ % FLAG_dump_allocations_digest_at_alloc == 0) {
+    if ((FLAG_dump_allocations_digest_at_alloc > 0) &&
+        (--dump_allocations_hash_countdown_ == 0)) {
+      dump_allocations_hash_countdown_ = FLAG_dump_allocations_digest_at_alloc;
       PrintAlloctionsHash();
     }
   }
 
   if (FLAG_trace_allocation_stack_interval > 0) {
-    if (!FLAG_verify_predictable) ++allocations_count_;
     if (allocations_count_ % FLAG_trace_allocation_stack_interval == 0) {
       isolate()->PrintStack(stdout, Isolate::kPrintStackConcise);
     }
@@ -293,14 +292,14 @@ void Heap::OnMoveEvent(HeapObject* target, HeapObject* source,
 
   if (FLAG_verify_predictable) {
     ++allocations_count_;
-    // Advance synthetic time by making a time request.
-    MonotonicallyIncreasingTimeInMs();
 
     UpdateAllocationsHash(source);
     UpdateAllocationsHash(target);
     UpdateAllocationsHash(size_in_bytes);
 
-    if (allocations_count_ % FLAG_dump_allocations_digest_at_alloc == 0) {
+    if ((FLAG_dump_allocations_digest_at_alloc > 0) &&
+        (--dump_allocations_hash_countdown_ == 0)) {
+      dump_allocations_hash_countdown_ = FLAG_dump_allocations_digest_at_alloc;
       PrintAlloctionsHash();
     }
   }

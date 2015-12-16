@@ -23,7 +23,7 @@ namespace v8 {
 namespace internal {
 
 
-DisassemblingDecoder::DisassemblingDecoder() {
+Disassembler::Disassembler() {
   buffer_size_ = 256;
   buffer_ = reinterpret_cast<char*>(malloc(buffer_size_));
   buffer_pos_ = 0;
@@ -31,7 +31,7 @@ DisassemblingDecoder::DisassemblingDecoder() {
 }
 
 
-DisassemblingDecoder::DisassemblingDecoder(char* text_buffer, int buffer_size) {
+Disassembler::Disassembler(char* text_buffer, int buffer_size) {
   buffer_size_ = buffer_size;
   buffer_ = text_buffer;
   buffer_pos_ = 0;
@@ -39,17 +39,19 @@ DisassemblingDecoder::DisassemblingDecoder(char* text_buffer, int buffer_size) {
 }
 
 
-DisassemblingDecoder::~DisassemblingDecoder() {
+Disassembler::~Disassembler() {
   if (own_buffer_) {
     free(buffer_);
   }
 }
 
 
-char* DisassemblingDecoder::GetOutput() { return buffer_; }
+char* Disassembler::GetOutput() {
+  return buffer_;
+}
 
 
-void DisassemblingDecoder::VisitAddSubImmediate(Instruction* instr) {
+void Disassembler::VisitAddSubImmediate(Instruction* instr) {
   bool rd_is_zr = RdIsZROrSP(instr);
   bool stack_op = (rd_is_zr || RnIsZROrSP(instr)) &&
                   (instr->ImmAddSub() == 0) ? true : false;
@@ -94,7 +96,7 @@ void DisassemblingDecoder::VisitAddSubImmediate(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitAddSubShifted(Instruction* instr) {
+void Disassembler::VisitAddSubShifted(Instruction* instr) {
   bool rd_is_zr = RdIsZROrSP(instr);
   bool rn_is_zr = RnIsZROrSP(instr);
   const char *mnemonic = "";
@@ -141,7 +143,7 @@ void DisassemblingDecoder::VisitAddSubShifted(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitAddSubExtended(Instruction* instr) {
+void Disassembler::VisitAddSubExtended(Instruction* instr) {
   bool rd_is_zr = RdIsZROrSP(instr);
   const char *mnemonic = "";
   Extend mode = static_cast<Extend>(instr->ExtendMode());
@@ -179,7 +181,7 @@ void DisassemblingDecoder::VisitAddSubExtended(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitAddSubWithCarry(Instruction* instr) {
+void Disassembler::VisitAddSubWithCarry(Instruction* instr) {
   bool rn_is_zr = RnIsZROrSP(instr);
   const char *mnemonic = "";
   const char *form = "'Rd, 'Rn, 'Rm";
@@ -214,7 +216,7 @@ void DisassemblingDecoder::VisitAddSubWithCarry(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitLogicalImmediate(Instruction* instr) {
+void Disassembler::VisitLogicalImmediate(Instruction* instr) {
   bool rd_is_zr = RdIsZROrSP(instr);
   bool rn_is_zr = RnIsZROrSP(instr);
   const char *mnemonic = "";
@@ -257,7 +259,7 @@ void DisassemblingDecoder::VisitLogicalImmediate(Instruction* instr) {
 }
 
 
-bool DisassemblingDecoder::IsMovzMovnImm(unsigned reg_size, uint64_t value) {
+bool Disassembler::IsMovzMovnImm(unsigned reg_size, uint64_t value) {
   DCHECK((reg_size == kXRegSizeInBits) ||
          ((reg_size == kWRegSizeInBits) && (value <= 0xffffffff)));
 
@@ -286,7 +288,7 @@ bool DisassemblingDecoder::IsMovzMovnImm(unsigned reg_size, uint64_t value) {
 }
 
 
-void DisassemblingDecoder::VisitLogicalShifted(Instruction* instr) {
+void Disassembler::VisitLogicalShifted(Instruction* instr) {
   bool rd_is_zr = RdIsZROrSP(instr);
   bool rn_is_zr = RnIsZROrSP(instr);
   const char *mnemonic = "";
@@ -337,7 +339,7 @@ void DisassemblingDecoder::VisitLogicalShifted(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitConditionalCompareRegister(Instruction* instr) {
+void Disassembler::VisitConditionalCompareRegister(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Rn, 'Rm, 'INzcv, 'Cond";
 
@@ -352,8 +354,7 @@ void DisassemblingDecoder::VisitConditionalCompareRegister(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitConditionalCompareImmediate(
-    Instruction* instr) {
+void Disassembler::VisitConditionalCompareImmediate(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Rn, 'IP, 'INzcv, 'Cond";
 
@@ -368,7 +369,7 @@ void DisassemblingDecoder::VisitConditionalCompareImmediate(
 }
 
 
-void DisassemblingDecoder::VisitConditionalSelect(Instruction* instr) {
+void Disassembler::VisitConditionalSelect(Instruction* instr) {
   bool rnm_is_zr = (RnIsZROrSP(instr) && RmIsZROrSP(instr));
   bool rn_is_rm = (instr->Rn() == instr->Rm());
   const char *mnemonic = "";
@@ -421,7 +422,7 @@ void DisassemblingDecoder::VisitConditionalSelect(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitBitfield(Instruction* instr) {
+void Disassembler::VisitBitfield(Instruction* instr) {
   unsigned s = instr->ImmS();
   unsigned r = instr->ImmR();
   unsigned rd_size_minus_1 =
@@ -499,7 +500,7 @@ void DisassemblingDecoder::VisitBitfield(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitExtract(Instruction* instr) {
+void Disassembler::VisitExtract(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Rd, 'Rn, 'Rm, 'IExtract";
 
@@ -520,7 +521,7 @@ void DisassemblingDecoder::VisitExtract(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitPCRelAddressing(Instruction* instr) {
+void Disassembler::VisitPCRelAddressing(Instruction* instr) {
   switch (instr->Mask(PCRelAddressingMask)) {
     case ADR: Format(instr, "adr", "'Xd, 'AddrPCRelByte"); break;
     // ADRP is not implemented.
@@ -529,7 +530,7 @@ void DisassemblingDecoder::VisitPCRelAddressing(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitConditionalBranch(Instruction* instr) {
+void Disassembler::VisitConditionalBranch(Instruction* instr) {
   switch (instr->Mask(ConditionalBranchMask)) {
     case B_cond: Format(instr, "b.'CBrn", "'BImmCond"); break;
     default: UNREACHABLE();
@@ -537,8 +538,7 @@ void DisassemblingDecoder::VisitConditionalBranch(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitUnconditionalBranchToRegister(
-    Instruction* instr) {
+void Disassembler::VisitUnconditionalBranchToRegister(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "'Xn";
 
@@ -558,7 +558,7 @@ void DisassemblingDecoder::VisitUnconditionalBranchToRegister(
 }
 
 
-void DisassemblingDecoder::VisitUnconditionalBranch(Instruction* instr) {
+void Disassembler::VisitUnconditionalBranch(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'BImmUncn";
 
@@ -571,7 +571,7 @@ void DisassemblingDecoder::VisitUnconditionalBranch(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitDataProcessing1Source(Instruction* instr) {
+void Disassembler::VisitDataProcessing1Source(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Rd, 'Rn";
 
@@ -592,7 +592,7 @@ void DisassemblingDecoder::VisitDataProcessing1Source(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitDataProcessing2Source(Instruction* instr) {
+void Disassembler::VisitDataProcessing2Source(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "'Rd, 'Rn, 'Rm";
 
@@ -613,7 +613,7 @@ void DisassemblingDecoder::VisitDataProcessing2Source(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitDataProcessing3Source(Instruction* instr) {
+void Disassembler::VisitDataProcessing3Source(Instruction* instr) {
   bool ra_is_zr = RaIsZROrSP(instr);
   const char *mnemonic = "";
   const char *form = "'Xd, 'Wn, 'Wm, 'Xa";
@@ -691,7 +691,7 @@ void DisassemblingDecoder::VisitDataProcessing3Source(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitCompareBranch(Instruction* instr) {
+void Disassembler::VisitCompareBranch(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Rt, 'BImmCmpa";
 
@@ -706,7 +706,7 @@ void DisassemblingDecoder::VisitCompareBranch(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitTestBranch(Instruction* instr) {
+void Disassembler::VisitTestBranch(Instruction* instr) {
   const char *mnemonic = "";
   // If the top bit of the immediate is clear, the tested register is
   // disassembled as Wt, otherwise Xt. As the top bit of the immediate is
@@ -723,7 +723,7 @@ void DisassemblingDecoder::VisitTestBranch(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitMoveWideImmediate(Instruction* instr) {
+void Disassembler::VisitMoveWideImmediate(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Rd, 'IMoveImm";
 
@@ -762,7 +762,7 @@ void DisassemblingDecoder::VisitMoveWideImmediate(Instruction* instr) {
   V(LDR_s, "ldr", "'St")      \
   V(LDR_d, "ldr", "'Dt")
 
-void DisassemblingDecoder::VisitLoadStorePreIndex(Instruction* instr) {
+void Disassembler::VisitLoadStorePreIndex(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "(LoadStorePreIndex)";
 
@@ -776,7 +776,7 @@ void DisassemblingDecoder::VisitLoadStorePreIndex(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitLoadStorePostIndex(Instruction* instr) {
+void Disassembler::VisitLoadStorePostIndex(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "(LoadStorePostIndex)";
 
@@ -790,7 +790,7 @@ void DisassemblingDecoder::VisitLoadStorePostIndex(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitLoadStoreUnsignedOffset(Instruction* instr) {
+void Disassembler::VisitLoadStoreUnsignedOffset(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "(LoadStoreUnsignedOffset)";
 
@@ -805,7 +805,7 @@ void DisassemblingDecoder::VisitLoadStoreUnsignedOffset(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitLoadStoreRegisterOffset(Instruction* instr) {
+void Disassembler::VisitLoadStoreRegisterOffset(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "(LoadStoreRegisterOffset)";
 
@@ -820,7 +820,7 @@ void DisassemblingDecoder::VisitLoadStoreRegisterOffset(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitLoadStoreUnscaledOffset(Instruction* instr) {
+void Disassembler::VisitLoadStoreUnscaledOffset(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "'Wt, ['Xns'ILS]";
   const char *form_x = "'Xt, ['Xns'ILS]";
@@ -851,7 +851,7 @@ void DisassemblingDecoder::VisitLoadStoreUnscaledOffset(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitLoadLiteral(Instruction* instr) {
+void Disassembler::VisitLoadLiteral(Instruction* instr) {
   const char *mnemonic = "ldr";
   const char *form = "(LoadLiteral)";
 
@@ -877,7 +877,7 @@ void DisassemblingDecoder::VisitLoadLiteral(Instruction* instr) {
   V(STP_d, "stp", "'Dt, 'Dt2", "8")     \
   V(LDP_d, "ldp", "'Dt, 'Dt2", "8")
 
-void DisassemblingDecoder::VisitLoadStorePairPostIndex(Instruction* instr) {
+void Disassembler::VisitLoadStorePairPostIndex(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "(LoadStorePairPostIndex)";
 
@@ -891,7 +891,7 @@ void DisassemblingDecoder::VisitLoadStorePairPostIndex(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitLoadStorePairPreIndex(Instruction* instr) {
+void Disassembler::VisitLoadStorePairPreIndex(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "(LoadStorePairPreIndex)";
 
@@ -905,7 +905,7 @@ void DisassemblingDecoder::VisitLoadStorePairPreIndex(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitLoadStorePairOffset(Instruction* instr) {
+void Disassembler::VisitLoadStorePairOffset(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "(LoadStorePairOffset)";
 
@@ -919,7 +919,7 @@ void DisassemblingDecoder::VisitLoadStorePairOffset(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitFPCompare(Instruction* instr) {
+void Disassembler::VisitFPCompare(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "'Fn, 'Fm";
   const char *form_zero = "'Fn, #0.0";
@@ -935,7 +935,7 @@ void DisassemblingDecoder::VisitFPCompare(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitFPConditionalCompare(Instruction* instr) {
+void Disassembler::VisitFPConditionalCompare(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "'Fn, 'Fm, 'INzcv, 'Cond";
 
@@ -950,7 +950,7 @@ void DisassemblingDecoder::VisitFPConditionalCompare(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitFPConditionalSelect(Instruction* instr) {
+void Disassembler::VisitFPConditionalSelect(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Fd, 'Fn, 'Fm, 'Cond";
 
@@ -963,7 +963,7 @@ void DisassemblingDecoder::VisitFPConditionalSelect(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitFPDataProcessing1Source(Instruction* instr) {
+void Disassembler::VisitFPDataProcessing1Source(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "'Fd, 'Fn";
 
@@ -991,7 +991,7 @@ void DisassemblingDecoder::VisitFPDataProcessing1Source(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitFPDataProcessing2Source(Instruction* instr) {
+void Disassembler::VisitFPDataProcessing2Source(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Fd, 'Fn, 'Fm";
 
@@ -1015,7 +1015,7 @@ void DisassemblingDecoder::VisitFPDataProcessing2Source(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitFPDataProcessing3Source(Instruction* instr) {
+void Disassembler::VisitFPDataProcessing3Source(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Fd, 'Fn, 'Fm, 'Fa";
 
@@ -1034,7 +1034,7 @@ void DisassemblingDecoder::VisitFPDataProcessing3Source(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitFPImmediate(Instruction* instr) {
+void Disassembler::VisitFPImmediate(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "(FPImmediate)";
 
@@ -1047,7 +1047,7 @@ void DisassemblingDecoder::VisitFPImmediate(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitFPIntegerConvert(Instruction* instr) {
+void Disassembler::VisitFPIntegerConvert(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "(FPIntegerConvert)";
   const char *form_rf = "'Rd, 'Fn";
@@ -1103,7 +1103,7 @@ void DisassemblingDecoder::VisitFPIntegerConvert(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitFPFixedPointConvert(Instruction* instr) {
+void Disassembler::VisitFPFixedPointConvert(Instruction* instr) {
   const char *mnemonic = "";
   const char *form = "'Rd, 'Fn, 'IFPFBits";
   const char *form_fr = "'Fd, 'Rn, 'IFPFBits";
@@ -1130,7 +1130,7 @@ void DisassemblingDecoder::VisitFPFixedPointConvert(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitSystem(Instruction* instr) {
+void Disassembler::VisitSystem(Instruction* instr) {
   // Some system instructions hijack their Op and Cp fields to represent a
   // range of immediates instead of indicating a different instruction. This
   // makes the decoding tricky.
@@ -1191,7 +1191,7 @@ void DisassemblingDecoder::VisitSystem(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitException(Instruction* instr) {
+void Disassembler::VisitException(Instruction* instr) {
   const char *mnemonic = "unimplemented";
   const char *form = "'IDebug";
 
@@ -1210,23 +1210,23 @@ void DisassemblingDecoder::VisitException(Instruction* instr) {
 }
 
 
-void DisassemblingDecoder::VisitUnimplemented(Instruction* instr) {
+void Disassembler::VisitUnimplemented(Instruction* instr) {
   Format(instr, "unimplemented", "(Unimplemented)");
 }
 
 
-void DisassemblingDecoder::VisitUnallocated(Instruction* instr) {
+void Disassembler::VisitUnallocated(Instruction* instr) {
   Format(instr, "unallocated", "(Unallocated)");
 }
 
 
-void DisassemblingDecoder::ProcessOutput(Instruction* /*instr*/) {
+void Disassembler::ProcessOutput(Instruction* /*instr*/) {
   // The base disasm does nothing more than disassembling into a buffer.
 }
 
 
-void DisassemblingDecoder::Format(Instruction* instr, const char* mnemonic,
-                                  const char* format) {
+void Disassembler::Format(Instruction* instr, const char* mnemonic,
+                          const char* format) {
   // TODO(mcapewel) don't think I can use the instr address here - there needs
   //                to be a base address too
   DCHECK(mnemonic != NULL);
@@ -1241,7 +1241,7 @@ void DisassemblingDecoder::Format(Instruction* instr, const char* mnemonic,
 }
 
 
-void DisassemblingDecoder::Substitute(Instruction* instr, const char* string) {
+void Disassembler::Substitute(Instruction* instr, const char* string) {
   char chr = *string++;
   while (chr != '\0') {
     if (chr == '\'') {
@@ -1254,8 +1254,7 @@ void DisassemblingDecoder::Substitute(Instruction* instr, const char* string) {
 }
 
 
-int DisassemblingDecoder::SubstituteField(Instruction* instr,
-                                          const char* format) {
+int Disassembler::SubstituteField(Instruction* instr, const char* format) {
   switch (format[0]) {
     case 'R':  // Register. X or W, selected by sf bit.
     case 'F':  // FP Register. S or D, selected by type field.
@@ -1281,8 +1280,8 @@ int DisassemblingDecoder::SubstituteField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstituteRegisterField(Instruction* instr,
-                                                  const char* format) {
+int Disassembler::SubstituteRegisterField(Instruction* instr,
+                                          const char* format) {
   unsigned reg_num = 0;
   unsigned field_len = 2;
   switch (format[1]) {
@@ -1346,8 +1345,8 @@ int DisassemblingDecoder::SubstituteRegisterField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstituteImmediateField(Instruction* instr,
-                                                   const char* format) {
+int Disassembler::SubstituteImmediateField(Instruction* instr,
+                                           const char* format) {
   DCHECK(format[0] == 'I');
 
   switch (format[1]) {
@@ -1457,8 +1456,8 @@ int DisassemblingDecoder::SubstituteImmediateField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstituteBitfieldImmediateField(Instruction* instr,
-                                                           const char* format) {
+int Disassembler::SubstituteBitfieldImmediateField(Instruction* instr,
+                                                   const char* format) {
   DCHECK((format[0] == 'I') && (format[1] == 'B'));
   unsigned r = instr->ImmR();
   unsigned s = instr->ImmS();
@@ -1493,8 +1492,8 @@ int DisassemblingDecoder::SubstituteBitfieldImmediateField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstituteLiteralField(Instruction* instr,
-                                                 const char* format) {
+int Disassembler::SubstituteLiteralField(Instruction* instr,
+                                         const char* format) {
   DCHECK(strncmp(format, "LValue", 6) == 0);
   USE(format);
 
@@ -1512,8 +1511,7 @@ int DisassemblingDecoder::SubstituteLiteralField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstituteShiftField(Instruction* instr,
-                                               const char* format) {
+int Disassembler::SubstituteShiftField(Instruction* instr, const char* format) {
   DCHECK(format[0] == 'H');
   DCHECK(instr->ShiftDP() <= 0x3);
 
@@ -1536,8 +1534,8 @@ int DisassemblingDecoder::SubstituteShiftField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstituteConditionField(Instruction* instr,
-                                                   const char* format) {
+int Disassembler::SubstituteConditionField(Instruction* instr,
+                                           const char* format) {
   DCHECK(format[0] == 'C');
   const char* condition_code[] = { "eq", "ne", "hs", "lo",
                                    "mi", "pl", "vs", "vc",
@@ -1557,8 +1555,8 @@ int DisassemblingDecoder::SubstituteConditionField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstitutePCRelAddressField(Instruction* instr,
-                                                      const char* format) {
+int Disassembler::SubstitutePCRelAddressField(Instruction* instr,
+                                              const char* format) {
   USE(format);
   DCHECK(strncmp(format, "AddrPCRel", 9) == 0);
 
@@ -1578,8 +1576,8 @@ int DisassemblingDecoder::SubstitutePCRelAddressField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstituteBranchTargetField(Instruction* instr,
-                                                      const char* format) {
+int Disassembler::SubstituteBranchTargetField(Instruction* instr,
+                                              const char* format) {
   DCHECK(strncmp(format, "BImm", 4) == 0);
 
   int64_t offset = 0;
@@ -1605,8 +1603,8 @@ int DisassemblingDecoder::SubstituteBranchTargetField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstituteExtendField(Instruction* instr,
-                                                const char* format) {
+int Disassembler::SubstituteExtendField(Instruction* instr,
+                                        const char* format) {
   DCHECK(strncmp(format, "Ext", 3) == 0);
   DCHECK(instr->ExtendMode() <= 7);
   USE(format);
@@ -1632,8 +1630,8 @@ int DisassemblingDecoder::SubstituteExtendField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstituteLSRegOffsetField(Instruction* instr,
-                                                     const char* format) {
+int Disassembler::SubstituteLSRegOffsetField(Instruction* instr,
+                                             const char* format) {
   DCHECK(strncmp(format, "Offsetreg", 9) == 0);
   const char* extend_mode[] = { "undefined", "undefined", "uxtw", "lsl",
                                 "undefined", "undefined", "sxtw", "sxtx" };
@@ -1661,8 +1659,8 @@ int DisassemblingDecoder::SubstituteLSRegOffsetField(Instruction* instr,
 }
 
 
-int DisassemblingDecoder::SubstitutePrefetchField(Instruction* instr,
-                                                  const char* format) {
+int Disassembler::SubstitutePrefetchField(Instruction* instr,
+                                          const char* format) {
   DCHECK(format[0] == 'P');
   USE(format);
 
@@ -1676,8 +1674,8 @@ int DisassemblingDecoder::SubstitutePrefetchField(Instruction* instr,
   return 6;
 }
 
-int DisassemblingDecoder::SubstituteBarrierField(Instruction* instr,
-                                                 const char* format) {
+int Disassembler::SubstituteBarrierField(Instruction* instr,
+                                         const char* format) {
   DCHECK(format[0] == 'M');
   USE(format);
 
@@ -1695,13 +1693,13 @@ int DisassemblingDecoder::SubstituteBarrierField(Instruction* instr,
 }
 
 
-void DisassemblingDecoder::ResetOutput() {
+void Disassembler::ResetOutput() {
   buffer_pos_ = 0;
   buffer_[buffer_pos_] = 0;
 }
 
 
-void DisassemblingDecoder::AppendToOutput(const char* format, ...) {
+void Disassembler::AppendToOutput(const char* format, ...) {
   va_list args;
   va_start(args, format);
   buffer_pos_ += vsnprintf(&buffer_[buffer_pos_], buffer_size_, format, args);
@@ -1767,7 +1765,7 @@ const char* NameConverter::NameInCode(byte* addr) const {
 
 //------------------------------------------------------------------------------
 
-class BufferDisassembler : public v8::internal::DisassemblingDecoder {
+class BufferDisassembler : public v8::internal::Disassembler {
  public:
   explicit BufferDisassembler(v8::internal::Vector<char> out_buffer)
       : out_buffer_(out_buffer) { }

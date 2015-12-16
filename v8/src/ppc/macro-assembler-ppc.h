@@ -23,8 +23,6 @@ const Register kInterpreterRegisterFileRegister = {Register::kCode_r14};
 const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r15};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r16};
 const Register kInterpreterDispatchTableRegister = {Register::kCode_r17};
-const Register kJavaScriptCallArgCountRegister = {Register::kCode_r3};
-const Register kJavaScriptCallNewTargetRegister = {Register::kCode_r6};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_r4};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_r3};
 
@@ -114,8 +112,7 @@ class MacroAssembler : public Assembler {
   // not use isolate-dependent functionality. In this case, it's the
   // responsibility of the caller to never invoke such function on the
   // macro assembler.
-  MacroAssembler(Isolate* isolate, void* buffer, int size,
-                 CodeObjectRequired create_code_object);
+  MacroAssembler(Isolate* isolate, void* buffer, int size);
 
 
   // Returns the size of a call in instructions. Note, the value returned is
@@ -388,13 +385,6 @@ class MacroAssembler : public Assembler {
   void ConvertIntToFloat(const DoubleRegister dst, const Register src,
                          const Register int_scratch);
 
-#if V8_TARGET_ARCH_PPC64
-  void ConvertInt64ToFloat(Register src, DoubleRegister double_dst);
-  void ConvertInt64ToDouble(Register src, DoubleRegister double_dst);
-  void ConvertUnsignedInt64ToFloat(Register src, DoubleRegister double_dst);
-  void ConvertUnsignedInt64ToDouble(Register src, DoubleRegister double_dst);
-#endif
-
   // Converts the double_input to an integer.  Note that, upon return,
   // the contents of double_dst will also hold the fixed point representation.
   void ConvertDoubleToInt64(const DoubleRegister double_input,
@@ -403,15 +393,6 @@ class MacroAssembler : public Assembler {
 #endif
                             const Register dst, const DoubleRegister double_dst,
                             FPRoundingMode rounding_mode = kRoundToZero);
-
-#if V8_TARGET_ARCH_PPC64
-  // Converts the double_input to an unsigned integer.  Note that, upon return,
-  // the contents of double_dst will also hold the fixed point representation.
-  void ConvertDoubleToUnsignedInt64(
-      const DoubleRegister double_input, const Register dst,
-      const DoubleRegister double_dst,
-      FPRoundingMode rounding_mode = kRoundToZero);
-#endif
 
   // Generates function and stub prologue code.
   void StubPrologue(int prologue_offset = 0);
@@ -555,15 +536,14 @@ class MacroAssembler : public Assembler {
   // JavaScript invokes
 
   // Invoke the JavaScript function code by either calling or jumping.
-  void InvokeCode(Register code, Register new_target,
-                  const ParameterCount& expected, const ParameterCount& actual,
-                  InvokeFlag flag, const CallWrapper& call_wrapper);
+  void InvokeCode(Register code, const ParameterCount& expected,
+                  const ParameterCount& actual, InvokeFlag flag,
+                  const CallWrapper& call_wrapper);
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
-  void InvokeFunction(Register function, Register new_target,
-                      const ParameterCount& actual, InvokeFlag flag,
-                      const CallWrapper& call_wrapper);
+  void InvokeFunction(Register function, const ParameterCount& actual,
+                      InvokeFlag flag, const CallWrapper& call_wrapper);
 
   void InvokeFunction(Register function, const ParameterCount& expected,
                       const ParameterCount& actual, InvokeFlag flag,
@@ -655,8 +635,8 @@ class MacroAssembler : public Assembler {
   void Allocate(int object_size, Register result, Register scratch1,
                 Register scratch2, Label* gc_required, AllocationFlags flags);
 
-  void Allocate(Register object_size, Register result, Register result_end,
-                Register scratch, Label* gc_required, AllocationFlags flags);
+  void Allocate(Register object_size, Register result, Register scratch1,
+                Register scratch2, Label* gc_required, AllocationFlags flags);
 
   void AllocateTwoByteString(Register result, Register length,
                              Register scratch1, Register scratch2,
@@ -689,23 +669,26 @@ class MacroAssembler : public Assembler {
                                    Register heap_number_map,
                                    Label* gc_required);
 
+  // Copies a fixed number of fields of heap objects from src to dst.
+  void CopyFields(Register dst, Register src, RegList temps, int field_count);
+
   // Copies a number of bytes from src to dst. All registers are clobbered. On
   // exit src and dst will point to the place just after where the last byte was
   // read or written and length will be zero.
   void CopyBytes(Register src, Register dst, Register length, Register scratch);
 
   // Initialize fields with filler values.  |count| fields starting at
-  // |current_address| are overwritten with the value in |filler|.  At the end
-  // the loop, |current_address| points at the next uninitialized field.
-  // |count| is assumed to be non-zero.
-  void InitializeNFieldsWithFiller(Register current_address, Register count,
+  // |start_offset| are overwritten with the value in |filler|.  At the end the
+  // loop, |start_offset| points at the next uninitialized field.  |count| is
+  // assumed to be non-zero.
+  void InitializeNFieldsWithFiller(Register start_offset, Register count,
                                    Register filler);
 
-  // Initialize fields with filler values.  Fields starting at |current_address|
-  // not including |end_address| are overwritten with the value in |filler|.  At
-  // the end the loop, |current_address| takes the value of |end_address|.
-  void InitializeFieldsWithFiller(Register current_address,
-                                  Register end_address, Register filler);
+  // Initialize fields with filler values.  Fields starting at |start_offset|
+  // not including end_offset are overwritten with the value in |filler|.  At
+  // the end the loop, |start_offset| takes the value of |end_offset|.
+  void InitializeFieldsWithFiller(Register start_offset, Register end_offset,
+                                  Register filler);
 
   // ---------------------------------------------------------------------------
   // Support functions.
@@ -1494,7 +1477,8 @@ class MacroAssembler : public Assembler {
 
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
-                      const ParameterCount& actual, Label* done,
+                      const ParameterCount& actual, Handle<Code> code_constant,
+                      Register code_reg, Label* done,
                       bool* definitely_mismatches, InvokeFlag flag,
                       const CallWrapper& call_wrapper);
 

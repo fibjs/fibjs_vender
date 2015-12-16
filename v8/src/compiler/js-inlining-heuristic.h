@@ -18,16 +18,16 @@ class JSInliningHeuristic final : public AdvancedReducer {
                       CompilationInfo* info, JSGraph* jsgraph)
       : AdvancedReducer(editor),
         mode_(mode),
+        local_zone_(local_zone),
+        jsgraph_(jsgraph),
         inliner_(editor, local_zone, info, jsgraph),
-        candidates_(local_zone),
-        seen_(local_zone),
-        info_(info) {}
+        candidates_(local_zone) {}
 
   Reduction Reduce(Node* node) final;
 
   // Processes the list of candidates gathered while the reducer was running,
   // and inlines call sites that the heuristic determines to be important.
-  void Finalize() final;
+  void ProcessCandidates();
 
  private:
   struct Candidate {
@@ -36,23 +36,14 @@ class JSInliningHeuristic final : public AdvancedReducer {
     int calls;                    // Number of times the call site was hit.
   };
 
-  // Comparator for candidates.
-  struct CandidateCompare {
-    bool operator()(const Candidate& left, const Candidate& right) const;
-  };
-
-  // Candidates are kept in a sorted set of unique candidates.
-  typedef ZoneSet<Candidate, CandidateCompare> Candidates;
-
-  // Dumps candidates to console.
+  static bool Compare(const Candidate& left, const Candidate& right);
   void PrintCandidates();
 
   Mode const mode_;
+  Zone* local_zone_;
+  JSGraph* jsgraph_;
   JSInliner inliner_;
-  Candidates candidates_;
-  ZoneSet<NodeId> seen_;
-  CompilationInfo* info_;
-  int cumulative_count_ = 0;
+  ZoneVector<Candidate> candidates_;
 };
 
 }  // namespace compiler

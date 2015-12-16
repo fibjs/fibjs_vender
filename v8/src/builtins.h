@@ -59,16 +59,12 @@ enum BuiltinExtraArguments {
                                                              \
   V(DateToPrimitive, NO_EXTRA_ARGUMENTS)                     \
                                                              \
-  V(ReflectDefineProperty, NO_EXTRA_ARGUMENTS)               \
   V(ReflectDeleteProperty, NO_EXTRA_ARGUMENTS)               \
   V(ReflectGet, NO_EXTRA_ARGUMENTS)                          \
-  V(ReflectGetOwnPropertyDescriptor, NO_EXTRA_ARGUMENTS)     \
   V(ReflectGetPrototypeOf, NO_EXTRA_ARGUMENTS)               \
   V(ReflectHas, NO_EXTRA_ARGUMENTS)                          \
   V(ReflectIsExtensible, NO_EXTRA_ARGUMENTS)                 \
-  V(ReflectOwnKeys, NO_EXTRA_ARGUMENTS)                      \
   V(ReflectPreventExtensions, NO_EXTRA_ARGUMENTS)            \
-  V(ReflectSet, NO_EXTRA_ARGUMENTS)                          \
   V(ReflectSetPrototypeOf, NO_EXTRA_ARGUMENTS)               \
                                                              \
   V(SymbolConstructor, NO_EXTRA_ARGUMENTS)                   \
@@ -86,27 +82,16 @@ enum BuiltinExtraArguments {
 #define BUILTIN_LIST_A(V)                                                     \
   V(ArgumentsAdaptorTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
                                                                               \
-  V(ConstructedNonConstructable, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
-                                                                              \
-  V(CallFunction_ReceiverIsNullOrUndefined, BUILTIN, UNINITIALIZED,           \
-    kNoExtraICState)                                                          \
-  V(CallFunction_ReceiverIsNotNullOrUndefined, BUILTIN, UNINITIALIZED,        \
-    kNoExtraICState)                                                          \
-  V(CallFunction_ReceiverIsAny, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
-  V(Call_ReceiverIsNullOrUndefined, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
-  V(Call_ReceiverIsNotNullOrUndefined, BUILTIN, UNINITIALIZED,                \
-    kNoExtraICState)                                                          \
-  V(Call_ReceiverIsAny, BUILTIN, UNINITIALIZED, kNoExtraICState)              \
+  V(CallFunction, BUILTIN, UNINITIALIZED, kNoExtraICState)                    \
+  V(Call, BUILTIN, UNINITIALIZED, kNoExtraICState)                            \
                                                                               \
   V(ConstructFunction, BUILTIN, UNINITIALIZED, kNoExtraICState)               \
   V(ConstructProxy, BUILTIN, UNINITIALIZED, kNoExtraICState)                  \
   V(Construct, BUILTIN, UNINITIALIZED, kNoExtraICState)                       \
                                                                               \
-  V(HandleFastApiCall, BUILTIN, UNINITIALIZED, kNoExtraICState)               \
-                                                                              \
   V(InOptimizationQueue, BUILTIN, UNINITIALIZED, kNoExtraICState)             \
   V(JSConstructStubGeneric, BUILTIN, UNINITIALIZED, kNoExtraICState)          \
-  V(JSBuiltinsConstructStub, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
+  V(JSConstructStubForDerived, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
   V(JSConstructStubApi, BUILTIN, UNINITIALIZED, kNoExtraICState)              \
   V(JSEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)               \
   V(JSConstructEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
@@ -240,10 +225,6 @@ class Builtins {
 #undef DECLARE_BUILTIN_ACCESSOR_C
 #undef DECLARE_BUILTIN_ACCESSOR_A
 
-  // Convenience wrappers.
-  Handle<Code> CallFunction(ConvertReceiverMode = ConvertReceiverMode::kAny);
-  Handle<Code> Call(ConvertReceiverMode = ConvertReceiverMode::kAny);
-
   Code* builtin(Name name) {
     // Code::cast cannot be used here since we access builtins
     // during the marking phase of mark sweep. See IC::Clear.
@@ -285,13 +266,12 @@ class Builtins {
   static void Generate_Adaptor(MacroAssembler* masm,
                                CFunctionId id,
                                BuiltinExtraArguments extra_args);
-  static void Generate_ConstructedNonConstructable(MacroAssembler* masm);
   static void Generate_CompileLazy(MacroAssembler* masm);
   static void Generate_InOptimizationQueue(MacroAssembler* masm);
   static void Generate_CompileOptimized(MacroAssembler* masm);
   static void Generate_CompileOptimizedConcurrent(MacroAssembler* masm);
   static void Generate_JSConstructStubGeneric(MacroAssembler* masm);
-  static void Generate_JSBuiltinsConstructStub(MacroAssembler* masm);
+  static void Generate_JSConstructStubForDerived(MacroAssembler* masm);
   static void Generate_JSConstructStubApi(MacroAssembler* masm);
   static void Generate_JSEntryTrampoline(MacroAssembler* masm);
   static void Generate_JSConstructEntryTrampoline(MacroAssembler* masm);
@@ -303,30 +283,9 @@ class Builtins {
   static void Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm);
 
   // ES6 section 9.2.1 [[Call]] ( thisArgument, argumentsList)
-  static void Generate_CallFunction(MacroAssembler* masm,
-                                    ConvertReceiverMode mode);
-  static void Generate_CallFunction_ReceiverIsNullOrUndefined(
-      MacroAssembler* masm) {
-    Generate_CallFunction(masm, ConvertReceiverMode::kNullOrUndefined);
-  }
-  static void Generate_CallFunction_ReceiverIsNotNullOrUndefined(
-      MacroAssembler* masm) {
-    Generate_CallFunction(masm, ConvertReceiverMode::kNotNullOrUndefined);
-  }
-  static void Generate_CallFunction_ReceiverIsAny(MacroAssembler* masm) {
-    Generate_CallFunction(masm, ConvertReceiverMode::kAny);
-  }
+  static void Generate_CallFunction(MacroAssembler* masm);
   // ES6 section 7.3.12 Call(F, V, [argumentsList])
-  static void Generate_Call(MacroAssembler* masm, ConvertReceiverMode mode);
-  static void Generate_Call_ReceiverIsNullOrUndefined(MacroAssembler* masm) {
-    Generate_Call(masm, ConvertReceiverMode::kNullOrUndefined);
-  }
-  static void Generate_Call_ReceiverIsNotNullOrUndefined(MacroAssembler* masm) {
-    Generate_Call(masm, ConvertReceiverMode::kNotNullOrUndefined);
-  }
-  static void Generate_Call_ReceiverIsAny(MacroAssembler* masm) {
-    Generate_Call(masm, ConvertReceiverMode::kAny);
-  }
+  static void Generate_Call(MacroAssembler* masm);
 
   // ES6 section 9.2.2 [[Construct]] ( argumentsList, newTarget)
   static void Generate_ConstructFunction(MacroAssembler* masm);
@@ -334,8 +293,6 @@ class Builtins {
   static void Generate_ConstructProxy(MacroAssembler* masm);
   // ES6 section 7.3.13 Construct (F, [argumentsList], [newTarget])
   static void Generate_Construct(MacroAssembler* masm);
-
-  static void Generate_HandleFastApiCall(MacroAssembler* masm);
 
   static void Generate_FunctionCall(MacroAssembler* masm);
   static void Generate_FunctionApply(MacroAssembler* masm);

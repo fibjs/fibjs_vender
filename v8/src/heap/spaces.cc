@@ -1499,7 +1499,7 @@ void NewSpace::ResetAllocationInfo() {
   while (it.has_next()) {
     Bitmap::Clear(it.next());
   }
-  InlineAllocationStep(old_top, allocation_info_.top(), nullptr, 0);
+  InlineAllocationStep(old_top, allocation_info_.top());
 }
 
 
@@ -1509,15 +1509,14 @@ void NewSpace::UpdateInlineAllocationLimit(int size_in_bytes) {
     Address high = to_space_.page_high();
     Address new_top = allocation_info_.top() + size_in_bytes;
     allocation_info_.set_limit(Min(new_top, high));
-  } else if (inline_allocation_observers_paused_ ||
-             top_on_previous_step_ == 0) {
+  } else if (inline_allocation_limit_step_ == 0) {
     // Normal limit is the end of the current page.
     allocation_info_.set_limit(to_space_.page_high());
   } else {
     // Lower limit during incremental marking.
     Address high = to_space_.page_high();
     Address new_top = allocation_info_.top() + size_in_bytes;
-    Address new_limit = new_top + GetNextInlineAllocationStepSize() - 1;
+    Address new_limit = new_top + inline_allocation_limit_step_;
     allocation_info_.set_limit(Min(new_limit, high));
   }
   DCHECK_SEMISPACE_ALLOCATION_INFO(allocation_info_, to_space_);
@@ -1579,7 +1578,7 @@ bool NewSpace::EnsureAllocation(int size_in_bytes,
       return false;
     }
 
-    InlineAllocationStep(old_top, allocation_info_.top(), nullptr, 0);
+    InlineAllocationStep(old_top, allocation_info_.top());
 
     old_top = allocation_info_.top();
     high = to_space_.page_high();
@@ -1595,74 +1594,19 @@ bool NewSpace::EnsureAllocation(int size_in_bytes,
     // or because idle scavenge job wants to get a chance to post a task.
     // Set the new limit accordingly.
     Address new_top = old_top + aligned_size_in_bytes;
-    Address soon_object = old_top + filler_size;
-    InlineAllocationStep(new_top, new_top, soon_object, size_in_bytes);
+    InlineAllocationStep(new_top, new_top);
     UpdateInlineAllocationLimit(aligned_size_in_bytes);
   }
   return true;
 }
 
 
-void NewSpace::StartNextInlineAllocationStep() {
-  DCHECK(!inline_allocation_observers_paused_);
-  top_on_previous_step_ =
-      inline_allocation_observers_.length() ? allocation_info_.top() : 0;
-  UpdateInlineAllocationLimit(0);
-}
-
-
-intptr_t NewSpace::GetNextInlineAllocationStepSize() {
-  intptr_t next_step = 0;
-  for (int i = 0; i < inline_allocation_observers_.length(); ++i) {
-    InlineAllocationObserver* o = inline_allocation_observers_[i];
-    next_step = next_step ? Min(next_step, o->bytes_to_next_step())
-                          : o->bytes_to_next_step();
-  }
-  DCHECK(inline_allocation_observers_.length() == 0 || next_step != 0);
-  return next_step;
-}
-
-
-void NewSpace::AddInlineAllocationObserver(InlineAllocationObserver* observer) {
-  inline_allocation_observers_.Add(observer);
-  StartNextInlineAllocationStep();
-}
-
-
-void NewSpace::RemoveInlineAllocationObserver(
-    InlineAllocationObserver* observer) {
-  bool removed = inline_allocation_observers_.RemoveElement(observer);
-  // Only used in assertion. Suppress unused variable warning.
-  static_cast<void>(removed);
-  DCHECK(removed);
-  StartNextInlineAllocationStep();
-}
-
-
-void NewSpace::PauseInlineAllocationObservers() {
-  // Do a step to account for memory allocated so far.
-  InlineAllocationStep(top(), top(), nullptr, 0);
-  inline_allocation_observers_paused_ = true;
-  top_on_previous_step_ = 0;
-  UpdateInlineAllocationLimit(0);
-}
-
-
-void NewSpace::ResumeInlineAllocationObservers() {
-  DCHECK(top_on_previous_step_ == 0);
-  inline_allocation_observers_paused_ = false;
-  StartNextInlineAllocationStep();
-}
-
-
-void NewSpace::InlineAllocationStep(Address top, Address new_top,
-                                    Address soon_object, size_t size) {
+void NewSpace::InlineAllocationStep(Address top, Address new_top) {
   if (top_on_previous_step_) {
     int bytes_allocated = static_cast<int>(top - top_on_previous_step_);
-    for (int i = 0; i < inline_allocation_observers_.length(); ++i) {
-      inline_allocation_observers_[i]->InlineAllocationStep(bytes_allocated,
-                                                            soon_object, size);
-    }
+    heap()->ScheduleIdleScavengeIfNeeded(bytes_allocated);
+    heap()->incremental_marking()->Step(bytes_allocated,
+                                        IncrementalMarking::GC_VIA_STACK_GUARD);
     top_on_previous_step_ = new_top;
   }
 }
@@ -2728,8 +2672,7 @@ void PagedSpace::PrepareForMarkCompact() {
 
 intptr_t PagedSpace::SizeOfObjects() {
   const intptr_t size = Size() - (limit() - top());
-  CHECK_GE(limit(), top());
-  CHECK_GE(size, 0);
+  DCHECK_GE(size, 0);
   USE(size);
   return size;
 }
@@ -2770,7 +2713,8 @@ void PagedSpace::EvictEvacuationCandidatesFromLinearAllocationArea() {
 }
 
 
-HeapObject* PagedSpace::SweepAndRetryAllocation(int size_in_bytes) {
+HeapObject* PagedSpace::WaitForSweeperThreadsAndRetryAllocation(
+    int size_in_bytes) {
   MarkCompactCollector* collector = heap()->mark_compact_collector();
   if (collector->sweeping_in_progress()) {
     // Wait for the sweeper threads here and complete the sweeping phase.
@@ -2780,17 +2724,7 @@ HeapObject* PagedSpace::SweepAndRetryAllocation(int size_in_bytes) {
     // entries.
     return free_list_.Allocate(size_in_bytes);
   }
-  return nullptr;
-}
-
-
-HeapObject* CompactionSpace::SweepAndRetryAllocation(int size_in_bytes) {
-  MarkCompactCollector* collector = heap()->mark_compact_collector();
-  if (collector->sweeping_in_progress()) {
-    collector->SweepAndRefill(this);
-    return free_list_.Allocate(size_in_bytes);
-  }
-  return nullptr;
+  return NULL;
 }
 
 
@@ -2809,10 +2743,15 @@ HeapObject* PagedSpace::SlowAllocateRaw(int size_in_bytes) {
     if (object != NULL) return object;
 
     // If sweeping is still in progress try to sweep pages on the main thread.
-    collector->SweepInParallel(heap()->paged_space(identity()), size_in_bytes);
+    int free_chunk = collector->SweepInParallel(this, size_in_bytes);
     RefillFreeList();
-    object = free_list_.Allocate(size_in_bytes);
-    if (object != nullptr) return object;
+    if (free_chunk >= size_in_bytes) {
+      HeapObject* object = free_list_.Allocate(size_in_bytes);
+      // We should be able to allocate an object here since we just freed that
+      // much memory.
+      DCHECK(object != NULL);
+      if (object != NULL) return object;
+    }
   }
 
   // Free list allocation failed and there is no next page.  Fail if we have
@@ -2822,7 +2761,7 @@ HeapObject* PagedSpace::SlowAllocateRaw(int size_in_bytes) {
       heap()->OldGenerationAllocationLimitReached()) {
     // If sweeper threads are active, wait for them at that point and steal
     // elements form their free-lists.
-    HeapObject* object = SweepAndRetryAllocation(size_in_bytes);
+    HeapObject* object = WaitForSweeperThreadsAndRetryAllocation(size_in_bytes);
     return object;
   }
 
@@ -2836,7 +2775,7 @@ HeapObject* PagedSpace::SlowAllocateRaw(int size_in_bytes) {
   // If sweeper threads are active, wait for them at that point and steal
   // elements form their free-lists. Allocation may still fail their which
   // would indicate that there is not enough memory for the given allocation.
-  return SweepAndRetryAllocation(size_in_bytes);
+  return WaitForSweeperThreadsAndRetryAllocation(size_in_bytes);
 }
 
 
@@ -2989,10 +2928,11 @@ void PagedSpace::ReportStatistics() {
 
 // -----------------------------------------------------------------------------
 // MapSpace implementation
+// TODO(mvstanton): this is weird...the compiler can't make a vtable unless
+// there is at least one non-inlined virtual function. I would prefer to hide
+// the VerifyObject definition behind VERIFY_HEAP.
 
-#ifdef VERIFY_HEAP
 void MapSpace::VerifyObject(HeapObject* object) { CHECK(object->IsMap()); }
-#endif
 
 
 // -----------------------------------------------------------------------------
@@ -3233,6 +3173,11 @@ void LargeObjectSpace::Verify() {
     Map* map = object->map();
     CHECK(map->IsMap());
     CHECK(heap()->map_space()->Contains(map));
+
+    // Double unboxing in LO space is not allowed. This would break the
+    // lookup mechanism for store and slot buffer entries which use the
+    // page header tag.
+    CHECK(object->ContentType() != HeapObjectContents::kMixedValues);
 
     // We have only code, sequential strings, external strings
     // (sequential strings that have been morphed into external

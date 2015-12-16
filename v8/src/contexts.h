@@ -118,6 +118,7 @@ enum BindingFlags {
   V(JSON_SERIALIZE_ADAPTER_INDEX, JSFunction, json_serialize_adapter)         \
   V(MAKE_ERROR_FUNCTION_INDEX, JSFunction, make_error_function)               \
   V(MAP_DELETE_METHOD_INDEX, JSFunction, map_delete)                          \
+  V(MAP_FROM_ARRAY_INDEX, JSFunction, map_from_array)                         \
   V(MAP_GET_METHOD_INDEX, JSFunction, map_get)                                \
   V(MAP_HAS_METHOD_INDEX, JSFunction, map_has)                                \
   V(MAP_SET_METHOD_INDEX, JSFunction, map_set)                                \
@@ -132,6 +133,7 @@ enum BindingFlags {
     no_side_effect_to_string_fun)                                             \
   V(OBJECT_VALUE_OF, JSFunction, object_value_of)                             \
   V(OBJECT_TO_STRING, JSFunction, object_to_string)                           \
+  V(OBJECT_DEFINE_OWN_PROPERTY_INDEX, JSFunction, object_define_own_property) \
   V(OBJECT_GET_OWN_PROPERTY_DESCROPTOR_INDEX, JSFunction,                     \
     object_get_own_property_descriptor)                                       \
   V(OBSERVERS_BEGIN_SPLICE_INDEX, JSFunction, observers_begin_perform_splice) \
@@ -151,6 +153,7 @@ enum BindingFlags {
   V(REFERENCE_ERROR_FUNCTION_INDEX, JSFunction, reference_error_function)     \
   V(SET_ADD_METHOD_INDEX, JSFunction, set_add)                                \
   V(SET_DELETE_METHOD_INDEX, JSFunction, set_delete)                          \
+  V(SET_FROM_ARRAY_INDEX, JSFunction, set_from_array)                         \
   V(SET_HAS_METHOD_INDEX, JSFunction, set_has)                                \
   V(STACK_OVERFLOW_BOILERPLATE_INDEX, JSObject, stack_overflow_boilerplate)   \
   V(SYNTAX_ERROR_FUNCTION_INDEX, JSFunction, syntax_error_function)           \
@@ -184,7 +187,6 @@ enum BindingFlags {
   V(DATA_VIEW_FUN_INDEX, JSFunction, data_view_fun)                            \
   V(ERROR_MESSAGE_FOR_CODE_GEN_FROM_STRINGS_INDEX, Object,                     \
     error_message_for_code_gen_from_strings)                                   \
-  V(ERRORS_THROWN_INDEX, Smi, errors_thrown)                                   \
   V(EXTRAS_EXPORTS_OBJECT_INDEX, JSObject, extras_binding_object)              \
   V(EXTRAS_UTILS_OBJECT_INDEX, JSObject, extras_utils_object)                  \
   V(FAST_ALIASED_ARGUMENTS_MAP_INDEX, Map, fast_aliased_arguments_map)         \
@@ -220,7 +222,6 @@ enum BindingFlags {
   V(OBJECT_FUNCTION_INDEX, JSFunction, object_function)                        \
   V(OBJECT_FUNCTION_PROTOTYPE_MAP_INDEX, Map, object_function_prototype_map)   \
   V(OPAQUE_REFERENCE_FUNCTION_INDEX, JSFunction, opaque_reference_function)    \
-  V(PROXY_FUNCTION_INDEX, JSFunction, proxy_function)                          \
   V(REGEXP_FUNCTION_INDEX, JSFunction, regexp_function)                        \
   V(REGEXP_RESULT_MAP_INDEX, Map, regexp_result_map)                           \
   V(RUNTIME_CONTEXT_INDEX, Context, runtime_context)                           \
@@ -396,9 +397,6 @@ class Context: public FixedArray {
     THROWN_OBJECT_INDEX = MIN_CONTEXT_SLOTS,
   };
 
-  void IncrementErrorsThrown();
-  int GetErrorsThrown();
-
   // Direct slot access.
   inline JSFunction* closure();
   inline void set_closure(JSFunction* closure);
@@ -422,12 +420,15 @@ class Context: public FixedArray {
   Context* declaration_context();
   bool is_declaration_context();
 
-  inline JSGlobalObject* global_object();
-  inline void set_global_object(JSGlobalObject* object);
+  inline GlobalObject* global_object();
+  inline void set_global_object(GlobalObject* object);
 
   // Returns a JSGlobalProxy object or null.
   JSObject* global_proxy();
   void set_global_proxy(JSObject* global);
+
+  // The builtins object.
+  JSBuiltinsObject* builtins();
 
   // Get the script context by traversing the context chain.
   Context* script_context();

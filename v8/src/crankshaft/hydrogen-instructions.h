@@ -62,6 +62,7 @@ class LChunkBuilder;
   V(CallWithDescriptor)                       \
   V(CallJSFunction)                           \
   V(CallFunction)                             \
+  V(CallNew)                                  \
   V(CallNewArray)                             \
   V(CallRuntime)                              \
   V(CallStub)                                 \
@@ -130,6 +131,7 @@ class LChunkBuilder;
   V(Power)                                    \
   V(Prologue)                                 \
   V(PushArguments)                            \
+  V(RegExpLiteral)                            \
   V(Return)                                   \
   V(Ror)                                      \
   V(Sar)                                      \
@@ -2392,13 +2394,14 @@ class HInvokeFunction final : public HBinaryCall {
 
 class HCallFunction final : public HBinaryCall {
  public:
-  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P3(HCallFunction, HValue*, int,
-                                              ConvertReceiverMode);
+  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P2(HCallFunction, HValue*, int);
+  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P3(
+      HCallFunction, HValue*, int, CallFunctionFlags);
 
   HValue* context() const { return first(); }
   HValue* function() const { return second(); }
+  CallFunctionFlags function_flags() const { return function_flags_; }
 
-  ConvertReceiverMode convert_mode() const { return convert_mode_; }
   FeedbackVectorSlot slot() const { return slot_; }
   Handle<TypeFeedbackVector> feedback_vector() const {
     return feedback_vector_;
@@ -2418,12 +2421,27 @@ class HCallFunction final : public HBinaryCall {
 
  private:
   HCallFunction(HValue* context, HValue* function, int argument_count,
-                ConvertReceiverMode convert_mode)
+                CallFunctionFlags flags = NO_CALL_FUNCTION_FLAGS)
       : HBinaryCall(context, function, argument_count),
-        convert_mode_(convert_mode) {}
+        function_flags_(flags) {}
+  CallFunctionFlags function_flags_;
   Handle<TypeFeedbackVector> feedback_vector_;
   FeedbackVectorSlot slot_;
-  ConvertReceiverMode convert_mode_;
+};
+
+
+class HCallNew final : public HBinaryCall {
+ public:
+  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P2(HCallNew, HValue*, int);
+
+  HValue* context() { return first(); }
+  HValue* constructor() { return second(); }
+
+  DECLARE_CONCRETE_INSTRUCTION(CallNew)
+
+ private:
+  HCallNew(HValue* context, HValue* constructor, int argument_count)
+      : HBinaryCall(context, constructor, argument_count) {}
 };
 
 
@@ -3251,7 +3269,7 @@ class HPhi final : public HValue {
   Representation RepresentationFromInputs() override;
 
   Range* InferRange(Zone* zone) override;
-  void InferRepresentation(HInferRepresentationPhase* h_infer) override;
+  virtual void InferRepresentation(HInferRepresentationPhase* h_infer) override;
   Representation RequiredInputRepresentation(int index) override {
     return representation();
   }
@@ -3807,15 +3825,15 @@ class HBinaryOperation : public HTemplateInstruction<3> {
     return observed_input_representation_[index - 1];
   }
 
-  void UpdateRepresentation(Representation new_rep,
-                            HInferRepresentationPhase* h_infer,
-                            const char* reason) override {
+  virtual void UpdateRepresentation(Representation new_rep,
+                                    HInferRepresentationPhase* h_infer,
+                                    const char* reason) override {
     Representation rep = !FLAG_smi_binop && new_rep.IsSmi()
         ? Representation::Integer32() : new_rep;
     HValue::UpdateRepresentation(rep, h_infer, reason);
   }
 
-  void InferRepresentation(HInferRepresentationPhase* h_infer) override;
+  virtual void InferRepresentation(HInferRepresentationPhase* h_infer) override;
   Representation RepresentationFromInputs() override;
   Representation RepresentationFromOutput();
   void AssumeRepresentation(Representation r) override;
@@ -4046,7 +4064,7 @@ class HBoundsCheck final : public HTemplateInstruction<2> {
   }
 
   std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
-  void InferRepresentation(HInferRepresentationPhase* h_infer) override;
+  virtual void InferRepresentation(HInferRepresentationPhase* h_infer) override;
 
   HValue* index() const { return OperandAt(0); }
   HValue* length() const { return OperandAt(1); }
@@ -4140,9 +4158,9 @@ class HBitwiseBinaryOperation : public HBinaryOperation {
     if (to.IsTagged()) SetChangesFlag(kNewSpacePromotion);
   }
 
-  void UpdateRepresentation(Representation new_rep,
-                            HInferRepresentationPhase* h_infer,
-                            const char* reason) override {
+  virtual void UpdateRepresentation(Representation new_rep,
+                                    HInferRepresentationPhase* h_infer,
+                                    const char* reason) override {
     // We only generate either int32 or generic tagged bitwise operations.
     if (new_rep.IsDouble()) new_rep = Representation::Integer32();
     HBinaryOperation::UpdateRepresentation(new_rep, h_infer, reason);
@@ -4154,7 +4172,8 @@ class HBitwiseBinaryOperation : public HBinaryOperation {
     return r;
   }
 
-  void initialize_output_representation(Representation observed) override {
+  virtual void initialize_output_representation(
+      Representation observed) override {
     if (observed.IsDouble()) observed = Representation::Integer32();
     HBinaryOperation::initialize_output_representation(observed);
   }
@@ -4288,7 +4307,7 @@ class HCompareNumericAndBranch : public HTemplateControlInstruction<2, 2> {
       observed_input_representation_[1] = right;
   }
 
-  void InferRepresentation(HInferRepresentationPhase* h_infer) override;
+  virtual void InferRepresentation(HInferRepresentationPhase* h_infer) override;
 
   Representation RequiredInputRepresentation(int index) override {
     return representation();
@@ -4336,7 +4355,7 @@ class HCompareHoleAndBranch final : public HUnaryControlInstruction {
   DECLARE_INSTRUCTION_FACTORY_P3(HCompareHoleAndBranch, HValue*,
                                  HBasicBlock*, HBasicBlock*);
 
-  void InferRepresentation(HInferRepresentationPhase* h_infer) override;
+  virtual void InferRepresentation(HInferRepresentationPhase* h_infer) override;
 
   Representation RequiredInputRepresentation(int index) override {
     return representation();
@@ -4359,7 +4378,7 @@ class HCompareMinusZeroAndBranch final : public HUnaryControlInstruction {
  public:
   DECLARE_INSTRUCTION_FACTORY_P1(HCompareMinusZeroAndBranch, HValue*);
 
-  void InferRepresentation(HInferRepresentationPhase* h_infer) override;
+  virtual void InferRepresentation(HInferRepresentationPhase* h_infer) override;
 
   Representation RequiredInputRepresentation(int index) override {
     return representation();
@@ -4932,9 +4951,9 @@ class HMul final : public HArithmeticBinaryOperation {
   // Only commutative if it is certain that not two objects are multiplicated.
   bool IsCommutative() const override { return !representation().IsTagged(); }
 
-  void UpdateRepresentation(Representation new_rep,
-                            HInferRepresentationPhase* h_infer,
-                            const char* reason) override {
+  virtual void UpdateRepresentation(Representation new_rep,
+                                    HInferRepresentationPhase* h_infer,
+                                    const char* reason) override {
     HArithmeticBinaryOperation::UpdateRepresentation(new_rep, h_infer, reason);
   }
 
@@ -4963,9 +4982,9 @@ class HMod final : public HArithmeticBinaryOperation {
 
   HValue* Canonicalize() override;
 
-  void UpdateRepresentation(Representation new_rep,
-                            HInferRepresentationPhase* h_infer,
-                            const char* reason) override {
+  virtual void UpdateRepresentation(Representation new_rep,
+                                    HInferRepresentationPhase* h_infer,
+                                    const char* reason) override {
     if (new_rep.IsSmi()) new_rep = Representation::Integer32();
     HArithmeticBinaryOperation::UpdateRepresentation(new_rep, h_infer, reason);
   }
@@ -4995,9 +5014,9 @@ class HDiv final : public HArithmeticBinaryOperation {
 
   HValue* Canonicalize() override;
 
-  void UpdateRepresentation(Representation new_rep,
-                            HInferRepresentationPhase* h_infer,
-                            const char* reason) override {
+  virtual void UpdateRepresentation(Representation new_rep,
+                                    HInferRepresentationPhase* h_infer,
+                                    const char* reason) override {
     if (new_rep.IsSmi()) new_rep = Representation::Integer32();
     HArithmeticBinaryOperation::UpdateRepresentation(new_rep, h_infer, reason);
   }
@@ -5029,7 +5048,7 @@ class HMathMinMax final : public HArithmeticBinaryOperation {
     return RequiredInputRepresentation(index);
   }
 
-  void InferRepresentation(HInferRepresentationPhase* h_infer) override;
+  virtual void InferRepresentation(HInferRepresentationPhase* h_infer) override;
 
   Representation RepresentationFromInputs() override {
     Representation left_rep = left()->representation();
@@ -5129,9 +5148,9 @@ class HShl final : public HBitwiseBinaryOperation {
 
   Range* InferRange(Zone* zone) override;
 
-  void UpdateRepresentation(Representation new_rep,
-                            HInferRepresentationPhase* h_infer,
-                            const char* reason) override {
+  virtual void UpdateRepresentation(Representation new_rep,
+                                    HInferRepresentationPhase* h_infer,
+                                    const char* reason) override {
     if (new_rep.IsSmi() &&
         !(right()->IsInteger32Constant() &&
           right()->GetInteger32Constant() >= 0)) {
@@ -5171,9 +5190,9 @@ class HShr final : public HBitwiseBinaryOperation {
 
   Range* InferRange(Zone* zone) override;
 
-  void UpdateRepresentation(Representation new_rep,
-                            HInferRepresentationPhase* h_infer,
-                            const char* reason) override {
+  virtual void UpdateRepresentation(Representation new_rep,
+                                    HInferRepresentationPhase* h_infer,
+                                    const char* reason) override {
     if (new_rep.IsSmi()) new_rep = Representation::Integer32();
     HBitwiseBinaryOperation::UpdateRepresentation(new_rep, h_infer, reason);
   }
@@ -5209,9 +5228,9 @@ class HSar final : public HBitwiseBinaryOperation {
 
   Range* InferRange(Zone* zone) override;
 
-  void UpdateRepresentation(Representation new_rep,
-                            HInferRepresentationPhase* h_infer,
-                            const char* reason) override {
+  virtual void UpdateRepresentation(Representation new_rep,
+                                    HInferRepresentationPhase* h_infer,
+                                    const char* reason) override {
     if (new_rep.IsSmi()) new_rep = Representation::Integer32();
     HBitwiseBinaryOperation::UpdateRepresentation(new_rep, h_infer, reason);
   }
@@ -5235,9 +5254,9 @@ class HRor final : public HBitwiseBinaryOperation {
     return new (zone) HRor(context, left, right, strength);
   }
 
-  void UpdateRepresentation(Representation new_rep,
-                            HInferRepresentationPhase* h_infer,
-                            const char* reason) override {
+  virtual void UpdateRepresentation(Representation new_rep,
+                                    HInferRepresentationPhase* h_infer,
+                                    const char* reason) override {
     if (new_rep.IsSmi()) new_rep = Representation::Integer32();
     HBitwiseBinaryOperation::UpdateRepresentation(new_rep, h_infer, reason);
   }
@@ -5502,8 +5521,8 @@ class HAllocate final : public HTemplateInstruction<2> {
     flags_ = static_cast<HAllocate::Flags>(flags_ | ALLOCATE_DOUBLE_ALIGNED);
   }
 
-  bool HandleSideEffectDominator(GVNFlag side_effect,
-                                 HValue* dominator) override;
+  virtual bool HandleSideEffectDominator(GVNFlag side_effect,
+                                         HValue* dominator) override;
 
   std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
 
@@ -6173,16 +6192,8 @@ class HObjectAccess final {
         JSArrayBufferView::kByteLengthOffset);
   }
 
-  static HObjectAccess ForJSGlobalObjectNativeContext() {
-    return HObjectAccess(kInobject, JSGlobalObject::kNativeContextOffset);
-  }
-
-  static HObjectAccess ForJSRegExpFlags() {
-    return HObjectAccess(kInobject, JSRegExp::kFlagsOffset);
-  }
-
-  static HObjectAccess ForJSRegExpSource() {
-    return HObjectAccess(kInobject, JSRegExp::kSourceOffset);
+  static HObjectAccess ForGlobalObjectNativeContext() {
+    return HObjectAccess(kInobject, GlobalObject::kNativeContextOffset);
   }
 
   static HObjectAccess ForJSCollectionTable() {
@@ -6803,8 +6814,8 @@ class HStoreNamedField final : public HTemplateInstruction<3> {
     }
     return Representation::Tagged();
   }
-  bool HandleSideEffectDominator(GVNFlag side_effect,
-                                 HValue* dominator) override {
+  virtual bool HandleSideEffectDominator(GVNFlag side_effect,
+                                         HValue* dominator) override {
     DCHECK(side_effect == kNewSpacePromotion);
     if (!FLAG_use_write_barrier_elimination) return false;
     dominator_ = dominator;
@@ -6937,7 +6948,7 @@ class HStoreNamedGeneric final : public HTemplateInstruction<3> {
   Handle<TypeFeedbackVector> feedback_vector() const {
     return feedback_vector_;
   }
-  bool HasVectorAndSlot() const { return true; }
+  bool HasVectorAndSlot() const { return FLAG_vector_stores; }
   void SetVectorAndSlot(Handle<TypeFeedbackVector> vector,
                         FeedbackVectorSlot slot) {
     feedback_vector_ = vector;
@@ -7061,8 +7072,8 @@ class HStoreKeyed final : public HTemplateInstruction<3>,
     return value()->IsConstant() && HConstant::cast(value())->IsTheHole();
   }
 
-  bool HandleSideEffectDominator(GVNFlag side_effect,
-                                 HValue* dominator) override {
+  virtual bool HandleSideEffectDominator(GVNFlag side_effect,
+                                         HValue* dominator) override {
     DCHECK(side_effect == kNewSpacePromotion);
     dominator_ = dominator;
     return false;
@@ -7163,6 +7174,8 @@ class HStoreKeyedGeneric final : public HTemplateInstruction<4> {
     return feedback_vector_;
   }
   bool HasVectorAndSlot() const {
+    DCHECK(!(FLAG_vector_stores && initialization_state_ != MEGAMORPHIC) ||
+           !feedback_vector_.is_null());
     return !feedback_vector_.is_null();
   }
   void SetVectorAndSlot(Handle<TypeFeedbackVector> vector,
@@ -7398,6 +7411,75 @@ class HStringCharFromCode final : public HTemplateInstruction<2> {
   bool IsDeletable() const override {
     return !value()->ToNumberCanBeObserved();
   }
+};
+
+
+template <int V>
+class HMaterializedLiteral : public HTemplateInstruction<V> {
+ public:
+  HMaterializedLiteral<V>(int index, int depth, AllocationSiteMode mode)
+      : literal_index_(index), depth_(depth), allocation_site_mode_(mode) {
+    this->set_representation(Representation::Tagged());
+  }
+
+  HMaterializedLiteral<V>(int index, int depth)
+      : literal_index_(index), depth_(depth),
+        allocation_site_mode_(DONT_TRACK_ALLOCATION_SITE) {
+    this->set_representation(Representation::Tagged());
+  }
+
+  int literal_index() const { return literal_index_; }
+  int depth() const { return depth_; }
+  AllocationSiteMode allocation_site_mode() const {
+    return allocation_site_mode_;
+  }
+
+ private:
+  bool IsDeletable() const final { return true; }
+
+  int literal_index_;
+  int depth_;
+  AllocationSiteMode allocation_site_mode_;
+};
+
+
+class HRegExpLiteral final : public HMaterializedLiteral<1> {
+ public:
+  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P4(HRegExpLiteral,
+                                              Handle<FixedArray>,
+                                              Handle<String>,
+                                              Handle<String>,
+                                              int);
+
+  HValue* context() { return OperandAt(0); }
+  Handle<FixedArray> literals() { return literals_; }
+  Handle<String> pattern() { return pattern_; }
+  Handle<String> flags() { return flags_; }
+
+  Representation RequiredInputRepresentation(int index) override {
+    return Representation::Tagged();
+  }
+
+  DECLARE_CONCRETE_INSTRUCTION(RegExpLiteral)
+
+ private:
+  HRegExpLiteral(HValue* context,
+                 Handle<FixedArray> literals,
+                 Handle<String> pattern,
+                 Handle<String> flags,
+                 int literal_index)
+      : HMaterializedLiteral<1>(literal_index, 0),
+        literals_(literals),
+        pattern_(pattern),
+        flags_(flags) {
+    SetOperandAt(0, context);
+    SetAllSideEffects();
+    set_type(HType::JSObject());
+  }
+
+  Handle<FixedArray> literals_;
+  Handle<String> pattern_;
+  Handle<String> flags_;
 };
 
 

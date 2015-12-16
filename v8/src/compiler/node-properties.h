@@ -79,17 +79,11 @@ class NodeProperties final {
   // ---------------------------------------------------------------------------
   // Miscellaneous mutators.
 
-  static void ReplaceValueInput(Node* node, Node* value, int index);
   static void ReplaceContextInput(Node* node, Node* context);
   static void ReplaceControlInput(Node* node, Node* control);
   static void ReplaceEffectInput(Node* node, Node* effect, int index = 0);
   static void ReplaceFrameStateInput(Node* node, int index, Node* frame_state);
-  static void RemoveFrameStateInput(Node* node, int index);
   static void RemoveNonValueInputs(Node* node);
-  static void RemoveValueInputs(Node* node);
-
-  // Replaces all value inputs of {node} with the single input {value}.
-  static void ReplaceValueInputs(Node* node, Node* value);
 
   // Merge the control node {node} into the end of the graph, introducing a
   // merge node or expanding an existing merge node if necessary.
@@ -119,27 +113,6 @@ class NodeProperties final {
   static void CollectControlProjections(Node* node, Node** proj, size_t count);
 
   // ---------------------------------------------------------------------------
-  // Context.
-
-  // Try to retrieve the specialization context from the given {node},
-  // optionally utilizing the knowledge about the (outermost) function
-  // {context}.
-  static MaybeHandle<Context> GetSpecializationContext(
-      Node* node, MaybeHandle<Context> context = MaybeHandle<Context>());
-
-  // Try to retrieve the specialization native context from the given
-  // {node}, optionally utilizing the knowledge about the (outermost)
-  // {native_context}.
-  static MaybeHandle<Context> GetSpecializationNativeContext(
-      Node* node, MaybeHandle<Context> native_context = MaybeHandle<Context>());
-
-  // Try to retrieve the specialization global object from the given
-  // {node}, optionally utilizing the knowledge about the (outermost)
-  // {native_context}.
-  static MaybeHandle<JSGlobalObject> GetSpecializationGlobalObject(
-      Node* node, MaybeHandle<Context> native_context = MaybeHandle<Context>());
-
-  // ---------------------------------------------------------------------------
   // Type.
 
   static bool IsTyped(Node* node) { return node->type() != nullptr; }
@@ -147,7 +120,6 @@ class NodeProperties final {
     DCHECK(IsTyped(node));
     return node->type();
   }
-  static Type* GetTypeOrAny(Node* node);
   static void SetType(Node* node, Type* type) {
     DCHECK_NOT_NULL(type);
     node->set_type(type);

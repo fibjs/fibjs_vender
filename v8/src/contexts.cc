@@ -4,10 +4,10 @@
 
 #include "src/contexts.h"
 
-#include "src/ast/scopeinfo.h"
 #include "src/bootstrapper.h"
 #include "src/debug/debug.h"
 #include "src/isolate-inl.h"
+#include "src/scopeinfo.h"
 
 namespace v8 {
 namespace internal {
@@ -118,6 +118,17 @@ String* Context::catch_name() {
 }
 
 
+JSBuiltinsObject* Context::builtins() {
+  GlobalObject* object = global_object();
+  if (object->IsJSGlobalObject()) {
+    return JSGlobalObject::cast(object)->builtins();
+  } else {
+    DCHECK(object->IsJSBuiltinsObject());
+    return JSBuiltinsObject::cast(object);
+  }
+}
+
+
 Context* Context::script_context() {
   Context* current = this;
   while (!current->IsScriptContext()) {
@@ -133,7 +144,7 @@ Context* Context::native_context() {
   // The global object has a direct pointer to the native context. If the
   // following DCHECK fails, the native context is probably being accessed
   // indirectly during bootstrapping. This is unsupported.
-  DCHECK(global_object()->IsJSGlobalObject());
+  DCHECK(global_object()->IsGlobalObject());
   return global_object()->native_context();
 }
 
@@ -573,20 +584,10 @@ bool Context::IsBootstrappingOrGlobalObject(Isolate* isolate, Object* object) {
   // During bootstrapping we allow all objects to pass as global
   // objects. This is necessary to fix circular dependencies.
   return isolate->heap()->gc_state() != Heap::NOT_IN_GC ||
-         isolate->bootstrapper()->IsActive() || object->IsJSGlobalObject();
+      isolate->bootstrapper()->IsActive() ||
+      object->IsGlobalObject();
 }
 #endif
-
-
-void Context::IncrementErrorsThrown() {
-  DCHECK(IsNativeContext());
-
-  int previous_value = errors_thrown()->value();
-  set_errors_thrown(Smi::FromInt(previous_value + 1));
-}
-
-
-int Context::GetErrorsThrown() { return errors_thrown()->value(); }
 
 }  // namespace internal
 }  // namespace v8

@@ -23,29 +23,30 @@ class ICUtility : public AllStatic {
 
 class CallICState final BASE_EMBEDDED {
  public:
-  explicit CallICState(ExtraICState extra_ic_state)
-      : bit_field_(extra_ic_state) {}
-  CallICState(int argc, ConvertReceiverMode convert_mode)
-      : bit_field_(ArgcBits::encode(argc) |
-                   ConvertModeBits::encode(convert_mode)) {}
+  explicit CallICState(ExtraICState extra_ic_state);
 
-  ExtraICState GetExtraICState() const { return bit_field_; }
+  enum CallType { METHOD, FUNCTION };
+
+  CallICState(int argc, CallType call_type)
+      : argc_(argc), call_type_(call_type) {}
+
+  ExtraICState GetExtraICState() const;
 
   static void GenerateAheadOfTime(Isolate*,
                                   void (*Generate)(Isolate*,
                                                    const CallICState&));
 
-  int argc() const { return ArgcBits::decode(bit_field_); }
-  ConvertReceiverMode convert_mode() const {
-    return ConvertModeBits::decode(bit_field_);
-  }
+  int arg_count() const { return argc_; }
+  CallType call_type() const { return call_type_; }
+
+  bool CallAsMethod() const { return call_type_ == METHOD; }
 
  private:
-  typedef BitField<int, 0, Code::kArgumentsBits> ArgcBits;
-  typedef BitField<ConvertReceiverMode, Code::kArgumentsBits, 2>
-      ConvertModeBits;
+  class ArgcBits : public BitField<int, 0, Code::kArgumentsBits> {};
+  class CallTypeBits : public BitField<CallType, Code::kArgumentsBits, 1> {};
 
-  int const bit_field_;
+  const int argc_;
+  const CallType call_type_;
 };
 
 

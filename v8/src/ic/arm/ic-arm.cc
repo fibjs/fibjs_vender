@@ -30,6 +30,8 @@ static void GenerateGlobalInstanceTypeCheck(MacroAssembler* masm, Register type,
   //   type: holds the receiver instance type on entry.
   __ cmp(type, Operand(JS_GLOBAL_OBJECT_TYPE));
   __ b(eq, global_object);
+  __ cmp(type, Operand(JS_BUILTINS_OBJECT_TYPE));
+  __ b(eq, global_object);
   __ cmp(type, Operand(JS_GLOBAL_PROXY_TYPE));
   __ b(eq, global_object);
 }
@@ -466,17 +468,23 @@ void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm,
 
 
 static void StoreIC_PushArgs(MacroAssembler* masm) {
-  __ Push(StoreDescriptor::ReceiverRegister(), StoreDescriptor::NameRegister(),
-          StoreDescriptor::ValueRegister(),
-          VectorStoreICDescriptor::SlotRegister(),
-          VectorStoreICDescriptor::VectorRegister());
+  if (FLAG_vector_stores) {
+    __ Push(StoreDescriptor::ReceiverRegister(),
+            StoreDescriptor::NameRegister(), StoreDescriptor::ValueRegister(),
+            VectorStoreICDescriptor::SlotRegister(),
+            VectorStoreICDescriptor::VectorRegister());
+  } else {
+    __ Push(StoreDescriptor::ReceiverRegister(),
+            StoreDescriptor::NameRegister(), StoreDescriptor::ValueRegister());
+  }
 }
 
 
 void KeyedStoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
-  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss, 5, 1);
+  int args = FLAG_vector_stores ? 5 : 3;
+  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss, args, 1);
 }
 
 
@@ -688,24 +696,27 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   __ ldrb(r4, FieldMemOperand(r4, Map::kInstanceTypeOffset));
   __ JumpIfNotUniqueNameInstanceType(r4, &slow);
 
-  // We use register r8, because otherwise probing the megamorphic stub cache
-  // would require pushing temporaries on the stack.
+  // We use register r8 when FLAG_vector_stores is enabled, because otherwise
+  // probing the megamorphic stub cache would require pushing temporaries on
+  // the stack.
   // TODO(mvstanton): quit using register r8 when
   // FLAG_enable_embedded_constant_pool is turned on.
-  DCHECK(!FLAG_enable_embedded_constant_pool);
-  Register temporary2 = r8;
-  // The handlers in the stub cache expect a vector and slot. Since we won't
-  // change the IC from any downstream misses, a dummy vector can be used.
-  Register vector = VectorStoreICDescriptor::VectorRegister();
-  Register slot = VectorStoreICDescriptor::SlotRegister();
+  DCHECK(!FLAG_vector_stores || !FLAG_enable_embedded_constant_pool);
+  Register temporary2 = FLAG_vector_stores ? r8 : r4;
+  if (FLAG_vector_stores) {
+    // The handlers in the stub cache expect a vector and slot. Since we won't
+    // change the IC from any downstream misses, a dummy vector can be used.
+    Register vector = VectorStoreICDescriptor::VectorRegister();
+    Register slot = VectorStoreICDescriptor::SlotRegister();
 
-  DCHECK(!AreAliased(vector, slot, r5, temporary2, r6, r9));
-  Handle<TypeFeedbackVector> dummy_vector =
-      TypeFeedbackVector::DummyVector(masm->isolate());
-  int slot_index = dummy_vector->GetIndex(
-      FeedbackVectorSlot(TypeFeedbackVector::kDummyKeyedStoreICSlot));
-  __ LoadRoot(vector, Heap::kDummyVectorRootIndex);
-  __ mov(slot, Operand(Smi::FromInt(slot_index)));
+    DCHECK(!AreAliased(vector, slot, r5, temporary2, r6, r9));
+    Handle<TypeFeedbackVector> dummy_vector =
+        TypeFeedbackVector::DummyVector(masm->isolate());
+    int slot_index = dummy_vector->GetIndex(
+        FeedbackVectorSlot(TypeFeedbackVector::kDummyKeyedStoreICSlot));
+    __ LoadRoot(vector, Heap::kDummyVectorRootIndex);
+    __ mov(slot, Operand(Smi::FromInt(slot_index)));
+  }
 
   Code::Flags flags = Code::RemoveTypeAndHolderFromFlags(
       Code::ComputeHandlerFlags(Code::STORE_IC));
@@ -783,7 +794,8 @@ void StoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   // Perform tail call to the entry.
-  __ TailCallRuntime(Runtime::kStoreIC_Miss, 5, 1);
+  int args = FLAG_vector_stores ? 5 : 3;
+  __ TailCallRuntime(Runtime::kStoreIC_Miss, args, 1);
 }
 
 

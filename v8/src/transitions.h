@@ -41,14 +41,6 @@ class TransitionArray: public FixedArray {
 
   static Map* SearchTransition(Map* map, PropertyKind kind, Name* name,
                                PropertyAttributes attributes);
-  static MaybeHandle<Map> SearchTransition(Handle<Map> map, PropertyKind kind,
-                                           Handle<Name> name,
-                                           PropertyAttributes attributes) {
-    if (Map* transition = SearchTransition(*map, kind, *name, attributes)) {
-      return handle(transition);
-    }
-    return MaybeHandle<Map>();
-  }
 
   static Map* SearchSpecial(Map* map, Symbol* name);
 
@@ -113,7 +105,6 @@ class TransitionArray: public FixedArray {
     Object* raw = proto_transitions->get(kProtoTransitionNumberOfEntriesOffset);
     return Smi::cast(raw)->value();
   }
-  static int NumberOfPrototypeTransitionsForTest(Map* map);
 
   static void SetNumberOfPrototypeTransitions(FixedArray* proto_transitions,
                                               int value);
@@ -273,11 +264,6 @@ class TransitionArray: public FixedArray {
   static void SetPrototypeTransitions(Handle<Map> map,
                                       Handle<FixedArray> proto_transitions);
 
-  static bool CompactPrototypeTransitionArray(FixedArray* array);
-
-  static Handle<FixedArray> GrowPrototypeTransitionArray(
-      Handle<FixedArray> array, int new_capacity, Isolate* isolate);
-
   // Compares two tuples <key, kind, attributes>, returns -1 if
   // tuple1 is "less" than tuple2, 0 if tuple1 equal to tuple2 and 1 otherwise.
   static inline int CompareKeys(Name* key1, uint32_t hash1, PropertyKind kind1,
@@ -297,7 +283,14 @@ class TransitionArray: public FixedArray {
                                    PropertyKind kind2,
                                    PropertyAttributes attributes2);
 
-  inline void Set(int transition_number, Name* key, Map* target);
+  inline void NoIncrementalWriteBarrierSet(int transition_number,
+                                           Name* key,
+                                           Map* target);
+
+  // Copy a single transition from the origin array.
+  inline void NoIncrementalWriteBarrierCopyFrom(TransitionArray* origin,
+                                                int origin_transition,
+                                                int target_transition);
 
 #ifdef DEBUG
   static void CheckNewTransitionsAreConsistent(Handle<Map> map,

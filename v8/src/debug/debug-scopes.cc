@@ -4,12 +4,12 @@
 
 #include "src/debug/debug-scopes.h"
 
-#include "src/ast/scopes.h"
 #include "src/debug/debug.h"
 #include "src/frames-inl.h"
 #include "src/globals.h"
 #include "src/isolate-inl.h"
-#include "src/parsing/parser.h"
+#include "src/parser.h"
+#include "src/scopes.h"
 
 namespace v8 {
 namespace internal {
@@ -117,7 +117,7 @@ ScopeIterator::ScopeIterator(Isolate* isolate, Handle<JSFunction> function)
       context_(function->context()),
       seen_script_scope_(false),
       failed_(false) {
-  if (!function->shared()->IsSubjectToDebugging()) context_ = Handle<Context>();
+  if (!function->IsSubjectToDebugging()) context_ = Handle<Context>();
 }
 
 
@@ -203,7 +203,7 @@ ScopeIterator::ScopeType ScopeIterator::Type() {
     }
   }
   if (context_->IsNativeContext()) {
-    DCHECK(context_->global_object()->IsJSGlobalObject());
+    DCHECK(context_->global_object()->IsGlobalObject());
     // If we are at the native context and have not yet seen script scope,
     // fake it.
     return seen_script_scope_ ? ScopeTypeGlobal : ScopeTypeScript;
@@ -404,7 +404,7 @@ void ScopeIterator::RetrieveScopeChain(Scope* scope,
 
 
 MaybeHandle<JSObject> ScopeIterator::MaterializeScriptScope() {
-  Handle<JSGlobalObject> global(CurrentContext()->global_object());
+  Handle<GlobalObject> global(CurrentContext()->global_object());
   Handle<ScriptContextTable> script_contexts(
       global->native_context()->script_context_table());
 

@@ -135,13 +135,6 @@ void TypeofDescriptor::InitializePlatformSpecific(
 }
 
 
-void FastCloneRegExpDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {edi, eax, ecx, edx};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
 void FastCloneShallowArrayDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {eax, ebx, ecx};
@@ -202,7 +195,7 @@ void CallConstructDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   // eax : number of arguments
   // ebx : feedback vector
-  // ecx : new target (for IsSuperConstructorCall)
+  // ecx : original constructor (for IsSuperConstructorCall)
   // edx : slot in feedback vector (Smi, for RecordCallTarget)
   // edi : constructor function
   // TODO(turbofan): So far we don't gather type feedback and hence skip the
@@ -217,16 +210,6 @@ void CallTrampolineDescriptor::InitializePlatformSpecific(
   // eax : number of arguments
   // edi : the target to call
   Register registers[] = {edi, eax};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
-void ConstructTrampolineDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  // eax : number of arguments
-  // edx : the new target
-  // edi : the target to call
-  Register registers[] = {edi, edx, eax};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
@@ -369,7 +352,6 @@ void ArgumentAdaptorDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
       edi,  // JSFunction
-      edx,  // the new target
       eax,  // actual number of arguments
       ebx,  // expected number of arguments
   };
@@ -438,7 +420,7 @@ void InterpreterPushArgsAndConstructDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
       eax,  // argument count (not including receiver)
-      edx,  // new target
+      edx,  // original constructor
       edi,  // constructor
       ebx,  // address of first argument
   };

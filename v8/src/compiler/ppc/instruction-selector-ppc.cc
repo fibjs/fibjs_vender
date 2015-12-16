@@ -209,83 +209,61 @@ void InstructionSelector::VisitStore(Node* node) {
   Node* value = node->InputAt(2);
 
   StoreRepresentation store_rep = OpParameter<StoreRepresentation>(node);
-  WriteBarrierKind write_barrier_kind = store_rep.write_barrier_kind();
   MachineType rep = RepresentationOf(store_rep.machine_type());
-
-  // TODO(ppc): I guess this could be done in a better way.
-  if (write_barrier_kind != kNoWriteBarrier) {
-    DCHECK_EQ(kRepTagged, rep);
-    InstructionOperand inputs[3];
-    size_t input_count = 0;
-    inputs[input_count++] = g.UseUniqueRegister(base);
-    inputs[input_count++] = g.UseUniqueRegister(offset);
-    inputs[input_count++] = (write_barrier_kind == kMapWriteBarrier)
-                                ? g.UseRegister(value)
-                                : g.UseUniqueRegister(value);
-    RecordWriteMode record_write_mode = RecordWriteMode::kValueIsAny;
-    switch (write_barrier_kind) {
-      case kNoWriteBarrier:
-        UNREACHABLE();
-        break;
-      case kMapWriteBarrier:
-        record_write_mode = RecordWriteMode::kValueIsMap;
-        break;
-      case kPointerWriteBarrier:
-        record_write_mode = RecordWriteMode::kValueIsPointer;
-        break;
-      case kFullWriteBarrier:
-        record_write_mode = RecordWriteMode::kValueIsAny;
-        break;
-    }
-    InstructionOperand temps[] = {g.TempRegister(), g.TempRegister()};
-    size_t const temp_count = arraysize(temps);
-    InstructionCode code = kArchStoreWithWriteBarrier;
-    code |= MiscField::encode(static_cast<int>(record_write_mode));
-    Emit(code, 0, nullptr, input_count, inputs, temp_count, temps);
-  } else {
-    ArchOpcode opcode;
-    ImmediateMode mode = kInt16Imm;
-    switch (rep) {
-      case kRepFloat32:
-        opcode = kPPC_StoreFloat32;
-        break;
-      case kRepFloat64:
-        opcode = kPPC_StoreDouble;
-        break;
-      case kRepBit:  // Fall through.
-      case kRepWord8:
-        opcode = kPPC_StoreWord8;
-        break;
-      case kRepWord16:
-        opcode = kPPC_StoreWord16;
-        break;
+  if (store_rep.write_barrier_kind() == kFullWriteBarrier) {
+    DCHECK(rep == kRepTagged);
+    // TODO(dcarney): refactor RecordWrite function to take temp registers
+    //                and pass them here instead of using fixed regs
+    // TODO(dcarney): handle immediate indices.
+    InstructionOperand temps[] = {g.TempRegister(r8), g.TempRegister(r9)};
+    Emit(kPPC_StoreWriteBarrier, g.NoOutput(), g.UseFixed(base, r7),
+         g.UseFixed(offset, r8), g.UseFixed(value, r9), arraysize(temps),
+         temps);
+    return;
+  }
+  DCHECK_EQ(kNoWriteBarrier, store_rep.write_barrier_kind());
+  ArchOpcode opcode;
+  ImmediateMode mode = kInt16Imm;
+  switch (rep) {
+    case kRepFloat32:
+      opcode = kPPC_StoreFloat32;
+      break;
+    case kRepFloat64:
+      opcode = kPPC_StoreDouble;
+      break;
+    case kRepBit:  // Fall through.
+    case kRepWord8:
+      opcode = kPPC_StoreWord8;
+      break;
+    case kRepWord16:
+      opcode = kPPC_StoreWord16;
+      break;
 #if !V8_TARGET_ARCH_PPC64
-      case kRepTagged:  // Fall through.
+    case kRepTagged:  // Fall through.
 #endif
-      case kRepWord32:
-        opcode = kPPC_StoreWord32;
-        break;
+    case kRepWord32:
+      opcode = kPPC_StoreWord32;
+      break;
 #if V8_TARGET_ARCH_PPC64
-      case kRepTagged:  // Fall through.
-      case kRepWord64:
-        opcode = kPPC_StoreWord64;
-        mode = kInt16Imm_4ByteAligned;
-        break;
+    case kRepTagged:  // Fall through.
+    case kRepWord64:
+      opcode = kPPC_StoreWord64;
+      mode = kInt16Imm_4ByteAligned;
+      break;
 #endif
-      default:
-        UNREACHABLE();
-        return;
-    }
-    if (g.CanBeImmediate(offset, mode)) {
-      Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-           g.UseRegister(base), g.UseImmediate(offset), g.UseRegister(value));
-    } else if (g.CanBeImmediate(base, mode)) {
-      Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-           g.UseRegister(offset), g.UseImmediate(base), g.UseRegister(value));
-    } else {
-      Emit(opcode | AddressingModeField::encode(kMode_MRR), g.NoOutput(),
-           g.UseRegister(base), g.UseRegister(offset), g.UseRegister(value));
-    }
+    default:
+      UNREACHABLE();
+      return;
+  }
+  if (g.CanBeImmediate(offset, mode)) {
+    Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
+         g.UseRegister(base), g.UseImmediate(offset), g.UseRegister(value));
+  } else if (g.CanBeImmediate(base, mode)) {
+    Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
+         g.UseRegister(offset), g.UseImmediate(base), g.UseRegister(value));
+  } else {
+    Emit(opcode | AddressingModeField::encode(kMode_MRR), g.NoOutput(),
+         g.UseRegister(base), g.UseRegister(offset), g.UseRegister(value));
   }
 }
 
@@ -443,8 +421,8 @@ static inline bool IsContiguousMask64(uint64_t value, int* mb, int* me) {
 void InstructionSelector::VisitWord32And(Node* node) {
   PPCOperandGenerator g(this);
   Int32BinopMatcher m(node);
-  int mb = 0;
-  int me = 0;
+  int mb;
+  int me;
   if (m.right().HasValue() && IsContiguousMask32(m.right().Value(), &mb, &me)) {
     int sh = 0;
     Node* left = m.left().node();
@@ -482,8 +460,8 @@ void InstructionSelector::VisitWord32And(Node* node) {
 void InstructionSelector::VisitWord64And(Node* node) {
   PPCOperandGenerator g(this);
   Int64BinopMatcher m(node);
-  int mb = 0;
-  int me = 0;
+  int mb;
+  int me;
   if (m.right().HasValue() && IsContiguousMask64(m.right().Value(), &mb, &me)) {
     int sh = 0;
     Node* left = m.left().node();
@@ -763,14 +741,6 @@ void InstructionSelector::VisitWord32Clz(Node* node) {
 }
 
 
-#if V8_TARGET_ARCH_PPC64
-void InstructionSelector::VisitWord64Clz(Node* node) {
-  PPCOperandGenerator g(this);
-  Emit(kPPC_Cntlz64, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)));
-}
-#endif
-
-
 void InstructionSelector::VisitWord32Popcnt(Node* node) {
   PPCOperandGenerator g(this);
   Emit(kPPC_Popcnt32, g.DefineAsRegister(node),
@@ -778,21 +748,7 @@ void InstructionSelector::VisitWord32Popcnt(Node* node) {
 }
 
 
-#if V8_TARGET_ARCH_PPC64
-void InstructionSelector::VisitWord64Popcnt(Node* node) {
-  PPCOperandGenerator g(this);
-  Emit(kPPC_Popcnt64, g.DefineAsRegister(node),
-       g.UseRegister(node->InputAt(0)));
-}
-#endif
-
-
 void InstructionSelector::VisitWord32Ctz(Node* node) { UNREACHABLE(); }
-
-
-#if V8_TARGET_ARCH_PPC64
-void InstructionSelector::VisitWord64Ctz(Node* node) { UNREACHABLE(); }
-#endif
 
 
 void InstructionSelector::VisitInt32Add(Node* node) {
@@ -931,21 +887,6 @@ void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
 
 
 #if V8_TARGET_ARCH_PPC64
-void InstructionSelector::VisitTruncateFloat32ToInt64(Node* node) {
-  UNIMPLEMENTED();
-}
-
-
-void InstructionSelector::VisitTruncateFloat64ToInt64(Node* node) {
-  VisitRR(this, kPPC_DoubleToInt64, node);
-}
-
-
-void InstructionSelector::VisitTruncateFloat64ToUint64(Node* node) {
-  VisitRR(this, kPPC_DoubleToUint64, node);
-}
-
-
 void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
   // TODO(mbrandy): inspect input to see if nop is appropriate.
   VisitRR(this, kPPC_ExtendSignWord32, node);
@@ -979,26 +920,6 @@ void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
 void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
   // TODO(mbrandy): inspect input to see if nop is appropriate.
   VisitRR(this, kPPC_Int64ToInt32, node);
-}
-
-
-void InstructionSelector::VisitRoundInt64ToFloat32(Node* node) {
-  VisitRR(this, kPPC_Int64ToFloat32, node);
-}
-
-
-void InstructionSelector::VisitRoundInt64ToFloat64(Node* node) {
-  VisitRR(this, kPPC_Int64ToDouble, node);
-}
-
-
-void InstructionSelector::VisitRoundUint64ToFloat32(Node* node) {
-  VisitRR(this, kPPC_Uint64ToFloat32, node);
-}
-
-
-void InstructionSelector::VisitRoundUint64ToFloat64(Node* node) {
-  VisitRR(this, kPPC_Uint64ToDouble, node);
 }
 #endif
 
@@ -1137,24 +1058,8 @@ void InstructionSelector::VisitFloat64Sqrt(Node* node) {
 }
 
 
-void InstructionSelector::VisitFloat32RoundDown(Node* node) { UNIMPLEMENTED(); }
-
-
 void InstructionSelector::VisitFloat64RoundDown(Node* node) {
   VisitRR(this, kPPC_FloorDouble, node);
-}
-
-
-void InstructionSelector::VisitFloat32RoundUp(Node* node) { UNIMPLEMENTED(); }
-
-
-void InstructionSelector::VisitFloat64RoundUp(Node* node) {
-  VisitRR(this, kPPC_CeilDouble, node);
-}
-
-
-void InstructionSelector::VisitFloat32RoundTruncate(Node* node) {
-  UNREACHABLE();
 }
 
 
@@ -1165,16 +1070,6 @@ void InstructionSelector::VisitFloat64RoundTruncate(Node* node) {
 
 void InstructionSelector::VisitFloat64RoundTiesAway(Node* node) {
   VisitRR(this, kPPC_RoundDouble, node);
-}
-
-
-void InstructionSelector::VisitFloat32RoundTiesEven(Node* node) {
-  UNREACHABLE();
-}
-
-
-void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
-  UNREACHABLE();
 }
 
 
@@ -1590,10 +1485,23 @@ void InstructionSelector::VisitFloat64LessThanOrEqual(Node* node) {
 }
 
 
-void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
-                                               const CallDescriptor* descriptor,
-                                               Node* node) {
+void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
   PPCOperandGenerator g(this);
+  const CallDescriptor* descriptor = OpParameter<const CallDescriptor*>(node);
+
+  FrameStateDescriptor* frame_state_descriptor = nullptr;
+  if (descriptor->NeedsFrameState()) {
+    frame_state_descriptor =
+        GetFrameStateDescriptor(node->InputAt(descriptor->InputCount()));
+  }
+
+  CallBuffer buffer(zone(), descriptor, frame_state_descriptor);
+
+  // Compute InstructionOperands for inputs and outputs.
+  // TODO(turbofan): on PPC it's probably better to use the code object in a
+  // register if there are multiple uses of it. Improve constant pool and the
+  // heuristics in the register allocator for where to emit constants.
+  InitializeCallBuffer(node, &buffer, true, true);
 
   // Prepare for C function call.
   if (descriptor->IsCFunctionCall()) {
@@ -1603,7 +1511,7 @@ void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
 
     // Poke any stack arguments.
     int slot = kStackFrameExtraParamSlot;
-    for (Node* node : (*arguments)) {
+    for (Node* node : buffer.pushed_nodes) {
       Emit(kPPC_StoreToStackSlot, g.NoOutput(), g.UseRegister(node),
            g.TempImmediate(slot));
       ++slot;
@@ -1612,7 +1520,7 @@ void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
     // Push any stack arguments.
     int num_slots = static_cast<int>(descriptor->StackParameterCount());
     int slot = 0;
-    for (Node* input : (*arguments)) {
+    for (Node* input : buffer.pushed_nodes) {
       if (slot == 0) {
         DCHECK(input);
         Emit(kPPC_PushFrame, g.NoOutput(), g.UseRegister(input),
@@ -1627,10 +1535,134 @@ void InstructionSelector::EmitPrepareArguments(NodeVector* arguments,
       ++slot;
     }
   }
+
+  // Pass label of exception handler block.
+  CallDescriptor::Flags flags = descriptor->flags();
+  if (handler) {
+    DCHECK_EQ(IrOpcode::kIfException, handler->front()->opcode());
+    IfExceptionHint hint = OpParameter<IfExceptionHint>(handler->front());
+    if (hint == IfExceptionHint::kLocallyCaught) {
+      flags |= CallDescriptor::kHasLocalCatchHandler;
+    }
+    flags |= CallDescriptor::kHasExceptionHandler;
+    buffer.instruction_args.push_back(g.Label(handler));
+  }
+
+  // Select the appropriate opcode based on the call type.
+  InstructionCode opcode = kArchNop;
+  switch (descriptor->kind()) {
+    case CallDescriptor::kCallAddress:
+      opcode =
+          kArchCallCFunction |
+          MiscField::encode(static_cast<int>(descriptor->CParameterCount()));
+      break;
+    case CallDescriptor::kCallCodeObject:
+      opcode = kArchCallCodeObject | MiscField::encode(flags);
+      break;
+    case CallDescriptor::kCallJSFunction:
+      opcode = kArchCallJSFunction | MiscField::encode(flags);
+      break;
+    case CallDescriptor::kLazyBailout:
+      opcode = kArchLazyBailout | MiscField::encode(flags);
+      break;
+  }
+
+  // Emit the call instruction.
+  size_t const output_count = buffer.outputs.size();
+  auto* outputs = output_count ? &buffer.outputs.front() : nullptr;
+  Emit(opcode, output_count, outputs, buffer.instruction_args.size(),
+       &buffer.instruction_args.front())->MarkAsCall();
 }
 
 
-bool InstructionSelector::IsTailCallAddressImmediate() { return false; }
+void InstructionSelector::VisitTailCall(Node* node) {
+  PPCOperandGenerator g(this);
+  CallDescriptor const* descriptor = OpParameter<CallDescriptor const*>(node);
+  DCHECK_NE(0, descriptor->flags() & CallDescriptor::kSupportsTailCalls);
+  DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kPatchableCallSite);
+  DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kNeedsNopAfterCall);
+
+  // TODO(turbofan): Relax restriction for stack parameters.
+  if (linkage()->GetIncomingDescriptor()->CanTailCall(node)) {
+    CallBuffer buffer(zone(), descriptor, nullptr);
+
+    // Compute InstructionOperands for inputs and outputs.
+    // TODO(turbofan): on PPC it's probably better to use the code object in a
+    // register if there are multiple uses of it. Improve constant pool and the
+    // heuristics in the register allocator for where to emit constants.
+    InitializeCallBuffer(node, &buffer, true, false);
+
+    // Select the appropriate opcode based on the call type.
+    InstructionCode opcode;
+    switch (descriptor->kind()) {
+      case CallDescriptor::kCallCodeObject:
+        opcode = kArchTailCallCodeObject;
+        break;
+      case CallDescriptor::kCallJSFunction:
+        opcode = kArchTailCallJSFunction;
+        break;
+      default:
+        UNREACHABLE();
+        return;
+    }
+    opcode |= MiscField::encode(descriptor->flags());
+
+    // Emit the tailcall instruction.
+    Emit(opcode, 0, nullptr, buffer.instruction_args.size(),
+         &buffer.instruction_args.front());
+  } else {
+    FrameStateDescriptor* frame_state_descriptor = nullptr;
+    if (descriptor->NeedsFrameState()) {
+      frame_state_descriptor =
+          GetFrameStateDescriptor(node->InputAt(descriptor->InputCount()));
+    }
+
+    CallBuffer buffer(zone(), descriptor, frame_state_descriptor);
+
+    // Compute InstructionOperands for inputs and outputs.
+    // TODO(turbofan): on PPC it's probably better to use the code object in a
+    // register if there are multiple uses of it. Improve constant pool and the
+    // heuristics in the register allocator for where to emit constants.
+    InitializeCallBuffer(node, &buffer, true, false);
+
+    // Push any stack arguments.
+    int num_slots = static_cast<int>(descriptor->StackParameterCount());
+    int slot = 0;
+    for (Node* input : buffer.pushed_nodes) {
+      if (slot == 0) {
+        Emit(kPPC_PushFrame, g.NoOutput(), g.UseRegister(input),
+             g.TempImmediate(num_slots));
+      } else {
+        Emit(kPPC_StoreToStackSlot, g.NoOutput(), g.UseRegister(input),
+             g.TempImmediate(slot));
+      }
+      ++slot;
+    }
+
+    // Select the appropriate opcode based on the call type.
+    InstructionCode opcode;
+    switch (descriptor->kind()) {
+      case CallDescriptor::kCallCodeObject: {
+        opcode = kArchCallCodeObject;
+        break;
+      }
+      case CallDescriptor::kCallJSFunction:
+        opcode = kArchCallJSFunction;
+        break;
+      default:
+        UNREACHABLE();
+        return;
+    }
+    opcode |= MiscField::encode(descriptor->flags());
+
+    // Emit the call instruction.
+    size_t const output_count = buffer.outputs.size();
+    auto* outputs = output_count ? &buffer.outputs.front() : nullptr;
+    Emit(opcode, output_count, outputs, buffer.instruction_args.size(),
+         &buffer.instruction_args.front())->MarkAsCall();
+    Emit(kArchRet, 0, nullptr, output_count, outputs);
+  }
+}
 
 
 void InstructionSelector::VisitFloat64ExtractLowWord32(Node* node) {
@@ -1683,11 +1715,9 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
   return MachineOperatorBuilder::kFloat64RoundDown |
-         MachineOperatorBuilder::kFloat64RoundUp |
          MachineOperatorBuilder::kFloat64RoundTruncate |
          MachineOperatorBuilder::kFloat64RoundTiesAway |
-         MachineOperatorBuilder::kWord32Popcnt |
-         MachineOperatorBuilder::kWord64Popcnt;
+         MachineOperatorBuilder::kWord32Popcnt;
   // We omit kWord32ShiftIsSafe as s[rl]w use 0x3f as a mask rather than 0x1f.
 }
 

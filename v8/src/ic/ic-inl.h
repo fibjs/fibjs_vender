@@ -60,8 +60,9 @@ void IC::SetTargetAtAddress(Address address, Code* target,
   DCHECK(!target->is_inline_cache_stub() ||
          (target->kind() != Code::LOAD_IC &&
           target->kind() != Code::KEYED_LOAD_IC &&
-          target->kind() != Code::CALL_IC && target->kind() != Code::STORE_IC &&
-          target->kind() != Code::KEYED_STORE_IC));
+          target->kind() != Code::CALL_IC &&
+          (!FLAG_vector_stores || (target->kind() != Code::STORE_IC &&
+                                   target->kind() != Code::KEYED_STORE_IC))));
 
   Heap* heap = target->GetHeap();
   Code* old_target = GetTargetAtAddress(address, constant_pool);
@@ -126,6 +127,19 @@ Code* IC::raw_target() const {
 void IC::UpdateTarget() { target_ = handle(raw_target(), isolate_); }
 
 
+JSFunction* IC::GetRootConstructor(Map* receiver_map, Context* native_context) {
+  DisallowHeapAllocation no_alloc;
+  if (receiver_map->IsPrimitiveMap()) {
+    int constructor_function_index =
+        receiver_map->GetConstructorFunctionIndex();
+    if (constructor_function_index != Map::kNoConstructorFunctionIndex) {
+      return JSFunction::cast(native_context->get(constructor_function_index));
+    }
+  }
+  return nullptr;
+}
+
+
 Handle<Map> IC::GetHandlerCacheHolder(Handle<Map> receiver_map,
                                       bool receiver_is_holder, Isolate* isolate,
                                       CacheHolderFlag* flag) {
@@ -133,9 +147,9 @@ Handle<Map> IC::GetHandlerCacheHolder(Handle<Map> receiver_map,
     *flag = kCacheOnReceiver;
     return receiver_map;
   }
-  Handle<JSFunction> builtin_ctor;
-  if (Map::GetConstructorFunction(receiver_map, isolate->native_context())
-          .ToHandle(&builtin_ctor)) {
+  Context* native_context = *isolate->native_context();
+  JSFunction* builtin_ctor = GetRootConstructor(*receiver_map, native_context);
+  if (builtin_ctor != NULL) {
     *flag = kCacheOnPrototypeReceiverIsPrimitive;
     return handle(HeapObject::cast(builtin_ctor->instance_prototype())->map());
   }
@@ -149,9 +163,9 @@ Handle<Map> IC::GetHandlerCacheHolder(Handle<Map> receiver_map,
 
 Handle<Map> IC::GetICCacheHolder(Handle<Map> map, Isolate* isolate,
                                  CacheHolderFlag* flag) {
-  Handle<JSFunction> builtin_ctor;
-  if (Map::GetConstructorFunction(map, isolate->native_context())
-          .ToHandle(&builtin_ctor)) {
+  Context* native_context = *isolate->native_context();
+  JSFunction* builtin_ctor = GetRootConstructor(*map, native_context);
+  if (builtin_ctor != NULL) {
     *flag = kCacheOnPrototype;
     return handle(builtin_ctor->initial_map());
   }

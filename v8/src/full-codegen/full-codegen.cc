@@ -4,11 +4,8 @@
 
 #include "src/full-codegen/full-codegen.h"
 
-#include "src/ast/ast.h"
-#include "src/ast/ast-numbering.h"
-#include "src/ast/prettyprinter.h"
-#include "src/ast/scopeinfo.h"
-#include "src/ast/scopes.h"
+#include "src/ast.h"
+#include "src/ast-numbering.h"
 #include "src/code-factory.h"
 #include "src/codegen.h"
 #include "src/compiler.h"
@@ -16,6 +13,9 @@
 #include "src/debug/liveedit.h"
 #include "src/isolate-inl.h"
 #include "src/macro-assembler.h"
+#include "src/prettyprinter.h"
+#include "src/scopeinfo.h"
+#include "src/scopes.h"
 #include "src/snapshot/snapshot.h"
 
 namespace v8 {
@@ -38,8 +38,7 @@ bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
   }
   CodeGenerator::MakeCodePrologue(info, "full");
   const int kInitialBufferSize = 4 * KB;
-  MacroAssembler masm(info->isolate(), NULL, kInitialBufferSize,
-                      CodeObjectRequired::kYes);
+  MacroAssembler masm(info->isolate(), NULL, kInitialBufferSize);
   if (info->will_serialize()) masm.enable_serializer();
 
   LOG_CODE_EVENT(isolate,
@@ -561,10 +560,7 @@ void FullCodeGenerator::SetFunctionPosition(FunctionLiteral* fun) {
 
 
 void FullCodeGenerator::SetReturnPosition(FunctionLiteral* fun) {
-  // For default constructors, start position equals end position, and there
-  // is no source code besides the class literal.
-  int pos = std::max(fun->start_position(), fun->end_position() - 1);
-  RecordStatementPosition(masm_, pos);
+  RecordStatementPosition(masm_, fun->end_position() - 1);
   if (info_->is_debug()) {
     // Always emit a debug break slot before a return.
     DebugCodegen::GenerateSlot(masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_RETURN);
@@ -613,13 +609,13 @@ void FullCodeGenerator::SetCallPosition(Expression* expr, int argc) {
 }
 
 
-void FullCodeGenerator::SetConstructCallPosition(Expression* expr, int argc) {
+void FullCodeGenerator::SetConstructCallPosition(Expression* expr) {
   if (expr->position() == RelocInfo::kNoPosition) return;
   RecordPosition(masm_, expr->position());
   if (info_->is_debug()) {
     // Always emit a debug break slot before a construct call.
-    DebugCodegen::GenerateSlot(
-        masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_CONSTRUCT_CALL, argc);
+    DebugCodegen::GenerateSlot(masm_,
+                               RelocInfo::DEBUG_BREAK_SLOT_AT_CONSTRUCT_CALL);
   }
 }
 
@@ -952,12 +948,7 @@ void FullCodeGenerator::VisitWithStatement(WithStatement* stmt) {
   Comment cmnt(masm_, "[ WithStatement");
   SetStatementPosition(stmt);
 
-  VisitForAccumulatorValue(stmt->expression());
-  Callable callable = CodeFactory::ToObject(isolate());
-  __ Move(callable.descriptor().GetRegisterParameter(0), result_register());
-  __ Call(callable.code(), RelocInfo::CODE_TARGET);
-  PrepareForBailoutForId(stmt->ToObjectId(), NO_REGISTERS);
-  __ Push(result_register());
+  VisitForStackValue(stmt->expression());
   PushFunctionArgumentForContextAllocation();
   __ CallRuntime(Runtime::kPushWithContext, 2);
   StoreToFrameField(StandardFrameConstants::kContextOffset, context_register());
@@ -1349,8 +1340,8 @@ void FullCodeGenerator::VisitClassLiteral(ClassLiteral* lit) {
     EmitClassDefineProperties(lit);
 
     if (lit->class_variable_proxy() != nullptr) {
-      EmitVariableAssignment(lit->class_variable_proxy()->var(), Token::INIT,
-                             lit->ProxySlot());
+      EmitVariableAssignment(lit->class_variable_proxy()->var(),
+                             Token::INIT_CONST, lit->ProxySlot());
     }
   }
 
@@ -1372,9 +1363,9 @@ void FullCodeGenerator::VisitNativeFunctionLiteral(
   DCHECK(!fun_template.IsEmpty());
 
   // Instantiate the function and create a shared function info from it.
-  Handle<JSFunction> fun = Handle<JSFunction>::cast(Utils::OpenHandle(
+  Handle<JSFunction> fun = Utils::OpenHandle(
       *fun_template->GetFunction(v8_isolate->GetCurrentContext())
-           .ToLocalChecked()));
+           .ToLocalChecked());
   const int literals = fun->NumberOfLiterals();
   Handle<Code> code = Handle<Code>(fun->shared()->code());
   Handle<Code> construct_stub = Handle<Code>(fun->shared()->construct_stub());
@@ -1428,66 +1419,6 @@ void FullCodeGenerator::ExitTryBlock(int handler_index) {
 
   // Drop context from operand stack.
   __ Drop(TryBlockConstant::kElementCount);
-}
-
-
-void FullCodeGenerator::VisitCall(Call* expr) {
-#ifdef DEBUG
-  // We want to verify that RecordJSReturnSite gets called on all paths
-  // through this function.  Avoid early returns.
-  expr->return_is_recorded_ = false;
-#endif
-
-  Comment cmnt(masm_, "[ Call");
-  Expression* callee = expr->expression();
-  Call::CallType call_type = expr->GetCallType(isolate());
-
-  switch (call_type) {
-    case Call::POSSIBLY_EVAL_CALL:
-      EmitPossiblyEvalCall(expr);
-      break;
-    case Call::GLOBAL_CALL:
-      EmitCallWithLoadIC(expr);
-      break;
-    case Call::LOOKUP_SLOT_CALL:
-      // Call to a lookup slot (dynamically introduced variable).
-      PushCalleeAndWithBaseObject(expr);
-      EmitCall(expr);
-      break;
-    case Call::NAMED_PROPERTY_CALL: {
-      Property* property = callee->AsProperty();
-      VisitForStackValue(property->obj());
-      EmitCallWithLoadIC(expr);
-      break;
-    }
-    case Call::KEYED_PROPERTY_CALL: {
-      Property* property = callee->AsProperty();
-      VisitForStackValue(property->obj());
-      EmitKeyedCallWithLoadIC(expr, property->key());
-      break;
-    }
-    case Call::NAMED_SUPER_PROPERTY_CALL:
-      EmitSuperCallWithLoadIC(expr);
-      break;
-    case Call::KEYED_SUPER_PROPERTY_CALL:
-      EmitKeyedSuperCallWithLoadIC(expr);
-      break;
-    case Call::SUPER_CALL:
-      EmitSuperConstructorCall(expr);
-      break;
-    case Call::OTHER_CALL:
-      // Call to an arbitrary expression not handled specially above.
-      VisitForStackValue(callee);
-      __ PushRoot(Heap::kUndefinedValueRootIndex);
-      // Emit function call.
-      EmitCall(expr);
-      break;
-  }
-
-#ifdef DEBUG
-  // RecordJSReturnSite should have been called.
-  DCHECK(expr->return_is_recorded_);
-#endif
 }
 
 

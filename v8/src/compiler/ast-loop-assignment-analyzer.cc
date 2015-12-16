@@ -4,7 +4,7 @@
 
 #include "src/compiler/ast-loop-assignment-analyzer.h"
 #include "src/compiler.h"
-#include "src/parsing/parser.h"
+#include "src/parser.h"
 
 namespace v8 {
 namespace internal {
@@ -126,7 +126,6 @@ void ALAA::VisitClassLiteral(ClassLiteral* e) {
   VisitIfNotNull(e->constructor());
   ZoneList<ObjectLiteralProperty*>* properties = e->properties();
   for (int i = 0; i < properties->length(); i++) {
-    Visit(properties->at(i)->key());
     Visit(properties->at(i)->value());
   }
 }
@@ -142,7 +141,6 @@ void ALAA::VisitConditional(Conditional* e) {
 void ALAA::VisitObjectLiteral(ObjectLiteral* e) {
   ZoneList<ObjectLiteralProperty*>* properties = e->properties();
   for (int i = 0; i < properties->length(); i++) {
-    Visit(properties->at(i)->key());
     Visit(properties->at(i)->value());
   }
 }
@@ -263,9 +261,7 @@ void ALAA::VisitForInStatement(ForInStatement* loop) {
 
 
 void ALAA::VisitForOfStatement(ForOfStatement* loop) {
-  Visit(loop->assign_iterator());
   Enter(loop);
-  Visit(loop->assign_each());
   Visit(loop->each());
   Visit(loop->subject());
   Visit(loop->body());

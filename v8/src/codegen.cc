@@ -7,19 +7,37 @@
 #if defined(V8_OS_AIX)
 #include <fenv.h>  // NOLINT(build/c++11)
 #endif
-#include "src/ast/prettyprinter.h"
 #include "src/bootstrapper.h"
 #include "src/compiler.h"
 #include "src/debug/debug.h"
-#include "src/parsing/parser.h"
+#include "src/parser.h"
+#include "src/prettyprinter.h"
 #include "src/profiler/cpu-profiler.h"
+#include "src/rewriter.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
 namespace internal {
 
 
-#if defined(V8_OS_WIN)
+#if defined(_WIN64)
+typedef double (*ModuloFunction)(double, double);
+static ModuloFunction modulo_function = NULL;
+// Defined in codegen-x64.cc.
+ModuloFunction CreateModuloFunction();
+
+void init_modulo_function() {
+  modulo_function = CreateModuloFunction();
+}
+
+
+double modulo(double x, double y) {
+  // Note: here we rely on dependent reads being ordered. This is true
+  // on all architectures we currently support.
+  return (*modulo_function)(x, y);
+}
+#elif defined(_WIN32)
+
 double modulo(double x, double y) {
   // Workaround MS fmod bugs. ECMA-262 says:
   // dividend is finite and divisor is an infinity => result equals dividend
@@ -43,27 +61,29 @@ double modulo(double x, double y) {
   return std::fmod(x, y);
 #endif
 }
-#endif  // defined(V8_OS_WIN)
+#endif  // defined(_WIN64)
 
 
-#define UNARY_MATH_FUNCTION(name, generator)                             \
-  static UnaryMathFunctionWithIsolate fast_##name##_function = nullptr;  \
-  double std_##name(double x, Isolate* isolate) { return std::name(x); } \
-  void init_fast_##name##_function(Isolate* isolate) {                   \
-    if (FLAG_fast_math) fast_##name##_function = generator(isolate);     \
-    if (!fast_##name##_function) fast_##name##_function = std_##name;    \
-  }                                                                      \
-  void lazily_initialize_fast_##name(Isolate* isolate) {                 \
-    if (!fast_##name##_function) init_fast_##name##_function(isolate);   \
-  }                                                                      \
-  double fast_##name(double x, Isolate* isolate) {                       \
-    return (*fast_##name##_function)(x, isolate);                        \
-  }
+#define UNARY_MATH_FUNCTION(name, generator)             \
+static UnaryMathFunction fast_##name##_function = NULL;  \
+void init_fast_##name##_function() {                     \
+  fast_##name##_function = generator;                    \
+}                                                        \
+double fast_##name(double x) {                           \
+  return (*fast_##name##_function)(x);                   \
+}
 
-UNARY_MATH_FUNCTION(sqrt, CreateSqrtFunction)
-UNARY_MATH_FUNCTION(exp, CreateExpFunction)
+UNARY_MATH_FUNCTION(exp, CreateExpFunction())
+UNARY_MATH_FUNCTION(sqrt, CreateSqrtFunction())
 
 #undef UNARY_MATH_FUNCTION
+
+
+void lazily_initialize_fast_exp() {
+  if (fast_exp_function == NULL) {
+    init_fast_exp_function();
+  }
+}
 
 
 #define __ ACCESS_MASM(masm_)
@@ -102,8 +122,7 @@ void CodeGenerator::MakeCodePrologue(CompilationInfo* info, const char* kind) {
 
   if (FLAG_trace_codegen || print_source || print_ast) {
     base::SmartArrayPointer<char> name = info->GetDebugName();
-    PrintF("[generating %s code for %s function: %s]\n", kind, ftype,
-           name.get());
+    PrintF("[generating %s code for %s function: %s]", kind, ftype, name.get());
   }
 
 #ifdef DEBUG

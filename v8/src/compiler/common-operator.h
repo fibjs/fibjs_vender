@@ -14,10 +14,6 @@ namespace internal {
 
 // Forward declarations.
 class ExternalReference;
-template <class>
-class TypeImpl;
-struct ZoneTypeConfig;
-typedef TypeImpl<ZoneTypeConfig> Type;
 
 
 namespace compiler {
@@ -149,7 +145,6 @@ class CommonOperatorBuilder final : public ZoneObject {
   const Operator* Phi(MachineType type, int value_input_count);
   const Operator* EffectPhi(int effect_input_count);
   const Operator* EffectSet(int arguments);
-  const Operator* Guard(Type* type);
   const Operator* BeginRegion();
   const Operator* FinishRegion();
   const Operator* StateValues(int arguments);

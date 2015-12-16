@@ -481,9 +481,14 @@ class Isolate {
     return isolate;
   }
 
-  // Like Current, but skips the check that |isolate_key_| was initialized.
-  // Callers have to ensure that themselves.
-  // DO NOT USE. The only remaining callsite will be deleted soon.
+  INLINE(static Isolate* UncheckedCurrent()) {
+    DCHECK(base::NoBarrier_Load(&isolate_key_created_) == 1);
+    return reinterpret_cast<Isolate*>(
+        base::Thread::GetThreadLocal(isolate_key_));
+  }
+
+  // Like UncheckedCurrent, but skips the check that |isolate_key_| was
+  // initialized. Callers have to ensure that themselves.
   INLINE(static Isolate* UnsafeCurrent()) {
     return reinterpret_cast<Isolate*>(
         base::Thread::GetThreadLocal(isolate_key_));
@@ -612,7 +617,7 @@ class Isolate {
 
   // Returns the global object of the current context. It could be
   // a builtin object, or a JS global object.
-  inline Handle<JSGlobalObject> global_object();
+  inline Handle<GlobalObject> global_object();
 
   // Returns the global proxy object of the current context.
   JSObject* global_proxy() {
@@ -934,7 +939,7 @@ class Isolate {
   bool initialized_from_snapshot() { return initialized_from_snapshot_; }
 
   double time_millis_since_init() {
-    return heap_.MonotonicallyIncreasingTimeInMs() - time_millis_at_init_;
+    return base::OS::TimeCurrentMillis() - time_millis_at_init_;
   }
 
   DateCache* date_cache() {
@@ -1041,12 +1046,6 @@ class Isolate {
     return id;
   }
 
-  void IncrementJsCallsFromApiCounter() { ++js_calls_from_api_counter_; }
-
-  unsigned int js_calls_from_api_counter() {
-    return js_calls_from_api_counter_;
-  }
-
   // Get (and lazily initialize) the registry for per-isolate symbols.
   Handle<JSObject> GetSymbolRegistry();
 
@@ -1088,9 +1087,8 @@ class Isolate {
 
   FutexWaitListNode* futex_wait_list_node() { return &futex_wait_list_node_; }
 
-  CancelableTaskManager* cancelable_task_manager() {
-    return cancelable_task_manager_;
-  }
+  void RegisterCancelableTask(Cancelable* task);
+  void RemoveCancelableTask(Cancelable* task);
 
   interpreter::Interpreter* interpreter() const { return interpreter_; }
 
@@ -1315,9 +1313,6 @@ class Isolate {
 
   int next_optimization_id_;
 
-  // Counts javascript calls from the API. Wraps around on overflow.
-  unsigned int js_calls_from_api_counter_;
-
 #if TRACE_MAPS
   int next_unique_sfi_id_;
 #endif
@@ -1334,7 +1329,7 @@ class Isolate {
 
   FutexWaitListNode futex_wait_list_node_;
 
-  CancelableTaskManager* cancelable_task_manager_;
+  std::set<Cancelable*> cancelable_tasks_;
 
   v8::Isolate::AbortOnUncaughtExceptionCallback
       abort_on_uncaught_exception_callback_;

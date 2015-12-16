@@ -35,6 +35,7 @@ class LCodeGen;
   V(CallJSFunction)                          \
   V(CallWithDescriptor)                      \
   V(CallFunction)                            \
+  V(CallNew)                                 \
   V(CallNewArray)                            \
   V(CallRuntime)                             \
   V(CallStub)                                \
@@ -131,6 +132,7 @@ class LCodeGen;
   V(Power)                                   \
   V(Prologue)                                \
   V(PushArgument)                            \
+  V(RegExpLiteral)                           \
   V(Return)                                  \
   V(SeqStringGetChar)                        \
   V(SeqStringSetChar)                        \
@@ -1916,6 +1918,25 @@ class LCallFunction final : public LTemplateInstruction<1, 2, 2> {
 };
 
 
+class LCallNew final : public LTemplateInstruction<1, 2, 0> {
+ public:
+  LCallNew(LOperand* context, LOperand* constructor) {
+    inputs_[0] = context;
+    inputs_[1] = constructor;
+  }
+
+  LOperand* context() { return inputs_[0]; }
+  LOperand* constructor() { return inputs_[1]; }
+
+  DECLARE_CONCRETE_INSTRUCTION(CallNew, "call-new")
+  DECLARE_HYDROGEN_ACCESSOR(CallNew)
+
+  void PrintDataTo(StringStream* stream) override;
+
+  int arity() const { return hydrogen()->argument_count() - 1; }
+};
+
+
 class LCallNewArray final : public LTemplateInstruction<1, 2, 0> {
  public:
   LCallNewArray(LOperand* context, LOperand* constructor) {
@@ -2493,6 +2514,19 @@ class LAllocate final : public LTemplateInstruction<1, 2, 2> {
 
   DECLARE_CONCRETE_INSTRUCTION(Allocate, "allocate")
   DECLARE_HYDROGEN_ACCESSOR(Allocate)
+};
+
+
+class LRegExpLiteral final : public LTemplateInstruction<1, 1, 0> {
+ public:
+  explicit LRegExpLiteral(LOperand* context) {
+    inputs_[0] = context;
+  }
+
+  LOperand* context() { return inputs_[0]; }
+
+  DECLARE_CONCRETE_INSTRUCTION(RegExpLiteral, "regexp-literal")
+  DECLARE_HYDROGEN_ACCESSOR(RegExpLiteral)
 };
 
 

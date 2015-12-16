@@ -46,12 +46,9 @@
 #include "src/counters.h"
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
-#include "src/disassembler.h"
 #include "src/execution.h"
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
-#include "src/ostreams.h"
-#include "src/parsing/token.h"
 #include "src/profiler/cpu-profiler.h"
 #include "src/regexp/jsregexp.h"
 #include "src/regexp/regexp-macro-assembler.h"
@@ -60,6 +57,7 @@
 #include "src/runtime/runtime.h"
 #include "src/simulator.h"  // For flushing instruction cache.
 #include "src/snapshot/serialize.h"
+#include "src/token.h"
 
 #if V8_TARGET_ARCH_IA32
 #include "src/ia32/assembler-ia32-inl.h"  // NOLINT
@@ -214,12 +212,6 @@ void AssemblerBase::FlushICacheWithoutIsolate(void* start, size_t size) {
   isolate = nullptr;
 #endif  // USE_SIMULATOR
   FlushICache(isolate, start, size);
-}
-
-
-void AssemblerBase::Print() {
-  OFStream os(stdout);
-  v8::internal::Disassembler::Decode(isolate(), &os, buffer_, pc_, nullptr);
 }
 
 
@@ -521,8 +513,7 @@ void RelocInfoWriter::Write(const RelocInfo* rinfo) {
       WriteData(rinfo->data());
     } else if (RelocInfo::IsConstPool(rmode) ||
                RelocInfo::IsVeneerPool(rmode) ||
-               RelocInfo::IsDebugBreakSlotAtCall(rmode) ||
-               RelocInfo::IsDebugBreakSlotAtConstructCall(rmode)) {
+               RelocInfo::IsDebugBreakSlotAtCall(rmode)) {
       WriteIntData(static_cast<int>(rinfo->data()));
     }
   }
@@ -714,8 +705,7 @@ void RelocIterator::next() {
           }
         } else if (RelocInfo::IsConstPool(rmode) ||
                    RelocInfo::IsVeneerPool(rmode) ||
-                   RelocInfo::IsDebugBreakSlotAtCall(rmode) ||
-                   RelocInfo::IsDebugBreakSlotAtConstructCall(rmode)) {
+                   RelocInfo::IsDebugBreakSlotAtCall(rmode)) {
           if (SetMode(rmode)) {
             AdvanceReadInt();
             return;
@@ -1469,20 +1459,17 @@ ExternalReference ExternalReference::runtime_function_table_address(
 }
 
 
-double power_helper(Isolate* isolate, double x, double y) {
+double power_helper(double x, double y) {
   int y_int = static_cast<int>(y);
   if (y == y_int) {
     return power_double_int(x, y_int);  // Returns 1 if exponent is 0.
   }
   if (y == 0.5) {
-    lazily_initialize_fast_sqrt(isolate);
     return (std::isinf(x)) ? V8_INFINITY
-                           : fast_sqrt(x + 0.0, isolate);  // Convert -0 to +0.
+                           : fast_sqrt(x + 0.0);  // Convert -0 to +0.
   }
   if (y == -0.5) {
-    lazily_initialize_fast_sqrt(isolate);
-    return (std::isinf(x)) ? 0 : 1.0 / fast_sqrt(x + 0.0,
-                                                 isolate);  // Convert -0 to +0.
+    return (std::isinf(x)) ? 0 : 1.0 / fast_sqrt(x + 0.0);  // Convert -0 to +0.
   }
   return power_double_double(x, y);
 }
@@ -1580,9 +1567,9 @@ ExternalReference ExternalReference::mod_two_doubles_operation(
 }
 
 
-ExternalReference ExternalReference::debug_last_step_action_address(
+ExternalReference ExternalReference::debug_step_in_fp_address(
     Isolate* isolate) {
-  return ExternalReference(isolate->debug()->last_step_action_addr());
+  return ExternalReference(isolate->debug()->step_in_fp_addr());
 }
 
 
