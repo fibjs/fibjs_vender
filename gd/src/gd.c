@@ -73,6 +73,7 @@ extern const int gdSinT[];
 
 void gd_stderr_error(int priority, const char *format, va_list args)
 {
+	return;
 	switch (priority) {
 	case GD_ERROR:
 		fputs("GD Error: ", stderr);
