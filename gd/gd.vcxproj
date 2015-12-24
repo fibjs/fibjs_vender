@@ -87,6 +87,7 @@
     <ClCompile Include="src\gd_topal.c" />
     <ClCompile Include="src\gd_transform.c" />
     <ClCompile Include="src\gd_wbmp.c" />
+    <ClCompile Include="src\gd_webp.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1F77AB58-706B-4BB5-BE73-00000000009d}</ProjectGuid>
@@ -159,7 +160,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;$(ProjectDir)\..\webp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4005;4267;4996;4018;4244;4101;4700;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -179,7 +180,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;$(ProjectDir)\..\webp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4005;4267;4996;4018;4244;4101;4700;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -201,7 +202,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;$(ProjectDir)\..\webp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -227,7 +228,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;HAVE_CONFIG_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\jpeg\include;$(ProjectDir)\..\png\include;$(ProjectDir)\..\tiff\include;$(ProjectDir)\..\zlib\include;$(ProjectDir)\..\webp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>

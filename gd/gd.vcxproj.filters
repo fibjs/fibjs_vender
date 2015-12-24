@@ -87,6 +87,18 @@
     <ClInclude Include="src\wbmp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\gd_error.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gd_intern.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\msinttypes\inttypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\msinttypes\stdint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\gd.c">
@@ -141,9 +153,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\gd_nnquant.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\gd_pixelate.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\gd_png.c">
@@ -201,6 +210,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\gdxpm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gdfx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gd_webp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

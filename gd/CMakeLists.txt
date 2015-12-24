@@ -8,6 +8,7 @@ include_directories(
 	"${PROJECT_SOURCE_DIR}/../tiff/include/" 
 	"${PROJECT_SOURCE_DIR}/../png/include/" 
 	"${PROJECT_SOURCE_DIR}/../jpeg/include/" 
+	"${PROJECT_SOURCE_DIR}/../webp/include/" 
 	"${PROJECT_SOURCE_DIR}/../zlib/include/")
 
 include(../tools/basic.cmake)

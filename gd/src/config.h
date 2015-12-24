@@ -36,6 +36,8 @@
 /* Define if you have the png library. */
 #define HAVE_LIBPNG
 
+#define HAVE_LIBWEBP
+
 /* Define to 1 if you have the <png.h> header file. */
 /* #undef HAVE_PNG_H */
 
