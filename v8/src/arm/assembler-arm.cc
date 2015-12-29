@@ -56,6 +56,14 @@ namespace internal {
 // snapshot.
 static unsigned CpuFeaturesImpliedByCompiler() {
   unsigned answer = 0;
+#ifdef CAN_USE_ARMV8_INSTRUCTIONS
+  if (FLAG_enable_armv8) {
+    answer |= 1u << ARMv8;
+    // ARMv8 always features VFP and NEON.
+    answer |= 1u << ARMv7 | 1u << VFP3 | 1u << NEON | 1u << VFP32DREGS;
+    answer |= 1u << SUDIV | 1u << MLS;
+  }
+#endif  // CAN_USE_ARMV8_INSTRUCTIONS
 #ifdef CAN_USE_ARMV7_INSTRUCTIONS
   if (FLAG_enable_armv7) answer |= 1u << ARMv7;
 #endif  // CAN_USE_ARMV7_INSTRUCTIONS
@@ -85,6 +93,13 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
 
 #ifndef __arm__
   // For the simulator build, use whatever the flags specify.
+  if (FLAG_enable_armv8) {
+    supported_ |= 1u << ARMv8;
+    // ARMv8 always features VFP and NEON.
+    supported_ |= 1u << ARMv7 | 1u << VFP3 | 1u << NEON | 1u << VFP32DREGS;
+    supported_ |= 1u << SUDIV | 1u << MLS;
+    if (FLAG_enable_movw_movt) supported_ |= 1u << MOVW_MOVT_IMMEDIATE_LOADS;
+  }
   if (FLAG_enable_armv7) {
     supported_ |= 1u << ARMv7;
     if (FLAG_enable_vfp3) supported_ |= 1u << VFP3;
@@ -158,7 +173,9 @@ void CpuFeatures::PrintTarget() {
   arm_no_probe = " noprobe";
 #endif
 
-#if defined CAN_USE_ARMV7_INSTRUCTIONS
+#if defined CAN_USE_ARMV8_INSTRUCTIONS
+  arm_arch = "arm v8";
+#elif defined CAN_USE_ARMV7_INSTRUCTIONS
   arm_arch = "arm v7";
 #else
   arm_arch = "arm v6";
@@ -196,13 +213,15 @@ void CpuFeatures::PrintTarget() {
 
 void CpuFeatures::PrintFeatures() {
   printf(
-    "ARMv7=%d VFP3=%d VFP32DREGS=%d NEON=%d SUDIV=%d UNALIGNED_ACCESSES=%d "
-    "MOVW_MOVT_IMMEDIATE_LOADS=%d COHERENT_CACHE=%d",
+    "ARMv8=%d ARMv7=%d VFP3=%d VFP32DREGS=%d NEON=%d SUDIV=%d MLS=%d"
+    "UNALIGNED_ACCESSES=%d MOVW_MOVT_IMMEDIATE_LOADS=%d COHERENT_CACHE=%d",
+    CpuFeatures::IsSupported(ARMv8),
     CpuFeatures::IsSupported(ARMv7),
     CpuFeatures::IsSupported(VFP3),
     CpuFeatures::IsSupported(VFP32DREGS),
     CpuFeatures::IsSupported(NEON),
     CpuFeatures::IsSupported(SUDIV),
+    CpuFeatures::IsSupported(MLS),
     CpuFeatures::IsSupported(UNALIGNED_ACCESSES),
     CpuFeatures::IsSupported(MOVW_MOVT_IMMEDIATE_LOADS),
     CpuFeatures::IsSupported(COHERENT_CACHE));
@@ -828,8 +847,7 @@ void Assembler::target_at_put(int pos, int target_pos) {
     if (is_uint8(target24)) {
       // If the target fits in a byte then only patch with a mov
       // instruction.
-      CodePatcher patcher(reinterpret_cast<byte*>(buffer_ + pos),
-                          1,
+      CodePatcher patcher(isolate(), reinterpret_cast<byte*>(buffer_ + pos), 1,
                           CodePatcher::DONT_FLUSH);
       patcher.masm()->mov(dst, Operand(target24));
     } else {
@@ -838,14 +856,12 @@ void Assembler::target_at_put(int pos, int target_pos) {
       if (CpuFeatures::IsSupported(ARMv7)) {
         // Patch with movw/movt.
         if (target16_1 == 0) {
-          CodePatcher patcher(reinterpret_cast<byte*>(buffer_ + pos),
-                              1,
-                              CodePatcher::DONT_FLUSH);
+          CodePatcher patcher(isolate(), reinterpret_cast<byte*>(buffer_ + pos),
+                              1, CodePatcher::DONT_FLUSH);
           patcher.masm()->movw(dst, target16_0);
         } else {
-          CodePatcher patcher(reinterpret_cast<byte*>(buffer_ + pos),
-                              2,
-                              CodePatcher::DONT_FLUSH);
+          CodePatcher patcher(isolate(), reinterpret_cast<byte*>(buffer_ + pos),
+                              2, CodePatcher::DONT_FLUSH);
           patcher.masm()->movw(dst, target16_0);
           patcher.masm()->movt(dst, target16_1);
         }
@@ -855,15 +871,13 @@ void Assembler::target_at_put(int pos, int target_pos) {
         uint8_t target8_1 = target16_0 >> 8;
         uint8_t target8_2 = target16_1 & kImm8Mask;
         if (target8_2 == 0) {
-          CodePatcher patcher(reinterpret_cast<byte*>(buffer_ + pos),
-                              2,
-                              CodePatcher::DONT_FLUSH);
+          CodePatcher patcher(isolate(), reinterpret_cast<byte*>(buffer_ + pos),
+                              2, CodePatcher::DONT_FLUSH);
           patcher.masm()->mov(dst, Operand(target8_0));
           patcher.masm()->orr(dst, dst, Operand(target8_1 << 8));
         } else {
-          CodePatcher patcher(reinterpret_cast<byte*>(buffer_ + pos),
-                              3,
-                              CodePatcher::DONT_FLUSH);
+          CodePatcher patcher(isolate(), reinterpret_cast<byte*>(buffer_ + pos),
+                              3, CodePatcher::DONT_FLUSH);
           patcher.masm()->mov(dst, Operand(target8_0));
           patcher.masm()->orr(dst, dst, Operand(target8_1 << 8));
           patcher.masm()->orr(dst, dst, Operand(target8_2 << 16));
@@ -3347,6 +3361,20 @@ void Assembler::vmrs(Register dst, Condition cond) {
 }
 
 
+void Assembler::vrinta(const SwVfpRegister dst, const SwVfpRegister src) {
+  // cond=kSpecialCondition(31-28) | 11101(27-23)| D(22) | 11(21-20) |
+  // 10(19-18) | RM=00(17-16) |  Vd(15-12) | 101(11-9) | sz=0(8) | 01(7-6) |
+  // M(5) | 0(4) | Vm(3-0)
+  DCHECK(CpuFeatures::IsSupported(ARMv8));
+  int vd, d;
+  dst.split_code(&vd, &d);
+  int vm, m;
+  src.split_code(&vm, &m);
+  emit(kSpecialCondition | 0x1D * B23 | d * B22 | 0x3 * B20 | B19 | vd * B12 |
+       0x5 * B9 | B6 | m * B5 | vm);
+}
+
+
 void Assembler::vrinta(const DwVfpRegister dst, const DwVfpRegister src) {
   // cond=kSpecialCondition(31-28) | 11101(27-23)| D(22) | 11(21-20) |
   // 10(19-18) | RM=00(17-16) |  Vd(15-12) | 101(11-9) | sz=1(8) | 01(7-6) |
@@ -3358,6 +3386,20 @@ void Assembler::vrinta(const DwVfpRegister dst, const DwVfpRegister src) {
   src.split_code(&vm, &m);
   emit(kSpecialCondition | 0x1D * B23 | d * B22 | 0x3 * B20 | B19 | vd * B12 |
        0x5 * B9 | B8 | B6 | m * B5 | vm);
+}
+
+
+void Assembler::vrintn(const SwVfpRegister dst, const SwVfpRegister src) {
+  // cond=kSpecialCondition(31-28) | 11101(27-23)| D(22) | 11(21-20) |
+  // 10(19-18) | RM=01(17-16) |  Vd(15-12) | 101(11-9) | sz=0(8) | 01(7-6) |
+  // M(5) | 0(4) | Vm(3-0)
+  DCHECK(CpuFeatures::IsSupported(ARMv8));
+  int vd, d;
+  dst.split_code(&vd, &d);
+  int vm, m;
+  src.split_code(&vm, &m);
+  emit(kSpecialCondition | 0x1D * B23 | d * B22 | 0x3 * B20 | B19 | 0x1 * B16 |
+       vd * B12 | 0x5 * B9 | B6 | m * B5 | vm);
 }
 
 
@@ -3375,6 +3417,20 @@ void Assembler::vrintn(const DwVfpRegister dst, const DwVfpRegister src) {
 }
 
 
+void Assembler::vrintp(const SwVfpRegister dst, const SwVfpRegister src) {
+  // cond=kSpecialCondition(31-28) | 11101(27-23)| D(22) | 11(21-20) |
+  // 10(19-18) | RM=10(17-16) |  Vd(15-12) | 101(11-9) | sz=0(8) | 01(7-6) |
+  // M(5) | 0(4) | Vm(3-0)
+  DCHECK(CpuFeatures::IsSupported(ARMv8));
+  int vd, d;
+  dst.split_code(&vd, &d);
+  int vm, m;
+  src.split_code(&vm, &m);
+  emit(kSpecialCondition | 0x1D * B23 | d * B22 | 0x3 * B20 | B19 | 0x2 * B16 |
+       vd * B12 | 0x5 * B9 | B6 | m * B5 | vm);
+}
+
+
 void Assembler::vrintp(const DwVfpRegister dst, const DwVfpRegister src) {
   // cond=kSpecialCondition(31-28) | 11101(27-23)| D(22) | 11(21-20) |
   // 10(19-18) | RM=10(17-16) |  Vd(15-12) | 101(11-9) | sz=1(8) | 01(7-6) |
@@ -3389,6 +3445,20 @@ void Assembler::vrintp(const DwVfpRegister dst, const DwVfpRegister src) {
 }
 
 
+void Assembler::vrintm(const SwVfpRegister dst, const SwVfpRegister src) {
+  // cond=kSpecialCondition(31-28) | 11101(27-23)| D(22) | 11(21-20) |
+  // 10(19-18) | RM=11(17-16) |  Vd(15-12) | 101(11-9) | sz=0(8) | 01(7-6) |
+  // M(5) | 0(4) | Vm(3-0)
+  DCHECK(CpuFeatures::IsSupported(ARMv8));
+  int vd, d;
+  dst.split_code(&vd, &d);
+  int vm, m;
+  src.split_code(&vm, &m);
+  emit(kSpecialCondition | 0x1D * B23 | d * B22 | 0x3 * B20 | B19 | 0x3 * B16 |
+       vd * B12 | 0x5 * B9 | B6 | m * B5 | vm);
+}
+
+
 void Assembler::vrintm(const DwVfpRegister dst, const DwVfpRegister src) {
   // cond=kSpecialCondition(31-28) | 11101(27-23)| D(22) | 11(21-20) |
   // 10(19-18) | RM=11(17-16) |  Vd(15-12) | 101(11-9) | sz=1(8) | 01(7-6) |
@@ -3400,6 +3470,20 @@ void Assembler::vrintm(const DwVfpRegister dst, const DwVfpRegister src) {
   src.split_code(&vm, &m);
   emit(kSpecialCondition | 0x1D * B23 | d * B22 | 0x3 * B20 | B19 | 0x3 * B16 |
        vd * B12 | 0x5 * B9 | B8 | B6 | m * B5 | vm);
+}
+
+
+void Assembler::vrintz(const SwVfpRegister dst, const SwVfpRegister src,
+                       const Condition cond) {
+  // cond(31-28) | 11101(27-23)| D(22) | 11(21-20) | 011(19-17) | 0(16) |
+  // Vd(15-12) | 101(11-9) | sz=0(8) | op=1(7) | 1(6) | M(5) | 0(4) | Vm(3-0)
+  DCHECK(CpuFeatures::IsSupported(ARMv8));
+  int vd, d;
+  dst.split_code(&vd, &d);
+  int vm, m;
+  src.split_code(&vm, &m);
+  emit(cond | 0x1D * B23 | d * B22 | 0x3 * B20 | 0x3 * B17 | vd * B12 |
+       0x5 * B9 | B7 | B6 | m * B5 | vm);
 }
 
 
@@ -3579,6 +3663,7 @@ void Assembler::GrowBuffer() {
 
   desc.instr_size = pc_offset();
   desc.reloc_size = (buffer_ + buffer_size_) - reloc_info_writer.pos();
+  desc.origin = this;
 
   // Copy the data.
   int pc_delta = desc.buffer - buffer_;
@@ -3654,7 +3739,7 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
     data = RecordedAstId().ToInt();
     ClearRecordedAstId();
   }
-  RelocInfo rinfo(pc_, rmode, data, NULL);
+  RelocInfo rinfo(isolate(), pc_, rmode, data, NULL);
   reloc_info_writer.Write(&rinfo);
 }
 

@@ -71,6 +71,7 @@ class Decoder {
   // Printing of common values.
   void PrintRegister(int reg);
   void PrintFPURegister(int freg);
+  void PrintFPUStatusRegister(int freg);
   void PrintRs(Instruction* instr);
   void PrintRt(Instruction* instr);
   void PrintRd(Instruction* instr);
@@ -191,6 +192,17 @@ void Decoder::PrintRd(Instruction* instr) {
 // Print the FPUregister name according to the active name converter.
 void Decoder::PrintFPURegister(int freg) {
   Print(converter_.NameOfXMMRegister(freg));
+}
+
+
+void Decoder::PrintFPUStatusRegister(int freg) {
+  switch (freg) {
+    case kFCSRRegister:
+      Print("FCSR");
+      break;
+    default:
+      Print(converter_.NameOfXMMRegister(freg));
+  }
 }
 
 
@@ -485,22 +497,42 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
 // complexity of FormatOption.
 int Decoder::FormatFPURegister(Instruction* instr, const char* format) {
   DCHECK(format[0] == 'f');
-  if (format[1] == 's') {  // 'fs: fs register.
-    int reg = instr->FsValue();
-    PrintFPURegister(reg);
-    return 2;
-  } else if (format[1] == 't') {  // 'ft: ft register.
-    int reg = instr->FtValue();
-    PrintFPURegister(reg);
-    return 2;
-  } else if (format[1] == 'd') {  // 'fd: fd register.
-    int reg = instr->FdValue();
-    PrintFPURegister(reg);
-    return 2;
-  } else if (format[1] == 'r') {  // 'fr: fr register.
-    int reg = instr->FrValue();
-    PrintFPURegister(reg);
-    return 2;
+  if ((CTC1 == instr->RsFieldRaw()) || (CFC1 == instr->RsFieldRaw())) {
+    if (format[1] == 's') {  // 'fs: fs register.
+      int reg = instr->FsValue();
+      PrintFPUStatusRegister(reg);
+      return 2;
+    } else if (format[1] == 't') {  // 'ft: ft register.
+      int reg = instr->FtValue();
+      PrintFPUStatusRegister(reg);
+      return 2;
+    } else if (format[1] == 'd') {  // 'fd: fd register.
+      int reg = instr->FdValue();
+      PrintFPUStatusRegister(reg);
+      return 2;
+    } else if (format[1] == 'r') {  // 'fr: fr register.
+      int reg = instr->FrValue();
+      PrintFPUStatusRegister(reg);
+      return 2;
+    }
+  } else {
+    if (format[1] == 's') {  // 'fs: fs register.
+      int reg = instr->FsValue();
+      PrintFPURegister(reg);
+      return 2;
+    } else if (format[1] == 't') {  // 'ft: ft register.
+      int reg = instr->FtValue();
+      PrintFPURegister(reg);
+      return 2;
+    } else if (format[1] == 'd') {  // 'fd: fd register.
+      int reg = instr->FdValue();
+      PrintFPURegister(reg);
+      return 2;
+    } else if (format[1] == 'r') {  // 'fr: fr register.
+      int reg = instr->FrValue();
+      PrintFPURegister(reg);
+      return 2;
+    }
   }
   UNREACHABLE();
   return -1;
@@ -1183,7 +1215,16 @@ void Decoder::DecodeTypeRegisterSPECIAL(Instruction* instr) {
       }
       break;
     case MFLO:
-      Format(instr, "mflo    'rd");
+      if (instr->Bits(25, 16) == 0) {
+        Format(instr, "mflo    'rd");
+      } else {
+        if ((instr->FunctionFieldRaw() == DCLZ_R6) && (instr->FdValue() == 1)) {
+          Format(instr, "dclz    'rd, 'rs");
+        } else if ((instr->FunctionFieldRaw() == DCLO_R6) &&
+                   (instr->FdValue() == 1)) {
+          Format(instr, "dclo     'rd, 'rs");
+        }
+      }
       break;
     case D_MUL_MUH_U:  // Equals to DMULTU.
       if (kArchVariant != kMips64r6) {
@@ -1364,6 +1405,11 @@ void Decoder::DecodeTypeRegisterSPECIAL2(Instruction* instr) {
         Format(instr, "clz     'rd, 'rs");
       }
       break;
+    case DCLZ:
+      if (kArchVariant != kMips64r6) {
+        Format(instr, "dclz    'rd, 'rs");
+      }
+      break;
     default:
       UNREACHABLE();
   }
@@ -1525,10 +1571,10 @@ void Decoder::DecodeTypeImmediateREGIMM(Instruction* instr) {
       Format(instr, "bgezall 'rs, 'imm16u -> 'imm16p4s2");
       break;
     case DAHI:
-      Format(instr, "dahi    'rs, 'imm16u");
+      Format(instr, "dahi    'rs, 'imm16x");
       break;
     case DATI:
-      Format(instr, "dati    'rs, 'imm16u");
+      Format(instr, "dati    'rs, 'imm16x");
       break;
     default:
       UNREACHABLE();
@@ -1681,14 +1727,14 @@ void Decoder::DecodeTypeImmediate(Instruction* instr) {
         Format(instr, "lui     'rt, 'imm16x");
       } else {
         if (instr->RsValue() != 0) {
-          Format(instr, "aui     'rt, 'imm16x");
+          Format(instr, "aui     'rt, 'rs, 'imm16x");
         } else {
           Format(instr, "lui     'rt, 'imm16x");
         }
       }
       break;
     case DAUI:
-      Format(instr, "daui    'rt, 'imm16x");
+      Format(instr, "daui    'rt, 'rs, 'imm16x");
       break;
     // ------------- Memory instructions.
     case LB:

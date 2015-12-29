@@ -63,7 +63,7 @@ void PropertyHandlerCompiler::GenerateDictionaryNegativeLookup(
 
   // Check that receiver is a JSObject.
   __ Ldrb(scratch0, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  __ Cmp(scratch0, FIRST_SPEC_OBJECT_TYPE);
+  __ Cmp(scratch0, FIRST_JS_RECEIVER_TYPE);
   __ B(lt, miss_label);
 
   // Load properties array.
@@ -82,9 +82,7 @@ void PropertyHandlerCompiler::GenerateDictionaryNegativeLookup(
 
 void NamedLoadHandlerCompiler::GenerateDirectLoadGlobalFunctionPrototype(
     MacroAssembler* masm, int index, Register result, Label* miss) {
-  __ Ldr(result, GlobalObjectMemOperand());
-  __ Ldr(result, FieldMemOperand(result, GlobalObject::kNativeContextOffset));
-  __ Ldr(result, ContextMemOperand(result, index));
+  __ LoadNativeContextSlot(index, result);
   // Load its initial map. The global functions all have initial maps.
   __ Ldr(result,
          FieldMemOperand(result, JSFunction::kPrototypeOrInitialMapOffset));
@@ -211,6 +209,13 @@ void PropertyHandlerCompiler::GenerateApiAccessorCall(
     __ Ldr(data, FieldMemOperand(data, CallHandlerInfo::kDataOffset));
   }
 
+  if (api_call_info->fast_handler()->IsCode()) {
+    // Just tail call into the fast handler if present.
+    __ Jump(handle(Code::cast(api_call_info->fast_handler())),
+            RelocInfo::CODE_TARGET);
+    return;
+  }
+
   // Put api_function_address in place.
   Address function_address = v8::ToCData<Address>(api_call_info->callback());
   ApiFunction fun(function_address);
@@ -252,7 +257,8 @@ void NamedStoreHandlerCompiler::GenerateStoreViaSetter(
       ParameterCount actual(1);
       ParameterCount expected(expected_arguments);
       __ LoadAccessor(x1, holder, accessor_index, ACCESSOR_SETTER);
-      __ InvokeFunction(x1, expected, actual, CALL_FUNCTION, NullCallWrapper());
+      __ InvokeFunction(x1, expected, actual, CALL_FUNCTION,
+                        CheckDebugStepCallWrapper());
     } else {
       // If we generate a global code snippet for deoptimization only, remember
       // the place to continue after deoptimization.
@@ -289,7 +295,8 @@ void NamedLoadHandlerCompiler::GenerateLoadViaGetter(
       ParameterCount actual(0);
       ParameterCount expected(expected_arguments);
       __ LoadAccessor(x1, holder, accessor_index, ACCESSOR_GETTER);
-      __ InvokeFunction(x1, expected, actual, CALL_FUNCTION, NullCallWrapper());
+      __ InvokeFunction(x1, expected, actual, CALL_FUNCTION,
+                        CheckDebugStepCallWrapper());
     } else {
       // If we generate a global code snippet for deoptimization only, remember
       // the place to continue after deoptimization.
@@ -304,15 +311,10 @@ void NamedLoadHandlerCompiler::GenerateLoadViaGetter(
 
 
 static void StoreIC_PushArgs(MacroAssembler* masm) {
-  if (FLAG_vector_stores) {
-    __ Push(StoreDescriptor::ReceiverRegister(),
-            StoreDescriptor::NameRegister(), StoreDescriptor::ValueRegister(),
-            VectorStoreICDescriptor::SlotRegister(),
-            VectorStoreICDescriptor::VectorRegister());
-  } else {
-    __ Push(StoreDescriptor::ReceiverRegister(),
-            StoreDescriptor::NameRegister(), StoreDescriptor::ValueRegister());
-  }
+  __ Push(StoreDescriptor::ReceiverRegister(), StoreDescriptor::NameRegister(),
+          StoreDescriptor::ValueRegister(),
+          VectorStoreICDescriptor::SlotRegister(),
+          VectorStoreICDescriptor::VectorRegister());
 }
 
 
@@ -321,7 +323,7 @@ void NamedStoreHandlerCompiler::GenerateSlow(MacroAssembler* masm) {
 
   // The slow case calls into the runtime to complete the store without causing
   // an IC miss that would otherwise cause a transition to the generic stub.
-  __ TailCallRuntime(Runtime::kStoreIC_Slow, FLAG_vector_stores ? 5 : 3, 1);
+  __ TailCallRuntime(Runtime::kStoreIC_Slow, 5, 1);
 }
 
 
@@ -331,8 +333,7 @@ void ElementHandlerCompiler::GenerateStoreSlow(MacroAssembler* masm) {
 
   // The slow case calls into the runtime to complete the store without causing
   // an IC miss that would otherwise cause a transition to the generic stub.
-  __ TailCallRuntime(Runtime::kKeyedStoreIC_Slow, FLAG_vector_stores ? 5 : 3,
-                     1);
+  __ TailCallRuntime(Runtime::kKeyedStoreIC_Slow, 5, 1);
 }
 
 

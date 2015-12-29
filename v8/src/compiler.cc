@@ -6,7 +6,10 @@
 
 #include <algorithm>
 
-#include "src/ast-numbering.h"
+#include "src/ast/ast-numbering.h"
+#include "src/ast/prettyprinter.h"
+#include "src/ast/scopeinfo.h"
+#include "src/ast/scopes.h"
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
 #include "src/compilation-cache.h"
@@ -23,14 +26,11 @@
 #include "src/isolate-inl.h"
 #include "src/log-inl.h"
 #include "src/messages.h"
-#include "src/parser.h"
-#include "src/prettyprinter.h"
+#include "src/parsing/parser.h"
+#include "src/parsing/rewriter.h"
+#include "src/parsing/scanner-character-streams.h"
 #include "src/profiler/cpu-profiler.h"
-#include "src/rewriter.h"
 #include "src/runtime-profiler.h"
-#include "src/scanner-character-streams.h"
-#include "src/scopeinfo.h"
-#include "src/scopes.h"
 #include "src/snapshot/serialize.h"
 #include "src/vm-state-inl.h"
 
@@ -178,7 +178,6 @@ CompilationInfo::CompilationInfo(ParseInfo* parse_info, CodeStub* code_stub,
       parameter_count_(0),
       optimization_id_(-1),
       osr_expr_stack_height_(0),
-      function_type_(nullptr),
       debug_name_(debug_name) {
   // Parameter count is number of stack parameters.
   if (code_stub_ != NULL) {
@@ -202,14 +201,6 @@ CompilationInfo::~CompilationInfo() {
   // been rolled back or committed.
   DCHECK(dependencies()->IsEmpty());
 #endif  // DEBUG
-}
-
-
-void CompilationInfo::SetStub(CodeStub* code_stub) {
-  SetMode(STUB);
-  code_stub_ = code_stub;
-  debug_name_ = CodeStub::MajorName(code_stub->MajorKey());
-  set_output_code_kind(code_stub->GetCodeKind());
 }
 
 
@@ -328,9 +319,8 @@ base::SmartArrayPointer<char> CompilationInfo::GetDebugName() const {
 }
 
 
-bool CompilationInfo::MustReplaceUndefinedReceiverWithGlobalProxy() {
-  return is_sloppy(language_mode()) && !is_native() &&
-         scope()->has_this_declaration() && scope()->receiver()->is_used();
+bool CompilationInfo::ExpectsJSReceiverAsReceiver() {
+  return is_sloppy(language_mode()) && !is_native();
 }
 
 
@@ -692,24 +682,6 @@ static void RecordFunctionCompilation(Logger::LogEventsAndTags tag,
 }
 
 
-// Checks whether top level functions should be passed by {raw_filter}.
-// TODO(rmcilroy): Remove filtering once ignition can handle test262 harness.
-static bool TopLevelFunctionPassesFilter(const char* raw_filter) {
-  Vector<const char> filter = CStrVector(raw_filter);
-  return (filter.length() == 0) || (filter.length() == 1 && filter[0] == '*');
-}
-
-
-// Checks whether the passed {raw_filter} is a prefix of the given scripts name.
-// TODO(rmcilroy): Remove filtering once ignition can handle test262 harness.
-static bool ScriptPassesFilter(const char* raw_filter, Handle<Script> script) {
-  Vector<const char> filter = CStrVector(raw_filter);
-  if (!script->name()->IsString()) return filter.length() == 0;
-  String* name = String::cast(script->name());
-  return name->IsUtf8EqualTo(filter, true);
-}
-
-
 static bool CompileUnoptimizedCode(CompilationInfo* info) {
   DCHECK(AllowCompilation::IsAllowed(info->isolate()));
   if (!Compiler::Analyze(info->parse_info()) ||
@@ -722,10 +694,55 @@ static bool CompileUnoptimizedCode(CompilationInfo* info) {
 }
 
 
-static bool GenerateBytecode(CompilationInfo* info) {
+// TODO(rmcilroy): Remove this temporary work-around when ignition supports
+// catch and eval.
+static bool IgnitionShouldFallbackToFullCodeGen(Scope* scope) {
+  if (scope->is_eval_scope() || scope->is_catch_scope() ||
+      scope->calls_eval()) {
+    return true;
+  }
+  for (auto inner_scope : *scope->inner_scopes()) {
+    if (IgnitionShouldFallbackToFullCodeGen(inner_scope)) return true;
+  }
+  return false;
+}
+
+
+static bool UseIgnition(CompilationInfo* info) {
+  // Cannot use Ignition when the {function_data} is already used.
+  if (info->has_shared_info() && info->shared_info()->HasBuiltinFunctionId()) {
+    return false;
+  }
+
+  // Checks whether the scope chain is supported.
+  if (FLAG_ignition_fallback_on_eval_and_catch &&
+      IgnitionShouldFallbackToFullCodeGen(info->scope())) {
+    return false;
+  }
+
+  // Checks whether top level functions should be passed by the filter.
+  if (info->closure().is_null()) {
+    Vector<const char> filter = CStrVector(FLAG_ignition_filter);
+    return (filter.length() == 0) || (filter.length() == 1 && filter[0] == '*');
+  }
+
+  // Finally respect the filter.
+  return info->closure()->PassesFilter(FLAG_ignition_filter);
+}
+
+
+static bool GenerateBaselineCode(CompilationInfo* info) {
+  if (FLAG_ignition && UseIgnition(info)) {
+    return interpreter::Interpreter::MakeBytecode(info);
+  } else {
+    return FullCodeGenerator::MakeCode(info);
+  }
+}
+
+
+static bool CompileBaselineCode(CompilationInfo* info) {
   DCHECK(AllowCompilation::IsAllowed(info->isolate()));
-  if (!Compiler::Analyze(info->parse_info()) ||
-      !interpreter::Interpreter::MakeBytecode(info)) {
+  if (!Compiler::Analyze(info->parse_info()) || !GenerateBaselineCode(info)) {
     Isolate* isolate = info->isolate();
     if (!isolate->has_pending_exception()) isolate->StackOverflow();
     return false;
@@ -743,19 +760,13 @@ MUST_USE_RESULT static MaybeHandle<Code> GetUnoptimizedCodeCommon(
   if (!Parser::ParseStatic(info->parse_info())) return MaybeHandle<Code>();
   Handle<SharedFunctionInfo> shared = info->shared_info();
   FunctionLiteral* lit = info->literal();
-  shared->set_language_mode(lit->language_mode());
+  DCHECK_EQ(shared->language_mode(), lit->language_mode());
   SetExpectedNofPropertiesFromEstimate(shared, lit->expected_property_count());
   MaybeDisableOptimization(shared, lit->dont_optimize_reason());
 
-  if (FLAG_ignition && info->closure()->PassesFilter(FLAG_ignition_filter) &&
-      ScriptPassesFilter(FLAG_ignition_script_filter, info->script())) {
-    // Compile bytecode for the interpreter.
-    if (!GenerateBytecode(info)) return MaybeHandle<Code>();
-  } else {
-    // Compile unoptimized code.
-    if (!CompileUnoptimizedCode(info)) return MaybeHandle<Code>();
-
-    CHECK_EQ(Code::FUNCTION, info->code()->kind());
+  // Compile either unoptimized code or bytecode for the interpreter.
+  if (!CompileBaselineCode(info)) return MaybeHandle<Code>();
+  if (info->code()->kind() == Code::FUNCTION) {  // Only for full code.
     RecordFunctionCompilation(Logger::LAZY_COMPILE_TAG, info, shared);
   }
 
@@ -804,11 +815,8 @@ static void InsertCodeIntoOptimizedCodeMap(CompilationInfo* info) {
   // Frame specialization implies function context specialization.
   DCHECK(!info->is_frame_specializing());
 
-  // Do not cache bound functions.
-  Handle<JSFunction> function = info->closure();
-  if (function->shared()->bound()) return;
-
   // Cache optimized context-specific code.
+  Handle<JSFunction> function = info->closure();
   Handle<SharedFunctionInfo> shared(function->shared());
   Handle<LiteralsArray> literals(function->literals());
   Handle<Context> native_context(function->context()->native_context());
@@ -863,9 +871,12 @@ bool Compiler::ParseAndAnalyze(ParseInfo* info) {
 
 
 static bool GetOptimizedCodeNow(CompilationInfo* info) {
+  Isolate* isolate = info->isolate();
+  CanonicalHandleScope canonical(isolate);
+
   if (!Compiler::ParseAndAnalyze(info->parse_info())) return false;
 
-  TimerEventScope<TimerEventRecompileSynchronous> timer(info->isolate());
+  TimerEventScope<TimerEventRecompileSynchronous> timer(isolate);
 
   OptimizedCompileJob job(info);
   if (job.CreateGraph() != OptimizedCompileJob::SUCCEEDED ||
@@ -880,7 +891,7 @@ static bool GetOptimizedCodeNow(CompilationInfo* info) {
   }
 
   // Success!
-  DCHECK(!info->isolate()->has_pending_exception());
+  DCHECK(!isolate->has_pending_exception());
   InsertCodeIntoOptimizedCodeMap(info);
   RecordFunctionCompilation(Logger::LAZY_COMPILE_TAG, info,
                             info->shared_info());
@@ -890,6 +901,8 @@ static bool GetOptimizedCodeNow(CompilationInfo* info) {
 
 static bool GetOptimizedCodeLater(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
+  CanonicalHandleScope canonical(isolate);
+
   if (!isolate->optimizing_compile_dispatcher()->IsQueueAvailable()) {
     if (FLAG_trace_concurrent_recompilation) {
       PrintF("  ** Compilation queue full, will retry optimizing ");
@@ -987,23 +1000,6 @@ MaybeHandle<Code> Compiler::GetLazyCode(Handle<JSFunction> function) {
   }
 
   return result;
-}
-
-
-MaybeHandle<Code> Compiler::GetStubCode(Handle<JSFunction> function,
-                                        CodeStub* stub) {
-  // Build a "hybrid" CompilationInfo for a JSFunction/CodeStub pair.
-  Zone zone;
-  ParseInfo parse_info(&zone, function);
-  CompilationInfo info(&parse_info);
-  info.SetFunctionType(stub->GetCallInterfaceDescriptor().GetFunctionType());
-  info.MarkAsFunctionContextSpecializing();
-  info.MarkAsDeoptimizationEnabled();
-  info.SetStub(stub);
-
-  // Run a "mini pipeline", extracted from compiler.cc.
-  if (!ParseAndAnalyze(&parse_info)) return MaybeHandle<Code>();
-  return compiler::Pipeline(&info).GenerateCode();
 }
 
 
@@ -1154,6 +1150,7 @@ void Compiler::CompileForLiveEdit(Handle<Script> script) {
 
   // Get rid of old list of shared function infos.
   info.MarkAsFirstCompile();
+  info.MarkAsDebug();
   info.parse_info()->set_global();
   if (!Parser::ParseStatic(info.parse_info())) return;
 
@@ -1231,15 +1228,8 @@ static Handle<SharedFunctionInfo> CompileToplevel(CompilationInfo* info) {
     HistogramTimerScope timer(rate);
 
     // Compile the code.
-    if (FLAG_ignition && TopLevelFunctionPassesFilter(FLAG_ignition_filter) &&
-        ScriptPassesFilter(FLAG_ignition_script_filter, script)) {
-      if (!GenerateBytecode(info)) {
-        return Handle<SharedFunctionInfo>::null();
-      }
-    } else {
-      if (!CompileUnoptimizedCode(info)) {
-        return Handle<SharedFunctionInfo>::null();
-      }
+    if (!CompileBaselineCode(info)) {
+      return Handle<SharedFunctionInfo>::null();
     }
 
     // Allocate function.
@@ -1584,9 +1574,8 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
     // called.
     info.EnsureFeedbackVector();
     scope_info = Handle<ScopeInfo>(ScopeInfo::Empty(isolate));
-  } else if (Renumber(info.parse_info()) &&
-             FullCodeGenerator::MakeCode(&info)) {
-    // MakeCode will ensure that the feedback vector is present and
+  } else if (Renumber(info.parse_info()) && GenerateBaselineCode(&info)) {
+    // Code generation will ensure that the feedback vector is present and
     // appropriately sized.
     DCHECK(!info.code().is_null());
     scope_info = ScopeInfo::Create(info.isolate(), info.zone(), info.scope());
@@ -1604,6 +1593,10 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
         isolate->factory()->NewSharedFunctionInfo(
             literal->name(), literal->materialized_literal_count(),
             literal->kind(), info.code(), scope_info, info.feedback_vector());
+    if (info.has_bytecode_array()) {
+      DCHECK(result->function_data()->IsUndefined());
+      result->set_function_data(*info.bytecode_array());
+    }
 
     SharedFunctionInfo::InitFromFunctionLiteral(result, literal);
     SharedFunctionInfo::SetScript(result, script);

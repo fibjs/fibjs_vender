@@ -142,24 +142,6 @@ bool LCodeGen::GeneratePrologue() {
     // cp: Callee's context.
     // fp: Caller's frame pointer.
     // lr: Caller's pc.
-
-    // Sloppy mode functions and builtins need to replace the receiver with the
-    // global proxy when called as functions (without an explicit receiver
-    // object).
-    if (info()->MustReplaceUndefinedReceiverWithGlobalProxy()) {
-      Label ok;
-      int receiver_offset = info_->scope()->num_parameters() * kPointerSize;
-      __ LoadRoot(at, Heap::kUndefinedValueRootIndex);
-      __ lw(a2, MemOperand(sp, receiver_offset));
-      __ Branch(&ok, ne, a2, Operand(at));
-
-      __ lw(a2, GlobalObjectOperand());
-      __ lw(a2, FieldMemOperand(a2, GlobalObject::kGlobalProxyOffset));
-
-      __ sw(a2, MemOperand(sp, receiver_offset));
-
-      __ bind(&ok);
-    }
   }
 
   info()->set_prologue_offset(masm_->pc_offset());
@@ -239,7 +221,7 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
         // Load parameter from stack.
         __ lw(a0, MemOperand(fp, parameter_offset));
         // Store it in the context.
-        MemOperand target = ContextOperand(cp, var->index());
+        MemOperand target = ContextMemOperand(cp, var->index());
         __ sw(a0, target);
         // Update the write barrier. This clobbers a3 and a0.
         if (need_write_barrier) {
@@ -863,60 +845,6 @@ void LCodeGen::DeoptimizeIf(Condition condition, LInstruction* instr,
 }
 
 
-void LCodeGen::PopulateDeoptimizationData(Handle<Code> code) {
-  int length = deoptimizations_.length();
-  if (length == 0) return;
-  Handle<DeoptimizationInputData> data =
-      DeoptimizationInputData::New(isolate(), length, TENURED);
-
-  Handle<ByteArray> translations =
-      translations_.CreateByteArray(isolate()->factory());
-  data->SetTranslationByteArray(*translations);
-  data->SetInlinedFunctionCount(Smi::FromInt(inlined_function_count_));
-  data->SetOptimizationId(Smi::FromInt(info_->optimization_id()));
-  if (info_->IsOptimizing()) {
-    // Reference to shared function info does not change between phases.
-    AllowDeferredHandleDereference allow_handle_dereference;
-    data->SetSharedFunctionInfo(*info_->shared_info());
-  } else {
-    data->SetSharedFunctionInfo(Smi::FromInt(0));
-  }
-  data->SetWeakCellCache(Smi::FromInt(0));
-
-  Handle<FixedArray> literals =
-      factory()->NewFixedArray(deoptimization_literals_.length(), TENURED);
-  { AllowDeferredHandleDereference copy_handles;
-    for (int i = 0; i < deoptimization_literals_.length(); i++) {
-      literals->set(i, *deoptimization_literals_[i]);
-    }
-    data->SetLiteralArray(*literals);
-  }
-
-  data->SetOsrAstId(Smi::FromInt(info_->osr_ast_id().ToInt()));
-  data->SetOsrPcOffset(Smi::FromInt(osr_pc_offset_));
-
-  // Populate the deoptimization entries.
-  for (int i = 0; i < length; i++) {
-    LEnvironment* env = deoptimizations_[i];
-    data->SetAstId(i, env->ast_id());
-    data->SetTranslationIndex(i, Smi::FromInt(env->translation_index()));
-    data->SetArgumentsStackHeight(i,
-                                  Smi::FromInt(env->arguments_stack_height()));
-    data->SetPc(i, Smi::FromInt(env->pc_offset()));
-  }
-  code->set_deoptimization_data(*data);
-}
-
-
-void LCodeGen::PopulateDeoptimizationLiteralsWithInlinedFunctions() {
-  DCHECK_EQ(0, deoptimization_literals_.length());
-  for (auto function : chunk()->inlined_functions()) {
-    DefineDeoptimizationLiteral(function);
-  }
-  inlined_function_count_ = deoptimization_literals_.length();
-}
-
-
 void LCodeGen::RecordSafepointWithLazyDeopt(
     LInstruction* instr, SafepointMode safepoint_mode) {
   if (safepoint_mode == RECORD_SIMPLE_SAFEPOINT) {
@@ -1452,9 +1380,10 @@ void LCodeGen::DoMulI(LMulI* instr) {
     switch (constant) {
       case -1:
         if (overflow) {
-          __ SubuAndCheckForOverflow(result, zero_reg, left, scratch);
-          DeoptimizeIf(lt, instr, Deoptimizer::kOverflow, scratch,
-                       Operand(zero_reg));
+          Label no_overflow;
+          __ SubBranchNoOvf(result, zero_reg, Operand(left), &no_overflow);
+          DeoptimizeIf(al, instr);
+          __ bind(&no_overflow);
         } else {
           __ Subu(result, zero_reg, left);
         }
@@ -1680,21 +1609,19 @@ void LCodeGen::DoSubI(LSubI* instr) {
       __ Subu(ToRegister(result), ToRegister(left), ToOperand(right));
     }
   } else {  // can_overflow.
-    Register overflow = scratch0();
-    Register scratch = scratch1();
+    Register scratch = scratch0();
+    Label no_overflow_label;
     if (right->IsStackSlot()) {
       Register right_reg = EmitLoadRegister(right, scratch);
-      __ SubuAndCheckForOverflow(ToRegister(result),
-                                 ToRegister(left),
-                                 right_reg,
-                                 overflow);  // Reg at also used as scratch.
+      __ SubBranchNoOvf(ToRegister(result), ToRegister(left),
+                        Operand(right_reg), &no_overflow_label);
     } else {
       DCHECK(right->IsRegister() || right->IsConstantOperand());
-      __ SubuAndCheckForOverflow(ToRegister(result), ToRegister(left),
-                                 ToOperand(right), overflow, scratch);
+      __ SubBranchNoOvf(ToRegister(result), ToRegister(left), ToOperand(right),
+                        &no_overflow_label, scratch);
     }
-    DeoptimizeIf(lt, instr, Deoptimizer::kOverflow, overflow,
-                 Operand(zero_reg));
+    DeoptimizeIf(al, instr);
+    __ bind(&no_overflow_label);
   }
 }
 
@@ -1712,20 +1639,6 @@ void LCodeGen::DoConstantS(LConstantS* instr) {
 void LCodeGen::DoConstantD(LConstantD* instr) {
   DCHECK(instr->result()->IsDoubleRegister());
   DoubleRegister result = ToDoubleRegister(instr->result());
-#if V8_HOST_ARCH_IA32
-  // Need some crappy work-around for x87 sNaN -> qNaN breakage in simulator
-  // builds.
-  uint64_t bits = instr->bits();
-  if ((bits & V8_UINT64_C(0x7FF8000000000000)) ==
-      V8_UINT64_C(0x7FF0000000000000)) {
-    uint32_t lo = static_cast<uint32_t>(bits);
-    uint32_t hi = static_cast<uint32_t>(bits >> 32);
-    __ li(at, Operand(lo));
-    __ li(scratch0(), Operand(hi));
-    __ Move(result, at, scratch0());
-    return;
-  }
-#endif
   double v = instr->value();
   __ Move(result, v);
 }
@@ -1876,21 +1789,19 @@ void LCodeGen::DoAddI(LAddI* instr) {
       __ Addu(ToRegister(result), ToRegister(left), ToOperand(right));
     }
   } else {  // can_overflow.
-    Register overflow = scratch0();
     Register scratch = scratch1();
+    Label no_overflow_label;
     if (right->IsStackSlot()) {
       Register right_reg = EmitLoadRegister(right, scratch);
-      __ AdduAndCheckForOverflow(ToRegister(result),
-                                 ToRegister(left),
-                                 right_reg,
-                                 overflow);  // Reg at also used as scratch.
+      __ AddBranchNoOvf(ToRegister(result), ToRegister(left),
+                        Operand(right_reg), &no_overflow_label);
     } else {
       DCHECK(right->IsRegister() || right->IsConstantOperand());
-      __ AdduAndCheckForOverflow(ToRegister(result), ToRegister(left),
-                                 ToOperand(right), overflow, scratch);
+      __ AddBranchNoOvf(ToRegister(result), ToRegister(left), ToOperand(right),
+                        &no_overflow_label, scratch);
     }
-    DeoptimizeIf(lt, instr, Deoptimizer::kOverflow, overflow,
-                 Operand(zero_reg));
+    DeoptimizeIf(al, instr);
+    __ bind(&no_overflow_label);
   }
 }
 
@@ -2175,7 +2086,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         // spec object -> true.
         __ lbu(at, FieldMemOperand(map, Map::kInstanceTypeOffset));
         __ Branch(instr->TrueLabel(chunk_),
-                  ge, at, Operand(FIRST_SPEC_OBJECT_TYPE));
+                  ge, at, Operand(FIRST_JS_RECEIVER_TYPE));
       }
 
       if (expected.Contains(ToBooleanStub::STRING)) {
@@ -2541,31 +2452,13 @@ void LCodeGen::EmitClassOfTest(Label* is_true,
   DCHECK(!temp.is(temp2));
 
   __ JumpIfSmi(input, is_false);
-
+  __ GetObjectType(input, temp, temp2);
   if (String::Equals(isolate()->factory()->Function_string(), class_name)) {
-    // Assuming the following assertions, we can use the same compares to test
-    // for both being a function type and being in the object type range.
-    STATIC_ASSERT(NUM_OF_CALLABLE_SPEC_OBJECT_TYPES == 2);
-    STATIC_ASSERT(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE ==
-                  FIRST_SPEC_OBJECT_TYPE + 1);
-    STATIC_ASSERT(LAST_NONCALLABLE_SPEC_OBJECT_TYPE ==
-                  LAST_SPEC_OBJECT_TYPE - 1);
-    STATIC_ASSERT(LAST_SPEC_OBJECT_TYPE == LAST_TYPE);
-
-    __ GetObjectType(input, temp, temp2);
-    __ Branch(is_false, lt, temp2, Operand(FIRST_SPEC_OBJECT_TYPE));
-    __ Branch(is_true, eq, temp2, Operand(FIRST_SPEC_OBJECT_TYPE));
-    __ Branch(is_true, eq, temp2, Operand(LAST_SPEC_OBJECT_TYPE));
+    __ Branch(is_true, eq, temp2, Operand(JS_FUNCTION_TYPE));
   } else {
-    // Faster code path to avoid two compares: subtract lower bound from the
-    // actual type and do a signed compare with the width of the type range.
-    __ GetObjectType(input, temp, temp2);
-    __ Subu(temp2, temp2, Operand(FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
-    __ Branch(is_false, gt, temp2, Operand(LAST_NONCALLABLE_SPEC_OBJECT_TYPE -
-                                           FIRST_NONCALLABLE_SPEC_OBJECT_TYPE));
+    __ Branch(is_false, eq, temp2, Operand(JS_FUNCTION_TYPE));
   }
 
-  // Now we are in the FIRST-LAST_NONCALLABLE_SPEC_OBJECT_TYPE range.
   // Check if the constructor in the map is a function.
   Register instance_type = scratch1();
   DCHECK(!instance_type.is(temp));
@@ -2631,6 +2524,7 @@ void LCodeGen::DoHasInPrototypeChainAndBranch(
     LHasInPrototypeChainAndBranch* instr) {
   Register const object = ToRegister(instr->object());
   Register const object_map = scratch0();
+  Register const object_instance_type = scratch1();
   Register const object_prototype = object_map;
   Register const prototype = ToRegister(instr->prototype());
 
@@ -2641,10 +2535,25 @@ void LCodeGen::DoHasInPrototypeChainAndBranch(
     __ SmiTst(object, at);
     EmitFalseBranch(instr, eq, at, Operand(zero_reg));
   }
+
   // Loop through the {object}s prototype chain looking for the {prototype}.
   __ lw(object_map, FieldMemOperand(object, HeapObject::kMapOffset));
   Label loop;
   __ bind(&loop);
+
+  // Deoptimize if the object needs to be access checked.
+  __ lbu(object_instance_type,
+         FieldMemOperand(object_map, Map::kBitFieldOffset));
+  __ And(object_instance_type, object_instance_type,
+         Operand(1 << Map::kIsAccessCheckNeeded));
+  DeoptimizeIf(ne, instr, Deoptimizer::kAccessCheck, object_instance_type,
+               Operand(zero_reg));
+  // Deoptimize for proxies.
+  __ lbu(object_instance_type,
+         FieldMemOperand(object_map, Map::kInstanceTypeOffset));
+  DeoptimizeIf(eq, instr, Deoptimizer::kProxy, object_instance_type,
+               Operand(JS_PROXY_TYPE));
+
   __ lw(object_prototype, FieldMemOperand(object_map, Map::kPrototypeOffset));
   EmitTrueBranch(instr, eq, object_prototype, Operand(prototype));
   __ LoadRoot(at, Heap::kNullValueRootIndex);
@@ -2763,7 +2672,7 @@ void LCodeGen::DoLoadContextSlot(LLoadContextSlot* instr) {
   Register context = ToRegister(instr->context());
   Register result = ToRegister(instr->result());
 
-  __ lw(result, ContextOperand(context, instr->slot_index()));
+  __ lw(result, ContextMemOperand(context, instr->slot_index()));
   if (instr->hydrogen()->RequiresHoleCheck()) {
     __ LoadRoot(at, Heap::kTheHoleValueRootIndex);
 
@@ -2783,7 +2692,7 @@ void LCodeGen::DoStoreContextSlot(LStoreContextSlot* instr) {
   Register context = ToRegister(instr->context());
   Register value = ToRegister(instr->value());
   Register scratch = scratch0();
-  MemOperand target = ContextOperand(context, instr->slot_index());
+  MemOperand target = ContextMemOperand(context, instr->slot_index());
 
   Label skip_assignment;
 
@@ -3258,15 +3167,13 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
 
   __ GetObjectType(receiver, scratch, scratch);
   DeoptimizeIf(lt, instr, Deoptimizer::kNotAJavaScriptObject, scratch,
-               Operand(FIRST_SPEC_OBJECT_TYPE));
+               Operand(FIRST_JS_RECEIVER_TYPE));
 
   __ Branch(&result_in_receiver);
   __ bind(&global_object);
   __ lw(result, FieldMemOperand(function, JSFunction::kContextOffset));
-  __ lw(result,
-        ContextOperand(result, Context::GLOBAL_OBJECT_INDEX));
-  __ lw(result,
-        FieldMemOperand(result, GlobalObject::kGlobalProxyOffset));
+  __ lw(result, ContextMemOperand(result, Context::NATIVE_CONTEXT_INDEX));
+  __ lw(result, ContextMemOperand(result, Context::GLOBAL_PROXY_INDEX));
 
   if (result.is(receiver)) {
     __ bind(&result_in_receiver);
@@ -3325,7 +3232,8 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // The number of arguments is stored in receiver which is a0, as expected
   // by InvokeFunction.
   ParameterCount actual(receiver);
-  __ InvokeFunction(function, actual, CALL_FUNCTION, safepoint_generator);
+  __ InvokeFunction(function, no_reg, actual, CALL_FUNCTION,
+                    safepoint_generator);
 }
 
 
@@ -3387,7 +3295,8 @@ void LCodeGen::CallKnownFunction(Handle<JSFunction> function,
     // Change context.
     __ lw(cp, FieldMemOperand(function_reg, JSFunction::kContextOffset));
 
-    // Always initialize a0 to the number of actual arguments.
+    // Always initialize new target and number of actual arguments.
+    __ LoadRoot(a3, Heap::kUndefinedValueRootIndex);
     __ li(a0, Operand(arity));
 
     // Invoke function.
@@ -3745,7 +3654,7 @@ void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
     LPointerMap* pointers = instr->pointer_map();
     SafepointGenerator generator(this, pointers, Safepoint::kLazyDeopt);
     ParameterCount count(instr->arity());
-    __ InvokeFunction(a1, count, CALL_FUNCTION, generator);
+    __ InvokeFunction(a1, no_reg, count, CALL_FUNCTION, generator);
   } else {
     CallKnownFunction(known_function,
                       instr->hydrogen()->formal_parameter_count(),
@@ -3795,10 +3704,12 @@ void LCodeGen::DoCallJSFunction(LCallJSFunction* instr) {
   DCHECK(ToRegister(instr->function()).is(a1));
   DCHECK(ToRegister(instr->result()).is(v0));
 
-  __ li(a0, Operand(instr->arity()));
-
   // Change context.
   __ lw(cp, FieldMemOperand(a1, JSFunction::kContextOffset));
+
+  // Always initialize new target and number of actual arguments.
+  __ LoadRoot(a3, Heap::kUndefinedValueRootIndex);
+  __ li(a0, Operand(instr->arity()));
 
   // Load the code entry address
   __ lw(at, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
@@ -3814,7 +3725,7 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
   DCHECK(ToRegister(instr->result()).is(v0));
 
   int arity = instr->arity();
-  CallFunctionFlags flags = instr->hydrogen()->function_flags();
+  ConvertReceiverMode mode = instr->hydrogen()->convert_mode();
   if (instr->hydrogen()->HasVectorAndSlot()) {
     Register slot_register = ToRegister(instr->temp_slot());
     Register vector_register = ToRegister(instr->temp_vector());
@@ -3828,29 +3739,13 @@ void LCodeGen::DoCallFunction(LCallFunction* instr) {
     __ li(vector_register, vector);
     __ li(slot_register, Operand(Smi::FromInt(index)));
 
-    CallICState::CallType call_type =
-        (flags & CALL_AS_METHOD) ? CallICState::METHOD : CallICState::FUNCTION;
-
     Handle<Code> ic =
-        CodeFactory::CallICInOptimizedCode(isolate(), arity, call_type).code();
+        CodeFactory::CallICInOptimizedCode(isolate(), arity, mode).code();
     CallCode(ic, RelocInfo::CODE_TARGET, instr);
   } else {
-    CallFunctionStub stub(isolate(), arity, flags);
-    CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
+    __ li(a0, Operand(arity));
+    CallCode(isolate()->builtins()->Call(mode), RelocInfo::CODE_TARGET, instr);
   }
-}
-
-
-void LCodeGen::DoCallNew(LCallNew* instr) {
-  DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(ToRegister(instr->constructor()).is(a1));
-  DCHECK(ToRegister(instr->result()).is(v0));
-
-  __ li(a0, Operand(instr->arity()));
-  // No cell in a2 for construct type feedback in optimized code
-  __ LoadRoot(a2, Heap::kUndefinedValueRootIndex);
-  CallConstructStub stub(isolate(), NO_CALL_CONSTRUCTOR_FLAGS);
-  CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
 }
 
 
@@ -3876,7 +3771,7 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
 
   if (instr->arity() == 0) {
     ArrayNoArgumentConstructorStub stub(isolate(), kind, override_mode);
-    CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
+    CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
   } else if (instr->arity() == 1) {
     Label done;
     if (IsFastPackedElementsKind(kind)) {
@@ -3890,17 +3785,17 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
       ArraySingleArgumentConstructorStub stub(isolate(),
                                               holey_kind,
                                               override_mode);
-      CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
+      CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
       __ jmp(&done);
       __ bind(&packed_case);
     }
 
     ArraySingleArgumentConstructorStub stub(isolate(), kind, override_mode);
-    CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
+    CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
     __ bind(&done);
   } else {
     ArrayNArgumentsConstructorStub stub(isolate(), kind, override_mode);
-    CallCode(stub.GetCode(), RelocInfo::CONSTRUCT_CALL, instr);
+    CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
   }
 }
 
@@ -4516,7 +4411,8 @@ void LCodeGen::DoDeferredStringCharFromCode(LStringCharFromCode* instr) {
   PushSafepointRegistersScope scope(this);
   __ SmiTag(char_code);
   __ push(char_code);
-  CallRuntimeFromDeferred(Runtime::kCharFromCode, 1, instr, instr->context());
+  CallRuntimeFromDeferred(Runtime::kStringCharFromCode, 1, instr,
+                          instr->context());
   __ StoreToSafepointRegisterSlot(v0, result);
 }
 
@@ -4542,9 +4438,7 @@ void LCodeGen::DoUint32ToDouble(LUint32ToDouble* instr) {
   LOperand* input = instr->value();
   LOperand* output = instr->result();
 
-  FPURegister dbl_scratch = double_scratch0();
-  __ mtc1(ToRegister(input), dbl_scratch);
-  __ Cvt_d_uw(ToDoubleRegister(output), dbl_scratch, f22);
+  __ Cvt_d_uw(ToDoubleRegister(output), ToRegister(input), f22);
 }
 
 
@@ -4629,8 +4523,7 @@ void LCodeGen::DoDeferredNumberTagIU(LInstruction* instr,
     __ mtc1(src, dbl_scratch);
     __ cvt_d_w(dbl_scratch, dbl_scratch);
   } else {
-    __ mtc1(src, dbl_scratch);
-    __ Cvt_d_uw(dbl_scratch, dbl_scratch, f22);
+    __ Cvt_d_uw(dbl_scratch, src, f22);
   }
 
   if (FLAG_inline_new) {
@@ -5358,59 +5251,6 @@ void LCodeGen::DoToFastProperties(LToFastProperties* instr) {
 }
 
 
-void LCodeGen::DoRegExpLiteral(LRegExpLiteral* instr) {
-  DCHECK(ToRegister(instr->context()).is(cp));
-  Label materialized;
-  // Registers will be used as follows:
-  // t3 = literals array.
-  // a1 = regexp literal.
-  // a0 = regexp literal clone.
-  // a2 and t0-t2 are used as temporaries.
-  int literal_offset =
-      LiteralsArray::OffsetOfLiteralAt(instr->hydrogen()->literal_index());
-  __ li(t3, instr->hydrogen()->literals());
-  __ lw(a1, FieldMemOperand(t3, literal_offset));
-  __ LoadRoot(at, Heap::kUndefinedValueRootIndex);
-  __ Branch(&materialized, ne, a1, Operand(at));
-
-  // Create regexp literal using runtime function
-  // Result will be in v0.
-  __ li(t2, Operand(Smi::FromInt(instr->hydrogen()->literal_index())));
-  __ li(t1, Operand(instr->hydrogen()->pattern()));
-  __ li(t0, Operand(instr->hydrogen()->flags()));
-  __ Push(t3, t2, t1, t0);
-  CallRuntime(Runtime::kMaterializeRegExpLiteral, 4, instr);
-  __ mov(a1, v0);
-
-  __ bind(&materialized);
-  int size = JSRegExp::kSize + JSRegExp::kInObjectFieldCount * kPointerSize;
-  Label allocated, runtime_allocate;
-
-  __ Allocate(size, v0, a2, a3, &runtime_allocate, TAG_OBJECT);
-  __ jmp(&allocated);
-
-  __ bind(&runtime_allocate);
-  __ li(a0, Operand(Smi::FromInt(size)));
-  __ Push(a1, a0);
-  CallRuntime(Runtime::kAllocateInNewSpace, 1, instr);
-  __ pop(a1);
-
-  __ bind(&allocated);
-  // Copy the content into the newly allocated memory.
-  // (Unroll copy loop once for better throughput).
-  for (int i = 0; i < size - kPointerSize; i += 2 * kPointerSize) {
-    __ lw(a3, FieldMemOperand(a1, i));
-    __ lw(a2, FieldMemOperand(a1, i + kPointerSize));
-    __ sw(a3, FieldMemOperand(v0, i));
-    __ sw(a2, FieldMemOperand(v0, i + kPointerSize));
-  }
-  if ((size % (2 * kPointerSize)) != 0) {
-    __ lw(a3, FieldMemOperand(a1, size - kPointerSize));
-    __ sw(a3, FieldMemOperand(v0, size - kPointerSize));
-  }
-}
-
-
 void LCodeGen::DoTypeof(LTypeof* instr) {
   DCHECK(ToRegister(instr->value()).is(a3));
   DCHECK(ToRegister(instr->result()).is(v0));
@@ -5518,9 +5358,9 @@ Condition LCodeGen::EmitTypeofIs(Label* true_label,
     __ JumpIfSmi(input, false_label);
     __ LoadRoot(at, Heap::kNullValueRootIndex);
     __ Branch(USE_DELAY_SLOT, true_label, eq, at, Operand(input));
-    STATIC_ASSERT(LAST_SPEC_OBJECT_TYPE == LAST_TYPE);
+    STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
     __ GetObjectType(input, scratch, scratch1());
-    __ Branch(false_label, lt, scratch1(), Operand(FIRST_SPEC_OBJECT_TYPE));
+    __ Branch(false_label, lt, scratch1(), Operand(FIRST_JS_RECEIVER_TYPE));
     // Check for callable or undetectable objects => false.
     __ lbu(scratch, FieldMemOperand(scratch, Map::kBitFieldOffset));
     __ And(at, scratch,
@@ -5549,34 +5389,6 @@ Condition LCodeGen::EmitTypeofIs(Label* true_label,
   }
 
   return final_branch_condition;
-}
-
-
-void LCodeGen::DoIsConstructCallAndBranch(LIsConstructCallAndBranch* instr) {
-  Register temp1 = ToRegister(instr->temp());
-
-  EmitIsConstructCall(temp1, scratch0());
-
-  EmitBranch(instr, eq, temp1,
-             Operand(Smi::FromInt(StackFrame::CONSTRUCT)));
-}
-
-
-void LCodeGen::EmitIsConstructCall(Register temp1, Register temp2) {
-  DCHECK(!temp1.is(temp2));
-  // Get the frame pointer for the calling frame.
-  __ lw(temp1, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
-
-  // Skip the arguments adaptor frame if it exists.
-  Label check_frame_marker;
-  __ lw(temp2, MemOperand(temp1, StandardFrameConstants::kContextOffset));
-  __ Branch(&check_frame_marker, ne, temp2,
-            Operand(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
-  __ lw(temp1, MemOperand(temp1, StandardFrameConstants::kCallerFPOffset));
-
-  // Check the marker in the calling frame.
-  __ bind(&check_frame_marker);
-  __ lw(temp1, MemOperand(temp1, StandardFrameConstants::kMarkerOffset));
 }
 
 
@@ -5710,10 +5522,10 @@ void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   __ And(at, object, kSmiTagMask);
   DeoptimizeIf(eq, instr, Deoptimizer::kSmi, at, Operand(zero_reg));
 
-  STATIC_ASSERT(FIRST_JS_PROXY_TYPE == FIRST_SPEC_OBJECT_TYPE);
+  STATIC_ASSERT(JS_PROXY_TYPE == FIRST_JS_RECEIVER_TYPE);
   __ GetObjectType(object, a1, a1);
   DeoptimizeIf(le, instr, Deoptimizer::kNotAJavaScriptObject, a1,
-               Operand(LAST_JS_PROXY_TYPE));
+               Operand(JS_PROXY_TYPE));
 
   Label use_cache, call_runtime;
   DCHECK(object.is(a0));

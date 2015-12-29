@@ -19,6 +19,8 @@
 #include "src/compiler/common-operator-reducer.h"
 #include "src/compiler/control-flow-optimizer.h"
 #include "src/compiler/dead-code-elimination.h"
+#include "src/compiler/escape-analysis.h"
+#include "src/compiler/escape-analysis-reducer.h"
 #include "src/compiler/frame-elider.h"
 #include "src/compiler/graph-replay.h"
 #include "src/compiler/graph-trimmer.h"
@@ -27,10 +29,12 @@
 #include "src/compiler/instruction.h"
 #include "src/compiler/instruction-selector.h"
 #include "src/compiler/js-builtin-reducer.h"
+#include "src/compiler/js-call-reducer.h"
 #include "src/compiler/js-context-relaxation.h"
 #include "src/compiler/js-context-specialization.h"
 #include "src/compiler/js-frame-specialization.h"
 #include "src/compiler/js-generic-lowering.h"
+#include "src/compiler/js-global-object-specialization.h"
 #include "src/compiler/js-inlining-heuristic.h"
 #include "src/compiler/js-intrinsic-lowering.h"
 #include "src/compiler/js-native-context-specialization.h"
@@ -53,6 +57,7 @@
 #include "src/compiler/simplified-operator.h"
 #include "src/compiler/simplified-operator-reducer.h"
 #include "src/compiler/tail-call-optimization.h"
+#include "src/compiler/type-hint-analyzer.h"
 #include "src/compiler/typer.h"
 #include "src/compiler/value-numbering-reducer.h"
 #include "src/compiler/verifier.h"
@@ -100,7 +105,7 @@ class PipelineData {
     source_positions_.Reset(new SourcePositionTable(graph_));
     simplified_ = new (graph_zone_) SimplifiedOperatorBuilder(graph_zone_);
     machine_ = new (graph_zone_) MachineOperatorBuilder(
-        graph_zone_, kMachPtr,
+        graph_zone_, MachineType::PointerRepresentation(),
         InstructionSelector::SupportedMachineOperatorFlags());
     common_ = new (graph_zone_) CommonOperatorBuilder(graph_zone_);
     javascript_ = new (graph_zone_) JSOperatorBuilder(graph_zone_);
@@ -195,11 +200,23 @@ class PipelineData {
   CommonOperatorBuilder* common() const { return common_; }
   JSOperatorBuilder* javascript() const { return javascript_; }
   JSGraph* jsgraph() const { return jsgraph_; }
+  MaybeHandle<Context> native_context() const {
+    if (info()->is_native_context_specializing()) {
+      return handle(info()->native_context(), isolate());
+    }
+    return MaybeHandle<Context>();
+  }
 
   LoopAssignmentAnalysis* loop_assignment() const { return loop_assignment_; }
   void set_loop_assignment(LoopAssignmentAnalysis* loop_assignment) {
     DCHECK(!loop_assignment_);
     loop_assignment_ = loop_assignment;
+  }
+
+  TypeHintAnalysis* type_hint_analysis() const { return type_hint_analysis_; }
+  void set_type_hint_analysis(TypeHintAnalysis* type_hint_analysis) {
+    DCHECK_NULL(type_hint_analysis_);
+    type_hint_analysis_ = type_hint_analysis;
   }
 
   Schedule* schedule() const { return schedule_; }
@@ -226,6 +243,7 @@ class PipelineData {
     graph_zone_ = nullptr;
     graph_ = nullptr;
     loop_assignment_ = nullptr;
+    type_hint_analysis_ = nullptr;
     simplified_ = nullptr;
     machine_ = nullptr;
     common_ = nullptr;
@@ -265,12 +283,12 @@ class PipelineData {
     DCHECK(register_allocation_data_ == nullptr);
     int fixed_frame_size = 0;
     if (descriptor != nullptr) {
-      fixed_frame_size = (descriptor->kind() == CallDescriptor::kCallAddress)
+      fixed_frame_size = (descriptor->IsCFunctionCall())
                              ? StandardFrameConstants::kFixedSlotCountAboveFp +
                                    StandardFrameConstants::kCPSlotCount
                              : StandardFrameConstants::kFixedSlotCount;
     }
-    frame_ = new (instruction_zone()) Frame(fixed_frame_size);
+    frame_ = new (instruction_zone()) Frame(fixed_frame_size, descriptor);
     register_allocation_data_ = new (register_allocation_zone())
         RegisterAllocationData(config, register_allocation_zone(), frame(),
                                sequence(), debug_name);
@@ -293,6 +311,7 @@ class PipelineData {
   // TODO(dcarney): make this into a ZoneObject.
   base::SmartPointer<SourcePositionTable> source_positions_;
   LoopAssignmentAnalysis* loop_assignment_;
+  TypeHintAnalysis* type_hint_analysis_ = nullptr;
   SimplifiedOperatorBuilder* simplified_;
   MachineOperatorBuilder* machine_;
   CommonOperatorBuilder* common_;
@@ -355,8 +374,10 @@ class AstGraphBuilderWithPositions final : public AstGraphBuilder {
   AstGraphBuilderWithPositions(Zone* local_zone, CompilationInfo* info,
                                JSGraph* jsgraph,
                                LoopAssignmentAnalysis* loop_assignment,
+                               TypeHintAnalysis* type_hint_analysis,
                                SourcePositionTable* source_positions)
-      : AstGraphBuilder(local_zone, info, jsgraph, loop_assignment),
+      : AstGraphBuilder(local_zone, info, jsgraph, loop_assignment,
+                        type_hint_analysis),
         source_positions_(source_positions),
         start_position_(info->shared_info()->start_position()) {}
 
@@ -391,6 +412,8 @@ class SourcePositionWrapper final : public Reducer {
     SourcePositionTable::Scope position(table_, pos);
     return reducer_->Reduce(node);
   }
+
+  void Finalize() final { reducer_->Finalize(); }
 
  private:
   Reducer* const reducer_;
@@ -466,6 +489,18 @@ struct LoopAssignmentAnalysisPhase {
 };
 
 
+struct TypeHintAnalysisPhase {
+  static const char* phase_name() { return "type hint analysis"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    TypeHintAnalyzer analyzer(data->graph_zone());
+    Handle<Code> code(data->info()->shared_info()->code(), data->isolate());
+    TypeHintAnalysis* type_hint_analysis = analyzer.Analyze(code);
+    data->set_type_hint_analysis(type_hint_analysis);
+  }
+};
+
+
 struct GraphBuilderPhase {
   static const char* phase_name() { return "graph builder"; }
 
@@ -480,37 +515,13 @@ struct GraphBuilderPhase {
     } else {
       AstGraphBuilderWithPositions graph_builder(
           temp_zone, data->info(), data->jsgraph(), data->loop_assignment(),
-          data->source_positions());
+          data->type_hint_analysis(), data->source_positions());
       succeeded = graph_builder.CreateGraph(stack_check);
     }
 
     if (!succeeded) {
       data->set_compilation_failed();
     }
-  }
-};
-
-
-struct NativeContextSpecializationPhase {
-  static const char* phase_name() { return "native context specialization"; }
-
-  void Run(PipelineData* data, Zone* temp_zone) {
-    JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
-    DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
-                                              data->common());
-    CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
-                                         data->common(), data->machine());
-    JSNativeContextSpecialization native_context_specialization(
-        &graph_reducer, data->jsgraph(),
-        data->info()->is_deoptimization_enabled()
-            ? JSNativeContextSpecialization::kDeoptimizationEnabled
-            : JSNativeContextSpecialization::kNoFlags,
-        handle(data->info()->global_object(), data->isolate()),
-        data->info()->dependencies(), temp_zone);
-    AddReducer(data, &graph_reducer, &dead_code_elimination);
-    AddReducer(data, &graph_reducer, &common_reducer);
-    AddReducer(data, &graph_reducer, &native_context_specialization);
-    graph_reducer.ReduceGraph();
   }
 };
 
@@ -524,6 +535,11 @@ struct InliningPhase {
                                               data->common());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
+    JSCallReducer call_reducer(data->jsgraph(),
+                               data->info()->is_deoptimization_enabled()
+                                   ? JSCallReducer::kDeoptimizationEnabled
+                                   : JSCallReducer::kNoFlags,
+                               data->native_context());
     JSContextSpecialization context_specialization(
         &graph_reducer, data->jsgraph(),
         data->info()->is_function_context_specializing()
@@ -531,6 +547,18 @@ struct InliningPhase {
             : MaybeHandle<Context>());
     JSFrameSpecialization frame_specialization(data->info()->osr_frame(),
                                                data->jsgraph());
+    JSGlobalObjectSpecialization global_object_specialization(
+        &graph_reducer, data->jsgraph(),
+        data->info()->is_deoptimization_enabled()
+            ? JSGlobalObjectSpecialization::kDeoptimizationEnabled
+            : JSGlobalObjectSpecialization::kNoFlags,
+        data->native_context(), data->info()->dependencies());
+    JSNativeContextSpecialization native_context_specialization(
+        &graph_reducer, data->jsgraph(),
+        data->info()->is_deoptimization_enabled()
+            ? JSNativeContextSpecialization::kDeoptimizationEnabled
+            : JSNativeContextSpecialization::kNoFlags,
+        data->native_context(), data->info()->dependencies(), temp_zone);
     JSInliningHeuristic inlining(&graph_reducer,
                                  data->info()->is_inlining_enabled()
                                      ? JSInliningHeuristic::kGeneralInlining
@@ -541,10 +569,12 @@ struct InliningPhase {
     if (data->info()->is_frame_specializing()) {
       AddReducer(data, &graph_reducer, &frame_specialization);
     }
+    AddReducer(data, &graph_reducer, &global_object_specialization);
+    AddReducer(data, &graph_reducer, &native_context_specialization);
     AddReducer(data, &graph_reducer, &context_specialization);
+    AddReducer(data, &graph_reducer, &call_reducer);
     AddReducer(data, &graph_reducer, &inlining);
     graph_reducer.ReduceGraph();
-    inlining.ProcessCandidates();
   }
 };
 
@@ -579,7 +609,16 @@ struct TypedLoweringPhase {
                                               data->common());
     LoadElimination load_elimination(&graph_reducer);
     JSBuiltinReducer builtin_reducer(&graph_reducer, data->jsgraph());
-    JSTypedLowering typed_lowering(&graph_reducer, data->jsgraph(), temp_zone);
+    JSTypedLowering::Flags typed_lowering_flags = JSTypedLowering::kNoFlags;
+    if (data->info()->is_deoptimization_enabled()) {
+      typed_lowering_flags |= JSTypedLowering::kDeoptimizationEnabled;
+    }
+    if (data->info()->shared_info()->HasBytecodeArray()) {
+      typed_lowering_flags |= JSTypedLowering::kDisableBinaryOpReduction;
+    }
+    JSTypedLowering typed_lowering(&graph_reducer, data->info()->dependencies(),
+                                   typed_lowering_flags, data->jsgraph(),
+                                   temp_zone);
     JSIntrinsicLowering intrinsic_lowering(
         &graph_reducer, data->jsgraph(),
         data->info()->is_deoptimization_enabled()
@@ -609,6 +648,22 @@ struct BranchEliminationPhase {
                                               data->common());
     AddReducer(data, &graph_reducer, &branch_condition_elimination);
     AddReducer(data, &graph_reducer, &dead_code_elimination);
+    graph_reducer.ReduceGraph();
+  }
+};
+
+
+struct EscapeAnalysisPhase {
+  static const char* phase_name() { return "escape analysis"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    EscapeAnalysis escape_analysis(data->graph(), data->jsgraph()->common(),
+                                   temp_zone);
+    escape_analysis.Run();
+    JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
+    EscapeAnalysisReducer escape_reducer(&graph_reducer, data->jsgraph(),
+                                         &escape_analysis, temp_zone);
+    AddReducer(data, &graph_reducer, &escape_reducer);
     graph_reducer.ReduceGraph();
   }
 };
@@ -950,14 +1005,6 @@ struct PrintGraphPhase {
     CompilationInfo* info = data->info();
     Graph* graph = data->graph();
 
-    {  // Print dot.
-      FILE* dot_file = OpenVisualizerLogFile(info, phase, "dot", "w+");
-      if (dot_file == nullptr) return;
-      OFStream dot_of(dot_file);
-      dot_of << AsDOT(*graph);
-      fclose(dot_file);
-    }
-
     {  // Print JSON.
       FILE* json_file = OpenVisualizerLogFile(info, NULL, "json", "a+");
       if (json_file == nullptr) return;
@@ -1065,6 +1112,10 @@ Handle<Code> Pipeline::GenerateCode() {
     Run<LoopAssignmentAnalysisPhase>();
   }
 
+  if (info()->is_typing_enabled()) {
+    Run<TypeHintAnalysisPhase>();
+  }
+
   Run<GraphBuilderPhase>();
   if (data.compilation_failed()) return Handle<Code>::null();
   RunPrintAndVerify("Initial untyped", true);
@@ -1073,12 +1124,6 @@ Handle<Code> Pipeline::GenerateCode() {
   if (info()->is_osr()) {
     Run<OsrDeconstructionPhase>();
     RunPrintAndVerify("OSR deconstruction", true);
-  }
-
-  // Perform native context specialization (if enabled).
-  if (info()->is_native_context_specializing()) {
-    Run<NativeContextSpecializationPhase>();
-    RunPrintAndVerify("Native context specialized", true);
   }
 
   // Perform function context specialization and inlining (if enabled).
@@ -1097,7 +1142,11 @@ Handle<Code> Pipeline::GenerateCode() {
   base::SmartPointer<Typer> typer;
   if (info()->is_typing_enabled()) {
     // Type the graph.
-    typer.Reset(new Typer(isolate(), data.graph(), info()->function_type()));
+    typer.Reset(new Typer(isolate(), data.graph(),
+                          info()->is_deoptimization_enabled()
+                              ? Typer::kDeoptimizationEnabled
+                              : Typer::kNoFlags,
+                          info()->dependencies()));
     Run<TyperPhase>(typer.get());
     RunPrintAndVerify("Typed");
   }
@@ -1112,6 +1161,14 @@ Handle<Code> Pipeline::GenerateCode() {
     if (FLAG_turbo_stress_loop_peeling) {
       Run<StressLoopPeelingPhase>();
       RunPrintAndVerify("Loop peeled");
+    }
+
+    if (FLAG_turbo_escape) {
+      // TODO(sigurds): EscapeAnalysis needs a trimmed graph at the moment,
+      // because it does a forwards traversal of the effect edges.
+      Run<EarlyGraphTrimmingPhase>();
+      Run<EscapeAnalysisPhase>();
+      RunPrintAndVerify("Escape Analysed");
     }
 
     // Lower simplified operators and insert changes.
@@ -1154,10 +1211,13 @@ Handle<Code> Pipeline::GenerateCode() {
 }
 
 
-Handle<Code> Pipeline::GenerateCodeForInterpreter(
-    Isolate* isolate, CallDescriptor* call_descriptor, Graph* graph,
-    Schedule* schedule, const char* bytecode_name) {
-  CompilationInfo info(bytecode_name, isolate, graph->zone());
+Handle<Code> Pipeline::GenerateCodeForCodeStub(Isolate* isolate,
+                                               CallDescriptor* call_descriptor,
+                                               Graph* graph, Schedule* schedule,
+                                               Code::Kind kind,
+                                               const char* debug_name) {
+  CompilationInfo info(debug_name, isolate, graph->zone());
+  info.set_output_code_kind(kind);
 
   // Construct a pipeline for scheduling and code generation.
   ZonePool zone_pool;
@@ -1165,8 +1225,13 @@ Handle<Code> Pipeline::GenerateCodeForInterpreter(
   base::SmartPointer<PipelineStatistics> pipeline_statistics;
   if (FLAG_turbo_stats) {
     pipeline_statistics.Reset(new PipelineStatistics(&info, &zone_pool));
-    pipeline_statistics->BeginPhaseKind("interpreter handler codegen");
+    pipeline_statistics->BeginPhaseKind("stub codegen");
   }
+
+  Pipeline pipeline(&info);
+  pipeline.data_ = &data;
+  DCHECK_NOT_NULL(data.schedule());
+
   if (FLAG_trace_turbo) {
     FILE* json_file = OpenVisualizerLogFile(&info, NULL, "json", "w+");
     if (json_file != nullptr) {
@@ -1175,11 +1240,9 @@ Handle<Code> Pipeline::GenerateCodeForInterpreter(
               << "\", \"source\":\"\",\n\"phases\":[";
       fclose(json_file);
     }
+    pipeline.Run<PrintGraphPhase>("Machine");
   }
 
-  Pipeline pipeline(&info);
-  pipeline.data_ = &data;
-  pipeline.RunPrintAndVerify("Machine", true);
   return pipeline.ScheduleAndGenerateCode(call_descriptor);
 }
 
@@ -1365,6 +1428,8 @@ void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
   }
   if (verifier != nullptr) {
     CHECK(!data->register_allocation_data()->ExistsUseWithoutDefinition());
+    CHECK(data->register_allocation_data()
+              ->RangesDefinedInDeferredStayInDeferred());
   }
 
   if (FLAG_turbo_preprocess_ranges) {

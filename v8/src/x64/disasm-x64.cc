@@ -988,6 +988,16 @@ int DisassemblerX64::AVXInstruction(byte* data) {
         }
         AppendToBuffer(",%s", NameOfXMMRegister(regop));
         break;
+      case 0x2a:
+        AppendToBuffer("%s %s,%s,", vex_w() ? "vcvtqsi2ss" : "vcvtlsi2ss",
+                       NameOfXMMRegister(regop), NameOfXMMRegister(vvvv));
+        current += PrintRightOperand(current);
+        break;
+      case 0x2c:
+        AppendToBuffer("vcvttss2si%s %s,", vex_w() ? "q" : "",
+                       NameOfCPURegister(regop));
+        current += PrintRightXMMOperand(current);
+        break;
       case 0x58:
         AppendToBuffer("vaddss %s,%s,", NameOfXMMRegister(regop),
                        NameOfXMMRegister(vvvv));
@@ -1046,12 +1056,17 @@ int DisassemblerX64::AVXInstruction(byte* data) {
         AppendToBuffer(",%s", NameOfXMMRegister(regop));
         break;
       case 0x2a:
-        AppendToBuffer("vcvtlsi2sd %s,%s,", NameOfXMMRegister(regop),
-                       NameOfXMMRegister(vvvv));
+        AppendToBuffer("%s %s,%s,", vex_w() ? "vcvtqsi2sd" : "vcvtlsi2sd",
+                       NameOfXMMRegister(regop), NameOfXMMRegister(vvvv));
         current += PrintRightOperand(current);
         break;
       case 0x2c:
         AppendToBuffer("vcvttsd2si%s %s,", vex_w() ? "q" : "",
+                       NameOfCPURegister(regop));
+        current += PrintRightXMMOperand(current);
+        break;
+      case 0x2d:
+        AppendToBuffer("vcvtsd2si%s %s,", vex_w() ? "q" : "",
                        NameOfCPURegister(regop));
         current += PrintRightXMMOperand(current);
         break;
@@ -1851,13 +1866,8 @@ int DisassemblerX64::TwoByteOpcodeInstruction(byte* data) {
     } else {
       AppendToBuffer(",%s,cl", NameOfCPURegister(regop));
     }
-  } else if (opcode == 0xBC) {
-    AppendToBuffer("%s%c ", mnemonic, operand_size_code());
-    int mod, regop, rm;
-    get_modrm(*current, &mod, &regop, &rm);
-    AppendToBuffer("%s,", NameOfCPURegister(regop));
-    current += PrintRightOperand(current);
-  } else if (opcode == 0xBD) {
+  } else if (opcode == 0xB8 || opcode == 0xBC || opcode == 0xBD) {
+    // POPCNT, CTZ, CLZ.
     AppendToBuffer("%s%c ", mnemonic, operand_size_code());
     int mod, regop, rm;
     get_modrm(*current, &mod, &regop, &rm);

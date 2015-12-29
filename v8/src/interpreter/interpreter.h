@@ -11,8 +11,8 @@
 #include "src/base/macros.h"
 #include "src/builtins.h"
 #include "src/interpreter/bytecodes.h"
+#include "src/parsing/token.h"
 #include "src/runtime/runtime.h"
-#include "src/token.h"
 
 namespace v8 {
 namespace internal {
@@ -63,6 +63,9 @@ class Interpreter {
   void DoCompareOp(Token::Value compare_op,
                    compiler::InterpreterAssembler* assembler);
 
+  // Generates code to load a constant from the constant pool.
+  void DoLoadConstant(compiler::InterpreterAssembler* assembler);
+
   // Generates code to perform a global load via |ic|.
   void DoLoadGlobal(Callable ic, compiler::InterpreterAssembler* assembler);
 
@@ -81,9 +84,24 @@ class Interpreter {
   // Generates code to perform a keyed property store via |ic|.
   void DoKeyedStoreIC(Callable ic, compiler::InterpreterAssembler* assembler);
 
+  // Generates code to perform a JS call.
+  void DoJSCall(compiler::InterpreterAssembler* assembler);
+
   // Generates code ro create a literal via |function_id|.
   void DoCreateLiteral(Runtime::FunctionId function_id,
                        compiler::InterpreterAssembler* assembler);
+
+  // Generates code to perform delete via function_id.
+  void DoDelete(Runtime::FunctionId function_id,
+                compiler::InterpreterAssembler* assembler);
+
+  // Generates code to perform a lookup slot load via |function_id|.
+  void DoLoadLookupSlot(Runtime::FunctionId function_id,
+                        compiler::InterpreterAssembler* assembler);
+
+  // Generates code to perform a lookup slot store depending on |language_mode|.
+  void DoStoreLookupSlot(LanguageMode language_mode,
+                         compiler::InterpreterAssembler* assembler);
 
   bool IsInterpreterTableInitialized(Handle<FixedArray> handler_table);
 

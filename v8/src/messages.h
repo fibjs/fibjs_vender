@@ -68,7 +68,7 @@ class CallSite {
   Isolate* isolate_;
   Handle<Object> receiver_;
   Handle<JSFunction> fun_;
-  int pos_;
+  int32_t pos_;
 };
 
 
@@ -93,14 +93,16 @@ class CallSite {
   T(CalledNonCallable, "% is not a function")                                  \
   T(CalledOnNonObject, "% called on non-object")                               \
   T(CalledOnNullOrUndefined, "% called on null or undefined")                  \
+  T(CallSiteExpectsFunction,                                                   \
+    "CallSite expects function as second argument, got %")                     \
   T(CannotConvertToPrimitive, "Cannot convert object to primitive value")      \
   T(CannotPreventExt, "Cannot prevent extensions")                             \
-  T(CannotPreventExtExternalArray,                                             \
-    "Cannot prevent extension of an object with external array elements")      \
+  T(CannotFreezeArrayBufferView,                                               \
+    "Cannot freeze array buffer views with elements")                          \
   T(CircularStructure, "Converting circular structure to JSON")                \
   T(ConstAssign, "Assignment to constant variable.")                           \
   T(ConstructorNonCallable,                                                    \
-    "Class constructors cannot be invoked without 'new'")                      \
+    "Class constructor % cannot be invoked without 'new'")                     \
   T(ConstructorNotFunction, "Constructor % requires 'new'")                    \
   T(CurrencyCode, "Currency code is required with currency style.")            \
   T(DataViewNotArrayBuffer,                                                    \
@@ -108,6 +110,7 @@ class CallSite {
   T(DateType, "this is not a Date object.")                                    \
   T(DebuggerFrame, "Debugger: Invalid frame index.")                           \
   T(DebuggerType, "Debugger: Parameters have wrong types.")                    \
+  T(DeclarationMissingInitializer, "Missing initializer in % declaration")     \
   T(DefineDisallowed, "Cannot define property:%, object is not extensible.")   \
   T(DuplicateTemplateProperty, "Object template has duplicate property '%'")   \
   T(ExtendsValueGenerator,                                                     \
@@ -116,8 +119,6 @@ class CallSite {
     "Class extends value % is not a function or null")                         \
   T(FirstArgumentNotRegExp,                                                    \
     "First argument to % must not be a regular expression")                    \
-  T(FlagsGetterNonObject,                                                      \
-    "RegExp.prototype.flags getter called on non-object %")                    \
   T(FunctionBind, "Bind must be called on a function")                         \
   T(GeneratorRunning, "Generator is already running")                          \
   T(IllegalInvocation, "Illegal invocation")                                   \
@@ -128,6 +129,7 @@ class CallSite {
     "Function has non-object prototype '%' in instanceof check")               \
   T(InvalidArgument, "invalid_argument")                                       \
   T(InvalidInOperatorUse, "Cannot use 'in' operator to search for '%' in %")   \
+  T(InvalidSimdOperation, "% is not a valid type for this SIMD operation.")    \
   T(IteratorResultNotAnObject, "Iterator result % is not an object")           \
   T(IteratorValueNotAnObject, "Iterator value % is not an entry object")       \
   T(LanguageID, "Language ID should be string or object.")                     \
@@ -149,6 +151,7 @@ class CallSite {
   T(NotIntlObject, "% is not an i18n object.")                                 \
   T(NotGeneric, "% is not generic")                                            \
   T(NotIterable, "% is not iterable")                                          \
+  T(NotPropertyName, "% is not a valid property name")                         \
   T(NotTypedArray, "this is not a typed array.")                               \
   T(NotSharedTypedArray, "% is not a shared typed array.")                     \
   T(NotIntegerSharedTypedArray, "% is not an integer shared typed array.")     \
@@ -177,31 +180,104 @@ class CallSite {
     "Function object that's not a constructor was created with new")           \
   T(PromiseCyclic, "Chaining cycle detected for promise %")                    \
   T(PropertyDescObject, "Property description must be an object: %")           \
-  T(PropertyNotFunction, "Property '%' of object % is not a function")         \
+  T(PropertyNotFunction,                                                       \
+    "'%' returned for property '%' of object '%' is not a function")           \
   T(ProtoObjectOrNull, "Object prototype may only be an Object or null: %")    \
   T(PrototypeParentNotAnObject,                                                \
     "Class extends value does not have valid prototype property %")            \
-  T(ProxyHandlerDeleteFailed,                                                  \
-    "Proxy handler % did not return a boolean value from 'delete' trap")       \
-  T(ProxyHandlerNonObject, "Proxy.% called with non-object as handler")        \
-  T(ProxyHandlerReturned, "Proxy handler % returned % from '%' trap")          \
-  T(ProxyHandlerTrapMissing, "Proxy handler % has no '%' trap")                \
-  T(ProxyHandlerTrapMustBeCallable,                                            \
-    "Proxy handler %0 has non-callable '%' trap")                              \
-  T(ProxyNonObjectPropNames, "Trap '%' returned non-object %")                 \
-  T(ProxyProtoNonObject, "Proxy.create called with no-object as prototype")    \
-  T(ProxyPropNotConfigurable,                                                  \
-    "Proxy handler % returned non-configurable descriptor for property '%' "   \
-    "from '%' trap")                                                           \
-  T(ProxyRepeatedPropName, "Trap '%' returned repeated property name '%'")     \
-  T(ProxyTrapFunctionExpected,                                                 \
-    "Proxy.createFunction called with non-function for '%' trap")              \
+  T(ProxyConstructNonObject,                                                   \
+    "'construct' on proxy: trap returned non-object ('%')")                    \
+  T(ProxyDefinePropertyNonConfigurable,                                        \
+    "'defineProperty' on proxy: trap returned truish for defining "            \
+    "non-configurable property '%' which is either non-existant or "           \
+    "configurable in the proxy target")                                        \
+  T(ProxyDefinePropertyNonExtensible,                                          \
+    "'defineProperty' on proxy: trap returned truish for adding property '%' " \
+    " to the non-extensible proxy target")                                     \
+  T(ProxyDefinePropertyIncompatible,                                           \
+    "'defineProperty' on proxy: trap returned truish for adding property '%' " \
+    " that is incompatible with the existing property in the proxy target")    \
+  T(ProxyDeletePropertyNonConfigurable,                                        \
+    "'deleteProperty' on proxy: trap returned truish for property '%' which "  \
+    "is non-configurable in the proxy target")                                 \
+  T(ProxyEnumerateNonObject, "'enumerate' on proxy: trap returned non-object") \
+  T(ProxyEnumerateNonString,                                                   \
+    "'enumerate' on proxy: trap result includes non-string")                   \
+  T(ProxyGetNonConfigurableData,                                               \
+    "'get' on proxy: property '%' is a read-only and "                         \
+    "non-configurable data property on the proxy target but the proxy "        \
+    "did not return its actual value (expected '%' but got '%')")              \
+  T(ProxyGetNonConfigurableAccessor,                                           \
+    "'get' on proxy: property '%' is a non-configurable accessor "             \
+    "property on the proxy target and does not have a getter function, but "   \
+    "the trap did not return 'undefined' (got '%')")                           \
+  T(ProxyGetOwnPropertyDescriptorIncompatible,                                 \
+    "'getOwnPropertyDescriptor' on proxy: trap returned descriptor for "       \
+    "property '%' that is incompatible with the existing property in the "     \
+    "proxy target")                                                            \
+  T(ProxyGetOwnPropertyDescriptorInvalid,                                      \
+    "'getOwnPropertyDescriptor' on proxy: trap returned neither object nor "   \
+    "undefined for property '%'")                                              \
+  T(ProxyGetOwnPropertyDescriptorNonConfigurable,                              \
+    "'getOwnPropertyDescriptor' on proxy: trap reported non-configurability "  \
+    "for property '%' which is either non-existant or configurable in the "    \
+    "proxy target")                                                            \
+  T(ProxyGetOwnPropertyDescriptorNonExtensible,                                \
+    "'getOwnPropertyDescriptor' on proxy: trap returned undefined for "        \
+    "property '%' which exists in the non-extensible proxy target")            \
+  T(ProxyGetOwnPropertyDescriptorUndefined,                                    \
+    "'getOwnPropertyDescriptor' on proxy: trap returned undefined for "        \
+    "property '%' which is non-configurable in the proxy target")              \
+  T(ProxyGetPrototypeOfInvalid,                                                \
+    "'getPrototypeOf' on proxy: trap returned neither object nor null")        \
+  T(ProxyGetPrototypeOfNonExtensible,                                          \
+    "'getPrototypeOf' on proxy: proxy target is non-extensible but the "       \
+    "trap did not return its actual prototype")                                \
+  T(ProxyHandlerOrTargetRevoked,                                               \
+    "Cannot create proxy with a revoked proxy as target or handler")           \
+  T(ProxyHasNonConfigurable,                                                   \
+    "'has' on proxy: trap returned falsish for property '%' which exists in "  \
+    "the proxy target as non-configurable")                                    \
+  T(ProxyHasNonExtensible,                                                     \
+    "'has' on proxy: trap returned falsish for property '%' but the proxy "    \
+    "target is not extensible")                                                \
+  T(ProxyIsExtensibleInconsistent,                                             \
+    "'isExtensible' on proxy: trap result does not reflect extensibility of "  \
+    "proxy target (which is '%')")                                             \
+  T(ProxyNonObject,                                                            \
+    "Cannot create proxy with a non-object as target or handler")              \
+  T(ProxyOwnKeysMissing,                                                       \
+    "'ownKeys' on proxy: trap result did not include '%'")                     \
+  T(ProxyOwnKeysNonExtensible,                                                 \
+    "'ownKeys' on proxy: trap returned extra keys but proxy target is "        \
+    "non-extensible")                                                          \
+  T(ProxyPreventExtensionsExtensible,                                          \
+    "'preventExtensions' on proxy: trap returned truish but the proxy target " \
+    "is extensible")                                                           \
+  T(ProxyRevoked, "Cannot perform '%' on a proxy that has been revoked")       \
+  T(ProxySetFrozenData,                                                        \
+    "'set' on proxy: trap returned truish for property '%' which exists in "   \
+    "the proxy target as a non-configurable and non-writable data property "   \
+    "with a different value")                                                  \
+  T(ProxySetFrozenAccessor,                                                    \
+    "'set' on proxy: trap returned truish for property '%' which exists in "   \
+    "the proxy target as a non-configurable and non-writable accessor "        \
+    "property without a setter")                                               \
+  T(ProxySetPrototypeOfNonExtensible,                                          \
+    "'setPrototypeOf' on proxy: trap returned truish for setting a new "       \
+    "prototype on the non-extensible proxy target")                            \
+  T(ProxyTrapReturnedFalsish, "'%' on proxy: trap returned falsish")           \
+  T(ProxyTrapReturnedFalsishFor,                                               \
+    "'%' on proxy: trap returned falsish for property '%'")                    \
+  T(ReadGlobalReferenceThroughProxy, "Trying to access '%' through proxy")     \
   T(RedefineDisallowed, "Cannot redefine property: %")                         \
   T(RedefineExternalArray,                                                     \
     "Cannot redefine a property of an object with external array elements")    \
   T(ReduceNoInitial, "Reduce of empty array with no initial value")            \
   T(RegExpFlags,                                                               \
     "Cannot supply flags when constructing one RegExp from another")           \
+  T(RegExpNonObject, "% getter called on non-object %")                        \
+  T(RegExpNonRegExp, "% getter called on non-RegExp object")                   \
   T(ReinitializeIntl, "Trying to re-initialize % object.")                     \
   T(ResolvedOptionsCalledOnNonObject,                                          \
     "resolvedOptions method called on a non-object or on a object that is "    \
@@ -240,7 +316,6 @@ class CallSite {
     "Invalid property descriptor. Cannot both specify accessors and a value "  \
     "or writable attribute, %")                                                \
   T(VarRedeclaration, "Identifier '%' has already been declared")              \
-  T(WithExpression, "% has no properties")                                     \
   T(WrongArgs, "%: Arguments list has wrong type")                             \
   /* ReferenceError */                                                         \
   T(NonMethod, "'super' is referenced from non-method")                        \
@@ -308,7 +383,10 @@ class CallSite {
   T(IllegalLanguageModeDirective,                                              \
     "Illegal '%' directive in function with non-simple parameter list")        \
   T(IllegalReturn, "Illegal return statement")                                 \
+  T(InvalidEscapedReservedWord, "Keyword must not contain escaped characters") \
   T(InvalidLhsInAssignment, "Invalid left-hand side in assignment")            \
+  T(InvalidCoverInitializedName, "Invalid shorthand property initializer")     \
+  T(InvalidDestructuringTarget, "Invalid destructuring assignment target")     \
   T(InvalidLhsInFor, "Invalid left-hand side in for-loop")                     \
   T(InvalidLhsInPostfixOp,                                                     \
     "Invalid left-hand side expression in postfix operation")                  \
@@ -326,6 +404,10 @@ class CallSite {
   T(NoCatchOrFinally, "Missing catch or finally after try")                    \
   T(NotIsvar, "builtin %%IS_VAR: not a variable")                              \
   T(ParamAfterRest, "Rest parameter must be last formal parameter")            \
+  T(PushPastSafeLength,                                                        \
+    "Pushing % elements on an array-like of length % "                         \
+    "is disallowed, as the total surpasses 2**53-1")                           \
+  T(ElementAfterRest, "Rest element must be last element in array")            \
   T(BadSetterRestParameter,                                                    \
     "Setter function argument must not be a rest parameter")                   \
   T(ParamDupe, "Duplicate parameter name not allowed in this context")         \
@@ -459,44 +541,6 @@ class MessageHandler {
 };
 
 
-class ErrorToStringHelper {
- public:
-  ErrorToStringHelper() : visited_(0) {}
-
-  MUST_USE_RESULT MaybeHandle<String> Stringify(Isolate* isolate,
-                                                Handle<JSObject> error);
-
- private:
-  class VisitedScope {
-   public:
-    VisitedScope(ErrorToStringHelper* helper, Handle<JSObject> error)
-        : helper_(helper), has_visited_(false) {
-      for (const Handle<JSObject>& visited : helper->visited_) {
-        if (visited.is_identical_to(error)) {
-          has_visited_ = true;
-          break;
-        }
-      }
-      helper->visited_.Add(error);
-    }
-    ~VisitedScope() { helper_->visited_.RemoveLast(); }
-    bool has_visited() { return has_visited_; }
-
-   private:
-    ErrorToStringHelper* helper_;
-    bool has_visited_;
-  };
-
-  static bool ShadowsInternalError(Isolate* isolate,
-                                   LookupIterator* property_lookup,
-                                   LookupIterator* internal_error_lookup);
-
-  static MUST_USE_RESULT MaybeHandle<String> GetStringifiedProperty(
-      Isolate* isolate, LookupIterator* property_lookup,
-      Handle<String> default_value);
-
-  List<Handle<JSObject> > visited_;
-};
 }  // namespace internal
 }  // namespace v8
 

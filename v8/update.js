@@ -89,19 +89,22 @@ function chk_file(fname) {
 	return true;
 }
 
-function cp_folder(path) {
+function cp_folder(path, to) {
 	var dir = fs.readdir(v8Folder + '/' + path);
 	dir.forEach(function(f) {
 		var name = f.name;
 		if (name !== '.' && name !== '..') {
 			var fname = path + '/' + name;
+			var fnameto = to ? to + '/' + fname : fname;
+
 			if (f.isDirectory()) {
-				fs.mkdir(fname);
-				cp_folder(fname);
+				console.log(fnameto);
+				fs.mkdir(fnameto);
+				cp_folder(fname, to);
 			} else {
-				if (chk_file(fname)) {
-					console.log("copy", fname);
-					fs.writeFile(fname, fs.readFile(v8Folder + '/' + fname));
+				if (chk_file(fnameto)) {
+					console.log("copy", fnameto);
+					fs.writeFile(fnameto, fs.readFile(v8Folder + '/' + fname));
 				}
 			}
 		}
@@ -113,7 +116,7 @@ var gens = [
 	'libraries.cc',
 	'experimental-libraries.cc',
 	'extras-libraries.cc',
-	'code-stub-libraries.cc',
+	// 'code-stub-libraries.cc',
 	'experimental-extras-libraries.cc'
 ];
 
@@ -248,8 +251,11 @@ save_plat();
 clean_folder('include');
 clean_folder('src');
 
-cp_folder('include')
-cp_folder('src')
+cp_folder('include');
+cp_folder('src');
+
+fs.mkdir('include/base');
+cp_folder('base', 'include');
 
 cp_gen();
 

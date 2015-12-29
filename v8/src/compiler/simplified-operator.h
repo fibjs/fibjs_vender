@@ -7,8 +7,8 @@
 
 #include <iosfwd>
 
-#include "src/compiler/machine-type.h"
 #include "src/handles.h"
+#include "src/machine-type.h"
 #include "src/objects.h"
 
 namespace v8 {
@@ -140,11 +140,15 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* NumberMultiply();
   const Operator* NumberDivide();
   const Operator* NumberModulus();
+  const Operator* NumberBitwiseOr();
+  const Operator* NumberBitwiseXor();
+  const Operator* NumberBitwiseAnd();
   const Operator* NumberShiftLeft();
   const Operator* NumberShiftRight();
   const Operator* NumberShiftRightLogical();
   const Operator* NumberToInt32();
   const Operator* NumberToUint32();
+  const Operator* NumberIsHoleNaN();
 
   const Operator* PlainPrimitiveToNumber();
 
@@ -163,6 +167,7 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* ChangeBoolToBit();
   const Operator* ChangeBitToBool();
 
+  const Operator* ObjectIsNumber();
   const Operator* ObjectIsSmi();
 
   const Operator* Allocate(PretenureFlag pretenure = NOT_TENURED);

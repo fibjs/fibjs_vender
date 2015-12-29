@@ -16,18 +16,20 @@ namespace internal {
 namespace interpreter {
 
 // The list of operand types used by bytecodes.
-#define OPERAND_TYPE_LIST(V)    \
-                                \
-  /* None operand. */           \
-  V(None, OperandSize::kNone)   \
-                                \
-  /* Byte operands. */          \
-  V(Count8, OperandSize::kByte) \
-  V(Imm8, OperandSize::kByte)   \
-  V(Idx8, OperandSize::kByte)   \
-  V(Reg8, OperandSize::kByte)   \
-                                \
-  /* Short operands. */         \
+#define OPERAND_TYPE_LIST(V)       \
+                                   \
+  /* None operand. */              \
+  V(None, OperandSize::kNone)      \
+                                   \
+  /* Byte operands. */             \
+  V(Count8, OperandSize::kByte)    \
+  V(Imm8, OperandSize::kByte)      \
+  V(Idx8, OperandSize::kByte)      \
+  V(Reg8, OperandSize::kByte)      \
+  V(MaybeReg8, OperandSize::kByte) \
+                                   \
+  /* Short operands. */            \
+  V(Count16, OperandSize::kShort)  \
   V(Idx16, OperandSize::kShort)
 
 // The list of bytecodes which are interpreted by the interpreter.
@@ -36,18 +38,27 @@ namespace interpreter {
   /* Loading the accumulator */                                                \
   V(LdaZero, OperandType::kNone)                                               \
   V(LdaSmi8, OperandType::kImm8)                                               \
-  V(LdaConstant, OperandType::kIdx8)                                           \
   V(LdaUndefined, OperandType::kNone)                                          \
   V(LdaNull, OperandType::kNone)                                               \
   V(LdaTheHole, OperandType::kNone)                                            \
   V(LdaTrue, OperandType::kNone)                                               \
   V(LdaFalse, OperandType::kNone)                                              \
+  V(LdaConstant, OperandType::kIdx8)                                           \
+  V(LdaConstantWide, OperandType::kIdx16)                                      \
                                                                                \
   /* Globals */                                                                \
   V(LdaGlobalSloppy, OperandType::kIdx8, OperandType::kIdx8)                   \
   V(LdaGlobalStrict, OperandType::kIdx8, OperandType::kIdx8)                   \
+  V(LdaGlobalInsideTypeofSloppy, OperandType::kIdx8, OperandType::kIdx8)       \
+  V(LdaGlobalInsideTypeofStrict, OperandType::kIdx8, OperandType::kIdx8)       \
+  V(LdaGlobalSloppyWide, OperandType::kIdx16, OperandType::kIdx16)             \
+  V(LdaGlobalStrictWide, OperandType::kIdx16, OperandType::kIdx16)             \
+  V(LdaGlobalInsideTypeofSloppyWide, OperandType::kIdx16, OperandType::kIdx16) \
+  V(LdaGlobalInsideTypeofStrictWide, OperandType::kIdx16, OperandType::kIdx16) \
   V(StaGlobalSloppy, OperandType::kIdx8, OperandType::kIdx8)                   \
   V(StaGlobalStrict, OperandType::kIdx8, OperandType::kIdx8)                   \
+  V(StaGlobalSloppyWide, OperandType::kIdx16, OperandType::kIdx16)             \
+  V(StaGlobalStrictWide, OperandType::kIdx16, OperandType::kIdx16)             \
                                                                                \
   /* Context operations */                                                     \
   V(PushContext, OperandType::kReg8)                                           \
@@ -55,15 +66,31 @@ namespace interpreter {
   V(LdaContextSlot, OperandType::kReg8, OperandType::kIdx8)                    \
   V(StaContextSlot, OperandType::kReg8, OperandType::kIdx8)                    \
                                                                                \
+  /* Load-Store lookup slots */                                                \
+  V(LdaLookupSlot, OperandType::kIdx8)                                         \
+  V(LdaLookupSlotInsideTypeof, OperandType::kIdx8)                             \
+  V(StaLookupSlotSloppy, OperandType::kIdx8)                                   \
+  V(StaLookupSlotStrict, OperandType::kIdx8)                                   \
+                                                                               \
   /* Register-accumulator transfers */                                         \
   V(Ldar, OperandType::kReg8)                                                  \
   V(Star, OperandType::kReg8)                                                  \
+                                                                               \
+  /* Register-register transfers */                                            \
+  V(Mov, OperandType::kReg8, OperandType::kReg8)                               \
                                                                                \
   /* LoadIC operations */                                                      \
   V(LoadICSloppy, OperandType::kReg8, OperandType::kIdx8, OperandType::kIdx8)  \
   V(LoadICStrict, OperandType::kReg8, OperandType::kIdx8, OperandType::kIdx8)  \
   V(KeyedLoadICSloppy, OperandType::kReg8, OperandType::kIdx8)                 \
   V(KeyedLoadICStrict, OperandType::kReg8, OperandType::kIdx8)                 \
+  /* TODO(rmcilroy): Wide register operands too? */                            \
+  V(LoadICSloppyWide, OperandType::kReg8, OperandType::kIdx16,                 \
+    OperandType::kIdx16)                                                       \
+  V(LoadICStrictWide, OperandType::kReg8, OperandType::kIdx16,                 \
+    OperandType::kIdx16)                                                       \
+  V(KeyedLoadICSloppyWide, OperandType::kReg8, OperandType::kIdx16)            \
+  V(KeyedLoadICStrictWide, OperandType::kReg8, OperandType::kIdx16)            \
                                                                                \
   /* StoreIC operations */                                                     \
   V(StoreICSloppy, OperandType::kReg8, OperandType::kIdx8, OperandType::kIdx8) \
@@ -72,6 +99,15 @@ namespace interpreter {
     OperandType::kIdx8)                                                        \
   V(KeyedStoreICStrict, OperandType::kReg8, OperandType::kReg8,                \
     OperandType::kIdx8)                                                        \
+  /* TODO(rmcilroy): Wide register operands too? */                            \
+  V(StoreICSloppyWide, OperandType::kReg8, OperandType::kIdx16,                \
+    OperandType::kIdx16)                                                       \
+  V(StoreICStrictWide, OperandType::kReg8, OperandType::kIdx16,                \
+    OperandType::kIdx16)                                                       \
+  V(KeyedStoreICSloppyWide, OperandType::kReg8, OperandType::kReg8,            \
+    OperandType::kIdx16)                                                       \
+  V(KeyedStoreICStrictWide, OperandType::kReg8, OperandType::kReg8,            \
+    OperandType::kIdx16)                                                       \
                                                                                \
   /* Binary Operators */                                                       \
   V(Add, OperandType::kReg8)                                                   \
@@ -91,14 +127,22 @@ namespace interpreter {
   V(Dec, OperandType::kNone)                                                   \
   V(LogicalNot, OperandType::kNone)                                            \
   V(TypeOf, OperandType::kNone)                                                \
+  V(DeletePropertyStrict, OperandType::kReg8)                                  \
+  V(DeletePropertySloppy, OperandType::kReg8)                                  \
+  V(DeleteLookupSlot, OperandType::kNone)                                      \
                                                                                \
   /* Call operations */                                                        \
-  V(Call, OperandType::kReg8, OperandType::kReg8, OperandType::kCount8)        \
-  V(CallRuntime, OperandType::kIdx16, OperandType::kReg8,                      \
+  V(Call, OperandType::kReg8, OperandType::kReg8, OperandType::kCount8,        \
+    OperandType::kIdx8)                                                        \
+  V(CallWide, OperandType::kReg8, OperandType::kReg8, OperandType::kCount16,   \
+    OperandType::kIdx16)                                                       \
+  V(CallRuntime, OperandType::kIdx16, OperandType::kMaybeReg8,                 \
+    OperandType::kCount8)                                                      \
+  V(CallJSRuntime, OperandType::kIdx16, OperandType::kReg8,                    \
     OperandType::kCount8)                                                      \
                                                                                \
   /* New operator */                                                           \
-  V(New, OperandType::kReg8, OperandType::kReg8, OperandType::kCount8)         \
+  V(New, OperandType::kReg8, OperandType::kMaybeReg8, OperandType::kCount8)    \
                                                                                \
   /* Test Operators */                                                         \
   V(TestEqual, OperandType::kReg8)                                             \
@@ -113,17 +157,27 @@ namespace interpreter {
   V(TestIn, OperandType::kReg8)                                                \
                                                                                \
   /* Cast operators */                                                         \
-  V(ToBoolean, OperandType::kNone)                                             \
   V(ToName, OperandType::kNone)                                                \
   V(ToNumber, OperandType::kNone)                                              \
+  V(ToObject, OperandType::kNone)                                              \
                                                                                \
   /* Literals */                                                               \
-  V(CreateRegExpLiteral, OperandType::kIdx8, OperandType::kReg8)               \
-  V(CreateArrayLiteral, OperandType::kIdx8, OperandType::kImm8)                \
-  V(CreateObjectLiteral, OperandType::kIdx8, OperandType::kImm8)               \
+  V(CreateRegExpLiteral, OperandType::kIdx8, OperandType::kIdx8,               \
+    OperandType::kImm8)                                                        \
+  V(CreateArrayLiteral, OperandType::kIdx8, OperandType::kIdx8,                \
+    OperandType::kImm8)                                                        \
+  V(CreateObjectLiteral, OperandType::kIdx8, OperandType::kIdx8,               \
+    OperandType::kImm8)                                                        \
+  V(CreateRegExpLiteralWide, OperandType::kIdx16, OperandType::kIdx16,         \
+    OperandType::kImm8)                                                        \
+  V(CreateArrayLiteralWide, OperandType::kIdx16, OperandType::kIdx16,          \
+    OperandType::kImm8)                                                        \
+  V(CreateObjectLiteralWide, OperandType::kIdx16, OperandType::kIdx16,         \
+    OperandType::kImm8)                                                        \
                                                                                \
   /* Closure allocation */                                                     \
-  V(CreateClosure, OperandType::kImm8)                                         \
+  V(CreateClosure, OperandType::kIdx8, OperandType::kImm8)                     \
+  V(CreateClosureWide, OperandType::kIdx16, OperandType::kImm8)                \
                                                                                \
   /* Arguments allocation */                                                   \
   V(CreateMappedArguments, OperandType::kNone)                                 \
@@ -140,6 +194,19 @@ namespace interpreter {
   V(JumpIfToBooleanTrueConstant, OperandType::kIdx8)                           \
   V(JumpIfToBooleanFalse, OperandType::kImm8)                                  \
   V(JumpIfToBooleanFalseConstant, OperandType::kIdx8)                          \
+  V(JumpIfNull, OperandType::kImm8)                                            \
+  V(JumpIfNullConstant, OperandType::kIdx8)                                    \
+  V(JumpIfUndefined, OperandType::kImm8)                                       \
+  V(JumpIfUndefinedConstant, OperandType::kIdx8)                               \
+                                                                               \
+  /* Complex flow control For..in */                                           \
+  V(ForInPrepare, OperandType::kReg8, OperandType::kReg8, OperandType::kReg8)  \
+  V(ForInDone, OperandType::kReg8, OperandType::kReg8)                         \
+  V(ForInNext, OperandType::kReg8, OperandType::kReg8, OperandType::kReg8,     \
+    OperandType::kReg8)                                                        \
+  V(ForInStep, OperandType::kReg8)                                             \
+                                                                               \
+  /* Non-local flow control */                                                 \
   V(Throw, OperandType::kNone)                                                 \
   V(Return, OperandType::kNone)
 
@@ -211,6 +278,10 @@ class Register {
   static Register function_context();
   bool is_function_context() const;
 
+  // Returns the register for the incoming new target value.
+  static Register new_target();
+  bool is_new_target() const;
+
   static Register FromOperand(uint8_t operand);
   uint8_t ToOperand() const;
 
@@ -278,19 +349,32 @@ class Bytecodes {
   // Returns the size of |operand|.
   static OperandSize SizeOfOperand(OperandType operand);
 
+  // Return true if the bytecode is a conditional jump taking
+  // an immediate byte operand (OperandType::kImm8).
+  static bool IsConditionalJumpImmediate(Bytecode bytecode);
+
+  // Return true if the bytecode is a conditional jump taking
+  // a constant pool entry (OperandType::kIdx).
+  static bool IsConditionalJumpConstant(Bytecode bytecode);
+
+  // Return true if the bytecode is a conditional jump taking
+  // any kind of operand.
+  static bool IsConditionalJump(Bytecode bytecode);
+
   // Return true if the bytecode is a jump or a conditional jump taking
   // an immediate byte operand (OperandType::kImm8).
-  static bool IsJump(Bytecode bytecode);
+  static bool IsJumpImmediate(Bytecode bytecode);
 
   // Return true if the bytecode is a jump or conditional jump taking a
   // constant pool entry (OperandType::kIdx).
   static bool IsJumpConstant(Bytecode bytecode);
 
-  // Converts bytes[0] and bytes[1] to a 16 bit 'short' operand value.
-  static uint16_t ShortOperandFromBytes(const uint8_t* bytes);
+  // Return true if the bytecode is a jump or conditional jump taking
+  // any kind of operand.
+  static bool IsJump(Bytecode bytecode);
 
-  // Converts 16 bit 'short' |operand| into bytes_out[0] and bytes_out[1].
-  static void ShortOperandToBytes(uint16_t operand, uint8_t* bytes_out);
+  // Return true if the bytecode is a conditional jump, a jump, or a return.
+  static bool IsJumpOrReturn(Bytecode bytecode);
 
   // Decode a single bytecode and operands to |os|.
   static std::ostream& Decode(std::ostream& os, const uint8_t* bytecode_start,

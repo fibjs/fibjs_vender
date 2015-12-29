@@ -22,6 +22,8 @@ const Register kInterpreterRegisterFileRegister = {Register::kCode_t3};
 const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_t4};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_t5};
 const Register kInterpreterDispatchTableRegister = {Register::kCode_t6};
+const Register kJavaScriptCallArgCountRegister = {Register::kCode_a0};
+const Register kJavaScriptCallNewTargetRegister = {Register::kCode_a3};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_a1};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_a0};
 
@@ -110,13 +112,13 @@ bool AreAliased(Register reg1,
 // -----------------------------------------------------------------------------
 // Static helper functions.
 
-inline MemOperand ContextOperand(Register context, int index) {
+inline MemOperand ContextMemOperand(Register context, int index) {
   return MemOperand(context, Context::SlotOffset(index));
 }
 
 
-inline MemOperand GlobalObjectOperand()  {
-  return ContextOperand(cp, Context::GLOBAL_OBJECT_INDEX);
+inline MemOperand NativeContextMemOperand() {
+  return ContextMemOperand(cp, Context::NATIVE_CONTEXT_INDEX);
 }
 
 
@@ -139,11 +141,8 @@ inline MemOperand CFunctionArgumentOperand(int index) {
 // MacroAssembler implements a collection of frequently used macros.
 class MacroAssembler: public Assembler {
  public:
-  // The isolate parameter can be NULL if the macro assembler should
-  // not use isolate-dependent functionality. In this case, it's the
-  // responsibility of the caller to never invoke such function on the
-  // macro assembler.
-  MacroAssembler(Isolate* isolate, void* buffer, int size);
+  MacroAssembler(Isolate* isolate, void* buffer, int size,
+                 CodeObjectRequired create_code_object);
 
   // Arguments macros.
 #define COND_TYPED_ARGS Condition cond, Register r1, const Operand& r2
@@ -164,9 +163,9 @@ class MacroAssembler: public Assembler {
     Name(target, COND_ARGS, bd); \
   }
 
-#define DECLARE_BRANCH_PROTOTYPES(Name) \
+#define DECLARE_BRANCH_PROTOTYPES(Name)   \
   DECLARE_NORELOC_PROTOTYPE(Name, Label*) \
-  DECLARE_NORELOC_PROTOTYPE(Name, int16_t)
+  DECLARE_NORELOC_PROTOTYPE(Name, int32_t)
 
   DECLARE_BRANCH_PROTOTYPES(Branch)
   DECLARE_BRANCH_PROTOTYPES(BranchAndLink)
@@ -202,6 +201,8 @@ class MacroAssembler: public Assembler {
     Register rs = zero_reg, const Operand& rt = Operand(zero_reg)) {
     Ret(cond, rs, rt, bd);
   }
+
+  bool IsNear(Label* L, Condition cond, int rs_reg);
 
   void Branch(Label* L,
               Condition cond,
@@ -383,22 +384,10 @@ class MacroAssembler: public Assembler {
                    Register scratch1,
                    Label* on_black);
 
-  // Checks the color of an object.  If the object is already grey or black
-  // then we just fall through, since it is already live.  If it is white and
-  // we can determine that it doesn't need to be scanned, then we just mark it
-  // black and fall through.  For the rest we jump to the label so the
-  // incremental marker can fix its assumptions.
-  void EnsureNotWhite(Register object,
-                      Register scratch1,
-                      Register scratch2,
-                      Register scratch3,
-                      Label* object_is_white_and_not_data);
-
-  // Detects conservatively whether an object is data-only, i.e. it does need to
-  // be scanned by the garbage collector.
-  void JumpIfDataObject(Register value,
-                        Register scratch,
-                        Label* not_data_object);
+  // Checks the color of an object.  If the object is white we jump to the
+  // incremental marker.
+  void JumpIfWhite(Register value, Register scratch1, Register scratch2,
+                   Register scratch3, Label* value_is_white);
 
   // Notify the garbage collector that we wrote a pointer into an object.
   // |object| is the object being stored into, |value| is the object being
@@ -535,12 +524,8 @@ class MacroAssembler: public Assembler {
                 Label* gc_required,
                 AllocationFlags flags);
 
-  void Allocate(Register object_size,
-                Register result,
-                Register scratch1,
-                Register scratch2,
-                Label* gc_required,
-                AllocationFlags flags);
+  void Allocate(Register object_size, Register result, Register result_new,
+                Register scratch, Label* gc_required, AllocationFlags flags);
 
   void AllocateTwoByteString(Register result,
                              Register length,
@@ -778,7 +763,6 @@ class MacroAssembler: public Assembler {
   // FPU macros. These do not handle special cases like NaN or +- inf.
 
   // Convert unsigned word to double.
-  void Cvt_d_uw(FPURegister fd, FPURegister fs, FPURegister scratch);
   void Cvt_d_uw(FPURegister fd, Register rs, FPURegister scratch);
 
   // Convert double to unsigned word.
@@ -938,8 +922,15 @@ class MacroAssembler: public Assembler {
 
   void LoadContext(Register dst, int context_chain_length);
 
+  // Load the global object from the current context.
+  void LoadGlobalObject(Register dst) {
+    LoadNativeContextSlot(Context::EXTENSION_INDEX, dst);
+  }
+
   // Load the global proxy from the current context.
-  void LoadGlobalProxy(Register dst);
+  void LoadGlobalProxy(Register dst) {
+    LoadNativeContextSlot(Context::GLOBAL_PROXY_INDEX, dst);
+  }
 
   // Conditionally load the cached Array transitioned map of type
   // transitioned_kind from the native context if the map in register
@@ -952,7 +943,7 @@ class MacroAssembler: public Assembler {
       Register scratch,
       Label* no_map_match);
 
-  void LoadGlobalFunction(int index, Register function);
+  void LoadNativeContextSlot(int index, Register dst);
 
   // Load the initial map from the global function. The registers
   // function and map can be the same, function is then overwritten.
@@ -970,15 +961,20 @@ class MacroAssembler: public Assembler {
   // JavaScript invokes.
 
   // Invoke the JavaScript function code by either calling or jumping.
-  void InvokeCode(Register code,
-                  const ParameterCount& expected,
-                  const ParameterCount& actual,
-                  InvokeFlag flag,
-                  const CallWrapper& call_wrapper);
+
+  void InvokeFunctionCode(Register function, Register new_target,
+                          const ParameterCount& expected,
+                          const ParameterCount& actual, InvokeFlag flag,
+                          const CallWrapper& call_wrapper);
+
+  void FloodFunctionIfStepping(Register fun, Register new_target,
+                               const ParameterCount& expected,
+                               const ParameterCount& actual);
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
   void InvokeFunction(Register function,
+                      Register new_target,
                       const ParameterCount& actual,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
@@ -1018,9 +1014,6 @@ class MacroAssembler: public Assembler {
   // Must preserve the result register.
   void PopStackHandler();
 
-  // Copies a fixed number of fields of heap objects from src to dst.
-  void CopyFields(Register dst, Register src, RegList temps, int field_count);
-
   // Copies a number of bytes from src to dst. All registers are clobbered. On
   // exit src and dst will point to the place just after where the last byte was
   // read or written and length will be zero.
@@ -1029,12 +1022,11 @@ class MacroAssembler: public Assembler {
                  Register length,
                  Register scratch);
 
-  // Initialize fields with filler values.  Fields starting at |start_offset|
-  // not including end_offset are overwritten with the value in |filler|.  At
-  // the end the loop, |start_offset| takes the value of |end_offset|.
-  void InitializeFieldsWithFiller(Register start_offset,
-                                  Register end_offset,
-                                  Register filler);
+  // Initialize fields with filler values.  Fields starting at |current_address|
+  // not including |end_address| are overwritten with the value in |filler|.  At
+  // the end the loop, |current_address| takes the value of |end_address|.
+  void InitializeFieldsWithFiller(Register current_address,
+                                  Register end_address, Register filler);
 
   // -------------------------------------------------------------------------
   // Support functions.
@@ -1184,45 +1176,42 @@ class MacroAssembler: public Assembler {
   // Usage: first call the appropriate arithmetic function, then call one of the
   // jump functions with the overflow_dst register as the second parameter.
 
-  void AdduAndCheckForOverflow(Register dst,
-                               Register left,
-                               Register right,
-                               Register overflow_dst,
-                               Register scratch = at);
-
-  void AdduAndCheckForOverflow(Register dst, Register left,
-                               const Operand& right, Register overflow_dst,
-                               Register scratch = at);
-
-  void SubuAndCheckForOverflow(Register dst,
-                               Register left,
-                               Register right,
-                               Register overflow_dst,
-                               Register scratch = at);
-
-  void SubuAndCheckForOverflow(Register dst, Register left,
-                               const Operand& right, Register overflow_dst,
-                               Register scratch = at);
-
-  void BranchOnOverflow(Label* label,
-                        Register overflow_check,
-                        BranchDelaySlot bd = PROTECT) {
-    Branch(label, lt, overflow_check, Operand(zero_reg), bd);
+  inline void AddBranchOvf(Register dst, Register left, const Operand& right,
+                           Label* overflow_label, Register scratch = at) {
+    AddBranchOvf(dst, left, right, overflow_label, nullptr, scratch);
   }
 
-  void BranchOnNoOverflow(Label* label,
-                          Register overflow_check,
-                          BranchDelaySlot bd = PROTECT) {
-    Branch(label, ge, overflow_check, Operand(zero_reg), bd);
+  inline void AddBranchNoOvf(Register dst, Register left, const Operand& right,
+                             Label* no_overflow_label, Register scratch = at) {
+    AddBranchOvf(dst, left, right, nullptr, no_overflow_label, scratch);
   }
 
-  void RetOnOverflow(Register overflow_check, BranchDelaySlot bd = PROTECT) {
-    Ret(lt, overflow_check, Operand(zero_reg), bd);
+  void AddBranchOvf(Register dst, Register left, const Operand& right,
+                    Label* overflow_label, Label* no_overflow_label,
+                    Register scratch = at);
+
+  void AddBranchOvf(Register dst, Register left, Register right,
+                    Label* overflow_label, Label* no_overflow_label,
+                    Register scratch = at);
+
+
+  inline void SubBranchOvf(Register dst, Register left, const Operand& right,
+                           Label* overflow_label, Register scratch = at) {
+    SubBranchOvf(dst, left, right, overflow_label, nullptr, scratch);
   }
 
-  void RetOnNoOverflow(Register overflow_check, BranchDelaySlot bd = PROTECT) {
-    Ret(ge, overflow_check, Operand(zero_reg), bd);
+  inline void SubBranchNoOvf(Register dst, Register left, const Operand& right,
+                             Label* no_overflow_label, Register scratch = at) {
+    SubBranchOvf(dst, left, right, nullptr, no_overflow_label, scratch);
   }
+
+  void SubBranchOvf(Register dst, Register left, const Operand& right,
+                    Label* overflow_label, Label* no_overflow_label,
+                    Register scratch = at);
+
+  void SubBranchOvf(Register dst, Register left, Register right,
+                    Label* overflow_label, Label* no_overflow_label,
+                    Register scratch = at);
 
   // -------------------------------------------------------------------------
   // Runtime calls.
@@ -1336,13 +1325,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
   void InvokeBuiltin(int native_context_index, InvokeFlag flag,
                      const CallWrapper& call_wrapper = NullCallWrapper());
 
-  // Store the code object for the given builtin in the target register and
-  // setup the function in a1.
-  void GetBuiltinEntry(Register target, int native_context_index);
-
-  // Store the function for the given builtin in the target register.
-  void GetBuiltinFunction(Register target, int native_context_index);
-
   struct Unresolved {
     int pc;
     uint32_t flags;  // See Bootstrapper::FixupFlags decoders/encoders.
@@ -1408,13 +1390,22 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
     Addu(reg, reg, reg);
   }
 
+  void SmiTag(Register dst, Register src) { Addu(dst, src, src); }
+
   // Test for overflow < 0: use BranchOnOverflow() or BranchOnNoOverflow().
   void SmiTagCheckOverflow(Register reg, Register overflow);
   void SmiTagCheckOverflow(Register dst, Register src, Register overflow);
 
-  void SmiTag(Register dst, Register src) {
-    Addu(dst, src, src);
+  void BranchOnOverflow(Label* label, Register overflow_check,
+                        BranchDelaySlot bd = PROTECT) {
+    Branch(label, lt, overflow_check, Operand(zero_reg), bd);
   }
+
+  void BranchOnNoOverflow(Label* label, Register overflow_check,
+                          BranchDelaySlot bd = PROTECT) {
+    Branch(label, ge, overflow_check, Operand(zero_reg), bd);
+  }
+
 
   // Try to convert int32 to smi. If the value is to large, preserve
   // the original value and jump to not_a_smi. Destroys scratch and
@@ -1484,6 +1475,10 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
 
   // Abort execution if argument is not a JSFunction, enabled via --debug-code.
   void AssertFunction(Register object);
+
+  // Abort execution if argument is not a JSBoundFunction,
+  // enabled via --debug-code.
+  void AssertBoundFunction(Register object);
 
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
@@ -1632,16 +1627,32 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
                            int num_reg_arguments,
                            int num_double_arguments);
 
-  void BranchAndLinkShort(int16_t offset, BranchDelaySlot bdslot = PROTECT);
-  void BranchAndLinkShort(int16_t offset, Condition cond, Register rs,
-                          const Operand& rt,
-                          BranchDelaySlot bdslot = PROTECT);
+  inline Register GetRtAsRegisterHelper(const Operand& rt, Register scratch);
+  inline int32_t GetOffset(int32_t offset, Label* L, OffsetSize bits);
+  void BranchShortHelperR6(int32_t offset, Label* L);
+  void BranchShortHelper(int16_t offset, Label* L, BranchDelaySlot bdslot);
+  bool BranchShortHelperR6(int32_t offset, Label* L, Condition cond,
+                           Register rs, const Operand& rt);
+  bool BranchShortHelper(int16_t offset, Label* L, Condition cond, Register rs,
+                         const Operand& rt, BranchDelaySlot bdslot);
+  bool BranchShortCheck(int32_t offset, Label* L, Condition cond, Register rs,
+                        const Operand& rt, BranchDelaySlot bdslot);
+
+  void BranchAndLinkShortHelperR6(int32_t offset, Label* L);
+  void BranchAndLinkShortHelper(int16_t offset, Label* L,
+                                BranchDelaySlot bdslot);
+  void BranchAndLinkShort(int32_t offset, BranchDelaySlot bdslot = PROTECT);
   void BranchAndLinkShort(Label* L, BranchDelaySlot bdslot = PROTECT);
-  void BranchAndLinkShort(Label* L, Condition cond, Register rs,
-                          const Operand& rt,
-                          BranchDelaySlot bdslot = PROTECT);
-  void Jr(Label* L, BranchDelaySlot bdslot);
-  void Jalr(Label* L, BranchDelaySlot bdslot);
+  bool BranchAndLinkShortHelperR6(int32_t offset, Label* L, Condition cond,
+                                  Register rs, const Operand& rt);
+  bool BranchAndLinkShortHelper(int16_t offset, Label* L, Condition cond,
+                                Register rs, const Operand& rt,
+                                BranchDelaySlot bdslot);
+  bool BranchAndLinkShortCheck(int32_t offset, Label* L, Condition cond,
+                               Register rs, const Operand& rt,
+                               BranchDelaySlot bdslot);
+  void BranchLong(Label* L, BranchDelaySlot bdslot);
+  void BranchAndLinkLong(Label* L, BranchDelaySlot bdslot);
 
   // Common implementation of BranchF functions for the different formats.
   void BranchFCommon(SecondaryField sizeField, Label* target, Label* nan,
@@ -1655,8 +1666,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
                       const ParameterCount& actual,
-                      Handle<Code> code_constant,
-                      Register code_reg,
                       Label* done,
                       bool* definitely_mismatches,
                       InvokeFlag flag,
@@ -1710,8 +1719,7 @@ class CodePatcher {
     DONT_FLUSH
   };
 
-  CodePatcher(byte* address,
-              int instructions,
+  CodePatcher(Isolate* isolate, byte* address, int instructions,
               FlushICache flush_cache = FLUSH);
   ~CodePatcher();
 
@@ -1726,7 +1734,7 @@ class CodePatcher {
 
   // Change the condition part of an instruction leaving the rest of the current
   // instruction unchanged.
-  void ChangeBranchCondition(Condition cond);
+  void ChangeBranchCondition(Instr current_instr, uint32_t new_opcode);
 
  private:
   byte* address_;  // The address of the code being patched.

@@ -45,34 +45,17 @@ void CreateSplinter(TopLevelLiveRange *range, RegisterAllocationData *data,
       data->CreateSpillRangeForLiveRange(range);
     }
     if (range->splinter() == nullptr) {
-      TopLevelLiveRange *splinter = data->NextLiveRange(range->machine_type());
+      TopLevelLiveRange *splinter =
+          data->NextLiveRange(range->representation());
       DCHECK_NULL(data->live_ranges()[splinter->vreg()]);
       data->live_ranges()[splinter->vreg()] = splinter;
       range->SetSplinter(splinter);
     }
     Zone *zone = data->allocation_zone();
+    TRACE("creating splinter for range %d between %d and %d\n", range->vreg(),
+          start.ToInstructionIndex(), end.ToInstructionIndex());
     range->Splinter(start, end, zone);
   }
-}
-
-
-int FirstInstruction(const UseInterval *interval) {
-  LifetimePosition start = interval->start();
-  int ret = start.ToInstructionIndex();
-  if (start.IsInstructionPosition() && start.IsEnd()) {
-    ++ret;
-  }
-  return ret;
-}
-
-
-int LastInstruction(const UseInterval *interval) {
-  LifetimePosition end = interval->end();
-  int ret = end.ToInstructionIndex();
-  if (end.IsGapPosition() || end.IsStart()) {
-    --ret;
-  }
-  return ret;
 }
 
 
@@ -86,9 +69,9 @@ void SplinterLiveRange(TopLevelLiveRange *range, RegisterAllocationData *data) {
   while (interval != nullptr) {
     UseInterval *next_interval = interval->next();
     const InstructionBlock *first_block =
-        code->GetInstructionBlock(FirstInstruction(interval));
+        code->GetInstructionBlock(interval->FirstInstructionIndex());
     const InstructionBlock *last_block =
-        code->GetInstructionBlock(LastInstruction(interval));
+        code->GetInstructionBlock(interval->LastInstructionIndex());
     int first_block_nr = first_block->rpo_number().ToInt();
     int last_block_nr = last_block->rpo_number().ToInt();
     for (int block_id = first_block_nr; block_id <= last_block_nr; ++block_id) {
@@ -112,8 +95,9 @@ void SplinterLiveRange(TopLevelLiveRange *range, RegisterAllocationData *data) {
     interval = next_interval;
   }
   // When the range ends in deferred blocks, first_cut will be valid here.
+  // Splinter from there to the last instruction that was in a deferred block.
   if (first_cut.IsValid()) {
-    CreateSplinter(range, data, first_cut, range->End());
+    CreateSplinter(range, data, first_cut, last_cut);
   }
 }
 }  // namespace
@@ -126,12 +110,35 @@ void LiveRangeSeparator::Splinter() {
     if (range == nullptr || range->IsEmpty() || range->IsSplinter()) {
       continue;
     }
-    SplinterLiveRange(range, data());
+    int first_instr = range->first_interval()->FirstInstructionIndex();
+    if (!data()->code()->GetInstructionBlock(first_instr)->IsDeferred()) {
+      SplinterLiveRange(range, data());
+    }
+  }
+}
+
+
+void LiveRangeMerger::MarkRangesSpilledInDeferredBlocks() {
+  for (TopLevelLiveRange *top : data()->live_ranges()) {
+    if (top == nullptr || top->IsEmpty() || top->splinter() == nullptr) {
+      continue;
+    }
+
+    LiveRange *child = top;
+    for (; child != nullptr; child = child->next()) {
+      if (child->spilled() ||
+          child->NextSlotPosition(child->Start()) != nullptr) {
+        break;
+      }
+    }
+    if (child == nullptr) top->MarkSpilledInDeferredBlock();
   }
 }
 
 
 void LiveRangeMerger::Merge() {
+  MarkRangesSpilledInDeferredBlocks();
+
   int live_range_count = static_cast<int>(data()->live_ranges().size());
   for (int i = 0; i < live_range_count; ++i) {
     TopLevelLiveRange *range = data()->live_ranges()[i];

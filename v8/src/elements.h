@@ -8,6 +8,7 @@
 #include "src/elements-kind.h"
 #include "src/heap/heap.h"
 #include "src/isolate.h"
+#include "src/key-accumulator.h"
 #include "src/objects.h"
 
 namespace v8 {
@@ -46,10 +47,10 @@ class ElementsAccessor {
   // all but DICTIONARY_ELEMENTS and SLOW_SLOPPY_ARGUMENTS_ELEMENTS.
   virtual bool HasElement(Handle<JSObject> holder, uint32_t index,
                           Handle<FixedArrayBase> backing_store,
-                          PropertyAttributes filter = NONE) = 0;
+                          PropertyFilter filter = ALL_PROPERTIES) = 0;
 
   inline bool HasElement(Handle<JSObject> holder, uint32_t index,
-                         PropertyAttributes filter = NONE) {
+                         PropertyFilter filter = ALL_PROPERTIES) {
     return HasElement(holder, index, handle(holder->elements()), filter);
   }
 
@@ -119,13 +120,13 @@ class ElementsAccessor {
                                      Handle<FixedArrayBase> backing_store,
                                      KeyAccumulator* keys,
                                      uint32_t range = kMaxUInt32,
-                                     PropertyAttributes filter = NONE,
+                                     PropertyFilter filter = ALL_PROPERTIES,
                                      uint32_t offset = 0) = 0;
 
   inline void CollectElementIndices(Handle<JSObject> object,
                                     KeyAccumulator* keys,
                                     uint32_t range = kMaxUInt32,
-                                    PropertyAttributes filter = NONE,
+                                    PropertyFilter filter = ALL_PROPERTIES,
                                     uint32_t offset = 0) {
     CollectElementIndices(object, handle(object->elements()), keys, range,
                           filter, offset);

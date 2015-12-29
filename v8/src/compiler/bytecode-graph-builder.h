@@ -6,6 +6,7 @@
 #define V8_COMPILER_BYTECODE_GRAPH_BUILDER_H_
 
 #include "src/compiler.h"
+#include "src/compiler/bytecode-branch-analysis.h"
 #include "src/compiler/js-graph.h"
 #include "src/interpreter/bytecode-array-iterator.h"
 #include "src/interpreter/bytecodes.h"
@@ -27,14 +28,41 @@ class BytecodeGraphBuilder {
   Graph* graph() const { return jsgraph_->graph(); }
 
  private:
+  enum class AccumulatorUpdateMode {
+    kOutputIgnored,
+    kOutputInAccumulator,
+  };
+
   class Environment;
+  class FrameStateBeforeAndAfter;
 
   void CreateGraphBody(bool stack_check);
   void VisitBytecodes();
 
   Node* LoadAccumulator(Node* value);
 
+  // Get or create the node that represents the outer function closure.
+  Node* GetFunctionClosure();
+
+  // Get or create the node that represents the outer function context.
   Node* GetFunctionContext();
+
+  // Get or create the node that represents the incoming new target value.
+  Node* GetNewTarget();
+
+  // Builder for accessing a (potentially immutable) object field.
+  Node* BuildLoadObjectField(Node* object, int offset);
+  Node* BuildLoadImmutableObjectField(Node* object, int offset);
+
+  // Builder for accessing type feedback vector.
+  Node* BuildLoadFeedbackVector();
+
+  // Builder for loading the a native context field.
+  Node* BuildLoadNativeContextField(int index);
+
+  // Helper function for creating a pair containing type feedback vector and
+  // a feedback slot.
+  VectorSlotPair CreateVectorSlotPair(int slot_id);
 
   void set_environment(Environment* env) { environment_ = env; }
   const Environment* environment() const { return environment_; }
@@ -55,17 +83,93 @@ class BytecodeGraphBuilder {
     return MakeNode(op, arraysize(buffer), buffer, false);
   }
 
+  Node* NewNode(const Operator* op, Node* n1, Node* n2, Node* n3) {
+    Node* buffer[] = {n1, n2, n3};
+    return MakeNode(op, arraysize(buffer), buffer, false);
+  }
+
+  Node* NewNode(const Operator* op, Node* n1, Node* n2, Node* n3, Node* n4) {
+    Node* buffer[] = {n1, n2, n3, n4};
+    return MakeNode(op, arraysize(buffer), buffer, false);
+  }
+
+  // Helpers to create new control nodes.
+  Node* NewIfTrue() { return NewNode(common()->IfTrue()); }
+  Node* NewIfFalse() { return NewNode(common()->IfFalse()); }
+  Node* NewMerge() { return NewNode(common()->Merge(1), true); }
+  Node* NewLoop() { return NewNode(common()->Loop(1), true); }
+  Node* NewBranch(Node* condition, BranchHint hint = BranchHint::kNone) {
+    return NewNode(common()->Branch(hint), condition);
+  }
+
+  // Creates a new Phi node having {count} input values.
+  Node* NewPhi(int count, Node* input, Node* control);
+  Node* NewEffectPhi(int count, Node* input, Node* control);
+
+  // Helpers for merging control, effect or value dependencies.
+  Node* MergeControl(Node* control, Node* other);
+  Node* MergeEffect(Node* effect, Node* other_effect, Node* control);
+  Node* MergeValue(Node* value, Node* other_value, Node* control);
+
+  // The main node creation chokepoint. Adds context, frame state, effect,
+  // and control dependencies depending on the operator.
   Node* MakeNode(const Operator* op, int value_input_count, Node** value_inputs,
                  bool incomplete);
 
-  Node* MergeControl(Node* control, Node* other);
+  // Helper to indicate a node exits the function body.
+  void UpdateControlDependencyToLeaveFunction(Node* exit);
 
   Node** EnsureInputBufferSize(int size);
 
-  void UpdateControlDependencyToLeaveFunction(Node* exit);
+  Node* ProcessCallArguments(const Operator* call_op, Node* callee,
+                             interpreter::Register receiver, size_t arity);
+  Node* ProcessCallNewArguments(const Operator* call_new_op,
+                                interpreter::Register callee,
+                                interpreter::Register first_arg, size_t arity);
+  Node* ProcessCallRuntimeArguments(const Operator* call_runtime_op,
+                                    interpreter::Register first_arg,
+                                    size_t arity);
 
+  void BuildCreateLiteral(const Operator* op,
+                          const interpreter::BytecodeArrayIterator& iterator);
+  void BuildCreateRegExpLiteral(
+      const interpreter::BytecodeArrayIterator& iterator);
+  void BuildCreateArrayLiteral(
+      const interpreter::BytecodeArrayIterator& iterator);
+  void BuildCreateObjectLiteral(
+      const interpreter::BytecodeArrayIterator& iterator);
+  void BuildCreateArguments(CreateArgumentsParameters::Type type,
+                            const interpreter::BytecodeArrayIterator& iterator);
+  void BuildLoadGlobal(const interpreter::BytecodeArrayIterator& iterator,
+                       TypeofMode typeof_mode);
+  void BuildStoreGlobal(const interpreter::BytecodeArrayIterator& iterator);
+  void BuildNamedLoad(const interpreter::BytecodeArrayIterator& iterator);
+  void BuildKeyedLoad(const interpreter::BytecodeArrayIterator& iterator);
+  void BuildNamedStore(const interpreter::BytecodeArrayIterator& iterator);
+  void BuildKeyedStore(const interpreter::BytecodeArrayIterator& iterator);
+  void BuildCall(const interpreter::BytecodeArrayIterator& iterator);
   void BuildBinaryOp(const Operator* op,
                      const interpreter::BytecodeArrayIterator& iterator);
+  void BuildCompareOp(const Operator* op,
+                      const interpreter::BytecodeArrayIterator& iterator);
+  void BuildDelete(const interpreter::BytecodeArrayIterator& iterator);
+  void BuildCastOperator(const Operator* js_op,
+                         const interpreter::BytecodeArrayIterator& iterator);
+
+  // Control flow plumbing.
+  void BuildJump(int source_offset, int target_offset);
+  void BuildJump();
+  void BuildConditionalJump(Node* condition);
+
+  // Helpers for building conditions for conditional jumps.
+  Node* BuildCondition(Node* comperand);
+  Node* BuildToBooleanCondition(Node* comperand);
+
+  // Constructing merge and loop headers.
+  void MergeEnvironmentsOfBackwardBranches(int source_offset,
+                                           int target_offset);
+  void MergeEnvironmentsOfForwardBranches(int source_offset);
+  void BuildLoopHeaderForBackwardBranches(int source_offset);
 
   // Growth increment for the temporary buffer used to construct input lists to
   // new nodes.
@@ -81,10 +185,30 @@ class BytecodeGraphBuilder {
   const Handle<BytecodeArray>& bytecode_array() const {
     return bytecode_array_;
   }
+  const FrameStateFunctionInfo* frame_state_function_info() const {
+    return frame_state_function_info_;
+  }
 
   LanguageMode language_mode() const {
-    // TODO(oth): need to propagate language mode through
-    return LanguageMode::SLOPPY;
+    // TODO(mythria): Don't rely on parse information to get language mode.
+    return info()->language_mode();
+  }
+
+  const interpreter::BytecodeArrayIterator* bytecode_iterator() const {
+    return bytecode_iterator_;
+  }
+
+  void set_bytecode_iterator(
+      const interpreter::BytecodeArrayIterator* bytecode_iterator) {
+    bytecode_iterator_ = bytecode_iterator;
+  }
+
+  const BytecodeBranchAnalysis* branch_analysis() const {
+    return branch_analysis_;
+  }
+
+  void set_branch_analysis(const BytecodeBranchAnalysis* branch_analysis) {
+    branch_analysis_ = branch_analysis;
   }
 
 #define DECLARE_VISIT_BYTECODE(name, ...) \
@@ -96,7 +220,19 @@ class BytecodeGraphBuilder {
   CompilationInfo* info_;
   JSGraph* jsgraph_;
   Handle<BytecodeArray> bytecode_array_;
+  const FrameStateFunctionInfo* frame_state_function_info_;
+  const interpreter::BytecodeArrayIterator* bytecode_iterator_;
+  const BytecodeBranchAnalysis* branch_analysis_;
   Environment* environment_;
+
+
+  // Merge environments are snapshots of the environment at a particular
+  // bytecode offset to be merged into a later environment.
+  ZoneMap<int, Environment*> merge_environments_;
+
+  // Loop header environments are environments created for bytecodes
+  // where it is known there are back branches, ie a loop header.
+  ZoneMap<int, Environment*> loop_header_environments_;
 
   // Temporary storage for building node input lists.
   int input_buffer_size_;
@@ -104,6 +240,11 @@ class BytecodeGraphBuilder {
 
   // Nodes representing values in the activation record.
   SetOncePointer<Node> function_context_;
+  SetOncePointer<Node> function_closure_;
+  SetOncePointer<Node> new_target_;
+
+  // Optimization to cache loaded feedback vector.
+  SetOncePointer<Node> feedback_vector_;
 
   // Control nodes that exit the function body.
   ZoneVector<Node*> exit_controls_;
@@ -123,8 +264,10 @@ class BytecodeGraphBuilder::Environment : public ZoneObject {
   void BindRegister(interpreter::Register the_register, Node* node);
   Node* LookupRegister(interpreter::Register the_register) const;
 
-  void BindAccumulator(Node* node);
+  void BindAccumulator(Node* node, FrameStateBeforeAndAfter* states = nullptr);
   Node* LookupAccumulator() const;
+
+  void RecordAfterState(Node* node, FrameStateBeforeAndAfter* states);
 
   bool IsMarkedAsUnreachable() const;
   void MarkAsUnreachable();
@@ -135,6 +278,15 @@ class BytecodeGraphBuilder::Environment : public ZoneObject {
     effect_dependency_ = dependency;
   }
 
+  // Preserve a checkpoint of the environment for the IR graph. Any
+  // further mutation of the environment will not affect checkpoints.
+  Node* Checkpoint(BailoutId ast_id, AccumulatorUpdateMode update_mode);
+
+  // Returns true if the state values are up to date with the current
+  // environment. If update_mode is AccumulatorUpdateMode::kOutputInAccumulator
+  // then accumulator state can be different from the environment.
+  bool StateValuesAreUpToDate(AccumulatorUpdateMode update_mode);
+
   // Control dependency tracked by this environment.
   Node* GetControlDependency() const { return control_dependency_; }
   void UpdateControlDependency(Node* dependency) {
@@ -142,8 +294,18 @@ class BytecodeGraphBuilder::Environment : public ZoneObject {
   }
 
   Node* Context() const { return context_; }
+  void SetContext(Node* new_context) { context_ = new_context; }
+
+  Environment* CopyForConditional() const;
+  Environment* CopyForLoop();
+  void Merge(Environment* other);
 
  private:
+  explicit Environment(const Environment* copy);
+  void PrepareForLoop();
+  bool StateValuesRequireUpdate(Node** state_values, int offset, int count);
+  void UpdateStateValues(Node** state_values, int offset, int count);
+
   int RegisterToValuesIndex(interpreter::Register the_register) const;
 
   Zone* zone() const { return builder_->local_zone(); }
@@ -152,20 +314,22 @@ class BytecodeGraphBuilder::Environment : public ZoneObject {
   BytecodeGraphBuilder* builder() const { return builder_; }
   const NodeVector* values() const { return &values_; }
   NodeVector* values() { return &values_; }
-  Node* accumulator() { return accumulator_; }
   int register_base() const { return register_base_; }
+  int accumulator_base() const { return accumulator_base_; }
 
   BytecodeGraphBuilder* builder_;
   int register_count_;
   int parameter_count_;
-  Node* accumulator_;
   Node* context_;
   Node* control_dependency_;
   Node* effect_dependency_;
   NodeVector values_;
+  Node* parameters_state_values_;
+  Node* registers_state_values_;
+  Node* accumulator_state_values_;
   int register_base_;
+  int accumulator_base_;
 };
-
 
 }  // namespace compiler
 }  // namespace internal

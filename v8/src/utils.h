@@ -366,9 +366,8 @@ inline uint32_t ComputePointerHash(void* ptr) {
 // ----------------------------------------------------------------------------
 // Generated memcpy/memmove
 
-// Initializes the codegen support that depends on CPU features. This is
-// called after CPU initialization.
-void init_memcopy_functions();
+// Initializes the codegen support that depends on CPU features.
+void init_memcopy_functions(Isolate* isolate);
 
 #if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_X87)
 // Limit below which the extra overhead of the MemCopy function is likely
@@ -1041,6 +1040,13 @@ class TypeFeedbackId {
 
   int id_;
 };
+
+inline bool operator<(TypeFeedbackId lhs, TypeFeedbackId rhs) {
+  return lhs.ToInt() < rhs.ToInt();
+}
+inline bool operator>(TypeFeedbackId lhs, TypeFeedbackId rhs) {
+  return lhs.ToInt() > rhs.ToInt();
+}
 
 
 class FeedbackVectorSlot {
@@ -1732,6 +1738,42 @@ static inline void WriteDoubleValue(void* p, double value) {
   *ptr = c.u[0];
   *(ptr + 1) = c.u[1];
 #endif  // V8_TARGET_ARCH_MIPS
+}
+
+
+static inline uint16_t ReadUnalignedUInt16(const void* p) {
+#if !(V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64)
+  return *reinterpret_cast<const uint16_t*>(p);
+#else   // V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64
+  // Prevent compiler from using load-half (mips lh) on (possibly)
+  // non-16-bit aligned address.
+  union conversion {
+    uint16_t h;
+    uint8_t b[2];
+  } c;
+  const uint8_t* ptr = reinterpret_cast<const uint8_t*>(p);
+  c.b[0] = *ptr;
+  c.b[1] = *(ptr + 1);
+  return c.h;
+#endif  // V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64
+}
+
+
+static inline void WriteUnalignedUInt16(void* p, uint16_t value) {
+#if !(V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64)
+  *(reinterpret_cast<uint16_t*>(p)) = value;
+#else   // V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64
+  // Prevent compiler from using store-half (mips sh) on (possibly)
+  // non-16-bit aligned address.
+  union conversion {
+    uint16_t h;
+    uint8_t b[2];
+  } c;
+  c.h = value;
+  uint8_t* ptr = reinterpret_cast<uint8_t*>(p);
+  *ptr = c.b[0];
+  *(ptr + 1) = c.b[1];
+#endif  // V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64
 }
 
 }  // namespace internal

@@ -68,6 +68,10 @@
 # endif
 #endif
 
+#if defined(__ARM_ARCH_8A__)
+# define CAN_USE_ARMV8_INSTRUCTIONS 1
+#endif
+
 
 // Target architecture detection. This may be set externally. If not, detect
 // in the same way as the host architecture, that is, target the native
@@ -177,6 +181,13 @@
 #define V8_TARGET_BIG_ENDIAN 1
 #else
 #error Unknown target architecture endianness
+#endif
+
+#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_X64) || \
+    defined(V8_TARGET_ARCH_X87)
+#define V8_TARGET_ARCH_STORES_RETURN_ADDRESS_ON_STACK 1
+#else
+#define V8_TARGET_ARCH_STORES_RETURN_ADDRESS_ON_STACK 0
 #endif
 
 // Number of bits to represent the page size for paged spaces. The value of 20

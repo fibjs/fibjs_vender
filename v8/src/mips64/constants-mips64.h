@@ -119,8 +119,11 @@ const int kInvalidFPURegister = -1;
 const int kFCSRRegister = 31;
 const int kInvalidFPUControlRegister = -1;
 const uint32_t kFPUInvalidResult = static_cast<uint32_t>(1 << 31) - 1;
+const int32_t kFPUInvalidResultNegative = static_cast<int32_t>(1 << 31);
 const uint64_t kFPU64InvalidResult =
     static_cast<uint64_t>(static_cast<uint64_t>(1) << 63) - 1;
+const int64_t kFPU64InvalidResultNegative =
+    static_cast<int64_t>(static_cast<uint64_t>(1) << 63);
 
 // FCSR constants.
 const uint32_t kFCSRInexactFlagBit = 2;
@@ -128,12 +131,14 @@ const uint32_t kFCSRUnderflowFlagBit = 3;
 const uint32_t kFCSROverflowFlagBit = 4;
 const uint32_t kFCSRDivideByZeroFlagBit = 5;
 const uint32_t kFCSRInvalidOpFlagBit = 6;
+const uint32_t kFCSRNaN2008FlagBit = 18;
 
 const uint32_t kFCSRInexactFlagMask = 1 << kFCSRInexactFlagBit;
 const uint32_t kFCSRUnderflowFlagMask = 1 << kFCSRUnderflowFlagBit;
 const uint32_t kFCSROverflowFlagMask = 1 << kFCSROverflowFlagBit;
 const uint32_t kFCSRDivideByZeroFlagMask = 1 << kFCSRDivideByZeroFlagBit;
 const uint32_t kFCSRInvalidOpFlagMask = 1 << kFCSRInvalidOpFlagBit;
+const uint32_t kFCSRNaN2008FlagMask = 1 << kFCSRNaN2008FlagBit;
 
 const uint32_t kFCSRFlagMask =
     kFCSRInexactFlagMask |
@@ -394,6 +399,8 @@ enum SecondaryField {
   CLZ_R6 = ((2 << 3) + 0),
   CLO_R6 = ((2 << 3) + 1),
   MFLO = ((2 << 3) + 2),
+  DCLZ_R6 = ((2 << 3) + 2),
+  DCLO_R6 = ((2 << 3) + 3),
   DSLLV = ((2 << 3) + 4),
   DSRLV = ((2 << 3) + 6),
   DSRAV = ((2 << 3) + 7),
@@ -462,6 +469,8 @@ enum SecondaryField {
   MUL = ((0 << 3) + 2),
   CLZ = ((4 << 3) + 0),
   CLO = ((4 << 3) + 1),
+  DCLZ = ((4 << 3) + 4),
+  DCLO = ((4 << 3) + 5),
 
   // SPECIAL3 Encoding of Function Field.
   EXT = ((0 << 3) + 0),
@@ -804,7 +813,12 @@ enum FPURoundingMode {
   kRoundToNearest = RN,
   kRoundToZero = RZ,
   kRoundToPlusInf = RP,
-  kRoundToMinusInf = RM
+  kRoundToMinusInf = RM,
+
+  mode_round = RN,
+  mode_ceil = RP,
+  mode_floor = RM,
+  mode_trunc = RZ
 };
 
 const uint32_t kFPURoundingModeMask = 3 << 0;
@@ -923,10 +937,11 @@ class Instruction {
       OpcodeToBitNumber(SWR) | OpcodeToBitNumber(LWC1) |
       OpcodeToBitNumber(LDC1) | OpcodeToBitNumber(SWC1) |
       OpcodeToBitNumber(SDC1) | OpcodeToBitNumber(PCREL) |
-      OpcodeToBitNumber(BC) | OpcodeToBitNumber(BALC);
+      OpcodeToBitNumber(DAUI) | OpcodeToBitNumber(BC) | OpcodeToBitNumber(BALC);
 
 #define FunctionFieldToBitNumber(function) (1ULL << function)
 
+  // On r6, DCLZ_R6 aliases to existing MFLO.
   static const uint64_t kFunctionFieldRegisterTypeMask =
       FunctionFieldToBitNumber(JR) | FunctionFieldToBitNumber(JALR) |
       FunctionFieldToBitNumber(BREAK) | FunctionFieldToBitNumber(SLL) |
@@ -1171,6 +1186,7 @@ Instruction::Type Instruction::InstructionType(TypeChecks checks) const {
       switch (FunctionFieldRaw()) {
         case MUL:
         case CLZ:
+        case DCLZ:
           return kRegisterType;
         default:
           return kUnsupported;

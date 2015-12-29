@@ -23,6 +23,8 @@ const Register kInterpreterRegisterFileRegister = {Register::kCode_r4};
 const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_r5};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_r6};
 const Register kInterpreterDispatchTableRegister = {Register::kCode_r8};
+const Register kJavaScriptCallArgCountRegister = {Register::kCode_r0};
+const Register kJavaScriptCallNewTargetRegister = {Register::kCode_r3};
 const Register kRuntimeCallFunctionRegister = {Register::kCode_r1};
 const Register kRuntimeCallArgCountRegister = {Register::kCode_r0};
 
@@ -86,11 +88,8 @@ enum TargetAddressStorageMode {
 // MacroAssembler implements a collection of frequently used macros.
 class MacroAssembler: public Assembler {
  public:
-  // The isolate parameter can be NULL if the macro assembler should
-  // not use isolate-dependent functionality. In this case, it's the
-  // responsibility of the caller to never invoke such function on the
-  // macro assembler.
-  MacroAssembler(Isolate* isolate, void* buffer, int size);
+  MacroAssembler(Isolate* isolate, void* buffer, int size,
+                 CodeObjectRequired create_code_object);
 
 
   // Returns the size of a call in instructions. Note, the value returned is
@@ -243,22 +242,10 @@ class MacroAssembler: public Assembler {
                    Register scratch1,
                    Label* on_black);
 
-  // Checks the color of an object.  If the object is already grey or black
-  // then we just fall through, since it is already live.  If it is white and
-  // we can determine that it doesn't need to be scanned, then we just mark it
-  // black and fall through.  For the rest we jump to the label so the
-  // incremental marker can fix its assumptions.
-  void EnsureNotWhite(Register object,
-                      Register scratch1,
-                      Register scratch2,
-                      Register scratch3,
-                      Label* object_is_white_and_not_data);
-
-  // Detects conservatively whether an object is data-only, i.e. it does need to
-  // be scanned by the garbage collector.
-  void JumpIfDataObject(Register value,
-                        Register scratch,
-                        Label* not_data_object);
+  // Checks the color of an object.  If the object is white we jump to the
+  // incremental marker.
+  void JumpIfWhite(Register value, Register scratch1, Register scratch2,
+                   Register scratch3, Label* value_is_white);
 
   // Notify the garbage collector that we wrote a pointer into an object.
   // |object| is the object being stored into, |value| is the object being
@@ -609,8 +596,15 @@ class MacroAssembler: public Assembler {
 
   void LoadContext(Register dst, int context_chain_length);
 
+  // Load the global object from the current context.
+  void LoadGlobalObject(Register dst) {
+    LoadNativeContextSlot(Context::EXTENSION_INDEX, dst);
+  }
+
   // Load the global proxy from the current context.
-  void LoadGlobalProxy(Register dst);
+  void LoadGlobalProxy(Register dst) {
+    LoadNativeContextSlot(Context::GLOBAL_PROXY_INDEX, dst);
+  }
 
   // Conditionally load the cached Array transitioned map of type
   // transitioned_kind from the native context if the map in register
@@ -623,7 +617,7 @@ class MacroAssembler: public Assembler {
       Register scratch,
       Label* no_map_match);
 
-  void LoadGlobalFunction(int index, Register function);
+  void LoadNativeContextSlot(int index, Register dst);
 
   // Load the initial map from the global function. The registers
   // function and map can be the same, function is then overwritten.
@@ -641,15 +635,19 @@ class MacroAssembler: public Assembler {
   // JavaScript invokes
 
   // Invoke the JavaScript function code by either calling or jumping.
-  void InvokeCode(Register code,
-                  const ParameterCount& expected,
-                  const ParameterCount& actual,
-                  InvokeFlag flag,
-                  const CallWrapper& call_wrapper);
+  void InvokeFunctionCode(Register function, Register new_target,
+                          const ParameterCount& expected,
+                          const ParameterCount& actual, InvokeFlag flag,
+                          const CallWrapper& call_wrapper);
+
+  void FloodFunctionIfStepping(Register fun, Register new_target,
+                               const ParameterCount& expected,
+                               const ParameterCount& actual);
 
   // Invoke the JavaScript function in the given register. Changes the
   // current context to the context in the function before invoking.
   void InvokeFunction(Register function,
+                      Register new_target,
                       const ParameterCount& actual,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
@@ -762,12 +760,8 @@ class MacroAssembler: public Assembler {
                 Label* gc_required,
                 AllocationFlags flags);
 
-  void Allocate(Register object_size,
-                Register result,
-                Register scratch1,
-                Register scratch2,
-                Label* gc_required,
-                AllocationFlags flags);
+  void Allocate(Register object_size, Register result, Register result_end,
+                Register scratch, Label* gc_required, AllocationFlags flags);
 
   void AllocateTwoByteString(Register result,
                              Register length,
@@ -812,12 +806,6 @@ class MacroAssembler: public Assembler {
                                    Register heap_number_map,
                                    Label* gc_required);
 
-  // Copies a fixed number of fields of heap objects from src to dst.
-  void CopyFields(Register dst,
-                  Register src,
-                  LowDwVfpRegister double_scratch,
-                  int field_count);
-
   // Copies a number of bytes from src to dst. All registers are clobbered. On
   // exit src and dst will point to the place just after where the last byte was
   // read or written and length will be zero.
@@ -826,12 +814,11 @@ class MacroAssembler: public Assembler {
                  Register length,
                  Register scratch);
 
-  // Initialize fields with filler values.  Fields starting at |start_offset|
-  // not including end_offset are overwritten with the value in |filler|.  At
-  // the end the loop, |start_offset| takes the value of |end_offset|.
-  void InitializeFieldsWithFiller(Register start_offset,
-                                  Register end_offset,
-                                  Register filler);
+  // Initialize fields with filler values.  Fields starting at |current_address|
+  // not including |end_address| are overwritten with the value in |filler|.  At
+  // the end the loop, |current_address| takes the value of |end_address|.
+  void InitializeFieldsWithFiller(Register current_address,
+                                  Register end_address, Register filler);
 
   // ---------------------------------------------------------------------------
   // Support functions.
@@ -1157,13 +1144,6 @@ class MacroAssembler: public Assembler {
   void InvokeBuiltin(int native_context_index, InvokeFlag flag,
                      const CallWrapper& call_wrapper = NullCallWrapper());
 
-  // Store the code object for the given builtin in the target register and
-  // setup the function in r1.
-  void GetBuiltinEntry(Register target, int native_context_index);
-
-  // Store the function for the given builtin in the target register.
-  void GetBuiltinFunction(Register target, int native_context_index);
-
   Handle<Object> CodeObject() {
     DCHECK(!code_object_.is_null());
     return code_object_;
@@ -1310,6 +1290,10 @@ class MacroAssembler: public Assembler {
 
   // Abort execution if argument is not a JSFunction, enabled via --debug-code.
   void AssertFunction(Register object);
+
+  // Abort execution if argument is not a JSBoundFunction,
+  // enabled via --debug-code.
+  void AssertBoundFunction(Register object);
 
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
@@ -1461,8 +1445,6 @@ class MacroAssembler: public Assembler {
   // Helper functions for generating invokes.
   void InvokePrologue(const ParameterCount& expected,
                       const ParameterCount& actual,
-                      Handle<Code> code_constant,
-                      Register code_reg,
                       Label* done,
                       bool* definitely_mismatches,
                       InvokeFlag flag,
@@ -1515,8 +1497,7 @@ class CodePatcher {
     DONT_FLUSH
   };
 
-  CodePatcher(byte* address,
-              int instructions,
+  CodePatcher(Isolate* isolate, byte* address, int instructions,
               FlushICache flush_cache = FLUSH);
   ~CodePatcher();
 
@@ -1544,13 +1525,13 @@ class CodePatcher {
 // -----------------------------------------------------------------------------
 // Static helper functions.
 
-inline MemOperand ContextOperand(Register context, int index = 0) {
+inline MemOperand ContextMemOperand(Register context, int index = 0) {
   return MemOperand(context, Context::SlotOffset(index));
 }
 
 
-inline MemOperand GlobalObjectOperand()  {
-  return ContextOperand(cp, Context::GLOBAL_OBJECT_INDEX);
+inline MemOperand NativeContextMemOperand() {
+  return ContextMemOperand(cp, Context::NATIVE_CONTEXT_INDEX);
 }
 
 

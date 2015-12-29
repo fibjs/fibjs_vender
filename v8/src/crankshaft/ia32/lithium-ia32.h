@@ -37,7 +37,6 @@ class LCodeGen;
   V(CallJSFunction)                          \
   V(CallWithDescriptor)                      \
   V(CallFunction)                            \
-  V(CallNew)                                 \
   V(CallNewArray)                            \
   V(CallRuntime)                             \
   V(CallStub)                                \
@@ -93,7 +92,6 @@ class LCodeGen;
   V(InstructionGap)                          \
   V(Integer32ToDouble)                       \
   V(InvokeFunction)                          \
-  V(IsConstructCallAndBranch)                \
   V(IsStringAndBranch)                       \
   V(IsSmiAndBranch)                          \
   V(IsUndetectableAndBranch)                 \
@@ -133,7 +131,6 @@ class LCodeGen;
   V(Power)                                   \
   V(Prologue)                                \
   V(PushArgument)                            \
-  V(RegExpLiteral)                           \
   V(Return)                                  \
   V(SeqStringGetChar)                        \
   V(SeqStringSetChar)                        \
@@ -1113,19 +1110,6 @@ class LHasCachedArrayIndexAndBranch final : public LControlInstruction<1, 0> {
 };
 
 
-class LIsConstructCallAndBranch final : public LControlInstruction<0, 1> {
- public:
-  explicit LIsConstructCallAndBranch(LOperand* temp) {
-    temps_[0] = temp;
-  }
-
-  LOperand* temp() { return temps_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(IsConstructCallAndBranch,
-                               "is-construct-call-and-branch")
-};
-
-
 class LClassOfTestAndBranch final : public LControlInstruction<1, 2> {
  public:
   LClassOfTestAndBranch(LOperand* value, LOperand* temp, LOperand* temp2) {
@@ -1606,14 +1590,16 @@ class LLoadRoot final : public LTemplateInstruction<1, 0, 0> {
 };
 
 
-class LLoadKeyed final : public LTemplateInstruction<1, 2, 0> {
+class LLoadKeyed final : public LTemplateInstruction<1, 3, 0> {
  public:
-  LLoadKeyed(LOperand* elements, LOperand* key) {
+  LLoadKeyed(LOperand* elements, LOperand* key, LOperand* backing_store_owner) {
     inputs_[0] = elements;
     inputs_[1] = key;
+    inputs_[2] = backing_store_owner;
   }
   LOperand* elements() { return inputs_[0]; }
   LOperand* key() { return inputs_[1]; }
+  LOperand* backing_store_owner() { return inputs_[2]; }
   ElementsKind elements_kind() const {
     return hydrogen()->elements_kind();
   }
@@ -1906,25 +1892,6 @@ class LCallFunction final : public LTemplateInstruction<1, 2, 2> {
 };
 
 
-class LCallNew final : public LTemplateInstruction<1, 2, 0> {
- public:
-  LCallNew(LOperand* context, LOperand* constructor) {
-    inputs_[0] = context;
-    inputs_[1] = constructor;
-  }
-
-  LOperand* context() { return inputs_[0]; }
-  LOperand* constructor() { return inputs_[1]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(CallNew, "call-new")
-  DECLARE_HYDROGEN_ACCESSOR(CallNew)
-
-  void PrintDataTo(StringStream* stream) override;
-
-  int arity() const { return hydrogen()->argument_count() - 1; }
-};
-
-
 class LCallNewArray final : public LTemplateInstruction<1, 2, 0> {
  public:
   LCallNewArray(LOperand* context, LOperand* constructor) {
@@ -2177,12 +2144,14 @@ class LStoreNamedGeneric final : public LTemplateInstruction<0, 3, 2> {
 };
 
 
-class LStoreKeyed final : public LTemplateInstruction<0, 3, 0> {
+class LStoreKeyed final : public LTemplateInstruction<0, 4, 0> {
  public:
-  LStoreKeyed(LOperand* obj, LOperand* key, LOperand* val) {
+  LStoreKeyed(LOperand* obj, LOperand* key, LOperand* val,
+              LOperand* backing_store_owner) {
     inputs_[0] = obj;
     inputs_[1] = key;
     inputs_[2] = val;
+    inputs_[3] = backing_store_owner;
   }
 
   bool is_fixed_typed_array() const {
@@ -2191,6 +2160,7 @@ class LStoreKeyed final : public LTemplateInstruction<0, 3, 0> {
   LOperand* elements() { return inputs_[0]; }
   LOperand* key() { return inputs_[1]; }
   LOperand* value() { return inputs_[2]; }
+  LOperand* backing_store_owner() { return inputs_[3]; }
   ElementsKind elements_kind() const {
     return hydrogen()->elements_kind();
   }
@@ -2513,19 +2483,6 @@ class LAllocate final : public LTemplateInstruction<1, 2, 1> {
 
   DECLARE_CONCRETE_INSTRUCTION(Allocate, "allocate")
   DECLARE_HYDROGEN_ACCESSOR(Allocate)
-};
-
-
-class LRegExpLiteral final : public LTemplateInstruction<1, 1, 0> {
- public:
-  explicit LRegExpLiteral(LOperand* context) {
-    inputs_[0] = context;
-  }
-
-  LOperand* context() { return inputs_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(RegExpLiteral, "regexp-literal")
-  DECLARE_HYDROGEN_ACCESSOR(RegExpLiteral)
 };
 
 

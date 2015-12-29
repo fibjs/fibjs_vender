@@ -776,7 +776,6 @@ bool HInstruction::CanDeoptimize() {
     case HValue::kBlockEntry:
     case HValue::kBoundsCheckBaseIndexInformation:
     case HValue::kCallFunction:
-    case HValue::kCallNew:
     case HValue::kCallNewArray:
     case HValue::kCallStub:
     case HValue::kCapturedObject:
@@ -803,8 +802,6 @@ bool HInstruction::CanDeoptimize() {
     case HValue::kHasInstanceTypeAndBranch:
     case HValue::kInnerAllocatedObject:
     case HValue::kInstanceOf:
-    case HValue::kIsConstructCallAndBranch:
-    case HValue::kHasInPrototypeChainAndBranch:
     case HValue::kIsSmiAndBranch:
     case HValue::kIsStringAndBranch:
     case HValue::kIsUndetectableAndBranch:
@@ -819,7 +816,6 @@ bool HInstruction::CanDeoptimize() {
     case HValue::kParameter:
     case HValue::kPhi:
     case HValue::kPushArguments:
-    case HValue::kRegExpLiteral:
     case HValue::kReturn:
     case HValue::kSeqStringGetChar:
     case HValue::kStoreCodeEntry:
@@ -858,6 +854,7 @@ bool HInstruction::CanDeoptimize() {
     case HValue::kDiv:
     case HValue::kForInCacheArray:
     case HValue::kForInPrepareMap:
+    case HValue::kHasInPrototypeChainAndBranch:
     case HValue::kInvokeFunction:
     case HValue::kLoadContextSlot:
     case HValue::kLoadFunctionPrototype:
@@ -949,6 +946,7 @@ std::ostream& HCallFunction::PrintDataTo(std::ostream& os) const {  // NOLINT
   if (HasVectorAndSlot()) {
     os << " (type-feedback-vector icslot " << slot().ToInt() << ")";
   }
+  os << " (convert mode" << convert_mode() << ")";
   return os;
 }
 
@@ -1525,7 +1523,7 @@ HValue* HChange::Canonicalize() {
 
 HValue* HWrapReceiver::Canonicalize() {
   if (HasNoUses()) return NULL;
-  if (receiver()->type().IsJSObject()) {
+  if (receiver()->type().IsJSReceiver()) {
     return receiver();
   }
   return this;
@@ -1621,7 +1619,7 @@ HValue* HUnaryMathOperation::Canonicalize() {
 
 
 HValue* HCheckInstanceType::Canonicalize() {
-  if ((check_ == IS_SPEC_OBJECT && value()->type().IsJSObject()) ||
+  if ((check_ == IS_JS_RECEIVER && value()->type().IsJSReceiver()) ||
       (check_ == IS_JS_ARRAY && value()->type().IsJSArray()) ||
       (check_ == IS_STRING && value()->type().IsString())) {
     return value();
@@ -1640,9 +1638,9 @@ void HCheckInstanceType::GetCheckInterval(InstanceType* first,
                                           InstanceType* last) {
   DCHECK(is_interval_check());
   switch (check_) {
-    case IS_SPEC_OBJECT:
-      *first = FIRST_SPEC_OBJECT_TYPE;
-      *last = LAST_SPEC_OBJECT_TYPE;
+    case IS_JS_RECEIVER:
+      *first = FIRST_JS_RECEIVER_TYPE;
+      *last = LAST_JS_RECEIVER_TYPE;
       return;
     case IS_JS_ARRAY:
       *first = *last = JS_ARRAY_TYPE;
@@ -1717,7 +1715,7 @@ HValue* HCheckValue::Canonicalize() {
 
 const char* HCheckInstanceType::GetCheckName() const {
   switch (check_) {
-    case IS_SPEC_OBJECT: return "object";
+    case IS_JS_RECEIVER: return "object";
     case IS_JS_ARRAY: return "array";
     case IS_JS_DATE:
       return "date";
@@ -3277,7 +3275,7 @@ bool HIsStringAndBranch::KnownSuccessorBlock(HBasicBlock** block) {
       value()->type().IsNull() ||
       value()->type().IsBoolean() ||
       value()->type().IsUndefined() ||
-      value()->type().IsJSObject()) {
+      value()->type().IsJSReceiver()) {
     *block = SecondSuccessor();
     return true;
   }
@@ -3545,7 +3543,7 @@ HValue* HLoadKeyedGeneric::Canonicalize() {
         HInstruction* index = HLoadKeyed::New(
             block()->graph()->isolate(), block()->graph()->zone(),
             block()->graph()->GetInvalidContext(), index_cache, key_load->key(),
-            key_load->key(), key_load->elements_kind());
+            key_load->key(), nullptr, key_load->elements_kind());
         map_check->InsertBefore(this);
         index->InsertBefore(this);
         return Prepend(new(block()->zone()) HLoadFieldByIndex(
@@ -4080,11 +4078,13 @@ HInstruction* HUnaryMathOperation::New(Isolate* isolate, Zone* zone,
     }
     switch (op) {
       case kMathExp:
-        return H_CONSTANT_DOUBLE(fast_exp(d));
+        lazily_initialize_fast_exp(isolate);
+        return H_CONSTANT_DOUBLE(fast_exp(d, isolate));
       case kMathLog:
         return H_CONSTANT_DOUBLE(std::log(d));
       case kMathSqrt:
-        return H_CONSTANT_DOUBLE(fast_sqrt(d));
+        lazily_initialize_fast_sqrt(isolate);
+        return H_CONSTANT_DOUBLE(fast_sqrt(d, isolate));
       case kMathPowHalf:
         return H_CONSTANT_DOUBLE(power_double_double(d, 0.5));
       case kMathAbs:
@@ -4156,8 +4156,8 @@ HInstruction* HPower::New(Isolate* isolate, Zone* zone, HValue* context,
     HConstant* c_left = HConstant::cast(left);
     HConstant* c_right = HConstant::cast(right);
     if (c_left->HasNumberValue() && c_right->HasNumberValue()) {
-      double result = power_helper(c_left->DoubleValue(),
-                                   c_right->DoubleValue());
+      double result =
+          power_helper(isolate, c_left->DoubleValue(), c_right->DoubleValue());
       return H_CONSTANT_DOUBLE(std::isnan(result)
                                    ? std::numeric_limits<double>::quiet_NaN()
                                    : result);
@@ -4680,13 +4680,13 @@ std::ostream& operator<<(std::ostream& os, const HObjectAccess& access) {
       break;
     case HObjectAccess::kDouble:  // fall through
     case HObjectAccess::kInobject:
-      if (!access.name().is_null()) {
+      if (!access.name().is_null() && access.name()->IsString()) {
         os << Handle<String>::cast(access.name())->ToCString().get();
       }
       os << "[in-object]";
       break;
     case HObjectAccess::kBackingStore:
-      if (!access.name().is_null()) {
+      if (!access.name().is_null() && access.name()->IsString()) {
         os << Handle<String>::cast(access.name())->ToCString().get();
       }
       os << "[backing-store]";

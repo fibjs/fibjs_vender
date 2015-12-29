@@ -92,10 +92,8 @@ void LookupIterator::RestartInternal(InterceptorState interceptor_state) {
 
 
 // static
-Handle<JSReceiver> LookupIterator::GetRoot(Isolate* isolate,
-                                           Handle<Object> receiver,
-                                           uint32_t index) {
-  if (receiver->IsJSReceiver()) return Handle<JSReceiver>::cast(receiver);
+Handle<JSReceiver> LookupIterator::GetRootForNonJSReceiver(
+    Isolate* isolate, Handle<Object> receiver, uint32_t index) {
   // Strings are the only objects with properties (only elements) directly on
   // the wrapper. Hence we can skip generating the wrapper for all other cases.
   if (index != kMaxUInt32 && receiver->IsString() &&
@@ -245,11 +243,11 @@ void LookupIterator::PrepareTransitionToDataProperty(
   state_ = TRANSITION;
   transition_ = transition;
 
-  if (receiver->IsGlobalObject()) {
+  if (receiver->IsJSGlobalObject()) {
     // Install a property cell.
     InternalizeName();
-    auto cell = GlobalObject::EnsurePropertyCell(
-        Handle<GlobalObject>::cast(receiver), name());
+    auto cell = JSGlobalObject::EnsurePropertyCell(
+        Handle<JSGlobalObject>::cast(receiver), name());
     DCHECK(cell->value()->IsTheHole());
     transition_ = cell;
   } else if (!transition->is_dictionary_map()) {
@@ -263,7 +261,7 @@ void LookupIterator::ApplyTransitionToDataProperty() {
   DCHECK_EQ(TRANSITION, state_);
 
   Handle<JSObject> receiver = GetStoreTarget();
-  if (receiver->IsGlobalObject()) return;
+  if (receiver->IsJSGlobalObject()) return;
   holder_ = receiver;
   holder_map_ = transition_map();
   JSObject::MigrateToMap(receiver, holder_map_);
@@ -427,7 +425,7 @@ Handle<Object> LookupIterator::FetchValue() const {
 
     ElementsAccessor* accessor = holder->GetElementsAccessor();
     return accessor->Get(handle(holder->elements()), number_);
-  } else if (holder_map_->IsGlobalObjectMap()) {
+  } else if (holder_map_->IsJSGlobalObjectMap()) {
     result = holder->global_dictionary()->ValueAt(number_);
     DCHECK(result->IsPropertyCell());
     result = PropertyCell::cast(result)->value();
@@ -486,7 +484,7 @@ Handle<HeapType> LookupIterator::GetFieldType() const {
 Handle<PropertyCell> LookupIterator::GetPropertyCell() const {
   DCHECK(!IsElement());
   Handle<JSObject> holder = GetHolder<JSObject>();
-  Handle<GlobalObject> global = Handle<GlobalObject>::cast(holder);
+  Handle<JSGlobalObject> global = Handle<JSGlobalObject>::cast(holder);
   Object* value = global->global_dictionary()->ValueAt(dictionary_entry());
   DCHECK(value->IsPropertyCell());
   return handle(PropertyCell::cast(value));
@@ -512,7 +510,7 @@ void LookupIterator::WriteDataValue(Handle<Object> value) {
   if (IsElement()) {
     ElementsAccessor* accessor = holder->GetElementsAccessor();
     accessor->Set(holder->elements(), number_, *value);
-  } else if (holder->IsGlobalObject()) {
+  } else if (holder->IsJSGlobalObject()) {
     Handle<GlobalDictionary> property_dictionary =
         handle(holder->global_dictionary());
     PropertyCell::UpdateCell(property_dictionary, dictionary_entry(), value,
@@ -530,8 +528,6 @@ void LookupIterator::WriteDataValue(Handle<Object> value) {
 
 bool LookupIterator::IsIntegerIndexedExotic(JSReceiver* holder) {
   DCHECK(exotic_index_state_ != ExoticIndexState::kNotExotic);
-  // Currently typed arrays are the only such objects.
-  if (!holder->IsJSTypedArray()) return false;
   if (exotic_index_state_ == ExoticIndexState::kExotic) return true;
   if (!InternalHolderIsReceiverOrHiddenPrototype()) {
     exotic_index_state_ = ExoticIndexState::kNotExotic;
@@ -566,18 +562,6 @@ bool LookupIterator::HasInterceptor(Map* map) const {
 }
 
 
-Handle<InterceptorInfo> LookupIterator::GetInterceptor() const {
-  DCHECK_EQ(INTERCEPTOR, state_);
-  return handle(GetInterceptor(JSObject::cast(*holder_)), isolate_);
-}
-
-
-InterceptorInfo* LookupIterator::GetInterceptor(JSObject* holder) const {
-  if (IsElement()) return holder->GetIndexedInterceptor();
-  return holder->GetNamedInterceptor();
-}
-
-
 bool LookupIterator::SkipInterceptor(JSObject* holder) {
   auto info = GetInterceptor(holder);
   // TODO(dcarney): check for symbol/can_intercept_symbols here as well.
@@ -601,7 +585,7 @@ JSReceiver* LookupIterator::NextHolder(Map* map) {
   if (!map->prototype()->IsJSReceiver()) return NULL;
 
   JSReceiver* next = JSReceiver::cast(map->prototype());
-  DCHECK(!next->map()->IsGlobalObjectMap() ||
+  DCHECK(!next->map()->IsJSGlobalObjectMap() ||
          next->map()->is_hidden_prototype());
 
   if (!check_prototype_chain() &&
@@ -625,7 +609,10 @@ LookupIterator::State LookupIterator::LookupInHolder(Map* const map,
   }
   switch (state_) {
     case NOT_FOUND:
-      if (map->IsJSProxyMap()) return JSPROXY;
+      if (map->IsJSProxyMap()) {
+        if (!name_.is_null() && name_->IsPrivate()) return NOT_FOUND;
+        return JSPROXY;
+      }
       if (map->is_access_check_needed() &&
           (IsElement() || !isolate_->IsInternallyUsedPropertyName(name_))) {
         return ACCESS_CHECK;
@@ -633,7 +620,7 @@ LookupIterator::State LookupIterator::LookupInHolder(Map* const map,
     // Fall through.
     case ACCESS_CHECK:
       if (exotic_index_state_ != ExoticIndexState::kNotExotic &&
-          IsIntegerIndexedExotic(holder)) {
+          holder->IsJSTypedArray() && IsIntegerIndexedExotic(holder)) {
         return INTEGER_INDEXED_EXOTIC;
       }
       if (check_interceptor() && HasInterceptor(map) &&
@@ -668,7 +655,7 @@ LookupIterator::State LookupIterator::LookupInHolder(Map* const map,
         if (number == DescriptorArray::kNotFound) return NOT_FOUND;
         number_ = static_cast<uint32_t>(number);
         property_details_ = descriptors->GetDetails(number_);
-      } else if (map->IsGlobalObjectMap()) {
+      } else if (map->IsJSGlobalObjectMap()) {
         GlobalDictionary* dict = JSObject::cast(holder)->global_dictionary();
         int number = dict->FindEntry(name_);
         if (number == GlobalDictionary::kNotFound) return NOT_FOUND;

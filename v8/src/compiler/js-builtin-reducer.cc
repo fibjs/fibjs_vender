@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/compiler/diamond.h"
 #include "src/compiler/js-builtin-reducer.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/node-matchers.h"
@@ -108,7 +107,7 @@ Reduction JSBuiltinReducer::ReduceMathMax(Node* node) {
     for (int i = 1; i < r.GetJSCallArity(); i++) {
       Node* const input = r.GetJSCallInput(i);
       value = graph()->NewNode(
-          common()->Select(kMachNone),
+          common()->Select(MachineRepresentation::kNone),
           graph()->NewNode(simplified()->NumberLessThan(), input, value), value,
           input);
     }
@@ -172,6 +171,9 @@ Reduction JSBuiltinReducer::Reduce(Node* node) {
 
 
 Graph* JSBuiltinReducer::graph() const { return jsgraph()->graph(); }
+
+
+Isolate* JSBuiltinReducer::isolate() const { return jsgraph()->isolate(); }
 
 
 CommonOperatorBuilder* JSBuiltinReducer::common() const {

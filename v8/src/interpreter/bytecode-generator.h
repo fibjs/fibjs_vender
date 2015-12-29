@@ -5,7 +5,7 @@
 #ifndef V8_INTERPRETER_BYTECODE_GENERATOR_H_
 #define V8_INTERPRETER_BYTECODE_GENERATOR_H_
 
-#include "src/ast.h"
+#include "src/ast/ast.h"
 #include "src/interpreter/bytecode-array-builder.h"
 #include "src/interpreter/bytecodes.h"
 
@@ -13,10 +13,9 @@ namespace v8 {
 namespace internal {
 namespace interpreter {
 
-class BytecodeGenerator : public AstVisitor {
+class BytecodeGenerator final : public AstVisitor {
  public:
   BytecodeGenerator(Isolate* isolate, Zone* zone);
-  virtual ~BytecodeGenerator();
 
   Handle<BytecodeArray> MakeBytecode(CompilationInfo* info);
 
@@ -30,11 +29,43 @@ class BytecodeGenerator : public AstVisitor {
  private:
   class ContextScope;
   class ControlScope;
+  class ControlScopeForBreakable;
   class ControlScopeForIteration;
   class ExpressionResultScope;
   class EffectResultScope;
   class AccumulatorResultScope;
   class RegisterResultScope;
+  class AssignmentHazardScope;
+
+  // Helper class that aliases locals and parameters when assignment
+  // hazards occur in binary expressions. For y = x + (x = 1) has an
+  // assignment hazard because the lhs evaluates to the register
+  // holding x and the rhs (x = 1) potentially updates x. When this
+  // hazard is detected, the rhs uses a temporary to hold the newer
+  // value of x while preserving the lhs for the binary expresion
+  // evaluation. The newer value is spilled to x at the end of the
+  // binary expression evaluation.
+  class AssignmentHazardHelper final {
+   public:
+    explicit AssignmentHazardHelper(BytecodeGenerator* generator);
+    MUST_USE_RESULT Register GetRegisterForLoad(Register reg);
+    MUST_USE_RESULT Register GetRegisterForStore(Register reg);
+
+   private:
+    friend class AssignmentHazardScope;
+
+    void EnterScope();
+    void LeaveScope();
+    void RestoreAliasedLocalsAndParameters();
+
+    BytecodeGenerator* generator_;
+    ZoneMap<int, int> alias_mappings_;
+    ZoneSet<int> aliased_locals_and_parameters_;
+    ExpressionResultScope* execution_result_;
+    int scope_depth_;
+
+    DISALLOW_COPY_AND_ASSIGN(AssignmentHazardHelper);
+  };
 
   void MakeBytecodeBody();
   Register NextContextRegister() const;
@@ -51,6 +82,10 @@ class BytecodeGenerator : public AstVisitor {
   void VisitVoid(UnaryOperation* expr);
   void VisitTypeOf(UnaryOperation* expr);
   void VisitNot(UnaryOperation* expr);
+  void VisitDelete(UnaryOperation* expr);
+
+  // Used by flow control routines to evaluate loop condition.
+  void VisitCondition(Expression* expr);
 
   // Helper visitors which perform common operations.
   Register VisitArguments(ZoneList<Expression*>* arguments);
@@ -58,11 +93,14 @@ class BytecodeGenerator : public AstVisitor {
   void VisitPropertyLoad(Register obj, Property* expr);
   void VisitPropertyLoadForAccumulator(Register obj, Property* expr);
 
-  void VisitVariableLoad(Variable* variable, FeedbackVectorSlot slot);
-  void VisitVariableLoadForAccumulatorValue(Variable* variable,
-                                            FeedbackVectorSlot slot);
-  MUST_USE_RESULT Register VisitVariableLoadForRegisterValue(
-      Variable* variable, FeedbackVectorSlot slot);
+  void VisitVariableLoad(Variable* variable, FeedbackVectorSlot slot,
+                         TypeofMode typeof_mode = NOT_INSIDE_TYPEOF);
+  void VisitVariableLoadForAccumulatorValue(
+      Variable* variable, FeedbackVectorSlot slot,
+      TypeofMode typeof_mode = NOT_INSIDE_TYPEOF);
+  MUST_USE_RESULT Register
+  VisitVariableLoadForRegisterValue(Variable* variable, FeedbackVectorSlot slot,
+                                    TypeofMode typeof_mode = NOT_INSIDE_TYPEOF);
   void VisitVariableAssignment(Variable* variable, FeedbackVectorSlot slot);
 
   void VisitArgumentsObject(Variable* variable);
@@ -77,17 +115,13 @@ class BytecodeGenerator : public AstVisitor {
   void VisitObjectLiteralAccessor(Register home_object,
                                   ObjectLiteralProperty* property,
                                   Register value_out);
-
+  void VisitForInAssignment(Expression* expr, FeedbackVectorSlot slot);
 
   // Visitors for obtaining expression result in the accumulator, in a
   // register, or just getting the effect.
   void VisitForAccumulatorValue(Expression* expression);
   MUST_USE_RESULT Register VisitForRegisterValue(Expression* expression);
   void VisitForEffect(Expression* node);
-
-  // Methods marking the start and end of binary expressions.
-  void PrepareForBinaryExpression();
-  void CompleteBinaryExpression();
 
   // Methods for tracking and remapping register.
   void RecordStoreToRegister(Register reg);
@@ -115,6 +149,9 @@ class BytecodeGenerator : public AstVisitor {
     execution_result_ = execution_result;
   }
   ExpressionResultScope* execution_result() const { return execution_result_; }
+  inline AssignmentHazardHelper* assignment_hazard_helper() {
+    return &assignment_hazard_helper_;
+  }
 
   ZoneVector<Handle<Object>>* globals() { return &globals_; }
   inline LanguageMode language_mode() const;
@@ -130,9 +167,7 @@ class BytecodeGenerator : public AstVisitor {
   ControlScope* execution_control_;
   ContextScope* execution_context_;
   ExpressionResultScope* execution_result_;
-
-  int binary_expression_depth_;
-  ZoneSet<int> binary_expression_hazard_set_;
+  AssignmentHazardHelper assignment_hazard_helper_;
 };
 
 }  // namespace interpreter

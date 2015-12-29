@@ -496,19 +496,18 @@ class Assembler : public AssemblerBase {
   // the relative displacements stored in the code.
   static inline Address target_address_at(Address pc, Address constant_pool);
   static inline void set_target_address_at(
-      Address pc, Address constant_pool, Address target,
+      Isolate* isolate, Address pc, Address constant_pool, Address target,
       ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED);
   static inline Address target_address_at(Address pc, Code* code) {
     Address constant_pool = code ? code->constant_pool() : NULL;
     return target_address_at(pc, constant_pool);
   }
-  static inline void set_target_address_at(Address pc,
-                                           Code* code,
-                                           Address target,
-                                           ICacheFlushMode icache_flush_mode =
-                                               FLUSH_ICACHE_IF_NEEDED) {
+  static inline void set_target_address_at(
+      Isolate* isolate, Address pc, Code* code, Address target,
+      ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED) {
     Address constant_pool = code ? code->constant_pool() : NULL;
-    set_target_address_at(pc, constant_pool, target, icache_flush_mode);
+    set_target_address_at(isolate, pc, constant_pool, target,
+                          icache_flush_mode);
   }
 
   // Return the code target address at a call site from the return address
@@ -518,13 +517,14 @@ class Assembler : public AssemblerBase {
   // This sets the branch destination (which is in the instruction on x64).
   // This is for calls and branches within generated code.
   inline static void deserialization_set_special_target_at(
-      Address instruction_payload, Code* code, Address target) {
-    set_target_address_at(instruction_payload, code, target);
+      Isolate* isolate, Address instruction_payload, Code* code,
+      Address target) {
+    set_target_address_at(isolate, instruction_payload, code, target);
   }
 
   // This sets the internal reference at the pc.
   inline static void deserialization_set_target_internal_reference_at(
-      Address pc, Address target,
+      Isolate* isolate, Address pc, Address target,
       RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
 
   static inline RelocInfo::Mode RelocInfoNone() {
@@ -847,8 +847,12 @@ class Assembler : public AssemblerBase {
   // Bit operations.
   void bt(const Operand& dst, Register src);
   void bts(const Operand& dst, Register src);
+  void bsrq(Register dst, Register src);
+  void bsrq(Register dst, const Operand& src);
   void bsrl(Register dst, Register src);
   void bsrl(Register dst, const Operand& src);
+  void bsfq(Register dst, Register src);
+  void bsfq(Register dst, const Operand& src);
   void bsfl(Register dst, Register src);
   void bsfl(Register dst, const Operand& src);
 
@@ -1073,11 +1077,17 @@ class Assembler : public AssemblerBase {
 
   void cvttsd2si(Register dst, const Operand& src);
   void cvttsd2si(Register dst, XMMRegister src);
+  void cvttss2siq(Register dst, XMMRegister src);
+  void cvttss2siq(Register dst, const Operand& src);
   void cvttsd2siq(Register dst, XMMRegister src);
   void cvttsd2siq(Register dst, const Operand& src);
 
   void cvtlsi2sd(XMMRegister dst, const Operand& src);
   void cvtlsi2sd(XMMRegister dst, Register src);
+
+  void cvtqsi2ss(XMMRegister dst, const Operand& src);
+  void cvtqsi2ss(XMMRegister dst, Register src);
+
   void cvtqsi2sd(XMMRegister dst, const Operand& src);
   void cvtqsi2sd(XMMRegister dst, Register src);
 
@@ -1128,6 +1138,7 @@ class Assembler : public AssemblerBase {
   void pinsrd(XMMRegister dst, Register src, int8_t imm8);
   void pinsrd(XMMRegister dst, const Operand& src, int8_t imm8);
 
+  void roundss(XMMRegister dst, XMMRegister src, RoundingMode mode);
   void roundsd(XMMRegister dst, XMMRegister src, RoundingMode mode);
 
   // AVX instruction
@@ -1359,6 +1370,20 @@ class Assembler : public AssemblerBase {
   void vcvtlsi2sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
     vsd(0x2a, dst, src1, src2, kF2, k0F, kW0);
   }
+  void vcvtqsi2ss(XMMRegister dst, XMMRegister src1, Register src2) {
+    XMMRegister isrc2 = {src2.code()};
+    vsd(0x2a, dst, src1, isrc2, kF3, k0F, kW1);
+  }
+  void vcvtqsi2ss(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vsd(0x2a, dst, src1, src2, kF3, k0F, kW1);
+  }
+  void vcvtqsi2sd(XMMRegister dst, XMMRegister src1, Register src2) {
+    XMMRegister isrc2 = {src2.code()};
+    vsd(0x2a, dst, src1, isrc2, kF2, k0F, kW1);
+  }
+  void vcvtqsi2sd(XMMRegister dst, XMMRegister src1, const Operand& src2) {
+    vsd(0x2a, dst, src1, src2, kF2, k0F, kW1);
+  }
   void vcvttsd2si(Register dst, XMMRegister src) {
     XMMRegister idst = {dst.code()};
     vsd(0x2c, idst, xmm0, src, kF2, k0F, kW0);
@@ -1366,6 +1391,14 @@ class Assembler : public AssemblerBase {
   void vcvttsd2si(Register dst, const Operand& src) {
     XMMRegister idst = {dst.code()};
     vsd(0x2c, idst, xmm0, src, kF2, k0F, kW0);
+  }
+  void vcvttss2siq(Register dst, XMMRegister src) {
+    XMMRegister idst = {dst.code()};
+    vsd(0x2c, idst, xmm0, src, kF3, k0F, kW1);
+  }
+  void vcvttss2siq(Register dst, const Operand& src) {
+    XMMRegister idst = {dst.code()};
+    vsd(0x2c, idst, xmm0, src, kF3, k0F, kW1);
   }
   void vcvttsd2siq(Register dst, XMMRegister src) {
     XMMRegister idst = {dst.code()};
@@ -1375,11 +1408,20 @@ class Assembler : public AssemblerBase {
     XMMRegister idst = {dst.code()};
     vsd(0x2c, idst, xmm0, src, kF2, k0F, kW1);
   }
+  void vcvtsd2si(Register dst, XMMRegister src) {
+    XMMRegister idst = {dst.code()};
+    vsd(0x2d, idst, xmm0, src, kF2, k0F, kW0);
+  }
   void vucomisd(XMMRegister dst, XMMRegister src) {
     vsd(0x2e, dst, xmm0, src, k66, k0F, kWIG);
   }
   void vucomisd(XMMRegister dst, const Operand& src) {
     vsd(0x2e, dst, xmm0, src, k66, k0F, kWIG);
+  }
+  void vroundss(XMMRegister dst, XMMRegister src1, XMMRegister src2,
+                RoundingMode mode) {
+    vsd(0x0a, dst, src1, src2, k66, k0F3A, kWIG);
+    emit(static_cast<byte>(mode) | 0x8);  // Mask precision exception.
   }
   void vroundsd(XMMRegister dst, XMMRegister src1, XMMRegister src2,
                 RoundingMode mode) {
@@ -1601,9 +1643,6 @@ class Assembler : public AssemblerBase {
   void rorxl(Register dst, Register src, byte imm8);
   void rorxl(Register dst, const Operand& src, byte imm8);
 
-  // Debugging
-  void Print();
-
   // Check the code size generated from label to here.
   int SizeOfCodeGeneratedSince(Label* label) {
     return pc_offset() - label->pos();
@@ -1613,7 +1652,7 @@ class Assembler : public AssemblerBase {
   void RecordGeneratorContinuation();
 
   // Mark address of a debug break slot.
-  void RecordDebugBreakSlot(RelocInfo::Mode mode, int argc = 0);
+  void RecordDebugBreakSlot(RelocInfo::Mode mode);
 
   // Record a comment relocation entry that can be used by a disassembler.
   // Use --code-comments to enable.

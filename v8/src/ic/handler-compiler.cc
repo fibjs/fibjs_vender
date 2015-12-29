@@ -58,7 +58,7 @@ Handle<Code> NamedLoadHandlerCompiler::ComputeLoadNonexistent(
       cache_name = name;
       JSReceiver* prototype = JSReceiver::cast(current_map->prototype());
       if (!prototype->map()->is_hidden_prototype() &&
-          !prototype->map()->IsGlobalObjectMap()) {
+          !prototype->map()->IsJSGlobalObjectMap()) {
         break;
       }
     }
@@ -330,6 +330,9 @@ Handle<Code> NamedLoadHandlerCompiler::CompileLoadInterceptor(
     PrototypeIterator iter(isolate(), last);
     while (!iter.IsAtEnd()) {
       lost_holder_register = true;
+      // Casting to JSObject is fine here. The LookupIterator makes sure to
+      // look behind non-masking interceptors during the original lookup, and
+      // we wouldn't try to compile a handler if there was a Proxy anywhere.
       last = iter.GetCurrent<JSObject>();
       iter.Advance();
     }
@@ -424,7 +427,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreTransition(
     Handle<Map> transition, Handle<Name> name) {
   Label miss;
 
-  if (FLAG_vector_stores) PushVectorAndSlot();
+  PushVectorAndSlot();
 
   // Check that we are allowed to write this.
   bool is_nonexistent = holder()->map() == transition->GetBackPointer();
@@ -468,7 +471,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreTransition(
     if (virtual_args) {
       // This will move the map from tmp into map_reg.
       RearrangeVectorAndSlot(tmp, map_reg);
-    } else if (FLAG_vector_stores) {
+    } else {
       PopVectorAndSlot();
     }
     GenerateRestoreName(name);
@@ -490,7 +493,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreTransition(
     GenerateRestoreMap(transition, tmp, scratch2(), &miss);
     if (virtual_args) {
       RearrangeVectorAndSlot(tmp, map_reg);
-    } else if (FLAG_vector_stores) {
+    } else {
       PopVectorAndSlot();
     }
     GenerateRestoreName(name);
@@ -501,7 +504,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreTransition(
   }
 
   GenerateRestoreName(&miss, name);
-  if (FLAG_vector_stores) PopVectorAndSlot();
+  PopVectorAndSlot();
   TailCallBuiltin(masm(), MissBuiltin(kind()));
 
   return GetCode(kind(), Code::FAST, name);

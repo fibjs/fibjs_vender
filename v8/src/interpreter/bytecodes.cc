@@ -159,33 +159,56 @@ OperandSize Bytecodes::SizeOfOperand(OperandType operand_type) {
 
 
 // static
-bool Bytecodes::IsJump(Bytecode bytecode) {
-  return bytecode == Bytecode::kJump || bytecode == Bytecode::kJumpIfTrue ||
+bool Bytecodes::IsConditionalJumpImmediate(Bytecode bytecode) {
+  return bytecode == Bytecode::kJumpIfTrue ||
          bytecode == Bytecode::kJumpIfFalse ||
          bytecode == Bytecode::kJumpIfToBooleanTrue ||
-         bytecode == Bytecode::kJumpIfToBooleanFalse;
+         bytecode == Bytecode::kJumpIfToBooleanFalse ||
+         bytecode == Bytecode::kJumpIfNull ||
+         bytecode == Bytecode::kJumpIfUndefined;
+}
+
+
+// static
+bool Bytecodes::IsConditionalJumpConstant(Bytecode bytecode) {
+  return bytecode == Bytecode::kJumpIfTrueConstant ||
+         bytecode == Bytecode::kJumpIfFalseConstant ||
+         bytecode == Bytecode::kJumpIfToBooleanTrueConstant ||
+         bytecode == Bytecode::kJumpIfToBooleanFalseConstant ||
+         bytecode == Bytecode::kJumpIfNullConstant ||
+         bytecode == Bytecode::kJumpIfUndefinedConstant;
+}
+
+
+// static
+bool Bytecodes::IsConditionalJump(Bytecode bytecode) {
+  return IsConditionalJumpImmediate(bytecode) ||
+         IsConditionalJumpConstant(bytecode);
+}
+
+
+// static
+bool Bytecodes::IsJumpImmediate(Bytecode bytecode) {
+  return bytecode == Bytecode::kJump || IsConditionalJumpImmediate(bytecode);
 }
 
 
 // static
 bool Bytecodes::IsJumpConstant(Bytecode bytecode) {
   return bytecode == Bytecode::kJumpConstant ||
-         bytecode == Bytecode::kJumpIfTrueConstant ||
-         bytecode == Bytecode::kJumpIfFalseConstant ||
-         bytecode == Bytecode::kJumpIfToBooleanTrueConstant ||
-         bytecode == Bytecode::kJumpIfToBooleanFalseConstant;
+         IsConditionalJumpConstant(bytecode);
 }
 
 
 // static
-uint16_t Bytecodes::ShortOperandFromBytes(const uint8_t* bytes) {
-  return *reinterpret_cast<const uint16_t*>(bytes);
+bool Bytecodes::IsJump(Bytecode bytecode) {
+  return IsJumpImmediate(bytecode) || IsJumpConstant(bytecode);
 }
 
 
 // static
-void Bytecodes::ShortOperandToBytes(uint16_t operand, uint8_t* bytes_out) {
-  *reinterpret_cast<uint16_t*>(bytes_out) = operand;
+bool Bytecodes::IsJumpOrReturn(Bytecode bytecode) {
+  return bytecode == Bytecode::kReturn || IsJump(bytecode);
 }
 
 
@@ -217,22 +240,27 @@ std::ostream& Bytecodes::Decode(std::ostream& os, const uint8_t* bytecode_start,
       case interpreter::OperandType::kCount8:
         os << "#" << static_cast<unsigned int>(*operand_start);
         break;
+      case interpreter::OperandType::kCount16:
+        os << '#' << ReadUnalignedUInt16(operand_start);
+        break;
       case interpreter::OperandType::kIdx8:
         os << "[" << static_cast<unsigned int>(*operand_start) << "]";
         break;
-      case interpreter::OperandType::kIdx16: {
-        os << "[" << Bytecodes::ShortOperandFromBytes(operand_start) << "]";
+      case interpreter::OperandType::kIdx16:
+        os << "[" << ReadUnalignedUInt16(operand_start) << "]";
         break;
-      }
       case interpreter::OperandType::kImm8:
         os << "#" << static_cast<int>(static_cast<int8_t>(*operand_start));
         break;
-      case interpreter::OperandType::kReg8: {
+      case interpreter::OperandType::kReg8:
+      case interpreter::OperandType::kMaybeReg8: {
         Register reg = Register::FromOperand(*operand_start);
         if (reg.is_function_context()) {
           os << "<context>";
         } else if (reg.is_function_closure()) {
           os << "<closure>";
+        } else if (reg.is_new_target()) {
+          os << "<new.target>";
         } else if (reg.is_parameter()) {
           int parameter_index = reg.ToParameterIndex(parameter_count);
           if (parameter_index == 0) {
@@ -278,6 +306,8 @@ static const int kFunctionClosureRegisterIndex =
     -InterpreterFrameConstants::kFunctionFromRegisterPointer / kPointerSize;
 static const int kFunctionContextRegisterIndex =
     -InterpreterFrameConstants::kContextFromRegisterPointer / kPointerSize;
+static const int kNewTargetRegisterIndex =
+    -InterpreterFrameConstants::kNewTargetFromRegisterPointer / kPointerSize;
 
 
 // Registers occupy range 0-127 in 8-bit value leaving 128 unused values.
@@ -320,6 +350,14 @@ Register Register::function_context() {
 
 bool Register::is_function_context() const {
   return index() == kFunctionContextRegisterIndex;
+}
+
+
+Register Register::new_target() { return Register(kNewTargetRegisterIndex); }
+
+
+bool Register::is_new_target() const {
+  return index() == kNewTargetRegisterIndex;
 }
 
 

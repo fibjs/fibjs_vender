@@ -29,7 +29,6 @@ static void GenerateGlobalInstanceTypeCheck(MacroAssembler* masm, Register type,
   // Register usage:
   //   type: holds the receiver instance type on entry.
   __ Branch(global_object, eq, type, Operand(JS_GLOBAL_OBJECT_TYPE));
-  __ Branch(global_object, eq, type, Operand(JS_BUILTINS_OBJECT_TYPE));
   __ Branch(global_object, eq, type, Operand(JS_GLOBAL_PROXY_TYPE));
 }
 
@@ -678,20 +677,18 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   __ lb(a4, FieldMemOperand(a4, Map::kInstanceTypeOffset));
   __ JumpIfNotUniqueNameInstanceType(a4, &slow);
 
-  if (FLAG_vector_stores) {
-    // The handlers in the stub cache expect a vector and slot. Since we won't
-    // change the IC from any downstream misses, a dummy vector can be used.
-    Register vector = VectorStoreICDescriptor::VectorRegister();
-    Register slot = VectorStoreICDescriptor::SlotRegister();
+  // The handlers in the stub cache expect a vector and slot. Since we won't
+  // change the IC from any downstream misses, a dummy vector can be used.
+  Register vector = VectorStoreICDescriptor::VectorRegister();
+  Register slot = VectorStoreICDescriptor::SlotRegister();
 
-    DCHECK(!AreAliased(vector, slot, a5, a6, a7, t0));
-    Handle<TypeFeedbackVector> dummy_vector =
-        TypeFeedbackVector::DummyVector(masm->isolate());
-    int slot_index = dummy_vector->GetIndex(
-        FeedbackVectorSlot(TypeFeedbackVector::kDummyKeyedStoreICSlot));
-    __ LoadRoot(vector, Heap::kDummyVectorRootIndex);
-    __ li(slot, Operand(Smi::FromInt(slot_index)));
-  }
+  DCHECK(!AreAliased(vector, slot, a5, a6, a7, t0));
+  Handle<TypeFeedbackVector> dummy_vector =
+      TypeFeedbackVector::DummyVector(masm->isolate());
+  int slot_index = dummy_vector->GetIndex(
+      FeedbackVectorSlot(TypeFeedbackVector::kDummyKeyedStoreICSlot));
+  __ LoadRoot(vector, Heap::kDummyVectorRootIndex);
+  __ li(slot, Operand(Smi::FromInt(slot_index)));
 
   Code::Flags flags = Code::RemoveTypeAndHolderFromFlags(
       Code::ComputeHandlerFlags(Code::STORE_IC));
@@ -745,23 +742,17 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
 
 
 static void StoreIC_PushArgs(MacroAssembler* masm) {
-  if (FLAG_vector_stores) {
-    __ Push(StoreDescriptor::ReceiverRegister(),
-            StoreDescriptor::NameRegister(), StoreDescriptor::ValueRegister(),
-            VectorStoreICDescriptor::SlotRegister(),
-            VectorStoreICDescriptor::VectorRegister());
-  } else {
-    __ Push(StoreDescriptor::ReceiverRegister(),
-            StoreDescriptor::NameRegister(), StoreDescriptor::ValueRegister());
-  }
+  __ Push(StoreDescriptor::ReceiverRegister(), StoreDescriptor::NameRegister(),
+          StoreDescriptor::ValueRegister(),
+          VectorStoreICDescriptor::SlotRegister(),
+          VectorStoreICDescriptor::VectorRegister());
 }
 
 
 void KeyedStoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
-  int args = FLAG_vector_stores ? 5 : 3;
-  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss, args, 1);
+  __ TailCallRuntime(Runtime::kKeyedStoreIC_Miss, 5, 1);
 }
 
 
@@ -787,8 +778,7 @@ void StoreIC::GenerateMiss(MacroAssembler* masm) {
   StoreIC_PushArgs(masm);
 
   // Perform tail call to the entry.
-  int args = FLAG_vector_stores ? 5 : 3;
-  __ TailCallRuntime(Runtime::kStoreIC_Miss, args, 1);
+  __ TailCallRuntime(Runtime::kStoreIC_Miss, 5, 1);
 }
 
 
@@ -851,7 +841,8 @@ bool CompareIC::HasInlinedSmiCode(Address address) {
 }
 
 
-void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
+void PatchInlinedSmiCode(Isolate* isolate, Address address,
+                         InlinedSmiCheck check) {
   Address andi_instruction_address =
       address + Assembler::kCallTargetAddressOffset;
 
@@ -891,7 +882,7 @@ void PatchInlinedSmiCode(Address address, InlinedSmiCheck check) {
   //   andi at, rx, #kSmiTagMask
   //   Branch <target>, ne, at, Operand(zero_reg)
   // and vice-versa to be disabled again.
-  CodePatcher patcher(patch_address, 2);
+  CodePatcher patcher(isolate, patch_address, 2);
   Register reg = Register::from_code(Assembler::GetRs(instr_at_patch));
   if (check == ENABLE_INLINED_SMI_CHECK) {
     DCHECK(Assembler::IsAndImmediate(instr_at_patch));

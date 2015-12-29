@@ -6,14 +6,14 @@
 
 #include <sstream>
 
-#include "src/ast.h"
+#include "src/ast/ast.h"
+#include "src/ast/scopeinfo.h"
 #include "src/base/bits.h"
 #include "src/deoptimizer.h"
 #include "src/frames-inl.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/register-configuration.h"
 #include "src/safepoint-table.h"
-#include "src/scopeinfo.h"
 #include "src/string-stream.h"
 #include "src/vm-state-inl.h"
 
@@ -334,11 +334,8 @@ void SafeStackFrameIterator::Advance() {
       // ExternalCallbackScope, just skip them as we cannot collect any useful
       // information about them.
       if (external_callback_scope_->scope_address() < frame_->fp()) {
-        Address* callback_address =
-            external_callback_scope_->callback_address();
-        if (*callback_address != NULL) {
-          frame_->state_.pc_address = callback_address;
-        }
+        frame_->state_.pc_address =
+            external_callback_scope_->callback_entrypoint_address();
         external_callback_scope_ = external_callback_scope_->previous();
         DCHECK(external_callback_scope_ == NULL ||
                external_callback_scope_->scope_address() > frame_->fp());
@@ -439,6 +436,8 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
         return JAVA_SCRIPT;
       case Code::OPTIMIZED_FUNCTION:
         return OPTIMIZED;
+      case Code::WASM_FUNCTION:
+        return STUB;
       case Code::BUILTIN:
         if (!marker->IsSmi()) {
           if (StandardFrame::IsArgumentsAdaptorFrame(state->fp)) {
@@ -752,23 +751,10 @@ bool JavaScriptFrame::IsConstructor() const {
 }
 
 
-bool JavaScriptFrame::HasInlinedFrames() {
+bool JavaScriptFrame::HasInlinedFrames() const {
   List<JSFunction*> functions(1);
   GetFunctions(&functions);
   return functions.length() > 1;
-}
-
-
-Object* JavaScriptFrame::GetOriginalConstructor() const {
-  Address fp = caller_fp();
-  if (has_adapted_arguments()) {
-    // Skip the arguments adaptor frame and look at the real caller.
-    fp = Memory::Address_at(fp + StandardFrameConstants::kCallerFPOffset);
-  }
-  DCHECK(IsConstructFrame(fp));
-  STATIC_ASSERT(ConstructFrameConstants::kOriginalConstructorOffset ==
-                StandardFrameConstants::kExpressionsOffset - 3 * kPointerSize);
-  return GetExpression(fp, 3);
 }
 
 
@@ -802,7 +788,7 @@ Address JavaScriptFrame::GetCallerStackPointer() const {
 }
 
 
-void JavaScriptFrame::GetFunctions(List<JSFunction*>* functions) {
+void JavaScriptFrame::GetFunctions(List<JSFunction*>* functions) const {
   DCHECK(functions->length() == 0);
   functions->Add(function());
 }
@@ -951,8 +937,9 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames) {
 
   TranslationIterator it(data->TranslationByteArray(),
                          data->TranslationIndex(deopt_index)->value());
-  Translation::Opcode opcode = static_cast<Translation::Opcode>(it.Next());
-  DCHECK_EQ(Translation::BEGIN, opcode);
+  Translation::Opcode frame_opcode =
+      static_cast<Translation::Opcode>(it.Next());
+  DCHECK_EQ(Translation::BEGIN, frame_opcode);
   it.Next();  // Drop frame count.
   int jsframe_count = it.Next();
 
@@ -960,8 +947,9 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames) {
   // in the deoptimization translation are ordered bottom-to-top.
   bool is_constructor = IsConstructor();
   while (jsframe_count != 0) {
-    opcode = static_cast<Translation::Opcode>(it.Next());
-    if (opcode == Translation::JS_FRAME) {
+    frame_opcode = static_cast<Translation::Opcode>(it.Next());
+    if (frame_opcode == Translation::JS_FRAME ||
+        frame_opcode == Translation::INTERPRETED_FRAME) {
       jsframe_count--;
       BailoutId const ast_id = BailoutId(it.Next());
       SharedFunctionInfo* const shared_info =
@@ -970,7 +958,7 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames) {
 
       // The translation commands are ordered and the function is always
       // at the first position, and the receiver is next.
-      opcode = static_cast<Translation::Opcode>(it.Next());
+      Translation::Opcode opcode = static_cast<Translation::Opcode>(it.Next());
 
       // Get the correct function in the optimized frame.
       JSFunction* function;
@@ -1007,25 +995,33 @@ void OptimizedFrame::Summarize(List<FrameSummary>* frames) {
       }
 
       Code* const code = shared_info->code();
-      DeoptimizationOutputData* const output_data =
-          DeoptimizationOutputData::cast(code->deoptimization_data());
-      unsigned const entry =
-          Deoptimizer::GetOutputInfo(output_data, ast_id, shared_info);
-      unsigned const pc_offset =
-          FullCodeGenerator::PcField::decode(entry) + Code::kHeaderSize;
-      DCHECK_NE(0U, pc_offset);
 
+      unsigned pc_offset;
+      if (frame_opcode == Translation::JS_FRAME) {
+        DeoptimizationOutputData* const output_data =
+            DeoptimizationOutputData::cast(code->deoptimization_data());
+        unsigned const entry =
+            Deoptimizer::GetOutputInfo(output_data, ast_id, shared_info);
+        pc_offset =
+            FullCodeGenerator::PcField::decode(entry) + Code::kHeaderSize;
+        DCHECK_NE(0U, pc_offset);
+      } else {
+        // TODO(rmcilroy): Modify FrameSummary to enable us to summarize
+        // based on the BytecodeArray and bytecode offset.
+        DCHECK_EQ(frame_opcode, Translation::INTERPRETED_FRAME);
+        pc_offset = 0;
+      }
       FrameSummary summary(receiver, function, code, pc_offset, is_constructor);
       frames->Add(summary);
       is_constructor = false;
-    } else if (opcode == Translation::CONSTRUCT_STUB_FRAME) {
+    } else if (frame_opcode == Translation::CONSTRUCT_STUB_FRAME) {
       // The next encountered JS_FRAME will be marked as a constructor call.
-      it.Skip(Translation::NumberOfOperandsFor(opcode));
+      it.Skip(Translation::NumberOfOperandsFor(frame_opcode));
       DCHECK(!is_constructor);
       is_constructor = true;
     } else {
       // Skip over operands to advance to the next opcode.
-      it.Skip(Translation::NumberOfOperandsFor(opcode));
+      it.Skip(Translation::NumberOfOperandsFor(frame_opcode));
     }
   }
   DCHECK(!is_constructor);
@@ -1044,7 +1040,7 @@ int OptimizedFrame::LookupExceptionHandlerInTable(
 
 
 DeoptimizationInputData* OptimizedFrame::GetDeoptimizationData(
-    int* deopt_index) {
+    int* deopt_index) const {
   DCHECK(is_optimized());
 
   JSFunction* opt_function = function();
@@ -1068,7 +1064,7 @@ DeoptimizationInputData* OptimizedFrame::GetDeoptimizationData(
 }
 
 
-void OptimizedFrame::GetFunctions(List<JSFunction*>* functions) {
+void OptimizedFrame::GetFunctions(List<JSFunction*>* functions) const {
   DCHECK(functions->length() == 0);
   DCHECK(is_optimized());
 
@@ -1097,7 +1093,8 @@ void OptimizedFrame::GetFunctions(List<JSFunction*>* functions) {
     opcode = static_cast<Translation::Opcode>(it.Next());
     // Skip over operands to advance to the next opcode.
     it.Skip(Translation::NumberOfOperandsFor(opcode));
-    if (opcode == Translation::JS_FRAME) {
+    if (opcode == Translation::JS_FRAME ||
+        opcode == Translation::INTERPRETED_FRAME) {
       jsframe_count--;
 
       // The translation commands are ordered and the function is always at the

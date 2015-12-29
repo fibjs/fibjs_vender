@@ -6,7 +6,7 @@
 #define V8_COMPILER_H_
 
 #include "src/allocation.h"
-#include "src/ast.h"
+#include "src/ast/ast.h"
 #include "src/bailout-reason.h"
 #include "src/compilation-dependencies.h"
 #include "src/signature.h"
@@ -269,8 +269,9 @@ class CompilationInfo {
   bool is_first_compile() const { return GetFlag(kFirstCompile); }
 
   bool IsCodePreAgingActive() const {
+    // TODO(bradnelson): Figure out why this breaks wasm.
     return FLAG_optimize_for_size && FLAG_age_code && !will_serialize() &&
-           !is_debug();
+           !is_debug() && !FLAG_expose_wasm;
   }
 
   void EnsureFeedbackVector();
@@ -288,13 +289,18 @@ class CompilationInfo {
         (FLAG_trap_on_stub_deopt && IsStub());
   }
 
-  bool has_global_object() const {
-    return !closure().is_null() &&
-        (closure()->context()->global_object() != NULL);
+  bool has_native_context() const {
+    return !closure().is_null() && (closure()->native_context() != nullptr);
   }
 
-  GlobalObject* global_object() const {
-    return has_global_object() ? closure()->context()->global_object() : NULL;
+  Context* native_context() const {
+    return has_native_context() ? closure()->native_context() : nullptr;
+  }
+
+  bool has_global_object() const { return has_native_context(); }
+
+  JSGlobalObject* global_object() const {
+    return has_global_object() ? native_context()->global_object() : nullptr;
   }
 
   // Accessors for the different compilation modes.
@@ -309,13 +315,6 @@ class CompilationInfo {
     set_output_code_kind(Code::OPTIMIZED_FUNCTION);
   }
 
-  void SetFunctionType(Type::FunctionType* function_type) {
-    function_type_ = function_type;
-  }
-  Type::FunctionType* function_type() const { return function_type_; }
-
-  void SetStub(CodeStub* code_stub);
-
   // Deoptimization support.
   bool HasDeoptimizationSupport() const {
     return GetFlag(kDeoptimizationSupport);
@@ -326,7 +325,7 @@ class CompilationInfo {
   }
   bool ShouldEnsureSpaceForLazyDeopt() { return !IsStub(); }
 
-  bool MustReplaceUndefinedReceiverWithGlobalProxy();
+  bool ExpectsJSReceiverAsReceiver();
 
   // Determines whether or not to insert a self-optimization header.
   bool ShouldSelfOptimize();
@@ -520,8 +519,6 @@ class CompilationInfo {
   // The current OSR frame for specialization or {nullptr}.
   JavaScriptFrame* osr_frame_ = nullptr;
 
-  Type::FunctionType* function_type_;
-
   const char* debug_name_;
 
   DISALLOW_COPY_AND_ASSIGN(CompilationInfo);
@@ -646,8 +643,6 @@ class Compiler : public AllStatic {
       Handle<JSFunction> function);
   MUST_USE_RESULT static MaybeHandle<Code> GetLazyCode(
       Handle<JSFunction> function);
-  MUST_USE_RESULT static MaybeHandle<Code> GetStubCode(
-      Handle<JSFunction> function, CodeStub* stub);
 
   static bool Compile(Handle<JSFunction> function, ClearExceptionFlag flag);
   static bool CompileDebugCode(Handle<JSFunction> function);

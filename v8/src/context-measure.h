@@ -5,7 +5,9 @@
 #ifndef V8_CONTEXT_MEASURE_H_
 #define V8_CONTEXT_MEASURE_H_
 
-#include "src/snapshot/serialize.h"
+#include "src/address-map.h"
+#include "src/assert-scope.h"
+#include "src/objects.h"
 
 namespace v8 {
 namespace internal {
@@ -17,7 +19,7 @@ class ContextMeasure : public ObjectVisitor {
   int Size() { return size_; }
   int Count() { return count_; }
 
-  void VisitPointers(Object** start, Object** end);
+  void VisitPointers(Object** start, Object** end) override;
 
  private:
   void MeasureObject(HeapObject* object);

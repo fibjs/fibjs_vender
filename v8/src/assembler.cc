@@ -46,9 +46,12 @@
 #include "src/counters.h"
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
+#include "src/disassembler.h"
 #include "src/execution.h"
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
+#include "src/ostreams.h"
+#include "src/parsing/token.h"
 #include "src/profiler/cpu-profiler.h"
 #include "src/regexp/jsregexp.h"
 #include "src/regexp/regexp-macro-assembler.h"
@@ -57,7 +60,6 @@
 #include "src/runtime/runtime.h"
 #include "src/simulator.h"  // For flushing instruction cache.
 #include "src/snapshot/serialize.h"
-#include "src/token.h"
 
 #if V8_TARGET_ARCH_IA32
 #include "src/ia32/assembler-ia32-inl.h"  // NOLINT
@@ -171,7 +173,8 @@ AssemblerBase::AssemblerBase(Isolate* isolate, void* buffer, int buffer_size)
       // We may use the assembler without an isolate.
       serializer_enabled_(isolate && isolate->serializer_enabled()),
       constant_pool_available_(false) {
-  if (FLAG_mask_constants_with_cookie && isolate != NULL)  {
+  DCHECK_NOT_NULL(isolate);
+  if (FLAG_mask_constants_with_cookie) {
     jit_cookie_ = isolate->random_number_generator()->NextInt();
   }
   own_buffer_ = buffer == NULL;
@@ -202,16 +205,9 @@ void AssemblerBase::FlushICache(Isolate* isolate, void* start, size_t size) {
 }
 
 
-void AssemblerBase::FlushICacheWithoutIsolate(void* start, size_t size) {
-  // Ideally we would just call Isolate::Current() here. However, this flushes
-  // out issues because we usually only need the isolate when in the simulator.
-  Isolate* isolate;
-#if defined(USE_SIMULATOR)
-  isolate = Isolate::Current();
-#else
-  isolate = nullptr;
-#endif  // USE_SIMULATOR
-  FlushICache(isolate, start, size);
+void AssemblerBase::Print() {
+  OFStream os(stdout);
+  v8::internal::Disassembler::Decode(isolate(), &os, buffer_, pc_, nullptr);
 }
 
 
@@ -512,8 +508,7 @@ void RelocInfoWriter::Write(const RelocInfo* rinfo) {
     if (RelocInfo::IsComment(rmode)) {
       WriteData(rinfo->data());
     } else if (RelocInfo::IsConstPool(rmode) ||
-               RelocInfo::IsVeneerPool(rmode) ||
-               RelocInfo::IsDebugBreakSlotAtCall(rmode)) {
+               RelocInfo::IsVeneerPool(rmode)) {
       WriteIntData(static_cast<int>(rinfo->data()));
     }
   }
@@ -704,8 +699,7 @@ void RelocIterator::next() {
             Advance(kIntSize);
           }
         } else if (RelocInfo::IsConstPool(rmode) ||
-                   RelocInfo::IsVeneerPool(rmode) ||
-                   RelocInfo::IsDebugBreakSlotAtCall(rmode)) {
+                   RelocInfo::IsVeneerPool(rmode)) {
           if (SetMode(rmode)) {
             AdvanceReadInt();
             return;
@@ -730,7 +724,8 @@ void RelocIterator::next() {
 }
 
 
-RelocIterator::RelocIterator(Code* code, int mode_mask) {
+RelocIterator::RelocIterator(Code* code, int mode_mask)
+    : rinfo_(code->map()->GetIsolate()) {
   rinfo_.host_ = code;
   rinfo_.pc_ = code->instruction_start();
   rinfo_.data_ = 0;
@@ -755,7 +750,8 @@ RelocIterator::RelocIterator(Code* code, int mode_mask) {
 }
 
 
-RelocIterator::RelocIterator(const CodeDesc& desc, int mode_mask) {
+RelocIterator::RelocIterator(const CodeDesc& desc, int mode_mask)
+    : rinfo_(desc.origin->isolate()) {
   rinfo_.pc_ = desc.buffer;
   rinfo_.data_ = 0;
   // Relocation info is read backwards.
@@ -799,8 +795,6 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
       return "no reloc 64";
     case EMBEDDED_OBJECT:
       return "embedded object";
-    case CONSTRUCT_CALL:
-      return "code target (js construct call)";
     case DEBUGGER_STATEMENT:
       return "debugger statement";
     case CODE_TARGET:
@@ -835,8 +829,6 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
       return "debug break slot at return";
     case DEBUG_BREAK_SLOT_AT_CALL:
       return "debug break slot at call";
-    case DEBUG_BREAK_SLOT_AT_CONSTRUCT_CALL:
-      return "debug break slot at construct call";
     case CODE_AGE_SEQUENCE:
       return "code age sequence";
     case GENERATOR_CONTINUATION:
@@ -901,7 +893,6 @@ void RelocInfo::Verify(Isolate* isolate) {
       Object::VerifyPointer(target_cell());
       break;
     case DEBUGGER_STATEMENT:
-    case CONSTRUCT_CALL:
     case CODE_TARGET_WITH_ID:
     case CODE_TARGET: {
       // convert inline target address to code object
@@ -934,7 +925,6 @@ void RelocInfo::Verify(Isolate* isolate) {
     case DEBUG_BREAK_SLOT_AT_POSITION:
     case DEBUG_BREAK_SLOT_AT_RETURN:
     case DEBUG_BREAK_SLOT_AT_CALL:
-    case DEBUG_BREAK_SLOT_AT_CONSTRUCT_CALL:
     case GENERATOR_CONTINUATION:
     case NONE32:
     case NONE64:
@@ -951,12 +941,6 @@ void RelocInfo::Verify(Isolate* isolate) {
 #endif  // VERIFY_HEAP
 
 
-int RelocInfo::DebugBreakCallArgumentsCount(intptr_t data) {
-  return static_cast<int>(data);
-}
-
-
-// -----------------------------------------------------------------------------
 // Implementation of ExternalReference
 
 void ExternalReference::SetUp() {
@@ -1433,14 +1417,6 @@ ExternalReference ExternalReference::debug_after_break_target_address(
 }
 
 
-ExternalReference
-    ExternalReference::debug_restarter_frame_function_pointer_address(
-        Isolate* isolate) {
-  return ExternalReference(
-      isolate->debug()->restarter_frame_function_pointer_address());
-}
-
-
 ExternalReference ExternalReference::virtual_handler_register(
     Isolate* isolate) {
   return ExternalReference(isolate->virtual_handler_register_address());
@@ -1459,17 +1435,20 @@ ExternalReference ExternalReference::runtime_function_table_address(
 }
 
 
-double power_helper(double x, double y) {
+double power_helper(Isolate* isolate, double x, double y) {
   int y_int = static_cast<int>(y);
   if (y == y_int) {
     return power_double_int(x, y_int);  // Returns 1 if exponent is 0.
   }
   if (y == 0.5) {
+    lazily_initialize_fast_sqrt(isolate);
     return (std::isinf(x)) ? V8_INFINITY
-                           : fast_sqrt(x + 0.0);  // Convert -0 to +0.
+                           : fast_sqrt(x + 0.0, isolate);  // Convert -0 to +0.
   }
   if (y == -0.5) {
-    return (std::isinf(x)) ? 0 : 1.0 / fast_sqrt(x + 0.0);  // Convert -0 to +0.
+    lazily_initialize_fast_sqrt(isolate);
+    return (std::isinf(x)) ? 0 : 1.0 / fast_sqrt(x + 0.0,
+                                                 isolate);  // Convert -0 to +0.
   }
   return power_double_double(x, y);
 }
@@ -1567,9 +1546,9 @@ ExternalReference ExternalReference::mod_two_doubles_operation(
 }
 
 
-ExternalReference ExternalReference::debug_step_in_fp_address(
+ExternalReference ExternalReference::debug_step_in_enabled_address(
     Isolate* isolate) {
-  return ExternalReference(isolate->debug()->step_in_fp_addr());
+  return ExternalReference(isolate->debug()->step_in_enabled_address());
 }
 
 
@@ -1883,11 +1862,10 @@ void Assembler::RecordGeneratorContinuation() {
 }
 
 
-void Assembler::RecordDebugBreakSlot(RelocInfo::Mode mode, int call_argc) {
+void Assembler::RecordDebugBreakSlot(RelocInfo::Mode mode) {
   EnsureSpace ensure_space(this);
   DCHECK(RelocInfo::IsDebugBreakSlot(mode));
-  intptr_t data = static_cast<intptr_t>(call_argc);
-  RecordRelocInfo(mode, data);
+  RecordRelocInfo(mode);
 }
 
 

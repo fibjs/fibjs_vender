@@ -315,13 +315,6 @@ void LInvokeFunction::PrintDataTo(StringStream* stream) {
 }
 
 
-void LCallNew::PrintDataTo(StringStream* stream) {
-  stream->Add("= ");
-  constructor()->PrintTo(stream);
-  stream->Add(" #%d / ", arity());
-}
-
-
 void LCallNewArray::PrintDataTo(StringStream* stream) {
   stream->Add("= ");
   constructor()->PrintTo(stream);
@@ -1006,7 +999,9 @@ LInstruction* LChunkBuilder::DoHasInPrototypeChainAndBranch(
     HHasInPrototypeChainAndBranch* instr) {
   LOperand* object = UseRegister(instr->object());
   LOperand* prototype = UseRegister(instr->prototype());
-  return new (zone()) LHasInPrototypeChainAndBranch(object, prototype);
+  LHasInPrototypeChainAndBranch* result =
+      new (zone()) LHasInPrototypeChainAndBranch(object, prototype);
+  return AssignEnvironment(result);
 }
 
 
@@ -1223,14 +1218,6 @@ LInstruction* LChunkBuilder::DoMathPowHalf(HUnaryMathOperation* instr) {
   LOperand* input = UseRegisterAtStart(instr->value());
   LMathPowHalf* result = new (zone()) LMathPowHalf(input);
   return DefineAsRegister(result);
-}
-
-
-LInstruction* LChunkBuilder::DoCallNew(HCallNew* instr) {
-  LOperand* context = UseFixed(instr->context(), cp);
-  LOperand* constructor = UseFixed(instr->constructor(), r4);
-  LCallNew* result = new (zone()) LCallNew(context, constructor);
-  return MarkAsCall(DefineFixed(result, r3), instr);
 }
 
 
@@ -2169,14 +2156,16 @@ LInstruction* LChunkBuilder::DoLoadKeyed(HLoadKeyed* instr) {
     } else {
       obj = UseRegisterAtStart(instr->elements());
     }
-    result = DefineAsRegister(new (zone()) LLoadKeyed(obj, key));
+    result = DefineAsRegister(new (zone()) LLoadKeyed(obj, key, nullptr));
   } else {
     DCHECK((instr->representation().IsInteger32() &&
             !IsDoubleOrFloatElementsKind(elements_kind)) ||
            (instr->representation().IsDouble() &&
             IsDoubleOrFloatElementsKind(elements_kind)));
     LOperand* backing_store = UseRegister(instr->elements());
-    result = DefineAsRegister(new (zone()) LLoadKeyed(backing_store, key));
+    LOperand* backing_store_owner = UseAny(instr->backing_store_owner());
+    result = DefineAsRegister(
+        new (zone()) LLoadKeyed(backing_store, key, backing_store_owner));
   }
 
   bool needs_environment;
@@ -2239,7 +2228,7 @@ LInstruction* LChunkBuilder::DoStoreKeyed(HStoreKeyed* instr) {
       }
     }
 
-    return new (zone()) LStoreKeyed(object, key, val);
+    return new (zone()) LStoreKeyed(object, key, val, nullptr);
   }
 
   DCHECK((instr->value()->representation().IsInteger32() &&
@@ -2250,7 +2239,8 @@ LInstruction* LChunkBuilder::DoStoreKeyed(HStoreKeyed* instr) {
   LOperand* val = UseRegister(instr->value());
   LOperand* key = UseRegisterOrConstantAtStart(instr->key());
   LOperand* backing_store = UseRegister(instr->elements());
-  return new (zone()) LStoreKeyed(backing_store, key, val);
+  LOperand* backing_store_owner = UseAny(instr->backing_store_owner());
+  return new (zone()) LStoreKeyed(backing_store, key, val, backing_store_owner);
 }
 
 
@@ -2409,13 +2399,6 @@ LInstruction* LChunkBuilder::DoAllocate(HAllocate* instr) {
 }
 
 
-LInstruction* LChunkBuilder::DoRegExpLiteral(HRegExpLiteral* instr) {
-  LOperand* context = UseFixed(instr->context(), cp);
-  return MarkAsCall(DefineFixed(new (zone()) LRegExpLiteral(context), r3),
-                    instr);
-}
-
-
 LInstruction* LChunkBuilder::DoOsrEntry(HOsrEntry* instr) {
   DCHECK(argument_count_ == 0);
   allocator_->MarkAsOsrEntry();
@@ -2507,12 +2490,6 @@ LInstruction* LChunkBuilder::DoTypeof(HTypeof* instr) {
 
 LInstruction* LChunkBuilder::DoTypeofIsAndBranch(HTypeofIsAndBranch* instr) {
   return new (zone()) LTypeofIsAndBranch(UseRegister(instr->value()));
-}
-
-
-LInstruction* LChunkBuilder::DoIsConstructCallAndBranch(
-    HIsConstructCallAndBranch* instr) {
-  return new (zone()) LIsConstructCallAndBranch(TempRegister());
 }
 
 

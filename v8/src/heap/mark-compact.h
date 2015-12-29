@@ -263,10 +263,9 @@ class MarkingDeque {
 // CodeFlusher collects candidates for code flushing during marking and
 // processes those candidates after marking has completed in order to
 // reset those functions referencing code objects that would otherwise
-// be unreachable. Code objects can be referenced in three ways:
+// be unreachable. Code objects can be referenced in two ways:
 //    - SharedFunctionInfo references unoptimized code.
 //    - JSFunction references either unoptimized or optimized code.
-//    - OptimizedCodeMap references optimized code.
 // We are not allowed to flush unoptimized code for functions that got
 // optimized or inlined into optimized code, because we might bailout
 // into the unoptimized code again during deoptimization.
@@ -274,39 +273,25 @@ class CodeFlusher {
  public:
   explicit CodeFlusher(Isolate* isolate)
       : isolate_(isolate),
-        jsfunction_candidates_head_(NULL),
-        shared_function_info_candidates_head_(NULL),
-        optimized_code_map_holder_head_(NULL) {}
+        jsfunction_candidates_head_(nullptr),
+        shared_function_info_candidates_head_(nullptr) {}
 
   inline void AddCandidate(SharedFunctionInfo* shared_info);
   inline void AddCandidate(JSFunction* function);
-  inline void AddOptimizedCodeMap(SharedFunctionInfo* code_map_holder);
 
-  void EvictOptimizedCodeMap(SharedFunctionInfo* code_map_holder);
   void EvictCandidate(SharedFunctionInfo* shared_info);
   void EvictCandidate(JSFunction* function);
 
   void ProcessCandidates() {
-    ProcessOptimizedCodeMaps();
     ProcessSharedFunctionInfoCandidates();
     ProcessJSFunctionCandidates();
-  }
-
-  void EvictAllCandidates() {
-    EvictOptimizedCodeMaps();
-    EvictJSFunctionCandidates();
-    EvictSharedFunctionInfoCandidates();
   }
 
   void IteratePointersToFromSpace(ObjectVisitor* v);
 
  private:
-  void ProcessOptimizedCodeMaps();
   void ProcessJSFunctionCandidates();
   void ProcessSharedFunctionInfoCandidates();
-  void EvictOptimizedCodeMaps();
-  void EvictJSFunctionCandidates();
-  void EvictSharedFunctionInfoCandidates();
 
   static inline JSFunction** GetNextCandidateSlot(JSFunction* candidate);
   static inline JSFunction* GetNextCandidate(JSFunction* candidate);
@@ -321,15 +306,9 @@ class CodeFlusher {
                                       SharedFunctionInfo* next_candidate);
   static inline void ClearNextCandidate(SharedFunctionInfo* candidate);
 
-  static inline SharedFunctionInfo* GetNextCodeMap(SharedFunctionInfo* holder);
-  static inline void SetNextCodeMap(SharedFunctionInfo* holder,
-                                    SharedFunctionInfo* next_holder);
-  static inline void ClearNextCodeMap(SharedFunctionInfo* holder);
-
   Isolate* isolate_;
   JSFunction* jsfunction_candidates_head_;
   SharedFunctionInfo* shared_function_info_candidates_head_;
-  SharedFunctionInfo* optimized_code_map_holder_head_;
 
   DISALLOW_COPY_AND_ASSIGN(CodeFlusher);
 };
@@ -343,6 +322,11 @@ class ThreadLocalTop;
 // Mark-Compact collector
 class MarkCompactCollector {
  public:
+  enum IterationMode {
+    kKeepMarking,
+    kClearMarkbits,
+  };
+
   static void Initialize();
 
   void SetUp();
@@ -388,12 +372,6 @@ class MarkCompactCollector {
 
   CodeFlusher* code_flusher() { return code_flusher_; }
   inline bool is_code_flushing_enabled() const { return code_flusher_ != NULL; }
-  void EnableCodeFlushing(bool enable);
-
-  enum SweeperType {
-    CONCURRENT_SWEEPING,
-    SEQUENTIAL_SWEEPING
-  };
 
   enum SweepingParallelism { SWEEP_ON_MAIN_THREAD, SWEEP_IN_PARALLEL };
 
@@ -430,14 +408,6 @@ class MarkCompactCollector {
                      AllocationSpace to_old_space,
                      SlotsBuffer** evacuation_slots_buffer);
 
-  void MigrateObjectTagged(HeapObject* dst, HeapObject* src, int size,
-                           SlotsBuffer** evacuation_slots_buffer);
-  void MigrateObjectMixed(HeapObject* dst, HeapObject* src, int size,
-                          SlotsBuffer** evacuation_slots_buffer);
-  void MigrateObjectRaw(HeapObject* dst, HeapObject* src, int size);
-
-  bool TryPromoteObject(HeapObject* object, int object_size);
-
   void InvalidateCode(Code* code);
 
   void ClearMarkbits();
@@ -457,9 +427,18 @@ class MarkCompactCollector {
   // size of the maximum continuous freed memory chunk.
   int SweepInParallel(Page* page, PagedSpace* space);
 
+  // Ensures that sweeping is finished.
+  //
+  // Note: Can only be called safely from main thread.
   void EnsureSweepingCompleted();
 
   void SweepOrWaitUntilSweepingCompleted(Page* page);
+
+  // Help out in sweeping the corresponding space and refill memory that has
+  // been regained.
+  //
+  // Note: Thread-safe.
+  void SweepAndRefill(CompactionSpace* space);
 
   // If sweeper threads are not active this method will return true. If
   // this is a latency issue we should be smarter here. Otherwise, it will
@@ -526,16 +505,23 @@ class MarkCompactCollector {
 
  private:
   class CompactionTask;
+  class EvacuateNewSpaceVisitor;
+  class EvacuateOldSpaceVisitor;
+  class EvacuateVisitorBase;
+  class HeapObjectVisitor;
   class SweeperTask;
 
   explicit MarkCompactCollector(Heap* heap);
-  ~MarkCompactCollector();
 
   bool WillBeDeoptimized(Code* code);
   void EvictPopularEvacuationCandidate(Page* page);
   void ClearInvalidStoreAndSlotsBufferEntries();
 
   void StartSweeperThreads();
+
+  void ComputeEvacuationHeuristics(int area_size,
+                                   int* target_fragmentation_percent,
+                                   int* max_evacuated_bytes);
 
 #ifdef DEBUG
   enum CollectorState {
@@ -575,11 +561,12 @@ class MarkCompactCollector {
   //   After: Live objects are marked and non-live objects are unmarked.
 
   friend class CodeMarkingVisitor;
+  friend class IncrementalMarkingMarkingVisitor;
   friend class MarkCompactMarkingVisitor;
   friend class MarkingVisitor;
+  friend class RecordMigratedSlotVisitor;
   friend class RootMarkingVisitor;
   friend class SharedFunctionInfoMarkingVisitor;
-  friend class IncrementalMarkingMarkingVisitor;
 
   // Mark code objects that are active on the stack to prevent them
   // from being flushed.
@@ -589,8 +576,6 @@ class MarkCompactCollector {
 
   // Marking operations for objects reachable from roots.
   void MarkLiveObjects();
-
-  void AfterMarking();
 
   // Pushes a black object onto the marking stack and accounts for live bytes.
   // Note that this assumes live bytes have not yet been counted.
@@ -633,9 +618,8 @@ class MarkCompactCollector {
   // otherwise a map can die and deoptimize the code.
   void ProcessTopOptimizedFrame(ObjectVisitor* visitor);
 
-  // Retain dying maps for <FLAG_retain_maps_for_n_gc> garbage collections to
-  // increase chances of reusing of map transition tree in future.
-  void RetainMaps();
+  // Collects a list of dependent code from maps embedded in optimize code.
+  DependentCode* DependentCodeListFromNonLiveMaps();
 
   // Mark objects reachable (transitively) from objects in the marking
   // stack.  This function empties the marking stack, but may leave
@@ -660,15 +644,20 @@ class MarkCompactCollector {
   // heap object.
   static bool IsUnmarkedHeapObject(Object** p);
 
-  // Map transitions from a live map to a dead map must be killed.
-  // We replace them with a null descriptor, with the same key.
+  // Clear non-live references in weak cells, transition and descriptor arrays,
+  // and deoptimize dependent code of non-live maps.
   void ClearNonLiveReferences();
-  void ClearNonLivePrototypeTransitions(Map* map);
-  void ClearNonLiveMapTransitions(Map* map, MarkBit map_mark);
-  void ClearMapTransitions(Map* map, Map* dead_transition);
-  bool ClearMapBackPointer(Map* map);
-  void TrimDescriptorArray(Map* map, DescriptorArray* descriptors,
-                           int number_of_own_descriptors);
+  void MarkDependentCodeForDeoptimization(DependentCode* list);
+  // Find non-live targets of simple transitions in the given list. Clear
+  // transitions to non-live targets and if needed trim descriptors arrays.
+  void ClearSimpleMapTransitions(Object* non_live_map_list);
+  void ClearSimpleMapTransition(Map* map, Map* dead_transition);
+  // Compact every array in the global list of transition arrays and
+  // trim the corresponding descriptor array if a transition target is non-live.
+  void ClearFullMapTransitions();
+  bool CompactTransitionArray(Map* map, TransitionArray* transitions,
+                              DescriptorArray* descriptors);
+  void TrimDescriptorArray(Map* map, DescriptorArray* descriptors);
   void TrimEnumCache(Map* map, DescriptorArray* descriptors);
 
   // Mark all values associated with reachable keys in weak collections
@@ -685,9 +674,11 @@ class MarkCompactCollector {
   // collections when incremental marking is aborted.
   void AbortWeakCollections();
 
-
-  void ProcessAndClearWeakCells();
+  void ClearWeakCells(Object** non_live_map_list,
+                      DependentCode** dependent_code_list);
   void AbortWeakCells();
+
+  void AbortTransitionArrays();
 
   // -----------------------------------------------------------------------
   // Phase 2: Sweeping to clear mark bits and free non-live objects for
@@ -705,13 +696,7 @@ class MarkCompactCollector {
   // regions to each space's free list.
   void SweepSpaces();
 
-  int DiscoverAndEvacuateBlackObjectsOnPage(NewSpace* new_space,
-                                            NewSpacePage* p);
-
   void EvacuateNewSpace();
-
-  bool EvacuateLiveObjectsFromPage(Page* p, PagedSpace* target_space,
-                                   SlotsBuffer** evacuation_slots_buffer);
 
   void AddEvacuationSlotsBufferSynchronized(
       SlotsBuffer* evacuation_slots_buffer);
@@ -724,9 +709,23 @@ class MarkCompactCollector {
   // The number of parallel compaction tasks, including the main thread.
   int NumberOfParallelCompactionTasks();
 
-  void WaitUntilCompactionCompleted();
+
+  void StartParallelCompaction(CompactionSpaceCollection** compaction_spaces,
+                               uint32_t* task_ids, int len);
+  void WaitUntilCompactionCompleted(uint32_t* task_ids, int len);
 
   void EvacuateNewSpaceAndCandidates();
+
+  void UpdatePointersAfterEvacuation();
+
+  // Iterates through all live objects on a page using marking information.
+  // Returns whether all objects have successfully been visited.
+  bool VisitLiveObjects(MemoryChunk* page, HeapObjectVisitor* visitor,
+                        IterationMode mode);
+
+  void VisitLiveObjectsBody(Page* page, ObjectVisitor* visitor);
+
+  void SweepAbortedPages();
 
   void ReleaseEvacuationCandidates();
 
@@ -734,7 +733,9 @@ class MarkCompactCollector {
   // corresponding space pages list.
   void MoveEvacuationCandidatesToEndOfPagesList();
 
-  void SweepSpace(PagedSpace* space, SweeperType sweeper);
+  // Starts sweeping of a space by contributing on the main thread and setting
+  // up other pages for sweeping.
+  void StartSweepSpace(PagedSpace* space);
 
   // Finalizes the parallel sweeping phase. Marks all the pages that were
   // swept in parallel.
@@ -799,10 +800,8 @@ class MarkCompactCollector {
   // Semaphore used to synchronize compaction tasks.
   base::Semaphore pending_compaction_tasks_semaphore_;
 
-  // Number of active compaction tasks (including main thread).
-  intptr_t concurrent_compaction_tasks_active_;
-
   friend class Heap;
+  friend class StoreBuffer;
 };
 
 
@@ -836,6 +835,14 @@ class MarkBitCellIterator BASE_EMBEDDED {
   inline void Advance() {
     cell_index_++;
     cell_base_ += 32 * kPointerSize;
+  }
+
+  // Return the next mark bit cell. If there is no next it returns 0;
+  inline MarkBit::CellType PeekNext() {
+    if (HasNext()) {
+      return cells_[cell_index_ + 1];
+    }
+    return 0;
   }
 
  private:

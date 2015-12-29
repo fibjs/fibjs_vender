@@ -164,8 +164,8 @@ RUNTIME_FUNCTION(Runtime_TypedArrayInitialize) {
 
   // All checks are done, now we can modify objects.
 
-  DCHECK(holder->GetInternalFieldCount() ==
-         v8::ArrayBufferView::kInternalFieldCount);
+  DCHECK_EQ(v8::ArrayBufferView::kInternalFieldCount,
+            holder->GetInternalFieldCount());
   for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
     holder->SetInternalField(i, Smi::FromInt(0));
   }
@@ -238,8 +238,8 @@ RUNTIME_FUNCTION(Runtime_TypedArrayInitializeFromArrayLike) {
   }
   size_t byte_length = length * element_size;
 
-  DCHECK(holder->GetInternalFieldCount() ==
-         v8::ArrayBufferView::kInternalFieldCount);
+  DCHECK_EQ(v8::ArrayBufferView::kInternalFieldCount,
+            holder->GetInternalFieldCount());
   for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
     holder->SetInternalField(i, Smi::FromInt(0));
   }
@@ -433,6 +433,19 @@ RUNTIME_FUNCTION(Runtime_IsSharedIntegerTypedArray) {
 }
 
 
+RUNTIME_FUNCTION(Runtime_IsSharedInteger32TypedArray) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+  if (!args[0]->IsJSTypedArray()) {
+    return isolate->heap()->false_value();
+  }
+
+  Handle<JSTypedArray> obj(JSTypedArray::cast(args[0]));
+  return isolate->heap()->ToBoolean(obj->GetBuffer()->is_shared() &&
+                                    obj->type() == kExternalInt32Array);
+}
+
+
 RUNTIME_FUNCTION(Runtime_DataViewInitialize) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 4);
@@ -441,8 +454,8 @@ RUNTIME_FUNCTION(Runtime_DataViewInitialize) {
   CONVERT_NUMBER_ARG_HANDLE_CHECKED(byte_offset, 2);
   CONVERT_NUMBER_ARG_HANDLE_CHECKED(byte_length, 3);
 
-  DCHECK(holder->GetInternalFieldCount() ==
-         v8::ArrayBufferView::kInternalFieldCount);
+  DCHECK_EQ(v8::ArrayBufferView::kInternalFieldCount,
+            holder->GetInternalFieldCount());
   for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
     holder->SetInternalField(i, Smi::FromInt(0));
   }

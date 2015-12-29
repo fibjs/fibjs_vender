@@ -35,7 +35,6 @@ class LCodeGen;
   V(Branch)                                  \
   V(CallFunction)                            \
   V(CallJSFunction)                          \
-  V(CallNew)                                 \
   V(CallNewArray)                            \
   V(CallRuntime)                             \
   V(CallStub)                                \
@@ -92,7 +91,6 @@ class LCodeGen;
   V(InstructionGap)                          \
   V(Integer32ToDouble)                       \
   V(InvokeFunction)                          \
-  V(IsConstructCallAndBranch)                \
   V(IsSmiAndBranch)                          \
   V(IsStringAndBranch)                       \
   V(IsUndetectableAndBranch)                 \
@@ -139,7 +137,6 @@ class LCodeGen;
   V(Prologue)                                \
   V(PreparePushArguments)                    \
   V(PushArguments)                           \
-  V(RegExpLiteral)                           \
   V(Return)                                  \
   V(SeqStringGetChar)                        \
   V(SeqStringSetChar)                        \
@@ -851,25 +848,6 @@ class LCallFunction final : public LTemplateInstruction<1, 2, 2> {
 };
 
 
-class LCallNew final : public LTemplateInstruction<1, 2, 0> {
- public:
-  LCallNew(LOperand* context, LOperand* constructor) {
-    inputs_[0] = context;
-    inputs_[1] = constructor;
-  }
-
-  LOperand* context() { return inputs_[0]; }
-  LOperand* constructor() { return inputs_[1]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(CallNew, "call-new")
-  DECLARE_HYDROGEN_ACCESSOR(CallNew)
-
-  void PrintDataTo(StringStream* stream) override;
-
-  int arity() const { return hydrogen()->argument_count() - 1; }
-};
-
-
 class LCallNewArray final : public LTemplateInstruction<1, 2, 0> {
  public:
   LCallNewArray(LOperand* context, LOperand* constructor) {
@@ -1490,18 +1468,20 @@ class LInstanceOf final : public LTemplateInstruction<1, 3, 0> {
 };
 
 
-class LHasInPrototypeChainAndBranch final : public LControlInstruction<2, 1> {
+class LHasInPrototypeChainAndBranch final : public LControlInstruction<2, 2> {
  public:
   LHasInPrototypeChainAndBranch(LOperand* object, LOperand* prototype,
-                                LOperand* scratch) {
+                                LOperand* scratch1, LOperand* scratch2) {
     inputs_[0] = object;
     inputs_[1] = prototype;
-    temps_[0] = scratch;
+    temps_[0] = scratch1;
+    temps_[1] = scratch2;
   }
 
   LOperand* object() const { return inputs_[0]; }
   LOperand* prototype() const { return inputs_[1]; }
-  LOperand* scratch() const { return temps_[0]; }
+  LOperand* scratch1() const { return temps_[0]; }
+  LOperand* scratch2() const { return temps_[1]; }
 
   DECLARE_CONCRETE_INSTRUCTION(HasInPrototypeChainAndBranch,
                                "has-in-prototype-chain-and-branch")
@@ -1580,21 +1560,6 @@ class LInvokeFunction final : public LTemplateInstruction<1, 2, 0> {
   void PrintDataTo(StringStream* stream) override;
 
   int arity() const { return hydrogen()->argument_count() - 1; }
-};
-
-
-class LIsConstructCallAndBranch final : public LControlInstruction<0, 2> {
- public:
-  LIsConstructCallAndBranch(LOperand* temp1, LOperand* temp2) {
-    temps_[0] = temp1;
-    temps_[1] = temp2;
-  }
-
-  LOperand* temp1() { return temps_[0]; }
-  LOperand* temp2() { return temps_[1]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(IsConstructCallAndBranch,
-                               "is-construct-call-and-branch")
 };
 
 
@@ -1714,16 +1679,18 @@ class LLoadGlobalGeneric final : public LTemplateInstruction<1, 2, 1> {
 };
 
 
-template<int T>
-class LLoadKeyed : public LTemplateInstruction<1, 2, T> {
+template <int T>
+class LLoadKeyed : public LTemplateInstruction<1, 3, T> {
  public:
-  LLoadKeyed(LOperand* elements, LOperand* key) {
+  LLoadKeyed(LOperand* elements, LOperand* key, LOperand* backing_store_owner) {
     this->inputs_[0] = elements;
     this->inputs_[1] = key;
+    this->inputs_[2] = backing_store_owner;
   }
 
   LOperand* elements() { return this->inputs_[0]; }
   LOperand* key() { return this->inputs_[1]; }
+  LOperand* backing_store_owner() { return this->inputs_[2]; }
   ElementsKind elements_kind() const {
     return this->hydrogen()->elements_kind();
   }
@@ -1756,8 +1723,9 @@ class LLoadKeyed : public LTemplateInstruction<1, 2, T> {
 
 class LLoadKeyedExternal: public LLoadKeyed<1> {
  public:
-  LLoadKeyedExternal(LOperand* elements, LOperand* key, LOperand* temp) :
-      LLoadKeyed<1>(elements, key) {
+  LLoadKeyedExternal(LOperand* elements, LOperand* key,
+                     LOperand* backing_store_owner, LOperand* temp)
+      : LLoadKeyed<1>(elements, key, backing_store_owner) {
     temps_[0] = temp;
   }
 
@@ -1769,8 +1737,8 @@ class LLoadKeyedExternal: public LLoadKeyed<1> {
 
 class LLoadKeyedFixed: public LLoadKeyed<1> {
  public:
-  LLoadKeyedFixed(LOperand* elements, LOperand* key, LOperand* temp) :
-      LLoadKeyed<1>(elements, key) {
+  LLoadKeyedFixed(LOperand* elements, LOperand* key, LOperand* temp)
+      : LLoadKeyed<1>(elements, key, nullptr) {
     temps_[0] = temp;
   }
 
@@ -1782,8 +1750,8 @@ class LLoadKeyedFixed: public LLoadKeyed<1> {
 
 class LLoadKeyedFixedDouble: public LLoadKeyed<1> {
  public:
-  LLoadKeyedFixedDouble(LOperand* elements, LOperand* key, LOperand* temp) :
-      LLoadKeyed<1>(elements, key) {
+  LLoadKeyedFixedDouble(LOperand* elements, LOperand* key, LOperand* temp)
+      : LLoadKeyed<1>(elements, key, nullptr) {
     temps_[0] = temp;
   }
 
@@ -2289,19 +2257,6 @@ class LPushArguments final : public LTemplateResultInstruction<0> {
 };
 
 
-class LRegExpLiteral final : public LTemplateInstruction<1, 1, 0> {
- public:
-  explicit LRegExpLiteral(LOperand* context) {
-    inputs_[0] = context;
-  }
-
-  LOperand* context() { return inputs_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(RegExpLiteral, "regexp-literal")
-  DECLARE_HYDROGEN_ACCESSOR(RegExpLiteral)
-};
-
-
 class LReturn final : public LTemplateInstruction<0, 3, 0> {
  public:
   LReturn(LOperand* value, LOperand* context, LOperand* parameter_count) {
@@ -2417,13 +2372,15 @@ class LStackCheck final : public LTemplateInstruction<0, 1, 0> {
 };
 
 
-template<int T>
-class LStoreKeyed : public LTemplateInstruction<0, 3, T> {
+template <int T>
+class LStoreKeyed : public LTemplateInstruction<0, 4, T> {
  public:
-  LStoreKeyed(LOperand* elements, LOperand* key, LOperand* value) {
+  LStoreKeyed(LOperand* elements, LOperand* key, LOperand* value,
+              LOperand* backing_store_owner) {
     this->inputs_[0] = elements;
     this->inputs_[1] = key;
     this->inputs_[2] = value;
+    this->inputs_[3] = backing_store_owner;
   }
 
   bool is_external() const { return this->hydrogen()->is_external(); }
@@ -2436,6 +2393,7 @@ class LStoreKeyed : public LTemplateInstruction<0, 3, T> {
   LOperand* elements() { return this->inputs_[0]; }
   LOperand* key() { return this->inputs_[1]; }
   LOperand* value() { return this->inputs_[2]; }
+  LOperand* backing_store_owner() { return this->inputs_[3]; }
   ElementsKind elements_kind() const {
     return this->hydrogen()->elements_kind();
   }
@@ -2475,8 +2433,8 @@ class LStoreKeyed : public LTemplateInstruction<0, 3, T> {
 class LStoreKeyedExternal final : public LStoreKeyed<1> {
  public:
   LStoreKeyedExternal(LOperand* elements, LOperand* key, LOperand* value,
-                      LOperand* temp) :
-      LStoreKeyed<1>(elements, key, value) {
+                      LOperand* backing_store_owner, LOperand* temp)
+      : LStoreKeyed<1>(elements, key, value, backing_store_owner) {
     temps_[0] = temp;
   }
 
@@ -2489,8 +2447,8 @@ class LStoreKeyedExternal final : public LStoreKeyed<1> {
 class LStoreKeyedFixed final : public LStoreKeyed<1> {
  public:
   LStoreKeyedFixed(LOperand* elements, LOperand* key, LOperand* value,
-                   LOperand* temp) :
-      LStoreKeyed<1>(elements, key, value) {
+                   LOperand* temp)
+      : LStoreKeyed<1>(elements, key, value, nullptr) {
     temps_[0] = temp;
   }
 
@@ -2503,8 +2461,8 @@ class LStoreKeyedFixed final : public LStoreKeyed<1> {
 class LStoreKeyedFixedDouble final : public LStoreKeyed<1> {
  public:
   LStoreKeyedFixedDouble(LOperand* elements, LOperand* key, LOperand* value,
-                         LOperand* temp) :
-      LStoreKeyed<1>(elements, key, value) {
+                         LOperand* temp)
+      : LStoreKeyed<1>(elements, key, value, nullptr) {
     temps_[0] = temp;
   }
 
