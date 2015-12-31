@@ -31,7 +31,8 @@ Thread_base* Thread_base::current()
 
     OSThread* thread_ = OSThread::current();
 
-    assert(thread_ != 0);
+    if (thread_ == 0)
+        return 0;
 
     if (thread_->is(Service::type))
         return ((Service*)thread_)->m_running;
@@ -58,16 +59,6 @@ bool Service::hasService()
     return OSThread::current()->is(Service::type);
 }
 
-void Service::init()
-{
-    Service *service_ = new Service();
-    service_->bindCurrent();
-
-    s_service_inited = true;
-
-    init_timer();
-}
-
 Service::Service() : m_main(this)
 {
     m_recycle = NULL;
@@ -80,6 +71,12 @@ Service::Service() : m_main(this)
     m_main.saveStackGuard();
 
     m_fibers.putTail(&m_main.m_link);
+
+    if (!s_service_inited)
+    {
+        s_service_inited = true;
+        init_timer();
+    }
 }
 
 static void fiber_proc(void *(*func)(void *), void *data)
