@@ -510,8 +510,8 @@ public:
     DWORD threadid;
 #else
     pthread_t thread_;
-#endif
     OSSemaphore m_sem;
+#endif
 };
 
 inline void InitOnce(intptr_t *once, void (*initializer)())
