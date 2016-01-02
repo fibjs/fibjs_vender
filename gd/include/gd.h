@@ -44,11 +44,11 @@ extern "C" {
    the gd sources in a project. */
 
 /* http://gcc.gnu.org/wiki/Visibility */
-#ifdef _MSC_VER
-#  define BGD_STDCALL __stdcall
-#else
+// #ifdef _MSC_VER
+// #  define BGD_STDCALL __stdcall
+// #else
 #  define BGD_STDCALL
-#endif
+// #endif
 #define BGD_EXPORT_DATA_PROT
 #define BGD_EXPORT_DATA_IMPL
 
