@@ -35,6 +35,16 @@ void *OSThread::Entry(void *arg)
     return 0;
 }
 
+void OSThread::suspend()
+{
+    m_sem.Wait();
+}
+
+void OSThread::resume()
+{
+    m_sem.Post();
+}
+
 void OSThread::yield()
 {
     sleep(0);
@@ -90,24 +100,6 @@ void OSThread::join()
     WaitForSingleObject(thread_, INFINITE);
 }
 
-void OSThread::suspend()
-{
-    assert(thread_ != 0);
-
-    ::SleepEx(INFINITE, TRUE);
-}
-
-void CALLBACK _wakeup_proc(ULONG_PTR dwParam)
-{
-}
-
-void OSThread::resume()
-{
-    assert(thread_ != 0);
-
-    ::QueueUserAPC(_wakeup_proc, thread_, 0);
-}
-
 OSThread::~OSThread()
 {
     if (thread_)
@@ -136,20 +128,6 @@ void OSThread::join()
     assert(thread_ != 0);
 
     pthread_join(thread_, NULL);
-}
-
-void OSThread::suspend()
-{
-    assert(thread_ != 0);
-
-    m_sem.Wait();
-}
-
-void OSThread::resume()
-{
-    assert(thread_ != 0);
-
-    m_sem.Post();
 }
 
 OSThread::~OSThread()
