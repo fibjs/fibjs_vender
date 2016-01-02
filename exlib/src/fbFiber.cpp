@@ -93,6 +93,7 @@ void Fiber::suspend()
 void Fiber::resume()
 {
     m_pService->m_resume.putTail(this);
+    m_pService->resume();
 }
 
 void Fiber::yield()

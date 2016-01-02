@@ -172,37 +172,11 @@ void Service::switchConext()
             break;
         }
 
-        int32_t nCount = 0;
-        int32_t time_0 = 0;
-        int32_t time_1 = time_0 + 2000;
-        int32_t time_2 = time_1 + 200;
-        int32_t time_3 = time_2 + 20;
+        if (m_Idle)
+            m_Idle();
 
-        while (1)
-        {
-            doInterrupt();
-
-            if (nCount < 2000000)
-                nCount++;
-
-            if (!m_resume.empty())
-                break;
-
-            if (m_Idle)
-                m_Idle();
-
-            if (!m_resume.empty())
-                break;
-
-            if (nCount > time_3)
-                OSThread::sleep(100);
-            else if (nCount > time_2)
-                OSThread::sleep(10);
-            else if (nCount > time_1)
-                OSThread::sleep(1);
-            else if (nCount > time_0)
-                OSThread::sleep(0);
-        }
+        if (m_resume.empty())
+            suspend();
     }
 
     m_switchTimes.inc();
