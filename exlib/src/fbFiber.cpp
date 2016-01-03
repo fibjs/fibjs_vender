@@ -128,12 +128,12 @@ public:
 
             m_tm = v8::base::OS::TimeCurrentMillis();
 
-            while (p = m_acSleep.getHead())
+            while ((p = m_acSleep.getHead()) != NULL)
             {
                 m_tms.insert(std::make_pair(m_tm + p->m_tm, p));
             }
 
-            while (p1 = m_acCancel.getHead())
+            while ((p1 = m_acCancel.getHead()) != NULL)
             {
                 e = m_tms.begin();
                 while (e != m_tms.end())
