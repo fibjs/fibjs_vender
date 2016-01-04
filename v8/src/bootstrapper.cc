@@ -205,6 +205,8 @@ class Genesis BASE_EMBEDDED {
   DECLARE_FEATURE_INITIALIZATION(promise_extra, "")
 #undef DECLARE_FEATURE_INITIALIZATION
 
+  Handle<JSFunction> InstallArrayBuffer(Handle<JSObject> target,
+                                        const char* name);
   Handle<JSFunction> InstallInternalArray(Handle<JSObject> target,
                                           const char* name,
                                           ElementsKind elements_kind);
@@ -1079,9 +1081,10 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
   Handle<String> object_name = factory->Object_string();
   JSObject::AddProperty(
       global_object, object_name, isolate->object_function(), DONT_ENUM);
-  SimpleInstallFunction(isolate->object_function(),
-                        isolate->factory()->InternalizeUtf8String("assign"),
+  SimpleInstallFunction(isolate->object_function(), factory->assign_string(),
                         Builtins::kObjectAssign, 2, false);
+  SimpleInstallFunction(isolate->object_function(), factory->create_string(),
+                        Builtins::kObjectCreate, 2, false);
 
   Handle<JSObject> global(native_context()->global_object());
 
@@ -1208,8 +1211,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
         isolate->initial_object_prototype(), Builtins::kSymbolConstructor);
     symbol_fun->shared()->set_construct_stub(
         *isolate->builtins()->SymbolConstructor_ConstructStub());
-    symbol_fun->shared()->set_internal_formal_parameter_count(1);
     symbol_fun->shared()->set_length(1);
+    symbol_fun->shared()->DontAdaptArguments();
     native_context()->set_symbol_function(*symbol_fun);
   }
 
@@ -1344,11 +1347,7 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
   {  // -- A r r a y B u f f e r
     Handle<JSFunction> array_buffer_fun =
-        InstallFunction(
-            global, "ArrayBuffer", JS_ARRAY_BUFFER_TYPE,
-            JSArrayBuffer::kSizeWithInternalFields,
-            isolate->initial_object_prototype(),
-            Builtins::kIllegal);
+        InstallArrayBuffer(global, "ArrayBuffer");
     InstallWithIntrinsicDefaultProto(isolate, array_buffer_fun,
                                      Context::ARRAY_BUFFER_FUN_INDEX);
   }
@@ -2236,13 +2235,9 @@ void Genesis::InitializeGlobal_harmony_reflect() {
 void Genesis::InitializeGlobal_harmony_sharedarraybuffer() {
   if (!FLAG_harmony_sharedarraybuffer) return;
 
-  Handle<JSGlobalObject> global(
-      JSGlobalObject::cast(native_context()->global_object()));
-
-  Handle<JSFunction> shared_array_buffer_fun = InstallFunction(
-      global, "SharedArrayBuffer", JS_ARRAY_BUFFER_TYPE,
-      JSArrayBuffer::kSizeWithInternalFields,
-      isolate()->initial_object_prototype(), Builtins::kIllegal);
+  Handle<JSGlobalObject> global(native_context()->global_object());
+  Handle<JSFunction> shared_array_buffer_fun =
+      InstallArrayBuffer(global, "SharedArrayBuffer");
   native_context()->set_shared_array_buffer_fun(*shared_array_buffer_fun);
 }
 
@@ -2331,6 +2326,36 @@ void Genesis::InitializeGlobal_harmony_proxies() {
 
   native_context()->set_proxy_function(*proxy_function);
   InstallFunction(global, name, proxy_function, factory->Object_string());
+}
+
+
+Handle<JSFunction> Genesis::InstallArrayBuffer(Handle<JSObject> target,
+                                               const char* name) {
+  // Setup the {prototype} with the given {name} for @@toStringTag.
+  Handle<JSObject> prototype =
+      factory()->NewJSObject(isolate()->object_function(), TENURED);
+  JSObject::AddProperty(prototype, factory()->to_string_tag_symbol(),
+                        factory()->NewStringFromAsciiChecked(name),
+                        static_cast<PropertyAttributes>(DONT_ENUM | READ_ONLY));
+
+  // Allocate the constructor with the given {prototype}.
+  Handle<JSFunction> array_buffer_fun =
+      InstallFunction(target, name, JS_ARRAY_BUFFER_TYPE,
+                      JSArrayBuffer::kSizeWithInternalFields, prototype,
+                      Builtins::kArrayBufferConstructor);
+  array_buffer_fun->shared()->set_construct_stub(
+      *isolate()->builtins()->ArrayBufferConstructor_ConstructStub());
+  array_buffer_fun->shared()->DontAdaptArguments();
+  array_buffer_fun->shared()->set_length(1);
+
+  // Install the "constructor" property on the {prototype}.
+  JSObject::AddProperty(prototype, factory()->constructor_string(),
+                        array_buffer_fun, DONT_ENUM);
+
+  SimpleInstallFunction(array_buffer_fun, factory()->isView_string(),
+                        Builtins::kArrayBufferIsView, 1, true);
+
+  return array_buffer_fun;
 }
 
 
@@ -2464,7 +2489,7 @@ bool Genesis::InstallNatives(ContextType context_type) {
   {
     Handle<JSFunction> eval = SimpleInstallFunction(
         handle(native_context()->global_object()), factory()->eval_string(),
-        Builtins::kGlobalEval, 1, true);
+        Builtins::kGlobalEval, 1, false);
     native_context()->set_global_eval_fun(*eval);
   }
 
@@ -2665,7 +2690,8 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_sloppy_natives[] = {nullptr};
   static const char* harmony_sloppy_function_natives[] = {nullptr};
   static const char* harmony_sloppy_let_natives[] = {nullptr};
-  static const char* harmony_unicode_regexps_natives[] = {nullptr};
+  static const char* harmony_unicode_regexps_natives[] = {
+      "native harmony-unicode-regexps.js", nullptr};
   static const char* harmony_default_parameters_natives[] = {nullptr};
   static const char* harmony_reflect_natives[] = {"native harmony-reflect.js",
                                                   nullptr};

@@ -66,7 +66,8 @@ Register GetRegisterThatIsNotOneOf(Register reg1, Register reg2 = no_reg,
 bool AreAliased(Register reg1, Register reg2, Register reg3 = no_reg,
                 Register reg4 = no_reg, Register reg5 = no_reg,
                 Register reg6 = no_reg, Register reg7 = no_reg,
-                Register reg8 = no_reg);
+                Register reg8 = no_reg, Register reg9 = no_reg,
+                Register reg10 = no_reg);
 #endif
 
 // These exist to provide portability between 32 and 64bit
@@ -930,29 +931,29 @@ class MacroAssembler : public Assembler {
   // Call a runtime routine.
   void CallRuntime(const Runtime::Function* f, int num_arguments,
                    SaveFPRegsMode save_doubles = kDontSaveFPRegs);
-  void CallRuntimeSaveDoubles(Runtime::FunctionId id) {
-    const Runtime::Function* function = Runtime::FunctionForId(id);
+  void CallRuntimeSaveDoubles(Runtime::FunctionId fid) {
+    const Runtime::Function* function = Runtime::FunctionForId(fid);
     CallRuntime(function, function->nargs, kSaveFPRegs);
   }
 
   // Convenience function: Same as above, but takes the fid instead.
-  void CallRuntime(Runtime::FunctionId id, int num_arguments,
+  void CallRuntime(Runtime::FunctionId fid,
                    SaveFPRegsMode save_doubles = kDontSaveFPRegs) {
-    CallRuntime(Runtime::FunctionForId(id), num_arguments, save_doubles);
+    const Runtime::Function* function = Runtime::FunctionForId(fid);
+    CallRuntime(function, function->nargs, save_doubles);
+  }
+
+  // Convenience function: Same as above, but takes the fid instead.
+  void CallRuntime(Runtime::FunctionId fid, int num_arguments,
+                   SaveFPRegsMode save_doubles = kDontSaveFPRegs) {
+    CallRuntime(Runtime::FunctionForId(fid), num_arguments, save_doubles);
   }
 
   // Convenience function: call an external reference.
   void CallExternalReference(const ExternalReference& ext, int num_arguments);
 
-  // Tail call of a runtime routine (jump).
-  // Like JumpToExternalReference, but also takes care of passing the number
-  // of parameters.
-  void TailCallExternalReference(const ExternalReference& ext,
-                                 int num_arguments, int result_size);
-
   // Convenience function: tail call a runtime routine (jump).
-  void TailCallRuntime(Runtime::FunctionId fid, int num_arguments,
-                       int result_size);
+  void TailCallRuntime(Runtime::FunctionId fid);
 
   int CalculateStackPassedWords(int num_reg_arguments,
                                 int num_double_arguments);
@@ -1320,6 +1321,10 @@ class MacroAssembler : public Assembler {
   void AssertName(Register object);
 
   void AssertFunction(Register object);
+
+  // Abort execution if argument is not a JSBoundFunction,
+  // enabled via --debug-code.
+  void AssertBoundFunction(Register object);
 
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.

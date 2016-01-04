@@ -220,7 +220,7 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
     if (info()->scope()->is_script_scope()) {
       __ push(edi);
       __ Push(info()->scope()->GetScopeInfo(info()->isolate()));
-      __ CallRuntime(Runtime::kNewScriptContext, 2);
+      __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
     } else if (slots <= FastNewContextStub::kMaximumSlots) {
       FastNewContextStub stub(isolate(), slots);
@@ -229,7 +229,7 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       need_write_barrier = false;
     } else {
       __ push(edi);
-      __ CallRuntime(Runtime::kNewFunctionContext, 1);
+      __ CallRuntime(Runtime::kNewFunctionContext);
     }
     RecordSafepoint(deopt_mode);
 
@@ -2896,7 +2896,7 @@ void LCodeGen::DoReturn(LReturn* instr) {
     // safe to write to the context register.
     __ push(eax);
     __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
-    __ CallRuntime(Runtime::kTraceExit, 1);
+    __ CallRuntime(Runtime::kTraceExit);
   }
   if (dynamic_frame_alignment_) {
     // Fetch the state of the dynamic frame alignment.
@@ -3484,7 +3484,7 @@ void LCodeGen::DoDeclareGlobals(LDeclareGlobals* instr) {
   DCHECK(ToRegister(instr->context()).is(esi));
   __ push(Immediate(instr->hydrogen()->pairs()));
   __ push(Immediate(Smi::FromInt(instr->hydrogen()->flags())));
-  CallRuntime(Runtime::kDeclareGlobals, 2, instr);
+  CallRuntime(Runtime::kDeclareGlobals, instr);
 }
 
 
@@ -5939,7 +5939,7 @@ void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   // Get the set of properties to enumerate.
   __ bind(&call_runtime);
   __ push(eax);
-  CallRuntime(Runtime::kGetPropertyNamesFast, 1, instr);
+  CallRuntime(Runtime::kGetPropertyNamesFast, instr);
 
   __ cmp(FieldOperand(eax, HeapObject::kMapOffset),
          isolate()->factory()->meta_map());
@@ -6060,7 +6060,7 @@ void LCodeGen::DoAllocateBlockContext(LAllocateBlockContext* instr) {
   Handle<ScopeInfo> scope_info = instr->scope_info();
   __ Push(scope_info);
   __ push(ToRegister(instr->function()));
-  CallRuntime(Runtime::kPushBlockContext, 2, instr);
+  CallRuntime(Runtime::kPushBlockContext, instr);
   RecordSafepoint(Safepoint::kNoLazyDeopt);
 }
 

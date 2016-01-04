@@ -205,7 +205,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
 };
 
 
-Condition FlagsConditionToCondition(FlagsCondition condition) {
+Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
   switch (condition) {
     case kEqual:
       return eq;
@@ -224,17 +224,42 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     case kUnsignedGreaterThan:
       return gt;
     case kOverflow:
+      // Overflow checked for add/sub only.
+      switch (op) {
 #if V8_TARGET_ARCH_PPC64
-      return ne;
-#else
-      return lt;
+        case kPPC_Add:
+        case kPPC_Sub:
+          return lt;
 #endif
+        case kPPC_AddWithOverflow32:
+        case kPPC_SubWithOverflow32:
+#if V8_TARGET_ARCH_PPC64
+          return ne;
+#else
+          return lt;
+#endif
+        default:
+          break;
+      }
+      break;
     case kNotOverflow:
+      switch (op) {
 #if V8_TARGET_ARCH_PPC64
-      return eq;
-#else
-      return ge;
+        case kPPC_Add:
+        case kPPC_Sub:
+          return ge;
 #endif
+        case kPPC_AddWithOverflow32:
+        case kPPC_SubWithOverflow32:
+#if V8_TARGET_ARCH_PPC64
+          return eq;
+#else
+          return ge;
+#endif
+        default:
+          break;
+      }
+      break;
     default:
       break;
   }
@@ -294,13 +319,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
   } while (0)
 
 
-#if V8_TARGET_ARCH_PPC64
-#define ASSEMBLE_ADD_WITH_OVERFLOW()             \
-  do {                                           \
-    ASSEMBLE_BINOP(add, addi);                   \
-    __ TestIfInt32(i.OutputRegister(), r0, cr0); \
-  } while (0)
-#else
 #define ASSEMBLE_ADD_WITH_OVERFLOW()                                    \
   do {                                                                  \
     if (HasRegisterInput(instr, 1)) {                                   \
@@ -311,16 +329,8 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
                                 i.InputInt32(1), kScratchReg, r0);      \
     }                                                                   \
   } while (0)
-#endif
 
 
-#if V8_TARGET_ARCH_PPC64
-#define ASSEMBLE_SUB_WITH_OVERFLOW()             \
-  do {                                           \
-    ASSEMBLE_BINOP(sub, subi);                   \
-    __ TestIfInt32(i.OutputRegister(), r0, cr0); \
-  } while (0)
-#else
 #define ASSEMBLE_SUB_WITH_OVERFLOW()                                    \
   do {                                                                  \
     if (HasRegisterInput(instr, 1)) {                                   \
@@ -331,6 +341,24 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
                                 -i.InputInt32(1), kScratchReg, r0);     \
     }                                                                   \
   } while (0)
+
+
+#if V8_TARGET_ARCH_PPC64
+#define ASSEMBLE_ADD_WITH_OVERFLOW32()           \
+  do {                                           \
+    ASSEMBLE_BINOP(add, addi);                   \
+    __ TestIfInt32(i.OutputRegister(), r0, cr0); \
+  } while (0)
+
+
+#define ASSEMBLE_SUB_WITH_OVERFLOW32()           \
+  do {                                           \
+    ASSEMBLE_BINOP(sub, subi);                   \
+    __ TestIfInt32(i.OutputRegister(), r0, cr0); \
+  } while (0)
+#else
+#define ASSEMBLE_ADD_WITH_OVERFLOW32 ASSEMBLE_ADD_WITH_OVERFLOW
+#define ASSEMBLE_SUB_WITH_OVERFLOW32 ASSEMBLE_SUB_WITH_OVERFLOW
 #endif
 
 
@@ -907,31 +935,47 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kPPC_Add:
-      if (HasRegisterInput(instr, 1)) {
-        __ add(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1),
-               LeaveOE, i.OutputRCBit());
+#if V8_TARGET_ARCH_PPC64
+      if (FlagsModeField::decode(instr->opcode()) != kFlags_none) {
+        ASSEMBLE_ADD_WITH_OVERFLOW();
       } else {
-        __ addi(i.OutputRegister(), i.InputRegister(0), i.InputImmediate(1));
-        DCHECK_EQ(LeaveRC, i.OutputRCBit());
+#endif
+        if (HasRegisterInput(instr, 1)) {
+          __ add(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1),
+                 LeaveOE, i.OutputRCBit());
+        } else {
+          __ addi(i.OutputRegister(), i.InputRegister(0), i.InputImmediate(1));
+          DCHECK_EQ(LeaveRC, i.OutputRCBit());
+        }
+#if V8_TARGET_ARCH_PPC64
       }
+#endif
       break;
     case kPPC_AddWithOverflow32:
-      ASSEMBLE_ADD_WITH_OVERFLOW();
+      ASSEMBLE_ADD_WITH_OVERFLOW32();
       break;
     case kPPC_AddDouble:
       ASSEMBLE_FLOAT_BINOP_RC(fadd);
       break;
     case kPPC_Sub:
-      if (HasRegisterInput(instr, 1)) {
-        __ sub(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1),
-               LeaveOE, i.OutputRCBit());
+#if V8_TARGET_ARCH_PPC64
+      if (FlagsModeField::decode(instr->opcode()) != kFlags_none) {
+        ASSEMBLE_SUB_WITH_OVERFLOW();
       } else {
-        __ subi(i.OutputRegister(), i.InputRegister(0), i.InputImmediate(1));
-        DCHECK_EQ(LeaveRC, i.OutputRCBit());
+#endif
+        if (HasRegisterInput(instr, 1)) {
+          __ sub(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1),
+                 LeaveOE, i.OutputRCBit());
+        } else {
+          __ subi(i.OutputRegister(), i.InputRegister(0), i.InputImmediate(1));
+          DCHECK_EQ(LeaveRC, i.OutputRCBit());
+        }
+#if V8_TARGET_ARCH_PPC64
       }
+#endif
       break;
     case kPPC_SubWithOverflow32:
-      ASSEMBLE_SUB_WITH_OVERFLOW();
+      ASSEMBLE_SUB_WITH_OVERFLOW32();
       break;
     case kPPC_SubDouble:
       ASSEMBLE_FLOAT_BINOP_RC(fsub);
@@ -1132,8 +1176,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kPPC_Int64ToInt32:
-      // TODO(mbrandy): sign extend?
-      __ Move(i.OutputRegister(), i.InputRegister(0));
+      __ extsw(i.OutputRegister(), i.InputRegister(0));
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kPPC_Int64ToFloat32:
@@ -1374,11 +1417,7 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
   FlagsCondition condition = branch->condition;
   CRegister cr = cr0;
 
-  // Overflow checked for add/sub only.
-  DCHECK((condition != kOverflow && condition != kNotOverflow) ||
-         (op == kPPC_AddWithOverflow32 || op == kPPC_SubWithOverflow32));
-
-  Condition cond = FlagsConditionToCondition(condition);
+  Condition cond = FlagsConditionToCondition(condition, op);
   if (op == kPPC_CmpDouble) {
     // check for unordered if necessary
     if (cond == le) {
@@ -1408,16 +1447,12 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
   bool check_unordered = (op == kPPC_CmpDouble);
   CRegister cr = cr0;
 
-  // Overflow checked for add/sub only.
-  DCHECK((condition != kOverflow && condition != kNotOverflow) ||
-         (op == kPPC_AddWithOverflow32 || op == kPPC_SubWithOverflow32));
-
   // Materialize a full 32-bit 1 or 0 value. The result register is always the
   // last output of the instruction.
   DCHECK_NE(0u, instr->OutputCount());
   Register reg = i.OutputRegister(instr->OutputCount() - 1);
 
-  Condition cond = FlagsConditionToCondition(condition);
+  Condition cond = FlagsConditionToCondition(condition, op);
   switch (cond) {
     case eq:
     case lt:

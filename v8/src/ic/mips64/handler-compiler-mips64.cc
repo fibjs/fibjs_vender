@@ -219,8 +219,10 @@ static void PushInterceptorArguments(MacroAssembler* masm, Register receiver,
 static void CompileCallLoadPropertyWithInterceptor(
     MacroAssembler* masm, Register receiver, Register holder, Register name,
     Handle<JSObject> holder_obj, Runtime::FunctionId id) {
+  DCHECK(NamedLoadHandlerCompiler::kInterceptorArgsLength ==
+         Runtime::FunctionForId(id)->nargs);
   PushInterceptorArguments(masm, receiver, holder, name, holder_obj);
-  __ CallRuntime(id, NamedLoadHandlerCompiler::kInterceptorArgsLength);
+  __ CallRuntime(id);
 }
 
 
@@ -319,7 +321,7 @@ void NamedStoreHandlerCompiler::GenerateSlow(MacroAssembler* masm) {
 
   // The slow case calls into the runtime to complete the store without causing
   // an IC miss that would otherwise cause a transition to the generic stub.
-  __ TailCallRuntime(Runtime::kStoreIC_Slow, 5, 1);
+  __ TailCallRuntime(Runtime::kStoreIC_Slow);
 }
 
 
@@ -328,7 +330,7 @@ void ElementHandlerCompiler::GenerateStoreSlow(MacroAssembler* masm) {
 
   // The slow case calls into the runtime to complete the store without causing
   // an IC miss that would otherwise cause a transition to the generic stub.
-  __ TailCallRuntime(Runtime::kKeyedStoreIC_Slow, 5, 1);
+  __ TailCallRuntime(Runtime::kKeyedStoreIC_Slow);
 }
 
 
@@ -702,8 +704,7 @@ void NamedLoadHandlerCompiler::GenerateLoadInterceptor(Register holder_reg) {
   PushInterceptorArguments(masm(), receiver(), holder_reg, this->name(),
                            holder());
 
-  __ TailCallRuntime(Runtime::kLoadPropertyWithInterceptor,
-                     NamedLoadHandlerCompiler::kInterceptorArgsLength, 1);
+  __ TailCallRuntime(Runtime::kLoadPropertyWithInterceptor);
 }
 
 
@@ -726,7 +727,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreCallback(
   __ Push(at, value());
 
   // Do tail-call to the runtime system.
-  __ TailCallRuntime(Runtime::kStoreCallbackProperty, 5, 1);
+  __ TailCallRuntime(Runtime::kStoreCallbackProperty);
 
   // Return the generated code.
   return GetCode(kind(), Code::FAST, name);
@@ -738,7 +739,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreInterceptor(
   __ Push(receiver(), this->name(), value());
 
   // Do tail-call to the runtime system.
-  __ TailCallRuntime(Runtime::kStorePropertyWithInterceptor, 3, 1);
+  __ TailCallRuntime(Runtime::kStorePropertyWithInterceptor);
 
   // Return the generated code.
   return GetCode(kind(), Code::FAST, name);

@@ -31,7 +31,7 @@ void PropertyICCompiler::GenerateRuntimeSetProperty(
   __ push(ebx);  // return address
 
   // Do tail-call to runtime routine.
-  __ TailCallRuntime(Runtime::kSetProperty, 4, 1);
+  __ TailCallRuntime(Runtime::kSetProperty);
 }
 
 

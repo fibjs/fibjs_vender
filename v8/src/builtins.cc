@@ -1489,6 +1489,39 @@ BUILTIN(ObjectAssign) {
 }
 
 
+// ES6 section 19.1.2.2 Object.create ( O [ , Properties ] )
+BUILTIN(ObjectCreate) {
+  HandleScope scope(isolate);
+  Handle<Object> prototype = args.atOrUndefined(isolate, 1);
+  if (!prototype->IsNull() && !prototype->IsJSReceiver()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kProtoObjectOrNull, prototype));
+  }
+
+  // Generate the map with the specified {prototype} based on the Object
+  // function's initial map from the current native context.
+  // TODO(bmeurer): Use a dedicated cache for Object.create; think about
+  // slack tracking for Object.create.
+  Handle<Map> map(isolate->native_context()->object_function()->initial_map(),
+                  isolate);
+  if (map->prototype() != *prototype) {
+    map = Map::TransitionToPrototype(map, prototype, FAST_PROTOTYPE);
+  }
+
+  // Actually allocate the object.
+  Handle<JSObject> object = isolate->factory()->NewJSObjectFromMap(map);
+
+  // Define the properties if properties was specified and is not undefined.
+  Handle<Object> properties = args.atOrUndefined(isolate, 2);
+  if (!properties->IsUndefined()) {
+    RETURN_FAILURE_ON_EXCEPTION(
+        isolate, JSReceiver::DefineProperties(isolate, object, properties));
+  }
+
+  return *object;
+}
+
+
 namespace {
 
 bool CodeGenerationFromStringsAllowed(Isolate* isolate,
@@ -1539,8 +1572,7 @@ MaybeHandle<JSFunction> CompileString(Handle<Context> context,
 // ES6 section 18.2.1 eval (x)
 BUILTIN(GlobalEval) {
   HandleScope scope(isolate);
-  DCHECK_LE(1, args.length());
-  Handle<Object> x = args.at<Object>(1);
+  Handle<Object> x = args.atOrUndefined(isolate, 1);
   Handle<JSFunction> target = args.target();
   Handle<JSObject> target_global_proxy(target->global_proxy(), isolate);
   if (!x->IsString()) return *x;
@@ -2041,7 +2073,6 @@ BUILTIN(FunctionPrototypeBind) {
 BUILTIN(FunctionPrototypeToString) {
   HandleScope scope(isolate);
   Handle<Object> receiver = args.receiver();
-
   if (receiver->IsJSBoundFunction()) {
     return *JSBoundFunction::ToString(Handle<JSBoundFunction>::cast(receiver));
   } else if (receiver->IsJSFunction()) {
@@ -2067,9 +2098,8 @@ BUILTIN(GeneratorFunctionConstructor) {
 // ES6 section 19.4.1.1 Symbol ( [ description ] ) for the [[Call]] case.
 BUILTIN(SymbolConstructor) {
   HandleScope scope(isolate);
-  DCHECK_EQ(2, args.length());
   Handle<Symbol> result = isolate->factory()->NewSymbol();
-  Handle<Object> description = args.at<Object>(1);
+  Handle<Object> description = args.atOrUndefined(isolate, 1);
   if (!description->IsUndefined()) {
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, description,
                                        Object::ToString(isolate, description));
@@ -2082,9 +2112,6 @@ BUILTIN(SymbolConstructor) {
 // ES6 section 19.4.1.1 Symbol ( [ description ] ) for the [[Construct]] case.
 BUILTIN(SymbolConstructor_ConstructStub) {
   HandleScope scope(isolate);
-  // The ConstructStub is executed in the context of the caller, so we need
-  // to enter the callee context first before raising an exception.
-  isolate->set_context(args.target()->context());
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate, NewTypeError(MessageTemplate::kNotConstructor,
                             isolate->factory()->Symbol_string()));
@@ -2102,9 +2129,64 @@ BUILTIN(ObjectProtoToString) {
 }
 
 
-namespace {
+// ES6 section 24.1.2.1 ArrayBuffer ( length ) for the [[Call]] case.
+BUILTIN(ArrayBufferConstructor) {
+  HandleScope scope(isolate);
+  Handle<JSFunction> target = args.target();
+  DCHECK(*target == target->native_context()->array_buffer_fun() ||
+         *target == target->native_context()->shared_array_buffer_fun());
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kConstructorNotFunction,
+                            handle(target->shared()->name(), isolate)));
+}
 
-}  // namespace
+
+// ES6 section 24.1.2.1 ArrayBuffer ( length ) for the [[Construct]] case.
+BUILTIN(ArrayBufferConstructor_ConstructStub) {
+  HandleScope scope(isolate);
+  Handle<JSFunction> target = args.target();
+  Handle<JSReceiver> new_target = Handle<JSReceiver>::cast(args.new_target());
+  Handle<Object> length = args.atOrUndefined(isolate, 1);
+  DCHECK(*target == target->native_context()->array_buffer_fun() ||
+         *target == target->native_context()->shared_array_buffer_fun());
+  Handle<Object> number_length;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, number_length,
+                                     Object::ToInteger(isolate, length));
+  if (number_length->Number() < 0.0) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewRangeError(MessageTemplate::kInvalidArrayBufferLength));
+  }
+  Handle<Map> initial_map;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, initial_map,
+      JSFunction::GetDerivedMap(isolate, target, new_target));
+  size_t byte_length;
+  if (!TryNumberToSize(isolate, *number_length, &byte_length)) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewRangeError(MessageTemplate::kInvalidArrayBufferLength));
+  }
+  Handle<JSArrayBuffer> result = Handle<JSArrayBuffer>::cast(
+      isolate->factory()->NewJSObjectFromMap(initial_map));
+  SharedFlag shared_flag =
+      (*target == target->native_context()->array_buffer_fun())
+          ? SharedFlag::kNotShared
+          : SharedFlag::kShared;
+  if (!JSArrayBuffer::SetupAllocatingData(result, isolate, byte_length, true,
+                                          shared_flag)) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewRangeError(MessageTemplate::kArrayBufferAllocationFailed));
+  }
+  return *result;
+}
+
+
+// ES6 section 24.1.3.1 ArrayBuffer.isView ( arg )
+BUILTIN(ArrayBufferIsView) {
+  SealHandleScope shs(isolate);
+  DCHECK_EQ(2, args.length());
+  Object* arg = args[1];
+  return isolate->heap()->ToBoolean(arg->IsJSArrayBufferView());
+}
 
 
 // ES6 section 26.2.1.1 Proxy ( target, handler ) for the [[Call]] case.
@@ -2123,9 +2205,6 @@ BUILTIN(ProxyConstructor_ConstructStub) {
   DCHECK(isolate->proxy_function()->IsConstructor());
   Handle<Object> target = args.atOrUndefined(isolate, 1);
   Handle<Object> handler = args.atOrUndefined(isolate, 2);
-  // The ConstructStub is executed in the context of the caller, so we need
-  // to enter the callee context first before raising an exception.
-  isolate->set_context(args.target()->context());
   Handle<JSProxy> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
                                      JSProxy::New(isolate, target, handler));
@@ -2728,12 +2807,12 @@ const char* Builtins::Lookup(byte* pc) {
 
 
 void Builtins::Generate_InterruptCheck(MacroAssembler* masm) {
-  masm->TailCallRuntime(Runtime::kInterrupt, 0, 1);
+  masm->TailCallRuntime(Runtime::kInterrupt);
 }
 
 
 void Builtins::Generate_StackCheck(MacroAssembler* masm) {
-  masm->TailCallRuntime(Runtime::kStackGuard, 0, 1);
+  masm->TailCallRuntime(Runtime::kStackGuard);
 }
 
 

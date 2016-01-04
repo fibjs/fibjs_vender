@@ -2095,6 +2095,7 @@ void MacroAssembler::StoreNumberToDoubleElements(
                                       LowDwVfpRegister double_scratch,
                                       Label* fail,
                                       int elements_offset) {
+  DCHECK(!AreAliased(value_reg, key_reg, elements_reg, scratch1));
   Label smi_value, store;
 
   // Handle smi values specially.
@@ -2484,24 +2485,17 @@ void MacroAssembler::CallExternalReference(const ExternalReference& ext,
 }
 
 
-void MacroAssembler::TailCallExternalReference(const ExternalReference& ext,
-                                               int num_arguments,
-                                               int result_size) {
-  // TODO(1236192): Most runtime routines don't need the number of
-  // arguments passed in because it is constant. At some point we
-  // should remove this need and make the runtime routine entry code
-  // smarter.
-  mov(r0, Operand(num_arguments));
-  JumpToExternalReference(ext);
-}
-
-
-void MacroAssembler::TailCallRuntime(Runtime::FunctionId fid,
-                                     int num_arguments,
-                                     int result_size) {
-  TailCallExternalReference(ExternalReference(fid, isolate()),
-                            num_arguments,
-                            result_size);
+void MacroAssembler::TailCallRuntime(Runtime::FunctionId fid) {
+  const Runtime::Function* function = Runtime::FunctionForId(fid);
+  DCHECK_EQ(1, function->result_size);
+  if (function->nargs >= 0) {
+    // TODO(1236192): Most runtime routines don't need the number of
+    // arguments passed in because it is constant. At some point we
+    // should remove this need and make the runtime routine entry code
+    // smarter.
+    mov(r0, Operand(function->nargs));
+  }
+  JumpToExternalReference(ExternalReference(fid, isolate()));
 }
 
 
