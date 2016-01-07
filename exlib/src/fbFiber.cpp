@@ -92,14 +92,18 @@ void Fiber::suspend()
 
 void Fiber::resume()
 {
-    m_pService->m_resume.putTail(this);
-    m_pService->resume();
+    Service* service_ = m_pService;
+
+    service_->m_resume.putTail(this);
+    service_->resume();
 }
 
 void Fiber::yield()
 {
-    m_pService->m_resume.putTail(this);
-    m_pService->switchConext();
+    Service* service_ = m_pService;
+
+    service_->m_resume.putTail(this);
+    service_->switchConext();
 }
 
 static class _timerThread: public OSThread
