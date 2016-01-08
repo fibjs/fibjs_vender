@@ -69,7 +69,14 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(ArrayBufferConstructor_ConstructStub, kTargetAndNewTarget) \
   V(ArrayBufferIsView, kNone)                                  \
                                                                \
-  V(DateToPrimitive, kNone)                                    \
+  V(DateConstructor, kNone)                                    \
+  V(DateConstructor_ConstructStub, kTargetAndNewTarget)        \
+  V(DateNow, kNone)                                            \
+  V(DateParse, kNone)                                          \
+  V(DateUTC, kNone)                                            \
+  V(DatePrototypeToISOString, kNone)                           \
+  V(DatePrototypeToPrimitive, kNone)                           \
+  V(DatePrototypeValueOf, kNone)                               \
                                                                \
   V(FunctionConstructor, kTargetAndNewTarget)                  \
   V(FunctionPrototypeBind, kNone)                              \
@@ -81,6 +88,12 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
                                                                \
   V(ObjectAssign, kNone)                                       \
   V(ObjectCreate, kNone)                                       \
+  V(ObjectFreeze, kNone)                                       \
+  V(ObjectIsExtensible, kNone)                                 \
+  V(ObjectIsFrozen, kNone)                                     \
+  V(ObjectIsSealed, kNone)                                     \
+  V(ObjectPreventExtensions, kNone)                            \
+  V(ObjectSeal, kNone)                                         \
   V(ObjectProtoToString, kNone)                                \
                                                                \
   V(ProxyConstructor, kNone)                                   \

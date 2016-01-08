@@ -147,6 +147,10 @@ class BytecodeGraphBuilder {
   void BuildKeyedLoad(const interpreter::BytecodeArrayIterator& iterator);
   void BuildNamedStore(const interpreter::BytecodeArrayIterator& iterator);
   void BuildKeyedStore(const interpreter::BytecodeArrayIterator& iterator);
+  void BuildLdaLookupSlot(TypeofMode typeof_mode,
+                          const interpreter::BytecodeArrayIterator& iterator);
+  void BuildStaLookupSlot(LanguageMode language_mode,
+                          const interpreter::BytecodeArrayIterator& iterator);
   void BuildCall(const interpreter::BytecodeArrayIterator& iterator);
   void BuildBinaryOp(const Operator* op,
                      const interpreter::BytecodeArrayIterator& iterator);
@@ -160,10 +164,8 @@ class BytecodeGraphBuilder {
   void BuildJump(int source_offset, int target_offset);
   void BuildJump();
   void BuildConditionalJump(Node* condition);
-
-  // Helpers for building conditions for conditional jumps.
-  Node* BuildCondition(Node* comperand);
-  Node* BuildToBooleanCondition(Node* comperand);
+  void BuildJumpIfEqual(Node* comperand);
+  void BuildJumpIfToBooleanEqual(Node* boolean_comperand);
 
   // Constructing merge and loop headers.
   void MergeEnvironmentsOfBackwardBranches(int source_offset,
@@ -263,6 +265,8 @@ class BytecodeGraphBuilder::Environment : public ZoneObject {
 
   void BindRegister(interpreter::Register the_register, Node* node);
   Node* LookupRegister(interpreter::Register the_register) const;
+  void ExchangeRegisters(interpreter::Register reg0,
+                         interpreter::Register reg1);
 
   void BindAccumulator(Node* node, FrameStateBeforeAndAfter* states = nullptr);
   Node* LookupAccumulator() const;

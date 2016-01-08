@@ -92,18 +92,34 @@ class AsmWasmBuilderImpl : public AstVisitor {
       }
     }
     DCHECK(in_function_);
-    breakable_blocks_.push_back(
-        std::make_pair(stmt->AsBreakableStatement(), false));
-    current_function_builder_->Emit(kExprBlock);
-    uint32_t index = current_function_builder_->EmitEditableImmediate(0);
-    int prev_block_size = block_size_;
+    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprBlock, false);
     block_size_ = static_cast<byte>(stmt->statements()->length());
     RECURSE(VisitStatements(stmt->statements()));
     DCHECK(block_size_ >= 0);
-    current_function_builder_->EditImmediate(index, block_size_);
-    block_size_ = prev_block_size;
-    breakable_blocks_.pop_back();
   }
+
+  class BlockVisitor {
+   private:
+    int prev_block_size_;
+    uint32_t index_;
+    AsmWasmBuilderImpl* builder_;
+
+   public:
+    BlockVisitor(AsmWasmBuilderImpl* builder, BreakableStatement* stmt,
+                 WasmOpcode opcode, bool is_loop)
+        : builder_(builder) {
+      builder_->breakable_blocks_.push_back(std::make_pair(stmt, is_loop));
+      builder_->current_function_builder_->Emit(opcode);
+      index_ = builder_->current_function_builder_->EmitEditableImmediate(0);
+      prev_block_size_ = builder_->block_size_;
+    }
+    ~BlockVisitor() {
+      builder_->current_function_builder_->EditImmediate(index_,
+                                                         builder_->block_size_);
+      builder_->block_size_ = prev_block_size_;
+      builder_->breakable_blocks_.pop_back();
+    }
+  };
 
   void VisitExpressionStatement(ExpressionStatement* stmt) {
     RECURSE(Visit(stmt->expression()));
@@ -185,10 +201,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
     }
   }
 
-  void VisitWithStatement(WithStatement* stmt) {
-    RECURSE(stmt->expression());
-    RECURSE(stmt->statement());
-  }
+  void VisitWithStatement(WithStatement* stmt) { UNREACHABLE(); }
 
   void VisitSwitchStatement(SwitchStatement* stmt) {
     RECURSE(Visit(stmt->tag()));
@@ -209,20 +222,24 @@ class AsmWasmBuilderImpl : public AstVisitor {
   void VisitCaseClause(CaseClause* clause) { UNREACHABLE(); }
 
   void VisitDoWhileStatement(DoWhileStatement* stmt) {
+    DCHECK(in_function_);
+    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprLoop, true);
+    block_size_ = 2;
     RECURSE(Visit(stmt->body()));
+    current_function_builder_->Emit(kExprIf);
     RECURSE(Visit(stmt->cond()));
+    current_function_builder_->EmitWithU8(kExprBr, 0);
+    current_function_builder_->Emit(kExprNop);
   }
 
   void VisitWhileStatement(WhileStatement* stmt) {
     DCHECK(in_function_);
-    current_function_builder_->EmitWithU8(kExprLoop, 1);
-    breakable_blocks_.push_back(
-        std::make_pair(stmt->AsBreakableStatement(), true));
+    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprLoop, true);
+    block_size_ = 1;
     current_function_builder_->Emit(kExprIf);
     RECURSE(Visit(stmt->cond()));
     current_function_builder_->EmitWithU8(kExprBr, 0);
     RECURSE(Visit(stmt->body()));
-    breakable_blocks_.pop_back();
   }
 
   void VisitForStatement(ForStatement* stmt) {
@@ -231,12 +248,8 @@ class AsmWasmBuilderImpl : public AstVisitor {
       block_size_++;
       RECURSE(Visit(stmt->init()));
     }
-    current_function_builder_->Emit(kExprLoop);
-    uint32_t index = current_function_builder_->EmitEditableImmediate(0);
-    int prev_block_size = block_size_;
+    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprLoop, true);
     block_size_ = 0;
-    breakable_blocks_.push_back(
-        std::make_pair(stmt->AsBreakableStatement(), true));
     if (stmt->cond() != NULL) {
       block_size_++;
       current_function_builder_->Emit(kExprIf);
@@ -256,32 +269,17 @@ class AsmWasmBuilderImpl : public AstVisitor {
     block_size_++;
     current_function_builder_->EmitWithU8(kExprBr, 0);
     current_function_builder_->Emit(kExprNop);
-    current_function_builder_->EditImmediate(index, block_size_);
-    block_size_ = prev_block_size;
-    breakable_blocks_.pop_back();
   }
 
-  void VisitForInStatement(ForInStatement* stmt) {
-    RECURSE(Visit(stmt->enumerable()));
-    RECURSE(Visit(stmt->body()));
-  }
+  void VisitForInStatement(ForInStatement* stmt) { UNREACHABLE(); }
 
-  void VisitForOfStatement(ForOfStatement* stmt) {
-    RECURSE(Visit(stmt->iterable()));
-    RECURSE(Visit(stmt->body()));
-  }
+  void VisitForOfStatement(ForOfStatement* stmt) { UNREACHABLE(); }
 
-  void VisitTryCatchStatement(TryCatchStatement* stmt) {
-    RECURSE(Visit(stmt->try_block()));
-    RECURSE(Visit(stmt->catch_block()));
-  }
+  void VisitTryCatchStatement(TryCatchStatement* stmt) { UNREACHABLE(); }
 
-  void VisitTryFinallyStatement(TryFinallyStatement* stmt) {
-    RECURSE(Visit(stmt->try_block()));
-    RECURSE(Visit(stmt->finally_block()));
-  }
+  void VisitTryFinallyStatement(TryFinallyStatement* stmt) { UNREACHABLE(); }
 
-  void VisitDebuggerStatement(DebuggerStatement* stmt) {}
+  void VisitDebuggerStatement(DebuggerStatement* stmt) { UNREACHABLE(); }
 
   void VisitFunctionLiteral(FunctionLiteral* expr) {
     Scope* scope = expr->scope();
@@ -303,9 +301,13 @@ class AsmWasmBuilderImpl : public AstVisitor {
     RECURSE(VisitStatements(expr->body()));
   }
 
-  void VisitNativeFunctionLiteral(NativeFunctionLiteral* expr) {}
+  void VisitNativeFunctionLiteral(NativeFunctionLiteral* expr) {
+    UNREACHABLE();
+  }
 
   void VisitConditional(Conditional* expr) {
+    DCHECK(in_function_);
+    current_function_builder_->Emit(kExprIfElse);
     RECURSE(Visit(expr->condition()));
     RECURSE(Visit(expr->then_expression()));
     RECURSE(Visit(expr->else_expression()));
@@ -382,7 +384,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
     }
   }
 
-  void VisitRegExpLiteral(RegExpLiteral* expr) {}
+  void VisitRegExpLiteral(RegExpLiteral* expr) { UNREACHABLE(); }
 
   void VisitObjectLiteral(ObjectLiteral* expr) {
     ZoneList<ObjectLiteralProperty*>* props = expr->properties();
@@ -392,13 +394,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
     }
   }
 
-  void VisitArrayLiteral(ArrayLiteral* expr) {
-    ZoneList<Expression*>* values = expr->values();
-    for (int i = 0; i < values->length(); ++i) {
-      Expression* value = values->at(i);
-      RECURSE(Visit(value));
-    }
-  }
+  void VisitArrayLiteral(ArrayLiteral* expr) { UNREACHABLE(); }
 
   void LoadInitFunction() {
     if (!init_function_initialized) {
@@ -450,12 +446,9 @@ class AsmWasmBuilderImpl : public AstVisitor {
     }
   }
 
-  void VisitYield(Yield* expr) {
-    RECURSE(Visit(expr->generator_object()));
-    RECURSE(Visit(expr->expression()));
-  }
+  void VisitYield(Yield* expr) { UNREACHABLE(); }
 
-  void VisitThrow(Throw* expr) { RECURSE(Visit(expr->exception())); }
+  void VisitThrow(Throw* expr) { UNREACHABLE(); }
 
   void VisitProperty(Property* expr) {
     Expression* obj = expr->obj();
@@ -560,9 +553,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
     RECURSE(Visit(expr->expression()));
   }
 
-  void VisitCountOperation(CountOperation* expr) {
-    RECURSE(Visit(expr->expression()));
-  }
+  void VisitCountOperation(CountOperation* expr) { UNREACHABLE(); }
 
   bool MatchIntBinaryOperation(BinaryOperation* expr, Token::Value op,
                                int32_t val) {
@@ -660,6 +651,14 @@ class AsmWasmBuilderImpl : public AstVisitor {
         return kNone;
     }
   }
+
+// Work around Mul + Div being defined in PPC assembler.
+#ifdef Mul
+#undef Mul
+#endif
+#ifdef Div
+#undef Div
+#endif
 
 #define NON_SIGNED_BINOP(op)      \
   static WasmOpcode opcodes[] = { \
@@ -865,7 +864,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
 #undef SIGNED
 #undef NON_SIGNED
 
-  void VisitThisFunction(ThisFunction* expr) {}
+  void VisitThisFunction(ThisFunction* expr) { UNREACHABLE(); }
 
   void VisitDeclarations(ZoneList<Declaration*>* decls) {
     for (int i = 0; i < decls->length(); ++i) {
@@ -874,20 +873,26 @@ class AsmWasmBuilderImpl : public AstVisitor {
     }
   }
 
-  void VisitClassLiteral(ClassLiteral* expr) {}
+  void VisitClassLiteral(ClassLiteral* expr) { UNREACHABLE(); }
 
-  void VisitSpread(Spread* expr) {}
+  void VisitSpread(Spread* expr) { UNREACHABLE(); }
 
-  void VisitSuperPropertyReference(SuperPropertyReference* expr) {}
+  void VisitSuperPropertyReference(SuperPropertyReference* expr) {
+    UNREACHABLE();
+  }
 
-  void VisitSuperCallReference(SuperCallReference* expr) {}
+  void VisitSuperCallReference(SuperCallReference* expr) { UNREACHABLE(); }
 
-  void VisitSloppyBlockFunctionStatement(SloppyBlockFunctionStatement* expr) {}
+  void VisitSloppyBlockFunctionStatement(SloppyBlockFunctionStatement* expr) {
+    UNREACHABLE();
+  }
 
-  void VisitDoExpression(DoExpression* expr) {}
+  void VisitDoExpression(DoExpression* expr) { UNREACHABLE(); }
 
   void VisitRewritableAssignmentExpression(
-      RewritableAssignmentExpression* expr) {}
+      RewritableAssignmentExpression* expr) {
+    UNREACHABLE();
+  }
 
   struct IndexContainer : public ZoneObject {
     uint16_t index;

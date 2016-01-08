@@ -1173,6 +1173,9 @@
     <ClInclude Include="src\interpreter\bytecodes.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\constant-array-builder.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\control-flow-builders.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -2577,6 +2580,9 @@
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecodes.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\constant-array-builder.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\control-flow-builders.cc">

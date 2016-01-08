@@ -349,6 +349,7 @@
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
     <ClInclude Include="src\interpreter\bytecode-traits.h" />
     <ClInclude Include="src\interpreter\bytecodes.h" />
+    <ClInclude Include="src\interpreter\constant-array-builder.h" />
     <ClInclude Include="src\interpreter\control-flow-builders.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
     <ClInclude Include="src\isolate-inl.h" />
@@ -819,6 +820,7 @@
     <ClCompile Include="src\interpreter\bytecode-array-iterator.cc" />
     <ClCompile Include="src\interpreter\bytecode-generator.cc" />
     <ClCompile Include="src\interpreter\bytecodes.cc" />
+    <ClCompile Include="src\interpreter\constant-array-builder.cc" />
     <ClCompile Include="src\interpreter\control-flow-builders.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
     <ClCompile Include="src\isolate.cc" />

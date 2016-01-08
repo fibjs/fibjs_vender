@@ -180,6 +180,8 @@ class CallSite {
   T(OrdinaryFunctionCalledAsConstructor,                                       \
     "Function object that's not a constructor was created with new")           \
   T(PromiseCyclic, "Chaining cycle detected for promise %")                    \
+  T(PromiseExecutorAlreadyInvoked,                                             \
+    "Promise executor has already been invoked with non-undefined arguments")  \
   T(PropertyDescObject, "Property description must be an object: %")           \
   T(PropertyNotFunction,                                                       \
     "'%' returned for property '%' of object '%' is not a function")           \
@@ -329,7 +331,11 @@ class CallSite {
   T(UnsupportedSuper, "Unsupported reference to 'super'")                      \
   /* RangeError */                                                             \
   T(DateRange, "Provided date is not in valid range.")                         \
-  T(ExpectedLocation, "Expected Area/Location for time zone, got %")           \
+  T(ExpectedTimezoneID,                                                        \
+    "Expected Area/Location(/Location)* for time zone, got %")                 \
+  T(ExpectedLocation,                                                          \
+    "Expected letters optionally connected with underscores or hyphens for "   \
+    "a location, got %")                                                       \
   T(InvalidArrayBufferLength, "Invalid array buffer length")                   \
   T(ArrayBufferAllocationFailed, "Array buffer allocation failed")             \
   T(InvalidArrayLength, "Invalid array length")                                \
@@ -417,6 +423,8 @@ class CallSite {
   T(SloppyLexical,                                                             \
     "Block-scoped declarations (let, const, function, class) not yet "         \
     "supported outside strict mode")                                           \
+  T(SpeciesNotConstructor,                                                     \
+    "object.constructor[Symbol.species] is not a constructor")                 \
   T(StrictDelete, "Delete of an unqualified identifier in strict mode.")       \
   T(StrictEvalArguments, "Unexpected eval or arguments in strict mode")        \
   T(StrictFunction,                                                            \

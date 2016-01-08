@@ -50,7 +50,8 @@ namespace internal {
   F(GetCachedArrayIndex, 1, 1)       \
   F(FixedArrayGet, 2, 1)             \
   F(FixedArraySet, 3, 1)             \
-  F(FastOneByteArrayJoin, 2, 1)
+  F(FastOneByteArrayJoin, 2, 1)      \
+  F(ArraySpeciesConstructor, 1, 1)
 
 
 #define FOR_EACH_INTRINSIC_ATOMICS(F) \
@@ -141,9 +142,7 @@ namespace internal {
   F(IsDate, 1, 1)                  \
   F(ThrowNotDateError, 0, 1)       \
   F(DateCurrentTime, 0, 1)         \
-  F(DateParseString, 2, 1)         \
   F(DateLocalTimezone, 1, 1)       \
-  F(DateToUTC, 1, 1)               \
   F(DateCacheVersion, 0, 1)        \
   F(DateField, 2 /* date object, field index */, 1)
 
@@ -423,13 +422,7 @@ namespace internal {
   F(SetPrototype, 2, 1)                              \
   F(GetOwnProperty, 2, 1)                            \
   F(GetOwnProperty_Legacy, 2, 1)                     \
-  F(PreventExtensions, 1, 1)                         \
-  F(IsExtensible, 1, 1)                              \
   F(OptimizeObjectForAddingMultipleProperties, 2, 1) \
-  F(ObjectFreeze, 1, 1)                              \
-  F(ObjectIsFrozen, 1, 1)                            \
-  F(ObjectSeal, 1, 1)                                \
-  F(ObjectIsSealed, 1, 1)                            \
   F(GetProperty, 2, 1)                               \
   F(GetPropertyStrong, 2, 1)                         \
   F(KeyedGetProperty, 2, 1)                          \
@@ -563,8 +556,8 @@ namespace internal {
   F(NewRestArguments_Generic, 2, 1)        \
   F(NewSloppyArguments, 3, 1)              \
   F(NewStrictArguments, 3, 1)              \
-  F(NewRestParam, 4, 1)                    \
-  F(NewRestParamSlow, 2, 1)                \
+  F(NewRestParam, 3, 1)                    \
+  F(NewRestParamSlow, 1, 1)                \
   F(NewClosure, 1, 1)                      \
   F(NewClosure_Tenured, 1, 1)              \
   F(NewScriptContext, 2, 1)                \

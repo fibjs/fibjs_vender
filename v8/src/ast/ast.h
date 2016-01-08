@@ -1533,11 +1533,18 @@ class ObjectLiteral final : public MaterializedLiteral {
   BailoutId CreateLiteralId() const { return BailoutId(local_id(0)); }
 
   // Return an AST id for a property that is used in simulate instructions.
-  BailoutId GetIdForProperty(int i) { return BailoutId(local_id(i + 1)); }
+  BailoutId GetIdForPropertyName(int i) {
+    return BailoutId(local_id(2 * i + 1));
+  }
+  BailoutId GetIdForPropertySet(int i) {
+    return BailoutId(local_id(2 * i + 2));
+  }
 
   // Unlike other AST nodes, this number of bailout IDs allocated for an
   // ObjectLiteral can vary, so num_ids() is not a static method.
-  int num_ids() const { return parent_num_ids() + 1 + properties()->length(); }
+  int num_ids() const {
+    return parent_num_ids() + 1 + 2 * properties()->length();
+  }
 
   // Object literals need one feedback slot for each non-trivial value, as well
   // as some slots for home objects.
@@ -2582,8 +2589,8 @@ class FunctionLiteral final : public Expression {
   DECLARE_NODE_TYPE(FunctionLiteral)
 
   Handle<String> name() const { return raw_name_->string(); }
-  const AstRawString* raw_name() const { return raw_name_; }
-  void set_raw_name(const AstRawString* name) { raw_name_ = name; }
+  const AstString* raw_name() const { return raw_name_; }
+  void set_raw_name(const AstString* name) { raw_name_ = name; }
   Scope* scope() const { return scope_; }
   ZoneList<Statement*>* body() const { return body_; }
   void set_function_token_position(int pos) { function_token_position_ = pos; }
@@ -2685,7 +2692,7 @@ class FunctionLiteral final : public Expression {
   }
 
  protected:
-  FunctionLiteral(Zone* zone, const AstRawString* name,
+  FunctionLiteral(Zone* zone, const AstString* name,
                   AstValueFactory* ast_value_factory, Scope* scope,
                   ZoneList<Statement*>* body, int materialized_literal_count,
                   int expected_property_count, int parameter_count,
@@ -2717,7 +2724,7 @@ class FunctionLiteral final : public Expression {
   }
 
  private:
-  const AstRawString* raw_name_;
+  const AstString* raw_name_;
   Handle<String> name_;
   Scope* scope_;
   ZoneList<Statement*>* body_;

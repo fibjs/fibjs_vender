@@ -262,12 +262,12 @@ void FullCodeGenerator::Generate() {
     int num_parameters = info->scope()->num_parameters();
     int offset = num_parameters * kPointerSize;
 
-    __ leap(rdx,
+    __ Move(RestParamAccessDescriptor::parameter_count(),
+            Smi::FromInt(num_parameters));
+    __ leap(RestParamAccessDescriptor::parameter_pointer(),
             Operand(rbp, StandardFrameConstants::kCallerSPOffset + offset));
-    __ Push(rdx);
-    __ Push(Smi::FromInt(num_parameters));
-    __ Push(Smi::FromInt(rest_index));
-    __ Push(Smi::FromInt(language_mode()));
+    __ Move(RestParamAccessDescriptor::rest_parameter_index(),
+            Smi::FromInt(rest_index));
     function_in_register = false;
 
     RestParamAccessStub stub(isolate());
@@ -1521,6 +1521,8 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
         VisitForStackValue(value);
         DCHECK(property->emit_store());
         __ CallRuntime(Runtime::kInternalSetPrototype);
+        PrepareForBailoutForId(expr->GetIdForPropertySet(property_index),
+                               NO_REGISTERS);
         break;
       case ObjectLiteral::Property::GETTER:
         if (property->emit_store()) {
@@ -1573,8 +1575,10 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
       VisitForStackValue(value);
       DCHECK(property->emit_store());
       __ CallRuntime(Runtime::kInternalSetPrototype);
+      PrepareForBailoutForId(expr->GetIdForPropertySet(property_index),
+                             NO_REGISTERS);
     } else {
-      EmitPropertyKey(property, expr->GetIdForProperty(property_index));
+      EmitPropertyKey(property, expr->GetIdForPropertyName(property_index));
       VisitForStackValue(value);
       if (NeedsHomeObject(value)) {
         EmitSetHomeObject(value, 2, property->GetSlot());

@@ -473,6 +473,12 @@ void BytecodeGenerator::MakeBytecodeBody() {
   // Build the arguments object if it is used.
   VisitArgumentsObject(scope()->arguments());
 
+  // TODO(mythria): Build rest arguments array if it is used.
+  int rest_index;
+  if (scope()->rest_parameter(&rest_index)) {
+    UNIMPLEMENTED();
+  }
+
   // Build assignment to {.this_function} variable if it is used.
   VisitThisFunctionVariable(scope()->this_function_var());
 
@@ -2074,9 +2080,10 @@ void BytecodeGenerator::VisitNewLocalBlockContext(Scope* scope) {
 
   // Allocate a new local block context.
   TemporaryRegisterScope temporary_register_scope(builder());
-  Register scope_info = temporary_register_scope.NewRegister();
-  Register closure = temporary_register_scope.NewRegister();
-  DCHECK(Register::AreContiguous(scope_info, closure));
+  temporary_register_scope.PrepareForConsecutiveAllocations(2);
+  Register scope_info = temporary_register_scope.NextConsecutiveRegister();
+  Register closure = temporary_register_scope.NextConsecutiveRegister();
+
   builder()
       ->LoadLiteral(scope->GetScopeInfo(isolate()))
       .StoreAccumulatorInRegister(scope_info);
@@ -2155,8 +2162,12 @@ void BytecodeGenerator::VisitFunctionClosureForContext() {
       closure_scope->is_module_scope()) {
     // Contexts nested in the native context have a canonical empty function as
     // their closure, not the anonymous closure containing the global code.
-    // Pass a SMI sentinel and let the runtime look up the empty function.
-    builder()->LoadLiteral(Smi::FromInt(0));
+    Register native_context = execution_result()->NewRegister();
+    builder()
+        ->LoadContextSlot(execution_context()->reg(),
+                          Context::NATIVE_CONTEXT_INDEX)
+        .StoreAccumulatorInRegister(native_context)
+        .LoadContextSlot(native_context, Context::CLOSURE_INDEX);
   } else {
     DCHECK(closure_scope->is_function_scope());
     builder()->LoadAccumulatorWithRegister(Register::function_closure());
