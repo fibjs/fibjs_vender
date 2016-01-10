@@ -63,14 +63,10 @@ Service::Service() : m_main(this)
 {
     m_recycle = NULL;
     m_running = &m_main;
-    m_Idle = NULL;
-    m_InterCallback = NULL;
 
     m_main.set_name("main");
     m_main.Ref();
     m_main.saveStackGuard();
-
-    m_fibers.putTail(&m_main.m_link);
 
     if (!s_service_inited)
     {
@@ -90,11 +86,10 @@ static void fiber_proc(void *(*func)(void *), void *data)
     now->switchConext();
 }
 
-Fiber *Fiber::Create(void *(*func)(void *), void *data, int32_t stacksize)
+Fiber *Service::Create(void *(*func)(void *), void *data, int32_t stacksize)
 {
     Fiber *fb;
     void **stack;
-    Service* now = Service::current();
 
     stacksize = (stacksize + FB_STK_ALIGN - 1) & ~(FB_STK_ALIGN - 1);
 #ifdef WIN32
@@ -106,7 +101,7 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int32_t stacksize)
         return NULL;
     stack = (void **) fb + stacksize / sizeof(void *) - 5;
 
-    new(fb) Fiber(now);
+    new(fb) Fiber(this);
 
     fb->m_cntxt.ip = (intptr_t) fiber_proc;
     fb->m_cntxt.sp = (intptr_t) stack;
@@ -128,30 +123,15 @@ Fiber *Fiber::Create(void *(*func)(void *), void *data, int32_t stacksize)
 #endif
 
     fb->resume();
-    now->m_fibers.putTail(&fb->m_link);
-
     fb->Ref();
 
     return fb;
-}
-
-void Service::doInterrupt()
-{
-    IDLE_PROC proc = m_InterCallback;
-
-    if (proc)
-    {
-        atom_xchg(&m_InterCallback, (IDLE_PROC)NULL);
-        proc();
-    }
 }
 
 void Service::switchConext()
 {
     while (1)
     {
-        doInterrupt();
-
         // First switch if we have work to do.
         if (!m_resume.empty())
         {
@@ -164,7 +144,6 @@ void Service::switchConext()
 
             if (m_recycle)
             {
-                m_fibers.remove(&m_recycle->m_link);
                 m_recycle->m_joins.set();
                 m_recycle->Unref();
                 m_recycle = NULL;
@@ -172,14 +151,9 @@ void Service::switchConext()
             break;
         }
 
-        if (m_Idle)
-            m_Idle();
-
         if (m_resume.empty())
             suspend();
     }
-
-    m_switchTimes.inc();
 }
 
 }
