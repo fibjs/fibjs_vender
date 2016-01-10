@@ -67,8 +67,15 @@ private:
 
         Fiber* next()
         {
-            m_sem.Wait();
-            return m_resume.getHead();
+            Fiber* new_;
+
+            do
+            {
+                m_sem.Wait();
+                new_ = m_resume.getHead();
+            } while (!new_);
+
+            return new_;
         }
 
     private:
