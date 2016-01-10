@@ -18,7 +18,7 @@ namespace exlib
 class Service : public OSThread
 {
 public:
-    Service();
+    Service(Service* master);
 
 public:
     static const int32_t type = 2;
@@ -38,11 +38,49 @@ public:
 
     Fiber* Create(void *(*func)(void *), void *data, int32_t stacksize);
 
-public:
+    void post(Fiber* fiber)
+    {
+        m_resume->post(fiber);
+    }
+
+    Fiber* next()
+    {
+        return m_resume->next();
+    }
+
+    Fiber* running()
+    {
+        return m_running;
+    }
+
+private:
+    static void fiber_proc(void *(*func)(void *), void *data);
+
+    class ResumeQueue
+    {
+    public:
+        void post(Fiber* fiber)
+        {
+            m_resume.putTail(fiber);
+            m_sem.Post();
+        }
+
+        Fiber* next()
+        {
+            m_sem.Wait();
+            return m_resume.getHead();
+        }
+
+    private:
+        LockedList<Fiber> m_resume;
+        OSSemaphore m_sem;
+    };
+
+private:
     Fiber m_main;
     Fiber *m_running;
     Fiber *m_recycle;
-    LockedList<Fiber> m_resume;
+    ResumeQueue* m_resume;
 };
 
 }

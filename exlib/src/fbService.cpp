@@ -35,7 +35,7 @@ Thread_base* Thread_base::current()
         return 0;
 
     if (thread_->is(Service::type))
-        return ((Service*)thread_)->m_running;
+        return ((Service*)thread_)->running();
     return thread_;
 }
 
@@ -59,10 +59,12 @@ bool Service::hasService()
     return OSThread::current()->is(Service::type);
 }
 
-Service::Service() : m_main(this)
+Service::Service(Service* master) : m_main(this)
 {
     m_recycle = NULL;
     m_running = &m_main;
+
+    m_resume = master ? master->m_resume : new ResumeQueue();
 
     m_main.set_name("main");
     m_main.Ref();
@@ -75,7 +77,7 @@ Service::Service() : m_main(this)
     }
 }
 
-static void fiber_proc(void *(*func)(void *), void *data)
+void Service::fiber_proc(void *(*func)(void *), void *data)
 {
     Service* now = Service::current();
     now->m_running->saveStackGuard();
@@ -130,29 +132,21 @@ Fiber *Service::Create(void *(*func)(void *), void *data, int32_t stacksize)
 
 void Service::switchConext()
 {
-    while (1)
+    Fiber *new_ = next();
+
+    assert(new_ != 0);
+
+    Fiber *old = m_running;
+    m_running = new_;
+
+    if (old != new_)
+        old->m_cntxt.switchto(&new_->m_cntxt);
+
+    if (m_recycle)
     {
-        // First switch if we have work to do.
-        if (!m_resume.empty())
-        {
-            Fiber *old = m_running;
-
-            m_running = m_resume.getHead();
-
-            if (old != m_running)
-                old->m_cntxt.switchto(&m_running->m_cntxt);
-
-            if (m_recycle)
-            {
-                m_recycle->m_joins.set();
-                m_recycle->Unref();
-                m_recycle = NULL;
-            }
-            break;
-        }
-
-        if (m_resume.empty())
-            suspend();
+        m_recycle->m_joins.set();
+        m_recycle->Unref();
+        m_recycle = NULL;
     }
 }
 

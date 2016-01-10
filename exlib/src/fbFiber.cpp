@@ -66,7 +66,7 @@ Fiber *Fiber::current()
     Service *pService = Service::current();
 
     if (pService)
-        return pService->m_running;
+        return pService->running();
 
     return NULL;
 }
@@ -92,17 +92,14 @@ void Fiber::suspend()
 
 void Fiber::resume()
 {
-    Service* service_ = m_pService;
-
-    service_->m_resume.putTail(this);
-    service_->resume();
+    m_pService->post(this);
 }
 
 void Fiber::yield()
 {
     Service* service_ = m_pService;
 
-    service_->m_resume.putTail(this);
+    service_->post(this);
     service_->switchConext();
 }
 
