@@ -23,6 +23,7 @@
 #include <mach/mach_init.h>
 #include <mach/task.h>
 #include <mach/semaphore.h>
+#include <dispatch/dispatch.h>
 #endif
 #endif
 
@@ -310,41 +311,37 @@ class OSSemaphore
 public:
     OSSemaphore(int32_t start_val = 0)
     {
-        semaphore_create(mach_task_self(), &m_sem, SYNC_POLICY_FIFO, start_val);
+        m_sem = dispatch_semaphore_create(start_val);
     }
 
     ~OSSemaphore()
     {
-        semaphore_destroy(mach_task_self(), m_sem);
+        dispatch_release(m_sem);
     }
 
     void Post()
     {
-        semaphore_signal(m_sem);
+        dispatch_semaphore_signal(m_sem);
     }
 
     void Wait()
     {
-        semaphore_wait(m_sem);
+        dispatch_semaphore_wait(m_sem, DISPATCH_TIME_FOREVER);
     }
 
     bool TimedWait(int32_t ms)
     {
-        mach_timespec_t mts;
-
-        mts.tv_sec = ms / 1000;
-        mts.tv_nsec = (ms % 1000) * 1000000;
-
-        return semaphore_timedwait(m_sem, mts) == 0;
+        double ns = dispatch_time(DISPATCH_TIME_NOW, (double)ms * NSEC_PER_SEC / 1000);
+        return dispatch_semaphore_wait(m_sem, ns) == 0;
     }
 
     bool TryWait()
     {
-        return TimedWait(0);
+        return dispatch_semaphore_wait(m_sem, DISPATCH_TIME_NOW) == 0;
     }
 
 public:
-    semaphore_t m_sem;
+    dispatch_semaphore_t m_sem;
 };
 #else
 class OSSemaphore
