@@ -224,7 +224,8 @@ class Service;
 class Fiber : public Thread_base
 {
 public:
-    Fiber(Service* pService) : m_pService(pService)
+    Fiber(Service* pService, void* data) :
+        m_pService(pService), m_data(data)
     {
         memset(&m_cntxt, 0, sizeof(m_cntxt));
         memset(&name_, 0, sizeof(name_));
@@ -268,6 +269,7 @@ public:
     context m_cntxt;
     Event m_joins;
     Service* m_pService;
+    void* m_data;
     char name_[16];
 
     linkitem m_link;

@@ -54,7 +54,7 @@ public:
     }
 
 private:
-    static void fiber_proc(void *(*func)(void *), void *data);
+    static void fiber_proc(void *(*func)(void *), Fiber* fb);
 
     class ResumeQueue
     {

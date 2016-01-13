@@ -59,7 +59,7 @@ bool Service::hasService()
     return OSThread::current()->is(Service::type);
 }
 
-Service::Service(Service* master) : m_main(this)
+Service::Service(Service* master) : m_main(this, NULL)
 {
     m_recycle = NULL;
     m_running = &m_main;
@@ -77,12 +77,13 @@ Service::Service(Service* master) : m_main(this)
     }
 }
 
-void Service::fiber_proc(void *(*func)(void *), void *data)
+void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
 {
-    Service* now = Service::current();
-    now->m_running->saveStackGuard();
+    fb->saveStackGuard();
 
-    func(data);
+    func(fb->m_data);
+
+    Service* now = fb->m_pService;
 
     now->m_recycle = now->m_running;
     now->switchConext();
@@ -103,7 +104,7 @@ Fiber *Service::Create(void *(*func)(void *), void *data, int32_t stacksize)
         return NULL;
     stack = (void **) fb + stacksize / sizeof(void *) - 5;
 
-    new(fb) Fiber(this);
+    new(fb) Fiber(this, data);
 
     fb->m_cntxt.ip = (intptr_t) fiber_proc;
     fb->m_cntxt.sp = (intptr_t) stack;
@@ -111,17 +112,17 @@ Fiber *Service::Create(void *(*func)(void *), void *data, int32_t stacksize)
 #if defined(x64)
 #ifdef _WIN32
     fb->m_cntxt.Rcx = (intptr_t) func;
-    fb->m_cntxt.Rdx = (intptr_t) data;
+    fb->m_cntxt.Rdx = (intptr_t) fb;
 #else
     fb->m_cntxt.Rdi = (intptr_t) func;
-    fb->m_cntxt.Rsi = (intptr_t) data;
+    fb->m_cntxt.Rsi = (intptr_t) fb;
 #endif
 #elif defined(I386)
     stack[1] = (void *)func;
-    stack[2] = data;
+    stack[2] = fb;
 #elif defined(arm)
     fb->m_cntxt.r0 = (intptr_t) func;
-    fb->m_cntxt.r1 = (intptr_t) data;
+    fb->m_cntxt.r1 = (intptr_t) fb;
 #endif
 
     fb->resume();
