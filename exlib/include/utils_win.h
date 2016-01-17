@@ -27,6 +27,11 @@ inline void MemoryBarrier()
 }
 #endif
 
+inline void yield()
+{
+    YieldProcessor();
+}
+
 intptr_t CompareAndSwap(volatile intptr_t *ptr, intptr_t old_value, intptr_t new_value);
 
 void *_CompareAndSwap(void *volatile *ptr, void *old_value, void *new_value);

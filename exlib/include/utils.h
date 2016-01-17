@@ -154,7 +154,8 @@ class spinlock
 public:
 	void lock()
 	{
-		while (m_atom.CompareAndSwap(0, -1));
+		while (m_atom.CompareAndSwap(0, -1))
+			yield();
 	}
 
 	void unlock()

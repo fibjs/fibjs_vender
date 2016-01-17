@@ -15,6 +15,11 @@ inline void MemoryBarrier()
     (*(LinuxKernelMemoryBarrierFunc)0xffff0fa0)();
 }
 
+inline void yield()
+{
+    __asm__ volatile("pause");
+}
+
 template<typename T>
 inline T *CompareAndSwap(T *volatile *ptr, T *old_value, T *new_value)
 {
