@@ -28,7 +28,9 @@ public:
     }
 
     virtual void Run()
-    {}
+    {
+        m_main.suspend();
+    }
 
 public:
     void switchConext();
