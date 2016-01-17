@@ -31,6 +31,11 @@ public:
 public:
     virtual void suspend() = 0;
     virtual void resume() = 0;
+
+    virtual bool is(int32_t t)
+    {
+        return false;
+    }
 };
 
 class Thread_base : public Task_base

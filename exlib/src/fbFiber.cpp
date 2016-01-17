@@ -201,8 +201,13 @@ void Fiber::sleep(int32_t ms, Task_base* now)
 
     assert(now != 0);
 
-    if (ms < 0)
-        ms = 0;
+    if (ms <= 0)
+        if (now->is(Fiber::type))
+        {
+            ((Fiber*)now)->yield();
+            return;
+        } else
+            ms = 0;
 
     s_timer.sleep(now, ms);
 }
