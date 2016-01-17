@@ -138,7 +138,7 @@ bool LCodeGen::GeneratePrologue() {
     if (info()->IsStub()) {
       __ StubPrologue();
     } else {
-      __ Prologue(info()->IsCodePreAgingActive());
+      __ Prologue(info()->GeneratePreagedPrologue());
     }
   }
 
@@ -1671,44 +1671,6 @@ void LCodeGen::DoMapEnumLength(LMapEnumLength* instr) {
 }
 
 
-void LCodeGen::DoDateField(LDateField* instr) {
-  Register object = ToRegister(instr->date());
-  Register result = ToRegister(instr->result());
-  Smi* index = instr->index();
-  DCHECK(object.is(result));
-  DCHECK(object.is(rax));
-
-  if (FLAG_debug_code) {
-    __ AssertNotSmi(object);
-    __ CmpObjectType(object, JS_DATE_TYPE, kScratchRegister);
-    __ Check(equal, kOperandIsNotADate);
-  }
-
-  if (index->value() == 0) {
-    __ movp(result, FieldOperand(object, JSDate::kValueOffset));
-  } else {
-    Label runtime, done;
-    if (index->value() < JSDate::kFirstUncachedField) {
-      ExternalReference stamp = ExternalReference::date_cache_stamp(isolate());
-      Operand stamp_operand = __ ExternalOperand(stamp);
-      __ movp(kScratchRegister, stamp_operand);
-      __ cmpp(kScratchRegister, FieldOperand(object,
-                                             JSDate::kCacheStampOffset));
-      __ j(not_equal, &runtime, Label::kNear);
-      __ movp(result, FieldOperand(object, JSDate::kValueOffset +
-                                           kPointerSize * index->value()));
-      __ jmp(&done, Label::kNear);
-    }
-    __ bind(&runtime);
-    __ PrepareCallCFunction(2);
-    __ movp(arg_reg_1, object);
-    __ Move(arg_reg_2, index, Assembler::RelocInfoNone());
-    __ CallCFunction(ExternalReference::get_date_field_function(isolate()), 2);
-    __ bind(&done);
-  }
-}
-
-
 Operand LCodeGen::BuildSeqStringOperand(Register string,
                                         LOperand* index,
                                         String::Encoding encoding) {
@@ -2250,8 +2212,9 @@ void LCodeGen::DoCompareNumericAndBranch(LCompareNumericAndBranch* instr) {
     // We can statically evaluate the comparison.
     double left_val = ToDouble(LConstantOperand::cast(left));
     double right_val = ToDouble(LConstantOperand::cast(right));
-    int next_block = EvalComparison(instr->op(), left_val, right_val) ?
-        instr->TrueDestination(chunk_) : instr->FalseDestination(chunk_);
+    int next_block = Token::EvalComparison(instr->op(), left_val, right_val)
+                         ? instr->TrueDestination(chunk_)
+                         : instr->FalseDestination(chunk_);
     EmitGoto(next_block);
   } else {
     if (instr->is_double()) {

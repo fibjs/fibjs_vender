@@ -670,7 +670,13 @@ MaybeHandle<String> Factory::NewExternalStringFromOneByte(
     THROW_NEW_ERROR(isolate(), NewInvalidStringLengthError(), String);
   }
 
-  Handle<Map> map = external_one_byte_string_map();
+  Handle<Map> map;
+  if (resource->IsCompressible()) {
+    // TODO(hajimehoshi): Rename this to 'uncached_external_one_byte_string_map'
+    map = short_external_one_byte_string_map();
+  } else {
+    map = external_one_byte_string_map();
+  }
   Handle<ExternalOneByteString> external_string =
       New<ExternalOneByteString>(map, NEW_SPACE);
   external_string->set_length(static_cast<int>(length));
@@ -693,8 +699,15 @@ MaybeHandle<String> Factory::NewExternalStringFromTwoByte(
   static const size_t kOneByteCheckLengthLimit = 32;
   bool is_one_byte = length <= kOneByteCheckLengthLimit &&
       String::IsOneByte(resource->data(), static_cast<int>(length));
-  Handle<Map> map = is_one_byte ?
-      external_string_with_one_byte_data_map() : external_string_map();
+  Handle<Map> map;
+  if (resource->IsCompressible()) {
+    // TODO(hajimehoshi): Rename these to 'uncached_external_string_...'.
+    map = is_one_byte ? short_external_string_with_one_byte_data_map()
+                      : short_external_string_map();
+  } else {
+    map = is_one_byte ? external_string_with_one_byte_data_map()
+                      : external_string_map();
+  }
   Handle<ExternalTwoByteString> external_string =
       New<ExternalTwoByteString>(map, NEW_SPACE);
   external_string->set_length(static_cast<int>(length));
@@ -818,8 +831,7 @@ Handle<Context> Factory::NewWithContext(Handle<JSFunction> function,
 Handle<Context> Factory::NewBlockContext(Handle<JSFunction> function,
                                          Handle<Context> previous,
                                          Handle<ScopeInfo> scope_info) {
-  Handle<FixedArray> array =
-      NewFixedArrayWithHoles(scope_info->ContextLength());
+  Handle<FixedArray> array = NewFixedArray(scope_info->ContextLength());
   array->set_map_no_write_barrier(*block_context_map());
   Handle<Context> context = Handle<Context>::cast(array);
   context->set_closure(*function);
@@ -1208,14 +1220,15 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
   Handle<SharedFunctionInfo> info =
       NewSharedFunctionInfo(name, code, map->is_constructor());
   DCHECK(is_sloppy(info->language_mode()));
+  DCHECK(!map->IsUndefined());
   DCHECK(
       map.is_identical_to(isolate()->sloppy_function_map()) ||
       map.is_identical_to(isolate()->sloppy_function_without_prototype_map()) ||
       map.is_identical_to(
           isolate()->sloppy_function_with_readonly_prototype_map()) ||
       map.is_identical_to(isolate()->strict_function_map()) ||
-      (FLAG_expose_wasm &&
-       map.is_identical_to(isolate()->wasm_function_map())) ||
+      // TODO(titzer): wasm_function_map() could be undefined here. ugly.
+      (*map == context->get(Context::WASM_FUNCTION_MAP_INDEX)) ||
       map.is_identical_to(isolate()->proxy_function_map()));
   return NewFunction(map, info, context);
 }
@@ -1988,7 +2001,6 @@ MaybeHandle<JSBoundFunction> Factory::NewJSBoundFunction(
   result->set_bound_target_function(*target_function);
   result->set_bound_this(*bound_this);
   result->set_bound_arguments(*bound_arguments);
-  result->set_creation_context(*isolate()->native_context());
   result->set_length(Smi::FromInt(0));
   result->set_name(*undefined_value(), SKIP_WRITE_BARRIER);
   return result;
@@ -2011,6 +2023,7 @@ Handle<JSProxy> Factory::NewJSProxy(Handle<JSReceiver> target,
   }
   DCHECK(map->prototype()->IsNull());
   Handle<JSProxy> result = New<JSProxy>(map, NEW_SPACE);
+  result->initialize_properties();
   result->set_target(*target);
   result->set_handler(*handler);
   result->set_hash(*undefined_value(), SKIP_WRITE_BARRIER);

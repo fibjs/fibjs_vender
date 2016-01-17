@@ -151,7 +151,7 @@ class ArmOperandConverter final : public InstructionOperandConverter {
   }
 
   MemOperand ToMemOperand(InstructionOperand* op) const {
-    DCHECK(op != NULL);
+    DCHECK_NOT_NULL(op);
     DCHECK(op->IsStackSlot() || op->IsDoubleStackSlot());
     FrameOffset offset = frame_access_state()->GetFrameOffset(
         AllocatedOperand::cast(op)->index());
@@ -835,6 +835,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
     }
+    case kArmVcvtF32S32: {
+      SwVfpRegister scratch = kScratchDoubleReg.low();
+      __ vmov(scratch, i.InputRegister(0));
+      __ vcvt_f32_s32(i.OutputFloat32Register(), scratch);
+      DCHECK_EQ(LeaveCC, i.OutputSBit());
+      break;
+    }
     case kArmVcvtF64S32: {
       SwVfpRegister scratch = kScratchDoubleReg.low();
       __ vmov(scratch, i.InputRegister(0));
@@ -846,6 +853,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       SwVfpRegister scratch = kScratchDoubleReg.low();
       __ vmov(scratch, i.InputRegister(0));
       __ vcvt_f64_u32(i.OutputFloat64Register(), scratch);
+      DCHECK_EQ(LeaveCC, i.OutputSBit());
+      break;
+    }
+    case kArmVcvtS32F32: {
+      SwVfpRegister scratch = kScratchDoubleReg.low();
+      __ vcvt_s32_f32(scratch, i.InputFloat32Register(0));
+      __ vmov(i.OutputRegister(), scratch);
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
     }
@@ -1083,8 +1097,7 @@ void CodeGenerator::AssemblePrologue() {
       __ mov(fp, sp);
     }
   } else if (descriptor->IsJSFunctionCall()) {
-    CompilationInfo* info = this->info();
-    __ Prologue(info->IsCodePreAgingActive());
+    __ Prologue(this->info()->GeneratePreagedPrologue());
   } else if (frame()->needs_frame()) {
     __ StubPrologue();
   } else {
@@ -1179,7 +1192,7 @@ void CodeGenerator::AssembleReturn() {
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  ArmOperandConverter g(this, NULL);
+  ArmOperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {
@@ -1287,7 +1300,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
 
 void CodeGenerator::AssembleSwap(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  ArmOperandConverter g(this, NULL);
+  ArmOperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {

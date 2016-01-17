@@ -624,7 +624,7 @@ bool LCodeGen::GeneratePrologue() {
     if (info()->IsStub()) {
       __ StubPrologue();
     } else {
-      __ Prologue(info()->IsCodePreAgingActive());
+      __ Prologue(info()->GeneratePreagedPrologue());
     }
     frame_is_built_ = true;
   }
@@ -2364,8 +2364,9 @@ void LCodeGen::DoCompareNumericAndBranch(LCompareNumericAndBranch* instr) {
     // We can statically evaluate the comparison.
     double left_val = ToDouble(LConstantOperand::cast(left));
     double right_val = ToDouble(LConstantOperand::cast(right));
-    int next_block = EvalComparison(instr->op(), left_val, right_val) ?
-        instr->TrueDestination(chunk_) : instr->FalseDestination(chunk_);
+    int next_block = Token::EvalComparison(instr->op(), left_val, right_val)
+                         ? instr->TrueDestination(chunk_)
+                         : instr->FalseDestination(chunk_);
     EmitGoto(next_block);
   } else {
     if (instr->is_double()) {
@@ -2517,40 +2518,6 @@ void LCodeGen::DoLazyBailout(LLazyBailout* instr) {
   LEnvironment* env = instr->environment();
   RegisterEnvironmentForDeoptimization(env, Safepoint::kLazyDeopt);
   safepoints_.RecordLazyDeoptimizationIndex(env->deoptimization_index());
-}
-
-
-void LCodeGen::DoDateField(LDateField* instr) {
-  Register object = ToRegister(instr->date());
-  Register result = ToRegister(instr->result());
-  Register temp1 = x10;
-  Register temp2 = x11;
-  Smi* index = instr->index();
-
-  DCHECK(object.is(result) && object.Is(x0));
-  DCHECK(instr->IsMarkedAsCall());
-
-  if (index->value() == 0) {
-    __ Ldr(result, FieldMemOperand(object, JSDate::kValueOffset));
-  } else {
-    Label runtime, done;
-    if (index->value() < JSDate::kFirstUncachedField) {
-      ExternalReference stamp = ExternalReference::date_cache_stamp(isolate());
-      __ Mov(temp1, Operand(stamp));
-      __ Ldr(temp1, MemOperand(temp1));
-      __ Ldr(temp2, FieldMemOperand(object, JSDate::kCacheStampOffset));
-      __ Cmp(temp1, temp2);
-      __ B(ne, &runtime);
-      __ Ldr(result, FieldMemOperand(object, JSDate::kValueOffset +
-                                             kPointerSize * index->value()));
-      __ B(&done);
-    }
-
-    __ Bind(&runtime);
-    __ Mov(x1, Operand(index));
-    __ CallCFunction(ExternalReference::get_date_field_function(isolate()), 2);
-    __ Bind(&done);
-  }
 }
 
 

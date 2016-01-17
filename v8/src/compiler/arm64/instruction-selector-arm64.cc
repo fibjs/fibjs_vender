@@ -1223,6 +1223,11 @@ void InstructionSelector::VisitChangeFloat32ToFloat64(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
+  VisitRR(this, kArm64Int32ToFloat32, node);
+}
+
+
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRR(this, kArm64Int32ToFloat64, node);
 }
@@ -1230,6 +1235,11 @@ void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
 
 void InstructionSelector::VisitChangeUint32ToFloat64(Node* node) {
   VisitRR(this, kArm64Uint32ToFloat64, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
+  VisitRR(this, kArm64Float32ToInt32, node);
 }
 
 
@@ -1836,12 +1846,12 @@ void InstructionSelector::VisitBranch(Node* branch, BasicBlock* tbranch,
         if (ProjectionIndexOf(value->op()) == 1u) {
           // We cannot combine the <Operation>WithOverflow with this branch
           // unless the 0th projection (the use of the actual value of the
-          // <Operation> is either NULL, which means there's no use of the
+          // <Operation> is either nullptr, which means there's no use of the
           // actual value, or was already defined, which means it is scheduled
           // *AFTER* this branch).
           Node* const node = value->InputAt(0);
           Node* const result = NodeProperties::FindProjection(node, 0);
-          if (result == NULL || IsDefined(result)) {
+          if (result == nullptr || IsDefined(result)) {
             switch (node->opcode()) {
               case IrOpcode::kInt32AddWithOverflow:
                 cont.OverwriteAndNegateIfEqual(kOverflow);

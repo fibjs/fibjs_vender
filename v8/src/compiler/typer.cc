@@ -1563,7 +1563,6 @@ Type* Typer::Visitor::TypeJSCallRuntime(Node* node) {
     case Runtime::kInlineDoubleHi:
       return Type::Signed32();
     case Runtime::kInlineConstructDouble:
-    case Runtime::kInlineDateField:
     case Runtime::kInlineMathFloor:
     case Runtime::kInlineMathSqrt:
     case Runtime::kInlineMathAcos:
@@ -2146,6 +2145,11 @@ Type* Typer::Visitor::TypeChangeFloat64ToUint32(Node* node) {
 }
 
 
+Type* Typer::Visitor::TypeTruncateFloat32ToInt32(Node* node) {
+  return Type::Intersect(Type::Signed32(), Type::UntaggedIntegral32(), zone());
+}
+
+
 Type* Typer::Visitor::TypeTryTruncateFloat32ToInt64(Node* node) {
   return Type::Internal();
 }
@@ -2198,6 +2202,11 @@ Type* Typer::Visitor::TypeTruncateFloat64ToInt32(Node* node) {
 
 Type* Typer::Visitor::TypeTruncateInt64ToInt32(Node* node) {
   return Type::Intersect(Type::Signed32(), Type::UntaggedIntegral32(), zone());
+}
+
+
+Type* Typer::Visitor::TypeRoundInt32ToFloat32(Node* node) {
+  return Type::Intersect(Type::PlainNumber(), Type::UntaggedFloat32(), zone());
 }
 
 

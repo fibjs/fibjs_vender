@@ -944,6 +944,11 @@ void InstructionSelector::VisitChangeFloat32ToFloat64(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
+  VisitRR(this, kPPC_Int32ToFloat32, node);
+}
+
+
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRR(this, kPPC_Int32ToDouble, node);
 }
@@ -1435,12 +1440,12 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
         if (ProjectionIndexOf(value->op()) == 1u) {
           // We cannot combine the <Operation>WithOverflow with this branch
           // unless the 0th projection (the use of the actual value of the
-          // <Operation> is either NULL, which means there's no use of the
+          // <Operation> is either nullptr, which means there's no use of the
           // actual value, or was already defined, which means it is scheduled
           // *AFTER* this branch).
           Node* const node = value->InputAt(0);
           Node* const result = NodeProperties::FindProjection(node, 0);
-          if (result == NULL || selector->IsDefined(result)) {
+          if (result == nullptr || selector->IsDefined(result)) {
             switch (node->opcode()) {
               case IrOpcode::kInt32AddWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);

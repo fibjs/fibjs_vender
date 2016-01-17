@@ -40,6 +40,7 @@
     <ClInclude Include="src\arguments.h" />
     <ClInclude Include="src\assembler.h" />
     <ClInclude Include="src\assert-scope.h" />
+    <ClInclude Include="src\ast\ast-expression-rewriter.h" />
     <ClInclude Include="src\ast\ast-expression-visitor.h" />
     <ClInclude Include="src\ast\ast-literal-reindexer.h" />
     <ClInclude Include="src\ast\ast-numbering.h" />
@@ -347,6 +348,7 @@
     <ClInclude Include="src\interpreter\bytecode-array-builder.h" />
     <ClInclude Include="src\interpreter\bytecode-array-iterator.h" />
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
+    <ClInclude Include="src\interpreter\bytecode-register-allocator.h" />
     <ClInclude Include="src\interpreter\bytecode-traits.h" />
     <ClInclude Include="src\interpreter\bytecodes.h" />
     <ClInclude Include="src\interpreter\constant-array-builder.h" />
@@ -425,10 +427,12 @@
     <ClInclude Include="src\regexp\jsregexp-inl.h" />
     <ClInclude Include="src\regexp\jsregexp.h" />
     <ClInclude Include="src\regexp\ppc\regexp-macro-assembler-ppc.h" />
+    <ClInclude Include="src\regexp\regexp-ast.h" />
     <ClInclude Include="src\regexp\regexp-macro-assembler-irregexp-inl.h" />
     <ClInclude Include="src\regexp\regexp-macro-assembler-irregexp.h" />
     <ClInclude Include="src\regexp\regexp-macro-assembler-tracer.h" />
     <ClInclude Include="src\regexp\regexp-macro-assembler.h" />
+    <ClInclude Include="src\regexp\regexp-parser.h" />
     <ClInclude Include="src\regexp\regexp-stack.h" />
     <ClInclude Include="src\regexp\x64\regexp-macro-assembler-x64.h" />
     <ClInclude Include="src\regexp\x87\regexp-macro-assembler-x87.h" />
@@ -444,6 +448,7 @@
     <ClInclude Include="src\snapshot\serialize.h" />
     <ClInclude Include="src\snapshot\snapshot-source-sink.h" />
     <ClInclude Include="src\snapshot\snapshot.h" />
+    <ClInclude Include="src\source-position.h" />
     <ClInclude Include="src\splay-tree-inl.h" />
     <ClInclude Include="src\splay-tree.h" />
     <ClInclude Include="src\startup-data-util.h" />
@@ -516,6 +521,7 @@
     <ClCompile Include="src\arguments.cc" />
     <ClCompile Include="src\assembler.cc" />
     <ClCompile Include="src\assert-scope.cc" />
+    <ClCompile Include="src\ast\ast-expression-rewriter.cc" />
     <ClCompile Include="src\ast\ast-expression-visitor.cc" />
     <ClCompile Include="src\ast\ast-literal-reindexer.cc" />
     <ClCompile Include="src\ast\ast-numbering.cc" />
@@ -819,6 +825,7 @@
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-iterator.cc" />
     <ClCompile Include="src\interpreter\bytecode-generator.cc" />
+    <ClCompile Include="src\interpreter\bytecode-register-allocator.cc" />
     <ClCompile Include="src\interpreter\bytecodes.cc" />
     <ClCompile Include="src\interpreter\constant-array-builder.cc" />
     <ClCompile Include="src\interpreter\control-flow-builders.cc" />
@@ -875,9 +882,11 @@
     <ClCompile Include="src\regexp\interpreter-irregexp.cc" />
     <ClCompile Include="src\regexp\jsregexp.cc" />
     <ClCompile Include="src\regexp\ppc\regexp-macro-assembler-ppc.cc" />
+    <ClCompile Include="src\regexp\regexp-ast.cc" />
     <ClCompile Include="src\regexp\regexp-macro-assembler-irregexp.cc" />
     <ClCompile Include="src\regexp\regexp-macro-assembler-tracer.cc" />
     <ClCompile Include="src\regexp\regexp-macro-assembler.cc" />
+    <ClCompile Include="src\regexp\regexp-parser.cc" />
     <ClCompile Include="src\regexp\regexp-stack.cc" />
     <ClCompile Include="src\regexp\x64\regexp-macro-assembler-x64.cc" />
     <ClCompile Include="src\regexp\x87\regexp-macro-assembler-x87.cc" />

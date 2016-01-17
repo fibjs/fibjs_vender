@@ -15,6 +15,7 @@ namespace internal {
 // Give alias names to registers for calling conventions.
 const Register kReturnRegister0 = {Register::kCode_v0};
 const Register kReturnRegister1 = {Register::kCode_v1};
+const Register kReturnRegister2 = {Register::kCode_a0};
 const Register kJSFunctionRegister = {Register::kCode_a1};
 const Register kContextRegister = {Register::kCpRegister};
 const Register kInterpreterAccumulatorRegister = {Register::kCode_v0};
@@ -565,6 +566,12 @@ class MacroAssembler: public Assembler {
                                    Register scratch1,
                                    Register scratch2,
                                    Label* gc_required);
+
+  // Allocate and initialize a JSValue wrapper with the specified {constructor}
+  // and {value}.
+  void AllocateJSValue(Register result, Register constructor, Register value,
+                       Register scratch1, Register scratch2,
+                       Label* gc_required);
 
   // ---------------------------------------------------------------------------
   // Instruction macros.

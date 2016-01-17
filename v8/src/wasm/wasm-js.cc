@@ -126,20 +126,25 @@ void CompileRun(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 
-v8::internal::wasm::WasmModuleIndex* TranslateAsmModule(i::ParseInfo* info) {
+v8::internal::wasm::WasmModuleIndex* TranslateAsmModule(i::ParseInfo* info,
+                                                        ErrorThrower* thrower) {
   info->set_global();
   info->set_lazy(false);
   info->set_allow_lazy_parsing(false);
   info->set_toplevel(true);
 
-  CHECK(i::Compiler::ParseAndAnalyze(info));
+  if (!i::Compiler::ParseAndAnalyze(info)) {
+    return nullptr;
+  }
+
   info->set_literal(
       info->scope()->declarations()->at(0)->AsFunctionDeclaration()->fun());
 
   v8::internal::AsmTyper typer(info->isolate(), info->zone(), *(info->script()),
                                info->literal());
   if (!typer.Validate()) {
-    return NULL;
+    thrower->Error("Asm.js validation failed: %s", typer.error_message());
+    return nullptr;
   }
 
   auto module = v8::internal::wasm::AsmWasmBuilder(
@@ -159,7 +164,7 @@ void AsmCompileRun(const v8::FunctionCallbackInfo<v8::Value>& args) {
     return;
   }
   if (!args[0]->IsString()) {
-    thrower.Error("Invalid argument count");
+    thrower.Error("Asm module text should be a string");
     return;
   }
 
@@ -169,9 +174,8 @@ void AsmCompileRun(const v8::FunctionCallbackInfo<v8::Value>& args) {
   i::Handle<i::Script> script = factory->NewScript(Utils::OpenHandle(*source));
   i::ParseInfo info(&zone, script);
 
-  auto module = TranslateAsmModule(&info);
-  if (module == NULL) {
-    thrower.Error("Asm.js validation failed");
+  auto module = TranslateAsmModule(&info, &thrower);
+  if (module == nullptr) {
     return;
   }
 
@@ -181,62 +185,10 @@ void AsmCompileRun(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 
-// TODO(aseemgarg): deal with arraybuffer and foreign functions
-void InstantiateModuleFromAsm(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  HandleScope scope(args.GetIsolate());
+void InstantiateModuleCommon(const v8::FunctionCallbackInfo<v8::Value>& args,
+                             const byte* start, const byte* end,
+                             ErrorThrower* thrower, bool must_decode) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(args.GetIsolate());
-  ErrorThrower thrower(isolate, "WASM.instantiateModuleFromAsm()");
-
-  if (args.Length() != 1) {
-    thrower.Error("Invalid argument count");
-    return;
-  }
-  if (!args[0]->IsString()) {
-    thrower.Error("Invalid argument count");
-    return;
-  }
-
-  i::Factory* factory = isolate->factory();
-  i::Zone zone;
-  Local<String> source = Local<String>::Cast(args[0]);
-  i::Handle<i::Script> script = factory->NewScript(Utils::OpenHandle(*source));
-  i::ParseInfo info(&zone, script);
-
-  auto module = TranslateAsmModule(&info);
-  if (module == NULL) {
-    thrower.Error("Asm.js validation failed");
-    return;
-  }
-
-  i::Handle<i::JSArrayBuffer> memory = i::Handle<i::JSArrayBuffer>::null();
-  internal::wasm::ModuleResult result = internal::wasm::DecodeWasmModule(
-      isolate, &zone, module->Begin(), module->End(), false, false);
-
-  if (result.failed()) {
-    thrower.Failed("", result);
-  } else {
-    // Success. Instantiate the module and return the object.
-    i::Handle<i::JSObject> ffi = i::Handle<i::JSObject>::null();
-
-    i::MaybeHandle<i::JSObject> object =
-        result.val->Instantiate(isolate, ffi, memory);
-
-    if (!object.is_null()) {
-      args.GetReturnValue().Set(v8::Utils::ToLocal(object.ToHandleChecked()));
-    }
-  }
-
-  if (result.val) delete result.val;
-}
-
-
-void InstantiateModule(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  HandleScope scope(args.GetIsolate());
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(args.GetIsolate());
-  ErrorThrower thrower(isolate, "WASM.instantiateModule()");
-
-  RawBuffer buffer = GetRawBufferArgument(thrower, args);
-  if (buffer.start == nullptr) return;
 
   i::Handle<i::JSArrayBuffer> memory = i::Handle<i::JSArrayBuffer>::null();
   if (args.Length() > 2 && args[2]->IsArrayBuffer()) {
@@ -249,10 +201,12 @@ void InstantiateModule(const v8::FunctionCallbackInfo<v8::Value>& args) {
   // Verification will happen during compilation.
   i::Zone zone;
   internal::wasm::ModuleResult result = internal::wasm::DecodeWasmModule(
-      isolate, &zone, buffer.start, buffer.end, false, false);
+      isolate, &zone, start, end, false, false);
 
-  if (result.failed()) {
-    thrower.Failed("", result);
+  if (result.failed() && must_decode) {
+    thrower->Error("Asm.js converted module failed to decode");
+  } else if (result.failed()) {
+    thrower->Failed("", result);
   } else {
     // Success. Instantiate the module and return the object.
     i::Handle<i::JSObject> ffi = i::Handle<i::JSObject>::null();
@@ -270,6 +224,43 @@ void InstantiateModule(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 
   if (result.val) delete result.val;
+}
+
+
+void InstantiateModuleFromAsm(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  HandleScope scope(args.GetIsolate());
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(args.GetIsolate());
+  ErrorThrower thrower(isolate, "WASM.instantiateModuleFromAsm()");
+
+  if (!args[0]->IsString()) {
+    thrower.Error("Asm module text should be a string");
+    return;
+  }
+
+  i::Factory* factory = isolate->factory();
+  i::Zone zone;
+  Local<String> source = Local<String>::Cast(args[0]);
+  i::Handle<i::Script> script = factory->NewScript(Utils::OpenHandle(*source));
+  i::ParseInfo info(&zone, script);
+
+  auto module = TranslateAsmModule(&info, &thrower);
+  if (module == nullptr) {
+    return;
+  }
+
+  InstantiateModuleCommon(args, module->Begin(), module->End(), &thrower, true);
+}
+
+
+void InstantiateModule(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  HandleScope scope(args.GetIsolate());
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(args.GetIsolate());
+  ErrorThrower thrower(isolate, "WASM.instantiateModule()");
+
+  RawBuffer buffer = GetRawBufferArgument(thrower, args);
+  if (buffer.start == nullptr) return;
+
+  InstantiateModuleCommon(args, buffer.start, buffer.end, &thrower, false);
 }
 }  // namespace
 
@@ -304,18 +295,15 @@ static void InstallFunc(Isolate* isolate, Handle<JSObject> object,
 
 void WasmJs::Install(Isolate* isolate, Handle<JSGlobalObject> global) {
   // Setup wasm function map.
-  Handle<Map> wasm_function_map = isolate->factory()->NewMap(
-      JS_FUNCTION_TYPE, JSFunction::kSize + kPointerSize);
-  wasm_function_map->set_is_callable();
-  global->native_context()->set_wasm_function_map(*wasm_function_map);
+  Handle<Context> context(global->native_context(), isolate);
+  InstallWasmFunctionMap(isolate, context);
 
   // Bind the WASM object.
   Factory* factory = isolate->factory();
-  Handle<String> name = v8_str(isolate, "WASM");
+  Handle<String> name = v8_str(isolate, "_WASMEXP_");
   Handle<JSFunction> cons = factory->NewFunction(name);
   JSFunction::SetInstancePrototype(
-      cons, Handle<Object>(global->native_context()->initial_object_prototype(),
-                           isolate));
+      cons, Handle<Object>(context->initial_object_prototype(), isolate));
   cons->shared()->set_instance_class_name(*name);
   Handle<JSObject> wasm_object = factory->NewJSObject(cons, TENURED);
   PropertyAttributes attributes = static_cast<PropertyAttributes>(DONT_ENUM);
@@ -330,5 +318,16 @@ void WasmJs::Install(Isolate* isolate, Handle<JSGlobalObject> global) {
   InstallFunc(isolate, wasm_object, "instantiateModuleFromAsm",
               InstantiateModuleFromAsm);
 }
+
+
+void WasmJs::InstallWasmFunctionMap(Isolate* isolate, Handle<Context> context) {
+  if (!context->get(Context::WASM_FUNCTION_MAP_INDEX)->IsMap()) {
+    Handle<Map> wasm_function_map = isolate->factory()->NewMap(
+        JS_FUNCTION_TYPE, JSFunction::kSize + kPointerSize);
+    wasm_function_map->set_is_callable();
+    context->set_wasm_function_map(*wasm_function_map);
+  }
+}
+
 }  // namespace internal
 }  // namespace v8

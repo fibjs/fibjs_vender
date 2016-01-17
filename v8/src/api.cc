@@ -1051,8 +1051,6 @@ Local<FunctionTemplate> FunctionTemplate::NewWithFastHandler(
     Isolate* isolate, FunctionCallback callback,
     experimental::FastAccessorBuilder* fast_handler, v8::Local<Value> data,
     v8::Local<Signature> signature, int length) {
-  // TODO(vogelheim): 'fast_handler' should have a more specific type than
-  // Local<Value>.
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   DCHECK(!i_isolate->serializer_enabled());
   LOG_API(i_isolate, "FunctionTemplate::NewWithFastHandler");
@@ -2768,9 +2766,7 @@ bool Value::IsSharedArrayBuffer() const {
 }
 
 
-bool Value::IsObject() const {
-  return Utils::OpenHandle(this)->IsJSObject();
-}
+bool Value::IsObject() const { return Utils::OpenHandle(this)->IsJSReceiver(); }
 
 
 bool Value::IsNumber() const {
@@ -2933,11 +2929,11 @@ Local<String> Value::ToDetailString(Isolate* isolate) const {
 
 MaybeLocal<Object> Value::ToObject(Local<Context> context) const {
   auto obj = Utils::OpenHandle(this);
-  if (obj->IsJSObject()) return ToApiHandle<Object>(obj);
+  if (obj->IsJSReceiver()) return ToApiHandle<Object>(obj);
   PREPARE_FOR_EXECUTION(context, "ToObject", Object);
   Local<Object> result;
   has_pending_exception =
-      !ToLocal<Object>(i::Execution::ToObject(isolate, obj), &result);
+      !ToLocal<Object>(i::Object::ToObject(isolate, obj), &result);
   RETURN_ON_FAILED_EXECUTION(Object);
   RETURN_ESCAPED(result);
 }

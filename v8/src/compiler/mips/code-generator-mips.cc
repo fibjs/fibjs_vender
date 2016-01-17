@@ -122,7 +122,7 @@ class MipsOperandConverter final : public InstructionOperandConverter {
   MemOperand MemoryOperand(size_t index = 0) { return MemoryOperand(&index); }
 
   MemOperand ToMemOperand(InstructionOperand* op) const {
-    DCHECK(op != NULL);
+    DCHECK_NOT_NULL(op);
     DCHECK(op->IsStackSlot() || op->IsDoubleStackSlot());
     FrameOffset offset = frame_access_state()->GetFrameOffset(
         AllocatedOperand::cast(op)->index());
@@ -1225,7 +1225,7 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
         !__ IsDoubleZeroRegSet()) {
       __ Move(kDoubleRegZero, 0.0);
     }
-    __ BranchF32(tlabel, NULL, cc, left, right);
+    __ BranchF32(tlabel, nullptr, cc, left, right);
   } else if (instr->arch_opcode() == kMipsCmpD) {
     if (!convertCondition(branch->condition, cc)) {
       UNSUPPORTED_COND(kMips64CmpD, branch->condition);
@@ -1236,7 +1236,7 @@ void CodeGenerator::AssembleArchBranch(Instruction* instr, BranchInfo* branch) {
         !__ IsDoubleZeroRegSet()) {
       __ Move(kDoubleRegZero, 0.0);
     }
-    __ BranchF64(tlabel, NULL, cc, left, right);
+    __ BranchF64(tlabel, nullptr, cc, left, right);
   } else {
     PrintF("AssembleArchBranch Unimplemented arch_opcode: %d\n",
            instr->arch_opcode());
@@ -1451,8 +1451,7 @@ void CodeGenerator::AssemblePrologue() {
     __ Push(ra, fp);
     __ mov(fp, sp);
   } else if (descriptor->IsJSFunctionCall()) {
-    CompilationInfo* info = this->info();
-    __ Prologue(info->IsCodePreAgingActive());
+    __ Prologue(this->info()->GeneratePreagedPrologue());
   } else if (frame()->needs_frame()) {
     __ StubPrologue();
   } else {
@@ -1545,7 +1544,7 @@ void CodeGenerator::AssembleReturn() {
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  MipsOperandConverter g(this, NULL);
+  MipsOperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {
@@ -1651,7 +1650,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
 
 void CodeGenerator::AssembleSwap(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  MipsOperandConverter g(this, NULL);
+  MipsOperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {

@@ -58,18 +58,18 @@ class X87OperandGenerator final : public OperandGenerator {
                                              InstructionOperand inputs[],
                                              size_t* input_count) {
     AddressingMode mode = kMode_MRI;
-    int32_t displacement = (displacement_node == NULL)
+    int32_t displacement = (displacement_node == nullptr)
                                ? 0
                                : OpParameter<int32_t>(displacement_node);
-    if (base != NULL) {
+    if (base != nullptr) {
       if (base->opcode() == IrOpcode::kInt32Constant) {
         displacement += OpParameter<int32_t>(base);
-        base = NULL;
+        base = nullptr;
       }
     }
-    if (base != NULL) {
+    if (base != nullptr) {
       inputs[(*input_count)++] = UseRegister(base);
-      if (index != NULL) {
+      if (index != nullptr) {
         DCHECK(scale >= 0 && scale <= 3);
         inputs[(*input_count)++] = UseRegister(index);
         if (displacement != 0) {
@@ -92,7 +92,7 @@ class X87OperandGenerator final : public OperandGenerator {
       }
     } else {
       DCHECK(scale >= 0 && scale <= 3);
-      if (index != NULL) {
+      if (index != nullptr) {
         inputs[(*input_count)++] = UseRegister(index);
         if (displacement != 0) {
           inputs[(*input_count)++] = TempImmediate(displacement);
@@ -117,7 +117,7 @@ class X87OperandGenerator final : public OperandGenerator {
                                                   size_t* input_count) {
     BaseWithIndexAndDisplacement32Matcher m(node, true);
     DCHECK(m.matches());
-    if ((m.displacement() == NULL || CanBeImmediate(m.displacement()))) {
+    if ((m.displacement() == nullptr || CanBeImmediate(m.displacement()))) {
       return GenerateMemoryOperandInputs(m.index(), m.scale(), m.base(),
                                          m.displacement(), inputs, input_count);
     } else {
@@ -263,7 +263,8 @@ void InstructionSelector::VisitStore(Node* node) {
     InstructionCode code =
         opcode | AddressingModeField::encode(addressing_mode);
     inputs[input_count++] = val;
-    Emit(code, 0, static_cast<InstructionOperand*>(NULL), input_count, inputs);
+    Emit(code, 0, static_cast<InstructionOperand*>(nullptr), input_count,
+         inputs);
   }
 }
 
@@ -520,8 +521,8 @@ void InstructionSelector::VisitWord32Shl(Node* node) {
   Int32ScaleMatcher m(node, true);
   if (m.matches()) {
     Node* index = node->InputAt(0);
-    Node* base = m.power_of_two_plus_one() ? index : NULL;
-    EmitLea(this, node, index, m.scale(), base, NULL);
+    Node* base = m.power_of_two_plus_one() ? index : nullptr;
+    EmitLea(this, node, index, m.scale(), base, nullptr);
     return;
   }
   VisitShift(this, node, kX87Shl);
@@ -564,7 +565,7 @@ void InstructionSelector::VisitInt32Add(Node* node) {
   // Try to match the Add to a lea pattern
   BaseWithIndexAndDisplacement32Matcher m(node);
   if (m.matches() &&
-      (m.displacement() == NULL || g.CanBeImmediate(m.displacement()))) {
+      (m.displacement() == nullptr || g.CanBeImmediate(m.displacement()))) {
     InstructionOperand inputs[4];
     size_t input_count = 0;
     AddressingMode mode = g.GenerateMemoryOperandInputs(
@@ -601,8 +602,8 @@ void InstructionSelector::VisitInt32Mul(Node* node) {
   Int32ScaleMatcher m(node, true);
   if (m.matches()) {
     Node* index = node->InputAt(0);
-    Node* base = m.power_of_two_plus_one() ? index : NULL;
-    EmitLea(this, node, index, m.scale(), base, NULL);
+    Node* base = m.power_of_two_plus_one() ? index : nullptr;
+    EmitLea(this, node, index, m.scale(), base, nullptr);
     return;
   }
   X87OperandGenerator g(this);
@@ -658,6 +659,11 @@ void InstructionSelector::VisitChangeFloat32ToFloat64(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
+  UNIMPLEMENTED();
+}
+
+
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87Int32ToFloat64, g.DefineAsFixed(node, stX_0),
@@ -669,6 +675,12 @@ void InstructionSelector::VisitChangeUint32ToFloat64(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87Uint32ToFloat64, g.DefineAsFixed(node, stX_0),
        g.UseRegister(node->InputAt(0)));
+}
+
+
+void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
+  X87OperandGenerator g(this);
+  Emit(kX87Float32ToInt32, g.DefineAsRegister(node), g.Use(node->InputAt(0)));
 }
 
 
@@ -711,7 +723,7 @@ void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
 void InstructionSelector::VisitBitcastFloat32ToInt32(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
-  Emit(kX87BitcastFI, g.DefineAsRegister(node), 0, NULL);
+  Emit(kX87BitcastFI, g.DefineAsRegister(node), 0, nullptr);
 }
 
 
@@ -725,7 +737,7 @@ void InstructionSelector::VisitFloat32Add(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float32Add, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float32Add, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -733,7 +745,7 @@ void InstructionSelector::VisitFloat64Add(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float64Add, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float64Add, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -741,7 +753,7 @@ void InstructionSelector::VisitFloat32Sub(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float32Sub, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float32Sub, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -749,7 +761,7 @@ void InstructionSelector::VisitFloat64Sub(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float64Sub, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float64Sub, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -757,7 +769,7 @@ void InstructionSelector::VisitFloat32Mul(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float32Mul, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float32Mul, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -765,7 +777,7 @@ void InstructionSelector::VisitFloat64Mul(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float64Mul, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float64Mul, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -773,7 +785,7 @@ void InstructionSelector::VisitFloat32Div(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float32Div, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float32Div, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -781,7 +793,7 @@ void InstructionSelector::VisitFloat64Div(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float64Div, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float64Div, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -798,7 +810,7 @@ void InstructionSelector::VisitFloat32Max(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float32Max, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float32Max, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -806,7 +818,7 @@ void InstructionSelector::VisitFloat64Max(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float64Max, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float64Max, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -814,7 +826,7 @@ void InstructionSelector::VisitFloat32Min(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float32Min, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float32Min, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -822,35 +834,35 @@ void InstructionSelector::VisitFloat64Min(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(1)));
-  Emit(kX87Float64Min, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float64Min, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
 void InstructionSelector::VisitFloat32Abs(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
-  Emit(kX87Float32Abs, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float32Abs, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
 void InstructionSelector::VisitFloat64Abs(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
-  Emit(kX87Float64Abs, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float64Abs, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
 void InstructionSelector::VisitFloat32Sqrt(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat32, g.NoOutput(), g.Use(node->InputAt(0)));
-  Emit(kX87Float32Sqrt, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float32Sqrt, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
 void InstructionSelector::VisitFloat64Sqrt(Node* node) {
   X87OperandGenerator g(this);
   Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
-  Emit(kX87Float64Sqrt, g.DefineAsFixed(node, stX_0), 0, NULL);
+  Emit(kX87Float64Sqrt, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 
@@ -1125,12 +1137,12 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
         if (ProjectionIndexOf(value->op()) == 1u) {
           // We cannot combine the <Operation>WithOverflow with this branch
           // unless the 0th projection (the use of the actual value of the
-          // <Operation> is either NULL, which means there's no use of the
+          // <Operation> is either nullptr, which means there's no use of the
           // actual value, or was already defined, which means it is scheduled
           // *AFTER* this branch).
           Node* const node = value->InputAt(0);
           Node* const result = NodeProperties::FindProjection(node, 0);
-          if (result == NULL || selector->IsDefined(result)) {
+          if (result == nullptr || selector->IsDefined(result)) {
             switch (node->opcode()) {
               case IrOpcode::kInt32AddWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);

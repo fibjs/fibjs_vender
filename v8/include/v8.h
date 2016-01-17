@@ -2198,6 +2198,8 @@ class V8_EXPORT String : public Name {
    public:
     virtual ~ExternalStringResourceBase() {}
 
+    virtual bool IsCompressible() const { return false; }
+
    protected:
     ExternalStringResourceBase() {}
 
@@ -3144,7 +3146,8 @@ class FunctionCallbackInfo {
  public:
   V8_INLINE int Length() const;
   V8_INLINE Local<Value> operator[](int i) const;
-  V8_INLINE Local<Function> Callee() const;
+  V8_INLINE V8_DEPRECATED("Use Data() to explicitly pass Callee instead",
+                          Local<Function> Callee() const);
   V8_INLINE Local<Object> This() const;
   V8_INLINE Local<Object> Holder() const;
   V8_INLINE bool IsConstructCall() const;

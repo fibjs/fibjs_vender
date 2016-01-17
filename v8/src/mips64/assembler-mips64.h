@@ -1092,7 +1092,7 @@ class Assembler : public AssemblerBase {
 
   // Record a deoptimization reason that can be used by a log or cpu profiler.
   // Use --trace-deopt to enable.
-  void RecordDeoptReason(const int reason, const SourcePosition position);
+  void RecordDeoptReason(const int reason, int raw_position);
 
   static int RelocateInternalReference(RelocInfo::Mode rmode, byte* pc,
                                        intptr_t pc_delta);
@@ -1104,9 +1104,6 @@ class Assembler : public AssemblerBase {
   void dq(uint64_t data);
   void dp(uintptr_t data) { dq(data); }
   void dd(Label* label);
-
-  // Emits the address of the code stub's first instruction.
-  void emit_code_stub_address(Code* stub);
 
   PositionsRecorder* positions_recorder() { return &positions_recorder_; }
 
@@ -1329,6 +1326,10 @@ class Assembler : public AssemblerBase {
   inline void emit(Instr x,
                    CompactBranchType is_compact_branch = CompactBranchType::NO);
   inline void emit(uint64_t x);
+  inline void CheckForEmitInForbiddenSlot();
+  template <typename T>
+  inline void EmitHelper(T x);
+  inline void EmitHelper(Instr x, CompactBranchType is_compact_branch);
 
   // Instruction generation.
   // We have 3 different kind of encoding layout on MIPS.

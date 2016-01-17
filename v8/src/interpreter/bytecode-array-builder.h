@@ -167,6 +167,14 @@ class BytecodeArrayBuilder final {
   BytecodeArrayBuilder& CallRuntime(Runtime::FunctionId function_id,
                                     Register first_arg, size_t arg_count);
 
+  // Call the runtime function with |function_id| that returns a pair of values.
+  // The first argument should be in |first_arg| and all subsequent arguments
+  // should be in registers <first_arg + 1> to <first_arg + 1 + arg_count>. The
+  // return values will be returned in <first_return> and <first_return + 1>.
+  BytecodeArrayBuilder& CallRuntimeForPair(Runtime::FunctionId function_id,
+                                           Register first_arg, size_t arg_count,
+                                           Register first_return);
+
   // Call the JS runtime function with |context_index|. The the receiver should
   // be in |receiver| and all subsequent arguments should be in registers
   // <receiver + 1> to <receiver + 1 + arg_count>.
@@ -293,10 +301,11 @@ class BytecodeArrayBuilder final {
   bool NeedToBooleanCast();
   bool IsRegisterInAccumulator(Register reg);
 
+  bool RegisterIsValid(Register reg) const;
+
   // Temporary register management.
   int BorrowTemporaryRegister();
   int BorrowTemporaryRegisterNotInRange(int start_index, int end_index);
-  int AllocateAndBorrowTemporaryRegister();
   void ReturnTemporaryRegister(int reg_index);
   int PrepareForConsecutiveTemporaryRegisters(size_t count);
   void BorrowConsecutiveTemporaryRegister(int reg_index);
@@ -325,7 +334,8 @@ class BytecodeArrayBuilder final {
   ZoneSet<int> free_temporaries_;
 
   class PreviousBytecodeHelper;
-  friend class TemporaryRegisterScope;
+  friend class BytecodeRegisterAllocator;
+
   DISALLOW_COPY_AND_ASSIGN(BytecodeArrayBuilder);
 };
 
@@ -369,39 +379,6 @@ class BytecodeLabel final {
 
   friend class BytecodeArrayBuilder;
 };
-
-
-// A stack-allocated class than allows the instantiator to allocate
-// temporary registers that are cleaned up when scope is closed.
-// TODO(oth): Deprecate TemporaryRegisterScope use. Code should be
-// using result scopes as far as possible.
-class TemporaryRegisterScope {
- public:
-  explicit TemporaryRegisterScope(BytecodeArrayBuilder* builder);
-  ~TemporaryRegisterScope();
-  Register NewRegister();
-  Register AllocateNewRegister();
-
-  void PrepareForConsecutiveAllocations(size_t count);
-  Register NextConsecutiveRegister();
-
-  bool RegisterIsAllocatedInThisScope(Register reg) const;
-
-  bool hasConsecutiveAllocations() const { return next_consecutive_count_ > 0; }
-
- private:
-  void* operator new(size_t size);
-  void operator delete(void* p);
-
-  BytecodeArrayBuilder* builder_;
-  const TemporaryRegisterScope* outer_;
-  ZoneVector<int> allocated_;
-  int next_consecutive_register_;
-  int next_consecutive_count_;
-
-  DISALLOW_COPY_AND_ASSIGN(TemporaryRegisterScope);
-};
-
 
 }  // namespace interpreter
 }  // namespace internal

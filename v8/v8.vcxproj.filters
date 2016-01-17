@@ -246,6 +246,9 @@
     <ClInclude Include="src\assert-scope.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ast\ast-expression-rewriter.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
     <ClInclude Include="src\ast\ast-expression-visitor.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
@@ -1167,6 +1170,9 @@
     <ClInclude Include="src\interpreter\bytecode-generator.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-register-allocator.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-traits.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -1401,6 +1407,9 @@
     <ClInclude Include="src\regexp\ppc\regexp-macro-assembler-ppc.h">
       <Filter>Source Files\regexp\ppc</Filter>
     </ClInclude>
+    <ClInclude Include="src\regexp\regexp-ast.h">
+      <Filter>Source Files\regexp</Filter>
+    </ClInclude>
     <ClInclude Include="src\regexp\regexp-macro-assembler-irregexp-inl.h">
       <Filter>Source Files\regexp</Filter>
     </ClInclude>
@@ -1411,6 +1420,9 @@
       <Filter>Source Files\regexp</Filter>
     </ClInclude>
     <ClInclude Include="src\regexp\regexp-macro-assembler.h">
+      <Filter>Source Files\regexp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\regexp\regexp-parser.h">
       <Filter>Source Files\regexp</Filter>
     </ClInclude>
     <ClInclude Include="src\regexp\regexp-stack.h">
@@ -1457,6 +1469,9 @@
     </ClInclude>
     <ClInclude Include="src\snapshot\snapshot.h">
       <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\source-position.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\splay-tree-inl.h">
       <Filter>Source Files</Filter>
@@ -1669,6 +1684,9 @@
     </ClCompile>
     <ClCompile Include="src\assert-scope.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\ast-expression-rewriter.cc">
+      <Filter>Source Files\ast</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\ast-expression-visitor.cc">
       <Filter>Source Files\ast</Filter>
@@ -2579,6 +2597,9 @@
     <ClCompile Include="src\interpreter\bytecode-generator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-register-allocator.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\bytecodes.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -2747,6 +2768,9 @@
     <ClCompile Include="src\regexp\ppc\regexp-macro-assembler-ppc.cc">
       <Filter>Source Files\regexp\ppc</Filter>
     </ClCompile>
+    <ClCompile Include="src\regexp\regexp-ast.cc">
+      <Filter>Source Files\regexp</Filter>
+    </ClCompile>
     <ClCompile Include="src\regexp\regexp-macro-assembler-irregexp.cc">
       <Filter>Source Files\regexp</Filter>
     </ClCompile>
@@ -2754,6 +2778,9 @@
       <Filter>Source Files\regexp</Filter>
     </ClCompile>
     <ClCompile Include="src\regexp\regexp-macro-assembler.cc">
+      <Filter>Source Files\regexp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\regexp\regexp-parser.cc">
       <Filter>Source Files\regexp</Filter>
     </ClCompile>
     <ClCompile Include="src\regexp\regexp-stack.cc">

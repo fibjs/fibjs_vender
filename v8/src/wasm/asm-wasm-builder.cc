@@ -40,31 +40,43 @@ class AsmWasmBuilderImpl : public AstVisitor {
         is_set_op_(false),
         marking_exported(false),
         builder_(new (zone) WasmModuleBuilder(zone)),
-        current_function_builder_(NULL),
+        current_function_builder_(nullptr),
         literal_(literal),
         isolate_(isolate),
         zone_(zone),
         cache_(TypeCache::Get()),
         breakable_blocks_(zone),
         block_size_(0),
-        init_function_initialized(false),
         init_function_index(0) {
     InitializeAstVisitor(isolate);
   }
 
-  void Compile() { RECURSE(VisitFunctionLiteral(literal_)); }
+  void InitializeInitFunction() {
+    unsigned char init[] = "__init__";
+    init_function_index = builder_->AddFunction();
+    current_function_builder_ = builder_->FunctionAt(init_function_index);
+    current_function_builder_->SetName(init, 8);
+    current_function_builder_->ReturnType(kAstStmt);
+    current_function_builder_->Exported(1);
+    current_function_builder_ = nullptr;
+  }
+
+  void Compile() {
+    InitializeInitFunction();
+    RECURSE(VisitFunctionLiteral(literal_));
+  }
 
   void VisitVariableDeclaration(VariableDeclaration* decl) {}
 
   void VisitFunctionDeclaration(FunctionDeclaration* decl) {
     DCHECK(!in_function_);
-    DCHECK(current_function_builder_ == NULL);
+    DCHECK(current_function_builder_ == nullptr);
     uint16_t index = LookupOrInsertFunction(decl->proxy()->var());
     current_function_builder_ = builder_->FunctionAt(index);
     in_function_ = true;
     RECURSE(Visit(decl->fun()));
     in_function_ = false;
-    current_function_builder_ = NULL;
+    current_function_builder_ = nullptr;
     local_variables_.Clear();
   }
 
@@ -84,7 +96,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
     if (stmt->statements()->length() == 1) {
       ExpressionStatement* expr =
           stmt->statements()->at(0)->AsExpressionStatement();
-      if (expr != NULL) {
+      if (expr != nullptr) {
         if (expr->expression()->IsAssignment()) {
           RECURSE(VisitExpressionStatement(expr));
           return;
@@ -92,8 +104,8 @@ class AsmWasmBuilderImpl : public AstVisitor {
       }
     }
     DCHECK(in_function_);
-    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprBlock, false);
-    block_size_ = static_cast<byte>(stmt->statements()->length());
+    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprBlock, false,
+                         static_cast<byte>(stmt->statements()->length()));
     RECURSE(VisitStatements(stmt->statements()));
     DCHECK(block_size_ >= 0);
   }
@@ -106,12 +118,13 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
    public:
     BlockVisitor(AsmWasmBuilderImpl* builder, BreakableStatement* stmt,
-                 WasmOpcode opcode, bool is_loop)
+                 WasmOpcode opcode, bool is_loop, int initial_block_size)
         : builder_(builder) {
       builder_->breakable_blocks_.push_back(std::make_pair(stmt, is_loop));
       builder_->current_function_builder_->Emit(opcode);
       index_ = builder_->current_function_builder_->EmitEditableImmediate(0);
       prev_block_size_ = builder_->block_size_;
+      builder_->block_size_ = initial_block_size;
     }
     ~BlockVisitor() {
       builder_->current_function_builder_->EditImmediate(index_,
@@ -149,6 +162,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   void VisitContinueStatement(ContinueStatement* stmt) {
     DCHECK(in_function_);
+    DCHECK(stmt->target() != NULL);
     int i = static_cast<int>(breakable_blocks_.size()) - 1;
     int block_distance = 0;
     for (; i >= 0; i--) {
@@ -169,6 +183,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   void VisitBreakStatement(BreakStatement* stmt) {
     DCHECK(in_function_);
+    DCHECK(stmt->target() != NULL);
     int i = static_cast<int>(breakable_blocks_.size()) - 1;
     int block_distance = 0;
     for (; i >= 0; i--) {
@@ -203,19 +218,51 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   void VisitWithStatement(WithStatement* stmt) { UNREACHABLE(); }
 
+  void SetLocalTo(uint16_t index, int value) {
+    current_function_builder_->Emit(kExprSetLocal);
+    AddLeb128(index, true);
+    byte code[] = {WASM_I32(value)};
+    current_function_builder_->EmitCode(code, sizeof(code));
+    block_size_++;
+  }
+
+  void CompileCase(CaseClause* clause, uint16_t fall_through,
+                   VariableProxy* tag) {
+    Literal* label = clause->label()->AsLiteral();
+    DCHECK(label != nullptr);
+    block_size_++;
+    current_function_builder_->Emit(kExprIf);
+    current_function_builder_->Emit(kExprI32Ior);
+    current_function_builder_->Emit(kExprI32Eq);
+    VisitVariableProxy(tag);
+    VisitLiteral(label);
+    current_function_builder_->Emit(kExprGetLocal);
+    AddLeb128(fall_through, true);
+    BlockVisitor visitor(this, nullptr, kExprBlock, false, 0);
+    SetLocalTo(fall_through, 1);
+    ZoneList<Statement*>* stmts = clause->statements();
+    block_size_ += stmts->length();
+    RECURSE(VisitStatements(stmts));
+  }
+
   void VisitSwitchStatement(SwitchStatement* stmt) {
-    RECURSE(Visit(stmt->tag()));
+    VariableProxy* tag = stmt->tag()->AsVariableProxy();
+    DCHECK(tag != NULL);
+    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprBlock, false,
+                         0);
+    uint16_t fall_through = current_function_builder_->AddLocal(kAstI32);
+    SetLocalTo(fall_through, 0);
 
     ZoneList<CaseClause*>* clauses = stmt->cases();
-
     for (int i = 0; i < clauses->length(); ++i) {
       CaseClause* clause = clauses->at(i);
       if (!clause->is_default()) {
-        Expression* label = clause->label();
-        RECURSE(Visit(label));
+        CompileCase(clause, fall_through, tag);
+      } else {
+        ZoneList<Statement*>* stmts = clause->statements();
+        block_size_ += stmts->length();
+        RECURSE(VisitStatements(stmts));
       }
-      ZoneList<Statement*>* stmts = clause->statements();
-      RECURSE(VisitStatements(stmts));
     }
   }
 
@@ -223,8 +270,8 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   void VisitDoWhileStatement(DoWhileStatement* stmt) {
     DCHECK(in_function_);
-    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprLoop, true);
-    block_size_ = 2;
+    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprLoop, true,
+                         2);
     RECURSE(Visit(stmt->body()));
     current_function_builder_->Emit(kExprIf);
     RECURSE(Visit(stmt->cond()));
@@ -234,8 +281,8 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   void VisitWhileStatement(WhileStatement* stmt) {
     DCHECK(in_function_);
-    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprLoop, true);
-    block_size_ = 1;
+    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprLoop, true,
+                         1);
     current_function_builder_->Emit(kExprIf);
     RECURSE(Visit(stmt->cond()));
     current_function_builder_->EmitWithU8(kExprBr, 0);
@@ -244,13 +291,13 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   void VisitForStatement(ForStatement* stmt) {
     DCHECK(in_function_);
-    if (stmt->init() != NULL) {
+    if (stmt->init() != nullptr) {
       block_size_++;
       RECURSE(Visit(stmt->init()));
     }
-    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprLoop, true);
-    block_size_ = 0;
-    if (stmt->cond() != NULL) {
+    BlockVisitor visitor(this, stmt->AsBreakableStatement(), kExprLoop, true,
+                         0);
+    if (stmt->cond() != nullptr) {
       block_size_++;
       current_function_builder_->Emit(kExprIf);
       current_function_builder_->Emit(kExprBoolNot);
@@ -258,11 +305,11 @@ class AsmWasmBuilderImpl : public AstVisitor {
       current_function_builder_->EmitWithU8(kExprBr, 1);
       current_function_builder_->Emit(kExprNop);
     }
-    if (stmt->body() != NULL) {
+    if (stmt->body() != nullptr) {
       block_size_++;
       RECURSE(Visit(stmt->body()));
     }
-    if (stmt->next() != NULL) {
+    if (stmt->next() != nullptr) {
       block_size_++;
       RECURSE(Visit(stmt->next()));
     }
@@ -345,12 +392,6 @@ class AsmWasmBuilderImpl : public AstVisitor {
           AddLeb128(LookupOrInsertLocal(var, var_type), true);
         }
       }
-    } else if (marking_exported) {
-      Variable* var = expr->var();
-      if (var->is_function()) {
-        uint16_t index = LookupOrInsertFunction(var);
-        builder_->FunctionAt(index)->Exported(1);
-      }
     }
   }
 
@@ -390,30 +431,33 @@ class AsmWasmBuilderImpl : public AstVisitor {
     ZoneList<ObjectLiteralProperty*>* props = expr->properties();
     for (int i = 0; i < props->length(); ++i) {
       ObjectLiteralProperty* prop = props->at(i);
-      RECURSE(Visit(prop->value()));
+      DCHECK(marking_exported);
+      VariableProxy* expr = prop->value()->AsVariableProxy();
+      DCHECK(expr != nullptr);
+      Variable* var = expr->var();
+      Literal* name = prop->key()->AsLiteral();
+      DCHECK(name != nullptr);
+      DCHECK(name->IsPropertyName());
+      const AstRawString* raw_name = name->AsRawPropertyName();
+      if (var->is_function()) {
+        uint16_t index = LookupOrInsertFunction(var);
+        builder_->FunctionAt(index)->Exported(1);
+        builder_->FunctionAt(index)
+            ->SetName(raw_name->raw_data(), raw_name->length());
+      }
     }
   }
 
   void VisitArrayLiteral(ArrayLiteral* expr) { UNREACHABLE(); }
 
   void LoadInitFunction() {
-    if (!init_function_initialized) {
-      init_function_initialized = true;
-      unsigned char init[] = "__init__";
-      init_function_index = builder_->AddFunction(init, 8);
-      current_function_builder_ = builder_->FunctionAt(init_function_index);
-      current_function_builder_->ReturnType(kAstStmt);
-      current_function_builder_->Exported(1);
-      in_function_ = true;
-    } else {
-      current_function_builder_ = builder_->FunctionAt(init_function_index);
-      in_function_ = true;
-    }
+    current_function_builder_ = builder_->FunctionAt(init_function_index);
+    in_function_ = true;
   }
 
   void UnLoadInitFunction() {
     in_function_ = false;
-    current_function_builder_ = NULL;
+    current_function_builder_ = nullptr;
   }
 
   void VisitAssignment(Assignment* expr) {
@@ -427,11 +471,10 @@ class AsmWasmBuilderImpl : public AstVisitor {
       LoadInitFunction();
     }
     BinaryOperation* value_op = expr->value()->AsBinaryOperation();
-    if (value_op != NULL && MatchBinaryOperation(value_op) == kAsIs) {
+    if (value_op != nullptr && MatchBinaryOperation(value_op) == kAsIs) {
       VariableProxy* target_var = expr->target()->AsVariableProxy();
       VariableProxy* effective_value_var = GetLeft(value_op)->AsVariableProxy();
-      // TODO(aseemgarg): simplify block_size_ or replace with a kNop
-      if (target_var != NULL && effective_value_var != NULL &&
+      if (target_var != nullptr && effective_value_var != nullptr &&
           target_var->var() == effective_value_var->var()) {
         block_size_--;
         return;
@@ -557,7 +600,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   bool MatchIntBinaryOperation(BinaryOperation* expr, Token::Value op,
                                int32_t val) {
-    DCHECK(expr->right() != NULL);
+    DCHECK(expr->right() != nullptr);
     if (expr->op() == op && expr->right()->IsLiteral() &&
         TypeOf(expr) == kAstI32) {
       Literal* right = expr->right()->AsLiteral();
@@ -571,7 +614,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   bool MatchDoubleBinaryOperation(BinaryOperation* expr, Token::Value op,
                                   double val) {
-    DCHECK(expr->right() != NULL);
+    DCHECK(expr->right() != nullptr);
     if (expr->op() == op && expr->right()->IsLiteral() &&
         TypeOf(expr) == kAstF64) {
       Literal* right = expr->right()->AsLiteral();
@@ -587,9 +630,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   ConvertOperation MatchOr(BinaryOperation* expr) {
     if (MatchIntBinaryOperation(expr, Token::BIT_OR, 0)) {
-      DCHECK(TypeOf(expr->left()) == kAstI32);
-      DCHECK(TypeOf(expr->right()) == kAstI32);
-      return kAsIs;
+      return (TypeOf(expr->left()) == kAstI32) ? kAsIs : kToInt;
     } else {
       return kNone;
     }
@@ -597,9 +638,8 @@ class AsmWasmBuilderImpl : public AstVisitor {
 
   ConvertOperation MatchShr(BinaryOperation* expr) {
     if (MatchIntBinaryOperation(expr, Token::SHR, 0)) {
-      DCHECK(TypeOf(expr->left()) == kAstI32);
-      DCHECK(TypeOf(expr->right()) == kAstI32);
-      return kAsIs;
+      // TODO(titzer): this probably needs to be kToUint
+      return (TypeOf(expr->left()) == kAstI32) ? kAsIs : kToInt;
     } else {
       return kNone;
     }
@@ -610,7 +650,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
       DCHECK(TypeOf(expr->left()) == kAstI32);
       DCHECK(TypeOf(expr->right()) == kAstI32);
       BinaryOperation* op = expr->left()->AsBinaryOperation();
-      if (op != NULL) {
+      if (op != nullptr) {
         if (MatchIntBinaryOperation(op, Token::BIT_XOR, 0xffffffff)) {
           DCHECK(TypeOf(op->right()) == kAstI32);
           if (TypeOf(op->left()) != kAstI32) {
@@ -899,10 +939,10 @@ class AsmWasmBuilderImpl : public AstVisitor {
   };
 
   uint16_t LookupOrInsertLocal(Variable* v, LocalType type) {
-    DCHECK(current_function_builder_ != NULL);
+    DCHECK(current_function_builder_ != nullptr);
     ZoneHashMap::Entry* entry =
         local_variables_.Lookup(v, ComputePointerHash(v));
-    if (entry == NULL) {
+    if (entry == nullptr) {
       uint16_t index;
       if (v->IsParameter()) {
         index = current_function_builder_->AddParam(type);
@@ -921,7 +961,7 @@ class AsmWasmBuilderImpl : public AstVisitor {
   uint16_t LookupOrInsertGlobal(Variable* v, LocalType type) {
     ZoneHashMap::Entry* entry =
         global_variables_.Lookup(v, ComputePointerHash(v));
-    if (entry == NULL) {
+    if (entry == nullptr) {
       uint16_t index =
           builder_->AddGlobal(WasmOpcodes::MachineTypeFor(type), 0);
       IndexContainer* container = new (zone()) IndexContainer();
@@ -934,11 +974,10 @@ class AsmWasmBuilderImpl : public AstVisitor {
   }
 
   uint16_t LookupOrInsertFunction(Variable* v) {
-    DCHECK(builder_ != NULL);
+    DCHECK(builder_ != nullptr);
     ZoneHashMap::Entry* entry = functions_.Lookup(v, ComputePointerHash(v));
-    if (entry == NULL) {
-      uint16_t index = builder_->AddFunction(v->raw_name()->raw_data(),
-                                             v->raw_name()->length());
+    if (entry == nullptr) {
+      uint16_t index = builder_->AddFunction();
       IndexContainer* container = new (zone()) IndexContainer();
       container->index = index;
       entry = functions_.LookupOrInsert(v, ComputePointerHash(v),
@@ -981,7 +1020,6 @@ class AsmWasmBuilderImpl : public AstVisitor {
   TypeCache const& cache_;
   ZoneVector<std::pair<BreakableStatement*, bool>> breakable_blocks_;
   int block_size_;
-  bool init_function_initialized;
   uint16_t init_function_index;
 
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();

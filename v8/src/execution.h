@@ -49,10 +49,6 @@ class Execution final : public AllStatic {
                                      Handle<Object> argv[],
                                      MaybeHandle<Object>* exception_out = NULL);
 
-  // ECMA-262 9.9
-  MUST_USE_RESULT static MaybeHandle<Object> ToObject(
-      Isolate* isolate, Handle<Object> obj);
-
   static Handle<String> GetStackTraceLine(Handle<Object> recv,
                                           Handle<JSFunction> fun,
                                           Handle<Object> pos,

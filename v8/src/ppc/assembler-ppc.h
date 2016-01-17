@@ -53,11 +53,17 @@
 #define ABI_PASSES_HANDLES_IN_REGS \
   (!V8_HOST_ARCH_PPC || V8_OS_AIX || V8_TARGET_ARCH_PPC64)
 
-#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS \
-  (!V8_HOST_ARCH_PPC || !V8_TARGET_ARCH_PPC64 || V8_TARGET_LITTLE_ENDIAN)
+#if !V8_HOST_ARCH_PPC || !V8_TARGET_ARCH_PPC64 || V8_TARGET_LITTLE_ENDIAN
+#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 1
+#else
+#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 0
+#endif
 
-#define ABI_TOC_ADDRESSABILITY_VIA_IP \
-  (V8_HOST_ARCH_PPC && V8_TARGET_ARCH_PPC64 && V8_TARGET_LITTLE_ENDIAN)
+#if !V8_HOST_ARCH_PPC || (V8_TARGET_ARCH_PPC64 && V8_TARGET_LITTLE_ENDIAN)
+#define ABI_CALL_VIA_IP 1
+#else
+#define ABI_CALL_VIA_IP 0
+#endif
 
 #if !V8_HOST_ARCH_PPC || V8_OS_AIX || V8_TARGET_ARCH_PPC64
 #define ABI_TOC_REGISTER Register::kCode_r2
@@ -1200,7 +1206,7 @@ class Assembler : public AssemblerBase {
 
   // Record a deoptimization reason that can be used by a log or cpu profiler.
   // Use --trace-deopt to enable.
-  void RecordDeoptReason(const int reason, const SourcePosition position);
+  void RecordDeoptReason(const int reason, int raw_position);
 
   // Writes a single byte or word of data in the code stream.  Used
   // for inline tables, e.g., jump-tables.

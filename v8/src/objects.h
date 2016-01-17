@@ -1135,8 +1135,8 @@ class Object {
 
   // Convert to a JSObject if needed.
   // native_context is used when creating wrapper object.
-  static inline MaybeHandle<JSReceiver> ToObject(Isolate* isolate,
-                                                 Handle<Object> object);
+  MUST_USE_RESULT static inline MaybeHandle<JSReceiver> ToObject(
+      Isolate* isolate, Handle<Object> object);
   MUST_USE_RESULT static MaybeHandle<JSReceiver> ToObject(
       Isolate* isolate, Handle<Object> object, Handle<Context> context);
 
@@ -1802,6 +1802,15 @@ enum GetKeysConversion { KEEP_NUMBERS, CONVERT_TO_STRING };
 // JSObject and JSProxy.
 class JSReceiver: public HeapObject {
  public:
+  // [properties]: Backing storage for properties.
+  // properties is a FixedArray in the fast case and a Dictionary in the
+  // slow case.
+  DECL_ACCESSORS(properties, FixedArray)  // Get and set fast properties.
+  inline void initialize_properties();
+  inline bool HasFastProperties();
+  // Gets slow properties for non-global objects.
+  inline NameDictionary* property_dictionary();
+
   DECLARE_CAST(JSReceiver)
 
   // ES6 section 7.1.1 ToPrimitive
@@ -1960,6 +1969,10 @@ class JSReceiver: public HeapObject {
       Handle<JSReceiver> object, KeyCollectionType type, PropertyFilter filter,
       GetKeysConversion keys_conversion = KEEP_NUMBERS);
 
+  // Layout description.
+  static const int kPropertiesOffset = HeapObject::kHeaderSize;
+  static const int kHeaderSize = HeapObject::kHeaderSize + kPointerSize;
+
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSReceiver);
 };
@@ -1975,14 +1988,6 @@ class JSObject: public JSReceiver {
       Handle<JSFunction> constructor, Handle<JSReceiver> new_target,
       Handle<AllocationSite> site = Handle<AllocationSite>::null());
 
-  // [properties]: Backing storage for properties.
-  // properties is a FixedArray in the fast case and a Dictionary in the
-  // slow case.
-  DECL_ACCESSORS(properties, FixedArray)  // Get and set fast properties.
-  inline void initialize_properties();
-  inline bool HasFastProperties();
-  // Gets slow properties for non-global objects.
-  inline NameDictionary* property_dictionary();
   // Gets global object properties.
   inline GlobalDictionary* global_dictionary();
 
@@ -2474,13 +2479,12 @@ class JSObject: public JSReceiver {
   static const int kFieldsAdded = 3;
 
   // Layout description.
-  static const int kPropertiesOffset = HeapObject::kHeaderSize;
-  static const int kElementsOffset = kPropertiesOffset + kPointerSize;
+  static const int kElementsOffset = JSReceiver::kHeaderSize;
   static const int kHeaderSize = kElementsOffset + kPointerSize;
 
   STATIC_ASSERT(kHeaderSize == Internals::kJSObjectHeaderSize);
 
-  typedef FlexibleBodyDescriptor<kPropertiesOffset> BodyDescriptor;
+  typedef FlexibleBodyDescriptor<JSReceiver::kPropertiesOffset> BodyDescriptor;
 
   // Enqueue change record for Object.observe. May cause GC.
   MUST_USE_RESULT static MaybeHandle<Object> EnqueueChangeRecord(
@@ -2915,6 +2919,8 @@ class DescriptorArray: public FixedArray {
   // necessary.
   INLINE(int SearchWithCache(Name* name, Map* map));
 
+  bool IsEqualUpTo(DescriptorArray* desc, int nof_descriptors);
+
   // Allocates a DescriptorArray, but returns the singleton
   // empty descriptor array object if number_of_descriptors is 0.
   static Handle<DescriptorArray> Allocate(Isolate* isolate,
@@ -3215,6 +3221,9 @@ class HashTable : public HashTableBase {
       Key key,
       PretenureFlag pretenure = NOT_TENURED);
 
+  // Returns true if this table has sufficient capacity for adding n elements.
+  bool HasSufficientCapacity(int n);
+
   // Sets the capacity of the hash table.
   void SetCapacity(int capacity) {
     // To scale a computed hash code to fit within the hash table, we
@@ -3413,6 +3422,9 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
       Isolate* isolate,
       int at_least_space_for,
       PretenureFlag pretenure = NOT_TENURED);
+
+  // Ensures that a new dictionary is created when the capacity is checked.
+  void SetRequiresCopyOnCapacityChange();
 
   // Ensure enough space for n additional elements.
   static Handle<Derived> EnsureCapacity(Handle<Derived> obj, int n, Key key);
@@ -7232,12 +7244,6 @@ class JSBoundFunction : public JSObject {
   // arguments to any call to the wrapped function.
   DECL_ACCESSORS(bound_arguments, FixedArray)
 
-  // [creation_context]: The native context in which the function was bound.
-  // TODO(bmeurer, verwaest): Can we (mis)use (unused) constructor field in
-  // the Map instead of putting this into the object? Only required for
-  // JSReceiver::GetCreationContext() anyway.
-  DECL_ACCESSORS(creation_context, Context)
-
   static MaybeHandle<Context> GetFunctionRealm(
       Handle<JSBoundFunction> function);
 
@@ -7255,9 +7261,7 @@ class JSBoundFunction : public JSObject {
   static const int kBoundTargetFunctionOffset = JSObject::kHeaderSize;
   static const int kBoundThisOffset = kBoundTargetFunctionOffset + kPointerSize;
   static const int kBoundArgumentsOffset = kBoundThisOffset + kPointerSize;
-  static const int kCreationContextOffset =
-      kBoundArgumentsOffset + kPointerSize;
-  static const int kLengthOffset = kCreationContextOffset + kPointerSize;
+  static const int kLengthOffset = kBoundArgumentsOffset + kPointerSize;
   static const int kNameOffset = kLengthOffset + kPointerSize;
   static const int kSize = kNameOffset + kPointerSize;
 
@@ -7574,6 +7578,8 @@ class JSDate: public JSObject {
   // Returns the date field with the specified index.
   // See FieldIndex for the list of date fields.
   static Object* GetField(Object* date, Smi* index);
+
+  static Handle<Object> SetValue(Handle<JSDate> date, double v);
 
   void SetValue(Object* value, bool is_value_nan);
 
@@ -8147,7 +8153,7 @@ class AllocationSite: public Struct {
 
   // Increments the mementos found counter and returns true when the first
   // memento was found for a given allocation site.
-  inline bool IncrementMementoFoundCount();
+  inline bool IncrementMementoFoundCount(int increment = 1);
 
   inline void IncrementMementoCreateCount();
 
@@ -9621,15 +9627,14 @@ class JSProxy: public JSReceiver {
   DECLARE_PRINTER(JSProxy)
   DECLARE_VERIFIER(JSProxy)
 
-  // Layout description. We add padding so that a proxy has the same
-  // size as a virgin JSObject. This is essential for becoming a JSObject
-  // upon freeze.
-  static const int kTargetOffset = HeapObject::kHeaderSize;
+  // Layout description.
+  static const int kTargetOffset = JSReceiver::kHeaderSize;
   static const int kHandlerOffset = kTargetOffset + kPointerSize;
   static const int kHashOffset = kHandlerOffset + kPointerSize;
   static const int kSize = kHashOffset + kPointerSize;
 
-  typedef FixedBodyDescriptor<kTargetOffset, kSize, kSize> BodyDescriptor;
+  typedef FixedBodyDescriptor<JSReceiver::kPropertiesOffset, kSize, kSize>
+      BodyDescriptor;
 
   MUST_USE_RESULT Object* GetIdentityHash();
 

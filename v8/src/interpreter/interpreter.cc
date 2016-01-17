@@ -433,6 +433,15 @@ void Interpreter::DoLdaContextSlot(compiler::InterpreterAssembler* assembler) {
 }
 
 
+// LdaContextSlotWide <context> <slot_index>
+//
+// Load the object in |slot_index| of |context| into the accumulator.
+void Interpreter::DoLdaContextSlotWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoLdaContextSlot(assembler);
+}
+
+
 // StaContextSlot <context> <slot_index>
 //
 // Stores the object in the accumulator into |slot_index| of |context|.
@@ -443,6 +452,15 @@ void Interpreter::DoStaContextSlot(compiler::InterpreterAssembler* assembler) {
   Node* slot_index = __ BytecodeOperandIdx(1);
   __ StoreContextSlot(context, slot_index, value);
   __ Dispatch();
+}
+
+
+// StaContextSlot <context> <slot_index>
+//
+// Stores the object in the accumulator into |slot_index| of |context|.
+void Interpreter::DoStaContextSlotWide(
+    compiler::InterpreterAssembler* assembler) {
+  DoStaContextSlot(assembler);
 }
 
 
@@ -1086,6 +1104,33 @@ void Interpreter::DoCallRuntime(compiler::InterpreterAssembler* assembler) {
 }
 
 
+// CallRuntimeForPair <function_id> <first_arg> <arg_count> <first_return>
+//
+// Call the runtime function |function_id| which returns a pair, with the
+// first argument in register |first_arg| and |arg_count| arguments in
+// subsequent registers. Returns the result in <first_return> and
+// <first_return + 1>
+void Interpreter::DoCallRuntimeForPair(
+    compiler::InterpreterAssembler* assembler) {
+  // Call the runtime function.
+  Node* function_id = __ BytecodeOperandIdx(0);
+  Node* first_arg_reg = __ BytecodeOperandReg(1);
+  Node* first_arg = __ RegisterLocation(first_arg_reg);
+  Node* args_count = __ BytecodeOperandCount(2);
+  Node* result_pair = __ CallRuntime(function_id, first_arg, args_count, 2);
+
+  // Store the results in <first_return> and <first_return + 1>
+  Node* first_return_reg = __ BytecodeOperandReg(3);
+  Node* second_return_reg = __ NextRegister(first_return_reg);
+  Node* result0 = __ Projection(0, result_pair);
+  Node* result1 = __ Projection(1, result_pair);
+  __ StoreRegister(result0, first_return_reg);
+  __ StoreRegister(result1, second_return_reg);
+
+  __ Dispatch();
+}
+
+
 // CallJSRuntime <context_index> <receiver> <arg_count>
 //
 // Call the JS runtime function that has the |context_index| with the receiver
@@ -1671,14 +1716,16 @@ void Interpreter::DoReturn(compiler::InterpreterAssembler* assembler) {
 // |cache_length| represent output parameters.
 void Interpreter::DoForInPrepare(compiler::InterpreterAssembler* assembler) {
   Node* object = __ GetAccumulator();
-  Node* result = __ CallRuntime(Runtime::kInterpreterForInPrepare, object);
+  Node* result_triple = __ CallRuntime(Runtime::kForInPrepare, object);
+
+  // Set output registers:
+  //   0 == cache_type, 1 == cache_array, 2 == cache_length
   for (int i = 0; i < 3; i++) {
-    // 0 == cache_type, 1 == cache_array, 2 == cache_length
-    Node* cache_info = __ LoadFixedArrayElement(result, i);
+    Node* cache_info = __ Projection(i, result_triple);
     Node* cache_info_reg = __ BytecodeOperandReg(i);
     __ StoreRegister(cache_info, cache_info_reg);
   }
-  __ SetAccumulator(result);
+
   __ Dispatch();
 }
 

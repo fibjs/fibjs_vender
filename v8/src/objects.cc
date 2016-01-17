@@ -42,6 +42,7 @@
 #include "src/profiler/cpu-profiler.h"
 #include "src/property-descriptor.h"
 #include "src/prototype.h"
+#include "src/regexp/jsregexp.h"
 #include "src/safepoint-table.h"
 #include "src/string-builder.h"
 #include "src/string-search.h"
@@ -97,7 +98,9 @@ MaybeHandle<JSReceiver> Object::ToObject(Isolate* isolate,
     int constructor_function_index =
         Handle<HeapObject>::cast(object)->map()->GetConstructorFunctionIndex();
     if (constructor_function_index == Map::kNoConstructorFunctionIndex) {
-      return MaybeHandle<JSReceiver>();
+      THROW_NEW_ERROR(isolate,
+                      NewTypeError(MessageTemplate::kUndefinedOrNullToObject),
+                      JSReceiver);
     }
     constructor = handle(
         JSFunction::cast(native_context->get(constructor_function_index)),
@@ -835,6 +838,7 @@ MaybeHandle<Object> JSProxy::GetProperty(Isolate* isolate,
         Object);
   }
 
+  DCHECK(!name->IsPrivate());
   STACK_CHECK(MaybeHandle<Object>());
   Handle<Name> trap_name = isolate->factory()->get_string();
   // 1. Assert: IsPropertyKey(P) is true.
@@ -1364,7 +1368,7 @@ Maybe<PropertyAttributes> JSObject::GetPropertyAttributesWithFailedAccessCheck(
 
 // static
 bool JSObject::AllCanWrite(LookupIterator* it) {
-  for (; it->IsFound(); it->Next()) {
+  for (; it->IsFound() && it->state() != LookupIterator::JSPROXY; it->Next()) {
     if (it->state() == LookupIterator::ACCESSOR) {
       Handle<Object> accessors = it->GetAccessors();
       if (accessors->IsAccessorInfo()) {
@@ -1746,6 +1750,7 @@ bool String::MakeExternal(v8::String::ExternalStringResource* resource) {
   // Externalizing twice leaks the external resource, so it's
   // prohibited by the API.
   DCHECK(!this->IsExternalString());
+  DCHECK(!resource->IsCompressible());
 #ifdef ENABLE_SLOW_DCHECKS
   if (FLAG_enable_slow_asserts) {
     // Assert that the resource and the string are equivalent.
@@ -1808,6 +1813,7 @@ bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
   // Externalizing twice leaks the external resource, so it's
   // prohibited by the API.
   DCHECK(!this->IsExternalString());
+  DCHECK(!resource->IsCompressible());
 #ifdef ENABLE_SLOW_DCHECKS
   if (FLAG_enable_slow_asserts) {
     // Assert that the resource and the string are equivalent.
@@ -2565,18 +2571,19 @@ Handle<String> JSReceiver::GetConstructorName(Handle<JSReceiver> receiver) {
 
 
 Context* JSReceiver::GetCreationContext() {
-  if (IsJSBoundFunction()) {
-    return JSBoundFunction::cast(this)->creation_context();
+  JSReceiver* receiver = this;
+  while (receiver->IsJSBoundFunction()) {
+    receiver = JSBoundFunction::cast(receiver)->bound_target_function();
   }
-  Object* constructor = map()->GetConstructor();
+  Object* constructor = receiver->map()->GetConstructor();
   JSFunction* function;
   if (constructor->IsJSFunction()) {
     function = JSFunction::cast(constructor);
   } else {
     // Functions have null as a constructor,
     // but any JSFunction knows its context immediately.
-    CHECK(IsJSFunction());
-    function = JSFunction::cast(this);
+    CHECK(receiver->IsJSFunction());
+    function = JSFunction::cast(receiver);
   }
 
   return function->context()->native_context();
@@ -4016,6 +4023,7 @@ Maybe<bool> JSObject::SetPropertyWithInterceptor(LookupIterator* it,
     result = args.Call(setter, index, v8::Utils::ToLocal(value));
   } else {
     Handle<Name> name = it->name();
+    DCHECK(!name->IsPrivate());
 
     if (name->IsSymbol() && !interceptor->can_intercept_symbols()) {
       return Just(false);
@@ -4156,6 +4164,10 @@ Maybe<bool> Object::SetProperty(LookupIterator* it, Handle<Object> value,
   if (found) return result;
   ShouldThrow should_throw =
       is_sloppy(language_mode) ? DONT_THROW : THROW_ON_ERROR;
+  if (it->GetReceiver()->IsJSProxy() && it->GetName()->IsPrivate()) {
+    RETURN_FAILURE(it->isolate(), should_throw,
+                   NewTypeError(MessageTemplate::kProxyPrivate));
+  }
   return AddDataProperty(it, value, NONE, should_throw, store_mode);
 }
 
@@ -4171,6 +4183,10 @@ Maybe<bool> Object::SetSuperProperty(LookupIterator* it, Handle<Object> value,
   Maybe<bool> result =
       SetPropertyInternal(it, value, language_mode, store_mode, &found);
   if (found) return result;
+  if (it->GetReceiver()->IsJSProxy() && it->GetName()->IsPrivate()) {
+    RETURN_FAILURE(isolate, should_throw,
+                   NewTypeError(MessageTemplate::kProxyPrivate));
+  }
 
   // The property either doesn't exist on the holder or exists there as a data
   // property.
@@ -4832,6 +4848,7 @@ void JSProxy::Revoke(Handle<JSProxy> proxy) {
 
 Maybe<bool> JSProxy::HasProperty(Isolate* isolate, Handle<JSProxy> proxy,
                                  Handle<Name> name) {
+  DCHECK(!name->IsPrivate());
   STACK_CHECK(Nothing<bool>());
   // 1. (Assert)
   // 2. Let handler be the value of the [[ProxyHandler]] internal slot of O.
@@ -4899,6 +4916,7 @@ Maybe<bool> JSProxy::HasProperty(Isolate* isolate, Handle<JSProxy> proxy,
 Maybe<bool> JSProxy::SetProperty(Handle<JSProxy> proxy, Handle<Name> name,
                                  Handle<Object> value, Handle<Object> receiver,
                                  LanguageMode language_mode) {
+  DCHECK(!name->IsPrivate());
   Isolate* isolate = proxy->GetIsolate();
   STACK_CHECK(Nothing<bool>());
   Factory* factory = isolate->factory();
@@ -4967,6 +4985,7 @@ Maybe<bool> JSProxy::SetProperty(Handle<JSProxy> proxy, Handle<Name> name,
 Maybe<bool> JSProxy::DeletePropertyOrElement(Handle<JSProxy> proxy,
                                              Handle<Name> name,
                                              LanguageMode language_mode) {
+  DCHECK(!name->IsPrivate());
   ShouldThrow should_throw =
       is_sloppy(language_mode) ? DONT_THROW : THROW_ON_ERROR;
   Isolate* isolate = proxy->GetIsolate();
@@ -5387,6 +5406,7 @@ Maybe<PropertyAttributes> JSObject::GetPropertyAttributesWithInterceptor(
       result = args.Call(query, index);
     } else {
       Handle<Name> name = it->name();
+      DCHECK(!name->IsPrivate());
       v8::GenericNamedPropertyQueryCallback query =
           v8::ToCData<v8::GenericNamedPropertyQueryCallback>(
               interceptor->query());
@@ -5412,7 +5432,7 @@ Maybe<PropertyAttributes> JSObject::GetPropertyAttributesWithInterceptor(
       result = args.Call(getter, index);
     } else {
       Handle<Name> name = it->name();
-
+      DCHECK(!name->IsPrivate());
       v8::GenericNamedPropertyGetterCallback getter =
           v8::ToCData<v8::GenericNamedPropertyGetterCallback>(
               interceptor->getter());
@@ -6156,6 +6176,7 @@ Maybe<bool> JSObject::DeletePropertyWithInterceptor(LookupIterator* it) {
     return Nothing<bool>();
   } else {
     Handle<Name> name = it->name();
+    DCHECK(!name->IsPrivate());
     v8::GenericNamedPropertyDeleterCallback deleter =
         v8::ToCData<v8::GenericNamedPropertyDeleterCallback>(
             interceptor->deleter());
@@ -6211,6 +6232,11 @@ Maybe<bool> JSReceiver::DeleteProperty(LookupIterator* it,
                                             it->GetName(), language_mode);
   }
 
+  if (it->GetReceiver()->IsJSProxy()) {
+    DCHECK(it->state() == LookupIterator::NOT_FOUND);
+    DCHECK(it->GetName()->IsPrivate());
+    return Just(true);
+  }
   Handle<JSObject> receiver = Handle<JSObject>::cast(it->GetReceiver());
 
   bool is_observed =
@@ -6482,7 +6508,7 @@ Maybe<bool> JSReceiver::OrdinaryDefineOwnProperty(Isolate* isolate,
     if (!it.HasAccess()) {
       isolate->ReportFailedAccessCheck(it.GetHolder<JSObject>());
       RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate, Nothing<bool>());
-      return Just(false);
+      return Just(true);
     }
     it.Next();
   }
@@ -7087,6 +7113,11 @@ Maybe<bool> JSProxy::DefineOwnProperty(Isolate* isolate, Handle<JSProxy> proxy,
       key->IsName()
           ? Handle<Name>::cast(key)
           : Handle<Name>::cast(isolate->factory()->NumberToString(key));
+  // Do not leak private property names.
+  if (property_name->IsPrivate()) {
+    RETURN_FAILURE(isolate, should_throw,
+                   NewTypeError(MessageTemplate::kProxyPrivate));
+  }
   Handle<Object> trap_result_obj;
   Handle<Object> args[] = {target, property_name, desc_obj};
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -7231,7 +7262,9 @@ Maybe<bool> JSProxy::GetOwnPropertyDescriptor(Isolate* isolate,
                                               Handle<JSProxy> proxy,
                                               Handle<Name> name,
                                               PropertyDescriptor* desc) {
+  DCHECK(!name->IsPrivate());
   STACK_CHECK(Nothing<bool>());
+
   Handle<String> trap_name =
       isolate->factory()->getOwnPropertyDescriptor_string();
   // 1. (Assert)
@@ -7642,7 +7675,6 @@ Maybe<bool> JSObject::PreventExtensions(Handle<JSObject> object,
       !isolate->MayAccess(handle(isolate->context()), object)) {
     isolate->ReportFailedAccessCheck(object);
     RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate, Nothing<bool>());
-    UNREACHABLE();
     RETURN_FAILURE(isolate, should_throw,
                    NewTypeError(MessageTemplate::kNoAccess));
   }
@@ -7790,7 +7822,6 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
       !isolate->MayAccess(handle(isolate->context()), object)) {
     isolate->ReportFailedAccessCheck(object);
     RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate, Nothing<bool>());
-    UNREACHABLE();
     RETURN_FAILURE(isolate, should_throw,
                    NewTypeError(MessageTemplate::kNoAccess));
   }
@@ -9978,7 +10009,7 @@ Handle<DescriptorArray> DescriptorArray::CopyUpToAddAttributes(
       Name* key = desc->GetKey(i);
       PropertyDetails details = desc->GetDetails(i);
       // Bulk attribute changes never affect private properties.
-      if (!key->IsSymbol() || !Symbol::cast(key)->is_private()) {
+      if (!key->IsPrivate()) {
         int mask = DONT_DELETE | DONT_ENUM;
         // READ_ONLY is an invalid attribute for JS setters/getters.
         if (details.type() != ACCESSOR_CONSTANT || !value->IsAccessorPair()) {
@@ -10000,6 +10031,22 @@ Handle<DescriptorArray> DescriptorArray::CopyUpToAddAttributes(
   if (desc->number_of_descriptors() != enumeration_index) descriptors->Sort();
 
   return descriptors;
+}
+
+
+bool DescriptorArray::IsEqualUpTo(DescriptorArray* desc, int nof_descriptors) {
+  for (int i = 0; i < nof_descriptors; i++) {
+    if (GetKey(i) != desc->GetKey(i) || GetValue(i) != desc->GetValue(i)) {
+      return false;
+    }
+    PropertyDetails details = GetDetails(i);
+    PropertyDetails other_details = desc->GetDetails(i);
+    if (details.type() != other_details.type() ||
+        !details.representation().Equals(other_details.representation())) {
+      return false;
+    }
+  }
+  return true;
 }
 
 
@@ -12139,12 +12186,6 @@ void String::PrintOn(FILE* file) {
 }
 
 
-inline static uint32_t ObjectAddressForHashing(Object* object) {
-  uint32_t value = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(object));
-  return value & MemoryChunk::kAlignmentMask;
-}
-
-
 int Map::Hash() {
   // For performance reasons we only hash the 3 most variable fields of a map:
   // constructor, prototype and bit_field2. For predictability reasons we
@@ -12179,7 +12220,15 @@ bool CheckEquivalent(Map* first, Map* second) {
 
 
 bool Map::EquivalentToForTransition(Map* other) {
-  return CheckEquivalent(this, other);
+  if (!CheckEquivalent(this, other)) return false;
+  if (instance_type() == JS_FUNCTION_TYPE) {
+    // JSFunctions require more checks to ensure that sloppy function is
+    // not equvalent to strict function.
+    int nof = Min(NumberOfOwnDescriptors(), other->NumberOfOwnDescriptors());
+    return instance_descriptors()->IsEqualUpTo(other->instance_descriptors(),
+                                               nof);
+  }
+  return true;
 }
 
 
@@ -15510,7 +15559,8 @@ Maybe<bool> JSObject::SetPrototypeUnobserved(Handle<JSObject> object,
         !isolate->MayAccess(handle(isolate->context()), object)) {
       isolate->ReportFailedAccessCheck(object);
       RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate, Nothing<bool>());
-      UNREACHABLE();
+      RETURN_FAILURE(isolate, should_throw,
+                     NewTypeError(MessageTemplate::kNoAccess));
     }
   } else {
     DCHECK(!object->IsAccessCheckNeeded());
@@ -16143,6 +16193,7 @@ MaybeHandle<Object> JSObject::GetPropertyWithInterceptor(LookupIterator* it,
     result = args.Call(getter, index);
   } else {
     Handle<Name> name = it->name();
+    DCHECK(!name->IsPrivate());
 
     if (name->IsSymbol() && !interceptor->can_intercept_symbols()) {
       return isolate->factory()->undefined_value();
@@ -16505,8 +16556,8 @@ MaybeHandle<String> Object::ObjectProtoToString(Isolate* isolate,
   if (object->IsUndefined()) return isolate->factory()->undefined_to_string();
   if (object->IsNull()) return isolate->factory()->null_to_string();
 
-  Handle<JSReceiver> receiver;
-  CHECK(Object::ToObject(isolate, object).ToHandle(&receiver));
+  Handle<JSReceiver> receiver =
+      Object::ToObject(isolate, object).ToHandleChecked();
 
   Handle<String> tag;
   if (FLAG_harmony_tostring) {
@@ -17134,14 +17185,8 @@ Handle<Derived> HashTable<Derived, Shape, Key>::EnsureCapacity(
   Isolate* isolate = table->GetIsolate();
   int capacity = table->Capacity();
   int nof = table->NumberOfElements() + n;
-  int nod = table->NumberOfDeletedElements();
-  // Return if:
-  //   50% is still free after adding n elements and
-  //   at most 50% of the free elements are deleted elements.
-  if (nod <= (capacity - nof) >> 1) {
-    int needed_free = nof >> 1;
-    if (nof + needed_free <= capacity) return table;
-  }
+
+  if (table->HasSufficientCapacity(n)) return table;
 
   const int kMinCapacityForPretenure = 256;
   bool should_pretenure = pretenure == TENURED ||
@@ -17155,6 +17200,22 @@ Handle<Derived> HashTable<Derived, Shape, Key>::EnsureCapacity(
 
   table->Rehash(new_table, key);
   return new_table;
+}
+
+
+template <typename Derived, typename Shape, typename Key>
+bool HashTable<Derived, Shape, Key>::HasSufficientCapacity(int n) {
+  int capacity = Capacity();
+  int nof = NumberOfElements() + n;
+  int nod = NumberOfDeletedElements();
+  // Return true if:
+  //   50% is still free after adding n elements and
+  //   at most 50% of the free elements are deleted elements.
+  if (nod <= (capacity - nof) >> 1) {
+    int needed_free = nof >> 1;
+    if (nof + needed_free <= capacity) return true;
+  }
+  return false;
 }
 
 
@@ -17323,6 +17384,9 @@ Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape, uint32_t>::
 template Handle<UnseededNumberDictionary>
 Dictionary<UnseededNumberDictionary, UnseededNumberDictionaryShape, uint32_t>::
     EnsureCapacity(Handle<UnseededNumberDictionary>, int, uint32_t);
+
+template void Dictionary<NameDictionary, NameDictionaryShape,
+                         Handle<Name> >::SetRequiresCopyOnCapacityChange();
 
 template Handle<NameDictionary>
 Dictionary<NameDictionary, NameDictionaryShape, Handle<Name> >::
@@ -18052,7 +18116,17 @@ Dictionary<Derived, Shape, Key>::GenerateNewEnumerationIndices(
 }
 
 
-template<typename Derived, typename Shape, typename Key>
+template <typename Derived, typename Shape, typename Key>
+void Dictionary<Derived, Shape, Key>::SetRequiresCopyOnCapacityChange() {
+  DCHECK_EQ(0, DerivedHashTable::NumberOfElements());
+  DCHECK_EQ(0, DerivedHashTable::NumberOfDeletedElements());
+  // Make sure that HashTable::EnsureCapacity will create a copy.
+  DerivedHashTable::SetNumberOfDeletedElements(DerivedHashTable::Capacity());
+  DCHECK(!DerivedHashTable::HasSufficientCapacity(1));
+}
+
+
+template <typename Derived, typename Shape, typename Key>
 Handle<Derived> Dictionary<Derived, Shape, Key>::EnsureCapacity(
     Handle<Derived> dictionary, int n, Key key) {
   // Check whether there are enough enumeration indices to add n elements.
@@ -19297,6 +19371,16 @@ Object* JSDate::GetUTCField(FieldIndex index,
 
   UNREACHABLE();
   return NULL;
+}
+
+
+// static
+Handle<Object> JSDate::SetValue(Handle<JSDate> date, double v) {
+  Isolate* const isolate = date->GetIsolate();
+  Handle<Object> value = isolate->factory()->NewNumber(v);
+  bool value_is_nan = std::isnan(v);
+  date->SetValue(*value, value_is_nan);
+  return value;
 }
 
 

@@ -925,6 +925,11 @@ void InstructionSelector::VisitChangeFloat32ToFloat64(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
+  VisitRR(this, kArmVcvtF32S32, node);
+}
+
+
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRR(this, kArmVcvtF64S32, node);
 }
@@ -932,6 +937,11 @@ void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
 
 void InstructionSelector::VisitChangeUint32ToFloat64(Node* node) {
   VisitRR(this, kArmVcvtF64U32, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
+  VisitRR(this, kArmVcvtS32F32, node);
 }
 
 
@@ -1362,7 +1372,7 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
         if (ProjectionIndexOf(value->op()) == 1u) {
           // We cannot combine the <Operation>WithOverflow with this branch
           // unless the 0th projection (the use of the actual value of the
-          // <Operation> is either NULL, which means there's no use of the
+          // <Operation> is either nullptr, which means there's no use of the
           // actual value, or was already defined, which means it is scheduled
           // *AFTER* this branch).
           Node* const node = value->InputAt(0);

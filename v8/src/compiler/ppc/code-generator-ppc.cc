@@ -105,7 +105,7 @@ class PPCOperandConverter final : public InstructionOperandConverter {
   }
 
   MemOperand ToMemOperand(InstructionOperand* op) const {
-    DCHECK(op != NULL);
+    DCHECK_NOT_NULL(op);
     DCHECK(op->IsStackSlot() || op->IsDoubleStackSlot());
     FrameOffset offset = frame_access_state()->GetFrameOffset(
         AllocatedOperand::cast(op)->index());
@@ -1198,6 +1198,11 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
 #endif
+    case kPPC_Int32ToFloat32:
+      __ ConvertIntToFloat(i.OutputDoubleRegister(), i.InputRegister(0),
+                           kScratchReg);
+      DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
     case kPPC_Int32ToDouble:
       __ ConvertIntToDouble(i.InputRegister(0), i.OutputDoubleRegister());
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
@@ -1547,10 +1552,14 @@ void CodeGenerator::AssemblePrologue() {
       __ mr(fp, sp);
     }
   } else if (descriptor->IsJSFunctionCall()) {
-    CompilationInfo* info = this->info();
-    __ Prologue(info->IsCodePreAgingActive());
+    __ Prologue(this->info()->GeneratePreagedPrologue(), ip);
   } else if (frame()->needs_frame()) {
-    __ StubPrologue();
+    if (!ABI_CALL_VIA_IP && info()->output_code_kind() == Code::WASM_FUNCTION) {
+      // TODO(mbrandy): Restrict only to the wasm wrapper case.
+      __ StubPrologue();
+    } else {
+      __ StubPrologue(ip);
+    }
   } else {
     frame()->SetElidedFrameSizeInSlots(0);
   }
@@ -1644,7 +1653,7 @@ void CodeGenerator::AssembleReturn() {
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  PPCOperandConverter g(this, NULL);
+  PPCOperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {
@@ -1746,7 +1755,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
 
 void CodeGenerator::AssembleSwap(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  PPCOperandConverter g(this, NULL);
+  PPCOperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {

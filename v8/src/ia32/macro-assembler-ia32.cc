@@ -971,7 +971,7 @@ void MacroAssembler::EnterExitFrameEpilogue(int argc, bool save_doubles) {
 }
 
 
-void MacroAssembler::EnterExitFrame(bool save_doubles) {
+void MacroAssembler::EnterExitFrame(int argc, bool save_doubles) {
   EnterExitFramePrologue();
 
   // Set up argc and argv in callee-saved registers.
@@ -980,7 +980,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles) {
   lea(esi, Operand(ebp, eax, times_4, offset));
 
   // Reserve space for argc, argv and isolate.
-  EnterExitFrameEpilogue(3, save_doubles);
+  EnterExitFrameEpilogue(argc, save_doubles);
 }
 
 
@@ -1677,6 +1677,27 @@ void MacroAssembler::AllocateOneByteSlicedString(Register result,
   // Set the map. The other fields are left uninitialized.
   mov(FieldOperand(result, HeapObject::kMapOffset),
       Immediate(isolate()->factory()->sliced_one_byte_string_map()));
+}
+
+
+void MacroAssembler::AllocateJSValue(Register result, Register constructor,
+                                     Register value, Register scratch,
+                                     Label* gc_required) {
+  DCHECK(!result.is(constructor));
+  DCHECK(!result.is(scratch));
+  DCHECK(!result.is(value));
+
+  // Allocate JSValue in new space.
+  Allocate(JSValue::kSize, result, scratch, no_reg, gc_required, TAG_OBJECT);
+
+  // Initialize the JSValue.
+  LoadGlobalFunctionInitialMap(constructor, scratch);
+  mov(FieldOperand(result, HeapObject::kMapOffset), scratch);
+  LoadRoot(scratch, Heap::kEmptyFixedArrayRootIndex);
+  mov(FieldOperand(result, JSObject::kPropertiesOffset), scratch);
+  mov(FieldOperand(result, JSObject::kElementsOffset), scratch);
+  mov(FieldOperand(result, JSValue::kValueOffset), value);
+  STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
 }
 
 
@@ -2904,10 +2925,9 @@ void MacroAssembler::JumpIfBlack(Register object,
                                  Register scratch1,
                                  Label* on_black,
                                  Label::Distance on_black_near) {
-  HasColor(object, scratch0, scratch1,
-           on_black, on_black_near,
-           1, 0);  // kBlackBitPattern.
-  DCHECK(strcmp(Marking::kBlackBitPattern, "10") == 0);
+  HasColor(object, scratch0, scratch1, on_black, on_black_near, 1,
+           1);  // kBlackBitPattern.
+  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
 }
 
 
@@ -2969,8 +2989,8 @@ void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
 
   // If the value is black or grey we don't need to do anything.
   DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "11") == 0);
+  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
+  DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
   DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
 
   // Since both black and grey have a 1 in the first position and white does

@@ -122,7 +122,8 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
 
 static void Generate_JSConstructStubHelper(MacroAssembler* masm,
                                            bool is_api_function,
-                                           bool create_implicit_receiver) {
+                                           bool create_implicit_receiver,
+                                           bool check_derived_construct) {
   // ----------- S t a t e -------------
   //  -- eax: number of arguments
   //  -- edi: constructor function
@@ -335,8 +336,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
 
     if (create_implicit_receiver) {
       // If the result is an object (in the ECMA sense), we should get rid
-      // of the receiver and use the result; see ECMA-262 section 13.2.2-7
-      // on page 74.
+      // of the receiver and use the result.
       Label use_receiver, exit;
 
       // If the result is a smi, it is *not* an object in the ECMA sense.
@@ -363,6 +363,19 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // Leave construct frame.
   }
 
+  // ES6 9.2.2. Step 13+
+  // Check that the result is not a Smi, indicating that the constructor result
+  // from a derived class is neither undefined nor an Object.
+  if (check_derived_construct) {
+    Label dont_throw;
+    __ JumpIfNotSmi(eax, &dont_throw);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ CallRuntime(Runtime::kThrowDerivedConstructorReturnedNonObject);
+    }
+    __ bind(&dont_throw);
+  }
+
   // Remove caller arguments from the stack and return.
   STATIC_ASSERT(kSmiTagSize == 1 && kSmiTag == 0);
   __ pop(ecx);
@@ -376,17 +389,23 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
 
 
 void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, false, true);
+  Generate_JSConstructStubHelper(masm, false, true, false);
 }
 
 
 void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, true, true);
+  Generate_JSConstructStubHelper(masm, true, true, false);
 }
 
 
 void Builtins::Generate_JSBuiltinsConstructStub(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, false, false);
+  Generate_JSConstructStubHelper(masm, false, false, false);
+}
+
+
+void Builtins::Generate_JSBuiltinsConstructStubForDerived(
+    MacroAssembler* masm) {
+  Generate_JSConstructStubHelper(masm, false, false, true);
 }
 
 
@@ -1005,6 +1024,58 @@ void Builtins::Generate_NotifyLazyDeoptimized(MacroAssembler* masm) {
 
 
 // static
+void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
+                                               int field_index) {
+  // ----------- S t a t e -------------
+  //  -- esp[0] : return address
+  //  -- esp[4] : receiver
+  // -----------------------------------
+
+  // 1. Load receiver into eax and check that it's actually a JSDate object.
+  Label receiver_not_date;
+  {
+    __ mov(eax, Operand(esp, kPointerSize));
+    __ JumpIfSmi(eax, &receiver_not_date);
+    __ CmpObjectType(eax, JS_DATE_TYPE, ebx);
+    __ j(not_equal, &receiver_not_date);
+  }
+
+  // 2. Load the specified date field, falling back to the runtime as necessary.
+  if (field_index == JSDate::kDateValue) {
+    __ mov(eax, FieldOperand(eax, JSDate::kValueOffset));
+  } else {
+    if (field_index < JSDate::kFirstUncachedField) {
+      Label stamp_mismatch;
+      __ mov(edx, Operand::StaticVariable(
+                      ExternalReference::date_cache_stamp(masm->isolate())));
+      __ cmp(edx, FieldOperand(eax, JSDate::kCacheStampOffset));
+      __ j(not_equal, &stamp_mismatch, Label::kNear);
+      __ mov(eax, FieldOperand(
+                      eax, JSDate::kValueOffset + field_index * kPointerSize));
+      __ ret(1 * kPointerSize);
+      __ bind(&stamp_mismatch);
+    }
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ PrepareCallCFunction(2, ebx);
+    __ mov(Operand(esp, 0), eax);
+    __ mov(Operand(esp, 1 * kPointerSize),
+           Immediate(Smi::FromInt(field_index)));
+    __ CallCFunction(
+        ExternalReference::get_date_field_function(masm->isolate()), 2);
+  }
+  __ ret(1 * kPointerSize);
+
+  // 3. Raise a TypeError if the receiver is not a date.
+  __ bind(&receiver_not_date);
+  {
+    FrameScope scope(masm, StackFrame::MANUAL);
+    __ EnterFrame(StackFrame::INTERNAL);
+    __ CallRuntime(Runtime::kThrowNotDateError);
+  }
+}
+
+
+// static
 void Builtins::Generate_FunctionPrototypeApply(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax     : argc
@@ -1327,6 +1398,113 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
 
 
 // static
+void Builtins::Generate_NumberConstructor(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- eax                 : number of arguments
+  //  -- edi                 : constructor function
+  //  -- esp[0]              : return address
+  //  -- esp[(argc - n) * 4] : arg[n] (zero-based)
+  //  -- esp[(argc + 1) * 4] : receiver
+  // -----------------------------------
+
+  // 1. Load the first argument into eax and get rid of the rest (including the
+  // receiver).
+  Label no_arguments;
+  {
+    __ test(eax, eax);
+    __ j(zero, &no_arguments, Label::kNear);
+    __ mov(ebx, Operand(esp, eax, times_pointer_size, 0));
+    __ PopReturnAddressTo(ecx);
+    __ lea(esp, Operand(esp, eax, times_pointer_size, kPointerSize));
+    __ PushReturnAddressFrom(ecx);
+    __ mov(eax, ebx);
+  }
+
+  // 2a. Convert the first argument to a number.
+  ToNumberStub stub(masm->isolate());
+  __ TailCallStub(&stub);
+
+  // 2b. No arguments, return +0 (already in eax).
+  __ bind(&no_arguments);
+  __ ret(1 * kPointerSize);
+}
+
+
+// static
+void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- eax                 : number of arguments
+  //  -- edi                 : constructor function
+  //  -- edx                 : new target
+  //  -- esp[0]              : return address
+  //  -- esp[(argc - n) * 4] : arg[n] (zero-based)
+  //  -- esp[(argc + 1) * 4] : receiver
+  // -----------------------------------
+
+  // 1. Make sure we operate in the context of the called function.
+  __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
+
+  // 2. Load the first argument into ebx and get rid of the rest (including the
+  // receiver).
+  {
+    Label no_arguments, done;
+    __ test(eax, eax);
+    __ j(zero, &no_arguments, Label::kNear);
+    __ mov(ebx, Operand(esp, eax, times_pointer_size, 0));
+    __ jmp(&done, Label::kNear);
+    __ bind(&no_arguments);
+    __ Move(ebx, Smi::FromInt(0));
+    __ bind(&done);
+    __ PopReturnAddressTo(ecx);
+    __ lea(esp, Operand(esp, eax, times_pointer_size, kPointerSize));
+    __ PushReturnAddressFrom(ecx);
+  }
+
+  // 3. Make sure ebx is a number.
+  {
+    Label done_convert;
+    __ JumpIfSmi(ebx, &done_convert);
+    __ CompareRoot(FieldOperand(ebx, HeapObject::kMapOffset),
+                   Heap::kHeapNumberMapRootIndex);
+    __ j(equal, &done_convert);
+    {
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ Push(edi);
+      __ Push(edx);
+      __ Move(eax, ebx);
+      ToNumberStub stub(masm->isolate());
+      __ CallStub(&stub);
+      __ Move(ebx, eax);
+      __ Pop(edx);
+      __ Pop(edi);
+    }
+    __ bind(&done_convert);
+  }
+
+  // 4. Check if new target and constructor differ.
+  Label new_object;
+  __ cmp(edx, edi);
+  __ j(not_equal, &new_object);
+
+  // 5. Allocate a JSValue wrapper for the number.
+  __ AllocateJSValue(eax, edi, ebx, ecx, &new_object);
+  __ Ret();
+
+  // 6. Fallback to the runtime to create new object.
+  __ bind(&new_object);
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ Push(ebx);  // the first argument
+    __ Push(edi);  // constructor function
+    __ Push(edx);  // new target
+    __ CallRuntime(Runtime::kNewObject);
+    __ Pop(FieldOperand(eax, JSValue::kValueOffset));
+  }
+  __ Ret();
+}
+
+
+// static
 void Builtins::Generate_StringConstructor(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- eax                 : number of arguments
@@ -1397,7 +1575,10 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   //  -- esp[(argc + 1) * 4] : receiver
   // -----------------------------------
 
-  // 1. Load the first argument into ebx and get rid of the rest (including the
+  // 1. Make sure we operate in the context of the called function.
+  __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
+
+  // 2. Load the first argument into ebx and get rid of the rest (including the
   // receiver).
   {
     Label no_arguments, done;
@@ -1413,7 +1594,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ PushReturnAddressFrom(ecx);
   }
 
-  // 2. Make sure ebx is a string.
+  // 3. Make sure ebx is a string.
   {
     Label convert, done_convert;
     __ JumpIfSmi(ebx, &convert, Label::kNear);
@@ -1434,33 +1615,16 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ bind(&done_convert);
   }
 
-  // 3. Check if new target and constructor differ.
+  // 4. Check if new target and constructor differ.
   Label new_object;
   __ cmp(edx, edi);
   __ j(not_equal, &new_object);
 
-  // 4. Allocate a JSValue wrapper for the string.
-  {
-    // ----------- S t a t e -------------
-    //  -- ebx : the first argument
-    //  -- edi : constructor function
-    //  -- edx : new target
-    // -----------------------------------
-    __ Allocate(JSValue::kSize, eax, ecx, no_reg, &new_object, TAG_OBJECT);
+  // 5. Allocate a JSValue wrapper for the string.
+  __ AllocateJSValue(eax, edi, ebx, ecx, &new_object);
+  __ Ret();
 
-    // Initialize the JSValue in eax.
-    __ LoadGlobalFunctionInitialMap(edi, ecx);
-    __ mov(FieldOperand(eax, HeapObject::kMapOffset), ecx);
-    __ mov(FieldOperand(eax, JSObject::kPropertiesOffset),
-           masm->isolate()->factory()->empty_fixed_array());
-    __ mov(FieldOperand(eax, JSObject::kElementsOffset),
-           masm->isolate()->factory()->empty_fixed_array());
-    __ mov(FieldOperand(eax, JSValue::kValueOffset), ebx);
-    STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
-    __ Ret();
-  }
-
-  // 5. Fallback to the runtime to create new object.
+  // 6. Fallback to the runtime to create new object.
   __ bind(&new_object);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
@@ -2199,10 +2363,6 @@ static void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
                                     Register function_template_info,
                                     Register scratch0, Register scratch1,
                                     Label* receiver_check_failed) {
-  // If receiver is not an object, jump to receiver_check_failed.
-  __ CmpObjectType(receiver, FIRST_JS_OBJECT_TYPE, scratch0);
-  __ j(below, receiver_check_failed);
-
   // If there is no signature, return the holder.
   __ CompareRoot(FieldOperand(function_template_info,
                               FunctionTemplateInfo::kSignatureOffset),
@@ -2211,16 +2371,9 @@ static void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
   __ j(equal, &receiver_check_passed, Label::kNear);
 
   // Walk the prototype chain.
+  __ mov(scratch0, FieldOperand(receiver, HeapObject::kMapOffset));
   Label prototype_loop_start;
   __ bind(&prototype_loop_start);
-
-  // End if receiver is null or if it's a hidden prototype.
-  __ CompareRoot(receiver, Heap::kNullValueRootIndex);
-  __ j(equal, receiver_check_failed, Label::kNear);
-  __ mov(scratch0, FieldOperand(receiver, HeapObject::kMapOffset));
-  __ test(FieldOperand(scratch0, Map::kBitField3Offset),
-          Immediate(Map::IsHiddenPrototype::kMask));
-  __ j(not_zero, receiver_check_failed, Label::kNear);
 
   // Get the constructor, if any.
   __ GetMapConstructor(scratch0, scratch0, scratch1);
@@ -2254,10 +2407,18 @@ static void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
          FieldOperand(scratch0, FunctionTemplateInfo::kParentTemplateOffset));
   __ jmp(&function_template_loop, Label::kNear);
 
-  // Load the next prototype and iterate.
+  // Load the next prototype.
   __ bind(&next_prototype);
   __ mov(receiver, FieldOperand(receiver, HeapObject::kMapOffset));
   __ mov(receiver, FieldOperand(receiver, Map::kPrototypeOffset));
+  // End if the prototype is null or not hidden.
+  __ CompareRoot(receiver, Heap::kNullValueRootIndex);
+  __ j(equal, receiver_check_failed);
+  __ mov(scratch0, FieldOperand(receiver, HeapObject::kMapOffset));
+  __ test(FieldOperand(scratch0, Map::kBitField3Offset),
+          Immediate(Map::IsHiddenPrototype::kMask));
+  __ j(zero, receiver_check_failed);
+  // Iterate.
   __ jmp(&prototype_loop_start, Label::kNear);
 
   __ bind(&receiver_check_passed);
@@ -2276,22 +2437,13 @@ void Builtins::Generate_HandleFastApiCall(MacroAssembler* masm) {
   //  -- esp[(eax + 1) * 4] : receiver
   // -----------------------------------
 
-  // Load the receiver.
-  Operand receiver_operand(esp, eax, times_pointer_size, kPCOnStackSize);
-  __ mov(ecx, receiver_operand);
-
-  // Update the receiver if this is a contextual call.
-  Label set_global_proxy, valid_receiver;
-  __ CompareRoot(ecx, Heap::kUndefinedValueRootIndex);
-  __ j(equal, &set_global_proxy);
-  __ bind(&valid_receiver);
-
   // Load the FunctionTemplateInfo.
   __ mov(ebx, FieldOperand(edi, JSFunction::kSharedFunctionInfoOffset));
   __ mov(ebx, FieldOperand(ebx, SharedFunctionInfo::kFunctionDataOffset));
 
   // Do the compatible receiver check.
   Label receiver_check_failed;
+  __ mov(ecx, Operand(esp, eax, times_pointer_size, kPCOnStackSize));
   __ Push(eax);
   CompatibleReceiverCheck(masm, ecx, ebx, edx, eax, &receiver_check_failed);
   __ Pop(eax);
@@ -2301,12 +2453,6 @@ void Builtins::Generate_HandleFastApiCall(MacroAssembler* masm) {
   __ mov(edx, FieldOperand(edx, CallHandlerInfo::kFastHandlerOffset));
   __ add(edx, Immediate(Code::kHeaderSize - kHeapObjectTag));
   __ jmp(edx);
-
-  __ bind(&set_global_proxy);
-  __ mov(ecx, NativeContextOperand());
-  __ mov(ecx, ContextOperand(ecx, Context::GLOBAL_PROXY_INDEX));
-  __ mov(receiver_operand, ecx);
-  __ jmp(&valid_receiver, Label::kNear);
 
   // Compatible receiver check failed: pop return address, arguments and
   // receiver and throw an Illegal Invocation exception.

@@ -54,18 +54,18 @@ class IA32OperandGenerator final : public OperandGenerator {
                                              InstructionOperand inputs[],
                                              size_t* input_count) {
     AddressingMode mode = kMode_MRI;
-    int32_t displacement = (displacement_node == NULL)
+    int32_t displacement = (displacement_node == nullptr)
                                ? 0
                                : OpParameter<int32_t>(displacement_node);
-    if (base != NULL) {
+    if (base != nullptr) {
       if (base->opcode() == IrOpcode::kInt32Constant) {
         displacement += OpParameter<int32_t>(base);
-        base = NULL;
+        base = nullptr;
       }
     }
-    if (base != NULL) {
+    if (base != nullptr) {
       inputs[(*input_count)++] = UseRegister(base);
-      if (index != NULL) {
+      if (index != nullptr) {
         DCHECK(scale >= 0 && scale <= 3);
         inputs[(*input_count)++] = UseRegister(index);
         if (displacement != 0) {
@@ -88,7 +88,7 @@ class IA32OperandGenerator final : public OperandGenerator {
       }
     } else {
       DCHECK(scale >= 0 && scale <= 3);
-      if (index != NULL) {
+      if (index != nullptr) {
         inputs[(*input_count)++] = UseRegister(index);
         if (displacement != 0) {
           inputs[(*input_count)++] = TempImmediate(displacement);
@@ -113,7 +113,7 @@ class IA32OperandGenerator final : public OperandGenerator {
                                                   size_t* input_count) {
     BaseWithIndexAndDisplacement32Matcher m(node, true);
     DCHECK(m.matches());
-    if ((m.displacement() == NULL || CanBeImmediate(m.displacement()))) {
+    if ((m.displacement() == nullptr || CanBeImmediate(m.displacement()))) {
       return GenerateMemoryOperandInputs(m.index(), m.scale(), m.base(),
                                          m.displacement(), inputs, input_count);
     } else {
@@ -302,7 +302,8 @@ void InstructionSelector::VisitStore(Node* node) {
     InstructionCode code =
         opcode | AddressingModeField::encode(addressing_mode);
     inputs[input_count++] = val;
-    Emit(code, 0, static_cast<InstructionOperand*>(NULL), input_count, inputs);
+    Emit(code, 0, static_cast<InstructionOperand*>(nullptr), input_count,
+         inputs);
   }
 }
 
@@ -559,8 +560,8 @@ void InstructionSelector::VisitWord32Shl(Node* node) {
   Int32ScaleMatcher m(node, true);
   if (m.matches()) {
     Node* index = node->InputAt(0);
-    Node* base = m.power_of_two_plus_one() ? index : NULL;
-    EmitLea(this, node, index, m.scale(), base, NULL);
+    Node* base = m.power_of_two_plus_one() ? index : nullptr;
+    EmitLea(this, node, index, m.scale(), base, nullptr);
     return;
   }
   VisitShift(this, node, kIA32Shl);
@@ -606,7 +607,7 @@ void InstructionSelector::VisitInt32Add(Node* node) {
   // Try to match the Add to a lea pattern
   BaseWithIndexAndDisplacement32Matcher m(node);
   if (m.matches() &&
-      (m.displacement() == NULL || g.CanBeImmediate(m.displacement()))) {
+      (m.displacement() == nullptr || g.CanBeImmediate(m.displacement()))) {
     InstructionOperand inputs[4];
     size_t input_count = 0;
     AddressingMode mode = g.GenerateMemoryOperandInputs(
@@ -643,8 +644,8 @@ void InstructionSelector::VisitInt32Mul(Node* node) {
   Int32ScaleMatcher m(node, true);
   if (m.matches()) {
     Node* index = node->InputAt(0);
-    Node* base = m.power_of_two_plus_one() ? index : NULL;
-    EmitLea(this, node, index, m.scale(), base, NULL);
+    Node* base = m.power_of_two_plus_one() ? index : nullptr;
+    EmitLea(this, node, index, m.scale(), base, nullptr);
     return;
   }
   IA32OperandGenerator g(this);
@@ -698,6 +699,11 @@ void InstructionSelector::VisitChangeFloat32ToFloat64(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
+  VisitRO(this, node, kSSEInt32ToFloat32);
+}
+
+
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRO(this, node, kSSEInt32ToFloat64);
 }
@@ -705,6 +711,11 @@ void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
 
 void InstructionSelector::VisitChangeUint32ToFloat64(Node* node) {
   VisitRO(this, node, kSSEUint32ToFloat64);
+}
+
+
+void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
+  VisitRO(this, node, kSSEFloat32ToInt32);
 }
 
 
@@ -1108,12 +1119,12 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
         if (ProjectionIndexOf(value->op()) == 1u) {
           // We cannot combine the <Operation>WithOverflow with this branch
           // unless the 0th projection (the use of the actual value of the
-          // <Operation> is either NULL, which means there's no use of the
+          // <Operation> is either nullptr, which means there's no use of the
           // actual value, or was already defined, which means it is scheduled
           // *AFTER* this branch).
           Node* const node = value->InputAt(0);
           Node* const result = NodeProperties::FindProjection(node, 0);
-          if (result == NULL || selector->IsDefined(result)) {
+          if (result == nullptr || selector->IsDefined(result)) {
             switch (node->opcode()) {
               case IrOpcode::kInt32AddWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);

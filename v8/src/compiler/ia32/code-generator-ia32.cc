@@ -743,6 +743,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kSSEFloat64ToFloat32:
       __ cvtsd2ss(i.OutputDoubleRegister(), i.InputOperand(0));
       break;
+    case kSSEFloat32ToInt32:
+      __ cvttss2si(i.OutputRegister(), i.InputOperand(0));
+      break;
     case kSSEFloat64ToInt32:
       __ cvttsd2si(i.OutputRegister(), i.InputOperand(0));
       break;
@@ -753,6 +756,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ add(i.OutputRegister(), Immediate(0x80000000));
       break;
     }
+    case kSSEInt32ToFloat32:
+      __ cvtsi2ss(i.OutputDoubleRegister(), i.InputOperand(0));
+      break;
     case kSSEInt32ToFloat64:
       __ cvtsi2sd(i.OutputDoubleRegister(), i.InputOperand(0));
       break;
@@ -1424,10 +1430,9 @@ void CodeGenerator::AssemblePrologue() {
     __ push(ebp);
     __ mov(ebp, esp);
   } else if (descriptor->IsJSFunctionCall()) {
-    // TODO(turbofan): this prologue is redundant with OSR, but needed for
+    // TODO(turbofan): this prologue is redundant with OSR, but still needed for
     // code aging.
-    CompilationInfo* info = this->info();
-    __ Prologue(info->IsCodePreAgingActive());
+    __ Prologue(this->info()->GeneratePreagedPrologue());
   } else if (frame()->needs_frame()) {
     __ StubPrologue();
   } else {
@@ -1504,7 +1509,7 @@ void CodeGenerator::AssembleReturn() {
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  IA32OperandConverter g(this, NULL);
+  IA32OperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {
@@ -1614,17 +1619,26 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
 
 void CodeGenerator::AssembleSwap(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  IA32OperandConverter g(this, NULL);
+  IA32OperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister() && destination->IsRegister()) {
     // Register-register.
     Register src = g.ToRegister(source);
     Register dst = g.ToRegister(destination);
-    __ xchg(dst, src);
+    __ push(src);
+    __ mov(src, dst);
+    __ pop(dst);
   } else if (source->IsRegister() && destination->IsStackSlot()) {
     // Register-memory.
-    __ xchg(g.ToRegister(source), g.ToOperand(destination));
+    Register src = g.ToRegister(source);
+    __ push(src);
+    frame_access_state()->IncreaseSPDelta(1);
+    Operand dst = g.ToOperand(destination);
+    __ mov(src, dst);
+    frame_access_state()->IncreaseSPDelta(-1);
+    dst = g.ToOperand(destination);
+    __ pop(dst);
   } else if (source->IsStackSlot() && destination->IsStackSlot()) {
     // Memory-memory.
     Operand dst1 = g.ToOperand(destination);

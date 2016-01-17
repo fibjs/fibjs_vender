@@ -169,6 +169,7 @@ namespace internal {
     ExperimentalExtraNativesSourceCache)                                       \
   V(Script, empty_script, EmptyScript)                                         \
   V(NameDictionary, intrinsic_function_names, IntrinsicFunctionNames)          \
+  V(NameDictionary, empty_properties_dictionary, EmptyPropertiesDictionary)    \
   V(Cell, undefined_cell, UndefinedCell)                                       \
   V(JSObject, observation_state, ObservationState)                             \
   V(Object, symbol_registry, SymbolRegistry)                                   \
@@ -176,7 +177,6 @@ namespace internal {
   V(SeededNumberDictionary, empty_slow_element_dictionary,                     \
     EmptySlowElementDictionary)                                                \
   V(FixedArray, materialized_objects, MaterializedObjects)                     \
-  V(FixedArray, allocation_sites_scratchpad, AllocationSitesScratchpad)        \
   V(FixedArray, microtask_queue, MicrotaskQueue)                               \
   V(TypeFeedbackVector, dummy_vector, DummyVector)                             \
   V(FixedArray, cleared_optimized_code_map, ClearedOptimizedCodeMap)           \
@@ -636,7 +636,7 @@ class Heap {
   // - or mutator code (CONCURRENT_TO_SWEEPER).
   enum InvocationMode { SEQUENTIAL_TO_SWEEPER, CONCURRENT_TO_SWEEPER };
 
-  enum ScratchpadSlotMode { IGNORE_SCRATCHPAD_SLOT, RECORD_SCRATCHPAD_SLOT };
+  enum PretenuringFeedbackInsertionMode { kCached, kGlobal };
 
   enum HeapState { NOT_IN_GC, SCAVENGE, MARK_COMPACT };
 
@@ -762,12 +762,6 @@ class Heap {
   // Checks whether the space is valid.
   static bool IsValidAllocationSpace(AllocationSpace space);
 
-  // An object may have an AllocationSite associated with it through a trailing
-  // AllocationMemento. Its feedback should be updated when objects are found
-  // in the heap.
-  static inline void UpdateAllocationSiteFeedback(HeapObject* object,
-                                                  ScratchpadSlotMode mode);
-
   // Generated code can embed direct references to non-writable roots if
   // they are in new space.
   static bool RootCanBeWrittenAfterInitialization(RootListIndex root_index);
@@ -825,7 +819,7 @@ class Heap {
 
   // TODO(hpayer): There is still a missmatch between capacity and actual
   // committed memory size.
-  bool CanExpandOldGeneration(int size) {
+  bool CanExpandOldGeneration(int size = 0) {
     if (force_oom_) return false;
     return (CommittedOldGenerationMemory() + size) < MaxOldGenerationSize();
   }
@@ -1414,22 +1408,26 @@ class Heap {
 
   void UpdateSurvivalStatistics(int start_new_space_size);
 
-  inline void IncrementPromotedObjectsSize(int object_size) {
-    DCHECK(object_size > 0);
-    promoted_objects_size_ += object_size;
+  inline void IncrementPromotedObjectsSize(intptr_t object_size) {
+    DCHECK_GE(object_size, 0);
+    promoted_objects_size_.Increment(object_size);
   }
-  inline intptr_t promoted_objects_size() { return promoted_objects_size_; }
 
-  inline void IncrementSemiSpaceCopiedObjectSize(int object_size) {
-    DCHECK(object_size > 0);
-    semi_space_copied_object_size_ += object_size;
+  inline intptr_t promoted_objects_size() {
+    return promoted_objects_size_.Value();
   }
+
+  inline void IncrementSemiSpaceCopiedObjectSize(intptr_t object_size) {
+    DCHECK_GE(object_size, 0);
+    semi_space_copied_object_size_.Increment(object_size);
+  }
+
   inline intptr_t semi_space_copied_object_size() {
-    return semi_space_copied_object_size_;
+    return semi_space_copied_object_size_.Value();
   }
 
   inline intptr_t SurvivedNewSpaceObjectSize() {
-    return promoted_objects_size_ + semi_space_copied_object_size_;
+    return promoted_objects_size() + semi_space_copied_object_size();
   }
 
   inline void IncrementNodesDiedInNewSpace() { nodes_died_in_new_space_++; }
@@ -1438,10 +1436,18 @@ class Heap {
 
   inline void IncrementNodesPromoted() { nodes_promoted_++; }
 
-  inline void IncrementYoungSurvivorsCounter(int survived) {
-    DCHECK(survived >= 0);
-    survived_last_scavenge_ = survived;
-    survived_since_last_expansion_ += survived;
+  inline void IncrementYoungSurvivorsCounter(intptr_t survived) {
+    DCHECK_GE(survived, 0);
+    survived_last_scavenge_.SetValue(survived);
+    survived_since_last_expansion_.Increment(survived);
+  }
+
+  inline intptr_t survived_last_scavenge() {
+    return survived_last_scavenge_.Value();
+  }
+
+  inline intptr_t survived_since_last_expansion() {
+    return survived_since_last_expansion_.Value();
   }
 
   inline intptr_t PromotedTotalSize() {
@@ -1544,6 +1550,27 @@ class Heap {
     return array_buffer_tracker_;
   }
 
+  // ===========================================================================
+  // Allocation site tracking. =================================================
+  // ===========================================================================
+
+  // Updates the AllocationSite of a given {object}. If the global prenuring
+  // storage is passed as {pretenuring_feedback} the memento found count on
+  // the corresponding allocation site is immediately updated and an entry
+  // in the hash map is created. Otherwise the entry (including a the count
+  // value) is cached on the local pretenuring feedback.
+  inline void UpdateAllocationSite(HeapObject* object,
+                                   HashMap* pretenuring_feedback);
+
+  // Removes an entry from the global pretenuring storage.
+  inline void RemoveAllocationSitePretenuringFeedback(AllocationSite* site);
+
+  // Merges local pretenuring feedback into the global one. Note that this
+  // method needs to be called after evacuation, as allocation sites may be
+  // evacuated and this method resolves forward pointers accordingly.
+  void MergeAllocationSitePretenuringFeedback(
+      const HashMap& local_pretenuring_feedback);
+
 // =============================================================================
 
 #ifdef VERIFY_HEAP
@@ -1567,6 +1594,7 @@ class Heap {
 #endif
 
  private:
+  class PretenuringScope;
   class UnmapFreeMemoryTask;
 
   // External strings table is a place where all external strings are
@@ -1661,7 +1689,7 @@ class Heap {
   static const int kMaxMarkCompactsInIdleRound = 7;
   static const int kIdleScavengeThreshold = 5;
 
-  static const int kAllocationSiteScratchpadSize = 256;
+  static const int kInitialFeedbackCapacity = 256;
 
   Heap();
 
@@ -1702,12 +1730,6 @@ class Heap {
   }
 
   void PreprocessStackTraces();
-
-  // Pretenuring decisions are made based on feedback collected during new
-  // space evacuation. Note that between feedback collection and calling this
-  // method object in old space must not move.
-  // Right now we only process pretenuring feedback in high promotion mode.
-  bool ProcessPretenuringFeedback();
 
   // Checks whether a global GC is necessary
   GarbageCollector SelectGarbageCollector(AllocationSpace space,
@@ -1788,16 +1810,6 @@ class Heap {
   // Flush the number to string cache.
   void FlushNumberStringCache();
 
-  // Sets used allocation sites entries to undefined.
-  void FlushAllocationSitesScratchpad();
-
-  // Initializes the allocation sites scratchpad with undefined values.
-  void InitializeAllocationSitesScratchpad();
-
-  // Adds an allocation site to the scratchpad if there is space left.
-  void AddAllocationSiteToScratchpad(AllocationSite* site,
-                                     ScratchpadSlotMode mode);
-
   // TODO(hpayer): Allocation site pretenuring may make this method obsolete.
   // Re-visit incremental marking heuristics.
   bool IsHighSurvivalRate() { return high_survival_rate_period_length_ > 0; }
@@ -1847,6 +1859,15 @@ class Heap {
   // - GCFinalizeMCReduceMemory: finalization of incremental full GC with
   // memory reduction
   HistogramTimer* GCTypeTimer(GarbageCollector collector);
+
+  // ===========================================================================
+  // Pretenuring. ==============================================================
+  // ===========================================================================
+
+  // Pretenuring decisions are made based on feedback collected during new space
+  // evacuation. Note that between feedback collection and calling this method
+  // object in old space must not move.
+  void ProcessPretenuringFeedback();
 
   // ===========================================================================
   // Actual GC. ================================================================
@@ -1929,6 +1950,16 @@ class Heap {
 
   bool RecentIdleNotificationHappened();
   void ScheduleIdleScavengeIfNeeded(int bytes_allocated);
+
+  // ===========================================================================
+  // HeapIterator helpers. =====================================================
+  // ===========================================================================
+
+  void heap_iterator_start() { heap_iterator_depth_++; }
+
+  void heap_iterator_end() { heap_iterator_depth_--; }
+
+  bool in_heap_iterator() { return heap_iterator_depth_ > 0; }
 
   // ===========================================================================
   // Allocation methods. =======================================================
@@ -2133,6 +2164,8 @@ class Heap {
 
   MUST_USE_RESULT AllocationResult InternalizeString(String* str);
 
+  // ===========================================================================
+
   void set_force_oom(bool value) { force_oom_ = value; }
 
   // The amount of external memory registered through the API kept alive
@@ -2161,10 +2194,10 @@ class Heap {
 
   // For keeping track of how much data has survived
   // scavenge since last new space expansion.
-  int survived_since_last_expansion_;
+  AtomicNumber<intptr_t> survived_since_last_expansion_;
 
   // ... and since the last scavenge.
-  int survived_last_scavenge_;
+  AtomicNumber<intptr_t> survived_last_scavenge_;
 
   // This is not the depth of nested AlwaysAllocateScope's but rather a single
   // count, as scopes can be acquired from multiple tasks (read: threads).
@@ -2262,10 +2295,10 @@ class Heap {
   GCTracer* tracer_;
 
   int high_survival_rate_period_length_;
-  intptr_t promoted_objects_size_;
+  AtomicNumber<intptr_t> promoted_objects_size_;
   double promotion_ratio_;
   double promotion_rate_;
-  intptr_t semi_space_copied_object_size_;
+  AtomicNumber<intptr_t> semi_space_copied_object_size_;
   intptr_t previous_semi_space_copied_object_size_;
   double semi_space_copied_rate_;
   int nodes_died_in_new_space_;
@@ -2342,7 +2375,12 @@ class Heap {
   // deoptimization triggered by garbage collection.
   int gcs_since_last_deopt_;
 
-  int allocation_sites_scratchpad_length_;
+  // The feedback storage is used to store allocation sites (keys) and how often
+  // they have been visited (values) by finding a memento behind an object. The
+  // storage is only alive temporary during a GC. The invariant is that all
+  // pointers in this map are already fixed, i.e., they do not point to
+  // forwarding pointers.
+  HashMap* global_pretenuring_feedback_;
 
   char trace_ring_buffer_[kTraceRingBufferSize];
   // If it's not full then the data is from 0 to ring_buffer_end_.  If it's
@@ -2382,6 +2420,9 @@ class Heap {
   StrongRootsList* strong_roots_list_;
 
   ArrayBufferTracker* array_buffer_tracker_;
+
+  // The depth of HeapIterator nestings.
+  int heap_iterator_depth_;
 
   // Used for testing purposes.
   bool force_oom_;

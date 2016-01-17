@@ -140,6 +140,110 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
 
 
 // static
+void Builtins::Generate_NumberConstructor(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- r3                     : number of arguments
+  //  -- r4                     : constructor function
+  //  -- lr                     : return address
+  //  -- sp[(argc - n - 1) * 4] : arg[n] (zero based)
+  //  -- sp[argc * 4]           : receiver
+  // -----------------------------------
+
+  // 1. Load the first argument into r3 and get rid of the rest (including the
+  // receiver).
+  Label no_arguments;
+  {
+    __ cmpi(r3, Operand::Zero());
+    __ beq(&no_arguments);
+    __ subi(r3, r3, Operand(1));
+    __ ShiftLeftImm(r3, r3, Operand(kPointerSizeLog2));
+    __ LoadPUX(r3, MemOperand(sp, r3));
+    __ Drop(2);
+  }
+
+  // 2a. Convert the first argument to a number.
+  ToNumberStub stub(masm->isolate());
+  __ TailCallStub(&stub);
+
+  // 2b. No arguments, return +0.
+  __ bind(&no_arguments);
+  __ LoadSmiLiteral(r3, Smi::FromInt(0));
+  __ Ret(1);
+}
+
+
+// static
+void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- r3                     : number of arguments
+  //  -- r4                     : constructor function
+  //  -- r6                     : new target
+  //  -- lr                     : return address
+  //  -- sp[(argc - n - 1) * 4] : arg[n] (zero based)
+  //  -- sp[argc * 4]           : receiver
+  // -----------------------------------
+
+  // 1. Make sure we operate in the context of the called function.
+  __ LoadP(cp, FieldMemOperand(r4, JSFunction::kContextOffset));
+
+  // 2. Load the first argument into r5 and get rid of the rest (including the
+  // receiver).
+  {
+    Label no_arguments, done;
+    __ cmpi(r3, Operand::Zero());
+    __ beq(&no_arguments);
+    __ subi(r3, r3, Operand(1));
+    __ ShiftLeftImm(r5, r3, Operand(kPointerSizeLog2));
+    __ LoadPUX(r5, MemOperand(sp, r5));
+    __ Drop(2);
+    __ b(&done);
+    __ bind(&no_arguments);
+    __ LoadSmiLiteral(r5, Smi::FromInt(0));
+    __ Drop(1);
+    __ bind(&done);
+  }
+
+  // 3. Make sure r5 is a number.
+  {
+    Label done_convert;
+    __ JumpIfSmi(r5, &done_convert);
+    __ CompareObjectType(r5, r7, r7, HEAP_NUMBER_TYPE);
+    __ beq(&done_convert);
+    {
+      FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+      __ Push(r4, r6);
+      __ mr(r3, r5);
+      ToNumberStub stub(masm->isolate());
+      __ CallStub(&stub);
+      __ mr(r5, r3);
+      __ Pop(r4, r6);
+    }
+    __ bind(&done_convert);
+  }
+
+  // 4. Check if new target and constructor differ.
+  Label new_object;
+  __ cmp(r4, r6);
+  __ bne(&new_object);
+
+  // 5. Allocate a JSValue wrapper for the number.
+  __ AllocateJSValue(r3, r4, r5, r7, r8, &new_object);
+  __ Ret();
+
+  // 6. Fallback to the runtime to create new object.
+  __ bind(&new_object);
+  {
+    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+    __ Push(r5, r4, r6);  // first argument, constructor, new target
+    __ CallRuntime(Runtime::kNewObject);
+    __ Pop(r5);
+  }
+  __ StoreP(r5, FieldMemOperand(r3, JSValue::kValueOffset), r0);
+  __ Ret();
+}
+
+
+// static
 void Builtins::Generate_StringConstructor(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- r3                     : number of arguments
@@ -207,7 +311,10 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   //  -- sp[argc * 4]           : receiver
   // -----------------------------------
 
-  // 1. Load the first argument into r5 and get rid of the rest (including the
+  // 1. Make sure we operate in the context of the called function.
+  __ LoadP(cp, FieldMemOperand(r4, JSFunction::kContextOffset));
+
+  // 2. Load the first argument into r5 and get rid of the rest (including the
   // receiver).
   {
     Label no_arguments, done;
@@ -224,7 +331,7 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ bind(&done);
   }
 
-  // 2. Make sure r5 is a string.
+  // 3. Make sure r5 is a string.
   {
     Label convert, done_convert;
     __ JumpIfSmi(r5, &convert);
@@ -243,33 +350,16 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ bind(&done_convert);
   }
 
-  // 3. Check if new target and constructor differ.
+  // 4. Check if new target and constructor differ.
   Label new_object;
   __ cmp(r4, r6);
   __ bne(&new_object);
 
-  // 4. Allocate a JSValue wrapper for the string.
-  {
-    // ----------- S t a t e -------------
-    //  -- r5 : the first argument
-    //  -- r4 : constructor function
-    //  -- r6 : new target
-    //  -- lr : return address
-    // -----------------------------------
-    __ Allocate(JSValue::kSize, r3, r7, r8, &new_object, TAG_OBJECT);
+  // 5. Allocate a JSValue wrapper for the string.
+  __ AllocateJSValue(r3, r4, r5, r7, r8, &new_object);
+  __ Ret();
 
-    // Initialize the JSValue in r3.
-    __ LoadGlobalFunctionInitialMap(r4, r6, r7);
-    __ StoreP(r6, FieldMemOperand(r3, HeapObject::kMapOffset), r0);
-    __ LoadRoot(r6, Heap::kEmptyFixedArrayRootIndex);
-    __ StoreP(r6, FieldMemOperand(r3, JSObject::kPropertiesOffset), r0);
-    __ StoreP(r6, FieldMemOperand(r3, JSObject::kElementsOffset), r0);
-    __ StoreP(r5, FieldMemOperand(r3, JSValue::kValueOffset), r0);
-    STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
-    __ Ret();
-  }
-
-  // 5. Fallback to the runtime to create new object.
+  // 6. Fallback to the runtime to create new object.
   __ bind(&new_object);
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
@@ -335,7 +425,8 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
 
 static void Generate_JSConstructStubHelper(MacroAssembler* masm,
                                            bool is_api_function,
-                                           bool create_implicit_receiver) {
+                                           bool create_implicit_receiver,
+                                           bool check_derived_construct) {
   // ----------- S t a t e -------------
   //  -- r3     : number of arguments
   //  -- r4     : constructor function
@@ -594,6 +685,19 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // Leave construct frame.
   }
 
+  // ES6 9.2.2. Step 13+
+  // Check that the result is not a Smi, indicating that the constructor result
+  // from a derived class is neither undefined nor an Object.
+  if (check_derived_construct) {
+    Label dont_throw;
+    __ JumpIfNotSmi(r3, &dont_throw);
+    {
+      FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+      __ CallRuntime(Runtime::kThrowDerivedConstructorReturnedNonObject);
+    }
+    __ bind(&dont_throw);
+  }
+
   __ SmiToPtrArrayOffset(r4, r4);
   __ add(sp, sp, r4);
   __ addi(sp, sp, Operand(kPointerSize));
@@ -605,17 +709,23 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
 
 
 void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, false, true);
+  Generate_JSConstructStubHelper(masm, false, true, false);
 }
 
 
 void Builtins::Generate_JSConstructStubApi(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, true, true);
+  Generate_JSConstructStubHelper(masm, true, true, false);
 }
 
 
 void Builtins::Generate_JSBuiltinsConstructStub(MacroAssembler* masm) {
-  Generate_JSConstructStubHelper(masm, false, false);
+  Generate_JSConstructStubHelper(masm, false, false, false);
+}
+
+
+void Builtins::Generate_JSBuiltinsConstructStubForDerived(
+    MacroAssembler* masm) {
+  Generate_JSConstructStubHelper(masm, false, false, true);
 }
 
 
@@ -927,7 +1037,8 @@ void Builtins::Generate_InterpreterPushArgsAndConstruct(MacroAssembler* masm) {
   // -----------------------------------
 
   // Push a slot for the receiver to be constructed.
-  __ push(r3);
+  __ li(r0, Operand::Zero());
+  __ push(r0);
 
   // Push the arguments (skip if none).
   Label skip;
@@ -1215,9 +1326,6 @@ void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
   Register constructor = r9;
   Register scratch = r10;
 
-  __ CompareObjectType(receiver, map, no_reg, FIRST_JS_OBJECT_TYPE);
-  __ blt(receiver_check_failed);
-
   // If there is no signature, return the holder.
   __ LoadP(signature, FieldMemOperand(function_template_info,
                                       FunctionTemplateInfo::kSignatureOffset));
@@ -1226,16 +1334,9 @@ void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
                 &receiver_check_passed);
 
   // Walk the prototype chain.
+  __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
   Label prototype_loop_start;
   __ bind(&prototype_loop_start);
-
-  // End if the receiver is null or if it's a hidden type.
-  __ JumpIfRoot(receiver, Heap::kNullValueRootIndex, receiver_check_failed);
-  __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  __ LoadP(scratch, FieldMemOperand(map, Map::kBitField3Offset));
-  __ DecodeField<Map::IsHiddenPrototype>(scratch, SetRC);
-  __ bne(receiver_check_failed, cr0);
-
 
   // Get the constructor, if any.
   __ GetMapConstructor(constructor, map, scratch, scratch);
@@ -1267,9 +1368,16 @@ void CompatibleReceiverCheck(MacroAssembler* masm, Register receiver,
            FieldMemOperand(type, FunctionTemplateInfo::kParentTemplateOffset));
   __ b(&function_template_loop);
 
-  // Load the next prototype and iterate.
+  // Load the next prototype.
   __ bind(&next_prototype);
   __ LoadP(receiver, FieldMemOperand(map, Map::kPrototypeOffset));
+  // End if the prototype is null or not hidden.
+  __ JumpIfRoot(receiver, Heap::kNullValueRootIndex, receiver_check_failed);
+  __ LoadP(map, FieldMemOperand(receiver, HeapObject::kMapOffset));
+  __ lwz(scratch, FieldMemOperand(map, Map::kBitField3Offset));
+  __ DecodeField<Map::IsHiddenPrototype>(scratch, SetRC);
+  __ beq(receiver_check_failed, cr0);
+  // Iterate.
   __ b(&prototype_loop_start);
 
   __ bind(&receiver_check_passed);
@@ -1287,21 +1395,15 @@ void Builtins::Generate_HandleFastApiCall(MacroAssembler* masm) {
   //  -- sp[4 * argc]       : receiver
   // -----------------------------------
 
-  // Load the receiver.
-  __ ShiftLeftImm(r11, r3, Operand(kPointerSizeLog2));
-  __ LoadPX(r5, MemOperand(sp, r11));
-
-  // Update the receiver if this is a contextual call.
-  Label set_global_proxy, valid_receiver;
-  __ JumpIfRoot(r5, Heap::kUndefinedValueRootIndex, &set_global_proxy);
 
   // Load the FunctionTemplateInfo.
-  __ bind(&valid_receiver);
   __ LoadP(r6, FieldMemOperand(r4, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(r6, FieldMemOperand(r6, SharedFunctionInfo::kFunctionDataOffset));
 
   // Do the compatible receiver check.
   Label receiver_check_failed;
+  __ ShiftLeftImm(r11, r3, Operand(kPointerSizeLog2));
+  __ LoadPX(r5, MemOperand(sp, r11));
   CompatibleReceiverCheck(masm, r5, r6, &receiver_check_failed);
 
   // Get the callback offset from the FunctionTemplateInfo, and jump to the
@@ -1310,11 +1412,6 @@ void Builtins::Generate_HandleFastApiCall(MacroAssembler* masm) {
   __ LoadP(r7, FieldMemOperand(r7, CallHandlerInfo::kFastHandlerOffset));
   __ addi(ip, r7, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ JumpToJSEntry(ip);
-
-  __ bind(&set_global_proxy);
-  __ LoadGlobalProxy(r5);
-  __ StorePX(r5, MemOperand(sp, r11));
-  __ b(&valid_receiver);
 
   // Compatible receiver check failed: throw an Illegal Invocation exception.
   __ bind(&receiver_check_failed);
@@ -1387,6 +1484,53 @@ void Builtins::Generate_OsrAfterStackCheck(MacroAssembler* masm) {
 
   __ bind(&ok);
   __ Ret();
+}
+
+
+// static
+void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
+                                               int field_index) {
+  // ----------- S t a t e -------------
+  //  -- lr    : return address
+  //  -- sp[0] : receiver
+  // -----------------------------------
+
+  // 1. Pop receiver into r3 and check that it's actually a JSDate object.
+  Label receiver_not_date;
+  {
+    __ Pop(r3);
+    __ JumpIfSmi(r3, &receiver_not_date);
+    __ CompareObjectType(r3, r4, r5, JS_DATE_TYPE);
+    __ bne(&receiver_not_date);
+  }
+
+  // 2. Load the specified date field, falling back to the runtime as necessary.
+  if (field_index == JSDate::kDateValue) {
+    __ LoadP(r3, FieldMemOperand(r3, JSDate::kValueOffset));
+  } else {
+    if (field_index < JSDate::kFirstUncachedField) {
+      Label stamp_mismatch;
+      __ mov(r4, Operand(ExternalReference::date_cache_stamp(masm->isolate())));
+      __ LoadP(r4, MemOperand(r4));
+      __ LoadP(ip, FieldMemOperand(r3, JSDate::kCacheStampOffset));
+      __ cmp(r4, ip);
+      __ bne(&stamp_mismatch);
+      __ LoadP(r3, FieldMemOperand(
+                       r3, JSDate::kValueOffset + field_index * kPointerSize));
+      __ Ret();
+      __ bind(&stamp_mismatch);
+    }
+    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+    __ PrepareCallCFunction(2, r4);
+    __ LoadSmiLiteral(r4, Smi::FromInt(field_index));
+    __ CallCFunction(
+        ExternalReference::get_date_field_function(masm->isolate()), 2);
+  }
+  __ Ret();
+
+  // 3. Raise a TypeError if the receiver is not a date.
+  __ bind(&receiver_not_date);
+  __ TailCallRuntime(Runtime::kThrowNotDateError);
 }
 
 

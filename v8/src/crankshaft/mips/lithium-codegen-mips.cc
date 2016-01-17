@@ -149,7 +149,7 @@ bool LCodeGen::GeneratePrologue() {
     if (info()->IsStub()) {
       __ StubPrologue();
     } else {
-      __ Prologue(info()->IsCodePreAgingActive());
+      __ Prologue(info()->GeneratePreagedPrologue());
     }
     frame_is_built_ = true;
   }
@@ -1663,39 +1663,6 @@ void LCodeGen::DoMapEnumLength(LMapEnumLength* instr) {
 }
 
 
-void LCodeGen::DoDateField(LDateField* instr) {
-  Register object = ToRegister(instr->date());
-  Register result = ToRegister(instr->result());
-  Register scratch = ToRegister(instr->temp());
-  Smi* index = instr->index();
-  DCHECK(object.is(a0));
-  DCHECK(result.is(v0));
-  DCHECK(!scratch.is(scratch0()));
-  DCHECK(!scratch.is(object));
-
-  if (index->value() == 0) {
-    __ lw(result, FieldMemOperand(object, JSDate::kValueOffset));
-  } else {
-    Label runtime, done;
-    if (index->value() < JSDate::kFirstUncachedField) {
-      ExternalReference stamp = ExternalReference::date_cache_stamp(isolate());
-      __ li(scratch, Operand(stamp));
-      __ lw(scratch, MemOperand(scratch));
-      __ lw(scratch0(), FieldMemOperand(object, JSDate::kCacheStampOffset));
-      __ Branch(&runtime, ne, scratch, Operand(scratch0()));
-      __ lw(result, FieldMemOperand(object, JSDate::kValueOffset +
-                                            kPointerSize * index->value()));
-      __ jmp(&done);
-    }
-    __ bind(&runtime);
-    __ PrepareCallCFunction(2, scratch);
-    __ li(a1, Operand(index));
-    __ CallCFunction(ExternalReference::get_date_field_function(isolate()), 2);
-    __ bind(&done);
-  }
-}
-
-
 MemOperand LCodeGen::BuildSeqStringOperand(Register string,
                                            LOperand* index,
                                            String::Encoding encoding) {
@@ -2196,8 +2163,9 @@ void LCodeGen::DoCompareNumericAndBranch(LCompareNumericAndBranch* instr) {
     // We can statically evaluate the comparison.
     double left_val = ToDouble(LConstantOperand::cast(left));
     double right_val = ToDouble(LConstantOperand::cast(right));
-    int next_block = EvalComparison(instr->op(), left_val, right_val) ?
-        instr->TrueDestination(chunk_) : instr->FalseDestination(chunk_);
+    int next_block = Token::EvalComparison(instr->op(), left_val, right_val)
+                         ? instr->TrueDestination(chunk_)
+                         : instr->FalseDestination(chunk_);
     EmitGoto(next_block);
   } else {
     if (instr->is_double()) {

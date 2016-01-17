@@ -666,7 +666,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       InstructionOperand* source = instr->InputAt(0);
       InstructionOperand* destination = instr->Output();
       DCHECK(source->IsConstant());
-      X87OperandConverter g(this, NULL);
+      X87OperandConverter g(this, nullptr);
       Constant src_constant = g.ToConstant(source);
 
       DCHECK_EQ(Constant::kFloat64, src_constant.type());
@@ -1009,6 +1009,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ LoadUint32NoSSE2(i.InputRegister(0));
       break;
     }
+    case kX87Float32ToInt32: {
+      if (!instr->InputAt(0)->IsDoubleRegister()) {
+        __ fld_s(i.InputOperand(0));
+      }
+      __ TruncateX87TOSToI(i.OutputRegister(0));
+      if (!instr->InputAt(0)->IsDoubleRegister()) {
+        __ fstp(0);
+      }
+      break;
+    }
     case kX87Float64ToInt32: {
       if (!instr->InputAt(0)->IsDoubleRegister()) {
         __ fld_d(i.InputOperand(0));
@@ -1204,24 +1214,19 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     }
     case kX87BitcastFI: {
-      __ fstp(0);
       __ mov(i.OutputRegister(), MemOperand(esp, 0));
       __ lea(esp, Operand(esp, kFloatSize));
       break;
     }
     case kX87BitcastIF: {
+      __ fstp(0);
       if (instr->InputAt(0)->IsRegister()) {
         __ lea(esp, Operand(esp, -kFloatSize));
         __ mov(MemOperand(esp, 0), i.InputRegister(0));
-        __ fstp(0);
         __ fld_s(MemOperand(esp, 0));
         __ lea(esp, Operand(esp, kFloatSize));
       } else {
-        __ lea(esp, Operand(esp, -kDoubleSize));
-        __ mov(MemOperand(esp, 0), i.InputRegister(0));
-        __ fstp(0);
-        __ fld_d(MemOperand(esp, 0));
-        __ lea(esp, Operand(esp, kDoubleSize));
+        __ fld_s(i.InputOperand(0));
       }
       break;
     }
@@ -1690,8 +1695,7 @@ void CodeGenerator::AssemblePrologue() {
   } else if (descriptor->IsJSFunctionCall()) {
     // TODO(turbofan): this prologue is redundant with OSR, but needed for
     // code aging.
-    CompilationInfo* info = this->info();
-    __ Prologue(info->IsCodePreAgingActive());
+    __ Prologue(this->info()->GeneratePreagedPrologue());
   } else if (frame()->needs_frame()) {
     __ StubPrologue();
   } else {
@@ -1774,7 +1778,7 @@ void CodeGenerator::AssembleReturn() {
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  X87OperandConverter g(this, NULL);
+  X87OperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister()) {
@@ -1918,7 +1922,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
 
 void CodeGenerator::AssembleSwap(InstructionOperand* source,
                                  InstructionOperand* destination) {
-  X87OperandConverter g(this, NULL);
+  X87OperandConverter g(this, nullptr);
   // Dispatch on the source and destination operand kinds.  Not all
   // combinations are possible.
   if (source->IsRegister() && destination->IsRegister()) {

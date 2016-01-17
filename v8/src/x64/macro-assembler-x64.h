@@ -18,6 +18,7 @@ namespace internal {
 // Give alias names to registers for calling conventions.
 const Register kReturnRegister0 = {Register::kCode_rax};
 const Register kReturnRegister1 = {Register::kCode_rdx};
+const Register kReturnRegister2 = {Register::kCode_r8};
 const Register kJSFunctionRegister = {Register::kCode_rdi};
 const Register kContextRegister = {Register::kCode_rsi};
 const Register kInterpreterAccumulatorRegister = {Register::kCode_rax};
@@ -230,11 +231,9 @@ class MacroAssembler: public Assembler {
   }
 
   // Check if an object has the black incremental marking color.  Also uses rcx!
-  void JumpIfBlack(Register object,
-                   Register scratch0,
-                   Register scratch1,
-                   Label* on_black,
-                   Label::Distance on_black_distance = Label::kFar);
+  void JumpIfBlack(Register object, Register bitmap_scratch,
+                   Register mask_scratch, Label* on_black,
+                   Label::Distance on_black_distance);
 
   // Checks the color of an object.  If the object is white we jump to the
   // incremental marker.
@@ -813,6 +812,8 @@ class MacroAssembler: public Assembler {
   void Cvtlsi2sd(XMMRegister dst, Register src);
   void Cvtlsi2sd(XMMRegister dst, const Operand& src);
 
+  void Cvtlsi2ss(XMMRegister dst, Register src);
+  void Cvtlsi2ss(XMMRegister dst, const Operand& src);
   void Cvtqsi2ss(XMMRegister dst, Register src);
   void Cvtqsi2ss(XMMRegister dst, const Operand& src);
 
@@ -824,6 +825,8 @@ class MacroAssembler: public Assembler {
 
   void Cvtsd2si(Register dst, XMMRegister src);
 
+  void Cvttss2si(Register dst, XMMRegister src);
+  void Cvttss2si(Register dst, const Operand& src);
   void Cvttsd2si(Register dst, XMMRegister src);
   void Cvttsd2si(Register dst, const Operand& src);
   void Cvttss2siq(Register dst, XMMRegister src);
@@ -1320,6 +1323,11 @@ class MacroAssembler: public Assembler {
                             Label* gc_required);
   void AllocateOneByteSlicedString(Register result, Register scratch1,
                                    Register scratch2, Label* gc_required);
+
+  // Allocate and initialize a JSValue wrapper with the specified {constructor}
+  // and {value}.
+  void AllocateJSValue(Register result, Register constructor, Register value,
+                       Register scratch, Label* gc_required);
 
   // ---------------------------------------------------------------------------
   // Support functions.

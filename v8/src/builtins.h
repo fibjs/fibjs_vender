@@ -74,9 +74,30 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(DateNow, kNone)                                            \
   V(DateParse, kNone)                                          \
   V(DateUTC, kNone)                                            \
+  V(DatePrototypeSetDate, kNone)                               \
+  V(DatePrototypeSetFullYear, kNone)                           \
+  V(DatePrototypeSetHours, kNone)                              \
+  V(DatePrototypeSetMilliseconds, kNone)                       \
+  V(DatePrototypeSetMinutes, kNone)                            \
+  V(DatePrototypeSetMonth, kNone)                              \
+  V(DatePrototypeSetSeconds, kNone)                            \
+  V(DatePrototypeSetTime, kNone)                               \
+  V(DatePrototypeSetUTCDate, kNone)                            \
+  V(DatePrototypeSetUTCFullYear, kNone)                        \
+  V(DatePrototypeSetUTCHours, kNone)                           \
+  V(DatePrototypeSetUTCMilliseconds, kNone)                    \
+  V(DatePrototypeSetUTCMinutes, kNone)                         \
+  V(DatePrototypeSetUTCMonth, kNone)                           \
+  V(DatePrototypeSetUTCSeconds, kNone)                         \
+  V(DatePrototypeToDateString, kNone)                          \
   V(DatePrototypeToISOString, kNone)                           \
   V(DatePrototypeToPrimitive, kNone)                           \
+  V(DatePrototypeToUTCString, kNone)                           \
+  V(DatePrototypeToString, kNone)                              \
+  V(DatePrototypeToTimeString, kNone)                          \
   V(DatePrototypeValueOf, kNone)                               \
+  V(DatePrototypeGetYear, kNone)                               \
+  V(DatePrototypeSetYear, kNone)                               \
                                                                \
   V(FunctionConstructor, kTargetAndNewTarget)                  \
   V(FunctionPrototypeBind, kNone)                              \
@@ -89,9 +110,11 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(ObjectAssign, kNone)                                       \
   V(ObjectCreate, kNone)                                       \
   V(ObjectFreeze, kNone)                                       \
+  V(ObjectGetOwnPropertySymbols, kNone)                        \
   V(ObjectIsExtensible, kNone)                                 \
   V(ObjectIsFrozen, kNone)                                     \
   V(ObjectIsSealed, kNone)                                     \
+  V(ObjectKeys, kNone)                                         \
   V(ObjectPreventExtensions, kNone)                            \
   V(ObjectSeal, kNone)                                         \
   V(ObjectProtoToString, kNone)                                \
@@ -151,6 +174,8 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(InOptimizationQueue, BUILTIN, UNINITIALIZED, kNoExtraICState)              \
   V(JSConstructStubGeneric, BUILTIN, UNINITIALIZED, kNoExtraICState)           \
   V(JSBuiltinsConstructStub, BUILTIN, UNINITIALIZED, kNoExtraICState)          \
+  V(JSBuiltinsConstructStubForDerived, BUILTIN, UNINITIALIZED,                 \
+    kNoExtraICState)                                                           \
   V(JSConstructStubApi, BUILTIN, UNINITIALIZED, kNoExtraICState)               \
   V(JSEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)                \
   V(JSConstructEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
@@ -196,13 +221,36 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(KeyedStoreIC_Megamorphic_Strict, KEYED_STORE_IC, MEGAMORPHIC,              \
     StoreICState::kStrictModeState)                                            \
                                                                                \
+  V(DatePrototypeGetDate, BUILTIN, UNINITIALIZED, kNoExtraICState)             \
+  V(DatePrototypeGetDay, BUILTIN, UNINITIALIZED, kNoExtraICState)              \
+  V(DatePrototypeGetFullYear, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
+  V(DatePrototypeGetHours, BUILTIN, UNINITIALIZED, kNoExtraICState)            \
+  V(DatePrototypeGetMilliseconds, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
+  V(DatePrototypeGetMinutes, BUILTIN, UNINITIALIZED, kNoExtraICState)          \
+  V(DatePrototypeGetMonth, BUILTIN, UNINITIALIZED, kNoExtraICState)            \
+  V(DatePrototypeGetSeconds, BUILTIN, UNINITIALIZED, kNoExtraICState)          \
+  V(DatePrototypeGetTime, BUILTIN, UNINITIALIZED, kNoExtraICState)             \
+  V(DatePrototypeGetTimezoneOffset, BUILTIN, UNINITIALIZED, kNoExtraICState)   \
+  V(DatePrototypeGetUTCDate, BUILTIN, UNINITIALIZED, kNoExtraICState)          \
+  V(DatePrototypeGetUTCDay, BUILTIN, UNINITIALIZED, kNoExtraICState)           \
+  V(DatePrototypeGetUTCFullYear, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
+  V(DatePrototypeGetUTCHours, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
+  V(DatePrototypeGetUTCMilliseconds, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
+  V(DatePrototypeGetUTCMinutes, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
+  V(DatePrototypeGetUTCMonth, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
+  V(DatePrototypeGetUTCSeconds, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
+                                                                               \
   V(FunctionPrototypeApply, BUILTIN, UNINITIALIZED, kNoExtraICState)           \
   V(FunctionPrototypeCall, BUILTIN, UNINITIALIZED, kNoExtraICState)            \
+                                                                               \
   V(ReflectApply, BUILTIN, UNINITIALIZED, kNoExtraICState)                     \
   V(ReflectConstruct, BUILTIN, UNINITIALIZED, kNoExtraICState)                 \
                                                                                \
   V(InternalArrayCode, BUILTIN, UNINITIALIZED, kNoExtraICState)                \
   V(ArrayCode, BUILTIN, UNINITIALIZED, kNoExtraICState)                        \
+                                                                               \
+  V(NumberConstructor, BUILTIN, UNINITIALIZED, kNoExtraICState)                \
+  V(NumberConstructor_ConstructStub, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
                                                                                \
   V(StringConstructor, BUILTIN, UNINITIALIZED, kNoExtraICState)                \
   V(StringConstructor_ConstructStub, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
@@ -338,6 +386,7 @@ class Builtins {
   static void Generate_CompileOptimizedConcurrent(MacroAssembler* masm);
   static void Generate_JSConstructStubGeneric(MacroAssembler* masm);
   static void Generate_JSBuiltinsConstructStub(MacroAssembler* masm);
+  static void Generate_JSBuiltinsConstructStubForDerived(MacroAssembler* masm);
   static void Generate_JSConstructStubApi(MacroAssembler* masm);
   static void Generate_JSEntryTrampoline(MacroAssembler* masm);
   static void Generate_JSConstructEntryTrampoline(MacroAssembler* masm);
@@ -389,13 +438,58 @@ class Builtins {
 
   static void Generate_HandleFastApiCall(MacroAssembler* masm);
 
+  static void Generate_DatePrototype_GetField(MacroAssembler* masm,
+                                              int field_index);
+  // ES6 section 20.3.4.2 Date.prototype.getDate ( )
+  static void Generate_DatePrototypeGetDate(MacroAssembler* masm);
+  // ES6 section 20.3.4.3 Date.prototype.getDay ( )
+  static void Generate_DatePrototypeGetDay(MacroAssembler* masm);
+  // ES6 section 20.3.4.4 Date.prototype.getFullYear ( )
+  static void Generate_DatePrototypeGetFullYear(MacroAssembler* masm);
+  // ES6 section 20.3.4.5 Date.prototype.getHours ( )
+  static void Generate_DatePrototypeGetHours(MacroAssembler* masm);
+  // ES6 section 20.3.4.6 Date.prototype.getMilliseconds ( )
+  static void Generate_DatePrototypeGetMilliseconds(MacroAssembler* masm);
+  // ES6 section 20.3.4.7 Date.prototype.getMinutes ( )
+  static void Generate_DatePrototypeGetMinutes(MacroAssembler* masm);
+  // ES6 section 20.3.4.8 Date.prototype.getMonth ( )
+  static void Generate_DatePrototypeGetMonth(MacroAssembler* masm);
+  // ES6 section 20.3.4.9 Date.prototype.getSeconds ( )
+  static void Generate_DatePrototypeGetSeconds(MacroAssembler* masm);
+  // ES6 section 20.3.4.10 Date.prototype.getTime ( )
+  static void Generate_DatePrototypeGetTime(MacroAssembler* masm);
+  // ES6 section 20.3.4.11 Date.prototype.getTimezoneOffset ( )
+  static void Generate_DatePrototypeGetTimezoneOffset(MacroAssembler* masm);
+  // ES6 section 20.3.4.12 Date.prototype.getUTCDate ( )
+  static void Generate_DatePrototypeGetUTCDate(MacroAssembler* masm);
+  // ES6 section 20.3.4.13 Date.prototype.getUTCDay ( )
+  static void Generate_DatePrototypeGetUTCDay(MacroAssembler* masm);
+  // ES6 section 20.3.4.14 Date.prototype.getUTCFullYear ( )
+  static void Generate_DatePrototypeGetUTCFullYear(MacroAssembler* masm);
+  // ES6 section 20.3.4.15 Date.prototype.getUTCHours ( )
+  static void Generate_DatePrototypeGetUTCHours(MacroAssembler* masm);
+  // ES6 section 20.3.4.16 Date.prototype.getUTCMilliseconds ( )
+  static void Generate_DatePrototypeGetUTCMilliseconds(MacroAssembler* masm);
+  // ES6 section 20.3.4.17 Date.prototype.getUTCMinutes ( )
+  static void Generate_DatePrototypeGetUTCMinutes(MacroAssembler* masm);
+  // ES6 section 20.3.4.18 Date.prototype.getUTCMonth ( )
+  static void Generate_DatePrototypeGetUTCMonth(MacroAssembler* masm);
+  // ES6 section 20.3.4.19 Date.prototype.getUTCSeconds ( )
+  static void Generate_DatePrototypeGetUTCSeconds(MacroAssembler* masm);
+
   static void Generate_FunctionPrototypeApply(MacroAssembler* masm);
   static void Generate_FunctionPrototypeCall(MacroAssembler* masm);
+
   static void Generate_ReflectApply(MacroAssembler* masm);
   static void Generate_ReflectConstruct(MacroAssembler* masm);
 
   static void Generate_InternalArrayCode(MacroAssembler* masm);
   static void Generate_ArrayCode(MacroAssembler* masm);
+
+  // ES6 section 20.1.1.1 Number ( [ value ] ) for the [[Call]] case.
+  static void Generate_NumberConstructor(MacroAssembler* masm);
+  // ES6 section 20.1.1.1 Number ( [ value ] ) for the [[Construct]] case.
+  static void Generate_NumberConstructor_ConstructStub(MacroAssembler* masm);
 
   static void Generate_StringConstructor(MacroAssembler* masm);
   static void Generate_StringConstructor_ConstructStub(MacroAssembler* masm);

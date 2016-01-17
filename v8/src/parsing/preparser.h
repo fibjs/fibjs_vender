@@ -279,6 +279,12 @@ class PreParserExpression {
   int position() const { return RelocInfo::kNoPosition; }
   void set_function_token_position(int position) {}
 
+  // Parenthesized expressions in the form `( Expression )`.
+  void set_is_parenthesized() {
+    code_ = ParenthesizedField::update(code_, true);
+  }
+  bool is_parenthesized() const { return ParenthesizedField::decode(code_); }
+
  private:
   enum Type {
     kExpression,
@@ -305,6 +311,13 @@ class PreParserExpression {
 
   // The first three bits are for the Type.
   typedef BitField<Type, 0, 3> TypeField;
+
+  // The high order bit applies only to nodes which would inherit from the
+  // Expression ASTNode --- This is by necessity, due to the fact that
+  // Expression nodes may be represented as multiple Types, not exclusively
+  // through kExpression.
+  // TODO(caitp, adamk): clean up PreParserExpression bitfields.
+  typedef BitField<bool, 31, 1> ParenthesizedField;
 
   // The rest of the bits are interpreted depending on the value
   // of the Type field, so they can share the storage.
@@ -527,18 +540,18 @@ class PreParserFactory {
     return PreParserStatement::Default();
   }
   PreParserExpression NewFunctionLiteral(
-      PreParserIdentifier name, AstValueFactory* ast_value_factory,
-      Scope* scope, PreParserStatementList body, int materialized_literal_count,
-      int expected_property_count, int parameter_count,
+      PreParserIdentifier name, Scope* scope, PreParserStatementList body,
+      int materialized_literal_count, int expected_property_count,
+      int parameter_count,
       FunctionLiteral::ParameterFlag has_duplicate_parameters,
       FunctionLiteral::FunctionType function_type,
-      FunctionLiteral::IsFunctionFlag is_function,
       FunctionLiteral::EagerCompileHint eager_compile_hint, FunctionKind kind,
       int position) {
     return PreParserExpression::Default();
   }
 
-  PreParserExpression NewSpread(PreParserExpression expression, int pos) {
+  PreParserExpression NewSpread(PreParserExpression expression, int pos,
+                                int expr_pos) {
     return PreParserExpression::Spread(expression);
   }
 
@@ -679,14 +692,6 @@ class PreParserTraits {
 
   static void CheckAssigningFunctionLiteralToProperty(
       PreParserExpression left, PreParserExpression right) {}
-
-  static void CheckPossibleEvalCall(PreParserExpression expression,
-                                    Scope* scope) {
-    if (IsIdentifier(expression) && IsEval(AsIdentifier(expression))) {
-      scope->DeclarationScope()->RecordEvalCall();
-      scope->RecordEvalCall();
-    }
-  }
 
   static PreParserExpression MarkExpressionAsAssigned(
       PreParserExpression expression) {
@@ -925,6 +930,18 @@ class PreParserTraits {
 
   void SetFunctionNameFromPropertyName(PreParserExpression,
                                        PreParserIdentifier) {}
+  void SetFunctionNameFromIdentifierRef(PreParserExpression,
+                                        PreParserExpression) {}
+
+  inline PreParserExpression RewriteNonPattern(
+      PreParserExpression expr, const ExpressionClassifier* classifier,
+      bool* ok);
+  inline PreParserExpression RewriteNonPatternArguments(
+      PreParserExpression args, const ExpressionClassifier* classifier,
+      bool* ok);
+  inline PreParserExpression RewriteNonPatternObjectLiteralProperty(
+      PreParserExpression property, const ExpressionClassifier* classifier,
+      bool* ok);
 
  private:
   PreParser* pre_parser_;
@@ -1104,6 +1121,30 @@ void PreParserTraits::ParseArrowFunctionFormalParameterList(
 
 PreParserExpression PreParserTraits::ParseDoExpression(bool* ok) {
   return pre_parser_->ParseDoExpression(ok);
+}
+
+
+PreParserExpression PreParserTraits::RewriteNonPattern(
+    PreParserExpression expr, const ExpressionClassifier* classifier,
+    bool* ok) {
+  pre_parser_->ValidateExpression(classifier, ok);
+  return expr;
+}
+
+
+PreParserExpression PreParserTraits::RewriteNonPatternArguments(
+    PreParserExpression args, const ExpressionClassifier* classifier,
+    bool* ok) {
+  pre_parser_->ValidateExpression(classifier, ok);
+  return args;
+}
+
+
+PreParserExpression PreParserTraits::RewriteNonPatternObjectLiteralProperty(
+    PreParserExpression property, const ExpressionClassifier* classifier,
+    bool* ok) {
+  pre_parser_->ValidateExpression(classifier, ok);
+  return property;
 }
 
 

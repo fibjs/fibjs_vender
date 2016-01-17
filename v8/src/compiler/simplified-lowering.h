@@ -31,14 +31,14 @@ class SimplifiedLowering final {
 
   void LowerAllNodes();
 
-  // TODO(turbofan): The output_type can be removed once the result of the
+  // TODO(turbofan): The representation can be removed once the result of the
   // representation analysis is stored in the node bounds.
-  void DoLoadBuffer(Node* node, MachineType output_type,
+  void DoLoadBuffer(Node* node, MachineRepresentation rep,
                     RepresentationChanger* changer);
   void DoStoreBuffer(Node* node);
   void DoObjectIsNumber(Node* node);
   void DoObjectIsSmi(Node* node);
-  void DoShift(Node* node, Operator const* op);
+  void DoShift(Node* node, Operator const* op, Type* rhs_type);
   void DoStringEqual(Node* node);
   void DoStringLessThan(Node* node);
   void DoStringLessThanOrEqual(Node* node);

@@ -9058,6 +9058,7 @@ bool HOptimizedGraphBuilder::TryInlineBuiltinMethodCall(
     case kArrayLastIndexOf: {
       if (receiver_map.is_null()) return false;
       if (receiver_map->instance_type() != JS_ARRAY_TYPE) return false;
+      if (!receiver_map->prototype()->IsJSObject()) return false;
       ElementsKind kind = receiver_map->elements_kind();
       if (!IsFastElementsKind(kind)) return false;
       if (receiver_map->is_observed()) return false;
@@ -12460,25 +12461,6 @@ void HOptimizedGraphBuilder::GenerateIsDate(CallRuntime* call) {
   HHasInstanceTypeAndBranch* result =
       New<HHasInstanceTypeAndBranch>(value, JS_DATE_TYPE);
   return ast_context()->ReturnControl(result, call->id());
-}
-
-
-void HOptimizedGraphBuilder::GenerateThrowNotDateError(CallRuntime* call) {
-  DCHECK_EQ(0, call->arguments()->length());
-  Add<HDeoptimize>(Deoptimizer::kNotADateObject, Deoptimizer::EAGER);
-  Add<HSimulate>(call->id(), FIXED_SIMULATE);
-  return ast_context()->ReturnValue(graph()->GetConstantUndefined());
-}
-
-
-void HOptimizedGraphBuilder::GenerateDateField(CallRuntime* call) {
-  DCHECK(call->arguments()->length() == 2);
-  DCHECK_NOT_NULL(call->arguments()->at(1)->AsLiteral());
-  Smi* index = Smi::cast(*(call->arguments()->at(1)->AsLiteral()->value()));
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
-  HValue* date = Pop();
-  HDateField* result = New<HDateField>(date, index);
-  return ast_context()->ReturnInstruction(result, call->id());
 }
 
 
