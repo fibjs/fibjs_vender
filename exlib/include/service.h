@@ -17,8 +17,11 @@ namespace exlib
 
 class Service : public OSThread
 {
-public:
+private:
     Service(Service* master);
+
+public:
+    Service(int32_t workers = 1);
 
 public:
     static const int32_t type = 2;
@@ -27,32 +30,42 @@ public:
         return t == type || OSThread::is(t);
     }
 
+    void start()
+    {
+        m_master->m_idleWorkers.inc();
+        OSThread::start();
+    }
+
+    void bindCurrent()
+    {
+        m_main.saveStackGuard();
+        OSThread::bindCurrent();
+    }
+
+    void dispatch();
+
     virtual void Run()
     {
-        dispatch_loop();
+        m_main.saveStackGuard();
+
+        m_master->m_idleWorkers.dec();
+        dispatch();
     }
 
 public:
-    void switchConext();
-    void switchConext(spinlock& lock);
-    void yield();
-
-    void dispatch_loop();
-
     static Service *current();
-    static bool hasService();
     static void init();
 
     Fiber* Create(void *(*func)(void *), void *data, int32_t stacksize);
 
     void post(Fiber* fiber)
     {
-        m_resume->post(fiber);
+        m_master->m_resume->post(fiber);
     }
 
     Fiber* next()
     {
-        return m_resume->next();
+        return m_master->_next();
     }
 
     Fiber* running()
@@ -60,8 +73,49 @@ public:
         return m_running;
     }
 
+public:
+    void switchConext()
+    {
+        assert(m_running != &m_main);
+        assert(current() == this);
+
+        m_running->m_cntxt.switchto(&m_main.m_cntxt);
+    }
+
+    void switchConext(spinlock& lock)
+    {
+        m_unlocker = &lock;
+        switchConext();
+    }
+
+    void yield()
+    {
+        m_yield = m_running;
+        switchConext();
+    }
+
 private:
     static void fiber_proc(void *(*func)(void *), Fiber* fb);
+
+    Fiber* _next()
+    {
+        Fiber* fb;
+
+        m_idleWorkers.inc();
+        fb = m_resume->next();
+        if (m_idleWorkers.dec() == 0 && m_workers > 0)
+        {
+            if (m_workers.dec() < 0)
+                m_workers.inc();
+            else
+            {
+                Service* worker = new Service(this);
+                worker->start();
+            }
+        }
+
+        return fb;
+    }
 
     class ResumeQueue
     {
@@ -84,11 +138,18 @@ private:
     };
 
 private:
+    Service* m_master;
+    exlib::atomic m_workers;
+    exlib::atomic m_idleWorkers;
+
     Fiber m_main;
+
     Fiber *m_running;
+
     Fiber *m_recycle;
     Fiber *m_yield;
     spinlock *m_unlocker;
+
     ResumeQueue* m_resume;
 };
 

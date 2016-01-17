@@ -50,26 +50,24 @@ Service *Service::current()
     return (Service*)thread_;
 }
 
-bool Service::hasService()
+Service::Service(Service* master) :
+    m_master(master), m_main(this, NULL), m_running(&m_main),
+    m_recycle(NULL), m_yield(NULL), m_unlocker(NULL),
+    m_resume(master->m_resume)
 {
-    if (!s_service_inited)
-        return false;
-
-    assert(OSThread::current() != 0);
-    return OSThread::current()->is(Service::type);
+    m_main.set_name("main");
+    m_main.Ref();
 }
 
-Service::Service(Service* master) :
-    m_main(this, NULL), m_recycle(NULL),
-    m_yield(NULL), m_unlocker(NULL)
+Service::Service(int32_t workers) :
+    m_master(this), m_workers(workers - 1),
+    m_main(this, NULL), m_running(&m_main),
+    m_recycle(NULL), m_yield(NULL), m_unlocker(NULL)
 {
-    m_running = &m_main;
-
-    m_resume = master ? master->m_resume : new ResumeQueue();
+    m_resume = new ResumeQueue();
 
     m_main.set_name("main");
     m_main.Ref();
-    m_main.saveStackGuard();
 
     if (!s_service_inited)
     {
@@ -81,7 +79,6 @@ Service::Service(Service* master) :
 void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
 {
     fb->saveStackGuard();
-
     func(fb->m_data);
 
     Service* now = fb->m_pService;
@@ -126,13 +123,13 @@ Fiber *Service::Create(void *(*func)(void *), void *data, int32_t stacksize)
     fb->m_cntxt.r1 = (intptr_t) fb;
 #endif
 
-    fb->resume();
     fb->Ref();
+    fb->resume();
 
     return fb;
 }
 
-void Service::dispatch_loop()
+void Service::dispatch()
 {
     while (true)
     {
@@ -153,32 +150,13 @@ void Service::dispatch_loop()
             m_recycle = NULL;
         }
 
-        Fiber *new_ = next();
-        assert(new_ != 0);
+        Fiber *fb = next();
+        assert(fb != 0);
 
-        m_running = new_;
-        m_main.m_cntxt.switchto(&new_->m_cntxt);
+        m_running = fb;
+        fb->m_pService = this;
+        m_main.m_cntxt.switchto(&fb->m_cntxt);
     }
-}
-
-void Service::switchConext()
-{
-    assert(m_running != &m_main);
-    m_running->m_cntxt.switchto(&m_main.m_cntxt);
-}
-
-void Service::switchConext(spinlock& lock)
-{
-    assert(m_running != &m_main);
-    m_unlocker = &lock;
-    m_running->m_cntxt.switchto(&m_main.m_cntxt);
-}
-
-void Service::yield()
-{
-    assert(m_running != &m_main);
-    m_yield = m_running;
-    m_running->m_cntxt.switchto(&m_main.m_cntxt);
 }
 
 }
