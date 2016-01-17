@@ -92,8 +92,7 @@ void Fiber::suspend()
 
 void Fiber::suspend(spinlock& lock)
 {
-    lock.unlock();
-    suspend();
+    m_pService->switchConext(lock);
 }
 
 void Fiber::resume()
@@ -103,10 +102,7 @@ void Fiber::resume()
 
 void Fiber::yield()
 {
-    Service* service_ = m_pService;
-
-    service_->post(this);
-    service_->switchConext();
+    m_pService->yield();
 }
 
 static class _timerThread: public OSThread
@@ -208,12 +204,14 @@ void Fiber::sleep(int32_t ms, Task_base* now)
     assert(now != 0);
 
     if (ms <= 0)
+    {
         if (now->is(Fiber::type))
         {
             ((Fiber*)now)->yield();
             return;
         } else
             ms = 0;
+    }
 
     s_timer.sleep(now, ms);
 }

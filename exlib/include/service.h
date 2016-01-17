@@ -29,11 +29,16 @@ public:
 
     virtual void Run()
     {
-        m_main.suspend();
+        dispatch_loop();
     }
 
 public:
     void switchConext();
+    void switchConext(spinlock& lock);
+    void yield();
+
+    void dispatch_loop();
+
     static Service *current();
     static bool hasService();
     static void init();
@@ -82,6 +87,8 @@ private:
     Fiber m_main;
     Fiber *m_running;
     Fiber *m_recycle;
+    Fiber *m_yield;
+    spinlock *m_unlocker;
     ResumeQueue* m_resume;
 };
 

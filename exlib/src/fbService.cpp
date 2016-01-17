@@ -59,9 +59,10 @@ bool Service::hasService()
     return OSThread::current()->is(Service::type);
 }
 
-Service::Service(Service* master) : m_main(this, NULL)
+Service::Service(Service* master) :
+    m_main(this, NULL), m_recycle(NULL),
+    m_yield(NULL), m_unlocker(NULL)
 {
-    m_recycle = NULL;
     m_running = &m_main;
 
     m_resume = master ? master->m_resume : new ResumeQueue();
@@ -85,7 +86,7 @@ void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
 
     Service* now = fb->m_pService;
 
-    now->m_recycle = now->m_running;
+    now->m_recycle = fb;
     now->switchConext();
 }
 
@@ -131,24 +132,53 @@ Fiber *Service::Create(void *(*func)(void *), void *data, int32_t stacksize)
     return fb;
 }
 
+void Service::dispatch_loop()
+{
+    while (true)
+    {
+        if (m_unlocker)
+        {
+            m_unlocker->unlock();
+            m_unlocker = NULL;
+        }
+        else if (m_yield)
+        {
+            post(m_yield);
+            m_yield = NULL;
+        }
+        else if (m_recycle)
+        {
+            m_recycle->m_joins.set();
+            m_recycle->Unref();
+            m_recycle = NULL;
+        }
+
+        Fiber *new_ = next();
+        assert(new_ != 0);
+
+        m_running = new_;
+        m_main.m_cntxt.switchto(&new_->m_cntxt);
+    }
+}
+
 void Service::switchConext()
 {
-    Fiber *new_ = next();
+    assert(m_running != &m_main);
+    m_running->m_cntxt.switchto(&m_main.m_cntxt);
+}
 
-    assert(new_ != 0);
+void Service::switchConext(spinlock& lock)
+{
+    assert(m_running != &m_main);
+    m_unlocker = &lock;
+    m_running->m_cntxt.switchto(&m_main.m_cntxt);
+}
 
-    Fiber *old = m_running;
-    m_running = new_;
-
-    if (old != new_)
-        old->m_cntxt.switchto(&new_->m_cntxt);
-
-    if (m_recycle)
-    {
-        m_recycle->m_joins.set();
-        m_recycle->Unref();
-        m_recycle = NULL;
-    }
+void Service::yield()
+{
+    assert(m_running != &m_main);
+    m_yield = m_running;
+    m_running->m_cntxt.switchto(&m_main.m_cntxt);
 }
 
 }
