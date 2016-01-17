@@ -473,6 +473,7 @@ public:
     }
 
     virtual void suspend();
+    virtual void suspend(spinlock& lock);
     virtual void resume();
 
     void join();

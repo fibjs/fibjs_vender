@@ -34,9 +34,7 @@ void Locker::lock()
     if (m_locker && current != m_locker)
     {
         m_blocks.putTail(current);
-        m_lock.unlock();
-
-        current->suspend();
+        current->suspend(m_lock);
         return;
     }
 

@@ -21,9 +21,7 @@ void Semaphore::wait()
         assert(current != 0);
 
         m_blocks.putTail(current);
-        m_lock.unlock();
-
-        current->suspend();
+        current->suspend(m_lock);
     }
     else
     {

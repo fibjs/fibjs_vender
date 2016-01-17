@@ -20,9 +20,7 @@ void CondVar::wait(Locker &l)
 
 	m_lock.lock();
 	m_blocks.putTail(current);
-	m_lock.unlock();
-
-	current->suspend();
+	current->suspend(m_lock);
 
 	l.lock();
 }

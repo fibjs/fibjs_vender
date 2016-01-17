@@ -40,6 +40,12 @@ void OSThread::suspend()
     m_sem.Wait();
 }
 
+void OSThread::suspend(spinlock& lock)
+{
+    lock.unlock();
+    suspend();
+}
+
 void OSThread::resume()
 {
     m_sem.Post();

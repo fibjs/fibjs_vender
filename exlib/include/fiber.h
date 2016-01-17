@@ -30,6 +30,7 @@ public:
 
 public:
     virtual void suspend() = 0;
+    virtual void suspend(spinlock& lock) = 0;
     virtual void resume() = 0;
 
     virtual bool is(int32_t t)
@@ -244,6 +245,7 @@ public:
     }
 
     virtual void suspend();
+    virtual void suspend(spinlock& lock);
     virtual void resume();
 
     void join();

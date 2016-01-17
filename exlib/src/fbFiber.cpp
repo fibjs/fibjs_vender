@@ -90,6 +90,12 @@ void Fiber::suspend()
     m_pService->switchConext();
 }
 
+void Fiber::suspend(spinlock& lock)
+{
+    lock.unlock();
+    suspend();
+}
+
 void Fiber::resume()
 {
     m_pService->post(this);
