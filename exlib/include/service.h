@@ -19,8 +19,6 @@ class Service : public OSThread
 {
 private:
     Service(Service* master);
-
-public:
     Service(int32_t workers = 1);
 
 public:
@@ -42,21 +40,25 @@ public:
         OSThread::bindCurrent();
     }
 
-    void dispatch();
+    static void dispatch();
 
     virtual void Run()
     {
         m_main.saveStackGuard();
 
         m_master->m_idleWorkers.dec();
-        dispatch();
+        dispatch_loop();
     }
 
+private:
+    void dispatch_loop();
+
 public:
+    static void init(int32_t workers);
     static Service *current();
     static void init();
 
-    Fiber* Create(void *(*func)(void *), void *data, int32_t stacksize);
+    static Fiber* Create(void *(*func)(void *), void *data, int32_t stacksize);
 
     void post(Fiber* fiber)
     {

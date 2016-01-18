@@ -23,6 +23,16 @@ namespace exlib
 void init_timer();
 
 static bool s_service_inited;
+static Service* s_service = NULL;
+
+void Service::init(int32_t workers)
+{
+    if (!s_service)
+    {
+        s_service = new Service(workers);
+        s_service->bindCurrent();
+    }
+}
 
 Thread_base* Thread_base::current()
 {
@@ -102,7 +112,7 @@ Fiber *Service::Create(void *(*func)(void *), void *data, int32_t stacksize)
         return NULL;
     stack = (void **) fb + stacksize / sizeof(void *) - 5;
 
-    new(fb) Fiber(this, data);
+    new(fb) Fiber(s_service, data);
 
     fb->m_cntxt.ip = (intptr_t) fiber_proc;
     fb->m_cntxt.sp = (intptr_t) stack;
@@ -130,6 +140,12 @@ Fiber *Service::Create(void *(*func)(void *), void *data, int32_t stacksize)
 }
 
 void Service::dispatch()
+{
+    assert(s_service != 0);
+    s_service->dispatch_loop();
+}
+
+void Service::dispatch_loop()
 {
     while (true)
     {
