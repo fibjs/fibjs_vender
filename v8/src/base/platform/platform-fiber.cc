@@ -34,32 +34,41 @@ void Sampler::DoSample()
 namespace base
 {
 
-class Thread::PlatformData : public exlib::OSThread
+#define V8_STACK_SIZE 64
+
+class Thread::PlatformData
 {
 public:
-    PlatformData(Thread* pThis) : thread(pThis)
+    PlatformData(Thread* pThis) : thread(pThis), fb(NULL)
     {}
 
 public:
-    virtual void Run()
+    static void* fiber_proc(void* p)
+    {
+        ((PlatformData*)p)->_run();
+    }
+
+private:
+    void _run()
     {
         thread->NotifyStartedAndRun();
     }
 
-private:
+public:
     Thread *thread;
+    exlib::Fiber* fb;
 };
 
 Thread::Thread(const Options &options) :
     data_(new PlatformData(this)), stack_size_(options.stack_size()), start_semaphore_(NULL)
 {
-    data_->Ref();
     set_name(options.name());
 }
 
 Thread::~Thread()
 {
-    data_->Unref();
+    if (((PlatformData*)data_)->fb)
+        ((PlatformData*)data_)->fb->Unref();
 }
 
 void Thread::set_name(const char *name)
@@ -70,12 +79,14 @@ void Thread::set_name(const char *name)
 
 void Thread::Start()
 {
-    data_->start();
+    ((PlatformData*)data_)->fb = exlib::Service::Create(PlatformData::fiber_proc, data_, V8_STACK_SIZE * 1024);
+    ((PlatformData*)data_)->fb->Ref();
 }
 
 void Thread::Join()
 {
-    data_->join();
+    if (((PlatformData*)data_)->fb)
+        ((PlatformData*)data_)->fb->join();
 }
 
 Thread::LocalStorageKey Thread::CreateThreadLocalKey()
