@@ -46,6 +46,7 @@ public:
     static void* fiber_proc(void* p)
     {
         ((PlatformData*)p)->_run();
+        return NULL;
     }
 
 private:
