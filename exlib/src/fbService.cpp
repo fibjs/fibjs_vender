@@ -62,7 +62,7 @@ Service *Service::current()
 
 Service::Service(Service* master) :
     m_master(master), m_main(this, NULL), m_running(&m_main),
-    m_recycle(NULL), m_yield(NULL), m_unlocker(NULL),
+    m_recycle(NULL), m_sleep(NULL), m_sleep_data(NULL), m_yield(NULL), m_unlocker(NULL),
     m_resume(master->m_resume)
 {
     m_main.set_name("main");
@@ -72,7 +72,7 @@ Service::Service(Service* master) :
 Service::Service(int32_t workers) :
     m_master(this), m_workers(workers - 1),
     m_main(this, NULL), m_running(&m_main),
-    m_recycle(NULL), m_yield(NULL), m_unlocker(NULL)
+    m_recycle(NULL), m_sleep(NULL), m_sleep_data(NULL), m_yield(NULL), m_unlocker(NULL)
 {
     m_resume = new ResumeQueue();
 
@@ -97,7 +97,7 @@ void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
     now->switchConext();
 }
 
-Fiber *Service::Create(void *(*func)(void *), void *data, int32_t stacksize)
+Fiber *Service::Create(fiber_func func, void *data, int32_t stacksize)
 {
     Fiber *fb;
     void **stack;
@@ -164,6 +164,11 @@ void Service::dispatch_loop()
             m_recycle->m_joins.set();
             m_recycle->Unref();
             m_recycle = NULL;
+        }
+        else if (m_sleep)
+        {
+            m_sleep(m_sleep_data);
+            m_sleep = NULL;
         }
 
         Fiber *fb = next();

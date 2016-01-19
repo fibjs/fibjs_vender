@@ -54,11 +54,14 @@ private:
     void dispatch_loop();
 
 public:
+    typedef void *(*fiber_func)(void *);
+
+public:
     static void init(int32_t workers);
     static Service *current();
     static void init();
 
-    static Fiber* Create(void *(*func)(void *), void *data, int32_t stacksize);
+    static Fiber* Create(fiber_func func, void *data, int32_t stacksize);
 
     void post(Fiber* fiber)
     {
@@ -87,6 +90,13 @@ public:
     void switchConext(spinlock& lock)
     {
         m_unlocker = &lock;
+        switchConext();
+    }
+
+    void sleep(fiber_func func, void* data)
+    {
+        m_sleep = func;
+        m_sleep_data = data;
         switchConext();
     }
 
@@ -149,6 +159,8 @@ private:
     Fiber *m_running;
 
     Fiber *m_recycle;
+    fiber_func m_sleep;
+    void* m_sleep_data;
     Fiber *m_yield;
     spinlock *m_unlocker;
 

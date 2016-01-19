@@ -177,6 +177,8 @@ public:
         now->suspend();
     }
 
+    static void* sleep_func(void* p);
+
     void cancel(Task_base* now)
     {
         m_acCancel.putTail(new Canceling(now));
@@ -191,6 +193,12 @@ private:
     std::multimap<double, Sleeping *> m_tms;
 } s_timer;
 
+void* _timerThread::sleep_func(void* p)
+{
+    s_timer.m_acSleep.putTail((Sleeping*)p);
+    s_timer.m_sem.Post();
+}
+
 void init_timer()
 {
     s_timer.start();
@@ -203,17 +211,19 @@ void Fiber::sleep(int32_t ms, Task_base* now)
 
     assert(now != 0);
 
-    if (ms <= 0)
+    if (now->is(Fiber::type))
     {
-        if (now->is(Fiber::type))
-        {
+        if (ms <= 0)
             ((Fiber*)now)->yield();
-            return;
-        } else
+        else
+            ((Fiber*)now)->m_pService->sleep(_timerThread::sleep_func, new Sleeping(now, ms));
+    } else
+    {
+        if (ms <= 0)
             ms = 0;
-    }
 
-    s_timer.sleep(now, ms);
+        s_timer.sleep(now, ms);
+    }
 }
 
 void Fiber::cancel_sleep(Task_base* now)
