@@ -197,6 +197,8 @@ void* _timerThread::sleep_func(void* p)
 {
     s_timer.m_acSleep.putTail((Sleeping*)p);
     s_timer.m_sem.Post();
+
+    return NULL;
 }
 
 void init_timer()
