@@ -62,8 +62,7 @@ Service *Service::current()
 
 Service::Service(Service* master) :
     m_master(master), m_main(this, NULL), m_running(&m_main),
-    m_recycle(NULL), m_sleep(NULL), m_sleep_data(NULL), m_yield(NULL), m_unlocker(NULL),
-    m_resume(master->m_resume)
+    m_cb(NULL), m_resume(master->m_resume)
 {
     m_main.set_name("main");
     m_main.Ref();
@@ -71,8 +70,7 @@ Service::Service(Service* master) :
 
 Service::Service(int32_t workers) :
     m_master(this), m_workers(workers - 1),
-    m_main(this, NULL), m_running(&m_main),
-    m_recycle(NULL), m_sleep(NULL), m_sleep_data(NULL), m_yield(NULL), m_unlocker(NULL)
+    m_main(this, NULL), m_running(&m_main), m_cb(NULL)
 {
     m_resume = new ResumeQueue();
 
@@ -88,13 +86,28 @@ Service::Service(int32_t workers) :
 
 void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
 {
+    class cb : public Service::switchConextCallback
+    {
+    public:
+        cb(Fiber* fb) : m_fb(fb)
+        {}
+
+    public:
+        virtual void invoke()
+        {
+            m_fb->m_joins.set();
+            m_fb->Unref();
+        }
+
+    private:
+        Fiber* m_fb;
+    } _cb(fb);
+
     fb->saveStackGuard();
     func(fb->m_data);
 
     Service* now = fb->m_pService;
-
-    now->m_recycle = fb;
-    now->switchConext();
+    now->switchConext(&_cb);
 }
 
 Fiber *Service::Create(fiber_func func, void *data, int32_t stacksize)
@@ -149,26 +162,10 @@ void Service::dispatch_loop()
 {
     while (true)
     {
-        if (m_unlocker)
+        if (m_cb)
         {
-            m_unlocker->unlock();
-            m_unlocker = NULL;
-        }
-        else if (m_yield)
-        {
-            post(m_yield);
-            m_yield = NULL;
-        }
-        else if (m_recycle)
-        {
-            m_recycle->m_joins.set();
-            m_recycle->Unref();
-            m_recycle = NULL;
-        }
-        else if (m_sleep)
-        {
-            m_sleep(m_sleep_data);
-            m_sleep = NULL;
+            m_cb->invoke();
+            m_cb = NULL;
         }
 
         Fiber *fb = next();

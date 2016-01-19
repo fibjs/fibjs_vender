@@ -79,6 +79,17 @@ public:
     }
 
 public:
+    class switchConextCallback
+    {
+    public:
+        virtual ~switchConextCallback()
+        {}
+
+    public:
+        virtual void invoke() = 0;
+    };
+
+public:
     void switchConext()
     {
         assert(m_running != &m_main);
@@ -87,22 +98,9 @@ public:
         m_running->m_cntxt.switchto(&m_main.m_cntxt);
     }
 
-    void switchConext(spinlock& lock)
+    void switchConext(switchConextCallback* cb)
     {
-        m_unlocker = &lock;
-        switchConext();
-    }
-
-    void sleep(fiber_func func, void* data)
-    {
-        m_sleep = func;
-        m_sleep_data = data;
-        switchConext();
-    }
-
-    void yield()
-    {
-        m_yield = m_running;
+        m_cb = cb;
         switchConext();
     }
 
@@ -157,12 +155,7 @@ private:
     Fiber m_main;
 
     Fiber *m_running;
-
-    Fiber *m_recycle;
-    fiber_func m_sleep;
-    void* m_sleep_data;
-    Fiber *m_yield;
-    spinlock *m_unlocker;
+    switchConextCallback* m_cb;
 
     ResumeQueue* m_resume;
 };

@@ -39,12 +39,16 @@ public:
 namespace exlib
 {
 
-class Sleeping : public linkitem
+class Sleeping : public linkitem,
+    public Service::switchConextCallback
 {
 public:
     Sleeping(Task_base* now, int32_t tm) :
         m_now(now), m_tm(tm)
     {}
+
+public:
+    virtual void invoke();
 
 public:
     Task_base* m_now;
@@ -92,7 +96,23 @@ void Fiber::suspend()
 
 void Fiber::suspend(spinlock& lock)
 {
-    m_pService->switchConext(lock);
+    class cb : public Service::switchConextCallback
+    {
+    public:
+        cb(spinlock& lock) : m_lock(lock)
+        {}
+
+    public:
+        virtual void invoke()
+        {
+            m_lock.unlock();
+        }
+
+    private:
+        spinlock& m_lock;
+    } _cb(lock);
+
+    m_pService->switchConext(&_cb);
 }
 
 void Fiber::resume()
@@ -102,7 +122,23 @@ void Fiber::resume()
 
 void Fiber::yield()
 {
-    m_pService->yield();
+    class cb : public Service::switchConextCallback
+    {
+    public:
+        cb(Fiber* fb) : m_fb(fb)
+        {}
+
+    public:
+        virtual void invoke()
+        {
+            m_fb->m_pService->post(m_fb);
+        }
+
+    private:
+        Fiber* m_fb;
+    } _cb(this);
+
+    m_pService->switchConext(&_cb);
 }
 
 static class _timerThread: public OSThread
@@ -177,8 +213,6 @@ public:
         now->suspend();
     }
 
-    static void* sleep_func(void* p);
-
     void cancel(Task_base* now)
     {
         m_acCancel.putTail(new Canceling(now));
@@ -191,14 +225,14 @@ private:
     LockedList<Sleeping> m_acSleep;
     LockedList<Canceling> m_acCancel;
     std::multimap<double, Sleeping *> m_tms;
+
+    friend class Sleeping;
 } s_timer;
 
-void* _timerThread::sleep_func(void* p)
+void Sleeping::invoke()
 {
-    s_timer.m_acSleep.putTail((Sleeping*)p);
+    s_timer.m_acSleep.putTail(this);
     s_timer.m_sem.Post();
-
-    return NULL;
 }
 
 void init_timer()
@@ -218,7 +252,9 @@ void Fiber::sleep(int32_t ms, Task_base* now)
         if (ms <= 0)
             ((Fiber*)now)->yield();
         else
-            ((Fiber*)now)->m_pService->sleep(_timerThread::sleep_func, new Sleeping(now, ms));
+        {
+            ((Fiber*)now)->m_pService->switchConext(new Sleeping(now, ms));
+        }
     } else
     {
         if (ms <= 0)
