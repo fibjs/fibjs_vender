@@ -17,7 +17,7 @@ inline void MemoryBarrier()
 
 inline void yield()
 {
-    __asm__ volatile("pause");
+    __asm__ volatile("mov r0,r0 @ nop");
 }
 
 template<typename T>
