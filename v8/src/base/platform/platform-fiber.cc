@@ -82,6 +82,7 @@ void Thread::Start()
 {
     ((PlatformData*)data_)->fb = exlib::Service::Create(PlatformData::fiber_proc, data_, V8_STACK_SIZE * 1024);
     ((PlatformData*)data_)->fb->Ref();
+    ((PlatformData*)data_)->fb->set_name(name_);
 }
 
 void Thread::Join()
