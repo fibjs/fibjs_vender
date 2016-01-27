@@ -279,7 +279,9 @@ public:
     void* m_data;
     char name_[16];
 
+#ifdef DEBUG
     linkitem m_link;
+#endif
 };
 
 }

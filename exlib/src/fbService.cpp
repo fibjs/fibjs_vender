@@ -60,6 +60,28 @@ Service *Service::current()
     return (Service*)thread_;
 }
 
+#ifdef DEBUG
+Fiber* Service::firstFiber()
+{
+    linkitem* p = s_service->m_fibers.head();
+    if (!p)
+        return 0;
+
+    Fiber* zfb = 0;
+    return (Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link));
+}
+
+Fiber* Service::nextFiber(Fiber* pThis)
+{
+    linkitem* p = pThis->m_link.m_next;
+    if (!p)
+        return 0;
+
+    Fiber* zfb = 0;
+    return (Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link));
+}
+#endif
+
 Service::Service() :
     m_master(s_service), m_main(this, NULL), m_running(&m_main),
     m_cb(NULL), m_resume(s_service->m_resume)
@@ -94,6 +116,10 @@ void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
     public:
         virtual void invoke()
         {
+#ifdef DEBUG
+            s_service->m_fibers.remove(&m_fb->m_link);
+#endif
+
             m_fb->m_joins.set();
             m_fb->Unref();
         }
@@ -147,6 +173,10 @@ Fiber *Service::Create(fiber_func func, void *data, int32_t stacksize)
 
     fb->Ref();
     fb->resume();
+
+#ifdef DEBUG
+    s_service->m_fibers.putTail(&fb->m_link);
+#endif
 
     return fb;
 }
