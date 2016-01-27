@@ -364,7 +364,7 @@ public:
 
     void Wait()
     {
-        sem_wait(&m_sem);
+        while (sem_wait(&m_sem));
     }
 
     bool TryWait()
