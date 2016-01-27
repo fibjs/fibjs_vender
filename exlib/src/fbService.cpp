@@ -61,9 +61,12 @@ Service *Service::current()
 }
 
 #ifdef DEBUG
+
+static LockedList<linkitem> s_fibers;
+
 Fiber* Service::firstFiber()
 {
-    linkitem* p = s_service->m_fibers.head();
+    linkitem* p = s_fibers.head();
     if (!p)
         return 0;
 
@@ -73,7 +76,7 @@ Fiber* Service::firstFiber()
 
 Fiber* Service::nextFiber(Fiber* pThis)
 {
-    linkitem* p = pThis->m_link.m_next;
+    linkitem* p = s_fibers.next(pThis);
     if (!p)
         return 0;
 
@@ -117,7 +120,7 @@ void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
         virtual void invoke()
         {
 #ifdef DEBUG
-            s_service->m_fibers.remove(&m_fb->m_link);
+            s_fibers.remove(&m_fb->m_link);
 #endif
 
             m_fb->m_joins.set();
@@ -175,7 +178,7 @@ Fiber *Service::Create(fiber_func func, void *data, int32_t stacksize)
     fb->resume();
 
 #ifdef DEBUG
-    s_service->m_fibers.putTail(&fb->m_link);
+    s_fibers.putTail(&fb->m_link);
 #endif
 
     return fb;

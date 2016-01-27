@@ -102,9 +102,6 @@ public:
 public:
     static Fiber* firstFiber();
     static Fiber* nextFiber(Fiber* pThis);
-
-private:
-    List<linkitem> m_fibers;
 #endif
 
 private:
