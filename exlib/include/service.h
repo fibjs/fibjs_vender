@@ -100,8 +100,7 @@ public:
 
 #ifdef DEBUG
 public:
-    static Fiber* firstFiber();
-    static Fiber* nextFiber(Fiber* pThis);
+    static void forEach(void (*func)(Fiber*));
 #endif
 
 private:

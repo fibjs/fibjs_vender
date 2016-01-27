@@ -63,26 +63,25 @@ Service *Service::current()
 #ifdef DEBUG
 
 static LockedList<linkitem> s_fibers;
+static spinlock s_locker;
 
-Fiber* Service::firstFiber()
+void Service::forEach(void (*func)(Fiber*))
 {
+    s_locker.lock();
+
     linkitem* p = s_fibers.head();
-    if (!p)
-        return 0;
 
-    Fiber* zfb = 0;
-    return (Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link));
+    while (p)
+    {
+        Fiber* zfb = 0;
+        func((Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link)));
+
+        p = s_fibers.next(p);
+    }
+
+    s_locker.unlock();
 }
 
-Fiber* Service::nextFiber(Fiber* pThis)
-{
-    linkitem* p = s_fibers.next(pThis);
-    if (!p)
-        return 0;
-
-    Fiber* zfb = 0;
-    return (Fiber*)((intptr_t)p - (intptr_t)(&zfb->m_link));
-}
 #endif
 
 Service::Service() :
@@ -120,7 +119,9 @@ void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
         virtual void invoke()
         {
 #ifdef DEBUG
+            s_locker.lock();
             s_fibers.remove(&m_fb->m_link);
+            s_locker.unlock();
 #endif
 
             m_fb->m_joins.set();
@@ -178,7 +179,9 @@ Fiber *Service::Create(fiber_func func, void *data, int32_t stacksize)
     fb->resume();
 
 #ifdef DEBUG
+    s_locker.lock();
     s_fibers.putTail(&fb->m_link);
+    s_locker.unlock();
 #endif
 
     return fb;
