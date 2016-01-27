@@ -60,19 +60,18 @@ Service *Service::current()
     return (Service*)thread_;
 }
 
-Service::Service(Service* master) :
-    m_master(master), m_main(this, NULL), m_running(&m_main),
-    m_cb(NULL), m_resume(master->m_resume)
+Service::Service() :
+    m_master(s_service), m_main(this, NULL), m_running(&m_main),
+    m_cb(NULL), m_resume(s_service->m_resume)
 {
     m_main.set_name("main");
     m_main.Ref();
 }
 
 Service::Service(int32_t workers) :
-    m_master(this), m_workers(workers - 1),
-    m_main(this, NULL), m_running(&m_main), m_cb(NULL)
+    m_master(this), m_main(this, NULL), m_running(&m_main), m_cb(NULL)
 {
-    m_resume = new ResumeQueue();
+    m_resume = new ResumeQueue(workers);
 
     m_main.set_name("main");
     m_main.Ref();
