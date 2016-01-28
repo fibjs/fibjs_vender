@@ -47,14 +47,14 @@ uint32_t BytecodeArrayIterator::GetRawOperand(int operand_index,
       bytecode_array()->GetFirstBytecodeAddress() + bytecode_offset_ +
       Bytecodes::GetOperandOffset(current_bytecode(), operand_index);
   switch (Bytecodes::SizeOfOperand(operand_type)) {
-    default:
-    case OperandSize::kNone:
-      UNREACHABLE();
     case OperandSize::kByte:
       return static_cast<uint32_t>(*operand_start);
     case OperandSize::kShort:
       return ReadUnalignedUInt16(operand_start);
+    case OperandSize::kNone:
+      UNREACHABLE();
   }
+  return 0;
 }
 
 
@@ -67,8 +67,8 @@ int8_t BytecodeArrayIterator::GetImmediateOperand(int operand_index) const {
 int BytecodeArrayIterator::GetCountOperand(int operand_index) const {
   OperandSize size =
       Bytecodes::GetOperandSize(current_bytecode(), operand_index);
-  OperandType type = (size == OperandSize::kByte) ? OperandType::kCount8
-                                                  : OperandType::kCount16;
+  OperandType type = (size == OperandSize::kByte) ? OperandType::kRegCount8
+                                                  : OperandType::kRegCount16;
   uint32_t operand = GetRawOperand(operand_index, type);
   return static_cast<int>(operand);
 }
@@ -87,12 +87,17 @@ int BytecodeArrayIterator::GetIndexOperand(int operand_index) const {
 Register BytecodeArrayIterator::GetRegisterOperand(int operand_index) const {
   OperandType operand_type =
       Bytecodes::GetOperandType(current_bytecode(), operand_index);
-  DCHECK(operand_type == OperandType::kReg8 ||
-         operand_type == OperandType::kRegPair8 ||
-         operand_type == OperandType::kMaybeReg8 ||
-         operand_type == OperandType::kReg16);
+  DCHECK(Bytecodes::IsRegisterOperandType(operand_type));
   uint32_t operand = GetRawOperand(operand_index, operand_type);
-  return Register::FromOperand(operand);
+  switch (Bytecodes::GetOperandSize(current_bytecode(), operand_index)) {
+    case OperandSize::kByte:
+      return Register::FromOperand(static_cast<uint8_t>(operand));
+    case OperandSize::kShort:
+      return Register::FromWideOperand(static_cast<uint16_t>(operand));
+    case OperandSize::kNone:
+      UNREACHABLE();
+  }
+  return Register();
 }
 
 

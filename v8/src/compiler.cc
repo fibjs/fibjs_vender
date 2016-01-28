@@ -110,8 +110,8 @@ bool CompilationInfo::has_scope() const {
 
 
 CompilationInfo::CompilationInfo(ParseInfo* parse_info)
-    : CompilationInfo(parse_info, nullptr, nullptr, BASE, parse_info->isolate(),
-                      parse_info->zone()) {
+    : CompilationInfo(parse_info, nullptr, Code::ComputeFlags(Code::FUNCTION),
+                      BASE, parse_info->isolate(), parse_info->zone()) {
   // Compiling for the snapshot typically results in different code than
   // compiling later on. This means that code recompiled with deoptimization
   // support won't be "equivalent" (as defined by SharedFunctionInfo::
@@ -138,23 +138,17 @@ CompilationInfo::CompilationInfo(ParseInfo* parse_info)
 }
 
 
-CompilationInfo::CompilationInfo(CodeStub* stub, Isolate* isolate, Zone* zone)
-    : CompilationInfo(nullptr, stub, CodeStub::MajorName(stub->MajorKey()),
-                      STUB, isolate, zone) {}
-
 CompilationInfo::CompilationInfo(const char* debug_name, Isolate* isolate,
-                                 Zone* zone)
-    : CompilationInfo(nullptr, nullptr, debug_name, STUB, isolate, zone) {
-  set_output_code_kind(Code::STUB);
-}
+                                 Zone* zone, Code::Flags code_flags)
+    : CompilationInfo(nullptr, debug_name, code_flags, STUB, isolate, zone) {}
 
-CompilationInfo::CompilationInfo(ParseInfo* parse_info, CodeStub* code_stub,
-                                 const char* debug_name, Mode mode,
+CompilationInfo::CompilationInfo(ParseInfo* parse_info, const char* debug_name,
+                                 Code::Flags code_flags, Mode mode,
                                  Isolate* isolate, Zone* zone)
     : parse_info_(parse_info),
       isolate_(isolate),
       flags_(0),
-      code_stub_(code_stub),
+      code_flags_(code_flags),
       mode_(mode),
       osr_ast_id_(BailoutId::None()),
       zone_(zone),
@@ -168,19 +162,7 @@ CompilationInfo::CompilationInfo(ParseInfo* parse_info, CodeStub* code_stub,
       parameter_count_(0),
       optimization_id_(-1),
       osr_expr_stack_height_(0),
-      debug_name_(debug_name) {
-  // Parameter count is number of stack parameters.
-  if (code_stub_ != NULL) {
-    CodeStubDescriptor descriptor(code_stub_);
-    parameter_count_ = descriptor.GetStackParameterCount();
-    if (descriptor.function_mode() == NOT_JS_FUNCTION_STUB_MODE) {
-      parameter_count_--;
-    }
-    set_output_code_kind(code_stub->GetCodeKind());
-  } else {
-    set_output_code_kind(Code::FUNCTION);
-  }
-}
+      debug_name_(debug_name) {}
 
 
 CompilationInfo::~CompilationInfo() {
@@ -758,29 +740,9 @@ static bool CompileUnoptimizedCode(CompilationInfo* info) {
 }
 
 
-// TODO(rmcilroy): Remove this temporary work-around when ignition supports
-// catch and eval.
-static bool IgnitionShouldFallbackToFullCodeGen(Scope* scope) {
-  if (scope->is_eval_scope() || scope->is_catch_scope() ||
-      scope->calls_eval()) {
-    return true;
-  }
-  for (auto inner_scope : *scope->inner_scopes()) {
-    if (IgnitionShouldFallbackToFullCodeGen(inner_scope)) return true;
-  }
-  return false;
-}
-
-
 static bool UseIgnition(CompilationInfo* info) {
   // Cannot use Ignition when the {function_data} is already used.
   if (info->has_shared_info() && info->shared_info()->HasBuiltinFunctionId()) {
-    return false;
-  }
-
-  // Checks whether the scope chain is supported.
-  if (FLAG_ignition_fallback_on_eval_and_catch &&
-      IgnitionShouldFallbackToFullCodeGen(info->scope())) {
     return false;
   }
 
@@ -1056,9 +1018,8 @@ MaybeHandle<Code> Compiler::GetLazyCode(Handle<JSFunction> function) {
 
   if (FLAG_always_opt) {
     Handle<Code> opt_code;
-    if (Compiler::GetOptimizedCode(
-            function, result,
-            Compiler::NOT_CONCURRENT).ToHandle(&opt_code)) {
+    if (Compiler::GetOptimizedCode(function, Compiler::NOT_CONCURRENT)
+            .ToHandle(&opt_code)) {
       result = opt_code;
     }
   }
@@ -1690,9 +1651,39 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
   return existing;
 }
 
+Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfoForNative(
+    v8::Extension* extension, Handle<String> name) {
+  Isolate* isolate = name->GetIsolate();
+  v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
+
+  // Compute the function template for the native function.
+  v8::Local<v8::FunctionTemplate> fun_template =
+      extension->GetNativeFunctionTemplate(v8_isolate,
+                                           v8::Utils::ToLocal(name));
+  DCHECK(!fun_template.IsEmpty());
+
+  // Instantiate the function and create a shared function info from it.
+  Handle<JSFunction> fun = Handle<JSFunction>::cast(Utils::OpenHandle(
+      *fun_template->GetFunction(v8_isolate->GetCurrentContext())
+           .ToLocalChecked()));
+  const int literals = fun->NumberOfLiterals();
+  Handle<Code> code = Handle<Code>(fun->shared()->code());
+  Handle<Code> construct_stub = Handle<Code>(fun->shared()->construct_stub());
+  Handle<SharedFunctionInfo> shared = isolate->factory()->NewSharedFunctionInfo(
+      name, literals, FunctionKind::kNormalFunction, code,
+      Handle<ScopeInfo>(fun->shared()->scope_info()),
+      Handle<TypeFeedbackVector>(fun->shared()->feedback_vector()));
+  shared->set_construct_stub(*construct_stub);
+
+  // Copy the function data to the shared function info.
+  shared->set_function_data(fun->shared()->function_data());
+  int parameters = fun->shared()->internal_formal_parameter_count();
+  shared->set_internal_formal_parameter_count(parameters);
+
+  return shared;
+}
 
 MaybeHandle<Code> Compiler::GetOptimizedCode(Handle<JSFunction> function,
-                                             Handle<Code> current_code,
                                              ConcurrencyMode mode,
                                              BailoutId osr_ast_id,
                                              JavaScriptFrame* osr_frame) {
@@ -1716,6 +1707,7 @@ MaybeHandle<Code> Compiler::GetOptimizedCode(Handle<JSFunction> function,
 
   DCHECK(AllowCompilation::IsAllowed(isolate));
 
+  Handle<Code> current_code(shared->code());
   if (!shared->is_compiled() ||
       shared->scope_info() == ScopeInfo::Empty(isolate)) {
     // The function was never compiled. Compile it unoptimized first.

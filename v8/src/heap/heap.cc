@@ -77,7 +77,6 @@ Heap::Heap()
       reserved_semispace_size_(8 * (kPointerSize / 4) * MB),
       max_semi_space_size_(8 * (kPointerSize / 4) * MB),
       initial_semispace_size_(Page::kPageSize),
-      target_semispace_size_(Page::kPageSize),
       max_old_generation_size_(700ul * (kPointerSize / 4) * MB),
       initial_old_generation_size_(max_old_generation_size_ /
                                    kInitalOldGenerationLimitFactor),
@@ -437,9 +436,9 @@ void Heap::GarbageCollectionPrologue() {
   }
 
   // Reset GC statistics.
-  promoted_objects_size_.SetValue(0);
-  previous_semi_space_copied_object_size_ = semi_space_copied_object_size();
-  semi_space_copied_object_size_.SetValue(0);
+  promoted_objects_size_ = 0;
+  previous_semi_space_copied_object_size_ = semi_space_copied_object_size_;
+  semi_space_copied_object_size_ = 0;
   nodes_died_in_new_space_ = 0;
   nodes_copied_in_new_space_ = 0;
   nodes_promoted_ = 0;
@@ -519,17 +518,19 @@ void Heap::MergeAllocationSitePretenuringFeedback(
     if (map_word.IsForwardingAddress()) {
       site = AllocationSite::cast(map_word.ToForwardingAddress());
     }
-    DCHECK(site->IsAllocationSite());
+
+    // We have not validated the allocation site yet, since we have not
+    // dereferenced the site during collecting information.
+    // This is an inlined check of AllocationMemento::IsValid.
+    if (!site->IsAllocationSite() || site->IsZombie()) continue;
+
     int value =
         static_cast<int>(reinterpret_cast<intptr_t>(local_entry->value));
     DCHECK_GT(value, 0);
 
-    {
-      // TODO(mlippautz): For parallel processing we need synchronization here.
-      if (site->IncrementMementoFoundCount(value)) {
-        global_pretenuring_feedback_->LookupOrInsert(
-            site, static_cast<uint32_t>(bit_cast<uintptr_t>(site)));
-      }
+    if (site->IncrementMementoFoundCount(value)) {
+      global_pretenuring_feedback_->LookupOrInsert(site,
+                                                   ObjectHash(site->address()));
     }
   }
 }
@@ -567,22 +568,24 @@ void Heap::ProcessPretenuringFeedback() {
     bool maximum_size_scavenge = MaximumSizeScavenge();
     for (HashMap::Entry* e = global_pretenuring_feedback_->Start();
          e != nullptr; e = global_pretenuring_feedback_->Next(e)) {
+      allocation_sites++;
       site = reinterpret_cast<AllocationSite*>(e->key);
       int found_count = site->memento_found_count();
-      // The fact that we have an entry in the storage means that we've found
-      // the site at least once.
-      DCHECK_GT(found_count, 0);
-      DCHECK(site->IsAllocationSite());
-      allocation_sites++;
-      active_allocation_sites++;
-      allocation_mementos_found += found_count;
-      if (site->DigestPretenuringFeedback(maximum_size_scavenge)) {
-        trigger_deoptimization = true;
-      }
-      if (site->GetPretenureMode() == TENURED) {
-        tenure_decisions++;
-      } else {
-        dont_tenure_decisions++;
+      // An entry in the storage does not imply that the count is > 0 because
+      // allocation sites might have been reset due to too many objects dying
+      // in old space.
+      if (found_count > 0) {
+        DCHECK(site->IsAllocationSite());
+        active_allocation_sites++;
+        allocation_mementos_found += found_count;
+        if (site->DigestPretenuringFeedback(maximum_size_scavenge)) {
+          trigger_deoptimization = true;
+        }
+        if (site->GetPretenureMode() == TENURED) {
+          tenure_decisions++;
+        } else {
+          dont_tenure_decisions++;
+        }
       }
     }
 
@@ -1234,19 +1237,19 @@ void Heap::ClearNormalizedMapCaches() {
 void Heap::UpdateSurvivalStatistics(int start_new_space_size) {
   if (start_new_space_size == 0) return;
 
-  promotion_ratio_ = (static_cast<double>(promoted_objects_size()) /
+  promotion_ratio_ = (static_cast<double>(promoted_objects_size_) /
                       static_cast<double>(start_new_space_size) * 100);
 
   if (previous_semi_space_copied_object_size_ > 0) {
     promotion_rate_ =
-        (static_cast<double>(promoted_objects_size()) /
+        (static_cast<double>(promoted_objects_size_) /
          static_cast<double>(previous_semi_space_copied_object_size_) * 100);
   } else {
     promotion_rate_ = 0;
   }
 
   semi_space_copied_rate_ =
-      (static_cast<double>(semi_space_copied_object_size()) /
+      (static_cast<double>(semi_space_copied_object_size_) /
        static_cast<double>(start_new_space_size) * 100);
 
   double survival_rate = promotion_ratio_ + semi_space_copied_rate_;
@@ -1309,7 +1312,7 @@ bool Heap::PerformGarbageCollection(
       // This should be updated before PostGarbageCollectionProcessing, which
       // can cause another GC. Take into account the objects promoted during GC.
       old_generation_allocation_counter_ +=
-          static_cast<size_t>(promoted_objects_size());
+          static_cast<size_t>(promoted_objects_size_);
       old_generation_size_at_last_gc_ = PromotedSpaceSizeOfObjects();
     } else {
       Scavenge();
@@ -1513,18 +1516,18 @@ static void VerifyNonPointerSpacePointers(Heap* heap) {
 void Heap::CheckNewSpaceExpansionCriteria() {
   if (FLAG_experimental_new_space_growth_heuristic) {
     if (new_space_.TotalCapacity() < new_space_.MaximumCapacity() &&
-        survived_last_scavenge() * 100 / new_space_.TotalCapacity() >= 10) {
+        survived_last_scavenge_ * 100 / new_space_.TotalCapacity() >= 10) {
       // Grow the size of new space if there is room to grow, and more than 10%
       // have survived the last scavenge.
       new_space_.Grow();
-      survived_since_last_expansion_.SetValue(0);
+      survived_since_last_expansion_ = 0;
     }
   } else if (new_space_.TotalCapacity() < new_space_.MaximumCapacity() &&
-             survived_since_last_expansion() > new_space_.TotalCapacity()) {
+             survived_since_last_expansion_ > new_space_.TotalCapacity()) {
     // Grow the size of new space if there is room to grow, and enough data
     // has survived scavenge since the last expansion.
     new_space_.Grow();
-    survived_since_last_expansion_.SetValue(0);
+    survived_since_last_expansion_ = 0;
   }
 }
 
@@ -1761,8 +1764,8 @@ void Heap::Scavenge() {
   array_buffer_tracker()->FreeDead(true);
 
   // Update how much has survived scavenge.
-  IncrementYoungSurvivorsCounter(PromotedSpaceSizeOfObjects() -
-                                 survived_watermark + new_space_.Size());
+  IncrementYoungSurvivorsCounter(static_cast<int>(
+      (PromotedSpaceSizeOfObjects() - survived_watermark) + new_space_.Size()));
 
   LOG(isolate_, ResourceEvent("scavenge", "end"));
 
@@ -3056,6 +3059,8 @@ AllocationResult Heap::AllocateBytecodeArray(int length,
   instance->set_frame_size(frame_size);
   instance->set_parameter_count(parameter_count);
   instance->set_constant_pool(constant_pool);
+  instance->set_handler_table(empty_fixed_array());
+  instance->set_source_position_table(empty_fixed_array());
   CopyBytes(instance->GetFirstBytecodeAddress(), raw_bytecodes, length);
 
   return result;
@@ -3098,7 +3103,7 @@ bool Heap::CanMoveObjectStart(HeapObject* object) {
   // (3) the page was already concurrently swept. This case is an optimization
   // for concurrent sweeping. The WasSwept predicate for concurrently swept
   // pages is set after sweeping all pages.
-  return !InOldSpace(address) || page->WasSwept() || page->SweepingCompleted();
+  return !InOldSpace(address) || page->SweepingDone();
 }
 
 
@@ -4745,31 +4750,6 @@ bool Heap::ConfigureHeap(int max_semi_space_size, int max_old_space_size,
   }
 
   initial_semispace_size_ = Min(initial_semispace_size_, max_semi_space_size_);
-
-  if (FLAG_target_semi_space_size > 0) {
-    int target_semispace_size = FLAG_target_semi_space_size * MB;
-    if (target_semispace_size < initial_semispace_size_) {
-      target_semispace_size_ = initial_semispace_size_;
-      if (FLAG_trace_gc) {
-        PrintIsolate(isolate_,
-                     "Target semi-space size cannot be less than the minimum "
-                     "semi-space size of %d MB\n",
-                     initial_semispace_size_ / MB);
-      }
-    } else if (target_semispace_size > max_semi_space_size_) {
-      target_semispace_size_ = max_semi_space_size_;
-      if (FLAG_trace_gc) {
-        PrintIsolate(isolate_,
-                     "Target semi-space size cannot be less than the maximum "
-                     "semi-space size of %d MB\n",
-                     max_semi_space_size_ / MB);
-      }
-    } else {
-      target_semispace_size_ = ROUND_UP(target_semispace_size, Page::kPageSize);
-    }
-  }
-
-  target_semispace_size_ = Max(initial_semispace_size_, target_semispace_size_);
 
   if (FLAG_semi_space_growth_factor < 2) {
     FLAG_semi_space_growth_factor = 2;

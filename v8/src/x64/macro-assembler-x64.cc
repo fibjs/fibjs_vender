@@ -593,9 +593,9 @@ void MacroAssembler::Abort(BailoutReason reason) {
     // We don't actually want to generate a pile of code for this, so just
     // claim there is a stack frame, without generating one.
     FrameScope scope(this, StackFrame::NONE);
-    CallRuntime(Runtime::kAbort, 1);
+    CallRuntime(Runtime::kAbort);
   } else {
-    CallRuntime(Runtime::kAbort, 1);
+    CallRuntime(Runtime::kAbort);
   }
   // Control will not return here.
   int3();
@@ -691,18 +691,6 @@ void MacroAssembler::JumpToExternalReference(const ExternalReference& ext) {
   LoadAddress(rbx, ext);
   CEntryStub ces(isolate(), 1);
   jmp(ces.GetCode(), RelocInfo::CODE_TARGET);
-}
-
-
-void MacroAssembler::InvokeBuiltin(int native_context_index, InvokeFlag flag,
-                                   const CallWrapper& call_wrapper) {
-  // You can't call a builtin without a valid frame.
-  DCHECK(flag == JUMP_FUNCTION || has_frame());
-
-  // Fake a parameter count to avoid emitting code to do the check.
-  ParameterCount expected(0);
-  LoadNativeContextSlot(native_context_index, rdi);
-  InvokeFunctionCode(rdi, no_reg, expected, expected, flag, call_wrapper);
 }
 
 
@@ -4216,7 +4204,7 @@ void MacroAssembler::FloodFunctionIfStepping(Register fun, Register new_target,
     }
     Push(fun);
     Push(fun);
-    CallRuntime(Runtime::kDebugPrepareStepInIfStepping, 1);
+    CallRuntime(Runtime::kDebugPrepareStepInIfStepping);
     Pop(fun);
     if (new_target.is_valid()) {
       Pop(new_target);
@@ -5088,7 +5076,7 @@ void MacroAssembler::CopyBytes(Register destination,
     incp(source);
     incp(destination);
     decl(length);
-    j(not_zero, &short_loop);
+    j(not_zero, &short_loop, Label::kNear);
   }
 
   bind(&done);
@@ -5099,13 +5087,13 @@ void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
                                                 Register end_address,
                                                 Register filler) {
   Label loop, entry;
-  jmp(&entry);
+  jmp(&entry, Label::kNear);
   bind(&loop);
   movp(Operand(current_address, 0), filler);
   addp(current_address, Immediate(kPointerSize));
   bind(&entry);
   cmpp(current_address, end_address);
-  j(below, &loop);
+  j(below, &loop, Label::kNear);
 }
 
 
@@ -5411,7 +5399,7 @@ void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
 }
 
 
-void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
+void MacroAssembler::CheckEnumCache(Label* call_runtime) {
   Label next, start;
   Register empty_fixed_array_value = r8;
   LoadRoot(empty_fixed_array_value, Heap::kEmptyFixedArrayRootIndex);
@@ -5452,9 +5440,10 @@ void MacroAssembler::CheckEnumCache(Register null_value, Label* call_runtime) {
 
   bind(&no_elements);
   movp(rcx, FieldOperand(rbx, Map::kPrototypeOffset));
-  cmpp(rcx, null_value);
+  CompareRoot(rcx, Heap::kNullValueRootIndex);
   j(not_equal, &next);
 }
+
 
 void MacroAssembler::TestJSArrayForAllocationMemento(
     Register receiver_reg,

@@ -318,6 +318,9 @@
     <ClInclude Include="src\base\atomicops_internals_ppc_gcc.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
+    <ClInclude Include="src\base\atomicops_internals_s390_gcc.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
     <ClInclude Include="src\base\atomicops_internals_tsan.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
@@ -1041,6 +1044,9 @@
     <ClInclude Include="src\hashmap.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap-symbols.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\array-buffer-tracker.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1185,7 +1191,13 @@
     <ClInclude Include="src\interpreter\control-flow-builders.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\handler-table-builder.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\interpreter.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\register-translator.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\isolate-inl.h">
@@ -1368,6 +1380,9 @@
     <ClInclude Include="src\profiler\sampler.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\profiler\sampling-heap-profiler.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\profiler\strings-storage.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
@@ -1546,6 +1561,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\unicode.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\utils.h">
@@ -2609,7 +2627,13 @@
     <ClCompile Include="src\interpreter\control-flow-builders.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\handler-table-builder.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\interpreter.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\register-translator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\isolate.cc">
@@ -2745,6 +2769,9 @@
       <Filter>Source Files\profiler</Filter>
     </ClCompile>
     <ClCompile Include="src\profiler\sampler.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\sampling-heap-profiler.cc">
       <Filter>Source Files\profiler</Filter>
     </ClCompile>
     <ClCompile Include="src\profiler\strings-storage.cc">

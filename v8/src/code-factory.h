@@ -43,10 +43,12 @@ class CodeFactory final {
       Isolate* isolate, LanguageMode language_mode,
       InlineCacheState initialization_state);
   static Callable CallIC(Isolate* isolate, int argc,
-                         ConvertReceiverMode mode = ConvertReceiverMode::kAny);
+                         ConvertReceiverMode mode = ConvertReceiverMode::kAny,
+                         TailCallMode tail_call_mode = TailCallMode::kDisallow);
   static Callable CallICInOptimizedCode(
       Isolate* isolate, int argc,
-      ConvertReceiverMode mode = ConvertReceiverMode::kAny);
+      ConvertReceiverMode mode = ConvertReceiverMode::kAny,
+      TailCallMode tail_call_mode = TailCallMode::kDisallow);
   static Callable StoreIC(Isolate* isolate, LanguageMode mode);
   static Callable StoreICInOptimizedCode(Isolate* isolate, LanguageMode mode,
                                          InlineCacheState initialization_state);
@@ -70,6 +72,7 @@ class CodeFactory final {
 
   static Callable ToNumber(Isolate* isolate);
   static Callable ToString(Isolate* isolate);
+  static Callable ToName(Isolate* isolate);
   static Callable ToLength(Isolate* isolate);
   static Callable ToObject(Isolate* isolate);
   static Callable NumberToString(Isolate* isolate);

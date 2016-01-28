@@ -864,9 +864,9 @@ class ForInStatement final : public ForEachStatement {
 
   static int num_ids() { return parent_num_ids() + 6; }
   BailoutId BodyId() const { return BailoutId(local_id(0)); }
-  BailoutId PrepareId() const { return BailoutId(local_id(1)); }
-  BailoutId EnumId() const { return BailoutId(local_id(2)); }
-  BailoutId ToObjectId() const { return BailoutId(local_id(3)); }
+  BailoutId EnumId() const { return BailoutId(local_id(1)); }
+  BailoutId ToObjectId() const { return BailoutId(local_id(2)); }
+  BailoutId PrepareId() const { return BailoutId(local_id(3)); }
   BailoutId FilterId() const { return BailoutId(local_id(4)); }
   BailoutId AssignmentId() const { return BailoutId(local_id(5)); }
   BailoutId ContinueId() const override { return EntryId(); }
@@ -1517,6 +1517,9 @@ class ObjectLiteral final : public MaterializedLiteral {
   bool may_store_doubles() const { return may_store_doubles_; }
   bool has_function() const { return has_function_; }
   bool has_elements() const { return has_elements_; }
+  bool has_shallow_properties() const {
+    return depth() == 1 && !has_elements() && !may_store_doubles();
+  }
 
   // Decide if a property should be in the object boilerplate.
   static bool IsBoilerplateProperty(Property* property);
@@ -1533,7 +1536,7 @@ class ObjectLiteral final : public MaterializedLiteral {
   int ComputeFlags(bool disable_mementos = false) const {
     int flags = fast_elements() ? kFastElements : kNoFlags;
     flags |= has_function() ? kHasFunction : kNoFlags;
-    if (depth() == 1 && !has_elements() && !may_store_doubles()) {
+    if (has_shallow_properties()) {
       flags |= kShallowProperties;
     }
     if (disable_mementos) {
@@ -1995,7 +1998,10 @@ class Call final : public Expression {
     bit_field_ = IsUninitializedField::update(bit_field_, b);
   }
 
-  bool is_tail() const { return IsTailField::decode(bit_field_); }
+  TailCallMode tail_call_mode() const {
+    return IsTailField::decode(bit_field_) ? TailCallMode::kAllow
+                                           : TailCallMode::kDisallow;
+  }
   void MarkTail() override {
     bit_field_ = IsTailField::update(bit_field_, true);
   }

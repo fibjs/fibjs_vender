@@ -143,14 +143,6 @@ namespace internal {
 // bitsets. Bit 0 is reserved for tagging. Class is a heap pointer to the
 // respective map. Only structured types require allocation.
 // Note that the bitset representation is closed under both Union and Intersect.
-//
-// There are two type representations, using different allocation:
-//
-// - class Type (zone-allocated, for compiler and concurrent compilation)
-// - class HeapType (heap-allocated, for persistent types)
-//
-// Both provide the same API, and the Convert method can be used to interconvert
-// them. For zone types, no query method touches the heap, only constructors do.
 
 
 // -----------------------------------------------------------------------------
@@ -332,6 +324,7 @@ class TypeImpl : public Config::Base {
   class ContextType;
   class ArrayType;
   class FunctionType;
+  class TupleType;
 
   typedef typename Config::template Handle<TypeImpl>::type TypeHandle;
   typedef typename Config::template Handle<ClassType>::type ClassHandle;
@@ -341,6 +334,7 @@ class TypeImpl : public Config::Base {
   typedef typename Config::template Handle<ArrayType>::type ArrayHandle;
   typedef typename Config::template Handle<FunctionType>::type FunctionHandle;
   typedef typename Config::template Handle<UnionType>::type UnionHandle;
+  typedef typename Config::template Handle<TupleType>::type TupleHandle;
   typedef typename Config::Region Region;
 
   // Constructors.
@@ -424,6 +418,14 @@ class TypeImpl : public Config::Base {
     }
     return function;
   }
+  static TypeHandle Tuple(TypeHandle first, TypeHandle second, TypeHandle third,
+                          Region* region) {
+    TupleHandle tuple = TupleType::New(3, region);
+    tuple->InitElement(0, first);
+    tuple->InitElement(1, second);
+    tuple->InitElement(2, third);
+    return tuple;
+  }
 
 #define CONSTRUCT_SIMD_TYPE(NAME, Name, name, lane_count, lane_type) \
   static TypeHandle Name(Isolate* isolate, Region* region);
@@ -501,6 +503,7 @@ class TypeImpl : public Config::Base {
   bool IsFunction() {
     return Config::is_struct(this, StructuralType::kFunctionTag);
   }
+  bool IsTuple() { return Config::is_struct(this, StructuralType::kTupleTag); }
 
   ClassType* AsClass() { return ClassType::cast(this); }
   ConstantType* AsConstant() { return ConstantType::cast(this); }
@@ -508,6 +511,7 @@ class TypeImpl : public Config::Base {
   ContextType* AsContext() { return ContextType::cast(this); }
   ArrayType* AsArray() { return ArrayType::cast(this); }
   FunctionType* AsFunction() { return FunctionType::cast(this); }
+  TupleType* AsTuple() { return TupleType::cast(this); }
 
   // Minimum and maximum of a numeric type.
   // These functions do not distinguish between -0 and +0.  If the type equals
@@ -543,10 +547,6 @@ class TypeImpl : public Config::Base {
   // Casting and conversion.
 
   static inline TypeImpl* cast(typename Config::Base* object);
-
-  template<class OtherTypeImpl>
-  static TypeHandle Convert(
-      typename OtherTypeImpl::TypeHandle type, Region* region);
 
   // Printing.
 
@@ -724,6 +724,7 @@ class TypeImpl<Config>::StructuralType : public TypeImpl<Config> {
     kContextTag,
     kArrayTag,
     kFunctionTag,
+    kTupleTag,
     kUnionTag
   };
 
@@ -967,6 +968,30 @@ class TypeImpl<Config>::FunctionType : public StructuralType {
 
 
 // -----------------------------------------------------------------------------
+// Tuple types.
+
+template <class Config>
+class TypeImpl<Config>::TupleType : public StructuralType {
+ public:
+  int Arity() { return this->Length(); }
+  TypeHandle Element(int i) { return this->Get(i); }
+
+  void InitElement(int i, TypeHandle type) { this->Set(i, type); }
+
+  static TupleHandle New(int length, Region* region) {
+    TupleHandle type = Config::template cast<TupleType>(
+        StructuralType::New(StructuralType::kTupleTag, length, region));
+    return type;
+  }
+
+  static TupleType* cast(TypeImpl* type) {
+    DCHECK(type->IsTuple());
+    return static_cast<TupleType*>(type);
+  }
+};
+
+
+// -----------------------------------------------------------------------------
 // Type iterators.
 
 template<class Config> template<class T>
@@ -1053,70 +1078,6 @@ struct ZoneTypeConfig {
 
 typedef TypeImpl<ZoneTypeConfig> Type;
 
-
-// -----------------------------------------------------------------------------
-// Heap-allocated types; either smis for bitsets, maps for classes, boxes for
-// constants, or fixed arrays for unions.
-
-struct HeapTypeConfig {
-  typedef TypeImpl<HeapTypeConfig> Type;
-  typedef i::Object Base;
-  typedef i::FixedArray Struct;
-  typedef i::FixedArray Range;
-  typedef i::Isolate Region;
-  template<class T> struct Handle { typedef i::Handle<T> type; };
-
-  static const int kRangeStructTag = 0xffff;
-
-  template<class T> static inline i::Handle<T> null_handle() {
-    return i::Handle<T>();
-  }
-  template<class T> static inline i::Handle<T> handle(T* type);
-  template<class T> static inline i::Handle<T> cast(i::Handle<Type> type);
-
-  static inline bool is_bitset(Type* type);
-  static inline bool is_class(Type* type);
-  static inline bool is_struct(Type* type, int tag);
-  static inline bool is_range(Type* type);
-
-  static inline Type::bitset as_bitset(Type* type);
-  static inline i::Handle<i::Map> as_class(Type* type);
-  static inline i::Handle<Struct> as_struct(Type* type);
-  static inline i::Handle<Range> as_range(Type* type);
-
-  static inline Type* from_bitset(Type::bitset);
-  static inline i::Handle<Type> from_bitset(Type::bitset, Isolate* isolate);
-  static inline i::Handle<Type> from_class(
-      i::Handle<i::Map> map, Isolate* isolate);
-  static inline i::Handle<Type> from_struct(i::Handle<Struct> structure);
-  static inline i::Handle<Type> from_range(i::Handle<Range> range);
-
-  static inline i::Handle<Struct> struct_create(
-      int tag, int length, Isolate* isolate);
-  static inline void struct_shrink(i::Handle<Struct> structure, int length);
-  static inline int struct_tag(i::Handle<Struct> structure);
-  static inline int struct_length(i::Handle<Struct> structure);
-  static inline i::Handle<Type> struct_get(i::Handle<Struct> structure, int i);
-  static inline void struct_set(
-      i::Handle<Struct> structure, int i, i::Handle<Type> type);
-  template<class V>
-  static inline i::Handle<V> struct_get_value(
-      i::Handle<Struct> structure, int i);
-  template<class V>
-  static inline void struct_set_value(
-      i::Handle<Struct> structure, int i, i::Handle<V> x);
-
-  static inline i::Handle<Range> range_create(Isolate* isolate);
-  static inline int range_get_bitset(i::Handle<Range> range);
-  static inline void range_set_bitset(i::Handle<Range> range, int value);
-  static inline double range_get_double(i::Handle<Range> range, int index);
-  static inline void range_set_double(i::Handle<Range> range, int index,
-                                      double value, Isolate* isolate);
-};
-
-typedef TypeImpl<HeapTypeConfig> HeapType;
-
-
 // -----------------------------------------------------------------------------
 // Type bounds. A simple struct to represent a pair of lower/upper types.
 
@@ -1178,6 +1139,30 @@ struct BoundsImpl {
 };
 
 typedef BoundsImpl<ZoneTypeConfig> Bounds;
+
+class FieldType : public Object {
+ public:
+  static FieldType* None();
+  static FieldType* Any();
+  static Handle<FieldType> None(Isolate* isolate);
+  static Handle<FieldType> Any(Isolate* isolate);
+  static FieldType* Class(i::Map* map);
+  static Handle<FieldType> Class(i::Handle<i::Map> map, Isolate* isolate);
+  static FieldType* cast(Object* object);
+
+  bool NowContains(Object* value);
+  bool NowContains(Handle<Object> value);
+  bool IsClass();
+  Handle<i::Map> AsClass();
+  bool IsNone() { return this == None(); }
+  bool IsAny() { return this == Any(); }
+  bool NowStable();
+  bool NowIs(FieldType* other);
+  bool NowIs(Handle<FieldType> other);
+  Type* Convert(Zone* zone);
+
+  void PrintTo(std::ostream& os);
+};
 
 }  // namespace internal
 }  // namespace v8

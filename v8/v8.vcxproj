@@ -64,6 +64,7 @@
     <ClInclude Include="src\base\atomicops_internals_mips_gcc.h" />
     <ClInclude Include="src\base\atomicops_internals_portable.h" />
     <ClInclude Include="src\base\atomicops_internals_ppc_gcc.h" />
+    <ClInclude Include="src\base\atomicops_internals_s390_gcc.h" />
     <ClInclude Include="src\base\atomicops_internals_tsan.h" />
     <ClInclude Include="src\base\atomicops_internals_x86_gcc.h" />
     <ClInclude Include="src\base\atomicops_internals_x86_msvc.h" />
@@ -305,6 +306,7 @@
     <ClInclude Include="src\handles-inl.h" />
     <ClInclude Include="src\handles.h" />
     <ClInclude Include="src\hashmap.h" />
+    <ClInclude Include="src\heap-symbols.h" />
     <ClInclude Include="src\heap\array-buffer-tracker.h" />
     <ClInclude Include="src\heap\gc-idle-time-handler.h" />
     <ClInclude Include="src\heap\gc-tracer.h" />
@@ -353,7 +355,9 @@
     <ClInclude Include="src\interpreter\bytecodes.h" />
     <ClInclude Include="src\interpreter\constant-array-builder.h" />
     <ClInclude Include="src\interpreter\control-flow-builders.h" />
+    <ClInclude Include="src\interpreter\handler-table-builder.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
+    <ClInclude Include="src\interpreter\register-translator.h" />
     <ClInclude Include="src\isolate-inl.h" />
     <ClInclude Include="src\isolate.h" />
     <ClInclude Include="src\json-stringifier.h" />
@@ -414,6 +418,7 @@
     <ClInclude Include="src\profiler\profile-generator-inl.h" />
     <ClInclude Include="src\profiler\profile-generator.h" />
     <ClInclude Include="src\profiler\sampler.h" />
+    <ClInclude Include="src\profiler\sampling-heap-profiler.h" />
     <ClInclude Include="src\profiler\strings-storage.h" />
     <ClInclude Include="src\profiler\unbound-queue-inl.h" />
     <ClInclude Include="src\profiler\unbound-queue.h" />
@@ -474,6 +479,7 @@
     <ClInclude Include="src\unicode-decoder.h" />
     <ClInclude Include="src\unicode-inl.h" />
     <ClInclude Include="src\unicode.h" />
+    <ClInclude Include="src\utils-inl.h" />
     <ClInclude Include="src\utils.h" />
     <ClInclude Include="src\v8.h" />
     <ClInclude Include="src\v8memory.h" />
@@ -829,7 +835,9 @@
     <ClCompile Include="src\interpreter\bytecodes.cc" />
     <ClCompile Include="src\interpreter\constant-array-builder.cc" />
     <ClCompile Include="src\interpreter\control-flow-builders.cc" />
+    <ClCompile Include="src\interpreter\handler-table-builder.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
+    <ClCompile Include="src\interpreter\register-translator.cc" />
     <ClCompile Include="src\isolate.cc" />
     <ClCompile Include="src\key-accumulator.cc" />
     <ClCompile Include="src\layout-descriptor.cc" />
@@ -875,6 +883,7 @@
     <ClCompile Include="src\profiler\heap-snapshot-generator.cc" />
     <ClCompile Include="src\profiler\profile-generator.cc" />
     <ClCompile Include="src\profiler\sampler.cc" />
+    <ClCompile Include="src\profiler\sampling-heap-profiler.cc" />
     <ClCompile Include="src\profiler\strings-storage.cc" />
     <ClCompile Include="src\property-descriptor.cc" />
     <ClCompile Include="src\property.cc" />

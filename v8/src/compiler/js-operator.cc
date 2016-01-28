@@ -52,23 +52,6 @@ ToBooleanHints ToBooleanHintsOf(Operator const* op) {
 }
 
 
-size_t hash_value(TailCallMode mode) {
-  return base::hash_value(static_cast<unsigned>(mode));
-}
-
-
-std::ostream& operator<<(std::ostream& os, TailCallMode mode) {
-  switch (mode) {
-    case TailCallMode::kAllow:
-      return os << "ALLOW_TAIL_CALLS";
-    case TailCallMode::kDisallow:
-      return os << "DISALLOW_TAIL_CALLS";
-  }
-  UNREACHABLE();
-  return os;
-}
-
-
 bool operator==(BinaryOperationParameters const& lhs,
                 BinaryOperationParameters const& rhs) {
   return lhs.language_mode() == rhs.language_mode() &&
@@ -746,10 +729,22 @@ const Operator* JSOperatorBuilder::CallFunction(
 }
 
 
+const Operator* JSOperatorBuilder::CallRuntime(Runtime::FunctionId id) {
+  const Runtime::Function* f = Runtime::FunctionForId(id);
+  return CallRuntime(f, f->nargs);
+}
+
+
 const Operator* JSOperatorBuilder::CallRuntime(Runtime::FunctionId id,
                                                size_t arity) {
-  CallRuntimeParameters parameters(id, arity);
-  const Runtime::Function* f = Runtime::FunctionForId(parameters.id());
+  const Runtime::Function* f = Runtime::FunctionForId(id);
+  return CallRuntime(f, arity);
+}
+
+
+const Operator* JSOperatorBuilder::CallRuntime(const Runtime::Function* f,
+                                               size_t arity) {
+  CallRuntimeParameters parameters(f->function_id, arity);
   DCHECK(f->nargs == -1 || f->nargs == static_cast<int>(parameters.arity()));
   return new (zone()) Operator1<CallRuntimeParameters>(   // --
       IrOpcode::kJSCallRuntime, Operator::kNoProperties,  // opcode

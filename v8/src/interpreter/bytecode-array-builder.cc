@@ -8,7 +8,7 @@ namespace v8 {
 namespace internal {
 namespace interpreter {
 
-class BytecodeArrayBuilder::PreviousBytecodeHelper {
+class BytecodeArrayBuilder::PreviousBytecodeHelper BASE_EMBEDDED {
  public:
   explicit PreviousBytecodeHelper(const BytecodeArrayBuilder& array_builder)
       : array_builder_(array_builder),
@@ -37,9 +37,9 @@ class BytecodeArrayBuilder::PreviousBytecodeHelper {
         Bytecodes::GetOperandOffset(bytecode, operand_index);
     OperandSize size = Bytecodes::GetOperandSize(bytecode, operand_index);
     switch (size) {
-      default:
       case OperandSize::kNone:
         UNREACHABLE();
+        break;
       case OperandSize::kByte:
         return static_cast<uint32_t>(
             array_builder_.bytecodes()->at(operand_offset));
@@ -49,6 +49,7 @@ class BytecodeArrayBuilder::PreviousBytecodeHelper {
             array_builder_.bytecodes()->at(operand_offset + 1);
         return static_cast<uint32_t>(operand);
     }
+    return 0;
   }
 
   Handle<Object> GetConstantForIndexOperand(int operand_index) const {
@@ -63,13 +64,13 @@ class BytecodeArrayBuilder::PreviousBytecodeHelper {
   DISALLOW_COPY_AND_ASSIGN(PreviousBytecodeHelper);
 };
 
-
 BytecodeArrayBuilder::BytecodeArrayBuilder(Isolate* isolate, Zone* zone)
     : isolate_(isolate),
       zone_(zone),
       bytecodes_(zone),
       bytecode_generated_(false),
       constant_array_builder_(isolate, zone),
+      handler_table_builder_(isolate, zone),
       last_block_end_(0),
       last_bytecode_start_(~0),
       exit_seen_in_block_(false),
@@ -78,8 +79,8 @@ BytecodeArrayBuilder::BytecodeArrayBuilder(Isolate* isolate, Zone* zone)
       local_register_count_(-1),
       context_register_count_(-1),
       temporary_register_count_(0),
-      free_temporaries_(zone) {}
-
+      free_temporaries_(zone),
+      register_translator_(this) {}
 
 BytecodeArrayBuilder::~BytecodeArrayBuilder() { DCHECK_EQ(0, unbound_jumps_); }
 
@@ -147,14 +148,15 @@ Handle<BytecodeArray> BytecodeArrayBuilder::ToBytecodeArray() {
   EnsureReturn();
 
   int bytecode_size = static_cast<int>(bytecodes_.size());
-  int register_count = fixed_register_count() + temporary_register_count_;
+  int register_count =
+      fixed_and_temporary_register_count() + translation_register_count();
   int frame_size = register_count * kPointerSize;
-  Factory* factory = isolate_->factory();
-  Handle<FixedArray> constant_pool =
-      constant_array_builder()->ToFixedArray(factory);
-  Handle<BytecodeArray> output =
-      factory->NewBytecodeArray(bytecode_size, &bytecodes_.front(), frame_size,
-                                parameter_count(), constant_pool);
+  Handle<FixedArray> constant_pool = constant_array_builder()->ToFixedArray();
+  Handle<FixedArray> handler_table = handler_table_builder()->ToHandlerTable();
+  Handle<BytecodeArray> output = isolate_->factory()->NewBytecodeArray(
+      bytecode_size, &bytecodes_.front(), frame_size, parameter_count(),
+      constant_pool);
+  output->set_handler_table(*handler_table);
   bytecode_generated_ = true;
   return output;
 }
@@ -165,14 +167,23 @@ void BytecodeArrayBuilder::Output(Bytecode bytecode, uint32_t(&operands)[N]) {
   // Don't output dead code.
   if (exit_seen_in_block_) return;
 
-  DCHECK_EQ(Bytecodes::NumberOfOperands(bytecode), static_cast<int>(N));
+  int operand_count = static_cast<int>(N);
+  DCHECK_EQ(Bytecodes::NumberOfOperands(bytecode), operand_count);
+
+  int register_operand_count = Bytecodes::NumberOfRegisterOperands(bytecode);
+  if (register_operand_count > 0) {
+    register_translator()->TranslateInputRegisters(bytecode, operands,
+                                                   operand_count);
+  }
+
   last_bytecode_start_ = bytecodes()->size();
   bytecodes()->push_back(Bytecodes::ToByte(bytecode));
-  for (int i = 0; i < static_cast<int>(N); i++) {
+  for (int i = 0; i < operand_count; i++) {
     DCHECK(OperandIsValid(bytecode, i, operands[i]));
     switch (Bytecodes::GetOperandSize(bytecode, i)) {
       case OperandSize::kNone:
         UNREACHABLE();
+        break;
       case OperandSize::kByte:
         bytecodes()->push_back(static_cast<uint8_t>(operands[i]));
         break;
@@ -184,6 +195,10 @@ void BytecodeArrayBuilder::Output(Bytecode bytecode, uint32_t(&operands)[N]) {
         break;
       }
     }
+  }
+
+  if (register_operand_count > 0) {
+    register_translator()->TranslateOutputRegisters();
   }
 }
 
@@ -233,7 +248,7 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::BinaryOperation(Token::Value op,
     UNIMPLEMENTED();
   }
 
-  Output(BytecodeForBinaryOperation(op), reg.ToOperand());
+  Output(BytecodeForBinaryOperation(op), reg.ToRawOperand());
   return *this;
 }
 
@@ -267,7 +282,7 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CompareOperation(
     UNIMPLEMENTED();
   }
 
-  Output(BytecodeForCompareOperation(op), reg.ToOperand());
+  Output(BytecodeForCompareOperation(op), reg.ToRawOperand());
   return *this;
 }
 
@@ -342,7 +357,7 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadBooleanConstant(bool value) {
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadAccumulatorWithRegister(
     Register reg) {
   if (!IsRegisterInAccumulator(reg)) {
-    Output(Bytecode::kLdar, reg.ToOperand());
+    Output(Bytecode::kLdar, reg.ToRawOperand());
   }
   return *this;
 }
@@ -350,15 +365,8 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadAccumulatorWithRegister(
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::StoreAccumulatorInRegister(
     Register reg) {
-  // TODO(oth): Avoid storing the accumulator in the register if the
-  // previous bytecode loaded the accumulator with the same register.
-  //
-  // TODO(oth): If the previous bytecode is a MOV into this register,
-  // the previous instruction can be removed. The logic for determining
-  // these redundant MOVs appears complex.
-  Output(Bytecode::kStar, reg.ToOperand());
   if (!IsRegisterInAccumulator(reg)) {
-    Output(Bytecode::kStar, reg.ToOperand());
+    Output(Bytecode::kStar, reg.ToRawOperand());
   }
   return *this;
 }
@@ -367,24 +375,31 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreAccumulatorInRegister(
 BytecodeArrayBuilder& BytecodeArrayBuilder::MoveRegister(Register from,
                                                          Register to) {
   DCHECK(from != to);
-  Output(Bytecode::kMov, from.ToOperand(), to.ToOperand());
-  return *this;
-}
-
-
-BytecodeArrayBuilder& BytecodeArrayBuilder::ExchangeRegisters(Register reg0,
-                                                              Register reg1) {
-  DCHECK(reg0 != reg1);
-  if (FitsInReg8Operand(reg0)) {
-    Output(Bytecode::kExchange, reg0.ToOperand(), reg1.ToWideOperand());
-  } else if (FitsInReg8Operand(reg1)) {
-    Output(Bytecode::kExchange, reg1.ToOperand(), reg0.ToWideOperand());
+  if (FitsInReg8Operand(from) && FitsInReg8Operand(to)) {
+    Output(Bytecode::kMov, from.ToRawOperand(), to.ToRawOperand());
+  } else if (FitsInReg16Operand(from) && FitsInReg16Operand(to)) {
+    Output(Bytecode::kMovWide, from.ToRawOperand(), to.ToRawOperand());
   } else {
-    Output(Bytecode::kExchangeWide, reg0.ToWideOperand(), reg1.ToWideOperand());
+    UNIMPLEMENTED();
   }
   return *this;
 }
 
+void BytecodeArrayBuilder::MoveRegisterUntranslated(Register from,
+                                                    Register to) {
+  // Move bytecodes modify the stack. Checking validity is an
+  // essential mitigation against corrupting the stack.
+  if (FitsInReg8OperandUntranslated(from)) {
+    CHECK(RegisterIsValid(from, OperandType::kReg8) &&
+          RegisterIsValid(to, OperandType::kReg16));
+  } else if (FitsInReg8OperandUntranslated(to)) {
+    CHECK(RegisterIsValid(from, OperandType::kReg16) &&
+          RegisterIsValid(to, OperandType::kReg8));
+  } else {
+    UNIMPLEMENTED();
+  }
+  Output(Bytecode::kMovWide, from.ToRawOperand(), to.ToRawOperand());
+}
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadGlobal(
     const Handle<String> name, int feedback_slot, LanguageMode language_mode,
@@ -429,10 +444,10 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadContextSlot(Register context,
                                                             int slot_index) {
   DCHECK(slot_index >= 0);
   if (FitsInIdx8Operand(slot_index)) {
-    Output(Bytecode::kLdaContextSlot, context.ToOperand(),
+    Output(Bytecode::kLdaContextSlot, context.ToRawOperand(),
            static_cast<uint8_t>(slot_index));
   } else if (FitsInIdx16Operand(slot_index)) {
-    Output(Bytecode::kLdaContextSlotWide, context.ToOperand(),
+    Output(Bytecode::kLdaContextSlotWide, context.ToRawOperand(),
            static_cast<uint16_t>(slot_index));
   } else {
     UNIMPLEMENTED();
@@ -445,10 +460,10 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreContextSlot(Register context,
                                                              int slot_index) {
   DCHECK(slot_index >= 0);
   if (FitsInIdx8Operand(slot_index)) {
-    Output(Bytecode::kStaContextSlot, context.ToOperand(),
+    Output(Bytecode::kStaContextSlot, context.ToRawOperand(),
            static_cast<uint8_t>(slot_index));
   } else if (FitsInIdx16Operand(slot_index)) {
-    Output(Bytecode::kStaContextSlotWide, context.ToOperand(),
+    Output(Bytecode::kStaContextSlotWide, context.ToRawOperand(),
            static_cast<uint16_t>(slot_index));
   } else {
     UNIMPLEMENTED();
@@ -497,11 +512,11 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadNamedProperty(
   Bytecode bytecode = BytecodeForLoadIC(language_mode);
   size_t name_index = GetConstantPoolEntry(name);
   if (FitsInIdx8Operand(name_index) && FitsInIdx8Operand(feedback_slot)) {
-    Output(bytecode, object.ToOperand(), static_cast<uint8_t>(name_index),
+    Output(bytecode, object.ToRawOperand(), static_cast<uint8_t>(name_index),
            static_cast<uint8_t>(feedback_slot));
   } else if (FitsInIdx16Operand(name_index) &&
              FitsInIdx16Operand(feedback_slot)) {
-    Output(BytecodeForWideOperands(bytecode), object.ToOperand(),
+    Output(BytecodeForWideOperands(bytecode), object.ToRawOperand(),
            static_cast<uint16_t>(name_index),
            static_cast<uint16_t>(feedback_slot));
   } else {
@@ -515,9 +530,10 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadKeyedProperty(
     Register object, int feedback_slot, LanguageMode language_mode) {
   Bytecode bytecode = BytecodeForKeyedLoadIC(language_mode);
   if (FitsInIdx8Operand(feedback_slot)) {
-    Output(bytecode, object.ToOperand(), static_cast<uint8_t>(feedback_slot));
+    Output(bytecode, object.ToRawOperand(),
+           static_cast<uint8_t>(feedback_slot));
   } else if (FitsInIdx16Operand(feedback_slot)) {
-    Output(BytecodeForWideOperands(bytecode), object.ToOperand(),
+    Output(BytecodeForWideOperands(bytecode), object.ToRawOperand(),
            static_cast<uint16_t>(feedback_slot));
   } else {
     UNIMPLEMENTED();
@@ -532,11 +548,11 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreNamedProperty(
   Bytecode bytecode = BytecodeForStoreIC(language_mode);
   size_t name_index = GetConstantPoolEntry(name);
   if (FitsInIdx8Operand(name_index) && FitsInIdx8Operand(feedback_slot)) {
-    Output(bytecode, object.ToOperand(), static_cast<uint8_t>(name_index),
+    Output(bytecode, object.ToRawOperand(), static_cast<uint8_t>(name_index),
            static_cast<uint8_t>(feedback_slot));
   } else if (FitsInIdx16Operand(name_index) &&
              FitsInIdx16Operand(feedback_slot)) {
-    Output(BytecodeForWideOperands(bytecode), object.ToOperand(),
+    Output(BytecodeForWideOperands(bytecode), object.ToRawOperand(),
            static_cast<uint16_t>(name_index),
            static_cast<uint16_t>(feedback_slot));
   } else {
@@ -551,11 +567,11 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreKeyedProperty(
     LanguageMode language_mode) {
   Bytecode bytecode = BytecodeForKeyedStoreIC(language_mode);
   if (FitsInIdx8Operand(feedback_slot)) {
-    Output(bytecode, object.ToOperand(), key.ToOperand(),
+    Output(bytecode, object.ToRawOperand(), key.ToRawOperand(),
            static_cast<uint8_t>(feedback_slot));
   } else if (FitsInIdx16Operand(feedback_slot)) {
-    Output(BytecodeForWideOperands(bytecode), object.ToOperand(),
-           key.ToOperand(), static_cast<uint16_t>(feedback_slot));
+    Output(BytecodeForWideOperands(bytecode), object.ToRawOperand(),
+           key.ToRawOperand(), static_cast<uint16_t>(feedback_slot));
   } else {
     UNIMPLEMENTED();
   }
@@ -653,13 +669,13 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CreateObjectLiteral(
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::PushContext(Register context) {
-  Output(Bytecode::kPushContext, context.ToOperand());
+  Output(Bytecode::kPushContext, context.ToRawOperand());
   return *this;
 }
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::PopContext(Register context) {
-  Output(Bytecode::kPopContext, context.ToOperand());
+  Output(Bytecode::kPopContext, context.ToRawOperand());
   return *this;
 }
 
@@ -973,6 +989,13 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Throw() {
 }
 
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::ReThrow() {
+  Output(Bytecode::kReThrow);
+  exit_seen_in_block_ = true;
+  return *this;
+}
+
+
 BytecodeArrayBuilder& BytecodeArrayBuilder::Return() {
   Output(Bytecode::kReturn);
   exit_seen_in_block_ = true;
@@ -981,32 +1004,67 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Return() {
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::ForInPrepare(
-    Register cache_type, Register cache_array, Register cache_length) {
-  Output(Bytecode::kForInPrepare, cache_type.ToOperand(),
-         cache_array.ToOperand(), cache_length.ToOperand());
+    Register cache_info_triple) {
+  if (FitsInReg8Operand(cache_info_triple)) {
+    Output(Bytecode::kForInPrepare, cache_info_triple.ToRawOperand());
+  } else if (FitsInReg16Operand(cache_info_triple)) {
+    Output(Bytecode::kForInPrepareWide, cache_info_triple.ToRawOperand());
+  } else {
+    UNIMPLEMENTED();
+  }
   return *this;
 }
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::ForInDone(Register index,
                                                       Register cache_length) {
-  Output(Bytecode::kForInDone, index.ToOperand(), cache_length.ToOperand());
+  Output(Bytecode::kForInDone, index.ToRawOperand(),
+         cache_length.ToRawOperand());
   return *this;
 }
 
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::ForInNext(Register receiver,
-                                                      Register cache_type,
-                                                      Register cache_array,
-                                                      Register index) {
-  Output(Bytecode::kForInNext, receiver.ToOperand(), cache_type.ToOperand(),
-         cache_array.ToOperand(), index.ToOperand());
+BytecodeArrayBuilder& BytecodeArrayBuilder::ForInNext(
+    Register receiver, Register index, Register cache_type_array_pair) {
+  if (FitsInReg8Operand(receiver) && FitsInReg8Operand(index) &&
+      FitsInReg8Operand(cache_type_array_pair)) {
+    Output(Bytecode::kForInNext, receiver.ToRawOperand(), index.ToRawOperand(),
+           cache_type_array_pair.ToRawOperand());
+  } else if (FitsInReg16Operand(receiver) && FitsInReg16Operand(index) &&
+             FitsInReg16Operand(cache_type_array_pair)) {
+    Output(Bytecode::kForInNextWide, receiver.ToRawOperand(),
+           index.ToRawOperand(), cache_type_array_pair.ToRawOperand());
+  } else {
+    UNIMPLEMENTED();
+  }
   return *this;
 }
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::ForInStep(Register index) {
-  Output(Bytecode::kForInStep, index.ToOperand());
+  Output(Bytecode::kForInStep, index.ToRawOperand());
+  return *this;
+}
+
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::MarkHandler(int handler_id,
+                                                        bool will_catch) {
+  handler_table_builder()->SetHandlerTarget(handler_id, bytecodes()->size());
+  handler_table_builder()->SetPrediction(handler_id, will_catch);
+  return *this;
+}
+
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::MarkTryBegin(int handler_id,
+                                                         Register context) {
+  handler_table_builder()->SetTryRegionStart(handler_id, bytecodes()->size());
+  handler_table_builder()->SetContextRegister(handler_id, context);
+  return *this;
+}
+
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::MarkTryEnd(int handler_id) {
+  handler_table_builder()->SetTryRegionEnd(handler_id, bytecodes()->size());
   return *this;
 }
 
@@ -1029,14 +1087,16 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Call(Register callable,
                                                  Register receiver,
                                                  size_t arg_count,
                                                  int feedback_slot) {
-  if (FitsInIdx8Operand(arg_count) && FitsInIdx8Operand(feedback_slot)) {
-    Output(Bytecode::kCall, callable.ToOperand(), receiver.ToOperand(),
+  if (FitsInReg8Operand(callable) && FitsInReg8Operand(receiver) &&
+      FitsInIdx8Operand(arg_count) && FitsInIdx8Operand(feedback_slot)) {
+    Output(Bytecode::kCall, callable.ToRawOperand(), receiver.ToRawOperand(),
            static_cast<uint8_t>(arg_count),
            static_cast<uint8_t>(feedback_slot));
-  } else if (FitsInIdx16Operand(arg_count) &&
+  } else if (FitsInReg16Operand(callable) && FitsInReg16Operand(receiver) &&
+             FitsInIdx16Operand(arg_count) &&
              FitsInIdx16Operand(feedback_slot)) {
-    Output(Bytecode::kCallWide, callable.ToOperand(), receiver.ToOperand(),
-           static_cast<uint16_t>(arg_count),
+    Output(Bytecode::kCallWide, callable.ToRawOperand(),
+           receiver.ToRawOperand(), static_cast<uint16_t>(arg_count),
            static_cast<uint16_t>(feedback_slot));
   } else {
     UNIMPLEMENTED();
@@ -1052,9 +1112,17 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::New(Register constructor,
     DCHECK_EQ(0u, arg_count);
     first_arg = Register(0);
   }
-  DCHECK(FitsInIdx8Operand(arg_count));
-  Output(Bytecode::kNew, constructor.ToOperand(), first_arg.ToOperand(),
-         static_cast<uint8_t>(arg_count));
+  if (FitsInReg8Operand(constructor) && FitsInReg8Operand(first_arg) &&
+      FitsInIdx8Operand(arg_count)) {
+    Output(Bytecode::kNew, constructor.ToRawOperand(), first_arg.ToRawOperand(),
+           static_cast<uint8_t>(arg_count));
+  } else if (FitsInReg16Operand(constructor) && FitsInReg16Operand(first_arg) &&
+             FitsInIdx16Operand(arg_count)) {
+    Output(Bytecode::kNewWide, constructor.ToRawOperand(),
+           first_arg.ToRawOperand(), static_cast<uint16_t>(arg_count));
+  } else {
+    UNIMPLEMENTED();
+  }
   return *this;
 }
 
@@ -1063,13 +1131,19 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CallRuntime(
     Runtime::FunctionId function_id, Register first_arg, size_t arg_count) {
   DCHECK_EQ(1, Runtime::FunctionForId(function_id)->result_size);
   DCHECK(FitsInIdx16Operand(function_id));
-  DCHECK(FitsInIdx8Operand(arg_count));
   if (!first_arg.is_valid()) {
     DCHECK_EQ(0u, arg_count);
     first_arg = Register(0);
   }
-  Output(Bytecode::kCallRuntime, static_cast<uint16_t>(function_id),
-         first_arg.ToOperand(), static_cast<uint8_t>(arg_count));
+  if (FitsInReg8Operand(first_arg) && FitsInIdx8Operand(arg_count)) {
+    Output(Bytecode::kCallRuntime, static_cast<uint16_t>(function_id),
+           first_arg.ToRawOperand(), static_cast<uint8_t>(arg_count));
+  } else if (FitsInReg16Operand(first_arg) && FitsInIdx16Operand(arg_count)) {
+    Output(Bytecode::kCallRuntimeWide, static_cast<uint16_t>(function_id),
+           first_arg.ToRawOperand(), static_cast<uint16_t>(arg_count));
+  } else {
+    UNIMPLEMENTED();
+  }
   return *this;
 }
 
@@ -1079,14 +1153,23 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CallRuntimeForPair(
     Register first_return) {
   DCHECK_EQ(2, Runtime::FunctionForId(function_id)->result_size);
   DCHECK(FitsInIdx16Operand(function_id));
-  DCHECK(FitsInIdx8Operand(arg_count));
   if (!first_arg.is_valid()) {
     DCHECK_EQ(0u, arg_count);
     first_arg = Register(0);
   }
-  Output(Bytecode::kCallRuntimeForPair, static_cast<uint16_t>(function_id),
-         first_arg.ToOperand(), static_cast<uint8_t>(arg_count),
-         first_return.ToOperand());
+  if (FitsInReg8Operand(first_arg) && FitsInIdx8Operand(arg_count) &&
+      FitsInReg8Operand(first_return)) {
+    Output(Bytecode::kCallRuntimeForPair, static_cast<uint16_t>(function_id),
+           first_arg.ToRawOperand(), static_cast<uint8_t>(arg_count),
+           first_return.ToRawOperand());
+  } else if (FitsInReg16Operand(first_arg) && FitsInIdx16Operand(arg_count) &&
+             FitsInReg16Operand(first_return)) {
+    Output(Bytecode::kCallRuntimeForPairWide,
+           static_cast<uint16_t>(function_id), first_arg.ToRawOperand(),
+           static_cast<uint16_t>(arg_count), first_return.ToRawOperand());
+  } else {
+    UNIMPLEMENTED();
+  }
   return *this;
 }
 
@@ -1095,16 +1178,22 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CallJSRuntime(int context_index,
                                                           Register receiver,
                                                           size_t arg_count) {
   DCHECK(FitsInIdx16Operand(context_index));
-  DCHECK(FitsInIdx8Operand(arg_count));
-  Output(Bytecode::kCallJSRuntime, static_cast<uint16_t>(context_index),
-         receiver.ToOperand(), static_cast<uint8_t>(arg_count));
+  if (FitsInReg8Operand(receiver) && FitsInIdx8Operand(arg_count)) {
+    Output(Bytecode::kCallJSRuntime, static_cast<uint16_t>(context_index),
+           receiver.ToRawOperand(), static_cast<uint8_t>(arg_count));
+  } else if (FitsInReg16Operand(receiver) && FitsInIdx16Operand(arg_count)) {
+    Output(Bytecode::kCallJSRuntimeWide, static_cast<uint16_t>(context_index),
+           receiver.ToRawOperand(), static_cast<uint16_t>(arg_count));
+  } else {
+    UNIMPLEMENTED();
+  }
   return *this;
 }
 
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::Delete(Register object,
                                                    LanguageMode language_mode) {
-  Output(BytecodeForDelete(language_mode), object.ToOperand());
+  Output(BytecodeForDelete(language_mode), object.ToRawOperand());
   return *this;
 }
 
@@ -1119,10 +1208,13 @@ size_t BytecodeArrayBuilder::GetConstantPoolEntry(Handle<Object> object) {
   return constant_array_builder()->Insert(object);
 }
 
+void BytecodeArrayBuilder::ForgeTemporaryRegister() {
+  temporary_register_count_++;
+}
 
 int BytecodeArrayBuilder::BorrowTemporaryRegister() {
   if (free_temporaries_.empty()) {
-    temporary_register_count_ += 1;
+    ForgeTemporaryRegister();
     return last_temporary_register().index();
   } else {
     auto pos = free_temporaries_.begin();
@@ -1141,7 +1233,7 @@ int BytecodeArrayBuilder::BorrowTemporaryRegisterNotInRange(int start_index,
     // greater than end_index.
     index = free_temporaries_.upper_bound(end_index);
     if (index == free_temporaries_.end()) {
-      temporary_register_count_ += 1;
+      ForgeTemporaryRegister();
       return last_temporary_register().index();
     }
   } else {
@@ -1173,11 +1265,33 @@ int BytecodeArrayBuilder::PrepareForConsecutiveTemporaryRegisters(
     return -1;
   }
 
+  // TODO(oth): replace use of set<> here for free_temporaries with a
+  // more efficient structure. And/or partition into two searches -
+  // one before the translation window and one after.
+
+  // A run will require at least |count| free temporaries.
+  while (free_temporaries_.size() < count) {
+    ForgeTemporaryRegister();
+    free_temporaries_.insert(last_temporary_register().index());
+  }
+
   // Search within existing temporaries for a run.
   auto start = free_temporaries_.begin();
   size_t run_length = 0;
   for (auto run_end = start; run_end != free_temporaries_.end(); run_end++) {
-    if (*run_end != *start + static_cast<int>(run_length)) {
+    int expected = *start + static_cast<int>(run_length);
+    if (*run_end != expected) {
+      start = run_end;
+      run_length = 0;
+    }
+    Register reg_start(*start);
+    Register reg_expected(expected);
+    if (RegisterTranslator::DistanceToTranslationWindow(reg_start) > 0 &&
+        RegisterTranslator::DistanceToTranslationWindow(reg_expected) <= 0) {
+      // Run straddles the lower edge of the translation window. Registers
+      // after the start of this boundary are displaced by the register
+      // translator to provide a hole for translation. Runs either side
+      // of the boundary are fine.
       start = run_end;
       run_length = 0;
     }
@@ -1194,12 +1308,34 @@ int BytecodeArrayBuilder::PrepareForConsecutiveTemporaryRegisters(
     run_length = 0;
   }
 
+  // Pad temporaries if extended run would cross translation boundary.
+  Register reg_first(*start);
+  Register reg_last(*start + static_cast<int>(count) - 1);
+  DCHECK_GT(RegisterTranslator::DistanceToTranslationWindow(reg_first),
+            RegisterTranslator::DistanceToTranslationWindow(reg_last));
+  while (RegisterTranslator::DistanceToTranslationWindow(reg_first) > 0 &&
+         RegisterTranslator::DistanceToTranslationWindow(reg_last) <= 0) {
+    ForgeTemporaryRegister();
+    free_temporaries_.insert(last_temporary_register().index());
+    start = --free_temporaries_.end();
+    reg_first = Register(*start);
+    reg_last = Register(*start + static_cast<int>(count) - 1);
+    run_length = 0;
+  }
+
   // Ensure enough registers for run.
   while (run_length++ < count) {
-    temporary_register_count_++;
+    ForgeTemporaryRegister();
     free_temporaries_.insert(last_temporary_register().index());
   }
-  return last_temporary_register().index() - static_cast<int>(count) + 1;
+
+  int run_start =
+      last_temporary_register().index() - static_cast<int>(count) + 1;
+  DCHECK(RegisterTranslator::DistanceToTranslationWindow(Register(run_start)) <=
+             0 ||
+         RegisterTranslator::DistanceToTranslationWindow(
+             Register(run_start + static_cast<int>(count) - 1)) > 0);
+  return run_start;
 }
 
 
@@ -1214,31 +1350,41 @@ bool BytecodeArrayBuilder::TemporaryRegisterIsLive(Register reg) const {
 }
 
 
-bool BytecodeArrayBuilder::RegisterIsValid(Register reg) const {
-  if (reg.is_function_context() || reg.is_function_closure() ||
-      reg.is_new_target()) {
-    return true;
-  } else if (reg.is_parameter()) {
-    int parameter_index = reg.ToParameterIndex(parameter_count_);
-    return parameter_index >= 0 && parameter_index < parameter_count_;
-  } else if (reg.index() < fixed_register_count()) {
-    return true;
-  } else {
-    return TemporaryRegisterIsLive(reg);
-  }
-}
-
-
 bool BytecodeArrayBuilder::OperandIsValid(Bytecode bytecode, int operand_index,
                                           uint32_t operand_value) const {
   OperandType operand_type = Bytecodes::GetOperandType(bytecode, operand_index);
   switch (operand_type) {
     case OperandType::kNone:
       return false;
-    case OperandType::kCount16:
+    case OperandType::kRegCount16: {
+      // Expect kRegCount16 is part of a range previous operand is a
+      // valid operand to start a range.
+      if (operand_index > 0) {
+        OperandType previous_operand_type =
+            Bytecodes::GetOperandType(bytecode, operand_index - 1);
+        return ((previous_operand_type == OperandType::kMaybeReg16 ||
+                 previous_operand_type == OperandType::kReg16) &&
+                static_cast<uint16_t>(operand_value) == operand_value);
+      } else {
+        return false;
+      }
+    }
+    case OperandType::kRegCount8: {
+      // Expect kRegCount8 is part of a range previous operand is a
+      // valid operand to start a range.
+      if (operand_index > 0) {
+        OperandType previous_operand_type =
+            Bytecodes::GetOperandType(bytecode, operand_index - 1);
+        return ((previous_operand_type == OperandType::kMaybeReg8 ||
+                 previous_operand_type == OperandType::kReg8 ||
+                 previous_operand_type == OperandType::kMaybeReg16) &&
+                static_cast<uint8_t>(operand_value) == operand_value);
+      } else {
+        return false;
+      }
+    }
     case OperandType::kIdx16:
       return static_cast<uint16_t>(operand_value) == operand_value;
-    case OperandType::kCount8:
     case OperandType::kImm8:
     case OperandType::kIdx8:
       return static_cast<uint8_t>(operand_value) == operand_value;
@@ -1248,24 +1394,81 @@ bool BytecodeArrayBuilder::OperandIsValid(Bytecode bytecode, int operand_index,
       }
     // Fall-through to kReg8 case.
     case OperandType::kReg8:
-      return RegisterIsValid(
-          Register::FromOperand(static_cast<uint8_t>(operand_value)));
-    case OperandType::kRegPair8: {
-      Register reg0 =
-          Register::FromOperand(static_cast<uint8_t>(operand_value));
+    case OperandType::kRegOut8:
+      return RegisterIsValid(Register::FromRawOperand(operand_value),
+                             operand_type);
+    case OperandType::kRegOutPair8:
+    case OperandType::kRegOutPair16:
+    case OperandType::kRegPair8:
+    case OperandType::kRegPair16: {
+      Register reg0 = Register::FromRawOperand(operand_value);
       Register reg1 = Register(reg0.index() + 1);
-      return RegisterIsValid(reg0) && RegisterIsValid(reg1);
+      return RegisterIsValid(reg0, operand_type) &&
+             RegisterIsValid(reg1, operand_type);
     }
-    case OperandType::kReg16:
-      if (bytecode != Bytecode::kExchange &&
-          bytecode != Bytecode::kExchangeWide) {
-        return false;
+    case OperandType::kRegOutTriple8:
+    case OperandType::kRegOutTriple16: {
+      Register reg0 = Register::FromRawOperand(operand_value);
+      Register reg1 = Register(reg0.index() + 1);
+      Register reg2 = Register(reg0.index() + 2);
+      return RegisterIsValid(reg0, operand_type) &&
+             RegisterIsValid(reg1, operand_type) &&
+             RegisterIsValid(reg2, operand_type);
+    }
+    case OperandType::kMaybeReg16:
+      if (operand_value == 0) {
+        return true;
       }
-      return RegisterIsValid(
-          Register::FromWideOperand(static_cast<uint16_t>(operand_value)));
+    // Fall-through to kReg16 case.
+    case OperandType::kReg16:
+    case OperandType::kRegOut16: {
+      Register reg = Register::FromRawOperand(operand_value);
+      return RegisterIsValid(reg, operand_type);
+    }
   }
   UNREACHABLE();
   return false;
+}
+
+
+bool BytecodeArrayBuilder::RegisterIsValid(Register reg,
+                                           OperandType reg_type) const {
+  if (!reg.is_valid()) {
+    return false;
+  }
+
+  switch (Bytecodes::SizeOfOperand(reg_type)) {
+    case OperandSize::kByte:
+      if (!FitsInReg8OperandUntranslated(reg)) {
+        return false;
+      }
+      break;
+    case OperandSize::kShort:
+      if (!FitsInReg16OperandUntranslated(reg)) {
+        return false;
+      }
+      break;
+    case OperandSize::kNone:
+      UNREACHABLE();
+      return false;
+  }
+
+  if (reg.is_current_context() || reg.is_function_closure() ||
+      reg.is_new_target()) {
+    return true;
+  } else if (reg.is_parameter()) {
+    int parameter_index = reg.ToParameterIndex(parameter_count());
+    return parameter_index >= 0 && parameter_index < parameter_count();
+  } else if (RegisterTranslator::InTranslationWindow(reg)) {
+    return translation_register_count() > 0;
+  } else {
+    reg = RegisterTranslator::UntranslateRegister(reg);
+    if (reg.index() < fixed_register_count()) {
+      return true;
+    } else {
+      return TemporaryRegisterIsLive(reg);
+    }
+  }
 }
 
 
@@ -1279,9 +1482,10 @@ bool BytecodeArrayBuilder::IsRegisterInAccumulator(Register reg) {
   if (LastBytecodeInSameBlock()) {
     PreviousBytecodeHelper previous_bytecode(*this);
     Bytecode bytecode = previous_bytecode.GetBytecode();
-    if ((bytecode == Bytecode::kLdar || bytecode == Bytecode::kStar) &&
-        (reg == Register::FromOperand(previous_bytecode.GetOperand(0)))) {
-      return true;
+    if (bytecode == Bytecode::kLdar || bytecode == Bytecode::kStar) {
+      Register previous_reg =
+          Register::FromOperand(previous_bytecode.GetOperand(0));
+      return previous_reg == reg;
     }
   }
   return false;
@@ -1594,13 +1798,23 @@ bool BytecodeArrayBuilder::FitsInIdx16Operand(size_t value) {
 
 // static
 bool BytecodeArrayBuilder::FitsInReg8Operand(Register value) {
-  return kMinInt8 <= value.index() && value.index() <= kMaxInt8;
+  return RegisterTranslator::FitsInReg8Operand(value);
+}
+
+// static
+bool BytecodeArrayBuilder::FitsInReg8OperandUntranslated(Register value) {
+  return value.is_byte_operand();
 }
 
 
 // static
 bool BytecodeArrayBuilder::FitsInReg16Operand(Register value) {
-  return kMinInt16 <= value.index() && value.index() <= kMaxInt16;
+  return RegisterTranslator::FitsInReg16Operand(value);
+}
+
+// static
+bool BytecodeArrayBuilder::FitsInReg16OperandUntranslated(Register value) {
+  return value.is_short_operand();
 }
 
 }  // namespace interpreter

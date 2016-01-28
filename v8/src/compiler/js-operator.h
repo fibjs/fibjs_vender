@@ -51,14 +51,6 @@ ConvertReceiverMode ConvertReceiverModeOf(Operator const* op);
 ToBooleanHints ToBooleanHintsOf(Operator const* op);
 
 
-// Defines whether tail call optimization is allowed.
-enum class TailCallMode : unsigned { kAllow, kDisallow };
-
-size_t hash_value(TailCallMode);
-
-std::ostream& operator<<(std::ostream&, TailCallMode);
-
-
 // Defines the language mode and hints for a JavaScript binary operations.
 // This is used as parameter by JSAdd, JSSubtract, etc. operators.
 class BinaryOperationParameters final {
@@ -527,7 +519,9 @@ class JSOperatorBuilder final : public ZoneObject {
       VectorSlotPair const& feedback = VectorSlotPair(),
       ConvertReceiverMode convert_mode = ConvertReceiverMode::kAny,
       TailCallMode tail_call_mode = TailCallMode::kDisallow);
+  const Operator* CallRuntime(Runtime::FunctionId id);
   const Operator* CallRuntime(Runtime::FunctionId id, size_t arity);
+  const Operator* CallRuntime(const Runtime::Function* function, size_t arity);
   const Operator* CallConstruct(size_t arity, VectorSlotPair const& feedback);
 
   const Operator* ConvertReceiver(ConvertReceiverMode convert_mode);

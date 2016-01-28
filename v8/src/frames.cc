@@ -121,15 +121,15 @@ StackFrame* StackFrameIteratorBase::SingletonFor(StackFrame::Type type,
 
 StackFrame* StackFrameIteratorBase::SingletonFor(StackFrame::Type type) {
 #define FRAME_TYPE_CASE(type, field) \
-  case StackFrame::type: result = &field##_; break;
+  case StackFrame::type:             \
+    return &field##_;
 
-  StackFrame* result = NULL;
   switch (type) {
     case StackFrame::NONE: return NULL;
     STACK_FRAME_TYPE_LIST(FRAME_TYPE_CASE)
     default: break;
   }
-  return result;
+  return NULL;
 
 #undef FRAME_TYPE_CASE
 }
@@ -234,7 +234,7 @@ SafeStackFrameIterator::SafeStackFrameIterator(
   }
   if (SingletonFor(type) == NULL) return;
   frame_ = SingletonFor(type, &state);
-  if (frame_ == NULL) return;
+  DCHECK(frame_);
 
   Advance();
 
@@ -272,8 +272,12 @@ void SafeStackFrameIterator::AdvanceOneFrame() {
   // Advance to the previous frame.
   StackFrame::State state;
   StackFrame::Type type = frame_->GetCallerState(&state);
+  if (SingletonFor(type) == NULL) {
+    frame_ = NULL;
+    return;
+  }
   frame_ = SingletonFor(type, &state);
-  if (frame_ == NULL) return;
+  DCHECK(frame_);
 
   // Check that we have actually moved to the previous frame in the stack.
   if (frame_->sp() < last_sp || frame_->fp() < last_fp) {
@@ -446,7 +450,8 @@ StackFrame::Type StackFrame::ComputeType(const StackFrameIteratorBase* iterator,
             return ARGUMENTS_ADAPTOR;
           } else {
             // The interpreter entry trampoline has a non-SMI marker.
-            DCHECK(code_obj->is_interpreter_entry_trampoline());
+            DCHECK(code_obj->is_interpreter_entry_trampoline() ||
+                   code_obj->is_interpreter_enter_bytecode_dispatch());
             return INTERPRETED;
           }
         }
@@ -1125,6 +1130,33 @@ int OptimizedFrame::StackSlotOffsetRelativeToFp(int slot_index) {
 
 Object* OptimizedFrame::StackSlotAt(int index) const {
   return Memory::Object_at(fp() + StackSlotOffsetRelativeToFp(index));
+}
+
+
+int InterpretedFrame::LookupExceptionHandlerInTable(
+    int* stack_slots, HandlerTable::CatchPrediction* prediction) {
+  BytecodeArray* bytecode = function()->shared()->bytecode_array();
+  HandlerTable* table = HandlerTable::cast(bytecode->handler_table());
+  int pc_offset = GetBytecodeOffset() + 1;  // Point after current bytecode.
+  return table->LookupRange(pc_offset, stack_slots, prediction);
+}
+
+
+int InterpretedFrame::GetBytecodeOffset() const {
+  const int index = InterpreterFrameConstants::kBytecodeOffsetExpressionIndex;
+  DCHECK_EQ(InterpreterFrameConstants::kBytecodeOffsetFromFp,
+            StandardFrameConstants::kExpressionsOffset - index * kPointerSize);
+  int raw_offset = Smi::cast(GetExpression(index))->value();
+  return raw_offset - BytecodeArray::kHeaderSize + kHeapObjectTag;
+}
+
+
+void InterpretedFrame::PatchBytecodeOffset(int new_offset) {
+  const int index = InterpreterFrameConstants::kBytecodeOffsetExpressionIndex;
+  DCHECK_EQ(InterpreterFrameConstants::kBytecodeOffsetFromFp,
+            StandardFrameConstants::kExpressionsOffset - index * kPointerSize);
+  int raw_offset = new_offset + BytecodeArray::kHeaderSize - kHeapObjectTag;
+  SetExpression(index, Smi::FromInt(raw_offset));
 }
 
 

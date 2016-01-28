@@ -202,14 +202,12 @@ MaybeHandle<JSObject> ConfigureInstance(Isolate* isolate, Handle<JSObject> obj,
   return obj;
 }
 
-
 MaybeHandle<JSObject> InstantiateObject(Isolate* isolate,
-                                        Handle<ObjectTemplateInfo> data) {
+                                        Handle<ObjectTemplateInfo> info) {
   // Enter a new scope.  Recursion could otherwise create a lot of handles.
   HandleScope scope(isolate);
   // Fast path.
   Handle<JSObject> result;
-  auto info = Handle<ObjectTemplateInfo>::cast(data);
   auto constructor = handle(info->constructor(), isolate);
   Handle<JSFunction> cons;
   if (constructor->IsUndefined()) {
@@ -548,7 +546,7 @@ Handle<JSFunction> ApiNatives::CreateApiFunction(
   // Mark instance as callable in the map.
   if (!obj->instance_call_handler()->IsUndefined()) {
     map->set_is_callable();
-    map->set_is_constructor();
+    map->set_is_constructor(true);
   }
 
   // Recursively copy parent instance templates' accessors,

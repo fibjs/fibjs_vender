@@ -117,7 +117,6 @@ class LChunkBuilder;
   V(LoadNamedField)                           \
   V(LoadNamedGeneric)                         \
   V(LoadRoot)                                 \
-  V(MapEnumLength)                            \
   V(MathFloorOfDiv)                           \
   V(MathMinMax)                               \
   V(MaybeGrowElements)                        \
@@ -2396,13 +2395,19 @@ class HInvokeFunction final : public HBinaryCall {
 
 class HCallFunction final : public HBinaryCall {
  public:
-  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P3(HCallFunction, HValue*, int,
-                                              ConvertReceiverMode);
+  DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P4(HCallFunction, HValue*, int,
+                                              ConvertReceiverMode,
+                                              TailCallMode);
 
   HValue* context() const { return first(); }
   HValue* function() const { return second(); }
 
-  ConvertReceiverMode convert_mode() const { return convert_mode_; }
+  ConvertReceiverMode convert_mode() const {
+    return ConvertReceiverModeField::decode(bit_field_);
+  }
+  TailCallMode tail_call_mode() const {
+    return TailCallModeField::decode(bit_field_);
+  }
   FeedbackVectorSlot slot() const { return slot_; }
   Handle<TypeFeedbackVector> feedback_vector() const {
     return feedback_vector_;
@@ -2422,12 +2427,19 @@ class HCallFunction final : public HBinaryCall {
 
  private:
   HCallFunction(HValue* context, HValue* function, int argument_count,
-                ConvertReceiverMode convert_mode)
+                ConvertReceiverMode convert_mode, TailCallMode tail_call_mode)
       : HBinaryCall(context, function, argument_count),
-        convert_mode_(convert_mode) {}
+        bit_field_(ConvertReceiverModeField::encode(convert_mode) |
+                   TailCallModeField::encode(tail_call_mode)) {}
   Handle<TypeFeedbackVector> feedback_vector_;
   FeedbackVectorSlot slot_;
-  ConvertReceiverMode convert_mode_;
+
+  class ConvertReceiverModeField : public BitField<ConvertReceiverMode, 0, 2> {
+  };
+  class TailCallModeField
+      : public BitField<TailCallMode, ConvertReceiverModeField::kNext, 1> {};
+
+  uint32_t bit_field_;
 };
 
 
@@ -2490,31 +2502,6 @@ class HCallRuntime final : public HCall<1> {
 
   const Runtime::Function* c_function_;
   SaveFPRegsMode save_doubles_;
-};
-
-
-class HMapEnumLength final : public HUnaryOperation {
- public:
-  DECLARE_INSTRUCTION_FACTORY_P1(HMapEnumLength, HValue*);
-
-  Representation RequiredInputRepresentation(int index) override {
-    return Representation::Tagged();
-  }
-
-  DECLARE_CONCRETE_INSTRUCTION(MapEnumLength)
-
- protected:
-  bool DataEquals(HValue* other) override { return true; }
-
- private:
-  explicit HMapEnumLength(HValue* value)
-      : HUnaryOperation(value, HType::Smi()) {
-    set_representation(Representation::Smi());
-    SetFlag(kUseGVN);
-    SetDependsOnFlag(kMaps);
-  }
-
-  bool IsDeletable() const override { return true; }
 };
 
 
@@ -6025,6 +6012,11 @@ class HObjectAccess final {
     return HObjectAccess(kInobject,
                          Map::kBitField2Offset,
                          Representation::UInteger8());
+  }
+
+  static HObjectAccess ForMapBitField3() {
+    return HObjectAccess(kInobject, Map::kBitField3Offset,
+                         Representation::Integer32());
   }
 
   static HObjectAccess ForNameHashField() {

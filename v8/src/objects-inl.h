@@ -150,9 +150,6 @@ bool Object::IsExternal() const {
 }
 
 
-bool Object::IsAccessorInfo() const { return IsExecutableAccessorInfo(); }
-
-
 TYPE_CHECKER(HeapNumber, HEAP_NUMBER_TYPE)
 TYPE_CHECKER(MutableHeapNumber, MUTABLE_HEAP_NUMBER_TYPE)
 TYPE_CHECKER(Symbol, SYMBOL_TYPE)
@@ -1858,6 +1855,9 @@ AllocationSite* AllocationMemento::GetAllocationSite() {
   return AllocationSite::cast(allocation_site());
 }
 
+Address AllocationMemento::GetAllocationSiteUnchecked() {
+  return reinterpret_cast<Address>(allocation_site());
+}
 
 void JSObject::EnsureCanContainHeapObjectElements(Handle<JSObject> object) {
   JSObject::ValidateElements(object);
@@ -2976,15 +2976,14 @@ int DescriptorArray::GetFieldIndex(int descriptor_number) {
   return GetDetails(descriptor_number).field_index();
 }
 
-
-HeapType* DescriptorArray::GetFieldType(int descriptor_number) {
+FieldType* DescriptorArray::GetFieldType(int descriptor_number) {
   DCHECK(GetDetails(descriptor_number).location() == kField);
   Object* value = GetValue(descriptor_number);
   if (value->IsWeakCell()) {
-    if (WeakCell::cast(value)->cleared()) return HeapType::None();
+    if (WeakCell::cast(value)->cleared()) return FieldType::None();
     value = WeakCell::cast(value)->value();
   }
-  return HeapType::cast(value);
+  return FieldType::cast(value);
 }
 
 
@@ -3181,7 +3180,6 @@ void SeededNumberDictionary::set_requires_slow_elements() {
 // Cast operations
 
 
-CAST_ACCESSOR(AccessorInfo)
 CAST_ACCESSOR(ArrayList)
 CAST_ACCESSOR(Bool16x8)
 CAST_ACCESSOR(Bool32x4)
@@ -4054,6 +4052,9 @@ int BytecodeArray::parameter_count() const {
 
 
 ACCESSORS(BytecodeArray, constant_pool, FixedArray, kConstantPoolOffset)
+ACCESSORS(BytecodeArray, handler_table, FixedArray, kHandlerTableOffset)
+ACCESSORS(BytecodeArray, source_position_table, FixedArray,
+          kSourcePositionTableOffset)
 
 
 Address BytecodeArray::GetFirstBytecodeAddress() {
@@ -4470,8 +4471,12 @@ bool Map::has_non_instance_prototype() {
 }
 
 
-void Map::set_is_constructor() {
-  set_bit_field(bit_field() | (1 << kIsConstructor));
+void Map::set_is_constructor(bool value) {
+  if (value) {
+    set_bit_field(bit_field() | (1 << kIsConstructor));
+  } else {
+    set_bit_field(bit_field() & ~(1 << kIsConstructor));
+  }
 }
 
 
@@ -4896,6 +4901,13 @@ inline bool Code::is_interpreter_entry_trampoline() {
   Handle<Code> interpreter_entry =
       GetIsolate()->builtins()->InterpreterEntryTrampoline();
   return interpreter_entry.location() != nullptr && *interpreter_entry == this;
+}
+
+inline bool Code::is_interpreter_enter_bytecode_dispatch() {
+  Handle<Code> interpreter_handler =
+      GetIsolate()->builtins()->InterpreterEnterBytecodeDispatch();
+  return interpreter_handler.location() != nullptr &&
+         *interpreter_handler == this;
 }
 
 inline void Code::set_is_crankshafted(bool value) {
@@ -5474,9 +5486,9 @@ SMI_ACCESSORS(AccessorInfo, flag, kFlagOffset)
 ACCESSORS(AccessorInfo, expected_receiver_type, Object,
           kExpectedReceiverTypeOffset)
 
-ACCESSORS(ExecutableAccessorInfo, getter, Object, kGetterOffset)
-ACCESSORS(ExecutableAccessorInfo, setter, Object, kSetterOffset)
-ACCESSORS(ExecutableAccessorInfo, data, Object, kDataOffset)
+ACCESSORS(AccessorInfo, getter, Object, kGetterOffset)
+ACCESSORS(AccessorInfo, setter, Object, kSetterOffset)
+ACCESSORS(AccessorInfo, data, Object, kDataOffset)
 
 ACCESSORS(Box, value, Object, kValueOffset)
 

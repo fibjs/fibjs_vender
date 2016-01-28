@@ -53,9 +53,10 @@ Handle<Code> InterpreterAssembler::GenerateCode() {
 
   const char* bytecode_name = interpreter::Bytecodes::ToString(bytecode_);
   Schedule* schedule = raw_assembler_->Export();
+  Code::Flags flags = Code::ComputeFlags(Code::STUB);
   Handle<Code> code = Pipeline::GenerateCodeForCodeStub(
-      isolate(), raw_assembler_->call_descriptor(), graph(), schedule,
-      Code::STUB, bytecode_name);
+      isolate(), raw_assembler_->call_descriptor(), graph(), schedule, flags,
+      bytecode_name);
 
 #ifdef ENABLE_DISASSEMBLER
   if (FLAG_trace_ignition_codegen) {
@@ -79,7 +80,10 @@ void InterpreterAssembler::SetAccumulator(Node* value) { accumulator_ = value; }
 Node* InterpreterAssembler::GetContext() { return context_; }
 
 
-void InterpreterAssembler::SetContext(Node* value) { context_ = value; }
+void InterpreterAssembler::SetContext(Node* value) {
+  StoreRegister(value, interpreter::Register::current_context());
+  context_ = value;
+}
 
 
 Node* InterpreterAssembler::BytecodeOffset() { return bytecode_offset_; }
@@ -259,18 +263,18 @@ Node* InterpreterAssembler::BytecodeOperandCount(int operand_index) {
   switch (interpreter::Bytecodes::GetOperandSize(bytecode_, operand_index)) {
     case interpreter::OperandSize::kByte:
       DCHECK_EQ(
-          interpreter::OperandType::kCount8,
+          interpreter::OperandType::kRegCount8,
           interpreter::Bytecodes::GetOperandType(bytecode_, operand_index));
       return BytecodeOperand(operand_index);
     case interpreter::OperandSize::kShort:
       DCHECK_EQ(
-          interpreter::OperandType::kCount16,
+          interpreter::OperandType::kRegCount16,
           interpreter::Bytecodes::GetOperandType(bytecode_, operand_index));
       return BytecodeOperandShort(operand_index);
-    default:
+    case interpreter::OperandSize::kNone:
       UNREACHABLE();
-      return nullptr;
   }
+  return nullptr;
 }
 
 
@@ -293,31 +297,27 @@ Node* InterpreterAssembler::BytecodeOperandIdx(int operand_index) {
           interpreter::OperandType::kIdx16,
           interpreter::Bytecodes::GetOperandType(bytecode_, operand_index));
       return BytecodeOperandShort(operand_index);
-    default:
+    case interpreter::OperandSize::kNone:
       UNREACHABLE();
-      return nullptr;
   }
+  return nullptr;
 }
 
 
 Node* InterpreterAssembler::BytecodeOperandReg(int operand_index) {
-  switch (interpreter::Bytecodes::GetOperandType(bytecode_, operand_index)) {
-    case interpreter::OperandType::kReg8:
-    case interpreter::OperandType::kRegPair8:
-    case interpreter::OperandType::kMaybeReg8:
-      DCHECK_EQ(
-          interpreter::OperandSize::kByte,
-          interpreter::Bytecodes::GetOperandSize(bytecode_, operand_index));
+  interpreter::OperandType operand_type =
+      interpreter::Bytecodes::GetOperandType(bytecode_, operand_index);
+  if (interpreter::Bytecodes::IsRegisterOperandType(operand_type)) {
+    interpreter::OperandSize operand_size =
+        interpreter::Bytecodes::SizeOfOperand(operand_type);
+    if (operand_size == interpreter::OperandSize::kByte) {
       return BytecodeOperandSignExtended(operand_index);
-    case interpreter::OperandType::kReg16:
-      DCHECK_EQ(
-          interpreter::OperandSize::kShort,
-          interpreter::Bytecodes::GetOperandSize(bytecode_, operand_index));
+    } else if (operand_size == interpreter::OperandSize::kShort) {
       return BytecodeOperandShortSignExtended(operand_index);
-    default:
-      UNREACHABLE();
-      return nullptr;
+    }
   }
+  UNREACHABLE();
+  return nullptr;
 }
 
 
