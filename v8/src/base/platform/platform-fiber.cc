@@ -80,9 +80,8 @@ void Thread::set_name(const char *name)
 
 void Thread::Start()
 {
-    ((PlatformData*)data_)->fb = exlib::Service::Create(PlatformData::fiber_proc, data_, V8_STACK_SIZE * 1024);
-    ((PlatformData*)data_)->fb->Ref();
-    ((PlatformData*)data_)->fb->set_name(name_);
+    exlib::Service::Create(PlatformData::fiber_proc, data_, V8_STACK_SIZE * 1024,
+                           name_, &((PlatformData*)data_)->fb);
 }
 
 void Thread::Join()

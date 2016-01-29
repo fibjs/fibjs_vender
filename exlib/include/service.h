@@ -55,7 +55,8 @@ public:
     static Service *current();
     static void init();
 
-    static Fiber* Create(fiber_func func, void *data, int32_t stacksize);
+    static void Create(fiber_func func, void *data, int32_t stacksize,
+                       const char* name = NULL, Fiber** retVal = NULL);
 
     void post(Fiber* fiber)
     {

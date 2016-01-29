@@ -139,7 +139,7 @@ void Service::fiber_proc(void *(*func)(void *), Fiber *fb)
     now->switchConext(&_cb);
 }
 
-Fiber *Service::Create(fiber_func func, void *data, int32_t stacksize)
+void Service::Create(fiber_func func, void *data, int32_t stacksize, const char* name, Fiber** retVal)
 {
     Fiber *fb;
     void **stack;
@@ -151,7 +151,8 @@ Fiber *Service::Create(fiber_func func, void *data, int32_t stacksize)
     fb = (Fiber *) malloc(stacksize);
 #endif
     if (fb == NULL)
-        return NULL;
+        return;
+
     stack = (void **) fb + stacksize / sizeof(void *) - 5;
 
     new(fb) Fiber(s_service, data);
@@ -181,11 +182,14 @@ Fiber *Service::Create(fiber_func func, void *data, int32_t stacksize)
     s_locker.unlock();
 #endif
 
-    fb->Ref();
+    if (retVal)
+    {
+        *retVal = fb;
+        fb->Ref();
+    }
+
     fb->Ref();
     fb->resume();
-
-    return fb;
 }
 
 void Service::dispatch()
