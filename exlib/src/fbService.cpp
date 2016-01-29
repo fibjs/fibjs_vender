@@ -175,14 +175,15 @@ Fiber *Service::Create(fiber_func func, void *data, int32_t stacksize)
     fb->m_cntxt.r1 = (intptr_t) fb;
 #endif
 
-    fb->Ref();
-    fb->resume();
-
 #ifdef DEBUG
     s_locker.lock();
     s_fibers.putTail(&fb->m_link);
     s_locker.unlock();
 #endif
+
+    fb->Ref();
+    fb->Ref();
+    fb->resume();
 
     return fb;
 }
