@@ -28,12 +28,6 @@ public:
         return t == type || OSThread::is(t);
     }
 
-    void bindCurrent()
-    {
-        m_main.saveStackGuard();
-        OSThread::bindCurrent();
-    }
-
     static void dispatch();
 
     virtual void Run()

@@ -30,6 +30,7 @@ void Service::init(int32_t workers)
     if (!s_service)
     {
         s_service = new Service(workers);
+        s_service->m_main.saveStackGuard();
         s_service->bindCurrent();
     }
 }
