@@ -18,6 +18,7 @@
 #include "src/conversions-inl.h"
 #include "src/factory.h"
 #include "src/field-index-inl.h"
+#include "src/handles-inl.h"
 #include "src/heap/heap-inl.h"
 #include "src/heap/heap.h"
 #include "src/isolate.h"
@@ -28,7 +29,6 @@
 #include "src/prototype.h"
 #include "src/transitions-inl.h"
 #include "src/type-feedback-vector-inl.h"
-#include "src/types-inl.h"
 #include "src/v8memory.h"
 
 namespace v8 {
@@ -846,6 +846,7 @@ TYPE_CHECKER(JSValue, JS_VALUE_TYPE)
 TYPE_CHECKER(JSDate, JS_DATE_TYPE)
 TYPE_CHECKER(JSMessageObject, JS_MESSAGE_OBJECT_TYPE)
 
+bool Object::IsAbstractCode() const { return IsBytecodeArray() || IsCode(); }
 
 bool Object::IsStringWrapper() const {
   return IsJSValue() && JSValue::cast(this)->value()->IsString();
@@ -1953,7 +1954,8 @@ void JSObject::SetMapAndElements(Handle<JSObject> object,
                                  Handle<FixedArrayBase> value) {
   JSObject::MigrateToMap(object, new_map);
   DCHECK((object->map()->has_fast_smi_or_object_elements() ||
-          (*value == object->GetHeap()->empty_fixed_array())) ==
+          (*value == object->GetHeap()->empty_fixed_array()) ||
+          object->map()->has_fast_string_wrapper_elements()) ==
          (value->map() == object->GetHeap()->fixed_array_map() ||
           value->map() == object->GetHeap()->fixed_cow_array_map()));
   DCHECK((*value == object->GetHeap()->empty_fixed_array()) ||
@@ -2335,19 +2337,6 @@ bool Object::ToArrayIndex(uint32_t* index) {
 }
 
 
-bool Object::IsStringObjectWithCharacterAt(uint32_t index) {
-  if (!this->IsJSValue()) return false;
-
-  JSValue* js_value = JSValue::cast(this);
-  if (!js_value->value()->IsString()) return false;
-
-  String* str = String::cast(js_value->value());
-  if (index >= static_cast<uint32_t>(str->length())) return false;
-
-  return true;
-}
-
-
 void Object::VerifyApiCallResultType() {
 #if DEBUG
   if (!(IsSmi() || IsString() || IsSymbol() || IsJSReceiver() ||
@@ -2364,9 +2353,8 @@ Object* FixedArray::get(int index) const {
   return READ_FIELD(this, kHeaderSize + index * kPointerSize);
 }
 
-
-Handle<Object> FixedArray::get(Handle<FixedArray> array, int index) {
-  return handle(array->get(index), array->GetIsolate());
+Handle<Object> FixedArray::get(FixedArray* array, int index, Isolate* isolate) {
+  return handle(array->get(index), isolate);
 }
 
 
@@ -2411,13 +2399,12 @@ uint64_t FixedDoubleArray::get_representation(int index) {
   return READ_UINT64_FIELD(this, offset);
 }
 
-
-Handle<Object> FixedDoubleArray::get(Handle<FixedDoubleArray> array,
-                                     int index) {
+Handle<Object> FixedDoubleArray::get(FixedDoubleArray* array, int index,
+                                     Isolate* isolate) {
   if (array->is_the_hole(index)) {
-    return array->GetIsolate()->factory()->the_hole_value();
+    return isolate->factory()->the_hole_value();
   } else {
-    return array->GetIsolate()->factory()->NewNumber(array->get_scalar(index));
+    return isolate->factory()->NewNumber(array->get_scalar(index));
   }
 }
 
@@ -2874,8 +2861,7 @@ void Map::SetEnumLength(int length) {
 
 
 FixedArrayBase* Map::GetInitialElements() {
-  if (has_fast_smi_or_object_elements() ||
-      has_fast_double_elements()) {
+  if (has_fast_elements() || has_fast_string_wrapper_elements()) {
     DCHECK(!GetHeap()->InNewSpace(GetHeap()->empty_fixed_array()));
     return GetHeap()->empty_fixed_array();
   } else if (has_fixed_typed_array_elements()) {
@@ -3179,7 +3165,7 @@ void SeededNumberDictionary::set_requires_slow_elements() {
 // ------------------------------------
 // Cast operations
 
-
+CAST_ACCESSOR(AbstractCode)
 CAST_ACCESSOR(ArrayList)
 CAST_ACCESSOR(Bool16x8)
 CAST_ACCESSOR(Bool32x4)
@@ -3393,11 +3379,19 @@ LiteralsArray* LiteralsArray::cast(Object* object) {
 
 
 TypeFeedbackVector* LiteralsArray::feedback_vector() const {
+  if (length() == 0) {
+    return TypeFeedbackVector::cast(
+        const_cast<FixedArray*>(FixedArray::cast(this)));
+  }
   return TypeFeedbackVector::cast(get(kVectorIndex));
 }
 
 
 void LiteralsArray::set_feedback_vector(TypeFeedbackVector* vector) {
+  if (length() <= kVectorIndex) {
+    DCHECK(vector->length() == 0);
+    return;
+  }
   set(kVectorIndex, vector);
 }
 
@@ -3411,11 +3405,30 @@ void LiteralsArray::set_literal(int literal_index, Object* literal) {
   set(kFirstLiteralIndex + literal_index, literal);
 }
 
+void LiteralsArray::set_literal_undefined(int literal_index) {
+  set_undefined(kFirstLiteralIndex + literal_index);
+}
 
 int LiteralsArray::literals_count() const {
   return length() - kFirstLiteralIndex;
 }
 
+int HandlerTable::GetRangeStart(int index) const {
+  return Smi::cast(get(index * kRangeEntrySize + kRangeStartIndex))->value();
+}
+
+int HandlerTable::GetRangeEnd(int index) const {
+  return Smi::cast(get(index * kRangeEntrySize + kRangeEndIndex))->value();
+}
+
+int HandlerTable::GetRangeHandler(int index) const {
+  return HandlerOffsetField::decode(
+      Smi::cast(get(index * kRangeEntrySize + kRangeHandlerIndex))->value());
+}
+
+int HandlerTable::GetRangeDepth(int index) const {
+  return Smi::cast(get(index * kRangeEntrySize + kRangeDepthIndex))->value();
+}
 
 void HandlerTable::SetRangeStart(int index, int value) {
   set(index * kRangeEntrySize + kRangeStartIndex, Smi::FromInt(value));
@@ -3452,6 +3465,9 @@ void HandlerTable::SetReturnHandler(int index, int offset,
   set(index * kReturnEntrySize + kReturnHandlerIndex, Smi::FromInt(value));
 }
 
+int HandlerTable::NumberOfRangeEntries() const {
+  return length() / kRangeEntrySize;
+}
 
 #define MAKE_STRUCT_CAST(NAME, Name, name) CAST_ACCESSOR(Name)
   STRUCT_LIST(MAKE_STRUCT_CAST)
@@ -4220,11 +4236,9 @@ double FixedTypedArray<Float64ArrayTraits>::from_double(double value) {
   return value;
 }
 
-
 template <class Traits>
-Handle<Object> FixedTypedArray<Traits>::get(
-    Handle<FixedTypedArray<Traits> > array,
-    int index) {
+Handle<Object> FixedTypedArray<Traits>::get(FixedTypedArray<Traits>* array,
+                                            int index) {
   return Traits::ToHandle(array->GetIsolate(), array->get_scalar(index));
 }
 
@@ -4599,6 +4613,10 @@ bool Map::has_fast_elements() { return IsFastElementsKind(elements_kind()); }
 
 bool Map::has_sloppy_arguments_elements() {
   return IsSloppyArgumentsElements(elements_kind());
+}
+
+bool Map::has_fast_string_wrapper_elements() {
+  return elements_kind() == FAST_STRING_WRAPPER_ELEMENTS;
 }
 
 bool Map::has_fixed_typed_array_elements() {
@@ -5286,6 +5304,10 @@ class Code::FindAndReplacePattern {
   friend class Code;
 };
 
+Code* AbstractCode::GetCode() { return Code::cast(this); }
+BytecodeArray* AbstractCode::GetBytecodeArray() {
+  return BytecodeArray::cast(this);
+}
 
 Object* Map::prototype() const {
   return READ_FIELD(this, kPrototypeOffset);
@@ -5615,7 +5637,7 @@ ACCESSORS(DebugInfo, shared, SharedFunctionInfo, kSharedFunctionInfoIndex)
 ACCESSORS(DebugInfo, code, Code, kCodeIndex)
 ACCESSORS(DebugInfo, break_points, FixedArray, kBreakPointsStateIndex)
 
-SMI_ACCESSORS(BreakPointInfo, code_position, kCodePositionIndex)
+SMI_ACCESSORS(BreakPointInfo, code_offset, kCodeOffsetIndex)
 SMI_ACCESSORS(BreakPointInfo, source_position, kSourcePositionIndex)
 SMI_ACCESSORS(BreakPointInfo, statement_position, kStatementPositionIndex)
 ACCESSORS(BreakPointInfo, break_point_objects, Object, kBreakPointObjectsIndex)
@@ -5624,8 +5646,8 @@ ACCESSORS(SharedFunctionInfo, name, Object, kNameOffset)
 ACCESSORS(SharedFunctionInfo, optimized_code_map, FixedArray,
           kOptimizedCodeMapOffset)
 ACCESSORS(SharedFunctionInfo, construct_stub, Code, kConstructStubOffset)
-ACCESSORS(SharedFunctionInfo, feedback_vector, TypeFeedbackVector,
-          kFeedbackVectorOffset)
+ACCESSORS(SharedFunctionInfo, feedback_metadata, TypeFeedbackMetadata,
+          kFeedbackMetadataOffset)
 #if TRACE_MAPS
 SMI_ACCESSORS(SharedFunctionInfo, unique_id, kUniqueIdOffset)
 #endif
@@ -5807,6 +5829,26 @@ void SharedFunctionInfo::set_kind(FunctionKind kind) {
   set_compiler_hints(hints);
 }
 
+// static
+int SharedFunctionInfo::OffsetToPreviousContext() {
+  return FixedArray::kHeaderSize +
+         kPointerSize * (kContextOffset - kEntryLength);
+}
+
+int SharedFunctionInfo::OffsetToPreviousCachedCode() {
+  return FixedArray::kHeaderSize +
+         kPointerSize * (kCachedCodeOffset - kEntryLength);
+}
+
+int SharedFunctionInfo::OffsetToPreviousLiterals() {
+  return FixedArray::kHeaderSize +
+         kPointerSize * (kLiteralsOffset - kEntryLength);
+}
+
+int SharedFunctionInfo::OffsetToPreviousOsrAstId() {
+  return FixedArray::kHeaderSize +
+         kPointerSize * (kOsrAstIdOffset - kEntryLength);
+}
 
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, needs_home_object,
                kNeedsHomeObject)
@@ -6258,11 +6300,12 @@ bool JSFunction::is_compiled() {
          code() != builtins->builtin(Builtins::kCompileOptimizedConcurrent);
 }
 
-
-int JSFunction::NumberOfLiterals() {
-  return literals()->length();
+TypeFeedbackVector* JSFunction::feedback_vector() {
+  LiteralsArray* array = literals();
+  return array->feedback_vector();
 }
 
+int JSFunction::NumberOfLiterals() { return literals()->literals_count(); }
 
 ACCESSORS(JSProxy, target, JSReceiver, kTargetOffset)
 ACCESSORS(JSProxy, handler, Object, kHandlerOffset)
@@ -6309,6 +6352,7 @@ void Foreign::set_foreign_address(Address value) {
 ACCESSORS(JSGeneratorObject, function, JSFunction, kFunctionOffset)
 ACCESSORS(JSGeneratorObject, context, Context, kContextOffset)
 ACCESSORS(JSGeneratorObject, receiver, Object, kReceiverOffset)
+ACCESSORS(JSGeneratorObject, input, Object, kInputOffset)
 SMI_ACCESSORS(JSGeneratorObject, continuation, kContinuationOffset)
 ACCESSORS(JSGeneratorObject, operand_stack, FixedArray, kOperandStackOffset)
 
@@ -6731,6 +6775,17 @@ bool JSObject::HasSloppyArgumentsElements() {
   return IsSloppyArgumentsElements(GetElementsKind());
 }
 
+bool JSObject::HasStringWrapperElements() {
+  return IsStringWrapperElementsKind(GetElementsKind());
+}
+
+bool JSObject::HasFastStringWrapperElements() {
+  return GetElementsKind() == FAST_STRING_WRAPPER_ELEMENTS;
+}
+
+bool JSObject::HasSlowStringWrapperElements() {
+  return GetElementsKind() == SLOW_STRING_WRAPPER_ELEMENTS;
+}
 
 bool JSObject::HasFixedTypedArrayElements() {
   HeapObject* array = elements();
@@ -6771,7 +6826,7 @@ GlobalDictionary* JSObject::global_dictionary() {
 
 
 SeededNumberDictionary* JSObject::element_dictionary() {
-  DCHECK(HasDictionaryElements());
+  DCHECK(HasDictionaryElements() || HasSlowStringWrapperElements());
   return SeededNumberDictionary::cast(elements());
 }
 
@@ -7065,10 +7120,9 @@ MaybeHandle<Object> Object::GetPropertyOrElement(Handle<Object> object,
   return GetProperty(&it, language_mode);
 }
 
-
-MaybeHandle<Object> Object::GetPropertyOrElement(Handle<JSReceiver> holder,
+MaybeHandle<Object> Object::GetPropertyOrElement(Handle<Object> receiver,
                                                  Handle<Name> name,
-                                                 Handle<Object> receiver,
+                                                 Handle<JSReceiver> holder,
                                                  LanguageMode language_mode) {
   LookupIterator it = LookupIterator::PropertyOrElement(
       name->GetIsolate(), receiver, name, holder);

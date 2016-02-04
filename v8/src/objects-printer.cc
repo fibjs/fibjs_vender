@@ -326,7 +326,8 @@ void JSObject::PrintElements(std::ostream& os) {  // NOLINT
     case FAST_HOLEY_SMI_ELEMENTS:
     case FAST_SMI_ELEMENTS:
     case FAST_HOLEY_ELEMENTS:
-    case FAST_ELEMENTS: {
+    case FAST_ELEMENTS:
+    case FAST_STRING_WRAPPER_ELEMENTS: {
       // Print in array notation for non-sparse arrays.
       FixedArray* p = FixedArray::cast(elements());
       for (int i = 0; i < p->length(); i++) {
@@ -371,6 +372,7 @@ void JSObject::PrintElements(std::ostream& os) {  // NOLINT
 #undef PRINT_ELEMENTS
 
     case DICTIONARY_ELEMENTS:
+    case SLOW_STRING_WRAPPER_ELEMENTS:
       os << "\n - elements: ";
       elements()->Print(os);
       break;
@@ -385,6 +387,8 @@ void JSObject::PrintElements(std::ostream& os) {  // NOLINT
          << "\n   arguments: " << Brief(p->get(1));
       break;
     }
+    case NO_ELEMENTS:
+      break;
   }
 }
 
@@ -900,8 +904,8 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - debug info = " << Brief(debug_info());
   os << "\n - length = " << length();
   os << "\n - optimized_code_map = " << Brief(optimized_code_map());
-  os << "\n - feedback_vector = ";
-  feedback_vector()->TypeFeedbackVectorPrint(os);
+  os << "\n - feedback_metadata = ";
+  feedback_metadata()->TypeFeedbackMetadataPrint(os);
   if (HasBytecodeArray()) {
     os << "\n - bytecode_array = " << bytecode_array();
   }
@@ -1142,7 +1146,7 @@ void DebugInfo::DebugInfoPrint(std::ostream& os) {  // NOLINT
 
 void BreakPointInfo::BreakPointInfoPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "BreakPointInfo");
-  os << "\n - code_position: " << code_position();
+  os << "\n - code_offset: " << code_offset();
   os << "\n - source_position: " << source_position();
   os << "\n - statement_position: " << statement_position();
   os << "\n - break_point_objects: " << Brief(break_point_objects());

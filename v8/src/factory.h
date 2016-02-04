@@ -395,11 +395,6 @@ class Factory final {
 
   // JS arrays are pretenured when allocated by the parser.
 
-  // Create a JSArray with no elements.
-  Handle<JSArray> NewJSArray(ElementsKind elements_kind,
-                             Strength strength = Strength::WEAK,
-                             PretenureFlag pretenure = NOT_TENURED);
-
   // Create a JSArray with a specified length and elements initialized
   // according to the specified mode.
   Handle<JSArray> NewJSArray(
@@ -629,7 +624,7 @@ class Factory final {
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(
       Handle<String> name, int number_of_literals, FunctionKind kind,
       Handle<Code> code, Handle<ScopeInfo> scope_info,
-      Handle<TypeFeedbackVector> feedback_vector);
+      Handle<TypeFeedbackMetadata> feedback_metadata);
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(Handle<String> name,
                                                    MaybeHandle<Code> code,
                                                    bool is_constructor);
@@ -704,6 +699,11 @@ class Factory final {
                                  Handle<SharedFunctionInfo> info,
                                  Handle<Context> context,
                                  PretenureFlag pretenure = TENURED);
+
+  // Create a JSArray with no elements and no length.
+  Handle<JSArray> NewJSArray(ElementsKind elements_kind,
+                             Strength strength = Strength::WEAK,
+                             PretenureFlag pretenure = NOT_TENURED);
 };
 
 }  // namespace internal

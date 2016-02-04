@@ -134,7 +134,8 @@ class Genesis BASE_EMBEDDED {
  public:
   Genesis(Isolate* isolate, MaybeHandle<JSGlobalProxy> maybe_global_proxy,
           v8::Local<v8::ObjectTemplate> global_proxy_template,
-          v8::ExtensionConfiguration* extensions, ContextType context_type);
+          v8::ExtensionConfiguration* extensions,
+          GlobalContextType context_type);
   ~Genesis() { }
 
   Isolate* isolate() const { return isolate_; }
@@ -187,10 +188,10 @@ class Genesis BASE_EMBEDDED {
   // New context initialization.  Used for creating a context from scratch.
   void InitializeGlobal(Handle<JSGlobalObject> global_object,
                         Handle<JSFunction> empty_function,
-                        ContextType context_type);
+                        GlobalContextType context_type);
   void InitializeExperimentalGlobal();
   // Depending on the situation, expose and/or get rid of the utils object.
-  void ConfigureUtilsObject(ContextType context_type);
+  void ConfigureUtilsObject(GlobalContextType context_type);
 
 #define DECLARE_FEATURE_INITIALIZATION(id, descr) \
   void InitializeGlobal_##id();
@@ -206,7 +207,7 @@ class Genesis BASE_EMBEDDED {
   Handle<JSFunction> InstallInternalArray(Handle<JSObject> target,
                                           const char* name,
                                           ElementsKind elements_kind);
-  bool InstallNatives(ContextType context_type);
+  bool InstallNatives(GlobalContextType context_type);
 
   void InstallTypedArray(const char* name, ElementsKind elements_kind,
                          Handle<JSFunction>* fun);
@@ -318,11 +319,10 @@ void Bootstrapper::Iterate(ObjectVisitor* v) {
   v->Synchronize(VisitorSynchronization::kExtensions);
 }
 
-
 Handle<Context> Bootstrapper::CreateEnvironment(
     MaybeHandle<JSGlobalProxy> maybe_global_proxy,
     v8::Local<v8::ObjectTemplate> global_proxy_template,
-    v8::ExtensionConfiguration* extensions, ContextType context_type) {
+    v8::ExtensionConfiguration* extensions, GlobalContextType context_type) {
   HandleScope scope(isolate_);
   Genesis genesis(isolate_, maybe_global_proxy, global_proxy_template,
                   extensions, context_type);
@@ -1066,7 +1066,7 @@ static void InstallWithIntrinsicDefaultProto(Isolate* isolate,
 // work in the snapshot case is done in HookUpGlobalObject.
 void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
                                Handle<JSFunction> empty_function,
-                               ContextType context_type) {
+                               GlobalContextType context_type) {
   // --- N a t i v e   C o n t e x t ---
   // Use the empty function as closure (no scope info).
   native_context()->set_closure(*empty_function);
@@ -1241,6 +1241,7 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
     Handle<Map> string_map =
         Handle<Map>(native_context()->string_function()->initial_map());
+    string_map->set_elements_kind(FAST_STRING_WRAPPER_ELEMENTS);
     Map::EnsureDescriptorSlack(string_map, 1);
 
     PropertyAttributes attribs = static_cast<PropertyAttributes>(
@@ -1517,9 +1518,11 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
         cons,
         Handle<Object>(native_context()->initial_object_prototype(), isolate));
     cons->shared()->set_instance_class_name(*name);
-    Handle<JSObject> json_object = factory->NewJSObject(cons, TENURED);
-    DCHECK(json_object->IsJSObject());
-    JSObject::AddProperty(global, name, json_object, DONT_ENUM);
+    Handle<JSObject> math = factory->NewJSObject(cons, TENURED);
+    DCHECK(math->IsJSObject());
+    JSObject::AddProperty(global, name, math, DONT_ENUM);
+    SimpleInstallFunction(math, "max", Builtins::kMathMax, 2, false);
+    SimpleInstallFunction(math, "min", Builtins::kMathMin, 2, false);
   }
 
   {  // -- A r r a y B u f f e r
@@ -1990,8 +1993,7 @@ static Handle<JSObject> ResolveBuiltinIdHolder(Handle<Context> native_context,
   return Handle<JSObject>::cast(value);
 }
 
-
-void Genesis::ConfigureUtilsObject(ContextType context_type) {
+void Genesis::ConfigureUtilsObject(GlobalContextType context_type) {
   switch (context_type) {
     // We still need the utils object to find debug functions.
     case DEBUG_CONTEXT:
@@ -2292,7 +2294,6 @@ void Bootstrapper::ExportExperimentalFromRuntime(Isolate* isolate,
   }
 
   INITIALIZE_FLAG(FLAG_harmony_tostring)
-  INITIALIZE_FLAG(FLAG_harmony_tolength)
   INITIALIZE_FLAG(FLAG_harmony_species)
 
 #undef INITIALIZE_FLAG
@@ -2312,11 +2313,10 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_destructuring_assignment)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_object_observe)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexps)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_unicode_regexps)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_completion)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_tolength)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_do_expressions)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_lookbehind)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_name)
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_sent)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(promise_extra)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_tailcalls)
 
@@ -2338,13 +2338,6 @@ void Genesis::InitializeGlobal_harmony_tostring() {
   if (!FLAG_harmony_tostring) return;
   InstallPublicSymbol(factory(), native_context(), "toStringTag",
                       factory()->to_string_tag_symbol());
-}
-
-
-void Genesis::InitializeGlobal_harmony_concat_spreadable() {
-  if (!FLAG_harmony_concat_spreadable) return;
-  InstallPublicSymbol(factory(), native_context(), "isConcatSpreadable",
-                      factory()->is_concat_spreadable_symbol());
 }
 
 
@@ -2603,8 +2596,7 @@ Handle<JSFunction> Genesis::InstallInternalArray(Handle<JSObject> target,
   return array_function;
 }
 
-
-bool Genesis::InstallNatives(ContextType context_type) {
+bool Genesis::InstallNatives(GlobalContextType context_type) {
   HandleScope scope(isolate());
 
   // Set up the utils object as shared container between native scripts.
@@ -2946,15 +2938,13 @@ bool Genesis::InstallExperimentalNatives() {
       "native harmony-object-observe.js", nullptr};
   static const char* harmony_sharedarraybuffer_natives[] = {
       "native harmony-sharedarraybuffer.js", "native harmony-atomics.js", NULL};
-  static const char* harmony_concat_spreadable_natives[] = {nullptr};
   static const char* harmony_simd_natives[] = {"native harmony-simd.js",
                                                nullptr};
-  static const char* harmony_tolength_natives[] = {nullptr};
-  static const char* harmony_completion_natives[] = {nullptr};
   static const char* harmony_do_expressions_natives[] = {nullptr};
   static const char* harmony_regexp_subclass_natives[] = {nullptr};
   static const char* harmony_regexp_lookbehind_natives[] = {nullptr};
   static const char* harmony_function_name_natives[] = {nullptr};
+  static const char* harmony_function_sent_natives[] = {nullptr};
   static const char* promise_extra_natives[] = {"native promise-extra.js",
                                                 nullptr};
   static const char* harmony_object_values_entries_natives[] = {nullptr};
@@ -3485,12 +3475,11 @@ class NoTrackDoubleFieldsForSerializerScope {
   bool enabled_;
 };
 
-
 Genesis::Genesis(Isolate* isolate,
                  MaybeHandle<JSGlobalProxy> maybe_global_proxy,
                  v8::Local<v8::ObjectTemplate> global_proxy_template,
                  v8::ExtensionConfiguration* extensions,
-                 ContextType context_type)
+                 GlobalContextType context_type)
     : isolate_(isolate), active_(isolate->bootstrapper()) {
   NoTrackDoubleFieldsForSerializerScope disable_scope(isolate);
   result_ = Handle<Context>::null();

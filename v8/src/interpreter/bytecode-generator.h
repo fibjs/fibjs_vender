@@ -13,6 +13,8 @@ namespace v8 {
 namespace internal {
 namespace interpreter {
 
+class LoopBuilder;
+
 class BytecodeGenerator final : public AstVisitor {
  public:
   BytecodeGenerator(Isolate* isolate, Zone* zone);
@@ -77,6 +79,7 @@ class BytecodeGenerator final : public AstVisitor {
   void VisitVariableAssignment(Variable* variable, FeedbackVectorSlot slot);
 
   void VisitArgumentsObject(Variable* variable);
+  void VisitRestArgumentsArray(Variable* rest, int index);
   void VisitThisFunctionVariable(Variable* variable);
   void VisitNewTargetVariable(Variable* variable);
   void VisitNewLocalFunctionContext();
@@ -84,6 +87,7 @@ class BytecodeGenerator final : public AstVisitor {
   void VisitBlockDeclarationsAndStatements(Block* stmt);
   void VisitNewLocalBlockContext(Scope* scope);
   void VisitNewLocalCatchContext(Variable* variable);
+  void VisitNewLocalWithContext();
   void VisitFunctionClosureForContext();
   void VisitSetHomeObject(Register value, Register home_object,
                           ObjectLiteralProperty* property, int slot_number = 0);
@@ -91,6 +95,9 @@ class BytecodeGenerator final : public AstVisitor {
                                   ObjectLiteralProperty* property,
                                   Register value_out);
   void VisitForInAssignment(Expression* expr, FeedbackVectorSlot slot);
+
+  // Visit the body of a loop iteration.
+  void VisitIterationBody(IterationStatement* stmt, LoopBuilder* loop_builder);
 
   // Visit a statement and switch scopes, the context is in the accumulator.
   void VisitInScope(Statement* stmt, Scope* scope);
@@ -105,7 +112,8 @@ class BytecodeGenerator final : public AstVisitor {
   void RecordStoreToRegister(Register reg);
   Register LoadFromAliasedRegister(Register reg);
 
-  inline BytecodeArrayBuilder* builder() { return &builder_; }
+  inline void set_builder(BytecodeArrayBuilder* builder) { builder_ = builder; }
+  inline BytecodeArrayBuilder* builder() const { return builder_; }
 
   inline Isolate* isolate() const { return isolate_; }
   inline Zone* zone() const { return zone_; }
@@ -142,7 +150,7 @@ class BytecodeGenerator final : public AstVisitor {
 
   Isolate* isolate_;
   Zone* zone_;
-  BytecodeArrayBuilder builder_;
+  BytecodeArrayBuilder* builder_;
   CompilationInfo* info_;
   Scope* scope_;
   ZoneVector<Handle<Object>> globals_;

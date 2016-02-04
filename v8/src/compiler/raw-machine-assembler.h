@@ -79,6 +79,9 @@ class RawMachineAssembler {
   Node* Int32Constant(int32_t value) {
     return AddNode(common()->Int32Constant(value));
   }
+  Node* StackSlot(MachineRepresentation rep) {
+    return AddNode(machine()->StackSlot(rep));
+  }
   Node* Int64Constant(int64_t value) {
     return AddNode(common()->Int64Constant(value));
   }
@@ -275,6 +278,10 @@ class RawMachineAssembler {
   Node* Int32GreaterThanOrEqual(Node* a, Node* b) {
     return Int32LessThanOrEqual(b, a);
   }
+  Node* Uint32GreaterThan(Node* a, Node* b) { return Uint32LessThan(b, a); }
+  Node* Uint32GreaterThanOrEqual(Node* a, Node* b) {
+    return Uint32LessThanOrEqual(b, a);
+  }
   Node* Int32Neg(Node* a) { return Int32Sub(Int32Constant(0), a); }
 
   Node* Int64Add(Node* a, Node* b) {
@@ -315,6 +322,10 @@ class RawMachineAssembler {
   Node* Int64GreaterThanOrEqual(Node* a, Node* b) {
     return Int64LessThanOrEqual(b, a);
   }
+  Node* Uint64GreaterThan(Node* a, Node* b) { return Uint64LessThan(b, a); }
+  Node* Uint64GreaterThanOrEqual(Node* a, Node* b) {
+    return Uint64LessThanOrEqual(b, a);
+  }
   Node* Uint64Div(Node* a, Node* b) {
     return AddNode(machine()->Uint64Div(), a, b);
   }
@@ -338,6 +349,19 @@ class RawMachineAssembler {
   INTPTR_BINOP(Int, GreaterThan);
 
 #undef INTPTR_BINOP
+
+#define UINTPTR_BINOP(prefix, name)                    \
+  Node* UintPtr##name(Node* a, Node* b) {              \
+    return kPointerSize == 8 ? prefix##64##name(a, b)  \
+                             : prefix##32##name(a, b); \
+  }
+
+  UINTPTR_BINOP(Uint, LessThan);
+  UINTPTR_BINOP(Uint, LessThanOrEqual);
+  UINTPTR_BINOP(Uint, GreaterThanOrEqual);
+  UINTPTR_BINOP(Uint, GreaterThan);
+
+#undef UINTPTR_BINOP
 
   Node* Float32Add(Node* a, Node* b) {
     return AddNode(machine()->Float32Add(), a, b);
@@ -564,11 +588,16 @@ class RawMachineAssembler {
   // Call a given call descriptor and the given arguments and frame-state.
   Node* CallNWithFrameState(CallDescriptor* desc, Node* function, Node** args,
                             Node* frame_state);
+  // Call to a runtime function with zero arguments.
+  Node* CallRuntime0(Runtime::FunctionId function, Node* context);
   // Call to a runtime function with one arguments.
   Node* CallRuntime1(Runtime::FunctionId function, Node* arg0, Node* context);
   // Call to a runtime function with two arguments.
   Node* CallRuntime2(Runtime::FunctionId function, Node* arg1, Node* arg2,
                      Node* context);
+  // Call to a runtime function with three arguments.
+  Node* CallRuntime3(Runtime::FunctionId function, Node* arg1, Node* arg2,
+                     Node* arg3, Node* context);
   // Call to a runtime function with four arguments.
   Node* CallRuntime4(Runtime::FunctionId function, Node* arg1, Node* arg2,
                      Node* arg3, Node* arg4, Node* context);
@@ -598,7 +627,12 @@ class RawMachineAssembler {
   // Tail call to a runtime function with two arguments.
   Node* TailCallRuntime2(Runtime::FunctionId function, Node* arg1, Node* arg2,
                          Node* context);
-
+  // Tail call to a runtime function with three arguments.
+  Node* TailCallRuntime3(Runtime::FunctionId function, Node* arg1, Node* arg2,
+                         Node* arg3, Node* context);
+  // Tail call to a runtime function with four arguments.
+  Node* TailCallRuntime4(Runtime::FunctionId function, Node* arg1, Node* arg2,
+                         Node* arg3, Node* arg4, Node* context);
 
   // ===========================================================================
   // The following utility methods deal with control flow, hence might switch
@@ -618,24 +652,26 @@ class RawMachineAssembler {
 
   // Variables.
   Node* Phi(MachineRepresentation rep, Node* n1, Node* n2) {
-    return AddNode(common()->Phi(rep, 2), n1, n2);
+    return AddNode(common()->Phi(rep, 2), n1, n2, graph()->start());
   }
   Node* Phi(MachineRepresentation rep, Node* n1, Node* n2, Node* n3) {
-    return AddNode(common()->Phi(rep, 3), n1, n2, n3);
+    return AddNode(common()->Phi(rep, 3), n1, n2, n3, graph()->start());
   }
   Node* Phi(MachineRepresentation rep, Node* n1, Node* n2, Node* n3, Node* n4) {
-    return AddNode(common()->Phi(rep, 4), n1, n2, n3, n4);
+    return AddNode(common()->Phi(rep, 4), n1, n2, n3, n4, graph()->start());
   }
+  Node* Phi(MachineRepresentation rep, int input_count, Node* const* inputs);
+  void AppendPhiInput(Node* phi, Node* new_input);
 
   // ===========================================================================
   // The following generic node creation methods can be used for operators that
   // are not covered by the above utility methods. There should rarely be a need
   // to do that outside of testing though.
 
-  Node* AddNode(const Operator* op, int input_count, Node** inputs);
+  Node* AddNode(const Operator* op, int input_count, Node* const* inputs);
 
   Node* AddNode(const Operator* op) {
-    return AddNode(op, 0, static_cast<Node**>(nullptr));
+    return AddNode(op, 0, static_cast<Node* const*>(nullptr));
   }
 
   template <class... TArgs>
@@ -645,7 +681,7 @@ class RawMachineAssembler {
   }
 
  private:
-  Node* MakeNode(const Operator* op, int input_count, Node** inputs);
+  Node* MakeNode(const Operator* op, int input_count, Node* const* inputs);
   BasicBlock* Use(RawMachineLabel* label);
   BasicBlock* EnsureBlock(RawMachineLabel* label);
   BasicBlock* CurrentBlock();

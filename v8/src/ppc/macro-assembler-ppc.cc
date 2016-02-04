@@ -187,6 +187,10 @@ void MacroAssembler::Drop(int count) {
   }
 }
 
+void MacroAssembler::Drop(Register count, Register scratch) {
+  ShiftLeftImm(scratch, count, Operand(kPointerSizeLog2));
+  add(sp, sp, scratch);
+}
 
 void MacroAssembler::Call(Label* target) { b(target, SetLK); }
 
@@ -2128,6 +2132,60 @@ void MacroAssembler::TestDoubleIsInt32(DoubleRegister double_input,
   TryDoubleToInt32Exact(scratch1, double_input, scratch2, double_scratch);
 }
 
+void MacroAssembler::TestDoubleIsMinusZero(DoubleRegister input,
+                                           Register scratch1,
+                                           Register scratch2) {
+#if V8_TARGET_ARCH_PPC64
+  MovDoubleToInt64(scratch1, input);
+  rotldi(scratch1, scratch1, 1);
+  cmpi(scratch1, Operand(1));
+#else
+  MovDoubleToInt64(scratch1, scratch2, input);
+  Label done;
+  cmpi(scratch2, Operand::Zero());
+  bne(&done);
+  lis(scratch2, Operand(SIGN_EXT_IMM16(0x8000)));
+  cmp(scratch1, scratch2);
+  bind(&done);
+#endif
+}
+
+void MacroAssembler::TestHeapNumberIsMinusZero(Register input,
+                                               Register scratch1,
+                                               Register scratch2) {
+#if V8_TARGET_ARCH_PPC64
+  LoadP(scratch1, FieldMemOperand(input, HeapNumber::kValueOffset));
+  rotldi(scratch1, scratch1, 1);
+  cmpi(scratch1, Operand(1));
+#else
+  lwz(scratch1, FieldMemOperand(input, HeapNumber::kExponentOffset));
+  lwz(scratch2, FieldMemOperand(input, HeapNumber::kMantissaOffset));
+  Label done;
+  cmpi(scratch2, Operand::Zero());
+  bne(&done);
+  lis(scratch2, Operand(SIGN_EXT_IMM16(0x8000)));
+  cmp(scratch1, scratch2);
+  bind(&done);
+#endif
+}
+
+void MacroAssembler::TestDoubleSign(DoubleRegister input, Register scratch) {
+#if V8_TARGET_ARCH_PPC64
+  MovDoubleToInt64(scratch, input);
+#else
+  MovDoubleHighToInt(scratch, input);
+#endif
+  cmpi(scratch, Operand::Zero());
+}
+
+void MacroAssembler::TestHeapNumberSign(Register input, Register scratch) {
+#if V8_TARGET_ARCH_PPC64
+  LoadP(scratch, FieldMemOperand(input, HeapNumber::kValueOffset));
+#else
+  lwz(scratch, FieldMemOperand(input, HeapNumber::kExponentOffset));
+#endif
+  cmpi(scratch, Operand::Zero());
+}
 
 void MacroAssembler::TryDoubleToInt32Exact(Register result,
                                            DoubleRegister double_input,
@@ -3116,41 +3174,6 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   } else {
     addi(sp, sp, Operand(stack_space * kPointerSize));
   }
-}
-
-
-void MacroAssembler::FlushICache(Register address, size_t size,
-                                 Register scratch) {
-  if (CpuFeatures::IsSupported(INSTR_AND_DATA_CACHE_COHERENCY)) {
-    sync();
-    icbi(r0, address);
-    isync();
-    return;
-  }
-
-  Label done;
-
-  dcbf(r0, address);
-  sync();
-  icbi(r0, address);
-  isync();
-
-  // This code handles ranges which cross a single cacheline boundary.
-  // scratch is last cacheline which intersects range.
-  const int kCacheLineSizeLog2 = WhichPowerOf2(CpuFeatures::cache_line_size());
-
-  DCHECK(size > 0 && size <= (size_t)(1 << kCacheLineSizeLog2));
-  addi(scratch, address, Operand(size - 1));
-  ClearRightImm(scratch, scratch, Operand(kCacheLineSizeLog2));
-  cmpl(scratch, address);
-  ble(&done);
-
-  dcbf(r0, scratch);
-  sync();
-  icbi(r0, scratch);
-  isync();
-
-  bind(&done);
 }
 
 

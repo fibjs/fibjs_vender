@@ -1329,8 +1329,14 @@ ParserBase<Traits>::ParsePrimaryExpression(ExpressionClassifier* classifier,
                                           MessageTemplate::kUnexpectedToken,
                                           Token::String(Token::ELLIPSIS));
         classifier->RecordNonSimpleParameter();
-        ExpressionT expr =
-            this->ParseAssignmentExpression(true, classifier, CHECK_OK);
+        ExpressionT expr = this->ParseAssignmentExpression(
+            true, kIsPossibleArrowFormals, classifier, CHECK_OK);
+        if (!this->IsIdentifier(expr) && !expr->IsObjectLiteral() &&
+            !expr->IsArrayLiteral()) {
+          classifier->RecordArrowFormalParametersError(
+              Scanner::Location(ellipsis_pos, scanner()->location().end_pos),
+              MessageTemplate::kInvalidRestParameter);
+        }
         if (peek() == Token::COMMA) {
           ReportMessageAt(scanner()->peek_location(),
                           MessageTemplate::kParamAfterRest);
@@ -1458,7 +1464,15 @@ typename ParserBase<Traits>::ExpressionT ParserBase<Traits>::ParseExpression(
     int pos = position(), expr_pos = peek_position();
     ExpressionT right = this->ParseAssignmentExpression(
         accept_IN, flags, &binding_classifier, CHECK_OK);
-    if (is_rest) right = factory()->NewSpread(right, pos, expr_pos);
+    if (is_rest) {
+      if (!this->IsIdentifier(right) && !right->IsObjectLiteral() &&
+          !right->IsArrayLiteral()) {
+        classifier->RecordArrowFormalParametersError(
+            Scanner::Location(pos, scanner()->location().end_pos),
+            MessageTemplate::kInvalidRestParameter);
+      }
+      right = factory()->NewSpread(right, pos, expr_pos);
+    }
     is_simple_parameter_list =
         is_simple_parameter_list && this->IsIdentifier(right);
     classifier->Accumulate(binding_classifier,
@@ -2146,10 +2160,7 @@ ParserBase<Traits>::ParseYieldExpression(ExpressionClassifier* classifier,
     }
   }
   if (kind == Yield::kDelegating) {
-    // var iterator = subject[Symbol.iterator]();
-    // Hackily disambiguate o from o.next and o [Symbol.iterator]().
-    // TODO(verwaest): Come up with a better solution.
-    expression = this->GetIterator(expression, factory(), pos + 1);
+    return Traits::RewriteYieldStar(generator_object, expression, pos);
   }
   // Hackily disambiguate o from o.next and o [Symbol.iterator]().
   // TODO(verwaest): Come up with a better solution.
@@ -2548,6 +2559,24 @@ ParserBase<Traits>::ParseMemberExpression(ExpressionClassifier* classifier,
 
     Consume(Token::FUNCTION);
     int function_token_position = position();
+
+    if (FLAG_harmony_function_sent && Check(Token::PERIOD)) {
+      // function.sent
+
+      int pos = position();
+      ExpectContextualKeyword(CStrVector("sent"), CHECK_OK);
+
+      if (!is_generator()) {
+        // TODO(neis): allow escaping into closures?
+        ReportMessageAt(scanner()->location(),
+                        MessageTemplate::kUnexpectedFunctionSent);
+        *ok = false;
+        return this->EmptyExpression();
+      }
+
+      return this->FunctionSentExpression(scope_, factory(), pos);
+    }
+
     bool is_generator = Check(Token::MUL);
     IdentifierT name = this->EmptyIdentifier();
     bool is_strict_reserved_name = false;

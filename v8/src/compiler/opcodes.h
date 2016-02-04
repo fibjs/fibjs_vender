@@ -202,6 +202,7 @@
   V(StoreBuffer)                   \
   V(StoreElement)                  \
   V(ObjectIsNumber)                \
+  V(ObjectIsReceiver)              \
   V(ObjectIsSmi)
 
 // Opcodes for Machine-level operators.
@@ -227,6 +228,7 @@
   MACHINE_COMPARE_BINOP_LIST(V) \
   V(Load)                       \
   V(Store)                      \
+  V(StackSlot)                  \
   V(Word32And)                  \
   V(Word32Or)                   \
   V(Word32Xor)                  \

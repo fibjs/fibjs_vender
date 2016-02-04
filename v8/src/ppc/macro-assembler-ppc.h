@@ -147,6 +147,7 @@ class MacroAssembler : public Assembler {
   // Emit code to discard a non-negative number of pointer-sized elements
   // from the stack, clobbering only the sp register.
   void Drop(int count);
+  void Drop(Register count, Register scratch = r0);
 
   void Ret(int drop) {
     Drop(drop);
@@ -862,6 +863,18 @@ class MacroAssembler : public Assembler {
   // CR_EQ in cr7 is set if true.
   void TestDoubleIsInt32(DoubleRegister double_input, Register scratch1,
                          Register scratch2, DoubleRegister double_scratch);
+
+  // Check if a double is equal to -0.0.
+  // CR_EQ in cr7 holds the result.
+  void TestDoubleIsMinusZero(DoubleRegister input, Register scratch1,
+                             Register scratch2);
+  void TestHeapNumberIsMinusZero(Register input, Register scratch1,
+                                 Register scratch2);
+
+  // Check the sign of a double.
+  // CR_LT in cr7 holds the result.
+  void TestDoubleSign(DoubleRegister input, Register scratch);
+  void TestHeapNumberSign(Register input, Register scratch);
 
   // Try to convert a double to a signed 32-bit integer.
   // CR_EQ in cr7 is set and result assigned if the conversion is exact.

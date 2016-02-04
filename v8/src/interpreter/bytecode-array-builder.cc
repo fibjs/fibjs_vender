@@ -64,43 +64,31 @@ class BytecodeArrayBuilder::PreviousBytecodeHelper BASE_EMBEDDED {
   DISALLOW_COPY_AND_ASSIGN(PreviousBytecodeHelper);
 };
 
-BytecodeArrayBuilder::BytecodeArrayBuilder(Isolate* isolate, Zone* zone)
+BytecodeArrayBuilder::BytecodeArrayBuilder(Isolate* isolate, Zone* zone,
+                                           int parameter_count,
+                                           int context_count, int locals_count)
     : isolate_(isolate),
       zone_(zone),
       bytecodes_(zone),
       bytecode_generated_(false),
       constant_array_builder_(isolate, zone),
       handler_table_builder_(isolate, zone),
+      source_position_table_builder_(isolate, zone),
       last_block_end_(0),
       last_bytecode_start_(~0),
       exit_seen_in_block_(false),
       unbound_jumps_(0),
-      parameter_count_(-1),
-      local_register_count_(-1),
-      context_register_count_(-1),
-      temporary_register_count_(0),
-      free_temporaries_(zone),
-      register_translator_(this) {}
-
-BytecodeArrayBuilder::~BytecodeArrayBuilder() { DCHECK_EQ(0, unbound_jumps_); }
-
-
-void BytecodeArrayBuilder::set_locals_count(int number_of_locals) {
-  local_register_count_ = number_of_locals;
-  DCHECK_LE(context_register_count_, 0);
-}
-
-
-void BytecodeArrayBuilder::set_parameter_count(int number_of_parameters) {
-  parameter_count_ = number_of_parameters;
-}
-
-
-void BytecodeArrayBuilder::set_context_count(int number_of_contexts) {
-  context_register_count_ = number_of_contexts;
+      parameter_count_(parameter_count),
+      local_register_count_(locals_count),
+      context_register_count_(context_count),
+      temporary_allocator_(zone, fixed_register_count()),
+      register_translator_(this) {
+  DCHECK_GE(parameter_count_, 0);
+  DCHECK_GE(context_register_count_, 0);
   DCHECK_GE(local_register_count_, 0);
 }
 
+BytecodeArrayBuilder::~BytecodeArrayBuilder() { DCHECK_EQ(0, unbound_jumps_); }
 
 Register BytecodeArrayBuilder::first_context_register() const {
   DCHECK_GT(context_register_count_, 0);
@@ -111,18 +99,6 @@ Register BytecodeArrayBuilder::first_context_register() const {
 Register BytecodeArrayBuilder::last_context_register() const {
   DCHECK_GT(context_register_count_, 0);
   return Register(local_register_count_ + context_register_count_ - 1);
-}
-
-
-Register BytecodeArrayBuilder::first_temporary_register() const {
-  DCHECK_GT(temporary_register_count_, 0);
-  return Register(fixed_register_count());
-}
-
-
-Register BytecodeArrayBuilder::last_temporary_register() const {
-  DCHECK_GT(temporary_register_count_, 0);
-  return Register(fixed_register_count() + temporary_register_count_ - 1);
 }
 
 
@@ -137,12 +113,6 @@ bool BytecodeArrayBuilder::RegisterIsParameterOrLocal(Register reg) const {
 }
 
 
-bool BytecodeArrayBuilder::RegisterIsTemporary(Register reg) const {
-  return temporary_register_count_ > 0 && first_temporary_register() <= reg &&
-         reg <= last_temporary_register();
-}
-
-
 Handle<BytecodeArray> BytecodeArrayBuilder::ToBytecodeArray() {
   DCHECK_EQ(bytecode_generated_, false);
   EnsureReturn();
@@ -153,10 +123,13 @@ Handle<BytecodeArray> BytecodeArrayBuilder::ToBytecodeArray() {
   int frame_size = register_count * kPointerSize;
   Handle<FixedArray> constant_pool = constant_array_builder()->ToFixedArray();
   Handle<FixedArray> handler_table = handler_table_builder()->ToHandlerTable();
+  Handle<FixedArray> source_position_table =
+      source_position_table_builder()->ToFixedArray();
   Handle<BytecodeArray> output = isolate_->factory()->NewBytecodeArray(
       bytecode_size, &bytecodes_.front(), frame_size, parameter_count(),
       constant_pool);
   output->set_handler_table(*handler_table);
+  output->set_source_position_table(*source_position_table);
   bytecode_generated_ = true;
   return output;
 }
@@ -606,6 +579,16 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CreateArguments(
   return *this;
 }
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::CreateRestArguments(int index) {
+  size_t index_entry =
+      GetConstantPoolEntry(Handle<Object>(Smi::FromInt(index), isolate_));
+  // This will always be the first entry in the constant pool, since the rest
+  // arguments object is created at the start of the function just after
+  // creating the arguments object.
+  CHECK(FitsInIdx8Operand(index_entry));
+  Output(Bytecode::kCreateRestArguments, static_cast<uint8_t>(index_entry));
+  return *this;
+}
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CreateRegExpLiteral(
     Handle<String> pattern, int literal_index, int flags) {
@@ -981,6 +964,10 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::JumpIfUndefined(
   return OutputJump(Bytecode::kJumpIfUndefined, label);
 }
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::StackCheck() {
+  Output(Bytecode::kStackCheck);
+  return *this;
+}
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::Throw() {
   Output(Bytecode::kThrow);
@@ -1002,6 +989,10 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Return() {
   return *this;
 }
 
+BytecodeArrayBuilder& BytecodeArrayBuilder::Debugger() {
+  Output(Bytecode::kDebugger);
+  return *this;
+}
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::ForInPrepare(
     Register cache_info_triple) {
@@ -1082,21 +1073,24 @@ void BytecodeArrayBuilder::EnsureReturn() {
   }
 }
 
-
 BytecodeArrayBuilder& BytecodeArrayBuilder::Call(Register callable,
-                                                 Register receiver,
-                                                 size_t arg_count,
+                                                 Register receiver_args,
+                                                 size_t receiver_args_count,
                                                  int feedback_slot) {
-  if (FitsInReg8Operand(callable) && FitsInReg8Operand(receiver) &&
-      FitsInIdx8Operand(arg_count) && FitsInIdx8Operand(feedback_slot)) {
-    Output(Bytecode::kCall, callable.ToRawOperand(), receiver.ToRawOperand(),
-           static_cast<uint8_t>(arg_count),
+  if (FitsInReg8Operand(callable) && FitsInReg8Operand(receiver_args) &&
+      FitsInIdx8Operand(receiver_args_count) &&
+      FitsInIdx8Operand(feedback_slot)) {
+    Output(Bytecode::kCall, callable.ToRawOperand(),
+           receiver_args.ToRawOperand(),
+           static_cast<uint8_t>(receiver_args_count),
            static_cast<uint8_t>(feedback_slot));
-  } else if (FitsInReg16Operand(callable) && FitsInReg16Operand(receiver) &&
-             FitsInIdx16Operand(arg_count) &&
+  } else if (FitsInReg16Operand(callable) &&
+             FitsInReg16Operand(receiver_args) &&
+             FitsInIdx16Operand(receiver_args_count) &&
              FitsInIdx16Operand(feedback_slot)) {
     Output(Bytecode::kCallWide, callable.ToRawOperand(),
-           receiver.ToRawOperand(), static_cast<uint16_t>(arg_count),
+           receiver_args.ToRawOperand(),
+           static_cast<uint16_t>(receiver_args_count),
            static_cast<uint16_t>(feedback_slot));
   } else {
     UNIMPLEMENTED();
@@ -1173,17 +1167,19 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CallRuntimeForPair(
   return *this;
 }
 
-
-BytecodeArrayBuilder& BytecodeArrayBuilder::CallJSRuntime(int context_index,
-                                                          Register receiver,
-                                                          size_t arg_count) {
+BytecodeArrayBuilder& BytecodeArrayBuilder::CallJSRuntime(
+    int context_index, Register receiver_args, size_t receiver_args_count) {
   DCHECK(FitsInIdx16Operand(context_index));
-  if (FitsInReg8Operand(receiver) && FitsInIdx8Operand(arg_count)) {
+  if (FitsInReg8Operand(receiver_args) &&
+      FitsInIdx8Operand(receiver_args_count)) {
     Output(Bytecode::kCallJSRuntime, static_cast<uint16_t>(context_index),
-           receiver.ToRawOperand(), static_cast<uint8_t>(arg_count));
-  } else if (FitsInReg16Operand(receiver) && FitsInIdx16Operand(arg_count)) {
+           receiver_args.ToRawOperand(),
+           static_cast<uint8_t>(receiver_args_count));
+  } else if (FitsInReg16Operand(receiver_args) &&
+             FitsInIdx16Operand(receiver_args_count)) {
     Output(Bytecode::kCallJSRuntimeWide, static_cast<uint16_t>(context_index),
-           receiver.ToRawOperand(), static_cast<uint16_t>(arg_count));
+           receiver_args.ToRawOperand(),
+           static_cast<uint16_t>(receiver_args_count));
   } else {
     UNIMPLEMENTED();
   }
@@ -1208,147 +1204,21 @@ size_t BytecodeArrayBuilder::GetConstantPoolEntry(Handle<Object> object) {
   return constant_array_builder()->Insert(object);
 }
 
-void BytecodeArrayBuilder::ForgeTemporaryRegister() {
-  temporary_register_count_++;
+void BytecodeArrayBuilder::SetStatementPosition(Statement* stmt) {
+  if (stmt->position() == RelocInfo::kNoPosition) return;
+  source_position_table_builder_.AddStatementPosition(
+      static_cast<int>(bytecodes_.size()), stmt->position());
 }
 
-int BytecodeArrayBuilder::BorrowTemporaryRegister() {
-  if (free_temporaries_.empty()) {
-    ForgeTemporaryRegister();
-    return last_temporary_register().index();
-  } else {
-    auto pos = free_temporaries_.begin();
-    int retval = *pos;
-    free_temporaries_.erase(pos);
-    return retval;
-  }
+void BytecodeArrayBuilder::SetExpressionPosition(Expression* expr) {
+  if (expr->position() == RelocInfo::kNoPosition) return;
+  source_position_table_builder_.AddExpressionPosition(
+      static_cast<int>(bytecodes_.size()), expr->position());
 }
-
-
-int BytecodeArrayBuilder::BorrowTemporaryRegisterNotInRange(int start_index,
-                                                            int end_index) {
-  auto index = free_temporaries_.lower_bound(start_index);
-  if (index == free_temporaries_.begin()) {
-    // If start_index is the first free register, check for a register
-    // greater than end_index.
-    index = free_temporaries_.upper_bound(end_index);
-    if (index == free_temporaries_.end()) {
-      ForgeTemporaryRegister();
-      return last_temporary_register().index();
-    }
-  } else {
-    // If there is a free register < start_index
-    index--;
-  }
-
-  int retval = *index;
-  free_temporaries_.erase(index);
-  return retval;
-}
-
-
-void BytecodeArrayBuilder::BorrowConsecutiveTemporaryRegister(int reg_index) {
-  DCHECK(free_temporaries_.find(reg_index) != free_temporaries_.end());
-  free_temporaries_.erase(reg_index);
-}
-
-
-void BytecodeArrayBuilder::ReturnTemporaryRegister(int reg_index) {
-  DCHECK(free_temporaries_.find(reg_index) == free_temporaries_.end());
-  free_temporaries_.insert(reg_index);
-}
-
-
-int BytecodeArrayBuilder::PrepareForConsecutiveTemporaryRegisters(
-    size_t count) {
-  if (count == 0) {
-    return -1;
-  }
-
-  // TODO(oth): replace use of set<> here for free_temporaries with a
-  // more efficient structure. And/or partition into two searches -
-  // one before the translation window and one after.
-
-  // A run will require at least |count| free temporaries.
-  while (free_temporaries_.size() < count) {
-    ForgeTemporaryRegister();
-    free_temporaries_.insert(last_temporary_register().index());
-  }
-
-  // Search within existing temporaries for a run.
-  auto start = free_temporaries_.begin();
-  size_t run_length = 0;
-  for (auto run_end = start; run_end != free_temporaries_.end(); run_end++) {
-    int expected = *start + static_cast<int>(run_length);
-    if (*run_end != expected) {
-      start = run_end;
-      run_length = 0;
-    }
-    Register reg_start(*start);
-    Register reg_expected(expected);
-    if (RegisterTranslator::DistanceToTranslationWindow(reg_start) > 0 &&
-        RegisterTranslator::DistanceToTranslationWindow(reg_expected) <= 0) {
-      // Run straddles the lower edge of the translation window. Registers
-      // after the start of this boundary are displaced by the register
-      // translator to provide a hole for translation. Runs either side
-      // of the boundary are fine.
-      start = run_end;
-      run_length = 0;
-    }
-    if (++run_length == count) {
-      return *start;
-    }
-  }
-
-  // Continue run if possible across existing last temporary.
-  if (temporary_register_count_ > 0 &&
-      (start == free_temporaries_.end() ||
-       *start + static_cast<int>(run_length) !=
-           last_temporary_register().index() + 1)) {
-    run_length = 0;
-  }
-
-  // Pad temporaries if extended run would cross translation boundary.
-  Register reg_first(*start);
-  Register reg_last(*start + static_cast<int>(count) - 1);
-  DCHECK_GT(RegisterTranslator::DistanceToTranslationWindow(reg_first),
-            RegisterTranslator::DistanceToTranslationWindow(reg_last));
-  while (RegisterTranslator::DistanceToTranslationWindow(reg_first) > 0 &&
-         RegisterTranslator::DistanceToTranslationWindow(reg_last) <= 0) {
-    ForgeTemporaryRegister();
-    free_temporaries_.insert(last_temporary_register().index());
-    start = --free_temporaries_.end();
-    reg_first = Register(*start);
-    reg_last = Register(*start + static_cast<int>(count) - 1);
-    run_length = 0;
-  }
-
-  // Ensure enough registers for run.
-  while (run_length++ < count) {
-    ForgeTemporaryRegister();
-    free_temporaries_.insert(last_temporary_register().index());
-  }
-
-  int run_start =
-      last_temporary_register().index() - static_cast<int>(count) + 1;
-  DCHECK(RegisterTranslator::DistanceToTranslationWindow(Register(run_start)) <=
-             0 ||
-         RegisterTranslator::DistanceToTranslationWindow(
-             Register(run_start + static_cast<int>(count) - 1)) > 0);
-  return run_start;
-}
-
 
 bool BytecodeArrayBuilder::TemporaryRegisterIsLive(Register reg) const {
-  if (temporary_register_count_ > 0) {
-    DCHECK(reg.index() >= first_temporary_register().index() &&
-           reg.index() <= last_temporary_register().index());
-    return free_temporaries_.find(reg.index()) == free_temporaries_.end();
-  } else {
-    return false;
-  }
+  return temporary_register_allocator()->RegisterIsLive(reg);
 }
-
 
 bool BytecodeArrayBuilder::OperandIsValid(Bytecode bytecode, int operand_index,
                                           uint32_t operand_value) const {

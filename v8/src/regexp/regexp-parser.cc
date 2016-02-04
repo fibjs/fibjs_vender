@@ -26,7 +26,9 @@ RegExpParser::RegExpParser(FlatStringReader* in, Handle<String>* error,
       captures_(NULL),
       in_(in),
       current_(kEndMarker),
-      flags_(flags),
+      ignore_case_(flags & JSRegExp::kIgnoreCase),
+      multiline_(flags & JSRegExp::kMultiline),
+      unicode_(flags & JSRegExp::kUnicode),
       next_pos_(0),
       captures_started_(0),
       capture_count_(0),
@@ -38,9 +40,8 @@ RegExpParser::RegExpParser(FlatStringReader* in, Handle<String>* error,
   Advance();
 }
 
-
 template <bool update_position>
-uc32 RegExpParser::ReadNext() {
+inline uc32 RegExpParser::ReadNext() {
   int position = next_pos_;
   uc32 c0 = in()->Get(position);
   position++;
@@ -102,11 +103,28 @@ void RegExpParser::Advance(int dist) {
 
 bool RegExpParser::simple() { return simple_; }
 
-
-bool RegExpParser::IsSyntaxCharacter(uc32 c) {
-  return c == '^' || c == '$' || c == '\\' || c == '.' || c == '*' ||
-         c == '+' || c == '?' || c == '(' || c == ')' || c == '[' || c == ']' ||
-         c == '{' || c == '}' || c == '|';
+bool RegExpParser::IsSyntaxCharacterOrSlash(uc32 c) {
+  switch (c) {
+    case '^':
+    case '$':
+    case '\\':
+    case '.':
+    case '*':
+    case '+':
+    case '?':
+    case '(':
+    case ')':
+    case '[':
+    case ']':
+    case '{':
+    case '}':
+    case '|':
+    case '/':
+      return true;
+    default:
+      break;
+  }
+  return false;
 }
 
 
@@ -152,7 +170,7 @@ RegExpTree* RegExpParser::ParsePattern() {
 RegExpTree* RegExpParser::ParseDisjunction() {
   // Used to store current state while parsing subexpressions.
   RegExpParserState initial_state(NULL, INITIAL, RegExpLookaround::LOOKAHEAD, 0,
-                                  flags_, zone());
+                                  ignore_case(), unicode(), zone());
   RegExpParserState* state = &initial_state;
   // Cache the builder in a local variable for quick access.
   RegExpBuilder* builder = initial_state.builder();
@@ -161,14 +179,14 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       case kEndMarker:
         if (state->IsSubexpression()) {
           // Inside a parenthesized group when hitting end of input.
-          ReportError(CStrVector("Unterminated group") CHECK_FAILED);
+          return ReportError(CStrVector("Unterminated group"));
         }
         DCHECK_EQ(INITIAL, state->group_type());
         // Parsing completed successfully.
         return builder->ToRegExp();
       case ')': {
         if (!state->IsSubexpression()) {
-          ReportError(CStrVector("Unmatched ')'") CHECK_FAILED);
+          return ReportError(CStrVector("Unmatched ')'"));
         }
         DCHECK_NE(INITIAL, state->group_type());
 
@@ -276,20 +294,19 @@ RegExpTree* RegExpParser::ParseDisjunction() {
               }
             // Fall through.
             default:
-              ReportError(CStrVector("Invalid group") CHECK_FAILED);
-              break;
+              return ReportError(CStrVector("Invalid group"));
           }
           Advance(2);
         } else {
           if (captures_started_ >= kMaxCaptures) {
-            ReportError(CStrVector("Too many captures") CHECK_FAILED);
+            return ReportError(CStrVector("Too many captures"));
           }
           captures_started_++;
         }
         // Store current state and begin new disjunction parsing.
-        state =
-            new (zone()) RegExpParserState(state, subexpr_type, lookaround_type,
-                                           captures_started_, flags_, zone());
+        state = new (zone()) RegExpParserState(
+            state, subexpr_type, lookaround_type, captures_started_,
+            ignore_case(), unicode(), zone());
         builder = state->builder();
         continue;
       }
@@ -360,24 +377,25 @@ RegExpTree* RegExpParser::ParseDisjunction() {
               }
               break;
             }
+            // With /u, no identity escapes except for syntax characters
+            // are allowed. Otherwise, all identity escapes are allowed.
+            if (unicode()) {
+              return ReportError(CStrVector("Invalid escape"));
+            }
             uc32 first_digit = Next();
             if (first_digit == '8' || first_digit == '9') {
-              // If the 'u' flag is present, only syntax characters can be
-              // escaped,
-              // no other identity escapes are allowed. If the 'u' flag is not
-              // present, all identity escapes are allowed.
-              if (!unicode()) {
-                builder->AddCharacter(first_digit);
-                Advance(2);
-              } else {
-                return ReportError(CStrVector("Invalid escape"));
-              }
+              builder->AddCharacter(first_digit);
+              Advance(2);
               break;
             }
           }
           // FALLTHROUGH
           case '0': {
             Advance();
+            if (unicode() && Next() >= '0' && Next() <= '9') {
+              // With /u, decimal escape with leading 0 are not parsed as octal.
+              return ReportError(CStrVector("Invalid decimal escape"));
+            }
             uc32 octal = ParseOctalLiteral();
             builder->AddCharacter(octal);
             break;
@@ -415,6 +433,10 @@ RegExpTree* RegExpParser::ParseDisjunction() {
               // This is outside the specification. We match JSC in
               // reading the backslash as a literal character instead
               // of as starting an escape.
+              if (unicode()) {
+                // With /u, invalid escapes are not treated as identity escapes.
+                return ReportError(CStrVector("Invalid unicode escape"));
+              }
               builder->AddCharacter('\\');
             } else {
               Advance(2);
@@ -430,8 +452,7 @@ RegExpTree* RegExpParser::ParseDisjunction() {
             } else if (!unicode()) {
               builder->AddCharacter('x');
             } else {
-              // If the 'u' flag is present, invalid escapes are not treated as
-              // identity escapes.
+              // With /u, invalid escapes are not treated as identity escapes.
               return ReportError(CStrVector("Invalid escape"));
             }
             break;
@@ -444,20 +465,16 @@ RegExpTree* RegExpParser::ParseDisjunction() {
             } else if (!unicode()) {
               builder->AddCharacter('u');
             } else {
-              // If the 'u' flag is present, invalid escapes are not treated as
-              // identity escapes.
+              // With /u, invalid escapes are not treated as identity escapes.
               return ReportError(CStrVector("Invalid unicode escape"));
             }
             break;
           }
           default:
             Advance();
-            // If the 'u' flag is present, only syntax characters can be
-            // escaped, no
-            // other identity escapes are allowed. If the 'u' flag is not
-            // present,
-            // all identity escapes are allowed.
-            if (!unicode() || IsSyntaxCharacter(current())) {
+            // With /u, no identity escapes except for syntax characters
+            // are allowed. Otherwise, all identity escapes are allowed.
+            if (!unicode() || IsSyntaxCharacterOrSlash(current())) {
               builder->AddCharacter(current());
               Advance();
             } else {
@@ -469,10 +486,16 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       case '{': {
         int dummy;
         if (ParseIntervalQuantifier(&dummy, &dummy)) {
-          ReportError(CStrVector("Nothing to repeat") CHECK_FAILED);
+          return ReportError(CStrVector("Nothing to repeat"));
         }
         // fallthrough
       }
+      case '}':
+      case ']':
+        if (unicode()) {
+          return ReportError(CStrVector("Lone quantifier brackets"));
+        }
+      // fallthrough
       default:
         builder->AddUnicodeCharacter(current());
         Advance();
@@ -505,13 +528,15 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       case '{':
         if (ParseIntervalQuantifier(&min, &max)) {
           if (max < min) {
-            ReportError(CStrVector("numbers out of order in {} quantifier.")
-                            CHECK_FAILED);
+            return ReportError(
+                CStrVector("numbers out of order in {} quantifier"));
           }
           break;
-        } else {
-          continue;
+        } else if (unicode()) {
+          // With /u, incomplete quantifiers are not allowed.
+          return ReportError(CStrVector("Incomplete quantifier"));
         }
+        continue;
       default:
         continue;
     }
@@ -524,7 +549,9 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       quantifier_type = RegExpQuantifier::POSSESSIVE;
       Advance();
     }
-    builder->AddQuantifierToAtom(min, max, quantifier_type);
+    if (!builder->AddQuantifierToAtom(min, max, quantifier_type)) {
+      return ReportError(CStrVector("Invalid quantifier"));
+    }
   }
 }
 
@@ -822,13 +849,22 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
     case 'c': {
       uc32 controlLetter = Next();
       uc32 letter = controlLetter & ~('A' ^ 'a');
-      // For compatibility with JSC, inside a character class
-      // we also accept digits and underscore as control characters.
-      if ((controlLetter >= '0' && controlLetter <= '9') ||
-          controlLetter == '_' || (letter >= 'A' && letter <= 'Z')) {
+      // For compatibility with JSC, inside a character class. We also accept
+      // digits and underscore as control characters, unless with /u.
+      if (letter >= 'A' && letter <= 'Z') {
         Advance(2);
         // Control letters mapped to ASCII control characters in the range
         // 0x00-0x1f.
+        return controlLetter & 0x1f;
+      }
+      if (unicode()) {
+        // With /u, invalid escapes are not treated as identity escapes.
+        ReportError(CStrVector("Invalid class escape"));
+        return 0;
+      }
+      if ((controlLetter >= '0' && controlLetter <= '9') ||
+          controlLetter == '_') {
+        Advance(2);
         return controlLetter & 0x1f;
       }
       // We match JSC in reading the backslash as a literal
@@ -846,43 +882,43 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
       // For compatibility, we interpret a decimal escape that isn't
       // a back reference (and therefore either \0 or not valid according
       // to the specification) as a 1..3 digit octal character code.
+      if (unicode()) {
+        // With /u, decimal escape is not interpreted as octal character code.
+        ReportError(CStrVector("Invalid class escape"));
+        return 0;
+      }
       return ParseOctalLiteral();
     case 'x': {
       Advance();
       uc32 value;
-      if (ParseHexEscape(2, &value)) {
-        return value;
+      if (ParseHexEscape(2, &value)) return value;
+      if (unicode()) {
+        // With /u, invalid escapes are not treated as identity escapes.
+        ReportError(CStrVector("Invalid escape"));
+        return 0;
       }
-      if (!unicode()) {
-        // If \x is not followed by a two-digit hexadecimal, treat it
-        // as an identity escape.
-        return 'x';
-      }
-      // If the 'u' flag is present, invalid escapes are not treated as
-      // identity escapes.
-      ReportError(CStrVector("Invalid escape"));
-      return 0;
+      // If \x is not followed by a two-digit hexadecimal, treat it
+      // as an identity escape.
+      return 'x';
     }
     case 'u': {
       Advance();
       uc32 value;
-      if (ParseUnicodeEscape(&value)) {
-        return value;
+      if (ParseUnicodeEscape(&value)) return value;
+      if (unicode()) {
+        // With /u, invalid escapes are not treated as identity escapes.
+        ReportError(CStrVector("Invalid unicode escape"));
+        return 0;
       }
-      if (!unicode()) {
-        return 'u';
-      }
-      // If the 'u' flag is present, invalid escapes are not treated as
-      // identity escapes.
-      ReportError(CStrVector("Invalid unicode escape"));
-      return 0;
+      // If \u is not followed by a two-digit hexadecimal, treat it
+      // as an identity escape.
+      return 'u';
     }
     default: {
       uc32 result = current();
-      // If the 'u' flag is present, only syntax characters can be escaped, no
-      // other identity escapes are allowed. If the 'u' flag is not present, all
-      // identity escapes are allowed.
-      if (!unicode() || IsSyntaxCharacter(result)) {
+      // With /u, no identity escapes except for syntax characters are
+      // allowed. Otherwise, all identity escapes are allowed.
+      if (!unicode() || IsSyntaxCharacterOrSlash(result)) {
         Advance();
         return result;
       }
@@ -956,6 +992,7 @@ static inline void AddRangeOrEscape(ZoneList<CharacterRange>* ranges,
 
 RegExpTree* RegExpParser::ParseCharacterClass() {
   static const char* kUnterminated = "Unterminated character class";
+  static const char* kRangeInvalid = "Invalid character class";
   static const char* kRangeOutOfOrder = "Range out of order in character class";
 
   DCHECK_EQ(current(), '[');
@@ -985,13 +1022,18 @@ RegExpTree* RegExpParser::ParseCharacterClass() {
       CharacterRange next = ParseClassAtom(&char_class_2 CHECK_FAILED);
       if (char_class != kNoCharClass || char_class_2 != kNoCharClass) {
         // Either end is an escaped character class. Treat the '-' verbatim.
+        if (unicode()) {
+          // ES2015 21.2.2.15.1 step 1.
+          return ReportError(CStrVector(kRangeInvalid));
+        }
         AddRangeOrEscape(ranges, char_class, first, zone());
         ranges->Add(CharacterRange::Singleton('-'), zone());
         AddRangeOrEscape(ranges, char_class_2, next, zone());
         continue;
       }
+      // ES2015 21.2.2.15.1 step 6.
       if (first.from() > next.to()) {
-        return ReportError(CStrVector(kRangeOutOfOrder) CHECK_FAILED);
+        return ReportError(CStrVector(kRangeOutOfOrder));
       }
       ranges->Add(CharacterRange::Range(first.from(), next.to()), zone());
     } else {
@@ -999,7 +1041,7 @@ RegExpTree* RegExpParser::ParseCharacterClass() {
     }
   }
   if (!has_more()) {
-    return ReportError(CStrVector(kUnterminated) CHECK_FAILED);
+    return ReportError(CStrVector(kUnterminated));
   }
   Advance();
   if (ranges->length() == 0) {
@@ -1039,11 +1081,11 @@ bool RegExpParser::ParseRegExp(Isolate* isolate, Zone* zone,
   return !parser.failed();
 }
 
-
-RegExpBuilder::RegExpBuilder(Zone* zone, JSRegExp::Flags flags)
+RegExpBuilder::RegExpBuilder(Zone* zone, bool ignore_case, bool unicode)
     : zone_(zone),
       pending_empty_(false),
-      flags_(flags),
+      ignore_case_(ignore_case),
+      unicode_(unicode),
       characters_(NULL),
       pending_surrogate_(kNoPendingSurrogate),
       terms_(),
@@ -1162,7 +1204,7 @@ void RegExpBuilder::AddEmpty() { pending_empty_ = true; }
 
 void RegExpBuilder::AddCharacterClass(RegExpCharacterClass* cc) {
   if (NeedsDesugaringForUnicode(cc)) {
-    // In unicode mode, character class needs to be desugared, so it
+    // With /u, character class needs to be desugared, so it
     // must be a standalone term instead of being part of a RegExpText.
     AddTerm(cc);
   } else {
@@ -1275,13 +1317,12 @@ RegExpTree* RegExpBuilder::ToRegExp() {
   return new (zone()) RegExpDisjunction(alternatives_.GetList(zone()));
 }
 
-
-void RegExpBuilder::AddQuantifierToAtom(
+bool RegExpBuilder::AddQuantifierToAtom(
     int min, int max, RegExpQuantifier::QuantifierType quantifier_type) {
   FlushPendingSurrogate();
   if (pending_empty_) {
     pending_empty_ = false;
-    return;
+    return true;
   }
   RegExpTree* atom;
   if (characters_ != NULL) {
@@ -1304,23 +1345,26 @@ void RegExpBuilder::AddQuantifierToAtom(
   } else if (terms_.length() > 0) {
     DCHECK(last_added_ == ADD_ATOM);
     atom = terms_.RemoveLast();
+    // With /u, lookarounds are not quantifiable.
+    if (unicode() && atom->IsLookaround()) return false;
     if (atom->max_match() == 0) {
       // Guaranteed to only match an empty string.
       LAST(ADD_TERM);
       if (min == 0) {
-        return;
+        return true;
       }
       terms_.Add(atom, zone());
-      return;
+      return true;
     }
   } else {
     // Only call immediately after adding an atom or character!
     UNREACHABLE();
-    return;
+    return false;
   }
   terms_.Add(new (zone()) RegExpQuantifier(min, max, quantifier_type, atom),
              zone());
   LAST(ADD_TERM);
+  return true;
 }
 
 }  // namespace internal

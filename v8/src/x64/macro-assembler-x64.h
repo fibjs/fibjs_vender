@@ -294,6 +294,11 @@ class MacroAssembler: public Assembler {
       PointersToHereCheck pointers_to_here_check_for_value =
           kPointersToHereMaybeInteresting);
 
+  // Notify the garbage collector that we wrote a code entry into a
+  // JSFunction. Only scratch is clobbered by the operation.
+  void RecordWriteCodeEntryField(Register js_function, Register code_entry,
+                                 Register scratch);
+
   void RecordWriteForMap(
       Register object,
       Register map,
@@ -426,6 +431,12 @@ class MacroAssembler: public Assembler {
   // Convert smi to 64-bit integer (sign extended if necessary).
   void SmiToInteger64(Register dst, Register src);
   void SmiToInteger64(Register dst, const Operand& src);
+
+  // Convert smi to double.
+  void SmiToDouble(XMMRegister dst, Register src) {
+    SmiToInteger32(kScratchRegister, src);
+    Cvtlsi2sd(dst, kScratchRegister);
+  }
 
   // Multiply a positive smi's integer value by a power of two.
   // Provides result as 64-bit integer value.

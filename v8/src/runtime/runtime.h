@@ -74,7 +74,6 @@ namespace internal {
   F(AtomicsFutexWakeOrRequeue, 5, 1) \
   F(AtomicsFutexNumWaitersForTesting, 2, 1)
 
-
 #define FOR_EACH_INTRINSIC_CLASSES(F)       \
   F(ThrowNonMethodError, 0, 1)              \
   F(ThrowUnsupportedSuperError, 0, 1)       \
@@ -83,7 +82,7 @@ namespace internal {
   F(ThrowStaticPrototypeError, 0, 1)        \
   F(ThrowIfStaticPrototype, 1, 1)           \
   F(HomeObjectSymbol, 0, 1)                 \
-  F(DefineClass, 5, 1)                      \
+  F(DefineClass, 4, 1)                      \
   F(FinalizeClassDefinition, 2, 1)          \
   F(DefineClassMethod, 3, 1)                \
   F(LoadFromSuper, 4, 1)                    \
@@ -93,7 +92,6 @@ namespace internal {
   F(StoreKeyedToSuper_Strict, 4, 1)         \
   F(StoreKeyedToSuper_Sloppy, 4, 1)         \
   F(GetSuperConstructor, 1, 1)
-
 
 #define FOR_EACH_INTRINSIC_COLLECTIONS(F) \
   F(StringGetRawHashField, 1, 1)          \
@@ -209,7 +207,6 @@ namespace internal {
   F(ForInNext, 4, 1)                \
   F(ForInStep, 1, 1)
 
-
 #define FOR_EACH_INTRINSIC_INTERPRETER(F) \
   F(InterpreterEquals, 2, 1)              \
   F(InterpreterNotEquals, 2, 1)           \
@@ -222,8 +219,11 @@ namespace internal {
   F(InterpreterToBoolean, 1, 1)           \
   F(InterpreterLogicalNot, 1, 1)          \
   F(InterpreterTypeOf, 1, 1)              \
-  F(InterpreterNewClosure, 2, 1)
-
+  F(InterpreterNewClosure, 2, 1)          \
+  F(InterpreterTraceBytecodeEntry, 3, 1)  \
+  F(InterpreterTraceBytecodeExit, 3, 1)   \
+  F(InterpreterClearPendingMessage, 0, 1) \
+  F(InterpreterSetPendingMessage, 1, 1)
 
 #define FOR_EACH_INTRINSIC_FUNCTION(F)     \
   F(FunctionGetName, 1, 1)                 \
@@ -258,6 +258,7 @@ namespace internal {
   F(GeneratorGetFunction, 1, 1)         \
   F(GeneratorGetContext, 1, 1)          \
   F(GeneratorGetReceiver, 1, 1)         \
+  F(GeneratorGetInput, 1, 1)            \
   F(GeneratorGetContinuation, 1, 1)     \
   F(GeneratorGetSourcePosition, 1, 1)   \
   F(GeneratorNext, 2, 1)                \
@@ -539,7 +540,6 @@ namespace internal {
   F(RegExpExecReThrow, 4, 1)                   \
   F(IsRegExp, 1, 1)
 
-
 #define FOR_EACH_INTRINSIC_SCOPES(F)       \
   F(ThrowConstAssignError, 0, 1)           \
   F(DeclareGlobals, 2, 1)                  \
@@ -552,6 +552,7 @@ namespace internal {
   F(NewRestArguments_Generic, 2, 1)        \
   F(NewSloppyArguments, 3, 1)              \
   F(NewStrictArguments, 3, 1)              \
+  F(InstallLiterals, 1, 1)                 \
   F(NewRestParam, 3, 1)                    \
   F(NewClosure, 1, 1)                      \
   F(NewClosure_Tenured, 1, 1)              \
@@ -567,7 +568,6 @@ namespace internal {
   F(StoreLookupSlot, 4, 1)                 \
   F(ArgumentsLength, 0, 1)                 \
   F(Arguments, 1, 1)
-
 
 #define FOR_EACH_INTRINSIC_SIMD(F)     \
   F(IsSimdValue, 1, 1)                 \

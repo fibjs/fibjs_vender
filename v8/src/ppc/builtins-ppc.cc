@@ -140,6 +140,107 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
 
 
 // static
+void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
+  // ----------- S t a t e -------------
+  //  -- r3                 : number of arguments
+  //  -- lr                 : return address
+  //  -- sp[(argc - n) * 8] : arg[n] (zero-based)
+  //  -- sp[(argc + 1) * 8] : receiver
+  // -----------------------------------
+  Condition const cond_done = (kind == MathMaxMinKind::kMin) ? lt : gt;
+  Heap::RootListIndex const root_index =
+      (kind == MathMaxMinKind::kMin) ? Heap::kInfinityValueRootIndex
+                                     : Heap::kMinusInfinityValueRootIndex;
+  DoubleRegister const reg = (kind == MathMaxMinKind::kMin) ? d2 : d1;
+
+  // Load the accumulator with the default return value (either -Infinity or
+  // +Infinity), with the tagged value in r4 and the double value in d1.
+  __ LoadRoot(r4, root_index);
+  __ lfd(d1, FieldMemOperand(r4, HeapNumber::kValueOffset));
+
+  // Setup state for loop
+  // r5: address of arg[0] + kPointerSize
+  // r6: number of slots to drop at exit (arguments + receiver)
+  __ ShiftLeftImm(r5, r3, Operand(kPointerSizeLog2));
+  __ add(r5, sp, r5);
+  __ addi(r6, r3, Operand(1));
+
+  Label done_loop, loop;
+  __ bind(&loop);
+  {
+    // Check if all parameters done.
+    __ cmpl(r5, sp);
+    __ ble(&done_loop);
+
+    // Load the next parameter tagged value into r3.
+    __ LoadPU(r3, MemOperand(r5, -kPointerSize));
+
+    // Load the double value of the parameter into d2, maybe converting the
+    // parameter to a number first using the ToNumberStub if necessary.
+    Label convert, convert_smi, convert_number, done_convert;
+    __ bind(&convert);
+    __ JumpIfSmi(r3, &convert_smi);
+    __ LoadP(r7, FieldMemOperand(r3, HeapObject::kMapOffset));
+    __ JumpIfRoot(r7, Heap::kHeapNumberMapRootIndex, &convert_number);
+    {
+      // Parameter is not a Number, use the ToNumberStub to convert it.
+      FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+      __ SmiTag(r6);
+      __ Push(r4, r5, r6);
+      ToNumberStub stub(masm->isolate());
+      __ CallStub(&stub);
+      __ Pop(r4, r5, r6);
+      __ SmiUntag(r6);
+      {
+        // Restore the double accumulator value (d1).
+        Label done_restore;
+        __ SmiToDouble(d1, r4);
+        __ JumpIfSmi(r4, &done_restore);
+        __ lfd(d1, FieldMemOperand(r4, HeapNumber::kValueOffset));
+        __ bind(&done_restore);
+      }
+    }
+    __ b(&convert);
+    __ bind(&convert_number);
+    __ lfd(d2, FieldMemOperand(r3, HeapNumber::kValueOffset));
+    __ b(&done_convert);
+    __ bind(&convert_smi);
+    __ SmiToDouble(d2, r3);
+    __ bind(&done_convert);
+
+    // Perform the actual comparison with the accumulator value on the left hand
+    // side (d1) and the next parameter value on the right hand side (d2).
+    Label compare_nan, compare_swap;
+    __ fcmpu(d1, d2);
+    __ bunordered(&compare_nan);
+    __ b(cond_done, &loop);
+    __ b(CommuteCondition(cond_done), &compare_swap);
+
+    // Left and right hand side are equal, check for -0 vs. +0.
+    __ TestDoubleIsMinusZero(reg, r7, r8);
+    __ bne(&loop);
+
+    // Update accumulator. Result is on the right hand side.
+    __ bind(&compare_swap);
+    __ fmr(d1, d2);
+    __ mr(r4, r3);
+    __ b(&loop);
+
+    // At least one side is NaN, which means that the result will be NaN too.
+    // We still need to visit the rest of the arguments.
+    __ bind(&compare_nan);
+    __ LoadRoot(r4, Heap::kNanValueRootIndex);
+    __ lfd(d1, FieldMemOperand(r4, HeapNumber::kValueOffset));
+    __ b(&loop);
+  }
+
+  __ bind(&done_loop);
+  __ mr(r3, r4);
+  __ Drop(r6);
+  __ Ret();
+}
+
+// static
 void Builtins::Generate_NumberConstructor(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- r3                     : number of arguments
@@ -870,10 +971,8 @@ void Builtins::Generate_JSConstructEntryTrampoline(MacroAssembler* masm) {
 //   o sp: stack pointer
 //   o lr: return address
 //
-// The function builds a JS frame.  Please see JavaScriptFrameConstants in
-// frames-ppc.h for its layout.
-// TODO(rmcilroy): We will need to include the current bytecode pointer in the
-// frame.
+// The function builds an interpreter frame.  See InterpreterFrameConstants in
+// frames.h for its layout.
 void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // Open a frame scope to indicate that there is a frame on the stack.  The
   // MANUAL indicates that the scope shouldn't actually generate code to set up
@@ -937,18 +1036,6 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   //  - Allow simulator stop operations if FLAG_stop_at is set.
   //  - Code aging of the BytecodeArray object.
 
-  // Perform stack guard check.
-  {
-    Label ok;
-    __ LoadRoot(r0, Heap::kStackLimitRootIndex);
-    __ cmp(sp, r0);
-    __ bge(&ok);
-    __ push(kInterpreterBytecodeArrayRegister);
-    __ CallRuntime(Runtime::kStackGuard);
-    __ pop(kInterpreterBytecodeArrayRegister);
-    __ bind(&ok);
-  }
-
   // Load accumulator, register file, bytecode offset, dispatch table into
   // registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
@@ -970,7 +1057,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // and header removal.
   __ addi(ip, ip, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ Call(ip);
-  __ bkpt(0);  // Does not return here.
+
+  // Even though the first bytecode handler was called, we will never return.
+  __ Abort(kUnexpectedReturnFromBytecodeHandler);
 }
 
 

@@ -5377,9 +5377,11 @@ void HOptimizedGraphBuilder::BuildForInBody(ForInStatement* stmt,
   // Reload the values to ensure we have up-to-date values inside of the loop.
   // This is relevant especially for OSR where the values don't come from the
   // computation above, but from the OSR entry block.
-  enumerable = environment()->ExpressionStackAt(4);
   HValue* index = environment()->ExpressionStackAt(0);
   HValue* limit = environment()->ExpressionStackAt(1);
+  HValue* array = environment()->ExpressionStackAt(2);
+  HValue* type = environment()->ExpressionStackAt(3);
+  enumerable = environment()->ExpressionStackAt(4);
 
   // Check that we still have more keys.
   HCompareNumericAndBranch* compare_index =
@@ -5399,32 +5401,67 @@ void HOptimizedGraphBuilder::BuildForInBody(ForInStatement* stmt,
 
   set_current_block(loop_body);
 
-  HValue* key =
-      Add<HLoadKeyed>(environment()->ExpressionStackAt(2),  // Enum cache.
-                      index, index, nullptr, FAST_ELEMENTS);
+  // Compute the next enumerated value.
+  HValue* key = Add<HLoadKeyed>(array, index, index, nullptr, FAST_ELEMENTS);
 
+  HBasicBlock* continue_block = nullptr;
   if (fast) {
-    // Check if the expected map still matches that of the enumerable.
-    // If not just deoptimize.
-    Add<HCheckMapValue>(enumerable, environment()->ExpressionStackAt(3));
-    Bind(each_var, key);
-  } else {
-    Add<HPushArguments>(enumerable, key);
-    Runtime::FunctionId function_id = Runtime::kForInFilter;
-    key = Add<HCallRuntime>(Runtime::FunctionForId(function_id), 2);
-    Push(key);
+    // Check if expected map still matches that of the enumerable.
+    Add<HCheckMapValue>(enumerable, type);
     Add<HSimulate>(stmt->FilterId());
+  } else {
+    // We need the continue block here to be able to skip over invalidated keys.
+    continue_block = graph()->CreateBasicBlock();
+
+    // We cannot use the IfBuilder here, since we need to be able to jump
+    // over the loop body in case of undefined result from %ForInFilter,
+    // and the poor soul that is the IfBuilder get's really confused about
+    // such "advanced control flow requirements".
+    HBasicBlock* if_fast = graph()->CreateBasicBlock();
+    HBasicBlock* if_slow = graph()->CreateBasicBlock();
+    HBasicBlock* if_slow_pass = graph()->CreateBasicBlock();
+    HBasicBlock* if_slow_skip = graph()->CreateBasicBlock();
+    HBasicBlock* if_join = graph()->CreateBasicBlock();
+
+    // Check if expected map still matches that of the enumerable.
+    HValue* enumerable_map =
+        Add<HLoadNamedField>(enumerable, nullptr, HObjectAccess::ForMap());
+    FinishCurrentBlock(
+        New<HCompareObjectEqAndBranch>(enumerable_map, type, if_fast, if_slow));
+    set_current_block(if_fast);
+    {
+      // The enum cache for enumerable is still valid, no need to check key.
+      Push(key);
+      Goto(if_join);
+    }
+    set_current_block(if_slow);
+    {
+      // Check if key is still valid for enumerable.
+      Add<HPushArguments>(enumerable, key);
+      Runtime::FunctionId function_id = Runtime::kForInFilter;
+      Push(Add<HCallRuntime>(Runtime::FunctionForId(function_id), 2));
+      Add<HSimulate>(stmt->FilterId());
+      FinishCurrentBlock(New<HCompareObjectEqAndBranch>(
+          Top(), graph()->GetConstantUndefined(), if_slow_skip, if_slow_pass));
+    }
+    set_current_block(if_slow_pass);
+    { Goto(if_join); }
+    set_current_block(if_slow_skip);
+    {
+      // The key is no longer valid for enumerable, skip it.
+      Drop(1);
+      Goto(continue_block);
+    }
+    if_join->SetJoinId(stmt->FilterId());
+    set_current_block(if_join);
     key = Pop();
-    Bind(each_var, key);
-    IfBuilder if_undefined(this);
-    if_undefined.If<HCompareObjectEqAndBranch>(key,
-                                               graph()->GetConstantUndefined());
-    if_undefined.ThenDeopt(Deoptimizer::kUndefined);
-    if_undefined.End();
-    Add<HSimulate>(stmt->AssignmentId());
   }
 
+  Bind(each_var, key);
+  Add<HSimulate>(stmt->AssignmentId());
+
   BreakAndContinueInfo break_info(stmt, scope(), 5);
+  break_info.set_continue_block(continue_block);
   {
     BreakAndContinueScope push(&break_info, this);
     CHECK_BAILOUT(VisitLoopBody(stmt, loop_entry));
@@ -5501,10 +5538,10 @@ void HOptimizedGraphBuilder::VisitFunctionLiteral(FunctionLiteral* expr) {
   // We also have a stack overflow if the recursive compilation did.
   if (HasStackOverflow()) return;
   // Use the fast case closure allocation code that allocates in new
-  // space for nested functions that don't need literals cloning.
+  // space for nested functions that don't need pretenuring.
   HConstant* shared_info_value = Add<HConstant>(shared_info);
   HInstruction* instr;
-  if (!expr->pretenure() && shared_info->num_literals() == 0) {
+  if (!expr->pretenure()) {
     FastNewClosureStub stub(isolate(), shared_info->language_mode(),
                             shared_info->kind());
     FastNewClosureDescriptor descriptor(isolate());
@@ -5658,7 +5695,7 @@ void HOptimizedGraphBuilder::VisitVariableProxy(VariableProxy* expr) {
           Handle<Context> script_context = ScriptContextTable::GetContext(
               script_contexts, lookup.context_index);
           Handle<Object> current_value =
-              FixedArray::get(script_context, lookup.slot_index);
+              FixedArray::get(*script_context, lookup.slot_index, isolate());
 
           // If the values is not the hole, it will stay initialized,
           // so no need to generate a check.
@@ -6854,7 +6891,7 @@ void HOptimizedGraphBuilder::HandleGlobalVariableAssignment(
           ScriptContextTable::GetContext(script_contexts, lookup.context_index);
 
       Handle<Object> current_value =
-          FixedArray::get(script_context, lookup.slot_index);
+          FixedArray::get(*script_context, lookup.slot_index, isolate());
 
       // If the values is not the hole, it will stay initialized,
       // so no need to generate a check.
@@ -7378,8 +7415,8 @@ HInstruction* HOptimizedGraphBuilder::BuildMonomorphicElementAccess(
 
 
 static bool CanInlineElementAccess(Handle<Map> map) {
-  return map->IsJSObjectMap() && !map->has_dictionary_elements() &&
-         !map->has_sloppy_arguments_elements() &&
+  return map->IsJSObjectMap() &&
+         (map->has_fast_elements() || map->has_fixed_typed_array_elements()) &&
          !map->has_indexed_interceptor() && !map->is_access_check_needed();
 }
 
@@ -8441,6 +8478,9 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
   // after the EnsureDeoptimizationSupport call so that the code flusher
   // does not remove the code with the deoptimization support.
   top_info()->AddInlinedFunction(target_info.shared_info());
+
+  // If target was lazily compiled, it's literals array may not yet be set up.
+  JSFunction::EnsureLiterals(target);
 
   // ----------------------------------------------------------------
   // After this point, we've made a decision to inline this function (so
@@ -10869,7 +10909,7 @@ HValue* HGraphBuilder::TruncateToNumber(HValue* value, Type** expected) {
     Maybe<HConstant*> number =
         constant->CopyToTruncatedNumber(isolate(), zone());
     if (number.IsJust()) {
-      *expected = Type::Number(zone());
+      *expected = Type::Number();
       return AddInstruction(number.FromJust());
     }
   }
@@ -10883,20 +10923,20 @@ HValue* HGraphBuilder::TruncateToNumber(HValue* value, Type** expected) {
 
   // Separate the number type from the rest.
   Type* expected_obj =
-      Type::Intersect(expected_type, Type::NonNumber(zone()), zone());
+      Type::Intersect(expected_type, Type::NonNumber(), zone());
   Type* expected_number =
-      Type::Intersect(expected_type, Type::Number(zone()), zone());
+      Type::Intersect(expected_type, Type::Number(), zone());
 
   // We expect to get a number.
   // (We need to check first, since Type::None->Is(Type::Any()) == true.
   if (expected_obj->Is(Type::None())) {
-    DCHECK(!expected_number->Is(Type::None(zone())));
+    DCHECK(!expected_number->Is(Type::None()));
     return value;
   }
 
-  if (expected_obj->Is(Type::Undefined(zone()))) {
+  if (expected_obj->Is(Type::Undefined())) {
     // This is already done by HChange.
-    *expected = Type::Union(expected_number, Type::Number(zone()), zone());
+    *expected = Type::Union(expected_number, Type::Number(), zone());
     return value;
   }
 
@@ -10971,7 +11011,7 @@ HValue* HGraphBuilder::BuildBinaryOperation(
     Add<HDeoptimize>(
         Deoptimizer::kInsufficientTypeFeedbackForLHSOfBinaryOperation,
         Deoptimizer::SOFT);
-    left_type = Type::Any(zone());
+    left_type = Type::Any();
     left_rep = RepresentationFor(left_type);
     maybe_string_add = op == Token::ADD;
   }
@@ -10980,7 +11020,7 @@ HValue* HGraphBuilder::BuildBinaryOperation(
     Add<HDeoptimize>(
         Deoptimizer::kInsufficientTypeFeedbackForRHSOfBinaryOperation,
         Deoptimizer::SOFT);
-    right_type = Type::Any(zone());
+    right_type = Type::Any();
     right_rep = RepresentationFor(right_type);
     maybe_string_add = op == Token::ADD;
   }
@@ -11534,7 +11574,7 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
     Add<HDeoptimize>(
         Deoptimizer::kInsufficientTypeFeedbackForCombinedTypeOfBinaryOperation,
         Deoptimizer::SOFT);
-    combined_type = left_type = right_type = Type::Any(zone());
+    combined_type = left_type = right_type = Type::Any();
   }
 
   Representation left_rep = RepresentationFor(left_type);
@@ -11720,7 +11760,8 @@ void HOptimizedGraphBuilder::HandleLiteralCompareNil(CompareOperation* expr,
   } else {
     DCHECK_EQ(Token::EQ, expr->op());
     Type* type = expr->combined_type()->Is(Type::None())
-        ? Type::Any(zone()) : expr->combined_type();
+                     ? Type::Any()
+                     : expr->combined_type();
     HIfContinuation continuation;
     BuildCompareNil(value, type, &continuation);
     return ast_context()->ReturnContinuation(&continuation, expr->id());
@@ -12192,16 +12233,6 @@ void HOptimizedGraphBuilder::GenerateIsJSReceiver(CallRuntime* call) {
 }
 
 
-void HOptimizedGraphBuilder::GenerateIsFunction(CallRuntime* call) {
-  DCHECK(call->arguments()->length() == 1);
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
-  HValue* value = Pop();
-  HHasInstanceTypeAndBranch* result = New<HHasInstanceTypeAndBranch>(
-      value, FIRST_FUNCTION_TYPE, LAST_FUNCTION_TYPE);
-  return ast_context()->ReturnControl(result, call->id());
-}
-
-
 void HOptimizedGraphBuilder::GenerateIsMinusZero(CallRuntime* call) {
   DCHECK(call->arguments()->length() == 1);
   CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
@@ -12283,10 +12314,10 @@ void HOptimizedGraphBuilder::GenerateToName(CallRuntime* call) {
   CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
   HValue* input = Pop();
   if (input->type().IsSmi()) {
-    HValue* result = BuildNumberToString(input, Type::SignedSmall(zone()));
+    HValue* result = BuildNumberToString(input, Type::SignedSmall());
     return ast_context()->ReturnValue(result);
   } else if (input->type().IsTaggedNumber()) {
-    HValue* result = BuildNumberToString(input, Type::Number(zone()));
+    HValue* result = BuildNumberToString(input, Type::Number());
     return ast_context()->ReturnValue(result);
   } else if (input->type().IsString()) {
     return ast_context()->ReturnValue(input);
@@ -12707,7 +12738,7 @@ void HOptimizedGraphBuilder::GenerateNumberToString(CallRuntime* call) {
   DCHECK_EQ(1, call->arguments()->length());
   CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
   HValue* number = Pop();
-  HValue* result = BuildNumberToString(number, Type::Any(zone()));
+  HValue* result = BuildNumberToString(number, Type::Any());
   return ast_context()->ReturnValue(result);
 }
 

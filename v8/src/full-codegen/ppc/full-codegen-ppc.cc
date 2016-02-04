@@ -1080,9 +1080,9 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   // We got a fixed array in register r3. Iterate through that.
   __ bind(&fixed_array);
 
+  int const vector_index = SmiFromSlot(slot)->value();
   __ EmitLoadTypeFeedbackVector(r4);
   __ mov(r5, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
-  int vector_index = SmiFromSlot(slot)->value();
   __ StoreP(
       r5, FieldMemOperand(r4, FixedArray::OffsetOfElementAt(vector_index)), r0);
   __ LoadSmiLiteral(r4, Smi::FromInt(1));  // Smi(1) indicates slow check
@@ -1120,6 +1120,17 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ LoadP(r7, FieldMemOperand(r4, HeapObject::kMapOffset));
   __ cmp(r7, r5);
   __ beq(&update_each);
+
+  // We might get here from TurboFan or Crankshaft when something in the
+  // for-in loop body deopts and only now notice in fullcodegen, that we
+  // can now longer use the enum cache, i.e. left fast mode. So better record
+  // this information here, in case we later OSR back into this loop or
+  // reoptimize the whole function w/o rerunning the loop with the slow
+  // mode object in fullcodegen (which would result in a deopt loop).
+  __ EmitLoadTypeFeedbackVector(r3);
+  __ mov(r5, Operand(TypeFeedbackVector::MegamorphicSentinel(isolate())));
+  __ StoreP(
+      r5, FieldMemOperand(r3, FixedArray::OffsetOfElementAt(vector_index)), r0);
 
   // Convert the entry to a string or (smi) 0 if it isn't a property
   // any more. If the property has been removed while iterating, we
@@ -2044,6 +2055,13 @@ void FullCodeGenerator::EmitGeneratorResume(
   VisitForStackValue(generator);
   VisitForAccumulatorValue(value);
   __ pop(r4);
+
+  // Store input value into generator object.
+  __ StoreP(result_register(),
+            FieldMemOperand(r4, JSGeneratorObject::kInputOffset), r0);
+  __ mr(r5, result_register());
+  __ RecordWriteField(r4, JSGeneratorObject::kInputOffset, r5, r6,
+                      kLRHasBeenSaved, kDontSaveFPRegs);
 
   // Load suspended function and context.
   __ LoadP(cp, FieldMemOperand(r4, JSGeneratorObject::kContextOffset));
@@ -3123,28 +3141,6 @@ void FullCodeGenerator::EmitIsSimdValue(CallRuntime* expr) {
 }
 
 
-void FullCodeGenerator::EmitIsFunction(CallRuntime* expr) {
-  ZoneList<Expression*>* args = expr->arguments();
-  DCHECK(args->length() == 1);
-
-  VisitForAccumulatorValue(args->at(0));
-
-  Label materialize_true, materialize_false;
-  Label* if_true = NULL;
-  Label* if_false = NULL;
-  Label* fall_through = NULL;
-  context()->PrepareTest(&materialize_true, &materialize_false, &if_true,
-                         &if_false, &fall_through);
-
-  __ JumpIfSmi(r3, if_false);
-  __ CompareObjectType(r3, r4, r5, FIRST_FUNCTION_TYPE);
-  PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  Split(ge, if_true, if_false, fall_through);
-
-  context()->Plug(if_true, if_false);
-}
-
-
 void FullCodeGenerator::EmitIsMinusZero(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   DCHECK(args->length() == 1);
@@ -3159,22 +3155,7 @@ void FullCodeGenerator::EmitIsMinusZero(CallRuntime* expr) {
                          &if_false, &fall_through);
 
   __ CheckMap(r3, r4, Heap::kHeapNumberMapRootIndex, if_false, DO_SMI_CHECK);
-#if V8_TARGET_ARCH_PPC64
-  __ LoadP(r4, FieldMemOperand(r3, HeapNumber::kValueOffset));
-  __ li(r5, Operand(1));
-  __ rotrdi(r5, r5, 1);  // r5 = 0x80000000_00000000
-  __ cmp(r4, r5);
-#else
-  __ lwz(r5, FieldMemOperand(r3, HeapNumber::kExponentOffset));
-  __ lwz(r4, FieldMemOperand(r3, HeapNumber::kMantissaOffset));
-  Label skip;
-  __ lis(r0, Operand(SIGN_EXT_IMM16(0x8000)));
-  __ cmp(r5, r0);
-  __ bne(&skip);
-  __ cmpi(r4, Operand::Zero());
-  __ bind(&skip);
-#endif
-
+  __ TestHeapNumberIsMinusZero(r3, r4, r5);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(eq, if_true, if_false, fall_through);
 

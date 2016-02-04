@@ -1450,6 +1450,10 @@ void ObjectTemplate::SetAccessCheckCallback(AccessCheckCallback callback,
   cons->set_needs_access_check(true);
 }
 
+void ObjectTemplate::SetAccessCheckCallback(
+    DeprecatedAccessCheckCallback callback, Local<Value> data) {
+  SetAccessCheckCallback(reinterpret_cast<AccessCheckCallback>(callback), data);
+}
 
 void ObjectTemplate::SetAccessCheckCallbacks(
     NamedSecurityCallback named_callback,
@@ -3557,7 +3561,8 @@ static i::MaybeHandle<i::Object> DefineObjectProperty(
       isolate, js_object, key, &success, i::LookupIterator::OWN);
   if (!success) return i::MaybeHandle<i::Object>();
 
-  return i::JSObject::DefineOwnPropertyIgnoreAttributes(&it, value, attrs);
+  return i::JSObject::DefineOwnPropertyIgnoreAttributes(
+      &it, value, attrs, i::JSObject::FORCE_FIELD);
 }
 
 

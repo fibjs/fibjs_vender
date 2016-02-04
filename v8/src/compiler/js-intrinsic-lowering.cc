@@ -53,8 +53,6 @@ Reduction JSIntrinsicLowering::Reduce(Node* node) {
       return ReduceIsInstanceType(node, JS_DATE_TYPE);
     case Runtime::kInlineIsTypedArray:
       return ReduceIsInstanceType(node, JS_TYPED_ARRAY_TYPE);
-    case Runtime::kInlineIsFunction:
-      return ReduceIsFunction(node);
     case Runtime::kInlineIsRegExp:
       return ReduceIsInstanceType(node, JS_REGEXP_TYPE);
     case Runtime::kInlineIsJSReceiver:
@@ -229,89 +227,8 @@ Reduction JSIntrinsicLowering::ReduceIsInstanceType(
 }
 
 
-Reduction JSIntrinsicLowering::ReduceIsFunction(Node* node) {
-  Node* value = NodeProperties::GetValueInput(node, 0);
-  Type* value_type = NodeProperties::GetType(value);
-  Node* effect = NodeProperties::GetEffectInput(node);
-  Node* control = NodeProperties::GetControlInput(node);
-  if (value_type->Is(Type::Function())) {
-    value = jsgraph()->TrueConstant();
-  } else {
-    // if (%_IsSmi(value)) {
-    //   return false;
-    // } else {
-    //   return FIRST_FUNCTION_TYPE <= %_GetInstanceType(%_GetMap(value))
-    // }
-    STATIC_ASSERT(LAST_TYPE == LAST_FUNCTION_TYPE);
-
-    Node* check = graph()->NewNode(simplified()->ObjectIsSmi(), value);
-    Node* branch = graph()->NewNode(common()->Branch(), check, control);
-
-    Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
-    Node* etrue = effect;
-    Node* vtrue = jsgraph()->FalseConstant();
-
-    Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
-    Node* efalse = graph()->NewNode(
-        simplified()->LoadField(AccessBuilder::ForMapInstanceType()),
-        graph()->NewNode(simplified()->LoadField(AccessBuilder::ForMap()),
-                         value, effect, if_false),
-        effect, if_false);
-    Node* vfalse =
-        graph()->NewNode(machine()->Uint32LessThanOrEqual(),
-                         jsgraph()->Int32Constant(FIRST_FUNCTION_TYPE), efalse);
-
-    control = graph()->NewNode(common()->Merge(2), if_true, if_false);
-    effect = graph()->NewNode(common()->EffectPhi(2), etrue, efalse, control);
-    value = graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
-                             vtrue, vfalse, control);
-  }
-  ReplaceWithValue(node, node, effect, control);
-  return Replace(value);
-}
-
-
 Reduction JSIntrinsicLowering::ReduceIsJSReceiver(Node* node) {
-  Node* value = NodeProperties::GetValueInput(node, 0);
-  Type* value_type = NodeProperties::GetType(value);
-  Node* effect = NodeProperties::GetEffectInput(node);
-  Node* control = NodeProperties::GetControlInput(node);
-  if (value_type->Is(Type::Receiver())) {
-    value = jsgraph()->TrueConstant();
-  } else if (!value_type->Maybe(Type::Receiver())) {
-    value = jsgraph()->FalseConstant();
-  } else {
-    // if (%_IsSmi(value)) {
-    //   return false;
-    // } else {
-    //   return FIRST_JS_RECEIVER_TYPE <= %_GetInstanceType(%_GetMap(value))
-    // }
-    STATIC_ASSERT(LAST_TYPE == LAST_JS_RECEIVER_TYPE);
-
-    Node* check = graph()->NewNode(simplified()->ObjectIsSmi(), value);
-    Node* branch = graph()->NewNode(common()->Branch(), check, control);
-
-    Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
-    Node* etrue = effect;
-    Node* vtrue = jsgraph()->FalseConstant();
-
-    Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
-    Node* efalse = graph()->NewNode(
-        simplified()->LoadField(AccessBuilder::ForMapInstanceType()),
-        graph()->NewNode(simplified()->LoadField(AccessBuilder::ForMap()),
-                         value, effect, if_false),
-        effect, if_false);
-    Node* vfalse = graph()->NewNode(
-        machine()->Uint32LessThanOrEqual(),
-        jsgraph()->Int32Constant(FIRST_JS_RECEIVER_TYPE), efalse);
-
-    control = graph()->NewNode(common()->Merge(2), if_true, if_false);
-    effect = graph()->NewNode(common()->EffectPhi(2), etrue, efalse, control);
-    value = graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
-                             vtrue, vfalse, control);
-  }
-  ReplaceWithValue(node, node, effect, control);
-  return Replace(value);
+  return Change(node, simplified()->ObjectIsReceiver());
 }
 
 
@@ -507,12 +424,43 @@ Reduction JSIntrinsicLowering::ReduceSubString(Node* node) {
 
 Reduction JSIntrinsicLowering::ReduceToInteger(Node* node) {
   Node* value = NodeProperties::GetValueInput(node, 0);
+  Node* context = NodeProperties::GetContextInput(node);
+  Node* frame_state = NodeProperties::GetFrameStateInput(node, 0);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+
+  // ToInteger is a no-op on integer values and -0.
   Type* value_type = NodeProperties::GetType(value);
   if (value_type->Is(type_cache().kIntegerOrMinusZero)) {
     ReplaceWithValue(node, value);
     return Replace(value);
   }
-  return NoChange();
+
+  Node* check = graph()->NewNode(simplified()->ObjectIsSmi(), value);
+  Node* branch =
+      graph()->NewNode(common()->Branch(BranchHint::kTrue), check, control);
+
+  Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+  Node* etrue = effect;
+  Node* vtrue = value;
+
+  Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
+  Node* efalse = effect;
+  Node* vfalse;
+  {
+    vfalse = efalse =
+        graph()->NewNode(javascript()->CallRuntime(Runtime::kToInteger), value,
+                         context, frame_state, efalse, if_false);
+    if_false = graph()->NewNode(common()->IfSuccess(), vfalse);
+  }
+
+  control = graph()->NewNode(common()->Merge(2), if_true, if_false);
+  effect = graph()->NewNode(common()->EffectPhi(2), etrue, efalse, control);
+  value = graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
+                           vtrue, vfalse, control);
+  // TODO(bmeurer, mstarzinger): Rewire IfException inputs to {vfalse}.
+  ReplaceWithValue(node, value, effect, control);
+  return Changed(value);
 }
 
 

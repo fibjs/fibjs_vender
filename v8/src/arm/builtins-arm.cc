@@ -141,6 +141,108 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
 
 
 // static
+void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
+  // ----------- S t a t e -------------
+  //  -- r0                 : number of arguments
+  //  -- lr                 : return address
+  //  -- sp[(argc - n) * 8] : arg[n] (zero-based)
+  //  -- sp[(argc + 1) * 8] : receiver
+  // -----------------------------------
+  Condition const cc_done = (kind == MathMaxMinKind::kMin) ? mi : gt;
+  Condition const cc_swap = (kind == MathMaxMinKind::kMin) ? gt : mi;
+  Heap::RootListIndex const root_index =
+      (kind == MathMaxMinKind::kMin) ? Heap::kInfinityValueRootIndex
+                                     : Heap::kMinusInfinityValueRootIndex;
+  DoubleRegister const reg = (kind == MathMaxMinKind::kMin) ? d2 : d1;
+
+  // Load the accumulator with the default return value (either -Infinity or
+  // +Infinity), with the tagged value in r1 and the double value in d1.
+  __ LoadRoot(r1, root_index);
+  __ vldr(d1, FieldMemOperand(r1, HeapNumber::kValueOffset));
+
+  // Remember how many slots to drop (including the receiver).
+  __ add(r4, r0, Operand(1));
+
+  Label done_loop, loop;
+  __ bind(&loop);
+  {
+    // Check if all parameters done.
+    __ sub(r0, r0, Operand(1), SetCC);
+    __ b(lt, &done_loop);
+
+    // Load the next parameter tagged value into r2.
+    __ ldr(r2, MemOperand(sp, r0, LSL, kPointerSizeLog2));
+
+    // Load the double value of the parameter into d2, maybe converting the
+    // parameter to a number first using the ToNumberStub if necessary.
+    Label convert, convert_smi, convert_number, done_convert;
+    __ bind(&convert);
+    __ JumpIfSmi(r2, &convert_smi);
+    __ ldr(r3, FieldMemOperand(r2, HeapObject::kMapOffset));
+    __ JumpIfRoot(r3, Heap::kHeapNumberMapRootIndex, &convert_number);
+    {
+      // Parameter is not a Number, use the ToNumberStub to convert it.
+      FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+      __ SmiTag(r0);
+      __ SmiTag(r4);
+      __ Push(r0, r1, r4);
+      __ mov(r0, r2);
+      ToNumberStub stub(masm->isolate());
+      __ CallStub(&stub);
+      __ mov(r2, r0);
+      __ Pop(r0, r1, r4);
+      {
+        // Restore the double accumulator value (d1).
+        Label done_restore;
+        __ SmiToDouble(d1, r1);
+        __ JumpIfSmi(r1, &done_restore);
+        __ vldr(d1, FieldMemOperand(r1, HeapNumber::kValueOffset));
+        __ bind(&done_restore);
+      }
+      __ SmiUntag(r4);
+      __ SmiUntag(r0);
+    }
+    __ b(&convert);
+    __ bind(&convert_number);
+    __ vldr(d2, FieldMemOperand(r2, HeapNumber::kValueOffset));
+    __ b(&done_convert);
+    __ bind(&convert_smi);
+    __ SmiToDouble(d2, r2);
+    __ bind(&done_convert);
+
+    // Perform the actual comparison with the accumulator value on the left hand
+    // side (d1) and the next parameter value on the right hand side (d2).
+    Label compare_nan, compare_swap;
+    __ VFPCompareAndSetFlags(d1, d2);
+    __ b(cc_done, &loop);
+    __ b(cc_swap, &compare_swap);
+    __ b(vs, &compare_nan);
+
+    // Left and right hand side are equal, check for -0 vs. +0.
+    __ VmovHigh(ip, reg);
+    __ cmp(ip, Operand(0x80000000));
+    __ b(ne, &loop);
+
+    // Result is on the right hand side.
+    __ bind(&compare_swap);
+    __ vmov(d1, d2);
+    __ mov(r1, r2);
+    __ b(&loop);
+
+    // At least one side is NaN, which means that the result will be NaN too.
+    __ bind(&compare_nan);
+    __ LoadRoot(r1, Heap::kNanValueRootIndex);
+    __ vldr(d1, FieldMemOperand(r1, HeapNumber::kValueOffset));
+    __ b(&loop);
+  }
+
+  __ bind(&done_loop);
+  __ mov(r0, r1);
+  __ Drop(r4);
+  __ Ret();
+}
+
+// static
 void Builtins::Generate_NumberConstructor(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- r0                     : number of arguments
@@ -878,10 +980,8 @@ void Builtins::Generate_JSConstructEntryTrampoline(MacroAssembler* masm) {
 //   o sp: stack pointer
 //   o lr: return address
 //
-// The function builds a JS frame.  Please see JavaScriptFrameConstants in
-// frames-arm.h for its layout.
-// TODO(rmcilroy): We will need to include the current bytecode pointer in the
-// frame.
+// The function builds an interpreter frame.  See InterpreterFrameConstants in
+// frames.h for its layout.
 void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // Open a frame scope to indicate that there is a frame on the stack.  The
   // MANUAL indicates that the scope shouldn't actually generate code to set up
@@ -946,18 +1046,6 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   //  - Allow simulator stop operations if FLAG_stop_at is set.
   //  - Code aging of the BytecodeArray object.
 
-  // Perform stack guard check.
-  {
-    Label ok;
-    __ LoadRoot(ip, Heap::kStackLimitRootIndex);
-    __ cmp(sp, Operand(ip));
-    __ b(hs, &ok);
-    __ push(kInterpreterBytecodeArrayRegister);
-    __ CallRuntime(Runtime::kStackGuard);
-    __ pop(kInterpreterBytecodeArrayRegister);
-    __ bind(&ok);
-  }
-
   // Load accumulator, register file, bytecode offset, dispatch table into
   // registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
@@ -979,6 +1067,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // and header removal.
   __ add(ip, ip, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ Call(ip);
+
+  // Even though the first bytecode handler was called, we will never return.
+  __ Abort(kUnexpectedReturnFromBytecodeHandler);
 }
 
 
@@ -1161,6 +1252,153 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
 
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- r3 : new target (preserved for callee)
+  //  -- r1 : target function (preserved for callee)
+  // -----------------------------------
+  // First lookup code, maybe we don't need to compile!
+  Label gotta_call_runtime, gotta_call_runtime_no_stack;
+  Label maybe_call_runtime;
+  Label try_shared;
+  Label loop_top, loop_bottom;
+
+  Register closure = r1;
+  Register new_target = r3;
+  __ push(new_target);
+  __ push(closure);
+
+  Register map = r0;
+  Register index = r2;
+  __ ldr(map, FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
+  __ ldr(map,
+         FieldMemOperand(map, SharedFunctionInfo::kOptimizedCodeMapOffset));
+  __ ldr(index, FieldMemOperand(map, FixedArray::kLengthOffset));
+  __ cmp(index, Operand(Smi::FromInt(2)));
+  __ b(lt, &gotta_call_runtime);
+
+  // Find literals.
+  // r3  : native context
+  // r2  : length / index
+  // r0  : optimized code map
+  // stack[0] : new target
+  // stack[4] : closure
+  Register native_context = r3;
+  __ ldr(native_context, NativeContextMemOperand());
+
+  __ bind(&loop_top);
+  Register temp = r1;
+  Register array_pointer = r5;
+
+  // Does the native context match?
+  __ add(array_pointer, map, Operand::PointerOffsetFromSmiKey(index));
+  __ ldr(temp, FieldMemOperand(array_pointer,
+                               SharedFunctionInfo::OffsetToPreviousContext()));
+  __ ldr(temp, FieldMemOperand(temp, WeakCell::kValueOffset));
+  __ cmp(temp, native_context);
+  __ b(ne, &loop_bottom);
+  // OSR id set to none?
+  __ ldr(temp, FieldMemOperand(array_pointer,
+                               SharedFunctionInfo::OffsetToPreviousOsrAstId()));
+  const int bailout_id = BailoutId::None().ToInt();
+  __ cmp(temp, Operand(Smi::FromInt(bailout_id)));
+  __ b(ne, &loop_bottom);
+  // Literals available?
+  __ ldr(temp, FieldMemOperand(array_pointer,
+                               SharedFunctionInfo::OffsetToPreviousLiterals()));
+  __ ldr(temp, FieldMemOperand(temp, WeakCell::kValueOffset));
+  __ JumpIfSmi(temp, &gotta_call_runtime);
+
+  // Save the literals in the closure.
+  __ ldr(r4, MemOperand(sp, 0));
+  __ str(temp, FieldMemOperand(r4, JSFunction::kLiteralsOffset));
+  __ push(index);
+  __ RecordWriteField(r4, JSFunction::kLiteralsOffset, temp, index,
+                      kLRHasNotBeenSaved, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
+                      OMIT_SMI_CHECK);
+  __ pop(index);
+
+  // Code available?
+  Register entry = r4;
+  __ ldr(entry,
+         FieldMemOperand(array_pointer,
+                         SharedFunctionInfo::OffsetToPreviousCachedCode()));
+  __ ldr(entry, FieldMemOperand(entry, WeakCell::kValueOffset));
+  __ JumpIfSmi(entry, &maybe_call_runtime);
+
+  // Found literals and code. Get them into the closure and return.
+  __ pop(closure);
+  // Store code entry in the closure.
+  __ add(entry, entry, Operand(Code::kHeaderSize - kHeapObjectTag));
+
+  Label install_optimized_code_and_tailcall;
+  __ bind(&install_optimized_code_and_tailcall);
+  __ str(entry, FieldMemOperand(closure, JSFunction::kCodeEntryOffset));
+  __ RecordWriteCodeEntryField(closure, entry, r5);
+
+  // Link the closure into the optimized function list.
+  // r4 : code entry
+  // r3 : native context
+  // r1 : closure
+  __ ldr(r5,
+         ContextMemOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST));
+  __ str(r5, FieldMemOperand(closure, JSFunction::kNextFunctionLinkOffset));
+  __ RecordWriteField(closure, JSFunction::kNextFunctionLinkOffset, r5, r0,
+                      kLRHasNotBeenSaved, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
+                      OMIT_SMI_CHECK);
+  const int function_list_offset =
+      Context::SlotOffset(Context::OPTIMIZED_FUNCTIONS_LIST);
+  __ str(closure,
+         ContextMemOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST));
+  // Save closure before the write barrier.
+  __ mov(r5, closure);
+  __ RecordWriteContextSlot(native_context, function_list_offset, closure, r0,
+                            kLRHasNotBeenSaved, kDontSaveFPRegs);
+  __ mov(closure, r5);
+  __ pop(new_target);
+  __ Jump(entry);
+
+  __ bind(&loop_bottom);
+  __ sub(index, index, Operand(Smi::FromInt(SharedFunctionInfo::kEntryLength)));
+  __ cmp(index, Operand(Smi::FromInt(1)));
+  __ b(gt, &loop_top);
+
+  // We found neither literals nor code.
+  __ jmp(&gotta_call_runtime);
+
+  __ bind(&maybe_call_runtime);
+  __ pop(closure);
+
+  // Last possibility. Check the context free optimized code map entry.
+  __ ldr(entry, FieldMemOperand(map, FixedArray::kHeaderSize +
+                                         SharedFunctionInfo::kSharedCodeIndex));
+  __ ldr(entry, FieldMemOperand(entry, WeakCell::kValueOffset));
+  __ JumpIfSmi(entry, &try_shared);
+
+  // Store code entry in the closure.
+  __ add(entry, entry, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ jmp(&install_optimized_code_and_tailcall);
+
+  __ bind(&try_shared);
+  __ pop(new_target);
+  // Is the full code valid?
+  __ ldr(entry,
+         FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
+  __ ldr(entry, FieldMemOperand(entry, SharedFunctionInfo::kCodeOffset));
+  __ ldr(r5, FieldMemOperand(entry, Code::kFlagsOffset));
+  __ and_(r5, r5, Operand(Code::KindField::kMask));
+  __ mov(r5, Operand(r5, LSR, Code::KindField::kShift));
+  __ cmp(r5, Operand(Code::BUILTIN));
+  __ b(eq, &gotta_call_runtime_no_stack);
+  // Yes, install the full code.
+  __ add(entry, entry, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ str(entry, FieldMemOperand(closure, JSFunction::kCodeEntryOffset));
+  __ RecordWriteCodeEntryField(closure, entry, r5);
+  __ Jump(entry);
+
+  __ bind(&gotta_call_runtime);
+  __ pop(closure);
+  __ pop(new_target);
+  __ bind(&gotta_call_runtime_no_stack);
   CallRuntimePassFunction(masm, Runtime::kCompileLazy);
   GenerateTailCallToReturnedCode(masm);
 }

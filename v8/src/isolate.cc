@@ -390,8 +390,9 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSObject> error_object,
       }
       DCHECK(cursor + 4 <= elements->length());
 
-      Handle<Code> code = frames[i].code();
-      Handle<Smi> offset(Smi::FromInt(frames[i].offset()), this);
+      Handle<AbstractCode> abstract_code = frames[i].abstract_code();
+
+      Handle<Smi> offset(Smi::FromInt(frames[i].code_offset()), this);
       // The stack trace API should not expose receivers and function
       // objects on frames deeper than the top-most one with a strict
       // mode function.  The number of sloppy frames is stored as
@@ -405,7 +406,7 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSObject> error_object,
       }
       elements->set(cursor++, *recv);
       elements->set(cursor++, *fun);
-      elements->set(cursor++, *code);
+      elements->set(cursor++, *abstract_code);
       elements->set(cursor++, *offset);
       frames_seen++;
     }
@@ -594,9 +595,9 @@ int PositionFromStackTrace(Handle<FixedArray> elements, int index) {
   if (maybe_code->IsSmi()) {
     return Smi::cast(maybe_code)->value();
   } else {
-    Code* code = Code::cast(maybe_code);
-    Address pc = code->address() + Smi::cast(elements->get(index + 3))->value();
-    return code->SourcePosition(pc);
+    AbstractCode* abstract_code = AbstractCode::cast(maybe_code);
+    int code_offset = Smi::cast(elements->get(index + 3))->value();
+    return abstract_code->SourcePosition(code_offset);
   }
 }
 
@@ -661,7 +662,8 @@ Handle<JSArray> Isolate::CaptureCurrentStackTrace(
       // Filter frames from other security contexts.
       if (!(options & StackTrace::kExposeFramesAcrossSecurityOrigins) &&
           !this->context()->HasSameSecurityTokenAs(fun->context())) continue;
-      int position = frames[i].code()->SourcePosition(frames[i].pc());
+      int position =
+          frames[i].abstract_code()->SourcePosition(frames[i].code_offset());
       Handle<JSObject> stack_frame =
           helper.NewStackFrameObject(fun, position, frames[i].is_constructor());
 
@@ -841,7 +843,7 @@ bool Isolate::MayAccess(Handle<Context> accessing_context,
     VMState<EXTERNAL> state(this);
     if (callback) {
       return callback(v8::Utils::ToLocal(accessing_context),
-                      v8::Utils::ToLocal(receiver));
+                      v8::Utils::ToLocal(receiver), v8::Utils::ToLocal(data));
     }
     Handle<Object> key = factory()->undefined_value();
     return named_callback(v8::Utils::ToLocal(receiver), v8::Utils::ToLocal(key),
@@ -1100,7 +1102,7 @@ Object* Isolate::UnwindAndFindHandler() {
     if (frame->is_optimized() && catchable_by_js) {
       OptimizedFrame* js_frame = static_cast<OptimizedFrame*>(frame);
       int stack_slots = 0;  // Will contain stack slot count of frame.
-      offset = js_frame->LookupExceptionHandlerInTable(&stack_slots, NULL);
+      offset = js_frame->LookupExceptionHandlerInTable(&stack_slots, nullptr);
       if (offset >= 0) {
         // Compute the stack pointer from the frame pointer. This ensures that
         // argument slots on the stack are dropped as returning would.
@@ -1119,12 +1121,14 @@ Object* Isolate::UnwindAndFindHandler() {
     // For interpreted frame we perform a range lookup in the handler table.
     if (frame->is_interpreted() && catchable_by_js) {
       InterpretedFrame* js_frame = static_cast<InterpretedFrame*>(frame);
-      int stack_slots = 0;  // Will contain stack slot count of frame.
-      offset = js_frame->LookupExceptionHandlerInTable(&stack_slots, NULL);
+      int context_reg = 0;  // Will contain register index holding context.
+      offset = js_frame->LookupExceptionHandlerInTable(&context_reg, nullptr);
       if (offset >= 0) {
         // Patch the bytecode offset in the interpreted frame to reflect the
         // position of the exception handler. The special builtin below will
-        // take care of continuing to dispatch at that position.
+        // take care of continuing to dispatch at that position. Also restore
+        // the correct context for the handler from the interpreter register.
+        context = Context::cast(js_frame->GetInterpreterRegister(context_reg));
         js_frame->PatchBytecodeOffset(static_cast<int>(offset));
         offset = 0;
 
@@ -1139,15 +1143,15 @@ Object* Isolate::UnwindAndFindHandler() {
     // For JavaScript frames we perform a range lookup in the handler table.
     if (frame->is_java_script() && catchable_by_js) {
       JavaScriptFrame* js_frame = static_cast<JavaScriptFrame*>(frame);
-      int stack_slots = 0;  // Will contain operand stack depth of handler.
-      offset = js_frame->LookupExceptionHandlerInTable(&stack_slots, NULL);
+      int stack_depth = 0;  // Will contain operand stack depth of handler.
+      offset = js_frame->LookupExceptionHandlerInTable(&stack_depth, nullptr);
       if (offset >= 0) {
         // Compute the stack pointer from the frame pointer. This ensures that
         // operand stack slots are dropped for nested statements. Also restore
         // correct context for the handler which is pushed within the try-block.
         Address return_sp = frame->fp() -
                             StandardFrameConstants::kFixedFrameSizeFromFp -
-                            stack_slots * kPointerSize;
+                            stack_depth * kPointerSize;
         STATIC_ASSERT(TryBlockConstant::kElementCount == 1);
         context = Context::cast(Memory::Object_at(return_sp - kPointerSize));
 
@@ -1283,7 +1287,9 @@ void Isolate::PrintCurrentStackTrace(FILE* out) {
     HandleScope scope(this);
     // Find code position if recorded in relocation info.
     JavaScriptFrame* frame = it.frame();
-    int pos = frame->LookupCode()->SourcePosition(frame->pc());
+    Code* code = frame->LookupCode();
+    int offset = static_cast<int>(frame->pc() - code->instruction_start());
+    int pos = frame->LookupCode()->SourcePosition(offset);
     Handle<Object> pos_obj(Smi::FromInt(pos), this);
     // Fetch function and receiver.
     Handle<JSFunction> fun(frame->function());
@@ -1318,7 +1324,7 @@ bool Isolate::ComputeLocation(MessageLocation* target) {
       List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
       it.frame()->Summarize(&frames);
       FrameSummary& summary = frames.last();
-      int pos = summary.code()->SourcePosition(summary.pc());
+      int pos = summary.abstract_code()->SourcePosition(summary.code_offset());
       *target = MessageLocation(casted_script, pos, pos + 1, handle(fun));
       return true;
     }

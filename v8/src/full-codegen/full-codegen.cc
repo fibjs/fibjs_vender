@@ -29,7 +29,7 @@ bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
   TimerEventScope<TimerEventCompileFullCode> timer(info->isolate());
 
   // Ensure that the feedback vector is large enough.
-  info->EnsureFeedbackVector();
+  info->EnsureFeedbackMetadata();
 
   Handle<Script> script = info->script();
   if (!script->IsUndefined() && !script->source()->IsUndefined()) {
@@ -1310,12 +1310,6 @@ void FullCodeGenerator::VisitClassLiteral(ClassLiteral* lit) {
   {
     EnterBlockScopeIfNeeded block_scope_state(
         this, lit->scope(), lit->EntryId(), lit->DeclsId(), lit->ExitId());
-
-    if (lit->raw_name() != NULL) {
-      __ Push(lit->name());
-    } else {
-      __ Push(isolate()->factory()->undefined_value());
-    }
 
     if (lit->extends() != NULL) {
       VisitForStackValue(lit->extends());

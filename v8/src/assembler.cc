@@ -34,6 +34,7 @@
 
 #include "src/assembler.h"
 
+#include <math.h>
 #include <cmath>
 #include "src/api.h"
 #include "src/base/cpu.h"
@@ -264,8 +265,8 @@ CpuFeatureScope::~CpuFeatureScope() {
 
 bool CpuFeatures::initialized_ = false;
 unsigned CpuFeatures::supported_ = 0;
-unsigned CpuFeatures::cache_line_size_ = 0;
-
+unsigned CpuFeatures::icache_line_size_ = 0;
+unsigned CpuFeatures::dcache_line_size_ = 0;
 
 // -----------------------------------------------------------------------------
 // Implementation of Label
@@ -1071,9 +1072,16 @@ ExternalReference ExternalReference::
       FUNCTION_ADDR(IncrementalMarking::RecordWriteFromCode)));
 }
 
+ExternalReference
+ExternalReference::incremental_marking_record_write_code_entry_function(
+    Isolate* isolate) {
+  return ExternalReference(Redirect(
+      isolate,
+      FUNCTION_ADDR(IncrementalMarking::RecordWriteOfCodeEntryFromCode)));
+}
 
-ExternalReference ExternalReference::
-    store_buffer_overflow_function(Isolate* isolate) {
+ExternalReference ExternalReference::store_buffer_overflow_function(
+    Isolate* isolate) {
   return ExternalReference(Redirect(
       isolate,
       FUNCTION_ADDR(StoreBuffer::StoreBufferOverflow)));
@@ -1131,6 +1139,67 @@ ExternalReference ExternalReference::compute_output_frames_function(
       Redirect(isolate, FUNCTION_ADDR(Deoptimizer::ComputeOutputFrames)));
 }
 
+static void f32_trunc_wrapper(float* param) { *param = truncf(*param); }
+
+ExternalReference ExternalReference::f32_trunc_wrapper_function(
+    Isolate* isolate) {
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f32_trunc_wrapper)));
+}
+
+static void f32_floor_wrapper(float* param) { *param = floorf(*param); }
+
+ExternalReference ExternalReference::f32_floor_wrapper_function(
+    Isolate* isolate) {
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f32_floor_wrapper)));
+}
+
+static void f32_ceil_wrapper(float* param) { *param = ceilf(*param); }
+
+ExternalReference ExternalReference::f32_ceil_wrapper_function(
+    Isolate* isolate) {
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f32_ceil_wrapper)));
+}
+
+static void f32_nearest_int_wrapper(float* param) {
+  *param = nearbyintf(*param);
+}
+
+ExternalReference ExternalReference::f32_nearest_int_wrapper_function(
+    Isolate* isolate) {
+  return ExternalReference(
+      Redirect(isolate, FUNCTION_ADDR(f32_nearest_int_wrapper)));
+}
+
+static void f64_trunc_wrapper(double* param) { *param = trunc(*param); }
+
+ExternalReference ExternalReference::f64_trunc_wrapper_function(
+    Isolate* isolate) {
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f64_trunc_wrapper)));
+}
+
+static void f64_floor_wrapper(double* param) { *param = floor(*param); }
+
+ExternalReference ExternalReference::f64_floor_wrapper_function(
+    Isolate* isolate) {
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f64_floor_wrapper)));
+}
+
+static void f64_ceil_wrapper(double* param) { *param = ceil(*param); }
+
+ExternalReference ExternalReference::f64_ceil_wrapper_function(
+    Isolate* isolate) {
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(f64_ceil_wrapper)));
+}
+
+static void f64_nearest_int_wrapper(double* param) {
+  *param = nearbyint(*param);
+}
+
+ExternalReference ExternalReference::f64_nearest_int_wrapper_function(
+    Isolate* isolate) {
+  return ExternalReference(
+      Redirect(isolate, FUNCTION_ADDR(f64_nearest_int_wrapper)));
+}
 
 ExternalReference ExternalReference::log_enter_external_function(
     Isolate* isolate) {

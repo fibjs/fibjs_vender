@@ -772,8 +772,7 @@ void Heap::PreprocessStackTraces() {
       if (!maybe_code->IsCode()) break;
       Code* code = Code::cast(maybe_code);
       int offset = Smi::cast(elements->get(j + 3))->value();
-      Address pc = code->address() + offset;
-      int pos = code->SourcePosition(pc);
+      int pos = code->SourcePosition(offset);
       elements->set(j + 2, Smi::FromInt(pos));
     }
   }
@@ -2418,14 +2417,6 @@ bool Heap::CreateInitialMaps() {
       ByteArray* byte_array;
       if (!AllocateByteArray(0, TENURED).To(&byte_array)) return false;
       set_empty_byte_array(byte_array);
-
-      BytecodeArray* bytecode_array = nullptr;
-      AllocationResult allocation =
-          AllocateBytecodeArray(0, nullptr, 0, 0, empty_fixed_array());
-      if (!allocation.To(&bytecode_array)) {
-        return false;
-      }
-      set_empty_bytecode_array(bytecode_array);
     }
 
 #define ALLOCATE_EMPTY_FIXED_TYPED_ARRAY(Type, type, TYPE, ctype, size) \
@@ -2827,6 +2818,14 @@ void Heap::CreateInitialObjects() {
     dummy_vector->Set(keyed_store_ic_slot, megamorphic, SKIP_WRITE_BARRIER);
 
     set_dummy_vector(*dummy_vector);
+  }
+
+  {
+    Handle<FixedArray> empty_literals_array =
+        factory->NewFixedArray(1, TENURED);
+    empty_literals_array->set(0, *factory->empty_fixed_array(),
+                              SKIP_WRITE_BARRIER);
+    set_empty_literals_array(*empty_literals_array);
   }
 
   {
@@ -3518,7 +3517,8 @@ AllocationResult Heap::AllocateJSObjectFromMap(
 
   // Initialize the JSObject.
   InitializeJSObjectFromMap(js_obj, properties, map);
-  DCHECK(js_obj->HasFastElements() || js_obj->HasFixedTypedArrayElements());
+  DCHECK(js_obj->HasFastElements() || js_obj->HasFixedTypedArrayElements() ||
+         js_obj->HasFastStringWrapperElements());
   return js_obj;
 }
 

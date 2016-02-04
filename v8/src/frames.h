@@ -190,6 +190,7 @@ class InterpreterFrameConstants : public AllStatic {
 
   // Expression index for {StandardFrame::GetExpressionAddress}.
   static const int kBytecodeOffsetExpressionIndex = 1;
+  static const int kRegisterFileExpressionIndex = 2;
 
   // Register file pointer relative.
   static const int kLastParamFromRegisterPointer =
@@ -544,14 +545,14 @@ class StandardFrame: public StackFrame {
 
 class FrameSummary BASE_EMBEDDED {
  public:
-  FrameSummary(Object* receiver, JSFunction* function, Code* code, int offset,
+  FrameSummary(Object* receiver, JSFunction* function,
+               AbstractCode* abstract_code, int code_offset,
                bool is_constructor);
 
   Handle<Object> receiver() { return receiver_; }
   Handle<JSFunction> function() { return function_; }
-  Handle<Code> code() { return code_; }
-  Address pc() { return code_->address() + offset_; }
-  int offset() { return offset_; }
+  Handle<AbstractCode> abstract_code() { return abstract_code_; }
+  int code_offset() { return code_offset_; }
   bool is_constructor() { return is_constructor_; }
 
   void Print();
@@ -559,8 +560,8 @@ class FrameSummary BASE_EMBEDDED {
  private:
   Handle<Object> receiver_;
   Handle<JSFunction> function_;
-  Handle<Code> code_;
-  int offset_;
+  Handle<AbstractCode> abstract_code_;
+  int code_offset_;
   bool is_constructor_;
 };
 
@@ -731,6 +732,12 @@ class InterpretedFrame : public JavaScriptFrame {
   // Updates the current offset into the bytecode stream, mainly used for stack
   // unwinding to continue execution at a different bytecode offset.
   void PatchBytecodeOffset(int new_offset);
+
+  // Access to the interpreter register file for this frame.
+  Object* GetInterpreterRegister(int register_index) const;
+
+  // Build a list with summaries for this frame including all inlined frames.
+  void Summarize(List<FrameSummary>* frames) override;
 
  protected:
   inline explicit InterpretedFrame(StackFrameIteratorBase* iterator);

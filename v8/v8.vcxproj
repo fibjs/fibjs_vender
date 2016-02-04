@@ -154,6 +154,7 @@
     <ClInclude Include="src\compiler\instruction-selector-impl.h" />
     <ClInclude Include="src\compiler\instruction-selector.h" />
     <ClInclude Include="src\compiler\instruction.h" />
+    <ClInclude Include="src\compiler\int64-lowering.h" />
     <ClInclude Include="src\compiler\interpreter-assembler.h" />
     <ClInclude Include="src\compiler\js-builtin-reducer.h" />
     <ClInclude Include="src\compiler\js-call-reducer.h" />
@@ -358,6 +359,7 @@
     <ClInclude Include="src\interpreter\handler-table-builder.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
     <ClInclude Include="src\interpreter\register-translator.h" />
+    <ClInclude Include="src\interpreter\source-position-table.h" />
     <ClInclude Include="src\isolate-inl.h" />
     <ClInclude Include="src\isolate.h" />
     <ClInclude Include="src\json-stringifier.h" />
@@ -470,7 +472,6 @@
     <ClInclude Include="src\type-feedback-vector-inl.h" />
     <ClInclude Include="src\type-feedback-vector.h" />
     <ClInclude Include="src\type-info.h" />
-    <ClInclude Include="src\types-inl.h" />
     <ClInclude Include="src\types.h" />
     <ClInclude Include="src\typing-asm.h" />
     <ClInclude Include="src\typing-reset.h" />
@@ -620,6 +621,7 @@
     <ClCompile Include="src\compiler\instruction-scheduler.cc" />
     <ClCompile Include="src\compiler\instruction-selector.cc" />
     <ClCompile Include="src\compiler\instruction.cc" />
+    <ClCompile Include="src\compiler\int64-lowering.cc" />
     <ClCompile Include="src\compiler\interpreter-assembler.cc" />
     <ClCompile Include="src\compiler\js-builtin-reducer.cc" />
     <ClCompile Include="src\compiler\js-call-reducer.cc" />
@@ -838,6 +840,7 @@
     <ClCompile Include="src\interpreter\handler-table-builder.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
     <ClCompile Include="src\interpreter\register-translator.cc" />
+    <ClCompile Include="src\interpreter\source-position-table.cc" />
     <ClCompile Include="src\isolate.cc" />
     <ClCompile Include="src\key-accumulator.cc" />
     <ClCompile Include="src\layout-descriptor.cc" />

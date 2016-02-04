@@ -4,6 +4,7 @@
 
 #include "src/interpreter/interpreter.h"
 
+#include "src/ast/prettyprinter.h"
 #include "src/code-factory.h"
 #include "src/compiler.h"
 #include "src/compiler/interpreter-assembler.h"
@@ -60,12 +61,36 @@ void Interpreter::Initialize() {
 
 
 bool Interpreter::MakeBytecode(CompilationInfo* info) {
+  if (FLAG_print_bytecode || FLAG_print_source || FLAG_print_ast) {
+    OFStream os(stdout);
+    base::SmartArrayPointer<char> name = info->GetDebugName();
+    os << "[generating bytecode for function: " << info->GetDebugName().get()
+       << "]" << std::endl
+       << std::flush;
+  }
+
+#ifdef DEBUG
+  if (info->parse_info() && FLAG_print_source) {
+    OFStream os(stdout);
+    os << "--- Source from AST ---" << std::endl
+       << PrettyPrinter(info->isolate()).PrintProgram(info->literal())
+       << std::endl
+       << std::flush;
+  }
+
+  if (info->parse_info() && FLAG_print_ast) {
+    OFStream os(stdout);
+    os << "--- AST ---" << std::endl
+       << AstPrinter(info->isolate()).PrintProgram(info->literal()) << std::endl
+       << std::flush;
+  }
+#endif  // DEBUG
+
   BytecodeGenerator generator(info->isolate(), info->zone());
-  info->EnsureFeedbackVector();
+  info->EnsureFeedbackMetadata();
   Handle<BytecodeArray> bytecodes = generator.MakeBytecode(info);
   if (FLAG_print_bytecode) {
     OFStream os(stdout);
-    os << "Function: " << info->GetDebugName().get() << std::endl;
     bytecodes->Print(os);
     os << std::flush;
   }
@@ -78,10 +103,13 @@ bool Interpreter::MakeBytecode(CompilationInfo* info) {
 
 bool Interpreter::IsInterpreterTableInitialized(
     Handle<FixedArray> handler_table) {
+  if (FLAG_trace_ignition) {
+    // Regenerate table to add bytecode tracing operations.
+    return false;
+  }
   DCHECK(handler_table->length() == static_cast<int>(Bytecode::kLast) + 1);
   return handler_table->get(0) != isolate_->heap()->undefined_value();
 }
-
 
 // LdaZero
 //
@@ -1049,10 +1077,12 @@ void Interpreter::DoJSCall(compiler::InterpreterAssembler* assembler) {
   Node* function_reg = __ BytecodeOperandReg(0);
   Node* function = __ LoadRegister(function_reg);
   Node* receiver_reg = __ BytecodeOperandReg(1);
-  Node* first_arg = __ RegisterLocation(receiver_reg);
-  Node* args_count = __ BytecodeOperandCount(2);
+  Node* receiver_arg = __ RegisterLocation(receiver_reg);
+  Node* receiver_args_count = __ BytecodeOperandCount(2);
+  Node* receiver_count = __ Int32Constant(1);
+  Node* args_count = __ Int32Sub(receiver_args_count, receiver_count);
   // TODO(rmcilroy): Use the call type feedback slot to call via CallIC.
-  Node* result = __ CallJS(function, first_arg, args_count);
+  Node* result = __ CallJS(function, receiver_arg, args_count);
   __ SetAccumulator(result);
   __ Dispatch();
 }
@@ -1157,7 +1187,9 @@ void Interpreter::DoCallJSRuntimeCommon(
   Node* context_index = __ BytecodeOperandIdx(0);
   Node* receiver_reg = __ BytecodeOperandReg(1);
   Node* first_arg = __ RegisterLocation(receiver_reg);
-  Node* args_count = __ BytecodeOperandCount(2);
+  Node* receiver_args_count = __ BytecodeOperandCount(2);
+  Node* receiver_count = __ Int32Constant(1);
+  Node* args_count = __ Int32Sub(receiver_args_count, receiver_count);
 
   // Get the function to call from the native context.
   Node* context = __ GetContext();
@@ -1741,6 +1773,27 @@ void Interpreter::DoCreateUnmappedArguments(
   __ Dispatch();
 }
 
+// CreateRestArguments
+//
+// Creates a new rest arguments object starting at |rest_index|.
+void Interpreter::DoCreateRestArguments(
+    compiler::InterpreterAssembler* assembler) {
+  Node* closure = __ LoadRegister(Register::function_closure());
+  Node* constant_pool_index = __ BytecodeOperandIdx(0);
+  Node* rest_index = __ LoadConstantPoolEntry(constant_pool_index);
+  Node* result =
+      __ CallRuntime(Runtime::kNewRestArguments_Generic, closure, rest_index);
+  __ SetAccumulator(result);
+  __ Dispatch();
+}
+
+// StackCheck
+//
+// Performs a stack guard check.
+void Interpreter::DoStackCheck(compiler::InterpreterAssembler* assembler) {
+  __ StackCheck();
+  __ Dispatch();
+}
 
 // Throw
 //
@@ -1771,6 +1824,13 @@ void Interpreter::DoReturn(compiler::InterpreterAssembler* assembler) {
   __ Return();
 }
 
+// Debugger
+//
+// Call runtime to handle debugger statement.
+void Interpreter::DoDebugger(compiler::InterpreterAssembler* assembler) {
+  __ CallRuntime(Runtime::kHandleDebuggerStatement);
+  __ Dispatch();
+}
 
 // ForInPrepare <cache_info_triple>
 //

@@ -513,8 +513,8 @@ class ParserTraits {
                                  int pos);
   Expression* NewTargetExpression(Scope* scope, AstNodeFactory* factory,
                                   int pos);
-  Expression* DefaultConstructor(bool call_super, Scope* scope, int pos,
-                                 int end_pos, LanguageMode language_mode);
+  Expression* FunctionSentExpression(Scope* scope, AstNodeFactory* factory,
+                                     int pos);
   Literal* ExpressionFromLiteral(Token::Value token, int pos, Scanner* scanner,
                                  AstNodeFactory* factory);
   Expression* ExpressionFromIdentifier(const AstRawString* name,
@@ -656,8 +656,14 @@ class ParserTraits {
       ObjectLiteralProperty* property, const ExpressionClassifier* classifier,
       bool* ok);
 
+  Expression* RewriteYieldStar(
+      Expression* generator, Expression* expression, int pos);
+
  private:
   Parser* parser_;
+
+  void BuildIteratorClose(ZoneList<Statement*>* statements, Variable* iterator,
+                          Maybe<Variable*> input);
 };
 
 
@@ -754,6 +760,7 @@ class Parser : public ParserBase<ParserTraits> {
                                 ZoneList<const AstRawString*>* names,
                                 bool* ok);
   DoExpression* ParseDoExpression(bool* ok);
+  Expression* ParseYieldStarExpression(bool* ok);
 
   struct DeclarationDescriptor {
     enum Kind { NORMAL, PARAMETER };
@@ -966,8 +973,9 @@ class Parser : public ParserBase<ParserTraits> {
   Statement* BuildAssertIsCoercible(Variable* var);
 
   // Factory methods.
-  FunctionLiteral* DefaultConstructor(bool call_super, Scope* scope, int pos,
-                                      int end_pos, LanguageMode language_mode);
+  FunctionLiteral* DefaultConstructor(const AstRawString* name, bool call_super,
+                                      Scope* scope, int pos, int end_pos,
+                                      LanguageMode language_mode);
 
   // Skip over a lazy function, either using cached data if we have it, or
   // by parsing the function with PreParser. Consumes the ending }.

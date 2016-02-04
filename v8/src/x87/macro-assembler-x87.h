@@ -271,6 +271,9 @@ class MacroAssembler: public Assembler {
   void StoreToSafepointRegisterSlot(Register dst, Immediate src);
   void LoadFromSafepointRegisterSlot(Register dst, Register src);
 
+  // Nop, because x87 does not have a root register.
+  void InitializeRootRegister() {}
+
   void LoadHeapObject(Register result, Handle<HeapObject> object);
   void CmpHeapObject(Register reg, Handle<HeapObject> object);
   void PushHeapObject(Handle<HeapObject> object);
@@ -325,9 +328,6 @@ class MacroAssembler: public Assembler {
                       const ParameterCount& expected,
                       const ParameterCount& actual, InvokeFlag flag,
                       const CallWrapper& call_wrapper);
-
-  // Store the function for the given builtin in the target register.
-  void GetBuiltinFunction(Register target, int native_context_index);
 
 
   // Expression support

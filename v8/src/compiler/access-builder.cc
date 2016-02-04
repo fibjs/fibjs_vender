@@ -6,9 +6,9 @@
 
 #include "src/contexts.h"
 #include "src/frames.h"
+#include "src/handles-inl.h"
 #include "src/heap/heap.h"
 #include "src/type-cache.h"
-#include "src/types-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -321,8 +321,15 @@ FieldAccess AccessBuilder::ForPropertyCellValue(Type* type) {
 
 
 // static
-FieldAccess AccessBuilder::ForSharedFunctionInfoTypeFeedbackVector() {
-  FieldAccess access = {kTaggedBase, SharedFunctionInfo::kFeedbackVectorOffset,
+FieldAccess AccessBuilder::ForJSFunctionLiterals() {
+  FieldAccess access = {kTaggedBase, JSFunction::kLiteralsOffset,
+                        Handle<Name>(), Type::Any(), MachineType::AnyTagged()};
+  return access;
+}
+
+// static
+FieldAccess AccessBuilder::ForLiteralsTypeFeedbackVector() {
+  FieldAccess access = {kTaggedBase, LiteralsArray::kFeedbackVectorOffset,
                         Handle<Name>(), Type::Any(), MachineType::AnyTagged()};
   return access;
 }

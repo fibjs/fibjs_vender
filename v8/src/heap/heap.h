@@ -180,6 +180,7 @@ namespace internal {
   V(FixedArray, materialized_objects, MaterializedObjects)                     \
   V(FixedArray, microtask_queue, MicrotaskQueue)                               \
   V(TypeFeedbackVector, dummy_vector, DummyVector)                             \
+  V(FixedArray, empty_literals_array, EmptyLiteralsArray)                      \
   V(FixedArray, cleared_optimized_code_map, ClearedOptimizedCodeMap)           \
   V(FixedArray, detached_contexts, DetachedContexts)                           \
   V(ArrayList, retained_maps, RetainedMaps)                                    \
@@ -190,9 +191,7 @@ namespace internal {
   V(Object, noscript_shared_function_infos, NoScriptSharedFunctionInfos)       \
   V(FixedArray, interpreter_table, InterpreterTable)                           \
   V(Map, bytecode_array_map, BytecodeArrayMap)                                 \
-  V(WeakCell, empty_weak_cell, EmptyWeakCell)                                  \
-  V(BytecodeArray, empty_bytecode_array, EmptyBytecodeArray)
-
+  V(WeakCell, empty_weak_cell, EmptyWeakCell)
 
 // Entries in this list are limited to Smis and are not visited during GC.
 #define SMI_ROOT_LIST(V)                                                   \
@@ -254,7 +253,6 @@ namespace internal {
   V(OrderedHashTableMap)                \
   V(EmptyFixedArray)                    \
   V(EmptyByteArray)                     \
-  V(EmptyBytecodeArray)                 \
   V(EmptyDescriptorArray)               \
   V(ArgumentsMarker)                    \
   V(SymbolMap)                          \
@@ -442,17 +440,17 @@ class Heap {
     kSmiRootsStart = kStringTableRootIndex + 1
   };
 
+  enum FindMementoMode { kForRuntime, kForGC };
+
+  enum HeapState { NOT_IN_GC, SCAVENGE, MARK_COMPACT };
+
   // Indicates whether live bytes adjustment is triggered
   // - from within the GC code before sweeping started (SEQUENTIAL_TO_SWEEPER),
   // - or from within GC (CONCURRENT_TO_SWEEPER),
   // - or mutator code (CONCURRENT_TO_SWEEPER).
   enum InvocationMode { SEQUENTIAL_TO_SWEEPER, CONCURRENT_TO_SWEEPER };
 
-  enum PretenuringFeedbackInsertionMode { kCached, kGlobal };
-
-  enum FindMementoMode { kForRuntime, kForGC };
-
-  enum HeapState { NOT_IN_GC, SCAVENGE, MARK_COMPACT };
+  enum UpdateAllocationSiteMode { kGlobal, kCached };
 
   // Taking this lock prevents the GC from entering a phase that relocates
   // object references.
@@ -1361,6 +1359,7 @@ class Heap {
   // the corresponding allocation site is immediately updated and an entry
   // in the hash map is created. Otherwise the entry (including a the count
   // value) is cached on the local pretenuring feedback.
+  template <UpdateAllocationSiteMode mode>
   inline void UpdateAllocationSite(HeapObject* object,
                                    HashMap* pretenuring_feedback);
 

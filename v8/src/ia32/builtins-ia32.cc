@@ -536,10 +536,8 @@ void Builtins::Generate_JSConstructEntryTrampoline(MacroAssembler* masm) {
 //   o ebp: the caller's frame pointer
 //   o esp: stack pointer (pointing to return address)
 //
-// The function builds a JS frame.  Please see JavaScriptFrameConstants in
-// frames-ia32.h for its layout.
-// TODO(rmcilroy): We will need to include the current bytecode pointer in the
-// frame.
+// The function builds an interpreter frame.  See InterpreterFrameConstants in
+// frames.h for its layout.
 void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // Open a frame scope to indicate that there is a frame on the stack.  The
   // MANUAL indicates that the scope shouldn't actually generate code to set up
@@ -606,19 +604,6 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   //  - Allow simulator stop operations if FLAG_stop_at is set.
   //  - Code aging of the BytecodeArray object.
 
-  // Perform stack guard check.
-  {
-    Label ok;
-    ExternalReference stack_limit =
-        ExternalReference::address_of_stack_limit(masm->isolate());
-    __ cmp(esp, Operand::StaticVariable(stack_limit));
-    __ j(above_equal, &ok);
-    __ push(kInterpreterBytecodeArrayRegister);
-    __ CallRuntime(Runtime::kStackGuard);
-    __ pop(kInterpreterBytecodeArrayRegister);
-    __ bind(&ok);
-  }
-
   // Load accumulator, register file, bytecode offset, dispatch table into
   // registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
@@ -648,8 +633,9 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // and header removal.
   __ add(ebx, Immediate(Code::kHeaderSize - kHeapObjectTag));
   __ call(ebx);
-  __ nop();  // Ensure that return address still counts as interpreter entry
-             // trampoline.
+
+  // Even though the first bytecode handler was called, we will never return.
+  __ Abort(kUnexpectedReturnFromBytecodeHandler);
 }
 
 
@@ -869,6 +855,146 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
 
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- edx : new target (preserved for callee)
+  //  -- edi : target function (preserved for callee)
+  // -----------------------------------
+  // First lookup code, maybe we don't need to compile!
+  Label gotta_call_runtime, gotta_call_runtime_no_stack;
+  Label maybe_call_runtime;
+  Label try_shared;
+  Label loop_top, loop_bottom;
+
+  Register closure = edi;
+  Register new_target = edx;
+  __ push(new_target);
+  __ push(closure);
+
+  Register map = eax;
+  Register index = ebx;
+  __ mov(map, FieldOperand(closure, JSFunction::kSharedFunctionInfoOffset));
+  __ mov(map, FieldOperand(map, SharedFunctionInfo::kOptimizedCodeMapOffset));
+  __ mov(index, FieldOperand(map, FixedArray::kLengthOffset));
+  __ cmp(index, Immediate(Smi::FromInt(2)));
+  __ j(less, &gotta_call_runtime);
+
+  // Find literals.
+  // edx : native context
+  // ebx : length / index
+  // eax : optimized code map
+  // stack[0] : new target
+  // stack[4] : closure
+  Register native_context = edx;
+  __ mov(native_context, NativeContextOperand());
+
+  __ bind(&loop_top);
+  Register temp = edi;
+
+  // Does the native context match?
+  __ mov(temp, FieldOperand(map, index, times_half_pointer_size,
+                            SharedFunctionInfo::OffsetToPreviousContext()));
+  __ mov(temp, FieldOperand(temp, WeakCell::kValueOffset));
+  __ cmp(temp, native_context);
+  __ j(not_equal, &loop_bottom);
+  // OSR id set to none?
+  __ mov(temp, FieldOperand(map, index, times_half_pointer_size,
+                            SharedFunctionInfo::OffsetToPreviousOsrAstId()));
+  const int bailout_id = BailoutId::None().ToInt();
+  __ cmp(temp, Immediate(Smi::FromInt(bailout_id)));
+  __ j(not_equal, &loop_bottom);
+  // Literals available?
+  __ mov(temp, FieldOperand(map, index, times_half_pointer_size,
+                            SharedFunctionInfo::OffsetToPreviousLiterals()));
+  __ mov(temp, FieldOperand(temp, WeakCell::kValueOffset));
+  __ JumpIfSmi(temp, &gotta_call_runtime);
+
+  // Save the literals in the closure.
+  __ mov(ecx, Operand(esp, 0));
+  __ mov(FieldOperand(ecx, JSFunction::kLiteralsOffset), temp);
+  __ push(index);
+  __ RecordWriteField(ecx, JSFunction::kLiteralsOffset, temp, index,
+                      kDontSaveFPRegs, EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
+  __ pop(index);
+
+  // Code available?
+  Register entry = ecx;
+  __ mov(entry, FieldOperand(map, index, times_half_pointer_size,
+                             SharedFunctionInfo::OffsetToPreviousCachedCode()));
+  __ mov(entry, FieldOperand(entry, WeakCell::kValueOffset));
+  __ JumpIfSmi(entry, &maybe_call_runtime);
+
+  // Found literals and code. Get them into the closure and return.
+  __ pop(closure);
+  // Store code entry in the closure.
+  __ lea(entry, FieldOperand(entry, Code::kHeaderSize));
+
+  Label install_optimized_code_and_tailcall;
+  __ bind(&install_optimized_code_and_tailcall);
+  __ mov(FieldOperand(closure, JSFunction::kCodeEntryOffset), entry);
+  __ RecordWriteCodeEntryField(closure, entry, eax);
+
+  // Link the closure into the optimized function list.
+  // ecx : code entry
+  // edx : native context
+  // edi : closure
+  __ mov(ebx,
+         ContextOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST));
+  __ mov(FieldOperand(closure, JSFunction::kNextFunctionLinkOffset), ebx);
+  __ RecordWriteField(closure, JSFunction::kNextFunctionLinkOffset, ebx, eax,
+                      kDontSaveFPRegs, EMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
+  const int function_list_offset =
+      Context::SlotOffset(Context::OPTIMIZED_FUNCTIONS_LIST);
+  __ mov(ContextOperand(native_context, Context::OPTIMIZED_FUNCTIONS_LIST),
+         closure);
+  // Save closure before the write barrier.
+  __ mov(ebx, closure);
+  __ RecordWriteContextSlot(native_context, function_list_offset, closure, eax,
+                            kDontSaveFPRegs);
+  __ mov(closure, ebx);
+  __ pop(new_target);
+  __ jmp(entry);
+
+  __ bind(&loop_bottom);
+  __ sub(index, Immediate(Smi::FromInt(SharedFunctionInfo::kEntryLength)));
+  __ cmp(index, Immediate(Smi::FromInt(1)));
+  __ j(greater, &loop_top);
+
+  // We found neither literals nor code.
+  __ jmp(&gotta_call_runtime);
+
+  __ bind(&maybe_call_runtime);
+  __ pop(closure);
+
+  // Last possibility. Check the context free optimized code map entry.
+  __ mov(entry, FieldOperand(map, FixedArray::kHeaderSize +
+                                      SharedFunctionInfo::kSharedCodeIndex));
+  __ mov(entry, FieldOperand(entry, WeakCell::kValueOffset));
+  __ JumpIfSmi(entry, &try_shared);
+
+  // Store code entry in the closure.
+  __ lea(entry, FieldOperand(entry, Code::kHeaderSize));
+  __ jmp(&install_optimized_code_and_tailcall);
+
+  __ bind(&try_shared);
+  __ pop(new_target);
+  // Is the full code valid?
+  __ mov(entry, FieldOperand(closure, JSFunction::kSharedFunctionInfoOffset));
+  __ mov(entry, FieldOperand(entry, SharedFunctionInfo::kCodeOffset));
+  __ mov(ebx, FieldOperand(entry, Code::kFlagsOffset));
+  __ and_(ebx, Code::KindField::kMask);
+  __ shr(ebx, Code::KindField::kShift);
+  __ cmp(ebx, Immediate(Code::BUILTIN));
+  __ j(equal, &gotta_call_runtime_no_stack);
+  // Yes, install the full code.
+  __ lea(entry, FieldOperand(entry, Code::kHeaderSize));
+  __ mov(FieldOperand(closure, JSFunction::kCodeEntryOffset), entry);
+  __ RecordWriteCodeEntryField(closure, entry, eax);
+  __ jmp(entry);
+
+  __ bind(&gotta_call_runtime);
+  __ pop(closure);
+  __ pop(new_target);
+  __ bind(&gotta_call_runtime_no_stack);
   CallRuntimePassFunction(masm, Runtime::kCompileLazy);
   GenerateTailCallToReturnedCode(masm);
 }
@@ -1418,6 +1544,122 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
   __ TailCallStub(&stub);
 }
 
+
+// static
+void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
+  // ----------- S t a t e -------------
+  //  -- eax                 : number of arguments
+  //  -- esp[0]              : return address
+  //  -- esp[(argc - n) * 8] : arg[n] (zero-based)
+  //  -- esp[(argc + 1) * 8] : receiver
+  // -----------------------------------
+  Condition const cc = (kind == MathMaxMinKind::kMin) ? below : above;
+  Heap::RootListIndex const root_index =
+      (kind == MathMaxMinKind::kMin) ? Heap::kInfinityValueRootIndex
+                                     : Heap::kMinusInfinityValueRootIndex;
+  XMMRegister const reg = (kind == MathMaxMinKind::kMin) ? xmm1 : xmm0;
+
+  // Load the accumulator with the default return value (either -Infinity or
+  // +Infinity), with the tagged value in edx and the double value in xmm0.
+  __ LoadRoot(edx, root_index);
+  __ movsd(xmm0, FieldOperand(edx, HeapNumber::kValueOffset));
+  __ Move(ecx, eax);
+
+  Label done_loop, loop;
+  __ bind(&loop);
+  {
+    // Check if all parameters done.
+    __ test(ecx, ecx);
+    __ j(zero, &done_loop);
+
+    // Load the next parameter tagged value into ebx.
+    __ mov(ebx, Operand(esp, ecx, times_pointer_size, 0));
+
+    // Load the double value of the parameter into xmm1, maybe converting the
+    // parameter to a number first using the ToNumberStub if necessary.
+    Label convert, convert_smi, convert_number, done_convert;
+    __ bind(&convert);
+    __ JumpIfSmi(ebx, &convert_smi);
+    __ JumpIfRoot(FieldOperand(ebx, HeapObject::kMapOffset),
+                  Heap::kHeapNumberMapRootIndex, &convert_number);
+    {
+      // Parameter is not a Number, use the ToNumberStub to convert it.
+      FrameScope scope(masm, StackFrame::INTERNAL);
+      __ SmiTag(eax);
+      __ SmiTag(ecx);
+      __ Push(eax);
+      __ Push(ecx);
+      __ Push(edx);
+      __ mov(eax, ebx);
+      ToNumberStub stub(masm->isolate());
+      __ CallStub(&stub);
+      __ mov(ebx, eax);
+      __ Pop(edx);
+      __ Pop(ecx);
+      __ Pop(eax);
+      {
+        // Restore the double accumulator value (xmm0).
+        Label restore_smi, done_restore;
+        __ JumpIfSmi(edx, &restore_smi, Label::kNear);
+        __ movsd(xmm0, FieldOperand(edx, HeapNumber::kValueOffset));
+        __ jmp(&done_restore, Label::kNear);
+        __ bind(&restore_smi);
+        __ SmiUntag(edx);
+        __ Cvtsi2sd(xmm0, edx);
+        __ SmiTag(edx);
+        __ bind(&done_restore);
+      }
+      __ SmiUntag(ecx);
+      __ SmiUntag(eax);
+    }
+    __ jmp(&convert);
+    __ bind(&convert_number);
+    __ movsd(xmm1, FieldOperand(ebx, HeapNumber::kValueOffset));
+    __ jmp(&done_convert, Label::kNear);
+    __ bind(&convert_smi);
+    __ SmiUntag(ebx);
+    __ Cvtsi2sd(xmm1, ebx);
+    __ SmiTag(ebx);
+    __ bind(&done_convert);
+
+    // Perform the actual comparison with the accumulator value on the left hand
+    // side (xmm0) and the next parameter value on the right hand side (xmm1).
+    Label compare_equal, compare_nan, compare_swap, done_compare;
+    __ ucomisd(xmm0, xmm1);
+    __ j(parity_even, &compare_nan, Label::kNear);
+    __ j(cc, &done_compare, Label::kNear);
+    __ j(equal, &compare_equal, Label::kNear);
+
+    // Result is on the right hand side.
+    __ bind(&compare_swap);
+    __ movaps(xmm0, xmm1);
+    __ mov(edx, ebx);
+    __ jmp(&done_compare, Label::kNear);
+
+    // At least one side is NaN, which means that the result will be NaN too.
+    __ bind(&compare_nan);
+    __ LoadRoot(edx, Heap::kNanValueRootIndex);
+    __ movsd(xmm0, FieldOperand(edx, HeapNumber::kValueOffset));
+    __ jmp(&done_compare, Label::kNear);
+
+    // Left and right hand side are equal, check for -0 vs. +0.
+    __ bind(&compare_equal);
+    __ movmskpd(edi, reg);
+    __ test(edi, Immediate(1));
+    __ j(not_zero, &compare_swap);
+
+    __ bind(&done_compare);
+    __ dec(ecx);
+    __ jmp(&loop);
+  }
+
+  __ bind(&done_loop);
+  __ PopReturnAddressTo(ecx);
+  __ lea(esp, Operand(esp, eax, times_pointer_size, kPointerSize));
+  __ PushReturnAddressFrom(ecx);
+  __ mov(eax, edx);
+  __ Ret();
+}
 
 // static
 void Builtins::Generate_NumberConstructor(MacroAssembler* masm) {

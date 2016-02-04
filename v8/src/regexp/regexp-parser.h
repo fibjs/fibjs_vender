@@ -99,7 +99,7 @@ class BufferedZoneList {
 // Accumulates RegExp atoms and assertions into lists of terms and alternatives.
 class RegExpBuilder : public ZoneObject {
  public:
-  RegExpBuilder(Zone* zone, JSRegExp::Flags flags);
+  RegExpBuilder(Zone* zone, bool ignore_case, bool unicode);
   void AddCharacter(uc16 character);
   void AddUnicodeCharacter(uc32 character);
   // "Adds" an empty expression. Does nothing except consume a
@@ -111,7 +111,7 @@ class RegExpBuilder : public ZoneObject {
   void AddTerm(RegExpTree* tree);
   void AddAssertion(RegExpTree* tree);
   void NewAlternative();  // '|'
-  void AddQuantifierToAtom(int min, int max,
+  bool AddQuantifierToAtom(int min, int max,
                            RegExpQuantifier::QuantifierType type);
   RegExpTree* ToRegExp();
 
@@ -126,12 +126,13 @@ class RegExpBuilder : public ZoneObject {
   bool NeedsDesugaringForUnicode(RegExpCharacterClass* cc);
   bool NeedsDesugaringForIgnoreCase(uc32 c);
   Zone* zone() const { return zone_; }
-  bool unicode() const { return (flags_ & JSRegExp::kUnicode) != 0; }
-  bool ignore_case() const { return (flags_ & JSRegExp::kIgnoreCase) != 0; }
+  bool ignore_case() const { return ignore_case_; }
+  bool unicode() const { return unicode_; }
 
   Zone* zone_;
   bool pending_empty_;
-  JSRegExp::Flags flags_;
+  bool ignore_case_;
+  bool unicode_;
   ZoneList<uc16>* characters_;
   uc16 pending_surrogate_;
   BufferedZoneList<RegExpTree, 2> terms_;
@@ -195,10 +196,11 @@ class RegExpParser BASE_EMBEDDED {
   int captures_started() { return captures_started_; }
   int position() { return next_pos_ - 1; }
   bool failed() { return failed_; }
-  bool unicode() const { return (flags_ & JSRegExp::kUnicode) != 0; }
-  bool multiline() const { return (flags_ & JSRegExp::kMultiline) != 0; }
+  bool ignore_case() const { return ignore_case_; }
+  bool multiline() const { return multiline_; }
+  bool unicode() const { return unicode_; }
 
-  static bool IsSyntaxCharacter(uc32 c);
+  static bool IsSyntaxCharacterOrSlash(uc32 c);
 
   static const int kMaxCaptures = 1 << 16;
   static const uc32 kEndMarker = (1 << 21);
@@ -217,10 +219,10 @@ class RegExpParser BASE_EMBEDDED {
     RegExpParserState(RegExpParserState* previous_state,
                       SubexpressionType group_type,
                       RegExpLookaround::Type lookaround_type,
-                      int disjunction_capture_index, JSRegExp::Flags flags,
-                      Zone* zone)
+                      int disjunction_capture_index, bool ignore_case,
+                      bool unicode, Zone* zone)
         : previous_state_(previous_state),
-          builder_(new (zone) RegExpBuilder(zone, flags)),
+          builder_(new (zone) RegExpBuilder(zone, ignore_case, unicode)),
           group_type_(group_type),
           lookaround_type_(lookaround_type),
           disjunction_capture_index_(disjunction_capture_index) {}
@@ -275,7 +277,9 @@ class RegExpParser BASE_EMBEDDED {
   ZoneList<RegExpCapture*>* captures_;
   FlatStringReader* in_;
   uc32 current_;
-  JSRegExp::Flags flags_;
+  bool ignore_case_;
+  bool multiline_;
+  bool unicode_;
   int next_pos_;
   int captures_started_;
   // The capture count is only valid after we have scanned for captures.

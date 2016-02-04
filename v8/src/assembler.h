@@ -223,9 +223,14 @@ class CpuFeatures : public AllStatic {
 
   static inline bool SupportsCrankshaft();
 
-  static inline unsigned cache_line_size() {
-    DCHECK(cache_line_size_ != 0);
-    return cache_line_size_;
+  static inline unsigned icache_line_size() {
+    DCHECK(icache_line_size_ != 0);
+    return icache_line_size_;
+  }
+
+  static inline unsigned dcache_line_size() {
+    DCHECK(dcache_line_size_ != 0);
+    return dcache_line_size_;
   }
 
   static void PrintTarget();
@@ -241,7 +246,8 @@ class CpuFeatures : public AllStatic {
   static void ProbeImpl(bool cross_compile);
 
   static unsigned supported_;
-  static unsigned cache_line_size_;
+  static unsigned icache_line_size_;
+  static unsigned dcache_line_size_;
   static bool initialized_;
   DISALLOW_COPY_AND_ASSIGN(CpuFeatures);
 };
@@ -893,6 +899,8 @@ class ExternalReference BASE_EMBEDDED {
 
   static ExternalReference incremental_marking_record_write_function(
       Isolate* isolate);
+  static ExternalReference incremental_marking_record_write_code_entry_function(
+      Isolate* isolate);
   static ExternalReference store_buffer_overflow_function(
       Isolate* isolate);
   static ExternalReference delete_handle_scope_extensions(Isolate* isolate);
@@ -906,6 +914,15 @@ class ExternalReference BASE_EMBEDDED {
   // Deoptimization support.
   static ExternalReference new_deoptimizer_function(Isolate* isolate);
   static ExternalReference compute_output_frames_function(Isolate* isolate);
+
+  static ExternalReference f32_trunc_wrapper_function(Isolate* isolate);
+  static ExternalReference f32_floor_wrapper_function(Isolate* isolate);
+  static ExternalReference f32_ceil_wrapper_function(Isolate* isolate);
+  static ExternalReference f32_nearest_int_wrapper_function(Isolate* isolate);
+  static ExternalReference f64_trunc_wrapper_function(Isolate* isolate);
+  static ExternalReference f64_floor_wrapper_function(Isolate* isolate);
+  static ExternalReference f64_ceil_wrapper_function(Isolate* isolate);
+  static ExternalReference f64_nearest_int_wrapper_function(Isolate* isolate);
 
   // Log support.
   static ExternalReference log_enter_external_function(Isolate* isolate);

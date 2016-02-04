@@ -719,7 +719,7 @@ void PrettyPrinter::VisitFunctionLiteral(FunctionLiteral* node) {
 
 void PrettyPrinter::VisitClassLiteral(ClassLiteral* node) {
   Print("(class ");
-  PrintLiteral(node->name(), false);
+  PrintLiteral(node->constructor()->name(), false);
   if (node->extends()) {
     Print(" extends ");
     Visit(node->extends());
@@ -1429,9 +1429,7 @@ void AstPrinter::VisitFunctionLiteral(FunctionLiteral* node) {
 
 void AstPrinter::VisitClassLiteral(ClassLiteral* node) {
   IndentedScope indent(this, "CLASS LITERAL", node->position());
-  if (node->raw_name() != nullptr) {
-    PrintLiteralIndented("NAME", node->name(), false);
-  }
+  PrintLiteralIndented("NAME", node->constructor()->name(), false);
   if (node->extends() != nullptr) {
     PrintIndentedVisit("EXTENDS", node->extends());
   }
@@ -1580,7 +1578,9 @@ void AstPrinter::VisitAssignment(Assignment* node) {
 
 
 void AstPrinter::VisitYield(Yield* node) {
-  IndentedScope indent(this, "YIELD", node->position());
+  EmbeddedVector<char, 128> buf;
+  SNPrintF(buf, "YIELD (kind %d)", node->yield_kind());
+  IndentedScope indent(this, buf.start(), node->position());
   Visit(node->expression());
 }
 

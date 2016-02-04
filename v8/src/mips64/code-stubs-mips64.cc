@@ -1127,20 +1127,21 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // we can store the address on the stack to be able to find it again and
   // we never have to restore it, because it will not change.
   { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm);
-    // This branch-and-link sequence is needed to find the current PC on mips,
-    // saved to the ra register.
-    // Use masm-> here instead of the double-underscore macro since extra
-    // coverage code can interfere with the proper calculation of ra.
+    int kNumInstructionsToJump = 4;
     Label find_ra;
-    __ bal(&find_ra);  // bal exposes branch delay slot.
-    __ nop();
-    __ bind(&find_ra);
-
     // Adjust the value in ra to point to the correct return location, 2nd
     // instruction past the real call into C code (the jalr(t9)), and push it.
     // This is the return address of the exit frame.
-    const int kNumInstructionsToJump = 5;
-    __ Daddu(ra, ra, kNumInstructionsToJump * kInt32Size);
+    if (kArchVariant >= kMips64r6) {
+      __ addiupc(ra, kNumInstructionsToJump + 1);
+    } else {
+      // This branch-and-link sequence is needed to find the current PC on mips
+      // before r6, saved to the ra register.
+      __ bal(&find_ra);  // bal exposes branch delay slot.
+      __ Daddu(ra, ra, kNumInstructionsToJump * Instruction::kInstrSize);
+    }
+    __ bind(&find_ra);
+
     // This spot was reserved in EnterExitFrame.
     __ sd(ra, MemOperand(sp, result_stack_size));
     // Stack space reservation moved to the branch delay slot below.
@@ -1278,14 +1279,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ Move(kDoubleRegZero, 0.0);
 
   // Load argv in s0 register.
-  if (kMipsAbi == kN64) {
-    __ mov(s0, a4);  // 5th parameter in mips64 a4 (a4) register.
-  } else {  // Abi O32.
-    // 5th parameter on stack for O32 abi.
-    int offset_to_argv = (kNumCalleeSaved + 1) * kPointerSize;
-    offset_to_argv += kNumCalleeSavedFPU * kDoubleSize;
-    __ ld(s0, MemOperand(sp, offset_to_argv + kCArgsSlotsSize));
-  }
+  __ mov(s0, a4);  // 5th parameter in mips64 a4 (a4) register.
 
   __ InitializeRootRegister();
 
@@ -2214,7 +2208,7 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   // Isolates: note we add an additional parameter here (isolate pointer).
   const int kRegExpExecuteArguments = 9;
-  const int kParameterRegisters = (kMipsAbi == kN64) ? 8 : 4;
+  const int kParameterRegisters = 8;
   __ EnterExitFrame(false, kRegExpExecuteArguments - kParameterRegisters);
 
   // Stack pointer now points to cell where return address is to be written.
@@ -2235,58 +2229,28 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   //   [sp + 1] - Argument 5
   //   [sp + 0] - saved ra
 
-  if (kMipsAbi == kN64) {
-    // Argument 9: Pass current isolate address.
-    __ li(a0, Operand(ExternalReference::isolate_address(isolate())));
-    __ sd(a0, MemOperand(sp, 1 * kPointerSize));
+  // Argument 9: Pass current isolate address.
+  __ li(a0, Operand(ExternalReference::isolate_address(isolate())));
+  __ sd(a0, MemOperand(sp, 1 * kPointerSize));
 
-    // Argument 8: Indicate that this is a direct call from JavaScript.
-    __ li(a7, Operand(1));
+  // Argument 8: Indicate that this is a direct call from JavaScript.
+  __ li(a7, Operand(1));
 
-    // Argument 7: Start (high end) of backtracking stack memory area.
-    __ li(a0, Operand(address_of_regexp_stack_memory_address));
-    __ ld(a0, MemOperand(a0, 0));
-    __ li(a2, Operand(address_of_regexp_stack_memory_size));
-    __ ld(a2, MemOperand(a2, 0));
-    __ daddu(a6, a0, a2);
+  // Argument 7: Start (high end) of backtracking stack memory area.
+  __ li(a0, Operand(address_of_regexp_stack_memory_address));
+  __ ld(a0, MemOperand(a0, 0));
+  __ li(a2, Operand(address_of_regexp_stack_memory_size));
+  __ ld(a2, MemOperand(a2, 0));
+  __ daddu(a6, a0, a2);
 
-    // Argument 6: Set the number of capture registers to zero to force global
-    // regexps to behave as non-global. This does not affect non-global regexps.
-    __ mov(a5, zero_reg);
+  // Argument 6: Set the number of capture registers to zero to force global
+  // regexps to behave as non-global. This does not affect non-global regexps.
+  __ mov(a5, zero_reg);
 
-    // Argument 5: static offsets vector buffer.
-    __ li(a4, Operand(
-          ExternalReference::address_of_static_offsets_vector(isolate())));
-  } else {  // O32.
-    DCHECK(kMipsAbi == kO32);
-
-    // Argument 9: Pass current isolate address.
-    // CFunctionArgumentOperand handles MIPS stack argument slots.
-    __ li(a0, Operand(ExternalReference::isolate_address(isolate())));
-    __ sd(a0, MemOperand(sp, 5 * kPointerSize));
-
-    // Argument 8: Indicate that this is a direct call from JavaScript.
-    __ li(a0, Operand(1));
-    __ sd(a0, MemOperand(sp, 4 * kPointerSize));
-
-    // Argument 7: Start (high end) of backtracking stack memory area.
-    __ li(a0, Operand(address_of_regexp_stack_memory_address));
-    __ ld(a0, MemOperand(a0, 0));
-    __ li(a2, Operand(address_of_regexp_stack_memory_size));
-    __ ld(a2, MemOperand(a2, 0));
-    __ daddu(a0, a0, a2);
-    __ sd(a0, MemOperand(sp, 3 * kPointerSize));
-
-    // Argument 6: Set the number of capture registers to zero to force global
-    // regexps to behave as non-global. This does not affect non-global regexps.
-    __ mov(a0, zero_reg);
-    __ sd(a0, MemOperand(sp, 2 * kPointerSize));
-
-    // Argument 5: static offsets vector buffer.
-    __ li(a0, Operand(
-          ExternalReference::address_of_static_offsets_vector(isolate())));
-    __ sd(a0, MemOperand(sp, 1 * kPointerSize));
-  }
+  // Argument 5: static offsets vector buffer.
+  __ li(
+      a4,
+      Operand(ExternalReference::address_of_static_offsets_vector(isolate())));
 
   // For arguments 4 and 3 get string length, calculate start of string data
   // and calculate the shift of the index (0 for one_byte and 1 for two byte).

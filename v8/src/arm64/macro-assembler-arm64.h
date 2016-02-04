@@ -982,6 +982,9 @@ class MacroAssembler : public Assembler {
   // --debug-code.
   void AssertPositiveOrZero(Register value);
 
+  // Abort execution if argument is not a number (heap number or smi).
+  void AssertNumber(Register value);
+
   void JumpIfHeapNumber(Register object, Label* on_heap_number,
                         SmiCheckType smi_check_type = DONT_DO_SMI_CHECK);
   void JumpIfNotHeapNumber(Register object, Label* on_not_heap_number,
@@ -1785,6 +1788,11 @@ class MacroAssembler : public Assembler {
                      smi_check,
                      pointers_to_here_check_for_value);
   }
+
+  // Notify the garbage collector that we wrote a code entry into a
+  // JSFunction. Only scratch is clobbered by the operation.
+  void RecordWriteCodeEntryField(Register js_function, Register code_entry,
+                                 Register scratch);
 
   void RecordWriteForMap(
       Register object,

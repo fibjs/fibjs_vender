@@ -225,6 +225,7 @@ namespace interpreter {
   /* Arguments allocation */                                                   \
   V(CreateMappedArguments, OperandType::kNone)                                 \
   V(CreateUnmappedArguments, OperandType::kNone)                               \
+  V(CreateRestArguments, OperandType::kIdx8)                                   \
                                                                                \
   /* Control Flow */                                                           \
   V(Jump, OperandType::kImm8)                                                  \
@@ -258,10 +259,16 @@ namespace interpreter {
     OperandType::kRegPair16)                                                   \
   V(ForInStep, OperandType::kReg8)                                             \
                                                                                \
+  /* Perform a stack guard check */                                            \
+  V(StackCheck, OperandType::kNone)                                            \
+                                                                               \
   /* Non-local flow control */                                                 \
   V(Throw, OperandType::kNone)                                                 \
   V(ReThrow, OperandType::kNone)                                               \
-  V(Return, OperandType::kNone)
+  V(Return, OperandType::kNone)                                                \
+                                                                               \
+  /* Debugger */                                                               \
+  V(Debugger, OperandType::kNone)
 
 // Enumeration of the size classes of operand types used by bytecodes.
 enum class OperandSize : uint8_t {
@@ -318,6 +325,9 @@ class Register {
   static int MaxRegisterIndex();
   static int MaxRegisterIndexForByteOperand();
 
+  // Returns an invalid register.
+  static Register invalid_value() { return Register(); }
+
   // Returns the register for the function's closure object.
   static Register function_closure();
   bool is_function_closure() const;
@@ -343,6 +353,8 @@ class Register {
                             Register reg3 = Register(),
                             Register reg4 = Register(),
                             Register reg5 = Register());
+
+  std::string ToString(int parameter_count);
 
   bool operator==(const Register& other) const {
     return index() == other.index();
@@ -450,6 +462,14 @@ class Bytecodes {
 
   // Returns true if the bytecode is a conditional jump, a jump, or a return.
   static bool IsJumpOrReturn(Bytecode bytecode);
+
+  // Returns true if |operand_type| is a maybe register operand
+  // (kMaybeReg8/kMaybeReg16).
+  static bool IsMaybeRegisterOperandType(OperandType operand_type);
+
+  // Returns true if |operand_type| is a register count operand
+  // (kRegCount8/kRegCount16).
+  static bool IsRegisterCountOperandType(OperandType operand_type);
 
   // Returns true if |operand_type| is any type of register operand.
   static bool IsRegisterOperandType(OperandType operand_type);

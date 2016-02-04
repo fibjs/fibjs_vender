@@ -835,14 +835,20 @@ uint32_t EstimateElementCount(Handle<JSArray> array) {
       }
       break;
     }
-    case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
-    case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) case TYPE##_ELEMENTS:
 
       TYPED_ARRAYS(TYPED_ARRAY_CASE)
 #undef TYPED_ARRAY_CASE
       // External arrays are always dense.
       return length;
+    case NO_ELEMENTS:
+      return 0;
+    case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
+    case SLOW_SLOPPY_ARGUMENTS_ELEMENTS:
+    case FAST_STRING_WRAPPER_ELEMENTS:
+    case SLOW_STRING_WRAPPER_ELEMENTS:
+      UNREACHABLE();
+      return 0;
   }
   // As an estimate, we assume that the prototype doesn't contain any
   // inherited elements.
@@ -983,6 +989,28 @@ void CollectElementIndices(Handle<JSObject> object, uint32_t range,
       }
       break;
     }
+    case FAST_STRING_WRAPPER_ELEMENTS:
+    case SLOW_STRING_WRAPPER_ELEMENTS: {
+      DCHECK(object->IsJSValue());
+      Handle<JSValue> js_value = Handle<JSValue>::cast(object);
+      DCHECK(js_value->value()->IsString());
+      Handle<String> string(String::cast(js_value->value()), isolate);
+      uint32_t length = static_cast<uint32_t>(string->length());
+      uint32_t i = 0;
+      uint32_t limit = Min(length, range);
+      for (; i < limit; i++) {
+        indices->Add(i);
+      }
+      ElementsAccessor* accessor = object->GetElementsAccessor();
+      for (; i < range; i++) {
+        if (accessor->HasElement(object, i)) {
+          indices->Add(i);
+        }
+      }
+      break;
+    }
+    case NO_ELEMENTS:
+      break;
   }
 
   PrototypeIterator iter(isolate, object);
@@ -1218,6 +1246,13 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
       }
       break;
     }
+    case NO_ELEMENTS:
+      break;
+    case FAST_STRING_WRAPPER_ELEMENTS:
+    case SLOW_STRING_WRAPPER_ELEMENTS:
+      // |array| is guaranteed to be an array or typed array.
+      UNREACHABLE();
+      break;
   }
   visitor->increase_index_offset(length);
   return true;
@@ -1226,7 +1261,6 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
 
 bool HasConcatSpreadableModifier(Isolate* isolate, Handle<JSArray> obj) {
   DCHECK(isolate->IsFastArrayConstructorPrototypeChainIntact());
-  if (!FLAG_harmony_concat_spreadable) return false;
   Handle<Symbol> key(isolate->factory()->is_concat_spreadable_symbol());
   Maybe<bool> maybe = JSReceiver::HasProperty(obj, key);
   return maybe.FromMaybe(false);
@@ -1236,14 +1270,12 @@ bool HasConcatSpreadableModifier(Isolate* isolate, Handle<JSArray> obj) {
 static Maybe<bool> IsConcatSpreadable(Isolate* isolate, Handle<Object> obj) {
   HandleScope handle_scope(isolate);
   if (!obj->IsJSReceiver()) return Just(false);
-  if (FLAG_harmony_concat_spreadable) {
-    Handle<Symbol> key(isolate->factory()->is_concat_spreadable_symbol());
-    Handle<Object> value;
-    MaybeHandle<Object> maybeValue =
-        i::Runtime::GetObjectProperty(isolate, obj, key);
-    if (!maybeValue.ToHandle(&value)) return Nothing<bool>();
-    if (!value->IsUndefined()) return Just(value->BooleanValue());
-  }
+  Handle<Symbol> key(isolate->factory()->is_concat_spreadable_symbol());
+  Handle<Object> value;
+  MaybeHandle<Object> maybeValue =
+      i::Runtime::GetObjectProperty(isolate, obj, key);
+  if (!maybeValue.ToHandle(&value)) return Nothing<bool>();
+  if (!value->IsUndefined()) return Just(value->BooleanValue());
   return Object::IsArray(obj);
 }
 
@@ -1367,6 +1399,7 @@ Object* Slow_ArrayConcat(Arguments* args, Handle<Object> species,
             case FAST_HOLEY_ELEMENTS:
             case FAST_ELEMENTS:
             case DICTIONARY_ELEMENTS:
+            case NO_ELEMENTS:
               DCHECK_EQ(0u, length);
               break;
             default:
@@ -1728,7 +1761,7 @@ BUILTIN(ObjectValues) {
                           CONVERT_TO_STRING));
 
   for (int i = 0; i < keys->length(); ++i) {
-    auto key = Handle<Name>::cast(FixedArray::get(keys, i));
+    auto key = Handle<Name>::cast(FixedArray::get(*keys, i, isolate));
     Handle<Object> value;
 
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
@@ -1754,7 +1787,7 @@ BUILTIN(ObjectEntries) {
                           CONVERT_TO_STRING));
 
   for (int i = 0; i < keys->length(); ++i) {
-    auto key = Handle<Name>::cast(FixedArray::get(keys, i));
+    auto key = Handle<Name>::cast(FixedArray::get(*keys, i, isolate));
     Handle<Object> value;
 
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
@@ -1942,7 +1975,7 @@ BUILTIN(ReflectGet) {
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, result, Object::GetPropertyOrElement(
-          Handle<JSReceiver>::cast(target), name, receiver));
+                           receiver, name, Handle<JSReceiver>::cast(target)));
 
   return *result;
 }
