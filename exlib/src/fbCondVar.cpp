@@ -11,18 +11,22 @@
 namespace exlib
 {
 
-void CondVar::wait(Locker &l)
+void CondVar::wait(Locker* l)
 {
-	l.unlock();
+	if (l == NULL)
+		l = m_locker;
+
+	assert(l != 0);
 
 	Task_base* current = Thread_base::current();
 	assert(current != 0);
 
 	m_lock.lock();
+	l->unlock();
 	m_blocks.putTail(current);
 	current->suspend(m_lock);
 
-	l.lock();
+	l->lock();
 }
 
 void CondVar::notify_one()

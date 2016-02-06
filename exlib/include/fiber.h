@@ -157,11 +157,16 @@ private:
 class CondVar
 {
 public:
-    void wait(Locker &l);
+    CondVar(Locker* locker = NULL) : m_locker(locker)
+    {}
+
+public:
+    void wait(Locker* l = NULL);
     void notify_one();
     void notify_all();
 
 private:
+    Locker* m_locker;
     spinlock m_lock;
     List<Task_base> m_blocks;
 };

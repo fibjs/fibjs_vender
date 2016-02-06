@@ -24,9 +24,9 @@ class SCOPED_LOCKABLE MutexLock {
  public:
   explicit MutexLock(port::Mutex *mu) EXCLUSIVE_LOCK_FUNCTION(mu)
       : mu_(mu)  {
-    this->mu_->Lock();
+    this->mu_->lock();
   }
-  ~MutexLock() UNLOCK_FUNCTION() { this->mu_->Unlock(); }
+  ~MutexLock() UNLOCK_FUNCTION() { this->mu_->unlock(); }
 
  private:
   port::Mutex *const mu_;
