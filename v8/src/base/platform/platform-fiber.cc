@@ -112,7 +112,7 @@ void Thread::SetThreadLocal(LocalStorageKey key, void *value)
 
 void OS::Sleep(TimeDelta interval)
 {
-    exlib::OSThread::sleep(interval.InMicroseconds());
+    exlib::Fiber::sleep(interval.InMicroseconds());
 }
 
 }
