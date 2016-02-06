@@ -203,6 +203,8 @@ void Service::dispatch_loop()
 {
     while (true)
     {
+        m_running = &m_main;
+
         if (m_cb)
         {
             m_cb->invoke();
