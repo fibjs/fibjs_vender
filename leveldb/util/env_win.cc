@@ -639,7 +639,7 @@ WinEnv::WinEnv() : bgthread_(NULL), bgsignal_(&mu_) {
 }
 
 void WinEnv::Schedule(void (*function)(void*), void* arg) {
-  mu_.lock();
+  mu_.Lock();
 
   // Start background thread if necessary
   if (NULL == bgthread_) {
@@ -651,25 +651,25 @@ void WinEnv::Schedule(void (*function)(void*), void* arg) {
   queue_.back().function = function;
   queue_.back().arg = arg;
 
-  mu_.unlock();
+  mu_.Unlock();
 
-  bgsignal_.notify_one();
+  bgsignal_.Signal();
 }
 
 void WinEnv::BGThread() {
   while (true) {
     // Wait until there is an item that is ready to run
-    mu_.lock();
+    mu_.Lock();
 
     while (queue_.empty()) {
-      bgsignal_.wait();
+      bgsignal_.Wait();
     }
 
     void (*function)(void*) = queue_.front().function;
     void* arg = queue_.front().arg;
     queue_.pop_front();
 
-    mu_.unlock();
+    mu_.Unlock();
     (*function)(arg);
   }
   // TODO: CloseHandle(bgthread_) ??
@@ -702,10 +702,10 @@ static void InitDefaultEnv() { default_env = new WinEnv(); }
 static leveldb::port::Mutex default_env_mutex;
 
 Env* Env::Default() {
-  default_env_mutex.lock();
+  default_env_mutex.Lock();
   if (NULL == default_env)
     InitDefaultEnv();
-  default_env_mutex.unlock();
+  default_env_mutex.Unlock();
   return default_env;
 }
 

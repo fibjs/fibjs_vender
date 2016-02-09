@@ -31,8 +31,8 @@ static const bool kLittleEndian = false;
 #define fdatasync fsync
 #endif
 
-typedef exlib::Locker Mutex;
-typedef exlib::CondVar CondVar;
+typedef exlib::OSMutex Mutex;
+typedef exlib::OSCondVar CondVar;
 
 typedef intptr_t OnceType;
 #define LEVELDB_ONCE_INIT 0

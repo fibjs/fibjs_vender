@@ -23,12 +23,12 @@ void ConditionVariable::NotifyAll() {
 
 
 void ConditionVariable::Wait(Mutex* mutex) {
-  native_handle_.wait(&mutex->native_handle());
+  native_handle_.wait(mutex->native_handle());
 }
 
 
 bool ConditionVariable::WaitFor(Mutex* mutex, const TimeDelta& rel_time) {
-  native_handle_.wait(&mutex->native_handle());
+  native_handle_.wait(mutex->native_handle());
   return true;
 }
 
