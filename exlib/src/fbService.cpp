@@ -29,7 +29,8 @@ void Service::init(int32_t workers)
 {
     if (!s_service)
     {
-        s_service = new Service(workers);
+        static Service _srv(workers);
+        s_service = &_srv;
         s_service->m_main.saveStackGuard();
         s_service->bindCurrent();
     }
@@ -86,18 +87,15 @@ void Service::forEach(void (*func)(Fiber*))
 #endif
 
 Service::Service() :
-    m_master(s_service), m_main(this, NULL), m_running(&m_main),
-    m_cb(NULL), m_resume(s_service->m_resume)
+    m_master(s_service), m_main(this, NULL), m_running(&m_main), m_cb(NULL)
 {
     m_main.set_name("main");
     m_main.Ref();
 }
 
 Service::Service(int32_t workers) :
-    m_master(this), m_main(this, NULL), m_running(&m_main), m_cb(NULL)
+    m_master(NULL), m_main(this, NULL), m_running(&m_main), m_cb(NULL), m_workers(workers - 1)
 {
-    m_resume = new ResumeQueue(workers);
-
     m_main.set_name("main");
     m_main.Ref();
 

@@ -34,7 +34,7 @@ public:
     {
         m_main.saveStackGuard();
 
-        m_master->m_resume->new_worker();
+        m_master->m_idleWorkers.dec();
         dispatch_loop();
     }
 
@@ -54,12 +54,40 @@ public:
 
     void post(Fiber* fiber)
     {
-        m_master->m_resume->post(fiber);
+        if (m_master)
+            m_master->post(fiber);
+        else
+        {
+            m_resumeList.putTail(fiber);
+            m_sem.Post();
+        }
     }
 
     Fiber* next()
     {
-        return m_master->m_resume->next();
+        if (m_master)
+            return m_master->next();
+
+        Fiber* fb;
+
+        m_idleWorkers.inc();
+
+        m_sem.Wait();
+        fb = m_resumeList.getHead();
+
+        if (m_idleWorkers.dec() == 0 && m_workers > 0)
+        {
+            if (m_workers.dec() < 0)
+                m_workers.inc();
+            else
+            {
+                m_idleWorkers.inc();
+                Service* worker = new Service();
+                worker->start();
+            }
+        }
+
+        return fb;
     }
 
     Fiber* running()
@@ -101,58 +129,6 @@ public:
 private:
     static void fiber_proc(void *(*func)(void *), Fiber* fb);
 
-    class ResumeQueue
-    {
-    public:
-        ResumeQueue(int32_t workers) : m_workers(workers - 1)
-        {}
-
-    public:
-        void post(Fiber* fiber)
-        {
-            m_resume.putTail(fiber);
-            m_sem.Post();
-        }
-
-        Fiber* next()
-        {
-
-            Fiber* fb;
-
-            m_idleWorkers.inc();
-
-            m_sem.Wait();
-            fb = m_resume.getHead();
-
-            if (m_idleWorkers.dec() == 0 && m_workers > 0)
-            {
-                if (m_workers.dec() < 0)
-                    m_workers.inc();
-                else
-                {
-                    m_idleWorkers.inc();
-                    Service* worker = new Service();
-                    worker->start();
-                }
-            }
-
-            return fb;
-        }
-
-        void new_worker()
-        {
-            m_idleWorkers.dec();
-        }
-
-    private:
-        exlib::atomic m_workers;
-        exlib::atomic m_idleWorkers;
-        LockedList<Fiber> m_resume;
-        OSSemaphore m_sem;
-    };
-
-    friend class ResumeQueue;
-
 private:
     Service* m_master;
 
@@ -161,7 +137,10 @@ private:
     Fiber *m_running;
     switchConextCallback* m_cb;
 
-    ResumeQueue* m_resume;
+    exlib::atomic m_workers;
+    exlib::atomic m_idleWorkers;
+    LockedList<Fiber> m_resumeList;
+    OSSemaphore m_sem;
 };
 
 }
