@@ -339,13 +339,6 @@ void ApiGetterDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
-
-void ArgumentsAccessReadDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {index(), parameter_count()};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
 FunctionType*
 ArgumentsAccessNewDescriptor::BuildCallInterfaceDescriptorFunctionType(
     Isolate* isolate, int paramater_count) {
@@ -362,26 +355,6 @@ ArgumentsAccessNewDescriptor::BuildCallInterfaceDescriptorFunctionType(
 void ArgumentsAccessNewDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {function(), parameter_count(), parameter_pointer()};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-FunctionType*
-RestParamAccessDescriptor::BuildCallInterfaceDescriptorFunctionType(
-    Isolate* isolate, int paramater_count) {
-  Zone* zone = isolate->interface_descriptor_zone();
-  FunctionType* function =
-      Type::Function(AnyTagged(zone), Type::Undefined(), 3, zone)->AsFunction();
-  function->InitParameter(0, SmiType(zone));
-  function->InitParameter(1, ExternalPointer(zone));
-  function->InitParameter(2, SmiType(zone));
-  return function;
-}
-
-
-void RestParamAccessDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {parameter_count(), parameter_pointer(),
-                          rest_parameter_index()};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
@@ -565,6 +538,19 @@ FunctionType* ApiAccessorDescriptor::BuildCallInterfaceDescriptorFunctionType(
   return function;
 }
 
+FunctionType*
+InterpreterDispatchDescriptor::BuildCallInterfaceDescriptorFunctionType(
+    Isolate* isolate, int parameter_count) {
+  Zone* zone = isolate->interface_descriptor_zone();
+  FunctionType* function =
+      Type::Function(AnyTagged(zone), Type::Undefined(), 5, zone)->AsFunction();
+  function->InitParameter(kAccumulatorParameter, AnyTagged(zone));
+  function->InitParameter(kRegisterFileParameter, ExternalPointer(zone));
+  function->InitParameter(kBytecodeOffsetParameter, UntaggedIntegral32(zone));
+  function->InitParameter(kBytecodeArrayParameter, AnyTagged(zone));
+  function->InitParameter(kDispatchTableParameter, AnyTagged(zone));
+  return function;
+}
 
 }  // namespace internal
 }  // namespace v8

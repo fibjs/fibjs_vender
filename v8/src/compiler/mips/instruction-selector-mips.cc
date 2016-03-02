@@ -518,6 +518,11 @@ void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundUint32ToFloat32(Node* node) {
+  UNIMPLEMENTED();
+}
+
+
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRR(this, kMipsCvtDW, node);
 }
@@ -530,6 +535,11 @@ void InstructionSelector::VisitChangeUint32ToFloat64(Node* node) {
 
 void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
   VisitRR(this, kMipsTruncWS, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat32ToUint32(Node* node) {
+  UNIMPLEMENTED();
 }
 
 

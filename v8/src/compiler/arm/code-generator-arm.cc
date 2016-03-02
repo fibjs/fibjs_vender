@@ -854,6 +854,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
     }
+    case kArmVcvtF32U32: {
+      SwVfpRegister scratch = kScratchDoubleReg.low();
+      __ vmov(scratch, i.InputRegister(0));
+      __ vcvt_f32_u32(i.OutputFloat32Register(), scratch);
+      DCHECK_EQ(LeaveCC, i.OutputSBit());
+      break;
+    }
     case kArmVcvtF64S32: {
       SwVfpRegister scratch = kScratchDoubleReg.low();
       __ vmov(scratch, i.InputRegister(0));
@@ -871,6 +878,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kArmVcvtS32F32: {
       SwVfpRegister scratch = kScratchDoubleReg.low();
       __ vcvt_s32_f32(scratch, i.InputFloat32Register(0));
+      __ vmov(i.OutputRegister(), scratch);
+      DCHECK_EQ(LeaveCC, i.OutputSBit());
+      break;
+    }
+    case kArmVcvtU32F32: {
+      SwVfpRegister scratch = kScratchDoubleReg.low();
+      __ vcvt_u32_f32(scratch, i.InputFloat32Register(0));
       __ vmov(i.OutputRegister(), scratch);
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
@@ -1128,8 +1142,6 @@ void CodeGenerator::AssemblePrologue() {
     // remaining stack slots.
     if (FLAG_code_comments) __ RecordComment("-- OSR entrypoint --");
     osr_pc_offset_ = __ pc_offset();
-    // TODO(titzer): cannot address target function == local #-1
-    __ ldr(r1, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
     stack_shrink_slots -= OsrHelper(info()).UnoptimizedFrameSlots();
   }
 

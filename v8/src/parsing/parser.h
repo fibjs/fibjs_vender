@@ -663,7 +663,7 @@ class ParserTraits {
   Parser* parser_;
 
   void BuildIteratorClose(ZoneList<Statement*>* statements, Variable* iterator,
-                          Maybe<Variable*> input);
+                          Maybe<Variable*> input, Maybe<Variable*> output);
 };
 
 
@@ -768,7 +768,6 @@ class Parser : public ParserBase<ParserTraits> {
     Scope* scope;
     Scope* hoist_scope;
     VariableMode mode;
-    bool needs_init;
     int declaration_pos;
     int initialization_pos;
     Kind declaration_kind;
@@ -903,6 +902,8 @@ class Parser : public ParserBase<ParserTraits> {
   Statement* ParseForStatement(ZoneList<const AstRawString*>* labels, bool* ok);
   Statement* ParseThrowStatement(bool* ok);
   Expression* MakeCatchContext(Handle<String> id, VariableProxy* value);
+  class DontCollectExpressionsInTailPositionScope;
+  class CollectExpressionsInTailPositionToListScope;
   TryStatement* ParseTryStatement(bool* ok);
   DebuggerStatement* ParseDebuggerStatement(bool* ok);
 
@@ -917,9 +918,9 @@ class Parser : public ParserBase<ParserTraits> {
                                   Expression* subject, Statement* body,
                                   bool is_destructuring);
   Statement* DesugarLexicalBindingsInForStatement(
-      Scope* inner_scope, bool is_const, ZoneList<const AstRawString*>* names,
-      ForStatement* loop, Statement* init, Expression* cond, Statement* next,
-      Statement* body, bool* ok);
+      Scope* inner_scope, VariableMode mode,
+      ZoneList<const AstRawString*>* names, ForStatement* loop, Statement* init,
+      Expression* cond, Statement* next, Statement* body, bool* ok);
 
   void RewriteDoExpression(Expression* expr, bool* ok);
 

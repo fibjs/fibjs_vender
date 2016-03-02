@@ -203,21 +203,23 @@ DEFINE_IMPLICATION(es_staging, harmony_regexp_lookbehind)
 DEFINE_IMPLICATION(es_staging, move_object_start)
 
 // Features that are still work in progress (behind individual flags).
-#define HARMONY_INPROGRESS(V)                                 \
-  V(harmony_modules, "harmony modules")                       \
-  V(harmony_function_name, "harmony Function name inference") \
-  V(harmony_function_sent, "harmony function.sent")           \
-  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")   \
-  V(harmony_simd, "harmony simd")                             \
-  V(harmony_do_expressions, "harmony do-expressions")         \
-  V(harmony_tailcalls, "harmony tail calls")                  \
-  V(harmony_species, "harmony Symbol.species")                \
-  V(harmony_object_values_entries, "harmony Object.values / Object.entries")
+#define HARMONY_INPROGRESS(V)                                                \
+  V(harmony_modules, "harmony modules")                                      \
+  V(harmony_function_sent, "harmony function.sent")                          \
+  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")                  \
+  V(harmony_simd, "harmony simd")                                            \
+  V(harmony_do_expressions, "harmony do-expressions")                        \
+  V(harmony_tailcalls, "harmony tail calls")                                 \
+  V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
+  V(harmony_object_own_property_descriptors,                                 \
+    "harmony Object.getOwnPropertyDescriptors()")                            \
+  V(harmony_regexp_property, "harmony unicode regexp property classes")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
-#define HARMONY_STAGED(V)                                   \
-  V(harmony_regexp_lookbehind, "harmony regexp lookbehind") \
-  V(harmony_unicode_regexps, "harmony unicode regexps")
+#define HARMONY_STAGED(V)                                     \
+  V(harmony_function_name, "harmony Function name inference") \
+  V(harmony_regexp_lookbehind, "harmony regexp lookbehind")   \
+  V(harmony_species, "harmony Symbol.species")
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                               \
@@ -227,6 +229,7 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
   V(harmony_object_observe, "harmony Object.observe")                     \
   V(harmony_tostring, "harmony toString")                                 \
   V(harmony_regexps, "harmony regular expression extensions")             \
+  V(harmony_unicode_regexps, "harmony unicode regexps")                   \
   V(harmony_sloppy, "harmony features in sloppy mode")                    \
   V(harmony_sloppy_let, "harmony let in sloppy mode")                     \
   V(harmony_sloppy_function, "harmony sloppy function block scoping")     \
@@ -417,7 +420,6 @@ DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
 DEFINE_BOOL(turbo, false, "enable TurboFan compiler")
 DEFINE_IMPLICATION(turbo, turbo_asm_deoptimization)
 DEFINE_IMPLICATION(turbo, turbo_inlining)
-DEFINE_IMPLICATION(turbo, turbo_escape)
 DEFINE_BOOL(turbo_shipping, true, "enable TurboFan compiler on subset")
 DEFINE_BOOL(turbo_greedy_regalloc, false, "use the greedy register allocator")
 DEFINE_BOOL(turbo_sp_frame_access, false,
@@ -459,7 +461,6 @@ DEFINE_BOOL(turbo_verify_allocation, DEBUG_BOOL,
 DEFINE_BOOL(turbo_move_optimization, true, "optimize gap moves in TurboFan")
 DEFINE_BOOL(turbo_jt, true, "enable jump threading in TurboFan")
 DEFINE_BOOL(turbo_osr, true, "enable OSR in TurboFan")
-DEFINE_BOOL(turbo_try_finally, false, "enable try-finally support in TurboFan")
 DEFINE_BOOL(turbo_stress_loop_peeling, false,
             "stress loop peeling optimization")
 DEFINE_BOOL(turbo_cf_optimization, true, "optimize control flow in TurboFan")
@@ -489,7 +490,7 @@ DEFINE_INT(frame_count, 1, "number of stack frames inspected by the profiler")
 // 0x1800 fits in the immediate field of an ARM instruction.
 DEFINE_INT(interrupt_budget, 0x1800,
            "execution budget before interrupt is triggered")
-DEFINE_INT(type_info_threshold, 25,
+DEFINE_INT(type_info_threshold, 24,
            "percentage of ICs that must have type info to allow optimization")
 DEFINE_INT(generic_ic_threshold, 30,
            "max percentage of megamorphic/generic ICs to allow optimization")
@@ -932,7 +933,6 @@ DEFINE_BOOL(print_builtin_source, false,
             "pretty print source code for builtins")
 DEFINE_BOOL(print_ast, false, "print source AST")
 DEFINE_BOOL(print_builtin_ast, false, "print source AST for builtins")
-DEFINE_STRING(stop_at, "", "function name where to insert a breakpoint")
 DEFINE_BOOL(trap_on_abort, false, "replace aborts by breakpoints")
 
 // compiler.cc
@@ -967,6 +967,8 @@ DEFINE_BOOL(trace_lazy, false, "trace lazy compilation")
 DEFINE_BOOL(collect_heap_spill_statistics, false,
             "report heap spill statistics along with heap_stats "
             "(requires heap_stats)")
+DEFINE_BOOL(trace_live_bytes, false,
+            "trace incrementing and resetting of live bytes")
 
 DEFINE_BOOL(trace_isolates, false, "trace isolate state changes")
 

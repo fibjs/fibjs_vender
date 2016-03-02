@@ -352,6 +352,23 @@ RegExpTree* RegExpParser::ParseDisjunction() {
             builder->AddCharacterClass(cc);
             break;
           }
+          case 'p':
+          case 'P': {
+            uc32 p = Next();
+            Advance(2);
+            if (unicode()) {
+              ZoneList<CharacterRange>* ranges = ParsePropertyClass();
+              if (ranges == nullptr) {
+                return ReportError(CStrVector("Invalid property name"));
+              }
+              RegExpCharacterClass* cc =
+                  new (zone()) RegExpCharacterClass(ranges, p == 'P');
+              builder->AddCharacterClass(cc);
+            } else {
+              builder->AddCharacter(p);
+            }
+            break;
+          }
           case '1':
           case '2':
           case '3':
@@ -461,7 +478,7 @@ RegExpTree* RegExpParser::ParseDisjunction() {
             Advance(2);
             uc32 value;
             if (ParseUnicodeEscape(&value)) {
-              builder->AddUnicodeCharacter(value);
+              builder->AddEscapedUnicodeCharacter(value);
             } else if (!unicode()) {
               builder->AddCharacter('u');
             } else {
@@ -780,7 +797,7 @@ bool RegExpParser::ParseHexEscape(int length, uc32* value) {
   return true;
 }
 
-
+// This parses RegExpUnicodeEscapeSequence as described in ECMA262.
 bool RegExpParser::ParseUnicodeEscape(uc32* value) {
   // Accept both \uxxxx and \u{xxxxxx} (if harmony unicode escapes are
   // allowed). In the latter case, the number of hex digits between { } is
@@ -798,9 +815,75 @@ bool RegExpParser::ParseUnicodeEscape(uc32* value) {
     return false;
   }
   // \u but no {, or \u{...} escapes not allowed.
-  return ParseHexEscape(4, value);
+  bool result = ParseHexEscape(4, value);
+  if (result && unicode() && unibrow::Utf16::IsLeadSurrogate(*value) &&
+      current() == '\\') {
+    // Attempt to read trail surrogate.
+    int start = position();
+    if (Next() == 'u') {
+      Advance(2);
+      uc32 trail;
+      if (ParseHexEscape(4, &trail) &&
+          unibrow::Utf16::IsTrailSurrogate(trail)) {
+        *value = unibrow::Utf16::CombineSurrogatePair(static_cast<uc16>(*value),
+                                                      static_cast<uc16>(trail));
+        return true;
+      }
+    }
+    Reset(start);
+  }
+  return result;
 }
 
+ZoneList<CharacterRange>* RegExpParser::ParsePropertyClass() {
+#ifdef V8_I18N_SUPPORT
+  char property_name[3];
+  memset(property_name, 0, sizeof(property_name));
+  if (current() == '{') {
+    Advance();
+    if (current() < 'A' || current() > 'Z') return nullptr;
+    property_name[0] = static_cast<char>(current());
+    Advance();
+    if (current() >= 'a' && current() <= 'z') {
+      property_name[1] = static_cast<char>(current());
+      Advance();
+    }
+    if (current() != '}') return nullptr;
+  } else if (current() >= 'A' && current() <= 'Z') {
+    property_name[0] = static_cast<char>(current());
+  } else {
+    return nullptr;
+  }
+  Advance();
+
+  int32_t category =
+      u_getPropertyValueEnum(UCHAR_GENERAL_CATEGORY_MASK, property_name);
+  if (category == UCHAR_INVALID_CODE) return nullptr;
+
+  USet* set = uset_openEmpty();
+  UErrorCode ec = U_ZERO_ERROR;
+  uset_applyIntPropertyValue(set, UCHAR_GENERAL_CATEGORY_MASK, category, &ec);
+  ZoneList<CharacterRange>* ranges = nullptr;
+  if (ec == U_ZERO_ERROR && !uset_isEmpty(set)) {
+    uset_removeAllStrings(set);
+    int item_count = uset_getItemCount(set);
+    ranges = new (zone()) ZoneList<CharacterRange>(item_count, zone());
+    int item_result = 0;
+    for (int i = 0; i < item_count; i++) {
+      uc32 start = 0;
+      uc32 end = 0;
+      item_result += uset_getItem(set, i, &start, &end, nullptr, 0, &ec);
+      ranges->Add(CharacterRange::Range(start, end), zone());
+    }
+    DCHECK_EQ(U_ZERO_ERROR, ec);
+    DCHECK_EQ(0, item_result);
+  }
+  uset_close(set);
+  return ranges;
+#else   // V8_I18N_SUPPORT
+  return nullptr;
+#endif  // V8_I18N_SUPPORT
+}
 
 bool RegExpParser::ParseUnlimitedLengthHexNumber(int max_value, uc32* value) {
   uc32 x = 0;
@@ -872,6 +955,12 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
       return '\\';
     }
     case '0':
+      // With /u, \0 is interpreted as NUL if not followed by another digit.
+      if (unicode() && !(Next() >= '0' && Next() <= '9')) {
+        Advance();
+        return 0;
+      }
+    // Fall through.
     case '1':
     case '2':
     case '3':
@@ -916,9 +1005,9 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
     }
     default: {
       uc32 result = current();
-      // With /u, no identity escapes except for syntax characters are
+      // With /u, no identity escapes except for syntax characters and '-' are
       // allowed. Otherwise, all identity escapes are allowed.
-      if (!unicode() || IsSyntaxCharacterOrSlash(result)) {
+      if (!unicode() || IsSyntaxCharacterOrSlash(result) || result == '-') {
         Advance();
         return result;
       }
@@ -952,22 +1041,6 @@ CharacterRange RegExpParser::ParseClassAtom(uc16* char_class) {
     }
   } else {
     Advance();
-  }
-
-  if (unicode() && unibrow::Utf16::IsLeadSurrogate(first)) {
-    // Combine with possibly following trail surrogate.
-    int start = position();
-    uc32 second = current();
-    if (second == '\\') {
-      second = ParseClassCharacterEscape(CHECK_FAILED);
-    } else {
-      Advance();
-    }
-    if (unibrow::Utf16::IsTrailSurrogate(second)) {
-      first = unibrow::Utf16::CombineSurrogatePair(first, second);
-    } else {
-      Reset(start);
-    }
   }
 
   return CharacterRange::Singleton(first);
@@ -1198,6 +1271,13 @@ void RegExpBuilder::AddUnicodeCharacter(uc32 c) {
   }
 }
 
+void RegExpBuilder::AddEscapedUnicodeCharacter(uc32 character) {
+  // A lead or trail surrogate parsed via escape sequence will not
+  // pair up with any preceding lead or following trail surrogate.
+  FlushPendingSurrogate();
+  AddUnicodeCharacter(character);
+  FlushPendingSurrogate();
+}
 
 void RegExpBuilder::AddEmpty() { pending_empty_ = true; }
 

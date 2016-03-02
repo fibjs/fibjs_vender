@@ -71,7 +71,6 @@ class CallSite {
   int32_t pos_;
 };
 
-
 #define MESSAGE_TEMPLATES(T)                                                   \
   /* Error */                                                                  \
   T(None, "")                                                                  \
@@ -387,12 +386,10 @@ class CallSite {
   T(DuplicateExport, "Duplicate export of '%'")                                \
   T(DuplicateProto,                                                            \
     "Duplicate __proto__ fields are not allowed in object literals")           \
-  T(ForInLoopInitializer,                                                      \
-    "for-in loop variable declaration may not have an initializer.")           \
+  T(ForInOfLoopInitializer,                                                    \
+    "% loop variable declaration may not have an initializer.")                \
   T(ForInOfLoopMultiBindings,                                                  \
     "Invalid left-hand side in % loop: Must have a single binding.")           \
-  T(ForOfLoopInitializer,                                                      \
-    "for-of loop variable declaration may not have an initializer.")           \
   T(IllegalAccess, "Illegal access")                                           \
   T(IllegalBreak, "Illegal break statement")                                   \
   T(IllegalContinue, "Illegal continue statement")                             \
@@ -409,6 +406,10 @@ class CallSite {
   T(InvalidLhsInPrefixOp,                                                      \
     "Invalid left-hand side expression in prefix operation")                   \
   T(InvalidRegExpFlags, "Invalid flags supplied to RegExp constructor '%'")    \
+  T(JsonParseUnexpectedEOS, "Unexpected end of JSON input")                    \
+  T(JsonParseUnexpectedToken, "Unexpected token % in JSON at position %")      \
+  T(JsonParseUnexpectedTokenNumber, "Unexpected number in JSON at position %") \
+  T(JsonParseUnexpectedTokenString, "Unexpected string in JSON at position %") \
   T(LabelRedeclaration, "Label '%' has already been declared")                 \
   T(MalformedArrowFunParamList, "Malformed arrow function parameter list")     \
   T(MalformedRegExp, "Invalid regular expression: /%/: %")                     \

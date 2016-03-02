@@ -24,8 +24,9 @@ class SourcePositionTableBuilder {
   explicit SourcePositionTableBuilder(Isolate* isolate, Zone* zone)
       : isolate_(isolate), entries_(zone) {}
 
-  void AddStatementPosition(int bytecode_offset, int source_position);
-  void AddExpressionPosition(int bytecode_offset, int source_position);
+  void AddStatementPosition(size_t bytecode_offset, int source_position);
+  void AddExpressionPosition(size_t bytecode_offset, int source_position);
+  void RevertPosition(size_t bytecode_offset);
   Handle<FixedArray> ToFixedArray();
 
  private:
@@ -34,9 +35,10 @@ class SourcePositionTableBuilder {
     uint32_t source_position_and_type;
   };
 
-  void AssertMonotonic(int bytecode_offset) {
-    DCHECK(entries_.size() == 0 ||
-           entries_.back().bytecode_offset < bytecode_offset);
+  bool CodeOffsetHasPosition(int bytecode_offset) {
+    // Return whether bytecode offset already has a position assigned.
+    return entries_.size() > 0 &&
+           entries_.back().bytecode_offset == bytecode_offset;
   }
 
   Isolate* isolate_;
@@ -47,8 +49,6 @@ class SourcePositionTableIterator {
  public:
   explicit SourcePositionTableIterator(BytecodeArray* bytecode_array);
 
-  static int PositionFromBytecodeOffset(BytecodeArray* bytecode_array,
-                                        int bytecode_offset);
   void Advance();
 
   int bytecode_offset() const {

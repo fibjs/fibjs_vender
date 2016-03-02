@@ -40,13 +40,6 @@ class BytecodeGraphBuilder {
   // Get or create the node that represents the incoming new target value.
   Node* GetNewTarget();
 
-  // Builder for accessing a (potentially immutable) object field.
-  Node* BuildLoadObjectField(Node* object, int offset);
-  Node* BuildLoadImmutableObjectField(Node* object, int offset);
-
-  // Builder for accessing type feedback vector.
-  Node* BuildLoadFeedbackVector();
-
   // Builder for loading the a native context field.
   Node* BuildLoadNativeContextField(int index);
 
@@ -110,8 +103,8 @@ class BytecodeGraphBuilder {
 
   Node* ProcessCallArguments(const Operator* call_op, Node* callee,
                              interpreter::Register receiver, size_t arity);
-  Node* ProcessCallNewArguments(const Operator* call_new_op,
-                                interpreter::Register callee,
+  Node* ProcessCallNewArguments(const Operator* call_new_op, Node* callee,
+                                Node* new_target,
                                 interpreter::Register first_arg, size_t arity);
   Node* ProcessCallRuntimeArguments(const Operator* call_runtime_op,
                                     interpreter::Register first_arg,
@@ -121,13 +114,13 @@ class BytecodeGraphBuilder {
   void BuildCreateRegExpLiteral();
   void BuildCreateArrayLiteral();
   void BuildCreateObjectLiteral();
-  void BuildCreateArguments(CreateArgumentsParameters::Type type, int index);
+  void BuildCreateArguments(CreateArgumentsType type);
   void BuildLoadGlobal(TypeofMode typeof_mode);
-  void BuildStoreGlobal();
+  void BuildStoreGlobal(LanguageMode language_mode);
   void BuildNamedLoad();
   void BuildKeyedLoad();
-  void BuildNamedStore();
-  void BuildKeyedStore();
+  void BuildNamedStore(LanguageMode language_mode);
+  void BuildKeyedStore(LanguageMode language_mode);
   void BuildLdaLookupSlot(TypeofMode typeof_mode);
   void BuildStaLookupSlot(LanguageMode language_mode);
   void BuildCall();
@@ -138,7 +131,7 @@ class BytecodeGraphBuilder {
   void BuildThrow();
   void BuildBinaryOp(const Operator* op);
   void BuildCompareOp(const Operator* op);
-  void BuildDelete();
+  void BuildDelete(LanguageMode language_mode);
   void BuildCastOperator(const Operator* op);
   void BuildForInPrepare();
   void BuildForInNext();
@@ -148,6 +141,7 @@ class BytecodeGraphBuilder {
   void BuildConditionalJump(Node* condition);
   void BuildJumpIfEqual(Node* comperand);
   void BuildJumpIfToBooleanEqual(Node* boolean_comperand);
+  void BuildJumpIfNotHole();
 
   // Simulates control flow by forward-propagating environments.
   void MergeIntoSuccessorEnvironment(int target_offset);
@@ -164,6 +158,9 @@ class BytecodeGraphBuilder {
   // new nodes.
   static const int kInputBufferSizeIncrement = 64;
 
+  // The catch prediction from the handler table is reused.
+  typedef HandlerTable::CatchPrediction CatchPrediction;
+
   // An abstract representation for an exception handler that is being
   // entered and exited while the graph builder is iterating over the
   // underlying bytecode. The exception handlers within the bytecode are
@@ -173,6 +170,7 @@ class BytecodeGraphBuilder {
     int end_offset_;        // End offset of the handled area in the bytecode.
     int handler_offset_;    // Handler entry offset within the bytecode.
     int context_register_;  // Index of register holding handler context.
+    CatchPrediction pred_;  // Prediction of whether handler is catching.
   };
 
   // Field accessors

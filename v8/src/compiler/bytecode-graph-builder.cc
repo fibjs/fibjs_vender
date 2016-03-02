@@ -101,6 +101,7 @@ class BytecodeGraphBuilder::FrameStateBeforeAndAfter {
       : builder_(builder),
         id_after_(BailoutId::None()),
         added_to_node_(false),
+        frame_states_unused_(false),
         output_poke_offset_(0),
         output_poke_count_(0) {
     BailoutId id_before(builder->bytecode_iterator().current_offset());
@@ -112,7 +113,8 @@ class BytecodeGraphBuilder::FrameStateBeforeAndAfter {
 
   ~FrameStateBeforeAndAfter() {
     DCHECK(added_to_node_);
-    DCHECK(builder_->environment()->StateValuesAreUpToDate(output_poke_offset_,
+    DCHECK(frame_states_unused_ ||
+           builder_->environment()->StateValuesAreUpToDate(output_poke_offset_,
                                                            output_poke_count_));
   }
 
@@ -143,6 +145,7 @@ class BytecodeGraphBuilder::FrameStateBeforeAndAfter {
       output_poke_offset_ = static_cast<int>(combine.GetOffsetToPokeAt());
       output_poke_count_ = node->op()->ValueOutputCount();
     }
+    frame_states_unused_ = count == 0;
     added_to_node_ = true;
   }
 
@@ -151,6 +154,7 @@ class BytecodeGraphBuilder::FrameStateBeforeAndAfter {
   BailoutId id_after_;
 
   bool added_to_node_;
+  bool frame_states_unused_;
   int output_poke_offset_;
   int output_poke_count_;
 };
@@ -488,21 +492,6 @@ Node* BytecodeGraphBuilder::GetFunctionClosure() {
 }
 
 
-Node* BytecodeGraphBuilder::BuildLoadObjectField(Node* object, int offset) {
-  return NewNode(jsgraph()->machine()->Load(MachineType::AnyTagged()), object,
-                 jsgraph()->IntPtrConstant(offset - kHeapObjectTag));
-}
-
-
-Node* BytecodeGraphBuilder::BuildLoadImmutableObjectField(Node* object,
-                                                          int offset) {
-  return graph()->NewNode(jsgraph()->machine()->Load(MachineType::AnyTagged()),
-                          object,
-                          jsgraph()->IntPtrConstant(offset - kHeapObjectTag),
-                          graph()->start(), graph()->start());
-}
-
-
 Node* BytecodeGraphBuilder::BuildLoadNativeContextField(int index) {
   const Operator* op =
       javascript()->LoadContext(0, Context::NATIVE_CONTEXT_INDEX, true);
@@ -511,22 +500,8 @@ Node* BytecodeGraphBuilder::BuildLoadNativeContextField(int index) {
 }
 
 
-Node* BytecodeGraphBuilder::BuildLoadFeedbackVector() {
-  if (!feedback_vector_.is_set()) {
-    Node* closure = GetFunctionClosure();
-    Node* literals =
-        BuildLoadImmutableObjectField(closure, JSFunction::kLiteralsOffset);
-    Node* vector = BuildLoadImmutableObjectField(
-        literals, LiteralsArray::kFeedbackVectorOffset);
-    feedback_vector_.set(vector);
-  }
-  return feedback_vector_.get();
-}
-
-
 VectorSlotPair BytecodeGraphBuilder::CreateVectorSlotPair(int slot_id) {
-  Handle<TypeFeedbackVector> feedback_vector =
-      handle(info()->closure()->feedback_vector());
+  Handle<TypeFeedbackVector> feedback_vector = info()->feedback_vector();
   FeedbackVectorSlot slot;
   if (slot_id >= TypeFeedbackVector::kReservedIndexCount) {
     slot = feedback_vector->ToSlot(slot_id);
@@ -666,51 +641,43 @@ void BytecodeGraphBuilder::BuildLoadGlobal(
       CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(1));
 
   const Operator* op = javascript()->LoadGlobal(name, feedback, typeof_mode);
-  Node* node = NewNode(op, BuildLoadFeedbackVector());
+  Node* node = NewNode(op, GetFunctionClosure());
   environment()->BindAccumulator(node, &states);
 }
 
 void BytecodeGraphBuilder::VisitLdaGlobalSloppy() {
-  DCHECK(is_sloppy(language_mode()));
   BuildLoadGlobal(TypeofMode::NOT_INSIDE_TYPEOF);
 }
 
 void BytecodeGraphBuilder::VisitLdaGlobalStrict() {
-  DCHECK(is_strict(language_mode()));
   BuildLoadGlobal(TypeofMode::NOT_INSIDE_TYPEOF);
 }
 
 void BytecodeGraphBuilder::VisitLdaGlobalInsideTypeofSloppy() {
-  DCHECK(is_sloppy(language_mode()));
   BuildLoadGlobal(TypeofMode::INSIDE_TYPEOF);
 }
 
 void BytecodeGraphBuilder::VisitLdaGlobalInsideTypeofStrict() {
-  DCHECK(is_strict(language_mode()));
   BuildLoadGlobal(TypeofMode::INSIDE_TYPEOF);
 }
 
 void BytecodeGraphBuilder::VisitLdaGlobalSloppyWide() {
-  DCHECK(is_sloppy(language_mode()));
   BuildLoadGlobal(TypeofMode::NOT_INSIDE_TYPEOF);
 }
 
 void BytecodeGraphBuilder::VisitLdaGlobalStrictWide() {
-  DCHECK(is_strict(language_mode()));
   BuildLoadGlobal(TypeofMode::NOT_INSIDE_TYPEOF);
 }
 
 void BytecodeGraphBuilder::VisitLdaGlobalInsideTypeofSloppyWide() {
-  DCHECK(is_sloppy(language_mode()));
   BuildLoadGlobal(TypeofMode::INSIDE_TYPEOF);
 }
 
 void BytecodeGraphBuilder::VisitLdaGlobalInsideTypeofStrictWide() {
-  DCHECK(is_strict(language_mode()));
   BuildLoadGlobal(TypeofMode::INSIDE_TYPEOF);
 }
 
-void BytecodeGraphBuilder::BuildStoreGlobal() {
+void BytecodeGraphBuilder::BuildStoreGlobal(LanguageMode language_mode) {
   FrameStateBeforeAndAfter states(this);
   Handle<Name> name =
       Handle<Name>::cast(bytecode_iterator().GetConstantForIndexOperand(0));
@@ -718,30 +685,25 @@ void BytecodeGraphBuilder::BuildStoreGlobal() {
       CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(1));
   Node* value = environment()->LookupAccumulator();
 
-  const Operator* op =
-      javascript()->StoreGlobal(language_mode(), name, feedback);
-  Node* node = NewNode(op, value, BuildLoadFeedbackVector());
+  const Operator* op = javascript()->StoreGlobal(language_mode, name, feedback);
+  Node* node = NewNode(op, value, GetFunctionClosure());
   environment()->RecordAfterState(node, &states);
 }
 
 void BytecodeGraphBuilder::VisitStaGlobalSloppy() {
-  DCHECK(is_sloppy(language_mode()));
-  BuildStoreGlobal();
+  BuildStoreGlobal(LanguageMode::SLOPPY);
 }
 
 void BytecodeGraphBuilder::VisitStaGlobalStrict() {
-  DCHECK(is_strict(language_mode()));
-  BuildStoreGlobal();
+  BuildStoreGlobal(LanguageMode::STRICT);
 }
 
 void BytecodeGraphBuilder::VisitStaGlobalSloppyWide() {
-  DCHECK(is_sloppy(language_mode()));
-  BuildStoreGlobal();
+  BuildStoreGlobal(LanguageMode::SLOPPY);
 }
 
 void BytecodeGraphBuilder::VisitStaGlobalStrictWide() {
-  DCHECK(is_strict(language_mode()));
-  BuildStoreGlobal();
+  BuildStoreGlobal(LanguageMode::STRICT);
 }
 
 void BytecodeGraphBuilder::VisitLdaContextSlot() {
@@ -777,11 +739,13 @@ void BytecodeGraphBuilder::VisitStaContextSlotWide() { VisitStaContextSlot(); }
 
 void BytecodeGraphBuilder::BuildLdaLookupSlot(TypeofMode typeof_mode) {
   FrameStateBeforeAndAfter states(this);
-  Handle<String> name =
-      Handle<String>::cast(bytecode_iterator().GetConstantForIndexOperand(0));
-  const Operator* op = javascript()->LoadDynamic(name, typeof_mode);
-  Node* value =
-      NewNode(op, BuildLoadFeedbackVector(), environment()->Context());
+  Node* name =
+      jsgraph()->Constant(bytecode_iterator().GetConstantForIndexOperand(0));
+  const Operator* op =
+      javascript()->CallRuntime(typeof_mode == TypeofMode::NOT_INSIDE_TYPEOF
+                                    ? Runtime::kLoadLookupSlot
+                                    : Runtime::kLoadLookupSlotInsideTypeof);
+  Node* value = NewNode(op, name);
   environment()->BindAccumulator(value, &states);
 }
 
@@ -798,9 +762,10 @@ void BytecodeGraphBuilder::BuildStaLookupSlot(LanguageMode language_mode) {
   Node* value = environment()->LookupAccumulator();
   Node* name =
       jsgraph()->Constant(bytecode_iterator().GetConstantForIndexOperand(0));
-  Node* language = jsgraph()->Constant(language_mode);
-  const Operator* op = javascript()->CallRuntime(Runtime::kStoreLookupSlot);
-  Node* store = NewNode(op, value, environment()->Context(), name, language);
+  const Operator* op = javascript()->CallRuntime(
+      is_strict(language_mode) ? Runtime::kStoreLookupSlot_Strict
+                               : Runtime::kStoreLookupSlot_Sloppy);
+  Node* store = NewNode(op, name, value);
   environment()->BindAccumulator(store, &states);
 }
 
@@ -836,7 +801,7 @@ void BytecodeGraphBuilder::BuildNamedLoad() {
       CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(2));
 
   const Operator* op = javascript()->LoadNamed(language_mode(), name, feedback);
-  Node* node = NewNode(op, object, BuildLoadFeedbackVector());
+  Node* node = NewNode(op, object, GetFunctionClosure());
   environment()->BindAccumulator(node, &states);
 }
 
@@ -869,7 +834,7 @@ void BytecodeGraphBuilder::BuildKeyedLoad() {
       CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(1));
 
   const Operator* op = javascript()->LoadProperty(language_mode(), feedback);
-  Node* node = NewNode(op, object, key, BuildLoadFeedbackVector());
+  Node* node = NewNode(op, object, key, GetFunctionClosure());
   environment()->BindAccumulator(node, &states);
 }
 
@@ -893,7 +858,7 @@ void BytecodeGraphBuilder::VisitKeyedLoadICStrictWide() {
   BuildKeyedLoad();
 }
 
-void BytecodeGraphBuilder::BuildNamedStore() {
+void BytecodeGraphBuilder::BuildNamedStore(LanguageMode language_mode) {
   FrameStateBeforeAndAfter states(this);
   Node* value = environment()->LookupAccumulator();
   Node* object =
@@ -903,33 +868,28 @@ void BytecodeGraphBuilder::BuildNamedStore() {
   VectorSlotPair feedback =
       CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(2));
 
-  const Operator* op =
-      javascript()->StoreNamed(language_mode(), name, feedback);
-  Node* node = NewNode(op, object, value, BuildLoadFeedbackVector());
+  const Operator* op = javascript()->StoreNamed(language_mode, name, feedback);
+  Node* node = NewNode(op, object, value, GetFunctionClosure());
   environment()->RecordAfterState(node, &states);
 }
 
 void BytecodeGraphBuilder::VisitStoreICSloppy() {
-  DCHECK(is_sloppy(language_mode()));
-  BuildNamedStore();
+  BuildNamedStore(LanguageMode::SLOPPY);
 }
 
 void BytecodeGraphBuilder::VisitStoreICStrict() {
-  DCHECK(is_strict(language_mode()));
-  BuildNamedStore();
+  BuildNamedStore(LanguageMode::STRICT);
 }
 
 void BytecodeGraphBuilder::VisitStoreICSloppyWide() {
-  DCHECK(is_sloppy(language_mode()));
-  BuildNamedStore();
+  BuildNamedStore(LanguageMode::SLOPPY);
 }
 
 void BytecodeGraphBuilder::VisitStoreICStrictWide() {
-  DCHECK(is_strict(language_mode()));
-  BuildNamedStore();
+  BuildNamedStore(LanguageMode::STRICT);
 }
 
-void BytecodeGraphBuilder::BuildKeyedStore() {
+void BytecodeGraphBuilder::BuildKeyedStore(LanguageMode language_mode) {
   FrameStateBeforeAndAfter states(this);
   Node* value = environment()->LookupAccumulator();
   Node* object =
@@ -939,29 +899,25 @@ void BytecodeGraphBuilder::BuildKeyedStore() {
   VectorSlotPair feedback =
       CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(2));
 
-  const Operator* op = javascript()->StoreProperty(language_mode(), feedback);
-  Node* node = NewNode(op, object, key, value, BuildLoadFeedbackVector());
+  const Operator* op = javascript()->StoreProperty(language_mode, feedback);
+  Node* node = NewNode(op, object, key, value, GetFunctionClosure());
   environment()->RecordAfterState(node, &states);
 }
 
 void BytecodeGraphBuilder::VisitKeyedStoreICSloppy() {
-  DCHECK(is_sloppy(language_mode()));
-  BuildKeyedStore();
+  BuildKeyedStore(LanguageMode::SLOPPY);
 }
 
 void BytecodeGraphBuilder::VisitKeyedStoreICStrict() {
-  DCHECK(is_strict(language_mode()));
-  BuildKeyedStore();
+  BuildKeyedStore(LanguageMode::STRICT);
 }
 
 void BytecodeGraphBuilder::VisitKeyedStoreICSloppyWide() {
-  DCHECK(is_sloppy(language_mode()));
-  BuildKeyedStore();
+  BuildKeyedStore(LanguageMode::SLOPPY);
 }
 
 void BytecodeGraphBuilder::VisitKeyedStoreICStrictWide() {
-  DCHECK(is_strict(language_mode()));
-  BuildKeyedStore();
+  BuildKeyedStore(LanguageMode::STRICT);
 }
 
 void BytecodeGraphBuilder::VisitPushContext() {
@@ -989,26 +945,23 @@ void BytecodeGraphBuilder::VisitCreateClosure() {
 
 void BytecodeGraphBuilder::VisitCreateClosureWide() { VisitCreateClosure(); }
 
-void BytecodeGraphBuilder::BuildCreateArguments(
-    CreateArgumentsParameters::Type type, int rest_index) {
+void BytecodeGraphBuilder::BuildCreateArguments(CreateArgumentsType type) {
   FrameStateBeforeAndAfter states(this);
-  const Operator* op = javascript()->CreateArguments(type, rest_index);
+  const Operator* op = javascript()->CreateArguments(type);
   Node* object = NewNode(op, GetFunctionClosure());
   environment()->BindAccumulator(object, &states);
 }
 
 void BytecodeGraphBuilder::VisitCreateMappedArguments() {
-  BuildCreateArguments(CreateArgumentsParameters::kMappedArguments, 0);
+  BuildCreateArguments(CreateArgumentsType::kMappedArguments);
 }
 
 void BytecodeGraphBuilder::VisitCreateUnmappedArguments() {
-  BuildCreateArguments(CreateArgumentsParameters::kUnmappedArguments, 0);
+  BuildCreateArguments(CreateArgumentsType::kUnmappedArguments);
 }
 
-void BytecodeGraphBuilder::VisitCreateRestArguments() {
-  int index =
-      Smi::cast(*bytecode_iterator().GetConstantForIndexOperand(0))->value();
-  BuildCreateArguments(CreateArgumentsParameters::kRestArray, index);
+void BytecodeGraphBuilder::VisitCreateRestParameter() {
+  BuildCreateArguments(CreateArgumentsType::kRestParameter);
 }
 
 void BytecodeGraphBuilder::BuildCreateLiteral(const Operator* op) {
@@ -1097,7 +1050,7 @@ void BytecodeGraphBuilder::BuildCall() {
   Node* callee =
       environment()->LookupRegister(bytecode_iterator().GetRegisterOperand(0));
   interpreter::Register receiver = bytecode_iterator().GetRegisterOperand(1);
-  size_t arg_count = bytecode_iterator().GetCountOperand(2);
+  size_t arg_count = bytecode_iterator().GetRegisterCountOperand(2);
   VectorSlotPair feedback =
       CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(3));
 
@@ -1117,7 +1070,7 @@ void BytecodeGraphBuilder::BuildCallJSRuntime() {
   Node* callee =
       BuildLoadNativeContextField(bytecode_iterator().GetIndexOperand(0));
   interpreter::Register receiver = bytecode_iterator().GetRegisterOperand(1);
-  size_t arg_count = bytecode_iterator().GetCountOperand(2);
+  size_t arg_count = bytecode_iterator().GetRegisterCountOperand(2);
 
   // Create node to perform the JS runtime call.
   const Operator* call =
@@ -1148,7 +1101,7 @@ void BytecodeGraphBuilder::BuildCallRuntime() {
   Runtime::FunctionId functionId =
       static_cast<Runtime::FunctionId>(bytecode_iterator().GetIndexOperand(0));
   interpreter::Register first_arg = bytecode_iterator().GetRegisterOperand(1);
-  size_t arg_count = bytecode_iterator().GetCountOperand(2);
+  size_t arg_count = bytecode_iterator().GetRegisterCountOperand(2);
 
   // Create node to perform the runtime call.
   const Operator* call = javascript()->CallRuntime(functionId, arg_count);
@@ -1165,7 +1118,7 @@ void BytecodeGraphBuilder::BuildCallRuntimeForPair() {
   Runtime::FunctionId functionId =
       static_cast<Runtime::FunctionId>(bytecode_iterator().GetIndexOperand(0));
   interpreter::Register first_arg = bytecode_iterator().GetRegisterOperand(1);
-  size_t arg_count = bytecode_iterator().GetCountOperand(2);
+  size_t arg_count = bytecode_iterator().GetRegisterCountOperand(2);
   interpreter::Register first_return =
       bytecode_iterator().GetRegisterOperand(3);
 
@@ -1183,33 +1136,34 @@ void BytecodeGraphBuilder::VisitCallRuntimeForPairWide() {
   BuildCallRuntimeForPair();
 }
 
-
 Node* BytecodeGraphBuilder::ProcessCallNewArguments(
-    const Operator* call_new_op, interpreter::Register callee,
+    const Operator* call_new_op, Node* callee, Node* new_target,
     interpreter::Register first_arg, size_t arity) {
   Node** all = info()->zone()->NewArray<Node*>(arity);
-  all[0] = environment()->LookupRegister(callee);
+  all[0] = new_target;
   int first_arg_index = first_arg.index();
   for (int i = 1; i < static_cast<int>(arity) - 1; ++i) {
     all[i] = environment()->LookupRegister(
         interpreter::Register(first_arg_index + i - 1));
   }
-  // Original constructor is the same as the callee.
-  all[arity - 1] = environment()->LookupRegister(callee);
+  all[arity - 1] = callee;
   Node* value = MakeNode(call_new_op, static_cast<int>(arity), all, false);
   return value;
 }
 
 void BytecodeGraphBuilder::BuildCallConstruct() {
   FrameStateBeforeAndAfter states(this);
-  interpreter::Register callee = bytecode_iterator().GetRegisterOperand(0);
+  interpreter::Register callee_reg = bytecode_iterator().GetRegisterOperand(0);
   interpreter::Register first_arg = bytecode_iterator().GetRegisterOperand(1);
-  size_t arg_count = bytecode_iterator().GetCountOperand(2);
+  size_t arg_count = bytecode_iterator().GetRegisterCountOperand(2);
 
+  Node* new_target = environment()->LookupAccumulator();
+  Node* callee = environment()->LookupRegister(callee_reg);
   // TODO(turbofan): Pass the feedback here.
   const Operator* call = javascript()->CallConstruct(
       static_cast<int>(arg_count) + 2, VectorSlotPair());
-  Node* value = ProcessCallNewArguments(call, callee, first_arg, arg_count + 2);
+  Node* value = ProcessCallNewArguments(call, callee, new_target, first_arg,
+                                        arg_count + 2);
   environment()->BindAccumulator(value, &states);
 }
 
@@ -1334,32 +1288,22 @@ void BytecodeGraphBuilder::VisitTypeOf() {
   environment()->BindAccumulator(node);
 }
 
-void BytecodeGraphBuilder::BuildDelete() {
+void BytecodeGraphBuilder::BuildDelete(LanguageMode language_mode) {
   FrameStateBeforeAndAfter states(this);
   Node* key = environment()->LookupAccumulator();
   Node* object =
       environment()->LookupRegister(bytecode_iterator().GetRegisterOperand(0));
   Node* node =
-      NewNode(javascript()->DeleteProperty(language_mode()), object, key);
+      NewNode(javascript()->DeleteProperty(language_mode), object, key);
   environment()->BindAccumulator(node, &states);
 }
 
 void BytecodeGraphBuilder::VisitDeletePropertyStrict() {
-  DCHECK(is_strict(language_mode()));
-  BuildDelete();
+  BuildDelete(LanguageMode::STRICT);
 }
 
 void BytecodeGraphBuilder::VisitDeletePropertySloppy() {
-  DCHECK(is_sloppy(language_mode()));
-  BuildDelete();
-}
-
-void BytecodeGraphBuilder::VisitDeleteLookupSlot() {
-  FrameStateBeforeAndAfter states(this);
-  Node* name = environment()->LookupAccumulator();
-  const Operator* op = javascript()->CallRuntime(Runtime::kDeleteLookupSlot);
-  Node* result = NewNode(op, environment()->Context(), name);
-  environment()->BindAccumulator(result, &states);
+  BuildDelete(LanguageMode::SLOPPY);
 }
 
 void BytecodeGraphBuilder::BuildCompareOp(const Operator* js_op) {
@@ -1481,6 +1425,16 @@ void BytecodeGraphBuilder::VisitJumpIfToBooleanFalseConstant() {
 
 void BytecodeGraphBuilder::VisitJumpIfToBooleanFalseConstantWide() {
   BuildJumpIfToBooleanEqual(jsgraph()->FalseConstant());
+}
+
+void BytecodeGraphBuilder::VisitJumpIfNotHole() { BuildJumpIfNotHole(); }
+
+void BytecodeGraphBuilder::VisitJumpIfNotHoleConstant() {
+  BuildJumpIfNotHole();
+}
+
+void BytecodeGraphBuilder::VisitJumpIfNotHoleConstantWide() {
+  BuildJumpIfNotHole();
 }
 
 void BytecodeGraphBuilder::VisitJumpIfNull() {
@@ -1644,6 +1598,15 @@ void BytecodeGraphBuilder::BuildJumpIfToBooleanEqual(Node* comperand) {
   BuildConditionalJump(condition);
 }
 
+void BytecodeGraphBuilder::BuildJumpIfNotHole() {
+  Node* accumulator = environment()->LookupAccumulator();
+  Node* condition = NewNode(javascript()->StrictEqual(), accumulator,
+                            jsgraph()->TheHoleConstant());
+  Node* node =
+      NewNode(common()->Select(MachineRepresentation::kTagged), condition,
+              jsgraph()->FalseConstant(), jsgraph()->TrueConstant());
+  BuildConditionalJump(node);
+}
 
 Node** BytecodeGraphBuilder::EnsureInputBufferSize(int size) {
   if (size > input_buffer_size_) {
@@ -1671,11 +1634,11 @@ void BytecodeGraphBuilder::EnterAndExitExceptionHandlers(int current_offset) {
     if (current_offset < next_start) break;  // Not yet covered by range.
     int next_end = table->GetRangeEnd(current_exception_handler_);
     int next_handler = table->GetRangeHandler(current_exception_handler_);
-    // TODO(mstarzinger): We are hijacking the "depth" field in the exception
-    // handler table to hold the context register. We should rename the field.
-    int context_register = table->GetRangeDepth(current_exception_handler_);
+    int context_register = table->GetRangeData(current_exception_handler_);
+    CatchPrediction pred =
+        table->GetRangePrediction(current_exception_handler_);
     exception_handlers_.push(
-        {next_start, next_end, next_handler, context_register});
+        {next_start, next_end, next_handler, context_register, pred});
     current_exception_handler_++;
   }
 }
@@ -1733,9 +1696,11 @@ Node* BytecodeGraphBuilder::MakeNode(const Operator* op, int value_input_count,
     if (!result->op()->HasProperty(Operator::kNoThrow) && inside_handler) {
       int handler_offset = exception_handlers_.top().handler_offset_;
       int context_index = exception_handlers_.top().context_register_;
+      CatchPrediction prediction = exception_handlers_.top().pred_;
       interpreter::Register context_register(context_index);
-      // TODO(mstarzinger): Thread through correct prediction!
-      IfExceptionHint hint = IfExceptionHint::kLocallyCaught;
+      IfExceptionHint hint = prediction == CatchPrediction::CAUGHT
+                                 ? IfExceptionHint::kLocallyCaught
+                                 : IfExceptionHint::kLocallyUncaught;
       Environment* success_env = environment()->CopyForConditional();
       const Operator* op = common()->IfException(hint);
       Node* effect = environment()->GetEffectDependency();

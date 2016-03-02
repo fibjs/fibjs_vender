@@ -559,7 +559,6 @@ void Verifier::Visitor::Check(Node* node) {
       break;
 
     case IrOpcode::kJSLoadContext:
-    case IrOpcode::kJSLoadDynamic:
       // Type can be anything.
       CheckUpperIs(node, Type::Any());
       break;
@@ -918,6 +917,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kRoundInt32ToFloat32:
     case IrOpcode::kRoundInt64ToFloat32:
     case IrOpcode::kRoundInt64ToFloat64:
+    case IrOpcode::kRoundUint32ToFloat32:
     case IrOpcode::kRoundUint64ToFloat64:
     case IrOpcode::kRoundUint64ToFloat32:
     case IrOpcode::kTruncateFloat64ToFloat32:
@@ -934,6 +934,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kChangeFloat64ToInt32:
     case IrOpcode::kChangeFloat64ToUint32:
     case IrOpcode::kTruncateFloat32ToInt32:
+    case IrOpcode::kTruncateFloat32ToUint32:
     case IrOpcode::kTryTruncateFloat32ToInt64:
     case IrOpcode::kTryTruncateFloat64ToInt64:
     case IrOpcode::kTryTruncateFloat32ToUint64:

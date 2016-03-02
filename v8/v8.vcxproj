@@ -155,11 +155,11 @@
     <ClInclude Include="src\compiler\instruction-selector.h" />
     <ClInclude Include="src\compiler\instruction.h" />
     <ClInclude Include="src\compiler\int64-lowering.h" />
-    <ClInclude Include="src\compiler\interpreter-assembler.h" />
     <ClInclude Include="src\compiler\js-builtin-reducer.h" />
     <ClInclude Include="src\compiler\js-call-reducer.h" />
     <ClInclude Include="src\compiler\js-context-relaxation.h" />
     <ClInclude Include="src\compiler\js-context-specialization.h" />
+    <ClInclude Include="src\compiler\js-create-lowering.h" />
     <ClInclude Include="src\compiler\js-frame-specialization.h" />
     <ClInclude Include="src\compiler\js-generic-lowering.h" />
     <ClInclude Include="src\compiler\js-global-object-specialization.h" />
@@ -325,6 +325,7 @@
     <ClInclude Include="src\heap\scavenge-job.h" />
     <ClInclude Include="src\heap\scavenger-inl.h" />
     <ClInclude Include="src\heap\scavenger.h" />
+    <ClInclude Include="src\heap\slot-set.h" />
     <ClInclude Include="src\heap\slots-buffer.h" />
     <ClInclude Include="src\heap\spaces-inl.h" />
     <ClInclude Include="src\heap\spaces.h" />
@@ -357,11 +358,13 @@
     <ClInclude Include="src\interpreter\constant-array-builder.h" />
     <ClInclude Include="src\interpreter\control-flow-builders.h" />
     <ClInclude Include="src\interpreter\handler-table-builder.h" />
+    <ClInclude Include="src\interpreter\interpreter-assembler.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
     <ClInclude Include="src\interpreter\register-translator.h" />
     <ClInclude Include="src\interpreter\source-position-table.h" />
     <ClInclude Include="src\isolate-inl.h" />
     <ClInclude Include="src\isolate.h" />
+    <ClInclude Include="src\json-parser.h" />
     <ClInclude Include="src\json-stringifier.h" />
     <ClInclude Include="src\key-accumulator.h" />
     <ClInclude Include="src\layout-descriptor-inl.h" />
@@ -389,7 +392,6 @@
     <ClInclude Include="src\ostreams.h" />
     <ClInclude Include="src\parsing\expression-classifier.h" />
     <ClInclude Include="src\parsing\func-name-inferrer.h" />
-    <ClInclude Include="src\parsing\json-parser.h" />
     <ClInclude Include="src\parsing\parameter-initializer-rewriter.h" />
     <ClInclude Include="src\parsing\parser-base.h" />
     <ClInclude Include="src\parsing\parser.h" />
@@ -622,11 +624,11 @@
     <ClCompile Include="src\compiler\instruction-selector.cc" />
     <ClCompile Include="src\compiler\instruction.cc" />
     <ClCompile Include="src\compiler\int64-lowering.cc" />
-    <ClCompile Include="src\compiler\interpreter-assembler.cc" />
     <ClCompile Include="src\compiler\js-builtin-reducer.cc" />
     <ClCompile Include="src\compiler\js-call-reducer.cc" />
     <ClCompile Include="src\compiler\js-context-relaxation.cc" />
     <ClCompile Include="src\compiler\js-context-specialization.cc" />
+    <ClCompile Include="src\compiler\js-create-lowering.cc" />
     <ClCompile Include="src\compiler\js-frame-specialization.cc" />
     <ClCompile Include="src\compiler\js-generic-lowering.cc" />
     <ClCompile Include="src\compiler\js-global-object-specialization.cc" />
@@ -838,6 +840,7 @@
     <ClCompile Include="src\interpreter\constant-array-builder.cc" />
     <ClCompile Include="src\interpreter\control-flow-builders.cc" />
     <ClCompile Include="src\interpreter\handler-table-builder.cc" />
+    <ClCompile Include="src\interpreter\interpreter-assembler.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
     <ClCompile Include="src\interpreter\register-translator.cc" />
     <ClCompile Include="src\interpreter\source-position-table.cc" />

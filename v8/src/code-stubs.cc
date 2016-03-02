@@ -459,9 +459,7 @@ void CompareNilICStub::UpdateStatus(Handle<Object> object) {
     state.Add(NULL_TYPE);
   } else if (object->IsUndefined()) {
     state.Add(UNDEFINED);
-  } else if (object->IsUndetectableObject() ||
-             object->IsOddball() ||
-             !object->IsHeapObject()) {
+  } else if (object->IsUndetectableObject() || object->IsSmi()) {
     state.RemoveAll();
     state.Add(GENERIC);
   } else if (IsMonomorphic()) {
@@ -662,7 +660,11 @@ ElementsTransitionAndStoreStub::GetCallInterfaceDescriptor() const {
   return VectorStoreTransitionDescriptor(isolate());
 }
 
-void FastNewClosureStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {}
+
+void FastNewClosureStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
+  descriptor->Initialize(Runtime::FunctionForId(Runtime::kNewClosure)->entry);
+}
+
 
 void FastNewContextStub::InitializeDescriptor(CodeStubDescriptor* d) {}
 
@@ -818,22 +820,13 @@ void StoreFastElementStub::GenerateAheadOfTime(Isolate* isolate) {
 }
 
 
-void RestParamAccessStub::Generate(MacroAssembler* masm) { GenerateNew(masm); }
-
-
 void ArgumentsAccessStub::Generate(MacroAssembler* masm) {
   switch (type()) {
-    case READ_ELEMENT:
-      GenerateReadElement(masm);
-      break;
     case NEW_SLOPPY_FAST:
       GenerateNewSloppyFast(masm);
       break;
     case NEW_SLOPPY_SLOW:
       GenerateNewSloppySlow(masm);
-      break;
-    case NEW_STRICT:
-      GenerateNewStrict(masm);
       break;
   }
 }
@@ -842,25 +835,14 @@ void ArgumentsAccessStub::Generate(MacroAssembler* masm) {
 void ArgumentsAccessStub::PrintName(std::ostream& os) const {  // NOLINT
   os << "ArgumentsAccessStub_";
   switch (type()) {
-    case READ_ELEMENT:
-      os << "ReadElement";
-      break;
     case NEW_SLOPPY_FAST:
       os << "NewSloppyFast";
       break;
     case NEW_SLOPPY_SLOW:
       os << "NewSloppySlow";
       break;
-    case NEW_STRICT:
-      os << "NewStrict";
-      break;
   }
   return;
-}
-
-
-void RestParamAccessStub::PrintName(std::ostream& os) const {  // NOLINT
-  os << "RestParamAccessStub_";
 }
 
 
@@ -944,9 +926,9 @@ bool ToBooleanStub::Types::UpdateStatus(Handle<Object> object) {
     Add(SPEC_OBJECT);
     return !object->IsUndetectableObject();
   } else if (object->IsString()) {
+    DCHECK(!object->IsUndetectableObject());
     Add(STRING);
-    return !object->IsUndetectableObject() &&
-        String::cast(*object)->length() != 0;
+    return String::cast(*object)->length() != 0;
   } else if (object->IsSymbol()) {
     Add(SYMBOL);
     return true;

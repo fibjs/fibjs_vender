@@ -1200,12 +1200,16 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kPPC_Int32ToFloat32:
-      __ ConvertIntToFloat(i.OutputDoubleRegister(), i.InputRegister(0),
-                           kScratchReg);
+      __ ConvertIntToFloat(i.InputRegister(0), i.OutputDoubleRegister());
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kPPC_Int32ToDouble:
       __ ConvertIntToDouble(i.InputRegister(0), i.OutputDoubleRegister());
+      DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      break;
+    case kPPC_Uint32ToFloat32:
+      __ ConvertUnsignedIntToFloat(i.InputRegister(0),
+                                   i.OutputDoubleRegister());
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kPPC_Uint32ToDouble:
@@ -1577,8 +1581,6 @@ void CodeGenerator::AssemblePrologue() {
     // remaining stack slots.
     if (FLAG_code_comments) __ RecordComment("-- OSR entrypoint --");
     osr_pc_offset_ = __ pc_offset();
-    // TODO(titzer): cannot address target function == local #-1
-    __ LoadP(r4, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
     stack_shrink_slots -= OsrHelper(info()).UnoptimizedFrameSlots();
   }
 

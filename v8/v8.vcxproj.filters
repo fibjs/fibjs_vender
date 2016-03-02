@@ -591,9 +591,6 @@
     <ClInclude Include="src\compiler\int64-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\interpreter-assembler.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\js-builtin-reducer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -604,6 +601,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-context-specialization.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\js-create-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-frame-specialization.h">
@@ -1101,6 +1101,9 @@
     <ClInclude Include="src\heap\scavenger.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\slot-set.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\slots-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1197,6 +1200,9 @@
     <ClInclude Include="src\interpreter\handler-table-builder.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\interpreter-assembler.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\interpreter.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -1210,6 +1216,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\isolate.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\json-parser.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\json-stringifier.h">
@@ -1291,9 +1300,6 @@
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\parsing\func-name-inferrer.h">
-      <Filter>Source Files\parsing</Filter>
-    </ClInclude>
-    <ClInclude Include="src\parsing\json-parser.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\parsing\parameter-initializer-rewriter.h">
@@ -1988,9 +1994,6 @@
     <ClCompile Include="src\compiler\int64-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\interpreter-assembler.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\js-builtin-reducer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2001,6 +2004,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-context-specialization.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\js-create-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-frame-specialization.cc">
@@ -2634,6 +2640,9 @@
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\handler-table-builder.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\interpreter-assembler.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\interpreter.cc">

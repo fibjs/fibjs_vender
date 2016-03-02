@@ -930,6 +930,11 @@ void InstructionSelector::VisitRoundInt32ToFloat32(Node* node) {
 }
 
 
+void InstructionSelector::VisitRoundUint32ToFloat32(Node* node) {
+  VisitRR(this, kArmVcvtF32U32, node);
+}
+
+
 void InstructionSelector::VisitChangeInt32ToFloat64(Node* node) {
   VisitRR(this, kArmVcvtF64S32, node);
 }
@@ -942,6 +947,11 @@ void InstructionSelector::VisitChangeUint32ToFloat64(Node* node) {
 
 void InstructionSelector::VisitTruncateFloat32ToInt32(Node* node) {
   VisitRR(this, kArmVcvtS32F32, node);
+}
+
+
+void InstructionSelector::VisitTruncateFloat32ToUint32(Node* node) {
+  VisitRR(this, kArmVcvtU32F32, node);
 }
 
 

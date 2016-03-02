@@ -1578,10 +1578,9 @@ void MacroAssembler::InNewSpace(Register object,
                                 Label* branch) {
   DCHECK(cond == eq || cond == ne);
   UseScratchRegisterScope temps(this);
-  Register temp = temps.AcquireX();
-  And(temp, object, ExternalReference::new_space_mask(isolate()));
-  Cmp(temp, ExternalReference::new_space_start(isolate()));
-  B(cond, branch);
+  const int mask =
+      (1 << MemoryChunk::IN_FROM_SPACE) | (1 << MemoryChunk::IN_TO_SPACE);
+  CheckPageFlag(object, temps.AcquireSameSizeAs(object), mask, cond, branch);
 }
 
 
@@ -2666,8 +2665,9 @@ void MacroAssembler::Prologue(bool code_pre_aging) {
 
 void MacroAssembler::EmitLoadTypeFeedbackVector(Register vector) {
   Ldr(vector, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-  Ldr(vector, FieldMemOperand(vector, JSFunction::kLiteralsOffset));
-  Ldr(vector, FieldMemOperand(vector, LiteralsArray::kFeedbackVectorOffset));
+  Ldr(vector, FieldMemOperand(vector, JSFunction::kSharedFunctionInfoOffset));
+  Ldr(vector,
+      FieldMemOperand(vector, SharedFunctionInfo::kFeedbackVectorOffset));
 }
 
 
@@ -3994,6 +3994,17 @@ int MacroAssembler::SafepointRegisterStackIndex(int reg_code) {
   }
 }
 
+void MacroAssembler::CheckPageFlag(const Register& object,
+                                   const Register& scratch, int mask,
+                                   Condition cc, Label* condition_met) {
+  And(scratch, object, ~Page::kPageAlignmentMask);
+  Ldr(scratch, MemOperand(scratch, MemoryChunk::kFlagsOffset));
+  if (cc == eq) {
+    TestAndBranchIfAnySet(scratch, mask, condition_met);
+  } else {
+    TestAndBranchIfAllClear(scratch, mask, condition_met);
+  }
+}
 
 void MacroAssembler::CheckPageFlagSet(const Register& object,
                                       const Register& scratch,

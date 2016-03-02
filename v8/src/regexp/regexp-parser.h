@@ -102,6 +102,7 @@ class RegExpBuilder : public ZoneObject {
   RegExpBuilder(Zone* zone, bool ignore_case, bool unicode);
   void AddCharacter(uc16 character);
   void AddUnicodeCharacter(uc32 character);
+  void AddEscapedUnicodeCharacter(uc32 character);
   // "Adds" an empty expression. Does nothing except consume a
   // following quantifier
   void AddEmpty();
@@ -173,6 +174,7 @@ class RegExpParser BASE_EMBEDDED {
   bool ParseHexEscape(int length, uc32* value);
   bool ParseUnicodeEscape(uc32* value);
   bool ParseUnlimitedLengthHexNumber(int max_value, uc32* value);
+  ZoneList<CharacterRange>* ParsePropertyClass();
 
   uc32 ParseOctalLiteral();
 

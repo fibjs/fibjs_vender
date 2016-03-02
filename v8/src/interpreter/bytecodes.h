@@ -162,7 +162,6 @@ namespace interpreter {
   V(TypeOf, OperandType::kNone)                                                \
   V(DeletePropertyStrict, OperandType::kReg8)                                  \
   V(DeletePropertySloppy, OperandType::kReg8)                                  \
-  V(DeleteLookupSlot, OperandType::kNone)                                      \
                                                                                \
   /* Call operations */                                                        \
   V(Call, OperandType::kReg8, OperandType::kReg8, OperandType::kRegCount8,     \
@@ -225,7 +224,7 @@ namespace interpreter {
   /* Arguments allocation */                                                   \
   V(CreateMappedArguments, OperandType::kNone)                                 \
   V(CreateUnmappedArguments, OperandType::kNone)                               \
-  V(CreateRestArguments, OperandType::kIdx8)                                   \
+  V(CreateRestParameter, OperandType::kNone)                                   \
                                                                                \
   /* Control Flow */                                                           \
   V(Jump, OperandType::kImm8)                                                  \
@@ -249,6 +248,9 @@ namespace interpreter {
   V(JumpIfUndefined, OperandType::kImm8)                                       \
   V(JumpIfUndefinedConstant, OperandType::kIdx8)                               \
   V(JumpIfUndefinedConstantWide, OperandType::kIdx16)                          \
+  V(JumpIfNotHole, OperandType::kImm8)                                         \
+  V(JumpIfNotHoleConstant, OperandType::kIdx8)                                 \
+  V(JumpIfNotHoleConstantWide, OperandType::kIdx16)                            \
                                                                                \
   /* Complex flow control For..in */                                           \
   V(ForInPrepare, OperandType::kRegOutTriple8)                                 \
@@ -310,10 +312,7 @@ class Register {
  public:
   explicit Register(int index = kInvalidIndex) : index_(index) {}
 
-  int index() const {
-    DCHECK(index_ != kInvalidIndex);
-    return index_;
-  }
+  int index() const { return index_; }
   bool is_parameter() const { return index() < 0; }
   bool is_valid() const { return index_ != kInvalidIndex; }
   bool is_byte_operand() const;
@@ -463,9 +462,14 @@ class Bytecodes {
   // Returns true if the bytecode is a conditional jump, a jump, or a return.
   static bool IsJumpOrReturn(Bytecode bytecode);
 
-  // Returns true if |operand_type| is a maybe register operand
-  // (kMaybeReg8/kMaybeReg16).
-  static bool IsMaybeRegisterOperandType(OperandType operand_type);
+  // Returns true if the bytecode is a call or a constructor call.
+  static bool IsCallOrNew(Bytecode bytecode);
+
+  // Returns true if |operand_type| is a register index operand (kIdx8/kIdx16).
+  static bool IsIndexOperandType(OperandType operand_type);
+
+  // Returns true if |operand_type| represents an immediate.
+  static bool IsImmediateOperandType(OperandType operand_type);
 
   // Returns true if |operand_type| is a register count operand
   // (kRegCount8/kRegCount16).
@@ -479,6 +483,10 @@ class Bytecodes {
 
   // Returns true if |operand_type| represents a register used as an output.
   static bool IsRegisterOutputOperandType(OperandType operand_type);
+
+  // Returns true if |operand_type| is a maybe register operand
+  // (kMaybeReg8/kMaybeReg16).
+  static bool IsMaybeRegisterOperandType(OperandType operand_type);
 
   // Decode a single bytecode and operands to |os|.
   static std::ostream& Decode(std::ostream& os, const uint8_t* bytecode_start,

@@ -34,28 +34,12 @@ RUNTIME_FUNCTION(Runtime_CompileLazy) {
   // Compile the target function.
   DCHECK(function->shared()->allows_lazy_compilation());
 
-  // There is one special case where we have optimized code but we
-  // couldn't find a literals array for the native context. That's with
-  // FLAG_turbo_cache_shared_code.
-  if (FLAG_turbo_cache_shared_code) {
-    SharedFunctionInfo* shared = function->shared();
-    CodeAndLiterals result;
-    result = shared->SearchOptimizedCodeMap(*isolate->native_context(),
-                                            BailoutId::None());
-    if (result.code != nullptr) {
-      function->ReplaceCode(result.code);
-      JSFunction::EnsureLiterals(function);
-      return result.code;
-    }
-  }
-
   Handle<Code> code;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, code,
                                      Compiler::GetLazyCode(function));
   DCHECK(code->IsJavaScriptCode());
 
   function->ReplaceCode(*code);
-  JSFunction::EnsureLiterals(function);
   return *code;
 }
 
@@ -264,7 +248,6 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
                                     function->shared()->ast_node_count() > 512)
                                        ? Compiler::CONCURRENT
                                        : Compiler::NOT_CONCURRENT;
-  Handle<Code> result = Handle<Code>::null();
 
   OptimizedCompileJob* job = NULL;
   if (mode == Compiler::CONCURRENT) {
@@ -285,22 +268,24 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
     job = dispatcher->FindReadyOSRCandidate(function, ast_id);
   }
 
+  MaybeHandle<Code> maybe_result;
   if (job != NULL) {
     if (FLAG_trace_osr) {
       PrintF("[OSR - Found ready: ");
       function->PrintName();
       PrintF(" at AST id %d]\n", ast_id.ToInt());
     }
-    result = Compiler::GetConcurrentlyOptimizedCode(job);
+    maybe_result = Compiler::GetConcurrentlyOptimizedCode(job);
   } else if (IsSuitableForOnStackReplacement(isolate, function)) {
     if (FLAG_trace_osr) {
       PrintF("[OSR - Compiling: ");
       function->PrintName();
       PrintF(" at AST id %d]\n", ast_id.ToInt());
     }
-    MaybeHandle<Code> maybe_result = Compiler::GetOptimizedCode(
+    maybe_result = Compiler::GetOptimizedCode(
         function, mode, ast_id,
         (mode == Compiler::NOT_CONCURRENT) ? frame : nullptr);
+    Handle<Code> result;
     if (maybe_result.ToHandle(&result) &&
         result.is_identical_to(isolate->builtins()->InOptimizationQueue())) {
       // Optimization is queued.  Return to check later.
@@ -312,7 +297,9 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
   BackEdgeTable::Revert(isolate, *caller_code);
 
   // Check whether we ended up with usable optimized code.
-  if (!result.is_null() && result->kind() == Code::OPTIMIZED_FUNCTION) {
+  Handle<Code> result;
+  if (maybe_result.ToHandle(&result) &&
+      result->kind() == Code::OPTIMIZED_FUNCTION) {
     DeoptimizationInputData* data =
         DeoptimizationInputData::cast(result->deoptimization_data());
 

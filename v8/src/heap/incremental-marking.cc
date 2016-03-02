@@ -23,7 +23,6 @@ IncrementalMarking::StepActions IncrementalMarking::IdleStepActions() {
                      IncrementalMarking::DO_NOT_FORCE_COMPLETION);
 }
 
-
 IncrementalMarking::IncrementalMarking(Heap* heap)
     : heap_(heap),
       observer_(*this, kAllocatedThreshold),
@@ -45,7 +44,6 @@ IncrementalMarking::IncrementalMarking(Heap* heap)
       finalize_marking_completed_(false),
       incremental_marking_finalization_rounds_(0),
       request_type_(COMPLETE_MARKING) {}
-
 
 bool IncrementalMarking::BaseRecordWrite(HeapObject* obj, Object* value) {
   HeapObject* value_heap_obj = HeapObject::cast(value);
@@ -375,7 +373,6 @@ void IncrementalMarking::SetNewSpacePageFlags(MemoryChunk* chunk,
   } else {
     chunk->ClearFlag(MemoryChunk::POINTERS_FROM_HERE_ARE_INTERESTING);
   }
-  chunk->SetFlag(MemoryChunk::SCAN_ON_SCAVENGE);
 }
 
 
@@ -550,7 +547,7 @@ void IncrementalMarking::Start(const char* reason) {
     state_ = SWEEPING;
   }
 
-  heap_->new_space()->AddInlineAllocationObserver(&observer_);
+  heap_->new_space()->AddAllocationObserver(&observer_);
 
   incremental_marking_job()->Start(heap_);
 }
@@ -796,8 +793,14 @@ void IncrementalMarking::UpdateMarkingDequeAfterScavenge() {
     HeapObject* obj = array[current];
     DCHECK(obj->IsHeapObject());
     current = ((current + 1) & mask);
-    if (heap_->InNewSpace(obj)) {
+    // Only pointers to from space have to be updated.
+    if (heap_->InFromSpace(obj)) {
       MapWord map_word = obj->map_word();
+      // There may be objects on the marking deque that do not exist anymore,
+      // e.g. left trimmed objects or objects from the root set (frames).
+      // If these object are dead at scavenging time, their marking deque
+      // entries will not point to forwarding addresses. Hence, we can discard
+      // them.
       if (map_word.IsForwardingAddress()) {
         HeapObject* dest = map_word.ToForwardingAddress();
         array[new_top] = dest;
@@ -948,7 +951,7 @@ void IncrementalMarking::Stop() {
     PrintF("[IncrementalMarking] Stopping.\n");
   }
 
-  heap_->new_space()->RemoveInlineAllocationObserver(&observer_);
+  heap_->new_space()->RemoveAllocationObserver(&observer_);
   IncrementalMarking::set_should_hurry(false);
   ResetStepCounters();
   if (IsMarking()) {

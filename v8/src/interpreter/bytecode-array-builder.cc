@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "src/interpreter/bytecode-array-builder.h"
+#include "src/compiler.h"
 
 namespace v8 {
 namespace internal {
@@ -115,7 +116,7 @@ bool BytecodeArrayBuilder::RegisterIsParameterOrLocal(Register reg) const {
 
 Handle<BytecodeArray> BytecodeArrayBuilder::ToBytecodeArray() {
   DCHECK_EQ(bytecode_generated_, false);
-  EnsureReturn();
+  DCHECK(exit_seen_in_block_);
 
   int bytecode_size = static_cast<int>(bytecodes_.size());
   int register_count =
@@ -138,7 +139,10 @@ Handle<BytecodeArray> BytecodeArrayBuilder::ToBytecodeArray() {
 template <size_t N>
 void BytecodeArrayBuilder::Output(Bytecode bytecode, uint32_t(&operands)[N]) {
   // Don't output dead code.
-  if (exit_seen_in_block_) return;
+  if (exit_seen_in_block_) {
+    source_position_table_builder_.RevertPosition(bytecodes()->size());
+    return;
+  }
 
   int operand_count = static_cast<int>(N);
   DCHECK_EQ(Bytecodes::NumberOfOperands(bytecode), operand_count);
@@ -206,7 +210,10 @@ void BytecodeArrayBuilder::Output(Bytecode bytecode, uint32_t operand0) {
 
 void BytecodeArrayBuilder::Output(Bytecode bytecode) {
   // Don't output dead code.
-  if (exit_seen_in_block_) return;
+  if (exit_seen_in_block_) {
+    source_position_table_builder_.RevertPosition(bytecodes()->size());
+    return;
+  }
 
   DCHECK_EQ(Bytecodes::NumberOfOperands(bytecode), 0);
   last_bytecode_start_ = bytecodes()->size();
@@ -325,7 +332,6 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadBooleanConstant(bool value) {
   }
   return *this;
 }
-
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadAccumulatorWithRegister(
     Register reg) {
@@ -478,9 +484,8 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreLookupSlot(
   return *this;
 }
 
-
 BytecodeArrayBuilder& BytecodeArrayBuilder::LoadNamedProperty(
-    Register object, const Handle<String> name, int feedback_slot,
+    Register object, const Handle<Name> name, int feedback_slot,
     LanguageMode language_mode) {
   Bytecode bytecode = BytecodeForLoadIC(language_mode);
   size_t name_index = GetConstantPoolEntry(name);
@@ -514,9 +519,8 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadKeyedProperty(
   return *this;
 }
 
-
 BytecodeArrayBuilder& BytecodeArrayBuilder::StoreNamedProperty(
-    Register object, const Handle<String> name, int feedback_slot,
+    Register object, const Handle<Name> name, int feedback_slot,
     LanguageMode language_mode) {
   Bytecode bytecode = BytecodeForStoreIC(language_mode);
   size_t name_index = GetConstantPoolEntry(name);
@@ -579,16 +583,6 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CreateArguments(
   return *this;
 }
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::CreateRestArguments(int index) {
-  size_t index_entry =
-      GetConstantPoolEntry(Handle<Object>(Smi::FromInt(index), isolate_));
-  // This will always be the first entry in the constant pool, since the rest
-  // arguments object is created at the start of the function just after
-  // creating the arguments object.
-  CHECK(FitsInIdx8Operand(index_entry));
-  Output(Bytecode::kCreateRestArguments, static_cast<uint8_t>(index_entry));
-  return *this;
-}
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CreateRegExpLiteral(
     Handle<String> pattern, int literal_index, int flags) {
@@ -765,6 +759,8 @@ Bytecode BytecodeArrayBuilder::GetJumpWithConstantOperand(
       return Bytecode::kJumpIfToBooleanTrueConstant;
     case Bytecode::kJumpIfToBooleanFalse:
       return Bytecode::kJumpIfToBooleanFalseConstant;
+    case Bytecode::kJumpIfNotHole:
+      return Bytecode::kJumpIfNotHoleConstant;
     case Bytecode::kJumpIfNull:
       return Bytecode::kJumpIfNullConstant;
     case Bytecode::kJumpIfUndefined:
@@ -790,6 +786,8 @@ Bytecode BytecodeArrayBuilder::GetJumpWithConstantWideOperand(
       return Bytecode::kJumpIfToBooleanTrueConstantWide;
     case Bytecode::kJumpIfToBooleanFalse:
       return Bytecode::kJumpIfToBooleanFalseConstantWide;
+    case Bytecode::kJumpIfNotHole:
+      return Bytecode::kJumpIfNotHoleConstantWide;
     case Bytecode::kJumpIfNull:
       return Bytecode::kJumpIfNullConstantWide;
     case Bytecode::kJumpIfUndefined:
@@ -807,6 +805,7 @@ Bytecode BytecodeArrayBuilder::GetJumpWithToBoolean(Bytecode jump_bytecode) {
     case Bytecode::kJump:
     case Bytecode::kJumpIfNull:
     case Bytecode::kJumpIfUndefined:
+    case Bytecode::kJumpIfNotHole:
       return jump_bytecode;
     case Bytecode::kJumpIfTrue:
       return Bytecode::kJumpIfToBooleanTrue;
@@ -882,7 +881,10 @@ void BytecodeArrayBuilder::PatchJump(
 BytecodeArrayBuilder& BytecodeArrayBuilder::OutputJump(Bytecode jump_bytecode,
                                                        BytecodeLabel* label) {
   // Don't emit dead code.
-  if (exit_seen_in_block_) return *this;
+  if (exit_seen_in_block_) {
+    source_position_table_builder_.RevertPosition(bytecodes()->size());
+    return *this;
+  }
 
   // Check if the value in accumulator is boolean, if not choose an
   // appropriate JumpIfToBoolean bytecode.
@@ -967,6 +969,11 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::JumpIfUndefined(
 BytecodeArrayBuilder& BytecodeArrayBuilder::StackCheck() {
   Output(Bytecode::kStackCheck);
   return *this;
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::JumpIfNotHole(
+    BytecodeLabel* label) {
+  return OutputJump(Bytecode::kJumpIfNotHole, label);
 }
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::Throw() {
@@ -1065,10 +1072,10 @@ void BytecodeArrayBuilder::LeaveBasicBlock() {
   exit_seen_in_block_ = false;
 }
 
-
-void BytecodeArrayBuilder::EnsureReturn() {
+void BytecodeArrayBuilder::EnsureReturn(FunctionLiteral* literal) {
   if (!exit_seen_in_block_) {
     LoadUndefined();
+    SetReturnPosition(literal);
     Return();
   }
 }
@@ -1097,7 +1104,6 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Call(Register callable,
   }
   return *this;
 }
-
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::New(Register constructor,
                                                 Register first_arg,
@@ -1194,26 +1200,25 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Delete(Register object,
 }
 
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::DeleteLookupSlot() {
-  Output(Bytecode::kDeleteLookupSlot);
-  return *this;
-}
-
-
 size_t BytecodeArrayBuilder::GetConstantPoolEntry(Handle<Object> object) {
   return constant_array_builder()->Insert(object);
 }
 
+void BytecodeArrayBuilder::SetReturnPosition(FunctionLiteral* fun) {
+  int pos = std::max(fun->start_position(), fun->end_position() - 1);
+  source_position_table_builder_.AddStatementPosition(bytecodes_.size(), pos);
+}
+
 void BytecodeArrayBuilder::SetStatementPosition(Statement* stmt) {
   if (stmt->position() == RelocInfo::kNoPosition) return;
-  source_position_table_builder_.AddStatementPosition(
-      static_cast<int>(bytecodes_.size()), stmt->position());
+  source_position_table_builder_.AddStatementPosition(bytecodes_.size(),
+                                                      stmt->position());
 }
 
 void BytecodeArrayBuilder::SetExpressionPosition(Expression* expr) {
   if (expr->position() == RelocInfo::kNoPosition) return;
-  source_position_table_builder_.AddExpressionPosition(
-      static_cast<int>(bytecodes_.size()), expr->position());
+  source_position_table_builder_.AddExpressionPosition(bytecodes_.size(),
+                                                       expr->position());
 }
 
 bool BytecodeArrayBuilder::TemporaryRegisterIsLive(Register reg) const {
@@ -1604,7 +1609,6 @@ Bytecode BytecodeArrayBuilder::BytecodeForStoreLookupSlot(
   return static_cast<Bytecode>(-1);
 }
 
-
 // static
 Bytecode BytecodeArrayBuilder::BytecodeForCreateArguments(
     CreateArgumentsType type) {
@@ -1613,9 +1617,10 @@ Bytecode BytecodeArrayBuilder::BytecodeForCreateArguments(
       return Bytecode::kCreateMappedArguments;
     case CreateArgumentsType::kUnmappedArguments:
       return Bytecode::kCreateUnmappedArguments;
-    default:
-      UNREACHABLE();
+    case CreateArgumentsType::kRestParameter:
+      return Bytecode::kCreateRestParameter;
   }
+  UNREACHABLE();
   return static_cast<Bytecode>(-1);
 }
 

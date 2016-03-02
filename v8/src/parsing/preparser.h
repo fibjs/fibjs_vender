@@ -197,6 +197,8 @@ class PreParserExpression {
            ExpressionTypeField::decode(code_) == kAssignment;
   }
 
+  bool IsRewritableAssignmentExpression() const { return IsAssignment(); }
+
   bool IsObjectLiteral() const {
     return TypeField::decode(code_) == kObjectLiteralExpression;
   }
@@ -278,12 +280,6 @@ class PreParserExpression {
 
   int position() const { return RelocInfo::kNoPosition; }
   void set_function_token_position(int position) {}
-
-  // Parenthesized expressions in the form `( Expression )`.
-  void set_is_parenthesized() {
-    code_ = ParenthesizedField::update(code_, true);
-  }
-  bool is_parenthesized() const { return ParenthesizedField::decode(code_); }
 
  private:
   enum Type {

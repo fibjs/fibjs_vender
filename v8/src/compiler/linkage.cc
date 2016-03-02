@@ -148,7 +148,7 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
   switch (function) {
     case Runtime::kAllocateInTargetSpace:
     case Runtime::kCreateIterResultObject:
-    case Runtime::kDefineClassMethod:              // TODO(jarin): Is it safe?
+    case Runtime::kDefineDataPropertyInLiteral:
     case Runtime::kDefineGetterPropertyUnchecked:  // TODO(jarin): Is it safe?
     case Runtime::kDefineSetterPropertyUnchecked:  // TODO(jarin): Is it safe?
     case Runtime::kFinalizeClassDefinition:        // TODO(conradw): Is it safe?
@@ -168,8 +168,6 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
     case Runtime::kTraceEnter:
     case Runtime::kTraceExit:
       return 0;
-    case Runtime::kInlineArguments:
-    case Runtime::kInlineArgumentsLength:
     case Runtime::kInlineGetPrototype:
     case Runtime::kInlineRegExpConstructResult:
     case Runtime::kInlineRegExpExec:
@@ -347,10 +345,10 @@ CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
 
   // The target for JS function calls is the JSFunction object.
   MachineType target_type = MachineType::AnyTagged();
-  // TODO(titzer): When entering into an OSR function from unoptimized code,
-  // the JSFunction is not in a register, but it is on the stack in an
-  // unaddressable spill slot. We hack this in the OSR prologue. Fix.
-  LinkageLocation target_loc = regloc(kJSFunctionRegister);
+  // When entering into an OSR function from unoptimized code the JSFunction
+  // is not in a register, but it is on the stack in the marker spill slot.
+  LinkageLocation target_loc = is_osr ? LinkageLocation::ForSavedCallerMarker()
+                                      : regloc(kJSFunctionRegister);
   return new (zone) CallDescriptor(     // --
       CallDescriptor::kCallJSFunction,  // kind
       target_type,                      // target MachineType
@@ -365,60 +363,6 @@ CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
           flags,                        // flags
       "js-call");
 }
-
-
-CallDescriptor* Linkage::GetInterpreterDispatchDescriptor(Zone* zone) {
-  MachineSignature::Builder types(zone, 0, 6);
-  LocationSignature::Builder locations(zone, 0, 6);
-
-  // Add registers for fixed parameters passed via interpreter dispatch.
-  STATIC_ASSERT(0 == Linkage::kInterpreterAccumulatorParameter);
-  types.AddParam(MachineType::AnyTagged());
-  locations.AddParam(regloc(kInterpreterAccumulatorRegister));
-
-  STATIC_ASSERT(1 == Linkage::kInterpreterRegisterFileParameter);
-  types.AddParam(MachineType::Pointer());
-  locations.AddParam(regloc(kInterpreterRegisterFileRegister));
-
-  STATIC_ASSERT(2 == Linkage::kInterpreterBytecodeOffsetParameter);
-  types.AddParam(MachineType::IntPtr());
-  locations.AddParam(regloc(kInterpreterBytecodeOffsetRegister));
-
-  STATIC_ASSERT(3 == Linkage::kInterpreterBytecodeArrayParameter);
-  types.AddParam(MachineType::AnyTagged());
-  locations.AddParam(regloc(kInterpreterBytecodeArrayRegister));
-
-  STATIC_ASSERT(4 == Linkage::kInterpreterDispatchTableParameter);
-  types.AddParam(MachineType::Pointer());
-#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_X87)
-  // TODO(rmcilroy): Make the context param the one spilled to the stack once
-  // Turbofan supports modified stack arguments in tail calls.
-  locations.AddParam(
-      LinkageLocation::ForCallerFrameSlot(kInterpreterDispatchTableSpillSlot));
-#else
-  locations.AddParam(regloc(kInterpreterDispatchTableRegister));
-#endif
-
-  STATIC_ASSERT(5 == Linkage::kInterpreterContextParameter);
-  types.AddParam(MachineType::AnyTagged());
-  locations.AddParam(regloc(kContextRegister));
-
-  LinkageLocation target_loc = LinkageLocation::ForAnyRegister();
-  return new (zone) CallDescriptor(         // --
-      CallDescriptor::kCallCodeObject,      // kind
-      MachineType::None(),                  // target MachineType
-      target_loc,                           // target location
-      types.Build(),                        // machine_sig
-      locations.Build(),                    // location_sig
-      0,                                    // stack_parameter_count
-      Operator::kNoProperties,              // properties
-      kNoCalleeSaved,                       // callee-saved registers
-      kNoCalleeSaved,                       // callee-saved fp regs
-      CallDescriptor::kSupportsTailCalls |  // flags
-          CallDescriptor::kCanUseRoots,     // flags
-      "interpreter-dispatch");
-}
-
 
 // TODO(all): Add support for return representations/locations to
 // CallInterfaceDescriptor.

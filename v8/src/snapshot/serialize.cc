@@ -54,8 +54,6 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "StackGuard::address_of_real_jslimit()");
   Add(ExternalReference::new_space_start(isolate).address(),
       "Heap::NewSpaceStart()");
-  Add(ExternalReference::new_space_mask(isolate).address(),
-      "Heap::NewSpaceMask()");
   Add(ExternalReference::new_space_allocation_limit_address(isolate).address(),
       "Heap::NewSpaceAllocationLimitAddress()");
   Add(ExternalReference::new_space_allocation_top_address(isolate).address(),
@@ -82,6 +80,8 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
   Add(ExternalReference::address_of_one_half().address(),
       "LDoubleConstant::one_half");
   Add(ExternalReference::isolate_address(isolate).address(), "isolate");
+  Add(ExternalReference::interpreter_dispatch_table_address(isolate).address(),
+      "Interpreter::dispatch_table_address");
   Add(ExternalReference::address_of_negative_infinity().address(),
       "LDoubleConstant::negative_infinity");
   Add(ExternalReference::power_double_double_function(isolate).address(),
@@ -1014,9 +1014,11 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
     }                                                                          \
     if (emit_write_barrier && write_barrier_needed) {                          \
       Address current_address = reinterpret_cast<Address>(current);            \
+      SLOW_DCHECK(isolate->heap()->ContainsSlow(current_object_address));      \
       isolate->heap()->RecordWrite(                                            \
-          current_object_address,                                              \
-          static_cast<int>(current_address - current_object_address));         \
+          HeapObject::FromAddress(current_object_address),                     \
+          static_cast<int>(current_address - current_object_address),          \
+          *reinterpret_cast<Object**>(current_address));                       \
     }                                                                          \
     if (!current_was_incremented) {                                            \
       current++;                                                               \
@@ -1248,11 +1250,13 @@ bool Deserializer::ReadData(Object** current, Object** limit, int source_space,
         int index = data & kHotObjectMask;
         Object* hot_object = hot_objects_.Get(index);
         UnalignedCopy(current, &hot_object);
-        if (write_barrier_needed && isolate->heap()->InNewSpace(hot_object)) {
+        if (write_barrier_needed) {
           Address current_address = reinterpret_cast<Address>(current);
+          SLOW_DCHECK(isolate->heap()->ContainsSlow(current_object_address));
           isolate->heap()->RecordWrite(
-              current_object_address,
-              static_cast<int>(current_address - current_object_address));
+              HeapObject::FromAddress(current_object_address),
+              static_cast<int>(current_address - current_object_address),
+              hot_object);
         }
         current++;
         break;
@@ -1715,12 +1719,16 @@ void StartupSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
   }
 
   int root_index = root_index_map_.Lookup(obj);
+  bool is_immortal_immovable_root = false;
   // We can only encode roots as such if it has already been serialized.
   // That applies to root indices below the wave front.
-  if (root_index != RootIndexMap::kInvalidRootIndex &&
-      root_index < root_index_wave_front_) {
-    PutRoot(root_index, obj, how_to_code, where_to_point, skip);
-    return;
+  if (root_index != RootIndexMap::kInvalidRootIndex) {
+    if (root_index < root_index_wave_front_) {
+      PutRoot(root_index, obj, how_to_code, where_to_point, skip);
+      return;
+    } else {
+      is_immortal_immovable_root = Heap::RootIsImmortalImmovable(root_index);
+    }
   }
 
   if (SerializeKnownObject(obj, how_to_code, where_to_point, skip)) return;
@@ -1731,6 +1739,14 @@ void StartupSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
   ObjectSerializer object_serializer(this, obj, sink_, how_to_code,
                                      where_to_point);
   object_serializer.Serialize();
+
+  if (is_immortal_immovable_root) {
+    // Make sure that the immortal immovable root has been included in the first
+    // chunk of its reserved space , so that it is deserialized onto the first
+    // page of its space and stays immortal immovable.
+    BackReference ref = back_reference_map_.Lookup(obj);
+    CHECK(ref.is_valid() && ref.chunk_index() == 0);
+  }
 }
 
 
@@ -1842,15 +1858,8 @@ void PartialSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
 
   // Clear literal boilerplates.
   if (obj->IsJSFunction()) {
-    LiteralsArray* literals = JSFunction::cast(obj)->literals();
-    for (int i = 0; i < literals->literals_count(); i++) {
-      literals->set_undefined(i);
-    }
-    // TODO(mvstanton): remove this line when the vector moves to the closure.
-    // We need to clear the vector so the serializer doesn't try to serialize
-    // the vector in the startup snapshot and the partial snapshot(s).
-    literals->set_feedback_vector(
-        TypeFeedbackVector::cast(isolate_->heap()->empty_fixed_array()));
+    FixedArray* literals = JSFunction::cast(obj)->literals();
+    for (int i = 0; i < literals->length(); i++) literals->set_undefined(i);
   }
 
   // Object has not yet been serialized.  Serialize it here.

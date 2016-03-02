@@ -318,7 +318,7 @@ void LoadIC::GenerateMiss(MacroAssembler* masm) {
 
   DCHECK(!AreAliased(r7, r8, LoadWithVectorDescriptor::SlotRegister(),
                      LoadWithVectorDescriptor::VectorRegister()));
-  __ IncrementCounter(isolate->counters()->load_miss(), 1, r7, r8);
+  __ IncrementCounter(isolate->counters()->ic_load_miss(), 1, r7, r8);
 
   LoadIC_PushArgs(masm);
 
@@ -346,7 +346,7 @@ void KeyedLoadIC::GenerateMiss(MacroAssembler* masm) {
 
   DCHECK(!AreAliased(r7, r8, LoadWithVectorDescriptor::SlotRegister(),
                      LoadWithVectorDescriptor::VectorRegister()));
-  __ IncrementCounter(isolate->counters()->keyed_load_miss(), 1, r7, r8);
+  __ IncrementCounter(isolate->counters()->ic_keyed_load_miss(), 1, r7, r8);
 
   LoadIC_PushArgs(masm);
 
@@ -394,7 +394,8 @@ void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm,
 
   GenerateFastArrayLoad(masm, receiver, key, r3, r6, r7, r3, &slow,
                         language_mode);
-  __ IncrementCounter(isolate->counters()->keyed_load_generic_smi(), 1, r7, r6);
+  __ IncrementCounter(isolate->counters()->ic_keyed_load_generic_smi(), 1, r7,
+                      r6);
   __ Ret();
 
   __ bind(&check_number_dictionary);
@@ -413,7 +414,7 @@ void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm,
 
   // Slow case, key and receiver still in r3 and r4.
   __ bind(&slow);
-  __ IncrementCounter(isolate->counters()->keyed_load_generic_slow(), 1, r7,
+  __ IncrementCounter(isolate->counters()->ic_keyed_load_generic_slow(), 1, r7,
                       r6);
   GenerateRuntimeGetProperty(masm, language_mode);
 
@@ -460,8 +461,8 @@ void KeyedLoadIC::GenerateMegamorphic(MacroAssembler* masm,
   GenerateGlobalInstanceTypeCheck(masm, r3, &slow);
   // Load the property to r3.
   GenerateDictionaryLoad(masm, &slow, r6, key, r3, r8, r7);
-  __ IncrementCounter(isolate->counters()->keyed_load_generic_symbol(), 1, r7,
-                      r6);
+  __ IncrementCounter(isolate->counters()->ic_keyed_load_generic_symbol(), 1,
+                      r7, r6);
   __ Ret();
 
   __ bind(&index_name);
@@ -801,11 +802,11 @@ void StoreIC::GenerateNormal(MacroAssembler* masm) {
 
   GenerateDictionaryStore(masm, &miss, dictionary, name, value, r9, r10);
   Counters* counters = masm->isolate()->counters();
-  __ IncrementCounter(counters->store_normal_hit(), 1, r9, r10);
+  __ IncrementCounter(counters->ic_store_normal_hit(), 1, r9, r10);
   __ Ret();
 
   __ bind(&miss);
-  __ IncrementCounter(counters->store_normal_miss(), 1, r9, r10);
+  __ IncrementCounter(counters->ic_store_normal_miss(), 1, r9, r10);
   GenerateMiss(masm);
 }
 

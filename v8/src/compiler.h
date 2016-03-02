@@ -215,9 +215,9 @@ class CompilationInfo {
            !is_debug() && output_code_kind() == Code::FUNCTION;
   }
 
-  void EnsureFeedbackMetadata();
-  Handle<TypeFeedbackMetadata> feedback_metadata() const {
-    return feedback_metadata_;
+  void EnsureFeedbackVector();
+  Handle<TypeFeedbackVector> feedback_vector() const {
+    return feedback_vector_;
   }
   void SetCode(Handle<Code> code) { code_ = code; }
 
@@ -247,14 +247,17 @@ class CompilationInfo {
   // Accessors for the different compilation modes.
   bool IsOptimizing() const { return mode_ == OPTIMIZE; }
   bool IsStub() const { return mode_ == STUB; }
-  void SetOptimizing(BailoutId osr_ast_id, Handle<Code> unoptimized) {
+  void SetOptimizing() {
     DCHECK(has_shared_info());
     SetMode(OPTIMIZE);
-    osr_ast_id_ = osr_ast_id;
-    unoptimized_code_ = unoptimized;
     optimization_id_ = isolate()->NextOptimizationId();
     code_flags_ =
         Code::KindField::update(code_flags_, Code::OPTIMIZED_FUNCTION);
+  }
+  void SetOptimizingForOsr(BailoutId osr_ast_id, Handle<Code> unoptimized) {
+    SetOptimizing();
+    osr_ast_id_ = osr_ast_id;
+    unoptimized_code_ = unoptimized;
   }
 
   // Deoptimization support.
@@ -412,7 +415,7 @@ class CompilationInfo {
   Handle<Code> code_;
 
   // Used by codegen, ultimately kept rooted by the SharedFunctionInfo.
-  Handle<TypeFeedbackMetadata> feedback_metadata_;
+  Handle<TypeFeedbackVector> feedback_vector_;
 
   // Compilation mode flag and whether deoptimization is allowed.
   Mode mode_;
@@ -637,7 +640,8 @@ class Compiler : public AllStatic {
 
   // Generate and return code from previously queued optimization job.
   // On failure, return the empty handle.
-  static Handle<Code> GetConcurrentlyOptimizedCode(OptimizedCompileJob* job);
+  MUST_USE_RESULT static MaybeHandle<Code> GetConcurrentlyOptimizedCode(
+      OptimizedCompileJob* job);
 };
 
 

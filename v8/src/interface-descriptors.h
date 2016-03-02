@@ -25,6 +25,8 @@ class PlatformInterfaceDescriptor;
   V(LoadWithVector)                           \
   V(FastNewClosure)                           \
   V(FastNewContext)                           \
+  V(FastNewRestParameter)                     \
+  V(FastNewStrictArguments)                 \
   V(ToNumber)                                 \
   V(ToLength)                                 \
   V(ToString)                                 \
@@ -67,19 +69,17 @@ class PlatformInterfaceDescriptor;
   V(ApiFunction)                              \
   V(ApiAccessor)                              \
   V(ApiGetter)                                \
-  V(ArgumentsAccessRead)                      \
   V(ArgumentsAccessNew)                       \
-  V(RestParamAccess)                          \
   V(LoadGlobalViaContext)                     \
   V(StoreGlobalViaContext)                    \
   V(MathPowTagged)                            \
   V(MathPowInteger)                           \
   V(ContextOnly)                              \
   V(GrowArrayElements)                        \
+  V(InterpreterDispatch)                      \
   V(InterpreterPushArgsAndCall)               \
   V(InterpreterPushArgsAndConstruct)          \
   V(InterpreterCEntry)
-
 
 class CallInterfaceDescriptorData {
  public:
@@ -372,6 +372,17 @@ class FastNewClosureDescriptor : public CallInterfaceDescriptor {
 class FastNewContextDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(FastNewContextDescriptor, CallInterfaceDescriptor)
+};
+
+class FastNewRestParameterDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(FastNewRestParameterDescriptor, CallInterfaceDescriptor)
+};
+
+class FastNewStrictArgumentsDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR(FastNewStrictArgumentsDescriptor,
+                     CallInterfaceDescriptor)
 };
 
 
@@ -697,15 +708,6 @@ class ApiGetterDescriptor : public CallInterfaceDescriptor {
 };
 
 
-class ArgumentsAccessReadDescriptor : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR(ArgumentsAccessReadDescriptor, CallInterfaceDescriptor)
-
-  static const Register index();
-  static const Register parameter_count();
-};
-
-
 class ArgumentsAccessNewDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(ArgumentsAccessNewDescriptor,
@@ -714,16 +716,6 @@ class ArgumentsAccessNewDescriptor : public CallInterfaceDescriptor {
   static const Register function();
   static const Register parameter_count();
   static const Register parameter_pointer();
-};
-
-
-class RestParamAccessDescriptor : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(RestParamAccessDescriptor,
-                                               CallInterfaceDescriptor)
-  static const Register parameter_count();
-  static const Register parameter_pointer();
-  static const Register rest_parameter_index();
 };
 
 
@@ -758,6 +750,18 @@ class GrowArrayElementsDescriptor : public CallInterfaceDescriptor {
   static const Register KeyRegister();
 };
 
+class InterpreterDispatchDescriptor  : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(InterpreterDispatchDescriptor,
+                                               CallInterfaceDescriptor)
+
+  static const int kAccumulatorParameter = 0;
+  static const int kRegisterFileParameter = 1;
+  static const int kBytecodeOffsetParameter = 2;
+  static const int kBytecodeArrayParameter = 3;
+  static const int kDispatchTableParameter = 4;
+  static const int kContextParameter = 5;
+};
 
 class InterpreterPushArgsAndCallDescriptor : public CallInterfaceDescriptor {
  public:
@@ -778,7 +782,6 @@ class InterpreterCEntryDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(InterpreterCEntryDescriptor, CallInterfaceDescriptor)
 };
-
 
 #undef DECLARE_DESCRIPTOR
 

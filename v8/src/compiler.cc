@@ -130,8 +130,8 @@ CompilationInfo::CompilationInfo(ParseInfo* parse_info)
     if (shared_info()->is_compiled()) {
       // We should initialize the CompilationInfo feedback vector from the
       // passed in shared info, rather than creating a new one.
-      feedback_metadata_ = Handle<TypeFeedbackMetadata>(
-          shared_info()->feedback_metadata(), parse_info->isolate());
+      feedback_vector_ = Handle<TypeFeedbackVector>(
+          shared_info()->feedback_vector(), parse_info->isolate());
     }
     if (shared_info()->never_compiled()) MarkAsFirstCompile();
   }
@@ -205,16 +205,18 @@ bool CompilationInfo::ShouldSelfOptimize() {
          (!has_shared_info() || !shared_info()->optimization_disabled());
 }
 
-void CompilationInfo::EnsureFeedbackMetadata() {
-  if (feedback_metadata_.is_null()) {
-    feedback_metadata_ =
+
+void CompilationInfo::EnsureFeedbackVector() {
+  if (feedback_vector_.is_null()) {
+    Handle<TypeFeedbackMetadata> feedback_metadata =
         TypeFeedbackMetadata::New(isolate(), literal()->feedback_vector_spec());
+    feedback_vector_ = TypeFeedbackVector::New(isolate(), feedback_metadata);
   }
 
   // It's very important that recompiles do not alter the structure of the
   // type feedback vector.
-  CHECK(
-      !feedback_metadata_->SpecDiffersFrom(literal()->feedback_vector_spec()));
+  CHECK(!feedback_vector_->metadata()->SpecDiffersFrom(
+      literal()->feedback_vector_spec()));
 }
 
 
@@ -277,9 +279,12 @@ void CompilationInfo::LogDeoptCallPosition(int pc_offset, int inlining_id) {
 
 
 base::SmartArrayPointer<char> CompilationInfo::GetDebugName() const {
-  if (parse_info()) {
+  if (parse_info() && parse_info()->literal()) {
     AllowHandleDereference allow_deref;
     return parse_info()->literal()->debug_name()->ToCString();
+  }
+  if (parse_info() && !parse_info()->shared_info().is_null()) {
+    return parse_info()->shared_info()->DebugName()->ToCString();
   }
   const char* str = debug_name_ ? debug_name_ : "unknown";
   size_t len = strlen(str) + 1;
@@ -380,11 +385,6 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
 
   DCHECK(info()->shared_info()->has_deoptimization_support());
   DCHECK(!info()->is_first_compile());
-
-  // If we have a closure make sure it has the literals array at this point.
-  if (!info()->closure().is_null()) {
-    JSFunction::EnsureLiterals(info()->closure());
-  }
 
   bool optimization_disabled = info()->shared_info()->optimization_disabled();
   bool dont_crankshaft = info()->shared_info()->dont_crankshaft();
@@ -815,7 +815,6 @@ MUST_USE_RESULT static MaybeHandle<Code> GetUnoptimizedCodeCommon(
   Handle<SharedFunctionInfo> shared = info->shared_info();
   FunctionLiteral* lit = info->literal();
   DCHECK_EQ(shared->language_mode(), lit->language_mode());
-  shared->set_num_literals(lit->materialized_literal_count());
   SetExpectedNofPropertiesFromEstimate(shared, lit->expected_property_count());
   MaybeDisableOptimization(shared, lit->dont_optimize_reason());
 
@@ -833,7 +832,7 @@ MUST_USE_RESULT static MaybeHandle<Code> GetUnoptimizedCodeCommon(
 
   // Update the code and feedback vector for the shared function info.
   shared->ReplaceCode(*info->code());
-  shared->set_feedback_metadata(*info->feedback_metadata());
+  shared->set_feedback_vector(*info->feedback_vector());
   if (info->has_bytecode_array()) {
     DCHECK(shared->function_data()->IsUndefined());
     shared->set_function_data(*info->bytecode_array());
@@ -1025,7 +1024,7 @@ MaybeHandle<Code> Compiler::GetLazyCode(Handle<JSFunction> function) {
     VMState<COMPILER> state(isolate);
     PostponeInterruptsScope postpone(isolate);
 
-    info.SetOptimizing(BailoutId::None(), handle(function->shared()->code()));
+    info.SetOptimizing();
 
     if (GetOptimizedCodeNow(&info)) {
       DCHECK(function->shared()->is_compiled());
@@ -1047,7 +1046,6 @@ MaybeHandle<Code> Compiler::GetLazyCode(Handle<JSFunction> function) {
 
   if (FLAG_always_opt) {
     Handle<Code> opt_code;
-    JSFunction::EnsureLiterals(function);
     if (Compiler::GetOptimizedCode(function, Compiler::NOT_CONCURRENT)
             .ToHandle(&opt_code)) {
       result = opt_code;
@@ -1062,16 +1060,14 @@ bool Compiler::Compile(Handle<JSFunction> function, ClearExceptionFlag flag) {
   if (function->is_compiled()) return true;
   MaybeHandle<Code> maybe_code = Compiler::GetLazyCode(function);
   Handle<Code> code;
-  Isolate* isolate = function->GetIsolate();
   if (!maybe_code.ToHandle(&code)) {
     if (flag == CLEAR_EXCEPTION) {
-      isolate->clear_pending_exception();
+      function->GetIsolate()->clear_pending_exception();
     }
     return false;
   }
   function->ReplaceCode(*code);
   DCHECK(function->is_compiled());
-  JSFunction::EnsureLiterals(function);
   return true;
 }
 
@@ -1102,7 +1098,7 @@ bool Compiler::EnsureDeoptimizationSupport(CompilationInfo* info) {
     if (!FullCodeGenerator::MakeCode(&unoptimized)) return false;
 
     shared->EnableDeoptimizationSupport(*unoptimized.code());
-    shared->set_feedback_metadata(*unoptimized.feedback_metadata());
+    shared->set_feedback_vector(*unoptimized.feedback_vector());
 
     info->MarkAsCompiled();
 
@@ -1178,15 +1174,12 @@ static inline bool IsEvalToplevel(Handle<SharedFunctionInfo> shared) {
 
 bool Compiler::CompileDebugCode(Handle<JSFunction> function) {
   Handle<SharedFunctionInfo> shared(function->shared());
-  bool result;
   if (IsEvalToplevel(shared)) {
-    result = CompileEvalForDebugging(function, shared);
+    return CompileEvalForDebugging(function, shared);
   } else {
     CompilationInfoWithZone info(function);
-    result = CompileForDebugging(&info);
+    return CompileForDebugging(&info);
   }
-  JSFunction::EnsureLiterals(function);
-  return result;
 }
 
 
@@ -1298,7 +1291,7 @@ static Handle<SharedFunctionInfo> CompileToplevel(CompilationInfo* info) {
         lit->name(), lit->materialized_literal_count(), lit->kind(),
         info->code(),
         ScopeInfo::Create(info->isolate(), info->zone(), info->scope()),
-        info->feedback_metadata());
+        info->feedback_vector());
     if (info->has_bytecode_array()) {
       DCHECK(result->function_data()->IsUndefined());
       result->set_function_data(*info->bytecode_array());
@@ -1481,6 +1474,9 @@ Handle<SharedFunctionInfo> Compiler::CompileScript(
     if (natives == NATIVES_CODE) {
       script->set_type(Script::TYPE_NATIVE);
       script->set_hide_source(true);
+    } else if (natives == EXTENSION_CODE) {
+      script->set_type(Script::TYPE_EXTENSION);
+      script->set_hide_source(true);
     }
     if (!script_name.is_null()) {
       script->set_name(*script_name);
@@ -1625,10 +1621,14 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
   if (lazy) {
     Handle<Code> code = isolate->builtins()->CompileLazy();
     info.SetCode(code);
-    // There's no need in theory for a lazy-compiled function to have type
-    // feedback metadata, but some parts of the system expect all
-    // SharedFunctionInfo instances to have one.
-    info.EnsureFeedbackMetadata();
+    // There's no need in theory for a lazy-compiled function to have a type
+    // feedback vector, but some parts of the system expect all
+    // SharedFunctionInfo instances to have one.  The size of the vector depends
+    // on how many feedback-needing nodes are in the tree, and when lazily
+    // parsing we might not know that, if this function was never parsed before.
+    // In that case the vector will be replaced the next time MakeCode is
+    // called.
+    info.EnsureFeedbackVector();
     scope_info = Handle<ScopeInfo>(ScopeInfo::Empty(isolate));
   } else if (Renumber(info.parse_info()) && GenerateBaselineCode(&info)) {
     // Code generation will ensure that the feedback vector is present and
@@ -1648,7 +1648,7 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
     Handle<SharedFunctionInfo> result =
         isolate->factory()->NewSharedFunctionInfo(
             literal->name(), literal->materialized_literal_count(),
-            literal->kind(), info.code(), scope_info, info.feedback_metadata());
+            literal->kind(), info.code(), scope_info, info.feedback_vector());
     if (info.has_bytecode_array()) {
       DCHECK(result->function_data()->IsUndefined());
       result->set_function_data(*info.bytecode_array());
@@ -1677,7 +1677,7 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
     DCHECK(!existing->HasDebugCode());
     existing->ReplaceCode(*info.code());
     existing->set_scope_info(*scope_info);
-    existing->set_feedback_metadata(*info.feedback_metadata());
+    existing->set_feedback_vector(*info.feedback_vector());
   }
   return existing;
 }
@@ -1703,7 +1703,7 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfoForNative(
   Handle<SharedFunctionInfo> shared = isolate->factory()->NewSharedFunctionInfo(
       name, literals, FunctionKind::kNormalFunction, code,
       Handle<ScopeInfo>(fun->shared()->scope_info()),
-      Handle<TypeFeedbackMetadata>(fun->shared()->feedback_metadata()));
+      Handle<TypeFeedbackVector>(fun->shared()->feedback_vector()));
   shared->set_construct_stub(*construct_stub);
 
   // Copy the function data to the shared function info.
@@ -1751,10 +1751,6 @@ MaybeHandle<Code> Compiler::GetOptimizedCode(Handle<JSFunction> function,
     shared->ReplaceCode(*current_code);
   }
 
-  // At this point we know we've compiled the function, so make sure the closure
-  // points to valid literals and type-feedback-vector.
-  JSFunction::EnsureLiterals(function);
-
   current_code->set_profiler_ticks(0);
 
   // TODO(mstarzinger): We cannot properly deserialize a scope chain containing
@@ -1775,7 +1771,7 @@ MaybeHandle<Code> Compiler::GetOptimizedCode(Handle<JSFunction> function,
   DCHECK(!isolate->has_pending_exception());
   PostponeInterruptsScope postpone(isolate);
 
-  info->SetOptimizing(osr_ast_id, current_code);
+  info->SetOptimizingForOsr(osr_ast_id, current_code);
 
   if (mode == CONCURRENT) {
     if (GetOptimizedCodeLater(info.get())) {
@@ -1791,8 +1787,8 @@ MaybeHandle<Code> Compiler::GetOptimizedCode(Handle<JSFunction> function,
   return MaybeHandle<Code>();
 }
 
-
-Handle<Code> Compiler::GetConcurrentlyOptimizedCode(OptimizedCompileJob* job) {
+MaybeHandle<Code> Compiler::GetConcurrentlyOptimizedCode(
+    OptimizedCompileJob* job) {
   // Take ownership of compilation info.  Deleting compilation info
   // also tears down the zone and the recompile job.
   base::SmartPointer<CompilationInfo> info(job->info());
@@ -1837,7 +1833,7 @@ Handle<Code> Compiler::GetConcurrentlyOptimizedCode(OptimizedCompileJob* job) {
     info->closure()->ShortPrint();
     PrintF(" because: %s]\n", GetBailoutReason(info->bailout_reason()));
   }
-  return Handle<Code>::null();
+  return MaybeHandle<Code>();
 }
 
 

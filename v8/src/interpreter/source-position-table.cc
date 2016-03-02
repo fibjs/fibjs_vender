@@ -15,20 +15,34 @@ namespace interpreter {
 class IsStatementField : public BitField<bool, 0, 1> {};
 class SourcePositionField : public BitField<int, 1, 30> {};
 
-void SourcePositionTableBuilder::AddStatementPosition(int bytecode_offset,
+void SourcePositionTableBuilder::AddStatementPosition(size_t bytecode_offset,
                                                       int source_position) {
-  AssertMonotonic(bytecode_offset);
+  int offset = static_cast<int>(bytecode_offset);
+  // If a position has already been assigned to this bytecode offset,
+  // do not reassign a new statement position.
+  if (CodeOffsetHasPosition(offset)) return;
   uint32_t encoded = IsStatementField::encode(true) |
                      SourcePositionField::encode(source_position);
-  entries_.push_back({bytecode_offset, encoded});
+  entries_.push_back({offset, encoded});
 }
 
-void SourcePositionTableBuilder::AddExpressionPosition(int bytecode_offset,
+void SourcePositionTableBuilder::AddExpressionPosition(size_t bytecode_offset,
                                                        int source_position) {
-  AssertMonotonic(bytecode_offset);
+  int offset = static_cast<int>(bytecode_offset);
+  // If a position has already been assigned to this bytecode offset,
+  // do not reassign a new statement position.
+  if (CodeOffsetHasPosition(offset)) return;
   uint32_t encoded = IsStatementField::encode(false) |
                      SourcePositionField::encode(source_position);
-  entries_.push_back({bytecode_offset, encoded});
+  entries_.push_back({offset, encoded});
+}
+
+void SourcePositionTableBuilder::RevertPosition(size_t bytecode_offset) {
+  int offset = static_cast<int>(bytecode_offset);
+  // If we already added a source position table entry, but the bytecode array
+  // builder ended up not outputting a bytecode for the corresponding bytecode
+  // offset, we have to remove that entry.
+  if (CodeOffsetHasPosition(offset)) entries_.pop_back();
 }
 
 Handle<FixedArray> SourcePositionTableBuilder::ToFixedArray() {
@@ -63,17 +77,6 @@ void SourcePositionTableIterator::Advance() {
     source_position_ = SourcePositionField::decode(source_position_and_type);
   }
   index_ += 2;
-}
-
-int SourcePositionTableIterator::PositionFromBytecodeOffset(
-    BytecodeArray* bytecode_array, int bytecode_offset) {
-  int last_position = 0;
-  for (SourcePositionTableIterator iterator(bytecode_array);
-       !iterator.done() && iterator.bytecode_offset() <= bytecode_offset;
-       iterator.Advance()) {
-    last_position = iterator.source_position();
-  }
-  return last_position;
 }
 
 }  // namespace interpreter

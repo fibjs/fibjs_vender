@@ -174,28 +174,12 @@ void MacroAssembler::PopCallerSaved(SaveFPRegsMode fp_mode, Register exclusion1,
   }
 }
 
-void MacroAssembler::InNewSpace(
-    Register object,
-    Register scratch,
-    Condition cc,
-    Label* condition_met,
-    Label::Distance condition_met_distance) {
-  DCHECK(cc == equal || cc == not_equal);
-  if (scratch.is(object)) {
-    and_(scratch, Immediate(~Page::kPageAlignmentMask));
-  } else {
-    mov(scratch, Immediate(~Page::kPageAlignmentMask));
-    and_(scratch, object);
-  }
-  // Check that we can use a test_b.
-  DCHECK(MemoryChunk::IN_FROM_SPACE < 8);
-  DCHECK(MemoryChunk::IN_TO_SPACE < 8);
-  int mask = (1 << MemoryChunk::IN_FROM_SPACE)
-           | (1 << MemoryChunk::IN_TO_SPACE);
-  // If non-zero, the page belongs to new-space.
-  test_b(Operand(scratch, MemoryChunk::kFlagsOffset),
-         static_cast<uint8_t>(mask));
-  j(cc, condition_met, condition_met_distance);
+void MacroAssembler::InNewSpace(Register object, Register scratch, Condition cc,
+                                Label* condition_met,
+                                Label::Distance distance) {
+  const int mask =
+      (1 << MemoryChunk::IN_FROM_SPACE) | (1 << MemoryChunk::IN_TO_SPACE);
+  CheckPageFlag(object, scratch, mask, cc, condition_met, distance);
 }
 
 
@@ -709,6 +693,25 @@ void MacroAssembler::Cvtsi2sd(XMMRegister dst, const Operand& src) {
 }
 
 
+void MacroAssembler::Cvtui2ss(XMMRegister dst, Register src, Register tmp) {
+  Label msb_set_src;
+  Label jmp_return;
+  test(src, src);
+  j(sign, &msb_set_src, Label::kNear);
+  cvtsi2ss(dst, src);
+  jmp(&jmp_return, Label::kNear);
+  bind(&msb_set_src);
+  mov(tmp, src);
+  shr(src, 1);
+  // Recover the least significant bit to avoid rounding errors.
+  and_(tmp, Immediate(1));
+  or_(src, tmp);
+  cvtsi2ss(dst, src);
+  addss(dst, dst);
+  bind(&jmp_return);
+}
+
+
 bool MacroAssembler::IsUnsafeImmediate(const Immediate& x) {
   static const int kMaxImmediateBits = 17;
   if (!RelocInfo::IsNone(x.rmode_)) return false;
@@ -1004,8 +1007,8 @@ void MacroAssembler::Prologue(bool code_pre_aging) {
 
 void MacroAssembler::EmitLoadTypeFeedbackVector(Register vector) {
   mov(vector, Operand(ebp, JavaScriptFrameConstants::kFunctionOffset));
-  mov(vector, FieldOperand(vector, JSFunction::kLiteralsOffset));
-  mov(vector, FieldOperand(vector, LiteralsArray::kFeedbackVectorOffset));
+  mov(vector, FieldOperand(vector, JSFunction::kSharedFunctionInfoOffset));
+  mov(vector, FieldOperand(vector, SharedFunctionInfo::kFeedbackVectorOffset));
 }
 
 

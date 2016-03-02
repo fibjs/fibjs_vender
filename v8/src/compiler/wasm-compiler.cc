@@ -706,9 +706,7 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input) {
       op = m->RoundInt32ToFloat32();
       break;
     case wasm::kExprF32UConvertI32:
-      op = m->ChangeUint32ToFloat64();
-      input = graph()->NewNode(op, input);
-      op = m->TruncateFloat64ToFloat32();
+      op = m->RoundUint32ToFloat32();
       break;
     case wasm::kExprI32SConvertF32:
       return BuildI32SConvertF32(input);
@@ -1035,8 +1033,12 @@ Node* WasmGraphBuilder::BuildF32Min(Node* left, Node* right) {
 
   return left_le_right.Phi(
       wasm::kAstF32, left,
-      right_lt_left.Phi(wasm::kAstF32, right,
-                        left_is_not_nan.Phi(wasm::kAstF32, right, left)));
+      right_lt_left.Phi(
+          wasm::kAstF32, right,
+          left_is_not_nan.Phi(
+              wasm::kAstF32,
+              Binop(wasm::kExprF32Mul, right, Float32Constant(1.0)),
+              Binop(wasm::kExprF32Mul, left, Float32Constant(1.0)))));
 }
 
 
@@ -1052,8 +1054,12 @@ Node* WasmGraphBuilder::BuildF32Max(Node* left, Node* right) {
 
   return left_ge_right.Phi(
       wasm::kAstF32, left,
-      right_gt_left.Phi(wasm::kAstF32, right,
-                        left_is_not_nan.Phi(wasm::kAstF32, right, left)));
+      right_gt_left.Phi(
+          wasm::kAstF32, right,
+          left_is_not_nan.Phi(
+              wasm::kAstF32,
+              Binop(wasm::kExprF32Mul, right, Float32Constant(1.0)),
+              Binop(wasm::kExprF32Mul, left, Float32Constant(1.0)))));
 }
 
 
@@ -1069,8 +1075,12 @@ Node* WasmGraphBuilder::BuildF64Min(Node* left, Node* right) {
 
   return left_le_right.Phi(
       wasm::kAstF64, left,
-      right_lt_left.Phi(wasm::kAstF64, right,
-                        left_is_not_nan.Phi(wasm::kAstF64, right, left)));
+      right_lt_left.Phi(
+          wasm::kAstF64, right,
+          left_is_not_nan.Phi(
+              wasm::kAstF64,
+              Binop(wasm::kExprF64Mul, right, Float64Constant(1.0)),
+              Binop(wasm::kExprF64Mul, left, Float64Constant(1.0)))));
 }
 
 
@@ -1086,8 +1096,12 @@ Node* WasmGraphBuilder::BuildF64Max(Node* left, Node* right) {
 
   return left_ge_right.Phi(
       wasm::kAstF64, left,
-      right_gt_left.Phi(wasm::kAstF64, right,
-                        left_is_not_nan.Phi(wasm::kAstF64, right, left)));
+      right_gt_left.Phi(
+          wasm::kAstF64, right,
+          left_is_not_nan.Phi(
+              wasm::kAstF64,
+              Binop(wasm::kExprF64Mul, right, Float64Constant(1.0)),
+              Binop(wasm::kExprF64Mul, left, Float64Constant(1.0)))));
 }
 
 
@@ -1131,14 +1145,12 @@ Node* WasmGraphBuilder::BuildI32UConvertF32(Node* input) {
   MachineOperatorBuilder* m = jsgraph()->machine();
   // Truncation of the input value is needed for the overflow check later.
   Node* trunc = Unop(wasm::kExprF32Trunc, input);
-  // TODO(titzer): two conversions
-  Node* f64_trunc = graph()->NewNode(m->ChangeFloat32ToFloat64(), trunc);
-  Node* result = graph()->NewNode(m->ChangeFloat64ToUint32(), f64_trunc);
+  Node* result = graph()->NewNode(m->TruncateFloat32ToUint32(), trunc);
 
-  // Convert the result back to f64. If we end up at a different value than the
+  // Convert the result back to f32. If we end up at a different value than the
   // truncated input value, then there has been an overflow and we trap.
-  Node* check = Unop(wasm::kExprF64UConvertI32, result);
-  Node* overflow = Binop(wasm::kExprF64Ne, f64_trunc, check);
+  Node* check = Unop(wasm::kExprF32UConvertI32, result);
+  Node* overflow = Binop(wasm::kExprF32Ne, trunc, check);
   trap_->AddTrapIfTrue(kTrapFloatUnrepresentable, overflow);
 
   return result;

@@ -1041,6 +1041,13 @@ Handle<FixedArray> Factory::CopyFixedArrayAndGrow(Handle<FixedArray> array,
                      FixedArray);
 }
 
+Handle<FixedArray> Factory::CopyFixedArrayUpTo(Handle<FixedArray> array,
+                                               int new_len,
+                                               PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(isolate(), isolate()->heap()->CopyFixedArrayUpTo(
+                                    *array, new_len, pretenure),
+                     FixedArray);
+}
 
 Handle<FixedArray> Factory::CopyFixedArray(Handle<FixedArray> array) {
   CALL_HEAP_FUNCTION(isolate(),
@@ -1205,7 +1212,7 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
   function->set_code(info->code());
   function->set_context(*context);
   function->set_prototype_or_initial_map(*the_hole_value());
-  function->set_literals(LiteralsArray::cast(*empty_literals_array()));
+  function->set_literals(LiteralsArray::cast(*empty_fixed_array()));
   function->set_next_function_link(*undefined_value(), SKIP_WRITE_BARRIER);
   isolate()->heap()->InitializeJSObjectBody(*function, *map, JSFunction::kSize);
   return function;
@@ -1371,12 +1378,11 @@ Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
 
   if (cached.literals != nullptr) {
     result->set_literals(cached.literals);
-  } else if (info->is_compiled()) {
+  } else {
     int number_of_literals = info->num_literals();
-    Handle<TypeFeedbackVector> vector =
-        TypeFeedbackVector::New(isolate(), handle(info->feedback_metadata()));
     Handle<LiteralsArray> literals =
-        LiteralsArray::New(isolate(), vector, number_of_literals, pretenure);
+        LiteralsArray::New(isolate(), handle(info->feedback_vector()),
+                           number_of_literals, pretenure);
     result->set_literals(*literals);
 
     // Cache context-specific literals.
@@ -1738,16 +1744,6 @@ Handle<JSSetIterator> Factory::NewJSSetIterator() {
 }
 
 
-Handle<JSIteratorResult> Factory::NewJSIteratorResult(Handle<Object> value,
-                                                      Handle<Object> done) {
-  Handle<JSIteratorResult> result = Handle<JSIteratorResult>::cast(
-      NewJSObjectFromMap(isolate()->iterator_result_map()));
-  result->set_value(*value);
-  result->set_done(*done);
-  return result;
-}
-
-
 namespace {
 
 ElementsKind GetExternalArrayElementsKind(ExternalArrayType type) {
@@ -1967,9 +1963,9 @@ MaybeHandle<JSBoundFunction> Factory::NewJSBoundFunction(
 
   // Determine the prototype of the {target_function}.
   Handle<Object> prototype;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate(), prototype,
-                             Object::GetPrototype(isolate(), target_function),
-                             JSBoundFunction);
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate(), prototype,
+      JSReceiver::GetPrototype(isolate(), target_function), JSBoundFunction);
 
   // Create the [[BoundArguments]] for the result.
   Handle<FixedArray> bound_arguments;
@@ -2082,15 +2078,16 @@ void Factory::ReinitializeJSGlobalProxy(Handle<JSGlobalProxy> object,
   object->set_hash(*hash);
 }
 
+
 Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
     Handle<String> name, int number_of_literals, FunctionKind kind,
     Handle<Code> code, Handle<ScopeInfo> scope_info,
-    Handle<TypeFeedbackMetadata> feedback_metadata) {
+    Handle<TypeFeedbackVector> feedback_vector) {
   DCHECK(IsValidFunctionKind(kind));
   Handle<SharedFunctionInfo> shared = NewSharedFunctionInfo(
       name, code, IsConstructable(kind, scope_info->language_mode()));
   shared->set_scope_info(*scope_info);
-  shared->set_feedback_metadata(*feedback_metadata);
+  shared->set_feedback_vector(*feedback_vector);
   shared->set_kind(kind);
   shared->set_num_literals(number_of_literals);
   if (IsGeneratorFunction(kind)) {
@@ -2122,6 +2119,10 @@ Handle<JSMessageObject> Factory::NewJSMessageObject(
 
 Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
     Handle<String> name, MaybeHandle<Code> maybe_code, bool is_constructor) {
+  // Function names are assumed to be flat elsewhere. Must flatten before
+  // allocating SharedFunctionInfo to avoid GC seeing the uninitialized SFI.
+  name = String::Flatten(name, TENURED);
+
   Handle<Map> map = shared_function_info_map();
   Handle<SharedFunctionInfo> share = New<SharedFunctionInfo>(map, OLD_SPACE);
 
@@ -2146,7 +2147,9 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   StaticFeedbackVectorSpec empty_spec;
   Handle<TypeFeedbackMetadata> feedback_metadata =
       TypeFeedbackMetadata::New(isolate(), &empty_spec);
-  share->set_feedback_metadata(*feedback_metadata, SKIP_WRITE_BARRIER);
+  Handle<TypeFeedbackVector> feedback_vector =
+      TypeFeedbackVector::New(isolate(), feedback_metadata);
+  share->set_feedback_vector(*feedback_vector, SKIP_WRITE_BARRIER);
 #if TRACE_MAPS
   share->set_unique_id(isolate()->GetNextUniqueSharedFunctionInfoId());
 #endif
@@ -2257,7 +2260,11 @@ Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
   Handle<DebugInfo> debug_info =
       Handle<DebugInfo>::cast(NewStruct(DEBUG_INFO_TYPE));
   debug_info->set_shared(*shared);
-  debug_info->set_code(shared->code());
+  if (shared->HasBytecodeArray()) {
+    debug_info->set_abstract_code(AbstractCode::cast(shared->bytecode_array()));
+  } else {
+    debug_info->set_abstract_code(AbstractCode::cast(shared->code()));
+  }
   debug_info->set_break_points(*break_points);
 
   // Link debug info to function.

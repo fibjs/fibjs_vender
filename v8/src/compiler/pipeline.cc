@@ -32,6 +32,7 @@
 #include "src/compiler/js-call-reducer.h"
 #include "src/compiler/js-context-relaxation.h"
 #include "src/compiler/js-context-specialization.h"
+#include "src/compiler/js-create-lowering.h"
 #include "src/compiler/js-frame-specialization.h"
 #include "src/compiler/js-generic-lowering.h"
 #include "src/compiler/js-global-object-specialization.h"
@@ -539,7 +540,7 @@ struct InliningPhase {
                                               data->common());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
-    JSCallReducer call_reducer(data->jsgraph(),
+    JSCallReducer call_reducer(&graph_reducer, data->jsgraph(),
                                data->info()->is_deoptimization_enabled()
                                    ? JSCallReducer::kDeoptimizationEnabled
                                    : JSCallReducer::kNoFlags,
@@ -612,6 +613,13 @@ struct TypedLoweringPhase {
                                               data->common());
     LoadElimination load_elimination(&graph_reducer);
     JSBuiltinReducer builtin_reducer(&graph_reducer, data->jsgraph());
+    MaybeHandle<LiteralsArray> literals_array =
+        data->info()->is_native_context_specializing()
+            ? handle(data->info()->closure()->literals(), data->isolate())
+            : MaybeHandle<LiteralsArray>();
+    JSCreateLowering create_lowering(
+        &graph_reducer, data->info()->dependencies(), data->jsgraph(),
+        literals_array, temp_zone);
     JSTypedLowering::Flags typed_lowering_flags = JSTypedLowering::kNoFlags;
     if (data->info()->is_deoptimization_enabled()) {
       typed_lowering_flags |= JSTypedLowering::kDeoptimizationEnabled;
@@ -631,6 +639,9 @@ struct TypedLoweringPhase {
                                          data->common(), data->machine());
     AddReducer(data, &graph_reducer, &dead_code_elimination);
     AddReducer(data, &graph_reducer, &builtin_reducer);
+    if (data->info()->is_deoptimization_enabled()) {
+      AddReducer(data, &graph_reducer, &create_lowering);
+    }
     AddReducer(data, &graph_reducer, &typed_lowering);
     AddReducer(data, &graph_reducer, &intrinsic_lowering);
     AddReducer(data, &graph_reducer, &load_elimination);
@@ -1072,13 +1083,14 @@ Handle<Code> Pipeline::GenerateCode() {
     if (json_file != nullptr) {
       OFStream json_of(json_file);
       Handle<Script> script = info()->script();
-      FunctionLiteral* function = info()->literal();
       base::SmartArrayPointer<char> function_name = info()->GetDebugName();
       int pos = info()->shared_info()->start_position();
       json_of << "{\"function\":\"" << function_name.get()
               << "\", \"sourcePosition\":" << pos << ", \"source\":\"";
-      if (!script->IsUndefined() && !script->source()->IsUndefined()) {
+      if (info()->has_literal() && !script->IsUndefined() &&
+          !script->source()->IsUndefined()) {
         DisallowHeapAllocation no_allocation;
+        FunctionLiteral* function = info()->literal();
         int start = function->start_position();
         int len = function->end_position() - start;
         String::SubStringRange source(String::cast(script->source()), start,

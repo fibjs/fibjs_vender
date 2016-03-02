@@ -51,6 +51,7 @@
 #include "src/execution.h"
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
+#include "src/interpreter/interpreter.h"
 #include "src/ostreams.h"
 #include "src/profiler/cpu-profiler.h"
 #include "src/regexp/jsregexp.h"
@@ -770,6 +771,9 @@ RelocIterator::RelocIterator(const CodeDesc& desc, int mode_mask)
 // -----------------------------------------------------------------------------
 // Implementation of RelocInfo
 
+bool RelocInfo::IsPatchedDebugBreakSlotSequence() {
+  return DebugCodegen::DebugBreakSlotIsPatched(pc_);
+}
 
 #ifdef DEBUG
 bool RelocInfo::RequiresRelocation(const CodeDesc& desc) {
@@ -1052,6 +1056,10 @@ ExternalReference ExternalReference::isolate_address(Isolate* isolate) {
   return ExternalReference(isolate);
 }
 
+ExternalReference ExternalReference::interpreter_dispatch_table_address(
+    Isolate* isolate) {
+  return ExternalReference(isolate->interpreter()->dispatch_table_address());
+}
 
 ExternalReference::ExternalReference(StatsCounter* counter)
   : address_(reinterpret_cast<Address>(counter->GetInternalPointer())) {}
@@ -1262,12 +1270,6 @@ ExternalReference ExternalReference::new_space_start(Isolate* isolate) {
 
 ExternalReference ExternalReference::store_buffer_top(Isolate* isolate) {
   return ExternalReference(isolate->heap()->store_buffer_top_address());
-}
-
-
-ExternalReference ExternalReference::new_space_mask(Isolate* isolate) {
-  return ExternalReference(reinterpret_cast<Address>(
-      isolate->heap()->NewSpaceMask()));
 }
 
 

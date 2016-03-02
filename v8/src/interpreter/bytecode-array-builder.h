@@ -24,10 +24,6 @@ namespace interpreter {
 class BytecodeLabel;
 class Register;
 
-// TODO(rmcilroy): Unify this with CreateArgumentsParameters::Type in Turbofan
-// when rest parameters implementation has settled down.
-enum class CreateArgumentsType { kMappedArguments, kUnmappedArguments };
-
 class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
  public:
   BytecodeArrayBuilder(Isolate* isolate, Zone* zone, int parameter_count,
@@ -118,7 +114,7 @@ class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
 
   // Named load property.
   BytecodeArrayBuilder& LoadNamedProperty(Register object,
-                                          const Handle<String> name,
+                                          const Handle<Name> name,
                                           int feedback_slot,
                                           LanguageMode language_mode);
   // Keyed load property. The key should be in the accumulator.
@@ -127,7 +123,7 @@ class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
 
   // Store properties. The value to be stored should be in the accumulator.
   BytecodeArrayBuilder& StoreNamedProperty(Register object,
-                                           const Handle<String> name,
+                                           const Handle<Name> name,
                                            int feedback_slot,
                                            LanguageMode language_mode);
   BytecodeArrayBuilder& StoreKeyedProperty(Register object, Register key,
@@ -148,9 +144,6 @@ class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
 
   // Create a new arguments object in the accumulator.
   BytecodeArrayBuilder& CreateArguments(CreateArgumentsType type);
-
-  // Create a new rest arguments object starting at |index| in the accumulator.
-  BytecodeArrayBuilder& CreateRestArguments(int index);
 
   // Literals creation.  Constant elements should be in the accumulator.
   BytecodeArrayBuilder& CreateRegExpLiteral(Handle<String> pattern,
@@ -174,9 +167,10 @@ class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
   BytecodeArrayBuilder& Call(Register callable, Register receiver_args,
                              size_t receiver_arg_count, int feedback_slot);
 
-  // Call the new operator. The |constructor| register is followed by
-  // |arg_count| consecutive registers containing arguments to be
-  // applied to the constructor.
+  // Call the new operator. The accumulator holds the |new_target|.
+  // The |constructor| is in a register followed by |arg_count|
+  // consecutive arguments starting at |first_arg| for the constuctor
+  // invocation.
   BytecodeArrayBuilder& New(Register constructor, Register first_arg,
                             size_t arg_count);
 
@@ -214,7 +208,6 @@ class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
   // Deletes property from an object. This expects that accumulator contains
   // the key to be deleted and the register contains a reference to the object.
   BytecodeArrayBuilder& Delete(Register object, LanguageMode language_mode);
-  BytecodeArrayBuilder& DeleteLookupSlot();
 
   // Tests.
   BytecodeArrayBuilder& CompareOperation(Token::Value op, Register reg,
@@ -233,6 +226,7 @@ class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
   BytecodeArrayBuilder& Jump(BytecodeLabel* label);
   BytecodeArrayBuilder& JumpIfTrue(BytecodeLabel* label);
   BytecodeArrayBuilder& JumpIfFalse(BytecodeLabel* label);
+  BytecodeArrayBuilder& JumpIfNotHole(BytecodeLabel* label);
   BytecodeArrayBuilder& JumpIfNull(BytecodeLabel* label);
   BytecodeArrayBuilder& JumpIfUndefined(BytecodeLabel* label);
 
@@ -261,6 +255,7 @@ class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
   // entry, so that it can be referenced by above exception handling support.
   int NewHandlerEntry() { return handler_table_builder()->NewHandlerEntry(); }
 
+  void SetReturnPosition(FunctionLiteral* fun);
   void SetStatementPosition(Statement* stmt);
   void SetExpressionPosition(Expression* expr);
 
@@ -272,6 +267,8 @@ class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
   const TemporaryRegisterAllocator* temporary_register_allocator() const {
     return &temporary_allocator_;
   }
+
+  void EnsureReturn(FunctionLiteral* literal);
 
  private:
   class PreviousBytecodeHelper;
@@ -329,7 +326,6 @@ class BytecodeArrayBuilder final : public ZoneObject, private RegisterMover {
       const ZoneVector<uint8_t>::iterator& jump_location, int delta);
 
   void LeaveBasicBlock();
-  void EnsureReturn();
 
   bool OperandIsValid(Bytecode bytecode, int operand_index,
                       uint32_t operand_value) const;
