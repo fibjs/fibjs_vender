@@ -167,8 +167,7 @@ Reduction JSCallReducer::ReduceFunctionPrototypeApply(Node* node) {
   }
   // Change {node} to the new {JSCallFunction} operator.
   NodeProperties::ChangeOp(
-      node, javascript()->CallFunction(arity, p.language_mode(),
-                                       CallCountFeedback(p.feedback()),
+      node, javascript()->CallFunction(arity, CallCountFeedback(p.feedback()),
                                        convert_mode, p.tail_call_mode()));
   // Change context of {node} to the Function.prototype.apply context,
   // to ensure any exception is thrown in the correct context.
@@ -208,8 +207,7 @@ Reduction JSCallReducer::ReduceFunctionPrototypeCall(Node* node) {
     --arity;
   }
   NodeProperties::ChangeOp(
-      node, javascript()->CallFunction(arity, p.language_mode(),
-                                       CallCountFeedback(p.feedback()),
+      node, javascript()->CallFunction(arity, CallCountFeedback(p.feedback()),
                                        convert_mode, p.tail_call_mode()));
   // Try to further reduce the JSCallFunction {node}.
   Reduction const reduction = ReduceJSCallFunction(node);
@@ -291,10 +289,9 @@ Reduction JSCallReducer::ReduceJSCallFunction(Node* node) {
             jsgraph()->Constant(handle(bound_arguments->get(i), isolate())));
         arity++;
       }
-      NodeProperties::ChangeOp(
-          node, javascript()->CallFunction(arity, p.language_mode(),
-                                           CallCountFeedback(p.feedback()),
-                                           convert_mode, p.tail_call_mode()));
+      NodeProperties::ChangeOp(node, javascript()->CallFunction(
+                                         arity, CallCountFeedback(p.feedback()),
+                                         convert_mode, p.tail_call_mode()));
       // Try to further reduce the JSCallFunction {node}.
       Reduction const reduction = ReduceJSCallFunction(node);
       return reduction.Changed() ? reduction : Changed(node);
@@ -332,16 +329,8 @@ Reduction JSCallReducer::ReduceJSCallFunction(Node* node) {
     Node* check = effect =
         graph()->NewNode(javascript()->StrictEqual(), target, array_function,
                          context, effect, control);
-    Node* branch =
-        graph()->NewNode(common()->Branch(BranchHint::kTrue), check, control);
-    Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
-    Node* deoptimize =
-        graph()->NewNode(common()->Deoptimize(DeoptimizeKind::kEager),
-                         frame_state, effect, if_false);
-    // TODO(bmeurer): This should be on the AdvancedReducer somehow.
-    NodeProperties::MergeControlToEnd(graph(), common(), deoptimize);
-    Revisit(graph()->end());
-    control = graph()->NewNode(common()->IfTrue(), branch);
+    control = graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
+                               effect, control);
 
     // Turn the {node} into a {JSCreateArray} call.
     NodeProperties::ReplaceValueInput(node, array_function, 0);
@@ -358,16 +347,8 @@ Reduction JSCallReducer::ReduceJSCallFunction(Node* node) {
       Node* check = effect =
           graph()->NewNode(javascript()->StrictEqual(), target, target_function,
                            context, effect, control);
-      Node* branch =
-          graph()->NewNode(common()->Branch(BranchHint::kTrue), check, control);
-      Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
-      Node* deoptimize =
-          graph()->NewNode(common()->Deoptimize(DeoptimizeKind::kEager),
-                           frame_state, effect, if_false);
-      // TODO(bmeurer): This should be on the AdvancedReducer somehow.
-      NodeProperties::MergeControlToEnd(graph(), common(), deoptimize);
-      Revisit(graph()->end());
-      control = graph()->NewNode(common()->IfTrue(), branch);
+      control = graph()->NewNode(common()->DeoptimizeUnless(), check,
+                                 frame_state, effect, control);
 
       // Specialize the JSCallFunction node to the {target_function}.
       NodeProperties::ReplaceValueInput(node, target_function, 0);
@@ -476,16 +457,8 @@ Reduction JSCallReducer::ReduceJSCallConstruct(Node* node) {
     Node* check = effect =
         graph()->NewNode(javascript()->StrictEqual(), target, array_function,
                          context, effect, control);
-    Node* branch =
-        graph()->NewNode(common()->Branch(BranchHint::kTrue), check, control);
-    Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
-    Node* deoptimize =
-        graph()->NewNode(common()->Deoptimize(DeoptimizeKind::kEager),
-                         frame_state, effect, if_false);
-    // TODO(bmeurer): This should be on the AdvancedReducer somehow.
-    NodeProperties::MergeControlToEnd(graph(), common(), deoptimize);
-    Revisit(graph()->end());
-    control = graph()->NewNode(common()->IfTrue(), branch);
+    control = graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
+                               effect, control);
 
     // Turn the {node} into a {JSCreateArray} call.
     NodeProperties::ReplaceEffectInput(node, effect);
@@ -508,16 +481,8 @@ Reduction JSCallReducer::ReduceJSCallConstruct(Node* node) {
       Node* check = effect =
           graph()->NewNode(javascript()->StrictEqual(), target, target_function,
                            context, effect, control);
-      Node* branch =
-          graph()->NewNode(common()->Branch(BranchHint::kTrue), check, control);
-      Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
-      Node* deoptimize =
-          graph()->NewNode(common()->Deoptimize(DeoptimizeKind::kEager),
-                           frame_state, effect, if_false);
-      // TODO(bmeurer): This should be on the AdvancedReducer somehow.
-      NodeProperties::MergeControlToEnd(graph(), common(), deoptimize);
-      Revisit(graph()->end());
-      control = graph()->NewNode(common()->IfTrue(), branch);
+      control = graph()->NewNode(common()->DeoptimizeUnless(), check,
+                                 frame_state, effect, control);
 
       // Specialize the JSCallConstruct node to the {target_function}.
       NodeProperties::ReplaceValueInput(node, target_function, 0);

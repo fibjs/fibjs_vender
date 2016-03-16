@@ -57,10 +57,8 @@ Typer::Typer(Isolate* isolate, Graph* graph, Flags flags,
   unsigned32ish_ = Type::Union(Type::Unsigned32(), truncating_to_zero, zone);
   falsish_ = Type::Union(
       Type::Undetectable(),
-      Type::Union(
-          Type::Union(Type::Union(singleton_false_, cache_.kZeroish, zone),
-                      Type::NullOrUndefined(), zone),
-          singleton_the_hole_, zone),
+      Type::Union(Type::Union(singleton_false_, cache_.kZeroish, zone),
+                  singleton_the_hole_, zone),
       zone);
   truish_ = Type::Union(
       singleton_true_,
@@ -116,6 +114,8 @@ class Typer::Visitor : public Reducer {
       DECLARE_CASE(IfDefault)
       DECLARE_CASE(Merge)
       DECLARE_CASE(Deoptimize)
+      DECLARE_CASE(DeoptimizeIf)
+      DECLARE_CASE(DeoptimizeUnless)
       DECLARE_CASE(Return)
       DECLARE_CASE(TailCall)
       DECLARE_CASE(Terminate)
@@ -160,6 +160,8 @@ class Typer::Visitor : public Reducer {
       DECLARE_CASE(IfDefault)
       DECLARE_CASE(Merge)
       DECLARE_CASE(Deoptimize)
+      DECLARE_CASE(DeoptimizeIf)
+      DECLARE_CASE(DeoptimizeUnless)
       DECLARE_CASE(Return)
       DECLARE_CASE(TailCall)
       DECLARE_CASE(Terminate)
@@ -244,6 +246,7 @@ class Typer::Visitor : public Reducer {
   static Type* ObjectIsNumber(Type*, Typer*);
   static Type* ObjectIsReceiver(Type*, Typer*);
   static Type* ObjectIsSmi(Type*, Typer*);
+  static Type* ObjectIsUndetectable(Type*, Typer*);
 
   static Type* JSAddRanger(RangeType*, RangeType*, Typer*);
   static Type* JSSubtractRanger(RangeType*, RangeType*, Typer*);
@@ -469,7 +472,9 @@ Type* Typer::Visitor::ToObject(Type* type, Typer* t) {
   // ES6 section 7.1.13 ToObject ( argument )
   if (type->Is(Type::Receiver())) return type;
   if (type->Is(Type::Primitive())) return Type::OtherObject();
-  if (!type->Maybe(Type::Undetectable())) return Type::DetectableReceiver();
+  if (!type->Maybe(Type::OtherUndetectable())) {
+    return Type::DetectableReceiver();
+  }
   return Type::Receiver();
 }
 
@@ -529,6 +534,13 @@ Type* Typer::Visitor::ObjectIsReceiver(Type* type, Typer* t) {
 Type* Typer::Visitor::ObjectIsSmi(Type* type, Typer* t) {
   if (type->Is(Type::TaggedSigned())) return t->singleton_true_;
   if (type->Is(Type::TaggedPointer())) return t->singleton_false_;
+  return Type::Boolean();
+}
+
+
+Type* Typer::Visitor::ObjectIsUndetectable(Type* type, Typer* t) {
+  if (type->Is(Type::Undetectable())) return t->singleton_true_;
+  if (!type->Maybe(Type::Undetectable())) return t->singleton_false_;
   return Type::Boolean();
 }
 
@@ -1171,7 +1183,7 @@ Type* Typer::Visitor::JSTypeOfTyper(Type* type, Typer* t) {
     return Type::Constant(f->string_string(), t->zone());
   } else if (type->Is(Type::Symbol())) {
     return Type::Constant(f->symbol_string(), t->zone());
-  } else if (type->Is(Type::Union(Type::Undefined(), Type::Undetectable(),
+  } else if (type->Is(Type::Union(Type::Undefined(), Type::OtherUndetectable(),
                                   t->zone()))) {
     return Type::Constant(f->undefined_string(), t->zone());
   } else if (type->Is(Type::Null())) {
@@ -1529,8 +1541,14 @@ Type* Typer::Visitor::JSCallFunctionTyper(Type* fun, Typer* t) {
         case kMathClz32:
           return t->cache_.kZeroToThirtyTwo;
         // String functions.
+        case kStringCharCodeAt:
+          return Type::Union(Type::Range(0, kMaxUInt16, t->zone()), Type::NaN(),
+                             t->zone());
         case kStringCharAt:
+        case kStringConcat:
         case kStringFromCharCode:
+        case kStringToLowerCase:
+        case kStringToUpperCase:
           return Type::String();
         // Array functions.
         case kArrayIndexOf:
@@ -1569,9 +1587,6 @@ Type* Typer::Visitor::TypeJSCallRuntime(Node* node) {
     case Runtime::kInlineConstructDouble:
     case Runtime::kInlineMathFloor:
     case Runtime::kInlineMathSqrt:
-    case Runtime::kInlineMathAcos:
-    case Runtime::kInlineMathAsin:
-    case Runtime::kInlineMathAtan:
     case Runtime::kInlineMathAtan2:
       return Type::Number();
     case Runtime::kInlineMathClz32:
@@ -1580,6 +1595,7 @@ Type* Typer::Visitor::TypeJSCallRuntime(Node* node) {
     case Runtime::kInlineRegExpConstructResult:
       return Type::OtherObject();
     case Runtime::kInlineSubString:
+    case Runtime::kInlineStringCharFromCode:
       return Type::String();
     case Runtime::kInlineToInteger:
       return TypeUnaryOp(node, ToInteger);
@@ -1918,6 +1934,11 @@ Type* Typer::Visitor::TypeObjectIsSmi(Node* node) {
 }
 
 
+Type* Typer::Visitor::TypeObjectIsUndetectable(Node* node) {
+  return TypeUnaryOp(node, ObjectIsUndetectable);
+}
+
+
 // Machine operators.
 
 Type* Typer::Visitor::TypeLoad(Node* node) { return Type::Any(); }
@@ -1960,6 +1981,11 @@ Type* Typer::Visitor::TypeWord32Clz(Node* node) { return Type::Integral32(); }
 Type* Typer::Visitor::TypeWord32Ctz(Node* node) { return Type::Integral32(); }
 
 
+Type* Typer::Visitor::TypeWord32ReverseBits(Node* node) {
+  return Type::Integral32();
+}
+
+
 Type* Typer::Visitor::TypeWord32Popcnt(Node* node) {
   return Type::Integral32();
 }
@@ -1990,6 +2016,11 @@ Type* Typer::Visitor::TypeWord64Clz(Node* node) { return Type::Internal(); }
 
 
 Type* Typer::Visitor::TypeWord64Ctz(Node* node) { return Type::Internal(); }
+
+
+Type* Typer::Visitor::TypeWord64ReverseBits(Node* node) {
+  return Type::Internal();
+}
 
 
 Type* Typer::Visitor::TypeWord64Popcnt(Node* node) { return Type::Internal(); }
@@ -2398,6 +2429,9 @@ Type* Typer::Visitor::TypeLoadFramePointer(Node* node) {
   return Type::Internal();
 }
 
+Type* Typer::Visitor::TypeLoadParentFramePointer(Node* node) {
+  return Type::Internal();
+}
 
 Type* Typer::Visitor::TypeCheckedLoad(Node* node) { return Type::Any(); }
 
@@ -2407,6 +2441,13 @@ Type* Typer::Visitor::TypeCheckedStore(Node* node) {
   return nullptr;
 }
 
+Type* Typer::Visitor::TypeInt32PairAdd(Node* node) { return Type::Internal(); }
+
+Type* Typer::Visitor::TypeWord32PairShl(Node* node) { return Type::Internal(); }
+
+Type* Typer::Visitor::TypeWord32PairShr(Node* node) { return Type::Internal(); }
+
+Type* Typer::Visitor::TypeWord32PairSar(Node* node) { return Type::Internal(); }
 
 // Heap constants.
 

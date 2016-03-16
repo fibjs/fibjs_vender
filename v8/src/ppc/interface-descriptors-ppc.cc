@@ -58,11 +58,6 @@ const Register StringCompareDescriptor::LeftRegister() { return r4; }
 const Register StringCompareDescriptor::RightRegister() { return r3; }
 
 
-const Register ArgumentsAccessNewDescriptor::function() { return r4; }
-const Register ArgumentsAccessNewDescriptor::parameter_count() { return r5; }
-const Register ArgumentsAccessNewDescriptor::parameter_pointer() { return r6; }
-
-
 const Register ApiGetterDescriptor::function_address() { return r5; }
 
 
@@ -91,7 +86,19 @@ void FastNewContextDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
+void FastNewObjectDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {r4, r6};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
 void FastNewRestParameterDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {r4};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+void FastNewSloppyArgumentsDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {r4};
   data->InitializePlatformSpecific(arraysize(registers), registers);
@@ -311,13 +318,6 @@ void CompareDescriptor::InitializePlatformSpecific(
 }
 
 
-void CompareNilDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {r3};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
 void ToBooleanDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {r3};
@@ -384,21 +384,7 @@ void ArgumentAdaptorDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
-
-void ApiFunctionDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {
-      r3,  // callee
-      r7,  // call_data
-      r5,  // holder
-      r4,  // api_function_address
-      r6,  // actual number of arguments
-  };
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
-void ApiAccessorDescriptor::InitializePlatformSpecific(
+void ApiCallbackDescriptorBase::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {
       r3,  // callee

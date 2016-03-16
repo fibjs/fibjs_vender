@@ -37,7 +37,6 @@ namespace internal {
   V(Oddball, true_value, TrueValue)                                            \
   V(Oddball, false_value, FalseValue)                                          \
   V(String, empty_string, empty_string)                                        \
-  V(String, hidden_string, hidden_string)                                      \
   V(Oddball, uninitialized_value, UninitializedValue)                          \
   V(Map, cell_map, CellMap)                                                    \
   V(Map, global_property_cell_map, GlobalPropertyCellMap)                      \
@@ -189,7 +188,8 @@ namespace internal {
   V(Object, weak_stack_trace_list, WeakStackTraceList)                         \
   V(Object, noscript_shared_function_infos, NoScriptSharedFunctionInfos)       \
   V(Map, bytecode_array_map, BytecodeArrayMap)                                 \
-  V(WeakCell, empty_weak_cell, EmptyWeakCell)
+  V(WeakCell, empty_weak_cell, EmptyWeakCell)                                  \
+  V(PropertyCell, species_protector, SpeciesProtector)
 
 // Entries in this list are limited to Smis and are not visited during GC.
 #define SMI_ROOT_LIST(V)                                                   \
@@ -291,6 +291,7 @@ class Scavenger;
 class ScavengeJob;
 class WeakObjectRetainer;
 
+typedef void (*ObjectSlotCallback)(HeapObject** from, HeapObject* to);
 
 // A queue of objects promoted during scavenge. Each object is accompanied
 // by it's size to avoid dereferencing a map pointer for scanning.
@@ -325,7 +326,7 @@ class PromotionQueue {
     // If the limit is not on the same page, we can ignore it.
     if (Page::FromAllocationTop(limit) != GetHeadPage()) return;
 
-    limit_ = reinterpret_cast<intptr_t*>(limit);
+    limit_ = reinterpret_cast<struct Entry*>(limit);
 
     if (limit_ <= rear_) {
       return;
@@ -347,7 +348,7 @@ class PromotionQueue {
     }
     // If the to space top pointer is smaller or equal than the promotion
     // queue head, then the to-space objects are below the promotion queue.
-    return reinterpret_cast<intptr_t*>(to_space_top) <= rear_;
+    return reinterpret_cast<struct Entry*>(to_space_top) <= rear_;
   }
 
   bool is_empty() {
@@ -355,43 +356,48 @@ class PromotionQueue {
            (emergency_stack_ == NULL || emergency_stack_->length() == 0);
   }
 
-  inline void insert(HeapObject* target, int size);
+  inline void insert(HeapObject* target, int32_t size, bool was_marked_black);
 
-  void remove(HeapObject** target, int* size) {
+  void remove(HeapObject** target, int32_t* size, bool* was_marked_black) {
     DCHECK(!is_empty());
     if (front_ == rear_) {
       Entry e = emergency_stack_->RemoveLast();
       *target = e.obj_;
       *size = e.size_;
+      *was_marked_black = e.was_marked_black_;
       return;
     }
 
-    *target = reinterpret_cast<HeapObject*>(*(--front_));
-    *size = static_cast<int>(*(--front_));
+    struct Entry* entry = reinterpret_cast<struct Entry*>(--front_);
+    *target = entry->obj_;
+    *size = entry->size_;
+    *was_marked_black = entry->was_marked_black_;
+
     // Assert no underflow.
     SemiSpace::AssertValidRange(reinterpret_cast<Address>(rear_),
                                 reinterpret_cast<Address>(front_));
   }
 
  private:
-  // The front of the queue is higher in the memory page chain than the rear.
-  intptr_t* front_;
-  intptr_t* rear_;
-  intptr_t* limit_;
-
-  static const int kEntrySizeInWords = 2;
-
   struct Entry {
-    Entry(HeapObject* obj, int size) : obj_(obj), size_(size) {}
+    Entry(HeapObject* obj, int32_t size, bool was_marked_black)
+        : obj_(obj), size_(size), was_marked_black_(was_marked_black) {}
 
     HeapObject* obj_;
-    int size_;
+    int32_t size_ : 31;
+    bool was_marked_black_ : 1;
   };
+
+  void RelocateQueueHead();
+
+  // The front of the queue is higher in the memory page chain than the rear.
+  struct Entry* front_;
+  struct Entry* rear_;
+  struct Entry* limit_;
+
   List<Entry>* emergency_stack_;
 
   Heap* heap_;
-
-  void RelocateQueueHead();
 
   DISALLOW_COPY_AND_ASSIGN(PromotionQueue);
 };
@@ -402,6 +408,7 @@ enum ArrayStorageAllocationMode {
   INITIALIZE_ARRAY_ELEMENTS_WITH_HOLE
 };
 
+enum class ClearRecordedSlots { kYes, kNo };
 
 class Heap {
  public:
@@ -631,8 +638,10 @@ class Heap {
   void MoveElements(FixedArray* array, int dst_index, int src_index, int len);
 
   // Initialize a filler object to keep the ability to iterate over the heap
-  // when introducing gaps within pages.
-  void CreateFillerObjectAt(Address addr, int size);
+  // when introducing gaps within pages. If slots could have been recorded in
+  // the freed area, then pass ClearRecordedSlots::kYes as the mode. Otherwise,
+  // pass ClearRecordedSlots::kNo.
+  void CreateFillerObjectAt(Address addr, int size, ClearRecordedSlots mode);
 
   bool CanMoveObjectStart(HeapObject* object);
 
@@ -648,7 +657,7 @@ class Heap {
   void RightTrimFixedArray(FixedArrayBase* obj, int elements_to_trim);
 
   // Converts the given boolean condition to JavaScript boolean value.
-  inline Object* ToBoolean(bool condition);
+  inline Oddball* ToBoolean(bool condition);
 
   // Check whether the heap is currently iterable.
   bool IsHeapIterable();
@@ -821,7 +830,7 @@ class Heap {
   bool HasHighFragmentation(intptr_t used, intptr_t committed);
 
   void SetOptimizeForLatency() { optimize_for_memory_usage_ = false; }
-  void SetOptimizeForMemoryUsage() { optimize_for_memory_usage_ = true; }
+  void SetOptimizeForMemoryUsage();
   bool ShouldOptimizeForMemoryUsage() { return optimize_for_memory_usage_; }
 
   // ===========================================================================
@@ -1038,14 +1047,14 @@ class Heap {
   // Iterates over all the other roots in the heap.
   void IterateWeakRoots(ObjectVisitor* v, VisitMode mode);
 
-  // Iterate pointers to from semispace of new space found in memory interval
-  // from start to end within |object|.
-  void IteratePointersToFromSpace(HeapObject* target, int size,
-                                  ObjectSlotCallback callback);
+  // Iterate pointers of promoted objects.
+  void IteratePromotedObject(HeapObject* target, int size,
+                             bool was_marked_black,
+                             ObjectSlotCallback callback);
 
-  void IterateAndMarkPointersToFromSpace(HeapObject* object, Address start,
-                                         Address end, bool record_slots,
-                                         ObjectSlotCallback callback);
+  void IteratePromotedObjectPointers(HeapObject* object, Address start,
+                                     Address end, bool record_slots,
+                                     ObjectSlotCallback callback);
 
   // ===========================================================================
   // Store buffer API. =========================================================
@@ -1059,6 +1068,7 @@ class Heap {
   }
 
   void ClearRecordedSlot(HeapObject* object, Object** slot);
+  void ClearRecordedSlotRange(Address start, Address end);
 
   // ===========================================================================
   // Incremental marking API. ==================================================
@@ -1078,6 +1088,8 @@ class Heap {
   void FinalizeIncrementalMarkingIfComplete(const char* comment);
 
   bool TryFinalizeIdleIncrementalMarking(double idle_time_in_ms);
+
+  void RegisterReservationsForBlackAllocation(Reservation* reservations);
 
   IncrementalMarking* incremental_marking() { return incremental_marking_; }
 
@@ -1361,6 +1373,9 @@ class Heap {
   // Report heap statistics.
   void ReportHeapStatistics(const char* title);
   void ReportCodeStatistics(const char* title);
+#endif
+#ifdef ENABLE_SLOW_DCHECKS
+  int CountHandlesForObject(Object* object);
 #endif
 
  private:
@@ -1667,6 +1682,7 @@ class Heap {
   void ProcessYoungWeakReferences(WeakObjectRetainer* retainer);
   void ProcessNativeContexts(WeakObjectRetainer* retainer);
   void ProcessAllocationSites(WeakObjectRetainer* retainer);
+  void ProcessWeakListRoots(WeakObjectRetainer* retainer);
 
   // ===========================================================================
   // GC statistics. ============================================================
@@ -1785,6 +1801,9 @@ class Heap {
                                             Vector<byte> reloc_info);
 
   MUST_USE_RESULT AllocationResult CopyCode(Code* code);
+
+  MUST_USE_RESULT AllocationResult
+  CopyBytecodeArray(BytecodeArray* bytecode_array);
 
   // Allocates a fixed array initialized with undefined values
   MUST_USE_RESULT AllocationResult
@@ -2202,7 +2221,7 @@ class Heap {
   friend class HeapIterator;
   friend class IdleScavengeObserver;
   friend class IncrementalMarking;
-  friend class IteratePointersToFromSpaceVisitor;
+  friend class IteratePromotedObjectsVisitor;
   friend class MarkCompactCollector;
   friend class MarkCompactMarkingVisitor;
   friend class NewSpace;
@@ -2476,16 +2495,7 @@ class DescriptorLookupCache {
     }
   }
 
-  static int Hash(Object* source, Name* name) {
-    // Uses only lower 32 bits if pointers are larger.
-    uint32_t source_hash =
-        static_cast<uint32_t>(reinterpret_cast<uintptr_t>(source)) >>
-        kPointerSizeLog2;
-    uint32_t name_hash =
-        static_cast<uint32_t>(reinterpret_cast<uintptr_t>(name)) >>
-        kPointerSizeLog2;
-    return (source_hash ^ name_hash) % kLength;
-  }
+  static inline int Hash(Object* source, Name* name);
 
   static const int kLength = 64;
   struct Key {

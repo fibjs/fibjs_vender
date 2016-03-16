@@ -23,9 +23,6 @@ namespace internal {
     return *isolate->factory()->NewHeapNumber(std::name(x));   \
   }
 
-RUNTIME_UNARY_MATH(Acos, acos)
-RUNTIME_UNARY_MATH(Asin, asin)
-RUNTIME_UNARY_MATH(Atan, atan)
 RUNTIME_UNARY_MATH(LogRT, log)
 #undef RUNTIME_UNARY_MATH
 
@@ -228,21 +225,11 @@ RUNTIME_FUNCTION(Runtime_MathSqrt) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_MathFround) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-
-  CONVERT_DOUBLE_ARG_CHECKED(x, 0);
-  float xf = DoubleToFloat32(x);
-  return *isolate->factory()->NewNumber(xf);
-}
-
-
 RUNTIME_FUNCTION(Runtime_GenerateRandomNumbers) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
   // Random numbers in the snapshot are not really that random.
-  DCHECK(!isolate->bootstrapper()->IsActive());
+  CHECK(!isolate->serializer_enabled());
   static const int kState0Offset = 0;
   static const int kState1Offset = 1;
   static const int kRandomBatchSize = 64;

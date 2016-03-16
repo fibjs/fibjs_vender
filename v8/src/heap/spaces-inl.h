@@ -25,6 +25,11 @@ void Bitmap::Clear(MemoryChunk* chunk) {
   chunk->ResetLiveBytes();
 }
 
+void Bitmap::SetAllBits(MemoryChunk* chunk) {
+  Bitmap* bitmap = chunk->markbits();
+  for (int i = 0; i < bitmap->CellsCount(); i++)
+    bitmap->cells()[i] = 0xffffffff;
+}
 
 // -----------------------------------------------------------------------------
 // PageIterator
@@ -147,6 +152,19 @@ HeapObject* HeapObjectIterator::FromCurrentPage() {
   return NULL;
 }
 
+// -----------------------------------------------------------------------------
+// LargePageIterator
+
+LargePageIterator::LargePageIterator(LargeObjectSpace* space)
+    : next_page_(space->first_page()) {}
+
+LargePage* LargePageIterator::next() {
+  LargePage* result = next_page_;
+  if (next_page_ != nullptr) {
+    next_page_ = next_page_->next_page();
+  }
+  return result;
+}
 
 // -----------------------------------------------------------------------------
 // MemoryAllocator
@@ -264,6 +282,7 @@ void MemoryChunk::ResetLiveBytes() {
 }
 
 void MemoryChunk::IncrementLiveBytes(int by) {
+  if (IsFlagSet(BLACK_PAGE)) return;
   if (FLAG_trace_live_bytes) {
     PrintIsolate(heap()->isolate(),
                  "live-bytes: update page=%p delta=%d %d->%d\n", this, by,
@@ -296,33 +315,27 @@ bool PagedSpace::Contains(Object* o) {
 }
 
 MemoryChunk* MemoryChunk::FromAnyPointerAddress(Heap* heap, Address addr) {
-  MemoryChunk* maybe = reinterpret_cast<MemoryChunk*>(
-      OffsetFrom(addr) & ~Page::kPageAlignmentMask);
-  if (maybe->owner() != NULL) return maybe;
-  LargeObjectIterator iterator(heap->lo_space());
-  for (HeapObject* o = iterator.Next(); o != NULL; o = iterator.Next()) {
-    // Fixed arrays are the only pointer-containing objects in large object
-    // space.
-    if (o->IsFixedArray()) {
-      MemoryChunk* chunk = MemoryChunk::FromAddress(o->address());
-      if (chunk->Contains(addr)) {
-        return chunk;
-      }
-    }
+  MemoryChunk* chunk = MemoryChunk::FromAddress(addr);
+  uintptr_t offset = addr - chunk->address();
+  if (offset < MemoryChunk::kHeaderSize || !chunk->HasPageHeader()) {
+    chunk = heap->lo_space()->FindPage(addr);
   }
-  UNREACHABLE();
-  return NULL;
+  return chunk;
 }
 
+Page* Page::FromAnyPointerAddress(Heap* heap, Address addr) {
+  return static_cast<Page*>(MemoryChunk::FromAnyPointerAddress(heap, addr));
+}
 
-PointerChunkIterator::PointerChunkIterator(Heap* heap)
+MemoryChunkIterator::MemoryChunkIterator(Heap* heap, Mode mode)
     : state_(kOldSpaceState),
+      mode_(mode),
       old_iterator_(heap->old_space()),
+      code_iterator_(heap->code_space()),
       map_iterator_(heap->map_space()),
       lo_iterator_(heap->lo_space()) {}
 
-
-MemoryChunk* PointerChunkIterator::next() {
+MemoryChunk* MemoryChunkIterator::next() {
   switch (state_) {
     case kOldSpaceState: {
       if (old_iterator_.has_next()) {
@@ -332,33 +345,34 @@ MemoryChunk* PointerChunkIterator::next() {
       // Fall through.
     }
     case kMapState: {
-      if (map_iterator_.has_next()) {
+      if (mode_ != ALL_BUT_MAP_SPACE && map_iterator_.has_next()) {
         return map_iterator_.next();
+      }
+      state_ = kCodeState;
+      // Fall through.
+    }
+    case kCodeState: {
+      if (mode_ != ALL_BUT_CODE_SPACE && code_iterator_.has_next()) {
+        return code_iterator_.next();
       }
       state_ = kLargeObjectState;
       // Fall through.
     }
     case kLargeObjectState: {
-      HeapObject* heap_object;
-      do {
-        heap_object = lo_iterator_.Next();
-        if (heap_object == NULL) {
-          state_ = kFinishedState;
-          return NULL;
-        }
-        // Fixed arrays are the only pointer-containing objects in large
-        // object space.
-      } while (!heap_object->IsFixedArray());
-      MemoryChunk* answer = MemoryChunk::FromAddress(heap_object->address());
-      return answer;
+      MemoryChunk* answer = lo_iterator_.next();
+      if (answer != nullptr) {
+        return answer;
+      }
+      state_ = kFinishedState;
+      // Fall through;
     }
     case kFinishedState:
-      return NULL;
+      return nullptr;
     default:
       break;
   }
   UNREACHABLE();
-  return NULL;
+  return nullptr;
 }
 
 

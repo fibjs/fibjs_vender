@@ -255,6 +255,7 @@ class AstValue : public ZoneObject {
   F(dot_catch, ".catch")                        \
   F(empty, "")                                  \
   F(eval, "eval")                               \
+  F(function, "function")                       \
   F(get_space, "get ")                          \
   F(let, "let")                                 \
   F(native, "native")                           \
@@ -270,7 +271,6 @@ class AstValue : public ZoneObject {
   F(throw, "throw")                             \
   F(undefined, "undefined")                     \
   F(use_asm, "use asm")                         \
-  F(use_strong, "use strong")                   \
   F(use_strict, "use strict")                   \
   F(value, "value")
 

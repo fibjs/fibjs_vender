@@ -369,6 +369,8 @@ bool AreSameSizeAndType(const CPURegister& reg1,
 
 typedef FPRegister DoubleRegister;
 
+// TODO(arm64) Define SIMD registers.
+typedef FPRegister Simd128Register;
 
 // -----------------------------------------------------------------------------
 // Lists of registers.
@@ -920,7 +922,9 @@ class Assembler : public AssemblerBase {
   }
 
   // Debugging ----------------------------------------------------------------
-  PositionsRecorder* positions_recorder() { return &positions_recorder_; }
+  AssemblerPositionsRecorder* positions_recorder() {
+    return &positions_recorder_;
+  }
   void RecordComment(const char* msg);
 
   // Record a deoptimization reason that can be used by a log or cpu profiler.
@@ -2133,8 +2137,8 @@ class Assembler : public AssemblerBase {
   void DeleteUnresolvedBranchInfoForLabelTraverse(Label* label);
 
  private:
-  PositionsRecorder positions_recorder_;
-  friend class PositionsRecorder;
+  AssemblerPositionsRecorder positions_recorder_;
+  friend class AssemblerPositionsRecorder;
   friend class EnsureSpace;
   friend class ConstPool;
 };

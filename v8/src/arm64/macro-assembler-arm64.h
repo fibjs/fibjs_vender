@@ -34,7 +34,6 @@ namespace v8 {
 namespace internal {
 
 // Give alias names to registers for calling conventions.
-// TODO(titzer): arm64 is a pain for aliasing; get rid of these macros
 #define kReturnRegister0 x0
 #define kReturnRegister1 x1
 #define kReturnRegister2 x2
@@ -896,6 +895,7 @@ class MacroAssembler : public Assembler {
   // This is required for compatibility with architecture independant code.
   // Remove if not needed.
   inline void Move(Register dst, Register src) { Mov(dst, src); }
+  inline void Move(Register dst, Handle<Object> x) { LoadObject(dst, x); }
   inline void Move(Register dst, Smi* src) { Mov(dst, src); }
 
   void LoadInstanceDescriptors(Register map,
@@ -970,6 +970,9 @@ class MacroAssembler : public Assembler {
   // Abort execution if argument is not a JSBoundFunction,
   // enabled via --debug-code.
   void AssertBoundFunction(Register object);
+
+  // Abort execution if argument is not a JSReceiver, enabled via --debug-code.
+  void AssertReceiver(Register object);
 
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
@@ -1162,6 +1165,15 @@ class MacroAssembler : public Assembler {
   static int CallSize(Handle<Code> code,
                       RelocInfo::Mode rmode = RelocInfo::CODE_TARGET,
                       TypeFeedbackId ast_id = TypeFeedbackId::None());
+
+  // Removes current frame and its arguments from the stack preserving
+  // the arguments and a return address pushed to the stack for the next call.
+  // Both |callee_args_count| and |caller_args_count_reg| do not include
+  // receiver. |callee_args_count| is not modified, |caller_args_count_reg|
+  // is trashed.
+  void PrepareForTailCall(const ParameterCount& callee_args_count,
+                          Register caller_args_count_reg, Register scratch0,
+                          Register scratch1);
 
   // Registers used through the invocation chain are hard-coded.
   // We force passing the parameters to ensure the contracts are correctly
@@ -1619,7 +1631,7 @@ class MacroAssembler : public Assembler {
   void ExitFrameRestoreFPRegs();
 
   // Generates function and stub prologue code.
-  void StubPrologue();
+  void StubPrologue(StackFrame::Type type, int frame_slots);
   void Prologue(bool code_pre_aging);
 
   // Enter exit frame. Exit frames are used when calling C code from generated

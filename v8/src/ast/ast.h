@@ -91,7 +91,7 @@ namespace internal {
   V(CaseClause)                 \
   V(EmptyParentheses)           \
   V(DoExpression)               \
-  V(RewritableAssignmentExpression)
+  V(RewritableExpression)
 
 #define AST_NODE_LIST(V)                        \
   DECLARATION_NODE_LIST(V)                      \
@@ -198,20 +198,14 @@ class AstNode: public ZoneObject {
 
 #ifdef DEBUG
   void PrettyPrint(Isolate* isolate);
-  void PrettyPrint();
-  void PrintAst(Isolate* isolate);
-  void PrintAst();
+  void Print(Isolate* isolate);
 #endif  // DEBUG
 
   // Type testing & conversion functions overridden by concrete subclasses.
 #define DECLARE_NODE_FUNCTIONS(type) \
-  bool Is##type() const { return node_type() == AstNode::k##type; } \
-  type* As##type() { \
-    return Is##type() ? reinterpret_cast<type*>(this) : NULL; \
-  } \
-  const type* As##type() const { \
-    return Is##type() ? reinterpret_cast<const type*>(this) : NULL; \
-  }
+  V8_INLINE bool Is##type() const;   \
+  V8_INLINE type* As##type();        \
+  V8_INLINE const type* As##type() const;
   AST_NODE_LIST(DECLARE_NODE_FUNCTIONS)
 #undef DECLARE_NODE_FUNCTIONS
 
@@ -549,24 +543,10 @@ class VariableDeclaration final : public Declaration {
     return mode() == VAR ? kCreatedInitialized : kNeedsInitialization;
   }
 
-  bool is_class_declaration() const { return is_class_declaration_; }
-
-  // VariableDeclarations can be grouped into consecutive declaration
-  // groups. Each VariableDeclaration is associated with the start position of
-  // the group it belongs to. The positions are used for strong mode scope
-  // checks for classes and functions.
-  int declaration_group_start() const { return declaration_group_start_; }
-
  protected:
   VariableDeclaration(Zone* zone, VariableProxy* proxy, VariableMode mode,
-                      Scope* scope, int pos, bool is_class_declaration = false,
-                      int declaration_group_start = -1)
-      : Declaration(zone, proxy, mode, scope, pos),
-        is_class_declaration_(is_class_declaration),
-        declaration_group_start_(declaration_group_start) {}
-
-  bool is_class_declaration_;
-  int declaration_group_start_;
+                      Scope* scope, int pos)
+      : Declaration(zone, proxy, mode, scope, pos) {}
 };
 
 
@@ -810,10 +790,6 @@ class ForEachStatement : public IterationStatement {
   void set_each(Expression* e) { each_ = e; }
   void set_subject(Expression* e) { subject_ = e; }
 
-  void AssignFeedbackVectorSlots(Isolate* isolate, FeedbackVectorSpec* spec,
-                                 FeedbackVectorSlotCache* cache) override;
-  FeedbackVectorSlot EachFeedbackSlot() const { return each_slot_; }
-
   static const char* VisitModeString(VisitMode mode) {
     return mode == ITERATE ? "for-of" : "for-in";
   }
@@ -825,7 +801,6 @@ class ForEachStatement : public IterationStatement {
  private:
   Expression* each_;
   Expression* subject_;
-  FeedbackVectorSlot each_slot_;
 };
 
 
@@ -839,11 +814,8 @@ class ForInStatement final : public ForEachStatement {
 
   // Type feedback information.
   void AssignFeedbackVectorSlots(Isolate* isolate, FeedbackVectorSpec* spec,
-                                 FeedbackVectorSlotCache* cache) override {
-    ForEachStatement::AssignFeedbackVectorSlots(isolate, spec, cache);
-    for_in_feedback_slot_ = spec->AddGeneralSlot();
-  }
-
+                                 FeedbackVectorSlotCache* cache) override;
+  FeedbackVectorSlot EachFeedbackSlot() const { return each_slot_; }
   FeedbackVectorSlot ForInFeedbackSlot() {
     DCHECK(!for_in_feedback_slot_.IsInvalid());
     return for_in_feedback_slot_;
@@ -872,6 +844,7 @@ class ForInStatement final : public ForEachStatement {
   int local_id(int n) const { return base_id() + parent_num_ids() + n; }
 
   ForInType for_in_type_;
+  FeedbackVectorSlot each_slot_;
   FeedbackVectorSlot for_in_feedback_slot_;
 };
 
@@ -883,11 +856,13 @@ class ForOfStatement final : public ForEachStatement {
   void Initialize(Expression* each,
                   Expression* subject,
                   Statement* body,
+                  Variable* iterator,
                   Expression* assign_iterator,
                   Expression* next_result,
                   Expression* result_done,
                   Expression* assign_each) {
     ForEachStatement::Initialize(each, subject, body);
+    iterator_ = iterator;
     assign_iterator_ = assign_iterator;
     next_result_ = next_result;
     result_done_ = result_done;
@@ -896,6 +871,10 @@ class ForOfStatement final : public ForEachStatement {
 
   Expression* iterable() const {
     return subject();
+  }
+
+  Variable* iterator() const {
+    return iterator_;
   }
 
   // iterator = subject[Symbol.iterator]()
@@ -932,6 +911,7 @@ class ForOfStatement final : public ForEachStatement {
  protected:
   ForOfStatement(Zone* zone, ZoneList<const AstRawString*>* labels, int pos)
       : ForEachStatement(zone, labels, pos),
+        iterator_(NULL),
         assign_iterator_(NULL),
         next_result_(NULL),
         result_done_(NULL),
@@ -941,6 +921,7 @@ class ForOfStatement final : public ForEachStatement {
  private:
   int local_id(int n) const { return base_id() + parent_num_ids() + n; }
 
+  Variable* iterator_;
   Expression* assign_iterator_;
   Expression* next_result_;
   Expression* result_done_;
@@ -1183,27 +1164,12 @@ class TryStatement : public Statement {
   Block* try_block() const { return try_block_; }
   void set_try_block(Block* b) { try_block_ = b; }
 
-  void set_base_id(int id) { base_id_ = id; }
-  static int num_ids() { return parent_num_ids() + 1; }
-  BailoutId HandlerId() const { return BailoutId(local_id(0)); }
-
  protected:
   TryStatement(Zone* zone, Block* try_block, int pos)
-      : Statement(zone, pos),
-        try_block_(try_block),
-        base_id_(BailoutId::None().ToInt()) {}
-  static int parent_num_ids() { return 0; }
-
-  int base_id() const {
-    DCHECK(!BailoutId(base_id_).IsNone());
-    return base_id_;
-  }
+      : Statement(zone, pos), try_block_(try_block) {}
 
  private:
-  int local_id(int n) const { return base_id() + parent_num_ids() + n; }
-
   Block* try_block_;
-  int base_id_;
 };
 
 
@@ -1364,14 +1330,11 @@ class MaterializedLiteral : public Expression {
     return depth_;
   }
 
-  bool is_strong() const { return is_strong_; }
-
  protected:
-  MaterializedLiteral(Zone* zone, int literal_index, bool is_strong, int pos)
+  MaterializedLiteral(Zone* zone, int literal_index, int pos)
       : Expression(zone, pos),
         literal_index_(literal_index),
         is_simple_(false),
-        is_strong_(is_strong),
         depth_(0) {}
 
   // A materialized literal is simple if the values consist of only
@@ -1400,7 +1363,6 @@ class MaterializedLiteral : public Expression {
  private:
   int literal_index_;
   bool is_simple_;
-  bool is_strong_;
   int depth_;
 
   friend class AstLiteralReindexer;
@@ -1450,9 +1412,7 @@ class ObjectLiteralProperty final : public ZoneObject {
 
   void set_receiver_type(Handle<Map> map) { receiver_type_ = map; }
 
-  bool NeedsSetFunctionName() const {
-    return is_computed_name_ && value_->IsAnonymousFunctionDefinition();
-  }
+  bool NeedsSetFunctionName() const;
 
  protected:
   friend class AstNodeFactory;
@@ -1490,7 +1450,6 @@ class ObjectLiteral final : public MaterializedLiteral {
   ZoneList<Property*>* properties() const { return properties_; }
   bool fast_elements() const { return fast_elements_; }
   bool may_store_doubles() const { return may_store_doubles_; }
-  bool has_function() const { return has_function_; }
   bool has_elements() const { return has_elements_; }
   bool has_shallow_properties() const {
     return depth() == 1 && !has_elements() && !may_store_doubles();
@@ -1510,15 +1469,11 @@ class ObjectLiteral final : public MaterializedLiteral {
   // Assemble bitfield of flags for the CreateObjectLiteral helper.
   int ComputeFlags(bool disable_mementos = false) const {
     int flags = fast_elements() ? kFastElements : kNoFlags;
-    flags |= has_function() ? kHasFunction : kNoFlags;
     if (has_shallow_properties()) {
       flags |= kShallowProperties;
     }
     if (disable_mementos) {
       flags |= kDisableMementos;
-    }
-    if (is_strong()) {
-      flags |= kIsStrong;
     }
     return flags;
   }
@@ -1526,10 +1481,8 @@ class ObjectLiteral final : public MaterializedLiteral {
   enum Flags {
     kNoFlags = 0,
     kFastElements = 1,
-    kHasFunction = 1 << 1,
-    kShallowProperties = 1 << 2,
-    kDisableMementos = 1 << 3,
-    kIsStrong = 1 << 4
+    kShallowProperties = 1 << 1,
+    kDisableMementos = 1 << 2
   };
 
   struct Accessors: public ZoneObject {
@@ -1561,15 +1514,13 @@ class ObjectLiteral final : public MaterializedLiteral {
 
  protected:
   ObjectLiteral(Zone* zone, ZoneList<Property*>* properties, int literal_index,
-                int boilerplate_properties, bool has_function, bool is_strong,
-                int pos)
-      : MaterializedLiteral(zone, literal_index, is_strong, pos),
+                int boilerplate_properties, int pos)
+      : MaterializedLiteral(zone, literal_index, pos),
         properties_(properties),
         boilerplate_properties_(boilerplate_properties),
         fast_elements_(false),
         has_elements_(false),
-        may_store_doubles_(false),
-        has_function_(has_function) {}
+        may_store_doubles_(false) {}
   static int parent_num_ids() { return MaterializedLiteral::num_ids(); }
 
  private:
@@ -1580,7 +1531,6 @@ class ObjectLiteral final : public MaterializedLiteral {
   bool fast_elements_;
   bool has_elements_;
   bool may_store_doubles_;
-  bool has_function_;
   FeedbackVectorSlot slot_;
 };
 
@@ -1616,8 +1566,8 @@ class RegExpLiteral final : public MaterializedLiteral {
 
  protected:
   RegExpLiteral(Zone* zone, const AstRawString* pattern, int flags,
-                int literal_index, bool is_strong, int pos)
-      : MaterializedLiteral(zone, literal_index, is_strong, pos),
+                int literal_index, int pos)
+      : MaterializedLiteral(zone, literal_index, pos),
         pattern_(pattern),
         flags_(flags) {
     set_depth(1);
@@ -1662,9 +1612,6 @@ class ArrayLiteral final : public MaterializedLiteral {
     if (disable_mementos) {
       flags |= kDisableMementos;
     }
-    if (is_strong()) {
-      flags |= kIsStrong;
-    }
     return flags;
   }
 
@@ -1684,8 +1631,7 @@ class ArrayLiteral final : public MaterializedLiteral {
   enum Flags {
     kNoFlags = 0,
     kShallowElements = 1,
-    kDisableMementos = 1 << 1,
-    kIsStrong = 1 << 2
+    kDisableMementos = 1 << 1
   };
 
   void AssignFeedbackVectorSlots(Isolate* isolate, FeedbackVectorSpec* spec,
@@ -1694,9 +1640,8 @@ class ArrayLiteral final : public MaterializedLiteral {
 
  protected:
   ArrayLiteral(Zone* zone, ZoneList<Expression*>* values,
-               int first_spread_index, int literal_index, bool is_strong,
-               int pos)
-      : MaterializedLiteral(zone, literal_index, is_strong, pos),
+               int first_spread_index, int literal_index, int pos)
+      : MaterializedLiteral(zone, literal_index, pos),
         values_(values),
         first_spread_index_(first_spread_index) {}
   static int parent_num_ids() { return MaterializedLiteral::num_ids(); }
@@ -2509,18 +2454,32 @@ class Assignment final : public Expression {
 };
 
 
-class RewritableAssignmentExpression : public Expression {
+// The RewritableExpression class is a wrapper for AST nodes that wait
+// for some potential rewriting.  However, even if such nodes are indeed
+// rewritten, the RewritableExpression wrapper nodes will survive in the
+// final AST and should be just ignored, i.e., they should be treated as
+// equivalent to the wrapped nodes.  For this reason and to simplify later
+// phases, RewritableExpressions are considered as exceptions of AST nodes
+// in the following sense:
+//
+// 1. IsRewritableExpression and AsRewritableExpression behave as usual.
+// 2. All other Is* and As* methods are practically delegated to the
+//    wrapped node, i.e. IsArrayLiteral() will return true iff the
+//    wrapped node is an array literal.
+//
+// Furthermore, an invariant that should be respected is that the wrapped
+// node is not a RewritableExpression.
+class RewritableExpression : public Expression {
  public:
-  DECLARE_NODE_TYPE(RewritableAssignmentExpression)
+  DECLARE_NODE_TYPE(RewritableExpression)
 
-  Expression* expression() { return expr_; }
+  Expression* expression() const { return expr_; }
   bool is_rewritten() const { return is_rewritten_; }
-
-  void set_expression(Expression* e) { expr_ = e; }
 
   void Rewrite(Expression* new_expression) {
     DCHECK(!is_rewritten());
     DCHECK_NOT_NULL(new_expression);
+    DCHECK(!new_expression->IsRewritableExpression());
     expr_ = new_expression;
     is_rewritten_ = true;
   }
@@ -2528,10 +2487,12 @@ class RewritableAssignmentExpression : public Expression {
   static int num_ids() { return parent_num_ids(); }
 
  protected:
-  RewritableAssignmentExpression(Zone* zone, Expression* expression)
+  RewritableExpression(Zone* zone, Expression* expression)
       : Expression(zone, expression->position()),
         is_rewritten_(false),
-        expr_(expression) {}
+        expr_(expression) {
+    DCHECK(!expression->IsRewritableExpression());
+  }
 
  private:
   int local_id(int n) const { return base_id() + parent_num_ids() + n; }
@@ -2540,37 +2501,29 @@ class RewritableAssignmentExpression : public Expression {
   Expression* expr_;
 };
 
-
+// Our Yield is different from the JS yield in that it "returns" its argument as
+// is, without wrapping it in an iterator result object.  Such wrapping, if
+// desired, must be done beforehand (see the parser).
 class Yield final : public Expression {
  public:
   DECLARE_NODE_TYPE(Yield)
 
-  enum Kind {
-    kInitial,  // The initial yield that returns the unboxed generator object.
-    kSuspend,  // A normal yield: { value: EXPRESSION, done: false }
-    kDelegating,  // A yield*.
-    kFinal        // A return: { value: EXPRESSION, done: true }
-  };
-
   Expression* generator_object() const { return generator_object_; }
   Expression* expression() const { return expression_; }
-  Kind yield_kind() const { return yield_kind_; }
 
   void set_generator_object(Expression* e) { generator_object_ = e; }
   void set_expression(Expression* e) { expression_ = e; }
 
  protected:
   Yield(Zone* zone, Expression* generator_object, Expression* expression,
-        Kind yield_kind, int pos)
+        int pos)
       : Expression(zone, pos),
         generator_object_(generator_object),
-        expression_(expression),
-        yield_kind_(yield_kind) {}
+        expression_(expression) {}
 
  private:
   Expression* generator_object_;
   Expression* expression_;
-  Kind yield_kind_;
 };
 
 
@@ -2596,14 +2549,12 @@ class FunctionLiteral final : public Expression {
     kAnonymousExpression,
     kNamedExpression,
     kDeclaration,
-    kGlobalOrEval
+    kAccessorOrMethod
   };
 
   enum ParameterFlag { kNoDuplicateParameters, kHasDuplicateParameters };
 
   enum EagerCompileHint { kShouldEagerCompile, kShouldLazyCompile };
-
-  enum ArityRestriction { kNormalArity, kGetterArity, kSetterArity };
 
   DECLARE_NODE_TYPE(FunctionLiteral)
 
@@ -2617,8 +2568,13 @@ class FunctionLiteral final : public Expression {
   int start_position() const;
   int end_position() const;
   int SourceSize() const { return end_position() - start_position(); }
-  bool is_expression() const { return IsExpression::decode(bitfield_); }
-  bool is_anonymous() const { return IsAnonymous::decode(bitfield_); }
+  bool is_declaration() const { return IsDeclaration::decode(bitfield_); }
+  bool is_named_expression() const {
+    return IsNamedExpression::decode(bitfield_);
+  }
+  bool is_anonymous_expression() const {
+    return IsAnonymousExpression::decode(bitfield_);
+  }
   LanguageMode language_mode() const;
 
   static bool NeedsHomeObject(Expression* expr);
@@ -2711,10 +2667,7 @@ class FunctionLiteral final : public Expression {
   }
 
   bool IsAnonymousFunctionDefinition() const final {
-    // TODO(adamk): This isn't quite accurate, as many non-expressions
-    // (such as concise methods) are marked as anonymous, but it's
-    // sufficient for the current callers.
-    return is_anonymous();
+    return is_anonymous_expression();
   }
 
  protected:
@@ -2725,7 +2678,7 @@ class FunctionLiteral final : public Expression {
                   FunctionType function_type,
                   ParameterFlag has_duplicate_parameters,
                   EagerCompileHint eager_compile_hint, FunctionKind kind,
-                  int position)
+                  int position, bool is_function)
       : Expression(zone, position),
         raw_name_(name),
         scope_(scope),
@@ -2738,26 +2691,28 @@ class FunctionLiteral final : public Expression {
         parameter_count_(parameter_count),
         function_token_position_(RelocInfo::kNoPosition) {
     bitfield_ =
-        IsExpression::encode(function_type != kDeclaration) |
-        IsAnonymous::encode(function_type == kAnonymousExpression) |
+        IsDeclaration::encode(function_type == kDeclaration) |
+        IsNamedExpression::encode(function_type == kNamedExpression) |
+        IsAnonymousExpression::encode(function_type == kAnonymousExpression) |
         Pretenure::encode(false) |
         HasDuplicateParameters::encode(has_duplicate_parameters ==
                                        kHasDuplicateParameters) |
-        IsFunction::encode(function_type != kGlobalOrEval) |
+        IsFunction::encode(is_function) |
         ShouldEagerCompile::encode(eager_compile_hint == kShouldEagerCompile) |
         FunctionKindBits::encode(kind) | ShouldBeUsedOnceHint::encode(false);
     DCHECK(IsValidFunctionKind(kind));
   }
 
  private:
-  class IsExpression : public BitField16<bool, 0, 1> {};
-  class IsAnonymous : public BitField16<bool, 1, 1> {};
-  class Pretenure : public BitField16<bool, 2, 1> {};
-  class HasDuplicateParameters : public BitField16<bool, 3, 1> {};
-  class IsFunction : public BitField16<bool, 4, 1> {};
-  class ShouldEagerCompile : public BitField16<bool, 5, 1> {};
-  class FunctionKindBits : public BitField16<FunctionKind, 6, 8> {};
-  class ShouldBeUsedOnceHint : public BitField16<bool, 15, 1> {};
+  class IsDeclaration : public BitField16<bool, 0, 1> {};
+  class IsNamedExpression : public BitField16<bool, 1, 1> {};
+  class IsAnonymousExpression : public BitField16<bool, 2, 1> {};
+  class Pretenure : public BitField16<bool, 3, 1> {};
+  class HasDuplicateParameters : public BitField16<bool, 4, 1> {};
+  class IsFunction : public BitField16<bool, 5, 1> {};
+  class ShouldEagerCompile : public BitField16<bool, 6, 1> {};
+  class ShouldBeUsedOnceHint : public BitField16<bool, 7, 1> {};
+  class FunctionKindBits : public BitField16<FunctionKind, 8, 8> {};
 
   // Start with 16-bit field, which should get packed together
   // with Expression's trailing 16-bit field.
@@ -3081,12 +3036,11 @@ class AstNodeFactory final BASE_EMBEDDED {
 
   AstValueFactory* ast_value_factory() const { return ast_value_factory_; }
 
-  VariableDeclaration* NewVariableDeclaration(
-      VariableProxy* proxy, VariableMode mode, Scope* scope, int pos,
-      bool is_class_declaration = false, int declaration_group_start = -1) {
+  VariableDeclaration* NewVariableDeclaration(VariableProxy* proxy,
+                                              VariableMode mode, Scope* scope,
+                                              int pos) {
     return new (parser_zone_)
-        VariableDeclaration(parser_zone_, proxy, mode, scope, pos,
-                            is_class_declaration, declaration_group_start);
+        VariableDeclaration(parser_zone_, proxy, mode, scope, pos);
   }
 
   FunctionDeclaration* NewFunctionDeclaration(VariableProxy* proxy,
@@ -3253,12 +3207,9 @@ class AstNodeFactory final BASE_EMBEDDED {
       ZoneList<ObjectLiteral::Property*>* properties,
       int literal_index,
       int boilerplate_properties,
-      bool has_function,
-      bool is_strong,
       int pos) {
-    return new (local_zone_)
-        ObjectLiteral(local_zone_, properties, literal_index,
-                      boilerplate_properties, has_function, is_strong, pos);
+    return new (local_zone_) ObjectLiteral(
+        local_zone_, properties, literal_index, boilerplate_properties, pos);
   }
 
   ObjectLiteral::Property* NewObjectLiteralProperty(
@@ -3277,24 +3228,23 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   RegExpLiteral* NewRegExpLiteral(const AstRawString* pattern, int flags,
-                                  int literal_index, bool is_strong, int pos) {
-    return new (local_zone_) RegExpLiteral(local_zone_, pattern, flags,
-                                           literal_index, is_strong, pos);
+                                  int literal_index, int pos) {
+    return new (local_zone_)
+        RegExpLiteral(local_zone_, pattern, flags, literal_index, pos);
   }
 
   ArrayLiteral* NewArrayLiteral(ZoneList<Expression*>* values,
                                 int literal_index,
-                                bool is_strong,
                                 int pos) {
     return new (local_zone_)
-        ArrayLiteral(local_zone_, values, -1, literal_index, is_strong, pos);
+        ArrayLiteral(local_zone_, values, -1, literal_index, pos);
   }
 
   ArrayLiteral* NewArrayLiteral(ZoneList<Expression*>* values,
                                 int first_spread_index, int literal_index,
-                                bool is_strong, int pos) {
+                                int pos) {
     return new (local_zone_) ArrayLiteral(
-        local_zone_, values, first_spread_index, literal_index, is_strong, pos);
+        local_zone_, values, first_spread_index, literal_index, pos);
   }
 
   VariableProxy* NewVariableProxy(Variable* var,
@@ -3387,12 +3337,9 @@ class AstNodeFactory final BASE_EMBEDDED {
         local_zone_, condition, then_expression, else_expression, position);
   }
 
-  RewritableAssignmentExpression* NewRewritableAssignmentExpression(
-      Expression* expression) {
+  RewritableExpression* NewRewritableExpression(Expression* expression) {
     DCHECK_NOT_NULL(expression);
-    DCHECK(expression->IsAssignment());
-    return new (local_zone_)
-        RewritableAssignmentExpression(local_zone_, expression);
+    return new (local_zone_) RewritableExpression(local_zone_, expression);
   }
 
   Assignment* NewAssignment(Token::Value op,
@@ -3412,11 +3359,10 @@ class AstNodeFactory final BASE_EMBEDDED {
 
   Yield* NewYield(Expression *generator_object,
                   Expression* expression,
-                  Yield::Kind yield_kind,
                   int pos) {
     if (!expression) expression = NewUndefinedLiteral(pos);
     return new (local_zone_)
-        Yield(local_zone_, generator_object, expression, yield_kind, pos);
+        Yield(local_zone_, generator_object, expression, pos);
   }
 
   Throw* NewThrow(Expression* exception, int pos) {
@@ -3435,7 +3381,22 @@ class AstNodeFactory final BASE_EMBEDDED {
         parser_zone_, name, ast_value_factory_, scope, body,
         materialized_literal_count, expected_property_count, parameter_count,
         function_type, has_duplicate_parameters, eager_compile_hint, kind,
-        position);
+        position, true);
+  }
+
+  // Creates a FunctionLiteral representing a top-level script, the
+  // result of an eval (top-level or otherwise), or the result of calling
+  // the Function constructor.
+  FunctionLiteral* NewScriptOrEvalFunctionLiteral(
+      Scope* scope, ZoneList<Statement*>* body, int materialized_literal_count,
+      int expected_property_count) {
+    return new (parser_zone_) FunctionLiteral(
+        parser_zone_, ast_value_factory_->empty_string(), ast_value_factory_,
+        scope, body, materialized_literal_count, expected_property_count, 0,
+        FunctionLiteral::kAnonymousExpression,
+        FunctionLiteral::kNoDuplicateParameters,
+        FunctionLiteral::kShouldLazyCompile, FunctionKind::kNormalFunction, 0,
+        false);
   }
 
   ClassLiteral* NewClassLiteral(Scope* scope, VariableProxy* proxy,
@@ -3513,6 +3474,46 @@ class AstNodeFactory final BASE_EMBEDDED {
   Zone* parser_zone_;
   AstValueFactory* ast_value_factory_;
 };
+
+
+// Type testing & conversion functions overridden by concrete subclasses.
+// Inline functions for AstNode.
+
+#define DECLARE_NODE_FUNCTIONS(type)                                          \
+  bool AstNode::Is##type() const {                                            \
+    NodeType mine = node_type();                                              \
+    if (mine == AstNode::kRewritableExpression &&                             \
+        AstNode::k##type != AstNode::kRewritableExpression)                   \
+      mine = reinterpret_cast<const RewritableExpression*>(this)              \
+                 ->expression()                                               \
+                 ->node_type();                                               \
+    return mine == AstNode::k##type;                                          \
+  }                                                                           \
+  type* AstNode::As##type() {                                                 \
+    NodeType mine = node_type();                                              \
+    AstNode* result = this;                                                   \
+    if (mine == AstNode::kRewritableExpression &&                             \
+        AstNode::k##type != AstNode::kRewritableExpression) {                 \
+      result =                                                                \
+          reinterpret_cast<const RewritableExpression*>(this)->expression();  \
+      mine = result->node_type();                                             \
+    }                                                                         \
+    return mine == AstNode::k##type ? reinterpret_cast<type*>(result) : NULL; \
+  }                                                                           \
+  const type* AstNode::As##type() const {                                     \
+    NodeType mine = node_type();                                              \
+    const AstNode* result = this;                                             \
+    if (mine == AstNode::kRewritableExpression &&                             \
+        AstNode::k##type != AstNode::kRewritableExpression) {                 \
+      result =                                                                \
+          reinterpret_cast<const RewritableExpression*>(this)->expression();  \
+      mine = result->node_type();                                             \
+    }                                                                         \
+    return mine == AstNode::k##type ? reinterpret_cast<const type*>(result)   \
+                                    : NULL;                                   \
+  }
+AST_NODE_LIST(DECLARE_NODE_FUNCTIONS)
+#undef DECLARE_NODE_FUNCTIONS
 
 
 }  // namespace internal

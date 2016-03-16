@@ -36,15 +36,9 @@ AST_NODE_LIST(DECL_ACCEPT)
 
 #ifdef DEBUG
 
-void AstNode::PrintAst() { PrintAst(Isolate::Current()); }
-
-
-void AstNode::PrintAst(Isolate* isolate) {
+void AstNode::Print(Isolate* isolate) {
   AstPrinter::PrintOut(isolate, this);
 }
-
-
-void AstNode::PrettyPrint() { PrettyPrint(Isolate::Current()); }
 
 
 void AstNode::PrettyPrint(Isolate* isolate) {
@@ -154,15 +148,11 @@ static void AssignVectorSlots(Expression* expr, FeedbackVectorSpec* spec,
   }
 }
 
-
-void ForEachStatement::AssignFeedbackVectorSlots(
-    Isolate* isolate, FeedbackVectorSpec* spec,
-    FeedbackVectorSlotCache* cache) {
-  // TODO(adamk): for-of statements do not make use of this feedback slot.
-  // The each_slot_ should be specific to ForInStatement, and this work moved
-  // there.
-  if (IsForOfStatement()) return;
+void ForInStatement::AssignFeedbackVectorSlots(Isolate* isolate,
+                                               FeedbackVectorSpec* spec,
+                                               FeedbackVectorSlotCache* cache) {
   AssignVectorSlots(each(), spec, &each_slot_);
+  for_in_feedback_slot_ = spec->AddGeneralSlot();
 }
 
 
@@ -275,6 +265,12 @@ ObjectLiteralProperty::ObjectLiteralProperty(AstValueFactory* ast_value_factory,
   }
 }
 
+bool ObjectLiteralProperty::NeedsSetFunctionName() const {
+  return is_computed_name_ &&
+         (value_->IsAnonymousFunctionDefinition() ||
+          (value_->IsFunctionLiteral() &&
+           IsConciseMethod(value_->AsFunctionLiteral()->kind())));
+}
 
 void ClassLiteral::AssignFeedbackVectorSlots(Isolate* isolate,
                                              FeedbackVectorSpec* spec,
@@ -469,18 +465,15 @@ void ObjectLiteral::BuildConstantProperties(Isolate* isolate) {
     // much larger than the number of elements, creating an object
     // literal with fast elements will be a waste of space.
     uint32_t element_index = 0;
-    if (key->IsString()
-        && Handle<String>::cast(key)->AsArrayIndex(&element_index)
-        && element_index > max_element_index) {
-      max_element_index = element_index;
+    if (key->IsString() && String::cast(*key)->AsArrayIndex(&element_index)) {
+      max_element_index = Max(element_index, max_element_index);
       elements++;
-    } else if (key->IsSmi()) {
-      int key_value = Smi::cast(*key)->value();
-      if (key_value > 0
-          && static_cast<uint32_t>(key_value) > max_element_index) {
-        max_element_index = key_value;
-      }
+      key = isolate->factory()->NewNumberFromUint(element_index);
+    } else if (key->ToArrayIndex(&element_index)) {
+      max_element_index = Max(element_index, max_element_index);
       elements++;
+    } else if (key->IsNumber()) {
+      key = isolate->factory()->NumberToString(key);
     }
 
     // Add name, value pair to the fixed array.
@@ -507,7 +500,7 @@ void ArrayLiteral::BuildConstantElements(Isolate* isolate) {
   // Allocate a fixed array to hold all the object literals.
   Handle<JSArray> array = isolate->factory()->NewJSArray(
       FAST_HOLEY_SMI_ELEMENTS, constants_length, constants_length,
-      Strength::WEAK, INITIALIZE_ARRAY_ELEMENTS_WITH_HOLE);
+      INITIALIZE_ARRAY_ELEMENTS_WITH_HOLE);
 
   // Fill in the literals.
   bool is_simple = true;

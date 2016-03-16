@@ -10,6 +10,7 @@
 #include "src/frames.h"
 #include "src/interface-descriptors.h"
 #include "src/interpreter/bytecodes.h"
+#include "src/interpreter/interpreter.h"
 #include "src/machine-type.h"
 #include "src/macro-assembler.h"
 #include "src/zone.h"
@@ -22,20 +23,21 @@ using compiler::Node;
 
 InterpreterAssembler::InterpreterAssembler(Isolate* isolate, Zone* zone,
                                            Bytecode bytecode)
-    : compiler::CodeStubAssembler(
-          isolate, zone, InterpreterDispatchDescriptor(isolate),
-          Code::ComputeFlags(Code::STUB), Bytecodes::ToString(bytecode), 0),
+    : compiler::CodeStubAssembler(isolate, zone,
+                                  InterpreterDispatchDescriptor(isolate),
+                                  Code::ComputeFlags(Code::BYTECODE_HANDLER),
+                                  Bytecodes::ToString(bytecode), 0),
       bytecode_(bytecode),
       accumulator_(this, MachineRepresentation::kTagged),
       context_(this, MachineRepresentation::kTagged),
-      dispatch_table_(this, MachineType::PointerRepresentation()),
+      bytecode_array_(this, MachineRepresentation::kTagged),
       disable_stack_check_across_call_(false),
       stack_pointer_before_call_(nullptr) {
   accumulator_.Bind(
       Parameter(InterpreterDispatchDescriptor::kAccumulatorParameter));
   context_.Bind(Parameter(InterpreterDispatchDescriptor::kContextParameter));
-  dispatch_table_.Bind(
-      Parameter(InterpreterDispatchDescriptor::kDispatchTableParameter));
+  bytecode_array_.Bind(
+      Parameter(InterpreterDispatchDescriptor::kBytecodeArrayParameter));
   if (FLAG_trace_ignition) {
     TraceBytecode(Runtime::kInterpreterTraceBytecodeEntry);
   }
@@ -65,11 +67,11 @@ Node* InterpreterAssembler::RegisterFileRawPointer() {
 }
 
 Node* InterpreterAssembler::BytecodeArrayTaggedPointer() {
-  return Parameter(InterpreterDispatchDescriptor::kBytecodeArrayParameter);
+  return bytecode_array_.value();
 }
 
 Node* InterpreterAssembler::DispatchTableRawPointer() {
-  return dispatch_table_.value();
+  return Parameter(InterpreterDispatchDescriptor::kDispatchTableParameter);
 }
 
 Node* InterpreterAssembler::RegisterLocation(Node* reg_index) {
@@ -78,7 +80,7 @@ Node* InterpreterAssembler::RegisterLocation(Node* reg_index) {
 
 Node* InterpreterAssembler::LoadRegister(int offset) {
   return Load(MachineType::AnyTagged(), RegisterFileRawPointer(),
-              Int32Constant(offset));
+              IntPtrConstant(offset));
 }
 
 Node* InterpreterAssembler::LoadRegister(Register reg) {
@@ -96,7 +98,7 @@ Node* InterpreterAssembler::LoadRegister(Node* reg_index) {
 
 Node* InterpreterAssembler::StoreRegister(Node* value, int offset) {
   return StoreNoWriteBarrier(MachineRepresentation::kTagged,
-                             RegisterFileRawPointer(), Int32Constant(offset),
+                             RegisterFileRawPointer(), IntPtrConstant(offset),
                              value);
 }
 
@@ -112,7 +114,7 @@ Node* InterpreterAssembler::StoreRegister(Node* value, Node* reg_index) {
 
 Node* InterpreterAssembler::NextRegister(Node* reg_index) {
   // Register indexes are negative, so the next index is minus one.
-  return IntPtrAdd(reg_index, Int32Constant(-1));
+  return IntPtrAdd(reg_index, IntPtrConstant(-1));
 }
 
 Node* InterpreterAssembler::BytecodeOperand(int operand_index) {
@@ -121,7 +123,7 @@ Node* InterpreterAssembler::BytecodeOperand(int operand_index) {
             Bytecodes::GetOperandSize(bytecode_, operand_index));
   return Load(
       MachineType::Uint8(), BytecodeArrayTaggedPointer(),
-      IntPtrAdd(BytecodeOffset(), Int32Constant(Bytecodes::GetOperandOffset(
+      IntPtrAdd(BytecodeOffset(), IntPtrConstant(Bytecodes::GetOperandOffset(
                                       bytecode_, operand_index))));
 }
 
@@ -131,7 +133,7 @@ Node* InterpreterAssembler::BytecodeOperandSignExtended(int operand_index) {
             Bytecodes::GetOperandSize(bytecode_, operand_index));
   Node* load = Load(
       MachineType::Int8(), BytecodeArrayTaggedPointer(),
-      IntPtrAdd(BytecodeOffset(), Int32Constant(Bytecodes::GetOperandOffset(
+      IntPtrAdd(BytecodeOffset(), IntPtrConstant(Bytecodes::GetOperandOffset(
                                       bytecode_, operand_index))));
   // Ensure that we sign extend to full pointer size
   if (kPointerSize == 8) {
@@ -147,15 +149,16 @@ Node* InterpreterAssembler::BytecodeOperandShort(int operand_index) {
   if (TargetSupportsUnalignedAccess()) {
     return Load(
         MachineType::Uint16(), BytecodeArrayTaggedPointer(),
-        IntPtrAdd(BytecodeOffset(), Int32Constant(Bytecodes::GetOperandOffset(
+        IntPtrAdd(BytecodeOffset(), IntPtrConstant(Bytecodes::GetOperandOffset(
                                         bytecode_, operand_index))));
   } else {
     int offset = Bytecodes::GetOperandOffset(bytecode_, operand_index);
-    Node* first_byte = Load(MachineType::Uint8(), BytecodeArrayTaggedPointer(),
-                            IntPtrAdd(BytecodeOffset(), Int32Constant(offset)));
+    Node* first_byte =
+        Load(MachineType::Uint8(), BytecodeArrayTaggedPointer(),
+             IntPtrAdd(BytecodeOffset(), IntPtrConstant(offset)));
     Node* second_byte =
         Load(MachineType::Uint8(), BytecodeArrayTaggedPointer(),
-             IntPtrAdd(BytecodeOffset(), Int32Constant(offset + 1)));
+             IntPtrAdd(BytecodeOffset(), IntPtrConstant(offset + 1)));
 #if V8_TARGET_LITTLE_ENDIAN
     return WordOr(WordShl(second_byte, kBitsPerByte), first_byte);
 #elif V8_TARGET_BIG_ENDIAN
@@ -175,14 +178,14 @@ Node* InterpreterAssembler::BytecodeOperandShortSignExtended(
   Node* load;
   if (TargetSupportsUnalignedAccess()) {
     load = Load(MachineType::Int16(), BytecodeArrayTaggedPointer(),
-                IntPtrAdd(BytecodeOffset(), Int32Constant(operand_offset)));
+                IntPtrAdd(BytecodeOffset(), IntPtrConstant(operand_offset)));
   } else {
 #if V8_TARGET_LITTLE_ENDIAN
-    Node* hi_byte_offset = Int32Constant(operand_offset + 1);
-    Node* lo_byte_offset = Int32Constant(operand_offset);
+    Node* hi_byte_offset = IntPtrConstant(operand_offset + 1);
+    Node* lo_byte_offset = IntPtrConstant(operand_offset);
 #elif V8_TARGET_BIG_ENDIAN
-    Node* hi_byte_offset = Int32Constant(operand_offset);
-    Node* lo_byte_offset = Int32Constant(operand_offset + 1);
+    Node* hi_byte_offset = IntPtrConstant(operand_offset);
+    Node* lo_byte_offset = IntPtrConstant(operand_offset + 1);
 #else
 #error "Unknown Architecture"
 #endif
@@ -263,14 +266,6 @@ Node* InterpreterAssembler::LoadConstantPoolEntry(Node* index) {
   return Load(MachineType::AnyTagged(), constant_pool, entry_offset);
 }
 
-Node* InterpreterAssembler::LoadFixedArrayElement(Node* fixed_array,
-                                                  int index) {
-  Node* entry_offset =
-      IntPtrAdd(IntPtrConstant(FixedArray::kHeaderSize - kHeapObjectTag),
-                WordShl(Int32Constant(index), kPointerSizeLog2));
-  return Load(MachineType::AnyTagged(), fixed_array, entry_offset);
-}
-
 Node* InterpreterAssembler::LoadObjectField(Node* object, int offset) {
   return Load(MachineType::AnyTagged(), object,
               IntPtrConstant(offset - kHeapObjectTag));
@@ -284,7 +279,7 @@ Node* InterpreterAssembler::LoadContextSlot(Node* context, int slot_index) {
 Node* InterpreterAssembler::LoadContextSlot(Node* context, Node* slot_index) {
   Node* offset =
       IntPtrAdd(WordShl(slot_index, kPointerSizeLog2),
-                Int32Constant(Context::kHeaderSize - kHeapObjectTag));
+                IntPtrConstant(Context::kHeaderSize - kHeapObjectTag));
   return Load(MachineType::AnyTagged(), context, offset);
 }
 
@@ -292,7 +287,7 @@ Node* InterpreterAssembler::StoreContextSlot(Node* context, Node* slot_index,
                                              Node* value) {
   Node* offset =
       IntPtrAdd(WordShl(slot_index, kPointerSizeLog2),
-                Int32Constant(Context::kHeaderSize - kHeapObjectTag));
+                IntPtrConstant(Context::kHeaderSize - kHeapObjectTag));
   return Store(MachineRepresentation::kTagged, context, offset, value);
 }
 
@@ -310,8 +305,8 @@ Node* InterpreterAssembler::LoadTypeFeedbackVector() {
 void InterpreterAssembler::CallPrologue() {
   StoreRegister(SmiTag(BytecodeOffset()),
                 InterpreterFrameConstants::kBytecodeOffsetFromRegisterPointer);
-  StoreRegister(DispatchTableRawPointer(),
-                InterpreterFrameConstants::kDispatchTableFromRegisterPointer);
+  StoreRegister(BytecodeArrayTaggedPointer(),
+                InterpreterFrameConstants::kBytecodeArrayFromRegisterPointer);
 
   if (FLAG_debug_code && !disable_stack_check_across_call_) {
     DCHECK(stack_pointer_before_call_ == nullptr);
@@ -328,15 +323,17 @@ void InterpreterAssembler::CallEpilogue() {
                         kUnexpectedStackPointer);
   }
 
-  // Restore dispatch table from stack frame in case the debugger has swapped us
-  // to the debugger dispatch table.
-  dispatch_table_.Bind(LoadRegister(
-      InterpreterFrameConstants::kDispatchTableFromRegisterPointer));
+  // Restore bytecode array from stack frame in case the debugger has swapped us
+  // to the patched debugger bytecode array.
+  bytecode_array_.Bind(LoadRegister(
+      InterpreterFrameConstants::kBytecodeArrayFromRegisterPointer));
 }
 
 Node* InterpreterAssembler::CallJS(Node* function, Node* context,
-                                   Node* first_arg, Node* arg_count) {
-  Callable callable = CodeFactory::InterpreterPushArgsAndCall(isolate());
+                                   Node* first_arg, Node* arg_count,
+                                   TailCallMode tail_call_mode) {
+  Callable callable =
+      CodeFactory::InterpreterPushArgsAndCall(isolate(), tail_call_mode);
   Node* code_target = HeapConstant(callable.code());
   return CallStub(callable.descriptor(), code_target, context, arg_count,
                   first_arg, function);
@@ -365,21 +362,54 @@ Node* InterpreterAssembler::CallRuntimeN(Node* function_id, Node* context,
   Node* function = IntPtrAdd(function_table, function_offset);
   Node* function_entry =
       Load(MachineType::Pointer(), function,
-           Int32Constant(offsetof(Runtime::Function, entry)));
+           IntPtrConstant(offsetof(Runtime::Function, entry)));
 
   return CallStub(callable.descriptor(), code_target, context, arg_count,
                   first_arg, function_entry, result_size);
 }
 
+void InterpreterAssembler::UpdateInterruptBudget(Node* weight) {
+  CodeStubAssembler::Label ok(this);
+  CodeStubAssembler::Label interrupt_check(this);
+  CodeStubAssembler::Label end(this);
+  Node* budget_offset =
+      IntPtrConstant(BytecodeArray::kInterruptBudgetOffset - kHeapObjectTag);
+
+  // Update budget by |weight| and check if it reaches zero.
+  Node* old_budget =
+      Load(MachineType::Int32(), BytecodeArrayTaggedPointer(), budget_offset);
+  Node* new_budget = Int32Add(old_budget, weight);
+  Node* condition = Int32GreaterThanOrEqual(new_budget, Int32Constant(0));
+  Branch(condition, &ok, &interrupt_check);
+
+  // Perform interrupt and reset budget.
+  Bind(&interrupt_check);
+  CallRuntime(Runtime::kInterrupt, GetContext());
+  StoreNoWriteBarrier(MachineRepresentation::kWord32,
+                      BytecodeArrayTaggedPointer(), budget_offset,
+                      Int32Constant(Interpreter::InterruptBudget()));
+  Goto(&end);
+
+  // Update budget.
+  Bind(&ok);
+  StoreNoWriteBarrier(MachineRepresentation::kWord32,
+                      BytecodeArrayTaggedPointer(), budget_offset, new_budget);
+  Goto(&end);
+  Bind(&end);
+}
+
 Node* InterpreterAssembler::Advance(int delta) {
-  return IntPtrAdd(BytecodeOffset(), Int32Constant(delta));
+  return IntPtrAdd(BytecodeOffset(), IntPtrConstant(delta));
 }
 
 Node* InterpreterAssembler::Advance(Node* delta) {
   return IntPtrAdd(BytecodeOffset(), delta);
 }
 
-void InterpreterAssembler::Jump(Node* delta) { DispatchTo(Advance(delta)); }
+void InterpreterAssembler::Jump(Node* delta) {
+  UpdateInterruptBudget(delta);
+  DispatchTo(Advance(delta));
+}
 
 void InterpreterAssembler::JumpConditional(Node* condition, Node* delta) {
   CodeStubAssembler::Label match(this);
@@ -387,7 +417,7 @@ void InterpreterAssembler::JumpConditional(Node* condition, Node* delta) {
 
   Branch(condition, &match, &no_match);
   Bind(&match);
-  DispatchTo(Advance(delta));
+  Jump(delta);
   Bind(&no_match);
   Dispatch();
 }
@@ -406,36 +436,48 @@ void InterpreterAssembler::Dispatch() {
 }
 
 void InterpreterAssembler::DispatchTo(Node* new_bytecode_offset) {
-  if (FLAG_trace_ignition) {
-    TraceBytecode(Runtime::kInterpreterTraceBytecodeExit);
-  }
   Node* target_bytecode = Load(
       MachineType::Uint8(), BytecodeArrayTaggedPointer(), new_bytecode_offset);
+  if (kPointerSize == 8) {
+    target_bytecode = ChangeUint32ToUint64(target_bytecode);
+  }
 
   // TODO(rmcilroy): Create a code target dispatch table to avoid conversion
   // from code object on every dispatch.
   Node* target_code_object =
       Load(MachineType::Pointer(), DispatchTableRawPointer(),
-           Word32Shl(target_bytecode, Int32Constant(kPointerSizeLog2)));
+           WordShl(target_bytecode, IntPtrConstant(kPointerSizeLog2)));
 
-  InterpreterDispatchDescriptor descriptor(isolate());
-  Node* args[] = {GetAccumulator(),          RegisterFileRawPointer(),
-                  new_bytecode_offset,       BytecodeArrayTaggedPointer(),
-                  DispatchTableRawPointer(), GetContext()};
-  TailCall(descriptor, target_code_object, args, 0);
+  DispatchToBytecodeHandler(target_code_object, new_bytecode_offset);
 }
 
-void InterpreterAssembler::InterpreterReturn() {
+void InterpreterAssembler::DispatchToBytecodeHandler(Node* handler,
+                                                     Node* bytecode_offset) {
   if (FLAG_trace_ignition) {
     TraceBytecode(Runtime::kInterpreterTraceBytecodeExit);
   }
+
   InterpreterDispatchDescriptor descriptor(isolate());
+  Node* args[] = {GetAccumulator(),          RegisterFileRawPointer(),
+                  bytecode_offset,           BytecodeArrayTaggedPointer(),
+                  DispatchTableRawPointer(), GetContext()};
+  TailCall(descriptor, handler, args, 0);
+}
+
+void InterpreterAssembler::InterpreterReturn() {
+  // TODO(rmcilroy): Investigate whether it is worth supporting self
+  // optimization of primitive functions like FullCodegen.
+
+  // Update profiling count by -BytecodeOffset to simulate backedge to start of
+  // function.
+  Node* profiling_weight =
+      Int32Sub(Int32Constant(kHeapObjectTag + BytecodeArray::kHeaderSize),
+               BytecodeOffset());
+  UpdateInterruptBudget(profiling_weight);
+
   Node* exit_trampoline_code_object =
       HeapConstant(isolate()->builtins()->InterpreterExitTrampoline());
-  Node* args[] = {GetAccumulator(),          RegisterFileRawPointer(),
-                  BytecodeOffset(),          BytecodeArrayTaggedPointer(),
-                  DispatchTableRawPointer(), GetContext()};
-  TailCall(descriptor, exit_trampoline_code_object, args, 0);
+  DispatchToBytecodeHandler(exit_trampoline_code_object);
 }
 
 void InterpreterAssembler::StackCheck() {
@@ -489,7 +531,8 @@ bool InterpreterAssembler::TargetSupportsUnalignedAccess() {
   return false;
 #elif V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_PPC
   return CpuFeatures::IsSupported(UNALIGNED_ACCESSES);
-#elif V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_X87
+#elif V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_X87 || \
+    V8_TARGET_ARCH_S390
   return true;
 #else
 #error "Unknown Architecture"

@@ -19,10 +19,13 @@ namespace compiler {
   V(PPC_Xor)                       \
   V(PPC_ShiftLeft32)               \
   V(PPC_ShiftLeft64)               \
+  V(PPC_ShiftLeftPair)             \
   V(PPC_ShiftRight32)              \
   V(PPC_ShiftRight64)              \
+  V(PPC_ShiftRightPair)            \
   V(PPC_ShiftRightAlg32)           \
   V(PPC_ShiftRightAlg64)           \
+  V(PPC_ShiftRightAlgPair)         \
   V(PPC_RotRight32)                \
   V(PPC_RotRight64)                \
   V(PPC_Not)                       \
@@ -32,6 +35,7 @@ namespace compiler {
   V(PPC_RotLeftAndClearRight64)    \
   V(PPC_Add)                       \
   V(PPC_AddWithOverflow32)         \
+  V(PPC_AddPair)                   \
   V(PPC_AddDouble)                 \
   V(PPC_Sub)                       \
   V(PPC_SubWithOverflow32)         \

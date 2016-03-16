@@ -97,13 +97,15 @@ class StackHandler BASE_EMBEDDED {
   DISALLOW_IMPLICIT_CONSTRUCTORS(StackHandler);
 };
 
-
 #define STACK_FRAME_TYPE_LIST(V)                         \
   V(ENTRY, EntryFrame)                                   \
   V(ENTRY_CONSTRUCT, EntryConstructFrame)                \
   V(EXIT, ExitFrame)                                     \
   V(JAVA_SCRIPT, JavaScriptFrame)                        \
   V(OPTIMIZED, OptimizedFrame)                           \
+  V(WASM, WasmFrame)                                     \
+  V(WASM_TO_JS, WasmToJsFrame)                           \
+  V(JS_TO_WASM, JsToWasmFrame)                           \
   V(INTERPRETED, InterpretedFrame)                       \
   V(STUB, StubFrame)                                     \
   V(STUB_FAILURE_TRAMPOLINE, StubFailureTrampolineFrame) \
@@ -111,66 +113,205 @@ class StackHandler BASE_EMBEDDED {
   V(CONSTRUCT, ConstructFrame)                           \
   V(ARGUMENTS_ADAPTOR, ArgumentsAdaptorFrame)
 
-
-class StandardFrameConstants : public AllStatic {
+// Every pointer in a frame has a slot id. On 32-bit platforms, doubles consume
+// two slots.
+//
+// Stack slot indices >= 0 access the callee stack with slot 0 corresponding to
+// the callee's saved return address and 1 corresponding to the saved frame
+// pointer. Some frames have additional information stored in the fixed header,
+// for example JSFunctions store the function context and marker in the fixed
+// header, with slot index 2 corresponding to the current function context and 3
+// corresponding to the frame marker/JSFunction.
+//
+//  slot      JS frame
+//       +-----------------+--------------------------------
+//  -n-1 |   parameter 0   |                            ^
+//       |- - - - - - - - -|                            |
+//  -n   |                 |                          Caller
+//  ...  |       ...       |                       frame slots
+//  -2   |  parameter n-1  |                       (slot < 0)
+//       |- - - - - - - - -|                            |
+//  -1   |   parameter n   |                            v
+//  -----+-----------------+--------------------------------
+//   0   |   return addr   |   ^                        ^
+//       |- - - - - - - - -|   |                        |
+//   1   | saved frame ptr | Fixed                      |
+//       |- - - - - - - - -| Header <-- frame ptr       |
+//   2   | [Constant Pool] |   |                        |
+//       |- - - - - - - - -|   |                        |
+// 2+cp  |Context/Frm. Type|   v   if a constant pool   |
+//       |-----------------+----    is used, cp = 1,    |
+// 3+cp  |                 |   ^   otherwise, cp = 0    |
+//       |- - - - - - - - -|   |                        |
+// 4+cp  |                 |   |                      Callee
+//       |- - - - - - - - -|   |                   frame slots
+//  ...  |                 | Frame slots           (slot >= 0)
+//       |- - - - - - - - -|   |                        |
+//       |                 |   v                        |
+//  -----+-----------------+----- <-- stack ptr -------------
+//
+class CommonFrameConstants : public AllStatic {
  public:
+  static const int kCallerFPOffset = 0 * kPointerSize;
+  static const int kCallerPCOffset = kCallerFPOffset + 1 * kFPOnStackSize;
+  static const int kCallerSPOffset = kCallerPCOffset + 1 * kPCOnStackSize;
+
   // Fixed part of the frame consists of return address, caller fp,
   // constant pool (if FLAG_enable_embedded_constant_pool), context, and
   // function. StandardFrame::IterateExpressions assumes that kLastObjectOffset
   // is the last object pointer.
-  static const int kCPSlotSize =
-      FLAG_enable_embedded_constant_pool ? kPointerSize : 0;
-  static const int kFixedFrameSizeFromFp =  2 * kPointerSize + kCPSlotSize;
   static const int kFixedFrameSizeAboveFp = kPCOnStackSize + kFPOnStackSize;
-  static const int kFixedFrameSize =
-      kFixedFrameSizeAboveFp + kFixedFrameSizeFromFp;
   static const int kFixedSlotCountAboveFp =
       kFixedFrameSizeAboveFp / kPointerSize;
-  static const int kFixedSlotCount = kFixedFrameSize / kPointerSize;
+  static const int kCPSlotSize =
+      FLAG_enable_embedded_constant_pool ? kPointerSize : 0;
   static const int kCPSlotCount = kCPSlotSize / kPointerSize;
-  static const int kExpressionsOffset = -3 * kPointerSize - kCPSlotSize;
-  static const int kMarkerOffset = -2 * kPointerSize - kCPSlotSize;
-  static const int kContextOffset = -1 * kPointerSize - kCPSlotSize;
   static const int kConstantPoolOffset = kCPSlotSize ? -1 * kPointerSize : 0;
-  static const int kCallerFPOffset = 0 * kPointerSize;
-  static const int kCallerPCOffset = +1 * kFPOnStackSize;
-  static const int kCallerSPOffset = kCallerPCOffset + 1 * kPCOnStackSize;
+  static const int kContextOrFrameTypeSize = kPointerSize;
+  static const int kContextOrFrameTypeOffset =
+      -(kCPSlotSize + kContextOrFrameTypeSize);
+};
 
+// StandardFrames are used for interpreted, full-codegen and optimized
+// JavaScript frames. They always have a context below the saved fp/constant
+// pool and below that the JSFunction of the executing function.
+//
+//  slot      JS frame
+//       +-----------------+--------------------------------
+//  -n-1 |   parameter 0   |                            ^
+//       |- - - - - - - - -|                            |
+//  -n   |                 |                          Caller
+//  ...  |       ...       |                       frame slots
+//  -2   |  parameter n-1  |                       (slot < 0)
+//       |- - - - - - - - -|                            |
+//  -1   |   parameter n   |                            v
+//  -----+-----------------+--------------------------------
+//   0   |   return addr   |   ^                        ^
+//       |- - - - - - - - -|   |                        |
+//   1   | saved frame ptr | Fixed                      |
+//       |- - - - - - - - -| Header <-- frame ptr       |
+//   2   | [Constant Pool] |   |                        |
+//       |- - - - - - - - -|   |                        |
+// 2+cp  |     Context     |   |   if a constant pool   |
+//       |- - - - - - - - -|   |    is used, cp = 1,    |
+// 3+cp  |    JSFunction   |   v   otherwise, cp = 0    |
+//       +-----------------+----                        |
+// 4+cp  |                 |   ^                      Callee
+//       |- - - - - - - - -|   |                   frame slots
+//  ...  |                 | Frame slots           (slot >= 0)
+//       |- - - - - - - - -|   |                        |
+//       |                 |   v                        |
+//  -----+-----------------+----- <-- stack ptr -------------
+//
+class StandardFrameConstants : public CommonFrameConstants {
+ public:
+  static const int kFixedFrameSizeFromFp = 2 * kPointerSize + kCPSlotSize;
+  static const int kFixedFrameSize =
+      kFixedFrameSizeAboveFp + kFixedFrameSizeFromFp;
+  static const int kFixedSlotCountFromFp = kFixedFrameSizeFromFp / kPointerSize;
+  static const int kFixedSlotCount = kFixedFrameSize / kPointerSize;
+  static const int kContextOffset = kContextOrFrameTypeOffset;
+  static const int kFunctionOffset = -2 * kPointerSize - kCPSlotSize;
+  static const int kExpressionsOffset = -3 * kPointerSize - kCPSlotSize;
   static const int kLastObjectOffset = kContextOffset;
 };
 
-
-class ArgumentsAdaptorFrameConstants : public AllStatic {
+// TypedFrames have a SMI type maker value below the saved FP/constant pool to
+// distinguish them from StandardFrames, which have a context in that position
+// instead.
+//
+//  slot      JS frame
+//       +-----------------+--------------------------------
+//  -n-1 |   parameter 0   |                            ^
+//       |- - - - - - - - -|                            |
+//  -n   |                 |                          Caller
+//  ...  |       ...       |                       frame slots
+//  -2   |  parameter n-1  |                       (slot < 0)
+//       |- - - - - - - - -|                            |
+//  -1   |   parameter n   |                            v
+//  -----+-----------------+--------------------------------
+//   0   |   return addr   |   ^                        ^
+//       |- - - - - - - - -|   |                        |
+//   1   | saved frame ptr | Fixed                      |
+//       |- - - - - - - - -| Header <-- frame ptr       |
+//   2   | [Constant Pool] |   |                        |
+//       |- - - - - - - - -|   |                        |
+// 2+cp  |Frame Type Marker|   v   if a constant pool   |
+//       |-----------------+----    is used, cp = 1,    |
+// 3+cp  |                 |   ^   otherwise, cp = 0    |
+//       |- - - - - - - - -|   |                        |
+// 4+cp  |                 |   |                      Callee
+//       |- - - - - - - - -|   |                   frame slots
+//  ...  |                 | Frame slots           (slot >= 0)
+//       |- - - - - - - - -|   |                        |
+//       |                 |   v                        |
+//  -----+-----------------+----- <-- stack ptr -------------
+//
+class TypedFrameConstants : public CommonFrameConstants {
  public:
-  // FP-relative.
-  static const int kLengthOffset = StandardFrameConstants::kExpressionsOffset;
-
-  static const int kFrameSize =
-      StandardFrameConstants::kFixedFrameSize + kPointerSize;
+  static const int kFrameTypeSize = kContextOrFrameTypeSize;
+  static const int kFrameTypeOffset = kContextOrFrameTypeOffset;
+  static const int kFixedFrameSizeFromFp = kCPSlotSize + kFrameTypeSize;
+  static const int kFixedSlotCountFromFp = kFixedFrameSizeFromFp / kPointerSize;
+  static const int kFixedFrameSize =
+      StandardFrameConstants::kFixedFrameSizeAboveFp + kFixedFrameSizeFromFp;
+  static const int kFixedSlotCount = kFixedFrameSize / kPointerSize;
+  static const int kFirstPushedFrameValueOffset =
+      -StandardFrameConstants::kCPSlotSize - kFrameTypeSize - kPointerSize;
 };
 
+#define TYPED_FRAME_PUSHED_VALUE_OFFSET(x) \
+  (TypedFrameConstants::kFirstPushedFrameValueOffset - (x)*kPointerSize)
+#define TYPED_FRAME_SIZE(count) \
+  (TypedFrameConstants::kFixedFrameSize + (count)*kPointerSize)
+#define TYPED_FRAME_SIZE_FROM_SP(count) \
+  (TypedFrameConstants::kFixedFrameSizeFromFp + (count)*kPointerSize)
+#define DEFINE_TYPED_FRAME_SIZES(count)                                     \
+  static const int kFixedFrameSize = TYPED_FRAME_SIZE(count);               \
+  static const int kFixedSlotCount = kFixedFrameSize / kPointerSize;        \
+  static const int kFixedFrameSizeFromFp = TYPED_FRAME_SIZE_FROM_SP(count); \
+  static const int kFixedSlotCountFromFp = kFixedFrameSizeFromFp / kPointerSize
 
-class InternalFrameConstants : public AllStatic {
+class ArgumentsAdaptorFrameConstants : public TypedFrameConstants {
  public:
   // FP-relative.
-  static const int kCodeOffset = StandardFrameConstants::kExpressionsOffset;
+  static const int kFunctionOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(0);
+  static const int kLengthOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(1);
+  DEFINE_TYPED_FRAME_SIZES(2);
 };
 
-
-class ConstructFrameConstants : public AllStatic {
+class InternalFrameConstants : public TypedFrameConstants {
  public:
   // FP-relative.
-  static const int kImplicitReceiverOffset =
-      StandardFrameConstants::kExpressionsOffset - 3 * kPointerSize;
-  static const int kLengthOffset =
-      StandardFrameConstants::kExpressionsOffset - 2 * kPointerSize;
-  static const int kAllocationSiteOffset =
-      StandardFrameConstants::kExpressionsOffset - 1 * kPointerSize;
-  static const int kCodeOffset =
-      StandardFrameConstants::kExpressionsOffset - 0 * kPointerSize;
+  static const int kCodeOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(0);
+  DEFINE_TYPED_FRAME_SIZES(1);
+};
 
-  static const int kFrameSize =
-      StandardFrameConstants::kFixedFrameSize + 4 * kPointerSize;
+class FrameDropperFrameConstants : public InternalFrameConstants {
+ public:
+  // FP-relative.
+  static const int kFunctionOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(1);
+  DEFINE_TYPED_FRAME_SIZES(2);
+};
+
+class ConstructFrameConstants : public TypedFrameConstants {
+ public:
+  // FP-relative.
+  static const int kContextOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(0);
+  static const int kAllocationSiteOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(1);
+  static const int kLengthOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(2);
+  static const int kImplicitReceiverOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(3);
+  DEFINE_TYPED_FRAME_SIZES(4);
+};
+
+class StubFailureTrampolineFrameConstants : public InternalFrameConstants {
+ public:
+  static const int kArgumentsArgumentsOffset =
+      TYPED_FRAME_PUSHED_VALUE_OFFSET(0);
+  static const int kArgumentsLengthOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(1);
+  static const int kArgumentsPointerOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(2);
+  static const int kFixedHeaderBottomOffset = kArgumentsPointerOffset;
+  DEFINE_TYPED_FRAME_SIZES(3);
 };
 
 
@@ -185,28 +326,40 @@ class InterpreterFrameConstants : public AllStatic {
   // FP-relative.
   static const int kNewTargetFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 1 * kPointerSize;
-  static const int kDispatchTableFromFp =
+  static const int kBytecodeArrayFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 2 * kPointerSize;
   static const int kBytecodeOffsetFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 3 * kPointerSize;
   static const int kRegisterFilePointerFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 4 * kPointerSize;
 
+  static const int kExpressionsOffset = kRegisterFilePointerFromFp;
+
   // Expression index for {StandardFrame::GetExpressionAddress}.
-  static const int kBytecodeOffsetExpressionIndex = 2;
-  static const int kRegisterFileExpressionIndex = 3;
+  static const int kBytecodeArrayExpressionIndex = -2;
+  static const int kBytecodeOffsetExpressionIndex = -1;
+  static const int kRegisterFileExpressionIndex = 0;
 
   // Register file pointer relative.
   static const int kLastParamFromRegisterPointer =
       StandardFrameConstants::kFixedFrameSize + 4 * kPointerSize;
 
   static const int kBytecodeOffsetFromRegisterPointer = 1 * kPointerSize;
-  static const int kDispatchTableFromRegisterPointer = 2 * kPointerSize;
+  static const int kBytecodeArrayFromRegisterPointer = 2 * kPointerSize;
   static const int kNewTargetFromRegisterPointer = 3 * kPointerSize;
   static const int kFunctionFromRegisterPointer = 4 * kPointerSize;
   static const int kContextFromRegisterPointer = 5 * kPointerSize;
 };
 
+inline static int FPOffsetToFrameSlot(int frame_offset) {
+  return StandardFrameConstants::kFixedSlotCountAboveFp - 1 -
+         frame_offset / kPointerSize;
+}
+
+inline static int FrameSlotToFPOffset(int slot) {
+  return (StandardFrameConstants::kFixedSlotCountAboveFp - 1 - slot) *
+         kPointerSize;
+}
 
 // Abstract base class for all stack frames.
 class StackFrame BASE_EMBEDDED {
@@ -261,6 +414,9 @@ class StackFrame BASE_EMBEDDED {
   bool is_exit() const { return type() == EXIT; }
   bool is_optimized() const { return type() == OPTIMIZED; }
   bool is_interpreted() const { return type() == INTERPRETED; }
+  bool is_wasm() const { return type() == WASM; }
+  bool is_wasm_to_js() const { return type() == WASM_TO_JS; }
+  bool is_js_to_wasm() const { return type() == JS_TO_WASM; }
   bool is_arguments_adaptor() const { return type() == ARGUMENTS_ADAPTOR; }
   bool is_internal() const { return type() == INTERNAL; }
   bool is_stub_failure_trampoline() const {
@@ -497,7 +653,6 @@ class StandardFrame: public StackFrame {
   inline Object* GetExpression(int index) const;
   inline void SetExpression(int index, Object* value);
   int ComputeExpressionsCount() const;
-  static Object* GetExpression(Address fp, int index);
 
   void SetCallerFp(Address caller_fp) override;
 
@@ -528,8 +683,7 @@ class StandardFrame: public StackFrame {
   void IterateExpressions(ObjectVisitor* v) const;
 
   // Returns the address of the n'th expression stack element.
-  Address GetExpressionAddress(int n) const;
-  static Address GetExpressionAddress(Address fp, int n);
+  virtual Address GetExpressionAddress(int n) const;
 
   // Determines if the standard frame for the given frame pointer is
   // an arguments adaptor frame.
@@ -570,8 +724,7 @@ class FrameSummary BASE_EMBEDDED {
   bool is_constructor_;
 };
 
-
-class JavaScriptFrame: public StandardFrame {
+class JavaScriptFrame : public StandardFrame {
  public:
   Type type() const override { return JAVA_SCRIPT; }
 
@@ -728,9 +881,6 @@ class InterpretedFrame : public JavaScriptFrame {
  public:
   Type type() const override { return INTERPRETED; }
 
-  // GC support.
-  void Iterate(ObjectVisitor* v) const override;
-
   // Lookup exception handler for current {pc}, returns -1 if none found.
   int LookupExceptionHandlerInTable(
       int* data, HandlerTable::CatchPrediction* prediction) override;
@@ -742,12 +892,12 @@ class InterpretedFrame : public JavaScriptFrame {
   // unwinding to continue execution at a different bytecode offset.
   void PatchBytecodeOffset(int new_offset);
 
-  // Returns the current dispatch table pointer.
-  Address GetDispatchTable() const;
+  // Returns the frame's current bytecode array.
+  Object* GetBytecodeArray() const;
 
-  // Updates the current dispatch table pointer with |dispatch_table|. Used by
-  // the debugger to swap execution onto the debugger dispatch table.
-  void PatchDispatchTable(Address dispatch_table);
+  // Updates the frame's BytecodeArray with |bytecode_array|. Used by the
+  // debugger to swap execution onto a BytecodeArray patched with breakpoints.
+  void PatchBytecodeArray(Object* bytecode_array);
 
   // Access to the interpreter register file for this frame.
   Object* GetInterpreterRegister(int register_index) const;
@@ -757,6 +907,8 @@ class InterpretedFrame : public JavaScriptFrame {
 
  protected:
   inline explicit InterpretedFrame(StackFrameIteratorBase* iterator);
+
+  Address GetExpressionAddress(int n) const override;
 
  private:
   friend class StackFrameIteratorBase;
@@ -782,6 +934,8 @@ class ArgumentsAdaptorFrame: public JavaScriptFrame {
   void Print(StringStream* accumulator, PrintMode mode,
              int index) const override;
 
+  static int GetLength(Address fp);
+
  protected:
   inline explicit ArgumentsAdaptorFrame(StackFrameIteratorBase* iterator);
 
@@ -793,6 +947,50 @@ class ArgumentsAdaptorFrame: public JavaScriptFrame {
   friend class StackFrameIteratorBase;
 };
 
+class WasmFrame : public StandardFrame {
+ public:
+  Type type() const override { return WASM; }
+
+  // GC support.
+  void Iterate(ObjectVisitor* v) const override;
+
+  // Printing support.
+  void Print(StringStream* accumulator, PrintMode mode,
+             int index) const override;
+
+  // Determine the code for the frame.
+  Code* unchecked_code() const override;
+
+ protected:
+  inline explicit WasmFrame(StackFrameIteratorBase* iterator);
+
+  Address GetCallerStackPointer() const override;
+
+ private:
+  friend class StackFrameIteratorBase;
+};
+
+class WasmToJsFrame : public WasmFrame {
+ public:
+  Type type() const override { return WASM_TO_JS; }
+
+ protected:
+  inline explicit WasmToJsFrame(StackFrameIteratorBase* iterator);
+
+ private:
+  friend class StackFrameIteratorBase;
+};
+
+class JsToWasmFrame : public WasmFrame {
+ public:
+  Type type() const override { return JS_TO_WASM; }
+
+ protected:
+  inline explicit JsToWasmFrame(StackFrameIteratorBase* iterator);
+
+ private:
+  friend class StackFrameIteratorBase;
+};
 
 class InternalFrame: public StandardFrame {
  public:
@@ -821,14 +1019,6 @@ class InternalFrame: public StandardFrame {
 
 class StubFailureTrampolineFrame: public StandardFrame {
  public:
-  // sizeof(Arguments) - sizeof(Arguments*) is 3 * kPointerSize), but the
-  // presubmit script complains about using sizeof() on a type.
-  static const int kFirstRegisterParameterFrameOffset =
-      StandardFrameConstants::kMarkerOffset - 3 * kPointerSize;
-
-  static const int kCallerStackParameterCountFrameOffset =
-      StandardFrameConstants::kMarkerOffset - 2 * kPointerSize;
-
   Type type() const override { return STUB_FAILURE_TRAMPOLINE; }
 
   // Get the code associated with this frame.
@@ -926,7 +1116,6 @@ class StackFrameIterator: public StackFrameIteratorBase {
   DISALLOW_COPY_AND_ASSIGN(StackFrameIterator);
 };
 
-
 // Iterator that supports iterating through all JavaScript frames.
 class JavaScriptFrameIterator BASE_EMBEDDED {
  public:
@@ -948,7 +1137,6 @@ class JavaScriptFrameIterator BASE_EMBEDDED {
  private:
   StackFrameIterator iterator_;
 };
-
 
 // NOTE: The stack trace frame iterator is an iterator that only
 // traverse proper JavaScript frames; that is JavaScript frames that

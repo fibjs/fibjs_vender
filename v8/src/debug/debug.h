@@ -70,10 +70,6 @@ class BreakLocation {
   static BreakLocation FromFrame(Handle<DebugInfo> debug_info,
                                  JavaScriptFrame* frame);
 
-  static void FromCodeOffsetSameStatement(Handle<DebugInfo> debug_info,
-                                          int offset,
-                                          List<BreakLocation>* result_out);
-
   static void AllForStatementPosition(Handle<DebugInfo> debug_info,
                                       int statement_position,
                                       List<BreakLocation>* result_out);
@@ -142,6 +138,7 @@ class BreakLocation {
 
    protected:
     explicit Iterator(Handle<DebugInfo> debug_info);
+    int ReturnPosition();
 
     Handle<DebugInfo> debug_info_;
     int break_index_;
@@ -431,7 +428,7 @@ class Debug {
   // Internal logic
   bool Load();
   void Break(Arguments args, JavaScriptFrame*);
-  void SetAfterBreakTarget(JavaScriptFrame* frame);
+  Object* SetAfterBreakTarget(JavaScriptFrame* frame);
 
   // Scripts handling.
   Handle<FixedArray> GetLoadedScripts();
@@ -458,9 +455,6 @@ class Debug {
   void ClearStepping();
   void ClearStepOut();
   void EnableStepIn();
-
-  void GetStepinPositions(JavaScriptFrame* frame, StackFrame::Id frame_id,
-                          List<int>* results_out);
 
   bool PrepareFunctionForBreakPoints(Handle<SharedFunctionInfo> shared);
 
@@ -616,6 +610,8 @@ class Debug {
   }
 
   void ThreadInit();
+
+  void PrintBreakLocation();
 
   // Global handles.
   Handle<Context> debug_context_;

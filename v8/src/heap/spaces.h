@@ -32,6 +32,7 @@ class SemiSpace;
 class SkipList;
 class SlotsBuffer;
 class SlotSet;
+class TypedSlotSet;
 class Space;
 
 // -----------------------------------------------------------------------------
@@ -104,10 +105,6 @@ class Space;
 
 #define DCHECK_PAGE_OFFSET(offset) \
   DCHECK((Page::kObjectStartOffset <= offset) && (offset <= Page::kPageSize))
-
-#define DCHECK_MAP_PAGE_INDEX(index) \
-  DCHECK((0 <= index) && (index <= MapSpace::kMaxMapPageIndex))
-
 
 class MarkBit {
  public:
@@ -203,6 +200,8 @@ class Bitmap {
   }
 
   static inline void Clear(MemoryChunk* chunk);
+
+  static inline void SetAllBits(MemoryChunk* chunk);
 
   static void PrintWord(uint32_t word, uint32_t himask = 0) {
     for (uint32_t mask = 1; mask != 0; mask <<= 1) {
@@ -303,15 +302,18 @@ class MemoryChunk {
     IN_TO_SPACE,    // All pages in new space has one of these two set.
     NEW_SPACE_BELOW_AGE_MARK,
     EVACUATION_CANDIDATE,
-    RESCAN_ON_EVACUATION,
     NEVER_EVACUATE,  // May contain immortal immutables.
-    POPULAR_PAGE,    // Slots buffer of this page overflowed on the previous GC.
 
     // Large objects can have a progress bar in their page header. These object
     // are scanned in increments and will be kept black while being scanned.
     // Even if the mutator writes to them they will be kept black and a white
     // to grey transition is performed in the value.
     HAS_PROGRESS_BAR,
+
+    // A black page has all mark bits set to 1 (black). A black page currently
+    // cannot be iterated because it is not swept. Moreover live bytes are also
+    // not updated.
+    BLACK_PAGE,
 
     // This flag is intended to be used for testing. Works only when both
     // FLAG_stress_compaction and FLAG_manual_evacuation_candidates_selection
@@ -332,19 +334,6 @@ class MemoryChunk {
 
     // Last flag, keep at bottom.
     NUM_MEMORY_CHUNK_FLAGS
-  };
-
-  // |kCompactionDone|: Initial compaction state of a |MemoryChunk|.
-  // |kCompactingInProgress|:  Parallel compaction is currently in progress.
-  // |kCompactingFinalize|: Parallel compaction is done but the chunk needs to
-  //   be finalized.
-  // |kCompactingAborted|: Parallel compaction has been aborted, which should
-  //   for now only happen in OOM scenarios.
-  enum ParallelCompactingState {
-    kCompactingDone,
-    kCompactingInProgress,
-    kCompactingFinalize,
-    kCompactingAborted,
   };
 
   // |kSweepingDone|: The page state when sweeping is complete or sweeping must
@@ -372,8 +361,7 @@ class MemoryChunk {
   static const int kEvacuationCandidateMask = 1 << EVACUATION_CANDIDATE;
 
   static const int kSkipEvacuationSlotsRecordingMask =
-      (1 << EVACUATION_CANDIDATE) | (1 << RESCAN_ON_EVACUATION) |
-      (1 << IN_FROM_SPACE) | (1 << IN_TO_SPACE);
+      (1 << EVACUATION_CANDIDATE) | (1 << IN_FROM_SPACE) | (1 << IN_TO_SPACE);
 
   static const intptr_t kAlignment =
       (static_cast<uintptr_t>(1) << kPageSizeBits);
@@ -392,22 +380,22 @@ class MemoryChunk {
       + kPointerSize              // Heap* heap_
       + kIntSize;                 // int progress_bar_
 
-  static const size_t kSlotsBufferOffset =
+  static const size_t kOldToNewSlotsOffset =
       kLiveBytesOffset + kIntSize;  // int live_byte_count_
 
   static const size_t kWriteBarrierCounterOffset =
-      kSlotsBufferOffset + kPointerSize  // SlotsBuffer* slots_buffer_;
-      + kPointerSize                     // SlotSet* old_to_new_slots_;
-      + kPointerSize;                    // SkipList* skip_list_;
+      kOldToNewSlotsOffset + kPointerSize  // SlotSet* old_to_new_slots_;
+      + kPointerSize                       // SlotSet* old_to_old_slots_;
+      + kPointerSize   // TypedSlotSet* typed_old_to_old_slots_;
+      + kPointerSize;  // SkipList* skip_list_;
 
   static const size_t kMinHeaderSize =
       kWriteBarrierCounterOffset +
       kIntptrSize         // intptr_t write_barrier_counter_
       + kPointerSize      // AtomicValue high_water_mark_
       + kPointerSize      // base::Mutex* mutex_
-      + kPointerSize      // base::AtomicWord parallel_sweeping_
-      + kPointerSize      // AtomicValue parallel_compaction_
-      + 5 * kPointerSize  // AtomicNumber free-list statistics
+      + kPointerSize      // base::AtomicWord concurrent_sweeping_
+      + 2 * kPointerSize  // AtomicNumber free-list statistics
       + kPointerSize      // AtomicValue next_chunk_
       + kPointerSize;     // AtomicValue prev_chunk_
 
@@ -437,7 +425,6 @@ class MemoryChunk {
     return reinterpret_cast<MemoryChunk*>(OffsetFrom(a) & ~kAlignmentMask);
   }
 
-  // Only works for addresses in pointer spaces, not data or code spaces.
   static inline MemoryChunk* FromAnyPointerAddress(Heap* heap, Address addr);
 
   static inline void UpdateHighWaterMark(Address mark) {
@@ -474,20 +461,18 @@ class MemoryChunk {
     return concurrent_sweeping_;
   }
 
-  AtomicValue<ParallelCompactingState>& parallel_compaction_state() {
-    return parallel_compaction_;
-  }
-
   // Manage live byte count, i.e., count of bytes in black objects.
   inline void ResetLiveBytes();
   inline void IncrementLiveBytes(int by);
 
   int LiveBytes() {
-    DCHECK_LE(static_cast<size_t>(live_byte_count_), size_);
+    DCHECK_LE(static_cast<unsigned>(live_byte_count_), size_);
+    DCHECK(!IsFlagSet(BLACK_PAGE) || live_byte_count_ == 0);
     return live_byte_count_;
   }
 
   void SetLiveBytes(int live_bytes) {
+    if (IsFlagSet(BLACK_PAGE)) return;
     DCHECK_GE(live_bytes, 0);
     DCHECK_LE(static_cast<size_t>(live_bytes), size_);
     live_byte_count_ = live_bytes;
@@ -509,14 +494,18 @@ class MemoryChunk {
 
   inline void set_skip_list(SkipList* skip_list) { skip_list_ = skip_list; }
 
-  inline SlotsBuffer* slots_buffer() { return slots_buffer_; }
-
-  inline SlotsBuffer** slots_buffer_address() { return &slots_buffer_; }
-
   inline SlotSet* old_to_new_slots() { return old_to_new_slots_; }
+  inline SlotSet* old_to_old_slots() { return old_to_old_slots_; }
+  inline TypedSlotSet* typed_old_to_old_slots() {
+    return typed_old_to_old_slots_;
+  }
 
   void AllocateOldToNewSlots();
   void ReleaseOldToNewSlots();
+  void AllocateOldToOldSlots();
+  void ReleaseOldToOldSlots();
+  void AllocateTypedOldToOldSlots();
+  void ReleaseTypedOldToOldSlots();
 
   Address area_start() { return area_start_; }
   Address area_end() { return area_end_; }
@@ -590,12 +579,14 @@ class MemoryChunk {
 
   void MarkEvacuationCandidate() {
     DCHECK(!IsFlagSet(NEVER_EVACUATE));
-    DCHECK_NULL(slots_buffer_);
+    DCHECK_NULL(old_to_old_slots_);
+    DCHECK_NULL(typed_old_to_old_slots_);
     SetFlag(EVACUATION_CANDIDATE);
   }
 
   void ClearEvacuationCandidate() {
-    DCHECK(slots_buffer_ == NULL);
+    DCHECK_NULL(old_to_old_slots_);
+    DCHECK_NULL(typed_old_to_old_slots_);
     ClearFlag(EVACUATION_CANDIDATE);
   }
 
@@ -640,6 +631,8 @@ class MemoryChunk {
            kPageHeaderTag);
   }
 
+  bool HasPageHeader() { return owner() != nullptr; }
+
   void InsertAfter(MemoryChunk* other);
   void Unlink();
 
@@ -678,12 +671,12 @@ class MemoryChunk {
   // Count of bytes marked black on page.
   int live_byte_count_;
 
-  SlotsBuffer* slots_buffer_;
-
   // A single slot set for small pages (of size kPageSize) or an array of slot
   // set for large pages. In the latter case the number of entries in the array
   // is ceil(size() / kPageSize).
   SlotSet* old_to_new_slots_;
+  SlotSet* old_to_old_slots_;
+  TypedSlotSet* typed_old_to_old_slots_;
 
   SkipList* skip_list_;
 
@@ -696,14 +689,10 @@ class MemoryChunk {
   base::Mutex* mutex_;
 
   AtomicValue<ConcurrentSweepingState> concurrent_sweeping_;
-  AtomicValue<ParallelCompactingState> parallel_compaction_;
 
   // PagedSpace free-list statistics.
-  AtomicNumber<intptr_t> available_in_small_free_list_;
-  AtomicNumber<intptr_t> available_in_medium_free_list_;
-  AtomicNumber<intptr_t> available_in_large_free_list_;
-  AtomicNumber<intptr_t> available_in_huge_free_list_;
-  AtomicNumber<intptr_t> non_available_small_blocks_;
+  AtomicNumber<intptr_t> available_in_free_list_;
+  AtomicNumber<intptr_t> wasted_memory_;
 
   // next_chunk_ holds a pointer of type MemoryChunk
   AtomicValue<MemoryChunk*> next_chunk_;
@@ -717,9 +706,18 @@ class MemoryChunk {
   friend class MemoryChunkValidator;
 };
 
+enum FreeListCategoryType {
+  kTiniest,
+  kTiny,
+  kSmall,
+  kMedium,
+  kLarge,
+  kHuge,
 
-enum FreeListCategoryType { kSmall, kMedium, kLarge, kHuge };
-
+  kFirstCategory = kTiniest,
+  kLastCategory = kHuge,
+  kNumberOfCategories = kLastCategory + 1
+};
 
 // -----------------------------------------------------------------------------
 // A page is a memory chunk of a size 1MB. Large object pages may be larger.
@@ -736,6 +734,9 @@ class Page : public MemoryChunk {
   INLINE(static Page* FromAddress(Address a)) {
     return reinterpret_cast<Page*>(OffsetFrom(a) & ~kPageAlignmentMask);
   }
+
+  // Only works for addresses in pointer spaces, not code space.
+  inline static Page* FromAnyPointerAddress(Heap* heap, Address addr);
 
   // Returns the page containing an allocation top. Because an allocation
   // top address can be the upper bound of the page, we need to subtract
@@ -817,10 +818,8 @@ class Page : public MemoryChunk {
   void ResetFreeListStatistics();
 
   int LiveBytesFromFreeList() {
-    return static_cast<int>(
-        area_size() - non_available_small_blocks() -
-        available_in_small_free_list() - available_in_medium_free_list() -
-        available_in_large_free_list() - available_in_huge_free_list());
+    return static_cast<int>(area_size() - wasted_memory() -
+                            available_in_free_list());
   }
 
 #define FRAGMENTATION_STATS_ACCESSORS(type, name)        \
@@ -828,49 +827,10 @@ class Page : public MemoryChunk {
   void set_##name(type name) { name##_.SetValue(name); } \
   void add_##name(type name) { name##_.Increment(name); }
 
-  FRAGMENTATION_STATS_ACCESSORS(intptr_t, non_available_small_blocks)
-  FRAGMENTATION_STATS_ACCESSORS(intptr_t, available_in_small_free_list)
-  FRAGMENTATION_STATS_ACCESSORS(intptr_t, available_in_medium_free_list)
-  FRAGMENTATION_STATS_ACCESSORS(intptr_t, available_in_large_free_list)
-  FRAGMENTATION_STATS_ACCESSORS(intptr_t, available_in_huge_free_list)
+  FRAGMENTATION_STATS_ACCESSORS(intptr_t, wasted_memory)
+  FRAGMENTATION_STATS_ACCESSORS(intptr_t, available_in_free_list)
 
 #undef FRAGMENTATION_STATS_ACCESSORS
-
-  void add_available_in_free_list(FreeListCategoryType type, intptr_t bytes) {
-    switch (type) {
-      case kSmall:
-        add_available_in_small_free_list(bytes);
-        break;
-      case kMedium:
-        add_available_in_medium_free_list(bytes);
-        break;
-      case kLarge:
-        add_available_in_large_free_list(bytes);
-        break;
-      case kHuge:
-        add_available_in_huge_free_list(bytes);
-        break;
-      default:
-        UNREACHABLE();
-    }
-  }
-
-  intptr_t available_in_free_list(FreeListCategoryType type) {
-    switch (type) {
-      case kSmall:
-        return available_in_small_free_list();
-      case kMedium:
-        return available_in_medium_free_list();
-      case kLarge:
-        return available_in_large_free_list();
-      case kHuge:
-        return available_in_huge_free_list();
-      default:
-        UNREACHABLE();
-    }
-    UNREACHABLE();
-    return 0;
-  }
 
 #ifdef DEBUG
   void Print();
@@ -889,6 +849,12 @@ class LargePage : public MemoryChunk {
   }
 
   inline void set_next_page(LargePage* page) { set_next_chunk(page); }
+
+  // A limit to guarantee that we do not overflow typed slot offset in
+  // the old to old remembered set.
+  // Note that this limit is higher than what assembler already imposes on
+  // x64 and ia32 architectures.
+  static const int kMaxCodePageSize = 512 * MB;
 
  private:
   static inline LargePage* Initialize(Heap* heap, MemoryChunk* chunk);
@@ -1005,8 +971,8 @@ class MemoryChunkValidator {
   STATIC_ASSERT(MemoryChunk::kSizeOffset == offsetof(MemoryChunk, size_));
   STATIC_ASSERT(MemoryChunk::kLiveBytesOffset ==
                 offsetof(MemoryChunk, live_byte_count_));
-  STATIC_ASSERT(MemoryChunk::kSlotsBufferOffset ==
-                offsetof(MemoryChunk, slots_buffer_));
+  STATIC_ASSERT(MemoryChunk::kOldToNewSlotsOffset ==
+                offsetof(MemoryChunk, old_to_new_slots_));
   STATIC_ASSERT(MemoryChunk::kWriteBarrierCounterOffset ==
                 offsetof(MemoryChunk, write_barrier_counter_));
 
@@ -1590,12 +1556,12 @@ class AllocationStats BASE_EMBEDDED {
 // A free list category maintains a linked list of free memory blocks.
 class FreeListCategory {
  public:
-  explicit FreeListCategory(FreeList* owner, FreeListCategoryType type)
-      : type_(type),
-        top_(nullptr),
-        end_(nullptr),
-        available_(0),
-        owner_(owner) {}
+  FreeListCategory() : top_(nullptr), end_(nullptr), available_(0) {}
+
+  void Initialize(FreeList* owner, FreeListCategoryType type) {
+    owner_ = owner;
+    type_ = type;
+  }
 
   // Concatenates {category} into {this}.
   //
@@ -1669,9 +1635,10 @@ class FreeListCategory {
 // categories would scatter allocation more.
 
 // The free list is organized in categories as follows:
-// 1-31 words (too small): Such small free areas are discarded for efficiency
-//   reasons. They can be reclaimed by the compactor. However the distance
-//   between top and limit may be this small.
+// kMinBlockSize-10 words (tiniest): The tiniest blocks are only used for
+//   allocation, when categories >= small do not have entries anymore.
+// 11-31 words (tiny): The tiny blocks are only used for allocation, when
+//   categories >= small do not have entries anymore.
 // 32-255 words (small): Used for allocating free space between 1-31 words in
 //   size.
 // 256-2047 words (medium): Used for allocating free space between 32-255 words
@@ -1685,8 +1652,12 @@ class FreeList {
   // This method returns how much memory can be allocated after freeing
   // maximum_freed memory.
   static inline int GuaranteedAllocatable(int maximum_freed) {
-    if (maximum_freed <= kSmallListMin) {
+    if (maximum_freed <= kTiniestListMax) {
+      // Since we are not iterating over all list entries, we cannot guarantee
+      // that we can find the maximum freed block in that free list.
       return 0;
+    } else if (maximum_freed <= kTinyListMax) {
+      return kTinyAllocationMax;
     } else if (maximum_freed <= kSmallListMax) {
       return kSmallAllocationMax;
     } else if (maximum_freed <= kMediumListMax) {
@@ -1725,8 +1696,11 @@ class FreeList {
 
   // Return the number of bytes available on the free list.
   intptr_t Available() {
-    return small_list_.available() + medium_list_.available() +
-           large_list_.available() + huge_list_.available();
+    intptr_t available = 0;
+    for (int i = kFirstCategory; i < kNumberOfCategories; i++) {
+      available += category_[i].available();
+    }
+    return available;
   }
 
   // The method tries to find a {FreeSpace} node of at least {size_in_bytes}
@@ -1738,8 +1712,10 @@ class FreeList {
   MUST_USE_RESULT FreeSpace* TryRemoveMemory(intptr_t hint_size_in_bytes);
 
   bool IsEmpty() {
-    return small_list_.IsEmpty() && medium_list_.IsEmpty() &&
-           large_list_.IsEmpty() && huge_list_.IsEmpty();
+    for (int i = kFirstCategory; i < kNumberOfCategories; i++) {
+      if (!category_[i].IsEmpty()) return false;
+    }
+    return true;
   }
 
   // Used after booting the VM.
@@ -1763,11 +1739,13 @@ class FreeList {
   static const int kMinBlockSize = 3 * kPointerSize;
   static const int kMaxBlockSize = Page::kAllocatableMemory;
 
-  static const int kSmallListMin = 0x1f * kPointerSize;
+  static const int kTiniestListMax = 0xa * kPointerSize;
+  static const int kTinyListMax = 0x1f * kPointerSize;
   static const int kSmallListMax = 0xff * kPointerSize;
   static const int kMediumListMax = 0x7ff * kPointerSize;
   static const int kLargeListMax = 0x3fff * kPointerSize;
-  static const int kSmallAllocationMax = kSmallListMin;
+  static const int kTinyAllocationMax = kTiniestListMax;
+  static const int kSmallAllocationMax = kTinyListMax;
   static const int kMediumAllocationMax = kSmallListMax;
   static const int kLargeAllocationMax = kMediumListMax;
 
@@ -1775,29 +1753,41 @@ class FreeList {
   FreeSpace* FindNodeIn(FreeListCategoryType category, int* node_size);
 
   FreeListCategory* GetFreeListCategory(FreeListCategoryType category) {
-    switch (category) {
-      case kSmall:
-        return &small_list_;
-      case kMedium:
-        return &medium_list_;
-      case kLarge:
-        return &large_list_;
-      case kHuge:
-        return &huge_list_;
-      default:
-        UNREACHABLE();
+    return &category_[category];
+  }
+
+  FreeListCategoryType SelectFreeListCategoryType(size_t size_in_bytes) {
+    if (size_in_bytes <= kTiniestListMax) {
+      return kTiniest;
+    } else if (size_in_bytes <= kTinyListMax) {
+      return kTiny;
+    } else if (size_in_bytes <= kSmallListMax) {
+      return kSmall;
+    } else if (size_in_bytes <= kMediumListMax) {
+      return kMedium;
+    } else if (size_in_bytes <= kLargeListMax) {
+      return kLarge;
     }
-    UNREACHABLE();
-    return nullptr;
+    return kHuge;
+  }
+
+  // The tiny categories are not used for fast allocation.
+  FreeListCategoryType SelectFastAllocationFreeListCategoryType(
+      size_t size_in_bytes) {
+    if (size_in_bytes <= kSmallAllocationMax) {
+      return kSmall;
+    } else if (size_in_bytes <= kMediumAllocationMax) {
+      return kMedium;
+    } else if (size_in_bytes <= kLargeAllocationMax) {
+      return kLarge;
+    }
+    return kHuge;
   }
 
   PagedSpace* owner_;
   base::Mutex mutex_;
   intptr_t wasted_bytes_;
-  FreeListCategory small_list_;
-  FreeListCategory medium_list_;
-  FreeListCategory large_list_;
-  FreeListCategory huge_list_;
+  FreeListCategory category_[kNumberOfCategories];
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(FreeList);
 };
@@ -2159,6 +2149,7 @@ class PagedSpace : public Space {
   // Mutex guarding any concurrent access to the space.
   base::Mutex space_mutex_;
 
+  friend class IncrementalMarking;
   friend class MarkCompactCollector;
   friend class PageIterator;
 
@@ -2872,12 +2863,7 @@ class MapSpace : public PagedSpace {
  public:
   // Creates a map space object.
   MapSpace(Heap* heap, AllocationSpace id)
-      : PagedSpace(heap, id, NOT_EXECUTABLE),
-        max_map_space_pages_(kMaxMapPageIndex - 1) {}
-
-  // Given an index, returns the page address.
-  // TODO(1600): this limit is artifical just to keep code compilable
-  static const int kMaxMapPageIndex = 1 << 16;
+      : PagedSpace(heap, id, NOT_EXECUTABLE) {}
 
   int RoundSizeDownToObjectAlignment(int size) override {
     if (base::bits::IsPowerOfTwo32(Map::kSize)) {
@@ -2890,16 +2876,6 @@ class MapSpace : public PagedSpace {
 #ifdef VERIFY_HEAP
   void VerifyObject(HeapObject* obj) override;
 #endif
-
- private:
-  static const int kMapsPerPage = Page::kAllocatableMemory / Map::kSize;
-
-  // Do map space compaction if there is a page gap.
-  int CompactionThreshold() {
-    return kMapsPerPage * (max_map_space_pages_ - 1);
-  }
-
-  const int max_map_space_pages_;
 };
 
 
@@ -3004,24 +2980,41 @@ class LargeObjectIterator : public ObjectIterator {
   LargePage* current_;
 };
 
+class LargePageIterator BASE_EMBEDDED {
+ public:
+  explicit inline LargePageIterator(LargeObjectSpace* space);
+
+  inline LargePage* next();
+
+ private:
+  LargePage* next_page_;
+};
 
 // Iterates over the chunks (pages and large object pages) that can contain
-// pointers to new space.
-class PointerChunkIterator BASE_EMBEDDED {
+// pointers to new space or to evacuation candidates.
+class MemoryChunkIterator BASE_EMBEDDED {
  public:
-  inline explicit PointerChunkIterator(Heap* heap);
+  enum Mode { ALL, ALL_BUT_MAP_SPACE, ALL_BUT_CODE_SPACE };
+  inline explicit MemoryChunkIterator(Heap* heap, Mode mode);
 
   // Return NULL when the iterator is done.
   inline MemoryChunk* next();
 
  private:
-  enum State { kOldSpaceState, kMapState, kLargeObjectState, kFinishedState };
+  enum State {
+    kOldSpaceState,
+    kMapState,
+    kCodeState,
+    kLargeObjectState,
+    kFinishedState
+  };
   State state_;
+  const Mode mode_;
   PageIterator old_iterator_;
+  PageIterator code_iterator_;
   PageIterator map_iterator_;
-  LargeObjectIterator lo_iterator_;
+  LargePageIterator lo_iterator_;
 };
-
 
 #ifdef DEBUG
 struct CommentStatistic {

@@ -63,9 +63,6 @@ std::ostream& operator<<(std::ostream& os, const CallDescriptor::Kind& k) {
     case CallDescriptor::kCallAddress:
       os << "Addr";
       break;
-    case CallDescriptor::kLazyBailout:
-      os << "LazyBail";
-      break;
   }
   return os;
 }
@@ -163,8 +160,12 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
     case Runtime::kPushCatchContext:
     case Runtime::kReThrow:
     case Runtime::kStringCompare:
-    case Runtime::kStringEquals:
-    case Runtime::kToFastProperties:  // TODO(jarin): Is it safe?
+    case Runtime::kStringEqual:
+    case Runtime::kStringNotEqual:
+    case Runtime::kStringLessThan:
+    case Runtime::kStringLessThanOrEqual:
+    case Runtime::kStringGreaterThan:
+    case Runtime::kStringGreaterThanOrEqual:
     case Runtime::kTraceEnter:
     case Runtime::kTraceExit:
       return 0;
@@ -183,7 +184,6 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
     case Runtime::kInlineToString:
       return 1;
     case Runtime::kInlineCall:
-    case Runtime::kInlineTailCall:
     case Runtime::kInlineDeoptimizeNow:
     case Runtime::kInlineThrowNotDateError:
       return 2;
@@ -282,31 +282,6 @@ CallDescriptor* Linkage::GetRuntimeCallDescriptor(
 }
 
 
-CallDescriptor* Linkage::GetLazyBailoutDescriptor(Zone* zone) {
-  const size_t return_count = 0;
-  const size_t parameter_count = 0;
-
-  LocationSignature::Builder locations(zone, return_count, parameter_count);
-  MachineSignature::Builder types(zone, return_count, parameter_count);
-
-  // The target is ignored, but we need to give some values here.
-  MachineType target_type = MachineType::AnyTagged();
-  LinkageLocation target_loc = regloc(kJSFunctionRegister);
-  return new (zone) CallDescriptor(      // --
-      CallDescriptor::kLazyBailout,      // kind
-      target_type,                       // target MachineType
-      target_loc,                        // target location
-      types.Build(),                     // machine_sig
-      locations.Build(),                 // location_sig
-      0,                                 // stack_parameter_count
-      Operator::kNoThrow,                // properties
-      kNoCalleeSaved,                    // callee-saved
-      kNoCalleeSaved,                    // callee-saved fp
-      CallDescriptor::kNeedsFrameState,  // flags
-      "lazy-bailout");
-}
-
-
 CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
                                              int js_parameter_count,
                                              CallDescriptor::Flags flags) {
@@ -347,8 +322,9 @@ CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
   MachineType target_type = MachineType::AnyTagged();
   // When entering into an OSR function from unoptimized code the JSFunction
   // is not in a register, but it is on the stack in the marker spill slot.
-  LinkageLocation target_loc = is_osr ? LinkageLocation::ForSavedCallerMarker()
-                                      : regloc(kJSFunctionRegister);
+  LinkageLocation target_loc = is_osr
+                                   ? LinkageLocation::ForSavedCallerFunction()
+                                   : regloc(kJSFunctionRegister);
   return new (zone) CallDescriptor(     // --
       CallDescriptor::kCallJSFunction,  // kind
       target_type,                      // target MachineType
@@ -429,7 +405,8 @@ CallDescriptor* Linkage::GetStubCallDescriptor(
       properties,                       // properties
       kNoCalleeSaved,                   // callee-saved registers
       kNoCalleeSaved,                   // callee-saved fp
-      flags,                            // flags
+      CallDescriptor::kCanUseRoots |    // flags
+          flags,                        // flags
       descriptor.DebugName(isolate));
 }
 
@@ -459,7 +436,7 @@ LinkageLocation Linkage::GetOsrValueLocation(int index) const {
 
 
 bool Linkage::ParameterHasSecondaryLocation(int index) const {
-  if (incoming_->kind() != CallDescriptor::kCallJSFunction) return false;
+  if (!incoming_->IsJSFunctionCall()) return false;
   LinkageLocation loc = GetParameterLocation(index);
   return (loc == regloc(kJSFunctionRegister) ||
           loc == regloc(kContextRegister));

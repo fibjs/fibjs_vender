@@ -30,7 +30,6 @@
 #include "src/compiler/instruction-selector.h"
 #include "src/compiler/js-builtin-reducer.h"
 #include "src/compiler/js-call-reducer.h"
-#include "src/compiler/js-context-relaxation.h"
 #include "src/compiler/js-context-specialization.h"
 #include "src/compiler/js-create-lowering.h"
 #include "src/compiler/js-frame-specialization.h"
@@ -281,10 +280,7 @@ class PipelineData {
     DCHECK(frame_ == nullptr);
     int fixed_frame_size = 0;
     if (descriptor != nullptr) {
-      fixed_frame_size = (descriptor->IsCFunctionCall())
-                             ? StandardFrameConstants::kFixedSlotCountAboveFp +
-                                   StandardFrameConstants::kCPSlotCount
-                             : StandardFrameConstants::kFixedSlotCount;
+      fixed_frame_size = CalculateFixedFrameSize(descriptor);
     }
     frame_ = new (instruction_zone()) Frame(fixed_frame_size, descriptor);
   }
@@ -338,6 +334,16 @@ class PipelineData {
   ZonePool::Scope register_allocation_zone_scope_;
   Zone* register_allocation_zone_;
   RegisterAllocationData* register_allocation_data_;
+
+  int CalculateFixedFrameSize(CallDescriptor* descriptor) {
+    if (descriptor->IsJSFunctionCall()) {
+      return StandardFrameConstants::kFixedSlotCount;
+    }
+    return descriptor->IsCFunctionCall()
+               ? (CommonFrameConstants::kFixedSlotCountAboveFp +
+                  CommonFrameConstants::kCPSlotCount)
+               : TypedFrameConstants::kFixedSlotCount;
+  }
 
   DISALLOW_COPY_AND_ASSIGN(PipelineData);
 };
@@ -540,7 +546,7 @@ struct InliningPhase {
                                               data->common());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
-    JSCallReducer call_reducer(&graph_reducer, data->jsgraph(),
+    JSCallReducer call_reducer(data->jsgraph(),
                                data->info()->is_deoptimization_enabled()
                                    ? JSCallReducer::kDeoptimizationEnabled
                                    : JSCallReducer::kNoFlags,
@@ -555,12 +561,17 @@ struct InliningPhase {
     JSGlobalObjectSpecialization global_object_specialization(
         &graph_reducer, data->jsgraph(), data->native_context(),
         data->info()->dependencies());
+    JSNativeContextSpecialization::Flags flags =
+        JSNativeContextSpecialization::kNoFlags;
+    if (data->info()->is_bailout_on_uninitialized()) {
+      flags |= JSNativeContextSpecialization::kBailoutOnUninitialized;
+    }
+    if (data->info()->is_deoptimization_enabled()) {
+      flags |= JSNativeContextSpecialization::kDeoptimizationEnabled;
+    }
     JSNativeContextSpecialization native_context_specialization(
-        &graph_reducer, data->jsgraph(),
-        data->info()->is_deoptimization_enabled()
-            ? JSNativeContextSpecialization::kDeoptimizationEnabled
-            : JSNativeContextSpecialization::kNoFlags,
-        data->native_context(), data->info()->dependencies(), temp_zone);
+        &graph_reducer, data->jsgraph(), flags, data->native_context(),
+        data->info()->dependencies(), temp_zone);
     JSInliningHeuristic inlining(&graph_reducer,
                                  data->info()->is_inlining_enabled()
                                      ? JSInliningHeuristic::kGeneralInlining
@@ -693,6 +704,13 @@ struct SimplifiedLoweringPhase {
     SimplifiedLowering lowering(data->jsgraph(), temp_zone,
                                 data->source_positions());
     lowering.LowerAllNodes();
+
+    // TODO(bmeurer): See comment on SimplifiedLowering::abort_compilation_.
+    if (lowering.abort_compilation_) {
+      data->set_compilation_failed();
+      return;
+    }
+
     JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
@@ -788,7 +806,6 @@ struct GenericLoweringPhase {
 
   void Run(PipelineData* data, Zone* temp_zone) {
     JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
-    JSContextRelaxation context_relaxing;
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
@@ -798,7 +815,6 @@ struct GenericLoweringPhase {
     SelectLowering select_lowering(data->jsgraph()->graph(),
                                    data->jsgraph()->common());
     TailCallOptimization tco(data->common(), data->graph());
-    AddReducer(data, &graph_reducer, &context_relaxing);
     AddReducer(data, &graph_reducer, &dead_code_elimination);
     AddReducer(data, &graph_reducer, &common_reducer);
     AddReducer(data, &graph_reducer, &generic_lowering);
@@ -1215,6 +1231,9 @@ Handle<Code> Pipeline::GenerateCode() {
   // Kill the Typer and thereby uninstall the decorator (if any).
   typer.Reset(nullptr);
 
+  // TODO(bmeurer): See comment on SimplifiedLowering::abort_compilation_.
+  if (data.compilation_failed()) return Handle<Code>::null();
+
   return ScheduleAndGenerateCode(
       Linkage::ComputeIncoming(data.instruction_zone(), info()));
 }
@@ -1501,6 +1520,8 @@ void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
 
   data->DeleteRegisterAllocationZone();
 }
+
+Isolate* Pipeline::isolate() const { return info()->isolate(); }
 
 }  // namespace compiler
 }  // namespace internal

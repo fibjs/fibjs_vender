@@ -70,13 +70,6 @@ void LBranch::PrintDataTo(StringStream* stream) {
 }
 
 
-void LCallJSFunction::PrintDataTo(StringStream* stream) {
-  stream->Add("= ");
-  function()->PrintTo(stream);
-  stream->Add("#%d / ", arity());
-}
-
-
 void LCallWithDescriptor::PrintDataTo(StringStream* stream) {
   for (int i = 0; i < InputCount(); i++) {
     InputAt(i)->PrintTo(stream);
@@ -136,20 +129,6 @@ void LInnerAllocatedObject::PrintDataTo(StringStream* stream) {
   base_object()->PrintTo(stream);
   stream->Add(" + ");
   offset()->PrintTo(stream);
-}
-
-
-void LCallFunction::PrintDataTo(StringStream* stream) {
-  context()->PrintTo(stream);
-  stream->Add(" ");
-  function()->PrintTo(stream);
-  if (hydrogen()->HasVectorAndSlot()) {
-    stream->Add(" (type-feedback-vector ");
-    temp_vector()->PrintTo(stream);
-    stream->Add(" ");
-    temp_slot()->PrintTo(stream);
-    stream->Add(")");
-  }
 }
 
 
@@ -531,11 +510,7 @@ LUnallocated* LChunkBuilder::TempDoubleRegister() {
   return operand;
 }
 
-
-int LPlatformChunk::GetNextSpillIndex() {
-  return spill_slot_count_++;
-}
-
+int LPlatformChunk::GetNextSpillIndex() { return current_frame_slots_++; }
 
 LOperand* LPlatformChunk::GetNextSpillSlot(RegisterKind kind) {
   int index = GetNextSpillIndex();
@@ -1001,7 +976,7 @@ LInstruction* LChunkBuilder::DoBranch(HBranch* instr) {
       return new(zone()) LBranch(UseRegister(value), TempRegister(), NULL);
     }
 
-    ToBooleanStub::Types expected = instr->expected_input_types();
+    ToBooleanICStub::Types expected = instr->expected_input_types();
     bool needs_temps = expected.NeedsMap() || expected.IsEmpty();
     LOperand* temp1 = needs_temps ? TempRegister() : NULL;
     LOperand* temp2 = needs_temps ? TempRegister() : NULL;
@@ -1016,16 +991,6 @@ LInstruction* LChunkBuilder::DoBranch(HBranch* instr) {
           new(zone()) LBranch(UseRegister(value), temp1, temp2));
     }
   }
-}
-
-
-LInstruction* LChunkBuilder::DoCallJSFunction(
-    HCallJSFunction* instr) {
-  LOperand* function = UseFixed(instr->function(), x1);
-
-  LCallJSFunction* result = new(zone()) LCallJSFunction(function);
-
-  return MarkAsCall(DefineFixed(result, x0), instr);
 }
 
 
@@ -1057,22 +1022,6 @@ LInstruction* LChunkBuilder::DoCallWithDescriptor(
 }
 
 
-LInstruction* LChunkBuilder::DoCallFunction(HCallFunction* instr) {
-  LOperand* context = UseFixed(instr->context(), cp);
-  LOperand* function = UseFixed(instr->function(), x1);
-  LOperand* slot = NULL;
-  LOperand* vector = NULL;
-  if (instr->HasVectorAndSlot()) {
-    slot = FixedTemp(x3);
-    vector = FixedTemp(x2);
-  }
-
-  LCallFunction* call =
-      new (zone()) LCallFunction(context, function, slot, vector);
-  return MarkAsCall(DefineFixed(call, x0), instr);
-}
-
-
 LInstruction* LChunkBuilder::DoCallNewArray(HCallNewArray* instr) {
   LOperand* context = UseFixed(instr->context(), cp);
   // The call to ArrayConstructCode will expect the constructor to be in x1.
@@ -1085,12 +1034,6 @@ LInstruction* LChunkBuilder::DoCallNewArray(HCallNewArray* instr) {
 LInstruction* LChunkBuilder::DoCallRuntime(HCallRuntime* instr) {
   LOperand* context = UseFixed(instr->context(), cp);
   return MarkAsCall(DefineFixed(new(zone()) LCallRuntime(context), x0), instr);
-}
-
-
-LInstruction* LChunkBuilder::DoCallStub(HCallStub* instr) {
-  LOperand* context = UseFixed(instr->context(), cp);
-  return MarkAsCall(DefineFixed(new(zone()) LCallStub(context), x0), instr);
 }
 
 
@@ -2471,13 +2414,6 @@ LInstruction* LChunkBuilder::DoThisFunction(HThisFunction* instr) {
 }
 
 
-LInstruction* LChunkBuilder::DoToFastProperties(HToFastProperties* instr) {
-  LOperand* object = UseFixed(instr->value(), x0);
-  LToFastProperties* result = new(zone()) LToFastProperties(object);
-  return MarkAsCall(DefineFixed(result, x0), instr);
-}
-
-
 LInstruction* LChunkBuilder::DoTransitionElementsKind(
     HTransitionElementsKind* instr) {
   if (IsSimpleMapChangeTransition(instr->from_kind(), instr->to_kind())) {
@@ -2651,6 +2587,7 @@ LInstruction* LChunkBuilder::DoUnknownOSRValue(HUnknownOSRValue* instr) {
       Retry(kTooManySpillSlotsNeededForOSR);
       spill_index = 0;
     }
+    spill_index += StandardFrameConstants::kFixedSlotCount;
   }
   return DefineAsSpilled(new(zone()) LUnknownOSRValue, spill_index);
 }
@@ -2705,16 +2642,6 @@ LInstruction* LChunkBuilder::DoWrapReceiver(HWrapReceiver* instr) {
 LInstruction* LChunkBuilder::DoStoreFrameContext(HStoreFrameContext* instr) {
   LOperand* context = UseRegisterAtStart(instr->context());
   return new(zone()) LStoreFrameContext(context);
-}
-
-
-LInstruction* LChunkBuilder::DoAllocateBlockContext(
-    HAllocateBlockContext* instr) {
-  LOperand* context = UseFixed(instr->context(), cp);
-  LOperand* function = UseRegisterAtStart(instr->function());
-  LAllocateBlockContext* result =
-      new(zone()) LAllocateBlockContext(context, function);
-  return MarkAsCall(DefineFixed(result, cp), instr);
 }
 
 

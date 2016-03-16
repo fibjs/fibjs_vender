@@ -7,6 +7,7 @@
 #include "src/bootstrapper.h"
 #include "src/disasm.h"
 #include "src/disassembler.h"
+#include "src/field-type.h"
 #include "src/macro-assembler.h"
 #include "src/ostreams.h"
 #include "src/regexp/jsregexp.h"
@@ -98,6 +99,7 @@ void HeapObject::HeapObjectVerify() {
       Oddball::cast(this)->OddballVerify();
       break;
     case JS_OBJECT_TYPE:
+    case JS_SPECIAL_API_OBJECT_TYPE:
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
     case JS_PROMISE_TYPE:
       JSObject::cast(this)->JSObjectVerify();
@@ -207,7 +209,7 @@ void HeapObject::VerifyHeapPointer(Object* p) {
 void Symbol::SymbolVerify() {
   CHECK(IsSymbol());
   CHECK(HasHashCode());
-  CHECK_GT(Hash(), 0u);
+  CHECK(GetHeap()->hidden_properties_symbol() == this || Hash() > 0u);
   CHECK(name()->IsUndefined() || name()->IsString());
 }
 

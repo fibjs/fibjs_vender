@@ -683,18 +683,22 @@ void AsmTyper::VisitAssignment(Assignment* expr) {
   RECURSE(VisitWithExpectation(
       expr->value(), type, "assignment value expected to match surrounding"));
   Type* target_type = StorageType(computed_type_);
-  if (intish_ != 0) {
-    FAIL(expr, "intish or floatish assignment");
-  }
   if (expr->target()->IsVariableProxy()) {
+    if (intish_ != 0) {
+      FAIL(expr, "intish or floatish assignment");
+    }
     expected_type_ = target_type;
     VisitVariableProxy(expr->target()->AsVariableProxy(), true);
   } else if (expr->target()->IsProperty()) {
+    int32_t value_intish = intish_;
     Property* property = expr->target()->AsProperty();
     RECURSE(VisitWithExpectation(property->obj(), Type::Any(),
                                  "bad propety object"));
     if (!computed_type_->IsArray()) {
       FAIL(property->obj(), "array expected");
+    }
+    if (value_intish != 0 && computed_type_->Is(cache_.kFloat64Array)) {
+      FAIL(expr, "floatish assignment to double array");
     }
     VisitHeapAccess(property, true, target_type);
   }
@@ -952,7 +956,6 @@ void AsmTyper::VisitCall(Call* expr) {
     ZoneList<Expression*>* args = expr->arguments();
     if (Type::Any()->Is(result_type)) {
       // For foreign calls.
-      ZoneList<Expression*>* args = expr->arguments();
       for (int i = 0; i < args->length(); ++i) {
         Expression* arg = args->at(i);
         RECURSE(VisitWithExpectation(
@@ -1079,7 +1082,7 @@ void AsmTyper::VisitIntegerBitwiseOperator(BinaryOperation* expr,
                                            Type* result_type, bool conversion) {
   RECURSE(VisitWithExpectation(expr->left(), Type::Number(),
                                "left bitwise operand expected to be a number"));
-  int left_intish = intish_;
+  int32_t left_intish = intish_;
   Type* left_type = computed_type_;
   if (!left_type->Is(left_expected)) {
     FAIL(expr->left(), "left bitwise operand expected to be an integer");
@@ -1091,7 +1094,7 @@ void AsmTyper::VisitIntegerBitwiseOperator(BinaryOperation* expr,
   RECURSE(
       VisitWithExpectation(expr->right(), Type::Number(),
                            "right bitwise operand expected to be a number"));
-  int right_intish = intish_;
+  int32_t right_intish = intish_;
   Type* right_type = computed_type_;
   if (!right_type->Is(right_expected)) {
     FAIL(expr->right(), "right bitwise operand expected to be an integer");
@@ -1109,7 +1112,7 @@ void AsmTyper::VisitIntegerBitwiseOperator(BinaryOperation* expr,
     right_type = left_type;
   }
   if (!conversion) {
-    if (!left_type->Is(right_type) || !right_type->Is(left_type)) {
+    if (!left_type->Is(cache_.kAsmIntQ) || !right_type->Is(cache_.kAsmIntQ)) {
       FAIL(expr, "ill-typed bitwise operation");
     }
   }
@@ -1153,9 +1156,11 @@ void AsmTyper::VisitBinaryOperation(BinaryOperation* expr) {
       FAIL(expr, "illegal logical operator");
     case Token::BIT_OR: {
       // BIT_OR allows Any since it is used as a type coercion.
-      VisitIntegerBitwiseOperator(expr, Type::Any(), cache_.kAsmInt,
+      VisitIntegerBitwiseOperator(expr, Type::Any(), cache_.kAsmIntQ,
                                   cache_.kAsmSigned, true);
-      if (expr->left()->IsCall() && expr->op() == Token::BIT_OR) {
+      if (expr->left()->IsCall() && expr->op() == Token::BIT_OR &&
+          Type::Number()->Is(expr->left()->bounds().upper)) {
+        // Force the return types of foreign functions.
         expr->left()->set_bounds(Bounds(cache_.kAsmSigned));
       }
       return;
@@ -1166,7 +1171,7 @@ void AsmTyper::VisitBinaryOperation(BinaryOperation* expr) {
       if (left && left->value()->IsBoolean()) {
         if (left->ToBooleanIsTrue()) {
           left->set_bounds(Bounds(cache_.kSingletonOne));
-          RECURSE(VisitWithExpectation(expr->right(), cache_.kAsmInt,
+          RECURSE(VisitWithExpectation(expr->right(), cache_.kAsmIntQ,
                                        "not operator expects an integer"));
           IntersectResult(expr, cache_.kAsmSigned);
           return;
@@ -1174,20 +1179,20 @@ void AsmTyper::VisitBinaryOperation(BinaryOperation* expr) {
           FAIL(left, "unexpected false");
         }
       }
-      // BIT_XOR allows Number since it is used as a type coercion (via ~~).
-      VisitIntegerBitwiseOperator(expr, Type::Number(), cache_.kAsmInt,
+      // BIT_XOR allows Any since it is used as a type coercion (via ~~).
+      VisitIntegerBitwiseOperator(expr, Type::Any(), cache_.kAsmIntQ,
                                   cache_.kAsmSigned, true);
       return;
     }
     case Token::SHR: {
-      VisitIntegerBitwiseOperator(expr, cache_.kAsmInt, cache_.kAsmInt,
+      VisitIntegerBitwiseOperator(expr, cache_.kAsmIntQ, cache_.kAsmIntQ,
                                   cache_.kAsmUnsigned, false);
       return;
     }
     case Token::SHL:
     case Token::SAR:
     case Token::BIT_AND: {
-      VisitIntegerBitwiseOperator(expr, cache_.kAsmInt, cache_.kAsmInt,
+      VisitIntegerBitwiseOperator(expr, cache_.kAsmIntQ, cache_.kAsmIntQ,
                                   cache_.kAsmSigned, false);
       return;
     }
@@ -1200,28 +1205,33 @@ void AsmTyper::VisitBinaryOperation(BinaryOperation* expr) {
           expr->left(), Type::Number(),
           "left arithmetic operand expected to be number"));
       Type* left_type = computed_type_;
-      int left_intish = intish_;
+      int32_t left_intish = intish_;
       RECURSE(VisitWithExpectation(
           expr->right(), Type::Number(),
           "right arithmetic operand expected to be number"));
       Type* right_type = computed_type_;
-      int right_intish = intish_;
+      int32_t right_intish = intish_;
       Type* type = Type::Union(left_type, right_type, zone());
       if (type->Is(cache_.kAsmInt)) {
         if (expr->op() == Token::MUL) {
-          Literal* right = expr->right()->AsLiteral();
-          if (!right) {
-            FAIL(expr, "direct integer multiply forbidden");
-          }
-          if (!right->value()->IsNumber()) {
-            FAIL(expr, "multiply must be by an integer");
-          }
           int32_t i;
-          if (!right->value()->ToInt32(&i)) {
-            FAIL(expr, "multiply must be a signed integer");
+          Literal* left = expr->left()->AsLiteral();
+          Literal* right = expr->right()->AsLiteral();
+          if (left != nullptr && left->value()->IsNumber() &&
+              left->value()->ToInt32(&i)) {
+            if (right_intish != 0) {
+              FAIL(expr, "intish not allowed in multiply");
+            }
+          } else if (right != nullptr && right->value()->IsNumber() &&
+                     right->value()->ToInt32(&i)) {
+            if (left_intish != 0) {
+              FAIL(expr, "intish not allowed in multiply");
+            }
+          } else {
+            FAIL(expr, "multiply must be by an integer literal");
           }
           i = abs(i);
-          if (i >= 1 << 20) {
+          if (i >= (1 << 20)) {
             FAIL(expr, "multiply must be by value in -2^20 < n < 2^20");
           }
           intish_ = i;
@@ -1244,9 +1254,19 @@ void AsmTyper::VisitBinaryOperation(BinaryOperation* expr) {
       } else if (expr->op() == Token::MUL && expr->right()->IsLiteral() &&
                  right_type->Is(cache_.kAsmDouble)) {
         // For unary +, expressed as x * 1.0
-        if (expr->left()->IsCall() && expr->op() == Token::MUL) {
+        if (expr->left()->IsCall() && expr->op() == Token::MUL &&
+            Type::Number()->Is(expr->left()->bounds().upper)) {
+          // Force the return types of foreign functions.
           expr->left()->set_bounds(Bounds(cache_.kAsmDouble));
         }
+        IntersectResult(expr, cache_.kAsmDouble);
+        return;
+      } else if (expr->op() == Token::MUL && left_type->Is(cache_.kAsmDouble) &&
+                 expr->right()->IsLiteral() &&
+                 !expr->right()->AsLiteral()->raw_value()->ContainsDot() &&
+                 expr->right()->AsLiteral()->raw_value()->AsNumber() == -1.0) {
+        // For unary -, expressed as x * -1
+        expr->right()->set_bounds(Bounds(cache_.kAsmDouble));
         IntersectResult(expr, cache_.kAsmDouble);
         return;
       } else if (type->Is(cache_.kAsmFloat) && expr->op() != Token::MOD) {
@@ -1551,8 +1571,7 @@ void AsmTyper::VisitWithExpectation(Expression* expr, Type* expected_type,
 }
 
 
-void AsmTyper::VisitRewritableAssignmentExpression(
-    RewritableAssignmentExpression* expr) {
+void AsmTyper::VisitRewritableExpression(RewritableExpression* expr) {
   RECURSE(Visit(expr->expression()));
 }
 

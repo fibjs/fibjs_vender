@@ -1045,6 +1045,32 @@ ReturnType Simulator::GetFromVFPRegister(int reg_index) {
   return value;
 }
 
+void Simulator::SetSpecialRegister(SRegisterFieldMask reg_and_mask,
+                                   uint32_t value) {
+  // Only CPSR_f is implemented. Of that, only N, Z, C and V are implemented.
+  if ((reg_and_mask == CPSR_f) && ((value & ~kSpecialCondition) == 0)) {
+    n_flag_ = ((value & (1 << 31)) != 0);
+    z_flag_ = ((value & (1 << 30)) != 0);
+    c_flag_ = ((value & (1 << 29)) != 0);
+    v_flag_ = ((value & (1 << 28)) != 0);
+  } else {
+    UNIMPLEMENTED();
+  }
+}
+
+uint32_t Simulator::GetFromSpecialRegister(SRegister reg) {
+  uint32_t result = 0;
+  // Only CPSR_f is implemented.
+  if (reg == CPSR) {
+    if (n_flag_) result |= (1 << 31);
+    if (z_flag_) result |= (1 << 30);
+    if (c_flag_) result |= (1 << 29);
+    if (v_flag_) result |= (1 << 28);
+  } else {
+    UNIMPLEMENTED();
+  }
+  return result;
+}
 
 // Runtime FP routines take:
 // - two double arguments
@@ -2316,7 +2342,22 @@ void Simulator::DecodeType01(Instruction* instr) {
       return;
     }
   } else if ((type == 0) && instr->IsMiscType0()) {
-    if (instr->Bits(22, 21) == 1) {
+    if ((instr->Bits(27, 23) == 2) && (instr->Bits(21, 20) == 2) &&
+        (instr->Bits(15, 4) == 0xf00)) {
+      // MSR
+      int rm = instr->RmValue();
+      DCHECK_NE(pc, rm);  // UNPREDICTABLE
+      SRegisterFieldMask sreg_and_mask =
+          instr->BitField(22, 22) | instr->BitField(19, 16);
+      SetSpecialRegister(sreg_and_mask, get_register(rm));
+    } else if ((instr->Bits(27, 23) == 2) && (instr->Bits(21, 20) == 0) &&
+               (instr->Bits(11, 0) == 0)) {
+      // MRS
+      int rd = instr->RdValue();
+      DCHECK_NE(pc, rd);  // UNPREDICTABLE
+      SRegister sreg = static_cast<SRegister>(instr->BitField(22, 22));
+      set_register(rd, GetFromSpecialRegister(sreg));
+    } else if (instr->Bits(22, 21) == 1) {
       int rm = instr->RmValue();
       switch (instr->BitField(7, 4)) {
         case BX:
@@ -2924,7 +2965,15 @@ void Simulator::DecodeType3(Instruction* instr) {
                   }
                 }
               } else {
-                UNIMPLEMENTED();
+                // PU == 0b01, BW == 0b11, Bits(9, 6) != 0b0001
+                if ((instr->Bits(20, 16) == 0x1f) &&
+                    (instr->Bits(11, 4) == 0xf3)) {
+                  // Rbit.
+                  uint32_t rm_val = get_register(instr->RmValue());
+                  set_register(rd, base::bits::ReverseBits(rm_val));
+                } else {
+                  UNIMPLEMENTED();
+                }
               }
               break;
           }
@@ -3211,7 +3260,7 @@ void Simulator::DecodeTypeVFP(Instruction* instr) {
         if (instr->SzValue() == 0x1) {
           set_d_register_from_double(vd, instr->DoubleImmedVmov());
         } else {
-          UNREACHABLE();  // Not used by v8.
+          set_s_register_from_float(d, instr->DoubleImmedVmov());
         }
       } else if (((instr->Opc2Value() == 0x6)) && (instr->Opc3Value() == 0x3)) {
         // vrintz - truncate
@@ -3908,6 +3957,9 @@ void Simulator::DecodeSpecialCondition(Instruction* instr) {
     case 0xB:
       if ((instr->Bits(22, 20) == 5) && (instr->Bits(15, 12) == 0xf)) {
         // pld: ignore instruction.
+      } else if (instr->SpecialValue() == 0xA && instr->Bits(22, 20) == 7) {
+        // dsb, dmb, isb: ignore instruction for now.
+        // TODO(binji): implement
       } else {
         UNIMPLEMENTED();
       }

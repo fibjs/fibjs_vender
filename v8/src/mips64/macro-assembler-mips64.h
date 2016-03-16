@@ -265,6 +265,7 @@ class MacroAssembler: public Assembler {
 
   void Call(Label* target);
 
+  void Move(Register dst, Handle<Object> handle) { li(dst, handle); }
   void Move(Register dst, Smi* smi) { li(dst, Operand(smi)); }
 
   inline void Move(Register dst, Register src) {
@@ -676,6 +677,9 @@ class MacroAssembler: public Assembler {
 #undef DEFINE_INSTRUCTION2
 #undef DEFINE_INSTRUCTION3
 
+  // Load Scaled Address instructions. Parameter sa (shift argument) must be
+  // between [1, 31] (inclusive). On pre-r6 architectures the scratch register
+  // may be clobbered.
   void Lsa(Register rd, Register rs, Register rt, uint8_t sa,
            Register scratch = at);
   void Dlsa(Register rd, Register rs, Register rt, uint8_t sa,
@@ -699,6 +703,7 @@ class MacroAssembler: public Assembler {
 
   // Load int32 in the rd register.
   void li(Register rd, Operand j, LiFlags mode = OPTIMIZE_SIZE);
+  inline bool LiLower32BitHelper(Register rd, Operand j);
   inline void li(Register rd, int64_t j, LiFlags mode = OPTIMIZE_SIZE) {
     li(rd, Operand(j), mode);
   }
@@ -802,6 +807,14 @@ class MacroAssembler: public Assembler {
     Daddu(sp, sp, Operand(count * kPointerSize));
   }
 
+  // Push a fixed frame, consisting of ra, fp.
+  void PushCommonFrame(Register marker_reg = no_reg);
+
+  // Push a standard frame, consisting of ra, fp, context and JS function.
+  void PushStandardFrame(Register function_reg);
+
+  void PopCommonFrame(Register marker_reg = no_reg);
+
   // Push and pop the registers that can hold pointers, as defined by the
   // RegList constant kSafepointSavedRegisters.
   void PushSafepointRegisters();
@@ -832,6 +845,10 @@ class MacroAssembler: public Assembler {
   void Cvt_d_ul(FPURegister fd, FPURegister fs);
   void Cvt_d_ul(FPURegister fd, Register rs);
 
+  // Convert unsigned word to float.
+  void Cvt_s_uw(FPURegister fd, FPURegister fs);
+  void Cvt_s_uw(FPURegister fd, Register rs);
+
   // Convert unsigned long to float.
   void Cvt_s_ul(FPURegister fd, FPURegister fs);
   void Cvt_s_ul(FPURegister fd, Register rs);
@@ -847,6 +864,10 @@ class MacroAssembler: public Assembler {
   // Convert double to unsigned word.
   void Trunc_uw_d(FPURegister fd, FPURegister fs, FPURegister scratch);
   void Trunc_uw_d(FPURegister fd, Register rs, FPURegister scratch);
+
+  // Convert single to unsigned word.
+  void Trunc_uw_s(FPURegister fd, FPURegister fs, FPURegister scratch);
+  void Trunc_uw_s(FPURegister fd, Register rs, FPURegister scratch);
 
   // Convert double to unsigned long.
   void Trunc_ul_d(FPURegister fd, FPURegister fs, FPURegister scratch,
@@ -1043,6 +1064,15 @@ class MacroAssembler: public Assembler {
 
   // -------------------------------------------------------------------------
   // JavaScript invokes.
+
+  // Removes current frame and its arguments from the stack preserving
+  // the arguments and a return address pushed to the stack for the next call.
+  // Both |callee_args_count| and |caller_args_count_reg| do not include
+  // receiver. |callee_args_count| is not modified, |caller_args_count_reg|
+  // is trashed.
+  void PrepareForTailCall(const ParameterCount& callee_args_count,
+                          Register caller_args_count_reg, Register scratch0,
+                          Register scratch1);
 
   // Invoke the JavaScript function code by either calling or jumping.
   void InvokeFunctionCode(Register function, Register new_target,
@@ -1268,32 +1298,41 @@ class MacroAssembler: public Assembler {
   // Usage: first call the appropriate arithmetic function, then call one of the
   // jump functions with the overflow_dst register as the second parameter.
 
-  void AdduAndCheckForOverflow(Register dst,
-                               Register left,
-                               Register right,
-                               Register overflow_dst,
-                               Register scratch = at);
+  inline void AddBranchOvf(Register dst, Register left, const Operand& right,
+                           Label* overflow_label, Register scratch = at) {
+    AddBranchOvf(dst, left, right, overflow_label, nullptr, scratch);
+  }
 
-  void AdduAndCheckForOverflow(Register dst, Register left,
-                               const Operand& right, Register overflow_dst,
-                               Register scratch);
+  inline void AddBranchNoOvf(Register dst, Register left, const Operand& right,
+                             Label* no_overflow_label, Register scratch = at) {
+    AddBranchOvf(dst, left, right, nullptr, no_overflow_label, scratch);
+  }
 
-  void SubuAndCheckForOverflow(Register dst,
-                               Register left,
-                               Register right,
-                               Register overflow_dst,
-                               Register scratch = at);
+  void AddBranchOvf(Register dst, Register left, const Operand& right,
+                    Label* overflow_label, Label* no_overflow_label,
+                    Register scratch = at);
 
-  void SubuAndCheckForOverflow(Register dst, Register left,
-                               const Operand& right, Register overflow_dst,
-                               Register scratch);
+  void AddBranchOvf(Register dst, Register left, Register right,
+                    Label* overflow_label, Label* no_overflow_label,
+                    Register scratch = at);
 
-  void DadduAndCheckForOverflow(Register dst, Register left, Register right,
-                                Register overflow_dst, Register scratch = at);
+  inline void SubBranchOvf(Register dst, Register left, const Operand& right,
+                           Label* overflow_label, Register scratch = at) {
+    SubBranchOvf(dst, left, right, overflow_label, nullptr, scratch);
+  }
 
-  void DadduAndCheckForOverflow(Register dst, Register left,
-                                const Operand& right, Register overflow_dst,
-                                Register scratch);
+  inline void SubBranchNoOvf(Register dst, Register left, const Operand& right,
+                             Label* no_overflow_label, Register scratch = at) {
+    SubBranchOvf(dst, left, right, nullptr, no_overflow_label, scratch);
+  }
+
+  void SubBranchOvf(Register dst, Register left, const Operand& right,
+                    Label* overflow_label, Label* no_overflow_label,
+                    Register scratch = at);
+
+  void SubBranchOvf(Register dst, Register left, Register right,
+                    Label* overflow_label, Label* no_overflow_label,
+                    Register scratch = at);
 
   inline void DaddBranchOvf(Register dst, Register left, const Operand& right,
                             Label* overflow_label, Register scratch = at) {
@@ -1312,13 +1351,6 @@ class MacroAssembler: public Assembler {
   void DaddBranchOvf(Register dst, Register left, Register right,
                      Label* overflow_label, Label* no_overflow_label,
                      Register scratch = at);
-
-  void DsubuAndCheckForOverflow(Register dst, Register left, Register right,
-                                Register overflow_dst, Register scratch = at);
-
-  void DsubuAndCheckForOverflow(Register dst, Register left,
-                                const Operand& right, Register overflow_dst,
-                                Register scratch);
 
   inline void DsubBranchOvf(Register dst, Register left, const Operand& right,
                             Label* overflow_label, Register scratch = at) {
@@ -1656,6 +1688,9 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
   // enabled via --debug-code.
   void AssertBoundFunction(Register object);
 
+  // Abort execution if argument is not a JSReceiver, enabled via --debug-code.
+  void AssertReceiver(Register object);
+
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object, Register scratch);
@@ -1746,7 +1781,7 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
     DecodeField<Field>(reg, reg);
   }
   // Generates function and stub prologue code.
-  void StubPrologue();
+  void StubPrologue(StackFrame::Type type);
   void Prologue(bool code_pre_aging);
 
   // Load the type feedback vector from a JavaScript frame.
@@ -1924,17 +1959,19 @@ void MacroAssembler::GenerateSwitchTable(Register index, size_t case_count,
       nop();
     }
     addiupc(at, 5);
-    dlsa(at, at, index, kPointerSizeLog2);
+    Dlsa(at, at, index, kPointerSizeLog2);
     ld(at, MemOperand(at));
   } else {
     Label here;
-    BlockTrampolinePoolFor(static_cast<int>(case_count) * 2 + 7);
+    BlockTrampolinePoolFor(static_cast<int>(case_count) * 2 + 11);
     Align(8);
+    push(ra);
     bal(&here);
     dsll(at, index, kPointerSizeLog2);  // Branch delay slot.
     bind(&here);
     daddu(at, at, ra);
-    ld(at, MemOperand(at, 4 * v8::internal::Assembler::kInstrSize));
+    pop(ra);
+    ld(at, MemOperand(at, 6 * v8::internal::Assembler::kInstrSize));
   }
   jr(at);
   nop();  // Branch delay slot nop.

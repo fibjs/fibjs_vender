@@ -378,7 +378,6 @@ typedef List<HeapObject*> DebugObjectCache;
   V(HashMap*, external_reference_map, NULL)                                    \
   V(HashMap*, root_index_map, NULL)                                            \
   V(int, pending_microtask_count, 0)                                           \
-  V(bool, autorun_microtasks, true)                                            \
   V(HStatistics*, hstatistics, NULL)                                           \
   V(CompilationStatistics*, turbo_statistics, NULL)                            \
   V(HTracer*, htracer, NULL)                                                   \
@@ -683,8 +682,6 @@ class Isolate {
   // set.
   bool MayAccess(Handle<Context> accessing_context, Handle<JSObject> receiver);
 
-  bool IsInternallyUsedPropertyName(Handle<Object> name);
-
   void SetFailedAccessCheckCallback(v8::FailedAccessCheckCallback callback);
   void ReportFailedAccessCheck(Handle<JSObject> receiver);
 
@@ -955,13 +952,13 @@ class Isolate {
     date_cache_ = date_cache;
   }
 
-  Map* get_initial_js_array_map(ElementsKind kind,
-                                Strength strength = Strength::WEAK);
+  Map* get_initial_js_array_map(ElementsKind kind);
 
   static const int kArrayProtectorValid = 1;
   static const int kArrayProtectorInvalid = 0;
 
   bool IsFastArrayConstructorPrototypeChainIntact();
+  bool IsArraySpeciesLookupChainIntact();
 
   // On intent to set an element in object, make sure that appropriate
   // notifications occur if the set is on the elements of the array or
@@ -977,6 +974,7 @@ class Isolate {
   void UpdateArrayProtectorOnNormalizeElements(Handle<JSObject> object) {
     UpdateArrayProtectorOnSetElement(object);
   }
+  void InvalidateArraySpeciesProtector();
 
   // Returns true if array is the initial array prototype in any native context.
   bool IsAnyInitialArrayPrototype(Handle<JSArray> array);
@@ -996,13 +994,6 @@ class Isolate {
     DCHECK(optimizing_compile_dispatcher_ == NULL ||
            FLAG_concurrent_recompilation);
     return optimizing_compile_dispatcher_ != NULL;
-  }
-
-  bool concurrent_osr_enabled() const {
-    // Thread is only available with flag enabled.
-    DCHECK(optimizing_compile_dispatcher_ == NULL ||
-           FLAG_concurrent_recompilation);
-    return optimizing_compile_dispatcher_ != NULL && FLAG_concurrent_osr;
   }
 
   OptimizingCompileDispatcher* optimizing_compile_dispatcher() {
@@ -1056,6 +1047,14 @@ class Isolate {
   void AddCallCompletedCallback(CallCompletedCallback callback);
   void RemoveCallCompletedCallback(CallCompletedCallback callback);
   void FireCallCompletedCallback();
+
+  void AddBeforeCallEnteredCallback(BeforeCallEnteredCallback callback);
+  void RemoveBeforeCallEnteredCallback(BeforeCallEnteredCallback callback);
+  void FireBeforeCallEnteredCallback();
+
+  void AddMicrotasksCompletedCallback(MicrotasksCompletedCallback callback);
+  void RemoveMicrotasksCompletedCallback(MicrotasksCompletedCallback callback);
+  void FireMicrotasksCompletedCallback();
 
   void SetPromiseRejectCallback(PromiseRejectCallback callback);
   void ReportPromiseReject(Handle<JSObject> promise, Handle<Object> value,
@@ -1205,6 +1204,8 @@ class Isolate {
   // the frame.
   void RemoveMaterializedObjectsOnUnwind(StackFrame* frame);
 
+  void RunMicrotasksInternal();
+
   base::Atomic32 id_;
   EntryStackItem* entry_stack_;
   int stack_trace_nesting_level_;
@@ -1320,8 +1321,14 @@ class Isolate {
   int next_unique_sfi_id_;
 #endif
 
+  // List of callbacks before a Call starts execution.
+  List<BeforeCallEnteredCallback> before_call_entered_callbacks_;
+
   // List of callbacks when a Call completes.
   List<CallCompletedCallback> call_completed_callbacks_;
+
+  // List of callbacks after microtasks were run.
+  List<MicrotasksCompletedCallback> microtasks_completed_callbacks_;
 
   v8::Isolate::UseCounterCallback use_counter_callback_;
   BasicBlockProfiler* basic_block_profiler_;

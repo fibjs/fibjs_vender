@@ -36,6 +36,7 @@ namespace compiler {
   V(ArmMvn)                        \
   V(ArmBfc)                        \
   V(ArmUbfx)                       \
+  V(ArmSbfx)                       \
   V(ArmSxtb)                       \
   V(ArmSxth)                       \
   V(ArmSxtab)                      \
@@ -43,7 +44,12 @@ namespace compiler {
   V(ArmUxtb)                       \
   V(ArmUxth)                       \
   V(ArmUxtab)                      \
+  V(ArmRbit)                       \
   V(ArmUxtah)                      \
+  V(ArmAddPair)                    \
+  V(ArmLslPair)                    \
+  V(ArmLsrPair)                    \
+  V(ArmAsrPair)                    \
   V(ArmVcmpF32)                    \
   V(ArmVaddF32)                    \
   V(ArmVsubF32)                    \
@@ -103,7 +109,6 @@ namespace compiler {
   V(ArmStr)                        \
   V(ArmPush)                       \
   V(ArmPoke)
-
 
 // Addressing modes represent the "shape" of inputs to an instruction.
 // Many instructions support multiple addressing modes. Addressing modes

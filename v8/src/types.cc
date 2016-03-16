@@ -198,17 +198,21 @@ Type::bitset BitsetType::Lub(i::Map* map) {
       return kNumber & kTaggedPointer;
     case SIMD128_VALUE_TYPE:
       return kSimd;
+    case JS_OBJECT_TYPE:
+    case JS_GLOBAL_OBJECT_TYPE:
+    case JS_GLOBAL_PROXY_TYPE:
+    case JS_SPECIAL_API_OBJECT_TYPE:
+      if (map->is_undetectable()) return kOtherUndetectable;
+      return kOtherObject;
     case JS_VALUE_TYPE:
     case JS_MESSAGE_OBJECT_TYPE:
     case JS_DATE_TYPE:
-    case JS_OBJECT_TYPE:
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
     case JS_GENERATOR_OBJECT_TYPE:
     case JS_MODULE_TYPE:
-    case JS_GLOBAL_OBJECT_TYPE:
-    case JS_GLOBAL_PROXY_TYPE:
     case JS_ARRAY_BUFFER_TYPE:
     case JS_ARRAY_TYPE:
+    case JS_REGEXP_TYPE:  // TODO(rossberg): there should be a RegExp type.
     case JS_TYPED_ARRAY_TYPE:
     case JS_DATA_VIEW_TYPE:
     case JS_SET_TYPE:
@@ -219,26 +223,15 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case JS_WEAK_SET_TYPE:
     case JS_PROMISE_TYPE:
     case JS_BOUND_FUNCTION_TYPE:
-      if (map->is_undetectable()) return kUndetectable;
+      DCHECK(!map->is_undetectable());
       return kOtherObject;
     case JS_FUNCTION_TYPE:
-      if (map->is_undetectable()) return kUndetectable;
+      DCHECK(!map->is_undetectable());
       return kFunction;
-    case JS_REGEXP_TYPE:
-      return kOtherObject;  // TODO(rossberg): there should be a RegExp type.
     case JS_PROXY_TYPE:
+      DCHECK(!map->is_undetectable());
       return kProxy;
     case MAP_TYPE:
-      // When compiling stub templates, the meta map is used as a place holder
-      // for the actual map with which the template is later instantiated.
-      // We treat it as a kind of type variable whose upper bound is Any.
-      // TODO(rossberg): for caching of CompareNilIC stubs to work correctly,
-      // we must exclude Undetectable here. This makes no sense, really,
-      // because it means that the template isn't actually parametric.
-      // Also, it doesn't apply elsewhere. 8-(
-      // We ought to find a cleaner solution for compiling stubs parameterised
-      // over type or class variables, esp ones with bounds...
-      return kDetectable & kTaggedPointer;
     case ALLOCATION_SITE_TYPE:
     case ACCESSOR_INFO_TYPE:
     case SHARED_FUNCTION_INFO_TYPE:
@@ -1257,93 +1250,6 @@ void BitsetType::Print(bitset bits) {
   os << std::endl;
 }
 #endif
-
-// static
-FieldType* FieldType::None() {
-  return reinterpret_cast<FieldType*>(Smi::FromInt(0));
-}
-
-// static
-FieldType* FieldType::Any() {
-  return reinterpret_cast<FieldType*>(Smi::FromInt(1));
-}
-
-// static
-Handle<FieldType> FieldType::None(Isolate* isolate) {
-  return handle(None(), isolate);
-}
-
-// static
-Handle<FieldType> FieldType::Any(Isolate* isolate) {
-  return handle(Any(), isolate);
-}
-
-// static
-FieldType* FieldType::Class(i::Map* map) { return FieldType::cast(map); }
-
-// static
-Handle<FieldType> FieldType::Class(i::Handle<i::Map> map, Isolate* isolate) {
-  return handle(Class(*map), isolate);
-}
-
-// static
-FieldType* FieldType::cast(Object* object) {
-  DCHECK(object == None() || object == Any() || object->IsMap());
-  return reinterpret_cast<FieldType*>(object);
-}
-
-bool FieldType::NowContains(Object* value) {
-  if (this == Any()) return true;
-  if (this == None()) return false;
-  if (!value->IsHeapObject()) return false;
-  return HeapObject::cast(value)->map() == Map::cast(this);
-}
-
-bool FieldType::NowContains(Handle<Object> value) {
-  return NowContains(*value);
-}
-
-bool FieldType::IsClass() { return this->IsMap(); }
-
-Handle<i::Map> FieldType::AsClass() {
-  DCHECK(IsClass());
-  i::Map* map = Map::cast(this);
-  return handle(map, map->GetIsolate());
-}
-
-bool FieldType::NowStable() {
-  return !this->IsClass() || this->AsClass()->is_stable();
-}
-
-bool FieldType::NowIs(FieldType* other) {
-  if (other->IsAny()) return true;
-  if (IsNone()) return true;
-  if (other->IsNone()) return false;
-  if (IsAny()) return false;
-  DCHECK(IsClass());
-  DCHECK(other->IsClass());
-  return this == other;
-}
-
-bool FieldType::NowIs(Handle<FieldType> other) { return NowIs(*other); }
-
-Type* FieldType::Convert(Zone* zone) {
-  if (IsAny()) return Type::Any();
-  if (IsNone()) return Type::None();
-  DCHECK(IsClass());
-  return Type::Class(AsClass(), zone);
-}
-
-void FieldType::PrintTo(std::ostream& os) {
-  if (IsAny()) {
-    os << "Any";
-  } else if (IsNone()) {
-    os << "None";
-  } else {
-    DCHECK(IsClass());
-    os << "Class(" << static_cast<void*>(*AsClass()) << ")";
-  }
-}
 
 BitsetType::bitset BitsetType::SignedSmall() {
   return i::SmiValuesAre31Bits() ? kSigned31 : kSigned32;

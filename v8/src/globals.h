@@ -59,6 +59,9 @@ namespace internal {
 #if (V8_TARGET_ARCH_MIPS64 && !V8_HOST_ARCH_MIPS64)
 #define USE_SIMULATOR 1
 #endif
+#if (V8_TARGET_ARCH_S390 && !V8_HOST_ARCH_S390)
+#define USE_SIMULATOR 1
+#endif
 #endif
 
 // Determine whether the architecture uses an embedded constant pool
@@ -243,89 +246,36 @@ template <typename T, class P = FreeStoreAllocationPolicy> class List;
 
 // The Strict Mode (ECMA-262 5th edition, 4.2.2).
 
-enum LanguageMode {
-  // LanguageMode is expressed as a bitmask. Descriptions of the bits:
-  STRICT_BIT = 1 << 0,
-  STRONG_BIT = 1 << 1,
-  LANGUAGE_END,
-
-  // Shorthands for some common language modes.
-  SLOPPY = 0,
-  STRICT = STRICT_BIT,
-  STRONG = STRICT_BIT | STRONG_BIT
-};
+enum LanguageMode { SLOPPY, STRICT, LANGUAGE_END = 3 };
 
 
 inline std::ostream& operator<<(std::ostream& os, const LanguageMode& mode) {
   switch (mode) {
-    case SLOPPY:
-      return os << "sloppy";
-    case STRICT:
-      return os << "strict";
-    case STRONG:
-      return os << "strong";
-    default:
-      return os << "unknown";
+    case SLOPPY: return os << "sloppy";
+    case STRICT: return os << "strict";
+    default: UNREACHABLE();
   }
+  return os;
 }
 
 
 inline bool is_sloppy(LanguageMode language_mode) {
-  return (language_mode & STRICT_BIT) == 0;
+  return language_mode == SLOPPY;
 }
 
 
 inline bool is_strict(LanguageMode language_mode) {
-  return language_mode & STRICT_BIT;
-}
-
-
-inline bool is_strong(LanguageMode language_mode) {
-  return language_mode & STRONG_BIT;
+  return language_mode != SLOPPY;
 }
 
 
 inline bool is_valid_language_mode(int language_mode) {
-  return language_mode == SLOPPY || language_mode == STRICT ||
-         language_mode == STRONG;
+  return language_mode == SLOPPY || language_mode == STRICT;
 }
 
 
-inline LanguageMode construct_language_mode(bool strict_bit, bool strong_bit) {
-  int language_mode = 0;
-  if (strict_bit) language_mode |= STRICT_BIT;
-  if (strong_bit) language_mode |= STRONG_BIT;
-  DCHECK(is_valid_language_mode(language_mode));
-  return static_cast<LanguageMode>(language_mode);
-}
-
-
-// Strong mode behaviour must sometimes be signalled by a two valued enum where
-// caching is involved, to prevent sloppy and strict mode from being incorrectly
-// differentiated.
-enum class Strength : bool {
-  WEAK,   // sloppy, strict behaviour
-  STRONG  // strong behaviour
-};
-
-
-inline bool is_strong(Strength strength) {
-  return strength == Strength::STRONG;
-}
-
-
-inline std::ostream& operator<<(std::ostream& os, const Strength& strength) {
-  return os << (is_strong(strength) ? "strong" : "weak");
-}
-
-
-inline Strength strength(LanguageMode language_mode) {
-  return is_strong(language_mode) ? Strength::STRONG : Strength::WEAK;
-}
-
-
-inline size_t hash_value(Strength strength) {
-  return static_cast<size_t>(strength);
+inline LanguageMode construct_language_mode(bool strict_bit) {
+  return static_cast<LanguageMode>(strict_bit);
 }
 
 
@@ -726,9 +676,12 @@ enum CpuFeature {
   FPR_GPR_MOV,
   LWSYNC,
   ISELECT,
+  // S390
+  DISTINCT_OPS,
+  GENERAL_INSTR_EXT,
+  FLOATING_POINT_EXT,
   NUMBER_OF_CPU_FEATURES
 };
-
 
 // Defines hints about receiver values based on structural knowledge.
 enum class ConvertReceiverMode : unsigned {
@@ -959,12 +912,6 @@ enum MaybeAssignedFlag { kNotAssigned, kMaybeAssigned };
 enum ParseErrorType { kSyntaxError = 0, kReferenceError = 1 };
 
 
-enum ClearExceptionFlag {
-  KEEP_EXCEPTION,
-  CLEAR_EXCEPTION
-};
-
-
 enum MinusZeroMode {
   TREAT_MINUS_ZERO_AS_ZERO,
   FAIL_ON_MINUS_ZERO
@@ -973,28 +920,23 @@ enum MinusZeroMode {
 
 enum Signedness { kSigned, kUnsigned };
 
-
 enum FunctionKind {
   kNormalFunction = 0,
   kArrowFunction = 1 << 0,
   kGeneratorFunction = 1 << 1,
   kConciseMethod = 1 << 2,
   kConciseGeneratorMethod = kGeneratorFunction | kConciseMethod,
-  kAccessorFunction = 1 << 3,
-  kDefaultConstructor = 1 << 4,
-  kSubclassConstructor = 1 << 5,
-  kBaseConstructor = 1 << 6,
-  kInObjectLiteral = 1 << 7,
+  kDefaultConstructor = 1 << 3,
+  kSubclassConstructor = 1 << 4,
+  kBaseConstructor = 1 << 5,
+  kGetterFunction = 1 << 6,
+  kSetterFunction = 1 << 7,
+  kAccessorFunction = kGetterFunction | kSetterFunction,
   kDefaultBaseConstructor = kDefaultConstructor | kBaseConstructor,
   kDefaultSubclassConstructor = kDefaultConstructor | kSubclassConstructor,
   kClassConstructor =
       kBaseConstructor | kSubclassConstructor | kDefaultConstructor,
-  kConciseMethodInObjectLiteral = kConciseMethod | kInObjectLiteral,
-  kConciseGeneratorMethodInObjectLiteral =
-      kConciseGeneratorMethod | kInObjectLiteral,
-  kAccessorFunctionInObjectLiteral = kAccessorFunction | kInObjectLiteral,
 };
-
 
 inline bool IsValidFunctionKind(FunctionKind kind) {
   return kind == FunctionKind::kNormalFunction ||
@@ -1002,14 +944,13 @@ inline bool IsValidFunctionKind(FunctionKind kind) {
          kind == FunctionKind::kGeneratorFunction ||
          kind == FunctionKind::kConciseMethod ||
          kind == FunctionKind::kConciseGeneratorMethod ||
+         kind == FunctionKind::kGetterFunction ||
+         kind == FunctionKind::kSetterFunction ||
          kind == FunctionKind::kAccessorFunction ||
          kind == FunctionKind::kDefaultBaseConstructor ||
          kind == FunctionKind::kDefaultSubclassConstructor ||
          kind == FunctionKind::kBaseConstructor ||
-         kind == FunctionKind::kSubclassConstructor ||
-         kind == FunctionKind::kConciseMethodInObjectLiteral ||
-         kind == FunctionKind::kConciseGeneratorMethodInObjectLiteral ||
-         kind == FunctionKind::kAccessorFunctionInObjectLiteral;
+         kind == FunctionKind::kSubclassConstructor;
 }
 
 
@@ -1030,6 +971,15 @@ inline bool IsConciseMethod(FunctionKind kind) {
   return kind & FunctionKind::kConciseMethod;
 }
 
+inline bool IsGetterFunction(FunctionKind kind) {
+  DCHECK(IsValidFunctionKind(kind));
+  return kind & FunctionKind::kGetterFunction;
+}
+
+inline bool IsSetterFunction(FunctionKind kind) {
+  DCHECK(IsValidFunctionKind(kind));
+  return kind & FunctionKind::kSetterFunction;
+}
 
 inline bool IsAccessorFunction(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
@@ -1066,22 +1016,9 @@ inline bool IsConstructable(FunctionKind kind, LanguageMode mode) {
   if (IsConciseMethod(kind)) return false;
   if (IsArrowFunction(kind)) return false;
   if (IsGeneratorFunction(kind)) return false;
-  if (is_strong(mode)) return IsClassConstructor(kind);
   return true;
 }
 
-
-inline bool IsInObjectLiteral(FunctionKind kind) {
-  DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kInObjectLiteral;
-}
-
-
-inline FunctionKind WithObjectLiteralBit(FunctionKind kind) {
-  kind = static_cast<FunctionKind>(kind | FunctionKind::kInObjectLiteral);
-  DCHECK(IsValidFunctionKind(kind));
-  return kind;
-}
 
 inline uint32_t ObjectHash(Address address) {
   // All objects are at least pointer aligned, so we can remove the trailing

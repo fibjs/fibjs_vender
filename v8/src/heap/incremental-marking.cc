@@ -12,6 +12,7 @@
 #include "src/heap/mark-compact-inl.h"
 #include "src/heap/objects-visiting.h"
 #include "src/heap/objects-visiting-inl.h"
+#include "src/tracing/trace-event.h"
 #include "src/v8.h"
 
 namespace v8 {
@@ -41,6 +42,7 @@ IncrementalMarking::IncrementalMarking(Heap* heap)
       no_marking_scope_depth_(0),
       unscanned_bytes_of_large_object_(0),
       was_activated_(false),
+      black_allocation_(false),
       finalize_marking_completed_(false),
       incremental_marking_finalization_rounds_(0),
       request_type_(COMPLETE_MARKING) {}
@@ -130,13 +132,11 @@ void IncrementalMarking::RecordWriteOfCodeEntrySlow(JSFunction* host,
   }
 }
 
-
-void IncrementalMarking::RecordWriteIntoCodeSlow(HeapObject* obj,
-                                                 RelocInfo* rinfo,
+void IncrementalMarking::RecordWriteIntoCodeSlow(Code* host, RelocInfo* rinfo,
                                                  Object* value) {
-  if (BaseRecordWrite(obj, value)) {
-      // Object is not going to be rescanned.  We need to record the slot.
-      heap_->mark_compact_collector()->RecordRelocSlot(rinfo, value);
+  if (BaseRecordWrite(host, value)) {
+    // Object is not going to be rescanned.  We need to record the slot.
+    heap_->mark_compact_collector()->RecordRelocSlot(host, rinfo, value);
   }
 }
 
@@ -322,6 +322,12 @@ class IncrementalMarkingMarkingVisitor
   }
 };
 
+void IncrementalMarking::IterateBlackObject(HeapObject* object) {
+  if (black_allocation() &&
+      Page::FromAddress(object->address())->IsFlagSet(Page::BLACK_PAGE)) {
+    IncrementalMarkingMarkingVisitor::IterateBody(object->map(), object);
+  }
+}
 
 class IncrementalMarkingRootMarkingVisitor : public ObjectVisitor {
  public:
@@ -443,7 +449,16 @@ void IncrementalMarking::ActivateIncrementalWriteBarrier() {
 
 
 bool IncrementalMarking::ShouldActivateEvenWithoutIdleNotification() {
+#ifndef DEBUG
+  static const intptr_t kActivationThreshold = 8 * MB;
+#else
+  // TODO(gc) consider setting this to some low level so that some
+  // debug tests run with incremental marking and some without.
+  static const intptr_t kActivationThreshold = 0;
+#endif
+  // Don't switch on for very small heaps.
   return CanBeActivated() &&
+         heap_->PromotedSpaceSizeOfObjects() > kActivationThreshold &&
          heap_->HeapIsFullEnoughToStartIncrementalMarking(
              heap_->old_generation_allocation_limit());
 }
@@ -453,21 +468,12 @@ bool IncrementalMarking::WasActivated() { return was_activated_; }
 
 
 bool IncrementalMarking::CanBeActivated() {
-#ifndef DEBUG
-  static const intptr_t kActivationThreshold = 8 * MB;
-#else
-  // TODO(gc) consider setting this to some low level so that some
-  // debug tests run with incremental marking and some without.
-  static const intptr_t kActivationThreshold = 0;
-#endif
   // Only start incremental marking in a safe state: 1) when incremental
   // marking is turned on, 2) when we are currently not in a GC, and
   // 3) when we are currently not serializing or deserializing the heap.
-  // Don't switch on for very small heaps.
   return FLAG_incremental_marking && heap_->gc_state() == Heap::NOT_IN_GC &&
          heap_->deserialization_complete() &&
-         !heap_->isolate()->serializer_enabled() &&
-         heap_->PromotedSpaceSizeOfObjects() > kActivationThreshold;
+         !heap_->isolate()->serializer_enabled();
 }
 
 
@@ -534,6 +540,7 @@ void IncrementalMarking::Start(const char* reason) {
 
   HistogramTimerScope incremental_marking_scope(
       heap_->isolate()->counters()->gc_incremental_marking_start());
+  TRACE_EVENT0("v8", "V8.GCIncrementalMarkingStart");
   ResetStepCounters();
 
   was_activated_ = true;
@@ -554,6 +561,15 @@ void IncrementalMarking::Start(const char* reason) {
 
 
 void IncrementalMarking::StartMarking() {
+  if (heap_->isolate()->serializer_enabled()) {
+    // Black allocation currently starts when we start incremental marking,
+    // but we cannot enable black allocation while deserializing. Hence, we
+    // have to delay the start of incremental marking in that case.
+    if (FLAG_trace_incremental_marking) {
+      PrintF("[IncrementalMarking] Start delayed - serializer\n");
+    }
+    return;
+  }
   if (FLAG_trace_incremental_marking) {
     PrintF("[IncrementalMarking] Start marking\n");
   }
@@ -595,12 +611,37 @@ void IncrementalMarking::StartMarking() {
   IncrementalMarkingRootMarkingVisitor visitor(this);
   heap_->IterateStrongRoots(&visitor, VISIT_ONLY_STRONG);
 
+  if (FLAG_black_allocation) {
+    StartBlackAllocation();
+  }
+
   // Ready to start incremental marking.
   if (FLAG_trace_incremental_marking) {
     PrintF("[IncrementalMarking] Running\n");
   }
 }
 
+void IncrementalMarking::StartBlackAllocation() {
+  DCHECK(FLAG_black_allocation);
+  DCHECK(IsMarking());
+  black_allocation_ = true;
+  PagedSpaces spaces(heap());
+  for (PagedSpace* space = spaces.next(); space != NULL;
+       space = spaces.next()) {
+    space->EmptyAllocationInfo();
+    space->free_list()->Reset();
+  }
+  if (FLAG_trace_incremental_marking) {
+    PrintF("[IncrementalMarking] Black allocation started\n");
+  }
+}
+
+void IncrementalMarking::FinishBlackAllocation() {
+  black_allocation_ = false;
+  if (FLAG_trace_incremental_marking) {
+    PrintF("[IncrementalMarking] Black allocation finished\n");
+  }
+}
 
 void IncrementalMarking::MarkRoots() {
   DCHECK(!finalize_marking_completed_);
@@ -803,6 +844,8 @@ void IncrementalMarking::UpdateMarkingDequeAfterScavenge() {
       // them.
       if (map_word.IsForwardingAddress()) {
         HeapObject* dest = map_word.ToForwardingAddress();
+        if (Page::FromAddress(dest->address())->IsFlagSet(Page::BLACK_PAGE))
+          continue;
         array[new_top] = dest;
         new_top = ((new_top + 1) & mask);
         DCHECK(new_top != marking_deque->bottom());
@@ -859,16 +902,21 @@ void IncrementalMarking::MarkObject(Heap* heap, HeapObject* obj) {
 
 intptr_t IncrementalMarking::ProcessMarkingDeque(intptr_t bytes_to_process) {
   intptr_t bytes_processed = 0;
-  Map* filler_map = heap_->one_pointer_filler_map();
+  Map* one_pointer_filler_map = heap_->one_pointer_filler_map();
+  Map* two_pointer_filler_map = heap_->two_pointer_filler_map();
   MarkingDeque* marking_deque =
       heap_->mark_compact_collector()->marking_deque();
   while (!marking_deque->IsEmpty() && bytes_processed < bytes_to_process) {
     HeapObject* obj = marking_deque->Pop();
 
-    // Explicitly skip one word fillers. Incremental markbit patterns are
-    // correct only for objects that occupy at least two words.
+    // Explicitly skip one and two word fillers. Incremental markbit patterns
+    // are correct only for objects that occupy at least two words.
+    // Moreover, slots filtering for left-trimmed arrays works only when
+    // the distance between the old array start and the new array start
+    // is greater than two if both starts are marked.
     Map* map = obj->map();
-    if (map == filler_map) continue;
+    if (map == one_pointer_filler_map || map == two_pointer_filler_map)
+      continue;
 
     int size = obj->SizeFromMap(map);
     unscanned_bytes_of_large_object_ = 0;
@@ -897,7 +945,12 @@ void IncrementalMarking::ProcessMarkingDeque() {
 
 
 void IncrementalMarking::Hurry() {
-  if (state() == MARKING) {
+  // A scavenge may have pushed new objects on the marking deque (due to black
+  // allocation) even in COMPLETE state. This may happen if scavenges are
+  // forced e.g. in tests. It should not happen when COMPLETE was set when
+  // incremental marking finished and a regular GC was triggered after that
+  // because should_hurry_ will force a full GC.
+  if (!heap_->mark_compact_collector()->marking_deque()->IsEmpty()) {
     double start = 0.0;
     if (FLAG_trace_incremental_marking || FLAG_print_cumulative_gc_stat) {
       start = heap_->MonotonicallyIncreasingTimeInMs();
@@ -962,6 +1015,7 @@ void IncrementalMarking::Stop() {
   heap_->isolate()->stack_guard()->ClearGC();
   state_ = STOPPED;
   is_compacting_ = false;
+  FinishBlackAllocation();
 }
 
 
@@ -1151,6 +1205,7 @@ intptr_t IncrementalMarking::Step(intptr_t allocated_bytes,
   {
     HistogramTimerScope incremental_marking_scope(
         heap_->isolate()->counters()->gc_incremental_marking());
+    TRACE_EVENT0("v8", "V8.GCIncrementalMarking");
     double start = heap_->MonotonicallyIncreasingTimeInMs();
 
     // The marking speed is driven either by the allocation rate or by the rate

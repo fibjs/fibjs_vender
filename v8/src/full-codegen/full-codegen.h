@@ -42,6 +42,7 @@ class FullCodeGenerator: public AstVisitor {
         nesting_stack_(NULL),
         loop_depth_(0),
         try_catch_depth_(0),
+        operand_stack_depth_(0),
         globals_(NULL),
         context_(NULL),
         bailout_entries_(info->HasDeoptimizationSupport()
@@ -92,6 +93,12 @@ class FullCodeGenerator: public AstVisitor {
   static const int kCodeSizeMultiplier = 149;
 #elif V8_TARGET_ARCH_MIPS64
   static const int kCodeSizeMultiplier = 149;
+#elif V8_TARGET_ARCH_S390
+// TODO(joransiu): Copied PPC value. Check this is sensible for S390.
+  static const int kCodeSizeMultiplier = 200;
+#elif V8_TARGET_ARCH_S390X
+// TODO(joransiu): Copied PPC value. Check this is sensible for S390X.
+  static const int kCodeSizeMultiplier = 200;
 #else
 #error Unsupported target architecture.
 #endif
@@ -107,7 +114,9 @@ class FullCodeGenerator: public AstVisitor {
 
   class NestedStatement BASE_EMBEDDED {
    public:
-    explicit NestedStatement(FullCodeGenerator* codegen) : codegen_(codegen) {
+    explicit NestedStatement(FullCodeGenerator* codegen)
+        : codegen_(codegen),
+          stack_depth_at_target_(codegen->operand_stack_depth_) {
       // Link into codegen's nesting stack.
       previous_ = codegen->nesting_stack_;
       codegen->nesting_stack_ = this;
@@ -129,23 +138,20 @@ class FullCodeGenerator: public AstVisitor {
     // Notify the statement that we are exiting it via break, continue, or
     // return and give it a chance to generate cleanup code.  Return the
     // next outer statement in the nesting stack.  We accumulate in
-    // *stack_depth the amount to drop the stack and in *context_length the
-    // number of context chain links to unwind as we traverse the nesting
-    // stack from an exit to its target.
-    virtual NestedStatement* Exit(int* stack_depth, int* context_length) {
-      return previous_;
-    }
+    // {*context_length} the number of context chain links to unwind as we
+    // traverse the nesting stack from an exit to its target.
+    virtual NestedStatement* Exit(int* context_length) { return previous_; }
 
-    // Like the Exit() method above, but limited to accumulating stack depth.
-    virtual NestedStatement* AccumulateDepth(int* stack_depth) {
-      return previous_;
-    }
+    // Determine the expected operand stack depth when this statement is being
+    // used as the target of an exit. The caller will drop to this depth.
+    int GetStackDepthAtTarget() { return stack_depth_at_target_; }
 
    protected:
     MacroAssembler* masm() { return codegen_->masm(); }
 
     FullCodeGenerator* codegen_;
     NestedStatement* previous_;
+    int stack_depth_at_target_;
 
    private:
     DISALLOW_COPY_AND_ASSIGN(NestedStatement);
@@ -196,28 +202,11 @@ class FullCodeGenerator: public AstVisitor {
         : Breakable(codegen, block) {
     }
 
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
+    NestedStatement* Exit(int* context_length) override {
       auto block_scope = statement()->AsBlock()->scope();
       if (block_scope != nullptr) {
         if (block_scope->ContextLocalCount() > 0) ++(*context_length);
       }
-      return previous_;
-    }
-  };
-
-  // The try block of a try/catch statement.
-  class TryCatch : public NestedStatement {
-   public:
-    static const int kElementCount = TryBlockConstant::kElementCount;
-
-    explicit TryCatch(FullCodeGenerator* codegen) : NestedStatement(codegen) {}
-
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
-      *stack_depth += kElementCount;
-      return previous_;
-    }
-    NestedStatement* AccumulateDepth(int* stack_depth) override {
-      *stack_depth += kElementCount;
       return previous_;
     }
   };
@@ -262,16 +251,10 @@ class FullCodeGenerator: public AstVisitor {
   // The try block of a try/finally statement.
   class TryFinally : public NestedStatement {
    public:
-    static const int kElementCount = TryBlockConstant::kElementCount;
-
     TryFinally(FullCodeGenerator* codegen, DeferredCommands* commands)
         : NestedStatement(codegen), deferred_commands_(commands) {}
 
-    NestedStatement* Exit(int* stack_depth, int* context_length) override;
-    NestedStatement* AccumulateDepth(int* stack_depth) override {
-      *stack_depth += kElementCount;
-      return previous_;
-    }
+    NestedStatement* Exit(int* context_length) override;
 
     bool IsTryFinally() override { return true; }
     TryFinally* AsTryFinally() override { return this; }
@@ -282,43 +265,6 @@ class FullCodeGenerator: public AstVisitor {
     DeferredCommands* deferred_commands_;
   };
 
-  // The finally block of a try/finally statement.
-  class Finally : public NestedStatement {
-   public:
-    static const int kElementCount = 3;
-
-    explicit Finally(FullCodeGenerator* codegen) : NestedStatement(codegen) {}
-
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
-      *stack_depth += kElementCount;
-      return previous_;
-    }
-    NestedStatement* AccumulateDepth(int* stack_depth) override {
-      *stack_depth += kElementCount;
-      return previous_;
-    }
-  };
-
-  // The body of a for/in loop.
-  class ForIn : public Iteration {
-   public:
-    static const int kElementCount = 5;
-
-    ForIn(FullCodeGenerator* codegen, ForInStatement* statement)
-        : Iteration(codegen, statement) {
-    }
-
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
-      *stack_depth += kElementCount;
-      return previous_;
-    }
-    NestedStatement* AccumulateDepth(int* stack_depth) override {
-      *stack_depth += kElementCount;
-      return previous_;
-    }
-  };
-
-
   // The body of a with or catch.
   class WithOrCatch : public NestedStatement {
    public:
@@ -326,7 +272,7 @@ class FullCodeGenerator: public AstVisitor {
         : NestedStatement(codegen) {
     }
 
-    NestedStatement* Exit(int* stack_depth, int* context_length) override {
+    NestedStatement* Exit(int* context_length) override {
       ++(*context_length);
       return previous_;
     }
@@ -400,18 +346,21 @@ class FullCodeGenerator: public AstVisitor {
   MemOperand VarOperand(Variable* var, Register scratch);
 
   void VisitForEffect(Expression* expr) {
+    if (FLAG_verify_operand_stack_depth) EmitOperandStackDepthCheck();
     EffectContext context(this);
     Visit(expr);
     PrepareForBailout(expr, NO_REGISTERS);
   }
 
   void VisitForAccumulatorValue(Expression* expr) {
+    if (FLAG_verify_operand_stack_depth) EmitOperandStackDepthCheck();
     AccumulatorValueContext context(this);
     Visit(expr);
     PrepareForBailout(expr, TOS_REG);
   }
 
   void VisitForStackValue(Expression* expr) {
+    if (FLAG_verify_operand_stack_depth) EmitOperandStackDepthCheck();
     StackValueContext context(this);
     Visit(expr);
     PrepareForBailout(expr, NO_REGISTERS);
@@ -421,6 +370,7 @@ class FullCodeGenerator: public AstVisitor {
                        Label* if_true,
                        Label* if_false,
                        Label* fall_through) {
+    if (FLAG_verify_operand_stack_depth) EmitOperandStackDepthCheck();
     TestContext context(this, expr, if_true, if_false, fall_through);
     Visit(expr);
     // For test contexts, we prepare for bailout before branching, not at
@@ -434,6 +384,34 @@ class FullCodeGenerator: public AstVisitor {
   void DeclareModules(Handle<FixedArray> descriptions);
   void DeclareGlobals(Handle<FixedArray> pairs);
   int DeclareGlobalsFlags();
+
+  // Push, pop or drop values onto/from the operand stack.
+  void PushOperand(Register reg);
+  void PopOperand(Register reg);
+  void DropOperands(int count);
+
+  // Convenience helpers for pushing onto the operand stack.
+  void PushOperand(MemOperand operand);
+  void PushOperand(Handle<Object> handle);
+  void PushOperand(Smi* smi);
+
+  // Convenience helpers for pushing/popping multiple operands.
+  void PushOperands(Register reg1, Register reg2);
+  void PushOperands(Register reg1, Register reg2, Register reg3);
+  void PushOperands(Register reg1, Register reg2, Register reg3, Register reg4);
+  void PopOperands(Register reg1, Register reg2);
+
+  // Convenience helper for calling a runtime function that consumes arguments
+  // from the operand stack (only usable for functions with known arity).
+  void CallRuntimeWithOperands(Runtime::FunctionId function_id);
+
+  // Static tracking of the operand stack depth.
+  void OperandStackDepthDecrement(int count);
+  void OperandStackDepthIncrement(int count);
+
+  // Generate debug code that verifies that our static tracking of the operand
+  // stack depth is in sync with the actual operand stack during runtime.
+  void EmitOperandStackDepthCheck();
 
   // Generate code to create an iterator result object.  The "value" property is
   // set to a value popped from the stack, and "done" is set according to the
@@ -526,19 +504,15 @@ class FullCodeGenerator: public AstVisitor {
   F(IsJSProxy)                          \
   F(Call)                               \
   F(ValueOf)                            \
-  F(SetValueOf)                         \
-  F(IsDate)                             \
   F(StringCharFromCode)                 \
   F(StringCharAt)                       \
   F(OneByteSeqStringSetChar)            \
   F(TwoByteSeqStringSetChar)            \
   F(IsJSReceiver)                       \
-  F(IsSimdValue)                        \
   F(MathPow)                            \
   F(HasCachedArrayIndex)                \
   F(GetCachedArrayIndex)                \
   F(GetSuperConstructor)                \
-  F(FastOneByteArrayJoin)               \
   F(GeneratorNext)                      \
   F(GeneratorReturn)                    \
   F(GeneratorThrow)                     \
@@ -673,11 +647,13 @@ class FullCodeGenerator: public AstVisitor {
   void EmitSetHomeObjectAccumulator(Expression* initializer, int offset,
                                     FeedbackVectorSlot slot);
 
+  void EmitLoadStoreICSlot(FeedbackVectorSlot slot);
+
   void CallIC(Handle<Code> code,
               TypeFeedbackId id = TypeFeedbackId::None());
 
   // Inside typeof reference errors are never thrown.
-  void CallLoadIC(TypeofMode typeof_mode, LanguageMode language_mode = SLOPPY,
+  void CallLoadIC(TypeofMode typeof_mode,
                   TypeFeedbackId id = TypeFeedbackId::None());
   void CallStoreIC(TypeFeedbackId id = TypeFeedbackId::None());
 
@@ -715,6 +691,8 @@ class FullCodeGenerator: public AstVisitor {
 
   void EmitContinue(Statement* target);
   void EmitBreak(Statement* target);
+
+  void EmitIllegalRedeclaration();
 
   // Loop nesting counter.
   int loop_depth() { return loop_depth_; }
@@ -774,8 +752,6 @@ class FullCodeGenerator: public AstVisitor {
 
   bool MustCreateObjectLiteralWithRuntime(ObjectLiteral* expr) const;
   bool MustCreateArrayLiteralWithRuntime(ArrayLiteral* expr) const;
-
-  void EmitLoadStoreICSlot(FeedbackVectorSlot slot);
 
   int NewHandlerTableEntry();
 
@@ -991,6 +967,7 @@ class FullCodeGenerator: public AstVisitor {
   NestedStatement* nesting_stack_;
   int loop_depth_;
   int try_catch_depth_;
+  int operand_stack_depth_;
   ZoneList<Handle<Object> >* globals_;
   Handle<FixedArray> modules_;
   int module_index_;
@@ -1000,7 +977,6 @@ class FullCodeGenerator: public AstVisitor {
   ZoneVector<HandlerTableEntry> handler_table_;
   int ic_total_count_;
   Handle<Cell> profiling_counter_;
-  bool generate_debug_code_;
 
   friend class NestedStatement;
 
@@ -1038,11 +1014,7 @@ class BackEdgeTable {
     return instruction_start_ + pc_offset(index);
   }
 
-  enum BackEdgeState {
-    INTERRUPT,
-    ON_STACK_REPLACEMENT,
-    OSR_AFTER_STACK_CHECK
-  };
+  enum BackEdgeState { INTERRUPT, ON_STACK_REPLACEMENT };
 
   // Increase allowed loop nesting level by one and patch those matching loops.
   static void Patch(Isolate* isolate, Code* unoptimized_code);
@@ -1056,13 +1028,6 @@ class BackEdgeTable {
   // Change all patched back edges back to normal interrupts.
   static void Revert(Isolate* isolate,
                      Code* unoptimized_code);
-
-  // Change a back edge patched for on-stack replacement to perform a
-  // stack check first.
-  static void AddStackCheck(Handle<Code> code, uint32_t pc_offset);
-
-  // Revert the patch by AddStackCheck.
-  static void RemoveStackCheck(Handle<Code> code, uint32_t pc_offset);
 
   // Return the current patch state of the back edge.
   static BackEdgeState GetBackEdgeState(Isolate* isolate,

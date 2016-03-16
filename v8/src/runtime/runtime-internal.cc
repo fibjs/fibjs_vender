@@ -171,14 +171,6 @@ RUNTIME_FUNCTION(Runtime_ThrowIteratorResultNotAnObject) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_ThrowStrongModeImplicitConversion) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 0);
-  THROW_NEW_ERROR_RETURN_FAILURE(
-      isolate, NewTypeError(MessageTemplate::kStrongImplicitConversion));
-}
-
-
 RUNTIME_FUNCTION(Runtime_ThrowApplyNonFunction) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
@@ -317,7 +309,6 @@ RUNTIME_FUNCTION(Runtime_FormatMessageString) {
   return *result;
 }
 
-
 #define CALLSITE_GET(NAME, RETURN)                          \
   RUNTIME_FUNCTION(Runtime_CallSite##NAME##RT) {            \
     HandleScope scope(isolate);                             \
@@ -325,7 +316,7 @@ RUNTIME_FUNCTION(Runtime_FormatMessageString) {
     CONVERT_ARG_HANDLE_CHECKED(JSObject, call_site_obj, 0); \
     Handle<String> result;                                  \
     CallSite call_site(isolate, call_site_obj);             \
-    RUNTIME_ASSERT(call_site.IsValid())                     \
+    RUNTIME_ASSERT(call_site.IsValid());                    \
     return RETURN(call_site.NAME(), isolate);               \
   }
 

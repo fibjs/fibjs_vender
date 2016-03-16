@@ -285,6 +285,7 @@ struct QwNeonRegister {
 
 typedef QwNeonRegister QuadRegister;
 
+typedef QwNeonRegister Simd128Register;
 
 // Support for the VFP registers s0 to s31 (d0 to d15).
 // Note that "s(N):s(N+1)" is the same as "d(N/2)".
@@ -950,6 +951,9 @@ class Assembler : public AssemblerBase {
   void uxtah(Register dst, Register src1, Register src2, int rotate = 0,
              Condition cond = al);
 
+  // Reverse the bits in a register.
+  void rbit(Register dst, Register src, Condition cond = al);
+
   // Status register access instructions
 
   void mrs(Register dst, SRegister s, Condition cond = al);
@@ -985,6 +989,11 @@ class Assembler : public AssemblerBase {
 
   void bkpt(uint32_t imm16);  // v5 and above
   void svc(uint32_t imm24, Condition cond = al);
+
+  // Synchronization instructions
+  void dmb(BarrierOption option);
+  void dsb(BarrierOption option);
+  void isb(BarrierOption option);
 
   // Coprocessor instructions
 
@@ -1381,7 +1390,9 @@ class Assembler : public AssemblerBase {
   // Emits the address of the code stub's first instruction.
   void emit_code_stub_address(Code* stub);
 
-  PositionsRecorder* positions_recorder() { return &positions_recorder_; }
+  AssemblerPositionsRecorder* positions_recorder() {
+    return &positions_recorder_;
+  }
 
   // Read/patch instructions
   Instr instr_at(int pos) { return *reinterpret_cast<Instr*>(buffer_ + pos); }
@@ -1628,8 +1639,8 @@ class Assembler : public AssemblerBase {
   friend class RelocInfo;
   friend class CodePatcher;
   friend class BlockConstPoolScope;
-  PositionsRecorder positions_recorder_;
-  friend class PositionsRecorder;
+  AssemblerPositionsRecorder positions_recorder_;
+  friend class AssemblerPositionsRecorder;
   friend class EnsureSpace;
 };
 

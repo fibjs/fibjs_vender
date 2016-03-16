@@ -53,7 +53,6 @@ class ParseInfo {
   FLAG_ACCESSOR(kEval, is_eval, set_eval)
   FLAG_ACCESSOR(kGlobal, is_global, set_global)
   FLAG_ACCESSOR(kStrictMode, is_strict_mode, set_strict_mode)
-  FLAG_ACCESSOR(kStrongMode, is_strong_mode, set_strong_mode)
   FLAG_ACCESSOR(kNative, is_native, set_native)
   FLAG_ACCESSOR(kModule, is_module, set_module)
   FLAG_ACCESSOR(kAllowLazyParsing, allow_lazy_parsing, set_allow_lazy_parsing)
@@ -137,12 +136,11 @@ class ParseInfo {
   //--------------------------------------------------------------------------
 
   LanguageMode language_mode() {
-    return construct_language_mode(is_strict_mode(), is_strong_mode());
+    return construct_language_mode(is_strict_mode());
   }
   void set_language_mode(LanguageMode language_mode) {
     STATIC_ASSERT(LANGUAGE_END == 3);
-    set_strict_mode(language_mode & STRICT_BIT);
-    set_strong_mode(language_mode & STRONG_BIT);
+    set_strict_mode(is_strict(language_mode));
   }
 
   void ReopenHandlesInNewHandleScope() {
@@ -165,13 +163,12 @@ class ParseInfo {
     kEval = 1 << 2,
     kGlobal = 1 << 3,
     kStrictMode = 1 << 4,
-    kStrongMode = 1 << 5,
-    kNative = 1 << 6,
-    kParseRestriction = 1 << 7,
-    kModule = 1 << 8,
-    kAllowLazyParsing = 1 << 9,
+    kNative = 1 << 5,
+    kParseRestriction = 1 << 6,
+    kModule = 1 << 7,
+    kAllowLazyParsing = 1 << 8,
     // ---------- Output flags --------------------------
-    kAstValueFactoryOwned = 1 << 10
+    kAstValueFactoryOwned = 1 << 9
   };
 
   //------------- Inputs to parsing and scope analysis -----------------------
@@ -335,6 +332,9 @@ class ParserTraits {
 
     typedef v8::internal::AstProperties AstProperties;
 
+    typedef v8::internal::ExpressionClassifier<ParserTraits>
+        ExpressionClassifier;
+
     // Return types for traversing functions.
     typedef const AstRawString* Identifier;
     typedef v8::internal::Expression* Expression;
@@ -401,16 +401,6 @@ class ParserTraits {
     fni->AddFunction(func_to_infer);
   }
 
-  static void CheckFunctionLiteralInsideTopLevelObjectLiteral(
-      Scope* scope, ObjectLiteralProperty* property, bool* has_function) {
-    Expression* value = property->value();
-    if (scope->DeclarationScope()->is_script_scope() &&
-        value->AsFunctionLiteral() != NULL) {
-      *has_function = true;
-      value->AsFunctionLiteral()->set_pretenure();
-    }
-  }
-
   // If we assign a function literal to a property we pretenure the
   // literal so it can be added as a constant function property.
   static void CheckAssigningFunctionLiteralToProperty(Expression* left,
@@ -441,6 +431,8 @@ class ParserTraits {
   Expression* BuildUnaryExpression(Expression* expression, Token::Value op,
                                    int pos, AstNodeFactory* factory);
 
+  Expression* BuildIteratorResult(Expression* value, bool done);
+
   // Generate AST node that throws a ReferenceError with the given type.
   Expression* NewThrowReferenceError(MessageTemplate::Template message,
                                      int pos);
@@ -460,6 +452,11 @@ class ParserTraits {
   Expression* NewThrowError(Runtime::FunctionId function_id,
                             MessageTemplate::Template message,
                             const AstRawString* arg, int pos);
+
+  void FinalizeIteratorUse(Variable* completion, Expression* condition,
+                           Variable* iter, Block* iterator_use, Block* result);
+
+  Statement* FinalizeForOfStatement(ForOfStatement* loop, int pos);
 
   // Reporting errors.
   void ReportMessageAt(Scanner::Location source_location,
@@ -547,7 +544,7 @@ class ParserTraits {
                                     int initializer_end_position, bool is_rest);
   V8_INLINE void DeclareFormalParameter(
       Scope* scope, const ParserFormalParameters::Parameter& parameter,
-      ExpressionClassifier* classifier);
+      Type::ExpressionClassifier* classifier);
   void ParseArrowFunctionFormalParameters(ParserFormalParameters* parameters,
                                           Expression* params,
                                           const Scanner::Location& params_loc,
@@ -567,7 +564,6 @@ class ParserTraits {
       const AstRawString* name, Scanner::Location function_name_location,
       FunctionNameValidity function_name_validity, FunctionKind kind,
       int function_token_position, FunctionLiteral::FunctionType type,
-      FunctionLiteral::ArityRestriction arity_restriction,
       LanguageMode language_mode, bool* ok);
   V8_INLINE void SkipLazyFunctionBody(
       int* materialized_literal_count, int* expected_property_count, bool* ok,
@@ -642,6 +638,7 @@ class ParserTraits {
 
   V8_INLINE void QueueDestructuringAssignmentForRewriting(
       Expression* assignment);
+  V8_INLINE void QueueNonPatternForRewriting(Expression* expr);
 
   void SetFunctionNameFromPropertyName(ObjectLiteralProperty* property,
                                        const AstRawString* name);
@@ -650,20 +647,27 @@ class ParserTraits {
                                         Expression* identifier);
 
   // Rewrite expressions that are not used as patterns
-  V8_INLINE Expression* RewriteNonPattern(
-      Expression* expr, const ExpressionClassifier* classifier, bool* ok);
-  V8_INLINE ObjectLiteralProperty* RewriteNonPatternObjectLiteralProperty(
-      ObjectLiteralProperty* property, const ExpressionClassifier* classifier,
-      bool* ok);
+  V8_INLINE void RewriteNonPattern(Type::ExpressionClassifier* classifier,
+                                   bool* ok);
+
+  V8_INLINE Zone* zone() const;
+
+  V8_INLINE ZoneList<Expression*>* GetNonPatternList() const;
 
   Expression* RewriteYieldStar(
       Expression* generator, Expression* expression, int pos);
+
+  Expression* RewriteInstanceof(Expression* lhs, Expression* rhs, int pos);
 
  private:
   Parser* parser_;
 
   void BuildIteratorClose(ZoneList<Statement*>* statements, Variable* iterator,
-                          Maybe<Variable*> input, Maybe<Variable*> output);
+                          Maybe<Variable*> input, Variable* output);
+  void BuildIteratorCloseForCompletion(
+      ZoneList<Statement*>* statements, Variable* iterator,
+      Variable* body_threw);
+  Statement* CheckCallable(Variable* var, Expression* error);
 };
 
 
@@ -691,6 +695,13 @@ class Parser : public ParserBase<ParserTraits> {
 
  private:
   friend class ParserTraits;
+
+  // Runtime encoding of different completion modes.
+  enum CompletionKind {
+    kNormalCompletion,
+    kThrowCompletion,
+    kAbruptCompletion
+  };
 
   // Limit the allowed number of local variables in a function. The hard limit
   // is that offsets computed by FullCodeGenerator::StackOperand and similar
@@ -807,8 +818,9 @@ class Parser : public ParserBase<ParserTraits> {
         const DeclarationParsingResult::Declaration* declaration,
         ZoneList<const AstRawString*>* names, bool* ok);
 
-    static void RewriteDestructuringAssignment(
-        Parser* parser, RewritableAssignmentExpression* expr, Scope* Scope);
+    static void RewriteDestructuringAssignment(Parser* parser,
+                                               RewritableExpression* expr,
+                                               Scope* Scope);
 
     static Expression* RewriteDestructuringAssignment(Parser* parser,
                                                       Assignment* assignment,
@@ -878,10 +890,10 @@ class Parser : public ParserBase<ParserTraits> {
     bool* ok_;
   };
 
-
-  void ParseVariableDeclarations(VariableDeclarationContext var_context,
-                                 DeclarationParsingResult* parsing_result,
-                                 bool* ok);
+  Block* ParseVariableDeclarations(VariableDeclarationContext var_context,
+                                   DeclarationParsingResult* parsing_result,
+                                   ZoneList<const AstRawString*>* names,
+                                   bool* ok);
   Statement* ParseExpressionOrLabelledStatement(
       ZoneList<const AstRawString*>* labels, bool* ok);
   IfStatement* ParseIfStatement(ZoneList<const AstRawString*>* labels,
@@ -906,6 +918,14 @@ class Parser : public ParserBase<ParserTraits> {
   class CollectExpressionsInTailPositionToListScope;
   TryStatement* ParseTryStatement(bool* ok);
   DebuggerStatement* ParseDebuggerStatement(bool* ok);
+  // Parse a SubStatement in strict mode, or with an extra block scope in
+  // sloppy mode to handle
+  // ES#sec-functiondeclarations-in-ifstatement-statement-clauses
+  // The legacy parameter indicates whether function declarations are
+  // banned by the ES2015 specification in this location, and they are being
+  // permitted here to match previous V8 behavior.
+  Statement* ParseScopedStatement(ZoneList<const AstRawString*>* labels,
+                                  bool legacy, bool* ok);
 
   // !%_IsJSReceiver(result = iterator.next()) &&
   //     %ThrowIteratorResultNotAnObject(result)
@@ -915,8 +935,10 @@ class Parser : public ParserBase<ParserTraits> {
 
   // Initialize the components of a for-in / for-of statement.
   void InitializeForEachStatement(ForEachStatement* stmt, Expression* each,
-                                  Expression* subject, Statement* body,
-                                  bool is_destructuring);
+                                  Expression* subject, Statement* body);
+  void InitializeForOfStatement(ForOfStatement* stmt, Expression* each,
+                                Expression* iterable, Statement* body,
+                                int iterable_pos);
   Statement* DesugarLexicalBindingsInForStatement(
       Scope* inner_scope, VariableMode mode,
       ZoneList<const AstRawString*>* names, ForStatement* loop, Statement* init,
@@ -928,7 +950,6 @@ class Parser : public ParserBase<ParserTraits> {
       const AstRawString* name, Scanner::Location function_name_location,
       FunctionNameValidity function_name_validity, FunctionKind kind,
       int function_token_position, FunctionLiteral::FunctionType type,
-      FunctionLiteral::ArityRestriction arity_restriction,
       LanguageMode language_mode, bool* ok);
 
 
@@ -1025,11 +1046,7 @@ class Parser : public ParserBase<ParserTraits> {
   friend class NonPatternRewriter;
   V8_INLINE Expression* RewriteSpreads(ArrayLiteral* lit);
 
-  V8_INLINE Expression* RewriteNonPattern(
-      Expression* expr, const ExpressionClassifier* classifier, bool* ok);
-  V8_INLINE ObjectLiteralProperty* RewriteNonPatternObjectLiteralProperty(
-      ObjectLiteralProperty* property, const ExpressionClassifier* classifier,
-      bool* ok);
+  V8_INLINE void RewriteNonPattern(ExpressionClassifier* classifier, bool* ok);
 
   friend class InitializerRewriter;
   void RewriteParameterInitializer(Expression* expr, Scope* scope);
@@ -1180,7 +1197,7 @@ void ParserTraits::AddFormalParameter(ParserFormalParameters* parameters,
 
 void ParserTraits::DeclareFormalParameter(
     Scope* scope, const ParserFormalParameters::Parameter& parameter,
-    ExpressionClassifier* classifier) {
+    Type::ExpressionClassifier* classifier) {
   bool is_duplicate = false;
   bool is_simple = classifier->is_simple_parameter_list();
   auto name = is_simple || parameter.is_rest

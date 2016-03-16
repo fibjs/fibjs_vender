@@ -178,8 +178,7 @@ class BytecodeGenerator::ControlScope::DeferredCommands final {
     for (size_t i = 0; i < deferred_.size(); ++i) {
       Entry& entry = deferred_[i];
       builder()->LoadLiteral(Smi::FromInt(entry.token));
-      builder()->CompareOperation(Token::EQ_STRICT, token_register_,
-                                  Strength::WEAK);
+      builder()->CompareOperation(Token::EQ_STRICT, token_register_);
       dispatch.Case(static_cast<int>(i));
     }
     dispatch.DefaultAt(static_cast<int>(deferred_.size()));
@@ -363,16 +362,22 @@ class BytecodeGenerator::ControlScopeForTryFinally final
 void BytecodeGenerator::ControlScope::PerformCommand(Command command,
                                                      Statement* statement) {
   ControlScope* current = this;
-  ContextScope* context = this->context();
+  ContextScope* context = generator()->execution_context();
   do {
-    if (current->Execute(command, statement)) { return; }
-    current = current->outer();
     if (current->context() != context) {
-      // Pop context to the expected depth.
+      // Pop context to the expected depth for break and continue. For return
+      // and throw it is not required to pop. Debugger expects that the
+      // context is not popped on return. So do not pop on return.
       // TODO(rmcilroy): Only emit a single context pop.
-      generator()->builder()->PopContext(current->context()->reg());
+      if (command == CMD_BREAK || command == CMD_CONTINUE) {
+        generator()->builder()->PopContext(current->context()->reg());
+      }
       context = current->context();
     }
+    if (current->Execute(command, statement)) {
+      return;
+    }
+    current = current->outer();
   } while (current != nullptr);
   UNREACHABLE();
 }
@@ -418,11 +423,6 @@ class BytecodeGenerator::RegisterAllocationScope {
     return allocator_.NextConsecutiveRegister();
   }
 
-  template <size_t N>
-  void PrepareAndInitializeConsecutiveAllocations(Register (&registers)[N]) {
-    return allocator_.PrepareAndInitializeConsecutiveAllocations(registers, N);
-  }
-
   bool RegisterIsAllocatedInThisScope(Register reg) const {
     return allocator_.RegisterIsAllocatedInThisScope(reg);
   }
@@ -456,7 +456,7 @@ class BytecodeGenerator::ExpressionResultScope {
 
   virtual ~ExpressionResultScope() {
     generator_->set_execution_result(outer_);
-    DCHECK(result_identified());
+    DCHECK(result_identified() || generator_->HasStackOverflow());
   }
 
   bool IsEffect() const { return kind_ == Expression::kEffect; }
@@ -468,6 +468,7 @@ class BytecodeGenerator::ExpressionResultScope {
  protected:
   ExpressionResultScope* outer() const { return outer_; }
   BytecodeArrayBuilder* builder() const { return generator_->builder(); }
+  BytecodeGenerator* generator() const { return generator_; }
   const RegisterAllocationScope* allocator() const { return &allocator_; }
 
   void set_result_identified() {
@@ -542,30 +543,15 @@ class BytecodeGenerator::RegisterResultScope final
     set_result_identified();
   }
 
-  Register ResultRegister() const { return result_register_; }
+  Register ResultRegister() {
+    if (generator()->HasStackOverflow() && !result_identified()) {
+      SetResultInAccumulator();
+    }
+    return result_register_;
+  }
 
  private:
   Register result_register_;
-};
-
-// Class for holding arguments for runtime calls relating to super
-// properties.
-class BytecodeGenerator::SuperPropertyArguments final {
- public:
-  SuperPropertyArguments() {}
-
-  Register (&registers())[4] { return args_; }
-  Register receiver() const { return args_[0]; }
-  Register home_object() const { return args_[1]; }
-  Register name_or_key() const { return args_[2]; }
-  Register store_value() const { return args_[3]; }
-  Register language_mode() const { return args_[3]; }
-  size_t count() const { return arraysize(args_); }
-
- private:
-  Register args_[4];
-
-  DISALLOW_COPY_AND_ASSIGN(SuperPropertyArguments);
 };
 
 BytecodeGenerator::BytecodeGenerator(Isolate* isolate, Zone* zone)
@@ -591,7 +577,8 @@ Handle<BytecodeArray> BytecodeGenerator::MakeBytecode(CompilationInfo* info) {
   // Initialize bytecode array builder.
   set_builder(new (zone()) BytecodeArrayBuilder(
       isolate(), zone(), info->num_parameters_including_this(),
-      scope()->MaxNestedContextChainLength(), scope()->num_stack_slots()));
+      scope()->MaxNestedContextChainLength(), scope()->num_stack_slots(),
+      info->literal()));
 
   // Initialize the incoming context.
   ContextScope incoming_context(this, scope(), false);
@@ -610,7 +597,7 @@ Handle<BytecodeArray> BytecodeGenerator::MakeBytecode(CompilationInfo* info) {
     MakeBytecodeBody();
   }
 
-  builder()->EnsureReturn(info->literal());
+  builder()->EnsureReturn();
   set_scope(nullptr);
   set_info(nullptr);
   return builder()->ToBytecodeArray();
@@ -639,7 +626,9 @@ void BytecodeGenerator::MakeBytecodeBody() {
 
   // Visit illegal re-declaration and bail out if it exists.
   if (scope()->HasIllegalRedeclaration()) {
-    VisitForEffect(scope()->GetIllegalRedeclaration());
+    Expression* illegal = scope()->GetIllegalRedeclaration();
+    builder()->SetExpressionAsStatementPosition(illegal);
+    VisitForEffect(illegal);
     return;
   }
 
@@ -852,6 +841,7 @@ void BytecodeGenerator::VisitEmptyStatement(EmptyStatement* stmt) {
 
 
 void BytecodeGenerator::VisitIfStatement(IfStatement* stmt) {
+  builder()->SetStatementPosition(stmt);
   BytecodeLabel else_label, end_label;
   if (stmt->condition()->ToBooleanIsTrue()) {
     // Generate then block unconditionally as always true.
@@ -887,23 +877,26 @@ void BytecodeGenerator::VisitSloppyBlockFunctionStatement(
 
 
 void BytecodeGenerator::VisitContinueStatement(ContinueStatement* stmt) {
+  builder()->SetStatementPosition(stmt);
   execution_control()->Continue(stmt->target());
 }
 
 
 void BytecodeGenerator::VisitBreakStatement(BreakStatement* stmt) {
+  builder()->SetStatementPosition(stmt);
   execution_control()->Break(stmt->target());
 }
 
 
 void BytecodeGenerator::VisitReturnStatement(ReturnStatement* stmt) {
+  builder()->SetStatementPosition(stmt);
   VisitForAccumulatorValue(stmt->expression());
-  builder()->SetReturnPosition(info_->literal());
   execution_control()->ReturnAccumulator();
 }
 
 
 void BytecodeGenerator::VisitWithStatement(WithStatement* stmt) {
+  builder()->SetStatementPosition(stmt);
   VisitForAccumulatorValue(stmt->expression());
   builder()->CastAccumulatorToJSObject();
   VisitNewLocalWithContext();
@@ -918,6 +911,8 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
   SwitchBuilder switch_builder(builder(), clauses->length());
   ControlScopeForBreakable scope(this, stmt, &switch_builder);
   int default_index = -1;
+
+  builder()->SetStatementPosition(stmt);
 
   // Keep the switch value in a register until a case matches.
   Register tag = VisitForRegisterValue(stmt->tag());
@@ -935,8 +930,7 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
 
     // Perform label comparison as if via '===' with tag.
     VisitForAccumulatorValue(clause->label());
-    builder()->CompareOperation(Token::Value::EQ_STRICT, tag,
-                                language_mode_strength());
+    builder()->CompareOperation(Token::Value::EQ_STRICT, tag);
     switch_builder.Case(i);
   }
 
@@ -986,6 +980,7 @@ void BytecodeGenerator::VisitDoWhileStatement(DoWhileStatement* stmt) {
   } else {
     VisitIterationBody(stmt, &loop_builder);
     loop_builder.Condition();
+    builder()->SetExpressionAsStatementPosition(stmt->cond());
     VisitForAccumulatorValue(stmt->cond());
     loop_builder.JumpToHeaderIfTrue();
   }
@@ -1002,6 +997,7 @@ void BytecodeGenerator::VisitWhileStatement(WhileStatement* stmt) {
   loop_builder.LoopHeader();
   loop_builder.Condition();
   if (!stmt->cond()->ToBooleanIsTrue()) {
+    builder()->SetExpressionAsStatementPosition(stmt->cond());
     VisitForAccumulatorValue(stmt->cond());
     loop_builder.BreakIfFalse();
   }
@@ -1025,12 +1021,14 @@ void BytecodeGenerator::VisitForStatement(ForStatement* stmt) {
   loop_builder.LoopHeader();
   loop_builder.Condition();
   if (stmt->cond() && !stmt->cond()->ToBooleanIsTrue()) {
+    builder()->SetExpressionAsStatementPosition(stmt->cond());
     VisitForAccumulatorValue(stmt->cond());
     loop_builder.BreakIfFalse();
   }
   VisitIterationBody(stmt, &loop_builder);
   if (stmt->next() != nullptr) {
     loop_builder.Next();
+    builder()->SetStatementPosition(stmt->next());
     Visit(stmt->next());
   }
   loop_builder.JumpToHeader();
@@ -1076,26 +1074,36 @@ void BytecodeGenerator::VisitForInAssignment(Expression* expr,
     }
     case NAMED_SUPER_PROPERTY: {
       RegisterAllocationScope register_scope(this);
-      SuperPropertyArguments super_args;
-      Register value = register_allocator()->NewRegister();
+      register_allocator()->PrepareForConsecutiveAllocations(4);
+      Register receiver = register_allocator()->NextConsecutiveRegister();
+      Register home_object = register_allocator()->NextConsecutiveRegister();
+      Register name = register_allocator()->NextConsecutiveRegister();
+      Register value = register_allocator()->NextConsecutiveRegister();
       builder()->StoreAccumulatorInRegister(value);
-      PrepareNamedSuperPropertyArguments(
-          property->obj()->AsSuperPropertyReference(),
-          property->key()->AsLiteral()->AsPropertyName(), &super_args);
-      builder()->LoadAccumulatorWithRegister(value);
-      BuildNamedSuperPropertyStore(&super_args);
+      SuperPropertyReference* super_property =
+          property->obj()->AsSuperPropertyReference();
+      VisitForRegisterValue(super_property->this_var(), receiver);
+      VisitForRegisterValue(super_property->home_object(), home_object);
+      builder()
+          ->LoadLiteral(property->key()->AsLiteral()->AsPropertyName())
+          .StoreAccumulatorInRegister(name);
+      BuildNamedSuperPropertyStore(receiver, home_object, name, value);
       break;
     }
     case KEYED_SUPER_PROPERTY: {
       RegisterAllocationScope register_scope(this);
-      SuperPropertyArguments super_args;
-      Register value = register_allocator()->NewRegister();
+      register_allocator()->PrepareForConsecutiveAllocations(4);
+      Register receiver = register_allocator()->NextConsecutiveRegister();
+      Register home_object = register_allocator()->NextConsecutiveRegister();
+      Register key = register_allocator()->NextConsecutiveRegister();
+      Register value = register_allocator()->NextConsecutiveRegister();
       builder()->StoreAccumulatorInRegister(value);
-      PrepareKeyedSuperPropertyArguments(
-          property->obj()->AsSuperPropertyReference(), property->key(),
-          &super_args);
-      builder()->LoadAccumulatorWithRegister(value);
-      BuildKeyedSuperPropertyStore(&super_args);
+      SuperPropertyReference* super_property =
+          property->obj()->AsSuperPropertyReference();
+      VisitForRegisterValue(super_property->this_var(), receiver);
+      VisitForRegisterValue(super_property->home_object(), home_object);
+      VisitForRegisterValue(property->key(), key);
+      BuildKeyedSuperPropertyStore(receiver, home_object, key, value);
       break;
     }
   }
@@ -1110,15 +1118,15 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   }
 
   LoopBuilder loop_builder(builder());
-  BytecodeLabel subject_null_label, subject_undefined_label, not_object_label;
+  BytecodeLabel subject_null_label, subject_undefined_label;
 
   // Prepare the state for executing ForIn.
+  builder()->SetExpressionAsStatementPosition(stmt->subject());
   VisitForAccumulatorValue(stmt->subject());
   builder()->JumpIfUndefined(&subject_undefined_label);
   builder()->JumpIfNull(&subject_null_label);
   Register receiver = register_allocator()->NewRegister();
   builder()->CastAccumulatorToJSObject();
-  builder()->JumpIfNull(&not_object_label);
   builder()->StoreAccumulatorInRegister(receiver);
 
   register_allocator()->PrepareForConsecutiveAllocations(3);
@@ -1136,11 +1144,13 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
   // The loop
   loop_builder.LoopHeader();
+  builder()->SetExpressionAsStatementPosition(stmt->each());
   loop_builder.Condition();
   builder()->ForInDone(index, cache_length);
   loop_builder.BreakIfTrue();
   DCHECK(Register::AreContiguous(cache_type, cache_array));
-  builder()->ForInNext(receiver, index, cache_type);
+  FeedbackVectorSlot slot = stmt->ForInFeedbackSlot();
+  builder()->ForInNext(receiver, index, cache_type, feedback_index(slot));
   loop_builder.ContinueIfUndefined();
   VisitForInAssignment(stmt->each(), stmt->EachFeedbackSlot());
   VisitIterationBody(stmt, &loop_builder);
@@ -1149,7 +1159,6 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   builder()->StoreAccumulatorInRegister(index);
   loop_builder.JumpToHeader();
   loop_builder.EndLoop();
-  builder()->Bind(&not_object_label);
   builder()->Bind(&subject_null_label);
   builder()->Bind(&subject_undefined_label);
 }
@@ -1163,6 +1172,7 @@ void BytecodeGenerator::VisitForOfStatement(ForOfStatement* stmt) {
 
   loop_builder.LoopHeader();
   loop_builder.Next();
+  builder()->SetExpressionAsStatementPosition(stmt->next_result());
   VisitForEffect(stmt->next_result());
   VisitForAccumulatorValue(stmt->result_done());
   loop_builder.BreakIfTrue();
@@ -1284,7 +1294,9 @@ void BytecodeGenerator::VisitFunctionLiteral(FunctionLiteral* expr) {
   // Find or build a shared function info.
   Handle<SharedFunctionInfo> shared_info =
       Compiler::GetSharedFunctionInfo(expr, info()->script(), info());
-  CHECK(!shared_info.is_null());  // TODO(rmcilroy): Set stack overflow?
+  if (shared_info.is_null()) {
+    return SetStackOverflow();
+  }
   builder()->CreateClosure(shared_info,
                            expr->pretenure() ? TENURED : NOT_TENURED);
   execution_result()->SetResultInAccumulator();
@@ -1314,7 +1326,7 @@ void BytecodeGenerator::VisitClassLiteralContents(ClassLiteral* expr) {
   FeedbackVectorSlot slot = expr->PrototypeSlot();
   builder()
       ->StoreAccumulatorInRegister(literal)
-      .LoadNamedProperty(literal, name, feedback_index(slot), language_mode())
+      .LoadNamedProperty(literal, name, feedback_index(slot))
       .StoreAccumulatorInRegister(prototype);
 
   VisitClassLiteralProperties(expr, literal, prototype);
@@ -1433,7 +1445,7 @@ void BytecodeGenerator::VisitClassLiteralStaticPrototypeWithComputedName(
   BytecodeLabel done;
   builder()
       ->LoadLiteral(isolate()->factory()->prototype_string())
-      .CompareOperation(Token::Value::EQ_STRICT, key, Strength::WEAK)
+      .CompareOperation(Token::Value::EQ_STRICT, key)
       .JumpIfFalse(&done)
       .CallRuntime(Runtime::kThrowStaticPrototypeError, Register(0), 0)
       .Bind(&done);
@@ -1696,11 +1708,6 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
     }
   }
 
-  // Transform literals that contain functions to fast properties.
-  if (expr->has_function()) {
-    builder()->CallRuntime(Runtime::kToFastProperties, literal, 1);
-  }
-
   execution_result()->SetResultInRegister(literal);
 }
 
@@ -1783,7 +1790,7 @@ void BytecodeGenerator::VisitVariableLoad(Variable* variable,
     case VariableLocation::GLOBAL:
     case VariableLocation::UNALLOCATED: {
       builder()->LoadGlobal(variable->name(), feedback_index(slot),
-                            language_mode(), typeof_mode);
+                            typeof_mode);
       execution_result()->SetResultInAccumulator();
       break;
     }
@@ -1836,70 +1843,40 @@ Register BytecodeGenerator::VisitVariableLoadForRegisterValue(
   return register_scope.ResultRegister();
 }
 
-void BytecodeGenerator::PrepareNamedSuperPropertyArguments(
-    SuperPropertyReference* super_property, Handle<Name> name,
-    SuperPropertyArguments* super_args) {
-  register_allocator()->PrepareAndInitializeConsecutiveAllocations(
-      super_args->registers());
-
-  VisitForAccumulatorValue(super_property->this_var());
-  builder()->StoreAccumulatorInRegister(super_args->receiver());
-  VisitForAccumulatorValue(super_property->home_object());
-  builder()->StoreAccumulatorInRegister(super_args->home_object());
-  builder()->LoadLiteral(name).StoreAccumulatorInRegister(
-      super_args->name_or_key());
+void BytecodeGenerator::BuildNamedSuperPropertyLoad(Register receiver,
+                                                    Register home_object,
+                                                    Register name) {
+  DCHECK(Register::AreContiguous(receiver, home_object, name));
+  builder()->CallRuntime(Runtime::kLoadFromSuper, receiver, 3);
 }
 
-void BytecodeGenerator::PrepareKeyedSuperPropertyArguments(
-    SuperPropertyReference* super_property, Expression* key,
-    SuperPropertyArguments* super_args) {
-  register_allocator()->PrepareAndInitializeConsecutiveAllocations(
-      super_args->registers());
-
-  VisitForAccumulatorValue(super_property->this_var());
-  builder()->StoreAccumulatorInRegister(super_args->receiver());
-  VisitForAccumulatorValue(super_property->home_object());
-  builder()->StoreAccumulatorInRegister(super_args->home_object());
-  VisitForAccumulatorValue(key);
-  builder()->StoreAccumulatorInRegister(super_args->name_or_key());
+void BytecodeGenerator::BuildKeyedSuperPropertyLoad(Register receiver,
+                                                    Register home_object,
+                                                    Register key) {
+  DCHECK(Register::AreContiguous(receiver, home_object, key));
+  builder()->CallRuntime(Runtime::kLoadKeyedFromSuper, receiver, 3);
 }
 
-void BytecodeGenerator::BuildNamedSuperPropertyLoad(
-    SuperPropertyArguments* super_args) {
-  builder()
-      ->LoadLiteral(Smi::FromInt(static_cast<int>(language_mode())))
-      .StoreAccumulatorInRegister(super_args->language_mode());
-  builder()->CallRuntime(Runtime::kLoadFromSuper, super_args->receiver(),
-                         super_args->count());
-}
-
-void BytecodeGenerator::BuildKeyedSuperPropertyLoad(
-    SuperPropertyArguments* super_args) {
-  builder()
-      ->LoadLiteral(Smi::FromInt(static_cast<int>(language_mode())))
-      .StoreAccumulatorInRegister(super_args->language_mode());
-  builder()->CallRuntime(Runtime::kLoadKeyedFromSuper, super_args->receiver(),
-                         super_args->count());
-}
-
-void BytecodeGenerator::BuildNamedSuperPropertyStore(
-    SuperPropertyArguments* super_args) {
-  builder()->StoreAccumulatorInRegister(super_args->store_value());
+void BytecodeGenerator::BuildNamedSuperPropertyStore(Register receiver,
+                                                     Register home_object,
+                                                     Register name,
+                                                     Register value) {
+  DCHECK(Register::AreContiguous(receiver, home_object, name, value));
   Runtime::FunctionId function_id = is_strict(language_mode())
                                         ? Runtime::kStoreToSuper_Strict
                                         : Runtime::kStoreToSuper_Sloppy;
-  builder()->CallRuntime(function_id, super_args->receiver(),
-                         super_args->count());
+  builder()->CallRuntime(function_id, receiver, 4);
 }
 
-void BytecodeGenerator::BuildKeyedSuperPropertyStore(
-    SuperPropertyArguments* super_args) {
-  builder()->StoreAccumulatorInRegister(super_args->store_value());
+void BytecodeGenerator::BuildKeyedSuperPropertyStore(Register receiver,
+                                                     Register home_object,
+                                                     Register key,
+                                                     Register value) {
+  DCHECK(Register::AreContiguous(receiver, home_object, key, value));
   Runtime::FunctionId function_id = is_strict(language_mode())
                                         ? Runtime::kStoreKeyedToSuper_Strict
                                         : Runtime::kStoreKeyedToSuper_Sloppy;
-  builder()->CallRuntime(function_id, super_args->receiver(),
-                         super_args->count());
+  builder()->CallRuntime(function_id, receiver, 4);
 }
 
 void BytecodeGenerator::BuildThrowReferenceError(Handle<String> name) {
@@ -2110,8 +2087,7 @@ void BytecodeGenerator::VisitVariableAssignment(Variable* variable,
 
 void BytecodeGenerator::VisitAssignment(Assignment* expr) {
   DCHECK(expr->target()->IsValidReferenceExpressionOrThis());
-  Register object, key;
-  SuperPropertyArguments super_args;
+  Register object, key, home_object, value;
   Handle<String> name;
 
   // Left-hand side can only be a property, a global or a variable slot.
@@ -2142,15 +2118,32 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
       break;
     }
     case NAMED_SUPER_PROPERTY: {
-      PrepareNamedSuperPropertyArguments(
-          property->obj()->AsSuperPropertyReference(),
-          property->key()->AsLiteral()->AsPropertyName(), &super_args);
+      register_allocator()->PrepareForConsecutiveAllocations(4);
+      object = register_allocator()->NextConsecutiveRegister();
+      home_object = register_allocator()->NextConsecutiveRegister();
+      key = register_allocator()->NextConsecutiveRegister();
+      value = register_allocator()->NextConsecutiveRegister();
+      SuperPropertyReference* super_property =
+          property->obj()->AsSuperPropertyReference();
+      VisitForRegisterValue(super_property->this_var(), object);
+      VisitForRegisterValue(super_property->home_object(), home_object);
+      builder()
+          ->LoadLiteral(property->key()->AsLiteral()->AsPropertyName())
+          .StoreAccumulatorInRegister(key);
       break;
     }
     case KEYED_SUPER_PROPERTY: {
-      PrepareKeyedSuperPropertyArguments(
-          property->obj()->AsSuperPropertyReference(), property->key(),
-          &super_args);
+      register_allocator()->PrepareForConsecutiveAllocations(4);
+      object = register_allocator()->NextConsecutiveRegister();
+      home_object = register_allocator()->NextConsecutiveRegister();
+      key = register_allocator()->NextConsecutiveRegister();
+      value = register_allocator()->NextConsecutiveRegister();
+      builder()->StoreAccumulatorInRegister(value);
+      SuperPropertyReference* super_property =
+          property->obj()->AsSuperPropertyReference();
+      VisitForRegisterValue(super_property->this_var(), object);
+      VisitForRegisterValue(super_property->home_object(), home_object);
+      VisitForRegisterValue(property->key(), key);
       break;
     }
   }
@@ -2170,8 +2163,7 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
         FeedbackVectorSlot slot = property->PropertyFeedbackSlot();
         old_value = register_allocator()->NewRegister();
         builder()
-            ->LoadNamedProperty(object, name, feedback_index(slot),
-                                language_mode())
+            ->LoadNamedProperty(object, name, feedback_index(slot))
             .StoreAccumulatorInRegister(old_value);
         break;
       }
@@ -2181,26 +2173,25 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
         FeedbackVectorSlot slot = property->PropertyFeedbackSlot();
         old_value = register_allocator()->NewRegister();
         builder()
-            ->LoadKeyedProperty(object, feedback_index(slot), language_mode())
+            ->LoadKeyedProperty(object, feedback_index(slot))
             .StoreAccumulatorInRegister(old_value);
         break;
       }
       case NAMED_SUPER_PROPERTY: {
         old_value = register_allocator()->NewRegister();
-        BuildNamedSuperPropertyLoad(&super_args);
+        BuildNamedSuperPropertyLoad(object, home_object, key);
         builder()->StoreAccumulatorInRegister(old_value);
         break;
       }
       case KEYED_SUPER_PROPERTY: {
         old_value = register_allocator()->NewRegister();
-        BuildKeyedSuperPropertyLoad(&super_args);
+        BuildKeyedSuperPropertyLoad(object, home_object, key);
         builder()->StoreAccumulatorInRegister(old_value);
         break;
       }
     }
     VisitForAccumulatorValue(expr->value());
-    builder()->BinaryOperation(expr->binary_op(), old_value,
-                               language_mode_strength());
+    builder()->BinaryOperation(expr->binary_op(), old_value);
   } else {
     VisitForAccumulatorValue(expr->value());
   }
@@ -2224,11 +2215,13 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
                                     language_mode());
       break;
     case NAMED_SUPER_PROPERTY: {
-      BuildNamedSuperPropertyStore(&super_args);
+      builder()->StoreAccumulatorInRegister(value);
+      BuildNamedSuperPropertyStore(object, home_object, key, value);
       break;
     }
     case KEYED_SUPER_PROPERTY: {
-      BuildKeyedSuperPropertyStore(&super_args);
+      builder()->StoreAccumulatorInRegister(value);
+      BuildKeyedSuperPropertyStore(object, home_object, key, value);
       break;
     }
   }
@@ -2259,12 +2252,12 @@ void BytecodeGenerator::VisitPropertyLoad(Register obj, Property* expr) {
     case NAMED_PROPERTY: {
       builder()->LoadNamedProperty(obj,
                                    expr->key()->AsLiteral()->AsPropertyName(),
-                                   feedback_index(slot), language_mode());
+                                   feedback_index(slot));
       break;
     }
     case KEYED_PROPERTY: {
       VisitForAccumulatorValue(expr->key());
-      builder()->LoadKeyedProperty(obj, feedback_index(slot), language_mode());
+      builder()->LoadKeyedProperty(obj, feedback_index(slot));
       break;
     }
     case NAMED_SUPER_PROPERTY:
@@ -2286,27 +2279,45 @@ void BytecodeGenerator::VisitPropertyLoadForAccumulator(Register obj,
 void BytecodeGenerator::VisitNamedSuperPropertyLoad(Property* property,
                                                     Register opt_receiver_out) {
   RegisterAllocationScope register_scope(this);
-  SuperPropertyArguments super_args;
-  PrepareNamedSuperPropertyArguments(
-      property->obj()->AsSuperPropertyReference(),
-      property->key()->AsLiteral()->AsPropertyName(), &super_args);
+  register_allocator()->PrepareForConsecutiveAllocations(3);
+
+  Register receiver, home_object, name;
+  receiver = register_allocator()->NextConsecutiveRegister();
+  home_object = register_allocator()->NextConsecutiveRegister();
+  name = register_allocator()->NextConsecutiveRegister();
+  SuperPropertyReference* super_property =
+      property->obj()->AsSuperPropertyReference();
+  VisitForRegisterValue(super_property->this_var(), receiver);
+  VisitForRegisterValue(super_property->home_object(), home_object);
+  builder()
+      ->LoadLiteral(property->key()->AsLiteral()->AsPropertyName())
+      .StoreAccumulatorInRegister(name);
+  BuildNamedSuperPropertyLoad(receiver, home_object, name);
+
   if (opt_receiver_out.is_valid()) {
-    builder()->MoveRegister(super_args.receiver(), opt_receiver_out);
+    builder()->MoveRegister(receiver, opt_receiver_out);
   }
-  BuildNamedSuperPropertyLoad(&super_args);
 }
 
 void BytecodeGenerator::VisitKeyedSuperPropertyLoad(Property* property,
                                                     Register opt_receiver_out) {
   RegisterAllocationScope register_scope(this);
-  SuperPropertyArguments super_args;
-  PrepareKeyedSuperPropertyArguments(
-      property->obj()->AsSuperPropertyReference(), property->key(),
-      &super_args);
+  register_allocator()->PrepareForConsecutiveAllocations(3);
+
+  Register receiver, home_object, key;
+  receiver = register_allocator()->NextConsecutiveRegister();
+  home_object = register_allocator()->NextConsecutiveRegister();
+  key = register_allocator()->NextConsecutiveRegister();
+  SuperPropertyReference* super_property =
+      property->obj()->AsSuperPropertyReference();
+  VisitForRegisterValue(super_property->this_var(), receiver);
+  VisitForRegisterValue(super_property->home_object(), home_object);
+  VisitForRegisterValue(property->key(), key);
+  BuildKeyedSuperPropertyLoad(receiver, home_object, key);
+
   if (opt_receiver_out.is_valid()) {
-    builder()->MoveRegister(super_args.receiver(), opt_receiver_out);
+    builder()->MoveRegister(receiver, opt_receiver_out);
   }
-  BuildKeyedSuperPropertyLoad(&super_args);
 }
 
 void BytecodeGenerator::VisitProperty(Property* expr) {
@@ -2471,7 +2482,8 @@ void BytecodeGenerator::VisitCall(Call* expr) {
 
   builder()->SetExpressionPosition(expr);
   builder()->Call(callee, receiver, 1 + args->length(),
-                  feedback_index(expr->CallFeedbackICSlot()));
+                  feedback_index(expr->CallFeedbackICSlot()),
+                  expr->tail_call_mode());
   execution_result()->SetResultInAccumulator();
 }
 
@@ -2669,8 +2681,7 @@ void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
   bool is_postfix = expr->is_postfix();
 
   // Evaluate LHS expression and get old value.
-  Register object, key, old_value;
-  SuperPropertyArguments super_args;
+  Register object, home_object, key, old_value, value;
   Handle<String> name;
   switch (assign_type) {
     case VARIABLE: {
@@ -2683,8 +2694,7 @@ void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
       FeedbackVectorSlot slot = property->PropertyFeedbackSlot();
       object = VisitForRegisterValue(property->obj());
       name = property->key()->AsLiteral()->AsPropertyName();
-      builder()->LoadNamedProperty(object, name, feedback_index(slot),
-                                   language_mode());
+      builder()->LoadNamedProperty(object, name, feedback_index(slot));
       break;
     }
     case KEYED_PROPERTY: {
@@ -2695,29 +2705,44 @@ void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
       key = register_allocator()->NewRegister();
       VisitForAccumulatorValue(property->key());
       builder()->StoreAccumulatorInRegister(key).LoadKeyedProperty(
-          object, feedback_index(slot), language_mode());
+          object, feedback_index(slot));
       break;
     }
     case NAMED_SUPER_PROPERTY: {
-      PrepareNamedSuperPropertyArguments(
-          property->obj()->AsSuperPropertyReference(),
-          property->key()->AsLiteral()->AsPropertyName(), &super_args);
-      BuildNamedSuperPropertyLoad(&super_args);
+      register_allocator()->PrepareForConsecutiveAllocations(4);
+      object = register_allocator()->NextConsecutiveRegister();
+      home_object = register_allocator()->NextConsecutiveRegister();
+      key = register_allocator()->NextConsecutiveRegister();
+      value = register_allocator()->NextConsecutiveRegister();
+      SuperPropertyReference* super_property =
+          property->obj()->AsSuperPropertyReference();
+      VisitForRegisterValue(super_property->this_var(), object);
+      VisitForRegisterValue(super_property->home_object(), home_object);
+      builder()
+          ->LoadLiteral(property->key()->AsLiteral()->AsPropertyName())
+          .StoreAccumulatorInRegister(key);
+      BuildNamedSuperPropertyLoad(object, home_object, key);
       break;
     }
     case KEYED_SUPER_PROPERTY: {
-      PrepareKeyedSuperPropertyArguments(
-          property->obj()->AsSuperPropertyReference(), property->key(),
-          &super_args);
-      BuildKeyedSuperPropertyLoad(&super_args);
+      register_allocator()->PrepareForConsecutiveAllocations(4);
+      object = register_allocator()->NextConsecutiveRegister();
+      home_object = register_allocator()->NextConsecutiveRegister();
+      key = register_allocator()->NextConsecutiveRegister();
+      value = register_allocator()->NextConsecutiveRegister();
+      builder()->StoreAccumulatorInRegister(value);
+      SuperPropertyReference* super_property =
+          property->obj()->AsSuperPropertyReference();
+      VisitForRegisterValue(super_property->this_var(), object);
+      VisitForRegisterValue(super_property->home_object(), home_object);
+      VisitForRegisterValue(property->key(), key);
+      BuildKeyedSuperPropertyLoad(object, home_object, key);
       break;
     }
   }
 
   // Convert old value into a number.
-  if (!is_strong(language_mode())) {
-    builder()->CastAccumulatorToNumber();
-  }
+  builder()->CastAccumulatorToNumber();
 
   // Save result for postfix expressions.
   if (is_postfix) {
@@ -2726,7 +2751,7 @@ void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
   }
 
   // Perform +1/-1 operation.
-  builder()->CountOperation(expr->binary_op(), language_mode_strength());
+  builder()->CountOperation(expr->binary_op());
 
   // Store the value.
   FeedbackVectorSlot feedback_slot = expr->CountSlot();
@@ -2747,11 +2772,13 @@ void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
       break;
     }
     case NAMED_SUPER_PROPERTY: {
-      BuildNamedSuperPropertyStore(&super_args);
+      builder()->StoreAccumulatorInRegister(value);
+      BuildNamedSuperPropertyStore(object, home_object, key, value);
       break;
     }
     case KEYED_SUPER_PROPERTY: {
-      BuildKeyedSuperPropertyStore(&super_args);
+      builder()->StoreAccumulatorInRegister(value);
+      BuildKeyedSuperPropertyStore(object, home_object, key, value);
       break;
     }
   }
@@ -2786,7 +2813,7 @@ void BytecodeGenerator::VisitBinaryOperation(BinaryOperation* binop) {
 void BytecodeGenerator::VisitCompareOperation(CompareOperation* expr) {
   Register lhs = VisitForRegisterValue(expr->left());
   VisitForAccumulatorValue(expr->right());
-  builder()->CompareOperation(expr->op(), lhs, language_mode_strength());
+  builder()->CompareOperation(expr->op(), lhs);
   execution_result()->SetResultInAccumulator();
 }
 
@@ -2794,7 +2821,7 @@ void BytecodeGenerator::VisitCompareOperation(CompareOperation* expr) {
 void BytecodeGenerator::VisitArithmeticExpression(BinaryOperation* expr) {
   Register lhs = VisitForRegisterValue(expr->left());
   VisitForAccumulatorValue(expr->right());
-  builder()->BinaryOperation(expr->op(), lhs, language_mode_strength());
+  builder()->BinaryOperation(expr->op(), lhs);
   execution_result()->SetResultInAccumulator();
 }
 
@@ -2869,8 +2896,7 @@ void BytecodeGenerator::VisitLogicalAndExpression(BinaryOperation* binop) {
 }
 
 
-void BytecodeGenerator::VisitRewritableAssignmentExpression(
-    RewritableAssignmentExpression* expr) {
+void BytecodeGenerator::VisitRewritableExpression(RewritableExpression* expr) {
   Visit(expr->expression());
 }
 
@@ -3108,6 +3134,14 @@ Register BytecodeGenerator::VisitForRegisterValue(Expression* expr) {
   return register_scope.ResultRegister();
 }
 
+// Visits the expression |expr| and stores the expression result in
+// |destination|.
+void BytecodeGenerator::VisitForRegisterValue(Expression* expr,
+                                              Register destination) {
+  AccumulatorResultScope register_scope(this);
+  Visit(expr);
+  builder()->StoreAccumulatorInRegister(destination);
+}
 
 void BytecodeGenerator::VisitInScope(Statement* stmt, Scope* scope) {
   ContextScope context_scope(this, scope);
@@ -3118,11 +3152,6 @@ void BytecodeGenerator::VisitInScope(Statement* stmt, Scope* scope) {
 
 LanguageMode BytecodeGenerator::language_mode() const {
   return info()->language_mode();
-}
-
-
-Strength BytecodeGenerator::language_mode_strength() const {
-  return strength(language_mode());
 }
 
 

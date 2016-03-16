@@ -177,12 +177,6 @@ DEFINE_BOOL(experimental_extras, false,
 
 // Flags for language modes and experimental language features.
 DEFINE_BOOL(use_strict, false, "enforce strict mode")
-DEFINE_BOOL(use_strong, false, "enforce strong mode")
-DEFINE_IMPLICATION(use_strong, use_strict)
-
-DEFINE_BOOL(strong_mode, false, "experimental strong language mode")
-DEFINE_IMPLICATION(use_strong, strong_mode)
-DEFINE_BOOL(strong_this, true, "don't allow 'this' to escape from constructors")
 
 DEFINE_BOOL(es_staging, false,
             "enable test-worthy harmony features (for internal use only)")
@@ -201,41 +195,42 @@ DEFINE_NEG_IMPLICATION(harmony, promise_extra)
 // Activate on ClusterFuzz.
 DEFINE_IMPLICATION(es_staging, harmony_regexp_lookbehind)
 DEFINE_IMPLICATION(es_staging, move_object_start)
+DEFINE_IMPLICATION(es_staging, harmony_tailcalls)
 
 // Features that are still work in progress (behind individual flags).
-#define HARMONY_INPROGRESS(V)                                                \
-  V(harmony_modules, "harmony modules")                                      \
-  V(harmony_function_sent, "harmony function.sent")                          \
-  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")                  \
-  V(harmony_simd, "harmony simd")                                            \
-  V(harmony_do_expressions, "harmony do-expressions")                        \
-  V(harmony_tailcalls, "harmony tail calls")                                 \
-  V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
-  V(harmony_object_own_property_descriptors,                                 \
-    "harmony Object.getOwnPropertyDescriptors()")                            \
+#define HARMONY_INPROGRESS(V)                                           \
+  V(harmony_object_observe, "harmony Object.observe")                   \
+  V(harmony_function_sent, "harmony function.sent")                     \
+  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")             \
+  V(harmony_simd, "harmony simd")                                       \
+  V(harmony_do_expressions, "harmony do-expressions")                   \
+  V(harmony_tailcalls, "harmony tail calls")                            \
   V(harmony_regexp_property, "harmony unicode regexp property classes")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
-#define HARMONY_STAGED(V)                                     \
-  V(harmony_function_name, "harmony Function name inference") \
-  V(harmony_regexp_lookbehind, "harmony regexp lookbehind")   \
-  V(harmony_species, "harmony Symbol.species")
+#define HARMONY_STAGED(V)                                                    \
+  V(harmony_regexp_lookbehind, "harmony regexp lookbehind")                  \
+  V(harmony_instanceof, "harmony instanceof support")                        \
+  V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
+  V(harmony_object_own_property_descriptors,                                 \
+    "harmony Object.getOwnPropertyDescriptors()")                            \
+  V(harmony_restrictive_declarations,                                        \
+    "harmony limitations on sloppy mode function declarations")
 
 // Features that are shipping (turned on by default, but internal flag remains).
-#define HARMONY_SHIPPING(V)                                               \
-  V(harmony_default_parameters, "harmony default parameters")             \
-  V(harmony_destructuring_assignment, "harmony destructuring assignment") \
-  V(harmony_destructuring_bind, "harmony destructuring bind")             \
-  V(harmony_object_observe, "harmony Object.observe")                     \
-  V(harmony_tostring, "harmony toString")                                 \
-  V(harmony_regexps, "harmony regular expression extensions")             \
-  V(harmony_unicode_regexps, "harmony unicode regexps")                   \
-  V(harmony_sloppy, "harmony features in sloppy mode")                    \
-  V(harmony_sloppy_let, "harmony let in sloppy mode")                     \
-  V(harmony_sloppy_function, "harmony sloppy function block scoping")     \
-  V(harmony_proxies, "harmony proxies")                                   \
-  V(harmony_reflect, "harmony Reflect API")                               \
-  V(harmony_regexp_subclass, "harmony regexp subclassing")
+#define HARMONY_SHIPPING(V)                                           \
+  V(harmony_array_prototype_values, "harmony Array.prototype.values") \
+  V(harmony_function_name, "harmony Function name inference")         \
+  V(harmony_iterator_close, "harmony iterator finalization")          \
+  V(harmony_regexps, "harmony regular expression extensions")         \
+  V(harmony_unicode_regexps, "harmony unicode regexps")               \
+  V(harmony_sloppy, "harmony features in sloppy mode")                \
+  V(harmony_sloppy_let, "harmony let in sloppy mode")                 \
+  V(harmony_sloppy_function, "harmony sloppy function block scoping") \
+  V(harmony_proxies, "harmony proxies")                               \
+  V(harmony_reflect, "harmony Reflect API")                           \
+  V(harmony_regexp_subclass, "harmony regexp subclassing")            \
+  V(harmony_species, "harmony Symbol.species")
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
 // from HARMONY_SHIPPING, all occurrences of the FLAG_ variable are removed,
@@ -264,10 +259,6 @@ HARMONY_SHIPPING(FLAG_SHIPPING_FEATURES)
 // Feature dependencies.
 DEFINE_IMPLICATION(harmony_sloppy_let, harmony_sloppy)
 DEFINE_IMPLICATION(harmony_sloppy_function, harmony_sloppy)
-
-// Destructuring shares too much parsing architecture with default parameters
-// to be enabled on its own.
-DEFINE_IMPLICATION(harmony_destructuring_bind, harmony_default_parameters)
 
 // Flags for experimental implementation features.
 DEFINE_BOOL(compiled_keyed_generic_loads, false,
@@ -332,7 +323,7 @@ DEFINE_INT(max_inlined_nodes_cumulative, 400,
            "maximum cumulative number of AST nodes considered for inlining")
 DEFINE_BOOL(loop_invariant_code_motion, true, "loop invariant code motion")
 DEFINE_BOOL(fast_math, true, "faster (but maybe less accurate) math functions")
-DEFINE_BOOL(collect_megamorphic_maps_from_stub_cache, true,
+DEFINE_BOOL(collect_megamorphic_maps_from_stub_cache, false,
             "crankshaft harvests type feedback from stub cache")
 DEFINE_BOOL(hydrogen_stats, false, "print statistics for hydrogen")
 DEFINE_BOOL(trace_check_elimination, false, "trace check elimination phase")
@@ -409,8 +400,6 @@ DEFINE_INT(concurrent_recompilation_delay, 0,
            "artificial compilation delay in ms")
 DEFINE_BOOL(block_concurrent_recompilation, false,
             "block queued jobs until released")
-DEFINE_BOOL(concurrent_osr, false, "concurrent on-stack replacement")
-DEFINE_IMPLICATION(concurrent_osr, concurrent_recompilation)
 
 DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
             "do not emit check maps for constant values that have a leaf map, "
@@ -419,7 +408,6 @@ DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
 // Flags for TurboFan.
 DEFINE_BOOL(turbo, false, "enable TurboFan compiler")
 DEFINE_IMPLICATION(turbo, turbo_asm_deoptimization)
-DEFINE_IMPLICATION(turbo, turbo_inlining)
 DEFINE_BOOL(turbo_shipping, true, "enable TurboFan compiler on subset")
 DEFINE_BOOL(turbo_greedy_regalloc, false, "use the greedy register allocator")
 DEFINE_BOOL(turbo_sp_frame_access, false,
@@ -452,7 +440,7 @@ DEFINE_BOOL(function_context_specialization, false,
             "enable function context specialization in TurboFan")
 DEFINE_BOOL(native_context_specialization, true,
             "enable native context specialization in TurboFan")
-DEFINE_BOOL(turbo_inlining, false, "enable inlining in TurboFan")
+DEFINE_BOOL(turbo_inlining, true, "enable inlining in TurboFan")
 DEFINE_BOOL(trace_turbo_inlining, false, "trace TurboFan inlining")
 DEFINE_BOOL(loop_assignment_analysis, true, "perform loop assignment analysis")
 DEFINE_BOOL(turbo_profiling, false, "enable profiling in TurboFan")
@@ -470,17 +458,26 @@ DEFINE_BOOL(turbo_preserve_shared_code, false, "keep context-independent code")
 DEFINE_BOOL(turbo_escape, false, "enable escape analysis")
 DEFINE_BOOL(turbo_instruction_scheduling, false,
             "enable instruction scheduling in TurboFan")
+DEFINE_BOOL(turbo_stress_instruction_scheduling, false,
+            "randomly schedule instructions to stress dependency tracking")
 
 // Flags for native WebAssembly.
 DEFINE_BOOL(expose_wasm, false, "expose WASM interface to JavaScript")
+DEFINE_BOOL(trace_wasm_encoder, false, "trace encoding of wasm code")
 DEFINE_BOOL(trace_wasm_decoder, false, "trace decoding of wasm code")
 DEFINE_BOOL(trace_wasm_decode_time, false, "trace decoding time of wasm code")
 DEFINE_BOOL(trace_wasm_compiler, false, "trace compiling of wasm code")
 DEFINE_BOOL(trace_wasm_ast, false, "dump AST after WASM decode")
 DEFINE_BOOL(wasm_break_on_decoder_error, false,
             "debug break when wasm decoder encounters an error")
+DEFINE_BOOL(wasm_loop_assignment_analysis, false,
+            "perform loop assignment analysis for WASM")
 
 DEFINE_BOOL(enable_simd_asmjs, false, "enable SIMD.js in asm.js stdlib")
+
+DEFINE_BOOL(dump_asmjs_wasm, false, "dump Asm.js to WASM module bytes")
+DEFINE_STRING(asmjs_wasm_dumpfile, "asmjs.wasm",
+              "file to dump asm wasm conversion result to")
 
 DEFINE_INT(typed_array_max_size_in_heap, 64,
            "threshold for in-heap typed array")
@@ -490,7 +487,7 @@ DEFINE_INT(frame_count, 1, "number of stack frames inspected by the profiler")
 // 0x1800 fits in the immediate field of an ARM instruction.
 DEFINE_INT(interrupt_budget, 0x1800,
            "execution budget before interrupt is triggered")
-DEFINE_INT(type_info_threshold, 24,
+DEFINE_INT(type_info_threshold, 25,
            "percentage of ICs that must have type info to allow optimization")
 DEFINE_INT(generic_ic_threshold, 30,
            "max percentage of megamorphic/generic ICs to allow optimization")
@@ -584,6 +581,8 @@ DEFINE_BOOL(trace_stub_failures, false,
             "trace deoptimization of generated code stubs")
 
 DEFINE_BOOL(serialize_toplevel, true, "enable caching of toplevel scripts")
+DEFINE_BOOL(serialize_eager, false, "compile eagerly when caching scripts")
+DEFINE_BOOL(serialize_age_code, false, "pre age code in the code cache")
 DEFINE_BOOL(trace_serializer, false, "print code serializer trace")
 
 // compiler.cc
@@ -629,6 +628,9 @@ DEFINE_INT(max_stack_trace_source_length, 300,
 // full-codegen.cc
 DEFINE_BOOL(always_inline_smi_code, false,
             "always inline smi code in non-opt code")
+DEFINE_BOOL(verify_operand_stack_depth, false,
+            "emit debug code that verifies the static tracking of the operand "
+            "stack depth")
 
 // heap.cc
 DEFINE_INT(min_semi_space_size, 0,
@@ -688,8 +690,11 @@ DEFINE_INT(min_progress_during_incremental_marking_finalization, 32,
            "least this many unmarked objects")
 DEFINE_INT(max_incremental_marking_finalization_rounds, 3,
            "at most try this many times to finalize incremental marking")
+DEFINE_BOOL(black_allocation, true, "use black allocation")
 DEFINE_BOOL(concurrent_sweeping, true, "use concurrent sweeping")
 DEFINE_BOOL(parallel_compaction, true, "use parallel compaction")
+DEFINE_BOOL(parallel_pointer_update, false,
+            "use parallel pointer update during compaction")
 DEFINE_BOOL(trace_incremental_marking, false,
             "trace progress of the incremental marking")
 DEFINE_BOOL(track_gc_object_stats, false,
@@ -716,6 +721,9 @@ DEFINE_INT(heap_growing_percent, 0,
 DEFINE_INT(histogram_interval, 600000,
            "time interval in ms for aggregating memory histograms")
 
+// global-handles.cc
+DEFINE_BOOL(trace_object_groups, false,
+            "print object groups detected during each garbage collection")
 
 // heap-snapshot-generator.cc
 DEFINE_BOOL(heap_profiler_trace_objects, false,
@@ -765,6 +773,7 @@ DEFINE_BOOL(eliminate_prototype_chain_checks, true,
             "Collapse prototype chain checks into single-cell checks")
 DEFINE_IMPLICATION(eliminate_prototype_chain_checks, track_prototype_users)
 DEFINE_BOOL(use_verbose_printer, true, "allows verbose printing")
+DEFINE_BOOL(trace_for_in_enumerate, false, "Trace for-in enumerate slow-paths")
 #if TRACE_MAPS
 DEFINE_BOOL(trace_maps, false, "trace map creation")
 #endif
@@ -851,7 +860,6 @@ DEFINE_BOOL(profile_hydrogen_code_stub_compilation, false,
 
 DEFINE_BOOL(predictable, false, "enable predictable mode")
 DEFINE_NEG_IMPLICATION(predictable, concurrent_recompilation)
-DEFINE_NEG_IMPLICATION(predictable, concurrent_osr)
 DEFINE_NEG_IMPLICATION(predictable, concurrent_sweeping)
 DEFINE_NEG_IMPLICATION(predictable, parallel_compaction)
 DEFINE_NEG_IMPLICATION(predictable, memory_reducer)
@@ -979,6 +987,9 @@ DEFINE_BOOL(trace_regexp_bytecodes, false, "trace regexp bytecode execution")
 DEFINE_BOOL(trace_regexp_assembler, false,
             "trace regexp macro assembler calls.")
 DEFINE_BOOL(trace_regexp_parser, false, "trace regexp parsing")
+
+// Debugger
+DEFINE_BOOL(print_break_location, false, "print source location on debug break")
 
 //
 // Logging and profiling flags

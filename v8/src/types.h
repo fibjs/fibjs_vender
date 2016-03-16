@@ -42,8 +42,8 @@ namespace internal {
 //   Array < Object
 //   Function < Object
 //   RegExp < Object
-//   Undetectable < Object
-//   Detectable = Receiver \/ Number \/ Name - Undetectable
+//   OtherUndetectable < Object
+//   DetectableReceiver = Receiver - OtherUndetectable
 //
 //   Class(map) < T   iff instance_type(map) < T
 //   Constant(x) < T  iff instance_type(map(x)) < T
@@ -151,20 +151,21 @@ namespace internal {
 // clang-format off
 
 #define MASK_BITSET_TYPE_LIST(V) \
-  V(Representation, 0xff800000u) \
-  V(Semantic,       0x007ffffeu)
+  V(Representation, 0xffc00000u) \
+  V(Semantic,       0x003ffffeu)
 
 #define REPRESENTATION(k) ((k) & BitsetType::kRepresentation)
 #define SEMANTIC(k)       ((k) & BitsetType::kSemantic)
 
 #define REPRESENTATION_BITSET_TYPE_LIST(V)    \
   V(None,               0)                    \
-  V(UntaggedBit,        1u << 23 | kSemantic) \
-  V(UntaggedIntegral8,  1u << 24 | kSemantic) \
-  V(UntaggedIntegral16, 1u << 25 | kSemantic) \
-  V(UntaggedIntegral32, 1u << 26 | kSemantic) \
-  V(UntaggedFloat32,    1u << 27 | kSemantic) \
-  V(UntaggedFloat64,    1u << 28 | kSemantic) \
+  V(UntaggedBit,        1u << 22 | kSemantic) \
+  V(UntaggedIntegral8,  1u << 23 | kSemantic) \
+  V(UntaggedIntegral16, 1u << 24 | kSemantic) \
+  V(UntaggedIntegral32, 1u << 25 | kSemantic) \
+  V(UntaggedFloat32,    1u << 26 | kSemantic) \
+  V(UntaggedFloat64,    1u << 27 | kSemantic) \
+  V(UntaggedSimd128,    1u << 28 | kSemantic) \
   V(UntaggedPointer,    1u << 29 | kSemantic) \
   V(TaggedSigned,       1u << 30 | kSemantic) \
   V(TaggedPointer,      1u << 31 | kSemantic) \
@@ -194,8 +195,8 @@ namespace internal {
   V(InternalizedString,  1u << 13 | REPRESENTATION(kTaggedPointer)) \
   V(OtherString,         1u << 14 | REPRESENTATION(kTaggedPointer)) \
   V(Simd,                1u << 15 | REPRESENTATION(kTaggedPointer)) \
-  V(Undetectable,        1u << 16 | REPRESENTATION(kTaggedPointer)) \
   V(OtherObject,         1u << 17 | REPRESENTATION(kTaggedPointer)) \
+  V(OtherUndetectable,   1u << 16 | REPRESENTATION(kTaggedPointer)) \
   V(Proxy,               1u << 18 | REPRESENTATION(kTaggedPointer)) \
   V(Function,            1u << 19 | REPRESENTATION(kTaggedPointer)) \
   V(Internal,            1u << 20 | REPRESENTATION(kTagged | kUntagged)) \
@@ -217,13 +218,13 @@ namespace internal {
   V(BooleanOrNumber,          kBoolean | kNumber) \
   V(BooleanOrNullOrUndefined, kBoolean | kNull | kUndefined) \
   V(NullOrUndefined,          kNull | kUndefined) \
+  V(Undetectable,             kNullOrUndefined | kOtherUndetectable) \
   V(NumberOrString,           kNumber | kString) \
   V(NumberOrUndefined,        kNumber | kUndefined) \
   V(PlainPrimitive,           kNumberOrString | kBoolean | kNullOrUndefined) \
   V(Primitive,                kSymbol | kSimd | kPlainPrimitive) \
   V(DetectableReceiver,       kFunction | kOtherObject | kProxy) \
-  V(Detectable,               kDetectableReceiver | kNumber | kName) \
-  V(Object,                   kFunction | kOtherObject | kUndetectable) \
+  V(Object,                   kFunction | kOtherObject | kOtherUndetectable) \
   V(Receiver,                 kObject | kProxy) \
   V(StringOrReceiver,         kString | kReceiver) \
   V(Unique,                   kBoolean | kUniqueName | kNull | kUndefined | \
@@ -962,30 +963,6 @@ struct Bounds {
   bool Narrows(Bounds that) {
     return that.lower->Is(this->lower) && this->upper->Is(that.upper);
   }
-};
-
-class FieldType : public Object {
- public:
-  static FieldType* None();
-  static FieldType* Any();
-  static Handle<FieldType> None(Isolate* isolate);
-  static Handle<FieldType> Any(Isolate* isolate);
-  static FieldType* Class(i::Map* map);
-  static Handle<FieldType> Class(i::Handle<i::Map> map, Isolate* isolate);
-  static FieldType* cast(Object* object);
-
-  bool NowContains(Object* value);
-  bool NowContains(Handle<Object> value);
-  bool IsClass();
-  Handle<i::Map> AsClass();
-  bool IsNone() { return this == None(); }
-  bool IsAny() { return this == Any(); }
-  bool NowStable();
-  bool NowIs(FieldType* other);
-  bool NowIs(Handle<FieldType> other);
-  Type* Convert(Zone* zone);
-
-  void PrintTo(std::ostream& os);
 };
 
 }  // namespace internal

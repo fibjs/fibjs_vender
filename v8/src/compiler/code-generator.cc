@@ -31,7 +31,6 @@ class CodeGenerator::JumpTable final : public ZoneObject {
   size_t const target_count_;
 };
 
-
 CodeGenerator::CodeGenerator(Frame* frame, Linkage* linkage,
                              InstructionSequence* code, CompilationInfo* info)
     : frame_access_state_(new (code->zone()) FrameAccessState(frame)),
@@ -45,6 +44,7 @@ CodeGenerator::CodeGenerator(Frame* frame, Linkage* linkage,
       resolver_(this),
       safepoints_(code->zone()),
       handlers_(code->zone()),
+      deoptimization_exits_(code->zone()),
       deoptimization_states_(code->zone()),
       deoptimization_literals_(code->zone()),
       inlined_function_count_(0),
@@ -87,7 +87,8 @@ Handle<Code> CodeGenerator::GenerateCode() {
 
   // Define deoptimization literals for all inlined functions.
   DCHECK_EQ(0u, deoptimization_literals_.size());
-  for (auto& inlined : info->inlined_functions()) {
+  for (const CompilationInfo::InlinedFunctionHolder& inlined :
+       info->inlined_functions()) {
     if (!inlined.shared_info.is_identical_to(info->shared_info())) {
       DefineDeoptimizationLiteral(inlined.shared_info);
     }
@@ -96,7 +97,8 @@ Handle<Code> CodeGenerator::GenerateCode() {
 
   // Define deoptimization literals for all unoptimized code objects of inlined
   // functions. This ensures unoptimized code is kept alive by optimized code.
-  for (auto& inlined : info->inlined_functions()) {
+  for (const CompilationInfo::InlinedFunctionHolder& inlined :
+       info->inlined_functions()) {
     if (!inlined.shared_info.is_identical_to(info->shared_info())) {
       DefineDeoptimizationLiteral(inlined.inlined_code_object_root);
     }
@@ -104,7 +106,7 @@ Handle<Code> CodeGenerator::GenerateCode() {
 
   // Assemble all non-deferred blocks, followed by deferred ones.
   for (int deferred = 0; deferred < 2; ++deferred) {
-    for (auto const block : code()->instruction_blocks()) {
+    for (const InstructionBlock* block : code()->instruction_blocks()) {
       if (block->IsDeferred() == (deferred == 0)) {
         continue;
       }
@@ -158,6 +160,12 @@ Handle<Code> CodeGenerator::GenerateCode() {
     }
   }
 
+  // Assemble all eager deoptimization exits.
+  for (DeoptimizationExit* exit : deoptimization_exits_) {
+    masm()->bind(exit->label());
+    AssembleDeoptimizerCall(exit->deoptimization_id(), Deoptimizer::EAGER);
+  }
+
   // Ensure there is space for lazy deoptimization in the code.
   if (info->ShouldEnsureSpaceForLazyDeopt()) {
     int target_offset = masm()->pc_offset() + Deoptimizer::patch_size();
@@ -177,12 +185,12 @@ Handle<Code> CodeGenerator::GenerateCode() {
     }
   }
 
-  safepoints()->Emit(masm(), frame()->GetSpillSlotCount());
+  safepoints()->Emit(masm(), frame()->GetTotalFrameSlotCount());
 
   Handle<Code> result =
       v8::internal::CodeGenerator::MakeCodeEpilogue(masm(), info);
   result->set_is_turbofanned(true);
-  result->set_stack_slots(frame()->GetSpillSlotCount());
+  result->set_stack_slots(frame()->GetTotalFrameSlotCount());
   result->set_safepoint_table_offset(safepoints()->GetCodeOffset());
 
   // Emit exception handler table.
@@ -211,7 +219,8 @@ Handle<Code> CodeGenerator::GenerateCode() {
 
   // Emit a code line info recording stop event.
   void* line_info = recorder->DetachJITHandlerData();
-  LOG_CODE_EVENT(isolate(), CodeEndLinePosInfoRecordEvent(*result, line_info));
+  LOG_CODE_EVENT(isolate(), CodeEndLinePosInfoRecordEvent(
+                                AbstractCode::cast(*result), line_info));
 
   return result;
 }
@@ -232,19 +241,16 @@ void CodeGenerator::RecordSafepoint(ReferenceMap* references,
       safepoints()->DefineSafepoint(masm(), kind, arguments, deopt_mode);
   int stackSlotToSpillSlotDelta =
       frame()->GetTotalFrameSlotCount() - frame()->GetSpillSlotCount();
-  for (auto& operand : references->reference_operands()) {
+  for (const InstructionOperand& operand : references->reference_operands()) {
     if (operand.IsStackSlot()) {
       int index = LocationOperand::cast(operand).index();
       DCHECK(index >= 0);
-      // Safepoint table indices are 0-based from the beginning of the spill
-      // slot area, adjust appropriately.
-      index -= stackSlotToSpillSlotDelta;
       // We might index values in the fixed part of the frame (i.e. the
       // closure pointer or the context pointer); these are not spill slots
       // and therefore don't work with the SafepointTable currently, but
       // we also don't need to worry about them, since the GC has special
       // knowledge about those fields anyway.
-      if (index < 0) continue;
+      if (index < stackSlotToSpillSlotDelta) continue;
       safepoint.DefinePointerSlot(index, zone());
     } else if (operand.IsRegister() && (kind & Safepoint::kWithRegisters)) {
       Register reg = LocationOperand::cast(operand).GetRegister();
@@ -253,16 +259,15 @@ void CodeGenerator::RecordSafepoint(ReferenceMap* references,
   }
 }
 
-
 bool CodeGenerator::IsMaterializableFromFrame(Handle<HeapObject> object,
-                                              int* offset_return) {
+                                              int* slot_return) {
   if (linkage()->GetIncomingDescriptor()->IsJSFunctionCall()) {
     if (info()->has_context() && object.is_identical_to(info()->context()) &&
         !info()->is_osr()) {
-      *offset_return = StandardFrameConstants::kContextOffset;
+      *slot_return = Frame::kContextSlot;
       return true;
     } else if (object.is_identical_to(info()->closure())) {
-      *offset_return = JavaScriptFrameConstants::kFunctionOffset;
+      *slot_return = Frame::kJSFunctionSlot;
       return true;
     }
   }
@@ -294,34 +299,59 @@ void CodeGenerator::AssembleInstruction(Instruction* instr) {
 
   FlagsMode mode = FlagsModeField::decode(instr->opcode());
   FlagsCondition condition = FlagsConditionField::decode(instr->opcode());
-  if (mode == kFlags_branch) {
-    // Assemble a branch after this instruction.
-    InstructionOperandConverter i(this, instr);
-    RpoNumber true_rpo = i.InputRpo(instr->InputCount() - 2);
-    RpoNumber false_rpo = i.InputRpo(instr->InputCount() - 1);
+  switch (mode) {
+    case kFlags_branch: {
+      // Assemble a branch after this instruction.
+      InstructionOperandConverter i(this, instr);
+      RpoNumber true_rpo = i.InputRpo(instr->InputCount() - 2);
+      RpoNumber false_rpo = i.InputRpo(instr->InputCount() - 1);
 
-    if (true_rpo == false_rpo) {
-      // redundant branch.
-      if (!IsNextInAssemblyOrder(true_rpo)) {
-        AssembleArchJump(true_rpo);
+      if (true_rpo == false_rpo) {
+        // redundant branch.
+        if (!IsNextInAssemblyOrder(true_rpo)) {
+          AssembleArchJump(true_rpo);
+        }
+        return;
       }
-      return;
+      if (IsNextInAssemblyOrder(true_rpo)) {
+        // true block is next, can fall through if condition negated.
+        std::swap(true_rpo, false_rpo);
+        condition = NegateFlagsCondition(condition);
+      }
+      BranchInfo branch;
+      branch.condition = condition;
+      branch.true_label = GetLabel(true_rpo);
+      branch.false_label = GetLabel(false_rpo);
+      branch.fallthru = IsNextInAssemblyOrder(false_rpo);
+      // Assemble architecture-specific branch.
+      AssembleArchBranch(instr, &branch);
+      break;
     }
-    if (IsNextInAssemblyOrder(true_rpo)) {
-      // true block is next, can fall through if condition negated.
-      std::swap(true_rpo, false_rpo);
-      condition = NegateFlagsCondition(condition);
+    case kFlags_deoptimize: {
+      // Assemble a conditional eager deoptimization after this instruction.
+      InstructionOperandConverter i(this, instr);
+      size_t frame_state_offset = MiscField::decode(instr->opcode());
+      DeoptimizationExit* const exit =
+          AddDeoptimizationExit(instr, frame_state_offset);
+      Label continue_label;
+      BranchInfo branch;
+      branch.condition = condition;
+      branch.true_label = exit->label();
+      branch.false_label = &continue_label;
+      branch.fallthru = true;
+      // Assemble architecture-specific branch.
+      AssembleArchBranch(instr, &branch);
+      masm()->bind(&continue_label);
+      break;
     }
-    BranchInfo branch;
-    branch.condition = condition;
-    branch.true_label = GetLabel(true_rpo);
-    branch.false_label = GetLabel(false_rpo);
-    branch.fallthru = IsNextInAssemblyOrder(false_rpo);
-    // Assemble architecture-specific branch.
-    AssembleArchBranch(instr, &branch);
-  } else if (mode == kFlags_set) {
-    // Assemble a boolean materialization after this instruction.
-    AssembleArchBoolean(instr, condition);
+    case kFlags_set: {
+      // Assemble a boolean materialization after this instruction.
+      AssembleArchBoolean(instr, condition);
+      break;
+    }
+    case kFlags_none: {
+      break;
+    }
   }
 }
 
@@ -591,12 +621,15 @@ void CodeGenerator::BuildTranslationForFrameStateDescriptor(
     case FrameStateType::kInterpretedFunction:
       translation->BeginInterpretedFrame(
           descriptor->bailout_id(), shared_info_id,
-          static_cast<unsigned int>(descriptor->locals_count()));
+          static_cast<unsigned int>(descriptor->locals_count() + 1));
       break;
     case FrameStateType::kArgumentsAdaptor:
       translation->BeginArgumentsAdaptorFrame(
           shared_info_id,
           static_cast<unsigned int>(descriptor->parameters_count()));
+      break;
+    case FrameStateType::kTailCallerFunction:
+      translation->BeginTailCallerFrame(shared_info_id);
       break;
     case FrameStateType::kConstructStub:
       translation->BeginConstructStubFrame(
@@ -717,6 +750,15 @@ void CodeGenerator::MarkLazyDeoptSite() {
   last_lazy_deopt_pc_ = masm()->pc_offset();
 }
 
+DeoptimizationExit* CodeGenerator::AddDeoptimizationExit(
+    Instruction* instr, size_t frame_state_offset) {
+  int const deoptimization_id = BuildTranslation(
+      instr, -1, frame_state_offset, OutputFrameStateCombine::Ignore());
+  DeoptimizationExit* const exit =
+      new (zone()) DeoptimizationExit(deoptimization_id);
+  deoptimization_exits_.push_back(exit);
+  return exit;
+}
 
 int CodeGenerator::TailCallFrameStackSlotDelta(int stack_param_delta) {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();

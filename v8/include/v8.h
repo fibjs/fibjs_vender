@@ -4759,7 +4759,7 @@ class V8_EXPORT ObjectTemplate : public Template {
    */
   void SetAccessCheckCallback(AccessCheckCallback callback,
                               Local<Value> data = Local<Value>());
-  V8_DEPRECATE_SOON(
+  V8_DEPRECATED(
       "Use SetAccessCheckCallback with new AccessCheckCallback signature.",
       void SetAccessCheckCallback(DeprecatedAccessCheckCallback callback,
                                   Local<Value> data = Local<Value>()));
@@ -4886,7 +4886,6 @@ V8_INLINE Local<Primitive> Null(Isolate* isolate);
 V8_INLINE Local<Boolean> True(Isolate* isolate);
 V8_INLINE Local<Boolean> False(Isolate* isolate);
 
-
 /**
  * A set of constraints that specifies the limits of the runtime's memory use.
  * You must set the heap size before initializing the VM - the size cannot be
@@ -4895,6 +4894,9 @@ V8_INLINE Local<Boolean> False(Isolate* isolate);
  * If you are using threads then you should hold the V8::Locker lock while
  * setting the stack limit and you must set a non-default stack limit separately
  * for each thread.
+ *
+ * The arguments for set_max_semi_space_size, set_max_old_space_size,
+ * set_max_executable_size, set_code_range_size specify limits in MB.
  */
 class V8_EXPORT ResourceConstraints {
  public:
@@ -4913,17 +4915,23 @@ class V8_EXPORT ResourceConstraints {
                          uint64_t virtual_memory_limit);
 
   int max_semi_space_size() const { return max_semi_space_size_; }
-  void set_max_semi_space_size(int value) { max_semi_space_size_ = value; }
+  void set_max_semi_space_size(int limit_in_mb) {
+    max_semi_space_size_ = limit_in_mb;
+  }
   int max_old_space_size() const { return max_old_space_size_; }
-  void set_max_old_space_size(int value) { max_old_space_size_ = value; }
+  void set_max_old_space_size(int limit_in_mb) {
+    max_old_space_size_ = limit_in_mb;
+  }
   int max_executable_size() const { return max_executable_size_; }
-  void set_max_executable_size(int value) { max_executable_size_ = value; }
+  void set_max_executable_size(int limit_in_mb) {
+    max_executable_size_ = limit_in_mb;
+  }
   uint32_t* stack_limit() const { return stack_limit_; }
   // Sets an address beyond which the VM's stack may not grow.
   void set_stack_limit(uint32_t* value) { stack_limit_ = value; }
   size_t code_range_size() const { return code_range_size_; }
-  void set_code_range_size(size_t value) {
-    code_range_size_ = value;
+  void set_code_range_size(size_t limit_in_mb) {
+    code_range_size_ = limit_in_mb;
   }
 
  private:
@@ -5009,8 +5017,10 @@ typedef void (*MemoryAllocationCallback)(ObjectSpace space,
                                          AllocationAction action,
                                          int size);
 
-// --- Leave Script Callback ---
-typedef void (*CallCompletedCallback)();
+// --- Enter/Leave Script Callback ---
+typedef void (*BeforeCallEnteredCallback)(Isolate*);
+typedef void (*CallCompletedCallback)(Isolate*);
+typedef void (*DeprecatedCallCompletedCallback)();
 
 // --- Promise Reject Callback ---
 enum PromiseRejectEvent {
@@ -5045,8 +5055,56 @@ class PromiseRejectMessage {
 
 typedef void (*PromiseRejectCallback)(PromiseRejectMessage message);
 
-// --- Microtask Callback ---
+// --- Microtasks Callbacks ---
+typedef void (*MicrotasksCompletedCallback)(Isolate*);
 typedef void (*MicrotaskCallback)(void* data);
+
+
+/**
+ * Policy for running microtasks:
+ *   - explicit: microtasks are invoked with Isolate::RunMicrotasks() method;
+ *   - scoped: microtasks invocation is controlled by MicrotasksScope objects;
+ *   - auto: microtasks are invoked when the script call depth decrements
+ *           to zero.
+ */
+enum class MicrotasksPolicy { kExplicit, kScoped, kAuto };
+
+
+/**
+ * This scope is used to control microtasks when kScopeMicrotasksInvocation
+ * is used on Isolate. In this mode every non-primitive call to V8 should be
+ * done inside some MicrotasksScope.
+ * Microtasks are executed when topmost MicrotasksScope marked as kRunMicrotasks
+ * exits.
+ * kDoNotRunMicrotasks should be used to annotate calls not intended to trigger
+ * microtasks.
+ */
+class V8_EXPORT MicrotasksScope {
+ public:
+  enum Type { kRunMicrotasks, kDoNotRunMicrotasks };
+
+  MicrotasksScope(Isolate* isolate, Type type);
+  ~MicrotasksScope();
+
+  /**
+   * Runs microtasks if no kRunMicrotasks scope is currently active.
+   */
+  static void PerformCheckpoint(Isolate* isolate);
+
+  /**
+   * Returns current depth of nested kRunMicrotasks scopes.
+   */
+  static int GetCurrentDepth(Isolate* isolate);
+
+ private:
+  internal::Isolate* const isolate_;
+  bool run_;
+
+  // Prevent copying.
+  MicrotasksScope(const MicrotasksScope&);
+  MicrotasksScope& operator=(const MicrotasksScope&);
+};
+
 
 // --- Failed Access Check Callback ---
 typedef void (*FailedAccessCheckCallback)(Local<Object> target,
@@ -5079,11 +5137,24 @@ enum GCType {
                kGCTypeIncrementalMarking | kGCTypeProcessWeakCallbacks
 };
 
+/**
+ * GCCallbackFlags is used to notify additional information about the GC
+ * callback.
+ *   - kGCCallbackFlagConstructRetainedObjectInfos: The GC callback is for
+ *     constructing retained object infos.
+ *   - kGCCallbackFlagForced: The GC callback is for a forced GC for testing.
+ *   - kGCCallbackFlagSynchronousPhantomCallbackProcessing: The GC callback
+ *     is called synchronously without getting posted to an idle task.
+ *   - kGCCallbackFlagCollectAllAvailableGarbage: The GC callback is called
+ *     in a phase where V8 is trying to collect all available garbage
+ *     (e.g., handling a low memory notification).
+ */
 enum GCCallbackFlags {
   kNoGCCallbackFlags = 0,
   kGCCallbackFlagConstructRetainedObjectInfos = 1 << 1,
   kGCCallbackFlagForced = 1 << 2,
-  kGCCallbackFlagSynchronousPhantomCallbackProcessing = 1 << 3
+  kGCCallbackFlagSynchronousPhantomCallbackProcessing = 1 << 3,
+  kGCCallbackFlagCollectAllAvailableGarbage = 1 << 4,
 };
 
 typedef void (*GCCallback)(GCType type, GCCallbackFlags flags);
@@ -5469,6 +5540,17 @@ class V8_EXPORT Isolate {
     kHtmlComment = 21,
     kSloppyModeBlockScopedFunctionRedefinition = 22,
     kForInInitializer = 23,
+    kArrayProtectorDirtied = 24,
+    kArraySpeciesModified = 25,
+    kArrayPrototypeConstructorModified = 26,
+    kArrayInstanceProtoModified = 27,
+    kArrayInstanceConstructorModified = 28,
+    kLegacyFunctionDeclaration = 29,
+    kRegExpPrototypeSourceGetter = 30,
+    kRegExpPrototypeOldFlagGetter = 31,
+
+    // If you add new values here, you'll also need to update V8Initializer.cpp
+    // in Chromium.
     kUseCounterFeatureCount  // This enum value must be last.
   };
 
@@ -5810,6 +5892,19 @@ class V8_EXPORT Isolate {
   void SetEventLogger(LogEventCallback that);
 
   /**
+   * Adds a callback to notify the host application right before a script
+   * is about to run. If a script re-enters the runtime during executing, the
+   * BeforeCallEnteredCallback is invoked for each re-entrance.
+   * Executing scripts inside the callback will re-trigger the callback.
+   */
+  void AddBeforeCallEnteredCallback(BeforeCallEnteredCallback callback);
+
+  /**
+   * Removes callback that was installed by AddBeforeCallEnteredCallback.
+   */
+  void RemoveBeforeCallEnteredCallback(BeforeCallEnteredCallback callback);
+
+  /**
    * Adds a callback to notify the host application when a script finished
    * running.  If a script re-enters the runtime during executing, the
    * CallCompletedCallback is only invoked when the outer-most script
@@ -5817,12 +5912,18 @@ class V8_EXPORT Isolate {
    * further callbacks.
    */
   void AddCallCompletedCallback(CallCompletedCallback callback);
+  V8_DEPRECATE_SOON(
+      "Use callback with parameter",
+      void AddCallCompletedCallback(DeprecatedCallCompletedCallback callback));
 
   /**
    * Removes callback that was installed by AddCallCompletedCallback.
    */
   void RemoveCallCompletedCallback(CallCompletedCallback callback);
-
+  V8_DEPRECATE_SOON(
+      "Use callback with parameter",
+      void RemoveCallCompletedCallback(
+          DeprecatedCallCompletedCallback callback));
 
   /**
    * Set callback to notify about promise reject with no handler, or
@@ -5846,17 +5947,39 @@ class V8_EXPORT Isolate {
    */
   void EnqueueMicrotask(MicrotaskCallback microtask, void* data = NULL);
 
-   /**
-   * Experimental: Controls whether the Microtask Work Queue is automatically
-   * run when the script call depth decrements to zero.
+  /**
+   * Experimental: Controls how Microtasks are invoked. See MicrotasksPolicy
+   * for details.
    */
-  void SetAutorunMicrotasks(bool autorun);
+  void SetMicrotasksPolicy(MicrotasksPolicy policy);
+  V8_DEPRECATE_SOON("Use SetMicrotasksPolicy",
+                    void SetAutorunMicrotasks(bool autorun));
 
   /**
-   * Experimental: Returns whether the Microtask Work Queue is automatically
-   * run when the script call depth decrements to zero.
+   * Experimental: Returns the policy controlling how Microtasks are invoked.
    */
-  bool WillAutorunMicrotasks() const;
+  MicrotasksPolicy GetMicrotasksPolicy() const;
+  V8_DEPRECATE_SOON("Use GetMicrotasksPolicy",
+                    bool WillAutorunMicrotasks() const);
+
+  /**
+   * Experimental: adds a callback to notify the host application after
+   * microtasks were run. The callback is triggered by explicit RunMicrotasks
+   * call or automatic microtasks execution (see SetAutorunMicrotasks).
+   *
+   * Callback will trigger even if microtasks were attempted to run,
+   * but the microtasks queue was empty and no single microtask was actually
+   * executed.
+   *
+   * Executing scriptsinside the callback will not re-trigger microtasks and
+   * the callback.
+   */
+  void AddMicrotasksCompletedCallback(MicrotasksCompletedCallback callback);
+
+  /**
+   * Removes callback that was installed by AddMicrotasksCompletedCallback.
+   */
+  void RemoveMicrotasksCompletedCallback(MicrotasksCompletedCallback callback);
 
   /**
    * Sets a callback for counting the number of times a feature of V8 is used.
@@ -7107,7 +7230,7 @@ class Internals {
       1 * kApiPointerSize + kApiIntSize;
   static const int kStringResourceOffset = 3 * kApiPointerSize;
 
-  static const int kOddballKindOffset = 4 * kApiPointerSize;
+  static const int kOddballKindOffset = 5 * kApiPointerSize;
   static const int kForeignAddressOffset = kApiPointerSize;
   static const int kJSObjectHeaderSize = 3 * kApiPointerSize;
   static const int kFixedArrayHeaderSize = 2 * kApiPointerSize;
@@ -7146,7 +7269,7 @@ class Internals {
   static const int kNodeIsPartiallyDependentShift = 4;
   static const int kNodeIsActiveShift = 4;
 
-  static const int kJSObjectType = 0xb5;
+  static const int kJSObjectType = 0xb8;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x83;
   static const int kForeignType = 0x87;

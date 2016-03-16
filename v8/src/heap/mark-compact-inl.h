@@ -6,7 +6,7 @@
 #define V8_HEAP_MARK_COMPACT_INL_H_
 
 #include "src/heap/mark-compact.h"
-#include "src/heap/slots-buffer.h"
+#include "src/heap/remembered-set.h"
 #include "src/isolate.h"
 
 namespace v8 {
@@ -70,31 +70,18 @@ bool MarkCompactCollector::IsMarked(Object* obj) {
 void MarkCompactCollector::RecordSlot(HeapObject* object, Object** slot,
                                       Object* target) {
   Page* target_page = Page::FromAddress(reinterpret_cast<Address>(target));
+  Page* source_page = Page::FromAddress(reinterpret_cast<Address>(object));
   if (target_page->IsEvacuationCandidate() &&
       !ShouldSkipEvacuationSlotRecording(object)) {
-    if (!SlotsBuffer::AddTo(slots_buffer_allocator_,
-                            target_page->slots_buffer_address(), slot,
-                            SlotsBuffer::FAIL_ON_OVERFLOW)) {
-      EvictPopularEvacuationCandidate(target_page);
-    }
-  }
-}
-
-
-void MarkCompactCollector::ForceRecordSlot(HeapObject* object, Object** slot,
-                                           Object* target) {
-  Page* target_page = Page::FromAddress(reinterpret_cast<Address>(target));
-  if (target_page->IsEvacuationCandidate() &&
-      !ShouldSkipEvacuationSlotRecording(object)) {
-    CHECK(SlotsBuffer::AddTo(slots_buffer_allocator_,
-                             target_page->slots_buffer_address(), slot,
-                             SlotsBuffer::IGNORE_OVERFLOW));
+    DCHECK(Marking::IsBlackOrGrey(Marking::MarkBitFrom(object)));
+    RememberedSet<OLD_TO_OLD>::Insert(source_page,
+                                      reinterpret_cast<Address>(slot));
   }
 }
 
 
 void CodeFlusher::AddCandidate(SharedFunctionInfo* shared_info) {
-  if (GetNextCandidate(shared_info) == NULL) {
+  if (GetNextCandidate(shared_info) == nullptr) {
     SetNextCandidate(shared_info, shared_function_info_candidates_head_);
     shared_function_info_candidates_head_ = shared_info;
   }
@@ -103,7 +90,7 @@ void CodeFlusher::AddCandidate(SharedFunctionInfo* shared_info) {
 
 void CodeFlusher::AddCandidate(JSFunction* function) {
   DCHECK(function->code() == function->shared()->code());
-  if (GetNextCandidate(function)->IsUndefined()) {
+  if (function->next_function_link()->IsUndefined()) {
     SetNextCandidate(function, jsfunction_candidates_head_);
     jsfunction_candidates_head_ = function;
   }
@@ -156,9 +143,20 @@ template <LiveObjectIterationMode T>
 HeapObject* LiveObjectIterator<T>::Next() {
   while (!it_.Done()) {
     HeapObject* object = nullptr;
+    if (T == kGreyObjectsOnBlackPage) {
+      // Black objects will have most of the mark bits set to 1. If we invert
+      // the mark bits, grey objects will be left but the mark bit is moved by
+      // one position. We can just substract one word from the found location
+      // to obtain the grey object.
+      current_cell_ = ~current_cell_;
+    }
     while (current_cell_ != 0) {
       uint32_t trailing_zeros = base::bits::CountTrailingZeros32(current_cell_);
       Address addr = cell_base_ + trailing_zeros * kPointerSize;
+
+      if (T == kGreyObjectsOnBlackPage) {
+        addr -= kPointerSize;
+      }
 
       // Clear the first bit of the found object..
       current_cell_ &= ~(1u << trailing_zeros);
@@ -181,9 +179,14 @@ HeapObject* LiveObjectIterator<T>::Next() {
         object = HeapObject::FromAddress(addr);
       } else if (T == kAllLiveObjects) {
         object = HeapObject::FromAddress(addr);
+      } else if (T == kGreyObjectsOnBlackPage) {
+        object = HeapObject::FromAddress(addr);
       }
-      // Clear the second bit of the found object.
-      current_cell_ &= ~second_bit_index;
+
+      if (T != kGreyObjectsOnBlackPage) {
+        // Clear the second bit of the found object.
+        current_cell_ &= ~second_bit_index;
+      }
 
       // We found a live object.
       if (object != nullptr) break;

@@ -108,17 +108,12 @@ Node* GetArgumentsFrameState(Node* frame_state) {
              : frame_state;
 }
 
-// Maximum instance size for which allocations will be inlined.
-const int kMaxInlineInstanceSize = 64 * kPointerSize;
-
-// Checks whether allocation using the given constructor can be inlined.
-bool IsAllocationInlineable(Handle<JSFunction> constructor) {
-  // TODO(bmeurer): Further relax restrictions on inlining, i.e.
-  // instance type and maybe instance size (inobject properties
-  // are limited anyways by the runtime).
-  return constructor->has_initial_map() &&
-         constructor->initial_map()->instance_type() == JS_OBJECT_TYPE &&
-         constructor->initial_map()->instance_size() < kMaxInlineInstanceSize;
+// Checks whether allocation using the given target and new.target can be
+// inlined.
+bool IsAllocationInlineable(Handle<JSFunction> target,
+                            Handle<JSFunction> new_target) {
+  return new_target->has_initial_map() &&
+         new_target->initial_map()->constructor_or_backpointer() == *target;
 }
 
 // When initializing arrays, we'll unfold the loop if the number of
@@ -230,32 +225,36 @@ Reduction JSCreateLowering::ReduceJSCreate(Node* node) {
   Node* const target = NodeProperties::GetValueInput(node, 0);
   Type* const target_type = NodeProperties::GetType(target);
   Node* const new_target = NodeProperties::GetValueInput(node, 1);
+  Type* const new_target_type = NodeProperties::GetType(new_target);
   Node* const effect = NodeProperties::GetEffectInput(node);
-  // TODO(turbofan): Add support for NewTarget passed to JSCreate.
-  if (target != new_target) return NoChange();
-  // Extract constructor function.
+  // Extract constructor and original constructor function.
   if (target_type->IsConstant() &&
-      target_type->AsConstant()->Value()->IsJSFunction()) {
+      new_target_type->IsConstant() &&
+      new_target_type->AsConstant()->Value()->IsJSFunction()) {
     Handle<JSFunction> constructor =
         Handle<JSFunction>::cast(target_type->AsConstant()->Value());
+    Handle<JSFunction> original_constructor =
+        Handle<JSFunction>::cast(new_target_type->AsConstant()->Value());
     DCHECK(constructor->IsConstructor());
-    // Force completion of inobject slack tracking before
-    // generating code to finalize the instance size.
-    constructor->CompleteInobjectSlackTrackingIfActive();
+    DCHECK(original_constructor->IsConstructor());
 
-    // TODO(bmeurer): We fall back to the runtime in case we cannot inline
-    // the allocation here, which is sort of expensive. We should think about
-    // a soft fallback to some NewObjectCodeStub.
-    if (IsAllocationInlineable(constructor)) {
-      // Compute instance size from initial map of {constructor}.
-      Handle<Map> initial_map(constructor->initial_map(), isolate());
+    // Check if we can inline the allocation.
+    if (IsAllocationInlineable(constructor, original_constructor)) {
+      // Force completion of inobject slack tracking before
+      // generating code to finalize the instance size.
+      original_constructor->CompleteInobjectSlackTrackingIfActive();
+
+      // Compute instance size from initial map of {original_constructor}.
+      Handle<Map> initial_map(original_constructor->initial_map(), isolate());
       int const instance_size = initial_map->instance_size();
 
       // Add a dependency on the {initial_map} to make sure that this code is
-      // deoptimized whenever the {initial_map} of the {constructor} changes.
+      // deoptimized whenever the {initial_map} of the {original_constructor}
+      // changes.
       dependencies()->AssumeInitialMapCantChange(initial_map);
 
-      // Emit code to allocate the JSObject instance for the {constructor}.
+      // Emit code to allocate the JSObject instance for the
+      // {original_constructor}.
       AllocationBuilder a(jsgraph(), effect, graph()->start());
       a.Allocate(instance_size);
       a.Store(AccessBuilder::ForMap(), initial_map);
@@ -286,31 +285,25 @@ Reduction JSCreateLowering::ReduceJSCreateArguments(Node* node) {
   if (outer_state->opcode() != IrOpcode::kFrameState) {
     switch (type) {
       case CreateArgumentsType::kMappedArguments: {
-        // TODO(bmeurer): Cleanup this mess at some point.
-        int parameter_count = state_info.parameter_count() - 1;
-        int parameter_offset = parameter_count * kPointerSize;
-        int offset = StandardFrameConstants::kCallerSPOffset + parameter_offset;
-        Node* parameter_pointer =
-            graph()->NewNode(machine()->IntAdd(),
-                             graph()->NewNode(machine()->LoadFramePointer()),
-                             jsgraph()->IntPtrConstant(offset));
-        Handle<SharedFunctionInfo> shared;
-        if (!state_info.shared_info().ToHandle(&shared)) return NoChange();
-        Callable callable = CodeFactory::ArgumentsAccess(
-            isolate(), shared->has_duplicate_parameters());
+        // TODO(mstarzinger): Duplicate parameters are not handled yet.
+        Handle<SharedFunctionInfo> shared_info;
+        if (!state_info.shared_info().ToHandle(&shared_info) ||
+            shared_info->has_duplicate_parameters()) {
+          return NoChange();
+        }
+        // TODO(bmeurer): Actually we don't need a frame state here.
+        Callable callable = CodeFactory::FastNewSloppyArguments(isolate());
         CallDescriptor* desc = Linkage::GetStubCallDescriptor(
             isolate(), graph()->zone(), callable.descriptor(), 0,
             CallDescriptor::kNeedsFrameState);
         const Operator* new_op = common()->Call(desc);
         Node* stub_code = jsgraph()->HeapConstant(callable.code());
         node->InsertInput(graph()->zone(), 0, stub_code);
-        node->InsertInput(graph()->zone(), 2,
-                          jsgraph()->Constant(parameter_count));
-        node->InsertInput(graph()->zone(), 3, parameter_pointer);
         NodeProperties::ChangeOp(node, new_op);
         return Changed(node);
       }
       case CreateArgumentsType::kUnmappedArguments: {
+        // TODO(bmeurer): Actually we don't need a frame state here.
         Callable callable = CodeFactory::FastNewStrictArguments(isolate());
         CallDescriptor* desc = Linkage::GetStubCallDescriptor(
             isolate(), graph()->zone(), callable.descriptor(), 0,
@@ -322,6 +315,7 @@ Reduction JSCreateLowering::ReduceJSCreateArguments(Node* node) {
         return Changed(node);
       }
       case CreateArgumentsType::kRestParameter: {
+        // TODO(bmeurer): Actually we don't need a frame state here.
         Callable callable = CodeFactory::FastNewRestParameter(isolate());
         CallDescriptor* desc = Linkage::GetStubCallDescriptor(
             isolate(), graph()->zone(), callable.descriptor(), 0,

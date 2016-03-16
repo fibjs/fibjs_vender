@@ -95,6 +95,7 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
       os << "filler";
       break;
     case JS_OBJECT_TYPE:  // fall through
+    case JS_SPECIAL_API_OBJECT_TYPE:
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
     case JS_ARRAY_TYPE:
     case JS_GENERATOR_OBJECT_TYPE:
@@ -454,6 +455,12 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
   }
   os << "\n - elements kind: " << ElementsKindToString(elements_kind());
   os << "\n - unused property fields: " << unused_property_fields();
+  os << "\n - enum length: ";
+  if (EnumLength() == kInvalidEnumCacheSentinel) {
+    os << "invalid";
+  } else {
+    os << EnumLength();
+  }
   if (is_deprecated()) os << "\n - deprecated_map";
   if (is_stable()) os << "\n - stable_map";
   if (is_dictionary_map()) os << "\n - dictionary_map";
@@ -466,7 +473,6 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
   if (is_access_check_needed()) os << "\n - access_check_needed";
   if (!is_extensible()) os << "\n - non-extensible";
   if (is_observed()) os << "\n - observed";
-  if (is_strong()) os << "\n - strong_map";
   if (is_prototype_map()) {
     os << "\n - prototype_map";
     os << "\n - prototype info: " << Brief(prototype_info());
@@ -856,6 +862,8 @@ void JSFunction::JSFunctionPrint(std::ostream& os) {  // NOLINT
   if (has_initial_map()) os << Brief(initial_map());
   os << "\n - shared_info = " << Brief(shared());
   os << "\n - name = " << Brief(shared()->name());
+  os << "\n - formal_parameter_count = "
+     << shared()->internal_formal_parameter_count();
   if (shared()->is_generator()) {
     os << "\n   - generator";
   }
@@ -868,9 +876,10 @@ void JSFunction::JSFunctionPrint(std::ostream& os) {  // NOLINT
 
 void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "SharedFunctionInfo");
-  os << "\n - name: " << Brief(name());
-  os << "\n - expected_nof_properties: " << expected_nof_properties();
-  os << "\n - ast_node_count: " << ast_node_count();
+  os << "\n - name = " << Brief(name());
+  os << "\n - formal_parameter_count = " << internal_formal_parameter_count();
+  os << "\n - expected_nof_properties = " << expected_nof_properties();
+  os << "\n - ast_node_count = " << ast_node_count();
   os << "\n - instance class name = ";
   instance_class_name()->Print(os);
   os << "\n - code = " << Brief(code());
@@ -886,10 +895,16 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
   // Script files are often large, hard to read.
   // os << "\n - script =";
   // script()->Print(os);
+  if (is_named_expression()) {
+    os << "\n - named expression";
+  } else if (is_anonymous_expression()) {
+    os << "\n - anonymous expression";
+  } else if (is_declaration()) {
+    os << "\n - declaration";
+  }
   os << "\n - function token position = " << function_token_position();
   os << "\n - start position = " << start_position();
   os << "\n - end position = " << end_position();
-  os << "\n - is expression = " << is_expression();
   os << "\n - debug info = " << Brief(debug_info());
   os << "\n - length = " << length();
   os << "\n - optimized_code_map = " << Brief(optimized_code_map());
@@ -946,6 +961,7 @@ void WeakCell::WeakCellPrint(std::ostream& os) {  // NOLINT
 
 void Code::CodePrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Code");
+  os << "\n";
 #ifdef ENABLE_DISASSEMBLER
   if (FLAG_use_verbose_printer) {
     Disassemble(NULL, os);
@@ -1290,8 +1306,6 @@ void TransitionArray::PrintTransitions(std::ostream& os, Object* transitions,
          << ")";
     } else if (key == heap->strict_function_transition_symbol()) {
       os << " (transition to strict function)";
-    } else if (key == heap->strong_function_transition_symbol()) {
-      os << " (transition to strong function)";
     } else if (key == heap->observed_symbol()) {
       os << " (transition to Object.observe)";
     } else {

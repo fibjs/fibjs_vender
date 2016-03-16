@@ -104,8 +104,7 @@ static MaybeHandle<Object> DefineClass(Isolate* isolate,
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, prototype_parent,
           Runtime::GetObjectProperty(isolate, super_class,
-                                     isolate->factory()->prototype_string(),
-                                     SLOPPY),
+                                     isolate->factory()->prototype_string()),
           Object);
       if (!prototype_parent->IsNull() && !prototype_parent->IsJSReceiver()) {
         THROW_NEW_ERROR(
@@ -125,14 +124,6 @@ static MaybeHandle<Object> DefineClass(Isolate* isolate,
   Handle<Map> map =
       isolate->factory()->NewMap(JS_OBJECT_TYPE, JSObject::kHeaderSize);
   map->set_is_prototype_map(true);
-  if (constructor->map()->is_strong()) {
-    map->set_is_strong();
-    if (super_class->IsNull()) {
-      // Strong class is not permitted to extend null.
-      THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kStrongExtendNull),
-                      Object);
-    }
-  }
   Map::SetPrototype(map, prototype_parent);
   map->SetConstructor(*constructor);
   Handle<JSObject> prototype = isolate->factory()->NewJSObjectFromMap(map);
@@ -207,28 +198,14 @@ RUNTIME_FUNCTION(Runtime_FinalizeClassDefinition) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, constructor, 0);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, prototype, 1);
-
   JSObject::MigrateSlowToFast(constructor, 0, "RuntimeToFastProperties");
-
-  if (constructor->map()->is_strong()) {
-    DCHECK(prototype->map()->is_strong());
-    MAYBE_RETURN(JSReceiver::SetIntegrityLevel(prototype, FROZEN,
-                                               Object::THROW_ON_ERROR),
-                 isolate->heap()->exception());
-    MAYBE_RETURN(JSReceiver::SetIntegrityLevel(constructor, FROZEN,
-                                               Object::THROW_ON_ERROR),
-                 isolate->heap()->exception());
-  }
   return *constructor;
 }
-
 
 static MaybeHandle<Object> LoadFromSuper(Isolate* isolate,
                                          Handle<Object> receiver,
                                          Handle<JSObject> home_object,
-                                         Handle<Name> name,
-                                         LanguageMode language_mode) {
+                                         Handle<Name> name) {
   if (home_object->IsAccessCheckNeeded() &&
       !isolate->MayAccess(handle(isolate->context()), home_object)) {
     isolate->ReportFailedAccessCheck(home_object);
@@ -238,22 +215,19 @@ static MaybeHandle<Object> LoadFromSuper(Isolate* isolate,
   PrototypeIterator iter(isolate, home_object);
   Handle<Object> proto = PrototypeIterator::GetCurrent(iter);
   if (!proto->IsJSReceiver()) {
-    return Object::ReadAbsentProperty(isolate, proto, name, language_mode);
+    return Object::ReadAbsentProperty(isolate, proto, name);
   }
 
   LookupIterator it(receiver, name, Handle<JSReceiver>::cast(proto));
   Handle<Object> result;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                             Object::GetProperty(&it, language_mode), Object);
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, result, Object::GetProperty(&it), Object);
   return result;
 }
-
 
 static MaybeHandle<Object> LoadElementFromSuper(Isolate* isolate,
                                                 Handle<Object> receiver,
                                                 Handle<JSObject> home_object,
-                                                uint32_t index,
-                                                LanguageMode language_mode) {
+                                                uint32_t index) {
   if (home_object->IsAccessCheckNeeded() &&
       !isolate->MayAccess(handle(isolate->context()), home_object)) {
     isolate->ReportFailedAccessCheck(home_object);
@@ -264,50 +238,44 @@ static MaybeHandle<Object> LoadElementFromSuper(Isolate* isolate,
   Handle<Object> proto = PrototypeIterator::GetCurrent(iter);
   if (!proto->IsJSReceiver()) {
     Handle<Object> name = isolate->factory()->NewNumberFromUint(index);
-    return Object::ReadAbsentProperty(isolate, proto, name, language_mode);
+    return Object::ReadAbsentProperty(isolate, proto, name);
   }
 
   LookupIterator it(isolate, receiver, index, Handle<JSReceiver>::cast(proto));
   Handle<Object> result;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                             Object::GetProperty(&it, language_mode), Object);
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, result, Object::GetProperty(&it), Object);
   return result;
 }
 
 
-// TODO(conradw): It would be more efficient to have a separate runtime function
-// for strong mode.
 RUNTIME_FUNCTION(Runtime_LoadFromSuper) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 4);
+  DCHECK_EQ(3, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, receiver, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, home_object, 1);
   CONVERT_ARG_HANDLE_CHECKED(Name, name, 2);
-  CONVERT_LANGUAGE_MODE_ARG_CHECKED(language_mode, 3);
 
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result,
-      LoadFromSuper(isolate, receiver, home_object, name, language_mode));
+      isolate, result, LoadFromSuper(isolate, receiver, home_object, name));
   return *result;
 }
 
 
 RUNTIME_FUNCTION(Runtime_LoadKeyedFromSuper) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 4);
+  DCHECK_EQ(3, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, receiver, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, home_object, 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, key, 2);
-  CONVERT_LANGUAGE_MODE_ARG_CHECKED(language_mode, 3);
 
   uint32_t index = 0;
   Handle<Object> result;
 
   if (key->ToArrayIndex(&index)) {
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, result, LoadElementFromSuper(isolate, receiver, home_object,
-                                              index, language_mode));
+        isolate, result,
+        LoadElementFromSuper(isolate, receiver, home_object, index));
     return *result;
   }
 
@@ -317,13 +285,12 @@ RUNTIME_FUNCTION(Runtime_LoadKeyedFromSuper) {
   // TODO(verwaest): Unify using LookupIterator.
   if (name->AsArrayIndex(&index)) {
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, result, LoadElementFromSuper(isolate, receiver, home_object,
-                                              index, language_mode));
+        isolate, result,
+        LoadElementFromSuper(isolate, receiver, home_object, index));
     return *result;
   }
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result,
-      LoadFromSuper(isolate, receiver, home_object, name, language_mode));
+      isolate, result, LoadFromSuper(isolate, receiver, home_object, name));
   return *result;
 }
 

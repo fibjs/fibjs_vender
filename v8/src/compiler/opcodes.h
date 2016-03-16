@@ -21,6 +21,8 @@
   V(IfDefault)             \
   V(Merge)                 \
   V(Deoptimize)            \
+  V(DeoptimizeIf)          \
+  V(DeoptimizeUnless)      \
   V(Return)                \
   V(TailCall)              \
   V(Terminate)             \
@@ -202,7 +204,8 @@
   V(StoreElement)                  \
   V(ObjectIsNumber)                \
   V(ObjectIsReceiver)              \
-  V(ObjectIsSmi)
+  V(ObjectIsSmi)                   \
+  V(ObjectIsUndetectable)
 
 // Opcodes for Machine-level operators.
 #define MACHINE_COMPARE_BINOP_LIST(V) \
@@ -237,6 +240,7 @@
   V(Word32Ror)                  \
   V(Word32Clz)                  \
   V(Word32Ctz)                  \
+  V(Word32ReverseBits)          \
   V(Word32Popcnt)               \
   V(Word64Popcnt)               \
   V(Word64And)                  \
@@ -248,6 +252,7 @@
   V(Word64Ror)                  \
   V(Word64Clz)                  \
   V(Word64Ctz)                  \
+  V(Word64ReverseBits)          \
   V(Int32Add)                   \
   V(Int32AddWithOverflow)       \
   V(Int32Sub)                   \
@@ -326,8 +331,13 @@
   V(Float64InsertHighWord32)    \
   V(LoadStackPointer)           \
   V(LoadFramePointer)           \
+  V(LoadParentFramePointer)     \
   V(CheckedLoad)                \
-  V(CheckedStore)
+  V(CheckedStore)               \
+  V(Int32PairAdd)               \
+  V(Word32PairShl)              \
+  V(Word32PairShr)              \
+  V(Word32PairSar)
 
 #define VALUE_OP_LIST(V) \
   COMMON_OP_LIST(V)      \

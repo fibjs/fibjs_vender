@@ -40,6 +40,9 @@
     <Filter Include="Source Files\compiler\ppc">
       <UniqueIdentifier>{747a3f26-b765-b376-aaaf-3d94438790ba}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\compiler\s390">
+      <UniqueIdentifier>{88cfefec-d575-51a1-4bec-52059e1e7165}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\compiler\x64">
       <UniqueIdentifier>{7e4db021-7f1c-d574-294e-09b6102be2dd}</UniqueIdentifier>
     </Filter>
@@ -54,6 +57,9 @@
     </Filter>
     <Filter Include="Source Files\crankshaft\ppc">
       <UniqueIdentifier>{1816900e-285a-c8b1-18b6-5f2448edc074}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crankshaft\s390">
+      <UniqueIdentifier>{ee0200e4-e677-4e1a-f115-276af6b7ca28}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\crankshaft\x64">
       <UniqueIdentifier>{ece323aa-3aa8-aa37-18ef-4dc21d62389a}</UniqueIdentifier>
@@ -73,6 +79,9 @@
     <Filter Include="Source Files\debug\ppc">
       <UniqueIdentifier>{b6820317-393c-979d-f23d-b233836dd8c7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\debug\s390">
+      <UniqueIdentifier>{7171cc16-05be-957f-3252-5f50fd8357d7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\debug\x64">
       <UniqueIdentifier>{64f81658-9958-9f87-2ec0-018527bb74dc}</UniqueIdentifier>
     </Filter>
@@ -90,6 +99,9 @@
     </Filter>
     <Filter Include="Source Files\full-codegen\ppc">
       <UniqueIdentifier>{f00a5531-efdb-0e27-81f4-9b7754d2a312}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\full-codegen\s390">
+      <UniqueIdentifier>{9c86a554-7da0-a7fe-588d-00d4ba3a5c7d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\full-codegen\x64">
       <UniqueIdentifier>{73f3d6cd-3dd6-8540-ff08-e30c63419f3a}</UniqueIdentifier>
@@ -114,6 +126,9 @@
     </Filter>
     <Filter Include="Source Files\ic\ppc">
       <UniqueIdentifier>{d6e99f08-7d31-eb33-b832-c0eb174f373a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ic\s390">
+      <UniqueIdentifier>{6370d2e6-c57b-d64a-8b5c-ebc01206aa1c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\ic\x64">
       <UniqueIdentifier>{7e4c29af-711e-18fb-353a-9dc159584321}</UniqueIdentifier>
@@ -148,6 +163,9 @@
     <Filter Include="Source Files\regexp\ppc">
       <UniqueIdentifier>{5fad0ab9-8d84-64b9-3087-2ac536ff4e34}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\regexp\s390">
+      <UniqueIdentifier>{0e717e53-0036-4ba5-183a-654540f665bf}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\regexp\x64">
       <UniqueIdentifier>{063176f1-b16b-9fb0-9798-0aed437124d5}</UniqueIdentifier>
     </Filter>
@@ -156,6 +174,9 @@
     </Filter>
     <Filter Include="Source Files\runtime">
       <UniqueIdentifier>{103f0e8f-8587-2131-6779-fa0e8e7a0c4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\s390">
+      <UniqueIdentifier>{8ca74801-2623-d8b2-2ea7-6b870dd765fb}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\snapshot">
       <UniqueIdentifier>{b807bda9-b184-8f62-a640-92e0b3402f98}</UniqueIdentifier>
@@ -226,6 +247,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\allocation.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\api-arguments.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\api-experimental.h">
@@ -453,6 +477,9 @@
     <ClInclude Include="src\codegen.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\collector.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\compilation-cache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -597,9 +624,6 @@
     <ClInclude Include="src\compiler\js-call-reducer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\js-context-relaxation.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\js-context-specialization.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -717,6 +741,9 @@
     <ClInclude Include="src\compiler\representation-change.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\s390\instruction-codes-s390.h">
+      <Filter>Source Files\compiler\s390</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\schedule.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -788,6 +815,9 @@
     </ClInclude>
     <ClInclude Include="src\counters.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\compilation-phase.h">
+      <Filter>Source Files\crankshaft</Filter>
     </ClInclude>
     <ClInclude Include="src\crankshaft\hydrogen-alias-analysis.h">
       <Filter>Source Files\crankshaft</Filter>
@@ -903,6 +933,15 @@
     <ClInclude Include="src\crankshaft\ppc\lithium-ppc.h">
       <Filter>Source Files\crankshaft\ppc</Filter>
     </ClInclude>
+    <ClInclude Include="src\crankshaft\s390\lithium-codegen-s390.h">
+      <Filter>Source Files\crankshaft\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\s390\lithium-gap-resolver-s390.h">
+      <Filter>Source Files\crankshaft\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crankshaft\s390\lithium-s390.h">
+      <Filter>Source Files\crankshaft\s390</Filter>
+    </ClInclude>
     <ClInclude Include="src\crankshaft\typing.h">
       <Filter>Source Files\crankshaft</Filter>
     </ClInclude>
@@ -1008,6 +1047,9 @@
     <ClInclude Include="src\field-index.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\field-type.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\fixed-dtoa.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1092,6 +1134,12 @@
     <ClInclude Include="src\heap\objects-visiting.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\page-parallel-job.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\remembered-set.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\scavenge-job.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1102,9 +1150,6 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\slot-set.h">
-      <Filter>Source Files\heap</Filter>
-    </ClInclude>
-    <ClInclude Include="src\heap\slots-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\spaces-inl.h">
@@ -1224,7 +1269,7 @@
     <ClInclude Include="src\json-stringifier.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\key-accumulator.h">
+    <ClInclude Include="src\keys.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\layout-descriptor-inl.h">
@@ -1455,6 +1500,9 @@
     <ClInclude Include="src\regexp\regexp-stack.h">
       <Filter>Source Files\regexp</Filter>
     </ClInclude>
+    <ClInclude Include="src\regexp\s390\regexp-macro-assembler-s390.h">
+      <Filter>Source Files\regexp\s390</Filter>
+    </ClInclude>
     <ClInclude Include="src\regexp\x64\regexp-macro-assembler-x64.h">
       <Filter>Source Files\regexp\x64</Filter>
     </ClInclude>
@@ -1473,6 +1521,30 @@
     <ClInclude Include="src\runtime\runtime.h">
       <Filter>Source Files\runtime</Filter>
     </ClInclude>
+    <ClInclude Include="src\s390\assembler-s390-inl.h">
+      <Filter>Source Files\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\s390\assembler-s390.h">
+      <Filter>Source Files\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\s390\code-stubs-s390.h">
+      <Filter>Source Files\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\s390\codegen-s390.h">
+      <Filter>Source Files\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\s390\constants-s390.h">
+      <Filter>Source Files\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\s390\frames-s390.h">
+      <Filter>Source Files\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\s390\macro-assembler-s390.h">
+      <Filter>Source Files\s390</Filter>
+    </ClInclude>
+    <ClInclude Include="src\s390\simulator-s390.h">
+      <Filter>Source Files\s390</Filter>
+    </ClInclude>
     <ClInclude Include="src\safepoint-table.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1485,16 +1557,31 @@
     <ClInclude Include="src\small-pointer-list.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\snapshot\code-serializer.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\deserializer.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
     <ClInclude Include="src\snapshot\natives.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
-    <ClInclude Include="src\snapshot\serialize.h">
+    <ClInclude Include="src\snapshot\partial-serializer.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\serializer-common.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\serializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
     <ClInclude Include="src\snapshot\snapshot-source-sink.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
     <ClInclude Include="src\snapshot\snapshot.h">
+      <Filter>Source Files\snapshot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\snapshot\startup-serializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
     <ClInclude Include="src\source-position.h">
@@ -1614,6 +1701,9 @@
     <ClInclude Include="src\wasm\module-decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\wasm-external-refs.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\wasm-js.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -1692,6 +1782,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\allocation.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\api-arguments.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\api-experimental.cc">
@@ -2000,9 +2093,6 @@
     <ClCompile Include="src\compiler\js-call-reducer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\js-context-relaxation.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\js-context-specialization.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2123,6 +2213,15 @@
     <ClCompile Include="src\compiler\representation-change.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\s390\code-generator-s390.cc">
+      <Filter>Source Files\compiler\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\s390\instruction-scheduler-s390.cc">
+      <Filter>Source Files\compiler\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\s390\instruction-selector-s390.cc">
+      <Filter>Source Files\compiler\s390</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\schedule.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2203,6 +2302,9 @@
     </ClCompile>
     <ClCompile Include="src\counters.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\compilation-phase.cc">
+      <Filter>Source Files\crankshaft</Filter>
     </ClCompile>
     <ClCompile Include="src\crankshaft\hydrogen-bce.cc">
       <Filter>Source Files\crankshaft</Filter>
@@ -2306,6 +2408,15 @@
     <ClCompile Include="src\crankshaft\ppc\lithium-ppc.cc">
       <Filter>Source Files\crankshaft\ppc</Filter>
     </ClCompile>
+    <ClCompile Include="src\crankshaft\s390\lithium-codegen-s390.cc">
+      <Filter>Source Files\crankshaft\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\s390\lithium-gap-resolver-s390.cc">
+      <Filter>Source Files\crankshaft\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crankshaft\s390\lithium-s390.cc">
+      <Filter>Source Files\crankshaft\s390</Filter>
+    </ClCompile>
     <ClCompile Include="src\crankshaft\typing.cc">
       <Filter>Source Files\crankshaft</Filter>
     </ClCompile>
@@ -2353,6 +2464,9 @@
     </ClCompile>
     <ClCompile Include="src\debug\ppc\debug-ppc.cc">
       <Filter>Source Files\debug\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="src\debug\s390\debug-s390.cc">
+      <Filter>Source Files\debug\s390</Filter>
     </ClCompile>
     <ClCompile Include="src\debug\x64\debug-x64.cc">
       <Filter>Source Files\debug\x64</Filter>
@@ -2402,6 +2516,9 @@
     <ClCompile Include="src\fast-dtoa.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\field-type.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\fixed-dtoa.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2419,6 +2536,9 @@
     </ClCompile>
     <ClCompile Include="src\full-codegen\ppc\full-codegen-ppc.cc">
       <Filter>Source Files\full-codegen\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="src\full-codegen\s390\full-codegen-s390.cc">
+      <Filter>Source Files\full-codegen\s390</Filter>
     </ClCompile>
     <ClCompile Include="src\full-codegen\x64\full-codegen-x64.cc">
       <Filter>Source Files\full-codegen\x64</Filter>
@@ -2480,13 +2600,13 @@
     <ClCompile Include="src\heap\objects-visiting.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
+    <ClCompile Include="src\heap\remembered-set.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
     <ClCompile Include="src\heap\scavenge-job.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\scavenger.cc">
-      <Filter>Source Files\heap</Filter>
-    </ClCompile>
-    <ClCompile Include="src\heap\slots-buffer.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\spaces.cc">
@@ -2576,6 +2696,21 @@
     <ClCompile Include="src\ic\ppc\stub-cache-ppc.cc">
       <Filter>Source Files\ic\ppc</Filter>
     </ClCompile>
+    <ClCompile Include="src\ic\s390\access-compiler-s390.cc">
+      <Filter>Source Files\ic\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ic\s390\handler-compiler-s390.cc">
+      <Filter>Source Files\ic\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ic\s390\ic-compiler-s390.cc">
+      <Filter>Source Files\ic\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ic\s390\ic-s390.cc">
+      <Filter>Source Files\ic\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ic\s390\stub-cache-s390.cc">
+      <Filter>Source Files\ic\s390</Filter>
+    </ClCompile>
     <ClCompile Include="src\ic\stub-cache.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
@@ -2657,7 +2792,7 @@
     <ClCompile Include="src\isolate.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\key-accumulator.cc">
+    <ClCompile Include="src\keys.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\layout-descriptor.cc">
@@ -2831,6 +2966,9 @@
     <ClCompile Include="src\regexp\regexp-stack.cc">
       <Filter>Source Files\regexp</Filter>
     </ClCompile>
+    <ClCompile Include="src\regexp\s390\regexp-macro-assembler-s390.cc">
+      <Filter>Source Files\regexp\s390</Filter>
+    </ClCompile>
     <ClCompile Include="src\regexp\x64\regexp-macro-assembler-x64.cc">
       <Filter>Source Files\regexp\x64</Filter>
     </ClCompile>
@@ -2939,13 +3077,61 @@
     <ClCompile Include="src\runtime\runtime.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
+    <ClCompile Include="src\s390\assembler-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\builtins-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\code-stubs-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\codegen-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\constants-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\cpu-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\deoptimizer-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\disasm-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\frames-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\interface-descriptors-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\macro-assembler-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\s390\simulator-s390.cc">
+      <Filter>Source Files\s390</Filter>
+    </ClCompile>
     <ClCompile Include="src\safepoint-table.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\code-serializer.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\deserializer.cc">
+      <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\natives-common.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
-    <ClCompile Include="src\snapshot\serialize.cc">
+    <ClCompile Include="src\snapshot\partial-serializer.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\serializer-common.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\serializer.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\snapshot-common.cc">
@@ -2955,6 +3141,9 @@
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\snapshot\snapshot-source-sink.cc">
+      <Filter>Source Files\snapshot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snapshot\startup-serializer.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
     <ClCompile Include="src\startup-data-util.cc">

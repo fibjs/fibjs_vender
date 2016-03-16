@@ -124,8 +124,11 @@ class MipsOperandConverter final : public InstructionOperandConverter {
   MemOperand ToMemOperand(InstructionOperand* op) const {
     DCHECK_NOT_NULL(op);
     DCHECK(op->IsStackSlot() || op->IsDoubleStackSlot());
-    FrameOffset offset = frame_access_state()->GetFrameOffset(
-        AllocatedOperand::cast(op)->index());
+    return SlotToMemOperand(AllocatedOperand::cast(op)->index());
+  }
+
+  MemOperand SlotToMemOperand(int slot) const {
+    FrameOffset offset = frame_access_state()->GetFrameOffset(slot);
     return MemOperand(offset.from_stack_pointer() ? sp : fp, offset.offset());
   }
 };
@@ -231,19 +234,25 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
     if (mode_ > RecordWriteMode::kValueIsPointer) {
       __ JumpIfSmi(value_, exit());
     }
-    if (mode_ > RecordWriteMode::kValueIsMap) {
-      __ CheckPageFlag(value_, scratch0_,
-                       MemoryChunk::kPointersToHereAreInterestingMask, eq,
-                       exit());
-    }
+    __ CheckPageFlag(value_, scratch0_,
+                     MemoryChunk::kPointersToHereAreInterestingMask, eq,
+                     exit());
+    RememberedSetAction const remembered_set_action =
+        mode_ > RecordWriteMode::kValueIsMap ? EMIT_REMEMBERED_SET
+                                             : OMIT_REMEMBERED_SET;
     SaveFPRegsMode const save_fp_mode =
         frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
-    // TODO(turbofan): Once we get frame elision working, we need to save
-    // and restore lr properly here if the frame was elided.
+    if (!frame()->needs_frame()) {
+      // We need to save and restore ra if the frame was elided.
+      __ Push(ra);
+    }
     RecordWriteStub stub(isolate(), object_, scratch0_, scratch1_,
-                         EMIT_REMEMBERED_SET, save_fp_mode);
+                         remembered_set_action, save_fp_mode);
     __ Addu(scratch1_, object_, index_);
     __ CallStub(&stub);
+    if (!frame()->needs_frame()) {
+      __ Pop(ra);
+    }
   }
 
  private:
@@ -487,13 +496,37 @@ void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
   frame_access_state()->SetFrameAccessToSP();
 }
 
+void CodeGenerator::AssemblePopArgumentsAdaptorFrame(Register args_reg,
+                                                     Register scratch1,
+                                                     Register scratch2,
+                                                     Register scratch3) {
+  DCHECK(!AreAliased(args_reg, scratch1, scratch2, scratch3));
+  Label done;
+
+  // Check if current frame is an arguments adaptor frame.
+  __ lw(scratch1, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  __ Branch(&done, ne, scratch1,
+            Operand(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
+
+  // Load arguments count from current arguments adaptor frame (note, it
+  // does not include receiver).
+  Register caller_args_count_reg = scratch1;
+  __ lw(caller_args_count_reg,
+        MemOperand(fp, ArgumentsAdaptorFrameConstants::kLengthOffset));
+  __ SmiUntag(caller_args_count_reg);
+
+  ParameterCount callee_args_count(args_reg);
+  __ PrepareForTailCall(callee_args_count, caller_args_count_reg, scratch2,
+                        scratch3);
+  __ bind(&done);
+}
 
 // Assembles an instruction after register allocation, producing machine code.
 void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
   MipsOperandConverter i(this, instr);
   InstructionCode opcode = instr->opcode();
-
-  switch (ArchOpcodeField::decode(opcode)) {
+  ArchOpcode arch_opcode = ArchOpcodeField::decode(opcode);
+  switch (arch_opcode) {
     case kArchCallCodeObject: {
       EnsureSpaceForLazyDeopt();
       if (instr->InputAt(0)->IsImmediate()) {
@@ -507,9 +540,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       frame_access_state()->ClearSPDelta();
       break;
     }
+    case kArchTailCallCodeObjectFromJSFunction:
     case kArchTailCallCodeObject: {
       int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
       AssembleDeconstructActivationRecord(stack_param_delta);
+      if (arch_opcode == kArchTailCallCodeObjectFromJSFunction) {
+        AssemblePopArgumentsAdaptorFrame(kJavaScriptCallArgCountRegister,
+                                         i.TempRegister(0), i.TempRegister(1),
+                                         i.TempRegister(2));
+      }
       if (instr->InputAt(0)->IsImmediate()) {
         __ Jump(Handle<Code>::cast(i.InputHeapObject(0)),
                 RelocInfo::CODE_TARGET);
@@ -535,6 +574,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       frame_access_state()->ClearSPDelta();
       break;
     }
+    case kArchTailCallJSFunctionFromJSFunction:
     case kArchTailCallJSFunction: {
       Register func = i.InputRegister(0);
       if (FLAG_debug_code) {
@@ -545,14 +585,14 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
 
       int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
       AssembleDeconstructActivationRecord(stack_param_delta);
+      if (arch_opcode == kArchTailCallJSFunctionFromJSFunction) {
+        AssemblePopArgumentsAdaptorFrame(kJavaScriptCallArgCountRegister,
+                                         i.TempRegister(0), i.TempRegister(1),
+                                         i.TempRegister(2));
+      }
       __ lw(at, FieldMemOperand(func, JSFunction::kCodeEntryOffset));
       __ Jump(at);
       frame_access_state()->ClearSPDelta();
-      break;
-    }
-    case kArchLazyBailout: {
-      EnsureSpaceForLazyDeopt();
-      RecordCallPosition(instr);
       break;
     }
     case kArchPrepareCallCFunction: {
@@ -607,6 +647,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
     case kArchFramePointer:
       __ mov(i.OutputRegister(), fp);
+      break;
+    case kArchParentFramePointer:
+      if (frame_access_state()->frame()->needs_frame()) {
+        __ lw(i.OutputRegister(), MemOperand(fp, 0));
+      } else {
+        __ mov(i.OutputRegister(), fp);
+      }
       break;
     case kArchTruncateDoubleToI:
       __ TruncateDoubleToI(i.OutputRegister(), i.InputDoubleRegister(0));
@@ -1025,6 +1072,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ cvt_s_w(i.OutputDoubleRegister(), scratch);
       break;
     }
+    case kMipsCvtSUw: {
+      FPURegister scratch = kScratchDoubleReg;
+      __ Cvt_d_uw(i.OutputDoubleRegister(), i.InputRegister(0), scratch);
+      __ cvt_s_d(i.OutputDoubleRegister(), i.OutputDoubleRegister());
+      break;
+    }
     case kMipsCvtDUw: {
       FPURegister scratch = kScratchDoubleReg;
       __ Cvt_d_uw(i.OutputDoubleRegister(), i.InputRegister(0), scratch);
@@ -1083,6 +1136,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       FPURegister scratch = kScratchDoubleReg;
       // TODO(plind): Fix wrong param order of Trunc_uw_d() macro-asm function.
       __ Trunc_uw_d(i.InputDoubleRegister(0), i.OutputRegister(), scratch);
+      break;
+    }
+    case kMipsTruncUwS: {
+      FPURegister scratch = kScratchDoubleReg;
+      // TODO(plind): Fix wrong param order of Trunc_uw_s() macro-asm function.
+      __ Trunc_uw_s(i.InputDoubleRegister(0), i.OutputRegister(), scratch);
       break;
     }
     case kMipsFloat64ExtractLowWord32:
@@ -1509,13 +1568,15 @@ void CodeGenerator::AssembleDeoptimizerCall(
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
   int stack_shrink_slots = frame()->GetSpillSlotCount();
-  if (descriptor->IsCFunctionCall()) {
-    __ Push(ra, fp);
-    __ mov(fp, sp);
-  } else if (descriptor->IsJSFunctionCall()) {
-    __ Prologue(this->info()->GeneratePreagedPrologue());
-  } else if (frame()->needs_frame()) {
-    __ StubPrologue();
+  if (frame()->needs_frame()) {
+    if (descriptor->IsCFunctionCall()) {
+      __ Push(ra, fp);
+      __ mov(fp, sp);
+    } else if (descriptor->IsJSFunctionCall()) {
+      __ Prologue(this->info()->GeneratePreagedPrologue());
+    } else {
+      __ StubPrologue(info()->GetOutputStackFrameType());
+    }
   } else {
     frame()->SetElidedFrameSizeInSlots(0);
   }
@@ -1649,9 +1710,9 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
         case Constant::kHeapObject: {
           Handle<HeapObject> src_object = src.ToHeapObject();
           Heap::RootListIndex index;
-          int offset;
-          if (IsMaterializableFromFrame(src_object, &offset)) {
-            __ lw(dst, MemOperand(fp, offset));
+          int slot;
+          if (IsMaterializableFromFrame(src_object, &slot)) {
+            __ lw(dst, g.SlotToMemOperand(slot));
           } else if (IsMaterializableFromRoot(src_object, &index)) {
             __ LoadRoot(dst, index);
           } else {

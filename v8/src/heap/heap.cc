@@ -27,6 +27,7 @@
 #include "src/heap/object-stats.h"
 #include "src/heap/objects-visiting-inl.h"
 #include "src/heap/objects-visiting.h"
+#include "src/heap/remembered-set.h"
 #include "src/heap/scavenge-job.h"
 #include "src/heap/scavenger-inl.h"
 #include "src/heap/store-buffer.h"
@@ -35,8 +36,9 @@
 #include "src/regexp/jsregexp.h"
 #include "src/runtime-profiler.h"
 #include "src/snapshot/natives.h"
-#include "src/snapshot/serialize.h"
+#include "src/snapshot/serializer-common.h"
 #include "src/snapshot/snapshot.h"
+#include "src/tracing/trace-event.h"
 #include "src/type-feedback-vector.h"
 #include "src/utils.h"
 #include "src/v8.h"
@@ -451,10 +453,6 @@ void Heap::GarbageCollectionPrologue() {
   ReportStatisticsBeforeGC();
 #endif  // DEBUG
 
-  if (isolate()->concurrent_osr_enabled()) {
-    isolate()->optimizing_compile_dispatcher()->AgeBufferedOsrJobs();
-  }
-
   if (new_space_.IsAtMaximumCapacity()) {
     maximum_size_scavenges_++;
   } else {
@@ -462,6 +460,7 @@ void Heap::GarbageCollectionPrologue() {
   }
   CheckNewSpaceExpansionCriteria();
   UpdateNewSpaceAllocationCounter();
+  store_buffer()->MoveEntriesToRememberedSet();
 }
 
 
@@ -815,6 +814,7 @@ void Heap::FinalizeIncrementalMarking(const char* gc_reason) {
   GCTracer::Scope gc_scope(tracer(), GCTracer::Scope::MC_INCREMENTAL_FINALIZE);
   HistogramTimerScope incremental_marking_scope(
       isolate()->counters()->gc_incremental_marking_finalize());
+  TRACE_EVENT0("v8", "V8.GCIncrementalMarkingFinalize");
 
   {
     GCCallbacksScope scope(this);
@@ -856,7 +856,6 @@ HistogramTimer* Heap::GCTypeTimer(GarbageCollector collector) {
   }
 }
 
-
 void Heap::CollectAllGarbage(int flags, const char* gc_reason,
                              const v8::GCCallbackFlags gc_callback_flags) {
   // Since we are ignoring the return value, the exact choice of space does
@@ -892,7 +891,7 @@ void Heap::CollectAllAvailableGarbage(const char* gc_reason) {
   const int kMinNumberOfAttempts = 2;
   for (int attempt = 0; attempt < kMaxNumberOfAttempts; attempt++) {
     if (!CollectGarbage(MARK_COMPACTOR, gc_reason, NULL,
-                        v8::kGCCallbackFlagForced) &&
+                        v8::kGCCallbackFlagCollectAllAvailableGarbage) &&
         attempt + 1 >= kMinNumberOfAttempts) {
       break;
     }
@@ -942,7 +941,8 @@ void Heap::EnsureFillerObjectAtTop() {
     Page* page = Page::FromAddress(from_top);
     if (page->Contains(from_top)) {
       int remaining_in_page = static_cast<int>(page->area_end() - from_top);
-      CreateFillerObjectAt(from_top, remaining_in_page);
+      CreateFillerObjectAt(from_top, remaining_in_page,
+                           ClearRecordedSlots::kNo);
     }
   }
 }
@@ -1004,7 +1004,9 @@ bool Heap::CollectGarbage(GarbageCollector collector, const char* gc_reason,
     GarbageCollectionPrologue();
 
     {
-      HistogramTimerScope histogram_timer_scope(GCTypeTimer(collector));
+      HistogramTimer* gc_type_timer = GCTypeTimer(collector);
+      HistogramTimerScope histogram_timer_scope(gc_type_timer);
+      TRACE_EVENT0("v8", gc_type_timer->name());
 
       next_gc_likely_to_collect_more =
           PerformGarbageCollection(collector, gc_callback_flags);
@@ -1038,7 +1040,8 @@ bool Heap::CollectGarbage(GarbageCollector collector, const char* gc_reason,
   }
 
   if (collector == MARK_COMPACTOR &&
-      (gc_callback_flags & kGCCallbackFlagForced) != 0) {
+      (gc_callback_flags & (kGCCallbackFlagForced |
+                            kGCCallbackFlagCollectAllAvailableGarbage)) != 0) {
     isolate()->CountUsage(v8::Isolate::kForcedGC);
   }
 
@@ -1058,9 +1061,9 @@ int Heap::NotifyContextDisposed(bool dependant_context) {
     tracer()->ResetSurvivalEvents();
     old_generation_size_configured_ = false;
     MemoryReducer::Event event;
-    event.type = MemoryReducer::kContextDisposed;
+    event.type = MemoryReducer::kPossibleGarbage;
     event.time_ms = MonotonicallyIncreasingTimeInMs();
-    memory_reducer_->NotifyContextDisposed(event);
+    memory_reducer_->NotifyPossibleGarbage(event);
   }
   if (isolate()->concurrent_recompilation_enabled()) {
     // Flush the queued recompilation tasks.
@@ -1137,7 +1140,8 @@ bool Heap::ReserveSpace(Reservation* reservations) {
   static const int kThreshold = 20;
   while (gc_performed && counter++ < kThreshold) {
     gc_performed = false;
-    for (int space = NEW_SPACE; space < Serializer::kNumberOfSpaces; space++) {
+    for (int space = NEW_SPACE; space < SerializerDeserializer::kNumberOfSpaces;
+         space++) {
       Reservation* reservation = &reservations[space];
       DCHECK_LE(1, reservation->length());
       if (reservation->at(0).size == 0) continue;
@@ -1161,8 +1165,9 @@ bool Heap::ReserveSpace(Reservation* reservations) {
             // Mark with a free list node, in case we have a GC before
             // deserializing.
             Address free_space_address = free_space->address();
-            CreateFillerObjectAt(free_space_address, size);
-            DCHECK(space < Serializer::kNumberOfPreallocatedSpaces);
+            CreateFillerObjectAt(free_space_address, size,
+                                 ClearRecordedSlots::kNo);
+            DCHECK(space < SerializerDeserializer::kNumberOfPreallocatedSpaces);
             chunk.start = free_space_address;
             chunk.end = free_space_address + size;
           } else {
@@ -1393,6 +1398,10 @@ void Heap::CallGCPrologueCallbacks(GCType gc_type, GCCallbackFlags flags) {
       }
     }
   }
+  if (FLAG_trace_object_groups && (gc_type == kGCTypeIncrementalMarking ||
+                                   gc_type == kGCTypeMarkSweepCompact)) {
+    isolate_->global_handles()->PrintObjectGroups();
+  }
 }
 
 
@@ -1552,8 +1561,8 @@ void PromotionQueue::Initialize() {
   DCHECK((Page::kPageSize - MemoryChunk::kBodyOffset) % (2 * kPointerSize) ==
          0);
   front_ = rear_ =
-      reinterpret_cast<intptr_t*>(heap_->new_space()->ToSpaceEnd());
-  limit_ = reinterpret_cast<intptr_t*>(
+      reinterpret_cast<struct Entry*>(heap_->new_space()->ToSpaceEnd());
+  limit_ = reinterpret_cast<struct Entry*>(
       Page::FromAllocationTop(reinterpret_cast<Address>(rear_))->area_start());
   emergency_stack_ = NULL;
 }
@@ -1563,22 +1572,21 @@ void PromotionQueue::RelocateQueueHead() {
   DCHECK(emergency_stack_ == NULL);
 
   Page* p = Page::FromAllocationTop(reinterpret_cast<Address>(rear_));
-  intptr_t* head_start = rear_;
-  intptr_t* head_end = Min(front_, reinterpret_cast<intptr_t*>(p->area_end()));
+  struct Entry* head_start = rear_;
+  struct Entry* head_end =
+      Min(front_, reinterpret_cast<struct Entry*>(p->area_end()));
 
   int entries_count =
-      static_cast<int>(head_end - head_start) / kEntrySizeInWords;
+      static_cast<int>(head_end - head_start) / sizeof(struct Entry);
 
   emergency_stack_ = new List<Entry>(2 * entries_count);
 
   while (head_start != head_end) {
-    int size = static_cast<int>(*(head_start++));
-    HeapObject* obj = reinterpret_cast<HeapObject*>(*(head_start++));
+    struct Entry* entry = head_start++;
     // New space allocation in SemiSpaceCopyObject marked the region
     // overlapping with promotion queue as uninitialized.
-    MSAN_MEMORY_IS_INITIALIZED(&size, sizeof(size));
-    MSAN_MEMORY_IS_INITIALIZED(&obj, sizeof(obj));
-    emergency_stack_->Add(Entry(obj, size));
+    MSAN_MEMORY_IS_INITIALIZED(entry, sizeof(struct Entry));
+    emergency_stack_->Add(*entry);
   }
   rear_ = head_end;
 }
@@ -1625,9 +1633,6 @@ void Heap::Scavenge() {
 
   // Implements Cheney's copying algorithm
   LOG(isolate_, ResourceEvent("scavenge", "begin"));
-
-  // Clear descriptor cache.
-  isolate_->descriptor_lookup_cache()->Clear();
 
   // Used for updating survived_since_last_expansion_ at function end.
   intptr_t survived_watermark = PromotedSpaceSizeOfObjects();
@@ -1678,7 +1683,8 @@ void Heap::Scavenge() {
     // Copy objects reachable from the old generation.
     GCTracer::Scope gc_scope(tracer(),
                              GCTracer::Scope::SCAVENGER_OLD_TO_NEW_POINTERS);
-    store_buffer()->IteratePointersToNewSpace(&Scavenger::ScavengeObject);
+    RememberedSet<OLD_TO_NEW>::IterateWithWrapper(this,
+                                                  Scavenger::ScavengeObject);
   }
 
   {
@@ -1845,6 +1851,10 @@ void Heap::ProcessAllocationSites(WeakObjectRetainer* retainer) {
   set_allocation_sites_list(allocation_site_obj);
 }
 
+void Heap::ProcessWeakListRoots(WeakObjectRetainer* retainer) {
+  set_native_contexts_list(retainer->RetainAs(native_contexts_list()));
+  set_allocation_sites_list(retainer->RetainAs(allocation_sites_list()));
+}
 
 void Heap::ResetAllAllocationSitesDependentCode(PretenureFlag flag) {
   DisallowHeapAllocation no_allocation_scope;
@@ -1934,8 +1944,9 @@ Address Heap::DoScavenge(ObjectVisitor* scavenge_visitor,
     {
       while (!promotion_queue()->is_empty()) {
         HeapObject* target;
-        int size;
-        promotion_queue()->remove(&target, &size);
+        int32_t size;
+        bool was_marked_black;
+        promotion_queue()->remove(&target, &size, &was_marked_black);
 
         // Promoted object might be already partially visited
         // during old space pointer iteration. Thus we search specifically
@@ -1943,7 +1954,8 @@ Address Heap::DoScavenge(ObjectVisitor* scavenge_visitor,
         // to new space.
         DCHECK(!target->IsMap());
 
-        IteratePointersToFromSpace(target, size, &Scavenger::ScavengeObject);
+        IteratePromotedObject(target, static_cast<int>(size), was_marked_black,
+                              &Scavenger::ScavengeObject);
       }
     }
 
@@ -1996,7 +2008,7 @@ int Heap::GetFillToAlign(Address address, AllocationAlignment alignment) {
 
 
 HeapObject* Heap::PrecedeWithFiller(HeapObject* object, int filler_size) {
-  CreateFillerObjectAt(object->address(), filler_size);
+  CreateFillerObjectAt(object->address(), filler_size, ClearRecordedSlots::kNo);
   return HeapObject::FromAddress(object->address() + filler_size);
 }
 
@@ -2012,7 +2024,8 @@ HeapObject* Heap::AlignWithFiller(HeapObject* object, int object_size,
     filler_size -= pre_filler;
   }
   if (filler_size)
-    CreateFillerObjectAt(object->address() + object_size, filler_size);
+    CreateFillerObjectAt(object->address() + object_size, filler_size,
+                         ClearRecordedSlots::kNo);
   return object;
 }
 
@@ -2130,7 +2143,7 @@ AllocationResult Heap::AllocateFillerObject(int size, bool double_align,
   MemoryChunk* chunk = MemoryChunk::FromAddress(obj->address());
   DCHECK(chunk->owner()->identity() == space);
 #endif
-  CreateFillerObjectAt(obj->address(), size);
+  CreateFillerObjectAt(obj->address(), size, ClearRecordedSlots::kNo);
   return obj;
 }
 
@@ -2397,6 +2410,20 @@ bool Heap::CreateInitialMaps() {
 #undef ALLOCATE_MAP
   }
 
+  {
+    AllocationResult allocation = Allocate(boolean_map(), OLD_SPACE);
+    if (!allocation.To(&obj)) return false;
+  }
+  set_true_value(Oddball::cast(obj));
+  Oddball::cast(obj)->set_kind(Oddball::kTrue);
+
+  {
+    AllocationResult allocation = Allocate(boolean_map(), OLD_SPACE);
+    if (!allocation.To(&obj)) return false;
+  }
+  set_false_value(Oddball::cast(obj));
+  Oddball::cast(obj)->set_kind(Oddball::kFalse);
+
   {  // Empty arrays
     {
       ByteArray* byte_array;
@@ -2526,6 +2553,15 @@ AllocationResult Heap::AllocateTransitionArray(int capacity) {
   TransitionArray* array = TransitionArray::cast(raw_array);
   array->set_length(capacity);
   MemsetPointer(array->data_start(), undefined_value(), capacity);
+  // Transition arrays are tenured. When black allocation is on we have to
+  // add the transition array to the list of encountered_transition_arrays.
+  if (incremental_marking()->black_allocation()) {
+    array->set_next_link(encountered_transition_arrays(),
+                         UPDATE_WEAK_WRITE_BARRIER);
+    set_encountered_transition_arrays(array);
+  } else {
+    array->set_next_link(undefined_value(), SKIP_WRITE_BARRIER);
+  }
   return array;
 }
 
@@ -2614,48 +2650,54 @@ void Heap::CreateInitialObjects() {
   // Allocate initial string table.
   set_string_table(*StringTable::New(isolate(), kInitialStringTableSize));
 
+  // Allocate
+
   // Finish initializing oddballs after creating the string table.
   Oddball::Initialize(isolate(), factory->undefined_value(), "undefined",
-                      factory->nan_value(), "undefined", Oddball::kUndefined);
+                      factory->nan_value(), false, "undefined",
+                      Oddball::kUndefined);
 
   // Initialize the null_value.
   Oddball::Initialize(isolate(), factory->null_value(), "null",
-                      handle(Smi::FromInt(0), isolate()), "object",
+                      handle(Smi::FromInt(0), isolate()), false, "object",
                       Oddball::kNull);
 
-  set_true_value(*factory->NewOddball(factory->boolean_map(), "true",
-                                      handle(Smi::FromInt(1), isolate()),
-                                      "boolean", Oddball::kTrue));
+  // Initialize the true_value.
+  Oddball::Initialize(isolate(), factory->true_value(), "true",
+                      handle(Smi::FromInt(1), isolate()), true, "boolean",
+                      Oddball::kTrue);
 
-  set_false_value(*factory->NewOddball(factory->boolean_map(), "false",
-                                       handle(Smi::FromInt(0), isolate()),
-                                       "boolean", Oddball::kFalse));
+  // Initialize the false_value.
+  Oddball::Initialize(isolate(), factory->false_value(), "false",
+                      handle(Smi::FromInt(0), isolate()), false, "boolean",
+                      Oddball::kFalse);
 
-  set_the_hole_value(*factory->NewOddball(factory->the_hole_map(), "hole",
-                                          handle(Smi::FromInt(-1), isolate()),
-                                          "undefined", Oddball::kTheHole));
+  set_the_hole_value(*factory->NewOddball(
+      factory->the_hole_map(), "hole", handle(Smi::FromInt(-1), isolate()),
+      false, "undefined", Oddball::kTheHole));
 
   set_uninitialized_value(
       *factory->NewOddball(factory->uninitialized_map(), "uninitialized",
-                           handle(Smi::FromInt(-1), isolate()), "undefined",
-                           Oddball::kUninitialized));
+                           handle(Smi::FromInt(-1), isolate()), false,
+                           "undefined", Oddball::kUninitialized));
 
   set_arguments_marker(
       *factory->NewOddball(factory->arguments_marker_map(), "arguments_marker",
-                           handle(Smi::FromInt(-4), isolate()), "undefined",
-                           Oddball::kArgumentMarker));
+                           handle(Smi::FromInt(-4), isolate()), false,
+                           "undefined", Oddball::kArgumentsMarker));
 
   set_no_interceptor_result_sentinel(*factory->NewOddball(
       factory->no_interceptor_result_sentinel_map(),
       "no_interceptor_result_sentinel", handle(Smi::FromInt(-2), isolate()),
-      "undefined", Oddball::kOther));
+      false, "undefined", Oddball::kOther));
 
   set_termination_exception(*factory->NewOddball(
       factory->termination_exception_map(), "termination_exception",
-      handle(Smi::FromInt(-3), isolate()), "undefined", Oddball::kOther));
+      handle(Smi::FromInt(-3), isolate()), false, "undefined",
+      Oddball::kOther));
 
   set_exception(*factory->NewOddball(factory->exception_map(), "exception",
-                                     handle(Smi::FromInt(-5), isolate()),
+                                     handle(Smi::FromInt(-5), isolate()), false,
                                      "undefined", Oddball::kException));
 
   for (unsigned i = 0; i < arraysize(constant_string_table); i++) {
@@ -2663,17 +2705,6 @@ void Heap::CreateInitialObjects() {
         factory->InternalizeUtf8String(constant_string_table[i].contents);
     roots_[constant_string_table[i].index] = *str;
   }
-
-  // The {hidden_string} is special because it is an empty string, but does not
-  // match any string (even the {empty_string}) when looked up in properties.
-  // Allocate the hidden string which is used to identify the hidden properties
-  // in JSObjects. The hash code has a special value so that it will not match
-  // the empty string when searching for the property. It cannot be part of the
-  // loop above because it needs to be allocated manually with the special
-  // hash code in place. The hash code for the hidden_string is zero to ensure
-  // that it will always be at the first entry in property descriptors.
-  set_hidden_string(*factory->NewOneByteInternalizedString(
-      OneByteVector("", 0), String::kEmptyStringHash));
 
   // Create the code_stubs dictionary. The initial size is set to avoid
   // expanding the dictionary during bootstrapping.
@@ -2702,6 +2733,14 @@ void Heap::CreateInitialObjects() {
     PRIVATE_SYMBOL_LIST(SYMBOL_INIT)
 #undef SYMBOL_INIT
   }
+
+  // The {hidden_properties_symbol} is special because it is the only name with
+  // hash code zero. This ensures that it will always be the first entry as
+  // sorted by hash code in descriptor arrays. It is used to identify the hidden
+  // properties in JSObjects.
+  // kIsNotArrayIndexMask is a computed hash with value zero.
+  Symbol::cast(roots_[khidden_properties_symbolRootIndex])
+      ->set_hash_field(Name::kIsNotArrayIndexMask);
 
   {
     HandleScope scope(isolate());
@@ -2850,6 +2889,10 @@ void Heap::CreateInitialObjects() {
   cell = factory->NewPropertyCell();
   cell->set_value(the_hole_value());
   set_empty_property_cell(*cell);
+
+  Handle<PropertyCell> species_cell = factory->NewPropertyCell();
+  species_cell->set_value(Smi::FromInt(Isolate::kArrayProtectorValid));
+  set_species_protector(*species_cell);
 
   set_weak_stack_trace_list(Smi::FromInt(0));
 
@@ -3029,16 +3072,17 @@ AllocationResult Heap::AllocateBytecodeArray(int length,
   instance->set_length(length);
   instance->set_frame_size(frame_size);
   instance->set_parameter_count(parameter_count);
+  instance->set_interrupt_budget(interpreter::Interpreter::InterruptBudget());
   instance->set_constant_pool(constant_pool);
   instance->set_handler_table(empty_fixed_array());
-  instance->set_source_position_table(empty_fixed_array());
+  instance->set_source_position_table(empty_byte_array());
   CopyBytes(instance->GetFirstBytecodeAddress(), raw_bytecodes, length);
 
   return result;
 }
 
-
-void Heap::CreateFillerObjectAt(Address addr, int size) {
+void Heap::CreateFillerObjectAt(Address addr, int size,
+                                ClearRecordedSlots mode) {
   if (size == 0) return;
   HeapObject* filler = HeapObject::FromAddress(addr);
   if (size == kPointerSize) {
@@ -3052,6 +3096,9 @@ void Heap::CreateFillerObjectAt(Address addr, int size) {
     filler->set_map_no_write_barrier(
         reinterpret_cast<Map*>(root(kFreeSpaceMapRootIndex)));
     FreeSpace::cast(filler)->nobarrier_set_size(size);
+  }
+  if (mode == ClearRecordedSlots::kYes) {
+    ClearRecordedSlotRange(addr, addr + size);
   }
   // At this point, we may be deserializing the heap from a snapshot, and
   // none of the maps have been created yet and are NULL.
@@ -3109,6 +3156,10 @@ FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
   DCHECK(!lo_space()->Contains(object));
   DCHECK(object->map() != fixed_cow_array_map());
 
+  // Ensure that the no handle-scope has more than one pointer to the same
+  // backing-store.
+  SLOW_DCHECK(CountHandlesForObject(object) <= 1);
+
   STATIC_ASSERT(FixedArrayBase::kMapOffset == 0);
   STATIC_ASSERT(FixedArrayBase::kLengthOffset == kPointerSize);
   STATIC_ASSERT(FixedArrayBase::kHeaderSize == 2 * kPointerSize);
@@ -3122,7 +3173,8 @@ FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
   // Technically in new space this write might be omitted (except for
   // debug mode which iterates through the heap), but to play safer
   // we still do it.
-  CreateFillerObjectAt(object->address(), bytes_to_trim);
+  CreateFillerObjectAt(object->address(), bytes_to_trim,
+                       ClearRecordedSlots::kYes);
 
   // Initialize header of the trimmed array. Since left trimming is only
   // performed on pages which are not concurrently swept creating a filler
@@ -3186,7 +3238,8 @@ void Heap::RightTrimFixedArray(FixedArrayBase* object, int elements_to_trim) {
   }
 
   // Calculate location of new array end.
-  Address new_end = object->address() + object->Size() - bytes_to_trim;
+  Address old_end = object->address() + object->Size();
+  Address new_end = old_end - bytes_to_trim;
 
   // Technically in new space this write might be omitted (except for
   // debug mode which iterates through the heap), but to play safer
@@ -3195,7 +3248,7 @@ void Heap::RightTrimFixedArray(FixedArrayBase* object, int elements_to_trim) {
   // TODO(hpayer): We should shrink the large object page if the size
   // of the object changed significantly.
   if (!lo_space()->Contains(object)) {
-    CreateFillerObjectAt(new_end, bytes_to_trim);
+    CreateFillerObjectAt(new_end, bytes_to_trim, ClearRecordedSlots::kYes);
   }
 
   // Initialize header of the trimmed array. We are storing the new length
@@ -3289,7 +3342,6 @@ AllocationResult Heap::AllocateCode(int object_size, bool immovable) {
 
   HeapObject* result = nullptr;
   if (!allocation.To(&result)) return allocation;
-
   if (immovable) {
     Address address = result->address();
     // Code objects which should stay at a fixed address are allocated either
@@ -3299,7 +3351,8 @@ AllocationResult Heap::AllocateCode(int object_size, bool immovable) {
         MemoryChunk::FromAddress(address)->owner()->identity() != LO_SPACE) {
       // Discard the first code allocation, which was on a page where it could
       // be moved.
-      CreateFillerObjectAt(result->address(), object_size);
+      CreateFillerObjectAt(result->address(), object_size,
+                           ClearRecordedSlots::kNo);
       allocation = lo_space_->AllocateRaw(object_size, EXECUTABLE);
       if (!allocation.To(&result)) return allocation;
       OnAllocationEvent(result, object_size);
@@ -3339,9 +3392,31 @@ AllocationResult Heap::CopyCode(Code* code) {
          isolate_->code_range()->contains(code->address()) ||
          obj_size <= code_space()->AreaSize());
   new_code->Relocate(new_addr - old_addr);
+  // We have to iterate over the object and process its pointers when black
+  // allocation is on.
+  incremental_marking()->IterateBlackObject(new_code);
   return new_code;
 }
 
+AllocationResult Heap::CopyBytecodeArray(BytecodeArray* bytecode_array) {
+  int size = BytecodeArray::SizeFor(bytecode_array->length());
+  HeapObject* result = nullptr;
+  {
+    AllocationResult allocation = AllocateRaw(size, OLD_SPACE);
+    if (!allocation.To(&result)) return allocation;
+  }
+
+  result->set_map_no_write_barrier(bytecode_array_map());
+  BytecodeArray* copy = BytecodeArray::cast(result);
+  copy->set_length(bytecode_array->length());
+  copy->set_frame_size(bytecode_array->frame_size());
+  copy->set_parameter_count(bytecode_array->parameter_count());
+  copy->set_constant_pool(bytecode_array->constant_pool());
+  copy->set_handler_table(bytecode_array->handler_table());
+  copy->set_source_position_table(bytecode_array->source_position_table());
+  bytecode_array->CopyBytecodesTo(copy);
+  return copy;
+}
 
 AllocationResult Heap::CopyCode(Code* code, Vector<byte> reloc_info) {
   // Allocate ByteArray before the Code object, so that we do not risk
@@ -3386,7 +3461,9 @@ AllocationResult Heap::CopyCode(Code* code, Vector<byte> reloc_info) {
          new_obj_size <= code_space()->AreaSize());
 
   new_code->Relocate(new_addr - old_addr);
-
+  // We have to iterate over over the object and process its pointers when
+  // black allocation is on.
+  incremental_marking()->IterateBlackObject(new_code);
 #ifdef VERIFY_HEAP
   if (FLAG_verify_heap) code->ObjectVerify();
 #endif
@@ -3517,11 +3594,12 @@ AllocationResult Heap::CopyJSObject(JSObject* source, AllocationSite* site) {
   // Make the clone.
   Map* map = source->map();
 
-  // We can only clone regexps, normal objects or arrays. Copying anything else
-  // will break invariants.
+  // We can only clone regexps, normal objects, api objects or arrays. Copying
+  // anything else will break invariants.
   CHECK(map->instance_type() == JS_REGEXP_TYPE ||
         map->instance_type() == JS_OBJECT_TYPE ||
-        map->instance_type() == JS_ARRAY_TYPE);
+        map->instance_type() == JS_ARRAY_TYPE ||
+        map->instance_type() == JS_SPECIAL_API_OBJECT_TYPE);
 
   int object_size = map->instance_size();
   HeapObject* clone = nullptr;
@@ -4097,6 +4175,20 @@ bool Heap::HasHighFragmentation(intptr_t used, intptr_t committed) {
   return committed - used > used + kSlack;
 }
 
+void Heap::SetOptimizeForMemoryUsage() {
+  // Activate memory reducer when switching to background if
+  // - there was no mark compact since the start.
+  // - the committed memory can be potentially reduced.
+  // 2 pages for the old, code, and map space + 1 page for new space.
+  const int kMinCommittedMemory = 7 * Page::kPageSize;
+  if (ms_count_ == 0 && CommittedMemory() > kMinCommittedMemory) {
+    MemoryReducer::Event event;
+    event.type = MemoryReducer::kPossibleGarbage;
+    event.time_ms = MonotonicallyIncreasingTimeInMs();
+    memory_reducer_->NotifyPossibleGarbage(event);
+  }
+  optimize_for_memory_usage_ = true;
+}
 
 void Heap::ReduceNewSpaceSize() {
   // TODO(ulan): Unify this constant with the similar constant in
@@ -4154,6 +4246,24 @@ bool Heap::TryFinalizeIdleIncrementalMarking(double idle_time_in_ms) {
   return false;
 }
 
+void Heap::RegisterReservationsForBlackAllocation(Reservation* reservations) {
+  // TODO(hpayer): We do not have to iterate reservations on black objects
+  // for marking. We just have to execute the special visiting side effect
+  // code that adds objects to global data structures, e.g. for array buffers.
+  if (incremental_marking()->black_allocation()) {
+    for (int i = OLD_SPACE; i < Serializer::kNumberOfSpaces; i++) {
+      const Heap::Reservation& res = reservations[i];
+      for (auto& chunk : res) {
+        Address addr = chunk.start;
+        while (addr < chunk.end) {
+          HeapObject* obj = HeapObject::FromAddress(addr);
+          incremental_marking()->IterateBlackObject(obj);
+          addr += obj->Size();
+        }
+      }
+    }
+  }
+}
 
 GCIdleTimeHeapState Heap::ComputeHeapState() {
   GCIdleTimeHeapState heap_state;
@@ -4189,6 +4299,7 @@ bool Heap::PerformIdleTimeAction(GCIdleTimeAction action,
     case DO_FULL_GC: {
       DCHECK(contexts_disposed_ > 0);
       HistogramTimerScope scope(isolate_->counters()->gc_context());
+      TRACE_EVENT0("v8", "V8.GCContext");
       CollectAllGarbage(kNoGCFlags, "idle notification: contexts disposed");
       break;
     }
@@ -4274,6 +4385,7 @@ bool Heap::IdleNotification(double deadline_in_seconds) {
       static_cast<double>(base::Time::kMillisecondsPerSecond);
   HistogramTimerScope idle_notification_scope(
       isolate_->counters()->gc_idle_notification());
+  TRACE_EVENT0("v8", "V8.GCIdleNotification");
   double start_ms = MonotonicallyIncreasingTimeInMs();
   double idle_time_in_ms = deadline_in_ms - start_ms;
 
@@ -4456,8 +4568,6 @@ void Heap::Verify() {
   CHECK(HasBeenSetUp());
   HandleScope scope(isolate());
 
-  store_buffer()->Verify();
-
   if (mark_compact_collector()->sweeping_in_progress()) {
     // We have to wait here for the sweeper threads to have an iterable heap.
     mark_compact_collector()->EnsureSweepingCompleted();
@@ -4500,19 +4610,15 @@ void Heap::ZapFromSpace() {
   }
 }
 
-
-void Heap::IterateAndMarkPointersToFromSpace(HeapObject* object, Address start,
-                                             Address end, bool record_slots,
-                                             ObjectSlotCallback callback) {
+void Heap::IteratePromotedObjectPointers(HeapObject* object, Address start,
+                                         Address end, bool record_slots,
+                                         ObjectSlotCallback callback) {
   Address slot_address = start;
+  Page* page = Page::FromAddress(start);
 
   while (slot_address < end) {
     Object** slot = reinterpret_cast<Object**>(slot_address);
     Object* target = *slot;
-    // If the store buffer becomes overfull we mark pages as being exempt from
-    // the store buffer.  These pages are scanned to find pointers that point
-    // to the new space.  In that case we may hit newly promoted objects and
-    // fix the pointers before the promotion queue gets to them.  Thus the 'if'.
     if (target->IsHeapObject()) {
       if (Heap::InFromSpace(target)) {
         callback(reinterpret_cast<HeapObject**>(slot),
@@ -4521,7 +4627,7 @@ void Heap::IterateAndMarkPointersToFromSpace(HeapObject* object, Address start,
         if (InNewSpace(new_target)) {
           SLOW_DCHECK(Heap::InToSpace(new_target));
           SLOW_DCHECK(new_target->IsHeapObject());
-          store_buffer_.Mark(reinterpret_cast<Address>(slot));
+          RememberedSet<OLD_TO_NEW>::Insert(page, slot_address);
         }
         SLOW_DCHECK(!MarkCompactCollector::IsOnEvacuationCandidate(new_target));
       } else if (record_slots &&
@@ -4533,24 +4639,29 @@ void Heap::IterateAndMarkPointersToFromSpace(HeapObject* object, Address start,
   }
 }
 
-
-class IteratePointersToFromSpaceVisitor final : public ObjectVisitor {
+class IteratePromotedObjectsVisitor final : public ObjectVisitor {
  public:
-  IteratePointersToFromSpaceVisitor(Heap* heap, HeapObject* target,
-                                    bool record_slots,
-                                    ObjectSlotCallback callback)
+  IteratePromotedObjectsVisitor(Heap* heap, HeapObject* target,
+                                bool record_slots, ObjectSlotCallback callback)
       : heap_(heap),
         target_(target),
         record_slots_(record_slots),
         callback_(callback) {}
 
   V8_INLINE void VisitPointers(Object** start, Object** end) override {
-    heap_->IterateAndMarkPointersToFromSpace(
+    heap_->IteratePromotedObjectPointers(
         target_, reinterpret_cast<Address>(start),
         reinterpret_cast<Address>(end), record_slots_, callback_);
   }
 
-  V8_INLINE void VisitCodeEntry(Address code_entry_slot) override {}
+  V8_INLINE void VisitCodeEntry(Address code_entry_slot) override {
+    // Black allocation requires us to process objects referenced by
+    // promoted objects.
+    if (heap_->incremental_marking()->black_allocation()) {
+      Code* code = Code::cast(Code::GetObjectFromEntryAddress(code_entry_slot));
+      IncrementalMarking::MarkObject(heap_, code);
+    }
+  }
 
  private:
   Heap* heap_;
@@ -4559,9 +4670,9 @@ class IteratePointersToFromSpaceVisitor final : public ObjectVisitor {
   ObjectSlotCallback callback_;
 };
 
-
-void Heap::IteratePointersToFromSpace(HeapObject* target, int size,
-                                      ObjectSlotCallback callback) {
+void Heap::IteratePromotedObject(HeapObject* target, int size,
+                                 bool was_marked_black,
+                                 ObjectSlotCallback callback) {
   // We are not collecting slots on new space objects during mutation
   // thus we have to scan for pointers to evacuation candidates when we
   // promote objects. But we should not record any slots in non-black
@@ -4574,9 +4685,21 @@ void Heap::IteratePointersToFromSpace(HeapObject* target, int size,
     record_slots = Marking::IsBlack(mark_bit);
   }
 
-  IteratePointersToFromSpaceVisitor visitor(this, target, record_slots,
-                                            callback);
+  IteratePromotedObjectsVisitor visitor(this, target, record_slots, callback);
   target->IterateBody(target->map()->instance_type(), size, &visitor);
+
+  // When black allocations is on, we have to visit not already marked black
+  // objects (in new space) promoted to black pages to keep their references
+  // alive.
+  // TODO(hpayer): Implement a special promotion visitor that incorporates
+  // regular visiting and IteratePromotedObjectPointers.
+  if (!was_marked_black) {
+    if (incremental_marking()->black_allocation()) {
+      Map* map = target->map();
+      IncrementalMarking::MarkObject(this, map);
+    }
+    incremental_marking()->IterateBlackObject(target);
+  }
 }
 
 
@@ -5475,6 +5598,32 @@ void Heap::PrintHandles() {
 
 #endif
 
+#ifdef ENABLE_SLOW_DCHECKS
+
+class CountHandleVisitor : public ObjectVisitor {
+ public:
+  explicit CountHandleVisitor(Object* object) : object_(object) {}
+
+  void VisitPointers(Object** start, Object** end) override {
+    for (Object** p = start; p < end; p++) {
+      if (object_ == reinterpret_cast<Object*>(*p)) count_++;
+    }
+  }
+
+  int count() { return count_; }
+
+ private:
+  Object* object_;
+  int count_ = 0;
+};
+
+int Heap::CountHandlesForObject(Object* object) {
+  CountHandleVisitor v(object);
+  isolate_->handle_scope_implementer()->Iterate(&v);
+  return v.count();
+}
+#endif
+
 class CheckHandleCountVisitor : public ObjectVisitor {
  public:
   CheckHandleCountVisitor() : handle_count_(0) {}
@@ -5497,7 +5646,22 @@ void Heap::CheckHandleCount() {
 
 void Heap::ClearRecordedSlot(HeapObject* object, Object** slot) {
   if (!InNewSpace(object)) {
-    store_buffer()->Remove(reinterpret_cast<Address>(slot));
+    store_buffer()->MoveEntriesToRememberedSet();
+    Address slot_addr = reinterpret_cast<Address>(slot);
+    Page* page = Page::FromAddress(slot_addr);
+    DCHECK_EQ(page->owner()->identity(), OLD_SPACE);
+    RememberedSet<OLD_TO_NEW>::Remove(page, slot_addr);
+    RememberedSet<OLD_TO_OLD>::Remove(page, slot_addr);
+  }
+}
+
+void Heap::ClearRecordedSlotRange(Address start, Address end) {
+  Page* page = Page::FromAddress(start);
+  if (!page->InNewSpace()) {
+    store_buffer()->MoveEntriesToRememberedSet();
+    DCHECK_EQ(page->owner()->identity(), OLD_SPACE);
+    RememberedSet<OLD_TO_NEW>::RemoveRange(page, start, end);
+    RememberedSet<OLD_TO_OLD>::RemoveRange(page, start, end);
   }
 }
 

@@ -76,9 +76,9 @@ class LinkageLocation {
                               kPointerSize);
   }
 
-  static LinkageLocation ForSavedCallerMarker() {
+  static LinkageLocation ForSavedCallerFunction() {
     return ForCalleeFrameSlot((StandardFrameConstants::kCallerPCOffset -
-                               StandardFrameConstants::kMarkerOffset) /
+                               StandardFrameConstants::kFunctionOffset) /
                               kPointerSize);
   }
 
@@ -146,8 +146,7 @@ class CallDescriptor final : public ZoneObject {
   enum Kind {
     kCallCodeObject,  // target is a Code object
     kCallJSFunction,  // target is a JSFunction object
-    kCallAddress,     // target is a machine pointer
-    kLazyBailout      // the call is no-op, only used for lazy bailout
+    kCallAddress      // target is a machine pointer
   };
 
   enum Flag {
@@ -325,8 +324,6 @@ class Linkage : public ZoneObject {
       Zone* zone, Runtime::FunctionId function, int parameter_count,
       Operator::Properties properties, CallDescriptor::Flags flags);
 
-  static CallDescriptor* GetLazyBailoutDescriptor(Zone* zone);
-
   static CallDescriptor* GetStubCallDescriptor(
       Isolate* isolate, Zone* zone, const CallInterfaceDescriptor& descriptor,
       int stack_parameter_count, CallDescriptor::Flags flags,
@@ -369,6 +366,11 @@ class Linkage : public ZoneObject {
 
   // Get the location where an incoming OSR value is stored.
   LinkageLocation GetOsrValueLocation(int index) const;
+
+  // A special {Parameter} index for Stub Calls that represents context.
+  static int GetStubCallContextParamIndex(int parameter_count) {
+    return parameter_count + 0;  // Parameter (arity + 0) is special.
+  }
 
   // A special {Parameter} index for JSCalls that represents the new target.
   static int GetJSCallNewTargetParamIndex(int parameter_count) {
