@@ -722,11 +722,11 @@ class ElementsAccessorBase : public ElementsAccessor {
   static uint32_t GetIterationLength(JSObject* receiver,
                                      FixedArrayBase* elements) {
     if (receiver->IsJSArray()) {
+      DCHECK(JSArray::cast(receiver)->length()->IsSmi());
       return static_cast<uint32_t>(
           Smi::cast(JSArray::cast(receiver)->length())->value());
-    } else {
-      return ElementsAccessorSubclass::GetCapacityImpl(receiver, elements);
     }
+    return ElementsAccessorSubclass::GetCapacityImpl(receiver, elements);
   }
 
   static Handle<FixedArrayBase> ConvertElementsWithCapacity(
@@ -845,6 +845,17 @@ class ElementsAccessorBase : public ElementsAccessor {
         from, from_start, *to, from_kind, to_start, packed_size, copy_size);
   }
 
+  Handle<SeededNumberDictionary> Normalize(Handle<JSObject> object) final {
+    return ElementsAccessorSubclass::NormalizeImpl(object,
+                                                   handle(object->elements()));
+  }
+
+  static Handle<SeededNumberDictionary> NormalizeImpl(
+      Handle<JSObject> object, Handle<FixedArrayBase> elements) {
+    UNREACHABLE();
+    return Handle<SeededNumberDictionary>();
+  }
+
   void CollectElementIndices(Handle<JSObject> object,
                              Handle<FixedArrayBase> backing_store,
                              KeyAccumulator* keys, uint32_t range,
@@ -935,6 +946,7 @@ class ElementsAccessorBase : public ElementsAccessor {
       Object** start =
           reinterpret_cast<Object**>(combined_keys->GetFirstElementAddress());
       std::sort(start, start + nof_indices, cmp);
+      uint32_t array_length = 0;
       // Indices from dictionary elements should only be converted after
       // sorting.
       if (convert == CONVERT_TO_STRING) {
@@ -942,6 +954,18 @@ class ElementsAccessorBase : public ElementsAccessor {
           Handle<Object> index_string = isolate->factory()->Uint32ToString(
                   combined_keys->get(i)->Number());
           combined_keys->set(i, *index_string);
+        }
+      } else if (!(object->IsJSArray() &&
+                   JSArray::cast(*object)->length()->ToArrayLength(
+                       &array_length) &&
+                   array_length <= Smi::kMaxValue)) {
+        // Since we use std::sort above, the GC will no longer know where the
+        // HeapNumbers are, hence we have to write them again.
+        // For Arrays with valid Smi length, we are sure to have no HeapNumber
+        // indices and thus we can skip this step.
+        for (uint32_t i = 0; i < nof_indices; i++) {
+          Object* index = combined_keys->get(i);
+          combined_keys->set(i, index);
         }
       }
     }
@@ -1027,6 +1051,19 @@ class DictionaryElementsAccessor
   explicit DictionaryElementsAccessor(const char* name)
       : ElementsAccessorBase<DictionaryElementsAccessor,
                              ElementsKindTraits<DICTIONARY_ELEMENTS> >(name) {}
+
+  static uint32_t GetIterationLength(JSObject* receiver,
+                                     FixedArrayBase* elements) {
+    uint32_t length;
+    if (receiver->IsJSArray()) {
+      // Special-case GetIterationLength for dictionary elements since the
+      // length of the array might be a HeapNumber.
+      JSArray::cast(receiver)->length()->ToArrayLength(&length);
+    } else {
+      length = GetCapacityImpl(receiver, elements);
+    }
+    return length;
+  }
 
   static void SetLengthImpl(Isolate* isolate, Handle<JSArray> array,
                             uint32_t length,
@@ -1292,6 +1329,36 @@ class FastElementsAccessor
                              KindTraits>(name) {}
 
   typedef typename KindTraits::BackingStore BackingStore;
+
+  static Handle<SeededNumberDictionary> NormalizeImpl(
+      Handle<JSObject> object, Handle<FixedArrayBase> store) {
+    Isolate* isolate = store->GetIsolate();
+    ElementsKind kind = FastElementsAccessorSubclass::kind();
+
+    // Ensure that notifications fire if the array or object prototypes are
+    // normalizing.
+    if (IsFastSmiOrObjectElementsKind(kind)) {
+      isolate->UpdateArrayProtectorOnNormalizeElements(object);
+    }
+
+    int capacity = object->GetFastElementsUsage();
+    Handle<SeededNumberDictionary> dictionary =
+        SeededNumberDictionary::New(isolate, capacity);
+
+    PropertyDetails details = PropertyDetails::Empty();
+    bool used_as_prototype = object->map()->is_prototype_map();
+    int j = 0;
+    for (int i = 0; j < capacity; i++) {
+      if (IsHoleyElementsKind(kind)) {
+        if (BackingStore::cast(*store)->is_the_hole(i)) continue;
+      }
+      Handle<Object> value = FastElementsAccessorSubclass::GetImpl(*store, i);
+      dictionary = SeededNumberDictionary::AddNumberEntry(
+          dictionary, i, value, details, used_as_prototype);
+      j++;
+    }
+    return dictionary;
+  }
 
   static void DeleteAtEnd(Handle<JSObject> obj,
                           Handle<BackingStore> backing_store, uint32_t entry) {
@@ -2403,6 +2470,13 @@ class FastSloppyArgumentsElementsAccessor
             FastHoleyObjectElementsAccessor,
             ElementsKindTraits<FAST_SLOPPY_ARGUMENTS_ELEMENTS> >(name) {}
 
+  static Handle<SeededNumberDictionary> NormalizeImpl(
+      Handle<JSObject> object, Handle<FixedArrayBase> elements) {
+    FixedArray* parameter_map = FixedArray::cast(*elements);
+    Handle<FixedArray> arguments(FixedArray::cast(parameter_map->get(1)));
+    return FastHoleyObjectElementsAccessor::NormalizeImpl(object, arguments);
+  }
+
   static void DeleteFromArguments(Handle<JSObject> obj, uint32_t entry) {
     FixedArray* parameter_map = FixedArray::cast(obj->elements());
     Handle<FixedArray> arguments(FixedArray::cast(parameter_map->get(1)));
@@ -2625,6 +2699,11 @@ class FastStringWrapperElementsAccessor
       : StringWrapperElementsAccessor<
             FastStringWrapperElementsAccessor, FastHoleyObjectElementsAccessor,
             ElementsKindTraits<FAST_STRING_WRAPPER_ELEMENTS>>(name) {}
+
+  static Handle<SeededNumberDictionary> NormalizeImpl(
+      Handle<JSObject> object, Handle<FixedArrayBase> elements) {
+    return FastHoleyObjectElementsAccessor::NormalizeImpl(object, elements);
+  }
 };
 
 class SlowStringWrapperElementsAccessor

@@ -561,29 +561,29 @@ class MarkCompactCollector {
 
   void InitializeMarkingDeque();
 
-  // The following four methods can just be called after marking, when the
+  // The following two methods can just be called after marking, when the
   // whole transitive closure is known. They must be called before sweeping
   // when mark bits are still intact.
-  bool IsSlotInBlackObject(Page* p, Address slot, HeapObject** out_object);
+  bool IsSlotInBlackObject(MemoryChunk* p, Address slot);
   HeapObject* FindBlackObjectBySlotSlow(Address slot);
-  bool IsSlotInLiveObject(Address slot);
 
   // Removes all the slots in the slot buffers that are within the given
   // address range.
   void RemoveObjectSlots(Address start_slot, Address end_slot);
 
-  //
-  // Free lists filled by sweeper and consumed by corresponding spaces
-  // (including compaction spaces).
-  //
-  base::SmartPointer<FreeList>& free_list_old_space() {
-    return free_list_old_space_;
-  }
-  base::SmartPointer<FreeList>& free_list_code_space() {
-    return free_list_code_space_;
-  }
-  base::SmartPointer<FreeList>& free_list_map_space() {
-    return free_list_map_space_;
+  base::Mutex* swept_pages_mutex() { return &swept_pages_mutex_; }
+  List<Page*>* swept_pages(AllocationSpace id) {
+    switch (id) {
+      case OLD_SPACE:
+        return &swept_old_space_pages_;
+      case CODE_SPACE:
+        return &swept_code_space_pages_;
+      case MAP_SPACE:
+        return &swept_map_space_pages_;
+      default:
+        UNREACHABLE();
+    }
+    return nullptr;
   }
 
  private:
@@ -834,9 +834,10 @@ class MarkCompactCollector {
   List<Page*> evacuation_candidates_;
   List<NewSpacePage*> newspace_evacuation_candidates_;
 
-  base::SmartPointer<FreeList> free_list_old_space_;
-  base::SmartPointer<FreeList> free_list_code_space_;
-  base::SmartPointer<FreeList> free_list_map_space_;
+  base::Mutex swept_pages_mutex_;
+  List<Page*> swept_old_space_pages_;
+  List<Page*> swept_code_space_pages_;
+  List<Page*> swept_map_space_pages_;
 
   SweepingList sweeping_list_old_space_;
   SweepingList sweeping_list_code_space_;

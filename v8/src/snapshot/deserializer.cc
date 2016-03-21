@@ -5,6 +5,7 @@
 #include "src/snapshot/deserializer.h"
 
 #include "src/bootstrapper.h"
+#include "src/external-reference-table.h"
 #include "src/heap/heap.h"
 #include "src/isolate.h"
 #include "src/macro-assembler.h"
@@ -77,9 +78,12 @@ void Deserializer::Deserialize(Isolate* isolate) {
   DCHECK_NULL(isolate_->thread_manager()->FirstThreadStateInUse());
   // No active handles.
   DCHECK(isolate_->handle_scope_implementer()->blocks()->is_empty());
+  // Partial snapshot cache is not yet populated.
+  DCHECK(isolate_->partial_snapshot_cache()->is_empty());
 
   {
     DisallowHeapAllocation no_gc;
+    isolate_->heap()->IterateStrongRoots(this, VISIT_ONLY_STRONG_ROOT_LIST);
     isolate_->heap()->IterateSmiRoots(this);
     isolate_->heap()->IterateStrongRoots(this, VISIT_ONLY_STRONG);
     isolate_->heap()->RepairFreeListsAfterDeserialization();
@@ -421,6 +425,7 @@ Address Deserializer::Allocate(int space_index, int size) {
     int chunk_index = current_chunk_[space_index];
     CHECK_LE(high_water_[space_index], reservation[chunk_index].end);
 #endif
+    if (space_index == CODE_SPACE) SkipList::Update(address, size);
     return address;
   }
 }

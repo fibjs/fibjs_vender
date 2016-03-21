@@ -139,7 +139,6 @@
     <ClInclude Include="src\compiler\diamond.h" />
     <ClInclude Include="src\compiler\escape-analysis-reducer.h" />
     <ClInclude Include="src\compiler\escape-analysis.h" />
-    <ClInclude Include="src\compiler\fast-accessor-assembler.h" />
     <ClInclude Include="src\compiler\frame-elider.h" />
     <ClInclude Include="src\compiler\frame-states.h" />
     <ClInclude Include="src\compiler\frame.h" />
@@ -296,7 +295,9 @@
     <ClInclude Include="src\extensions\gc-extension.h" />
     <ClInclude Include="src\extensions\statistics-extension.h" />
     <ClInclude Include="src\extensions\trigger-failure-extension.h" />
+    <ClInclude Include="src\external-reference-table.h" />
     <ClInclude Include="src\factory.h" />
+    <ClInclude Include="src\fast-accessor-assembler.h" />
     <ClInclude Include="src\fast-dtoa.h" />
     <ClInclude Include="src\field-index-inl.h" />
     <ClInclude Include="src\field-index.h" />
@@ -630,7 +631,6 @@
     <ClCompile Include="src\compiler\dead-code-elimination.cc" />
     <ClCompile Include="src\compiler\escape-analysis-reducer.cc" />
     <ClCompile Include="src\compiler\escape-analysis.cc" />
-    <ClCompile Include="src\compiler\fast-accessor-assembler.cc" />
     <ClCompile Include="src\compiler\frame-elider.cc" />
     <ClCompile Include="src\compiler\frame-states.cc" />
     <ClCompile Include="src\compiler\frame.cc" />
@@ -789,7 +789,9 @@
     <ClCompile Include="src\extensions\gc-extension.cc" />
     <ClCompile Include="src\extensions\statistics-extension.cc" />
     <ClCompile Include="src\extensions\trigger-failure-extension.cc" />
+    <ClCompile Include="src\external-reference-table.cc" />
     <ClCompile Include="src\factory.cc" />
+    <ClCompile Include="src\fast-accessor-assembler.cc" />
     <ClCompile Include="src\fast-dtoa.cc" />
     <ClCompile Include="src\field-type.cc" />
     <ClCompile Include="src\fixed-dtoa.cc" />

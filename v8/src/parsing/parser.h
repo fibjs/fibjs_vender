@@ -121,6 +121,10 @@ class ParseInfo {
   uint32_t hash_seed() { return hash_seed_; }
   void set_hash_seed(uint32_t hash_seed) { hash_seed_ = hash_seed; }
 
+  bool allow_html_comments() const {
+    return !script_.is_null() && script_->origin_options().AllowHtmlComments();
+  }
+
   //--------------------------------------------------------------------------
   // TODO(titzer): these should not be part of ParseInfo.
   //--------------------------------------------------------------------------
@@ -636,6 +640,11 @@ class ParserTraits {
   // Rewrite all DestructuringAssignments in the current FunctionState.
   V8_INLINE void RewriteDestructuringAssignments();
 
+  V8_INLINE Expression* RewriteExponentiation(Expression* left,
+                                              Expression* right, int pos);
+  V8_INLINE Expression* RewriteAssignExponentiation(Expression* left,
+                                                    Expression* right, int pos);
+
   V8_INLINE void QueueDestructuringAssignmentForRewriting(
       Expression* assignment);
   V8_INLINE void QueueNonPatternForRewriting(Expression* expr);
@@ -667,7 +676,7 @@ class ParserTraits {
   void BuildIteratorCloseForCompletion(
       ZoneList<Statement*>* statements, Variable* iterator,
       Variable* body_threw);
-  Statement* CheckCallable(Variable* var, Expression* error);
+  Statement* CheckCallable(Variable* var, Expression* error, int pos);
 };
 
 
@@ -1042,6 +1051,11 @@ class Parser : public ParserBase<ParserTraits> {
   void RaiseLanguageMode(LanguageMode mode);
 
   V8_INLINE void RewriteDestructuringAssignments();
+
+  V8_INLINE Expression* RewriteExponentiation(Expression* left,
+                                              Expression* right, int pos);
+  V8_INLINE Expression* RewriteAssignExponentiation(Expression* left,
+                                                    Expression* right, int pos);
 
   friend class NonPatternRewriter;
   V8_INLINE Expression* RewriteSpreads(ArrayLiteral* lit);

@@ -1004,7 +1004,8 @@ template <class C> inline bool Is(Object* obj);
   V(Uninitialized)      \
   V(True)               \
   V(False)              \
-  V(ArgumentsMarker)
+  V(ArgumentsMarker)    \
+  V(OptimizedOut)
 
 // The element types selection for CreateListFromArrayLike.
 enum class ElementTypes { kAll, kStringAndSymbol };
@@ -2103,8 +2104,9 @@ class JSObject: public JSReceiver {
 
   // Adds or reconfigures a property to attributes NONE. It will fail when it
   // cannot.
-  MUST_USE_RESULT static Maybe<bool> CreateDataProperty(LookupIterator* it,
-                                                        Handle<Object> value);
+  MUST_USE_RESULT static Maybe<bool> CreateDataProperty(
+      LookupIterator* it, Handle<Object> value,
+      ShouldThrow should_throw = DONT_THROW);
 
   static void AddProperty(Handle<JSObject> object, Handle<Name> name,
                           Handle<Object> value, PropertyAttributes attributes);
@@ -2540,9 +2542,6 @@ class JSObject: public JSReceiver {
                                         Handle<JSObject> object);
 
   static Handle<Smi> GetOrCreateIdentityHash(Handle<JSObject> object);
-
-  static Handle<SeededNumberDictionary> GetNormalizedElementDictionary(
-      Handle<JSObject> object, Handle<FixedArrayBase> elements);
 
   // Helper for fast versions of preventExtensions, seal, and freeze.
   // attrs is one of NONE, SEALED, or FROZEN (depending on the operation).
@@ -6562,8 +6561,9 @@ class Script: public Struct {
   static const int kCompilationTypeBit = 0;
   static const int kCompilationStateBit = 1;
   static const int kHideSourceBit = 2;
-  static const int kOriginOptionsShift = 3;
-  static const int kOriginOptionsSize = 3;
+  static const int kAllowHtmlCommentsBit = 3;
+  static const int kOriginOptionsShift = 4;
+  static const int kOriginOptionsSize = 4;
   static const int kOriginOptionsMask = ((1 << kOriginOptionsSize) - 1)
                                         << kOriginOptionsShift;
 
@@ -6769,23 +6769,34 @@ class SharedFunctionInfo: public HeapObject {
   // [function data]: This field holds some additional data for function.
   // Currently it has one of:
   //  - a FunctionTemplateInfo to make benefit the API [IsApiFunction()].
-  //  - a Smi identifying a builtin function [HasBuiltinFunctionId()].
   //  - a BytecodeArray for the interpreter [HasBytecodeArray()].
-  // In the long run we don't want all functions to have this field but
-  // we can fix that when we have a better model for storing hidden data
-  // on objects.
   DECL_ACCESSORS(function_data, Object)
 
   inline bool IsApiFunction();
   inline FunctionTemplateInfo* get_api_func_data();
   inline void set_api_func_data(FunctionTemplateInfo* data);
-  inline bool HasBuiltinFunctionId();
-  inline BuiltinFunctionId builtin_function_id();
-  inline void set_builtin_function_id(BuiltinFunctionId id);
   inline bool HasBytecodeArray();
   inline BytecodeArray* bytecode_array();
   inline void set_bytecode_array(BytecodeArray* bytecode);
   inline void ClearBytecodeArray();
+
+  // [function identifier]: This field holds an additional identifier for the
+  // function.
+  //  - a Smi identifying a builtin function [HasBuiltinFunctionId()].
+  //  - a String identifying the function's inferred name [HasInferredName()].
+  // The inferred_name is inferred from variable or property
+  // assignment of this function. It is used to facilitate debugging and
+  // profiling of JavaScript code written in OO style, where almost
+  // all functions are anonymous but are assigned to object
+  // properties.
+  DECL_ACCESSORS(function_identifier, Object)
+
+  inline bool HasBuiltinFunctionId();
+  inline BuiltinFunctionId builtin_function_id();
+  inline void set_builtin_function_id(BuiltinFunctionId id);
+  inline bool HasInferredName();
+  inline String* inferred_name();
+  inline void set_inferred_name(String* inferred_name);
 
   // [script info]: Script from which the function originates.
   DECL_ACCESSORS(script, Object)
@@ -6811,13 +6822,6 @@ class SharedFunctionInfo: public HeapObject {
 
   // [debug info]: Debug information.
   DECL_ACCESSORS(debug_info, Object)
-
-  // [inferred name]: Name inferred from variable or property
-  // assignment of this function. Used to facilitate debugging and
-  // profiling of JavaScript code written in OO style, where almost
-  // all functions are anonymous but are assigned to object
-  // properties.
-  DECL_ACCESSORS(inferred_name, String)
 
   // The function's name if it is non-empty, otherwise the inferred name.
   String* DebugName();
@@ -7058,9 +7062,9 @@ class SharedFunctionInfo: public HeapObject {
       kInstanceClassNameOffset + kPointerSize;
   static const int kScriptOffset = kFunctionDataOffset + kPointerSize;
   static const int kDebugInfoOffset = kScriptOffset + kPointerSize;
-  static const int kInferredNameOffset = kDebugInfoOffset + kPointerSize;
+  static const int kFunctionIdentifierOffset = kDebugInfoOffset + kPointerSize;
   static const int kFeedbackVectorOffset =
-      kInferredNameOffset + kPointerSize;
+      kFunctionIdentifierOffset + kPointerSize;
 #if TRACE_MAPS
   static const int kUniqueIdOffset = kFeedbackVectorOffset + kPointerSize;
   static const int kLastPointerFieldOffset = kUniqueIdOffset;
@@ -9598,6 +9602,7 @@ class Oddball: public HeapObject {
   static const byte kUninitialized = 6;
   static const byte kOther = 7;
   static const byte kException = 8;
+  static const byte kOptimizedOut = 9;
 
   typedef FixedBodyDescriptor<kToStringOffset, kTypeOfOffset + kPointerSize,
                               kSize> BodyDescriptor;

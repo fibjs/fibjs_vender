@@ -34,6 +34,7 @@
 #include "src/ic/ic.h"
 #include "src/identity-map.h"
 #include "src/interpreter/bytecode-array-iterator.h"
+#include "src/interpreter/interpreter.h"
 #include "src/interpreter/source-position-table.h"
 #include "src/isolate-inl.h"
 #include "src/keys.h"
@@ -285,6 +286,10 @@ Maybe<ComparisonResult> Object::Compare(Handle<Object> x, Handle<Object> y) {
 
 // static
 Maybe<bool> Object::Equals(Handle<Object> x, Handle<Object> y) {
+  // This is the generic version of Abstract Equality Comparison; a version in
+  // JavaScript land is available in the EqualStub and NotEqualStub. Whenever
+  // you change something functionality wise in here, remember to update the
+  // TurboFan code stubs as well.
   while (true) {
     if (x->IsNumber()) {
       if (y->IsNumber()) {
@@ -5692,35 +5697,6 @@ void JSObject::ResetElements(Handle<JSObject> object) {
 }
 
 
-static Handle<SeededNumberDictionary> CopyFastElementsToDictionary(
-    Handle<FixedArrayBase> array, int length,
-    Handle<SeededNumberDictionary> dictionary, bool used_as_prototype) {
-  Isolate* isolate = array->GetIsolate();
-  Factory* factory = isolate->factory();
-  bool has_double_elements = array->IsFixedDoubleArray();
-  for (int i = 0; i < length; i++) {
-    Handle<Object> value;
-    if (has_double_elements) {
-      Handle<FixedDoubleArray> double_array =
-          Handle<FixedDoubleArray>::cast(array);
-      if (double_array->is_the_hole(i)) {
-        value = factory->the_hole_value();
-      } else {
-        value = factory->NewHeapNumber(double_array->get_scalar(i));
-      }
-    } else {
-      value = handle(Handle<FixedArray>::cast(array)->get(i), isolate);
-    }
-    if (!value->IsTheHole()) {
-      PropertyDetails details = PropertyDetails::Empty();
-      dictionary = SeededNumberDictionary::AddNumberEntry(
-          dictionary, i, value, details, used_as_prototype);
-    }
-  }
-  return dictionary;
-}
-
-
 void JSObject::RequireSlowElements(SeededNumberDictionary* dictionary) {
   if (dictionary->requires_slow_elements()) return;
   dictionary->set_requires_slow_elements();
@@ -5731,40 +5707,23 @@ void JSObject::RequireSlowElements(SeededNumberDictionary* dictionary) {
 }
 
 
-Handle<SeededNumberDictionary> JSObject::GetNormalizedElementDictionary(
-    Handle<JSObject> object, Handle<FixedArrayBase> elements) {
-  DCHECK(!object->HasDictionaryElements());
-  DCHECK(!object->HasSlowArgumentsElements());
-  Isolate* isolate = object->GetIsolate();
-  // Ensure that notifications fire if the array or object prototypes are
-  // normalizing.
-  isolate->UpdateArrayProtectorOnNormalizeElements(object);
-  int length = object->IsJSArray()
-                   ? Smi::cast(Handle<JSArray>::cast(object)->length())->value()
-                   : elements->length();
-  int used = object->GetFastElementsUsage();
-  Handle<SeededNumberDictionary> dictionary =
-      SeededNumberDictionary::New(isolate, used);
-  return CopyFastElementsToDictionary(elements, length, dictionary,
-                                      object->map()->is_prototype_map());
-}
-
-
 Handle<SeededNumberDictionary> JSObject::NormalizeElements(
     Handle<JSObject> object) {
   DCHECK(!object->HasFixedTypedArrayElements());
   Isolate* isolate = object->GetIsolate();
-
-  // Find the backing store.
-  Handle<FixedArrayBase> elements(object->elements(), isolate);
   bool is_arguments = object->HasSloppyArgumentsElements();
-  if (is_arguments) {
-    FixedArray* parameter_map = FixedArray::cast(*elements);
-    elements = handle(FixedArrayBase::cast(parameter_map->get(1)), isolate);
-  }
+  {
+    DisallowHeapAllocation no_gc;
+    FixedArrayBase* elements = object->elements();
 
-  if (elements->IsDictionary()) {
-    return Handle<SeededNumberDictionary>::cast(elements);
+    if (is_arguments) {
+      FixedArray* parameter_map = FixedArray::cast(elements);
+      elements = FixedArrayBase::cast(parameter_map->get(1));
+    }
+
+    if (elements->IsDictionary()) {
+      return handle(SeededNumberDictionary::cast(elements), isolate);
+    }
   }
 
   DCHECK(object->HasFastSmiOrObjectElements() ||
@@ -5773,7 +5732,7 @@ Handle<SeededNumberDictionary> JSObject::NormalizeElements(
          object->HasFastStringWrapperElements());
 
   Handle<SeededNumberDictionary> dictionary =
-      GetNormalizedElementDictionary(object, elements);
+      object->GetElementsAccessor()->Normalize(object);
 
   // Switch to using the dictionary as the backing storage for elements.
   ElementsKind target_kind = is_arguments
@@ -6707,7 +6666,7 @@ Maybe<bool> JSReceiver::CreateDataProperty(LookupIterator* it,
   Isolate* isolate = receiver->GetIsolate();
 
   if (receiver->IsJSObject()) {
-    return JSObject::CreateDataProperty(it, value);  // Shortcut.
+    return JSObject::CreateDataProperty(it, value, should_throw);  // Shortcut.
   }
 
   PropertyDescriptor new_desc;
@@ -6720,17 +6679,26 @@ Maybe<bool> JSReceiver::CreateDataProperty(LookupIterator* it,
                                        &new_desc, should_throw);
 }
 
-
 Maybe<bool> JSObject::CreateDataProperty(LookupIterator* it,
-                                         Handle<Object> value) {
+                                         Handle<Object> value,
+                                         ShouldThrow should_throw) {
   DCHECK(it->GetReceiver()->IsJSObject());
   MAYBE_RETURN(JSReceiver::GetPropertyAttributes(it), Nothing<bool>());
+  Handle<JSReceiver> receiver = Handle<JSReceiver>::cast(it->GetReceiver());
+  Isolate* isolate = receiver->GetIsolate();
 
   if (it->IsFound()) {
-    if (!it->IsConfigurable()) return Just(false);
+    if (!it->IsConfigurable()) {
+      RETURN_FAILURE(
+          isolate, should_throw,
+          NewTypeError(MessageTemplate::kRedefineDisallowed, it->GetName()));
+    }
   } else {
-    if (!JSObject::IsExtensible(Handle<JSObject>::cast(it->GetReceiver())))
-      return Just(false);
+    if (!JSObject::IsExtensible(Handle<JSObject>::cast(it->GetReceiver()))) {
+      RETURN_FAILURE(
+          isolate, should_throw,
+          NewTypeError(MessageTemplate::kDefineDisallowed, it->GetName()));
+    }
   }
 
   RETURN_ON_EXCEPTION_VALUE(it->isolate(),
@@ -7760,8 +7728,7 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
             : object->elements()->length();
     new_element_dictionary =
         length == 0 ? isolate->factory()->empty_slow_element_dictionary()
-                    : GetNormalizedElementDictionary(
-                          object, handle(object->elements()));
+                    : object->GetElementsAccessor()->Normalize(object);
   }
 
   Handle<Symbol> transition_marker;
@@ -13533,7 +13500,7 @@ void SharedFunctionInfo::SetScript(Handle<SharedFunctionInfo> shared,
   }
 
 #ifdef DEBUG
-  {
+  if (FLAG_enable_slow_asserts) {
     WeakFixedArray::Iterator iterator(*list);
     SharedFunctionInfo* next;
     while ((next = iterator.Next<SharedFunctionInfo>())) {
@@ -14513,7 +14480,9 @@ bool Code::CanDeoptAt(Address pc) {
   for (int i = 0; i < deopt_data->DeoptCount(); i++) {
     if (deopt_data->Pc(i)->value() == -1) continue;
     Address address = code_start_address + deopt_data->Pc(i)->value();
-    if (address == pc) return true;
+    if (address == pc && deopt_data->AstId(i) != BailoutId::None()) {
+      return true;
+    }
   }
   return false;
 }
@@ -14858,11 +14827,16 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
       os << "compare_operation = " << Token::Name(stub.op()) << "\n";
     }
   }
-  if ((name != NULL) && (name[0] != '\0')) {
+  if ((name != nullptr) && (name[0] != '\0')) {
     os << "name = " << name << "\n";
   } else if (kind() == BUILTIN) {
     name = GetIsolate()->builtins()->Lookup(instruction_start());
-    if (name != NULL) {
+    if (name != nullptr) {
+      os << "name = " << name << "\n";
+    }
+  } else if (kind() == BYTECODE_HANDLER) {
+    name = GetIsolate()->interpreter()->LookupNameOfBytecodeHandler(this);
+    if (name != nullptr) {
       os << "name = " << name << "\n";
     }
   }

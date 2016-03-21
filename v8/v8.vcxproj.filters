@@ -564,9 +564,6 @@
     <ClInclude Include="src\compiler\escape-analysis.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\fast-accessor-assembler.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\frame-elider.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -1035,7 +1032,13 @@
     <ClInclude Include="src\extensions\trigger-failure-extension.h">
       <Filter>Source Files\extensions</Filter>
     </ClInclude>
+    <ClInclude Include="src\external-reference-table.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\factory.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fast-accessor-assembler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\fast-dtoa.h">
@@ -2033,9 +2036,6 @@
     <ClCompile Include="src\compiler\escape-analysis.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\fast-accessor-assembler.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\frame-elider.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2510,7 +2510,13 @@
     <ClCompile Include="src\extensions\trigger-failure-extension.cc">
       <Filter>Source Files\extensions</Filter>
     </ClCompile>
+    <ClCompile Include="src\external-reference-table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\factory.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fast-accessor-assembler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\fast-dtoa.cc">

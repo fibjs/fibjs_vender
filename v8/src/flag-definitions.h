@@ -205,7 +205,8 @@ DEFINE_IMPLICATION(es_staging, harmony_tailcalls)
   V(harmony_simd, "harmony simd")                                       \
   V(harmony_do_expressions, "harmony do-expressions")                   \
   V(harmony_tailcalls, "harmony tail calls")                            \
-  V(harmony_regexp_property, "harmony unicode regexp property classes")
+  V(harmony_regexp_property, "harmony unicode regexp property classes") \
+  V(harmony_exponentiation_operator, "harmony exponentiation operator `**`")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED(V)                                                    \
@@ -214,8 +215,6 @@ DEFINE_IMPLICATION(es_staging, harmony_tailcalls)
   V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
   V(harmony_object_own_property_descriptors,                                 \
     "harmony Object.getOwnPropertyDescriptors()")                            \
-  V(harmony_restrictive_declarations,                                        \
-    "harmony limitations on sloppy mode function declarations")
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                           \
@@ -230,6 +229,8 @@ DEFINE_IMPLICATION(es_staging, harmony_tailcalls)
   V(harmony_proxies, "harmony proxies")                               \
   V(harmony_reflect, "harmony Reflect API")                           \
   V(harmony_regexp_subclass, "harmony regexp subclassing")            \
+  V(harmony_restrictive_declarations,                                 \
+    "harmony limitations on sloppy mode function declarations")       \
   V(harmony_species, "harmony Symbol.species")
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
@@ -467,7 +468,10 @@ DEFINE_BOOL(trace_wasm_encoder, false, "trace encoding of wasm code")
 DEFINE_BOOL(trace_wasm_decoder, false, "trace decoding of wasm code")
 DEFINE_BOOL(trace_wasm_decode_time, false, "trace decoding time of wasm code")
 DEFINE_BOOL(trace_wasm_compiler, false, "trace compiling of wasm code")
-DEFINE_BOOL(trace_wasm_ast, false, "dump AST after WASM decode")
+DEFINE_INT(trace_wasm_ast_start, 0,
+           "start function for WASM AST trace (inclusive)")
+DEFINE_INT(trace_wasm_ast_end, 0, "end function for WASM AST trace (exclusive)")
+DEFINE_INT(skip_compiling_wasm_funcs, 0, "start compiling at function N")
 DEFINE_BOOL(wasm_break_on_decoder_error, false,
             "debug break when wasm decoder encounters an error")
 DEFINE_BOOL(wasm_loop_assignment_analysis, false,
@@ -673,6 +677,7 @@ DEFINE_INT(trace_allocation_stack_interval, -1,
 DEFINE_BOOL(trace_fragmentation, false, "report fragmentation for old space")
 DEFINE_BOOL(trace_fragmentation_verbose, false,
             "report fragmentation for old space (detailed)")
+DEFINE_BOOL(trace_evacuation, false, "report evacuation statistics")
 DEFINE_BOOL(trace_mutator_utilization, false,
             "print mutator utilization, allocation speed, gc speed")
 DEFINE_BOOL(weak_embedded_maps_in_optimized_code, true,
@@ -690,10 +695,10 @@ DEFINE_INT(min_progress_during_incremental_marking_finalization, 32,
            "least this many unmarked objects")
 DEFINE_INT(max_incremental_marking_finalization_rounds, 3,
            "at most try this many times to finalize incremental marking")
-DEFINE_BOOL(black_allocation, true, "use black allocation")
+DEFINE_BOOL(black_allocation, false, "use black allocation")
 DEFINE_BOOL(concurrent_sweeping, true, "use concurrent sweeping")
 DEFINE_BOOL(parallel_compaction, true, "use parallel compaction")
-DEFINE_BOOL(parallel_pointer_update, false,
+DEFINE_BOOL(parallel_pointer_update, true,
             "use parallel pointer update during compaction")
 DEFINE_BOOL(trace_incremental_marking, false,
             "trace progress of the incremental marking")
