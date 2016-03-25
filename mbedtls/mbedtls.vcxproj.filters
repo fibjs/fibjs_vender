@@ -72,6 +72,9 @@
     <ClInclude Include="mbedtls\debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="mbedtls\ecjpake.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="mbedtls\des.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -252,6 +255,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ctr_drbg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecjpake.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\des.c">

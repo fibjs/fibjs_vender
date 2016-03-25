@@ -38,6 +38,7 @@
     <ClInclude Include="mbedtls\config.h" />
     <ClInclude Include="mbedtls\ctr_drbg.h" />
     <ClInclude Include="mbedtls\debug.h" />
+    <ClInclude Include="mbedtls\ecjpake.h" />
     <ClInclude Include="mbedtls\des.h" />
     <ClInclude Include="mbedtls\dhm.h" />
     <ClInclude Include="mbedtls\ecdh.h" />
@@ -99,6 +100,7 @@
     <ClCompile Include="src\cipher.c" />
     <ClCompile Include="src\cipher_wrap.c" />
     <ClCompile Include="src\ctr_drbg.c" />
+    <ClCompile Include="src\ecjpake.c" />
     <ClCompile Include="src\des.c" />
     <ClCompile Include="src\dhm.c" />
     <ClCompile Include="src\ecdh.c" />
