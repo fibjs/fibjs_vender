@@ -171,7 +171,8 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
         value_(value),
         scratch0_(scratch0),
         scratch1_(scratch1),
-        mode_(mode) {}
+        mode_(mode),
+        must_save_lr_(!gen->frame_access_state()->has_frame()) {}
 
   void Generate() final {
     if (mode_ > RecordWriteMode::kValueIsPointer) {
@@ -185,7 +186,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
                                              : OMIT_REMEMBERED_SET;
     SaveFPRegsMode const save_fp_mode =
         frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
-    if (!frame()->needs_frame()) {
+    if (must_save_lr_) {
       // We need to save and restore r14 if the frame was elided.
       __ Push(r14);
     }
@@ -198,7 +199,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
       __ AddP(scratch1_, object_, offset_);
     }
     __ CallStub(&stub);
-    if (!frame()->needs_frame()) {
+    if (must_save_lr_) {
       // We need to save and restore r14 if the frame was elided.
       __ Pop(r14);
     }
@@ -212,6 +213,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
   Register const scratch0_;
   Register const scratch1_;
   RecordWriteMode const mode_;
+  bool must_save_lr_;
 };
 
 Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
@@ -564,6 +566,12 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     __ bind(&done);                                     \
   } while (0)
 
+void CodeGenerator::AssembleDeconstructFrame() {
+  __ LeaveFrame(StackFrame::MANUAL);
+}
+
+void CodeGenerator::AssembleSetupStackPointer() {}
+
 void CodeGenerator::AssembleDeconstructActivationRecord(int stack_param_delta) {
   int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
   if (sp_slot_delta > 0) {
@@ -578,7 +586,7 @@ void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
     __ AddP(sp, sp, Operand(sp_slot_delta * kPointerSize));
     frame_access_state()->IncreaseSPDelta(-sp_slot_delta);
   }
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     __ RestoreFrameStateForTailCall();
   }
   frame_access_state()->SetFrameAccessToSP();
@@ -649,6 +657,14 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ Jump(Handle<Code>::cast(i.InputHeapObject(0)),
                 RelocInfo::CODE_TARGET);
       }
+      frame_access_state()->ClearSPDelta();
+      break;
+    }
+    case kArchTailCallAddress: {
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
+      CHECK(!instr->InputAt(0)->IsImmediate());
+      __ Jump(i.InputRegister(0));
       frame_access_state()->ClearSPDelta();
       break;
     }
@@ -744,7 +760,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ LoadRR(i.OutputRegister(), fp);
       break;
     case kArchParentFramePointer:
-      if (frame_access_state()->frame()->needs_frame()) {
+      if (frame_access_state()->has_frame()) {
         __ LoadP(i.OutputRegister(), MemOperand(fp, 0));
       } else {
         __ LoadRR(i.OutputRegister(), fp);
@@ -886,6 +902,19 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ SubLogicalWithBorrow32(i.OutputRegister(1), i.InputRegister(1),
                                 i.InputRegister(3));
       break;
+    case kS390_MulPair:
+      // i.InputRegister(0) ... left low word.
+      // i.InputRegister(1) ... left high word.
+      // i.InputRegister(2) ... right low word.
+      // i.InputRegister(3) ... right high word.
+      __ sllg(r0, i.InputRegister(1), Operand(32));
+      __ sllg(r1, i.InputRegister(3), Operand(32));
+      __ lr(r0, i.InputRegister(0));
+      __ lr(r1, i.InputRegister(2));
+      __ msgr(r1, r0);
+      __ lr(i.OutputRegister(0), r1);
+      __ srag(i.OutputRegister(1), r1, Operand(32));
+      break;
     case kS390_ShiftLeftPair:
       if (instr->InputAt(2)->IsImmediate()) {
         __ ShiftLeftPair(i.OutputRegister(0), i.OutputRegister(1),
@@ -933,11 +962,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_RotRight64:
       if (HasRegisterInput(instr, 1)) {
         __ LoadComplementRR(kScratchReg, i.InputRegister(1));
-        __ rll(i.OutputRegister(), i.InputRegister(0), kScratchReg,
-               Operand(32));
-        __ lgfr(i.OutputRegister(), i.OutputRegister());
+        __ rllg(i.OutputRegister(), i.InputRegister(0), kScratchReg);
       } else {
-        UNIMPLEMENTED();  // Not implemented for now
+        __ rllg(i.OutputRegister(), i.InputRegister(0),
+                Operand(64 - i.InputInt32(1)));
       }
       break;
 #endif
@@ -1111,6 +1139,10 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_Div64:
+      __ LoadRR(r1, i.InputRegister(0));
+      __ dsgr(r0, i.InputRegister(1));  // R1: Dividend
+      __ ltgr(i.OutputRegister(), r1);  // Copy R1: Quotient to output
+      break;
 #endif
     case kS390_Div32:
       __ LoadRR(r0, i.InputRegister(0));
@@ -1122,15 +1154,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     case kS390_DivU64:
       __ LoadRR(r1, i.InputRegister(0));
       __ LoadImmP(r0, Operand::Zero());
-      __ dlgr(r0, i.InputRegister(1));  // R0:R1 = R1 / divisor -
-      __ ltgr(i.OutputRegister(), r1);  // Copy remainder to output reg
+      __ dlgr(r0, i.InputRegister(1));  // R0:R1: Dividend
+      __ ltgr(i.OutputRegister(), r1);  // Copy R1: Quotient to output
       break;
 #endif
     case kS390_DivU32:
       __ LoadRR(r0, i.InputRegister(0));
       __ srdl(r0, Operand(32));
-      __ dlr(r0, i.InputRegister(1));  // R0:R1 = R1 / divisor -
-      __ ltr(i.OutputRegister(), r1);  // Copy remainder to output reg
+      __ dlr(r0, i.InputRegister(1));  // R0:R1: Dividend
+      __ ltr(i.OutputRegister(), r1);  // Copy R1: Quotient to output
       break;
 
     case kS390_DivFloat:
@@ -1165,10 +1197,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_Mod64:
-      ASSEMBLE_MODULO(dr, srda);
+      __ LoadRR(r1, i.InputRegister(0));
+      __ dsgr(r0, i.InputRegister(1));  // R1: Dividend
+      __ ltgr(i.OutputRegister(), r0);  // Copy R0: Remainder to output
       break;
     case kS390_ModU64:
-      ASSEMBLE_MODULO(dlr, srdl);
+      __ LoadRR(r1, i.InputRegister(0));
+      __ LoadImmP(r0, Operand::Zero());
+      __ dlgr(r0, i.InputRegister(1));  // R0:R1: Dividend
+      __ ltgr(i.OutputRegister(), r0);  // Copy R0: Remainder to output
       break;
 #endif
     case kS390_AbsFloat:
@@ -1178,13 +1215,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_FLOAT_UNOP(sqebr);
       break;
     case kS390_FloorFloat:
-      //      ASSEMBLE_FLOAT_UNOP_RC(frim);
-      __ FloatFloor32(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                      kScratchReg);
+      __ fiebra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                v8::internal::Assembler::FIDBRA_ROUND_TOWARD_NEG_INF);
       break;
     case kS390_CeilFloat:
-      __ FloatCeiling32(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                        kScratchReg, kScratchDoubleReg);
+      __ fiebra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                v8::internal::Assembler::FIDBRA_ROUND_TOWARD_POS_INF);
       break;
     case kS390_TruncateFloat:
       __ fiebra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
@@ -1210,12 +1246,12 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_FLOAT_UNOP(sqdbr);
       break;
     case kS390_FloorDouble:
-      __ FloatFloor64(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                      kScratchReg);
+      __ fidbra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                v8::internal::Assembler::FIDBRA_ROUND_TOWARD_NEG_INF);
       break;
     case kS390_CeilDouble:
-      __ FloatCeiling64(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                        kScratchReg, kScratchDoubleReg);
+      __ fidbra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                v8::internal::Assembler::FIDBRA_ROUND_TOWARD_POS_INF);
       break;
     case kS390_TruncateDouble:
       __ fidbra(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
@@ -1670,7 +1706,8 @@ void CodeGenerator::AssembleArchBoolean(Instruction* instr,
 
   // Overflow checked for add/sub only.
   DCHECK((condition != kOverflow && condition != kNotOverflow) ||
-         (op == kS390_AddWithOverflow32 || op == kS390_SubWithOverflow32));
+         (op == kS390_AddWithOverflow32 || op == kS390_SubWithOverflow32) ||
+         (op == kS390_Add || op == kS390_Sub));
 
   // Materialize a full 32-bit 1 or 0 value. The result register is always the
   // last output of the instruction.
@@ -1763,7 +1800,7 @@ void CodeGenerator::AssembleDeoptimizerCall(
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
 
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     if (descriptor->IsCFunctionCall()) {
       __ Push(r14, fp);
       __ LoadRR(fp, sp);
@@ -1771,18 +1808,11 @@ void CodeGenerator::AssemblePrologue() {
       __ Prologue(this->info()->GeneratePreagedPrologue(), ip);
     } else {
       StackFrame::Type type = info()->GetOutputStackFrameType();
-      if (!ABI_CALL_VIA_IP &&
-          info()->output_code_kind() == Code::WASM_FUNCTION) {
-        // TODO(mbrandy): Restrict only to the wasm wrapper case.
-        __ StubPrologue(type);
-      } else {
-        __ StubPrologue(type, ip);
-      }
+      // TODO(mbrandy): Detect cases where ip is the entrypoint (for
+      // efficient intialization of the constant pool pointer register).
+      __ StubPrologue(type);
     }
-  } else {
-    frame()->SetElidedFrameSizeInSlots(0);
   }
-  frame_access_state()->SetFrameAccessToDefault();
 
   int stack_shrink_slots = frame()->GetSpillSlotCount();
   if (info()->is_osr()) {
@@ -1844,20 +1874,18 @@ void CodeGenerator::AssembleReturn() {
   }
 
   if (descriptor->IsCFunctionCall()) {
-    __ LeaveFrame(StackFrame::MANUAL, pop_count * kPointerSize);
-  } else if (frame()->needs_frame()) {
+    AssembleDeconstructFrame();
+  } else if (frame_access_state()->has_frame()) {
     // Canonicalize JSFunction return sites for now.
     if (return_label_.is_bound()) {
       __ b(&return_label_);
       return;
     } else {
       __ bind(&return_label_);
-      __ LeaveFrame(StackFrame::MANUAL, pop_count * kPointerSize);
+      AssembleDeconstructFrame();
     }
-  } else {
-    __ Drop(pop_count);
   }
-  __ Ret();
+  __ Ret(pop_count);
 }
 
 void CodeGenerator::AssembleMove(InstructionOperand* source,
@@ -1890,10 +1918,26 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           destination->IsRegister() ? g.ToRegister(destination) : kScratchReg;
       switch (src.type()) {
         case Constant::kInt32:
+#if !V8_TARGET_ARCH_S390X
+          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+            __ mov(dst, Operand(src.ToInt32(), src.rmode()));
+          } else {
+            __ mov(dst, Operand(src.ToInt32()));
+          }
+#else
           __ mov(dst, Operand(src.ToInt32()));
+#endif  // V8_TARGET_ARCH_S390X
           break;
         case Constant::kInt64:
+#if V8_TARGET_ARCH_S390X
+          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+            __ mov(dst, Operand(src.ToInt64(), src.rmode()));
+          } else {
+            __ mov(dst, Operand(src.ToInt64()));
+          }
+#else
           __ mov(dst, Operand(src.ToInt64()));
+#endif  // V8_TARGET_ARCH_S390X
           break;
         case Constant::kFloat32:
           __ Move(dst,

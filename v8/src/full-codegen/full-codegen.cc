@@ -4,8 +4,8 @@
 
 #include "src/full-codegen/full-codegen.h"
 
-#include "src/ast/ast.h"
 #include "src/ast/ast-numbering.h"
+#include "src/ast/ast.h"
 #include "src/ast/prettyprinter.h"
 #include "src/ast/scopeinfo.h"
 #include "src/ast/scopes.h"
@@ -14,6 +14,7 @@
 #include "src/compiler.h"
 #include "src/debug/debug.h"
 #include "src/debug/liveedit.h"
+#include "src/frames-inl.h"
 #include "src/isolate-inl.h"
 #include "src/macro-assembler.h"
 #include "src/snapshot/snapshot.h"
@@ -559,9 +560,17 @@ void FullCodeGenerator::EmitIntrinsicAsStubCall(CallRuntime* expr,
     }
   }
   __ Call(callable.code(), RelocInfo::CODE_TARGET);
+
+  // Reload the context register after the call as i.e. TurboFan code stubs
+  // won't preserve the context register.
+  LoadFromFrameField(StandardFrameConstants::kContextOffset,
+                     context_register());
   context()->Plug(result_register());
 }
 
+void FullCodeGenerator::EmitNewObject(CallRuntime* expr) {
+  EmitIntrinsicAsStubCall(expr, CodeFactory::FastNewObject(isolate()));
+}
 
 void FullCodeGenerator::EmitNumberToString(CallRuntime* expr) {
   EmitIntrinsicAsStubCall(expr, CodeFactory::NumberToString(isolate()));
@@ -582,6 +591,9 @@ void FullCodeGenerator::EmitToLength(CallRuntime* expr) {
   EmitIntrinsicAsStubCall(expr, CodeFactory::ToLength(isolate()));
 }
 
+void FullCodeGenerator::EmitToInteger(CallRuntime* expr) {
+  EmitIntrinsicAsStubCall(expr, CodeFactory::ToInteger(isolate()));
+}
 
 void FullCodeGenerator::EmitToNumber(CallRuntime* expr) {
   EmitIntrinsicAsStubCall(expr, CodeFactory::ToNumber(isolate()));
@@ -659,13 +671,16 @@ void FullCodeGenerator::SetExpressionAsStatementPosition(Expression* expr) {
   }
 }
 
-
-void FullCodeGenerator::SetCallPosition(Expression* expr) {
+void FullCodeGenerator::SetCallPosition(Expression* expr,
+                                        TailCallMode tail_call_mode) {
   if (expr->position() == RelocInfo::kNoPosition) return;
   RecordPosition(masm_, expr->position());
   if (info_->is_debug()) {
+    RelocInfo::Mode mode = (tail_call_mode == TailCallMode::kAllow)
+                               ? RelocInfo::DEBUG_BREAK_SLOT_AT_TAIL_CALL
+                               : RelocInfo::DEBUG_BREAK_SLOT_AT_CALL;
     // Always emit a debug break slot before a call.
-    DebugCodegen::GenerateSlot(masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_CALL);
+    DebugCodegen::GenerateSlot(masm_, mode);
   }
 }
 
@@ -678,27 +693,6 @@ void FullCodeGenerator::VisitSuperPropertyReference(
 
 void FullCodeGenerator::VisitSuperCallReference(SuperCallReference* super) {
   __ CallRuntime(Runtime::kThrowUnsupportedSuperError);
-}
-
-
-void FullCodeGenerator::EmitGeneratorNext(CallRuntime* expr) {
-  ZoneList<Expression*>* args = expr->arguments();
-  DCHECK(args->length() == 2);
-  EmitGeneratorResume(args->at(0), args->at(1), JSGeneratorObject::NEXT);
-}
-
-
-void FullCodeGenerator::EmitGeneratorReturn(CallRuntime* expr) {
-  ZoneList<Expression*>* args = expr->arguments();
-  DCHECK(args->length() == 2);
-  EmitGeneratorResume(args->at(0), args->at(1), JSGeneratorObject::RETURN);
-}
-
-
-void FullCodeGenerator::EmitGeneratorThrow(CallRuntime* expr) {
-  ZoneList<Expression*>* args = expr->arguments();
-  DCHECK(args->length() == 2);
-  EmitGeneratorResume(args->at(0), args->at(1), JSGeneratorObject::THROW);
 }
 
 
@@ -978,13 +972,6 @@ void FullCodeGenerator::EmitBreak(Statement* target) {
   }
 
   __ jmp(current->AsBreakable()->break_label());
-}
-
-void FullCodeGenerator::EmitIllegalRedeclaration() {
-  Comment cmnt(masm_, "[ Declarations");
-  Expression* illegal = scope()->GetIllegalRedeclaration();
-  SetExpressionAsStatementPosition(illegal);
-  VisitForEffect(illegal);
 }
 
 void FullCodeGenerator::VisitBreakStatement(BreakStatement* stmt) {
@@ -1276,6 +1263,11 @@ void FullCodeGenerator::VisitForOfStatement(ForOfStatement* stmt) {
   decrement_loop_depth();
 }
 
+void FullCodeGenerator::VisitThisFunction(ThisFunction* expr) {
+  LoadFromFrameField(JavaScriptFrameConstants::kFunctionOffset,
+                     result_register());
+  context()->Plug(result_register());
+}
 
 void FullCodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
   Comment cmnt(masm_, "[ TryCatchStatement");
@@ -1290,7 +1282,7 @@ void FullCodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
   Label try_entry, handler_entry, exit;
   __ jmp(&try_entry);
   __ bind(&handler_entry);
-  ClearPendingMessage();
+  if (stmt->clear_pending_message()) ClearPendingMessage();
 
   // Exception handler code, the exception is in the result register.
   // Extend the context before executing the catch block.

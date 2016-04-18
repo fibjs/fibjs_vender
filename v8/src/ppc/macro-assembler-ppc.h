@@ -1332,6 +1332,9 @@ class MacroAssembler : public Assembler {
   // Jump if either of the registers contain a smi.
   void JumpIfEitherSmi(Register reg1, Register reg2, Label* on_either_smi);
 
+  // Abort execution if argument is a number, enabled via --debug-code.
+  void AssertNotNumber(Register object);
+
   // Abort execution if argument is a smi, enabled via --debug-code.
   void AssertNotSmi(Register object);
   void AssertSmi(Register object);
@@ -1376,6 +1379,10 @@ class MacroAssembler : public Assembler {
   // Abort execution if argument is not a JSBoundFunction,
   // enabled via --debug-code.
   void AssertBoundFunction(Register object);
+
+  // Abort execution if argument is not a JSGeneratorObject,
+  // enabled via --debug-code.
+  void AssertGeneratorObject(Register object);
 
   // Abort execution if argument is not a JSReceiver, enabled via --debug-code.
   void AssertReceiver(Register object);
@@ -1506,13 +1513,15 @@ class MacroAssembler : public Assembler {
   // If allocation info is present, condition flags are set to eq.
   void TestJSArrayForAllocationMemento(Register receiver_reg,
                                        Register scratch_reg,
+                                       Register scratch2_reg,
                                        Label* no_memento_found);
 
   void JumpIfJSArrayHasAllocationMemento(Register receiver_reg,
                                          Register scratch_reg,
+                                         Register scratch2_reg,
                                          Label* memento_found) {
     Label no_memento_found;
-    TestJSArrayForAllocationMemento(receiver_reg, scratch_reg,
+    TestJSArrayForAllocationMemento(receiver_reg, scratch_reg, scratch2_reg,
                                     &no_memento_found);
     beq(memento_found);
     bind(&no_memento_found);

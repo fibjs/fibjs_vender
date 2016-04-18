@@ -69,6 +69,11 @@ class IA32OperandConverter : public InstructionOperandConverter {
 
   Immediate ToImmediate(InstructionOperand* operand) {
     Constant constant = ToConstant(operand);
+    if (constant.type() == Constant::kInt32 &&
+        constant.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+      return Immediate(reinterpret_cast<Address>(constant.ToInt32()),
+                       constant.rmode());
+    }
     switch (constant.type()) {
       case Constant::kInt32:
         return Immediate(constant.ToInt32());
@@ -334,6 +339,39 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
     __ bind(&done);                                          \
   } while (false)
 
+#define ASSEMBLE_COMPARE(asm_instr)                                   \
+  do {                                                                \
+    if (AddressingModeField::decode(instr->opcode()) != kMode_None) { \
+      size_t index = 0;                                               \
+      Operand left = i.MemoryOperand(&index);                         \
+      if (HasImmediateInput(instr, index)) {                          \
+        __ asm_instr(left, i.InputImmediate(index));                  \
+      } else {                                                        \
+        __ asm_instr(left, i.InputRegister(index));                   \
+      }                                                               \
+    } else {                                                          \
+      if (HasImmediateInput(instr, 1)) {                              \
+        if (instr->InputAt(0)->IsRegister()) {                        \
+          __ asm_instr(i.InputRegister(0), i.InputImmediate(1));      \
+        } else {                                                      \
+          __ asm_instr(i.InputOperand(0), i.InputImmediate(1));       \
+        }                                                             \
+      } else {                                                        \
+        if (instr->InputAt(1)->IsRegister()) {                        \
+          __ asm_instr(i.InputRegister(0), i.InputRegister(1));       \
+        } else {                                                      \
+          __ asm_instr(i.InputRegister(0), i.InputOperand(1));        \
+        }                                                             \
+      }                                                               \
+    }                                                                 \
+  } while (0)
+
+void CodeGenerator::AssembleDeconstructFrame() {
+  __ mov(esp, ebp);
+  __ pop(ebp);
+}
+
+void CodeGenerator::AssembleSetupStackPointer() {}
 
 void CodeGenerator::AssembleDeconstructActivationRecord(int stack_param_delta) {
   int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
@@ -350,7 +388,7 @@ void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
     __ sub(esp, Immediate(-sp_slot_delta * kPointerSize));
     frame_access_state()->IncreaseSPDelta(-sp_slot_delta);
   }
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     __ mov(ebp, MemOperand(ebp, 0));
   }
   frame_access_state()->SetFrameAccessToSP();
@@ -430,6 +468,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ add(reg, Immediate(Code::kHeaderSize - kHeapObjectTag));
         __ jmp(reg);
       }
+      frame_access_state()->ClearSPDelta();
+      break;
+    }
+    case kArchTailCallAddress: {
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
+      CHECK(!HasImmediateInput(instr, 0));
+      Register reg = i.InputRegister(0);
+      __ jmp(reg);
       frame_access_state()->ClearSPDelta();
       break;
     }
@@ -518,7 +565,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ mov(i.OutputRegister(), ebp);
       break;
     case kArchParentFramePointer:
-      if (frame_access_state()->frame()->needs_frame()) {
+      if (frame_access_state()->has_frame()) {
         __ mov(i.OutputRegister(), Operand(ebp, 0));
       } else {
         __ mov(i.OutputRegister(), ebp);
@@ -579,38 +626,22 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       }
       break;
     case kIA32Cmp:
-      if (AddressingModeField::decode(instr->opcode()) != kMode_None) {
-        size_t index = 0;
-        Operand operand = i.MemoryOperand(&index);
-        if (HasImmediateInput(instr, index)) {
-          __ cmp(operand, i.InputImmediate(index));
-        } else {
-          __ cmp(operand, i.InputRegister(index));
-        }
-      } else {
-        if (HasImmediateInput(instr, 1)) {
-          __ cmp(i.InputOperand(0), i.InputImmediate(1));
-        } else {
-          __ cmp(i.InputRegister(0), i.InputOperand(1));
-        }
-      }
+      ASSEMBLE_COMPARE(cmp);
+      break;
+    case kIA32Cmp16:
+      ASSEMBLE_COMPARE(cmpw);
+      break;
+    case kIA32Cmp8:
+      ASSEMBLE_COMPARE(cmpb);
       break;
     case kIA32Test:
-      if (AddressingModeField::decode(instr->opcode()) != kMode_None) {
-        size_t index = 0;
-        Operand operand = i.MemoryOperand(&index);
-        if (HasImmediateInput(instr, index)) {
-          __ test(operand, i.InputImmediate(index));
-        } else {
-          __ test(i.InputRegister(index), operand);
-        }
-      } else {
-        if (HasImmediateInput(instr, 1)) {
-          __ test(i.InputOperand(0), i.InputImmediate(1));
-        } else {
-          __ test(i.InputRegister(0), i.InputOperand(1));
-        }
-      }
+      ASSEMBLE_COMPARE(test);
+      break;
+    case kIA32Test16:
+      ASSEMBLE_COMPARE(test_w);
+      break;
+    case kIA32Test8:
+      ASSEMBLE_COMPARE(test_b);
       break;
     case kIA32Imul:
       if (HasImmediateInput(instr, 1)) {
@@ -729,6 +760,18 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       if (use_temp) {
         __ Move(i.OutputRegister(0), i.TempRegister(0));
       }
+      break;
+    }
+    case kIA32MulPair: {
+      __ imul(i.OutputRegister(1), i.InputOperand(0));
+      __ mov(i.TempRegister(0), i.InputOperand(1));
+      __ imul(i.TempRegister(0), i.InputOperand(2));
+      __ add(i.OutputRegister(1), i.TempRegister(0));
+      __ mov(i.OutputRegister(0), i.InputOperand(0));
+      // Multiplies the low words and stores them in eax and edx.
+      __ mul(i.InputRegister(2));
+      __ add(i.OutputRegister(1), i.TempRegister(0));
+
       break;
     }
     case kIA32ShlPair:
@@ -1599,7 +1642,7 @@ void CodeGenerator::AssembleDeoptimizerCall(
 
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     if (descriptor->IsCFunctionCall()) {
       __ push(ebp);
       __ mov(ebp, esp);
@@ -1608,11 +1651,7 @@ void CodeGenerator::AssemblePrologue() {
     } else {
       __ StubPrologue(info()->GetOutputStackFrameType());
     }
-  } else {
-    frame()->SetElidedFrameSizeInSlots(kPCOnStackSize / kPointerSize);
   }
-  frame_access_state()->SetFrameAccessToDefault();
-
   int stack_shrink_slots = frame()->GetSpillSlotCount();
   if (info()->is_osr()) {
     // TurboFan OSR-compiled functions cannot be entered directly.
@@ -1658,17 +1697,15 @@ void CodeGenerator::AssembleReturn() {
   }
 
   if (descriptor->IsCFunctionCall()) {
-    __ mov(esp, ebp);  // Move stack pointer back to frame pointer.
-    __ pop(ebp);       // Pop caller's frame pointer.
-  } else if (frame()->needs_frame()) {
+    AssembleDeconstructFrame();
+  } else if (frame_access_state()->has_frame()) {
     // Canonicalize JSFunction return sites for now.
     if (return_label_.is_bound()) {
       __ jmp(&return_label_);
       return;
     } else {
       __ bind(&return_label_);
-      __ mov(esp, ebp);  // Move stack pointer back to frame pointer.
-      __ pop(ebp);       // Pop caller's frame pointer.
+      AssembleDeconstructFrame();
     }
   }
   size_t pop_size = descriptor->StackParameterCount() * kPointerSize;

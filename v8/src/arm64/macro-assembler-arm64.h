@@ -788,6 +788,9 @@ class MacroAssembler : public Assembler {
   // If emit_debug_code() is false, this emits no code.
   void AssertStackConsistency();
 
+  // Emits a runtime assert that the CSP is aligned.
+  void AssertCspAligned();
+
   // Preserve the callee-saved registers (as defined by AAPCS64).
   //
   // Higher-numbered registers are pushed before lower-numbered registers, and
@@ -862,7 +865,6 @@ class MacroAssembler : public Assembler {
   inline void InitializeRootRegister();
 
   void AssertFPCRState(Register fpcr = NoReg);
-  void ConfigureFPCR();
   void CanonicalizeNaN(const FPRegister& dst, const FPRegister& src);
   void CanonicalizeNaN(const FPRegister& reg) {
     CanonicalizeNaN(reg, reg);
@@ -967,6 +969,10 @@ class MacroAssembler : public Assembler {
   // Abort execution if argument is not a JSFunction, enabled via --debug-code.
   void AssertFunction(Register object);
 
+  // Abort execution if argument is not a JSGeneratorObject,
+  // enabled via --debug-code.
+  void AssertGeneratorObject(Register object);
+
   // Abort execution if argument is not a JSBoundFunction,
   // enabled via --debug-code.
   void AssertBoundFunction(Register object);
@@ -987,6 +993,7 @@ class MacroAssembler : public Assembler {
 
   // Abort execution if argument is not a number (heap number or smi).
   void AssertNumber(Register value);
+  void AssertNotNumber(Register value);
 
   void JumpIfHeapNumber(Register object, Label* on_heap_number,
                         SmiCheckType smi_check_type = DONT_DO_SMI_CHECK);

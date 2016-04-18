@@ -55,6 +55,7 @@
     <ClInclude Include="src\atomic-utils.h" />
     <ClInclude Include="src\background-parsing-task.h" />
     <ClInclude Include="src\bailout-reason.h" />
+    <ClInclude Include="src\base\accounting-allocator.h" />
     <ClInclude Include="src\base\adapters.h" />
     <ClInclude Include="src\base\atomicops.h" />
     <ClInclude Include="src\base\atomicops_internals_arm64_gcc.h" />
@@ -75,6 +76,7 @@
     <ClInclude Include="src\base\cpu.h" />
     <ClInclude Include="src\base\division-by-constant.h" />
     <ClInclude Include="src\base\flags.h" />
+    <ClInclude Include="src\base\format-macros.h" />
     <ClInclude Include="src\base\functional.h" />
     <ClInclude Include="src\base\iterator.h" />
     <ClInclude Include="src\base\lazy-instance.h" />
@@ -108,6 +110,7 @@
     <ClInclude Include="src\char-predicates.h" />
     <ClInclude Include="src\checks.h" />
     <ClInclude Include="src\code-factory.h" />
+    <ClInclude Include="src\code-stub-assembler.h" />
     <ClInclude Include="src\code-stubs.h" />
     <ClInclude Include="src\codegen.h" />
     <ClInclude Include="src\collector.h" />
@@ -126,9 +129,9 @@
     <ClInclude Include="src\compiler\bytecode-graph-builder.h" />
     <ClInclude Include="src\compiler\change-lowering.h" />
     <ClInclude Include="src\compiler\coalesced-live-ranges.h" />
+    <ClInclude Include="src\compiler\code-assembler.h" />
     <ClInclude Include="src\compiler\code-generator-impl.h" />
     <ClInclude Include="src\compiler\code-generator.h" />
-    <ClInclude Include="src\compiler\code-stub-assembler.h" />
     <ClInclude Include="src\compiler\common-node-cache.h" />
     <ClInclude Include="src\compiler\common-operator-reducer.h" />
     <ClInclude Include="src\compiler\common-operator.h" />
@@ -137,6 +140,7 @@
     <ClInclude Include="src\compiler\control-flow-optimizer.h" />
     <ClInclude Include="src\compiler\dead-code-elimination.h" />
     <ClInclude Include="src\compiler\diamond.h" />
+    <ClInclude Include="src\compiler\effect-control-linearizer.h" />
     <ClInclude Include="src\compiler\escape-analysis-reducer.h" />
     <ClInclude Include="src\compiler\escape-analysis.h" />
     <ClInclude Include="src\compiler\frame-elider.h" />
@@ -225,7 +229,6 @@
     <ClInclude Include="src\crankshaft\compilation-phase.h" />
     <ClInclude Include="src\crankshaft\hydrogen-alias-analysis.h" />
     <ClInclude Include="src\crankshaft\hydrogen-bce.h" />
-    <ClInclude Include="src\crankshaft\hydrogen-bch.h" />
     <ClInclude Include="src\crankshaft\hydrogen-canonicalize.h" />
     <ClInclude Include="src\crankshaft\hydrogen-check-elimination.h" />
     <ClInclude Include="src\crankshaft\hydrogen-dce.h" />
@@ -338,7 +341,6 @@
     <ClInclude Include="src\heap\slot-set.h" />
     <ClInclude Include="src\heap\spaces-inl.h" />
     <ClInclude Include="src\heap\spaces.h" />
-    <ClInclude Include="src\heap\store-buffer-inl.h" />
     <ClInclude Include="src\heap\store-buffer.h" />
     <ClInclude Include="src\ia32\assembler-ia32-inl.h" />
     <ClInclude Include="src\ia32\assembler-ia32.h" />
@@ -368,8 +370,8 @@
     <ClInclude Include="src\interpreter\control-flow-builders.h" />
     <ClInclude Include="src\interpreter\handler-table-builder.h" />
     <ClInclude Include="src\interpreter\interpreter-assembler.h" />
+    <ClInclude Include="src\interpreter\interpreter-intrinsics.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
-    <ClInclude Include="src\interpreter\register-translator.h" />
     <ClInclude Include="src\interpreter\source-position-table.h" />
     <ClInclude Include="src\isolate-inl.h" />
     <ClInclude Include="src\isolate.h" />
@@ -412,6 +414,7 @@
     <ClInclude Include="src\parsing\scanner.h" />
     <ClInclude Include="src\parsing\token.h" />
     <ClInclude Include="src\pending-compilation-error-handler.h" />
+    <ClInclude Include="src\perf-jit.h" />
     <ClInclude Include="src\ppc\assembler-ppc-inl.h" />
     <ClInclude Include="src\ppc\assembler-ppc.h" />
     <ClInclude Include="src\ppc\code-stubs-ppc.h" />
@@ -519,6 +522,7 @@
     <ClInclude Include="src\wasm\decoder.h" />
     <ClInclude Include="src\wasm\encoder.h" />
     <ClInclude Include="src\wasm\module-decoder.h" />
+    <ClInclude Include="src\wasm\switch-logic.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
     <ClInclude Include="src\wasm\wasm-js.h" />
     <ClInclude Include="src\wasm\wasm-macro-gen.h" />
@@ -568,6 +572,7 @@
     <ClCompile Include="src\ast\variables.cc" />
     <ClCompile Include="src\background-parsing-task.cc" />
     <ClCompile Include="src\bailout-reason.cc" />
+    <ClCompile Include="src\base\accounting-allocator.cc" />
     <ClCompile Include="src\base\atomicops_internals_x86_gcc.cc" />
     <ClCompile Include="src\base\bits.cc" />
     <ClCompile Include="src\base\cpu.cc" />
@@ -601,6 +606,7 @@
     <ClCompile Include="src\cancelable-task.cc" />
     <ClCompile Include="src\char-predicates.cc" />
     <ClCompile Include="src\code-factory.cc" />
+    <ClCompile Include="src\code-stub-assembler.cc" />
     <ClCompile Include="src\code-stubs-hydrogen.cc" />
     <ClCompile Include="src\code-stubs.cc" />
     <ClCompile Include="src\codegen.cc" />
@@ -620,8 +626,8 @@
     <ClCompile Include="src\compiler\c-linkage.cc" />
     <ClCompile Include="src\compiler\change-lowering.cc" />
     <ClCompile Include="src\compiler\coalesced-live-ranges.cc" />
+    <ClCompile Include="src\compiler\code-assembler.cc" />
     <ClCompile Include="src\compiler\code-generator.cc" />
-    <ClCompile Include="src\compiler\code-stub-assembler.cc" />
     <ClCompile Include="src\compiler\common-node-cache.cc" />
     <ClCompile Include="src\compiler\common-operator-reducer.cc" />
     <ClCompile Include="src\compiler\common-operator.cc" />
@@ -629,6 +635,7 @@
     <ClCompile Include="src\compiler\control-equivalence.cc" />
     <ClCompile Include="src\compiler\control-flow-optimizer.cc" />
     <ClCompile Include="src\compiler\dead-code-elimination.cc" />
+    <ClCompile Include="src\compiler\effect-control-linearizer.cc" />
     <ClCompile Include="src\compiler\escape-analysis-reducer.cc" />
     <ClCompile Include="src\compiler\escape-analysis.cc" />
     <ClCompile Include="src\compiler\frame-elider.cc" />
@@ -722,7 +729,6 @@
     <ClCompile Include="src\counters.cc" />
     <ClCompile Include="src\crankshaft\compilation-phase.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-bce.cc" />
-    <ClCompile Include="src\crankshaft\hydrogen-bch.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-canonicalize.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-check-elimination.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-dce.cc" />
@@ -881,8 +887,8 @@
     <ClCompile Include="src\interpreter\control-flow-builders.cc" />
     <ClCompile Include="src\interpreter\handler-table-builder.cc" />
     <ClCompile Include="src\interpreter\interpreter-assembler.cc" />
+    <ClCompile Include="src\interpreter\interpreter-intrinsics.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
-    <ClCompile Include="src\interpreter\register-translator.cc" />
     <ClCompile Include="src\interpreter\source-position-table.cc" />
     <ClCompile Include="src\isolate.cc" />
     <ClCompile Include="src\keys.cc" />
@@ -911,6 +917,7 @@
     <ClCompile Include="src\parsing\scanner.cc" />
     <ClCompile Include="src\parsing\token.cc" />
     <ClCompile Include="src\pending-compilation-error-handler.cc" />
+    <ClCompile Include="src\perf-jit.cc" />
     <ClCompile Include="src\ppc\assembler-ppc.cc" />
     <ClCompile Include="src\ppc\builtins-ppc.cc" />
     <ClCompile Include="src\ppc\code-stubs-ppc.cc" />
@@ -1026,6 +1033,8 @@
     <ClCompile Include="src\wasm\ast-decoder.cc" />
     <ClCompile Include="src\wasm\encoder.cc" />
     <ClCompile Include="src\wasm\module-decoder.cc" />
+    <ClCompile Include="src\wasm\switch-logic.cc" />
+    <ClCompile Include="src\wasm\wasm-external-refs.cc" />
     <ClCompile Include="src\wasm\wasm-js.cc" />
     <ClCompile Include="src\wasm\wasm-module.cc" />
     <ClCompile Include="src\wasm\wasm-opcodes.cc" />

@@ -12,9 +12,9 @@
 #include "src/heap/heap.h"
 #include "src/heap/incremental-marking-inl.h"
 #include "src/heap/mark-compact.h"
+#include "src/heap/remembered-set.h"
 #include "src/heap/spaces-inl.h"
 #include "src/heap/store-buffer.h"
-#include "src/heap/store-buffer-inl.h"
 #include "src/isolate.h"
 #include "src/list-inl.h"
 #include "src/log.h"
@@ -251,6 +251,12 @@ AllocationResult Heap::AllocateRaw(int size_in_bytes, AllocationSpace space,
   } else {
     old_gen_exhausted_ = true;
   }
+
+  if (!old_gen_exhausted_ && incremental_marking()->black_allocation() &&
+      space != OLD_SPACE) {
+    Marking::MarkBlack(Marking::MarkBitFrom(object));
+    MemoryChunk::IncrementLiveBytesFromGC(object, size_in_bytes);
+  }
   return allocation;
 }
 
@@ -399,9 +405,20 @@ void Heap::RecordWrite(Object* object, int offset, Object* o) {
   if (!InNewSpace(o) || !object->IsHeapObject() || InNewSpace(object)) {
     return;
   }
-  Page* page = Page::FromAddress(reinterpret_cast<Address>(object));
-  Address slot = HeapObject::cast(object)->address() + offset;
-  RememberedSet<OLD_TO_NEW>::Insert(page, slot);
+  RememberedSet<OLD_TO_NEW>::Insert(
+      Page::FromAddress(reinterpret_cast<Address>(object)),
+      HeapObject::cast(object)->address() + offset);
+}
+
+void Heap::RecordFixedArrayElements(FixedArray* array, int offset, int length) {
+  if (InNewSpace(array)) return;
+  Page* page = Page::FromAddress(reinterpret_cast<Address>(array));
+  for (int i = 0; i < length; i++) {
+    if (!InNewSpace(array->get(offset + i))) continue;
+    RememberedSet<OLD_TO_NEW>::Insert(
+        page,
+        reinterpret_cast<Address>(array->RawFieldOfElementAt(offset + i)));
+  }
 }
 
 
@@ -438,29 +455,17 @@ bool Heap::AllowedToBeMigrated(HeapObject* obj, AllocationSpace dst) {
   return false;
 }
 
-
 void Heap::CopyBlock(Address dst, Address src, int byte_size) {
   CopyWords(reinterpret_cast<Object**>(dst), reinterpret_cast<Object**>(src),
             static_cast<size_t>(byte_size / kPointerSize));
 }
 
+void Heap::UpdateNewSpaceAllocationCounter() {
+  new_space_allocation_counter_ = NewSpaceAllocationCounter();
+}
 
-void Heap::MoveBlock(Address dst, Address src, int byte_size) {
-  DCHECK(IsAligned(byte_size, kPointerSize));
-
-  int size_in_words = byte_size / kPointerSize;
-
-  if ((dst < src) || (dst >= (src + byte_size))) {
-    Object** src_slot = reinterpret_cast<Object**>(src);
-    Object** dst_slot = reinterpret_cast<Object**>(dst);
-    Object** end_slot = src_slot + size_in_words;
-
-    while (src_slot != end_slot) {
-      *dst_slot++ = *src_slot++;
-    }
-  } else {
-    MemMove(dst, src, static_cast<size_t>(byte_size));
-  }
+size_t Heap::NewSpaceAllocationCounter() {
+  return new_space_allocation_counter_ + new_space()->AllocatedSinceLastGC();
 }
 
 template <Heap::FindMementoMode mode>

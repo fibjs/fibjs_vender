@@ -1359,6 +1359,14 @@ void MacroAssembler::AssertStackConsistency() {
   }
 }
 
+void MacroAssembler::AssertCspAligned() {
+  if (emit_debug_code() && use_real_aborts()) {
+    // TODO(titzer): use a real assert for alignment check?
+    UseScratchRegisterScope scope(this);
+    Register temp = scope.AcquireX();
+    ldr(temp, MemOperand(csp));
+  }
+}
 
 void MacroAssembler::AssertFPCRState(Register fpcr) {
   if (emit_debug_code()) {
@@ -1368,10 +1376,6 @@ void MacroAssembler::AssertFPCRState(Register fpcr) {
       fpcr = temps.AcquireX();
       Mrs(fpcr, FPCR);
     }
-
-    // Settings overridden by ConfiugreFPCR():
-    //   - Assert that default-NaN mode is set.
-    Tbz(fpcr, DN_offset, &unexpected_mode);
 
     // Settings left to their default values:
     //   - Assert that flush-to-zero is not set.
@@ -1389,31 +1393,13 @@ void MacroAssembler::AssertFPCRState(Register fpcr) {
 }
 
 
-void MacroAssembler::ConfigureFPCR() {
-  UseScratchRegisterScope temps(this);
-  Register fpcr = temps.AcquireX();
-  Mrs(fpcr, FPCR);
-
-  // If necessary, enable default-NaN mode. The default values of the other FPCR
-  // options should be suitable, and AssertFPCRState will verify that.
-  Label no_write_required;
-  Tbnz(fpcr, DN_offset, &no_write_required);
-
-  Orr(fpcr, fpcr, DN_mask);
-  Msr(FPCR, fpcr);
-
-  Bind(&no_write_required);
-  AssertFPCRState(fpcr);
-}
-
-
 void MacroAssembler::CanonicalizeNaN(const FPRegister& dst,
                                      const FPRegister& src) {
   AssertFPCRState();
 
-  // With DN=1 and RMode=FPTieEven, subtracting 0.0 preserves all inputs except
-  // for NaNs, which become the default NaN. We use fsub rather than fadd
-  // because sub preserves -0.0 inputs: -0.0 + 0.0 = 0.0, but -0.0 - 0.0 = -0.0.
+  // Subtracting 0.0 preserves all inputs except for signalling NaNs, which
+  // become quiet NaNs. We use fsub rather than fadd because fsub preserves -0.0
+  // inputs: -0.0 + 0.0 = 0.0, but -0.0 - 0.0 = -0.0.
   Fsub(dst, src, fp_zero);
 }
 
@@ -1552,24 +1538,38 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver,
                                                      Register scratch1,
                                                      Register scratch2,
                                                      Label* no_memento_found) {
-  ExternalReference new_space_start =
-      ExternalReference::new_space_start(isolate());
+  Label map_check;
+  Label top_check;
   ExternalReference new_space_allocation_top =
       ExternalReference::new_space_allocation_top_address(isolate());
+  const int kMementoMapOffset = JSArray::kSize - kHeapObjectTag;
+  const int kMementoEndOffset = kMementoMapOffset + AllocationMemento::kSize;
 
-  Add(scratch1, receiver,
-      JSArray::kSize + AllocationMemento::kSize - kHeapObjectTag);
-  Cmp(scratch1, new_space_start);
-  B(lt, no_memento_found);
-
-  Mov(scratch2, new_space_allocation_top);
-  Ldr(scratch2, MemOperand(scratch2));
-  Cmp(scratch1, scratch2);
+  // Bail out if the object is not in new space.
+  JumpIfNotInNewSpace(receiver, no_memento_found);
+  Add(scratch1, receiver, kMementoEndOffset);
+  // If the object is in new space, we need to check whether it is on the same
+  // page as the current top.
+  Eor(scratch2, scratch1, new_space_allocation_top);
+  Tst(scratch2, ~Page::kPageAlignmentMask);
+  B(eq, &top_check);
+  // The object is on a different page than allocation top. Bail out if the
+  // object sits on the page boundary as no memento can follow and we cannot
+  // touch the memory following it.
+  Eor(scratch2, scratch1, receiver);
+  Tst(scratch2, ~Page::kPageAlignmentMask);
+  B(ne, no_memento_found);
+  // Continue with the actual map check.
+  jmp(&map_check);
+  // If top is on the same page as the current object, we need to check whether
+  // we are below top.
+  bind(&top_check);
+  Cmp(scratch1, new_space_allocation_top);
   B(gt, no_memento_found);
-
-  Ldr(scratch1, MemOperand(scratch1, -AllocationMemento::kSize));
-  Cmp(scratch1,
-      Operand(isolate()->factory()->allocation_memento_map()));
+  // Memento map check.
+  bind(&map_check);
+  Ldr(scratch1, MemOperand(receiver, kMementoMapOffset));
+  Cmp(scratch1, Operand(isolate()->factory()->allocation_memento_map()));
 }
 
 
@@ -1641,6 +1641,17 @@ void MacroAssembler::AssertBoundFunction(Register object) {
   }
 }
 
+void MacroAssembler::AssertGeneratorObject(Register object) {
+  if (emit_debug_code()) {
+    AssertNotSmi(object, kOperandIsASmiAndNotAGeneratorObject);
+
+    UseScratchRegisterScope temps(this);
+    Register temp = temps.AcquireX();
+
+    CompareObjectType(object, temp, temp, JS_GENERATOR_OBJECT_TYPE);
+    Check(eq, kOperandIsNotAGeneratorObject);
+  }
+}
 
 void MacroAssembler::AssertReceiver(Register object) {
   if (emit_debug_code()) {
@@ -1690,6 +1701,18 @@ void MacroAssembler::AssertPositiveOrZero(Register value) {
     int sign_bit = value.Is64Bits() ? kXSignBit : kWSignBit;
     Tbz(value, sign_bit, &done);
     Abort(kUnexpectedNegativeValue);
+    Bind(&done);
+  }
+}
+
+void MacroAssembler::AssertNotNumber(Register value) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    Tst(value, kSmiTagMask);
+    Check(ne, kOperandIsANumber);
+    Label done;
+    JumpIfNotHeapNumber(value, &done);
+    Abort(kOperandIsANumber);
     Bind(&done);
   }
 }
@@ -4002,13 +4025,12 @@ void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
   Str(scratch1, MemOperand(scratch2));
   // Call stub on end of buffer.
   // Check for end of buffer.
-  DCHECK(StoreBuffer::kStoreBufferOverflowBit ==
-         (1 << (14 + kPointerSizeLog2)));
+  Tst(scratch1, StoreBuffer::kStoreBufferMask);
   if (and_then == kFallThroughAtEnd) {
-    Tbz(scratch1, (14 + kPointerSizeLog2), &done);
+    B(ne, &done);
   } else {
     DCHECK(and_then == kReturnAtEnd);
-    Tbnz(scratch1, (14 + kPointerSizeLog2), &store_buffer_overflow);
+    B(eq, &store_buffer_overflow);
     Ret();
   }
 

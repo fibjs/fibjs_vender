@@ -615,15 +615,17 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
         call->InputAt(static_cast<int>(buffer->descriptor->InputCount()));
 
     // If it was a syntactic tail call we need to drop the current frame and
-    // an arguments adaptor frame on top of it (if the latter is present).
+    // all the frames on top of it that are either an arguments adaptor frame
+    // or a tail caller frame.
     if (buffer->descriptor->SupportsTailCalls()) {
       frame_state = NodeProperties::GetFrameStateInput(frame_state, 0);
       buffer->frame_state_descriptor =
           buffer->frame_state_descriptor->outer_state();
-
-      if (buffer->frame_state_descriptor != nullptr &&
-          buffer->frame_state_descriptor->type() ==
-              FrameStateType::kArgumentsAdaptor) {
+      while (buffer->frame_state_descriptor != nullptr &&
+             (buffer->frame_state_descriptor->type() ==
+                  FrameStateType::kArgumentsAdaptor ||
+              buffer->frame_state_descriptor->type() ==
+                  FrameStateType::kTailCallerFunction)) {
         frame_state = NodeProperties::GetFrameStateInput(frame_state, 0);
         buffer->frame_state_descriptor =
             buffer->frame_state_descriptor->outer_state();
@@ -877,6 +879,8 @@ void InstructionSelector::VisitNode(Node* node) {
     case IrOpcode::kInt32Constant:
     case IrOpcode::kInt64Constant:
     case IrOpcode::kExternalConstant:
+    case IrOpcode::kRelocatableInt32Constant:
+    case IrOpcode::kRelocatableInt64Constant:
       return VisitConstant(node);
     case IrOpcode::kFloat32Constant:
       return MarkAsFloat32(node), VisitConstant(node);
@@ -1020,6 +1024,8 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord32(node), VisitChangeFloat64ToInt32(node);
     case IrOpcode::kChangeFloat64ToUint32:
       return MarkAsWord32(node), VisitChangeFloat64ToUint32(node);
+    case IrOpcode::kTruncateFloat64ToUint32:
+      return MarkAsWord32(node), VisitTruncateFloat64ToUint32(node);
     case IrOpcode::kTruncateFloat32ToInt32:
       return MarkAsWord32(node), VisitTruncateFloat32ToInt32(node);
     case IrOpcode::kTruncateFloat32ToUint32:
@@ -1158,6 +1164,10 @@ void InstructionSelector::VisitNode(Node* node) {
       MarkAsWord32(NodeProperties::FindProjection(node, 0));
       MarkAsWord32(NodeProperties::FindProjection(node, 1));
       return VisitInt32PairSub(node);
+    case IrOpcode::kInt32PairMul:
+      MarkAsWord32(NodeProperties::FindProjection(node, 0));
+      MarkAsWord32(NodeProperties::FindProjection(node, 1));
+      return VisitInt32PairMul(node);
     case IrOpcode::kWord32PairShl:
       MarkAsWord32(NodeProperties::FindProjection(node, 0));
       MarkAsWord32(NodeProperties::FindProjection(node, 1));
@@ -1186,7 +1196,6 @@ void InstructionSelector::VisitLoadStackPointer(Node* node) {
 
 void InstructionSelector::VisitLoadFramePointer(Node* node) {
   OperandGenerator g(this);
-  frame_->MarkNeedsFrame();
   Emit(kArchFramePointer, g.DefineAsRegister(node));
 }
 
@@ -1399,6 +1408,8 @@ void InstructionSelector::VisitInt32PairAdd(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitInt32PairSub(Node* node) { UNIMPLEMENTED(); }
 
+void InstructionSelector::VisitInt32PairMul(Node* node) { UNIMPLEMENTED(); }
+
 void InstructionSelector::VisitWord32PairShl(Node* node) { UNIMPLEMENTED(); }
 
 void InstructionSelector::VisitWord32PairShr(Node* node) { UNIMPLEMENTED(); }
@@ -1440,7 +1451,7 @@ void InstructionSelector::VisitIfException(Node* node) {
   OperandGenerator g(this);
   Node* call = node->InputAt(1);
   DCHECK_EQ(IrOpcode::kCall, call->opcode());
-  const CallDescriptor* descriptor = OpParameter<const CallDescriptor*>(call);
+  const CallDescriptor* descriptor = CallDescriptorOf(call->op());
   Emit(kArchNop,
        g.DefineAsLocation(node, descriptor->GetReturnLocation(0),
                           descriptor->GetReturnType(0).representation()));
@@ -1485,6 +1496,7 @@ void InstructionSelector::VisitProjection(Node* node) {
     case IrOpcode::kTryTruncateFloat64ToUint64:
     case IrOpcode::kInt32PairAdd:
     case IrOpcode::kInt32PairSub:
+    case IrOpcode::kInt32PairMul:
     case IrOpcode::kWord32PairShl:
     case IrOpcode::kWord32PairShr:
     case IrOpcode::kWord32PairSar:
@@ -1511,7 +1523,7 @@ void InstructionSelector::VisitConstant(Node* node) {
 
 void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
   OperandGenerator g(this);
-  const CallDescriptor* descriptor = OpParameter<const CallDescriptor*>(node);
+  const CallDescriptor* descriptor = CallDescriptorOf(node->op());
 
   FrameStateDescriptor* frame_state_descriptor = nullptr;
   if (descriptor->NeedsFrameState()) {
@@ -1543,12 +1555,14 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
     buffer.instruction_args.push_back(g.Label(handler));
   }
 
-  // (arm64 only) caller uses JSSP but callee might destroy it.
-  if (descriptor->UseNativeStack() &&
-      !linkage()->GetIncomingDescriptor()->UseNativeStack()) {
-    flags |= CallDescriptor::kRestoreJSSP;
+  bool from_native_stack = linkage()->GetIncomingDescriptor()->UseNativeStack();
+  bool to_native_stack = descriptor->UseNativeStack();
+  if (from_native_stack != to_native_stack) {
+    // (arm64 only) Mismatch in the use of stack pointers. One or the other
+    // has to be restored manually by the code generator.
+    flags |= to_native_stack ? CallDescriptor::kRestoreJSSP
+                             : CallDescriptor::kRestoreCSP;
   }
-
 
   // Select the appropriate opcode based on the call type.
   InstructionCode opcode = kArchNop;
@@ -1577,7 +1591,7 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
 
 void InstructionSelector::VisitTailCall(Node* node) {
   OperandGenerator g(this);
-  CallDescriptor const* descriptor = OpParameter<CallDescriptor const*>(node);
+  CallDescriptor const* descriptor = CallDescriptorOf(node->op());
   DCHECK_NE(0, descriptor->flags() & CallDescriptor::kSupportsTailCalls);
   DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kPatchableCallSite);
   DCHECK_EQ(0, descriptor->flags() & CallDescriptor::kNeedsNopAfterCall);
@@ -1622,6 +1636,9 @@ void InstructionSelector::VisitTailCall(Node* node) {
           break;
         case CallDescriptor::kCallJSFunction:
           opcode = kArchTailCallJSFunction;
+          break;
+        case CallDescriptor::kCallAddress:
+          opcode = kArchTailCallAddress;
           break;
         default:
           UNREACHABLE();

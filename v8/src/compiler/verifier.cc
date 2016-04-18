@@ -345,6 +345,10 @@ void Verifier::Visitor::Check(Node* node) {
       // Type is a number.
       CheckUpperIs(node, Type::Number());
       break;
+    case IrOpcode::kRelocatableInt32Constant:
+    case IrOpcode::kRelocatableInt64Constant:
+      CHECK_EQ(0, input_count);
+      break;
     case IrOpcode::kHeapConstant:
       // Constants have no inputs.
       CHECK_EQ(0, input_count);
@@ -492,6 +496,18 @@ void Verifier::Visitor::Check(Node* node) {
       // Type is Boolean.
       CheckUpperIs(node, Type::Boolean());
       break;
+    case IrOpcode::kJSToInteger:
+      // Type is OrderedNumber.
+      CheckUpperIs(node, Type::OrderedNumber());
+      break;
+    case IrOpcode::kJSToLength:
+      // Type is OrderedNumber.
+      CheckUpperIs(node, Type::OrderedNumber());
+      break;
+    case IrOpcode::kJSToName:
+      // Type is Name.
+      CheckUpperIs(node, Type::Name());
+      break;
     case IrOpcode::kJSToNumber:
       // Type is Number.
       CheckUpperIs(node, Type::Number());
@@ -499,10 +515,6 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kJSToString:
       // Type is String.
       CheckUpperIs(node, Type::String());
-      break;
-    case IrOpcode::kJSToName:
-      // Type is Name.
-      CheckUpperIs(node, Type::Name());
       break;
     case IrOpcode::kJSToObject:
       // Type is Receiver.
@@ -638,17 +650,27 @@ void Verifier::Visitor::Check(Node* node) {
       CheckUpperIs(node, Type::Number());
       break;
     case IrOpcode::kNumberEqual:
+      // (NumberOrUndefined, NumberOrUndefined) -> Boolean
+      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
+      CheckValueInputIs(node, 1, Type::NumberOrUndefined());
+      CheckUpperIs(node, Type::Boolean());
+      break;
     case IrOpcode::kNumberLessThan:
     case IrOpcode::kNumberLessThanOrEqual:
       // (Number, Number) -> Boolean
-      CheckValueInputIs(node, 0, Type::Number());
-      CheckValueInputIs(node, 1, Type::Number());
+      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
+      CheckValueInputIs(node, 1, Type::NumberOrUndefined());
       CheckUpperIs(node, Type::Boolean());
       break;
     case IrOpcode::kNumberAdd:
     case IrOpcode::kNumberSubtract:
     case IrOpcode::kNumberMultiply:
     case IrOpcode::kNumberDivide:
+      // (Number, Number) -> Number
+      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
+      CheckValueInputIs(node, 1, Type::NumberOrUndefined());
+      // CheckUpperIs(node, Type::Number());
+      break;
     case IrOpcode::kNumberModulus:
       // (Number, Number) -> Number
       CheckValueInputIs(node, 0, Type::Number());
@@ -677,25 +699,33 @@ void Verifier::Visitor::Check(Node* node) {
       CheckValueInputIs(node, 1, Type::Unsigned32());
       CheckUpperIs(node, Type::Unsigned32());
       break;
+    case IrOpcode::kNumberClz32:
+      // Unsigned32 -> Unsigned32
+      CheckValueInputIs(node, 0, Type::Unsigned32());
+      CheckUpperIs(node, Type::Unsigned32());
+      break;
+    case IrOpcode::kNumberCeil:
+    case IrOpcode::kNumberFloor:
+    case IrOpcode::kNumberRound:
+    case IrOpcode::kNumberTrunc:
+      // Number -> Number
+      CheckValueInputIs(node, 0, Type::Number());
+      CheckUpperIs(node, Type::Number());
+      break;
     case IrOpcode::kNumberToInt32:
       // Number -> Signed32
-      CheckValueInputIs(node, 0, Type::Number());
+      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
       CheckUpperIs(node, Type::Signed32());
       break;
     case IrOpcode::kNumberToUint32:
       // Number -> Unsigned32
-      CheckValueInputIs(node, 0, Type::Number());
+      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
       CheckUpperIs(node, Type::Unsigned32());
       break;
     case IrOpcode::kNumberIsHoleNaN:
       // Number -> Boolean
       CheckValueInputIs(node, 0, Type::Number());
       CheckUpperIs(node, Type::Boolean());
-      break;
-    case IrOpcode::kPlainPrimitiveToNumber:
-      // PlainPrimitive -> Number
-      CheckValueInputIs(node, 0, Type::PlainPrimitive());
-      CheckUpperIs(node, Type::Number());
       break;
     case IrOpcode::kStringEqual:
     case IrOpcode::kStringLessThan:
@@ -705,15 +735,22 @@ void Verifier::Visitor::Check(Node* node) {
       CheckValueInputIs(node, 1, Type::String());
       CheckUpperIs(node, Type::Boolean());
       break;
+    case IrOpcode::kStringToNumber:
+      // String -> Number
+      CheckValueInputIs(node, 0, Type::String());
+      CheckUpperIs(node, Type::Number());
+      break;
     case IrOpcode::kReferenceEqual: {
       // (Unique, Any) -> Boolean  and
       // (Any, Unique) -> Boolean
       CheckUpperIs(node, Type::Boolean());
       break;
     }
+    case IrOpcode::kObjectIsCallable:
     case IrOpcode::kObjectIsNumber:
     case IrOpcode::kObjectIsReceiver:
     case IrOpcode::kObjectIsSmi:
+    case IrOpcode::kObjectIsString:
     case IrOpcode::kObjectIsUndetectable:
       CheckValueInputIs(node, 0, Type::Any());
       CheckUpperIs(node, Type::Boolean());
@@ -936,6 +973,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kChangeFloat32ToFloat64:
     case IrOpcode::kChangeFloat64ToInt32:
     case IrOpcode::kChangeFloat64ToUint32:
+    case IrOpcode::kTruncateFloat64ToUint32:
     case IrOpcode::kTruncateFloat32ToInt32:
     case IrOpcode::kTruncateFloat32ToUint32:
     case IrOpcode::kTryTruncateFloat32ToInt64:
@@ -948,6 +986,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kFloat64InsertHighWord32:
     case IrOpcode::kInt32PairAdd:
     case IrOpcode::kInt32PairSub:
+    case IrOpcode::kInt32PairMul:
     case IrOpcode::kWord32PairShl:
     case IrOpcode::kWord32PairShr:
     case IrOpcode::kWord32PairSar:
@@ -965,7 +1004,7 @@ void Verifier::Visitor::Check(Node* node) {
 void Verifier::Run(Graph* graph, Typing typing) {
   CHECK_NOT_NULL(graph->start());
   CHECK_NOT_NULL(graph->end());
-  Zone zone;
+  Zone zone(graph->zone()->allocator());
   Visitor visitor(&zone, typing);
   AllNodes all(&zone, graph);
   for (Node* node : all.live) visitor.Check(node);
@@ -1055,7 +1094,7 @@ static void CheckInputsDominate(Schedule* schedule, BasicBlock* block,
 
 void ScheduleVerifier::Run(Schedule* schedule) {
   const size_t count = schedule->BasicBlockCount();
-  Zone tmp_zone;
+  Zone tmp_zone(schedule->zone()->allocator());
   Zone* zone = &tmp_zone;
   BasicBlock* start = schedule->start();
   BasicBlockVector* rpo_order = schedule->rpo_order();

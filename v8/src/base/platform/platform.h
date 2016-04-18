@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "src/base/build_config.h"
+#include "src/base/compiler-specific.h"
 #include "src/base/platform/mutex.h"
 #include "src/base/platform/semaphore.h"
 
@@ -142,6 +143,7 @@ class OS {
   static FILE* FOpen(const char* path, const char* mode);
   static bool Remove(const char* path);
 
+  static char DirectorySeparator();
   static bool isDirectorySeparator(const char ch);
 
   // Opens a temporary file, the file is auto removed on close.
@@ -153,18 +155,19 @@ class OS {
   // Print output to console. This is mostly used for debugging output.
   // On platforms that has standard terminal output, the output
   // should go to stdout.
-  static void Print(const char* format, ...);
-  static void VPrint(const char* format, va_list args);
+  static PRINTF_FORMAT(1, 2) void Print(const char* format, ...);
+  static PRINTF_FORMAT(1, 0) void VPrint(const char* format, va_list args);
 
   // Print output to a file. This is mostly used for debugging output.
-  static void FPrint(FILE* out, const char* format, ...);
-  static void VFPrint(FILE* out, const char* format, va_list args);
+  static PRINTF_FORMAT(2, 3) void FPrint(FILE* out, const char* format, ...);
+  static PRINTF_FORMAT(2, 0) void VFPrint(FILE* out, const char* format,
+                                          va_list args);
 
   // Print error output to console. This is mostly used for error message
   // output. On platforms that has standard terminal output, the output
   // should go to stderr.
-  static void PrintError(const char* format, ...);
-  static void VPrintError(const char* format, va_list args);
+  static PRINTF_FORMAT(1, 2) void PrintError(const char* format, ...);
+  static PRINTF_FORMAT(1, 0) void VPrintError(const char* format, va_list args);
 
   // Allocate/Free memory used by JS heap. Pages are readable/writable, but
   // they are not guaranteed to be executable unless 'executable' is true.
@@ -221,11 +224,10 @@ class OS {
 
   // Safe formatting print. Ensures that str is always null-terminated.
   // Returns the number of chars written, or -1 if output was truncated.
-  static int SNPrintF(char* str, int length, const char* format, ...);
-  static int VSNPrintF(char* str,
-                       int length,
-                       const char* format,
-                       va_list args);
+  static PRINTF_FORMAT(3, 4) int SNPrintF(char* str, int length,
+                                          const char* format, ...);
+  static PRINTF_FORMAT(3, 0) int VSNPrintF(char* str, int length,
+                                           const char* format, va_list args);
 
   static char* StrChr(char* str, int c);
   static void StrNCpy(char* dest, int length, const char* src, size_t n);
@@ -289,6 +291,10 @@ class VirtualMemory {
   // is aligned per alignment. This may not be at the position returned
   // by address().
   VirtualMemory(size_t size, size_t alignment);
+
+  // Construct a virtual memory by assigning it some already mapped address
+  // and size.
+  VirtualMemory(void* address, size_t size) : address_(address), size_(size) {}
 
   // Releases the reserved memory, if any, controlled by this VirtualMemory
   // object.

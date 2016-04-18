@@ -603,7 +603,7 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
   Comment(";;; Prologue begin");
 
   // Allocate a local context if needed.
-  if (info()->num_heap_slots() > 0) {
+  if (info()->scope()->num_heap_slots() > 0) {
     Comment(";;; Allocate local context");
     bool need_write_barrier = true;
     // Argument to NewContext is the function, which is in x1.
@@ -1570,7 +1570,7 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
     // get a pointer which will work well with LAccessArgumentsAt.
     DCHECK(masm()->StackPointer().Is(jssp));
     __ Sub(result, jssp, 2 * kPointerSize);
-  } else {
+  } else if (instr->hydrogen()->arguments_adaptor()) {
     DCHECK(instr->temp() != NULL);
     Register previous_fp = ToRegister(instr->temp());
 
@@ -1580,6 +1580,8 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
                               CommonFrameConstants::kContextOrFrameTypeOffset));
     __ Cmp(result, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
     __ Csel(result, fp, previous_fp, ne);
+  } else {
+    __ Mov(result, fp);
   }
 }
 
@@ -5731,13 +5733,6 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ Bind(deferred->exit());
   __ Bind(&done);
 }
-
-
-void LCodeGen::DoStoreFrameContext(LStoreFrameContext* instr) {
-  Register context = ToRegister(instr->context());
-  __ Str(context, MemOperand(fp, StandardFrameConstants::kContextOffset));
-}
-
 
 }  // namespace internal
 }  // namespace v8

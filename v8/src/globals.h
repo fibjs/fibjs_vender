@@ -113,6 +113,7 @@ const int kMaxUInt16 = (1 << 16) - 1;
 const int kMinUInt16 = 0;
 
 const uint32_t kMaxUInt32 = 0xFFFFFFFFu;
+const int kMinUInt32 = 0;
 
 const int kCharSize      = sizeof(char);      // NOLINT
 const int kShortSize     = sizeof(short);     // NOLINT
@@ -123,6 +124,11 @@ const int kFloatSize     = sizeof(float);     // NOLINT
 const int kDoubleSize    = sizeof(double);    // NOLINT
 const int kIntptrSize    = sizeof(intptr_t);  // NOLINT
 const int kPointerSize   = sizeof(void*);     // NOLINT
+#if V8_TARGET_ARCH_ARM64
+const int kFrameAlignmentInBytes = 2 * kPointerSize;
+#else
+const int kFrameAlignmentInBytes = kPointerSize;
+#endif
 #if V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT
 const int kRegisterSize  = kPointerSize + kPointerSize;
 #else
@@ -130,6 +136,12 @@ const int kRegisterSize  = kPointerSize;
 #endif
 const int kPCOnStackSize = kRegisterSize;
 const int kFPOnStackSize = kRegisterSize;
+
+#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X87
+const int kElidedFrameSlots = kPCOnStackSize / kPointerSize;
+#else
+const int kElidedFrameSlots = 0;
+#endif
 
 const int kDoubleSizeLog2 = 3;
 
@@ -539,7 +551,7 @@ enum InlineCacheState {
   // Has been executed and only one receiver type has been seen.
   MONOMORPHIC,
   // Check failed due to prototype (or map deprecation).
-  PROTOTYPE_FAILURE,
+  RECOMPUTE_HANDLER,
   // Multiple receiver types have been seen.
   POLYMORPHIC,
   // Many receiver types have been seen.
@@ -549,7 +561,6 @@ enum InlineCacheState {
   // Special state for debug break or step in prepare stubs.
   DEBUG_STUB
 };
-
 
 enum CacheHolderFlag {
   kCacheOnPrototype,

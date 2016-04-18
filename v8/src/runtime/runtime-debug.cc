@@ -5,11 +5,13 @@
 #include "src/runtime/runtime-utils.h"
 
 #include "src/arguments.h"
-#include "src/debug/debug.h"
 #include "src/debug/debug-evaluate.h"
 #include "src/debug/debug-frames.h"
 #include "src/debug/debug-scopes.h"
+#include "src/debug/debug.h"
 #include "src/frames-inl.h"
+#include "src/interpreter/bytecodes.h"
+#include "src/interpreter/interpreter.h"
 #include "src/isolate-inl.h"
 #include "src/runtime/runtime.h"
 
@@ -18,11 +20,39 @@ namespace internal {
 
 RUNTIME_FUNCTION(Runtime_DebugBreak) {
   SealHandleScope shs(isolate);
-  DCHECK(args.length() == 0);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(Object, value, 0);
+  isolate->debug()->set_return_value(value);
+
   // Get the top-most JavaScript frame.
   JavaScriptFrameIterator it(isolate);
-  isolate->debug()->Break(args, it.frame());
-  return isolate->debug()->SetAfterBreakTarget(it.frame());
+  isolate->debug()->Break(it.frame());
+
+  isolate->debug()->SetAfterBreakTarget(it.frame());
+  return *isolate->debug()->return_value();
+}
+
+RUNTIME_FUNCTION(Runtime_DebugBreakOnBytecode) {
+  SealHandleScope shs(isolate);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(Object, value, 0);
+  isolate->debug()->set_return_value(value);
+
+  // Get the top-most JavaScript frame.
+  JavaScriptFrameIterator it(isolate);
+  isolate->debug()->Break(it.frame());
+
+  // Return the handler from the original bytecode array.
+  DCHECK(it.frame()->is_interpreted());
+  InterpretedFrame* interpreted_frame =
+      reinterpret_cast<InterpretedFrame*>(it.frame());
+  SharedFunctionInfo* shared = interpreted_frame->function()->shared();
+  BytecodeArray* bytecode_array = shared->bytecode_array();
+  int bytecode_offset = interpreted_frame->GetBytecodeOffset();
+  interpreter::Bytecode bytecode =
+      interpreter::Bytecodes::FromByte(bytecode_array->get(bytecode_offset));
+  return isolate->interpreter()->GetBytecodeHandler(
+      bytecode, interpreter::OperandScale::kSingle);
 }
 
 
@@ -591,31 +621,7 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
   // to the frame information.
   Handle<Object> return_value = isolate->factory()->undefined_value();
   if (at_return) {
-    StackFrameIterator it2(isolate);
-    Address internal_frame_sp = NULL;
-    while (!it2.done()) {
-      if (it2.frame()->is_internal()) {
-        internal_frame_sp = it2.frame()->sp();
-      } else {
-        if (it2.frame()->is_java_script()) {
-          if (it2.frame()->id() == it.frame()->id()) {
-            // The internal frame just before the JavaScript frame contains the
-            // value to return on top. A debug break at return will create an
-            // internal frame to store the return value (eax/rax/r0) before
-            // entering the debug break exit frame.
-            if (internal_frame_sp != NULL) {
-              return_value =
-                  Handle<Object>(Memory::Object_at(internal_frame_sp), isolate);
-              break;
-            }
-          }
-        }
-
-        // Indicate that the previous frame was not an internal frame.
-        internal_frame_sp = NULL;
-      }
-      it2.Advance();
-    }
+    return_value = isolate->debug()->return_value();
   }
 
   // Now advance to the arguments adapter frame (if any). It contains all
@@ -1448,11 +1454,14 @@ RUNTIME_FUNCTION(Runtime_FunctionGetDebugName) {
 
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, function, 0);
 
+  Handle<Object> name;
   if (function->IsJSBoundFunction()) {
-    return Handle<JSBoundFunction>::cast(function)->name();
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+        isolate, name, JSBoundFunction::GetName(
+                           isolate, Handle<JSBoundFunction>::cast(function)));
+  } else {
+    name = JSFunction::GetDebugName(Handle<JSFunction>::cast(function));
   }
-  Handle<Object> name =
-      JSFunction::GetDebugName(Handle<JSFunction>::cast(function));
   return *name;
 }
 
@@ -1592,18 +1601,9 @@ RUNTIME_FUNCTION(Runtime_GetScript) {
 // built-in function such as Array.forEach to enable stepping into the callback,
 // if we are indeed stepping and the callback is subject to debugging.
 RUNTIME_FUNCTION(Runtime_DebugPrepareStepInIfStepping) {
-  DCHECK(args.length() == 1);
   HandleScope scope(isolate);
-  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
-  RUNTIME_ASSERT(object->IsJSFunction() || object->IsJSGeneratorObject());
-  Handle<JSFunction> fun;
-  if (object->IsJSFunction()) {
-    fun = Handle<JSFunction>::cast(object);
-  } else {
-    fun = Handle<JSFunction>(
-        Handle<JSGeneratorObject>::cast(object)->function(), isolate);
-  }
-
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, fun, 0);
   isolate->debug()->PrepareStepIn(fun);
   return isolate->heap()->undefined_value();
 }
@@ -1625,15 +1625,6 @@ RUNTIME_FUNCTION(Runtime_DebugPopPromise) {
   DCHECK(args.length() == 0);
   SealHandleScope shs(isolate);
   isolate->PopPromise();
-  return isolate->heap()->undefined_value();
-}
-
-
-RUNTIME_FUNCTION(Runtime_DebugPromiseEvent) {
-  DCHECK(args.length() == 1);
-  HandleScope scope(isolate);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, data, 0);
-  isolate->debug()->OnPromiseEvent(data);
   return isolate->heap()->undefined_value();
 }
 

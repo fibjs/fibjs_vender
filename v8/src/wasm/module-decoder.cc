@@ -2,12 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/wasm/module-decoder.h"
+
+#include "src/base/functional.h"
+#include "src/base/platform/platform.h"
 #include "src/macro-assembler.h"
 #include "src/objects.h"
 #include "src/v8.h"
 
 #include "src/wasm/decoder.h"
-#include "src/wasm/module-decoder.h"
 
 namespace v8 {
 namespace internal {
@@ -40,6 +43,31 @@ class ModuleDecoder : public Decoder {
     pc_ = limit_;  // On error, terminate section decoding loop.
   }
 
+  static void DumpModule(WasmModule* module, ModuleResult result) {
+    std::string path;
+    if (FLAG_dump_wasm_module_path) {
+      path = FLAG_dump_wasm_module_path;
+      if (path.size() &&
+          !base::OS::isDirectorySeparator(path[path.size() - 1])) {
+        path += base::OS::DirectorySeparator();
+      }
+    }
+    // File are named `HASH.{ok,failed}.wasm`.
+    size_t hash = base::hash_range(module->module_start, module->module_end);
+    char buf[32] = {'\0'};
+#if V8_OS_WIN && _MSC_VER < 1900
+#define snprintf sprintf_s
+#endif
+    snprintf(buf, sizeof(buf) - 1, "%016zx.%s.wasm", hash,
+             result.ok() ? "ok" : "failed");
+    std::string name(buf);
+    if (FILE* wasm_file = base::OS::FOpen((path + name).c_str(), "wb")) {
+      fwrite(module->module_start, module->module_end - module->module_start, 1,
+             wasm_file);
+      fclose(wasm_file);
+    }
+  }
+
   // Decodes an entire module.
   ModuleResult DecodeModule(WasmModule* module, bool verify_functions = true) {
     pc_ = start_;
@@ -61,17 +89,19 @@ class ModuleDecoder : public Decoder {
             "expected magic word %02x %02x %02x %02x, "
             "found %02x %02x %02x %02x",
             BYTES(kWasmMagic), BYTES(magic_word));
-      return toResult(module);
+      goto done;
     }
 
     pos = pc_;
-    uint32_t magic_version = consume_u32("wasm version");
-    if (magic_version != kWasmVersion) {
-      error(pos, pos,
-            "expected version %02x %02x %02x %02x, "
-            "found %02x %02x %02x %02x",
-            BYTES(kWasmVersion), BYTES(magic_version));
-      return toResult(module);
+    {
+      uint32_t magic_version = consume_u32("wasm version");
+      if (magic_version != kWasmVersion) {
+        error(pos, pos,
+              "expected version %02x %02x %02x %02x, "
+              "found %02x %02x %02x %02x",
+              BYTES(kWasmVersion), BYTES(magic_version));
+        goto done;
+      }
     }
 
     // Decode the module sections.
@@ -366,7 +396,12 @@ class ModuleDecoder : public Decoder {
       }
     }
 
-    return toResult(module);
+  done:
+    ModuleResult result = toResult(module);
+    if (FLAG_dump_wasm_module) {
+      DumpModule(module, result);
+    }
+    return result;
   }
 
   uint32_t SafeReserve(uint32_t count) {
@@ -399,13 +434,13 @@ class ModuleDecoder : public Decoder {
   FunctionResult DecodeSingleFunction(ModuleEnv* module_env,
                                       WasmFunction* function) {
     pc_ = start_;
-    function->sig = consume_sig();               // read signature
-    function->name_offset = 0;                   // ---- name
-    function->name_length = 0;                   // ---- name length
-    function->code_start_offset = off(pc_);      // ---- code start
-    function->code_end_offset = off(limit_);     // ---- code end
-    function->exported = false;                  // ---- exported
-    function->external = false;                  // ---- external
+    function->sig = consume_sig();            // read signature
+    function->name_offset = 0;                // ---- name
+    function->name_length = 0;                // ---- name length
+    function->code_start_offset = off(pc_);   // ---- code start
+    function->code_end_offset = off(limit_);  // ---- code end
+    function->exported = false;               // ---- exported
+    function->external = false;               // ---- external
 
     if (ok()) VerifyFunctionBody(0, module_env, function);
 
@@ -540,7 +575,7 @@ class ModuleDecoder : public Decoder {
     FunctionBody body = {menv, function->sig, start_,
                          start_ + function->code_start_offset,
                          start_ + function->code_end_offset};
-    TreeResult result = VerifyWasmCode(body);
+    TreeResult result = VerifyWasmCode(module_zone->allocator(), body);
     if (result.failed()) {
       // Wrap the error message from the function decoder.
       std::ostringstream str;
@@ -732,14 +767,23 @@ class FunctionError : public FunctionResult {
 ModuleResult DecodeWasmModule(Isolate* isolate, Zone* zone,
                               const byte* module_start, const byte* module_end,
                               bool verify_functions, ModuleOrigin origin) {
+  size_t decode_memory_start = zone->allocation_size();
+  HistogramTimerScope wasm_decode_module_time_scope(
+      isolate->counters()->wasm_decode_module_time());
   size_t size = module_end - module_start;
   if (module_start > module_end) return ModuleError("start > end");
   if (size >= kMaxModuleSize) return ModuleError("size > maximum module size");
+  // TODO(bradnelson): Improve histogram handling of size_t.
+  isolate->counters()->wasm_module_size_bytes()->AddSample(
+      static_cast<int>(size));
   WasmModule* module = new WasmModule();
   ModuleDecoder decoder(zone, module_start, module_end, origin);
-  return decoder.DecodeModule(module, verify_functions);
+  ModuleResult result = decoder.DecodeModule(module, verify_functions);
+  // TODO(bradnelson): Improve histogram handling of size_t.
+  isolate->counters()->wasm_decode_peak_memory_bytes()->AddSample(
+      static_cast<int>(zone->allocation_size() - decode_memory_start));
+  return result;
 }
-
 
 FunctionSig* DecodeWasmSignatureForTesting(Zone* zone, const byte* start,
                                            const byte* end) {
@@ -752,10 +796,14 @@ FunctionResult DecodeWasmFunction(Isolate* isolate, Zone* zone,
                                   ModuleEnv* module_env,
                                   const byte* function_start,
                                   const byte* function_end) {
+  HistogramTimerScope wasm_decode_function_time_scope(
+      isolate->counters()->wasm_decode_function_time());
   size_t size = function_end - function_start;
   if (function_start > function_end) return FunctionError("start > end");
   if (size > kMaxFunctionSize)
     return FunctionError("size > maximum function size");
+  isolate->counters()->wasm_function_size_bytes()->AddSample(
+      static_cast<int>(size));
   WasmFunction* function = new WasmFunction();
   ModuleDecoder decoder(zone, function_start, function_end, kWasmOrigin);
   return decoder.DecodeSingleFunction(module_env, function);

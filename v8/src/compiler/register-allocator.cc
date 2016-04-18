@@ -25,7 +25,6 @@ void RemoveElement(ZoneVector<LiveRange*>* v, LiveRange* range) {
   v->erase(it);
 }
 
-
 int GetRegisterCount(const RegisterConfiguration* cfg, RegisterKind kind) {
   return kind == DOUBLE_REGISTERS ? cfg->num_double_registers()
                                   : cfg->num_general_registers();
@@ -2948,9 +2947,13 @@ void LinearScanAllocator::AllocateBlockedReg(LiveRange* current) {
   LifetimePosition pos = use_pos[reg];
 
   if (pos < register_use->pos()) {
-    // All registers are blocked before the first use that requires a register.
-    // Spill starting part of live range up to that use.
-    SpillBetween(current, current->Start(), register_use->pos());
+    if (LifetimePosition::ExistsGapPositionBetween(current->Start(),
+                                                   register_use->pos())) {
+      SpillBetween(current, current->Start(), register_use->pos());
+    } else {
+      SetLiveRangeAssignedRegister(current, reg);
+      SplitAndSpillIntersecting(current);
+    }
     return;
   }
 
@@ -2995,6 +2998,8 @@ void LinearScanAllocator::SplitAndSpillIntersecting(LiveRange* current) {
         // live-ranges: ranges are allocated in order of their start positions,
         // ranges are retired from active/inactive when the start of the
         // current live-range is larger than their end.
+        DCHECK(LifetimePosition::ExistsGapPositionBetween(current->Start(),
+                                                          next_pos->pos()));
         SpillBetweenUntil(range, spill_pos, current->Start(), next_pos->pos());
       }
       ActiveToHandled(range);
@@ -3162,21 +3167,14 @@ void SpillSlotLocator::LocateSpillSlots() {
   for (TopLevelLiveRange* range : data()->live_ranges()) {
     if (range == nullptr || range->IsEmpty()) continue;
     // We care only about ranges which spill in the frame.
-    if (!range->HasSpillRange()) continue;
-    if (range->IsSpilledOnlyInDeferredBlocks()) {
-      for (LiveRange* child = range; child != nullptr; child = child->next()) {
-        if (child->spilled()) {
-          code->GetInstructionBlock(child->Start().ToInstructionIndex())
-              ->mark_needs_frame();
-        }
-      }
-    } else {
-      TopLevelLiveRange::SpillMoveInsertionList* spills =
-          range->GetSpillMoveInsertionLocations();
-      DCHECK_NOT_NULL(spills);
-      for (; spills != nullptr; spills = spills->next) {
-        code->GetInstructionBlock(spills->gap_index)->mark_needs_frame();
-      }
+    if (!range->HasSpillRange() || range->IsSpilledOnlyInDeferredBlocks()) {
+      continue;
+    }
+    TopLevelLiveRange::SpillMoveInsertionList* spills =
+        range->GetSpillMoveInsertionLocations();
+    DCHECK_NOT_NULL(spills);
+    for (; spills != nullptr; spills = spills->next) {
+      code->GetInstructionBlock(spills->gap_index)->mark_needs_frame();
     }
   }
 }
@@ -3639,7 +3637,7 @@ void LiveRangeConnector::CommitSpillsInDeferredBlocks(
     worklist.pop();
     if (done_blocks.Contains(block_id)) continue;
     done_blocks.Add(block_id);
-    const InstructionBlock* spill_block =
+    InstructionBlock* spill_block =
         code->InstructionBlockAt(RpoNumber::FromInt(block_id));
 
     for (const RpoNumber& pred : spill_block->predecessors()) {
@@ -3659,6 +3657,7 @@ void LiveRangeConnector::CommitSpillsInDeferredBlocks(
         data()->AddGapMove(spill_block->first_instruction_index(),
                            Instruction::GapPosition::START, pred_op,
                            spill_operand);
+        spill_block->mark_needs_frame();
       }
     }
   }

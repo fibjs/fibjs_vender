@@ -1732,13 +1732,13 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
   LOperand* left = instr->left();
   LOperand* right = instr->right();
   HMathMinMax::Operation operation = instr->hydrogen()->operation();
-  Condition condition = (operation == HMathMinMax::kMathMin) ? le : ge;
+  Register scratch = scratch1();
   if (instr->hydrogen()->representation().IsSmiOrInteger32()) {
+    Condition condition = (operation == HMathMinMax::kMathMin) ? le : ge;
     Register left_reg = ToRegister(left);
     Register right_reg = EmitLoadRegister(right, scratch0());
     Register result_reg = ToRegister(instr->result());
     Label return_right, done;
-    Register scratch = scratch1();
     __ Slt(scratch, left_reg, Operand(right_reg));
     if (condition == ge) {
      __  Movz(result_reg, left_reg, scratch);
@@ -1753,43 +1753,19 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     FPURegister left_reg = ToDoubleRegister(left);
     FPURegister right_reg = ToDoubleRegister(right);
     FPURegister result_reg = ToDoubleRegister(instr->result());
-    Label check_nan_left, check_zero, return_left, return_right, done;
-    __ BranchF(&check_zero, &check_nan_left, eq, left_reg, right_reg);
-    __ BranchF(&return_left, NULL, condition, left_reg, right_reg);
-    __ Branch(&return_right);
-
-    __ bind(&check_zero);
-    // left == right != 0.
-    __ BranchF(&return_left, NULL, ne, left_reg, kDoubleRegZero);
-    // At this point, both left and right are either 0 or -0.
-    if (operation == HMathMinMax::kMathMin) {
-      // The algorithm is: -((-L) + (-R)), which in case of L and R being
-      // different registers is most efficiently expressed as -((-L) - R).
-      __ neg_d(left_reg, left_reg);
-      if (left_reg.is(right_reg)) {
-        __ add_d(result_reg, left_reg, right_reg);
-      } else {
-        __ sub_d(result_reg, left_reg, right_reg);
-      }
-      __ neg_d(result_reg, result_reg);
+    Label nan, done;
+    if (operation == HMathMinMax::kMathMax) {
+      __ MaxNaNCheck_d(result_reg, left_reg, right_reg, &nan);
     } else {
-      __ add_d(result_reg, left_reg, right_reg);
+      DCHECK(operation == HMathMinMax::kMathMin);
+      __ MinNaNCheck_d(result_reg, left_reg, right_reg, &nan);
     }
     __ Branch(&done);
 
-    __ bind(&check_nan_left);
-    // left == NaN.
-    __ BranchF(NULL, &return_left, eq, left_reg, left_reg);
-    __ bind(&return_right);
-    if (!right_reg.is(result_reg)) {
-      __ mov_d(result_reg, right_reg);
-    }
-    __ Branch(&done);
+    __ bind(&nan);
+    __ LoadRoot(scratch, Heap::kNanValueRootIndex);
+    __ ldc1(result_reg, FieldMemOperand(scratch, HeapNumber::kValueOffset));
 
-    __ bind(&return_left);
-    if (!left_reg.is(result_reg)) {
-      __ mov_d(result_reg, left_reg);
-    }
     __ bind(&done);
   }
 }
@@ -2988,7 +2964,7 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
 
   if (instr->hydrogen()->from_inlined()) {
     __ Subu(result, sp, 2 * kPointerSize);
-  } else {
+  } else if (instr->hydrogen()->arguments_adaptor()) {
     // Check if the calling frame is an arguments adaptor frame.
     Label done, adapted;
     __ lw(scratch, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
@@ -3000,6 +2976,8 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
     // frame below the adaptor frame if adapted.
     __ Movn(result, fp, temp);  // Move only if temp is not equal to zero (ne).
     __ Movz(result, scratch, temp);  // Move only if temp is equal to zero (eq).
+  } else {
+    __ mov(result, fp);
   }
 }
 
@@ -4160,7 +4138,15 @@ void LCodeGen::DoDeferredMaybeGrowElements(LMaybeGrowElements* instr) {
 
     LOperand* key = instr->key();
     if (key->IsConstantOperand()) {
-      __ li(a3, Operand(ToSmi(LConstantOperand::cast(key))));
+      LConstantOperand* constant_key = LConstantOperand::cast(key);
+      int32_t int_key = ToInteger32(constant_key);
+      if (Smi::IsValid(int_key)) {
+        __ li(a3, Operand(Smi::FromInt(int_key)));
+      } else {
+        // We should never get here at runtime because there is a smi check on
+        // the key before this point.
+        __ stop("expected smi");
+      }
     } else {
       __ mov(a3, ToRegister(key));
       __ SmiTag(a3);
@@ -4223,8 +4209,7 @@ void LCodeGen::DoTrapAllocationMemento(LTrapAllocationMemento* instr) {
   Register object = ToRegister(instr->object());
   Register temp = ToRegister(instr->temp());
   Label no_memento_found;
-  __ TestJSArrayForAllocationMemento(object, temp, &no_memento_found,
-                                     ne, &no_memento_found);
+  __ TestJSArrayForAllocationMemento(object, temp, &no_memento_found);
   DeoptimizeIf(al, instr);
   __ bind(&no_memento_found);
 }
@@ -5559,13 +5544,6 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ bind(deferred->exit());
   __ bind(&done);
 }
-
-
-void LCodeGen::DoStoreFrameContext(LStoreFrameContext* instr) {
-  Register context = ToRegister(instr->context());
-  __ sw(context, MemOperand(fp, StandardFrameConstants::kContextOffset));
-}
-
 
 #undef __
 

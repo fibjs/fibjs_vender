@@ -49,12 +49,16 @@ Reduction ChangeLowering::Reduce(Node* node) {
       return StoreElement(node);
     case IrOpcode::kAllocate:
       return Allocate(node);
+    case IrOpcode::kObjectIsCallable:
+      return ObjectIsCallable(node);
+    case IrOpcode::kObjectIsNumber:
+      return ObjectIsNumber(node);
     case IrOpcode::kObjectIsReceiver:
       return ObjectIsReceiver(node);
     case IrOpcode::kObjectIsSmi:
       return ObjectIsSmi(node);
-    case IrOpcode::kObjectIsNumber:
-      return ObjectIsNumber(node);
+    case IrOpcode::kObjectIsString:
+      return ObjectIsString(node);
     case IrOpcode::kObjectIsUndetectable:
       return ObjectIsUndetectable(node);
     default:
@@ -284,7 +288,8 @@ Reduction ChangeLowering::ChangeTaggedToUI32(Node* value, Node* control,
                            ? machine()->ChangeFloat64ToInt32()
                            : machine()->ChangeFloat64ToUint32();
 
-  if (NodeProperties::GetType(value)->Is(Type::TaggedPointer())) {
+  if (NodeProperties::GetType(value)->Is(Type::TaggedPointer()) &&
+      NodeProperties::GetType(value)->Is(Type::Number())) {
     return Replace(graph()->NewNode(op, LoadHeapNumberValue(value, control)));
   }
 
@@ -292,15 +297,38 @@ Reduction ChangeLowering::ChangeTaggedToUI32(Node* value, Node* control,
   Node* branch =
       graph()->NewNode(common()->Branch(BranchHint::kFalse), check, control);
 
-  Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
-  Node* vtrue = graph()->NewNode(op, LoadHeapNumberValue(value, if_true));
+  Node* if_not_smi = graph()->NewNode(common()->IfTrue(), branch);
 
-  Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
-  Node* vfalse = ChangeSmiToInt32(value);
+  Node* vnot_smi;
+  if (NodeProperties::GetType(value)->Maybe(Type::Undefined())) {
+    Node* check_undefined = graph()->NewNode(machine()->WordEqual(), value,
+                                             jsgraph()->UndefinedConstant());
+    Node* branch_undefined = graph()->NewNode(
+        common()->Branch(BranchHint::kFalse), check_undefined, if_not_smi);
 
-  Node* merge = graph()->NewNode(common()->Merge(2), if_true, if_false);
+    Node* if_undefined = graph()->NewNode(common()->IfTrue(), branch_undefined);
+    Node* vundefined = jsgraph()->Int32Constant(0);
+
+    Node* if_not_undefined =
+        graph()->NewNode(common()->IfFalse(), branch_undefined);
+    Node* vheap_number =
+        graph()->NewNode(op, LoadHeapNumberValue(value, if_not_undefined));
+
+    if_not_smi =
+        graph()->NewNode(common()->Merge(2), if_undefined, if_not_undefined);
+    vnot_smi =
+        graph()->NewNode(common()->Phi(MachineRepresentation::kWord32, 2),
+                         vundefined, vheap_number, if_not_smi);
+  } else {
+    vnot_smi = graph()->NewNode(op, LoadHeapNumberValue(value, if_not_smi));
+  }
+
+  Node* if_smi = graph()->NewNode(common()->IfFalse(), branch);
+  Node* vfrom_smi = ChangeSmiToInt32(value);
+
+  Node* merge = graph()->NewNode(common()->Merge(2), if_not_smi, if_smi);
   Node* phi = graph()->NewNode(common()->Phi(MachineRepresentation::kWord32, 2),
-                               vtrue, vfalse, merge);
+                               vnot_smi, vfrom_smi, merge);
 
   return Replace(phi);
 }
@@ -389,15 +417,39 @@ Reduction ChangeLowering::ChangeTaggedToFloat64(Node* value, Node* control) {
   Node* branch =
       graph()->NewNode(common()->Branch(BranchHint::kFalse), check, control);
 
-  Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
-  Node* vtrue = LoadHeapNumberValue(value, if_true);
+  Node* if_not_smi = graph()->NewNode(common()->IfTrue(), branch);
 
-  Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
-  Node* vfalse = ChangeSmiToFloat64(value);
+  Node* vnot_smi;
+  if (NodeProperties::GetType(value)->Maybe(Type::Undefined())) {
+    Node* check_undefined = graph()->NewNode(machine()->WordEqual(), value,
+                                             jsgraph()->UndefinedConstant());
+    Node* branch_undefined = graph()->NewNode(
+        common()->Branch(BranchHint::kFalse), check_undefined, if_not_smi);
 
-  Node* merge = graph()->NewNode(common()->Merge(2), if_true, if_false);
-  Node* phi = graph()->NewNode(
-      common()->Phi(MachineRepresentation::kFloat64, 2), vtrue, vfalse, merge);
+    Node* if_undefined = graph()->NewNode(common()->IfTrue(), branch_undefined);
+    Node* vundefined =
+        jsgraph()->Float64Constant(std::numeric_limits<double>::quiet_NaN());
+
+    Node* if_not_undefined =
+        graph()->NewNode(common()->IfFalse(), branch_undefined);
+    Node* vheap_number = LoadHeapNumberValue(value, if_not_undefined);
+
+    if_not_smi =
+        graph()->NewNode(common()->Merge(2), if_undefined, if_not_undefined);
+    vnot_smi =
+        graph()->NewNode(common()->Phi(MachineRepresentation::kFloat64, 2),
+                         vundefined, vheap_number, if_not_smi);
+  } else {
+    vnot_smi = LoadHeapNumberValue(value, if_not_smi);
+  }
+
+  Node* if_smi = graph()->NewNode(common()->IfFalse(), branch);
+  Node* vfrom_smi = ChangeSmiToFloat64(value);
+
+  Node* merge = graph()->NewNode(common()->Merge(2), if_not_smi, if_smi);
+  Node* phi =
+      graph()->NewNode(common()->Phi(MachineRepresentation::kFloat64, 2),
+                       vnot_smi, vfrom_smi, merge);
 
   return Replace(phi);
 }
@@ -561,32 +613,15 @@ Reduction ChangeLowering::StoreElement(Node* node) {
 
 Reduction ChangeLowering::Allocate(Node* node) {
   PretenureFlag pretenure = OpParameter<PretenureFlag>(node->op());
-  if (pretenure == NOT_TENURED) {
-    Callable callable = CodeFactory::AllocateInNewSpace(isolate());
-    Node* target = jsgraph()->HeapConstant(callable.code());
-    CallDescriptor* descriptor = Linkage::GetStubCallDescriptor(
-        isolate(), jsgraph()->zone(), callable.descriptor(), 0,
-        CallDescriptor::kNoFlags, Operator::kNoThrow);
-    const Operator* op = common()->Call(descriptor);
-    node->InsertInput(graph()->zone(), 0, target);
-    node->InsertInput(graph()->zone(), 2, jsgraph()->NoContextConstant());
-    NodeProperties::ChangeOp(node, op);
-  } else {
-    DCHECK_EQ(TENURED, pretenure);
-    AllocationSpace space = OLD_SPACE;
-    Runtime::FunctionId f = Runtime::kAllocateInTargetSpace;
-    Operator::Properties props = node->op()->properties();
-    CallDescriptor* desc = Linkage::GetRuntimeCallDescriptor(
-        jsgraph()->zone(), f, 2, props, CallDescriptor::kNeedsFrameState);
-    ExternalReference ref(f, jsgraph()->isolate());
-    int32_t flags = AllocateTargetSpace::encode(space);
-    node->InsertInput(graph()->zone(), 0, jsgraph()->CEntryStubConstant(1));
-    node->InsertInput(graph()->zone(), 2, jsgraph()->SmiConstant(flags));
-    node->InsertInput(graph()->zone(), 3, jsgraph()->ExternalConstant(ref));
-    node->InsertInput(graph()->zone(), 4, jsgraph()->Int32Constant(2));
-    node->InsertInput(graph()->zone(), 5, jsgraph()->NoContextConstant());
-    NodeProperties::ChangeOp(node, common()->Call(desc));
-  }
+  Callable callable = CodeFactory::Allocate(isolate(), pretenure);
+  Node* target = jsgraph()->HeapConstant(callable.code());
+  CallDescriptor* descriptor = Linkage::GetStubCallDescriptor(
+      isolate(), jsgraph()->zone(), callable.descriptor(), 0,
+      CallDescriptor::kNoFlags, Operator::kNoThrow);
+  const Operator* op = common()->Call(descriptor);
+  node->InsertInput(graph()->zone(), 0, target);
+  node->InsertInput(graph()->zone(), 2, jsgraph()->NoContextConstant());
+  NodeProperties::ChangeOp(node, op);
   return Changed(node);
 }
 
@@ -617,6 +652,29 @@ Node* ChangeLowering::LoadMapInstanceType(Node* map) {
       machine()->Load(MachineType::Uint8()), map,
       jsgraph()->IntPtrConstant(Map::kInstanceTypeOffset - kHeapObjectTag),
       graph()->start(), graph()->start());
+}
+
+Reduction ChangeLowering::ObjectIsCallable(Node* node) {
+  Node* input = NodeProperties::GetValueInput(node, 0);
+  // TODO(bmeurer): Optimize somewhat based on input type.
+  Node* check = IsSmi(input);
+  Node* branch = graph()->NewNode(common()->Branch(), check, graph()->start());
+  Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+  Node* vtrue = jsgraph()->Int32Constant(0);
+  Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
+  Node* vfalse = graph()->NewNode(
+      machine()->Word32Equal(),
+      jsgraph()->Uint32Constant(1 << Map::kIsCallable),
+      graph()->NewNode(machine()->Word32And(),
+                       LoadMapBitField(LoadHeapObjectMap(input, if_false)),
+                       jsgraph()->Uint32Constant((1 << Map::kIsCallable) |
+                                                 (1 << Map::kIsUndetectable))));
+  Node* control = graph()->NewNode(common()->Merge(2), if_true, if_false);
+  node->ReplaceInput(0, vtrue);
+  node->AppendInput(graph()->zone(), vfalse);
+  node->AppendInput(graph()->zone(), control);
+  NodeProperties::ChangeOp(node, common()->Phi(MachineRepresentation::kBit, 2));
+  return Changed(node);
 }
 
 Reduction ChangeLowering::ObjectIsNumber(Node* node) {
@@ -690,6 +748,25 @@ Reduction ChangeLowering::ObjectIsSmi(Node* node) {
                                       jsgraph()->IntPtrConstant(kSmiTagMask)));
   node->AppendInput(graph()->zone(), jsgraph()->IntPtrConstant(kSmiTag));
   NodeProperties::ChangeOp(node, machine()->WordEqual());
+  return Changed(node);
+}
+
+Reduction ChangeLowering::ObjectIsString(Node* node) {
+  Node* input = NodeProperties::GetValueInput(node, 0);
+  Node* check = IsSmi(input);
+  Node* branch = graph()->NewNode(common()->Branch(), check, graph()->start());
+  Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+  Node* vtrue = jsgraph()->Int32Constant(0);
+  Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
+  Node* vfalse =
+      graph()->NewNode(machine()->Uint32LessThan(),
+                       LoadMapInstanceType(LoadHeapObjectMap(input, if_false)),
+                       jsgraph()->Uint32Constant(FIRST_NONSTRING_TYPE));
+  Node* control = graph()->NewNode(common()->Merge(2), if_true, if_false);
+  node->ReplaceInput(0, vtrue);
+  node->AppendInput(graph()->zone(), vfalse);
+  node->AppendInput(graph()->zone(), control);
+  NodeProperties::ChangeOp(node, common()->Phi(MachineRepresentation::kBit, 2));
   return Changed(node);
 }
 

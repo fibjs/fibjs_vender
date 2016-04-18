@@ -154,16 +154,16 @@ class CompilationInfo {
     kFrameSpecializing = 1 << 9,
     kNativeContextSpecializing = 1 << 10,
     kInliningEnabled = 1 << 11,
-    kTypingEnabled = 1 << 12,
-    kDisableFutureOptimization = 1 << 13,
-    kSplittingEnabled = 1 << 14,
-    kDeoptimizationEnabled = 1 << 16,
-    kSourcePositionsEnabled = 1 << 17,
-    kFirstCompile = 1 << 18,
-    kBailoutOnUninitialized = 1 << 19,
+    kDisableFutureOptimization = 1 << 12,
+    kSplittingEnabled = 1 << 13,
+    kDeoptimizationEnabled = 1 << 14,
+    kSourcePositionsEnabled = 1 << 15,
+    kEffectSchedulingEnabled = 1 << 16,
+    kBailoutOnUninitialized = 1 << 17,
+    kOptimizeFromBytecode = 1 << 18,
   };
 
-  explicit CompilationInfo(ParseInfo* parse_info);
+  CompilationInfo(ParseInfo* parse_info, Handle<JSFunction> closure);
   CompilationInfo(const char* debug_name, Isolate* isolate, Zone* zone,
                   Code::Flags code_flags = Code::ComputeFlags(Code::STUB));
   virtual ~CompilationInfo();
@@ -178,15 +178,11 @@ class CompilationInfo {
   bool is_native() const;
   bool is_module() const;
   LanguageMode language_mode() const;
-  Handle<JSFunction> closure() const;
   FunctionLiteral* literal() const;
   Scope* scope() const;
   Handle<Context> context() const;
   Handle<SharedFunctionInfo> shared_info() const;
   bool has_shared_info() const;
-  bool has_context() const;
-  bool has_literal() const;
-  bool has_scope() const;
   // -----------------------------------------------------------
 
   Isolate* isolate() const {
@@ -194,14 +190,13 @@ class CompilationInfo {
   }
   Zone* zone() { return zone_; }
   bool is_osr() const { return !osr_ast_id_.IsNone(); }
+  Handle<JSFunction> closure() const { return closure_; }
   Handle<Code> code() const { return code_; }
   Code::Flags code_flags() const { return code_flags_; }
   BailoutId osr_ast_id() const { return osr_ast_id_; }
-  int opt_count() const { return opt_count_; }
   int num_parameters() const;
   int num_parameters_including_this() const;
   bool is_this_defined() const;
-  int num_heap_slots() const;
 
   void set_parameter_count(int parameter_count) {
     DCHECK(IsStub());
@@ -284,6 +279,12 @@ class CompilationInfo {
     return GetFlag(kDeoptimizationEnabled);
   }
 
+  void MarkAsEffectSchedulingEnabled() { SetFlag(kEffectSchedulingEnabled); }
+
+  bool is_effect_scheduling_enabled() const {
+    return GetFlag(kEffectSchedulingEnabled);
+  }
+
   void MarkAsSourcePositionsEnabled() { SetFlag(kSourcePositionsEnabled); }
 
   bool is_source_positions_enabled() const {
@@ -294,24 +295,20 @@ class CompilationInfo {
 
   bool is_inlining_enabled() const { return GetFlag(kInliningEnabled); }
 
-  void MarkAsTypingEnabled() { SetFlag(kTypingEnabled); }
-
-  bool is_typing_enabled() const { return GetFlag(kTypingEnabled); }
-
   void MarkAsSplittingEnabled() { SetFlag(kSplittingEnabled); }
 
   bool is_splitting_enabled() const { return GetFlag(kSplittingEnabled); }
-
-  void MarkAsFirstCompile() { SetFlag(kFirstCompile); }
-
-  void MarkAsCompiled() { SetFlag(kFirstCompile, false); }
-
-  bool is_first_compile() const { return GetFlag(kFirstCompile); }
 
   void MarkAsBailoutOnUninitialized() { SetFlag(kBailoutOnUninitialized); }
 
   bool is_bailout_on_uninitialized() const {
     return GetFlag(kBailoutOnUninitialized);
+  }
+
+  void MarkAsOptimizeFromBytecode() { SetFlag(kOptimizeFromBytecode); }
+
+  bool is_optimizing_from_bytecode() const {
+    return GetFlag(kOptimizeFromBytecode);
   }
 
   bool GeneratePreagedPrologue() const {
@@ -322,10 +319,6 @@ class CompilationInfo {
            output_code_kind() == Code::FUNCTION;
   }
 
-  void EnsureFeedbackVector();
-  Handle<TypeFeedbackVector> feedback_vector() const {
-    return feedback_vector_;
-  }
   void SetCode(Handle<Code> code) { code_ = code; }
 
   void SetBytecodeArray(Handle<BytecodeArray> bytecode_array) {
@@ -387,7 +380,7 @@ class CompilationInfo {
   }
 
   void ReopenHandlesInNewHandleScope() {
-    // Empty for now but will be needed once fields move from ParseInfo.
+    closure_ = Handle<JSFunction>(*closure_);
   }
 
   void AbortOptimization(BailoutReason reason) {
@@ -531,11 +524,10 @@ class CompilationInfo {
 
   Code::Flags code_flags_;
 
+  Handle<JSFunction> closure_;
+
   // The compiled code.
   Handle<Code> code_;
-
-  // Used by codegen, ultimately kept rooted by the SharedFunctionInfo.
-  Handle<TypeFeedbackVector> feedback_vector_;
 
   // Compilation mode flag and whether deoptimization is allowed.
   Mode mode_;
@@ -564,10 +556,6 @@ class CompilationInfo {
 
   InlinedFunctionList inlined_functions_;
 
-  // A copy of shared_info()->opt_count() to avoid handle deref
-  // during graph optimization.
-  int opt_count_;
-
   // Number of parameters used for compilation of stubs that require arguments.
   int parameter_count_;
 
@@ -583,20 +571,21 @@ class CompilationInfo {
   DISALLOW_COPY_AND_ASSIGN(CompilationInfo);
 };
 
-
-class HGraph;
-class LChunk;
-
-// A helper class that calls the three compilation phases in
-// Crankshaft and keeps track of its state.  The three phases
-// CreateGraph, OptimizeGraph and GenerateAndInstallCode can either
-// fail, bail-out to the full code generator or succeed.  Apart from
-// their return value, the status of the phase last run can be checked
-// using last_status().
+// A base class for compilation jobs intended to run concurrent to the main
+// thread. The job is split into three phases which are called in sequence on
+// different threads and with different limitations:
+//  1) CreateGraph:   Runs on main thread. No major limitations.
+//  2) OptimizeGraph: Runs concurrently. No heap allocation or handle derefs.
+//  3) GenerateCode:  Runs on main thread. No dependency changes.
+//
+// Each of the three phases can either fail, bail-out to full code generator or
+// succeed. Apart from their return value, the status of the phase last run can
+// be checked using {last_status()} as well.
 class OptimizedCompileJob: public ZoneObject {
  public:
-  explicit OptimizedCompileJob(CompilationInfo* info)
-      : info_(info), graph_(NULL), chunk_(NULL), last_status_(FAILED) {}
+  explicit OptimizedCompileJob(CompilationInfo* info, const char* compiler_name)
+      : info_(info), compiler_name_(compiler_name), last_status_(SUCCEEDED) {}
+  virtual ~OptimizedCompileJob() {}
 
   enum Status {
     FAILED, BAILED_OUT, SUCCEEDED
@@ -620,36 +609,28 @@ class OptimizedCompileJob: public ZoneObject {
     return SetLastStatus(BAILED_OUT);
   }
 
+  void RecordOptimizationStats();
+
+ protected:
+  void RegisterWeakObjectsInOptimizedCode(Handle<Code> code);
+
+  // Overridden by the actual implementation.
+  virtual Status CreateGraphImpl() = 0;
+  virtual Status OptimizeGraphImpl() = 0;
+  virtual Status GenerateCodeImpl() = 0;
+
  private:
   CompilationInfo* info_;
-  HGraph* graph_;
-  LChunk* chunk_;
   base::TimeDelta time_taken_to_create_graph_;
   base::TimeDelta time_taken_to_optimize_;
   base::TimeDelta time_taken_to_codegen_;
+  const char* compiler_name_;
   Status last_status_;
 
   MUST_USE_RESULT Status SetLastStatus(Status status) {
     last_status_ = status;
     return last_status_;
   }
-  void RecordOptimizationStats();
-
-  struct Timer {
-    Timer(OptimizedCompileJob* job, base::TimeDelta* location)
-        : job_(job), location_(location) {
-      DCHECK(location_ != NULL);
-      timer_.Start();
-    }
-
-    ~Timer() {
-      *location_ += timer_.Elapsed();
-    }
-
-    OptimizedCompileJob* job_;
-    base::ElapsedTimer timer_;
-    base::TimeDelta* location_;
-  };
 };
 
 }  // namespace internal

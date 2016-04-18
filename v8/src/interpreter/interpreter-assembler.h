@@ -8,7 +8,7 @@
 #include "src/allocation.h"
 #include "src/base/smart-pointers.h"
 #include "src/builtins.h"
-#include "src/compiler/code-stub-assembler.h"
+#include "src/code-stub-assembler.h"
 #include "src/frames.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/runtime/runtime.h"
@@ -17,14 +17,18 @@ namespace v8 {
 namespace internal {
 namespace interpreter {
 
-class InterpreterAssembler : public compiler::CodeStubAssembler {
+class InterpreterAssembler : public CodeStubAssembler {
  public:
-  InterpreterAssembler(Isolate* isolate, Zone* zone, Bytecode bytecode);
+  InterpreterAssembler(Isolate* isolate, Zone* zone, Bytecode bytecode,
+                       OperandScale operand_scale);
   virtual ~InterpreterAssembler();
 
   // Returns the count immediate for bytecode operand |operand_index| in the
   // current bytecode.
   compiler::Node* BytecodeOperandCount(int operand_index);
+  // Returns the 8-bit flag for bytecode operand |operand_index| in the
+  // current bytecode.
+  compiler::Node* BytecodeOperandFlag(int operand_index);
   // Returns the index immediate for bytecode operand |operand_index| in the
   // current bytecode.
   compiler::Node* BytecodeOperandIdx(int operand_index);
@@ -34,6 +38,9 @@ class InterpreterAssembler : public compiler::CodeStubAssembler {
   // Returns the register index for bytecode operand |operand_index| in the
   // current bytecode.
   compiler::Node* BytecodeOperandReg(int operand_index);
+  // Returns the runtime id immediate for bytecode operand
+  // |operand_index| in the current bytecode.
+  compiler::Node* BytecodeOperandRuntimeId(int operand_index);
 
   // Accumulator.
   compiler::Node* GetAccumulator();
@@ -130,16 +137,18 @@ class InterpreterAssembler : public compiler::CodeStubAssembler {
   void Dispatch();
 
   // Dispatch to bytecode handler.
-  void DispatchToBytecodeHandler(compiler::Node* handler,
-                                 compiler::Node* bytecode_offset);
   void DispatchToBytecodeHandler(compiler::Node* handler) {
     DispatchToBytecodeHandler(handler, BytecodeOffset());
   }
+
+  // Dispatch bytecode as wide operand variant.
+  void DispatchWide(OperandScale operand_scale);
 
   // Abort with the given bailout reason.
   void Abort(BailoutReason bailout_reason);
 
  protected:
+  Bytecode bytecode() const { return bytecode_; }
   static bool TargetSupportsUnalignedAccess();
 
  private:
@@ -152,10 +161,18 @@ class InterpreterAssembler : public compiler::CodeStubAssembler {
   // Returns a raw pointer to first entry in the interpreter dispatch table.
   compiler::Node* DispatchTableRawPointer();
 
+  // Returns the accumulator value without checking whether bytecode
+  // uses it. This is intended to be used only in dispatch and in
+  // tracing as these need to bypass accumulator use validity checks.
+  compiler::Node* GetAccumulatorUnchecked();
+
   // Saves and restores interpreter bytecode offset to the interpreter stack
   // frame when performing a call.
   void CallPrologue() override;
   void CallEpilogue() override;
+
+  // Increment the dispatch counter for the (current, next) bytecode pair.
+  void TraceBytecodeDispatch(compiler::Node* target_index);
 
   // Traces the current bytecode by calling |function_id|.
   void TraceBytecode(Runtime::FunctionId function_id);
@@ -167,10 +184,28 @@ class InterpreterAssembler : public compiler::CodeStubAssembler {
   // Returns the offset of register |index| relative to RegisterFilePointer().
   compiler::Node* RegisterFrameOffset(compiler::Node* index);
 
-  compiler::Node* BytecodeOperand(int operand_index);
-  compiler::Node* BytecodeOperandSignExtended(int operand_index);
-  compiler::Node* BytecodeOperandShort(int operand_index);
-  compiler::Node* BytecodeOperandShortSignExtended(int operand_index);
+  // Returns the offset of an operand relative to the current bytecode offset.
+  compiler::Node* OperandOffset(int operand_index);
+
+  // Returns a value built from an sequence of bytes in the bytecode
+  // array starting at |relative_offset| from the current bytecode.
+  // The |result_type| determines the size and signedness.  of the
+  // value read. This method should only be used on architectures that
+  // do not support unaligned memory accesses.
+  compiler::Node* BytecodeOperandReadUnaligned(int relative_offset,
+                                               MachineType result_type);
+
+  compiler::Node* BytecodeOperandUnsignedByte(int operand_index);
+  compiler::Node* BytecodeOperandSignedByte(int operand_index);
+  compiler::Node* BytecodeOperandUnsignedShort(int operand_index);
+  compiler::Node* BytecodeOperandSignedShort(int operand_index);
+  compiler::Node* BytecodeOperandUnsignedQuad(int operand_index);
+  compiler::Node* BytecodeOperandSignedQuad(int operand_index);
+
+  compiler::Node* BytecodeSignedOperand(int operand_index,
+                                        OperandSize operand_size);
+  compiler::Node* BytecodeUnsignedOperand(int operand_index,
+                                          OperandSize operand_size);
 
   // Returns BytecodeOffset() advanced by delta bytecodes. Note: this does not
   // update BytecodeOffset() itself.
@@ -180,13 +215,24 @@ class InterpreterAssembler : public compiler::CodeStubAssembler {
   // Starts next instruction dispatch at |new_bytecode_offset|.
   void DispatchTo(compiler::Node* new_bytecode_offset);
 
+  // Dispatch to the bytecode handler with code offset |handler|.
+  void DispatchToBytecodeHandler(compiler::Node* handler,
+                                 compiler::Node* bytecode_offset);
+
+  // Dispatch to the bytecode handler with code entry point |handler_entry|.
+  void DispatchToBytecodeHandlerEntry(compiler::Node* handler_entry,
+                                      compiler::Node* bytecode_offset);
+
   // Abort operations for debug code.
   void AbortIfWordNotEqual(compiler::Node* lhs, compiler::Node* rhs,
                            BailoutReason bailout_reason);
 
+  OperandScale operand_scale() const { return operand_scale_; }
+
   Bytecode bytecode_;
+  OperandScale operand_scale_;
   CodeStubAssembler::Variable accumulator_;
-  CodeStubAssembler::Variable context_;
+  AccumulatorUse accumulator_use_;
   CodeStubAssembler::Variable bytecode_array_;
 
   bool disable_stack_check_across_call_;

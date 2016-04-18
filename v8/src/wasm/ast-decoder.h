@@ -194,21 +194,25 @@ typedef Result<Tree*> TreeResult;
 
 std::ostream& operator<<(std::ostream& os, const Tree& tree);
 
-TreeResult VerifyWasmCode(FunctionBody& body);
-TreeResult BuildTFGraph(TFBuilder* builder, FunctionBody& body);
-void PrintAst(FunctionBody& body);
+TreeResult VerifyWasmCode(base::AccountingAllocator* allocator,
+                          FunctionBody& body);
+TreeResult BuildTFGraph(base::AccountingAllocator* allocator,
+                        TFBuilder* builder, FunctionBody& body);
+void PrintAst(base::AccountingAllocator* allocator, FunctionBody& body);
 
-inline TreeResult VerifyWasmCode(ModuleEnv* module, FunctionSig* sig,
+inline TreeResult VerifyWasmCode(base::AccountingAllocator* allocator,
+                                 ModuleEnv* module, FunctionSig* sig,
                                  const byte* start, const byte* end) {
   FunctionBody body = {module, sig, nullptr, start, end};
-  return VerifyWasmCode(body);
+  return VerifyWasmCode(allocator, body);
 }
 
-inline TreeResult BuildTFGraph(TFBuilder* builder, ModuleEnv* module,
+inline TreeResult BuildTFGraph(base::AccountingAllocator* allocator,
+                               TFBuilder* builder, ModuleEnv* module,
                                FunctionSig* sig, const byte* start,
                                const byte* end) {
   FunctionBody body = {module, sig, nullptr, start, end};
-  return BuildTFGraph(builder, body);
+  return BuildTFGraph(allocator, builder, body);
 }
 
 enum ReadUnsignedLEB128ErrorCode { kNoError, kInvalidLEB128, kMissingLEB128 };
@@ -216,8 +220,22 @@ enum ReadUnsignedLEB128ErrorCode { kNoError, kInvalidLEB128, kMissingLEB128 };
 ReadUnsignedLEB128ErrorCode ReadUnsignedLEB128Operand(const byte*, const byte*,
                                                       int*, uint32_t*);
 
-std::vector<LocalType>* DecodeLocalDeclsForTesting(const byte* start,
-                                                   const byte* end);
+struct AstLocalDecls {
+  // The size of the encoded declarations.
+  uint32_t decls_encoded_size;  // size of encoded declarations
+
+  // Total number of locals.
+  uint32_t total_local_count;
+
+  // List of {local type, count} pairs.
+  ZoneVector<std::pair<LocalType, uint32_t>> local_types;
+
+  // Constructor initializes the vector.
+  explicit AstLocalDecls(Zone* zone)
+      : decls_encoded_size(0), total_local_count(0), local_types(zone) {}
+};
+
+bool DecodeLocalDecls(AstLocalDecls& decls, const byte* start, const byte* end);
 BitVector* AnalyzeLoopAssignmentForTesting(Zone* zone, size_t num_locals,
                                            const byte* start, const byte* end);
 

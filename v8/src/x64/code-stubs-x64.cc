@@ -80,6 +80,10 @@ void InternalArrayNoArgumentConstructorStub::InitializeDescriptor(
   InitializeInternalArrayConstructorDescriptor(isolate(), descriptor, 0);
 }
 
+void FastArrayPushStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
+  Address deopt_handler = Runtime::FunctionForId(Runtime::kArrayPush)->entry;
+  descriptor->Initialize(rax, deopt_handler, -1, JS_FUNCTION_STUB_MODE);
+}
 
 void InternalArraySingleArgumentConstructorStub::InitializeDescriptor(
     CodeStubDescriptor* descriptor) {
@@ -536,34 +540,6 @@ void FunctionPrototypeStub::Generate(MacroAssembler* masm) {
   __ bind(&miss);
   PropertyAccessCompiler::TailCallBuiltin(
       masm, PropertyAccessCompiler::MissBuiltin(Code::LOAD_IC));
-}
-
-
-void LoadIndexedInterceptorStub::Generate(MacroAssembler* masm) {
-  // Return address is on the stack.
-  Label slow;
-
-  Register receiver = LoadDescriptor::ReceiverRegister();
-  Register key = LoadDescriptor::NameRegister();
-  Register scratch = rax;
-  DCHECK(!scratch.is(receiver) && !scratch.is(key));
-
-  // Check that the key is an array index, that is Uint32.
-  STATIC_ASSERT(kSmiValueSize <= 32);
-  __ JumpUnlessNonNegativeSmi(key, &slow);
-
-  // Everything is fine, call runtime.
-  __ PopReturnAddressTo(scratch);
-  __ Push(receiver);  // receiver
-  __ Push(key);       // key
-  __ PushReturnAddressFrom(scratch);
-
-  // Perform tail call to the entry.
-  __ TailCallRuntime(Runtime::kLoadElementWithInterceptor);
-
-  __ bind(&slow);
-  PropertyAccessCompiler::TailCallBuiltin(
-      masm, PropertyAccessCompiler::MissBuiltin(Code::KEYED_LOAD_IC));
 }
 
 
@@ -2169,7 +2145,8 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
   __ Push(object);
   __ Push(function);
   __ PushReturnAddressFrom(kScratchRegister);
-  __ TailCallRuntime(Runtime::kInstanceOf);
+  __ TailCallRuntime(is_es6_instanceof() ? Runtime::kOrdinaryHasInstance
+                                         : Runtime::kInstanceOf);
 }
 
 
@@ -2576,23 +2553,21 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ Ret();
   __ bind(&not_heap_number);
 
-  Label not_string, slow_string;
+  NonNumberToNumberStub stub(masm->isolate());
+  __ TailCallStub(&stub);
+}
+
+void NonNumberToNumberStub::Generate(MacroAssembler* masm) {
+  // The NonNumberToNumber stub takes one argument in rax.
+  __ AssertNotNumber(rax);
+
+  Label not_string;
   __ CmpObjectType(rax, FIRST_NONSTRING_TYPE, rdi);
   // rax: object
   // rdi: object map
   __ j(above_equal, &not_string, Label::kNear);
-  // Check if string has a cached array index.
-  __ testl(FieldOperand(rax, String::kHashFieldOffset),
-           Immediate(String::kContainsCachedArrayIndexMask));
-  __ j(not_zero, &slow_string, Label::kNear);
-  __ movl(rax, FieldOperand(rax, String::kHashFieldOffset));
-  __ IndexFromHash(rax, rax);
-  __ Ret();
-  __ bind(&slow_string);
-  __ PopReturnAddressTo(rcx);     // Pop return address.
-  __ Push(rax);                   // Push argument.
-  __ PushReturnAddressFrom(rcx);  // Push return address.
-  __ TailCallRuntime(Runtime::kStringToNumber);
+  StringToNumberStub stub(masm->isolate());
+  __ TailCallStub(&stub);
   __ bind(&not_string);
 
   Label not_oddball;
@@ -2608,25 +2583,25 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ TailCallRuntime(Runtime::kToNumber);
 }
 
+void StringToNumberStub::Generate(MacroAssembler* masm) {
+  // The StringToNumber stub takes one argument in rax.
+  __ AssertString(rax);
 
-void ToLengthStub::Generate(MacroAssembler* masm) {
-  // The ToLength stub takes on argument in rax.
-  Label not_smi, positive_smi;
-  __ JumpIfNotSmi(rax, &not_smi, Label::kNear);
-  STATIC_ASSERT(kSmiTag == 0);
-  __ testp(rax, rax);
-  __ j(greater_equal, &positive_smi, Label::kNear);
-  __ xorl(rax, rax);
-  __ bind(&positive_smi);
+  // Check if string has a cached array index.
+  Label runtime;
+  __ testl(FieldOperand(rax, String::kHashFieldOffset),
+           Immediate(String::kContainsCachedArrayIndexMask));
+  __ j(not_zero, &runtime, Label::kNear);
+  __ movl(rax, FieldOperand(rax, String::kHashFieldOffset));
+  __ IndexFromHash(rax, rax);
   __ Ret();
-  __ bind(&not_smi);
 
+  __ bind(&runtime);
   __ PopReturnAddressTo(rcx);     // Pop return address.
   __ Push(rax);                   // Push argument.
   __ PushReturnAddressFrom(rcx);  // Push return address.
-  __ TailCallRuntime(Runtime::kToLength);
+  __ TailCallRuntime(Runtime::kStringToNumber);
 }
-
 
 void ToStringStub::Generate(MacroAssembler* masm) {
   // The ToString stub takes one argument in rax.
@@ -3778,8 +3753,8 @@ void LoadICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   __ bind(&not_array);
   __ CompareRoot(feedback, Heap::kmegamorphic_symbolRootIndex);
   __ j(not_equal, &miss);
-  Code::Flags code_flags = Code::RemoveTypeAndHolderFromFlags(
-      Code::ComputeHandlerFlags(Code::LOAD_IC));
+  Code::Flags code_flags =
+      Code::RemoveHolderFromFlags(Code::ComputeHandlerFlags(Code::LOAD_IC));
   masm->isolate()->stub_cache()->GenerateProbe(
       masm, Code::LOAD_IC, code_flags, receiver, name, feedback, no_reg);
 
@@ -3920,8 +3895,8 @@ void VectorStoreICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   __ CompareRoot(feedback, Heap::kmegamorphic_symbolRootIndex);
   __ j(not_equal, &miss);
 
-  Code::Flags code_flags = Code::RemoveTypeAndHolderFromFlags(
-      Code::ComputeHandlerFlags(Code::STORE_IC));
+  Code::Flags code_flags =
+      Code::RemoveHolderFromFlags(Code::ComputeHandlerFlags(Code::STORE_IC));
   masm->isolate()->stub_cache()->GenerateProbe(masm, Code::STORE_IC, code_flags,
                                                receiver, key, feedback, no_reg);
 
@@ -5593,6 +5568,169 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
                            NULL);
 }
 
+namespace {
+
+void GetTypedArrayBackingStore(MacroAssembler* masm, Register backing_store,
+                               Register object, Register scratch) {
+  Label offset_is_not_smi, done;
+  __ movp(scratch, FieldOperand(object, JSTypedArray::kBufferOffset));
+  __ movp(backing_store,
+          FieldOperand(scratch, JSArrayBuffer::kBackingStoreOffset));
+
+  __ movp(scratch, FieldOperand(object, JSArrayBufferView::kByteOffsetOffset));
+  __ JumpIfNotSmi(scratch, &offset_is_not_smi, Label::kNear);
+  // offset is smi
+  __ SmiToInteger32(scratch, scratch);
+  __ addp(backing_store, scratch);
+  __ jmp(&done, Label::kNear);
+
+  // offset is a heap number
+  __ bind(&offset_is_not_smi);
+  __ Movsd(xmm0, FieldOperand(scratch, HeapNumber::kValueOffset));
+  __ Cvttsd2siq(scratch, xmm0);
+  __ addp(backing_store, scratch);
+  __ bind(&done);
+}
+
+void TypedArrayJumpTablePrologue(MacroAssembler* masm, Register object,
+                                 Register scratch, Register scratch2,
+                                 Label* table) {
+  __ movp(scratch, FieldOperand(object, JSObject::kElementsOffset));
+  __ movp(scratch, FieldOperand(scratch, HeapObject::kMapOffset));
+  __ movzxbl(scratch, FieldOperand(scratch, Map::kInstanceTypeOffset));
+  __ subl(scratch, Immediate(static_cast<uint8_t>(FIXED_INT8_ARRAY_TYPE)));
+  __ Assert(above_equal, kOffsetOutOfRange);
+  __ leaq(scratch2, Operand(table));
+  __ jmp(Operand(scratch2, scratch, times_8, 0));
+}
+
+void TypedArrayJumpTableEpilogue(MacroAssembler* masm, Label* table, Label* i8,
+                                 Label* u8, Label* i16, Label* u16, Label* i32,
+                                 Label* u32, Label* u8c) {
+  STATIC_ASSERT(FIXED_UINT8_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 1);
+  STATIC_ASSERT(FIXED_INT16_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 2);
+  STATIC_ASSERT(FIXED_UINT16_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 3);
+  STATIC_ASSERT(FIXED_INT32_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 4);
+  STATIC_ASSERT(FIXED_UINT32_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 5);
+  STATIC_ASSERT(FIXED_FLOAT32_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 6);
+  STATIC_ASSERT(FIXED_FLOAT64_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 7);
+  STATIC_ASSERT(FIXED_UINT8_CLAMPED_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 8);
+
+  Label abort;
+  __ bind(table);
+  __ dq(i8);      // Int8Array
+  __ dq(u8);      // Uint8Array
+  __ dq(i16);     // Int16Array
+  __ dq(u16);     // Uint16Array
+  __ dq(i32);     // Int32Array
+  __ dq(u32);     // Uint32Array
+  __ dq(&abort);  // Float32Array
+  __ dq(&abort);  // Float64Array
+  __ dq(u8c);     // Uint8ClampedArray
+
+  __ bind(&abort);
+  __ Abort(kNoReason);
+}
+
+void ReturnInteger32(MacroAssembler* masm, XMMRegister dst, Register value,
+                     Label* use_heap_number) {
+  Label not_smi;
+  if (!value.is(rax)) {
+    __ movp(rax, value);
+  }
+  __ JumpIfNotValidSmiValue(rax, &not_smi, Label::kNear);
+  __ Integer32ToSmi(rax, rax);
+  __ Ret();
+
+  __ bind(&not_smi);
+  __ Cvtlsi2sd(dst, rax);
+  __ jmp(use_heap_number);
+}
+
+void ReturnUnsignedInteger32(MacroAssembler* masm, XMMRegister dst,
+                             Register value, Label* use_heap_number) {
+  Label not_smi;
+  if (!value.is(rax)) {
+    __ movp(rax, value);
+  }
+  __ JumpIfUIntNotValidSmiValue(rax, &not_smi, Label::kNear);
+  __ Integer32ToSmi(rax, rax);
+  __ Ret();
+
+  __ bind(&not_smi);
+  __ Cvtqsi2sd(dst, rax);
+  __ jmp(use_heap_number);
+}
+
+void ReturnAllocatedHeapNumber(MacroAssembler* masm, XMMRegister value,
+                               Register scratch) {
+  Label call_runtime;
+  __ AllocateHeapNumber(rax, scratch, &call_runtime);
+  __ Movsd(FieldOperand(rax, HeapNumber::kValueOffset), value);
+  __ Ret();
+
+  __ bind(&call_runtime);
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
+    __ Movsd(FieldOperand(rax, HeapNumber::kValueOffset), value);
+  }
+  __ Ret();
+}
+
+}  // anonymous namespace
+
+void AtomicsLoadStub::Generate(MacroAssembler* masm) {
+  Register object = rdx;
+  Register index = rax;  // Index is an untagged word32.
+  Register backing_store = rbx;
+  Label table;
+
+  GetTypedArrayBackingStore(masm, backing_store, object, kScratchRegister);
+  TypedArrayJumpTablePrologue(masm, object, rcx, kScratchRegister, &table);
+
+  Label i8, u8, i16, u16, i32, u32;
+
+  __ bind(&i8);
+  __ movb(rax, Operand(backing_store, index, times_1, 0));
+  __ movsxbl(rax, rax);
+  __ Integer32ToSmi(rax, rax);
+  __ Ret();
+
+  __ bind(&u8);
+  __ movb(rax, Operand(backing_store, index, times_1, 0));
+  __ movzxbl(rax, rax);
+  __ Integer32ToSmi(rax, rax);
+  __ Ret();
+
+  __ bind(&i16);
+  __ movw(rax, Operand(backing_store, index, times_2, 0));
+  __ movsxwl(rax, rax);
+  __ Integer32ToSmi(rax, rax);
+  __ Ret();
+
+  __ bind(&u16);
+  __ movw(rax, Operand(backing_store, index, times_2, 0));
+  __ movzxwl(rax, rax);
+  __ Integer32ToSmi(rax, rax);
+  __ Ret();
+
+  Label use_heap_number;
+
+  __ bind(&i32);
+  __ movl(rax, Operand(backing_store, index, times_4, 0));
+  ReturnInteger32(masm, xmm0, rax, &use_heap_number);
+
+  __ bind(&u32);
+  __ movl(rax, Operand(backing_store, index, times_4, 0));
+  ReturnUnsignedInteger32(masm, xmm0, rax, &use_heap_number);
+
+  __ bind(&use_heap_number);
+  ReturnAllocatedHeapNumber(masm, xmm0, rcx);
+
+  TypedArrayJumpTableEpilogue(masm, &table, &i8, &u8, &i16, &u16, &i32, &u32,
+                              &u8);
+}
 
 #undef __
 

@@ -3056,7 +3056,7 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
 
   if (instr->hydrogen()->from_inlined()) {
     __ sub(result, sp, Operand(2 * kPointerSize));
-  } else {
+  } else if (instr->hydrogen()->arguments_adaptor()) {
     // Check if the calling frame is an arguments adaptor frame.
     Label done, adapted;
     __ ldr(scratch, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
@@ -3068,6 +3068,8 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
     // frame below the adaptor frame if adapted.
     __ mov(result, fp, LeaveCC, ne);
     __ mov(result, scratch, LeaveCC, eq);
+  } else {
+    __ mov(result, fp);
   }
 }
 
@@ -4032,11 +4034,6 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
 
   if (instr->NeedsCanonicalization()) {
     // Force a canonical NaN.
-    if (masm()->emit_debug_code()) {
-      __ vmrs(ip);
-      __ tst(ip, Operand(kVFPDefaultNaNModeControlBit));
-      __ Assert(ne, kDefaultNaNModeNotSet);
-    }
     __ VFPCanonicalizeNaN(double_scratch, value);
     __ vstr(double_scratch, scratch, 0);
   } else {
@@ -4194,7 +4191,15 @@ void LCodeGen::DoDeferredMaybeGrowElements(LMaybeGrowElements* instr) {
 
     LOperand* key = instr->key();
     if (key->IsConstantOperand()) {
-      __ Move(r3, Operand(ToSmi(LConstantOperand::cast(key))));
+      LConstantOperand* constant_key = LConstantOperand::cast(key);
+      int32_t int_key = ToInteger32(constant_key);
+      if (Smi::IsValid(int_key)) {
+        __ mov(r3, Operand(Smi::FromInt(int_key)));
+      } else {
+        // We should never get here at runtime because there is a smi check on
+        // the key before this point.
+        __ stop("expected smi");
+      }
     } else {
       __ Move(r3, ToRegister(key));
       __ SmiTag(r3);
@@ -5542,13 +5547,6 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ bind(deferred->exit());
   __ bind(&done);
 }
-
-
-void LCodeGen::DoStoreFrameContext(LStoreFrameContext* instr) {
-  Register context = ToRegister(instr->context());
-  __ str(context, MemOperand(fp, StandardFrameConstants::kContextOffset));
-}
-
 
 #undef __
 

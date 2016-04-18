@@ -172,11 +172,11 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
   Comment(";;; Prologue begin");
 
   // Possibly allocate a local context.
-  if (info_->num_heap_slots() > 0) {
+  if (info_->scope()->num_heap_slots() > 0) {
     Comment(";;; Allocate local context");
     bool need_write_barrier = true;
     // Argument to NewContext is the function, which is still in rdi.
-    int slots = info_->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
+    int slots = info_->scope()->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
     Safepoint::DeoptMode deopt_mode = Safepoint::kNoLazyDeopt;
     if (info()->scope()->is_script_scope()) {
       __ Push(rdi);
@@ -3005,7 +3005,7 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
 
   if (instr->hydrogen()->from_inlined()) {
     __ leap(result, Operand(rsp, -kFPOnStackSize + -kPCOnStackSize));
-  } else {
+  } else if (instr->hydrogen()->arguments_adaptor()) {
     // Check for arguments adapter frame.
     Label done, adapted;
     __ movp(result, Operand(rbp, StandardFrameConstants::kCallerFPOffset));
@@ -3024,6 +3024,8 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
     // Result is the frame pointer for the frame if not adapted and for the real
     // frame below the adaptor frame if adapted.
     __ bind(&done);
+  } else {
+    __ movp(result, rbp);
   }
 }
 
@@ -3386,8 +3388,14 @@ void LCodeGen::DoMathAbs(LMathAbs* instr) {
   }
 }
 
+void LCodeGen::DoMathFloorD(LMathFloorD* instr) {
+  XMMRegister output_reg = ToDoubleRegister(instr->result());
+  XMMRegister input_reg = ToDoubleRegister(instr->value());
+  CpuFeatureScope scope(masm(), SSE4_1);
+  __ Roundsd(output_reg, input_reg, kRoundDown);
+}
 
-void LCodeGen::DoMathFloor(LMathFloor* instr) {
+void LCodeGen::DoMathFloorI(LMathFloorI* instr) {
   XMMRegister xmm_scratch = double_scratch0();
   Register output_reg = ToRegister(instr->result());
   XMMRegister input_reg = ToDoubleRegister(instr->value());
@@ -3445,8 +3453,23 @@ void LCodeGen::DoMathFloor(LMathFloor* instr) {
   }
 }
 
+void LCodeGen::DoMathRoundD(LMathRoundD* instr) {
+  XMMRegister xmm_scratch = double_scratch0();
+  XMMRegister output_reg = ToDoubleRegister(instr->result());
+  XMMRegister input_reg = ToDoubleRegister(instr->value());
+  CpuFeatureScope scope(masm(), SSE4_1);
+  Label done;
+  __ Roundsd(output_reg, input_reg, kRoundUp);
+  __ Move(xmm_scratch, -0.5);
+  __ Addsd(xmm_scratch, output_reg);
+  __ Ucomisd(xmm_scratch, input_reg);
+  __ j(below_equal, &done, Label::kNear);
+  __ Move(xmm_scratch, 1.0);
+  __ Subsd(output_reg, xmm_scratch);
+  __ bind(&done);
+}
 
-void LCodeGen::DoMathRound(LMathRound* instr) {
+void LCodeGen::DoMathRoundI(LMathRoundI* instr) {
   const XMMRegister xmm_scratch = double_scratch0();
   Register output_reg = ToRegister(instr->result());
   XMMRegister input_reg = ToDoubleRegister(instr->value());
@@ -5573,13 +5596,6 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ bind(deferred->exit());
   __ bind(&done);
 }
-
-
-void LCodeGen::DoStoreFrameContext(LStoreFrameContext* instr) {
-  Register context = ToRegister(instr->context());
-  __ movp(Operand(rbp, StandardFrameConstants::kContextOffset), context);
-}
-
 
 #undef __
 

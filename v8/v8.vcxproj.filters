@@ -312,6 +312,9 @@
     <ClInclude Include="src\bailout-reason.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\base\accounting-allocator.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
     <ClInclude Include="src\base\adapters.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
@@ -370,6 +373,9 @@
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\flags.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\format-macros.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\functional.h">
@@ -471,6 +477,9 @@
     <ClInclude Include="src\code-factory.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\code-stub-assembler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\code-stubs.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -525,13 +534,13 @@
     <ClInclude Include="src\compiler\coalesced-live-ranges.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\code-assembler.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\code-generator-impl.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\code-generator.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\code-stub-assembler.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\common-node-cache.h">
@@ -556,6 +565,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\diamond.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\effect-control-linearizer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\escape-analysis-reducer.h">
@@ -820,9 +832,6 @@
       <Filter>Source Files\crankshaft</Filter>
     </ClInclude>
     <ClInclude Include="src\crankshaft\hydrogen-bce.h">
-      <Filter>Source Files\crankshaft</Filter>
-    </ClInclude>
-    <ClInclude Include="src\crankshaft\hydrogen-bch.h">
       <Filter>Source Files\crankshaft</Filter>
     </ClInclude>
     <ClInclude Include="src\crankshaft\hydrogen-canonicalize.h">
@@ -1161,9 +1170,6 @@
     <ClInclude Include="src\heap\spaces.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
-    <ClInclude Include="src\heap\store-buffer-inl.h">
-      <Filter>Source Files\heap</Filter>
-    </ClInclude>
     <ClInclude Include="src\heap\store-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1251,10 +1257,10 @@
     <ClInclude Include="src\interpreter\interpreter-assembler.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
-    <ClInclude Include="src\interpreter\interpreter.h">
+    <ClInclude Include="src\interpreter\interpreter-intrinsics.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
-    <ClInclude Include="src\interpreter\register-translator.h">
+    <ClInclude Include="src\interpreter\interpreter.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\source-position-table.h">
@@ -1381,6 +1387,9 @@
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\pending-compilation-error-handler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\perf-jit.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ppc\assembler-ppc-inl.h">
@@ -1704,6 +1713,9 @@
     <ClInclude Include="src\wasm\module-decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\switch-logic.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\wasm-external-refs.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -1847,6 +1859,9 @@
     <ClCompile Include="src\bailout-reason.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\base\accounting-allocator.cc">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
     <ClCompile Include="src\base\atomicops_internals_x86_gcc.cc">
       <Filter>Source Files\base</Filter>
     </ClCompile>
@@ -1946,6 +1961,9 @@
     <ClCompile Include="src\code-factory.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\code-stub-assembler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\code-stubs-hydrogen.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2003,10 +2021,10 @@
     <ClCompile Include="src\compiler\coalesced-live-ranges.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\code-generator.cc">
+    <ClCompile Include="src\compiler\code-assembler.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\code-stub-assembler.cc">
+    <ClCompile Include="src\compiler\code-generator.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\common-node-cache.cc">
@@ -2028,6 +2046,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\dead-code-elimination.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\effect-control-linearizer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\escape-analysis-reducer.cc">
@@ -2307,9 +2328,6 @@
       <Filter>Source Files\crankshaft</Filter>
     </ClCompile>
     <ClCompile Include="src\crankshaft\hydrogen-bce.cc">
-      <Filter>Source Files\crankshaft</Filter>
-    </ClCompile>
-    <ClCompile Include="src\crankshaft\hydrogen-bch.cc">
       <Filter>Source Files\crankshaft</Filter>
     </ClCompile>
     <ClCompile Include="src\crankshaft\hydrogen-canonicalize.cc">
@@ -2786,10 +2804,10 @@
     <ClCompile Include="src\interpreter\interpreter-assembler.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
-    <ClCompile Include="src\interpreter\interpreter.cc">
+    <ClCompile Include="src\interpreter\interpreter-intrinsics.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
-    <ClCompile Include="src\interpreter\register-translator.cc">
+    <ClCompile Include="src\interpreter\interpreter.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\source-position-table.cc">
@@ -2874,6 +2892,9 @@
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="src\pending-compilation-error-handler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\perf-jit.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ppc\assembler-ppc.cc">
@@ -3219,6 +3240,12 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\module-decoder.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\switch-logic.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-external-refs.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-js.cc">

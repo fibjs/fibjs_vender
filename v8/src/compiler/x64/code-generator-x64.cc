@@ -606,6 +606,12 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
     }                                                            \
   } while (false)
 
+void CodeGenerator::AssembleDeconstructFrame() {
+  __ movq(rsp, rbp);
+  __ popq(rbp);
+}
+
+void CodeGenerator::AssembleSetupStackPointer() {}
 
 void CodeGenerator::AssembleDeconstructActivationRecord(int stack_param_delta) {
   int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
@@ -622,7 +628,7 @@ void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
     __ subq(rsp, Immediate(-sp_slot_delta * kPointerSize));
     frame_access_state()->IncreaseSPDelta(-sp_slot_delta);
   }
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     __ movq(rbp, MemOperand(rbp, 0));
   }
   frame_access_state()->SetFrameAccessToSP();
@@ -690,6 +696,15 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ addp(reg, Immediate(Code::kHeaderSize - kHeapObjectTag));
         __ jmp(reg);
       }
+      frame_access_state()->ClearSPDelta();
+      break;
+    }
+    case kArchTailCallAddress: {
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
+      CHECK(!HasImmediateInput(instr, 0));
+      Register reg = i.InputRegister(0);
+      __ jmp(reg);
       frame_access_state()->ClearSPDelta();
       break;
     }
@@ -779,7 +794,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ movq(i.OutputRegister(), rbp);
       break;
     case kArchParentFramePointer:
-      if (frame_access_state()->frame()->needs_frame()) {
+      if (frame_access_state()->has_frame()) {
         __ movq(i.OutputRegister(), Operand(rbp, 0));
       } else {
         __ movq(i.OutputRegister(), rbp);
@@ -789,10 +804,13 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       auto result = i.OutputRegister();
       auto input = i.InputDoubleRegister(0);
       auto ool = new (zone()) OutOfLineTruncateDoubleToI(this, result, input);
+      // We use Cvttsd2siq instead of Cvttsd2si due to performance reasons. The
+      // use of Cvttsd2siq requires the movl below to avoid sign extension.
       __ Cvttsd2siq(result, input);
       __ cmpq(result, Immediate(1));
       __ j(overflow, ool->entry());
       __ bind(ool->exit());
+      __ movl(result, result);
       break;
     }
     case kArchStoreWithWriteBarrier: {
@@ -1057,7 +1075,6 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         __ Cvttss2siq(i.OutputRegister(), i.InputOperand(0));
       }
-      __ AssertZeroExtended(i.OutputRegister());
       break;
     }
     case kSSEFloat64Cmp:
@@ -1156,7 +1173,9 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       } else {
         __ Cvttsd2siq(i.OutputRegister(), i.InputOperand(0));
       }
-      __ AssertZeroExtended(i.OutputRegister());
+      if (MiscField::decode(instr->opcode())) {
+        __ AssertZeroExtended(i.OutputRegister());
+      }
       break;
     }
     case kSSEFloat32ToInt64:
@@ -1933,7 +1952,7 @@ static const int kQuadWordSize = 16;
 
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     if (descriptor->IsCFunctionCall()) {
       __ pushq(rbp);
       __ movq(rbp, rsp);
@@ -1942,11 +1961,7 @@ void CodeGenerator::AssemblePrologue() {
     } else {
       __ StubPrologue(info()->GetOutputStackFrameType());
     }
-  } else {
-    frame()->SetElidedFrameSizeInSlots(kPCOnStackSize / kPointerSize);
   }
-  frame_access_state()->SetFrameAccessToDefault();
-
   int stack_shrink_slots = frame()->GetSpillSlotCount();
   if (info()->is_osr()) {
     // TurboFan OSR-compiled functions cannot be entered directly.
@@ -2026,17 +2041,15 @@ void CodeGenerator::AssembleReturn() {
   }
 
   if (descriptor->IsCFunctionCall()) {
-    __ movq(rsp, rbp);  // Move stack pointer back to frame pointer.
-    __ popq(rbp);       // Pop caller's frame pointer.
-  } else if (frame()->needs_frame()) {
+    AssembleDeconstructFrame();
+  } else if (frame_access_state()->has_frame()) {
     // Canonicalize JSFunction return sites for now.
     if (return_label_.is_bound()) {
       __ jmp(&return_label_);
       return;
     } else {
       __ bind(&return_label_);
-      __ movq(rsp, rbp);  // Move stack pointer back to frame pointer.
-      __ popq(rbp);       // Pop caller's frame pointer.
+      AssembleDeconstructFrame();
     }
   }
   size_t pop_size = descriptor->StackParameterCount() * kPointerSize;
@@ -2080,12 +2093,26 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       Register dst = destination->IsRegister() ? g.ToRegister(destination)
                                                : kScratchRegister;
       switch (src.type()) {
-        case Constant::kInt32:
-          // TODO(dcarney): don't need scratch in this case.
-          __ Set(dst, src.ToInt32());
+        case Constant::kInt32: {
+          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+            __ movq(dst, src.ToInt64(), src.rmode());
+          } else {
+            // TODO(dcarney): don't need scratch in this case.
+            int32_t value = src.ToInt32();
+            if (value == 0) {
+              __ xorl(dst, dst);
+            } else {
+              __ movl(dst, Immediate(value));
+            }
+          }
           break;
+        }
         case Constant::kInt64:
-          __ Set(dst, src.ToInt64());
+          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+            __ movq(dst, src.ToInt64(), src.rmode());
+          } else {
+            __ Set(dst, src.ToInt64());
+          }
           break;
         case Constant::kFloat32:
           __ Move(dst,

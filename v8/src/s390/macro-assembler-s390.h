@@ -335,6 +335,7 @@ class MacroAssembler : public Assembler {
   void LoadW(Register dst, const MemOperand& opnd, Register scratch = no_reg);
   void LoadlW(Register dst, const MemOperand& opnd, Register scratch = no_reg);
   void LoadB(Register dst, const MemOperand& opnd);
+  void LoadB(Register dst, Register src);
   void LoadlB(Register dst, const MemOperand& opnd);
 
   // Load And Test
@@ -1180,22 +1181,6 @@ class MacroAssembler : public Assembler {
                      Register input_high, Register scratch,
                      DoubleRegister double_scratch, Label* done, Label* exact);
 
-  // Perform ceiling of float in input_register and store in double_output.
-  void FloatCeiling32(DoubleRegister double_output, DoubleRegister double_input,
-                      Register scratch, DoubleRegister double_scratch);
-
-  // Perform floor of float in input_register and store in double_output.
-  void FloatFloor32(DoubleRegister double_output, DoubleRegister double_input,
-                    Register scratch);
-
-  // Perform ceiling of double in input_register and store in double_output.
-  void FloatCeiling64(DoubleRegister double_output, DoubleRegister double_input,
-                      Register scratch, DoubleRegister double_scratch);
-
-  // Perform floor of double in input_register and store in double_output.
-  void FloatFloor64(DoubleRegister double_output, DoubleRegister double_input,
-                    Register scratch);
-
   // Performs a truncating conversion of a floating point number as used by
   // the JS bitwise operations. See ECMA-262 9.5: ToInt32. Goes to 'done' if it
   // succeeds, otherwise falls through if result is saturated. On return
@@ -1588,6 +1573,12 @@ class MacroAssembler : public Assembler {
     if (isSmi) {
       SmiToArrayOffset(dst, src, elementSizeLog2);
     } else {
+#if V8_TARGET_ARCH_S390X
+      // src (key) is a 32-bit integer.  Sign extension ensures
+      // upper 32-bit does not contain garbage before being used to
+      // reference memory.
+      lgfr(src, src);
+#endif
       ShiftLeftP(dst, src, Operand(elementSizeLog2));
     }
   }
@@ -1623,6 +1614,9 @@ class MacroAssembler : public Assembler {
   void JumpIfNotBothSmi(Register reg1, Register reg2, Label* on_not_both_smi);
   // Jump if either of the registers contain a smi.
   void JumpIfEitherSmi(Register reg1, Register reg2, Label* on_either_smi);
+
+  // Abort execution if argument is a number, enabled via --debug-code.
+  void AssertNotNumber(Register object);
 
   // Abort execution if argument is a smi, enabled via --debug-code.
   void AssertNotSmi(Register object);
@@ -1666,6 +1660,10 @@ class MacroAssembler : public Assembler {
   // Abort execution if argument is not a JSBoundFunction,
   // enabled via --debug-code.
   void AssertBoundFunction(Register object);
+
+  // Abort execution if argument is not a JSGeneratorObject,
+  // enabled via --debug-code.
+  void AssertGeneratorObject(Register object);
 
   // Abort execution if argument is not a JSReceiver, enabled via --debug-code.
   void AssertReceiver(Register object);
@@ -1779,13 +1777,15 @@ class MacroAssembler : public Assembler {
   // If allocation info is present, condition flags are set to eq.
   void TestJSArrayForAllocationMemento(Register receiver_reg,
                                        Register scratch_reg,
+                                       Register scratch2_reg,
                                        Label* no_memento_found);
 
   void JumpIfJSArrayHasAllocationMemento(Register receiver_reg,
                                          Register scratch_reg,
+                                         Register scratch2_reg,
                                          Label* memento_found) {
     Label no_memento_found;
-    TestJSArrayForAllocationMemento(receiver_reg, scratch_reg,
+    TestJSArrayForAllocationMemento(receiver_reg, scratch_reg, scratch2_reg,
                                     &no_memento_found);
     beq(memento_found);
     bind(&no_memento_found);

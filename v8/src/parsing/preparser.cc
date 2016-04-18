@@ -182,10 +182,7 @@ PreParser::Statement PreParser::ParseStatementListItem(bool* ok) {
     case Token::CLASS:
       return ParseClassDeclaration(ok);
     case Token::CONST:
-      if (allow_const()) {
-        return ParseVariableStatement(kStatementListItem, ok);
-      }
-      break;
+      return ParseVariableStatement(kStatementListItem, ok);
     case Token::LET:
       if (IsNextLetKeyword()) {
         return ParseVariableStatement(kStatementListItem, ok);
@@ -194,7 +191,7 @@ PreParser::Statement PreParser::ParseStatementListItem(bool* ok) {
     default:
       break;
   }
-  return ParseStatement(ok);
+  return ParseStatement(kAllowLabelledFunctionStatement, ok);
 }
 
 
@@ -263,8 +260,8 @@ void PreParser::ParseStatementList(int end_token, bool* ok,
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
-
-PreParser::Statement PreParser::ParseStatement(bool* ok) {
+PreParser::Statement PreParser::ParseStatement(
+    AllowLabelledFunctionStatement allow_function, bool* ok) {
   // Statement ::
   //   EmptyStatement
   //   ...
@@ -273,19 +270,20 @@ PreParser::Statement PreParser::ParseStatement(bool* ok) {
     Next();
     return Statement::Default();
   }
-  return ParseSubStatement(ok);
+  return ParseSubStatement(allow_function, ok);
 }
 
 PreParser::Statement PreParser::ParseScopedStatement(bool legacy, bool* ok) {
   if (is_strict(language_mode()) || peek() != Token::FUNCTION ||
       (legacy && allow_harmony_restrictive_declarations())) {
-    return ParseSubStatement(ok);
+    return ParseSubStatement(kDisallowLabelledFunctionStatement, ok);
   } else {
     return ParseFunctionDeclaration(CHECK_OK);
   }
 }
 
-PreParser::Statement PreParser::ParseSubStatement(bool* ok) {
+PreParser::Statement PreParser::ParseSubStatement(
+    AllowLabelledFunctionStatement allow_function, bool* ok) {
   // Statement ::
   //   Block
   //   VariableStatement
@@ -371,17 +369,8 @@ PreParser::Statement PreParser::ParseSubStatement(bool* ok) {
     case Token::VAR:
       return ParseVariableStatement(kStatement, ok);
 
-    case Token::CONST:
-      // In ES6 CONST is not allowed as a Statement, only as a
-      // LexicalDeclaration, however we continue to allow it in sloppy mode for
-      // backwards compatibility.
-      if (is_sloppy(language_mode()) && allow_legacy_const()) {
-        return ParseVariableStatement(kStatement, ok);
-      }
-
-    // Fall through.
     default:
-      return ParseExpressionOrLabelledStatement(ok);
+      return ParseExpressionOrLabelledStatement(allow_function, ok);
   }
 }
 
@@ -411,11 +400,6 @@ PreParser::Statement PreParser::ParseFunctionDeclaration(bool* ok) {
 
 PreParser::Statement PreParser::ParseClassDeclaration(bool* ok) {
   Expect(Token::CLASS, CHECK_OK);
-  if (!allow_harmony_sloppy() && is_sloppy(language_mode())) {
-    ReportMessage(MessageTemplate::kSloppyLexical);
-    *ok = false;
-    return Statement::Default();
-  }
 
   int pos = position();
   bool is_strict_reserved = false;
@@ -481,7 +465,7 @@ PreParser::Statement PreParser::ParseVariableDeclarations(
   bool is_pattern = false;
   if (peek() == Token::VAR) {
     Consume(Token::VAR);
-  } else if (peek() == Token::CONST && allow_const()) {
+  } else if (peek() == Token::CONST) {
     // TODO(ES6): The ES6 Draft Rev4 section 12.2.2 reads:
     //
     // ConstDeclaration : const ConstBinding (',' ConstBinding)* ';'
@@ -493,13 +477,10 @@ PreParser::Statement PreParser::ParseVariableDeclarations(
     // existing pages. Therefore we keep allowing const with the old
     // non-harmony semantics in sloppy mode.
     Consume(Token::CONST);
-    if (is_strict(language_mode()) ||
-        (allow_harmony_sloppy() && !allow_legacy_const())) {
-      DCHECK(var_context != kStatement);
-      require_initializer = true;
-      lexical = true;
-    }
-  } else if (peek() == Token::LET && allow_let()) {
+    DCHECK(var_context != kStatement);
+    require_initializer = true;
+    lexical = true;
+  } else if (peek() == Token::LET) {
     Consume(Token::LET);
     DCHECK(var_context != kStatement);
     lexical = true;
@@ -565,8 +546,8 @@ PreParser::Statement PreParser::ParseVariableDeclarations(
   return Statement::Default();
 }
 
-
-PreParser::Statement PreParser::ParseExpressionOrLabelledStatement(bool* ok) {
+PreParser::Statement PreParser::ParseExpressionOrLabelledStatement(
+    AllowLabelledFunctionStatement allow_function, bool* ok) {
   // ExpressionStatement | LabelledStatement ::
   //   Expression ';'
   //   Identifier ':' Statement
@@ -601,23 +582,20 @@ PreParser::Statement PreParser::ParseExpressionOrLabelledStatement(bool* ok) {
     Consume(Token::COLON);
     // ES#sec-labelled-function-declarations Labelled Function Declarations
     if (peek() == Token::FUNCTION && is_sloppy(language_mode())) {
-      return ParseFunctionDeclaration(ok);
+      if (allow_function == kAllowLabelledFunctionStatement) {
+        return ParseFunctionDeclaration(ok);
+      } else {
+        return ParseScopedStatement(true, ok);
+      }
     }
-    Statement statement = ParseStatement(ok);
+    Statement statement =
+        ParseStatement(kDisallowLabelledFunctionStatement, ok);
     return statement.IsJumpStatement() ? Statement::Default() : statement;
     // Preparsing is disabled for extensions (because the extension details
     // aren't passed to lazily compiled functions), so we don't
     // accept "native function" in the preparser.
   }
   // Parsed expression statement.
-  // Detect attempts at 'let' declarations in sloppy mode.
-  if (!allow_harmony_sloppy_let() && peek() == Token::IDENTIFIER &&
-      is_sloppy(language_mode()) && expr.IsIdentifier() &&
-      expr.AsIdentifier().IsLet()) {
-    ReportMessage(MessageTemplate::kSloppyLexical, NULL);
-    *ok = false;
-    return Statement::Default();
-  }
   ExpectSemicolon(CHECK_OK);
   return Statement::ExpressionStatement(expr);
 }
@@ -794,10 +772,9 @@ PreParser::Statement PreParser::ParseForStatement(bool* ok) {
 
   Expect(Token::FOR, CHECK_OK);
   Expect(Token::LPAREN, CHECK_OK);
-  bool is_let_identifier_expression = false;
   if (peek() != Token::SEMICOLON) {
     ForEachStatement::VisitMode mode;
-    if (peek() == Token::VAR || (peek() == Token::CONST && allow_const()) ||
+    if (peek() == Token::VAR || peek() == Token::CONST ||
         (peek() == Token::LET && IsNextLetKeyword())) {
       int decl_count;
       bool is_lexical;
@@ -843,8 +820,6 @@ PreParser::Statement PreParser::ParseForStatement(bool* ok) {
       ExpressionClassifier classifier(this);
       Expression lhs = ParseExpression(false, &classifier, CHECK_OK);
       int lhs_end_pos = scanner()->location().end_pos;
-      is_let_identifier_expression =
-          lhs.IsIdentifier() && lhs.AsIdentifier().IsLet();
       bool is_for_each = CheckInOrOf(&mode, ok);
       if (!*ok) return Statement::Default();
       bool is_destructuring = is_for_each &&
@@ -879,13 +854,6 @@ PreParser::Statement PreParser::ParseForStatement(bool* ok) {
   }
 
   // Parsed initializer at this point.
-  // Detect attempts at 'let' declarations in sloppy mode.
-  if (!allow_harmony_sloppy_let() && peek() == Token::IDENTIFIER &&
-      is_sloppy(language_mode()) && is_let_identifier_expression) {
-    ReportMessage(MessageTemplate::kSloppyLexical, NULL);
-    *ok = false;
-    return Statement::Default();
-  }
   Expect(Token::SEMICOLON, CHECK_OK);
 
   if (peek() != Token::SEMICOLON) {

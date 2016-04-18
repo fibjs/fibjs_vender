@@ -76,6 +76,7 @@ class RawMachineAssembler {
     return kPointerSize == 8 ? Int64Constant(value)
                              : Int32Constant(static_cast<int>(value));
   }
+  Node* RelocatableIntPtrConstant(intptr_t value, RelocInfo::Mode rmode);
   Node* Int32Constant(int32_t value) {
     return AddNode(common()->Int32Constant(value));
   }
@@ -103,6 +104,12 @@ class RawMachineAssembler {
   }
   Node* ExternalConstant(ExternalReference address) {
     return AddNode(common()->ExternalConstant(address));
+  }
+  Node* RelocatableInt32Constant(int32_t value, RelocInfo::Mode rmode) {
+    return AddNode(common()->RelocatableInt32Constant(value, rmode));
+  }
+  Node* RelocatableInt64Constant(int64_t value, RelocInfo::Mode rmode) {
+    return AddNode(common()->RelocatableInt64Constant(value, rmode));
   }
 
   Node* Projection(int index, Node* a) {
@@ -330,6 +337,9 @@ class RawMachineAssembler {
   Node* Int32PairSub(Node* a_low, Node* a_high, Node* b_low, Node* b_high) {
     return AddNode(machine()->Int32PairSub(), a_low, a_high, b_low, b_high);
   }
+  Node* Int32PairMul(Node* a_low, Node* a_high, Node* b_low, Node* b_high) {
+    return AddNode(machine()->Int32PairMul(), a_low, a_high, b_low, b_high);
+  }
   Node* Word32PairShl(Node* low_word, Node* high_word, Node* shift) {
     return AddNode(machine()->Word32PairShl(), low_word, high_word, shift);
   }
@@ -347,7 +357,11 @@ class RawMachineAssembler {
   }
 
   INTPTR_BINOP(Int, Add);
+  INTPTR_BINOP(Int, AddWithOverflow);
   INTPTR_BINOP(Int, Sub);
+  INTPTR_BINOP(Int, SubWithOverflow);
+  INTPTR_BINOP(Int, Mul);
+  INTPTR_BINOP(Int, Div);
   INTPTR_BINOP(Int, LessThan);
   INTPTR_BINOP(Int, LessThanOrEqual);
   INTPTR_BINOP(Word, Equal);
@@ -389,6 +403,7 @@ class RawMachineAssembler {
     return AddNode(machine()->Float32Min().op(), a, b);
   }
   Node* Float32Abs(Node* a) { return AddNode(machine()->Float32Abs(), a); }
+  Node* Float32Neg(Node* a) { return Float32Sub(Float32Constant(-0.0f), a); }
   Node* Float32Sqrt(Node* a) { return AddNode(machine()->Float32Sqrt(), a); }
   Node* Float32Equal(Node* a, Node* b) {
     return AddNode(machine()->Float32Equal(), a, b);
@@ -429,6 +444,7 @@ class RawMachineAssembler {
     return AddNode(machine()->Float64Min().op(), a, b);
   }
   Node* Float64Abs(Node* a) { return AddNode(machine()->Float64Abs(), a); }
+  Node* Float64Neg(Node* a) { return Float64Sub(Float64Constant(-0.0), a); }
   Node* Float64Sqrt(Node* a) { return AddNode(machine()->Float64Sqrt(), a); }
   Node* Float64Equal(Node* a, Node* b) {
     return AddNode(machine()->Float64Equal(), a, b);
@@ -462,6 +478,9 @@ class RawMachineAssembler {
   }
   Node* ChangeFloat64ToUint32(Node* a) {
     return AddNode(machine()->ChangeFloat64ToUint32(), a);
+  }
+  Node* TruncateFloat64ToUint32(Node* a) {
+    return AddNode(machine()->TruncateFloat64ToUint32(), a);
   }
   Node* TruncateFloat32ToInt32(Node* a) {
     return AddNode(machine()->TruncateFloat32ToInt32(), a);

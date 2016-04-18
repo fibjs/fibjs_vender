@@ -140,7 +140,7 @@ void ElementsTransitionGenerator::GenerateMapChangeElementsTransition(
 
   if (mode == TRACK_ALLOCATION_SITE) {
     DCHECK(allocation_memento_found != NULL);
-    __ JumpIfJSArrayHasAllocationMemento(receiver, scratch_elements,
+    __ JumpIfJSArrayHasAllocationMemento(receiver, scratch_elements, r11,
                                          allocation_memento_found);
   }
 
@@ -173,7 +173,7 @@ void ElementsTransitionGenerator::GenerateSmiToDouble(
                      scratch2));
 
   if (mode == TRACK_ALLOCATION_SITE) {
-    __ JumpIfJSArrayHasAllocationMemento(receiver, elements, fail);
+    __ JumpIfJSArrayHasAllocationMemento(receiver, elements, scratch3, fail);
   }
 
   // Check for empty arrays, which only require a map transition and no changes
@@ -293,7 +293,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
                      scratch));
 
   if (mode == TRACK_ALLOCATION_SITE) {
-    __ JumpIfJSArrayHasAllocationMemento(receiver, elements, fail);
+    __ JumpIfJSArrayHasAllocationMemento(receiver, elements, scratch3, fail);
   }
 
   // Check for empty arrays, which only require a map transition and no changes

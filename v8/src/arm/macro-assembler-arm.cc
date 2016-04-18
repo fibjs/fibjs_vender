@@ -742,12 +742,12 @@ void MacroAssembler::RememberedSetHelper(Register object,  // For debug tests.
   str(scratch, MemOperand(ip));
   // Call stub on end of buffer.
   // Check for end of buffer.
-  tst(scratch, Operand(StoreBuffer::kStoreBufferOverflowBit));
+  tst(scratch, Operand(StoreBuffer::kStoreBufferMask));
   if (and_then == kFallThroughAtEnd) {
-    b(eq, &done);
+    b(ne, &done);
   } else {
     DCHECK(and_then == kReturnAtEnd);
-    Ret(eq);
+    Ret(ne);
   }
   push(lr);
   StoreBufferOverflowStub store_buffer_overflow(isolate(), fp_mode);
@@ -954,30 +954,12 @@ void MacroAssembler::Strd(Register src1, Register src2,
   }
 }
 
-
-void MacroAssembler::VFPEnsureFPSCRState(Register scratch) {
-  // If needed, restore wanted bits of FPSCR.
-  Label fpscr_done;
-  vmrs(scratch);
-  if (emit_debug_code()) {
-    Label rounding_mode_correct;
-    tst(scratch, Operand(kVFPRoundingModeMask));
-    b(eq, &rounding_mode_correct);
-    // Don't call Assert here, since Runtime_Abort could re-enter here.
-    stop("Default rounding mode not set");
-    bind(&rounding_mode_correct);
-  }
-  tst(scratch, Operand(kVFPDefaultNaNModeControlBit));
-  b(ne, &fpscr_done);
-  orr(scratch, scratch, Operand(kVFPDefaultNaNModeControlBit));
-  vmsr(scratch);
-  bind(&fpscr_done);
-}
-
-
 void MacroAssembler::VFPCanonicalizeNaN(const DwVfpRegister dst,
                                         const DwVfpRegister src,
                                         const Condition cond) {
+  // Subtracting 0.0 preserves all inputs except for signalling NaNs, which
+  // become quiet NaNs. We use vsub rather than vadd because vsub preserves -0.0
+  // inputs: -0.0 + 0.0 = 0.0, but -0.0 - 0.0 = -0.0.
   vsub(dst, src, kDoubleRegZero, cond);
 }
 
@@ -2418,12 +2400,6 @@ void MacroAssembler::StoreNumberToDoubleElements(
            DONT_DO_SMI_CHECK);
 
   vldr(double_scratch, FieldMemOperand(value_reg, HeapNumber::kValueOffset));
-  // Force a canonical NaN.
-  if (emit_debug_code()) {
-    vmrs(ip);
-    tst(ip, Operand(kVFPDefaultNaNModeControlBit));
-    Assert(ne, kDefaultNaNModeNotSet);
-  }
   VFPCanonicalizeNaN(double_scratch);
   b(&store);
 
@@ -3050,6 +3026,17 @@ void MacroAssembler::JumpIfEitherSmi(Register reg1,
   b(eq, on_either_smi);
 }
 
+void MacroAssembler::AssertNotNumber(Register object) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    tst(object, Operand(kSmiTagMask));
+    Check(ne, kOperandIsANumber);
+    push(object);
+    CompareObjectType(object, object, object, HEAP_NUMBER_TYPE);
+    pop(object);
+    Check(ne, kOperandIsANumber);
+  }
+}
 
 void MacroAssembler::AssertNotSmi(Register object) {
   if (emit_debug_code()) {
@@ -3122,6 +3109,17 @@ void MacroAssembler::AssertBoundFunction(Register object) {
   }
 }
 
+void MacroAssembler::AssertGeneratorObject(Register object) {
+  if (emit_debug_code()) {
+    STATIC_ASSERT(kSmiTag == 0);
+    tst(object, Operand(kSmiTagMask));
+    Check(ne, kOperandIsASmiAndNotAGeneratorObject);
+    push(object);
+    CompareObjectType(object, object, object, JS_GENERATOR_OBJECT_TYPE);
+    pop(object);
+    Check(eq, kOperandIsNotAGeneratorObject);
+  }
+}
 
 void MacroAssembler::AssertReceiver(Register object) {
   if (emit_debug_code()) {
@@ -3757,28 +3755,45 @@ void MacroAssembler::CheckEnumCache(Label* call_runtime) {
   b(ne, &next);
 }
 
-
 void MacroAssembler::TestJSArrayForAllocationMemento(
     Register receiver_reg,
     Register scratch_reg,
     Label* no_memento_found) {
-  ExternalReference new_space_start =
-      ExternalReference::new_space_start(isolate());
+  Label map_check;
+  Label top_check;
   ExternalReference new_space_allocation_top =
       ExternalReference::new_space_allocation_top_address(isolate());
-  add(scratch_reg, receiver_reg,
-      Operand(JSArray::kSize + AllocationMemento::kSize - kHeapObjectTag));
-  cmp(scratch_reg, Operand(new_space_start));
-  b(lt, no_memento_found);
-  mov(ip, Operand(new_space_allocation_top));
-  ldr(ip, MemOperand(ip));
-  cmp(scratch_reg, ip);
-  b(gt, no_memento_found);
-  ldr(scratch_reg, MemOperand(scratch_reg, -AllocationMemento::kSize));
-  cmp(scratch_reg,
-      Operand(isolate()->factory()->allocation_memento_map()));
-}
+  const int kMementoMapOffset = JSArray::kSize - kHeapObjectTag;
+  const int kMementoEndOffset = kMementoMapOffset + AllocationMemento::kSize;
 
+  // Bail out if the object is not in new space.
+  JumpIfNotInNewSpace(receiver_reg, scratch_reg, no_memento_found);
+  // If the object is in new space, we need to check whether it is on the same
+  // page as the current top.
+  add(scratch_reg, receiver_reg, Operand(kMementoEndOffset));
+  eor(scratch_reg, scratch_reg, Operand(new_space_allocation_top));
+  tst(scratch_reg, Operand(~Page::kPageAlignmentMask));
+  b(eq, &top_check);
+  // The object is on a different page than allocation top. Bail out if the
+  // object sits on the page boundary as no memento can follow and we cannot
+  // touch the memory following it.
+  add(scratch_reg, receiver_reg, Operand(kMementoEndOffset));
+  eor(scratch_reg, scratch_reg, Operand(receiver_reg));
+  tst(scratch_reg, Operand(~Page::kPageAlignmentMask));
+  b(ne, no_memento_found);
+  // Continue with the actual map check.
+  jmp(&map_check);
+  // If top is on the same page as the current object, we need to check whether
+  // we are below top.
+  bind(&top_check);
+  add(scratch_reg, receiver_reg, Operand(kMementoEndOffset));
+  cmp(scratch_reg, Operand(new_space_allocation_top));
+  b(gt, no_memento_found);
+  // Memento map check.
+  bind(&map_check);
+  ldr(scratch_reg, MemOperand(receiver_reg, kMementoMapOffset));
+  cmp(scratch_reg, Operand(isolate()->factory()->allocation_memento_map()));
+}
 
 Register GetRegisterThatIsNotOneOf(Register reg1,
                                    Register reg2,

@@ -234,7 +234,8 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
         value_(value),
         scratch0_(scratch0),
         scratch1_(scratch1),
-        mode_(mode) {}
+        mode_(mode),
+        must_save_lr_(!gen->frame_access_state()->has_frame()) {}
 
   void Generate() final {
     if (mode_ > RecordWriteMode::kValueIsPointer) {
@@ -248,7 +249,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
                                              : OMIT_REMEMBERED_SET;
     SaveFPRegsMode const save_fp_mode =
         frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
-    if (!frame()->needs_frame()) {
+    if (must_save_lr_) {
       // We need to save and restore lr if the frame was elided.
       __ Push(lr);
     }
@@ -261,7 +262,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
       __ add(scratch1_, object_, Operand(index_));
     }
     __ CallStub(&stub);
-    if (!frame()->needs_frame()) {
+    if (must_save_lr_) {
       __ Pop(lr);
     }
   }
@@ -274,6 +275,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
   Register const scratch0_;
   Register const scratch1_;
   RecordWriteMode const mode_;
+  bool must_save_lr_;
 };
 
 
@@ -390,6 +392,11 @@ Condition FlagsConditionToCondition(FlagsCondition condition) {
     DCHECK_EQ(LeaveCC, i.OutputSBit());           \
   } while (0)
 
+void CodeGenerator::AssembleDeconstructFrame() {
+  __ LeaveFrame(StackFrame::MANUAL);
+}
+
+void CodeGenerator::AssembleSetupStackPointer() {}
 
 void CodeGenerator::AssembleDeconstructActivationRecord(int stack_param_delta) {
   int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
@@ -406,7 +413,7 @@ void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
     __ sub(sp, sp, Operand(-sp_slot_delta * kPointerSize));
     frame_access_state()->IncreaseSPDelta(-sp_slot_delta);
   }
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     if (FLAG_enable_embedded_constant_pool) {
       __ ldr(cp, MemOperand(fp, StandardFrameConstants::kConstantPoolOffset));
     }
@@ -482,6 +489,14 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
         __ Jump(ip);
       }
       DCHECK_EQ(LeaveCC, i.OutputSBit());
+      frame_access_state()->ClearSPDelta();
+      break;
+    }
+    case kArchTailCallAddress: {
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
+      CHECK(!instr->InputAt(0)->IsImmediate());
+      __ Jump(i.InputRegister(0));
       frame_access_state()->ClearSPDelta();
       break;
     }
@@ -584,7 +599,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
     case kArchParentFramePointer:
-      if (frame_access_state()->frame()->needs_frame()) {
+      if (frame_access_state()->has_frame()) {
         __ ldr(i.OutputRegister(), MemOperand(fp, 0));
       } else {
         __ mov(i.OutputRegister(), fp);
@@ -812,6 +827,18 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ sbc(i.OutputRegister(1), i.InputRegister(1),
              Operand(i.InputRegister(3)));
       DCHECK_EQ(LeaveCC, i.OutputSBit());
+      break;
+    case kArmMulPair:
+      // i.InputRegister(0) ... left low word.
+      // i.InputRegister(1) ... left high word.
+      // i.InputRegister(2) ... right low word.
+      // i.InputRegister(3) ... right high word.
+      __ umull(i.OutputRegister(0), i.OutputRegister(1), i.InputRegister(0),
+               i.InputRegister(2));
+      __ mla(i.OutputRegister(1), i.InputRegister(0), i.InputRegister(3),
+             i.OutputRegister(1));
+      __ mla(i.OutputRegister(1), i.InputRegister(2), i.InputRegister(1),
+             i.OutputRegister(1));
       break;
     case kArmLslPair:
       if (instr->InputAt(2)->IsImmediate()) {
@@ -1131,6 +1158,46 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       DCHECK_EQ(LeaveCC, i.OutputSBit());
       break;
     }
+    case kArmFloat32Max: {
+      CpuFeatureScope scope(masm(), ARMv8);
+      // (b < a) ? a : b
+      SwVfpRegister a = i.InputFloat32Register(0);
+      SwVfpRegister b = i.InputFloat32Register(1);
+      SwVfpRegister result = i.OutputFloat32Register(0);
+      __ VFPCompareAndSetFlags(a, b);
+      __ vsel(gt, result, a, b);
+      break;
+    }
+    case kArmFloat32Min: {
+      CpuFeatureScope scope(masm(), ARMv8);
+      // (a < b) ? a : b
+      SwVfpRegister a = i.InputFloat32Register(0);
+      SwVfpRegister b = i.InputFloat32Register(1);
+      SwVfpRegister result = i.OutputFloat32Register(0);
+      __ VFPCompareAndSetFlags(b, a);
+      __ vsel(gt, result, a, b);
+      break;
+    }
+    case kArmFloat64Max: {
+      CpuFeatureScope scope(masm(), ARMv8);
+      // (b < a) ? a : b
+      DwVfpRegister a = i.InputFloat64Register(0);
+      DwVfpRegister b = i.InputFloat64Register(1);
+      DwVfpRegister result = i.OutputFloat64Register(0);
+      __ VFPCompareAndSetFlags(a, b);
+      __ vsel(gt, result, a, b);
+      break;
+    }
+    case kArmFloat64Min: {
+      CpuFeatureScope scope(masm(), ARMv8);
+      // (a < b) ? a : b
+      DwVfpRegister a = i.InputFloat64Register(0);
+      DwVfpRegister b = i.InputFloat64Register(1);
+      DwVfpRegister result = i.OutputFloat64Register(0);
+      __ VFPCompareAndSetFlags(b, a);
+      __ vsel(gt, result, a, b);
+      break;
+    }
     case kArmPush:
       if (instr->InputAt(0)->IsDoubleRegister()) {
         __ vpush(i.InputDoubleRegister(0));
@@ -1263,7 +1330,7 @@ void CodeGenerator::AssembleDeoptimizerCall(
 
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     if (descriptor->IsCFunctionCall()) {
       if (FLAG_enable_embedded_constant_pool) {
         __ Push(lr, fp, pp);
@@ -1278,10 +1345,7 @@ void CodeGenerator::AssemblePrologue() {
     } else {
       __ StubPrologue(info()->GetOutputStackFrameType());
     }
-  } else {
-    frame()->SetElidedFrameSizeInSlots(0);
   }
-  frame_access_state()->SetFrameAccessToDefault();
 
   int stack_shrink_slots = frame()->GetSpillSlotCount();
   if (info()->is_osr()) {
@@ -1351,15 +1415,15 @@ void CodeGenerator::AssembleReturn() {
   }
 
   if (descriptor->IsCFunctionCall()) {
-    __ LeaveFrame(StackFrame::MANUAL);
-  } else if (frame()->needs_frame()) {
+    AssembleDeconstructFrame();
+  } else if (frame_access_state()->has_frame()) {
     // Canonicalize JSFunction return sites for now.
     if (return_label_.is_bound()) {
       __ b(&return_label_);
       return;
     } else {
       __ bind(&return_label_);
-      __ LeaveFrame(StackFrame::MANUAL);
+      AssembleDeconstructFrame();
     }
   }
   __ Ret(pop_count);
@@ -1396,7 +1460,11 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           destination->IsRegister() ? g.ToRegister(destination) : kScratchReg;
       switch (src.type()) {
         case Constant::kInt32:
-          __ mov(dst, Operand(src.ToInt32()));
+          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+            __ mov(dst, Operand(src.ToInt32(), src.rmode()));
+          } else {
+            __ mov(dst, Operand(src.ToInt32()));
+          }
           break;
         case Constant::kInt64:
           UNREACHABLE();

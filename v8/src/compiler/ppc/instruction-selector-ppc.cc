@@ -75,22 +75,22 @@ class PPCOperandGenerator final : public OperandGenerator {
 
 namespace {
 
-void VisitRR(InstructionSelector* selector, ArchOpcode opcode, Node* node) {
+void VisitRR(InstructionSelector* selector, InstructionCode opcode,
+             Node* node) {
   PPCOperandGenerator g(selector);
   selector->Emit(opcode, g.DefineAsRegister(node),
                  g.UseRegister(node->InputAt(0)));
 }
 
-
-void VisitRRR(InstructionSelector* selector, ArchOpcode opcode, Node* node) {
+void VisitRRR(InstructionSelector* selector, InstructionCode opcode,
+              Node* node) {
   PPCOperandGenerator g(selector);
   selector->Emit(opcode, g.DefineAsRegister(node),
                  g.UseRegister(node->InputAt(0)),
                  g.UseRegister(node->InputAt(1)));
 }
 
-
-void VisitRRO(InstructionSelector* selector, ArchOpcode opcode, Node* node,
+void VisitRRO(InstructionSelector* selector, InstructionCode opcode, Node* node,
               ImmediateMode operand_mode) {
   PPCOperandGenerator g(selector);
   selector->Emit(opcode, g.DefineAsRegister(node),
@@ -100,8 +100,8 @@ void VisitRRO(InstructionSelector* selector, ArchOpcode opcode, Node* node,
 
 
 #if V8_TARGET_ARCH_PPC64
-void VisitTryTruncateDouble(InstructionSelector* selector, ArchOpcode opcode,
-                            Node* node) {
+void VisitTryTruncateDouble(InstructionSelector* selector,
+                            InstructionCode opcode, Node* node) {
   PPCOperandGenerator g(selector);
   InstructionOperand inputs[] = {g.UseRegister(node->InputAt(0))};
   InstructionOperand outputs[2];
@@ -160,8 +160,8 @@ void VisitBinop(InstructionSelector* selector, Node* node,
 
 // Shared routine for multiple binary operations.
 template <typename Matcher>
-void VisitBinop(InstructionSelector* selector, Node* node, ArchOpcode opcode,
-                ImmediateMode operand_mode) {
+void VisitBinop(InstructionSelector* selector, Node* node,
+                InstructionCode opcode, ImmediateMode operand_mode) {
   FlagsContinuation cont;
   VisitBinop<Matcher>(selector, node, opcode, operand_mode, &cont);
 }
@@ -789,7 +789,7 @@ void InstructionSelector::VisitWord32Sar(Node* node) {
 }
 
 #if !V8_TARGET_ARCH_PPC64
-void VisitPairBinop(InstructionSelector* selector, ArchOpcode opcode,
+void VisitPairBinop(InstructionSelector* selector, InstructionCode opcode,
                     Node* node) {
   PPCOperandGenerator g(selector);
 
@@ -814,7 +814,23 @@ void InstructionSelector::VisitInt32PairSub(Node* node) {
   VisitPairBinop(this, kPPC_SubPair, node);
 }
 
-void VisitPairShift(InstructionSelector* selector, ArchOpcode opcode,
+void InstructionSelector::VisitInt32PairMul(Node* node) {
+  PPCOperandGenerator g(this);
+  InstructionOperand inputs[] = {g.UseUniqueRegister(node->InputAt(0)),
+                                 g.UseUniqueRegister(node->InputAt(1)),
+                                 g.UseUniqueRegister(node->InputAt(2)),
+                                 g.UseRegister(node->InputAt(3))};
+
+  InstructionOperand outputs[] = {
+      g.DefineAsRegister(node),
+      g.DefineAsRegister(NodeProperties::FindProjection(node, 1))};
+
+  InstructionOperand temps[] = {g.TempRegister(), g.TempRegister()};
+
+  Emit(kPPC_MulPair, 2, outputs, 4, inputs, 2, temps);
+}
+
+void VisitPairShift(InstructionSelector* selector, InstructionCode opcode,
                     Node* node) {
   PPCOperandGenerator g(selector);
   Int32Matcher m(node->InputAt(2));
@@ -851,6 +867,30 @@ void InstructionSelector::VisitWord32PairSar(Node* node) {
 
 #if V8_TARGET_ARCH_PPC64
 void InstructionSelector::VisitWord64Sar(Node* node) {
+  PPCOperandGenerator g(this);
+  Int64BinopMatcher m(node);
+  if (CanCover(m.node(), m.left().node()) && m.left().IsLoad() &&
+      m.right().Is(32)) {
+    // Just load and sign-extend the interesting 4 bytes instead. This happens,
+    // for example, when we're loading and untagging SMIs.
+    BaseWithIndexAndDisplacement64Matcher mleft(m.left().node(), true);
+    if (mleft.matches() && mleft.index() == nullptr) {
+      int64_t offset = 0;
+      Node* displacement = mleft.displacement();
+      if (displacement != nullptr) {
+        Int64Matcher mdisplacement(displacement);
+        DCHECK(mdisplacement.HasValue());
+        offset = mdisplacement.Value();
+      }
+      offset = SmiWordOffset(offset);
+      if (g.CanBeImmediate(offset, kInt16Imm_4ByteAligned)) {
+        Emit(kPPC_LoadWordS32 | AddressingModeField::encode(kMode_MRI),
+             g.DefineAsRegister(node), g.UseRegister(mleft.base()),
+             g.TempImmediate(offset));
+        return;
+      }
+    }
+  }
   VisitRRO(this, kPPC_ShiftRightAlg64, node, kShift64Imm);
 }
 #endif
@@ -1059,6 +1099,9 @@ void InstructionSelector::VisitChangeFloat64ToUint32(Node* node) {
   VisitRR(this, kPPC_DoubleToUint32, node);
 }
 
+void InstructionSelector::VisitTruncateFloat64ToUint32(Node* node) {
+  VisitRR(this, kPPC_DoubleToUint32, node);
+}
 
 #if V8_TARGET_ARCH_PPC64
 void InstructionSelector::VisitTryTruncateFloat32ToInt64(Node* node) {
@@ -1173,7 +1216,7 @@ void InstructionSelector::VisitBitcastInt64ToFloat64(Node* node) {
 
 
 void InstructionSelector::VisitFloat32Add(Node* node) {
-  VisitRRR(this, kPPC_AddDouble, node);
+  VisitRRR(this, kPPC_AddDouble | MiscField::encode(1), node);
 }
 
 
@@ -1187,11 +1230,11 @@ void InstructionSelector::VisitFloat32Sub(Node* node) {
   PPCOperandGenerator g(this);
   Float32BinopMatcher m(node);
   if (m.left().IsMinusZero()) {
-    Emit(kPPC_NegDouble, g.DefineAsRegister(node),
+    Emit(kPPC_NegDouble | MiscField::encode(1), g.DefineAsRegister(node),
          g.UseRegister(m.right().node()));
     return;
   }
-  VisitRRR(this, kPPC_SubDouble, node);
+  VisitRRR(this, kPPC_SubDouble | MiscField::encode(1), node);
 }
 
 
@@ -1222,7 +1265,7 @@ void InstructionSelector::VisitFloat64Sub(Node* node) {
 
 
 void InstructionSelector::VisitFloat32Mul(Node* node) {
-  VisitRRR(this, kPPC_MulDouble, node);
+  VisitRRR(this, kPPC_MulDouble | MiscField::encode(1), node);
 }
 
 
@@ -1233,7 +1276,7 @@ void InstructionSelector::VisitFloat64Mul(Node* node) {
 
 
 void InstructionSelector::VisitFloat32Div(Node* node) {
-  VisitRRR(this, kPPC_DivDouble, node);
+  VisitRRR(this, kPPC_DivDouble | MiscField::encode(1), node);
 }
 
 
@@ -1263,7 +1306,7 @@ void InstructionSelector::VisitFloat64Min(Node* node) { UNREACHABLE(); }
 
 
 void InstructionSelector::VisitFloat32Abs(Node* node) {
-  VisitRR(this, kPPC_AbsDouble, node);
+  VisitRR(this, kPPC_AbsDouble | MiscField::encode(1), node);
 }
 
 
@@ -1273,7 +1316,7 @@ void InstructionSelector::VisitFloat64Abs(Node* node) {
 
 
 void InstructionSelector::VisitFloat32Sqrt(Node* node) {
-  VisitRR(this, kPPC_SqrtDouble, node);
+  VisitRR(this, kPPC_SqrtDouble | MiscField::encode(1), node);
 }
 
 
@@ -1283,7 +1326,7 @@ void InstructionSelector::VisitFloat64Sqrt(Node* node) {
 
 
 void InstructionSelector::VisitFloat32RoundDown(Node* node) {
-  VisitRR(this, kPPC_FloorDouble, node);
+  VisitRR(this, kPPC_FloorDouble | MiscField::encode(1), node);
 }
 
 
@@ -1293,7 +1336,7 @@ void InstructionSelector::VisitFloat64RoundDown(Node* node) {
 
 
 void InstructionSelector::VisitFloat32RoundUp(Node* node) {
-  VisitRR(this, kPPC_CeilDouble, node);
+  VisitRR(this, kPPC_CeilDouble | MiscField::encode(1), node);
 }
 
 
@@ -1303,7 +1346,7 @@ void InstructionSelector::VisitFloat64RoundUp(Node* node) {
 
 
 void InstructionSelector::VisitFloat32RoundTruncate(Node* node) {
-  VisitRR(this, kPPC_TruncateDouble, node);
+  VisitRR(this, kPPC_TruncateDouble | MiscField::encode(1), node);
 }
 
 

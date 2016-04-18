@@ -647,6 +647,9 @@ class IterationStatement : public BreakableStatement {
   Statement* body() const { return body_; }
   void set_body(Statement* s) { body_ = s; }
 
+  int yield_count() { return yield_count_; }
+  void set_yield_count(int yield_count) { yield_count_ = yield_count; }
+
   static int num_ids() { return parent_num_ids() + 1; }
   BailoutId OsrEntryId() const { return BailoutId(local_id(0)); }
   virtual BailoutId ContinueId() const = 0;
@@ -658,7 +661,8 @@ class IterationStatement : public BreakableStatement {
  protected:
   IterationStatement(Zone* zone, ZoneList<const AstRawString*>* labels, int pos)
       : BreakableStatement(zone, labels, TARGET_FOR_ANONYMOUS, pos),
-        body_(NULL) {}
+        body_(NULL),
+        yield_count_(0) {}
   static int parent_num_ids() { return BreakableStatement::num_ids(); }
   void Initialize(Statement* body) { body_ = body; }
 
@@ -667,6 +671,7 @@ class IterationStatement : public BreakableStatement {
 
   Statement* body_;
   Label continue_target_;
+  int yield_count_;
 };
 
 
@@ -1183,18 +1188,33 @@ class TryCatchStatement final : public TryStatement {
   Block* catch_block() const { return catch_block_; }
   void set_catch_block(Block* b) { catch_block_ = b; }
 
+  // The clear_pending_message flag indicates whether or not to clear the
+  // isolate's pending exception message before executing the catch_block.  In
+  // the normal use case, this flag is always on because the message object
+  // is not needed anymore when entering the catch block and should not be kept
+  // alive.
+  // The use case where the flag is off is when the catch block is guaranteed to
+  // rethrow the caught exception (using %ReThrow), which reuses the pending
+  // message instead of generating a new one.
+  // (When the catch block doesn't rethrow but is guaranteed to perform an
+  // ordinary throw, not clearing the old message is safe but not very useful.)
+  bool clear_pending_message() { return clear_pending_message_; }
+
  protected:
   TryCatchStatement(Zone* zone, Block* try_block, Scope* scope,
-                    Variable* variable, Block* catch_block, int pos)
+                    Variable* variable, Block* catch_block,
+                    bool clear_pending_message, int pos)
       : TryStatement(zone, try_block, pos),
         scope_(scope),
         variable_(variable),
-        catch_block_(catch_block) {}
+        catch_block_(catch_block),
+        clear_pending_message_(clear_pending_message) {}
 
  private:
   Scope* scope_;
   Variable* variable_;
   Block* catch_block_;
+  bool clear_pending_message_;
 };
 
 
@@ -2671,6 +2691,9 @@ class FunctionLiteral final : public Expression {
     return is_anonymous_expression();
   }
 
+  int yield_count() { return yield_count_; }
+  void set_yield_count(int yield_count) { yield_count_ = yield_count; }
+
  protected:
   FunctionLiteral(Zone* zone, const AstString* name,
                   AstValueFactory* ast_value_factory, Scope* scope,
@@ -2690,7 +2713,8 @@ class FunctionLiteral final : public Expression {
         materialized_literal_count_(materialized_literal_count),
         expected_property_count_(expected_property_count),
         parameter_count_(parameter_count),
-        function_token_position_(RelocInfo::kNoPosition) {
+        function_token_position_(RelocInfo::kNoPosition),
+        yield_count_(0) {
     bitfield_ =
         IsDeclaration::encode(function_type == kDeclaration) |
         IsNamedExpression::encode(function_type == kNamedExpression) |
@@ -2731,6 +2755,7 @@ class FunctionLiteral final : public Expression {
   int expected_property_count_;
   int parameter_count_;
   int function_token_position_;
+  int yield_count_;
 };
 
 
@@ -3134,8 +3159,17 @@ class AstNodeFactory final BASE_EMBEDDED {
   TryCatchStatement* NewTryCatchStatement(Block* try_block, Scope* scope,
                                           Variable* variable,
                                           Block* catch_block, int pos) {
-    return new (local_zone_) TryCatchStatement(local_zone_, try_block, scope,
-                                               variable, catch_block, pos);
+    return new (local_zone_) TryCatchStatement(
+        local_zone_, try_block, scope, variable, catch_block, true, pos);
+  }
+
+  TryCatchStatement* NewTryCatchStatementForReThrow(Block* try_block,
+                                                    Scope* scope,
+                                                    Variable* variable,
+                                                    Block* catch_block,
+                                                    int pos) {
+    return new (local_zone_) TryCatchStatement(
+        local_zone_, try_block, scope, variable, catch_block, false, pos);
   }
 
   TryFinallyStatement* NewTryFinallyStatement(Block* try_block,

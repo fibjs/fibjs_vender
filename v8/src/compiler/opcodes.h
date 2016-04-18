@@ -32,14 +32,16 @@
   V(End)
 
 // Opcodes for constant operators.
-#define CONSTANT_OP_LIST(V) \
-  V(Int32Constant)          \
-  V(Int64Constant)          \
-  V(Float32Constant)        \
-  V(Float64Constant)        \
-  V(ExternalConstant)       \
-  V(NumberConstant)         \
-  V(HeapConstant)
+#define CONSTANT_OP_LIST(V)   \
+  V(Int32Constant)            \
+  V(Int64Constant)            \
+  V(Float32Constant)          \
+  V(Float64Constant)          \
+  V(ExternalConstant)         \
+  V(NumberConstant)           \
+  V(HeapConstant)             \
+  V(RelocatableInt32Constant) \
+  V(RelocatableInt64Constant)
 
 #define INNER_OP_LIST(V) \
   V(Select)              \
@@ -96,10 +98,12 @@
 
 #define JS_CONVERSION_UNOP_LIST(V) \
   V(JSToBoolean)                   \
-  V(JSToNumber)                    \
-  V(JSToString)                    \
+  V(JSToInteger)                   \
+  V(JSToLength)                    \
   V(JSToName)                      \
-  V(JSToObject)
+  V(JSToNumber)                    \
+  V(JSToObject)                    \
+  V(JSToString)
 
 #define JS_OTHER_UNOP_LIST(V) \
   V(JSTypeOf)
@@ -183,10 +187,15 @@
   V(NumberShiftLeft)               \
   V(NumberShiftRight)              \
   V(NumberShiftRightLogical)       \
+  V(NumberClz32)                   \
+  V(NumberCeil)                    \
+  V(NumberFloor)                   \
+  V(NumberRound)                   \
+  V(NumberTrunc)                   \
   V(NumberToInt32)                 \
   V(NumberToUint32)                \
   V(NumberIsHoleNaN)               \
-  V(PlainPrimitiveToNumber)        \
+  V(StringToNumber)                \
   V(ChangeTaggedToInt32)           \
   V(ChangeTaggedToUint32)          \
   V(ChangeTaggedToFloat64)         \
@@ -202,9 +211,11 @@
   V(StoreField)                    \
   V(StoreBuffer)                   \
   V(StoreElement)                  \
+  V(ObjectIsCallable)              \
   V(ObjectIsNumber)                \
   V(ObjectIsReceiver)              \
   V(ObjectIsSmi)                   \
+  V(ObjectIsString)                \
   V(ObjectIsUndetectable)
 
 // Opcodes for Machine-level operators.
@@ -276,6 +287,7 @@
   V(ChangeFloat32ToFloat64)     \
   V(ChangeFloat64ToInt32)       \
   V(ChangeFloat64ToUint32)      \
+  V(TruncateFloat64ToUint32)    \
   V(TruncateFloat32ToInt32)     \
   V(TruncateFloat32ToUint32)    \
   V(TryTruncateFloat32ToInt64)  \
@@ -336,6 +348,7 @@
   V(CheckedStore)               \
   V(Int32PairAdd)               \
   V(Int32PairSub)               \
+  V(Int32PairMul)               \
   V(Word32PairShl)              \
   V(Word32PairShr)              \
   V(Word32PairSar)
@@ -389,7 +402,7 @@ class IrOpcode {
 
   // Returns true if opcode for constant operator.
   static bool IsConstantOpcode(Value value) {
-    return kInt32Constant <= value && value <= kHeapConstant;
+    return kInt32Constant <= value && value <= kRelocatableInt64Constant;
   }
 
   static bool IsPhiOpcode(Value value) {

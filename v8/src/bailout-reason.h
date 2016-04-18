@@ -82,15 +82,13 @@ namespace internal {
   V(kFrameIsExpectedToBeAligned, "Frame is expected to be aligned")            \
   V(kFunctionBeingDebugged, "Function is being debugged")                      \
   V(kFunctionCallsEval, "Function calls eval")                                 \
-  V(kFunctionWithIllegalRedeclaration, "Function with illegal redeclaration")  \
   V(kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry,                      \
     "The function_data field should be a BytecodeArray on interpreter entry")  \
   V(kGeneratedCodeIsTooLarge, "Generated code is too large")                   \
-  V(kGeneratorFailedToResume, "Generator failed to resume")                    \
-  V(kGeneratorResumeMethod, "Generator resume method is being called")         \
   V(kGenerator, "Generator")                                                   \
   V(kGlobalFunctionsMustHaveInitialMap,                                        \
     "Global functions must have initial map")                                  \
+  V(kGraphBuildingFailed, "Optimized graph construction failed")               \
   V(kHeapNumberMapRegisterClobbered, "HeapNumberMap register clobbered")       \
   V(kHydrogenFilter, "Optimization disabled by filter")                        \
   V(kImportDeclaration, "Import declaration")                                  \
@@ -102,6 +100,7 @@ namespace internal {
   V(kInputStringTooLong, "Input string too long")                              \
   V(kInteger32ToSmiFieldWritingToNonSmiLocation,                               \
     "Integer32ToSmiField writing to non-smi location")                         \
+  V(kInvalidBytecode, "Invalid bytecode")                                      \
   V(kInvalidCaptureReferenced, "Invalid capture referenced")                   \
   V(kInvalidElementsKindForInternalArrayOrInternalPackedArray,                 \
     "Invalid ElementsKind for InternalArray or InternalPackedArray")           \
@@ -139,9 +138,12 @@ namespace internal {
   V(kObjectFoundInSmiOnlyArray, "Object found in smi-only array")              \
   V(kObjectLiteralWithComplexProperty, "Object literal with complex property") \
   V(kOffsetOutOfRange, "Offset out of range")                                  \
+  V(kOperandIsANumber, "Operand is a number")                                  \
   V(kOperandIsASmiAndNotABoundFunction,                                        \
     "Operand is a smi and not a bound function")                               \
   V(kOperandIsASmiAndNotAFunction, "Operand is a smi and not a function")      \
+  V(kOperandIsASmiAndNotAGeneratorObject,                                      \
+    "Operand is a smi and not a generator object")                             \
   V(kOperandIsASmiAndNotAName, "Operand is a smi and not a name")              \
   V(kOperandIsASmiAndNotAReceiver, "Operand is a smi and not a receiver")      \
   V(kOperandIsASmiAndNotAString, "Operand is a smi and not a string")          \
@@ -149,6 +151,7 @@ namespace internal {
   V(kOperandIsNotADate, "Operand is not a date")                               \
   V(kOperandIsNotABoundFunction, "Operand is not a bound function")            \
   V(kOperandIsNotAFunction, "Operand is not a function")                       \
+  V(kOperandIsNotAGeneratorObject, "Operand is not a generator object")        \
   V(kOperandIsNotAName, "Operand is not a name")                               \
   V(kOperandIsNotANumber, "Operand is not a number")                           \
   V(kOperandIsNotAReceiver, "Operand is not a receiver")                       \
@@ -229,6 +232,8 @@ namespace internal {
   V(kUnexpectedNegativeValue, "Unexpected negative value")                     \
   V(kUnexpectedNumberOfPreAllocatedPropertyFields,                             \
     "Unexpected number of pre-allocated property fields")                      \
+  V(kUnexpectedFunctionIDForInvokeIntrinsic,                                   \
+    "Unexpected runtime function id for the InvokeIntrinsic bytecode")         \
   V(kUnexpectedFPCRMode, "Unexpected FPCR mode.")                              \
   V(kUnexpectedSmi, "Unexpected smi value")                                    \
   V(kUnexpectedStackDepth, "Unexpected operand stack depth in full-codegen")   \
@@ -261,6 +266,8 @@ namespace internal {
   V(kWrongFunctionContext, "Wrong context passed to function")                 \
   V(kWrongAddressOrValuePassedToRecordWrite,                                   \
     "Wrong address or value passed to RecordWrite")                            \
+  V(kWrongArgumentCountForInvokeIntrinsic,                                     \
+    "Wrong number of arguments for intrinsic")                                 \
   V(kShouldNotDirectlyEnterOsrFunction,                                        \
     "Should not directly enter OSR-compiled function")                         \
   V(kYield, "Yield")

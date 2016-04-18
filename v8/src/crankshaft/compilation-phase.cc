@@ -11,7 +11,7 @@ namespace v8 {
 namespace internal {
 
 CompilationPhase::CompilationPhase(const char* name, CompilationInfo* info)
-    : name_(name), info_(info) {
+    : name_(name), info_(info), zone_(info->isolate()->allocator()) {
   if (FLAG_hydrogen_stats) {
     info_zone_start_allocation_size_ = info->zone()->allocation_size();
     timer_.Start();
@@ -34,7 +34,7 @@ bool CompilationPhase::ShouldProduceTraceOutput() const {
       info()->IsStub()
           ? FLAG_trace_hydrogen_stubs
           : (FLAG_trace_hydrogen &&
-             info()->closure()->PassesFilter(FLAG_trace_hydrogen_filter));
+             info()->shared_info()->PassesFilter(FLAG_trace_hydrogen_filter));
   return (tracing_on &&
           base::OS::StrChr(const_cast<char*>(FLAG_trace_phase), name_[0]) !=
               NULL);

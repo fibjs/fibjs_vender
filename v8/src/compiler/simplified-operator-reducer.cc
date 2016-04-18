@@ -9,14 +9,14 @@
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/operator-properties.h"
 #include "src/conversions-inl.h"
+#include "src/type-cache.h"
 
 namespace v8 {
 namespace internal {
 namespace compiler {
 
 SimplifiedOperatorReducer::SimplifiedOperatorReducer(JSGraph* jsgraph)
-    : jsgraph_(jsgraph) {}
-
+    : jsgraph_(jsgraph), type_cache_(TypeCache::Get()) {}
 
 SimplifiedOperatorReducer::~SimplifiedOperatorReducer() {}
 
@@ -47,6 +47,7 @@ Reduction SimplifiedOperatorReducer::Reduce(Node* node) {
     case IrOpcode::kChangeFloat64ToTagged: {
       Float64Matcher m(node->InputAt(0));
       if (m.HasValue()) return ReplaceNumber(m.Value());
+      if (m.IsChangeTaggedToFloat64()) return Replace(m.node()->InputAt(0));
       break;
     }
     case IrOpcode::kChangeInt32ToTagged: {
@@ -89,6 +90,17 @@ Reduction SimplifiedOperatorReducer::Reduce(Node* node) {
       if (m.HasValue()) return ReplaceNumber(FastUI2D(m.Value()));
       break;
     }
+    case IrOpcode::kNumberCeil:
+    case IrOpcode::kNumberFloor:
+    case IrOpcode::kNumberRound:
+    case IrOpcode::kNumberTrunc: {
+      Node* const input = NodeProperties::GetValueInput(node, 0);
+      Type* const input_type = NodeProperties::GetType(input);
+      if (input_type->Is(type_cache_.kIntegerOrMinusZeroOrNaN)) {
+        return Replace(input);
+      }
+      break;
+    }
     case IrOpcode::kReferenceEqual:
       return ReduceReferenceEqual(node);
     default:
@@ -96,7 +108,6 @@ Reduction SimplifiedOperatorReducer::Reduce(Node* node) {
   }
   return NoChange();
 }
-
 
 Reduction SimplifiedOperatorReducer::ReduceReferenceEqual(Node* node) {
   DCHECK_EQ(IrOpcode::kReferenceEqual, node->opcode());

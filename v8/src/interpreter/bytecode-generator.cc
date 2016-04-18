@@ -624,14 +624,6 @@ void BytecodeGenerator::MakeBytecodeBody() {
     UNIMPLEMENTED();
   }
 
-  // Visit illegal re-declaration and bail out if it exists.
-  if (scope()->HasIllegalRedeclaration()) {
-    Expression* illegal = scope()->GetIllegalRedeclaration();
-    builder()->SetExpressionAsStatementPosition(illegal);
-    VisitForEffect(illegal);
-    return;
-  }
-
   // Visit declarations within the function scope.
   VisitDeclarations(scope()->declarations());
 
@@ -1133,7 +1125,7 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   Register cache_type = register_allocator()->NextConsecutiveRegister();
   Register cache_array = register_allocator()->NextConsecutiveRegister();
   Register cache_length = register_allocator()->NextConsecutiveRegister();
-  // Used as kRegTriple8 and kRegPair8 in ForInPrepare and ForInNext.
+  // Used as kRegTriple and kRegPair in ForInPrepare and ForInNext.
   USE(cache_array);
   builder()->ForInPrepare(cache_type);
 
@@ -1207,8 +1199,10 @@ void BytecodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
   VisitNewLocalCatchContext(stmt->variable());
   builder()->StoreAccumulatorInRegister(context);
 
-  // Clear message object as we enter the catch block.
-  builder()->CallRuntime(Runtime::kInterpreterClearPendingMessage, no_reg, 0);
+  // If requested, clear message object as we enter the catch block.
+  if (stmt->clear_pending_message()) {
+    builder()->CallRuntime(Runtime::kInterpreterClearPendingMessage, no_reg, 0);
+  }
 
   // Load the catch context into the accumulator.
   builder()->LoadAccumulatorWithRegister(context);
@@ -1753,6 +1747,7 @@ void BytecodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
 
 
 void BytecodeGenerator::VisitVariableProxy(VariableProxy* proxy) {
+  builder()->SetExpressionPosition(proxy);
   VisitVariableLoad(proxy->var(), proxy->VariableFeedbackSlot());
 }
 
@@ -1975,11 +1970,15 @@ void BytecodeGenerator::VisitVariableAssignment(Variable* variable,
           // Break here because the value should not be stored unconditionally.
           break;
         } else if (mode == CONST_LEGACY && op != Token::INIT) {
-          DCHECK(!is_strict(language_mode()));
-          // Ensure accumulator is in the correct state.
-          builder()->LoadAccumulatorWithRegister(value_temp);
-          // Break here, non-initializing assignments to legacy constants are
-          // ignored.
+          if (is_strict(language_mode())) {
+            builder()->CallRuntime(Runtime::kThrowConstAssignError, Register(),
+                                   0);
+          } else {
+            // Ensure accumulator is in the correct state.
+            builder()->LoadAccumulatorWithRegister(value_temp);
+          }
+          // Non-initializing assignments to legacy constants are ignored
+          // in sloppy mode. Break here to avoid storing into variable.
           break;
         } else {
           BuildHoleCheckForVariableAssignment(variable, op);
@@ -2042,11 +2041,15 @@ void BytecodeGenerator::VisitVariableAssignment(Variable* variable,
           // The above code performs the store conditionally.
           break;
         } else if (mode == CONST_LEGACY && op != Token::INIT) {
-          DCHECK(!is_strict(language_mode()));
-          // Ensure accumulator is in the correct state.
-          builder()->LoadAccumulatorWithRegister(value_temp);
-          // Break here, non-initializing assignments to legacy constants are
-          // ignored.
+          if (is_strict(language_mode())) {
+            builder()->CallRuntime(Runtime::kThrowConstAssignError, Register(),
+                                   0);
+          } else {
+            // Ensure accumulator is in the correct state.
+            builder()->LoadAccumulatorWithRegister(value_temp);
+          }
+          // Non-initializing assignments to legacy constants are ignored
+          // in sloppy mode. Break here to avoid storing into variable.
           break;
         } else {
           BuildHoleCheckForVariableAssignment(variable, op);
@@ -2073,9 +2076,6 @@ void BytecodeGenerator::VisitVariableAssignment(Variable* variable,
             .LoadLiteral(variable->name())
             .StoreAccumulatorInRegister(name)
             .CallRuntime(Runtime::kInitializeLegacyConstLookupSlot, value, 3);
-      } else if (mode == CONST_LEGACY && op != Token::INIT) {
-        // Non-intializing assignments to legacy constants are ignored.
-        DCHECK(!is_strict(language_mode()));
       } else {
         builder()->StoreLookupSlot(variable->name(), language_mode());
       }
@@ -2197,6 +2197,7 @@ void BytecodeGenerator::VisitAssignment(Assignment* expr) {
   }
 
   // Store the value.
+  builder()->SetExpressionPosition(expr);
   FeedbackVectorSlot slot = expr->AssignmentSlot();
   switch (assign_type) {
     case VARIABLE: {
@@ -2234,6 +2235,7 @@ void BytecodeGenerator::VisitYield(Yield* expr) { UNIMPLEMENTED(); }
 
 void BytecodeGenerator::VisitThrow(Throw* expr) {
   VisitForAccumulatorValue(expr->exception());
+  builder()->SetExpressionPosition(expr);
   builder()->Throw();
   // Throw statments are modeled as expression instead of statments. These are
   // converted from assignment statements in Rewriter::ReWrite pass. An
@@ -2246,6 +2248,7 @@ void BytecodeGenerator::VisitThrow(Throw* expr) {
 void BytecodeGenerator::VisitPropertyLoad(Register obj, Property* expr) {
   LhsKind property_kind = Property::GetAssignType(expr);
   FeedbackVectorSlot slot = expr->PropertyFeedbackSlot();
+  builder()->SetExpressionPosition(expr);
   switch (property_kind) {
     case VARIABLE:
       UNREACHABLE();
@@ -2754,6 +2757,7 @@ void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
   builder()->CountOperation(expr->binary_op());
 
   // Store the value.
+  builder()->SetExpressionPosition(expr);
   FeedbackVectorSlot feedback_slot = expr->CountSlot();
   switch (assign_type) {
     case VARIABLE: {
@@ -2813,6 +2817,7 @@ void BytecodeGenerator::VisitBinaryOperation(BinaryOperation* binop) {
 void BytecodeGenerator::VisitCompareOperation(CompareOperation* expr) {
   Register lhs = VisitForRegisterValue(expr->left());
   VisitForAccumulatorValue(expr->right());
+  builder()->SetExpressionPosition(expr);
   builder()->CompareOperation(expr->op(), lhs);
   execution_result()->SetResultInAccumulator();
 }
@@ -3156,7 +3161,7 @@ LanguageMode BytecodeGenerator::language_mode() const {
 
 
 int BytecodeGenerator::feedback_index(FeedbackVectorSlot slot) const {
-  return info()->feedback_vector()->GetIndex(slot);
+  return info()->shared_info()->feedback_vector()->GetIndex(slot);
 }
 
 }  // namespace interpreter

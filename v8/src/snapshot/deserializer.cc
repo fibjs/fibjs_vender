@@ -157,9 +157,9 @@ MaybeHandle<SharedFunctionInfo> Deserializer::DeserializeCode(
       DeserializeDeferredObjects();
       FlushICacheForNewCodeObjects();
       result = Handle<SharedFunctionInfo>(SharedFunctionInfo::cast(root));
+      isolate->heap()->RegisterReservationsForBlackAllocation(reservations_);
     }
     CommitPostProcessedObjects(isolate);
-    isolate->heap()->RegisterReservationsForBlackAllocation(reservations_);
     return scope.CloseAndEscape(result);
   }
 }
@@ -373,14 +373,10 @@ void Deserializer::ReadObject(int space_number, Object** write_back) {
   isolate_->heap()->OnAllocationEvent(obj, size);
   Object** current = reinterpret_cast<Object**>(address);
   Object** limit = current + (size >> kPointerSizeLog2);
-  int position = source_.position();
 
   if (ReadData(current, limit, space_number, address)) {
     // Only post process if object content has not been deferred.
     obj = PostProcessNewObject(obj, space_number);
-  }
-  if (FLAG_log_snapshot_positions) {
-    LOG(isolate_, SnapshotPositionEvent(obj, position));
   }
 
   Object* write_back_obj = obj;

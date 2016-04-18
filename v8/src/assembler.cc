@@ -838,6 +838,8 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
       return "debug break slot at return";
     case DEBUG_BREAK_SLOT_AT_CALL:
       return "debug break slot at call";
+    case DEBUG_BREAK_SLOT_AT_TAIL_CALL:
+      return "debug break slot at tail call";
     case CODE_AGE_SEQUENCE:
       return "code age sequence";
     case GENERATOR_CONTINUATION:
@@ -936,6 +938,7 @@ void RelocInfo::Verify(Isolate* isolate) {
     case DEBUG_BREAK_SLOT_AT_POSITION:
     case DEBUG_BREAK_SLOT_AT_RETURN:
     case DEBUG_BREAK_SLOT_AT_CALL:
+    case DEBUG_BREAK_SLOT_AT_TAIL_CALL:
     case GENERATOR_CONTINUATION:
     case WASM_MEMORY_REFERENCE:
     case NONE32:
@@ -1067,6 +1070,12 @@ ExternalReference ExternalReference::isolate_address(Isolate* isolate) {
 ExternalReference ExternalReference::interpreter_dispatch_table_address(
     Isolate* isolate) {
   return ExternalReference(isolate->interpreter()->dispatch_table_address());
+}
+
+ExternalReference ExternalReference::interpreter_dispatch_counters(
+    Isolate* isolate) {
+  return ExternalReference(
+      isolate->interpreter()->bytecode_dispatch_count_table());
 }
 
 ExternalReference::ExternalReference(StatsCounter* counter)
@@ -1403,12 +1412,6 @@ ExternalReference ExternalReference::address_of_regexp_stack_limit(
   return ExternalReference(isolate->regexp_stack()->limit_address());
 }
 
-
-ExternalReference ExternalReference::new_space_start(Isolate* isolate) {
-  return ExternalReference(isolate->heap()->NewSpaceStart());
-}
-
-
 ExternalReference ExternalReference::store_buffer_top(Isolate* isolate) {
   return ExternalReference(isolate->heap()->store_buffer_top_address());
 }
@@ -1632,6 +1635,10 @@ ExternalReference ExternalReference::cpu_features() {
   return ExternalReference(&CpuFeatures::supported_);
 }
 
+ExternalReference ExternalReference::is_tail_call_elimination_enabled_address(
+    Isolate* isolate) {
+  return ExternalReference(isolate->is_tail_call_elimination_enabled_address());
+}
 
 ExternalReference ExternalReference::debug_is_active_address(
     Isolate* isolate) {

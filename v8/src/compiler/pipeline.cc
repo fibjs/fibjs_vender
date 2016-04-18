@@ -19,15 +19,16 @@
 #include "src/compiler/common-operator-reducer.h"
 #include "src/compiler/control-flow-optimizer.h"
 #include "src/compiler/dead-code-elimination.h"
-#include "src/compiler/escape-analysis.h"
+#include "src/compiler/effect-control-linearizer.h"
 #include "src/compiler/escape-analysis-reducer.h"
+#include "src/compiler/escape-analysis.h"
 #include "src/compiler/frame-elider.h"
 #include "src/compiler/graph-replay.h"
 #include "src/compiler/graph-trimmer.h"
 #include "src/compiler/graph-visualizer.h"
 #include "src/compiler/greedy-allocator.h"
-#include "src/compiler/instruction.h"
 #include "src/compiler/instruction-selector.h"
+#include "src/compiler/instruction.h"
 #include "src/compiler/js-builtin-reducer.h"
 #include "src/compiler/js-call-reducer.h"
 #include "src/compiler/js-context-specialization.h"
@@ -48,20 +49,21 @@
 #include "src/compiler/move-optimizer.h"
 #include "src/compiler/osr.h"
 #include "src/compiler/pipeline-statistics.h"
-#include "src/compiler/register-allocator.h"
 #include "src/compiler/register-allocator-verifier.h"
+#include "src/compiler/register-allocator.h"
 #include "src/compiler/schedule.h"
 #include "src/compiler/scheduler.h"
 #include "src/compiler/select-lowering.h"
 #include "src/compiler/simplified-lowering.h"
-#include "src/compiler/simplified-operator.h"
 #include "src/compiler/simplified-operator-reducer.h"
+#include "src/compiler/simplified-operator.h"
 #include "src/compiler/tail-call-optimization.h"
 #include "src/compiler/type-hint-analyzer.h"
 #include "src/compiler/typer.h"
 #include "src/compiler/value-numbering-reducer.h"
 #include "src/compiler/verifier.h"
 #include "src/compiler/zone-pool.h"
+#include "src/isolate-inl.h"
 #include "src/ostreams.h"
 #include "src/register-configuration.h"
 #include "src/type-info.h"
@@ -224,6 +226,7 @@ class PipelineData {
     DCHECK(!schedule_);
     schedule_ = schedule;
   }
+  void reset_schedule() { schedule_ = nullptr; }
 
   Zone* instruction_zone() const { return instruction_zone_; }
   InstructionSequence* sequence() const { return sequence_; }
@@ -267,13 +270,19 @@ class PipelineData {
     register_allocation_data_ = nullptr;
   }
 
-  void InitializeInstructionSequence() {
+  void InitializeInstructionSequence(const CallDescriptor* descriptor) {
     DCHECK(sequence_ == nullptr);
     InstructionBlocks* instruction_blocks =
         InstructionSequence::InstructionBlocksFor(instruction_zone(),
                                                   schedule());
     sequence_ = new (instruction_zone()) InstructionSequence(
         info()->isolate(), instruction_zone(), instruction_blocks);
+    if (descriptor && descriptor->RequiresFrameAsIncoming()) {
+      sequence_->instruction_blocks()[0]->mark_needs_frame();
+    } else {
+      DCHECK_EQ(0, descriptor->CalleeSavedFPRegisters());
+      DCHECK_EQ(0, descriptor->CalleeSavedRegisters());
+    }
   }
 
   void InitializeFrameData(CallDescriptor* descriptor) {
@@ -282,7 +291,7 @@ class PipelineData {
     if (descriptor != nullptr) {
       fixed_frame_size = CalculateFixedFrameSize(descriptor);
     }
-    frame_ = new (instruction_zone()) Frame(fixed_frame_size, descriptor);
+    frame_ = new (instruction_zone()) Frame(fixed_frame_size);
   }
 
   void InitializeRegisterAllocationData(const RegisterConfiguration* config,
@@ -470,6 +479,65 @@ class PipelineRunScope {
   ZonePool::Scope zone_scope_;
 };
 
+class PipelineCompilationJob : public OptimizedCompileJob {
+ public:
+  explicit PipelineCompilationJob(CompilationInfo* info)
+      : OptimizedCompileJob(info, "TurboFan") {}
+
+ protected:
+  virtual Status CreateGraphImpl();
+  virtual Status OptimizeGraphImpl();
+  virtual Status GenerateCodeImpl();
+};
+
+PipelineCompilationJob::Status PipelineCompilationJob::CreateGraphImpl() {
+  if (info()->shared_info()->asm_function()) {
+    if (info()->osr_frame()) info()->MarkAsFrameSpecializing();
+    info()->MarkAsFunctionContextSpecializing();
+  } else {
+    if (!FLAG_always_opt) {
+      info()->MarkAsBailoutOnUninitialized();
+    }
+    if (FLAG_native_context_specialization) {
+      info()->MarkAsNativeContextSpecializing();
+    }
+  }
+  if (!info()->shared_info()->asm_function() || FLAG_turbo_asm_deoptimization) {
+    info()->MarkAsDeoptimizationEnabled();
+  }
+  if (!info()->shared_info()->asm_function()) {
+    info()->MarkAsEffectSchedulingEnabled();
+  }
+
+  if (!info()->shared_info()->HasBytecodeArray()) {
+    if (!Compiler::EnsureDeoptimizationSupport(info())) return FAILED;
+  }
+
+  Pipeline pipeline(info());
+  pipeline.GenerateCode();
+  if (isolate()->has_pending_exception()) return FAILED;  // Stack overflowed.
+  if (info()->code().is_null()) return AbortOptimization(kGraphBuildingFailed);
+
+  return SUCCEEDED;
+}
+
+PipelineCompilationJob::Status PipelineCompilationJob::OptimizeGraphImpl() {
+  // TODO(turbofan): Currently everything is done in the first phase.
+  DCHECK(!info()->code().is_null());
+  return SUCCEEDED;
+}
+
+PipelineCompilationJob::Status PipelineCompilationJob::GenerateCodeImpl() {
+  // TODO(turbofan): Currently everything is done in the first phase.
+  DCHECK(!info()->code().is_null());
+  info()->dependencies()->Commit(info()->code());
+  if (info()->is_deoptimization_enabled()) {
+    info()->context()->native_context()->AddOptimizedCode(*info()->code());
+    RegisterWeakObjectsInOptimizedCode(info()->code());
+  }
+  return SUCCEEDED;
+}
+
 }  // namespace
 
 
@@ -493,9 +561,11 @@ struct LoopAssignmentAnalysisPhase {
   static const char* phase_name() { return "loop assignment analysis"; }
 
   void Run(PipelineData* data, Zone* temp_zone) {
-    AstLoopAssignmentAnalyzer analyzer(data->graph_zone(), data->info());
-    LoopAssignmentAnalysis* loop_assignment = analyzer.Analyze();
-    data->set_loop_assignment(loop_assignment);
+    if (!data->info()->is_optimizing_from_bytecode()) {
+      AstLoopAssignmentAnalyzer analyzer(data->graph_zone(), data->info());
+      LoopAssignmentAnalysis* loop_assignment = analyzer.Analyze();
+      data->set_loop_assignment(loop_assignment);
+    }
   }
 };
 
@@ -504,10 +574,12 @@ struct TypeHintAnalysisPhase {
   static const char* phase_name() { return "type hint analysis"; }
 
   void Run(PipelineData* data, Zone* temp_zone) {
-    TypeHintAnalyzer analyzer(data->graph_zone());
-    Handle<Code> code(data->info()->shared_info()->code(), data->isolate());
-    TypeHintAnalysis* type_hint_analysis = analyzer.Analyze(code);
-    data->set_type_hint_analysis(type_hint_analysis);
+    if (!data->info()->is_optimizing_from_bytecode()) {
+      TypeHintAnalyzer analyzer(data->graph_zone());
+      Handle<Code> code(data->info()->shared_info()->code(), data->isolate());
+      TypeHintAnalysis* type_hint_analysis = analyzer.Analyze(code);
+      data->set_type_hint_analysis(type_hint_analysis);
+    }
   }
 };
 
@@ -519,7 +591,7 @@ struct GraphBuilderPhase {
     bool stack_check = !data->info()->IsStub();
     bool succeeded = false;
 
-    if (data->info()->shared_info()->HasBytecodeArray()) {
+    if (data->info()->is_optimizing_from_bytecode()) {
       BytecodeGraphBuilder graph_builder(temp_zone, data->info(),
                                          data->jsgraph());
       succeeded = graph_builder.CreateGraph();
@@ -622,7 +694,8 @@ struct TypedLoweringPhase {
     JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
-    LoadElimination load_elimination(&graph_reducer);
+    LoadElimination load_elimination(&graph_reducer, data->graph(),
+                                     data->common());
     JSBuiltinReducer builtin_reducer(&graph_reducer, data->jsgraph());
     MaybeHandle<LiteralsArray> literals_array =
         data->info()->is_native_context_specializing()
@@ -646,6 +719,7 @@ struct TypedLoweringPhase {
         data->info()->is_deoptimization_enabled()
             ? JSIntrinsicLowering::kDeoptimizationEnabled
             : JSIntrinsicLowering::kDeoptimizationDisabled);
+    SimplifiedOperatorReducer simple_reducer(data->jsgraph());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
     AddReducer(data, &graph_reducer, &dead_code_elimination);
@@ -656,6 +730,7 @@ struct TypedLoweringPhase {
     AddReducer(data, &graph_reducer, &typed_lowering);
     AddReducer(data, &graph_reducer, &intrinsic_lowering);
     AddReducer(data, &graph_reducer, &load_elimination);
+    AddReducer(data, &graph_reducer, &simple_reducer);
     AddReducer(data, &graph_reducer, &common_reducer);
     graph_reducer.ReduceGraph();
   }
@@ -705,12 +780,6 @@ struct SimplifiedLoweringPhase {
                                 data->source_positions());
     lowering.LowerAllNodes();
 
-    // TODO(bmeurer): See comment on SimplifiedLowering::abort_compilation_.
-    if (lowering.abort_compilation_) {
-      data->set_compilation_failed();
-      return;
-    }
-
     JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
@@ -739,6 +808,35 @@ struct ControlFlowOptimizationPhase {
   }
 };
 
+struct EffectControlLinearizationPhase {
+  static const char* phase_name() { return "effect linearization"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    // The scheduler requires the graphs to be trimmed, so trim now.
+    // TODO(jarin) Remove the trimming once the scheduler can handle untrimmed
+    // graphs.
+    GraphTrimmer trimmer(temp_zone, data->graph());
+    NodeVector roots(temp_zone);
+    data->jsgraph()->GetCachedNodes(&roots);
+    trimmer.TrimGraph(roots.begin(), roots.end());
+
+    // Schedule the graph without node splitting so that we can
+    // fix the effect and control flow for nodes with low-level side
+    // effects (such as changing representation to tagged or
+    // 'floating' allocation regions.)
+    Schedule* schedule = Scheduler::ComputeSchedule(temp_zone, data->graph(),
+                                                    Scheduler::kNoFlags);
+    if (FLAG_turbo_verify) ScheduleVerifier::Run(schedule);
+
+    // Post-pass for wiring the control/effects
+    // - connect allocating representation changes into the control&effect
+    //   chains and lower them,
+    // - get rid of the region markers,
+    // - introduce effect phis and rewire effects to get SSA again.
+    EffectControlLinearizer introducer(data->jsgraph(), schedule, temp_zone);
+    introducer.Run();
+  }
+};
 
 struct ChangeLoweringPhase {
   static const char* phase_name() { return "change lowering"; }
@@ -762,7 +860,6 @@ struct ChangeLoweringPhase {
     graph_reducer.ReduceGraph();
   }
 };
-
 
 struct EarlyGraphTrimmingPhase {
   static const char* phase_name() { return "early graph trimming"; }
@@ -810,8 +907,7 @@ struct GenericLoweringPhase {
                                               data->common());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
-    JSGenericLowering generic_lowering(data->info()->is_typing_enabled(),
-                                       data->jsgraph());
+    JSGenericLowering generic_lowering(data->jsgraph());
     SelectLowering select_lowering(data->jsgraph()->graph(),
                                    data->jsgraph()->common());
     TailCallOptimization tco(data->common(), data->graph());
@@ -1061,9 +1157,8 @@ struct VerifyGraphPhase {
   static const char* phase_name() { return nullptr; }
 
   void Run(PipelineData* data, Zone* temp_zone, const bool untyped) {
-    Verifier::Run(data->graph(), FLAG_turbo_types && !untyped
-                                     ? Verifier::TYPED
-                                     : Verifier::UNTYPED);
+    Verifier::Run(data->graph(),
+                  !untyped ? Verifier::TYPED : Verifier::UNTYPED);
   }
 };
 
@@ -1086,7 +1181,7 @@ void Pipeline::RunPrintAndVerify(const char* phase, bool untyped) {
 
 
 Handle<Code> Pipeline::GenerateCode() {
-  ZonePool zone_pool;
+  ZonePool zone_pool(isolate()->allocator());
   base::SmartPointer<PipelineStatistics> pipeline_statistics;
 
   if (FLAG_turbo_stats) {
@@ -1103,12 +1198,10 @@ Handle<Code> Pipeline::GenerateCode() {
       int pos = info()->shared_info()->start_position();
       json_of << "{\"function\":\"" << function_name.get()
               << "\", \"sourcePosition\":" << pos << ", \"source\":\"";
-      if (info()->has_literal() && !script->IsUndefined() &&
-          !script->source()->IsUndefined()) {
+      if (!script->IsUndefined() && !script->source()->IsUndefined()) {
         DisallowHeapAllocation no_allocation;
-        FunctionLiteral* function = info()->literal();
-        int start = function->start_position();
-        int len = function->end_position() - start;
+        int start = info()->shared_info()->start_position();
+        int len = info()->shared_info()->end_position() - start;
         String::SubStringRange source(String::cast(script->source()), start,
                                       len);
         for (const auto& c : source) {
@@ -1140,9 +1233,7 @@ Handle<Code> Pipeline::GenerateCode() {
     Run<LoopAssignmentAnalysisPhase>();
   }
 
-  if (info()->is_typing_enabled()) {
-    Run<TypeHintAnalysisPhase>();
-  }
+  Run<TypeHintAnalysisPhase>();
 
   Run<GraphBuilderPhase>();
   if (data.compilation_failed()) return Handle<Code>::null();
@@ -1167,53 +1258,55 @@ Handle<Code> Pipeline::GenerateCode() {
     GraphReplayPrinter::PrintReplay(data.graph());
   }
 
+  // Type the graph.
   base::SmartPointer<Typer> typer;
-  if (info()->is_typing_enabled()) {
-    // Type the graph.
-    typer.Reset(new Typer(isolate(), data.graph(),
-                          info()->is_deoptimization_enabled()
-                              ? Typer::kDeoptimizationEnabled
-                              : Typer::kNoFlags,
-                          info()->dependencies()));
-    Run<TyperPhase>(typer.get());
-    RunPrintAndVerify("Typed");
-  }
+  typer.Reset(new Typer(isolate(), data.graph(),
+                        info()->is_deoptimization_enabled()
+                            ? Typer::kDeoptimizationEnabled
+                            : Typer::kNoFlags,
+                        info()->dependencies()));
+  Run<TyperPhase>(typer.get());
+  RunPrintAndVerify("Typed");
 
   BeginPhaseKind("lowering");
 
-  if (info()->is_typing_enabled()) {
-    // Lower JSOperators where we can determine types.
-    Run<TypedLoweringPhase>();
-    RunPrintAndVerify("Lowered typed");
+  // Lower JSOperators where we can determine types.
+  Run<TypedLoweringPhase>();
+  RunPrintAndVerify("Lowered typed");
 
-    if (FLAG_turbo_stress_loop_peeling) {
-      Run<StressLoopPeelingPhase>();
-      RunPrintAndVerify("Loop peeled");
-    }
-
-    if (FLAG_turbo_escape) {
-      Run<EscapeAnalysisPhase>();
-      RunPrintAndVerify("Escape Analysed");
-    }
-
-    // Lower simplified operators and insert changes.
-    Run<SimplifiedLoweringPhase>();
-    RunPrintAndVerify("Lowered simplified");
-
-    Run<BranchEliminationPhase>();
-    RunPrintAndVerify("Branch conditions eliminated");
-
-    // Optimize control flow.
-    if (FLAG_turbo_cf_optimization) {
-      Run<ControlFlowOptimizationPhase>();
-      RunPrintAndVerify("Control flow optimized");
-    }
-
-    // Lower changes that have been inserted before.
-    Run<ChangeLoweringPhase>();
-    // TODO(jarin, rossberg): Remove UNTYPED once machine typing works.
-    RunPrintAndVerify("Lowered changes", true);
+  if (FLAG_turbo_stress_loop_peeling) {
+    Run<StressLoopPeelingPhase>();
+    RunPrintAndVerify("Loop peeled");
   }
+
+  if (FLAG_experimental_turbo_escape) {
+    Run<EscapeAnalysisPhase>();
+    RunPrintAndVerify("Escape Analysed");
+  }
+
+  // Lower simplified operators and insert changes.
+  Run<SimplifiedLoweringPhase>();
+  RunPrintAndVerify("Lowered simplified");
+
+  if (info()->is_effect_scheduling_enabled()) {
+    // TODO(jarin) Run value numbering for the representation changes.
+    Run<EffectControlLinearizationPhase>();
+    RunPrintAndVerify("Effect and control linearized");
+  }
+
+  Run<BranchEliminationPhase>();
+  RunPrintAndVerify("Branch conditions eliminated");
+
+  // Optimize control flow.
+  if (FLAG_turbo_cf_optimization) {
+    Run<ControlFlowOptimizationPhase>();
+    RunPrintAndVerify("Control flow optimized");
+  }
+
+  // Lower changes that have been inserted before.
+  Run<ChangeLoweringPhase>();
+  // TODO(jarin, rossberg): Remove UNTYPED once machine typing works.
+  RunPrintAndVerify("Lowered changes", true);
 
   // Lower any remaining generic JSOperators.
   Run<GenericLoweringPhase>();
@@ -1231,9 +1324,6 @@ Handle<Code> Pipeline::GenerateCode() {
   // Kill the Typer and thereby uninstall the decorator (if any).
   typer.Reset(nullptr);
 
-  // TODO(bmeurer): See comment on SimplifiedLowering::abort_compilation_.
-  if (data.compilation_failed()) return Handle<Code>::null();
-
   return ScheduleAndGenerateCode(
       Linkage::ComputeIncoming(data.instruction_zone(), info()));
 }
@@ -1247,7 +1337,7 @@ Handle<Code> Pipeline::GenerateCodeForCodeStub(Isolate* isolate,
   CompilationInfo info(debug_name, isolate, graph->zone(), flags);
 
   // Construct a pipeline for scheduling and code generation.
-  ZonePool zone_pool;
+  ZonePool zone_pool(isolate->allocator());
   PipelineData data(&zone_pool, &info, graph, schedule);
   base::SmartPointer<PipelineStatistics> pipeline_statistics;
   if (FLAG_turbo_stats) {
@@ -1288,7 +1378,7 @@ Handle<Code> Pipeline::GenerateCodeForTesting(CompilationInfo* info,
                                               Graph* graph,
                                               Schedule* schedule) {
   // Construct a pipeline for scheduling and code generation.
-  ZonePool zone_pool;
+  ZonePool zone_pool(info->isolate()->allocator());
   PipelineData data(&zone_pool, info, graph, schedule);
   base::SmartPointer<PipelineStatistics> pipeline_statistics;
   if (FLAG_turbo_stats) {
@@ -1306,12 +1396,15 @@ Handle<Code> Pipeline::GenerateCodeForTesting(CompilationInfo* info,
   return pipeline.ScheduleAndGenerateCode(call_descriptor);
 }
 
+OptimizedCompileJob* Pipeline::NewCompilationJob(CompilationInfo* info) {
+  return new (info->zone()) PipelineCompilationJob(info);
+}
 
 bool Pipeline::AllocateRegistersForTesting(const RegisterConfiguration* config,
                                            InstructionSequence* sequence,
                                            bool run_verifier) {
   CompilationInfo info("testing", sequence->isolate(), sequence->zone());
-  ZonePool zone_pool;
+  ZonePool zone_pool(sequence->isolate()->allocator());
   PipelineData data(&zone_pool, &info, sequence);
   Pipeline pipeline(&info);
   pipeline.data_ = &data;
@@ -1336,7 +1429,7 @@ Handle<Code> Pipeline::ScheduleAndGenerateCode(
                                                        data->schedule());
   }
 
-  data->InitializeInstructionSequence();
+  data->InitializeInstructionSequence(call_descriptor);
 
   data->InitializeFrameData(call_descriptor);
   // Select and schedule instructions covering the scheduled graph.
@@ -1365,6 +1458,7 @@ Handle<Code> Pipeline::ScheduleAndGenerateCode(
   AllocateRegisters(
       RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN),
       call_descriptor, run_verifier);
+  Run<FrameElisionPhase>();
   if (data->compilation_failed()) {
     info()->AbortOptimization(kNotEnoughVirtualRegistersRegalloc);
     return Handle<Code>();
@@ -1373,11 +1467,7 @@ Handle<Code> Pipeline::ScheduleAndGenerateCode(
   BeginPhaseKind("code generation");
   // TODO(mtrofin): move this off to the register allocator.
   bool generate_frame_at_start =
-      !FLAG_turbo_frame_elision || !data_->info()->IsStub() ||
-      !data_->frame()->needs_frame() ||
-      data_->sequence()->instruction_blocks().front()->needs_frame() ||
-      linkage.GetIncomingDescriptor()->CalleeSavedFPRegisters() != 0 ||
-      linkage.GetIncomingDescriptor()->CalleeSavedRegisters() != 0;
+      data_->sequence()->instruction_blocks().front()->must_construct_frame();
   // Optimimize jumps.
   if (FLAG_turbo_jt) {
     Run<JumpThreadingPhase>(generate_frame_at_start);
@@ -1437,7 +1527,7 @@ void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
   base::SmartPointer<Zone> verifier_zone;
   RegisterAllocatorVerifier* verifier = nullptr;
   if (run_verifier) {
-    verifier_zone.Reset(new Zone());
+    verifier_zone.Reset(new Zone(isolate()->allocator()));
     verifier = new (verifier_zone.get()) RegisterAllocatorVerifier(
         verifier_zone.get(), config, data->sequence());
   }
@@ -1446,6 +1536,7 @@ void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
 #ifdef DEBUG
   debug_name = info()->GetDebugName();
   data_->sequence()->ValidateEdgeSplitForm();
+  data_->sequence()->ValidateDeferredBlockExitPaths();
 #endif
 
   data->InitializeRegisterAllocationData(config, descriptor, debug_name.get());
@@ -1485,12 +1576,6 @@ void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
     Run<MergeSplintersPhase>();
   }
 
-  // We plan to enable frame elision only for stubs and bytecode handlers.
-  if (FLAG_turbo_frame_elision && info()->IsStub()) {
-    Run<LocateSpillSlotsPhase>();
-    Run<FrameElisionPhase>();
-  }
-
   Run<AssignSpillSlotsPhase>();
 
   Run<CommitAssignmentPhase>();
@@ -1500,6 +1585,8 @@ void Pipeline::AllocateRegisters(const RegisterConfiguration* config,
   if (FLAG_turbo_move_optimization) {
     Run<OptimizeMovesPhase>();
   }
+
+  Run<LocateSpillSlotsPhase>();
 
   if (FLAG_trace_turbo_graph) {
     OFStream os(stdout);

@@ -39,7 +39,6 @@ ScriptData::ScriptData(const byte* data, int length)
   }
 }
 
-
 ParseInfo::ParseInfo(Zone* zone)
     : zone_(zone),
       flags_(0),
@@ -51,15 +50,14 @@ ParseInfo::ParseInfo(Zone* zone)
       unicode_cache_(nullptr),
       stack_limit_(0),
       hash_seed_(0),
+      isolate_(nullptr),
       cached_data_(nullptr),
       ast_value_factory_(nullptr),
       literal_(nullptr),
       scope_(nullptr) {}
 
-
 ParseInfo::ParseInfo(Zone* zone, Handle<JSFunction> function)
     : ParseInfo(zone, Handle<SharedFunctionInfo>(function->shared())) {
-  set_closure(function);
   set_context(Handle<Context>(function->context()));
 }
 
@@ -764,11 +762,12 @@ ClassLiteral* ParserTraits::ParseClassLiteral(
                                     name_is_strict_reserved, pos, ok);
 }
 
+
 Parser::Parser(ParseInfo* info)
     : ParserBase<ParserTraits>(info->zone(), &scanner_, info->stack_limit(),
                                info->extension(), info->ast_value_factory(),
                                NULL, this),
-      scanner_(info->unicode_cache(), info->allow_html_comments()),
+      scanner_(info->unicode_cache()),
       reusable_preparser_(NULL),
       original_scope_(NULL),
       target_stack_(NULL),
@@ -783,10 +782,8 @@ Parser::Parser(ParseInfo* info)
   DCHECK(!info->script().is_null() || info->source_stream() != NULL);
   set_allow_lazy(info->allow_lazy_parsing());
   set_allow_natives(FLAG_allow_natives_syntax || info->is_native());
-  set_allow_harmony_sloppy(FLAG_harmony_sloppy);
-  set_allow_harmony_sloppy_function(FLAG_harmony_sloppy_function);
-  set_allow_harmony_sloppy_let(FLAG_harmony_sloppy_let);
-  set_allow_legacy_const(FLAG_legacy_const);
+  set_allow_tailcalls(FLAG_harmony_tailcalls && !info->is_native() &&
+                      info->isolate()->is_tail_call_elimination_enabled());
   set_allow_harmony_do_expressions(FLAG_harmony_do_expressions);
   set_allow_harmony_function_name(FLAG_harmony_function_name);
   set_allow_harmony_function_sent(FLAG_harmony_function_sent);
@@ -939,7 +936,7 @@ FunctionLiteral* Parser::DoParseProgram(ParseInfo* info) {
     if (ok && is_strict(language_mode())) {
       CheckStrictOctalLiteral(beg_pos, scanner()->location().end_pos, &ok);
     }
-    if (ok && is_sloppy(language_mode()) && allow_harmony_sloppy_function()) {
+    if (ok && is_sloppy(language_mode())) {
       // TODO(littledan): Function bindings on the global object that modify
       // pre-existing bindings should be made writable, enumerable and
       // nonconfigurable if possible, whereas this code will leave attributes
@@ -1049,12 +1046,12 @@ FunctionLiteral* Parser::ParseLazy(Isolate* isolate, ParseInfo* info,
     // Parse the function literal.
     Scope* scope = NewScope(scope_, SCRIPT_SCOPE);
     info->set_script_scope(scope);
-    if (!info->closure().is_null()) {
+    if (!info->context().is_null()) {
       // Ok to use Isolate here, since lazy function parsing is only done in the
       // main thread.
       DCHECK(parsing_on_main_thread_);
-      scope = Scope::DeserializeScopeChain(isolate, zone(),
-                                           info->closure()->context(), scope);
+      scope = Scope::DeserializeScopeChain(isolate, zone(), *info->context(),
+                                           scope);
     }
     original_scope_ = scope;
     AstNodeFactory function_factory(ast_value_factory());
@@ -1256,10 +1253,7 @@ Statement* Parser::ParseStatementListItem(bool* ok) {
       Consume(Token::CLASS);
       return ParseClassDeclaration(NULL, ok);
     case Token::CONST:
-      if (allow_const()) {
-        return ParseVariableStatement(kStatementListItem, NULL, ok);
-      }
-      break;
+      return ParseVariableStatement(kStatementListItem, NULL, ok);
     case Token::VAR:
       return ParseVariableStatement(kStatementListItem, NULL, ok);
     case Token::LET:
@@ -1270,7 +1264,7 @@ Statement* Parser::ParseStatementListItem(bool* ok) {
     default:
       break;
   }
-  return ParseStatement(NULL, ok);
+  return ParseStatement(NULL, kAllowLabelledFunctionStatement, ok);
 }
 
 
@@ -1720,8 +1714,8 @@ Statement* Parser::ParseExportDeclaration(bool* ok) {
   return result;
 }
 
-
 Statement* Parser::ParseStatement(ZoneList<const AstRawString*>* labels,
+                                  AllowLabelledFunctionStatement allow_function,
                                   bool* ok) {
   // Statement ::
   //   EmptyStatement
@@ -1731,12 +1725,12 @@ Statement* Parser::ParseStatement(ZoneList<const AstRawString*>* labels,
     Next();
     return factory()->NewEmptyStatement(RelocInfo::kNoPosition);
   }
-  return ParseSubStatement(labels, ok);
+  return ParseSubStatement(labels, allow_function, ok);
 }
 
-
-Statement* Parser::ParseSubStatement(ZoneList<const AstRawString*>* labels,
-                                     bool* ok) {
+Statement* Parser::ParseSubStatement(
+    ZoneList<const AstRawString*>* labels,
+    AllowLabelledFunctionStatement allow_function, bool* ok) {
   // Statement ::
   //   Block
   //   VariableStatement
@@ -1824,17 +1818,8 @@ Statement* Parser::ParseSubStatement(ZoneList<const AstRawString*>* labels,
     case Token::VAR:
       return ParseVariableStatement(kStatement, NULL, ok);
 
-    case Token::CONST:
-      // In ES6 CONST is not allowed as a Statement, only as a
-      // LexicalDeclaration, however we continue to allow it in sloppy mode for
-      // backwards compatibility.
-      if (is_sloppy(language_mode()) && allow_legacy_const()) {
-        return ParseVariableStatement(kStatement, NULL, ok);
-      }
-
-    // Fall through.
     default:
-      return ParseExpressionOrLabelledStatement(labels, ok);
+      return ParseExpressionOrLabelledStatement(labels, allow_function, ok);
   }
 }
 
@@ -1916,18 +1901,8 @@ Variable* Parser::Declare(Declaration* declaration,
       }
       var = declaration_scope->DeclareLocal(
           name, mode, declaration->initialization(), kind, kNotAssigned);
-    } else if ((mode == CONST_LEGACY || var->mode() == CONST_LEGACY) &&
-               !declaration_scope->is_script_scope()) {
-      // Duplicate legacy const definitions throw at runtime.
-      DCHECK(is_sloppy(language_mode()));
-      Expression* expression = NewThrowSyntaxError(
-          MessageTemplate::kVarRedeclaration, name, declaration->position());
-      declaration_scope->SetIllegalRedeclaration(expression);
-    } else if ((IsLexicalVariableMode(mode) ||
-                IsLexicalVariableMode(var->mode())) &&
-               // Lexical bindings may appear for some parameters in sloppy
-               // mode even with --harmony-sloppy off.
-               (is_strict(language_mode()) || allow_harmony_sloppy())) {
+    } else if (IsLexicalVariableMode(mode) ||
+               IsLexicalVariableMode(var->mode())) {
       // Allow duplicate function decls for web compat, see bug 4693.
       if (is_sloppy(language_mode()) && is_function_declaration &&
           var->is_function()) {
@@ -1996,14 +1971,6 @@ Variable* Parser::Declare(Declaration* declaration,
   // a performance issue since it may lead to repeated
   // RuntimeHidden_DeclareLookupSlot calls.
   declaration_scope->AddDeclaration(declaration);
-
-  if (mode == CONST_LEGACY && declaration_scope->is_script_scope()) {
-    // For global const variables we bind the proxy to a variable.
-    DCHECK(resolve);  // should be set by all callers
-    Variable::Kind kind = Variable::NORMAL;
-    var = new (zone()) Variable(declaration_scope, name, mode, kind,
-                                kNeedsInitialization, kNotAssigned);
-  }
 
   // If requested and we have a local variable, bind the proxy to the variable
   // at parse-time. This is used for functions (and consts) declared inside
@@ -2117,19 +2084,14 @@ Statement* Parser::ParseFunctionDeclaration(
   // initial value upon entering the corresponding scope.
   // In ES6, a function behaves as a lexical binding, except in
   // a script scope, or the initial scope of eval or another function.
-  VariableMode mode =
-      (is_strict(language_mode()) || allow_harmony_sloppy_function()) &&
-      !scope_->is_declaration_scope()
-          ? LET
-          : VAR;
+  VariableMode mode = !scope_->is_declaration_scope() ? LET : VAR;
   VariableProxy* proxy = NewUnresolved(name, mode);
   Declaration* declaration =
       factory()->NewFunctionDeclaration(proxy, mode, fun, scope_, pos);
   Declare(declaration, DeclarationDescriptor::NORMAL, true, CHECK_OK);
   if (names) names->Add(name, zone());
   EmptyStatement* empty = factory()->NewEmptyStatement(RelocInfo::kNoPosition);
-  if (is_sloppy(language_mode()) && allow_harmony_sloppy_function() &&
-      !scope_->is_declaration_scope()) {
+  if (is_sloppy(language_mode()) && !scope_->is_declaration_scope()) {
     SloppyBlockFunctionStatement* delegate =
         factory()->NewSloppyBlockFunctionStatement(empty, scope_);
     scope_->DeclarationScope()->sloppy_block_function_map()->Declare(name,
@@ -2156,12 +2118,6 @@ Statement* Parser::ParseClassDeclaration(ZoneList<const AstRawString*>* names,
   //   let C = class C { ... };
   //
   // so rewrite it as such.
-
-  if (!allow_harmony_sloppy() && is_sloppy(language_mode())) {
-    ReportMessage(MessageTemplate::kSloppyLexical);
-    *ok = false;
-    return NULL;
-  }
 
   int pos = position();
   bool is_strict_reserved = false;
@@ -2293,17 +2249,11 @@ Block* Parser::ParseVariableDeclarations(
 
   if (peek() == Token::VAR) {
     Consume(Token::VAR);
-  } else if (peek() == Token::CONST && allow_const()) {
+  } else if (peek() == Token::CONST) {
     Consume(Token::CONST);
-    if (is_sloppy(language_mode()) && allow_legacy_const()) {
-      parsing_result->descriptor.mode = CONST_LEGACY;
-      ++use_counts_[v8::Isolate::kLegacyConst];
-    } else {
-      DCHECK(is_strict(language_mode()) || allow_harmony_sloppy());
-      DCHECK(var_context != kStatement);
-      parsing_result->descriptor.mode = CONST;
-    }
-  } else if (peek() == Token::LET && allow_let()) {
+    DCHECK(var_context != kStatement);
+    parsing_result->descriptor.mode = CONST;
+  } else if (peek() == Token::LET) {
     Consume(Token::LET);
     DCHECK(var_context != kStatement);
     parsing_result->descriptor.mode = LET;
@@ -2386,9 +2336,8 @@ Block* Parser::ParseVariableDeclarations(
           return nullptr;
         }
 
-        // 'let x' and (legacy) 'const x' initialize 'x' to undefined.
-        if (parsing_result->descriptor.mode == LET ||
-            parsing_result->descriptor.mode == CONST_LEGACY) {
+        // 'let x' initializes 'x' to undefined.
+        if (parsing_result->descriptor.mode == LET) {
           value = GetLiteralUndefined(position());
         }
       }
@@ -2435,9 +2384,9 @@ static bool ContainsLabel(ZoneList<const AstRawString*>* labels,
   return false;
 }
 
-
 Statement* Parser::ParseExpressionOrLabelledStatement(
-    ZoneList<const AstRawString*>* labels, bool* ok) {
+    ZoneList<const AstRawString*>* labels,
+    AllowLabelledFunctionStatement allow_function, bool* ok) {
   // ExpressionStatement | LabelledStatement ::
   //   Expression ';'
   //   Identifier ':' Statement
@@ -2490,9 +2439,13 @@ Statement* Parser::ParseExpressionOrLabelledStatement(
     Expect(Token::COLON, CHECK_OK);
     // ES#sec-labelled-function-declarations Labelled Function Declarations
     if (peek() == Token::FUNCTION && is_sloppy(language_mode())) {
-      return ParseFunctionDeclaration(labels, ok);
+      if (allow_function == kAllowLabelledFunctionStatement) {
+        return ParseFunctionDeclaration(labels, ok);
+      } else {
+        return ParseScopedStatement(labels, true, ok);
+      }
     }
-    return ParseStatement(labels, ok);
+    return ParseStatement(labels, kDisallowLabelledFunctionStatement, ok);
   }
 
   // If we have an extension, we allow a native function declaration.
@@ -2508,15 +2461,6 @@ Statement* Parser::ParseExpressionOrLabelledStatement(
   }
 
   // Parsed expression statement, followed by semicolon.
-  // Detect attempts at 'let' declarations in sloppy mode.
-  if (!allow_harmony_sloppy_let() && peek() == Token::IDENTIFIER &&
-      expr->AsVariableProxy() != NULL &&
-      expr->AsVariableProxy()->raw_name() ==
-          ast_value_factory()->let_string()) {
-    ReportMessage(MessageTemplate::kSloppyLexical, NULL);
-    *ok = false;
-    return NULL;
-  }
   ExpectSemicolon(CHECK_OK);
   return factory()->NewExpressionStatement(expr, pos);
 }
@@ -2680,7 +2624,7 @@ Statement* Parser::ParseReturnStatement(bool* ok) {
     }
 
     // ES6 14.6.1 Static Semantics: IsInTailPosition
-    if (FLAG_harmony_tailcalls && !is_sloppy(language_mode())) {
+    if (allow_tailcalls() && !is_sloppy(language_mode())) {
       function_state_->AddExpressionInTailPosition(return_value);
     }
   }
@@ -3480,7 +3424,7 @@ Statement* Parser::ParseScopedStatement(ZoneList<const AstRawString*>* labels,
                                         bool legacy, bool* ok) {
   if (is_strict(language_mode()) || peek() != Token::FUNCTION ||
       (legacy && allow_harmony_restrictive_declarations())) {
-    return ParseSubStatement(labels, ok);
+    return ParseSubStatement(labels, kDisallowLabelledFunctionStatement, ok);
   } else {
     if (legacy) {
       ++use_counts_[v8::Isolate::kLegacyFunctionDeclaration];
@@ -3512,10 +3456,9 @@ Statement* Parser::ParseForStatement(ZoneList<const AstRawString*>* labels,
   Expect(Token::FOR, CHECK_OK);
   Expect(Token::LPAREN, CHECK_OK);
   for_scope->set_start_position(scanner()->location().beg_pos);
-  bool is_let_identifier_expression = false;
   DeclarationParsingResult parsing_result;
   if (peek() != Token::SEMICOLON) {
-    if (peek() == Token::VAR || (peek() == Token::CONST && allow_const()) ||
+    if (peek() == Token::VAR || peek() == Token::CONST ||
         (peek() == Token::LET && IsNextLetKeyword())) {
       ParseVariableDeclarations(kForStatement, &parsing_result, nullptr,
                                 CHECK_OK);
@@ -3688,10 +3631,6 @@ Statement* Parser::ParseForStatement(ZoneList<const AstRawString*>* labels,
       Expression* expression = ParseExpression(false, &classifier, CHECK_OK);
       int lhs_end_pos = scanner()->location().end_pos;
       ForEachStatement::VisitMode mode = ForEachStatement::ENUMERATE;
-      is_let_identifier_expression =
-          expression->IsVariableProxy() &&
-          expression->AsVariableProxy()->raw_name() ==
-              ast_value_factory()->let_string();
 
       bool is_for_each = CheckInOrOf(&mode, ok);
       if (!*ok) return nullptr;
@@ -3752,13 +3691,6 @@ Statement* Parser::ParseForStatement(ZoneList<const AstRawString*>* labels,
   Target target(&this->target_stack_, loop);
 
   // Parsed initializer at this point.
-  // Detect attempts at 'let' declarations in sloppy mode.
-  if (!allow_harmony_sloppy_let() && peek() == Token::IDENTIFIER &&
-      is_sloppy(language_mode()) && is_let_identifier_expression) {
-    ReportMessage(MessageTemplate::kSloppyLexical, NULL);
-    *ok = false;
-    return NULL;
-  }
   Expect(Token::SEMICOLON, CHECK_OK);
 
   Expression* cond = NULL;
@@ -4054,42 +3986,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
     function_name = ast_value_factory()->empty_string();
   }
 
-  // Function declarations are function scoped in normal mode, so they are
-  // hoisted. In harmony block scoping mode they are block scoped, so they
-  // are not hoisted.
-  //
-  // One tricky case are function declarations in a local sloppy-mode eval:
-  // their declaration is hoisted, but they still see the local scope. E.g.,
-  //
-  // function() {
-  //   var x = 0
-  //   try { throw 1 } catch (x) { eval("function g() { return x }") }
-  //   return g()
-  // }
-  //
-  // needs to return 1. To distinguish such cases, we need to detect
-  // (1) whether a function stems from a sloppy eval, and
-  // (2) whether it actually hoists across the eval.
-  // Unfortunately, we do not represent sloppy eval scopes, so we do not have
-  // either information available directly, especially not when lazily compiling
-  // a function like 'g'. We hence rely on the following invariants:
-  // - (1) is the case iff the innermost scope of the deserialized scope chain
-  //   under which we compile is _not_ a declaration scope. This holds because
-  //   in all normal cases, function declarations are fully hoisted to a
-  //   declaration scope and compiled relative to that.
-  // - (2) is the case iff the current declaration scope is still the original
-  //   one relative to the deserialized scope chain. Otherwise we must be
-  //   compiling a function in an inner declaration scope in the eval, e.g. a
-  //   nested function, and hoisting works normally relative to that.
-  Scope* declaration_scope = scope_->DeclarationScope();
-  Scope* original_declaration_scope = original_scope_->DeclarationScope();
-  Scope* scope = function_type == FunctionLiteral::kDeclaration &&
-                         is_sloppy(language_mode) &&
-                         !allow_harmony_sloppy_function() &&
-                         (original_scope_ == original_declaration_scope ||
-                          declaration_scope != original_declaration_scope)
-                     ? NewScope(declaration_scope, FUNCTION_SCOPE, kind)
-                     : NewScope(scope_, FUNCTION_SCOPE, kind);
+  Scope* scope = NewScope(scope_, FUNCTION_SCOPE, kind);
   SetLanguageMode(scope, language_mode);
   ZoneList<Statement*>* body = NULL;
   int arity = -1;
@@ -4233,7 +4130,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
       // temp_zone is deallocated. These objects are instead allocated in a
       // parser-persistent zone (see parser_zone_ in AstNodeFactory).
       {
-        Zone temp_zone;
+        Zone temp_zone(zone()->allocator());
         AstNodeFactory::BodyScope inner(factory(), &temp_zone, use_temp_zone);
 
         body = ParseEagerFunctionBody(function_name, pos, formals, kind,
@@ -4264,7 +4161,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
       CheckStrictOctalLiteral(scope->start_position(), scope->end_position(),
                               CHECK_OK);
     }
-    if (is_sloppy(language_mode) && allow_harmony_sloppy_function()) {
+    if (is_sloppy(language_mode)) {
       InsertSloppyBlockFunctionVarBindings(scope, CHECK_OK);
     }
     CheckConflictingVarDeclarations(scope, CHECK_OK);
@@ -4409,13 +4306,17 @@ class InitializerRewriter : public AstExpressionVisitor {
         scope_(scope) {}
 
  private:
-  void VisitExpression(Expression* expr) {
+  void VisitExpression(Expression* expr) override {
     RewritableExpression* to_rewrite = expr->AsRewritableExpression();
     if (to_rewrite == nullptr || to_rewrite->is_rewritten()) return;
 
     Parser::PatternRewriter::RewriteDestructuringAssignment(parser_, to_rewrite,
                                                             scope_);
   }
+
+  // Code in function literals does not need to be eagerly rewritten, it will be
+  // rewritten when scheduled.
+  void VisitFunctionLiteral(FunctionLiteral* expr) override {}
 
  private:
   Parser* parser_;
@@ -4560,9 +4461,13 @@ ZoneList<Statement*>* Parser::ParseEagerFunctionBody(
 
       {
         ZoneList<Expression*>* arguments =
-            new (zone()) ZoneList<Expression*>(0, zone());
+            new (zone()) ZoneList<Expression*>(2, zone());
+        arguments->Add(factory()->NewThisFunction(pos), zone());
+        arguments->Add(
+            ThisExpression(scope_, factory(), RelocInfo::kNoPosition), zone());
         CallRuntime* allocation = factory()->NewCallRuntime(
             Runtime::kCreateJSGeneratorObject, arguments, pos);
+
         VariableProxy* init_proxy = factory()->NewVariableProxy(
             function_state_->generator_object_variable());
         Assignment* assignment = factory()->NewAssignment(
@@ -4684,10 +4589,6 @@ PreParser::PreParseResult Parser::ParseLazyFunctionBodyWithPreParser(
     reusable_preparser_->set_allow_lazy(true);
 #define SET_ALLOW(name) reusable_preparser_->set_allow_##name(allow_##name());
     SET_ALLOW(natives);
-    SET_ALLOW(legacy_const);
-    SET_ALLOW(harmony_sloppy);
-    SET_ALLOW(harmony_sloppy_function);
-    SET_ALLOW(harmony_sloppy_let);
     SET_ALLOW(harmony_do_expressions);
     SET_ALLOW(harmony_function_name);
     SET_ALLOW(harmony_function_sent);
@@ -5797,7 +5698,7 @@ Expression* ParserTraits::RewriteYieldStar(
   Statement* initialize_mode;
   {
     Expression* mode_proxy = factory->NewVariableProxy(var_mode);
-    Expression* knext = factory->NewSmiLiteral(JSGeneratorObject::NEXT, nopos);
+    Expression* knext = factory->NewSmiLiteral(JSGeneratorObject::kNext, nopos);
     Expression* assignment =
         factory->NewAssignment(Token::ASSIGN, mode_proxy, knext, nopos);
     initialize_mode = factory->NewExpressionStatement(assignment, nopos);
@@ -5995,7 +5896,7 @@ Expression* ParserTraits::RewriteYieldStar(
   {
     Expression* mode_proxy = factory->NewVariableProxy(var_mode);
     Expression* kreturn =
-        factory->NewSmiLiteral(JSGeneratorObject::RETURN, nopos);
+        factory->NewSmiLiteral(JSGeneratorObject::kReturn, nopos);
     Expression* assignment =
         factory->NewAssignment(Token::ASSIGN, mode_proxy, kreturn, nopos);
     set_mode_return = factory->NewExpressionStatement(assignment, nopos);
@@ -6014,7 +5915,7 @@ Expression* ParserTraits::RewriteYieldStar(
   Statement* set_mode_next;
   {
     Expression* mode_proxy = factory->NewVariableProxy(var_mode);
-    Expression* knext = factory->NewSmiLiteral(JSGeneratorObject::NEXT, nopos);
+    Expression* knext = factory->NewSmiLiteral(JSGeneratorObject::kNext, nopos);
     Expression* assignment =
         factory->NewAssignment(Token::ASSIGN, mode_proxy, knext, nopos);
     set_mode_next = factory->NewExpressionStatement(assignment, nopos);
@@ -6026,7 +5927,7 @@ Expression* ParserTraits::RewriteYieldStar(
   {
     Expression* mode_proxy = factory->NewVariableProxy(var_mode);
     Expression* kthrow =
-        factory->NewSmiLiteral(JSGeneratorObject::THROW, nopos);
+        factory->NewSmiLiteral(JSGeneratorObject::kThrow, nopos);
     Expression* assignment =
         factory->NewAssignment(Token::ASSIGN, mode_proxy, kthrow, nopos);
     set_mode_throw = factory->NewExpressionStatement(assignment, nopos);
@@ -6114,11 +6015,11 @@ Expression* ParserTraits::RewriteYieldStar(
     case_throw->Add(factory->NewBreakStatement(switch_mode, nopos), zone);
 
     auto cases = new (zone) ZoneList<CaseClause*>(3, zone);
-    Expression* knext = factory->NewSmiLiteral(JSGeneratorObject::NEXT, nopos);
+    Expression* knext = factory->NewSmiLiteral(JSGeneratorObject::kNext, nopos);
     Expression* kreturn =
-        factory->NewSmiLiteral(JSGeneratorObject::RETURN, nopos);
+        factory->NewSmiLiteral(JSGeneratorObject::kReturn, nopos);
     Expression* kthrow =
-        factory->NewSmiLiteral(JSGeneratorObject::THROW, nopos);
+        factory->NewSmiLiteral(JSGeneratorObject::kThrow, nopos);
     cases->Add(factory->NewCaseClause(knext, case_next, nopos), zone);
     cases->Add(factory->NewCaseClause(kreturn, case_return, nopos), zone);
     cases->Add(factory->NewCaseClause(kthrow, case_throw, nopos), zone);
@@ -6481,7 +6382,7 @@ void ParserTraits::FinalizeIteratorUse(Variable* completion,
   //       iterator_use
   //     } catch(e) {
   //       if (completion === kAbruptCompletion) completion = kThrowCompletion;
-  //       throw e;
+  //       %ReThrow(e);
   //     }
   //   } finally {
   //     if (condition) {
@@ -6542,7 +6443,7 @@ void ParserTraits::FinalizeIteratorUse(Variable* completion,
   // try { #try_block }
   // catch(e) {
   //   #set_completion_throw;
-  //   throw e;
+  //   %ReThrow(e);
   // }
   Statement* try_catch;
   {
@@ -6552,17 +6453,22 @@ void ParserTraits::FinalizeIteratorUse(Variable* completion,
                                   kCreatedInitialized, Variable::NORMAL);
 
     Statement* rethrow;
+    // We use %ReThrow rather than the ordinary throw because we want to
+    // preserve the original exception message.  This is also why we create a
+    // TryCatchStatementForReThrow below (which does not clear the pending
+    // message), rather than a TryCatchStatement.
     {
-      Expression* proxy = factory->NewVariableProxy(catch_variable);
-      rethrow = factory->NewExpressionStatement(factory->NewThrow(proxy, nopos),
-                                                nopos);
+      auto args = new (zone) ZoneList<Expression*>(1, zone);
+      args->Add(factory->NewVariableProxy(catch_variable), zone);
+      rethrow = factory->NewExpressionStatement(
+          factory->NewCallRuntime(Runtime::kReThrow, args, nopos), nopos);
     }
 
     Block* catch_block = factory->NewBlock(nullptr, 2, false, nopos);
     catch_block->statements()->Add(set_completion_throw, zone);
     catch_block->statements()->Add(rethrow, zone);
 
-    try_catch = factory->NewTryCatchStatement(
+    try_catch = factory->NewTryCatchStatementForReThrow(
         iterator_use, catch_scope, catch_variable, catch_block, nopos);
   }
 
@@ -6758,7 +6664,7 @@ Statement* ParserTraits::FinalizeForOfStatement(ForOfStatement* loop, int pos) {
   //       #loop;
   //     } catch(e) {
   //       if (completion === kAbruptCompletion) completion = kThrowCompletion;
-  //       throw e;
+  //       %ReThrow(e);
   //     }
   //   } finally {
   //     if (!(completion === kNormalCompletion || IS_UNDEFINED(#iterator))) {

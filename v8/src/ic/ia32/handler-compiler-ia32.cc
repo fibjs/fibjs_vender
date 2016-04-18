@@ -42,11 +42,11 @@ void NamedLoadHandlerCompiler::GenerateLoadViaGetter(
         receiver = scratch;
       }
       __ push(receiver);
-      ParameterCount actual(0);
-      ParameterCount expected(expected_arguments);
       __ LoadAccessor(edi, holder, accessor_index, ACCESSOR_GETTER);
-      __ InvokeFunction(edi, expected, actual, CALL_FUNCTION,
-                        CheckDebugStepCallWrapper());
+      __ Set(eax, 0);
+      __ Call(masm->isolate()->builtins()->CallFunction(
+                  ConvertReceiverMode::kNotNullOrUndefined),
+              RelocInfo::CODE_TARGET);
     } else {
       // If we generate a global code snippet for deoptimization only, remember
       // the place to continue after deoptimization.
@@ -98,7 +98,7 @@ void PropertyHandlerCompiler::GenerateDictionaryNegativeLookup(
 
   // Bail out if the receiver has a named interceptor or requires access checks.
   __ test_b(FieldOperand(scratch0, Map::kBitFieldOffset),
-            kInterceptorOrAccessCheckNeededMask);
+            Immediate(kInterceptorOrAccessCheckNeededMask));
   __ j(not_zero, miss_label);
 
   // Check that receiver is a JSObject.
@@ -277,11 +277,11 @@ void NamedStoreHandlerCompiler::GenerateStoreViaSetter(
       }
       __ push(receiver);
       __ push(value());
-      ParameterCount actual(1);
-      ParameterCount expected(expected_arguments);
       __ LoadAccessor(edi, holder, accessor_index, ACCESSOR_SETTER);
-      __ InvokeFunction(edi, expected, actual, CALL_FUNCTION,
-                        CheckDebugStepCallWrapper());
+      __ Set(eax, 1);
+      __ Call(masm->isolate()->builtins()->CallFunction(
+                  ConvertReceiverMode::kNotNullOrUndefined),
+              RelocInfo::CODE_TARGET);
     } else {
       // If we generate a global code snippet for deoptimization only, remember
       // the place to continue after deoptimization.
@@ -763,23 +763,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreCallback(
   __ TailCallRuntime(Runtime::kStoreCallbackProperty);
 
   // Return the generated code.
-  return GetCode(kind(), Code::FAST, name);
-}
-
-
-Handle<Code> NamedStoreHandlerCompiler::CompileStoreInterceptor(
-    Handle<Name> name) {
-  __ pop(scratch1());  // remove the return address
-  __ push(receiver());
-  __ push(this->name());
-  __ push(value());
-  __ push(scratch1());  // restore return address
-
-  // Do tail-call to the runtime system.
-  __ TailCallRuntime(Runtime::kStorePropertyWithInterceptor);
-
-  // Return the generated code.
-  return GetCode(kind(), Code::FAST, name);
+  return GetCode(kind(), name);
 }
 
 
@@ -821,7 +805,7 @@ Handle<Code> NamedLoadHandlerCompiler::CompileLoadGlobal(
   FrontendFooter(name, &miss);
 
   // Return the generated code.
-  return GetCode(kind(), Code::NORMAL, name);
+  return GetCode(kind(), name);
 }
 
 

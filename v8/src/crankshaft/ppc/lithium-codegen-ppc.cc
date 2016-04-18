@@ -3210,7 +3210,7 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
 
   if (instr->hydrogen()->from_inlined()) {
     __ subi(result, sp, Operand(2 * kPointerSize));
-  } else {
+  } else if (instr->hydrogen()->arguments_adaptor()) {
     // Check if the calling frame is an arguments adaptor frame.
     __ LoadP(scratch, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
     __ LoadP(
@@ -3232,6 +3232,8 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
       __ mr(result, scratch);
       __ bind(&done);
     }
+  } else {
+    __ mr(result, fp);
   }
 }
 
@@ -4431,7 +4433,15 @@ void LCodeGen::DoDeferredMaybeGrowElements(LMaybeGrowElements* instr) {
 
     LOperand* key = instr->key();
     if (key->IsConstantOperand()) {
-      __ LoadSmiLiteral(r6, ToSmi(LConstantOperand::cast(key)));
+      LConstantOperand* constant_key = LConstantOperand::cast(key);
+      int32_t int_key = ToInteger32(constant_key);
+      if (Smi::IsValid(int_key)) {
+        __ LoadSmiLiteral(r6, Smi::FromInt(int_key));
+      } else {
+        // We should never get here at runtime because there is a smi check on
+        // the key before this point.
+        __ stop("expected smi");
+      }
     } else {
       __ SmiTag(r6, ToRegister(key));
     }
@@ -4489,9 +4499,10 @@ void LCodeGen::DoTransitionElementsKind(LTransitionElementsKind* instr) {
 
 void LCodeGen::DoTrapAllocationMemento(LTrapAllocationMemento* instr) {
   Register object = ToRegister(instr->object());
-  Register temp = ToRegister(instr->temp());
+  Register temp1 = ToRegister(instr->temp1());
+  Register temp2 = ToRegister(instr->temp2());
   Label no_memento_found;
-  __ TestJSArrayForAllocationMemento(object, temp, &no_memento_found);
+  __ TestJSArrayForAllocationMemento(object, temp1, temp2, &no_memento_found);
   DeoptimizeIf(eq, instr, Deoptimizer::kMementoFound);
   __ bind(&no_memento_found);
 }
@@ -5755,14 +5766,8 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
   __ bind(&done);
 }
 
-
-void LCodeGen::DoStoreFrameContext(LStoreFrameContext* instr) {
-  Register context = ToRegister(instr->context());
-  __ StoreP(context, MemOperand(fp, StandardFrameConstants::kContextOffset));
-}
-
-
 #undef __
+
 }  // namespace internal
 }  // namespace v8
 

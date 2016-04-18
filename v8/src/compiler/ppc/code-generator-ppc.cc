@@ -191,7 +191,8 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
         value_(value),
         scratch0_(scratch0),
         scratch1_(scratch1),
-        mode_(mode) {}
+        mode_(mode),
+        must_save_lr_(!gen->frame_access_state()->has_frame()) {}
 
   void Generate() final {
     if (mode_ > RecordWriteMode::kValueIsPointer) {
@@ -205,7 +206,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
                                              : OMIT_REMEMBERED_SET;
     SaveFPRegsMode const save_fp_mode =
         frame()->DidAllocateDoubleRegisters() ? kSaveFPRegs : kDontSaveFPRegs;
-    if (!frame()->needs_frame()) {
+    if (must_save_lr_) {
       // We need to save and restore lr if the frame was elided.
       __ mflr(scratch1_);
       __ Push(scratch1_);
@@ -219,7 +220,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
       __ add(scratch1_, object_, offset_);
     }
     __ CallStub(&stub);
-    if (!frame()->needs_frame()) {
+    if (must_save_lr_) {
       // We need to save and restore lr if the frame was elided.
       __ Pop(scratch1_);
       __ mtlr(scratch1_);
@@ -234,6 +235,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
   Register const scratch0_;
   Register const scratch1_;
   RecordWriteMode const mode_;
+  bool must_save_lr_;
 };
 
 
@@ -301,19 +303,23 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
 
 }  // namespace
 
-#define ASSEMBLE_FLOAT_UNOP_RC(asm_instr)                            \
+#define ASSEMBLE_FLOAT_UNOP_RC(asm_instr, round)                     \
   do {                                                               \
     __ asm_instr(i.OutputDoubleRegister(), i.InputDoubleRegister(0), \
                  i.OutputRCBit());                                   \
+    if (round) {                                                     \
+      __ frsp(i.OutputDoubleRegister(), i.OutputDoubleRegister());   \
+    }                                                                \
   } while (0)
 
-
-#define ASSEMBLE_FLOAT_BINOP_RC(asm_instr)                           \
+#define ASSEMBLE_FLOAT_BINOP_RC(asm_instr, round)                    \
   do {                                                               \
     __ asm_instr(i.OutputDoubleRegister(), i.InputDoubleRegister(0), \
                  i.InputDoubleRegister(1), i.OutputRCBit());         \
+    if (round) {                                                     \
+      __ frsp(i.OutputDoubleRegister(), i.OutputDoubleRegister());   \
+    }                                                                \
   } while (0)
-
 
 #define ASSEMBLE_BINOP(asm_instr_reg, asm_instr_imm)           \
   do {                                                         \
@@ -670,6 +676,11 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     DCHECK_EQ(LeaveRC, i.OutputRCBit());                      \
   } while (0)
 
+void CodeGenerator::AssembleDeconstructFrame() {
+  __ LeaveFrame(StackFrame::MANUAL);
+}
+
+void CodeGenerator::AssembleSetupStackPointer() {}
 
 void CodeGenerator::AssembleDeconstructActivationRecord(int stack_param_delta) {
   int sp_slot_delta = TailCallFrameStackSlotDelta(stack_param_delta);
@@ -686,7 +697,7 @@ void CodeGenerator::AssemblePrepareTailCall(int stack_param_delta) {
     __ Add(sp, sp, sp_slot_delta * kPointerSize, r0);
     frame_access_state()->IncreaseSPDelta(-sp_slot_delta);
   }
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     __ RestoreFrameStateForTailCall();
   }
   frame_access_state()->SetFrameAccessToSP();
@@ -761,6 +772,14 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
                 RelocInfo::CODE_TARGET);
       }
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
+      frame_access_state()->ClearSPDelta();
+      break;
+    }
+    case kArchTailCallAddress: {
+      int stack_param_delta = i.InputInt32(instr->InputCount() - 1);
+      AssembleDeconstructActivationRecord(stack_param_delta);
+      CHECK(!instr->InputAt(0)->IsImmediate());
+      __ Jump(i.InputRegister(0));
       frame_access_state()->ClearSPDelta();
       break;
     }
@@ -867,7 +886,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
     case kArchParentFramePointer:
-      if (frame_access_state()->frame()->needs_frame()) {
+      if (frame_access_state()->has_frame()) {
         __ LoadP(i.OutputRegister(), MemOperand(fp, 0));
       } else {
         __ mr(i.OutputRegister(), fp);
@@ -991,6 +1010,18 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       __ sube(i.OutputRegister(1), i.InputRegister(1), i.InputRegister(3));
       DCHECK_EQ(LeaveRC, i.OutputRCBit());
       break;
+    case kPPC_MulPair:
+      // i.InputRegister(0) ... left low word.
+      // i.InputRegister(1) ... left high word.
+      // i.InputRegister(2) ... right low word.
+      // i.InputRegister(3) ... right high word.
+      __ mullw(i.TempRegister(0), i.InputRegister(0), i.InputRegister(3));
+      __ mullw(i.TempRegister(1), i.InputRegister(2), i.InputRegister(1));
+      __ add(i.TempRegister(0), i.TempRegister(0), i.TempRegister(1));
+      __ mullw(i.OutputRegister(0), i.InputRegister(0), i.InputRegister(2));
+      __ mulhwu(i.OutputRegister(1), i.InputRegister(0), i.InputRegister(2));
+      __ add(i.OutputRegister(1), i.OutputRegister(1), i.TempRegister(0));
+      break;
     case kPPC_ShiftLeftPair:
       if (instr->InputAt(2)->IsImmediate()) {
         __ ShiftLeftPair(i.OutputRegister(0), i.OutputRegister(1),
@@ -1089,7 +1120,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_ADD_WITH_OVERFLOW32();
       break;
     case kPPC_AddDouble:
-      ASSEMBLE_FLOAT_BINOP_RC(fadd);
+      ASSEMBLE_FLOAT_BINOP_RC(fadd, MiscField::decode(instr->opcode()));
       break;
     case kPPC_Sub:
 #if V8_TARGET_ARCH_PPC64
@@ -1112,7 +1143,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_SUB_WITH_OVERFLOW32();
       break;
     case kPPC_SubDouble:
-      ASSEMBLE_FLOAT_BINOP_RC(fsub);
+      ASSEMBLE_FLOAT_BINOP_RC(fsub, MiscField::decode(instr->opcode()));
       break;
     case kPPC_Mul32:
       __ mullw(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1),
@@ -1133,7 +1164,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
                 i.OutputRCBit());
       break;
     case kPPC_MulDouble:
-      ASSEMBLE_FLOAT_BINOP_RC(fmul);
+      ASSEMBLE_FLOAT_BINOP_RC(fmul, MiscField::decode(instr->opcode()));
       break;
     case kPPC_Div32:
       __ divw(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1));
@@ -1156,7 +1187,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       break;
 #endif
     case kPPC_DivDouble:
-      ASSEMBLE_FLOAT_BINOP_RC(fdiv);
+      ASSEMBLE_FLOAT_BINOP_RC(fdiv, MiscField::decode(instr->opcode()));
       break;
     case kPPC_Mod32:
       ASSEMBLE_MODULO(divw, mullw);
@@ -1189,25 +1220,25 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
       ASSEMBLE_FLOAT_MIN(kScratchDoubleReg);
       break;
     case kPPC_AbsDouble:
-      ASSEMBLE_FLOAT_UNOP_RC(fabs);
+      ASSEMBLE_FLOAT_UNOP_RC(fabs, 0);
       break;
     case kPPC_SqrtDouble:
-      ASSEMBLE_FLOAT_UNOP_RC(fsqrt);
+      ASSEMBLE_FLOAT_UNOP_RC(fsqrt, MiscField::decode(instr->opcode()));
       break;
     case kPPC_FloorDouble:
-      ASSEMBLE_FLOAT_UNOP_RC(frim);
+      ASSEMBLE_FLOAT_UNOP_RC(frim, MiscField::decode(instr->opcode()));
       break;
     case kPPC_CeilDouble:
-      ASSEMBLE_FLOAT_UNOP_RC(frip);
+      ASSEMBLE_FLOAT_UNOP_RC(frip, MiscField::decode(instr->opcode()));
       break;
     case kPPC_TruncateDouble:
-      ASSEMBLE_FLOAT_UNOP_RC(friz);
+      ASSEMBLE_FLOAT_UNOP_RC(friz, MiscField::decode(instr->opcode()));
       break;
     case kPPC_RoundDouble:
-      ASSEMBLE_FLOAT_UNOP_RC(frin);
+      ASSEMBLE_FLOAT_UNOP_RC(frin, MiscField::decode(instr->opcode()));
       break;
     case kPPC_NegDouble:
-      ASSEMBLE_FLOAT_UNOP_RC(fneg);
+      ASSEMBLE_FLOAT_UNOP_RC(fneg, 0);
       break;
     case kPPC_Cntlz32:
       __ cntlzw_(i.OutputRegister(), i.InputRegister(0));
@@ -1413,7 +1444,7 @@ void CodeGenerator::AssembleArchInstruction(Instruction* instr) {
     }
 #endif
     case kPPC_DoubleToFloat32:
-      ASSEMBLE_FLOAT_UNOP_RC(frsp);
+      ASSEMBLE_FLOAT_UNOP_RC(frsp, 0);
       break;
     case kPPC_Float32ToDouble:
       // Nothing to do.
@@ -1695,7 +1726,7 @@ void CodeGenerator::AssembleDeoptimizerCall(
 
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-  if (frame()->needs_frame()) {
+  if (frame_access_state()->has_frame()) {
     if (descriptor->IsCFunctionCall()) {
       __ function_descriptor();
       __ mflr(r0);
@@ -1711,18 +1742,11 @@ void CodeGenerator::AssemblePrologue() {
       __ Prologue(this->info()->GeneratePreagedPrologue(), ip);
     } else {
       StackFrame::Type type = info()->GetOutputStackFrameType();
-      if (!ABI_CALL_VIA_IP &&
-          info()->output_code_kind() == Code::WASM_FUNCTION) {
-        // TODO(mbrandy): Restrict only to the wasm wrapper case.
-        __ StubPrologue(type);
-      } else {
-        __ StubPrologue(type, ip);
-      }
+      // TODO(mbrandy): Detect cases where ip is the entrypoint (for
+      // efficient intialization of the constant pool pointer register).
+      __ StubPrologue(type);
     }
-  } else {
-    frame()->SetElidedFrameSizeInSlots(0);
   }
-  frame_access_state()->SetFrameAccessToDefault();
 
   int stack_shrink_slots = frame()->GetSpillSlotCount();
   if (info()->is_osr()) {
@@ -1791,20 +1815,18 @@ void CodeGenerator::AssembleReturn() {
   }
 
   if (descriptor->IsCFunctionCall()) {
-    __ LeaveFrame(StackFrame::MANUAL, pop_count * kPointerSize);
-  } else if (frame()->needs_frame()) {
+    AssembleDeconstructFrame();
+  } else if (frame_access_state()->has_frame()) {
     // Canonicalize JSFunction return sites for now.
     if (return_label_.is_bound()) {
       __ b(&return_label_);
       return;
     } else {
       __ bind(&return_label_);
-      __ LeaveFrame(StackFrame::MANUAL, pop_count * kPointerSize);
+      AssembleDeconstructFrame();
     }
-  } else {
-    __ Drop(pop_count);
   }
-  __ Ret();
+  __ Ret(pop_count);
 }
 
 
@@ -1838,10 +1860,26 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           destination->IsRegister() ? g.ToRegister(destination) : kScratchReg;
       switch (src.type()) {
         case Constant::kInt32:
-          __ mov(dst, Operand(src.ToInt32()));
+#if !V8_TARGET_ARCH_PPC64
+          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+            __ mov(dst, Operand(src.ToInt32(), src.rmode()));
+          } else {
+#endif
+            __ mov(dst, Operand(src.ToInt32()));
+#if !V8_TARGET_ARCH_PPC64
+          }
+#endif
           break;
         case Constant::kInt64:
-          __ mov(dst, Operand(src.ToInt64()));
+#if V8_TARGET_ARCH_PPC64
+          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+            __ mov(dst, Operand(src.ToInt64(), src.rmode()));
+          } else {
+#endif
+            __ mov(dst, Operand(src.ToInt64()));
+#if V8_TARGET_ARCH_PPC64
+          }
+#endif
           break;
         case Constant::kFloat32:
           __ Move(dst,

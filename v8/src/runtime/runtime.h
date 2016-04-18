@@ -42,6 +42,7 @@ namespace internal {
   F(ArrayConstructor, -1, 1)         \
   F(NewArray, -1 /* >= 3 */, 1)      \
   F(InternalArrayConstructor, -1, 1) \
+  F(ArrayPush, -1, 1)                \
   F(NormalizeElements, 1, 1)         \
   F(GrowArrayElements, 2, 1)         \
   F(HasComplexElements, 1, 1)        \
@@ -52,19 +53,19 @@ namespace internal {
   F(FixedArraySet, 3, 1)             \
   F(ArraySpeciesConstructor, 1, 1)
 
-
-#define FOR_EACH_INTRINSIC_ATOMICS(F) \
-  F(AtomicsCompareExchange, 4, 1)     \
-  F(AtomicsLoad, 2, 1)                \
-  F(AtomicsStore, 3, 1)               \
-  F(AtomicsAdd, 3, 1)                 \
-  F(AtomicsSub, 3, 1)                 \
-  F(AtomicsAnd, 3, 1)                 \
-  F(AtomicsOr, 3, 1)                  \
-  F(AtomicsXor, 3, 1)                 \
-  F(AtomicsExchange, 3, 1)            \
+#define FOR_EACH_INTRINSIC_ATOMICS(F)           \
+  F(ThrowNotIntegerSharedTypedArrayError, 1, 1) \
+  F(ThrowNotInt32SharedTypedArrayError, 1, 1)   \
+  F(ThrowInvalidAtomicAccessIndexError, 0, 1)   \
+  F(AtomicsCompareExchange, 4, 1)               \
+  F(AtomicsStore, 3, 1)                         \
+  F(AtomicsAdd, 3, 1)                           \
+  F(AtomicsSub, 3, 1)                           \
+  F(AtomicsAnd, 3, 1)                           \
+  F(AtomicsOr, 3, 1)                            \
+  F(AtomicsXor, 3, 1)                           \
+  F(AtomicsExchange, 3, 1)                      \
   F(AtomicsIsLockFree, 1, 1)
-
 
 #define FOR_EACH_INTRINSIC_FUTEX(F)  \
   F(AtomicsFutexWait, 4, 1)          \
@@ -137,10 +138,10 @@ namespace internal {
   F(DateCurrentTime, 0, 1)         \
   F(ThrowNotDateError, 0, 1)
 
-
 #define FOR_EACH_INTRINSIC_DEBUG(F)            \
   F(HandleDebuggerStatement, 0, 1)             \
-  F(DebugBreak, 0, 1)                          \
+  F(DebugBreak, 1, 1)                          \
+  F(DebugBreakOnBytecode, 1, 1)                \
   F(SetDebugEventListener, 2, 1)               \
   F(ScheduleBreak, 0, 1)                       \
   F(DebugGetInternalProperties, 1, 1)          \
@@ -190,11 +191,9 @@ namespace internal {
   F(DebugPrepareStepInIfStepping, 1, 1)        \
   F(DebugPushPromise, 2, 1)                    \
   F(DebugPopPromise, 0, 1)                     \
-  F(DebugPromiseEvent, 1, 1)                   \
   F(DebugAsyncTaskEvent, 1, 1)                 \
   F(DebugIsActive, 0, 1)                       \
   F(DebugBreakInOptimizedCode, 0, 1)
-
 
 #define FOR_EACH_INTRINSIC_FORIN(F) \
   F(ForInDone, 2, 1)                \
@@ -218,6 +217,7 @@ namespace internal {
   F(FunctionGetSourceCode, 1, 1)           \
   F(FunctionGetScriptSourcePosition, 1, 1) \
   F(FunctionGetPositionForOffset, 2, 1)    \
+  F(FunctionGetContextData, 1, 1)          \
   F(FunctionSetInstanceClassName, 2, 1)    \
   F(FunctionSetLength, 2, 1)               \
   F(FunctionSetPrototype, 2, 1)            \
@@ -232,20 +232,14 @@ namespace internal {
   F(FunctionToString, 1, 1)
 
 #define FOR_EACH_INTRINSIC_GENERATOR(F) \
-  F(CreateJSGeneratorObject, 0, 1)      \
+  F(CreateJSGeneratorObject, 2, 1)      \
   F(SuspendJSGeneratorObject, 1, 1)     \
-  F(ResumeJSGeneratorObject, 3, 1)      \
   F(GeneratorClose, 1, 1)               \
   F(GeneratorGetFunction, 1, 1)         \
-  F(GeneratorGetContext, 1, 1)          \
   F(GeneratorGetReceiver, 1, 1)         \
   F(GeneratorGetInput, 1, 1)            \
   F(GeneratorGetContinuation, 1, 1)     \
-  F(GeneratorGetSourcePosition, 1, 1)   \
-  F(GeneratorNext, 2, 1)                \
-  F(GeneratorReturn, 2, 1)              \
-  F(GeneratorThrow, 2, 1)
-
+  F(GeneratorGetSourcePosition, 1, 1)
 
 #ifdef V8_I18N_SUPPORT
 #define FOR_EACH_INTRINSIC_I18N(F)           \
@@ -291,7 +285,9 @@ namespace internal {
   F(NewSyntaxError, 2, 1)                           \
   F(NewReferenceError, 2, 1)                        \
   F(ThrowIllegalInvocation, 0, 1)                   \
+  F(ThrowIncompatibleMethodReceiver, 2, 1)          \
   F(ThrowIteratorResultNotAnObject, 1, 1)           \
+  F(ThrowGeneratorRunning, 0, 1)                    \
   F(ThrowStackOverflow, 0, 1)                       \
   F(PromiseRejectEvent, 3, 1)                       \
   F(PromiseRevokeReject, 1, 1)                      \
@@ -314,10 +310,10 @@ namespace internal {
   F(CallSiteIsEvalRT, 1, 1)                         \
   F(CallSiteIsConstructorRT, 1, 1)                  \
   F(IS_VAR, 1, 1)                                   \
-  F(IncrementStatsCounter, 1, 1)                    \
   F(ThrowConstructedNonConstructable, 1, 1)         \
   F(ThrowDerivedConstructorReturnedNonObject, 0, 1) \
   F(ThrowCalledNonCallable, 1, 1)                   \
+  F(ThrowCalledOnNullOrUndefined, 1, 1)             \
   F(CreateListFromArrayLike, 1, 1)                  \
   F(IncrementUseCounter, 1, 1)                      \
   F(GetOrdinaryHasInstance, 0, 1)                   \
@@ -358,12 +354,8 @@ namespace internal {
   F(RemPiO2, 2, 1)                  \
   F(MathAtan2, 2, 1)                \
   F(MathExpRT, 1, 1)                \
-  F(MathClz32, 1, 1)                \
-  F(MathFloor, 1, 1)                \
   F(MathPow, 2, 1)                  \
   F(MathPowRT, 2, 1)                \
-  F(RoundNumber, 1, 1)              \
-  F(MathSqrt, 1, 1)                 \
   F(GenerateRandomNumbers, 1, 1)
 
 
@@ -389,6 +381,7 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_OBJECT(F)                 \
   F(GetPrototype, 1, 1)                              \
+  F(ObjectHasOwnProperty, 2, 1)                      \
   F(InternalSetPrototype, 2, 1)                      \
   F(SetPrototype, 2, 1)                              \
   F(GetOwnProperty_Legacy, 2, 1)                     \
@@ -440,11 +433,13 @@ namespace internal {
   F(SameValueZero, 2, 1)                             \
   F(Compare, 3, 1)                                   \
   F(InstanceOf, 2, 1)                                \
+  F(OrdinaryHasInstance, 2, 1)                       \
   F(HasInPrototypeChain, 2, 1)                       \
   F(CreateIterResultObject, 2, 1)                    \
   F(IsAccessCheckNeeded, 1, 1)                       \
   F(ObjectDefineProperties, 2, 1)                    \
-  F(ObjectDefineProperty, 3, 1)
+  F(ObjectDefineProperty, 3, 1)                      \
+  F(CreateDataProperty, 3, 1)
 
 #define FOR_EACH_INTRINSIC_OBSERVE(F)            \
   F(IsObserved, 1, 1)                            \
@@ -866,6 +861,7 @@ namespace internal {
   F(FlattenString, 1, 1)                  \
   F(StringCharFromCode, 1, 1)             \
   F(StringCharAt, 2, 1)                   \
+  F(ExternalStringGetChar, 2, 1)          \
   F(OneByteSeqStringGetChar, 2, 1)        \
   F(OneByteSeqStringSetChar, 3, 1)        \
   F(TwoByteSeqStringGetChar, 2, 1)        \
@@ -1114,6 +1110,12 @@ class Runtime : public AllStatic {
   MUST_USE_RESULT static MaybeHandle<Object> GetObjectProperty(
       Isolate* isolate, Handle<Object> object, Handle<Object> key);
 
+  MUST_USE_RESULT static MaybeHandle<Object> BasicJsonStringify(
+      Isolate* isolate, Handle<Object> object);
+
+  MUST_USE_RESULT static MaybeHandle<Object> BasicJsonStringifyString(
+      Isolate* isolate, Handle<String> string);
+
   enum TypedArrayId {
     // arrayIds below should be synchronized with typedarray.js natives.
     ARRAY_ID_UINT8 = 1,
@@ -1132,11 +1134,6 @@ class Runtime : public AllStatic {
   static void ArrayIdToTypeAndSize(int array_id, ExternalArrayType* type,
                                    ElementsKind* fixed_elements_kind,
                                    size_t* element_size);
-
-  // Used in runtime.cc and hydrogen's VisitArrayLiteral.
-  MUST_USE_RESULT static MaybeHandle<Object> CreateArrayLiteralBoilerplate(
-      Isolate* isolate, Handle<LiteralsArray> literals,
-      Handle<FixedArray> elements);
 
   static MaybeHandle<JSArray> GetInternalProperties(Isolate* isolate,
                                                     Handle<Object>);

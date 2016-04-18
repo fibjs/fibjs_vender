@@ -79,7 +79,6 @@ enum BindingFlags {
 
 #define NATIVE_CONTEXT_INTRINSIC_FUNCTIONS(V)                             \
   V(IS_ARRAYLIKE, JSFunction, is_arraylike)                               \
-  V(CONCAT_ITERABLE_TO_ARRAY_INDEX, JSFunction, concat_iterable_to_array) \
   V(GET_TEMPLATE_CALL_SITE_INDEX, JSFunction, get_template_call_site)     \
   V(MAKE_RANGE_ERROR_INDEX, JSFunction, make_range_error)                 \
   V(MAKE_TYPE_ERROR_INDEX, JSFunction, make_type_error)                   \
@@ -94,7 +93,9 @@ enum BindingFlags {
   V(REFLECT_DELETE_PROPERTY_INDEX, JSFunction, reflect_delete_property)   \
   V(SPREAD_ARGUMENTS_INDEX, JSFunction, spread_arguments)                 \
   V(SPREAD_ITERABLE_INDEX, JSFunction, spread_iterable)                   \
-  V(ORDINARY_HAS_INSTANCE_INDEX, JSFunction, ordinary_has_instance)
+  V(ORDINARY_HAS_INSTANCE_INDEX, JSFunction, ordinary_has_instance)       \
+  V(MATH_FLOOR, JSFunction, math_floor)                                   \
+  V(MATH_SQRT, JSFunction, math_sqrt)
 
 #define NATIVE_CONTEXT_IMPORTED_FIELDS(V)                                     \
   V(ARRAY_CONCAT_INDEX, JSFunction, array_concat)                             \
@@ -404,6 +405,10 @@ class Context: public FixedArray {
     MIN_CONTEXT_SLOTS = GLOBAL_PROXY_INDEX,
     // This slot holds the thrown value in catch contexts.
     THROWN_OBJECT_INDEX = MIN_CONTEXT_SLOTS,
+
+    // These slots hold values in debug evaluate contexts.
+    WRAPPED_CONTEXT_INDEX = MIN_CONTEXT_SLOTS,
+    WHITE_LIST_INDEX = MIN_CONTEXT_SLOTS + 1
   };
 
   void IncrementErrorsThrown();
@@ -456,6 +461,7 @@ class Context: public FixedArray {
   inline bool IsFunctionContext();
   inline bool IsCatchContext();
   inline bool IsWithContext();
+  inline bool IsDebugEvaluateContext();
   inline bool IsBlockContext();
   inline bool IsModuleContext();
   inline bool IsScriptContext();

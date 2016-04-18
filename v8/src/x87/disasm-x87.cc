@@ -12,6 +12,7 @@
 
 #if V8_TARGET_ARCH_X87
 
+#include "src/base/compiler-specific.h"
 #include "src/disasm.h"
 
 namespace disasm {
@@ -329,8 +330,7 @@ class DisassemblerX87 {
   int FPUInstruction(byte* data);
   int MemoryFPUInstruction(int escape_opcode, int regop, byte* modrm_start);
   int RegisterFPUInstruction(int escape_opcode, byte modrm_byte);
-  void AppendToBuffer(const char* format, ...);
-
+  PRINTF_FORMAT(2, 3) void AppendToBuffer(const char* format, ...);
 
   void UnimplementedInstruction() {
     if (abort_on_unimplemented_) {
@@ -952,7 +952,7 @@ int DisassemblerX87::InstructionDecode(v8::internal::Vector<char> out_buffer,
   const InstructionDesc& idesc = instruction_table_->Get(*data);
   switch (idesc.type) {
     case ZERO_OPERANDS_INSTR:
-      AppendToBuffer(idesc.mnem);
+      AppendToBuffer("%s", idesc.mnem);
       data++;
       break;
 
@@ -1281,6 +1281,13 @@ int DisassemblerX87::InstructionDecode(v8::internal::Vector<char> out_buffer,
         } else if (*data == 0xC7) {
           data++;
           AppendToBuffer("%s ", "mov_w");
+          data += PrintRightOperand(data);
+          int imm = *reinterpret_cast<int16_t*>(data);
+          AppendToBuffer(",0x%x", imm);
+          data += 2;
+        } else if (*data == 0xF7) {
+          data++;
+          AppendToBuffer("%s ", "test_w");
           data += PrintRightOperand(data);
           int imm = *reinterpret_cast<int16_t*>(data);
           AppendToBuffer(",0x%x", imm);

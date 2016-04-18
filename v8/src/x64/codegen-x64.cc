@@ -292,6 +292,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   __ CompareRoot(r8, Heap::kEmptyFixedArrayRootIndex);
   __ j(equal, &only_change_map);
 
+  __ Push(rsi);
   __ Push(rax);
 
   __ movp(r8, FieldOperand(rdx, JSObject::kElementsOffset));
@@ -330,7 +331,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
   // Call into runtime if GC is required.
   __ bind(&gc_required);
   __ Pop(rax);
-  __ movp(rsi, Operand(rbp, StandardFrameConstants::kContextOffset));
+  __ Pop(rsi);
   __ jmp(fail);
 
   // Box doubles into heap numbers.
@@ -384,7 +385,7 @@ void ElementsTransitionGenerator::GenerateDoubleToObject(
                       EMIT_REMEMBERED_SET,
                       OMIT_SMI_CHECK);
   __ Pop(rax);
-  __ movp(rsi, Operand(rbp, StandardFrameConstants::kContextOffset));
+  __ Pop(rsi);
 
   __ bind(&only_change_map);
   // Set transitioned map.

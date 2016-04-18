@@ -568,7 +568,7 @@ bool AstGraphBuilder::CreateGraph(bool stack_check) {
   }
 
   // Build local context only if there are context allocated variables.
-  if (info()->num_heap_slots() > 0) {
+  if (scope->num_heap_slots() > 0) {
     // Push a new inner context scope for the current activation.
     Node* inner_context = BuildLocalActivationContext(GetFunctionContext());
     ContextScope top_context(this, scope, inner_context);
@@ -614,12 +614,6 @@ void AstGraphBuilder::CreateGraphBody(bool stack_check) {
   // Emit tracing call if requested to do so.
   if (FLAG_trace) {
     NewNode(javascript()->CallRuntime(Runtime::kTraceEnter));
-  }
-
-  // Visit illegal re-declaration and bail out if it exists.
-  if (scope->HasIllegalRedeclaration()) {
-    VisitForEffect(scope->GetIllegalRedeclaration());
-    return;
   }
 
   // Visit declarations within the function scope.
@@ -1448,9 +1442,11 @@ void AstGraphBuilder::VisitTryCatchStatement(TryCatchStatement* stmt) {
   }
   try_control.EndTry();
 
-  // Clear message object as we enter the catch block.
-  Node* the_hole = jsgraph()->TheHoleConstant();
-  NewNode(javascript()->StoreMessage(), the_hole);
+  // If requested, clear message object as we enter the catch block.
+  if (stmt->clear_pending_message()) {
+    Node* the_hole = jsgraph()->TheHoleConstant();
+    NewNode(javascript()->StoreMessage(), the_hole);
+  }
 
   // Create a catch scope that binds the exception.
   Node* exception = try_control.GetExceptionNode();
@@ -2877,6 +2873,7 @@ void AstGraphBuilder::VisitCompareOperation(CompareOperation* expr) {
       op = javascript()->GreaterThanOrEqual();
       break;
     case Token::INSTANCEOF:
+      DCHECK(!FLAG_harmony_instanceof);
       op = javascript()->InstanceOf();
       break;
     case Token::IN:

@@ -31,8 +31,6 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "StackGuard::address_of_jslimit()");
   Add(ExternalReference::address_of_real_stack_limit(isolate).address(),
       "StackGuard::address_of_real_jslimit()");
-  Add(ExternalReference::new_space_start(isolate).address(),
-      "Heap::NewSpaceStart()");
   Add(ExternalReference::new_space_allocation_limit_address(isolate).address(),
       "Heap::NewSpaceAllocationLimitAddress()");
   Add(ExternalReference::new_space_allocation_top_address(isolate).address(),
@@ -61,6 +59,8 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
   Add(ExternalReference::isolate_address(isolate).address(), "isolate");
   Add(ExternalReference::interpreter_dispatch_table_address(isolate).address(),
       "Interpreter::dispatch_table_address");
+  Add(ExternalReference::interpreter_dispatch_counters(isolate).address(),
+      "Interpreter::interpreter_dispatch_counters");
   Add(ExternalReference::address_of_negative_infinity().address(),
       "LDoubleConstant::negative_infinity");
   Add(ExternalReference::power_double_double_function(isolate).address(),
@@ -172,6 +172,9 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "Isolate::virtual_slot_register()");
   Add(ExternalReference::runtime_function_table_address(isolate).address(),
       "Runtime::runtime_function_table_address()");
+  Add(ExternalReference::is_tail_call_elimination_enabled_address(isolate)
+          .address(),
+      "Isolate::is_tail_call_elimination_enabled_address()");
 
   // Debug addresses
   Add(ExternalReference::debug_after_break_target_address(isolate).address(),

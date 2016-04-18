@@ -30,6 +30,22 @@ class LAllocator;
 class LChunk;
 class LiveRange;
 
+class HCompilationJob final : public OptimizedCompileJob {
+ public:
+  explicit HCompilationJob(CompilationInfo* info)
+      : OptimizedCompileJob(info, "Crankshaft"),
+        graph_(nullptr),
+        chunk_(nullptr) {}
+
+ protected:
+  virtual Status CreateGraphImpl();
+  virtual Status OptimizeGraphImpl();
+  virtual Status GenerateCodeImpl();
+
+ private:
+  HGraph* graph_;
+  LChunk* chunk_;
+};
 
 class HBasicBlock final : public ZoneObject {
  public:
@@ -294,8 +310,6 @@ class HLoopInformation final : public ZoneObject {
 };
 
 
-class BoundsCheckTable;
-class InductionVariableBlocksTable;
 class HGraph final : public ZoneObject {
  public:
   explicit HGraph(CompilationInfo* info, CallInterfaceDescriptor descriptor);
@@ -394,13 +408,11 @@ class HGraph final : public ZoneObject {
   }
   int maximum_environment_size() { return maximum_environment_size_; }
 
-  bool use_optimistic_licm() {
-    return use_optimistic_licm_;
-  }
+  bool allow_code_motion() const { return allow_code_motion_; }
+  void set_allow_code_motion(bool value) { allow_code_motion_ = value; }
 
-  void set_use_optimistic_licm(bool value) {
-    use_optimistic_licm_ = value;
-  }
+  bool use_optimistic_licm() const { return use_optimistic_licm_; }
+  void set_use_optimistic_licm(bool value) { use_optimistic_licm_ = value; }
 
   void MarkDependsOnEmptyArrayProtoElements() {
     // Add map dependency if not already added.
@@ -482,6 +494,7 @@ class HGraph final : public ZoneObject {
   CallInterfaceDescriptor descriptor_;
   Zone* zone_;
 
+  bool allow_code_motion_;
   bool use_optimistic_licm_;
   bool depends_on_empty_array_proto_elements_;
   int type_change_checksum_;
@@ -503,9 +516,9 @@ enum FrameType {
   JS_GETTER,
   JS_SETTER,
   ARGUMENTS_ADAPTOR,
+  TAIL_CALLER_FUNCTION,
   STUB
 };
-
 
 class HEnvironment final : public ZoneObject {
  public:
@@ -615,16 +628,21 @@ class HEnvironment final : public ZoneObject {
   // Create an "inlined version" of this environment, where the original
   // environment is the outer environment but the top expression stack
   // elements are moved to an inner environment as parameters.
-  HEnvironment* CopyForInlining(Handle<JSFunction> target,
-                                int arguments,
-                                FunctionLiteral* function,
-                                HConstant* undefined,
-                                InliningKind inlining_kind) const;
+  HEnvironment* CopyForInlining(Handle<JSFunction> target, int arguments,
+                                FunctionLiteral* function, HConstant* undefined,
+                                InliningKind inlining_kind,
+                                TailCallMode syntactic_tail_call_mode) const;
 
   HEnvironment* DiscardInlined(bool drop_extra) {
     HEnvironment* outer = outer_;
-    while (outer->frame_type() != JS_FUNCTION) outer = outer->outer_;
+    while (outer->frame_type() != JS_FUNCTION &&
+           outer->frame_type() != TAIL_CALLER_FUNCTION) {
+      outer = outer->outer_;
+    }
     if (drop_extra) outer->Drop(1);
+    if (outer->frame_type() == TAIL_CALLER_FUNCTION) {
+      outer->ClearTailCallerMark();
+    }
     return outer;
   }
 
@@ -681,6 +699,11 @@ class HEnvironment final : public ZoneObject {
                                       Handle<JSFunction> target,
                                       FrameType frame_type,
                                       int arguments) const;
+
+  // Marks current environment as tail caller by setting frame type to
+  // TAIL_CALLER_FUNCTION.
+  void MarkAsTailCaller();
+  void ClearTailCallerMark();
 
   // True if index is included in the expression stack part of the environment.
   bool HasExpressionAt(int index) const;
@@ -1278,6 +1301,26 @@ class HGraphBuilder {
            class P5, class P6, class P7, class P8>
   I* Add(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8) {
     return AddInstructionTyped(New<I>(p1, p2, p3, p4, p5, p6, p7, p8));
+  }
+
+  template <class I, class P1, class P2, class P3, class P4, class P5, class P6,
+            class P7, class P8, class P9>
+  I* New(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8, P9 p9) {
+    return I::New(isolate(), zone(), context(), p1, p2, p3, p4, p5, p6, p7, p8,
+                  p9);
+  }
+
+  template <class I, class P1, class P2, class P3, class P4, class P5, class P6,
+            class P7, class P8, class P9>
+  HInstruction* AddUncasted(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7,
+                            P8 p8, P9 p9) {
+    return AddInstruction(NewUncasted<I>(p1, p2, p3, p4, p5, p6, p7, p8, p8));
+  }
+
+  template <class I, class P1, class P2, class P3, class P4, class P5, class P6,
+            class P7, class P8, class P9>
+  I* Add(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8, P9 p9) {
+    return AddInstructionTyped(New<I>(p1, p2, p3, p4, p5, p6, p7, p8, p9));
   }
 
   void AddSimulate(BailoutId id, RemovableSimulate removable = FIXED_SIMULATE);
@@ -2206,6 +2249,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   F(IsRegExp)                          \
   F(IsJSProxy)                         \
   F(Call)                              \
+  F(NewObject)                         \
   F(ValueOf)                           \
   F(StringCharFromCode)                \
   F(StringCharAt)                      \
@@ -2244,9 +2288,6 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   F(ConstructDouble)                   \
   F(DoubleHi)                          \
   F(DoubleLo)                          \
-  F(MathClz32)                         \
-  F(MathFloor)                         \
-  F(MathSqrt)                          \
   F(MathLogRT)                         \
   /* ES6 Collections */                \
   F(MapClear)                          \
@@ -2837,17 +2878,22 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   void AddCheckPrototypeMaps(Handle<JSObject> holder,
                              Handle<Map> receiver_map);
 
+  void BuildEnsureCallable(HValue* object);
+
   HInstruction* NewCallFunction(HValue* function, int argument_count,
+                                TailCallMode syntactic_tail_call_mode,
                                 ConvertReceiverMode convert_mode,
                                 TailCallMode tail_call_mode);
 
   HInstruction* NewCallFunctionViaIC(HValue* function, int argument_count,
+                                     TailCallMode syntactic_tail_call_mode,
                                      ConvertReceiverMode convert_mode,
                                      TailCallMode tail_call_mode,
                                      FeedbackVectorSlot slot);
 
   HInstruction* NewCallConstantFunction(Handle<JSFunction> target,
                                         int argument_count,
+                                        TailCallMode syntactic_tail_call_mode,
                                         TailCallMode tail_call_mode);
 
   bool CanBeFunctionApplyArguments(Call* expr);

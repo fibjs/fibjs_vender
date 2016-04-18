@@ -131,7 +131,6 @@ class LCodeGen;
   V(StackCheck)                              \
   V(StoreCodeEntry)                          \
   V(StoreContextSlot)                        \
-  V(StoreFrameContext)                       \
   V(StoreKeyed)                              \
   V(StoreKeyedGeneric)                       \
   V(StoreNamedField)                         \
@@ -217,6 +216,13 @@ class LInstruction : public ZoneObject {
   void MarkAsCall() { bit_field_ = IsCallBits::update(bit_field_, true); }
   bool IsCall() const { return IsCallBits::decode(bit_field_); }
 
+  void MarkAsSyntacticTailCall() {
+    bit_field_ = IsSyntacticTailCallBits::update(bit_field_, true);
+  }
+  bool IsSyntacticTailCall() const {
+    return IsSyntacticTailCallBits::decode(bit_field_);
+  }
+
   // Interface to the register allocator and iterators.
   bool ClobbersTemps() const { return IsCall(); }
   bool ClobbersRegisters() const { return IsCall(); }
@@ -251,6 +257,8 @@ class LInstruction : public ZoneObject {
   virtual LOperand* TempAt(int i) = 0;
 
   class IsCallBits : public BitField<bool, 0, 1> {};
+  class IsSyntacticTailCallBits : public BitField<bool, IsCallBits::kNext, 1> {
+  };
 
   LEnvironment* environment_;
   SetOncePointer<LPointerMap> pointer_map_;
@@ -1937,15 +1945,17 @@ class LTransitionElementsKind final : public LTemplateInstruction<0, 2, 1> {
   ElementsKind to_kind() { return hydrogen()->to_kind(); }
 };
 
-class LTrapAllocationMemento final : public LTemplateInstruction<0, 1, 1> {
+class LTrapAllocationMemento final : public LTemplateInstruction<0, 1, 2> {
  public:
-  LTrapAllocationMemento(LOperand* object, LOperand* temp) {
+  LTrapAllocationMemento(LOperand* object, LOperand* temp1, LOperand* temp2) {
     inputs_[0] = object;
-    temps_[0] = temp;
+    temps_[0] = temp1;
+    temps_[1] = temp2;
   }
 
   LOperand* object() { return inputs_[0]; }
-  LOperand* temp() { return temps_[0]; }
+  LOperand* temp1() { return temps_[0]; }
+  LOperand* temp2() { return temps_[1]; }
 
   DECLARE_CONCRETE_INSTRUCTION(TrapAllocationMemento, "trap-allocation-memento")
 };
@@ -2253,15 +2263,6 @@ class LLoadFieldByIndex final : public LTemplateInstruction<1, 2, 0> {
   LOperand* index() { return inputs_[1]; }
 
   DECLARE_CONCRETE_INSTRUCTION(LoadFieldByIndex, "load-field-by-index")
-};
-
-class LStoreFrameContext : public LTemplateInstruction<0, 1, 0> {
- public:
-  explicit LStoreFrameContext(LOperand* context) { inputs_[0] = context; }
-
-  LOperand* context() { return inputs_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(StoreFrameContext, "store-frame-context")
 };
 
 class LChunkBuilder;

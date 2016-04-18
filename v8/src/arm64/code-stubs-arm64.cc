@@ -86,6 +86,10 @@ void InternalArrayNoArgumentConstructorStub::InitializeDescriptor(
   InitializeInternalArrayConstructorDescriptor(isolate(), descriptor, 0);
 }
 
+void FastArrayPushStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
+  Address deopt_handler = Runtime::FunctionForId(Runtime::kArrayPush)->entry;
+  descriptor->Initialize(x0, deopt_handler, -1, JS_FUNCTION_STUB_MODE);
+}
 
 void InternalArraySingleArgumentConstructorStub::InitializeDescriptor(
     CodeStubDescriptor* descriptor) {
@@ -1323,11 +1327,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ Mov(jssp, csp);
   __ SetStackPointer(jssp);
 
-  // Configure the FPCR. We don't restore it, so this is technically not allowed
-  // according to AAPCS64. However, we only set default-NaN mode and this will
-  // be harmless for most C code. Also, it works for ARM.
-  __ ConfigureFPCR();
-
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
   // Set up the reserved register for 0.0.
@@ -1632,27 +1631,8 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
   // Slow-case: Call the %InstanceOf runtime function.
   __ bind(&slow_case);
   __ Push(object, function);
-  __ TailCallRuntime(Runtime::kInstanceOf);
-}
-
-
-void LoadIndexedInterceptorStub::Generate(MacroAssembler* masm) {
-  // Return address is in lr.
-  Label slow;
-
-  Register receiver = LoadDescriptor::ReceiverRegister();
-  Register key = LoadDescriptor::NameRegister();
-
-  // Check that the key is an array index, that is Uint32.
-  __ TestAndBranchIfAnySet(key, kSmiTagMask | kSmiSignMask, &slow);
-
-  // Everything is fine, call runtime.
-  __ Push(receiver, key);
-  __ TailCallRuntime(Runtime::kLoadElementWithInterceptor);
-
-  __ Bind(&slow);
-  PropertyAccessCompiler::TailCallBuiltin(
-      masm, PropertyAccessCompiler::MissBuiltin(Code::KEYED_LOAD_IC));
+  __ TailCallRuntime(is_es6_instanceof() ? Runtime::kOrdinaryHasInstance
+                                         : Runtime::kInstanceOf);
 }
 
 
@@ -3266,27 +3246,28 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ Bind(&not_smi);
 
   Label not_heap_number;
-  __ Ldr(x1, FieldMemOperand(x0, HeapObject::kMapOffset));
-  __ Ldrb(x1, FieldMemOperand(x1, Map::kInstanceTypeOffset));
-  // x0: object
-  // x1: instance type
-  __ Cmp(x1, HEAP_NUMBER_TYPE);
+  __ CompareObjectType(x0, x1, x1, HEAP_NUMBER_TYPE);
+  // x0: receiver
+  // x1: receiver instance type
   __ B(ne, &not_heap_number);
   __ Ret();
   __ Bind(&not_heap_number);
 
-  Label not_string, slow_string;
-  __ Cmp(x1, FIRST_NONSTRING_TYPE);
+  NonNumberToNumberStub stub(masm->isolate());
+  __ TailCallStub(&stub);
+}
+
+void NonNumberToNumberStub::Generate(MacroAssembler* masm) {
+  // The NonNumberToNumber stub takes one argument in x0.
+  __ AssertNotNumber(x0);
+
+  Label not_string;
+  __ CompareObjectType(x0, x1, x1, FIRST_NONSTRING_TYPE);
+  // x0: receiver
+  // x1: receiver instance type
   __ B(hs, &not_string);
-  // Check if string has a cached array index.
-  __ Ldr(x2, FieldMemOperand(x0, String::kHashFieldOffset));
-  __ Tst(x2, Operand(String::kContainsCachedArrayIndexMask));
-  __ B(ne, &slow_string);
-  __ IndexFromHash(x2, x0);
-  __ Ret();
-  __ Bind(&slow_string);
-  __ Push(x0);  // Push argument.
-  __ TailCallRuntime(Runtime::kStringToNumber);
+  StringToNumberStub stub(masm->isolate());
+  __ TailCallStub(&stub);
   __ Bind(&not_string);
 
   Label not_oddball;
@@ -3300,21 +3281,22 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ TailCallRuntime(Runtime::kToNumber);
 }
 
+void StringToNumberStub::Generate(MacroAssembler* masm) {
+  // The StringToNumber stub takes one argument in x0.
+  __ AssertString(x0);
 
-void ToLengthStub::Generate(MacroAssembler* masm) {
-  // The ToLength stub takes one argument in x0.
-  Label not_smi;
-  __ JumpIfNotSmi(x0, &not_smi);
-  STATIC_ASSERT(kSmiTag == 0);
-  __ Tst(x0, x0);
-  __ Csel(x0, x0, Operand(0), ge);
+  // Check if string has a cached array index.
+  Label runtime;
+  __ Ldr(x2, FieldMemOperand(x0, String::kHashFieldOffset));
+  __ Tst(x2, Operand(String::kContainsCachedArrayIndexMask));
+  __ B(ne, &runtime);
+  __ IndexFromHash(x2, x0);
   __ Ret();
-  __ Bind(&not_smi);
 
+  __ Bind(&runtime);
   __ Push(x0);  // Push argument.
-  __ TailCallRuntime(Runtime::kToLength);
+  __ TailCallRuntime(Runtime::kStringToNumber);
 }
-
 
 void ToStringStub::Generate(MacroAssembler* masm) {
   // The ToString stub takes one argument in x0.
@@ -3844,8 +3826,8 @@ void LoadICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
 
   __ Bind(&not_array);
   __ JumpIfNotRoot(feedback, Heap::kmegamorphic_symbolRootIndex, &miss);
-  Code::Flags code_flags = Code::RemoveTypeAndHolderFromFlags(
-      Code::ComputeHandlerFlags(Code::LOAD_IC));
+  Code::Flags code_flags =
+      Code::RemoveHolderFromFlags(Code::ComputeHandlerFlags(Code::LOAD_IC));
   masm->isolate()->stub_cache()->GenerateProbe(masm, Code::LOAD_IC, code_flags,
                                                receiver, name, feedback,
                                                receiver_map, scratch1, x7);
@@ -3980,8 +3962,8 @@ void VectorStoreICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
 
   __ Bind(&not_array);
   __ JumpIfNotRoot(feedback, Heap::kmegamorphic_symbolRootIndex, &miss);
-  Code::Flags code_flags = Code::RemoveTypeAndHolderFromFlags(
-      Code::ComputeHandlerFlags(Code::STORE_IC));
+  Code::Flags code_flags =
+      Code::RemoveHolderFromFlags(Code::ComputeHandlerFlags(Code::STORE_IC));
   masm->isolate()->stub_cache()->GenerateProbe(masm, Code::STORE_IC, code_flags,
                                                receiver, key, feedback,
                                                receiver_map, scratch1, x8);
@@ -5956,6 +5938,144 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
                            return_value_operand, NULL);
 }
 
+namespace {
+
+void GetTypedArrayBackingStore(MacroAssembler* masm, Register backing_store,
+                               Register object, Register scratch,
+                               FPRegister double_scratch) {
+  Label offset_is_not_smi, done;
+  __ Ldr(scratch, FieldMemOperand(object, JSTypedArray::kBufferOffset));
+  __ Ldr(backing_store,
+         FieldMemOperand(scratch, JSArrayBuffer::kBackingStoreOffset));
+  __ Ldr(scratch,
+         FieldMemOperand(object, JSArrayBufferView::kByteOffsetOffset));
+  __ JumpIfNotSmi(scratch, &offset_is_not_smi);
+  // offset is smi
+  __ Add(backing_store, backing_store, Operand::UntagSmi(scratch));
+  __ B(&done);
+
+  // offset is a heap number
+  __ Bind(&offset_is_not_smi);
+  __ Ldr(double_scratch, FieldMemOperand(scratch, HeapNumber::kValueOffset));
+  __ Fcvtzu(scratch, double_scratch);
+  __ Add(backing_store, backing_store, scratch);
+  __ Bind(&done);
+}
+
+void TypedArrayJumpTable(MacroAssembler* masm, Register object,
+                         Register scratch, Register scratch2, Label* i8,
+                         Label* u8, Label* i16, Label* u16, Label* i32,
+                         Label* u32, Label* u8c) {
+  STATIC_ASSERT(FIXED_UINT8_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 1);
+  STATIC_ASSERT(FIXED_INT16_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 2);
+  STATIC_ASSERT(FIXED_UINT16_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 3);
+  STATIC_ASSERT(FIXED_INT32_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 4);
+  STATIC_ASSERT(FIXED_UINT32_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 5);
+  STATIC_ASSERT(FIXED_FLOAT32_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 6);
+  STATIC_ASSERT(FIXED_FLOAT64_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 7);
+  STATIC_ASSERT(FIXED_UINT8_CLAMPED_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 8);
+
+  __ Ldr(scratch, FieldMemOperand(object, JSObject::kElementsOffset));
+  __ Ldr(scratch, FieldMemOperand(scratch, HeapObject::kMapOffset));
+  __ Ldrb(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
+  __ Subs(scratch, scratch,
+          Operand(static_cast<uint8_t>(FIXED_INT8_ARRAY_TYPE)));
+  __ Assert(ge, kOffsetOutOfRange);
+
+  Label abort;
+  Label table;
+
+  __ Adr(scratch2, &table);
+  __ Add(scratch, scratch2, Operand(scratch, UXTW, 2));
+  __ Br(scratch);
+
+  __ StartBlockPools();
+  __ Bind(&table);
+  __ B(i8);      // Int8Array
+  __ B(u8);      // Uint8Array
+  __ B(i16);     // Int16Array
+  __ B(u16);     // Uint16Array
+  __ B(i32);     // Int32Array
+  __ B(u32);     // Uint32Array
+  __ B(&abort);  // Float32Array
+  __ B(&abort);  // Float64Array
+  __ B(u8c);     // Uint8ClampedArray
+  __ EndBlockPools();
+
+  __ Bind(&abort);
+  __ Abort(kNoReason);
+}
+
+void ReturnUnsignedInteger32(MacroAssembler* masm, FPRegister dst,
+                             Register value, Register scratch,
+                             Register scratch2) {
+  Label not_smi, call_runtime;
+  __ Tbnz(value, 31, &not_smi);
+  __ SmiTag(x0, value);
+  __ Ret();
+
+  __ Bind(&not_smi);
+  __ Ucvtf(dst, value);
+  __ AllocateHeapNumber(x0, &call_runtime, scratch, scratch2, dst);
+  __ Ret();
+
+  __ Bind(&call_runtime);
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
+    __ Str(value, FieldMemOperand(x0, HeapNumber::kValueOffset));
+  }
+  __ Ret();
+}
+
+}  // anonymous namespace
+
+void AtomicsLoadStub::Generate(MacroAssembler* masm) {
+  Register object = x1;
+  Register index = x0;  // Index is an untagged word32.
+  Register backing_store = x2;
+  Label i8, u8, i16, u16, i32, u32;
+
+  GetTypedArrayBackingStore(masm, backing_store, object, x3, d0);
+  TypedArrayJumpTable(masm, object, x3, x4, &i8, &u8, &i16, &u16, &i32, &u32,
+                      &u8);
+
+  __ Bind(&i8);
+  __ Ldrsb(x0, MemOperand(backing_store, index));
+  __ Dmb(InnerShareable, BarrierAll);
+  __ SmiTag(x0);
+  __ Ret();
+
+  __ Bind(&u8);
+  __ Ldrb(x0, MemOperand(backing_store, index));
+  __ Dmb(InnerShareable, BarrierAll);
+  __ SmiTag(x0);
+  __ Ret();
+
+  __ Bind(&i16);
+  __ Ldrsh(x0, MemOperand(backing_store, index, UXTW, 1));
+  __ Dmb(InnerShareable, BarrierAll);
+  __ SmiTag(x0);
+  __ Ret();
+
+  __ Bind(&u16);
+  __ Ldrh(x0, MemOperand(backing_store, index, UXTW, 1));
+  __ Dmb(InnerShareable, BarrierAll);
+  __ SmiTag(x0);
+  __ Ret();
+
+  __ Bind(&i32);
+  __ Ldrsw(x0, MemOperand(backing_store, index, UXTW, 2));
+  __ Dmb(InnerShareable, BarrierAll);
+  DCHECK(SmiValuesAre32Bits());
+  __ SmiTag(x0);
+  __ Ret();
+
+  __ Bind(&u32);
+  __ Ldr(w0, MemOperand(backing_store, index, UXTW, 2));
+  __ Dmb(InnerShareable, BarrierAll);
+  ReturnUnsignedInteger32(masm, d0, x0, x1, x2);
+}
 
 #undef __
 

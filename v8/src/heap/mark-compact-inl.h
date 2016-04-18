@@ -12,17 +12,6 @@
 namespace v8 {
 namespace internal {
 
-inline std::vector<Page*>& MarkCompactCollector::sweeping_list(Space* space) {
-  if (space == heap()->old_space()) {
-    return sweeping_list_old_space_;
-  } else if (space == heap()->code_space()) {
-    return sweeping_list_code_space_;
-  }
-  DCHECK_EQ(space, heap()->map_space());
-  return sweeping_list_map_space_;
-}
-
-
 void MarkCompactCollector::PushBlack(HeapObject* obj) {
   DCHECK(Marking::IsBlack(Marking::MarkBitFrom(obj)));
   if (marking_deque_.Push(obj)) {
@@ -143,20 +132,9 @@ template <LiveObjectIterationMode T>
 HeapObject* LiveObjectIterator<T>::Next() {
   while (!it_.Done()) {
     HeapObject* object = nullptr;
-    if (T == kGreyObjectsOnBlackPage) {
-      // Black objects will have most of the mark bits set to 1. If we invert
-      // the mark bits, grey objects will be left but the mark bit is moved by
-      // one position. We can just substract one word from the found location
-      // to obtain the grey object.
-      current_cell_ = ~current_cell_;
-    }
     while (current_cell_ != 0) {
       uint32_t trailing_zeros = base::bits::CountTrailingZeros32(current_cell_);
       Address addr = cell_base_ + trailing_zeros * kPointerSize;
-
-      if (T == kGreyObjectsOnBlackPage) {
-        addr -= kPointerSize;
-      }
 
       // Clear the first bit of the found object..
       current_cell_ &= ~(1u << trailing_zeros);
@@ -179,14 +157,10 @@ HeapObject* LiveObjectIterator<T>::Next() {
         object = HeapObject::FromAddress(addr);
       } else if (T == kAllLiveObjects) {
         object = HeapObject::FromAddress(addr);
-      } else if (T == kGreyObjectsOnBlackPage) {
-        object = HeapObject::FromAddress(addr);
       }
 
-      if (T != kGreyObjectsOnBlackPage) {
-        // Clear the second bit of the found object.
-        current_cell_ &= ~second_bit_index;
-      }
+      // Clear the second bit of the found object.
+      current_cell_ &= ~second_bit_index;
 
       // We found a live object.
       if (object != nullptr) break;

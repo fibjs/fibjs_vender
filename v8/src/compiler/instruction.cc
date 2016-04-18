@@ -504,6 +504,14 @@ std::ostream& operator<<(std::ostream& os,
 
 Constant::Constant(int32_t v) : type_(kInt32), value_(v) {}
 
+Constant::Constant(RelocatablePtrConstantInfo info)
+#ifdef V8_HOST_ARCH_32_BIT
+    : type_(kInt32), value_(info.value()), rmode_(info.rmode()) {
+}
+#else
+    : type_(kInt64), value_(info.value()), rmode_(info.rmode()) {
+}
+#endif
 
 std::ostream& operator<<(std::ostream& os, const Constant& constant) {
   switch (constant.type()) {
@@ -631,6 +639,17 @@ void InstructionSequence::ValidateEdgeSplitForm() {
         CHECK(successor->PredecessorCount() == 1 &&
               successor->predecessors()[0] == block->rpo_number());
       }
+    }
+  }
+}
+
+void InstructionSequence::ValidateDeferredBlockExitPaths() {
+  // A deferred block with more than one successor must have all its successors
+  // deferred.
+  for (const InstructionBlock* block : instruction_blocks()) {
+    if (!block->IsDeferred() || block->SuccessorCount() <= 1) continue;
+    for (RpoNumber successor_id : block->successors()) {
+      CHECK(InstructionBlockAt(successor_id)->IsDeferred());
     }
   }
 }

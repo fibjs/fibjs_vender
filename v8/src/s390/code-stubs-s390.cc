@@ -75,6 +75,11 @@ void InternalArrayNoArgumentConstructorStub::InitializeDescriptor(
   InitializeInternalArrayConstructorDescriptor(isolate(), descriptor, 0);
 }
 
+void FastArrayPushStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
+  Address deopt_handler = Runtime::FunctionForId(Runtime::kArrayPush)->entry;
+  descriptor->Initialize(r2, deopt_handler, -1, JS_FUNCTION_STUB_MODE);
+}
+
 void InternalArraySingleArgumentConstructorStub::InitializeDescriptor(
     CodeStubDescriptor* descriptor) {
   InitializeInternalArrayConstructorDescriptor(isolate(), descriptor, 1);
@@ -1103,9 +1108,9 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     Label okay;
     ExternalReference pending_exception_address(
         Isolate::kPendingExceptionAddress, isolate());
-    __ mov(r4, Operand(pending_exception_address));
-    __ LoadP(r4, MemOperand(r4));
-    __ CompareRoot(r4, Heap::kTheHoleValueRootIndex);
+    __ mov(r1, Operand(pending_exception_address));
+    __ LoadP(r1, MemOperand(r1));
+    __ CompareRoot(r1, Heap::kTheHoleValueRootIndex);
     // Cannot use check here as it attempts to generate call into runtime.
     __ beq(&okay, Label::kNear);
     __ stop("Unexpected pending exception");
@@ -1192,7 +1197,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
 // saving floating point registers
-#if V8_HOST_ARCH_S390X
+#if V8_TARGET_ARCH_S390X
   // 64bit ABI requires f8 to f15 be saved
   __ lay(sp, MemOperand(sp, -8 * kDoubleSize));
   __ std(d8, MemOperand(sp));
@@ -1354,7 +1359,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
 
 // saving floating point registers
-#if V8_HOST_ARCH_S390X
+#if V8_TARGET_ARCH_S390X
   // 64bit ABI requires f8 to f15 be saved
   __ ld(d8, MemOperand(sp));
   __ ld(d9, MemOperand(sp, 1 * kDoubleSize));
@@ -1491,7 +1496,8 @@ void InstanceOfStub::Generate(MacroAssembler* masm) {
   // Slow-case: Call the %InstanceOf runtime function.
   __ bind(&slow_case);
   __ Push(object, function);
-  __ TailCallRuntime(Runtime::kInstanceOf);
+  __ TailCallRuntime(is_es6_instanceof() ? Runtime::kOrdinaryHasInstance
+                                         : Runtime::kInstanceOf);
 }
 
 void FunctionPrototypeStub::Generate(MacroAssembler* masm) {
@@ -1537,28 +1543,6 @@ void LoadIndexedStringStub::Generate(MacroAssembler* masm) {
   char_at_generator.GenerateSlow(masm, PART_OF_IC_HANDLER, call_helper);
 
   __ bind(&miss);
-  PropertyAccessCompiler::TailCallBuiltin(
-      masm, PropertyAccessCompiler::MissBuiltin(Code::KEYED_LOAD_IC));
-}
-
-void LoadIndexedInterceptorStub::Generate(MacroAssembler* masm) {
-  // Return address is in lr.
-  Label slow;
-
-  Register receiver = LoadDescriptor::ReceiverRegister();
-  Register key = LoadDescriptor::NameRegister();
-
-  // Check that the key is an array index, that is Uint32.
-  __ TestIfPositiveSmi(key, r0);
-  __ bne(&slow);
-
-  // Everything is fine, call runtime.
-  __ Push(receiver, key);  // Receiver, key.
-
-  // Perform tail call to the entry.
-  __ TailCallRuntime(Runtime::kLoadElementWithInterceptor);
-
-  __ bind(&slow);
   PropertyAccessCompiler::TailCallBuiltin(
       masm, PropertyAccessCompiler::MissBuiltin(Code::KEYED_LOAD_IC));
 }
@@ -2716,10 +2700,9 @@ void SubStringStub::Generate(MacroAssembler* masm) {
 
 void ToNumberStub::Generate(MacroAssembler* masm) {
   // The ToNumber stub takes one argument in r2.
-  Label not_smi;
-  __ JumpIfNotSmi(r2, &not_smi);
-  __ b(r14);
-  __ bind(&not_smi);
+  STATIC_ASSERT(kSmiTag == 0);
+  __ TestIfSmi(r2);
+  __ Ret(eq);
 
   __ CompareObjectType(r2, r3, r3, HEAP_NUMBER_TYPE);
   // r2: receiver
@@ -2729,19 +2712,19 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ Ret();
   __ bind(&not_heap_number);
 
-  Label not_string, slow_string;
-  __ CmpLogicalP(r3, Operand(FIRST_NONSTRING_TYPE));
-  __ bge(&not_string, Label::kNear);
-  // Check if string has a cached array index.
-  __ LoadlW(r4, FieldMemOperand(r2, String::kHashFieldOffset));
-  __ AndP(r0, r4, Operand(String::kContainsCachedArrayIndexMask));
-  __ bne(&slow_string, Label::kNear);
-  __ IndexFromHash(r4, r2);
-  __ b(r14);
-  __ bind(&slow_string);
-  __ push(r2);  // Push argument.
-  __ TailCallRuntime(Runtime::kStringToNumber);
-  __ bind(&not_string);
+  NonNumberToNumberStub stub(masm->isolate());
+  __ TailCallStub(&stub);
+}
+
+void NonNumberToNumberStub::Generate(MacroAssembler* masm) {
+  // The NonNumberToNumber stub takes one argument in r2.
+  __ AssertNotNumber(r2);
+
+  __ CompareObjectType(r2, r3, r3, FIRST_NONSTRING_TYPE);
+  // r2: receiver
+  // r3: receiver instance type
+  StringToNumberStub stub(masm->isolate());
+  __ TailCallStub(&stub, lt);
 
   Label not_oddball;
   __ CmpP(r3, Operand(ODDBALL_TYPE));
@@ -2754,21 +2737,21 @@ void ToNumberStub::Generate(MacroAssembler* masm) {
   __ TailCallRuntime(Runtime::kToNumber);
 }
 
-void ToLengthStub::Generate(MacroAssembler* masm) {
-  // The ToLength stub takes one argument in r2.
-  Label not_smi;
-  __ JumpIfNotSmi(r2, &not_smi);
-  STATIC_ASSERT(kSmiTag == 0);
-  __ CmpP(r2, Operand::Zero());
-  Label positive;
-  __ bgt(&positive);
-  __ LoadImmP(r2, Operand::Zero());
-  __ bind(&positive);
-  __ Ret();
-  __ bind(&not_smi);
+void StringToNumberStub::Generate(MacroAssembler* masm) {
+  // The StringToNumber stub takes one argument in r2.
+  __ AssertString(r2);
 
+  // Check if string has a cached array index.
+  Label runtime;
+  __ LoadlW(r4, FieldMemOperand(r2, String::kHashFieldOffset));
+  __ And(r0, r4, Operand(String::kContainsCachedArrayIndexMask));
+  __ bne(&runtime);
+  __ IndexFromHash(r4, r2);
+  __ Ret();
+
+  __ bind(&runtime);
   __ push(r2);  // Push argument.
-  __ TailCallRuntime(Runtime::kToLength);
+  __ TailCallRuntime(Runtime::kStringToNumber);
 }
 
 void ToStringStub::Generate(MacroAssembler* masm) {
@@ -3929,8 +3912,8 @@ void LoadICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   __ bind(&not_array);
   __ CompareRoot(feedback, Heap::kmegamorphic_symbolRootIndex);
   __ bne(&miss);
-  Code::Flags code_flags = Code::RemoveTypeAndHolderFromFlags(
-      Code::ComputeHandlerFlags(Code::LOAD_IC));
+  Code::Flags code_flags =
+      Code::RemoveHolderFromFlags(Code::ComputeHandlerFlags(Code::LOAD_IC));
   masm->isolate()->stub_cache()->GenerateProbe(masm, Code::LOAD_IC, code_flags,
                                                receiver, name, feedback,
                                                receiver_map, scratch1, r9);
@@ -4064,8 +4047,8 @@ void VectorStoreICStub::GenerateImpl(MacroAssembler* masm, bool in_frame) {
   __ bind(&not_array);
   __ CompareRoot(feedback, Heap::kmegamorphic_symbolRootIndex);
   __ bne(&miss);
-  Code::Flags code_flags = Code::RemoveTypeAndHolderFromFlags(
-      Code::ComputeHandlerFlags(Code::STORE_IC));
+  Code::Flags code_flags =
+      Code::RemoveHolderFromFlags(Code::ComputeHandlerFlags(Code::STORE_IC));
   masm->isolate()->stub_cache()->GenerateProbe(
       masm, Code::STORE_IC, code_flags, receiver, key, feedback, receiver_map,
       scratch1, scratch2);
@@ -5717,6 +5700,182 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
       fp, (PropertyCallbackArguments::kReturnValueOffset + 3) * kPointerSize);
   CallApiFunctionAndReturn(masm, api_function_address, thunk_ref,
                            kStackUnwindSpace, NULL, return_value_operand, NULL);
+}
+
+namespace {
+
+void GetTypedArrayBackingStore(MacroAssembler* masm, Register backing_store,
+                               Register object, Register scratch,
+                               DoubleRegister double_scratch) {
+  Label offset_is_not_smi, done_offset;
+  __ LoadP(scratch, FieldMemOperand(object, JSTypedArray::kBufferOffset));
+  __ LoadP(backing_store,
+           FieldMemOperand(scratch, JSArrayBuffer::kBackingStoreOffset));
+  __ LoadP(scratch,
+           FieldMemOperand(object, JSArrayBufferView::kByteOffsetOffset));
+  __ JumpIfNotSmi(scratch, &offset_is_not_smi);
+  // offset is smi
+  __ SmiUntag(scratch);
+  __ b(&done_offset, Label::kNear);
+
+  // offset is a heap number
+  __ bind(&offset_is_not_smi);
+  __ LoadDouble(double_scratch,
+                FieldMemOperand(scratch, HeapNumber::kValueOffset));
+  __ ConvertDoubleToInt64(double_scratch,
+#if !V8_TARGET_ARCH_S390X
+                          r0,
+#endif
+                          scratch, double_scratch);
+  __ bind(&done_offset);
+  __ AddP(backing_store, backing_store, scratch);
+}
+
+void TypedArrayJumpTablePrologue(MacroAssembler* masm, Register object,
+                                 Register scratch, Register scratch2,
+                                 Label* table) {
+  __ LoadP(scratch, FieldMemOperand(object, JSObject::kElementsOffset));
+  __ LoadP(scratch, FieldMemOperand(scratch, HeapObject::kMapOffset));
+  __ LoadlB(scratch, FieldMemOperand(scratch, Map::kInstanceTypeOffset));
+  __ SubP(scratch, scratch,
+          Operand(static_cast<uint8_t>(FIXED_INT8_ARRAY_TYPE)));
+  if (__ emit_debug_code()) {
+    __ CmpP(scratch, Operand::Zero());
+    __ Check(ge, kOffsetOutOfRange);
+  }
+  __ ShiftLeftP(scratch, scratch, Operand(kPointerSizeLog2));
+  __ larl(scratch2, table);
+  __ LoadP(scratch, MemOperand(scratch2, scratch));
+  __ Jump(scratch);
+}
+
+void TypedArrayJumpTableEpilogue(MacroAssembler* masm, Label* table, Label* i8,
+                                 Label* u8, Label* i16, Label* u16, Label* i32,
+                                 Label* u32, Label* u8c) {
+  STATIC_ASSERT(FIXED_UINT8_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 1);
+  STATIC_ASSERT(FIXED_INT16_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 2);
+  STATIC_ASSERT(FIXED_UINT16_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 3);
+  STATIC_ASSERT(FIXED_INT32_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 4);
+  STATIC_ASSERT(FIXED_UINT32_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 5);
+  STATIC_ASSERT(FIXED_FLOAT32_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 6);
+  STATIC_ASSERT(FIXED_FLOAT64_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 7);
+  STATIC_ASSERT(FIXED_UINT8_CLAMPED_ARRAY_TYPE == FIXED_INT8_ARRAY_TYPE + 8);
+
+  Label abort;
+  __ bind(table);
+  __ emit_label_addr(i8);      // Int8Array
+  __ emit_label_addr(u8);      // Uint8Array
+  __ emit_label_addr(i16);     // Int16Array
+  __ emit_label_addr(u16);     // Uint16Array
+  __ emit_label_addr(i32);     // Int32Array
+  __ emit_label_addr(u32);     // Uint32Array
+  __ emit_label_addr(&abort);  // Float32Array
+  __ emit_label_addr(&abort);  // Float64Array
+  __ emit_label_addr(u8c);     // Uint8ClampedArray
+
+  __ bind(&abort);
+  __ Abort(kNoReason);
+}
+
+#if !V8_TARGET_ARCH_S390X
+void ReturnInteger32(MacroAssembler* masm, DoubleRegister dst, Register value,
+                     Label* use_heap_number) {
+  Label not_smi;
+  __ JumpIfNotSmiCandidate(value, r0, &not_smi);
+  __ SmiTag(r2, value);
+  __ Ret();
+
+  __ bind(&not_smi);
+  __ ConvertIntToDouble(value, dst);
+  __ b(use_heap_number);
+}
+#endif
+
+void ReturnUnsignedInteger32(MacroAssembler* masm, DoubleRegister dst,
+                             Register value, Label* use_heap_number) {
+  Label not_smi;
+  __ JumpIfNotUnsignedSmiCandidate(value, r0, &not_smi);
+  __ SmiTag(r2, value);
+  __ Ret();
+
+  __ bind(&not_smi);
+  __ ConvertUnsignedIntToDouble(value, dst);
+  __ b(use_heap_number);
+}
+
+void ReturnAllocatedHeapNumber(MacroAssembler* masm, DoubleRegister value,
+                               Register scratch, Register scratch2,
+                               Register scratch3) {
+  Label call_runtime;
+  __ LoadRoot(scratch3, Heap::kHeapNumberMapRootIndex);
+  __ AllocateHeapNumber(r2, scratch, scratch2, scratch3, &call_runtime);
+  __ StoreDouble(value, FieldMemOperand(r2, HeapNumber::kValueOffset));
+  __ Ret();
+
+  __ bind(&call_runtime);
+  {
+    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+    __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
+    __ StoreDouble(value, FieldMemOperand(r2, HeapNumber::kValueOffset));
+  }
+  __ Ret();
+}
+
+}  // anonymous namespace
+
+void AtomicsLoadStub::Generate(MacroAssembler* masm) {
+  Register object = r3;
+  Register index = r2;  // Index is an untagged word32.
+  Register backing_store = r4;
+  Label table, i8, u8, i16, u16, i32, u32;
+
+  GetTypedArrayBackingStore(masm, backing_store, object, r5, d0);
+  TypedArrayJumpTablePrologue(masm, object, r5, r6, &table);
+
+  __ bind(&i8);
+  __ LoadB(r2, MemOperand(index, backing_store));
+  __ SmiTag(r2);
+  __ Ret();
+
+  __ bind(&u8);
+  __ LoadlB(r2, MemOperand(index, backing_store));
+  __ SmiTag(r2);
+  __ Ret();
+
+  __ bind(&i16);
+  __ ShiftLeftP(index, index, Operand(1));
+  __ LoadHalfWordP(r2, MemOperand(index, backing_store));
+  __ SmiTag(r2);
+  __ Ret();
+
+  __ bind(&u16);
+  __ ShiftLeftP(index, index, Operand(1));
+  __ LoadHalfWordP(r2, MemOperand(index, backing_store));
+  __ SmiTag(r2);
+  __ Ret();
+
+  Label use_heap_number;
+
+  __ bind(&i32);
+  __ ShiftLeftP(index, index, Operand(2));
+  __ LoadW(r2, MemOperand(index, backing_store));
+#if V8_TARGET_ARCH_S390X
+  __ SmiTag(r2);
+  __ Ret();
+#else
+  ReturnInteger32(masm, d0, r2, &use_heap_number);
+#endif
+
+  __ bind(&u32);
+  __ ShiftLeftP(index, index, Operand(2));
+  __ LoadW(r2, MemOperand(index, backing_store));
+  ReturnUnsignedInteger32(masm, d0, r2, &use_heap_number);
+
+  __ bind(&use_heap_number);
+  ReturnAllocatedHeapNumber(masm, d0, r3, r4, r5);
+
+  TypedArrayJumpTableEpilogue(masm, &table, &i8, &u8, &i16, &u16, &i32, &u32,
+                              &u8);
 }
 
 #undef __

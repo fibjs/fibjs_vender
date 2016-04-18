@@ -107,6 +107,9 @@ class WasmGraphBuilder {
   void BuildJSToWasmWrapper(Handle<Code> wasm_code, wasm::FunctionSig* sig);
   void BuildWasmToJSWrapper(Handle<JSFunction> function,
                             wasm::FunctionSig* sig);
+
+  Node* BuildJavaScriptToNumber(Node* node, Node* context, Node* effect,
+                                Node* control);
   Node* ToJS(Node* node, Node* context, wasm::LocalType type);
   Node* FromJS(Node* node, Node* context, wasm::LocalType type);
   Node* Invert(Node* node);
@@ -164,8 +167,12 @@ class WasmGraphBuilder {
   Node* MemBuffer(uint32_t offset);
   void BoundsCheckMem(MachineType memtype, Node* index, uint32_t offset);
 
+  Node* MaskShiftCount32(Node* node);
+  Node* MaskShiftCount64(Node* node);
+
   Node* BuildCCall(MachineSignature* sig, Node** args);
   Node* BuildWasmCall(wasm::FunctionSig* sig, Node** args);
+
   Node* BuildF32Neg(Node* input);
   Node* BuildF64Neg(Node* input);
   Node* BuildF32CopySign(Node* left, Node* right);
@@ -225,6 +232,11 @@ class WasmGraphBuilder {
   Node* BuildI64SConvertF64(Node* input);
   Node* BuildI64UConvertF64(Node* input);
 
+  Node* BuildI32DivS(Node* left, Node* right);
+  Node* BuildI32RemS(Node* left, Node* right);
+  Node* BuildI32DivU(Node* left, Node* right);
+  Node* BuildI32RemU(Node* left, Node* right);
+
   Node* BuildI64DivS(Node* left, Node* right);
   Node* BuildI64RemS(Node* left, Node* right);
   Node* BuildI64DivU(Node* left, Node* right);
@@ -232,9 +244,9 @@ class WasmGraphBuilder {
   Node* BuildDiv64Call(Node* left, Node* right, ExternalReference ref,
                        MachineType result_type, int trap_zero);
 
-  Node** Realloc(Node** buffer, size_t count) {
-    Node** buf = Buffer(count);
-    if (buf != buffer) memcpy(buf, buffer, count * sizeof(Node*));
+  Node** Realloc(Node** buffer, size_t old_count, size_t new_count) {
+    Node** buf = Buffer(new_count);
+    if (buf != buffer) memcpy(buf, buffer, old_count * sizeof(Node*));
     return buf;
   }
 };

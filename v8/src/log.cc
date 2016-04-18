@@ -18,6 +18,7 @@
 #include "src/log-inl.h"
 #include "src/log-utils.h"
 #include "src/macro-assembler.h"
+#include "src/perf-jit.h"
 #include "src/profiler/cpu-profiler.h"
 #include "src/runtime-profiler.h"
 #include "src/string-stream.h"
@@ -283,11 +284,16 @@ void PerfBasicLogger::LogRecordedBuffer(AbstractCode* code, SharedFunctionInfo*,
     return;
   }
 
-  base::OS::FPrint(perf_output_handle_, "%llx %x %.*s\n",
-                   reinterpret_cast<uint64_t>(code->instruction_start()),
+  // Linux perf expects hex literals without a leading 0x, while some
+  // implementations of printf might prepend one when using the %p format
+  // for pointers, leading to wrongly formatted JIT symbols maps.
+  //
+  // Instead, we use V8PRIxPTR format string and cast pointer to uintpr_t,
+  // so that we have control over the exact output format.
+  base::OS::FPrint(perf_output_handle_, "%" V8PRIxPTR " %x %.*s\n",
+                   reinterpret_cast<uintptr_t>(code->instruction_start()),
                    code->instruction_size(), length, name);
 }
-
 
 // Low-level logging support.
 #define LL_LOG(Call) if (ll_logger_) ll_logger_->Call;
@@ -322,14 +328,6 @@ class LowLevelLogger : public CodeEventLogger {
 
     Address from_address;
     Address to_address;
-  };
-
-
-  struct SnapshotPositionStruct {
-    static const char kTag = 'P';
-
-    Address address;
-    int32_t position;
   };
 
 
@@ -423,17 +421,6 @@ void LowLevelLogger::CodeMoveEvent(AbstractCode* from, Address to) {
   size_t header_size = from->instruction_start() - from->address();
   event.to_address = to + header_size;
   LogWriteStruct(event);
-}
-
-void LowLevelLogger::SnapshotPositionEvent(HeapObject* obj, int pos) {
-  if (obj->IsAbstractCode()) {
-    SnapshotPositionStruct event;
-    event.address =
-        obj->address() +
-        (obj->IsCode() ? Code::kHeaderSize : BytecodeArray::kHeaderSize);
-    event.position = pos;
-    LogWriteStruct(event);
-  }
 }
 
 
@@ -730,19 +717,18 @@ void Profiler::Run() {
 //
 
 Logger::Logger(Isolate* isolate)
-  : isolate_(isolate),
-    ticker_(NULL),
-    profiler_(NULL),
-    log_events_(NULL),
-    is_logging_(false),
-    log_(new Log(this)),
-    perf_basic_logger_(NULL),
-    ll_logger_(NULL),
-    jit_logger_(NULL),
-    listeners_(5),
-    is_initialized_(false) {
-}
-
+    : isolate_(isolate),
+      ticker_(NULL),
+      profiler_(NULL),
+      log_events_(NULL),
+      is_logging_(false),
+      log_(new Log(this)),
+      perf_basic_logger_(NULL),
+      perf_jit_logger_(NULL),
+      ll_logger_(NULL),
+      jit_logger_(NULL),
+      listeners_(5),
+      is_initialized_(false) {}
 
 Logger::~Logger() {
   delete log_;
@@ -808,7 +794,7 @@ void Logger::UncheckedIntEvent(const char* name, int value) {
 void Logger::UncheckedIntPtrTEvent(const char* name, intptr_t value) {
   if (!log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,%" V8_PTR_PREFIX "d", name, value);
+  msg.Append("%s,%" V8PRIdPTR, name, value);
   msg.WriteToLogFile();
 }
 
@@ -816,7 +802,7 @@ void Logger::UncheckedIntPtrTEvent(const char* name, intptr_t value) {
 void Logger::HandleEvent(const char* name, Object** location) {
   if (!log_->IsEnabled() || !FLAG_log_handles) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,0x%" V8PRIxPTR, name, location);
+  msg.Append("%s,%p", name, location);
   msg.WriteToLogFile();
 }
 
@@ -857,7 +843,7 @@ void Logger::CodeDeoptEvent(Code* code, Address pc, int fp_to_sp_delta) {
   if (!log_->IsEnabled() || !FLAG_log_internal_timer_events) return;
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
-  msg.Append("code-deopt,%ld,%d", since_epoch, code->CodeSize());
+  msg.Append("code-deopt,%d,%d", since_epoch, code->CodeSize());
   msg.WriteToLogFile();
 }
 
@@ -867,7 +853,7 @@ void Logger::CurrentTimeEvent() {
   DCHECK(FLAG_log_timer_events || FLAG_prof_cpp);
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
-  msg.Append("current-time,%ld", since_epoch);
+  msg.Append("current-time,%d", since_epoch);
   msg.WriteToLogFile();
 }
 
@@ -1027,8 +1013,7 @@ void Logger::ApiEntryCall(const char* name) {
 void Logger::NewEvent(const char* name, void* object, size_t size) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("new,%s,0x%" V8PRIxPTR ",%u", name, object,
-             static_cast<unsigned int>(size));
+  msg.Append("new,%s,%p,%u", name, object, static_cast<unsigned int>(size));
   msg.WriteToLogFile();
 }
 
@@ -1036,7 +1021,7 @@ void Logger::NewEvent(const char* name, void* object, size_t size) {
 void Logger::DeleteEvent(const char* name, void* object) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("delete,%s,0x%" V8PRIxPTR, name, object);
+  msg.Append("delete,%s,%p", name, object);
   msg.WriteToLogFile();
 }
 
@@ -1056,12 +1041,12 @@ void Logger::CallbackEventInternal(const char* prefix, Name* name,
   } else {
     Symbol* symbol = Symbol::cast(name);
     if (symbol->name()->IsUndefined()) {
-      msg.Append(",1,symbol(hash %x)", prefix, symbol->Hash());
+      msg.Append(",1,symbol(hash %x)", symbol->Hash());
     } else {
       base::SmartArrayPointer<char> str =
           String::cast(symbol->name())
               ->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-      msg.Append(",1,symbol(\"%s\" hash %x)", prefix, str.get(),
+      msg.Append(",1,symbol(\"%s%s\" hash %x)", prefix, str.get(),
                  symbol->Hash());
     }
   }
@@ -1296,17 +1281,6 @@ void Logger::CodeNameEvent(Address addr, int pos, const char* code_name) {
   msg.WriteToLogFile();
 }
 
-void Logger::SnapshotPositionEvent(HeapObject* obj, int pos) {
-  if (!log_->IsEnabled()) return;
-  LL_LOG(SnapshotPositionEvent(obj, pos));
-  if (!FLAG_log_snapshot_positions) return;
-  Log::MessageBuilder msg(log_);
-  msg.Append("%s,", kLogEventsNames[SNAPSHOT_POSITION_EVENT]);
-  msg.AppendAddress(obj->address());
-  msg.Append(",%d", pos);
-  msg.WriteToLogFile();
-}
-
 
 void Logger::SharedFunctionInfoMoveEvent(Address from, Address to) {
   if (!is_logging_code_events()) return;
@@ -1416,7 +1390,7 @@ void Logger::TickEvent(TickSample* sample, bool overflow) {
   Log::MessageBuilder msg(log_);
   msg.Append("%s,", kLogEventsNames[TICK_EVENT]);
   msg.AppendAddress(sample->pc);
-  msg.Append(",%ld", static_cast<int>(timer_.Elapsed().InMicroseconds()));
+  msg.Append(",%d", static_cast<int>(timer_.Elapsed().InMicroseconds()));
   if (sample->has_external_callback) {
     msg.Append(",1,");
     msg.AppendAddress(sample->external_callback_entry);
@@ -1607,12 +1581,22 @@ void Logger::LogCodeObjects() {
 void Logger::LogBytecodeHandlers() {
   if (!FLAG_ignition) return;
 
+  interpreter::Interpreter* interpreter = isolate_->interpreter();
   const int last_index = static_cast<int>(interpreter::Bytecode::kLast);
-  for (int index = 0; index <= last_index; ++index) {
-    interpreter::Bytecode bytecode = interpreter::Bytecodes::FromByte(index);
-    Code* code = isolate_->interpreter()->GetBytecodeHandler(bytecode);
-    CodeCreateEvent(Logger::BYTECODE_HANDLER_TAG, AbstractCode::cast(code),
-                    interpreter::Bytecodes::ToString(bytecode));
+  for (auto operand_scale = interpreter::OperandScale::kSingle;
+       operand_scale <= interpreter::OperandScale::kMaxValid;
+       operand_scale =
+           interpreter::Bytecodes::NextOperandScale(operand_scale)) {
+    for (int index = 0; index <= last_index; ++index) {
+      interpreter::Bytecode bytecode = interpreter::Bytecodes::FromByte(index);
+      if (interpreter::Bytecodes::BytecodeHasHandler(bytecode, operand_scale)) {
+        Code* code = interpreter->GetBytecodeHandler(bytecode, operand_scale);
+        std::string bytecode_name =
+            interpreter::Bytecodes::ToString(bytecode, operand_scale);
+        CodeCreateEvent(Logger::BYTECODE_HANDLER_TAG, AbstractCode::cast(code),
+                        bytecode_name.c_str());
+      }
+    }
   }
 }
 
@@ -1771,11 +1755,6 @@ bool Logger::SetUp(Isolate* isolate) {
   if (is_initialized_) return true;
   is_initialized_ = true;
 
-  // --ll-prof implies --log-code and --log-snapshot-positions.
-  if (FLAG_ll_prof) {
-    FLAG_log_snapshot_positions = true;
-  }
-
   std::ostringstream log_file_name;
   PrepareLogFileName(log_file_name, isolate, FLAG_logfile);
   log_->Initialize(log_file_name.str().c_str());
@@ -1784,6 +1763,11 @@ bool Logger::SetUp(Isolate* isolate) {
   if (FLAG_perf_basic_prof) {
     perf_basic_logger_ = new PerfBasicLogger();
     addCodeEventListener(perf_basic_logger_);
+  }
+
+  if (FLAG_perf_prof) {
+    perf_jit_logger_ = new PerfJitLogger();
+    addCodeEventListener(perf_jit_logger_);
   }
 
   if (FLAG_ll_prof) {
@@ -1852,6 +1836,12 @@ FILE* Logger::TearDown() {
     removeCodeEventListener(perf_basic_logger_);
     delete perf_basic_logger_;
     perf_basic_logger_ = NULL;
+  }
+
+  if (perf_jit_logger_) {
+    removeCodeEventListener(perf_jit_logger_);
+    delete perf_jit_logger_;
+    perf_jit_logger_ = NULL;
   }
 
   if (ll_logger_) {
