@@ -51,7 +51,7 @@ $ sh update.sh
 
 ### 4）编译并测试更新vender库后的fibjs
 
-各平台的编译几测试方法见：https://github.com/xicilion/fibjs
+各平台的编译及测试方法见：https://github.com/xicilion/fibjs
 
 ### 5）提交更新
 
