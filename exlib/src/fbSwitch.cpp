@@ -17,10 +17,7 @@ void __declspec(naked) win_switch()
         mov [eax + 010h], esi
         mov [eax + 014h], edi
 
-        lea edx, [esp + 4]
-        mov [eax + 018h], edx
-        mov edx, [esp]
-        mov [eax + 01ch], edx
+        mov [eax + 018h], esp
 
         mov eax, [esp + 08h]
         mov ebp, [eax]
@@ -30,8 +27,6 @@ void __declspec(naked) win_switch()
         mov esi, [eax + 010h]
         mov edi, [eax + 014h]
         mov esp, [eax + 018h]
-        mov eax, [eax + 01ch]
-        push eax
         ret
     }
 }
@@ -80,11 +75,7 @@ asm("    movq    %r13,0x38(%rdi)");
 asm("    movq    %r14,0x40(%rdi)");
 asm("    movq    %r15,0x48(%rdi)");
 
-asm("    leaq    8(%rsp),%rax");
-asm("    movq    %rax,0x50(%rdi)");
-
-asm("    movq    (%rsp),%rax");
-asm("    movq    %rax,0x58(%rdi)");
+asm("    movq    %rsp,0x50(%rdi)");
 
 asm("    movq    %rsi, %rdi");
 
@@ -100,11 +91,8 @@ asm("    movq    0x40(%rdi), %r14");
 asm("    movq    0x48(%rdi), %r15");
 asm("    movq    0x50(%rdi), %rsp");
 
-asm("    movq    0x58(%rdi), %rax");
-
 asm("    movq    0x28(%rdi), %rdi");
 
-asm("    pushq   %rax");
 asm("    ret");
 
 asm(".globl nix_save, _nix_save");
@@ -139,10 +127,7 @@ asm("    movl    %edx, 0x0c(%eax)");
 asm("    movl    %esi, 0x10(%eax)");
 asm("    movl    %edi, 0x14(%eax)");
 
-asm("    leal    4(%esp), %edx");
-asm("    movl    %edx, 0x18(%eax)");
-asm("    movl    (%esp), %edx");
-asm("    movl    %edx, 0x1c(%eax)");
+asm("    movl    %esp, 0x18(%eax)");
 
 asm("    movl    0x8(%esp), %eax");
 asm("    movl    (%eax), %ebp");
@@ -152,8 +137,7 @@ asm("    movl    0x0c(%eax), %edx");
 asm("    movl    0x10(%eax), %esi");
 asm("    movl    0x14(%eax), %edi");
 asm("    movl    0x18(%eax), %esp");
-asm("    movl    0x1c(%eax), %eax");
-asm("    pushl   %eax");
+
 asm("    ret");
 
 asm(".globl nix_save, _nix_save");

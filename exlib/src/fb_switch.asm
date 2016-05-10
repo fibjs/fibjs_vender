@@ -16,11 +16,7 @@ win_switch:
 	mov	[rcx + 040h], r14
 	mov	[rcx + 048h], r15
 
-	lea	rax, [rsp + 8]
-	mov	[rcx + 050h], rax
-
-	mov	rax, [rsp]
-	mov	[rcx + 058h], rax
+	mov	[rcx + 050h], rsp
 
     mov	rcx, rdx
 
@@ -35,11 +31,8 @@ win_switch:
 	mov	r14, [rcx + 040h]
 	mov	r15, [rcx + 048h]
 	mov	rsp, [rcx + 050h]
-	mov	rax, [rcx + 058h]
 
 	mov	rcx, [rcx + 010h]
-	push	rax
-	xor		rax, rax
 
 	ret
 

@@ -152,11 +152,11 @@ void Service::Create(fiber_func func, void *data, int32_t stacksize, const char*
     if (fb == NULL)
         return;
 
-    stack = (void **) fb + stacksize / sizeof(void *) - 5;
+    stack = (void **) fb + stacksize / sizeof(void *) - 6;
 
     new(fb) Fiber(s_service, data);
 
-    fb->m_cntxt.ip = (intptr_t) fiber_proc;
+    stack[0] = (void *) fiber_proc;
     fb->m_cntxt.sp = (intptr_t) stack;
 
 #if defined(x64)
@@ -168,9 +168,10 @@ void Service::Create(fiber_func func, void *data, int32_t stacksize, const char*
     fb->m_cntxt.Rsi = (intptr_t) fb;
 #endif
 #elif defined(I386)
-    stack[1] = (void *)func;
-    stack[2] = fb;
+    stack[2] = (void *)func;
+    stack[3] = fb;
 #elif defined(arm)
+    fb->m_cntxt.ip = (intptr_t) fiber_proc;
     fb->m_cntxt.r0 = (intptr_t) func;
     fb->m_cntxt.r1 = (intptr_t) fb;
 #endif

@@ -57,10 +57,6 @@ public:
         intptr_t Rsp;
         intptr_t sp;
     };
-    union {
-        intptr_t Rip;
-        intptr_t ip;
-    };
 #elif defined(I386)
     union {
         intptr_t Ebp;
@@ -74,10 +70,6 @@ public:
     union {
         intptr_t Esp;
         intptr_t sp;
-    };
-    union {
-        intptr_t Eip;
-        intptr_t ip;
     };
 #elif defined(arm)
     intptr_t r0;
