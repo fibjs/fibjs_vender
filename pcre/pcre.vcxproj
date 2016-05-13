@@ -22,21 +22,6 @@
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\pcre.h" />
     <ClInclude Include="src\pcre_internal.h" />
-    <ClInclude Include="src\sljit\sljitConfig.h" />
-    <ClInclude Include="src\sljit\sljitConfigInternal.h" />
-    <ClInclude Include="src\sljit\sljitExecAllocator.h" />
-    <ClInclude Include="src\sljit\sljitLir.h" />
-    <ClInclude Include="src\sljit\sljitNativeARM_Thumb2.h" />
-    <ClInclude Include="src\sljit\sljitNativeARM_v5.h" />
-    <ClInclude Include="src\sljit\sljitNativeMIPS_32.h" />
-    <ClInclude Include="src\sljit\sljitNativeMIPS_common.h" />
-    <ClInclude Include="src\sljit\sljitNativePPC_32.h" />
-    <ClInclude Include="src\sljit\sljitNativePPC_64.h" />
-    <ClInclude Include="src\sljit\sljitNativePPC_common.h" />
-    <ClInclude Include="src\sljit\sljitNativeX86_32.h" />
-    <ClInclude Include="src\sljit\sljitNativeX86_64.h" />
-    <ClInclude Include="src\sljit\sljitNativeX86_common.h" />
-    <ClInclude Include="src\sljit\sljitUtils.h" />
     <ClInclude Include="src\ucp.h" />
   </ItemGroup>
   <ItemGroup>
@@ -61,7 +46,6 @@
     <ClCompile Include="src\pcre_valid_utf8.c" />
     <ClCompile Include="src\pcre_version.c" />
     <ClCompile Include="src\pcre_xclass.c" />
-    <ClCompile Include="src\sljit\sljitLir.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1F77AB58-706B-4BB5-BE73-000000009c2e}</ProjectGuid>

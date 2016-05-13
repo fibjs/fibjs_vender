@@ -304,9 +304,9 @@ them both to 0; an emulation function will be used. */
 #endif
 
 /* Define to enable support for Just-In-Time compiling. */
-#ifndef SUPPORT_JIT
-#define SUPPORT_JIT
-#endif
+// #ifndef SUPPORT_JIT
+// #define SUPPORT_JIT
+// #endif
 
 /* Define to allow pcregrep to be linked with libbz2, so that it is able to
    handle .bz2 files. */
@@ -320,9 +320,9 @@ them both to 0; an emulation function will be used. */
 #undef SUPPORT_LIBZ
 
 /* Define to enable JIT support in pcregrep. */
-#ifndef SUPPORT_PCREGREP_JIT
-#define SUPPORT_PCREGREP_JIT
-#endif
+// #ifndef SUPPORT_PCREGREP_JIT
+// #define SUPPORT_PCREGREP_JIT
+// #endif
 
 /* Define to enable support for Unicode properties. */
 #ifndef SUPPORT_UCP
