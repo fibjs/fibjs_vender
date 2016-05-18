@@ -171,9 +171,13 @@ void Service::Create(fiber_func func, void *data, int32_t stacksize, const char*
     stack[2] = (void *)func;
     stack[3] = fb;
 #elif defined(arm)
-    fb->m_cntxt.ip = (intptr_t) fiber_proc;
+    fb->m_cntxt.lr = (intptr_t) fiber_proc;
     fb->m_cntxt.r0 = (intptr_t) func;
     fb->m_cntxt.r1 = (intptr_t) fb;
+#elif defined(arm64)
+    fb->m_cntxt.lr = (intptr_t) fiber_proc;
+    fb->m_cntxt.x0 = (intptr_t) func;
+    fb->m_cntxt.x1 = (intptr_t) fb;
 #endif
 
 #ifdef DEBUG

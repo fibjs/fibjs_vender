@@ -20,6 +20,8 @@
 #include "utils_x86.h"
 #elif defined(arm)
 #include "utils_arm.h"
+#elif defined(arm64)
+#include "utils_arm64.h"
 #endif
 
 namespace exlib
