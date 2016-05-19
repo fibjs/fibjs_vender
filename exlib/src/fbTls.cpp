@@ -13,8 +13,9 @@ namespace exlib
 {
 
 static char s_tls[TLS_SIZE];
+static Fiber::tls_free s_tls_free[TLS_SIZE];
 
-int32_t Thread_base::tlsAlloc()
+int32_t Thread_base::tlsAlloc(tls_free _free)
 {
 	int32_t i;
 
@@ -22,6 +23,7 @@ int32_t Thread_base::tlsAlloc()
 		if (s_tls[i] == 0)
 		{
 			s_tls[i] = 1;
+			s_tls_free[i] = _free;
 			return i;
 		}
 
@@ -43,6 +45,19 @@ void Thread_base::tlsPut(int32_t idx, void* v)
 void Thread_base::tlsFree(int32_t idx)
 {
 	s_tls[idx] = 0;
+	s_tls_free[idx] = NULL;
+}
+
+void Thread_base::destroy()
+{
+	int32_t i;
+
+	for (i = 0; i < TLS_SIZE; i++)
+		if (s_tls_free[i])
+		{
+			s_tls_free[i](m_tls[i]);
+			m_tls[i] = NULL;
+		}
 }
 
 }

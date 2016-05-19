@@ -79,13 +79,14 @@ public:
     }
 
 public:
-    static int32_t tlsAlloc();
+    typedef void(*tls_free)(void*);
+    static int32_t tlsAlloc(tls_free _free = NULL);
     static void *tlsGet(int32_t idx);
     static void tlsPut(int32_t idx, void *v);
     static void tlsFree(int32_t idx);
 
-private:
-    virtual void destroy() = 0;
+protected:
+    virtual void destroy();
 
 private:
     void *m_tls[TLS_SIZE];

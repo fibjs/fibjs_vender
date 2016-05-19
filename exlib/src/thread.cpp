@@ -81,6 +81,7 @@ void OSThread::bindCurrent()
 
 void OSThread::destroy()
 {
+    Thread_base::destroy();
     delete this;
 }
 

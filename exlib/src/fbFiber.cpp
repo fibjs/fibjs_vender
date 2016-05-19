@@ -77,6 +77,8 @@ Fiber *Fiber::current()
 
 void Fiber::destroy()
 {
+    Thread_base::destroy();
+
 #ifdef WIN32
     VirtualFree(this, 0, MEM_RELEASE);
 #else
