@@ -156,10 +156,10 @@ void Service::Create(fiber_func func, void *data, int32_t stacksize, const char*
 
     new(fb) Fiber(s_service, data);
 
-    stack[0] = (void *) fiber_proc;
     fb->m_cntxt.sp = (intptr_t) stack;
 
 #if defined(x64)
+    stack[0] = (void *) fiber_proc;
 #ifdef _WIN32
     fb->m_cntxt.Rcx = (intptr_t) func;
     fb->m_cntxt.Rdx = (intptr_t) fb;
@@ -168,6 +168,7 @@ void Service::Create(fiber_func func, void *data, int32_t stacksize, const char*
     fb->m_cntxt.Rsi = (intptr_t) fb;
 #endif
 #elif defined(I386)
+    stack[0] = (void *) fiber_proc;
     stack[2] = (void *)func;
     stack[3] = fb;
 #elif defined(arm)
