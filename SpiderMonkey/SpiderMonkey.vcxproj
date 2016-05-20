@@ -1,0 +1,273 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\jsapi.h" />
+    <ClInclude Include="include\jsautocfg.h" />
+    <ClInclude Include="include\jscompat.h" />
+    <ClInclude Include="include\jsconfig.h" />
+    <ClInclude Include="include\jslong.h" />
+    <ClInclude Include="include\jsotypes.h" />
+    <ClInclude Include="include\jspubtd.h" />
+    <ClInclude Include="include\jstypes.h" />
+    <ClInclude Include="include\jsutil.h" />
+    <ClInclude Include="src\jsarena.h" />
+    <ClInclude Include="src\jsarray.h" />
+    <ClInclude Include="src\jsatom.h" />
+    <ClInclude Include="src\jsautokw.h" />
+    <ClInclude Include="src\jsbit.h" />
+    <ClInclude Include="src\jsbool.h" />
+    <ClInclude Include="src\jsclist.h" />
+    <ClInclude Include="src\jscntxt.h" />
+    <ClInclude Include="src\jsdate.h" />
+    <ClInclude Include="src\jsdbgapi.h" />
+    <ClInclude Include="src\jsdhash.h" />
+    <ClInclude Include="src\jsdtoa.h" />
+    <ClInclude Include="src\jsemit.h" />
+    <ClInclude Include="src\jsexn.h" />
+    <ClInclude Include="src\jsfun.h" />
+    <ClInclude Include="src\jsgc.h" />
+    <ClInclude Include="src\jshash.h" />
+    <ClInclude Include="src\jsinterp.h" />
+    <ClInclude Include="src\jsiter.h" />
+    <ClInclude Include="src\jslibmath.h" />
+    <ClInclude Include="src\jslock.h" />
+    <ClInclude Include="src\jsmath.h" />
+    <ClInclude Include="src\jsnum.h" />
+    <ClInclude Include="src\jsobj.h" />
+    <ClInclude Include="src\jsopcode.h" />
+    <ClInclude Include="src\jsparse.h" />
+    <ClInclude Include="src\jsprf.h" />
+    <ClInclude Include="src\jsprvtd.h" />
+    <ClInclude Include="src\jsregexp.h" />
+    <ClInclude Include="src\jsscan.h" />
+    <ClInclude Include="src\jsscope.h" />
+    <ClInclude Include="src\jsscript.h" />
+    <ClInclude Include="src\jsstddef.h" />
+    <ClInclude Include="src\jsstr.h" />
+    <ClInclude Include="src\jsxdrapi.h" />
+    <ClInclude Include="src\prmjtime.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="include\jsproto.tbl" />
+    <None Include="src\js.msg" />
+    <None Include="src\jskeyword.tbl" />
+    <None Include="src\jsopcode.tbl" />
+    <None Include="src\jsreops.tbl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\jsapi.c" />
+    <ClCompile Include="src\jsarena.c" />
+    <ClCompile Include="src\jsarray.c" />
+    <ClCompile Include="src\jsatom.c" />
+    <ClCompile Include="src\jsbool.c" />
+    <ClCompile Include="src\jscntxt.c" />
+    <ClCompile Include="src\jsdate.c" />
+    <ClCompile Include="src\jsdbgapi.c" />
+    <ClCompile Include="src\jsdhash.c" />
+    <ClCompile Include="src\jsdtoa.c" />
+    <ClCompile Include="src\jsemit.c" />
+    <ClCompile Include="src\jsexn.c" />
+    <ClCompile Include="src\jsfun.c" />
+    <ClCompile Include="src\jsgc.c" />
+    <ClCompile Include="src\jshash.c" />
+    <ClCompile Include="src\jsinterp.c" />
+    <ClCompile Include="src\jsinvoke.c" />
+    <ClCompile Include="src\jsiter.c" />
+    <ClCompile Include="src\jslock.c" />
+    <ClCompile Include="src\jslog2.c" />
+    <ClCompile Include="src\jslong.c" />
+    <ClCompile Include="src\jsmath.c" />
+    <ClCompile Include="src\jsnum.c" />
+    <ClCompile Include="src\jsobj.c" />
+    <ClCompile Include="src\jsopcode.c" />
+    <ClCompile Include="src\jsparse.c" />
+    <ClCompile Include="src\jsprf.c" />
+    <ClCompile Include="src\jsregexp.c" />
+    <ClCompile Include="src\jsscan.c" />
+    <ClCompile Include="src\jsscope.c" />
+    <ClCompile Include="src\jsscript.c" />
+    <ClCompile Include="src\jsstr.c" />
+    <ClCompile Include="src\jsutil.c" />
+    <ClCompile Include="src\jsxdrapi.c" />
+    <ClCompile Include="src\prmjtime.c" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{1F77AB58-706B-4BB5-BE73-00000000213b}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>SpiderMonkey</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120_xp</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)bin\Windows_Debug32\vender\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_Debug32\SpiderMonkey\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)bin\Windows_Release32\vender\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_Release32\SpiderMonkey\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)bin\Windows_Debug\vender\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_Debug\SpiderMonkey\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)bin\Windows_Release\vender\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_Release\SpiderMonkey\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;STATIC_JS_API;XP_WIN=1;JS_THREADSAFE=1;HAVE_VA_COPY=1;VA_COPY=va_copy;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4101;4244;4267;4334;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;STATIC_JS_API;XP_WIN=1;JS_THREADSAFE=1;HAVE_VA_COPY=1;VA_COPY=va_copy;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4101;4244;4267;4334;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;STATIC_JS_API;XP_WIN=1;JS_THREADSAFE=1;HAVE_VA_COPY=1;VA_COPY=va_copy;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <DisableSpecificWarnings>4101;4244;4267;4334;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib />
+    <Lib>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;STATIC_JS_API;XP_WIN=1;JS_THREADSAFE=1;HAVE_VA_COPY=1;VA_COPY=va_copy;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\include;$(ProjectDir)\..\exlib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <DisableSpecificWarnings>4101;4244;4267;4334;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib />
+    <Lib>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
