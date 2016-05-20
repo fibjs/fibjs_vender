@@ -11,6 +11,8 @@
 #define PR_END_EXTERN_C
 #endif
 
+#define PR_CALLBACK
+
 typedef enum { PR_FAILURE = -1, PR_SUCCESS = 0 } PRStatus;
 
 typedef uint32_t PRIntervalTime;

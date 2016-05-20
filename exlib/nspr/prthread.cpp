@@ -8,6 +8,7 @@
 
 #include "prthread.h"
 #include "fiber.h"
+#include "thread.h"
 
 PRThread* PR_GetCurrentThread()
 {
@@ -29,4 +30,10 @@ PRStatus PR_SetThreadPrivate(PRUintn tpdIndex, void *priv)
 void* PR_GetThreadPrivate(PRUintn tpdIndex)
 {
 	return exlib::Thread_base::tlsGet(tpdIndex);
+}
+
+PRStatus PR_CallOnce(PRCallOnceType *once, PRCallOnceFN func)
+{
+	exlib::InitOnce(once, (void (*)())func);
+	return PR_SUCCESS;
 }

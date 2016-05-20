@@ -23,6 +23,7 @@
     <ClInclude Include="include\osconfig.h" />
     <ClInclude Include="include\pratom.h" />
     <ClInclude Include="include\prcvar.h" />
+    <ClInclude Include="include\prinit.h" />
     <ClInclude Include="include\prlock.h" />
     <ClInclude Include="include\prthread.h" />
     <ClInclude Include="include\prtypes.h" />
