@@ -45,6 +45,31 @@ intptr_t atom_xchg(volatile intptr_t *ptr, intptr_t new_value)
 {
 	return InterlockedExchange64((LONGLONG *)ptr, new_value);
 }
+
+int32_t CompareAndSwap(volatile int32_t *ptr, int32_t old_value, int32_t new_value)
+{
+	return InterlockedCompareExchange((LONG *)ptr, new_value, old_value);
+}
+
+int32_t atom_add(volatile int32_t *dest, int32_t incr)
+{
+	return InterlockedExchangeAdd((LONG *)dest, incr) + incr;
+}
+
+int32_t atom_inc(volatile int32_t *dest)
+{
+	return InterlockedIncrement((LONG *)dest);
+}
+
+int32_t atom_dec(volatile int32_t *dest)
+{
+	return InterlockedDecrement((LONG *)dest);
+}
+
+int32_t atom_xchg(volatile int32_t *ptr, int32_t new_value)
+{
+	return InterlockedExchange((LONG *)ptr, new_value);
+}
 #else
 intptr_t CompareAndSwap(volatile intptr_t *ptr, intptr_t old_value, intptr_t new_value)
 {
@@ -71,31 +96,6 @@ intptr_t atom_xchg(volatile intptr_t *ptr, intptr_t new_value)
 	return InterlockedExchange((LONG *)ptr, new_value);
 }
 #endif
-
-int32_t CompareAndSwap(volatile int32_t *ptr, int32_t old_value, int32_t new_value)
-{
-	return InterlockedCompareExchange((LONG *)ptr, new_value, old_value);
-}
-
-int32_t atom_add(volatile int32_t *dest, int32_t incr)
-{
-	return InterlockedExchangeAdd((LONG *)dest, incr) + incr;
-}
-
-int32_t atom_inc(volatile int32_t *dest)
-{
-	return InterlockedIncrement((LONG *)dest);
-}
-
-int32_t atom_dec(volatile int32_t *dest)
-{
-	return InterlockedDecrement((LONG *)dest);
-}
-
-int32_t atom_xchg(volatile int32_t *ptr, int32_t new_value)
-{
-	return InterlockedExchange((LONG *)ptr, new_value);
-}
 
 void *_atom_xchg(void *volatile *ptr, void *new_value)
 {
