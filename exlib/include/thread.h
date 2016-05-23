@@ -512,9 +512,9 @@ public:
     OSSemaphore m_sem;
 };
 
-inline void InitOnce(intptr_t *once, void (*initializer)())
+inline void InitOnce(int32_t *once, void (*initializer)())
 {
-    intptr_t state = CompareAndSwap(once, 0, 1);
+    int32_t state = CompareAndSwap(once, 0, 1);
     if (state == 0)
     {
         initializer();
