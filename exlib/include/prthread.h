@@ -16,7 +16,7 @@ PRStatus PR_SetThreadPrivate(PRUintn tpdIndex, void *priv);
 
 void* PR_GetThreadPrivate(PRUintn tpdIndex);
 
-typedef int32_t PRCallOnceType;
+typedef intptr_t PRCallOnceType;
 typedef PRStatus (PR_CALLBACK *PRCallOnceFN)(void);
 PRStatus PR_CallOnce(PRCallOnceType *once, PRCallOnceFN func);
 
