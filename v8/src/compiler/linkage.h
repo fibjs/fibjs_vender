@@ -152,20 +152,19 @@ class CallDescriptor final : public ZoneObject {
   enum Flag {
     kNoFlags = 0u,
     kNeedsFrameState = 1u << 0,
-    kPatchableCallSite = 1u << 1,
-    kNeedsNopAfterCall = 1u << 2,
-    kHasExceptionHandler = 1u << 3,
-    kHasLocalCatchHandler = 1u << 4,
-    kSupportsTailCalls = 1u << 5,
-    kCanUseRoots = 1u << 6,
+    kHasExceptionHandler = 1u << 1,
+    kHasLocalCatchHandler = 1u << 2,
+    kSupportsTailCalls = 1u << 3,
+    kCanUseRoots = 1u << 4,
     // (arm64 only) native stack should be used for arguments.
-    kUseNativeStack = 1u << 7,
+    kUseNativeStack = 1u << 5,
     // (arm64 only) call instruction has to restore JSSP or CSP.
-    kRestoreJSSP = 1u << 8,
-    kRestoreCSP = 1u << 9,
+    kRestoreJSSP = 1u << 6,
+    kRestoreCSP = 1u << 7,
     // Causes the code generator to initialize the root register.
-    kInitializeRootRegister = 1u << 10,
-    kPatchableCallSiteWithNop = kPatchableCallSite | kNeedsNopAfterCall
+    kInitializeRootRegister = 1u << 8,
+    // Does not ever try to allocate space on our heap.
+    kNoAllocate = 1u << 9
   };
   typedef base::Flags<Flag> Flags;
 
@@ -333,6 +332,7 @@ class Linkage : public ZoneObject {
       MachineType return_type = MachineType::AnyTagged(),
       size_t return_count = 1);
 
+  static CallDescriptor* GetAllocateCallDescriptor(Zone* zone);
   static CallDescriptor* GetBytecodeDispatchCallDescriptor(
       Isolate* isolate, Zone* zone, const CallInterfaceDescriptor& descriptor,
       int stack_parameter_count);

@@ -5,10 +5,7 @@
 #include "src/runtime/runtime-utils.h"
 
 #include "src/arguments.h"
-#include "src/conversions-inl.h"
-#include "src/isolate-inl.h"
 #include "src/regexp/jsregexp-inl.h"
-#include "src/regexp/jsregexp.h"
 #include "src/string-builder.h"
 #include "src/string-search.h"
 
@@ -316,10 +313,8 @@ RUNTIME_FUNCTION(Runtime_StringAdd) {
   CONVERT_ARG_HANDLE_CHECKED(String, str1, 0);
   CONVERT_ARG_HANDLE_CHECKED(String, str2, 1);
   isolate->counters()->string_add_runtime()->Increment();
-  Handle<String> result;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result, isolate->factory()->NewConsString(str1, str2));
-  return *result;
+  RETURN_RESULT_OR_FAILURE(isolate,
+                           isolate->factory()->NewConsString(str1, str2));
 }
 
 
@@ -1080,7 +1075,7 @@ MUST_USE_RESULT static Object* ConvertCase(
 
 RUNTIME_FUNCTION(Runtime_StringToLowerCase) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(args.length(), 1);
   CONVERT_ARG_HANDLE_CHECKED(String, s, 0);
   return ConvertCase(s, isolate, isolate->runtime_state()->to_lower_mapping());
 }
@@ -1088,7 +1083,7 @@ RUNTIME_FUNCTION(Runtime_StringToLowerCase) {
 
 RUNTIME_FUNCTION(Runtime_StringToUpperCase) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(args.length(), 1);
   CONVERT_ARG_HANDLE_CHECKED(String, s, 0);
   return ConvertCase(s, isolate, isolate->runtime_state()->to_upper_mapping());
 }
@@ -1143,16 +1138,15 @@ RUNTIME_FUNCTION(Runtime_NewString) {
   CONVERT_INT32_ARG_CHECKED(length, 0);
   CONVERT_BOOLEAN_ARG_CHECKED(is_one_byte, 1);
   if (length == 0) return isolate->heap()->empty_string();
-  Handle<String> result;
   if (is_one_byte) {
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, result, isolate->factory()->NewRawOneByteString(length));
+    RETURN_RESULT_OR_FAILURE(isolate,
+                             isolate->factory()->NewRawOneByteString(length));
   } else {
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, result, isolate->factory()->NewRawTwoByteString(length));
+    RETURN_RESULT_OR_FAILURE(isolate,
+                             isolate->factory()->NewRawTwoByteString(length));
   }
-  return *result;
 }
+
 
 RUNTIME_FUNCTION(Runtime_StringLessThan) {
   HandleScope handle_scope(isolate);

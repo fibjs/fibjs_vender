@@ -17,6 +17,11 @@ Callable CodeFactory::LoadIC(Isolate* isolate, TypeofMode typeof_mode) {
   return Callable(stub.GetCode(), LoadDescriptor(isolate));
 }
 
+// static
+Callable CodeFactory::ApiGetter(Isolate* isolate) {
+  CallApiGetterStub stub(isolate);
+  return Callable(stub.GetCode(), ApiGetterDescriptor(isolate));
+}
 
 // static
 Callable CodeFactory::LoadICInOptimizedCode(
@@ -276,6 +281,18 @@ Callable CodeFactory::BitwiseXor(Isolate* isolate) {
 }
 
 // static
+Callable CodeFactory::Inc(Isolate* isolate) {
+  IncStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+// static
+Callable CodeFactory::Dec(Isolate* isolate) {
+  DecStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+// static
 Callable CodeFactory::LessThan(Isolate* isolate) {
   LessThanStub stub(isolate);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
@@ -456,22 +473,25 @@ Callable CodeFactory::FastNewObject(Isolate* isolate) {
 
 
 // static
-Callable CodeFactory::FastNewRestParameter(Isolate* isolate) {
-  FastNewRestParameterStub stub(isolate);
+Callable CodeFactory::FastNewRestParameter(Isolate* isolate,
+                                           bool skip_stub_frame) {
+  FastNewRestParameterStub stub(isolate, skip_stub_frame);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 
 
 // static
-Callable CodeFactory::FastNewSloppyArguments(Isolate* isolate) {
-  FastNewSloppyArgumentsStub stub(isolate);
+Callable CodeFactory::FastNewSloppyArguments(Isolate* isolate,
+                                             bool skip_stub_frame) {
+  FastNewSloppyArgumentsStub stub(isolate, skip_stub_frame);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 
 
 // static
-Callable CodeFactory::FastNewStrictArguments(Isolate* isolate) {
-  FastNewStrictArgumentsStub stub(isolate);
+Callable CodeFactory::FastNewStrictArguments(Isolate* isolate,
+                                             bool skip_stub_frame) {
+  FastNewStrictArgumentsStub stub(isolate, skip_stub_frame);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 
@@ -482,13 +502,6 @@ Callable CodeFactory::AllocateHeapNumber(Isolate* isolate) {
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 
-
-// static
-Callable CodeFactory::AllocateMutableHeapNumber(Isolate* isolate) {
-  AllocateMutableHeapNumberStub stub(isolate);
-  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
-}
-
 #define SIMD128_ALLOC(TYPE, Type, type, lane_count, lane_type)          \
   Callable CodeFactory::Allocate##Type(Isolate* isolate) {              \
     Allocate##Type##Stub stub(isolate);                                 \
@@ -496,12 +509,6 @@ Callable CodeFactory::AllocateMutableHeapNumber(Isolate* isolate) {
   }
 SIMD128_TYPES(SIMD128_ALLOC)
 #undef SIMD128_ALLOC
-
-// static
-Callable CodeFactory::Allocate(Isolate* isolate, PretenureFlag pretenure_flag) {
-  AllocateStub stub(isolate, pretenure_flag);
-  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
-}
 
 // static
 Callable CodeFactory::ArgumentAdaptor(Isolate* isolate) {
@@ -538,6 +545,11 @@ Callable CodeFactory::ConstructFunction(Isolate* isolate) {
                   ConstructTrampolineDescriptor(isolate));
 }
 
+// static
+Callable CodeFactory::HasProperty(Isolate* isolate) {
+  HasPropertyStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
 
 // static
 Callable CodeFactory::InterpreterPushArgsAndCall(Isolate* isolate,
@@ -561,11 +573,6 @@ Callable CodeFactory::InterpreterCEntry(Isolate* isolate, int result_size) {
   // save fpregs too.
   CEntryStub stub(isolate, result_size, kDontSaveFPRegs, kArgvInRegister);
   return Callable(stub.GetCode(), InterpreterCEntryDescriptor(isolate));
-}
-
-Callable CodeFactory::AtomicsLoad(Isolate* isolate) {
-  AtomicsLoadStub stub(isolate);
-  return Callable(stub.GetCode(), AtomicsLoadDescriptor(isolate));
 }
 
 }  // namespace internal

@@ -133,6 +133,15 @@ class RawMachineAssembler {
                    base, index, value);
   }
 
+  // Atomic memory operations.
+  Node* AtomicLoad(MachineType rep, Node* base, Node* index) {
+    return AddNode(machine()->AtomicLoad(rep), base, index);
+  }
+  Node* AtomicStore(MachineRepresentation rep, Node* base, Node* index,
+                    Node* value) {
+    return AddNode(machine()->AtomicStore(rep), base, index, value);
+  }
+
   // Arithmetic Operations.
   Node* WordAnd(Node* a, Node* b) {
     return AddNode(machine()->WordAnd(), a, b);
@@ -390,6 +399,9 @@ class RawMachineAssembler {
   Node* Float32Sub(Node* a, Node* b) {
     return AddNode(machine()->Float32Sub(), a, b);
   }
+  Node* Float32SubPreserveNan(Node* a, Node* b) {
+    return AddNode(machine()->Float32SubPreserveNan(), a, b);
+  }
   Node* Float32Mul(Node* a, Node* b) {
     return AddNode(machine()->Float32Mul(), a, b);
   }
@@ -428,6 +440,9 @@ class RawMachineAssembler {
   Node* Float64Sub(Node* a, Node* b) {
     return AddNode(machine()->Float64Sub(), a, b);
   }
+  Node* Float64SubPreserveNan(Node* a, Node* b) {
+    return AddNode(machine()->Float64SubPreserveNan(), a, b);
+  }
   Node* Float64Mul(Node* a, Node* b) {
     return AddNode(machine()->Float64Mul(), a, b);
   }
@@ -464,6 +479,12 @@ class RawMachineAssembler {
   }
 
   // Conversions.
+  Node* BitcastWordToTagged(Node* a) {
+    return AddNode(machine()->BitcastWordToTagged(), a);
+  }
+  Node* TruncateFloat64ToWord32(Node* a) {
+    return AddNode(machine()->TruncateFloat64ToWord32(), a);
+  }
   Node* ChangeFloat32ToFloat64(Node* a) {
     return AddNode(machine()->ChangeFloat32ToFloat64(), a);
   }
@@ -509,11 +530,11 @@ class RawMachineAssembler {
   Node* TruncateFloat64ToFloat32(Node* a) {
     return AddNode(machine()->TruncateFloat64ToFloat32(), a);
   }
-  Node* TruncateFloat64ToInt32(TruncationMode mode, Node* a) {
-    return AddNode(machine()->TruncateFloat64ToInt32(mode), a);
-  }
   Node* TruncateInt64ToInt32(Node* a) {
     return AddNode(machine()->TruncateInt64ToInt32(), a);
+  }
+  Node* RoundFloat64ToInt32(Node* a) {
+    return AddNode(machine()->RoundFloat64ToInt32(), a);
   }
   Node* RoundInt32ToFloat32(Node* a) {
     return AddNode(machine()->RoundInt32ToFloat32(), a);
@@ -676,6 +697,7 @@ class RawMachineAssembler {
   void Return(Node* v1, Node* v2, Node* v3);
   void Bind(RawMachineLabel* label);
   void Deoptimize(Node* state);
+  void DebugBreak();
 
   // Variables.
   Node* Phi(MachineRepresentation rep, Node* n1, Node* n2) {

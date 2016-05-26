@@ -44,7 +44,9 @@ class Arm64OperandGenerator final : public OperandGenerator {
   // Use the zero register if the node has the immediate value zero, otherwise
   // assign a register.
   InstructionOperand UseRegisterOrImmediateZero(Node* node) {
-    if (IsIntegerConstant(node) && (GetIntegerConstantValue(node) == 0)) {
+    if ((IsIntegerConstant(node) && (GetIntegerConstantValue(node) == 0)) ||
+        (IsFloatConstant(node) &&
+         (bit_cast<int64_t>(GetFloatConstantValue(node)) == V8_INT64_C(0)))) {
       return UseImmediate(node);
     }
     return UseRegister(node);
@@ -70,6 +72,19 @@ class Arm64OperandGenerator final : public OperandGenerator {
     }
     DCHECK(node->opcode() == IrOpcode::kInt64Constant);
     return OpParameter<int64_t>(node);
+  }
+
+  bool IsFloatConstant(Node* node) {
+    return (node->opcode() == IrOpcode::kFloat32Constant) ||
+           (node->opcode() == IrOpcode::kFloat64Constant);
+  }
+
+  double GetFloatConstantValue(Node* node) {
+    if (node->opcode() == IrOpcode::kFloat32Constant) {
+      return OpParameter<float>(node);
+    }
+    DCHECK_EQ(IrOpcode::kFloat64Constant, node->opcode());
+    return OpParameter<double>(node);
   }
 
   bool CanBeImmediate(Node* node, ImmediateMode mode) {
@@ -108,6 +123,13 @@ class Arm64OperandGenerator final : public OperandGenerator {
         return true;
     }
     return false;
+  }
+
+  bool CanBeLoadStoreShiftImmediate(Node* node, MachineRepresentation rep) {
+    // TODO(arm64): Load and Store on 128 bit Q registers is not supported yet.
+    DCHECK_NE(MachineRepresentation::kSimd128, rep);
+    return IsIntegerConstant(node) &&
+           (GetIntegerConstantValue(node) == ElementSizeLog2Of(rep));
   }
 
  private:
@@ -215,6 +237,28 @@ bool TryMatchAnyExtend(Arm64OperandGenerator* g, InstructionSelector* selector,
   return false;
 }
 
+bool TryMatchLoadStoreShift(Arm64OperandGenerator* g,
+                            InstructionSelector* selector,
+                            MachineRepresentation rep, Node* node, Node* index,
+                            InstructionOperand* index_op,
+                            InstructionOperand* shift_immediate_op) {
+  if (!selector->CanCover(node, index)) return false;
+  if (index->InputCount() != 2) return false;
+  Node* left = index->InputAt(0);
+  Node* right = index->InputAt(1);
+  switch (index->opcode()) {
+    case IrOpcode::kWord32Shl:
+    case IrOpcode::kWord64Shl:
+      if (!g->CanBeLoadStoreShiftImmediate(right, rep)) {
+        return false;
+      }
+      *index_op = g->UseRegister(left);
+      *shift_immediate_op = g->UseImmediate(right);
+      return true;
+    default:
+      return false;
+  }
+}
 
 // Shared routine for multiple binary operations.
 template <typename Matcher>
@@ -348,12 +392,16 @@ int32_t LeftShiftForReducedMultiply(Matcher* m) {
 
 void InstructionSelector::VisitLoad(Node* node) {
   LoadRepresentation load_rep = LoadRepresentationOf(node->op());
+  MachineRepresentation rep = load_rep.representation();
   Arm64OperandGenerator g(this);
   Node* base = node->InputAt(0);
   Node* index = node->InputAt(1);
-  ArchOpcode opcode = kArchNop;
+  InstructionCode opcode = kArchNop;
   ImmediateMode immediate_mode = kNoImmediate;
-  switch (load_rep.representation()) {
+  InstructionOperand inputs[3];
+  size_t input_count = 0;
+  InstructionOperand outputs[1];
+  switch (rep) {
     case MachineRepresentation::kFloat32:
       opcode = kArm64LdrS;
       immediate_mode = kLoadStoreImm32;
@@ -385,13 +433,25 @@ void InstructionSelector::VisitLoad(Node* node) {
       UNREACHABLE();
       return;
   }
+
+  outputs[0] = g.DefineAsRegister(node);
+  inputs[0] = g.UseRegister(base);
+
   if (g.CanBeImmediate(index, immediate_mode)) {
-    Emit(opcode | AddressingModeField::encode(kMode_MRI),
-         g.DefineAsRegister(node), g.UseRegister(base), g.UseImmediate(index));
+    input_count = 2;
+    inputs[1] = g.UseImmediate(index);
+    opcode |= AddressingModeField::encode(kMode_MRI);
+  } else if (TryMatchLoadStoreShift(&g, this, rep, node, index, &inputs[1],
+                                    &inputs[2])) {
+    input_count = 3;
+    opcode |= AddressingModeField::encode(kMode_Operand2_R_LSL_I);
   } else {
-    Emit(opcode | AddressingModeField::encode(kMode_MRR),
-         g.DefineAsRegister(node), g.UseRegister(base), g.UseRegister(index));
+    input_count = 2;
+    inputs[1] = g.UseRegister(index);
+    opcode |= AddressingModeField::encode(kMode_MRR);
   }
+
+  Emit(opcode, arraysize(outputs), outputs, input_count, inputs);
 }
 
 
@@ -445,7 +505,9 @@ void InstructionSelector::VisitStore(Node* node) {
     code |= MiscField::encode(static_cast<int>(record_write_mode));
     Emit(code, 0, nullptr, input_count, inputs, temp_count, temps);
   } else {
-    ArchOpcode opcode = kArchNop;
+    InstructionOperand inputs[4];
+    size_t input_count = 0;
+    InstructionCode opcode = kArchNop;
     ImmediateMode immediate_mode = kNoImmediate;
     switch (rep) {
       case MachineRepresentation::kFloat32:
@@ -479,13 +541,25 @@ void InstructionSelector::VisitStore(Node* node) {
         UNREACHABLE();
         return;
     }
+
+    inputs[0] = g.UseRegisterOrImmediateZero(value);
+    inputs[1] = g.UseRegister(base);
+
     if (g.CanBeImmediate(index, immediate_mode)) {
-      Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-           g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
+      input_count = 3;
+      inputs[2] = g.UseImmediate(index);
+      opcode |= AddressingModeField::encode(kMode_MRI);
+    } else if (TryMatchLoadStoreShift(&g, this, rep, node, index, &inputs[2],
+                                      &inputs[3])) {
+      input_count = 4;
+      opcode |= AddressingModeField::encode(kMode_Operand2_R_LSL_I);
     } else {
-      Emit(opcode | AddressingModeField::encode(kMode_MRR), g.NoOutput(),
-           g.UseRegister(base), g.UseRegister(index), g.UseRegister(value));
+      input_count = 3;
+      inputs[2] = g.UseRegister(index);
+      opcode |= AddressingModeField::encode(kMode_MRR);
     }
+
+    Emit(opcode, 0, nullptr, input_count, inputs);
   }
 }
 
@@ -563,7 +637,8 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
       return;
   }
   Emit(opcode, g.NoOutput(), g.UseRegister(buffer), g.UseRegister(offset),
-       g.UseOperand(length, kArithmeticImm), g.UseRegister(value));
+       g.UseOperand(length, kArithmeticImm),
+       g.UseRegisterOrImmediateZero(value));
 }
 
 
@@ -1400,6 +1475,20 @@ void InstructionSelector::VisitChangeUint32ToUint64(Node* node) {
       Emit(kArchNop, g.DefineSameAsFirst(node), g.Use(value));
       return;
     }
+    case IrOpcode::kLoad: {
+      // As for the operations above, a 32-bit load will implicitly clear the
+      // top 32 bits of the destination register.
+      LoadRepresentation load_rep = LoadRepresentationOf(value->op());
+      switch (load_rep.representation()) {
+        case MachineRepresentation::kWord8:
+        case MachineRepresentation::kWord16:
+        case MachineRepresentation::kWord32:
+          Emit(kArchNop, g.DefineSameAsFirst(node), g.Use(value));
+          return;
+        default:
+          break;
+      }
+    }
     default:
       break;
   }
@@ -1411,15 +1500,12 @@ void InstructionSelector::VisitTruncateFloat64ToFloat32(Node* node) {
   VisitRR(this, kArm64Float64ToFloat32, node);
 }
 
+void InstructionSelector::VisitTruncateFloat64ToWord32(Node* node) {
+  VisitRR(this, kArchTruncateDoubleToI, node);
+}
 
-void InstructionSelector::VisitTruncateFloat64ToInt32(Node* node) {
-  switch (TruncationModeOf(node->op())) {
-    case TruncationMode::kJavaScript:
-      return VisitRR(this, kArchTruncateDoubleToI, node);
-    case TruncationMode::kRoundToZero:
-      return VisitRR(this, kArm64Float64ToInt32, node);
-  }
-  UNREACHABLE();
+void InstructionSelector::VisitRoundFloat64ToInt32(Node* node) {
+  VisitRR(this, kArm64Float64ToInt32, node);
 }
 
 
@@ -1495,6 +1581,9 @@ void InstructionSelector::VisitFloat32Sub(Node* node) {
   VisitRRR(this, kArm64Float32Sub, node);
 }
 
+void InstructionSelector::VisitFloat32SubPreserveNan(Node* node) {
+  VisitRRR(this, kArm64Float32Sub, node);
+}
 
 void InstructionSelector::VisitFloat64Sub(Node* node) {
   Arm64OperandGenerator g(this);
@@ -1519,6 +1608,9 @@ void InstructionSelector::VisitFloat64Sub(Node* node) {
   VisitRRR(this, kArm64Float64Sub, node);
 }
 
+void InstructionSelector::VisitFloat64SubPreserveNan(Node* node) {
+  VisitRRR(this, kArm64Float64Sub, node);
+}
 
 void InstructionSelector::VisitFloat32Mul(Node* node) {
   VisitRRR(this, kArm64Float32Mul, node);
@@ -2250,6 +2342,61 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
        g.UseRegister(left), g.UseRegister(right));
 }
 
+void InstructionSelector::VisitAtomicLoad(Node* node) {
+  LoadRepresentation load_rep = LoadRepresentationOf(node->op());
+  Arm64OperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  ArchOpcode opcode = kArchNop;
+  switch (load_rep.representation()) {
+    case MachineRepresentation::kWord8:
+      opcode = load_rep.IsSigned() ? kAtomicLoadInt8 : kAtomicLoadUint8;
+      break;
+    case MachineRepresentation::kWord16:
+      opcode = load_rep.IsSigned() ? kAtomicLoadInt16 : kAtomicLoadUint16;
+      break;
+    case MachineRepresentation::kWord32:
+      opcode = kAtomicLoadWord32;
+      break;
+    default:
+      UNREACHABLE();
+      return;
+  }
+  Emit(opcode | AddressingModeField::encode(kMode_MRR),
+       g.DefineAsRegister(node), g.UseRegister(base), g.UseRegister(index));
+}
+
+void InstructionSelector::VisitAtomicStore(Node* node) {
+  MachineRepresentation rep = AtomicStoreRepresentationOf(node->op());
+  Arm64OperandGenerator g(this);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+  Node* value = node->InputAt(2);
+  ArchOpcode opcode = kArchNop;
+  switch (rep) {
+    case MachineRepresentation::kWord8:
+      opcode = kAtomicStoreWord8;
+      break;
+    case MachineRepresentation::kWord16:
+      opcode = kAtomicStoreWord16;
+      break;
+    case MachineRepresentation::kWord32:
+      opcode = kAtomicStoreWord32;
+      break;
+    default:
+      UNREACHABLE();
+      return;
+  }
+
+  AddressingMode addressing_mode = kMode_MRR;
+  InstructionOperand inputs[3];
+  size_t input_count = 0;
+  inputs[input_count++] = g.UseUniqueRegister(base);
+  inputs[input_count++] = g.UseUniqueRegister(index);
+  inputs[input_count++] = g.UseUniqueRegister(value);
+  InstructionCode code = opcode | AddressingModeField::encode(addressing_mode);
+  Emit(code, 0, nullptr, input_count, inputs);
+}
 
 // static
 MachineOperatorBuilder::Flags
@@ -2272,6 +2419,13 @@ InstructionSelector::SupportedMachineOperatorFlags() {
          MachineOperatorBuilder::kUint32DivIsSafe |
          MachineOperatorBuilder::kWord32ReverseBits |
          MachineOperatorBuilder::kWord64ReverseBits;
+}
+
+// static
+MachineOperatorBuilder::AlignmentRequirements
+InstructionSelector::AlignmentRequirements() {
+  return MachineOperatorBuilder::AlignmentRequirements::
+      FullUnalignedAccessSupport();
 }
 
 }  // namespace compiler

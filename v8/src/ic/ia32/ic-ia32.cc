@@ -523,10 +523,10 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   __ JumpIfSmi(receiver, &slow);
   // Get the map from the receiver.
   __ mov(edi, FieldOperand(receiver, HeapObject::kMapOffset));
-  // Check that the receiver does not require access checks and is not observed.
-  // The generic stub does not perform map checks or handle observed objects.
+  // Check that the receiver does not require access checks.
+  // The generic stub does not perform map checks.
   __ test_b(FieldOperand(edi, Map::kBitFieldOffset),
-            Immediate(1 << Map::kIsAccessCheckNeeded | 1 << Map::kIsObserved));
+            Immediate(1 << Map::kIsAccessCheckNeeded));
   __ j(not_zero, &slow);
   // Check that the key is a smi.
   __ JumpIfNotSmi(key, &maybe_name_key);
@@ -840,8 +840,9 @@ void PatchInlinedSmiCode(Isolate* isolate, Address address,
   // condition code uses at the patched jump.
   uint8_t delta = *reinterpret_cast<uint8_t*>(delta_address);
   if (FLAG_trace_ic) {
-    PrintF("[  patching ic at %p, test=%p, delta=%d\n", address,
-           test_instruction_address, delta);
+    PrintF("[  patching ic at %p, test=%p, delta=%d\n",
+           static_cast<void*>(address),
+           static_cast<void*>(test_instruction_address), delta);
   }
 
   // Patch with a short conditional jump. Enabling means switching from a short

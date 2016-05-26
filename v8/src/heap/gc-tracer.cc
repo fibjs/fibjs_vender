@@ -26,10 +26,8 @@ GCTracer::Scope::Scope(GCTracer* tracer, ScopeId scope)
   start_time_ = tracer_->heap_->MonotonicallyIncreasingTimeInMs();
   // TODO(cbruni): remove once we fully moved to a trace-based system.
   if (FLAG_runtime_call_stats) {
-    RuntimeCallStats* stats =
-        tracer_->heap_->isolate()->counters()->runtime_call_stats();
-    timer_.Initialize(&stats->GC, stats->current_timer());
-    stats->Enter(&timer_);
+    RuntimeCallStats::Enter(tracer_->heap_->isolate(), &timer_,
+                            &RuntimeCallStats::GC);
   }
 }
 
@@ -40,7 +38,7 @@ GCTracer::Scope::~Scope() {
       tracer_->heap_->MonotonicallyIncreasingTimeInMs() - start_time_;
   // TODO(cbruni): remove once we fully moved to a trace-based system.
   if (FLAG_runtime_call_stats) {
-    tracer_->heap_->isolate()->counters()->runtime_call_stats()->Leave(&timer_);
+    RuntimeCallStats::Leave(tracer_->heap_->isolate(), &timer_);
   }
 }
 
@@ -137,6 +135,26 @@ GCTracer::GCTracer(Heap* heap)
   previous_ = previous_incremental_mark_compactor_event_ = current_;
 }
 
+void GCTracer::ResetForTesting() {
+  cumulative_incremental_marking_steps_ = 0.0;
+  cumulative_incremental_marking_bytes_ = 0.0;
+  cumulative_incremental_marking_duration_ = 0.0;
+  cumulative_pure_incremental_marking_duration_ = 0.0;
+  longest_incremental_marking_step_ = 0.0;
+  cumulative_incremental_marking_finalization_steps_ = 0.0;
+  cumulative_incremental_marking_finalization_duration_ = 0.0;
+  longest_incremental_marking_finalization_step_ = 0.0;
+  cumulative_marking_duration_ = 0.0;
+  cumulative_sweeping_duration_ = 0.0;
+  allocation_time_ms_ = 0.0;
+  new_space_allocation_counter_bytes_ = 0.0;
+  old_generation_allocation_counter_bytes_ = 0.0;
+  allocation_duration_since_gc_ = 0.0;
+  new_space_allocation_in_bytes_since_gc_ = 0.0;
+  old_generation_allocation_in_bytes_since_gc_ = 0.0;
+  combined_mark_compact_speed_cache_ = 0.0;
+  start_counter_ = 0;
+}
 
 void GCTracer::Start(GarbageCollector collector, const char* gc_reason,
                      const char* collector_reason) {
@@ -190,10 +208,7 @@ void GCTracer::Start(GarbageCollector collector, const char* gc_reason,
       start_time, used_memory);
   // TODO(cbruni): remove once we fully moved to a trace-based system.
   if (FLAG_runtime_call_stats) {
-    RuntimeCallStats* stats =
-        heap_->isolate()->counters()->runtime_call_stats();
-    timer_.Initialize(&stats->GC, stats->current_timer());
-    stats->Enter(&timer_);
+    RuntimeCallStats::Enter(heap_->isolate(), &timer_, &RuntimeCallStats::GC);
   }
 }
 
@@ -303,7 +318,7 @@ void GCTracer::Stop(GarbageCollector collector) {
   cumulative_incremental_marking_finalization_duration_ = 0.0;
   // TODO(cbruni): remove once we fully moved to a trace-based system.
   if (FLAG_runtime_call_stats) {
-    heap_->isolate()->counters()->runtime_call_stats()->Leave(&timer_);
+    RuntimeCallStats::Leave(heap_->isolate(), &timer_);
   }
 }
 

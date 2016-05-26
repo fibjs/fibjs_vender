@@ -496,7 +496,6 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
   if (is_constructor()) os << "\n - constructor";
   if (is_access_check_needed()) os << "\n - access_check_needed";
   if (!is_extensible()) os << "\n - non-extensible";
-  if (is_observed()) os << "\n - observed";
   if (is_prototype_map()) {
     os << "\n - prototype_map";
     os << "\n - prototype info: " << Brief(prototype_info());
@@ -917,6 +916,7 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - end position = " << end_position();
   os << "\n - debug info = " << Brief(debug_info());
   os << "\n - length = " << length();
+  os << "\n - num_literals = " << num_literals();
   os << "\n - optimized_code_map = " << Brief(optimized_code_map());
   os << "\n - feedback_vector = ";
   feedback_vector()->TypeFeedbackVectorPrint(os);
@@ -992,6 +992,7 @@ void AccessorInfo::AccessorInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - flag: " << flag();
   os << "\n - getter: " << Brief(getter());
   os << "\n - setter: " << Brief(setter());
+  os << "\n - js_getter: " << Brief(js_getter());
   os << "\n - data: " << Brief(data());
   os << "\n";
 }
@@ -1144,8 +1145,7 @@ void Script::ScriptPrint(std::ostream& os) {  // NOLINT
   os << "\n - compilation type: " << compilation_type();
   os << "\n - line ends: " << Brief(line_ends());
   os << "\n - eval from shared: " << Brief(eval_from_shared());
-  os << "\n - eval from instructions offset: "
-     << eval_from_instructions_offset();
+  os << "\n - eval from position: " << eval_from_position();
   os << "\n - shared function infos: " << Brief(shared_function_infos());
   os << "\n";
 }
@@ -1316,8 +1316,6 @@ void TransitionArray::PrintTransitions(std::ostream& os, Object* transitions,
          << ")";
     } else if (key == heap->strict_function_transition_symbol()) {
       os << " (transition to strict function)";
-    } else if (key == heap->observed_symbol()) {
-      os << " (transition to Object.observe)";
     } else {
       PropertyDetails details = GetTargetDetails(key, target);
       os << "(transition to ";

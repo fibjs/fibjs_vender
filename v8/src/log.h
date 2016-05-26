@@ -19,6 +19,10 @@ namespace base {
 class Semaphore;
 }
 
+namespace sampler {
+class Sampler;
+}
+
 namespace internal {
 
 // Logger is used for collecting logging information from V8 during
@@ -57,7 +61,6 @@ namespace internal {
 
 // Forward declarations.
 class CodeEventListener;
-class CompilationInfo;
 class CpuProfiler;
 class Isolate;
 class Log;
@@ -142,7 +145,6 @@ class JitLogger;
 class PerfBasicLogger;
 class LowLevelLogger;
 class PerfJitLogger;
-class Sampler;
 
 class Logger {
  public:
@@ -162,7 +164,7 @@ class Logger {
   void SetCodeEventHandler(uint32_t options,
                            JitCodeEventHandler event_handler);
 
-  Sampler* sampler();
+  sampler::Sampler* sampler();
 
   // Frees resources acquired in SetUp.
   // When a temporary file is used for the log, returns its stream descriptor,
@@ -224,11 +226,10 @@ class Logger {
                        const char* source);
   void CodeCreateEvent(LogEventsAndTags tag, AbstractCode* code, Name* name);
   void CodeCreateEvent(LogEventsAndTags tag, AbstractCode* code,
-                       SharedFunctionInfo* shared, CompilationInfo* info,
-                       Name* name);
+                       SharedFunctionInfo* shared, Name* name);
   void CodeCreateEvent(LogEventsAndTags tag, AbstractCode* code,
-                       SharedFunctionInfo* shared, CompilationInfo* info,
-                       Name* source, int line, int column);
+                       SharedFunctionInfo* shared, Name* source, int line,
+                       int column);
   void CodeCreateEvent(LogEventsAndTags tag, AbstractCode* code,
                        int args_count);
   // Emits a code deoptimization event.
@@ -271,9 +272,8 @@ class Logger {
   void HeapSampleStats(const char* space, const char* kind,
                        intptr_t capacity, intptr_t used);
 
-  void SharedLibraryEvent(const std::string& library_path,
-                          uintptr_t start,
-                          uintptr_t end);
+  void SharedLibraryEvent(const std::string& library_path, uintptr_t start,
+                          uintptr_t end, intptr_t aslr_slide);
 
   void CodeDeoptEvent(Code* code, Address pc, int fp_to_sp_delta);
   void CurrentTimeEvent();
@@ -470,12 +470,10 @@ class CodeEventListener {
   virtual void CodeCreateEvent(Logger::LogEventsAndTags tag, AbstractCode* code,
                                Name* name) = 0;
   virtual void CodeCreateEvent(Logger::LogEventsAndTags tag, AbstractCode* code,
-                               SharedFunctionInfo* shared,
-                               CompilationInfo* info, Name* name) = 0;
+                               SharedFunctionInfo* shared, Name* name) = 0;
   virtual void CodeCreateEvent(Logger::LogEventsAndTags tag, AbstractCode* code,
-                               SharedFunctionInfo* shared,
-                               CompilationInfo* info, Name* source, int line,
-                               int column) = 0;
+                               SharedFunctionInfo* shared, Name* source,
+                               int line, int column) = 0;
   virtual void CodeCreateEvent(Logger::LogEventsAndTags tag, AbstractCode* code,
                                int args_count) = 0;
   virtual void CallbackEvent(Name* name, Address entry_point) = 0;
@@ -502,11 +500,10 @@ class CodeEventLogger : public CodeEventListener {
   void CodeCreateEvent(Logger::LogEventsAndTags tag, AbstractCode* code,
                        int args_count) override;
   void CodeCreateEvent(Logger::LogEventsAndTags tag, AbstractCode* code,
-                       SharedFunctionInfo* shared, CompilationInfo* info,
-                       Name* name) override;
+                       SharedFunctionInfo* shared, Name* name) override;
   void CodeCreateEvent(Logger::LogEventsAndTags tag, AbstractCode* code,
-                       SharedFunctionInfo* shared, CompilationInfo* info,
-                       Name* source, int line, int column) override;
+                       SharedFunctionInfo* shared, Name* source, int line,
+                       int column) override;
   void RegExpCodeCreateEvent(AbstractCode* code, String* source) override;
 
   void CallbackEvent(Name* name, Address entry_point) override {}

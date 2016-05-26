@@ -324,31 +324,22 @@ class InterpreterFrameConstants : public AllStatic {
       StandardFrameConstants::kFixedFrameSizeFromFp + 3 * kPointerSize;
 
   // FP-relative.
+  static const int kLastParamFromFp = StandardFrameConstants::kCallerSPOffset;
   static const int kNewTargetFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 1 * kPointerSize;
   static const int kBytecodeArrayFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 2 * kPointerSize;
   static const int kBytecodeOffsetFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 3 * kPointerSize;
-  static const int kRegisterFilePointerFromFp =
+  static const int kRegisterFileFromFp =
       -StandardFrameConstants::kFixedFrameSizeFromFp - 4 * kPointerSize;
 
-  static const int kExpressionsOffset = kRegisterFilePointerFromFp;
+  static const int kExpressionsOffset = kRegisterFileFromFp;
 
   // Expression index for {StandardFrame::GetExpressionAddress}.
   static const int kBytecodeArrayExpressionIndex = -2;
   static const int kBytecodeOffsetExpressionIndex = -1;
   static const int kRegisterFileExpressionIndex = 0;
-
-  // Register file pointer relative.
-  static const int kLastParamFromRegisterPointer =
-      StandardFrameConstants::kFixedFrameSize + 4 * kPointerSize;
-
-  static const int kBytecodeOffsetFromRegisterPointer = 1 * kPointerSize;
-  static const int kBytecodeArrayFromRegisterPointer = 2 * kPointerSize;
-  static const int kNewTargetFromRegisterPointer = 3 * kPointerSize;
-  static const int kFunctionFromRegisterPointer = 4 * kPointerSize;
-  static const int kContextFromRegisterPointer = 5 * kPointerSize;
 };
 
 inline static int FPOffsetToFrameSlot(int frame_offset) {
@@ -640,11 +631,22 @@ class ExitFrame: public StackFrame {
   friend class StackFrameIteratorBase;
 };
 
+class JavaScriptFrame;
+
 class FrameSummary BASE_EMBEDDED {
  public:
+  // Mode for JavaScriptFrame::Summarize. Exact summary is required to produce
+  // an exact stack trace. It will trigger an assertion failure if that is not
+  // possible, e.g., because of missing deoptimization information. The
+  // approximate mode should produce a summary even without deoptimization
+  // information, but it might miss frames.
+  enum Mode { kExactSummary, kApproximateSummary };
+
   FrameSummary(Object* receiver, JSFunction* function,
                AbstractCode* abstract_code, int code_offset,
-               bool is_constructor);
+               bool is_constructor, Mode mode = kExactSummary);
+
+  static FrameSummary GetFirst(JavaScriptFrame* frame);
 
   Handle<Object> receiver() { return receiver_; }
   Handle<JSFunction> function() { return function_; }
@@ -681,13 +683,6 @@ class StandardFrame : public StackFrame {
     DCHECK(frame->is_standard());
     return static_cast<StandardFrame*>(frame);
   }
-
-  // Build a list with summaries for this frame including all inlined frames.
-  virtual void Summarize(List<FrameSummary>* frames) const;
-
-  // Accessors.
-  virtual JSFunction* function() const;
-  virtual Object* receiver() const;
 
  protected:
   inline explicit StandardFrame(StackFrameIteratorBase* iterator);
@@ -729,13 +724,18 @@ class StandardFrame : public StackFrame {
   friend class SafeStackFrameIterator;
 };
 
-
 class JavaScriptFrame : public StandardFrame {
  public:
   Type type() const override { return JAVA_SCRIPT; }
 
-  JSFunction* function() const override;
-  Object* receiver() const override;
+  // Build a list with summaries for this frame including all inlined frames.
+  virtual void Summarize(
+      List<FrameSummary>* frames,
+      FrameSummary::Mode mode = FrameSummary::kExactSummary) const;
+
+  // Accessors.
+  virtual JSFunction* function() const;
+  virtual Object* receiver() const;
 
   inline void set_receiver(Object* value);
 
@@ -782,8 +782,6 @@ class JavaScriptFrame : public StandardFrame {
 
   // Return a list with JSFunctions of this frame.
   virtual void GetFunctions(List<JSFunction*>* functions) const;
-
-  void Summarize(List<FrameSummary>* frames) const override;
 
   // Lookup exception handler for current {pc}, returns -1 if none found. Also
   // returns data associated with the handler site specific to the frame type:
@@ -861,7 +859,9 @@ class OptimizedFrame : public JavaScriptFrame {
   // is the top-most activation)
   void GetFunctions(List<JSFunction*>* functions) const override;
 
-  void Summarize(List<FrameSummary>* frames) const override;
+  void Summarize(
+      List<FrameSummary>* frames,
+      FrameSummary::Mode mode = FrameSummary::kExactSummary) const override;
 
   // Lookup exception handler for current {pc}, returns -1 if none found.
   int LookupExceptionHandlerInTable(
@@ -897,17 +897,20 @@ class InterpretedFrame : public JavaScriptFrame {
   void PatchBytecodeOffset(int new_offset);
 
   // Returns the frame's current bytecode array.
-  Object* GetBytecodeArray() const;
+  BytecodeArray* GetBytecodeArray() const;
 
   // Updates the frame's BytecodeArray with |bytecode_array|. Used by the
   // debugger to swap execution onto a BytecodeArray patched with breakpoints.
-  void PatchBytecodeArray(Object* bytecode_array);
+  void PatchBytecodeArray(BytecodeArray* bytecode_array);
 
   // Access to the interpreter register file for this frame.
-  Object* GetInterpreterRegister(int register_index) const;
+  Object* ReadInterpreterRegister(int register_index) const;
+  void WriteInterpreterRegister(int register_index, Object* value);
 
   // Build a list with summaries for this frame including all inlined frames.
-  void Summarize(List<FrameSummary>* frames) const override;
+  void Summarize(
+      List<FrameSummary>* frames,
+      FrameSummary::Mode mode = FrameSummary::kExactSummary) const override;
 
  protected:
   inline explicit InterpretedFrame(StackFrameIteratorBase* iterator);
@@ -965,12 +968,13 @@ class WasmFrame : public StandardFrame {
   // Determine the code for the frame.
   Code* unchecked_code() const override;
 
+  Object* wasm_obj();
+  uint32_t function_index();
+
   static WasmFrame* cast(StackFrame* frame) {
     DCHECK(frame->is_wasm());
     return static_cast<WasmFrame*>(frame);
   }
-
-  JSFunction* function() const override;
 
  protected:
   inline explicit WasmFrame(StackFrameIteratorBase* iterator);

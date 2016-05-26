@@ -278,8 +278,6 @@ bool LCodeGen::GenerateJumpTable() {
       if (info()->saves_caller_doubles()) RestoreCallerDoubles();
       __ call(entry, RelocInfo::RUNTIME_ENTRY);
     }
-    info()->LogDeoptCallPosition(masm()->pc_offset(),
-                                 table_entry->deopt_info.inlining_id);
   }
   if (needs_frame.is_linked()) {
     __ bind(&needs_frame);
@@ -729,13 +727,12 @@ void LCodeGen::DeoptimizeIf(Condition cc, LInstruction* instr,
     __ bind(&done);
   }
 
-  Deoptimizer::DeoptInfo deopt_info = MakeDeoptInfo(instr, deopt_reason);
+  Deoptimizer::DeoptInfo deopt_info = MakeDeoptInfo(instr, deopt_reason, id);
 
   DCHECK(info()->IsStub() || frame_is_built_);
   if (cc == no_condition && frame_is_built_) {
     DeoptComment(deopt_info);
     __ call(entry, RelocInfo::RUNTIME_ENTRY);
-    info()->LogDeoptCallPosition(masm()->pc_offset(), deopt_info.inlining_id);
   } else {
     Deoptimizer::JumpTableEntry table_entry(entry, deopt_info, bailout_type,
                                             !frame_is_built_);
@@ -2239,11 +2236,12 @@ void LCodeGen::EmitClassOfTest(Label* is_true,
   DCHECK(!temp.is(temp2));
   __ JumpIfSmi(input, is_false);
 
-  __ CmpObjectType(input, JS_FUNCTION_TYPE, temp);
+  __ CmpObjectType(input, FIRST_FUNCTION_TYPE, temp);
+  STATIC_ASSERT(LAST_FUNCTION_TYPE == LAST_TYPE);
   if (String::Equals(isolate()->factory()->Function_string(), class_name)) {
-    __ j(equal, is_true);
+    __ j(above_equal, is_true);
   } else {
-    __ j(equal, is_false);
+    __ j(above_equal, is_false);
   }
 
   // Now we are in the FIRST-LAST_NONCALLABLE_SPEC_OBJECT_TYPE range.
@@ -2291,16 +2289,6 @@ void LCodeGen::DoCmpMapAndBranch(LCmpMapAndBranch* instr) {
   Register reg = ToRegister(instr->value());
   __ cmp(FieldOperand(reg, HeapObject::kMapOffset), instr->map());
   EmitBranch(instr, equal);
-}
-
-
-void LCodeGen::DoInstanceOf(LInstanceOf* instr) {
-  DCHECK(ToRegister(instr->context()).is(esi));
-  DCHECK(ToRegister(instr->left()).is(InstanceOfDescriptor::LeftRegister()));
-  DCHECK(ToRegister(instr->right()).is(InstanceOfDescriptor::RightRegister()));
-  DCHECK(ToRegister(instr->result()).is(eax));
-  InstanceOfStub stub(isolate());
-  CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
 }
 
 
@@ -2731,9 +2719,9 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
     __ j(not_equal, &done);
     if (info()->IsStub()) {
       // A stub can safely convert the hole to undefined only if the array
-      // protector cell contains (Smi) Isolate::kArrayProtectorValid. Otherwise
-      // it needs to bail out.
-      __ mov(result, isolate()->factory()->array_protector());
+      // protector cell contains (Smi) Isolate::kArrayProtectorValid.
+      // Otherwise it needs to bail out.
+      __ LoadRoot(result, Heap::kArrayProtectorRootIndex);
       __ cmp(FieldOperand(result, PropertyCell::kValueOffset),
              Immediate(Smi::FromInt(Isolate::kArrayProtectorValid)));
       DeoptimizeIf(not_equal, instr, Deoptimizer::kHole);
@@ -4865,7 +4853,7 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
   Register temp = ToRegister(instr->temp());
 
   // Allocate memory for the object.
-  AllocationFlags flags = TAG_OBJECT;
+  AllocationFlags flags = NO_ALLOCATION_FLAGS;
   if (instr->hydrogen()->MustAllocateDoubleAligned()) {
     flags = static_cast<AllocationFlags>(flags | DOUBLE_ALIGNMENT);
   }
@@ -4873,6 +4861,10 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
     DCHECK(!instr->hydrogen()->IsNewSpaceAllocation());
     flags = static_cast<AllocationFlags>(flags | PRETENURE);
   }
+  if (instr->hydrogen()->IsAllocationFoldingDominator()) {
+    flags = static_cast<AllocationFlags>(flags | ALLOCATION_FOLDING_DOMINATOR);
+  }
+  DCHECK(!instr->hydrogen()->IsAllocationFolded());
 
   if (instr->size()->IsConstantOperand()) {
     int32_t size = ToInteger32(LConstantOperand::cast(instr->size()));
@@ -4903,6 +4895,29 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
   }
 }
 
+void LCodeGen::DoFastAllocate(LFastAllocate* instr) {
+  DCHECK(instr->hydrogen()->IsAllocationFolded());
+  DCHECK(!instr->hydrogen()->IsAllocationFoldingDominator());
+  Register result = ToRegister(instr->result());
+  Register temp = ToRegister(instr->temp());
+
+  AllocationFlags flags = ALLOCATION_FOLDED;
+  if (instr->hydrogen()->MustAllocateDoubleAligned()) {
+    flags = static_cast<AllocationFlags>(flags | DOUBLE_ALIGNMENT);
+  }
+  if (instr->hydrogen()->IsOldSpaceAllocation()) {
+    DCHECK(!instr->hydrogen()->IsNewSpaceAllocation());
+    flags = static_cast<AllocationFlags>(flags | PRETENURE);
+  }
+  if (instr->size()->IsConstantOperand()) {
+    int32_t size = ToInteger32(LConstantOperand::cast(instr->size()));
+    CHECK(size <= Page::kMaxRegularHeapObjectSize);
+    __ FastAllocate(size, result, temp, flags);
+  } else {
+    Register size = ToRegister(instr->size());
+    __ FastAllocate(size, result, temp, flags);
+  }
+}
 
 void LCodeGen::DoDeferredAllocate(LAllocate* instr) {
   Register result = ToRegister(instr->result());
@@ -4942,6 +4957,22 @@ void LCodeGen::DoDeferredAllocate(LAllocate* instr) {
   CallRuntimeFromDeferred(
       Runtime::kAllocateInTargetSpace, 2, instr, instr->context());
   __ StoreToSafepointRegisterSlot(result, eax);
+
+  if (instr->hydrogen()->IsAllocationFoldingDominator()) {
+    AllocationFlags allocation_flags = NO_ALLOCATION_FLAGS;
+    if (instr->hydrogen()->IsOldSpaceAllocation()) {
+      DCHECK(!instr->hydrogen()->IsNewSpaceAllocation());
+      allocation_flags = static_cast<AllocationFlags>(flags | PRETENURE);
+    }
+    // If the allocation folding dominator allocate triggered a GC, allocation
+    // happend in the runtime. We have to reset the top pointer to virtually
+    // undo the allocation.
+    ExternalReference allocation_top =
+        AllocationUtils::GetAllocationTopReference(isolate(), allocation_flags);
+    __ sub(eax, Immediate(kHeapObjectTag));
+    __ mov(Operand::StaticVariable(allocation_top), eax);
+    __ add(eax, Immediate(kHeapObjectTag));
+  }
 }
 
 

@@ -272,33 +272,42 @@ void MipsDebugger::PrintAllRegs() {
 
   PrintF("\n");
   // at, v0, a0.
-  PrintF("%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\n",
+  PrintF("%3s: 0x%016" PRIx64 " %14" PRId64 "\t%3s: 0x%016" PRIx64 " %14" PRId64
+         "\t%3s: 0x%016" PRIx64 " %14" PRId64 "\n",
          REG_INFO(1), REG_INFO(2), REG_INFO(4));
   // v1, a1.
-  PrintF("%34s\t%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\n",
+  PrintF("%34s\t%3s: 0x%016" PRIx64 "  %14" PRId64 " \t%3s: 0x%016" PRIx64
+         "  %14" PRId64 " \n",
          "", REG_INFO(3), REG_INFO(5));
   // a2.
-  PrintF("%34s\t%34s\t%3s: 0x%016lx %14ld\n", "", "", REG_INFO(6));
+  PrintF("%34s\t%34s\t%3s: 0x%016" PRIx64 "  %14" PRId64 " \n", "", "",
+         REG_INFO(6));
   // a3.
-  PrintF("%34s\t%34s\t%3s: 0x%016lx %14ld\n", "", "", REG_INFO(7));
+  PrintF("%34s\t%34s\t%3s: 0x%016" PRIx64 "  %14" PRId64 " \n", "", "",
+         REG_INFO(7));
   PrintF("\n");
   // a4-t3, s0-s7
   for (int i = 0; i < 8; i++) {
-    PrintF("%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\n",
-           REG_INFO(8+i), REG_INFO(16+i));
+    PrintF("%3s: 0x%016" PRIx64 "  %14" PRId64 " \t%3s: 0x%016" PRIx64
+           "  %14" PRId64 " \n",
+           REG_INFO(8 + i), REG_INFO(16 + i));
   }
   PrintF("\n");
   // t8, k0, LO.
-  PrintF("%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\n",
+  PrintF("%3s: 0x%016" PRIx64 "  %14" PRId64 " \t%3s: 0x%016" PRIx64
+         "  %14" PRId64 " \t%3s: 0x%016" PRIx64 "  %14" PRId64 " \n",
          REG_INFO(24), REG_INFO(26), REG_INFO(32));
   // t9, k1, HI.
-  PrintF("%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\n",
+  PrintF("%3s: 0x%016" PRIx64 "  %14" PRId64 " \t%3s: 0x%016" PRIx64
+         "  %14" PRId64 " \t%3s: 0x%016" PRIx64 "  %14" PRId64 " \n",
          REG_INFO(25), REG_INFO(27), REG_INFO(33));
   // sp, fp, gp.
-  PrintF("%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\n",
+  PrintF("%3s: 0x%016" PRIx64 "  %14" PRId64 " \t%3s: 0x%016" PRIx64
+         "  %14" PRId64 " \t%3s: 0x%016" PRIx64 "  %14" PRId64 " \n",
          REG_INFO(29), REG_INFO(30), REG_INFO(28));
   // pc.
-  PrintF("%3s: 0x%016lx %14ld\t%3s: 0x%016lx %14ld\n",
+  PrintF("%3s: 0x%016" PRIx64 "  %14" PRId64 " \t%3s: 0x%016" PRIx64
+         "  %14" PRId64 " \n",
          REG_INFO(31), REG_INFO(34));
 
 #undef REG_INFO
@@ -316,38 +325,38 @@ void MipsDebugger::PrintAllRegsIncludingFPU() {
   PrintF("\n\n");
   // f0, f1, f2, ... f31.
   // TODO(plind): consider printing 2 columns for space efficiency.
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(0) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(1) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(2) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(3) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(4) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(5) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(6) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(7) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(8) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(9) );
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(10));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(11));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(12));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(13));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(14));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(15));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(16));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(17));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(18));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(19));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(20));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(21));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(22));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(23));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(24));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(25));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(26));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(27));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(28));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(29));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(30));
-  PrintF("%3s: 0x%016lx %16.4e\n", FPU_REG_INFO(31));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(0));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(1));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(2));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(3));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(4));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(5));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(6));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(7));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(8));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(9));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(10));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(11));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(12));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(13));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(14));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(15));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(16));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(17));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(18));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(19));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(20));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(21));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(22));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(23));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(24));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(25));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(26));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(27));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(28));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(29));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(30));
+  PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n", FPU_REG_INFO(31));
 
 #undef REG_INFO
 #undef FPU_REG_INFO
@@ -386,7 +395,7 @@ void MipsDebugger::Debug() {
       v8::internal::EmbeddedVector<char, 256> buffer;
       dasm.InstructionDecode(buffer,
                              reinterpret_cast<byte*>(sim_->get_pc()));
-      PrintF("  0x%016lx  %s\n", sim_->get_pc(), buffer.start());
+      PrintF("  0x%016" PRIx64 "   %s\n", sim_->get_pc(), buffer.start());
       last_pc = sim_->get_pc();
     }
     char* line = ReadLine("sim> ");
@@ -437,11 +446,12 @@ void MipsDebugger::Debug() {
 
             if (regnum != kInvalidRegister) {
               value = GetRegisterValue(regnum);
-              PrintF("%s: 0x%08lx %ld \n", arg1, value, value);
+              PrintF("%s: 0x%08" PRIx64 "  %" PRId64 "  \n", arg1, value,
+                     value);
             } else if (fpuregnum != kInvalidFPURegister) {
               value = GetFPURegisterValue(fpuregnum);
               dvalue = GetFPURegisterValueDouble(fpuregnum);
-              PrintF("%3s: 0x%016lx %16.4e\n",
+              PrintF("%3s: 0x%016" PRIx64 "  %16.4e\n",
                      FPURegisters::Name(fpuregnum), value, dvalue);
             } else {
               PrintF("%s unrecognized\n", arg1);
@@ -458,7 +468,7 @@ void MipsDebugger::Debug() {
                 value = GetFPURegisterValue(fpuregnum);
                 value &= 0xffffffffUL;
                 fvalue = GetFPURegisterValueFloat(fpuregnum);
-                PrintF("%s: 0x%08lx %11.4e\n", arg1, value, fvalue);
+                PrintF("%s: 0x%08" PRIx64 "  %11.4e\n", arg1, value, fvalue);
               } else {
                 PrintF("%s unrecognized\n", arg1);
               }
@@ -517,7 +527,7 @@ void MipsDebugger::Debug() {
         end = cur + words;
 
         while (cur < end) {
-          PrintF("  0x%012lx:  0x%016lx %14ld",
+          PrintF("  0x%012" PRIxPTR " :  0x%016" PRIx64 "  %14" PRId64 " ",
                  reinterpret_cast<intptr_t>(cur), *cur, *cur);
           HeapObject* obj = reinterpret_cast<HeapObject*>(*cur);
           int64_t value = *cur;
@@ -580,8 +590,8 @@ void MipsDebugger::Debug() {
 
         while (cur < end) {
           dasm.InstructionDecode(buffer, cur);
-          PrintF("  0x%08lx  %s\n",
-              reinterpret_cast<intptr_t>(cur), buffer.start());
+          PrintF("  0x%08" PRIxPTR "   %s\n", reinterpret_cast<intptr_t>(cur),
+                 buffer.start());
           cur += Instruction::kInstrSize;
         }
       } else if (strcmp(cmd, "gdb") == 0) {
@@ -702,8 +712,8 @@ void MipsDebugger::Debug() {
 
         while (cur < end) {
           dasm.InstructionDecode(buffer, cur);
-          PrintF("  0x%08lx  %s\n",
-                 reinterpret_cast<intptr_t>(cur), buffer.start());
+          PrintF("  0x%08" PRIxPTR "   %s\n", reinterpret_cast<intptr_t>(cur),
+                 buffer.start());
           cur += Instruction::kInstrSize;
         }
       } else if ((strcmp(cmd, "h") == 0) || (strcmp(cmd, "help") == 0)) {
@@ -1687,7 +1697,7 @@ void Simulator::DieOrDebug() {
 
 void Simulator::TraceRegWr(int64_t value) {
   if (::v8::internal::FLAG_trace_sim) {
-    SNPrintF(trace_buf_, "%016lx", value);
+    SNPrintF(trace_buf_, "%016" PRIx64 " ", value);
   }
 }
 
@@ -1695,8 +1705,9 @@ void Simulator::TraceRegWr(int64_t value) {
 // TODO(plind): consider making icount_ printing a flag option.
 void Simulator::TraceMemRd(int64_t addr, int64_t value) {
   if (::v8::internal::FLAG_trace_sim) {
-    SNPrintF(trace_buf_, "%016lx <-- [%016lx]    (%ld)",
-             value, addr, icount_);
+    SNPrintF(trace_buf_,
+             "%016" PRIx64 "  <-- [%016" PRIx64 " ]    (%" PRId64 " )", value,
+             addr, icount_);
   }
 }
 
@@ -1705,19 +1716,20 @@ void Simulator::TraceMemWr(int64_t addr, int64_t value, TraceType t) {
   if (::v8::internal::FLAG_trace_sim) {
     switch (t) {
       case BYTE:
-        SNPrintF(trace_buf_, "               %02x --> [%016lx]",
+        SNPrintF(trace_buf_, "               %02x --> [%016" PRIx64 " ]",
                  static_cast<int8_t>(value), addr);
         break;
       case HALF:
-        SNPrintF(trace_buf_, "            %04x --> [%016lx]",
+        SNPrintF(trace_buf_, "            %04x --> [%016" PRIx64 " ]",
                  static_cast<int16_t>(value), addr);
         break;
       case WORD:
-        SNPrintF(trace_buf_, "        %08x --> [%016lx]",
+        SNPrintF(trace_buf_, "        %08x --> [%016" PRIx64 " ]",
                  static_cast<int32_t>(value), addr);
         break;
       case DWORD:
-        SNPrintF(trace_buf_, "%016lx --> [%016lx]    (%ld)",
+        SNPrintF(trace_buf_,
+                 "%016" PRIx64 "  --> [%016" PRIx64 " ]    (%" PRId64 " )",
                  value, addr, icount_);
         break;
     }
@@ -1730,17 +1742,17 @@ void Simulator::TraceMemWr(int64_t addr, int64_t value, TraceType t) {
 int32_t Simulator::ReadW(int64_t addr, Instruction* instr) {
   if (addr >=0 && addr < 0x400) {
     // This has to be a NULL-dereference, drop into debugger.
-    PrintF("Memory read from bad address: 0x%08lx, pc=0x%08lx\n",
+    PrintF("Memory read from bad address: 0x%08" PRIx64 " , pc=0x%08" PRIxPTR
+           " \n",
            addr, reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
   }
-  if ((addr & 0x3) == 0) {
+  if ((addr & 0x3) == 0 || kArchVariant == kMips64r6) {
     int32_t* ptr = reinterpret_cast<int32_t*>(addr);
     TraceMemRd(addr, static_cast<int64_t>(*ptr));
     return *ptr;
   }
-  PrintF("Unaligned read at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
+  PrintF("Unaligned read at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n", addr,
          reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
   return 0;
@@ -1750,17 +1762,17 @@ int32_t Simulator::ReadW(int64_t addr, Instruction* instr) {
 uint32_t Simulator::ReadWU(int64_t addr, Instruction* instr) {
   if (addr >=0 && addr < 0x400) {
     // This has to be a NULL-dereference, drop into debugger.
-    PrintF("Memory read from bad address: 0x%08lx, pc=0x%08lx\n",
+    PrintF("Memory read from bad address: 0x%08" PRIx64 " , pc=0x%08" PRIxPTR
+           " \n",
            addr, reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
   }
-  if ((addr & 0x3) == 0) {
+  if ((addr & 0x3) == 0 || kArchVariant == kMips64r6) {
     uint32_t* ptr = reinterpret_cast<uint32_t*>(addr);
     TraceMemRd(addr, static_cast<int64_t>(*ptr));
     return *ptr;
   }
-  PrintF("Unaligned read at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
+  PrintF("Unaligned read at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n", addr,
          reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
   return 0;
@@ -1770,18 +1782,18 @@ uint32_t Simulator::ReadWU(int64_t addr, Instruction* instr) {
 void Simulator::WriteW(int64_t addr, int32_t value, Instruction* instr) {
   if (addr >= 0 && addr < 0x400) {
     // This has to be a NULL-dereference, drop into debugger.
-    PrintF("Memory write to bad address: 0x%08lx, pc=0x%08lx\n",
+    PrintF("Memory write to bad address: 0x%08" PRIx64 " , pc=0x%08" PRIxPTR
+           " \n",
            addr, reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
   }
-  if ((addr & 0x3) == 0) {
+  if ((addr & 0x3) == 0 || kArchVariant == kMips64r6) {
     TraceMemWr(addr, value, WORD);
     int* ptr = reinterpret_cast<int*>(addr);
     *ptr = value;
     return;
   }
-  PrintF("Unaligned write at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
+  PrintF("Unaligned write at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n", addr,
          reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
 }
@@ -1790,17 +1802,17 @@ void Simulator::WriteW(int64_t addr, int32_t value, Instruction* instr) {
 int64_t Simulator::Read2W(int64_t addr, Instruction* instr) {
   if (addr >=0 && addr < 0x400) {
     // This has to be a NULL-dereference, drop into debugger.
-    PrintF("Memory read from bad address: 0x%08lx, pc=0x%08lx\n",
+    PrintF("Memory read from bad address: 0x%08" PRIx64 " , pc=0x%08" PRIxPTR
+           " \n",
            addr, reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
   }
-  if ((addr & kPointerAlignmentMask) == 0) {
+  if ((addr & kPointerAlignmentMask) == 0 || kArchVariant == kMips64r6) {
     int64_t* ptr = reinterpret_cast<int64_t*>(addr);
     TraceMemRd(addr, *ptr);
     return *ptr;
   }
-  PrintF("Unaligned read at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
+  PrintF("Unaligned read at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n", addr,
          reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
   return 0;
@@ -1810,102 +1822,100 @@ int64_t Simulator::Read2W(int64_t addr, Instruction* instr) {
 void Simulator::Write2W(int64_t addr, int64_t value, Instruction* instr) {
   if (addr >= 0 && addr < 0x400) {
     // This has to be a NULL-dereference, drop into debugger.
-    PrintF("Memory write to bad address: 0x%08lx, pc=0x%08lx\n",
+    PrintF("Memory write to bad address: 0x%08" PRIx64 " , pc=0x%08" PRIxPTR
+           "\n",
            addr, reinterpret_cast<intptr_t>(instr));
     DieOrDebug();
   }
-  if ((addr & kPointerAlignmentMask) == 0) {
+  if ((addr & kPointerAlignmentMask) == 0 || kArchVariant == kMips64r6) {
     TraceMemWr(addr, value, DWORD);
     int64_t* ptr = reinterpret_cast<int64_t*>(addr);
     *ptr = value;
     return;
   }
-  PrintF("Unaligned write at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
+  PrintF("Unaligned write at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n", addr,
          reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
 }
 
 
 double Simulator::ReadD(int64_t addr, Instruction* instr) {
-  if ((addr & kDoubleAlignmentMask) == 0) {
+  if ((addr & kDoubleAlignmentMask) == 0 || kArchVariant == kMips64r6) {
     double* ptr = reinterpret_cast<double*>(addr);
     return *ptr;
   }
-  PrintF("Unaligned (double) read at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
-         reinterpret_cast<intptr_t>(instr));
+  PrintF("Unaligned (double) read at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR "\n",
+         addr, reinterpret_cast<intptr_t>(instr));
   base::OS::Abort();
   return 0;
 }
 
 
 void Simulator::WriteD(int64_t addr, double value, Instruction* instr) {
-  if ((addr & kDoubleAlignmentMask) == 0) {
+  if ((addr & kDoubleAlignmentMask) == 0 || kArchVariant == kMips64r6) {
     double* ptr = reinterpret_cast<double*>(addr);
     *ptr = value;
     return;
   }
-  PrintF("Unaligned (double) write at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
-         reinterpret_cast<intptr_t>(instr));
+  PrintF("Unaligned (double) write at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR
+         "\n",
+         addr, reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
 }
 
 
 uint16_t Simulator::ReadHU(int64_t addr, Instruction* instr) {
-  if ((addr & 1) == 0) {
+  if ((addr & 1) == 0 || kArchVariant == kMips64r6) {
     uint16_t* ptr = reinterpret_cast<uint16_t*>(addr);
     TraceMemRd(addr, static_cast<int64_t>(*ptr));
     return *ptr;
   }
-  PrintF("Unaligned unsigned halfword read at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
-         reinterpret_cast<intptr_t>(instr));
+  PrintF("Unaligned unsigned halfword read at 0x%08" PRIx64
+         " , pc=0x%08" V8PRIxPTR "\n",
+         addr, reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
   return 0;
 }
 
 
 int16_t Simulator::ReadH(int64_t addr, Instruction* instr) {
-  if ((addr & 1) == 0) {
+  if ((addr & 1) == 0 || kArchVariant == kMips64r6) {
     int16_t* ptr = reinterpret_cast<int16_t*>(addr);
     TraceMemRd(addr, static_cast<int64_t>(*ptr));
     return *ptr;
   }
-  PrintF("Unaligned signed halfword read at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
-         reinterpret_cast<intptr_t>(instr));
+  PrintF("Unaligned signed halfword read at 0x%08" PRIx64
+         " , pc=0x%08" V8PRIxPTR "\n",
+         addr, reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
   return 0;
 }
 
 
 void Simulator::WriteH(int64_t addr, uint16_t value, Instruction* instr) {
-  if ((addr & 1) == 0) {
+  if ((addr & 1) == 0 || kArchVariant == kMips64r6) {
     TraceMemWr(addr, value, HALF);
     uint16_t* ptr = reinterpret_cast<uint16_t*>(addr);
     *ptr = value;
     return;
   }
-  PrintF(
-      "Unaligned unsigned halfword write at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-      addr,
-      reinterpret_cast<intptr_t>(instr));
+  PrintF("Unaligned unsigned halfword write at 0x%08" PRIx64
+         " , pc=0x%08" V8PRIxPTR "\n",
+         addr, reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
 }
 
 
 void Simulator::WriteH(int64_t addr, int16_t value, Instruction* instr) {
-  if ((addr & 1) == 0) {
+  if ((addr & 1) == 0 || kArchVariant == kMips64r6) {
     TraceMemWr(addr, value, HALF);
     int16_t* ptr = reinterpret_cast<int16_t*>(addr);
     *ptr = value;
     return;
   }
-  PrintF("Unaligned halfword write at 0x%08lx, pc=0x%08" V8PRIxPTR "\n",
-         addr,
-         reinterpret_cast<intptr_t>(instr));
+  PrintF("Unaligned halfword write at 0x%08" PRIx64 " , pc=0x%08" V8PRIxPTR
+         "\n",
+         addr, reinterpret_cast<intptr_t>(instr));
   DieOrDebug();
 }
 
@@ -1954,7 +1964,7 @@ uintptr_t Simulator::StackLimit(uintptr_t c_limit) const {
 
 // Unsupported instructions use Format to print an error and stop execution.
 void Simulator::Format(Instruction* instr, const char* format) {
-  PrintF("Simulator found unsupported instruction:\n 0x%08lx: %s\n",
+  PrintF("Simulator found unsupported instruction:\n 0x%08" PRIxPTR " : %s\n",
          reinterpret_cast<intptr_t>(instr), format);
   UNIMPLEMENTED_MIPS();
 }
@@ -2071,15 +2081,17 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           case ExternalReference::BUILTIN_FP_FP_CALL:
           case ExternalReference::BUILTIN_COMPARE_CALL:
             PrintF("Call to host function at %p with args %f, %f",
-                   FUNCTION_ADDR(generic_target), dval0, dval1);
+                   static_cast<void*>(FUNCTION_ADDR(generic_target)), dval0,
+                   dval1);
             break;
           case ExternalReference::BUILTIN_FP_CALL:
             PrintF("Call to host function at %p with arg %f",
-                FUNCTION_ADDR(generic_target), dval0);
+                   static_cast<void*>(FUNCTION_ADDR(generic_target)), dval0);
             break;
           case ExternalReference::BUILTIN_FP_INT_CALL:
             PrintF("Call to host function at %p with args %f, %d",
-                   FUNCTION_ADDR(generic_target), dval0, ival);
+                   static_cast<void*>(FUNCTION_ADDR(generic_target)), dval0,
+                   ival);
             break;
           default:
             UNREACHABLE();
@@ -2137,8 +2149,8 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       }
     } else if (redirection->type() == ExternalReference::DIRECT_API_CALL) {
       if (::v8::internal::FLAG_trace_sim) {
-        PrintF("Call to host function at %p args %08lx\n",
-            reinterpret_cast<void*>(external), arg0);
+        PrintF("Call to host function at %p args %08" PRIx64 " \n",
+               reinterpret_cast<void*>(external), arg0);
       }
       SimulatorRuntimeDirectApiCall target =
           reinterpret_cast<SimulatorRuntimeDirectApiCall>(external);
@@ -2146,8 +2158,9 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
     } else if (
         redirection->type() == ExternalReference::PROFILING_API_CALL) {
       if (::v8::internal::FLAG_trace_sim) {
-        PrintF("Call to host function at %p args %08lx %08lx\n",
-            reinterpret_cast<void*>(external), arg0, arg1);
+        PrintF("Call to host function at %p args %08" PRIx64 "  %08" PRIx64
+               " \n",
+               reinterpret_cast<void*>(external), arg0, arg1);
       }
       SimulatorRuntimeProfilingApiCall target =
           reinterpret_cast<SimulatorRuntimeProfilingApiCall>(external);
@@ -2155,8 +2168,9 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
     } else if (
         redirection->type() == ExternalReference::DIRECT_GETTER_CALL) {
       if (::v8::internal::FLAG_trace_sim) {
-        PrintF("Call to host function at %p args %08lx %08lx\n",
-            reinterpret_cast<void*>(external), arg0, arg1);
+        PrintF("Call to host function at %p args %08" PRIx64 "  %08" PRIx64
+               " \n",
+               reinterpret_cast<void*>(external), arg0, arg1);
       }
       SimulatorRuntimeDirectGetterCall target =
           reinterpret_cast<SimulatorRuntimeDirectGetterCall>(external);
@@ -2164,8 +2178,9 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
     } else if (
         redirection->type() == ExternalReference::PROFILING_GETTER_CALL) {
       if (::v8::internal::FLAG_trace_sim) {
-        PrintF("Call to host function at %p args %08lx %08lx %08lx\n",
-            reinterpret_cast<void*>(external), arg0, arg1, arg2);
+        PrintF("Call to host function at %p args %08" PRIx64 "  %08" PRIx64
+               "  %08" PRIx64 " \n",
+               reinterpret_cast<void*>(external), arg0, arg1, arg2);
       }
       SimulatorRuntimeProfilingGetterCall target =
           reinterpret_cast<SimulatorRuntimeProfilingGetterCall>(external);
@@ -2179,13 +2194,15 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
             "Call to host triple returning runtime function %p "
             "args %016" PRIx64 ", %016" PRIx64 ", %016" PRIx64 ", %016" PRIx64
             ", %016" PRIx64 "\n",
-            FUNCTION_ADDR(target), arg1, arg2, arg3, arg4, arg5);
+            static_cast<void*>(FUNCTION_ADDR(target)), arg1, arg2, arg3, arg4,
+            arg5);
       }
       // arg0 is a hidden argument pointing to the return location, so don't
       // pass it to the target function.
       ObjectTriple result = target(arg1, arg2, arg3, arg4, arg5);
       if (::v8::internal::FLAG_trace_sim) {
-        PrintF("Returned { %p, %p, %p }\n", result.x, result.y, result.z);
+        PrintF("Returned { %p, %p, %p }\n", static_cast<void*>(result.x),
+               static_cast<void*>(result.y), static_cast<void*>(result.z));
       }
       // Return is passed back in address pointed to by hidden first argument.
       ObjectTriple* sim_result = reinterpret_cast<ObjectTriple*>(arg0);
@@ -2199,14 +2216,10 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       if (::v8::internal::FLAG_trace_sim) {
         PrintF(
             "Call to host function at %p "
-            "args %08lx, %08lx, %08lx, %08lx, %08lx, %08lx\n",
-            FUNCTION_ADDR(target),
-            arg0,
-            arg1,
-            arg2,
-            arg3,
-            arg4,
-            arg5);
+            "args %08" PRIx64 " , %08" PRIx64 " , %08" PRIx64 " , %08" PRIx64
+            " , %08" PRIx64 " , %08" PRIx64 " \n",
+            static_cast<void*>(FUNCTION_ADDR(target)), arg0, arg1, arg2, arg3,
+            arg4, arg5);
       }
       // int64_t result = target(arg0, arg1, arg2, arg3, arg4, arg5);
       // set_register(v0, static_cast<int32_t>(result));
@@ -2216,7 +2229,8 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       set_register(v1, (int64_t)(result.y));
     }
      if (::v8::internal::FLAG_trace_sim) {
-      PrintF("Returned %08lx : %08lx\n", get_register(v1), get_register(v0));
+       PrintF("Returned %08" PRIx64 "  : %08" PRIx64 " \n", get_register(v1),
+              get_register(v0));
     }
     set_register(ra, saved_ra);
     set_pc(get_register(ra));
@@ -2245,7 +2259,8 @@ bool Simulator::IsWatchpoint(uint64_t code) {
 void Simulator::PrintWatchpoint(uint64_t code) {
   MipsDebugger dbg(this);
   ++break_count_;
-  PrintF("\n---- break %ld marker: %3d  (instr count: %8ld) ----------"
+  PrintF("\n---- break %" PRId64 "  marker: %3d  (instr count: %8" PRId64
+         " ) ----------"
          "----------------------------------",
          code, break_count_, icount_);
   dbg.PrintAllRegs();  // Print registers and continue running.
@@ -2295,8 +2310,10 @@ void Simulator::DisableStop(uint64_t code) {
 void Simulator::IncreaseStopCounter(uint64_t code) {
   DCHECK(code <= kMaxStopCode);
   if ((watched_stops_[code].count & ~(1 << 31)) == 0x7fffffff) {
-    PrintF("Stop counter for code %ld has overflowed.\n"
-           "Enabling this code and reseting the counter to 0.\n", code);
+    PrintF("Stop counter for code %" PRId64
+           "  has overflowed.\n"
+           "Enabling this code and reseting the counter to 0.\n",
+           code);
     watched_stops_[code].count = 0;
     EnableStop(code);
   } else {
@@ -2319,11 +2336,11 @@ void Simulator::PrintStopInfo(uint64_t code) {
   // Don't print the state of unused breakpoints.
   if (count != 0) {
     if (watched_stops_[code].desc) {
-      PrintF("stop %ld - 0x%lx: \t%s, \tcounter = %i, \t%s\n",
+      PrintF("stop %" PRId64 "  - 0x%" PRIx64 " : \t%s, \tcounter = %i, \t%s\n",
              code, code, state, count, watched_stops_[code].desc);
     } else {
-      PrintF("stop %ld - 0x%lx: \t%s, \tcounter = %i\n",
-             code, code, state, count);
+      PrintF("stop %" PRId64 "  - 0x%" PRIx64 " : \t%s, \tcounter = %i\n", code,
+             code, state, count);
     }
   }
 }
@@ -3811,6 +3828,9 @@ void Simulator::DecodeTypeRegisterSPECIAL() {
     case TNE:
       do_interrupt = rs() != rt();
       break;
+    case SYNC:
+      // TODO(palfia): Ignore sync instruction for now.
+      break;
     // Conditional moves.
     case MOVN:
       if (rt()) {
@@ -4153,6 +4173,8 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
   int64_t addr = 0x0;
   // Alignment for 32-bit integers used in LWL, LWR, etc.
   const int kInt32AlignmentMask = sizeof(uint32_t) - 1;
+  // Alignment for 64-bit integers used in LDL, LDR, etc.
+  const int kInt64AlignmentMask = sizeof(uint64_t) - 1;
 
   // Branch instructions common part.
   auto BranchAndLinkHelper = [this, instr, &next_pc,
@@ -4400,6 +4422,7 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
       break;
     // ------------- Arithmetic instructions.
     case ADDIU: {
+      DCHECK(is_int32(rs));
       int32_t alu32_out = static_cast<int32_t>(rs + se_imm16);
       // Sign-extend result of 32bit operation into 64bit register.
       SetResult(rt_reg, static_cast<int64_t>(alu32_out));
@@ -4454,10 +4477,10 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
       uint8_t byte_shift = kInt32AlignmentMask - al_offset;
       uint32_t mask = (1 << byte_shift * 8) - 1;
       addr = rs + se_imm16 - al_offset;
-      alu_out = ReadW(addr, instr);
-      alu_out <<= byte_shift * 8;
-      alu_out |= rt & mask;
-      set_register(rt_reg, alu_out);
+      int32_t val = ReadW(addr, instr);
+      val <<= byte_shift * 8;
+      val |= rt & mask;
+      set_register(rt_reg, static_cast<int64_t>(val));
       break;
     }
     case LW:
@@ -4483,6 +4506,30 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
       addr = rs + se_imm16 - al_offset;
       alu_out = ReadW(addr, instr);
       alu_out = static_cast<uint32_t> (alu_out) >> al_offset * 8;
+      alu_out |= rt & mask;
+      set_register(rt_reg, alu_out);
+      break;
+    }
+    case LDL: {
+      // al_offset is offset of the effective address within an aligned word.
+      uint8_t al_offset = (rs + se_imm16) & kInt64AlignmentMask;
+      uint8_t byte_shift = kInt64AlignmentMask - al_offset;
+      uint64_t mask = (1UL << byte_shift * 8) - 1;
+      addr = rs + se_imm16 - al_offset;
+      alu_out = Read2W(addr, instr);
+      alu_out <<= byte_shift * 8;
+      alu_out |= rt & mask;
+      set_register(rt_reg, alu_out);
+      break;
+    }
+    case LDR: {
+      // al_offset is offset of the effective address within an aligned word.
+      uint8_t al_offset = (rs + se_imm16) & kInt64AlignmentMask;
+      uint8_t byte_shift = kInt64AlignmentMask - al_offset;
+      uint64_t mask = al_offset ? (~0UL << (byte_shift + 1) * 8) : 0UL;
+      addr = rs + se_imm16 - al_offset;
+      alu_out = Read2W(addr, instr);
+      alu_out = alu_out >> al_offset * 8;
       alu_out |= rt & mask;
       set_register(rt_reg, alu_out);
       break;
@@ -4516,6 +4563,25 @@ void Simulator::DecodeTypeImmediate(Instruction* instr) {
       uint64_t mem_value = ReadW(addr, instr);
       mem_value = (rt << al_offset * 8) | (mem_value & mask);
       WriteW(addr, static_cast<int32_t>(mem_value), instr);
+      break;
+    }
+    case SDL: {
+      uint8_t al_offset = (rs + se_imm16) & kInt64AlignmentMask;
+      uint8_t byte_shift = kInt64AlignmentMask - al_offset;
+      uint64_t mask = byte_shift ? (~0UL << (al_offset + 1) * 8) : 0;
+      addr = rs + se_imm16 - al_offset;
+      uint64_t mem_value = Read2W(addr, instr) & mask;
+      mem_value |= rt >> byte_shift * 8;
+      Write2W(addr, mem_value, instr);
+      break;
+    }
+    case SDR: {
+      uint8_t al_offset = (rs + se_imm16) & kInt64AlignmentMask;
+      uint64_t mask = (1UL << al_offset * 8) - 1;
+      addr = rs + se_imm16 - al_offset;
+      uint64_t mem_value = Read2W(addr, instr);
+      mem_value = (rt << al_offset * 8) | (mem_value & mask);
+      Write2W(addr, mem_value, instr);
       break;
     }
     case LWC1:
@@ -4676,8 +4742,9 @@ void Simulator::InstructionDecode(Instruction* instr) {
   }
 
   if (::v8::internal::FLAG_trace_sim) {
-    PrintF("  0x%08lx  %-44s   %s\n", reinterpret_cast<intptr_t>(instr),
-        buffer.start(), trace_buf_.start());
+    PrintF("  0x%08" PRIxPTR "   %-44s   %s\n",
+           reinterpret_cast<intptr_t>(instr), buffer.start(),
+           trace_buf_.start());
   }
 
   if (!pc_modified_) {

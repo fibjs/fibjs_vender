@@ -45,6 +45,7 @@
     <ClInclude Include="src\ast\ast-expression-visitor.h" />
     <ClInclude Include="src\ast\ast-literal-reindexer.h" />
     <ClInclude Include="src\ast\ast-numbering.h" />
+    <ClInclude Include="src\ast\ast-type-bounds.h" />
     <ClInclude Include="src\ast\ast-value-factory.h" />
     <ClInclude Include="src\ast\ast.h" />
     <ClInclude Include="src\ast\modules.h" />
@@ -52,11 +53,11 @@
     <ClInclude Include="src\ast\scopeinfo.h" />
     <ClInclude Include="src\ast\scopes.h" />
     <ClInclude Include="src\ast\variables.h" />
-    <ClInclude Include="src\atomic-utils.h" />
     <ClInclude Include="src\background-parsing-task.h" />
     <ClInclude Include="src\bailout-reason.h" />
     <ClInclude Include="src\base\accounting-allocator.h" />
     <ClInclude Include="src\base\adapters.h" />
+    <ClInclude Include="src\base\atomic-utils.h" />
     <ClInclude Include="src\base\atomicops.h" />
     <ClInclude Include="src\base\atomicops_internals_arm64_gcc.h" />
     <ClInclude Include="src\base\atomicops_internals_arm_gcc.h" />
@@ -127,7 +128,6 @@
     <ClInclude Include="src\compiler\branch-elimination.h" />
     <ClInclude Include="src\compiler\bytecode-branch-analysis.h" />
     <ClInclude Include="src\compiler\bytecode-graph-builder.h" />
-    <ClInclude Include="src\compiler\change-lowering.h" />
     <ClInclude Include="src\compiler\coalesced-live-ranges.h" />
     <ClInclude Include="src\compiler\code-assembler.h" />
     <ClInclude Include="src\compiler\code-generator-impl.h" />
@@ -183,6 +183,7 @@
     <ClInclude Include="src\compiler\loop-peeling.h" />
     <ClInclude Include="src\compiler\machine-operator-reducer.h" />
     <ClInclude Include="src\compiler\machine-operator.h" />
+    <ClInclude Include="src\compiler\memory-optimizer.h" />
     <ClInclude Include="src\compiler\move-optimizer.h" />
     <ClInclude Include="src\compiler\node-aux-data.h" />
     <ClInclude Include="src\compiler\node-cache.h" />
@@ -225,6 +226,7 @@
     <ClInclude Include="src\contexts.h" />
     <ClInclude Include="src\conversions-inl.h" />
     <ClInclude Include="src\conversions.h" />
+    <ClInclude Include="src\counters-inl.h" />
     <ClInclude Include="src\counters.h" />
     <ClInclude Include="src\crankshaft\compilation-phase.h" />
     <ClInclude Include="src\crankshaft\hydrogen-alias-analysis.h" />
@@ -296,6 +298,7 @@
     <ClInclude Include="src\extensions\externalize-string-extension.h" />
     <ClInclude Include="src\extensions\free-buffer-extension.h" />
     <ClInclude Include="src\extensions\gc-extension.h" />
+    <ClInclude Include="src\extensions\ignition-statistics-extension.h" />
     <ClInclude Include="src\extensions\statistics-extension.h" />
     <ClInclude Include="src\extensions\trigger-failure-extension.h" />
     <ClInclude Include="src\external-reference-table.h" />
@@ -362,7 +365,10 @@
     <ClInclude Include="src\interface-descriptors.h" />
     <ClInclude Include="src\interpreter\bytecode-array-builder.h" />
     <ClInclude Include="src\interpreter\bytecode-array-iterator.h" />
+    <ClInclude Include="src\interpreter\bytecode-array-writer.h" />
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
+    <ClInclude Include="src\interpreter\bytecode-peephole-optimizer.h" />
+    <ClInclude Include="src\interpreter\bytecode-pipeline.h" />
     <ClInclude Include="src\interpreter\bytecode-register-allocator.h" />
     <ClInclude Include="src\interpreter\bytecode-traits.h" />
     <ClInclude Include="src\interpreter\bytecodes.h" />
@@ -383,6 +389,9 @@
     <ClInclude Include="src\libplatform\default-platform.h" />
     <ClInclude Include="src\libplatform\task-queue.h" />
     <ClInclude Include="src\libplatform\worker-thread.h" />
+    <ClInclude Include="src\libsampler\hashmap.h" />
+    <ClInclude Include="src\libsampler\utils.h" />
+    <ClInclude Include="src\libsampler\v8-sampler.h" />
     <ClInclude Include="src\list-inl.h" />
     <ClInclude Include="src\list.h" />
     <ClInclude Include="src\locked-queue-inl.h" />
@@ -433,9 +442,9 @@
     <ClInclude Include="src\profiler\heap-snapshot-generator.h" />
     <ClInclude Include="src\profiler\profile-generator-inl.h" />
     <ClInclude Include="src\profiler\profile-generator.h" />
-    <ClInclude Include="src\profiler\sampler.h" />
     <ClInclude Include="src\profiler\sampling-heap-profiler.h" />
     <ClInclude Include="src\profiler\strings-storage.h" />
+    <ClInclude Include="src\profiler\tick-sample.h" />
     <ClInclude Include="src\profiler\unbound-queue-inl.h" />
     <ClInclude Include="src\profiler\unbound-queue.h" />
     <ClInclude Include="src\property-descriptor.h" />
@@ -502,12 +511,12 @@
     <ClInclude Include="src\type-info.h" />
     <ClInclude Include="src\types.h" />
     <ClInclude Include="src\typing-asm.h" />
-    <ClInclude Include="src\typing-reset.h" />
     <ClInclude Include="src\unicode-cache-inl.h" />
     <ClInclude Include="src\unicode-cache.h" />
     <ClInclude Include="src\unicode-decoder.h" />
     <ClInclude Include="src\unicode-inl.h" />
     <ClInclude Include="src\unicode.h" />
+    <ClInclude Include="src\uri.h" />
     <ClInclude Include="src\utils-inl.h" />
     <ClInclude Include="src\utils.h" />
     <ClInclude Include="src\v8.h" />
@@ -521,9 +530,12 @@
     <ClInclude Include="src\wasm\ast-decoder.h" />
     <ClInclude Include="src\wasm\decoder.h" />
     <ClInclude Include="src\wasm\encoder.h" />
+    <ClInclude Include="src\wasm\leb-helper.h" />
     <ClInclude Include="src\wasm\module-decoder.h" />
     <ClInclude Include="src\wasm\switch-logic.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
+    <ClInclude Include="src\wasm\wasm-function-name-table.h" />
+    <ClInclude Include="src\wasm\wasm-interpreter.h" />
     <ClInclude Include="src\wasm\wasm-js.h" />
     <ClInclude Include="src\wasm\wasm-macro-gen.h" />
     <ClInclude Include="src\wasm\wasm-module.h" />
@@ -624,7 +636,6 @@
     <ClCompile Include="src\compiler\bytecode-branch-analysis.cc" />
     <ClCompile Include="src\compiler\bytecode-graph-builder.cc" />
     <ClCompile Include="src\compiler\c-linkage.cc" />
-    <ClCompile Include="src\compiler\change-lowering.cc" />
     <ClCompile Include="src\compiler\coalesced-live-ranges.cc" />
     <ClCompile Include="src\compiler\code-assembler.cc" />
     <ClCompile Include="src\compiler\code-generator.cc" />
@@ -678,6 +689,7 @@
     <ClCompile Include="src\compiler\loop-peeling.cc" />
     <ClCompile Include="src\compiler\machine-operator-reducer.cc" />
     <ClCompile Include="src\compiler\machine-operator.cc" />
+    <ClCompile Include="src\compiler\memory-optimizer.cc" />
     <ClCompile Include="src\compiler\move-optimizer.cc" />
     <ClCompile Include="src\compiler\node-cache.cc" />
     <ClCompile Include="src\compiler\node-marker.cc" />
@@ -793,6 +805,7 @@
     <ClCompile Include="src\extensions\externalize-string-extension.cc" />
     <ClCompile Include="src\extensions\free-buffer-extension.cc" />
     <ClCompile Include="src\extensions\gc-extension.cc" />
+    <ClCompile Include="src\extensions\ignition-statistics-extension.cc" />
     <ClCompile Include="src\extensions\statistics-extension.cc" />
     <ClCompile Include="src\extensions\trigger-failure-extension.cc" />
     <ClCompile Include="src\external-reference-table.cc" />
@@ -880,7 +893,10 @@
     <ClCompile Include="src\interface-descriptors.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-iterator.cc" />
+    <ClCompile Include="src\interpreter\bytecode-array-writer.cc" />
     <ClCompile Include="src\interpreter\bytecode-generator.cc" />
+    <ClCompile Include="src\interpreter\bytecode-peephole-optimizer.cc" />
+    <ClCompile Include="src\interpreter\bytecode-pipeline.cc" />
     <ClCompile Include="src\interpreter\bytecode-register-allocator.cc" />
     <ClCompile Include="src\interpreter\bytecodes.cc" />
     <ClCompile Include="src\interpreter\constant-array-builder.cc" />
@@ -891,11 +907,14 @@
     <ClCompile Include="src\interpreter\interpreter.cc" />
     <ClCompile Include="src\interpreter\source-position-table.cc" />
     <ClCompile Include="src\isolate.cc" />
+    <ClCompile Include="src\json-parser.cc" />
+    <ClCompile Include="src\json-stringifier.cc" />
     <ClCompile Include="src\keys.cc" />
     <ClCompile Include="src\layout-descriptor.cc" />
     <ClCompile Include="src\libplatform\default-platform.cc" />
     <ClCompile Include="src\libplatform\task-queue.cc" />
     <ClCompile Include="src\libplatform\worker-thread.cc" />
+    <ClCompile Include="src\libsampler\v8-sampler.cc" />
     <ClCompile Include="src\log-utils.cc" />
     <ClCompile Include="src\log.cc" />
     <ClCompile Include="src\lookup.cc" />
@@ -935,9 +954,9 @@
     <ClCompile Include="src\profiler\heap-profiler.cc" />
     <ClCompile Include="src\profiler\heap-snapshot-generator.cc" />
     <ClCompile Include="src\profiler\profile-generator.cc" />
-    <ClCompile Include="src\profiler\sampler.cc" />
     <ClCompile Include="src\profiler\sampling-heap-profiler.cc" />
     <ClCompile Include="src\profiler\strings-storage.cc" />
+    <ClCompile Include="src\profiler\tick-sample.cc" />
     <ClCompile Include="src\property-descriptor.cc" />
     <ClCompile Include="src\property.cc" />
     <ClCompile Include="src\regexp\ia32\regexp-macro-assembler-ia32.cc" />
@@ -975,7 +994,6 @@
     <ClCompile Include="src\runtime\runtime-maths.cc" />
     <ClCompile Include="src\runtime\runtime-numbers.cc" />
     <ClCompile Include="src\runtime\runtime-object.cc" />
-    <ClCompile Include="src\runtime\runtime-observe.cc" />
     <ClCompile Include="src\runtime\runtime-operators.cc" />
     <ClCompile Include="src\runtime\runtime-proxy.cc" />
     <ClCompile Include="src\runtime\runtime-regexp.cc" />
@@ -1022,9 +1040,9 @@
     <ClCompile Include="src\type-info.cc" />
     <ClCompile Include="src\types.cc" />
     <ClCompile Include="src\typing-asm.cc" />
-    <ClCompile Include="src\typing-reset.cc" />
     <ClCompile Include="src\unicode-decoder.cc" />
     <ClCompile Include="src\unicode.cc" />
+    <ClCompile Include="src\uri.cc" />
     <ClCompile Include="src\utils.cc" />
     <ClCompile Include="src\v8.cc" />
     <ClCompile Include="src\v8threads.cc" />
@@ -1035,6 +1053,8 @@
     <ClCompile Include="src\wasm\module-decoder.cc" />
     <ClCompile Include="src\wasm\switch-logic.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />
+    <ClCompile Include="src\wasm\wasm-function-name-table.cc" />
+    <ClCompile Include="src\wasm\wasm-interpreter.cc" />
     <ClCompile Include="src\wasm\wasm-js.cc" />
     <ClCompile Include="src\wasm\wasm-module.cc" />
     <ClCompile Include="src\wasm\wasm-opcodes.cc" />

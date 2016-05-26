@@ -40,6 +40,12 @@ namespace internal {
   R(x8)  R(x9)  R(x10) R(x11) R(x12) R(x13) R(x14) R(x15) \
   R(x18) R(x19) R(x20) R(x21) R(x22) R(x23) R(x24) R(x27)
 
+#define FLOAT_REGISTERS(V)                               \
+  V(s0)  V(s1)  V(s2)  V(s3)  V(s4)  V(s5)  V(s6)  V(s7)  \
+  V(s8)  V(s9)  V(s10) V(s11) V(s12) V(s13) V(s14) V(s15) \
+  V(s16) V(s17) V(s18) V(s19) V(s20) V(s21) V(s22) V(s23) \
+  V(s24) V(s25) V(s26) V(s27) V(s28) V(s29) V(s30) V(s31)
+
 #define DOUBLE_REGISTERS(R)                               \
   R(d0)  R(d1)  R(d2)  R(d3)  R(d4)  R(d5)  R(d6)  R(d7)  \
   R(d8)  R(d9)  R(d10) R(d11) R(d12) R(d13) R(d14) R(d15) \
@@ -366,7 +372,7 @@ bool AreSameSizeAndType(const CPURegister& reg1,
                         const CPURegister& reg7 = NoCPUReg,
                         const CPURegister& reg8 = NoCPUReg);
 
-
+typedef FPRegister FloatRegister;
 typedef FPRegister DoubleRegister;
 
 // TODO(arm64) Define SIMD registers.
@@ -929,7 +935,7 @@ class Assembler : public AssemblerBase {
 
   // Record a deoptimization reason that can be used by a log or cpu profiler.
   // Use --trace-deopt to enable.
-  void RecordDeoptReason(const int reason, int raw_position);
+  void RecordDeoptReason(const int reason, int raw_position, int id);
 
   int buffer_space() const;
 
@@ -1395,6 +1401,42 @@ class Assembler : public AssemblerBase {
   // Load literal to register.
   void ldr(const CPURegister& rt, const Immediate& imm);
 
+  // Load-acquire word.
+  void ldar(const Register& rt, const Register& rn);
+
+  // Load-acquire exclusive word.
+  void ldaxr(const Register& rt, const Register& rn);
+
+  // Store-release word.
+  void stlr(const Register& rt, const Register& rn);
+
+  // Store-release exclusive word.
+  void stlxr(const Register& rs, const Register& rt, const Register& rn);
+
+  // Load-acquire byte.
+  void ldarb(const Register& rt, const Register& rn);
+
+  // Load-acquire exclusive byte.
+  void ldaxrb(const Register& rt, const Register& rn);
+
+  // Store-release byte.
+  void stlrb(const Register& rt, const Register& rn);
+
+  // Store-release exclusive byte.
+  void stlxrb(const Register& rs, const Register& rt, const Register& rn);
+
+  // Load-acquire half-word.
+  void ldarh(const Register& rt, const Register& rn);
+
+  // Load-acquire exclusive half-word.
+  void ldaxrh(const Register& rt, const Register& rn);
+
+  // Store-release half-word.
+  void stlrh(const Register& rt, const Register& rn);
+
+  // Store-release exclusive half-word.
+  void stlxrh(const Register& rs, const Register& rt, const Register& rn);
+
   // Move instructions. The default shift of -1 indicates that the move
   // instruction will calculate an appropriate 16-bit immediate and left shift
   // that is equal to the 64-bit immediate argument. If an explicit left shift
@@ -1687,6 +1729,11 @@ class Assembler : public AssemblerBase {
   static Instr Rt2(CPURegister rt2) {
     DCHECK(rt2.code() != kSPRegInternalCode);
     return rt2.code() << Rt2_offset;
+  }
+
+  static Instr Rs(CPURegister rs) {
+    DCHECK(rs.code() != kSPRegInternalCode);
+    return rs.code() << Rs_offset;
   }
 
   // These encoding functions allow the stack pointer to be encoded, and

@@ -629,11 +629,10 @@ void KeyedStoreIC::GenerateMegamorphic(MacroAssembler* masm,
   __ JumpIfSmi(receiver, &slow);
   // Get the map of the object.
   __ LoadP(receiver_map, FieldMemOperand(receiver, HeapObject::kMapOffset));
-  // Check that the receiver does not require access checks and is not observed.
-  // The generic stub does not perform map checks or handle observed objects.
+  // Check that the receiver does not require access checks.
+  // The generic stub does not perform map checks.
   __ LoadlB(ip, FieldMemOperand(receiver_map, Map::kBitFieldOffset));
-  __ AndP(r0, ip,
-          Operand(1 << Map::kIsAccessCheckNeeded | 1 << Map::kIsObserved));
+  __ AndP(r0, ip, Operand(1 << Map::kIsAccessCheckNeeded));
   __ bne(&slow, Label::kNear);
   // Check if the object is a JS array or not.
   __ LoadlB(r6, FieldMemOperand(receiver_map, Map::kInstanceTypeOffset));
@@ -833,8 +832,9 @@ void PatchInlinedSmiCode(Isolate* isolate, Address address,
   }
 
   if (FLAG_trace_ic) {
-    PrintF("[  patching ic at %p, cmp=%p, delta=%d\n", address,
-           cmp_instruction_address, delta);
+    PrintF("[  patching ic at %p, cmp=%p, delta=%d\n",
+           static_cast<void*>(address),
+           static_cast<void*>(cmp_instruction_address), delta);
   }
 
   // Expected sequence to enable by changing the following

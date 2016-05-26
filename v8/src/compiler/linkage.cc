@@ -136,14 +136,15 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
   // not to call into arbitrary JavaScript, not to throw, and not to deoptimize
   // are blacklisted here and can be called without a FrameState.
   switch (function) {
+    case Runtime::kAbort:
     case Runtime::kAllocateInTargetSpace:
     case Runtime::kCreateIterResultObject:
     case Runtime::kDefineDataPropertyInLiteral:
     case Runtime::kDefineGetterPropertyUnchecked:  // TODO(jarin): Is it safe?
     case Runtime::kDefineSetterPropertyUnchecked:  // TODO(jarin): Is it safe?
-    case Runtime::kFinalizeClassDefinition:        // TODO(conradw): Is it safe?
     case Runtime::kForInDone:
     case Runtime::kForInStep:
+    case Runtime::kGeneratorGetContinuation:
     case Runtime::kGetSuperConstructor:
     case Runtime::kIsFunction:
     case Runtime::kNewClosure:
@@ -159,6 +160,7 @@ int Linkage::FrameStateInputCount(Runtime::FunctionId function) {
     case Runtime::kStringLessThanOrEqual:
     case Runtime::kStringGreaterThan:
     case Runtime::kStringGreaterThanOrEqual:
+    case Runtime::kToFastProperties:  // TODO(conradw): Is it safe?
     case Runtime::kTraceEnter:
     case Runtime::kTraceExit:
       return 0;
@@ -404,6 +406,35 @@ CallDescriptor* Linkage::GetStubCallDescriptor(
       descriptor.DebugName(isolate));
 }
 
+// static
+CallDescriptor* Linkage::GetAllocateCallDescriptor(Zone* zone) {
+  LocationSignature::Builder locations(zone, 1, 1);
+  MachineSignature::Builder types(zone, 1, 1);
+
+  locations.AddParam(regloc(kAllocateSizeRegister));
+  types.AddParam(MachineType::Int32());
+
+  locations.AddReturn(regloc(kReturnRegister0));
+  types.AddReturn(MachineType::AnyTagged());
+
+  // The target for allocate calls is a code object.
+  MachineType target_type = MachineType::AnyTagged();
+  LinkageLocation target_loc = LinkageLocation::ForAnyRegister();
+  return new (zone) CallDescriptor(     // --
+      CallDescriptor::kCallCodeObject,  // kind
+      target_type,                      // target MachineType
+      target_loc,                       // target location
+      types.Build(),                    // machine_sig
+      locations.Build(),                // location_sig
+      0,                                // stack_parameter_count
+      Operator::kNoThrow,               // properties
+      kNoCalleeSaved,                   // callee-saved registers
+      kNoCalleeSaved,                   // callee-saved fp
+      CallDescriptor::kCanUseRoots,     // flags
+      "Allocate");
+}
+
+// static
 CallDescriptor* Linkage::GetBytecodeDispatchCallDescriptor(
     Isolate* isolate, Zone* zone, const CallInterfaceDescriptor& descriptor,
     int stack_parameter_count) {

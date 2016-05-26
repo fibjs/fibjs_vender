@@ -102,11 +102,6 @@ Address RelocInfo::target_address() {
   return Assembler::target_address_at(pc_, host_);
 }
 
-Address RelocInfo::wasm_memory_reference() {
-  DCHECK(IsWasmMemoryReference(rmode_));
-  return Assembler::target_address_at(pc_, host_);
-}
-
 Address RelocInfo::target_address_address() {
   DCHECK(IsCodeTarget(rmode_) ||
          IsRuntimeEntry(rmode_) ||
@@ -156,19 +151,6 @@ void RelocInfo::set_target_address(Address target,
     host()->GetHeap()->incremental_marking()->RecordWriteIntoCode(
         host(), this, HeapObject::cast(target_code));
   }
-}
-
-void RelocInfo::update_wasm_memory_reference(
-    Address old_base, Address new_base, size_t old_size, size_t new_size,
-    ICacheFlushMode icache_flush_mode) {
-  DCHECK(IsWasmMemoryReference(rmode_));
-  DCHECK(old_base <= wasm_memory_reference() &&
-         wasm_memory_reference() < old_base + old_size);
-  Address updated_reference = new_base + (wasm_memory_reference() - old_base);
-  DCHECK(new_base <= updated_reference &&
-         updated_reference < new_base + new_size);
-  Assembler::set_target_address_at(isolate_, pc_, host_, updated_reference,
-                                   icache_flush_mode);
 }
 
 Address Assembler::target_address_from_return_address(Address pc) {
@@ -362,7 +344,7 @@ void RelocInfo::WipeOut() {
   }
 }
 
-
+template <typename ObjectVisitor>
 void RelocInfo::Visit(Isolate* isolate, ObjectVisitor* visitor) {
   RelocInfo::Mode mode = rmode();
   if (mode == RelocInfo::EMBEDDED_OBJECT) {
@@ -463,6 +445,8 @@ void Assembler::EmitHelper(Instr x, CompactBranchType is_compact_branch) {
   CheckTrampolinePoolQuick();
 }
 
+template <>
+inline void Assembler::EmitHelper(uint8_t x);
 
 template <typename T>
 void Assembler::EmitHelper(T x) {
@@ -471,6 +455,14 @@ void Assembler::EmitHelper(T x) {
   CheckTrampolinePoolQuick();
 }
 
+template <>
+void Assembler::EmitHelper(uint8_t x) {
+  *reinterpret_cast<uint8_t*>(pc_) = x;
+  pc_ += sizeof(x);
+  if (reinterpret_cast<intptr_t>(pc_) % kInstrSize == 0) {
+    CheckTrampolinePoolQuick();
+  }
+}
 
 void Assembler::emit(Instr x, CompactBranchType is_compact_branch) {
   if (!is_buffer_growth_blocked()) {

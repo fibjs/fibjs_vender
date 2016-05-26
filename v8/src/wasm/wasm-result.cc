@@ -28,9 +28,9 @@ std::ostream& operator<<(std::ostream& os, const ErrorCode& error_code) {
   return os;
 }
 
-
 void ErrorThrower::Error(const char* format, ...) {
-  if (error_) return;  // only report the first error.
+  // only report the first error.
+  if (error_ || isolate_->has_pending_exception()) return;
   error_ = true;
   char buffer[256];
 

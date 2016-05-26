@@ -192,10 +192,11 @@ void CallPrinter::VisitForInStatement(ForInStatement* node) {
 
 
 void CallPrinter::VisitForOfStatement(ForOfStatement* node) {
-  Find(node->each());
   Find(node->assign_iterator());
-  Find(node->body());
   Find(node->next_result());
+  Find(node->result_done());
+  Find(node->assign_each());
+  Find(node->body());
 }
 
 
@@ -675,11 +676,37 @@ void PrettyPrinter::VisitForInStatement(ForInStatement* node) {
 
 
 void PrettyPrinter::VisitForOfStatement(ForOfStatement* node) {
+  // TODO(adamk): ForOf is largely desugared as part of parsing,
+  // so it's hard to display useful stuff here. Should likely
+  // either bite the bullet and display less or try harder
+  // to preserve more.
   PrintLabels(node->labels());
-  Print("for (");
-  Visit(node->each());
-  Print(" of ");
-  Visit(node->iterable());
+  // The <each> is embedded inside a do-expression by the time we get here.
+  Print("for (<each> of ");
+  if (node->assign_iterator()->IsAssignment() &&
+      node->assign_iterator()->AsAssignment()->value()->IsCall() &&
+      node->assign_iterator()
+          ->AsAssignment()
+          ->value()
+          ->AsCall()
+          ->expression()
+          ->IsProperty() &&
+      node->assign_iterator()
+          ->AsAssignment()
+          ->value()
+          ->AsCall()
+          ->expression()
+          ->IsProperty()) {
+    Visit(node->assign_iterator()
+              ->AsAssignment()
+              ->value()
+              ->AsCall()
+              ->expression()
+              ->AsProperty()
+              ->obj());
+  } else {
+    Print("<iterable>");
+  }
   Print(") ");
   Visit(node->body());
 }
@@ -1065,7 +1092,7 @@ void PrettyPrinter::PrintLiteral(Handle<Object> value, bool quote) {
   } else if (object->IsFixedArray()) {
     Print("FixedArray");
   } else {
-    Print("<unknown literal %p>", object);
+    Print("<unknown literal %p>", static_cast<void*>(object));
   }
 }
 
@@ -1408,13 +1435,11 @@ void AstPrinter::VisitForOfStatement(ForOfStatement* node) {
   IndentedScope indent(this, "FOR OF", node->position());
   PrintIndented("YIELD COUNT");
   Print(" %d\n", node->yield_count());
-  PrintIndentedVisit("FOR", node->each());
-  PrintIndentedVisit("OF", node->iterable());
-  PrintIndentedVisit("BODY", node->body());
   PrintIndentedVisit("INIT", node->assign_iterator());
   PrintIndentedVisit("NEXT", node->next_result());
-  PrintIndentedVisit("EACH", node->assign_each());
   PrintIndentedVisit("DONE", node->result_done());
+  PrintIndentedVisit("EACH", node->assign_each());
+  PrintIndentedVisit("BODY", node->body());
 }
 
 
@@ -1609,7 +1634,9 @@ void AstPrinter::VisitAssignment(Assignment* node) {
 
 
 void AstPrinter::VisitYield(Yield* node) {
-  IndentedScope indent(this, "YIELD", node->position());
+  EmbeddedVector<char, 128> buf;
+  SNPrintF(buf, "YIELD id %d", node->yield_id());
+  IndentedScope indent(this, buf.start(), node->position());
   Visit(node->expression());
 }
 

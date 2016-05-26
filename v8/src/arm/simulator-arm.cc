@@ -391,7 +391,7 @@ void ArmDebugger::Debug() {
         end = cur + words;
 
         while (cur < end) {
-          PrintF("  0x%08x:  0x%08x %10d",
+          PrintF("  0x%08" V8PRIxPTR ":  0x%08x %10d",
                  reinterpret_cast<intptr_t>(cur), *cur, *cur);
           HeapObject* obj = reinterpret_cast<HeapObject*>(*cur);
           int value = *cur;
@@ -453,8 +453,8 @@ void ArmDebugger::Debug() {
         while (cur < end) {
           prev = cur;
           cur += dasm.InstructionDecode(buffer, cur);
-          PrintF("  0x%08x  %s\n",
-                 reinterpret_cast<intptr_t>(prev), buffer.start());
+          PrintF("  0x%08" V8PRIxPTR "  %s\n", reinterpret_cast<intptr_t>(prev),
+                 buffer.start());
         }
       } else if (strcmp(cmd, "gdb") == 0) {
         PrintF("relinquishing control to gdb\n");
@@ -1275,7 +1275,7 @@ uintptr_t Simulator::StackLimit(uintptr_t c_limit) const {
 
 // Unsupported instructions use Format to print an error and stop execution.
 void Simulator::Format(Instruction* instr, const char* format) {
-  PrintF("Simulator found unsupported instruction:\n 0x%08x: %s\n",
+  PrintF("Simulator found unsupported instruction:\n 0x%08" V8PRIxPTR ": %s\n",
          reinterpret_cast<intptr_t>(instr), format);
   UNIMPLEMENTED();
 }
@@ -1812,15 +1812,17 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           case ExternalReference::BUILTIN_FP_FP_CALL:
           case ExternalReference::BUILTIN_COMPARE_CALL:
             PrintF("Call to host function at %p with args %f, %f",
-                   FUNCTION_ADDR(generic_target), dval0, dval1);
+                   static_cast<void*>(FUNCTION_ADDR(generic_target)), dval0,
+                   dval1);
             break;
           case ExternalReference::BUILTIN_FP_CALL:
             PrintF("Call to host function at %p with arg %f",
-                FUNCTION_ADDR(generic_target), dval0);
+                   static_cast<void*>(FUNCTION_ADDR(generic_target)), dval0);
             break;
           case ExternalReference::BUILTIN_FP_INT_CALL:
             PrintF("Call to host function at %p with args %f, %d",
-                   FUNCTION_ADDR(generic_target), dval0, ival);
+                   static_cast<void*>(FUNCTION_ADDR(generic_target)), dval0,
+                   ival);
             break;
           default:
             UNREACHABLE();
@@ -1946,7 +1948,8 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           PrintF(
               "Call to host triple returning runtime function %p "
               "args %08x, %08x, %08x, %08x, %08x",
-              FUNCTION_ADDR(target), arg1, arg2, arg3, arg4, arg5);
+              static_cast<void*>(FUNCTION_ADDR(target)), arg1, arg2, arg3, arg4,
+              arg5);
           if (!stack_aligned) {
             PrintF(" with unaligned stack %08x\n", get_register(sp));
           }
@@ -1957,7 +1960,8 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         // pass it to the target function.
         ObjectTriple result = target(arg1, arg2, arg3, arg4, arg5);
         if (::v8::internal::FLAG_trace_sim) {
-          PrintF("Returned { %p, %p, %p }\n", result.x, result.y, result.z);
+          PrintF("Returned { %p, %p, %p }\n", static_cast<void*>(result.x),
+                 static_cast<void*>(result.y), static_cast<void*>(result.z));
         }
         // Return is passed back in address pointed to by hidden first argument.
         ObjectTriple* sim_result = reinterpret_cast<ObjectTriple*>(arg0);
@@ -1973,13 +1977,8 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           PrintF(
               "Call to host function at %p "
               "args %08x, %08x, %08x, %08x, %08x, %08x",
-              FUNCTION_ADDR(target),
-              arg0,
-              arg1,
-              arg2,
-              arg3,
-              arg4,
-              arg5);
+              static_cast<void*>(FUNCTION_ADDR(target)), arg0, arg1, arg2, arg3,
+              arg4, arg5);
           if (!stack_aligned) {
             PrintF(" with unaligned stack %08x\n", get_register(sp));
           }
@@ -4091,7 +4090,8 @@ void Simulator::InstructionDecode(Instruction* instr) {
     v8::internal::EmbeddedVector<char, 256> buffer;
     dasm.InstructionDecode(buffer,
                            reinterpret_cast<byte*>(instr));
-    PrintF("  0x%08x  %s\n", reinterpret_cast<intptr_t>(instr), buffer.start());
+    PrintF("  0x%08" V8PRIxPTR "  %s\n", reinterpret_cast<intptr_t>(instr),
+           buffer.start());
   }
   if (instr->ConditionField() == kSpecialCondition) {
     DecodeSpecialCondition(instr);

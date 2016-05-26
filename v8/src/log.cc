@@ -15,11 +15,12 @@
 #include "src/global-handles.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/interpreter/interpreter.h"
+#include "src/libsampler/v8-sampler.h"
 #include "src/log-inl.h"
 #include "src/log-utils.h"
 #include "src/macro-assembler.h"
 #include "src/perf-jit.h"
-#include "src/profiler/cpu-profiler.h"
+#include "src/profiler/cpu-profiler-inl.h"
 #include "src/runtime-profiler.h"
 #include "src/string-stream.h"
 #include "src/vm-state-inl.h"
@@ -180,8 +181,7 @@ void CodeEventLogger::CodeCreateEvent(Logger::LogEventsAndTags tag,
 
 void CodeEventLogger::CodeCreateEvent(Logger::LogEventsAndTags tag,
                                       AbstractCode* code,
-                                      SharedFunctionInfo* shared,
-                                      CompilationInfo* info, Name* name) {
+                                      SharedFunctionInfo* shared, Name* name) {
   name_buffer_->Init(tag);
   name_buffer_->AppendBytes(ComputeMarker(shared, code));
   name_buffer_->AppendName(name);
@@ -190,8 +190,7 @@ void CodeEventLogger::CodeCreateEvent(Logger::LogEventsAndTags tag,
 
 void CodeEventLogger::CodeCreateEvent(Logger::LogEventsAndTags tag,
                                       AbstractCode* code,
-                                      SharedFunctionInfo* shared,
-                                      CompilationInfo* info, Name* source,
+                                      SharedFunctionInfo* shared, Name* source,
                                       int line, int column) {
   name_buffer_->Init(tag);
   name_buffer_->AppendBytes(ComputeMarker(shared, code));
@@ -541,6 +540,31 @@ void JitLogger::EndCodePosInfoEvent(AbstractCode* code,
 }
 
 
+// TODO(lpy): Keeping sampling thread inside V8 is a workaround currently,
+// the reason is to reduce code duplication during migration to sampler library,
+// sampling thread, as well as the sampler, will be moved to D8 eventually.
+class SamplingThread : public base::Thread {
+ public:
+  static const int kSamplingThreadStackSize = 64 * KB;
+
+  SamplingThread(sampler::Sampler* sampler, int interval)
+      : base::Thread(base::Thread::Options("SamplingThread",
+                                           kSamplingThreadStackSize)),
+        sampler_(sampler),
+        interval_(interval) {}
+  void Run() override {
+    while (sampler_->IsProfiling()) {
+      sampler_->DoSample();
+      base::OS::Sleep(base::TimeDelta::FromMilliseconds(interval_));
+    }
+  }
+
+ private:
+  sampler::Sampler* sampler_;
+  const int interval_;
+};
+
+
 // The Profiler samples pc and sp values for the main thread.
 // Each sample is appended to a circular buffer.
 // An independent thread removes data and writes it to the log.
@@ -613,16 +637,16 @@ class Profiler: public base::Thread {
 // Ticker used to provide ticks to the profiler and the sliding state
 // window.
 //
-class Ticker: public Sampler {
+class Ticker: public sampler::Sampler {
  public:
   Ticker(Isolate* isolate, int interval):
-      Sampler(isolate, interval),
-      profiler_(NULL) {}
+      sampler::Sampler(reinterpret_cast<v8::Isolate*>(isolate)),
+      profiler_(NULL),
+      sampling_thread_(new SamplingThread(this, interval)) {}
 
-  ~Ticker() { if (IsActive()) Stop(); }
-
-  virtual void Tick(TickSample* sample) {
-    if (profiler_) profiler_->Insert(sample);
+  ~Ticker() {
+    if (IsActive()) Stop();
+    delete sampling_thread_;
   }
 
   void SetProfiler(Profiler* profiler) {
@@ -630,16 +654,40 @@ class Ticker: public Sampler {
     profiler_ = profiler;
     IncreaseProfilingDepth();
     if (!IsActive()) Start();
+    sampling_thread_->StartSynchronously();
   }
 
   void ClearProfiler() {
     profiler_ = NULL;
     if (IsActive()) Stop();
     DecreaseProfilingDepth();
+    sampling_thread_->Join();
+  }
+
+  void SampleStack(const v8::RegisterState& state) override {
+    v8::Isolate* v8_isolate = isolate();
+    Isolate* isolate = reinterpret_cast<Isolate*>(v8_isolate);
+#if defined(USE_SIMULATOR)
+    SimulatorHelper::FillRegisters(isolate,
+                                   const_cast<v8::RegisterState*>(&state));
+#endif
+    TickSample* sample = isolate->cpu_profiler()->StartTickSample();
+    TickSample sample_obj;
+    if (sample == NULL) sample = &sample_obj;
+    sample->Init(isolate, state, TickSample::kIncludeCEntryFrame, true);
+    if (is_counting_samples_ && !sample->timestamp.IsNull()) {
+      if (sample->state == JS) ++js_sample_count_;
+      if (sample->state == EXTERNAL) ++external_sample_count_;
+    }
+    if (profiler_) profiler_->Insert(sample);
+    if (sample != &sample_obj) {
+      isolate->cpu_profiler()->FinishTickSample();
+    }
   }
 
  private:
   Profiler* profiler_;
+  SamplingThread* sampling_thread_;
 };
 
 
@@ -666,8 +714,9 @@ void Profiler::Engage() {
   std::vector<base::OS::SharedLibraryAddress> addresses =
       base::OS::GetSharedLibraryAddresses();
   for (size_t i = 0; i < addresses.size(); ++i) {
-    LOG(isolate_, SharedLibraryEvent(
-        addresses[i].library_path, addresses[i].start, addresses[i].end));
+    LOG(isolate_,
+        SharedLibraryEvent(addresses[i].library_path, addresses[i].start,
+                           addresses[i].end, addresses[i].aslr_slide));
   }
 
   // Start thread processing the profiler buffer.
@@ -802,7 +851,7 @@ void Logger::UncheckedIntPtrTEvent(const char* name, intptr_t value) {
 void Logger::HandleEvent(const char* name, Object** location) {
   if (!log_->IsEnabled() || !FLAG_log_handles) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,%p", name, location);
+  msg.Append("%s,%p", name, static_cast<void*>(location));
   msg.WriteToLogFile();
 }
 
@@ -826,14 +875,14 @@ void Logger::ApiSecurityCheck() {
   ApiEvent("api,check-security");
 }
 
-
 void Logger::SharedLibraryEvent(const std::string& library_path,
-                                uintptr_t start,
-                                uintptr_t end) {
+                                uintptr_t start, uintptr_t end,
+                                intptr_t aslr_slide) {
   if (!log_->IsEnabled() || !FLAG_prof_cpp) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("shared-library,\"%s\",0x%08" V8PRIxPTR ",0x%08" V8PRIxPTR,
-             library_path.c_str(), start, end);
+  msg.Append("shared-library,\"%s\",0x%08" V8PRIxPTR ",0x%08" V8PRIxPTR
+             ",%" V8PRIdPTR,
+             library_path.c_str(), start, end, aslr_slide);
   msg.WriteToLogFile();
 }
 
@@ -1118,12 +1167,11 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag, AbstractCode* code,
 }
 
 void Logger::CodeCreateEvent(LogEventsAndTags tag, AbstractCode* code,
-                             SharedFunctionInfo* shared, CompilationInfo* info,
-                             Name* name) {
-  PROFILER_LOG(CodeCreateEvent(tag, code, shared, info, name));
+                             SharedFunctionInfo* shared, Name* name) {
+  PROFILER_LOG(CodeCreateEvent(tag, code, shared, name));
 
   if (!is_logging_code_events()) return;
-  CALL_LISTENERS(CodeCreateEvent(tag, code, shared, info, name));
+  CALL_LISTENERS(CodeCreateEvent(tag, code, shared, name));
 
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   if (code == AbstractCode::cast(
@@ -1151,13 +1199,12 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag, AbstractCode* code,
 // the SharedFunctionInfo object, we left it to caller
 // to leave logging functions free from heap allocations.
 void Logger::CodeCreateEvent(LogEventsAndTags tag, AbstractCode* code,
-                             SharedFunctionInfo* shared, CompilationInfo* info,
-                             Name* source, int line, int column) {
-  PROFILER_LOG(CodeCreateEvent(tag, code, shared, info, source, line, column));
+                             SharedFunctionInfo* shared, Name* source, int line,
+                             int column) {
+  PROFILER_LOG(CodeCreateEvent(tag, code, shared, source, line, column));
 
   if (!is_logging_code_events()) return;
-  CALL_LISTENERS(CodeCreateEvent(tag, code, shared, info, source, line,
-                                 column));
+  CALL_LISTENERS(CodeCreateEvent(tag, code, shared, source, line, column));
 
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
@@ -1561,6 +1608,8 @@ void Logger::LogCodeObject(Object* object) {
       description = "A Wasm to JavaScript adapter";
       tag = Logger::STUB_TAG;
       break;
+    case AbstractCode::NUMBER_OF_KINDS:
+      UNIMPLEMENTED();
   }
   PROFILE(isolate_, CodeCreateEvent(tag, code_object, description));
 }
@@ -1581,12 +1630,15 @@ void Logger::LogCodeObjects() {
 void Logger::LogBytecodeHandlers() {
   if (!FLAG_ignition) return;
 
-  interpreter::Interpreter* interpreter = isolate_->interpreter();
+  const interpreter::OperandScale kOperandScales[] = {
+#define VALUE(Name, _) interpreter::OperandScale::k##Name,
+      OPERAND_SCALE_LIST(VALUE)
+#undef VALUE
+  };
+
   const int last_index = static_cast<int>(interpreter::Bytecode::kLast);
-  for (auto operand_scale = interpreter::OperandScale::kSingle;
-       operand_scale <= interpreter::OperandScale::kMaxValid;
-       operand_scale =
-           interpreter::Bytecodes::NextOperandScale(operand_scale)) {
+  interpreter::Interpreter* interpreter = isolate_->interpreter();
+  for (auto operand_scale : kOperandScales) {
     for (int index = 0; index <= last_index; ++index) {
       interpreter::Bytecode bytecode = interpreter::Bytecodes::FromByte(index);
       if (interpreter::Bytecodes::BytecodeHasHandler(bytecode, operand_scale)) {
@@ -1614,21 +1666,19 @@ void Logger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
         PROFILE(isolate_,
                 CodeCreateEvent(
                     Logger::ToNativeByScript(Logger::LAZY_COMPILE_TAG, *script),
-                    *code, *shared, NULL,
-                    *script_name, line_num, column_num));
+                    *code, *shared, *script_name, line_num, column_num));
       } else {
         // Can't distinguish eval and script here, so always use Script.
-        PROFILE(isolate_,
-                CodeCreateEvent(
-                    Logger::ToNativeByScript(Logger::SCRIPT_TAG, *script),
-                    *code, *shared, NULL, *script_name));
+        PROFILE(isolate_, CodeCreateEvent(Logger::ToNativeByScript(
+                                              Logger::SCRIPT_TAG, *script),
+                                          *code, *shared, *script_name));
       }
     } else {
       PROFILE(isolate_,
               CodeCreateEvent(
                   Logger::ToNativeByScript(Logger::LAZY_COMPILE_TAG, *script),
-                  *code, *shared, NULL,
-                  isolate_->heap()->empty_string(), line_num, column_num));
+                  *code, *shared, isolate_->heap()->empty_string(), line_num,
+                  column_num));
     }
   } else if (shared->IsApiFunction()) {
     // API function.
@@ -1644,9 +1694,8 @@ void Logger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
       PROFILE(isolate_, CallbackEvent(*func_name, entry_point));
     }
   } else {
-    PROFILE(isolate_,
-            CodeCreateEvent(
-                Logger::LAZY_COMPILE_TAG, *code, *shared, NULL, *func_name));
+    PROFILE(isolate_, CodeCreateEvent(Logger::LAZY_COMPILE_TAG, *code, *shared,
+                                      *func_name));
   }
 }
 
@@ -1813,7 +1862,7 @@ void Logger::SetCodeEventHandler(uint32_t options,
 }
 
 
-Sampler* Logger::sampler() {
+sampler::Sampler* Logger::sampler() {
   return ticker_;
 }
 

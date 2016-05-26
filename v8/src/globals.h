@@ -124,11 +124,6 @@ const int kFloatSize     = sizeof(float);     // NOLINT
 const int kDoubleSize    = sizeof(double);    // NOLINT
 const int kIntptrSize    = sizeof(intptr_t);  // NOLINT
 const int kPointerSize   = sizeof(void*);     // NOLINT
-#if V8_TARGET_ARCH_ARM64
-const int kFrameAlignmentInBytes = 2 * kPointerSize;
-#else
-const int kFrameAlignmentInBytes = kPointerSize;
-#endif
 #if V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT
 const int kRegisterSize  = kPointerSize + kPointerSize;
 #else
@@ -155,8 +150,10 @@ const bool kRequiresCodeRange = true;
 // encoded immediate, the addresses have to be in range of 256MB aligned
 // region. Used only for large object space.
 const size_t kMaximalCodeRangeSize = 256 * MB;
+const size_t kCodeRangeAreaAlignment = 256 * MB;
 #else
 const size_t kMaximalCodeRangeSize = 512 * MB;
+const size_t kCodeRangeAreaAlignment = 4 * KB;  // OS page.
 #endif
 #if V8_OS_WIN
 const size_t kMinimumCodeRangeSize = 4 * MB;
@@ -175,11 +172,13 @@ const bool kRequiresCodeRange = true;
 const size_t kMaximalCodeRangeSize = 256 * MB;
 const size_t kMinimumCodeRangeSize = 3 * MB;
 const size_t kReservedCodeRangePages = 0;
+const size_t kCodeRangeAreaAlignment = 4 * KB;  // OS page.
 #else
 const bool kRequiresCodeRange = false;
 const size_t kMaximalCodeRangeSize = 0 * MB;
 const size_t kMinimumCodeRangeSize = 0 * MB;
 const size_t kReservedCodeRangePages = 0;
+const size_t kCodeRangeAreaAlignment = 4 * KB;  // OS page.
 #endif
 #endif
 
@@ -457,6 +456,33 @@ enum AllocationAlignment {
   kSimd128Unaligned
 };
 
+// Supported write barrier modes.
+enum WriteBarrierKind : uint8_t {
+  kNoWriteBarrier,
+  kMapWriteBarrier,
+  kPointerWriteBarrier,
+  kFullWriteBarrier
+};
+
+inline size_t hash_value(WriteBarrierKind kind) {
+  return static_cast<uint8_t>(kind);
+}
+
+inline std::ostream& operator<<(std::ostream& os, WriteBarrierKind kind) {
+  switch (kind) {
+    case kNoWriteBarrier:
+      return os << "NoWriteBarrier";
+    case kMapWriteBarrier:
+      return os << "MapWriteBarrier";
+    case kPointerWriteBarrier:
+      return os << "PointerWriteBarrier";
+    case kFullWriteBarrier:
+      return os << "FullWriteBarrier";
+  }
+  UNREACHABLE();
+  return os;
+}
+
 // A flag that indicates whether objects should be pretenured when
 // allocated (allocated directly into the old generation) or not
 // (allocated in the young generation if the object size and type
@@ -671,7 +697,6 @@ enum CpuFeature {
   ARMv7,
   ARMv8,
   SUDIV,
-  MLS,
   UNALIGNED_ACCESSES,
   MOVW_MOVT_IMMEDIATE_LOADS,
   VFP32DREGS,
@@ -684,7 +709,6 @@ enum CpuFeature {
   MIPSr6,
   // ARM64
   ALWAYS_ALIGN_CSP,
-  COHERENT_CACHE,
   // PPC
   FPR_GPR_MOV,
   LWSYNC,
@@ -799,33 +823,30 @@ const double kMaxSafeInteger = 9007199254740991.0;  // 2^53-1
 // The order of this enum has to be kept in sync with the predicates below.
 enum VariableMode {
   // User declared variables:
-  VAR,             // declared via 'var', and 'function' declarations
+  VAR,  // declared via 'var', and 'function' declarations
 
-  CONST_LEGACY,    // declared via legacy 'const' declarations
+  CONST_LEGACY,  // declared via legacy 'const' declarations
 
-  LET,             // declared via 'let' declarations (first lexical)
+  LET,  // declared via 'let' declarations (first lexical)
 
-  CONST,           // declared via 'const' declarations
-
-  IMPORT,          // declared via 'import' declarations (last lexical)
+  CONST,  // declared via 'const' declarations (last lexical)
 
   // Variables introduced by the compiler:
-  TEMPORARY,       // temporary variables (not user-visible), stack-allocated
-                   // unless the scope as a whole has forced context allocation
+  TEMPORARY,  // temporary variables (not user-visible), stack-allocated
+              // unless the scope as a whole has forced context allocation
 
-  DYNAMIC,         // always require dynamic lookup (we don't know
-                   // the declaration)
+  DYNAMIC,  // always require dynamic lookup (we don't know
+            // the declaration)
 
   DYNAMIC_GLOBAL,  // requires dynamic lookup, but we know that the
                    // variable is global unless it has been shadowed
                    // by an eval-introduced variable
 
-  DYNAMIC_LOCAL    // requires dynamic lookup, but we know that the
-                   // variable is local and where it is unless it
-                   // has been shadowed by an eval-introduced
-                   // variable
+  DYNAMIC_LOCAL  // requires dynamic lookup, but we know that the
+                 // variable is local and where it is unless it
+                 // has been shadowed by an eval-introduced
+                 // variable
 };
-
 
 inline bool IsDynamicVariableMode(VariableMode mode) {
   return mode >= DYNAMIC && mode <= DYNAMIC_LOCAL;
@@ -833,17 +854,17 @@ inline bool IsDynamicVariableMode(VariableMode mode) {
 
 
 inline bool IsDeclaredVariableMode(VariableMode mode) {
-  return mode >= VAR && mode <= IMPORT;
+  return mode >= VAR && mode <= CONST;
 }
 
 
 inline bool IsLexicalVariableMode(VariableMode mode) {
-  return mode >= LET && mode <= IMPORT;
+  return mode >= LET && mode <= CONST;
 }
 
 
 inline bool IsImmutableVariableMode(VariableMode mode) {
-  return mode == CONST || mode == CONST_LEGACY || mode == IMPORT;
+  return mode == CONST || mode == CONST_LEGACY;
 }
 
 
@@ -944,11 +965,14 @@ enum FunctionKind {
   kBaseConstructor = 1 << 5,
   kGetterFunction = 1 << 6,
   kSetterFunction = 1 << 7,
+  kAsyncFunction = 1 << 8,
   kAccessorFunction = kGetterFunction | kSetterFunction,
   kDefaultBaseConstructor = kDefaultConstructor | kBaseConstructor,
   kDefaultSubclassConstructor = kDefaultConstructor | kSubclassConstructor,
   kClassConstructor =
       kBaseConstructor | kSubclassConstructor | kDefaultConstructor,
+  kAsyncArrowFunction = kArrowFunction | kAsyncFunction,
+  kAsyncConciseMethod = kAsyncFunction | kConciseMethod
 };
 
 inline bool IsValidFunctionKind(FunctionKind kind) {
@@ -963,7 +987,10 @@ inline bool IsValidFunctionKind(FunctionKind kind) {
          kind == FunctionKind::kDefaultBaseConstructor ||
          kind == FunctionKind::kDefaultSubclassConstructor ||
          kind == FunctionKind::kBaseConstructor ||
-         kind == FunctionKind::kSubclassConstructor;
+         kind == FunctionKind::kSubclassConstructor ||
+         kind == FunctionKind::kAsyncFunction ||
+         kind == FunctionKind::kAsyncArrowFunction ||
+         kind == FunctionKind::kAsyncConciseMethod;
 }
 
 
@@ -978,6 +1005,10 @@ inline bool IsGeneratorFunction(FunctionKind kind) {
   return kind & FunctionKind::kGeneratorFunction;
 }
 
+inline bool IsAsyncFunction(FunctionKind kind) {
+  DCHECK(IsValidFunctionKind(kind));
+  return kind & FunctionKind::kAsyncFunction;
+}
 
 inline bool IsConciseMethod(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
@@ -1029,6 +1060,7 @@ inline bool IsConstructable(FunctionKind kind, LanguageMode mode) {
   if (IsConciseMethod(kind)) return false;
   if (IsArrowFunction(kind)) return false;
   if (IsGeneratorFunction(kind)) return false;
+  if (IsAsyncFunction(kind)) return false;
   return true;
 }
 

@@ -60,7 +60,6 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(EmptyFunction, kNone)                                      \
                                                                \
   V(ArrayConcat, kNone)                                        \
-  V(ArrayIsArray, kNone)                                       \
   V(ArrayPop, kNone)                                           \
   V(ArrayPush, kNone)                                          \
   V(ArrayShift, kNone)                                         \
@@ -115,8 +114,14 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(FunctionPrototypeToString, kNone)                          \
                                                                \
   V(GeneratorFunctionConstructor, kTargetAndNewTarget)         \
+  V(AsyncFunctionConstructor, kTargetAndNewTarget)             \
+                                                               \
+  V(GlobalEncodeURI, kNone)                                    \
+  V(GlobalEncodeURIComponent, kNone)                           \
                                                                \
   V(GlobalEval, kTarget)                                       \
+                                                               \
+  V(JsonStringify, kNone)                                      \
                                                                \
   V(MathAcos, kNone)                                           \
   V(MathAsin, kNone)                                           \
@@ -126,21 +131,28 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
                                                                \
   V(ObjectAssign, kNone)                                       \
   V(ObjectCreate, kNone)                                       \
+  V(ObjectDefineGetter, kNone)                                 \
+  V(ObjectDefineProperties, kNone)                             \
+  V(ObjectDefineProperty, kNone)                               \
+  V(ObjectDefineSetter, kNone)                                 \
+  V(ObjectEntries, kNone)                                      \
   V(ObjectFreeze, kNone)                                       \
   V(ObjectGetOwnPropertyDescriptor, kNone)                     \
+  V(ObjectGetOwnPropertyDescriptors, kNone)                    \
   V(ObjectGetOwnPropertyNames, kNone)                          \
   V(ObjectGetOwnPropertySymbols, kNone)                        \
+  V(ObjectGetPrototypeOf, kNone)                               \
   V(ObjectIs, kNone)                                           \
   V(ObjectIsExtensible, kNone)                                 \
   V(ObjectIsFrozen, kNone)                                     \
   V(ObjectIsSealed, kNone)                                     \
   V(ObjectKeys, kNone)                                         \
-  V(ObjectValues, kNone)                                       \
-  V(ObjectEntries, kNone)                                      \
-  V(ObjectGetOwnPropertyDescriptors, kNone)                    \
+  V(ObjectLookupGetter, kNone)                                 \
+  V(ObjectLookupSetter, kNone)                                 \
   V(ObjectPreventExtensions, kNone)                            \
-  V(ObjectSeal, kNone)                                         \
   V(ObjectProtoToString, kNone)                                \
+  V(ObjectSeal, kNone)                                         \
+  V(ObjectValues, kNone)                                       \
                                                                \
   V(ProxyConstructor, kNone)                                   \
   V(ProxyConstructor_ConstructStub, kTarget)                   \
@@ -157,11 +169,12 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(ReflectSet, kNone)                                         \
   V(ReflectSetPrototypeOf, kNone)                              \
                                                                \
+  V(StringFromCharCode, kNone)                                 \
+                                                               \
   V(SymbolConstructor, kNone)                                  \
   V(SymbolConstructor_ConstructStub, kTarget)                  \
                                                                \
-  V(HandleApiCall, kTarget)                                    \
-  V(HandleApiCallConstruct, kTarget)                           \
+  V(HandleApiCall, kTargetAndNewTarget)                        \
   V(HandleApiCallAsFunction, kNone)                            \
   V(HandleApiCallAsConstructor, kNone)                         \
                                                                \
@@ -170,6 +183,9 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
 
 // Define list of builtins implemented in assembly.
 #define BUILTIN_LIST_A(V)                                                      \
+  V(AllocateInNewSpace, BUILTIN, UNINITIALIZED, kNoExtraICState)               \
+  V(AllocateInOldSpace, BUILTIN, UNINITIALIZED, kNoExtraICState)               \
+                                                                               \
   V(ArgumentsAdaptorTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
                                                                                \
   V(ConstructedNonConstructable, BUILTIN, UNINITIALIZED, kNoExtraICState)      \
@@ -215,6 +231,7 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(JSConstructEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
   V(ResumeGeneratorTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)        \
   V(CompileLazy, BUILTIN, UNINITIALIZED, kNoExtraICState)                      \
+  V(CompileBaseline, BUILTIN, UNINITIALIZED, kNoExtraICState)                  \
   V(CompileOptimized, BUILTIN, UNINITIALIZED, kNoExtraICState)                 \
   V(CompileOptimizedConcurrent, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
   V(NotifyDeoptimized, BUILTIN, UNINITIALIZED, kNoExtraICState)                \
@@ -224,13 +241,10 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(NotifyStubFailureSaveDoubles, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
                                                                                \
   V(InterpreterEntryTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
-  V(InterpreterExitTrampoline, BUILTIN, UNINITIALIZED, kNoExtraICState)        \
+  V(InterpreterMarkBaselineOnReturn, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
   V(InterpreterPushArgsAndCall, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
   V(InterpreterPushArgsAndTailCall, BUILTIN, UNINITIALIZED, kNoExtraICState)   \
   V(InterpreterPushArgsAndConstruct, BUILTIN, UNINITIALIZED, kNoExtraICState)  \
-  V(InterpreterNotifyDeoptimized, BUILTIN, UNINITIALIZED, kNoExtraICState)     \
-  V(InterpreterNotifySoftDeoptimized, BUILTIN, UNINITIALIZED, kNoExtraICState) \
-  V(InterpreterNotifyLazyDeoptimized, BUILTIN, UNINITIALIZED, kNoExtraICState) \
   V(InterpreterEnterBytecodeDispatch, BUILTIN, UNINITIALIZED, kNoExtraICState) \
                                                                                \
   V(LoadIC_Miss, BUILTIN, UNINITIALIZED, kNoExtraICState)                      \
@@ -270,7 +284,6 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   V(DatePrototypeGetUTCMonth, BUILTIN, UNINITIALIZED, kNoExtraICState)         \
   V(DatePrototypeGetUTCSeconds, BUILTIN, UNINITIALIZED, kNoExtraICState)       \
                                                                                \
-  V(FunctionHasInstance, BUILTIN, UNINITIALIZED, kNoExtraICState)              \
   V(FunctionPrototypeApply, BUILTIN, UNINITIALIZED, kNoExtraICState)           \
   V(FunctionPrototypeCall, BUILTIN, UNINITIALIZED, kNoExtraICState)            \
                                                                                \
@@ -299,20 +312,23 @@ inline bool operator&(BuiltinExtraArguments lhs, BuiltinExtraArguments rhs) {
   CODE_AGE_LIST_WITH_ARG(DECLARE_CODE_AGE_BUILTIN, V)
 
 // Define list of builtins implemented in TurboFan (with JS linkage).
-#define BUILTIN_LIST_T(V)         \
-  V(GeneratorPrototypeNext, 2)    \
-  V(GeneratorPrototypeReturn, 2)  \
-  V(GeneratorPrototypeThrow, 2)   \
-  V(MathCeil, 2)                  \
-  V(MathClz32, 2)                 \
-  V(MathFloor, 2)                 \
-  V(MathRound, 2)                 \
-  V(MathSqrt, 2)                  \
-  V(MathTrunc, 2)                 \
-  V(ObjectHasOwnProperty, 2)      \
-  V(StringPrototypeCharAt, 2)     \
-  V(StringPrototypeCharCodeAt, 2) \
-  V(AtomicsLoadCheck, 3)
+#define BUILTIN_LIST_T(V)            \
+  V(FunctionPrototypeHasInstance, 2) \
+  V(GeneratorPrototypeNext, 2)       \
+  V(GeneratorPrototypeReturn, 2)     \
+  V(GeneratorPrototypeThrow, 2)      \
+  V(MathCeil, 2)                     \
+  V(MathClz32, 2)                    \
+  V(MathFloor, 2)                    \
+  V(MathRound, 2)                    \
+  V(MathSqrt, 2)                     \
+  V(MathTrunc, 2)                    \
+  V(ObjectHasOwnProperty, 2)         \
+  V(ArrayIsArray, 2)                 \
+  V(StringPrototypeCharAt, 2)        \
+  V(StringPrototypeCharCodeAt, 2)    \
+  V(AtomicsLoad, 3)                  \
+  V(AtomicsStore, 4)
 
 // Define list of builtin handlers implemented in assembly.
 #define BUILTIN_LIST_H(V)                    \
@@ -436,8 +452,11 @@ class Builtins {
   static void Generate_Adaptor(MacroAssembler* masm,
                                CFunctionId id,
                                BuiltinExtraArguments extra_args);
+  static void Generate_AllocateInNewSpace(MacroAssembler* masm);
+  static void Generate_AllocateInOldSpace(MacroAssembler* masm);
   static void Generate_ConstructedNonConstructable(MacroAssembler* masm);
   static void Generate_CompileLazy(MacroAssembler* masm);
+  static void Generate_CompileBaseline(MacroAssembler* masm);
   static void Generate_InOptimizationQueue(MacroAssembler* masm);
   static void Generate_CompileOptimized(MacroAssembler* masm);
   static void Generate_CompileOptimizedConcurrent(MacroAssembler* masm);
@@ -576,7 +595,6 @@ class Builtins {
   // ES6 section 20.3.4.19 Date.prototype.getUTCSeconds ( )
   static void Generate_DatePrototypeGetUTCSeconds(MacroAssembler* masm);
 
-  static void Generate_FunctionHasInstance(MacroAssembler* masm);
   static void Generate_FunctionPrototypeApply(MacroAssembler* masm);
   static void Generate_FunctionPrototypeCall(MacroAssembler* masm);
 
@@ -614,6 +632,10 @@ class Builtins {
   // ES6 section 20.1.1.1 Number ( [ value ] ) for the [[Construct]] case.
   static void Generate_NumberConstructor_ConstructStub(MacroAssembler* masm);
 
+  // ES6 section 19.2.3.6 Function.prototype [ @@hasInstance ] ( V )
+  static void Generate_FunctionPrototypeHasInstance(
+      CodeStubAssembler* assembler);
+
   // ES6 section 25.3.1.2 Generator.prototype.next ( value )
   static void Generate_GeneratorPrototypeNext(CodeStubAssembler* assembler);
   // ES6 section 25.3.1.3 Generator.prototype.return ( value )
@@ -623,6 +645,9 @@ class Builtins {
 
   // ES6 section 19.1.3.2 Object.prototype.hasOwnProperty
   static void Generate_ObjectHasOwnProperty(CodeStubAssembler* assembler);
+
+  // ES6 section 22.1.2.2 Array.isArray
+  static void Generate_ArrayIsArray(CodeStubAssembler* assembler);
 
   // ES6 section 21.1.3.1 String.prototype.charAt ( pos )
   static void Generate_StringPrototypeCharAt(CodeStubAssembler* assembler);
@@ -636,7 +661,8 @@ class Builtins {
   static void Generate_StackCheck(MacroAssembler* masm);
 
   static void Generate_InterpreterEntryTrampoline(MacroAssembler* masm);
-  static void Generate_InterpreterExitTrampoline(MacroAssembler* masm);
+  static void Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm);
+  static void Generate_InterpreterMarkBaselineOnReturn(MacroAssembler* masm);
   static void Generate_InterpreterPushArgsAndCall(MacroAssembler* masm) {
     return Generate_InterpreterPushArgsAndCallImpl(masm,
                                                    TailCallMode::kDisallow);
@@ -647,10 +673,6 @@ class Builtins {
   static void Generate_InterpreterPushArgsAndCallImpl(
       MacroAssembler* masm, TailCallMode tail_call_mode);
   static void Generate_InterpreterPushArgsAndConstruct(MacroAssembler* masm);
-  static void Generate_InterpreterNotifyDeoptimized(MacroAssembler* masm);
-  static void Generate_InterpreterNotifySoftDeoptimized(MacroAssembler* masm);
-  static void Generate_InterpreterNotifyLazyDeoptimized(MacroAssembler* masm);
-  static void Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm);
 
 #define DECLARE_CODE_AGE_BUILTIN_GENERATOR(C)                \
   static void Generate_Make##C##CodeYoungAgainEvenMarking(   \
@@ -664,7 +686,8 @@ class Builtins {
   static void Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm);
   static void Generate_MarkCodeAsExecutedTwice(MacroAssembler* masm);
 
-  static void Generate_AtomicsLoadCheck(CodeStubAssembler* assembler);
+  static void Generate_AtomicsLoad(CodeStubAssembler* assembler);
+  static void Generate_AtomicsStore(CodeStubAssembler* assembler);
 
   static void InitBuiltinFunctionTable();
 

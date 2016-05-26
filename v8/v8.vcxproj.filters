@@ -145,6 +145,9 @@
     <Filter Include="Source Files\libplatform">
       <UniqueIdentifier>{d55c839e-d9e9-0541-edc0-1b7cf01a3405}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\libsampler">
+      <UniqueIdentifier>{f2a6d3b6-5280-3743-7fe3-95515bcbd0f9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\parsing">
       <UniqueIdentifier>{9ed8203f-a302-00ef-2289-9b0854c4f2cd}</UniqueIdentifier>
     </Filter>
@@ -192,6 +195,9 @@
     </Filter>
     <Filter Include="Source Files\tracing">
       <UniqueIdentifier>{0b421633-1f84-f485-f589-7a71eb8cdce2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\v8.xcodeproj">
+      <UniqueIdentifier>{1f9b478c-90cc-d923-d8db-1822188c6980}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\wasm">
       <UniqueIdentifier>{3a7f7d48-d621-6ae7-ac90-1da78babcc0a}</UniqueIdentifier>
@@ -282,6 +288,9 @@
     <ClInclude Include="src\ast\ast-numbering.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
+    <ClInclude Include="src\ast\ast-type-bounds.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
     <ClInclude Include="src\ast\ast-value-factory.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
@@ -303,9 +312,6 @@
     <ClInclude Include="src\ast\variables.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
-    <ClInclude Include="src\atomic-utils.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\background-parsing-task.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -316,6 +322,9 @@
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\adapters.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\atomic-utils.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\atomicops.h">
@@ -528,9 +537,6 @@
     <ClInclude Include="src\compiler\bytecode-graph-builder.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\change-lowering.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\coalesced-live-ranges.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -696,6 +702,9 @@
     <ClInclude Include="src\compiler\machine-operator.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\memory-optimizer.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\move-optimizer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -820,6 +829,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\conversions.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\counters-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\counters.h">
@@ -1035,6 +1047,9 @@
     <ClInclude Include="src\extensions\gc-extension.h">
       <Filter>Source Files\extensions</Filter>
     </ClInclude>
+    <ClInclude Include="src\extensions\ignition-statistics-extension.h">
+      <Filter>Source Files\extensions</Filter>
+    </ClInclude>
     <ClInclude Include="src\extensions\statistics-extension.h">
       <Filter>Source Files\extensions</Filter>
     </ClInclude>
@@ -1233,7 +1248,16 @@
     <ClInclude Include="src\interpreter\bytecode-array-iterator.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-array-writer.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-generator.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-peephole-optimizer.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-pipeline.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-register-allocator.h">
@@ -1295,6 +1319,15 @@
     </ClInclude>
     <ClInclude Include="src\libplatform\worker-thread.h">
       <Filter>Source Files\libplatform</Filter>
+    </ClInclude>
+    <ClInclude Include="src\libsampler\hashmap.h">
+      <Filter>Source Files\libsampler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\libsampler\utils.h">
+      <Filter>Source Files\libsampler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\libsampler\v8-sampler.h">
+      <Filter>Source Files\libsampler</Filter>
     </ClInclude>
     <ClInclude Include="src\list-inl.h">
       <Filter>Source Files</Filter>
@@ -1446,13 +1479,13 @@
     <ClInclude Include="src\profiler\profile-generator.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\profiler\sampler.h">
-      <Filter>Source Files\profiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\profiler\sampling-heap-profiler.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
     <ClInclude Include="src\profiler\strings-storage.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\profiler\tick-sample.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
     <ClInclude Include="src\profiler\unbound-queue-inl.h">
@@ -1653,9 +1686,6 @@
     <ClInclude Include="src\typing-asm.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\typing-reset.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\unicode-cache-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1669,6 +1699,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\unicode.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\uri.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\utils-inl.h">
@@ -1710,6 +1743,9 @@
     <ClInclude Include="src\wasm\encoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\leb-helper.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\module-decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -1717,6 +1753,12 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-external-refs.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-function-name-table.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-interpreter.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-js.h">
@@ -2015,9 +2057,6 @@
     <ClCompile Include="src\compiler\c-linkage.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\change-lowering.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\coalesced-live-ranges.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2175,6 +2214,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\machine-operator.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\memory-optimizer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\move-optimizer.cc">
@@ -2522,6 +2564,9 @@
     <ClCompile Include="src\extensions\gc-extension.cc">
       <Filter>Source Files\extensions</Filter>
     </ClCompile>
+    <ClCompile Include="src\extensions\ignition-statistics-extension.cc">
+      <Filter>Source Files\extensions</Filter>
+    </ClCompile>
     <ClCompile Include="src\extensions\statistics-extension.cc">
       <Filter>Source Files\extensions</Filter>
     </ClCompile>
@@ -2783,7 +2828,16 @@
     <ClCompile Include="src\interpreter\bytecode-array-iterator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-array-writer.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-generator.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-peephole-optimizer.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-pipeline.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-register-allocator.cc">
@@ -2816,6 +2870,12 @@
     <ClCompile Include="src\isolate.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\json-parser.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\json-stringifier.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\keys.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2830,6 +2890,9 @@
     </ClCompile>
     <ClCompile Include="src\libplatform\worker-thread.cc">
       <Filter>Source Files\libplatform</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libsampler\v8-sampler.cc">
+      <Filter>Source Files\libsampler</Filter>
     </ClCompile>
     <ClCompile Include="src\log-utils.cc">
       <Filter>Source Files</Filter>
@@ -2948,13 +3011,13 @@
     <ClCompile Include="src\profiler\profile-generator.cc">
       <Filter>Source Files\profiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\profiler\sampler.cc">
-      <Filter>Source Files\profiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\profiler\sampling-heap-profiler.cc">
       <Filter>Source Files\profiler</Filter>
     </ClCompile>
     <ClCompile Include="src\profiler\strings-storage.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\tick-sample.cc">
       <Filter>Source Files\profiler</Filter>
     </ClCompile>
     <ClCompile Include="src\property-descriptor.cc">
@@ -3066,9 +3129,6 @@
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-object.cc">
-      <Filter>Source Files\runtime</Filter>
-    </ClCompile>
-    <ClCompile Include="src\runtime\runtime-observe.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-operators.cc">
@@ -3209,13 +3269,13 @@
     <ClCompile Include="src\typing-asm.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\typing-reset.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\unicode-decoder.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\unicode.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\uri.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\utils.cc">
@@ -3246,6 +3306,12 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-external-refs.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-function-name-table.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-interpreter.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-js.cc">

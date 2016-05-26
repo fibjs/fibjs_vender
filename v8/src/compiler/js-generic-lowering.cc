@@ -47,18 +47,6 @@ Reduction JSGenericLowering::Reduce(Node* node) {
   }
   return Changed(node);
 }
-
-#define REPLACE_BINARY_OP_IC_CALL(Op, token)                                \
-  void JSGenericLowering::Lower##Op(Node* node) {                           \
-    CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);           \
-    ReplaceWithStubCall(node, CodeFactory::BinaryOpIC(isolate(), token),    \
-                        CallDescriptor::kPatchableCallSiteWithNop | flags); \
-  }
-REPLACE_BINARY_OP_IC_CALL(JSShiftLeft, Token::SHL)
-REPLACE_BINARY_OP_IC_CALL(JSShiftRight, Token::SAR)
-REPLACE_BINARY_OP_IC_CALL(JSShiftRightLogical, Token::SHR)
-#undef REPLACE_BINARY_OP_IC_CALL
-
 #define REPLACE_RUNTIME_CALL(op, fun)             \
   void JSGenericLowering::Lower##op(Node* node) { \
     ReplaceWithRuntimeCall(node, fun);            \
@@ -82,15 +70,16 @@ REPLACE_STUB_CALL(Modulus)
 REPLACE_STUB_CALL(BitwiseAnd)
 REPLACE_STUB_CALL(BitwiseOr)
 REPLACE_STUB_CALL(BitwiseXor)
+REPLACE_STUB_CALL(ShiftLeft)
+REPLACE_STUB_CALL(ShiftRight)
+REPLACE_STUB_CALL(ShiftRightLogical)
 REPLACE_STUB_CALL(LessThan)
 REPLACE_STUB_CALL(LessThanOrEqual)
 REPLACE_STUB_CALL(GreaterThan)
 REPLACE_STUB_CALL(GreaterThanOrEqual)
+REPLACE_STUB_CALL(HasProperty)
 REPLACE_STUB_CALL(Equal)
 REPLACE_STUB_CALL(NotEqual)
-REPLACE_STUB_CALL(StrictEqual)
-REPLACE_STUB_CALL(StrictNotEqual)
-REPLACE_STUB_CALL(ToBoolean)
 REPLACE_STUB_CALL(ToInteger)
 REPLACE_STUB_CALL(ToLength)
 REPLACE_STUB_CALL(ToNumber)
@@ -101,7 +90,12 @@ REPLACE_STUB_CALL(ToString)
 
 void JSGenericLowering::ReplaceWithStubCall(Node* node, Callable callable,
                                             CallDescriptor::Flags flags) {
-  Operator::Properties properties = node->op()->properties();
+  ReplaceWithStubCall(node, callable, flags, node->op()->properties());
+}
+
+void JSGenericLowering::ReplaceWithStubCall(Node* node, Callable callable,
+                                            CallDescriptor::Flags flags,
+                                            Operator::Properties properties) {
   CallDescriptor* desc = Linkage::GetStubCallDescriptor(
       isolate(), zone(), callable.descriptor(), 0, flags, properties);
   Node* stub_code = jsgraph()->HeapConstant(callable.code());
@@ -127,11 +121,32 @@ void JSGenericLowering::ReplaceWithRuntimeCall(Node* node,
   NodeProperties::ChangeOp(node, common()->Call(desc));
 }
 
+void JSGenericLowering::LowerJSStrictEqual(Node* node) {
+  Callable callable = CodeFactory::StrictEqual(isolate());
+  node->AppendInput(zone(), graph()->start());
+  ReplaceWithStubCall(node, callable, CallDescriptor::kNoFlags,
+                      Operator::kEliminatable);
+}
+
+void JSGenericLowering::LowerJSStrictNotEqual(Node* node) {
+  Callable callable = CodeFactory::StrictNotEqual(isolate());
+  node->AppendInput(zone(), graph()->start());
+  ReplaceWithStubCall(node, callable, CallDescriptor::kNoFlags,
+                      Operator::kEliminatable);
+}
+
+void JSGenericLowering::LowerJSToBoolean(Node* node) {
+  Callable callable = CodeFactory::ToBoolean(isolate());
+  node->AppendInput(zone(), graph()->start());
+  ReplaceWithStubCall(node, callable, CallDescriptor::kNoAllocate,
+                      Operator::kEliminatable);
+}
 
 void JSGenericLowering::LowerJSTypeOf(Node* node) {
-  CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
   Callable callable = CodeFactory::Typeof(isolate());
-  ReplaceWithStubCall(node, callable, flags);
+  node->AppendInput(zone(), graph()->start());
+  ReplaceWithStubCall(node, callable, CallDescriptor::kNoAllocate,
+                      Operator::kEliminatable);
 }
 
 
@@ -328,11 +343,6 @@ void JSGenericLowering::LowerJSDeleteProperty(Node* node) {
 }
 
 
-void JSGenericLowering::LowerJSHasProperty(Node* node) {
-  ReplaceWithRuntimeCall(node, Runtime::kHasProperty);
-}
-
-
 void JSGenericLowering::LowerJSInstanceOf(Node* node) {
   CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
   Callable callable = CodeFactory::InstanceOf(isolate());
@@ -431,7 +441,8 @@ void JSGenericLowering::LowerJSCreateArray(Node* node) {
           CallDescriptor::kNeedsFrameState);
       node->ReplaceInput(0, jsgraph()->HeapConstant(stub.GetCode()));
       node->InsertInput(graph()->zone(), 2, jsgraph()->HeapConstant(site));
-      node->InsertInput(graph()->zone(), 3, jsgraph()->UndefinedConstant());
+      node->InsertInput(graph()->zone(), 3, jsgraph()->Int32Constant(0));
+      node->InsertInput(graph()->zone(), 4, jsgraph()->UndefinedConstant());
       NodeProperties::ChangeOp(node, common()->Call(desc));
     } else if (arity == 1) {
       // TODO(bmeurer): Optimize for the 0 length non-holey case?
@@ -669,9 +680,17 @@ void JSGenericLowering::LowerJSStoreMessage(Node* node) {
   NodeProperties::ChangeOp(node, machine()->Store(representation));
 }
 
+void JSGenericLowering::LowerJSGeneratorStore(Node* node) {
+  UNREACHABLE();  // Eliminated in typed lowering.
+}
 
-void JSGenericLowering::LowerJSYield(Node* node) { UNIMPLEMENTED(); }
+void JSGenericLowering::LowerJSGeneratorRestoreContinuation(Node* node) {
+  UNREACHABLE();  // Eliminated in typed lowering.
+}
 
+void JSGenericLowering::LowerJSGeneratorRestoreRegister(Node* node) {
+  UNREACHABLE();  // Eliminated in typed lowering.
+}
 
 void JSGenericLowering::LowerJSStackCheck(Node* node) {
   Node* effect = NodeProperties::GetEffectInput(node);

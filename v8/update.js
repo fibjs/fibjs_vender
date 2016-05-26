@@ -264,7 +264,7 @@ clean_folder('src/third_party/vtune');
 fs.rmdir('src/third_party/vtune');
 
 update_plat();
-patch_samp();
+//patch_samp();
 
 patch_src('src');
 patch_plat();

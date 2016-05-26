@@ -67,6 +67,7 @@ Handle<Code> NamedLoadHandlerCompiler::ComputeLoadNonexistent(
       cache_name, stub_holder_map, Code::LOAD_IC, flag);
   if (!handler.is_null()) return handler;
 
+  TRACE_HANDLER_STATS(isolate, LoadIC_LoadNonexistent);
   NamedLoadHandlerCompiler compiler(isolate, receiver_map, last, flag);
   handler = compiler.CompileLoadNonexistent(cache_name);
   Map::UpdateCodeCache(stub_holder_map, cache_name, handler);
@@ -358,6 +359,18 @@ Handle<Code> NamedLoadHandlerCompiler::CompileLoadInterceptor(
   return GetCode(kind(), it->name());
 }
 
+void NamedLoadHandlerCompiler::GenerateLoadCallback(
+    Register reg, Handle<AccessorInfo> callback) {
+  DCHECK(receiver().is(ApiGetterDescriptor::ReceiverRegister()));
+  __ Move(ApiGetterDescriptor::HolderRegister(), reg);
+  // The callback is alive if this instruction is executed,
+  // so the weak cell is not cleared and points to data.
+  Handle<WeakCell> cell = isolate()->factory()->NewWeakCell(callback);
+  __ GetWeakValue(ApiGetterDescriptor::CallbackRegister(), cell);
+
+  CallApiGetterStub stub(isolate());
+  __ TailCallStub(&stub);
+}
 
 void NamedLoadHandlerCompiler::GenerateLoadPostInterceptor(
     LookupIterator* it, Register interceptor_reg) {

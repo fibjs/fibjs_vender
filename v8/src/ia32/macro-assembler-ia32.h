@@ -19,8 +19,8 @@ const Register kReturnRegister1 = {Register::kCode_edx};
 const Register kReturnRegister2 = {Register::kCode_edi};
 const Register kJSFunctionRegister = {Register::kCode_edi};
 const Register kContextRegister = {Register::kCode_esi};
+const Register kAllocateSizeRegister = {Register::kCode_edx};
 const Register kInterpreterAccumulatorRegister = {Register::kCode_eax};
-const Register kInterpreterRegisterFileRegister = {Register::kCode_edx};
 const Register kInterpreterBytecodeOffsetRegister = {Register::kCode_ecx};
 const Register kInterpreterBytecodeArrayRegister = {Register::kCode_edi};
 const Register kInterpreterDispatchTableRegister = {Register::kCode_esi};
@@ -639,6 +639,14 @@ class MacroAssembler: public Assembler {
 
   void Allocate(Register object_size, Register result, Register result_end,
                 Register scratch, Label* gc_required, AllocationFlags flags);
+
+  // FastAllocate is right now only used for folded allocations. It just
+  // increments the top pointer without checking against limit. This can only
+  // be done if it was proved earlier that the allocation will succeed.
+  void FastAllocate(int object_size, Register result, Register result_end,
+                    AllocationFlags flags);
+  void FastAllocate(Register object_size, Register result, Register result_end,
+                    AllocationFlags flags);
 
   // Allocate a heap number in new space with undefined value. The
   // register scratch2 can be passed as no_reg; the others must be

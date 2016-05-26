@@ -27,10 +27,6 @@ Decision DecideCondition(Node* const cond) {
       Int32Matcher mcond(cond);
       return mcond.Value() ? Decision::kTrue : Decision::kFalse;
     }
-    case IrOpcode::kInt64Constant: {
-      Int64Matcher mcond(cond);
-      return mcond.Value() ? Decision::kTrue : Decision::kFalse;
-    }
     case IrOpcode::kHeapConstant: {
       HeapObjectMatcher mcond(cond);
       return mcond.Value()->BooleanValue() ? Decision::kTrue : Decision::kFalse;
@@ -70,8 +66,6 @@ Reduction CommonOperatorReducer::Reduce(Node* node) {
       return ReduceReturn(node);
     case IrOpcode::kSelect:
       return ReduceSelect(node);
-    case IrOpcode::kGuard:
-      return ReduceGuard(node);
     default:
       break;
   }
@@ -148,13 +142,14 @@ Reduction CommonOperatorReducer::ReduceDeoptimizeConditional(Node* node) {
   Decision const decision = DecideCondition(condition);
   if (decision == Decision::kUnknown) return NoChange();
   if (condition_is_true == (decision == Decision::kTrue)) {
-    return Replace(control);
+    ReplaceWithValue(node, dead(), effect, control);
+  } else {
+    control = graph()->NewNode(common()->Deoptimize(DeoptimizeKind::kEager),
+                               frame_state, effect, control);
+    // TODO(bmeurer): This should be on the AdvancedReducer somehow.
+    NodeProperties::MergeControlToEnd(graph(), common(), control);
+    Revisit(graph()->end());
   }
-  control = graph()->NewNode(common()->Deoptimize(DeoptimizeKind::kEager),
-                             frame_state, effect, control);
-  // TODO(bmeurer): This should be on the AdvancedReducer somehow.
-  NodeProperties::MergeControlToEnd(graph(), common(), control);
-  Revisit(graph()->end());
   return Replace(dead());
 }
 
@@ -392,16 +387,6 @@ Reduction CommonOperatorReducer::ReduceSelect(Node* node) {
     default:
       break;
   }
-  return NoChange();
-}
-
-
-Reduction CommonOperatorReducer::ReduceGuard(Node* node) {
-  DCHECK_EQ(IrOpcode::kGuard, node->opcode());
-  Node* const input = NodeProperties::GetValueInput(node, 0);
-  Type* const input_type = NodeProperties::GetTypeOrAny(input);
-  Type* const guard_type = OpParameter<Type*>(node);
-  if (input_type->Is(guard_type)) return Replace(input);
   return NoChange();
 }
 

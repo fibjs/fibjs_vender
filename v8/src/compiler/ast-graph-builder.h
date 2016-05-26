@@ -15,7 +15,7 @@ namespace internal {
 
 // Forward declarations.
 class BitVector;
-
+class CompilationInfo;
 
 namespace compiler {
 
@@ -106,6 +106,9 @@ class AstGraphBuilder : public AstVisitor {
   // Optimization to cache loaded feedback vector.
   SetOncePointer<Node> feedback_vector_;
 
+  // Optimization to cache empty frame state.
+  SetOncePointer<Node> empty_frame_state_;
+
   // Control nodes that exit the function body.
   ZoneVector<Node*> exit_controls_;
 
@@ -166,6 +169,9 @@ class AstGraphBuilder : public AstVisitor {
 
   // Get or create the node that represents the incoming new target value.
   Node* GetNewTarget();
+
+  // Get or create the node that represents the empty frame state.
+  Node* GetEmptyFrameState();
 
   // Node creation helpers.
   Node* NewNode(const Operator* op, bool incomplete = false) {
@@ -341,7 +347,6 @@ class AstGraphBuilder : public AstVisitor {
   Node* BuildThrowUnsupportedSuperError(BailoutId bailout_id);
 
   // Builders for dynamic hole-checks at runtime.
-  Node* BuildHoleCheckSilent(Node* value, Node* for_hole, Node* not_hole);
   Node* BuildHoleCheckThenThrow(Node* value, Variable* var, Node* not_hole,
                                 BailoutId bailout_id);
   Node* BuildHoleCheckElseThrow(Node* value, Variable* var, Node* for_hole,

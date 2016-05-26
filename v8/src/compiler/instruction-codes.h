@@ -56,6 +56,7 @@ enum class RecordWriteMode { kValueIsMap, kValueIsPointer, kValueIsAny };
   V(ArchLookupSwitch)                     \
   V(ArchTableSwitch)                      \
   V(ArchNop)                              \
+  V(ArchDebugBreak)                       \
   V(ArchThrowTerminator)                  \
   V(ArchDeoptimize)                       \
   V(ArchRet)                              \
@@ -78,7 +79,15 @@ enum class RecordWriteMode { kValueIsMap, kValueIsPointer, kValueIsAny };
   V(CheckedStoreWord64)                   \
   V(CheckedStoreFloat32)                  \
   V(CheckedStoreFloat64)                  \
-  V(ArchStackSlot)
+  V(ArchStackSlot)                        \
+  V(AtomicLoadInt8)                       \
+  V(AtomicLoadUint8)                      \
+  V(AtomicLoadInt16)                      \
+  V(AtomicLoadUint16)                     \
+  V(AtomicLoadWord32)                     \
+  V(AtomicStoreWord8)                     \
+  V(AtomicStoreWord16)                    \
+  V(AtomicStoreWord32)
 
 #define ARCH_OPCODE_LIST(V)  \
   COMMON_ARCH_OPCODE_LIST(V) \

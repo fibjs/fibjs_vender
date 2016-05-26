@@ -17,14 +17,23 @@ RUNTIME_FUNCTION(Runtime_CreateJSGeneratorObject) {
   DCHECK(args.length() == 2);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, receiver, 1);
-  RUNTIME_ASSERT(function->shared()->is_generator());
+  RUNTIME_ASSERT(function->shared()->is_resumable());
+
+  Handle<FixedArray> operand_stack;
+  if (FLAG_ignition && FLAG_ignition_generators) {
+    int size = function->shared()->bytecode_array()->register_count();
+    operand_stack = isolate->factory()->NewFixedArray(size);
+  } else {
+    DCHECK(!function->shared()->HasBytecodeArray());
+    operand_stack = handle(isolate->heap()->empty_fixed_array());
+  }
 
   Handle<JSGeneratorObject> generator =
       isolate->factory()->NewJSGeneratorObject(function);
   generator->set_function(*function);
   generator->set_context(isolate->context());
   generator->set_receiver(*receiver);
-  generator->set_operand_stack(isolate->heap()->empty_fixed_array());
+  generator->set_operand_stack(*operand_stack);
   generator->set_continuation(JSGeneratorObject::kGeneratorExecuting);
   return *generator;
 }
@@ -37,7 +46,7 @@ RUNTIME_FUNCTION(Runtime_SuspendJSGeneratorObject) {
 
   JavaScriptFrameIterator stack_iterator(isolate);
   JavaScriptFrame* frame = stack_iterator.frame();
-  RUNTIME_ASSERT(frame->function()->shared()->is_generator());
+  RUNTIME_ASSERT(frame->function()->shared()->is_resumable());
   DCHECK_EQ(frame->function(), generator_object->function());
   DCHECK(frame->function()->shared()->is_compiled());
   DCHECK(!frame->function()->IsOptimized());
@@ -67,6 +76,7 @@ RUNTIME_FUNCTION(Runtime_SuspendJSGeneratorObject) {
 
   return isolate->heap()->undefined_value();
 }
+
 
 RUNTIME_FUNCTION(Runtime_GeneratorClose) {
   HandleScope scope(isolate);
@@ -109,7 +119,16 @@ RUNTIME_FUNCTION(Runtime_GeneratorGetInput) {
 }
 
 
-// Returns generator continuation as a PC offset, or the magic -1 or 0 values.
+// Returns resume mode of generator activation.
+RUNTIME_FUNCTION(Runtime_GeneratorGetResumeMode) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(JSGeneratorObject, generator, 0);
+
+  return Smi::FromInt(generator->resume_mode());
+}
+
+
 RUNTIME_FUNCTION(Runtime_GeneratorGetContinuation) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);

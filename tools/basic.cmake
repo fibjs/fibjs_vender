@@ -16,7 +16,7 @@ set(flags "${flags} -fsigned-char -fmessage-length=0 -fdata-sections -ffunction-
 set(link_flags " ")
 
 if(${OS} STREQUAL "Darwin")
-	set(flags "${flags} -mmacosx-version-min=10.6")
+	set(flags "${flags} -mmacosx-version-min=10.9")
 endif()
 
 if(${BUILD_TYPE} STREQUAL "Release32")

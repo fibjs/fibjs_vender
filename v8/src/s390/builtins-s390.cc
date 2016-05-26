@@ -600,15 +600,10 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // r2: number of arguments
     // r3: constructor function
     // r5: new target
-    if (is_api_function) {
-      __ LoadP(cp, FieldMemOperand(r3, JSFunction::kContextOffset));
-      Handle<Code> code = masm->isolate()->builtins()->HandleApiCallConstruct();
-      __ Call(code, RelocInfo::CODE_TARGET);
-    } else {
-      ParameterCount actual(r2);
-      __ InvokeFunction(r3, r5, actual, CALL_FUNCTION,
-                        CheckDebugStepCallWrapper());
-    }
+
+    ParameterCount actual(r2);
+    __ InvokeFunction(r3, r5, actual, CALL_FUNCTION,
+                      CheckDebugStepCallWrapper());
 
     // Store offset of return address for deoptimizer.
     if (create_implicit_receiver && !is_api_function) {
@@ -755,68 +750,89 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   // will never be used.
   __ LoadP(r5, FieldMemOperand(r6, JSFunction::kSharedFunctionInfoOffset));
   __ LoadW(
-      r5, FieldMemOperand(r5, SharedFunctionInfo::kFormalParameterCountOffset));
+      r2, FieldMemOperand(r5, SharedFunctionInfo::kFormalParameterCountOffset));
   {
     Label loop, done_loop;
     __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
 #if V8_TARGET_ARCH_S390X
-    __ CmpP(r5, Operand::Zero());
+    __ CmpP(r2, Operand::Zero());
     __ beq(&done_loop);
 #else
-    __ SmiUntag(r5);
-    __ LoadAndTestP(r5, r5);
+    __ SmiUntag(r2);
+    __ LoadAndTestP(r2, r2);
     __ beq(&done_loop);
 #endif
-    __ LoadRR(r1, r5);
+    __ LoadRR(r1, r2);
     __ bind(&loop);
     __ push(ip);
     __ BranchOnCount(r1, &loop);
     __ bind(&done_loop);
   }
 
-  // Enter a new JavaScript frame, and initialize its slots as they were when
-  // the generator was suspended.
-  FrameScope scope(masm, StackFrame::MANUAL);
-  __ PushStandardFrame(r6);
+  // Dispatch on the kind of generator object.
+  Label old_generator;
+  __ LoadP(r5, FieldMemOperand(r5, SharedFunctionInfo::kFunctionDataOffset));
+  __ CompareObjectType(r5, r5, r5, BYTECODE_ARRAY_TYPE);
+  __ bne(&old_generator, Label::kNear);
 
-  // Restore the operand stack.
-  __ LoadP(r2, FieldMemOperand(r3, JSGeneratorObject::kOperandStackOffset));
-  __ LoadP(r5, FieldMemOperand(r2, FixedArray::kLengthOffset));
-  __ AddP(r2, r2,
-          Operand(FixedArray::kHeaderSize - kHeapObjectTag - kPointerSize));
+  // New-style (ignition/turbofan) generator object
   {
-    Label loop, done_loop;
-    __ SmiUntag(r5);
-    __ LoadAndTestP(r5, r5);
-    __ beq(&done_loop);
-    __ LoadRR(r1, r5);
-    __ bind(&loop);
-    __ LoadP(ip, MemOperand(r2, kPointerSize));
-    __ la(r2, MemOperand(r2, kPointerSize));
-    __ Push(ip);
-    __ BranchOnCount(r1, &loop);
-    __ bind(&done_loop);
+    // We abuse new.target both to indicate that this is a resume call and to
+    // pass in the generator object.  In ordinary calls, new.target is always
+    // undefined because generator functions are non-constructable.
+    __ LoadRR(r5, r3);
+    __ LoadRR(r3, r6);
+    __ LoadP(ip, FieldMemOperand(r3, JSFunction::kCodeEntryOffset));
+    __ JumpToJSEntry(ip);
   }
-
-  // Reset operand stack so we don't leak.
-  __ LoadRoot(ip, Heap::kEmptyFixedArrayRootIndex);
-  __ StoreP(ip, FieldMemOperand(r3, JSGeneratorObject::kOperandStackOffset),
-            r0);
-
-  // Resume the generator function at the continuation.
-  __ LoadP(r5, FieldMemOperand(r6, JSFunction::kSharedFunctionInfoOffset));
-  __ LoadP(r5, FieldMemOperand(r5, SharedFunctionInfo::kCodeOffset));
-  __ AddP(r5, r5, Operand(Code::kHeaderSize - kHeapObjectTag));
+  // Old-style (full-codegen) generator object
+  __ bind(&old_generator);
   {
-    ConstantPoolUnavailableScope constant_pool_unavailable(masm);
-    __ LoadP(r4, FieldMemOperand(r3, JSGeneratorObject::kContinuationOffset));
-    __ SmiUntag(r4);
-    __ AddP(r5, r5, r4);
-    __ LoadSmiLiteral(r4, Smi::FromInt(JSGeneratorObject::kGeneratorExecuting));
-    __ StoreP(r4, FieldMemOperand(r3, JSGeneratorObject::kContinuationOffset),
+    // Enter a new JavaScript frame, and initialize its slots as they were when
+    // the generator was suspended.
+    FrameScope scope(masm, StackFrame::MANUAL);
+    __ PushStandardFrame(r6);
+
+    // Restore the operand stack.
+    __ LoadP(r2, FieldMemOperand(r3, JSGeneratorObject::kOperandStackOffset));
+    __ LoadP(r5, FieldMemOperand(r2, FixedArray::kLengthOffset));
+    __ AddP(r2, r2,
+            Operand(FixedArray::kHeaderSize - kHeapObjectTag - kPointerSize));
+    {
+      Label loop, done_loop;
+      __ SmiUntag(r5);
+      __ LoadAndTestP(r5, r5);
+      __ beq(&done_loop);
+      __ LoadRR(r1, r5);
+      __ bind(&loop);
+      __ LoadP(ip, MemOperand(r2, kPointerSize));
+      __ la(r2, MemOperand(r2, kPointerSize));
+      __ Push(ip);
+      __ BranchOnCount(r1, &loop);
+      __ bind(&done_loop);
+    }
+
+    // Reset operand stack so we don't leak.
+    __ LoadRoot(ip, Heap::kEmptyFixedArrayRootIndex);
+    __ StoreP(ip, FieldMemOperand(r3, JSGeneratorObject::kOperandStackOffset),
               r0);
-    __ LoadRR(r2, r3);  // Continuation expects generator object in r2.
-    __ Jump(r5);
+
+    // Resume the generator function at the continuation.
+    __ LoadP(r5, FieldMemOperand(r6, JSFunction::kSharedFunctionInfoOffset));
+    __ LoadP(r5, FieldMemOperand(r5, SharedFunctionInfo::kCodeOffset));
+    __ AddP(r5, r5, Operand(Code::kHeaderSize - kHeapObjectTag));
+    {
+      ConstantPoolUnavailableScope constant_pool_unavailable(masm);
+      __ LoadP(r4, FieldMemOperand(r3, JSGeneratorObject::kContinuationOffset));
+      __ SmiUntag(r4);
+      __ AddP(r5, r5, r4);
+      __ LoadSmiLiteral(r4,
+                        Smi::FromInt(JSGeneratorObject::kGeneratorExecuting));
+      __ StoreP(r4, FieldMemOperand(r3, JSGeneratorObject::kContinuationOffset),
+                r0);
+      __ LoadRR(r2, r3);  // Continuation expects generator object in r2.
+      __ Jump(r5);
+    }
   }
 }
 
@@ -945,6 +961,21 @@ void Builtins::Generate_JSConstructEntryTrampoline(MacroAssembler* masm) {
   Generate_JSEntryTrampolineHelper(masm, true);
 }
 
+static void LeaveInterpreterFrame(MacroAssembler* masm, Register scratch) {
+  Register args_count = scratch;
+
+  // Get the arguments + receiver count.
+  __ LoadP(args_count,
+           MemOperand(fp, InterpreterFrameConstants::kBytecodeArrayFromFp));
+  __ LoadlW(args_count,
+            FieldMemOperand(args_count, BytecodeArray::kParameterSizeOffset));
+
+  // Leave the frame (also dropping the register file).
+  __ LeaveFrame(StackFrame::JAVA_SCRIPT);
+
+  __ AddP(sp, sp, args_count);
+}
+
 // Generate code for entering a JS function with the interpreter.
 // On entry to the function the receiver and arguments have been pushed on the
 // stack left to right.  The actual argument count matches the formal parameter
@@ -970,8 +1001,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   FrameScope frame_scope(masm, StackFrame::MANUAL);
   __ PushStandardFrame(r3);
 
-  // Get the bytecode array from the function object and load the pointer to the
-  // first entry into kInterpreterBytecodeRegister.
+  // Get the bytecode array from the function object (or from the DebugInfo if
+  // it is present) and load it into kInterpreterBytecodeArrayRegister.
   __ LoadP(r2, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
   Label array_done;
   Register debug_info = r4;
@@ -987,8 +1018,13 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
            FieldMemOperand(debug_info, DebugInfo::kAbstractCodeIndex));
   __ bind(&array_done);
 
+  // Check function data field is actually a BytecodeArray object.
+  Label bytecode_array_not_present;
+  __ CompareRoot(kInterpreterBytecodeArrayRegister,
+                 Heap::kUndefinedValueRootIndex);
+  __ beq(&bytecode_array_not_present);
+
   if (FLAG_debug_code) {
-    // Check function data field is actually a BytecodeArray object.
     __ TestIfSmi(kInterpreterBytecodeArrayRegister);
     __ Assert(ne, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
     __ CompareObjectType(kInterpreterBytecodeArrayRegister, r2, no_reg,
@@ -996,9 +1032,13 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     __ Assert(eq, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
   }
 
-  // Push new.target, bytecode array and zero for bytecode array offset.
-  __ LoadImmP(r2, Operand::Zero());
-  __ Push(r5, kInterpreterBytecodeArrayRegister, r2);
+  // Load the initial bytecode offset.
+  __ mov(kInterpreterBytecodeOffsetRegister,
+         Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
+
+  // Push new.target, bytecode array and Smi tagged bytecode array offset.
+  __ SmiTag(r4, kInterpreterBytecodeOffsetRegister);
+  __ Push(r5, kInterpreterBytecodeArrayRegister, r4);
 
   // Allocate the local and temporary register file on the stack.
   {
@@ -1030,13 +1070,8 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     __ bind(&no_args);
   }
 
-  // Load accumulator, register file, bytecode offset, dispatch table into
-  // registers.
+  // Load accumulator and dispatch table into registers.
   __ LoadRoot(kInterpreterAccumulatorRegister, Heap::kUndefinedValueRootIndex);
-  __ AddP(kInterpreterRegisterFileRegister, fp,
-          Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
-  __ mov(kInterpreterBytecodeOffsetRegister,
-         Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
   __ mov(kInterpreterDispatchTableRegister,
          Operand(ExternalReference::interpreter_dispatch_table_address(
              masm->isolate())));
@@ -1048,26 +1083,47 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ LoadP(ip, MemOperand(kInterpreterDispatchTableRegister, ip));
   __ Call(ip);
 
-  // Even though the first bytecode handler was called, we will never return.
-  __ Abort(kUnexpectedReturnFromBytecodeHandler);
+  masm->isolate()->heap()->SetInterpreterEntryReturnPCOffset(masm->pc_offset());
+
+  // The return value is in r2.
+  LeaveInterpreterFrame(masm, r4);
+  __ Ret();
+
+  // If the bytecode array is no longer present, then the underlying function
+  // has been switched to a different kind of code and we heal the closure by
+  // switching the code entry field over to the new code object as well.
+  __ bind(&bytecode_array_not_present);
+  __ LeaveFrame(StackFrame::JAVA_SCRIPT);
+  __ LoadP(r6, FieldMemOperand(r3, JSFunction::kSharedFunctionInfoOffset));
+  __ LoadP(r6, FieldMemOperand(r6, SharedFunctionInfo::kCodeOffset));
+  __ AddP(r6, r6, Operand(Code::kHeaderSize - kHeapObjectTag));
+  __ StoreP(r6, FieldMemOperand(r3, JSFunction::kCodeEntryOffset), r0);
+  __ RecordWriteCodeEntryField(r3, r6, r7);
+  __ JumpToJSEntry(r6);
 }
 
-void Builtins::Generate_InterpreterExitTrampoline(MacroAssembler* masm) {
-  // TODO(rmcilroy): List of things not currently dealt with here but done in
-  // fullcodegen's EmitReturnSequence.
-  //  - Supporting FLAG_trace for Runtime::TraceExit.
-  //  - Support profiler (specifically decrementing profiling_counter
-  //    appropriately and calling out to HandleInterrupts if necessary).
+void Builtins::Generate_InterpreterMarkBaselineOnReturn(MacroAssembler* masm) {
+  // Save the function and context for call to CompileBaseline.
+  __ LoadP(r3, MemOperand(fp, StandardFrameConstants::kFunctionOffset));
+  __ LoadP(kContextRegister,
+           MemOperand(fp, StandardFrameConstants::kContextOffset));
 
-  // The return value is in accumulator, which is already in r2.
+  // Leave the frame before recompiling for baseline so that we don't count as
+  // an activation on the stack.
+  LeaveInterpreterFrame(masm, r4);
 
-  // Leave the frame (also dropping the register file).
-  __ LeaveFrame(StackFrame::JAVA_SCRIPT);
+  {
+    FrameScope frame_scope(masm, StackFrame::INTERNAL);
+    // Push return value.
+    __ push(r2);
 
-  // Drop receiver + arguments and return.
-  __ LoadlW(r0, FieldMemOperand(kInterpreterBytecodeArrayRegister,
-                                BytecodeArray::kParameterSizeOffset));
-  __ AddP(sp, sp, r0);
+    // Push function as argument and compile for baseline.
+    __ push(r3);
+    __ CallRuntime(Runtime::kCompileBaseline);
+
+    // Restore return value.
+    __ pop(r2);
+  }
   __ Ret();
 }
 
@@ -1131,19 +1187,24 @@ void Builtins::Generate_InterpreterPushArgsAndConstruct(MacroAssembler* masm) {
   __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
 }
 
-static void Generate_EnterBytecodeDispatch(MacroAssembler* masm) {
-  // Initialize register file register and dispatch table register.
-  __ AddP(kInterpreterRegisterFileRegister, fp,
-          Operand(InterpreterFrameConstants::kRegisterFilePointerFromFp));
+void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
+  // Set the return address to the correct point in the interpreter entry
+  // trampoline.
+  Smi* interpreter_entry_return_pc_offset(
+      masm->isolate()->heap()->interpreter_entry_return_pc_offset());
+  DCHECK_NE(interpreter_entry_return_pc_offset, Smi::FromInt(0));
+  __ Move(r4, masm->isolate()->builtins()->InterpreterEntryTrampoline());
+  __ AddP(r14, r4, Operand(interpreter_entry_return_pc_offset->value() +
+                           Code::kHeaderSize - kHeapObjectTag));
+
+  // Initialize the dispatch table register.
   __ mov(kInterpreterDispatchTableRegister,
          Operand(ExternalReference::interpreter_dispatch_table_address(
              masm->isolate())));
 
   // Get the bytecode array pointer from the frame.
-  __ LoadP(
-      kInterpreterBytecodeArrayRegister,
-      MemOperand(kInterpreterRegisterFileRegister,
-                 InterpreterFrameConstants::kBytecodeArrayFromRegisterPointer));
+  __ LoadP(kInterpreterBytecodeArrayRegister,
+           MemOperand(fp, InterpreterFrameConstants::kBytecodeArrayFromFp));
 
   if (FLAG_debug_code) {
     // Check function data field is actually a BytecodeArray object.
@@ -1156,9 +1217,7 @@ static void Generate_EnterBytecodeDispatch(MacroAssembler* masm) {
 
   // Get the target bytecode offset from the frame.
   __ LoadP(kInterpreterBytecodeOffsetRegister,
-           MemOperand(
-               kInterpreterRegisterFileRegister,
-               InterpreterFrameConstants::kBytecodeOffsetFromRegisterPointer));
+           MemOperand(fp, InterpreterFrameConstants::kBytecodeOffsetFromFp));
   __ SmiUntag(kInterpreterBytecodeOffsetRegister);
 
   // Dispatch to the target bytecode.
@@ -1167,51 +1226,6 @@ static void Generate_EnterBytecodeDispatch(MacroAssembler* masm) {
   __ ShiftLeftP(ip, r3, Operand(kPointerSizeLog2));
   __ LoadP(ip, MemOperand(kInterpreterDispatchTableRegister, ip));
   __ Jump(ip);
-}
-
-static void Generate_InterpreterNotifyDeoptimizedHelper(
-    MacroAssembler* masm, Deoptimizer::BailoutType type) {
-  // Enter an internal frame.
-  {
-    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
-
-    // Pass the deoptimization type to the runtime system.
-    __ LoadSmiLiteral(r3, Smi::FromInt(static_cast<int>(type)));
-    __ Push(r3);
-    __ CallRuntime(Runtime::kNotifyDeoptimized);
-    // Tear down internal frame.
-  }
-
-  // Drop state (we don't use these for interpreter deopts) and and pop the
-  // accumulator value into the accumulator register.
-  __ Drop(1);
-  __ Pop(kInterpreterAccumulatorRegister);
-
-  // Enter the bytecode dispatch.
-  Generate_EnterBytecodeDispatch(masm);
-}
-
-void Builtins::Generate_InterpreterNotifyDeoptimized(MacroAssembler* masm) {
-  Generate_InterpreterNotifyDeoptimizedHelper(masm, Deoptimizer::EAGER);
-}
-
-void Builtins::Generate_InterpreterNotifySoftDeoptimized(MacroAssembler* masm) {
-  Generate_InterpreterNotifyDeoptimizedHelper(masm, Deoptimizer::SOFT);
-}
-
-void Builtins::Generate_InterpreterNotifyLazyDeoptimized(MacroAssembler* masm) {
-  Generate_InterpreterNotifyDeoptimizedHelper(masm, Deoptimizer::LAZY);
-}
-
-void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
-  // Set the address of the interpreter entry trampoline as a return address.
-  // This simulates the initial call to bytecode handlers in interpreter entry
-  // trampoline. The return will never actually be taken, but our stack walker
-  // uses this address to determine whether a frame is interpreted.
-  __ mov(r14,
-         Operand(masm->isolate()->builtins()->InterpreterEntryTrampoline()));
-
-  Generate_EnterBytecodeDispatch(masm);
 }
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
@@ -1358,6 +1372,10 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   GenerateTailCallToReturnedCode(masm, Runtime::kCompileLazy);
 }
 
+void Builtins::Generate_CompileBaseline(MacroAssembler* masm) {
+  GenerateTailCallToReturnedCode(masm, Runtime::kCompileBaseline);
+}
+
 void Builtins::Generate_CompileOptimized(MacroAssembler* masm) {
   GenerateTailCallToReturnedCode(masm,
                                  Runtime::kCompileOptimized_NotConcurrent);
@@ -1497,14 +1515,19 @@ static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
   __ SmiUntag(r8);
   // Switch on the state.
   Label with_tos_register, unknown_state;
-  __ CmpP(r8, Operand(FullCodeGenerator::NO_REGISTERS));
+  __ CmpP(
+      r8,
+      Operand(static_cast<intptr_t>(Deoptimizer::BailoutState::NO_REGISTERS)));
   __ bne(&with_tos_register);
   __ la(sp, MemOperand(sp, 1 * kPointerSize));  // Remove state.
   __ Ret();
 
   __ bind(&with_tos_register);
+  DCHECK_EQ(kInterpreterAccumulatorRegister.code(), r2.code());
   __ LoadP(r2, MemOperand(sp, 1 * kPointerSize));
-  __ CmpP(r8, Operand(FullCodeGenerator::TOS_REG));
+  __ CmpP(
+      r8,
+      Operand(static_cast<intptr_t>(Deoptimizer::BailoutState::TOS_REGISTER)));
   __ bne(&unknown_state);
   __ la(sp, MemOperand(sp, 2 * kPointerSize));  // Remove state.
   __ Ret();
@@ -1709,28 +1732,6 @@ void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
   // 3. Raise a TypeError if the receiver is not a date.
   __ bind(&receiver_not_date);
   __ TailCallRuntime(Runtime::kThrowNotDateError);
-}
-
-// static
-void Builtins::Generate_FunctionHasInstance(MacroAssembler* masm) {
-  // ----------- S t a t e -------------
-  //  -- r2    : argc
-  //  -- sp[0] : first argument (left-hand side)
-  //  -- sp[4] : receiver (right-hand side)
-  // -----------------------------------
-
-  {
-    FrameScope scope(masm, StackFrame::INTERNAL);
-    __ LoadP(InstanceOfDescriptor::LeftRegister(),
-             MemOperand(fp, 2 * kPointerSize));  // Load left-hand side.
-    __ LoadP(InstanceOfDescriptor::RightRegister(),
-             MemOperand(fp, 3 * kPointerSize));  // Load right-hand side.
-    InstanceOfStub stub(masm->isolate(), true);
-    __ CallStub(&stub);
-  }
-
-  // Pop the argument and the receiver.
-  __ Ret(2);
 }
 
 // static
@@ -2669,6 +2670,31 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   __ bind(&non_constructor);
   __ Jump(masm->isolate()->builtins()->ConstructedNonConstructable(),
           RelocInfo::CODE_TARGET);
+}
+
+// static
+void Builtins::Generate_AllocateInNewSpace(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- r3 : requested object size (untagged)
+  //  -- lr : return address
+  // -----------------------------------
+  __ SmiTag(r3);
+  __ Push(r3);
+  __ LoadSmiLiteral(cp, Smi::FromInt(0));
+  __ TailCallRuntime(Runtime::kAllocateInNewSpace);
+}
+
+// static
+void Builtins::Generate_AllocateInOldSpace(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- r3 : requested object size (untagged)
+  //  -- lr : return address
+  // -----------------------------------
+  __ SmiTag(r3);
+  __ LoadSmiLiteral(r4, Smi::FromInt(AllocateTargetSpace::encode(OLD_SPACE)));
+  __ Push(r3, r4);
+  __ LoadSmiLiteral(cp, Smi::FromInt(0));
+  __ TailCallRuntime(Runtime::kAllocateInTargetSpace);
 }
 
 void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {

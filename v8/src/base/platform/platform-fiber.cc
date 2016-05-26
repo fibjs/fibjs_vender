@@ -1,5 +1,6 @@
 #include "src/v8.h"
-#include "src/profiler/sampler.h"
+#include "src/base/platform/platform.h"
+#include "src/base/platform/time.h"
 #include <exlib/include/fiber.h>
 #include <exlib/include/service.h>
 
@@ -21,15 +22,6 @@ inline int64_t getTime();
 
 namespace v8
 {
-
-namespace internal
-{
-
-void Sampler::DoSample()
-{
-}
-
-}
 
 namespace base
 {

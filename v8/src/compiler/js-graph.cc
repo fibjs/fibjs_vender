@@ -14,6 +14,15 @@ namespace compiler {
 #define CACHED(name, expr) \
   cached_nodes_[name] ? cached_nodes_[name] : (cached_nodes_[name] = (expr))
 
+Node* JSGraph::AllocateInNewSpaceStubConstant() {
+  return CACHED(kAllocateInNewSpaceStubConstant,
+                HeapConstant(isolate()->builtins()->AllocateInNewSpace()));
+}
+
+Node* JSGraph::AllocateInOldSpaceStubConstant() {
+  return CACHED(kAllocateInOldSpaceStubConstant,
+                HeapConstant(isolate()->builtins()->AllocateInOldSpace()));
+}
 
 Node* JSGraph::CEntryStubConstant(int result_size) {
   if (result_size == 1) {
@@ -37,6 +46,11 @@ Node* JSGraph::HeapNumberMapConstant() {
 Node* JSGraph::OptimizedOutConstant() {
   return CACHED(kOptimizedOutConstant,
                 HeapConstant(factory()->optimized_out()));
+}
+
+Node* JSGraph::StaleRegisterConstant() {
+  return CACHED(kStaleRegisterConstant,
+                HeapConstant(factory()->stale_register()));
 }
 
 Node* JSGraph::UndefinedConstant() {
@@ -81,9 +95,6 @@ Node* JSGraph::NaNConstant() {
 
 
 Node* JSGraph::HeapConstant(Handle<HeapObject> value) {
-  if (value->IsConsString()) {
-    value = String::Flatten(Handle<String>::cast(value), TENURED);
-  }
   Node** loc = cache_.FindHeapConstant(value);
   if (*loc == nullptr) {
     *loc = graph()->NewNode(common()->HeapConstant(value));
@@ -207,21 +218,9 @@ Node* JSGraph::ExternalConstant(Runtime::FunctionId function_id) {
   return ExternalConstant(ExternalReference(function_id, isolate()));
 }
 
-
-Node* JSGraph::EmptyFrameState() {
-  Node* empty_frame_state = cached_nodes_[kEmptyFrameState];
-  if (!empty_frame_state || empty_frame_state->IsDead()) {
-    Node* state_values = graph()->NewNode(common()->StateValues(0));
-    empty_frame_state = graph()->NewNode(
-        common()->FrameState(BailoutId::None(),
-                             OutputFrameStateCombine::Ignore(), nullptr),
-        state_values, state_values, state_values, NoContextConstant(),
-        UndefinedConstant(), graph()->start());
-    cached_nodes_[kEmptyFrameState] = empty_frame_state;
-  }
-  return empty_frame_state;
+Node* JSGraph::EmptyStateValues() {
+  return CACHED(kEmptyStateValues, graph()->NewNode(common()->StateValues(0)));
 }
-
 
 Node* JSGraph::Dead() {
   return CACHED(kDead, graph()->NewNode(common()->Dead()));

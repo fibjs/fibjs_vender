@@ -10,7 +10,8 @@
 namespace v8 {
 namespace internal {
 
-void Scavenger::ScavengeObject(HeapObject** p, HeapObject* object) {
+void Scavenger::ScavengeObject(HeapObject** p, HeapObject* object,
+                               PromotionMode promotion_mode) {
   DCHECK(object->GetIsolate()->heap()->InFromSpace(object));
 
   // We use the first word (where the map pointer usually is) of a heap
@@ -34,9 +35,33 @@ void Scavenger::ScavengeObject(HeapObject** p, HeapObject* object) {
   // AllocationMementos are unrooted and shouldn't survive a scavenge
   DCHECK(object->map() != object->GetHeap()->allocation_memento_map());
   // Call the slow part of scavenge object.
-  return ScavengeObjectSlow(p, object);
+  return ScavengeObjectSlow(p, object, promotion_mode);
 }
 
+SlotCallbackResult Scavenger::CheckAndScavengeObject(
+    Heap* heap, Address slot_address, PromotionMode promotion_mode) {
+  Object** slot = reinterpret_cast<Object**>(slot_address);
+  Object* object = *slot;
+  if (heap->InFromSpace(object)) {
+    HeapObject* heap_object = reinterpret_cast<HeapObject*>(object);
+    DCHECK(heap_object->IsHeapObject());
+
+    ScavengeObject(reinterpret_cast<HeapObject**>(slot), heap_object,
+                   promotion_mode);
+
+    object = *slot;
+    // If the object was in from space before and is after executing the
+    // callback in to space, the object is still live.
+    // Unfortunately, we do not know about the slot. It could be in a
+    // just freed free space object.
+    if (heap->InToSpace(object)) {
+      return KEEP_SLOT;
+    }
+  } else {
+    DCHECK(!heap->InNewSpace(object));
+  }
+  return REMOVE_SLOT;
+}
 
 // static
 void StaticScavengeVisitor::VisitPointer(Heap* heap, HeapObject* obj,
@@ -44,7 +69,8 @@ void StaticScavengeVisitor::VisitPointer(Heap* heap, HeapObject* obj,
   Object* object = *p;
   if (!heap->InNewSpace(object)) return;
   Scavenger::ScavengeObject(reinterpret_cast<HeapObject**>(p),
-                            reinterpret_cast<HeapObject*>(object));
+                            reinterpret_cast<HeapObject*>(object),
+                            DEFAULT_PROMOTION);
 }
 
 }  // namespace internal

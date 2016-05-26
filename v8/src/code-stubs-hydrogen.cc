@@ -81,21 +81,13 @@ class CodeStubGraphBuilderBase : public HGraphBuilder {
   HValue* BuildPushElement(HValue* object, HValue* argc,
                            HValue* argument_elements, ElementsKind kind);
 
-  enum ArgumentClass {
-    NONE,
-    SINGLE,
-    MULTIPLE
-  };
-
   HValue* UnmappedCase(HValue* elements, HValue* key, HValue* value);
   HValue* EmitKeyedSloppyArguments(HValue* receiver, HValue* key,
                                    HValue* value);
 
   HValue* BuildArrayConstructor(ElementsKind kind,
-                                AllocationSiteOverrideMode override_mode,
-                                ArgumentClass argument_class);
-  HValue* BuildInternalArrayConstructor(ElementsKind kind,
-                                        ArgumentClass argument_class);
+                                AllocationSiteOverrideMode override_mode);
+  HValue* BuildInternalArrayConstructor(ElementsKind kind);
 
   HValue* BuildToString(HValue* input, bool convert);
   HValue* BuildToPrimitive(HValue* input, HValue* input_map);
@@ -278,8 +270,8 @@ static Handle<Code> DoGenerateCode(Stub* stub) {
     timer.Start();
   }
   Zone zone(isolate->allocator());
-  CompilationInfo info(CodeStub::MajorName(stub->MajorKey()), isolate, &zone,
-                       stub->GetCodeFlags());
+  CompilationInfo info(CStrVector(CodeStub::MajorName(stub->MajorKey())),
+                       isolate, &zone, stub->GetCodeFlags());
   // Parameter count is number of stack parameters.
   int parameter_count = descriptor.GetStackParameterCount();
   if (descriptor.function_mode() == NOT_JS_FUNCTION_STUB_MODE) {
@@ -443,7 +435,7 @@ HValue* CodeStubGraphBuilder<FastCloneRegExpStub>::BuildCodeStub() {
         JSRegExp::kSize + JSRegExp::kInObjectFieldCount * kPointerSize;
     HValue* result =
         Add<HAllocate>(Add<HConstant>(result_size), HType::JSObject(),
-                       NOT_TENURED, JS_REGEXP_TYPE);
+                       NOT_TENURED, JS_REGEXP_TYPE, graph()->GetConstant0());
     Add<HStoreNamedField>(
         result, HObjectAccess::ForMap(),
         Add<HLoadNamedField>(boilerplate, nullptr, HObjectAccess::ForMap()));
@@ -556,8 +548,9 @@ HValue* CodeStubGraphBuilder<CreateAllocationSiteStub>::BuildCodeStub() {
   info()->MarkMustNotHaveEagerFrame();
 
   HValue* size = Add<HConstant>(AllocationSite::kSize);
-  HInstruction* object = Add<HAllocate>(size, HType::JSObject(), TENURED,
-      JS_OBJECT_TYPE);
+  HInstruction* object =
+      Add<HAllocate>(size, HType::JSObject(), TENURED, JS_OBJECT_TYPE,
+                     graph()->GetConstant0());
 
   // Store the map
   Handle<Map> allocation_site_map = isolate()->factory()->allocation_site_map();
@@ -635,7 +628,8 @@ HValue* CodeStubGraphBuilder<CreateWeakCellStub>::BuildCodeStub() {
 
   HValue* size = Add<HConstant>(WeakCell::kSize);
   HInstruction* object =
-      Add<HAllocate>(size, HType::JSObject(), TENURED, JS_OBJECT_TYPE);
+      Add<HAllocate>(size, HType::JSObject(), TENURED, JS_OBJECT_TYPE,
+                     graph()->GetConstant0());
 
   Handle<Map> weak_cell_map = isolate()->factory()->weak_cell_map();
   AddStoreMapConstant(object, weak_cell_map);
@@ -759,18 +753,6 @@ HValue* CodeStubGraphBuilder<FastArrayPushStub>::BuildCodeStub() {
     IfBuilder check(this);
     check.If<HCompareNumericAndBranch>(
         bits, Add<HConstant>(1 << Map::kIsExtensible), Token::NE);
-    check.ThenDeopt(Deoptimizer::kFastArrayPushFailed);
-    check.End();
-  }
-
-  // Disallow pushing onto observed objects.
-  {
-    HValue* bit_field =
-        Add<HLoadNamedField>(map, nullptr, HObjectAccess::ForMapBitField());
-    HValue* mask = Add<HConstant>(1 << Map::kIsObserved);
-    HValue* bit = AddUncasted<HBitwise>(Token::BIT_AND, bit_field, mask);
-    IfBuilder check(this);
-    check.If<HCompareNumericAndBranch>(bit, mask, Token::EQ);
     check.ThenDeopt(Deoptimizer::kFastArrayPushFailed);
     check.End();
   }
@@ -1179,7 +1161,7 @@ void CodeStubGraphBuilderBase::BuildStoreNamedField(
         // TODO(hpayer): Allocation site pretenuring support.
         HInstruction* heap_number =
             Add<HAllocate>(heap_number_size, HType::HeapObject(), NOT_TENURED,
-                           MUTABLE_HEAP_NUMBER_TYPE);
+                           MUTABLE_HEAP_NUMBER_TYPE, graph()->GetConstant0());
         AddStoreMapConstant(heap_number,
                             isolate()->factory()->mutable_heap_number_map());
         Add<HStoreNamedField>(heap_number, HObjectAccess::ForHeapNumberValue(),
@@ -1301,66 +1283,21 @@ Handle<Code> TransitionElementsKindStub::GenerateCode() {
   return DoGenerateCode(this);
 }
 
-template <>
-HValue* CodeStubGraphBuilder<AllocateStub>::BuildCodeStub() {
-  HValue* result =
-      Add<HAllocate>(GetParameter(0), HType::Tagged(),
-                     casted_stub()->pretenure_flag(), JS_OBJECT_TYPE);
-  return result;
-}
-
-Handle<Code> AllocateStub::GenerateCode() { return DoGenerateCode(this); }
-
 HValue* CodeStubGraphBuilderBase::BuildArrayConstructor(
-    ElementsKind kind,
-    AllocationSiteOverrideMode override_mode,
-    ArgumentClass argument_class) {
+    ElementsKind kind, AllocationSiteOverrideMode override_mode) {
   HValue* constructor = GetParameter(ArrayConstructorStubBase::kConstructor);
   HValue* alloc_site = GetParameter(ArrayConstructorStubBase::kAllocationSite);
   JSArrayBuilder array_builder(this, kind, alloc_site, constructor,
                                override_mode);
-  HValue* result = NULL;
-  switch (argument_class) {
-    case NONE:
-      // This stub is very performance sensitive, the generated code must be
-      // tuned so that it doesn't build and eager frame.
-      info()->MarkMustNotHaveEagerFrame();
-      result = array_builder.AllocateEmptyArray();
-      break;
-    case SINGLE:
-      result = BuildArraySingleArgumentConstructor(&array_builder);
-      break;
-    case MULTIPLE:
-      result = BuildArrayNArgumentsConstructor(&array_builder, kind);
-      break;
-  }
-
-  return result;
+  return BuildArrayNArgumentsConstructor(&array_builder, kind);
 }
 
-
 HValue* CodeStubGraphBuilderBase::BuildInternalArrayConstructor(
-    ElementsKind kind, ArgumentClass argument_class) {
+    ElementsKind kind) {
   HValue* constructor = GetParameter(
       InternalArrayConstructorStubBase::kConstructor);
   JSArrayBuilder array_builder(this, kind, constructor);
-
-  HValue* result = NULL;
-  switch (argument_class) {
-    case NONE:
-      // This stub is very performance sensitive, the generated code must be
-      // tuned so that it doesn't build and eager frame.
-      info()->MarkMustNotHaveEagerFrame();
-      result = array_builder.AllocateEmptyArray();
-      break;
-    case SINGLE:
-      result = BuildArraySingleArgumentConstructor(&array_builder);
-      break;
-    case MULTIPLE:
-      result = BuildArrayNArgumentsConstructor(&array_builder, kind);
-      break;
-  }
-  return result;
+  return BuildArrayNArgumentsConstructor(&array_builder, kind);
 }
 
 
@@ -1401,7 +1338,6 @@ HValue* CodeStubGraphBuilderBase::BuildArrayNArgumentsConstructor(
       ? JSArrayBuilder::FILL_WITH_HOLE
       : JSArrayBuilder::DONT_FILL_WITH_HOLE;
   HValue* new_object = array_builder->AllocateArray(checked_length,
-                                                    max_alloc_length,
                                                     checked_length,
                                                     fill_mode);
   HValue* elements = array_builder->GetElementsLocation();
@@ -1424,37 +1360,10 @@ HValue* CodeStubGraphBuilderBase::BuildArrayNArgumentsConstructor(
 
 
 template <>
-HValue* CodeStubGraphBuilder<ArrayNoArgumentConstructorStub>::BuildCodeStub() {
-  ElementsKind kind = casted_stub()->elements_kind();
-  AllocationSiteOverrideMode override_mode = casted_stub()->override_mode();
-  return BuildArrayConstructor(kind, override_mode, NONE);
-}
-
-
-Handle<Code> ArrayNoArgumentConstructorStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-template <>
-HValue* CodeStubGraphBuilder<ArraySingleArgumentConstructorStub>::
-    BuildCodeStub() {
-  ElementsKind kind = casted_stub()->elements_kind();
-  AllocationSiteOverrideMode override_mode = casted_stub()->override_mode();
-  return BuildArrayConstructor(kind, override_mode, SINGLE);
-}
-
-
-Handle<Code> ArraySingleArgumentConstructorStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-template <>
 HValue* CodeStubGraphBuilder<ArrayNArgumentsConstructorStub>::BuildCodeStub() {
   ElementsKind kind = casted_stub()->elements_kind();
   AllocationSiteOverrideMode override_mode = casted_stub()->override_mode();
-  return BuildArrayConstructor(kind, override_mode, MULTIPLE);
+  return BuildArrayConstructor(kind, override_mode);
 }
 
 
@@ -1464,36 +1373,10 @@ Handle<Code> ArrayNArgumentsConstructorStub::GenerateCode() {
 
 
 template <>
-HValue* CodeStubGraphBuilder<InternalArrayNoArgumentConstructorStub>::
-    BuildCodeStub() {
-  ElementsKind kind = casted_stub()->elements_kind();
-  return BuildInternalArrayConstructor(kind, NONE);
-}
-
-
-Handle<Code> InternalArrayNoArgumentConstructorStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-template <>
-HValue* CodeStubGraphBuilder<InternalArraySingleArgumentConstructorStub>::
-    BuildCodeStub() {
-  ElementsKind kind = casted_stub()->elements_kind();
-  return BuildInternalArrayConstructor(kind, SINGLE);
-}
-
-
-Handle<Code> InternalArraySingleArgumentConstructorStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-template <>
 HValue* CodeStubGraphBuilder<InternalArrayNArgumentsConstructorStub>::
     BuildCodeStub() {
   ElementsKind kind = casted_stub()->elements_kind();
-  return BuildInternalArrayConstructor(kind, MULTIPLE);
+  return BuildInternalArrayConstructor(kind);
 }
 
 
@@ -1649,9 +1532,9 @@ HValue* CodeStubGraphBuilderBase::BuildToString(HValue* input, bool convert) {
       // Convert the primitive to a string value.
       ToStringStub stub(isolate());
       HValue* values[] = {context(), Pop()};
-      Push(AddUncasted<HCallWithDescriptor>(
-          Add<HConstant>(stub.GetCode()), 0, stub.GetCallInterfaceDescriptor(),
-          Vector<HValue*>(values, arraysize(values))));
+      Push(AddUncasted<HCallWithDescriptor>(Add<HConstant>(stub.GetCode()), 0,
+                                            stub.GetCallInterfaceDescriptor(),
+                                            ArrayVector(values)));
     }
     if_inputisstring.End();
   }
@@ -1929,7 +1812,8 @@ HValue* CodeStubGraphBuilder<FastNewClosureStub>::BuildCodeStub() {
   // Create a new closure from the given function info in new space
   HValue* size = Add<HConstant>(JSFunction::kSize);
   HInstruction* js_function =
-      Add<HAllocate>(size, HType::JSObject(), NOT_TENURED, JS_FUNCTION_TYPE);
+      Add<HAllocate>(size, HType::JSObject(), NOT_TENURED, JS_FUNCTION_TYPE,
+                     graph()->GetConstant0());
 
   int map_index = Context::FunctionMapIndex(casted_stub()->language_mode(),
                                             casted_stub()->kind());
@@ -1982,7 +1866,8 @@ HValue* CodeStubGraphBuilder<FastNewContextStub>::BuildCodeStub() {
   // Allocate the context in new space.
   HAllocate* function_context = Add<HAllocate>(
       Add<HConstant>(length * kPointerSize + FixedArray::kHeaderSize),
-      HType::HeapObject(), NOT_TENURED, FIXED_ARRAY_TYPE);
+      HType::HeapObject(), NOT_TENURED, FIXED_ARRAY_TYPE,
+      graph()->GetConstant0());
 
   // Set up the object header.
   AddStoreMapConstant(function_context,

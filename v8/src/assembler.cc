@@ -201,7 +201,6 @@ AssemblerBase::~AssemblerBase() {
 
 void AssemblerBase::FlushICache(Isolate* isolate, void* start, size_t size) {
   if (size == 0) return;
-  if (CpuFeatures::IsSupported(COHERENT_CACHE)) return;
 
 #if defined(USE_SIMULATOR)
   Simulator::FlushICache(isolate->simulator_i_cache(), start, size);
@@ -514,7 +513,8 @@ void RelocInfoWriter::Write(const RelocInfo* rinfo) {
     if (RelocInfo::IsComment(rmode)) {
       WriteData(rinfo->data());
     } else if (RelocInfo::IsConstPool(rmode) ||
-               RelocInfo::IsVeneerPool(rmode)) {
+               RelocInfo::IsVeneerPool(rmode) ||
+               RelocInfo::IsDeoptId(rmode)) {
       WriteIntData(static_cast<int>(rinfo->data()));
     }
   }
@@ -705,7 +705,8 @@ void RelocIterator::next() {
             Advance(kIntSize);
           }
         } else if (RelocInfo::IsConstPool(rmode) ||
-                   RelocInfo::IsVeneerPool(rmode)) {
+                   RelocInfo::IsVeneerPool(rmode) ||
+                   RelocInfo::IsDeoptId(rmode)) {
           if (SetMode(rmode)) {
             AdvanceReadInt();
             return;
@@ -828,6 +829,8 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
       return "encoded internal reference";
     case DEOPT_REASON:
       return "deopt reason";
+    case DEOPT_ID:
+      return "deopt index";
     case CONST_POOL:
       return "constant pool";
     case VENEER_POOL:
@@ -846,6 +849,8 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
       return "generator continuation";
     case WASM_MEMORY_REFERENCE:
       return "wasm memory reference";
+    case WASM_MEMORY_SIZE_REFERENCE:
+      return "wasm memory size reference";
     case NUMBER_OF_MODES:
     case PC_JUMP:
       UNREACHABLE();
@@ -933,6 +938,7 @@ void RelocInfo::Verify(Isolate* isolate) {
     case STATEMENT_POSITION:
     case EXTERNAL_REFERENCE:
     case DEOPT_REASON:
+    case DEOPT_ID:
     case CONST_POOL:
     case VENEER_POOL:
     case DEBUG_BREAK_SLOT_AT_POSITION:
@@ -941,6 +947,7 @@ void RelocInfo::Verify(Isolate* isolate) {
     case DEBUG_BREAK_SLOT_AT_TAIL_CALL:
     case GENERATOR_CONTINUATION:
     case WASM_MEMORY_REFERENCE:
+    case WASM_MEMORY_SIZE_REFERENCE:
     case NONE32:
     case NONE64:
       break;
@@ -1075,7 +1082,7 @@ ExternalReference ExternalReference::interpreter_dispatch_table_address(
 ExternalReference ExternalReference::interpreter_dispatch_counters(
     Isolate* isolate) {
   return ExternalReference(
-      isolate->interpreter()->bytecode_dispatch_count_table());
+      isolate->interpreter()->bytecode_dispatch_counters_table());
 }
 
 ExternalReference::ExternalReference(StatsCounter* counter)
@@ -1259,6 +1266,26 @@ ExternalReference ExternalReference::wasm_uint64_div(Isolate* isolate) {
 ExternalReference ExternalReference::wasm_uint64_mod(Isolate* isolate) {
   return ExternalReference(
       Redirect(isolate, FUNCTION_ADDR(wasm::uint64_mod_wrapper)));
+}
+
+ExternalReference ExternalReference::wasm_word32_ctz(Isolate* isolate) {
+  return ExternalReference(
+      Redirect(isolate, FUNCTION_ADDR(wasm::word32_ctz_wrapper)));
+}
+
+ExternalReference ExternalReference::wasm_word64_ctz(Isolate* isolate) {
+  return ExternalReference(
+      Redirect(isolate, FUNCTION_ADDR(wasm::word64_ctz_wrapper)));
+}
+
+ExternalReference ExternalReference::wasm_word32_popcnt(Isolate* isolate) {
+  return ExternalReference(
+      Redirect(isolate, FUNCTION_ADDR(wasm::word32_popcnt_wrapper)));
+}
+
+ExternalReference ExternalReference::wasm_word64_popcnt(Isolate* isolate) {
+  return ExternalReference(
+      Redirect(isolate, FUNCTION_ADDR(wasm::word64_popcnt_wrapper)));
 }
 
 static void f64_acos_wrapper(double* param) { *param = std::acos(*param); }
@@ -1709,34 +1736,12 @@ double power_double_int(double x, int y) {
 
 
 double power_double_double(double x, double y) {
-#if (defined(__MINGW64_VERSION_MAJOR) &&                              \
-     (!defined(__MINGW64_VERSION_RC) || __MINGW64_VERSION_RC < 1)) || \
-    defined(V8_OS_AIX)
-  // MinGW64 and AIX have a custom implementation for pow.  This handles certain
-  // special cases that are different.
-  if ((x == 0.0 || std::isinf(x)) && y != 0.0 && std::isfinite(y)) {
-    double f;
-    double result = ((x == 0.0) ^ (y > 0)) ? V8_INFINITY : 0;
-    /* retain sign if odd integer exponent */
-    return ((std::modf(y, &f) == 0.0) && (static_cast<int64_t>(y) & 1))
-               ? copysign(result, x)
-               : result;
-  }
-
-  if (x == 2.0) {
-    int y_int = static_cast<int>(y);
-    if (y == y_int) {
-      return std::ldexp(1.0, y_int);
-    }
-  }
-#endif
-
   // The checks for special cases can be dropped in ia32 because it has already
   // been done in generated code before bailing out here.
   if (std::isnan(y) || ((x == 1 || x == -1) && std::isinf(y))) {
     return std::numeric_limits<double>::quiet_NaN();
   }
-  return std::pow(x, y);
+  return Pow(x, y);
 }
 
 
@@ -2051,12 +2056,12 @@ int ConstantPoolBuilder::Emit(Assembler* assm) {
 
 // Platform specific but identical code for all the platforms.
 
-
-void Assembler::RecordDeoptReason(const int reason, int raw_position) {
+void Assembler::RecordDeoptReason(const int reason, int raw_position, int id) {
   if (FLAG_trace_deopt || isolate()->cpu_profiler()->is_profiling()) {
     EnsureSpace ensure_space(this);
     RecordRelocInfo(RelocInfo::POSITION, raw_position);
     RecordRelocInfo(RelocInfo::DEOPT_REASON, reason);
+    RecordRelocInfo(RelocInfo::DEOPT_ID, id);
   }
 }
 

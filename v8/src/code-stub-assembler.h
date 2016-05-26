@@ -32,11 +32,26 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   CodeStubAssembler(Isolate* isolate, Zone* zone, int parameter_count,
                     Code::Flags flags, const char* name);
 
+  enum ParameterMode { INTEGER_PARAMETERS, SMI_PARAMETERS };
+
+  compiler::Node* BooleanMapConstant();
+  compiler::Node* EmptyStringConstant();
+  compiler::Node* HeapNumberMapConstant();
+  compiler::Node* NoContextConstant();
+  compiler::Node* NullConstant();
+  compiler::Node* UndefinedConstant();
+  compiler::Node* StaleRegisterConstant();
+
   // Float64 operations.
   compiler::Node* Float64Ceil(compiler::Node* x);
   compiler::Node* Float64Floor(compiler::Node* x);
   compiler::Node* Float64Round(compiler::Node* x);
   compiler::Node* Float64Trunc(compiler::Node* x);
+
+  // Tag a Word as a Smi value.
+  compiler::Node* SmiTag(compiler::Node* value);
+  // Untag a Smi value as a Word.
+  compiler::Node* SmiUntag(compiler::Node* value);
 
   // Smi conversions.
   compiler::Node* SmiToFloat64(compiler::Node* value);
@@ -54,6 +69,15 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* SmiLessThan(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiLessThanOrEqual(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiMin(compiler::Node* a, compiler::Node* b);
+
+  // Allocate an object of the given size.
+  compiler::Node* Allocate(compiler::Node* size, AllocationFlags flags = kNone);
+  compiler::Node* Allocate(int size, AllocationFlags flags = kNone);
+  compiler::Node* InnerAllocate(compiler::Node* previous, int offset);
+  compiler::Node* InnerAllocate(compiler::Node* previous,
+                                compiler::Node* offset);
+
+  void Assert(compiler::Node* condition);
 
   // Check a value for smi-ness
   compiler::Node* WordIsSmi(compiler::Node* a);
@@ -101,26 +125,34 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* LoadMapInstanceType(compiler::Node* map);
   // Load the instance descriptors of a map.
   compiler::Node* LoadMapDescriptors(compiler::Node* map);
+  // Load the prototype of a map.
+  compiler::Node* LoadMapPrototype(compiler::Node* map);
 
   // Load the hash field of a name.
   compiler::Node* LoadNameHash(compiler::Node* name);
   // Load the instance size of a Map.
   compiler::Node* LoadMapInstanceSize(compiler::Node* map);
 
+  compiler::Node* AllocateUninitializedFixedArray(compiler::Node* length);
+
   // Load an array element from a FixedArray.
-  compiler::Node* LoadFixedArrayElementInt32Index(compiler::Node* object,
-                                                  compiler::Node* int32_index,
-                                                  int additional_offset = 0);
-  compiler::Node* LoadFixedArrayElementSmiIndex(compiler::Node* object,
-                                                compiler::Node* smi_index,
-                                                int additional_offset = 0);
-  compiler::Node* LoadFixedArrayElementConstantIndex(compiler::Node* object,
-                                                     int index);
+  compiler::Node* LoadFixedArrayElement(
+      compiler::Node* object, compiler::Node* int32_index,
+      int additional_offset = 0,
+      ParameterMode parameter_mode = INTEGER_PARAMETERS);
+
+  // Context manipulation
+  compiler::Node* LoadNativeContext(compiler::Node* context);
+
+  compiler::Node* LoadJSArrayElementsMap(ElementsKind kind,
+                                         compiler::Node* native_context);
 
   // Store the floating point value of a HeapNumber.
   compiler::Node* StoreHeapNumberValue(compiler::Node* object,
                                        compiler::Node* value);
   // Store a field to an object on the heap.
+  compiler::Node* StoreObjectField(
+      compiler::Node* object, int offset, compiler::Node* value);
   compiler::Node* StoreObjectFieldNoWriteBarrier(
       compiler::Node* object, int offset, compiler::Node* value,
       MachineRepresentation rep = MachineRepresentation::kTagged);
@@ -128,12 +160,14 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* StoreMapNoWriteBarrier(compiler::Node* object,
                                          compiler::Node* map);
   // Store an array element to a FixedArray.
-  compiler::Node* StoreFixedArrayElementInt32Index(compiler::Node* object,
-                                                   compiler::Node* index,
-                                                   compiler::Node* value);
-  compiler::Node* StoreFixedArrayElementNoWriteBarrier(compiler::Node* object,
-                                                       compiler::Node* index,
-                                                       compiler::Node* value);
+  compiler::Node* StoreFixedArrayElement(
+      compiler::Node* object, compiler::Node* index, compiler::Node* value,
+      WriteBarrierMode barrier_mode = UPDATE_WRITE_BARRIER,
+      ParameterMode parameter_mode = INTEGER_PARAMETERS);
+
+  compiler::Node* StoreFixedDoubleArrayElement(
+      compiler::Node* object, compiler::Node* index, compiler::Node* value,
+      ParameterMode parameter_mode = INTEGER_PARAMETERS);
 
   // Allocate a HeapNumber without initializing its value.
   compiler::Node* AllocateHeapNumber();
@@ -143,13 +177,22 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* AllocateSeqOneByteString(int length);
   // Allocate a SeqTwoByteString with the given length.
   compiler::Node* AllocateSeqTwoByteString(int length);
+  // Allocated an JSArray
+  compiler::Node* AllocateJSArray(ElementsKind kind, compiler::Node* array_map,
+                                  compiler::Node* capacity,
+                                  compiler::Node* length,
+                                  compiler::Node* allocation_site = nullptr,
+                                  ParameterMode mode = INTEGER_PARAMETERS);
+
+  // Allocation site manipulation
+  void InitializeAllocationMemento(compiler::Node* base_allocation,
+                                   int base_allocation_size,
+                                   compiler::Node* allocation_site);
 
   compiler::Node* TruncateTaggedToFloat64(compiler::Node* context,
                                           compiler::Node* value);
   compiler::Node* TruncateTaggedToWord32(compiler::Node* context,
                                          compiler::Node* value);
-  // Truncate to int32 using JavaScript truncation mode.
-  compiler::Node* TruncateFloat64ToInt32(compiler::Node* value);
   // Truncate the floating point value of a HeapNumber to an Int32.
   compiler::Node* TruncateHeapNumberValueToWord32(compiler::Node* object);
 
@@ -179,6 +222,42 @@ class CodeStubAssembler : public compiler::CodeAssembler {
 
   compiler::Node* BitFieldDecode(compiler::Node* word32, uint32_t shift,
                                  uint32_t mask);
+
+  // Various building blocks for stubs doing property lookups.
+  void TryToName(compiler::Node* key, Label* if_keyisindex, Variable* var_index,
+                 Label* if_keyisunique, Label* call_runtime);
+
+  void TryLookupProperty(compiler::Node* object, compiler::Node* map,
+                         compiler::Node* instance_type, compiler::Node* name,
+                         Label* if_found, Label* if_not_found,
+                         Label* call_runtime);
+
+  void TryLookupElement(compiler::Node* object, compiler::Node* map,
+                        compiler::Node* instance_type, compiler::Node* index,
+                        Label* if_found, Label* if_not_found,
+                        Label* call_runtime);
+
+  // Instanceof helpers.
+  // ES6 section 7.3.19 OrdinaryHasInstance (C, O)
+  compiler::Node* OrdinaryHasInstance(compiler::Node* context,
+                                      compiler::Node* callable,
+                                      compiler::Node* object);
+
+ private:
+  compiler::Node* ElementOffsetFromIndex(compiler::Node* index,
+                                         ElementsKind kind, ParameterMode mode,
+                                         int base_size = 0);
+
+  compiler::Node* AllocateRawAligned(compiler::Node* size_in_bytes,
+                                     AllocationFlags flags,
+                                     compiler::Node* top_address,
+                                     compiler::Node* limit_address);
+  compiler::Node* AllocateRawUnaligned(compiler::Node* size_in_bytes,
+                                       AllocationFlags flags,
+                                       compiler::Node* top_adddress,
+                                       compiler::Node* limit_address);
+
+  static const int kElementLoopUnrollThreshold = 8;
 };
 
 }  // namespace internal

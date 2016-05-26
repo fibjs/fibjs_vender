@@ -277,6 +277,11 @@ class IncrementalMarkingMarkingVisitor
 
 void IncrementalMarking::IterateBlackObject(HeapObject* object) {
   if (IsMarking() && Marking::IsBlack(Marking::MarkBitFrom(object))) {
+    Page* page = Page::FromAddress(object->address());
+    if ((page->owner() != nullptr) && (page->owner()->identity() == LO_SPACE)) {
+      // IterateBlackObject requires us to visit the whole object.
+      page->ResetProgressBar();
+    }
     IncrementalMarkingMarkingVisitor::IterateBody(object->map(), object);
   }
 }
@@ -348,7 +353,7 @@ void IncrementalMarking::DeactivateIncrementalWriteBarrierForSpace(
     NewSpace* space) {
   NewSpacePageIterator it(space);
   while (it.has_next()) {
-    NewSpacePage* p = it.next();
+    Page* p = it.next();
     SetNewSpacePageFlags(p, false);
   }
 }
@@ -361,7 +366,7 @@ void IncrementalMarking::DeactivateIncrementalWriteBarrier() {
   DeactivateIncrementalWriteBarrierForSpace(heap_->new_space());
 
   LargePage* lop = heap_->lo_space()->first_page();
-  while (lop->is_valid()) {
+  while (LargePage::IsValid(lop)) {
     SetOldSpacePageFlags(lop, false, false);
     lop = lop->next_page();
   }
@@ -380,7 +385,7 @@ void IncrementalMarking::ActivateIncrementalWriteBarrier(PagedSpace* space) {
 void IncrementalMarking::ActivateIncrementalWriteBarrier(NewSpace* space) {
   NewSpacePageIterator it(space->ToSpaceStart(), space->ToSpaceEnd());
   while (it.has_next()) {
-    NewSpacePage* p = it.next();
+    Page* p = it.next();
     SetNewSpacePageFlags(p, true);
   }
 }
@@ -393,7 +398,7 @@ void IncrementalMarking::ActivateIncrementalWriteBarrier() {
   ActivateIncrementalWriteBarrier(heap_->new_space());
 
   LargePage* lop = heap_->lo_space()->first_page();
-  while (lop->is_valid()) {
+  while (LargePage::IsValid(lop)) {
     SetOldSpacePageFlags(lop, true, is_compacting_);
     lop = lop->next_page();
   }
@@ -937,7 +942,7 @@ void IncrementalMarking::Hurry() {
         MemoryChunk::IncrementLiveBytesFromGC(cache, cache->Size());
       }
     }
-    context = Context::cast(context)->get(Context::NEXT_CONTEXT_LINK);
+    context = Context::cast(context)->next_context_link();
   }
 }
 

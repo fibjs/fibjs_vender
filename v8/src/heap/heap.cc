@@ -157,9 +157,6 @@ Heap::Heap()
       current_gc_flags_(Heap::kNoGCFlags),
       current_gc_callback_flags_(GCCallbackFlags::kNoGCCallbackFlags),
       external_string_table_(this),
-      chunks_queued_for_free_(NULL),
-      concurrent_unmapping_tasks_active_(0),
-      pending_unmapping_tasks_semaphore_(0),
       gc_callbacks_depth_(0),
       deserialization_complete_(false),
       strong_roots_list_(NULL),
@@ -766,10 +763,10 @@ void Heap::PreprocessStackTraces() {
       // If GC happens while adding a stack trace to the weak fixed array,
       // which has been copied into a larger backing store, we may run into
       // a stack trace that has already been preprocessed. Guard against this.
-      if (!maybe_code->IsCode()) break;
-      Code* code = Code::cast(maybe_code);
+      if (!maybe_code->IsAbstractCode()) break;
+      AbstractCode* abstract_code = AbstractCode::cast(maybe_code);
       int offset = Smi::cast(elements->get(j + 3))->value();
-      int pos = code->SourcePosition(offset);
+      int pos = abstract_code->SourcePosition(offset);
       elements->set(j + 2, Smi::FromInt(pos));
     }
   }
@@ -945,7 +942,7 @@ void Heap::EnsureFillerObjectAtTop() {
   // may be uninitialized memory behind top. We fill the remainder of the page
   // with a filler.
   Address to_top = new_space_.top();
-  NewSpacePage* page = NewSpacePage::FromAddress(to_top - kPointerSize);
+  Page* page = Page::FromAddress(to_top - kPointerSize);
   if (page->Contains(to_top)) {
     int remaining_in_page = static_cast<int>(page->area_end() - to_top);
     CreateFillerObjectAt(to_top, remaining_in_page, ClearRecordedSlots::kNo);
@@ -1223,7 +1220,7 @@ void Heap::ClearNormalizedMapCaches() {
     if (!cache->IsUndefined()) {
       NormalizedMapCache::cast(cache)->Clear();
     }
-    context = Context::cast(context)->get(Context::NEXT_CONTEXT_LINK);
+    context = Context::cast(context)->next_context_link();
   }
 }
 
@@ -1552,7 +1549,8 @@ void PromotionQueue::Initialize() {
   front_ = rear_ =
       reinterpret_cast<struct Entry*>(heap_->new_space()->ToSpaceEnd());
   limit_ = reinterpret_cast<struct Entry*>(
-      Page::FromAllocationTop(reinterpret_cast<Address>(rear_))->area_start());
+      Page::FromAllocationAreaAddress(reinterpret_cast<Address>(rear_))
+          ->area_start());
   emergency_stack_ = NULL;
 }
 
@@ -1560,7 +1558,7 @@ void PromotionQueue::Initialize() {
 void PromotionQueue::RelocateQueueHead() {
   DCHECK(emergency_stack_ == NULL);
 
-  Page* p = Page::FromAllocationTop(reinterpret_cast<Address>(rear_));
+  Page* p = Page::FromAllocationAreaAddress(reinterpret_cast<Address>(rear_));
   struct Entry* head_start = rear_;
   struct Entry* head_end =
       Min(front_, reinterpret_cast<struct Entry*>(p->area_end()));
@@ -1671,8 +1669,21 @@ void Heap::Scavenge() {
   {
     // Copy objects reachable from the old generation.
     TRACE_GC(tracer(), GCTracer::Scope::SCAVENGER_OLD_TO_NEW_POINTERS);
-    RememberedSet<OLD_TO_NEW>::IterateWithWrapper(this,
-                                                  Scavenger::ScavengeObject);
+    RememberedSet<OLD_TO_NEW>::Iterate(this, [this](Address addr) {
+      return Scavenger::CheckAndScavengeObject(this, addr, DEFAULT_PROMOTION);
+    });
+
+    RememberedSet<OLD_TO_NEW>::IterateTyped(
+        this, [this](SlotType type, Address addr) {
+          return UpdateTypedSlotHelper::UpdateTypedSlot(
+              isolate(), type, addr, [this](Object** addr) {
+                // We expect that objects referenced by code are long living.
+                // If we do not force promotion, then we need to clear
+                // old_to_new slots in dead code objects after mark-compact.
+                return Scavenger::CheckAndScavengeObject(
+                    this, reinterpret_cast<Address>(addr), FORCE_PROMOTION);
+              });
+        });
   }
 
   {
@@ -1765,12 +1776,6 @@ String* Heap::UpdateNewSpaceReferenceInExternalStringTableEntry(Heap* heap,
 
 void Heap::UpdateNewSpaceReferencesInExternalStringTable(
     ExternalStringTableUpdaterCallback updater_func) {
-#ifdef VERIFY_HEAP
-  if (FLAG_verify_heap) {
-    external_string_table_.Verify();
-  }
-#endif
-
   if (external_string_table_.new_space_strings_.is_empty()) return;
 
   Object** start = &external_string_table_.new_space_strings_[0];
@@ -1778,7 +1783,6 @@ void Heap::UpdateNewSpaceReferencesInExternalStringTable(
   Object** last = start;
 
   for (Object** p = start; p < end; ++p) {
-    DCHECK(InFromSpace(*p));
     String* target = updater_func(this, p);
 
     if (target == NULL) continue;
@@ -1916,13 +1920,14 @@ Address Heap::DoScavenge(ObjectVisitor* scavenge_visitor,
     // queue of unprocessed copied objects.  Process them until the
     // queue is empty.
     while (new_space_front != new_space_.top()) {
-      if (!NewSpacePage::IsAtEnd(new_space_front)) {
+      if (!Page::IsAlignedToPageSize(new_space_front)) {
         HeapObject* object = HeapObject::FromAddress(new_space_front);
         new_space_front +=
             StaticScavengeVisitor::IterateBody(object->map(), object);
       } else {
-        new_space_front =
-            NewSpacePage::FromLimit(new_space_front)->next_page()->area_start();
+        new_space_front = Page::FromAllocationAreaAddress(new_space_front)
+                              ->next_page()
+                              ->area_start();
       }
     }
 
@@ -2197,6 +2202,7 @@ bool Heap::CreateInitialMaps() {
   }
 
     ALLOCATE_PARTIAL_MAP(FIXED_ARRAY_TYPE, kVariableSizeSentinel, fixed_array);
+    fixed_array_map()->set_elements_kind(FAST_HOLEY_ELEMENTS);
     ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, undefined);
     ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, null);
     ALLOCATE_PARTIAL_MAP(ODDBALL_TYPE, Oddball::kSize, the_hole);
@@ -2271,7 +2277,8 @@ bool Heap::CreateInitialMaps() {
   }
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, fixed_cow_array)
-    DCHECK(fixed_array_map() != fixed_cow_array_map());
+    fixed_cow_array_map()->set_elements_kind(FAST_HOLEY_ELEMENTS);
+    DCHECK_NE(fixed_array_map(), fixed_cow_array_map());
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, scope_info)
     ALLOCATE_PRIMITIVE_MAP(HEAP_NUMBER_TYPE, HeapNumber::kSize, heap_number,
@@ -2295,6 +2302,7 @@ bool Heap::CreateInitialMaps() {
     ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, exception);
     ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, termination_exception);
     ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, optimized_out);
+    ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, stale_register);
 
     for (unsigned i = 0; i < arraysize(string_type_table); i++) {
       const StringTypeTable& entry = string_type_table[i];
@@ -2311,8 +2319,9 @@ bool Heap::CreateInitialMaps() {
     }
 
     {  // Create a separate external one byte string map for native sources.
-      AllocationResult allocation = AllocateMap(EXTERNAL_ONE_BYTE_STRING_TYPE,
-                                                ExternalOneByteString::kSize);
+      AllocationResult allocation =
+          AllocateMap(SHORT_EXTERNAL_ONE_BYTE_STRING_TYPE,
+                      ExternalOneByteString::kShortSize);
       if (!allocation.To(&obj)) return false;
       Map* map = Map::cast(obj);
       map->SetConstructorFunctionIndex(Context::STRING_FUNCTION_INDEX);
@@ -2320,6 +2329,7 @@ bool Heap::CreateInitialMaps() {
     }
 
     ALLOCATE_VARSIZE_MAP(FIXED_DOUBLE_ARRAY_TYPE, fixed_double_array)
+    fixed_double_array_map()->set_elements_kind(FAST_HOLEY_DOUBLE_ELEMENTS);
     ALLOCATE_VARSIZE_MAP(BYTE_ARRAY_TYPE, byte_array)
     ALLOCATE_VARSIZE_MAP(BYTECODE_ARRAY_TYPE, bytecode_array)
     ALLOCATE_VARSIZE_MAP(FREE_SPACE_TYPE, free_space)
@@ -2669,6 +2679,11 @@ void Heap::CreateInitialObjects() {
                            handle(Smi::FromInt(-6), isolate()), false,
                            "undefined", Oddball::kOptimizedOut));
 
+  set_stale_register(
+      *factory->NewOddball(factory->stale_register_map(), "stale_register",
+                           handle(Smi::FromInt(-7), isolate()), false,
+                           "undefined", Oddball::kStaleRegister));
+
   for (unsigned i = 0; i < arraysize(constant_string_table); i++) {
     Handle<String> str =
         factory->InternalizeUtf8String(constant_string_table[i].contents);
@@ -2696,14 +2711,6 @@ void Heap::CreateInitialObjects() {
 #undef SYMBOL_INIT
   }
 
-  // The {hidden_properties_symbol} is special because it is the only name with
-  // hash code zero. This ensures that it will always be the first entry as
-  // sorted by hash code in descriptor arrays. It is used to identify the hidden
-  // properties in JSObjects.
-  // kIsNotArrayIndexMask is a computed hash with value zero.
-  Symbol::cast(roots_[khidden_properties_symbolRootIndex])
-      ->set_hash_field(Name::kIsNotArrayIndexMask);
-
   {
     HandleScope scope(isolate());
 #define SYMBOL_INIT(name, description)                                      \
@@ -2723,8 +2730,6 @@ void Heap::CreateInitialObjects() {
     WELL_KNOWN_SYMBOL_LIST(SYMBOL_INIT)
 #undef SYMBOL_INIT
   }
-
-  CreateFixedStubs();
 
   // Allocate the dictionary of intrinsic function names.
   Handle<NameDictionary> intrinsic_names =
@@ -2767,10 +2772,6 @@ void Heap::CreateInitialObjects() {
 
   // The symbol registry is initialized lazily.
   set_symbol_registry(Smi::FromInt(0));
-
-  // Allocate object to hold object observation state.
-  set_observation_state(*factory->NewJSObjectFromMap(
-      factory->NewMap(JS_OBJECT_TYPE, JSObject::kHeaderSize)));
 
   // Microtask queue uses the empty fixed array as a sentinel for "empty".
   // Number of queued microtasks stored in Isolate::pending_microtask_count().
@@ -2852,8 +2853,16 @@ void Heap::CreateInitialObjects() {
   cell->set_value(the_hole_value());
   set_empty_property_cell(*cell);
 
-  Handle<PropertyCell> species_cell = factory->NewPropertyCell();
-  species_cell->set_value(Smi::FromInt(Isolate::kArrayProtectorValid));
+  cell = factory->NewPropertyCell();
+  cell->set_value(Smi::FromInt(Isolate::kArrayProtectorValid));
+  set_has_instance_protector(*cell);
+
+  Handle<Cell> is_concat_spreadable_cell = factory->NewCell(
+      handle(Smi::FromInt(Isolate::kArrayProtectorValid), isolate()));
+  set_is_concat_spreadable_protector(*is_concat_spreadable_cell);
+
+  Handle<Cell> species_cell = factory->NewCell(
+      handle(Smi::FromInt(Isolate::kArrayProtectorValid), isolate()));
   set_species_protector(*species_cell);
 
   set_weak_stack_trace_list(Smi::FromInt(0));
@@ -2871,6 +2880,8 @@ void Heap::CreateInitialObjects() {
 
   // Initialize compilation cache.
   isolate_->compilation_cache()->Clear();
+
+  CreateFixedStubs();
 }
 
 
@@ -3092,9 +3103,11 @@ void Heap::AdjustLiveBytes(HeapObject* object, int by, InvocationMode mode) {
   // the heap using HeapIterator, we can update the live byte count. We cannot
   // update while using HeapIterator because the iterator is temporarily
   // marking the whole object graph, without updating live bytes.
-  if (!in_heap_iterator() &&
-      !mark_compact_collector()->sweeping_in_progress() &&
-      Marking::IsBlack(Marking::MarkBitFrom(object->address()))) {
+  if (lo_space()->Contains(object)) {
+    lo_space()->AdjustLiveBytes(by);
+  } else if (!in_heap_iterator() &&
+             !mark_compact_collector()->sweeping_in_progress() &&
+             Marking::IsBlack(Marking::MarkBitFrom(object->address()))) {
     if (mode == SEQUENTIAL_TO_SWEEPER) {
       MemoryChunk::IncrementLiveBytesFromGC(object, by);
     } else {
@@ -3149,9 +3162,9 @@ FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
       FixedArrayBase::cast(HeapObject::FromAddress(new_start));
 
   // Remove recorded slots for the new map and length offset.
-  ClearRecordedSlot(new_object, HeapObject::RawField(object, 0));
-  ClearRecordedSlot(
-      new_object, HeapObject::RawField(object, FixedArrayBase::kLengthOffset));
+  ClearRecordedSlot(new_object, HeapObject::RawField(new_object, 0));
+  ClearRecordedSlot(new_object, HeapObject::RawField(
+                                    new_object, FixedArrayBase::kLengthOffset));
 
   // Maintain consistency of live bytes during incremental marking
   Marking::TransferMark(this, object->address(), new_start);
@@ -3328,8 +3341,7 @@ AllocationResult Heap::AllocateCode(int object_size, bool immovable) {
   result->set_map_no_write_barrier(code_map());
   Code* code = Code::cast(result);
   DCHECK(IsAligned(bit_cast<intptr_t>(code->address()), kCodeAlignment));
-  DCHECK(memory_allocator()->code_range() == NULL ||
-         !memory_allocator()->code_range()->valid() ||
+  DCHECK(!memory_allocator()->code_range()->valid() ||
          memory_allocator()->code_range()->contains(code->address()) ||
          object_size <= code_space()->AreaSize());
   code->set_gc_metadata(Smi::FromInt(0));
@@ -3355,8 +3367,7 @@ AllocationResult Heap::CopyCode(Code* code) {
 
   // Relocate the copy.
   DCHECK(IsAligned(bit_cast<intptr_t>(new_code->address()), kCodeAlignment));
-  DCHECK(memory_allocator()->code_range() == NULL ||
-         !memory_allocator()->code_range()->valid() ||
+  DCHECK(!memory_allocator()->code_range()->valid() ||
          memory_allocator()->code_range()->contains(code->address()) ||
          obj_size <= code_space()->AreaSize());
   new_code->Relocate(new_addr - old_addr);
@@ -3425,8 +3436,7 @@ AllocationResult Heap::CopyCode(Code* code, Vector<byte> reloc_info) {
 
   // Relocate the copy.
   DCHECK(IsAligned(bit_cast<intptr_t>(new_code->address()), kCodeAlignment));
-  DCHECK(memory_allocator()->code_range() == NULL ||
-         !memory_allocator()->code_range()->valid() ||
+  DCHECK(!memory_allocator()->code_range()->valid() ||
          memory_allocator()->code_range()->contains(code->address()) ||
          new_obj_size <= code_space()->AreaSize());
 
@@ -4449,6 +4459,15 @@ void Heap::MemoryPressureNotification(MemoryPressureLevel level,
   }
 }
 
+void Heap::CollectCodeStatistics() {
+  PagedSpace::ResetCodeAndMetadataStatistics(isolate());
+  // We do not look for code in new space, or map space.  If code
+  // somehow ends up in those spaces, we would miss it here.
+  code_space_->CollectCodeStatistics();
+  old_space_->CollectCodeStatistics();
+  lo_space_->CollectCodeStatistics();
+}
+
 #ifdef DEBUG
 
 void Heap::Print() {
@@ -4463,11 +4482,7 @@ void Heap::Print() {
 
 void Heap::ReportCodeStatistics(const char* title) {
   PrintF(">>>>>> Code Stats (%s) >>>>>>\n", title);
-  PagedSpace::ResetCodeStatistics(isolate());
-  // We do not look for code in new space, map space, or old space.  If code
-  // somehow ends up in those spaces, we would miss it here.
-  code_space_->CollectCodeStatistics();
-  lo_space_->CollectCodeStatistics();
+  CollectCodeStatistics();
   PagedSpace::ReportCodeStatistics(isolate());
 }
 
@@ -4640,7 +4655,7 @@ void Heap::ZapFromSpace() {
   NewSpacePageIterator it(new_space_.FromSpaceStart(),
                           new_space_.FromSpaceEnd());
   while (it.has_next()) {
-    NewSpacePage* page = it.next();
+    Page* page = it.next();
     for (Address cursor = page->area_start(), limit = page->area_end();
          cursor < limit; cursor += kPointerSize) {
       Memory::Address_at(cursor) = kFromSpaceZapValue;
@@ -4659,8 +4674,8 @@ void Heap::IteratePromotedObjectPointers(HeapObject* object, Address start,
     Object* target = *slot;
     if (target->IsHeapObject()) {
       if (Heap::InFromSpace(target)) {
-        callback(reinterpret_cast<HeapObject**>(slot),
-                 HeapObject::cast(target));
+        callback(reinterpret_cast<HeapObject**>(slot), HeapObject::cast(target),
+                 DEFAULT_PROMOTION);
         Object* new_target = *slot;
         if (InNewSpace(new_target)) {
           SLOW_DCHECK(Heap::InToSpace(new_target));
@@ -5456,8 +5471,6 @@ void Heap::TearDown() {
   delete scavenge_job_;
   scavenge_job_ = nullptr;
 
-  WaitUntilUnmappingOfFreeChunksCompleted();
-
   delete array_buffer_tracker_;
   array_buffer_tracker_ = nullptr;
 
@@ -6217,7 +6230,6 @@ void DescriptorLookupCache::Clear() {
   for (int index = 0; index < kLength; index++) keys_[index].source = NULL;
 }
 
-
 void Heap::ExternalStringTable::CleanUp() {
   int last = 0;
   for (int i = 0; i < new_space_strings_.length(); ++i) {
@@ -6252,7 +6264,6 @@ void Heap::ExternalStringTable::CleanUp() {
 #endif
 }
 
-
 void Heap::ExternalStringTable::TearDown() {
   for (int i = 0; i < new_space_strings_.length(); ++i) {
     heap_->FinalizeExternalString(ExternalString::cast(new_space_strings_[i]));
@@ -6262,75 +6273,6 @@ void Heap::ExternalStringTable::TearDown() {
     heap_->FinalizeExternalString(ExternalString::cast(old_space_strings_[i]));
   }
   old_space_strings_.Free();
-}
-
-
-class Heap::UnmapFreeMemoryTask : public v8::Task {
- public:
-  UnmapFreeMemoryTask(Heap* heap, MemoryChunk* head)
-      : heap_(heap), head_(head) {}
-  virtual ~UnmapFreeMemoryTask() {}
-
- private:
-  // v8::Task overrides.
-  void Run() override {
-    heap_->FreeQueuedChunks(head_);
-    heap_->pending_unmapping_tasks_semaphore_.Signal();
-  }
-
-  Heap* heap_;
-  MemoryChunk* head_;
-
-  DISALLOW_COPY_AND_ASSIGN(UnmapFreeMemoryTask);
-};
-
-
-void Heap::WaitUntilUnmappingOfFreeChunksCompleted() {
-  while (concurrent_unmapping_tasks_active_ > 0) {
-    pending_unmapping_tasks_semaphore_.Wait();
-    concurrent_unmapping_tasks_active_--;
-  }
-}
-
-
-void Heap::QueueMemoryChunkForFree(MemoryChunk* chunk) {
-  // PreFree logically frees the memory chunk. However, the actual freeing
-  // will happen on a separate thread sometime later.
-  memory_allocator()->PreFreeMemory(chunk);
-
-  // The chunks added to this queue will be freed by a concurrent thread.
-  chunk->set_next_chunk(chunks_queued_for_free_);
-  chunks_queued_for_free_ = chunk;
-}
-
-
-void Heap::FreeQueuedChunks() {
-  if (chunks_queued_for_free_ != NULL) {
-    if (FLAG_concurrent_sweeping) {
-      V8::GetCurrentPlatform()->CallOnBackgroundThread(
-          new UnmapFreeMemoryTask(this, chunks_queued_for_free_),
-          v8::Platform::kShortRunningTask);
-    } else {
-      FreeQueuedChunks(chunks_queued_for_free_);
-      pending_unmapping_tasks_semaphore_.Signal();
-    }
-    chunks_queued_for_free_ = NULL;
-  } else {
-    // If we do not have anything to unmap, we just signal the semaphore
-    // that we are done.
-    pending_unmapping_tasks_semaphore_.Signal();
-  }
-  concurrent_unmapping_tasks_active_++;
-}
-
-
-void Heap::FreeQueuedChunks(MemoryChunk* list_head) {
-  MemoryChunk* next;
-  MemoryChunk* chunk;
-  for (chunk = list_head; chunk != NULL; chunk = next) {
-    next = chunk->next_chunk();
-    memory_allocator()->PerformFreeMemory(chunk);
-  }
 }
 
 

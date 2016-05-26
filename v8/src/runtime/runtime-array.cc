@@ -211,9 +211,8 @@ RUNTIME_FUNCTION(Runtime_GetArrayKeys) {
       // collecting keys in that case.
       return *isolate->factory()->NewNumberFromUint(length);
     }
-    accumulator.NextPrototype();
     Handle<JSObject> current = PrototypeIterator::GetCurrent<JSObject>(iter);
-    JSObject::CollectOwnElementKeys(current, &accumulator, ALL_PROPERTIES);
+    accumulator.CollectOwnElementIndices(array, current);
   }
   // Erase any keys >= length.
   Handle<FixedArray> keys = accumulator.GetKeys(KEEP_NUMBERS);
@@ -391,6 +390,19 @@ RUNTIME_FUNCTION(Runtime_InternalArrayConstructor) {
                                 Handle<AllocationSite>::null(), caller_args);
 }
 
+RUNTIME_FUNCTION(Runtime_ArraySingleArgumentConstructor) {
+  HandleScope scope(isolate);
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, constructor, 0);
+  Object** argument_base = reinterpret_cast<Object**>(args[1]);
+  CONVERT_SMI_ARG_CHECKED(argument_count, 2);
+  CONVERT_ARG_HANDLE_CHECKED(Object, raw_site, 3);
+  Handle<AllocationSite> casted_site =
+      raw_site->IsUndefined() ? Handle<AllocationSite>::null()
+                              : Handle<AllocationSite>::cast(raw_site);
+  Arguments constructor_args(argument_count, argument_base);
+  return ArrayConstructorCommon(isolate, constructor, constructor, casted_site,
+                                &constructor_args);
+}
 
 RUNTIME_FUNCTION(Runtime_NormalizeElements) {
   HandleScope scope(isolate);
@@ -455,6 +467,15 @@ RUNTIME_FUNCTION(Runtime_HasComplexElements) {
   return isolate->heap()->false_value();
 }
 
+// ES6 22.1.2.2 Array.isArray
+RUNTIME_FUNCTION(Runtime_ArrayIsArray) {
+  HandleScope shs(isolate);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+  Maybe<bool> result = Object::IsArray(object);
+  MAYBE_RETURN(result, isolate->heap()->exception());
+  return isolate->heap()->ToBoolean(result.FromJust());
+}
 
 RUNTIME_FUNCTION(Runtime_IsArray) {
   SealHandleScope shs(isolate);
@@ -462,7 +483,6 @@ RUNTIME_FUNCTION(Runtime_IsArray) {
   CONVERT_ARG_CHECKED(Object, obj, 0);
   return isolate->heap()->ToBoolean(obj->IsJSArray());
 }
-
 
 RUNTIME_FUNCTION(Runtime_HasCachedArrayIndex) {
   SealHandleScope shs(isolate);
@@ -483,11 +503,8 @@ RUNTIME_FUNCTION(Runtime_ArraySpeciesConstructor) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, original_array, 0);
-  Handle<Object> constructor;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, constructor,
-      Object::ArraySpeciesConstructor(isolate, original_array));
-  return *constructor;
+  RETURN_RESULT_OR_FAILURE(
+      isolate, Object::ArraySpeciesConstructor(isolate, original_array));
 }
 
 }  // namespace internal

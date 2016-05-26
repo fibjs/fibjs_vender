@@ -221,6 +221,44 @@ bool RelocInfo::IsCodedSpecially() {
 
 bool RelocInfo::IsInConstantPool() { return false; }
 
+Address RelocInfo::wasm_memory_reference() {
+  DCHECK(IsWasmMemoryReference(rmode_));
+  return Assembler::target_address_at(pc_, host_);
+}
+
+uint32_t RelocInfo::wasm_memory_size_reference() {
+  DCHECK(IsWasmMemorySizeReference(rmode_));
+  return static_cast<uint32_t>(
+      reinterpret_cast<intptr_t>(Assembler::target_address_at(pc_, host_)));
+}
+
+void RelocInfo::update_wasm_memory_reference(
+    Address old_base, Address new_base, uint32_t old_size, uint32_t new_size,
+    ICacheFlushMode icache_flush_mode) {
+  DCHECK(IsWasmMemoryReference(rmode_) || IsWasmMemorySizeReference(rmode_));
+  if (IsWasmMemoryReference(rmode_)) {
+    Address updated_memory_reference;
+    DCHECK(old_base <= wasm_memory_reference() &&
+           wasm_memory_reference() < old_base + old_size);
+    updated_memory_reference = new_base + (wasm_memory_reference() - old_base);
+    DCHECK(new_base <= updated_memory_reference &&
+           updated_memory_reference < new_base + new_size);
+    Assembler::set_target_address_at(
+        isolate_, pc_, host_, updated_memory_reference, icache_flush_mode);
+  } else if (IsWasmMemorySizeReference(rmode_)) {
+    uint32_t updated_size_reference;
+    DCHECK(wasm_memory_size_reference() <= old_size);
+    updated_size_reference =
+        new_size + (wasm_memory_size_reference() - old_size);
+    DCHECK(updated_size_reference <= new_size);
+    Assembler::set_target_address_at(
+        isolate_, pc_, host_, reinterpret_cast<Address>(updated_size_reference),
+        icache_flush_mode);
+  } else {
+    UNREACHABLE();
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Implementation of Operand and MemOperand
 // See assembler-s390-inl.h for inlined constructors
@@ -368,7 +406,7 @@ void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
   if (BRC == opcode || BRCT == opcode || BRCTG == opcode) {
     int16_t imm16 = target_pos - pos;
     instr &= (~0xffff);
-    CHECK(is_int16(imm16));
+    DCHECK(is_int16(imm16));
     instr_at_put<FourByteInstr>(pos, instr | (imm16 >> 1));
     return;
   } else if (BRCL == opcode || LARL == opcode || BRASL == opcode) {
@@ -378,7 +416,7 @@ void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
     instr_at_put<SixByteInstr>(pos, instr | (imm32 >> 1));
     return;
   } else if (LLILF == opcode) {
-    CHECK(target_pos == kEndOfChain || target_pos >= 0);
+    DCHECK(target_pos == kEndOfChain || target_pos >= 0);
     // Emitted label constant, not part of a branch.
     // Make label relative to Code* of generated Code object.
     int32_t imm32 = target_pos + (Code::kHeaderSize - kHeapObjectTag);
@@ -2542,6 +2580,7 @@ void Assembler::mvghi(const MemOperand& opnd1, const Operand& i2) {
 
 // Store Register (64)
 void Assembler::stg(Register src, const MemOperand& dst) {
+  DCHECK(!(dst.rb().code() == 15 && dst.offset() < 0));
   rxy_form(STG, src, dst.rx(), dst.rb(), dst.offset());
 }
 
@@ -2739,6 +2778,7 @@ void Assembler::std(DoubleRegister r1, const MemOperand& opnd) {
 
 // Store Double (64)
 void Assembler::stdy(DoubleRegister r1, const MemOperand& opnd) {
+  DCHECK(!(opnd.rb().code() == 15 && opnd.offset() < 0));
   rxy_form(STDY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
@@ -2749,6 +2789,7 @@ void Assembler::ste(DoubleRegister r1, const MemOperand& opnd) {
 
 // Store Float (32)
 void Assembler::stey(DoubleRegister r1, const MemOperand& opnd) {
+  DCHECK(!(opnd.rb().code() == 15 && opnd.offset() < 0));
   rxy_form(STEY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 

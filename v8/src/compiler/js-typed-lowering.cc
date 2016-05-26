@@ -224,16 +224,19 @@ class JSBinopReduction final {
     if (NodeProperties::GetType(node)->Is(Type::NumberOrUndefined())) {
       return node;
     }
+    // TODO(bmeurer): Introduce PlainPrimitiveToNumber here.
     return graph()->NewNode(
         javascript()->ToNumber(), node, jsgraph()->NoContextConstant(),
-        jsgraph()->EmptyFrameState(), graph()->start(), graph()->start());
+        lowering_->EmptyFrameState(), graph()->start(), graph()->start());
   }
 
   Node* ConvertSingleInputToNumber(Node* node, Node* frame_state) {
     DCHECK(!NodeProperties::GetType(node)->Is(Type::PlainPrimitive()));
     Node* const n = graph()->NewNode(javascript()->ToNumber(), node, context(),
                                      frame_state, effect(), control());
-    NodeProperties::ReplaceUses(node_, node_, node_, n, n);
+    Node* const if_success = graph()->NewNode(common()->IfSuccess(), n);
+    NodeProperties::ReplaceControlInput(node_, if_success);
+    NodeProperties::ReplaceUses(node_, node_, node_, node_, n);
     update_effect(n);
     return n;
   }
@@ -717,12 +720,6 @@ Reduction JSTypedLowering::ReduceJSToLength(Node* node) {
 }
 
 Reduction JSTypedLowering::ReduceJSToNumberInput(Node* input) {
-  if (input->opcode() == IrOpcode::kJSToNumber) {
-    // Recursively try to reduce the input first.
-    Reduction result = ReduceJSToNumber(input);
-    if (result.Changed()) return result;
-    return Changed(input);  // JSToNumber(JSToNumber(x)) => JSToNumber(x)
-  }
   // Check for ToNumber truncation of signaling NaN to undefined mapping.
   if (input->opcode() == IrOpcode::kSelect) {
     Node* check = NodeProperties::GetValueInput(input, 0);
@@ -795,8 +792,7 @@ Reduction JSTypedLowering::ReduceJSToNumber(Node* node) {
       NodeProperties::ReplaceControlInput(node, graph()->start());
       NodeProperties::ReplaceEffectInput(node, graph()->start());
       DCHECK_EQ(1, OperatorProperties::GetFrameStateInputCount(node->op()));
-      NodeProperties::ReplaceFrameStateInput(node, 0,
-                                             jsgraph()->EmptyFrameState());
+      NodeProperties::ReplaceFrameStateInput(node, 0, EmptyFrameState());
       return Changed(node);
     }
   }
@@ -940,27 +936,6 @@ Reduction JSTypedLowering::ReduceJSLoadNamed(Node* node) {
     ReplaceWithValue(node, value, effect);
     return Replace(value);
   }
-  // Optimize "prototype" property of functions.
-  if (name.is_identical_to(factory()->prototype_string()) &&
-      receiver_type->IsConstant() &&
-      receiver_type->AsConstant()->Value()->IsJSFunction()) {
-    // TODO(turbofan): This lowering might not kick in if we ever lower
-    // the C++ accessor for "prototype" in an earlier optimization pass.
-    Handle<JSFunction> function =
-        Handle<JSFunction>::cast(receiver_type->AsConstant()->Value());
-    if (function->has_initial_map()) {
-      // We need to add a code dependency on the initial map of the {function}
-      // in order to be notified about changes to the "prototype" of {function},
-      // so it doesn't make sense to continue unless deoptimization is enabled.
-      if (!(flags() & kDeoptimizationEnabled)) return NoChange();
-      Handle<Map> initial_map(function->initial_map(), isolate());
-      dependencies()->AssumeInitialMapCantChange(initial_map);
-      Node* value =
-          jsgraph()->Constant(handle(initial_map->prototype(), isolate()));
-      ReplaceWithValue(node, value);
-      return Replace(value);
-    }
-  }
   return NoChange();
 }
 
@@ -1091,10 +1066,7 @@ Reduction JSTypedLowering::ReduceJSInstanceOf(Node* node) {
   Node* const frame_state = NodeProperties::GetFrameStateInput(node, 0);
 
   // If deoptimization is disabled, we cannot optimize.
-  if (!(flags() & kDeoptimizationEnabled) ||
-      (flags() & kDisableBinaryOpReduction)) {
-    return NoChange();
-  }
+  if (!(flags() & kDeoptimizationEnabled)) return NoChange();
 
   // If we are in a try block, don't optimize since the runtime call
   // in the proxy case can throw.
@@ -1113,15 +1085,21 @@ Reduction JSTypedLowering::ReduceJSInstanceOf(Node* node) {
       Handle<JSFunction>::cast(r.right_type()->AsConstant()->Value());
   Handle<SharedFunctionInfo> shared(function->shared(), isolate());
 
-  if (!function->IsConstructor() ||
-      function->map()->has_non_instance_prototype()) {
+  // Make sure the prototype of {function} is the %FunctionPrototype%, and it
+  // already has a meaningful initial map (i.e. we constructed at least one
+  // instance using the constructor {function}).
+  if (function->map()->prototype() != function->native_context()->closure() ||
+      function->map()->has_non_instance_prototype() ||
+      !function->has_initial_map()) {
     return NoChange();
   }
 
-  JSFunction::EnsureHasInitialMap(function);
-  DCHECK(function->has_initial_map());
+  // We can only use the fast case if @@hasInstance was not used so far.
+  if (!isolate()->IsHasInstanceLookupChainIntact()) return NoChange();
+  dependencies()->AssumePropertyCell(factory()->has_instance_protector());
+
   Handle<Map> initial_map(function->initial_map(), isolate());
-  this->dependencies()->AssumeInitialMapCantChange(initial_map);
+  dependencies()->AssumeInitialMapCantChange(initial_map);
   Node* prototype =
       jsgraph()->Constant(handle(initial_map->prototype(), isolate()));
 
@@ -1652,6 +1630,79 @@ Reduction JSTypedLowering::ReduceJSForInStep(Node* node) {
   return Changed(node);
 }
 
+Reduction JSTypedLowering::ReduceJSGeneratorStore(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSGeneratorStore, node->opcode());
+  Node* generator = NodeProperties::GetValueInput(node, 0);
+  Node* continuation = NodeProperties::GetValueInput(node, 1);
+  Node* context = NodeProperties::GetContextInput(node);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+  int register_count = OpParameter<int>(node);
+
+  FieldAccess array_field = AccessBuilder::ForJSGeneratorObjectOperandStack();
+  FieldAccess context_field = AccessBuilder::ForJSGeneratorObjectContext();
+  FieldAccess continuation_field =
+      AccessBuilder::ForJSGeneratorObjectContinuation();
+
+  Node* array = effect = graph()->NewNode(simplified()->LoadField(array_field),
+                                          generator, effect, control);
+
+  for (int i = 0; i < register_count; ++i) {
+    Node* value = NodeProperties::GetValueInput(node, 2 + i);
+    effect = graph()->NewNode(
+        simplified()->StoreField(AccessBuilder::ForFixedArraySlot(i)), array,
+        value, effect, control);
+  }
+
+  effect = graph()->NewNode(simplified()->StoreField(context_field), generator,
+                            context, effect, control);
+  effect = graph()->NewNode(simplified()->StoreField(continuation_field),
+                            generator, continuation, effect, control);
+
+  ReplaceWithValue(node, effect, effect, control);
+  return Changed(effect);
+}
+
+Reduction JSTypedLowering::ReduceJSGeneratorRestoreContinuation(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSGeneratorRestoreContinuation, node->opcode());
+  Node* generator = NodeProperties::GetValueInput(node, 0);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+
+  FieldAccess continuation_field =
+      AccessBuilder::ForJSGeneratorObjectContinuation();
+
+  Node* continuation = effect = graph()->NewNode(
+      simplified()->LoadField(continuation_field), generator, effect, control);
+  Node* executing = jsgraph()->Constant(JSGeneratorObject::kGeneratorExecuting);
+  effect = graph()->NewNode(simplified()->StoreField(continuation_field),
+                            generator, executing, effect, control);
+
+  ReplaceWithValue(node, continuation, effect, control);
+  return Changed(continuation);
+}
+
+Reduction JSTypedLowering::ReduceJSGeneratorRestoreRegister(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSGeneratorRestoreRegister, node->opcode());
+  Node* generator = NodeProperties::GetValueInput(node, 0);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+  int index = OpParameter<int>(node);
+
+  FieldAccess array_field = AccessBuilder::ForJSGeneratorObjectOperandStack();
+  FieldAccess element_field = AccessBuilder::ForFixedArraySlot(index);
+
+  Node* array = effect = graph()->NewNode(simplified()->LoadField(array_field),
+                                          generator, effect, control);
+  Node* element = effect = graph()->NewNode(
+      simplified()->LoadField(element_field), array, effect, control);
+  Node* stale = jsgraph()->StaleRegisterConstant();
+  effect = graph()->NewNode(simplified()->StoreField(element_field), array,
+                            stale, effect, control);
+
+  ReplaceWithValue(node, element, effect, control);
+  return Changed(element);
+}
 
 Reduction JSTypedLowering::ReduceSelect(Node* node) {
   DCHECK_EQ(IrOpcode::kSelect, node->opcode());
@@ -1788,6 +1839,12 @@ Reduction JSTypedLowering::Reduce(Node* node) {
       return ReduceJSForInNext(node);
     case IrOpcode::kJSForInStep:
       return ReduceJSForInStep(node);
+    case IrOpcode::kJSGeneratorStore:
+      return ReduceJSGeneratorStore(node);
+    case IrOpcode::kJSGeneratorRestoreContinuation:
+      return ReduceJSGeneratorRestoreContinuation(node);
+    case IrOpcode::kJSGeneratorRestoreRegister:
+      return ReduceJSGeneratorRestoreRegister(node);
     case IrOpcode::kSelect:
       return ReduceSelect(node);
     default:
@@ -1803,6 +1860,14 @@ Node* JSTypedLowering::Word32Shl(Node* const lhs, int32_t const rhs) {
                           jsgraph()->Int32Constant(rhs));
 }
 
+Node* JSTypedLowering::EmptyFrameState() {
+  return graph()->NewNode(
+      common()->FrameState(BailoutId::None(), OutputFrameStateCombine::Ignore(),
+                           nullptr),
+      jsgraph()->EmptyStateValues(), jsgraph()->EmptyStateValues(),
+      jsgraph()->EmptyStateValues(), jsgraph()->NoContextConstant(),
+      jsgraph()->UndefinedConstant(), graph()->start());
+}
 
 Factory* JSTypedLowering::factory() const { return jsgraph()->factory(); }
 

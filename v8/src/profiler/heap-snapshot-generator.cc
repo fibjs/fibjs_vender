@@ -412,10 +412,8 @@ bool HeapObjectsMap::MoveObject(Address from, Address to, int object_size) {
     // object is migrated.
     if (FLAG_heap_profiler_trace_objects) {
       PrintF("Move object from %p to %p old size %6d new size %6d\n",
-             from,
-             to,
-             entries_.at(from_entry_info_index).size,
-             object_size);
+             static_cast<void*>(from), static_cast<void*>(to),
+             entries_.at(from_entry_info_index).size, object_size);
     }
     entries_.at(from_entry_info_index).size = object_size;
     to_entry->value = from_value;
@@ -452,9 +450,7 @@ SnapshotObjectId HeapObjectsMap::FindOrAddEntry(Address addr,
     entry_info.accessed = accessed;
     if (FLAG_heap_profiler_trace_objects) {
       PrintF("Update object size : %p with old size %d and new size %d\n",
-             addr,
-             entry_info.size,
-             size);
+             static_cast<void*>(addr), entry_info.size, size);
     }
     entry_info.size = size;
     return entry_info.id;
@@ -487,9 +483,8 @@ void HeapObjectsMap::UpdateHeapObjectsMap() {
     FindOrAddEntry(obj->address(), obj->Size());
     if (FLAG_heap_profiler_trace_objects) {
       PrintF("Update object      : %p %6d. Next address is %p\n",
-             obj->address(),
-             obj->Size(),
-             obj->address() + obj->Size());
+             static_cast<void*>(obj->address()), obj->Size(),
+             static_cast<void*>(obj->address() + obj->Size()));
     }
   }
   RemoveDeadEntries();
@@ -517,20 +512,16 @@ struct HeapObjectInfo {
   void Print() const {
     if (expected_size == 0) {
       PrintF("Untracked object   : %p %6d. Next address is %p\n",
-             obj->address(),
-             obj->Size(),
-             obj->address() + obj->Size());
+             static_cast<void*>(obj->address()), obj->Size(),
+             static_cast<void*>(obj->address() + obj->Size()));
     } else if (obj->Size() != expected_size) {
-      PrintF("Wrong size %6d: %p %6d. Next address is %p\n",
-             expected_size,
-             obj->address(),
-             obj->Size(),
-             obj->address() + obj->Size());
+      PrintF("Wrong size %6d: %p %6d. Next address is %p\n", expected_size,
+             static_cast<void*>(obj->address()), obj->Size(),
+             static_cast<void*>(obj->address() + obj->Size()));
     } else {
       PrintF("Good object      : %p %6d. Next address is %p\n",
-             obj->address(),
-             expected_size,
-             obj->address() + obj->Size());
+             static_cast<void*>(obj->address()), expected_size,
+             static_cast<void*>(obj->address() + obj->Size()));
     }
   }
 };
@@ -1583,14 +1574,8 @@ void V8HeapExplorer::ExtractPropertyReferences(JSObject* js_obj, int entry) {
           int field_offset =
               field_index.is_inobject() ? field_index.offset() : -1;
 
-          if (k != heap_->hidden_properties_symbol()) {
-            SetDataOrAccessorPropertyReference(details.kind(), js_obj, entry, k,
-                                               value, NULL, field_offset);
-          } else {
-            TagObject(value, "(hidden properties)");
-            SetInternalReference(js_obj, entry, "hidden_properties", value,
-                                 field_offset);
-          }
+          SetDataOrAccessorPropertyReference(details.kind(), js_obj, entry, k,
+                                             value, NULL, field_offset);
           break;
         }
         case kDescriptor:
@@ -1610,11 +1595,6 @@ void V8HeapExplorer::ExtractPropertyReferences(JSObject* js_obj, int entry) {
         DCHECK(dictionary->ValueAt(i)->IsPropertyCell());
         PropertyCell* cell = PropertyCell::cast(dictionary->ValueAt(i));
         Object* value = cell->value();
-        if (k == heap_->hidden_properties_symbol()) {
-          TagObject(value, "(hidden properties)");
-          SetInternalReference(js_obj, entry, "hidden_properties", value);
-          continue;
-        }
         PropertyDetails details = cell->property_details();
         SetDataOrAccessorPropertyReference(details.kind(), js_obj, entry,
                                            Name::cast(k), value);
@@ -1627,11 +1607,6 @@ void V8HeapExplorer::ExtractPropertyReferences(JSObject* js_obj, int entry) {
       Object* k = dictionary->KeyAt(i);
       if (dictionary->IsKey(k)) {
         Object* value = dictionary->ValueAt(i);
-        if (k == heap_->hidden_properties_symbol()) {
-          TagObject(value, "(hidden properties)");
-          SetInternalReference(js_obj, entry, "hidden_properties", value);
-          continue;
-        }
         PropertyDetails details = dictionary->DetailsAt(i);
         SetDataOrAccessorPropertyReference(details.kind(), js_obj, entry,
                                            Name::cast(k), value);

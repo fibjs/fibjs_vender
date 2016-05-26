@@ -22,6 +22,46 @@ CodeStubAssembler::CodeStubAssembler(Isolate* isolate, Zone* zone,
                                      const char* name)
     : compiler::CodeAssembler(isolate, zone, parameter_count, flags, name) {}
 
+void CodeStubAssembler::Assert(Node* condition) {
+#if defined(DEBUG)
+  Label ok(this);
+  Label not_ok(this);
+  Branch(condition, &ok, &not_ok);
+  Bind(&not_ok);
+  DebugBreak();
+  Goto(&ok);
+  Bind(&ok);
+#endif
+}
+
+Node* CodeStubAssembler::BooleanMapConstant() {
+  return HeapConstant(isolate()->factory()->boolean_map());
+}
+
+Node* CodeStubAssembler::EmptyStringConstant() {
+  return LoadRoot(Heap::kempty_stringRootIndex);
+}
+
+Node* CodeStubAssembler::HeapNumberMapConstant() {
+  return HeapConstant(isolate()->factory()->heap_number_map());
+}
+
+Node* CodeStubAssembler::NoContextConstant() {
+  return SmiConstant(Smi::FromInt(0));
+}
+
+Node* CodeStubAssembler::NullConstant() {
+  return LoadRoot(Heap::kNullValueRootIndex);
+}
+
+Node* CodeStubAssembler::UndefinedConstant() {
+  return LoadRoot(Heap::kUndefinedValueRootIndex);
+}
+
+Node* CodeStubAssembler::StaleRegisterConstant() {
+  return LoadRoot(Heap::kStaleRegisterRootIndex);
+}
+
 Node* CodeStubAssembler::Float64Round(Node* x) {
   Node* one = Float64Constant(1.0);
   Node* one_half = Float64Constant(0.5);
@@ -210,10 +250,20 @@ Node* CodeStubAssembler::Float64Trunc(Node* x) {
 }
 
 Node* CodeStubAssembler::SmiFromWord32(Node* value) {
-  if (Is64()) {
-    value = ChangeInt32ToInt64(value);
+  value = ChangeInt32ToIntPtr(value);
+  return WordShl(value, SmiShiftBitsConstant());
+}
+
+Node* CodeStubAssembler::SmiTag(Node* value) {
+  int32_t constant_value;
+  if (ToInt32Constant(value, constant_value) && Smi::IsValid(constant_value)) {
+    return SmiConstant(Smi::FromInt(constant_value));
   }
   return WordShl(value, SmiShiftBitsConstant());
+}
+
+Node* CodeStubAssembler::SmiUntag(Node* value) {
+  return WordSar(value, SmiShiftBitsConstant());
 }
 
 Node* CodeStubAssembler::SmiToWord32(Node* value) {
@@ -225,7 +275,7 @@ Node* CodeStubAssembler::SmiToWord32(Node* value) {
 }
 
 Node* CodeStubAssembler::SmiToFloat64(Node* value) {
-  return ChangeInt32ToFloat64(SmiUntag(value));
+  return ChangeInt32ToFloat64(SmiToWord32(value));
 }
 
 Node* CodeStubAssembler::SmiAdd(Node* a, Node* b) { return IntPtrAdd(a, b); }
@@ -276,6 +326,140 @@ Node* CodeStubAssembler::WordIsSmi(Node* a) {
 Node* CodeStubAssembler::WordIsPositiveSmi(Node* a) {
   return WordEqual(WordAnd(a, IntPtrConstant(kSmiTagMask | kSmiSignMask)),
                    IntPtrConstant(0));
+}
+
+Node* CodeStubAssembler::AllocateRawUnaligned(Node* size_in_bytes,
+                                              AllocationFlags flags,
+                                              Node* top_address,
+                                              Node* limit_address) {
+  Node* top = Load(MachineType::Pointer(), top_address);
+  Node* limit = Load(MachineType::Pointer(), limit_address);
+
+  // If there's not enough space, call the runtime.
+  Variable result(this, MachineRepresentation::kTagged);
+  Label runtime_call(this, Label::kDeferred), no_runtime_call(this);
+  Label merge_runtime(this, &result);
+
+  Node* new_top = IntPtrAdd(top, size_in_bytes);
+  Branch(UintPtrGreaterThanOrEqual(new_top, limit), &runtime_call,
+         &no_runtime_call);
+
+  Bind(&runtime_call);
+  // AllocateInTargetSpace does not use the context.
+  Node* context = SmiConstant(Smi::FromInt(0));
+
+  Node* runtime_result;
+  if (flags & kPretenured) {
+    Node* runtime_flags = SmiConstant(
+        Smi::FromInt(AllocateDoubleAlignFlag::encode(false) |
+                     AllocateTargetSpace::encode(AllocationSpace::OLD_SPACE)));
+    runtime_result = CallRuntime(Runtime::kAllocateInTargetSpace, context,
+                                 SmiTag(size_in_bytes), runtime_flags);
+  } else {
+    runtime_result = CallRuntime(Runtime::kAllocateInNewSpace, context,
+                                 SmiTag(size_in_bytes));
+  }
+  result.Bind(runtime_result);
+  Goto(&merge_runtime);
+
+  // When there is enough space, return `top' and bump it up.
+  Bind(&no_runtime_call);
+  Node* no_runtime_result = top;
+  StoreNoWriteBarrier(MachineType::PointerRepresentation(), top_address,
+                      new_top);
+  no_runtime_result = BitcastWordToTagged(
+      IntPtrAdd(no_runtime_result, IntPtrConstant(kHeapObjectTag)));
+  result.Bind(no_runtime_result);
+  Goto(&merge_runtime);
+
+  Bind(&merge_runtime);
+  return result.value();
+}
+
+Node* CodeStubAssembler::AllocateRawAligned(Node* size_in_bytes,
+                                            AllocationFlags flags,
+                                            Node* top_address,
+                                            Node* limit_address) {
+  Node* top = Load(MachineType::Pointer(), top_address);
+  Node* limit = Load(MachineType::Pointer(), limit_address);
+  Variable adjusted_size(this, MachineType::PointerRepresentation());
+  adjusted_size.Bind(size_in_bytes);
+  if (flags & kDoubleAlignment) {
+    // TODO(epertoso): Simd128 alignment.
+    Label aligned(this), not_aligned(this), merge(this, &adjusted_size);
+    Branch(WordAnd(top, IntPtrConstant(kDoubleAlignmentMask)), &not_aligned,
+           &aligned);
+
+    Bind(&not_aligned);
+    Node* not_aligned_size =
+        IntPtrAdd(size_in_bytes, IntPtrConstant(kPointerSize));
+    adjusted_size.Bind(not_aligned_size);
+    Goto(&merge);
+
+    Bind(&aligned);
+    Goto(&merge);
+
+    Bind(&merge);
+  }
+
+  Variable address(this, MachineRepresentation::kTagged);
+  address.Bind(AllocateRawUnaligned(adjusted_size.value(), kNone, top, limit));
+
+  Label needs_filler(this), doesnt_need_filler(this),
+      merge_address(this, &address);
+  Branch(IntPtrEqual(adjusted_size.value(), size_in_bytes), &doesnt_need_filler,
+         &needs_filler);
+
+  Bind(&needs_filler);
+  // Store a filler and increase the address by kPointerSize.
+  // TODO(epertoso): this code assumes that we only align to kDoubleSize. Change
+  // it when Simd128 alignment is supported.
+  StoreNoWriteBarrier(MachineType::PointerRepresentation(), top,
+                      LoadRoot(Heap::kOnePointerFillerMapRootIndex));
+  address.Bind(BitcastWordToTagged(
+      IntPtrAdd(address.value(), IntPtrConstant(kPointerSize))));
+  Goto(&merge_address);
+
+  Bind(&doesnt_need_filler);
+  Goto(&merge_address);
+
+  Bind(&merge_address);
+  // Update the top.
+  StoreNoWriteBarrier(MachineType::PointerRepresentation(), top_address,
+                      IntPtrAdd(top, adjusted_size.value()));
+  return address.value();
+}
+
+Node* CodeStubAssembler::Allocate(Node* size_in_bytes, AllocationFlags flags) {
+  bool const new_space = !(flags & kPretenured);
+  Node* top_address = ExternalConstant(
+      new_space
+          ? ExternalReference::new_space_allocation_top_address(isolate())
+          : ExternalReference::old_space_allocation_top_address(isolate()));
+  Node* limit_address = ExternalConstant(
+      new_space
+          ? ExternalReference::new_space_allocation_limit_address(isolate())
+          : ExternalReference::old_space_allocation_limit_address(isolate()));
+
+#ifdef V8_HOST_ARCH_32_BIT
+  if (flags & kDoubleAlignment) {
+    return AllocateRawAligned(size_in_bytes, flags, top_address, limit_address);
+  }
+#endif
+
+  return AllocateRawUnaligned(size_in_bytes, flags, top_address, limit_address);
+}
+
+Node* CodeStubAssembler::Allocate(int size_in_bytes, AllocationFlags flags) {
+  return CodeStubAssembler::Allocate(IntPtrConstant(size_in_bytes), flags);
+}
+
+Node* CodeStubAssembler::InnerAllocate(Node* previous, Node* offset) {
+  return BitcastWordToTagged(IntPtrAdd(previous, offset));
+}
+
+Node* CodeStubAssembler::InnerAllocate(Node* previous, int offset) {
+  return InnerAllocate(previous, IntPtrConstant(offset));
 }
 
 Node* CodeStubAssembler::LoadBufferObject(Node* buffer, int offset,
@@ -333,20 +517,35 @@ Node* CodeStubAssembler::LoadMapDescriptors(Node* map) {
   return LoadObjectField(map, Map::kDescriptorsOffset);
 }
 
+Node* CodeStubAssembler::LoadMapPrototype(Node* map) {
+  return LoadObjectField(map, Map::kPrototypeOffset);
+}
+
 Node* CodeStubAssembler::LoadNameHash(Node* name) {
   return Load(MachineType::Uint32(), name,
               IntPtrConstant(Name::kHashFieldOffset - kHeapObjectTag));
 }
 
-Node* CodeStubAssembler::LoadFixedArrayElementInt32Index(
-    Node* object, Node* index, int additional_offset) {
-  Node* header_size = IntPtrConstant(additional_offset +
-                                     FixedArray::kHeaderSize - kHeapObjectTag);
-  if (Is64()) {
-    index = ChangeInt32ToInt64(index);
-  }
-  Node* scaled_index = WordShl(index, IntPtrConstant(kPointerSizeLog2));
-  Node* offset = IntPtrAdd(scaled_index, header_size);
+Node* CodeStubAssembler::AllocateUninitializedFixedArray(Node* length) {
+  Node* header_size = IntPtrConstant(FixedArray::kHeaderSize);
+  Node* data_size = WordShl(length, IntPtrConstant(kPointerSizeLog2));
+  Node* total_size = IntPtrAdd(data_size, header_size);
+
+  Node* result = Allocate(total_size, kNone);
+  StoreMapNoWriteBarrier(result, LoadRoot(Heap::kFixedArrayMapRootIndex));
+  StoreObjectFieldNoWriteBarrier(result, FixedArray::kLengthOffset,
+      SmiTag(length));
+
+  return result;
+}
+
+Node* CodeStubAssembler::LoadFixedArrayElement(Node* object, Node* index_node,
+                                               int additional_offset,
+                                               ParameterMode parameter_mode) {
+  int32_t header_size =
+      FixedArray::kHeaderSize + additional_offset - kHeapObjectTag;
+  Node* offset = ElementOffsetFromIndex(index_node, FAST_HOLEY_ELEMENTS,
+                                        parameter_mode, header_size);
   return Load(MachineType::AnyTagged(), object, offset);
 }
 
@@ -355,32 +554,27 @@ Node* CodeStubAssembler::LoadMapInstanceSize(Node* map) {
               IntPtrConstant(Map::kInstanceSizeOffset - kHeapObjectTag));
 }
 
-Node* CodeStubAssembler::LoadFixedArrayElementSmiIndex(Node* object,
-                                                       Node* smi_index,
-                                                       int additional_offset) {
-  int const kSmiShiftBits = kSmiShiftSize + kSmiTagSize;
-  Node* header_size = IntPtrConstant(additional_offset +
-                                     FixedArray::kHeaderSize - kHeapObjectTag);
-  Node* scaled_index =
-      (kSmiShiftBits > kPointerSizeLog2)
-          ? WordSar(smi_index, IntPtrConstant(kSmiShiftBits - kPointerSizeLog2))
-          : WordShl(smi_index,
-                    IntPtrConstant(kPointerSizeLog2 - kSmiShiftBits));
-  Node* offset = IntPtrAdd(scaled_index, header_size);
-  return Load(MachineType::AnyTagged(), object, offset);
+Node* CodeStubAssembler::LoadNativeContext(Node* context) {
+  return LoadFixedArrayElement(context,
+                               Int32Constant(Context::NATIVE_CONTEXT_INDEX));
 }
 
-Node* CodeStubAssembler::LoadFixedArrayElementConstantIndex(Node* object,
-                                                            int index) {
-  Node* offset = IntPtrConstant(FixedArray::kHeaderSize - kHeapObjectTag +
-                                index * kPointerSize);
-  return Load(MachineType::AnyTagged(), object, offset);
+Node* CodeStubAssembler::LoadJSArrayElementsMap(ElementsKind kind,
+                                                Node* native_context) {
+  return LoadFixedArrayElement(native_context,
+                               Int32Constant(Context::ArrayMapIndex(kind)));
 }
 
 Node* CodeStubAssembler::StoreHeapNumberValue(Node* object, Node* value) {
   return StoreNoWriteBarrier(
       MachineRepresentation::kFloat64, object,
       IntPtrConstant(HeapNumber::kValueOffset - kHeapObjectTag), value);
+}
+
+Node* CodeStubAssembler::StoreObjectField(
+    Node* object, int offset, Node* value) {
+  return Store(MachineRepresentation::kTagged, object,
+               IntPtrConstant(offset - kHeapObjectTag), value);
 }
 
 Node* CodeStubAssembler::StoreObjectFieldNoWriteBarrier(
@@ -395,26 +589,30 @@ Node* CodeStubAssembler::StoreMapNoWriteBarrier(Node* object, Node* map) {
       IntPtrConstant(HeapNumber::kMapOffset - kHeapObjectTag), map);
 }
 
-Node* CodeStubAssembler::StoreFixedArrayElementNoWriteBarrier(Node* object,
-                                                              Node* index,
-                                                              Node* value) {
+Node* CodeStubAssembler::StoreFixedArrayElement(Node* object, Node* index_node,
+                                                Node* value,
+                                                WriteBarrierMode barrier_mode,
+                                                ParameterMode parameter_mode) {
+  DCHECK(barrier_mode == SKIP_WRITE_BARRIER ||
+         barrier_mode == UPDATE_WRITE_BARRIER);
   Node* offset =
-      IntPtrAdd(WordShl(index, IntPtrConstant(kPointerSizeLog2)),
-                IntPtrConstant(FixedArray::kHeaderSize - kHeapObjectTag));
-  return StoreNoWriteBarrier(MachineRepresentation::kTagged, object, offset,
-                             value);
+      ElementOffsetFromIndex(index_node, FAST_HOLEY_ELEMENTS, parameter_mode,
+                             FixedArray::kHeaderSize - kHeapObjectTag);
+  MachineRepresentation rep = MachineRepresentation::kTagged;
+  if (barrier_mode == SKIP_WRITE_BARRIER) {
+    return StoreNoWriteBarrier(rep, object, offset, value);
+  } else {
+    return Store(rep, object, offset, value);
+  }
 }
 
-Node* CodeStubAssembler::StoreFixedArrayElementInt32Index(Node* object,
-                                                          Node* index,
-                                                          Node* value) {
-  if (Is64()) {
-    index = ChangeInt32ToInt64(index);
-  }
+Node* CodeStubAssembler::StoreFixedDoubleArrayElement(
+    Node* object, Node* index_node, Node* value, ParameterMode parameter_mode) {
   Node* offset =
-      IntPtrAdd(WordShl(index, IntPtrConstant(kPointerSizeLog2)),
-                IntPtrConstant(FixedArray::kHeaderSize - kHeapObjectTag));
-  return Store(MachineRepresentation::kTagged, object, offset, value);
+      ElementOffsetFromIndex(index_node, FAST_DOUBLE_ELEMENTS, parameter_mode,
+                             FixedArray::kHeaderSize - kHeapObjectTag);
+  MachineRepresentation rep = MachineRepresentation::kFloat64;
+  return StoreNoWriteBarrier(rep, object, offset, value);
 }
 
 Node* CodeStubAssembler::AllocateHeapNumber() {
@@ -434,7 +632,7 @@ Node* CodeStubAssembler::AllocateSeqOneByteString(int length) {
   StoreMapNoWriteBarrier(result, LoadRoot(Heap::kOneByteStringMapRootIndex));
   StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kLengthOffset,
                                  SmiConstant(Smi::FromInt(length)));
-  StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kHashFieldOffset,
+  StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kHashFieldSlot,
                                  IntPtrConstant(String::kEmptyHashField));
   return result;
 }
@@ -444,9 +642,156 @@ Node* CodeStubAssembler::AllocateSeqTwoByteString(int length) {
   StoreMapNoWriteBarrier(result, LoadRoot(Heap::kStringMapRootIndex));
   StoreObjectFieldNoWriteBarrier(result, SeqTwoByteString::kLengthOffset,
                                  SmiConstant(Smi::FromInt(length)));
-  StoreObjectFieldNoWriteBarrier(result, SeqTwoByteString::kHashFieldOffset,
+  StoreObjectFieldNoWriteBarrier(result, SeqTwoByteString::kHashFieldSlot,
                                  IntPtrConstant(String::kEmptyHashField));
   return result;
+}
+
+Node* CodeStubAssembler::AllocateJSArray(ElementsKind kind, Node* array_map,
+                                         Node* capacity_node, Node* length_node,
+                                         compiler::Node* allocation_site,
+                                         ParameterMode mode) {
+  bool is_double = IsFastDoubleElementsKind(kind);
+  int base_size = JSArray::kSize + FixedArray::kHeaderSize;
+  int elements_offset = JSArray::kSize;
+
+  if (allocation_site != nullptr) {
+    base_size += AllocationMemento::kSize;
+    elements_offset += AllocationMemento::kSize;
+  }
+
+  int32_t capacity;
+  bool constant_capacity = ToInt32Constant(capacity_node, capacity);
+  Node* total_size =
+      ElementOffsetFromIndex(capacity_node, kind, mode, base_size);
+
+  // Allocate both array and elements object, and initialize the JSArray.
+  Heap* heap = isolate()->heap();
+  Node* array = Allocate(total_size);
+  StoreMapNoWriteBarrier(array, array_map);
+  Node* empty_properties =
+      HeapConstant(Handle<HeapObject>(heap->empty_fixed_array()));
+  StoreObjectFieldNoWriteBarrier(array, JSArray::kPropertiesOffset,
+                                 empty_properties);
+  StoreObjectFieldNoWriteBarrier(
+      array, JSArray::kLengthOffset,
+      mode == SMI_PARAMETERS ? length_node : SmiTag(length_node));
+
+  if (allocation_site != nullptr) {
+    InitializeAllocationMemento(array, JSArray::kSize, allocation_site);
+  }
+
+  // Setup elements object.
+  Node* elements = InnerAllocate(array, elements_offset);
+  StoreObjectFieldNoWriteBarrier(array, JSArray::kElementsOffset, elements);
+  Handle<Map> elements_map(is_double ? heap->fixed_double_array_map()
+                                     : heap->fixed_array_map());
+  StoreMapNoWriteBarrier(elements, HeapConstant(elements_map));
+  StoreObjectFieldNoWriteBarrier(
+      elements, FixedArray::kLengthOffset,
+      mode == SMI_PARAMETERS ? capacity_node : SmiTag(capacity_node));
+
+  int const first_element_offset = FixedArray::kHeaderSize - kHeapObjectTag;
+  Node* hole = HeapConstant(Handle<HeapObject>(heap->the_hole_value()));
+  Node* double_hole =
+      Is64() ? Int64Constant(kHoleNanInt64) : Int32Constant(kHoleNanLower32);
+  DCHECK_EQ(kHoleNanLower32, kHoleNanUpper32);
+  if (constant_capacity && capacity <= kElementLoopUnrollThreshold) {
+    for (int i = 0; i < capacity; ++i) {
+      if (is_double) {
+        Node* offset = ElementOffsetFromIndex(Int32Constant(i), kind, mode,
+                                              first_element_offset);
+        // Don't use doubles to store the hole double, since manipulating the
+        // signaling NaN used for the hole in C++, e.g. with bit_cast, will
+        // change its value on ia32 (the x87 stack is used to return values
+        // and stores to the stack silently clear the signalling bit).
+        //
+        // TODO(danno): When we have a Float32/Float64 wrapper class that
+        // preserves double bits during manipulation, remove this code/change
+        // this to an indexed Float64 store.
+        if (Is64()) {
+          StoreNoWriteBarrier(MachineRepresentation::kWord64, elements, offset,
+                              double_hole);
+        } else {
+          StoreNoWriteBarrier(MachineRepresentation::kWord32, elements, offset,
+                              double_hole);
+          offset = ElementOffsetFromIndex(Int32Constant(i), kind, mode,
+                                          first_element_offset + kPointerSize);
+          StoreNoWriteBarrier(MachineRepresentation::kWord32, elements, offset,
+                              double_hole);
+        }
+      } else {
+        StoreFixedArrayElement(elements, Int32Constant(i), hole,
+                               SKIP_WRITE_BARRIER);
+      }
+    }
+  } else {
+    Variable current(this, MachineRepresentation::kTagged);
+    Label test(this);
+    Label decrement(this, &current);
+    Label done(this);
+    Node* limit = IntPtrAdd(elements, IntPtrConstant(first_element_offset));
+    current.Bind(
+        IntPtrAdd(limit, ElementOffsetFromIndex(capacity_node, kind, mode, 0)));
+
+    Branch(WordEqual(current.value(), limit), &done, &decrement);
+
+    Bind(&decrement);
+    current.Bind(IntPtrSub(
+        current.value(),
+        Int32Constant(IsFastDoubleElementsKind(kind) ? kDoubleSize
+                                                     : kPointerSize)));
+    if (is_double) {
+      // Don't use doubles to store the hole double, since manipulating the
+      // signaling NaN used for the hole in C++, e.g. with bit_cast, will
+      // change its value on ia32 (the x87 stack is used to return values
+      // and stores to the stack silently clear the signalling bit).
+      //
+      // TODO(danno): When we have a Float32/Float64 wrapper class that
+      // preserves double bits during manipulation, remove this code/change
+      // this to an indexed Float64 store.
+      if (Is64()) {
+        StoreNoWriteBarrier(MachineRepresentation::kWord64, current.value(),
+                            double_hole);
+      } else {
+        StoreNoWriteBarrier(MachineRepresentation::kWord32, current.value(),
+                            double_hole);
+        StoreNoWriteBarrier(
+            MachineRepresentation::kWord32,
+            IntPtrAdd(current.value(), Int32Constant(kPointerSize)),
+            double_hole);
+      }
+    } else {
+      StoreNoWriteBarrier(MachineRepresentation::kTagged, current.value(),
+                          hole);
+    }
+    Node* compare = WordNotEqual(current.value(), limit);
+    Branch(compare, &decrement, &done);
+
+    Bind(&done);
+  }
+
+  return array;
+}
+
+void CodeStubAssembler::InitializeAllocationMemento(
+    compiler::Node* base_allocation, int base_allocation_size,
+    compiler::Node* allocation_site) {
+  StoreObjectFieldNoWriteBarrier(
+      base_allocation, AllocationMemento::kMapOffset + base_allocation_size,
+      HeapConstant(Handle<Map>(isolate()->heap()->allocation_memento_map())));
+  StoreObjectFieldNoWriteBarrier(
+      base_allocation,
+      AllocationMemento::kAllocationSiteOffset + base_allocation_size,
+      allocation_site);
+  if (FLAG_allocation_site_pretenuring) {
+    Node* count = LoadObjectField(allocation_site,
+                                  AllocationSite::kPretenureCreateCountOffset);
+    Node* incremented_count = IntPtrAdd(count, SmiConstant(Smi::FromInt(1)));
+    StoreObjectFieldNoWriteBarrier(allocation_site,
+                                   AllocationSite::kPretenureCreateCountOffset,
+                                   incremented_count);
+  }
 }
 
 Node* CodeStubAssembler::TruncateTaggedToFloat64(Node* context, Node* value) {
@@ -551,17 +896,13 @@ Node* CodeStubAssembler::TruncateTaggedToWord32(Node* context, Node* value) {
   return var_result.value();
 }
 
-Node* CodeStubAssembler::TruncateFloat64ToInt32(Node* value) {
-  return TruncateFloat64ToInt32JavaScript(value);
-}
-
 Node* CodeStubAssembler::TruncateHeapNumberValueToWord32(Node* object) {
   Node* value = LoadHeapNumberValue(object);
-  return TruncateFloat64ToInt32(value);
+  return TruncateFloat64ToWord32(value);
 }
 
 Node* CodeStubAssembler::ChangeFloat64ToTagged(Node* value) {
-  Node* value32 = TruncateFloat64ToInt32RoundToZero(value);
+  Node* value32 = RoundFloat64ToInt32(value);
   Node* value64 = ChangeInt32ToFloat64(value32);
 
   Label if_valueisint32(this), if_valueisheapnumber(this), if_join(this);
@@ -570,16 +911,9 @@ Node* CodeStubAssembler::ChangeFloat64ToTagged(Node* value) {
   Branch(Float64Equal(value, value64), &if_valueisequal, &if_valueisnotequal);
   Bind(&if_valueisequal);
   {
-    Label if_valueiszero(this), if_valueisnotzero(this);
-    Branch(Float64Equal(value, Float64Constant(0.0)), &if_valueiszero,
-           &if_valueisnotzero);
-
-    Bind(&if_valueiszero);
+    GotoUnless(Word32Equal(value32, Int32Constant(0)), &if_valueisint32);
     BranchIfInt32LessThan(Float64ExtractHighWord32(value), Int32Constant(0),
                           &if_valueisheapnumber, &if_valueisint32);
-
-    Bind(&if_valueisnotzero);
-    Goto(&if_valueisint32);
   }
   Bind(&if_valueisnotequal);
   Goto(&if_valueisheapnumber);
@@ -930,7 +1264,7 @@ Node* CodeStubAssembler::StringFromCharCode(Node* code) {
     // cache already.
     Label if_entryisundefined(this, Label::kDeferred),
         if_entryisnotundefined(this);
-    Node* entry = LoadFixedArrayElementInt32Index(cache, code);
+    Node* entry = LoadFixedArrayElement(cache, code);
     Branch(WordEqual(entry, UndefinedConstant()), &if_entryisundefined,
            &if_entryisnotundefined);
 
@@ -941,7 +1275,7 @@ Node* CodeStubAssembler::StringFromCharCode(Node* code) {
       StoreNoWriteBarrier(
           MachineRepresentation::kWord8, result,
           IntPtrConstant(SeqOneByteString::kHeaderSize - kHeapObjectTag), code);
-      StoreFixedArrayElementInt32Index(cache, code, result);
+      StoreFixedArrayElement(cache, code, result);
       var_result.Bind(result);
       Goto(&if_done);
     }
@@ -973,6 +1307,318 @@ Node* CodeStubAssembler::BitFieldDecode(Node* word32, uint32_t shift,
                                         uint32_t mask) {
   return Word32Shr(Word32And(word32, Int32Constant(mask)),
                    Int32Constant(shift));
+}
+
+void CodeStubAssembler::TryToName(Node* key, Label* if_keyisindex,
+                                  Variable* var_index, Label* if_keyisunique,
+                                  Label* call_runtime) {
+  DCHECK_EQ(MachineRepresentation::kWord32, var_index->rep());
+
+  Label if_keyissmi(this), if_keyisnotsmi(this);
+  Branch(WordIsSmi(key), &if_keyissmi, &if_keyisnotsmi);
+  Bind(&if_keyissmi);
+  {
+    // Negative smi keys are named properties. Handle in the runtime.
+    Label if_keyispositive(this);
+    Branch(WordIsPositiveSmi(key), &if_keyispositive, call_runtime);
+    Bind(&if_keyispositive);
+
+    var_index->Bind(SmiToWord32(key));
+    Goto(if_keyisindex);
+  }
+
+  Bind(&if_keyisnotsmi);
+
+  Node* key_instance_type = LoadInstanceType(key);
+  Label if_keyisnotsymbol(this);
+  Branch(Word32Equal(key_instance_type, Int32Constant(SYMBOL_TYPE)),
+         if_keyisunique, &if_keyisnotsymbol);
+  Bind(&if_keyisnotsymbol);
+  {
+    Label if_keyisinternalized(this);
+    Node* bits =
+        WordAnd(key_instance_type,
+                Int32Constant(kIsNotStringMask | kIsNotInternalizedMask));
+    Branch(Word32Equal(bits, Int32Constant(kStringTag | kInternalizedTag)),
+           &if_keyisinternalized, call_runtime);
+    Bind(&if_keyisinternalized);
+
+    // Check whether the key is an array index passed in as string. Handle
+    // uniform with smi keys if so.
+    // TODO(verwaest): Also support non-internalized strings.
+    Node* hash = LoadNameHash(key);
+    Node* bit =
+        Word32And(hash, Int32Constant(internal::Name::kIsNotArrayIndexMask));
+    Label if_isarrayindex(this);
+    Branch(Word32Equal(bit, Int32Constant(0)), &if_isarrayindex,
+           if_keyisunique);
+    Bind(&if_isarrayindex);
+    var_index->Bind(BitFieldDecode<internal::Name::ArrayIndexValueBits>(hash));
+    Goto(if_keyisindex);
+  }
+}
+
+void CodeStubAssembler::TryLookupProperty(Node* object, Node* map,
+                                          Node* instance_type, Node* name,
+                                          Label* if_found, Label* if_not_found,
+                                          Label* call_runtime) {
+  {
+    Label if_objectissimple(this);
+    Branch(Int32LessThanOrEqual(instance_type,
+                                Int32Constant(LAST_SPECIAL_RECEIVER_TYPE)),
+           call_runtime, &if_objectissimple);
+    Bind(&if_objectissimple);
+  }
+
+  // TODO(verwaest): Perform a dictonary lookup on slow-mode receivers.
+  Node* bit_field3 = LoadMapBitField3(map);
+  Node* bit = BitFieldDecode<Map::DictionaryMap>(bit_field3);
+  Label if_isfastmap(this);
+  Branch(Word32Equal(bit, Int32Constant(0)), &if_isfastmap, call_runtime);
+  Bind(&if_isfastmap);
+  Node* nof = BitFieldDecode<Map::NumberOfOwnDescriptorsBits>(bit_field3);
+  // Bail out to the runtime for large numbers of own descriptors. The stub only
+  // does linear search, which becomes too expensive in that case.
+  {
+    static const int32_t kMaxLinear = 210;
+    Label above_max(this), below_max(this);
+    Branch(Int32LessThanOrEqual(nof, Int32Constant(kMaxLinear)), &below_max,
+           call_runtime);
+    Bind(&below_max);
+  }
+  Node* descriptors = LoadMapDescriptors(map);
+
+  Variable var_descriptor(this, MachineRepresentation::kWord32);
+  Label loop(this, &var_descriptor);
+  var_descriptor.Bind(Int32Constant(0));
+  Goto(&loop);
+  Bind(&loop);
+  {
+    Node* index = var_descriptor.value();
+    Node* offset = Int32Constant(DescriptorArray::ToKeyIndex(0));
+    Node* factor = Int32Constant(DescriptorArray::kDescriptorSize);
+    Label if_notdone(this);
+    Branch(Word32Equal(index, nof), if_not_found, &if_notdone);
+    Bind(&if_notdone);
+    {
+      Node* array_index = Int32Add(offset, Int32Mul(index, factor));
+      Node* current = LoadFixedArrayElement(descriptors, array_index);
+      Label if_unequal(this);
+      Branch(WordEqual(current, name), if_found, &if_unequal);
+      Bind(&if_unequal);
+
+      var_descriptor.Bind(Int32Add(index, Int32Constant(1)));
+      Goto(&loop);
+    }
+  }
+}
+
+void CodeStubAssembler::TryLookupElement(Node* object, Node* map,
+                                         Node* instance_type, Node* index,
+                                         Label* if_found, Label* if_not_found,
+                                         Label* call_runtime) {
+  {
+    Label if_objectissimple(this);
+    Branch(Int32LessThanOrEqual(instance_type,
+                                Int32Constant(LAST_CUSTOM_ELEMENTS_RECEIVER)),
+           call_runtime, &if_objectissimple);
+    Bind(&if_objectissimple);
+  }
+
+  Node* bit_field2 = LoadMapBitField2(map);
+  Node* elements_kind = BitFieldDecode<Map::ElementsKindBits>(bit_field2);
+
+  // TODO(verwaest): Support other elements kinds as well.
+  Label if_isobjectorsmi(this);
+  Branch(
+      Int32LessThanOrEqual(elements_kind, Int32Constant(FAST_HOLEY_ELEMENTS)),
+      &if_isobjectorsmi, call_runtime);
+  Bind(&if_isobjectorsmi);
+  {
+    Node* elements = LoadElements(object);
+    Node* length = LoadFixedArrayBaseLength(elements);
+
+    Label if_iskeyinrange(this);
+    Branch(Int32LessThan(index, SmiToWord32(length)), &if_iskeyinrange,
+           if_not_found);
+
+    Bind(&if_iskeyinrange);
+    Node* element = LoadFixedArrayElement(elements, index);
+    Node* the_hole = LoadRoot(Heap::kTheHoleValueRootIndex);
+    Branch(WordEqual(element, the_hole), if_not_found, if_found);
+  }
+}
+
+Node* CodeStubAssembler::OrdinaryHasInstance(Node* context, Node* callable,
+                                             Node* object) {
+  Variable var_result(this, MachineRepresentation::kTagged);
+  Label return_false(this), return_true(this),
+      return_runtime(this, Label::kDeferred), return_result(this);
+
+  // Goto runtime if {object} is a Smi.
+  GotoIf(WordIsSmi(object), &return_runtime);
+
+  // Load map of {object}.
+  Node* object_map = LoadMap(object);
+
+  // Lookup the {callable} and {object} map in the global instanceof cache.
+  // Note: This is safe because we clear the global instanceof cache whenever
+  // we change the prototype of any object.
+  Node* instanceof_cache_function =
+      LoadRoot(Heap::kInstanceofCacheFunctionRootIndex);
+  Node* instanceof_cache_map = LoadRoot(Heap::kInstanceofCacheMapRootIndex);
+  {
+    Label instanceof_cache_miss(this);
+    GotoUnless(WordEqual(instanceof_cache_function, callable),
+               &instanceof_cache_miss);
+    GotoUnless(WordEqual(instanceof_cache_map, object_map),
+               &instanceof_cache_miss);
+    var_result.Bind(LoadRoot(Heap::kInstanceofCacheAnswerRootIndex));
+    Goto(&return_result);
+    Bind(&instanceof_cache_miss);
+  }
+
+  // Goto runtime if {callable} is a Smi.
+  GotoIf(WordIsSmi(callable), &return_runtime);
+
+  // Load map of {callable}.
+  Node* callable_map = LoadMap(callable);
+
+  // Goto runtime if {callable} is not a JSFunction.
+  Node* callable_instance_type = LoadMapInstanceType(callable_map);
+  GotoUnless(
+      Word32Equal(callable_instance_type, Int32Constant(JS_FUNCTION_TYPE)),
+      &return_runtime);
+
+  // Goto runtime if {callable} is not a constructor or has
+  // a non-instance "prototype".
+  Node* callable_bitfield = LoadMapBitField(callable_map);
+  GotoUnless(
+      Word32Equal(Word32And(callable_bitfield,
+                            Int32Constant((1 << Map::kHasNonInstancePrototype) |
+                                          (1 << Map::kIsConstructor))),
+                  Int32Constant(1 << Map::kIsConstructor)),
+      &return_runtime);
+
+  // Get the "prototype" (or initial map) of the {callable}.
+  Node* callable_prototype =
+      LoadObjectField(callable, JSFunction::kPrototypeOrInitialMapOffset);
+  {
+    Variable var_callable_prototype(this, MachineRepresentation::kTagged);
+    Label callable_prototype_valid(this);
+    var_callable_prototype.Bind(callable_prototype);
+
+    // Resolve the "prototype" if the {callable} has an initial map.  Afterwards
+    // the {callable_prototype} will be either the JSReceiver prototype object
+    // or the hole value, which means that no instances of the {callable} were
+    // created so far and hence we should return false.
+    Node* callable_prototype_instance_type =
+        LoadInstanceType(callable_prototype);
+    GotoUnless(
+        Word32Equal(callable_prototype_instance_type, Int32Constant(MAP_TYPE)),
+        &callable_prototype_valid);
+    var_callable_prototype.Bind(
+        LoadObjectField(callable_prototype, Map::kPrototypeOffset));
+    Goto(&callable_prototype_valid);
+    Bind(&callable_prototype_valid);
+    callable_prototype = var_callable_prototype.value();
+  }
+
+  // Update the global instanceof cache with the current {object} map and
+  // {callable}.  The cached answer will be set when it is known below.
+  StoreRoot(Heap::kInstanceofCacheFunctionRootIndex, callable);
+  StoreRoot(Heap::kInstanceofCacheMapRootIndex, object_map);
+
+  // Loop through the prototype chain looking for the {callable} prototype.
+  Variable var_object_map(this, MachineRepresentation::kTagged);
+  var_object_map.Bind(object_map);
+  Label loop(this, &var_object_map);
+  Goto(&loop);
+  Bind(&loop);
+  {
+    Node* object_map = var_object_map.value();
+
+    // Check if the current {object} needs to be access checked.
+    Node* object_bitfield = LoadMapBitField(object_map);
+    GotoUnless(
+        Word32Equal(Word32And(object_bitfield,
+                              Int32Constant(1 << Map::kIsAccessCheckNeeded)),
+                    Int32Constant(0)),
+        &return_runtime);
+
+    // Check if the current {object} is a proxy.
+    Node* object_instance_type = LoadMapInstanceType(object_map);
+    GotoIf(Word32Equal(object_instance_type, Int32Constant(JS_PROXY_TYPE)),
+           &return_runtime);
+
+    // Check the current {object} prototype.
+    Node* object_prototype = LoadMapPrototype(object_map);
+    GotoIf(WordEqual(object_prototype, callable_prototype), &return_true);
+    GotoIf(WordEqual(object_prototype, NullConstant()), &return_false);
+
+    // Continue with the prototype.
+    var_object_map.Bind(LoadMap(object_prototype));
+    Goto(&loop);
+  }
+
+  Bind(&return_true);
+  StoreRoot(Heap::kInstanceofCacheAnswerRootIndex, BooleanConstant(true));
+  var_result.Bind(BooleanConstant(true));
+  Goto(&return_result);
+
+  Bind(&return_false);
+  StoreRoot(Heap::kInstanceofCacheAnswerRootIndex, BooleanConstant(false));
+  var_result.Bind(BooleanConstant(false));
+  Goto(&return_result);
+
+  Bind(&return_runtime);
+  {
+    // Invalidate the global instanceof cache.
+    StoreRoot(Heap::kInstanceofCacheFunctionRootIndex, SmiConstant(0));
+    // Fallback to the runtime implementation.
+    var_result.Bind(
+        CallRuntime(Runtime::kOrdinaryHasInstance, context, callable, object));
+  }
+  Goto(&return_result);
+
+  Bind(&return_result);
+  return var_result.value();
+}
+
+compiler::Node* CodeStubAssembler::ElementOffsetFromIndex(Node* index_node,
+                                                          ElementsKind kind,
+                                                          ParameterMode mode,
+                                                          int base_size) {
+  bool is_double = IsFastDoubleElementsKind(kind);
+  int element_size_shift = is_double ? kDoubleSizeLog2 : kPointerSizeLog2;
+  int element_size = 1 << element_size_shift;
+  int const kSmiShiftBits = kSmiShiftSize + kSmiTagSize;
+  int32_t index = 0;
+  bool constant_index = false;
+  if (mode == SMI_PARAMETERS) {
+    element_size_shift -= kSmiShiftBits;
+    intptr_t temp = 0;
+    constant_index = ToIntPtrConstant(index_node, temp);
+    index = temp >> kSmiShiftBits;
+  } else {
+    constant_index = ToInt32Constant(index_node, index);
+  }
+  if (constant_index) {
+    return IntPtrConstant(base_size + element_size * index);
+  }
+  if (Is64() && mode == INTEGER_PARAMETERS) {
+    index_node = ChangeInt32ToInt64(index_node);
+  }
+  if (base_size == 0) {
+    return (element_size_shift >= 0)
+               ? WordShl(index_node, IntPtrConstant(element_size_shift))
+               : WordShr(index_node, IntPtrConstant(-element_size_shift));
+  }
+  return IntPtrAdd(
+      IntPtrConstant(base_size),
+      (element_size_shift >= 0)
+          ? WordShl(index_node, IntPtrConstant(element_size_shift))
+          : WordShr(index_node, IntPtrConstant(-element_size_shift)));
 }
 
 }  // namespace internal

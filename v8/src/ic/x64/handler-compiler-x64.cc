@@ -444,29 +444,26 @@ Register PropertyHandlerCompiler::CheckPrototypes(
   DCHECK(!scratch2.is(object_reg) && !scratch2.is(holder_reg) &&
          !scratch2.is(scratch1));
 
-  if (FLAG_eliminate_prototype_chain_checks) {
-    Handle<Cell> validity_cell =
-        Map::GetOrCreatePrototypeChainValidityCell(receiver_map, isolate());
-    if (!validity_cell.is_null()) {
-      DCHECK_EQ(Smi::FromInt(Map::kPrototypeChainValid),
-                validity_cell->value());
-      __ Move(scratch1, validity_cell, RelocInfo::CELL);
-      // Move(..., CELL) loads the payload's address!
-      __ SmiCompare(Operand(scratch1, 0),
-                    Smi::FromInt(Map::kPrototypeChainValid));
-      __ j(not_equal, miss);
-    }
+  Handle<Cell> validity_cell =
+      Map::GetOrCreatePrototypeChainValidityCell(receiver_map, isolate());
+  if (!validity_cell.is_null()) {
+    DCHECK_EQ(Smi::FromInt(Map::kPrototypeChainValid), validity_cell->value());
+    __ Move(scratch1, validity_cell, RelocInfo::CELL);
+    // Move(..., CELL) loads the payload's address!
+    __ SmiCompare(Operand(scratch1, 0),
+                  Smi::FromInt(Map::kPrototypeChainValid));
+    __ j(not_equal, miss);
+  }
 
-    // The prototype chain of primitives (and their JSValue wrappers) depends
-    // on the native context, which can't be guarded by validity cells.
-    // |object_reg| holds the native context specific prototype in this case;
-    // we need to check its map.
-    if (check == CHECK_ALL_MAPS) {
-      __ movp(scratch1, FieldOperand(object_reg, HeapObject::kMapOffset));
-      Handle<WeakCell> cell = Map::WeakCellForMap(receiver_map);
-      __ CmpWeakValue(scratch1, cell, scratch2);
-      __ j(not_equal, miss);
-    }
+  // The prototype chain of primitives (and their JSValue wrappers) depends
+  // on the native context, which can't be guarded by validity cells.
+  // |object_reg| holds the native context specific prototype in this case;
+  // we need to check its map.
+  if (check == CHECK_ALL_MAPS) {
+    __ movp(scratch1, FieldOperand(object_reg, HeapObject::kMapOffset));
+    Handle<WeakCell> cell = Map::WeakCellForMap(receiver_map);
+    __ CmpWeakValue(scratch1, cell, scratch2);
+    __ j(not_equal, miss);
   }
 
   // Keep track of the current object in register reg.  On the first
@@ -504,8 +501,10 @@ Register PropertyHandlerCompiler::CheckPrototypes(
            !current_map->is_access_check_needed());
 
     prototype = handle(JSObject::cast(current_map->prototype()));
-    if (current_map->is_dictionary_map() &&
-        !current_map->IsJSGlobalObjectMap()) {
+    if (current_map->IsJSGlobalObjectMap()) {
+      GenerateCheckPropertyCell(masm(), Handle<JSGlobalObject>::cast(current),
+                                name, scratch2, miss);
+    } else if (current_map->is_dictionary_map()) {
       DCHECK(!current_map->IsJSGlobalProxyMap());  // Proxy maps are fast.
       if (!name->IsUniqueName()) {
         DCHECK(name->IsString());
@@ -515,34 +514,12 @@ Register PropertyHandlerCompiler::CheckPrototypes(
              current->property_dictionary()->FindEntry(name) ==
                  NameDictionary::kNotFound);
 
-      if (FLAG_eliminate_prototype_chain_checks && depth > 1) {
+      if (depth > 1) {
         // TODO(jkummerow): Cache and re-use weak cell.
         __ LoadWeakValue(reg, isolate()->factory()->NewWeakCell(current), miss);
       }
       GenerateDictionaryNegativeLookup(masm(), miss, reg, name, scratch1,
                                        scratch2);
-
-      if (!FLAG_eliminate_prototype_chain_checks) {
-        __ movp(scratch1, FieldOperand(reg, HeapObject::kMapOffset));
-        __ movp(holder_reg, FieldOperand(scratch1, Map::kPrototypeOffset));
-      }
-    } else {
-      Register map_reg = scratch1;
-      if (!FLAG_eliminate_prototype_chain_checks) {
-        __ movp(map_reg, FieldOperand(reg, HeapObject::kMapOffset));
-      }
-      if (current_map->IsJSGlobalObjectMap()) {
-        GenerateCheckPropertyCell(masm(), Handle<JSGlobalObject>::cast(current),
-                                  name, scratch2, miss);
-      } else if (!FLAG_eliminate_prototype_chain_checks &&
-                 (depth != 1 || check == CHECK_ALL_MAPS)) {
-        Handle<WeakCell> cell = Map::WeakCellForMap(current_map);
-        __ CmpWeakValue(map_reg, cell, scratch2);
-        __ j(not_equal, miss);
-      }
-      if (!FLAG_eliminate_prototype_chain_checks) {
-        __ movp(holder_reg, FieldOperand(map_reg, Map::kPrototypeOffset));
-      }
     }
 
     reg = holder_reg;  // From now on the object will be in holder_reg.
@@ -556,17 +533,8 @@ Register PropertyHandlerCompiler::CheckPrototypes(
   // Log the check depth.
   LOG(isolate(), IntEvent("check-maps-depth", depth + 1));
 
-  if (!FLAG_eliminate_prototype_chain_checks &&
-      (depth != 0 || check == CHECK_ALL_MAPS)) {
-    // Check the holder map.
-    __ movp(scratch1, FieldOperand(reg, HeapObject::kMapOffset));
-    Handle<WeakCell> cell = Map::WeakCellForMap(current_map);
-    __ CmpWeakValue(scratch1, cell, scratch2);
-    __ j(not_equal, miss);
-  }
-
   bool return_holder = return_what == RETURN_HOLDER;
-  if (FLAG_eliminate_prototype_chain_checks && return_holder && depth != 0) {
+  if (return_holder && depth != 0) {
     __ LoadWeakValue(reg, isolate()->factory()->NewWeakCell(current), miss);
   }
 
@@ -600,58 +568,6 @@ void NamedStoreHandlerCompiler::FrontendFooter(Handle<Name> name, Label* miss) {
     __ bind(&success);
   }
 }
-
-
-void NamedLoadHandlerCompiler::GenerateLoadCallback(
-    Register reg, Handle<AccessorInfo> callback) {
-  DCHECK(!AreAliased(kScratchRegister, scratch2(), scratch3(), receiver()));
-  DCHECK(!AreAliased(kScratchRegister, scratch2(), scratch3(), reg));
-
-  // Insert additional parameters into the stack frame above return address.
-  __ PopReturnAddressTo(scratch3());
-
-  // Build v8::PropertyCallbackInfo::args_ array on the stack and push property
-  // name below the exit frame to make GC aware of them.
-  STATIC_ASSERT(PropertyCallbackArguments::kShouldThrowOnErrorIndex == 0);
-  STATIC_ASSERT(PropertyCallbackArguments::kHolderIndex == 1);
-  STATIC_ASSERT(PropertyCallbackArguments::kIsolateIndex == 2);
-  STATIC_ASSERT(PropertyCallbackArguments::kReturnValueDefaultValueIndex == 3);
-  STATIC_ASSERT(PropertyCallbackArguments::kReturnValueOffset == 4);
-  STATIC_ASSERT(PropertyCallbackArguments::kDataIndex == 5);
-  STATIC_ASSERT(PropertyCallbackArguments::kThisIndex == 6);
-  STATIC_ASSERT(PropertyCallbackArguments::kArgsLength == 7);
-
-  __ Push(receiver());  // receiver
-  Handle<Object> data(callback->data(), isolate());
-  if (data->IsUndefined() || data->IsSmi()) {
-    __ Push(data);
-  } else {
-    Handle<WeakCell> cell =
-        isolate()->factory()->NewWeakCell(Handle<HeapObject>::cast(data));
-    // The callback is alive if this instruction is executed,
-    // so the weak cell is not cleared and points to data.
-    __ GetWeakValue(scratch2(), cell);
-    __ Push(scratch2());
-  }
-  __ LoadRoot(kScratchRegister, Heap::kUndefinedValueRootIndex);
-  __ Push(kScratchRegister);  // return value
-  __ Push(kScratchRegister);  // return value default
-  __ PushAddress(ExternalReference::isolate_address(isolate()));
-  __ Push(reg);     // holder
-  __ Push(Smi::FromInt(0));  // should_throw_on_error -> false
-
-  __ Push(name());  // name
-  __ PushReturnAddressFrom(scratch3());
-
-  // Abi for CallApiGetter
-  Register api_function_address = ApiGetterDescriptor::function_address();
-  Address getter_address = v8::ToCData<Address>(callback->getter());
-  __ Move(api_function_address, getter_address, RelocInfo::EXTERNAL_REFERENCE);
-
-  CallApiGetterStub stub(isolate());
-  __ TailCallStub(&stub);
-}
-
 
 void NamedLoadHandlerCompiler::GenerateLoadConstant(Handle<Object> value) {
   // Return the constant value.

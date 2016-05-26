@@ -76,6 +76,9 @@ class JSTypedLowering final : public AdvancedReducer {
   Reduction ReduceJSForInDone(Node* node);
   Reduction ReduceJSForInNext(Node* node);
   Reduction ReduceJSForInStep(Node* node);
+  Reduction ReduceJSGeneratorStore(Node* node);
+  Reduction ReduceJSGeneratorRestoreContinuation(Node* node);
+  Reduction ReduceJSGeneratorRestoreRegister(Node* node);
   Reduction ReduceSelect(Node* node);
   Reduction ReduceNumberBinop(Node* node, const Operator* numberOp);
   Reduction ReduceInt32Binop(Node* node, const Operator* intOp);
@@ -83,6 +86,8 @@ class JSTypedLowering final : public AdvancedReducer {
                             const Operator* shift_op);
 
   Node* Word32Shl(Node* const lhs, int32_t const rhs);
+
+  Node* EmptyFrameState();
 
   Factory* factory() const;
   Graph* graph() const;

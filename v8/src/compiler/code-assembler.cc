@@ -10,6 +10,7 @@
 #include "src/compiler/graph.h"
 #include "src/compiler/instruction-selector.h"
 #include "src/compiler/linkage.h"
+#include "src/compiler/node-matchers.h"
 #include "src/compiler/pipeline.h"
 #include "src/compiler/raw-machine-assembler.h"
 #include "src/compiler/schedule.h"
@@ -87,8 +88,12 @@ bool CodeAssembler::IsFloat64RoundTruncateSupported() const {
   return raw_assembler_->machine()->Float64RoundTruncate().IsSupported();
 }
 
-Node* CodeAssembler::Int32Constant(int value) {
+Node* CodeAssembler::Int32Constant(int32_t value) {
   return raw_assembler_->Int32Constant(value);
+}
+
+Node* CodeAssembler::Int64Constant(int64_t value) {
+  return raw_assembler_->Int64Constant(value);
 }
 
 Node* CodeAssembler::IntPtrConstant(intptr_t value) {
@@ -119,32 +124,32 @@ Node* CodeAssembler::Float64Constant(double value) {
   return raw_assembler_->Float64Constant(value);
 }
 
-Node* CodeAssembler::BooleanMapConstant() {
-  return HeapConstant(isolate()->factory()->boolean_map());
-}
-
-Node* CodeAssembler::EmptyStringConstant() {
-  return LoadRoot(Heap::kempty_stringRootIndex);
-}
-
-Node* CodeAssembler::HeapNumberMapConstant() {
-  return HeapConstant(isolate()->factory()->heap_number_map());
-}
-
 Node* CodeAssembler::NaNConstant() {
   return LoadRoot(Heap::kNanValueRootIndex);
 }
 
-Node* CodeAssembler::NoContextConstant() {
-  return SmiConstant(Smi::FromInt(0));
+bool CodeAssembler::ToInt32Constant(Node* node, int32_t& out_value) {
+  Int64Matcher m(node);
+  if (m.HasValue() &&
+      m.IsInRange(std::numeric_limits<int32_t>::min(),
+                  std::numeric_limits<int32_t>::max())) {
+    out_value = static_cast<int32_t>(m.Value());
+    return true;
+  }
+
+  return false;
 }
 
-Node* CodeAssembler::NullConstant() {
-  return LoadRoot(Heap::kNullValueRootIndex);
+bool CodeAssembler::ToInt64Constant(Node* node, int64_t& out_value) {
+  Int64Matcher m(node);
+  if (m.HasValue()) out_value = m.Value();
+  return m.HasValue();
 }
 
-Node* CodeAssembler::UndefinedConstant() {
-  return LoadRoot(Heap::kUndefinedValueRootIndex);
+bool CodeAssembler::ToIntPtrConstant(Node* node, intptr_t& out_value) {
+  IntPtrMatcher m(node);
+  if (m.HasValue()) out_value = m.Value();
+  return m.HasValue();
 }
 
 Node* CodeAssembler::Parameter(int value) {
@@ -154,6 +159,8 @@ Node* CodeAssembler::Parameter(int value) {
 void CodeAssembler::Return(Node* value) {
   return raw_assembler_->Return(value);
 }
+
+void CodeAssembler::DebugBreak() { raw_assembler_->DebugBreak(); }
 
 void CodeAssembler::Bind(CodeAssembler::Label* label) { return label->Bind(); }
 
@@ -173,14 +180,6 @@ Node* CodeAssembler::SmiShiftBitsConstant() {
   return IntPtrConstant(kSmiShiftSize + kSmiTagSize);
 }
 
-Node* CodeAssembler::SmiTag(Node* value) {
-  return raw_assembler_->WordShl(value, SmiShiftBitsConstant());
-}
-
-Node* CodeAssembler::SmiUntag(Node* value) {
-  return raw_assembler_->WordSar(value, SmiShiftBitsConstant());
-}
-
 #define DEFINE_CODE_ASSEMBLER_BINARY_OP(name)   \
   Node* CodeAssembler::name(Node* a, Node* b) { \
     return raw_assembler_->name(a, b);          \
@@ -192,19 +191,40 @@ Node* CodeAssembler::WordShl(Node* value, int shift) {
   return raw_assembler_->WordShl(value, IntPtrConstant(shift));
 }
 
-Node* CodeAssembler::TruncateFloat64ToInt32RoundToZero(Node* a) {
-  return raw_assembler_->TruncateFloat64ToInt32(TruncationMode::kRoundToZero,
-                                                a);
+Node* CodeAssembler::WordShr(Node* value, int shift) {
+  return raw_assembler_->WordShr(value, IntPtrConstant(shift));
 }
 
-Node* CodeAssembler::TruncateFloat64ToInt32JavaScript(Node* a) {
-  return raw_assembler_->TruncateFloat64ToInt32(TruncationMode::kJavaScript, a);
+Node* CodeAssembler::ChangeUint32ToWord(Node* value) {
+  if (raw_assembler_->machine()->Is64()) {
+    value = raw_assembler_->ChangeUint32ToUint64(value);
+  }
+  return value;
+}
+
+Node* CodeAssembler::ChangeInt32ToIntPtr(Node* value) {
+  if (raw_assembler_->machine()->Is64()) {
+    value = raw_assembler_->ChangeInt32ToInt64(value);
+  }
+  return value;
 }
 
 #define DEFINE_CODE_ASSEMBLER_UNARY_OP(name) \
   Node* CodeAssembler::name(Node* a) { return raw_assembler_->name(a); }
 CODE_ASSEMBLER_UNARY_OP_LIST(DEFINE_CODE_ASSEMBLER_UNARY_OP)
 #undef DEFINE_CODE_ASSEMBLER_UNARY_OP
+
+Node* CodeAssembler::Load(MachineType rep, Node* base) {
+  return raw_assembler_->Load(rep, base);
+}
+
+Node* CodeAssembler::Load(MachineType rep, Node* base, Node* index) {
+  return raw_assembler_->Load(rep, base, index);
+}
+
+Node* CodeAssembler::AtomicLoad(MachineType rep, Node* base, Node* index) {
+  return raw_assembler_->AtomicLoad(rep, base, index);
+}
 
 Node* CodeAssembler::LoadRoot(Heap::RootListIndex root_index) {
   if (isolate()->heap()->RootCanBeTreatedAsConstant(root_index)) {
@@ -216,143 +236,10 @@ Node* CodeAssembler::LoadRoot(Heap::RootListIndex root_index) {
     }
   }
 
-  compiler::Node* roots_array_start =
+  Node* roots_array_start =
       ExternalConstant(ExternalReference::roots_array_start(isolate()));
-  USE(roots_array_start);
-
-  // TODO(danno): Implement thee root-access case where the root is not constant
-  // and must be loaded from the root array.
-  UNIMPLEMENTED();
-  return nullptr;
-}
-
-Node* CodeAssembler::AllocateRawUnaligned(Node* size_in_bytes,
-                                          AllocationFlags flags,
-                                          Node* top_address,
-                                          Node* limit_address) {
-  Node* top = Load(MachineType::Pointer(), top_address);
-  Node* limit = Load(MachineType::Pointer(), limit_address);
-
-  // If there's not enough space, call the runtime.
-  RawMachineLabel runtime_call(RawMachineLabel::kDeferred), no_runtime_call,
-      merge_runtime;
-  raw_assembler_->Branch(
-      raw_assembler_->IntPtrLessThan(IntPtrSub(limit, top), size_in_bytes),
-      &runtime_call, &no_runtime_call);
-
-  raw_assembler_->Bind(&runtime_call);
-  // AllocateInTargetSpace does not use the context.
-  Node* context = IntPtrConstant(0);
-  Node* runtime_flags = SmiTag(Int32Constant(
-      AllocateDoubleAlignFlag::encode(false) |
-      AllocateTargetSpace::encode(flags & kPretenured
-                                      ? AllocationSpace::OLD_SPACE
-                                      : AllocationSpace::NEW_SPACE)));
-  Node* runtime_result = CallRuntime(Runtime::kAllocateInTargetSpace, context,
-                                     SmiTag(size_in_bytes), runtime_flags);
-  raw_assembler_->Goto(&merge_runtime);
-
-  // When there is enough space, return `top' and bump it up.
-  raw_assembler_->Bind(&no_runtime_call);
-  Node* no_runtime_result = top;
-  StoreNoWriteBarrier(MachineType::PointerRepresentation(), top_address,
-                      IntPtrAdd(top, size_in_bytes));
-  no_runtime_result =
-      IntPtrAdd(no_runtime_result, IntPtrConstant(kHeapObjectTag));
-  raw_assembler_->Goto(&merge_runtime);
-
-  raw_assembler_->Bind(&merge_runtime);
-  return raw_assembler_->Phi(MachineType::PointerRepresentation(),
-                             runtime_result, no_runtime_result);
-}
-
-Node* CodeAssembler::AllocateRawAligned(Node* size_in_bytes,
-                                        AllocationFlags flags,
-                                        Node* top_address,
-                                        Node* limit_address) {
-  Node* top = Load(MachineType::Pointer(), top_address);
-  Node* limit = Load(MachineType::Pointer(), limit_address);
-  Node* adjusted_size = size_in_bytes;
-  if (flags & kDoubleAlignment) {
-    // TODO(epertoso): Simd128 alignment.
-    RawMachineLabel aligned, not_aligned, merge;
-    raw_assembler_->Branch(WordAnd(top, IntPtrConstant(kDoubleAlignmentMask)),
-                           &not_aligned, &aligned);
-
-    raw_assembler_->Bind(&not_aligned);
-    Node* not_aligned_size =
-        IntPtrAdd(size_in_bytes, IntPtrConstant(kPointerSize));
-    raw_assembler_->Goto(&merge);
-
-    raw_assembler_->Bind(&aligned);
-    raw_assembler_->Goto(&merge);
-
-    raw_assembler_->Bind(&merge);
-    adjusted_size = raw_assembler_->Phi(MachineType::PointerRepresentation(),
-                                        not_aligned_size, adjusted_size);
-  }
-
-  Node* address = AllocateRawUnaligned(adjusted_size, kNone, top, limit);
-
-  RawMachineLabel needs_filler, doesnt_need_filler, merge_address;
-  raw_assembler_->Branch(
-      raw_assembler_->IntPtrEqual(adjusted_size, size_in_bytes),
-      &doesnt_need_filler, &needs_filler);
-
-  raw_assembler_->Bind(&needs_filler);
-  // Store a filler and increase the address by kPointerSize.
-  // TODO(epertoso): this code assumes that we only align to kDoubleSize. Change
-  // it when Simd128 alignment is supported.
-  StoreNoWriteBarrier(MachineType::PointerRepresentation(), top,
-                      LoadRoot(Heap::kOnePointerFillerMapRootIndex));
-  Node* address_with_filler = IntPtrAdd(address, IntPtrConstant(kPointerSize));
-  raw_assembler_->Goto(&merge_address);
-
-  raw_assembler_->Bind(&doesnt_need_filler);
-  Node* address_without_filler = address;
-  raw_assembler_->Goto(&merge_address);
-
-  raw_assembler_->Bind(&merge_address);
-  address = raw_assembler_->Phi(MachineType::PointerRepresentation(),
-                                address_with_filler, address_without_filler);
-  // Update the top.
-  StoreNoWriteBarrier(MachineType::PointerRepresentation(), top_address,
-                      IntPtrAdd(top, adjusted_size));
-  return address;
-}
-
-Node* CodeAssembler::Allocate(int size_in_bytes, AllocationFlags flags) {
-  bool const new_space = !(flags & kPretenured);
-  Node* top_address = ExternalConstant(
-      new_space
-          ? ExternalReference::new_space_allocation_top_address(isolate())
-          : ExternalReference::old_space_allocation_top_address(isolate()));
-  Node* limit_address = ExternalConstant(
-      new_space
-          ? ExternalReference::new_space_allocation_limit_address(isolate())
-          : ExternalReference::old_space_allocation_limit_address(isolate()));
-
-#ifdef V8_HOST_ARCH_32_BIT
-  if (flags & kDoubleAlignment) {
-    return AllocateRawAligned(IntPtrConstant(size_in_bytes), flags, top_address,
-                              limit_address);
-  }
-#endif
-
-  return AllocateRawUnaligned(IntPtrConstant(size_in_bytes), flags, top_address,
-                              limit_address);
-}
-
-Node* CodeAssembler::InnerAllocate(Node* previous, int offset) {
-  return IntPtrAdd(previous, IntPtrConstant(offset));
-}
-
-Node* CodeAssembler::Load(MachineType rep, Node* base) {
-  return raw_assembler_->Load(rep, base);
-}
-
-Node* CodeAssembler::Load(MachineType rep, Node* base, Node* index) {
-  return raw_assembler_->Load(rep, base, index);
+  return Load(MachineType::AnyTagged(), roots_array_start,
+              IntPtrConstant(root_index * kPointerSize));
 }
 
 Node* CodeAssembler::Store(MachineRepresentation rep, Node* base, Node* value) {
@@ -372,6 +259,19 @@ Node* CodeAssembler::StoreNoWriteBarrier(MachineRepresentation rep, Node* base,
 Node* CodeAssembler::StoreNoWriteBarrier(MachineRepresentation rep, Node* base,
                                          Node* index, Node* value) {
   return raw_assembler_->Store(rep, base, index, value, kNoWriteBarrier);
+}
+
+Node* CodeAssembler::AtomicStore(MachineRepresentation rep, Node* base,
+                                 Node* index, Node* value) {
+  return raw_assembler_->AtomicStore(rep, base, index, value);
+}
+
+Node* CodeAssembler::StoreRoot(Heap::RootListIndex root_index, Node* value) {
+  DCHECK(Heap::RootCanBeWrittenAfterInitialization(root_index));
+  Node* roots_array_start =
+      ExternalConstant(ExternalReference::roots_array_start(isolate()));
+  return StoreNoWriteBarrier(MachineRepresentation::kTagged, roots_array_start,
+                             IntPtrConstant(root_index * kPointerSize), value);
 }
 
 Node* CodeAssembler::Projection(int index, Node* value) {
@@ -588,6 +488,14 @@ Node* CodeAssembler::TailCallStub(Callable const& callable, Node* context,
                       result_size);
 }
 
+Node* CodeAssembler::TailCallStub(Callable const& callable, Node* context,
+                                  Node* arg1, Node* arg2, Node* arg3,
+                                  size_t result_size) {
+  Node* target = HeapConstant(callable.code());
+  return TailCallStub(callable.descriptor(), target, context, arg1, arg2, arg3,
+                      result_size);
+}
+
 Node* CodeAssembler::TailCallStub(const CallInterfaceDescriptor& descriptor,
                                   Node* target, Node* context, Node* arg1,
                                   Node* arg2, size_t result_size) {
@@ -600,6 +508,23 @@ Node* CodeAssembler::TailCallStub(const CallInterfaceDescriptor& descriptor,
   args[0] = arg1;
   args[1] = arg2;
   args[2] = context;
+
+  return raw_assembler_->TailCallN(call_descriptor, target, args);
+}
+
+Node* CodeAssembler::TailCallStub(const CallInterfaceDescriptor& descriptor,
+                                  Node* target, Node* context, Node* arg1,
+                                  Node* arg2, Node* arg3, size_t result_size) {
+  CallDescriptor* call_descriptor = Linkage::GetStubCallDescriptor(
+      isolate(), zone(), descriptor, descriptor.GetStackParameterCount(),
+      CallDescriptor::kSupportsTailCalls, Operator::kNoProperties,
+      MachineType::AnyTagged(), result_size);
+
+  Node** args = zone()->NewArray<Node*>(4);
+  args[0] = arg1;
+  args[1] = arg2;
+  args[2] = arg3;
+  args[3] = context;
 
   return raw_assembler_->TailCallN(call_descriptor, target, args);
 }

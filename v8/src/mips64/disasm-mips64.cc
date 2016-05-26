@@ -379,7 +379,8 @@ void Decoder::PrintXImm26(Instruction* instr) {
   uint64_t target = static_cast<uint64_t>(instr->Imm26Value())
                     << kImmFieldShift;
   target = (reinterpret_cast<uint64_t>(instr) & ~0xfffffff) | target;
-  out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "0x%lx", target);
+  out_buffer_pos_ +=
+      SNPrintF(out_buffer_ + out_buffer_pos_, "0x%" PRIx64, target);
 }
 
 
@@ -805,16 +806,14 @@ int Decoder::DecodeBreakInstr(Instruction* instr) {
   if (instr->Bits(25, 6) == static_cast<int>(kMaxStopCode)) {
     // This is stop(msg).
     Format(instr, "break, code: 'code");
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
-                                "\n%p       %08lx       stop msg: %s",
-                                static_cast<void*>
-                                      (reinterpret_cast<int32_t*>(instr
-                                              + Instruction::kInstrSize)),
-                                reinterpret_cast<uint64_t>
-                                (*reinterpret_cast<char**>(instr
-                                              + Instruction::kInstrSize)),
-                                *reinterpret_cast<char**>(instr
-                                              + Instruction::kInstrSize));
+    out_buffer_pos_ += SNPrintF(
+        out_buffer_ + out_buffer_pos_,
+        "\n%p       %08" PRIx64 "       stop msg: %s",
+        static_cast<void*>(
+            reinterpret_cast<int32_t*>(instr + Instruction::kInstrSize)),
+        reinterpret_cast<uint64_t>(
+            *reinterpret_cast<char**>(instr + Instruction::kInstrSize)),
+        *reinterpret_cast<char**>(instr + Instruction::kInstrSize));
     // Size 3: the break_ instr, plus embedded 64-bit char pointer.
     return 3 * Instruction::kInstrSize;
   } else {
@@ -1392,6 +1391,9 @@ void Decoder::DecodeTypeRegisterSPECIAL(Instruction* instr) {
     case TNE:
       Format(instr, "tne     'rs, 'rt, code: 'code");
       break;
+    case SYNC:
+      Format(instr, "sync");
+      break;
     case MOVZ:
       Format(instr, "movz    'rd, 'rs, 'rt");
       break;
@@ -1940,7 +1942,7 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
 namespace disasm {
 
 const char* NameConverter::NameOfAddress(byte* addr) const {
-  v8::internal::SNPrintF(tmp_buffer_, "%p", addr);
+  v8::internal::SNPrintF(tmp_buffer_, "%p", static_cast<void*>(addr));
   return tmp_buffer_.start();
 }
 
@@ -2003,8 +2005,8 @@ void Disassembler::Disassemble(FILE* f, byte* begin, byte* end) {
     buffer[0] = '\0';
     byte* prev_pc = pc;
     pc += d.InstructionDecode(buffer, pc);
-    v8::internal::PrintF(f, "%p    %08x      %s\n",
-        prev_pc, *reinterpret_cast<int32_t*>(prev_pc), buffer.start());
+    v8::internal::PrintF(f, "%p    %08x      %s\n", static_cast<void*>(prev_pc),
+                         *reinterpret_cast<int32_t*>(prev_pc), buffer.start());
   }
 }
 

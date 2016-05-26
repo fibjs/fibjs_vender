@@ -34,7 +34,8 @@ void StartupSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
       // replace it with lazy-compile builtin. Only exception is when we are
       // serializing the canonical interpreter-entry-trampoline builtin.
       if (code->kind() == Code::FUNCTION ||
-          (!serializing_builtins_ && code->is_interpreter_entry_trampoline())) {
+          (!serializing_builtins_ &&
+           code->is_interpreter_trampoline_builtin())) {
         obj = isolate()->builtins()->builtin(Builtins::kCompileLazy);
       }
     } else if (obj->IsBytecodeArray()) {
@@ -73,8 +74,8 @@ void StartupSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
     // Make sure that the immortal immovable root has been included in the first
     // chunk of its reserved space , so that it is deserialized onto the first
     // page of its space and stays immortal immovable.
-    BackReference ref = back_reference_map_.Lookup(obj);
-    CHECK(ref.is_valid() && ref.chunk_index() == 0);
+    SerializerReference ref = reference_map_.Lookup(obj);
+    CHECK(ref.is_back_reference() && ref.chunk_index() == 0);
   }
 }
 

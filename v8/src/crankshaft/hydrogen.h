@@ -7,12 +7,14 @@
 
 #include "src/accessors.h"
 #include "src/allocation.h"
+#include "src/ast/ast-type-bounds.h"
 #include "src/ast/ast.h"
 #include "src/ast/scopes.h"
 #include "src/bailout-reason.h"
 #include "src/compiler.h"
 #include "src/crankshaft/compilation-phase.h"
 #include "src/crankshaft/hydrogen-instructions.h"
+#include "src/parsing/parser.h"
 #include "src/zone.h"
 
 namespace v8 {
@@ -30,10 +32,13 @@ class LAllocator;
 class LChunk;
 class LiveRange;
 
-class HCompilationJob final : public OptimizedCompileJob {
+class HCompilationJob final : public CompilationJob {
  public:
-  explicit HCompilationJob(CompilationInfo* info)
-      : OptimizedCompileJob(info, "Crankshaft"),
+  explicit HCompilationJob(Handle<JSFunction> function)
+      : CompilationJob(&info_, "Crankshaft"),
+        zone_(function->GetIsolate()->allocator()),
+        parse_info_(&zone_, function),
+        info_(&parse_info_, function),
         graph_(nullptr),
         chunk_(nullptr) {}
 
@@ -43,6 +48,9 @@ class HCompilationJob final : public OptimizedCompileJob {
   virtual Status GenerateCodeImpl();
 
  private:
+  Zone zone_;
+  ParseInfo parse_info_;
+  CompilationInfo info_;
   HGraph* graph_;
   LChunk* chunk_;
 };
@@ -309,6 +317,11 @@ class HLoopInformation final : public ZoneObject {
   HStackCheck* stack_check_;
 };
 
+struct HInlinedFunctionInfo {
+  explicit HInlinedFunctionInfo(int start_position)
+      : start_position(start_position) {}
+  int start_position;
+};
 
 class HGraph final : public ZoneObject {
  public:
@@ -458,6 +471,10 @@ class HGraph final : public ZoneObject {
   // the corresponding script.
   int SourcePositionToScriptPosition(SourcePosition position);
 
+  ZoneVector<HInlinedFunctionInfo>& inlined_function_infos() {
+    return inlined_function_infos_;
+  }
+
  private:
   HConstant* ReinsertConstantIfNecessary(HConstant* constant);
   HConstant* GetConstant(SetOncePointer<HConstant>* pointer,
@@ -501,6 +518,8 @@ class HGraph final : public ZoneObject {
   int maximum_environment_size_;
   int no_side_effects_scope_count_;
   bool disallow_adding_new_values_;
+
+  ZoneVector<HInlinedFunctionInfo> inlined_function_infos_;
 
   DISALLOW_COPY_AND_ASSIGN(HGraph);
 };
@@ -1314,7 +1333,7 @@ class HGraphBuilder {
             class P7, class P8, class P9>
   HInstruction* AddUncasted(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7,
                             P8 p8, P9 p9) {
-    return AddInstruction(NewUncasted<I>(p1, p2, p3, p4, p5, p6, p7, p8, p8));
+    return AddInstruction(NewUncasted<I>(p1, p2, p3, p4, p5, p6, p7, p8, p9));
   }
 
   template <class I, class P1, class P2, class P3, class P4, class P5, class P6,
@@ -1783,18 +1802,6 @@ class HGraphBuilder {
     HAllocate* AllocateArray(HValue* capacity,
                              HValue* length_field,
                              FillMode fill_mode = FILL_WITH_HOLE);
-    // Use these allocators when capacity could be unknown at compile time
-    // but its limit is known. For constant |capacity| the value of
-    // |capacity_upper_bound| is ignored and the actual |capacity|
-    // value is used as an upper bound.
-    HAllocate* AllocateArray(HValue* capacity,
-                             int capacity_upper_bound,
-                             HValue* length_field,
-                             FillMode fill_mode = FILL_WITH_HOLE);
-    HAllocate* AllocateArray(HValue* capacity,
-                             HConstant* capacity_upper_bound,
-                             HValue* length_field,
-                             FillMode fill_mode = FILL_WITH_HOLE);
     HValue* GetElementsLocation() { return elements_location_; }
     HValue* EmitMapCode();
 
@@ -1943,6 +1950,9 @@ class HGraphBuilder {
 
   SourcePosition source_position() { return position_; }
   void set_source_position(SourcePosition position) { position_ = position; }
+
+  int TraceInlinedFunction(Handle<SharedFunctionInfo> shared,
+                           SourcePosition position);
 
   HValue* BuildAllocateEmptyArrayBuffer(HValue* byte_length);
   template <typename ViewClass>
@@ -2185,6 +2195,8 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
 
   void VisitDeclarations(ZoneList<Declaration*>* declarations) override;
 
+  AstTypeBounds* bounds() { return &bounds_; }
+
   void* operator new(size_t size, Zone* zone) { return zone->New(size); }
   void operator delete(void* pointer, Zone* zone) { }
   void operator delete(void* pointer) { }
@@ -2239,7 +2251,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
     function_state()->ClearInlinedTestContext();
   }
   LanguageMode function_language_mode() {
-    return function_state()->compilation_info()->language_mode();
+    return function_state()->compilation_info()->parse_info()->language_mode();
   }
 
 #define FOR_EACH_HYDROGEN_INTRINSIC(F) \
@@ -2274,7 +2286,6 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   F(RegExpSource)                      \
   F(NumberToString)                    \
   F(DebugIsActive)                     \
-  F(GetOrdinaryHasInstance)            \
   /* Typed Arrays */                   \
   F(TypedArrayInitialize)              \
   F(MaxSmi)                            \
@@ -2611,20 +2622,6 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
       return false;
     }
 
-    bool IsJSArrayBufferViewFieldAccessor() {
-      int offset;  // unused
-      return Accessors::IsJSArrayBufferViewFieldAccessor(map_, name_, &offset);
-    }
-
-    bool GetJSArrayBufferViewFieldAccess(HObjectAccess* access) {
-      int offset;
-      if (Accessors::IsJSArrayBufferViewFieldAccessor(map_, name_, &offset)) {
-        *access = HObjectAccess::ForMapAndOffset(map_, offset);
-        return true;
-      }
-      return false;
-    }
-
     bool has_holder() { return !holder_.is_null(); }
     bool IsLoad() const { return access_type_ == LOAD; }
 
@@ -2917,6 +2914,8 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   bool inline_bailout_;
 
   HOsrBuilder* osr_;
+
+  AstTypeBounds bounds_;
 
   friend class FunctionState;  // Pushes and pops the state stack.
   friend class AstContext;  // Pushes and pops the AST context stack.
