@@ -20,7 +20,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="exif.cpp">
+    <ClCompile Include="src\exif.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

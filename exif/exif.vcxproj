@@ -22,7 +22,7 @@
     <ClInclude Include="exif.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="exif.cpp" />
+    <ClCompile Include="src\exif.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{238FDB2A-C47D-44E0-94A2-D0FA2BF3C964}</ProjectGuid>

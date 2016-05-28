@@ -20,7 +20,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="win_iconv.c">
+    <ClCompile Include="src\win_iconv.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

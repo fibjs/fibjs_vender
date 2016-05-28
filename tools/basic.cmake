@@ -3,7 +3,7 @@ include(../tools/os.cmake)
 
 project(${name})
 
-file(GLOB_RECURSE src_list "*.c*")
+file(GLOB_RECURSE src_list "src/*.c*")
 add_library(${name} ${src_list})
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../bin/${OS}_${BUILD_TYPE}/vender)

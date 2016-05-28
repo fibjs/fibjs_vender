@@ -22,7 +22,7 @@
     <ClInclude Include="sqlite3.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="sqlite3.c" />
+    <ClCompile Include="src\sqlite3.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1F77AB58-706B-4BB5-BE73-00000039117e}</ProjectGuid>

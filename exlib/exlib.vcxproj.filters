@@ -104,16 +104,16 @@
     <ClCompile Include="src\osx_tls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nspr\pratom.cpp">
+    <ClCompile Include="src\pratom.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nspr\prcvar.cpp">
+    <ClCompile Include="src\prcvar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nspr\prlock.cpp">
+    <ClCompile Include="src\prlock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nspr\prthread.cpp">
+    <ClCompile Include="src\prthread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
