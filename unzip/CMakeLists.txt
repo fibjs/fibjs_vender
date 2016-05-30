@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(name unzip)
-
 include_directories("${PROJECT_SOURCE_DIR}/../zlib/include/")
 
 add_definitions(-DUSE_FILE32API)

@@ -51,7 +51,7 @@ do
 
 	cd ${lib}
 
-	cmake -DBUILD_TYPE=$1 ${VENDER_PATH}/${lib} > CMake.log
+	cmake -DBUILD_TYPE=$1 -Dname=${lib} ${VENDER_PATH}/${lib} > CMake.log
 	if [ $? != 0 ]; then
 		exit 1
 	fi

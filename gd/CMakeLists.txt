@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(name gd)
-
 add_definitions(-DHAVE_CONFIG_H=1)
 
 include_directories(
