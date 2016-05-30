@@ -31,26 +31,26 @@
     <ClCompile Include="src\gtest-all.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\gtest\gtest-death-test.h" />
-    <ClInclude Include="include\gtest\gtest-message.h" />
-    <ClInclude Include="include\gtest\gtest-param-test.h" />
-    <ClInclude Include="include\gtest\gtest-printers.h" />
-    <ClInclude Include="include\gtest\gtest-spi.h" />
-    <ClInclude Include="include\gtest\gtest-test-part.h" />
-    <ClInclude Include="include\gtest\gtest-typed-test.h" />
-    <ClInclude Include="include\gtest\gtest.h" />
-    <ClInclude Include="include\gtest\gtest_pred_impl.h" />
-    <ClInclude Include="include\gtest\gtest_prod.h" />
-    <ClInclude Include="include\gtest\internal\gtest-death-test-internal.h" />
-    <ClInclude Include="include\gtest\internal\gtest-filepath.h" />
-    <ClInclude Include="include\gtest\internal\gtest-internal.h" />
-    <ClInclude Include="include\gtest\internal\gtest-linked_ptr.h" />
-    <ClInclude Include="include\gtest\internal\gtest-param-util-generated.h" />
-    <ClInclude Include="include\gtest\internal\gtest-param-util.h" />
-    <ClInclude Include="include\gtest\internal\gtest-port.h" />
-    <ClInclude Include="include\gtest\internal\gtest-string.h" />
-    <ClInclude Include="include\gtest\internal\gtest-tuple.h" />
-    <ClInclude Include="include\gtest\internal\gtest-type-util.h" />
+    <ClInclude Include="gtest-death-test.h" />
+    <ClInclude Include="gtest-message.h" />
+    <ClInclude Include="gtest-param-test.h" />
+    <ClInclude Include="gtest-printers.h" />
+    <ClInclude Include="gtest-spi.h" />
+    <ClInclude Include="gtest-test-part.h" />
+    <ClInclude Include="gtest-typed-test.h" />
+    <ClInclude Include="gtest.h" />
+    <ClInclude Include="gtest_pred_impl.h" />
+    <ClInclude Include="gtest_prod.h" />
+    <ClInclude Include="internal\gtest-death-test-internal.h" />
+    <ClInclude Include="internal\gtest-filepath.h" />
+    <ClInclude Include="internal\gtest-internal.h" />
+    <ClInclude Include="internal\gtest-linked_ptr.h" />
+    <ClInclude Include="internal\gtest-param-util-generated.h" />
+    <ClInclude Include="internal\gtest-param-util.h" />
+    <ClInclude Include="internal\gtest-port.h" />
+    <ClInclude Include="internal\gtest-string.h" />
+    <ClInclude Include="internal\gtest-tuple.h" />
+    <ClInclude Include="internal\gtest-type-util.h" />
     <ClInclude Include="src\gtest-internal-inl.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -124,7 +124,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)vender\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -144,7 +144,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)vender\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -166,7 +166,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)vender\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -192,7 +192,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)vender\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
