@@ -7,7 +7,6 @@ var v8Folder = process.argv[2];
 
 var paltFolder = 'src/base/platform';
 var plats = [
-	'_date_cache.cc',
 	'platform-fiber.cc',
 	'condition-variable.cc',
 	'condition-variable.h',

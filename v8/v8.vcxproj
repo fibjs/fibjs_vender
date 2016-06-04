@@ -592,7 +592,6 @@
     <ClCompile Include="src\base\functional.cc" />
     <ClCompile Include="src\base\logging.cc" />
     <ClCompile Include="src\base\once.cc" />
-    <ClCompile Include="src\base\platform\_date_cache.cc" />
     <ClCompile Include="src\base\platform\condition-variable.cc" />
     <ClCompile Include="src\base\platform\mutex.cc" />
     <ClCompile Include="src\base\platform\platform-aix.cc" />

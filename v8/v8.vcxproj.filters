@@ -1925,9 +1925,6 @@
     <ClCompile Include="src\base\once.cc">
       <Filter>Source Files\base</Filter>
     </ClCompile>
-    <ClCompile Include="src\base\platform\_date_cache.cc">
-      <Filter>Source Files\base\platform</Filter>
-    </ClCompile>
     <ClCompile Include="src\base\platform\condition-variable.cc">
       <Filter>Source Files\base\platform</Filter>
     </ClCompile>
