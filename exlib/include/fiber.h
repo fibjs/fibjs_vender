@@ -69,12 +69,12 @@ public:
 public:
     void Ref()
     {
-        refs_.inc();
+        refs_++;
     }
 
     void Unref()
     {
-        if (refs_.dec() == 0)
+        if (--refs_ == 0)
             destroy();
     }
 
@@ -91,7 +91,7 @@ protected:
 private:
     void *m_tls[TLS_SIZE];
     intptr_t m_stackguard;
-    atomic refs_;
+    std::atomic_intptr_t refs_;
 };
 
 class Locker

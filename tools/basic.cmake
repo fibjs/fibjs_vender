@@ -11,8 +11,13 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../bin/${OS}_${BUILD_TYPE}/vend
 if(NOT flags)
 	set(flags " ")
 endif()
-
 set(flags "${flags} -fsigned-char -fmessage-length=0 -fdata-sections -ffunction-sections -fno-exceptions -D_FILE_OFFSET_BITS=64")
+
+if(NOT ccflags)
+	set(ccflags " ")
+endif()
+set(ccflags "${ccflags} -std=c++11")
+
 set(link_flags " ")
 
 if(${OS} STREQUAL "Darwin")
@@ -41,7 +46,8 @@ if(${BUILD_TYPE} STREQUAL "Debug")
 	add_definitions(-DDEBUG=1)
 endif()
 
-set_target_properties(${name} PROPERTIES COMPILE_FLAGS ${flags})
+set(CMAKE_C_FLAGS "${flags}")
+set(CMAKE_CXX_FLAGS "${flags} ${ccflags}")
 
 if(link_flags)
 	set_target_properties(${name} PROPERTIES LINK_FLAGS ${link_flags})

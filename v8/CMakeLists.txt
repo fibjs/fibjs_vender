@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(flags "-std=gnu++0x")
-
 include(../tools/basic.cmake)
 
 add_definitions(-DV8_NO_FAST_TLS=1 -DV8_DEPRECATION_WARNINGS=1 -DENABLE_HANDLE_ZAPPING=1)

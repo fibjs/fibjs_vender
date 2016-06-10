@@ -11,10 +11,10 @@
 
 PRInt32 PR_AtomicIncrement(PRInt32 *val)
 {
-	return exlib::atom_inc(val);
+	return std::atomic_fetch_add((std::atomic_int*)val, 1) + 1;
 }
 
 PRInt32 PR_AtomicDecrement(PRInt32 *val)
 {
-	return exlib::atom_dec(val);
+	return std::atomic_fetch_sub((std::atomic_int*)val, 1) - 1;
 }

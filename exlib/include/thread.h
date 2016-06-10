@@ -512,17 +512,18 @@ public:
     OSSemaphore m_sem;
 };
 
-inline void InitOnce(intptr_t *once, void (*initializer)())
+inline void InitOnce(intptr_t* once, void (*initializer)())
 {
-    intptr_t state = CompareAndSwap(once, 0, 1);
-    if (state == 0)
+    std::atomic_intptr_t& _once = *(std::atomic_intptr_t*)once;
+    intptr_t tst = 0;
+    if (_once.compare_exchange_strong(tst, 1))
     {
         initializer();
-        *once = 2;
+        _once = 2;
     }
-    else if (state == 1)
+    else
     {
-        while (*once != 2)
+        while (_once.load() != 2)
             OSThread::sleep(0);
     }
 }

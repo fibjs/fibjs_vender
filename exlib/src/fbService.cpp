@@ -87,14 +87,16 @@ void Service::forEach(void (*func)(Fiber*))
 #endif
 
 Service::Service() :
-    m_master(s_service), m_main(this, NULL), m_running(&m_main), m_cb(NULL)
+    m_master(s_service), m_main(this, NULL), m_running(&m_main), m_cb(NULL),
+    m_workers(0), m_idleWorkers(0)
 {
     m_main.set_name("main");
     m_main.Ref();
 }
 
 Service::Service(int32_t workers) :
-    m_master(NULL), m_main(this, NULL), m_running(&m_main), m_cb(NULL), m_workers(workers - 1)
+    m_master(NULL), m_main(this, NULL), m_running(&m_main), m_cb(NULL),
+    m_workers(workers - 1), m_idleWorkers(0)
 {
     m_main.set_name("main");
     m_main.Ref();
