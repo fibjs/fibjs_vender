@@ -42,7 +42,33 @@ fi
 OUT_PATH="${OUT_PATH}/${OS}_$1"
 cd ${OUT_PATH}
 
-for lib in exlib gtest expat gumbo gd tiff jpeg png webp zlib leveldb snappy ev pcre sqlite mongo umysql uuid exif winiconv mbedtls v8 SpiderMonkey unzip editline
+libs="exlib
+gtest
+expat
+gumbo
+gd
+tiff
+jpeg
+png
+webp
+zlib
+leveldb
+snappy
+ev
+pcre
+sqlite
+mongo
+umysql
+uuid
+exif
+winiconv
+mbedtls
+v8
+SpiderMonkey
+unzip
+editline"
+
+for lib in ${libs}
 do
 
 	if [ ! -e ${lib} ]; then
@@ -66,6 +92,10 @@ do
 	fi
 
 	cd ..
+done
+
+for lib in ${libs}
+do
 
 	if [ -e ${VENDER_PATH}/${lib}/test ]; then
 
