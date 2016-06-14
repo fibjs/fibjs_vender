@@ -55,12 +55,8 @@ class JSCallAccessor {
     return call_->InputAt(formal_arguments() + 1);
   }
 
-  Node* frame_state_before() {
-    return NodeProperties::GetFrameStateInput(call_, 1);
-  }
-
-  Node* frame_state_after() {
-    // Both, {JSCallFunction} and {JSCallConstruct}, have frame state after.
+  Node* frame_state() {
+    // Both, {JSCallFunction} and {JSCallConstruct}, have frame state.
     return NodeProperties::GetFrameStateInput(call_, 0);
   }
 
@@ -334,7 +330,7 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
   // TODO(turbofan): TranslatedState::GetAdaptedArguments() currently relies on
   // not inlining recursive functions. We might want to relax that at some
   // point.
-  for (Node* frame_state = call.frame_state_after();
+  for (Node* frame_state = call.frame_state();
        frame_state->opcode() == IrOpcode::kFrameState;
        frame_state = frame_state->InputAt(kFrameStateOuterStateInput)) {
     FrameStateInfo const& frame_info = OpParameter<FrameStateInfo>(frame_state);
@@ -360,6 +356,7 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
   ParseInfo parse_info(&zone, function);
   CompilationInfo info(&parse_info, function);
   if (info_->is_deoptimization_enabled()) info.MarkAsDeoptimizationEnabled();
+  if (info_->is_type_feedback_enabled()) info.MarkAsTypeFeedbackEnabled();
 
   if (!Compiler::ParseAndAnalyze(info.parse_info())) {
     TRACE("Not inlining %s into %s because parsing failed\n",
@@ -377,6 +374,7 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
           info_->shared_info()->DebugName()->ToCString().get());
     return NoChange();
   }
+
   // Remember that we inlined this function. This needs to be called right
   // after we ensure deoptimization support so that the code flusher
   // does not remove the code with the deoptimization support.
@@ -389,6 +387,9 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
   TRACE("Inlining %s into %s\n",
         shared_info->DebugName()->ToCString().get(),
         info_->shared_info()->DebugName()->ToCString().get());
+
+  // If function was lazily compiled, it's literals array may not yet be set up.
+  JSFunction::EnsureLiterals(function);
 
   // Create the subgraph for the inlinee.
   Node* start;
@@ -415,7 +416,7 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
     end = graph()->end();
   }
 
-  Node* frame_state = call.frame_state_after();
+  Node* frame_state = call.frame_state();
   Node* new_target = jsgraph_->UndefinedConstant();
 
   // Inline {JSCallConstruct} requires some additional magic.
@@ -426,11 +427,12 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
     // Note that the context has to be the callers context (input to call node).
     Node* receiver = jsgraph_->UndefinedConstant();  // Implicit receiver.
     if (NeedsImplicitReceiver(shared_info)) {
+      Node* frame_state_before = NodeProperties::FindFrameStateBefore(node);
       Node* effect = NodeProperties::GetEffectInput(node);
       Node* context = NodeProperties::GetContextInput(node);
       Node* create = jsgraph_->graph()->NewNode(
           jsgraph_->javascript()->Create(), call.target(), call.new_target(),
-          context, call.frame_state_before(), effect);
+          context, frame_state_before, effect);
       NodeProperties::ReplaceEffectInput(node, create);
       // Insert a check of the return value to determine whether the return
       // value
@@ -477,10 +479,11 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
   if (node->opcode() == IrOpcode::kJSCallFunction &&
       is_sloppy(parse_info.language_mode()) && !shared_info->native()) {
     const CallFunctionParameters& p = CallFunctionParametersOf(node->op());
+    Node* frame_state_before = NodeProperties::FindFrameStateBefore(node);
     Node* effect = NodeProperties::GetEffectInput(node);
     Node* convert = jsgraph_->graph()->NewNode(
         jsgraph_->javascript()->ConvertReceiver(p.convert_mode()),
-        call.receiver(), context, call.frame_state_before(), effect, start);
+        call.receiver(), context, frame_state_before, effect, start);
     NodeProperties::ReplaceValueInput(node, convert, 1);
     NodeProperties::ReplaceEffectInput(node, convert);
   }

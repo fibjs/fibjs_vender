@@ -8,6 +8,7 @@
 #include "src/base/platform/platform.h"
 #include "src/base/platform/semaphore.h"
 #include "src/full-codegen/full-codegen.h"
+#include "src/heap/array-buffer-tracker.h"
 #include "src/heap/slot-set.h"
 #include "src/macro-assembler.h"
 #include "src/msan.h"
@@ -511,13 +512,14 @@ MemoryChunk* MemoryChunk::Initialize(Heap* heap, Address base, size_t size,
   chunk->progress_bar_ = 0;
   chunk->high_water_mark_.SetValue(static_cast<intptr_t>(area_start - base));
   chunk->concurrent_sweeping_state().SetValue(kSweepingDone);
-  chunk->mutex_ = nullptr;
+  chunk->mutex_ = new base::Mutex();
   chunk->available_in_free_list_ = 0;
   chunk->wasted_memory_ = 0;
   chunk->ResetLiveBytes();
   Bitmap::Clear(chunk);
   chunk->set_next_chunk(nullptr);
   chunk->set_prev_chunk(nullptr);
+  chunk->local_tracker_ = nullptr;
 
   DCHECK(OFFSET_OF(MemoryChunk, flags_) == kFlagsOffset);
   DCHECK(OFFSET_OF(MemoryChunk, live_byte_count_) == kLiveBytesOffset);
@@ -723,10 +725,6 @@ MemoryChunk* MemoryAllocator::AllocateChunk(intptr_t reserve_area_size,
       static_cast<int>(chunk_size));
 
   LOG(isolate_, NewEvent("MemoryChunk", base, chunk_size));
-  if (owner != NULL) {
-    ObjectSpace space = static_cast<ObjectSpace>(1 << owner->identity());
-    PerformAllocationCallback(space, kAllocationActionAllocate, chunk_size);
-  }
 
   // We cannot use the last chunk in the address space because we would
   // overflow when comparing top and limit if this chunk is used for a
@@ -758,11 +756,6 @@ void Page::ResetFreeListStatistics() {
 void MemoryAllocator::PreFreeMemory(MemoryChunk* chunk) {
   DCHECK(!chunk->IsFlagSet(MemoryChunk::PRE_FREED));
   LOG(isolate_, DeleteEvent("MemoryChunk", chunk));
-  if (chunk->owner() != NULL) {
-    ObjectSpace space =
-        static_cast<ObjectSpace>(1 << chunk->owner()->identity());
-    PerformAllocationCallback(space, kAllocationActionFree, chunk->size());
-  }
 
   isolate_->heap()->RememberUnmappedPage(reinterpret_cast<Address>(chunk),
                                          chunk->IsEvacuationCandidate());
@@ -911,52 +904,6 @@ void MemoryAllocator::ZapBlock(Address start, size_t size) {
   }
 }
 
-
-void MemoryAllocator::PerformAllocationCallback(ObjectSpace space,
-                                                AllocationAction action,
-                                                size_t size) {
-  for (int i = 0; i < memory_allocation_callbacks_.length(); ++i) {
-    MemoryAllocationCallbackRegistration registration =
-        memory_allocation_callbacks_[i];
-    if ((registration.space & space) == space &&
-        (registration.action & action) == action)
-      registration.callback(space, action, static_cast<int>(size));
-  }
-}
-
-
-bool MemoryAllocator::MemoryAllocationCallbackRegistered(
-    MemoryAllocationCallback callback) {
-  for (int i = 0; i < memory_allocation_callbacks_.length(); ++i) {
-    if (memory_allocation_callbacks_[i].callback == callback) return true;
-  }
-  return false;
-}
-
-
-void MemoryAllocator::AddMemoryAllocationCallback(
-    MemoryAllocationCallback callback, ObjectSpace space,
-    AllocationAction action) {
-  DCHECK(callback != NULL);
-  MemoryAllocationCallbackRegistration registration(callback, space, action);
-  DCHECK(!MemoryAllocator::MemoryAllocationCallbackRegistered(callback));
-  return memory_allocation_callbacks_.Add(registration);
-}
-
-
-void MemoryAllocator::RemoveMemoryAllocationCallback(
-    MemoryAllocationCallback callback) {
-  DCHECK(callback != NULL);
-  for (int i = 0; i < memory_allocation_callbacks_.length(); ++i) {
-    if (memory_allocation_callbacks_[i].callback == callback) {
-      memory_allocation_callbacks_.Remove(i);
-      return;
-    }
-  }
-  UNREACHABLE();
-}
-
-
 #ifdef DEBUG
 void MemoryAllocator::ReportStatistics() {
   intptr_t size = Size();
@@ -1039,6 +986,7 @@ void MemoryChunk::ReleaseAllocatedMemory() {
   if (old_to_old_slots_ != nullptr) ReleaseOldToOldSlots();
   if (typed_old_to_new_slots_ != nullptr) ReleaseTypedOldToNewSlots();
   if (typed_old_to_old_slots_ != nullptr) ReleaseTypedOldToOldSlots();
+  if (local_tracker_ != nullptr) ReleaseLocalTracker();
 }
 
 static SlotSet* AllocateSlotSet(size_t size, Address page_start) {
@@ -1090,6 +1038,18 @@ void MemoryChunk::ReleaseTypedOldToOldSlots() {
   delete typed_old_to_old_slots_;
   typed_old_to_old_slots_ = nullptr;
 }
+
+void MemoryChunk::AllocateLocalTracker() {
+  DCHECK_NULL(local_tracker_);
+  local_tracker_ = new LocalArrayBufferTracker(heap());
+}
+
+void MemoryChunk::ReleaseLocalTracker() {
+  DCHECK_NOT_NULL(local_tracker_);
+  delete local_tracker_;
+  local_tracker_ = nullptr;
+}
+
 // -----------------------------------------------------------------------------
 // PagedSpace implementation
 
@@ -1130,7 +1090,9 @@ bool PagedSpace::HasBeenSetUp() { return true; }
 void PagedSpace::TearDown() {
   PageIterator iterator(this);
   while (iterator.has_next()) {
-    heap()->memory_allocator()->Free<MemoryAllocator::kFull>(iterator.next());
+    Page* page = iterator.next();
+    ArrayBufferTracker::FreeAll(page);
+    heap()->memory_allocator()->Free<MemoryAllocator::kFull>(page);
   }
   anchor_.set_next_page(&anchor_);
   anchor_.set_prev_page(&anchor_);
@@ -1748,7 +1710,14 @@ void SemiSpace::SetUp(int initial_capacity, int maximum_capacity) {
 
 void SemiSpace::TearDown() {
   // Properly uncommit memory to keep the allocator counters in sync.
-  if (is_committed()) Uncommit();
+  if (is_committed()) {
+    NewSpacePageIterator it(this);
+    while (it.has_next()) {
+      Page* page = it.next();
+      ArrayBufferTracker::FreeAll(page);
+    }
+    Uncommit();
+  }
   current_capacity_ = maximum_capacity_ = 0;
 }
 
@@ -2960,15 +2929,13 @@ HeapObject* LargeObjectIterator::Next() {
 // -----------------------------------------------------------------------------
 // LargeObjectSpace
 
-
 LargeObjectSpace::LargeObjectSpace(Heap* heap, AllocationSpace id)
     : Space(heap, id, NOT_EXECUTABLE),  // Managed on a per-allocation basis
       first_page_(NULL),
       size_(0),
       page_count_(0),
       objects_size_(0),
-      chunk_map_(HashMap::PointersMatch, 1024) {}
-
+      chunk_map_(base::HashMap::PointersMatch, 1024) {}
 
 LargeObjectSpace::~LargeObjectSpace() {}
 
@@ -2988,10 +2955,6 @@ void LargeObjectSpace::TearDown() {
     LargePage* page = first_page_;
     first_page_ = first_page_->next_page();
     LOG(heap()->isolate(), DeleteEvent("LargeObjectChunk", page->address()));
-
-    ObjectSpace space = static_cast<ObjectSpace>(1 << identity());
-    heap()->memory_allocator()->PerformAllocationCallback(
-        space, kAllocationActionFree, page->size());
     heap()->memory_allocator()->Free<MemoryAllocator::kFull>(page);
   }
   SetUp();
@@ -3023,7 +2986,7 @@ AllocationResult LargeObjectSpace::AllocateRaw(int object_size,
   uintptr_t base = reinterpret_cast<uintptr_t>(page) / MemoryChunk::kAlignment;
   uintptr_t limit = base + (page->size() - 1) / MemoryChunk::kAlignment;
   for (uintptr_t key = base; key <= limit; key++) {
-    HashMap::Entry* entry = chunk_map_.LookupOrInsert(
+    base::HashMap::Entry* entry = chunk_map_.LookupOrInsert(
         reinterpret_cast<void*>(key), static_cast<uint32_t>(key));
     DCHECK(entry != NULL);
     entry->value = page;
@@ -3047,14 +3010,10 @@ AllocationResult LargeObjectSpace::AllocateRaw(int object_size,
 
 
 size_t LargeObjectSpace::CommittedPhysicalMemory() {
-  if (!base::VirtualMemory::HasLazyCommits()) return CommittedMemory();
-  size_t size = 0;
-  LargePage* current = first_page_;
-  while (current != NULL) {
-    size += current->CommittedPhysicalMemory();
-    current = current->next_page();
-  }
-  return size;
+  // On a platform that provides lazy committing of memory, we over-account
+  // the actually committed memory. There is no easy way right now to support
+  // precise accounting of committed memory in large object space.
+  return CommittedMemory();
 }
 
 
@@ -3070,8 +3029,8 @@ Object* LargeObjectSpace::FindObject(Address a) {
 
 LargePage* LargeObjectSpace::FindPage(Address a) {
   uintptr_t key = reinterpret_cast<uintptr_t>(a) / MemoryChunk::kAlignment;
-  HashMap::Entry* e = chunk_map_.Lookup(reinterpret_cast<void*>(key),
-                                        static_cast<uint32_t>(key));
+  base::HashMap::Entry* e = chunk_map_.Lookup(reinterpret_cast<void*>(key),
+                                              static_cast<uint32_t>(key));
   if (e != NULL) {
     DCHECK(e->value != NULL);
     LargePage* page = reinterpret_cast<LargePage*>(e->value);

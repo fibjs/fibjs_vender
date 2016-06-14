@@ -53,10 +53,10 @@ AsmTyper::AsmTyper(Isolate* isolate, Zone* zone, Script* script,
   stdlib_simd_##name##_types_(zone),
       SIMD128_TYPES(V)
 #undef V
-          global_variable_type_(HashMap::PointersMatch,
+          global_variable_type_(base::HashMap::PointersMatch,
                                 ZoneHashMap::kDefaultHashMapCapacity,
                                 ZoneAllocationPolicy(zone)),
-      local_variable_type_(HashMap::PointersMatch,
+      local_variable_type_(base::HashMap::PointersMatch,
                            ZoneHashMap::kDefaultHashMapCapacity,
                            ZoneAllocationPolicy(zone)),
       in_function_(false),
@@ -166,6 +166,10 @@ void AsmTyper::VisitFunctionDeclaration(FunctionDeclaration* decl) {
   // Set function type so global references to functions have some type
   // (so they can give a more useful error).
   Variable* var = decl->proxy()->var();
+  if (GetVariableInfo(var)) {
+    // Detect previously-seen functions.
+    FAIL(decl->fun(), "function repeated in module");
+  }
   SetType(var, Type::Function());
 }
 
@@ -603,7 +607,7 @@ void AsmTyper::VisitLiteral(Literal* expr, bool is_return) {
     }
   } else if (!is_return && value->IsString()) {
     RECURSE(IntersectResult(expr, Type::String()));
-  } else if (value->IsUndefined()) {
+  } else if (value->IsUndefined(isolate_)) {
     RECURSE(IntersectResult(expr, Type::Undefined()));
   } else {
     FAIL(expr, "illegal literal");
@@ -681,6 +685,9 @@ void AsmTyper::VisitAssignment(Assignment* expr) {
     VariableProxy* proxy = expr->target()->AsVariableProxy();
     if (intish_ != 0) {
       FAIL(expr, "intish or floatish assignment");
+    }
+    if (in_function_ && target_type->IsArray()) {
+      FAIL(expr, "assignment to array variable");
     }
     expected_type_ = target_type;
     Variable* var = proxy->var();

@@ -907,7 +907,10 @@ void InstructionSelector::VisitNode(Node* node) {
     case IrOpcode::kObjectState:
       return;
     case IrOpcode::kDebugBreak:
-      VisitDebugBreak();
+      VisitDebugBreak(node);
+      return;
+    case IrOpcode::kComment:
+      VisitComment(node);
       return;
     case IrOpcode::kLoad: {
       LoadRepresentation type = LoadRepresentationOf(node->op());
@@ -1032,6 +1035,13 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsWord32(node), VisitChangeFloat64ToInt32(node);
     case IrOpcode::kChangeFloat64ToUint32:
       return MarkAsWord32(node), VisitChangeFloat64ToUint32(node);
+    case IrOpcode::kFloat64SilenceNaN:
+      MarkAsFloat64(node);
+      if (CanProduceSignalingNaN(node->InputAt(0))) {
+        return VisitFloat64SilenceNaN(node);
+      } else {
+        return EmitIdentity(node);
+      }
     case IrOpcode::kTruncateFloat64ToUint32:
       return MarkAsWord32(node), VisitTruncateFloat64ToUint32(node);
     case IrOpcode::kTruncateFloat32ToInt32:
@@ -1084,6 +1094,8 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsFloat32(node), VisitFloat32Sub(node);
     case IrOpcode::kFloat32SubPreserveNan:
       return MarkAsFloat32(node), VisitFloat32SubPreserveNan(node);
+    case IrOpcode::kFloat32Neg:
+      return MarkAsFloat32(node), VisitFloat32Neg(node);
     case IrOpcode::kFloat32Mul:
       return MarkAsFloat32(node), VisitFloat32Mul(node);
     case IrOpcode::kFloat32Div:
@@ -1108,6 +1120,8 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsFloat64(node), VisitFloat64Sub(node);
     case IrOpcode::kFloat64SubPreserveNan:
       return MarkAsFloat64(node), VisitFloat64SubPreserveNan(node);
+    case IrOpcode::kFloat64Neg:
+      return MarkAsFloat64(node), VisitFloat64Neg(node);
     case IrOpcode::kFloat64Mul:
       return MarkAsFloat64(node), VisitFloat64Mul(node);
     case IrOpcode::kFloat64Div:
@@ -1120,6 +1134,14 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsFloat64(node), VisitFloat64Max(node);
     case IrOpcode::kFloat64Abs:
       return MarkAsFloat64(node), VisitFloat64Abs(node);
+    case IrOpcode::kFloat64Atan:
+      return MarkAsFloat64(node), VisitFloat64Atan(node);
+    case IrOpcode::kFloat64Atan2:
+      return MarkAsFloat64(node), VisitFloat64Atan2(node);
+    case IrOpcode::kFloat64Log:
+      return MarkAsFloat64(node), VisitFloat64Log(node);
+    case IrOpcode::kFloat64Log1p:
+      return MarkAsFloat64(node), VisitFloat64Log1p(node);
     case IrOpcode::kFloat64Sqrt:
       return MarkAsFloat64(node), VisitFloat64Sqrt(node);
     case IrOpcode::kFloat64Equal:
@@ -1225,6 +1247,22 @@ void InstructionSelector::VisitLoadParentFramePointer(Node* node) {
   Emit(kArchParentFramePointer, g.DefineAsRegister(node));
 }
 
+void InstructionSelector::VisitFloat64Atan(Node* node) {
+  VisitFloat64Ieee754Unop(node, kIeee754Float64Atan);
+}
+
+void InstructionSelector::VisitFloat64Atan2(Node* node) {
+  VisitFloat64Ieee754Binop(node, kIeee754Float64Atan2);
+}
+
+void InstructionSelector::VisitFloat64Log(Node* node) {
+  VisitFloat64Ieee754Unop(node, kIeee754Float64Log);
+}
+
+void InstructionSelector::VisitFloat64Log1p(Node* node) {
+  VisitFloat64Ieee754Unop(node, kIeee754Float64Log1p);
+}
+
 void InstructionSelector::EmitTableSwitch(const SwitchInfo& sw,
                                           InstructionOperand& index_operand) {
   OperandGenerator g(this);
@@ -1270,9 +1308,7 @@ void InstructionSelector::VisitStackSlot(Node* node) {
 }
 
 void InstructionSelector::VisitBitcastWordToTagged(Node* node) {
-  OperandGenerator g(this);
-  Node* value = node->InputAt(0);
-  Emit(kArchNop, g.DefineSameAsFirst(node), g.Use(value));
+  EmitIdentity(node);
 }
 
 // 32 bit targets do not implement the following instructions.
@@ -1444,12 +1480,7 @@ void InstructionSelector::VisitWord32PairShr(Node* node) { UNIMPLEMENTED(); }
 void InstructionSelector::VisitWord32PairSar(Node* node) { UNIMPLEMENTED(); }
 #endif  // V8_TARGET_ARCH_64_BIT
 
-void InstructionSelector::VisitFinishRegion(Node* node) {
-  OperandGenerator g(this);
-  Node* value = node->InputAt(0);
-  Emit(kArchNop, g.DefineSameAsFirst(node), g.Use(value));
-}
-
+void InstructionSelector::VisitFinishRegion(Node* node) { EmitIdentity(node); }
 
 void InstructionSelector::VisitParameter(Node* node) {
   OperandGenerator g(this);
@@ -1775,6 +1806,12 @@ Instruction* InstructionSelector::EmitDeoptimize(
               nullptr);
 }
 
+void InstructionSelector::EmitIdentity(Node* node) {
+  OperandGenerator g(this);
+  Node* value = node->InputAt(0);
+  Emit(kArchNop, g.DefineSameAsFirst(node), g.Use(value));
+}
+
 void InstructionSelector::VisitDeoptimize(DeoptimizeKind kind, Node* value) {
   InstructionCode opcode = kArchDeoptimize;
   switch (kind) {
@@ -1794,9 +1831,25 @@ void InstructionSelector::VisitThrow(Node* value) {
   Emit(kArchThrowTerminator, g.NoOutput());
 }
 
-void InstructionSelector::VisitDebugBreak() {
+void InstructionSelector::VisitDebugBreak(Node* node) {
   OperandGenerator g(this);
   Emit(kArchDebugBreak, g.NoOutput());
+}
+
+void InstructionSelector::VisitComment(Node* node) {
+  OperandGenerator g(this);
+  InstructionOperand operand(g.UseImmediate(node));
+  Emit(kArchComment, 0, nullptr, 1, &operand);
+}
+
+bool InstructionSelector::CanProduceSignalingNaN(Node* node) {
+  // TODO(jarin) Improve the heuristic here.
+  if (node->opcode() == IrOpcode::kFloat64Add ||
+      node->opcode() == IrOpcode::kFloat64Sub ||
+      node->opcode() == IrOpcode::kFloat64Mul) {
+    return false;
+  }
+  return true;
 }
 
 FrameStateDescriptor* InstructionSelector::GetFrameStateDescriptor(

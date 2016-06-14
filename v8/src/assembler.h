@@ -968,13 +968,10 @@ class ExternalReference BASE_EMBEDDED {
 
   static ExternalReference f64_acos_wrapper_function(Isolate* isolate);
   static ExternalReference f64_asin_wrapper_function(Isolate* isolate);
-  static ExternalReference f64_atan_wrapper_function(Isolate* isolate);
   static ExternalReference f64_cos_wrapper_function(Isolate* isolate);
   static ExternalReference f64_sin_wrapper_function(Isolate* isolate);
   static ExternalReference f64_tan_wrapper_function(Isolate* isolate);
   static ExternalReference f64_exp_wrapper_function(Isolate* isolate);
-  static ExternalReference f64_log_wrapper_function(Isolate* isolate);
-  static ExternalReference f64_atan2_wrapper_function(Isolate* isolate);
   static ExternalReference f64_pow_wrapper_function(Isolate* isolate);
   static ExternalReference f64_mod_wrapper_function(Isolate* isolate);
 
@@ -1036,7 +1033,11 @@ class ExternalReference BASE_EMBEDDED {
   static ExternalReference address_of_the_hole_nan();
   static ExternalReference address_of_uint32_bias();
 
-  static ExternalReference math_log_double_function(Isolate* isolate);
+  // IEEE 754 functions.
+  static ExternalReference ieee754_atan_function(Isolate* isolate);
+  static ExternalReference ieee754_atan2_function(Isolate* isolate);
+  static ExternalReference ieee754_log_function(Isolate* isolate);
+  static ExternalReference ieee754_log1p_function(Isolate* isolate);
 
   static ExternalReference math_exp_constants(int constant_index);
   static ExternalReference math_exp_log_table();
@@ -1064,8 +1065,11 @@ class ExternalReference BASE_EMBEDDED {
 
   Address address() const { return reinterpret_cast<Address>(address_); }
 
-  // Used to check if single stepping is enabled in generated code.
-  static ExternalReference debug_step_in_enabled_address(Isolate* isolate);
+  // Used to read out the last step action of the debugger.
+  static ExternalReference debug_last_step_action_address(Isolate* isolate);
+
+  // Used to check for suspended generator, used for stepping across await call.
+  static ExternalReference debug_suspended_generator_address(Isolate* isolate);
 
 #ifndef V8_INTERPRETED_REGEXP
   // C functions called from RegExp generated code.

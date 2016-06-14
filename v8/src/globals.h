@@ -584,8 +584,6 @@ enum InlineCacheState {
   MEGAMORPHIC,
   // A generic handler is installed and no extra typefeedback is recorded.
   GENERIC,
-  // Special state for debug break or step in prepare stubs.
-  DEBUG_STUB
 };
 
 enum CacheHolderFlag {
@@ -595,6 +593,7 @@ enum CacheHolderFlag {
   kCacheOnReceiver
 };
 
+enum WhereToStart { kStartAtReceiver, kStartAtPrototype };
 
 // The Store Buffer (GC).
 typedef enum {
@@ -644,6 +643,15 @@ union IeeeDoubleBigEndianArchType {
   } bits;
 };
 
+#if V8_TARGET_LITTLE_ENDIAN
+typedef IeeeDoubleLittleEndianArchType IeeeDoubleArchType;
+const int kIeeeDoubleMantissaWordOffset = 0;
+const int kIeeeDoubleExponentWordOffset = 4;
+#else
+typedef IeeeDoubleBigEndianArchType IeeeDoubleArchType;
+const int kIeeeDoubleMantissaWordOffset = 4;
+const int kIeeeDoubleExponentWordOffset = 0;
+#endif
 
 // AccessorCallback
 struct AccessorDescriptor {
@@ -803,8 +811,14 @@ enum ScopeType {
 };
 
 // The mips architecture prior to revision 5 has inverted encoding for sNaN.
-#if (V8_TARGET_ARCH_MIPS && !defined(_MIPS_ARCH_MIPS32R6)) || \
-    (V8_TARGET_ARCH_MIPS64 && !defined(_MIPS_ARCH_MIPS64R6))
+// The x87 FPU convert the sNaN to qNaN automatically when loading sNaN from
+// memmory.
+// Use mips sNaN which is a not used qNaN in x87 port as sNaN to workaround this
+// issue
+// for some test cases.
+#if (V8_TARGET_ARCH_MIPS && !defined(_MIPS_ARCH_MIPS32R6)) ||   \
+    (V8_TARGET_ARCH_MIPS64 && !defined(_MIPS_ARCH_MIPS64R6)) || \
+    (V8_TARGET_ARCH_X87)
 const uint32_t kHoleNanUpper32 = 0xFFFF7FFF;
 const uint32_t kHoleNanLower32 = 0xFFFF7FFF;
 #else
@@ -1008,6 +1022,10 @@ inline bool IsGeneratorFunction(FunctionKind kind) {
 inline bool IsAsyncFunction(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
   return kind & FunctionKind::kAsyncFunction;
+}
+
+inline bool IsResumableFunction(FunctionKind kind) {
+  return IsGeneratorFunction(kind) || IsAsyncFunction(kind);
 }
 
 inline bool IsConciseMethod(FunctionKind kind) {

@@ -15,7 +15,6 @@
 namespace v8 {
 namespace internal {
 
-
 enum class FeedbackVectorSlotKind {
   // This kind means that the slot points to the middle of other slot
   // which occupies more than one feedback vector element.
@@ -24,6 +23,7 @@ enum class FeedbackVectorSlotKind {
 
   CALL_IC,
   LOAD_IC,
+  LOAD_GLOBAL_IC,
   KEYED_LOAD_IC,
   STORE_IC,
   KEYED_STORE_IC,
@@ -33,7 +33,6 @@ enum class FeedbackVectorSlotKind {
 
   KINDS_NUMBER  // Last value indicating number of kinds.
 };
-
 
 std::ostream& operator<<(std::ostream& os, FeedbackVectorSlotKind kind);
 
@@ -49,6 +48,10 @@ class FeedbackVectorSpecBase {
 
   FeedbackVectorSlot AddLoadICSlot() {
     return AddSlot(FeedbackVectorSlotKind::LOAD_IC);
+  }
+
+  FeedbackVectorSlot AddLoadGlobalICSlot() {
+    return AddSlot(FeedbackVectorSlotKind::LOAD_GLOBAL_IC);
   }
 
   FeedbackVectorSlot AddKeyedLoadICSlot() {
@@ -136,6 +139,10 @@ class TypeFeedbackMetadata : public FixedArray {
 
   bool SpecDiffersFrom(const FeedbackVectorSpec* other_spec) const;
 
+  bool DiffersFrom(const TypeFeedbackMetadata* other_metadata) const;
+
+  inline bool is_empty() const;
+
   // Returns number of slots in the vector.
   inline int slot_count() const;
 
@@ -155,7 +162,7 @@ class TypeFeedbackMetadata : public FixedArray {
   static const char* Kind2String(FeedbackVectorSlotKind kind);
 
  private:
-  static const int kFeedbackVectorSlotKindBits = 3;
+  static const int kFeedbackVectorSlotKindBits = 4;
   STATIC_ASSERT(static_cast<int>(FeedbackVectorSlotKind::KINDS_NUMBER) <
                 (1 << kFeedbackVectorSlotKindBits));
 
@@ -194,18 +201,20 @@ class TypeFeedbackVector : public FixedArray {
   inline TypeFeedbackMetadata* metadata() const;
 
   // Conversion from a slot to an integer index to the underlying array.
-  inline int GetIndex(FeedbackVectorSlot slot) const;
+  static int GetIndex(FeedbackVectorSlot slot) {
+    return kReservedIndexCount + slot.ToInt();
+  }
   static int GetIndexFromSpec(const FeedbackVectorSpec* spec,
                               FeedbackVectorSlot slot);
 
   // Conversion from an integer index to the underlying array to a slot.
-  inline FeedbackVectorSlot ToSlot(int index) const;
+  static inline FeedbackVectorSlot ToSlot(int index);
   inline Object* Get(FeedbackVectorSlot slot) const;
   inline void Set(FeedbackVectorSlot slot, Object* value,
                   WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Returns slot kind for given slot.
-  inline FeedbackVectorSlotKind GetKind(FeedbackVectorSlot slot) const;
+  FeedbackVectorSlotKind GetKind(FeedbackVectorSlot slot) const;
 
   static Handle<TypeFeedbackVector> New(Isolate* isolate,
                                         Handle<TypeFeedbackMetadata> metadata);
@@ -288,15 +297,9 @@ class TypeFeedbackMetadataIterator {
         slot_(FeedbackVectorSlot(0)),
         slot_kind_(FeedbackVectorSlotKind::INVALID) {}
 
-  bool HasNext() const { return slot_.ToInt() < metadata()->slot_count(); }
+  inline bool HasNext() const;
 
-  FeedbackVectorSlot Next() {
-    DCHECK(HasNext());
-    FeedbackVectorSlot slot = slot_;
-    slot_kind_ = metadata()->GetKind(slot);
-    slot_ = FeedbackVectorSlot(slot_.ToInt() + entry_size());
-    return slot;
-  }
+  inline FeedbackVectorSlot Next();
 
   // Returns slot kind of the last slot returned by Next().
   FeedbackVectorSlotKind kind() const {
@@ -306,7 +309,7 @@ class TypeFeedbackMetadataIterator {
   }
 
   // Returns entry size of the last slot returned by Next().
-  int entry_size() const { return TypeFeedbackMetadata::GetSlotSize(kind()); }
+  inline int entry_size() const;
 
  private:
   TypeFeedbackMetadata* metadata() const {
@@ -393,10 +396,6 @@ class FeedbackNexus {
 
 class CallICNexus final : public FeedbackNexus {
  public:
-  // Monomorphic call ics store call counts. Platform code needs to increment
-  // the count appropriately (ie, by 2).
-  static const int kCallCountIncrement = 2;
-
   CallICNexus(Handle<TypeFeedbackVector> vector, FeedbackVectorSlot slot)
       : FeedbackNexus(vector, slot) {
     DCHECK_EQ(FeedbackVectorSlotKind::CALL_IC, vector->GetKind(slot));
@@ -454,6 +453,24 @@ class LoadICNexus : public FeedbackNexus {
   InlineCacheState StateFromFeedback() const override;
 };
 
+class LoadGlobalICNexus : public FeedbackNexus {
+ public:
+  LoadGlobalICNexus(Handle<TypeFeedbackVector> vector, FeedbackVectorSlot slot)
+      : FeedbackNexus(vector, slot) {
+    DCHECK_EQ(FeedbackVectorSlotKind::LOAD_GLOBAL_IC, vector->GetKind(slot));
+  }
+  LoadGlobalICNexus(TypeFeedbackVector* vector, FeedbackVectorSlot slot)
+      : FeedbackNexus(vector, slot) {
+    DCHECK_EQ(FeedbackVectorSlotKind::LOAD_GLOBAL_IC, vector->GetKind(slot));
+  }
+
+  void ConfigureMegamorphic() override { UNREACHABLE(); }
+  void Clear(Code* host);
+
+  void ConfigureMonomorphic(Handle<Map> receiver_map, Handle<Code> handler);
+
+  InlineCacheState StateFromFeedback() const override;
+};
 
 class KeyedLoadICNexus : public FeedbackNexus {
  public:

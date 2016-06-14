@@ -47,7 +47,7 @@
   V(Select)              \
   V(Phi)                 \
   V(EffectPhi)           \
-  V(CheckPoint)          \
+  V(Checkpoint)          \
   V(BeginRegion)         \
   V(FinishRegion)        \
   V(FrameState)          \
@@ -175,8 +175,13 @@
 
 #define SIMPLIFIED_OP_LIST(V)      \
   SIMPLIFIED_COMPARE_BINOP_LIST(V) \
+  V(PlainPrimitiveToNumber)        \
+  V(PlainPrimitiveToWord32)        \
+  V(PlainPrimitiveToFloat64)       \
   V(BooleanNot)                    \
   V(BooleanToNumber)               \
+  V(SpeculativeNumberAdd)          \
+  V(SpeculativeNumberSubtract)     \
   V(NumberAdd)                     \
   V(NumberSubtract)                \
   V(NumberMultiply)                \
@@ -192,11 +197,18 @@
   V(NumberClz32)                   \
   V(NumberCeil)                    \
   V(NumberFloor)                   \
+  V(NumberAtan)                    \
+  V(NumberAtan2)                   \
+  V(NumberLog)                     \
+  V(NumberLog1p)                   \
   V(NumberRound)                   \
   V(NumberTrunc)                   \
   V(NumberToInt32)                 \
   V(NumberToUint32)                \
   V(NumberIsHoleNaN)               \
+  V(NumberSilenceNaN)              \
+  V(NumberConvertHoleNaN)          \
+  V(StringFromCharCode)            \
   V(StringToNumber)                \
   V(ChangeTaggedSignedToInt32)     \
   V(ChangeTaggedToInt32)           \
@@ -208,7 +220,13 @@
   V(ChangeFloat64ToTagged)         \
   V(ChangeTaggedToBit)             \
   V(ChangeBitToTagged)             \
+  V(CheckedUint32ToInt32)          \
+  V(CheckedFloat64ToInt32)         \
+  V(CheckedTaggedToInt32)          \
+  V(CheckedTaggedToFloat64)        \
+  V(CheckIf)                       \
   V(TruncateTaggedToWord32)        \
+  V(TruncateTaggedToFloat64)       \
   V(Allocate)                      \
   V(LoadField)                     \
   V(LoadBuffer)                    \
@@ -246,6 +264,7 @@
 #define MACHINE_OP_LIST(V)      \
   MACHINE_COMPARE_BINOP_LIST(V) \
   V(DebugBreak)                 \
+  V(Comment)                    \
   V(Load)                       \
   V(Store)                      \
   V(StackSlot)                  \
@@ -296,6 +315,7 @@
   V(ChangeFloat32ToFloat64)     \
   V(ChangeFloat64ToInt32)       \
   V(ChangeFloat64ToUint32)      \
+  V(Float64SilenceNaN)          \
   V(TruncateFloat64ToUint32)    \
   V(TruncateFloat32ToInt32)     \
   V(TruncateFloat32ToUint32)    \
@@ -323,6 +343,7 @@
   V(Float32Add)                 \
   V(Float32Sub)                 \
   V(Float32SubPreserveNan)      \
+  V(Float32Neg)                 \
   V(Float32Mul)                 \
   V(Float32Div)                 \
   V(Float32Max)                 \
@@ -333,12 +354,17 @@
   V(Float64Add)                 \
   V(Float64Sub)                 \
   V(Float64SubPreserveNan)      \
+  V(Float64Neg)                 \
   V(Float64Mul)                 \
   V(Float64Div)                 \
   V(Float64Mod)                 \
   V(Float64Max)                 \
   V(Float64Min)                 \
   V(Float64Abs)                 \
+  V(Float64Atan)                \
+  V(Float64Atan2)               \
+  V(Float64Log)                 \
+  V(Float64Log1p)               \
   V(Float64Sqrt)                \
   V(Float64RoundDown)           \
   V(Float32RoundUp)             \

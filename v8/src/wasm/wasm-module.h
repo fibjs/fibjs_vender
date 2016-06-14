@@ -5,11 +5,10 @@
 #ifndef V8_WASM_MODULE_H_
 #define V8_WASM_MODULE_H_
 
-#include "src/wasm/wasm-opcodes.h"
-#include "src/wasm/wasm-result.h"
-
 #include "src/api.h"
 #include "src/handles.h"
+#include "src/wasm/wasm-opcodes.h"
+#include "src/wasm/wasm-result.h"
 
 namespace v8 {
 namespace internal {
@@ -231,7 +230,11 @@ struct WasmModuleInstance {
   byte* globals_start;  // start of the globals area.
 
   explicit WasmModuleInstance(const WasmModule* m)
-      : module(m), mem_start(nullptr), mem_size(0), globals_start(nullptr) {}
+      : module(m),
+        function_code(m->functions.size()),
+        mem_start(nullptr),
+        mem_size(0),
+        globals_start(nullptr) {}
 };
 
 // forward declaration.
@@ -248,7 +251,7 @@ struct ModuleEnv {
   bool IsValidGlobal(uint32_t index) {
     return module && index < module->globals.size();
   }
-  bool IsValidFunction(uint32_t index) {
+  bool IsValidFunction(uint32_t index) const {
     return module && index < module->functions.size();
   }
   bool IsValidSignature(uint32_t index) {
@@ -279,7 +282,7 @@ struct ModuleEnv {
 
   bool asm_js() { return origin == kAsmJsOrigin; }
 
-  Handle<Code> GetFunctionCode(uint32_t index);
+  Handle<Code> GetCodeOrPlaceholder(uint32_t index) const;
   Handle<Code> GetImportCode(uint32_t index);
   Handle<FixedArray> GetFunctionTable();
 
@@ -315,10 +318,23 @@ int32_t CompileAndRunWasmModule(Isolate* isolate, const byte* module_start,
 int32_t CompileAndRunWasmModule(Isolate* isolate, const WasmModule* module);
 
 // Extract a function name from the given wasm object.
+// Returns "<WASM UNNAMED>" if the function is unnamed or the name is not a
+// valid UTF-8 string.
+Handle<String> GetWasmFunctionName(Isolate* isolate, Handle<Object> wasm,
+                                   uint32_t func_index);
+
+// Extract a function name from the given wasm object.
 // Returns a null handle if the function is unnamed or the name is not a valid
 // UTF-8 string.
-MaybeHandle<String> GetWasmFunctionName(Handle<JSObject> wasm,
-                                        uint32_t func_index);
+Handle<Object> GetWasmFunctionNameOrNull(Isolate* isolate, Handle<Object> wasm,
+                                         uint32_t func_index);
+
+// Check whether the given object is a wasm object.
+// This checks the number and type of internal fields, so it's not 100 percent
+// secure. If it turns out that we need more complete checks, we could add a
+// special marker as internal field, which will definitely never occur anywhere
+// else.
+bool IsWasmObject(Handle<JSObject> object);
 
 }  // namespace wasm
 }  // namespace internal

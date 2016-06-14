@@ -389,6 +389,35 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     __ MovFromFloatResult(i.OutputDoubleRegister());                          \
   } while (0)
 
+#define ASSEMBLE_IEEE754_UNOP(name)                                            \
+  do {                                                                         \
+    /* TODO(bmeurer): We should really get rid of this special instruction, */ \
+    /* and generate a CallAddress instruction instead. */                      \
+    FrameScope scope(masm(), StackFrame::MANUAL);                              \
+    __ PrepareCallCFunction(0, 1, kScratchReg);                                \
+    __ MovToFloatParameter(i.InputDoubleRegister(0));                          \
+    __ CallCFunction(ExternalReference::ieee754_##name##_function(isolate()),  \
+                     0, 1);                                                    \
+    /* Move the result in the double result register. */                       \
+    __ MovFromFloatResult(i.OutputDoubleRegister());                           \
+    DCHECK_EQ(LeaveRC, i.OutputRCBit());                                       \
+  } while (0)
+
+#define ASSEMBLE_IEEE754_BINOP(name)                                           \
+  do {                                                                         \
+    /* TODO(bmeurer): We should really get rid of this special instruction, */ \
+    /* and generate a CallAddress instruction instead. */                      \
+    FrameScope scope(masm(), StackFrame::MANUAL);                              \
+    __ PrepareCallCFunction(0, 2, kScratchReg);                                \
+    __ MovToFloatParameters(i.InputDoubleRegister(0),                          \
+                            i.InputDoubleRegister(1));                         \
+    __ CallCFunction(ExternalReference::ieee754_##name##_function(isolate()),  \
+                     0, 2);                                                    \
+    /* Move the result in the double result register. */                       \
+    __ MovFromFloatResult(i.OutputDoubleRegister());                           \
+    DCHECK_EQ(LeaveRC, i.OutputRCBit());                                       \
+  } while (0)
+
 #define ASSEMBLE_FLOAT_MAX(double_scratch_reg, general_scratch_reg) \
   do {                                                              \
     Label ge, done;                                                 \
@@ -1223,6 +1252,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kS390_ModDouble:
       ASSEMBLE_FLOAT_MODULO();
       break;
+    case kIeee754Float64Atan:
+      ASSEMBLE_IEEE754_UNOP(atan);
+      break;
+    case kIeee754Float64Atan2:
+      ASSEMBLE_IEEE754_BINOP(atan2);
+      break;
+    case kIeee754Float64Log:
+      ASSEMBLE_IEEE754_UNOP(log);
+      break;
+    case kIeee754Float64Log1p:
+      ASSEMBLE_IEEE754_UNOP(log1p);
+      break;
     case kS390_Neg:
       __ LoadComplementRR(i.OutputRegister(), i.InputRegister(0));
       break;
@@ -1322,8 +1363,13 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       int num_slots = i.InputInt32(1);
       __ lay(sp, MemOperand(sp, -num_slots * kPointerSize));
       if (instr->InputAt(0)->IsFPRegister()) {
-        __ StoreDouble(i.InputDoubleRegister(0),
-                 MemOperand(sp));
+        LocationOperand* op = LocationOperand::cast(instr->InputAt(0));
+        if (op->representation() == MachineRepresentation::kFloat64) {
+          __ StoreDouble(i.InputDoubleRegister(0), MemOperand(sp));
+        } else {
+          DCHECK(op->representation() == MachineRepresentation::kFloat32);
+          __ StoreFloat32(i.InputDoubleRegister(0), MemOperand(sp));
+        }
       } else {
         __ StoreP(i.InputRegister(0),
                   MemOperand(sp));
@@ -1333,8 +1379,15 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kS390_StoreToStackSlot: {
       int slot = i.InputInt32(1);
       if (instr->InputAt(0)->IsFPRegister()) {
-        __ StoreDouble(i.InputDoubleRegister(0),
-                       MemOperand(sp, slot * kPointerSize));
+        LocationOperand* op = LocationOperand::cast(instr->InputAt(0));
+        if (op->representation() == MachineRepresentation::kFloat64) {
+          __ StoreDouble(i.InputDoubleRegister(0),
+                         MemOperand(sp, slot * kPointerSize));
+        } else {
+          DCHECK(op->representation() == MachineRepresentation::kFloat32);
+          __ StoreFloat32(i.InputDoubleRegister(0),
+                          MemOperand(sp, slot * kPointerSize));
+        }
       } else {
         __ StoreP(i.InputRegister(0), MemOperand(sp, slot * kPointerSize));
       }
@@ -2021,17 +2074,33 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       __ Move(dst, src);
     } else {
       DCHECK(destination->IsFPStackSlot());
-      __ StoreDouble(src, g.ToMemOperand(destination));
+      LocationOperand* op = LocationOperand::cast(source);
+      if (op->representation() == MachineRepresentation::kFloat64) {
+        __ StoreDouble(src, g.ToMemOperand(destination));
+      } else {
+        __ StoreFloat32(src, g.ToMemOperand(destination));
+      }
     }
   } else if (source->IsFPStackSlot()) {
     DCHECK(destination->IsFPRegister() || destination->IsFPStackSlot());
     MemOperand src = g.ToMemOperand(source);
     if (destination->IsFPRegister()) {
-      __ LoadDouble(g.ToDoubleRegister(destination), src);
+      LocationOperand* op = LocationOperand::cast(source);
+      if (op->representation() == MachineRepresentation::kFloat64) {
+        __ LoadDouble(g.ToDoubleRegister(destination), src);
+      } else {
+        __ LoadFloat32(g.ToDoubleRegister(destination), src);
+      }
     } else {
+      LocationOperand* op = LocationOperand::cast(source);
       DoubleRegister temp = kScratchDoubleReg;
-      __ LoadDouble(temp, src);
-      __ StoreDouble(temp, g.ToMemOperand(destination));
+      if (op->representation() == MachineRepresentation::kFloat64) {
+        __ LoadDouble(temp, src);
+        __ StoreDouble(temp, g.ToMemOperand(destination));
+      } else {
+        __ LoadFloat32(temp, src);
+        __ StoreFloat32(temp, g.ToMemOperand(destination));
+      }
     }
   } else {
     UNREACHABLE();

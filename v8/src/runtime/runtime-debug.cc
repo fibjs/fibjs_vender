@@ -76,8 +76,8 @@ RUNTIME_FUNCTION(Runtime_HandleDebuggerStatement) {
 RUNTIME_FUNCTION(Runtime_SetDebugEventListener) {
   SealHandleScope shs(isolate);
   DCHECK(args.length() == 2);
-  RUNTIME_ASSERT(args[0]->IsJSFunction() || args[0]->IsUndefined() ||
-                 args[0]->IsNull());
+  RUNTIME_ASSERT(args[0]->IsJSFunction() || args[0]->IsUndefined(isolate) ||
+                 args[0]->IsNull(isolate));
   CONVERT_ARG_HANDLE_CHECKED(Object, callback, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, data, 1);
   isolate->debug()->SetEventListener(callback, data);
@@ -145,7 +145,7 @@ static MaybeHandle<JSArray> GetIteratorInternalProperties(
     Isolate* isolate, Handle<IteratorType> object) {
   Factory* factory = isolate->factory();
   Handle<IteratorType> iterator = Handle<IteratorType>::cast(object);
-  RUNTIME_ASSERT_HANDLIFIED(iterator->kind()->IsSmi(), JSArray);
+  CHECK(iterator->kind()->IsSmi());
   const char* kind = NULL;
   switch (Smi::cast(iterator->kind())->value()) {
     case IteratorType::kKindKeys:
@@ -158,7 +158,7 @@ static MaybeHandle<JSArray> GetIteratorInternalProperties(
       kind = "entries";
       break;
     default:
-      RUNTIME_ASSERT_HANDLIFIED(false, JSArray);
+      UNREACHABLE();
   }
 
   Handle<FixedArray> result = factory->NewFixedArray(2 * 3);
@@ -248,7 +248,7 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
 
     Handle<Object> status_obj =
         DebugGetProperty(promise, isolate->factory()->promise_state_symbol());
-    RUNTIME_ASSERT_HANDLIFIED(status_obj->IsSmi(), JSArray);
+    CHECK(status_obj->IsSmi());
     const char* status = "rejected";
     int status_val = Handle<Smi>::cast(status_obj)->value();
     switch (status_val) {
@@ -562,10 +562,13 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
     // Use the value from the stack.
     if (ScopeInfo::VariableIsSynthetic(scope_info->LocalName(i))) continue;
     locals->set(local * 2, scope_info->LocalName(i));
-    Handle<Object> value = frame_inspector.GetExpression(i);
+    Handle<Object> value =
+        frame_inspector.GetExpression(scope_info->StackLocalIndex(i));
     // TODO(yangguo): We convert optimized out values to {undefined} when they
     // are passed to the debugger. Eventually we should handle them somehow.
-    if (value->IsOptimizedOut()) value = isolate->factory()->undefined_value();
+    if (value->IsOptimizedOut(isolate)) {
+      value = isolate->factory()->undefined_value();
+    }
     locals->set(local * 2 + 1, *value);
     local++;
   }
@@ -963,7 +966,9 @@ RUNTIME_FUNCTION(Runtime_GetBreakLocations) {
   // Find the number of break points
   Handle<Object> break_locations =
       Debug::GetSourceBreakLocations(shared, alignment);
-  if (break_locations->IsUndefined()) return isolate->heap()->undefined_value();
+  if (break_locations->IsUndefined(isolate)) {
+    return isolate->heap()->undefined_value();
+  }
   // Return array as JS array
   return *isolate->factory()->NewJSArrayWithElements(
       Handle<FixedArray>::cast(break_locations));
@@ -1193,7 +1198,7 @@ RUNTIME_FUNCTION(Runtime_DebugGetLoadedScripts) {
 static bool HasInPrototypeChainIgnoringProxies(Isolate* isolate,
                                                JSObject* object,
                                                Object* proto) {
-  PrototypeIterator iter(isolate, object, PrototypeIterator::START_AT_RECEIVER);
+  PrototypeIterator iter(isolate, object, kStartAtReceiver);
   while (true) {
     iter.AdvanceIgnoringProxies();
     if (iter.IsAtEnd()) return false;
@@ -1211,7 +1216,7 @@ RUNTIME_FUNCTION(Runtime_DebugReferencedBy) {
   DCHECK(args.length() == 3);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, target, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, filter, 1);
-  RUNTIME_ASSERT(filter->IsUndefined() || filter->IsJSObject());
+  RUNTIME_ASSERT(filter->IsUndefined(isolate) || filter->IsJSObject());
   CONVERT_NUMBER_CHECKED(int32_t, max_references, Int32, args[2]);
   RUNTIME_ASSERT(max_references >= 0);
 
@@ -1230,7 +1235,7 @@ RUNTIME_FUNCTION(Runtime_DebugReferencedBy) {
       if (!obj->ReferencesObject(*target)) continue;
       // Check filter if supplied. This is normally used to avoid
       // references from mirror objects.
-      if (!filter->IsUndefined() &&
+      if (!filter->IsUndefined(isolate) &&
           HasInPrototypeChainIgnoringProxies(isolate, obj, *filter)) {
         continue;
       }
@@ -1590,7 +1595,7 @@ RUNTIME_FUNCTION(Runtime_ScriptLocationFromLine) {
   // additionally subtracting corresponding offsets.
 
   int32_t line;
-  if (args[1]->IsNull() || args[1]->IsUndefined()) {
+  if (args[1]->IsNull(isolate) || args[1]->IsUndefined(isolate)) {
     line = 0;
   } else {
     RUNTIME_ASSERT(args[1]->IsNumber());
@@ -1598,7 +1603,7 @@ RUNTIME_FUNCTION(Runtime_ScriptLocationFromLine) {
   }
 
   int32_t column;
-  if (args[2]->IsNull() || args[2]->IsUndefined()) {
+  if (args[2]->IsNull(isolate) || args[2]->IsUndefined(isolate)) {
     column = 0;
   } else {
     RUNTIME_ASSERT(args[2]->IsNumber());
@@ -1698,6 +1703,22 @@ RUNTIME_FUNCTION(Runtime_DebugPrepareStepInIfStepping) {
   return isolate->heap()->undefined_value();
 }
 
+// Set one shot breakpoints for the suspended generator object.
+RUNTIME_FUNCTION(Runtime_DebugPrepareStepInSuspendedGenerator) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(0, args.length());
+  isolate->debug()->PrepareStepInSuspendedGenerator();
+  return isolate->heap()->undefined_value();
+}
+
+RUNTIME_FUNCTION(Runtime_DebugRecordAsyncFunction) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(JSGeneratorObject, generator, 0);
+  CHECK(isolate->debug()->last_step_action() >= StepNext);
+  isolate->debug()->RecordAsyncFunction(generator);
+  return isolate->heap()->undefined_value();
+}
 
 RUNTIME_FUNCTION(Runtime_DebugPushPromise) {
   DCHECK(args.length() == 2);
@@ -1705,8 +1726,6 @@ RUNTIME_FUNCTION(Runtime_DebugPushPromise) {
   CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 1);
   isolate->PushPromise(promise, function);
-  // If we are in step-in mode, flood the handler.
-  isolate->debug()->EnableStepIn();
   return isolate->heap()->undefined_value();
 }
 

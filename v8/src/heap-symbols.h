@@ -26,6 +26,7 @@
   V(boolean_string, "boolean")                                     \
   V(Boolean_string, "Boolean")                                     \
   V(bound__string, "bound ")                                       \
+  V(buffer_string, "buffer")                                       \
   V(byte_length_string, "byteLength")                              \
   V(byte_offset_string, "byteOffset")                              \
   V(call_string, "call")                                           \
@@ -175,12 +176,13 @@
   V(premonomorphic_symbol)                  \
   V(promise_combined_deferred_symbol)       \
   V(promise_debug_marker_symbol)            \
-  V(promise_has_handler_symbol)             \
+  V(promise_deferred_reactions_symbol)      \
   V(promise_fulfill_reactions_symbol)       \
-  V(promise_reject_reactions_symbol)        \
+  V(promise_has_handler_symbol)             \
   V(promise_raw_symbol)                     \
-  V(promise_state_symbol)                   \
+  V(promise_reject_reactions_symbol)        \
   V(promise_result_symbol)                  \
+  V(promise_state_symbol)                   \
   V(sealed_symbol)                          \
   V(stack_trace_symbol)                     \
   V(strict_function_transition_symbol)      \

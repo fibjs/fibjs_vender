@@ -96,6 +96,7 @@ Handle<PrototypeInfo> Factory::NewPrototypeInfo() {
   result->set_prototype_users(WeakFixedArray::Empty());
   result->set_registry_slot(PrototypeInfo::UNREGISTERED);
   result->set_validity_cell(Smi::FromInt(0));
+  result->set_bit_field(0);
   return result;
 }
 
@@ -1222,7 +1223,7 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
   function->set_code(info->code());
   function->set_context(*context);
   function->set_prototype_or_initial_map(*the_hole_value());
-  function->set_literals(LiteralsArray::cast(*empty_fixed_array()));
+  function->set_literals(LiteralsArray::cast(*empty_literals_array()));
   function->set_next_function_link(*undefined_value(), SKIP_WRITE_BARRIER);
   isolate()->heap()->InitializeJSObjectBody(*function, *map, JSFunction::kSize);
   return function;
@@ -1236,7 +1237,7 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
   Handle<SharedFunctionInfo> info =
       NewSharedFunctionInfo(name, code, map->is_constructor());
   DCHECK(is_sloppy(info->language_mode()));
-  DCHECK(!map->IsUndefined());
+  DCHECK(!map->IsUndefined(isolate()));
   DCHECK(
       map.is_identical_to(isolate()->sloppy_function_map()) ||
       map.is_identical_to(isolate()->sloppy_function_without_prototype_map()) ||
@@ -1298,8 +1299,11 @@ Handle<JSFunction> Factory::NewFunction(Handle<String> name, Handle<Code> code,
   ElementsKind elements_kind =
       type == JS_ARRAY_TYPE ? FAST_SMI_ELEMENTS : FAST_HOLEY_SMI_ELEMENTS;
   Handle<Map> initial_map = NewMap(type, instance_size, elements_kind);
-  if (!function->shared()->is_generator()) {
-    if (prototype->IsTheHole()) {
+  // TODO(littledan): Why do we have this is_generator test when
+  // NewFunctionPrototype already handles finding an appropriately
+  // shared prototype?
+  if (!function->shared()->is_resumable()) {
+    if (prototype->IsTheHole(isolate())) {
       prototype = NewFunctionPrototype(function);
     } else if (install_constructor) {
       JSObject::AddProperty(Handle<JSObject>::cast(prototype),
@@ -1327,11 +1331,12 @@ Handle<JSObject> Factory::NewFunctionPrototype(Handle<JSFunction> function) {
   // can be from a different context.
   Handle<Context> native_context(function->context()->native_context());
   Handle<Map> new_map;
-  if (function->shared()->is_generator()) {
-    // Generator prototypes can share maps since they don't have "constructor"
-    // properties.
+  if (function->shared()->is_resumable()) {
+    // Generator and async function prototypes can share maps since they
+    // don't have "constructor" properties.
     new_map = handle(native_context->generator_object_prototype_map());
   } else {
+    CHECK(!function->shared()->is_async());
     // Each function prototype gets a fresh map to avoid unwanted sharing of
     // maps between prototypes of different constructors.
     Handle<JSFunction> object_function(native_context->object_function());
@@ -1342,7 +1347,7 @@ Handle<JSObject> Factory::NewFunctionPrototype(Handle<JSFunction> function) {
   DCHECK(!new_map->is_prototype_map());
   Handle<JSObject> prototype = NewJSObjectFromMap(new_map);
 
-  if (!function->shared()->is_generator()) {
+  if (!function->shared()->is_resumable()) {
     JSObject::AddProperty(prototype, constructor_string(), function, DONT_ENUM);
   }
 
@@ -2008,7 +2013,7 @@ Handle<JSProxy> Factory::NewJSProxy(Handle<JSReceiver> target,
   } else {
     map = Handle<Map>(isolate()->proxy_map());
   }
-  DCHECK(map->prototype()->IsNull());
+  DCHECK(map->prototype()->IsNull(isolate()));
   Handle<JSProxy> result = New<JSProxy>(map, NEW_SPACE);
   result->initialize_properties();
   result->set_target(*target);
@@ -2080,12 +2085,6 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   shared->set_num_literals(number_of_literals);
   if (IsGeneratorFunction(kind)) {
     shared->set_instance_class_name(isolate()->heap()->Generator_string());
-    shared->DisableOptimization(kGenerator);
-  }
-  if (IsAsyncFunction(kind)) {
-    // TODO(caitp): Enable optimization of async functions when they are enabled
-    // for generators functions.
-    shared->DisableOptimization(kGenerator);
   }
   return shared;
 }
@@ -2140,9 +2139,7 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   StaticFeedbackVectorSpec empty_spec;
   Handle<TypeFeedbackMetadata> feedback_metadata =
       TypeFeedbackMetadata::New(isolate(), &empty_spec);
-  Handle<TypeFeedbackVector> feedback_vector =
-      TypeFeedbackVector::New(isolate(), feedback_metadata);
-  share->set_feedback_vector(*feedback_vector, SKIP_WRITE_BARRIER);
+  share->set_feedback_metadata(*feedback_metadata, SKIP_WRITE_BARRIER);
 #if TRACE_MAPS
   share->set_unique_id(isolate()->GetNextUniqueSharedFunctionInfoId());
 #endif
@@ -2218,7 +2215,7 @@ Handle<String> Factory::NumberToString(Handle<Object> number,
   isolate()->counters()->number_to_string_runtime()->Increment();
   if (check_number_string_cache) {
     Handle<Object> cached = GetNumberStringCache(number);
-    if (!cached->IsUndefined()) return Handle<String>::cast(cached);
+    if (!cached->IsUndefined(isolate())) return Handle<String>::cast(cached);
   }
 
   char arr[100];
@@ -2324,7 +2321,7 @@ Handle<Map> Factory::ObjectLiteralMapFromCache(Handle<Context> context,
 
   int cache_index = number_of_properties - 1;
   Handle<Object> maybe_cache(context->map_cache(), isolate());
-  if (maybe_cache->IsUndefined()) {
+  if (maybe_cache->IsUndefined(isolate())) {
     // Allocate the new map cache for the native context.
     maybe_cache = NewFixedArray(kMapCacheSize, TENURED);
     context->set_map_cache(*maybe_cache);

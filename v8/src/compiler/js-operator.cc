@@ -9,8 +9,8 @@
 #include "src/base/lazy-instance.h"
 #include "src/compiler/opcodes.h"
 #include "src/compiler/operator.h"
-#include "src/objects-inl.h"  // TODO(mstarzinger): Temporary cycle breaker!
-#include "src/type-feedback-vector-inl.h"
+#include "src/handles-inl.h"
+#include "src/type-feedback-vector.h"
 
 namespace v8 {
 namespace internal {
@@ -374,6 +374,12 @@ const CreateLiteralParameters& CreateLiteralParametersOf(const Operator* op) {
          op->opcode() == IrOpcode::kJSCreateLiteralObject ||
          op->opcode() == IrOpcode::kJSCreateLiteralRegExp);
   return OpParameter<CreateLiteralParameters>(op);
+}
+
+const BinaryOperationHints& BinaryOperationHintsOf(const Operator* op) {
+  DCHECK(op->opcode() == IrOpcode::kJSAdd ||
+         op->opcode() == IrOpcode::kJSSubtract);
+  return OpParameter<BinaryOperationHints>(op);
 }
 
 #define CACHED_OP_LIST(V)                                   \

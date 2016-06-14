@@ -455,7 +455,7 @@ static void KeyedStoreGenerateMegamorphicHelper(
   __ JumpIfDictionaryInPrototypeChain(receiver, rdi, kScratchRegister, slow);
 
   __ bind(&fast_double_without_map_check);
-  __ StoreNumberToDoubleElements(value, rbx, key, xmm0,
+  __ StoreNumberToDoubleElements(value, rbx, key, kScratchDoubleReg,
                                  &transition_double_elements);
   if (increment_length == kIncrementLength) {
     // Add 1 to receiver->length.
@@ -713,13 +713,6 @@ void KeyedLoadIC::GenerateRuntimeGetProperty(MacroAssembler* masm) {
   // Do tail-call to runtime routine.
   __ TailCallRuntime(Runtime::kKeyedGetProperty);
 }
-
-
-void StoreIC::GenerateMegamorphic(MacroAssembler* masm) {
-  // This shouldn't be called.
-  __ int3();
-}
-
 
 static void StoreIC_PushArgs(MacroAssembler* masm) {
   Register receiver = StoreDescriptor::ReceiverRegister();

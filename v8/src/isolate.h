@@ -13,6 +13,7 @@
 #include "src/assert-scope.h"
 #include "src/base/accounting-allocator.h"
 #include "src/base/atomicops.h"
+#include "src/base/hashmap.h"
 #include "src/builtins.h"
 #include "src/cancelable-task.h"
 #include "src/contexts.h"
@@ -22,7 +23,6 @@
 #include "src/futex-emulation.h"
 #include "src/global-handles.h"
 #include "src/handles.h"
-#include "src/hashmap.h"
 #include "src/heap/heap.h"
 #include "src/messages.h"
 #include "src/optimizing-compile-dispatcher.h"
@@ -359,9 +359,9 @@ class ThreadLocalTop BASE_EMBEDDED {
 
 #if USE_SIMULATOR
 
-#define ISOLATE_INIT_SIMULATOR_LIST(V)                                         \
-  V(bool, simulator_initialized, false)                                        \
-  V(HashMap*, simulator_i_cache, NULL)                                         \
+#define ISOLATE_INIT_SIMULATOR_LIST(V)       \
+  V(bool, simulator_initialized, false)      \
+  V(base::HashMap*, simulator_i_cache, NULL) \
   V(Redirection*, simulator_redirection, NULL)
 #else
 
@@ -407,8 +407,8 @@ typedef List<HeapObject*> DebugObjectCache;
   V(DebugObjectCache*, string_stream_debug_object_cache, NULL)                 \
   V(Object*, string_stream_current_security_token, NULL)                       \
   V(ExternalReferenceTable*, external_reference_table, NULL)                   \
-  V(HashMap*, external_reference_map, NULL)                                    \
-  V(HashMap*, root_index_map, NULL)                                            \
+  V(base::HashMap*, external_reference_map, NULL)                              \
+  V(base::HashMap*, root_index_map, NULL)                                      \
   V(int, pending_microtask_count, 0)                                           \
   V(HStatistics*, hstatistics, NULL)                                           \
   V(CompilationStatistics*, turbo_statistics, NULL)                            \
@@ -420,6 +420,8 @@ typedef List<HeapObject*> DebugObjectCache;
   V(const v8::StartupData*, snapshot_blob, NULL)                               \
   V(int, code_and_metadata_size, 0)                                            \
   V(int, bytecode_and_metadata_size, 0)                                        \
+  /* true if being profiled. Causes collection of extra compile info. */       \
+  V(bool, is_profiling, false)                                                 \
   ISOLATE_INIT_SIMULATOR_LIST(V)
 
 #define THREAD_LOCAL_TOP_ACCESSOR(type, name)                        \
@@ -916,6 +918,7 @@ class Isolate {
 
   Debug* debug() { return debug_; }
 
+  bool* is_profiling_address() { return &is_profiling_; }
   CpuProfiler* cpu_profiler() const { return cpu_profiler_; }
   HeapProfiler* heap_profiler() const { return heap_profiler_; }
 
@@ -1416,6 +1419,7 @@ class Isolate {
   friend class v8::Isolate;
   friend class v8::Locker;
   friend class v8::Unlocker;
+  friend class v8::SnapshotCreator;
   friend v8::StartupData v8::V8::CreateSnapshotDataBlob(const char*);
   friend v8::StartupData v8::V8::WarmUpSnapshotDataBlob(v8::StartupData,
                                                         const char*);

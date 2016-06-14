@@ -9,6 +9,7 @@
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
 #include "src/disasm.h"
+#include "src/ic/ic.h"
 #include "src/macro-assembler.h"
 #include "src/snapshot/serializer-common.h"
 #include "src/string-stream.h"
@@ -200,14 +201,16 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
         Code* code = Code::GetCodeFromTargetAddress(relocinfo.target_address());
         Code::Kind kind = code->kind();
         if (code->is_inline_cache_stub()) {
-          if (kind == Code::LOAD_IC &&
+          if (kind == Code::LOAD_GLOBAL_IC &&
               LoadICState::GetTypeofMode(code->extra_ic_state()) ==
-                  NOT_INSIDE_TYPEOF) {
-            out.AddFormatted(" contextual,");
+                  INSIDE_TYPEOF) {
+            out.AddFormatted(" inside typeof,");
           }
-          InlineCacheState ic_state = code->ic_state();
-          out.AddFormatted(" %s, %s", Code::Kind2String(kind),
-              Code::ICState2String(ic_state));
+          out.AddFormatted(" %s", Code::Kind2String(kind));
+          if (!IC::ICUseVector(kind)) {
+            InlineCacheState ic_state = IC::StateFromCode(code);
+            out.AddFormatted(" %s", Code::ICState2String(ic_state));
+          }
         } else if (kind == Code::STUB || kind == Code::HANDLER) {
           // Get the STUB key and extract major and minor key.
           uint32_t key = code->stub_key();

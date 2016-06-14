@@ -156,17 +156,15 @@ void JSGenericLowering::LowerJSLoadProperty(Node* node) {
   Node* control = NodeProperties::GetControlInput(node);
   CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
   const PropertyAccess& p = PropertyAccessOf(node->op());
-  Callable callable =
-      CodeFactory::KeyedLoadICInOptimizedCode(isolate(), UNINITIALIZED);
+  Callable callable = CodeFactory::KeyedLoadICInOptimizedCode(isolate());
   // Load the type feedback vector from the closure.
-  Node* shared_info = effect = graph()->NewNode(
+  Node* literals = effect = graph()->NewNode(
       machine()->Load(MachineType::AnyTagged()), closure,
-      jsgraph()->IntPtrConstant(JSFunction::kSharedFunctionInfoOffset -
-                                kHeapObjectTag),
+      jsgraph()->IntPtrConstant(JSFunction::kLiteralsOffset - kHeapObjectTag),
       effect, control);
   Node* vector = effect = graph()->NewNode(
-      machine()->Load(MachineType::AnyTagged()), shared_info,
-      jsgraph()->IntPtrConstant(SharedFunctionInfo::kFeedbackVectorOffset -
+      machine()->Load(MachineType::AnyTagged()), literals,
+      jsgraph()->IntPtrConstant(LiteralsArray::kFeedbackVectorOffset -
                                 kHeapObjectTag),
       effect, control);
   node->InsertInput(zone(), 2, jsgraph()->SmiConstant(p.feedback().index()));
@@ -182,17 +180,15 @@ void JSGenericLowering::LowerJSLoadNamed(Node* node) {
   Node* control = NodeProperties::GetControlInput(node);
   CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
   NamedAccess const& p = NamedAccessOf(node->op());
-  Callable callable = CodeFactory::LoadICInOptimizedCode(
-      isolate(), NOT_INSIDE_TYPEOF, UNINITIALIZED);
+  Callable callable = CodeFactory::LoadICInOptimizedCode(isolate());
   // Load the type feedback vector from the closure.
-  Node* shared_info = effect = graph()->NewNode(
+  Node* literals = effect = graph()->NewNode(
       machine()->Load(MachineType::AnyTagged()), closure,
-      jsgraph()->IntPtrConstant(JSFunction::kSharedFunctionInfoOffset -
-                                kHeapObjectTag),
+      jsgraph()->IntPtrConstant(JSFunction::kLiteralsOffset - kHeapObjectTag),
       effect, control);
   Node* vector = effect = graph()->NewNode(
-      machine()->Load(MachineType::AnyTagged()), shared_info,
-      jsgraph()->IntPtrConstant(SharedFunctionInfo::kFeedbackVectorOffset -
+      machine()->Load(MachineType::AnyTagged()), literals,
+      jsgraph()->IntPtrConstant(LiteralsArray::kFeedbackVectorOffset -
                                 kHeapObjectTag),
       effect, control);
   node->InsertInput(zone(), 1, jsgraph()->HeapConstant(p.name()));
@@ -210,17 +206,16 @@ void JSGenericLowering::LowerJSLoadGlobal(Node* node) {
   Node* control = NodeProperties::GetControlInput(node);
   CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
   const LoadGlobalParameters& p = LoadGlobalParametersOf(node->op());
-  Callable callable = CodeFactory::LoadICInOptimizedCode(
-      isolate(), p.typeof_mode(), UNINITIALIZED);
+  Callable callable =
+      CodeFactory::LoadGlobalICInOptimizedCode(isolate(), p.typeof_mode());
   // Load the type feedback vector from the closure.
-  Node* shared_info = effect = graph()->NewNode(
+  Node* literals = effect = graph()->NewNode(
       machine()->Load(MachineType::AnyTagged()), closure,
-      jsgraph()->IntPtrConstant(JSFunction::kSharedFunctionInfoOffset -
-                                kHeapObjectTag),
+      jsgraph()->IntPtrConstant(JSFunction::kLiteralsOffset - kHeapObjectTag),
       effect, control);
   Node* vector = effect = graph()->NewNode(
-      machine()->Load(MachineType::AnyTagged()), shared_info,
-      jsgraph()->IntPtrConstant(SharedFunctionInfo::kFeedbackVectorOffset -
+      machine()->Load(MachineType::AnyTagged()), literals,
+      jsgraph()->IntPtrConstant(LiteralsArray::kFeedbackVectorOffset -
                                 kHeapObjectTag),
       effect, control);
   // Load global object from the context.
@@ -249,17 +244,16 @@ void JSGenericLowering::LowerJSStoreProperty(Node* node) {
   CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
   PropertyAccess const& p = PropertyAccessOf(node->op());
   LanguageMode language_mode = p.language_mode();
-  Callable callable = CodeFactory::KeyedStoreICInOptimizedCode(
-      isolate(), language_mode, UNINITIALIZED);
+  Callable callable =
+      CodeFactory::KeyedStoreICInOptimizedCode(isolate(), language_mode);
   // Load the type feedback vector from the closure.
-  Node* shared_info = effect = graph()->NewNode(
+  Node* literals = effect = graph()->NewNode(
       machine()->Load(MachineType::AnyTagged()), closure,
-      jsgraph()->IntPtrConstant(JSFunction::kSharedFunctionInfoOffset -
-                                kHeapObjectTag),
+      jsgraph()->IntPtrConstant(JSFunction::kLiteralsOffset - kHeapObjectTag),
       effect, control);
   Node* vector = effect = graph()->NewNode(
-      machine()->Load(MachineType::AnyTagged()), shared_info,
-      jsgraph()->IntPtrConstant(SharedFunctionInfo::kFeedbackVectorOffset -
+      machine()->Load(MachineType::AnyTagged()), literals,
+      jsgraph()->IntPtrConstant(LiteralsArray::kFeedbackVectorOffset -
                                 kHeapObjectTag),
       effect, control);
   node->InsertInput(zone(), 3, jsgraph()->SmiConstant(p.feedback().index()));
@@ -275,17 +269,16 @@ void JSGenericLowering::LowerJSStoreNamed(Node* node) {
   Node* control = NodeProperties::GetControlInput(node);
   CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
   NamedAccess const& p = NamedAccessOf(node->op());
-  Callable callable = CodeFactory::StoreICInOptimizedCode(
-      isolate(), p.language_mode(), UNINITIALIZED);
+  Callable callable =
+      CodeFactory::StoreICInOptimizedCode(isolate(), p.language_mode());
   // Load the type feedback vector from the closure.
-  Node* shared_info = effect = graph()->NewNode(
+  Node* literals = effect = graph()->NewNode(
       machine()->Load(MachineType::AnyTagged()), closure,
-      jsgraph()->IntPtrConstant(JSFunction::kSharedFunctionInfoOffset -
-                                kHeapObjectTag),
+      jsgraph()->IntPtrConstant(JSFunction::kLiteralsOffset - kHeapObjectTag),
       effect, control);
   Node* vector = effect = graph()->NewNode(
-      machine()->Load(MachineType::AnyTagged()), shared_info,
-      jsgraph()->IntPtrConstant(SharedFunctionInfo::kFeedbackVectorOffset -
+      machine()->Load(MachineType::AnyTagged()), literals,
+      jsgraph()->IntPtrConstant(LiteralsArray::kFeedbackVectorOffset -
                                 kHeapObjectTag),
       effect, control);
   node->InsertInput(zone(), 1, jsgraph()->HeapConstant(p.name()));
@@ -303,17 +296,16 @@ void JSGenericLowering::LowerJSStoreGlobal(Node* node) {
   Node* control = NodeProperties::GetControlInput(node);
   CallDescriptor::Flags flags = AdjustFrameStatesForCall(node);
   const StoreGlobalParameters& p = StoreGlobalParametersOf(node->op());
-  Callable callable = CodeFactory::StoreICInOptimizedCode(
-      isolate(), p.language_mode(), UNINITIALIZED);
+  Callable callable =
+      CodeFactory::StoreICInOptimizedCode(isolate(), p.language_mode());
   // Load the type feedback vector from the closure.
-  Node* shared_info = effect = graph()->NewNode(
+  Node* literals = effect = graph()->NewNode(
       machine()->Load(MachineType::AnyTagged()), closure,
-      jsgraph()->IntPtrConstant(JSFunction::kSharedFunctionInfoOffset -
-                                kHeapObjectTag),
+      jsgraph()->IntPtrConstant(JSFunction::kLiteralsOffset - kHeapObjectTag),
       effect, control);
   Node* vector = effect = graph()->NewNode(
-      machine()->Load(MachineType::AnyTagged()), shared_info,
-      jsgraph()->IntPtrConstant(SharedFunctionInfo::kFeedbackVectorOffset -
+      machine()->Load(MachineType::AnyTagged()), literals,
+      jsgraph()->IntPtrConstant(LiteralsArray::kFeedbackVectorOffset -
                                 kHeapObjectTag),
       effect, control);
   // Load global object from the context.
@@ -457,8 +449,7 @@ void JSGenericLowering::LowerJSCreateArray(Node* node) {
       node->InsertInput(graph()->zone(), 4, jsgraph()->UndefinedConstant());
       NodeProperties::ChangeOp(node, common()->Call(desc));
     } else {
-      ArrayNArgumentsConstructorStub stub(isolate(), elements_kind,
-                                          override_mode);
+      ArrayNArgumentsConstructorStub stub(isolate());
       CallDescriptor* desc = Linkage::GetStubCallDescriptor(
           isolate(), graph()->zone(), stub.GetCallInterfaceDescriptor(),
           arity + 1, CallDescriptor::kNeedsFrameState);
@@ -486,9 +477,8 @@ void JSGenericLowering::LowerJSCreateClosure(Node* node) {
   Handle<SharedFunctionInfo> const shared_info = p.shared_info();
   node->InsertInput(zone(), 0, jsgraph()->HeapConstant(shared_info));
 
-  // Use the FastNewClosureStub that allocates in new space only for nested
-  // functions that don't need literals cloning.
-  if (p.pretenure() == NOT_TENURED && shared_info->num_literals() == 0) {
+  // Use the FastNewClosureStub only for functions allocated in new space.
+  if (p.pretenure() == NOT_TENURED) {
     Callable callable = CodeFactory::FastNewClosure(
         isolate(), shared_info->language_mode(), shared_info->kind());
     ReplaceWithStubCall(node, callable, flags);

@@ -160,7 +160,6 @@ Heap::Heap()
       gc_callbacks_depth_(0),
       deserialization_complete_(false),
       strong_roots_list_(NULL),
-      array_buffer_tracker_(NULL),
       heap_iterator_depth_(0),
       force_oom_(false) {
 // Allow build-time customization of the max semispace size. Building
@@ -502,11 +501,10 @@ void Heap::RepairFreeListsAfterDeserialization() {
   }
 }
 
-
 void Heap::MergeAllocationSitePretenuringFeedback(
-    const HashMap& local_pretenuring_feedback) {
+    const base::HashMap& local_pretenuring_feedback) {
   AllocationSite* site = nullptr;
-  for (HashMap::Entry* local_entry = local_pretenuring_feedback.Start();
+  for (base::HashMap::Entry* local_entry = local_pretenuring_feedback.Start();
        local_entry != nullptr;
        local_entry = local_pretenuring_feedback.Next(local_entry)) {
     site = reinterpret_cast<AllocationSite*>(local_entry->key);
@@ -535,8 +533,8 @@ void Heap::MergeAllocationSitePretenuringFeedback(
 class Heap::PretenuringScope {
  public:
   explicit PretenuringScope(Heap* heap) : heap_(heap) {
-    heap_->global_pretenuring_feedback_ =
-        new HashMap(HashMap::PointersMatch, kInitialFeedbackCapacity);
+    heap_->global_pretenuring_feedback_ = new base::HashMap(
+        base::HashMap::PointersMatch, kInitialFeedbackCapacity);
   }
 
   ~PretenuringScope() {
@@ -562,7 +560,7 @@ void Heap::ProcessPretenuringFeedback() {
 
     // Step 1: Digest feedback for recorded allocation sites.
     bool maximum_size_scavenge = MaximumSizeScavenge();
-    for (HashMap::Entry* e = global_pretenuring_feedback_->Start();
+    for (base::HashMap::Entry* e = global_pretenuring_feedback_->Start();
          e != nullptr; e = global_pretenuring_feedback_->Next(e)) {
       allocation_sites++;
       site = reinterpret_cast<AllocationSite*>(e->key);
@@ -1111,9 +1109,11 @@ class StringTableVerifier : public ObjectVisitor {
     // Visit all HeapObject pointers in [start, end).
     for (Object** p = start; p < end; p++) {
       if ((*p)->IsHeapObject()) {
+        HeapObject* object = HeapObject::cast(*p);
+        Isolate* isolate = object->GetIsolate();
         // Check that the string is actually internalized.
-        CHECK((*p)->IsTheHole() || (*p)->IsUndefined() ||
-              (*p)->IsInternalizedString());
+        CHECK(object->IsTheHole(isolate) || object->IsUndefined(isolate) ||
+              object->IsInternalizedString());
       }
     }
   }
@@ -1212,12 +1212,12 @@ void Heap::ClearNormalizedMapCaches() {
   }
 
   Object* context = native_contexts_list();
-  while (!context->IsUndefined()) {
+  while (!context->IsUndefined(isolate())) {
     // GC can happen when the context is not fully initialized,
     // so the cache can be undefined.
     Object* cache =
         Context::cast(context)->get(Context::NORMALIZED_MAP_CACHE_INDEX);
-    if (!cache->IsUndefined()) {
+    if (!cache->IsUndefined(isolate())) {
       NormalizedMapCache::cast(cache)->Clear();
     }
     context = Context::cast(context)->next_context_link();
@@ -1626,7 +1626,12 @@ void Heap::Scavenge() {
 
   scavenge_collector_->SelectScavengingVisitorsTable();
 
-  array_buffer_tracker()->PrepareDiscoveryInNewSpace();
+  if (UsingEmbedderHeapTracer()) {
+    // Register found wrappers with embedder so he can add them to his marking
+    // deque and correctly manage the case when v8 scavenger collects the
+    // wrappers by either keeping wrappables alive, or cleaning marking deque.
+    mark_compact_collector()->RegisterWrappersWithEmbedderHeapTracer();
+  }
 
   // Flip the semispaces.  After flipping, to space is empty, from space has
   // live objects.
@@ -1653,6 +1658,7 @@ void Heap::Scavenge() {
   Address new_space_front = new_space_.ToSpaceStart();
   promotion_queue_.Initialize();
 
+  PromotionMode promotion_mode = CurrentPromotionMode();
   ScavengeVisitor scavenge_visitor(this);
 
   if (FLAG_scavenge_reclaim_unmodified_objects) {
@@ -1670,18 +1676,18 @@ void Heap::Scavenge() {
     // Copy objects reachable from the old generation.
     TRACE_GC(tracer(), GCTracer::Scope::SCAVENGER_OLD_TO_NEW_POINTERS);
     RememberedSet<OLD_TO_NEW>::Iterate(this, [this](Address addr) {
-      return Scavenger::CheckAndScavengeObject(this, addr, DEFAULT_PROMOTION);
+      return Scavenger::CheckAndScavengeObject(this, addr);
     });
 
     RememberedSet<OLD_TO_NEW>::IterateTyped(
-        this, [this](SlotType type, Address addr) {
+        this, [this](SlotType type, Address host_addr, Address addr) {
           return UpdateTypedSlotHelper::UpdateTypedSlot(
               isolate(), type, addr, [this](Object** addr) {
                 // We expect that objects referenced by code are long living.
                 // If we do not force promotion, then we need to clear
                 // old_to_new slots in dead code objects after mark-compact.
                 return Scavenger::CheckAndScavengeObject(
-                    this, reinterpret_cast<Address>(addr), FORCE_PROMOTION);
+                    this, reinterpret_cast<Address>(addr));
               });
         });
   }
@@ -1705,7 +1711,8 @@ void Heap::Scavenge() {
 
   {
     TRACE_GC(tracer(), GCTracer::Scope::SCAVENGER_SEMISPACE);
-    new_space_front = DoScavenge(&scavenge_visitor, new_space_front);
+    new_space_front =
+        DoScavenge(&scavenge_visitor, new_space_front, promotion_mode);
   }
 
   if (FLAG_scavenge_reclaim_unmodified_objects) {
@@ -1714,12 +1721,14 @@ void Heap::Scavenge() {
 
     isolate()->global_handles()->IterateNewSpaceWeakUnmodifiedRoots(
         &scavenge_visitor);
-    new_space_front = DoScavenge(&scavenge_visitor, new_space_front);
+    new_space_front =
+        DoScavenge(&scavenge_visitor, new_space_front, promotion_mode);
   } else {
     TRACE_GC(tracer(), GCTracer::Scope::SCAVENGER_OBJECT_GROUPS);
     while (isolate()->global_handles()->IterateObjectGroups(
         &scavenge_visitor, &IsUnscavengedHeapObject)) {
-      new_space_front = DoScavenge(&scavenge_visitor, new_space_front);
+      new_space_front =
+          DoScavenge(&scavenge_visitor, new_space_front, promotion_mode);
     }
     isolate()->global_handles()->RemoveObjectGroups();
     isolate()->global_handles()->RemoveImplicitRefGroups();
@@ -1729,7 +1738,8 @@ void Heap::Scavenge() {
 
     isolate()->global_handles()->IterateNewSpaceWeakIndependentRoots(
         &scavenge_visitor);
-    new_space_front = DoScavenge(&scavenge_visitor, new_space_front);
+    new_space_front =
+        DoScavenge(&scavenge_visitor, new_space_front, promotion_mode);
   }
 
   UpdateNewSpaceReferencesInExternalStringTable(
@@ -1747,7 +1757,7 @@ void Heap::Scavenge() {
   // Set age mark.
   new_space_.set_age_mark(new_space_.top());
 
-  array_buffer_tracker()->FreeDead(true);
+  ArrayBufferTracker::FreeDeadInNewSpace(this);
 
   // Update how much has survived scavenge.
   IncrementYoungSurvivorsCounter(static_cast<int>(
@@ -1911,9 +1921,9 @@ void Heap::VisitExternalResources(v8::ExternalResourceVisitor* visitor) {
   external_string_table_.Iterate(&external_string_table_visitor);
 }
 
-
 Address Heap::DoScavenge(ObjectVisitor* scavenge_visitor,
-                         Address new_space_front) {
+                         Address new_space_front,
+                         PromotionMode promotion_mode) {
   do {
     SemiSpace::AssertValidRange(new_space_front, new_space_.top());
     // The addresses new_space_front and new_space_.top() define a
@@ -1922,8 +1932,14 @@ Address Heap::DoScavenge(ObjectVisitor* scavenge_visitor,
     while (new_space_front != new_space_.top()) {
       if (!Page::IsAlignedToPageSize(new_space_front)) {
         HeapObject* object = HeapObject::FromAddress(new_space_front);
-        new_space_front +=
-            StaticScavengeVisitor::IterateBody(object->map(), object);
+        if (promotion_mode == PROMOTE_MARKED) {
+          new_space_front += StaticScavengeVisitor<PROMOTE_MARKED>::IterateBody(
+              object->map(), object);
+        } else {
+          new_space_front +=
+              StaticScavengeVisitor<DEFAULT_PROMOTION>::IterateBody(
+                  object->map(), object);
+        }
       } else {
         new_space_front = Page::FromAllocationAreaAddress(new_space_front)
                               ->next_page()
@@ -2027,12 +2043,12 @@ HeapObject* Heap::DoubleAlignForDeserialization(HeapObject* object, int size) {
 
 
 void Heap::RegisterNewArrayBuffer(JSArrayBuffer* buffer) {
-  return array_buffer_tracker()->RegisterNew(buffer);
+  ArrayBufferTracker::RegisterNew(this, buffer);
 }
 
 
 void Heap::UnregisterArrayBuffer(JSArrayBuffer* buffer) {
-  return array_buffer_tracker()->Unregister(buffer);
+  ArrayBufferTracker::Unregister(this, buffer);
 }
 
 
@@ -2808,6 +2824,20 @@ void Heap::CreateInitialObjects() {
   }
 
   {
+    Handle<FixedArray> empty_literals_array =
+        factory->NewFixedArray(1, TENURED);
+    empty_literals_array->set(0, *factory->empty_fixed_array());
+    set_empty_literals_array(*empty_literals_array);
+  }
+
+  {
+    Handle<FixedArray> empty_sloppy_arguments_elements =
+        factory->NewFixedArray(2, TENURED);
+    empty_sloppy_arguments_elements->set_map(sloppy_arguments_elements_map());
+    set_empty_sloppy_arguments_elements(*empty_sloppy_arguments_elements);
+  }
+
+  {
     Handle<WeakCell> cell = factory->NewWeakCell(factory->undefined_value());
     set_empty_weak_cell(*cell);
     cell->clear();
@@ -3548,7 +3578,8 @@ AllocationResult Heap::AllocateJSObjectFromMap(
   // Initialize the JSObject.
   InitializeJSObjectFromMap(js_obj, properties, map);
   DCHECK(js_obj->HasFastElements() || js_obj->HasFixedTypedArrayElements() ||
-         js_obj->HasFastStringWrapperElements());
+         js_obj->HasFastStringWrapperElements() ||
+         js_obj->HasFastArgumentsElements());
   return js_obj;
 }
 
@@ -4435,8 +4466,36 @@ void Heap::CheckMemoryPressure() {
 }
 
 void Heap::CollectGarbageOnMemoryPressure(const char* source) {
+  const int kGarbageThresholdInBytes = 8 * MB;
+  const double kGarbageThresholdAsFractionOfTotalMemory = 0.1;
+  // This constant is the maximum response time in RAIL performance model.
+  const double kMaxMemoryPressurePauseMs = 100;
+
+  double start = MonotonicallyIncreasingTimeInMs();
   CollectAllGarbage(kReduceMemoryFootprintMask | kAbortIncrementalMarkingMask,
-                    source);
+                    source, kGCCallbackFlagCollectAllAvailableGarbage);
+  double end = MonotonicallyIncreasingTimeInMs();
+
+  // Estimate how much memory we can free.
+  int64_t potential_garbage = (CommittedMemory() - SizeOfObjects()) +
+                              amount_of_external_allocated_memory_;
+  // If we can potentially free large amount of memory, then start GC right
+  // away instead of waiting for memory reducer.
+  if (potential_garbage >= kGarbageThresholdInBytes &&
+      potential_garbage >=
+          CommittedMemory() * kGarbageThresholdAsFractionOfTotalMemory) {
+    // If we spent less than half of the time budget, then perform full GC
+    // Otherwise, start incremental marking.
+    if (end - start < kMaxMemoryPressurePauseMs / 2) {
+      CollectAllGarbage(
+          kReduceMemoryFootprintMask | kAbortIncrementalMarkingMask, source,
+          kGCCallbackFlagCollectAllAvailableGarbage);
+    } else {
+      if (FLAG_incremental_marking && incremental_marking()->IsStopped()) {
+        StartIdleIncrementalMarking();
+      }
+    }
+  }
 }
 
 void Heap::MemoryPressureNotification(MemoryPressureLevel level,
@@ -4674,8 +4733,8 @@ void Heap::IteratePromotedObjectPointers(HeapObject* object, Address start,
     Object* target = *slot;
     if (target->IsHeapObject()) {
       if (Heap::InFromSpace(target)) {
-        callback(reinterpret_cast<HeapObject**>(slot), HeapObject::cast(target),
-                 DEFAULT_PROMOTION);
+        callback(reinterpret_cast<HeapObject**>(slot),
+                 HeapObject::cast(target));
         Object* new_target = *slot;
         if (InNewSpace(new_target)) {
           SLOW_DCHECK(Heap::InToSpace(new_target));
@@ -4794,6 +4853,8 @@ void Heap::IterateStrongRoots(ObjectVisitor* v, VisitMode mode) {
   v->Synchronize(VisitorSynchronization::kTop);
   Relocatable::Iterate(isolate_, v);
   v->Synchronize(VisitorSynchronization::kRelocatable);
+  isolate_->debug()->Iterate(v);
+  v->Synchronize(VisitorSynchronization::kDebug);
 
   isolate_->compilation_cache()->Iterate(v);
   v->Synchronize(VisitorSynchronization::kCompilationCache);
@@ -5217,7 +5278,8 @@ V8_DECLARE_ONCE(initialize_gc_once);
 
 static void InitializeGCOnce() {
   Scavenger::Initialize();
-  StaticScavengeVisitor::Initialize();
+  StaticScavengeVisitor<DEFAULT_PROMOTION>::Initialize();
+  StaticScavengeVisitor<PROMOTE_MARKED>::Initialize();
   MarkCompactCollector::Initialize();
 }
 
@@ -5309,8 +5371,6 @@ bool Heap::SetUp() {
   object_stats_->ClearObjectStats(true);
 
   scavenge_job_ = new ScavengeJob();
-
-  array_buffer_tracker_ = new ArrayBufferTracker(this);
 
   LOG(isolate_, IntPtrTEvent("heap-capacity", Capacity()));
   LOG(isolate_, IntPtrTEvent("heap-available", Available()));
@@ -5471,9 +5531,6 @@ void Heap::TearDown() {
   delete scavenge_job_;
   scavenge_job_ = nullptr;
 
-  delete array_buffer_tracker_;
-  array_buffer_tracker_ = nullptr;
-
   isolate_->global_handles()->TearDown();
 
   external_string_table_.TearDown();
@@ -5580,6 +5637,25 @@ DependentCode* Heap::LookupWeakObjectToCodeDependency(Handle<HeapObject> obj) {
   return DependentCode::cast(empty_fixed_array());
 }
 
+void Heap::CompactWeakFixedArrays() {
+  // Find known WeakFixedArrays and compact them.
+  i::HeapIterator iterator(this);
+  for (i::HeapObject* o = iterator.next(); o != NULL; o = iterator.next()) {
+    if (o->IsPrototypeInfo()) {
+      i::Object* prototype_users = i::PrototypeInfo::cast(o)->prototype_users();
+      if (prototype_users->IsWeakFixedArray()) {
+        i::WeakFixedArray* array = i::WeakFixedArray::cast(prototype_users);
+        array->Compact<i::JSObject::PrototypeRegistryCompactionCallback>();
+      }
+    } else if (o->IsScript()) {
+      i::Object* shared_list = i::Script::cast(o)->shared_function_infos();
+      if (shared_list->IsWeakFixedArray()) {
+        i::WeakFixedArray* array = i::WeakFixedArray::cast(shared_list);
+        array->Compact<i::WeakFixedArray::NullCallback>();
+      }
+    }
+  }
+}
 
 void Heap::AddRetainedMap(Handle<Map> map) {
   Handle<WeakCell> cell = Map::WeakCellForMap(map);
@@ -6232,8 +6308,9 @@ void DescriptorLookupCache::Clear() {
 
 void Heap::ExternalStringTable::CleanUp() {
   int last = 0;
+  Isolate* isolate = heap_->isolate();
   for (int i = 0; i < new_space_strings_.length(); ++i) {
-    if (new_space_strings_[i] == heap_->the_hole_value()) {
+    if (new_space_strings_[i]->IsTheHole(isolate)) {
       continue;
     }
     DCHECK(new_space_strings_[i]->IsExternalString());
@@ -6248,7 +6325,7 @@ void Heap::ExternalStringTable::CleanUp() {
 
   last = 0;
   for (int i = 0; i < old_space_strings_.length(); ++i) {
-    if (old_space_strings_[i] == heap_->the_hole_value()) {
+    if (old_space_strings_[i]->IsTheHole(isolate)) {
       continue;
     }
     DCHECK(old_space_strings_[i]->IsExternalString());

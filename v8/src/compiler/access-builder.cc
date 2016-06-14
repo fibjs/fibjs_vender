@@ -98,7 +98,6 @@ FieldAccess AccessBuilder::ForJSFunctionSharedFunctionInfo() {
   return access;
 }
 
-
 // static
 FieldAccess AccessBuilder::ForJSFunctionLiterals() {
   FieldAccess access = {
@@ -366,6 +365,14 @@ FieldAccess AccessBuilder::ForMapPrototype() {
 
 
 // static
+FieldAccess AccessBuilder::ForNameHashField() {
+  FieldAccess access = {
+      kTaggedBase,      Name::kHashFieldOffset, Handle<Name>(),
+      Type::Internal(), MachineType::Pointer(), kNoWriteBarrier};
+  return access;
+}
+
+// static
 FieldAccess AccessBuilder::ForStringLength() {
   FieldAccess access = {kTaggedBase,
                         String::kLengthOffset,
@@ -472,19 +479,6 @@ FieldAccess AccessBuilder::ForPropertyCellValue(Type* type) {
       type,        MachineType::AnyTagged(),   kFullWriteBarrier};
   return access;
 }
-
-
-// static
-FieldAccess AccessBuilder::ForSharedFunctionInfoTypeFeedbackVector() {
-  FieldAccess access = {kTaggedBase,
-                        SharedFunctionInfo::kFeedbackVectorOffset,
-                        Handle<Name>(),
-                        Type::Any(),
-                        MachineType::AnyTagged(),
-                        kPointerWriteBarrier};
-  return access;
-}
-
 
 // static
 ElementAccess AccessBuilder::ForFixedArrayElement() {

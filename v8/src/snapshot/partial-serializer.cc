@@ -10,9 +10,8 @@ namespace v8 {
 namespace internal {
 
 PartialSerializer::PartialSerializer(Isolate* isolate,
-                                     Serializer* startup_snapshot_serializer,
-                                     SnapshotByteSink* sink)
-    : Serializer(isolate, sink),
+                                     Serializer* startup_snapshot_serializer)
+    : Serializer(isolate),
       startup_serializer_(startup_snapshot_serializer),
       next_partial_cache_index_(0) {
   InitializeCodeAddressMap();
@@ -34,7 +33,7 @@ void PartialSerializer::Serialize(Object** o) {
     if (context->IsNativeContext()) {
       context->set(Context::NEXT_CONTEXT_LINK,
                    isolate_->heap()->undefined_value());
-      DCHECK(!context->global_object()->IsUndefined());
+      DCHECK(!context->global_object()->IsUndefined(context->GetIsolate()));
     }
   }
   VisitPointer(o);
@@ -63,9 +62,9 @@ void PartialSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
     FlushSkip(skip);
 
     int cache_index = PartialSnapshotCacheIndex(obj);
-    sink_->Put(kPartialSnapshotCache + how_to_code + where_to_point,
-               "PartialSnapshotCache");
-    sink_->PutInt(cache_index, "partial_snapshot_cache_index");
+    sink_.Put(kPartialSnapshotCache + how_to_code + where_to_point,
+              "PartialSnapshotCache");
+    sink_.PutInt(cache_index, "partial_snapshot_cache_index");
     return;
   }
 
@@ -83,12 +82,14 @@ void PartialSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
 
   // Clear literal boilerplates.
   if (obj->IsJSFunction()) {
-    FixedArray* literals = JSFunction::cast(obj)->literals();
-    for (int i = 0; i < literals->length(); i++) literals->set_undefined(i);
+    LiteralsArray* literals = JSFunction::cast(obj)->literals();
+    for (int i = 0; i < literals->literals_count(); i++) {
+      literals->set_literal_undefined(i);
+    }
   }
 
   // Object has not yet been serialized.  Serialize it here.
-  ObjectSerializer serializer(this, obj, sink_, how_to_code, where_to_point);
+  ObjectSerializer serializer(this, obj, &sink_, how_to_code, where_to_point);
   serializer.Serialize();
 }
 

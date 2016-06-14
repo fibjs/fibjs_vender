@@ -15,10 +15,55 @@ namespace interpreter {
 BytecodePeepholeOptimizer::BytecodePeepholeOptimizer(
     ConstantArrayBuilder* constant_array_builder,
     BytecodePipelineStage* next_stage)
-    : constant_array_builder_(constant_array_builder),
-      next_stage_(next_stage),
-      last_is_discardable_(false) {
+    : constant_array_builder_(constant_array_builder), next_stage_(next_stage) {
   InvalidateLast();
+}
+
+// override
+Handle<BytecodeArray> BytecodePeepholeOptimizer::ToBytecodeArray(
+    int fixed_register_count, int parameter_count,
+    Handle<FixedArray> handler_table) {
+  Flush();
+  return next_stage_->ToBytecodeArray(fixed_register_count, parameter_count,
+                                      handler_table);
+}
+
+// override
+void BytecodePeepholeOptimizer::Write(BytecodeNode* node) {
+  node = OptimizeAndEmitLast(node);
+  if (node != nullptr) {
+    SetLast(node);
+  }
+}
+
+// override
+void BytecodePeepholeOptimizer::WriteJump(BytecodeNode* node,
+                                          BytecodeLabel* label) {
+  node = OptimizeAndEmitLast(node);
+  next_stage_->WriteJump(node, label);
+}
+
+// override
+void BytecodePeepholeOptimizer::BindLabel(BytecodeLabel* label) {
+  Flush();
+  next_stage_->BindLabel(label);
+}
+
+// override
+void BytecodePeepholeOptimizer::BindLabel(const BytecodeLabel& target,
+                                          BytecodeLabel* label) {
+  // There is no need to flush here, it will have been flushed when |target|
+  // was bound.
+  next_stage_->BindLabel(target, label);
+}
+
+void BytecodePeepholeOptimizer::Flush() {
+  // TODO(oth/rmcilroy): We could check CanElideLast() here to potentially
+  // eliminate last rather than writing it.
+  if (LastIsValid()) {
+    next_stage_->Write(&last_);
+    InvalidateLast();
+  }
 }
 
 void BytecodePeepholeOptimizer::InvalidateLast() {
@@ -31,51 +76,6 @@ bool BytecodePeepholeOptimizer::LastIsValid() const {
 
 void BytecodePeepholeOptimizer::SetLast(const BytecodeNode* const node) {
   last_.Clone(node);
-  last_is_discardable_ = true;
-}
-
-// override
-size_t BytecodePeepholeOptimizer::FlushForOffset() {
-  size_t buffered_size = next_stage_->FlushForOffset();
-  if (LastIsValid()) {
-    if (last_.bytecode() == Bytecode::kNop &&
-        !last_.source_info().is_statement()) {
-      // The Nop can be dropped as it doesn't have a statement
-      // position for the debugger and doesn't have any effects by
-      // definition.
-      InvalidateLast();
-    } else {
-      buffered_size += last_.Size();
-      last_is_discardable_ = false;
-    }
-  }
-  return buffered_size;
-}
-
-// override
-void BytecodePeepholeOptimizer::FlushBasicBlock() {
-  if (LastIsValid()) {
-    next_stage_->Write(&last_);
-    InvalidateLast();
-  }
-  next_stage_->FlushBasicBlock();
-}
-
-// override
-void BytecodePeepholeOptimizer::Write(BytecodeNode* node) {
-  // Attempt optimization if there is an earlier node to optimize with.
-  if (LastIsValid()) {
-    node = Optimize(node);
-    // Only output the last node if it wasn't invalidated by the optimization.
-    if (LastIsValid()) {
-      next_stage_->Write(&last_);
-      InvalidateLast();
-    }
-  }
-
-  if (node != nullptr) {
-    SetLast(node);
-  }
 }
 
 Handle<Object> BytecodePeepholeOptimizer::GetConstantForIndexOperand(
@@ -96,7 +96,7 @@ bool BytecodePeepholeOptimizer::LastBytecodePutsNameInAccumulator() const {
 
 void BytecodePeepholeOptimizer::TryToRemoveLastExpressionPosition(
     const BytecodeNode* const current) {
-  if (current->source_info().is_statement() &&
+  if (current->source_info().is_valid() &&
       last_.source_info().is_expression() &&
       Bytecodes::IsWithoutExternalSideEffects(last_.bytecode())) {
     // The last bytecode has been marked as expression. It has no
@@ -173,6 +173,7 @@ namespace {
 void TransformLdaStarToLdrLdar(Bytecode new_bytecode, BytecodeNode* const last,
                                BytecodeNode* const current) {
   DCHECK_EQ(current->bytecode(), Bytecode::kStar);
+
   //
   // An example transformation here would be:
   //
@@ -183,23 +184,19 @@ void TransformLdaStarToLdrLdar(Bytecode new_bytecode, BytecodeNode* const last,
   // accumulator. However, in the second form the Ldar can often be
   // peephole optimized away unlike the Star in the first form.
   //
-  last->Transform(new_bytecode, current->operand(0), current->operand_scale());
-  current->set_bytecode(Bytecode::kLdar, current->operand(0),
-                        current->operand_scale());
-
-  // If there was a source position on |current| transfer it to the
-  // updated |last| to maintain the debugger's causal view. ie. if an
-  // expression position LdrGlobal is the bytecode that could throw
-  // and if a statement position it needs to be placed before the
-  // store to R occurs.
-  last->source_info().Update(current->source_info());
-  current->source_info().set_invalid();
+  last->Transform(new_bytecode, current->operand(0));
+  current->set_bytecode(Bytecode::kLdar, current->operand(0));
 }
 
 }  // namespace
 
-bool BytecodePeepholeOptimizer::ChangeLdaToLdr(BytecodeNode* const current) {
-  if (current->bytecode() == Bytecode::kStar) {
+bool BytecodePeepholeOptimizer::TransformLastAndCurrentBytecodes(
+    BytecodeNode* const current) {
+  if (current->bytecode() == Bytecode::kStar &&
+      !current->source_info().is_statement()) {
+    // Note: If the Star is tagged with a statement position, we can't
+    // perform this transform as the store to the register will
+    // have the wrong ordering for stepping in the debugger.
     switch (last_.bytecode()) {
       case Bytecode::kLdaNamedProperty:
         TransformLdaStarToLdrLdar(Bytecode::kLdrNamedProperty, &last_, current);
@@ -234,7 +231,7 @@ bool BytecodePeepholeOptimizer::RemoveToBooleanFromJump(
     // element can be removed if the previous bytecode put a boolean
     // value in the accumulator.
     Bytecode jump = Bytecodes::GetJumpWithoutToBoolean(current->bytecode());
-    current->set_bytecode(jump, current->operand(0), current->operand_scale());
+    current->set_bytecode(jump, current->operand(0));
   }
   return can_remove;
 }
@@ -252,18 +249,14 @@ bool BytecodePeepholeOptimizer::RemoveToBooleanFromLogicalNot(
   return can_remove;
 }
 
-bool BytecodePeepholeOptimizer::TransformLastAndCurrentBytecodes(
+bool BytecodePeepholeOptimizer::TransformCurrentBytecode(
     BytecodeNode* const current) {
   return RemoveToBooleanFromJump(current) ||
-         RemoveToBooleanFromLogicalNot(current) || ChangeLdaToLdr(current);
+         RemoveToBooleanFromLogicalNot(current);
 }
 
 bool BytecodePeepholeOptimizer::CanElideLast(
     const BytecodeNode* const current) const {
-  if (!last_is_discardable_) {
-    return false;
-  }
-
   if (last_.bytecode() == Bytecode::kNop) {
     // Nop are placeholders for holding source position information.
     return true;
@@ -287,7 +280,8 @@ bool BytecodePeepholeOptimizer::CanElideLast(
 BytecodeNode* BytecodePeepholeOptimizer::Optimize(BytecodeNode* current) {
   TryToRemoveLastExpressionPosition(current);
 
-  if (TransformLastAndCurrentBytecodes(current)) {
+  if (TransformCurrentBytecode(current) ||
+      TransformLastAndCurrentBytecodes(current)) {
     return current;
   }
 
@@ -308,6 +302,20 @@ BytecodeNode* BytecodePeepholeOptimizer::Optimize(BytecodeNode* current) {
     return current;
   }
 
+  return current;
+}
+
+BytecodeNode* BytecodePeepholeOptimizer::OptimizeAndEmitLast(
+    BytecodeNode* current) {
+  // Attempt optimization if there is an earlier node to optimize with.
+  if (LastIsValid()) {
+    current = Optimize(current);
+    // Only output the last node if it wasn't invalidated by the optimization.
+    if (LastIsValid()) {
+      next_stage_->Write(&last_);
+      InvalidateLast();
+    }
+  }
   return current;
 }
 

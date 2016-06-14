@@ -130,7 +130,7 @@ void MessageHandler::ReportMessage(Isolate* isolate, MessageLocation* loc,
   } else {
     for (int i = 0; i < global_length; i++) {
       HandleScope scope(isolate);
-      if (global_listeners.get(i)->IsUndefined()) continue;
+      if (global_listeners.get(i)->IsUndefined(isolate)) continue;
       v8::NeanderObject listener(JSObject::cast(global_listeners.get(i)));
       Handle<Foreign> callback_obj(Foreign::cast(listener.get(0)));
       v8::MessageCallback callback =
@@ -139,7 +139,7 @@ void MessageHandler::ReportMessage(Isolate* isolate, MessageLocation* loc,
       {
         // Do not allow exceptions to propagate.
         v8::TryCatch try_catch(reinterpret_cast<v8::Isolate*>(isolate));
-        callback(api_message_obj, callback_data->IsUndefined()
+        callback(api_message_obj, callback_data->IsUndefined(isolate)
                                       ? api_exception_obj
                                       : v8::Utils::ToLocal(callback_data));
       }
@@ -182,14 +182,9 @@ CallSite::CallSite(Isolate* isolate, Handle<JSObject> call_site_obj)
       // invalid: neither javascript nor wasm
       return;
     }
-    Handle<Object> maybe_wasm_obj = JSObject::GetDataProperty(
-        call_site_obj, isolate->factory()->call_site_wasm_obj_symbol());
-    if (!maybe_wasm_obj->IsJSObject()) {
-      // invalid: neither javascript nor wasm
-      return;
-    }
     // wasm
-    wasm_obj_ = Handle<JSObject>::cast(maybe_wasm_obj);
+    wasm_obj_ = Handle<JSObject>::cast(JSObject::GetDataProperty(
+        call_site_obj, isolate->factory()->call_site_wasm_obj_symbol()));
     wasm_func_index_ = Smi::cast(*maybe_wasm_func_index)->value();
     DCHECK(static_cast<int>(wasm_func_index_) >= 0);
   }
@@ -210,10 +205,8 @@ Handle<Object> CallSite::GetFileName() {
 
 Handle<Object> CallSite::GetFunctionName() {
   if (IsWasm()) {
-    MaybeHandle<String> name = wasm::GetWasmFunctionName(
-        Handle<JSObject>::cast(wasm_obj_), wasm_func_index_);
-    if (name.is_null()) return isolate_->factory()->null_value();
-    return name.ToHandleChecked();
+    return wasm::GetWasmFunctionNameOrNull(isolate_, wasm_obj_,
+                                           wasm_func_index_);
   }
   Handle<String> result = JSFunction::GetName(fun_);
   if (result->length() != 0) return result;
@@ -256,7 +249,8 @@ bool CheckMethodName(Isolate* isolate, Handle<JSObject> obj, Handle<Name> name,
 
 
 Handle<Object> CallSite::GetMethodName() {
-  if (!IsJavaScript() || receiver_->IsNull() || receiver_->IsUndefined()) {
+  if (!IsJavaScript() || receiver_->IsNull(isolate_) ||
+      receiver_->IsUndefined(isolate_)) {
     return isolate_->factory()->null_value();
   }
   Handle<JSReceiver> receiver =
@@ -287,9 +281,8 @@ Handle<Object> CallSite::GetMethodName() {
 
   HandleScope outer_scope(isolate_);
   Handle<Object> result;
-  for (PrototypeIterator iter(isolate_, obj,
-                              PrototypeIterator::START_AT_RECEIVER);
-       !iter.IsAtEnd(); iter.Advance()) {
+  for (PrototypeIterator iter(isolate_, obj, kStartAtReceiver); !iter.IsAtEnd();
+       iter.Advance()) {
     Handle<Object> current = PrototypeIterator::GetCurrent(iter);
     if (!current->IsJSObject()) break;
     Handle<JSObject> current_obj = Handle<JSObject>::cast(current);
@@ -348,8 +341,8 @@ bool CallSite::IsNative() {
 
 bool CallSite::IsToplevel() {
   if (IsWasm()) return false;
-  return receiver_->IsJSGlobalProxy() || receiver_->IsNull() ||
-         receiver_->IsUndefined();
+  return receiver_->IsJSGlobalProxy() || receiver_->IsNull(isolate_) ||
+         receiver_->IsUndefined(isolate_);
 }
 
 

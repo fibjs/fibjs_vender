@@ -16,13 +16,14 @@ class PlatformInterfaceDescriptor;
 #define INTERFACE_DESCRIPTOR_LIST(V)   \
   V(Void)                              \
   V(Load)                              \
+  V(LoadGlobal)                        \
   V(Store)                             \
   V(StoreTransition)                   \
   V(VectorStoreTransition)             \
   V(VectorStoreICTrampoline)           \
   V(VectorStoreIC)                     \
   V(LoadWithVector)                    \
-  V(FastArrayPush)                     \
+  V(VarArgFunction)                    \
   V(FastNewClosure)                    \
   V(FastNewContext)                    \
   V(FastNewObject)                     \
@@ -58,8 +59,7 @@ class PlatformInterfaceDescriptor;
   V(AllocateBool8x16)                  \
   V(ArrayNoArgumentConstructor)        \
   V(ArraySingleArgumentConstructor)    \
-  V(ArrayConstructor)                  \
-  V(InternalArrayConstructor)          \
+  V(ArrayNArgumentsConstructor)        \
   V(Compare)                           \
   V(BinaryOp)                          \
   V(BinaryOpWithAllocationSite)        \
@@ -109,7 +109,7 @@ class CallInterfaceDescriptorData {
   // and register side by side (eg, RegRep(r1, Representation::Tagged()).
   // The same should go for the CodeStubDescriptor class.
   void InitializePlatformSpecific(
-      int register_parameter_count, Register* registers,
+      int register_parameter_count, const Register* registers,
       PlatformInterfaceDescriptor* platform_descriptor = NULL);
 
   bool IsInitialized() const { return register_param_count_ >= 0; }
@@ -218,6 +218,12 @@ class CallInterfaceDescriptor {
     }
   }
 
+  // Initializes |data| using the platform dependent default set of registers.
+  // It is intended to be used for TurboFan stubs when particular set of
+  // registers does not matter.
+  static void DefaultInitializePlatformSpecific(
+      CallInterfaceDescriptorData* data, int register_parameter_count);
+
  private:
   const CallInterfaceDescriptorData* data_;
 };
@@ -228,6 +234,17 @@ class CallInterfaceDescriptor {
     Initialize(isolate, key());                            \
   }                                                        \
   static inline CallDescriptors::Key key();
+
+#define DECLARE_DEFAULT_DESCRIPTOR(name, base, parameter_count)            \
+  DECLARE_DESCRIPTOR_WITH_BASE(name, base)                                 \
+ protected:                                                                \
+  void InitializePlatformSpecific(CallInterfaceDescriptorData* data)       \
+      override {                                                           \
+    DefaultInitializePlatformSpecific(data, parameter_count);              \
+  }                                                                        \
+  name(Isolate* isolate, CallDescriptors::Key key) : base(isolate, key) {} \
+                                                                           \
+ public:
 
 #define DECLARE_DESCRIPTOR(name, base)                                         \
   DECLARE_DESCRIPTOR_WITH_BASE(name, base)                                     \
@@ -274,6 +291,13 @@ class LoadDescriptor : public CallInterfaceDescriptor {
   static const Register SlotRegister();
 };
 
+class LoadGlobalDescriptor : public CallInterfaceDescriptor {
+ public:
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(LoadGlobalDescriptor,
+                                               CallInterfaceDescriptor)
+
+  enum ParameterIndices { kNameIndex, kSlotIndex, kVectorIndex };
+};
 
 class StoreDescriptor : public CallInterfaceDescriptor {
  public:
@@ -424,10 +448,7 @@ class HasPropertyDescriptor final : public CallInterfaceDescriptor {
  public:
   enum ParameterIndices { kKeyIndex, kObjectIndex };
 
-  DECLARE_DESCRIPTOR(HasPropertyDescriptor, CallInterfaceDescriptor)
-
-  static const Register KeyRegister();
-  static const Register ObjectRegister();
+  DECLARE_DEFAULT_DESCRIPTOR(HasPropertyDescriptor, CallInterfaceDescriptor, 2)
 };
 
 class TypeofDescriptor : public CallInterfaceDescriptor {
@@ -590,24 +611,23 @@ class ArraySingleArgumentConstructorDescriptor
   enum ParameterIndices {
     kFunctionIndex,
     kAllocationSiteIndex,
-    kArgumentsCountIndex,
+    kArgumentCountIndex,
     kFunctionParameterIndex,
     kArraySizeSmiParameterIndex,
     kContextIndex
   };
 };
 
-class ArrayConstructorDescriptor : public CallInterfaceDescriptor {
- public:
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(ArrayConstructorDescriptor,
-                                               CallInterfaceDescriptor)
-};
-
-
-class InternalArrayConstructorDescriptor : public CallInterfaceDescriptor {
+class ArrayNArgumentsConstructorDescriptor : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
-      InternalArrayConstructorDescriptor, CallInterfaceDescriptor)
+      ArrayNArgumentsConstructorDescriptor, CallInterfaceDescriptor)
+  enum ParameterIndices {
+    kFunctionIndex,
+    kAllocationSiteIndex,
+    kArgumentCountIndex,
+    kContextIndex
+  };
 };
 
 
@@ -777,9 +797,9 @@ class ContextOnlyDescriptor : public CallInterfaceDescriptor {
   DECLARE_DESCRIPTOR(ContextOnlyDescriptor, CallInterfaceDescriptor)
 };
 
-class FastArrayPushDescriptor : public CallInterfaceDescriptor {
+class VarArgFunctionDescriptor : public CallInterfaceDescriptor {
  public:
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(FastArrayPushDescriptor,
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(VarArgFunctionDescriptor,
                                                CallInterfaceDescriptor)
 };
 

@@ -607,7 +607,8 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left, Node* right,
     case wasm::kExprF64Pow:
       return BuildF64Pow(left, right);
     case wasm::kExprF64Atan2:
-      return BuildF64Atan2(left, right);
+      op = m->Float64Atan2();
+      break;
     case wasm::kExprF64Mod:
       return BuildF64Mod(left, right);
     case wasm::kExprI32AsmjsDivS:
@@ -645,16 +646,28 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input,
     case wasm::kExprF32Abs:
       op = m->Float32Abs();
       break;
-    case wasm::kExprF32Neg:
-      return BuildF32Neg(input);
+    case wasm::kExprF32Neg: {
+      if (m->Float32Neg().IsSupported()) {
+        op = m->Float32Neg().op();
+        break;
+      } else {
+        return BuildF32Neg(input);
+      }
+    }
     case wasm::kExprF32Sqrt:
       op = m->Float32Sqrt();
       break;
     case wasm::kExprF64Abs:
       op = m->Float64Abs();
       break;
-    case wasm::kExprF64Neg:
-      return BuildF64Neg(input);
+    case wasm::kExprF64Neg: {
+      if (m->Float64Neg().IsSupported()) {
+        op = m->Float64Neg().op();
+        break;
+      } else {
+        return BuildF64Neg(input);
+      }
+    }
     case wasm::kExprF64Sqrt:
       op = m->Float64Sqrt();
       break;
@@ -769,9 +782,9 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input,
     case wasm::kExprF64Asin: {
       return BuildF64Asin(input);
     }
-    case wasm::kExprF64Atan: {
-      return BuildF64Atan(input);
-    }
+    case wasm::kExprF64Atan:
+      op = m->Float64Atan();
+      break;
     case wasm::kExprF64Cos: {
       return BuildF64Cos(input);
     }
@@ -784,9 +797,9 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input,
     case wasm::kExprF64Exp: {
       return BuildF64Exp(input);
     }
-    case wasm::kExprF64Log: {
-      return BuildF64Log(input);
-    }
+    case wasm::kExprF64Log:
+      op = m->Float64Log();
+      break;
     case wasm::kExprI32ConvertI64:
       op = m->TruncateInt64ToInt32();
       break;
@@ -1336,13 +1349,6 @@ Node* WasmGraphBuilder::BuildF64Asin(Node* input) {
   return BuildCFuncInstruction(ref, type, input);
 }
 
-Node* WasmGraphBuilder::BuildF64Atan(Node* input) {
-  MachineType type = MachineType::Float64();
-  ExternalReference ref =
-      ExternalReference::f64_atan_wrapper_function(jsgraph()->isolate());
-  return BuildCFuncInstruction(ref, type, input);
-}
-
 Node* WasmGraphBuilder::BuildF64Cos(Node* input) {
   MachineType type = MachineType::Float64();
   ExternalReference ref =
@@ -1369,20 +1375,6 @@ Node* WasmGraphBuilder::BuildF64Exp(Node* input) {
   ExternalReference ref =
       ExternalReference::f64_exp_wrapper_function(jsgraph()->isolate());
   return BuildCFuncInstruction(ref, type, input);
-}
-
-Node* WasmGraphBuilder::BuildF64Log(Node* input) {
-  MachineType type = MachineType::Float64();
-  ExternalReference ref =
-      ExternalReference::f64_log_wrapper_function(jsgraph()->isolate());
-  return BuildCFuncInstruction(ref, type, input);
-}
-
-Node* WasmGraphBuilder::BuildF64Atan2(Node* left, Node* right) {
-  MachineType type = MachineType::Float64();
-  ExternalReference ref =
-      ExternalReference::f64_atan2_wrapper_function(jsgraph()->isolate());
-  return BuildCFuncInstruction(ref, type, left, right);
 }
 
 Node* WasmGraphBuilder::BuildF64Pow(Node* left, Node* right) {
@@ -1896,7 +1888,7 @@ Node* WasmGraphBuilder::CallDirect(uint32_t index, Node** args,
   DCHECK_NULL(args[0]);
 
   // Add code object as constant.
-  args[0] = HeapConstant(module_->GetFunctionCode(index));
+  args[0] = HeapConstant(module_->GetCodeOrPlaceholder(index));
   wasm::FunctionSig* sig = module_->GetFunctionSignature(index);
 
   return BuildWasmCall(sig, args, position);
@@ -2537,10 +2529,13 @@ Node* WasmGraphBuilder::MemSize(uint32_t offset) {
   DCHECK(module_ && module_->instance);
   uint32_t size = static_cast<uint32_t>(module_->instance->mem_size);
   if (offset == 0) {
-    if (!mem_size_) mem_size_ = jsgraph()->Int32Constant(size);
+    if (!mem_size_)
+      mem_size_ = jsgraph()->RelocatableInt32Constant(
+          size, RelocInfo::WASM_MEMORY_SIZE_REFERENCE);
     return mem_size_;
   } else {
-    return jsgraph()->Int32Constant(size + offset);
+    return jsgraph()->RelocatableInt32Constant(
+        size + offset, RelocInfo::WASM_MEMORY_SIZE_REFERENCE);
   }
 }
 
@@ -2587,29 +2582,28 @@ void WasmGraphBuilder::BoundsCheckMem(MachineType memtype, Node* index,
   size_t size = module_->instance->mem_size;
   byte memsize = wasm::WasmOpcodes::MemSize(memtype);
 
-  if (offset >= size || (static_cast<uint64_t>(offset) + memsize) > size) {
-    // The access will always throw (unless memory is grown).
-    Node* cond = jsgraph()->Int32Constant(0);
-    trap_->AddTrapIfFalse(wasm::kTrapMemOutOfBounds, cond, position);
-    return;
-  }
-
   // Check against the effective size.
-  size_t effective_size = size - offset - memsize;
+  size_t effective_size;
+  if (offset >= size || (static_cast<uint64_t>(offset) + memsize) > size) {
+    effective_size = 0;
+  } else {
+    effective_size = size - offset - memsize + 1;
+  }
   CHECK(effective_size <= kMaxUInt32);
 
   Uint32Matcher m(index);
   if (m.HasValue()) {
     uint32_t value = m.Value();
-    if (value <= effective_size) {
+    if (value < effective_size) {
       // The bounds check will always succeed.
       return;
     }
   }
 
-  Node* cond = graph()->NewNode(
-      jsgraph()->machine()->Uint32LessThanOrEqual(), index,
-      jsgraph()->Int32Constant(static_cast<uint32_t>(effective_size)));
+  Node* cond = graph()->NewNode(jsgraph()->machine()->Uint32LessThan(), index,
+                                jsgraph()->RelocatableInt32Constant(
+                                    static_cast<uint32_t>(effective_size),
+                                    RelocInfo::WASM_MEMORY_SIZE_REFERENCE));
 
   trap_->AddTrapIfFalse(wasm::kTrapMemOutOfBounds, cond, position);
 }
@@ -2945,8 +2939,7 @@ static void RecordFunctionCompilation(Logger::LogEventsAndTags tag,
                                       const char* message, uint32_t index,
                                       wasm::WasmName func_name) {
   Isolate* isolate = info->isolate();
-  if (isolate->logger()->is_logging_code_events() ||
-      isolate->cpu_profiler()->is_profiling()) {
+  if (isolate->logger()->is_logging_code_events() || isolate->is_profiling()) {
     ScopedVector<char> buffer(128);
     SNPrintF(buffer, "%s#%d:%.*s", message, index, func_name.length(),
              func_name.start());
@@ -3280,16 +3273,6 @@ Handle<Code> WasmCompilationUnit::FinishCompilation() {
   }
   Handle<Code> code = info_.code();
   DCHECK(!code.is_null());
-  DCHECK(code->deoptimization_data() == nullptr ||
-         code->deoptimization_data()->length() == 0);
-  Handle<FixedArray> deopt_data =
-      isolate_->factory()->NewFixedArray(2, TENURED);
-  if (!module_env_->instance->js_object.is_null()) {
-    deopt_data->set(0, *module_env_->instance->js_object);
-  }
-  deopt_data->set(1, Smi::FromInt(function_->func_index));
-  deopt_data->set_length(2);
-  code->set_deoptimization_data(*deopt_data);
 
   RecordFunctionCompilation(
       Logger::FUNCTION_TAG, &info_, "WASM_function", function_->func_index,

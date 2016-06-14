@@ -43,9 +43,8 @@ FunctionType* CallInterfaceDescriptor::BuildDefaultFunctionType(
   return function;
 }
 
-
 void CallInterfaceDescriptorData::InitializePlatformSpecific(
-    int register_parameter_count, Register* registers,
+    int register_parameter_count, const Register* registers,
     PlatformInterfaceDescriptor* platform_descriptor) {
   platform_specific_descriptor_ = platform_descriptor;
   register_param_count_ = register_parameter_count;
@@ -98,6 +97,24 @@ void LoadDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
+FunctionType* LoadGlobalDescriptor::BuildCallInterfaceDescriptorFunctionType(
+    Isolate* isolate, int paramater_count) {
+  Zone* zone = isolate->interface_descriptor_zone();
+  FunctionType* function =
+      Type::Function(AnyTagged(zone), Type::Undefined(), 3, zone)->AsFunction();
+  function->InitParameter(0, AnyTagged(zone));
+  function->InitParameter(1, SmiType(zone));
+  function->InitParameter(2, AnyTagged(zone));
+  return function;
+}
+
+void LoadGlobalDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {LoadWithVectorDescriptor::NameRegister(),
+                          LoadWithVectorDescriptor::SlotRegister(),
+                          LoadWithVectorDescriptor::VectorRegister()};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
 
 void StoreDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
@@ -187,12 +204,6 @@ void StringCompareDescriptor::InitializePlatformSpecific(
 void TypeConversionDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {ArgumentRegister()};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-void HasPropertyDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {KeyRegister(), ObjectRegister()};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
@@ -316,7 +327,8 @@ void GrowArrayElementsDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 
-FunctionType* FastArrayPushDescriptor::BuildCallInterfaceDescriptorFunctionType(
+FunctionType*
+VarArgFunctionDescriptor::BuildCallInterfaceDescriptorFunctionType(
     Isolate* isolate, int paramater_count) {
   Zone* zone = isolate->interface_descriptor_zone();
   FunctionType* function =
@@ -459,25 +471,14 @@ FunctionType* ArraySingleArgumentConstructorDescriptor::
 }
 
 FunctionType*
-ArrayConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
+ArrayNArgumentsConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
     Isolate* isolate, int paramater_count) {
   Zone* zone = isolate->interface_descriptor_zone();
   FunctionType* function =
       Type::Function(AnyTagged(zone), Type::Undefined(), 3, zone)->AsFunction();
   function->InitParameter(0, Type::Receiver());  // JSFunction
-  function->InitParameter(1, AnyTagged(zone));
-  function->InitParameter(2, UntaggedIntegral32(zone));
-  return function;
-}
-
-FunctionType*
-InternalArrayConstructorDescriptor::BuildCallInterfaceDescriptorFunctionType(
-    Isolate* isolate, int paramater_count) {
-  Zone* zone = isolate->interface_descriptor_zone();
-  FunctionType* function =
-      Type::Function(AnyTagged(zone), Type::Undefined(), 2, zone)->AsFunction();
-  function->InitParameter(0, Type::Receiver());  // JSFunction
-  function->InitParameter(1, UntaggedIntegral32(zone));
+  function->InitParameter(1, AnyTagged(zone));   // Allocation site or undefined
+  function->InitParameter(2, UntaggedIntegral32(zone));  //  Arg count
   return function;
 }
 

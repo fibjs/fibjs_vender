@@ -26,62 +26,27 @@
 namespace v8 {
 namespace internal {
 
+#define __ ACCESS_MASM(masm)
 
-static void InitializeArrayConstructorDescriptor(
-    Isolate* isolate, CodeStubDescriptor* descriptor,
-    int constant_stack_parameter_count) {
-  // cp: context
-  // x1: function
-  // x2: allocation site with elements kind
-  // x0: number of arguments to the constructor function
-  Address deopt_handler = Runtime::FunctionForId(
-      Runtime::kArrayConstructor)->entry;
-
-  if (constant_stack_parameter_count == 0) {
-    descriptor->Initialize(deopt_handler, constant_stack_parameter_count,
-                           JS_FUNCTION_STUB_MODE);
-  } else {
-    descriptor->Initialize(x0, deopt_handler, constant_stack_parameter_count,
-                           JS_FUNCTION_STUB_MODE);
-  }
+void ArrayNArgumentsConstructorStub::Generate(MacroAssembler* masm) {
+  __ Mov(x5, Operand(x0, LSL, kPointerSizeLog2));
+  __ Str(x1, MemOperand(jssp, x5));
+  __ Push(x1);
+  __ Push(x2);
+  __ Add(x0, x0, Operand(3));
+  __ TailCallRuntime(Runtime::kNewArray);
 }
-
-
-void ArrayNArgumentsConstructorStub::InitializeDescriptor(
-    CodeStubDescriptor* descriptor) {
-  InitializeArrayConstructorDescriptor(isolate(), descriptor, -1);
-}
-
-
-static void InitializeInternalArrayConstructorDescriptor(
-    Isolate* isolate, CodeStubDescriptor* descriptor,
-    int constant_stack_parameter_count) {
-  Address deopt_handler = Runtime::FunctionForId(
-      Runtime::kInternalArrayConstructor)->entry;
-
-  if (constant_stack_parameter_count == 0) {
-    descriptor->Initialize(deopt_handler, constant_stack_parameter_count,
-                           JS_FUNCTION_STUB_MODE);
-  } else {
-    descriptor->Initialize(x0, deopt_handler, constant_stack_parameter_count,
-                           JS_FUNCTION_STUB_MODE);
-  }
-}
-
 
 void FastArrayPushStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
   Address deopt_handler = Runtime::FunctionForId(Runtime::kArrayPush)->entry;
   descriptor->Initialize(x0, deopt_handler, -1, JS_FUNCTION_STUB_MODE);
 }
 
-void InternalArrayNArgumentsConstructorStub::InitializeDescriptor(
+void FastFunctionBindStub::InitializeDescriptor(
     CodeStubDescriptor* descriptor) {
-  InitializeInternalArrayConstructorDescriptor(isolate(), descriptor, -1);
+  Address deopt_handler = Runtime::FunctionForId(Runtime::kFunctionBind)->entry;
+  descriptor->Initialize(x0, deopt_handler, -1, JS_FUNCTION_STUB_MODE);
 }
-
-
-#define __ ACCESS_MASM(masm)
-
 
 void HydrogenCodeStub::GenerateLightweightMiss(MacroAssembler* masm,
                                                ExternalReference miss) {
@@ -978,7 +943,7 @@ void CodeStub::GenerateStubsAheadOfTime(Isolate* isolate) {
   CEntryStub::GenerateAheadOfTime(isolate);
   StoreBufferOverflowStub::GenerateFixedRegStubsAheadOfTime(isolate);
   StubFailureTrampolineStub::GenerateAheadOfTime(isolate);
-  ArrayConstructorStubBase::GenerateStubsAheadOfTime(isolate);
+  CommonArrayConstructorStub::GenerateStubsAheadOfTime(isolate);
   CreateAllocationSiteStub::GenerateAheadOfTime(isolate);
   CreateWeakCellStub::GenerateAheadOfTime(isolate);
   BinaryOpICStub::GenerateAheadOfTime(isolate);
@@ -1482,7 +1447,6 @@ void LoadIndexedStringStub::Generate(MacroAssembler* masm) {
                                           &miss,  // When not a string.
                                           &miss,  // When not a number.
                                           &miss,  // When index out of range.
-                                          STRING_INDEX_IS_ARRAY_INDEX,
                                           RECEIVER_IS_STRING);
   char_at_generator.GenerateFast(masm);
   __ Ret();
@@ -2188,7 +2152,7 @@ void CallICStub::HandleArrayCase(MacroAssembler* masm, Label* miss) {
   __ Add(feedback_vector, feedback_vector,
          Operand(FixedArray::kHeaderSize + kPointerSize));
   __ Ldr(index, FieldMemOperand(feedback_vector, 0));
-  __ Add(index, index, Operand(Smi::FromInt(CallICNexus::kCallCountIncrement)));
+  __ Add(index, index, Operand(Smi::FromInt(1)));
   __ Str(index, FieldMemOperand(feedback_vector, 0));
 
   // Set up arguments for the array constructor stub.
@@ -2248,7 +2212,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ Add(feedback_vector, feedback_vector,
          Operand(FixedArray::kHeaderSize + kPointerSize));
   __ Ldr(index, FieldMemOperand(feedback_vector, 0));
-  __ Add(index, index, Operand(Smi::FromInt(CallICNexus::kCallCountIncrement)));
+  __ Add(index, index, Operand(Smi::FromInt(1)));
   __ Str(index, FieldMemOperand(feedback_vector, 0));
 
   __ Bind(&call_function);
@@ -2313,7 +2277,7 @@ void CallICStub::Generate(MacroAssembler* masm) {
   __ B(ne, &miss);
 
   // Initialize the call counter.
-  __ Mov(x5, Smi::FromInt(CallICNexus::kCallCountIncrement));
+  __ Mov(x5, Smi::FromInt(1));
   __ Adds(x4, feedback_vector,
           Operand::UntagSmiAndScale(index, kPointerSizeLog2));
   __ Str(x5, FieldMemOperand(x4, FixedArray::kHeaderSize + kPointerSize));
@@ -2407,13 +2371,7 @@ void StringCharCodeAtGenerator::GenerateSlow(
     // Save object_ on the stack and pass index_ as argument for runtime call.
     __ Push(object_, index_);
   }
-  if (index_flags_ == STRING_INDEX_IS_NUMBER) {
-    __ CallRuntime(Runtime::kNumberToIntegerMapMinusZero);
-  } else {
-    DCHECK(index_flags_ == STRING_INDEX_IS_ARRAY_INDEX);
-    // NumberToSmi discards numbers that are not exact integers.
-    __ CallRuntime(Runtime::kNumberToSmi);
-  }
+  __ CallRuntime(Runtime::kNumberToSmi);
   // Save the conversion result before the pop instructions below
   // have a chance to overwrite it.
   __ Mov(index_, x0);
@@ -3099,72 +3057,11 @@ void SubStringStub::Generate(MacroAssembler* masm) {
   __ SmiTag(from);
   StringCharAtGenerator generator(input_string, from, result_length, x0,
                                   &runtime, &runtime, &runtime,
-                                  STRING_INDEX_IS_NUMBER, RECEIVER_IS_STRING);
+                                  RECEIVER_IS_STRING);
   generator.GenerateFast(masm);
   __ Drop(3);
   __ Ret();
   generator.SkipSlow(masm, &runtime);
-}
-
-
-void ToNumberStub::Generate(MacroAssembler* masm) {
-  // The ToNumber stub takes one argument in x0.
-  Label not_smi;
-  __ JumpIfNotSmi(x0, &not_smi);
-  __ Ret();
-  __ Bind(&not_smi);
-
-  Label not_heap_number;
-  __ CompareObjectType(x0, x1, x1, HEAP_NUMBER_TYPE);
-  // x0: receiver
-  // x1: receiver instance type
-  __ B(ne, &not_heap_number);
-  __ Ret();
-  __ Bind(&not_heap_number);
-
-  NonNumberToNumberStub stub(masm->isolate());
-  __ TailCallStub(&stub);
-}
-
-void NonNumberToNumberStub::Generate(MacroAssembler* masm) {
-  // The NonNumberToNumber stub takes one argument in x0.
-  __ AssertNotNumber(x0);
-
-  Label not_string;
-  __ CompareObjectType(x0, x1, x1, FIRST_NONSTRING_TYPE);
-  // x0: receiver
-  // x1: receiver instance type
-  __ B(hs, &not_string);
-  StringToNumberStub stub(masm->isolate());
-  __ TailCallStub(&stub);
-  __ Bind(&not_string);
-
-  Label not_oddball;
-  __ Cmp(x1, ODDBALL_TYPE);
-  __ B(ne, &not_oddball);
-  __ Ldr(x0, FieldMemOperand(x0, Oddball::kToNumberOffset));
-  __ Ret();
-  __ Bind(&not_oddball);
-
-  __ Push(x0);  // Push argument.
-  __ TailCallRuntime(Runtime::kToNumber);
-}
-
-void StringToNumberStub::Generate(MacroAssembler* masm) {
-  // The StringToNumber stub takes one argument in x0.
-  __ AssertString(x0);
-
-  // Check if string has a cached array index.
-  Label runtime;
-  __ Ldr(x2, FieldMemOperand(x0, String::kHashFieldOffset));
-  __ Tst(x2, Operand(String::kContainsCachedArrayIndexMask));
-  __ B(ne, &runtime);
-  __ IndexFromHash(x2, x0);
-  __ Ret();
-
-  __ Bind(&runtime);
-  __ Push(x0);  // Push argument.
-  __ TailCallRuntime(Runtime::kStringToNumber);
 }
 
 void ToStringStub::Generate(MacroAssembler* masm) {
@@ -4456,19 +4353,13 @@ static void ArrayConstructorStubAheadOfTimeHelper(Isolate* isolate) {
   }
 }
 
-
-void ArrayConstructorStubBase::GenerateStubsAheadOfTime(Isolate* isolate) {
+void CommonArrayConstructorStub::GenerateStubsAheadOfTime(Isolate* isolate) {
   ArrayConstructorStubAheadOfTimeHelper<ArrayNoArgumentConstructorStub>(
       isolate);
   ArrayConstructorStubAheadOfTimeHelper<ArraySingleArgumentConstructorStub>(
       isolate);
-  ArrayConstructorStubAheadOfTimeHelper<ArrayNArgumentsConstructorStub>(
-      isolate);
-}
-
-
-void InternalArrayConstructorStubBase::GenerateStubsAheadOfTime(
-    Isolate* isolate) {
+  ArrayNArgumentsConstructorStub stub(isolate);
+  stub.GetCode();
   ElementsKind kinds[2] = { FAST_ELEMENTS, FAST_HOLEY_ELEMENTS };
   for (int i = 0; i < 2; i++) {
     // For internal arrays we only need a few things
@@ -4476,8 +4367,6 @@ void InternalArrayConstructorStubBase::GenerateStubsAheadOfTime(
     stubh1.GetCode();
     InternalArraySingleArgumentConstructorStub stubh2(isolate, kinds[i]);
     stubh2.GetCode();
-    InternalArrayNArgumentsConstructorStub stubh3(isolate, kinds[i]);
-    stubh3.GetCode();
   }
 }
 
@@ -4501,14 +4390,15 @@ void ArrayConstructorStub::GenerateDispatchToArrayStub(
 
     __ Bind(&n_case);
     // N arguments.
-    CreateArrayDispatch<ArrayNArgumentsConstructorStub>(masm, mode);
-
+    ArrayNArgumentsConstructorStub stub(masm->isolate());
+    __ TailCallStub(&stub);
   } else if (argument_count() == NONE) {
     CreateArrayDispatch<ArrayNoArgumentConstructorStub>(masm, mode);
   } else if (argument_count() == ONE) {
     CreateArrayDispatchOneArgument(masm, mode);
   } else if (argument_count() == MORE_THAN_ONE) {
-    CreateArrayDispatch<ArrayNArgumentsConstructorStub>(masm, mode);
+    ArrayNArgumentsConstructorStub stub(masm->isolate());
+    __ TailCallStub(&stub);
   } else {
     UNREACHABLE();
   }
@@ -4623,7 +4513,7 @@ void InternalArrayConstructorStub::GenerateCase(
 
   __ Bind(&n_case);
   // N arguments.
-  InternalArrayNArgumentsConstructorStub stubN(isolate(), kind);
+  ArrayNArgumentsConstructorStub stubN(isolate());
   __ TailCallStub(&stubN);
 }
 
@@ -4836,10 +4726,10 @@ void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
   Label rest_parameters;
   __ Ldrsw(x0, UntagSmiMemOperand(
                    x2, ArgumentsAdaptorFrameConstants::kLengthOffset));
-  __ Ldr(x1, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
+  __ Ldr(x3, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
   __ Ldrsw(
-      x1, FieldMemOperand(x1, SharedFunctionInfo::kFormalParameterCountOffset));
-  __ Subs(x0, x0, x1);
+      x3, FieldMemOperand(x3, SharedFunctionInfo::kFormalParameterCountOffset));
+  __ Subs(x0, x0, x3);
   __ B(gt, &rest_parameters);
 
   // Return an empty rest parameter array.
@@ -4885,15 +4775,16 @@ void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
     // ----------- S t a t e -------------
     //  -- cp : context
     //  -- x0 : number of rest parameters
+    //  -- x1 : function
     //  -- x2 : pointer to first rest parameters
     //  -- lr : return address
     // -----------------------------------
 
     // Allocate space for the rest parameter array plus the backing store.
     Label allocate, done_allocate;
-    __ Mov(x1, JSArray::kSize + FixedArray::kHeaderSize);
-    __ Add(x1, x1, Operand(x0, LSL, kPointerSizeLog2));
-    __ Allocate(x1, x3, x4, x5, &allocate, NO_ALLOCATION_FLAGS);
+    __ Mov(x6, JSArray::kSize + FixedArray::kHeaderSize);
+    __ Add(x6, x6, Operand(x0, LSL, kPointerSizeLog2));
+    __ Allocate(x6, x3, x4, x5, &allocate, NO_ALLOCATION_FLAGS);
     __ Bind(&done_allocate);
 
     // Compute arguments.length in x6.
@@ -4928,19 +4819,27 @@ void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
     STATIC_ASSERT(JSArray::kSize == 4 * kPointerSize);
     __ Ret();
 
-    // Fall back to %AllocateInNewSpace.
+    // Fall back to %AllocateInNewSpace (if not too big).
+    Label too_big_for_new_space;
     __ Bind(&allocate);
+    __ Cmp(x6, Operand(Page::kMaxRegularHeapObjectSize));
+    __ B(gt, &too_big_for_new_space);
     {
       FrameScope scope(masm, StackFrame::INTERNAL);
       __ SmiTag(x0);
-      __ SmiTag(x1);
-      __ Push(x0, x2, x1);
+      __ SmiTag(x6);
+      __ Push(x0, x2, x6);
       __ CallRuntime(Runtime::kAllocateInNewSpace);
       __ Mov(x3, x0);
       __ Pop(x2, x0);
       __ SmiUntag(x0);
     }
     __ B(&done_allocate);
+
+    // Fall back to %NewRestParameter.
+    __ Bind(&too_big_for_new_space);
+    __ Push(x1);
+    __ TailCallRuntime(Runtime::kNewRestParameter);
   }
 }
 
@@ -5277,9 +5176,9 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   __ Cmp(x4, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
   __ B(eq, &arguments_adaptor);
   {
-    __ Ldr(x1, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
+    __ Ldr(x4, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
     __ Ldrsw(x0, FieldMemOperand(
-                     x1, SharedFunctionInfo::kFormalParameterCountOffset));
+                     x4, SharedFunctionInfo::kFormalParameterCountOffset));
     __ Add(x2, x2, Operand(x0, LSL, kPointerSizeLog2));
     __ Add(x2, x2, StandardFrameConstants::kCallerSPOffset - 1 * kPointerSize);
   }
@@ -5296,15 +5195,16 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   // ----------- S t a t e -------------
   //  -- cp : context
   //  -- x0 : number of rest parameters
+  //  -- x1 : function
   //  -- x2 : pointer to first rest parameters
   //  -- lr : return address
   // -----------------------------------
 
   // Allocate space for the strict arguments object plus the backing store.
   Label allocate, done_allocate;
-  __ Mov(x1, JSStrictArgumentsObject::kSize + FixedArray::kHeaderSize);
-  __ Add(x1, x1, Operand(x0, LSL, kPointerSizeLog2));
-  __ Allocate(x1, x3, x4, x5, &allocate, NO_ALLOCATION_FLAGS);
+  __ Mov(x6, JSStrictArgumentsObject::kSize + FixedArray::kHeaderSize);
+  __ Add(x6, x6, Operand(x0, LSL, kPointerSizeLog2));
+  __ Allocate(x6, x3, x4, x5, &allocate, NO_ALLOCATION_FLAGS);
   __ Bind(&done_allocate);
 
   // Compute arguments.length in x6.
@@ -5339,19 +5239,27 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   STATIC_ASSERT(JSStrictArgumentsObject::kSize == 4 * kPointerSize);
   __ Ret();
 
-  // Fall back to %AllocateInNewSpace.
+  // Fall back to %AllocateInNewSpace (if not too big).
+  Label too_big_for_new_space;
   __ Bind(&allocate);
+  __ Cmp(x6, Operand(Page::kMaxRegularHeapObjectSize));
+  __ B(gt, &too_big_for_new_space);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ SmiTag(x0);
-    __ SmiTag(x1);
-    __ Push(x0, x2, x1);
+    __ SmiTag(x6);
+    __ Push(x0, x2, x6);
     __ CallRuntime(Runtime::kAllocateInNewSpace);
     __ Mov(x3, x0);
     __ Pop(x2, x0);
     __ SmiUntag(x0);
   }
   __ B(&done_allocate);
+
+  // Fall back to %NewStrictArguments.
+  __ Bind(&too_big_for_new_space);
+  __ Push(x1);
+  __ TailCallRuntime(Runtime::kNewStrictArguments);
 }
 
 

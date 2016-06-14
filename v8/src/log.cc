@@ -11,6 +11,7 @@
 #include "src/base/platform/platform.h"
 #include "src/bootstrapper.h"
 #include "src/code-stubs.h"
+#include "src/counters.h"
 #include "src/deoptimizer.h"
 #include "src/global-handles.h"
 #include "src/interpreter/bytecodes.h"
@@ -41,13 +42,11 @@ for (int i = 0; i < listeners_.length(); ++i) { \
   listeners_[i]->Call;                          \
 }
 
-#define PROFILER_LOG(Call)                                \
-  do {                                                    \
-    CpuProfiler* cpu_profiler = isolate_->cpu_profiler(); \
-    if (cpu_profiler->is_profiling()) {                   \
-      cpu_profiler->Call;                                 \
-    }                                                     \
-  } while (false);
+#define PROFILER_LOG(Call)          \
+  if (isolate_->is_profiling()) {   \
+    isolate_->cpu_profiler()->Call; \
+  } else {                          \
+  }
 
 static const char* ComputeMarker(SharedFunctionInfo* shared,
                                  AbstractCode* code) {
@@ -83,7 +82,7 @@ class CodeEventLogger::NameBuffer {
     } else {
       Symbol* symbol = Symbol::cast(name);
       AppendBytes("symbol(");
-      if (!symbol->name()->IsUndefined()) {
+      if (!symbol->name()->IsUndefined(symbol->GetIsolate())) {
         AppendBytes("\"");
         AppendString(String::cast(symbol->name()));
         AppendBytes("\" ");
@@ -241,10 +240,6 @@ class PerfBasicLogger : public CodeEventLogger {
   static const char kFilenameFormatString[];
   static const int kFilenameBufferPadding;
 
-  // File buffer size of the low-level log. We don't use the default to
-  // minimize the associated overhead.
-  static const int kLogBufferSize = 2 * MB;
-
   FILE* perf_output_handle_;
 };
 
@@ -265,7 +260,7 @@ PerfBasicLogger::PerfBasicLogger()
   perf_output_handle_ =
       base::OS::FOpen(perf_dump_name.start(), base::OS::LogFileOpenMode);
   CHECK_NOT_NULL(perf_output_handle_);
-  setvbuf(perf_output_handle_, NULL, _IOFBF, kLogBufferSize);
+  setvbuf(perf_output_handle_, NULL, _IOLBF, 0);
 }
 
 
@@ -336,10 +331,6 @@ class LowLevelLogger : public CodeEventLogger {
   // Extension added to V8 log file name to get the low-level log name.
   static const char kLogExt[];
 
-  // File buffer size of the low-level log. We don't use the default to
-  // minimize the associated overhead.
-  static const int kLogBufferSize = 2 * MB;
-
   void LogCodeInfo();
   void LogWriteBytes(const char* bytes, int size);
 
@@ -364,7 +355,7 @@ LowLevelLogger::LowLevelLogger(const char* name)
   MemCopy(ll_name.start() + len, kLogExt, sizeof(kLogExt));
   ll_output_handle_ =
       base::OS::FOpen(ll_name.start(), base::OS::LogFileOpenMode);
-  setvbuf(ll_output_handle_, NULL, _IOFBF, kLogBufferSize);
+  setvbuf(ll_output_handle_, NULL, _IOLBF, 0);
 
   LogCodeInfo();
 }
@@ -976,19 +967,19 @@ void LogRegExpSource(Handle<JSRegExp> regexp, Isolate* isolate,
   // global flag
   Handle<Object> global =
       JSReceiver::GetProperty(isolate, regexp, "global").ToHandleChecked();
-  if (global->IsTrue()) {
+  if (global->IsTrue(isolate)) {
     msg->Append('g');
   }
   // ignorecase flag
   Handle<Object> ignorecase =
       JSReceiver::GetProperty(isolate, regexp, "ignoreCase").ToHandleChecked();
-  if (ignorecase->IsTrue()) {
+  if (ignorecase->IsTrue(isolate)) {
     msg->Append('i');
   }
   // multiline flag
   Handle<Object> multiline =
       JSReceiver::GetProperty(isolate, regexp, "multiline").ToHandleChecked();
-  if (multiline->IsTrue()) {
+  if (multiline->IsTrue(isolate)) {
     msg->Append('m');
   }
 }
@@ -1021,7 +1012,7 @@ void Logger::ApiNamedPropertyAccess(const char* tag,
   } else {
     Symbol* symbol = Symbol::cast(name);
     uint32_t hash = symbol->Hash();
-    if (symbol->name()->IsUndefined()) {
+    if (symbol->name()->IsUndefined(symbol->GetIsolate())) {
       ApiEvent("api,%s,\"%s\",symbol(hash %x)", tag, class_name.get(), hash);
     } else {
       base::SmartArrayPointer<char> str =
@@ -1089,7 +1080,7 @@ void Logger::CallbackEventInternal(const char* prefix, Name* name,
     msg.Append(",1,\"%s%s\"", prefix, str.get());
   } else {
     Symbol* symbol = Symbol::cast(name);
-    if (symbol->name()->IsUndefined()) {
+    if (symbol->name()->IsUndefined(symbol->GetIsolate())) {
       msg.Append(",1,symbol(hash %x)", symbol->Hash());
     } else {
       base::SmartArrayPointer<char> str =
@@ -1431,9 +1422,23 @@ void Logger::DebugEvent(const char* event_type, Vector<uint16_t> parameter) {
   msg.WriteToLogFile();
 }
 
+void Logger::RuntimeCallTimerEvent() {
+  RuntimeCallStats* stats = isolate_->counters()->runtime_call_stats();
+  RuntimeCallTimer* timer = stats->current_timer();
+  if (timer == nullptr) return;
+  RuntimeCallCounter* counter = timer->counter();
+  if (counter == nullptr) return;
+  Log::MessageBuilder msg(log_);
+  msg.Append("active-runtime-timer,");
+  msg.AppendDoubleQuotedString(counter->name);
+  msg.WriteToLogFile();
+}
 
 void Logger::TickEvent(TickSample* sample, bool overflow) {
   if (!log_->IsEnabled() || !FLAG_prof_cpp) return;
+  if (FLAG_runtime_call_stats) {
+    RuntimeCallTimerEvent();
+  }
   Log::MessageBuilder msg(log_);
   msg.Append("%s,", kLogEventsNames[TICK_EVENT]);
   msg.AppendAddress(sample->pc);
@@ -1584,6 +1589,10 @@ void Logger::LogCodeObject(Object* object) {
       description = "A load IC from the snapshot";
       tag = Logger::LOAD_IC_TAG;
       break;
+    case AbstractCode::LOAD_GLOBAL_IC:
+      description = "A load global IC from the snapshot";
+      tag = Logger::LOAD_GLOBAL_IC_TAG;
+      break;
     case AbstractCode::CALL_IC:
       description = "A call IC from the snapshot";
       tag = Logger::CALL_IC_TAG;
@@ -1684,7 +1693,7 @@ void Logger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
     // API function.
     FunctionTemplateInfo* fun_data = shared->get_api_func_data();
     Object* raw_call_data = fun_data->call_code();
-    if (!raw_call_data->IsUndefined()) {
+    if (!raw_call_data->IsUndefined(isolate_)) {
       CallHandlerInfo* call_data = CallHandlerInfo::cast(raw_call_data);
       Object* callback_obj = call_data->callback();
       Address entry_point = v8::ToCData<Address>(callback_obj);

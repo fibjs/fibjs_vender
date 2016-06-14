@@ -1013,6 +1013,11 @@ void InstructionSelector::VisitFloat64Abs(Node* node) {
   Emit(kX87Float64Abs, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
+void InstructionSelector::VisitFloat64Log(Node* node) {
+  X87OperandGenerator g(this);
+  Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
+  Emit(kX87Float64Log, g.DefineAsFixed(node, stX_0), 0, nullptr);
+}
 
 void InstructionSelector::VisitFloat32Sqrt(Node* node) {
   X87OperandGenerator g(this);
@@ -1088,6 +1093,9 @@ void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
        g.UseFixed(node, stX_0), g.Use(node->InputAt(0)));
 }
 
+void InstructionSelector::VisitFloat32Neg(Node* node) { UNREACHABLE(); }
+
+void InstructionSelector::VisitFloat64Neg(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::EmitPrepareArguments(
     ZoneVector<PushParameter>* arguments, const CallDescriptor* descriptor,
@@ -1122,7 +1130,7 @@ void InstructionSelector::EmitPrepareArguments(
           g.CanBeImmediate(input.node())
               ? g.UseImmediate(input.node())
               : IsSupported(ATOM) ||
-                        sequence()->IsFloat(GetVirtualRegister(input.node()))
+                        sequence()->IsFP(GetVirtualRegister(input.node()))
                     ? g.UseRegister(input.node())
                     : g.Use(input.node());
       Emit(kX87Push, g.NoOutput(), value);

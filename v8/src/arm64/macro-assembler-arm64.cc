@@ -1540,7 +1540,7 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver,
                                                      Label* no_memento_found) {
   Label map_check;
   Label top_check;
-  ExternalReference new_space_allocation_top =
+  ExternalReference new_space_allocation_top_adr =
       ExternalReference::new_space_allocation_top_address(isolate());
   const int kMementoMapOffset = JSArray::kSize - kHeapObjectTag;
   const int kMementoEndOffset = kMementoMapOffset + AllocationMemento::kSize;
@@ -1550,7 +1550,9 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver,
   Add(scratch1, receiver, kMementoEndOffset);
   // If the object is in new space, we need to check whether it is on the same
   // page as the current top.
-  Eor(scratch2, scratch1, new_space_allocation_top);
+  Mov(scratch2, new_space_allocation_top_adr);
+  Ldr(scratch2, MemOperand(scratch2));
+  Eor(scratch2, scratch1, scratch2);
   Tst(scratch2, ~Page::kPageAlignmentMask);
   B(eq, &top_check);
   // The object is on a different page than allocation top. Bail out if the
@@ -1564,7 +1566,9 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver,
   // If top is on the same page as the current object, we need to check whether
   // we are below top.
   bind(&top_check);
-  Cmp(scratch1, new_space_allocation_top);
+  Mov(scratch2, new_space_allocation_top_adr);
+  Ldr(scratch2, MemOperand(scratch2));
+  Cmp(scratch1, scratch2);
   B(gt, no_memento_found);
   // Memento map check.
   bind(&map_check);
@@ -2496,11 +2500,12 @@ void MacroAssembler::FloodFunctionIfStepping(Register fun, Register new_target,
                                              const ParameterCount& expected,
                                              const ParameterCount& actual) {
   Label skip_flooding;
-  ExternalReference step_in_enabled =
-      ExternalReference::debug_step_in_enabled_address(isolate());
-  Mov(x4, Operand(step_in_enabled));
-  ldrb(x4, MemOperand(x4));
-  CompareAndBranch(x4, Operand(0), eq, &skip_flooding);
+  ExternalReference last_step_action =
+      ExternalReference::debug_last_step_action_address(isolate());
+  STATIC_ASSERT(StepFrame > StepIn);
+  Mov(x4, Operand(last_step_action));
+  Ldrsb(x4, MemOperand(x4));
+  CompareAndBranch(x4, Operand(StepIn), lt, &skip_flooding);
   {
     FrameScope frame(this,
                      has_frame() ? StackFrame::NONE : StackFrame::INTERNAL);
@@ -2761,9 +2766,8 @@ void MacroAssembler::Prologue(bool code_pre_aging) {
 
 void MacroAssembler::EmitLoadTypeFeedbackVector(Register vector) {
   Ldr(vector, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-  Ldr(vector, FieldMemOperand(vector, JSFunction::kSharedFunctionInfoOffset));
-  Ldr(vector,
-      FieldMemOperand(vector, SharedFunctionInfo::kFeedbackVectorOffset));
+  Ldr(vector, FieldMemOperand(vector, JSFunction::kLiteralsOffset));
+  Ldr(vector, FieldMemOperand(vector, LiteralsArray::kFeedbackVectorOffset));
 }
 
 

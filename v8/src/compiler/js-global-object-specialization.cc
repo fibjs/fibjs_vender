@@ -12,7 +12,7 @@
 #include "src/compiler/node-properties.h"
 #include "src/compiler/simplified-operator.h"
 #include "src/lookup.h"
-#include "src/objects-inl.h"  // TODO(mstarzinger): Temporary cycle breaker!
+#include "src/objects-inl.h"
 #include "src/type-cache.h"
 
 namespace v8 {
@@ -131,9 +131,9 @@ Reduction JSGlobalObjectSpecialization::ReduceJSStoreGlobal(Node* node) {
   DCHECK_EQ(IrOpcode::kJSStoreGlobal, node->opcode());
   Handle<Name> name = StoreGlobalParametersOf(node->op()).name();
   Node* value = NodeProperties::GetValueInput(node, 0);
-  Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
+  Node* frame_state = NodeProperties::FindFrameStateBefore(node);
 
   // Retrieve the global object from the given {node}.
   Handle<JSGlobalObject> global_object;

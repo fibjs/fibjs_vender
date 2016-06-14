@@ -8,14 +8,14 @@
 
 #include "src/ast/prettyprinter.h"
 #include "src/ast/scopes.h"
+#include "src/base/hashmap.h"
 #include "src/builtins.h"
 #include "src/code-stubs.h"
 #include "src/contexts.h"
 #include "src/conversions.h"
-#include "src/hashmap.h"
 #include "src/parsing/parser.h"
-#include "src/property.h"
 #include "src/property-details.h"
+#include "src/property.h"
 #include "src/string-stream.h"
 #include "src/type-info.h"
 
@@ -59,12 +59,19 @@ bool Expression::IsStringLiteral() const {
 
 
 bool Expression::IsNullLiteral() const {
-  return IsLiteral() && AsLiteral()->value()->IsNull();
+  if (!IsLiteral()) return false;
+  Handle<Object> value = AsLiteral()->value();
+  return !value->IsSmi() &&
+         value->IsNull(HeapObject::cast(*value)->GetIsolate());
 }
 
 bool Expression::IsUndefinedLiteral() const {
-  if (IsLiteral() && AsLiteral()->value()->IsUndefined()) {
-    return true;
+  if (IsLiteral()) {
+    Handle<Object> value = AsLiteral()->value();
+    if (!value->IsSmi() &&
+        value->IsUndefined(HeapObject::cast(*value)->GetIsolate())) {
+      return true;
+    }
   }
 
   const VariableProxy* var_proxy = AsVariableProxy();
@@ -120,17 +127,17 @@ void VariableProxy::AssignFeedbackVectorSlots(Isolate* isolate,
   if (UsesVariableFeedbackSlot()) {
     // VariableProxies that point to the same Variable within a function can
     // make their loads from the same IC slot.
-    if (var()->IsUnallocated()) {
+    if (var()->IsUnallocated() || var()->mode() == DYNAMIC_GLOBAL) {
       ZoneHashMap::Entry* entry = cache->Get(var());
       if (entry != NULL) {
         variable_feedback_slot_ = FeedbackVectorSlot(
             static_cast<int>(reinterpret_cast<intptr_t>(entry->value)));
         return;
       }
-    }
-    variable_feedback_slot_ = spec->AddLoadICSlot();
-    if (var()->IsUnallocated()) {
+      variable_feedback_slot_ = spec->AddLoadGlobalICSlot();
       cache->Put(var(), variable_feedback_slot_);
+    } else {
+      variable_feedback_slot_ = spec->AddLoadICSlot();
     }
   }
 }
@@ -387,7 +394,7 @@ void ObjectLiteral::CalculateEmitStore(Zone* zone) {
     if (property->is_computed_name()) continue;
     if (property->kind() == ObjectLiteral::Property::PROTOTYPE) continue;
     Literal* literal = property->key()->AsLiteral();
-    DCHECK(!literal->value()->IsNull());
+    DCHECK(!literal->IsNullLiteral());
 
     // If there is an existing entry do not emit a store unless the previous
     // entry was also an accessor.
@@ -457,11 +464,11 @@ void ObjectLiteral::BuildConstantProperties(Isolate* isolate) {
     // (value->IsNumber()).
     // TODO(verwaest): Remove once we can store them inline.
     if (FLAG_track_double_fields &&
-        (value->IsNumber() || value->IsUninitialized())) {
+        (value->IsNumber() || value->IsUninitialized(isolate))) {
       may_store_doubles_ = true;
     }
 
-    is_simple = is_simple && !value->IsUninitialized();
+    is_simple = is_simple && !value->IsUninitialized(isolate);
 
     // Keep track of the number of elements in the object literal and
     // the largest element index.  If the largest element index is
@@ -524,12 +531,12 @@ void ArrayLiteral::BuildConstantElements(Isolate* isolate) {
     // New handle scope here, needs to be after BuildContants().
     HandleScope scope(isolate);
     Handle<Object> boilerplate_value = GetBoilerplateValue(element, isolate);
-    if (boilerplate_value->IsTheHole()) {
+    if (boilerplate_value->IsTheHole(isolate)) {
       is_holey = true;
       continue;
     }
 
-    if (boilerplate_value->IsUninitialized()) {
+    if (boilerplate_value->IsUninitialized(isolate)) {
       boilerplate_value = handle(Smi::FromInt(0), isolate);
       is_simple = false;
     }

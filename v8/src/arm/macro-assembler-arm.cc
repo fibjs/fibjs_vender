@@ -93,17 +93,6 @@ int MacroAssembler::CallStubSize(
 }
 
 
-int MacroAssembler::CallSizeNotPredictableCodeSize(Isolate* isolate,
-                                                   Address target,
-                                                   RelocInfo::Mode rmode,
-                                                   Condition cond) {
-  Instr mov_instr = cond | MOV | LeaveCC;
-  Operand mov_operand = Operand(reinterpret_cast<intptr_t>(target), rmode);
-  return kInstrSize +
-         mov_operand.instructions_required(NULL, mov_instr) * kInstrSize;
-}
-
-
 void MacroAssembler::Call(Address target,
                           RelocInfo::Mode rmode,
                           Condition cond,
@@ -177,6 +166,40 @@ void MacroAssembler::Call(Handle<Code> code,
   Call(reinterpret_cast<Address>(code.location()), rmode, cond, mode);
 }
 
+void MacroAssembler::CallDeoptimizer(Address target) {
+  BlockConstPoolScope block_const_pool(this);
+
+  uintptr_t target_raw = reinterpret_cast<uintptr_t>(target);
+
+  // We use blx, like a call, but it does not return here. The link register is
+  // used by the deoptimizer to work out what called it.
+  if (CpuFeatures::IsSupported(ARMv7)) {
+    CpuFeatureScope scope(this, ARMv7);
+    movw(ip, target_raw & 0xffff);
+    movt(ip, (target_raw >> 16) & 0xffff);
+    blx(ip);
+  } else {
+    // We need to load a literal, but we can't use the usual constant pool
+    // because we call this from a patcher, and cannot afford the guard
+    // instruction and other administrative overhead.
+    ldr(ip, MemOperand(pc, (2 * kInstrSize) - kPcLoadDelta));
+    blx(ip);
+    dd(target_raw);
+  }
+}
+
+int MacroAssembler::CallDeoptimizerSize() {
+  // ARMv7+:
+  //    movw    ip, ...
+  //    movt    ip, ...
+  //    blx     ip              @ This never returns.
+  //
+  // ARMv6:
+  //    ldr     ip, =address
+  //    blx     ip              @ This never returns.
+  //    .word   address
+  return 3 * kInstrSize;
+}
 
 void MacroAssembler::Ret(Condition cond) {
   bx(lr, cond);
@@ -249,13 +272,17 @@ void MacroAssembler::Move(Register dst, Register src, Condition cond) {
   }
 }
 
+void MacroAssembler::Move(SwVfpRegister dst, SwVfpRegister src) {
+  if (!dst.is(src)) {
+    vmov(dst, src);
+  }
+}
 
 void MacroAssembler::Move(DwVfpRegister dst, DwVfpRegister src) {
   if (!dst.is(src)) {
     vmov(dst, src);
   }
 }
-
 
 void MacroAssembler::Mls(Register dst, Register src1, Register src2,
                          Register srcA, Condition cond) {
@@ -1241,9 +1268,8 @@ void MacroAssembler::Prologue(bool code_pre_aging) {
 
 void MacroAssembler::EmitLoadTypeFeedbackVector(Register vector) {
   ldr(vector, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-  ldr(vector, FieldMemOperand(vector, JSFunction::kSharedFunctionInfoOffset));
-  ldr(vector,
-      FieldMemOperand(vector, SharedFunctionInfo::kFeedbackVectorOffset));
+  ldr(vector, FieldMemOperand(vector, JSFunction::kLiteralsOffset));
+  ldr(vector, FieldMemOperand(vector, LiteralsArray::kFeedbackVectorOffset));
 }
 
 
@@ -1557,12 +1583,13 @@ void MacroAssembler::FloodFunctionIfStepping(Register fun, Register new_target,
                                              const ParameterCount& expected,
                                              const ParameterCount& actual) {
   Label skip_flooding;
-  ExternalReference step_in_enabled =
-      ExternalReference::debug_step_in_enabled_address(isolate());
-  mov(r4, Operand(step_in_enabled));
-  ldrb(r4, MemOperand(r4));
-  cmp(r4, Operand(0));
-  b(eq, &skip_flooding);
+  ExternalReference last_step_action =
+      ExternalReference::debug_last_step_action_address(isolate());
+  STATIC_ASSERT(StepFrame > StepIn);
+  mov(r4, Operand(last_step_action));
+  ldrsb(r4, MemOperand(r4));
+  cmp(r4, Operand(StepIn));
+  b(lt, &skip_flooding);
   {
     FrameScope frame(this,
                      has_frame() ? StackFrame::NONE : StackFrame::INTERNAL);
@@ -3822,7 +3849,7 @@ void MacroAssembler::TestJSArrayForAllocationMemento(
     Label* no_memento_found) {
   Label map_check;
   Label top_check;
-  ExternalReference new_space_allocation_top =
+  ExternalReference new_space_allocation_top_adr =
       ExternalReference::new_space_allocation_top_address(isolate());
   const int kMementoMapOffset = JSArray::kSize - kHeapObjectTag;
   const int kMementoEndOffset = kMementoMapOffset + AllocationMemento::kSize;
@@ -3832,7 +3859,9 @@ void MacroAssembler::TestJSArrayForAllocationMemento(
   // If the object is in new space, we need to check whether it is on the same
   // page as the current top.
   add(scratch_reg, receiver_reg, Operand(kMementoEndOffset));
-  eor(scratch_reg, scratch_reg, Operand(new_space_allocation_top));
+  mov(ip, Operand(new_space_allocation_top_adr));
+  ldr(ip, MemOperand(ip));
+  eor(scratch_reg, scratch_reg, Operand(ip));
   tst(scratch_reg, Operand(~Page::kPageAlignmentMask));
   b(eq, &top_check);
   // The object is on a different page than allocation top. Bail out if the
@@ -3848,7 +3877,9 @@ void MacroAssembler::TestJSArrayForAllocationMemento(
   // we are below top.
   bind(&top_check);
   add(scratch_reg, receiver_reg, Operand(kMementoEndOffset));
-  cmp(scratch_reg, Operand(new_space_allocation_top));
+  mov(ip, Operand(new_space_allocation_top_adr));
+  ldr(ip, MemOperand(ip));
+  cmp(scratch_reg, ip);
   b(gt, no_memento_found);
   // Memento map check.
   bind(&map_check);
@@ -3968,6 +3999,10 @@ CodePatcher::~CodePatcher() {
   if (flush_cache_ == FLUSH) {
     Assembler::FlushICache(masm_.isolate(), address_, size_);
   }
+
+  // Check that we don't have any pending constant pools.
+  DCHECK(masm_.pending_32_bit_constants_.empty());
+  DCHECK(masm_.pending_64_bit_constants_.empty());
 
   // Check that the code was patched as expected.
   DCHECK(masm_.pc_ == address_ + size_);

@@ -2241,11 +2241,14 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   TestContext* inlined_test_context() const {
     return function_state()->test_context();
   }
+  Handle<JSFunction> current_closure() const {
+    return current_info()->closure();
+  }
   Handle<SharedFunctionInfo> current_shared_info() const {
     return current_info()->shared_info();
   }
   TypeFeedbackVector* current_feedback_vector() const {
-    return current_shared_info()->feedback_vector();
+    return current_closure()->feedback_vector();
   }
   void ClearInlinedTestContext() {
     function_state()->ClearInlinedTestContext();
@@ -2264,9 +2267,6 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   F(NewObject)                         \
   F(ValueOf)                           \
   F(StringCharFromCode)                \
-  F(StringCharAt)                      \
-  F(OneByteSeqStringSetChar)           \
-  F(TwoByteSeqStringSetChar)           \
   F(ToInteger)                         \
   F(ToName)                            \
   F(ToObject)                          \
@@ -2299,7 +2299,6 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   F(ConstructDouble)                   \
   F(DoubleHi)                          \
   F(DoubleLo)                          \
-  F(MathLogRT)                         \
   /* ES6 Collections */                \
   F(MapClear)                          \
   F(MapInitialize)                     \
@@ -2362,21 +2361,19 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   void Bind(Variable* var, HValue* value) { environment()->Bind(var, value); }
   bool IsEligibleForEnvironmentLivenessAnalysis(Variable* var,
                                                 int index,
-                                                HValue* value,
                                                 HEnvironment* env) {
     if (!FLAG_analyze_environment_liveness) return false;
     // |this| and |arguments| are always live; zapping parameters isn't
     // safe because function.arguments can inspect them at any time.
     return !var->is_this() &&
            !var->is_arguments() &&
-           !value->IsArgumentsObject() &&
            env->is_local_index(index);
   }
   void BindIfLive(Variable* var, HValue* value) {
     HEnvironment* env = environment();
     int index = env->IndexFor(var);
     env->Bind(index, value);
-    if (IsEligibleForEnvironmentLivenessAnalysis(var, index, value, env)) {
+    if (IsEligibleForEnvironmentLivenessAnalysis(var, index, env)) {
       HEnvironmentMarker* bind =
           Add<HEnvironmentMarker>(HEnvironmentMarker::BIND, index);
       USE(bind);
@@ -2388,8 +2385,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
   HValue* LookupAndMakeLive(Variable* var) {
     HEnvironment* env = environment();
     int index = env->IndexFor(var);
-    HValue* value = env->Lookup(index);
-    if (IsEligibleForEnvironmentLivenessAnalysis(var, index, value, env)) {
+    if (IsEligibleForEnvironmentLivenessAnalysis(var, index, env)) {
       HEnvironmentMarker* lookup =
           Add<HEnvironmentMarker>(HEnvironmentMarker::LOOKUP, index);
       USE(lookup);
@@ -2397,7 +2393,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
       lookup->set_closure(env->closure());
 #endif
     }
-    return value;
+    return env->Lookup(index);
   }
 
   // The value of the arguments object is allowed in some but not most value
@@ -2477,8 +2473,10 @@ class HOptimizedGraphBuilder : public HGraphBuilder, public AstVisitor {
                        HValue* implicit_return_value);
   bool TryInlineIndirectCall(Handle<JSFunction> function, Call* expr,
                              int arguments_count);
-  bool TryInlineBuiltinMethodCall(Call* expr, Handle<JSFunction> function,
-                                  Handle<Map> receiver_map,
+  bool TryInlineBuiltinGetterCall(Handle<JSFunction> function,
+                                  Handle<Map> receiver_map, BailoutId ast_id);
+  bool TryInlineBuiltinMethodCall(Handle<JSFunction> function,
+                                  Handle<Map> receiver_map, BailoutId ast_id,
                                   int args_count_no_receiver);
   bool TryInlineBuiltinFunctionCall(Call* expr);
   enum ApiCallType {

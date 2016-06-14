@@ -68,6 +68,7 @@ class PositionsRecorder;
 class Profiler;
 class Ticker;
 struct TickSample;
+class RuntimeCallTimer;
 
 #undef LOG
 #define LOG(isolate, Call)                          \
@@ -128,6 +129,7 @@ struct TickSample;
   V(LAZY_COMPILE_TAG, "LazyCompile")                                     \
   V(CALL_IC_TAG, "CallIC")                                               \
   V(LOAD_IC_TAG, "LoadIC")                                               \
+  V(LOAD_GLOBAL_IC_TAG, "LoadGlobalIC")                                  \
   V(LOAD_POLYMORPHIC_IC_TAG, "LoadPolymorphicIC")                        \
   V(REG_EXP_TAG, "RegExp")                                               \
   V(SCRIPT_TAG, "Script")                                                \
@@ -354,6 +356,7 @@ class Logger {
 
   // Emits a profiler tick event. Used by the profiler thread.
   void TickEvent(TickSample* sample, bool overflow);
+  void RuntimeCallTimerEvent();
 
   PRINTF_FORMAT(2, 3) void ApiEvent(const char* format, ...);
 

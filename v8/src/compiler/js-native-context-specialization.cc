@@ -15,7 +15,6 @@
 #include "src/compiler/node-matchers.h"
 #include "src/field-index-inl.h"
 #include "src/isolate-inl.h"
-#include "src/objects-inl.h"  // TODO(mstarzinger): Temporary cycle breaker!
 #include "src/type-cache.h"
 #include "src/type-feedback-vector.h"
 
@@ -79,9 +78,9 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
          node->opcode() == IrOpcode::kJSLoadProperty ||
          node->opcode() == IrOpcode::kJSStoreProperty);
   Node* receiver = NodeProperties::GetValueInput(node, 0);
-  Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
+  Node* frame_state = NodeProperties::FindFrameStateBefore(node);
 
   // Not much we can do if deoptimization support is disabled.
   if (!(flags() & kDeoptimizationEnabled)) return NoChange();
@@ -245,32 +244,7 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
     } else {
       DCHECK(access_info.IsDataField());
       FieldIndex const field_index = access_info.field_index();
-      FieldCheck const field_check = access_info.field_check();
       Type* const field_type = access_info.field_type();
-      switch (field_check) {
-        case FieldCheck::kNone:
-          break;
-        case FieldCheck::kJSArrayBufferViewBufferNotNeutered: {
-          Node* this_buffer = this_effect =
-              graph()->NewNode(simplified()->LoadField(
-                                   AccessBuilder::ForJSArrayBufferViewBuffer()),
-                               this_receiver, this_effect, this_control);
-          Node* this_buffer_bit_field = this_effect =
-              graph()->NewNode(simplified()->LoadField(
-                                   AccessBuilder::ForJSArrayBufferBitField()),
-                               this_buffer, this_effect, this_control);
-          Node* check = graph()->NewNode(
-              machine()->Word32Equal(),
-              graph()->NewNode(machine()->Word32And(), this_buffer_bit_field,
-                               jsgraph()->Int32Constant(
-                                   1 << JSArrayBuffer::WasNeutered::kShift)),
-              jsgraph()->Int32Constant(0));
-          this_control = this_effect =
-              graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
-                               this_effect, this_control);
-          break;
-        }
-      }
       if (access_mode == AccessMode::kLoad &&
           access_info.holder().ToHandle(&holder)) {
         this_receiver = jsgraph()->Constant(holder);
@@ -524,9 +498,9 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
          node->opcode() == IrOpcode::kJSStoreProperty);
   Node* receiver = NodeProperties::GetValueInput(node, 0);
   Node* context = NodeProperties::GetContextInput(node);
-  Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
+  Node* frame_state = NodeProperties::FindFrameStateBefore(node);
 
   // Not much we can do if deoptimization support is disabled.
   if (!(flags() & kDeoptimizationEnabled)) return NoChange();
@@ -651,8 +625,7 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
           // Instance migration, let the stub deal with the {receiver}.
           TransitionElementsKindStub stub(isolate(),
                                           transition_source->elements_kind(),
-                                          transition_target->elements_kind(),
-                                          transition_source->IsJSArrayMap());
+                                          transition_target->elements_kind());
           CallDescriptor const* const desc = Linkage::GetStubCallDescriptor(
               isolate(), graph()->zone(), stub.GetCallInterfaceDescriptor(), 0,
               CallDescriptor::kNeedsFrameState, node->op()->properties());
@@ -825,9 +798,6 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
         this_value = graph()->NewNode(simplified()->TypeGuard(element_type),
                                       this_value, this_control);
       } else if (elements_kind == FAST_HOLEY_DOUBLE_ELEMENTS) {
-        // Perform the hole check on the result.
-        Node* check =
-            graph()->NewNode(simplified()->NumberIsHoleNaN(), this_value);
         // Check if we are allowed to return the hole directly.
         Type* initial_holey_array_type = Type::Class(
             handle(isolate()->get_initial_js_array_map(elements_kind)),
@@ -839,11 +809,12 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
                                  isolate()->initial_object_prototype());
           dependencies()->AssumePropertyCell(factory()->array_protector());
           // Turn the hole into undefined.
-          this_value = graph()->NewNode(
-              common()->Select(MachineRepresentation::kTagged,
-                               BranchHint::kFalse),
-              check, jsgraph()->UndefinedConstant(), this_value);
+          this_value = graph()->NewNode(simplified()->NumberConvertHoleNaN(),
+                                        this_value);
         } else {
+          // Perform the hole check on the result.
+          Node* check =
+              graph()->NewNode(simplified()->NumberIsHoleNaN(), this_value);
           // Deoptimize in case of the hole.
           this_control = this_effect =
               graph()->NewNode(common()->DeoptimizeIf(), check, frame_state,
@@ -867,6 +838,11 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
                              this_effect, this_control);
         this_value = graph()->NewNode(simplified()->TypeGuard(Type::Number()),
                                       this_value, this_control);
+        // Make sure we do not store signalling NaNs into holey double arrays.
+        if (elements_kind == FAST_HOLEY_DOUBLE_ELEMENTS) {
+          this_value =
+              graph()->NewNode(simplified()->NumberSilenceNaN(), this_value);
+        }
       }
       this_effect = graph()->NewNode(simplified()->StoreElement(element_access),
                                      this_elements, this_index, this_value,
@@ -970,9 +946,9 @@ Reduction JSNativeContextSpecialization::ReduceKeyedAccess(
 
 
 Reduction JSNativeContextSpecialization::ReduceSoftDeoptimize(Node* node) {
-  Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
+  Node* frame_state = NodeProperties::FindFrameStateBefore(node);
   Node* deoptimize =
       graph()->NewNode(common()->Deoptimize(DeoptimizeKind::kSoft), frame_state,
                        effect, control);

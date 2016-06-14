@@ -256,7 +256,14 @@ void VisitBinop(InstructionSelector* selector, Node* node,
     inputs[input_count++] = g.Label(cont->false_block());
   }
 
-  outputs[output_count++] = g.DefineAsRegister(node);
+  if (cont->IsDeoptimize()) {
+    // If we can deoptimize as a result of the binop, we need to make sure that
+    // the deopt inputs are not overwritten by the binop result. One way
+    // to achieve that is to declare the output register as same-as-first.
+    outputs[output_count++] = g.DefineSameAsFirst(node);
+  } else {
+    outputs[output_count++] = g.DefineAsRegister(node);
+  }
   if (cont->IsSet()) {
     outputs[output_count++] = g.DefineAsRegister(cont->result());
   }
@@ -330,7 +337,8 @@ void VisitMod(InstructionSelector* selector, Node* node, ArchOpcode div_opcode,
   } else {
     InstructionOperand mul_operand = g.TempRegister();
     selector->Emit(kArmMul, mul_operand, div_operand, right_operand);
-    selector->Emit(kArmSub, result_operand, left_operand, mul_operand);
+    selector->Emit(kArmSub | AddressingModeField::encode(kMode_Operand2_R),
+                   result_operand, left_operand, mul_operand);
   }
 }
 
@@ -1209,7 +1217,7 @@ void InstructionSelector::VisitRoundFloat64ToInt32(Node* node) {
 
 
 void InstructionSelector::VisitBitcastFloat32ToInt32(Node* node) {
-  VisitRR(this, kArmVmovLowU32F64, node);
+  VisitRR(this, kArmVmovU32F32, node);
 }
 
 
@@ -1370,6 +1378,10 @@ void InstructionSelector::VisitFloat64Max(Node* node) {
   VisitRRR(this, kArmFloat64Max, node);
 }
 
+void InstructionSelector::VisitFloat64SilenceNaN(Node* node) {
+  VisitRR(this, kArmFloat64SilenceNaN, node);
+}
+
 void InstructionSelector::VisitFloat32Min(Node* node) {
   DCHECK(IsSupported(ARMv8));
   VisitRRR(this, kArmFloat32Min, node);
@@ -1388,7 +1400,6 @@ void InstructionSelector::VisitFloat32Abs(Node* node) {
 void InstructionSelector::VisitFloat64Abs(Node* node) {
   VisitRR(this, kArmVabsF64, node);
 }
-
 
 void InstructionSelector::VisitFloat32Sqrt(Node* node) {
   VisitRR(this, kArmVsqrtF32, node);
@@ -1444,6 +1455,28 @@ void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
   VisitRR(this, kArmVrintnF64, node);
 }
 
+void InstructionSelector::VisitFloat32Neg(Node* node) {
+  VisitRR(this, kArmVnegF32, node);
+}
+
+void InstructionSelector::VisitFloat64Neg(Node* node) {
+  VisitRR(this, kArmVnegF64, node);
+}
+
+void InstructionSelector::VisitFloat64Ieee754Binop(Node* node,
+                                                   InstructionCode opcode) {
+  ArmOperandGenerator g(this);
+  Emit(opcode, g.DefineAsFixed(node, d0), g.UseFixed(node->InputAt(0), d0),
+       g.UseFixed(node->InputAt(1), d1))
+      ->MarkAsCall();
+}
+
+void InstructionSelector::VisitFloat64Ieee754Unop(Node* node,
+                                                  InstructionCode opcode) {
+  ArmOperandGenerator g(this);
+  Emit(opcode, g.DefineAsFixed(node, d0), g.UseFixed(node->InputAt(0), d0))
+      ->MarkAsCall();
+}
 
 void InstructionSelector::EmitPrepareArguments(
     ZoneVector<PushParameter>* arguments, const CallDescriptor* descriptor,
@@ -1948,9 +1981,13 @@ void InstructionSelector::VisitAtomicStore(Node* node) {
 // static
 MachineOperatorBuilder::Flags
 InstructionSelector::SupportedMachineOperatorFlags() {
-  MachineOperatorBuilder::Flags flags =
-      MachineOperatorBuilder::kInt32DivIsSafe |
-      MachineOperatorBuilder::kUint32DivIsSafe;
+  MachineOperatorBuilder::Flags flags;
+  if (CpuFeatures::IsSupported(SUDIV)) {
+    // The sdiv and udiv instructions correctly return 0 if the divisor is 0,
+    // but the fall-back implementation does not.
+    flags |= MachineOperatorBuilder::kInt32DivIsSafe |
+             MachineOperatorBuilder::kUint32DivIsSafe;
+  }
   if (CpuFeatures::IsSupported(ARMv7)) {
     flags |= MachineOperatorBuilder::kWord32ReverseBits;
   }
@@ -1967,7 +2004,9 @@ InstructionSelector::SupportedMachineOperatorFlags() {
              MachineOperatorBuilder::kFloat32Min |
              MachineOperatorBuilder::kFloat32Max |
              MachineOperatorBuilder::kFloat64Min |
-             MachineOperatorBuilder::kFloat64Max;
+             MachineOperatorBuilder::kFloat64Max |
+             MachineOperatorBuilder::kFloat32Neg |
+             MachineOperatorBuilder::kFloat64Neg;
   }
   return flags;
 }

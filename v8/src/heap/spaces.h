@@ -11,9 +11,9 @@
 #include "src/base/atomic-utils.h"
 #include "src/base/atomicops.h"
 #include "src/base/bits.h"
+#include "src/base/hashmap.h"
 #include "src/base/platform/mutex.h"
 #include "src/flags.h"
-#include "src/hashmap.h"
 #include "src/list.h"
 #include "src/objects.h"
 #include "src/utils.h"
@@ -27,6 +27,7 @@ class CompactionSpace;
 class CompactionSpaceCollection;
 class FreeList;
 class Isolate;
+class LocalArrayBufferTracker;
 class MemoryAllocator;
 class MemoryChunk;
 class Page;
@@ -450,6 +451,11 @@ class MemoryChunk {
     //   has been aborted and needs special handling by the sweeper.
     COMPACTION_WAS_ABORTED,
 
+    // |COMPACTION_WAS_ABORTED_FOR_TESTING|: During stress testing evacuation
+    // on pages is sometimes aborted. The flag is used to avoid repeatedly
+    // triggering on the same page.
+    COMPACTION_WAS_ABORTED_FOR_TESTING,
+
     // |ANCHOR|: Flag is set if page is an anchor.
     ANCHOR,
 
@@ -523,7 +529,8 @@ class MemoryChunk {
       + kPointerSize      // AtomicValue next_chunk_
       + kPointerSize      // AtomicValue prev_chunk_
       // FreeListCategory categories_[kNumberOfCategories]
-      + FreeListCategory::kSize * kNumberOfCategories;
+      + FreeListCategory::kSize * kNumberOfCategories +
+      kPointerSize;  // LocalArrayBufferTracker* local_tracker_;
 
   // We add some more space to the computed header size to amount for missing
   // alignment requirements in our computation.
@@ -632,6 +639,7 @@ class MemoryChunk {
   inline TypedSlotSet* typed_old_to_old_slots() {
     return typed_old_to_old_slots_;
   }
+  inline LocalArrayBufferTracker* local_tracker() { return local_tracker_; }
 
   void AllocateOldToNewSlots();
   void ReleaseOldToNewSlots();
@@ -641,6 +649,8 @@ class MemoryChunk {
   void ReleaseTypedOldToNewSlots();
   void AllocateTypedOldToOldSlots();
   void ReleaseTypedOldToOldSlots();
+  void AllocateLocalTracker();
+  void ReleaseLocalTracker();
 
   Address area_start() { return area_start_; }
   Address area_end() { return area_end_; }
@@ -650,6 +660,8 @@ class MemoryChunk {
 
   // Approximate amount of physical memory committed for this chunk.
   size_t CommittedPhysicalMemory() { return high_water_mark_.Value(); }
+
+  Address HighWaterMark() { return address() + high_water_mark_.Value(); }
 
   int progress_bar() {
     DCHECK(IsFlagSet(HAS_PROGRESS_BAR));
@@ -713,7 +725,8 @@ class MemoryChunk {
   }
 
   bool ShouldSkipEvacuationSlotRecording() {
-    return (flags_ & kSkipEvacuationSlotsRecordingMask) != 0;
+    return ((flags_ & kSkipEvacuationSlotsRecordingMask) != 0) &&
+           !IsFlagSet(COMPACTION_WAS_ABORTED);
   }
 
   Executability executable() {
@@ -823,6 +836,8 @@ class MemoryChunk {
   base::AtomicValue<MemoryChunk*> prev_chunk_;
 
   FreeListCategory categories_[kNumberOfCategories];
+
+  LocalArrayBufferTracker* local_tracker_;
 
  private:
   void InitializeReservedMemory() { reservation_.Reset(); }
@@ -1453,16 +1468,6 @@ class MemoryAllocator {
   // filling it up with a recognizable non-NULL bit pattern.
   void ZapBlock(Address start, size_t size);
 
-  void PerformAllocationCallback(ObjectSpace space, AllocationAction action,
-                                 size_t size);
-
-  void AddMemoryAllocationCallback(MemoryAllocationCallback callback,
-                                   ObjectSpace space, AllocationAction action);
-
-  void RemoveMemoryAllocationCallback(MemoryAllocationCallback callback);
-
-  bool MemoryAllocationCallbackRegistered(MemoryAllocationCallback callback);
-
   static int CodePageGuardStartOffset();
 
   static int CodePageGuardSize();
@@ -1522,19 +1527,6 @@ class MemoryAllocator {
   // and exclusive on the high end.
   base::AtomicValue<void*> lowest_ever_allocated_;
   base::AtomicValue<void*> highest_ever_allocated_;
-
-  struct MemoryAllocationCallbackRegistration {
-    MemoryAllocationCallbackRegistration(MemoryAllocationCallback callback,
-                                         ObjectSpace space,
-                                         AllocationAction action)
-        : callback(callback), space(space), action(action) {}
-    MemoryAllocationCallback callback;
-    ObjectSpace space;
-    AllocationAction action;
-  };
-
-  // A List of callback that are triggered when memory is allocated or free'd
-  List<MemoryAllocationCallbackRegistration> memory_allocation_callbacks_;
 
   // Initializes pages in a chunk. Returns the first page address.
   // This function and GetChunkId() are provided for the mark-compact
@@ -3092,7 +3084,7 @@ class LargeObjectSpace : public Space {
   int page_count_;         // number of chunks
   intptr_t objects_size_;  // size of objects
   // Map MemoryChunk::kAlignment-aligned chunks to large pages covering them
-  HashMap chunk_map_;
+  base::HashMap chunk_map_;
 
   friend class LargeObjectIterator;
 };

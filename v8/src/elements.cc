@@ -189,7 +189,7 @@ static void CopyDictionaryToObjectElements(
     int entry = from->FindEntry(i + from_start);
     if (entry != SeededNumberDictionary::kNotFound) {
       Object* value = from->ValueAt(entry);
-      DCHECK(!value->IsTheHole());
+      DCHECK(!value->IsTheHole(from->GetIsolate()));
       to->set(i + to_start, value, write_barrier_mode);
     } else {
       to->set_the_hole(i + to_start);
@@ -352,7 +352,7 @@ static void CopyPackedSmiToDoubleElements(FixedArrayBase* from_base,
   for (uint32_t from_end = from_start + static_cast<uint32_t>(packed_size);
        from_start < from_end; from_start++, to_start++) {
     Object* smi = from->get(from_start);
-    DCHECK(!smi->IsTheHole());
+    DCHECK(!smi->IsTheHole(from->GetIsolate()));
     to->set(to_start, Smi::cast(smi)->value());
   }
 }
@@ -450,11 +450,13 @@ static void SortIndices(
     WriteBarrierMode write_barrier_mode = UPDATE_WRITE_BARRIER) {
   struct {
     bool operator()(Object* a, Object* b) {
-      if (!a->IsUndefined()) {
-        if (b->IsUndefined()) return true;
+      if (a->IsSmi() || !a->IsUndefined(HeapObject::cast(a)->GetIsolate())) {
+        if (!b->IsSmi() && b->IsUndefined(HeapObject::cast(b)->GetIsolate())) {
+          return true;
+        }
         return a->Number() < b->Number();
       }
-      return b->IsUndefined();
+      return !b->IsSmi() && b->IsUndefined(HeapObject::cast(b)->GetIsolate());
     }
   } cmp;
   Object** start =
@@ -886,7 +888,8 @@ class ElementsAccessorBase : public ElementsAccessor {
       Handle<FixedArray> values_or_entries, bool get_entries, int* nof_items,
       PropertyFilter filter) {
     int count = 0;
-    KeyAccumulator accumulator(isolate, OWN_ONLY, ALL_PROPERTIES);
+    KeyAccumulator accumulator(isolate, KeyCollectionMode::kOwnOnly,
+                               ALL_PROPERTIES);
     Subclass::CollectElementIndicesImpl(
         object, handle(object->elements(), isolate), &accumulator);
     Handle<FixedArray> keys = accumulator.GetKeys();
@@ -950,7 +953,7 @@ class ElementsAccessorBase : public ElementsAccessor {
     uint32_t length = Subclass::GetMaxIndex(*object, *backing_store);
     for (uint32_t i = 0; i < length; i++) {
       if (Subclass::HasElementImpl(object, i, backing_store, filter)) {
-        if (convert == CONVERT_TO_STRING) {
+        if (convert == GetKeysConversion::kConvertToString) {
           Handle<String> index_string = isolate->factory()->Uint32ToString(i);
           list->set(insertion_index, *index_string);
         } else {
@@ -996,7 +999,7 @@ class ElementsAccessorBase : public ElementsAccessor {
       uint32_t array_length = 0;
       // Indices from dictionary elements should only be converted after
       // sorting.
-      if (convert == CONVERT_TO_STRING) {
+      if (convert == GetKeysConversion::kConvertToString) {
         for (uint32_t i = 0; i < nof_indices; i++) {
           Handle<Object> index_string = isolate->factory()->Uint32ToString(
                   combined_keys->get(i)->Number());
@@ -1173,7 +1176,7 @@ class DictionaryElementsAccessor
     uint32_t index = GetIndexForEntryImpl(*dict, entry);
     Handle<Object> result = SeededNumberDictionary::DeleteProperty(dict, entry);
     USE(result);
-    DCHECK(result->IsTrue());
+    DCHECK(result->IsTrue(dict->GetIsolate()));
     Handle<FixedArray> new_elements =
         SeededNumberDictionary::Shrink(dict, index);
     obj->set_elements(*new_elements);
@@ -1185,12 +1188,10 @@ class DictionaryElementsAccessor
     SeededNumberDictionary* dict = SeededNumberDictionary::cast(backing_store);
     if (!dict->requires_slow_elements()) return false;
     int capacity = dict->Capacity();
-    Heap* heap = holder->GetHeap();
-    Object* undefined = heap->undefined_value();
-    Object* the_hole = heap->the_hole_value();
+    Isolate* isolate = dict->GetIsolate();
     for (int i = 0; i < capacity; i++) {
       Object* key = dict->KeyAt(i);
-      if (key == the_hole || key == undefined) continue;
+      if (!dict->IsKey(isolate, key)) continue;
       DCHECK(!dict->IsDeleted(i));
       PropertyDetails details = dict->DetailsAt(i);
       if (details.type() == ACCESSOR_CONSTANT) return true;
@@ -1255,7 +1256,7 @@ class DictionaryElementsAccessor
     DisallowHeapAllocation no_gc;
     SeededNumberDictionary* dict = SeededNumberDictionary::cast(store);
     Object* index = dict->KeyAt(entry);
-    return !index->IsTheHole();
+    return !index->IsTheHole(dict->GetIsolate());
   }
 
   static uint32_t GetIndexForEntryImpl(FixedArrayBase* store, uint32_t entry) {
@@ -1300,23 +1301,12 @@ class DictionaryElementsAccessor
     return static_cast<uint32_t>(raw_key->Number());
   }
 
-  static uint32_t GetKeyForEntryImpl(Handle<SeededNumberDictionary> dictionary,
+  static uint32_t GetKeyForEntryImpl(Isolate* isolate,
+                                     Handle<SeededNumberDictionary> dictionary,
                                      int entry, PropertyFilter filter) {
     DisallowHeapAllocation no_gc;
     Object* raw_key = dictionary->KeyAt(entry);
-    if (!dictionary->IsKey(raw_key)) return kMaxUInt32;
-    return FilterKey(dictionary, entry, raw_key, filter);
-  }
-
-  static uint32_t GetKeyForEntryImpl(Handle<SeededNumberDictionary> dictionary,
-                                     int entry, PropertyFilter filter,
-                                     Object* undefined, Object* the_hole) {
-    DisallowHeapAllocation no_gc;
-    Object* raw_key = dictionary->KeyAt(entry);
-    // Replace the IsKey check with a direct comparison which is much faster.
-    if (raw_key == undefined || raw_key == the_hole) {
-      return kMaxUInt32;
-    }
+    if (!dictionary->IsKey(isolate, raw_key)) return kMaxUInt32;
     return FilterKey(dictionary, entry, raw_key, filter);
   }
 
@@ -1324,21 +1314,18 @@ class DictionaryElementsAccessor
                                         Handle<FixedArrayBase> backing_store,
                                         KeyAccumulator* keys) {
     if (keys->filter() & SKIP_STRINGS) return;
-    Factory* factory = keys->isolate()->factory();
-    Handle<Object> undefined = factory->undefined_value();
-    Handle<Object> the_hole = factory->the_hole_value();
+    Isolate* isolate = keys->isolate();
     Handle<SeededNumberDictionary> dictionary =
         Handle<SeededNumberDictionary>::cast(backing_store);
     int capacity = dictionary->Capacity();
-    Handle<FixedArray> elements =
-        factory->NewFixedArray(GetMaxNumberOfEntries(*object, *backing_store));
+    Handle<FixedArray> elements = isolate->factory()->NewFixedArray(
+        GetMaxNumberOfEntries(*object, *backing_store));
     int insertion_index = 0;
     PropertyFilter filter = keys->filter();
     for (int i = 0; i < capacity; i++) {
-      uint32_t key =
-          GetKeyForEntryImpl(dictionary, i, filter, *undefined, *the_hole);
+      uint32_t key = GetKeyForEntryImpl(isolate, dictionary, i, filter);
       if (key == kMaxUInt32) continue;
-      Handle<Object> key_handle = factory->NewNumberFromUint(key);
+      Handle<Object> key_handle = isolate->factory()->NewNumberFromUint(key);
       elements->set(insertion_index, *key_handle);
       insertion_index++;
     }
@@ -1356,14 +1343,11 @@ class DictionaryElementsAccessor
     if (filter & SKIP_STRINGS) return list;
     if (filter & ONLY_ALL_CAN_READ) return list;
 
-    Handle<Object> undefined = isolate->factory()->undefined_value();
-    Handle<Object> the_hole = isolate->factory()->the_hole_value();
     Handle<SeededNumberDictionary> dictionary =
         Handle<SeededNumberDictionary>::cast(backing_store);
     uint32_t capacity = dictionary->Capacity();
     for (uint32_t i = 0; i < capacity; i++) {
-      uint32_t key =
-          GetKeyForEntryImpl(dictionary, i, filter, *undefined, *the_hole);
+      uint32_t key = GetKeyForEntryImpl(isolate, dictionary, i, filter);
       if (key == kMaxUInt32) continue;
       Handle<Object> index = isolate->factory()->NewNumberFromUint(key);
       list->set(insertion_index, *index);
@@ -1388,7 +1372,7 @@ class DictionaryElementsAccessor
       if (k == *the_hole) continue;
       if (dictionary->IsDeleted(i)) continue;
       Object* value = dictionary->ValueAt(i);
-      DCHECK(!value->IsTheHole());
+      DCHECK(!value->IsTheHole(isolate));
       DCHECK(!value->IsAccessorPair());
       DCHECK(!value->IsAccessorInfo());
       accumulator->AddKey(value, convert);
@@ -1819,7 +1803,7 @@ class FastElementsAccessor : public ElementsAccessorBase<Subclass, KindTraits> {
     }
     Subclass::SetLengthImpl(isolate, receiver, new_length, backing_store);
 
-    if (IsHoleyElementsKind(kind) && result->IsTheHole()) {
+    if (IsHoleyElementsKind(kind) && result->IsTheHole(isolate)) {
       return isolate->factory()->undefined_value();
     }
     return result;
@@ -1871,7 +1855,7 @@ class FastElementsAccessor : public ElementsAccessorBase<Subclass, KindTraits> {
     WriteBarrierMode mode = raw_backing_store->GetWriteBarrierMode(no_gc);
     for (uint32_t i = 0; i < copy_size; i++) {
       Object* argument = (*args)[src_index + i];
-      DCHECK(!argument->IsTheHole());
+      DCHECK(!argument->IsTheHole(raw_backing_store->GetIsolate()));
       Subclass::SetImpl(raw_backing_store, dst_index + i, argument, mode);
     }
   }
@@ -2248,7 +2232,7 @@ class SloppyArgumentsElementsAccessor
       Object* probe = parameter_map->get(entry + 2);
       Context* context = Context::cast(parameter_map->get(0));
       int context_entry = Smi::cast(probe)->value();
-      DCHECK(!context->get(context_entry)->IsTheHole());
+      DCHECK(!context->get(context_entry)->IsTheHole(isolate));
       return handle(context->get(context_entry), isolate);
     } else {
       // Object is not mapped, defer to the arguments.
@@ -2260,7 +2244,7 @@ class SloppyArgumentsElementsAccessor
         AliasedArgumentsEntry* alias = AliasedArgumentsEntry::cast(*result);
         Context* context = Context::cast(parameter_map->get(0));
         int context_entry = alias->aliased_context_slot();
-        DCHECK(!context->get(context_entry)->IsTheHole());
+        DCHECK(!context->get(context_entry)->IsTheHole(isolate));
         return handle(context->get(context_entry), isolate);
       }
       return result;
@@ -2285,7 +2269,7 @@ class SloppyArgumentsElementsAccessor
       Object* probe = parameter_map->get(entry + 2);
       Context* context = Context::cast(parameter_map->get(0));
       int context_entry = Smi::cast(probe)->value();
-      DCHECK(!context->get(context_entry)->IsTheHole());
+      DCHECK(!context->get(context_entry)->IsTheHole(store->GetIsolate()));
       context->set(context_entry, value);
     } else {
       FixedArray* arguments = FixedArray::cast(parameter_map->get(1));
@@ -2294,7 +2278,7 @@ class SloppyArgumentsElementsAccessor
         AliasedArgumentsEntry* alias = AliasedArgumentsEntry::cast(current);
         Context* context = Context::cast(parameter_map->get(0));
         int context_entry = alias->aliased_context_slot();
-        DCHECK(!context->get(context_entry)->IsTheHole());
+        DCHECK(!context->get(context_entry)->IsTheHole(store->GetIsolate()));
         context->set(context_entry, value);
       } else {
         ArgumentsAccessor::SetImpl(arguments, entry - length, value);
@@ -2333,7 +2317,8 @@ class SloppyArgumentsElementsAccessor
     FixedArray* parameter_map = FixedArray::cast(parameters);
     uint32_t length = parameter_map->length() - 2;
     if (entry < length) {
-      return !GetParameterMapArg(parameter_map, entry)->IsTheHole();
+      return !GetParameterMapArg(parameter_map, entry)
+                  ->IsTheHole(parameter_map->GetIsolate());
     }
 
     FixedArrayBase* arguments = FixedArrayBase::cast(parameter_map->get(1));
@@ -2362,7 +2347,7 @@ class SloppyArgumentsElementsAccessor
                                        uint32_t index, PropertyFilter filter) {
     FixedArray* parameter_map = FixedArray::cast(parameters);
     Object* probe = GetParameterMapArg(parameter_map, index);
-    if (!probe->IsTheHole()) return index;
+    if (!probe->IsTheHole(holder->GetIsolate())) return index;
 
     FixedArray* arguments = FixedArray::cast(parameter_map->get(1));
     uint32_t entry = ArgumentsAccessor::GetEntryForIndexImpl(holder, arguments,
@@ -2409,8 +2394,8 @@ class SloppyArgumentsElementsAccessor
     Handle<FixedArray> indices = isolate->factory()->NewFixedArray(
         GetCapacityImpl(*object, *backing_store));
     DirectCollectElementIndicesImpl(isolate, object, backing_store,
-                                    KEEP_NUMBERS, ENUMERABLE_STRINGS, indices,
-                                    &nof_indices);
+                                    GetKeysConversion::kKeepNumbers,
+                                    ENUMERABLE_STRINGS, indices, &nof_indices);
     SortIndices(indices, nof_indices);
     for (uint32_t i = 0; i < nof_indices; i++) {
       keys->AddKey(indices->get(i));
@@ -2426,8 +2411,8 @@ class SloppyArgumentsElementsAccessor
     uint32_t length = parameter_map->length() - 2;
 
     for (uint32_t i = 0; i < length; ++i) {
-      if (parameter_map->get(i + 2)->IsTheHole()) continue;
-      if (convert == CONVERT_TO_STRING) {
+      if (parameter_map->get(i + 2)->IsTheHole(isolate)) continue;
+      if (convert == GetKeysConversion::kConvertToString) {
         Handle<String> index_string = isolate->factory()->Uint32ToString(i);
         list->set(insertion_index, *index_string);
       } else {
@@ -2462,7 +2447,7 @@ class SlowSloppyArgumentsElementsAccessor
     uint32_t index = GetIndexForEntryImpl(*dict, entry);
     Handle<Object> result = SeededNumberDictionary::DeleteProperty(dict, entry);
     USE(result);
-    DCHECK(result->IsTrue());
+    DCHECK(result->IsTrue(dict->GetIsolate()));
     Handle<FixedArray> new_elements =
         SeededNumberDictionary::Shrink(dict, index);
     parameter_map->set(1, *new_elements);
@@ -2495,25 +2480,25 @@ class SlowSloppyArgumentsElementsAccessor
                               PropertyAttributes attributes) {
     Handle<FixedArray> parameter_map = Handle<FixedArray>::cast(store);
     uint32_t length = parameter_map->length() - 2;
+    Isolate* isolate = store->GetIsolate();
     if (entry < length) {
       Object* probe = parameter_map->get(entry + 2);
-      DCHECK(!probe->IsTheHole());
+      DCHECK(!probe->IsTheHole(isolate));
       Context* context = Context::cast(parameter_map->get(0));
       int context_entry = Smi::cast(probe)->value();
-      DCHECK(!context->get(context_entry)->IsTheHole());
+      DCHECK(!context->get(context_entry)->IsTheHole(isolate));
       context->set(context_entry, *value);
 
       // Redefining attributes of an aliased element destroys fast aliasing.
       parameter_map->set_the_hole(entry + 2);
       // For elements that are still writable we re-establish slow aliasing.
       if ((attributes & READ_ONLY) == 0) {
-        Isolate* isolate = store->GetIsolate();
         value = isolate->factory()->NewAliasedArgumentsEntry(context_entry);
       }
 
       PropertyDetails details(attributes, DATA, 0, PropertyCellType::kNoCell);
       Handle<SeededNumberDictionary> arguments(
-          SeededNumberDictionary::cast(parameter_map->get(1)));
+          SeededNumberDictionary::cast(parameter_map->get(1)), isolate);
       arguments = SeededNumberDictionary::AddNumberEntry(
           arguments, entry, value, details, object->map()->is_prototype_map());
       // If the attributes were NONE, we would have called set rather than
@@ -2523,7 +2508,7 @@ class SlowSloppyArgumentsElementsAccessor
       parameter_map->set(1, *arguments);
     } else {
       Handle<FixedArrayBase> arguments(
-          FixedArrayBase::cast(parameter_map->get(1)));
+          FixedArrayBase::cast(parameter_map->get(1)), isolate);
       DictionaryElementsAccessor::ReconfigureImpl(
           object, arguments, entry - length, value, attributes);
     }

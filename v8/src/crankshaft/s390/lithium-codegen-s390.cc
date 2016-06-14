@@ -16,7 +16,6 @@
 #include "src/crankshaft/s390/lithium-gap-resolver-s390.h"
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
-#include "src/profiler/cpu-profiler.h"
 
 namespace v8 {
 namespace internal {
@@ -760,7 +759,7 @@ void LCodeGen::DeoptimizeIf(Condition cond, LInstruction* instr,
                                             !frame_is_built_);
     // We often have several deopts to the same entry, reuse the last
     // jump entry if this is the case.
-    if (FLAG_trace_deopt || isolate()->cpu_profiler()->is_profiling() ||
+    if (FLAG_trace_deopt || isolate()->is_profiling() ||
         jump_table_.is_empty() ||
         !table_entry.IsEquivalentTo(jump_table_.last())) {
       jump_table_.Add(table_entry, zone());
@@ -2572,10 +2571,10 @@ void LCodeGen::DoHasInPrototypeChainAndBranch(
   DeoptimizeIf(eq, instr, Deoptimizer::kProxy);
   __ LoadP(object_prototype,
            FieldMemOperand(object_map, Map::kPrototypeOffset));
-  __ CmpP(object_prototype, prototype);
-  EmitTrueBranch(instr, eq);
   __ CompareRoot(object_prototype, Heap::kNullValueRootIndex);
   EmitFalseBranch(instr, eq);
+  __ CmpP(object_prototype, prototype);
+  EmitTrueBranch(instr, eq);
   __ LoadP(object_map,
            FieldMemOperand(object_prototype, HeapObject::kMapOffset));
   __ b(&loop);
@@ -2680,9 +2679,9 @@ void LCodeGen::DoLoadGlobalGeneric(LLoadGlobalGeneric* instr) {
 
   __ mov(LoadDescriptor::NameRegister(), Operand(instr->name()));
   EmitVectorLoadICRegisters<LLoadGlobalGeneric>(instr);
-  Handle<Code> ic = CodeFactory::LoadICInOptimizedCode(
-                        isolate(), instr->typeof_mode(), PREMONOMORPHIC)
-                        .code();
+  Handle<Code> ic =
+      CodeFactory::LoadGlobalICInOptimizedCode(isolate(), instr->typeof_mode())
+          .code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -2783,10 +2782,7 @@ void LCodeGen::DoLoadNamedGeneric(LLoadNamedGeneric* instr) {
   // Name is always in r4.
   __ mov(LoadDescriptor::NameRegister(), Operand(instr->name()));
   EmitVectorLoadICRegisters<LLoadNamedGeneric>(instr);
-  Handle<Code> ic = CodeFactory::LoadICInOptimizedCode(
-                        isolate(), NOT_INSIDE_TYPEOF,
-                        instr->hydrogen()->initialization_state())
-                        .code();
+  Handle<Code> ic = CodeFactory::LoadICInOptimizedCode(isolate()).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -2876,6 +2872,7 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
   }
   int element_size_shift = ElementsKindToShiftSize(elements_kind);
   bool key_is_smi = instr->hydrogen()->key()->representation().IsSmi();
+  bool keyMaybeNegative = instr->hydrogen()->IsDehoisted();
   int base_offset = instr->base_offset();
   bool use_scratch = false;
 
@@ -2889,7 +2886,8 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
         use_scratch = true;
       }
     } else {
-      __ IndexToArrayOffset(scratch0(), key, element_size_shift, key_is_smi);
+      __ IndexToArrayOffset(scratch0(), key, element_size_shift, key_is_smi,
+                            keyMaybeNegative);
       use_scratch = true;
     }
     if (elements_kind == FLOAT32_ELEMENTS) {
@@ -2909,7 +2907,8 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
     Register result = ToRegister(instr->result());
     MemOperand mem_operand =
         PrepareKeyedOperand(key, external_pointer, key_is_constant, key_is_smi,
-                            constant_key, element_size_shift, base_offset);
+                            constant_key, element_size_shift, base_offset,
+                            keyMaybeNegative);
     switch (elements_kind) {
       case INT8_ELEMENTS:
         __ LoadB(result, mem_operand);
@@ -2963,6 +2962,7 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
 
   int element_size_shift = ElementsKindToShiftSize(FAST_DOUBLE_ELEMENTS);
   bool key_is_smi = instr->hydrogen()->key()->representation().IsSmi();
+  bool keyMaybeNegative = instr->hydrogen()->IsDehoisted();
   int constant_key = 0;
   if (key_is_constant) {
     constant_key = ToInteger32(LConstantOperand::cast(instr->key()));
@@ -2977,7 +2977,8 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
   intptr_t base_offset = instr->base_offset() + constant_key * kDoubleSize;
   if (!key_is_constant) {
     use_scratch = true;
-    __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
+    __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi,
+                          keyMaybeNegative);
   }
 
   // Memory references support up to 20-bits signed displacement in RXY form
@@ -3099,7 +3100,8 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key, Register base,
                                          bool key_is_constant, bool key_is_smi,
                                          int constant_key,
                                          int element_size_shift,
-                                         int base_offset) {
+                                         int base_offset,
+                                         bool keyMaybeNegative) {
   Register scratch = scratch0();
 
   if (key_is_constant) {
@@ -3117,7 +3119,8 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key, Register base,
       (element_size_shift != (key_is_smi ? kSmiTagSize + kSmiShiftSize : 0));
 
   if (needs_shift) {
-    __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
+    __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi,
+                          keyMaybeNegative);
   } else {
     scratch = key;
   }
@@ -3133,14 +3136,9 @@ void LCodeGen::DoLoadKeyedGeneric(LLoadKeyedGeneric* instr) {
   DCHECK(ToRegister(instr->context()).is(cp));
   DCHECK(ToRegister(instr->object()).is(LoadDescriptor::ReceiverRegister()));
   DCHECK(ToRegister(instr->key()).is(LoadDescriptor::NameRegister()));
+  EmitVectorLoadICRegisters<LLoadKeyedGeneric>(instr);
 
-  if (instr->hydrogen()->HasVectorAndSlot()) {
-    EmitVectorLoadICRegisters<LLoadKeyedGeneric>(instr);
-  }
-
-  Handle<Code> ic = CodeFactory::KeyedLoadICInOptimizedCode(
-                        isolate(), instr->hydrogen()->initialization_state())
-                        .code();
+  Handle<Code> ic = CodeFactory::KeyedLoadICInOptimizedCode(isolate()).code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -3690,8 +3688,7 @@ void LCodeGen::DoMathExp(LMathExp* instr) {
 void LCodeGen::DoMathLog(LMathLog* instr) {
   __ PrepareCallCFunction(0, 1, scratch0());
   __ MovToFloatParameter(ToDoubleRegister(instr->value()));
-  __ CallCFunction(ExternalReference::math_log_double_function(isolate()), 0,
-                   1);
+  __ CallCFunction(ExternalReference::ieee754_log_function(isolate()), 0, 1);
   __ MovFromFloatResult(ToDoubleRegister(instr->result()));
 }
 
@@ -3824,14 +3821,8 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
   DCHECK(ToRegister(instr->result()).is(r2));
 
   __ mov(r2, Operand(instr->arity()));
-  if (instr->arity() == 1) {
-    // We only need the allocation site for the case we have a length argument.
-    // The case may bail out to the runtime, which will determine the correct
-    // elements kind with the site.
-    __ Move(r4, instr->hydrogen()->site());
-  } else {
-    __ LoadRoot(r4, Heap::kUndefinedValueRootIndex);
-  }
+  __ Move(r4, instr->hydrogen()->site());
+
   ElementsKind kind = instr->hydrogen()->elements_kind();
   AllocationSiteOverrideMode override_mode =
       (AllocationSite::GetMode(kind) == TRACK_ALLOCATION_SITE)
@@ -3863,7 +3854,7 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
     CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
     __ bind(&done);
   } else {
-    ArrayNArgumentsConstructorStub stub(isolate(), kind, override_mode);
+    ArrayNArgumentsConstructorStub stub(isolate());
     CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
   }
 }
@@ -3994,15 +3985,12 @@ void LCodeGen::DoStoreNamedGeneric(LStoreNamedGeneric* instr) {
   DCHECK(ToRegister(instr->object()).is(StoreDescriptor::ReceiverRegister()));
   DCHECK(ToRegister(instr->value()).is(StoreDescriptor::ValueRegister()));
 
-  if (instr->hydrogen()->HasVectorAndSlot()) {
-    EmitVectorStoreICRegisters<LStoreNamedGeneric>(instr);
-  }
+  EmitVectorStoreICRegisters<LStoreNamedGeneric>(instr);
 
   __ mov(StoreDescriptor::NameRegister(), Operand(instr->name()));
-  Handle<Code> ic = CodeFactory::StoreICInOptimizedCode(
-                        isolate(), instr->language_mode(),
-                        instr->hydrogen()->initialization_state())
-                        .code();
+  Handle<Code> ic =
+      CodeFactory::StoreICInOptimizedCode(isolate(), instr->language_mode())
+          .code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
@@ -4064,6 +4052,7 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
   }
   int element_size_shift = ElementsKindToShiftSize(elements_kind);
   bool key_is_smi = instr->hydrogen()->key()->representation().IsSmi();
+  bool keyMaybeNegative = instr->hydrogen()->IsDehoisted();
   int base_offset = instr->base_offset();
 
   if (elements_kind == FLOAT32_ELEMENTS || elements_kind == FLOAT64_ELEMENTS) {
@@ -4083,7 +4072,8 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
         address = external_pointer;
       }
     } else {
-      __ IndexToArrayOffset(address, key, element_size_shift, key_is_smi);
+      __ IndexToArrayOffset(address, key, element_size_shift, key_is_smi,
+                            keyMaybeNegative);
       __ AddP(address, external_pointer);
     }
     if (elements_kind == FLOAT32_ELEMENTS) {
@@ -4096,7 +4086,8 @@ void LCodeGen::DoStoreKeyedExternalArray(LStoreKeyed* instr) {
     Register value(ToRegister(instr->value()));
     MemOperand mem_operand =
         PrepareKeyedOperand(key, external_pointer, key_is_constant, key_is_smi,
-                            constant_key, element_size_shift, base_offset);
+                            constant_key, element_size_shift, base_offset,
+                            keyMaybeNegative);
     switch (elements_kind) {
       case UINT8_ELEMENTS:
       case UINT8_CLAMPED_ELEMENTS:
@@ -4164,6 +4155,7 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
   }
   int element_size_shift = ElementsKindToShiftSize(FAST_DOUBLE_ELEMENTS);
   bool key_is_smi = instr->hydrogen()->key()->representation().IsSmi();
+  bool keyMaybeNegative = instr->hydrogen()->IsDehoisted();
   int base_offset = instr->base_offset() + constant_key * kDoubleSize;
   bool use_scratch = false;
   intptr_t address_offset = base_offset;
@@ -4177,7 +4169,8 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
     }
   } else {
     use_scratch = true;
-    __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi);
+    __ IndexToArrayOffset(scratch, key, element_size_shift, key_is_smi,
+                          keyMaybeNegative);
     // Memory references support up to 20-bits signed displacement in RXY form
     if (!is_int20((address_offset))) {
       __ AddP(scratch, Operand(address_offset));
@@ -4295,13 +4288,10 @@ void LCodeGen::DoStoreKeyedGeneric(LStoreKeyedGeneric* instr) {
   DCHECK(ToRegister(instr->key()).is(StoreDescriptor::NameRegister()));
   DCHECK(ToRegister(instr->value()).is(StoreDescriptor::ValueRegister()));
 
-  if (instr->hydrogen()->HasVectorAndSlot()) {
-    EmitVectorStoreICRegisters<LStoreKeyedGeneric>(instr);
-  }
+  EmitVectorStoreICRegisters<LStoreKeyedGeneric>(instr);
 
   Handle<Code> ic = CodeFactory::KeyedStoreICInOptimizedCode(
-                        isolate(), instr->language_mode(),
-                        instr->hydrogen()->initialization_state())
+                        isolate(), instr->language_mode())
                         .code();
   CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
@@ -4431,8 +4421,7 @@ void LCodeGen::DoTransitionElementsKind(LTransitionElementsKind* instr) {
     DCHECK(object_reg.is(r2));
     PushSafepointRegistersScope scope(this);
     __ Move(r3, to_map);
-    bool is_js_array = from_map->instance_type() == JS_ARRAY_TYPE;
-    TransitionElementsKindStub stub(isolate(), from_kind, to_kind, is_js_array);
+    TransitionElementsKindStub stub(isolate(), from_kind, to_kind);
     __ CallStub(&stub);
     RecordSafepointWithRegisters(instr->pointer_map(), 0,
                                  Safepoint::kLazyDeopt);

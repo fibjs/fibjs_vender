@@ -1613,21 +1613,21 @@ class V8_EXPORT StackFrame {
 // A StateTag represents a possible state of the VM.
 enum StateTag { JS, GC, COMPILER, OTHER, EXTERNAL, IDLE };
 
-
 // A RegisterState represents the current state of registers used
 // by the sampling profiler API.
 struct RegisterState {
-  RegisterState() : pc(NULL), sp(NULL), fp(NULL) {}
+  RegisterState() : pc(nullptr), sp(nullptr), fp(nullptr) {}
   void* pc;  // Instruction pointer.
   void* sp;  // Stack pointer.
   void* fp;  // Frame pointer.
 };
 
-
 // The output structure filled up by GetStackSample API function.
 struct SampleInfo {
-  size_t frames_count;
-  StateTag vm_state;
+  size_t frames_count;            // Number of frames collected.
+  StateTag vm_state;              // Current VM state.
+  void* external_callback_entry;  // External callback address if VM is
+                                  // executing an external callback.
 };
 
 /**
@@ -2632,6 +2632,21 @@ enum PropertyFilter {
 };
 
 /**
+ * Keys/Properties filter enums:
+ *
+ * KeyCollectionMode limits the range of collected properties. kOwnOnly limits
+ * the collected properties to the given Object only. kIncludesPrototypes will
+ * include all keys of the objects's prototype chain as well.
+ */
+enum class KeyCollectionMode { kOwnOnly, kIncludePrototypes };
+
+/**
+ * kIncludesIndices allows for integer indices to be collected, while
+ * kSkipIndices will exclude integer indicies from being collected.
+ */
+enum class IndexFilter { kIncludeIndices, kSkipIndices };
+
+/**
  * Integrity level for objects.
  */
 enum class IntegrityLevel { kFrozen, kSealed };
@@ -2780,6 +2795,9 @@ class V8_EXPORT Object : public Value {
   V8_DEPRECATE_SOON("Use maybe version", Local<Array> GetPropertyNames());
   V8_WARN_UNUSED_RESULT MaybeLocal<Array> GetPropertyNames(
       Local<Context> context);
+  V8_WARN_UNUSED_RESULT MaybeLocal<Array> GetPropertyNames(
+      Local<Context> context, KeyCollectionMode mode,
+      PropertyFilter property_filter, IndexFilter index_filter);
 
   /**
    * This function has the same functionality as GetPropertyNames but
@@ -4365,28 +4383,6 @@ enum AccessType {
 typedef bool (*AccessCheckCallback)(Local<Context> accessing_context,
                                     Local<Object> accessed_object,
                                     Local<Value> data);
-typedef bool (*DeprecatedAccessCheckCallback)(Local<Context> accessing_context,
-                                              Local<Object> accessed_object);
-
-/**
- * Returns true if cross-context access should be allowed to the named
- * property with the given key on the host object.
- */
-typedef bool (*NamedSecurityCallback)(Local<Object> host,
-                                      Local<Value> key,
-                                      AccessType type,
-                                      Local<Value> data);
-
-
-/**
- * Returns true if cross-context access should be allowed to the indexed
- * property with the given index on the host object.
- */
-typedef bool (*IndexedSecurityCallback)(Local<Object> host,
-                                        uint32_t index,
-                                        AccessType type,
-                                        Local<Value> data);
-
 
 /**
  * A FunctionTemplate is used to create functions at runtime. There
@@ -4796,17 +4792,6 @@ class V8_EXPORT ObjectTemplate : public Template {
    */
   void SetAccessCheckCallback(AccessCheckCallback callback,
                               Local<Value> data = Local<Value>());
-  V8_DEPRECATED(
-      "Use SetAccessCheckCallback with new AccessCheckCallback signature.",
-      void SetAccessCheckCallback(DeprecatedAccessCheckCallback callback,
-                                  Local<Value> data = Local<Value>()));
-
-  V8_DEPRECATED(
-      "Use SetAccessCheckCallback instead",
-      void SetAccessCheckCallbacks(NamedSecurityCallback named_handler,
-                                   IndexedSecurityCallback indexed_handler,
-                                   Local<Value> data = Local<Value>()));
-
   /**
    * Gets the number of internal fields for objects generated from
    * this template.
@@ -5049,10 +5034,6 @@ enum ObjectSpace {
     kAllocationActionFree = 1 << 1,
     kAllocationActionAll = kAllocationActionAllocate | kAllocationActionFree
   };
-
-typedef void (*MemoryAllocationCallback)(ObjectSpace space,
-                                         AllocationAction action,
-                                         int size);
 
 // --- Enter/Leave Script Callback ---
 typedef void (*BeforeCallEnteredCallback)(Isolate*);
@@ -5454,23 +5435,44 @@ enum class MemoryPressureLevel { kNone, kModerate, kCritical };
  */
 class V8_EXPORT EmbedderHeapTracer {
  public:
+  enum ForceCompletionAction { FORCE_COMPLETION, DO_NOT_FORCE_COMPLETION };
+  struct AdvanceTracingActions {
+    explicit AdvanceTracingActions(ForceCompletionAction force_completion_)
+        : force_completion(force_completion_) {}
+
+    ForceCompletionAction force_completion;
+  };
+  /**
+   * V8 will call this method with internal fields of found wrappers.
+   * Embedder is expected to store them in it's marking deque and trace
+   * reachable wrappers from them when asked by AdvanceTracing method.
+   */
+  virtual void RegisterV8References(
+      const std::vector<std::pair<void*, void*> >& internal_fields) = 0;
   /**
    * V8 will call this method at the beginning of the gc cycle.
    */
   virtual void TracePrologue() = 0;
   /**
-   * V8 will call this method with internal fields of a potential wrappers.
-   * Embedder is expected to trace its heap (synchronously) and call
-   * PersistentBase::RegisterExternalReference() on all wrappers reachable from
-   * any of the given wrappers.
+   * Embedder is expected to trace its heap starting from wrappers reported by
+   * RegisterV8References method, and call
+   * PersistentBase::RegisterExternalReference() on all reachable wrappers.
+   * Embedder is expected to stop tracing by the given deadline.
+   *
+   * Returns true if there is still work to do.
    */
-  virtual void TraceWrappersFrom(
-      const std::vector<std::pair<void*, void*> >& internal_fields) = 0;
+  virtual bool AdvanceTracing(double deadline_in_ms,
+                              AdvanceTracingActions actions) = 0;
   /**
    * V8 will call this method at the end of the gc cycle. Allocation is *not*
    * allowed in the TraceEpilogue.
    */
   virtual void TraceEpilogue() = 0;
+
+  /**
+   * Throw away all intermediate data and reset to the initial state.
+   */
+  virtual void AbortTracing() {}
 
  protected:
   virtual ~EmbedderHeapTracer() = default;
@@ -5503,8 +5505,8 @@ class V8_EXPORT Isolate {
      * The optional entry_hook allows the host application to provide the
      * address of a function that's invoked on entry to every V8-generated
      * function.  Note that entry_hook is invoked at the very start of each
-     * generated function. Furthermore, if an  entry_hook is given, V8 will
-     * always run without a context snapshot.
+     * generated function. Furthermore, if an entry_hook is given, V8 will
+     * not use a snapshot, including custom snapshots.
      */
     FunctionEntryHook entry_hook;
 
@@ -5674,6 +5676,7 @@ class V8_EXPORT Isolate {
     kRegExpPrototypeSourceGetter = 30,
     kRegExpPrototypeOldFlagGetter = 31,
     kDecimalWithLeadingZeroInStrictMode = 32,
+    kLegacyDateParser = 33,
 
     // If you add new values here, you'll also need to update Chromium's:
     // UseCounter.h, V8PerIsolateData.cpp, histograms.xml
@@ -6308,22 +6311,6 @@ class V8_EXPORT Isolate {
       StackTrace::StackTraceOptions options = StackTrace::kOverview);
 
   /**
-   * Enables the host application to provide a mechanism to be notified
-   * and perform custom logging when V8 Allocates Executable Memory.
-   */
-  void V8_DEPRECATED(
-      "Use a combination of RequestInterrupt and GCCallback instead",
-      AddMemoryAllocationCallback(MemoryAllocationCallback callback,
-                                  ObjectSpace space, AllocationAction action));
-
-  /**
-   * Removes callback that was installed by AddMemoryAllocationCallback.
-   */
-  void V8_DEPRECATED(
-      "Use a combination of RequestInterrupt and GCCallback instead",
-      RemoveMemoryAllocationCallback(MemoryAllocationCallback callback));
-
-  /**
    * Iterates through all external resources referenced from current isolate
    * heap.  GC is not invoked prior to iterating, therefore there is no
    * guarantee that visited objects are still alive.
@@ -6683,7 +6670,24 @@ class V8_EXPORT V8 {
    * If V8 was compiled with the ICU data in an external file, the location
    * of the data file has to be provided.
    */
-  static bool InitializeICU(const char* icu_data_file = NULL);
+  V8_DEPRECATE_SOON(
+      "Use version with default location.",
+      static bool InitializeICU(const char* icu_data_file = nullptr));
+
+  /**
+   * Initialize the ICU library bundled with V8. The embedder should only
+   * invoke this method when using the bundled ICU. If V8 was compiled with
+   * the ICU data in an external file and when the default location of that
+   * file should be used, a path to the executable must be provided.
+   * Returns true on success.
+   *
+   * The default is a file called icudtl.dat side-by-side with the executable.
+   *
+   * Optionally, the location of the data file can be provided to override the
+   * default.
+   */
+  static bool InitializeICUDefaultLocation(const char* exec_path,
+                                           const char* icu_data_file = nullptr);
 
   /**
    * Initialize the external startup data. The embedder only needs to
@@ -6760,6 +6764,48 @@ class V8_EXPORT V8 {
   friend class Context;
 };
 
+/**
+ * Helper class to create a snapshot data blob.
+ */
+class SnapshotCreator {
+ public:
+  enum class FunctionCodeHandling { kClear, kKeep };
+
+  /**
+   * Create and enter an isolate, and set it up for serialization.
+   * The isolate is either created from scratch or from an existing snapshot.
+   * The caller keeps ownership of the argument snapshot.
+   */
+  explicit SnapshotCreator(StartupData* existing_blob = nullptr);
+
+  ~SnapshotCreator();
+
+  /**
+   * \returns the isolate prepared by the snapshot creator.
+   */
+  Isolate* GetIsolate();
+
+  /**
+   * Add a context to be included in the snapshot blob.
+   */
+  void AddContext(Local<Context> context);
+
+  /**
+   * Created a snapshot data blob.
+   * \param function_code_handling whether to include compiled function code
+   *        in the snapshot.
+   * \returns { nullptr, 0 } on failure, and a startup snapshot on success. The
+   *        caller acquires ownership of the data array in the return value.
+   */
+  StartupData CreateBlob(FunctionCodeHandling function_code_handling);
+
+ private:
+  void* data_;
+
+  // Disallow copying and assigning.
+  SnapshotCreator(const SnapshotCreator&);
+  void operator=(const SnapshotCreator&);
+};
 
 /**
  * A simple Maybe type, representing an object which may or may not have a
@@ -7419,7 +7465,7 @@ class Internals {
       kAmountOfExternalAllocatedMemoryOffset + kApiInt64Size;
   static const int kIsolateRootsOffset =
       kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset + kApiInt64Size +
-      kApiPointerSize;
+      kApiPointerSize + kApiPointerSize;
   static const int kUndefinedValueRootIndex = 4;
   static const int kTheHoleValueRootIndex = 5;
   static const int kNullValueRootIndex = 6;
