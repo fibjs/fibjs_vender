@@ -12,12 +12,12 @@ namespace exlib
 typedef void (*LinuxKernelMemoryBarrierFunc)(void);
 inline void MemoryBarrier()
 {
-    (*(LinuxKernelMemoryBarrierFunc)0xffff0fa0)();
+	__asm__ __volatile__ ("dmb ish" ::: "memory");
 }
 
 inline void yield()
 {
-    asm volatile("yield" ::: "memory");
+	asm volatile("yield" ::: "memory");
 }
 
 }
