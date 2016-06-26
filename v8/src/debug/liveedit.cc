@@ -1226,18 +1226,13 @@ Handle<Code> PatchPositionsInCode(Handle<Code> code,
   }
 
   Vector<byte> buffer = buffer_writer.GetResult();
+  Handle<ByteArray> reloc_info =
+      isolate->factory()->NewByteArray(buffer.length(), TENURED);
 
-  if (buffer.length() == code->relocation_size()) {
-    // Simply patch relocation area of code.
-    MemCopy(code->relocation_start(), buffer.start(), buffer.length());
-    return code;
-  } else {
-    // Relocation info section now has different size. We cannot simply
-    // rewrite it inside code object. Instead we have to create a new
-    // code object.
-    Handle<Code> result(isolate->factory()->CopyCode(code, buffer));
-    return result;
-  }
+  DisallowHeapAllocation no_gc;
+  code->set_relocation_info(*reloc_info);
+  CopyBytes(code->relocation_start(), buffer.start(), buffer.length());
+  return code;
 }
 
 void PatchPositionsInBytecodeArray(Handle<BytecodeArray> bytecode,
@@ -1627,6 +1622,21 @@ class MultipleFunctionTarget {
     return false;
   }
 
+  void set_status(LiveEdit::FunctionPatchabilityStatus status) {
+    Isolate* isolate = old_shared_array_->GetIsolate();
+    int len = GetArrayLength(old_shared_array_);
+    for (int i = 0; i < len; ++i) {
+      Handle<Object> old_element =
+          JSReceiver::GetElement(isolate, result_, i).ToHandleChecked();
+      if (!old_element->IsSmi() ||
+          Smi::cast(*old_element)->value() ==
+              LiveEdit::FUNCTION_AVAILABLE_FOR_PATCH) {
+        SetElementSloppy(result_, i,
+                         Handle<Smi>(Smi::FromInt(status), isolate));
+      }
+    }
+  }
+
  private:
   Handle<JSArray> old_shared_array_;
   Handle<JSArray> new_shared_array_;
@@ -1702,6 +1712,13 @@ static const char* DropActivationsInActiveThreadImpl(Isolate* isolate,
       if (frame->is_java_script()) {
         if (target.MatchActivation(frame, non_droppable_reason)) {
           // Fail.
+          return NULL;
+        }
+        if (non_droppable_reason ==
+                LiveEdit::FUNCTION_BLOCKED_UNDER_GENERATOR &&
+            !target_frame_found) {
+          // Fail.
+          target.set_status(non_droppable_reason);
           return NULL;
         }
       }

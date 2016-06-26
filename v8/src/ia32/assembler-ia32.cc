@@ -195,36 +195,24 @@ Address RelocInfo::wasm_memory_reference() {
   return Memory::Address_at(pc_);
 }
 
+Address RelocInfo::wasm_global_reference() {
+  DCHECK(IsWasmGlobalReference(rmode_));
+  return Memory::Address_at(pc_);
+}
+
 uint32_t RelocInfo::wasm_memory_size_reference() {
   DCHECK(IsWasmMemorySizeReference(rmode_));
   return Memory::uint32_at(pc_);
 }
 
-void RelocInfo::update_wasm_memory_reference(
-    Address old_base, Address new_base, uint32_t old_size, uint32_t new_size,
-    ICacheFlushMode icache_flush_mode) {
-  DCHECK(IsWasmMemoryReference(rmode_) || IsWasmMemorySizeReference(rmode_));
-  if (IsWasmMemoryReference(rmode_)) {
-    Address updated_reference;
-    DCHECK(old_base <= wasm_memory_reference() &&
-           wasm_memory_reference() < old_base + old_size);
-    updated_reference = new_base + (wasm_memory_reference() - old_base);
-    DCHECK(new_base <= updated_reference &&
-           updated_reference < new_base + new_size);
-    Memory::Address_at(pc_) = updated_reference;
-  } else if (IsWasmMemorySizeReference(rmode_)) {
-    uint32_t updated_size_reference;
-    DCHECK(wasm_memory_size_reference() <= old_size);
-    updated_size_reference =
-        new_size + (wasm_memory_size_reference() - old_size);
-    DCHECK(updated_size_reference <= new_size);
-    Memory::uint32_at(pc_) = updated_size_reference;
-  } else {
-    UNREACHABLE();
-  }
-  if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-    Assembler::FlushICache(isolate_, pc_, sizeof(int32_t));
-  }
+void RelocInfo::unchecked_update_wasm_memory_reference(
+    Address address, ICacheFlushMode flush_mode) {
+  Memory::Address_at(pc_) = address;
+}
+
+void RelocInfo::unchecked_update_wasm_memory_size(uint32_t size,
+                                                  ICacheFlushMode flush_mode) {
+  Memory::uint32_at(pc_) = size;
 }
 
 // -----------------------------------------------------------------------------
@@ -1547,7 +1535,6 @@ void Assembler::bind(Label* L) {
 
 
 void Assembler::call(Label* L) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   if (L->is_bound()) {
     const int long_size = 5;
@@ -1565,7 +1552,6 @@ void Assembler::call(Label* L) {
 
 
 void Assembler::call(byte* entry, RelocInfo::Mode rmode) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   DCHECK(!RelocInfo::IsCodeTarget(rmode));
   EMIT(0xE8);
@@ -1584,7 +1570,6 @@ int Assembler::CallSize(const Operand& adr) {
 
 
 void Assembler::call(const Operand& adr) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   EMIT(0xFF);
   emit_operand(edx, adr);
@@ -1599,7 +1584,6 @@ int Assembler::CallSize(Handle<Code> code, RelocInfo::Mode rmode) {
 void Assembler::call(Handle<Code> code,
                      RelocInfo::Mode rmode,
                      TypeFeedbackId ast_id) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   DCHECK(RelocInfo::IsCodeTarget(rmode)
       || rmode == RelocInfo::CODE_AGE_SEQUENCE);

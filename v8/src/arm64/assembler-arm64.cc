@@ -193,30 +193,19 @@ uint32_t RelocInfo::wasm_memory_size_reference() {
   return Memory::uint32_at(Assembler::target_pointer_address_at(pc_));
 }
 
-void RelocInfo::update_wasm_memory_reference(
-    Address old_base, Address new_base, uint32_t old_size, uint32_t new_size,
-    ICacheFlushMode icache_flush_mode) {
-  DCHECK(IsWasmMemoryReference(rmode_) || IsWasmMemorySizeReference(rmode_));
-  if (IsWasmMemoryReference(rmode_) && old_base != new_base) {
-    Address updated_memory_reference;
-    DCHECK(old_base <= wasm_memory_reference() &&
-           wasm_memory_reference() < old_base + old_size);
-    updated_memory_reference = new_base + (wasm_memory_reference() - old_base);
-    DCHECK(new_base <= updated_memory_reference &&
-           updated_memory_reference < new_base + new_size);
-    Assembler::set_target_address_at(
-        isolate_, pc_, host_, updated_memory_reference, icache_flush_mode);
-  } else if (IsWasmMemorySizeReference(rmode_)) {
-    uint32_t updated_size_reference;
-    DCHECK(wasm_memory_size_reference() <= old_size);
-    updated_size_reference =
-        new_size + (wasm_memory_size_reference() - old_size);
-    DCHECK(updated_size_reference <= new_size);
-    Memory::uint32_at(Assembler::target_pointer_address_at(pc_)) =
-        updated_size_reference;
-  } else {
-    UNREACHABLE();
-  }
+Address RelocInfo::wasm_global_reference() {
+  DCHECK(IsWasmGlobalReference(rmode_));
+  return Memory::Address_at(Assembler::target_pointer_address_at(pc_));
+}
+
+void RelocInfo::unchecked_update_wasm_memory_reference(
+    Address address, ICacheFlushMode flush_mode) {
+  Assembler::set_target_address_at(isolate_, pc_, host_, address, flush_mode);
+}
+
+void RelocInfo::unchecked_update_wasm_memory_size(uint32_t size,
+                                                  ICacheFlushMode flush_mode) {
+  Memory::uint32_at(Assembler::target_pointer_address_at(pc_)) = size;
 }
 
 Register GetAllocatableRegisterThatIsNotOneOf(Register reg1, Register reg2,
@@ -986,14 +975,12 @@ void Assembler::EndBlockVeneerPool() {
 
 
 void Assembler::br(const Register& xn) {
-  positions_recorder()->WriteRecordedPositions();
   DCHECK(xn.Is64Bits());
   Emit(BR | Rn(xn));
 }
 
 
 void Assembler::blr(const Register& xn) {
-  positions_recorder()->WriteRecordedPositions();
   DCHECK(xn.Is64Bits());
   // The pattern 'blr xzr' is used as a guard to detect when execution falls
   // through the constant pool. It should not be emitted.
@@ -1003,7 +990,6 @@ void Assembler::blr(const Register& xn) {
 
 
 void Assembler::ret(const Register& xn) {
-  positions_recorder()->WriteRecordedPositions();
   DCHECK(xn.Is64Bits());
   Emit(RET | Rn(xn));
 }
@@ -1015,7 +1001,6 @@ void Assembler::b(int imm26) {
 
 
 void Assembler::b(Label* label) {
-  positions_recorder()->WriteRecordedPositions();
   b(LinkAndGetInstructionOffsetTo(label));
 }
 
@@ -1026,47 +1011,40 @@ void Assembler::b(int imm19, Condition cond) {
 
 
 void Assembler::b(Label* label, Condition cond) {
-  positions_recorder()->WriteRecordedPositions();
   b(LinkAndGetInstructionOffsetTo(label), cond);
 }
 
 
 void Assembler::bl(int imm26) {
-  positions_recorder()->WriteRecordedPositions();
   Emit(BL | ImmUncondBranch(imm26));
 }
 
 
 void Assembler::bl(Label* label) {
-  positions_recorder()->WriteRecordedPositions();
   bl(LinkAndGetInstructionOffsetTo(label));
 }
 
 
 void Assembler::cbz(const Register& rt,
                     int imm19) {
-  positions_recorder()->WriteRecordedPositions();
   Emit(SF(rt) | CBZ | ImmCmpBranch(imm19) | Rt(rt));
 }
 
 
 void Assembler::cbz(const Register& rt,
                     Label* label) {
-  positions_recorder()->WriteRecordedPositions();
   cbz(rt, LinkAndGetInstructionOffsetTo(label));
 }
 
 
 void Assembler::cbnz(const Register& rt,
                      int imm19) {
-  positions_recorder()->WriteRecordedPositions();
   Emit(SF(rt) | CBNZ | ImmCmpBranch(imm19) | Rt(rt));
 }
 
 
 void Assembler::cbnz(const Register& rt,
                      Label* label) {
-  positions_recorder()->WriteRecordedPositions();
   cbnz(rt, LinkAndGetInstructionOffsetTo(label));
 }
 
@@ -1074,7 +1052,6 @@ void Assembler::cbnz(const Register& rt,
 void Assembler::tbz(const Register& rt,
                     unsigned bit_pos,
                     int imm14) {
-  positions_recorder()->WriteRecordedPositions();
   DCHECK(rt.Is64Bits() || (rt.Is32Bits() && (bit_pos < kWRegSizeInBits)));
   Emit(TBZ | ImmTestBranchBit(bit_pos) | ImmTestBranch(imm14) | Rt(rt));
 }
@@ -1083,7 +1060,6 @@ void Assembler::tbz(const Register& rt,
 void Assembler::tbz(const Register& rt,
                     unsigned bit_pos,
                     Label* label) {
-  positions_recorder()->WriteRecordedPositions();
   tbz(rt, bit_pos, LinkAndGetInstructionOffsetTo(label));
 }
 
@@ -1091,7 +1067,6 @@ void Assembler::tbz(const Register& rt,
 void Assembler::tbnz(const Register& rt,
                      unsigned bit_pos,
                      int imm14) {
-  positions_recorder()->WriteRecordedPositions();
   DCHECK(rt.Is64Bits() || (rt.Is32Bits() && (bit_pos < kWRegSizeInBits)));
   Emit(TBNZ | ImmTestBranchBit(bit_pos) | ImmTestBranch(imm14) | Rt(rt));
 }
@@ -1100,7 +1075,6 @@ void Assembler::tbnz(const Register& rt,
 void Assembler::tbnz(const Register& rt,
                      unsigned bit_pos,
                      Label* label) {
-  positions_recorder()->WriteRecordedPositions();
   tbnz(rt, bit_pos, LinkAndGetInstructionOffsetTo(label));
 }
 

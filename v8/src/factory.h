@@ -163,6 +163,9 @@ class Factory final {
       Vector<const uc16> str,
       PretenureFlag pretenure = NOT_TENURED);
 
+  MUST_USE_RESULT MaybeHandle<String> NewStringFromTwoByte(
+      const ZoneVector<uc16>* str, PretenureFlag pretenure = NOT_TENURED);
+
   // Allocates an internalized string in old space based on the character
   // stream.
   Handle<String> NewInternalizedStringFromUtf8(Vector<const char> str,
@@ -505,7 +508,6 @@ class Factory final {
 
   Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
                                  Handle<Object> prototype,
-                                 bool read_only_prototype = false,
                                  bool is_strict = false);
   Handle<JSFunction> NewFunction(Handle<String> name);
   Handle<JSFunction> NewFunctionWithoutPrototype(Handle<String> name,
@@ -523,8 +525,6 @@ class Factory final {
   Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
                                  Handle<Object> prototype, InstanceType type,
                                  int instance_size,
-                                 bool read_only_prototype = false,
-                                 bool install_constructor = false,
                                  bool is_strict = false);
   Handle<JSFunction> NewFunction(Handle<String> name,
                                  Handle<Code> code,
@@ -699,6 +699,9 @@ class Factory final {
   Handle<T> New(Handle<Map> map,
                 AllocationSpace space,
                 Handle<AllocationSite> allocation_site);
+
+  MaybeHandle<String> NewStringFromTwoByte(const uc16* string, int length,
+                                           PretenureFlag pretenure);
 
   // Creates a code object that is not yet fully initialized yet.
   inline Handle<Code> NewCodeRaw(int object_size, bool immovable);

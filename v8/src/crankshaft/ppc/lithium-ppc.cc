@@ -1084,6 +1084,10 @@ LInstruction* LChunkBuilder::DoUnaryMathOperation(HUnaryMathOperation* instr) {
       return DoMathAbs(instr);
     case kMathLog:
       return DoMathLog(instr);
+    case kMathCos:
+      return DoMathCos(instr);
+    case kMathSin:
+      return DoMathSin(instr);
     case kMathExp:
       return DoMathExp(instr);
     case kMathSqrt:
@@ -1150,8 +1154,8 @@ LInstruction* LChunkBuilder::DoMathAbs(HUnaryMathOperation* instr) {
 LInstruction* LChunkBuilder::DoMathLog(HUnaryMathOperation* instr) {
   DCHECK(instr->representation().IsDouble());
   DCHECK(instr->value()->representation().IsDouble());
-  LOperand* input = UseFixedDouble(instr->value(), d1);
-  return MarkAsCall(DefineFixedDouble(new (zone()) LMathLog(input), d1), instr);
+  LOperand* input = UseFixedDouble(instr->value(), d0);
+  return MarkAsCall(DefineFixedDouble(new (zone()) LMathLog(input), d0), instr);
 }
 
 
@@ -1161,16 +1165,25 @@ LInstruction* LChunkBuilder::DoMathClz32(HUnaryMathOperation* instr) {
   return DefineAsRegister(result);
 }
 
+LInstruction* LChunkBuilder::DoMathCos(HUnaryMathOperation* instr) {
+  DCHECK(instr->representation().IsDouble());
+  DCHECK(instr->value()->representation().IsDouble());
+  LOperand* input = UseFixedDouble(instr->value(), d0);
+  return MarkAsCall(DefineFixedDouble(new (zone()) LMathCos(input), d0), instr);
+}
+
+LInstruction* LChunkBuilder::DoMathSin(HUnaryMathOperation* instr) {
+  DCHECK(instr->representation().IsDouble());
+  DCHECK(instr->value()->representation().IsDouble());
+  LOperand* input = UseFixedDouble(instr->value(), d0);
+  return MarkAsCall(DefineFixedDouble(new (zone()) LMathSin(input), d0), instr);
+}
 
 LInstruction* LChunkBuilder::DoMathExp(HUnaryMathOperation* instr) {
   DCHECK(instr->representation().IsDouble());
   DCHECK(instr->value()->representation().IsDouble());
-  LOperand* input = UseRegister(instr->value());
-  LOperand* temp1 = TempRegister();
-  LOperand* temp2 = TempRegister();
-  LOperand* double_temp = TempDoubleRegister();
-  LMathExp* result = new (zone()) LMathExp(input, double_temp, temp1, temp2);
-  return DefineAsRegister(result);
+  LOperand* input = UseFixedDouble(instr->value(), d0);
+  return MarkAsCall(DefineFixedDouble(new (zone()) LMathExp(input), d0), instr);
 }
 
 
@@ -1952,13 +1965,6 @@ LInstruction* LChunkBuilder::DoDoubleBits(HDoubleBits* instr) {
   HValue* value = instr->value();
   DCHECK(value->representation().IsDouble());
   return DefineAsRegister(new (zone()) LDoubleBits(UseRegister(value)));
-}
-
-
-LInstruction* LChunkBuilder::DoConstructDouble(HConstructDouble* instr) {
-  LOperand* lo = UseRegister(instr->lo());
-  LOperand* hi = UseRegister(instr->hi());
-  return DefineAsRegister(new (zone()) LConstructDouble(hi, lo));
 }
 
 

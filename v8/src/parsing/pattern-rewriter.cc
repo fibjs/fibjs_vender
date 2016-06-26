@@ -381,6 +381,37 @@ void Parser::PatternRewriter::VisitRewritableExpression(
   return set_context(old_context);
 }
 
+// Two cases for scope rewriting the scope of default parameters:
+// - Eagerly parsed arrow functions are initially parsed as having
+//   expressions in the enclosing scope, but when the arrow is encountered,
+//   need to be in the scope of the function.
+// - When an extra declaration scope needs to be inserted to account for
+//   a sloppy eval in a default parameter or function body, the expressions
+//   needs to be in that new inner scope which was added after initial
+//   parsing.
+// Each of these cases can be handled by rewriting the contents of the
+// expression to the current scope. The source scope is typically the outer
+// scope when one case occurs; when both cases occur, both scopes need to
+// be included as the outer scope. (Both rewritings still need to be done
+// to account for lazily parsed arrow functions which hit the second case.)
+// TODO(littledan): Remove the outer_scope parameter of
+//                  RewriteParameterInitializerScope
+void Parser::PatternRewriter::RewriteParameterScopes(Expression* expr) {
+  if (!IsBindingContext()) return;
+  if (descriptor_->declaration_kind != DeclarationDescriptor::PARAMETER) return;
+  if (!scope()->is_arrow_scope() && !scope()->is_block_scope()) return;
+
+  // Either this scope is an arrow scope or a declaration block scope.
+  DCHECK(scope()->is_declaration_scope());
+
+  if (scope()->outer_scope()->is_arrow_scope() && scope()->is_block_scope()) {
+    RewriteParameterInitializerScope(parser_->stack_limit(), expr,
+                                     scope()->outer_scope()->outer_scope(),
+                                     scope());
+  }
+  RewriteParameterInitializerScope(parser_->stack_limit(), expr,
+                                   scope()->outer_scope(), scope());
+}
 
 void Parser::PatternRewriter::VisitObjectLiteral(ObjectLiteral* pattern,
                                                  Variable** temp_var) {
@@ -390,6 +421,11 @@ void Parser::PatternRewriter::VisitObjectLiteral(ObjectLiteral* pattern,
 
   for (ObjectLiteralProperty* property : *pattern->properties()) {
     PatternContext context = SetInitializerContextIfNeeded(property->value());
+
+    // Computed property names contain expressions which might require
+    // scope rewriting.
+    if (!property->key()->IsLiteral()) RewriteParameterScopes(property->key());
+
     RecurseIntoSubpattern(
         property->value(),
         factory()->NewProperty(factory()->NewVariableProxy(temp),
@@ -425,9 +461,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
   // wrap this new block in a try-finally statement, restore block_ to its
   // original value, and add the try-finally statement to block_.
   auto target = block_;
-  if (FLAG_harmony_iterator_close) {
-    block_ = factory()->NewBlock(nullptr, 8, true, nopos);
-  }
+  block_ = factory()->NewBlock(nullptr, 8, true, nopos);
 
   Spread* spread = nullptr;
   for (Expression* value : *node->values()) {
@@ -515,7 +549,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
     block_->statements()->Add(if_not_done, zone());
 
     if (!(value->IsLiteral() && value->AsLiteral()->raw_value()->IsTheHole())) {
-      if (FLAG_harmony_iterator_close) {
+      {
         // completion = kAbruptCompletion;
         Expression* proxy = factory()->NewVariableProxy(completion);
         Expression* assignment = factory()->NewAssignment(
@@ -527,7 +561,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
 
       RecurseIntoSubpattern(value, factory()->NewVariableProxy(v));
 
-      if (FLAG_harmony_iterator_close) {
+      {
         // completion = kNormalCompletion;
         Expression* proxy = factory()->NewVariableProxy(completion);
         Expression* assignment = factory()->NewAssignment(
@@ -640,13 +674,11 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
                           factory()->NewVariableProxy(array));
   }
 
-  if (FLAG_harmony_iterator_close) {
-    Expression* closing_condition = factory()->NewUnaryOperation(
-        Token::NOT, factory()->NewVariableProxy(done), nopos);
-    parser_->FinalizeIteratorUse(completion, closing_condition, iterator,
-                                 block_, target);
-    block_ = target;
-  }
+  Expression* closing_condition = factory()->NewUnaryOperation(
+      Token::NOT, factory()->NewVariableProxy(done), nopos);
+  parser_->FinalizeIteratorUse(completion, closing_condition, iterator, block_,
+                               target);
+  block_ = target;
 }
 
 
@@ -677,12 +709,8 @@ void Parser::PatternRewriter::VisitAssignment(Assignment* node) {
                                       RelocInfo::kNoPosition);
   }
 
-  if (IsBindingContext() &&
-      descriptor_->declaration_kind == DeclarationDescriptor::PARAMETER &&
-      scope()->is_arrow_scope()) {
-    RewriteParameterInitializerScope(parser_->stack_limit(), initializer,
-                                     scope()->outer_scope(), scope());
-  }
+  // Initializer may have been parsed in the wrong scope.
+  RewriteParameterScopes(initializer);
 
   PatternContext old_context = SetAssignmentContextIfNeeded(initializer);
   RecurseIntoSubpattern(node->target(), value);

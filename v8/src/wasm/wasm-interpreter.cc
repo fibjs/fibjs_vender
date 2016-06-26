@@ -60,7 +60,6 @@ namespace wasm {
   V(I64GtS, int64_t, >)         \
   V(I64GeS, int64_t, >=)        \
   V(F32Add, float, +)           \
-  V(F32Sub, float, -)           \
   V(F32Mul, float, *)           \
   V(F32Div, float, /)           \
   V(F32Eq, float, ==)           \
@@ -70,7 +69,6 @@ namespace wasm {
   V(F32Gt, float, >)            \
   V(F32Ge, float, >=)           \
   V(F64Add, double, +)          \
-  V(F64Sub, double, -)          \
   V(F64Mul, double, *)          \
   V(F64Div, double, /)          \
   V(F64Eq, double, ==)          \
@@ -99,11 +97,13 @@ namespace wasm {
   V(I32Rol, int32_t)           \
   V(I64Ror, int64_t)           \
   V(I64Rol, int64_t)           \
+  V(F32Sub, float)             \
   V(F32Min, float)             \
   V(F32Max, float)             \
   V(F32CopySign, float)        \
   V(F64Min, double)            \
   V(F64Max, double)            \
+  V(F64Sub, double)            \
   V(F64CopySign, double)       \
   V(I32AsmjsDivS, int32_t)     \
   V(I32AsmjsDivU, uint32_t)    \
@@ -311,6 +311,17 @@ static double quiet(double a) {
   }
 }
 
+static inline float ExecuteF32Sub(float a, float b, TrapReason* trap) {
+  float result = a - b;
+  // Some architectures (e.g. MIPS) need extra checking to preserve the payload
+  // of a NaN operand.
+  if (result - result != 0) {
+    if (std::isnan(a)) return quiet(a);
+    if (std::isnan(b)) return quiet(b);
+  }
+  return result;
+}
+
 static inline float ExecuteF32Min(float a, float b, TrapReason* trap) {
   if (std::isnan(a)) return quiet(a);
   if (std::isnan(b)) return quiet(b);
@@ -325,6 +336,17 @@ static inline float ExecuteF32Max(float a, float b, TrapReason* trap) {
 
 static inline float ExecuteF32CopySign(float a, float b, TrapReason* trap) {
   return copysignf(a, b);
+}
+
+static inline double ExecuteF64Sub(double a, double b, TrapReason* trap) {
+  double result = a - b;
+  // Some architectures (e.g. MIPS) need extra checking to preserve the payload
+  // of a NaN operand.
+  if (result - result != 0) {
+    if (std::isnan(a)) return quiet(a);
+    if (std::isnan(b)) return quiet(b);
+  }
+  return result;
 }
 
 static inline double ExecuteF64Min(double a, double b, TrapReason* trap) {
@@ -800,7 +822,7 @@ class ControlTransfers : public ZoneObject {
           TRACE("control @%td $%zu: BrTable[arity=%u count=%u]\n", (pc - start),
                 value_depth, operand.arity, operand.table_count);
           value_depth -= (operand.arity + 1);
-          for (uint32_t i = 0; i < operand.table_count + 1; i++) {
+          for (uint32_t i = 0; i < operand.table_count + 1; ++i) {
             uint32_t target = operand.read_entry(&decoder, i);
             control_stack[control_stack.size() - target - 1].Ref(
                 &map_, start, pc + i, value_depth, operand.arity > 0);
@@ -851,7 +873,7 @@ class CodeMap {
   CodeMap(const WasmModule* module, Zone* zone)
       : zone_(zone), module_(module), interpreter_code_(zone) {
     if (module == nullptr) return;
-    for (size_t i = 0; i < module->functions.size(); i++) {
+    for (size_t i = 0; i < module->functions.size(); ++i) {
       const WasmFunction* function = &module->functions[i];
       const byte* code_start =
           module->module_start + function->code_start_offset;
@@ -942,7 +964,7 @@ class ThreadImpl : public WasmInterpreter::Thread {
     InterpreterCode* code = codemap()->FindCode(function);
     CHECK_NOT_NULL(code);
     frames_.push_back({code, 0, 0, stack_.size()});
-    for (size_t i = 0; i < function->sig->parameter_count(); i++) {
+    for (size_t i = 0; i < function->sig->parameter_count(); ++i) {
       stack_.push_back(args[i]);
     }
     frames_.back().ret_pc = InitLocals(code);
@@ -1635,7 +1657,7 @@ class ThreadImpl : public WasmInterpreter::Thread {
     sp_t plimit = top ? top->plimit() : 0;
     sp_t llimit = top ? top->llimit() : 0;
     if (FLAG_trace_wasm_interpreter) {
-      for (size_t i = sp; i < stack_.size(); i++) {
+      for (size_t i = sp; i < stack_.size(); ++i) {
         if (i < plimit)
           PrintF(" p%zu:", i);
         else if (i < llimit)

@@ -126,36 +126,24 @@ Address RelocInfo::wasm_memory_reference() {
   return Memory::Address_at(pc_);
 }
 
+Address RelocInfo::wasm_global_reference() {
+  DCHECK(IsWasmGlobalReference(rmode_));
+  return Memory::Address_at(pc_);
+}
+
 uint32_t RelocInfo::wasm_memory_size_reference() {
   DCHECK(IsWasmMemorySizeReference(rmode_));
   return Memory::uint32_at(pc_);
 }
 
-void RelocInfo::update_wasm_memory_reference(
-    Address old_base, Address new_base, uint32_t old_size, uint32_t new_size,
-    ICacheFlushMode icache_flush_mode) {
-  DCHECK(IsWasmMemoryReference(rmode_) || IsWasmMemorySizeReference(rmode_));
-  if (IsWasmMemoryReference(rmode_)) {
-    Address updated_reference;
-    DCHECK(old_base <= wasm_memory_reference() &&
-           wasm_memory_reference() < old_base + old_size);
-    updated_reference = new_base + (wasm_memory_reference() - old_base);
-    DCHECK(new_base <= updated_reference &&
-           updated_reference < new_base + new_size);
-    Memory::Address_at(pc_) = updated_reference;
-  } else if (IsWasmMemorySizeReference(rmode_)) {
-    uint32_t updated_size_reference;
-    DCHECK(wasm_memory_size_reference() <= old_size);
-    updated_size_reference =
-        new_size + (wasm_memory_size_reference() - old_size);
-    DCHECK(updated_size_reference <= new_size);
-    Memory::uint32_at(pc_) = updated_size_reference;
-  } else {
-    UNREACHABLE();
-  }
-  if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-    Assembler::FlushICache(isolate_, pc_, sizeof(int64_t));
-  }
+void RelocInfo::unchecked_update_wasm_memory_reference(
+    Address address, ICacheFlushMode flush_mode) {
+  Memory::Address_at(pc_) = address;
+}
+
+void RelocInfo::unchecked_update_wasm_memory_size(uint32_t size,
+                                                  ICacheFlushMode flush_mode) {
+  Memory::uint32_at(pc_) = size;
 }
 
 // -----------------------------------------------------------------------------
@@ -603,12 +591,9 @@ void Assembler::immediate_arithmetic_op(byte subcode,
                                         int size) {
   EnsureSpace ensure_space(this);
   emit_rex(dst, size);
-  if (is_int8(src.value_)) {
+  if (is_int8(src.value_) && RelocInfo::IsNone(src.rmode_)) {
     emit(0x83);
     emit_modrm(subcode, dst);
-    if (!RelocInfo::IsNone(src.rmode_)) {
-      RecordRelocInfo(src.rmode_);
-    }
     emit(src.value_);
   } else if (dst.is(rax)) {
     emit(0x05 | (subcode << 3));
@@ -852,7 +837,6 @@ void Assembler::bsfq(Register dst, const Operand& src) {
 
 
 void Assembler::call(Label* L) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   // 1110 1000 #32-bit disp.
   emit(0xE8);
@@ -874,7 +858,6 @@ void Assembler::call(Label* L) {
 
 void Assembler::call(Address entry, RelocInfo::Mode rmode) {
   DCHECK(RelocInfo::IsRuntimeEntry(rmode));
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   // 1110 1000 #32-bit disp.
   emit(0xE8);
@@ -885,7 +868,6 @@ void Assembler::call(Address entry, RelocInfo::Mode rmode) {
 void Assembler::call(Handle<Code> target,
                      RelocInfo::Mode rmode,
                      TypeFeedbackId ast_id) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   // 1110 1000 #32-bit disp.
   emit(0xE8);
@@ -894,7 +876,6 @@ void Assembler::call(Handle<Code> target,
 
 
 void Assembler::call(Register adr) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   // Opcode: FF /2 r64.
   emit_optional_rex_32(adr);
@@ -904,7 +885,6 @@ void Assembler::call(Register adr) {
 
 
 void Assembler::call(const Operand& op) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   // Opcode: FF /2 m64.
   emit_optional_rex_32(op);
@@ -918,7 +898,6 @@ void Assembler::call(const Operand& op) {
 // same Code object. Should not be used when generating new code (use labels),
 // but only when patching existing code.
 void Assembler::call(Address target) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   // 1110 1000 #32-bit disp.
   emit(0xE8);
@@ -3776,6 +3755,14 @@ void Assembler::punpckldq(XMMRegister dst, XMMRegister src) {
   emit_sse_operand(dst, src);
 }
 
+void Assembler::punpckldq(XMMRegister dst, const Operand& src) {
+  EnsureSpace ensure_space(this);
+  emit(0x66);
+  emit_optional_rex_32(dst, src);
+  emit(0x0F);
+  emit(0x62);
+  emit_sse_operand(dst, src);
+}
 
 void Assembler::punpckhdq(XMMRegister dst, XMMRegister src) {
   EnsureSpace ensure_space(this);
@@ -4420,7 +4407,8 @@ void Assembler::pmulld(XMMRegister dst, const Operand& src) {
   emit(0x66);
   emit_optional_rex_32(dst, src);
   emit(0x0F);
-  emit(0xF4);
+  emit(0x38);
+  emit(0x40);
   emit_sse_operand(dst, src);
 }
 
@@ -4439,24 +4427,6 @@ void Assembler::pmuludq(XMMRegister dst, const Operand& src) {
   emit_optional_rex_32(dst, src);
   emit(0x0F);
   emit(0xF4);
-  emit_sse_operand(dst, src);
-}
-
-void Assembler::punpackldq(XMMRegister dst, XMMRegister src) {
-  EnsureSpace ensure_space(this);
-  emit(0x66);
-  emit_optional_rex_32(dst, src);
-  emit(0x0F);
-  emit(0x62);
-  emit_sse_operand(dst, src);
-}
-
-void Assembler::punpackldq(XMMRegister dst, const Operand& src) {
-  EnsureSpace ensure_space(this);
-  emit(0x66);
-  emit_optional_rex_32(dst, src);
-  emit(0x0F);
-  emit(0x62);
   emit_sse_operand(dst, src);
 }
 

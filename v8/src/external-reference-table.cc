@@ -71,10 +71,28 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "base::ieee754::atan");
   Add(ExternalReference::ieee754_atan2_function(isolate).address(),
       "base::ieee754::atan2");
+  Add(ExternalReference::ieee754_atanh_function(isolate).address(),
+      "base::ieee754::atanh");
+  Add(ExternalReference::ieee754_cbrt_function(isolate).address(),
+      "base::ieee754::cbrt");
+  Add(ExternalReference::ieee754_cos_function(isolate).address(),
+      "base::ieee754::cos");
+  Add(ExternalReference::ieee754_exp_function(isolate).address(),
+      "base::ieee754::exp");
+  Add(ExternalReference::ieee754_expm1_function(isolate).address(),
+      "base::ieee754::expm1");
   Add(ExternalReference::ieee754_log_function(isolate).address(),
       "base::ieee754::log");
   Add(ExternalReference::ieee754_log1p_function(isolate).address(),
       "base::ieee754::log1p");
+  Add(ExternalReference::ieee754_log10_function(isolate).address(),
+      "base::ieee754::log10");
+  Add(ExternalReference::ieee754_log2_function(isolate).address(),
+      "base::ieee754::log2");
+  Add(ExternalReference::ieee754_sin_function(isolate).address(),
+      "base::ieee754::sin");
+  Add(ExternalReference::ieee754_tan_function(isolate).address(),
+      "base::ieee754::tan");
   Add(ExternalReference::store_buffer_top(isolate).address(),
       "store_buffer_top");
   Add(ExternalReference::address_of_the_hole_nan().address(), "the_hole_nan");
@@ -154,14 +172,6 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       "f64_acos_wrapper");
   Add(ExternalReference::f64_asin_wrapper_function(isolate).address(),
       "f64_asin_wrapper");
-  Add(ExternalReference::f64_cos_wrapper_function(isolate).address(),
-      "f64_cos_wrapper");
-  Add(ExternalReference::f64_sin_wrapper_function(isolate).address(),
-      "f64_sin_wrapper");
-  Add(ExternalReference::f64_tan_wrapper_function(isolate).address(),
-      "f64_tan_wrapper");
-  Add(ExternalReference::f64_exp_wrapper_function(isolate).address(),
-      "f64_exp_wrapper");
   Add(ExternalReference::f64_pow_wrapper_function(isolate).address(),
       "f64_pow_wrapper");
   Add(ExternalReference::f64_mod_wrapper_function(isolate).address(),
@@ -228,7 +238,7 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
   };
 
   static const RefTableEntry c_builtins[] = {
-#define DEF_ENTRY_C(name, ignored) {Builtins::c_##name, "Builtins::" #name},
+#define DEF_ENTRY_C(name) {Builtins::c_##name, "Builtins::" #name},
       BUILTIN_LIST_C(DEF_ENTRY_C)
 #undef DEF_ENTRY_C
   };
@@ -240,7 +250,7 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
   }
 
   static const RefTableEntry builtins[] = {
-#define DEF_ENTRY_C(name, ignored) {Builtins::k##name, "Builtins::" #name},
+#define DEF_ENTRY_C(name) {Builtins::k##name, "Builtins::" #name},
 #define DEF_ENTRY_A(name, i1, i2) {Builtins::k##name, "Builtins::" #name},
       BUILTIN_LIST_C(DEF_ENTRY_C) BUILTIN_LIST_A(DEF_ENTRY_A)
           BUILTIN_LIST_DEBUG_A(DEF_ENTRY_A)
@@ -367,6 +377,15 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
         isolate, entry, Deoptimizer::LAZY,
         Deoptimizer::CALCULATE_ENTRY_ADDRESS);
     Add(address, "lazy_deopt");
+  }
+
+  // Add external references provided by the embedder (a null-terminated array).
+  intptr_t* api_external_references = isolate->api_external_references();
+  if (api_external_references != nullptr) {
+    while (*api_external_references != 0) {
+      Add(reinterpret_cast<Address>(*api_external_references), "<embedder>");
+      api_external_references++;
+    }
   }
 }
 

@@ -15,7 +15,6 @@
 #include "src/ic/ic.h"
 #include "src/macro-assembler.h"
 #include "src/parsing/parser.h"
-#include "src/profiler/cpu-profiler.h"
 
 namespace v8 {
 namespace internal {
@@ -83,8 +82,8 @@ void CodeStub::RecordCodeGeneration(Handle<Code> code) {
   std::ostringstream os;
   os << *this;
   PROFILE(isolate(),
-          CodeCreateEvent(Logger::STUB_TAG, AbstractCode::cast(*code),
-                          os.str().c_str()));
+          CodeCreateEvent(CodeEventListener::STUB_TAG,
+                          AbstractCode::cast(*code), os.str().c_str()));
   Counters* counters = isolate()->counters();
   counters->total_stubs_code_size()->Increment(code->instruction_size());
 #ifdef DEBUG
@@ -421,7 +420,6 @@ Handle<Code> TurboFanCodeStub::GenerateCode() {
 void LoadICTrampolineTFStub::GenerateAssembly(
     CodeStubAssembler* assembler) const {
   typedef compiler::Node Node;
-  typedef CodeStubAssembler::Label Label;
 
   Node* receiver = assembler->Parameter(0);
   Node* name = assembler->Parameter(1);
@@ -430,17 +428,11 @@ void LoadICTrampolineTFStub::GenerateAssembly(
   Node* vector = assembler->LoadTypeFeedbackVectorForStub();
 
   CodeStubAssembler::LoadICParameters p(context, receiver, name, slot, vector);
-  Label miss(assembler);
-  assembler->LoadIC(&p, &miss);
-
-  assembler->Bind(&miss);
-  assembler->TailCallRuntime(Runtime::kLoadIC_Miss, context, receiver, name,
-                             slot, vector);
+  assembler->LoadIC(&p);
 }
 
 void LoadICTFStub::GenerateAssembly(CodeStubAssembler* assembler) const {
   typedef compiler::Node Node;
-  typedef CodeStubAssembler::Label Label;
 
   Node* receiver = assembler->Parameter(0);
   Node* name = assembler->Parameter(1);
@@ -449,12 +441,32 @@ void LoadICTFStub::GenerateAssembly(CodeStubAssembler* assembler) const {
   Node* context = assembler->Parameter(4);
 
   CodeStubAssembler::LoadICParameters p(context, receiver, name, slot, vector);
-  Label miss(assembler);
-  assembler->LoadIC(&p, &miss);
+  assembler->LoadIC(&p);
+}
 
-  assembler->Bind(&miss);
-  assembler->TailCallRuntime(Runtime::kLoadIC_Miss, context, receiver, name,
-                             slot, vector);
+void LoadGlobalICTrampolineStub::GenerateAssembly(
+    CodeStubAssembler* assembler) const {
+  typedef compiler::Node Node;
+
+  Node* slot = assembler->Parameter(0);
+  Node* context = assembler->Parameter(1);
+  Node* vector = assembler->LoadTypeFeedbackVectorForStub();
+
+  CodeStubAssembler::LoadICParameters p(context, nullptr, nullptr, slot,
+                                        vector);
+  assembler->LoadGlobalIC(&p);
+}
+
+void LoadGlobalICStub::GenerateAssembly(CodeStubAssembler* assembler) const {
+  typedef compiler::Node Node;
+
+  Node* slot = assembler->Parameter(0);
+  Node* vector = assembler->Parameter(1);
+  Node* context = assembler->Parameter(2);
+
+  CodeStubAssembler::LoadICParameters p(context, nullptr, nullptr, slot,
+                                        vector);
+  assembler->LoadGlobalIC(&p);
 }
 
 void AllocateHeapNumberStub::GenerateAssembly(

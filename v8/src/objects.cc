@@ -47,7 +47,6 @@
 #include "src/macro-assembler.h"
 #include "src/messages.h"
 #include "src/objects-body-descriptors-inl.h"
-#include "src/profiler/cpu-profiler.h"
 #include "src/property-descriptor.h"
 #include "src/prototype.h"
 #include "src/regexp/jsregexp.h"
@@ -615,30 +614,28 @@ MaybeHandle<Object> Object::OrdinaryHasInstance(Isolate* isolate,
 // static
 MaybeHandle<Object> Object::InstanceOf(Isolate* isolate, Handle<Object> object,
                                        Handle<Object> callable) {
-  if (FLAG_harmony_instanceof) {
-    // The {callable} must be a receiver.
-    if (!callable->IsJSReceiver()) {
-      THROW_NEW_ERROR(
-          isolate, NewTypeError(MessageTemplate::kNonObjectInInstanceOfCheck),
-          Object);
-    }
+  // The {callable} must be a receiver.
+  if (!callable->IsJSReceiver()) {
+    THROW_NEW_ERROR(isolate,
+                    NewTypeError(MessageTemplate::kNonObjectInInstanceOfCheck),
+                    Object);
+  }
 
-    // Lookup the @@hasInstance method on {callable}.
-    Handle<Object> inst_of_handler;
+  // Lookup the @@hasInstance method on {callable}.
+  Handle<Object> inst_of_handler;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, inst_of_handler,
+      JSReceiver::GetMethod(Handle<JSReceiver>::cast(callable),
+                            isolate->factory()->has_instance_symbol()),
+      Object);
+  if (!inst_of_handler->IsUndefined(isolate)) {
+    // Call the {inst_of_handler} on the {callable}.
+    Handle<Object> result;
     ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, inst_of_handler,
-        JSReceiver::GetMethod(Handle<JSReceiver>::cast(callable),
-                              isolate->factory()->has_instance_symbol()),
+        isolate, result,
+        Execution::Call(isolate, inst_of_handler, callable, 1, &object),
         Object);
-    if (!inst_of_handler->IsUndefined(isolate)) {
-      // Call the {inst_of_handler} on the {callable}.
-      Handle<Object> result;
-      ASSIGN_RETURN_ON_EXCEPTION(
-          isolate, result,
-          Execution::Call(isolate, inst_of_handler, callable, 1, &object),
-          Object);
-      return isolate->factory()->ToBoolean(result->BooleanValue());
-    }
+    return isolate->factory()->ToBoolean(result->BooleanValue());
   }
 
   // The {callable} must have a [[Call]] internal method.
@@ -989,12 +986,40 @@ bool Object::ToInt32(int32_t* value) {
   return false;
 }
 
+Handle<SharedFunctionInfo> FunctionTemplateInfo::GetOrCreateSharedFunctionInfo(
+    Isolate* isolate, Handle<FunctionTemplateInfo> info) {
+  Object* current_info = info->shared_function_info();
+  if (current_info->IsSharedFunctionInfo()) {
+    return handle(SharedFunctionInfo::cast(current_info), isolate);
+  }
 
-bool FunctionTemplateInfo::IsTemplateFor(Object* object) {
-  if (!object->IsHeapObject()) return false;
-  return IsTemplateFor(HeapObject::cast(object)->map());
+  Handle<Object> class_name(info->class_name(), isolate);
+  Handle<String> name = class_name->IsString()
+                            ? Handle<String>::cast(class_name)
+                            : isolate->factory()->empty_string();
+  Handle<Code> code;
+  if (info->call_code()->IsCallHandlerInfo() &&
+      CallHandlerInfo::cast(info->call_code())->fast_handler()->IsCode()) {
+    code = isolate->builtins()->HandleFastApiCall();
+  } else {
+    code = isolate->builtins()->HandleApiCall();
+  }
+  bool is_constructor = !info->remove_prototype();
+  Handle<SharedFunctionInfo> result =
+      isolate->factory()->NewSharedFunctionInfo(name, code, is_constructor);
+  if (is_constructor) {
+    result->set_construct_stub(*isolate->builtins()->JSConstructStubApi());
+  }
+
+  result->set_length(info->length());
+  if (class_name->IsString()) result->set_instance_class_name(*class_name);
+  result->set_api_func_data(*info);
+  result->DontAdaptArguments();
+  DCHECK(result->IsApiFunction());
+
+  info->set_shared_function_info(*result);
+  return result;
 }
-
 
 bool FunctionTemplateInfo::IsTemplateFor(Map* map) {
   // There is a constraint on the object; check.
@@ -1012,26 +1037,6 @@ bool FunctionTemplateInfo::IsTemplateFor(Map* map) {
   }
   // Didn't find the required type in the inheritance chain.
   return false;
-}
-
-
-// TODO(dcarney): CallOptimization duplicates this logic, merge.
-Object* FunctionTemplateInfo::GetCompatibleReceiver(Isolate* isolate,
-                                                    Object* receiver) {
-  // API calls are only supported with JSObject receivers.
-  if (!receiver->IsJSObject()) return isolate->heap()->null_value();
-  Object* recv_type = this->signature();
-  // No signature, return holder.
-  if (recv_type->IsUndefined(isolate)) return receiver;
-  FunctionTemplateInfo* signature = FunctionTemplateInfo::cast(recv_type);
-  // Check the receiver.
-  for (PrototypeIterator iter(isolate, JSObject::cast(receiver),
-                              kStartAtReceiver,
-                              PrototypeIterator::END_AT_NON_HIDDEN);
-       !iter.IsAtEnd(); iter.Advance()) {
-    if (signature->IsTemplateFor(iter.GetCurrent())) return iter.GetCurrent();
-  }
-  return isolate->heap()->null_value();
 }
 
 
@@ -1179,16 +1184,9 @@ MaybeHandle<Object> Object::GetPropertyWithAccessor(LookupIterator* it) {
   // Regular accessor.
   Handle<Object> getter(AccessorPair::cast(*structure)->getter(), isolate);
   if (getter->IsFunctionTemplateInfo()) {
-    auto result = Builtins::InvokeApiFunction(
-        Handle<FunctionTemplateInfo>::cast(getter), receiver, 0, nullptr);
-    if (isolate->has_pending_exception()) {
-      return MaybeHandle<Object>();
-    }
-    Handle<Object> return_value;
-    if (result.ToHandle(&return_value)) {
-      return_value->VerifyApiCallResultType();
-      return handle(*return_value, isolate);
-    }
+    return Builtins::InvokeApiFunction(
+        isolate, Handle<FunctionTemplateInfo>::cast(getter), receiver, 0,
+        nullptr);
   } else if (getter->IsCallable()) {
     // TODO(rossberg): nicer would be to cast to some JSCallable here...
     return Object::GetPropertyWithDefinedGetter(
@@ -1268,12 +1266,11 @@ Maybe<bool> Object::SetPropertyWithAccessor(LookupIterator* it,
   Handle<Object> setter(AccessorPair::cast(*structure)->setter(), isolate);
   if (setter->IsFunctionTemplateInfo()) {
     Handle<Object> argv[] = {value};
-    auto result =
-        Builtins::InvokeApiFunction(Handle<FunctionTemplateInfo>::cast(setter),
-                                    receiver, arraysize(argv), argv);
-    if (isolate->has_pending_exception()) {
-      return Nothing<bool>();
-    }
+    RETURN_ON_EXCEPTION_VALUE(
+        isolate, Builtins::InvokeApiFunction(
+                     isolate, Handle<FunctionTemplateInfo>::cast(setter),
+                     receiver, arraysize(argv), argv),
+        Nothing<bool>());
     return Just(true);
   } else if (setter->IsCallable()) {
     // TODO(rossberg): nicer would be to cast to some JSCallable here...
@@ -1659,9 +1656,6 @@ bool Object::SameValueZero(Object* other) {
 MaybeHandle<Object> Object::ArraySpeciesConstructor(
     Isolate* isolate, Handle<Object> original_array) {
   Handle<Object> default_species = isolate->array_function();
-  if (!FLAG_harmony_species) {
-    return default_species;
-  }
   if (original_array->IsJSArray() &&
       Handle<JSArray>::cast(original_array)->HasArrayPrototype(isolate) &&
       isolate->IsArraySpeciesLookupChainIntact()) {
@@ -2563,25 +2557,6 @@ String* JSReceiver::class_name() {
   }
   // If the constructor is not present, return "Object".
   return GetHeap()->Object_string();
-}
-
-
-MaybeHandle<String> JSReceiver::BuiltinStringTag(Handle<JSReceiver> object) {
-  Maybe<bool> is_array = Object::IsArray(object);
-  MAYBE_RETURN(is_array, MaybeHandle<String>());
-  Isolate* const isolate = object->GetIsolate();
-  if (is_array.FromJust()) {
-    return isolate->factory()->Array_string();
-  }
-  // TODO(adamk): According to ES2015, we should return "Function" when
-  // object has a [[Call]] internal method (corresponds to IsCallable).
-  // But this is well cemented in layout tests and might cause webbreakage.
-  // if (object->IsCallable()) {
-  //   return isolate->factory()->Function_string();
-  // }
-  // TODO(adamk): class_name() is expensive, replace with instance type
-  // checks where possible.
-  return handle(object->class_name(), isolate);
 }
 
 
@@ -4308,23 +4283,38 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
         return JSProxy::SetProperty(it->GetHolder<JSProxy>(), it->GetName(),
                                     value, it->GetReceiver(), language_mode);
 
-      case LookupIterator::INTERCEPTOR:
+      case LookupIterator::INTERCEPTOR: {
+        Handle<Map> store_target_map =
+            handle(it->GetStoreTarget()->map(), it->isolate());
         if (it->HolderIsReceiverOrHiddenPrototype()) {
           Maybe<bool> result =
               JSObject::SetPropertyWithInterceptor(it, should_throw, value);
           if (result.IsNothing() || result.FromJust()) return result;
+          // Interceptor modified the store target but failed to set the
+          // property.
+          Utils::ApiCheck(*store_target_map == it->GetStoreTarget()->map(),
+                          it->IsElement() ? "v8::IndexedPropertySetterCallback"
+                                          : "v8::NamedPropertySetterCallback",
+                          "Interceptor silently changed store target.");
         } else {
           Maybe<PropertyAttributes> maybe_attributes =
               JSObject::GetPropertyAttributesWithInterceptor(it);
           if (!maybe_attributes.IsJust()) return Nothing<bool>();
-          if (maybe_attributes.FromJust() == ABSENT) break;
           if ((maybe_attributes.FromJust() & READ_ONLY) != 0) {
             return WriteToReadOnlyProperty(it, value, should_throw);
           }
+          // Interceptor modified the store target but failed to set the
+          // property.
+          Utils::ApiCheck(*store_target_map == it->GetStoreTarget()->map(),
+                          it->IsElement() ? "v8::IndexedPropertySetterCallback"
+                                          : "v8::NamedPropertySetterCallback",
+                          "Interceptor silently changed store target.");
+          if (maybe_attributes.FromJust() == ABSENT) break;
           *found = false;
           return Nothing<bool>();
         }
         break;
+      }
 
       case LookupIterator::ACCESSOR: {
         if (it->IsReadOnly()) {
@@ -12313,6 +12303,8 @@ bool CanSubclassHaveInobjectProperties(InstanceType instance_type) {
     case JS_MESSAGE_OBJECT_TYPE:
     case JS_MODULE_TYPE:
     case JS_OBJECT_TYPE:
+    case JS_ERROR_TYPE:
+    case JS_ARGUMENTS_TYPE:
     case JS_PROMISE_TYPE:
     case JS_REGEXP_TYPE:
     case JS_SET_ITERATOR_TYPE:
@@ -13526,31 +13518,14 @@ void Code::CopyFrom(const CodeDesc& desc) {
 // The position returned is relative to the beginning of the script where the
 // source for this function is found.
 int Code::SourcePosition(int code_offset) {
-  Address pc = instruction_start() + code_offset;
-  int distance = kMaxInt;
+  // Subtract one because the current PC is one instruction after the call site.
+  Address pc = instruction_start() + code_offset - 1;
   int position = RelocInfo::kNoPosition;  // Initially no position found.
-  // Run through all the relocation info to find the best matching source
-  // position. All the code needs to be considered as the sequence of the
-  // instructions in the code does not necessarily follow the same order as the
-  // source.
-  RelocIterator it(this, RelocInfo::kPositionMask);
-  while (!it.done()) {
-    // Only look at positions after the current pc.
-    if (it.rinfo()->pc() < pc) {
-      // Get position and distance.
-
-      int dist = static_cast<int>(pc - it.rinfo()->pc());
-      int pos = static_cast<int>(it.rinfo()->data());
-      // If this position is closer than the current candidate or if it has the
-      // same distance as the current candidate and the position is higher then
-      // this position is the new candidate.
-      if ((dist < distance) ||
-          (dist == distance && pos > position)) {
-        position = pos;
-        distance = dist;
-      }
-    }
-    it.next();
+  // Find the closest position attached to a pc lower or equal to the current.
+  // Note that the pc of reloc infos grow monotonically.
+  for (RelocIterator it(this, RelocInfo::kPositionMask);
+       !it.done() && it.rinfo()->pc() <= pc; it.next()) {
+    position = static_cast<int>(it.rinfo()->data());
   }
   DCHECK(kind() == FUNCTION || (is_optimized_code() && is_turbofanned()) ||
          is_wasm_code() || position == RelocInfo::kNoPosition);
@@ -13561,20 +13536,18 @@ int Code::SourcePosition(int code_offset) {
 // Same as Code::SourcePosition above except it only looks for statement
 // positions.
 int Code::SourceStatementPosition(int code_offset) {
-  // First find the position as close as possible using all position
-  // information.
+  // First find the closest position.
   int position = SourcePosition(code_offset);
   // Now find the closest statement position before the position.
   int statement_position = 0;
-  RelocIterator it(this, RelocInfo::kPositionMask);
-  while (!it.done()) {
+  for (RelocIterator it(this, RelocInfo::kPositionMask); !it.done();
+       it.next()) {
     if (RelocInfo::IsStatementPosition(it.rinfo()->rmode())) {
       int p = static_cast<int>(it.rinfo()->data());
       if (statement_position < p && p <= position) {
         statement_position = p;
       }
     }
-    it.next();
   }
   return statement_position;
 }
@@ -14383,20 +14356,18 @@ int BytecodeArray::SourcePosition(int offset) {
 }
 
 int BytecodeArray::SourceStatementPosition(int offset) {
-  // First find the position as close as possible using all position
-  // information.
+  // First find the closest position.
   int position = SourcePosition(offset);
   // Now find the closest statement position before the position.
   int statement_position = 0;
-  interpreter::SourcePositionTableIterator iterator(source_position_table());
-  while (!iterator.done()) {
-    if (iterator.is_statement()) {
-      int p = iterator.source_position();
+  for (interpreter::SourcePositionTableIterator it(source_position_table());
+       !it.done(); it.Advance()) {
+    if (it.is_statement()) {
+      int p = it.source_position();
       if (statement_position < p && p <= position) {
         statement_position = p;
       }
     }
-    iterator.Advance();
   }
   return statement_position;
 }
@@ -15687,32 +15658,73 @@ MaybeHandle<String> Object::ObjectProtoToString(Isolate* isolate,
       String);
   if (to_string_tag->IsString()) {
     tag = Handle<String>::cast(to_string_tag);
+  } else {
+    InstanceType instance_type = receiver->map()->instance_type();
+
+    switch (instance_type) {
+      case JS_API_OBJECT_TYPE:
+      case JS_SPECIAL_API_OBJECT_TYPE:
+        tag = handle(receiver->class_name(), isolate);
+        break;
+      case JS_ARGUMENTS_TYPE:
+        return isolate->factory()->arguments_to_string();
+      case JS_ARRAY_TYPE:
+        return isolate->factory()->array_to_string();
+      case JS_BOUND_FUNCTION_TYPE:
+      case JS_FUNCTION_TYPE:
+        return isolate->factory()->function_to_string();
+      case JS_ERROR_TYPE:
+        return isolate->factory()->error_to_string();
+      case JS_DATE_TYPE:
+        return isolate->factory()->date_to_string();
+      case JS_REGEXP_TYPE:
+        return isolate->factory()->regexp_to_string();
+
+      // TODO(franzih): According to the specification, isArray() must be run
+      // before get(@@toStringTag). On proxies, isArray() and get() can throw
+      // if the proxy has been revoked, so we change observable behavior
+      // by not obeying the correct order.
+      case JS_PROXY_TYPE: {
+        Maybe<bool> is_array = Object::IsArray(receiver);
+        MAYBE_RETURN(is_array, MaybeHandle<String>());
+        if (is_array.FromJust()) {
+          return isolate->factory()->array_to_string();
+        }
+        if (receiver->IsCallable()) {
+          return isolate->factory()->function_to_string();
+        }
+        return isolate->factory()->object_to_string();
+      }
+      case JS_VALUE_TYPE: {
+        Object* value = JSValue::cast(*receiver)->value();
+        if (value->IsString()) {
+          return isolate->factory()->string_to_string();
+        }
+        if (value->IsNumber()) {
+          return isolate->factory()->number_to_string();
+        }
+        if (value->IsBoolean()) {
+          return isolate->factory()->boolean_to_string();
+        }
+        if (value->IsSymbol()) {
+          return isolate->factory()->object_to_string();
+        }
+        UNREACHABLE();
+        tag = handle(receiver->class_name(), isolate);
+        break;
+      }
+      default:
+        return isolate->factory()->object_to_string();
+        break;
+    }
   }
 
-  if (tag.is_null()) {
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, tag,
-                               JSReceiver::BuiltinStringTag(receiver), String);
-  }
-
-  if (*tag == isolate->heap()->Object_string()) {
-    return isolate->factory()->object_to_string();
-  }
-  if (*tag == isolate->heap()->String_string()) {
-    return isolate->factory()->string_to_string();
-  }
-  if (*tag == isolate->heap()->Array_string()) {
-    return isolate->factory()->array_to_string();
-  }
-  if (*tag == isolate->heap()->Function_string()) {
-    return isolate->factory()->function_to_string();
-  }
   IncrementalStringBuilder builder(isolate);
   builder.AppendCString("[object ");
   builder.AppendString(tag);
   builder.AppendCharacter(']');
   return builder.Finish();
 }
-
 
 const char* Symbol::PrivateSymbolToName() const {
   Heap* heap = GetIsolate()->heap();
@@ -15848,7 +15860,6 @@ JSRegExp::Flags RegExpFlagsFromString(Handle<String> flags, bool* success) {
         flag = JSRegExp::kMultiline;
         break;
       case 'u':
-        if (!FLAG_harmony_unicode_regexps) return JSRegExp::Flags(0);
         flag = JSRegExp::kUnicode;
         break;
       case 'y':
@@ -18861,6 +18872,23 @@ void PropertyCell::SetValueWithInvalidation(Handle<PropertyCell> cell,
     Isolate* isolate = cell->GetIsolate();
     cell->dependent_code()->DeoptimizeDependentCodeGroup(
         isolate, DependentCode::kPropertyCellChangedGroup);
+  }
+}
+
+int JSGeneratorObject::source_position() const {
+  CHECK(is_suspended());
+  if (function()->shared()->HasBytecodeArray()) {
+    // New-style generators.
+    int offset = Smi::cast(input_or_debug_pos())->value();
+    // The stored bytecode offset is relative to a different base than what
+    // is used in the source position table, hence the subtraction.
+    offset -= BytecodeArray::kHeaderSize - kHeapObjectTag;
+    return function()->shared()->bytecode_array()->SourcePosition(offset);
+  } else {
+    // Old-style generators.
+    int offset = continuation();
+    CHECK(0 <= offset && offset < function()->code()->instruction_size());
+    return function()->code()->SourcePosition(offset);
   }
 }
 

@@ -195,28 +195,29 @@ DEFINE_NEG_VALUE_IMPLICATION(harmony_shipping, intl_extra, true)
 // Activate on ClusterFuzz.
 DEFINE_IMPLICATION(es_staging, harmony_regexp_lookbehind)
 DEFINE_IMPLICATION(es_staging, move_object_start)
-DEFINE_IMPLICATION(es_staging, harmony_async_await)
 
 // Features that are still work in progress (behind individual flags).
 #define HARMONY_INPROGRESS(V)                                           \
+  V(harmony_array_prototype_values, "harmony Array.prototype.values")   \
   V(harmony_function_sent, "harmony function.sent")                     \
   V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")             \
   V(harmony_simd, "harmony simd")                                       \
+  V(harmony_explicit_tailcalls, "harmony explicit tail calls")          \
   V(harmony_do_expressions, "harmony do-expressions")                   \
   V(harmony_restrictive_generators,                                     \
     "harmony restrictions on generator declarations")                   \
+  V(harmony_regexp_named_captures, "harmony regexp named captures")     \
   V(harmony_regexp_property, "harmony unicode regexp property classes") \
-  V(harmony_for_in, "harmony for-in syntax")                            \
-  V(harmony_async_await, "harmony async-await")
+  V(harmony_for_in, "harmony for-in syntax")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED_BASE(V)                                               \
   V(harmony_regexp_lookbehind, "harmony regexp lookbehind")                  \
   V(harmony_tailcalls, "harmony tail calls")                                 \
-  V(harmony_explicit_tailcalls, "harmony explicit tail calls")               \
   V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
   V(harmony_object_own_property_descriptors,                                 \
     "harmony Object.getOwnPropertyDescriptors()")                            \
+  V(harmony_async_await, "harmony async-await")                              \
   V(harmony_string_padding, "harmony String-padding methods")
 
 #ifdef V8_I18N_SUPPORT
@@ -229,16 +230,8 @@ DEFINE_IMPLICATION(es_staging, harmony_async_await)
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                           \
-  V(harmony_array_prototype_values, "harmony Array.prototype.values") \
-  V(harmony_function_name, "harmony Function name inference")         \
-  V(harmony_instanceof, "harmony instanceof support")                 \
-  V(harmony_iterator_close, "harmony iterator finalization")          \
-  V(harmony_unicode_regexps, "harmony unicode regexps")               \
-  V(harmony_regexp_exec, "harmony RegExp exec override behavior")     \
-  V(harmony_regexp_subclass, "harmony regexp subclassing")            \
   V(harmony_restrictive_declarations,                                 \
     "harmony limitations on sloppy mode function declarations")       \
-  V(harmony_species, "harmony Symbol.species")                        \
   V(harmony_exponentiation_operator, "harmony exponentiation operator `**`")
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
@@ -302,9 +295,11 @@ DEFINE_BOOL(string_slices, true, "use string slices")
 // Flags for Ignition.
 DEFINE_BOOL(ignition, false, "use ignition interpreter")
 DEFINE_BOOL(ignition_eager, false, "eagerly compile and parse with ignition")
-DEFINE_BOOL(ignition_generators, false,
+DEFINE_BOOL(ignition_generators, true,
             "enable experimental ignition support for generators")
 DEFINE_STRING(ignition_filter, "*", "filter for ignition interpreter")
+DEFINE_BOOL(ignition_deadcode, true,
+            "use ignition dead code elimination optimizer")
 DEFINE_BOOL(ignition_peephole, true, "use ignition peephole optimizer")
 DEFINE_BOOL(ignition_reo, true, "use ignition register equivalence optimizer")
 DEFINE_BOOL(ignition_filter_expression_positions, true,
@@ -426,6 +421,7 @@ DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
 // Flags for TurboFan.
 DEFINE_BOOL(turbo, false, "enable TurboFan compiler")
 DEFINE_IMPLICATION(turbo, turbo_asm_deoptimization)
+DEFINE_IMPLICATION(turbo, turbo_type_feedback)
 DEFINE_BOOL(turbo_shipping, true, "enable TurboFan compiler on subset")
 DEFINE_BOOL(turbo_from_bytecode, false, "enable building graphs from bytecode")
 DEFINE_BOOL(turbo_sp_frame_access, false,
@@ -480,6 +476,8 @@ DEFINE_BOOL(turbo_instruction_scheduling, false,
             "enable instruction scheduling in TurboFan")
 DEFINE_BOOL(turbo_stress_instruction_scheduling, false,
             "randomly schedule instructions to stress dependency tracking")
+DEFINE_BOOL(turbo_store_elimination, false,
+            "enable store-store elimination in TurboFan")
 
 // Flags for native WebAssembly.
 DEFINE_BOOL(expose_wasm, false, "expose WASM interface to JavaScript")
@@ -509,6 +507,9 @@ DEFINE_BOOL(print_wasm_code_size, false,
 
 DEFINE_INT(typed_array_max_size_in_heap, 64,
            "threshold for in-heap typed array")
+
+DEFINE_BOOL(wasm_jit_prototype, false,
+            "enable experimental wasm runtime dynamic code generation")
 
 // Profiler flags.
 DEFINE_INT(frame_count, 1, "number of stack frames inspected by the profiler")

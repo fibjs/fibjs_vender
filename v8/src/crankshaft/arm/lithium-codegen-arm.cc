@@ -913,7 +913,6 @@ void LCodeGen::RecordSafepointWithRegisters(LPointerMap* pointers,
 void LCodeGen::RecordAndWritePosition(int position) {
   if (position == RelocInfo::kNoPosition) return;
   masm()->positions_recorder()->RecordPosition(position);
-  masm()->positions_recorder()->WriteRecordedPositions();
 }
 
 
@@ -3542,18 +3541,25 @@ void LCodeGen::DoPower(LPower* instr) {
   }
 }
 
+void LCodeGen::DoMathCos(LMathCos* instr) {
+  __ PrepareCallCFunction(0, 1, scratch0());
+  __ MovToFloatParameter(ToDoubleRegister(instr->value()));
+  __ CallCFunction(ExternalReference::ieee754_cos_function(isolate()), 0, 1);
+  __ MovFromFloatResult(ToDoubleRegister(instr->result()));
+}
+
+void LCodeGen::DoMathSin(LMathSin* instr) {
+  __ PrepareCallCFunction(0, 1, scratch0());
+  __ MovToFloatParameter(ToDoubleRegister(instr->value()));
+  __ CallCFunction(ExternalReference::ieee754_sin_function(isolate()), 0, 1);
+  __ MovFromFloatResult(ToDoubleRegister(instr->result()));
+}
 
 void LCodeGen::DoMathExp(LMathExp* instr) {
-  DwVfpRegister input = ToDoubleRegister(instr->value());
-  DwVfpRegister result = ToDoubleRegister(instr->result());
-  DwVfpRegister double_scratch1 = ToDoubleRegister(instr->double_temp());
-  DwVfpRegister double_scratch2 = double_scratch0();
-  Register temp1 = ToRegister(instr->temp1());
-  Register temp2 = ToRegister(instr->temp2());
-
-  MathExpGenerator::EmitMathExp(
-      masm(), input, result, double_scratch1, double_scratch2,
-      temp1, temp2, scratch0());
+  __ PrepareCallCFunction(0, 1, scratch0());
+  __ MovToFloatParameter(ToDoubleRegister(instr->value()));
+  __ CallCFunction(ExternalReference::ieee754_exp_function(isolate()), 0, 1);
+  __ MovFromFloatResult(ToDoubleRegister(instr->result()));
 }
 
 
@@ -5040,15 +5046,6 @@ void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
   } else {
     __ VmovLow(result_reg, value_reg);
   }
-}
-
-
-void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
-  Register hi_reg = ToRegister(instr->hi());
-  Register lo_reg = ToRegister(instr->lo());
-  DwVfpRegister result_reg = ToDoubleRegister(instr->result());
-  __ VmovHigh(result_reg, hi_reg);
-  __ VmovLow(result_reg, lo_reg);
 }
 
 

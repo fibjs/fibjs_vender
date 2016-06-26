@@ -12,7 +12,6 @@
 #include "src/compiler.h"
 #include "src/debug/debug.h"
 #include "src/parsing/parser.h"
-#include "src/profiler/cpu-profiler.h"
 #include "src/runtime/runtime.h"
 
 namespace v8 {
@@ -61,7 +60,6 @@ double modulo(double x, double y) {
   }
 
 UNARY_MATH_FUNCTION(sqrt, CreateSqrtFunction)
-UNARY_MATH_FUNCTION(exp, CreateExpFunction)
 
 #undef UNARY_MATH_FUNCTION
 

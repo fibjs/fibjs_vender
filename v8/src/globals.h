@@ -182,6 +182,10 @@ const size_t kCodeRangeAreaAlignment = 4 * KB;  // OS page.
 #endif
 #endif
 
+// The external allocation limit should be below 256 MB on all architectures
+// to avoid that resource-constrained embedders run low on memory.
+const int kExternalAllocationLimit = 192 * 1024 * 1024;
+
 STATIC_ASSERT(kPointerSize == (1 << kPointerSizeLog2));
 
 const int kBitsPerByte = 8;
@@ -455,6 +459,26 @@ enum AllocationAlignment {
   kDoubleUnaligned,
   kSimd128Unaligned
 };
+
+// Possible outcomes for decisions.
+enum class Decision : uint8_t { kUnknown, kTrue, kFalse };
+
+inline size_t hash_value(Decision decision) {
+  return static_cast<uint8_t>(decision);
+}
+
+inline std::ostream& operator<<(std::ostream& os, Decision decision) {
+  switch (decision) {
+    case Decision::kUnknown:
+      return os << "Unknown";
+    case Decision::kTrue:
+      return os << "True";
+    case Decision::kFalse:
+      return os << "False";
+  }
+  UNREACHABLE();
+  return os;
+}
 
 // Supported write barrier modes.
 enum WriteBarrierKind : uint8_t {

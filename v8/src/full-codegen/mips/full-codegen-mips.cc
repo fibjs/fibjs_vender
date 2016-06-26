@@ -802,15 +802,11 @@ void FullCodeGenerator::VisitVariableDeclaration(
 
     case VariableLocation::LOOKUP: {
       Comment cmnt(masm_, "[ VariableDeclaration");
-      __ li(a2, Operand(variable->name()));
-      // Declaration nodes are always introduced in one of four modes.
-      DCHECK(IsDeclaredVariableMode(mode));
+      DCHECK_EQ(VAR, mode);
       DCHECK(!hole_init);
-      DCHECK(Smi::FromInt(0) == 0);
-      __ mov(a0, zero_reg);  // Smi::FromInt(0) indicates no initial value.
-      __ Push(a2, a0);
-      __ Push(Smi::FromInt(variable->DeclarationPropertyAttributes()));
-      __ CallRuntime(Runtime::kDeclareLookupSlot);
+      __ li(a2, Operand(variable->name()));
+      __ Push(a2);
+      __ CallRuntime(Runtime::kDeclareEvalVar);
       PrepareForBailoutForId(proxy->id(), BailoutState::NO_REGISTERS);
       break;
     }
@@ -867,8 +863,7 @@ void FullCodeGenerator::VisitFunctionDeclaration(
       PushOperand(a2);
       // Push initial value for function declaration.
       VisitForStackValue(declaration->fun());
-      PushOperand(Smi::FromInt(variable->DeclarationPropertyAttributes()));
-      CallRuntimeWithOperands(Runtime::kDeclareLookupSlot);
+      CallRuntimeWithOperands(Runtime::kDeclareEvalFunction);
       PrepareForBailoutForId(proxy->id(), BailoutState::NO_REGISTERS);
       break;
     }
@@ -1832,7 +1827,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
   // When we arrive here, v0 holds the generator object.
   __ RecordGeneratorContinuation();
   __ lw(a1, FieldMemOperand(v0, JSGeneratorObject::kResumeModeOffset));
-  __ lw(v0, FieldMemOperand(v0, JSGeneratorObject::kInputOffset));
+  __ lw(v0, FieldMemOperand(v0, JSGeneratorObject::kInputOrDebugPosOffset));
   __ Branch(&resume, eq, a1, Operand(Smi::FromInt(JSGeneratorObject::kNext)));
   __ Push(result_register());
   __ Branch(&exception, eq, a1,

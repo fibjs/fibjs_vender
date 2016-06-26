@@ -108,10 +108,19 @@ class Schedule;
 
 #define CODE_ASSEMBLER_UNARY_OP_LIST(V) \
   V(Float64Atan)                        \
+  V(Float64Atanh)                       \
+  V(Float64Cos)                         \
+  V(Float64Exp)                         \
+  V(Float64Expm1)                       \
   V(Float64Log)                         \
   V(Float64Log1p)                       \
+  V(Float64Log2)                        \
+  V(Float64Log10)                       \
+  V(Float64Cbrt)                        \
   V(Float64Neg)                         \
+  V(Float64Sin)                         \
   V(Float64Sqrt)                        \
+  V(Float64Tan)                         \
   V(Float64ExtractLowWord32)            \
   V(Float64ExtractHighWord32)           \
   V(BitcastWordToTagged)                \
@@ -302,6 +311,8 @@ class CodeAssembler {
                  Node* arg2, size_t result_size = 1);
   Node* CallStub(Callable const& callable, Node* context, Node* arg1,
                  Node* arg2, Node* arg3, size_t result_size = 1);
+  Node* CallStubN(Callable const& callable, Node** args,
+                  size_t result_size = 1);
 
   Node* CallStub(const CallInterfaceDescriptor& descriptor, Node* target,
                  Node* context, Node* arg1, size_t result_size = 1);
@@ -316,6 +327,8 @@ class CodeAssembler {
   Node* CallStub(const CallInterfaceDescriptor& descriptor, Node* target,
                  Node* context, Node* arg1, Node* arg2, Node* arg3, Node* arg4,
                  Node* arg5, size_t result_size = 1);
+  Node* CallStubN(const CallInterfaceDescriptor& descriptor, Node* target,
+                  Node** args, size_t result_size = 1);
 
   Node* TailCallStub(Callable const& callable, Node* context, Node* arg1,
                      Node* arg2, size_t result_size = 1);
@@ -333,6 +346,13 @@ class CodeAssembler {
 
   Node* TailCallBytecodeDispatch(const CallInterfaceDescriptor& descriptor,
                                  Node* code_target_address, Node** args);
+
+  Node* CallJS(Callable const& callable, Node* context, Node* function,
+               Node* receiver, size_t result_size = 1);
+  Node* CallJS(Callable const& callable, Node* context, Node* function,
+               Node* receiver, Node* arg1, size_t result_size = 1);
+  Node* CallJS(Callable const& callable, Node* context, Node* function,
+               Node* receiver, Node* arg1, Node* arg2, size_t result_size = 1);
 
   // Branching helpers.
   void BranchIf(Node* condition, Label* if_true, Label* if_false);
@@ -360,8 +380,6 @@ class CodeAssembler {
   virtual void CallEpilogue();
 
  private:
-  friend class CodeAssemblerTester;
-
   CodeAssembler(Isolate* isolate, Zone* zone, CallDescriptor* call_descriptor,
                 Code::Flags flags, const char* name);
 

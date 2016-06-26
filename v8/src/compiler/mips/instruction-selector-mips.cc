@@ -759,7 +759,7 @@ void InstructionSelector::VisitFloat32Sub(Node* node) {
 }
 
 void InstructionSelector::VisitFloat32SubPreserveNan(Node* node) {
-  VisitRRR(this, kMipsSubS, node);
+  VisitRRR(this, kMipsSubPreserveNanS, node);
 }
 
 void InstructionSelector::VisitFloat64Sub(Node* node) {
@@ -781,7 +781,7 @@ void InstructionSelector::VisitFloat64Sub(Node* node) {
 }
 
 void InstructionSelector::VisitFloat64SubPreserveNan(Node* node) {
-  VisitRRR(this, kMipsSubD, node);
+  VisitRRR(this, kMipsSubPreserveNanD, node);
 }
 
 void InstructionSelector::VisitFloat32Mul(Node* node) {

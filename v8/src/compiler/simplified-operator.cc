@@ -172,6 +172,46 @@ const ElementAccess& ElementAccessOf(const Operator* op) {
   return OpParameter<ElementAccess>(op);
 }
 
+size_t hash_value(CheckFloat64HoleMode mode) {
+  return static_cast<size_t>(mode);
+}
+
+std::ostream& operator<<(std::ostream& os, CheckFloat64HoleMode mode) {
+  switch (mode) {
+    case CheckFloat64HoleMode::kAllowReturnHole:
+      return os << "allow-return-hole";
+    case CheckFloat64HoleMode::kNeverReturnHole:
+      return os << "never-return-hole";
+  }
+  UNREACHABLE();
+  return os;
+}
+
+CheckFloat64HoleMode CheckFloat64HoleModeOf(const Operator* op) {
+  DCHECK_EQ(IrOpcode::kCheckFloat64Hole, op->opcode());
+  return OpParameter<CheckFloat64HoleMode>(op);
+}
+
+size_t hash_value(CheckTaggedHoleMode mode) {
+  return static_cast<size_t>(mode);
+}
+
+std::ostream& operator<<(std::ostream& os, CheckTaggedHoleMode mode) {
+  switch (mode) {
+    case CheckTaggedHoleMode::kConvertHoleToUndefined:
+      return os << "convert-hole-to-undefined";
+    case CheckTaggedHoleMode::kNeverReturnHole:
+      return os << "never-return-hole";
+  }
+  UNREACHABLE();
+  return os;
+}
+
+CheckTaggedHoleMode CheckTaggedHoleModeOf(const Operator* op) {
+  DCHECK_EQ(IrOpcode::kCheckTaggedHole, op->opcode());
+  return OpParameter<CheckTaggedHoleMode>(op);
+}
+
 Type* TypeOf(const Operator* op) {
   DCHECK_EQ(IrOpcode::kTypeGuard, op->opcode());
   return OpParameter<Type*>(op);
@@ -179,8 +219,18 @@ Type* TypeOf(const Operator* op) {
 
 BinaryOperationHints::Hint BinaryOperationHintOf(const Operator* op) {
   DCHECK(op->opcode() == IrOpcode::kSpeculativeNumberAdd ||
-         op->opcode() == IrOpcode::kSpeculativeNumberSubtract);
+         op->opcode() == IrOpcode::kSpeculativeNumberSubtract ||
+         op->opcode() == IrOpcode::kSpeculativeNumberMultiply ||
+         op->opcode() == IrOpcode::kSpeculativeNumberDivide ||
+         op->opcode() == IrOpcode::kSpeculativeNumberModulus);
   return OpParameter<BinaryOperationHints::Hint>(op);
+}
+
+CompareOperationHints::Hint CompareOperationHintOf(const Operator* op) {
+  DCHECK(op->opcode() == IrOpcode::kSpeculativeNumberEqual ||
+         op->opcode() == IrOpcode::kSpeculativeNumberLessThan ||
+         op->opcode() == IrOpcode::kSpeculativeNumberLessThanOrEqual);
+  return OpParameter<CompareOperationHints::Hint>(op);
 }
 
 #define PURE_OP_LIST(V)                                    \
@@ -204,22 +254,31 @@ BinaryOperationHints::Hint BinaryOperationHintOf(const Operator* op) {
   V(NumberClz32, Operator::kNoProperties, 1)               \
   V(NumberCeil, Operator::kNoProperties, 1)                \
   V(NumberFloor, Operator::kNoProperties, 1)               \
+  V(NumberFround, Operator::kNoProperties, 1)              \
   V(NumberAtan, Operator::kNoProperties, 1)                \
   V(NumberAtan2, Operator::kNoProperties, 2)               \
+  V(NumberAtanh, Operator::kNoProperties, 1)               \
+  V(NumberCbrt, Operator::kNoProperties, 1)                \
+  V(NumberCos, Operator::kNoProperties, 1)                 \
+  V(NumberExp, Operator::kNoProperties, 1)                 \
+  V(NumberExpm1, Operator::kNoProperties, 1)               \
   V(NumberLog, Operator::kNoProperties, 1)                 \
   V(NumberLog1p, Operator::kNoProperties, 1)               \
+  V(NumberLog10, Operator::kNoProperties, 1)               \
+  V(NumberLog2, Operator::kNoProperties, 1)                \
   V(NumberRound, Operator::kNoProperties, 1)               \
+  V(NumberSin, Operator::kNoProperties, 1)                 \
+  V(NumberSqrt, Operator::kNoProperties, 1)                \
+  V(NumberTan, Operator::kNoProperties, 1)                 \
   V(NumberTrunc, Operator::kNoProperties, 1)               \
   V(NumberToInt32, Operator::kNoProperties, 1)             \
   V(NumberToUint32, Operator::kNoProperties, 1)            \
-  V(NumberIsHoleNaN, Operator::kNoProperties, 1)           \
   V(NumberSilenceNaN, Operator::kNoProperties, 1)          \
-  V(NumberConvertHoleNaN, Operator::kNoProperties, 1)      \
   V(StringFromCharCode, Operator::kNoProperties, 1)        \
   V(StringToNumber, Operator::kNoProperties, 1)            \
-  V(PlainPrimitiveToNumber, Operator::kNoWrite, 1)         \
-  V(PlainPrimitiveToWord32, Operator::kNoWrite, 1)         \
-  V(PlainPrimitiveToFloat64, Operator::kNoWrite, 1)        \
+  V(PlainPrimitiveToNumber, Operator::kNoProperties, 1)    \
+  V(PlainPrimitiveToWord32, Operator::kNoProperties, 1)    \
+  V(PlainPrimitiveToFloat64, Operator::kNoProperties, 1)   \
   V(ChangeTaggedSignedToInt32, Operator::kNoProperties, 1) \
   V(ChangeTaggedToInt32, Operator::kNoProperties, 1)       \
   V(ChangeTaggedToUint32, Operator::kNoProperties, 1)      \
@@ -242,11 +301,22 @@ BinaryOperationHints::Hint BinaryOperationHintOf(const Operator* op) {
   V(StringLessThan, Operator::kNoProperties, 2)            \
   V(StringLessThanOrEqual, Operator::kNoProperties, 2)
 
-#define CHECKED_OP_LIST(V) \
-  V(CheckedUint32ToInt32)  \
-  V(CheckedFloat64ToInt32) \
-  V(CheckedTaggedToInt32)  \
-  V(CheckedTaggedToFloat64)
+#define SPECULATIVE_BINOP_LIST(V) \
+  V(SpeculativeNumberAdd)         \
+  V(SpeculativeNumberSubtract)    \
+  V(SpeculativeNumberDivide)      \
+  V(SpeculativeNumberMultiply)    \
+  V(SpeculativeNumberModulus)
+
+#define CHECKED_OP_LIST(V)    \
+  V(CheckTaggedPointer, 1)    \
+  V(CheckTaggedSigned, 1)     \
+  V(CheckedInt32Add, 2)       \
+  V(CheckedInt32Sub, 2)       \
+  V(CheckedUint32ToInt32, 1)  \
+  V(CheckedFloat64ToInt32, 1) \
+  V(CheckedTaggedToInt32, 1)  \
+  V(CheckedTaggedToFloat64, 1)
 
 struct SimplifiedOperatorGlobalCache final {
 #define PURE(Name, properties, input_count)                                \
@@ -259,28 +329,51 @@ struct SimplifiedOperatorGlobalCache final {
   PURE_OP_LIST(PURE)
 #undef PURE
 
-#define CHECKED(Name)                                                        \
-  struct Name##Operator final : public Operator {                            \
-    Name##Operator()                                                         \
-        : Operator(IrOpcode::k##Name, Operator::kNoThrow, #Name, 1, 1, 1, 1, \
-                   1, 1) {}                                                  \
-  };                                                                         \
+#define CHECKED(Name, value_input_count)                            \
+  struct Name##Operator final : public Operator {                   \
+    Name##Operator()                                                \
+        : Operator(IrOpcode::k##Name,                               \
+                   Operator::kFoldable | Operator::kNoThrow, #Name, \
+                   value_input_count, 1, 1, 1, 1, 0) {}             \
+  };                                                                \
   Name##Operator k##Name;
   CHECKED_OP_LIST(CHECKED)
 #undef CHECKED
 
-  struct CheckIfOperator final : public Operator {
-    CheckIfOperator()
-        : Operator(IrOpcode::kCheckIf, Operator::kFoldable, "CheckIf", 1, 1, 1,
-                   0, 1, 1) {}
+  template <CheckFloat64HoleMode kMode>
+  struct CheckFloat64HoleNaNOperator final
+      : public Operator1<CheckFloat64HoleMode> {
+    CheckFloat64HoleNaNOperator()
+        : Operator1<CheckFloat64HoleMode>(
+              IrOpcode::kCheckFloat64Hole,
+              Operator::kFoldable | Operator::kNoThrow, "CheckFloat64Hole", 1,
+              1, 1, 1, 1, 0, kMode) {}
   };
-  CheckIfOperator kCheckIf;
+  CheckFloat64HoleNaNOperator<CheckFloat64HoleMode::kAllowReturnHole>
+      kCheckFloat64HoleAllowReturnHoleOperator;
+  CheckFloat64HoleNaNOperator<CheckFloat64HoleMode::kNeverReturnHole>
+      kCheckFloat64HoleNeverReturnHoleOperator;
+
+  template <CheckTaggedHoleMode kMode>
+  struct CheckTaggedHoleOperator final : public Operator1<CheckTaggedHoleMode> {
+    CheckTaggedHoleOperator()
+        : Operator1<CheckTaggedHoleMode>(
+              IrOpcode::kCheckTaggedHole,
+              Operator::kFoldable | Operator::kNoThrow, "CheckTaggedHole", 1, 1,
+              1, 1, 1, 0, kMode) {}
+  };
+  CheckTaggedHoleOperator<CheckTaggedHoleMode::kConvertHoleToUndefined>
+      kCheckTaggedHoleConvertHoleToUndefinedOperator;
+  CheckTaggedHoleOperator<CheckTaggedHoleMode::kNeverReturnHole>
+      kCheckTaggedHoleNeverReturnHoleOperator;
 
   template <PretenureFlag kPretenure>
   struct AllocateOperator final : public Operator1<PretenureFlag> {
     AllocateOperator()
-        : Operator1<PretenureFlag>(IrOpcode::kAllocate, Operator::kNoThrow,
-                                   "Allocate", 1, 1, 1, 1, 1, 0, kPretenure) {}
+        : Operator1<PretenureFlag>(
+              IrOpcode::kAllocate,
+              Operator::kNoDeopt | Operator::kNoThrow | Operator::kNoWrite,
+              "Allocate", 1, 1, 1, 1, 1, 0, kPretenure) {}
   };
   AllocateOperator<NOT_TENURED> kAllocateNotTenuredOperator;
   AllocateOperator<TENURED> kAllocateTenuredOperator;
@@ -288,17 +381,19 @@ struct SimplifiedOperatorGlobalCache final {
 #define BUFFER_ACCESS(Type, type, TYPE, ctype, size)                          \
   struct LoadBuffer##Type##Operator final : public Operator1<BufferAccess> {  \
     LoadBuffer##Type##Operator()                                              \
-        : Operator1<BufferAccess>(IrOpcode::kLoadBuffer,                      \
-                                  Operator::kNoThrow | Operator::kNoWrite,    \
-                                  "LoadBuffer", 3, 1, 1, 1, 1, 0,             \
-                                  BufferAccess(kExternal##Type##Array)) {}    \
+        : Operator1<BufferAccess>(                                            \
+              IrOpcode::kLoadBuffer,                                          \
+              Operator::kNoDeopt | Operator::kNoThrow | Operator::kNoWrite,   \
+              "LoadBuffer", 3, 1, 1, 1, 1, 0,                                 \
+              BufferAccess(kExternal##Type##Array)) {}                        \
   };                                                                          \
   struct StoreBuffer##Type##Operator final : public Operator1<BufferAccess> { \
     StoreBuffer##Type##Operator()                                             \
-        : Operator1<BufferAccess>(IrOpcode::kStoreBuffer,                     \
-                                  Operator::kNoRead | Operator::kNoThrow,     \
-                                  "StoreBuffer", 4, 1, 1, 0, 1, 0,            \
-                                  BufferAccess(kExternal##Type##Array)) {}    \
+        : Operator1<BufferAccess>(                                            \
+              IrOpcode::kStoreBuffer,                                         \
+              Operator::kNoDeopt | Operator::kNoRead | Operator::kNoThrow,    \
+              "StoreBuffer", 4, 1, 1, 0, 1, 0,                                \
+              BufferAccess(kExternal##Type##Array)) {}                        \
   };                                                                          \
   LoadBuffer##Type##Operator kLoadBuffer##Type;                               \
   StoreBuffer##Type##Operator kStoreBuffer##Type;
@@ -319,19 +414,46 @@ SimplifiedOperatorBuilder::SimplifiedOperatorBuilder(Zone* zone)
 PURE_OP_LIST(GET_FROM_CACHE)
 #undef GET_FROM_CACHE
 
-#define GET_FROM_CACHE(Name) \
+#define GET_FROM_CACHE(Name, value_input_count) \
   const Operator* SimplifiedOperatorBuilder::Name() { return &cache_.k##Name; }
 CHECKED_OP_LIST(GET_FROM_CACHE)
 #undef GET_FROM_CACHE
 
-const Operator* SimplifiedOperatorBuilder::CheckIf() {
-  return &cache_.kCheckIf;
+const Operator* SimplifiedOperatorBuilder::CheckFloat64Hole(
+    CheckFloat64HoleMode mode) {
+  switch (mode) {
+    case CheckFloat64HoleMode::kAllowReturnHole:
+      return &cache_.kCheckFloat64HoleAllowReturnHoleOperator;
+    case CheckFloat64HoleMode::kNeverReturnHole:
+      return &cache_.kCheckFloat64HoleNeverReturnHoleOperator;
+  }
+  UNREACHABLE();
+  return nullptr;
+}
+
+const Operator* SimplifiedOperatorBuilder::CheckTaggedHole(
+    CheckTaggedHoleMode mode) {
+  switch (mode) {
+    case CheckTaggedHoleMode::kConvertHoleToUndefined:
+      return &cache_.kCheckTaggedHoleConvertHoleToUndefinedOperator;
+    case CheckTaggedHoleMode::kNeverReturnHole:
+      return &cache_.kCheckTaggedHoleNeverReturnHoleOperator;
+  }
+  UNREACHABLE();
+  return nullptr;
 }
 
 const Operator* SimplifiedOperatorBuilder::ReferenceEqual(Type* type) {
   return new (zone()) Operator(IrOpcode::kReferenceEqual,
                                Operator::kCommutative | Operator::kPure,
                                "ReferenceEqual", 2, 0, 0, 1, 0, 0);
+}
+
+const Operator* SimplifiedOperatorBuilder::CheckBounds() {
+  // TODO(bmeurer): Cache this operator. Make it pure!
+  return new (zone())
+      Operator(IrOpcode::kCheckBounds, Operator::kFoldable | Operator::kNoThrow,
+               "CheckBounds", 2, 1, 1, 1, 1, 0);
 }
 
 const Operator* SimplifiedOperatorBuilder::TypeGuard(Type* type) {
@@ -388,18 +510,38 @@ const Operator* SimplifiedOperatorBuilder::StoreBuffer(BufferAccess access) {
   return nullptr;
 }
 
-const Operator* SimplifiedOperatorBuilder::SpeculativeNumberAdd(
-    BinaryOperationHints::Hint hint) {
-  return new (zone()) Operator1<BinaryOperationHints::Hint>(
-      IrOpcode::kSpeculativeNumberAdd, Operator::kNoThrow,
-      "SpeculativeNumberAdd", 2, 1, 1, 1, 1, 1, hint);
+#define SPECULATIVE_BINOP_DEF(Name)                                            \
+  const Operator* SimplifiedOperatorBuilder::Name(                             \
+      BinaryOperationHints::Hint hint) {                                       \
+    return new (zone()) Operator1<BinaryOperationHints::Hint>(                 \
+        IrOpcode::k##Name, Operator::kFoldable | Operator::kNoThrow, #Name, 2, \
+        1, 1, 1, 1, 0, hint);                                                  \
+  }
+SPECULATIVE_BINOP_LIST(SPECULATIVE_BINOP_DEF)
+#undef SPECULATIVE_BINOP_DEF
+
+const Operator* SimplifiedOperatorBuilder::SpeculativeNumberEqual(
+    CompareOperationHints::Hint hint) {
+  return new (zone()) Operator1<CompareOperationHints::Hint>(
+      IrOpcode::kSpeculativeNumberEqual,
+      Operator::kFoldable | Operator::kNoThrow, "SpeculativeNumberEqual", 2, 1,
+      1, 1, 1, 0, hint);
 }
 
-const Operator* SimplifiedOperatorBuilder::SpeculativeNumberSubtract(
-    BinaryOperationHints::Hint hint) {
-  return new (zone()) Operator1<BinaryOperationHints::Hint>(
-      IrOpcode::kSpeculativeNumberSubtract, Operator::kNoThrow,
-      "SpeculativeNumberSubtract", 2, 1, 1, 1, 1, 1, hint);
+const Operator* SimplifiedOperatorBuilder::SpeculativeNumberLessThan(
+    CompareOperationHints::Hint hint) {
+  return new (zone()) Operator1<CompareOperationHints::Hint>(
+      IrOpcode::kSpeculativeNumberLessThan,
+      Operator::kFoldable | Operator::kNoThrow, "SpeculativeNumberLessThan", 2,
+      1, 1, 1, 1, 0, hint);
+}
+
+const Operator* SimplifiedOperatorBuilder::SpeculativeNumberLessThanOrEqual(
+    CompareOperationHints::Hint hint) {
+  return new (zone()) Operator1<CompareOperationHints::Hint>(
+      IrOpcode::kSpeculativeNumberLessThanOrEqual,
+      Operator::kFoldable | Operator::kNoThrow,
+      "SpeculativeNumberLessThanOrEqual", 2, 1, 1, 1, 1, 0, hint);
 }
 
 #define ACCESS_OP_LIST(V)                                    \
@@ -408,12 +550,12 @@ const Operator* SimplifiedOperatorBuilder::SpeculativeNumberSubtract(
   V(LoadElement, ElementAccess, Operator::kNoWrite, 2, 1, 1) \
   V(StoreElement, ElementAccess, Operator::kNoRead, 3, 1, 0)
 
-
 #define ACCESS(Name, Type, properties, value_input_count, control_input_count, \
                output_count)                                                   \
   const Operator* SimplifiedOperatorBuilder::Name(const Type& access) {        \
     return new (zone())                                                        \
-        Operator1<Type>(IrOpcode::k##Name, Operator::kNoThrow | properties,    \
+        Operator1<Type>(IrOpcode::k##Name,                                     \
+                        Operator::kNoDeopt | Operator::kNoThrow | properties,  \
                         #Name, value_input_count, 1, control_input_count,      \
                         output_count, 1, 0, access);                           \
   }

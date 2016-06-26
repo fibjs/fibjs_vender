@@ -114,6 +114,7 @@
     <ClInclude Include="src\char-predicates-inl.h" />
     <ClInclude Include="src\char-predicates.h" />
     <ClInclude Include="src\checks.h" />
+    <ClInclude Include="src\code-events.h" />
     <ClInclude Include="src\code-factory.h" />
     <ClInclude Include="src\code-stub-assembler.h" />
     <ClInclude Include="src\code-stubs.h" />
@@ -203,6 +204,7 @@
     <ClInclude Include="src\compiler\pipeline.h" />
     <ClInclude Include="src\compiler\ppc\instruction-codes-ppc.h" />
     <ClInclude Include="src\compiler\raw-machine-assembler.h" />
+    <ClInclude Include="src\compiler\redundancy-elimination.h" />
     <ClInclude Include="src\compiler\register-allocator-verifier.h" />
     <ClInclude Include="src\compiler\register-allocator.h" />
     <ClInclude Include="src\compiler\representation-change.h" />
@@ -215,6 +217,7 @@
     <ClInclude Include="src\compiler\simplified-operator.h" />
     <ClInclude Include="src\compiler\source-position.h" />
     <ClInclude Include="src\compiler\state-values-utils.h" />
+    <ClInclude Include="src\compiler\store-store-elimination.h" />
     <ClInclude Include="src\compiler\tail-call-optimization.h" />
     <ClInclude Include="src\compiler\type-hint-analyzer.h" />
     <ClInclude Include="src\compiler\type-hints.h" />
@@ -325,6 +328,7 @@
     <ClInclude Include="src\handles-inl.h" />
     <ClInclude Include="src\handles.h" />
     <ClInclude Include="src\heap-symbols.h" />
+    <ClInclude Include="src\heap\array-buffer-tracker-inl.h" />
     <ClInclude Include="src\heap\array-buffer-tracker.h" />
     <ClInclude Include="src\heap\gc-idle-time-handler.h" />
     <ClInclude Include="src\heap\gc-tracer.h" />
@@ -369,6 +373,7 @@
     <ClInclude Include="src\interpreter\bytecode-array-builder.h" />
     <ClInclude Include="src\interpreter\bytecode-array-iterator.h" />
     <ClInclude Include="src\interpreter\bytecode-array-writer.h" />
+    <ClInclude Include="src\interpreter\bytecode-dead-code-optimizer.h" />
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
     <ClInclude Include="src\interpreter\bytecode-label.h" />
     <ClInclude Include="src\interpreter\bytecode-peephole-optimizer.h" />
@@ -445,6 +450,7 @@
     <ClInclude Include="src\profiler\heap-snapshot-generator.h" />
     <ClInclude Include="src\profiler\profile-generator-inl.h" />
     <ClInclude Include="src\profiler\profile-generator.h" />
+    <ClInclude Include="src\profiler\profiler-listener.h" />
     <ClInclude Include="src\profiler\sampling-heap-profiler.h" />
     <ClInclude Include="src\profiler\strings-storage.h" />
     <ClInclude Include="src\profiler\tick-sample.h" />
@@ -503,7 +509,6 @@
     <ClInclude Include="src\string-search.h" />
     <ClInclude Include="src\string-stream.h" />
     <ClInclude Include="src\strtod.h" />
-    <ClInclude Include="src\third_party\fdlibm\fdlibm.h" />
     <ClInclude Include="src\third_party\valgrind\valgrind.h" />
     <ClInclude Include="src\tracing\trace-event.h" />
     <ClInclude Include="src\transitions-inl.h" />
@@ -537,6 +542,7 @@
     <ClInclude Include="src\wasm\leb-helper.h" />
     <ClInclude Include="src\wasm\module-decoder.h" />
     <ClInclude Include="src\wasm\switch-logic.h" />
+    <ClInclude Include="src\wasm\wasm-debug.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
     <ClInclude Include="src\wasm\wasm-function-name-table.h" />
     <ClInclude Include="src\wasm\wasm-interpreter.h" />
@@ -711,6 +717,7 @@
     <ClCompile Include="src\compiler\ppc\instruction-scheduler-ppc.cc" />
     <ClCompile Include="src\compiler\ppc\instruction-selector-ppc.cc" />
     <ClCompile Include="src\compiler\raw-machine-assembler.cc" />
+    <ClCompile Include="src\compiler\redundancy-elimination.cc" />
     <ClCompile Include="src\compiler\register-allocator-verifier.cc" />
     <ClCompile Include="src\compiler\register-allocator.cc" />
     <ClCompile Include="src\compiler\representation-change.cc" />
@@ -725,6 +732,7 @@
     <ClCompile Include="src\compiler\simplified-operator.cc" />
     <ClCompile Include="src\compiler\source-position.cc" />
     <ClCompile Include="src\compiler\state-values-utils.cc" />
+    <ClCompile Include="src\compiler\store-store-elimination.cc" />
     <ClCompile Include="src\compiler\tail-call-optimization.cc" />
     <ClCompile Include="src\compiler\type-hint-analyzer.cc" />
     <ClCompile Include="src\compiler\type-hints.cc" />
@@ -899,6 +907,7 @@
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-iterator.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-writer.cc" />
+    <ClCompile Include="src\interpreter\bytecode-dead-code-optimizer.cc" />
     <ClCompile Include="src\interpreter\bytecode-generator.cc" />
     <ClCompile Include="src\interpreter\bytecode-peephole-optimizer.cc" />
     <ClCompile Include="src\interpreter\bytecode-pipeline.cc" />
@@ -960,6 +969,7 @@
     <ClCompile Include="src\profiler\heap-profiler.cc" />
     <ClCompile Include="src\profiler\heap-snapshot-generator.cc" />
     <ClCompile Include="src\profiler\profile-generator.cc" />
+    <ClCompile Include="src\profiler\profiler-listener.cc" />
     <ClCompile Include="src\profiler\sampling-heap-profiler.cc" />
     <ClCompile Include="src\profiler\strings-storage.cc" />
     <ClCompile Include="src\profiler\tick-sample.cc" />
@@ -1036,7 +1046,6 @@
     <ClCompile Include="src\string-builder.cc" />
     <ClCompile Include="src\string-stream.cc" />
     <ClCompile Include="src\strtod.cc" />
-    <ClCompile Include="src\third_party\fdlibm\fdlibm.cc" />
     <ClCompile Include="src\tracing\trace-event.cc" />
     <ClCompile Include="src\transitions.cc" />
     <ClCompile Include="src\type-cache.cc" />
@@ -1057,6 +1066,7 @@
     <ClCompile Include="src\wasm\encoder.cc" />
     <ClCompile Include="src\wasm\module-decoder.cc" />
     <ClCompile Include="src\wasm\switch-logic.cc" />
+    <ClCompile Include="src\wasm\wasm-debug.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />
     <ClCompile Include="src\wasm\wasm-function-name-table.cc" />
     <ClCompile Include="src\wasm\wasm-interpreter.cc" />

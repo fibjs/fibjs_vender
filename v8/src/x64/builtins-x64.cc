@@ -19,10 +19,7 @@ namespace internal {
 
 #define __ ACCESS_MASM(masm)
 
-
-void Builtins::Generate_Adaptor(MacroAssembler* masm,
-                                CFunctionId id,
-                                BuiltinExtraArguments extra_args) {
+void Builtins::Generate_Adaptor(MacroAssembler* masm, CFunctionId id) {
   // ----------- S t a t e -------------
   //  -- rax                 : number of arguments excluding receiver
   //  -- rdi                 : target
@@ -41,20 +38,13 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
   // ordinary functions).
   __ movp(rsi, FieldOperand(rdi, JSFunction::kContextOffset));
 
-  // Insert extra arguments.
-  int num_extra_args = 0;
-  if (extra_args != BuiltinExtraArguments::kNone) {
-    __ PopReturnAddressTo(kScratchRegister);
-    if (extra_args & BuiltinExtraArguments::kTarget) {
-      ++num_extra_args;
-      __ Push(rdi);
-    }
-    if (extra_args & BuiltinExtraArguments::kNewTarget) {
-      ++num_extra_args;
-      __ Push(rdx);
-    }
-    __ PushReturnAddressFrom(kScratchRegister);
-  }
+  // Unconditionally insert the target and new target as extra arguments. They
+  // will be used by stack frame iterators when constructing the stack trace.
+  const int num_extra_args = 2;
+  __ PopReturnAddressTo(kScratchRegister);
+  __ Push(rdi);
+  __ Push(rdx);
+  __ PushReturnAddressFrom(kScratchRegister);
 
   // JumpToExternalReference expects rax to contain the number of arguments
   // including the receiver and the extra arguments.
@@ -472,8 +462,8 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   __ AssertGeneratorObject(rbx);
 
   // Store input value into generator object.
-  __ movp(FieldOperand(rbx, JSGeneratorObject::kInputOffset), rax);
-  __ RecordWriteField(rbx, JSGeneratorObject::kInputOffset, rax, rcx,
+  __ movp(FieldOperand(rbx, JSGeneratorObject::kInputOrDebugPosOffset), rax);
+  __ RecordWriteField(rbx, JSGeneratorObject::kInputOrDebugPosOffset, rax, rcx,
                       kDontSaveFPRegs);
 
   // Store resume mode into generator object.
@@ -1249,6 +1239,9 @@ void Builtins::Generate_NotifyLazyDeoptimized(MacroAssembler* masm) {
 void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
                                                int field_index) {
   // ----------- S t a t e -------------
+  //  -- rax    : number of arguments
+  //  -- rdi    : function
+  //  -- rsi    : context
   //  -- rsp[0] : return address
   //  -- rsp[8] : receiver
   // -----------------------------------
@@ -1290,7 +1283,11 @@ void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
   __ bind(&receiver_not_date);
   {
     FrameScope scope(masm, StackFrame::MANUAL);
-    __ EnterFrame(StackFrame::INTERNAL);
+    __ Push(rbp);
+    __ Move(rbp, rsp);
+    __ Push(rsi);
+    __ Push(rdi);
+    __ Push(Immediate(0));
     __ CallRuntime(Runtime::kThrowNotDateError);
   }
 }
@@ -1641,6 +1638,8 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
 void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
   // ----------- S t a t e -------------
   //  -- rax                 : number of arguments
+  //  -- rdi                 : function
+  //  -- rsi                 : context
   //  -- rsp[0]              : return address
   //  -- rsp[(argc - n) * 8] : arg[n] (zero-based)
   //  -- rsp[(argc + 1) * 8] : receiver
@@ -1676,7 +1675,11 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
                   Heap::kHeapNumberMapRootIndex, &convert_number);
     {
       // Parameter is not a Number, use the ToNumber builtin to convert it.
-      FrameScope scope(masm, StackFrame::INTERNAL);
+      FrameScope scope(masm, StackFrame::MANUAL);
+      __ Push(rbp);
+      __ Move(rbp, rsp);
+      __ Push(rsi);
+      __ Push(rdi);
       __ Integer32ToSmi(rax, rax);
       __ Integer32ToSmi(rcx, rcx);
       __ Push(rax);
@@ -1688,6 +1691,8 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
       __ Pop(rdx);
       __ Pop(rcx);
       __ Pop(rax);
+      __ Pop(rdi);
+      __ Pop(rsi);
       {
         // Restore the double accumulator value (xmm0).
         Label restore_smi, done_restore;
@@ -1700,6 +1705,7 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
       }
       __ SmiToInteger32(rcx, rcx);
       __ SmiToInteger32(rax, rax);
+      __ leave();
     }
     __ jmp(&convert);
     __ bind(&convert_number);
@@ -2092,10 +2098,15 @@ void Builtins::Generate_StringToNumber(MacroAssembler* masm) {
   __ Ret();
 
   __ bind(&runtime);
-  __ PopReturnAddressTo(rcx);     // Pop return address.
-  __ Push(rax);                   // Push argument.
-  __ PushReturnAddressFrom(rcx);  // Push return address.
-  __ TailCallRuntime(Runtime::kStringToNumber);
+  {
+    FrameScope frame(masm, StackFrame::INTERNAL);
+    // Push argument.
+    __ Push(rax);
+    // We cannot use a tail call here because this builtin can also be called
+    // from wasm.
+    __ CallRuntime(Runtime::kStringToNumber);
+  }
+  __ Ret();
 }
 
 // static
@@ -2137,11 +2148,15 @@ void Builtins::Generate_NonNumberToNumber(MacroAssembler* masm) {
   __ movp(rax, FieldOperand(rax, Oddball::kToNumberOffset));
   __ Ret();
   __ bind(&not_oddball);
-
-  __ PopReturnAddressTo(rcx);     // Pop return address.
-  __ Push(rax);                   // Push argument.
-  __ PushReturnAddressFrom(rcx);  // Push return address.
-  __ TailCallRuntime(Runtime::kToNumber);
+  {
+    FrameScope frame(masm, StackFrame::INTERNAL);
+    // Push argument.
+    __ Push(rax);
+    // We cannot use a tail call here because this builtin can also be called
+    // from wasm.
+    __ CallRuntime(Runtime::kToNumber);
+  }
+  __ Ret();
 }
 
 void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {

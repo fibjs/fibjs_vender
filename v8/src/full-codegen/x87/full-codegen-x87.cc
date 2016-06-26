@@ -752,15 +752,8 @@ void FullCodeGenerator::VisitVariableDeclaration(
       __ push(Immediate(variable->name()));
       // VariableDeclaration nodes are always introduced in one of four modes.
       DCHECK(IsDeclaredVariableMode(mode));
-      // Push initial value, if any.
-      // Note: For variables we must not push an initial value (such as
-      // 'undefined') because we may have a (legal) redeclaration and we
-      // must not destroy the current value.
-      if (hole_init) {
-        __ push(Immediate(isolate()->factory()->the_hole_value()));
-      } else {
-        __ push(Immediate(Smi::FromInt(0)));  // Indicates no initial value.
-      }
+      DCHECK(!hole_init);
+      __ push(Immediate(Smi::FromInt(0)));  // Indicates no initial value.
       __ push(
           Immediate(Smi::FromInt(variable->DeclarationPropertyAttributes())));
       __ CallRuntime(Runtime::kDeclareLookupSlot);
@@ -1752,7 +1745,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
   // When we arrive here, eax holds the generator object.
   __ RecordGeneratorContinuation();
   __ mov(ebx, FieldOperand(eax, JSGeneratorObject::kResumeModeOffset));
-  __ mov(eax, FieldOperand(eax, JSGeneratorObject::kInputOffset));
+  __ mov(eax, FieldOperand(eax, JSGeneratorObject::kInputOrDebugPosOffset));
   STATIC_ASSERT(JSGeneratorObject::kNext < JSGeneratorObject::kReturn);
   STATIC_ASSERT(JSGeneratorObject::kThrow > JSGeneratorObject::kReturn);
   __ cmp(ebx, Immediate(Smi::FromInt(JSGeneratorObject::kReturn)));
@@ -3215,7 +3208,7 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
   }
 
   // Convert old value into a number.
-  __ Call(masm->isolate()->builtins()->ToNumber(), RelocInfo::CODE_TARGET);
+  __ Call(isolate()->builtins()->ToNumber(), RelocInfo::CODE_TARGET);
   PrepareForBailoutForId(expr->ToNumberId(), BailoutState::TOS_REGISTER);
 
   // Save result for postfix expressions.

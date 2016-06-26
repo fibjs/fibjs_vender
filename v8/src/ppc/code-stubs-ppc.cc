@@ -3600,14 +3600,14 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
 
 void LoadICTrampolineStub::Generate(MacroAssembler* masm) {
   __ EmitLoadTypeFeedbackVector(LoadWithVectorDescriptor::VectorRegister());
-  LoadICStub stub(isolate(), state());
+  LoadICStub stub(isolate());
   stub.GenerateForTrampoline(masm);
 }
 
 
 void KeyedLoadICTrampolineStub::Generate(MacroAssembler* masm) {
   __ EmitLoadTypeFeedbackVector(LoadWithVectorDescriptor::VectorRegister());
-  KeyedLoadICStub stub(isolate(), state());
+  KeyedLoadICStub stub(isolate());
   stub.GenerateForTrampoline(masm);
 }
 
@@ -4699,7 +4699,7 @@ void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
     // Fall back to %AllocateInNewSpace (if not too big).
     Label too_big_for_new_space;
     __ bind(&allocate);
-    __ cmpi(r10, Operand(Page::kMaxRegularHeapObjectSize));
+    __ Cmpi(r10, Operand(Page::kMaxRegularHeapObjectSize), r0);
     __ bgt(&too_big_for_new_space);
     {
       FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
@@ -5090,7 +5090,7 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   // Fall back to %AllocateInNewSpace (if not too big).
   Label too_big_for_new_space;
   __ bind(&allocate);
-  __ cmpi(r10, Operand(Page::kMaxRegularHeapObjectSize));
+  __ Cmpi(r10, Operand(Page::kMaxRegularHeapObjectSize), r0);
   __ bgt(&too_big_for_new_space);
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
@@ -5107,34 +5107,6 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   __ push(r4);
   __ TailCallRuntime(Runtime::kNewStrictArguments);
 }
-
-void LoadGlobalViaContextStub::Generate(MacroAssembler* masm) {
-  Register context = cp;
-  Register result = r3;
-  Register slot = r5;
-
-  // Go up the context chain to the script context.
-  for (int i = 0; i < depth(); ++i) {
-    __ LoadP(result, ContextMemOperand(context, Context::PREVIOUS_INDEX));
-    context = result;
-  }
-
-  // Load the PropertyCell value at the specified slot.
-  __ ShiftLeftImm(r0, slot, Operand(kPointerSizeLog2));
-  __ add(result, context, r0);
-  __ LoadP(result, ContextMemOperand(result));
-  __ LoadP(result, FieldMemOperand(result, PropertyCell::kValueOffset));
-
-  // If the result is not the_hole, return. Otherwise, handle in the runtime.
-  __ CompareRoot(result, Heap::kTheHoleValueRootIndex);
-  __ Ret(ne);
-
-  // Fallback to runtime.
-  __ SmiTag(slot);
-  __ Push(slot);
-  __ TailCallRuntime(Runtime::kLoadGlobalViaContext);
-}
-
 
 void StoreGlobalViaContextStub::Generate(MacroAssembler* masm) {
   Register value = r3;

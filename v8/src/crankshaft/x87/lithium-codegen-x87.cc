@@ -1105,7 +1105,6 @@ void LCodeGen::RecordSafepointWithRegisters(LPointerMap* pointers,
 void LCodeGen::RecordAndWritePosition(int position) {
   if (position == RelocInfo::kNoPosition) return;
   masm()->positions_recorder()->RecordPosition(position);
-  masm()->positions_recorder()->WriteRecordedPositions();
 }
 
 
@@ -3684,40 +3683,17 @@ void LCodeGen::DoPower(LPower* instr) {
 
 void LCodeGen::DoMathLog(LMathLog* instr) {
   DCHECK(instr->value()->Equals(instr->result()));
+  X87Register result = ToX87Register(instr->result());
   X87Register input_reg = ToX87Register(instr->value());
   X87Fxch(input_reg);
 
-  Label positive, done, zero, nan_result;
-  __ fldz();
-  __ fld(1);
-  __ FCmp();
-  __ j(below, &nan_result, Label::kNear);
-  __ j(equal, &zero, Label::kNear);
-  // Positive input.
-  // {input, ln2}.
-  __ fldln2();
-  // {ln2, input}.
-  __ fxch();
-  // {result}.
-  __ fyl2x();
-  __ jmp(&done, Label::kNear);
-
-  __ bind(&nan_result);
-  X87PrepareToWrite(input_reg);
-  __ push(Immediate(0xffffffff));
-  __ push(Immediate(0x7fffffff));
-  __ fld_d(MemOperand(esp, 0));
-  __ lea(esp, Operand(esp, kDoubleSize));
-  X87CommitWrite(input_reg);
-  __ jmp(&done, Label::kNear);
-
-  __ bind(&zero);
-  ExternalReference ninf = ExternalReference::address_of_negative_infinity();
-  X87PrepareToWrite(input_reg);
-  __ fld_d(Operand::StaticVariable(ninf));
-  X87CommitWrite(input_reg);
-
-  __ bind(&done);
+  // Pass one double as argument on the stack.
+  __ PrepareCallCFunction(2, eax);
+  __ fstp_d(MemOperand(esp, 0));
+  X87PrepareToWrite(result);
+  __ CallCFunction(ExternalReference::ieee754_log_function(isolate()), 2);
+  // Return value is in st(0) on ia32.
+  X87CommitWrite(result);
 }
 
 
@@ -3873,14 +3849,7 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
   DCHECK(ToRegister(instr->result()).is(eax));
 
   __ Move(eax, Immediate(instr->arity()));
-  if (instr->arity() == 1) {
-    // We only need the allocation site for the case we have a length argument.
-    // The case may bail out to the runtime, which will determine the correct
-    // elements kind with the site.
-    __ mov(ebx, instr->hydrogen()->site());
-  } else {
-    __ mov(ebx, isolate()->factory()->undefined_value());
-  }
+  __ mov(ebx, instr->hydrogen()->site());
 
   ElementsKind kind = instr->hydrogen()->elements_kind();
   AllocationSiteOverrideMode override_mode =
@@ -3914,7 +3883,7 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
     CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
     __ bind(&done);
   } else {
-    ArrayNArgumentsConstructorStub stub(isolate(), kind, override_mode);
+    ArrayNArgumentsConstructorStub stub(isolate());
     CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
   }
 }

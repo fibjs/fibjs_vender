@@ -246,11 +246,12 @@ void BytecodeRegisterOptimizer::Write(BytecodeNode* node) {
   }
 
   if (Bytecodes::IsJump(node->bytecode()) ||
-      node->bytecode() == Bytecode::kDebugger) {
-    // The debugger can manipulate locals and parameters, flush
-    // everything before handing over to it. Similarly, all state must
-    // be flushed before emitting a jump due to how bytecode offsets
-    // for jumps are evaluated.
+      node->bytecode() == Bytecode::kDebugger ||
+      node->bytecode() == Bytecode::kSuspendGenerator) {
+    // All state must be flushed before emitting
+    // - a jump (due to how bytecode offsets for jumps are evaluated),
+    // - a call to the debugger (as it can manipulate locals and parameters),
+    // - a generator suspend (as this involves saving all registers).
     FlushState();
   }
 
@@ -311,7 +312,9 @@ void BytecodeRegisterOptimizer::WriteToNextStage(BytecodeNode* node) const {
 
 void BytecodeRegisterOptimizer::WriteToNextStage(
     BytecodeNode* node, const BytecodeSourceInfo& source_info) const {
-  node->source_info().Update(source_info);
+  if (source_info.is_valid()) {
+    node->source_info().Clone(source_info);
+  }
   next_stage_->Write(node);
 }
 
@@ -413,8 +416,9 @@ void BytecodeRegisterOptimizer::RegisterTransfer(
 
 void BytecodeRegisterOptimizer::EmitNopForSourceInfo(
     const BytecodeSourceInfo& source_info) const {
+  DCHECK(source_info.is_valid());
   BytecodeNode nop(Bytecode::kNop);
-  nop.source_info().Update(source_info);
+  nop.source_info().Clone(source_info);
   WriteToNextStage(&nop);
 }
 

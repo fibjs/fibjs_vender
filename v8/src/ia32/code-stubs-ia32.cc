@@ -3447,14 +3447,14 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
 
 void LoadICTrampolineStub::Generate(MacroAssembler* masm) {
   __ EmitLoadTypeFeedbackVector(LoadWithVectorDescriptor::VectorRegister());
-  LoadICStub stub(isolate(), state());
+  LoadICStub stub(isolate());
   stub.GenerateForTrampoline(masm);
 }
 
 
 void KeyedLoadICTrampolineStub::Generate(MacroAssembler* masm) {
   __ EmitLoadTypeFeedbackVector(LoadWithVectorDescriptor::VectorRegister());
-  KeyedLoadICStub stub(isolate(), state());
+  KeyedLoadICStub stub(isolate());
   stub.GenerateForTrampoline(masm);
 }
 
@@ -5119,37 +5119,6 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   }
   __ PushReturnAddressFrom(ecx);
   __ TailCallRuntime(Runtime::kNewStrictArguments);
-}
-
-
-void LoadGlobalViaContextStub::Generate(MacroAssembler* masm) {
-  Register context_reg = esi;
-  Register slot_reg = ebx;
-  Register result_reg = eax;
-  Label slow_case;
-
-  // Go up context chain to the script context.
-  for (int i = 0; i < depth(); ++i) {
-    __ mov(result_reg, ContextOperand(context_reg, Context::PREVIOUS_INDEX));
-    context_reg = result_reg;
-  }
-
-  // Load the PropertyCell value at the specified slot.
-  __ mov(result_reg, ContextOperand(context_reg, slot_reg));
-  __ mov(result_reg, FieldOperand(result_reg, PropertyCell::kValueOffset));
-
-  // Check that value is not the_hole.
-  __ CompareRoot(result_reg, Heap::kTheHoleValueRootIndex);
-  __ j(equal, &slow_case, Label::kNear);
-  __ Ret();
-
-  // Fallback to the runtime.
-  __ bind(&slow_case);
-  __ SmiTag(slot_reg);
-  __ Pop(result_reg);  // Pop return address.
-  __ Push(slot_reg);
-  __ Push(result_reg);  // Push return address.
-  __ TailCallRuntime(Runtime::kLoadGlobalViaContext);
 }
 
 

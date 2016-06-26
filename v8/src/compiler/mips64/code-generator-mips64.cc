@@ -760,11 +760,38 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kIeee754Float64Atan2:
       ASSEMBLE_IEEE754_BINOP(atan2);
       break;
+    case kIeee754Float64Atanh:
+      ASSEMBLE_IEEE754_UNOP(atanh);
+      break;
+    case kIeee754Float64Cos:
+      ASSEMBLE_IEEE754_UNOP(cos);
+      break;
+    case kIeee754Float64Cbrt:
+      ASSEMBLE_IEEE754_UNOP(cbrt);
+      break;
+    case kIeee754Float64Exp:
+      ASSEMBLE_IEEE754_UNOP(exp);
+      break;
+    case kIeee754Float64Expm1:
+      ASSEMBLE_IEEE754_UNOP(expm1);
+      break;
     case kIeee754Float64Log:
       ASSEMBLE_IEEE754_UNOP(log);
       break;
     case kIeee754Float64Log1p:
       ASSEMBLE_IEEE754_UNOP(log1p);
+      break;
+    case kIeee754Float64Log2:
+      ASSEMBLE_IEEE754_UNOP(log2);
+      break;
+    case kIeee754Float64Log10:
+      ASSEMBLE_IEEE754_UNOP(log10);
+      break;
+    case kIeee754Float64Sin:
+      ASSEMBLE_IEEE754_UNOP(sin);
+      break;
+    case kIeee754Float64Tan:
+      ASSEMBLE_IEEE754_UNOP(tan);
       break;
     case kMips64Add:
       __ Addu(i.OutputRegister(), i.InputRegister(0), i.InputOperand(1));
@@ -1149,6 +1176,11 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ sub_s(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
                i.InputDoubleRegister(1));
       break;
+    case kMips64SubPreserveNanS:
+      __ SubNanPreservePayloadAndSign_s(i.OutputDoubleRegister(),
+                                        i.InputDoubleRegister(0),
+                                        i.InputDoubleRegister(1));
+      break;
     case kMips64MulS:
       // TODO(plind): add special case: right op is -1.0, see arm port.
       __ mul_s(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
@@ -1198,6 +1230,11 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kMips64SubD:
       __ sub_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
                i.InputDoubleRegister(1));
+      break;
+    case kMips64SubPreserveNanD:
+      __ SubNanPreservePayloadAndSign_d(i.OutputDoubleRegister(),
+                                        i.InputDoubleRegister(0),
+                                        i.InputDoubleRegister(1));
       break;
     case kMips64MulD:
       // TODO(plind): add special case: right op is -1.0, see arm port.
@@ -2129,7 +2166,8 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           __ li(dst, isolate()->factory()->NewNumber(src.ToFloat32(), TENURED));
           break;
         case Constant::kInt64:
-          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE ||
+              src.rmode() == RelocInfo::WASM_GLOBAL_REFERENCE) {
             __ li(dst, Operand(src.ToInt64(), src.rmode()));
           } else {
             DCHECK(src.rmode() != RelocInfo::WASM_MEMORY_SIZE_REFERENCE);

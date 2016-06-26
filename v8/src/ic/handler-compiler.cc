@@ -9,7 +9,6 @@
 #include "src/ic/ic-inl.h"
 #include "src/ic/ic.h"
 #include "src/isolate-inl.h"
-#include "src/profiler/cpu-profiler.h"
 
 namespace v8 {
 namespace internal {
@@ -79,7 +78,7 @@ Handle<Code> PropertyHandlerCompiler::GetCode(Code::Kind kind,
                                               Handle<Name> name) {
   Code::Flags flags = Code::ComputeHandlerFlags(kind, cache_holder());
   Handle<Code> code = GetCodeWithFlags(flags, name);
-  PROFILE(isolate(), CodeCreateEvent(Logger::HANDLER_TAG,
+  PROFILE(isolate(), CodeCreateEvent(CodeEventListener::HANDLER_TAG,
                                      AbstractCode::cast(*code), *name));
 #ifdef DEBUG
   code->VerifyEmbeddedObjects();
@@ -616,8 +615,7 @@ void ElementHandlerCompiler::CompileElementHandlers(
                                           convert_hole_to_undefined).GetCode();
       } else {
         DCHECK(elements_kind == DICTIONARY_ELEMENTS);
-        LoadICState state = LoadICState(kNoExtraICState);
-        cached_stub = LoadDictionaryElementStub(isolate(), state).GetCode();
+        cached_stub = LoadDictionaryElementStub(isolate()).GetCode();
       }
     }
 

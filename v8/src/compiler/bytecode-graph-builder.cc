@@ -1001,8 +1001,7 @@ Node* BytecodeGraphBuilder::ProcessCallRuntimeArguments(
 
 void BytecodeGraphBuilder::VisitCallRuntime() {
   FrameStateBeforeAndAfter states(this);
-  Runtime::FunctionId functionId = static_cast<Runtime::FunctionId>(
-      bytecode_iterator().GetRuntimeIdOperand(0));
+  Runtime::FunctionId functionId = bytecode_iterator().GetRuntimeIdOperand(0);
   interpreter::Register first_arg = bytecode_iterator().GetRegisterOperand(1);
   size_t arg_count = bytecode_iterator().GetRegisterCountOperand(2);
 
@@ -1014,8 +1013,7 @@ void BytecodeGraphBuilder::VisitCallRuntime() {
 
 void BytecodeGraphBuilder::VisitCallRuntimeForPair() {
   FrameStateBeforeAndAfter states(this);
-  Runtime::FunctionId functionId = static_cast<Runtime::FunctionId>(
-      bytecode_iterator().GetRuntimeIdOperand(0));
+  Runtime::FunctionId functionId = bytecode_iterator().GetRuntimeIdOperand(0);
   interpreter::Register first_arg = bytecode_iterator().GetRegisterOperand(1);
   size_t arg_count = bytecode_iterator().GetRegisterCountOperand(2);
   interpreter::Register first_return =
@@ -1029,8 +1027,7 @@ void BytecodeGraphBuilder::VisitCallRuntimeForPair() {
 
 void BytecodeGraphBuilder::VisitInvokeIntrinsic() {
   FrameStateBeforeAndAfter states(this);
-  Runtime::FunctionId functionId = static_cast<Runtime::FunctionId>(
-      bytecode_iterator().GetRuntimeIdOperand(0));
+  Runtime::FunctionId functionId = bytecode_iterator().GetIntrinsicIdOperand(0);
   interpreter::Register first_arg = bytecode_iterator().GetRegisterOperand(1);
   size_t arg_count = bytecode_iterator().GetRegisterCountOperand(2);
 
@@ -1224,31 +1221,38 @@ void BytecodeGraphBuilder::BuildCompareOp(const Operator* js_op) {
 }
 
 void BytecodeGraphBuilder::VisitTestEqual() {
-  BuildCompareOp(javascript()->Equal());
+  CompareOperationHints hints = CompareOperationHints::Any();
+  BuildCompareOp(javascript()->Equal(hints));
 }
 
 void BytecodeGraphBuilder::VisitTestNotEqual() {
-  BuildCompareOp(javascript()->NotEqual());
+  CompareOperationHints hints = CompareOperationHints::Any();
+  BuildCompareOp(javascript()->NotEqual(hints));
 }
 
 void BytecodeGraphBuilder::VisitTestEqualStrict() {
-  BuildCompareOp(javascript()->StrictEqual());
+  CompareOperationHints hints = CompareOperationHints::Any();
+  BuildCompareOp(javascript()->StrictEqual(hints));
 }
 
 void BytecodeGraphBuilder::VisitTestLessThan() {
-  BuildCompareOp(javascript()->LessThan());
+  CompareOperationHints hints = CompareOperationHints::Any();
+  BuildCompareOp(javascript()->LessThan(hints));
 }
 
 void BytecodeGraphBuilder::VisitTestGreaterThan() {
-  BuildCompareOp(javascript()->GreaterThan());
+  CompareOperationHints hints = CompareOperationHints::Any();
+  BuildCompareOp(javascript()->GreaterThan(hints));
 }
 
 void BytecodeGraphBuilder::VisitTestLessThanOrEqual() {
-  BuildCompareOp(javascript()->LessThanOrEqual());
+  CompareOperationHints hints = CompareOperationHints::Any();
+  BuildCompareOp(javascript()->LessThanOrEqual(hints));
 }
 
 void BytecodeGraphBuilder::VisitTestGreaterThanOrEqual() {
-  BuildCompareOp(javascript()->GreaterThanOrEqual());
+  CompareOperationHints hints = CompareOperationHints::Any();
+  BuildCompareOp(javascript()->GreaterThanOrEqual(hints));
 }
 
 void BytecodeGraphBuilder::VisitTestIn() {
@@ -1412,15 +1416,21 @@ void BytecodeGraphBuilder::VisitSuspendGenerator() {
   Node* state = environment()->LookupAccumulator();
   Node* generator = environment()->LookupRegister(
       bytecode_iterator().GetRegisterOperand(0));
+  // The offsets used by the bytecode iterator are relative to a different base
+  // than what is used in the interpreter, hence the addition.
+  Node* offset =
+      jsgraph()->Constant(bytecode_iterator().current_offset() +
+                          (BytecodeArray::kHeaderSize - kHeapObjectTag));
 
   int register_count = environment()->register_count();
-  int value_input_count = 2 + register_count;
+  int value_input_count = 3 + register_count;
 
   Node** value_inputs = local_zone()->NewArray<Node*>(value_input_count);
   value_inputs[0] = generator;
   value_inputs[1] = state;
+  value_inputs[2] = offset;
   for (int i = 0; i < register_count; ++i) {
-    value_inputs[2 + i] =
+    value_inputs[3 + i] =
         environment()->LookupRegister(interpreter::Register(i));
   }
 
@@ -1518,7 +1528,8 @@ void BytecodeGraphBuilder::BuildConditionalJump(Node* condition) {
 void BytecodeGraphBuilder::BuildJumpIfEqual(Node* comperand) {
   Node* accumulator = environment()->LookupAccumulator();
   Node* condition =
-      NewNode(javascript()->StrictEqual(), accumulator, comperand);
+      NewNode(javascript()->StrictEqual(CompareOperationHints::Any()),
+              accumulator, comperand);
   BuildConditionalJump(condition);
 }
 
@@ -1527,14 +1538,17 @@ void BytecodeGraphBuilder::BuildJumpIfToBooleanEqual(Node* comperand) {
   Node* accumulator = environment()->LookupAccumulator();
   Node* to_boolean =
       NewNode(javascript()->ToBoolean(ToBooleanHint::kAny), accumulator);
-  Node* condition = NewNode(javascript()->StrictEqual(), to_boolean, comperand);
+  Node* condition =
+      NewNode(javascript()->StrictEqual(CompareOperationHints::Any()),
+              to_boolean, comperand);
   BuildConditionalJump(condition);
 }
 
 void BytecodeGraphBuilder::BuildJumpIfNotHole() {
   Node* accumulator = environment()->LookupAccumulator();
-  Node* condition = NewNode(javascript()->StrictEqual(), accumulator,
-                            jsgraph()->TheHoleConstant());
+  Node* condition =
+      NewNode(javascript()->StrictEqual(CompareOperationHints::Any()),
+              accumulator, jsgraph()->TheHoleConstant());
   Node* node =
       NewNode(common()->Select(MachineRepresentation::kTagged), condition,
               jsgraph()->FalseConstant(), jsgraph()->TrueConstant());

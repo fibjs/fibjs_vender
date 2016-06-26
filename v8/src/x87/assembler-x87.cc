@@ -1418,7 +1418,6 @@ void Assembler::bind(Label* L) {
 
 
 void Assembler::call(Label* L) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   if (L->is_bound()) {
     const int long_size = 5;
@@ -1436,7 +1435,6 @@ void Assembler::call(Label* L) {
 
 
 void Assembler::call(byte* entry, RelocInfo::Mode rmode) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   DCHECK(!RelocInfo::IsCodeTarget(rmode));
   EMIT(0xE8);
@@ -1455,7 +1453,6 @@ int Assembler::CallSize(const Operand& adr) {
 
 
 void Assembler::call(const Operand& adr) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   EMIT(0xFF);
   emit_operand(edx, adr);
@@ -1470,7 +1467,6 @@ int Assembler::CallSize(Handle<Code> code, RelocInfo::Mode rmode) {
 void Assembler::call(Handle<Code> code,
                      RelocInfo::Mode rmode,
                      TypeFeedbackId ast_id) {
-  positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
   DCHECK(RelocInfo::IsCodeTarget(rmode)
       || rmode == RelocInfo::CODE_AGE_SEQUENCE);

@@ -842,7 +842,6 @@ void LCodeGen::RecordSafepointWithRegisters(LPointerMap* pointers,
 void LCodeGen::RecordAndWritePosition(int position) {
   if (position == RelocInfo::kNoPosition) return;
   masm()->positions_recorder()->RecordPosition(position);
-  masm()->positions_recorder()->WriteRecordedPositions();
 }
 
 
@@ -3602,17 +3601,26 @@ void LCodeGen::DoPower(LPower* instr) {
   }
 }
 
-
-void LCodeGen::DoMathExp(LMathExp* instr) {
-  XMMRegister input = ToDoubleRegister(instr->value());
-  XMMRegister result = ToDoubleRegister(instr->result());
-  XMMRegister temp0 = double_scratch0();
-  Register temp1 = ToRegister(instr->temp1());
-  Register temp2 = ToRegister(instr->temp2());
-
-  MathExpGenerator::EmitMathExp(masm(), input, result, temp0, temp1, temp2);
+void LCodeGen::DoMathCos(LMathCos* instr) {
+  DCHECK(ToDoubleRegister(instr->value()).is(xmm0));
+  DCHECK(ToDoubleRegister(instr->result()).is(xmm0));
+  __ PrepareCallCFunction(1);
+  __ CallCFunction(ExternalReference::ieee754_cos_function(isolate()), 1);
 }
 
+void LCodeGen::DoMathExp(LMathExp* instr) {
+  DCHECK(ToDoubleRegister(instr->value()).is(xmm0));
+  DCHECK(ToDoubleRegister(instr->result()).is(xmm0));
+  __ PrepareCallCFunction(1);
+  __ CallCFunction(ExternalReference::ieee754_exp_function(isolate()), 1);
+}
+
+void LCodeGen::DoMathSin(LMathSin* instr) {
+  DCHECK(ToDoubleRegister(instr->value()).is(xmm0));
+  DCHECK(ToDoubleRegister(instr->result()).is(xmm0));
+  __ PrepareCallCFunction(1);
+  __ CallCFunction(ExternalReference::ieee754_sin_function(isolate()), 1);
+}
 
 void LCodeGen::DoMathLog(LMathLog* instr) {
   DCHECK(ToDoubleRegister(instr->value()).is(xmm0));
@@ -5088,17 +5096,6 @@ void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
   } else {
     __ Movd(result_reg, value_reg);
   }
-}
-
-
-void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
-  Register hi_reg = ToRegister(instr->hi());
-  Register lo_reg = ToRegister(instr->lo());
-  XMMRegister result_reg = ToDoubleRegister(instr->result());
-  __ movl(kScratchRegister, hi_reg);
-  __ shlq(kScratchRegister, Immediate(32));
-  __ orq(kScratchRegister, lo_reg);
-  __ Movq(result_reg, kScratchRegister);
 }
 
 

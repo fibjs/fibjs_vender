@@ -22,7 +22,6 @@
 #include "src/json-parser.h"
 #include "src/json-stringifier.h"
 #include "src/messages.h"
-#include "src/profiler/cpu-profiler.h"
 #include "src/property-descriptor.h"
 #include "src/prototype.h"
 #include "src/string-builder.h"
@@ -35,7 +34,6 @@ namespace internal {
 namespace {
 
 // Arguments object passed to C++ builtins.
-template <BuiltinExtraArguments extra_args>
 class BuiltinArguments : public Arguments {
  public:
   BuiltinArguments(int length, Object** arguments)
@@ -66,68 +64,17 @@ class BuiltinArguments : public Arguments {
   }
 
   template <class S>
-  Handle<S> target();
-  Handle<HeapObject> new_target();
+  Handle<S> target() {
+    return Arguments::at<S>(Arguments::length() - 2);
+  }
+  Handle<HeapObject> new_target() {
+    return Arguments::at<HeapObject>(Arguments::length() - 1);
+  }
 
   // Gets the total number of arguments including the receiver (but
   // excluding extra arguments).
-  int length() const;
+  int length() const { return Arguments::length() - 2; }
 };
-
-
-// Specialize BuiltinArguments for the extra arguments.
-
-template <>
-int BuiltinArguments<BuiltinExtraArguments::kNone>::length() const {
-  return Arguments::length();
-}
-
-template <>
-int BuiltinArguments<BuiltinExtraArguments::kTarget>::length() const {
-  return Arguments::length() - 1;
-}
-
-template <>
-template <class S>
-Handle<S> BuiltinArguments<BuiltinExtraArguments::kTarget>::target() {
-  return Arguments::at<S>(Arguments::length() - 1);
-}
-
-template <>
-int BuiltinArguments<BuiltinExtraArguments::kNewTarget>::length() const {
-  return Arguments::length() - 1;
-}
-
-template <>
-Handle<HeapObject>
-BuiltinArguments<BuiltinExtraArguments::kNewTarget>::new_target() {
-  return Arguments::at<HeapObject>(Arguments::length() - 1);
-}
-
-template <>
-int BuiltinArguments<BuiltinExtraArguments::kTargetAndNewTarget>::length()
-    const {
-  return Arguments::length() - 2;
-}
-
-template <>
-template <class S>
-Handle<S>
-BuiltinArguments<BuiltinExtraArguments::kTargetAndNewTarget>::target() {
-  return Arguments::at<S>(Arguments::length() - 2);
-}
-
-template <>
-Handle<HeapObject>
-BuiltinArguments<BuiltinExtraArguments::kTargetAndNewTarget>::new_target() {
-  return Arguments::at<HeapObject>(Arguments::length() - 1);
-}
-
-
-#define DEF_ARG_TYPE(name, spec) \
-  typedef BuiltinArguments<BuiltinExtraArguments::spec> name##ArgumentsType;
-BUILTIN_LIST_C(DEF_ARG_TYPE)
-#undef DEF_ARG_TYPE
 
 
 // ----------------------------------------------------------------------------
@@ -144,29 +91,29 @@ BUILTIN_LIST_C(DEF_ARG_TYPE)
 // through the BuiltinArguments object args.
 // TODO(cbruni): add global flag to check whether any tracing events have been
 // enabled.
-#define BUILTIN(name)                                                          \
-  MUST_USE_RESULT static Object* Builtin_Impl_##name(name##ArgumentsType args, \
-                                                     Isolate* isolate);        \
-                                                                               \
-  V8_NOINLINE static Object* Builtin_Impl_Stats_##name(                        \
-      int args_length, Object** args_object, Isolate* isolate) {               \
-    name##ArgumentsType args(args_length, args_object);                        \
-    RuntimeCallTimerScope timer(isolate, &RuntimeCallStats::Builtin_##name);   \
-    TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.runtime"),                      \
-                 "V8.Builtin_" #name);                                         \
-    return Builtin_Impl_##name(args, isolate);                                 \
-  }                                                                            \
-                                                                               \
-  MUST_USE_RESULT static Object* Builtin_##name(                               \
-      int args_length, Object** args_object, Isolate* isolate) {               \
-    if (FLAG_runtime_call_stats) {                                             \
-      return Builtin_Impl_Stats_##name(args_length, args_object, isolate);     \
-    }                                                                          \
-    name##ArgumentsType args(args_length, args_object);                        \
-    return Builtin_Impl_##name(args, isolate);                                 \
-  }                                                                            \
-                                                                               \
-  MUST_USE_RESULT static Object* Builtin_Impl_##name(name##ArgumentsType args, \
+#define BUILTIN(name)                                                        \
+  MUST_USE_RESULT static Object* Builtin_Impl_##name(BuiltinArguments args,  \
+                                                     Isolate* isolate);      \
+                                                                             \
+  V8_NOINLINE static Object* Builtin_Impl_Stats_##name(                      \
+      int args_length, Object** args_object, Isolate* isolate) {             \
+    BuiltinArguments args(args_length, args_object);                         \
+    RuntimeCallTimerScope timer(isolate, &RuntimeCallStats::Builtin_##name); \
+    TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.runtime"),                    \
+                 "V8.Builtin_" #name);                                       \
+    return Builtin_Impl_##name(args, isolate);                               \
+  }                                                                          \
+                                                                             \
+  MUST_USE_RESULT static Object* Builtin_##name(                             \
+      int args_length, Object** args_object, Isolate* isolate) {             \
+    if (FLAG_runtime_call_stats) {                                           \
+      return Builtin_Impl_Stats_##name(args_length, args_object, isolate);   \
+    }                                                                        \
+    BuiltinArguments args(args_length, args_object);                         \
+    return Builtin_Impl_##name(args, isolate);                               \
+  }                                                                          \
+                                                                             \
+  MUST_USE_RESULT static Object* Builtin_Impl_##name(BuiltinArguments args,  \
                                                      Isolate* isolate)
 
 // ----------------------------------------------------------------------------
@@ -287,7 +234,7 @@ inline bool HasOnlySimpleElements(Isolate* isolate, JSReceiver* receiver) {
 MUST_USE_RESULT
 inline bool EnsureJSArrayWithWritableFastElements(Isolate* isolate,
                                                   Handle<Object> receiver,
-                                                  Arguments* args,
+                                                  BuiltinArguments* args,
                                                   int first_added_arg) {
   if (!receiver->IsJSArray()) return false;
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
@@ -334,10 +281,9 @@ inline bool EnsureJSArrayWithWritableFastElements(Isolate* isolate,
   return true;
 }
 
-
-MUST_USE_RESULT static Object* CallJsIntrinsic(
-    Isolate* isolate, Handle<JSFunction> function,
-    BuiltinArguments<BuiltinExtraArguments::kNone> args) {
+MUST_USE_RESULT static Object* CallJsIntrinsic(Isolate* isolate,
+                                               Handle<JSFunction> function,
+                                               BuiltinArguments args) {
   HandleScope handleScope(isolate);
   int argc = args.length() - 1;
   ScopedVector<Handle<Object> > argv(argc);
@@ -442,8 +388,7 @@ void Builtins::Generate_ObjectHasOwnProperty(CodeStubAssembler* assembler) {
 
 namespace {
 
-Object* DoArrayPush(Isolate* isolate,
-                    BuiltinArguments<BuiltinExtraArguments::kNone> args) {
+Object* DoArrayPush(Isolate* isolate, BuiltinArguments args) {
   HandleScope scope(isolate);
   Handle<Object> receiver = args.receiver();
   if (!EnsureJSArrayWithWritableFastElements(isolate, receiver, &args, 1)) {
@@ -477,8 +422,8 @@ RUNTIME_FUNCTION(Runtime_ArrayPush) {
   DCHECK_EQ(2, args.length());
   Arguments* incoming = reinterpret_cast<Arguments*>(args[0]);
   // Rewrap the arguments as builtins arguments.
-  BuiltinArguments<BuiltinExtraArguments::kNone> caller_args(
-      incoming->length() + 1, incoming->arguments() + 1);
+  BuiltinArguments caller_args(incoming->length() + 3,
+                               incoming->arguments() + 1);
   return DoArrayPush(isolate, caller_args);
 }
 
@@ -1242,8 +1187,7 @@ static Maybe<bool> IsConcatSpreadable(Isolate* isolate, Handle<Object> obj) {
   return Object::IsArray(obj);
 }
 
-
-Object* Slow_ArrayConcat(Arguments* args, Handle<Object> species,
+Object* Slow_ArrayConcat(BuiltinArguments* args, Handle<Object> species,
                          Isolate* isolate) {
   int argument_count = args->length();
 
@@ -1440,7 +1384,8 @@ bool IsSimpleArray(Isolate* isolate, Handle<JSArray> obj) {
   return false;
 }
 
-MaybeHandle<JSArray> Fast_ArrayConcat(Isolate* isolate, Arguments* args) {
+MaybeHandle<JSArray> Fast_ArrayConcat(Isolate* isolate,
+                                      BuiltinArguments* args) {
   if (!isolate->IsIsConcatSpreadableLookupChainIntact()) {
     return MaybeHandle<JSArray>();
   }
@@ -1673,6 +1618,8 @@ BUILTIN(ObjectAssign) {
 
 
 // ES6 section 19.1.2.2 Object.create ( O [ , Properties ] )
+// TODO(verwaest): Support the common cases with precached map directly in
+// an Object.create stub.
 BUILTIN(ObjectCreate) {
   HandleScope scope(isolate);
   Handle<Object> prototype = args.atOrUndefined(isolate, 1);
@@ -1688,7 +1635,26 @@ BUILTIN(ObjectCreate) {
   Handle<Map> map(isolate->native_context()->object_function()->initial_map(),
                   isolate);
   if (map->prototype() != *prototype) {
-    map = Map::TransitionToPrototype(map, prototype, FAST_PROTOTYPE);
+    if (prototype->IsNull(isolate)) {
+      map = isolate->object_with_null_prototype_map();
+    } else if (prototype->IsJSObject()) {
+      Handle<JSObject> js_prototype = Handle<JSObject>::cast(prototype);
+      if (!js_prototype->map()->is_prototype_map()) {
+        JSObject::OptimizeAsPrototype(js_prototype, FAST_PROTOTYPE);
+      }
+      Handle<PrototypeInfo> info =
+          Map::GetOrCreatePrototypeInfo(js_prototype, isolate);
+      // TODO(verwaest): Use inobject slack tracking for this map.
+      if (info->HasObjectCreateMap()) {
+        map = handle(info->ObjectCreateMap(), isolate);
+      } else {
+        map = Map::CopyInitialMap(map);
+        Map::SetPrototype(map, prototype, FAST_PROTOTYPE);
+        PrototypeInfo::SetObjectCreateMap(info, map);
+      }
+    } else {
+      map = Map::TransitionToPrototype(map, prototype, REGULAR_PROTOTYPE);
+    }
   }
 
   // Actually allocate the object.
@@ -1905,8 +1871,7 @@ BUILTIN(ObjectGetOwnPropertyDescriptor) {
 
 namespace {
 
-Object* GetOwnPropertyKeys(Isolate* isolate,
-                           BuiltinArguments<BuiltinExtraArguments::kNone> args,
+Object* GetOwnPropertyKeys(Isolate* isolate, BuiltinArguments args,
                            PropertyFilter filter) {
   HandleScope scope(isolate);
   Handle<Object> object = args.atOrUndefined(isolate, 1);
@@ -2317,6 +2282,18 @@ void Builtins::Generate_MathAtan2(CodeStubAssembler* assembler) {
   assembler->Return(result);
 }
 
+// ES6 section 20.2.2.7 Math.atanh ( x )
+void Builtins::Generate_MathAtanh(CodeStubAssembler* assembler) {
+  using compiler::Node;
+
+  Node* x = assembler->Parameter(1);
+  Node* context = assembler->Parameter(4);
+  Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
+  Node* value = assembler->Float64Atanh(x_value);
+  Node* result = assembler->ChangeFloat64ToTagged(value);
+  assembler->Return(result);
+}
+
 namespace {
 
 void Generate_MathRoundingOperation(
@@ -2383,6 +2360,18 @@ void Generate_MathRoundingOperation(
 // ES6 section 20.2.2.10 Math.ceil ( x )
 void Builtins::Generate_MathCeil(CodeStubAssembler* assembler) {
   Generate_MathRoundingOperation(assembler, &CodeStubAssembler::Float64Ceil);
+}
+
+// ES6 section 20.2.2.9 Math.cbrt ( x )
+void Builtins::Generate_MathCbrt(CodeStubAssembler* assembler) {
+  using compiler::Node;
+
+  Node* x = assembler->Parameter(1);
+  Node* context = assembler->Parameter(4);
+  Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
+  Node* value = assembler->Float64Cbrt(x_value);
+  Node* result = assembler->ChangeFloat64ToTagged(value);
+  assembler->Return(result);
 }
 
 // ES6 section 20.2.2.11 Math.clz32 ( x )
@@ -2453,6 +2442,30 @@ void Builtins::Generate_MathClz32(CodeStubAssembler* assembler) {
   }
 }
 
+// ES6 section 20.2.2.12 Math.cos ( x )
+void Builtins::Generate_MathCos(CodeStubAssembler* assembler) {
+  using compiler::Node;
+
+  Node* x = assembler->Parameter(1);
+  Node* context = assembler->Parameter(4);
+  Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
+  Node* value = assembler->Float64Cos(x_value);
+  Node* result = assembler->ChangeFloat64ToTagged(value);
+  assembler->Return(result);
+}
+
+// ES6 section 20.2.2.14 Math.exp ( x )
+void Builtins::Generate_MathExp(CodeStubAssembler* assembler) {
+  using compiler::Node;
+
+  Node* x = assembler->Parameter(1);
+  Node* context = assembler->Parameter(4);
+  Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
+  Node* value = assembler->Float64Exp(x_value);
+  Node* result = assembler->ChangeFloat64ToTagged(value);
+  assembler->Return(result);
+}
+
 // ES6 section 20.2.2.16 Math.floor ( x )
 void Builtins::Generate_MathFloor(CodeStubAssembler* assembler) {
   Generate_MathRoundingOperation(assembler, &CodeStubAssembler::Float64Floor);
@@ -2504,9 +2517,57 @@ void Builtins::Generate_MathLog1p(CodeStubAssembler* assembler) {
   assembler->Return(result);
 }
 
+// ES6 section 20.2.2.23 Math.log2 ( x )
+void Builtins::Generate_MathLog2(CodeStubAssembler* assembler) {
+  using compiler::Node;
+
+  Node* x = assembler->Parameter(1);
+  Node* context = assembler->Parameter(4);
+  Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
+  Node* value = assembler->Float64Log2(x_value);
+  Node* result = assembler->ChangeFloat64ToTagged(value);
+  assembler->Return(result);
+}
+
+// ES6 section 20.2.2.22 Math.log10 ( x )
+void Builtins::Generate_MathLog10(CodeStubAssembler* assembler) {
+  using compiler::Node;
+
+  Node* x = assembler->Parameter(1);
+  Node* context = assembler->Parameter(4);
+  Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
+  Node* value = assembler->Float64Log10(x_value);
+  Node* result = assembler->ChangeFloat64ToTagged(value);
+  assembler->Return(result);
+}
+
+// ES6 section 20.2.2.15 Math.expm1 ( x )
+void Builtins::Generate_MathExpm1(CodeStubAssembler* assembler) {
+  using compiler::Node;
+
+  Node* x = assembler->Parameter(1);
+  Node* context = assembler->Parameter(4);
+  Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
+  Node* value = assembler->Float64Expm1(x_value);
+  Node* result = assembler->ChangeFloat64ToTagged(value);
+  assembler->Return(result);
+}
+
 // ES6 section 20.2.2.28 Math.round ( x )
 void Builtins::Generate_MathRound(CodeStubAssembler* assembler) {
   Generate_MathRoundingOperation(assembler, &CodeStubAssembler::Float64Round);
+}
+
+// ES6 section 20.2.2.30 Math.sin ( x )
+void Builtins::Generate_MathSin(CodeStubAssembler* assembler) {
+  using compiler::Node;
+
+  Node* x = assembler->Parameter(1);
+  Node* context = assembler->Parameter(4);
+  Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
+  Node* value = assembler->Float64Sin(x_value);
+  Node* result = assembler->ChangeFloat64ToTagged(value);
+  assembler->Return(result);
 }
 
 // ES6 section 20.2.2.32 Math.sqrt ( x )
@@ -2517,6 +2578,18 @@ void Builtins::Generate_MathSqrt(CodeStubAssembler* assembler) {
   Node* context = assembler->Parameter(4);
   Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
   Node* value = assembler->Float64Sqrt(x_value);
+  Node* result = assembler->ChangeFloat64ToTagged(value);
+  assembler->Return(result);
+}
+
+// ES6 section 20.2.2.33 Math.tan ( x )
+void Builtins::Generate_MathTan(CodeStubAssembler* assembler) {
+  using compiler::Node;
+
+  Node* x = assembler->Parameter(1);
+  Node* context = assembler->Parameter(4);
+  Node* x_value = assembler->TruncateTaggedToFloat64(context, x);
+  Node* value = assembler->Float64Tan(x_value);
   Node* result = assembler->ChangeFloat64ToTagged(value);
   assembler->Return(result);
 }
@@ -4254,10 +4327,9 @@ void Builtins::Generate_DatePrototypeGetUTCSeconds(MacroAssembler* masm) {
 namespace {
 
 // ES6 section 19.2.1.1.1 CreateDynamicFunction
-MaybeHandle<JSFunction> CreateDynamicFunction(
-    Isolate* isolate,
-    BuiltinArguments<BuiltinExtraArguments::kTargetAndNewTarget> args,
-    const char* token) {
+MaybeHandle<JSFunction> CreateDynamicFunction(Isolate* isolate,
+                                              BuiltinArguments args,
+                                              const char* token) {
   // Compute number of arguments, ignoring the receiver.
   DCHECK_LE(1, args.length());
   int const argc = args.length() - 1;
@@ -4377,8 +4449,7 @@ BUILTIN(FunctionConstructor) {
 
 namespace {
 
-Object* DoFunctionBind(Isolate* isolate,
-                       BuiltinArguments<BuiltinExtraArguments::kNone> args) {
+Object* DoFunctionBind(Isolate* isolate, BuiltinArguments args) {
   HandleScope scope(isolate);
   DCHECK_LE(1, args.length());
   if (!args.receiver()->IsCallable()) {
@@ -4473,8 +4544,8 @@ RUNTIME_FUNCTION(Runtime_FunctionBind) {
   DCHECK_EQ(2, args.length());
   Arguments* incoming = reinterpret_cast<Arguments*>(args[0]);
   // Rewrap the arguments as builtins arguments.
-  BuiltinArguments<BuiltinExtraArguments::kNone> caller_args(
-      incoming->length() + 1, incoming->arguments() + 1);
+  BuiltinArguments caller_args(incoming->length() + 3,
+                               incoming->arguments() + 1);
   return DoFunctionBind(isolate, caller_args);
 }
 
@@ -4503,8 +4574,17 @@ BUILTIN(GeneratorFunctionConstructor) {
 
 BUILTIN(AsyncFunctionConstructor) {
   HandleScope scope(isolate);
-  RETURN_RESULT_OR_FAILURE(
-      isolate, CreateDynamicFunction(isolate, args, "async function"));
+  Handle<JSFunction> func;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, func, CreateDynamicFunction(isolate, args, "async function"));
+
+  // Do not lazily compute eval position for AsyncFunction, as they may not be
+  // determined after the function is resumed.
+  Handle<Script> script = handle(Script::cast(func->shared()->script()));
+  int position = script->GetEvalPosition();
+  USE(position);
+
+  return *func;
 }
 
 // ES6 section 19.4.1.1 Symbol ( [ description ] ) for the [[Call]] case.
@@ -5042,22 +5122,35 @@ BUILTIN(RestrictedStrictArgumentsPropertiesThrower) {
 
 namespace {
 
+// Returns the holder JSObject if the function can legally be called with this
+// receiver.  Returns nullptr if the call is illegal.
+// TODO(dcarney): CallOptimization duplicates this logic, merge.
+JSObject* GetCompatibleReceiver(Isolate* isolate, FunctionTemplateInfo* info,
+                                JSObject* receiver) {
+  Object* recv_type = info->signature();
+  // No signature, return holder.
+  if (!recv_type->IsFunctionTemplateInfo()) return receiver;
+  FunctionTemplateInfo* signature = FunctionTemplateInfo::cast(recv_type);
+
+  // Check the receiver. Fast path for receivers with no hidden prototypes.
+  if (signature->IsTemplateFor(receiver)) return receiver;
+  if (!receiver->map()->has_hidden_prototype()) return nullptr;
+  for (PrototypeIterator iter(isolate, receiver, kStartAtPrototype,
+                              PrototypeIterator::END_AT_NON_HIDDEN);
+       !iter.IsAtEnd(); iter.Advance()) {
+    JSObject* current = iter.GetCurrent<JSObject>();
+    if (signature->IsTemplateFor(current)) return current;
+  }
+  return nullptr;
+}
+
+template <bool is_construct>
 MUST_USE_RESULT MaybeHandle<Object> HandleApiCallHelper(
-    Isolate* isolate,
-    BuiltinArguments<BuiltinExtraArguments::kTargetAndNewTarget> args) {
-  HandleScope scope(isolate);
-  Handle<HeapObject> function = args.target<HeapObject>();
-  Handle<HeapObject> new_target = args.new_target();
-  bool is_construct = !new_target->IsUndefined(isolate);
-  Handle<JSReceiver> receiver;
-
-  DCHECK(function->IsFunctionTemplateInfo() ||
-         Handle<JSFunction>::cast(function)->shared()->IsApiFunction());
-
-  Handle<FunctionTemplateInfo> fun_data =
-      function->IsFunctionTemplateInfo()
-          ? Handle<FunctionTemplateInfo>::cast(function)
-          : handle(JSFunction::cast(*function)->shared()->get_api_func_data());
+    Isolate* isolate, Handle<HeapObject> function,
+    Handle<HeapObject> new_target, Handle<FunctionTemplateInfo> fun_data,
+    Handle<Object> receiver, BuiltinArguments args) {
+  Handle<JSObject> js_receiver;
+  JSObject* raw_holder;
   if (is_construct) {
     DCHECK(args.receiver()->IsTheHole(isolate));
     if (fun_data->instance_template()->IsUndefined(isolate)) {
@@ -5069,33 +5162,39 @@ MUST_USE_RESULT MaybeHandle<Object> HandleApiCallHelper(
     Handle<ObjectTemplateInfo> instance_template(
         ObjectTemplateInfo::cast(fun_data->instance_template()), isolate);
     ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, receiver,
+        isolate, js_receiver,
         ApiNatives::InstantiateObject(instance_template,
                                       Handle<JSReceiver>::cast(new_target)),
         Object);
-    args[0] = *receiver;
-    DCHECK_EQ(*receiver, *args.receiver());
+    args[0] = *js_receiver;
+    DCHECK_EQ(*js_receiver, *args.receiver());
+
+    raw_holder = *js_receiver;
   } else {
-    DCHECK(args.receiver()->IsJSReceiver());
-    receiver = args.at<JSReceiver>(0);
-  }
+    DCHECK(receiver->IsJSReceiver());
 
-  if (!is_construct && !fun_data->accept_any_receiver()) {
-    if (receiver->IsJSObject() && receiver->IsAccessCheckNeeded()) {
-      Handle<JSObject> js_receiver = Handle<JSObject>::cast(receiver);
-      if (!isolate->MayAccess(handle(isolate->context()), js_receiver)) {
-        isolate->ReportFailedAccessCheck(js_receiver);
-        RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate, Object);
-      }
+    if (!receiver->IsJSObject()) {
+      // This function cannot be called with the given receiver.  Abort!
+      THROW_NEW_ERROR(
+          isolate, NewTypeError(MessageTemplate::kIllegalInvocation), Object);
     }
-  }
 
-  Object* raw_holder = fun_data->GetCompatibleReceiver(isolate, *receiver);
+    js_receiver = Handle<JSObject>::cast(receiver);
 
-  if (raw_holder->IsNull(isolate)) {
-    // This function cannot be called with the given receiver.  Abort!
-    THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kIllegalInvocation),
-                    Object);
+    if (!fun_data->accept_any_receiver() &&
+        js_receiver->IsAccessCheckNeeded() &&
+        !isolate->MayAccess(handle(isolate->context()), js_receiver)) {
+      isolate->ReportFailedAccessCheck(js_receiver);
+      RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate, Object);
+    }
+
+    raw_holder = GetCompatibleReceiver(isolate, *fun_data, *js_receiver);
+
+    if (raw_holder == nullptr) {
+      // This function cannot be called with the given receiver.  Abort!
+      THROW_NEW_ERROR(
+          isolate, NewTypeError(MessageTemplate::kIllegalInvocation), Object);
+    }
   }
 
   Object* raw_call_data = fun_data->call_code();
@@ -5107,23 +5206,25 @@ MUST_USE_RESULT MaybeHandle<Object> HandleApiCallHelper(
         v8::ToCData<v8::FunctionCallback>(callback_obj);
     Object* data_obj = call_data->data();
 
-    LOG(isolate, ApiObjectAccess("call", JSObject::cast(*args.receiver())));
-    DCHECK(raw_holder->IsJSObject());
+    LOG(isolate, ApiObjectAccess("call", JSObject::cast(*js_receiver)));
 
     FunctionCallbackArguments custom(isolate, data_obj, *function, raw_holder,
                                      *new_target, &args[0] - 1,
                                      args.length() - 1);
 
     Handle<Object> result = custom.Call(callback);
-    if (result.is_null()) result = isolate->factory()->undefined_value();
 
     RETURN_EXCEPTION_IF_SCHEDULED_EXCEPTION(isolate, Object);
-    if (!is_construct || result->IsJSObject()) {
-      return scope.CloseAndEscape(result);
+    if (result.is_null()) {
+      if (is_construct) return js_receiver;
+      return isolate->factory()->undefined_value();
     }
+    // Rebox the result.
+    result->VerifyApiCallResultType();
+    if (!is_construct || result->IsJSObject()) return handle(*result, isolate);
   }
 
-  return scope.CloseAndEscape(receiver);
+  return js_receiver;
 }
 
 }  // namespace
@@ -5131,7 +5232,20 @@ MUST_USE_RESULT MaybeHandle<Object> HandleApiCallHelper(
 
 BUILTIN(HandleApiCall) {
   HandleScope scope(isolate);
-  RETURN_RESULT_OR_FAILURE(isolate, HandleApiCallHelper(isolate, args));
+  Handle<JSFunction> function = args.target<JSFunction>();
+  Handle<Object> receiver = args.receiver();
+  Handle<HeapObject> new_target = args.new_target();
+  Handle<FunctionTemplateInfo> fun_data(function->shared()->get_api_func_data(),
+                                        isolate);
+  if (new_target->IsJSReceiver()) {
+    RETURN_RESULT_OR_FAILURE(
+        isolate, HandleApiCallHelper<true>(isolate, function, new_target,
+                                           fun_data, receiver, args));
+  } else {
+    RETURN_RESULT_OR_FAILURE(
+        isolate, HandleApiCallHelper<false>(isolate, function, new_target,
+                                            fun_data, receiver, args));
+  }
 }
 
 
@@ -5215,14 +5329,10 @@ Handle<Code> Builtins::InterpreterPushArgsAndCall(TailCallMode tail_call_mode) {
 
 namespace {
 
-class RelocatableArguments
-    : public BuiltinArguments<BuiltinExtraArguments::kTargetAndNewTarget>,
-      public Relocatable {
+class RelocatableArguments : public BuiltinArguments, public Relocatable {
  public:
   RelocatableArguments(Isolate* isolate, int length, Object** arguments)
-      : BuiltinArguments<BuiltinExtraArguments::kTargetAndNewTarget>(length,
-                                                                     arguments),
-        Relocatable(isolate) {}
+      : BuiltinArguments(length, arguments), Relocatable(isolate) {}
 
   virtual inline void IterateInstance(ObjectVisitor* v) {
     if (length() == 0) return;
@@ -5235,14 +5345,17 @@ class RelocatableArguments
 
 }  // namespace
 
-MaybeHandle<Object> Builtins::InvokeApiFunction(Handle<HeapObject> function,
+MaybeHandle<Object> Builtins::InvokeApiFunction(Isolate* isolate,
+                                                Handle<HeapObject> function,
                                                 Handle<Object> receiver,
                                                 int argc,
                                                 Handle<Object> args[]) {
-  Isolate* isolate = function->GetIsolate();
+  DCHECK(function->IsFunctionTemplateInfo() ||
+         (function->IsJSFunction() &&
+          JSFunction::cast(*function)->shared()->IsApiFunction()));
+
   // Do proper receiver conversion for non-strict mode api functions.
   if (!receiver->IsJSReceiver()) {
-    DCHECK(function->IsFunctionTemplateInfo() || function->IsJSFunction());
     if (function->IsFunctionTemplateInfo() ||
         is_sloppy(JSFunction::cast(*function)->shared()->language_mode())) {
       ASSIGN_RETURN_ON_EXCEPTION(isolate, receiver,
@@ -5250,6 +5363,13 @@ MaybeHandle<Object> Builtins::InvokeApiFunction(Handle<HeapObject> function,
                                  Object);
     }
   }
+
+  Handle<FunctionTemplateInfo> fun_data =
+      function->IsFunctionTemplateInfo()
+          ? Handle<FunctionTemplateInfo>::cast(function)
+          : handle(JSFunction::cast(*function)->shared()->get_api_func_data(),
+                   isolate);
+  Handle<HeapObject> new_target = isolate->factory()->undefined_value();
   // Construct BuiltinArguments object:
   // new target, function, arguments reversed, receiver.
   const int kBufferSize = 32;
@@ -5265,15 +5385,14 @@ MaybeHandle<Object> Builtins::InvokeApiFunction(Handle<HeapObject> function,
     argv[argc - i + 1] = *args[i];
   }
   argv[1] = *function;
-  argv[0] = isolate->heap()->undefined_value();  // new target
+  argv[0] = *new_target;
   MaybeHandle<Object> result;
   {
     RelocatableArguments arguments(isolate, argc + 3, &argv[argc] + 2);
-    result = HandleApiCallHelper(isolate, arguments);
+    result = HandleApiCallHelper<false>(isolate, function, new_target, fun_data,
+                                        receiver, arguments);
   }
-  if (argv != small_argv) {
-    delete[] argv;
-  }
+  if (argv != small_argv) delete[] argv;
   return result;
 }
 
@@ -5282,8 +5401,7 @@ MaybeHandle<Object> Builtins::InvokeApiFunction(Handle<HeapObject> function,
 // API. The object can be called as either a constructor (using new) or just as
 // a function (without new).
 MUST_USE_RESULT static Object* HandleApiCallAsFunctionOrConstructor(
-    Isolate* isolate, bool is_construct_call,
-    BuiltinArguments<BuiltinExtraArguments::kNone> args) {
+    Isolate* isolate, bool is_construct_call, BuiltinArguments args) {
   Handle<Object> receiver = args.receiver();
 
   // Get the object called.
@@ -5370,12 +5488,11 @@ void Generate_LoadIC_Miss(CodeStubAssembler* assembler) {
 void Generate_LoadGlobalIC_Miss(CodeStubAssembler* assembler) {
   typedef compiler::Node Node;
 
-  Node* name = assembler->Parameter(0);
-  Node* slot = assembler->Parameter(1);
-  Node* vector = assembler->Parameter(2);
-  Node* context = assembler->Parameter(3);
+  Node* slot = assembler->Parameter(0);
+  Node* vector = assembler->Parameter(1);
+  Node* context = assembler->Parameter(2);
 
-  assembler->TailCallRuntime(Runtime::kLoadGlobalIC_Miss, context, name, slot,
+  assembler->TailCallRuntime(Runtime::kLoadGlobalIC_Miss, context, slot,
                              vector);
 }
 
@@ -5399,15 +5516,26 @@ void Generate_LoadIC_Slow(CodeStubAssembler* assembler) {
   assembler->TailCallRuntime(Runtime::kGetProperty, context, receiver, name);
 }
 
-void Generate_LoadGlobalIC_Slow(CodeStubAssembler* assembler) {
+void Generate_LoadGlobalIC_SlowInsideTypeof(CodeStubAssembler* assembler) {
   typedef compiler::Node Node;
 
-  Node* name = assembler->Parameter(0);
-  // Node* slot = assembler->Parameter(1);
-  // Node* vector = assembler->Parameter(2);
-  Node* context = assembler->Parameter(3);
+  Node* slot = assembler->Parameter(0);
+  Node* vector = assembler->Parameter(1);
+  Node* context = assembler->Parameter(2);
 
-  assembler->TailCallRuntime(Runtime::kGetGlobal, context, name);
+  assembler->TailCallRuntime(Runtime::kGetGlobalInsideTypeof, context, slot,
+                             vector);
+}
+
+void Generate_LoadGlobalIC_SlowNotInsideTypeof(CodeStubAssembler* assembler) {
+  typedef compiler::Node Node;
+
+  Node* slot = assembler->Parameter(0);
+  Node* vector = assembler->Parameter(1);
+  Node* context = assembler->Parameter(2);
+
+  assembler->TailCallRuntime(Runtime::kGetGlobalNotInsideTypeof, context, slot,
+                             vector);
 }
 
 void Generate_KeyedLoadIC_Slow(MacroAssembler* masm) {
@@ -5479,8 +5607,7 @@ Builtins::Builtins() : initialized_(false) {
 Builtins::~Builtins() {
 }
 
-
-#define DEF_ENUM_C(name, ignore) FUNCTION_ADDR(Builtin_##name),
+#define DEF_ENUM_C(name) FUNCTION_ADDR(Builtin_##name),
 Address const Builtins::c_functions_[cfunction_count] = {
   BUILTIN_LIST_C(DEF_ENUM_C)
 };
@@ -5494,7 +5621,6 @@ struct BuiltinDesc {
   const char* s_name;  // name is only used for generating log information.
   int name;
   Code::Flags flags;
-  BuiltinExtraArguments extra_args;
   int argc;
 };
 
@@ -5539,13 +5665,13 @@ Handle<Code> MacroAssemblerBuilder(Isolate* isolate,
   MacroAssembler masm(isolate, u.buffer, sizeof(u.buffer),
                       CodeObjectRequired::kYes);
   // Generate the code/adaptor.
-  typedef void (*Generator)(MacroAssembler*, int, BuiltinExtraArguments);
+  typedef void (*Generator)(MacroAssembler*, int);
   Generator g = FUNCTION_CAST<Generator>(builtin_desc->generator);
   // We pass all arguments to the generator, but it may not use all of
   // them.  This works because the first arguments are on top of the
   // stack.
   DCHECK(!masm.has_frame());
-  g(&masm, builtin_desc->name, builtin_desc->extra_args);
+  g(&masm, builtin_desc->name);
   // Move the code into the object heap.
   CodeDesc desc;
   masm.GetCode(&desc);
@@ -5599,18 +5725,16 @@ void Builtins::InitBuiltinFunctionTable() {
   functions[builtin_count].s_name = nullptr;
   functions[builtin_count].name = builtin_count;
   functions[builtin_count].flags = static_cast<Code::Flags>(0);
-  functions[builtin_count].extra_args = BuiltinExtraArguments::kNone;
   functions[builtin_count].argc = 0;
 
-#define DEF_FUNCTION_PTR_C(aname, aextra_args)                \
-  functions->builder = &MacroAssemblerBuilder;                \
-  functions->generator = FUNCTION_ADDR(Generate_Adaptor);     \
-  functions->c_code = FUNCTION_ADDR(Builtin_##aname);         \
-  functions->s_name = #aname;                                 \
-  functions->name = c_##aname;                                \
-  functions->flags = Code::ComputeFlags(Code::BUILTIN);       \
-  functions->extra_args = BuiltinExtraArguments::aextra_args; \
-  functions->argc = 0;                                        \
+#define DEF_FUNCTION_PTR_C(aname)                         \
+  functions->builder = &MacroAssemblerBuilder;            \
+  functions->generator = FUNCTION_ADDR(Generate_Adaptor); \
+  functions->c_code = FUNCTION_ADDR(Builtin_##aname);     \
+  functions->s_name = #aname;                             \
+  functions->name = c_##aname;                            \
+  functions->flags = Code::ComputeFlags(Code::BUILTIN);   \
+  functions->argc = 0;                                    \
   ++functions;
 
 #define DEF_FUNCTION_PTR_A(aname, kind, extra)              \
@@ -5620,7 +5744,6 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->s_name = #aname;                               \
   functions->name = k##aname;                               \
   functions->flags = Code::ComputeFlags(Code::kind, extra); \
-  functions->extra_args = BuiltinExtraArguments::kNone;     \
   functions->argc = 0;                                      \
   ++functions;
 
@@ -5631,7 +5754,6 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->s_name = #aname;                             \
   functions->name = k##aname;                             \
   functions->flags = Code::ComputeFlags(Code::BUILTIN);   \
-  functions->extra_args = BuiltinExtraArguments::kNone;   \
   functions->argc = aargc;                                \
   ++functions;
 
@@ -5642,7 +5764,6 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->s_name = #aname;                                        \
   functions->name = k##aname;                                        \
   functions->flags = Code::ComputeFlags(Code::kind, extra);          \
-  functions->extra_args = BuiltinExtraArguments::kNone;              \
   functions->argc = CallDescriptors::interface_descriptor;           \
   ++functions;
 
@@ -5653,7 +5774,6 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->s_name = #aname;                               \
   functions->name = k##aname;                               \
   functions->flags = Code::ComputeHandlerFlags(Code::kind); \
-  functions->extra_args = BuiltinExtraArguments::kNone;     \
   functions->argc = 0;                                      \
   ++functions;
 
@@ -5692,8 +5812,8 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
       Handle<Code> code = (*functions[i].builder)(isolate, functions + i);
       // Log the event and add the code to the builtins array.
       PROFILE(isolate,
-              CodeCreateEvent(Logger::BUILTIN_TAG, AbstractCode::cast(*code),
-                              functions[i].s_name));
+              CodeCreateEvent(CodeEventListener::BUILTIN_TAG,
+                              AbstractCode::cast(*code), functions[i].s_name));
       builtins_[i] = *code;
       code->set_builtin_index(i);
 #ifdef ENABLE_DISASSEMBLER
@@ -5987,12 +6107,11 @@ void Builtins::Generate_AtomicsStore(CodeStubAssembler* a) {
   a->Return(a->Int32Constant(0));
 }
 
-#define DEFINE_BUILTIN_ACCESSOR_C(name, ignore)               \
-Handle<Code> Builtins::name() {                               \
-  Code** code_address =                                       \
-      reinterpret_cast<Code**>(builtin_address(k##name));     \
-  return Handle<Code>(code_address);                          \
-}
+#define DEFINE_BUILTIN_ACCESSOR_C(name)                                       \
+  Handle<Code> Builtins::name() {                                             \
+    Code** code_address = reinterpret_cast<Code**>(builtin_address(k##name)); \
+    return Handle<Code>(code_address);                                        \
+  }
 #define DEFINE_BUILTIN_ACCESSOR_A(name, kind, extra)                          \
   Handle<Code> Builtins::name() {                                             \
     Code** code_address = reinterpret_cast<Code**>(builtin_address(k##name)); \

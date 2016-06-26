@@ -77,7 +77,7 @@ class WasmCompilationUnit final {
 };
 
 // Wraps a JS function, producing a code object that can be called from WASM.
-Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, wasm::ModuleEnv* module,
+Handle<Code> CompileWasmToJSWrapper(Isolate* isolate,
                                     Handle<JSFunction> function,
                                     wasm::FunctionSig* sig,
                                     wasm::WasmName module_name,
@@ -275,10 +275,6 @@ class WasmGraphBuilder {
 
   Node* BuildF64Acos(Node* input);
   Node* BuildF64Asin(Node* input);
-  Node* BuildF64Cos(Node* input);
-  Node* BuildF64Sin(Node* input);
-  Node* BuildF64Tan(Node* input);
-  Node* BuildF64Exp(Node* input);
   Node* BuildF64Pow(Node* left, Node* right);
   Node* BuildF64Mod(Node* left, Node* right);
 

@@ -785,7 +785,6 @@ bool HInstruction::CanDeoptimize() {
     case HValue::kCompareNumericAndBranch:
     case HValue::kCompareObjectEqAndBranch:
     case HValue::kConstant:
-    case HValue::kConstructDouble:
     case HValue::kContext:
     case HValue::kDebugBreak:
     case HValue::kDeclareGlobals:
@@ -1115,10 +1114,14 @@ const char* HUnaryMathOperation::OpName() const {
       return "round";
     case kMathAbs:
       return "abs";
+    case kMathCos:
+      return "cos";
     case kMathLog:
       return "log";
     case kMathExp:
       return "exp";
+    case kMathSin:
+      return "sin";
     case kMathSqrt:
       return "sqrt";
     case kMathPowHalf:
@@ -3401,6 +3404,9 @@ HInstruction* HUnaryMathOperation::New(Isolate* isolate, Zone* zone,
     }
     if (std::isinf(d)) {  // +Infinity and -Infinity.
       switch (op) {
+        case kMathCos:
+        case kMathSin:
+          return H_CONSTANT_DOUBLE(std::numeric_limits<double>::quiet_NaN());
         case kMathExp:
           return H_CONSTANT_DOUBLE((d > 0.0) ? d : 0.0);
         case kMathLog:
@@ -3422,11 +3428,14 @@ HInstruction* HUnaryMathOperation::New(Isolate* isolate, Zone* zone,
       }
     }
     switch (op) {
+      case kMathCos:
+        return H_CONSTANT_DOUBLE(base::ieee754::cos(d));
       case kMathExp:
-        lazily_initialize_fast_exp(isolate);
-        return H_CONSTANT_DOUBLE(fast_exp(d, isolate));
+        return H_CONSTANT_DOUBLE(base::ieee754::exp(d));
       case kMathLog:
         return H_CONSTANT_DOUBLE(base::ieee754::log(d));
+      case kMathSin:
+        return H_CONSTANT_DOUBLE(base::ieee754::sin(d));
       case kMathSqrt:
         lazily_initialize_fast_sqrt(isolate);
         return H_CONSTANT_DOUBLE(fast_sqrt(d, isolate));

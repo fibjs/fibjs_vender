@@ -253,31 +253,20 @@ uint32_t RelocInfo::wasm_memory_size_reference() {
   return reinterpret_cast<uint32_t>(Assembler::target_address_at(pc_, host_));
 }
 
-void RelocInfo::update_wasm_memory_reference(
-    Address old_base, Address new_base, uint32_t old_size, uint32_t new_size,
-    ICacheFlushMode icache_flush_mode) {
-  DCHECK(IsWasmMemoryReference(rmode_) || IsWasmMemorySizeReference(rmode_));
-  if (IsWasmMemoryReference(rmode_)) {
-    Address updated_memory_reference;
-    DCHECK(old_base <= wasm_memory_reference() &&
-           wasm_memory_reference() < old_base + old_size);
-    updated_memory_reference = new_base + (wasm_memory_reference() - old_base);
-    DCHECK(new_base <= updated_memory_reference &&
-           updated_memory_reference < new_base + new_size);
-    Assembler::set_target_address_at(
-        isolate_, pc_, host_, updated_memory_reference, icache_flush_mode);
-  } else if (IsWasmMemorySizeReference(rmode_)) {
-    uint32_t updated_size_reference;
-    DCHECK(wasm_memory_size_reference() <= old_size);
-    updated_size_reference =
-        new_size + (wasm_memory_size_reference() - old_size);
-    DCHECK(updated_size_reference <= new_size);
-    Assembler::set_target_address_at(
-        isolate_, pc_, host_, reinterpret_cast<Address>(updated_size_reference),
-        icache_flush_mode);
-  } else {
-    UNREACHABLE();
-  }
+Address RelocInfo::wasm_global_reference() {
+  DCHECK(IsWasmGlobalReference(rmode_));
+  return Assembler::target_address_at(pc_, host_);
+}
+
+void RelocInfo::unchecked_update_wasm_memory_reference(
+    Address address, ICacheFlushMode flush_mode) {
+  Assembler::set_target_address_at(isolate_, pc_, host_, address, flush_mode);
+}
+
+void RelocInfo::unchecked_update_wasm_memory_size(uint32_t size,
+                                                  ICacheFlushMode flush_mode) {
+  Assembler::set_target_address_at(isolate_, pc_, host_,
+                                   reinterpret_cast<Address>(size), flush_mode);
 }
 
 // -----------------------------------------------------------------------------
@@ -1393,7 +1382,6 @@ void Assembler::b(int branch_offset, Condition cond) {
 
 
 void Assembler::bl(int branch_offset, Condition cond) {
-  positions_recorder()->WriteRecordedPositions();
   DCHECK((branch_offset & 3) == 0);
   int imm24 = branch_offset >> 2;
   CHECK(is_int24(imm24));
@@ -1402,7 +1390,6 @@ void Assembler::bl(int branch_offset, Condition cond) {
 
 
 void Assembler::blx(int branch_offset) {  // v5 and above
-  positions_recorder()->WriteRecordedPositions();
   DCHECK((branch_offset & 1) == 0);
   int h = ((branch_offset & 2) >> 1)*B24;
   int imm24 = branch_offset >> 2;
@@ -1412,14 +1399,12 @@ void Assembler::blx(int branch_offset) {  // v5 and above
 
 
 void Assembler::blx(Register target, Condition cond) {  // v5 and above
-  positions_recorder()->WriteRecordedPositions();
   DCHECK(!target.is(pc));
   emit(cond | B24 | B21 | 15*B16 | 15*B12 | 15*B8 | BLX | target.code());
 }
 
 
 void Assembler::bx(Register target, Condition cond) {  // v5 and above, plus v4t
-  positions_recorder()->WriteRecordedPositions();
   DCHECK(!target.is(pc));  // use of pc is actually allowed, but discouraged
   emit(cond | B24 | B21 | 15*B16 | 15*B12 | 15*B8 | BX | target.code());
 }
@@ -1527,9 +1512,6 @@ void Assembler::orr(Register dst, Register src1, const Operand& src2,
 
 
 void Assembler::mov(Register dst, const Operand& src, SBit s, Condition cond) {
-  if (dst.is(pc)) {
-    positions_recorder()->WriteRecordedPositions();
-  }
   // Don't allow nop instructions in the form mov rn, rn to be generated using
   // the mov instruction. They must be generated using nop(int/NopMarkerTypes)
   // or MarkCode(int/NopMarkerTypes) pseudo instructions.
@@ -2018,9 +2000,6 @@ void Assembler::msr(SRegisterFieldMask fields, const Operand& src,
 
 // Load/Store instructions.
 void Assembler::ldr(Register dst, const MemOperand& src, Condition cond) {
-  if (dst.is(pc)) {
-    positions_recorder()->WriteRecordedPositions();
-  }
   addrmod2(cond | B26 | L, dst, src);
 }
 

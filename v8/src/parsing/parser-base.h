@@ -196,7 +196,6 @@ class ParserBase : public Traits {
         allow_harmony_restrictive_declarations_(false),
         allow_harmony_do_expressions_(false),
         allow_harmony_for_in_(false),
-        allow_harmony_function_name_(false),
         allow_harmony_function_sent_(false),
         allow_harmony_async_await_(false),
         allow_harmony_restrictive_generators_(false) {}
@@ -217,7 +216,6 @@ class ParserBase : public Traits {
   ALLOW_ACCESSORS(harmony_restrictive_declarations);
   ALLOW_ACCESSORS(harmony_do_expressions);
   ALLOW_ACCESSORS(harmony_for_in);
-  ALLOW_ACCESSORS(harmony_function_name);
   ALLOW_ACCESSORS(harmony_function_sent);
   ALLOW_ACCESSORS(harmony_async_await);
   ALLOW_ACCESSORS(harmony_restrictive_generators);
@@ -669,13 +667,13 @@ class ParserBase : public Traits {
     Expect(Token::SEMICOLON, ok);
   }
 
-  bool peek_any_identifier() {
-    Token::Value next = peek();
-    return next == Token::IDENTIFIER || next == Token::ENUM ||
-           next == Token::AWAIT || next == Token::ASYNC ||
-           next == Token::FUTURE_STRICT_RESERVED_WORD || next == Token::LET ||
-           next == Token::STATIC || next == Token::YIELD;
+  bool is_any_identifier(Token::Value token) {
+    return token == Token::IDENTIFIER || token == Token::ENUM ||
+           token == Token::AWAIT || token == Token::ASYNC ||
+           token == Token::FUTURE_STRICT_RESERVED_WORD || token == Token::LET ||
+           token == Token::STATIC || token == Token::YIELD;
   }
+  bool peek_any_identifier() { return is_any_identifier(peek()); }
 
   bool CheckContextualKeyword(Vector<const char> keyword) {
     if (PeekContextualKeyword(keyword)) {
@@ -886,6 +884,10 @@ class ParserBase : public Traits {
       ReportClassifierError(classifier->strict_mode_formal_parameter_error());
       *ok = false;
     }
+  }
+
+  bool IsValidArrowFormalParametersStart(Token::Value token) {
+    return is_any_identifier(token) || token == Token::LPAREN;
   }
 
   void ValidateArrowFormalParameters(const ExpressionClassifier* classifier,
@@ -1184,7 +1186,6 @@ class ParserBase : public Traits {
   bool allow_harmony_restrictive_declarations_;
   bool allow_harmony_do_expressions_;
   bool allow_harmony_for_in_;
-  bool allow_harmony_function_name_;
   bool allow_harmony_function_sent_;
   bool allow_harmony_async_await_;
   bool allow_harmony_restrictive_generators_;
@@ -1588,8 +1589,11 @@ ParserBase<Traits>::ParsePrimaryExpression(ExpressionClassifier* classifier,
                                           MessageTemplate::kUnexpectedToken,
                                           Token::String(Token::ELLIPSIS));
         classifier->RecordNonSimpleParameter();
-        ExpressionT expr =
-            this->ParseAssignmentExpression(true, classifier, CHECK_OK);
+        ExpressionClassifier binding_classifier(this);
+        ExpressionT expr = this->ParseAssignmentExpression(
+            true, &binding_classifier, CHECK_OK);
+        classifier->Accumulate(&binding_classifier,
+                               ExpressionClassifier::AllProductions);
         if (!this->IsIdentifier(expr) && !IsValidPattern(expr)) {
           classifier->RecordArrowFormalParametersError(
               Scanner::Location(ellipsis_pos, scanner()->location().end_pos),
@@ -1676,11 +1680,14 @@ typename ParserBase<Traits>::ExpressionT ParserBase<Traits>::ParseExpression(
   //   AssignmentExpression
   //   Expression ',' AssignmentExpression
 
-  ExpressionClassifier binding_classifier(this);
-  ExpressionT result =
-      this->ParseAssignmentExpression(accept_IN, &binding_classifier, CHECK_OK);
-  classifier->Accumulate(&binding_classifier,
-                         ExpressionClassifier::AllProductions);
+  ExpressionT result = this->EmptyExpression();
+  {
+    ExpressionClassifier binding_classifier(this);
+    result = this->ParseAssignmentExpression(accept_IN, &binding_classifier,
+                                             CHECK_OK);
+    classifier->Accumulate(&binding_classifier,
+                           ExpressionClassifier::AllProductions);
+  }
   bool is_simple_parameter_list = this->IsIdentifier(result);
   bool seen_rest = false;
   while (peek() == Token::COMMA) {
@@ -1963,9 +1970,7 @@ ParserBase<Traits>::ParsePropertyDefinition(
             Scanner::Location(next_beg_pos, scanner()->location().end_pos),
             MessageTemplate::kInvalidCoverInitializedName);
 
-        if (allow_harmony_function_name()) {
-          Traits::SetFunctionNameFromIdentifierRef(rhs, lhs);
-        }
+        Traits::SetFunctionNameFromIdentifierRef(rhs, lhs);
       } else {
         value = lhs;
       }
@@ -2120,9 +2125,7 @@ typename ParserBase<Traits>::ExpressionT ParserBase<Traits>::ParseObjectLiteral(
 
     if (fni_ != nullptr) fni_->Infer();
 
-    if (allow_harmony_function_name()) {
-      Traits::SetFunctionNameFromPropertyName(property, name);
-    }
+    Traits::SetFunctionNameFromPropertyName(property, name);
   }
   Expect(Token::RBRACE, CHECK_OK);
 
@@ -2228,7 +2231,8 @@ ParserBase<Traits>::ParseAssignmentExpression(bool accept_IN,
                                                 classifier->duplicate_finder());
 
   bool is_async = allow_harmony_async_await() && peek() == Token::ASYNC &&
-                  !scanner()->HasAnyLineTerminatorAfterNext();
+                  !scanner()->HasAnyLineTerminatorAfterNext() &&
+                  IsValidArrowFormalParametersStart(PeekAhead());
 
   bool parenthesized_formals = peek() == Token::LPAREN;
   if (!is_async && !parenthesized_formals) {
@@ -2376,7 +2380,7 @@ ParserBase<Traits>::ParseAssignmentExpression(bool accept_IN,
     }
   }
 
-  if (op == Token::ASSIGN && allow_harmony_function_name()) {
+  if (op == Token::ASSIGN) {
     Traits::SetFunctionNameFromIdentifierRef(right, expression);
   }
 
@@ -3174,9 +3178,7 @@ void ParserBase<Traits>::ParseFormalParameter(
     init_classifier.Discard();
     classifier->RecordNonSimpleParameter();
 
-    if (allow_harmony_function_name()) {
-      Traits::SetFunctionNameFromIdentifierRef(initializer, pattern);
-    }
+    Traits::SetFunctionNameFromIdentifierRef(initializer, pattern);
   }
 
   Traits::AddFormalParameter(parameters, pattern, initializer,
@@ -3343,7 +3345,6 @@ ParserBase<Traits>::ParseArrowFunctionLiteral(
     } else {
       // Single-expression body
       int pos = position();
-      ExpressionClassifier classifier(this);
       DCHECK(ReturnExprContext::kInsideValidBlock ==
              function_state_->return_expr_context());
       ReturnExprScope allow_tail_calls(
@@ -3351,6 +3352,7 @@ ParserBase<Traits>::ParseArrowFunctionLiteral(
       body = this->NewStatementList(1, zone());
       this->AddParameterInitializationBlock(formal_parameters, body, is_async,
                                             CHECK_OK);
+      ExpressionClassifier classifier(this);
       if (is_async) {
         this->ParseAsyncArrowSingleExpressionBody(body, accept_IN, &classifier,
                                                   pos, CHECK_OK);

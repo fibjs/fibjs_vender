@@ -15,9 +15,9 @@
 namespace v8 {
 namespace internal {
 
-MaybeHandle<Object> Runtime::GetObjectProperty(Isolate* isolate,
-                                               Handle<Object> object,
-                                               Handle<Object> key) {
+MaybeHandle<Object> Runtime::GetObjectProperty(
+    Isolate* isolate, Handle<Object> object, Handle<Object> key,
+    bool should_throw_reference_error) {
   if (object->IsUndefined(isolate) || object->IsNull(isolate)) {
     THROW_NEW_ERROR(
         isolate,
@@ -30,7 +30,12 @@ MaybeHandle<Object> Runtime::GetObjectProperty(Isolate* isolate,
       LookupIterator::PropertyOrElement(isolate, object, key, &success);
   if (!success) return MaybeHandle<Object>();
 
-  return Object::GetProperty(&it);
+  MaybeHandle<Object> result = Object::GetProperty(&it);
+  if (!result.is_null() && should_throw_reference_error && !it.IsFound()) {
+    THROW_NEW_ERROR(
+        isolate, NewReferenceError(MessageTemplate::kNotDefined, key), Object);
+  }
+  return result;
 }
 
 static MaybeHandle<Object> KeyedGetObjectProperty(Isolate* isolate,
@@ -274,40 +279,6 @@ RUNTIME_FUNCTION(Runtime_OptimizeObjectForAddingMultipleProperties) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_LoadGlobalViaContext) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  CONVERT_SMI_ARG_CHECKED(slot, 0);
-
-  // Go up context chain to the script context.
-  Handle<Context> script_context(isolate->context()->script_context(), isolate);
-  DCHECK(script_context->IsScriptContext());
-  DCHECK(script_context->get(slot)->IsPropertyCell());
-
-  // Lookup the named property on the global object.
-  Handle<ScopeInfo> scope_info(script_context->scope_info(), isolate);
-  Handle<Name> name(scope_info->ContextSlotName(slot), isolate);
-  Handle<JSGlobalObject> global_object(script_context->global_object(),
-                                       isolate);
-  LookupIterator it(global_object, name, global_object, LookupIterator::OWN);
-
-  // Switch to fast mode only if there is a data property and it's not on
-  // a hidden prototype.
-  if (it.state() == LookupIterator::DATA &&
-      it.GetHolder<Object>().is_identical_to(global_object)) {
-    // Now update the cell in the script context.
-    Handle<PropertyCell> cell = it.GetPropertyCell();
-    script_context->set(slot, *cell);
-  } else {
-    // This is not a fast case, so keep this access in a slow mode.
-    // Store empty_property_cell here to release the outdated property cell.
-    script_context->set(slot, isolate->heap()->empty_property_cell());
-  }
-
-  RETURN_RESULT_OR_FAILURE(isolate, Object::GetProperty(&it));
-}
-
-
 namespace {
 
 Object* StoreGlobalViaContext(Isolate* isolate, int slot, Handle<Object> value,
@@ -377,11 +348,15 @@ RUNTIME_FUNCTION(Runtime_GetProperty) {
                            Runtime::GetObjectProperty(isolate, object, key));
 }
 
-RUNTIME_FUNCTION(Runtime_GetGlobal) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
+namespace {
 
-  CONVERT_ARG_HANDLE_CHECKED(String, name, 0);
+Object* GetGlobal(Isolate* isolate, int slot, Handle<TypeFeedbackVector> vector,
+                  bool should_throw_reference_error) {
+  FeedbackVectorSlot vector_slot = vector->ToSlot(slot);
+  DCHECK_EQ(FeedbackVectorSlotKind::LOAD_GLOBAL_IC,
+            vector->GetKind(vector_slot));
+  Handle<String> name(vector->GetName(vector_slot), isolate);
+  DCHECK_NE(*name, *isolate->factory()->empty_string());
 
   Handle<JSGlobalObject> global = isolate->global_object();
 
@@ -398,14 +373,33 @@ RUNTIME_FUNCTION(Runtime_GetGlobal) {
       THROW_NEW_ERROR_RETURN_FAILURE(
           isolate, NewReferenceError(MessageTemplate::kNotDefined, name));
     }
-
     return *result;
   }
 
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result, Runtime::GetObjectProperty(isolate, global, name));
+      isolate, result,
+      Runtime::GetObjectProperty(isolate, global, name,
+                                 should_throw_reference_error));
   return *result;
+}
+
+}  // namespace
+
+RUNTIME_FUNCTION(Runtime_GetGlobalInsideTypeof) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_SMI_ARG_CHECKED(slot, 0);
+  CONVERT_ARG_HANDLE_CHECKED(TypeFeedbackVector, vector, 1);
+  return GetGlobal(isolate, slot, vector, false);
+}
+
+RUNTIME_FUNCTION(Runtime_GetGlobalNotInsideTypeof) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_SMI_ARG_CHECKED(slot, 0);
+  CONVERT_ARG_HANDLE_CHECKED(TypeFeedbackVector, vector, 1);
+  return GetGlobal(isolate, slot, vector, true);
 }
 
 // KeyedGetProperty is called from KeyedLoadIC::GenerateGeneric.
@@ -739,7 +733,7 @@ RUNTIME_FUNCTION(Runtime_DefineDataPropertyInLiteral) {
   CONVERT_PROPERTY_ATTRIBUTES_CHECKED(attrs, 3);
   CONVERT_SMI_ARG_CHECKED(set_function_name, 4);
 
-  if (FLAG_harmony_function_name && set_function_name) {
+  if (set_function_name) {
     DCHECK(value->IsJSFunction());
     JSFunction::SetName(Handle<JSFunction>::cast(value), name,
                         isolate->factory()->empty_string());
@@ -808,8 +802,7 @@ RUNTIME_FUNCTION(Runtime_DefineGetterPropertyUnchecked) {
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, getter, 2);
   CONVERT_PROPERTY_ATTRIBUTES_CHECKED(attrs, 3);
 
-  if (FLAG_harmony_function_name &&
-      String::cast(getter->shared()->name())->length() == 0) {
+  if (String::cast(getter->shared()->name())->length() == 0) {
     JSFunction::SetName(getter, name, isolate->factory()->get_string());
   }
 
@@ -829,8 +822,7 @@ RUNTIME_FUNCTION(Runtime_DefineSetterPropertyUnchecked) {
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, setter, 2);
   CONVERT_PROPERTY_ATTRIBUTES_CHECKED(attrs, 3);
 
-  if (FLAG_harmony_function_name &&
-      String::cast(setter->shared()->name())->length() == 0) {
+  if (String::cast(setter->shared()->name())->length() == 0) {
     JSFunction::SetName(setter, name, isolate->factory()->set_string());
   }
 

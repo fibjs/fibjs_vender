@@ -88,10 +88,6 @@ void MacroAssembler::Call(Register target) {
   Label start;
   bind(&start);
 
-  // Statement positions are expected to be recorded when the target
-  // address is loaded.
-  positions_recorder()->WriteRecordedPositions();
-
   // branch via link register and set LK bit for return point
   mtctr(target);
   bctrl();
@@ -132,11 +128,6 @@ void MacroAssembler::Call(Address target, RelocInfo::Mode rmode,
   Label start;
   bind(&start);
 #endif
-
-  // Statement positions are expected to be recorded when the target
-  // address is loaded.
-  positions_recorder()->WriteRecordedPositions();
-
   // This can likely be optimized to make use of bc() with 24bit relative
   //
   // RecordRelocInfo(x.rmode_, x.imm_);
@@ -1390,12 +1381,14 @@ void MacroAssembler::FloodFunctionIfStepping(Register fun, Register new_target,
                                              const ParameterCount& expected,
                                              const ParameterCount& actual) {
   Label skip_flooding;
-  ExternalReference step_in_enabled =
-      ExternalReference::debug_step_in_enabled_address(isolate());
-  mov(r7, Operand(step_in_enabled));
-  lbz(r7, MemOperand(r7));
-  cmpi(r7, Operand::Zero());
-  beq(&skip_flooding);
+  ExternalReference last_step_action =
+      ExternalReference::debug_last_step_action_address(isolate());
+  STATIC_ASSERT(StepFrame > StepIn);
+  mov(r7, Operand(last_step_action));
+  LoadByte(r7, MemOperand(r7), r0);
+  extsb(r7, r7);
+  cmpi(r7, Operand(StepIn));
+  blt(&skip_flooding);
   {
     FrameScope frame(this,
                      has_frame() ? StackFrame::NONE : StackFrame::INTERNAL);
@@ -4700,7 +4693,7 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver_reg,
                                                      Label* no_memento_found) {
   Label map_check;
   Label top_check;
-  ExternalReference new_space_allocation_top =
+  ExternalReference new_space_allocation_top_adr =
       ExternalReference::new_space_allocation_top_address(isolate());
   const int kMementoMapOffset = JSArray::kSize - kHeapObjectTag;
   const int kMementoEndOffset = kMementoMapOffset + AllocationMemento::kSize;
@@ -4717,7 +4710,9 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver_reg,
 
   // If the object is in new space, we need to check whether it is on the same
   // page as the current top.
-  Xor(r0, scratch_reg, Operand(new_space_allocation_top));
+  mov(ip, Operand(new_space_allocation_top_adr));
+  LoadP(ip, MemOperand(ip));
+  Xor(r0, scratch_reg, Operand(ip));
   and_(r0, r0, mask, SetRC);
   beq(&top_check, cr0);
   // The object is on a different page than allocation top. Bail out if the
@@ -4731,7 +4726,7 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver_reg,
   // If top is on the same page as the current object, we need to check whether
   // we are below top.
   bind(&top_check);
-  Cmpi(scratch_reg, Operand(new_space_allocation_top), r0);
+  cmp(scratch_reg, ip);
   bgt(no_memento_found);
   // Memento map check.
   bind(&map_check);

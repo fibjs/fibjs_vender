@@ -2897,6 +2897,8 @@ class V8_EXPORT Object : public Value {
   V8_DEPRECATED("Use maybe version", bool HasOwnProperty(Local<String> key));
   V8_WARN_UNUSED_RESULT Maybe<bool> HasOwnProperty(Local<Context> context,
                                                    Local<Name> key);
+  V8_WARN_UNUSED_RESULT Maybe<bool> HasOwnProperty(Local<Context> context,
+                                                   uint32_t index);
   V8_DEPRECATE_SOON("Use maybe version",
                     bool HasRealNamedProperty(Local<String> key));
   V8_WARN_UNUSED_RESULT Maybe<bool> HasRealNamedProperty(Local<Context> context,
@@ -4487,6 +4489,9 @@ class V8_EXPORT FunctionTemplate : public Template {
       Local<Value> data = Local<Value>(),
       Local<Signature> signature = Local<Signature>(), int length = 0);
 
+  /** Get a template included in the snapshot by index. */
+  static Local<FunctionTemplate> FromSnapshot(Isolate* isolate, size_t index);
+
   /**
    * Creates a function template with a fast handler. If a fast handler is set,
    * the callback cannot be null.
@@ -4661,6 +4666,9 @@ class V8_EXPORT ObjectTemplate : public Template {
       Isolate* isolate,
       Local<FunctionTemplate> constructor = Local<FunctionTemplate>());
   static V8_DEPRECATED("Use isolate version", Local<ObjectTemplate> New());
+
+  /** Get a template included in the snapshot by index. */
+  static Local<ObjectTemplate> FromSnapshot(Isolate* isolate, size_t index);
 
   /** Creates a new instance of this template.*/
   V8_DEPRECATE_SOON("Use maybe version", Local<Object> NewInstance());
@@ -5470,6 +5478,12 @@ class V8_EXPORT EmbedderHeapTracer {
   virtual void TraceEpilogue() = 0;
 
   /**
+   * Let embedder know v8 entered final marking pause (no more incremental steps
+   * will follow).
+   */
+  virtual void EnterFinalPause() {}
+
+  /**
    * Throw away all intermediate data and reset to the initial state.
    */
   virtual void AbortTracing() {}
@@ -5493,13 +5507,14 @@ class V8_EXPORT Isolate {
    */
   struct CreateParams {
     CreateParams()
-        : entry_hook(NULL),
-          code_event_handler(NULL),
-          snapshot_blob(NULL),
-          counter_lookup_callback(NULL),
-          create_histogram_callback(NULL),
-          add_histogram_sample_callback(NULL),
-          array_buffer_allocator(NULL) {}
+        : entry_hook(nullptr),
+          code_event_handler(nullptr),
+          snapshot_blob(nullptr),
+          counter_lookup_callback(nullptr),
+          create_histogram_callback(nullptr),
+          add_histogram_sample_callback(nullptr),
+          array_buffer_allocator(nullptr),
+          external_references(nullptr) {}
 
     /**
      * The optional entry_hook allows the host application to provide the
@@ -5547,6 +5562,14 @@ class V8_EXPORT Isolate {
      * store of ArrayBuffers.
      */
     ArrayBuffer::Allocator* array_buffer_allocator;
+
+    /**
+     * Specifies an optional nullptr-terminated array of raw addresses in the
+     * embedder that V8 can match against during serialization and use for
+     * deserialization. This array and its content must stay valid for the
+     * entire lifetime of the isolate.
+     */
+    intptr_t* external_references;
   };
 
 
@@ -6775,8 +6798,12 @@ class SnapshotCreator {
    * Create and enter an isolate, and set it up for serialization.
    * The isolate is either created from scratch or from an existing snapshot.
    * The caller keeps ownership of the argument snapshot.
+   * \param existing_blob existing snapshot from which to create this one.
+   * \param external_references a null-terminated array of external references
+   *        that must be equivalent to CreateParams::external_references.
    */
-  explicit SnapshotCreator(StartupData* existing_blob = nullptr);
+  SnapshotCreator(intptr_t* external_references = nullptr,
+                  StartupData* existing_blob = nullptr);
 
   ~SnapshotCreator();
 
@@ -6787,11 +6814,19 @@ class SnapshotCreator {
 
   /**
    * Add a context to be included in the snapshot blob.
+   * \returns the index of the context in the snapshot blob.
    */
-  void AddContext(Local<Context> context);
+  size_t AddContext(Local<Context> context);
+
+  /**
+   * Add a template to be included in the snapshot blob.
+   * \returns the index of the template in the snapshot blob.
+   */
+  size_t AddTemplate(Local<Template> template_obj);
 
   /**
    * Created a snapshot data blob.
+   * This must not be called from within a handle scope.
    * \param function_code_handling whether to include compiled function code
    *        in the snapshot.
    * \returns { nullptr, 0 } on failure, and a startup snapshot on success. The
@@ -7092,7 +7127,8 @@ class V8_EXPORT Context {
   static Local<Context> New(
       Isolate* isolate, ExtensionConfiguration* extensions = NULL,
       Local<ObjectTemplate> global_template = Local<ObjectTemplate>(),
-      Local<Value> global_object = Local<Value>());
+      Local<Value> global_object = Local<Value>(),
+      size_t context_snapshot_index = 0);
 
   /**
    * Sets the security token for the context.  To access an object in
@@ -7459,23 +7495,18 @@ class Internals {
   static const int kExternalOneByteRepresentationTag = 0x06;
 
   static const int kIsolateEmbedderDataOffset = 0 * kApiPointerSize;
-  static const int kAmountOfExternalAllocatedMemoryOffset =
-      4 * kApiPointerSize;
-  static const int kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset =
-      kAmountOfExternalAllocatedMemoryOffset + kApiInt64Size;
-  static const int kIsolateRootsOffset =
-      kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset + kApiInt64Size +
-      kApiPointerSize + kApiPointerSize;
+  static const int kExternalMemoryOffset = 4 * kApiPointerSize;
+  static const int kExternalMemoryLimitOffset =
+      kExternalMemoryOffset + kApiInt64Size;
+  static const int kIsolateRootsOffset = kExternalMemoryLimitOffset +
+                                         kApiInt64Size + kApiInt64Size +
+                                         kApiPointerSize + kApiPointerSize;
   static const int kUndefinedValueRootIndex = 4;
   static const int kTheHoleValueRootIndex = 5;
   static const int kNullValueRootIndex = 6;
   static const int kTrueValueRootIndex = 7;
   static const int kFalseValueRootIndex = 8;
   static const int kEmptyStringRootIndex = 9;
-
-  // The external allocation limit should be below 256 MB on all architectures
-  // to avoid that resource-constrained embedders run low on memory.
-  static const int kExternalAllocationLimit = 192 * 1024 * 1024;
 
   static const int kNodeClassIdOffset = 1 * kApiPointerSize;
   static const int kNodeFlagsOffset = 1 * kApiPointerSize + 3;
@@ -8671,21 +8702,16 @@ uint32_t Isolate::GetNumberOfDataSlots() {
 int64_t Isolate::AdjustAmountOfExternalAllocatedMemory(
     int64_t change_in_bytes) {
   typedef internal::Internals I;
-  int64_t* amount_of_external_allocated_memory =
-      reinterpret_cast<int64_t*>(reinterpret_cast<uint8_t*>(this) +
-                                 I::kAmountOfExternalAllocatedMemoryOffset);
-  int64_t* amount_of_external_allocated_memory_at_last_global_gc =
-      reinterpret_cast<int64_t*>(
-          reinterpret_cast<uint8_t*>(this) +
-          I::kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset);
-  int64_t amount = *amount_of_external_allocated_memory + change_in_bytes;
-  if (change_in_bytes > 0 &&
-      amount - *amount_of_external_allocated_memory_at_last_global_gc >
-          I::kExternalAllocationLimit) {
+  int64_t* external_memory = reinterpret_cast<int64_t*>(
+      reinterpret_cast<uint8_t*>(this) + I::kExternalMemoryOffset);
+  const int64_t external_memory_limit = *reinterpret_cast<int64_t*>(
+      reinterpret_cast<uint8_t*>(this) + I::kExternalMemoryLimitOffset);
+  const int64_t amount = *external_memory + change_in_bytes;
+  *external_memory = amount;
+  if (change_in_bytes > 0 && amount > external_memory_limit) {
     ReportExternalAllocationLimitReached();
   }
-  *amount_of_external_allocated_memory = amount;
-  return *amount_of_external_allocated_memory;
+  return *external_memory;
 }
 
 

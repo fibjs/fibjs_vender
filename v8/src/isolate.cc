@@ -386,7 +386,8 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
     switch (frame->type()) {
       case StackFrame::JAVA_SCRIPT:
       case StackFrame::OPTIMIZED:
-      case StackFrame::INTERPRETED: {
+      case StackFrame::INTERPRETED:
+      case StackFrame::BUILTIN: {
         JavaScriptFrame* js_frame = JavaScriptFrame::cast(frame);
         // Set initial size to the maximum inlining level + 1 for the outermost
         // function.
@@ -621,6 +622,8 @@ class CaptureStackTraceHelper {
       Code* code = frame->LookupCode();
       int offset = static_cast<int>(frame->pc() - code->instruction_start());
       int position = code->SourcePosition(offset);
+      // Make position 1-based.
+      if (position >= 0) ++position;
       JSObject::AddProperty(stack_frame, column_key_,
                             isolate_->factory()->NewNumberFromInt(position),
                             NONE);
@@ -891,10 +894,6 @@ bool Isolate::MayAccess(Handle<Context> accessing_context,
                     v8::Utils::ToLocal(receiver), v8::Utils::ToLocal(data));
   }
 }
-
-
-const char* const Isolate::kStackOverflowMessage =
-  "Uncaught RangeError: Maximum call stack size exceeded";
 
 
 Object* Isolate::StackOverflow() {
@@ -1862,6 +1861,7 @@ Isolate::Isolate(bool enable_serializer)
       is_tail_call_elimination_enabled_(true),
       cpu_profiler_(NULL),
       heap_profiler_(NULL),
+      code_event_dispatcher_(new CodeEventDispatcher()),
       function_entry_hook_(NULL),
       deferred_handles_head_(NULL),
       optimizing_compile_dispatcher_(NULL),
@@ -2018,6 +2018,8 @@ void Isolate::Deinit() {
 
   delete cpu_profiler_;
   cpu_profiler_ = NULL;
+
+  code_event_dispatcher_.reset();
 
   delete root_index_map_;
   root_index_map_ = NULL;
@@ -2310,13 +2312,10 @@ bool Isolate::Init(Deserializer* des) {
            Internals::kIsolateEmbedderDataOffset);
   CHECK_EQ(static_cast<int>(OFFSET_OF(Isolate, heap_.roots_)),
            Internals::kIsolateRootsOffset);
-  CHECK_EQ(static_cast<int>(
-               OFFSET_OF(Isolate, heap_.amount_of_external_allocated_memory_)),
-           Internals::kAmountOfExternalAllocatedMemoryOffset);
-  CHECK_EQ(static_cast<int>(OFFSET_OF(
-               Isolate,
-               heap_.amount_of_external_allocated_memory_at_last_global_gc_)),
-           Internals::kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset);
+  CHECK_EQ(static_cast<int>(OFFSET_OF(Isolate, heap_.external_memory_)),
+           Internals::kExternalMemoryOffset);
+  CHECK_EQ(static_cast<int>(OFFSET_OF(Isolate, heap_.external_memory_limit_)),
+           Internals::kExternalMemoryLimitOffset);
 
   time_millis_at_init_ = heap_.MonotonicallyIncreasingTimeInMs();
 
@@ -2658,7 +2657,6 @@ void Isolate::InvalidateIsConcatSpreadableProtector() {
 }
 
 void Isolate::InvalidateArraySpeciesProtector() {
-  if (!FLAG_harmony_species) return;
   DCHECK(factory()->species_protector()->value()->IsSmi());
   DCHECK(IsArraySpeciesLookupChainIntact());
   factory()->species_protector()->set_value(

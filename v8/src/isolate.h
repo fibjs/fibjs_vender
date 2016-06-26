@@ -5,6 +5,7 @@
 #ifndef V8_ISOLATE_H_
 #define V8_ISOLATE_H_
 
+#include <memory>
 #include <queue>
 #include <set>
 
@@ -42,6 +43,8 @@ namespace internal {
 class BasicBlockProfiler;
 class Bootstrapper;
 class CallInterfaceDescriptorData;
+class CodeAgingHelper;
+class CodeEventDispatcher;
 class CodeGenerator;
 class CodeRange;
 class CodeStubDescriptor;
@@ -66,7 +69,7 @@ class InlineRuntimeFunctionsTable;
 class InnerPointerToCodeCache;
 class Logger;
 class MaterializedObjectStore;
-class CodeAgingHelper;
+class PositionsRecorder;
 class RegExpStack;
 class SaveContext;
 class StatsTable;
@@ -393,35 +396,34 @@ class ThreadLocalTop BASE_EMBEDDED {
 
 typedef List<HeapObject*> DebugObjectCache;
 
-#define ISOLATE_INIT_LIST(V)                                                   \
-  /* Assembler state. */                                                       \
-  V(FatalErrorCallback, exception_behavior, NULL)                              \
-  V(LogEventCallback, event_logger, NULL)                                      \
-  V(AllowCodeGenerationFromStringsCallback, allow_code_gen_callback, NULL)     \
-  /* To distinguish the function templates, so that we can find them in the */ \
-  /* function cache of the native context. */                                  \
-  V(int, next_serial_number, 0)                                                \
-  V(ExternalReferenceRedirectorPointer*, external_reference_redirector, NULL)  \
-  /* State for Relocatable. */                                                 \
-  V(Relocatable*, relocatable_top, NULL)                                       \
-  V(DebugObjectCache*, string_stream_debug_object_cache, NULL)                 \
-  V(Object*, string_stream_current_security_token, NULL)                       \
-  V(ExternalReferenceTable*, external_reference_table, NULL)                   \
-  V(base::HashMap*, external_reference_map, NULL)                              \
-  V(base::HashMap*, root_index_map, NULL)                                      \
-  V(int, pending_microtask_count, 0)                                           \
-  V(HStatistics*, hstatistics, NULL)                                           \
-  V(CompilationStatistics*, turbo_statistics, NULL)                            \
-  V(HTracer*, htracer, NULL)                                                   \
-  V(CodeTracer*, code_tracer, NULL)                                            \
-  V(bool, fp_stubs_generated, false)                                           \
-  V(uint32_t, per_isolate_assert_data, 0xFFFFFFFFu)                            \
-  V(PromiseRejectCallback, promise_reject_callback, NULL)                      \
-  V(const v8::StartupData*, snapshot_blob, NULL)                               \
-  V(int, code_and_metadata_size, 0)                                            \
-  V(int, bytecode_and_metadata_size, 0)                                        \
-  /* true if being profiled. Causes collection of extra compile info. */       \
-  V(bool, is_profiling, false)                                                 \
+#define ISOLATE_INIT_LIST(V)                                                  \
+  /* Assembler state. */                                                      \
+  V(FatalErrorCallback, exception_behavior, nullptr)                          \
+  V(LogEventCallback, event_logger, nullptr)                                  \
+  V(AllowCodeGenerationFromStringsCallback, allow_code_gen_callback, nullptr) \
+  V(ExternalReferenceRedirectorPointer*, external_reference_redirector,       \
+    nullptr)                                                                  \
+  /* State for Relocatable. */                                                \
+  V(Relocatable*, relocatable_top, nullptr)                                   \
+  V(DebugObjectCache*, string_stream_debug_object_cache, nullptr)             \
+  V(Object*, string_stream_current_security_token, nullptr)                   \
+  V(ExternalReferenceTable*, external_reference_table, nullptr)               \
+  V(intptr_t*, api_external_references, nullptr)                              \
+  V(base::HashMap*, external_reference_map, nullptr)                          \
+  V(base::HashMap*, root_index_map, nullptr)                                  \
+  V(int, pending_microtask_count, 0)                                          \
+  V(HStatistics*, hstatistics, nullptr)                                       \
+  V(CompilationStatistics*, turbo_statistics, nullptr)                        \
+  V(HTracer*, htracer, nullptr)                                               \
+  V(CodeTracer*, code_tracer, nullptr)                                        \
+  V(bool, fp_stubs_generated, false)                                          \
+  V(uint32_t, per_isolate_assert_data, 0xFFFFFFFFu)                           \
+  V(PromiseRejectCallback, promise_reject_callback, nullptr)                  \
+  V(const v8::StartupData*, snapshot_blob, nullptr)                           \
+  V(int, code_and_metadata_size, 0)                                           \
+  V(int, bytecode_and_metadata_size, 0)                                       \
+  /* true if being profiled. Causes collection of extra compile info. */      \
+  V(bool, is_profiling, false)                                                \
   ISOLATE_INIT_SIMULATOR_LIST(V)
 
 #define THREAD_LOCAL_TOP_ACCESSOR(type, name)                        \
@@ -789,8 +791,6 @@ class Isolate {
   char* ArchiveThread(char* to);
   char* RestoreThread(char* from);
 
-  static const char* const kStackOverflowMessage;
-
   static const int kUC16AlphabetSize = 256;  // See StringSearchBase.
   static const int kBMMaxShift = 250;        // See StringSearchBase.
 
@@ -919,6 +919,9 @@ class Isolate {
   Debug* debug() { return debug_; }
 
   bool* is_profiling_address() { return &is_profiling_; }
+  CodeEventDispatcher* code_event_dispatcher() const {
+    return code_event_dispatcher_.get();
+  }
   CpuProfiler* cpu_profiler() const { return cpu_profiler_; }
   HeapProfiler* heap_profiler() const { return heap_profiler_; }
 
@@ -1338,6 +1341,7 @@ class Isolate {
   Debug* debug_;
   CpuProfiler* cpu_profiler_;
   HeapProfiler* heap_profiler_;
+  std::unique_ptr<CodeEventDispatcher> code_event_dispatcher_;
   FunctionEntryHook function_entry_hook_;
 
   interpreter::Interpreter* interpreter_;

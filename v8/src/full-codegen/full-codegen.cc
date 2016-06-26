@@ -615,18 +615,14 @@ void FullCodeGenerator::EmitHasProperty() {
   RestoreContext();
 }
 
-bool RecordStatementPosition(MacroAssembler* masm, int pos) {
-  if (pos == RelocInfo::kNoPosition) return false;
+void RecordStatementPosition(MacroAssembler* masm, int pos) {
+  if (pos == RelocInfo::kNoPosition) return;
   masm->positions_recorder()->RecordStatementPosition(pos);
-  masm->positions_recorder()->RecordPosition(pos);
-  return masm->positions_recorder()->WriteRecordedPositions();
 }
 
-
-bool RecordPosition(MacroAssembler* masm, int pos) {
-  if (pos == RelocInfo::kNoPosition) return false;
+void RecordPosition(MacroAssembler* masm, int pos) {
+  if (pos == RelocInfo::kNoPosition) return;
   masm->positions_recorder()->RecordPosition(pos);
-  return masm->positions_recorder()->WriteRecordedPositions();
 }
 
 
@@ -650,8 +646,8 @@ void FullCodeGenerator::SetReturnPosition(FunctionLiteral* fun) {
 void FullCodeGenerator::SetStatementPosition(
     Statement* stmt, FullCodeGenerator::InsertBreak insert_break) {
   if (stmt->position() == RelocInfo::kNoPosition) return;
-  bool recorded = RecordStatementPosition(masm_, stmt->position());
-  if (recorded && insert_break == INSERT_BREAK && info_->is_debug() &&
+  RecordStatementPosition(masm_, stmt->position());
+  if (insert_break == INSERT_BREAK && info_->is_debug() &&
       !stmt->IsDebuggerStatement()) {
     DebugCodegen::GenerateSlot(masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_POSITION);
   }
@@ -665,8 +661,8 @@ void FullCodeGenerator::SetExpressionPosition(Expression* expr) {
 
 void FullCodeGenerator::SetExpressionAsStatementPosition(Expression* expr) {
   if (expr->position() == RelocInfo::kNoPosition) return;
-  bool recorded = RecordStatementPosition(masm_, expr->position());
-  if (recorded && info_->is_debug()) {
+  RecordStatementPosition(masm_, expr->position());
+  if (info_->is_debug()) {
     DebugCodegen::GenerateSlot(masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_POSITION);
   }
 }

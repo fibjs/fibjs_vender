@@ -57,10 +57,16 @@ class TypeCache final {
   Type* const kAdditiveSafeInteger =
       CreateRange(-4503599627370496.0, 4503599627370496.0);
   Type* const kSafeInteger = CreateRange(-kMaxSafeInteger, kMaxSafeInteger);
+  Type* const kAdditiveSafeIntegerOrMinusZero =
+      Type::Union(kAdditiveSafeInteger, Type::MinusZero(), zone());
+  Type* const kSafeIntegerOrMinusZero =
+      Type::Union(kSafeInteger, Type::MinusZero(), zone());
   Type* const kPositiveSafeInteger = CreateRange(0.0, kMaxSafeInteger);
 
   Type* const kUntaggedUndefined =
       Type::Intersect(Type::Undefined(), Type::Untagged(), zone());
+  Type* const kSigned32OrMinusZero =
+      Type::Union(Type::Signed32(), Type::MinusZero(), zone());
 
   // Asm.js related types.
   Type* const kAsmSigned = kInt32;

@@ -62,6 +62,16 @@ class EffectControlLinearizer {
                                               Node* control);
   ValueEffectControl LowerChangeTaggedToUint32(Node* node, Node* effect,
                                                Node* control);
+  ValueEffectControl LowerCheckBounds(Node* node, Node* frame_state,
+                                      Node* effect, Node* control);
+  ValueEffectControl LowerCheckTaggedPointer(Node* node, Node* frame_state,
+                                             Node* effect, Node* control);
+  ValueEffectControl LowerCheckTaggedSigned(Node* node, Node* frame_state,
+                                            Node* effect, Node* control);
+  ValueEffectControl LowerCheckedInt32Add(Node* node, Node* frame_state,
+                                          Node* effect, Node* control);
+  ValueEffectControl LowerCheckedInt32Sub(Node* node, Node* frame_state,
+                                          Node* effect, Node* control);
   ValueEffectControl LowerCheckedUint32ToInt32(Node* node, Node* frame_state,
                                                Node* effect, Node* control);
   ValueEffectControl LowerCheckedFloat64ToInt32(Node* node, Node* frame_state,
@@ -89,8 +99,10 @@ class EffectControlLinearizer {
                                                Node* control);
   ValueEffectControl LowerStringFromCharCode(Node* node, Node* effect,
                                              Node* control);
-  ValueEffectControl LowerCheckIf(Node* node, Node* frame_state, Node* effect,
-                                  Node* control);
+  ValueEffectControl LowerCheckFloat64Hole(Node* node, Node* frame_state,
+                                           Node* effect, Node* control);
+  ValueEffectControl LowerCheckTaggedHole(Node* node, Node* frame_state,
+                                          Node* effect, Node* control);
   ValueEffectControl LowerPlainPrimitiveToNumber(Node* node, Node* effect,
                                                  Node* control);
   ValueEffectControl LowerPlainPrimitiveToWord32(Node* node, Node* effect,
@@ -132,6 +144,7 @@ class EffectControlLinearizer {
   JSGraph* js_graph_;
   Schedule* schedule_;
   Zone* temp_zone_;
+  RegionObservability region_observability_ = RegionObservability::kObservable;
 
   SetOncePointer<Operator const> to_number_operator_;
 };

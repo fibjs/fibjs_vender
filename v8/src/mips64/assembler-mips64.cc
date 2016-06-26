@@ -176,37 +176,26 @@ Address RelocInfo::wasm_memory_reference() {
   return Assembler::target_address_at(pc_, host_);
 }
 
+Address RelocInfo::wasm_global_reference() {
+  DCHECK(IsWasmGlobalReference(rmode_));
+  return Assembler::target_address_at(pc_, host_);
+}
+
 uint32_t RelocInfo::wasm_memory_size_reference() {
   DCHECK(IsWasmMemorySizeReference(rmode_));
   return static_cast<uint32_t>(
       reinterpret_cast<intptr_t>((Assembler::target_address_at(pc_, host_))));
 }
 
-void RelocInfo::update_wasm_memory_reference(
-    Address old_base, Address new_base, uint32_t old_size, uint32_t new_size,
-    ICacheFlushMode icache_flush_mode) {
-  DCHECK(IsWasmMemoryReference(rmode_) || IsWasmMemorySizeReference(rmode_));
-  if (IsWasmMemoryReference(rmode_)) {
-    Address updated_memory_reference;
-    DCHECK(old_base <= wasm_memory_reference() &&
-           wasm_memory_reference() < old_base + old_size);
-    updated_memory_reference = new_base + (wasm_memory_reference() - old_base);
-    DCHECK(new_base <= updated_memory_reference &&
-           updated_memory_reference < new_base + new_size);
-    Assembler::set_target_address_at(
-        isolate_, pc_, host_, updated_memory_reference, icache_flush_mode);
-  } else if (IsWasmMemorySizeReference(rmode_)) {
-    uint32_t updated_size_reference;
-    DCHECK(wasm_memory_size_reference() <= old_size);
-    updated_size_reference =
-        new_size + (wasm_memory_size_reference() - old_size);
-    DCHECK(updated_size_reference <= new_size);
-    Assembler::set_target_address_at(
-        isolate_, pc_, host_, reinterpret_cast<Address>(updated_size_reference),
-        icache_flush_mode);
-  } else {
-    UNREACHABLE();
-  }
+void RelocInfo::unchecked_update_wasm_memory_reference(
+    Address address, ICacheFlushMode flush_mode) {
+  Assembler::set_target_address_at(isolate_, pc_, host_, address, flush_mode);
+}
+
+void RelocInfo::unchecked_update_wasm_memory_size(uint32_t size,
+                                                  ICacheFlushMode flush_mode) {
+  Assembler::set_target_address_at(isolate_, pc_, host_,
+                                   reinterpret_cast<Address>(size), flush_mode);
 }
 
 // -----------------------------------------------------------------------------
@@ -1267,7 +1256,6 @@ void Assembler::b(int16_t offset) {
 
 
 void Assembler::bal(int16_t offset) {
-  positions_recorder()->WriteRecordedPositions();
   bgezal(zero_reg, offset);
 }
 
@@ -1280,7 +1268,6 @@ void Assembler::bc(int32_t offset) {
 
 void Assembler::balc(int32_t offset) {
   DCHECK(kArchVariant == kMips64r6);
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(BALC, offset, CompactBranchType::COMPACT_BRANCH);
 }
 
@@ -1327,7 +1314,6 @@ void Assembler::bgec(Register rs, Register rt, int16_t offset) {
 void Assembler::bgezal(Register rs, int16_t offset) {
   DCHECK(kArchVariant != kMips64r6 || rs.is(zero_reg));
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(REGIMM, rs, BGEZAL, offset);
   BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
@@ -1398,7 +1384,6 @@ void Assembler::bltz(Register rs, int16_t offset) {
 void Assembler::bltzal(Register rs, int16_t offset) {
   DCHECK(kArchVariant != kMips64r6 || rs.is(zero_reg));
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(REGIMM, rs, BLTZAL, offset);
   BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
@@ -1434,7 +1419,6 @@ void Assembler::bnvc(Register rs, Register rt, int16_t offset) {
 void Assembler::blezalc(Register rt, int16_t offset) {
   DCHECK(kArchVariant == kMips64r6);
   DCHECK(!(rt.is(zero_reg)));
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(BLEZ, zero_reg, rt, offset,
                     CompactBranchType::COMPACT_BRANCH);
 }
@@ -1443,7 +1427,6 @@ void Assembler::blezalc(Register rt, int16_t offset) {
 void Assembler::bgezalc(Register rt, int16_t offset) {
   DCHECK(kArchVariant == kMips64r6);
   DCHECK(!(rt.is(zero_reg)));
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(BLEZ, rt, rt, offset, CompactBranchType::COMPACT_BRANCH);
 }
 
@@ -1452,7 +1435,6 @@ void Assembler::bgezall(Register rs, int16_t offset) {
   DCHECK(kArchVariant != kMips64r6);
   DCHECK(!(rs.is(zero_reg)));
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(REGIMM, rs, BGEZALL, offset);
   BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
@@ -1461,7 +1443,6 @@ void Assembler::bgezall(Register rs, int16_t offset) {
 void Assembler::bltzalc(Register rt, int16_t offset) {
   DCHECK(kArchVariant == kMips64r6);
   DCHECK(!(rt.is(zero_reg)));
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(BGTZ, rt, rt, offset, CompactBranchType::COMPACT_BRANCH);
 }
 
@@ -1469,7 +1450,6 @@ void Assembler::bltzalc(Register rt, int16_t offset) {
 void Assembler::bgtzalc(Register rt, int16_t offset) {
   DCHECK(kArchVariant == kMips64r6);
   DCHECK(!(rt.is(zero_reg)));
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(BGTZ, zero_reg, rt, offset,
                     CompactBranchType::COMPACT_BRANCH);
 }
@@ -1478,7 +1458,6 @@ void Assembler::bgtzalc(Register rt, int16_t offset) {
 void Assembler::beqzalc(Register rt, int16_t offset) {
   DCHECK(kArchVariant == kMips64r6);
   DCHECK(!(rt.is(zero_reg)));
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(ADDI, zero_reg, rt, offset,
                     CompactBranchType::COMPACT_BRANCH);
 }
@@ -1487,7 +1466,6 @@ void Assembler::beqzalc(Register rt, int16_t offset) {
 void Assembler::bnezalc(Register rt, int16_t offset) {
   DCHECK(kArchVariant == kMips64r6);
   DCHECK(!(rt.is(zero_reg)));
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(DADDI, zero_reg, rt, offset,
                     CompactBranchType::COMPACT_BRANCH);
 }
@@ -1553,7 +1531,6 @@ void Assembler::jal(Label* target) {
   uint64_t imm = jump_offset(target);
   if (target->is_bound()) {
     BlockTrampolinePoolScope block_trampoline_pool(this);
-    positions_recorder()->WriteRecordedPositions();
     GenInstrJump(static_cast<Opcode>(kJalRawMark),
                  static_cast<uint32_t>(imm >> 2) & kImm26Mask);
     BlockTrampolinePoolFor(1);  // For associated delay slot.
@@ -1566,9 +1543,6 @@ void Assembler::jal(Label* target) {
 void Assembler::jr(Register rs) {
   if (kArchVariant != kMips64r6) {
     BlockTrampolinePoolScope block_trampoline_pool(this);
-    if (rs.is(ra)) {
-      positions_recorder()->WriteRecordedPositions();
-    }
     GenInstrRegister(SPECIAL, rs, zero_reg, zero_reg, 0, JR);
     BlockTrampolinePoolFor(1);  // For associated delay slot.
   } else {
@@ -1579,7 +1553,6 @@ void Assembler::jr(Register rs) {
 
 void Assembler::jal(int64_t target) {
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  positions_recorder()->WriteRecordedPositions();
   GenInstrJump(JAL, static_cast<uint32_t>(target >> 2) & kImm26Mask);
   BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
@@ -1588,7 +1561,6 @@ void Assembler::jal(int64_t target) {
 void Assembler::jalr(Register rs, Register rd) {
   DCHECK(rs.code() != rd.code());
   BlockTrampolinePoolScope block_trampoline_pool(this);
-  positions_recorder()->WriteRecordedPositions();
   GenInstrRegister(SPECIAL, rs, zero_reg, rd, 0, JALR);
   BlockTrampolinePoolFor(1);  // For associated delay slot.
 }
@@ -1602,7 +1574,6 @@ void Assembler::jic(Register rt, int16_t offset) {
 
 void Assembler::jialc(Register rt, int16_t offset) {
   DCHECK(kArchVariant == kMips64r6);
-  positions_recorder()->WriteRecordedPositions();
   GenInstrImmediate(POP76, zero_reg, rt, offset);
 }
 

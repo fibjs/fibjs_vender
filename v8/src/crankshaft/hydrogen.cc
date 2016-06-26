@@ -8855,13 +8855,13 @@ bool HOptimizedGraphBuilder::TryInlineBuiltinFunctionCall(Call* expr) {
   // We intentionally ignore expr->tail_call_mode() here because builtins
   // we inline here do not observe if they were tail called or not.
   switch (id) {
+    case kMathCos:
     case kMathExp:
-      if (!FLAG_fast_math) break;
-      // Fall through if FLAG_fast_math.
     case kMathRound:
     case kMathFround:
     case kMathFloor:
     case kMathAbs:
+    case kMathSin:
     case kMathSqrt:
     case kMathLog:
     case kMathClz32:
@@ -9038,13 +9038,13 @@ bool HOptimizedGraphBuilder::TryInlineBuiltinMethodCall(
         return true;
       }
       break;
+    case kMathCos:
     case kMathExp:
-      if (!FLAG_fast_math) break;
-      // Fall through if FLAG_fast_math.
     case kMathRound:
     case kMathFround:
     case kMathFloor:
     case kMathAbs:
+    case kMathSin:
     case kMathSqrt:
     case kMathLog:
     case kMathClz32:
@@ -12770,17 +12770,6 @@ void HOptimizedGraphBuilder::GenerateDoubleHi(CallRuntime* call) {
   CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
   HValue* value = Pop();
   HInstruction* result = NewUncasted<HDoubleBits>(value, HDoubleBits::HIGH);
-  return ast_context()->ReturnInstruction(result, call->id());
-}
-
-
-void HOptimizedGraphBuilder::GenerateConstructDouble(CallRuntime* call) {
-  DCHECK_EQ(2, call->arguments()->length());
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(1)));
-  HValue* lo = Pop();
-  HValue* hi = Pop();
-  HInstruction* result = NewUncasted<HConstructDouble>(hi, lo);
   return ast_context()->ReturnInstruction(result, call->id());
 }
 

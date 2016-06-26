@@ -386,7 +386,10 @@ bool RunExtraCode(Isolate* isolate, Local<Context> context,
 
 struct SnapshotCreatorData {
   explicit SnapshotCreatorData(Isolate* isolate)
-      : isolate_(isolate), contexts_(isolate), created_(false) {}
+      : isolate_(isolate),
+        contexts_(isolate),
+        templates_(isolate),
+        created_(false) {}
 
   static SnapshotCreatorData* cast(void* data) {
     return reinterpret_cast<SnapshotCreatorData*>(data);
@@ -395,17 +398,20 @@ struct SnapshotCreatorData {
   ArrayBufferAllocator allocator_;
   Isolate* isolate_;
   PersistentValueVector<Context> contexts_;
+  PersistentValueVector<Template> templates_;
   bool created_;
 };
 
 }  // namespace
 
-SnapshotCreator::SnapshotCreator(StartupData* existing_snapshot) {
+SnapshotCreator::SnapshotCreator(intptr_t* external_references,
+                                 StartupData* existing_snapshot) {
   i::Isolate* internal_isolate = new i::Isolate(true);
   Isolate* isolate = reinterpret_cast<Isolate*>(internal_isolate);
   SnapshotCreatorData* data = new SnapshotCreatorData(isolate);
   data->isolate_ = isolate;
   internal_isolate->set_array_buffer_allocator(&data->allocator_);
+  internal_isolate->set_api_external_references(external_references);
   isolate->Enter();
   if (existing_snapshot) {
     internal_isolate->set_snapshot_blob(existing_snapshot);
@@ -429,13 +435,26 @@ Isolate* SnapshotCreator::GetIsolate() {
   return SnapshotCreatorData::cast(data_)->isolate_;
 }
 
-void SnapshotCreator::AddContext(Local<Context> context) {
+size_t SnapshotCreator::AddContext(Local<Context> context) {
   DCHECK(!context.IsEmpty());
   SnapshotCreatorData* data = SnapshotCreatorData::cast(data_);
   DCHECK(!data->created_);
   Isolate* isolate = data->isolate_;
   CHECK_EQ(isolate, context->GetIsolate());
+  size_t index = static_cast<int>(data->contexts_.Size());
   data->contexts_.Append(context);
+  return index;
+}
+
+size_t SnapshotCreator::AddTemplate(Local<Template> template_obj) {
+  DCHECK(!template_obj.IsEmpty());
+  SnapshotCreatorData* data = SnapshotCreatorData::cast(data_);
+  DCHECK(!data->created_);
+  DCHECK_EQ(reinterpret_cast<i::Isolate*>(data->isolate_),
+            Utils::OpenHandle(*template_obj)->GetIsolate());
+  size_t index = static_cast<int>(data->templates_.Size());
+  data->templates_.Append(template_obj);
+  return index;
 }
 
 StartupData SnapshotCreator::CreateBlob(
@@ -443,6 +462,18 @@ StartupData SnapshotCreator::CreateBlob(
   SnapshotCreatorData* data = SnapshotCreatorData::cast(data_);
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(data->isolate_);
   DCHECK(!data->created_);
+
+  {
+    int num_templates = static_cast<int>(data->templates_.Size());
+    i::HandleScope scope(isolate);
+    i::Handle<i::FixedArray> templates =
+        isolate->factory()->NewFixedArray(num_templates, i::TENURED);
+    for (int i = 0; i < num_templates; i++) {
+      templates->set(i, *v8::Utils::OpenHandle(*data->templates_.Get(i)));
+    }
+    isolate->heap()->SetSerializedTemplates(*templates);
+    data->templates_.Clear();
+  }
 
   // If we don't do this then we end up with a stray root pointing at the
   // context even after we have disposed of the context.
@@ -464,13 +495,25 @@ StartupData SnapshotCreator::CreateBlob(
   i::StartupSerializer startup_serializer(isolate, function_code_handling);
   startup_serializer.SerializeStrongReferences();
 
-  i::PartialSerializer context_serializer(isolate, &startup_serializer);
-  context_serializer.Serialize(&contexts[0]);
-  startup_serializer.SerializeWeakReferencesAndDeferred();
+  // Serialize each context with a new partial serializer.
+  i::List<i::SnapshotData*> context_snapshots(num_contexts);
+  for (int i = 0; i < num_contexts; i++) {
+    i::PartialSerializer partial_serializer(isolate, &startup_serializer);
+    partial_serializer.Serialize(&contexts[i]);
+    context_snapshots.Add(new i::SnapshotData(&partial_serializer));
+  }
 
+  startup_serializer.SerializeWeakReferencesAndDeferred();
+  i::SnapshotData startup_snapshot(&startup_serializer);
+  StartupData result =
+      i::Snapshot::CreateSnapshotBlob(&startup_snapshot, &context_snapshots);
+
+  // Delete heap-allocated context snapshot instances.
+  for (const auto& context_snapshot : context_snapshots) {
+    delete context_snapshot;
+  }
   data->created_ = true;
-  return i::Snapshot::CreateSnapshotBlob(&startup_serializer,
-                                         &context_serializer);
+  return result;
 }
 
 StartupData V8::CreateSnapshotDataBlob(const char* embedded_source) {
@@ -517,7 +560,7 @@ StartupData V8::WarmUpSnapshotDataBlob(StartupData cold_snapshot_blob,
   base::ElapsedTimer timer;
   timer.Start();
   {
-    SnapshotCreator snapshot_creator(&cold_snapshot_blob);
+    SnapshotCreator snapshot_creator(nullptr, &cold_snapshot_blob);
     Isolate* isolate = snapshot_creator.GetIsolate();
     {
       HandleScope scope(isolate);
@@ -1124,8 +1167,7 @@ static Local<FunctionTemplate> FunctionTemplateNew(
   obj->set_do_not_cache(do_not_cache);
   int next_serial_number = 0;
   if (!do_not_cache) {
-    next_serial_number = isolate->next_serial_number() + 1;
-    isolate->set_next_serial_number(next_serial_number);
+    next_serial_number = isolate->heap()->GetNextTemplateSerialNumber();
   }
   obj->set_serial_number(i::Smi::FromInt(next_serial_number));
   if (callback != 0) {
@@ -1152,13 +1194,26 @@ Local<FunctionTemplate> FunctionTemplate::New(Isolate* isolate,
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   // Changes to the environment cannot be captured in the snapshot. Expect no
   // function templates when the isolate is created for serialization.
-  DCHECK(!i_isolate->serializer_enabled());
   LOG_API(i_isolate, FunctionTemplate, New);
   ENTER_V8(i_isolate);
   return FunctionTemplateNew(i_isolate, callback, nullptr, data, signature,
                              length, false);
 }
 
+Local<FunctionTemplate> FunctionTemplate::FromSnapshot(Isolate* isolate,
+                                                       size_t index) {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::FixedArray* templates = i_isolate->heap()->serialized_templates();
+  int int_index = static_cast<int>(index);
+  if (int_index < templates->length()) {
+    i::Object* info = i_isolate->heap()->serialized_templates()->get(int_index);
+    if (info->IsFunctionTemplateInfo()) {
+      return Utils::ToLocal(i::Handle<i::FunctionTemplateInfo>(
+          i::FunctionTemplateInfo::cast(info)));
+    }
+  }
+  return Local<FunctionTemplate>();
+}
 
 Local<FunctionTemplate> FunctionTemplate::NewWithFastHandler(
     Isolate* isolate, FunctionCallback callback,
@@ -1347,9 +1402,6 @@ Local<ObjectTemplate> ObjectTemplate::New() {
 static Local<ObjectTemplate> ObjectTemplateNew(
     i::Isolate* isolate, v8::Local<FunctionTemplate> constructor,
     bool do_not_cache) {
-  // Changes to the environment cannot be captured in the snapshot. Expect no
-  // object templates when the isolate is created for serialization.
-  DCHECK(!isolate->serializer_enabled());
   LOG_API(isolate, ObjectTemplate, New);
   ENTER_V8(isolate);
   i::Handle<i::Struct> struct_obj =
@@ -1359,8 +1411,7 @@ static Local<ObjectTemplate> ObjectTemplateNew(
   InitializeTemplate(obj, Consts::OBJECT_TEMPLATE);
   int next_serial_number = 0;
   if (!do_not_cache) {
-    next_serial_number = isolate->next_serial_number() + 1;
-    isolate->set_next_serial_number(next_serial_number);
+    next_serial_number = isolate->heap()->GetNextTemplateSerialNumber();
   }
   obj->set_serial_number(i::Smi::FromInt(next_serial_number));
   if (!constructor.IsEmpty())
@@ -1372,6 +1423,21 @@ static Local<ObjectTemplate> ObjectTemplateNew(
 Local<ObjectTemplate> ObjectTemplate::New(
     i::Isolate* isolate, v8::Local<FunctionTemplate> constructor) {
   return ObjectTemplateNew(isolate, constructor, false);
+}
+
+Local<ObjectTemplate> ObjectTemplate::FromSnapshot(Isolate* isolate,
+                                                   size_t index) {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::FixedArray* templates = i_isolate->heap()->serialized_templates();
+  int int_index = static_cast<int>(index);
+  if (int_index < templates->length()) {
+    i::Object* info = i_isolate->heap()->serialized_templates()->get(int_index);
+    if (info->IsObjectTemplateInfo()) {
+      return Utils::ToLocal(
+          i::Handle<i::ObjectTemplateInfo>(i::ObjectTemplateInfo::cast(info)));
+    }
+  }
+  return Local<ObjectTemplate>();
 }
 
 // Ensure that the object template has a constructor.  If no
@@ -3847,11 +3913,10 @@ Local<Object> v8::Object::FindInstanceInPrototypeChain(
   i::PrototypeIterator iter(isolate, *Utils::OpenHandle(this),
                             i::kStartAtReceiver);
   auto tmpl_info = *Utils::OpenHandle(*tmpl);
-  while (!tmpl_info->IsTemplateFor(iter.GetCurrent())) {
+  while (!tmpl_info->IsTemplateFor(iter.GetCurrent<i::JSObject>())) {
     iter.Advance();
-    if (iter.IsAtEnd()) {
-      return Local<Object>();
-    }
+    if (iter.IsAtEnd()) return Local<Object>();
+    if (!iter.GetCurrent()->IsJSObject()) return Local<Object>();
   }
   // IsTemplateFor() ensures that iter.GetCurrent() can't be a Proxy here.
   return Utils::ToLocal(i::handle(iter.GetCurrent<i::JSObject>(), isolate));
@@ -4119,6 +4184,14 @@ Maybe<bool> v8::Object::HasOwnProperty(Local<Context> context,
   return result;
 }
 
+Maybe<bool> v8::Object::HasOwnProperty(Local<Context> context, uint32_t index) {
+  PREPARE_FOR_EXECUTION_PRIMITIVE(context, Object, HasOwnProperty, bool);
+  auto self = Utils::OpenHandle(this);
+  auto result = i::JSReceiver::HasOwnProperty(self, index);
+  has_pending_exception = result.IsNothing();
+  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
+  return result;
+}
 
 bool v8::Object::HasOwnProperty(Local<String> key) {
   auto context = ContextFromHeapObject(Utils::OpenHandle(this));
@@ -5532,11 +5605,10 @@ const char* v8::V8::GetVersion() {
   return i::Version::GetVersion();
 }
 
-
 static i::Handle<i::Context> CreateEnvironment(
     i::Isolate* isolate, v8::ExtensionConfiguration* extensions,
     v8::Local<ObjectTemplate> global_template,
-    v8::Local<Value> maybe_global_proxy) {
+    v8::Local<Value> maybe_global_proxy, size_t context_snapshot_index) {
   i::Handle<i::Context> env;
 
   // Enter V8 via an ENTER_V8 scope.
@@ -5581,7 +5653,7 @@ static i::Handle<i::Context> CreateEnvironment(
     }
     // Create the environment.
     env = isolate->bootstrapper()->CreateEnvironment(
-        maybe_proxy, proxy_template, extensions);
+        maybe_proxy, proxy_template, extensions, context_snapshot_index);
 
     // Restore the access check info on the global template.
     if (!global_template.IsEmpty()) {
@@ -5601,14 +5673,16 @@ static i::Handle<i::Context> CreateEnvironment(
 Local<Context> v8::Context::New(v8::Isolate* external_isolate,
                                 v8::ExtensionConfiguration* extensions,
                                 v8::Local<ObjectTemplate> global_template,
-                                v8::Local<Value> global_object) {
+                                v8::Local<Value> global_object,
+                                size_t context_snapshot_index) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(external_isolate);
   LOG_API(isolate, Context, New);
   i::HandleScope scope(isolate);
   ExtensionConfiguration no_extensions;
   if (extensions == NULL) extensions = &no_extensions;
   i::Handle<i::Context> env =
-      CreateEnvironment(isolate, extensions, global_template, global_object);
+      CreateEnvironment(isolate, extensions, global_template, global_object,
+                        context_snapshot_index);
   if (env.is_null()) {
     if (isolate->has_pending_exception()) {
       isolate->OptionalRescheduleException(true);
@@ -5743,7 +5817,7 @@ Local<v8::Function> FunctionTemplate::GetFunction() {
 bool FunctionTemplate::HasInstance(v8::Local<v8::Value> value) {
   auto self = Utils::OpenHandle(this);
   auto obj = Utils::OpenHandle(*value);
-  return self->IsTemplateFor(*obj);
+  return obj->IsJSObject() && self->IsTemplateFor(i::JSObject::cast(*obj));
 }
 
 
@@ -7264,6 +7338,8 @@ Isolate* Isolate::New(const Isolate::CreateParams& params) {
     v8_isolate->SetAddHistogramSampleFunction(
         params.add_histogram_sample_callback);
   }
+
+  isolate->set_api_external_references(params.external_references);
   SetResourceConstraints(isolate, params.constraints);
   // TODO(jochen): Once we got rid of Isolate::Current(), we can remove this.
   Isolate::Scope isolate_scope(v8_isolate);
@@ -8243,9 +8319,8 @@ const std::vector<CpuProfileDeoptInfo>& CpuProfileNode::GetDeoptInfos() const {
 
 void CpuProfile::Delete() {
   i::CpuProfile* profile = reinterpret_cast<i::CpuProfile*>(this);
-  i::Isolate* isolate = profile->top_down()->isolate();
-  i::CpuProfiler* profiler = isolate->cpu_profiler();
-  DCHECK(profiler != NULL);
+  i::CpuProfiler* profiler = profile->cpu_profiler();
+  DCHECK(profiler != nullptr);
   profiler->DeleteProfile(profile);
 }
 

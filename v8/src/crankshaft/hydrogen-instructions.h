@@ -77,7 +77,6 @@ class LChunkBuilder;
   V(CompareObjectEqAndBranch)                 \
   V(CompareMap)                               \
   V(Constant)                                 \
-  V(ConstructDouble)                          \
   V(Context)                                  \
   V(DebugBreak)                               \
   V(DeclareGlobals)                           \
@@ -1691,34 +1690,6 @@ class HDoubleBits final : public HUnaryOperation {
 };
 
 
-class HConstructDouble final : public HTemplateInstruction<2> {
- public:
-  DECLARE_INSTRUCTION_FACTORY_P2(HConstructDouble, HValue*, HValue*);
-
-  Representation RequiredInputRepresentation(int index) override {
-    return Representation::Integer32();
-  }
-
-  DECLARE_CONCRETE_INSTRUCTION(ConstructDouble)
-
-  HValue* hi() { return OperandAt(0); }
-  HValue* lo() { return OperandAt(1); }
-
- protected:
-  bool DataEquals(HValue* other) override { return true; }
-
- private:
-  explicit HConstructDouble(HValue* hi, HValue* lo) {
-    set_representation(Representation::Double());
-    SetFlag(kUseGVN);
-    SetOperandAt(0, hi);
-    SetOperandAt(1, lo);
-  }
-
-  bool IsDeletable() const override { return true; }
-};
-
-
 enum RemovableSimulate {
   REMOVABLE_SIMULATE,
   FIXED_SIMULATE
@@ -2453,9 +2424,11 @@ class HUnaryMathOperation final : public HTemplateInstruction<2> {
       return Representation::Tagged();
     } else {
       switch (op_) {
+        case kMathCos:
         case kMathFloor:
         case kMathRound:
         case kMathFround:
+        case kMathSin:
         case kMathSqrt:
         case kMathPowHalf:
         case kMathLog:
@@ -2524,9 +2497,11 @@ class HUnaryMathOperation final : public HTemplateInstruction<2> {
         // is tagged, and not when it is an unboxed double or unboxed integer.
         SetChangesFlag(kNewSpacePromotion);
         break;
+      case kMathCos:
       case kMathFround:
       case kMathLog:
       case kMathExp:
+      case kMathSin:
       case kMathSqrt:
       case kMathPowHalf:
         set_representation(Representation::Double());
@@ -3765,6 +3740,7 @@ class HBitwiseBinaryOperation : public HBinaryOperation {
       : HBinaryOperation(context, left, right, type) {
     SetFlag(kFlexibleRepresentation);
     SetFlag(kTruncatingToInt32);
+    SetFlag(kAllowUndefinedAsNaN);
     SetAllSideEffects();
   }
 

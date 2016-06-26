@@ -451,8 +451,7 @@ Node* RepresentationChanger::InsertConversion(Node* node, const Operator* op,
     Node* effect = NodeProperties::GetEffectInput(use_node);
     Node* control = NodeProperties::GetControlInput(use_node);
     Node* conversion = jsgraph()->graph()->NewNode(op, node, effect, control);
-    NodeProperties::ReplaceControlInput(use_node, control);
-    NodeProperties::ReplaceEffectInput(use_node, effect);
+    NodeProperties::ReplaceEffectInput(use_node, conversion);
     return conversion;
   }
   return jsgraph()->graph()->NewNode(op, node);
@@ -571,10 +570,13 @@ const Operator* RepresentationChanger::Int32OperatorFor(
     case IrOpcode::kSpeculativeNumberSubtract:  // Fall through.
     case IrOpcode::kNumberSubtract:
       return machine()->Int32Sub();
+    case IrOpcode::kSpeculativeNumberMultiply:
     case IrOpcode::kNumberMultiply:
       return machine()->Int32Mul();
+    case IrOpcode::kSpeculativeNumberDivide:
     case IrOpcode::kNumberDivide:
       return machine()->Int32Div();
+    case IrOpcode::kSpeculativeNumberModulus:
     case IrOpcode::kNumberModulus:
       return machine()->Int32Mod();
     case IrOpcode::kNumberBitwiseOr:
@@ -584,10 +586,13 @@ const Operator* RepresentationChanger::Int32OperatorFor(
     case IrOpcode::kNumberBitwiseAnd:
       return machine()->Word32And();
     case IrOpcode::kNumberEqual:
+    case IrOpcode::kSpeculativeNumberEqual:
       return machine()->Word32Equal();
     case IrOpcode::kNumberLessThan:
+    case IrOpcode::kSpeculativeNumberLessThan:
       return machine()->Int32LessThan();
     case IrOpcode::kNumberLessThanOrEqual:
+    case IrOpcode::kSpeculativeNumberLessThanOrEqual:
       return machine()->Int32LessThanOrEqual();
     default:
       UNREACHABLE();
@@ -599,9 +604,9 @@ const Operator* RepresentationChanger::Int32OverflowOperatorFor(
     IrOpcode::Value opcode) {
   switch (opcode) {
     case IrOpcode::kSpeculativeNumberAdd:  // Fall through.
-      return machine()->Int32AddWithOverflow();
+      return simplified()->CheckedInt32Add();
     case IrOpcode::kSpeculativeNumberSubtract:  // Fall through.
-      return machine()->Int32SubWithOverflow();
+      return simplified()->CheckedInt32Sub();
     default:
       UNREACHABLE();
       return nullptr;
@@ -615,17 +620,23 @@ const Operator* RepresentationChanger::Uint32OperatorFor(
       return machine()->Int32Add();
     case IrOpcode::kNumberSubtract:
       return machine()->Int32Sub();
+    case IrOpcode::kSpeculativeNumberMultiply:
     case IrOpcode::kNumberMultiply:
       return machine()->Int32Mul();
+    case IrOpcode::kSpeculativeNumberDivide:
     case IrOpcode::kNumberDivide:
       return machine()->Uint32Div();
+    case IrOpcode::kSpeculativeNumberModulus:
     case IrOpcode::kNumberModulus:
       return machine()->Uint32Mod();
     case IrOpcode::kNumberEqual:
+    case IrOpcode::kSpeculativeNumberEqual:
       return machine()->Word32Equal();
     case IrOpcode::kNumberLessThan:
+    case IrOpcode::kSpeculativeNumberLessThan:
       return machine()->Uint32LessThan();
     case IrOpcode::kNumberLessThanOrEqual:
+    case IrOpcode::kSpeculativeNumberLessThanOrEqual:
       return machine()->Uint32LessThanOrEqual();
     case IrOpcode::kNumberClz32:
       return machine()->Word32Clz();
@@ -647,26 +658,54 @@ const Operator* RepresentationChanger::Float64OperatorFor(
     case IrOpcode::kSpeculativeNumberSubtract:
     case IrOpcode::kNumberSubtract:
       return machine()->Float64Sub();
+    case IrOpcode::kSpeculativeNumberMultiply:
     case IrOpcode::kNumberMultiply:
       return machine()->Float64Mul();
+    case IrOpcode::kSpeculativeNumberDivide:
     case IrOpcode::kNumberDivide:
       return machine()->Float64Div();
+    case IrOpcode::kSpeculativeNumberModulus:
     case IrOpcode::kNumberModulus:
       return machine()->Float64Mod();
     case IrOpcode::kNumberEqual:
+    case IrOpcode::kSpeculativeNumberEqual:
       return machine()->Float64Equal();
     case IrOpcode::kNumberLessThan:
+    case IrOpcode::kSpeculativeNumberLessThan:
       return machine()->Float64LessThan();
     case IrOpcode::kNumberLessThanOrEqual:
+    case IrOpcode::kSpeculativeNumberLessThanOrEqual:
       return machine()->Float64LessThanOrEqual();
     case IrOpcode::kNumberAtan:
       return machine()->Float64Atan();
     case IrOpcode::kNumberAtan2:
       return machine()->Float64Atan2();
+    case IrOpcode::kNumberCos:
+      return machine()->Float64Cos();
+    case IrOpcode::kNumberExp:
+      return machine()->Float64Exp();
+    case IrOpcode::kNumberFround:
+      return machine()->TruncateFloat64ToFloat32();
+    case IrOpcode::kNumberAtanh:
+      return machine()->Float64Atanh();
     case IrOpcode::kNumberLog:
       return machine()->Float64Log();
     case IrOpcode::kNumberLog1p:
       return machine()->Float64Log1p();
+    case IrOpcode::kNumberLog2:
+      return machine()->Float64Log2();
+    case IrOpcode::kNumberLog10:
+      return machine()->Float64Log10();
+    case IrOpcode::kNumberSin:
+      return machine()->Float64Sin();
+    case IrOpcode::kNumberTan:
+      return machine()->Float64Tan();
+    case IrOpcode::kNumberSqrt:
+      return machine()->Float64Sqrt();
+    case IrOpcode::kNumberCbrt:
+      return machine()->Float64Cbrt();
+    case IrOpcode::kNumberExpm1:
+      return machine()->Float64Expm1();
     case IrOpcode::kNumberSilenceNaN:
       return machine()->Float64SilenceNaN();
     default:

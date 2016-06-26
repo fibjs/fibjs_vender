@@ -680,13 +680,14 @@ Expression* ParserTraits::NewTargetExpression(Scope* scope,
 Expression* ParserTraits::FunctionSentExpression(Scope* scope,
                                                  AstNodeFactory* factory,
                                                  int pos) {
-  // We desugar function.sent into %_GeneratorGetInput(generator).
+  // We desugar function.sent into %_GeneratorGetInputOrDebugPos(generator).
   Zone* zone = parser_->zone();
   ZoneList<Expression*>* args = new (zone) ZoneList<Expression*>(1, zone);
   VariableProxy* generator = factory->NewVariableProxy(
       parser_->function_state_->generator_object_variable());
   args->Add(generator, zone);
-  return factory->NewCallRuntime(Runtime::kInlineGeneratorGetInput, args, pos);
+  return factory->NewCallRuntime(Runtime::kInlineGeneratorGetInputOrDebugPos,
+                                 args, pos);
 }
 
 
@@ -807,7 +808,6 @@ Parser::Parser(ParseInfo* info)
                       info->isolate()->is_tail_call_elimination_enabled());
   set_allow_harmony_do_expressions(FLAG_harmony_do_expressions);
   set_allow_harmony_for_in(FLAG_harmony_for_in);
-  set_allow_harmony_function_name(FLAG_harmony_function_name);
   set_allow_harmony_function_sent(FLAG_harmony_function_sent);
   set_allow_harmony_restrictive_declarations(
       FLAG_harmony_restrictive_declarations);
@@ -2036,13 +2036,12 @@ Variable* Parser::Declare(Declaration* declaration,
     // In a var binding in a sloppy direct eval, pollute the enclosing scope
     // with this new binding by doing the following:
     // The proxy is bound to a lookup variable to force a dynamic declaration
-    // using the DeclareLookupSlot runtime function.
+    // using the DeclareEvalVar or DeclareEvalFunction runtime functions.
     Variable::Kind kind = Variable::NORMAL;
     // TODO(sigurds) figure out if kNotAssigned is OK here
     var = new (zone()) Variable(declaration_scope, name, mode, kind,
                                 declaration->initialization(), kNotAssigned);
     var->AllocateTo(VariableLocation::LOOKUP, -1);
-    var->SetFromEval();
     resolve = true;
   }
 
@@ -2062,7 +2061,7 @@ Variable* Parser::Declare(Declaration* declaration,
   // same variable if it is declared several times. This is not a
   // semantic issue as long as we keep the source order, but it may be
   // a performance issue since it may lead to repeated
-  // RuntimeHidden_DeclareLookupSlot calls.
+  // DeclareEvalVar or DeclareEvalFunction calls.
   declaration_scope->AddDeclaration(declaration);
 
   // If requested and we have a local variable, bind the proxy to the variable
@@ -2444,9 +2443,7 @@ Block* Parser::ParseVariableDeclarations(
         }
       }
 
-      if (allow_harmony_function_name()) {
-        ParserTraits::SetFunctionNameFromIdentifierRef(value, pattern);
-      }
+      ParserTraits::SetFunctionNameFromIdentifierRef(value, pattern);
 
       // End position of the initializer is after the assignment expression.
       initializer_position = scanner()->location().end_pos;
@@ -4564,7 +4561,6 @@ Block* Parser::BuildParameterInitializationBlock(
   DCHECK(scope_->is_function_scope());
   Block* init_block =
       factory()->NewBlock(NULL, 1, true, RelocInfo::kNoPosition);
-  ZoneList<Scope*>* param_scopes = new (zone()) ZoneList<Scope*>(0, zone());
   for (int i = 0; i < parameters.params.length(); ++i) {
     auto parameter = parameters.params[i];
     if (parameter.is_rest && parameter.pattern->IsVariableProxy()) break;
@@ -4606,16 +4602,21 @@ Block* Parser::BuildParameterInitializationBlock(
 
     Scope* param_scope = scope_;
     Block* param_block = init_block;
-    if (!parameter.is_simple()) {
+    if (!parameter.is_simple() && scope_->calls_sloppy_eval()) {
       param_scope = NewScope(scope_, BLOCK_SCOPE);
       param_scope->set_is_declaration_scope();
       param_scope->set_start_position(descriptor.initialization_pos);
       param_scope->set_end_position(parameter.initializer_end_position);
-      param_scopes->Add(param_scope, zone());
-      scope_->PropagateUsageFlagsToScope(param_scope);
+      param_scope->RecordEvalCall();
       param_block = factory()->NewBlock(NULL, 8, true, RelocInfo::kNoPosition);
       param_block->set_scope(param_scope);
       descriptor.hoist_scope = scope_;
+      // Pass the appropriate scope in so that PatternRewriter can appropriately
+      // rewrite inner initializers of the pattern to param_scope
+      descriptor.scope = param_scope;
+      // Rewrite the outer initializer to point to param_scope
+      RewriteParameterInitializerScope(stack_limit(), initial_value, scope_,
+                                       param_scope);
     }
 
     {
@@ -4626,16 +4627,13 @@ Block* Parser::BuildParameterInitializationBlock(
                                                      &decl, nullptr, CHECK_OK);
     }
 
-    if (!parameter.is_simple()) {
+    if (!parameter.is_simple() && scope_->calls_sloppy_eval()) {
       param_scope = param_scope->FinalizeBlockScope();
       if (param_scope != nullptr) {
         CheckConflictingVarDeclarations(param_scope, CHECK_OK);
       }
       init_block->statements()->Add(param_block, zone());
     }
-  }
-  for (Scope* param_scope : *param_scopes) {
-    scope_->PropagateUsageFlagsToScope(param_scope);
   }
   return init_block;
 }
@@ -4874,7 +4872,6 @@ PreParser::PreParseResult Parser::ParseLazyFunctionBodyWithPreParser(
     SET_ALLOW(natives);
     SET_ALLOW(harmony_do_expressions);
     SET_ALLOW(harmony_for_in);
-    SET_ALLOW(harmony_function_name);
     SET_ALLOW(harmony_function_sent);
     SET_ALLOW(harmony_exponentiation_operator);
     SET_ALLOW(harmony_restrictive_declarations);
@@ -4973,8 +4970,7 @@ ClassLiteral* Parser::ParseClassLiteral(ExpressionClassifier* classifier,
 
     if (fni_ != NULL) fni_->Infer();
 
-    if (allow_harmony_function_name() &&
-        property_name != ast_value_factory()->constructor_string()) {
+    if (property_name != ast_value_factory()->constructor_string()) {
       SetFunctionNameFromPropertyName(property, property_name);
     }
   }
@@ -5219,7 +5215,7 @@ void Parser::Internalize(Isolate* isolate, Handle<Script> script, bool error) {
   // Move statistics to Isolate.
   for (int feature = 0; feature < v8::Isolate::kUseCounterFeatureCount;
        ++feature) {
-    for (int i = 0; i < use_counts_[feature]; ++i) {
+    if (use_counts_[feature] > 0) {
       isolate->CountUsage(v8::Isolate::UseCounterFeature(feature));
     }
   }
@@ -6570,8 +6566,6 @@ void ParserTraits::BuildIteratorClose(ZoneList<Statement*>* statements,
 void ParserTraits::FinalizeIteratorUse(Variable* completion,
                                        Expression* condition, Variable* iter,
                                        Block* iterator_use, Block* target) {
-  if (!FLAG_harmony_iterator_close) return;
-
   //
   // This function adds two statements to [target], corresponding to the
   // following code:
@@ -6854,8 +6848,6 @@ void ParserTraits::BuildIteratorCloseForCompletion(
 
 
 Statement* ParserTraits::FinalizeForOfStatement(ForOfStatement* loop, int pos) {
-  if (!FLAG_harmony_iterator_close) return loop;
-
   //
   // This function replaces the loop with the following wrapping:
   //

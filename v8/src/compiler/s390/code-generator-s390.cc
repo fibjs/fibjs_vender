@@ -400,7 +400,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
                      0, 1);                                                    \
     /* Move the result in the double result register. */                       \
     __ MovFromFloatResult(i.OutputDoubleRegister());                           \
-    DCHECK_EQ(LeaveRC, i.OutputRCBit());                                       \
   } while (0)
 
 #define ASSEMBLE_IEEE754_BINOP(name)                                           \
@@ -415,7 +414,6 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
                      0, 2);                                                    \
     /* Move the result in the double result register. */                       \
     __ MovFromFloatResult(i.OutputDoubleRegister());                           \
-    DCHECK_EQ(LeaveRC, i.OutputRCBit());                                       \
   } while (0)
 
 #define ASSEMBLE_FLOAT_MAX(double_scratch_reg, general_scratch_reg) \
@@ -1258,11 +1256,38 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kIeee754Float64Atan2:
       ASSEMBLE_IEEE754_BINOP(atan2);
       break;
+    case kIeee754Float64Tan:
+      ASSEMBLE_IEEE754_UNOP(tan);
+      break;
+    case kIeee754Float64Cbrt:
+      ASSEMBLE_IEEE754_UNOP(cbrt);
+      break;
+    case kIeee754Float64Sin:
+      ASSEMBLE_IEEE754_UNOP(sin);
+      break;
+    case kIeee754Float64Cos:
+      ASSEMBLE_IEEE754_UNOP(cos);
+      break;
+    case kIeee754Float64Exp:
+      ASSEMBLE_IEEE754_UNOP(exp);
+      break;
+    case kIeee754Float64Expm1:
+      ASSEMBLE_IEEE754_UNOP(expm1);
+      break;
+    case kIeee754Float64Atanh:
+      ASSEMBLE_IEEE754_UNOP(atanh);
+      break;
     case kIeee754Float64Log:
       ASSEMBLE_IEEE754_UNOP(log);
       break;
     case kIeee754Float64Log1p:
       ASSEMBLE_IEEE754_UNOP(log1p);
+      break;
+    case kIeee754Float64Log2:
+      ASSEMBLE_IEEE754_UNOP(log2);
+      break;
+    case kIeee754Float64Log10:
+      ASSEMBLE_IEEE754_UNOP(log10);
       break;
     case kS390_Neg:
       __ LoadComplementRR(i.OutputRegister(), i.InputRegister(0));
@@ -1349,6 +1374,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       }
       break;
 #endif
+    case kS390_Float64SilenceNaN: {
+      DoubleRegister value = i.InputDoubleRegister(0);
+      DoubleRegister result = i.OutputDoubleRegister();
+      __ CanonicalizeNaN(result, value);
+      break;
+    }
     case kS390_Push:
       if (instr->InputAt(0)->IsFPRegister()) {
         __ lay(sp, MemOperand(sp, -kDoubleSize));
@@ -2001,6 +2032,7 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           if (src.rmode() == RelocInfo::WASM_MEMORY_SIZE_REFERENCE) {
 #else
           if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE ||
+              src.rmode() == RelocInfo::WASM_GLOBAL_REFERENCE ||
               src.rmode() == RelocInfo::WASM_MEMORY_SIZE_REFERENCE) {
 #endif
             __ mov(dst, Operand(src.ToInt32(), src.rmode()));
@@ -2010,7 +2042,8 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
           break;
         case Constant::kInt64:
 #if V8_TARGET_ARCH_S390X
-          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE) {
+          if (src.rmode() == RelocInfo::WASM_MEMORY_REFERENCE ||
+              src.rmode() == RelocInfo::WASM_GLOBAL_REFERENCE) {
             __ mov(dst, Operand(src.ToInt64(), src.rmode()));
           } else {
             DCHECK(src.rmode() != RelocInfo::WASM_MEMORY_SIZE_REFERENCE);

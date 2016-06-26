@@ -281,7 +281,9 @@ class AstGraphBuilder::ControlScope::DeferredCommands : public ZoneObject {
     return NewPathToken(TokenDispenserForFinally::kFallThroughToken);
   }
   Node* NewPathDispatchCondition(Node* t1, Node* t2) {
-    return owner_->NewNode(owner_->javascript()->StrictEqual(), t1, t2);
+    return owner_->NewNode(
+        owner_->javascript()->StrictEqual(CompareOperationHints::Any()), t1,
+        t2);
   }
 
  private:
@@ -1132,12 +1134,8 @@ void AstGraphBuilder::VisitVariableDeclaration(VariableDeclaration* decl) {
     case VariableLocation::LOOKUP: {
       DCHECK(!hole_init);
       Node* name = jsgraph()->Constant(variable->name());
-      Node* value = jsgraph()->ZeroConstant();  // Indicates no initial value.
-      Node* attr =
-          jsgraph()->Constant(variable->DeclarationPropertyAttributes());
-      const Operator* op =
-          javascript()->CallRuntime(Runtime::kDeclareLookupSlot);
-      Node* store = NewNode(op, name, value, attr);
+      const Operator* op = javascript()->CallRuntime(Runtime::kDeclareEvalVar);
+      Node* store = NewNode(op, name);
       PrepareFrameState(store, decl->proxy()->id());
       break;
     }
@@ -1176,11 +1174,9 @@ void AstGraphBuilder::VisitFunctionDeclaration(FunctionDeclaration* decl) {
       VisitForValue(decl->fun());
       Node* value = environment()->Pop();
       Node* name = jsgraph()->Constant(variable->name());
-      Node* attr =
-          jsgraph()->Constant(variable->DeclarationPropertyAttributes());
       const Operator* op =
-          javascript()->CallRuntime(Runtime::kDeclareLookupSlot);
-      Node* store = NewNode(op, name, value, attr);
+          javascript()->CallRuntime(Runtime::kDeclareEvalFunction);
+      Node* store = NewNode(op, name, value);
       PrepareFrameState(store, decl->proxy()->id());
       break;
     }
@@ -1303,7 +1299,15 @@ void AstGraphBuilder::VisitSwitchStatement(SwitchStatement* stmt) {
     VisitForValue(clause->label());
     Node* label = environment()->Pop();
     Node* tag = environment()->Top();
-    const Operator* op = javascript()->StrictEqual();
+
+    CompareOperationHints hints;
+    if (!type_hint_analysis_ ||
+        !type_hint_analysis_->GetCompareOperationHints(clause->CompareId(),
+                                                       &hints)) {
+      hints = CompareOperationHints::Any();
+    }
+
+    const Operator* op = javascript()->StrictEqual(hints);
     Node* condition = NewNode(op, tag, label);
     compare_switch.BeginLabel(i, condition);
 
@@ -1379,10 +1383,12 @@ void AstGraphBuilder::VisitForInStatement(ForInStatement* stmt) {
   for_block.BeginBlock();
   // Check for null or undefined before entering loop.
   Node* is_null_cond =
-      NewNode(javascript()->StrictEqual(), object, jsgraph()->NullConstant());
+      NewNode(javascript()->StrictEqual(CompareOperationHints::Any()), object,
+              jsgraph()->NullConstant());
   for_block.BreakWhen(is_null_cond, BranchHint::kFalse);
-  Node* is_undefined_cond = NewNode(javascript()->StrictEqual(), object,
-                                    jsgraph()->UndefinedConstant());
+  Node* is_undefined_cond =
+      NewNode(javascript()->StrictEqual(CompareOperationHints::Any()), object,
+              jsgraph()->UndefinedConstant());
   for_block.BreakWhen(is_undefined_cond, BranchHint::kFalse);
   {
     // Convert object to jsobject.
@@ -1425,8 +1431,9 @@ void AstGraphBuilder::VisitForInStatement(ForInStatement* stmt) {
       PrepareFrameState(value, stmt->FilterId(),
                         OutputFrameStateCombine::Push());
       IfBuilder test_value(this);
-      Node* test_value_cond = NewNode(javascript()->StrictEqual(), value,
-                                      jsgraph()->UndefinedConstant());
+      Node* test_value_cond =
+          NewNode(javascript()->StrictEqual(CompareOperationHints::Any()),
+                  value, jsgraph()->UndefinedConstant());
       test_value.If(test_value_cond, BranchHint::kFalse);
       test_value.Then();
       test_value.Else();
@@ -2831,10 +2838,10 @@ void AstGraphBuilder::VisitLiteralCompareNil(CompareOperation* expr,
   const Operator* op = nullptr;
   switch (expr->op()) {
     case Token::EQ:
-      op = javascript()->Equal();
+      op = javascript()->Equal(CompareOperationHints::Any());
       break;
     case Token::EQ_STRICT:
-      op = javascript()->StrictEqual();
+      op = javascript()->StrictEqual(CompareOperationHints::Any());
       break;
     default:
       UNREACHABLE();
@@ -2853,8 +2860,8 @@ void AstGraphBuilder::VisitLiteralCompareTypeof(CompareOperation* expr,
   VisitTypeofExpression(sub_expr);
   PrepareEagerCheckpoint(sub_expr->id());
   Node* typeof_arg = NewNode(javascript()->TypeOf(), environment()->Pop());
-  Node* value = NewNode(javascript()->StrictEqual(), typeof_arg,
-                        jsgraph()->Constant(check));
+  Node* value = NewNode(javascript()->StrictEqual(CompareOperationHints::Any()),
+                        typeof_arg, jsgraph()->Constant(check));
   PrepareFrameState(value, expr->id(), ast_context()->GetStateCombine());
   return ast_context()->ProduceValue(value);
 }
@@ -2876,31 +2883,38 @@ void AstGraphBuilder::VisitCompareOperation(CompareOperation* expr) {
     return VisitLiteralCompareNil(expr, sub_expr, jsgraph()->NullConstant());
   }
 
+  CompareOperationHints hints;
+  if (!type_hint_analysis_ ||
+      !type_hint_analysis_->GetCompareOperationHints(
+          expr->CompareOperationFeedbackId(), &hints)) {
+    hints = CompareOperationHints::Any();
+  }
+
   const Operator* op;
   switch (expr->op()) {
     case Token::EQ:
-      op = javascript()->Equal();
+      op = javascript()->Equal(hints);
       break;
     case Token::NE:
-      op = javascript()->NotEqual();
+      op = javascript()->NotEqual(hints);
       break;
     case Token::EQ_STRICT:
-      op = javascript()->StrictEqual();
+      op = javascript()->StrictEqual(hints);
       break;
     case Token::NE_STRICT:
-      op = javascript()->StrictNotEqual();
+      op = javascript()->StrictNotEqual(hints);
       break;
     case Token::LT:
-      op = javascript()->LessThan();
+      op = javascript()->LessThan(hints);
       break;
     case Token::GT:
-      op = javascript()->GreaterThan();
+      op = javascript()->GreaterThan(hints);
       break;
     case Token::LTE:
-      op = javascript()->LessThanOrEqual();
+      op = javascript()->LessThanOrEqual(hints);
       break;
     case Token::GTE:
-      op = javascript()->GreaterThanOrEqual();
+      op = javascript()->GreaterThanOrEqual(hints);
       break;
     case Token::INSTANCEOF:
       op = javascript()->InstanceOf();
@@ -3319,7 +3333,8 @@ Node* AstGraphBuilder::BuildHoleCheckThenThrow(Node* value, Variable* variable,
                                                BailoutId bailout_id) {
   IfBuilder hole_check(this);
   Node* the_hole = jsgraph()->TheHoleConstant();
-  Node* check = NewNode(javascript()->StrictEqual(), value, the_hole);
+  Node* check = NewNode(javascript()->StrictEqual(CompareOperationHints::Any()),
+                        value, the_hole);
   hole_check.If(check);
   hole_check.Then();
   Node* error = BuildThrowReferenceError(variable, bailout_id);
@@ -3336,7 +3351,8 @@ Node* AstGraphBuilder::BuildHoleCheckElseThrow(Node* value, Variable* variable,
                                                BailoutId bailout_id) {
   IfBuilder hole_check(this);
   Node* the_hole = jsgraph()->TheHoleConstant();
-  Node* check = NewNode(javascript()->StrictEqual(), value, the_hole);
+  Node* check = NewNode(javascript()->StrictEqual(CompareOperationHints::Any()),
+                        value, the_hole);
   hole_check.If(check);
   hole_check.Then();
   environment()->Push(for_hole);
@@ -3353,7 +3369,8 @@ Node* AstGraphBuilder::BuildThrowIfStaticPrototype(Node* name,
   IfBuilder prototype_check(this);
   Node* prototype_string =
       jsgraph()->Constant(isolate()->factory()->prototype_string());
-  Node* check = NewNode(javascript()->StrictEqual(), name, prototype_string);
+  Node* check = NewNode(javascript()->StrictEqual(CompareOperationHints::Any()),
+                        name, prototype_string);
   prototype_check.If(check);
   prototype_check.Then();
   Node* error = BuildThrowStaticPrototypeError(bailout_id);
@@ -3903,8 +3920,9 @@ Node* AstGraphBuilder::TryLoadDynamicVariable(Variable* variable,
       Node* load = NewNode(
           javascript()->LoadContext(depth, Context::EXTENSION_INDEX, false),
           current_context());
-      Node* check = NewNode(javascript()->StrictEqual(), load,
-                            jsgraph()->TheHoleConstant());
+      Node* check =
+          NewNode(javascript()->StrictEqual(CompareOperationHints::Any()), load,
+                  jsgraph()->TheHoleConstant());
       fast_block.BreakUnless(check, BranchHint::kTrue);
     }
 
@@ -3949,8 +3967,9 @@ Node* AstGraphBuilder::TryLoadDynamicVariable(Variable* variable,
       Node* load = NewNode(
           javascript()->LoadContext(depth, Context::EXTENSION_INDEX, false),
           current_context());
-      Node* check = NewNode(javascript()->StrictEqual(), load,
-                            jsgraph()->TheHoleConstant());
+      Node* check =
+          NewNode(javascript()->StrictEqual(CompareOperationHints::Any()), load,
+                  jsgraph()->TheHoleConstant());
       fast_block.BreakUnless(check, BranchHint::kTrue);
     }
 
@@ -4050,6 +4069,11 @@ void AstGraphBuilder::PrepareFrameState(Node* node, BailoutId ast_id,
 }
 
 void AstGraphBuilder::PrepareEagerCheckpoint(BailoutId ast_id) {
+  if (environment()->GetEffectDependency()->opcode() == IrOpcode::kCheckpoint) {
+    // We skip preparing a checkpoint if there already is one the current effect
+    // dependency. This is just an optimization and not need for correctness.
+    return;
+  }
   if (ast_id != BailoutId::None()) {
     Node* node = NewNode(common()->Checkpoint());
     DCHECK_EQ(IrOpcode::kDead,

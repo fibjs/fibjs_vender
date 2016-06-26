@@ -13,7 +13,6 @@
 #include "src/global-handles.h"
 #include "src/interpreter/interpreter.h"
 #include "src/macro-assembler.h"
-#include "src/profiler/cpu-profiler.h"
 #include "src/tracing/trace-event.h"
 #include "src/v8.h"
 
@@ -3739,7 +3738,9 @@ Handle<Object> TranslatedState::MaterializeAt(int frame_index,
           }
           return object;
         }
-        case JS_OBJECT_TYPE: {
+        case JS_OBJECT_TYPE:
+        case JS_ERROR_TYPE:
+        case JS_ARGUMENTS_TYPE: {
           Handle<JSObject> object =
               isolate_->factory()->NewJSObjectFromMap(map, NOT_TENURED);
           slot->value_ = object;

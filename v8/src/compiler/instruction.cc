@@ -59,6 +59,19 @@ FlagsCondition CommuteFlagsCondition(FlagsCondition condition) {
   return condition;
 }
 
+bool InstructionOperand::InterferesWith(const InstructionOperand& that) const {
+  if (!IsFPRegister() || !that.IsFPRegister()) return EqualsCanonicalized(that);
+
+  const LocationOperand& loc1 = *LocationOperand::cast(this);
+  const LocationOperand& loc2 = LocationOperand::cast(that);
+  const RegisterConfiguration* config =
+      RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN);
+  if (config->fp_aliasing_kind() != RegisterConfiguration::COMBINE)
+    return loc1.register_code() == loc2.register_code();
+
+  return config->AreAliases(loc1.representation(), loc1.register_code(),
+                            loc2.representation(), loc2.register_code());
+}
 
 void InstructionOperand::Print(const RegisterConfiguration* config) const {
   OFStream os(stdout);
@@ -74,7 +87,6 @@ void InstructionOperand::Print() const {
       RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN);
   Print(config);
 }
-
 
 std::ostream& operator<<(std::ostream& os,
                          const PrintableInstructionOperand& printable) {
@@ -181,7 +193,6 @@ std::ostream& operator<<(std::ostream& os,
   return os;
 }
 
-
 void MoveOperands::Print(const RegisterConfiguration* config) const {
   OFStream os(stdout);
   PrintableInstructionOperand wrapper;
@@ -247,11 +258,14 @@ ExplicitOperand::ExplicitOperand(LocationKind kind, MachineRepresentation rep,
                                  int index)
     : LocationOperand(EXPLICIT, kind, rep, index) {
   DCHECK_IMPLIES(kind == REGISTER && !IsFloatingPoint(rep),
-                 Register::from_code(index).IsAllocatable());
-  DCHECK_IMPLIES(kind == REGISTER && (rep == MachineRepresentation::kFloat32),
-                 FloatRegister::from_code(index).IsAllocatable());
+                 Register::from_code(index).IsAllocatable(
+                     RegisterConfiguration::TURBOFAN));
+  DCHECK_IMPLIES(kind == REGISTER && rep == MachineRepresentation::kFloat32,
+                 FloatRegister::from_code(index).IsAllocatable(
+                     RegisterConfiguration::TURBOFAN));
   DCHECK_IMPLIES(kind == REGISTER && (rep == MachineRepresentation::kFloat64),
-                 DoubleRegister::from_code(index).IsAllocatable());
+                 DoubleRegister::from_code(index).IsAllocatable(
+                     RegisterConfiguration::TURBOFAN));
 }
 
 Instruction::Instruction(InstructionCode opcode)

@@ -20,10 +20,7 @@ namespace internal {
 
 #define __ ACCESS_MASM(masm)
 
-
-void Builtins::Generate_Adaptor(MacroAssembler* masm,
-                                CFunctionId id,
-                                BuiltinExtraArguments extra_args) {
+void Builtins::Generate_Adaptor(MacroAssembler* masm, CFunctionId id) {
   // ----------- S t a t e -------------
   //  -- r0                 : number of arguments excluding receiver
   //  -- r1                 : target
@@ -42,23 +39,8 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
   __ ldr(cp, FieldMemOperand(r1, JSFunction::kContextOffset));
 
   // Insert extra arguments.
-  int num_extra_args = 0;
-  switch (extra_args) {
-    case BuiltinExtraArguments::kTarget:
-      __ Push(r1);
-      ++num_extra_args;
-      break;
-    case BuiltinExtraArguments::kNewTarget:
-      __ Push(r3);
-      ++num_extra_args;
-      break;
-    case BuiltinExtraArguments::kTargetAndNewTarget:
-      __ Push(r1, r3);
-      num_extra_args += 2;
-      break;
-    case BuiltinExtraArguments::kNone:
-      break;
-  }
+  const int num_extra_args = 2;
+  __ Push(r1, r3);
 
   // JumpToExternalReference expects r0 to contain the number of arguments
   // including the receiver and the extra arguments.
@@ -144,6 +126,8 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
 void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
   // ----------- S t a t e -------------
   //  -- r0                 : number of arguments
+  //  -- r1                 : function
+  //  -- cp                 : context
   //  -- lr                 : return address
   //  -- sp[(argc - n) * 8] : arg[n] (zero-based)
   //  -- sp[(argc + 1) * 8] : receiver
@@ -156,9 +140,9 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
   DoubleRegister const reg = (kind == MathMaxMinKind::kMin) ? d2 : d1;
 
   // Load the accumulator with the default return value (either -Infinity or
-  // +Infinity), with the tagged value in r1 and the double value in d1.
-  __ LoadRoot(r1, root_index);
-  __ vldr(d1, FieldMemOperand(r1, HeapNumber::kValueOffset));
+  // +Infinity), with the tagged value in r5 and the double value in d1.
+  __ LoadRoot(r5, root_index);
+  __ vldr(d1, FieldMemOperand(r5, HeapNumber::kValueOffset));
 
   // Remember how many slots to drop (including the receiver).
   __ add(r4, r0, Operand(1));
@@ -182,24 +166,28 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
     __ JumpIfRoot(r3, Heap::kHeapNumberMapRootIndex, &convert_number);
     {
       // Parameter is not a Number, use the ToNumber builtin to convert it.
-      FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+      DCHECK(!FLAG_enable_embedded_constant_pool);
+      FrameScope scope(masm, StackFrame::MANUAL);
+      __ Push(lr, fp, cp, r1);
+      __ add(fp, sp, Operand(2 * kPointerSize));
       __ SmiTag(r0);
       __ SmiTag(r4);
-      __ Push(r0, r1, r4);
+      __ Push(r0, r4, r5);
       __ mov(r0, r2);
       __ Call(masm->isolate()->builtins()->ToNumber(), RelocInfo::CODE_TARGET);
       __ mov(r2, r0);
-      __ Pop(r0, r1, r4);
+      __ Pop(r0, r4, r5);
       {
         // Restore the double accumulator value (d1).
         Label done_restore;
-        __ SmiToDouble(d1, r1);
-        __ JumpIfSmi(r1, &done_restore);
-        __ vldr(d1, FieldMemOperand(r1, HeapNumber::kValueOffset));
+        __ SmiToDouble(d1, r5);
+        __ JumpIfSmi(r5, &done_restore);
+        __ vldr(d1, FieldMemOperand(r5, HeapNumber::kValueOffset));
         __ bind(&done_restore);
       }
       __ SmiUntag(r4);
       __ SmiUntag(r0);
+      __ Pop(lr, fp, cp, r1);
     }
     __ b(&convert);
     __ bind(&convert_number);
@@ -225,18 +213,18 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
     // Result is on the right hand side.
     __ bind(&compare_swap);
     __ vmov(d1, d2);
-    __ mov(r1, r2);
+    __ mov(r5, r2);
     __ b(&loop);
 
     // At least one side is NaN, which means that the result will be NaN too.
     __ bind(&compare_nan);
-    __ LoadRoot(r1, Heap::kNanValueRootIndex);
-    __ vldr(d1, FieldMemOperand(r1, HeapNumber::kValueOffset));
+    __ LoadRoot(r5, Heap::kNanValueRootIndex);
+    __ vldr(d1, FieldMemOperand(r5, HeapNumber::kValueOffset));
     __ b(&loop);
   }
 
   __ bind(&done_loop);
-  __ mov(r0, r1);
+  __ mov(r0, r5);
   __ Drop(r4);
   __ Ret();
 }
@@ -709,8 +697,8 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   __ AssertGeneratorObject(r1);
 
   // Store input value into generator object.
-  __ str(r0, FieldMemOperand(r1, JSGeneratorObject::kInputOffset));
-  __ RecordWriteField(r1, JSGeneratorObject::kInputOffset, r0, r3,
+  __ str(r0, FieldMemOperand(r1, JSGeneratorObject::kInputOrDebugPosOffset));
+  __ RecordWriteField(r1, JSGeneratorObject::kInputOrDebugPosOffset, r0, r3,
                       kLRHasNotBeenSaved, kDontSaveFPRegs);
 
   // Store resume mode into generator object.
@@ -1732,6 +1720,9 @@ void Builtins::Generate_OnStackReplacement(MacroAssembler* masm) {
 void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
                                                int field_index) {
   // ----------- S t a t e -------------
+  //  -- r0    : number of arguments
+  //  -- r1    : function
+  //  -- cp    : context
   //  -- lr    : return address
   //  -- sp[0] : receiver
   // -----------------------------------
@@ -1741,7 +1732,7 @@ void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
   {
     __ Pop(r0);
     __ JumpIfSmi(r0, &receiver_not_date);
-    __ CompareObjectType(r0, r1, r2, JS_DATE_TYPE);
+    __ CompareObjectType(r0, r2, r3, JS_DATE_TYPE);
     __ b(ne, &receiver_not_date);
   }
 
@@ -1771,7 +1762,14 @@ void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
 
   // 3. Raise a TypeError if the receiver is not a date.
   __ bind(&receiver_not_date);
-  __ TailCallRuntime(Runtime::kThrowNotDateError);
+  {
+    FrameScope scope(masm, StackFrame::MANUAL);
+    __ Push(r0, lr, fp);
+    __ Move(fp, sp);
+    __ Push(cp, r1);
+    __ Push(Smi::FromInt(0));
+    __ CallRuntime(Runtime::kThrowNotDateError);
+  }
 }
 
 // static
@@ -2705,8 +2703,15 @@ void Builtins::Generate_StringToNumber(MacroAssembler* masm) {
   __ Ret();
 
   __ bind(&runtime);
-  __ Push(r0);  // Push argument.
-  __ TailCallRuntime(Runtime::kStringToNumber);
+  {
+    FrameScope frame(masm, StackFrame::INTERNAL);
+    // Push argument.
+    __ Push(r0);
+    // We cannot use a tail call here because this builtin can also be called
+    // from wasm.
+    __ CallRuntime(Runtime::kStringToNumber);
+  }
+  __ Ret();
 }
 
 void Builtins::Generate_ToNumber(MacroAssembler* masm) {
@@ -2740,9 +2745,15 @@ void Builtins::Generate_NonNumberToNumber(MacroAssembler* masm) {
   __ ldr(r0, FieldMemOperand(r0, Oddball::kToNumberOffset));
   __ Ret();
   __ bind(&not_oddball);
-
-  __ Push(r0);  // Push argument.
-  __ TailCallRuntime(Runtime::kToNumber);
+  {
+    FrameScope frame(masm, StackFrame::INTERNAL);
+    // Push argument.
+    __ Push(r0);
+    // We cannot use a tail call here because this builtin can also be called
+    // from wasm.
+    __ CallRuntime(Runtime::kToNumber);
+  }
+  __ Ret();
 }
 
 void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {

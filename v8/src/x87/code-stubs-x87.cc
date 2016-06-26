@@ -26,51 +26,17 @@
 namespace v8 {
 namespace internal {
 
+#define __ ACCESS_MASM(masm)
 
-static void InitializeArrayConstructorDescriptor(
-    Isolate* isolate, CodeStubDescriptor* descriptor,
-    int constant_stack_parameter_count) {
-  // register state
-  // eax -- number of arguments
-  // edi -- function
-  // ebx -- allocation site with elements kind
-  Address deopt_handler = Runtime::FunctionForId(
-      Runtime::kArrayConstructor)->entry;
-
-  if (constant_stack_parameter_count == 0) {
-    descriptor->Initialize(deopt_handler, constant_stack_parameter_count,
-                           JS_FUNCTION_STUB_MODE);
-  } else {
-    descriptor->Initialize(eax, deopt_handler, constant_stack_parameter_count,
-                           JS_FUNCTION_STUB_MODE);
-  }
+void ArrayNArgumentsConstructorStub::Generate(MacroAssembler* masm) {
+  __ pop(ecx);
+  __ mov(MemOperand(esp, eax, times_4, 0), edi);
+  __ push(edi);
+  __ push(ebx);
+  __ push(ecx);
+  __ add(eax, Immediate(3));
+  __ TailCallRuntime(Runtime::kNewArray);
 }
-
-
-static void InitializeInternalArrayConstructorDescriptor(
-    Isolate* isolate, CodeStubDescriptor* descriptor,
-    int constant_stack_parameter_count) {
-  // register state
-  // eax -- number of arguments
-  // edi -- constructor function
-  Address deopt_handler = Runtime::FunctionForId(
-      Runtime::kInternalArrayConstructor)->entry;
-
-  if (constant_stack_parameter_count == 0) {
-    descriptor->Initialize(deopt_handler, constant_stack_parameter_count,
-                           JS_FUNCTION_STUB_MODE);
-  } else {
-    descriptor->Initialize(eax, deopt_handler, constant_stack_parameter_count,
-                           JS_FUNCTION_STUB_MODE);
-  }
-}
-
-
-void ArrayNArgumentsConstructorStub::InitializeDescriptor(
-    CodeStubDescriptor* descriptor) {
-  InitializeArrayConstructorDescriptor(isolate(), descriptor, -1);
-}
-
 
 void FastArrayPushStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
   Address deopt_handler = Runtime::FunctionForId(Runtime::kArrayPush)->entry;
@@ -82,15 +48,6 @@ void FastFunctionBindStub::InitializeDescriptor(
   Address deopt_handler = Runtime::FunctionForId(Runtime::kFunctionBind)->entry;
   descriptor->Initialize(eax, deopt_handler, -1, JS_FUNCTION_STUB_MODE);
 }
-
-void InternalArrayNArgumentsConstructorStub::InitializeDescriptor(
-    CodeStubDescriptor* descriptor) {
-  InitializeInternalArrayConstructorDescriptor(isolate(), descriptor, -1);
-}
-
-
-#define __ ACCESS_MASM(masm)
-
 
 void HydrogenCodeStub::GenerateLightweightMiss(MacroAssembler* masm,
                                                ExternalReference miss) {
@@ -1495,7 +1452,7 @@ void CodeStub::GenerateStubsAheadOfTime(Isolate* isolate) {
   StoreBufferOverflowStub::GenerateFixedRegStubsAheadOfTime(isolate);
   StubFailureTrampolineStub::GenerateAheadOfTime(isolate);
   // It is important that the store buffer overflow stubs are generated first.
-  ArrayConstructorStubBase::GenerateStubsAheadOfTime(isolate);
+  CommonArrayConstructorStub::GenerateStubsAheadOfTime(isolate);
   CreateAllocationSiteStub::GenerateAheadOfTime(isolate);
   CreateWeakCellStub::GenerateAheadOfTime(isolate);
   BinaryOpICStub::GenerateAheadOfTime(isolate);
@@ -3182,14 +3139,14 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
 
 void LoadICTrampolineStub::Generate(MacroAssembler* masm) {
   __ EmitLoadTypeFeedbackVector(LoadWithVectorDescriptor::VectorRegister());
-  LoadICStub stub(isolate(), state());
+  LoadICStub stub(isolate());
   stub.GenerateForTrampoline(masm);
 }
 
 
 void KeyedLoadICTrampolineStub::Generate(MacroAssembler* masm) {
   __ EmitLoadTypeFeedbackVector(LoadWithVectorDescriptor::VectorRegister());
-  KeyedLoadICStub stub(isolate(), state());
+  KeyedLoadICStub stub(isolate());
   stub.GenerateForTrampoline(masm);
 }
 
@@ -3954,17 +3911,14 @@ static void ArrayConstructorStubAheadOfTimeHelper(Isolate* isolate) {
   }
 }
 
-void ArrayConstructorStubBase::GenerateStubsAheadOfTime(Isolate* isolate) {
+void CommonArrayConstructorStub::GenerateStubsAheadOfTime(Isolate* isolate) {
   ArrayConstructorStubAheadOfTimeHelper<ArrayNoArgumentConstructorStub>(
       isolate);
   ArrayConstructorStubAheadOfTimeHelper<ArraySingleArgumentConstructorStub>(
       isolate);
-  ArrayConstructorStubAheadOfTimeHelper<ArrayNArgumentsConstructorStub>(
-      isolate);
-}
+  ArrayNArgumentsConstructorStub stub(isolate);
+  stub.GetCode();
 
-void InternalArrayConstructorStubBase::GenerateStubsAheadOfTime(
-    Isolate* isolate) {
   ElementsKind kinds[2] = {FAST_ELEMENTS, FAST_HOLEY_ELEMENTS};
   for (int i = 0; i < 2; i++) {
     // For internal arrays we only need a few things
@@ -3972,8 +3926,6 @@ void InternalArrayConstructorStubBase::GenerateStubsAheadOfTime(
     stubh1.GetCode();
     InternalArraySingleArgumentConstructorStub stubh2(isolate, kinds[i]);
     stubh2.GetCode();
-    InternalArrayNArgumentsConstructorStub stubh3(isolate, kinds[i]);
-    stubh3.GetCode();
   }
 }
 
@@ -3991,13 +3943,15 @@ void ArrayConstructorStub::GenerateDispatchToArrayStub(
     CreateArrayDispatchOneArgument(masm, mode);
 
     __ bind(&not_one_case);
-    CreateArrayDispatch<ArrayNArgumentsConstructorStub>(masm, mode);
+    ArrayNArgumentsConstructorStub stub(masm->isolate());
+    __ TailCallStub(&stub);
   } else if (argument_count() == NONE) {
     CreateArrayDispatch<ArrayNoArgumentConstructorStub>(masm, mode);
   } else if (argument_count() == ONE) {
     CreateArrayDispatchOneArgument(masm, mode);
   } else if (argument_count() == MORE_THAN_ONE) {
-    CreateArrayDispatch<ArrayNArgumentsConstructorStub>(masm, mode);
+    ArrayNArgumentsConstructorStub stub(masm->isolate());
+    __ TailCallStub(&stub);
   } else {
     UNREACHABLE();
   }
@@ -4107,7 +4061,7 @@ void InternalArrayConstructorStub::GenerateCase(MacroAssembler* masm,
   __ TailCallStub(&stub1);
 
   __ bind(&not_one_case);
-  InternalArrayNArgumentsConstructorStub stubN(isolate(), kind);
+  ArrayNArgumentsConstructorStub stubN(isolate());
   __ TailCallStub(&stubN);
 }
 
@@ -4799,37 +4753,6 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   }
   __ jmp(&done_allocate);
 }
-
-void LoadGlobalViaContextStub::Generate(MacroAssembler* masm) {
-  Register context_reg = esi;
-  Register slot_reg = ebx;
-  Register result_reg = eax;
-  Label slow_case;
-
-  // Go up context chain to the script context.
-  for (int i = 0; i < depth(); ++i) {
-    __ mov(result_reg, ContextOperand(context_reg, Context::PREVIOUS_INDEX));
-    context_reg = result_reg;
-  }
-
-  // Load the PropertyCell value at the specified slot.
-  __ mov(result_reg, ContextOperand(context_reg, slot_reg));
-  __ mov(result_reg, FieldOperand(result_reg, PropertyCell::kValueOffset));
-
-  // Check that value is not the_hole.
-  __ CompareRoot(result_reg, Heap::kTheHoleValueRootIndex);
-  __ j(equal, &slow_case, Label::kNear);
-  __ Ret();
-
-  // Fallback to the runtime.
-  __ bind(&slow_case);
-  __ SmiTag(slot_reg);
-  __ Pop(result_reg);  // Pop return address.
-  __ Push(slot_reg);
-  __ Push(result_reg);  // Push return address.
-  __ TailCallRuntime(Runtime::kLoadGlobalViaContext);
-}
-
 
 void StoreGlobalViaContextStub::Generate(MacroAssembler* masm) {
   Register context_reg = esi;

@@ -9,6 +9,7 @@
 #include "src/debug/debug.h"
 #include "src/deoptimizer.h"
 #include "src/global-handles.h"
+#include "src/profiler/cpu-profiler.h"
 #include "src/profiler/profile-generator-inl.h"
 #include "src/profiler/tick-sample.h"
 #include "src/unicode.h"
@@ -47,6 +48,41 @@ const char* const CodeEntry::kEmptyResourceName = "";
 const char* const CodeEntry::kEmptyBailoutReason = "";
 const char* const CodeEntry::kNoDeoptReason = "";
 
+const char* const CodeEntry::kProgramEntryName = "(program)";
+const char* const CodeEntry::kIdleEntryName = "(idle)";
+const char* const CodeEntry::kGarbageCollectorEntryName = "(garbage collector)";
+const char* const CodeEntry::kUnresolvedFunctionName = "(unresolved function)";
+
+base::LazyDynamicInstance<CodeEntry, CodeEntry::ProgramEntryCreateTrait>::type
+    CodeEntry::kProgramEntry = LAZY_DYNAMIC_INSTANCE_INITIALIZER;
+
+base::LazyDynamicInstance<CodeEntry, CodeEntry::IdleEntryCreateTrait>::type
+    CodeEntry::kIdleEntry = LAZY_DYNAMIC_INSTANCE_INITIALIZER;
+
+base::LazyDynamicInstance<CodeEntry, CodeEntry::GCEntryCreateTrait>::type
+    CodeEntry::kGCEntry = LAZY_DYNAMIC_INSTANCE_INITIALIZER;
+
+base::LazyDynamicInstance<CodeEntry,
+                          CodeEntry::UnresolvedEntryCreateTrait>::type
+    CodeEntry::kUnresolvedEntry = LAZY_DYNAMIC_INSTANCE_INITIALIZER;
+
+CodeEntry* CodeEntry::ProgramEntryCreateTrait::Create() {
+  return new CodeEntry(Logger::FUNCTION_TAG, CodeEntry::kProgramEntryName);
+}
+
+CodeEntry* CodeEntry::IdleEntryCreateTrait::Create() {
+  return new CodeEntry(Logger::FUNCTION_TAG, CodeEntry::kIdleEntryName);
+}
+
+CodeEntry* CodeEntry::GCEntryCreateTrait::Create() {
+  return new CodeEntry(Logger::BUILTIN_TAG,
+                       CodeEntry::kGarbageCollectorEntryName);
+}
+
+CodeEntry* CodeEntry::UnresolvedEntryCreateTrait::Create() {
+  return new CodeEntry(Logger::FUNCTION_TAG,
+                       CodeEntry::kUnresolvedFunctionName);
+}
 
 CodeEntry::~CodeEntry() {
   delete line_info_;
@@ -93,7 +129,7 @@ bool CodeEntry::IsSameFunctionAs(CodeEntry* entry) const {
 
 
 void CodeEntry::SetBuiltinId(Builtins::Name id) {
-  bit_field_ = TagField::update(bit_field_, Logger::BUILTIN_TAG);
+  bit_field_ = TagField::update(bit_field_, CodeEventListener::BUILTIN_TAG);
   bit_field_ = BuiltinIdField::update(bit_field_, id);
 }
 
@@ -268,15 +304,13 @@ class DeleteNodesCallback {
   void AfterChildTraversed(ProfileNode*, ProfileNode*) { }
 };
 
-
 ProfileTree::ProfileTree(Isolate* isolate)
-    : root_entry_(Logger::FUNCTION_TAG, "(root)"),
+    : root_entry_(CodeEventListener::FUNCTION_TAG, "(root)"),
       next_node_id_(1),
       root_(new ProfileNode(this, &root_entry_)),
       isolate_(isolate),
       next_function_id_(1),
       function_ids_(ProfileNode::CodeEntriesMatch) {}
-
 
 ProfileTree::~ProfileTree() {
   DeleteNodesCallback cb;
@@ -365,12 +399,13 @@ void ProfileTree::TraverseDepthFirst(Callback* callback) {
   }
 }
 
-
-CpuProfile::CpuProfile(Isolate* isolate, const char* title, bool record_samples)
+CpuProfile::CpuProfile(CpuProfiler* profiler, const char* title,
+                       bool record_samples)
     : title_(title),
       record_samples_(record_samples),
       start_time_(base::TimeTicks::HighResolutionNow()),
-      top_down_(isolate) {}
+      top_down_(profiler->isolate()),
+      profiler_(profiler) {}
 
 void CpuProfile::AddPath(base::TimeTicks timestamp,
                          const std::vector<CodeEntry*>& path, int src_line,
@@ -432,16 +467,10 @@ void CodeMap::Print() {
   }
 }
 
-CpuProfilesCollection::CpuProfilesCollection(Heap* heap)
-    : function_and_resource_names_(heap),
-      isolate_(heap->isolate()),
+CpuProfilesCollection::CpuProfilesCollection(Isolate* isolate)
+    : resource_names_(isolate->heap()),
+      profiler_(nullptr),
       current_profiles_semaphore_(1) {}
-
-
-static void DeleteCodeEntry(CodeEntry** entry_ptr) {
-  delete *entry_ptr;
-}
-
 
 static void DeleteCpuProfile(CpuProfile** profile_ptr) {
   delete *profile_ptr;
@@ -451,7 +480,6 @@ static void DeleteCpuProfile(CpuProfile** profile_ptr) {
 CpuProfilesCollection::~CpuProfilesCollection() {
   finished_profiles_.Iterate(DeleteCpuProfile);
   current_profiles_.Iterate(DeleteCpuProfile);
-  code_entries_.Iterate(DeleteCodeEntry);
 }
 
 
@@ -470,7 +498,7 @@ bool CpuProfilesCollection::StartProfiling(const char* title,
       return true;
     }
   }
-  current_profiles_.Add(new CpuProfile(isolate_, title, record_samples));
+  current_profiles_.Add(new CpuProfile(profiler_, title, record_samples));
   current_profiles_semaphore_.Signal();
   return true;
 }
@@ -528,43 +556,8 @@ void CpuProfilesCollection::AddPathToCurrentProfiles(
   current_profiles_semaphore_.Signal();
 }
 
-
-CodeEntry* CpuProfilesCollection::NewCodeEntry(
-    Logger::LogEventsAndTags tag, const char* name, const char* name_prefix,
-    const char* resource_name, int line_number, int column_number,
-    JITLineInfoTable* line_info, Address instruction_start) {
-  CodeEntry* code_entry =
-      new CodeEntry(tag, name, name_prefix, resource_name, line_number,
-                    column_number, line_info, instruction_start);
-  code_entries_.Add(code_entry);
-  return code_entry;
-}
-
-
-const char* const ProfileGenerator::kProgramEntryName =
-    "(program)";
-const char* const ProfileGenerator::kIdleEntryName =
-    "(idle)";
-const char* const ProfileGenerator::kGarbageCollectorEntryName =
-    "(garbage collector)";
-const char* const ProfileGenerator::kUnresolvedFunctionName =
-    "(unresolved function)";
-
-
 ProfileGenerator::ProfileGenerator(CpuProfilesCollection* profiles)
-    : profiles_(profiles),
-      program_entry_(
-          profiles->NewCodeEntry(Logger::FUNCTION_TAG, kProgramEntryName)),
-      idle_entry_(
-          profiles->NewCodeEntry(Logger::FUNCTION_TAG, kIdleEntryName)),
-      gc_entry_(
-          profiles->NewCodeEntry(Logger::BUILTIN_TAG,
-                                 kGarbageCollectorEntryName)),
-      unresolved_entry_(
-          profiles->NewCodeEntry(Logger::FUNCTION_TAG,
-                                 kUnresolvedFunctionName)) {
-}
-
+    : profiles_(profiles) {}
 
 void ProfileGenerator::RecordTickSample(const TickSample& sample) {
   std::vector<CodeEntry*> entries;
@@ -617,7 +610,7 @@ void ProfileGenerator::RecordTickSample(const TickSample& sample) {
           // former case we don't so we simply replace the frame with
           // 'unresolved' entry.
           if (!sample.has_external_callback) {
-            entries.push_back(unresolved_entry_);
+            entries.push_back(CodeEntry::unresolved_entry());
           }
         }
       }
@@ -674,7 +667,7 @@ void ProfileGenerator::RecordTickSample(const TickSample& sample) {
 CodeEntry* ProfileGenerator::EntryForVMState(StateTag tag) {
   switch (tag) {
     case GC:
-      return gc_entry_;
+      return CodeEntry::gc_entry();
     case JS:
     case COMPILER:
     // DOM events handlers are reported as OTHER / EXTERNAL entries.
@@ -682,9 +675,9 @@ CodeEntry* ProfileGenerator::EntryForVMState(StateTag tag) {
     // one bucket.
     case OTHER:
     case EXTERNAL:
-      return program_entry_;
+      return CodeEntry::program_entry();
     case IDLE:
-      return idle_entry_;
+      return CodeEntry::idle_entry();
     default: return NULL;
   }
 }

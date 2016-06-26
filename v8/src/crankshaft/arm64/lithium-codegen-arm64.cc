@@ -452,7 +452,6 @@ void LCodeGen::CallRuntimeFromDeferred(Runtime::FunctionId id,
 void LCodeGen::RecordAndWritePosition(int position) {
   if (position == RelocInfo::kNoPosition) return;
   masm()->positions_recorder()->RecordPosition(position);
-  masm()->positions_recorder()->WriteRecordedPositions();
 }
 
 
@@ -2222,18 +2221,6 @@ void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
 }
 
 
-void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
-  Register hi_reg = ToRegister(instr->hi());
-  Register lo_reg = ToRegister(instr->lo());
-  DoubleRegister result_reg = ToDoubleRegister(instr->result());
-
-  // Insert the least significant 32 bits of hi_reg into the most significant
-  // 32 bits of lo_reg, and move to a floating point register.
-  __ Bfi(lo_reg, hi_reg, 32, 32);
-  __ Fmov(result_reg, lo_reg);
-}
-
-
 void LCodeGen::DoClassOfTestAndBranch(LClassOfTestAndBranch* instr) {
   Handle<String> class_name = instr->hydrogen()->class_name();
   Label* true_label = instr->TrueLabel(chunk_);
@@ -3550,19 +3537,25 @@ void LCodeGen::DoMathAbsTagged(LMathAbsTagged* instr) {
   __ Bind(&done);
 }
 
+void LCodeGen::DoMathCos(LMathCos* instr) {
+  DCHECK(instr->IsMarkedAsCall());
+  DCHECK(ToDoubleRegister(instr->value()).is(d0));
+  __ CallCFunction(ExternalReference::ieee754_cos_function(isolate()), 0, 1);
+  DCHECK(ToDoubleRegister(instr->result()).Is(d0));
+}
+
+void LCodeGen::DoMathSin(LMathSin* instr) {
+  DCHECK(instr->IsMarkedAsCall());
+  DCHECK(ToDoubleRegister(instr->value()).is(d0));
+  __ CallCFunction(ExternalReference::ieee754_sin_function(isolate()), 0, 1);
+  DCHECK(ToDoubleRegister(instr->result()).Is(d0));
+}
 
 void LCodeGen::DoMathExp(LMathExp* instr) {
-  DoubleRegister input = ToDoubleRegister(instr->value());
-  DoubleRegister result = ToDoubleRegister(instr->result());
-  DoubleRegister double_temp1 = ToDoubleRegister(instr->double_temp1());
-  DoubleRegister double_temp2 = double_scratch();
-  Register temp1 = ToRegister(instr->temp1());
-  Register temp2 = ToRegister(instr->temp2());
-  Register temp3 = ToRegister(instr->temp3());
-
-  MathExpGenerator::EmitMathExp(masm(), input, result,
-                                double_temp1, double_temp2,
-                                temp1, temp2, temp3);
+  DCHECK(instr->IsMarkedAsCall());
+  DCHECK(ToDoubleRegister(instr->value()).is(d0));
+  __ CallCFunction(ExternalReference::ieee754_exp_function(isolate()), 0, 1);
+  DCHECK(ToDoubleRegister(instr->result()).Is(d0));
 }
 
 

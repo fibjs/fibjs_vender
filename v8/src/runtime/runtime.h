@@ -236,7 +236,7 @@ namespace internal {
   F(GeneratorClose, 1, 1)               \
   F(GeneratorGetFunction, 1, 1)         \
   F(GeneratorGetReceiver, 1, 1)         \
-  F(GeneratorGetInput, 1, 1)            \
+  F(GeneratorGetInputOrDebugPos, 1, 1)  \
   F(GeneratorGetContinuation, 1, 1)     \
   F(GeneratorGetSourcePosition, 1, 1)   \
   F(GeneratorGetResumeMode, 1, 1)
@@ -353,9 +353,6 @@ namespace internal {
 #define FOR_EACH_INTRINSIC_MATHS(F) \
   F(DoubleHi, 1, 1)                 \
   F(DoubleLo, 1, 1)                 \
-  F(ConstructDouble, 2, 1)          \
-  F(RemPiO2, 2, 1)                  \
-  F(MathExpRT, 1, 1)                \
   F(MathPow, 2, 1)                  \
   F(MathPowRT, 2, 1)                \
   F(GenerateRandomNumbers, 1, 1)
@@ -387,9 +384,9 @@ namespace internal {
   F(SetPrototype, 2, 1)                              \
   F(OptimizeObjectForAddingMultipleProperties, 2, 1) \
   F(GetProperty, 2, 1)                               \
-  F(GetGlobal, 1, 1)                                 \
+  F(GetGlobalInsideTypeof, 2, 1)                     \
+  F(GetGlobalNotInsideTypeof, 2, 1)                  \
   F(KeyedGetProperty, 2, 1)                          \
-  F(LoadGlobalViaContext, 1, 1)                      \
   F(StoreGlobalViaContext_Sloppy, 2, 1)              \
   F(StoreGlobalViaContext_Strict, 2, 1)              \
   F(AddNamedProperty, 4, 1)                          \
@@ -477,30 +474,31 @@ namespace internal {
   F(RegExpExecReThrow, 4, 1)                   \
   F(IsRegExp, 1, 1)
 
-#define FOR_EACH_INTRINSIC_SCOPES(F)       \
-  F(ThrowConstAssignError, 0, 1)           \
-  F(DeclareGlobals, 2, 1)                  \
-  F(InitializeVarGlobal, 3, 1)             \
-  F(InitializeConstGlobal, 2, 1)           \
-  F(DeclareLookupSlot, 3, 1)               \
-  F(NewSloppyArguments_Generic, 1, 1)      \
-  F(NewStrictArguments, 1, 1)              \
-  F(NewRestParameter, 1, 1)                \
-  F(NewSloppyArguments, 3, 1)              \
-  F(NewClosure, 1, 1)                      \
-  F(NewClosure_Tenured, 1, 1)              \
-  F(NewScriptContext, 2, 1)                \
-  F(NewFunctionContext, 1, 1)              \
-  F(PushWithContext, 2, 1)                 \
-  F(PushCatchContext, 3, 1)                \
-  F(PushBlockContext, 2, 1)                \
-  F(IsJSModule, 1, 1)                      \
-  F(PushModuleContext, 2, 1)               \
-  F(DeclareModules, 1, 1)                  \
-  F(DeleteLookupSlot, 1, 1)                \
-  F(LoadLookupSlot, 1, 1)                  \
-  F(LoadLookupSlotInsideTypeof, 1, 1)      \
-  F(StoreLookupSlot_Sloppy, 2, 1)          \
+#define FOR_EACH_INTRINSIC_SCOPES(F)  \
+  F(ThrowConstAssignError, 0, 1)      \
+  F(DeclareGlobals, 2, 1)             \
+  F(InitializeVarGlobal, 3, 1)        \
+  F(InitializeConstGlobal, 2, 1)      \
+  F(DeclareEvalFunction, 2, 1)        \
+  F(DeclareEvalVar, 1, 1)             \
+  F(NewSloppyArguments_Generic, 1, 1) \
+  F(NewStrictArguments, 1, 1)         \
+  F(NewRestParameter, 1, 1)           \
+  F(NewSloppyArguments, 3, 1)         \
+  F(NewClosure, 1, 1)                 \
+  F(NewClosure_Tenured, 1, 1)         \
+  F(NewScriptContext, 2, 1)           \
+  F(NewFunctionContext, 1, 1)         \
+  F(PushWithContext, 2, 1)            \
+  F(PushCatchContext, 3, 1)           \
+  F(PushBlockContext, 2, 1)           \
+  F(IsJSModule, 1, 1)                 \
+  F(PushModuleContext, 2, 1)          \
+  F(DeclareModules, 1, 1)             \
+  F(DeleteLookupSlot, 1, 1)           \
+  F(LoadLookupSlot, 1, 1)             \
+  F(LoadLookupSlotInsideTypeof, 1, 1) \
+  F(StoreLookupSlot_Sloppy, 2, 1)     \
   F(StoreLookupSlot_Strict, 2, 1)
 
 #define FOR_EACH_INTRINSIC_SIMD(F)     \
@@ -850,6 +848,7 @@ namespace internal {
   F(SymbolIsPrivate, 1, 1)
 
 #define FOR_EACH_INTRINSIC_TEST(F)            \
+  F(ConstructDouble, 2, 1)                    \
   F(DeoptimizeFunction, 1, 1)                 \
   F(DeoptimizeNow, 0, 1)                      \
   F(RunningInSimulator, 0, 1)                 \
@@ -954,7 +953,7 @@ namespace internal {
   F(KeyedStoreIC_MissFromStubFailure, 5, 1)  \
   F(KeyedStoreIC_Slow, 5, 1)                 \
   F(LoadElementWithInterceptor, 2, 1)        \
-  F(LoadGlobalIC_Miss, 3, 1)                 \
+  F(LoadGlobalIC_Miss, 2, 1)                 \
   F(LoadIC_Miss, 4, 1)                       \
   F(LoadIC_MissFromStubFailure, 4, 1)        \
   F(LoadPropertyWithInterceptor, 3, 1)       \
@@ -1075,7 +1074,8 @@ class Runtime : public AllStatic {
       Handle<Object> value, LanguageMode language_mode);
 
   MUST_USE_RESULT static MaybeHandle<Object> GetObjectProperty(
-      Isolate* isolate, Handle<Object> object, Handle<Object> key);
+      Isolate* isolate, Handle<Object> object, Handle<Object> key,
+      bool should_throw_reference_error = false);
 
   enum TypedArrayId {
     // arrayIds below should be synchronized with typedarray.js natives.

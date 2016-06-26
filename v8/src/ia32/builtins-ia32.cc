@@ -20,10 +20,7 @@ namespace internal {
 
 #define __ ACCESS_MASM(masm)
 
-
-void Builtins::Generate_Adaptor(MacroAssembler* masm,
-                                CFunctionId id,
-                                BuiltinExtraArguments extra_args) {
+void Builtins::Generate_Adaptor(MacroAssembler* masm, CFunctionId id) {
   // ----------- S t a t e -------------
   //  -- eax                : number of arguments excluding receiver
   //  -- edi                : target
@@ -43,19 +40,11 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm,
   __ mov(esi, FieldOperand(edi, JSFunction::kContextOffset));
 
   // Insert extra arguments.
-  int num_extra_args = 0;
-  if (extra_args != BuiltinExtraArguments::kNone) {
-    __ PopReturnAddressTo(ecx);
-    if (extra_args & BuiltinExtraArguments::kTarget) {
-      ++num_extra_args;
-      __ Push(edi);
-    }
-    if (extra_args & BuiltinExtraArguments::kNewTarget) {
-      ++num_extra_args;
-      __ Push(edx);
-    }
-    __ PushReturnAddressFrom(ecx);
-  }
+  const int num_extra_args = 2;
+  __ PopReturnAddressTo(ecx);
+  __ Push(edi);
+  __ Push(edx);
+  __ PushReturnAddressFrom(ecx);
 
   // JumpToExternalReference expects eax to contain the number of arguments
   // including the receiver and the extra arguments.
@@ -399,8 +388,8 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   __ AssertGeneratorObject(ebx);
 
   // Store input value into generator object.
-  __ mov(FieldOperand(ebx, JSGeneratorObject::kInputOffset), eax);
-  __ RecordWriteField(ebx, JSGeneratorObject::kInputOffset, eax, ecx,
+  __ mov(FieldOperand(ebx, JSGeneratorObject::kInputOrDebugPosOffset), eax);
+  __ RecordWriteField(ebx, JSGeneratorObject::kInputOrDebugPosOffset, eax, ecx,
                       kDontSaveFPRegs);
 
   // Store resume mode into generator object.
@@ -1197,6 +1186,9 @@ void Builtins::Generate_NotifyLazyDeoptimized(MacroAssembler* masm) {
 void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
                                                int field_index) {
   // ----------- S t a t e -------------
+  //  -- eax    : number of arguments
+  //  -- edi    : function
+  //  -- esi    : context
   //  -- esp[0] : return address
   //  -- esp[4] : receiver
   // -----------------------------------
@@ -1239,7 +1231,11 @@ void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
   __ bind(&receiver_not_date);
   {
     FrameScope scope(masm, StackFrame::MANUAL);
-    __ EnterFrame(StackFrame::INTERNAL);
+    __ Push(ebp);
+    __ Move(ebp, esp);
+    __ Push(esi);
+    __ Push(edi);
+    __ Push(Immediate(0));
     __ CallRuntime(Runtime::kThrowNotDateError);
   }
 }
@@ -1573,6 +1569,8 @@ void Builtins::Generate_ArrayCode(MacroAssembler* masm) {
 void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
   // ----------- S t a t e -------------
   //  -- eax                 : number of arguments
+  //  -- edi                 : function
+  //  -- esi                 : context
   //  -- esp[0]              : return address
   //  -- esp[(argc - n) * 8] : arg[n] (zero-based)
   //  -- esp[(argc + 1) * 8] : receiver
@@ -1608,7 +1606,11 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
                   Heap::kHeapNumberMapRootIndex, &convert_number);
     {
       // Parameter is not a Number, use the ToNumber builtin to convert it.
-      FrameScope scope(masm, StackFrame::INTERNAL);
+      FrameScope scope(masm, StackFrame::MANUAL);
+      __ Push(ebp);
+      __ Move(ebp, esp);
+      __ Push(esi);
+      __ Push(edi);
       __ SmiTag(eax);
       __ SmiTag(ecx);
       __ Push(eax);
@@ -1620,6 +1622,8 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
       __ Pop(edx);
       __ Pop(ecx);
       __ Pop(eax);
+      __ Pop(edi);
+      __ Pop(esi);
       {
         // Restore the double accumulator value (xmm0).
         Label restore_smi, done_restore;
@@ -1634,6 +1638,7 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
       }
       __ SmiUntag(ecx);
       __ SmiUntag(eax);
+      __ leave();
     }
     __ jmp(&convert);
     __ bind(&convert_number);
@@ -1667,8 +1672,10 @@ void Builtins::Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind) {
 
     // Left and right hand side are equal, check for -0 vs. +0.
     __ bind(&compare_equal);
+    __ Push(edi);  // Preserve function in edi.
     __ movmskpd(edi, reg);
     __ test(edi, Immediate(1));
+    __ Pop(edi);
     __ j(not_zero, &compare_swap);
 
     __ bind(&done_compare);
@@ -2665,10 +2672,15 @@ void Builtins::Generate_StringToNumber(MacroAssembler* masm) {
   __ Ret();
 
   __ bind(&runtime);
-  __ PopReturnAddressTo(ecx);     // Pop return address.
-  __ Push(eax);                   // Push argument.
-  __ PushReturnAddressFrom(ecx);  // Push return address.
-  __ TailCallRuntime(Runtime::kStringToNumber);
+  {
+    FrameScope frame(masm, StackFrame::INTERNAL);
+    // Push argument.
+    __ push(eax);
+    // We cannot use a tail call here because this builtin can also be called
+    // from wasm.
+    __ CallRuntime(Runtime::kStringToNumber);
+  }
+  __ Ret();
 }
 
 // static
@@ -2709,11 +2721,15 @@ void Builtins::Generate_NonNumberToNumber(MacroAssembler* masm) {
   __ mov(eax, FieldOperand(eax, Oddball::kToNumberOffset));
   __ Ret();
   __ bind(&not_oddball);
-
-  __ pop(ecx);   // Pop return address.
-  __ push(eax);  // Push argument.
-  __ push(ecx);  // Push return address.
-  __ TailCallRuntime(Runtime::kToNumber);
+  {
+    FrameScope frame(masm, StackFrame::INTERNAL);
+    // Push argument.
+    __ push(eax);
+    // We cannot use a tail call here because this builtin can also be called
+    // from wasm.
+    __ CallRuntime(Runtime::kToNumber);
+  }
+  __ Ret();
 }
 
 void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {

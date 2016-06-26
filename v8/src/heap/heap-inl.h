@@ -476,6 +476,31 @@ void Heap::CopyBlock(Address dst, Address src, int byte_size) {
             static_cast<size_t>(byte_size / kPointerSize));
 }
 
+bool Heap::PurgeLeftTrimmedObject(Object** object) {
+  HeapObject* current = reinterpret_cast<HeapObject*>(*object);
+  const MapWord map_word = current->map_word();
+  if (current->IsFiller() && !map_word.IsForwardingAddress()) {
+#ifdef DEBUG
+    // We need to find a FixedArrayBase map after walking the fillers.
+    while (current->IsFiller()) {
+      Address next = reinterpret_cast<Address>(current);
+      if (current->map() == one_pointer_filler_map()) {
+        next += kPointerSize;
+      } else if (current->map() == two_pointer_filler_map()) {
+        next += 2 * kPointerSize;
+      } else {
+        next += current->Size();
+      }
+      current = reinterpret_cast<HeapObject*>(next);
+    }
+    DCHECK(current->IsFixedArrayBase());
+#endif  // DEBUG
+    *object = nullptr;
+    return true;
+  }
+  return false;
+}
+
 template <Heap::FindMementoMode mode>
 AllocationMemento* Heap::FindAllocationMemento(HeapObject* object) {
   // Check if there is potentially a memento behind the object. If
@@ -724,6 +749,17 @@ void Heap::SetSetterStubDeoptPCOffset(int pc_offset) {
 void Heap::SetInterpreterEntryReturnPCOffset(int pc_offset) {
   DCHECK(interpreter_entry_return_pc_offset() == Smi::FromInt(0));
   set_interpreter_entry_return_pc_offset(Smi::FromInt(pc_offset));
+}
+
+int Heap::GetNextTemplateSerialNumber() {
+  int next_serial_number = next_template_serial_number()->value() + 1;
+  set_next_template_serial_number(Smi::FromInt(next_serial_number));
+  return next_serial_number;
+}
+
+void Heap::SetSerializedTemplates(FixedArray* templates) {
+  DCHECK_EQ(empty_fixed_array(), serialized_templates());
+  set_serialized_templates(templates);
 }
 
 AlwaysAllocateScope::AlwaysAllocateScope(Isolate* isolate)

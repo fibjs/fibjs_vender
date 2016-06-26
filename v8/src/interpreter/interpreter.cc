@@ -62,10 +62,11 @@ void Interpreter::Initialize() {
       size_t index = GetDispatchTableIndex(Bytecode::k##Name, operand_scale);  \
       dispatch_table_[index] = code->entry();                                  \
       TraceCodegen(code);                                                      \
-      LOG_CODE_EVENT(                                                          \
+      PROFILE(                                                                 \
           isolate_,                                                            \
           CodeCreateEvent(                                                     \
-              Logger::BYTECODE_HANDLER_TAG, AbstractCode::cast(*code),         \
+              CodeEventListener::BYTECODE_HANDLER_TAG,                         \
+              AbstractCode::cast(*code),                                       \
               Bytecodes::ToString(Bytecode::k##Name, operand_scale).c_str())); \
     }                                                                          \
   }
@@ -1044,7 +1045,7 @@ void Interpreter::DoCallRuntime(InterpreterAssembler* assembler) {
 // |function_id| with the first argument in |first_arg| and |arg_count|
 // arguments in subsequent registers.
 void Interpreter::DoInvokeIntrinsic(InterpreterAssembler* assembler) {
-  Node* function_id = __ BytecodeOperandRuntimeId(0);
+  Node* function_id = __ BytecodeOperandIntrinsicId(0);
   Node* first_arg_reg = __ BytecodeOperandReg(1);
   Node* arg_count = __ BytecodeOperandCount(2);
   Node* context = __ GetContext();
@@ -1790,7 +1791,8 @@ void Interpreter::DoNop(InterpreterAssembler* assembler) { __ Dispatch(); }
 // SuspendGenerator <generator>
 //
 // Exports the register file and stores it into the generator.  Also stores the
-// current context and the state given in the accumulator into the generator.
+// current context, the state given in the accumulator, and the current bytecode
+// offset (for debugging purposes) into the generator.
 void Interpreter::DoSuspendGenerator(InterpreterAssembler* assembler) {
   Node* generator_reg = __ BytecodeOperandReg(0);
   Node* generator = __ LoadRegister(generator_reg);
@@ -1814,6 +1816,10 @@ void Interpreter::DoSuspendGenerator(InterpreterAssembler* assembler) {
   __ ExportRegisterFile(array);
   __ StoreObjectField(generator, JSGeneratorObject::kContextOffset, context);
   __ StoreObjectField(generator, JSGeneratorObject::kContinuationOffset, state);
+
+  Node* offset = __ SmiTag(__ BytecodeOffset());
+  __ StoreObjectField(generator, JSGeneratorObject::kInputOrDebugPosOffset,
+                      offset);
 
   __ Dispatch();
 

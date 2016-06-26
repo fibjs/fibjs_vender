@@ -415,6 +415,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(JS_VALUE_TYPE)                                              \
   V(JS_DATE_TYPE)                                               \
   V(JS_OBJECT_TYPE)                                             \
+  V(JS_ARGUMENTS_TYPE)                                          \
   V(JS_CONTEXT_EXTENSION_OBJECT_TYPE)                           \
   V(JS_GENERATOR_OBJECT_TYPE)                                   \
   V(JS_MODULE_TYPE)                                             \
@@ -435,6 +436,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(JS_WEAK_SET_TYPE)                                           \
   V(JS_PROMISE_TYPE)                                            \
   V(JS_REGEXP_TYPE)                                             \
+  V(JS_ERROR_TYPE)                                              \
                                                                 \
   V(JS_BOUND_FUNCTION_TYPE)                                     \
   V(JS_FUNCTION_TYPE)                                           \
@@ -712,6 +714,7 @@ enum InstanceType {
   // Like JS_OBJECT_TYPE, but created from API function.
   JS_API_OBJECT_TYPE,
   JS_OBJECT_TYPE,
+  JS_ARGUMENTS_TYPE,
   JS_CONTEXT_EXTENSION_OBJECT_TYPE,
   JS_GENERATOR_OBJECT_TYPE,
   JS_MODULE_TYPE,
@@ -727,6 +730,7 @@ enum InstanceType {
   JS_WEAK_SET_TYPE,
   JS_PROMISE_TYPE,
   JS_REGEXP_TYPE,
+  JS_ERROR_TYPE,
   JS_BOUND_FUNCTION_TYPE,
   JS_FUNCTION_TYPE,  // LAST_JS_OBJECT_TYPE, LAST_JS_RECEIVER_TYPE
 
@@ -1490,7 +1494,7 @@ class MapWord BASE_EMBEDDED {
   // True if this map word is a forwarding address for a scavenge
   // collection.  Only valid during a scavenge collection (specifically,
   // when all map words are heap object pointers, i.e. not during a full GC).
-  inline bool IsForwardingAddress();
+  inline bool IsForwardingAddress() const;
 
   // Create a map word from a forwarding address.
   static inline MapWord FromForwardingAddress(HeapObject* object);
@@ -1854,6 +1858,8 @@ class JSReceiver: public HeapObject {
 
   MUST_USE_RESULT static inline Maybe<bool> HasOwnProperty(
       Handle<JSReceiver> object, Handle<Name> name);
+  MUST_USE_RESULT static inline Maybe<bool> HasOwnProperty(
+      Handle<JSReceiver> object, uint32_t index);
 
   MUST_USE_RESULT static inline MaybeHandle<Object> GetProperty(
       Isolate* isolate, Handle<JSReceiver> receiver, const char* key);
@@ -1937,10 +1943,6 @@ class JSReceiver: public HeapObject {
   // Returns the class name ([[Class]] property in the specification).
   String* class_name();
 
-  // Returns the builtin string tag used in Object.prototype.toString.
-  MUST_USE_RESULT static MaybeHandle<String> BuiltinStringTag(
-      Handle<JSReceiver> object);
-
   // Returns the constructor name (the name (possibly, inferred name) of the
   // function that was used to instantiate the object).
   static Handle<String> GetConstructorName(Handle<JSReceiver> receiver);
@@ -1951,6 +1953,8 @@ class JSReceiver: public HeapObject {
       Handle<JSReceiver> object, Handle<Name> name);
   MUST_USE_RESULT static inline Maybe<PropertyAttributes>
   GetOwnPropertyAttributes(Handle<JSReceiver> object, Handle<Name> name);
+  MUST_USE_RESULT static inline Maybe<PropertyAttributes>
+  GetOwnPropertyAttributes(Handle<JSReceiver> object, uint32_t index);
 
   MUST_USE_RESULT static inline Maybe<PropertyAttributes> GetElementAttributes(
       Handle<JSReceiver> object, uint32_t index);
@@ -6300,6 +6304,13 @@ class PrototypeInfo : public Struct {
   // [prototype_users]: WeakFixedArray containing maps using this prototype,
   // or Smi(0) if uninitialized.
   DECL_ACCESSORS(prototype_users, Object)
+
+  // [object_create_map]: A field caching the map for Object.create(prototype).
+  static inline void SetObjectCreateMap(Handle<PrototypeInfo> info,
+                                        Handle<Map> map);
+  inline Map* ObjectCreateMap();
+  inline bool HasObjectCreateMap();
+
   // [registry_slot]: Slot in prototype's user registry where this user
   // is stored. Returns UNREGISTERED if this prototype has not been registered.
   inline int registry_slot() const;
@@ -6326,13 +6337,16 @@ class PrototypeInfo : public Struct {
   static const int kPrototypeUsersOffset = HeapObject::kHeaderSize;
   static const int kRegistrySlotOffset = kPrototypeUsersOffset + kPointerSize;
   static const int kValidityCellOffset = kRegistrySlotOffset + kPointerSize;
-  static const int kBitFieldOffset = kValidityCellOffset + kPointerSize;
+  static const int kObjectCreateMap = kValidityCellOffset + kPointerSize;
+  static const int kBitFieldOffset = kObjectCreateMap + kPointerSize;
   static const int kSize = kBitFieldOffset + kPointerSize;
 
   // Bit field usage.
   static const int kShouldBeFastBit = 0;
 
  private:
+  DECL_ACCESSORS(object_create_map, Object)
+
   DISALLOW_IMPLICIT_CONSTRUCTORS(PrototypeInfo);
 };
 
@@ -6589,7 +6603,11 @@ class Script: public Struct {
   V(Math, abs, MathAbs)                                     \
   V(Math, log, MathLog)                                     \
   V(Math, log1p, MathLog1p)                                 \
+  V(Math, log2, MathLog2)                                   \
+  V(Math, log10, MathLog10)                                 \
+  V(Math, cbrt, MathCbrt)                                   \
   V(Math, exp, MathExp)                                     \
+  V(Math, expm1, MathExpm1)                                 \
   V(Math, sqrt, MathSqrt)                                   \
   V(Math, pow, MathPow)                                     \
   V(Math, max, MathMax)                                     \
@@ -6601,6 +6619,7 @@ class Script: public Struct {
   V(Math, asin, MathAsin)                                   \
   V(Math, atan, MathAtan)                                   \
   V(Math, atan2, MathAtan2)                                 \
+  V(Math, atanh, MathAtanh)                                 \
   V(Math, imul, MathImul)                                   \
   V(Math, clz32, MathClz32)                                 \
   V(Math, fround, MathFround)                               \
@@ -7358,23 +7377,32 @@ class JSGeneratorObject: public JSObject {
   // [receiver]: The receiver of the suspended computation.
   DECL_ACCESSORS(receiver, Object)
 
-  // [input]: The most recent input value.
-  DECL_ACCESSORS(input, Object)
+  // [input_or_debug_pos]
+  // For executing generators: the most recent input value.
+  // For suspended new-style generators: debug information (bytecode offset).
+  // For suspended old-style generators: unused.
+  // There is currently no need to remember the most recent input value for a
+  // suspended generator.
+  DECL_ACCESSORS(input_or_debug_pos, Object)
 
   // [resume_mode]: The most recent resume mode.
   enum ResumeMode { kNext, kReturn, kThrow };
   DECL_INT_ACCESSORS(resume_mode)
 
-  // [continuation]: Offset into code of continuation.
+  // [continuation]
   //
-  // A positive offset indicates a suspended generator.  The special
+  // A positive value indicates a suspended generator.  The special
   // kGeneratorExecuting and kGeneratorClosed values indicate that a generator
   // cannot be resumed.
   inline int continuation() const;
   inline void set_continuation(int continuation);
-  inline bool is_closed();
-  inline bool is_executing();
-  inline bool is_suspended();
+  inline bool is_closed() const;
+  inline bool is_executing() const;
+  inline bool is_suspended() const;
+
+  // For suspended generators: the source position at which the generator
+  // is suspended.
+  int source_position() const;
 
   // [operand_stack]: Saved operand stack.
   DECL_ACCESSORS(operand_stack, FixedArray)
@@ -7392,8 +7420,8 @@ class JSGeneratorObject: public JSObject {
   static const int kFunctionOffset = JSObject::kHeaderSize;
   static const int kContextOffset = kFunctionOffset + kPointerSize;
   static const int kReceiverOffset = kContextOffset + kPointerSize;
-  static const int kInputOffset = kReceiverOffset + kPointerSize;
-  static const int kResumeModeOffset = kInputOffset + kPointerSize;
+  static const int kInputOrDebugPosOffset = kReceiverOffset + kPointerSize;
+  static const int kResumeModeOffset = kInputOrDebugPosOffset + kPointerSize;
   static const int kContinuationOffset = kResumeModeOffset + kPointerSize;
   static const int kOperandStackOffset = kContinuationOffset + kPointerSize;
   static const int kSize = kOperandStackOffset + kPointerSize;
@@ -7935,7 +7963,6 @@ class JSRegExp: public JSObject {
   // NOT_COMPILED: Initial value. No data has been stored in the JSRegExp yet.
   // ATOM: A simple string to match against using an indexOf operation.
   // IRREGEXP: Compiled with Irregexp.
-  // IRREGEXP_NATIVE: Compiled to native code with Irregexp.
   enum Type { NOT_COMPILED, ATOM, IRREGEXP };
   enum Flag {
     kNone = 0,
@@ -8028,8 +8055,11 @@ class JSRegExp: public JSObject {
   static const int kIrregexpMaxRegisterCountIndex = kDataIndex + 4;
   // Number of captures in the compiled regexp.
   static const int kIrregexpCaptureCountIndex = kDataIndex + 5;
+  // Maps names of named capture groups (at indices 2i) to their corresponding
+  // capture group indices (at indices 2i + 1).
+  static const int kIrregexpCaptureNameMapIndex = kDataIndex + 6;
 
-  static const int kIrregexpDataSize = kIrregexpCaptureCountIndex + 1;
+  static const int kIrregexpDataSize = kIrregexpCaptureNameMapIndex + 1;
 
   // Offsets directly into the data fixed array.
   static const int kDataTagOffset =
@@ -10493,6 +10523,7 @@ class FunctionTemplateInfo: public TemplateInfo {
   DECL_ACCESSORS(signature, Object)
   DECL_ACCESSORS(instance_call_handler, Object)
   DECL_ACCESSORS(access_check_info, Object)
+  DECL_ACCESSORS(shared_function_info, Object)
   DECL_INT_ACCESSORS(flag)
 
   inline int length() const;
@@ -10507,7 +10538,6 @@ class FunctionTemplateInfo: public TemplateInfo {
   DECL_BOOLEAN_ACCESSORS(read_only_prototype)
   DECL_BOOLEAN_ACCESSORS(remove_prototype)
   DECL_BOOLEAN_ACCESSORS(do_not_cache)
-  DECL_BOOLEAN_ACCESSORS(instantiated)
   DECL_BOOLEAN_ACCESSORS(accept_any_receiver)
 
   DECLARE_CAST(FunctionTemplateInfo)
@@ -10532,17 +10562,18 @@ class FunctionTemplateInfo: public TemplateInfo {
   static const int kInstanceCallHandlerOffset = kSignatureOffset + kPointerSize;
   static const int kAccessCheckInfoOffset =
       kInstanceCallHandlerOffset + kPointerSize;
-  static const int kFlagOffset = kAccessCheckInfoOffset + kPointerSize;
+  static const int kSharedFunctionInfoOffset =
+      kAccessCheckInfoOffset + kPointerSize;
+  static const int kFlagOffset = kSharedFunctionInfoOffset + kPointerSize;
   static const int kLengthOffset = kFlagOffset + kPointerSize;
   static const int kSize = kLengthOffset + kPointerSize;
 
+  static Handle<SharedFunctionInfo> GetOrCreateSharedFunctionInfo(
+      Isolate* isolate, Handle<FunctionTemplateInfo> info);
   // Returns true if |object| is an instance of this function template.
-  bool IsTemplateFor(Object* object);
+  inline bool IsTemplateFor(JSObject* object);
   bool IsTemplateFor(Map* map);
-
-  // Returns the holder JSObject if the function can legally be called with this
-  // receiver.  Returns Heap::null_value() if the call is illegal.
-  Object* GetCompatibleReceiver(Isolate* isolate, Object* receiver);
+  inline bool instantiated();
 
  private:
   // Bit position in the flag, from least significant bit position.
@@ -10552,8 +10583,7 @@ class FunctionTemplateInfo: public TemplateInfo {
   static const int kReadOnlyPrototypeBit = 3;
   static const int kRemovePrototypeBit   = 4;
   static const int kDoNotCacheBit        = 5;
-  static const int kInstantiatedBit      = 6;
-  static const int kAcceptAnyReceiver = 7;
+  static const int kAcceptAnyReceiver = 6;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(FunctionTemplateInfo);
 };

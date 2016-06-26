@@ -814,7 +814,6 @@ void LCodeGen::RecordSafepointWithRegisters(LPointerMap* pointers,
 void LCodeGen::RecordAndWritePosition(int position) {
   if (position == RelocInfo::kNoPosition) return;
   masm()->positions_recorder()->RecordPosition(position);
-  masm()->positions_recorder()->WriteRecordedPositions();
 }
 
 
@@ -3425,15 +3424,49 @@ void LCodeGen::DoMathClz32(LMathClz32* instr) {
   __ Lzcnt(result, input);
 }
 
+void LCodeGen::DoMathCos(LMathCos* instr) {
+  XMMRegister input = ToDoubleRegister(instr->value());
+  XMMRegister result = ToDoubleRegister(instr->result());
+  // Pass one double as argument on the stack.
+  __ PrepareCallCFunction(2, eax);
+  __ movsd(Operand(esp, 0 * kDoubleSize), input);
+  __ CallCFunction(ExternalReference::ieee754_cos_function(isolate()), 2);
+  // Return value is in st(0) on ia32.
+  // Store it into the result register.
+  __ sub(esp, Immediate(kDoubleSize));
+  __ fstp_d(Operand(esp, 0));
+  __ movsd(result, Operand(esp, 0));
+  __ add(esp, Immediate(kDoubleSize));
+}
+
+void LCodeGen::DoMathSin(LMathSin* instr) {
+  XMMRegister input = ToDoubleRegister(instr->value());
+  XMMRegister result = ToDoubleRegister(instr->result());
+  // Pass one double as argument on the stack.
+  __ PrepareCallCFunction(2, eax);
+  __ movsd(Operand(esp, 0 * kDoubleSize), input);
+  __ CallCFunction(ExternalReference::ieee754_sin_function(isolate()), 2);
+  // Return value is in st(0) on ia32.
+  // Store it into the result register.
+  __ sub(esp, Immediate(kDoubleSize));
+  __ fstp_d(Operand(esp, 0));
+  __ movsd(result, Operand(esp, 0));
+  __ add(esp, Immediate(kDoubleSize));
+}
 
 void LCodeGen::DoMathExp(LMathExp* instr) {
   XMMRegister input = ToDoubleRegister(instr->value());
   XMMRegister result = ToDoubleRegister(instr->result());
-  XMMRegister temp0 = double_scratch0();
-  Register temp1 = ToRegister(instr->temp1());
-  Register temp2 = ToRegister(instr->temp2());
-
-  MathExpGenerator::EmitMathExp(masm(), input, result, temp0, temp1, temp2);
+  // Pass one double as argument on the stack.
+  __ PrepareCallCFunction(2, eax);
+  __ movsd(Operand(esp, 0 * kDoubleSize), input);
+  __ CallCFunction(ExternalReference::ieee754_exp_function(isolate()), 2);
+  // Return value is in st(0) on ia32.
+  // Store it into the result register.
+  __ sub(esp, Immediate(kDoubleSize));
+  __ fstp_d(Operand(esp, 0));
+  __ movsd(result, Operand(esp, 0));
+  __ add(esp, Immediate(kDoubleSize));
 }
 
 void LCodeGen::PrepareForTailCall(const ParameterCount& actual,
@@ -4790,25 +4823,6 @@ void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
     }
   } else {
     __ movd(result_reg, value_reg);
-  }
-}
-
-
-void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
-  Register hi_reg = ToRegister(instr->hi());
-  Register lo_reg = ToRegister(instr->lo());
-  XMMRegister result_reg = ToDoubleRegister(instr->result());
-
-  if (CpuFeatures::IsSupported(SSE4_1)) {
-    CpuFeatureScope scope2(masm(), SSE4_1);
-    __ movd(result_reg, lo_reg);
-    __ pinsrd(result_reg, hi_reg, 1);
-  } else {
-    XMMRegister xmm_scratch = double_scratch0();
-    __ movd(result_reg, hi_reg);
-    __ psllq(result_reg, 32);
-    __ movd(xmm_scratch, lo_reg);
-    __ orps(result_reg, xmm_scratch);
   }
 }
 

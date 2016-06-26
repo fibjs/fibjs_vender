@@ -117,8 +117,8 @@ class X87OperandConverter : public InstructionOperandConverter {
       }
       case kMode_MRI: {
         Register base = InputRegister(NextOffset(offset));
-        int32_t disp = InputInt32(NextOffset(offset));
-        return Operand(base, disp);
+        Constant ctant = ToConstant(instr_->InputAt(NextOffset(offset)));
+        return Operand(base, ctant.ToInt32(), ctant.rmode());
       }
       case kMode_MR1:
       case kMode_MR2:
@@ -137,8 +137,8 @@ class X87OperandConverter : public InstructionOperandConverter {
         Register base = InputRegister(NextOffset(offset));
         Register index = InputRegister(NextOffset(offset));
         ScaleFactor scale = ScaleFor(kMode_MR1I, mode);
-        int32_t disp = InputInt32(NextOffset(offset));
-        return Operand(base, index, scale, disp);
+        Constant ctant = ToConstant(instr_->InputAt(NextOffset(offset)));
+        return Operand(base, index, scale, ctant.ToInt32(), ctant.rmode());
       }
       case kMode_M1:
       case kMode_M2:
@@ -155,12 +155,12 @@ class X87OperandConverter : public InstructionOperandConverter {
       case kMode_M8I: {
         Register index = InputRegister(NextOffset(offset));
         ScaleFactor scale = ScaleFor(kMode_M1I, mode);
-        int32_t disp = InputInt32(NextOffset(offset));
-        return Operand(index, scale, disp);
+        Constant ctant = ToConstant(instr_->InputAt(NextOffset(offset)));
+        return Operand(index, scale, ctant.ToInt32(), ctant.rmode());
       }
       case kMode_MI: {
-        int32_t disp = InputInt32(NextOffset(offset));
-        return Operand(Immediate(disp));
+        Constant ctant = ToConstant(instr_->InputAt(NextOffset(offset)));
+        return Operand(ctant.ToInt32(), ctant.rmode());
       }
       case kMode_None:
         UNREACHABLE();
@@ -373,6 +373,26 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
       }                                                               \
     }                                                                 \
   } while (0)
+
+#define ASSEMBLE_IEEE754_UNOP(name)                                           \
+  do {                                                                        \
+    /* Saves the esp into ebx */                                              \
+    __ push(ebx);                                                             \
+    __ mov(ebx, esp);                                                         \
+    /* Pass one double as argument on the stack. */                           \
+    __ PrepareCallCFunction(2, eax);                                          \
+    __ fstp(0);                                                               \
+    /* Load operand from original stack */                                    \
+    __ fld_d(MemOperand(ebx, 4));                                             \
+    /* Put operand into stack for function call */                            \
+    __ fstp_d(Operand(esp, 0));                                               \
+    __ CallCFunction(ExternalReference::ieee754_##name##_function(isolate()), \
+                     2);                                                      \
+    /* Restore the ebx */                                                     \
+    __ pop(ebx);                                                              \
+    /* Return value is in st(0) on x87. */                                    \
+    __ lea(esp, Operand(esp, kDoubleSize));                                   \
+  } while (false)
 
 void CodeGenerator::AssembleDeconstructFrame() {
   __ mov(esp, ebp);
@@ -610,6 +630,11 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArchTableSwitch:
       AssembleArchTableSwitch(instr);
       break;
+    case kArchComment: {
+      Address comment_string = i.InputExternalReference(0).address();
+      __ RecordComment(reinterpret_cast<const char*>(comment_string));
+      break;
+    }
     case kArchDebugBreak:
       __ int3();
       break;
@@ -702,6 +727,12 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ lea(i.OutputRegister(), Operand(base, offset.offset()));
       break;
     }
+    case kIeee754Float64Log:
+      ASSEMBLE_IEEE754_UNOP(log);
+      break;
+    case kIeee754Float64Log1p:
+      ASSEMBLE_IEEE754_UNOP(log1p);
+      break;
     case kX87Add:
       if (HasImmediateInput(instr, 1)) {
         __ add(i.InputOperand(0), i.InputImmediate(1));
@@ -901,18 +932,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kX87Popcnt:
       __ Popcnt(i.OutputRegister(), i.InputOperand(0));
-      break;
-    case kX87Float64Log:
-      if (FLAG_debug_code && FLAG_enable_slow_asserts) {
-        __ VerifyX87StackDepth(1);
-      }
-      __ X87SetFPUCW(0x027F);
-      __ fstp(0);
-      __ fldln2();
-      __ fld_d(MemOperand(esp, 0));
-      __ fyl2x();
-      __ lea(esp, Operand(esp, kDoubleSize));
-      __ X87SetFPUCW(0x037F);
       break;
     case kX87LoadFloat64Constant: {
       InstructionOperand* source = instr->InputAt(0);

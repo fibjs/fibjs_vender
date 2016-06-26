@@ -495,6 +495,9 @@
     <ClInclude Include="src\checks.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\code-events.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\code-factory.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -762,6 +765,9 @@
     <ClInclude Include="src\compiler\raw-machine-assembler.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\redundancy-elimination.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\register-allocator-verifier.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -796,6 +802,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\state-values-utils.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\store-store-elimination.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\tail-call-optimization.h">
@@ -1128,6 +1137,9 @@
     <ClInclude Include="src\heap-symbols.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\array-buffer-tracker-inl.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\array-buffer-tracker.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1258,6 +1270,9 @@
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-array-writer.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-dead-code-optimizer.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-generator.h">
@@ -1488,6 +1503,9 @@
     <ClInclude Include="src\profiler\profile-generator.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\profiler\profiler-listener.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\profiler\sampling-heap-profiler.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
@@ -1662,9 +1680,6 @@
     <ClInclude Include="src\strtod.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\third_party\fdlibm\fdlibm.h">
-      <Filter>Source Files\third_party\fdlibm</Filter>
-    </ClInclude>
     <ClInclude Include="src\third_party\valgrind\valgrind.h">
       <Filter>Source Files\third_party\valgrind</Filter>
     </ClInclude>
@@ -1762,6 +1777,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\switch-logic.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-debug.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-external-refs.h">
@@ -2282,6 +2300,9 @@
     <ClCompile Include="src\compiler\raw-machine-assembler.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\redundancy-elimination.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\register-allocator-verifier.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2322,6 +2343,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\state-values-utils.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\store-store-elimination.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\tail-call-optimization.cc">
@@ -2846,6 +2870,9 @@
     <ClCompile Include="src\interpreter\bytecode-array-writer.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-dead-code-optimizer.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-generator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -3027,6 +3054,9 @@
       <Filter>Source Files\profiler</Filter>
     </ClCompile>
     <ClCompile Include="src\profiler\profile-generator.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\profiler-listener.cc">
       <Filter>Source Files\profiler</Filter>
     </ClCompile>
     <ClCompile Include="src\profiler\sampling-heap-profiler.cc">
@@ -3257,9 +3287,6 @@
     <ClCompile Include="src\strtod.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\third_party\fdlibm\fdlibm.cc">
-      <Filter>Source Files\third_party\fdlibm</Filter>
-    </ClCompile>
     <ClCompile Include="src\tracing\trace-event.cc">
       <Filter>Source Files\tracing</Filter>
     </ClCompile>
@@ -3318,6 +3345,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\switch-logic.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-debug.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-external-refs.cc">

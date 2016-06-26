@@ -56,9 +56,6 @@ const Register VectorStoreTransitionDescriptor::MapRegister() { return edi; }
 const Register StoreTransitionDescriptor::MapRegister() { return ebx; }
 
 
-const Register LoadGlobalViaContextDescriptor::SlotRegister() { return ebx; }
-
-
 const Register StoreGlobalViaContextDescriptor::SlotRegister() { return ebx; }
 const Register StoreGlobalViaContextDescriptor::ValueRegister() { return eax; }
 

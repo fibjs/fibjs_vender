@@ -278,7 +278,6 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     case IrOpcode::kDeoptimizeIf:
     case IrOpcode::kDeoptimizeUnless:
-    case IrOpcode::kCheckIf:
       // Type is empty.
       CheckNotTyped(node);
       break;
@@ -675,36 +674,44 @@ void Verifier::Visitor::Check(Node* node) {
       CheckUpperIs(node, Type::Number());
       break;
     case IrOpcode::kNumberEqual:
-      // (NumberOrUndefined, NumberOrUndefined) -> Boolean
-      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
-      CheckValueInputIs(node, 1, Type::NumberOrUndefined());
+      // (Number, Number) -> Boolean
+      CheckValueInputIs(node, 0, Type::Number());
+      CheckValueInputIs(node, 1, Type::Number());
       CheckUpperIs(node, Type::Boolean());
       break;
     case IrOpcode::kNumberLessThan:
     case IrOpcode::kNumberLessThanOrEqual:
       // (Number, Number) -> Boolean
-      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
-      CheckValueInputIs(node, 1, Type::NumberOrUndefined());
+      CheckValueInputIs(node, 0, Type::Number());
+      CheckValueInputIs(node, 1, Type::Number());
       CheckUpperIs(node, Type::Boolean());
       break;
     case IrOpcode::kSpeculativeNumberAdd:
     case IrOpcode::kSpeculativeNumberSubtract:
+    case IrOpcode::kSpeculativeNumberMultiply:
+    case IrOpcode::kSpeculativeNumberDivide:
+    case IrOpcode::kSpeculativeNumberModulus:
+      CheckUpperIs(node, Type::Number());
+      break;
+    case IrOpcode::kSpeculativeNumberEqual:
+    case IrOpcode::kSpeculativeNumberLessThan:
+    case IrOpcode::kSpeculativeNumberLessThanOrEqual:
+      CheckUpperIs(node, Type::Boolean());
       break;
     case IrOpcode::kNumberAdd:
     case IrOpcode::kNumberSubtract:
     case IrOpcode::kNumberMultiply:
     case IrOpcode::kNumberDivide:
       // (Number, Number) -> Number
-      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
-      CheckValueInputIs(node, 1, Type::NumberOrUndefined());
-      // CheckUpperIs(node, Type::Number());
+      CheckValueInputIs(node, 0, Type::Number());
+      CheckValueInputIs(node, 1, Type::Number());
+      CheckUpperIs(node, Type::Number());
       break;
     case IrOpcode::kNumberModulus:
       // (Number, Number) -> Number
       CheckValueInputIs(node, 0, Type::Number());
       CheckValueInputIs(node, 1, Type::Number());
-      // TODO(rossberg): activate once we retype after opcode changes.
-      // CheckUpperIs(node, Type::Number());
+      CheckUpperIs(node, Type::Number());
       break;
     case IrOpcode::kNumberBitwiseOr:
     case IrOpcode::kNumberBitwiseXor:
@@ -746,10 +753,21 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     case IrOpcode::kNumberCeil:
     case IrOpcode::kNumberFloor:
+    case IrOpcode::kNumberFround:
     case IrOpcode::kNumberAtan:
+    case IrOpcode::kNumberAtanh:
+    case IrOpcode::kNumberCos:
+    case IrOpcode::kNumberExp:
+    case IrOpcode::kNumberExpm1:
     case IrOpcode::kNumberLog:
     case IrOpcode::kNumberLog1p:
+    case IrOpcode::kNumberLog2:
+    case IrOpcode::kNumberLog10:
+    case IrOpcode::kNumberCbrt:
     case IrOpcode::kNumberRound:
+    case IrOpcode::kNumberSin:
+    case IrOpcode::kNumberSqrt:
+    case IrOpcode::kNumberTan:
     case IrOpcode::kNumberTrunc:
       // Number -> Number
       CheckValueInputIs(node, 0, Type::Number());
@@ -757,23 +775,13 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     case IrOpcode::kNumberToInt32:
       // Number -> Signed32
-      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
+      CheckValueInputIs(node, 0, Type::Number());
       CheckUpperIs(node, Type::Signed32());
       break;
     case IrOpcode::kNumberToUint32:
       // Number -> Unsigned32
-      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
+      CheckValueInputIs(node, 0, Type::Number());
       CheckUpperIs(node, Type::Unsigned32());
-      break;
-    case IrOpcode::kNumberIsHoleNaN:
-      // Number -> Boolean
-      CheckValueInputIs(node, 0, Type::Number());
-      CheckUpperIs(node, Type::Boolean());
-      break;
-    case IrOpcode::kNumberConvertHoleNaN:
-      // Number -> Number \/ Undefined
-      CheckValueInputIs(node, 0, Type::Number());
-      CheckUpperIs(node, Type::NumberOrUndefined());
       break;
     case IrOpcode::kPlainPrimitiveToNumber:
       // Type is Number.
@@ -851,7 +859,7 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
     case IrOpcode::kChangeTaggedToFloat64: {
-      // Number /\ Tagged -> Number /\ UntaggedFloat64
+      // NumberOrUndefined /\ Tagged -> Number /\ UntaggedFloat64
       // TODO(neis): Activate once ChangeRepresentation works in typer.
       // Type* from = Type::Intersect(Type::Number(), Type::Tagged());
       // Type* to = Type::Intersect(Type::Number(), Type::UntaggedFloat64());
@@ -933,10 +941,35 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
 
+    case IrOpcode::kCheckBounds:
+      CheckValueInputIs(node, 0, Type::Any());
+      CheckValueInputIs(node, 1, Type::Unsigned31());
+      CheckUpperIs(node, Type::Unsigned31());
+      break;
+    case IrOpcode::kCheckTaggedSigned:
+      CheckValueInputIs(node, 0, Type::Any());
+      CheckUpperIs(node, Type::TaggedSigned());
+      break;
+    case IrOpcode::kCheckTaggedPointer:
+      CheckValueInputIs(node, 0, Type::Any());
+      CheckUpperIs(node, Type::TaggedPointer());
+      break;
+
+    case IrOpcode::kCheckedInt32Add:
+    case IrOpcode::kCheckedInt32Sub:
     case IrOpcode::kCheckedUint32ToInt32:
     case IrOpcode::kCheckedFloat64ToInt32:
     case IrOpcode::kCheckedTaggedToInt32:
     case IrOpcode::kCheckedTaggedToFloat64:
+      break;
+
+    case IrOpcode::kCheckFloat64Hole:
+      CheckValueInputIs(node, 0, Type::Number());
+      CheckUpperIs(node, Type::Number());
+      break;
+    case IrOpcode::kCheckTaggedHole:
+      CheckValueInputIs(node, 0, Type::Any());
+      CheckUpperIs(node, Type::Any());
       break;
 
     case IrOpcode::kLoadField:
@@ -970,7 +1003,7 @@ void Verifier::Visitor::Check(Node* node) {
       CheckNotTyped(node);
       break;
     case IrOpcode::kNumberSilenceNaN:
-      CheckValueInputIs(node, 0, Type::NumberOrUndefined());
+      CheckValueInputIs(node, 0, Type::Number());
       CheckUpperIs(node, Type::Number());
       break;
 
@@ -1056,9 +1089,18 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kFloat64Abs:
     case IrOpcode::kFloat64Atan:
     case IrOpcode::kFloat64Atan2:
+    case IrOpcode::kFloat64Atanh:
+    case IrOpcode::kFloat64Cos:
+    case IrOpcode::kFloat64Exp:
+    case IrOpcode::kFloat64Expm1:
     case IrOpcode::kFloat64Log:
     case IrOpcode::kFloat64Log1p:
+    case IrOpcode::kFloat64Log2:
+    case IrOpcode::kFloat64Log10:
+    case IrOpcode::kFloat64Cbrt:
+    case IrOpcode::kFloat64Sin:
     case IrOpcode::kFloat64Sqrt:
+    case IrOpcode::kFloat64Tan:
     case IrOpcode::kFloat32RoundDown:
     case IrOpcode::kFloat64RoundDown:
     case IrOpcode::kFloat32RoundUp:

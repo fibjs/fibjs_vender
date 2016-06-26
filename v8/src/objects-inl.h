@@ -1274,8 +1274,7 @@ Map* MapWord::ToMap() {
   return reinterpret_cast<Map*>(value_);
 }
 
-
-bool MapWord::IsForwardingAddress() {
+bool MapWord::IsForwardingAddress() const {
   return HAS_SMI_TAG(reinterpret_cast<Object*>(value_));
 }
 
@@ -2069,6 +2068,10 @@ int JSObject::GetHeaderSize(InstanceType type) {
       return JSObject::kHeaderSize;
     case JS_MESSAGE_OBJECT_TYPE:
       return JSMessageObject::kSize;
+    case JS_ARGUMENTS_TYPE:
+      return JSArgumentsObject::kHeaderSize;
+    case JS_ERROR_TYPE:
+      return JSObject::kHeaderSize;
     default:
       UNREACHABLE();
       return 0;
@@ -5487,7 +5490,28 @@ ACCESSORS(AccessorInfo, data, Object, kDataOffset)
 
 ACCESSORS(Box, value, Object, kValueOffset)
 
+Map* PrototypeInfo::ObjectCreateMap() {
+  return Map::cast(WeakCell::cast(object_create_map())->value());
+}
+
+// static
+void PrototypeInfo::SetObjectCreateMap(Handle<PrototypeInfo> info,
+                                       Handle<Map> map) {
+  Handle<WeakCell> cell = Map::WeakCellForMap(map);
+  info->set_object_create_map(*cell);
+}
+
+bool PrototypeInfo::HasObjectCreateMap() {
+  Object* cache = object_create_map();
+  return cache->IsWeakCell() && !WeakCell::cast(cache)->cleared();
+}
+
+bool FunctionTemplateInfo::instantiated() {
+  return shared_function_info()->IsSharedFunctionInfo();
+}
+
 ACCESSORS(PrototypeInfo, prototype_users, Object, kPrototypeUsersOffset)
+ACCESSORS(PrototypeInfo, object_create_map, Object, kObjectCreateMap)
 SMI_ACCESSORS(PrototypeInfo, registry_slot, kRegistrySlotOffset)
 ACCESSORS(PrototypeInfo, validity_cell, Object, kValidityCellOffset)
 SMI_ACCESSORS(PrototypeInfo, bit_field, kBitFieldOffset)
@@ -5542,6 +5566,9 @@ ACCESSORS(FunctionTemplateInfo, instance_call_handler, Object,
           kInstanceCallHandlerOffset)
 ACCESSORS(FunctionTemplateInfo, access_check_info, Object,
           kAccessCheckInfoOffset)
+ACCESSORS(FunctionTemplateInfo, shared_function_info, Object,
+          kSharedFunctionInfoOffset)
+
 SMI_ACCESSORS(FunctionTemplateInfo, flag, kFlagOffset)
 
 ACCESSORS(ObjectTemplateInfo, constructor, Object, kConstructorOffset)
@@ -5647,7 +5674,6 @@ BOOL_ACCESSORS(FunctionTemplateInfo, flag, remove_prototype,
                kRemovePrototypeBit)
 BOOL_ACCESSORS(FunctionTemplateInfo, flag, do_not_cache,
                kDoNotCacheBit)
-BOOL_ACCESSORS(FunctionTemplateInfo, flag, instantiated, kInstantiatedBit)
 BOOL_ACCESSORS(FunctionTemplateInfo, flag, accept_any_receiver,
                kAcceptAnyReceiver)
 BOOL_ACCESSORS(SharedFunctionInfo, start_position_and_type, is_named_expression,
@@ -6343,22 +6369,22 @@ void Foreign::set_foreign_address(Address value) {
 ACCESSORS(JSGeneratorObject, function, JSFunction, kFunctionOffset)
 ACCESSORS(JSGeneratorObject, context, Context, kContextOffset)
 ACCESSORS(JSGeneratorObject, receiver, Object, kReceiverOffset)
-ACCESSORS(JSGeneratorObject, input, Object, kInputOffset)
+ACCESSORS(JSGeneratorObject, input_or_debug_pos, Object, kInputOrDebugPosOffset)
 SMI_ACCESSORS(JSGeneratorObject, resume_mode, kResumeModeOffset)
 SMI_ACCESSORS(JSGeneratorObject, continuation, kContinuationOffset)
 ACCESSORS(JSGeneratorObject, operand_stack, FixedArray, kOperandStackOffset)
 
-bool JSGeneratorObject::is_suspended() {
+bool JSGeneratorObject::is_suspended() const {
   DCHECK_LT(kGeneratorExecuting, 0);
   DCHECK_LT(kGeneratorClosed, 0);
   return continuation() >= 0;
 }
 
-bool JSGeneratorObject::is_closed() {
+bool JSGeneratorObject::is_closed() const {
   return continuation() == kGeneratorClosed;
 }
 
-bool JSGeneratorObject::is_executing() {
+bool JSGeneratorObject::is_executing() const {
   return continuation() == kGeneratorExecuting;
 }
 
@@ -7178,6 +7204,19 @@ Maybe<bool> JSReceiver::HasOwnProperty(Handle<JSReceiver> object,
   return Just(attributes.FromJust() != ABSENT);
 }
 
+Maybe<bool> JSReceiver::HasOwnProperty(Handle<JSReceiver> object,
+                                       uint32_t index) {
+  if (object->IsJSObject()) {  // Shortcut
+    LookupIterator it(object->GetIsolate(), object, index, object,
+                      LookupIterator::OWN);
+    return HasProperty(&it);
+  }
+
+  Maybe<PropertyAttributes> attributes =
+      JSReceiver::GetOwnPropertyAttributes(object, index);
+  MAYBE_RETURN(attributes, Nothing<bool>());
+  return Just(attributes.FromJust() != ABSENT);
+}
 
 Maybe<PropertyAttributes> JSReceiver::GetPropertyAttributes(
     Handle<JSReceiver> object, Handle<Name> name) {
@@ -7194,6 +7233,12 @@ Maybe<PropertyAttributes> JSReceiver::GetOwnPropertyAttributes(
   return GetPropertyAttributes(&it);
 }
 
+Maybe<PropertyAttributes> JSReceiver::GetOwnPropertyAttributes(
+    Handle<JSReceiver> object, uint32_t index) {
+  LookupIterator it(object->GetIsolate(), object, index, object,
+                    LookupIterator::OWN);
+  return GetPropertyAttributes(&it);
+}
 
 Maybe<bool> JSReceiver::HasElement(Handle<JSReceiver> object, uint32_t index) {
   LookupIterator it(object->GetIsolate(), object, index, object);
@@ -7289,6 +7334,9 @@ void AccessorInfo::set_property_attributes(PropertyAttributes attributes) {
   set_flag(AttributesField::update(flag(), attributes));
 }
 
+bool FunctionTemplateInfo::IsTemplateFor(JSObject* object) {
+  return IsTemplateFor(object->map());
+}
 
 bool AccessorInfo::IsCompatibleReceiver(Object* receiver) {
   if (!HasExpectedReceiverType()) return true;

@@ -141,8 +141,9 @@ RUNTIME_FUNCTION(Runtime_ThrowWasmError) {
                       LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
     if (it.IsFound()) {
       DCHECK(JSReceiver::GetDataProperty(&it)->IsSmi());
+      // Make column number 1-based here.
       Maybe<bool> data_set = JSReceiver::SetDataProperty(
-          &it, handle(Smi::FromInt(byte_offset), isolate));
+          &it, handle(Smi::FromInt(byte_offset + 1), isolate));
       DCHECK(data_set.IsJust() && data_set.FromJust() == true);
       USE(data_set);
     }
@@ -618,9 +619,9 @@ RUNTIME_FUNCTION(Runtime_OrdinaryHasInstance) {
 RUNTIME_FUNCTION(Runtime_IsWasmObject) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
-  bool is_wasm_object = object->IsJSObject() &&
-                        wasm::IsWasmObject(Handle<JSObject>::cast(object));
+  CONVERT_ARG_CHECKED(Object, object, 0);
+  bool is_wasm_object =
+      object->IsJSObject() && wasm::IsWasmObject(JSObject::cast(object));
   return *isolate->factory()->ToBoolean(is_wasm_object);
 }
 

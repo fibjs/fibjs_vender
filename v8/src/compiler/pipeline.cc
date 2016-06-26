@@ -49,6 +49,7 @@
 #include "src/compiler/move-optimizer.h"
 #include "src/compiler/osr.h"
 #include "src/compiler/pipeline-statistics.h"
+#include "src/compiler/redundancy-elimination.h"
 #include "src/compiler/register-allocator-verifier.h"
 #include "src/compiler/register-allocator.h"
 #include "src/compiler/schedule.h"
@@ -57,6 +58,7 @@
 #include "src/compiler/simplified-lowering.h"
 #include "src/compiler/simplified-operator-reducer.h"
 #include "src/compiler/simplified-operator.h"
+#include "src/compiler/store-store-elimination.h"
 #include "src/compiler/tail-call-optimization.h"
 #include "src/compiler/type-hint-analyzer.h"
 #include "src/compiler/typer.h"
@@ -898,7 +900,7 @@ struct TypedLoweringPhase {
         data->info()->is_deoptimization_enabled()
             ? JSIntrinsicLowering::kDeoptimizationEnabled
             : JSIntrinsicLowering::kDeoptimizationDisabled);
-    SimplifiedOperatorReducer simple_reducer(data->jsgraph());
+    SimplifiedOperatorReducer simple_reducer(&graph_reducer, data->jsgraph());
     CheckpointElimination checkpoint_elimination(&graph_reducer);
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
@@ -972,13 +974,15 @@ struct EarlyOptimizationPhase {
     JSGenericLowering generic_lowering(data->jsgraph());
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
-    SimplifiedOperatorReducer simple_reducer(data->jsgraph());
+    SimplifiedOperatorReducer simple_reducer(&graph_reducer, data->jsgraph());
+    RedundancyElimination redundancy_elimination(&graph_reducer, temp_zone);
     ValueNumberingReducer value_numbering(temp_zone);
     MachineOperatorReducer machine_reducer(data->jsgraph());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
     AddReducer(data, &graph_reducer, &dead_code_elimination);
     AddReducer(data, &graph_reducer, &simple_reducer);
+    AddReducer(data, &graph_reducer, &redundancy_elimination);
     AddReducer(data, &graph_reducer, &generic_lowering);
     AddReducer(data, &graph_reducer, &value_numbering);
     AddReducer(data, &graph_reducer, &machine_reducer);
@@ -1028,10 +1032,26 @@ struct EffectControlLinearizationPhase {
   }
 };
 
+struct StoreStoreEliminationPhase {
+  static const char* phase_name() { return "Store-store elimination"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    StoreStoreElimination store_store_elimination(data->jsgraph(), temp_zone);
+    store_store_elimination.Run();
+  }
+};
+
 struct MemoryOptimizationPhase {
   static const char* phase_name() { return "memory optimization"; }
 
   void Run(PipelineData* data, Zone* temp_zone) {
+    // The memory optimizer requires the graphs to be trimmed, so trim now.
+    GraphTrimmer trimmer(temp_zone, data->graph());
+    NodeVector roots(temp_zone);
+    data->jsgraph()->GetCachedNodes(&roots);
+    trimmer.TrimGraph(roots.begin(), roots.end());
+
+    // Optimize allocations and load/store operations.
     MemoryOptimizer optimizer(data->jsgraph(), temp_zone);
     optimizer.Optimize();
   }
@@ -1463,6 +1483,11 @@ bool PipelineImpl::OptimizeGraph(Linkage* linkage) {
 
   Run<EffectControlLinearizationPhase>();
   RunPrintAndVerify("Effect and control linearized", true);
+
+  if (FLAG_turbo_store_elimination) {
+    Run<StoreStoreEliminationPhase>();
+    RunPrintAndVerify("Store-store elimination", true);
+  }
 
   Run<BranchEliminationPhase>();
   RunPrintAndVerify("Branch conditions eliminated", true);

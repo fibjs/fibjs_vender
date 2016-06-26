@@ -37,6 +37,23 @@ FeedbackVectorSlotKind TypeFeedbackMetadata::GetKind(
   return VectorICComputer::decode(data, slot.ToInt());
 }
 
+String* TypeFeedbackMetadata::GetName(FeedbackVectorSlot slot) const {
+  DCHECK(SlotRequiresName(GetKind(slot)));
+  FixedArray* names = FixedArray::cast(get(kNamesTableIndex));
+  // TODO(ishell): consider using binary search here or even Dictionary when we
+  // have more ICs with names.
+  Smi* key = Smi::FromInt(slot.ToInt());
+  for (int entry = 0; entry < names->length(); entry += kNameTableEntrySize) {
+    Object* current_key = names->get(entry + kNameTableSlotIndex);
+    if (current_key == key) {
+      Object* name = names->get(entry + kNameTableNameIndex);
+      DCHECK(name->IsString());
+      return String::cast(name);
+    }
+  }
+  UNREACHABLE();
+  return nullptr;
+}
 
 void TypeFeedbackMetadata::SetKind(FeedbackVectorSlot slot,
                                    FeedbackVectorSlotKind kind) {
@@ -57,12 +74,13 @@ template Handle<TypeFeedbackMetadata> TypeFeedbackMetadata::New(
 template <typename Spec>
 Handle<TypeFeedbackMetadata> TypeFeedbackMetadata::New(Isolate* isolate,
                                                        const Spec* spec) {
+  Factory* factory = isolate->factory();
+
   const int slot_count = spec->slots();
   const int slot_kinds_length = VectorICComputer::word_count(slot_count);
   const int length = slot_kinds_length + kReservedIndexCount;
   if (length == kReservedIndexCount) {
-    return Handle<TypeFeedbackMetadata>::cast(
-        isolate->factory()->empty_fixed_array());
+    return Handle<TypeFeedbackMetadata>::cast(factory->empty_fixed_array());
   }
 #ifdef DEBUG
   for (int i = 0; i < slot_count;) {
@@ -76,7 +94,7 @@ Handle<TypeFeedbackMetadata> TypeFeedbackMetadata::New(Isolate* isolate,
   }
 #endif
 
-  Handle<FixedArray> array = isolate->factory()->NewFixedArray(length, TENURED);
+  Handle<FixedArray> array = factory->NewFixedArray(length, TENURED);
   array->set(kSlotsCountIndex, Smi::FromInt(slot_count));
   // Fill the bit-vector part with zeros.
   for (int i = 0; i < slot_kinds_length; i++) {
@@ -85,9 +103,29 @@ Handle<TypeFeedbackMetadata> TypeFeedbackMetadata::New(Isolate* isolate,
 
   Handle<TypeFeedbackMetadata> metadata =
       Handle<TypeFeedbackMetadata>::cast(array);
+
+  // Add names to NamesTable.
+  const int name_count = spec->name_count();
+
+  Handle<FixedArray> names =
+      name_count == 0
+          ? factory->empty_fixed_array()
+          : factory->NewFixedArray(name_count * kNameTableEntrySize);
+  int name_index = 0;
   for (int i = 0; i < slot_count; i++) {
-    metadata->SetKind(FeedbackVectorSlot(i), spec->GetKind(i));
+    FeedbackVectorSlotKind kind = spec->GetKind(i);
+    metadata->SetKind(FeedbackVectorSlot(i), kind);
+    if (SlotRequiresName(kind)) {
+      Handle<String> name = spec->GetName(name_index);
+      DCHECK(!name.is_null());
+      int entry = name_index * kNameTableEntrySize;
+      names->set(entry + kNameTableSlotIndex, Smi::FromInt(i));
+      names->set(entry + kNameTableNameIndex, *name);
+      name_index++;
+    }
   }
+  DCHECK_EQ(name_count, name_index);
+  metadata->set(kNamesTableIndex, *names);
 
   // It's important that the TypeFeedbackMetadata have a COW map, since it's
   // pointed to by both a SharedFunctionInfo and indirectly by closures through
@@ -107,10 +145,24 @@ bool TypeFeedbackMetadata::SpecDiffersFrom(
   }
 
   int slots = slot_count();
-  for (int i = 0; i < slots; i++) {
-    if (GetKind(FeedbackVectorSlot(i)) != other_spec->GetKind(i)) {
+  int name_index = 0;
+  for (int i = 0; i < slots;) {
+    FeedbackVectorSlot slot(i);
+    FeedbackVectorSlotKind kind = GetKind(slot);
+    int entry_size = TypeFeedbackMetadata::GetSlotSize(kind);
+
+    if (kind != other_spec->GetKind(i)) {
       return true;
     }
+    if (SlotRequiresName(kind)) {
+      String* name = GetName(slot);
+      DCHECK(name != GetHeap()->empty_string());
+      String* other_name = *other_spec->GetName(name_index++);
+      if (name != other_name) {
+        return true;
+      }
+    }
+    i += entry_size;
   }
   return false;
 }
@@ -122,11 +174,19 @@ bool TypeFeedbackMetadata::DiffersFrom(
   }
 
   int slots = slot_count();
-  for (int i = 0; i < slots; i++) {
+  for (int i = 0; i < slots;) {
     FeedbackVectorSlot slot(i);
+    FeedbackVectorSlotKind kind = GetKind(slot);
+    int entry_size = TypeFeedbackMetadata::GetSlotSize(kind);
     if (GetKind(slot) != other_metadata->GetKind(slot)) {
       return true;
     }
+    if (SlotRequiresName(kind)) {
+      if (GetName(slot) != other_metadata->GetName(slot)) {
+        return true;
+      }
+    }
+    i += entry_size;
   }
   return false;
 }
@@ -162,6 +222,11 @@ FeedbackVectorSlotKind TypeFeedbackVector::GetKind(
   return metadata()->GetKind(slot);
 }
 
+String* TypeFeedbackVector::GetName(FeedbackVectorSlot slot) const {
+  DCHECK(!is_empty());
+  return metadata()->GetName(slot);
+}
+
 // static
 Handle<TypeFeedbackVector> TypeFeedbackVector::New(
     Isolate* isolate, Handle<TypeFeedbackMetadata> metadata) {
@@ -176,13 +241,29 @@ Handle<TypeFeedbackVector> TypeFeedbackVector::New(
   Handle<FixedArray> array = factory->NewFixedArray(length, TENURED);
   array->set(kMetadataIndex, *metadata);
 
+  DisallowHeapAllocation no_gc;
+
   // Ensure we can skip the write barrier
   Handle<Object> uninitialized_sentinel = UninitializedSentinel(isolate);
   DCHECK_EQ(*factory->uninitialized_symbol(), *uninitialized_sentinel);
-  for (int i = kReservedIndexCount; i < length; i++) {
-    array->set(i, *uninitialized_sentinel, SKIP_WRITE_BARRIER);
-  }
+  for (int i = 0; i < slot_count;) {
+    FeedbackVectorSlot slot(i);
+    FeedbackVectorSlotKind kind = metadata->GetKind(slot);
+    int index = TypeFeedbackVector::GetIndex(slot);
+    int entry_size = TypeFeedbackMetadata::GetSlotSize(kind);
 
+    Object* value;
+    if (kind == FeedbackVectorSlotKind::LOAD_GLOBAL_IC) {
+      value = *factory->empty_weak_cell();
+    } else {
+      value = *uninitialized_sentinel;
+    }
+    array->set(index, value, SKIP_WRITE_BARRIER);
+    for (int j = 1; j < entry_size; j++) {
+      array->set(index + j, *uninitialized_sentinel, SKIP_WRITE_BARRIER);
+    }
+    i += entry_size;
+  }
   return Handle<TypeFeedbackVector>::cast(array);
 }
 
@@ -448,21 +529,11 @@ InlineCacheState LoadGlobalICNexus::StateFromFeedback() const {
   Isolate* isolate = GetIsolate();
   Object* feedback = GetFeedback();
 
-  if (feedback == *TypeFeedbackVector::UninitializedSentinel(isolate)) {
-    return UNINITIALIZED;
-  } else if (feedback == *TypeFeedbackVector::MegamorphicSentinel(isolate)) {
-    return MEGAMORPHIC;
-  } else if (feedback == *TypeFeedbackVector::PremonomorphicSentinel(isolate)) {
-    return PREMONOMORPHIC;
-  } else if (feedback->IsFixedArray()) {
-    // Determine state purely by our structure, don't check if the maps are
-    // cleared.
-    return POLYMORPHIC;
-  } else if (feedback->IsWeakCell()) {
-    // Don't check if the map is cleared.
+  Object* extra = GetFeedbackExtra();
+  if (!WeakCell::cast(feedback)->cleared() ||
+      extra != *TypeFeedbackVector::UninitializedSentinel(isolate)) {
     return MONOMORPHIC;
   }
-
   return UNINITIALIZED;
 }
 
@@ -611,10 +682,22 @@ void LoadICNexus::ConfigureMonomorphic(Handle<Map> receiver_map,
   SetFeedbackExtra(*handler);
 }
 
-void LoadGlobalICNexus::ConfigureMonomorphic(Handle<Map> receiver_map,
-                                             Handle<Code> handler) {
-  Handle<WeakCell> cell = Map::WeakCellForMap(receiver_map);
-  SetFeedback(*cell);
+void LoadGlobalICNexus::ConfigureUninitialized() {
+  Isolate* isolate = GetIsolate();
+  SetFeedback(isolate->heap()->empty_weak_cell(), SKIP_WRITE_BARRIER);
+  SetFeedbackExtra(*TypeFeedbackVector::UninitializedSentinel(isolate),
+                   SKIP_WRITE_BARRIER);
+}
+
+void LoadGlobalICNexus::ConfigurePropertyCellMode(Handle<PropertyCell> cell) {
+  Isolate* isolate = GetIsolate();
+  SetFeedback(*isolate->factory()->NewWeakCell(cell));
+  SetFeedbackExtra(*TypeFeedbackVector::UninitializedSentinel(isolate),
+                   SKIP_WRITE_BARRIER);
+}
+
+void LoadGlobalICNexus::ConfigureHandlerMode(Handle<Code> handler) {
+  SetFeedback(GetIsolate()->heap()->empty_weak_cell());
   SetFeedbackExtra(*handler);
 }
 

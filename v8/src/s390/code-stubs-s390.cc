@@ -1039,7 +1039,6 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
     // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
-    __ positions_recorder()->WriteRecordedPositions();
     __ b(target);
     __ bind(&return_label);
     // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
@@ -3098,10 +3097,6 @@ void CompareICStub::GenerateMiss(MacroAssembler* masm) {
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
   __ CleanseP(r14);
 
-  // Statement positions are expected to be recorded when the target
-  // address is loaded.
-  __ positions_recorder()->WriteRecordedPositions();
-
   __ b(ip);  // Callee will return to R14 directly
 }
 
@@ -3555,13 +3550,13 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
 
 void LoadICTrampolineStub::Generate(MacroAssembler* masm) {
   __ EmitLoadTypeFeedbackVector(LoadWithVectorDescriptor::VectorRegister());
-  LoadICStub stub(isolate(), state());
+  LoadICStub stub(isolate());
   stub.GenerateForTrampoline(masm);
 }
 
 void KeyedLoadICTrampolineStub::Generate(MacroAssembler* masm) {
   __ EmitLoadTypeFeedbackVector(LoadWithVectorDescriptor::VectorRegister());
-  KeyedLoadICStub stub(isolate(), state());
+  KeyedLoadICStub stub(isolate());
   stub.GenerateForTrampoline(masm);
 }
 
@@ -5030,36 +5025,6 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   __ bind(&too_big_for_new_space);
   __ push(r3);
   __ TailCallRuntime(Runtime::kNewStrictArguments);
-}
-
-void LoadGlobalViaContextStub::Generate(MacroAssembler* masm) {
-  Register context = cp;
-  Register result = r2;
-  Register slot = r4;
-
-  // Go up the context chain to the script context.
-  for (int i = 0; i < depth(); ++i) {
-    __ LoadP(result, ContextMemOperand(context, Context::PREVIOUS_INDEX));
-    context = result;
-  }
-
-  // Load the PropertyCell value at the specified slot.
-  __ ShiftLeftP(r0, slot, Operand(kPointerSizeLog2));
-  __ AddP(result, context, r0);
-  __ LoadP(result, ContextMemOperand(result));
-  __ LoadP(result, FieldMemOperand(result, PropertyCell::kValueOffset));
-
-  // If the result is not the_hole, return. Otherwise, handle in the runtime.
-  __ CompareRoot(result, Heap::kTheHoleValueRootIndex);
-  Label runtime;
-  __ beq(&runtime);
-  __ Ret();
-  __ bind(&runtime);
-
-  // Fallback to runtime.
-  __ SmiTag(slot);
-  __ Push(slot);
-  __ TailCallRuntime(Runtime::kLoadGlobalViaContext);
 }
 
 void StoreGlobalViaContextStub::Generate(MacroAssembler* masm) {
