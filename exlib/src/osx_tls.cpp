@@ -8,7 +8,7 @@
 
 #include "osconfig.h"
 
-#ifdef MacOS
+#ifdef Darwin
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +40,7 @@ OSTls::OSTls()
 
         if (kernel_version_major < 11)
         {
-#if defined(I386)
+#if defined(i386)
             kMacTlsBaseOffset = 0x48;
 #else
             kMacTlsBaseOffset = 0x60;

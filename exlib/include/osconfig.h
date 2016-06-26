@@ -49,20 +49,20 @@
 # endif
 
 # if defined(macosx) || (defined(__APPLE__) && defined(__MACH__))
-#  ifndef MacOS
-#   define MacOS
+#  ifndef Darwin
+#   define Darwin
 #  endif
 # endif
 
 # if defined(i386) || defined(__i386__) || defined(_M_IX86) || defined(_X86_) || defined(x86)
-#  ifndef I386
-#   define I386
+#  ifndef i386
+#   define i386
 #  endif
 # endif
 
 # if defined(__amd64) || defined(__x86_64__) || defined(_M_X64)
-#  ifndef x64
-#   define x64
+#  ifndef amd64
+#   define amd64
 #  endif
 # endif
 

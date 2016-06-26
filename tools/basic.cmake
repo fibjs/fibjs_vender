@@ -1,12 +1,12 @@
-include(../tools/arch.cmake)
 include(../tools/os.cmake)
+include(../tools/arch.cmake)
 
 project(${name})
 
 file(GLOB_RECURSE src_list "src/*.c*")
 add_library(${name} ${src_list})
 
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../bin/${OS}_${BUILD_TYPE}/vender)
+SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../bin/${OS}_${ARCH}_${BUILD_TYPE})
 
 if(NOT flags)
 	set(flags " ")
@@ -24,25 +24,15 @@ if(${OS} STREQUAL "Darwin")
 	set(flags "${flags} -mmacosx-version-min=10.9")
 endif()
 
-if(${BUILD_TYPE} STREQUAL "Release32")
-	set(flags "${flags} -O3 -m32 -w -fomit-frame-pointer -fvisibility=hidden")
-	set(link_flags "${link_flags} -m32")
-	set(BUILD_TYPE "Release")
-endif()
-
-if(${BUILD_TYPE} STREQUAL "Debug32")
-	set(flags "${flags} -g -O0 -m32 -Wall")
-	set(link_flags "${link_flags} -m32")
-	set(BUILD_TYPE "Debug")
-endif()
-
-if(${BUILD_TYPE} STREQUAL "Release")
-	set(flags "${flags} -O3 -w -fomit-frame-pointer -fvisibility=hidden")
+if(${BUILD_TYPE} STREQUAL "release")
+	set(flags "${flags} -O3 ${BUILD_OPTION} -w -fomit-frame-pointer -fvisibility=hidden")
+	set(link_flags "${link_flags} ${BUILD_OPTION}")
 	add_definitions(-DNDEBUG=1)
 endif()
 
-if(${BUILD_TYPE} STREQUAL "Debug")
-	set(flags "${flags} -g -O0 -Wall")
+if(${BUILD_TYPE} STREQUAL "debug")
+	set(flags "${flags} -g -O0 ${BUILD_OPTION} -Wall")
+	set(link_flags "${link_flags} ${BUILD_OPTION}")
 	add_definitions(-DDEBUG=1)
 endif()
 

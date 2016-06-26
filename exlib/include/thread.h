@@ -19,7 +19,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
-#ifdef MacOS
+#ifdef Darwin
 #include <mach/mach_init.h>
 #include <mach/task.h>
 #include <mach/semaphore.h>
@@ -31,7 +31,7 @@
 #include "utils.h"
 #include "fiber.h"
 
-#ifdef MacOS
+#ifdef Darwin
 
 class OSTls
 {
@@ -48,7 +48,7 @@ public:
     {
         intptr_t result;
 
-#if defined(I386)
+#if defined(i386)
         asm("movl %%gs:(%1,%2,4), %0;"
             :"=r"(result)
             :"r"(kMacTlsBaseOffset), "r"(m_index));
@@ -305,7 +305,7 @@ public:
     pthread_mutex_t mutex_;
 };
 
-#ifdef MacOS
+#ifdef Darwin
 class OSSemaphore
 {
 public:

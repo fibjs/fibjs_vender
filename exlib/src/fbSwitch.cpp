@@ -1,6 +1,6 @@
 #include "osconfig.h"
 
-#if defined(_MSC_VER) && defined(I386)
+#if defined(_MSC_VER) && defined(i386)
 
 extern "C" void win_switch();
 extern "C" void win_save();
@@ -51,13 +51,13 @@ void __declspec(naked) win_save()
 
 #ifndef _WIN32
 
-#ifdef MacOS
+#ifdef Darwin
 asm(".section   __TEXT,__text");
 #else
 asm(".section   .text");
 #endif
 
-#if defined(x64)
+#if defined(amd64)
 
 asm(".globl nix_switch, _nix_switch");
 asm("nix_switch:");
@@ -113,7 +113,7 @@ asm("    movq    %r15,0x48(%rdi)");
 
 asm("    ret");
 
-#elif defined(I386)
+#elif defined(i386)
 
 asm(".globl nix_switch, _nix_switch");
 asm("nix_switch:");

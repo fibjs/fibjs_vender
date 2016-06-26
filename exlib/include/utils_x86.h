@@ -6,28 +6,28 @@
  *  lion@9465.net
  */
 
-#ifdef MacOS
+#ifdef Darwin
 #include <libkern/OSAtomic.h>
 #endif
 
 namespace exlib
 {
 
-#if defined(MacOS)
+#if defined(Darwin)
 inline void MemoryBarrier()
 {
-    OSMemoryBarrier();
+	OSMemoryBarrier();
 }
 #else
 inline void MemoryBarrier()
 {
-    __asm__ volatile("" : : : "memory");
+	__asm__ volatile("" : : : "memory");
 }
 #endif
 
 inline void yield()
 {
-    __asm__ volatile("pause");
+	__asm__ volatile("pause");
 }
 
 }

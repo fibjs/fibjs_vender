@@ -40,10 +40,10 @@
   <ItemGroup>
     <CustomBuild Include="src\fb_switch.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ml64 /c /Fo$(SolutionDir)out\Windows_Debug\fb_switch.obj src\fb_switch.asm</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ml64 /c /Fo$(SolutionDir)out\Windows_Release\fb_switch.obj src\fb_switch.asm</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)out\Windows_Debug\fb_switch.obj</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)out\Windows_Release\fb_switch.obj</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ml64 /c /Fo$(SolutionDir)out\Windows_amd64_debug\fb_switch.obj src\fb_switch.asm</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ml64 /c /Fo$(SolutionDir)out\Windows_amd64_release\fb_switch.obj src\fb_switch.asm</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)out\Windows_amd64_debug\fb_switch.obj</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)out\Windows_amd64_release\fb_switch.obj</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
@@ -112,20 +112,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)bin\Windows_Debug32\vender\</OutDir>
-    <IntDir>$(SolutionDir)out\Windows_Debug32\exlib\</IntDir>
+    <OutDir>$(SolutionDir)bin\Windows_i386_debug\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_i386_debug\exlib\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)bin\Windows_Release32\vender\</OutDir>
-    <IntDir>$(SolutionDir)out\Windows_Release32\exlib\</IntDir>
+    <OutDir>$(SolutionDir)bin\Windows_i386_release\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_i386_release\exlib\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)bin\Windows_Debug\vender\</OutDir>
-    <IntDir>$(SolutionDir)out\Windows_Debug\exlib\</IntDir>
+    <OutDir>$(SolutionDir)bin\Windows_amd64_debug\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_amd64_debug\exlib\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)bin\Windows_Release\vender\</OutDir>
-    <IntDir>$(SolutionDir)out\Windows_Release\exlib\</IntDir>
+    <OutDir>$(SolutionDir)bin\Windows_amd64_release\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_amd64_release\exlib\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

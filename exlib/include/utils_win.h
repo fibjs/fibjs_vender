@@ -11,25 +11,25 @@
 namespace exlib
 {
 
-#ifdef x64
+#ifdef amd64
 inline void MemoryBarrier()
 {
-    ::__faststorefence();
+	::__faststorefence();
 }
 #else
 inline void MemoryBarrier()
 {
-    LONG Barrier;
-    __asm
-    {
-        xchg Barrier, eax
-    }
+	LONG Barrier;
+	__asm
+	{
+		xchg Barrier, eax
+	}
 }
 #endif
 
 inline void yield()
 {
-    YieldProcessor();
+	YieldProcessor();
 }
 
 }

@@ -39,7 +39,7 @@ extern "C" void nix_save(void *now);
 class context
 {
 public:
-#if defined(x64)
+#if defined(amd64)
     union {
         intptr_t Rbp;
         intptr_t fp;
@@ -57,7 +57,7 @@ public:
         intptr_t Rsp;
         intptr_t sp;
     };
-#elif defined(I386)
+#elif defined(i386)
     union {
         intptr_t Ebp;
         intptr_t fp;

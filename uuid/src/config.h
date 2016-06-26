@@ -111,7 +111,7 @@
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #define HAVE_SYS_SOCKET_H 1
 
-#ifdef MacOS
+#ifdef Darwin
 
 /* Define to 1 if you have the `nsl' library (-lnsl). */
 //#define HAVE_LIBNSL 1

@@ -15,14 +15,16 @@
 
 #ifdef WIN32
 #include "utils_win.h"
-#elif defined(x64)
+#elif defined(amd64)
 #include "utils_x64.h"
-#elif defined(I386)
+#elif defined(i386)
 #include "utils_x86.h"
-#elif defined(arm)
-#include "utils_arm.h"
 #elif defined(arm64)
 #include "utils_arm64.h"
+#elif defined(arm)
+#include "utils_arm.h"
+#else
+#error unknoen arch....
 #endif
 
 namespace exlib

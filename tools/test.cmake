@@ -6,7 +6,7 @@ project(${name}_test)
 file(GLOB_RECURSE src_list "src/*.c*")
 add_executable(${name}_test ${src_list})
 
-set(BIN_DIR ${PROJECT_SOURCE_DIR}/../../../bin/${OS}_${BUILD_TYPE}/vender)
+set(BIN_DIR ${PROJECT_SOURCE_DIR}/../../../bin/${OS}_${ARCH}_${BUILD_TYPE})
 set(EXECUTABLE_OUTPUT_PATH ${BIN_DIR})
 
 if(NOT flags)
@@ -21,34 +21,8 @@ set(ccflags "${ccflags} -std=c++11")
 
 set(link_flags " ")
 
-if(${OS} STREQUAL "Darwin")
-	set(flags "${flags} -mmacosx-version-min=10.9")
-endif()
-
-if(${BUILD_TYPE} STREQUAL "Release32")
-	set(flags "${flags} -O3 -m32 -w -fomit-frame-pointer -fvisibility=hidden")
-	set(link_flags "${link_flags} -m32")
-	set(BUILD_TYPE "Release")
-endif()
-
-if(${BUILD_TYPE} STREQUAL "Debug32")
-	set(flags "${flags} -g -O0 -m32 -Wall")
-	set(link_flags "${link_flags} -m32")
-	set(BUILD_TYPE "Debug")
-endif()
-
-if(${BUILD_TYPE} STREQUAL "Release")
-	set(flags "${flags} -O3 -w -fomit-frame-pointer -fvisibility=hidden")
-	add_definitions(-DNDEBUG=1)
-endif()
-
-if(${BUILD_TYPE} STREQUAL "Debug")
-	set(flags "${flags} -g -O0 -Wall")
-	add_definitions(-DDEBUG=1)
-endif()
-
-set(CMAKE_C_FLAGS "${flags}")
-set(CMAKE_CXX_FLAGS "${flags} ${ccflags}")
+target_link_libraries(${name}_test "${BIN_DIR}/libgtest.a")
+target_link_libraries(${name}_test "${BIN_DIR}/lib${name}.a")
 
 if(libs)
 	foreach(lib ${libs})
@@ -56,13 +30,40 @@ if(libs)
 	endforeach()
 endif()
 
-target_link_libraries(${name}_test "${BIN_DIR}/lib${name}.a")
-target_link_libraries(${name}_test "${BIN_DIR}/libgtest.a")
-
-if(link_flags)
-	set_target_properties(${name}_test PROPERTIES LINK_FLAGS ${link_flags})
+if(${OS} STREQUAL "Darwin")
+	set(link_flags "${link_flags} -mmacosx-version-min=10.9")
+	set(flags "${flags} -mmacosx-version-min=10.9")
+	target_link_libraries(${name}_test dl iconv stdc++)
 endif()
+
+if(${OS} STREQUAL "Linux")
+	target_link_libraries(${name}_test dl rt)
+endif()
+
+if(${OS} STREQUAL "FreeBSD")
+	find_library(execinfo execinfo "/usr/local/lib" "/usr/lib")
+	target_link_libraries(${name}_test ${execinfo})
+endif()
+
+if(${BUILD_TYPE} STREQUAL "release")
+	set(flags "${flags} -O3 ${BUILD_OPTION} -w -fomit-frame-pointer -fvisibility=hidden")
+	set(link_flags "${link_flags} ${BUILD_OPTION}")
+	add_definitions(-DNDEBUG=1)
+endif()
+
+if(${BUILD_TYPE} STREQUAL "debug")
+	set(flags "${flags} -g -O0 ${BUILD_OPTION} -Wall")
+	set(link_flags "${link_flags} ${BUILD_OPTION}")
+	add_definitions(-DDEBUG=1)
+endif()
+
+set(CMAKE_C_FLAGS "${flags}")
+set(CMAKE_CXX_FLAGS "${flags} ${ccflags}")
 
 target_link_libraries(${name}_test pthread)
 
 include_directories(${PROJECT_SOURCE_DIR}/../ "${PROJECT_SOURCE_DIR}/../include" "${PROJECT_SOURCE_DIR}/../../" "/usr/local/include/")
+
+if(link_flags)
+	set_target_properties(${name}_test PROPERTIES LINK_FLAGS ${link_flags})
+endif()

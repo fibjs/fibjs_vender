@@ -96,20 +96,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)bin\Windows_Debug32\vender\</OutDir>
-    <IntDir>$(SolutionDir)out\Windows_Debug32\uuid\</IntDir>
+    <OutDir>$(SolutionDir)bin\Windows_i386_debug\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_i386_debug\uuid\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)bin\Windows_Release32\vender\</OutDir>
-    <IntDir>$(SolutionDir)out\Windows_Release32\uuid\</IntDir>
+    <OutDir>$(SolutionDir)bin\Windows_i386_release\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_i386_release\uuid\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)bin\Windows_Debug\vender\</OutDir>
-    <IntDir>$(SolutionDir)out\Windows_Debug\uuid\</IntDir>
+    <OutDir>$(SolutionDir)bin\Windows_amd64_debug\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_amd64_debug\uuid\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)bin\Windows_Release\vender\</OutDir>
-    <IntDir>$(SolutionDir)out\Windows_Release\uuid\</IntDir>
+    <OutDir>$(SolutionDir)bin\Windows_amd64_release\</OutDir>
+    <IntDir>$(SolutionDir)out\Windows_amd64_release\uuid\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

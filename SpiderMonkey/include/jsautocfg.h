@@ -3,7 +3,7 @@
 
 #include <exlib/include/osconfig.h>
 
-#if defined(x64)
+#if defined(amd64)
 
 #define IS_LITTLE_ENDIAN 1
 #undef  IS_BIG_ENDIAN
@@ -53,7 +53,7 @@
 
 #define JS_HAVE_LONG_LONG
 
-#elif defined(I386)
+#elif defined(i386)
 
 #define IS_LITTLE_ENDIAN 1
 #undef  IS_BIG_ENDIAN

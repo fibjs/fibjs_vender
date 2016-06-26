@@ -172,7 +172,7 @@ var plats1 = {
 	'aix': "#ifdef AIX",
 	'freebsd': "#ifdef FreeBSD",
 	'linux': "#ifdef Linux",
-	'macos': "#ifdef MacOS",
+	'macos': "#ifdef Darwin",
 	'openbsd': "#ifdef OpenBSD",
 	'solaris': "#ifdef Solaris",
 	'win32': "#ifdef Windows",
