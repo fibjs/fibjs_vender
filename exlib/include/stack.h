@@ -79,25 +79,14 @@ public:
     intptr_t r4;
     intptr_t r5;
     intptr_t r6;
-#ifdef __thumb2__
-    union {
-        intptr_t r7;
-        intptr_t fp;
-    };
-#else
     intptr_t r7;
-#endif
     intptr_t r8;
     intptr_t r9;
     intptr_t r10;
-#ifndef __thumb2__
     union {
         intptr_t r11;
         intptr_t fp;
     };
-#else
-    intptr_t r11;
-#endif
     intptr_t r12;
     union {
         intptr_t r13;
