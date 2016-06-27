@@ -133,6 +133,7 @@ winiconv
 mbedtls
 v8
 SpiderMonkey
+jssdk
 unzip
 editline"
 
