@@ -16,9 +16,7 @@ int main(int argc, char* argv[])
 	js::setup_SpiderMonkey();
 
 	exlib::Service::init(3);
-
 	exlib::Service::Create(fiber_proc, 0, 128 * 1024);
-
 	exlib::Service::dispatch();
 	return 0;
 }

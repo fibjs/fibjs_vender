@@ -14,12 +14,29 @@
 namespace js
 {
 
+class Value;
+class Locker;
+class Unlocker;
+class Scope;
+
 class Runtime
 {
 public:
 	virtual void destroy() = 0;
-	virtual void enter() = 0;
-	virtual void leave() = 0;
+
+	virtual void Locker_enter(Locker& locker) = 0;
+	virtual void Locker_leave(Locker& locker) = 0;
+
+	virtual void Unlocker_enter(Unlocker& unlocker) = 0;
+	virtual void Unlocker_leave(Unlocker& unlocker) = 0;
+
+	virtual void Scope_enter(Scope& scope) = 0;
+	virtual void Scope_leave(Scope& scope) = 0;
+
+	virtual Value NewNumberValue(double d) = 0;
+
+	virtual Value execute(const char* code, int32_t size, const char* soname) = 0;
+
 };
 
 class Api
@@ -32,6 +49,7 @@ public:
 	virtual int32_t getVersion() = 0;
 	virtual void init() = 0;
 	virtual Runtime* createRuntime() = 0;
+	virtual double ValueToNumber(Value& v) = 0;
 
 
 };

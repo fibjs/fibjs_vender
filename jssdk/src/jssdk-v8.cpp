@@ -44,32 +44,89 @@ public:
 		m_isolate = v8::Isolate::New(create_params);
 
 		v8::Locker locker(m_isolate);
-		v8::Isolate::Scope isolate_scope(m_isolate);
 		v8::HandleScope handle_scope(m_isolate);
+		v8::Isolate::Scope isolate_scope(m_isolate);
 
-		v8::Local<v8::Context> _context = v8::Context::New(m_isolate);
+		m_context.Reset(m_isolate, v8::Context::New(m_isolate));
 
-//		m_context.Reset(m_isolate, _context);
+		// v8::Number::New(m_isolate, 100);
 	}
 
 public:
-	virtual void destroy()
+	void destroy()
 	{
+		m_isolate->Dispose();
 		delete this;
 	}
 
-	virtual void enter()
+	void Locker_enter(Locker& locker)
 	{
-		m_isolate->Enter();
+		new (locker.m_locker) v8::Locker(m_isolate);
 	}
 
-	virtual void leave()
+	void Locker_leave(Locker& locker)
 	{
+		((v8::Locker*)locker.m_locker)->~Locker();
+	}
+
+	void Unlocker_enter(Unlocker& unlocker)
+	{
+		new (unlocker.m_unlocker) v8::Unlocker(m_isolate);
+	}
+
+	void Unlocker_leave(Unlocker& unlocker)
+	{
+		((v8::Unlocker*)unlocker.m_unlocker)->~Unlocker();
+	}
+
+	void Scope_enter(Scope& scope)
+	{
+		class HandleScope : public v8::HandleScope
+		{
+		public:
+			HandleScope(v8::Isolate *rt) : v8::HandleScope(rt)
+			{}
+
+		public:
+			static void *operator new(size_t, void * p)
+			{
+				return p;
+			}
+		};
+
+		new (scope.m_locker) v8::Locker(m_isolate);
+		new (scope.m_handle_scope) HandleScope(m_isolate);
+		m_isolate->Enter();
+		v8::Local<v8::Context>::New(m_isolate, m_context)->Enter();
+	}
+
+	void Scope_leave(Scope& scope)
+	{
+		v8::Local<v8::Context>::New(m_isolate, m_context)->Exit();
 		m_isolate->Exit();
+		((v8::HandleScope*)scope.m_handle_scope)->~HandleScope();
+		((v8::Locker*)scope.m_locker)->~Locker();
+	}
+
+	Value NewNumberValue(double d)
+	{
+		return Value(v8::Number::New(m_isolate, d));
+	}
+
+	Value execute(const char* code, int32_t size, const char* soname)
+	{
+		v8::Local<v8::Context> context = v8::Context::New(m_isolate);
+		v8::Local<v8::String> str = v8::String::NewFromUtf8(m_isolate,
+		                            code, v8::String::kNormalString, size);
+		v8::Local<v8::Script> script = v8::Script::Compile(str,
+		                               v8::String::NewFromUtf8(m_isolate, code));
+
+		return Value(script->Run(context).ToLocalChecked());
 	}
 
 private:
 	v8::Isolate *m_isolate;
+	v8::Persistent<v8::Context> m_context;
 
 	v8::Isolate::CreateParams create_params;
 	ShellArrayBufferAllocator array_buffer_allocator;
@@ -101,6 +158,10 @@ public:
 		return new v8_Runtime();
 	}
 
+	double ValueToNumber(Value& v)
+	{
+		return v.m_v->NumberValue();
+	}
 };
 
 static Api_v8 s_api;

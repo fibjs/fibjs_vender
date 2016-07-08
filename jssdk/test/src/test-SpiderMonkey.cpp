@@ -2,6 +2,6 @@
 
 #include "jssdk-SpiderMonkey.h"
 
-#define JS(n) SpiderMonkey_##n
+#define ENG(n) SpiderMonkey_##n
 
 #include "test-js.inl"

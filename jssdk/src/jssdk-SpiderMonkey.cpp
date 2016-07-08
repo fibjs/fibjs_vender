@@ -18,25 +18,75 @@ public:
 	{
 		m_rt = JS_NewRuntime(8L * 1024L * 1024L);
 		m_cx = JS_NewContext(m_rt, 8192);
+		JS_BeginRequest(m_cx);
+		m_global = JS_NewObject(m_cx, NULL, 0, 0);
+		JS_InitStandardClasses(m_cx, m_global);
 	}
 
 public:
-	virtual void destroy()
+	void destroy()
 	{
+		JS_EndRequest(m_cx);
+		JS_DestroyContext(m_cx);
+		JS_DestroyRuntime(m_rt);
 		delete this;
 	}
 
-	virtual void enter()
+	void Locker_enter(Locker& locker)
 	{
+
 	}
 
-	virtual void leave()
+	void Locker_leave(Locker& locker)
 	{
+
+	}
+
+	void Unlocker_enter(Unlocker& unlocker)
+	{
+
+	}
+
+	void Unlocker_leave(Unlocker& unlocker)
+	{
+
+	}
+
+	void Scope_enter(Scope& scope)
+	{
+
+	}
+
+	void Scope_leave(Scope& scope)
+	{
+
+	}
+
+	Value NewNumberValue(double d)
+	{
+		jsval v;
+		JS_NewNumberValue(m_cx, d, &v);
+		return Value(m_cx, v);
+	}
+
+	Value execute(const char* code, int32_t size, const char* soname)
+	{
+		jsval rval;
+		JSBool ok;
+
+		ok = JS_EvaluateScript(m_cx, m_global, code, size,
+		                       soname, 0, &rval);
+
+		if (ok)
+			return Value(m_cx, rval);
+
+		return Value();
 	}
 
 private:
 	JSRuntime *m_rt;
 	JSContext *m_cx;
+	JSObject *m_global;
 };
 
 class Api_SpiderMonkey : public Api
@@ -60,6 +110,13 @@ public:
 	virtual Runtime* createRuntime()
 	{
 		return new SpiderMonkey_Runtime();
+	}
+
+	double ValueToNumber(Value& v)
+	{
+		jsdouble d;
+		JS_ValueToNumber(v.m_cx, v.m_v, &d);
+		return d;
 	}
 
 };
