@@ -202,6 +202,7 @@ struct JSAtomState {
     JSAtom              *toStringAtom;
     JSAtom              *valueOfAtom;
     JSAtom              *void0Atom;
+    JSAtom              *toJSONAtom;
 
 #if JS_HAS_XML_SUPPORT
     JSAtom              *etagoAtom;
@@ -336,6 +337,7 @@ extern const char   js_toString_str[];
 extern const char   js_toLocaleString_str[];
 extern const char   js_undefined_str[];
 extern const char   js_valueOf_str[];
+extern const char   js_toJSON_str[];
 extern const char   js_xml_str[];
 
 #ifdef NARCISSUS

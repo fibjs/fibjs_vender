@@ -52,6 +52,7 @@
     <ClInclude Include="src\jsmath.h" />
     <ClInclude Include="src\jsnum.h" />
     <ClInclude Include="src\jsobj.h" />
+    <ClInclude Include="src\json.h" />
     <ClInclude Include="src\jsopcode.h" />
     <ClInclude Include="src\jsparse.h" />
     <ClInclude Include="src\jsprf.h" />
@@ -97,6 +98,7 @@
     <ClCompile Include="src\jsmath.c" />
     <ClCompile Include="src\jsnum.c" />
     <ClCompile Include="src\jsobj.c" />
+    <ClCompile Include="src\json.cpp" />
     <ClCompile Include="src\jsopcode.c" />
     <ClCompile Include="src\jsparse.c" />
     <ClCompile Include="src\jsprf.c" />

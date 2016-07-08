@@ -110,6 +110,9 @@
     <ClInclude Include="src\jsobj.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\json.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\jsopcode.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -235,6 +238,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\jsobj.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\json.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\jsopcode.c">
