@@ -17,11 +17,24 @@ TEST(ENG(api), Runtime)
 	EXPECT_NE((void*)NULL, rt);
 }
 
+TEST(ENG(api), Value_Boolean)
+{
+	js::Scope scope(rt);
+
+	js::Value v = js::_api->NewBoolean(rt, true);
+
+	EXPECT_EQ(true, v.toBoolean());
+
+	js::Value v1 = js::_api->NewBoolean(rt, false);
+
+	EXPECT_EQ(false, v1.toBoolean());
+}
+
 TEST(ENG(api), Value_Number)
 {
 	js::Scope scope(rt);
 
-	js::Value v = rt->NewNumberValue(100.5);
+	js::Value v = js::_api->NewNumber(rt, 100.5);
 
 	EXPECT_EQ(100.5, v.toNumber());
 }
@@ -39,9 +52,9 @@ TEST(ENG(api), json)
 {
 	js::Scope scope(rt);
 
-	js::Value v = rt->execute("JSON.parse(\'{\"a\":100}\')", 23, "test.js");
+	js::Value v = rt->execute("!!JSON", 6, "test.js");
 
-	EXPECT_EQ(100, v.toNumber());
+	EXPECT_EQ(true, v.toBoolean());
 }
 
 TEST(ENG(api), DestroyRuntime)

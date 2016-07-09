@@ -108,11 +108,6 @@ public:
 		((v8::Locker*)scope.m_locker)->~Locker();
 	}
 
-	Value NewNumberValue(double d)
-	{
-		return Value(v8::Number::New(m_isolate, d));
-	}
-
 	Value execute(const char* code, int32_t size, const char* soname)
 	{
 		v8::Local<v8::Context> context = v8::Context::New(m_isolate);
@@ -130,6 +125,8 @@ private:
 
 	v8::Isolate::CreateParams create_params;
 	ShellArrayBufferAllocator array_buffer_allocator;
+
+	friend class Api_v8;
 };
 
 class Api_v8 : public Api
@@ -156,6 +153,22 @@ public:
 	virtual Runtime* createRuntime()
 	{
 		return new v8_Runtime();
+	}
+
+	Value NewBoolean(Runtime* rt, bool b)
+	{
+		return Value(b ? v8::True(((v8_Runtime*)rt)->m_isolate) :
+		             v8::False(((v8_Runtime*)rt)->m_isolate));
+	}
+
+	bool ValueToBoolean(Value& v)
+	{
+		return v.m_v->BooleanValue();
+	}
+
+	Value NewNumber(Runtime* rt, double d)
+	{
+		return Value(v8::Number::New(((v8_Runtime*)rt)->m_isolate, d));
 	}
 
 	double ValueToNumber(Value& v)

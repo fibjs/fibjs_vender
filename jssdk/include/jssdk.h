@@ -33,8 +33,6 @@ public:
 	virtual void Scope_enter(Scope& scope) = 0;
 	virtual void Scope_leave(Scope& scope) = 0;
 
-	virtual Value NewNumberValue(double d) = 0;
-
 	virtual Value execute(const char* code, int32_t size, const char* soname) = 0;
 
 };
@@ -49,9 +47,12 @@ public:
 	virtual int32_t getVersion() = 0;
 	virtual void init() = 0;
 	virtual Runtime* createRuntime() = 0;
+
+	virtual Value NewBoolean(Runtime* rt, bool b) = 0;
+	virtual bool ValueToBoolean(Value& v) = 0;
+
+	virtual Value NewNumber(Runtime* rt, double d) = 0;
 	virtual double ValueToNumber(Value& v) = 0;
-
-
 };
 
 extern Api* v8_api;

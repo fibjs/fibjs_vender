@@ -96,6 +96,11 @@ public:
 	}
 
 public:
+	bool toBoolean()
+	{
+		return _api->ValueToBoolean(*this);
+	}
+
 	double toNumber()
 	{
 		return _api->ValueToNumber(*this);

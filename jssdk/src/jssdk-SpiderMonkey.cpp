@@ -62,13 +62,6 @@ public:
 
 	}
 
-	Value NewNumberValue(double d)
-	{
-		jsval v;
-		JS_NewNumberValue(m_cx, d, &v);
-		return Value(m_cx, v);
-	}
-
 	Value execute(const char* code, int32_t size, const char* soname)
 	{
 		jsval rval;
@@ -87,6 +80,8 @@ private:
 	JSRuntime *m_rt;
 	JSContext *m_cx;
 	JSObject *m_global;
+
+	friend class Api_SpiderMonkey;
 };
 
 class Api_SpiderMonkey : public Api
@@ -110,6 +105,26 @@ public:
 	virtual Runtime* createRuntime()
 	{
 		return new SpiderMonkey_Runtime();
+	}
+
+	Value NewBoolean(Runtime* rt, bool b)
+	{
+		return Value(((SpiderMonkey_Runtime*)rt)->m_cx,
+		             b ? JSVAL_TRUE : JSVAL_FALSE);
+	}
+
+	bool ValueToBoolean(Value& v)
+	{
+		JSBool d;
+		JS_ValueToBoolean(v.m_cx, v.m_v, &d);
+		return d;
+	}
+
+	Value NewNumber(Runtime* rt, double d)
+	{
+		jsval v;
+		JS_NewNumberValue(((SpiderMonkey_Runtime*)rt)->m_cx, d, &v);
+		return Value(((SpiderMonkey_Runtime*)rt)->m_cx, v);
 	}
 
 	double ValueToNumber(Value& v)
