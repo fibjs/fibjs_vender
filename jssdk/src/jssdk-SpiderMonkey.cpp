@@ -115,9 +115,9 @@ public:
 
 	bool ValueToBoolean(Value& v)
 	{
-		JSBool d;
-		JS_ValueToBoolean(v.m_cx, v.m_v, &d);
-		return d;
+		JSBool b;
+		JS_ValueToBoolean(v.m_cx, v.m_v, &b);
+		return b ? true : false;
 	}
 
 	Value NewNumber(Runtime* rt, double d)
