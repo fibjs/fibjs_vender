@@ -514,16 +514,15 @@ public:
 
 inline void InitOnce(intptr_t* once, void (*initializer)())
 {
-    std::atomic_intptr_t& _once = *(std::atomic_intptr_t*)once;
-    intptr_t tst = 0;
-    if (_once.compare_exchange_strong(tst, 1))
+    intptr_t state = CompareAndSwap(once, 0, 1);
+    if (state == 0)
     {
         initializer();
-        _once = 2;
+        *once = 2;
     }
-    else
+    else if (state == 1)
     {
-        while (_once.load() != 2)
+        while (*once != 2)
             OSThread::sleep(0);
     }
 }

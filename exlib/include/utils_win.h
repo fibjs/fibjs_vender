@@ -32,4 +32,47 @@ inline void yield()
 	YieldProcessor();
 }
 
+intptr_t CompareAndSwap(volatile intptr_t *ptr, intptr_t old_value, intptr_t new_value);
+
+void *_CompareAndSwap(void *volatile *ptr, void *old_value, void *new_value);
+
+template<typename T>
+inline T *CompareAndSwap(T *volatile *ptr, T *old_value, T *new_value)
+{
+	void *result = _CompareAndSwap((void *volatile *)ptr, (void *)old_value, (void *)new_value);
+	return (T *)result;
+}
+
+inline void *CompareAndSwap(void *volatile *ptr, void *old_value, void *new_value)
+{
+	return _CompareAndSwap(ptr, old_value, new_value);
+}
+
+void *_atom_xchg(void *volatile *ptr, void *new_value);
+
+template<typename T>
+inline T *atom_xchg(T *volatile *ptr, T *new_value)
+{
+	void *result = _atom_xchg((void *volatile *)ptr, (void *)new_value);
+	return (T *)result;
+}
+
+inline void *atom_xchg(void *volatile *ptr, void *new_value)
+{
+	return _atom_xchg(ptr, new_value);
+}
+
+intptr_t atom_add(volatile intptr_t *dest, intptr_t incr);
+intptr_t atom_inc(volatile intptr_t *dest);
+intptr_t atom_dec(volatile intptr_t *dest);
+intptr_t atom_xchg(volatile intptr_t *ptr, intptr_t new_value);
+
+#ifdef amd64
+int32_t CompareAndSwap(volatile int32_t *ptr, int32_t old_value, int32_t new_value);
+int32_t atom_add(volatile int32_t *dest, int32_t incr);
+int32_t atom_inc(volatile int32_t *dest);
+int32_t atom_dec(volatile int32_t *dest);
+int32_t atom_xchg(volatile int32_t *ptr, int32_t new_value);
+#endif
+
 }

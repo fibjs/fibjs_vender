@@ -55,6 +55,7 @@
     <ClCompile Include="src\fbService.cpp" />
     <ClCompile Include="src\fbSwitch.cpp" />
     <ClCompile Include="src\fbTls.cpp" />
+    <ClCompile Include="src\fbUtils.cpp" />
     <ClCompile Include="src\pratom.cpp" />
     <ClCompile Include="src\prcvar.cpp" />
     <ClCompile Include="src\prlock.cpp" />

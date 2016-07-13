@@ -92,6 +92,9 @@
     <ClCompile Include="src\fbTls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\fbUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\thread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

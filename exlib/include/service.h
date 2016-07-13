@@ -34,7 +34,7 @@ public:
     {
         m_main.saveStackGuard();
 
-        m_master->m_idleWorkers--;
+        m_master->m_idleWorkers.dec();
         dispatch_loop();
     }
 
@@ -70,18 +70,18 @@ public:
 
         Fiber* fb;
 
-        m_idleWorkers++;
+        m_idleWorkers.inc();
 
         m_sem.Wait();
         fb = m_resumeList.getHead();
 
-        if (--m_idleWorkers == 0 && m_workers > 0)
+        if (m_idleWorkers.dec() == 0 && m_workers > 0)
         {
-            if (--m_workers < 0)
-                m_workers++;
+            if (m_workers.dec() < 0)
+                m_workers.inc();
             else
             {
-                m_idleWorkers++;
+                m_idleWorkers.inc();
                 Service* worker = new Service();
                 worker->start();
             }
@@ -137,8 +137,8 @@ private:
     Fiber *m_running;
     switchConextCallback* m_cb;
 
-    std::atomic_intptr_t m_workers;
-    std::atomic_intptr_t m_idleWorkers;
+    exlib::atomic m_workers;
+    exlib::atomic m_idleWorkers;
     LockedList<Fiber> m_resumeList;
     OSSemaphore m_sem;
 };

@@ -30,28 +30,145 @@
 namespace exlib
 {
 
-class spinlock
+class atomic
 {
 public:
-	spinlock()
+	atomic() : m_v(0)
 	{
-		m_atom.clear(std::memory_order_release);
+	}
+
+	atomic(intptr_t new_value) : m_v(new_value)
+	{
+	}
+
+	atomic(const atomic &new_value) : m_v(new_value.m_v)
+	{
 	}
 
 public:
+	intptr_t operator=(intptr_t new_value)
+	{
+		xchg(new_value);
+		return new_value;
+	}
+
+	intptr_t operator=(const atomic &new_value)
+	{
+		intptr_t v = new_value.m_v;
+
+		xchg(v);
+		return v;
+	}
+
+	operator intptr_t () const
+	{
+		return m_v;
+	}
+
+	intptr_t value() const
+	{
+		return m_v;
+	}
+
+	intptr_t CompareAndSwap(intptr_t old_value, intptr_t new_value)
+	{
+		return exlib::CompareAndSwap(&m_v, old_value, new_value);
+	}
+
+	inline intptr_t add(intptr_t incr)
+	{
+		return atom_add(&m_v, incr);
+	}
+
+	inline intptr_t xchg(intptr_t new_value)
+	{
+		return atom_xchg(&m_v, new_value);
+	}
+
+	inline intptr_t inc()
+	{
+		return add(1);
+	}
+
+	inline intptr_t dec()
+	{
+		return add(-1);
+	}
+
+private:
+	volatile intptr_t m_v;
+};
+
+template<class T>
+class atomic_ptr
+{
+public:
+	atomic_ptr() : m_v(0)
+	{}
+
+	atomic_ptr(T* new_value) : m_v(new_value)
+	{
+	}
+
+	atomic_ptr(const atomic_ptr &new_value) : m_v(new_value.m_v)
+	{
+	}
+
+public:
+	T* operator=(T* new_value)
+	{
+		atom_xchg(&m_v, new_value);
+		return new_value;
+	}
+
+	T* operator=(const atomic_ptr &new_value)
+	{
+		T* v = new_value.m_v;
+
+		atom_xchg(&m_v, v);
+		return v;
+	}
+
+	operator T* () const
+	{
+		return m_v;
+	}
+
+	T* value() const
+	{
+		return m_v;
+	}
+
+	T* CompareAndSwap(T* old_value, T* new_value)
+	{
+		return exlib::CompareAndSwap(&m_v, old_value, new_value);
+	}
+
+	inline T* xchg(T* new_value)
+	{
+		return atom_xchg(&m_v, new_value);
+	}
+
+private:
+	T *volatile m_v;
+};
+
+class spinlock
+{
+public:
 	void lock()
 	{
-		while (m_atom.test_and_set(std::memory_order_acquire))
+		while (m_atom.CompareAndSwap(0, -1))
 			yield();
 	}
 
 	void unlock()
 	{
-		m_atom.clear(std::memory_order_release);
+		m_atom.xchg(0);
 	}
 
 private:
-	std::atomic_flag m_atom;
+	atomic m_atom;
 };
 
 }
