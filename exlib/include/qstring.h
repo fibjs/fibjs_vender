@@ -98,12 +98,14 @@ template<typename T>
 class basic_string
 {
 private:
+#pragma pack(1)
 	struct buffer
 	{
 		atomic refs_;
 		size_t blk_size;
 		T data[1];
 	};
+#pragma pack()
 
 	void unref()
 	{
@@ -188,7 +190,7 @@ public:
 				return m_small_data;
 			} else
 			{
-				size_t blk_size = (sz + 16) & (SIZE_MAX - 15);
+				size_t blk_size = (sz + 15) & (SIZE_MAX - 15);
 				buffer* _buffer = (buffer*)malloc(blk_size * sizeof(T) + sizeof(buffer));
 
 				_buffer->refs_ = 1;
@@ -218,18 +220,14 @@ public:
 			unref();
 			m_length = 0;
 			m_small_data[0] = 0;
-		} else if (sz < MAX_SMALL)
+		} else if (sz < MAX_SMALL && m_buffer == 0)
 		{
 			m_length = sz;
-
-			if (m_buffer)
-				m_buffer->data[sz] = 0;
-			else
-				m_small_data[sz] = 0;
+			m_small_data[sz] = 0;
 		}
 		else
 		{
-			size_t blk_size = (sz + 16) & (SIZE_MAX - 15);
+			size_t blk_size = (sz + 15) & (SIZE_MAX - 15);
 			size_t sz1 = m_length;
 
 			if (sz1 == 0)
