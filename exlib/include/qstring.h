@@ -563,6 +563,15 @@ bool operator!=(const basic_string<T>& lhs,
 	return lhs.compare(rhs) != 0;
 }
 
+#ifdef _WIN32
+typedef wchar_t wchar;
+#else
+typedef uint16_t wchar;
+#endif
+
+typedef basic_string<char> string;
+typedef basic_string<wchar> wstring;
+
 }
 
 #endif
