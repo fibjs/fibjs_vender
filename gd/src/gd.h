@@ -54,6 +54,8 @@ extern "C" {
 
 #define BGD_DECLARE(rt) BGD_EXPORT_DATA_PROT rt BGD_STDCALL
 
+#include <stdio.h>
+
 /* VS2012+ disable keyword macroizing unless _ALLOW_KEYWORD_MACROS is set
    We define inline, snprintf, and strcasecmp if they're missing 
 */
@@ -87,7 +89,6 @@ extern "C" {
  * documentation. */
 
 /* stdio is needed for file I/O. */
-#include <stdio.h>
 #include <stdarg.h>
 #include "gd_io.h"
 
