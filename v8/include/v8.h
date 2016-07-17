@@ -3259,6 +3259,7 @@ class PropertyCallbackInfo {
 
 typedef void (*FunctionCallback)(const FunctionCallbackInfo<Value>& info);
 
+enum class ConstructorBehavior { kThrow, kAllow };
 
 /**
  * A JavaScript function object (ECMA-262, 15.3).
@@ -3269,10 +3270,10 @@ class V8_EXPORT Function : public Object {
    * Create a function in the current execution context
    * for a given FunctionCallback.
    */
-  static MaybeLocal<Function> New(Local<Context> context,
-                                  FunctionCallback callback,
-                                  Local<Value> data = Local<Value>(),
-                                  int length = 0);
+  static MaybeLocal<Function> New(
+      Local<Context> context, FunctionCallback callback,
+      Local<Value> data = Local<Value>(), int length = 0,
+      ConstructorBehavior behavior = ConstructorBehavior::kAllow);
   static V8_DEPRECATE_SOON(
       "Use maybe version",
       Local<Function> New(Isolate* isolate, FunctionCallback callback,
@@ -3487,8 +3488,6 @@ class V8_EXPORT ArrayBuffer : public Object {
    *
    * Note that it is unsafe to call back into V8 from any of the allocator
    * functions.
-   *
-   * This API is experimental and may change significantly.
    */
   class V8_EXPORT Allocator { // NOLINT
    public:
@@ -3505,11 +3504,19 @@ class V8_EXPORT ArrayBuffer : public Object {
      * Memory does not have to be initialized.
      */
     virtual void* AllocateUninitialized(size_t length) = 0;
+
     /**
      * Free the memory block of size |length|, pointed to by |data|.
      * That memory is guaranteed to be previously allocated by |Allocate|.
      */
     virtual void Free(void* data, size_t length) = 0;
+
+    /**
+     * malloc/free based convenience allocator.
+     *
+     * Caller takes ownership.
+     */
+    static Allocator* NewDefaultAllocator();
   };
 
   /**
@@ -4411,17 +4418,21 @@ typedef bool (*AccessCheckCallback)(Local<Context> accessing_context,
  * The following example shows how to use a FunctionTemplate:
  *
  * \code
- *    v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New();
- *    t->Set("func_property", v8::Number::New(1));
+ *    v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate);
+ *    t->Set(isolate, "func_property", v8::Number::New(isolate, 1));
  *
  *    v8::Local<v8::Template> proto_t = t->PrototypeTemplate();
- *    proto_t->Set("proto_method", v8::FunctionTemplate::New(InvokeCallback));
- *    proto_t->Set("proto_const", v8::Number::New(2));
+ *    proto_t->Set(isolate,
+ *                 "proto_method",
+ *                 v8::FunctionTemplate::New(isolate, InvokeCallback));
+ *    proto_t->Set(isolate, "proto_const", v8::Number::New(isolate, 2));
  *
  *    v8::Local<v8::ObjectTemplate> instance_t = t->InstanceTemplate();
- *    instance_t->SetAccessor("instance_accessor", InstanceAccessorCallback);
- *    instance_t->SetNamedPropertyHandler(PropertyHandlerCallback, ...);
- *    instance_t->Set("instance_property", Number::New(3));
+ *    instance_t->SetAccessor(String::NewFromUtf8(isolate, "instance_accessor"),
+ *                            InstanceAccessorCallback);
+ *    instance_t->SetNamedPropertyHandler(PropertyHandlerCallback);
+ *    instance_t->Set(String::NewFromUtf8(isolate, "instance_property"),
+ *                    Number::New(isolate, 3));
  *
  *    v8::Local<v8::Function> function = t->GetFunction();
  *    v8::Local<v8::Object> instance = function->NewInstance();
@@ -4487,10 +4498,12 @@ class V8_EXPORT FunctionTemplate : public Template {
   static Local<FunctionTemplate> New(
       Isolate* isolate, FunctionCallback callback = 0,
       Local<Value> data = Local<Value>(),
-      Local<Signature> signature = Local<Signature>(), int length = 0);
+      Local<Signature> signature = Local<Signature>(), int length = 0,
+      ConstructorBehavior behavior = ConstructorBehavior::kAllow);
 
   /** Get a template included in the snapshot by index. */
-  static Local<FunctionTemplate> FromSnapshot(Isolate* isolate, size_t index);
+  static MaybeLocal<FunctionTemplate> FromSnapshot(Isolate* isolate,
+                                                   size_t index);
 
   /**
    * Creates a function template with a fast handler. If a fast handler is set,
@@ -4668,7 +4681,8 @@ class V8_EXPORT ObjectTemplate : public Template {
   static V8_DEPRECATED("Use isolate version", Local<ObjectTemplate> New());
 
   /** Get a template included in the snapshot by index. */
-  static Local<ObjectTemplate> FromSnapshot(Isolate* isolate, size_t index);
+  static MaybeLocal<ObjectTemplate> FromSnapshot(Isolate* isolate,
+                                                 size_t index);
 
   /** Creates a new instance of this template.*/
   V8_DEPRECATE_SOON("Use maybe version", Local<Object> NewInstance());
@@ -4800,6 +4814,19 @@ class V8_EXPORT ObjectTemplate : public Template {
    */
   void SetAccessCheckCallback(AccessCheckCallback callback,
                               Local<Value> data = Local<Value>());
+
+  /**
+   * Like SetAccessCheckCallback but invokes an interceptor on failed access
+   * checks instead of looking up all-can-read properties. You can only use
+   * either this method or SetAccessCheckCallback, but not both at the same
+   * time.
+   */
+  void SetAccessCheckCallbackAndHandler(
+      AccessCheckCallback callback,
+      const NamedPropertyHandlerConfiguration& named_handler,
+      const IndexedPropertyHandlerConfiguration& indexed_handler,
+      Local<Value> data = Local<Value>());
+
   /**
    * Gets the number of internal fields for objects generated from
    * this template.
@@ -4811,6 +4838,17 @@ class V8_EXPORT ObjectTemplate : public Template {
    * this template.
    */
   void SetInternalFieldCount(int value);
+
+  /**
+   * Returns true if the object will be an immutable prototype exotic object.
+   */
+  bool IsImmutableProto();
+
+  /**
+   * Makes the ObjectTempate for an immutable prototype exotic object, with an
+   * immutable __proto__.
+   */
+  void SetImmutableProto();
 
  private:
   ObjectTemplate();
@@ -4978,6 +5016,7 @@ class V8_EXPORT ResourceConstraints {
 
 typedef void (*FatalErrorCallback)(const char* location, const char* message);
 
+typedef void (*OOMErrorCallback)(const char* location, bool is_heap_oom);
 
 typedef void (*MessageCallback)(Local<Message> message, Local<Value> error);
 
@@ -5363,16 +5402,13 @@ struct JitCodeEvent {
  * profile/evaluate-performance/rail
  */
 enum RAILMode {
-  // Default performance mode: V8 will optimize for both latency and
-  // throughput in this mode.
-  PERFORMANCE_DEFAULT,
   // Response performance mode: In this mode very low virtual machine latency
   // is provided. V8 will try to avoid JavaScript execution interruptions.
   // Throughput may be throttled.
   PERFORMANCE_RESPONSE,
   // Animation performance mode: In this mode low virtual machine latency is
   // provided. V8 will try to avoid as many JavaScript execution interruptions
-  // as possible. Throughput may be throttled
+  // as possible. Throughput may be throttled. This is the default mode.
   PERFORMANCE_ANIMATION,
   // Idle performance mode: The embedder is idle. V8 can complete deferred work
   // in this mode.
@@ -5700,6 +5736,7 @@ class V8_EXPORT Isolate {
     kRegExpPrototypeOldFlagGetter = 31,
     kDecimalWithLeadingZeroInStrictMode = 32,
     kLegacyDateParser = 33,
+    kDefineGetterOrSetterWouldThrow = 34,
 
     // If you add new values here, you'll also need to update Chromium's:
     // UseCounter.h, V8PerIsolateData.cpp, histograms.xml
@@ -5900,7 +5937,8 @@ class V8_EXPORT Isolate {
    * is initialized. It is the embedder's responsibility to stop all CPU
    * profiling activities if it has started any.
    */
-  CpuProfiler* GetCpuProfiler();
+  V8_DEPRECATE_SOON("CpuProfiler should be created with CpuProfiler::New call.",
+                    CpuProfiler* GetCpuProfiler());
 
   /** Returns true if this isolate has a current context. */
   bool InContext();
@@ -6291,6 +6329,9 @@ class V8_EXPORT Isolate {
 
   /** Set the callback to invoke in case of fatal errors. */
   void SetFatalErrorHandler(FatalErrorCallback that);
+
+  /** Set the callback to invoke in case of OOM errors. */
+  void SetOOMErrorHandler(OOMErrorCallback that);
 
   /**
    * Set the callback to invoke to check if code generation from
@@ -7126,9 +7167,35 @@ class V8_EXPORT Context {
    */
   static Local<Context> New(
       Isolate* isolate, ExtensionConfiguration* extensions = NULL,
-      Local<ObjectTemplate> global_template = Local<ObjectTemplate>(),
-      Local<Value> global_object = Local<Value>(),
-      size_t context_snapshot_index = 0);
+      MaybeLocal<ObjectTemplate> global_template = MaybeLocal<ObjectTemplate>(),
+      MaybeLocal<Value> global_object = MaybeLocal<Value>());
+
+  static MaybeLocal<Context> FromSnapshot(
+      Isolate* isolate, size_t context_snapshot_index,
+      ExtensionConfiguration* extensions = nullptr,
+      MaybeLocal<ObjectTemplate> global_template = MaybeLocal<ObjectTemplate>(),
+      MaybeLocal<Value> global_object = MaybeLocal<Value>());
+
+  /**
+   * Returns an global object that isn't backed by an actual context.
+   *
+   * The global template needs to have access checks with handlers installed.
+   * If an existing global object is passed in, the global object is detached
+   * from its context.
+   *
+   * Note that this is different from a detached context where all accesses to
+   * the global proxy will fail. Instead, the access check handlers are invoked.
+   *
+   * It is also not possible to detach an object returned by this method.
+   * Instead, the access check handlers need to return nothing to achieve the
+   * same effect.
+   *
+   * It is possible, however, to create a new context from the global object
+   * returned by this method.
+   */
+  static MaybeLocal<Object> NewRemoteContext(
+      Isolate* isolate, Local<ObjectTemplate> global_template,
+      MaybeLocal<Value> global_object = MaybeLocal<Value>());
 
   /**
    * Sets the security token for the context.  To access an object in
@@ -8811,7 +8878,6 @@ void V8::SetFatalErrorHandler(FatalErrorCallback callback) {
   Isolate* isolate = Isolate::GetCurrent();
   isolate->SetFatalErrorHandler(callback);
 }
-
 
 void V8::RemoveGCPrologueCallback(GCCallback callback) {
   Isolate* isolate = Isolate::GetCurrent();

@@ -47,7 +47,6 @@ MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size,
   }
 }
 
-
 void MacroAssembler::Load(Register dst,
                           const MemOperand& src,
                           Representation r) {
@@ -83,7 +82,6 @@ void MacroAssembler::Store(Register src,
     sw(src, dst);
   }
 }
-
 
 void MacroAssembler::LoadRoot(Register destination,
                               Heap::RootListIndex index) {
@@ -1208,6 +1206,79 @@ void MacroAssembler::Lsa(Register rd, Register rt, Register rs, uint8_t sa,
 
 // ------------Pseudo-instructions-------------
 
+// Word Swap Byte
+void MacroAssembler::ByteSwapSigned(Register reg, int operand_size) {
+  DCHECK(operand_size == 1 || operand_size == 2 || operand_size == 4);
+  if (IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) {
+    if (operand_size == 2) {
+      seh(reg, reg);
+    } else if (operand_size == 1) {
+      seb(reg, reg);
+    }
+    // No need to do any preparation if operand_size is 4
+
+    wsbh(reg, reg);
+    rotr(reg, reg, 16);
+  } else if (IsMipsArchVariant(kMips32r1) || IsMipsArchVariant(kLoongson)) {
+    if (operand_size == 1) {
+      sll(reg, reg, 24);
+      sra(reg, reg, 24);
+    } else if (operand_size == 2) {
+      sll(reg, reg, 16);
+      sra(reg, reg, 16);
+    }
+    // No need to do any preparation if operand_size is 4
+
+    Register tmp = t0;
+    Register tmp2 = t1;
+
+    andi(tmp2, reg, 0xFF);
+    sll(tmp2, tmp2, 24);
+    or_(tmp, zero_reg, tmp2);
+
+    andi(tmp2, reg, 0xFF00);
+    sll(tmp2, tmp2, 8);
+    or_(tmp, tmp, tmp2);
+
+    srl(reg, reg, 8);
+    andi(tmp2, reg, 0xFF00);
+    or_(tmp, tmp, tmp2);
+
+    srl(reg, reg, 16);
+    andi(tmp2, reg, 0xFF);
+    or_(tmp, tmp, tmp2);
+
+    or_(reg, tmp, zero_reg);
+  }
+}
+
+void MacroAssembler::ByteSwapUnsigned(Register reg, int operand_size) {
+  DCHECK(operand_size == 1 || operand_size == 2);
+
+  if (IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) {
+    if (operand_size == 1) {
+      andi(reg, reg, 0xFF);
+    } else {
+      andi(reg, reg, 0xFFFF);
+    }
+    // No need to do any preparation if operand_size is 4
+
+    wsbh(reg, reg);
+    rotr(reg, reg, 16);
+  } else if (IsMipsArchVariant(kMips32r1) || IsMipsArchVariant(kLoongson)) {
+    if (operand_size == 1) {
+      sll(reg, reg, 24);
+    } else {
+      Register tmp = t0;
+
+      andi(tmp, reg, 0xFF00);
+      sll(reg, reg, 24);
+      sll(tmp, tmp, 8);
+      or_(reg, tmp, reg);
+    }
+  }
+}
+
 void MacroAssembler::Ulw(Register rd, const MemOperand& rs) {
   DCHECK(!rd.is(at));
   DCHECK(!rs.rm().is(at));
@@ -1406,19 +1477,7 @@ void MacroAssembler::Usdc1(FPURegister fd, const MemOperand& rs,
 
 
 void MacroAssembler::li(Register dst, Handle<Object> value, LiFlags mode) {
-  AllowDeferredHandleDereference smi_check;
-  if (value->IsSmi()) {
-    li(dst, Operand(value), mode);
-  } else {
-    DCHECK(value->IsHeapObject());
-    if (isolate()->heap()->InNewSpace(*value)) {
-      Handle<Cell> cell = isolate()->factory()->NewCell(value);
-      li(dst, Operand(cell));
-      lw(dst, FieldMemOperand(dst, Cell::kValueOffset));
-    } else {
-      li(dst, Operand(value));
-    }
-  }
+  li(dst, Operand(value), mode);
 }
 
 
@@ -2249,13 +2308,11 @@ void MacroAssembler::Move(FPURegister dst, float imm) {
 
 
 void MacroAssembler::Move(FPURegister dst, double imm) {
-  static const DoubleRepresentation minus_zero(-0.0);
-  static const DoubleRepresentation zero(0.0);
-  DoubleRepresentation value_rep(imm);
+  int64_t imm_bits = bit_cast<int64_t>(imm);
   // Handle special values first.
-  if (value_rep == zero && has_double_zero_reg_set_) {
+  if (imm_bits == bit_cast<int64_t>(0.0) && has_double_zero_reg_set_) {
     mov_d(dst, kDoubleRegZero);
-  } else if (value_rep == minus_zero && has_double_zero_reg_set_) {
+  } else if (imm_bits == bit_cast<int64_t>(-0.0) && has_double_zero_reg_set_) {
     neg_d(dst, kDoubleRegZero);
   } else {
     uint32_t lo, hi;
@@ -5545,6 +5602,62 @@ void MacroAssembler::SubBranchOvf(Register dst, Register left, Register right,
   BranchOvfHelper(this, overflow_dst, overflow_label, no_overflow_label);
 }
 
+static inline void BranchOvfHelperMult(MacroAssembler* masm,
+                                       Register overflow_dst,
+                                       Label* overflow_label,
+                                       Label* no_overflow_label) {
+  DCHECK(overflow_label || no_overflow_label);
+  if (!overflow_label) {
+    DCHECK(no_overflow_label);
+    masm->Branch(no_overflow_label, eq, overflow_dst, Operand(zero_reg));
+  } else {
+    masm->Branch(overflow_label, ne, overflow_dst, Operand(zero_reg));
+    if (no_overflow_label) masm->Branch(no_overflow_label);
+  }
+}
+
+void MacroAssembler::MulBranchOvf(Register dst, Register left,
+                                  const Operand& right, Label* overflow_label,
+                                  Label* no_overflow_label, Register scratch) {
+  DCHECK(overflow_label || no_overflow_label);
+  if (right.is_reg()) {
+    MulBranchOvf(dst, left, right.rm(), overflow_label, no_overflow_label,
+                 scratch);
+  } else {
+    Register overflow_dst = t9;
+    DCHECK(!dst.is(scratch));
+    DCHECK(!dst.is(overflow_dst));
+    DCHECK(!scratch.is(overflow_dst));
+    DCHECK(!left.is(overflow_dst));
+    DCHECK(!left.is(scratch));
+
+    Mul(overflow_dst, dst, left, right.immediate());
+    sra(scratch, dst, 31);
+    xor_(overflow_dst, overflow_dst, scratch);
+
+    BranchOvfHelperMult(this, overflow_dst, overflow_label, no_overflow_label);
+  }
+}
+
+void MacroAssembler::MulBranchOvf(Register dst, Register left, Register right,
+                                  Label* overflow_label,
+                                  Label* no_overflow_label, Register scratch) {
+  DCHECK(overflow_label || no_overflow_label);
+  Register overflow_dst = t9;
+  DCHECK(!dst.is(scratch));
+  DCHECK(!dst.is(overflow_dst));
+  DCHECK(!scratch.is(overflow_dst));
+  DCHECK(!overflow_dst.is(left));
+  DCHECK(!overflow_dst.is(right));
+  DCHECK(!scratch.is(left));
+  DCHECK(!scratch.is(right));
+
+  Mul(overflow_dst, dst, left, right);
+  sra(scratch, dst, 31);
+  xor_(overflow_dst, overflow_dst, scratch);
+
+  BranchOvfHelperMult(this, overflow_dst, overflow_label, no_overflow_label);
+}
 
 void MacroAssembler::CallRuntime(const Runtime::Function* f, int num_arguments,
                                  SaveFPRegsMode save_doubles,
@@ -5587,11 +5700,12 @@ void MacroAssembler::TailCallRuntime(Runtime::FunctionId fid) {
   JumpToExternalReference(ExternalReference(fid, isolate()));
 }
 
-
 void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
-                                             BranchDelaySlot bd) {
+                                             BranchDelaySlot bd,
+                                             bool builtin_exit_frame) {
   PrepareCEntryFunction(builtin);
-  CEntryStub stub(isolate(), 1);
+  CEntryStub stub(isolate(), 1, kDontSaveFPRegs, kArgvOnStack,
+                  builtin_exit_frame);
   Jump(stub.GetCode(),
        RelocInfo::CODE_TARGET,
        al,
@@ -5599,7 +5713,6 @@ void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
        Operand(zero_reg),
        bd);
 }
-
 
 void MacroAssembler::SetCounter(StatsCounter* counter, int value,
                                 Register scratch1, Register scratch2) {
@@ -5855,7 +5968,24 @@ void MacroAssembler::LeaveFrame(StackFrame::Type type) {
   lw(fp, MemOperand(fp, 0 * kPointerSize));
 }
 
-void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
+void MacroAssembler::EnterBuiltinFrame(Register context, Register target,
+                                       Register argc) {
+  Push(ra, fp);
+  Move(fp, sp);
+  Push(context, target, argc);
+}
+
+void MacroAssembler::LeaveBuiltinFrame(Register context, Register target,
+                                       Register argc) {
+  Pop(context, target, argc);
+  Pop(ra, fp);
+}
+
+void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
+                                    StackFrame::Type frame_type) {
+  DCHECK(frame_type == StackFrame::EXIT ||
+         frame_type == StackFrame::BUILTIN_EXIT);
+
   // Set up the frame structure on the stack.
   STATIC_ASSERT(2 * kPointerSize == ExitFrameConstants::kCallerSPDisplacement);
   STATIC_ASSERT(1 * kPointerSize == ExitFrameConstants::kCallerPCOffset);
@@ -5875,7 +6005,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   addiu(sp, sp, -2 * kPointerSize - ExitFrameConstants::kFixedFrameSizeFromFp);
   sw(ra, MemOperand(sp, 4 * kPointerSize));
   sw(fp, MemOperand(sp, 3 * kPointerSize));
-  li(at, Operand(Smi::FromInt(StackFrame::EXIT)));
+  li(at, Operand(Smi::FromInt(frame_type)));
   sw(at, MemOperand(sp, 2 * kPointerSize));
   // Set up new frame pointer.
   addiu(fp, sp, ExitFrameConstants::kFixedFrameSizeFromFp);
@@ -6723,8 +6853,7 @@ Register GetRegisterThatIsNotOneOf(Register reg1,
   if (reg5.is_valid()) regs |= reg5.bit();
   if (reg6.is_valid()) regs |= reg6.bit();
 
-  const RegisterConfiguration* config =
-      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
+  const RegisterConfiguration* config = RegisterConfiguration::Crankshaft();
   for (int i = 0; i < config->num_allocatable_general_registers(); ++i) {
     int code = config->GetAllocatableGeneralCode(i);
     Register candidate = Register::from_code(code);

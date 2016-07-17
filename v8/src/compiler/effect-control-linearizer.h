@@ -43,7 +43,6 @@ class EffectControlLinearizer {
 
   bool TryWireInStateEffect(Node* node, Node* frame_state, Node** effect,
                             Node** control);
-  ValueEffectControl LowerTypeGuard(Node* node, Node* effect, Node* control);
   ValueEffectControl LowerChangeBitToTagged(Node* node, Node* effect,
                                             Node* control);
   ValueEffectControl LowerChangeInt31ToTaggedSigned(Node* node, Node* effect,
@@ -64,6 +63,10 @@ class EffectControlLinearizer {
                                                Node* control);
   ValueEffectControl LowerCheckBounds(Node* node, Node* frame_state,
                                       Node* effect, Node* control);
+  ValueEffectControl LowerCheckNumber(Node* node, Node* frame_state,
+                                      Node* effect, Node* control);
+  ValueEffectControl LowerCheckIf(Node* node, Node* frame_state, Node* effect,
+                                  Node* control);
   ValueEffectControl LowerCheckTaggedPointer(Node* node, Node* frame_state,
                                              Node* effect, Node* control);
   ValueEffectControl LowerCheckTaggedSigned(Node* node, Node* frame_state,
@@ -71,6 +74,16 @@ class EffectControlLinearizer {
   ValueEffectControl LowerCheckedInt32Add(Node* node, Node* frame_state,
                                           Node* effect, Node* control);
   ValueEffectControl LowerCheckedInt32Sub(Node* node, Node* frame_state,
+                                          Node* effect, Node* control);
+  ValueEffectControl LowerCheckedInt32Div(Node* node, Node* frame_state,
+                                          Node* effect, Node* control);
+  ValueEffectControl LowerCheckedInt32Mod(Node* node, Node* frame_state,
+                                          Node* effect, Node* control);
+  ValueEffectControl LowerCheckedUint32Div(Node* node, Node* frame_state,
+                                           Node* effect, Node* control);
+  ValueEffectControl LowerCheckedUint32Mod(Node* node, Node* frame_state,
+                                           Node* effect, Node* control);
+  ValueEffectControl LowerCheckedInt32Mul(Node* node, Node* frame_state,
                                           Node* effect, Node* control);
   ValueEffectControl LowerCheckedUint32ToInt32(Node* node, Node* frame_state,
                                                Node* effect, Node* control);

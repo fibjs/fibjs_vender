@@ -207,6 +207,11 @@ RUNTIME_FUNCTION(Runtime_NewSyntaxError) {
   return *isolate->factory()->NewSyntaxError(message_template, arg0);
 }
 
+RUNTIME_FUNCTION(Runtime_ThrowCannotConvertToPrimitive) {
+  HandleScope scope(isolate);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kCannotConvertToPrimitive));
+}
 
 RUNTIME_FUNCTION(Runtime_ThrowIllegalInvocation) {
   HandleScope scope(isolate);
@@ -225,6 +230,12 @@ RUNTIME_FUNCTION(Runtime_ThrowIncompatibleMethodReceiver) {
       NewTypeError(MessageTemplate::kIncompatibleMethodReceiver, arg0, arg1));
 }
 
+RUNTIME_FUNCTION(Runtime_ThrowInvalidStringLength) {
+  HandleScope scope(isolate);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewRangeError(MessageTemplate::kInvalidStringLength));
+}
+
 RUNTIME_FUNCTION(Runtime_ThrowIteratorResultNotAnObject) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
@@ -232,6 +243,14 @@ RUNTIME_FUNCTION(Runtime_ThrowIteratorResultNotAnObject) {
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate,
       NewTypeError(MessageTemplate::kIteratorResultNotAnObject, value));
+}
+
+RUNTIME_FUNCTION(Runtime_ThrowNotGeneric) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, arg0, 0);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kNotGeneric, arg0));
 }
 
 RUNTIME_FUNCTION(Runtime_ThrowGeneratorRunning) {

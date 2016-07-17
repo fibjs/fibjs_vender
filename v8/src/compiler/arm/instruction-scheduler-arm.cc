@@ -34,6 +34,7 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArmMla:
     case kArmMls:
     case kArmSmmul:
+    case kArmSmull:
     case kArmSmmla:
     case kArmUmull:
     case kArmSdiv:

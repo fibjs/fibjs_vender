@@ -174,19 +174,7 @@ void MacroAssembler::Push(Handle<Object> handle) {
 }
 
 void MacroAssembler::Move(Register dst, Handle<Object> value) {
-  AllowDeferredHandleDereference smi_check;
-  if (value->IsSmi()) {
-    LoadSmiLiteral(dst, reinterpret_cast<Smi*>(*value));
-  } else {
-    DCHECK(value->IsHeapObject());
-    if (isolate()->heap()->InNewSpace(*value)) {
-      Handle<Cell> cell = isolate()->factory()->NewCell(value);
-      mov(dst, Operand(cell));
-      LoadP(dst, FieldMemOperand(dst, Cell::kValueOffset));
-    } else {
-      mov(dst, Operand(value));
-    }
-  }
+  mov(dst, Operand(value));
 }
 
 void MacroAssembler::Move(Register dst, Register src, Condition cond) {
@@ -641,8 +629,7 @@ MemOperand MacroAssembler::SafepointRegisterSlot(Register reg) {
 
 MemOperand MacroAssembler::SafepointRegistersAndDoublesSlot(Register reg) {
   // General purpose registers are pushed last on the stack.
-  const RegisterConfiguration* config =
-      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
+  const RegisterConfiguration* config = RegisterConfiguration::Crankshaft();
   int doubles_size = config->num_allocatable_double_registers() * kDoubleSize;
   int register_offset = SafepointRegisterStackIndex(reg.code()) * kPointerSize;
   return MemOperand(sp, doubles_size + register_offset);
@@ -1017,6 +1004,20 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type, int stack_adjustment) {
   return frame_ends;
 }
 
+void MacroAssembler::EnterBuiltinFrame(Register context, Register target,
+                                       Register argc) {
+  CleanseP(r14);
+  Push(r14, fp, context, target);
+  la(fp, MemOperand(sp, 2 * kPointerSize));
+  Push(argc);
+}
+
+void MacroAssembler::LeaveBuiltinFrame(Register context, Register target,
+                                       Register argc) {
+  Pop(argc);
+  Pop(r14, fp, context, target);
+}
+
 // ExitFrame layout (probably wrongish.. needs updating)
 //
 //  SP -> previousSP
@@ -1041,7 +1042,10 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type, int stack_adjustment) {
 // gaps
 // Args
 // ABIRes <- newSP
-void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
+void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
+                                    StackFrame::Type frame_type) {
+  DCHECK(frame_type == StackFrame::EXIT ||
+         frame_type == StackFrame::BUILTIN_EXIT);
   // Set up the frame structure on the stack.
   DCHECK_EQ(2 * kPointerSize, ExitFrameConstants::kCallerSPDisplacement);
   DCHECK_EQ(1 * kPointerSize, ExitFrameConstants::kCallerPCOffset);
@@ -1052,7 +1056,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // all of the pushes that have happened inside of V8
   // since we were called from C code
   CleanseP(r14);
-  LoadSmiLiteral(r1, Smi::FromInt(StackFrame::EXIT));
+  LoadSmiLiteral(r1, Smi::FromInt(frame_type));
   PushCommonFrame(r1);
   // Reserve room for saved entry sp and code object.
   lay(sp, MemOperand(fp, -ExitFrameConstants::kFixedFrameSizeFromFp));
@@ -2631,9 +2635,11 @@ void MacroAssembler::TailCallRuntime(Runtime::FunctionId fid) {
   JumpToExternalReference(ExternalReference(fid, isolate()));
 }
 
-void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin) {
+void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
+                                             bool builtin_exit_frame) {
   mov(r3, Operand(builtin));
-  CEntryStub stub(isolate(), 1);
+  CEntryStub stub(isolate(), 1, kDontSaveFPRegs, kArgvOnStack,
+                  builtin_exit_frame);
   Jump(stub.GetCode(), RelocInfo::CODE_TARGET);
 }
 
@@ -3701,8 +3707,7 @@ Register GetRegisterThatIsNotOneOf(Register reg1, Register reg2, Register reg3,
   if (reg5.is_valid()) regs |= reg5.bit();
   if (reg6.is_valid()) regs |= reg6.bit();
 
-  const RegisterConfiguration* config =
-      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
+  const RegisterConfiguration* config = RegisterConfiguration::Crankshaft();
   for (int i = 0; i < config->num_allocatable_general_registers(); ++i) {
     int code = config->GetAllocatableGeneralCode(i);
     Register candidate = Register::from_code(code);

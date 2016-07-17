@@ -64,39 +64,6 @@ Instruction* GetLastInstruction(InstructionSequence* code,
   return code->InstructionAt(block->last_instruction_index());
 }
 
-bool IsOutputRegisterOf(Instruction* instr, int code) {
-  for (size_t i = 0; i < instr->OutputCount(); i++) {
-    InstructionOperand* output = instr->OutputAt(i);
-    if (output->IsRegister() &&
-        LocationOperand::cast(output)->register_code() == code) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool IsOutputFPRegisterOf(Instruction* instr, MachineRepresentation rep,
-                          int code) {
-  for (size_t i = 0; i < instr->OutputCount(); i++) {
-    InstructionOperand* output = instr->OutputAt(i);
-    if (output->IsFPRegister()) {
-      const LocationOperand* op = LocationOperand::cast(output);
-      const RegisterConfiguration* config =
-          RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN);
-      if (config->fp_aliasing_kind() != RegisterConfiguration::COMBINE) {
-        if (op->register_code() == code) return true;
-      } else {
-        if (config->AreAliases(op->representation(), op->register_code(), rep,
-                               code)) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-
 // TODO(dcarney): fix frame to allow frame accesses to half size location.
 int GetByteWidth(MachineRepresentation rep) {
   switch (rep) {
@@ -105,8 +72,8 @@ int GetByteWidth(MachineRepresentation rep) {
     case MachineRepresentation::kWord16:
     case MachineRepresentation::kWord32:
     case MachineRepresentation::kTagged:
-      return kPointerSize;
     case MachineRepresentation::kFloat32:
+      return kPointerSize;
     case MachineRepresentation::kWord64:
     case MachineRepresentation::kFloat64:
       return 8;
@@ -824,9 +791,7 @@ void LiveRange::Print(const RegisterConfiguration* config,
 
 
 void LiveRange::Print(bool with_children) const {
-  const RegisterConfiguration* config =
-      RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN);
-  Print(config, with_children);
+  Print(RegisterConfiguration::Turbofan(), with_children);
 }
 
 
@@ -1226,12 +1191,10 @@ std::ostream& operator<<(std::ostream& os,
   return os;
 }
 
-
 SpillRange::SpillRange(TopLevelLiveRange* parent, Zone* zone)
     : live_ranges_(zone),
       assigned_slot_(kUnassignedSlot),
-      byte_width_(GetByteWidth(parent->representation())),
-      kind_(parent->kind()) {
+      byte_width_(GetByteWidth(parent->representation())) {
   // Spill ranges are created for top level, non-splintered ranges. This is so
   // that, when merging decisions are made, we consider the full extent of the
   // virtual register, and avoid clobbering it.
@@ -1270,11 +1233,8 @@ bool SpillRange::IsIntersectingWith(SpillRange* other) const {
 
 bool SpillRange::TryMerge(SpillRange* other) {
   if (HasSlot() || other->HasSlot()) return false;
-  // TODO(dcarney): byte widths should be compared here not kinds.
-  if (live_ranges_[0]->kind() != other->live_ranges_[0]->kind() ||
-      IsIntersectingWith(other)) {
+  if (byte_width() != other->byte_width() || IsIntersectingWith(other))
     return false;
-  }
 
   LifetimePosition max = LifetimePosition::MaxPosition();
   if (End() < other->End() && other->End() != max) {
@@ -1379,6 +1339,8 @@ RegisterAllocationData::RegisterAllocationData(
                                allocation_zone()),
       fixed_double_live_ranges_(this->config()->num_double_registers(), nullptr,
                                 allocation_zone()),
+      fixed_simd128_live_ranges_(this->config()->num_simd128_registers(),
+                                 nullptr, allocation_zone()),
       spill_ranges_(code->VirtualRegisterCount(), nullptr, allocation_zone()),
       delayed_references_(allocation_zone()),
       assigned_registers_(nullptr),
@@ -1556,10 +1518,14 @@ void RegisterAllocationData::MarkAllocated(MachineRepresentation rep,
                                            int index) {
   switch (rep) {
     case MachineRepresentation::kFloat32:
-      if (config()->fp_aliasing_kind() == RegisterConfiguration::COMBINE) {
+    case MachineRepresentation::kSimd128:
+      if (kSimpleFPAliasing) {
+        assigned_double_registers_->Add(index);
+      } else {
         int alias_base_index = -1;
         int aliases = config()->GetAliases(
             rep, index, MachineRepresentation::kFloat64, &alias_base_index);
+        DCHECK(aliases > 0 || (aliases == 0 && alias_base_index == -1));
         while (aliases--) {
           int aliased_reg = alias_base_index + aliases;
           assigned_double_registers_->Add(aliased_reg);
@@ -1890,17 +1856,22 @@ void LiveRangeBuilder::AddInitialIntervals(const InstructionBlock* block,
 }
 
 int LiveRangeBuilder::FixedFPLiveRangeID(int index, MachineRepresentation rep) {
+  int result = -index - 1;
   switch (rep) {
+    case MachineRepresentation::kSimd128:
+      result -= config()->num_float_registers();
+    // Fall through.
     case MachineRepresentation::kFloat32:
-      return -index - 1 - config()->num_general_registers();
+      result -= config()->num_double_registers();
+    // Fall through.
     case MachineRepresentation::kFloat64:
-      return -index - 1 - config()->num_general_registers() -
-             config()->num_float_registers();
+      result -= config()->num_general_registers();
+      break;
     default:
+      UNREACHABLE();
       break;
   }
-  UNREACHABLE();
-  return 0;
+  return result;
 }
 
 TopLevelLiveRange* LiveRangeBuilder::FixedLiveRangeFor(int index) {
@@ -1920,27 +1891,44 @@ TopLevelLiveRange* LiveRangeBuilder::FixedLiveRangeFor(int index) {
 TopLevelLiveRange* LiveRangeBuilder::FixedFPLiveRangeFor(
     int index, MachineRepresentation rep) {
   TopLevelLiveRange* result = nullptr;
-  if (rep == MachineRepresentation::kFloat64) {
-    DCHECK(index < config()->num_double_registers());
-    result = data()->fixed_double_live_ranges()[index];
-    if (result == nullptr) {
-      result = data()->NewLiveRange(FixedFPLiveRangeID(index, rep), rep);
-      DCHECK(result->IsFixed());
-      result->set_assigned_register(index);
-      data()->MarkAllocated(rep, index);
-      data()->fixed_double_live_ranges()[index] = result;
-    }
-  } else {
-    DCHECK(rep == MachineRepresentation::kFloat32);
-    DCHECK(index < config()->num_float_registers());
-    result = data()->fixed_float_live_ranges()[index];
-    if (result == nullptr) {
-      result = data()->NewLiveRange(FixedFPLiveRangeID(index, rep), rep);
-      DCHECK(result->IsFixed());
-      result->set_assigned_register(index);
-      data()->MarkAllocated(rep, index);
-      data()->fixed_float_live_ranges()[index] = result;
-    }
+  switch (rep) {
+    case MachineRepresentation::kFloat32:
+      DCHECK(rep == MachineRepresentation::kFloat32);
+      DCHECK(index < config()->num_float_registers());
+      result = data()->fixed_float_live_ranges()[index];
+      if (result == nullptr) {
+        result = data()->NewLiveRange(FixedFPLiveRangeID(index, rep), rep);
+        DCHECK(result->IsFixed());
+        result->set_assigned_register(index);
+        data()->MarkAllocated(rep, index);
+        data()->fixed_float_live_ranges()[index] = result;
+      }
+      break;
+    case MachineRepresentation::kFloat64:
+      DCHECK(index < config()->num_double_registers());
+      result = data()->fixed_double_live_ranges()[index];
+      if (result == nullptr) {
+        result = data()->NewLiveRange(FixedFPLiveRangeID(index, rep), rep);
+        DCHECK(result->IsFixed());
+        result->set_assigned_register(index);
+        data()->MarkAllocated(rep, index);
+        data()->fixed_double_live_ranges()[index] = result;
+      }
+      break;
+    case MachineRepresentation::kSimd128:
+      DCHECK(index < config()->num_simd128_registers());
+      result = data()->fixed_simd128_live_ranges()[index];
+      if (result == nullptr) {
+        result = data()->NewLiveRange(FixedFPLiveRangeID(index, rep), rep);
+        DCHECK(result->IsFixed());
+        result->set_assigned_register(index);
+        data()->MarkAllocated(rep, index);
+        data()->fixed_simd128_live_ranges()[index] = result;
+      }
+      break;
+    default:
+      UNREACHABLE();
+      break;
   }
   return result;
 }
@@ -2052,32 +2040,43 @@ void LiveRangeBuilder::ProcessInstructions(const InstructionBlock* block,
 
     if (instr->ClobbersRegisters()) {
       for (int i = 0; i < config()->num_allocatable_general_registers(); ++i) {
+        // Create a UseInterval at this instruction for all fixed registers,
+        // (including the instruction outputs). Adding another UseInterval here
+        // is OK because AddUseInterval will just merge it with the existing
+        // one at the end of the range.
         int code = config()->GetAllocatableGeneralCode(i);
-        if (!IsOutputRegisterOf(instr, code)) {
-          TopLevelLiveRange* range = FixedLiveRangeFor(code);
-          range->AddUseInterval(curr_position, curr_position.End(),
-                                allocation_zone());
-        }
+        TopLevelLiveRange* range = FixedLiveRangeFor(code);
+        range->AddUseInterval(curr_position, curr_position.End(),
+                              allocation_zone());
       }
     }
 
     if (instr->ClobbersDoubleRegisters()) {
       for (int i = 0; i < config()->num_allocatable_double_registers(); ++i) {
+        // Add a UseInterval for all DoubleRegisters. See comment above for
+        // general registers.
         int code = config()->GetAllocatableDoubleCode(i);
-        if (!IsOutputFPRegisterOf(instr, MachineRepresentation::kFloat64,
-                                  code)) {
+        TopLevelLiveRange* range =
+            FixedFPLiveRangeFor(code, MachineRepresentation::kFloat64);
+        range->AddUseInterval(curr_position, curr_position.End(),
+                              allocation_zone());
+      }
+      // Preserve fixed float registers on archs with non-simple aliasing.
+      if (!kSimpleFPAliasing) {
+        for (int i = 0; i < config()->num_allocatable_float_registers(); ++i) {
+          // Add a UseInterval for all FloatRegisters. See comment above for
+          // general registers.
+          int code = config()->GetAllocatableFloatCode(i);
           TopLevelLiveRange* range =
-              FixedFPLiveRangeFor(code, MachineRepresentation::kFloat64);
+              FixedFPLiveRangeFor(code, MachineRepresentation::kFloat32);
           range->AddUseInterval(curr_position, curr_position.End(),
                                 allocation_zone());
         }
-      }
-      for (int i = 0; i < config()->num_allocatable_float_registers(); ++i) {
-        int code = config()->GetAllocatableFloatCode(i);
-        if (!IsOutputFPRegisterOf(instr, MachineRepresentation::kFloat32,
-                                  code)) {
+        for (int i = 0; i < config()->num_allocatable_simd128_registers();
+             ++i) {
+          int code = config()->GetAllocatableSimd128Code(i);
           TopLevelLiveRange* range =
-              FixedFPLiveRangeFor(code, MachineRepresentation::kFloat32);
+              FixedFPLiveRangeFor(code, MachineRepresentation::kSimd128);
           range->AddUseInterval(curr_position, curr_position.End(),
                                 allocation_zone());
         }
@@ -2424,10 +2423,7 @@ RegisterAllocator::RegisterAllocator(RegisterAllocationData* data,
       num_allocatable_registers_(
           GetAllocatableRegisterCount(data->config(), kind)),
       allocatable_register_codes_(
-          GetAllocatableRegisterCodes(data->config(), kind)),
-      no_combining_(kind != FP_REGISTERS ||
-                    data->config()->fp_aliasing_kind() !=
-                        RegisterConfiguration::COMBINE) {}
+          GetAllocatableRegisterCodes(data->config(), kind)) {}
 
 LifetimePosition RegisterAllocator::GetSplitPositionForInstruction(
     const LiveRange* range, int instruction_index) {
@@ -2820,15 +2816,22 @@ void LinearScanAllocator::InactiveToActive(LiveRange* range) {
 
 
 bool LinearScanAllocator::TryAllocateFreeReg(LiveRange* current) {
+  MachineRepresentation rep = current->representation();
   int num_regs = num_registers();
   int num_codes = num_allocatable_registers();
   const int* codes = allocatable_register_codes();
-  if (!no_combining() &&
-      (current->representation() == MachineRepresentation::kFloat32)) {
-    num_regs = data()->config()->num_float_registers();
-    num_codes = data()->config()->num_allocatable_float_registers();
-    codes = data()->config()->allocatable_float_codes();
+  if (!kSimpleFPAliasing) {
+    if (rep == MachineRepresentation::kFloat32) {
+      num_regs = data()->config()->num_float_registers();
+      num_codes = data()->config()->num_allocatable_float_registers();
+      codes = data()->config()->allocatable_float_codes();
+    } else if (rep == MachineRepresentation::kSimd128) {
+      num_regs = data()->config()->num_simd128_registers();
+      num_codes = data()->config()->num_allocatable_simd128_registers();
+      codes = data()->config()->allocatable_simd128_codes();
+    }
   }
+
   LifetimePosition free_until_pos[RegisterConfiguration::kMaxFPRegisters];
   for (int i = 0; i < num_regs; i++) {
     free_until_pos[i] = LifetimePosition::MaxPosition();
@@ -2836,15 +2839,15 @@ bool LinearScanAllocator::TryAllocateFreeReg(LiveRange* current) {
 
   for (LiveRange* cur_active : active_live_ranges()) {
     int cur_reg = cur_active->assigned_register();
-    if (no_combining()) {
+    if (kSimpleFPAliasing || mode() == GENERAL_REGISTERS) {
       free_until_pos[cur_reg] = LifetimePosition::GapFromInstructionIndex(0);
       TRACE("Register %s is free until pos %d (1)\n", RegisterName(cur_reg),
             LifetimePosition::GapFromInstructionIndex(0).value());
     } else {
       int alias_base_index = -1;
       int aliases = data()->config()->GetAliases(
-          cur_active->representation(), cur_reg, current->representation(),
-          &alias_base_index);
+          cur_active->representation(), cur_reg, rep, &alias_base_index);
+      DCHECK(aliases > 0 || (aliases == 0 && alias_base_index == -1));
       while (aliases--) {
         int aliased_reg = alias_base_index + aliases;
         free_until_pos[aliased_reg] =
@@ -2859,15 +2862,15 @@ bool LinearScanAllocator::TryAllocateFreeReg(LiveRange* current) {
         cur_inactive->FirstIntersection(current);
     if (!next_intersection.IsValid()) continue;
     int cur_reg = cur_inactive->assigned_register();
-    if (no_combining()) {
+    if (kSimpleFPAliasing || mode() == GENERAL_REGISTERS) {
       free_until_pos[cur_reg] = Min(free_until_pos[cur_reg], next_intersection);
       TRACE("Register %s is free until pos %d (2)\n", RegisterName(cur_reg),
             Min(free_until_pos[cur_reg], next_intersection).value());
     } else {
       int alias_base_index = -1;
       int aliases = data()->config()->GetAliases(
-          cur_inactive->representation(), cur_reg, current->representation(),
-          &alias_base_index);
+          cur_inactive->representation(), cur_reg, rep, &alias_base_index);
+      DCHECK(aliases > 0 || (aliases == 0 && alias_base_index == -1));
       while (aliases--) {
         int aliased_reg = alias_base_index + aliases;
         free_until_pos[aliased_reg] =
@@ -2937,14 +2940,20 @@ void LinearScanAllocator::AllocateBlockedReg(LiveRange* current) {
     return;
   }
 
+  MachineRepresentation rep = current->representation();
   int num_regs = num_registers();
   int num_codes = num_allocatable_registers();
   const int* codes = allocatable_register_codes();
-  if (!no_combining() &&
-      (current->representation() == MachineRepresentation::kFloat32)) {
-    num_regs = data()->config()->num_float_registers();
-    num_codes = data()->config()->num_allocatable_float_registers();
-    codes = data()->config()->allocatable_float_codes();
+  if (!kSimpleFPAliasing) {
+    if (rep == MachineRepresentation::kFloat32) {
+      num_regs = data()->config()->num_float_registers();
+      num_codes = data()->config()->num_allocatable_float_registers();
+      codes = data()->config()->allocatable_float_codes();
+    } else if (rep == MachineRepresentation::kSimd128) {
+      num_regs = data()->config()->num_simd128_registers();
+      num_codes = data()->config()->num_allocatable_simd128_registers();
+      codes = data()->config()->allocatable_simd128_codes();
+    }
   }
 
   LifetimePosition use_pos[RegisterConfiguration::kMaxFPRegisters];
@@ -2957,7 +2966,7 @@ void LinearScanAllocator::AllocateBlockedReg(LiveRange* current) {
     int cur_reg = range->assigned_register();
     bool is_fixed_or_cant_spill =
         range->TopLevel()->IsFixed() || !range->CanBeSpilled(current->Start());
-    if (no_combining()) {
+    if (kSimpleFPAliasing || mode() == GENERAL_REGISTERS) {
       if (is_fixed_or_cant_spill) {
         block_pos[cur_reg] = use_pos[cur_reg] =
             LifetimePosition::GapFromInstructionIndex(0);
@@ -2973,8 +2982,8 @@ void LinearScanAllocator::AllocateBlockedReg(LiveRange* current) {
     } else {
       int alias_base_index = -1;
       int aliases = data()->config()->GetAliases(
-          range->representation(), cur_reg, current->representation(),
-          &alias_base_index);
+          range->representation(), cur_reg, rep, &alias_base_index);
+      DCHECK(aliases > 0 || (aliases == 0 && alias_base_index == -1));
       while (aliases--) {
         int aliased_reg = alias_base_index + aliases;
         if (is_fixed_or_cant_spill) {
@@ -2999,7 +3008,7 @@ void LinearScanAllocator::AllocateBlockedReg(LiveRange* current) {
     if (!next_intersection.IsValid()) continue;
     int cur_reg = range->assigned_register();
     bool is_fixed = range->TopLevel()->IsFixed();
-    if (no_combining()) {
+    if (kSimpleFPAliasing || mode() == GENERAL_REGISTERS) {
       if (is_fixed) {
         block_pos[cur_reg] = Min(block_pos[cur_reg], next_intersection);
         use_pos[cur_reg] = Min(block_pos[cur_reg], use_pos[cur_reg]);
@@ -3009,8 +3018,8 @@ void LinearScanAllocator::AllocateBlockedReg(LiveRange* current) {
     } else {
       int alias_base_index = -1;
       int aliases = data()->config()->GetAliases(
-          range->representation(), cur_reg, current->representation(),
-          &alias_base_index);
+          range->representation(), cur_reg, rep, &alias_base_index);
+      DCHECK(aliases > 0 || (aliases == 0 && alias_base_index == -1));
       while (aliases--) {
         int aliased_reg = alias_base_index + aliases;
         if (is_fixed) {
@@ -3073,7 +3082,7 @@ void LinearScanAllocator::SplitAndSpillIntersecting(LiveRange* current) {
   LifetimePosition split_pos = current->Start();
   for (size_t i = 0; i < active_live_ranges().size(); ++i) {
     LiveRange* range = active_live_ranges()[i];
-    if (no_combining()) {
+    if (kSimpleFPAliasing || mode() == GENERAL_REGISTERS) {
       if (range->assigned_register() != reg) continue;
     } else {
       if (!data()->config()->AreAliases(current->representation(), reg,
@@ -3108,7 +3117,7 @@ void LinearScanAllocator::SplitAndSpillIntersecting(LiveRange* current) {
     LiveRange* range = inactive_live_ranges()[i];
     DCHECK(range->End() > current->Start());
     if (range->TopLevel()->IsFixed()) continue;
-    if (no_combining()) {
+    if (kSimpleFPAliasing || mode() == GENERAL_REGISTERS) {
       if (range->assigned_register() != reg) continue;
     } else {
       if (!data()->config()->AreAliases(current->representation(), reg,

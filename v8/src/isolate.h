@@ -15,7 +15,7 @@
 #include "src/base/accounting-allocator.h"
 #include "src/base/atomicops.h"
 #include "src/base/hashmap.h"
-#include "src/builtins.h"
+#include "src/builtins/builtins.h"
 #include "src/cancelable-task.h"
 #include "src/contexts.h"
 #include "src/date.h"
@@ -69,7 +69,6 @@ class InlineRuntimeFunctionsTable;
 class InnerPointerToCodeCache;
 class Logger;
 class MaterializedObjectStore;
-class PositionsRecorder;
 class RegExpStack;
 class SaveContext;
 class StatsTable;
@@ -399,6 +398,7 @@ typedef List<HeapObject*> DebugObjectCache;
 #define ISOLATE_INIT_LIST(V)                                                  \
   /* Assembler state. */                                                      \
   V(FatalErrorCallback, exception_behavior, nullptr)                          \
+  V(OOMErrorCallback, oom_behavior, nullptr)                                  \
   V(LogEventCallback, event_logger, nullptr)                                  \
   V(AllowCodeGenerationFromStringsCallback, allow_code_gen_callback, nullptr) \
   V(ExternalReferenceRedirectorPointer*, external_reference_redirector,       \
@@ -702,8 +702,6 @@ class Isolate {
   MaybeHandle<JSReceiver> CaptureAndSetSimpleStackTrace(
       Handle<JSReceiver> error_object, Handle<Object> caller);
   Handle<JSArray> GetDetailedStackTrace(Handle<JSObject> error_object);
-  Handle<JSArray> GetDetailedFromSimpleStackTrace(
-      Handle<JSObject> error_object);
 
   // Returns if the given context may access the given global object. If
   // the result is false, the pending exception is guaranteed to be
@@ -735,8 +733,7 @@ class Isolate {
 
   // Tries to predict whether an exception will be caught. Note that this can
   // only produce an estimate, because it is undecidable whether a finally
-  // clause will consume or re-throw an exception. We conservatively assume any
-  // finally clause will behave as if the exception were consumed.
+  // clause will consume or re-throw an exception.
   enum CatchType { NOT_CAUGHT, CAUGHT_BY_JAVASCRIPT, CAUGHT_BY_EXTERNAL };
   CatchType PredictExceptionCatcher();
 
@@ -839,7 +836,8 @@ class Isolate {
   StackGuard* stack_guard() { return &stack_guard_; }
   Heap* heap() { return &heap_; }
   StatsTable* stats_table();
-  StubCache* stub_cache() { return stub_cache_; }
+  StubCache* load_stub_cache() { return load_stub_cache_; }
+  StubCache* store_stub_cache() { return store_stub_cache_; }
   CodeAgingHelper* code_aging_helper() { return code_aging_helper_; }
   DeoptimizerData* deoptimizer_data() { return deoptimizer_data_; }
   bool deoptimizer_lazy_throw() const { return deoptimizer_lazy_throw_; }
@@ -922,7 +920,6 @@ class Isolate {
   CodeEventDispatcher* code_event_dispatcher() const {
     return code_event_dispatcher_.get();
   }
-  CpuProfiler* cpu_profiler() const { return cpu_profiler_; }
   HeapProfiler* heap_profiler() const { return heap_profiler_; }
 
 #ifdef DEBUG
@@ -1253,8 +1250,6 @@ class Isolate {
 
   const char* RAILModeName(RAILMode rail_mode) const {
     switch (rail_mode) {
-      case PERFORMANCE_DEFAULT:
-        return "DEFAULT";
       case PERFORMANCE_RESPONSE:
         return "RESPONSE";
       case PERFORMANCE_ANIMATION:
@@ -1263,11 +1258,13 @@ class Isolate {
         return "IDLE";
       case PERFORMANCE_LOAD:
         return "LOAD";
-      default:
-        UNREACHABLE();
     }
     return "";
   }
+
+  // TODO(alph): Remove along with the deprecated GetCpuProfiler().
+  friend v8::CpuProfiler* v8::Isolate::GetCpuProfiler();
+  CpuProfiler* cpu_profiler() const { return cpu_profiler_; }
 
   base::Atomic32 id_;
   EntryStackItem* entry_stack_;
@@ -1282,7 +1279,8 @@ class Isolate {
   Logger* logger_;
   StackGuard stack_guard_;
   StatsTable* stats_table_;
-  StubCache* stub_cache_;
+  StubCache* load_stub_cache_;
+  StubCache* store_stub_cache_;
   CodeAgingHelper* code_aging_helper_;
   DeoptimizerData* deoptimizer_data_;
   bool deoptimizer_lazy_throw_;
@@ -1315,7 +1313,7 @@ class Isolate {
   DateCache* date_cache_;
   CallInterfaceDescriptorData* call_descriptor_data_;
   base::RandomNumberGenerator* random_number_generator_;
-  RAILMode rail_mode_;
+  base::AtomicValue<RAILMode> rail_mode_;
 
   // Whether the isolate has been created for snapshotting.
   bool serializer_enabled_;
@@ -1464,7 +1462,7 @@ class SaveContext BASE_EMBEDDED {
   SaveContext* prev() { return prev_; }
 
   // Returns true if this save context is below a given JavaScript frame.
-  bool IsBelowFrame(JavaScriptFrame* frame) {
+  bool IsBelowFrame(StandardFrame* frame) {
     return (c_entry_fp_ == 0) || (c_entry_fp_ > frame->sp());
   }
 

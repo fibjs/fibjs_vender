@@ -197,7 +197,6 @@ Operand::Operand(Handle<Object> handle) {
   // Verify all Objects referred by code are NOT in new space.
   Object* obj = *handle;
   if (obj->IsHeapObject()) {
-    DCHECK(!HeapObject::cast(obj)->GetHeap()->InNewSpace(obj));
     imm_ = reinterpret_cast<intptr_t>(handle.location());
     rmode_ = RelocInfo::EMBEDDED_OBJECT;
   } else {
@@ -225,12 +224,10 @@ MemOperand::MemOperand(Register ra, Register rb) {
 // -----------------------------------------------------------------------------
 // Specific instructions, constants, and masks.
 
-
 Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
     : AssemblerBase(isolate, buffer, buffer_size),
       recorded_ast_id_(TypeFeedbackId::None()),
-      constant_pool_builder_(kLoadPtrMaxReachBits, kLoadDoubleMaxReachBits),
-      positions_recorder_(this) {
+      constant_pool_builder_(kLoadPtrMaxReachBits, kLoadDoubleMaxReachBits) {
   reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
 
   no_trampoline_pool_before_ = 0;
@@ -261,6 +258,8 @@ void Assembler::GetCode(CodeDesc* desc) {
   desc->constant_pool_size =
       (constant_pool_offset ? desc->instr_size - constant_pool_offset : 0);
   desc->origin = this;
+  desc->unwinding_info_size = 0;
+  desc->unwinding_info = nullptr;
 }
 
 
@@ -2468,8 +2467,6 @@ void Assembler::EmitRelocations() {
 
     reloc_info_writer.Write(&rinfo);
   }
-
-  reloc_info_writer.Finish();
 }
 
 

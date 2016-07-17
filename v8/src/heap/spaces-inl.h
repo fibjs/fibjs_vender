@@ -29,23 +29,9 @@ PageIteratorImpl<PAGE_TYPE> PageIteratorImpl<PAGE_TYPE>::operator++(int) {
 }
 
 NewSpacePageRange::NewSpacePageRange(Address start, Address limit)
-    : start_(start), limit_(limit) {
+    : range_(Page::FromAddress(start),
+             Page::FromAllocationAreaAddress(limit)->next_page()) {
   SemiSpace::AssertValidRange(start, limit);
-}
-
-// -----------------------------------------------------------------------------
-// Bitmap
-
-void Bitmap::Clear(MemoryChunk* chunk) {
-  Bitmap* bitmap = chunk->markbits();
-  for (int i = 0; i < bitmap->CellsCount(); i++) bitmap->cells()[i] = 0;
-  chunk->ResetLiveBytes();
-}
-
-void Bitmap::SetAllBits(MemoryChunk* chunk) {
-  Bitmap* bitmap = chunk->markbits();
-  for (int i = 0; i < bitmap->CellsCount(); i++)
-    bitmap->cells()[i] = 0xffffffff;
 }
 
 
@@ -70,24 +56,16 @@ HeapObject* SemiSpaceIterator::Next() {
   return nullptr;
 }
 
-
-HeapObject* SemiSpaceIterator::next_object() { return Next(); }
-
-
 // -----------------------------------------------------------------------------
 // HeapObjectIterator
 
 HeapObject* HeapObjectIterator::Next() {
   do {
     HeapObject* next_obj = FromCurrentPage();
-    if (next_obj != NULL) return next_obj;
+    if (next_obj != nullptr) return next_obj;
   } while (AdvanceToNextPage());
-  return NULL;
+  return nullptr;
 }
-
-
-HeapObject* HeapObjectIterator::next_object() { return Next(); }
-
 
 HeapObject* HeapObjectIterator::FromCurrentPage() {
   while (cur_addr_ != cur_end_) {
@@ -96,15 +74,9 @@ HeapObject* HeapObjectIterator::FromCurrentPage() {
       continue;
     }
     HeapObject* obj = HeapObject::FromAddress(cur_addr_);
-    int obj_size = obj->Size();
+    const int obj_size = obj->Size();
     cur_addr_ += obj_size;
-    DCHECK(cur_addr_ <= cur_end_);
-    // TODO(hpayer): Remove the debugging code.
-    if (cur_addr_ > cur_end_) {
-      space_->heap()->isolate()->PushStackTraceAndDie(0xaaaaaaaa, obj, NULL,
-                                                      obj_size);
-    }
-
+    DCHECK_LE(cur_addr_, cur_end_);
     if (!obj->IsFiller()) {
       if (obj->IsCode()) {
         DCHECK_EQ(space_, space_->heap()->code_space());
@@ -115,7 +87,7 @@ HeapObject* HeapObjectIterator::FromCurrentPage() {
       return obj;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 // -----------------------------------------------------------------------------

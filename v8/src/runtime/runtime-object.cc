@@ -270,7 +270,7 @@ RUNTIME_FUNCTION(Runtime_OptimizeObjectForAddingMultipleProperties) {
   CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
   CONVERT_SMI_ARG_CHECKED(properties, 1);
   // Conservative upper limit to prevent fuzz tests from going OOM.
-  RUNTIME_ASSERT(properties <= 100000);
+  if (properties > 100000) return isolate->ThrowIllegalOperation();
   if (object->HasFastProperties() && !object->IsJSGlobalProxy()) {
     JSObject::NormalizeProperties(object, KEEP_INOBJECT_PROPERTIES, properties,
                                   "OptimizeForAdding");
@@ -348,10 +348,15 @@ RUNTIME_FUNCTION(Runtime_GetProperty) {
                            Runtime::GetObjectProperty(isolate, object, key));
 }
 
-namespace {
+RUNTIME_FUNCTION(Runtime_GetGlobal) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(3, args.length());
+  CONVERT_SMI_ARG_CHECKED(slot, 0);
+  CONVERT_ARG_HANDLE_CHECKED(TypeFeedbackVector, vector, 1);
+  CONVERT_SMI_ARG_CHECKED(typeof_mode_value, 2);
+  TypeofMode typeof_mode = static_cast<TypeofMode>(typeof_mode_value);
+  bool should_throw_reference_error = typeof_mode == NOT_INSIDE_TYPEOF;
 
-Object* GetGlobal(Isolate* isolate, int slot, Handle<TypeFeedbackVector> vector,
-                  bool should_throw_reference_error) {
   FeedbackVectorSlot vector_slot = vector->ToSlot(slot);
   DCHECK_EQ(FeedbackVectorSlotKind::LOAD_GLOBAL_IC,
             vector->GetKind(vector_slot));
@@ -384,24 +389,6 @@ Object* GetGlobal(Isolate* isolate, int slot, Handle<TypeFeedbackVector> vector,
   return *result;
 }
 
-}  // namespace
-
-RUNTIME_FUNCTION(Runtime_GetGlobalInsideTypeof) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(2, args.length());
-  CONVERT_SMI_ARG_CHECKED(slot, 0);
-  CONVERT_ARG_HANDLE_CHECKED(TypeFeedbackVector, vector, 1);
-  return GetGlobal(isolate, slot, vector, false);
-}
-
-RUNTIME_FUNCTION(Runtime_GetGlobalNotInsideTypeof) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(2, args.length());
-  CONVERT_SMI_ARG_CHECKED(slot, 0);
-  CONVERT_ARG_HANDLE_CHECKED(TypeFeedbackVector, vector, 1);
-  return GetGlobal(isolate, slot, vector, true);
-}
-
 // KeyedGetProperty is called from KeyedLoadIC::GenerateGeneric.
 RUNTIME_FUNCTION(Runtime_KeyedGetProperty) {
   HandleScope scope(isolate);
@@ -413,7 +400,6 @@ RUNTIME_FUNCTION(Runtime_KeyedGetProperty) {
   RETURN_RESULT_OR_FAILURE(
       isolate, KeyedGetObjectProperty(isolate, receiver_obj, key_obj));
 }
-
 
 RUNTIME_FUNCTION(Runtime_AddNamedProperty) {
   HandleScope scope(isolate);
@@ -493,8 +479,7 @@ RUNTIME_FUNCTION(Runtime_SetProperty) {
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, key, 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, value, 2);
-  CONVERT_LANGUAGE_MODE_ARG_CHECKED(language_mode_arg, 3);
-  LanguageMode language_mode = language_mode_arg;
+  CONVERT_LANGUAGE_MODE_ARG_CHECKED(language_mode, 3);
 
   RETURN_RESULT_OR_FAILURE(
       isolate,
@@ -561,21 +546,6 @@ RUNTIME_FUNCTION(Runtime_HasProperty) {
   Maybe<bool> maybe = JSReceiver::HasProperty(receiver, name);
   if (!maybe.IsJust()) return isolate->heap()->exception();
   return isolate->heap()->ToBoolean(maybe.FromJust());
-}
-
-
-RUNTIME_FUNCTION(Runtime_PropertyIsEnumerable) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, object, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Name, key, 1);
-
-  Maybe<PropertyAttributes> maybe =
-      JSReceiver::GetOwnPropertyAttributes(object, key);
-  if (!maybe.IsJust()) return isolate->heap()->exception();
-  if (maybe.FromJust() == ABSENT) return isolate->heap()->false_value();
-  return isolate->heap()->ToBoolean((maybe.FromJust() & DONT_ENUM) == 0);
 }
 
 
@@ -758,6 +728,15 @@ RUNTIME_FUNCTION(Runtime_GetDataProperty) {
   return *JSReceiver::GetDataProperty(object, name);
 }
 
+RUNTIME_FUNCTION(Runtime_GetConstructorName) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+
+  CHECK(!object->IsUndefined(isolate) && !object->IsNull(isolate));
+  Handle<JSReceiver> recv = Object::ToObject(isolate, object).ToHandleChecked();
+  return *JSReceiver::GetConstructorName(recv);
+}
 
 RUNTIME_FUNCTION(Runtime_HasFastPackedElements) {
   SealHandleScope shs(isolate);
@@ -857,16 +836,6 @@ RUNTIME_FUNCTION(Runtime_ToPrimitive_Number) {
   RETURN_RESULT_OR_FAILURE(
       isolate, Object::ToPrimitive(input, ToPrimitiveHint::kNumber));
 }
-
-
-RUNTIME_FUNCTION(Runtime_ToPrimitive_String) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(Object, input, 0);
-  RETURN_RESULT_OR_FAILURE(
-      isolate, Object::ToPrimitive(input, ToPrimitiveHint::kString));
-}
-
 
 RUNTIME_FUNCTION(Runtime_ToNumber) {
   HandleScope scope(isolate);

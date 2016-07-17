@@ -124,6 +124,15 @@ std::ostream& operator<<(std::ostream& os, FieldAccess const& access) {
   return os;
 }
 
+template <>
+void Operator1<FieldAccess>::PrintParameter(std::ostream& os,
+                                            PrintVerbosity verbose) const {
+  if (verbose == PrintVerbosity::kVerbose) {
+    os << parameter();
+  } else {
+    os << "[+" << parameter().offset << "]";
+  }
+}
 
 bool operator==(ElementAccess const& lhs, ElementAccess const& rhs) {
   // On purpose we don't include the write barrier kind here, as this method is
@@ -212,17 +221,13 @@ CheckTaggedHoleMode CheckTaggedHoleModeOf(const Operator* op) {
   return OpParameter<CheckTaggedHoleMode>(op);
 }
 
-Type* TypeOf(const Operator* op) {
-  DCHECK_EQ(IrOpcode::kTypeGuard, op->opcode());
-  return OpParameter<Type*>(op);
-}
-
 BinaryOperationHints::Hint BinaryOperationHintOf(const Operator* op) {
   DCHECK(op->opcode() == IrOpcode::kSpeculativeNumberAdd ||
          op->opcode() == IrOpcode::kSpeculativeNumberSubtract ||
          op->opcode() == IrOpcode::kSpeculativeNumberMultiply ||
          op->opcode() == IrOpcode::kSpeculativeNumberDivide ||
-         op->opcode() == IrOpcode::kSpeculativeNumberModulus);
+         op->opcode() == IrOpcode::kSpeculativeNumberModulus ||
+         op->opcode() == IrOpcode::kSpeculativeNumberShiftLeft);
   return OpParameter<BinaryOperationHints::Hint>(op);
 }
 
@@ -235,7 +240,6 @@ CompareOperationHints::Hint CompareOperationHintOf(const Operator* op) {
 
 #define PURE_OP_LIST(V)                                    \
   V(BooleanNot, Operator::kNoProperties, 1)                \
-  V(BooleanToNumber, Operator::kNoProperties, 1)           \
   V(NumberEqual, Operator::kCommutative, 2)                \
   V(NumberLessThan, Operator::kNoProperties, 2)            \
   V(NumberLessThanOrEqual, Operator::kNoProperties, 2)     \
@@ -251,31 +255,40 @@ CompareOperationHints::Hint CompareOperationHintOf(const Operator* op) {
   V(NumberShiftRight, Operator::kNoProperties, 2)          \
   V(NumberShiftRightLogical, Operator::kNoProperties, 2)   \
   V(NumberImul, Operator::kCommutative, 2)                 \
+  V(NumberAbs, Operator::kNoProperties, 1)                 \
   V(NumberClz32, Operator::kNoProperties, 1)               \
   V(NumberCeil, Operator::kNoProperties, 1)                \
   V(NumberFloor, Operator::kNoProperties, 1)               \
   V(NumberFround, Operator::kNoProperties, 1)              \
+  V(NumberAcos, Operator::kNoProperties, 1)                \
+  V(NumberAcosh, Operator::kNoProperties, 1)               \
+  V(NumberAsin, Operator::kNoProperties, 1)                \
+  V(NumberAsinh, Operator::kNoProperties, 1)               \
   V(NumberAtan, Operator::kNoProperties, 1)                \
   V(NumberAtan2, Operator::kNoProperties, 2)               \
   V(NumberAtanh, Operator::kNoProperties, 1)               \
   V(NumberCbrt, Operator::kNoProperties, 1)                \
   V(NumberCos, Operator::kNoProperties, 1)                 \
+  V(NumberCosh, Operator::kNoProperties, 1)                \
   V(NumberExp, Operator::kNoProperties, 1)                 \
   V(NumberExpm1, Operator::kNoProperties, 1)               \
   V(NumberLog, Operator::kNoProperties, 1)                 \
   V(NumberLog1p, Operator::kNoProperties, 1)               \
   V(NumberLog10, Operator::kNoProperties, 1)               \
   V(NumberLog2, Operator::kNoProperties, 1)                \
+  V(NumberPow, Operator::kNoProperties, 2)                 \
   V(NumberRound, Operator::kNoProperties, 1)               \
+  V(NumberSign, Operator::kNoProperties, 1)                \
   V(NumberSin, Operator::kNoProperties, 1)                 \
+  V(NumberSinh, Operator::kNoProperties, 1)                \
   V(NumberSqrt, Operator::kNoProperties, 1)                \
   V(NumberTan, Operator::kNoProperties, 1)                 \
+  V(NumberTanh, Operator::kNoProperties, 1)                \
   V(NumberTrunc, Operator::kNoProperties, 1)               \
   V(NumberToInt32, Operator::kNoProperties, 1)             \
   V(NumberToUint32, Operator::kNoProperties, 1)            \
   V(NumberSilenceNaN, Operator::kNoProperties, 1)          \
   V(StringFromCharCode, Operator::kNoProperties, 1)        \
-  V(StringToNumber, Operator::kNoProperties, 1)            \
   V(PlainPrimitiveToNumber, Operator::kNoProperties, 1)    \
   V(PlainPrimitiveToWord32, Operator::kNoProperties, 1)    \
   V(PlainPrimitiveToFloat64, Operator::kNoProperties, 1)   \
@@ -306,17 +319,26 @@ CompareOperationHints::Hint CompareOperationHintOf(const Operator* op) {
   V(SpeculativeNumberSubtract)    \
   V(SpeculativeNumberDivide)      \
   V(SpeculativeNumberMultiply)    \
-  V(SpeculativeNumberModulus)
+  V(SpeculativeNumberModulus)     \
+  V(SpeculativeNumberShiftLeft)
 
-#define CHECKED_OP_LIST(V)    \
-  V(CheckTaggedPointer, 1)    \
-  V(CheckTaggedSigned, 1)     \
-  V(CheckedInt32Add, 2)       \
-  V(CheckedInt32Sub, 2)       \
-  V(CheckedUint32ToInt32, 1)  \
-  V(CheckedFloat64ToInt32, 1) \
-  V(CheckedTaggedToInt32, 1)  \
-  V(CheckedTaggedToFloat64, 1)
+#define CHECKED_OP_LIST(V)       \
+  V(CheckBounds, 2, 1)           \
+  V(CheckIf, 1, 0)               \
+  V(CheckNumber, 1, 1)           \
+  V(CheckTaggedPointer, 1, 1)    \
+  V(CheckTaggedSigned, 1, 1)     \
+  V(CheckedInt32Add, 2, 1)       \
+  V(CheckedInt32Sub, 2, 1)       \
+  V(CheckedInt32Div, 2, 1)       \
+  V(CheckedInt32Mod, 2, 1)       \
+  V(CheckedUint32Div, 2, 1)      \
+  V(CheckedUint32Mod, 2, 1)      \
+  V(CheckedInt32Mul, 2, 1)       \
+  V(CheckedUint32ToInt32, 1, 1)  \
+  V(CheckedFloat64ToInt32, 1, 1) \
+  V(CheckedTaggedToInt32, 1, 1)  \
+  V(CheckedTaggedToFloat64, 1, 1)
 
 struct SimplifiedOperatorGlobalCache final {
 #define PURE(Name, properties, input_count)                                \
@@ -329,13 +351,13 @@ struct SimplifiedOperatorGlobalCache final {
   PURE_OP_LIST(PURE)
 #undef PURE
 
-#define CHECKED(Name, value_input_count)                            \
-  struct Name##Operator final : public Operator {                   \
-    Name##Operator()                                                \
-        : Operator(IrOpcode::k##Name,                               \
-                   Operator::kFoldable | Operator::kNoThrow, #Name, \
-                   value_input_count, 1, 1, 1, 1, 0) {}             \
-  };                                                                \
+#define CHECKED(Name, value_input_count, value_output_count)             \
+  struct Name##Operator final : public Operator {                        \
+    Name##Operator()                                                     \
+        : Operator(IrOpcode::k##Name,                                    \
+                   Operator::kFoldable | Operator::kNoThrow, #Name,      \
+                   value_input_count, 1, 1, value_output_count, 1, 0) {} \
+  };                                                                     \
   Name##Operator k##Name;
   CHECKED_OP_LIST(CHECKED)
 #undef CHECKED
@@ -414,7 +436,7 @@ SimplifiedOperatorBuilder::SimplifiedOperatorBuilder(Zone* zone)
 PURE_OP_LIST(GET_FROM_CACHE)
 #undef GET_FROM_CACHE
 
-#define GET_FROM_CACHE(Name, value_input_count) \
+#define GET_FROM_CACHE(Name, value_input_count, value_output_count) \
   const Operator* SimplifiedOperatorBuilder::Name() { return &cache_.k##Name; }
 CHECKED_OP_LIST(GET_FROM_CACHE)
 #undef GET_FROM_CACHE
@@ -447,30 +469,6 @@ const Operator* SimplifiedOperatorBuilder::ReferenceEqual(Type* type) {
   return new (zone()) Operator(IrOpcode::kReferenceEqual,
                                Operator::kCommutative | Operator::kPure,
                                "ReferenceEqual", 2, 0, 0, 1, 0, 0);
-}
-
-const Operator* SimplifiedOperatorBuilder::CheckBounds() {
-  // TODO(bmeurer): Cache this operator. Make it pure!
-  return new (zone())
-      Operator(IrOpcode::kCheckBounds, Operator::kFoldable | Operator::kNoThrow,
-               "CheckBounds", 2, 1, 1, 1, 1, 0);
-}
-
-const Operator* SimplifiedOperatorBuilder::TypeGuard(Type* type) {
-  class TypeGuardOperator final : public Operator1<Type*> {
-   public:
-    explicit TypeGuardOperator(Type* type)
-        : Operator1<Type*>(                           // --
-              IrOpcode::kTypeGuard, Operator::kPure,  // opcode
-              "TypeGuard",                            // name
-              1, 0, 1, 1, 0, 0,                       // counts
-              type) {}                                // parameter
-
-    void PrintParameter(std::ostream& os) const final {
-      parameter()->PrintTo(os);
-    }
-  };
-  return new (zone()) TypeGuardOperator(type);
 }
 
 const Operator* SimplifiedOperatorBuilder::Allocate(PretenureFlag pretenure) {

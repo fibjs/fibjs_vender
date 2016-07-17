@@ -258,7 +258,6 @@ Operand::Operand(Handle<Object> handle) {
   // Verify all Objects referred by code are NOT in new space.
   Object* obj = *handle;
   if (obj->IsHeapObject()) {
-    DCHECK(!HeapObject::cast(obj)->GetHeap()->InNewSpace(obj));
     imm_ = reinterpret_cast<intptr_t>(handle.location());
     rmode_ = RelocInfo::EMBEDDED_OBJECT;
   } else {
@@ -286,8 +285,7 @@ MemOperand::MemOperand(Register rx, Register rb, int32_t offset) {
 Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
     : AssemblerBase(isolate, buffer, buffer_size),
       recorded_ast_id_(TypeFeedbackId::None()),
-      code_targets_(100),
-      positions_recorder_(this) {
+      code_targets_(100) {
   reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
 
   last_bound_pos_ = 0;
@@ -304,6 +302,8 @@ void Assembler::GetCode(CodeDesc* desc) {
   desc->instr_size = pc_offset();
   desc->reloc_size = (buffer_ + buffer_size_) - reloc_info_writer.pos();
   desc->origin = this;
+  desc->unwinding_info_size = 0;
+  desc->unwinding_info = nullptr;
 }
 
 void Assembler::Align(int m) {
@@ -3082,8 +3082,6 @@ void Assembler::EmitRelocations() {
 
     reloc_info_writer.Write(&rinfo);
   }
-
-  reloc_info_writer.Finish();
 }
 
 }  // namespace internal

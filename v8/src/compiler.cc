@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include "src/asmjs/asm-js.h"
+#include "src/asmjs/asm-typer.h"
 #include "src/ast/ast-numbering.h"
 #include "src/ast/prettyprinter.h"
 #include "src/ast/scopeinfo.h"
@@ -20,6 +22,8 @@
 #include "src/deoptimizer.h"
 #include "src/frames-inl.h"
 #include "src/full-codegen/full-codegen.h"
+#include "src/globals.h"
+#include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/isolate-inl.h"
 #include "src/log-inl.h"
@@ -29,7 +33,6 @@
 #include "src/parsing/scanner-character-streams.h"
 #include "src/runtime-profiler.h"
 #include "src/snapshot/code-serializer.h"
-#include "src/typing-asm.h"
 #include "src/vm-state-inl.h"
 
 namespace v8 {
@@ -141,7 +144,9 @@ CompilationInfo::CompilationInfo(ParseInfo* parse_info,
       debug_name_(debug_name) {}
 
 CompilationInfo::~CompilationInfo() {
-  DisableFutureOptimization();
+  if (GetFlag(kDisableFutureOptimization) && has_shared_info()) {
+    shared_info()->DisableOptimization(bailout_reason());
+  }
   dependencies()->Rollback();
   delete deferred_handles_;
 }
@@ -222,16 +227,16 @@ int CompilationInfo::GetDeclareGlobalsFlags() const {
          DeclareGlobalsLanguageMode::encode(parse_info()->language_mode());
 }
 
+SourcePositionTableBuilder::RecordingMode
+CompilationInfo::SourcePositionRecordingMode() const {
+  return parse_info() && parse_info()->is_native()
+             ? SourcePositionTableBuilder::OMIT_SOURCE_POSITIONS
+             : SourcePositionTableBuilder::RECORD_SOURCE_POSITIONS;
+}
+
 bool CompilationInfo::ExpectsJSReceiverAsReceiver() {
   return is_sloppy(parse_info()->language_mode()) && !parse_info()->is_native();
 }
-
-#if DEBUG
-void CompilationInfo::PrintAstForTesting() {
-  PrintF("--- Source from AST ---\n%s\n",
-         PrettyPrinter(isolate()).PrintProgram(literal()));
-}
-#endif
 
 // ----------------------------------------------------------------------------
 // Implementation of CompilationJob
@@ -284,9 +289,14 @@ void AddWeakObjectToCodeDependency(Isolate* isolate, Handle<HeapObject> object,
                                    Handle<Code> code) {
   Handle<WeakCell> cell = Code::WeakCellFor(code);
   Heap* heap = isolate->heap();
-  Handle<DependentCode> dep(heap->LookupWeakObjectToCodeDependency(object));
-  dep = DependentCode::InsertWeakCode(dep, DependentCode::kWeakCodeGroup, cell);
-  heap->AddWeakObjectToCodeDependency(object, dep);
+  if (heap->InNewSpace(*object)) {
+    heap->AddWeakNewSpaceObjectToCodeDependency(object, cell);
+  } else {
+    Handle<DependentCode> dep(heap->LookupWeakObjectToCodeDependency(object));
+    dep =
+        DependentCode::InsertWeakCode(dep, DependentCode::kWeakCodeGroup, cell);
+    heap->AddWeakObjectToCodeDependency(object, dep);
+  }
 }
 
 }  // namespace
@@ -471,14 +481,12 @@ bool GenerateUnoptimizedCode(CompilationInfo* info) {
   bool success;
   EnsureFeedbackMetadata(info);
   if (FLAG_validate_asm && info->scope()->asm_module()) {
-    AsmTyper typer(info->isolate(), info->zone(), *(info->script()),
-                   info->literal());
-    if (FLAG_enable_simd_asmjs) {
-      typer.set_allow_simd(true);
-    }
-    if (!typer.Validate()) {
-      DCHECK(!info->isolate()->has_pending_exception());
-      PrintF("Validation of asm.js module failed: %s", typer.error_message());
+    MaybeHandle<FixedArray> wasm_data;
+    wasm_data = AsmJs::ConvertAsmToWasm(info->parse_info());
+    if (!wasm_data.is_null()) {
+      info->shared_info()->set_asm_wasm_data(*wasm_data.ToHandleChecked());
+      info->SetCode(info->isolate()->builtins()->InstantiateAsmJs());
+      return true;
     }
   }
   if (FLAG_ignition && UseIgnition(info)) {
@@ -615,9 +623,9 @@ bool Renumber(ParseInfo* parse_info) {
     if (lit->dont_optimize_reason() != kNoReason) {
       shared_info->DisableOptimization(lit->dont_optimize_reason());
     }
-    shared_info->set_dont_crankshaft(
-        shared_info->dont_crankshaft() ||
-        (lit->flags() & AstProperties::kDontCrankshaft));
+    if (lit->flags() & AstProperties::kDontCrankshaft) {
+      shared_info->set_dont_crankshaft(true);
+    }
   }
   return true;
 }
@@ -658,7 +666,8 @@ bool GetOptimizedCodeNow(CompilationJob* job) {
   TimerEventScope<TimerEventRecompileSynchronous> timer(isolate);
   RuntimeCallTimerScope runtimeTimer(isolate,
                                      &RuntimeCallStats::RecompileSynchronous);
-  TRACE_EVENT0("v8", "V8.RecompileSynchronous");
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"),
+               "V8.RecompileSynchronous");
 
   if (job->CreateGraph() != CompilationJob::SUCCEEDED ||
       job->OptimizeGraph() != CompilationJob::SUCCEEDED ||
@@ -692,6 +701,15 @@ bool GetOptimizedCodeLater(CompilationJob* job) {
     return false;
   }
 
+  if (isolate->heap()->HighMemoryPressure()) {
+    if (FLAG_trace_concurrent_recompilation) {
+      PrintF("  ** High memory pressure, will retry optimizing ");
+      info->closure()->ShortPrint();
+      PrintF(" later.\n");
+    }
+    return false;
+  }
+
   // All handles below this point will be allocated in a deferred handle scope
   // that is detached and handed off to the background thread when we return.
   CompilationHandleScope handle_scope(info);
@@ -711,7 +729,8 @@ bool GetOptimizedCodeLater(CompilationJob* job) {
   TimerEventScope<TimerEventRecompileSynchronous> timer(info->isolate());
   RuntimeCallTimerScope runtimeTimer(info->isolate(),
                                      &RuntimeCallStats::RecompileSynchronous);
-  TRACE_EVENT0("v8", "V8.RecompileSynchronous");
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"),
+               "V8.RecompileSynchronous");
 
   if (job->CreateGraph() != CompilationJob::SUCCEEDED) return false;
   isolate->optimizing_compile_dispatcher()->QueueForOptimization(job);
@@ -779,7 +798,7 @@ MaybeHandle<Code> GetOptimizedCode(Handle<JSFunction> function,
   CanonicalHandleScope canonical(isolate);
   TimerEventScope<TimerEventOptimizeCode> optimize_code_timer(isolate);
   RuntimeCallTimerScope runtimeTimer(isolate, &RuntimeCallStats::OptimizeCode);
-  TRACE_EVENT0("v8", "V8.OptimizeCode");
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.OptimizeCode");
 
   // TurboFan can optimize directly from existing bytecode.
   if (FLAG_turbo_from_bytecode && use_turbofan &&
@@ -969,7 +988,7 @@ MaybeHandle<Code> GetLazyCode(Handle<JSFunction> function) {
   TimerEventScope<TimerEventCompileCode> compile_timer(isolate);
   RuntimeCallTimerScope runtimeTimer(isolate,
                                      &RuntimeCallStats::CompileCodeLazy);
-  TRACE_EVENT0("v8", "V8.CompileCode");
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.CompileCode");
   AggregatedHistogramTimerScope timer(isolate->counters()->compile_lazy());
 
   if (FLAG_turbo_cache_shared_code) {
@@ -1024,7 +1043,7 @@ Handle<SharedFunctionInfo> CompileToplevel(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
   TimerEventScope<TimerEventCompileCode> timer(isolate);
   RuntimeCallTimerScope runtimeTimer(isolate, &RuntimeCallStats::CompileCode);
-  TRACE_EVENT0("v8", "V8.CompileCode");
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.CompileCode");
   PostponeInterruptsScope postpone(isolate);
   DCHECK(!isolate->native_context().is_null());
   ParseInfo* parse_info = info->parse_info();
@@ -1091,10 +1110,11 @@ Handle<SharedFunctionInfo> CompileToplevel(CompilationInfo* info) {
                                ? info->isolate()->counters()->compile_eval()
                                : info->isolate()->counters()->compile();
     HistogramTimerScope timer(rate);
-    TRACE_EVENT0("v8", parse_info->is_eval() ? "V8.CompileEval" : "V8.Compile");
+    TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"),
+                 parse_info->is_eval() ? "V8.CompileEval" : "V8.Compile");
 
     // Allocate a shared function info object.
-    DCHECK_EQ(RelocInfo::kNoPosition, lit->function_token_position());
+    DCHECK_EQ(kNoSourcePosition, lit->function_token_position());
     result = NewSharedFunctionInfoForLiteral(isolate, lit, script);
     result->set_is_toplevel(true);
     if (parse_info->is_eval()) {
@@ -1491,7 +1511,8 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfoForScript(
       HistogramTimerScope timer(isolate->counters()->compile_deserialize());
       RuntimeCallTimerScope runtimeTimer(isolate,
                                          &RuntimeCallStats::CompileDeserialize);
-      TRACE_EVENT0("v8", "V8.CompileDeserialize");
+      TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"),
+                   "V8.CompileDeserialize");
       Handle<SharedFunctionInfo> result;
       if (CodeSerializer::Deserialize(isolate, *cached_data, source)
               .ToHandle(&result)) {
@@ -1564,7 +1585,8 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfoForScript(
             isolate->counters()->compile_serialize());
         RuntimeCallTimerScope runtimeTimer(isolate,
                                            &RuntimeCallStats::CompileSerialize);
-        TRACE_EVENT0("v8", "V8.CompileSerialize");
+        TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"),
+                     "V8.CompileSerialize");
         *cached_data = CodeSerializer::Serialize(isolate, result, source);
         if (FLAG_profile_deserialization) {
           PrintF("[Compiling and serializing took %0.3f ms]\n",
@@ -1681,7 +1703,7 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfo(
   // Generate code
   TimerEventScope<TimerEventCompileCode> timer(isolate);
   RuntimeCallTimerScope runtimeTimer(isolate, &RuntimeCallStats::CompileCode);
-  TRACE_EVENT0("v8", "V8.CompileCode");
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.CompileCode");
   if (lazy) {
     info.SetCode(isolate->builtins()->CompileLazy());
   } else if (Renumber(info.parse_info()) && GenerateUnoptimizedCode(&info)) {
@@ -1727,7 +1749,7 @@ Handle<SharedFunctionInfo> Compiler::GetSharedFunctionInfoForNative(
   Handle<SharedFunctionInfo> shared = isolate->factory()->NewSharedFunctionInfo(
       name, fun->shared()->num_literals(), FunctionKind::kNormalFunction, code,
       Handle<ScopeInfo>(fun->shared()->scope_info()));
-  shared->set_construct_stub(*construct_stub);
+  shared->SetConstructStub(*construct_stub);
   shared->set_feedback_metadata(fun->shared()->feedback_metadata());
 
   // Copy the function data to the shared function info.
@@ -1756,7 +1778,8 @@ void Compiler::FinalizeCompilationJob(CompilationJob* raw_job) {
   TimerEventScope<TimerEventRecompileSynchronous> timer(info->isolate());
   RuntimeCallTimerScope runtimeTimer(isolate,
                                      &RuntimeCallStats::RecompileSynchronous);
-  TRACE_EVENT0("v8", "V8.RecompileSynchronous");
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"),
+               "V8.RecompileSynchronous");
 
   Handle<SharedFunctionInfo> shared = info->shared_info();
   shared->code()->set_profiler_ticks(0);

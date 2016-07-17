@@ -64,7 +64,6 @@ class LCodeGen;
   V(DivByConstI)                             \
   V(DivByPowerOf2I)                          \
   V(DivI)                                    \
-  V(DoubleBits)                              \
   V(DoubleToI)                               \
   V(DoubleToSmi)                             \
   V(Drop)                                    \
@@ -1598,18 +1597,14 @@ class LLoadKeyedGeneric final : public LTemplateInstruction<1, 3, 1> {
   DECLARE_HYDROGEN_ACCESSOR(LoadKeyedGeneric)
 };
 
-
-class LLoadGlobalGeneric final : public LTemplateInstruction<1, 2, 1> {
+class LLoadGlobalGeneric final : public LTemplateInstruction<1, 1, 1> {
  public:
-  LLoadGlobalGeneric(LOperand* context, LOperand* global_object,
-                     LOperand* vector) {
+  LLoadGlobalGeneric(LOperand* context, LOperand* vector) {
     inputs_[0] = context;
-    inputs_[1] = global_object;
     temps_[0] = vector;
   }
 
   LOperand* context() { return inputs_[0]; }
-  LOperand* global_object() { return inputs_[1]; }
   LOperand* temp_vector() { return temps_[0]; }
 
   DECLARE_CONCRETE_INSTRUCTION(LoadGlobalGeneric, "load-global-generic")
@@ -2348,19 +2343,6 @@ class LCheckNonSmi final : public LTemplateInstruction<0, 1, 0> {
 
   DECLARE_CONCRETE_INSTRUCTION(CheckNonSmi, "check-non-smi")
   DECLARE_HYDROGEN_ACCESSOR(CheckHeapObject)
-};
-
-
-class LDoubleBits final : public LTemplateInstruction<1, 1, 0> {
- public:
-  explicit LDoubleBits(LOperand* value) {
-    inputs_[0] = value;
-  }
-
-  LOperand* value() { return inputs_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(DoubleBits, "double-bits")
-  DECLARE_HYDROGEN_ACCESSOR(DoubleBits)
 };
 
 

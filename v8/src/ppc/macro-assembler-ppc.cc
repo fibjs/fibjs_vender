@@ -193,19 +193,7 @@ void MacroAssembler::Push(Handle<Object> handle) {
 
 
 void MacroAssembler::Move(Register dst, Handle<Object> value) {
-  AllowDeferredHandleDereference smi_check;
-  if (value->IsSmi()) {
-    LoadSmiLiteral(dst, reinterpret_cast<Smi*>(*value));
-  } else {
-    DCHECK(value->IsHeapObject());
-    if (isolate()->heap()->InNewSpace(*value)) {
-      Handle<Cell> cell = isolate()->factory()->NewCell(value);
-      mov(dst, Operand(cell));
-      LoadP(dst, FieldMemOperand(dst, Cell::kValueOffset));
-    } else {
-      mov(dst, Operand(value));
-    }
-  }
+  mov(dst, Operand(value));
 }
 
 
@@ -720,8 +708,7 @@ MemOperand MacroAssembler::SafepointRegisterSlot(Register reg) {
 
 MemOperand MacroAssembler::SafepointRegistersAndDoublesSlot(Register reg) {
   // General purpose registers are pushed last on the stack.
-  const RegisterConfiguration* config =
-      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
+  const RegisterConfiguration* config = RegisterConfiguration::Crankshaft();
   int doubles_size = config->num_allocatable_double_registers() * kDoubleSize;
   int register_offset = SafepointRegisterStackIndex(reg.code()) * kPointerSize;
   return MemOperand(sp, doubles_size + register_offset);
@@ -1089,6 +1076,49 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type, int stack_adjustment) {
   return frame_ends;
 }
 
+void MacroAssembler::EnterBuiltinFrame(Register context, Register target,
+                                       Register argc) {
+  int fp_delta = 0;
+  mflr(r0);
+  if (FLAG_enable_embedded_constant_pool) {
+    if (target.is_valid()) {
+      Push(r0, fp, kConstantPoolRegister, context, target);
+      fp_delta = 3;
+    } else {
+      Push(r0, fp, kConstantPoolRegister, context);
+      fp_delta = 2;
+    }
+  } else {
+    if (target.is_valid()) {
+      Push(r0, fp, context, target);
+      fp_delta = 2;
+    } else {
+      Push(r0, fp, context);
+      fp_delta = 1;
+    }
+  }
+  addi(fp, sp, Operand(fp_delta * kPointerSize));
+  Push(argc);
+}
+
+void MacroAssembler::LeaveBuiltinFrame(Register context, Register target,
+                                       Register argc) {
+  Pop(argc);
+  if (FLAG_enable_embedded_constant_pool) {
+    if (target.is_valid()) {
+      Pop(r0, fp, kConstantPoolRegister, context, target);
+    } else {
+      Pop(r0, fp, kConstantPoolRegister, context);
+    }
+  } else {
+    if (target.is_valid()) {
+      Pop(r0, fp, context, target);
+    } else {
+      Pop(r0, fp, context);
+    }
+  }
+  mtlr(r0);
+}
 
 // ExitFrame layout (probably wrongish.. needs updating)
 //
@@ -1106,7 +1136,10 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type, int stack_adjustment) {
 // in the fp register (r31)
 // Then - we buy a new frame
 
-void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
+void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
+                                    StackFrame::Type frame_type) {
+  DCHECK(frame_type == StackFrame::EXIT ||
+         frame_type == StackFrame::BUILTIN_EXIT);
   // Set up the frame structure on the stack.
   DCHECK_EQ(2 * kPointerSize, ExitFrameConstants::kCallerSPDisplacement);
   DCHECK_EQ(1 * kPointerSize, ExitFrameConstants::kCallerPCOffset);
@@ -1117,7 +1150,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   // all of the pushes that have happened inside of V8
   // since we were called from C code
 
-  LoadSmiLiteral(ip, Smi::FromInt(StackFrame::EXIT));
+  LoadSmiLiteral(ip, Smi::FromInt(frame_type));
   PushCommonFrame(ip);
   // Reserve room for saved entry sp and code object.
   subi(sp, fp, Operand(ExitFrameConstants::kFixedFrameSizeFromFp));
@@ -2771,9 +2804,11 @@ void MacroAssembler::TailCallRuntime(Runtime::FunctionId fid) {
 }
 
 
-void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin) {
+void MacroAssembler::JumpToExternalReference(const ExternalReference& builtin,
+                                             bool builtin_exit_frame) {
   mov(r4, Operand(builtin));
-  CEntryStub stub(isolate(), 1);
+  CEntryStub stub(isolate(), 1, kDontSaveFPRegs, kArgvOnStack,
+                  builtin_exit_frame);
   Jump(stub.GetCode(), RelocInfo::CODE_TARGET);
 }
 
@@ -4746,8 +4781,7 @@ Register GetRegisterThatIsNotOneOf(Register reg1, Register reg2, Register reg3,
   if (reg5.is_valid()) regs |= reg5.bit();
   if (reg6.is_valid()) regs |= reg6.bit();
 
-  const RegisterConfiguration* config =
-      RegisterConfiguration::ArchDefault(RegisterConfiguration::CRANKSHAFT);
+  const RegisterConfiguration* config = RegisterConfiguration::Crankshaft();
   for (int i = 0; i < config->num_allocatable_general_registers(); ++i) {
     int code = config->GetAllocatableGeneralCode(i);
     Register candidate = Register::from_code(code);

@@ -28,41 +28,37 @@ class JSBinopReduction final {
       : lowering_(lowering), node_(node) {}
 
   BinaryOperationHints::Hint GetNumberBinaryOperationFeedback() {
-    if (!(lowering_->flags() & JSTypedLowering::kDeoptimizationEnabled) ||
-        !(lowering_->flags() & JSTypedLowering::kTypeFeedbackEnabled)) {
-      return BinaryOperationHints::kAny;
-    }
-    DCHECK_NE(0, node_->op()->ControlOutputCount());
-    DCHECK_EQ(1, node_->op()->EffectOutputCount());
-    DCHECK_EQ(2, OperatorProperties::GetFrameStateInputCount(node_->op()));
-    BinaryOperationHints hints = BinaryOperationHintsOf(node_->op());
-    BinaryOperationHints::Hint combined = hints.combined();
-    if (combined == BinaryOperationHints::kSignedSmall ||
-        combined == BinaryOperationHints::kSigned32 ||
-        combined == BinaryOperationHints::kNumberOrUndefined) {
-      return combined;
+    if (lowering_->flags() & JSTypedLowering::kDeoptimizationEnabled) {
+      DCHECK_NE(0, node_->op()->ControlOutputCount());
+      DCHECK_EQ(1, node_->op()->EffectOutputCount());
+      DCHECK_LE(1, OperatorProperties::GetFrameStateInputCount(node_->op()));
+      BinaryOperationHints hints = BinaryOperationHintsOf(node_->op());
+      BinaryOperationHints::Hint combined = hints.combined();
+      if (combined == BinaryOperationHints::kSignedSmall ||
+          combined == BinaryOperationHints::kSigned32 ||
+          combined == BinaryOperationHints::kNumberOrOddball) {
+        return combined;
+      }
     }
     return BinaryOperationHints::kAny;
   }
 
   CompareOperationHints::Hint GetNumberCompareOperationFeedback() {
-    if (!(lowering_->flags() & JSTypedLowering::kDeoptimizationEnabled) ||
-        !(lowering_->flags() & JSTypedLowering::kTypeFeedbackEnabled)) {
-      return CompareOperationHints::kAny;
-    }
-    DCHECK_NE(0, node_->op()->ControlOutputCount());
-    DCHECK_EQ(1, node_->op()->EffectOutputCount());
-    DCHECK_EQ(2, OperatorProperties::GetFrameStateInputCount(node_->op()));
-    CompareOperationHints hints = CompareOperationHintsOf(node_->op());
-    CompareOperationHints::Hint combined = hints.combined();
-    if (combined == CompareOperationHints::kSignedSmall ||
-        combined == CompareOperationHints::kNumber) {
-      return combined;
+    if (lowering_->flags() & JSTypedLowering::kDeoptimizationEnabled) {
+      DCHECK_NE(0, node_->op()->ControlOutputCount());
+      DCHECK_EQ(1, node_->op()->EffectOutputCount());
+      DCHECK_EQ(1, OperatorProperties::GetFrameStateInputCount(node_->op()));
+      CompareOperationHints hints = CompareOperationHintsOf(node_->op());
+      CompareOperationHints::Hint combined = hints.combined();
+      if (combined == CompareOperationHints::kSignedSmall ||
+          combined == CompareOperationHints::kNumberOrOddball) {
+        return combined;
+      }
     }
     return CompareOperationHints::kAny;
   }
 
-  void ConvertInputsToNumber(Node* frame_state) {
+  void ConvertInputsToNumber() {
     // To convert the inputs to numbers, we have to provide frame states
     // for lazy bailouts in the ToNumber conversions.
     // We use a little hack here: we take the frame state before the binary
@@ -78,17 +74,17 @@ class JSBinopReduction final {
     bool handles_exception = NodeProperties::IsExceptionalCall(node_);
 
     if (!left_is_primitive && !right_is_primitive && handles_exception) {
-      ConvertBothInputsToNumber(&left_input, &right_input, frame_state);
+      ConvertBothInputsToNumber(&left_input, &right_input);
     } else {
       left_input = left_is_primitive
                        ? ConvertPlainPrimitiveToNumber(left())
                        : ConvertSingleInputToNumber(
-                             left(), CreateFrameStateForLeftInput(frame_state));
-      right_input = right_is_primitive
-                        ? ConvertPlainPrimitiveToNumber(right())
-                        : ConvertSingleInputToNumber(
-                              right(), CreateFrameStateForRightInput(
-                                           frame_state, left_input));
+                             left(), CreateFrameStateForLeftInput());
+      right_input =
+          right_is_primitive
+              ? ConvertPlainPrimitiveToNumber(right())
+              : ConvertSingleInputToNumber(
+                    right(), CreateFrameStateForRightInput(left_input));
     }
 
     node_->ReplaceInput(0, left_input);
@@ -155,7 +151,7 @@ class JSBinopReduction final {
     DCHECK_EQ(1, node_->op()->EffectOutputCount());
     DCHECK_EQ(1, node_->op()->ControlInputCount());
     DCHECK_LT(1, node_->op()->ControlOutputCount());
-    DCHECK_EQ(2, OperatorProperties::GetFrameStateInputCount(node_->op()));
+    DCHECK_LE(1, OperatorProperties::GetFrameStateInputCount(node_->op()));
     DCHECK_EQ(2, node_->op()->ValueInputCount());
 
     // Reconnect the control output to bypass the IfSuccess node and
@@ -175,7 +171,9 @@ class JSBinopReduction final {
     }
 
     // Remove both bailout frame states and the context.
-    node_->RemoveInput(NodeProperties::FirstFrameStateIndex(node_) + 1);
+    if (OperatorProperties::GetFrameStateInputCount(node_->op()) == 2) {
+      node_->RemoveInput(NodeProperties::FirstFrameStateIndex(node_) + 1);
+    }
     node_->RemoveInput(NodeProperties::FirstFrameStateIndex(node_));
     node_->RemoveInput(NodeProperties::FirstContextIndex(node_));
 
@@ -229,7 +227,15 @@ class JSBinopReduction final {
   JSTypedLowering* lowering_;  // The containing lowering instance.
   Node* node_;                 // The original node.
 
-  Node* CreateFrameStateForLeftInput(Node* frame_state) {
+  Node* CreateFrameStateForLeftInput() {
+    if (OperatorProperties::GetFrameStateInputCount(node_->op()) < 2) {
+      // Deoptimization is disabled => return dummy frame state instead.
+      Node* dummy_state = NodeProperties::GetFrameStateInput(node_, 0);
+      DCHECK(OpParameter<FrameStateInfo>(dummy_state).bailout_id().IsNone());
+      return dummy_state;
+    }
+
+    Node* frame_state = NodeProperties::GetFrameStateInput(node_, 1);
     FrameStateInfo state_info = OpParameter<FrameStateInfo>(frame_state);
 
     if (state_info.bailout_id() == BailoutId::None()) {
@@ -259,7 +265,15 @@ class JSBinopReduction final {
                             frame_state->InputAt(kFrameStateOuterStateInput));
   }
 
-  Node* CreateFrameStateForRightInput(Node* frame_state, Node* converted_left) {
+  Node* CreateFrameStateForRightInput(Node* converted_left) {
+    if (OperatorProperties::GetFrameStateInputCount(node_->op()) < 2) {
+      // Deoptimization is disabled => return dummy frame state instead.
+      Node* dummy_state = NodeProperties::GetFrameStateInput(node_, 0);
+      DCHECK(OpParameter<FrameStateInfo>(dummy_state).bailout_id().IsNone());
+      return dummy_state;
+    }
+
+    Node* frame_state = NodeProperties::GetFrameStateInput(node_, 1);
     FrameStateInfo state_info = OpParameter<FrameStateInfo>(frame_state);
 
     if (state_info.bailout_id() == BailoutId::None()) {
@@ -320,8 +334,7 @@ class JSBinopReduction final {
     return n;
   }
 
-  void ConvertBothInputsToNumber(Node** left_result, Node** right_result,
-                                 Node* frame_state) {
+  void ConvertBothInputsToNumber(Node** left_result, Node** right_result) {
     Node* projections[2];
 
     // Find {IfSuccess} and {IfException} continuations of the operation.
@@ -331,12 +344,12 @@ class JSBinopReduction final {
     Node* if_success = projections[0];
 
     // Insert two ToNumber() operations that both potentially throw.
-    Node* left_state = CreateFrameStateForLeftInput(frame_state);
+    Node* left_state = CreateFrameStateForLeftInput();
     Node* left_conv =
         graph()->NewNode(javascript()->ToNumber(), left(), context(),
                          left_state, effect(), control());
     Node* left_success = graph()->NewNode(common()->IfSuccess(), left_conv);
-    Node* right_state = CreateFrameStateForRightInput(frame_state, left_conv);
+    Node* right_state = CreateFrameStateForRightInput(left_conv);
     Node* right_conv =
         graph()->NewNode(javascript()->ToNumber(), right(), context(),
                          right_state, left_conv, left_success);
@@ -416,17 +429,13 @@ JSTypedLowering::JSTypedLowering(Editor* editor,
 
 
 Reduction JSTypedLowering::ReduceJSAdd(Node* node) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
-
   JSBinopReduction r(this, node);
-
   BinaryOperationHints::Hint feedback = r.GetNumberBinaryOperationFeedback();
-  if (feedback == BinaryOperationHints::kNumberOrUndefined &&
+  if (feedback == BinaryOperationHints::kNumberOrOddball &&
       r.BothInputsAre(Type::PlainPrimitive()) &&
       r.NeitherInputCanBe(Type::StringOrReceiver())) {
     // JSAdd(x:-string, y:-string) => NumberAdd(ToNumber(x), ToNumber(y))
-    Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-    r.ConvertInputsToNumber(frame_state);
+    r.ConvertInputsToNumber();
     return r.ChangeToPureOperator(simplified()->NumberAdd(), Type::Number());
   }
   if (feedback != BinaryOperationHints::kAny) {
@@ -436,14 +445,14 @@ Reduction JSTypedLowering::ReduceJSAdd(Node* node) {
   }
   if (r.BothInputsAre(Type::Number())) {
     // JSAdd(x:number, y:number) => NumberAdd(x, y)
-    Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-    r.ConvertInputsToNumber(frame_state);
+    r.ConvertInputsToNumber();
     return r.ChangeToPureOperator(simplified()->NumberAdd(), Type::Number());
   }
-  if (r.NeitherInputCanBe(Type::StringOrReceiver())) {
+  if ((r.BothInputsAre(Type::PlainPrimitive()) ||
+       !(flags() & kDeoptimizationEnabled)) &&
+      r.NeitherInputCanBe(Type::StringOrReceiver())) {
     // JSAdd(x:-string, y:-string) => NumberAdd(ToNumber(x), ToNumber(y))
-    Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-    r.ConvertInputsToNumber(frame_state);
+    r.ConvertInputsToNumber();
     return r.ChangeToPureOperator(simplified()->NumberAdd(), Type::Number());
   }
   if (r.OneInputIs(Type::String())) {
@@ -460,8 +469,7 @@ Reduction JSTypedLowering::ReduceJSAdd(Node* node) {
     CallDescriptor const* const desc = Linkage::GetStubCallDescriptor(
         isolate(), graph()->zone(), callable.descriptor(), 0,
         CallDescriptor::kNeedsFrameState, node->op()->properties());
-    DCHECK_EQ(2, OperatorProperties::GetFrameStateInputCount(node->op()));
-    node->RemoveInput(NodeProperties::FirstFrameStateIndex(node) + 1);
+    DCHECK_EQ(1, OperatorProperties::GetFrameStateInputCount(node->op()));
     node->InsertInput(graph()->zone(), 0,
                       jsgraph()->HeapConstant(callable.code()));
     NodeProperties::ChangeOp(node, common()->Call(desc));
@@ -471,32 +479,14 @@ Reduction JSTypedLowering::ReduceJSAdd(Node* node) {
 }
 
 
-Reduction JSTypedLowering::ReduceJSModulus(Node* node) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
-  JSBinopReduction r(this, node);
-  if (r.BothInputsAre(Type::Number())) {
-    // JSModulus(x:number, x:number) => NumberModulus(x, y)
-    return r.ChangeToPureOperator(simplified()->NumberModulus(),
-                                  Type::Number());
-  }
-  BinaryOperationHints::Hint feedback = r.GetNumberBinaryOperationFeedback();
-  if (feedback != BinaryOperationHints::kAny) {
-    return r.ChangeToSpeculativeOperator(
-        simplified()->SpeculativeNumberModulus(feedback), Type::Number());
-  }
-  return NoChange();
-}
-
 Reduction JSTypedLowering::ReduceJSSubtract(Node* node) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
   JSBinopReduction r(this, node);
   BinaryOperationHints::Hint feedback = r.GetNumberBinaryOperationFeedback();
-  if (feedback == BinaryOperationHints::kNumberOrUndefined &&
+  if (feedback == BinaryOperationHints::kNumberOrOddball &&
       r.BothInputsAre(Type::PlainPrimitive())) {
     // JSSubtract(x:plain-primitive, y:plain-primitive)
     //   => NumberSubtract(ToNumber(x), ToNumber(y))
-    Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-    r.ConvertInputsToNumber(frame_state);
+    r.ConvertInputsToNumber();
     return r.ChangeToPureOperator(simplified()->NumberSubtract(),
                                   Type::Number());
   }
@@ -505,67 +495,137 @@ Reduction JSTypedLowering::ReduceJSSubtract(Node* node) {
     return r.ChangeToSpeculativeOperator(
         simplified()->SpeculativeNumberSubtract(feedback), Type::Number());
   }
-  Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-  r.ConvertInputsToNumber(frame_state);
-  return r.ChangeToPureOperator(simplified()->NumberSubtract(), Type::Number());
+
+  // If deoptimization is enabled we rely on type feedback.
+  if (r.BothInputsAre(Type::PlainPrimitive()) ||
+      !(flags() & kDeoptimizationEnabled)) {
+    r.ConvertInputsToNumber();
+    return r.ChangeToPureOperator(simplified()->NumberSubtract(),
+                                  Type::Number());
+  }
+
+  return NoChange();
 }
 
 Reduction JSTypedLowering::ReduceJSMultiply(Node* node) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
   JSBinopReduction r(this, node);
-
   BinaryOperationHints::Hint feedback = r.GetNumberBinaryOperationFeedback();
+  if (feedback == BinaryOperationHints::kNumberOrOddball &&
+      r.BothInputsAre(Type::PlainPrimitive())) {
+    // JSMultiply(x:plain-primitive,
+    //            y:plain-primitive) => NumberMultiply(ToNumber(x), ToNumber(y))
+    r.ConvertInputsToNumber();
+    return r.ChangeToPureOperator(simplified()->NumberMultiply(),
+                                  Type::Number());
+  }
   if (feedback != BinaryOperationHints::kAny) {
     return r.ChangeToSpeculativeOperator(
         simplified()->SpeculativeNumberMultiply(feedback), Type::Number());
   }
 
-  Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-  r.ConvertInputsToNumber(frame_state);
-  return r.ChangeToPureOperator(simplified()->NumberMultiply(), Type::Number());
+  // If deoptimization is enabled we rely on type feedback.
+  if (r.BothInputsAre(Type::PlainPrimitive()) ||
+      !(flags() & kDeoptimizationEnabled)) {
+    r.ConvertInputsToNumber();
+    return r.ChangeToPureOperator(simplified()->NumberMultiply(),
+                                  Type::Number());
+  }
+
+  return NoChange();
 }
 
 Reduction JSTypedLowering::ReduceJSDivide(Node* node) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
   JSBinopReduction r(this, node);
   BinaryOperationHints::Hint feedback = r.GetNumberBinaryOperationFeedback();
+  if (feedback == BinaryOperationHints::kNumberOrOddball &&
+      r.BothInputsAre(Type::PlainPrimitive())) {
+    // JSDivide(x:plain-primitive,
+    //          y:plain-primitive) => NumberDivide(ToNumber(x), ToNumber(y))
+    r.ConvertInputsToNumber();
+    return r.ChangeToPureOperator(simplified()->NumberDivide(), Type::Number());
+  }
   if (feedback != BinaryOperationHints::kAny) {
     return r.ChangeToSpeculativeOperator(
         simplified()->SpeculativeNumberDivide(feedback), Type::Number());
   }
-  Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-  r.ConvertInputsToNumber(frame_state);
-  return r.ChangeToPureOperator(simplified()->NumberDivide(), Type::Number());
+  if (r.BothInputsAre(Type::PlainPrimitive())) {
+    // JSDivide(x:plain-primitive,
+    //          y:plain-primitive) => NumberDivide(ToNumber(x), ToNumber(y))
+    r.ConvertInputsToNumber();
+    return r.ChangeToPureOperator(simplified()->NumberDivide(), Type::Number());
+  }
+  return NoChange();
 }
 
+Reduction JSTypedLowering::ReduceJSModulus(Node* node) {
+  JSBinopReduction r(this, node);
+  BinaryOperationHints::Hint feedback = r.GetNumberBinaryOperationFeedback();
+  if (feedback == BinaryOperationHints::kNumberOrOddball &&
+      r.BothInputsAre(Type::PlainPrimitive())) {
+    // JSModulus(x:plain-primitive,
+    //           y:plain-primitive) => NumberModulus(ToNumber(x), ToNumber(y))
+    r.ConvertInputsToNumber();
+    return r.ChangeToPureOperator(simplified()->NumberModulus(),
+                                  Type::Number());
+  }
+  if (feedback != BinaryOperationHints::kAny) {
+    return r.ChangeToSpeculativeOperator(
+        simplified()->SpeculativeNumberModulus(feedback), Type::Number());
+  }
+  if (r.BothInputsAre(Type::PlainPrimitive())) {
+    // JSModulus(x:plain-primitive,
+    //           y:plain-primitive) => NumberModulus(ToNumber(x), ToNumber(y))
+    r.ConvertInputsToNumber();
+    return r.ChangeToPureOperator(simplified()->NumberModulus(),
+                                  Type::Number());
+  }
+  return NoChange();
+}
 
 Reduction JSTypedLowering::ReduceInt32Binop(Node* node, const Operator* intOp) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
+  if (flags() & kDisableIntegerBinaryOpReduction) return NoChange();
 
   JSBinopReduction r(this, node);
-  Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-  r.ConvertInputsToNumber(frame_state);
+  r.ConvertInputsToNumber();
   r.ConvertInputsToUI32(kSigned, kSigned);
   return r.ChangeToPureOperator(intOp, Type::Integral32());
 }
 
+Reduction JSTypedLowering::ReduceShiftLeft(Node* node) {
+  if (flags() & kDisableIntegerBinaryOpReduction) return NoChange();
+
+  JSBinopReduction r(this, node);
+  BinaryOperationHints::Hint feedback = r.GetNumberBinaryOperationFeedback();
+  if (feedback == BinaryOperationHints::kSigned32 ||
+      feedback == BinaryOperationHints::kSignedSmall) {
+    return r.ChangeToSpeculativeOperator(
+        simplified()->SpeculativeNumberShiftLeft(feedback), Type::Signed32());
+  }
+
+  // If deoptimization is enabled we rely on type feedback.
+  if (r.BothInputsAre(Type::PlainPrimitive()) ||
+      !(flags() & kDeoptimizationEnabled)) {
+    r.ConvertInputsToNumber();
+    r.ConvertInputsToUI32(kSigned, kUnsigned);
+    return r.ChangeToPureOperator(simplified()->NumberShiftLeft(),
+                                  Type::Number());
+  }
+  return NoChange();
+}
 
 Reduction JSTypedLowering::ReduceUI32Shift(Node* node,
                                            Signedness left_signedness,
                                            const Operator* shift_op) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
+  if (flags() & kDisableIntegerBinaryOpReduction) return NoChange();
 
   JSBinopReduction r(this, node);
-  Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-  r.ConvertInputsToNumber(frame_state);
+  r.ConvertInputsToNumber();
   r.ConvertInputsToUI32(left_signedness, kUnsigned);
   return r.ChangeToPureOperator(shift_op);
 }
 
 
 Reduction JSTypedLowering::ReduceJSComparison(Node* node) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
-
   JSBinopReduction r(this, node);
   if (r.BothInputsAre(Type::String())) {
     // If both inputs are definitely strings, perform a string comparison.
@@ -597,21 +657,16 @@ Reduction JSTypedLowering::ReduceJSComparison(Node* node) {
       r.OneInputCannotBe(Type::StringOrReceiver())) {
     const Operator* less_than;
     const Operator* less_than_or_equal;
-    if (r.BothInputsAre(Type::Unsigned32())) {
-      less_than = machine()->Uint32LessThan();
-      less_than_or_equal = machine()->Uint32LessThanOrEqual();
-    } else if (r.BothInputsAre(Type::Signed32())) {
-      less_than = machine()->Int32LessThan();
-      less_than_or_equal = machine()->Int32LessThanOrEqual();
-    } else if (hint != CompareOperationHints::kAny) {
+    if (hint != CompareOperationHints::kAny) {
       less_than = simplified()->SpeculativeNumberLessThan(hint);
       less_than_or_equal = simplified()->SpeculativeNumberLessThanOrEqual(hint);
-    } else {
-      // TODO(turbofan): mixed signed/unsigned int32 comparisons.
-      Node* frame_state = NodeProperties::GetFrameStateInput(node, 1);
-      r.ConvertInputsToNumber(frame_state);
+    } else if (r.BothInputsAre(Type::PlainPrimitive()) ||
+               !(flags() & kDeoptimizationEnabled)) {
+      r.ConvertInputsToNumber();
       less_than = simplified()->NumberLessThan();
       less_than_or_equal = simplified()->NumberLessThanOrEqual();
+    } else {
+      return NoChange();
     }
     const Operator* comparison;
     switch (node->opcode()) {
@@ -682,8 +737,6 @@ Reduction JSTypedLowering::ReduceJSEqualTypeOf(Node* node, bool invert) {
 }
 
 Reduction JSTypedLowering::ReduceJSEqual(Node* node, bool invert) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
-
   Reduction const reduction = ReduceJSEqualTypeOf(node, invert);
   if (reduction.Changed()) {
     ReplaceWithValue(node, reduction.replacement());
@@ -726,8 +779,6 @@ Reduction JSTypedLowering::ReduceJSEqual(Node* node, bool invert) {
 
 
 Reduction JSTypedLowering::ReduceJSStrictEqual(Node* node, bool invert) {
-  if (flags() & kDisableBinaryOpReduction) return NoChange();
-
   JSBinopReduction r(this, node);
   if (r.left() == r.right()) {
     // x === x is always true if x != NaN
@@ -803,6 +854,14 @@ Reduction JSTypedLowering::ReduceJSToBoolean(Node* node) {
                                            jsgraph()->ZeroConstant()));
     node->TrimInputCount(1);
     NodeProperties::ChangeOp(node, simplified()->BooleanNot());
+    return Changed(node);
+  } else if (input_type->Is(Type::Number())) {
+    // JSToBoolean(x:number) => NumberLessThan(#0,NumberAbs(x))
+    RelaxEffectsAndControls(node);
+    node->ReplaceInput(0, jsgraph()->ZeroConstant());
+    node->ReplaceInput(1, graph()->NewNode(simplified()->NumberAbs(), input));
+    node->TrimInputCount(2);
+    NodeProperties::ChangeOp(node, simplified()->NumberLessThan());
     return Changed(node);
   } else if (input_type->Is(Type::String())) {
     // JSToBoolean(x:string) => NumberLessThan(#0,x.length)
@@ -888,14 +947,6 @@ Reduction JSTypedLowering::ReduceJSToNumberInput(Node* input) {
   if (input_type->Is(Type::Null())) {
     // JSToNumber(null) => #0
     return Replace(jsgraph()->ZeroConstant());
-  }
-  if (input_type->Is(Type::Boolean())) {
-    // JSToNumber(x:boolean) => BooleanToNumber(x)
-    return Replace(graph()->NewNode(simplified()->BooleanToNumber(), input));
-  }
-  if (input_type->Is(Type::String())) {
-    // JSToNumber(x:string) => StringToNumber(x)
-    return Replace(graph()->NewNode(simplified()->StringToNumber(), input));
   }
   return NoChange();
 }
@@ -1847,6 +1898,15 @@ Reduction JSTypedLowering::ReduceSelect(Node* node) {
   return NoChange();
 }
 
+Reduction JSTypedLowering::ReduceNumberRoundop(Node* node) {
+  // TODO(bmeurer): Find a better home for this thing!
+  Node* const input = NodeProperties::GetValueInput(node, 0);
+  Type* const input_type = NodeProperties::GetType(input);
+  if (input_type->Is(type_cache_.kIntegerOrMinusZeroOrNaN)) {
+    return Replace(input);
+  }
+  return NoChange();
+}
 
 Reduction JSTypedLowering::Reduce(Node* node) {
   // Check if the output type is a singleton.  In that case we already know the
@@ -1908,7 +1968,7 @@ Reduction JSTypedLowering::Reduce(Node* node) {
     case IrOpcode::kJSBitwiseAnd:
       return ReduceInt32Binop(node, simplified()->NumberBitwiseAnd());
     case IrOpcode::kJSShiftLeft:
-      return ReduceUI32Shift(node, kSigned, simplified()->NumberShiftLeft());
+      return ReduceShiftLeft(node);
     case IrOpcode::kJSShiftRight:
       return ReduceUI32Shift(node, kSigned, simplified()->NumberShiftRight());
     case IrOpcode::kJSShiftRightLogical:
@@ -1968,6 +2028,11 @@ Reduction JSTypedLowering::Reduce(Node* node) {
       return ReduceJSGeneratorRestoreRegister(node);
     case IrOpcode::kSelect:
       return ReduceSelect(node);
+    case IrOpcode::kNumberCeil:
+    case IrOpcode::kNumberFloor:
+    case IrOpcode::kNumberRound:
+    case IrOpcode::kNumberTrunc:
+      return ReduceNumberRoundop(node);
     default:
       break;
   }

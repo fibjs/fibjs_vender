@@ -165,6 +165,9 @@ struct WasmModule {
   uint32_t max_mem_pages;     // maximum size of the memory in 64k pages.
   bool mem_export;            // true if the memory is exported.
   bool mem_external;          // true if the memory is external.
+  // TODO(wasm): reconcile start function index being an int with
+  // the fact that we index on uint32_t, so we may technically not be
+  // able to represent some start_function_index -es.
   int start_function_index;   // start function, if any.
   ModuleOrigin origin;        // origin of the module
 
@@ -187,7 +190,8 @@ struct WasmModule {
   // switch to libc-2.21 or higher.
   base::SmartPointer<base::Semaphore> pending_tasks;
 
-  WasmModule();
+  WasmModule() : WasmModule(nullptr) {}
+  explicit WasmModule(byte* module_start);
 
   // Get a string stored in the module bytes representing a name.
   WasmName GetName(uint32_t offset, uint32_t length) const {
@@ -224,10 +228,13 @@ struct WasmModule {
   }
 
   // Creates a new instantiation of the module in the given isolate.
-  MaybeHandle<JSObject> Instantiate(Isolate* isolate, Handle<JSReceiver> ffi,
-                                    Handle<JSArrayBuffer> memory) const;
+  static MaybeHandle<JSObject> Instantiate(Isolate* isolate,
+                                           Handle<FixedArray> compiled_module,
+                                           Handle<JSReceiver> ffi,
+                                           Handle<JSArrayBuffer> memory);
 
-  Handle<FixedArray> CompileFunctions(Isolate* isolate) const;
+  MaybeHandle<FixedArray> CompileFunctions(Isolate* isolate,
+                                           ErrorThrower* thrower) const;
 
   uint32_t FunctionTableSize() const {
     if (indirect_table_size > 0) {
@@ -352,7 +359,16 @@ SeqOneByteString* GetWasmBytes(JSObject* wasm);
 
 // Get the debug info associated with the given wasm object.
 // If no debug info exists yet, it is created automatically.
-WasmDebugInfo* GetDebugInfo(JSObject* wasm);
+Handle<WasmDebugInfo> GetDebugInfo(Handle<JSObject> wasm);
+
+// Return the number of functions in the given wasm object.
+int GetNumberOfFunctions(JSObject* wasm);
+
+// Create and export JSFunction
+Handle<JSFunction> WrapExportCodeAsJSFunction(Isolate* isolate,
+                                              Handle<Code> export_code,
+                                              Handle<String> name, int arity,
+                                              Handle<JSObject> module_instance);
 
 // Check whether the given object is a wasm object.
 // This checks the number and type of internal fields, so it's not 100 percent
@@ -360,6 +376,11 @@ WasmDebugInfo* GetDebugInfo(JSObject* wasm);
 // special marker as internal field, which will definitely never occur anywhere
 // else.
 bool IsWasmObject(Object* object);
+
+// Update memory references of code objects associated with the module
+bool UpdateWasmModuleMemory(Handle<JSObject> object, Address old_start,
+                            Address new_start, uint32_t old_size,
+                            uint32_t new_size);
 
 namespace testing {
 
@@ -369,7 +390,6 @@ int32_t CompileAndRunWasmModule(Isolate* isolate, const byte* module_start,
                                 const byte* module_end, bool asm_js = false);
 
 }  // namespace testing
-
 }  // namespace wasm
 }  // namespace internal
 }  // namespace v8

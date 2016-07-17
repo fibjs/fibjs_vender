@@ -15,6 +15,7 @@
 #include "src/debug/debug.h"
 #include "src/debug/liveedit.h"
 #include "src/frames-inl.h"
+#include "src/globals.h"
 #include "src/isolate-inl.h"
 #include "src/macro-assembler.h"
 #include "src/snapshot/snapshot.h"
@@ -31,7 +32,7 @@ bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
   RuntimeCallTimerScope runtimeTimer(isolate,
                                      &RuntimeCallStats::CompileFullCode);
   TimerEventScope<TimerEventCompileFullCode> timer(info->isolate());
-  TRACE_EVENT0("v8", "V8.CompileFullCode");
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.CompileFullCode");
 
   Handle<Script> script = info->script();
   if (!script->IsUndefined(isolate) &&
@@ -45,9 +46,6 @@ bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
                       CodeObjectRequired::kYes);
   if (info->will_serialize()) masm.enable_serializer();
 
-  LOG_CODE_EVENT(isolate,
-                 CodeStartLinePosInfoRecordEvent(masm.positions_recorder()));
-
   FullCodeGenerator cgen(&masm, info);
   cgen.Generate();
   if (cgen.HasStackOverflow()) {
@@ -56,7 +54,8 @@ bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
   }
   unsigned table_offset = cgen.EmitBackEdgeTable();
 
-  Handle<Code> code = CodeGenerator::MakeCodeEpilogue(&masm, info);
+  Handle<Code> code =
+      CodeGenerator::MakeCodeEpilogue(&masm, nullptr, info, masm.CodeObject());
   cgen.PopulateDeoptimizationData(code);
   cgen.PopulateTypeFeedbackInfo(code);
   cgen.PopulateHandlerTable(code);
@@ -65,11 +64,12 @@ bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
   code->set_allow_osr_at_loop_nesting_level(0);
   code->set_profiler_ticks(0);
   code->set_back_edge_table_offset(table_offset);
+  Handle<ByteArray> source_positions =
+      cgen.source_position_table_builder_.ToSourcePositionTable();
+  code->set_source_position_table(*source_positions);
+  cgen.source_position_table_builder_.EndJitLogging(AbstractCode::cast(*code));
   CodeGenerator::PrintCode(code, info);
   info->SetCode(code);
-  void* line_info = masm.positions_recorder()->DetachJITHandlerData();
-  LOG_CODE_EVENT(isolate, CodeEndLinePosInfoRecordEvent(
-                              AbstractCode::cast(*code), line_info));
 
 #ifdef DEBUG
   // Check that no context-specific object has been embedded.
@@ -125,9 +125,9 @@ void FullCodeGenerator::PopulateHandlerTable(Handle<Code> code) {
       Handle<HandlerTable>::cast(isolate()->factory()->NewFixedArray(
           HandlerTable::LengthForRange(handler_table_size), TENURED));
   for (int i = 0; i < handler_table_size; ++i) {
-    HandlerTable::CatchPrediction prediction =
-        handler_table_[i].try_catch_depth > 0 ? HandlerTable::CAUGHT
-                                              : HandlerTable::UNCAUGHT;
+    HandlerTable::CatchPrediction prediction = handler_table_[i].catch_predicted
+                                                   ? HandlerTable::CAUGHT
+                                                   : HandlerTable::UNCAUGHT;
     table->SetRangeStart(i, handler_table_[i].range_start);
     table->SetRangeEnd(i, handler_table_[i].range_end);
     table->SetRangeHandler(i, handler_table_[i].handler_offset, prediction);
@@ -173,6 +173,7 @@ void FullCodeGenerator::PrepareForBailout(Expression* node,
 void FullCodeGenerator::CallLoadIC(TypeFeedbackId id) {
   Handle<Code> ic = CodeFactory::LoadIC(isolate()).code();
   CallIC(ic, id);
+  if (FLAG_tf_load_ic_stub) RestoreContext();
 }
 
 void FullCodeGenerator::CallLoadGlobalIC(TypeofMode typeof_mode,
@@ -390,7 +391,7 @@ void FullCodeGenerator::VisitDeclarations(
   ZoneList<Handle<Object> > inner_globals(10, zone());
   globals_ = &inner_globals;
 
-  AstVisitor::VisitDeclarations(declarations);
+  AstVisitor<FullCodeGenerator>::VisitDeclarations(declarations);
 
   if (!globals_->is_empty()) {
     // Invoke the platform-dependent code generator to do the actual
@@ -427,11 +428,6 @@ void FullCodeGenerator::VisitImportDeclaration(ImportDeclaration* declaration) {
     case VariableLocation::LOOKUP:
       UNREACHABLE();
   }
-}
-
-
-void FullCodeGenerator::VisitExportDeclaration(ExportDeclaration* declaration) {
-  // TODO(rossberg)
 }
 
 
@@ -522,19 +518,6 @@ void FullCodeGenerator::EmitRegExpExec(CallRuntime* expr) {
 }
 
 
-void FullCodeGenerator::EmitMathPow(CallRuntime* expr) {
-  // Load the arguments on the stack and call the runtime function.
-  MathPowStub stub(isolate(), MathPowStub::ON_STACK);
-  ZoneList<Expression*>* args = expr->arguments();
-  DCHECK(args->length() == 2);
-  VisitForStackValue(args->at(0));
-  VisitForStackValue(args->at(1));
-  __ CallStub(&stub);
-  OperandStackDepthDecrement(2);
-  context()->Plug(result_register());
-}
-
-
 void FullCodeGenerator::EmitIntrinsicAsStubCall(CallRuntime* expr,
                                                 const Callable& callable) {
   ZoneList<Expression*>* args = expr->arguments();
@@ -580,11 +563,6 @@ void FullCodeGenerator::EmitToString(CallRuntime* expr) {
 }
 
 
-void FullCodeGenerator::EmitToName(CallRuntime* expr) {
-  EmitIntrinsicAsStubCall(expr, CodeFactory::ToName(isolate()));
-}
-
-
 void FullCodeGenerator::EmitToLength(CallRuntime* expr) {
   EmitIntrinsicAsStubCall(expr, CodeFactory::ToLength(isolate()));
 }
@@ -615,19 +593,19 @@ void FullCodeGenerator::EmitHasProperty() {
   RestoreContext();
 }
 
-void RecordStatementPosition(MacroAssembler* masm, int pos) {
-  if (pos == RelocInfo::kNoPosition) return;
-  masm->positions_recorder()->RecordStatementPosition(pos);
+void FullCodeGenerator::RecordStatementPosition(int pos) {
+  DCHECK_NE(kNoSourcePosition, pos);
+  source_position_table_builder_.AddPosition(masm_->pc_offset(), pos, true);
 }
 
-void RecordPosition(MacroAssembler* masm, int pos) {
-  if (pos == RelocInfo::kNoPosition) return;
-  masm->positions_recorder()->RecordPosition(pos);
+void FullCodeGenerator::RecordPosition(int pos) {
+  DCHECK_NE(kNoSourcePosition, pos);
+  source_position_table_builder_.AddPosition(masm_->pc_offset(), pos, false);
 }
 
 
 void FullCodeGenerator::SetFunctionPosition(FunctionLiteral* fun) {
-  RecordPosition(masm_, fun->start_position());
+  RecordPosition(fun->start_position());
 }
 
 
@@ -635,7 +613,7 @@ void FullCodeGenerator::SetReturnPosition(FunctionLiteral* fun) {
   // For default constructors, start position equals end position, and there
   // is no source code besides the class literal.
   int pos = std::max(fun->start_position(), fun->end_position() - 1);
-  RecordStatementPosition(masm_, pos);
+  RecordStatementPosition(pos);
   if (info_->is_debug()) {
     // Always emit a debug break slot before a return.
     DebugCodegen::GenerateSlot(masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_RETURN);
@@ -645,8 +623,8 @@ void FullCodeGenerator::SetReturnPosition(FunctionLiteral* fun) {
 
 void FullCodeGenerator::SetStatementPosition(
     Statement* stmt, FullCodeGenerator::InsertBreak insert_break) {
-  if (stmt->position() == RelocInfo::kNoPosition) return;
-  RecordStatementPosition(masm_, stmt->position());
+  if (stmt->position() == kNoSourcePosition) return;
+  RecordStatementPosition(stmt->position());
   if (insert_break == INSERT_BREAK && info_->is_debug() &&
       !stmt->IsDebuggerStatement()) {
     DebugCodegen::GenerateSlot(masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_POSITION);
@@ -654,14 +632,14 @@ void FullCodeGenerator::SetStatementPosition(
 }
 
 void FullCodeGenerator::SetExpressionPosition(Expression* expr) {
-  if (expr->position() == RelocInfo::kNoPosition) return;
-  RecordPosition(masm_, expr->position());
+  if (expr->position() == kNoSourcePosition) return;
+  RecordPosition(expr->position());
 }
 
 
 void FullCodeGenerator::SetExpressionAsStatementPosition(Expression* expr) {
-  if (expr->position() == RelocInfo::kNoPosition) return;
-  RecordStatementPosition(masm_, expr->position());
+  if (expr->position() == kNoSourcePosition) return;
+  RecordStatementPosition(expr->position());
   if (info_->is_debug()) {
     DebugCodegen::GenerateSlot(masm_, RelocInfo::DEBUG_BREAK_SLOT_AT_POSITION);
   }
@@ -669,8 +647,8 @@ void FullCodeGenerator::SetExpressionAsStatementPosition(Expression* expr) {
 
 void FullCodeGenerator::SetCallPosition(Expression* expr,
                                         TailCallMode tail_call_mode) {
-  if (expr->position() == RelocInfo::kNoPosition) return;
-  RecordPosition(masm_, expr->position());
+  if (expr->position() == kNoSourcePosition) return;
+  RecordPosition(expr->position());
   if (info_->is_debug()) {
     RelocInfo::Mode mode = (tail_call_mode == TailCallMode::kAllow)
                                ? RelocInfo::DEBUG_BREAK_SLOT_AT_TAIL_CALL
@@ -891,7 +869,7 @@ void FullCodeGenerator::VisitDoExpression(DoExpression* expr) {
   Comment cmnt(masm_, "[ Do Expression");
   SetExpressionPosition(expr);
   VisitBlock(expr->block());
-  EmitVariableLoad(expr->result());
+  VisitInDuplicateContext(expr->result());
 }
 
 
@@ -1038,7 +1016,7 @@ void FullCodeGenerator::EmitNewClosure(Handle<SharedFunctionInfo> info,
   // doesn't just get a copy of the existing unoptimized code.
   if (!FLAG_always_opt && !FLAG_prepare_always_opt && !pretenure &&
       scope()->is_function_scope()) {
-    FastNewClosureStub stub(isolate(), info->language_mode(), info->kind());
+    FastNewClosureStub stub(isolate());
     __ Move(stub.GetCallInterfaceDescriptor().GetRegisterParameter(0), info);
     __ CallStub(&stub);
   } else {
@@ -1090,13 +1068,13 @@ void FullCodeGenerator::EmitPropertyKey(ObjectLiteralProperty* property,
                                         BailoutId bailout_id) {
   VisitForStackValue(property->key());
   CallRuntimeWithOperands(Runtime::kToName);
-  PrepareForBailoutForId(bailout_id, BailoutState::NO_REGISTERS);
+  PrepareForBailoutForId(bailout_id, BailoutState::TOS_REGISTER);
   PushOperand(result_register());
 }
 
 void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorSlot slot) {
   DCHECK(!slot.IsInvalid());
-  __ Move(VectorStoreICTrampolineDescriptor::SlotRegister(), SmiFromSlot(slot));
+  __ Move(StoreDescriptor::SlotRegister(), SmiFromSlot(slot));
 }
 
 void FullCodeGenerator::VisitReturnStatement(ReturnStatement* stmt) {
@@ -1340,15 +1318,13 @@ void FullCodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
   // Try block code. Sets up the exception handler chain.
   __ bind(&try_entry);
 
-  try_catch_depth_++;
   int handler_index = NewHandlerTableEntry();
-  EnterTryBlock(handler_index, &handler_entry);
+  EnterTryBlock(handler_index, &handler_entry, stmt->catch_predicted());
   {
     Comment cmnt_try(masm(), "[ Try block");
     Visit(stmt->try_block());
   }
   ExitTryBlock(handler_index);
-  try_catch_depth_--;
   __ bind(&exit);
 }
 
@@ -1392,7 +1368,7 @@ void FullCodeGenerator::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
   // Set up try handler.
   __ bind(&try_entry);
   int handler_index = NewHandlerTableEntry();
-  EnterTryBlock(handler_index, &handler_entry);
+  EnterTryBlock(handler_index, &handler_entry, stmt->catch_predicted());
   {
     Comment cmnt_try(masm(), "[ Try block");
     TryFinally try_body(this, &deferred);
@@ -1575,13 +1551,13 @@ void FullCodeGenerator::VisitThrow(Throw* expr) {
   if (context()->IsStackValue()) OperandStackDepthIncrement(1);
 }
 
-
-void FullCodeGenerator::EnterTryBlock(int handler_index, Label* handler) {
+void FullCodeGenerator::EnterTryBlock(int handler_index, Label* handler,
+                                      bool catch_predicted) {
   HandlerTableEntry* entry = &handler_table_[handler_index];
   entry->range_start = masm()->pc_offset();
   entry->handler_offset = handler->pos();
-  entry->try_catch_depth = try_catch_depth_;
   entry->stack_depth = operand_stack_depth_;
+  entry->catch_predicted = catch_predicted;
 
   // We are using the operand stack depth, check for accuracy.
   EmitOperandStackDepthCheck();
@@ -1980,8 +1956,8 @@ bool FullCodeGenerator::NeedsHoleCheckForLoad(VariableProxy* proxy) {
   }
 
   // Check that we always have valid source position.
-  DCHECK(var->initializer_position() != RelocInfo::kNoPosition);
-  DCHECK(proxy->position() != RelocInfo::kNoPosition);
+  DCHECK(var->initializer_position() != kNoSourcePosition);
+  DCHECK(proxy->position() != kNoSourcePosition);
 
   return var->scope()->is_nonlinear() ||
          var->initializer_position() >= proxy->position();

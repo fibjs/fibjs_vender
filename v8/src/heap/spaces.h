@@ -14,6 +14,7 @@
 #include "src/base/hashmap.h"
 #include "src/base/platform/mutex.h"
 #include "src/flags.h"
+#include "src/heap/marking.h"
 #include "src/list.h"
 #include "src/objects.h"
 #include "src/utils.h"
@@ -109,187 +110,6 @@ class Space;
 
 #define DCHECK_PAGE_OFFSET(offset) \
   DCHECK((Page::kObjectStartOffset <= offset) && (offset <= Page::kPageSize))
-
-class MarkBit {
- public:
-  typedef uint32_t CellType;
-
-  inline MarkBit(CellType* cell, CellType mask) : cell_(cell), mask_(mask) {}
-
-#ifdef DEBUG
-  bool operator==(const MarkBit& other) {
-    return cell_ == other.cell_ && mask_ == other.mask_;
-  }
-#endif
-
- private:
-  inline CellType* cell() { return cell_; }
-  inline CellType mask() { return mask_; }
-
-  inline MarkBit Next() {
-    CellType new_mask = mask_ << 1;
-    if (new_mask == 0) {
-      return MarkBit(cell_ + 1, 1);
-    } else {
-      return MarkBit(cell_, new_mask);
-    }
-  }
-
-  inline void Set() { *cell_ |= mask_; }
-  inline bool Get() { return (*cell_ & mask_) != 0; }
-  inline void Clear() { *cell_ &= ~mask_; }
-
-  CellType* cell_;
-  CellType mask_;
-
-  friend class Marking;
-};
-
-
-// Bitmap is a sequence of cells each containing fixed number of bits.
-class Bitmap {
- public:
-  static const uint32_t kBitsPerCell = 32;
-  static const uint32_t kBitsPerCellLog2 = 5;
-  static const uint32_t kBitIndexMask = kBitsPerCell - 1;
-  static const uint32_t kBytesPerCell = kBitsPerCell / kBitsPerByte;
-  static const uint32_t kBytesPerCellLog2 = kBitsPerCellLog2 - kBitsPerByteLog2;
-
-  static const size_t kLength = (1 << kPageSizeBits) >> (kPointerSizeLog2);
-
-  static const size_t kSize =
-      (1 << kPageSizeBits) >> (kPointerSizeLog2 + kBitsPerByteLog2);
-
-
-  static int CellsForLength(int length) {
-    return (length + kBitsPerCell - 1) >> kBitsPerCellLog2;
-  }
-
-  int CellsCount() { return CellsForLength(kLength); }
-
-  static int SizeFor(int cells_count) {
-    return sizeof(MarkBit::CellType) * cells_count;
-  }
-
-  INLINE(static uint32_t IndexToCell(uint32_t index)) {
-    return index >> kBitsPerCellLog2;
-  }
-
-  V8_INLINE static uint32_t IndexInCell(uint32_t index) {
-    return index & kBitIndexMask;
-  }
-
-  INLINE(static uint32_t CellToIndex(uint32_t index)) {
-    return index << kBitsPerCellLog2;
-  }
-
-  INLINE(static uint32_t CellAlignIndex(uint32_t index)) {
-    return (index + kBitIndexMask) & ~kBitIndexMask;
-  }
-
-  INLINE(MarkBit::CellType* cells()) {
-    return reinterpret_cast<MarkBit::CellType*>(this);
-  }
-
-  INLINE(Address address()) { return reinterpret_cast<Address>(this); }
-
-  INLINE(static Bitmap* FromAddress(Address addr)) {
-    return reinterpret_cast<Bitmap*>(addr);
-  }
-
-  inline MarkBit MarkBitFromIndex(uint32_t index) {
-    MarkBit::CellType mask = 1u << IndexInCell(index);
-    MarkBit::CellType* cell = this->cells() + (index >> kBitsPerCellLog2);
-    return MarkBit(cell, mask);
-  }
-
-  static inline void Clear(MemoryChunk* chunk);
-
-  static inline void SetAllBits(MemoryChunk* chunk);
-
-  static void PrintWord(uint32_t word, uint32_t himask = 0) {
-    for (uint32_t mask = 1; mask != 0; mask <<= 1) {
-      if ((mask & himask) != 0) PrintF("[");
-      PrintF((mask & word) ? "1" : "0");
-      if ((mask & himask) != 0) PrintF("]");
-    }
-  }
-
-  class CellPrinter {
-   public:
-    CellPrinter() : seq_start(0), seq_type(0), seq_length(0) {}
-
-    void Print(uint32_t pos, uint32_t cell) {
-      if (cell == seq_type) {
-        seq_length++;
-        return;
-      }
-
-      Flush();
-
-      if (IsSeq(cell)) {
-        seq_start = pos;
-        seq_length = 0;
-        seq_type = cell;
-        return;
-      }
-
-      PrintF("%d: ", pos);
-      PrintWord(cell);
-      PrintF("\n");
-    }
-
-    void Flush() {
-      if (seq_length > 0) {
-        PrintF("%d: %dx%d\n", seq_start, seq_type == 0 ? 0 : 1,
-               seq_length * kBitsPerCell);
-        seq_length = 0;
-      }
-    }
-
-    static bool IsSeq(uint32_t cell) { return cell == 0 || cell == 0xFFFFFFFF; }
-
-   private:
-    uint32_t seq_start;
-    uint32_t seq_type;
-    uint32_t seq_length;
-  };
-
-  void Print() {
-    CellPrinter printer;
-    for (int i = 0; i < CellsCount(); i++) {
-      printer.Print(i, cells()[i]);
-    }
-    printer.Flush();
-    PrintF("\n");
-  }
-
-  bool IsClean() {
-    for (int i = 0; i < CellsCount(); i++) {
-      if (cells()[i] != 0) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // Clears all bits starting from {cell_base_index} up to and excluding
-  // {index}. Note that {cell_base_index} is required to be cell aligned.
-  void ClearRange(uint32_t cell_base_index, uint32_t index) {
-    DCHECK_EQ(IndexInCell(cell_base_index), 0u);
-    DCHECK_GE(index, cell_base_index);
-    uint32_t start_cell_index = IndexToCell(cell_base_index);
-    uint32_t end_cell_index = IndexToCell(index);
-    DCHECK_GE(end_cell_index, start_cell_index);
-    // Clear all cells till the cell containing the last index.
-    for (uint32_t i = start_cell_index; i < end_cell_index; i++) {
-      cells()[i] = 0;
-    }
-    // Clear all bits in the last cell till the last bit before index.
-    uint32_t clear_mask = ~((1u << IndexInCell(index)) - 1);
-    cells()[end_cell_index] &= clear_mask;
-  }
-};
 
 enum FreeListCategoryType {
   kTiniest,
@@ -628,6 +448,7 @@ class MemoryChunk {
   }
 
   size_t size() const { return size_; }
+  void set_size(size_t size) { size_ = size; }
 
   inline Heap* heap() const { return heap_; }
 
@@ -663,7 +484,7 @@ class MemoryChunk {
   bool CommitArea(size_t requested);
 
   // Approximate amount of physical memory committed for this chunk.
-  size_t CommittedPhysicalMemory() { return high_water_mark_.Value(); }
+  size_t CommittedPhysicalMemory();
 
   Address HighWaterMark() { return address() + high_water_mark_.Value(); }
 
@@ -695,6 +516,8 @@ class MemoryChunk {
   inline Address MarkbitIndexToAddress(uint32_t index) {
     return this->address() + (index << kPointerSizeLog2);
   }
+
+  void ClearLiveness();
 
   void PrintMarkbits() { markbits()->Print(); }
 
@@ -1002,6 +825,12 @@ class LargePage : public MemoryChunk {
   }
 
   inline void set_next_page(LargePage* page) { set_next_chunk(page); }
+
+  // Uncommit memory that is not in use anymore by the object. If the object
+  // cannot be shrunk 0 is returned.
+  Address GetAddressToShrink();
+
+  void ClearOutOfLiveRangeSlots(Address free_start);
 
   // A limit to guarantee that we do not overflow typed slot offset in
   // the old to old remembered set.
@@ -1454,6 +1283,7 @@ class MemoryAllocator {
   bool CommitMemory(Address addr, size_t size, Executability executable);
 
   void FreeMemory(base::VirtualMemory* reservation, Executability executable);
+  void PartialFreeMemory(MemoryChunk* chunk, Address start_free);
   void FreeMemory(Address addr, size_t size, Executability executable);
 
   // Commit a contiguous block of memory from the initial chunk.  Assumes that
@@ -1572,10 +1402,44 @@ class MemoryAllocator {
 class ObjectIterator : public Malloced {
  public:
   virtual ~ObjectIterator() {}
-
-  virtual HeapObject* next_object() = 0;
+  virtual HeapObject* Next() = 0;
 };
 
+template <class PAGE_TYPE>
+class PageIteratorImpl
+    : public std::iterator<std::forward_iterator_tag, PAGE_TYPE> {
+ public:
+  explicit PageIteratorImpl(PAGE_TYPE* p) : p_(p) {}
+  PageIteratorImpl(const PageIteratorImpl<PAGE_TYPE>& other) : p_(other.p_) {}
+  PAGE_TYPE* operator*() { return p_; }
+  bool operator==(const PageIteratorImpl<PAGE_TYPE>& rhs) {
+    return rhs.p_ == p_;
+  }
+  bool operator!=(const PageIteratorImpl<PAGE_TYPE>& rhs) {
+    return rhs.p_ != p_;
+  }
+  inline PageIteratorImpl<PAGE_TYPE>& operator++();
+  inline PageIteratorImpl<PAGE_TYPE> operator++(int);
+
+ private:
+  PAGE_TYPE* p_;
+};
+
+typedef PageIteratorImpl<Page> PageIterator;
+typedef PageIteratorImpl<LargePage> LargePageIterator;
+
+class PageRange {
+ public:
+  typedef PageIterator iterator;
+  PageRange(Page* begin, Page* end) : begin_(begin), end_(end) {}
+  explicit PageRange(Page* page) : PageRange(page, page->next_page()) {}
+  iterator begin() { return iterator(begin_); }
+  iterator end() { return iterator(end_); }
+
+ private:
+  Page* begin_;
+  Page* end_;
+};
 
 // -----------------------------------------------------------------------------
 // Heap object iterator in new/old/map spaces.
@@ -1594,18 +1458,10 @@ class HeapObjectIterator : public ObjectIterator {
 
   // Advance to the next object, skipping free spaces and other fillers and
   // skipping the special garbage section of which there is one per space.
-  // Returns NULL when the iteration has ended.
-  inline HeapObject* Next();
-  inline HeapObject* next_object() override;
+  // Returns nullptr when the iteration has ended.
+  inline HeapObject* Next() override;
 
  private:
-  enum PageMode { kOnePageOnly, kAllPagesInSpace };
-
-  Address cur_addr_;              // Current iteration point.
-  Address cur_end_;               // End iteration point.
-  PagedSpace* space_;
-  PageMode page_mode_;
-
   // Fast (inlined) path of next().
   inline HeapObject* FromCurrentPage();
 
@@ -1613,9 +1469,11 @@ class HeapObjectIterator : public ObjectIterator {
   // iteration has ended.
   bool AdvanceToNextPage();
 
-  // Initializes fields.
-  inline void Initialize(PagedSpace* owner, Address start, Address end,
-                         PageMode mode);
+  Address cur_addr_;  // Current iteration point.
+  Address cur_end_;   // End iteration point.
+  PagedSpace* space_;
+  PageRange page_range_;
+  PageRange::iterator current_page_;
 };
 
 
@@ -2067,43 +1925,15 @@ class LocalAllocationBuffer {
   AllocationInfo allocation_info_;
 };
 
-template <class PAGE_TYPE>
-class PageIteratorImpl
-    : public std::iterator<std::forward_iterator_tag, PAGE_TYPE> {
- public:
-  explicit PageIteratorImpl(PAGE_TYPE* p) : p_(p) {}
-  PageIteratorImpl(const PageIteratorImpl<PAGE_TYPE>& other) : p_(other.p_) {}
-  PAGE_TYPE* operator*() { return p_; }
-  bool operator==(const PageIteratorImpl<PAGE_TYPE>& rhs) {
-    return rhs.p_ == p_;
-  }
-  bool operator!=(const PageIteratorImpl<PAGE_TYPE>& rhs) {
-    return rhs.p_ != p_;
-  }
-  inline PageIteratorImpl<PAGE_TYPE>& operator++();
-  inline PageIteratorImpl<PAGE_TYPE> operator++(int);
-
- private:
-  PAGE_TYPE* p_;
-};
-
-typedef PageIteratorImpl<Page> PageIterator;
-typedef PageIteratorImpl<LargePage> LargePageIterator;
-
 class NewSpacePageRange {
  public:
-  typedef PageIterator iterator;
-
+  typedef PageRange::iterator iterator;
   inline NewSpacePageRange(Address start, Address limit);
-
-  iterator begin() { return iterator(Page::FromAddress(start_)); }
-  iterator end() {
-    return iterator(Page::FromAllocationAreaAddress(limit_)->next_page());
-  }
+  iterator begin() { return range_.begin(); }
+  iterator end() { return range_.end(); }
 
  private:
-  Address start_;
-  Address limit_;
+  PageRange range_;
 };
 
 class PagedSpace : public Space {
@@ -2261,11 +2091,6 @@ class PagedSpace : public Space {
   // The dummy page that anchors the linked list of pages.
   Page* anchor() { return &anchor_; }
 
-  // Collect code size related statistics
-  void CollectCodeStatistics();
-
-  // Reset code size related statistics
-  static void ResetCodeAndMetadataStatistics(Isolate* isolate);
 
 #ifdef VERIFY_HEAP
   // Verify integrity of this space.
@@ -2598,10 +2423,7 @@ class SemiSpaceIterator : public ObjectIterator {
   // Create an iterator over the allocated objects in the given to-space.
   explicit SemiSpaceIterator(NewSpace* space);
 
-  inline HeapObject* Next();
-
-  // Implementation of the ObjectIterator functions.
-  inline HeapObject* next_object() override;
+  inline HeapObject* Next() override;
 
  private:
   void Initialize(Address start, Address end);
@@ -3078,6 +2900,10 @@ class LargeObjectSpace : public Space {
   // Frees unmarked objects.
   void FreeUnmarkedObjects();
 
+  void InsertChunkMapEntries(LargePage* page);
+  void RemoveChunkMapEntries(LargePage* page);
+  void RemoveChunkMapEntries(LargePage* page, Address free_start);
+
   // Checks whether a heap object is in this space; O(1).
   bool Contains(HeapObject* obj);
   // Checks whether an address is in the object area in this space. Iterates
@@ -3123,10 +2949,7 @@ class LargeObjectIterator : public ObjectIterator {
  public:
   explicit LargeObjectIterator(LargeObjectSpace* space);
 
-  HeapObject* Next();
-
-  // implementation of ObjectIterator.
-  virtual HeapObject* next_object() { return Next(); }
+  HeapObject* Next() override;
 
  private:
   LargePage* current_;

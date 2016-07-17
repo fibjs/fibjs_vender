@@ -254,7 +254,7 @@ AllocationResult Heap::AllocateRaw(int size_in_bytes, AllocationSpace space,
 
   if (!old_gen_exhausted_ && incremental_marking()->black_allocation() &&
       space != OLD_SPACE) {
-    Marking::MarkBlack(Marking::MarkBitFrom(object));
+    Marking::MarkBlack(ObjectMarking::MarkBitFrom(object));
     MemoryChunk::IncrementLiveBytesFromGC(object, size_in_bytes);
   }
   return allocation;
@@ -399,7 +399,7 @@ bool Heap::ShouldBePromoted(Address old_address, int object_size) {
   Address age_mark = new_space_.age_mark();
 
   if (promotion_mode == PROMOTE_MARKED) {
-    MarkBit mark_bit = Marking::MarkBitFrom(old_address);
+    MarkBit mark_bit = ObjectMarking::MarkBitFrom(old_address);
     if (!Marking::IsWhite(mark_bit)) {
       return true;
     }
@@ -424,6 +424,12 @@ void Heap::RecordWrite(Object* object, int offset, Object* o) {
   RememberedSet<OLD_TO_NEW>::Insert(
       Page::FromAddress(reinterpret_cast<Address>(object)),
       HeapObject::cast(object)->address() + offset);
+}
+
+void Heap::RecordWriteIntoCode(Code* host, RelocInfo* rinfo, Object* value) {
+  if (InNewSpace(value)) {
+    RecordWriteIntoCodeSlow(host, rinfo, value);
+  }
 }
 
 void Heap::RecordFixedArrayElements(FixedArray* array, int offset, int length) {
@@ -474,31 +480,6 @@ bool Heap::AllowedToBeMigrated(HeapObject* obj, AllocationSpace dst) {
 void Heap::CopyBlock(Address dst, Address src, int byte_size) {
   CopyWords(reinterpret_cast<Object**>(dst), reinterpret_cast<Object**>(src),
             static_cast<size_t>(byte_size / kPointerSize));
-}
-
-bool Heap::PurgeLeftTrimmedObject(Object** object) {
-  HeapObject* current = reinterpret_cast<HeapObject*>(*object);
-  const MapWord map_word = current->map_word();
-  if (current->IsFiller() && !map_word.IsForwardingAddress()) {
-#ifdef DEBUG
-    // We need to find a FixedArrayBase map after walking the fillers.
-    while (current->IsFiller()) {
-      Address next = reinterpret_cast<Address>(current);
-      if (current->map() == one_pointer_filler_map()) {
-        next += kPointerSize;
-      } else if (current->map() == two_pointer_filler_map()) {
-        next += 2 * kPointerSize;
-      } else {
-        next += current->Size();
-      }
-      current = reinterpret_cast<HeapObject*>(next);
-    }
-    DCHECK(current->IsFixedArrayBase());
-#endif  // DEBUG
-    *object = nullptr;
-    return true;
-  }
-  return false;
 }
 
 template <Heap::FindMementoMode mode>

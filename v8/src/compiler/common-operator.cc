@@ -213,6 +213,9 @@ std::ostream& operator<<(std::ostream& os,
   V(Terminate, Operator::kKontrol, 0, 1, 1, 0, 0, 1)         \
   V(OsrNormalEntry, Operator::kFoldable, 0, 1, 1, 0, 1, 1)   \
   V(OsrLoopEntry, Operator::kFoldable, 0, 1, 1, 0, 1, 1)     \
+  V(LoopExit, Operator::kKontrol, 0, 0, 2, 0, 0, 1)          \
+  V(LoopExitValue, Operator::kPure, 1, 0, 1, 1, 0, 0)        \
+  V(LoopExitEffect, Operator::kNoThrow, 0, 1, 1, 0, 1, 0)    \
   V(Checkpoint, Operator::kKontrol, 0, 1, 1, 0, 1, 0)        \
   V(FinishRegion, Operator::kKontrol, 1, 1, 0, 1, 1, 0)
 
@@ -878,7 +881,7 @@ const Operator* CommonOperatorBuilder::Call(const CallDescriptor* descriptor) {
               Operator::ZeroIfPure(descriptor->properties()),
               Operator::ZeroIfNoThrow(descriptor->properties()), descriptor) {}
 
-    void PrintParameter(std::ostream& os) const override {
+    void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
       os << "[" << *parameter() << "]";
     }
   };
@@ -896,7 +899,7 @@ const Operator* CommonOperatorBuilder::TailCall(
               descriptor->InputCount() + descriptor->FrameStateCount(), 1, 1, 0,
               0, 1, descriptor) {}
 
-    void PrintParameter(std::ostream& os) const override {
+    void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
       os << "[" << *parameter() << "]";
     }
   };

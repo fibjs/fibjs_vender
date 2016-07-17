@@ -305,11 +305,10 @@ static void InitCoverageLog();
 #endif
 
 Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
-    : AssemblerBase(isolate, buffer, buffer_size),
-      positions_recorder_(this) {
-  // Clear the buffer in debug mode unless it was provided by the
-  // caller in which case we can't be sure it's okay to overwrite
-  // existing code in it; see CodePatcher::CodePatcher(...).
+    : AssemblerBase(isolate, buffer, buffer_size) {
+// Clear the buffer in debug mode unless it was provided by the
+// caller in which case we can't be sure it's okay to overwrite
+// existing code in it; see CodePatcher::CodePatcher(...).
 #ifdef DEBUG
   if (own_buffer_) {
     memset(buffer_, 0xCC, buffer_size_);  // int3
@@ -327,7 +326,6 @@ Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
 void Assembler::GetCode(CodeDesc* desc) {
   // Finalize code (at this point overflow() may be true, but the gap ensures
   // that we are still not overlapping instructions and relocation info).
-  reloc_info_writer.Finish();
   DCHECK(pc_ <= reloc_info_writer.pos());  // No overlap.
   // Set up code descriptor.
   desc->buffer = buffer_;
@@ -336,6 +334,8 @@ void Assembler::GetCode(CodeDesc* desc) {
   desc->reloc_size = (buffer_ + buffer_size_) - reloc_info_writer.pos();
   desc->origin = this;
   desc->constant_pool_size = 0;
+  desc->unwinding_info_size = 0;
+  desc->unwinding_info = nullptr;
 }
 
 
@@ -854,14 +854,14 @@ void Assembler::cmpw(const Operand& op, Immediate imm16) {
 void Assembler::cmpw(Register reg, const Operand& op) {
   EnsureSpace ensure_space(this);
   EMIT(0x66);
-  EMIT(0x39);
+  EMIT(0x3B);
   emit_operand(reg, op);
 }
 
 void Assembler::cmpw(const Operand& op, Register reg) {
   EnsureSpace ensure_space(this);
   EMIT(0x66);
-  EMIT(0x3B);
+  EMIT(0x39);
   emit_operand(reg, op);
 }
 
@@ -2405,6 +2405,26 @@ void Assembler::movaps(XMMRegister dst, XMMRegister src) {
   emit_sse_operand(dst, src);
 }
 
+void Assembler::movups(XMMRegister dst, XMMRegister src) {
+  EnsureSpace ensure_space(this);
+  EMIT(0x0F);
+  EMIT(0x11);
+  emit_sse_operand(dst, src);
+}
+
+void Assembler::movups(XMMRegister dst, const Operand& src) {
+  EnsureSpace ensure_space(this);
+  EMIT(0x0F);
+  EMIT(0x10);
+  emit_sse_operand(dst, src);
+}
+
+void Assembler::movups(const Operand& dst, XMMRegister src) {
+  EnsureSpace ensure_space(this);
+  EMIT(0x0F);
+  EMIT(0x11);
+  emit_sse_operand(src, dst);
+}
 
 void Assembler::shufps(XMMRegister dst, XMMRegister src, byte imm8) {
   DCHECK(is_uint8(imm8));

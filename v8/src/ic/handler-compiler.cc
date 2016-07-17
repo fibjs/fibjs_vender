@@ -221,30 +221,26 @@ Handle<Code> NamedLoadHandlerCompiler::CompileLoadNonexistent(
   return GetCode(kind(), name);
 }
 
-
 Handle<Code> NamedLoadHandlerCompiler::CompileLoadCallback(
-    Handle<Name> name, Handle<AccessorInfo> callback) {
-  Register reg = Frontend(name);
+    Handle<Name> name, Handle<AccessorInfo> callback, Handle<Code> slow_stub) {
   if (FLAG_runtime_call_stats) {
-    TailCallBuiltin(masm(), Builtins::kLoadIC_Slow);
-  } else {
-    GenerateLoadCallback(reg, callback);
+    GenerateTailCall(masm(), slow_stub);
   }
+  Register reg = Frontend(name);
+  GenerateLoadCallback(reg, callback);
   return GetCode(kind(), name);
 }
 
-
 Handle<Code> NamedLoadHandlerCompiler::CompileLoadCallback(
     Handle<Name> name, const CallOptimization& call_optimization,
-    int accessor_index) {
+    int accessor_index, Handle<Code> slow_stub) {
   DCHECK(call_optimization.is_simple_api_call());
-  Register holder = Frontend(name);
   if (FLAG_runtime_call_stats) {
-    TailCallBuiltin(masm(), Builtins::kLoadIC_Slow);
-  } else {
-    GenerateApiAccessorCall(masm(), call_optimization, map(), receiver(),
-                            scratch2(), false, no_reg, holder, accessor_index);
+    GenerateTailCall(masm(), slow_stub);
   }
+  Register holder = Frontend(name);
+  GenerateApiAccessorCall(masm(), call_optimization, map(), receiver(),
+                          scratch2(), false, no_reg, holder, accessor_index);
   return GetCode(kind(), name);
 }
 
@@ -479,7 +475,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreTransition(
   if (details.type() == DATA_CONSTANT) {
     DCHECK(descriptors->GetValue(descriptor)->IsJSFunction());
     Register tmp =
-        virtual_args ? VectorStoreICDescriptor::VectorRegister() : map_reg;
+        virtual_args ? StoreWithVectorDescriptor::VectorRegister() : map_reg;
     GenerateRestoreMap(transition, tmp, scratch2(), &miss);
     GenerateConstantCheck(tmp, descriptor, value(), scratch2(), &miss);
     if (virtual_args) {
@@ -503,7 +499,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreTransition(
             : StoreTransitionStub::StoreMapAndValue;
 
     Register tmp =
-        virtual_args ? VectorStoreICDescriptor::VectorRegister() : map_reg;
+        virtual_args ? StoreWithVectorDescriptor::VectorRegister() : map_reg;
     GenerateRestoreMap(transition, tmp, scratch2(), &miss);
     if (virtual_args) {
       RearrangeVectorAndSlot(tmp, map_reg);
@@ -563,19 +559,17 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreViaSetter(
   return GetCode(kind(), name);
 }
 
-
 Handle<Code> NamedStoreHandlerCompiler::CompileStoreCallback(
     Handle<JSObject> object, Handle<Name> name,
-    const CallOptimization& call_optimization, int accessor_index) {
-  Register holder = Frontend(name);
+    const CallOptimization& call_optimization, int accessor_index,
+    Handle<Code> slow_stub) {
   if (FLAG_runtime_call_stats) {
-    GenerateRestoreName(name);
-    TailCallBuiltin(masm(), Builtins::kStoreIC_Slow);
-  } else {
-    GenerateApiAccessorCall(masm(), call_optimization, handle(object->map()),
-                            receiver(), scratch2(), true, value(), holder,
-                            accessor_index);
+    GenerateTailCall(masm(), slow_stub);
   }
+  Register holder = Frontend(name);
+  GenerateApiAccessorCall(masm(), call_optimization, handle(object->map()),
+                          receiver(), scratch2(), true, value(), holder,
+                          accessor_index);
   return GetCode(kind(), name);
 }
 
@@ -583,7 +577,7 @@ Handle<Code> NamedStoreHandlerCompiler::CompileStoreCallback(
 #undef __
 
 void ElementHandlerCompiler::CompileElementHandlers(
-    MapHandleList* receiver_maps, CodeHandleList* handlers) {
+    MapHandleList* receiver_maps, List<Handle<Object>>* handlers) {
   for (int i = 0; i < receiver_maps->length(); ++i) {
     Handle<Map> receiver_map = receiver_maps->at(i);
     Handle<Code> cached_stub;

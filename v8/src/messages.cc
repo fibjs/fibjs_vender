@@ -98,7 +98,7 @@ void MessageHandler::ReportMessage(Isolate* isolate, MessageLocation* loc,
     MaybeHandle<Object> maybe_stringified;
     Handle<Object> stringified;
     // Make sure we don't leak uncaught internally generated Error objects.
-    if (Object::IsErrorObject(isolate, argument)) {
+    if (argument->IsJSError()) {
       Handle<Object> args[] = {argument};
       maybe_stringified = Execution::TryCall(
           isolate, isolate->no_side_effects_to_string_fun(),
@@ -286,7 +286,7 @@ Handle<Object> CallSite::GetMethodName() {
     Handle<JSObject> current_obj = Handle<JSObject>::cast(current);
     if (current_obj->IsAccessCheckNeeded()) break;
     Handle<FixedArray> keys =
-        KeyAccumulator::GetEnumPropertyKeys(isolate_, current_obj);
+        KeyAccumulator::GetOwnEnumPropertyKeys(isolate_, current_obj);
     for (int i = 0; i < keys->length(); i++) {
       HandleScope inner_scope(isolate_);
       if (!keys->get(i)->IsName()) continue;
@@ -354,6 +354,10 @@ bool CallSite::IsEval() {
 
 
 bool CallSite::IsConstructor() {
+  // Builtin exit frames mark constructors by passing a special symbol as the
+  // receiver.
+  Object* ctor_symbol = isolate_->heap()->call_site_constructor_symbol();
+  if (*receiver_ == ctor_symbol) return true;
   if (!IsJavaScript() || !receiver_->IsJSObject()) return false;
   Handle<Object> constructor =
       JSReceiver::GetDataProperty(Handle<JSObject>::cast(receiver_),

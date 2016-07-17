@@ -74,6 +74,7 @@ class X64OperandGenerator final : public OperandGenerator {
 
   AddressingMode GenerateMemoryOperandInputs(Node* index, int scale_exponent,
                                              Node* base, Node* displacement,
+                                             DisplacementMode displacement_mode,
                                              InstructionOperand inputs[],
                                              size_t* input_count) {
     AddressingMode mode = kMode_MRI;
@@ -83,7 +84,9 @@ class X64OperandGenerator final : public OperandGenerator {
         DCHECK(scale_exponent >= 0 && scale_exponent <= 3);
         inputs[(*input_count)++] = UseRegister(index);
         if (displacement != nullptr) {
-          inputs[(*input_count)++] = UseImmediate(displacement);
+          inputs[(*input_count)++] = displacement_mode
+                                         ? UseNegatedImmediate(displacement)
+                                         : UseImmediate(displacement);
           static const AddressingMode kMRnI_modes[] = {kMode_MR1I, kMode_MR2I,
                                                        kMode_MR4I, kMode_MR8I};
           mode = kMRnI_modes[scale_exponent];
@@ -96,7 +99,9 @@ class X64OperandGenerator final : public OperandGenerator {
         if (displacement == nullptr) {
           mode = kMode_MR;
         } else {
-          inputs[(*input_count)++] = UseImmediate(displacement);
+          inputs[(*input_count)++] = displacement_mode == kNegativeDisplacement
+                                         ? UseNegatedImmediate(displacement)
+                                         : UseImmediate(displacement);
           mode = kMode_MRI;
         }
       }
@@ -105,7 +110,9 @@ class X64OperandGenerator final : public OperandGenerator {
       DCHECK(scale_exponent >= 0 && scale_exponent <= 3);
       inputs[(*input_count)++] = UseRegister(index);
       if (displacement != nullptr) {
-        inputs[(*input_count)++] = UseImmediate(displacement);
+        inputs[(*input_count)++] = displacement_mode == kNegativeDisplacement
+                                       ? UseNegatedImmediate(displacement)
+                                       : UseImmediate(displacement);
         static const AddressingMode kMnI_modes[] = {kMode_MRI, kMode_M2I,
                                                     kMode_M4I, kMode_M8I};
         mode = kMnI_modes[scale_exponent];
@@ -128,8 +135,9 @@ class X64OperandGenerator final : public OperandGenerator {
     BaseWithIndexAndDisplacement64Matcher m(operand, true);
     DCHECK(m.matches());
     if ((m.displacement() == nullptr || CanBeImmediate(m.displacement()))) {
-      return GenerateMemoryOperandInputs(m.index(), m.scale(), m.base(),
-                                         m.displacement(), inputs, input_count);
+      return GenerateMemoryOperandInputs(
+          m.index(), m.scale(), m.base(), m.displacement(),
+          m.displacement_mode(), inputs, input_count);
     } else {
       inputs[(*input_count)++] = UseRegister(operand->InputAt(0));
       inputs[(*input_count)++] = UseRegister(operand->InputAt(1));
@@ -546,16 +554,16 @@ void VisitWord64Shift(InstructionSelector* selector, Node* node,
   }
 }
 
-
 void EmitLea(InstructionSelector* selector, InstructionCode opcode,
              Node* result, Node* index, int scale, Node* base,
-             Node* displacement) {
+             Node* displacement, DisplacementMode displacement_mode) {
   X64OperandGenerator g(selector);
 
   InstructionOperand inputs[4];
   size_t input_count = 0;
-  AddressingMode mode = g.GenerateMemoryOperandInputs(
-      index, scale, base, displacement, inputs, &input_count);
+  AddressingMode mode =
+      g.GenerateMemoryOperandInputs(index, scale, base, displacement,
+                                    displacement_mode, inputs, &input_count);
 
   DCHECK_NE(0u, input_count);
   DCHECK_GE(arraysize(inputs), input_count);
@@ -576,7 +584,8 @@ void InstructionSelector::VisitWord32Shl(Node* node) {
   if (m.matches()) {
     Node* index = node->InputAt(0);
     Node* base = m.power_of_two_plus_one() ? index : nullptr;
-    EmitLea(this, kX64Lea32, node, index, m.scale(), base, nullptr);
+    EmitLea(this, kX64Lea32, node, index, m.scale(), base, nullptr,
+            kPositiveDisplacement);
     return;
   }
   VisitWord32Shift(this, node, kX64Shl32);
@@ -760,7 +769,7 @@ void InstructionSelector::VisitInt32Add(Node* node) {
   if (m.matches() &&
       (m.displacement() == nullptr || g.CanBeImmediate(m.displacement()))) {
     EmitLea(this, kX64Lea32, node, m.index(), m.scale(), m.base(),
-            m.displacement());
+            m.displacement(), m.displacement_mode());
     return;
   }
 
@@ -843,7 +852,6 @@ void VisitMul(InstructionSelector* selector, Node* node, ArchOpcode opcode) {
   }
 }
 
-
 void VisitMulHigh(InstructionSelector* selector, Node* node,
                   ArchOpcode opcode) {
   X64OperandGenerator g(selector);
@@ -885,17 +893,26 @@ void InstructionSelector::VisitInt32Mul(Node* node) {
   if (m.matches()) {
     Node* index = node->InputAt(0);
     Node* base = m.power_of_two_plus_one() ? index : nullptr;
-    EmitLea(this, kX64Lea32, node, index, m.scale(), base, nullptr);
+    EmitLea(this, kX64Lea32, node, index, m.scale(), base, nullptr,
+            kPositiveDisplacement);
     return;
   }
   VisitMul(this, node, kX64Imul32);
 }
 
+void InstructionSelector::VisitInt32MulWithOverflow(Node* node) {
+  // TODO(mvstanton): Use Int32ScaleMatcher somehow.
+  if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
+    FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
+    return VisitBinop(this, node, kX64Imul32, &cont);
+  }
+  FlagsContinuation cont;
+  VisitBinop(this, node, kX64Imul32, &cont);
+}
 
 void InstructionSelector::VisitInt64Mul(Node* node) {
   VisitMul(this, node, kX64Imul);
 }
-
 
 void InstructionSelector::VisitInt32MulHigh(Node* node) {
   VisitMulHigh(this, node, kX64ImulHigh32);
@@ -1435,7 +1452,7 @@ void InstructionSelector::EmitPrepareArguments(
   // Prepare for C function call.
   if (descriptor->IsCFunctionCall()) {
     Emit(kArchPrepareCallCFunction |
-             MiscField::encode(static_cast<int>(descriptor->CParameterCount())),
+             MiscField::encode(static_cast<int>(descriptor->ParameterCount())),
          0, nullptr, 0, nullptr);
 
     // Poke any stack arguments.
@@ -1770,6 +1787,9 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
               case IrOpcode::kInt32SubWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
                 return VisitBinop(selector, node, kX64Sub32, cont);
+              case IrOpcode::kInt32MulWithOverflow:
+                cont->OverwriteAndNegateIfEqual(kOverflow);
+                return VisitBinop(selector, node, kX64Imul32, cont);
               case IrOpcode::kInt64AddWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
                 return VisitBinop(selector, node, kX64Add, cont);

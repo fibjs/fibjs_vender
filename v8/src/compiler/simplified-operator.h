@@ -7,6 +7,7 @@
 
 #include <iosfwd>
 
+#include "src/compiler/operator.h"
 #include "src/compiler/type-hints.h"
 #include "src/handles.h"
 #include "src/machine-type.h"
@@ -79,6 +80,9 @@ std::ostream& operator<<(std::ostream&, FieldAccess const&);
 
 FieldAccess const& FieldAccessOf(const Operator* op) WARN_UNUSED_RESULT;
 
+template <>
+void Operator1<FieldAccess>::PrintParameter(std::ostream& os,
+                                            PrintVerbosity verbose) const;
 
 // An access descriptor for loads/stores of indexed structures like characters
 // in strings or off-heap backing stores. Accesses from either tagged or
@@ -158,7 +162,6 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   explicit SimplifiedOperatorBuilder(Zone* zone);
 
   const Operator* BooleanNot();
-  const Operator* BooleanToNumber();
 
   const Operator* NumberEqual();
   const Operator* NumberLessThan();
@@ -175,25 +178,35 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* NumberShiftRight();
   const Operator* NumberShiftRightLogical();
   const Operator* NumberImul();
+  const Operator* NumberAbs();
   const Operator* NumberClz32();
   const Operator* NumberCeil();
   const Operator* NumberFloor();
   const Operator* NumberFround();
+  const Operator* NumberAcos();
+  const Operator* NumberAcosh();
+  const Operator* NumberAsin();
+  const Operator* NumberAsinh();
   const Operator* NumberAtan();
   const Operator* NumberAtan2();
   const Operator* NumberAtanh();
   const Operator* NumberCbrt();
   const Operator* NumberCos();
+  const Operator* NumberCosh();
   const Operator* NumberExp();
   const Operator* NumberExpm1();
   const Operator* NumberLog();
   const Operator* NumberLog1p();
   const Operator* NumberLog10();
   const Operator* NumberLog2();
+  const Operator* NumberPow();
   const Operator* NumberRound();
+  const Operator* NumberSign();
   const Operator* NumberSin();
+  const Operator* NumberSinh();
   const Operator* NumberSqrt();
   const Operator* NumberTan();
+  const Operator* NumberTanh();
   const Operator* NumberTrunc();
   const Operator* NumberToInt32();
   const Operator* NumberToUint32();
@@ -205,6 +218,7 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* SpeculativeNumberMultiply(BinaryOperationHints::Hint hint);
   const Operator* SpeculativeNumberDivide(BinaryOperationHints::Hint hint);
   const Operator* SpeculativeNumberModulus(BinaryOperationHints::Hint hint);
+  const Operator* SpeculativeNumberShiftLeft(BinaryOperationHints::Hint hint);
 
   const Operator* SpeculativeNumberLessThan(CompareOperationHints::Hint hint);
   const Operator* SpeculativeNumberLessThanOrEqual(
@@ -217,7 +231,6 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* StringLessThan();
   const Operator* StringLessThanOrEqual();
   const Operator* StringFromCharCode();
-  const Operator* StringToNumber();
 
   const Operator* PlainPrimitiveToNumber();
   const Operator* PlainPrimitiveToWord32();
@@ -236,12 +249,19 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* TruncateTaggedToWord32();
   const Operator* TruncateTaggedToFloat64();
 
+  const Operator* CheckIf();
   const Operator* CheckBounds();
+  const Operator* CheckNumber();
   const Operator* CheckTaggedPointer();
   const Operator* CheckTaggedSigned();
 
   const Operator* CheckedInt32Add();
   const Operator* CheckedInt32Sub();
+  const Operator* CheckedInt32Div();
+  const Operator* CheckedInt32Mod();
+  const Operator* CheckedUint32Div();
+  const Operator* CheckedUint32Mod();
+  const Operator* CheckedInt32Mul();
   const Operator* CheckedUint32ToInt32();
   const Operator* CheckedFloat64ToInt32();
   const Operator* CheckedTaggedToInt32();
@@ -256,8 +276,6 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* ObjectIsSmi();
   const Operator* ObjectIsString();
   const Operator* ObjectIsUndetectable();
-
-  const Operator* TypeGuard(Type* type);
 
   const Operator* Allocate(PretenureFlag pretenure = NOT_TENURED);
 

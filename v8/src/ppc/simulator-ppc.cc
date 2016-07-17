@@ -27,6 +27,8 @@
 namespace v8 {
 namespace internal {
 
+const auto GetRegConfig = RegisterConfiguration::Crankshaft;
+
 // This macro provides a platform independent use of sscanf. The reason for
 // SScanF not being implemented in a platform independent way through
 // ::v8::internal::OS in the same way as SNPrintF is that the
@@ -319,7 +321,7 @@ void PPCDebugger::Debug() {
             for (int i = 0; i < kNumRegisters; i++) {
               value = GetRegisterValue(i);
               PrintF("    %3s: %08" V8PRIxPTR,
-                     Register::from_code(i).ToString(), value);
+                     GetRegConfig()->GetGeneralRegisterName(i), value);
               if ((argc == 3 && strcmp(arg2, "fp") == 0) && i < 8 &&
                   (i % 2) == 0) {
                 dvalue = GetRegisterPairDoubleValue(i);
@@ -338,7 +340,7 @@ void PPCDebugger::Debug() {
             for (int i = 0; i < kNumRegisters; i++) {
               value = GetRegisterValue(i);
               PrintF("     %3s: %08" V8PRIxPTR " %11" V8PRIdPTR,
-                     Register::from_code(i).ToString(), value, value);
+                     GetRegConfig()->GetGeneralRegisterName(i), value, value);
               if ((argc == 3 && strcmp(arg2, "fp") == 0) && i < 8 &&
                   (i % 2) == 0) {
                 dvalue = GetRegisterPairDoubleValue(i);
@@ -358,7 +360,7 @@ void PPCDebugger::Debug() {
               dvalue = GetFPDoubleRegisterValue(i);
               uint64_t as_words = bit_cast<uint64_t>(dvalue);
               PrintF("%3s: %f 0x%08x %08x\n",
-                     DoubleRegister::from_code(i).ToString(), dvalue,
+                     GetRegConfig()->GetDoubleRegisterName(i), dvalue,
                      static_cast<uint32_t>(as_words >> 32),
                      static_cast<uint32_t>(as_words & 0xffffffff));
             }

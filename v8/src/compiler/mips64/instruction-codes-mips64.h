@@ -19,6 +19,7 @@ namespace compiler {
   V(Mips64Dsub)                     \
   V(Mips64DsubOvf)                  \
   V(Mips64Mul)                      \
+  V(Mips64MulOvf)                   \
   V(Mips64MulHigh)                  \
   V(Mips64DMulHigh)                 \
   V(Mips64MulHighU)                 \
@@ -32,9 +33,13 @@ namespace compiler {
   V(Mips64ModU)                     \
   V(Mips64DmodU)                    \
   V(Mips64And)                      \
+  V(Mips64And32)                    \
   V(Mips64Or)                       \
+  V(Mips64Or32)                     \
   V(Mips64Nor)                      \
+  V(Mips64Nor32)                    \
   V(Mips64Xor)                      \
+  V(Mips64Xor32)                    \
   V(Mips64Clz)                      \
   V(Mips64Lsa)                      \
   V(Mips64Dlsa)                     \

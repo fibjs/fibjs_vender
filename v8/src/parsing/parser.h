@@ -458,7 +458,8 @@ class ParserTraits {
   void FinalizeIteratorUse(Variable* completion, Expression* condition,
                            Variable* iter, Block* iterator_use, Block* result);
 
-  Statement* FinalizeForOfStatement(ForOfStatement* loop, int pos);
+  Statement* FinalizeForOfStatement(ForOfStatement* loop, Variable* completion,
+                                    int pos);
 
   // Reporting errors.
   void ReportMessageAt(Scanner::Location source_location,
@@ -505,11 +506,11 @@ class ParserTraits {
   const AstRawString* GetNumberAsSymbol(Scanner* scanner);
 
   Expression* ThisExpression(Scope* scope, AstNodeFactory* factory,
-                             int pos = RelocInfo::kNoPosition);
-  Expression* SuperPropertyReference(Scope* scope, AstNodeFactory* factory,
-                                     int pos);
-  Expression* SuperCallReference(Scope* scope, AstNodeFactory* factory,
-                                 int pos);
+                             int pos = kNoSourcePosition);
+  Expression* NewSuperPropertyReference(Scope* scope, AstNodeFactory* factory,
+                                        int pos);
+  Expression* NewSuperCallReference(Scope* scope, AstNodeFactory* factory,
+                                    int pos);
   Expression* NewTargetExpression(Scope* scope, AstNodeFactory* factory,
                                   int pos);
   Expression* FunctionSentExpression(Scope* scope, AstNodeFactory* factory,
@@ -683,10 +684,10 @@ class ParserTraits {
   Parser* parser_;
 
   void BuildIteratorClose(ZoneList<Statement*>* statements, Variable* iterator,
-                          Maybe<Variable*> input, Variable* output);
-  void BuildIteratorCloseForCompletion(
-      ZoneList<Statement*>* statements, Variable* iterator,
-      Variable* body_threw);
+                          Variable* input, Variable* output);
+  void BuildIteratorCloseForCompletion(ZoneList<Statement*>* statements,
+                                       Variable* iterator,
+                                       Expression* completion);
   Statement* CheckCallable(Variable* var, Expression* error, int pos);
 };
 
@@ -782,18 +783,15 @@ class Parser : public ParserBase<ParserTraits> {
                                    bool* ok);
   Statement* ParseFunctionDeclaration(bool* ok);
   Statement* ParseHoistableDeclaration(ZoneList<const AstRawString*>* names,
-                                      bool* ok);
+                                       bool default_export, bool* ok);
   Statement* ParseHoistableDeclaration(int pos, ParseFunctionFlags flags,
                                        ZoneList<const AstRawString*>* names,
-                                       bool* ok);
+                                       bool default_export, bool* ok);
   Statement* ParseAsyncFunctionDeclaration(ZoneList<const AstRawString*>* names,
-                                           bool* ok);
+                                           bool default_export, bool* ok);
   Expression* ParseAsyncFunctionExpression(bool* ok);
-  Statement* ParseFunctionDeclaration(int pos, bool is_generator,
-                                      ZoneList<const AstRawString*>* names,
-                                      bool* ok);
   Statement* ParseClassDeclaration(ZoneList<const AstRawString*>* names,
-                                   bool* ok);
+                                   bool default_export, bool* ok);
   Statement* ParseNativeDeclaration(bool* ok);
   Block* ParseBlock(ZoneList<const AstRawString*>* labels, bool* ok);
   Block* ParseBlock(ZoneList<const AstRawString*>* labels,
@@ -842,7 +840,7 @@ class Parser : public ParserBase<ParserTraits> {
     Scanner::Location bindings_loc;
   };
 
-  class PatternRewriter : private AstVisitor {
+  class PatternRewriter final : private AstVisitor<PatternRewriter> {
    public:
     static void DeclareAndInitializeVariables(
         Block* block, const DeclarationDescriptor* declaration_descriptor,
@@ -857,16 +855,13 @@ class Parser : public ParserBase<ParserTraits> {
                                                       Assignment* assignment,
                                                       Scope* scope);
 
-    void set_initializer_position(int pos) { initializer_position_ = pos; }
-
    private:
     PatternRewriter() {}
 
-#define DECLARE_VISIT(type) void Visit##type(v8::internal::type* node) override;
+#define DECLARE_VISIT(type) void Visit##type(v8::internal::type* node);
     // Visiting functions for AST nodes make this an AstVisitor.
     AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
-    void Visit(AstNode* node) override;
 
     enum PatternContext {
       BINDING,
@@ -882,7 +877,7 @@ class Parser : public ParserBase<ParserTraits> {
       Expression* old_value = current_value_;
       current_value_ = value;
       recursion_level_++;
-      pattern->Accept(this);
+      Visit(pattern);
       recursion_level_--;
       current_value_ = old_value;
     }
@@ -921,6 +916,8 @@ class Parser : public ParserBase<ParserTraits> {
     Expression* current_value_;
     int recursion_level_;
     bool* ok_;
+
+    DEFINE_AST_VISITOR_MEMBERS_WITHOUT_STACKOVERFLOW()
   };
 
   Block* ParseVariableDeclarations(VariableDeclarationContext var_context,
@@ -966,12 +963,13 @@ class Parser : public ParserBase<ParserTraits> {
 
 
   // Initialize the components of a for-in / for-of statement.
-  void InitializeForEachStatement(ForEachStatement* stmt, Expression* each,
-                                  Expression* subject, Statement* body,
-                                  int each_keyword_pos);
-  void InitializeForOfStatement(ForOfStatement* stmt, Expression* each,
-                                Expression* iterable, Statement* body,
-                                int next_result_pos = RelocInfo::kNoPosition);
+  Statement* InitializeForEachStatement(ForEachStatement* stmt,
+                                        Expression* each, Expression* subject,
+                                        Statement* body, int each_keyword_pos);
+  Statement* InitializeForOfStatement(ForOfStatement* stmt, Expression* each,
+                                      Expression* iterable, Statement* body,
+                                      bool finalize,
+                                      int next_result_pos = kNoSourcePosition);
   Statement* DesugarLexicalBindingsInForStatement(
       Scope* inner_scope, VariableMode mode,
       ZoneList<const AstRawString*>* names, ForStatement* loop, Statement* init,
@@ -1019,7 +1017,9 @@ class Parser : public ParserBase<ParserTraits> {
   void InsertShadowingVarBindingInitializers(Block* block);
 
   // Implement sloppy block-scoped functions, ES2015 Annex B 3.3
-  void InsertSloppyBlockFunctionVarBindings(Scope* scope, bool* ok);
+  void InsertSloppyBlockFunctionVarBindings(Scope* scope,
+                                            Scope* complex_params_scope,
+                                            bool* ok);
 
   // Parser support
   VariableProxy* NewUnresolved(const AstRawString* name, VariableMode mode);
@@ -1118,6 +1118,10 @@ class Parser : public ParserBase<ParserTraits> {
   HistogramTimer* pre_parse_timer_;
 
   bool parsing_on_main_thread_;
+
+#ifdef DEBUG
+  void Print(AstNode* node);
+#endif  // DEBUG
 };
 
 

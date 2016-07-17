@@ -19,6 +19,9 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{ba03e055-4fa2-fce3-8a1c-d348547d379c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\asmjs">
+      <UniqueIdentifier>{9814e273-cc37-cf8c-83d1-e0b6eb38bae5}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\ast">
       <UniqueIdentifier>{99089531-8444-8631-8c0b-ba54a721a684}</UniqueIdentifier>
     </Filter>
@@ -30,6 +33,24 @@
     </Filter>
     <Filter Include="Source Files\base\utils">
       <UniqueIdentifier>{d56d30d7-d66d-38c8-feb2-cde00768e940}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\builtins">
+      <UniqueIdentifier>{a80f5cfd-ac4b-a584-618c-5263d494b642}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\builtins\ia32">
+      <UniqueIdentifier>{bf01cfee-34c2-625f-4aa2-96c79e145c2a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\builtins\ppc">
+      <UniqueIdentifier>{37cb385d-4e57-bbc6-b858-573a217e15ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\builtins\s390">
+      <UniqueIdentifier>{cb19e761-5ef1-800d-6a7a-08e2bf33a2b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\builtins\x64">
+      <UniqueIdentifier>{b8368f3d-c5c5-3548-da65-f1bbd980cfee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\builtins\x87">
+      <UniqueIdentifier>{2843c431-7faf-166c-6674-73403a728e4b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\compiler">
       <UniqueIdentifier>{99e52990-fb59-1eaf-e932-48f9c3481633}</UniqueIdentifier>
@@ -187,9 +208,6 @@
     <Filter Include="Source Files\third_party">
       <UniqueIdentifier>{517d88ea-d211-bcd7-bc22-b7165eec24c6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\third_party\fdlibm">
-      <UniqueIdentifier>{150701b7-2672-7bd0-aace-02cbfb72715d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\third_party\valgrind">
       <UniqueIdentifier>{d995e528-12ff-117d-98c4-5a4e21697a61}</UniqueIdentifier>
     </Filter>
@@ -272,6 +290,18 @@
     </ClInclude>
     <ClInclude Include="src\arguments.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\asmjs\asm-js.h">
+      <Filter>Source Files\asmjs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\asmjs\asm-typer.h">
+      <Filter>Source Files\asmjs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\asmjs\asm-types.h">
+      <Filter>Source Files\asmjs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\asmjs\asm-wasm-builder.h">
+      <Filter>Source Files\asmjs</Filter>
     </ClInclude>
     <ClInclude Include="src\assembler.h">
       <Filter>Source Files</Filter>
@@ -477,8 +507,8 @@
     <ClInclude Include="src\bootstrapper.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\builtins.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\builtins\builtins.h">
+      <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\cached-powers.h">
       <Filter>Source Files</Filter>
@@ -789,6 +819,9 @@
     <ClInclude Include="src\compiler\select-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\simd-lowering.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\simplified-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -819,6 +852,9 @@
     <ClInclude Include="src\compiler\typer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\unwinding-info-writer.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\value-numbering-reducer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -829,6 +865,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\x64\instruction-codes-x64.h">
+      <Filter>Source Files\compiler\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\x64\unwinding-info-writer-x64.h">
       <Filter>Source Files\compiler\x64</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\x87\instruction-codes-x87.h">
@@ -1050,6 +1089,9 @@
     <ClInclude Include="src\effects.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\eh-frame.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\elements-kind.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1143,6 +1185,9 @@
     <ClInclude Include="src\heap\array-buffer-tracker.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\code-stats.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\gc-idle-time-handler.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1168,6 +1213,9 @@
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\mark-compact.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\heap\marking.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
     <ClInclude Include="src\heap\memory-reducer.h">
@@ -1275,6 +1323,12 @@
     <ClInclude Include="src\interpreter\bytecode-dead-code-optimizer.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-decoder.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-flags.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-generator.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -1291,6 +1345,9 @@
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-register-optimizer.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-register.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-traits.h">
@@ -1315,9 +1372,6 @@
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\interpreter.h">
-      <Filter>Source Files\interpreter</Filter>
-    </ClInclude>
-    <ClInclude Include="src\interpreter\source-position-table.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\isolate-inl.h">
@@ -1350,7 +1404,7 @@
     <ClInclude Include="src\libplatform\worker-thread.h">
       <Filter>Source Files\libplatform</Filter>
     </ClInclude>
-    <ClInclude Include="src\libsampler\v8-sampler.h">
+    <ClInclude Include="src\libsampler\sampler.h">
       <Filter>Source Files\libsampler</Filter>
     </ClInclude>
     <ClInclude Include="src\list-inl.h">
@@ -1656,6 +1710,9 @@
     <ClInclude Include="src\snapshot\startup-serializer.h">
       <Filter>Source Files\snapshot</Filter>
     </ClInclude>
+    <ClInclude Include="src\source-position-table.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\source-position.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1707,9 +1764,6 @@
     <ClInclude Include="src\types.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\typing-asm.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\unicode-cache-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1754,12 +1808,6 @@
     </ClInclude>
     <ClInclude Include="src\vm-state.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\wasm\asm-types.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
-    <ClInclude Include="src\wasm\asm-wasm-builder.h">
-      <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\ast-decoder.h">
       <Filter>Source Files\wasm</Filter>
@@ -1885,6 +1933,18 @@
     </ClCompile>
     <ClCompile Include="src\arguments.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\asmjs\asm-js.cc">
+      <Filter>Source Files\asmjs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\asmjs\asm-typer.cc">
+      <Filter>Source Files\asmjs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\asmjs\asm-types.cc">
+      <Filter>Source Files\asmjs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\asmjs\asm-wasm-builder.cc">
+      <Filter>Source Files\asmjs</Filter>
     </ClCompile>
     <ClCompile Include="src\assembler.cc">
       <Filter>Source Files</Filter>
@@ -2021,8 +2081,23 @@
     <ClCompile Include="src\bootstrapper.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\builtins\builtins.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\ia32\builtins-ia32.cc">
+      <Filter>Source Files\builtins\ia32</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\ppc\builtins-ppc.cc">
+      <Filter>Source Files\builtins\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\s390\builtins-s390.cc">
+      <Filter>Source Files\builtins\s390</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\x64\builtins-x64.cc">
+      <Filter>Source Files\builtins\x64</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\x87\builtins-x87.cc">
+      <Filter>Source Files\builtins\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\cached-powers.cc">
       <Filter>Source Files</Filter>
@@ -2330,6 +2405,9 @@
     <ClCompile Include="src\compiler\select-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\simd-lowering.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\simplified-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2379,6 +2457,9 @@
       <Filter>Source Files\compiler\x64</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\x64\instruction-selector-x64.cc">
+      <Filter>Source Files\compiler\x64</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\x64\unwinding-info-writer-x64.cc">
       <Filter>Source Files\compiler\x64</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\x87\code-generator-x87.cc">
@@ -2585,6 +2666,9 @@
     <ClCompile Include="src\dtoa.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\eh-frame.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\elements-kind.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2681,6 +2765,9 @@
     <ClCompile Include="src\heap\array-buffer-tracker.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
+    <ClCompile Include="src\heap\code-stats.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
     <ClCompile Include="src\heap\gc-idle-time-handler.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
@@ -2724,9 +2811,6 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\ia32\assembler-ia32.cc">
-      <Filter>Source Files\ia32</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ia32\builtins-ia32.cc">
       <Filter>Source Files\ia32</Filter>
     </ClCompile>
     <ClCompile Include="src\ia32\code-stubs-ia32.cc">
@@ -2873,6 +2957,12 @@
     <ClCompile Include="src\interpreter\bytecode-dead-code-optimizer.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-decoder.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-flags.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-generator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -2886,6 +2976,9 @@
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-register-optimizer.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-register.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecodes.cc">
@@ -2907,9 +3000,6 @@
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\interpreter.cc">
-      <Filter>Source Files\interpreter</Filter>
-    </ClCompile>
-    <ClCompile Include="src\interpreter\source-position-table.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\isolate.cc">
@@ -2936,7 +3026,7 @@
     <ClCompile Include="src\libplatform\worker-thread.cc">
       <Filter>Source Files\libplatform</Filter>
     </ClCompile>
-    <ClCompile Include="src\libsampler\v8-sampler.cc">
+    <ClCompile Include="src\libsampler\sampler.cc">
       <Filter>Source Files\libsampler</Filter>
     </ClCompile>
     <ClCompile Include="src\log-utils.cc">
@@ -3006,9 +3096,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ppc\assembler-ppc.cc">
-      <Filter>Source Files\ppc</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ppc\builtins-ppc.cc">
       <Filter>Source Files\ppc</Filter>
     </ClCompile>
     <ClCompile Include="src\ppc\code-stubs-ppc.cc">
@@ -3203,13 +3290,13 @@
     <ClCompile Include="src\runtime\runtime-typedarray.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
+    <ClCompile Include="src\runtime\runtime-wasm.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
     <ClCompile Include="src\runtime\runtime.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\s390\assembler-s390.cc">
-      <Filter>Source Files\s390</Filter>
-    </ClCompile>
-    <ClCompile Include="src\s390\builtins-s390.cc">
       <Filter>Source Files\s390</Filter>
     </ClCompile>
     <ClCompile Include="src\s390\code-stubs-s390.cc">
@@ -3275,6 +3362,9 @@
     <ClCompile Include="src\snapshot\startup-serializer.cc">
       <Filter>Source Files\snapshot</Filter>
     </ClCompile>
+    <ClCompile Include="src\source-position-table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\startup-data-util.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3305,9 +3395,6 @@
     <ClCompile Include="src\types.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\typing-asm.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\unicode-decoder.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3328,12 +3415,6 @@
     </ClCompile>
     <ClCompile Include="src\version.cc">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\wasm\asm-types.cc">
-      <Filter>Source Files\wasm</Filter>
-    </ClCompile>
-    <ClCompile Include="src\wasm\asm-wasm-builder.cc">
-      <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\ast-decoder.cc">
       <Filter>Source Files\wasm</Filter>
@@ -3374,9 +3455,6 @@
     <ClCompile Include="src\x64\assembler-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
-    <ClCompile Include="src\x64\builtins-x64.cc">
-      <Filter>Source Files\x64</Filter>
-    </ClCompile>
     <ClCompile Include="src\x64\code-stubs-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
@@ -3392,6 +3470,9 @@
     <ClCompile Include="src\x64\disasm-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
+    <ClCompile Include="src\x64\eh-frame-x64.cc">
+      <Filter>Source Files\x64</Filter>
+    </ClCompile>
     <ClCompile Include="src\x64\frames-x64.cc">
       <Filter>Source Files\x64</Filter>
     </ClCompile>
@@ -3405,9 +3486,6 @@
       <Filter>Source Files\x64</Filter>
     </ClCompile>
     <ClCompile Include="src\x87\assembler-x87.cc">
-      <Filter>Source Files\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\x87\builtins-x87.cc">
       <Filter>Source Files\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\x87\code-stubs-x87.cc">

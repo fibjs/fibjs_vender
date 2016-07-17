@@ -626,10 +626,11 @@ void BytecodeGraphBuilder::VisitMov() {
 }
 
 Node* BytecodeGraphBuilder::BuildLoadGlobal(TypeofMode typeof_mode) {
-  Handle<Name> name =
-      Handle<Name>::cast(bytecode_iterator().GetConstantForIndexOperand(0));
   VectorSlotPair feedback =
-      CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(1));
+      CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(0));
+  DCHECK_EQ(FeedbackVectorSlotKind::LOAD_GLOBAL_IC,
+            feedback_vector()->GetKind(feedback.slot()));
+  Handle<Name> name(feedback_vector()->GetName(feedback.slot()));
   const Operator* op = javascript()->LoadGlobal(name, feedback, typeof_mode);
   return NewNode(op, GetFunctionClosure());
 }
@@ -643,7 +644,7 @@ void BytecodeGraphBuilder::VisitLdaGlobal() {
 void BytecodeGraphBuilder::VisitLdrGlobal() {
   FrameStateBeforeAndAfter states(this);
   Node* node = BuildLoadGlobal(TypeofMode::NOT_INSIDE_TYPEOF);
-  environment()->BindRegister(bytecode_iterator().GetRegisterOperand(2), node,
+  environment()->BindRegister(bytecode_iterator().GetRegisterOperand(1), node,
                               &states);
 }
 
@@ -946,14 +947,15 @@ Node* BytecodeGraphBuilder::ProcessCallArguments(const Operator* call_op,
 
 void BytecodeGraphBuilder::BuildCall(TailCallMode tail_call_mode) {
   FrameStateBeforeAndAfter states(this);
-  // TODO(rmcilroy): Set receiver_hint correctly based on whether the receiver
-  // register has been loaded with null / undefined explicitly or we are sure it
-  // is not null / undefined.
   ConvertReceiverMode receiver_hint = ConvertReceiverMode::kAny;
   Node* callee =
       environment()->LookupRegister(bytecode_iterator().GetRegisterOperand(0));
   interpreter::Register receiver = bytecode_iterator().GetRegisterOperand(1);
   size_t arg_count = bytecode_iterator().GetRegisterCountOperand(2);
+
+  // Slot index of 0 is used indicate no feedback slot is available. Assert
+  // the assumption that slot index 0 is never a valid feedback slot.
+  STATIC_ASSERT(TypeFeedbackVector::kReservedIndexCount > 0);
   VectorSlotPair feedback =
       CreateVectorSlotPair(bytecode_iterator().GetIndexOperand(3));
 
@@ -1152,6 +1154,45 @@ void BytecodeGraphBuilder::VisitShiftRight() {
 void BytecodeGraphBuilder::VisitShiftRightLogical() {
   BinaryOperationHints hints = BinaryOperationHints::Any();
   BuildBinaryOp(javascript()->ShiftRightLogical(hints));
+}
+
+void BytecodeGraphBuilder::BuildBinaryOpWithImmediate(const Operator* js_op) {
+  FrameStateBeforeAndAfter states(this);
+  Node* left =
+      environment()->LookupRegister(bytecode_iterator().GetRegisterOperand(1));
+  Node* right = jsgraph()->Constant(bytecode_iterator().GetImmediateOperand(0));
+  Node* node = NewNode(js_op, left, right);
+  environment()->BindAccumulator(node, &states);
+}
+
+void BytecodeGraphBuilder::VisitAddSmi() {
+  BinaryOperationHints hints = BinaryOperationHints::Any();
+  BuildBinaryOpWithImmediate(javascript()->Add(hints));
+}
+
+void BytecodeGraphBuilder::VisitSubSmi() {
+  BinaryOperationHints hints = BinaryOperationHints::Any();
+  BuildBinaryOpWithImmediate(javascript()->Subtract(hints));
+}
+
+void BytecodeGraphBuilder::VisitBitwiseOrSmi() {
+  BinaryOperationHints hints = BinaryOperationHints::Any();
+  BuildBinaryOpWithImmediate(javascript()->BitwiseOr(hints));
+}
+
+void BytecodeGraphBuilder::VisitBitwiseAndSmi() {
+  BinaryOperationHints hints = BinaryOperationHints::Any();
+  BuildBinaryOpWithImmediate(javascript()->BitwiseAnd(hints));
+}
+
+void BytecodeGraphBuilder::VisitShiftLeftSmi() {
+  BinaryOperationHints hints = BinaryOperationHints::Any();
+  BuildBinaryOpWithImmediate(javascript()->ShiftLeft(hints));
+}
+
+void BytecodeGraphBuilder::VisitShiftRightSmi() {
+  BinaryOperationHints hints = BinaryOperationHints::Any();
+  BuildBinaryOpWithImmediate(javascript()->ShiftRight(hints));
 }
 
 void BytecodeGraphBuilder::VisitInc() {

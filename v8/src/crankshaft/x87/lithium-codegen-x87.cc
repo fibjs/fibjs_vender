@@ -72,6 +72,9 @@ void LCodeGen::FinishCode(Handle<Code> code) {
   DCHECK(is_done());
   code->set_stack_slots(GetTotalFrameSlotCount());
   code->set_safepoint_table_offset(safepoints_.GetCodeOffset());
+  Handle<ByteArray> source_positions =
+      source_position_table_builder_.ToSourcePositionTable();
+  code->set_source_position_table(*source_positions);
   PopulateDeoptimizationData(code);
   if (info()->ShouldEnsureSpaceForLazyDeopt()) {
     Deoptimizer::EnsureRelocSpaceForLazyDeoptimization(code);
@@ -149,10 +152,10 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       __ Push(info()->scope()->GetScopeInfo(info()->isolate()));
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
-    } else if (slots <= FastNewContextStub::kMaximumSlots) {
-      FastNewContextStub stub(isolate(), slots);
+    } else if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
+      FastNewFunctionContextStub stub(isolate(), slots);
       __ CallStub(&stub);
-      // Result of FastNewContextStub is always in new space.
+      // Result of FastNewFunctionContextStub is always in new space.
       need_write_barrier = false;
     } else {
       __ push(edi);
@@ -1099,12 +1102,6 @@ void LCodeGen::RecordSafepointWithRegisters(LPointerMap* pointers,
                                             int arguments,
                                             Safepoint::DeoptMode mode) {
   RecordSafepoint(pointers, Safepoint::kWithRegisters, arguments, mode);
-}
-
-
-void LCodeGen::RecordAndWritePosition(int position) {
-  if (position == RelocInfo::kNoPosition) return;
-  masm()->positions_recorder()->RecordPosition(position);
 }
 
 
@@ -2705,11 +2702,8 @@ void LCodeGen::EmitVectorStoreICRegisters(T* instr) {
 
 void LCodeGen::DoLoadGlobalGeneric(LLoadGlobalGeneric* instr) {
   DCHECK(ToRegister(instr->context()).is(esi));
-  DCHECK(ToRegister(instr->global_object())
-             .is(LoadDescriptor::ReceiverRegister()));
   DCHECK(ToRegister(instr->result()).is(eax));
 
-  __ mov(LoadDescriptor::NameRegister(), instr->name());
   EmitVectorLoadICRegisters<LLoadGlobalGeneric>(instr);
   Handle<Code> ic =
       CodeFactory::LoadGlobalICInOptimizedCode(isolate(), instr->typeof_mode())
@@ -3248,6 +3242,7 @@ void LCodeGen::DoDeclareGlobals(LDeclareGlobals* instr) {
   DCHECK(ToRegister(instr->context()).is(esi));
   __ push(Immediate(instr->hydrogen()->pairs()));
   __ push(Immediate(Smi::FromInt(instr->hydrogen()->flags())));
+  __ push(Immediate(instr->hydrogen()->feedback_vector()));
   CallRuntime(Runtime::kDeclareGlobals, instr);
 }
 
@@ -3704,67 +3699,46 @@ void LCodeGen::DoMathClz32(LMathClz32* instr) {
   __ Lzcnt(result, input);
 }
 
+void LCodeGen::DoMathCos(LMathCos* instr) {
+  X87Register result = ToX87Register(instr->result());
+  X87Register input_reg = ToX87Register(instr->value());
+  __ fld(x87_stack_.st(input_reg));
+
+  // Pass one double as argument on the stack.
+  __ PrepareCallCFunction(2, eax);
+  __ fstp_d(MemOperand(esp, 0));
+  X87PrepareToWrite(result);
+  __ CallCFunction(ExternalReference::ieee754_cos_function(isolate()), 2);
+  // Return value is in st(0) on ia32.
+  X87CommitWrite(result);
+}
+
+void LCodeGen::DoMathSin(LMathSin* instr) {
+  X87Register result = ToX87Register(instr->result());
+  X87Register input_reg = ToX87Register(instr->value());
+  __ fld(x87_stack_.st(input_reg));
+
+  // Pass one double as argument on the stack.
+  __ PrepareCallCFunction(2, eax);
+  __ fstp_d(MemOperand(esp, 0));
+  X87PrepareToWrite(result);
+  __ CallCFunction(ExternalReference::ieee754_sin_function(isolate()), 2);
+  // Return value is in st(0) on ia32.
+  X87CommitWrite(result);
+}
 
 void LCodeGen::DoMathExp(LMathExp* instr) {
-  X87Register input = ToX87Register(instr->value());
-  X87Register result_reg = ToX87Register(instr->result());
-  Register temp_result = ToRegister(instr->temp1());
-  Register temp = ToRegister(instr->temp2());
-  Label slow, done, smi, finish;
-  DCHECK(result_reg.is(input));
+  X87Register result = ToX87Register(instr->result());
+  X87Register input_reg = ToX87Register(instr->value());
+  __ fld(x87_stack_.st(input_reg));
 
-  // Store input into Heap number and call runtime function kMathExpRT.
-  if (FLAG_inline_new) {
-    __ AllocateHeapNumber(temp_result, temp, no_reg, &slow);
-    __ jmp(&done, Label::kNear);
-  }
-
-  // Slow case: Call the runtime system to do the number allocation.
-  __ bind(&slow);
-  {
-    // TODO(3095996): Put a valid pointer value in the stack slot where the
-    // result register is stored, as this register is in the pointer map, but
-    // contains an integer value.
-    __ Move(temp_result, Immediate(0));
-
-    // Preserve the value of all registers.
-    PushSafepointRegistersScope scope(this);
-
-    __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
-    __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
-    RecordSafepointWithRegisters(instr->pointer_map(), 0,
-                                 Safepoint::kNoLazyDeopt);
-    __ StoreToSafepointRegisterSlot(temp_result, eax);
-  }
-  __ bind(&done);
-  X87LoadForUsage(input);
-  __ fstp_d(FieldOperand(temp_result, HeapNumber::kValueOffset));
-
-  {
-    // Preserve the value of all registers.
-    PushSafepointRegistersScope scope(this);
-
-    __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
-    __ push(temp_result);
-    __ CallRuntimeSaveDoubles(Runtime::kMathExpRT);
-    RecordSafepointWithRegisters(instr->pointer_map(), 1,
-                                 Safepoint::kNoLazyDeopt);
-    __ StoreToSafepointRegisterSlot(temp_result, eax);
-  }
-  X87PrepareToWrite(result_reg);
-  // return value of MathExpRT is Smi or Heap Number.
-  __ JumpIfSmi(temp_result, &smi);
-  // Heap number(double)
-  __ fld_d(FieldOperand(temp_result, HeapNumber::kValueOffset));
-  __ jmp(&finish);
-  // SMI
-  __ bind(&smi);
-  __ SmiUntag(temp_result);
-  __ push(temp_result);
-  __ fild_s(MemOperand(esp, 0));
-  __ pop(temp_result);
-  __ bind(&finish);
-  X87CommitWrite(result_reg);
+  // Pass one double as argument on the stack.
+  __ PrepareCallCFunction(2, eax);
+  __ fstp_d(MemOperand(esp, 0));
+  X87PrepareToWrite(result);
+  __ CallCFunction(ExternalReference::ieee754_exp_function(isolate()), 2);
+  // Return value is in st(0) on ia32.
+  X87CommitWrite(result);
 }
 
 void LCodeGen::PrepareForTailCall(const ParameterCount& actual,
@@ -3779,7 +3753,9 @@ void LCodeGen::PrepareForTailCall(const ParameterCount& actual,
 #endif
   if (FLAG_code_comments) {
     if (actual.is_reg()) {
-      Comment(";;; PrepareForTailCall, actual: %s {", actual.reg().ToString());
+      Comment(";;; PrepareForTailCall, actual: %s {",
+              RegisterConfiguration::Crankshaft()->GetGeneralRegisterName(
+                  actual.reg().code()));
     } else {
       Comment(";;; PrepareForTailCall, actual: %d {", actual.immediate());
     }
@@ -4639,13 +4615,10 @@ void LCodeGen::DoDeferredNumberTagIU(LInstruction* instr,
 
     // Preserve the value of all registers.
     PushSafepointRegistersScope scope(this);
-
-    // NumberTagI and NumberTagD use the context from the frame, rather than
-    // the environment's HContext or HInlinedContext value.
-    // They only call Runtime::kAllocateHeapNumber.
-    // The corresponding HChange instructions are added in a phase that does
-    // not have easy access to the local context.
-    __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
+    // Reset the context register.
+    if (!reg.is(esi)) {
+      __ Move(esi, Immediate(0));
+    }
     __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
     RecordSafepointWithRegisters(
         instr->pointer_map(), 0, Safepoint::kNoLazyDeopt);
@@ -4700,12 +4673,10 @@ void LCodeGen::DoDeferredNumberTagD(LNumberTagD* instr) {
   __ Move(reg, Immediate(0));
 
   PushSafepointRegistersScope scope(this);
-  // NumberTagI and NumberTagD use the context from the frame, rather than
-  // the environment's HContext or HInlinedContext value.
-  // They only call Runtime::kAllocateHeapNumber.
-  // The corresponding HChange instructions are added in a phase that does
-  // not have easy access to the local context.
-  __ mov(esi, Operand(ebp, StandardFrameConstants::kContextOffset));
+  // Reset the context register.
+  if (!reg.is(esi)) {
+    __ Move(esi, Immediate(0));
+  }
   __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
   RecordSafepointWithRegisters(
       instr->pointer_map(), 0, Safepoint::kNoLazyDeopt);
@@ -5309,36 +5280,6 @@ void LCodeGen::DoClampTToUint8NoSSE2(LClampTToUint8NoSSE2* instr) {
   __ SmiUntag(result_reg);
   __ ClampUint8(result_reg);
   __ bind(&done);
-}
-
-
-void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
-  X87Register value_reg = ToX87Register(instr->value());
-  Register result_reg = ToRegister(instr->result());
-  X87Fxch(value_reg);
-  __ sub(esp, Immediate(kDoubleSize));
-  __ fst_d(Operand(esp, 0));
-  if (instr->hydrogen()->bits() == HDoubleBits::HIGH) {
-    __ mov(result_reg, Operand(esp, kPointerSize));
-  } else {
-    __ mov(result_reg, Operand(esp, 0));
-  }
-  __ add(esp, Immediate(kDoubleSize));
-}
-
-
-void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
-  Register hi_reg = ToRegister(instr->hi());
-  Register lo_reg = ToRegister(instr->lo());
-  X87Register result_reg = ToX87Register(instr->result());
-  // Follow below pattern to write a x87 fp register.
-  X87PrepareToWrite(result_reg);
-  __ sub(esp, Immediate(kDoubleSize));
-  __ mov(Operand(esp, 0), lo_reg);
-  __ mov(Operand(esp, kPointerSize), hi_reg);
-  __ fld_d(Operand(esp, 0));
-  __ add(esp, Immediate(kDoubleSize));
-  X87CommitWrite(result_reg);
 }
 
 

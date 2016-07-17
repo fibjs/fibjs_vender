@@ -7,6 +7,7 @@
 
 #include "src/ast/ast.h"
 #include "src/base/hashmap.h"
+#include "src/globals.h"
 #include "src/pending-compilation-error-handler.h"
 #include "src/zone.h"
 
@@ -174,8 +175,8 @@ class Scope: public ZoneObject {
   VariableProxy* NewUnresolved(AstNodeFactory* factory,
                                const AstRawString* name,
                                Variable::Kind kind = Variable::NORMAL,
-                               int start_position = RelocInfo::kNoPosition,
-                               int end_position = RelocInfo::kNoPosition) {
+                               int start_position = kNoSourcePosition,
+                               int end_position = kNoSourcePosition) {
     // Note that we must not share the unresolved variables with
     // the same name because they may be removed selectively via
     // RemoveUnresolved().
@@ -216,7 +217,11 @@ class Scope: public ZoneObject {
   // Adds a temporary variable in this scope's TemporaryScope. This is for
   // adjusting the scope of temporaries used when desugaring parameter
   // initializers.
-  void AddTemporary(Variable* var) { temps_.Add(var, zone()); }
+  void AddTemporary(Variable* var) {
+    // Temporaries are only placed in ClosureScopes.
+    DCHECK_EQ(ClosureScope(), this);
+    temps_.Add(var, zone());
+  }
 
   // Adds the specific declaration node to the list of declarations in
   // this scope. The declarations are processed as part of entering
@@ -230,6 +235,14 @@ class Scope: public ZoneObject {
   // declarations, i.e. a var declaration that has been hoisted from a nested
   // scope over a let binding of the same name.
   Declaration* CheckConflictingVarDeclarations();
+
+  // Check if the scope has a conflicting lexical declaration that has a name in
+  // the given list. This is used to catch patterns like
+  // `try{}catch(e){let e;}`,
+  // which is an error even though the two 'e's are declared in different
+  // scopes.
+  Declaration* CheckLexDeclarationsConflictingWith(
+      const ZoneList<const AstRawString*>& names);
 
   // ---------------------------------------------------------------------------
   // Scope-specific info.
@@ -486,6 +499,12 @@ class Scope: public ZoneObject {
   // The ModuleDescriptor for this scope; only for module scopes.
   ModuleDescriptor* module() const { return module_descriptor_; }
 
+  const AstRawString* catch_variable_name() const {
+    DCHECK(is_catch_scope());
+    DCHECK(num_var() == 1);
+    return static_cast<AstRawString*>(variables_.Start()->key);
+  }
+
   // ---------------------------------------------------------------------------
   // Variable allocation.
 
@@ -496,8 +515,8 @@ class Scope: public ZoneObject {
                                     ZoneList<Variable*>* context_locals,
                                     ZoneList<Variable*>* context_globals);
 
-  // Current number of var or const locals.
-  int num_var_or_const() { return num_var_or_const_; }
+  // Current number of var locals.
+  int num_var() const { return num_var_; }
 
   // Result of variable allocation.
   int num_stack_slots() const { return num_stack_slots_; }
@@ -570,11 +589,6 @@ class Scope: public ZoneObject {
   SloppyBlockFunctionMap* sloppy_block_function_map() {
     return &sloppy_block_function_map_;
   }
-
-  // Error handling.
-  void ReportMessage(int start_position, int end_position,
-                     MessageTemplate::Template message,
-                     const AstRawString* arg);
 
   // ---------------------------------------------------------------------------
   // Debugging.
@@ -673,7 +687,7 @@ class Scope: public ZoneObject {
   bool is_declaration_scope_;
 
   // Computed as variables are declared.
-  int num_var_or_const_;
+  int num_var_;
 
   // Computed via AllocateVariables; function, block and catch scopes only.
   int num_stack_slots_;

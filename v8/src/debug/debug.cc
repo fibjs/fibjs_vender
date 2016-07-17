@@ -16,17 +16,31 @@
 #include "src/frames-inl.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/global-handles.h"
+#include "src/globals.h"
 #include "src/interpreter/interpreter.h"
 #include "src/isolate-inl.h"
 #include "src/list.h"
 #include "src/log.h"
 #include "src/messages.h"
 #include "src/snapshot/natives.h"
+#include "src/wasm/wasm-debug.h"
+#include "src/wasm/wasm-module.h"
 
 #include "include/v8-debug.h"
 
 namespace v8 {
 namespace internal {
+
+namespace {
+
+inline int CallOffsetFromCodeOffset(int code_offset, bool is_interpreted) {
+  // Code offset points to the instruction after the call. Subtract 1 to
+  // exclude that instruction from the search. For bytecode, the code offset
+  // still points to the call.
+  return is_interpreted ? code_offset : code_offset - 1;
+}
+
+}  // namespace
 
 Debug::Debug(Isolate* isolate)
     : debug_context_(Handle<Context>()),
@@ -66,7 +80,19 @@ BreakLocation::BreakLocation(Handle<DebugInfo> debug_info, DebugBreakType type,
       code_offset_(code_offset),
       type_(type),
       position_(position),
-      statement_position_(statement_position) {}
+      statement_position_(statement_position) {
+  if (type == DEBUG_BREAK_SLOT_AT_RETURN) {
+    int return_position = 0;
+    SharedFunctionInfo* shared = debug_info->shared();
+    if (shared->HasSourceCode()) {
+      return_position =
+          std::max(shared->end_position() - shared->start_position() - 1, 0);
+    }
+    // TODO(yangguo): find out why return position is wrong for liveedit.
+    position_ = return_position;
+    statement_position = return_position;
+  }
+}
 
 BreakLocation::Iterator* BreakLocation::GetIterator(
     Handle<DebugInfo> debug_info, BreakLocatorType type) {
@@ -83,20 +109,14 @@ BreakLocation::Iterator::Iterator(Handle<DebugInfo> debug_info)
       position_(1),
       statement_position_(1) {}
 
-int BreakLocation::Iterator::ReturnPosition() {
-  if (debug_info_->shared()->HasSourceCode()) {
-    return debug_info_->shared()->end_position() -
-           debug_info_->shared()->start_position() - 1;
-  } else {
-    return 0;
-  }
-}
-
 BreakLocation::CodeIterator::CodeIterator(Handle<DebugInfo> debug_info,
                                           BreakLocatorType type)
     : Iterator(debug_info),
       reloc_iterator_(debug_info->abstract_code()->GetCode(),
-                      GetModeMask(type)) {
+                      GetModeMask(type)),
+      source_position_iterator_(
+          debug_info->abstract_code()->GetCode()->source_position_table()),
+      start_position_(debug_info_->shared()->start_position()) {
   // There is at least one break location.
   DCHECK(!Done());
   Next();
@@ -104,8 +124,6 @@ BreakLocation::CodeIterator::CodeIterator(Handle<DebugInfo> debug_info,
 
 int BreakLocation::CodeIterator::GetModeMask(BreakLocatorType type) {
   int mask = 0;
-  mask |= RelocInfo::ModeMask(RelocInfo::POSITION);
-  mask |= RelocInfo::ModeMask(RelocInfo::STATEMENT_POSITION);
   mask |= RelocInfo::ModeMask(RelocInfo::DEBUG_BREAK_SLOT_AT_RETURN);
   mask |= RelocInfo::ModeMask(RelocInfo::DEBUG_BREAK_SLOT_AT_CALL);
   if (isolate()->is_tail_call_elimination_enabled()) {
@@ -124,37 +142,23 @@ void BreakLocation::CodeIterator::Next() {
 
   // Iterate through reloc info stopping at each breakable code target.
   bool first = break_index_ == -1;
-  while (!Done()) {
-    if (!first) reloc_iterator_.next();
-    first = false;
-    if (Done()) return;
 
-    // Whenever a statement position or (plain) position is passed update the
-    // current value of these.
-    if (RelocInfo::IsPosition(rmode())) {
-      if (RelocInfo::IsStatementPosition(rmode())) {
-        statement_position_ = static_cast<int>(
-            rinfo()->data() - debug_info_->shared()->start_position());
-      }
-      // Always update the position as we don't want that to be before the
-      // statement position.
-      position_ = static_cast<int>(rinfo()->data() -
-                                   debug_info_->shared()->start_position());
-      DCHECK(position_ >= 0);
-      DCHECK(statement_position_ >= 0);
-      continue;
+  if (!first) reloc_iterator_.next();
+  first = false;
+  if (Done()) return;
+
+  int offset = code_offset();
+  while (!source_position_iterator_.done() &&
+         source_position_iterator_.code_offset() <= offset) {
+    position_ = source_position_iterator_.source_position() - start_position_;
+    if (source_position_iterator_.is_statement()) {
+      statement_position_ = position_;
     }
-
-    DCHECK(RelocInfo::IsDebugBreakSlot(rmode()) ||
-           RelocInfo::IsDebuggerStatement(rmode()));
-
-    if (RelocInfo::IsDebugBreakSlotAtReturn(rmode())) {
-      // Set the positions to the end of the function.
-      statement_position_ = position_ = ReturnPosition();
-    }
-
-    break;
+    source_position_iterator_.Advance();
   }
+
+  DCHECK(RelocInfo::IsDebugBreakSlot(rmode()) ||
+         RelocInfo::IsDebuggerStatement(rmode()));
   break_index_++;
 }
 
@@ -214,11 +218,7 @@ void BreakLocation::BytecodeArrayIterator::Next() {
 
     DCHECK_EQ(CALLS_AND_RETURNS, break_locator_type_);
     if (type == DEBUG_BREAK_SLOT_AT_CALL) break;
-    if (type == DEBUG_BREAK_SLOT_AT_RETURN) {
-      DCHECK_EQ(ReturnPosition(), position_);
-      DCHECK_EQ(ReturnPosition(), statement_position_);
-      break;
-    }
+    if (type == DEBUG_BREAK_SLOT_AT_RETURN) break;
   }
   break_index_++;
 }
@@ -260,18 +260,11 @@ BreakLocation BreakLocation::FromCodeOffset(Handle<DebugInfo> debug_info,
   return it->GetBreakLocation();
 }
 
-int CallOffsetFromCodeOffset(int code_offset, bool is_interpreted) {
-  // Code offset points to the instruction after the call. Subtract 1 to
-  // exclude that instruction from the search. For bytecode, the code offset
-  // still points to the call.
-  return is_interpreted ? code_offset : code_offset - 1;
-}
-
 BreakLocation BreakLocation::FromFrame(Handle<DebugInfo> debug_info,
                                        JavaScriptFrame* frame) {
-  FrameSummary summary = FrameSummary::GetFirst(frame);
+  int code_offset = FrameSummary::GetFirst(frame).code_offset();
   int call_offset =
-      CallOffsetFromCodeOffset(summary.code_offset(), frame->is_interpreted());
+      CallOffsetFromCodeOffset(code_offset, frame->is_interpreted());
   return FromCodeOffset(debug_info, call_offset);
 }
 
@@ -474,7 +467,7 @@ void Debug::ThreadInit() {
   thread_local_.break_id_ = 0;
   thread_local_.break_frame_id_ = StackFrame::NO_ID;
   thread_local_.last_step_action_ = StepNone;
-  thread_local_.last_statement_position_ = RelocInfo::kNoPosition;
+  thread_local_.last_statement_position_ = kNoSourcePosition;
   thread_local_.last_fp_ = 0;
   thread_local_.target_fp_ = 0;
   thread_local_.return_value_ = Handle<Object>();
@@ -793,6 +786,10 @@ bool Debug::SetBreakPointForScript(Handle<Script> script,
                                    Handle<Object> break_point_object,
                                    int* source_position,
                                    BreakPositionAlignment alignment) {
+  if (script->type() == Script::TYPE_WASM) {
+    // TODO(clemensh): set breakpoint for wasm.
+    return false;
+  }
   HandleScope scope(isolate_);
 
   // Obtain shared function info for the function.
@@ -1074,7 +1071,7 @@ void Debug::PrepareStep(StepAction step_action) {
         thread_local_.target_fp_ = frames_it.frame()->UnpaddedFP();
       }
       // Clear last position info. For stepping out it does not matter.
-      thread_local_.last_statement_position_ = RelocInfo::kNoPosition;
+      thread_local_.last_statement_position_ = kNoSourcePosition;
       thread_local_.last_fp_ = 0;
       break;
     case StepNext:
@@ -1135,7 +1132,7 @@ void Debug::ClearStepping() {
   ClearOneShot();
 
   thread_local_.last_step_action_ = StepNone;
-  thread_local_.last_statement_position_ = RelocInfo::kNoPosition;
+  thread_local_.last_statement_position_ = kNoSourcePosition;
   thread_local_.last_fp_ = 0;
   thread_local_.target_fp_ = 0;
 }
@@ -1397,13 +1394,13 @@ class SharedFunctionInfoFinder {
   explicit SharedFunctionInfoFinder(int target_position)
       : current_candidate_(NULL),
         current_candidate_closure_(NULL),
-        current_start_position_(RelocInfo::kNoPosition),
+        current_start_position_(kNoSourcePosition),
         target_position_(target_position) {}
 
   void NewCandidate(SharedFunctionInfo* shared, JSFunction* closure = NULL) {
     if (!shared->IsSubjectToDebugging()) return;
     int start_position = shared->function_token_position();
-    if (start_position == RelocInfo::kNoPosition) {
+    if (start_position == kNoSourcePosition) {
       start_position = shared->start_position();
     }
 
@@ -1601,23 +1598,20 @@ void Debug::SetAfterBreakTarget(JavaScriptFrame* frame) {
   }
 }
 
-
 bool Debug::IsBreakAtReturn(JavaScriptFrame* frame) {
   HandleScope scope(isolate_);
 
   // Get the executing function in which the debug break occurred.
-  Handle<JSFunction> function(JSFunction::cast(frame->function()));
-  Handle<SharedFunctionInfo> shared(function->shared());
+  Handle<SharedFunctionInfo> shared(frame->function()->shared());
 
   // With no debug info there are no break points, so we can't be at a return.
   if (!shared->HasDebugInfo()) return false;
 
   DCHECK(!frame->is_optimized());
-  FrameSummary summary = FrameSummary::GetFirst(frame);
-
+  int code_offset = FrameSummary::GetFirst(frame).code_offset();
   Handle<DebugInfo> debug_info(shared->GetDebugInfo());
   BreakLocation location =
-      BreakLocation::FromCodeOffset(debug_info, summary.code_offset());
+      BreakLocation::FromCodeOffset(debug_info, code_offset);
   return location.IsReturn() || location.IsTailCall();
 }
 
@@ -2303,12 +2297,14 @@ DebugScope::DebugScope(Debug* debug)
   break_frame_id_ = debug_->break_frame_id();
   return_value_ = debug_->return_value();
 
-  // Create the new break info. If there is no JavaScript frames there is no
-  // break frame id.
-  JavaScriptFrameIterator it(isolate());
-  bool has_js_frames = !it.done();
-  debug_->thread_local_.break_frame_id_ = has_js_frames ? it.frame()->id()
-                                                        : StackFrame::NO_ID;
+  // Create the new break info. If there is no proper frames there is no break
+  // frame id.
+  StackTraceFrameIterator it(isolate());
+  bool has_frames = !it.done();
+  // We don't currently support breaking inside wasm framess.
+  DCHECK(!has_frames || !it.is_wasm());
+  debug_->thread_local_.break_frame_id_ =
+      has_frames ? it.frame()->id() : StackFrame::NO_ID;
   debug_->SetNextBreakId();
 
   debug_->UpdateState();

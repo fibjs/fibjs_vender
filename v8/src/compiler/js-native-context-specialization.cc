@@ -80,7 +80,6 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
   Node* receiver = NodeProperties::GetValueInput(node, 0);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
-  Node* frame_state = NodeProperties::FindFrameStateBefore(node);
 
   // Not much we can do if deoptimization support is disabled.
   if (!(flags() & kDeoptimizationEnabled)) return NoChange();
@@ -111,8 +110,7 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
   if (index != nullptr) {
     Node* check = graph()->NewNode(simplified()->ReferenceEqual(Type::Name()),
                                    index, jsgraph()->HeapConstant(name));
-    control = effect = graph()->NewNode(common()->DeoptimizeUnless(), check,
-                                        frame_state, effect, control);
+    effect = graph()->NewNode(simplified()->CheckIf(), check, effect, control);
   }
 
   // Check if {receiver} may be a number.
@@ -158,9 +156,9 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
     if (receiver_type->Is(Type::String())) {
       Node* check = graph()->NewNode(simplified()->ObjectIsString(), receiver);
       if (j == access_infos.size() - 1) {
-        this_control = this_effect =
-            graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
-                             this_effect, fallthrough_control);
+        this_effect = graph()->NewNode(simplified()->CheckIf(), check,
+                                       this_effect, fallthrough_control);
+        this_control = fallthrough_control;
         fallthrough_control = nullptr;
       } else {
         Node* branch =
@@ -181,11 +179,10 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
             graph()->NewNode(simplified()->ReferenceEqual(Type::Internal()),
                              receiver_map, jsgraph()->Constant(map));
         if (--num_classes == 0 && j == access_infos.size() - 1) {
-          Node* deoptimize =
-              graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
-                               this_effect, fallthrough_control);
-          this_controls.push_back(deoptimize);
-          this_effects.push_back(deoptimize);
+          check = graph()->NewNode(simplified()->CheckIf(), check, this_effect,
+                                   fallthrough_control);
+          this_controls.push_back(fallthrough_control);
+          this_effects.push_back(check);
           fallthrough_control = nullptr;
         } else {
           Node* branch =
@@ -237,9 +234,8 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
       if (access_mode == AccessMode::kStore) {
         Node* check = graph()->NewNode(
             simplified()->ReferenceEqual(Type::Tagged()), value, this_value);
-        this_control = this_effect =
-            graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
-                             this_effect, this_control);
+        this_effect = graph()->NewNode(simplified()->CheckIf(), check,
+                                       this_effect, this_control);
       }
     } else {
       DCHECK(access_info.IsDataField());
@@ -276,13 +272,9 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
       } else {
         DCHECK_EQ(AccessMode::kStore, access_mode);
         if (field_type->Is(Type::UntaggedFloat64())) {
-          Node* check =
-              graph()->NewNode(simplified()->ObjectIsNumber(), this_value);
-          this_control = this_effect =
-              graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
+          this_value = this_effect =
+              graph()->NewNode(simplified()->CheckNumber(), this_value,
                                this_effect, this_control);
-          this_value = graph()->NewNode(simplified()->TypeGuard(Type::Number()),
-                                        this_value, this_control);
 
           if (!field_index.is_inobject() || field_index.is_hidden_field() ||
               !FLAG_unbox_double_fields) {
@@ -335,9 +327,8 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
             Node* check = graph()->NewNode(
                 simplified()->ReferenceEqual(Type::Internal()), this_value_map,
                 jsgraph()->Constant(field_type->Classes().Current()));
-            this_control = this_effect =
-                graph()->NewNode(common()->DeoptimizeUnless(), check,
-                                 frame_state, this_effect, this_control);
+            this_effect = graph()->NewNode(simplified()->CheckIf(), check,
+                                           this_effect, this_control);
           } else {
             DCHECK_EQ(0, field_type->NumClasses());
           }
@@ -568,11 +559,10 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
           // TODO(turbofan): This is ugly as hell! We should probably introduce
           // macro-ish operators for property access that encapsulate this whole
           // mess.
-          Node* deoptimize =
-              graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
-                               effect, fallthrough_control);
-          this_controls.push_back(deoptimize);
-          this_effects.push_back(deoptimize);
+          check = graph()->NewNode(simplified()->CheckIf(), check, effect,
+                                   fallthrough_control);
+          this_controls.push_back(fallthrough_control);
+          this_effects.push_back(check);
           fallthrough_control = nullptr;
         } else {
           Node* branch =
@@ -597,9 +587,10 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
             simplified()->ReferenceEqual(Type::Any()), receiver_map,
             jsgraph()->HeapConstant(transition_source));
         if (--num_transitions == 0 && j == access_infos.size() - 1) {
-          transition_control = transition_effect =
-              graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
+          transition_effect =
+              graph()->NewNode(simplified()->CheckIf(), check,
                                transition_effect, fallthrough_control);
+          transition_control = fallthrough_control;
           fallthrough_control = nullptr;
         } else {
           Node* branch =
@@ -684,9 +675,8 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
       Node* check = graph()->NewNode(
           simplified()->ReferenceEqual(Type::Any()), this_elements_map,
           jsgraph()->HeapConstant(factory()->fixed_array_map()));
-      this_control = this_effect =
-          graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
-                           this_effect, this_control);
+      this_effect = graph()->NewNode(simplified()->CheckIf(), check,
+                                     this_effect, this_control);
     }
 
     // Load the length of the {receiver}.
@@ -784,18 +774,11 @@ Reduction JSNativeContextSpecialization::ReduceElementAccess(
             graph()->NewNode(simplified()->CheckTaggedSigned(), this_value,
                              this_effect, this_control);
       } else if (IsFastDoubleElementsKind(elements_kind)) {
-        Node* check =
-            graph()->NewNode(simplified()->ObjectIsNumber(), this_value);
-        this_control = this_effect =
-            graph()->NewNode(common()->DeoptimizeUnless(), check, frame_state,
-                             this_effect, this_control);
-        this_value = graph()->NewNode(simplified()->TypeGuard(Type::Number()),
-                                      this_value, this_control);
-        // Make sure we do not store signalling NaNs into holey double arrays.
-        if (elements_kind == FAST_HOLEY_DOUBLE_ELEMENTS) {
-          this_value =
-              graph()->NewNode(simplified()->NumberSilenceNaN(), this_value);
-        }
+        this_value = this_effect = graph()->NewNode(
+            simplified()->CheckNumber(), this_value, this_effect, this_control);
+        // Make sure we do not store signalling NaNs into double arrays.
+        this_value =
+            graph()->NewNode(simplified()->NumberSilenceNaN(), this_value);
       }
       this_effect = graph()->NewNode(simplified()->StoreElement(element_access),
                                      this_elements, this_index, this_value,

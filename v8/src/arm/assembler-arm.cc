@@ -279,7 +279,6 @@ Operand::Operand(Handle<Object> handle) {
   // Verify all Objects referred by code are NOT in new space.
   Object* obj = *handle;
   if (obj->IsHeapObject()) {
-    DCHECK(!HeapObject::cast(obj)->GetHeap()->InNewSpace(obj));
     imm32_ = reinterpret_cast<intptr_t>(handle.location());
     rmode_ = RelocInfo::EMBEDDED_OBJECT;
   } else {
@@ -481,8 +480,7 @@ Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
       recorded_ast_id_(TypeFeedbackId::None()),
       pending_32_bit_constants_(),
       pending_64_bit_constants_(),
-      constant_pool_builder_(kLdrMaxReachBits, kVldrMaxReachBits),
-      positions_recorder_(this) {
+      constant_pool_builder_(kLdrMaxReachBits, kVldrMaxReachBits) {
   pending_32_bit_constants_.reserve(kMinNumPendingConstants);
   pending_64_bit_constants_.reserve(kMinNumPendingConstants);
   reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
@@ -502,8 +500,6 @@ Assembler::~Assembler() {
 
 
 void Assembler::GetCode(CodeDesc* desc) {
-  reloc_info_writer.Finish();
-
   // Emit constant pool if necessary.
   int constant_pool_offset = 0;
   if (FLAG_enable_embedded_constant_pool) {
@@ -521,6 +517,8 @@ void Assembler::GetCode(CodeDesc* desc) {
   desc->constant_pool_size =
       (constant_pool_offset ? desc->instr_size - constant_pool_offset : 0);
   desc->origin = this;
+  desc->unwinding_info_size = 0;
+  desc->unwinding_info = nullptr;
 }
 
 
@@ -3914,9 +3912,8 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
 ConstantPoolEntry::Access Assembler::ConstantPoolAddEntry(int position,
                                                           RelocInfo::Mode rmode,
                                                           intptr_t value) {
-  DCHECK(rmode != RelocInfo::COMMENT && rmode != RelocInfo::POSITION &&
-         rmode != RelocInfo::STATEMENT_POSITION &&
-         rmode != RelocInfo::CONST_POOL && rmode != RelocInfo::NONE64);
+  DCHECK(rmode != RelocInfo::COMMENT && rmode != RelocInfo::CONST_POOL &&
+         rmode != RelocInfo::NONE64);
   bool sharing_ok = RelocInfo::IsNone(rmode) ||
                     !(serializer_enabled() || rmode < RelocInfo::CELL);
   if (FLAG_enable_embedded_constant_pool) {

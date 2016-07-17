@@ -18,6 +18,7 @@
 #include "src/deoptimizer.h"
 #include "src/global-handles.h"
 #include "src/heap/array-buffer-tracker-inl.h"
+#include "src/heap/code-stats.h"
 #include "src/heap/gc-idle-time-handler.h"
 #include "src/heap/gc-tracer.h"
 #include "src/heap/incremental-marking.h"
@@ -140,7 +141,8 @@ Heap::Heap()
       incremental_marking_(nullptr),
       gc_idle_time_handler_(nullptr),
       memory_reducer_(nullptr),
-      object_stats_(nullptr),
+      live_object_stats_(nullptr),
+      dead_object_stats_(nullptr),
       scavenge_job_(nullptr),
       idle_scavenge_observer_(nullptr),
       full_codegen_bytes_generated_(0),
@@ -1469,38 +1471,6 @@ void Heap::MarkCompactPrologue() {
 }
 
 
-#ifdef VERIFY_HEAP
-// Visitor class to verify pointers in code or data space do not point into
-// new space.
-class VerifyNonPointerSpacePointersVisitor : public ObjectVisitor {
- public:
-  explicit VerifyNonPointerSpacePointersVisitor(Heap* heap) : heap_(heap) {}
-
-  void VisitPointers(Object** start, Object** end) override {
-    for (Object** current = start; current < end; current++) {
-      if ((*current)->IsHeapObject()) {
-        CHECK(!heap_->InNewSpace(HeapObject::cast(*current)));
-      }
-    }
-  }
-
- private:
-  Heap* heap_;
-};
-
-
-static void VerifyNonPointerSpacePointers(Heap* heap) {
-  // Verify that there are no pointers to new space in spaces where we
-  // do not expect them.
-  VerifyNonPointerSpacePointersVisitor v(heap);
-  HeapObjectIterator code_it(heap->code_space());
-  for (HeapObject* object = code_it.Next(); object != NULL;
-       object = code_it.Next())
-    object->Iterate(&v);
-}
-#endif  // VERIFY_HEAP
-
-
 void Heap::CheckNewSpaceExpansionCriteria() {
   if (FLAG_experimental_new_space_growth_heuristic) {
     if (new_space_.TotalCapacity() < new_space_.MaximumCapacity() &&
@@ -1612,10 +1582,6 @@ void Heap::Scavenge() {
   PauseAllocationObserversScope pause_observers(this);
 
   mark_compact_collector()->sweeper().EnsureNewSpaceCompleted();
-
-#ifdef VERIFY_HEAP
-  if (FLAG_verify_heap) VerifyNonPointerSpacePointers(this);
-#endif
 
   gc_state_ = SCAVENGE;
 
@@ -2378,6 +2344,7 @@ bool Heap::CreateInitialMaps() {
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, hash_table)
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, ordered_hash_table)
+    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, unseeded_number_dictionary)
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, function_context)
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, catch_context)
@@ -2859,6 +2826,10 @@ void Heap::CreateInitialObjects() {
       *WeakHashTable::New(isolate(), 16, USE_DEFAULT_MINIMUM_CAPACITY,
                           TENURED));
 
+  set_weak_new_space_object_to_code_list(
+      ArrayList::cast(*(factory->NewFixedArray(16, TENURED))));
+  weak_new_space_object_to_code_list()->SetLength(0);
+
   set_script_list(Smi::FromInt(0));
 
   Handle<SeededNumberDictionary> slow_element_dictionary =
@@ -2918,7 +2889,6 @@ void Heap::CreateInitialObjects() {
   CreateFixedStubs();
 }
 
-
 bool Heap::RootCanBeWrittenAfterInitialization(Heap::RootListIndex root_index) {
   switch (root_index) {
     case kNumberStringCacheRootIndex:
@@ -2933,6 +2903,7 @@ bool Heap::RootCanBeWrittenAfterInitialization(Heap::RootListIndex root_index) {
     case kMicrotaskQueueRootIndex:
     case kDetachedContextsRootIndex:
     case kWeakObjectToCodeTableRootIndex:
+    case kWeakNewSpaceObjectToCodeListRootIndex:
     case kRetainedMapsRootIndex:
     case kNoScriptSharedFunctionInfosRootIndex:
     case kWeakStackTraceListRootIndex:
@@ -3142,7 +3113,7 @@ void Heap::AdjustLiveBytes(HeapObject* object, int by, InvocationMode mode) {
     lo_space()->AdjustLiveBytes(by);
   } else if (!in_heap_iterator() &&
              !mark_compact_collector()->sweeping_in_progress() &&
-             Marking::IsBlack(Marking::MarkBitFrom(object->address()))) {
+             Marking::IsBlack(ObjectMarking::MarkBitFrom(object->address()))) {
     if (mode == SEQUENTIAL_TO_SWEEPER) {
       MemoryChunk::IncrementLiveBytesFromGC(object, by);
     } else {
@@ -3199,7 +3170,7 @@ FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
                                     new_object, FixedArrayBase::kLengthOffset));
 
   // Maintain consistency of live bytes during incremental marking
-  Marking::TransferMark(this, object->address(), new_start);
+  IncrementalMarking::TransferMark(this, object->address(), new_start);
   AdjustLiveBytes(new_object, -bytes_to_trim, Heap::CONCURRENT_TO_SWEEPER);
 
   // Notify the heap profiler of change in object layout.
@@ -4221,7 +4192,7 @@ void Heap::RegisterReservationsForBlackAllocation(Reservation* reservations) {
         Address addr = chunk.start;
         while (addr < chunk.end) {
           HeapObject* obj = HeapObject::FromAddress(addr);
-          Marking::MarkBlack(Marking::MarkBitFrom(obj));
+          Marking::MarkBlack(ObjectMarking::MarkBitFrom(obj));
           MemoryChunk::IncrementLiveBytesFromGC(obj, obj->Size());
           addr += obj->Size();
         }
@@ -4402,6 +4373,13 @@ class MemoryPressureInterruptTask : public CancelableTask {
 };
 
 void Heap::CheckMemoryPressure() {
+  if (HighMemoryPressure()) {
+    if (isolate()->concurrent_recompilation_enabled()) {
+      // The optimizing compiler may be unnecessarily holding on to memory.
+      DisallowHeapAllocation no_recursive_gc;
+      isolate()->optimizing_compile_dispatcher()->Flush();
+    }
+  }
   if (memory_pressure_level_.Value() == MemoryPressureLevel::kCritical) {
     CollectGarbageOnMemoryPressure("memory pressure");
   } else if (memory_pressure_level_.Value() == MemoryPressureLevel::kModerate) {
@@ -4469,12 +4447,12 @@ void Heap::MemoryPressureNotification(MemoryPressureLevel level,
 }
 
 void Heap::CollectCodeStatistics() {
-  PagedSpace::ResetCodeAndMetadataStatistics(isolate());
+  CodeStatistics::ResetCodeAndMetadataStatistics(isolate());
   // We do not look for code in new space, or map space.  If code
   // somehow ends up in those spaces, we would miss it here.
-  code_space_->CollectCodeStatistics();
-  old_space_->CollectCodeStatistics();
-  lo_space_->CollectCodeStatistics();
+  CodeStatistics::CollectCodeStatistics(code_space_, isolate());
+  CodeStatistics::CollectCodeStatistics(old_space_, isolate());
+  CodeStatistics::CollectCodeStatistics(lo_space_, isolate());
 }
 
 #ifdef DEBUG
@@ -4492,7 +4470,7 @@ void Heap::Print() {
 void Heap::ReportCodeStatistics(const char* title) {
   PrintF(">>>>>> Code Stats (%s) >>>>>>\n", title);
   CollectCodeStatistics();
-  PagedSpace::ReportCodeStatistics(isolate());
+  CodeStatistics::ReportCodeStatistics(isolate());
 }
 
 
@@ -4741,7 +4719,7 @@ void Heap::IteratePromotedObject(HeapObject* target, int size,
   // it would be a violation of the invariant to record it's slots.
   bool record_slots = false;
   if (incremental_marking()->IsCompacting()) {
-    MarkBit mark_bit = Marking::MarkBitFrom(target);
+    MarkBit mark_bit = ObjectMarking::MarkBitFrom(target);
     record_slots = Marking::IsBlack(mark_bit);
   }
 
@@ -4786,6 +4764,49 @@ void Heap::IterateSmiRoots(ObjectVisitor* v) {
   v->Synchronize(VisitorSynchronization::kSmiRootList);
 }
 
+// We cannot avoid stale handles to left-trimmed objects, but can only make
+// sure all handles still needed are updated. Filter out a stale pointer
+// and clear the slot to allow post processing of handles (needed because
+// the sweeper might actually free the underlying page).
+class FixStaleLeftTrimmedHandlesVisitor : public ObjectVisitor {
+ public:
+  explicit FixStaleLeftTrimmedHandlesVisitor(Heap* heap) : heap_(heap) {
+    USE(heap_);
+  }
+
+  void VisitPointer(Object** p) override { FixHandle(p); }
+
+  void VisitPointers(Object** start, Object** end) override {
+    for (Object** p = start; p < end; p++) FixHandle(p);
+  }
+
+ private:
+  inline void FixHandle(Object** p) {
+    HeapObject* current = reinterpret_cast<HeapObject*>(*p);
+    if (!current->IsHeapObject()) return;
+    const MapWord map_word = current->map_word();
+    if (!map_word.IsForwardingAddress() && current->IsFiller()) {
+#ifdef DEBUG
+      // We need to find a FixedArrayBase map after walking the fillers.
+      while (current->IsFiller()) {
+        Address next = reinterpret_cast<Address>(current);
+        if (current->map() == heap_->one_pointer_filler_map()) {
+          next += kPointerSize;
+        } else if (current->map() == heap_->two_pointer_filler_map()) {
+          next += 2 * kPointerSize;
+        } else {
+          next += current->Size();
+        }
+        current = reinterpret_cast<HeapObject*>(next);
+      }
+      DCHECK(current->IsFixedArrayBase());
+#endif  // DEBUG
+      *p = nullptr;
+    }
+  }
+
+  Heap* heap_;
+};
 
 void Heap::IterateStrongRoots(ObjectVisitor* v, VisitMode mode) {
   v->VisitPointers(&roots_[0], &roots_[kStrongRootListLength]);
@@ -4808,6 +4829,8 @@ void Heap::IterateStrongRoots(ObjectVisitor* v, VisitMode mode) {
   v->Synchronize(VisitorSynchronization::kCompilationCache);
 
   // Iterate over local handles in handle scopes.
+  FixStaleLeftTrimmedHandlesVisitor left_trim_visitor(this);
+  isolate_->handle_scope_implementer()->Iterate(&left_trim_visitor);
   isolate_->handle_scope_implementer()->Iterate(v);
   isolate_->IterateDeferredHandles(v);
   v->Synchronize(VisitorSynchronization::kHandleScope);
@@ -5312,8 +5335,10 @@ bool Heap::SetUp() {
 
   memory_reducer_ = new MemoryReducer(this);
 
-  object_stats_ = new ObjectStats(this);
-  object_stats_->ClearObjectStats(true);
+  if (FLAG_track_gc_object_stats) {
+    live_object_stats_ = new ObjectStats(this);
+    dead_object_stats_ = new ObjectStats(this);
+  }
 
   scavenge_job_ = new ScavengeJob();
 
@@ -5471,8 +5496,15 @@ void Heap::TearDown() {
     memory_reducer_ = nullptr;
   }
 
-  delete object_stats_;
-  object_stats_ = nullptr;
+  if (live_object_stats_ != nullptr) {
+    delete live_object_stats_;
+    live_object_stats_ = nullptr;
+  }
+
+  if (dead_object_stats_ != nullptr) {
+    delete dead_object_stats_;
+    dead_object_stats_ = nullptr;
+  }
 
   delete scavenge_job_;
   scavenge_job_ = nullptr;
@@ -5562,6 +5594,18 @@ void Heap::RemoveGCEpilogueCallback(v8::Isolate::GCCallback callback) {
     }
   }
   UNREACHABLE();
+}
+
+// TODO(ishell): Find a better place for this.
+void Heap::AddWeakNewSpaceObjectToCodeDependency(Handle<HeapObject> obj,
+                                                 Handle<WeakCell> code) {
+  DCHECK(InNewSpace(*obj));
+  DCHECK(!InNewSpace(*code));
+  Handle<ArrayList> list(weak_new_space_object_to_code_list(), isolate());
+  list = ArrayList::Add(list, isolate()->factory()->NewWeakCell(obj), code);
+  if (*list != weak_new_space_object_to_code_list()) {
+    set_weak_new_space_object_to_code_list(*list);
+  }
 }
 
 // TODO(ishell): Find a better place for this.
@@ -5719,6 +5763,26 @@ void Heap::ClearRecordedSlotRange(Address start, Address end) {
   }
 }
 
+void Heap::RecordWriteIntoCodeSlow(Code* host, RelocInfo* rinfo,
+                                   Object* value) {
+  DCHECK(InNewSpace(value));
+  Page* source_page = Page::FromAddress(reinterpret_cast<Address>(host));
+  RelocInfo::Mode rmode = rinfo->rmode();
+  Address addr = rinfo->pc();
+  SlotType slot_type = SlotTypeForRelocInfoMode(rmode);
+  if (rinfo->IsInConstantPool()) {
+    addr = rinfo->constant_pool_entry_address();
+    if (RelocInfo::IsCodeTarget(rmode)) {
+      slot_type = CODE_ENTRY_SLOT;
+    } else {
+      DCHECK(RelocInfo::IsEmbeddedObject(rmode));
+      slot_type = OBJECT_SLOT;
+    }
+  }
+  RememberedSet<OLD_TO_NEW>::InsertTyped(
+      source_page, reinterpret_cast<Address>(host), slot_type, addr);
+}
+
 Space* AllSpaces::next() {
   switch (counter_++) {
     case NEW_SPACE:
@@ -5842,7 +5906,7 @@ class UnreachableObjectsFilter : public HeapObjectsFilter {
 
   bool SkipObject(HeapObject* object) {
     if (object->IsFiller()) return true;
-    MarkBit mark_bit = Marking::MarkBitFrom(object);
+    MarkBit mark_bit = ObjectMarking::MarkBitFrom(object);
     return Marking::IsWhite(mark_bit);
   }
 
@@ -5855,7 +5919,7 @@ class UnreachableObjectsFilter : public HeapObjectsFilter {
       for (Object** p = start; p < end; p++) {
         if (!(*p)->IsHeapObject()) continue;
         HeapObject* obj = HeapObject::cast(*p);
-        MarkBit mark_bit = Marking::MarkBitFrom(obj);
+        MarkBit mark_bit = ObjectMarking::MarkBitFrom(obj);
         if (Marking::IsWhite(mark_bit)) {
           Marking::WhiteToBlack(mark_bit);
           marking_stack_.Add(obj);
@@ -5937,14 +6001,14 @@ HeapObject* HeapIterator::NextObject() {
   // No iterator means we are done.
   if (object_iterator_ == nullptr) return nullptr;
 
-  if (HeapObject* obj = object_iterator_->next_object()) {
+  if (HeapObject* obj = object_iterator_->Next()) {
     // If the current iterator has more objects we are fine.
     return obj;
   } else {
     // Go though the spaces looking for one that has objects.
     while (space_iterator_->has_next()) {
       object_iterator_ = space_iterator_->next();
-      if (HeapObject* obj = object_iterator_->next_object()) {
+      if (HeapObject* obj = object_iterator_->Next()) {
         return obj;
       }
     }
@@ -6331,14 +6395,16 @@ size_t Heap::NumberOfTrackedHeapObjectTypes() {
 
 
 size_t Heap::ObjectCountAtLastGC(size_t index) {
-  if (index >= ObjectStats::OBJECT_STATS_COUNT) return 0;
-  return object_stats_->object_count_last_gc(index);
+  if (live_object_stats_ == nullptr || index >= ObjectStats::OBJECT_STATS_COUNT)
+    return 0;
+  return live_object_stats_->object_count_last_gc(index);
 }
 
 
 size_t Heap::ObjectSizeAtLastGC(size_t index) {
-  if (index >= ObjectStats::OBJECT_STATS_COUNT) return 0;
-  return object_stats_->object_size_last_gc(index);
+  if (live_object_stats_ == nullptr || index >= ObjectStats::OBJECT_STATS_COUNT)
+    return 0;
+  return live_object_stats_->object_size_last_gc(index);
 }
 
 

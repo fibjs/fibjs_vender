@@ -285,9 +285,13 @@ Type* OperationTyper::ToNumber(Type* type) {
   return Type::Number();
 }
 
-Type* OperationTyper::NumericAdd(Type* lhs, Type* rhs) {
+Type* OperationTyper::NumberAdd(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
+
+  if (!lhs->IsInhabited() || !rhs->IsInhabited()) {
+    return Type::None();
+  }
 
   // We can give more precise types for integers.
   if (!lhs->Is(cache_.kIntegerOrMinusZeroOrNaN) ||
@@ -307,9 +311,13 @@ Type* OperationTyper::NumericAdd(Type* lhs, Type* rhs) {
   return result;
 }
 
-Type* OperationTyper::NumericSubtract(Type* lhs, Type* rhs) {
+Type* OperationTyper::NumberSubtract(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
+
+  if (!lhs->IsInhabited() || !rhs->IsInhabited()) {
+    return Type::None();
+  }
 
   lhs = Rangify(lhs);
   rhs = Rangify(rhs);
@@ -321,9 +329,14 @@ Type* OperationTyper::NumericSubtract(Type* lhs, Type* rhs) {
   return Type::Number();
 }
 
-Type* OperationTyper::NumericMultiply(Type* lhs, Type* rhs) {
+Type* OperationTyper::NumberMultiply(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
+
+  if (!lhs->IsInhabited() || !rhs->IsInhabited()) {
+    return Type::None();
+  }
+
   lhs = Rangify(lhs);
   rhs = Rangify(rhs);
   if (lhs->Is(Type::NaN()) || rhs->Is(Type::NaN())) return Type::NaN();
@@ -333,9 +346,13 @@ Type* OperationTyper::NumericMultiply(Type* lhs, Type* rhs) {
   return Type::Number();
 }
 
-Type* OperationTyper::NumericDivide(Type* lhs, Type* rhs) {
+Type* OperationTyper::NumberDivide(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
+
+  if (!lhs->IsInhabited() || !rhs->IsInhabited()) {
+    return Type::None();
+  }
 
   if (lhs->Is(Type::NaN()) || rhs->Is(Type::NaN())) return Type::NaN();
   // Division is tricky, so all we do is try ruling out nan.
@@ -346,9 +363,14 @@ Type* OperationTyper::NumericDivide(Type* lhs, Type* rhs) {
   return maybe_nan ? Type::Number() : Type::OrderedNumber();
 }
 
-Type* OperationTyper::NumericModulus(Type* lhs, Type* rhs) {
+Type* OperationTyper::NumberModulus(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
+
+  if (!lhs->IsInhabited() || !rhs->IsInhabited()) {
+    return Type::None();
+  }
+
   if (lhs->Is(Type::NaN()) || rhs->Is(Type::NaN())) return Type::NaN();
 
   if (lhs->Maybe(Type::NaN()) || rhs->Maybe(cache_.kZeroish) ||
@@ -363,6 +385,34 @@ Type* OperationTyper::NumericModulus(Type* lhs, Type* rhs) {
     return ModulusRanger(lhs->AsRange(), rhs->AsRange());
   }
   return Type::OrderedNumber();
+}
+
+Type* OperationTyper::NumberAbs(Type* type) {
+  DCHECK(type->Is(Type::Number()));
+
+  if (!type->IsInhabited()) {
+    return Type::None();
+  }
+
+  bool const maybe_nan = type->Maybe(Type::NaN());
+  bool const maybe_minuszero = type->Maybe(Type::MinusZero());
+  type = Type::Intersect(type, Type::PlainNumber(), zone());
+  double const max = type->Max();
+  double const min = type->Min();
+  if (min < 0) {
+    if (type->Is(cache_.kInteger)) {
+      type = Type::Range(0.0, std::max(std::fabs(min), std::fabs(max)), zone());
+    } else {
+      type = Type::PlainNumber();
+    }
+  }
+  if (maybe_minuszero) {
+    type = Type::Union(type, cache_.kSingletonZero, zone());
+  }
+  if (maybe_nan) {
+    type = Type::Union(type, Type::NaN(), zone());
+  }
+  return type;
 }
 
 Type* OperationTyper::ToPrimitive(Type* type) {
@@ -403,6 +453,11 @@ Type* OperationTyper::FalsifyUndefined(ComparisonOutcome outcome) {
 Type* OperationTyper::TypeJSAdd(Type* lhs, Type* rhs) {
   lhs = ToPrimitive(lhs);
   rhs = ToPrimitive(rhs);
+
+  if (!lhs->IsInhabited() || !rhs->IsInhabited()) {
+    return Type::None();
+  }
+
   if (lhs->Maybe(Type::String()) || rhs->Maybe(Type::String())) {
     if (lhs->Is(Type::String()) || rhs->Is(Type::String())) {
       return Type::String();
@@ -412,11 +467,11 @@ Type* OperationTyper::TypeJSAdd(Type* lhs, Type* rhs) {
   }
   lhs = ToNumber(lhs);
   rhs = ToNumber(rhs);
-  return NumericAdd(lhs, rhs);
+  return NumberAdd(lhs, rhs);
 }
 
 Type* OperationTyper::TypeJSSubtract(Type* lhs, Type* rhs) {
-  return NumericSubtract(ToNumber(lhs), ToNumber(rhs));
+  return NumberSubtract(ToNumber(lhs), ToNumber(rhs));
 }
 
 }  // namespace compiler

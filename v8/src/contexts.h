@@ -86,10 +86,8 @@ enum BindingFlags {
   V(REFLECT_DELETE_PROPERTY_INDEX, JSFunction, reflect_delete_property) \
   V(SPREAD_ARGUMENTS_INDEX, JSFunction, spread_arguments)               \
   V(SPREAD_ITERABLE_INDEX, JSFunction, spread_iterable)                 \
-  V(MATH_EXP_INDEX, JSFunction, math_exp)                               \
   V(MATH_FLOOR_INDEX, JSFunction, math_floor)                           \
-  V(MATH_LOG_INDEX, JSFunction, math_log)                               \
-  V(MATH_SQRT_INDEX, JSFunction, math_sqrt)
+  V(MATH_POW_INDEX, JSFunction, math_pow)
 
 #define NATIVE_CONTEXT_IMPORTED_FIELDS(V)                                   \
   V(ARRAY_CONCAT_INDEX, JSFunction, array_concat)                           \
@@ -111,7 +109,6 @@ enum BindingFlags {
   V(MAP_GET_METHOD_INDEX, JSFunction, map_get)                              \
   V(MAP_HAS_METHOD_INDEX, JSFunction, map_has)                              \
   V(MAP_SET_METHOD_INDEX, JSFunction, map_set)                              \
-  V(MATH_POW_METHOD_INDEX, JSFunction, math_pow)                            \
   V(MESSAGE_GET_COLUMN_NUMBER_INDEX, JSFunction, message_get_column_number) \
   V(MESSAGE_GET_LINE_NUMBER_INDEX, JSFunction, message_get_line_number)     \
   V(MESSAGE_GET_SOURCE_LINE_INDEX, JSFunction, message_get_source_line)     \
@@ -350,7 +347,6 @@ class ScriptContextTable : public FixedArray {
 //                block scopes, it may also be a struct being a
 //                SloppyBlockWithEvalContextExtension, pairing the ScopeInfo
 //                with an extension object.
-//                For module contexts, points back to the respective JSModule.
 //
 // [ global_object ]  A pointer to the global object. Provided for quick
 //                access to the global object from inside the code (since
@@ -429,9 +425,6 @@ class Context: public FixedArray {
   JSReceiver* extension_receiver();
   ScopeInfo* scope_info();
   String* catch_name();
-
-  inline JSModule* module();
-  inline void set_module(JSModule* module);
 
   // Get the context where var declarations will be hoisted to, which
   // may be the context itself.
@@ -527,6 +520,7 @@ class Context: public FixedArray {
   }
 
   static int FunctionMapIndex(LanguageMode language_mode, FunctionKind kind) {
+    // Note: Must be kept in sync with FastNewClosureStub::Generate.
     if (IsGeneratorFunction(kind)) {
       return is_strict(language_mode) ? STRICT_GENERATOR_FUNCTION_MAP_INDEX
                                       : SLOPPY_GENERATOR_FUNCTION_MAP_INDEX;

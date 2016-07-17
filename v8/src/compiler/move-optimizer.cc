@@ -29,30 +29,44 @@ typedef ZoneSet<InstructionOperand, CompareOperandModuloType> OperandSet;
 
 bool Blocks(const OperandSet& set, const InstructionOperand& operand) {
   if (set.find(operand) != set.end()) return true;
-  // Only FP registers alias.
-  if (!operand.IsFPRegister()) return false;
+  // Only FP registers on archs with non-simple aliasing need extra checks.
+  if (!operand.IsFPRegister() || kSimpleFPAliasing) return false;
 
+  // Check operand against operands of other FP types for interference.
   const LocationOperand& loc = LocationOperand::cast(operand);
   MachineRepresentation rep = loc.representation();
-  MachineRepresentation other_fp_rep = rep == MachineRepresentation::kFloat64
-                                           ? MachineRepresentation::kFloat32
-                                           : MachineRepresentation::kFloat64;
-  const RegisterConfiguration* config =
-      RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN);
-  if (config->fp_aliasing_kind() != RegisterConfiguration::COMBINE) {
-    // Overlap aliasing case.
-    return set.find(LocationOperand(loc.kind(), loc.location_kind(),
-                                    other_fp_rep, loc.register_code())) !=
-           set.end();
+  MachineRepresentation other_rep1, other_rep2;
+  switch (rep) {
+    case MachineRepresentation::kFloat32:
+      other_rep1 = MachineRepresentation::kFloat64;
+      other_rep2 = MachineRepresentation::kSimd128;
+      break;
+    case MachineRepresentation::kFloat64:
+      other_rep1 = MachineRepresentation::kFloat32;
+      other_rep2 = MachineRepresentation::kSimd128;
+      break;
+    case MachineRepresentation::kSimd128:
+      other_rep1 = MachineRepresentation::kFloat32;
+      other_rep2 = MachineRepresentation::kFloat64;
+      break;
+    default:
+      UNREACHABLE();
+      break;
   }
-  // Combine aliasing case.
-  int alias_base_index = -1;
-  int aliases = config->GetAliases(rep, loc.register_code(), other_fp_rep,
-                                   &alias_base_index);
+  const RegisterConfiguration* config = RegisterConfiguration::Turbofan();
+  int base = -1;
+  int aliases = config->GetAliases(rep, loc.register_code(), other_rep1, &base);
+  DCHECK(aliases > 0 || (aliases == 0 && base == -1));
   while (aliases--) {
-    int aliased_reg = alias_base_index + aliases;
-    if (set.find(LocationOperand(loc.kind(), loc.location_kind(), other_fp_rep,
-                                 aliased_reg)) != set.end())
+    if (set.find(LocationOperand(loc.kind(), loc.location_kind(), other_rep1,
+                                 base + aliases)) != set.end())
+      return true;
+  }
+  aliases = config->GetAliases(rep, loc.register_code(), other_rep2, &base);
+  DCHECK(aliases > 0 || (aliases == 0 && base == -1));
+  while (aliases--) {
+    if (set.find(LocationOperand(loc.kind(), loc.location_kind(), other_rep2,
+                                 base + aliases)) != set.end())
       return true;
   }
   return false;
@@ -146,7 +160,7 @@ void MoveOptimizer::RemoveClobberedDestinations(Instruction* instruction) {
 
   // The ret instruction makes any assignment before it unnecessary, except for
   // the one for its input.
-  if (instruction->opcode() == ArchOpcode::kArchRet) {
+  if (instruction->IsRet() || instruction->IsTailCall()) {
     for (MoveOperands* move : *moves) {
       if (inputs.find(move->destination()) == inputs.end()) {
         move->Eliminate();

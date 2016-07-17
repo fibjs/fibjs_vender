@@ -22,50 +22,34 @@ namespace internal {
 // ----------------------------------------------------------------------------
 // HeapObjectIterator
 
-HeapObjectIterator::HeapObjectIterator(PagedSpace* space) {
-  // You can't actually iterate over the anchor page.  It is not a real page,
-  // just an anchor for the double linked page list.  Initialize as if we have
-  // reached the end of the anchor page, then the first iteration will move on
-  // to the first page.
-  Initialize(space, NULL, NULL, kAllPagesInSpace);
-}
+HeapObjectIterator::HeapObjectIterator(PagedSpace* space)
+    : cur_addr_(nullptr),
+      cur_end_(nullptr),
+      space_(space),
+      page_range_(space->anchor()->next_page(), space->anchor()),
+      current_page_(page_range_.begin()) {}
 
-
-HeapObjectIterator::HeapObjectIterator(Page* page) {
+HeapObjectIterator::HeapObjectIterator(Page* page)
+    : cur_addr_(nullptr),
+      cur_end_(nullptr),
+      space_(reinterpret_cast<PagedSpace*>(page->owner())),
+      page_range_(page),
+      current_page_(page_range_.begin()) {
+#ifdef DEBUG
   Space* owner = page->owner();
   DCHECK(owner == page->heap()->old_space() ||
          owner == page->heap()->map_space() ||
          owner == page->heap()->code_space());
-  Initialize(reinterpret_cast<PagedSpace*>(owner), page->area_start(),
-             page->area_end(), kOnePageOnly);
-  DCHECK(page->SweepingDone());
+#endif  // DEBUG
 }
-
-
-void HeapObjectIterator::Initialize(PagedSpace* space, Address cur, Address end,
-                                    HeapObjectIterator::PageMode mode) {
-  space_ = space;
-  cur_addr_ = cur;
-  cur_end_ = end;
-  page_mode_ = mode;
-}
-
 
 // We have hit the end of the page and should advance to the next block of
 // objects.  This happens at the end of the page.
 bool HeapObjectIterator::AdvanceToNextPage() {
-  DCHECK(cur_addr_ == cur_end_);
-  if (page_mode_ == kOnePageOnly) return false;
-  Page* cur_page;
-  if (cur_addr_ == NULL) {
-    cur_page = space_->anchor();
-  } else {
-    cur_page = Page::FromAddress(cur_addr_ - 1);
-    DCHECK(cur_addr_ == cur_page->area_end());
-  }
-  cur_page = cur_page->next_page();
-  if (cur_page == space_->anchor()) return false;
-  cur_page->heap()
+  DCHECK_EQ(cur_addr_, cur_end_);
+  if (current_page_ == page_range_.end()) return false;
+  Page* cur_page = *(current_page_++);
+  space_->heap()
       ->mark_compact_collector()
       ->sweeper()
       .SweepOrWaitUntilSweepingCompleted(cur_page);
@@ -516,7 +500,7 @@ MemoryChunk* MemoryChunk::Initialize(Heap* heap, Address base, size_t size,
   chunk->available_in_free_list_ = 0;
   chunk->wasted_memory_ = 0;
   chunk->ResetLiveBytes();
-  Bitmap::Clear(chunk);
+  chunk->ClearLiveness();
   chunk->set_next_chunk(nullptr);
   chunk->set_prev_chunk(nullptr);
   chunk->local_tracker_ = nullptr;
@@ -586,6 +570,11 @@ bool MemoryChunk::CommitArea(size_t requested) {
   return true;
 }
 
+size_t MemoryChunk::CommittedPhysicalMemory() {
+  if (!base::VirtualMemory::HasLazyCommits() || owner()->identity() == LO_SPACE)
+    return size();
+  return high_water_mark_.Value();
+}
 
 void MemoryChunk::InsertAfter(MemoryChunk* other) {
   MemoryChunk* other_next = other->next_chunk();
@@ -751,6 +740,27 @@ MemoryChunk* MemoryAllocator::AllocateChunk(intptr_t reserve_area_size,
 void Page::ResetFreeListStatistics() {
   wasted_memory_ = 0;
   available_in_free_list_ = 0;
+}
+
+void MemoryAllocator::PartialFreeMemory(MemoryChunk* chunk,
+                                        Address start_free) {
+  // We do not allow partial shrink for code.
+  DCHECK(chunk->executable() == NOT_EXECUTABLE);
+
+  intptr_t size;
+  base::VirtualMemory* reservation = chunk->reserved_memory();
+  DCHECK(reservation->IsReserved());
+  size = static_cast<intptr_t>(reservation->size());
+
+  size_t to_free_size = size - (start_free - chunk->address());
+
+  DCHECK(size_.Value() >= static_cast<intptr_t>(to_free_size));
+  size_.Increment(-static_cast<intptr_t>(to_free_size));
+  isolate_->counters()->memory_allocated()->Decrement(
+      static_cast<int>(to_free_size));
+  chunk->set_size(size - to_free_size);
+
+  reservation->ReleasePartial(start_free);
 }
 
 void MemoryAllocator::PreFreeMemory(MemoryChunk* chunk) {
@@ -1050,6 +1060,11 @@ void MemoryChunk::ReleaseLocalTracker() {
   local_tracker_ = nullptr;
 }
 
+void MemoryChunk::ClearLiveness() {
+  markbits()->Clear();
+  ResetLiveBytes();
+}
+
 // -----------------------------------------------------------------------------
 // PagedSpace implementation
 
@@ -1218,7 +1233,7 @@ bool PagedSpace::Expand() {
   // black.
   if (heap()->incremental_marking()->black_allocation() &&
       identity() == OLD_SPACE) {
-    Bitmap::SetAllBits(p);
+    p->markbits()->SetAllBits();
     p->SetFlag(Page::BLACK_PAGE);
     if (FLAG_trace_incremental_marking) {
       PrintIsolate(heap()->isolate(), "Added black page %p\n",
@@ -1317,7 +1332,7 @@ void PagedSpace::Verify(ObjectVisitor* visitor) {
       int size = object->Size();
       object->IterateBody(map->instance_type(), size, visitor);
       if (!page->IsFlagSet(Page::BLACK_PAGE) &&
-          Marking::IsBlack(Marking::MarkBitFrom(object))) {
+          Marking::IsBlack(ObjectMarking::MarkBitFrom(object))) {
         black_size += size;
       }
 
@@ -1452,7 +1467,7 @@ bool SemiSpace::EnsureCurrentCapacity() {
       if (current_page == nullptr) return false;
       DCHECK_NOT_NULL(current_page);
       current_page->InsertAfter(anchor());
-      Bitmap::Clear(current_page);
+      current_page->ClearLiveness();
       current_page->SetFlags(anchor()->prev_page()->GetFlags(),
                              Page::kCopyAllFlags);
       heap()->CreateFillerObjectAt(current_page->area_start(),
@@ -1520,7 +1535,7 @@ void NewSpace::ResetAllocationInfo() {
   UpdateAllocationInfo();
   // Clear all mark-bits in the to-space.
   for (Page* p : to_space_) {
-    Bitmap::Clear(p);
+    p->ClearLiveness();
   }
   InlineAllocationStep(old_top, allocation_info_.top(), nullptr, 0);
 }
@@ -1818,7 +1833,7 @@ bool SemiSpace::GrowTo(int new_capacity) {
       return false;
     }
     new_page->InsertAfter(last_page);
-    Bitmap::Clear(new_page);
+    new_page->ClearLiveness();
     // Duplicate the flags that was set on the old page.
     new_page->SetFlags(last_page->GetFlags(), Page::kCopyOnFlipFlagsMask);
     last_page = new_page;
@@ -2025,24 +2040,6 @@ static void ClearHistograms(Isolate* isolate) {
 #undef CLEAR_HISTOGRAM
 
   isolate->js_spill_information()->Clear();
-}
-
-
-static void ClearCodeKindStatistics(int* code_kind_statistics) {
-  for (int i = 0; i < AbstractCode::NUMBER_OF_KINDS; i++) {
-    code_kind_statistics[i] = 0;
-  }
-}
-static void ReportCodeKindStatistics(int* code_kind_statistics) {
-  PrintF("\n   Code kind histograms: \n");
-  for (int i = 0; i < AbstractCode::NUMBER_OF_KINDS; i++) {
-    if (code_kind_statistics[i] > 0) {
-      PrintF("     %-20s: %10d bytes\n",
-             AbstractCode::Kind2String(static_cast<AbstractCode::Kind>(i)),
-             code_kind_statistics[i]);
-    }
-  }
-  PrintF("\n");
 }
 
 static int CollectHistogramInfo(HeapObject* obj) {
@@ -2376,6 +2373,9 @@ FreeSpace* FreeList::SearchForNodeInList(FreeListCategoryType type,
           ->add_available_in_free_list(-(*node_size));
       DCHECK(IsVeryLong() || Available() == SumFreeLists());
       return node;
+    }
+    if (current->is_empty()) {
+      RemoveCategory(current);
     }
   }
   return node;
@@ -2740,127 +2740,6 @@ HeapObject* PagedSpace::SlowAllocateRaw(int size_in_bytes) {
 }
 
 #ifdef DEBUG
-void PagedSpace::ReportCodeStatistics(Isolate* isolate) {
-  CommentStatistic* comments_statistics =
-      isolate->paged_space_comments_statistics();
-  ReportCodeKindStatistics(isolate->code_kind_statistics());
-  PrintF("Code size including metadata    : %10d bytes\n",
-         isolate->code_and_metadata_size());
-  PrintF("Bytecode size including metadata: %10d bytes\n",
-         isolate->bytecode_and_metadata_size());
-  PrintF(
-      "Code comment statistics (\"   [ comment-txt   :    size/   "
-      "count  (average)\"):\n");
-  for (int i = 0; i <= CommentStatistic::kMaxComments; i++) {
-    const CommentStatistic& cs = comments_statistics[i];
-    if (cs.size > 0) {
-      PrintF("   %-30s: %10d/%6d     (%d)\n", cs.comment, cs.size, cs.count,
-             cs.size / cs.count);
-    }
-  }
-  PrintF("\n");
-}
-
-void PagedSpace::ResetCodeStatistics(Isolate* isolate) {
-  CommentStatistic* comments_statistics =
-      isolate->paged_space_comments_statistics();
-  ClearCodeKindStatistics(isolate->code_kind_statistics());
-  for (int i = 0; i < CommentStatistic::kMaxComments; i++) {
-    comments_statistics[i].Clear();
-  }
-  comments_statistics[CommentStatistic::kMaxComments].comment = "Unknown";
-  comments_statistics[CommentStatistic::kMaxComments].size = 0;
-  comments_statistics[CommentStatistic::kMaxComments].count = 0;
-}
-
-
-// Adds comment to 'comment_statistics' table. Performance OK as long as
-// 'kMaxComments' is small
-static void EnterComment(Isolate* isolate, const char* comment, int delta) {
-  CommentStatistic* comments_statistics =
-      isolate->paged_space_comments_statistics();
-  // Do not count empty comments
-  if (delta <= 0) return;
-  CommentStatistic* cs = &comments_statistics[CommentStatistic::kMaxComments];
-  // Search for a free or matching entry in 'comments_statistics': 'cs'
-  // points to result.
-  for (int i = 0; i < CommentStatistic::kMaxComments; i++) {
-    if (comments_statistics[i].comment == NULL) {
-      cs = &comments_statistics[i];
-      cs->comment = comment;
-      break;
-    } else if (strcmp(comments_statistics[i].comment, comment) == 0) {
-      cs = &comments_statistics[i];
-      break;
-    }
-  }
-  // Update entry for 'comment'
-  cs->size += delta;
-  cs->count += 1;
-}
-
-
-// Call for each nested comment start (start marked with '[ xxx', end marked
-// with ']'.  RelocIterator 'it' must point to a comment reloc info.
-static void CollectCommentStatistics(Isolate* isolate, RelocIterator* it) {
-  DCHECK(!it->done());
-  DCHECK(it->rinfo()->rmode() == RelocInfo::COMMENT);
-  const char* tmp = reinterpret_cast<const char*>(it->rinfo()->data());
-  if (tmp[0] != '[') {
-    // Not a nested comment; skip
-    return;
-  }
-
-  // Search for end of nested comment or a new nested comment
-  const char* const comment_txt =
-      reinterpret_cast<const char*>(it->rinfo()->data());
-  const byte* prev_pc = it->rinfo()->pc();
-  int flat_delta = 0;
-  it->next();
-  while (true) {
-    // All nested comments must be terminated properly, and therefore exit
-    // from loop.
-    DCHECK(!it->done());
-    if (it->rinfo()->rmode() == RelocInfo::COMMENT) {
-      const char* const txt =
-          reinterpret_cast<const char*>(it->rinfo()->data());
-      flat_delta += static_cast<int>(it->rinfo()->pc() - prev_pc);
-      if (txt[0] == ']') break;  // End of nested  comment
-      // A new comment
-      CollectCommentStatistics(isolate, it);
-      // Skip code that was covered with previous comment
-      prev_pc = it->rinfo()->pc();
-    }
-    it->next();
-  }
-  EnterComment(isolate, comment_txt, flat_delta);
-}
-
-// Collects code comment statistics
-static void CollectCodeCommentStatistics(HeapObject* obj, Isolate* isolate) {
-  if (!obj->IsCode()) {
-    return;
-  }
-  Code* code = Code::cast(obj);
-  RelocIterator it(code);
-  int delta = 0;
-  const byte* prev_pc = code->instruction_start();
-  while (!it.done()) {
-    if (it.rinfo()->rmode() == RelocInfo::COMMENT) {
-      delta += static_cast<int>(it.rinfo()->pc() - prev_pc);
-      CollectCommentStatistics(isolate, &it);
-      prev_pc = it.rinfo()->pc();
-    }
-    it.next();
-  }
-
-  DCHECK(code->instruction_start() <= prev_pc &&
-         prev_pc <= code->instruction_end());
-  delta += static_cast<int>(code->instruction_end() - prev_pc);
-  EnterComment(isolate, "NoComment", delta);
-}
-
-
 void PagedSpace::ReportStatistics() {
   int pct = static_cast<int>(Available() * 100 / Capacity());
   PrintF("  capacity: %" V8PRIdPTR ", waste: %" V8PRIdPTR
@@ -2878,44 +2757,6 @@ void PagedSpace::ReportStatistics() {
 }
 #endif
 
-static void RecordCodeSizeIncludingMetadata(AbstractCode* abstract_code,
-                                            Isolate* isolate) {
-  int size = abstract_code->SizeIncludingMetadata();
-  if (abstract_code->IsCode()) {
-    size += isolate->code_and_metadata_size();
-    isolate->set_code_and_metadata_size(size);
-  } else {
-    size += isolate->bytecode_and_metadata_size();
-    isolate->set_bytecode_and_metadata_size(size);
-  }
-}
-
-// Collects code size statistics:
-// - code and metadata size
-// - by code kind (only in debug mode)
-// - by code comment (only in debug mode)
-void PagedSpace::CollectCodeStatistics() {
-  Isolate* isolate = heap()->isolate();
-  HeapObjectIterator obj_it(this);
-  for (HeapObject* obj = obj_it.Next(); obj != NULL; obj = obj_it.Next()) {
-    if (obj->IsAbstractCode()) {
-      AbstractCode* code = AbstractCode::cast(obj);
-      RecordCodeSizeIncludingMetadata(code, isolate);
-#ifdef DEBUG
-      isolate->code_kind_statistics()[code->kind()] += code->Size();
-      CollectCodeCommentStatistics(obj, isolate);
-#endif
-    }
-  }
-}
-
-void PagedSpace::ResetCodeAndMetadataStatistics(Isolate* isolate) {
-  isolate->set_code_and_metadata_size(0);
-  isolate->set_bytecode_and_metadata_size(0);
-#ifdef DEBUG
-  ResetCodeStatistics(isolate);
-#endif
-}
 
 // -----------------------------------------------------------------------------
 // MapSpace implementation
@@ -2924,6 +2765,25 @@ void PagedSpace::ResetCodeAndMetadataStatistics(Isolate* isolate) {
 void MapSpace::VerifyObject(HeapObject* object) { CHECK(object->IsMap()); }
 #endif
 
+Address LargePage::GetAddressToShrink() {
+  HeapObject* object = GetObject();
+  if (executable() == EXECUTABLE) {
+    return 0;
+  }
+  size_t used_size = RoundUp((object->address() - address()) + object->Size(),
+                             base::OS::CommitPageSize());
+  if (used_size < CommittedPhysicalMemory()) {
+    return address() + used_size;
+  }
+  return 0;
+}
+
+void LargePage::ClearOutOfLiveRangeSlots(Address free_start) {
+  RememberedSet<OLD_TO_NEW>::RemoveRange(this, free_start, area_end());
+  RememberedSet<OLD_TO_OLD>::RemoveRange(this, free_start, area_end());
+  RememberedSet<OLD_TO_NEW>::RemoveRangeTyped(this, free_start, area_end());
+  RememberedSet<OLD_TO_OLD>::RemoveRangeTyped(this, free_start, area_end());
+}
 
 // -----------------------------------------------------------------------------
 // LargeObjectIterator
@@ -2997,16 +2857,7 @@ AllocationResult LargeObjectSpace::AllocateRaw(int object_size,
   page->set_next_page(first_page_);
   first_page_ = page;
 
-  // Register all MemoryChunk::kAlignment-aligned chunks covered by
-  // this large page in the chunk map.
-  uintptr_t base = reinterpret_cast<uintptr_t>(page) / MemoryChunk::kAlignment;
-  uintptr_t limit = base + (page->size() - 1) / MemoryChunk::kAlignment;
-  for (uintptr_t key = base; key <= limit; key++) {
-    base::HashMap::Entry* entry = chunk_map_.LookupOrInsert(
-        reinterpret_cast<void*>(key), static_cast<uint32_t>(key));
-    DCHECK(entry != NULL);
-    entry->value = page;
-  }
+  InsertChunkMapEntries(page);
 
   HeapObject* object = page->GetObject();
   MSAN_ALLOCATED_UNINITIALIZED_MEMORY(object->address(), object_size);
@@ -3063,7 +2914,7 @@ void LargeObjectSpace::ClearMarkingStateOfLiveObjects() {
   LargePage* current = first_page_;
   while (current != NULL) {
     HeapObject* object = current->GetObject();
-    MarkBit mark_bit = Marking::MarkBitFrom(object);
+    MarkBit mark_bit = ObjectMarking::MarkBitFrom(object);
     DCHECK(Marking::IsBlack(mark_bit));
     Marking::BlackToWhite(mark_bit);
     Page::FromAddress(object->address())->ResetProgressBar();
@@ -3072,15 +2923,51 @@ void LargeObjectSpace::ClearMarkingStateOfLiveObjects() {
   }
 }
 
+void LargeObjectSpace::InsertChunkMapEntries(LargePage* page) {
+  // Register all MemoryChunk::kAlignment-aligned chunks covered by
+  // this large page in the chunk map.
+  uintptr_t start = reinterpret_cast<uintptr_t>(page) / MemoryChunk::kAlignment;
+  uintptr_t limit = (reinterpret_cast<uintptr_t>(page) + (page->size() - 1)) /
+                    MemoryChunk::kAlignment;
+  for (uintptr_t key = start; key <= limit; key++) {
+    base::HashMap::Entry* entry = chunk_map_.InsertNew(
+        reinterpret_cast<void*>(key), static_cast<uint32_t>(key));
+    DCHECK(entry != NULL);
+    entry->value = page;
+  }
+}
+
+void LargeObjectSpace::RemoveChunkMapEntries(LargePage* page) {
+  RemoveChunkMapEntries(page, page->address());
+}
+
+void LargeObjectSpace::RemoveChunkMapEntries(LargePage* page,
+                                             Address free_start) {
+  uintptr_t start = RoundUp(reinterpret_cast<uintptr_t>(free_start),
+                            MemoryChunk::kAlignment) /
+                    MemoryChunk::kAlignment;
+  uintptr_t limit = (reinterpret_cast<uintptr_t>(page) + (page->size() - 1)) /
+                    MemoryChunk::kAlignment;
+  for (uintptr_t key = start; key <= limit; key++) {
+    chunk_map_.Remove(reinterpret_cast<void*>(key), static_cast<uint32_t>(key));
+  }
+}
 
 void LargeObjectSpace::FreeUnmarkedObjects() {
   LargePage* previous = NULL;
   LargePage* current = first_page_;
   while (current != NULL) {
     HeapObject* object = current->GetObject();
-    MarkBit mark_bit = Marking::MarkBitFrom(object);
+    MarkBit mark_bit = ObjectMarking::MarkBitFrom(object);
     DCHECK(!Marking::IsGrey(mark_bit));
     if (Marking::IsBlack(mark_bit)) {
+      Address free_start;
+      if ((free_start = current->GetAddressToShrink()) != 0) {
+        // TODO(hpayer): Perform partial free concurrently.
+        current->ClearOutOfLiveRangeSlots(free_start);
+        RemoveChunkMapEntries(current, free_start);
+        heap()->memory_allocator()->PartialFreeMemory(current, free_start);
+      }
       previous = current;
       current = current->next_page();
     } else {
@@ -3099,17 +2986,7 @@ void LargeObjectSpace::FreeUnmarkedObjects() {
       objects_size_ -= object->Size();
       page_count_--;
 
-      // Remove entries belonging to this page.
-      // Use variable alignment to help pass length check (<= 80 characters)
-      // of single line in tools/presubmit.py.
-      const intptr_t alignment = MemoryChunk::kAlignment;
-      uintptr_t base = reinterpret_cast<uintptr_t>(page) / alignment;
-      uintptr_t limit = base + (page->size() - 1) / alignment;
-      for (uintptr_t key = base; key <= limit; key++) {
-        chunk_map_.Remove(reinterpret_cast<void*>(key),
-                          static_cast<uint32_t>(key));
-      }
-
+      RemoveChunkMapEntries(page);
       heap()->memory_allocator()->Free<MemoryAllocator::kPreFreeAndQueue>(page);
     }
   }
@@ -3176,21 +3053,6 @@ void LargeObjectSpace::Verify() {
 }
 #endif
 
-void LargeObjectSpace::CollectCodeStatistics() {
-  Isolate* isolate = heap()->isolate();
-  LargeObjectIterator obj_it(this);
-  for (HeapObject* obj = obj_it.Next(); obj != NULL; obj = obj_it.Next()) {
-    if (obj->IsAbstractCode()) {
-      AbstractCode* code = AbstractCode::cast(obj);
-      RecordCodeSizeIncludingMetadata(code, isolate);
-#ifdef DEBUG
-      isolate->code_kind_statistics()[code->kind()] += code->Size();
-      CollectCodeCommentStatistics(obj, isolate);
-#endif
-    }
-  }
-}
-
 #ifdef DEBUG
 void LargeObjectSpace::Print() {
   OFStream os(stdout);
@@ -3228,7 +3090,7 @@ void Page::Print() {
   unsigned mark_size = 0;
   for (HeapObject* object = objects.Next(); object != NULL;
        object = objects.Next()) {
-    bool is_marked = Marking::IsBlackOrGrey(Marking::MarkBitFrom(object));
+    bool is_marked = Marking::IsBlackOrGrey(ObjectMarking::MarkBitFrom(object));
     PrintF(" %c ", (is_marked ? '!' : ' '));  // Indent a little.
     if (is_marked) {
       mark_size += object->Size();

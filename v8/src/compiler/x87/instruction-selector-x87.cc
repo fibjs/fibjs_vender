@@ -90,12 +90,16 @@ class X87OperandGenerator final : public OperandGenerator {
 
   AddressingMode GenerateMemoryOperandInputs(Node* index, int scale, Node* base,
                                              Node* displacement_node,
+                                             DisplacementMode displacement_mode,
                                              InstructionOperand inputs[],
                                              size_t* input_count) {
     AddressingMode mode = kMode_MRI;
     int32_t displacement = (displacement_node == nullptr)
                                ? 0
                                : OpParameter<int32_t>(displacement_node);
+    if (displacement_mode == kNegativeDisplacement) {
+      displacement = -displacement;
+    }
     if (base != nullptr) {
       if (base->opcode() == IrOpcode::kInt32Constant) {
         displacement += OpParameter<int32_t>(base);
@@ -153,8 +157,9 @@ class X87OperandGenerator final : public OperandGenerator {
     BaseWithIndexAndDisplacement32Matcher m(node, true);
     DCHECK(m.matches());
     if ((m.displacement() == nullptr || CanBeImmediate(m.displacement()))) {
-      return GenerateMemoryOperandInputs(m.index(), m.scale(), m.base(),
-                                         m.displacement(), inputs, input_count);
+      return GenerateMemoryOperandInputs(
+          m.index(), m.scale(), m.base(), m.displacement(),
+          m.displacement_mode(), inputs, input_count);
     } else {
       inputs[(*input_count)++] = UseRegister(node->InputAt(0));
       inputs[(*input_count)++] = UseRegister(node->InputAt(1));
@@ -542,12 +547,14 @@ void VisitMod(InstructionSelector* selector, Node* node, ArchOpcode opcode) {
 }
 
 void EmitLea(InstructionSelector* selector, Node* result, Node* index,
-             int scale, Node* base, Node* displacement) {
+             int scale, Node* base, Node* displacement,
+             DisplacementMode displacement_mode) {
   X87OperandGenerator g(selector);
   InstructionOperand inputs[4];
   size_t input_count = 0;
-  AddressingMode mode = g.GenerateMemoryOperandInputs(
-      index, scale, base, displacement, inputs, &input_count);
+  AddressingMode mode =
+      g.GenerateMemoryOperandInputs(index, scale, base, displacement,
+                                    displacement_mode, inputs, &input_count);
 
   DCHECK_NE(0u, input_count);
   DCHECK_GE(arraysize(inputs), input_count);
@@ -568,7 +575,7 @@ void InstructionSelector::VisitWord32Shl(Node* node) {
   if (m.matches()) {
     Node* index = node->InputAt(0);
     Node* base = m.power_of_two_plus_one() ? index : nullptr;
-    EmitLea(this, node, index, m.scale(), base, nullptr);
+    EmitLea(this, node, index, m.scale(), base, nullptr, kPositiveDisplacement);
     return;
   }
   VisitShift(this, node, kX87Shl);
@@ -705,7 +712,8 @@ void InstructionSelector::VisitInt32Add(Node* node) {
     InstructionOperand inputs[4];
     size_t input_count = 0;
     AddressingMode mode = g.GenerateMemoryOperandInputs(
-        m.index(), m.scale(), m.base(), m.displacement(), inputs, &input_count);
+        m.index(), m.scale(), m.base(), m.displacement(), m.displacement_mode(),
+        inputs, &input_count);
 
     DCHECK_NE(0u, input_count);
     DCHECK_GE(arraysize(inputs), input_count);
@@ -739,7 +747,7 @@ void InstructionSelector::VisitInt32Mul(Node* node) {
   if (m.matches()) {
     Node* index = node->InputAt(0);
     Node* base = m.power_of_two_plus_one() ? index : nullptr;
-    EmitLea(this, node, index, m.scale(), base, nullptr);
+    EmitLea(this, node, index, m.scale(), base, nullptr, kPositiveDisplacement);
     return;
   }
   X87OperandGenerator g(this);
@@ -1091,6 +1099,14 @@ void InstructionSelector::VisitFloat32Neg(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitFloat64Neg(Node* node) { UNREACHABLE(); }
 
+void InstructionSelector::VisitFloat64Ieee754Binop(Node* node,
+                                                   InstructionCode opcode) {
+  X87OperandGenerator g(this);
+  Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
+  Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(1)));
+  Emit(opcode, g.DefineAsFixed(node, stX_0), 0, nullptr)->MarkAsCall();
+}
+
 void InstructionSelector::VisitFloat64Ieee754Unop(Node* node,
                                                   InstructionCode opcode) {
   X87OperandGenerator g(this);
@@ -1108,7 +1124,7 @@ void InstructionSelector::EmitPrepareArguments(
     InstructionOperand temps[] = {g.TempRegister()};
     size_t const temp_count = arraysize(temps);
     Emit(kArchPrepareCallCFunction |
-             MiscField::encode(static_cast<int>(descriptor->CParameterCount())),
+             MiscField::encode(static_cast<int>(descriptor->ParameterCount())),
          0, nullptr, 0, nullptr, temp_count, temps);
 
     // Poke any stack arguments.
@@ -1428,6 +1444,9 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
               case IrOpcode::kInt32SubWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
                 return VisitBinop(selector, node, kX87Sub, cont);
+              case IrOpcode::kInt32MulWithOverflow:
+                cont->OverwriteAndNegateIfEqual(kOverflow);
+                return VisitBinop(selector, node, kX87Imul, cont);
               default:
                 break;
             }
@@ -1553,6 +1572,14 @@ void InstructionSelector::VisitInt32SubWithOverflow(Node* node) {
   VisitBinop(this, node, kX87Sub, &cont);
 }
 
+void InstructionSelector::VisitInt32MulWithOverflow(Node* node) {
+  if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
+    FlagsContinuation cont = FlagsContinuation::ForSet(kOverflow, ovf);
+    return VisitBinop(this, node, kX87Imul, &cont);
+  }
+  FlagsContinuation cont;
+  VisitBinop(this, node, kX87Imul, &cont);
+}
 
 void InstructionSelector::VisitFloat32Equal(Node* node) {
   FlagsContinuation cont = FlagsContinuation::ForSet(kUnorderedEqual, node);
@@ -1623,6 +1650,12 @@ void InstructionSelector::VisitFloat64InsertHighWord32(Node* node) {
   Node* right = node->InputAt(1);
   Emit(kX87Float64InsertHighWord32, g.UseFixed(node, stX_0),
        g.UseRegister(left), g.UseRegister(right));
+}
+
+void InstructionSelector::VisitFloat64SilenceNaN(Node* node) {
+  X87OperandGenerator g(this);
+  Emit(kX87PushFloat64, g.NoOutput(), g.Use(node->InputAt(0)));
+  Emit(kX87Float64SilenceNaN, g.DefineAsFixed(node, stX_0), 0, nullptr);
 }
 
 void InstructionSelector::VisitAtomicLoad(Node* node) {

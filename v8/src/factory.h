@@ -412,10 +412,6 @@ class Factory final {
       PretenureFlag pretenure = NOT_TENURED,
       Handle<AllocationSite> allocation_site = Handle<AllocationSite>::null());
 
-  // JS modules are pretenured.
-  Handle<JSModule> NewJSModule(Handle<Context> context,
-                               Handle<ScopeInfo> scope_info);
-
   // JS arrays are pretenured when allocated by the parser.
 
   // Create a JSArray with a specified length and elements initialized
@@ -506,6 +502,10 @@ class Factory final {
 
   Handle<JSGlobalProxy> NewUninitializedJSGlobalProxy();
 
+  Handle<JSFunction> NewFunction(Handle<Map> map,
+                                 Handle<SharedFunctionInfo> info,
+                                 Handle<Object> context_or_undefined,
+                                 PretenureFlag pretenure = TENURED);
   Handle<JSFunction> NewFunction(Handle<String> name, Handle<Code> code,
                                  Handle<Object> prototype,
                                  bool is_strict = false);
@@ -516,7 +516,7 @@ class Factory final {
 
   Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
       Handle<Map> initial_map, Handle<SharedFunctionInfo> function_info,
-      Handle<Context> context, PretenureFlag pretenure = TENURED);
+      Handle<Object> context_or_undefined, PretenureFlag pretenure = TENURED);
 
   Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
       Handle<SharedFunctionInfo> function_info, Handle<Context> context,
@@ -551,8 +551,6 @@ class Factory final {
                        bool is_debug = false);
 
   Handle<Code> CopyCode(Handle<Code> code);
-
-  Handle<Code> CopyCode(Handle<Code> code, Vector<byte> reloc_info);
 
   Handle<BytecodeArray> CopyBytecodeArray(Handle<BytecodeArray>);
 
@@ -686,6 +684,9 @@ class Factory final {
   // Converts the given boolean condition to JavaScript boolean value.
   Handle<Object> ToBoolean(bool value);
 
+  // Converts the given ToPrimitive hint to it's string representation.
+  Handle<String> ToPrimitiveHintString(ToPrimitiveHint hint);
+
  private:
   Isolate* isolate() { return reinterpret_cast<Isolate*>(this); }
 
@@ -712,12 +713,6 @@ class Factory final {
 
   // Update the cache with a new number-string pair.
   void SetNumberStringCache(Handle<Object> number, Handle<String> string);
-
-  // Creates a function initialized with a shared part.
-  Handle<JSFunction> NewFunction(Handle<Map> map,
-                                 Handle<SharedFunctionInfo> info,
-                                 Handle<Context> context,
-                                 PretenureFlag pretenure = TENURED);
 
   // Create a JSArray with no elements and no length.
   Handle<JSArray> NewJSArray(ElementsKind elements_kind,

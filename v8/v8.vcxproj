@@ -40,6 +40,10 @@
     <ClInclude Include="src\api-natives.h" />
     <ClInclude Include="src\api.h" />
     <ClInclude Include="src\arguments.h" />
+    <ClInclude Include="src\asmjs\asm-js.h" />
+    <ClInclude Include="src\asmjs\asm-typer.h" />
+    <ClInclude Include="src\asmjs\asm-types.h" />
+    <ClInclude Include="src\asmjs\asm-wasm-builder.h" />
     <ClInclude Include="src\assembler.h" />
     <ClInclude Include="src\assert-scope.h" />
     <ClInclude Include="src\ast\ast-expression-rewriter.h" />
@@ -108,7 +112,7 @@
     <ClInclude Include="src\bignum.h" />
     <ClInclude Include="src\bit-vector.h" />
     <ClInclude Include="src\bootstrapper.h" />
-    <ClInclude Include="src\builtins.h" />
+    <ClInclude Include="src\builtins\builtins.h" />
     <ClInclude Include="src\cached-powers.h" />
     <ClInclude Include="src\cancelable-task.h" />
     <ClInclude Include="src\char-predicates-inl.h" />
@@ -212,6 +216,7 @@
     <ClInclude Include="src\compiler\schedule.h" />
     <ClInclude Include="src\compiler\scheduler.h" />
     <ClInclude Include="src\compiler\select-lowering.h" />
+    <ClInclude Include="src\compiler\simd-lowering.h" />
     <ClInclude Include="src\compiler\simplified-lowering.h" />
     <ClInclude Include="src\compiler\simplified-operator-reducer.h" />
     <ClInclude Include="src\compiler\simplified-operator.h" />
@@ -222,10 +227,12 @@
     <ClInclude Include="src\compiler\type-hint-analyzer.h" />
     <ClInclude Include="src\compiler\type-hints.h" />
     <ClInclude Include="src\compiler\typer.h" />
+    <ClInclude Include="src\compiler\unwinding-info-writer.h" />
     <ClInclude Include="src\compiler\value-numbering-reducer.h" />
     <ClInclude Include="src\compiler\verifier.h" />
     <ClInclude Include="src\compiler\wasm-compiler.h" />
     <ClInclude Include="src\compiler\x64\instruction-codes-x64.h" />
+    <ClInclude Include="src\compiler\x64\unwinding-info-writer-x64.h" />
     <ClInclude Include="src\compiler\x87\instruction-codes-x87.h" />
     <ClInclude Include="src\compiler\zone-pool.h" />
     <ClInclude Include="src\context-measure.h" />
@@ -299,6 +306,7 @@
     <ClInclude Include="src\double.h" />
     <ClInclude Include="src\dtoa.h" />
     <ClInclude Include="src\effects.h" />
+    <ClInclude Include="src\eh-frame.h" />
     <ClInclude Include="src\elements-kind.h" />
     <ClInclude Include="src\elements.h" />
     <ClInclude Include="src\execution.h" />
@@ -330,6 +338,7 @@
     <ClInclude Include="src\heap-symbols.h" />
     <ClInclude Include="src\heap\array-buffer-tracker-inl.h" />
     <ClInclude Include="src\heap\array-buffer-tracker.h" />
+    <ClInclude Include="src\heap\code-stats.h" />
     <ClInclude Include="src\heap\gc-idle-time-handler.h" />
     <ClInclude Include="src\heap\gc-tracer.h" />
     <ClInclude Include="src\heap\heap-inl.h" />
@@ -339,6 +348,7 @@
     <ClInclude Include="src\heap\incremental-marking.h" />
     <ClInclude Include="src\heap\mark-compact-inl.h" />
     <ClInclude Include="src\heap\mark-compact.h" />
+    <ClInclude Include="src\heap\marking.h" />
     <ClInclude Include="src\heap\memory-reducer.h" />
     <ClInclude Include="src\heap\object-stats.h" />
     <ClInclude Include="src\heap\objects-visiting-inl.h" />
@@ -374,12 +384,15 @@
     <ClInclude Include="src\interpreter\bytecode-array-iterator.h" />
     <ClInclude Include="src\interpreter\bytecode-array-writer.h" />
     <ClInclude Include="src\interpreter\bytecode-dead-code-optimizer.h" />
+    <ClInclude Include="src\interpreter\bytecode-decoder.h" />
+    <ClInclude Include="src\interpreter\bytecode-flags.h" />
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
     <ClInclude Include="src\interpreter\bytecode-label.h" />
     <ClInclude Include="src\interpreter\bytecode-peephole-optimizer.h" />
     <ClInclude Include="src\interpreter\bytecode-pipeline.h" />
     <ClInclude Include="src\interpreter\bytecode-register-allocator.h" />
     <ClInclude Include="src\interpreter\bytecode-register-optimizer.h" />
+    <ClInclude Include="src\interpreter\bytecode-register.h" />
     <ClInclude Include="src\interpreter\bytecode-traits.h" />
     <ClInclude Include="src\interpreter\bytecodes.h" />
     <ClInclude Include="src\interpreter\constant-array-builder.h" />
@@ -388,7 +401,6 @@
     <ClInclude Include="src\interpreter\interpreter-assembler.h" />
     <ClInclude Include="src\interpreter\interpreter-intrinsics.h" />
     <ClInclude Include="src\interpreter\interpreter.h" />
-    <ClInclude Include="src\interpreter\source-position-table.h" />
     <ClInclude Include="src\isolate-inl.h" />
     <ClInclude Include="src\isolate.h" />
     <ClInclude Include="src\json-parser.h" />
@@ -399,7 +411,7 @@
     <ClInclude Include="src\libplatform\default-platform.h" />
     <ClInclude Include="src\libplatform\task-queue.h" />
     <ClInclude Include="src\libplatform\worker-thread.h" />
-    <ClInclude Include="src\libsampler\v8-sampler.h" />
+    <ClInclude Include="src\libsampler\sampler.h" />
     <ClInclude Include="src\list-inl.h" />
     <ClInclude Include="src\list.h" />
     <ClInclude Include="src\locked-queue-inl.h" />
@@ -501,6 +513,7 @@
     <ClInclude Include="src\snapshot\snapshot-source-sink.h" />
     <ClInclude Include="src\snapshot\snapshot.h" />
     <ClInclude Include="src\snapshot\startup-serializer.h" />
+    <ClInclude Include="src\source-position-table.h" />
     <ClInclude Include="src\source-position.h" />
     <ClInclude Include="src\splay-tree-inl.h" />
     <ClInclude Include="src\splay-tree.h" />
@@ -518,7 +531,6 @@
     <ClInclude Include="src\type-feedback-vector.h" />
     <ClInclude Include="src\type-info.h" />
     <ClInclude Include="src\types.h" />
-    <ClInclude Include="src\typing-asm.h" />
     <ClInclude Include="src\unicode-cache-inl.h" />
     <ClInclude Include="src\unicode-cache.h" />
     <ClInclude Include="src\unicode-decoder.h" />
@@ -534,8 +546,6 @@
     <ClInclude Include="src\version.h" />
     <ClInclude Include="src\vm-state-inl.h" />
     <ClInclude Include="src\vm-state.h" />
-    <ClInclude Include="src\wasm\asm-types.h" />
-    <ClInclude Include="src\wasm\asm-wasm-builder.h" />
     <ClInclude Include="src\wasm\ast-decoder.h" />
     <ClInclude Include="src\wasm\decoder.h" />
     <ClInclude Include="src\wasm\encoder.h" />
@@ -579,6 +589,10 @@
     <ClCompile Include="src\api-natives.cc" />
     <ClCompile Include="src\api.cc" />
     <ClCompile Include="src\arguments.cc" />
+    <ClCompile Include="src\asmjs\asm-js.cc" />
+    <ClCompile Include="src\asmjs\asm-typer.cc" />
+    <ClCompile Include="src\asmjs\asm-types.cc" />
+    <ClCompile Include="src\asmjs\asm-wasm-builder.cc" />
     <ClCompile Include="src\assembler.cc" />
     <ClCompile Include="src\assert-scope.cc" />
     <ClCompile Include="src\ast\ast-expression-rewriter.cc" />
@@ -624,7 +638,12 @@
     <ClCompile Include="src\bignum.cc" />
     <ClCompile Include="src\bit-vector.cc" />
     <ClCompile Include="src\bootstrapper.cc" />
-    <ClCompile Include="src\builtins.cc" />
+    <ClCompile Include="src\builtins\builtins.cc" />
+    <ClCompile Include="src\builtins\ia32\builtins-ia32.cc" />
+    <ClCompile Include="src\builtins\ppc\builtins-ppc.cc" />
+    <ClCompile Include="src\builtins\s390\builtins-s390.cc" />
+    <ClCompile Include="src\builtins\x64\builtins-x64.cc" />
+    <ClCompile Include="src\builtins\x87\builtins-x87.cc" />
     <ClCompile Include="src\cached-powers.cc" />
     <ClCompile Include="src\cancelable-task.cc" />
     <ClCompile Include="src\char-predicates.cc" />
@@ -727,6 +746,7 @@
     <ClCompile Include="src\compiler\schedule.cc" />
     <ClCompile Include="src\compiler\scheduler.cc" />
     <ClCompile Include="src\compiler\select-lowering.cc" />
+    <ClCompile Include="src\compiler\simd-lowering.cc" />
     <ClCompile Include="src\compiler\simplified-lowering.cc" />
     <ClCompile Include="src\compiler\simplified-operator-reducer.cc" />
     <ClCompile Include="src\compiler\simplified-operator.cc" />
@@ -744,6 +764,7 @@
     <ClCompile Include="src\compiler\x64\code-generator-x64.cc" />
     <ClCompile Include="src\compiler\x64\instruction-scheduler-x64.cc" />
     <ClCompile Include="src\compiler\x64\instruction-selector-x64.cc" />
+    <ClCompile Include="src\compiler\x64\unwinding-info-writer-x64.cc" />
     <ClCompile Include="src\compiler\x87\code-generator-x87.cc" />
     <ClCompile Include="src\compiler\x87\instruction-scheduler-x87.cc" />
     <ClCompile Include="src\compiler\x87\instruction-selector-x87.cc" />
@@ -812,6 +833,7 @@
     <ClCompile Include="src\disassembler.cc" />
     <ClCompile Include="src\diy-fp.cc" />
     <ClCompile Include="src\dtoa.cc" />
+    <ClCompile Include="src\eh-frame.cc" />
     <ClCompile Include="src\elements-kind.cc" />
     <ClCompile Include="src\elements.cc" />
     <ClCompile Include="src\execution.cc" />
@@ -844,6 +866,7 @@
     <ClCompile Include="src\global-handles.cc" />
     <ClCompile Include="src\handles.cc" />
     <ClCompile Include="src\heap\array-buffer-tracker.cc" />
+    <ClCompile Include="src\heap\code-stats.cc" />
     <ClCompile Include="src\heap\gc-idle-time-handler.cc" />
     <ClCompile Include="src\heap\gc-tracer.cc" />
     <ClCompile Include="src\heap\heap.cc" />
@@ -859,7 +882,6 @@
     <ClCompile Include="src\heap\spaces.cc" />
     <ClCompile Include="src\heap\store-buffer.cc" />
     <ClCompile Include="src\ia32\assembler-ia32.cc" />
-    <ClCompile Include="src\ia32\builtins-ia32.cc" />
     <ClCompile Include="src\ia32\code-stubs-ia32.cc" />
     <ClCompile Include="src\ia32\codegen-ia32.cc" />
     <ClCompile Include="src\ia32\cpu-ia32.cc" />
@@ -908,11 +930,14 @@
     <ClCompile Include="src\interpreter\bytecode-array-iterator.cc" />
     <ClCompile Include="src\interpreter\bytecode-array-writer.cc" />
     <ClCompile Include="src\interpreter\bytecode-dead-code-optimizer.cc" />
+    <ClCompile Include="src\interpreter\bytecode-decoder.cc" />
+    <ClCompile Include="src\interpreter\bytecode-flags.cc" />
     <ClCompile Include="src\interpreter\bytecode-generator.cc" />
     <ClCompile Include="src\interpreter\bytecode-peephole-optimizer.cc" />
     <ClCompile Include="src\interpreter\bytecode-pipeline.cc" />
     <ClCompile Include="src\interpreter\bytecode-register-allocator.cc" />
     <ClCompile Include="src\interpreter\bytecode-register-optimizer.cc" />
+    <ClCompile Include="src\interpreter\bytecode-register.cc" />
     <ClCompile Include="src\interpreter\bytecodes.cc" />
     <ClCompile Include="src\interpreter\constant-array-builder.cc" />
     <ClCompile Include="src\interpreter\control-flow-builders.cc" />
@@ -920,7 +945,6 @@
     <ClCompile Include="src\interpreter\interpreter-assembler.cc" />
     <ClCompile Include="src\interpreter\interpreter-intrinsics.cc" />
     <ClCompile Include="src\interpreter\interpreter.cc" />
-    <ClCompile Include="src\interpreter\source-position-table.cc" />
     <ClCompile Include="src\isolate.cc" />
     <ClCompile Include="src\json-parser.cc" />
     <ClCompile Include="src\json-stringifier.cc" />
@@ -929,7 +953,7 @@
     <ClCompile Include="src\libplatform\default-platform.cc" />
     <ClCompile Include="src\libplatform\task-queue.cc" />
     <ClCompile Include="src\libplatform\worker-thread.cc" />
-    <ClCompile Include="src\libsampler\v8-sampler.cc" />
+    <ClCompile Include="src\libsampler\sampler.cc" />
     <ClCompile Include="src\log-utils.cc" />
     <ClCompile Include="src\log.cc" />
     <ClCompile Include="src\lookup.cc" />
@@ -953,7 +977,6 @@
     <ClCompile Include="src\pending-compilation-error-handler.cc" />
     <ClCompile Include="src\perf-jit.cc" />
     <ClCompile Include="src\ppc\assembler-ppc.cc" />
-    <ClCompile Include="src\ppc\builtins-ppc.cc" />
     <ClCompile Include="src\ppc\code-stubs-ppc.cc" />
     <ClCompile Include="src\ppc\codegen-ppc.cc" />
     <ClCompile Include="src\ppc\constants-ppc.cc" />
@@ -1018,9 +1041,9 @@
     <ClCompile Include="src\runtime\runtime-symbol.cc" />
     <ClCompile Include="src\runtime\runtime-test.cc" />
     <ClCompile Include="src\runtime\runtime-typedarray.cc" />
+    <ClCompile Include="src\runtime\runtime-wasm.cc" />
     <ClCompile Include="src\runtime\runtime.cc" />
     <ClCompile Include="src\s390\assembler-s390.cc" />
-    <ClCompile Include="src\s390\builtins-s390.cc" />
     <ClCompile Include="src\s390\code-stubs-s390.cc" />
     <ClCompile Include="src\s390\codegen-s390.cc" />
     <ClCompile Include="src\s390\constants-s390.cc" />
@@ -1042,6 +1065,7 @@
     <ClCompile Include="src\snapshot\snapshot-empty.cc" />
     <ClCompile Include="src\snapshot\snapshot-source-sink.cc" />
     <ClCompile Include="src\snapshot\startup-serializer.cc" />
+    <ClCompile Include="src\source-position-table.cc" />
     <ClCompile Include="src\startup-data-util.cc" />
     <ClCompile Include="src\string-builder.cc" />
     <ClCompile Include="src\string-stream.cc" />
@@ -1052,7 +1076,6 @@
     <ClCompile Include="src\type-feedback-vector.cc" />
     <ClCompile Include="src\type-info.cc" />
     <ClCompile Include="src\types.cc" />
-    <ClCompile Include="src\typing-asm.cc" />
     <ClCompile Include="src\unicode-decoder.cc" />
     <ClCompile Include="src\unicode.cc" />
     <ClCompile Include="src\uri.cc" />
@@ -1060,8 +1083,6 @@
     <ClCompile Include="src\v8.cc" />
     <ClCompile Include="src\v8threads.cc" />
     <ClCompile Include="src\version.cc" />
-    <ClCompile Include="src\wasm\asm-types.cc" />
-    <ClCompile Include="src\wasm\asm-wasm-builder.cc" />
     <ClCompile Include="src\wasm\ast-decoder.cc" />
     <ClCompile Include="src\wasm\encoder.cc" />
     <ClCompile Include="src\wasm\module-decoder.cc" />
@@ -1075,18 +1096,17 @@
     <ClCompile Include="src\wasm\wasm-opcodes.cc" />
     <ClCompile Include="src\wasm\wasm-result.cc" />
     <ClCompile Include="src\x64\assembler-x64.cc" />
-    <ClCompile Include="src\x64\builtins-x64.cc" />
     <ClCompile Include="src\x64\code-stubs-x64.cc" />
     <ClCompile Include="src\x64\codegen-x64.cc" />
     <ClCompile Include="src\x64\cpu-x64.cc" />
     <ClCompile Include="src\x64\deoptimizer-x64.cc" />
     <ClCompile Include="src\x64\disasm-x64.cc" />
+    <ClCompile Include="src\x64\eh-frame-x64.cc" />
     <ClCompile Include="src\x64\frames-x64.cc" />
     <ClCompile Include="src\x64\interface-descriptors-x64.cc" />
     <ClCompile Include="src\x64\macro-assembler-x64.cc" />
     <ClCompile Include="src\x64\simulator-x64.cc" />
     <ClCompile Include="src\x87\assembler-x87.cc" />
-    <ClCompile Include="src\x87\builtins-x87.cc" />
     <ClCompile Include="src\x87\code-stubs-x87.cc" />
     <ClCompile Include="src\x87\codegen-x87.cc" />
     <ClCompile Include="src\x87\cpu-x87.cc" />

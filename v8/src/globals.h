@@ -293,6 +293,8 @@ inline LanguageMode construct_language_mode(bool strict_bit) {
   return static_cast<LanguageMode>(strict_bit);
 }
 
+// This constant is used as an undefined value when passing source positions.
+const int kNoSourcePosition = -1;
 
 // Mask for the sign bit in a smi.
 const intptr_t kSmiSignMask = kIntptrSignBit;
@@ -577,6 +579,8 @@ struct CodeDesc {
   int instr_size;
   int reloc_size;
   int constant_pool_size;
+  byte* unwinding_info;
+  int unwinding_info_size;
   Assembler* origin;
 };
 
@@ -630,18 +634,6 @@ typedef enum {
 typedef void (*StoreBufferCallback)(Heap* heap,
                                     MemoryChunk* page,
                                     StoreBufferEvent event);
-
-
-// Union used for fast testing of specific double values.
-union DoubleRepresentation {
-  double  value;
-  int64_t bits;
-  DoubleRepresentation(double x) { value = x; }
-  bool operator==(const DoubleRepresentation& other) const {
-    return bits == other.bits;
-  }
-};
-
 
 // Union used for customized checking of the IEEE double types
 // inlined within v8 runtime, rather than going to the underlying
@@ -791,6 +783,14 @@ inline std::ostream& operator<<(std::ostream& os, TailCallMode mode) {
   UNREACHABLE();
   return os;
 }
+
+// Valid hints for the abstract operation OrdinaryToPrimitive,
+// implemented according to ES6, section 7.1.1.
+enum class OrdinaryToPrimitiveHint { kNumber, kString };
+
+// Valid hints for the abstract operation ToPrimitive,
+// implemented according to ES6, section 7.1.1.
+enum class ToPrimitiveHint { kDefault, kNumber, kString };
 
 // Defines specifics about arguments object or rest parameter creation.
 enum class CreateArgumentsType : uint8_t {
@@ -1106,6 +1106,20 @@ inline bool IsConstructable(FunctionKind kind, LanguageMode mode) {
   return true;
 }
 
+enum class CallableType : unsigned { kJSFunction, kAny };
+
+inline size_t hash_value(CallableType type) { return bit_cast<unsigned>(type); }
+
+inline std::ostream& operator<<(std::ostream& os, CallableType function_type) {
+  switch (function_type) {
+    case CallableType::kJSFunction:
+      return os << "JSFunction";
+    case CallableType::kAny:
+      return os << "Any";
+  }
+  UNREACHABLE();
+  return os;
+}
 
 inline uint32_t ObjectHash(Address address) {
   // All objects are at least pointer aligned, so we can remove the trailing

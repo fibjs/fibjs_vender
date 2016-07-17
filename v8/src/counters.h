@@ -9,7 +9,7 @@
 #include "src/allocation.h"
 #include "src/base/platform/elapsed-timer.h"
 #include "src/base/platform/time.h"
-#include "src/builtins.h"
+#include "src/builtins/builtins.h"
 #include "src/globals.h"
 #include "src/objects.h"
 #include "src/runtime/runtime.h"
@@ -531,6 +531,7 @@ class RuntimeCallTimer {
   V(BooleanObject_BooleanValue)                            \
   V(BooleanObject_New)                                     \
   V(Context_New)                                           \
+  V(Context_NewRemoteContext)                              \
   V(DataView_New)                                          \
   V(Date_DateTimeConfigurationChangeNotification)          \
   V(Date_New)                                              \
@@ -1054,7 +1055,9 @@ class RuntimeCallTimerScope {
   /* Total code size (including metadata) of baseline code or bytecode. */     \
   SC(total_baseline_code_size, V8.TotalBaselineCodeSize)                       \
   /* Total count of functions compiled using the baseline compiler. */         \
-  SC(total_baseline_compile_count, V8.TotalBaselineCompileCount)
+  SC(total_baseline_compile_count, V8.TotalBaselineCompileCount)               \
+  SC(wasm_generated_code_size, V8.WasmGeneratedCodeBytes)                      \
+  SC(wasm_reloc_size, V8.WasmRelocBytes)
 
 // This file contains all the v8 counters that are in use.
 class Counters {

@@ -6,7 +6,6 @@
 #define V8_PROFILER_PROFILE_GENERATOR_H_
 
 #include <map>
-#include "include/v8-profiler.h"
 #include "src/allocation.h"
 #include "src/base/hashmap.h"
 #include "src/compiler.h"
@@ -14,6 +13,8 @@
 
 namespace v8 {
 namespace internal {
+
+struct TickSample;
 
 // Provides a mapping from the offsets within generated code to
 // the source line.

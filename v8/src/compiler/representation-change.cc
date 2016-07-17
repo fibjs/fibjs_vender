@@ -63,6 +63,11 @@ Truncation::TruncationKind Truncation::Generalize(TruncationKind rep1,
       LessGeneral(rep2, TruncationKind::kFloat64)) {
     return TruncationKind::kFloat64;
   }
+  // Handle the generalization of any-representable values.
+  if (LessGeneral(rep1, TruncationKind::kAny) &&
+      LessGeneral(rep2, TruncationKind::kAny)) {
+    return TruncationKind::kAny;
+  }
   // All other combinations are illegal.
   FATAL("Tried to combine incompatible truncations");
   return TruncationKind::kNone;
@@ -278,7 +283,7 @@ Node* RepresentationChanger::GetFloat32RepresentationFor(
       op = machine()->TruncateFloat64ToFloat32();
     }
   } else if (output_rep == MachineRepresentation::kTagged) {
-    if (output_type->Is(Type::NumberOrUndefined())) {
+    if (output_type->Is(Type::NumberOrOddball())) {
       // tagged -> float64 -> float32
       if (output_type->Is(Type::Number())) {
         op = simplified()->ChangeTaggedToFloat64();
@@ -344,10 +349,10 @@ Node* RepresentationChanger::GetFloat64RepresentationFor(
       op = machine()->ChangeInt32ToFloat64();
     } else if (output_type->Is(Type::Number())) {
       op = simplified()->ChangeTaggedToFloat64();
-    } else if (output_type->Is(Type::NumberOrUndefined())) {
+    } else if (output_type->Is(Type::NumberOrOddball())) {
       // TODO(jarin) Here we should check that truncation is Number.
       op = simplified()->TruncateTaggedToFloat64();
-    } else if (use_info.type_check() == TypeCheckKind::kNumberOrUndefined) {
+    } else if (use_info.type_check() == TypeCheckKind::kNumberOrOddball) {
       op = simplified()->CheckedTaggedToFloat64();
     }
   } else if (output_rep == MachineRepresentation::kFloat32) {
@@ -368,19 +373,30 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
     Node* node, MachineRepresentation output_rep, Type* output_type,
     Node* use_node, UseInfo use_info) {
   // Eagerly fold representation changes for constants.
-  // TODO(jarin) Properly fold constants in presence of type check.
-  if (use_info.type_check() == TypeCheckKind::kNone) {
-    switch (node->opcode()) {
-      case IrOpcode::kInt32Constant:
-        return node;  // No change necessary.
-      case IrOpcode::kFloat32Constant:
-        return MakeTruncatedInt32Constant(OpParameter<float>(node));
-      case IrOpcode::kNumberConstant:
-      case IrOpcode::kFloat64Constant:
-        return MakeTruncatedInt32Constant(OpParameter<double>(node));
-      default:
-        break;
+  switch (node->opcode()) {
+    case IrOpcode::kInt32Constant:
+      return node;  // No change necessary.
+    case IrOpcode::kFloat32Constant: {
+      float const fv = OpParameter<float>(node);
+      if (use_info.type_check() == TypeCheckKind::kNone ||
+          (use_info.type_check() == TypeCheckKind::kSigned32 &&
+           IsInt32Double(fv))) {
+        return MakeTruncatedInt32Constant(fv);
+      }
+      break;
     }
+    case IrOpcode::kNumberConstant:
+    case IrOpcode::kFloat64Constant: {
+      double const fv = OpParameter<double>(node);
+      if (use_info.type_check() == TypeCheckKind::kNone ||
+          (use_info.type_check() == TypeCheckKind::kSigned32 &&
+           IsInt32Double(fv))) {
+        return MakeTruncatedInt32Constant(fv);
+      }
+      break;
+    }
+    default:
+      break;
   }
 
   // Select the correct X -> Word32 operator.
@@ -603,10 +619,16 @@ const Operator* RepresentationChanger::Int32OperatorFor(
 const Operator* RepresentationChanger::Int32OverflowOperatorFor(
     IrOpcode::Value opcode) {
   switch (opcode) {
-    case IrOpcode::kSpeculativeNumberAdd:  // Fall through.
+    case IrOpcode::kSpeculativeNumberAdd:
       return simplified()->CheckedInt32Add();
-    case IrOpcode::kSpeculativeNumberSubtract:  // Fall through.
+    case IrOpcode::kSpeculativeNumberSubtract:
       return simplified()->CheckedInt32Sub();
+    case IrOpcode::kSpeculativeNumberDivide:
+      return simplified()->CheckedInt32Div();
+    case IrOpcode::kSpeculativeNumberModulus:
+      return simplified()->CheckedInt32Mod();
+    case IrOpcode::kSpeculativeNumberMultiply:
+      return simplified()->CheckedInt32Mul();
     default:
       UNREACHABLE();
       return nullptr;
@@ -648,6 +670,18 @@ const Operator* RepresentationChanger::Uint32OperatorFor(
   }
 }
 
+const Operator* RepresentationChanger::Uint32OverflowOperatorFor(
+    IrOpcode::Value opcode) {
+  switch (opcode) {
+    case IrOpcode::kSpeculativeNumberDivide:
+      return simplified()->CheckedUint32Div();
+    case IrOpcode::kSpeculativeNumberModulus:
+      return simplified()->CheckedUint32Mod();
+    default:
+      UNREACHABLE();
+      return nullptr;
+  }
+}
 
 const Operator* RepresentationChanger::Float64OperatorFor(
     IrOpcode::Value opcode) {
@@ -676,18 +710,34 @@ const Operator* RepresentationChanger::Float64OperatorFor(
     case IrOpcode::kNumberLessThanOrEqual:
     case IrOpcode::kSpeculativeNumberLessThanOrEqual:
       return machine()->Float64LessThanOrEqual();
+    case IrOpcode::kNumberAbs:
+      return machine()->Float64Abs();
+    case IrOpcode::kNumberAcos:
+      return machine()->Float64Acos();
+    case IrOpcode::kNumberAcosh:
+      return machine()->Float64Acosh();
+    case IrOpcode::kNumberAsin:
+      return machine()->Float64Asin();
+    case IrOpcode::kNumberAsinh:
+      return machine()->Float64Asinh();
     case IrOpcode::kNumberAtan:
       return machine()->Float64Atan();
-    case IrOpcode::kNumberAtan2:
-      return machine()->Float64Atan2();
-    case IrOpcode::kNumberCos:
-      return machine()->Float64Cos();
-    case IrOpcode::kNumberExp:
-      return machine()->Float64Exp();
-    case IrOpcode::kNumberFround:
-      return machine()->TruncateFloat64ToFloat32();
     case IrOpcode::kNumberAtanh:
       return machine()->Float64Atanh();
+    case IrOpcode::kNumberAtan2:
+      return machine()->Float64Atan2();
+    case IrOpcode::kNumberCbrt:
+      return machine()->Float64Cbrt();
+    case IrOpcode::kNumberCos:
+      return machine()->Float64Cos();
+    case IrOpcode::kNumberCosh:
+      return machine()->Float64Cosh();
+    case IrOpcode::kNumberExp:
+      return machine()->Float64Exp();
+    case IrOpcode::kNumberExpm1:
+      return machine()->Float64Expm1();
+    case IrOpcode::kNumberFround:
+      return machine()->TruncateFloat64ToFloat32();
     case IrOpcode::kNumberLog:
       return machine()->Float64Log();
     case IrOpcode::kNumberLog1p:
@@ -696,16 +746,18 @@ const Operator* RepresentationChanger::Float64OperatorFor(
       return machine()->Float64Log2();
     case IrOpcode::kNumberLog10:
       return machine()->Float64Log10();
+    case IrOpcode::kNumberPow:
+      return machine()->Float64Pow();
     case IrOpcode::kNumberSin:
       return machine()->Float64Sin();
-    case IrOpcode::kNumberTan:
-      return machine()->Float64Tan();
+    case IrOpcode::kNumberSinh:
+      return machine()->Float64Sinh();
     case IrOpcode::kNumberSqrt:
       return machine()->Float64Sqrt();
-    case IrOpcode::kNumberCbrt:
-      return machine()->Float64Cbrt();
-    case IrOpcode::kNumberExpm1:
-      return machine()->Float64Expm1();
+    case IrOpcode::kNumberTan:
+      return machine()->Float64Tan();
+    case IrOpcode::kNumberTanh:
+      return machine()->Float64Tanh();
     case IrOpcode::kNumberSilenceNaN:
       return machine()->Float64SilenceNaN();
     default:

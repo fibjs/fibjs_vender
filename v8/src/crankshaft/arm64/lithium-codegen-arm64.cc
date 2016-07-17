@@ -442,16 +442,10 @@ void LCodeGen::CallRuntimeFromDeferred(Runtime::FunctionId id,
                                        int argc,
                                        LInstruction* instr,
                                        LOperand* context) {
-  LoadContextFromDeferred(context);
+  if (context != nullptr) LoadContextFromDeferred(context);
   __ CallRuntimeSaveDoubles(id);
   RecordSafepointWithRegisters(
       instr->pointer_map(), argc, Safepoint::kNoLazyDeopt);
-}
-
-
-void LCodeGen::RecordAndWritePosition(int position) {
-  if (position == RelocInfo::kNoPosition) return;
-  masm()->positions_recorder()->RecordPosition(position);
 }
 
 
@@ -604,10 +598,10 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       __ Push(x1, x10);
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
-    } else if (slots <= FastNewContextStub::kMaximumSlots) {
-      FastNewContextStub stub(isolate(), slots);
+    } else if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
+      FastNewFunctionContextStub stub(isolate(), slots);
       __ CallStub(&stub);
-      // Result of FastNewContextStub is always in new space.
+      // Result of FastNewFunctionContextStub is always in new space.
       need_write_barrier = false;
     } else {
       __ Push(x1);
@@ -828,6 +822,9 @@ void LCodeGen::FinishCode(Handle<Code> code) {
   DCHECK(is_done());
   code->set_stack_slots(GetTotalFrameSlotCount());
   code->set_safepoint_table_offset(safepoints_.GetCodeOffset());
+  Handle<ByteArray> source_positions =
+      source_position_table_builder_.ToSourcePositionTable();
+  code->set_source_position_table(*source_positions);
   PopulateDeoptimizationData(code);
 }
 
@@ -1462,6 +1459,7 @@ void LCodeGen::DoDeferredAllocate(LAllocate* instr) {
   __ Mov(ToRegister(instr->result()), Smi::FromInt(0));
 
   PushSafepointRegistersScope scope(this);
+  LoadContextFromDeferred(instr->context());
   // We're in a SafepointRegistersScope so we can use any scratch registers.
   Register size = x0;
   if (instr->size()->IsConstantOperand()) {
@@ -1480,8 +1478,7 @@ void LCodeGen::DoDeferredAllocate(LAllocate* instr) {
   __ Mov(x10, Smi::FromInt(flags));
   __ Push(size, x10);
 
-  CallRuntimeFromDeferred(
-      Runtime::kAllocateInTargetSpace, 2, instr, instr->context());
+  CallRuntimeFromDeferred(Runtime::kAllocateInTargetSpace, 2, instr, nullptr);
   __ StoreToSafepointRegisterSlot(x0, ToRegister(instr->result()));
 
   if (instr->hydrogen()->IsAllocationFoldingDominator()) {
@@ -2209,18 +2206,6 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
 }
 
 
-void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
-  DoubleRegister value_reg = ToDoubleRegister(instr->value());
-  Register result_reg = ToRegister(instr->result());
-  if (instr->hydrogen()->bits() == HDoubleBits::HIGH) {
-    __ Fmov(result_reg, value_reg);
-    __ Lsr(result_reg, result_reg, 32);
-  } else {
-    __ Fmov(result_reg.W(), value_reg.S());
-  }
-}
-
-
 void LCodeGen::DoClassOfTestAndBranch(LClassOfTestAndBranch* instr) {
   Handle<String> class_name = instr->hydrogen()->class_name();
   Label* true_label = instr->TrueLabel(chunk_);
@@ -2847,7 +2832,9 @@ void LCodeGen::PrepareForTailCall(const ParameterCount& actual,
 #endif
   if (FLAG_code_comments) {
     if (actual.is_reg()) {
-      Comment(";;; PrepareForTailCall, actual: %s {", actual.reg().ToString());
+      Comment(";;; PrepareForTailCall, actual: %s {",
+              RegisterConfiguration::Crankshaft()->GetGeneralRegisterName(
+                  actual.reg().code()));
     } else {
       Comment(";;; PrepareForTailCall, actual: %d {", actual.immediate());
     }
@@ -3068,10 +3055,8 @@ void LCodeGen::EmitVectorStoreICRegisters(T* instr) {
 
 void LCodeGen::DoLoadGlobalGeneric(LLoadGlobalGeneric* instr) {
   DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(ToRegister(instr->global_object())
-             .is(LoadDescriptor::ReceiverRegister()));
   DCHECK(ToRegister(instr->result()).Is(x0));
-  __ Mov(LoadDescriptor::NameRegister(), Operand(instr->name()));
+
   EmitVectorLoadICRegisters<LLoadGlobalGeneric>(instr);
   Handle<Code> ic =
       CodeFactory::LoadGlobalICInOptimizedCode(isolate(), instr->typeof_mode())
@@ -4214,12 +4199,10 @@ void LCodeGen::DoDeferredNumberTagD(LNumberTagD* instr) {
   __ Mov(result, 0);
 
   PushSafepointRegistersScope scope(this);
-  // NumberTagU and NumberTagD use the context from the frame, rather than
-  // the environment's HContext or HInlinedContext value.
-  // They only call Runtime::kAllocateHeapNumber.
-  // The corresponding HChange instructions are added in a phase that does
-  // not have easy access to the local context.
-  __ Ldr(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  // Reset the context register.
+  if (!result.is(cp)) {
+    __ Mov(cp, 0);
+  }
   __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
   RecordSafepointWithRegisters(
       instr->pointer_map(), 0, Safepoint::kNoLazyDeopt);
@@ -4279,13 +4262,10 @@ void LCodeGen::DoDeferredNumberTagU(LInstruction* instr,
   {
     // Preserve the value of all registers.
     PushSafepointRegistersScope scope(this);
-
-    // NumberTagU and NumberTagD use the context from the frame, rather than
-    // the environment's HContext or HInlinedContext value.
-    // They only call Runtime::kAllocateHeapNumber.
-    // The corresponding HChange instructions are added in a phase that does
-    // not have easy access to the local context.
-    __ Ldr(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+    // Reset the context register.
+    if (!dst.is(cp)) {
+      __ Mov(cp, 0);
+    }
     __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
     RecordSafepointWithRegisters(
       instr->pointer_map(), 0, Safepoint::kNoLazyDeopt);
@@ -4706,6 +4686,8 @@ void LCodeGen::DoDeclareGlobals(LDeclareGlobals* instr) {
   __ LoadHeapObject(scratch1, instr->hydrogen()->pairs());
   __ Mov(scratch2, Smi::FromInt(instr->hydrogen()->flags()));
   __ Push(scratch1, scratch2);
+  __ LoadHeapObject(scratch1, instr->hydrogen()->feedback_vector());
+  __ Push(scratch1);
   CallRuntime(Runtime::kDeclareGlobals, instr);
 }
 

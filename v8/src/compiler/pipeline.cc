@@ -872,8 +872,6 @@ struct TypedLoweringPhase {
     JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
-    LoadElimination load_elimination(&graph_reducer, data->graph(),
-                                     data->jsgraph()->simplified());
     JSBuiltinReducer builtin_reducer(&graph_reducer, data->jsgraph());
     MaybeHandle<LiteralsArray> literals_array =
         data->info()->is_native_context_specializing()
@@ -886,11 +884,8 @@ struct TypedLoweringPhase {
     if (data->info()->is_deoptimization_enabled()) {
       typed_lowering_flags |= JSTypedLowering::kDeoptimizationEnabled;
     }
-    if (data->info()->shared_info()->HasBytecodeArray()) {
-      typed_lowering_flags |= JSTypedLowering::kDisableBinaryOpReduction;
-    }
-    if (data->info()->is_type_feedback_enabled()) {
-      typed_lowering_flags |= JSTypedLowering::kTypeFeedbackEnabled;
+    if (data->info()->is_optimizing_from_bytecode()) {
+      typed_lowering_flags |= JSTypedLowering::kDisableIntegerBinaryOpReduction;
     }
     JSTypedLowering typed_lowering(&graph_reducer, data->info()->dependencies(),
                                    typed_lowering_flags, data->jsgraph(),
@@ -900,6 +895,7 @@ struct TypedLoweringPhase {
         data->info()->is_deoptimization_enabled()
             ? JSIntrinsicLowering::kDeoptimizationEnabled
             : JSIntrinsicLowering::kDeoptimizationDisabled);
+    ValueNumberingReducer value_numbering(temp_zone, data->graph()->zone());
     SimplifiedOperatorReducer simple_reducer(&graph_reducer, data->jsgraph());
     CheckpointElimination checkpoint_elimination(&graph_reducer);
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
@@ -911,26 +907,10 @@ struct TypedLoweringPhase {
     }
     AddReducer(data, &graph_reducer, &typed_lowering);
     AddReducer(data, &graph_reducer, &intrinsic_lowering);
-    AddReducer(data, &graph_reducer, &load_elimination);
+    AddReducer(data, &graph_reducer, &value_numbering);
     AddReducer(data, &graph_reducer, &simple_reducer);
     AddReducer(data, &graph_reducer, &checkpoint_elimination);
     AddReducer(data, &graph_reducer, &common_reducer);
-    graph_reducer.ReduceGraph();
-  }
-};
-
-
-struct BranchEliminationPhase {
-  static const char* phase_name() { return "branch condition elimination"; }
-
-  void Run(PipelineData* data, Zone* temp_zone) {
-    JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
-    BranchElimination branch_condition_elimination(&graph_reducer,
-                                                   data->jsgraph(), temp_zone);
-    DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
-                                              data->common());
-    AddReducer(data, &graph_reducer, &branch_condition_elimination);
-    AddReducer(data, &graph_reducer, &dead_code_elimination);
     graph_reducer.ReduceGraph();
   }
 };
@@ -956,13 +936,33 @@ struct RepresentationSelectionPhase {
   static const char* phase_name() { return "representation selection"; }
 
   void Run(PipelineData* data, Zone* temp_zone) {
-    SimplifiedLowering::Flags flags =
-        data->info()->is_type_feedback_enabled()
-            ? SimplifiedLowering::kTypeFeedbackEnabled
-            : SimplifiedLowering::kNoFlag;
     SimplifiedLowering lowering(data->jsgraph(), temp_zone,
-                                data->source_positions(), flags);
+                                data->source_positions());
     lowering.LowerAllNodes();
+  }
+};
+
+struct LoopPeelingPhase {
+  static const char* phase_name() { return "loop peeling"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    GraphTrimmer trimmer(temp_zone, data->graph());
+    NodeVector roots(temp_zone);
+    data->jsgraph()->GetCachedNodes(&roots);
+    trimmer.TrimGraph(roots.begin(), roots.end());
+
+    LoopTree* loop_tree =
+        LoopFinder::BuildLoopTree(data->jsgraph()->graph(), temp_zone);
+    LoopPeeler::PeelInnerLoopsOfTree(data->graph(), data->common(), loop_tree,
+                                     temp_zone);
+  }
+};
+
+struct LoopExitEliminationPhase {
+  static const char* phase_name() { return "loop exit elimination"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    LoopPeeler::EliminateLoopExits(data->graph(), temp_zone);
   }
 };
 
@@ -976,7 +976,7 @@ struct EarlyOptimizationPhase {
                                               data->common());
     SimplifiedOperatorReducer simple_reducer(&graph_reducer, data->jsgraph());
     RedundancyElimination redundancy_elimination(&graph_reducer, temp_zone);
-    ValueNumberingReducer value_numbering(temp_zone);
+    ValueNumberingReducer value_numbering(temp_zone, data->graph()->zone());
     MachineOperatorReducer machine_reducer(data->jsgraph());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
@@ -1041,6 +1041,22 @@ struct StoreStoreEliminationPhase {
   }
 };
 
+struct LoadEliminationPhase {
+  static const char* phase_name() { return "load elimination"; }
+
+  void Run(PipelineData* data, Zone* temp_zone) {
+    // The memory optimizer requires the graphs to be trimmed, so trim now.
+    GraphTrimmer trimmer(temp_zone, data->graph());
+    NodeVector roots(temp_zone);
+    data->jsgraph()->GetCachedNodes(&roots);
+    trimmer.TrimGraph(roots.begin(), roots.end());
+
+    // Eliminate redundant loads.
+    LoadElimination load_elimination(data->graph(), temp_zone);
+    load_elimination.Run();
+  }
+};
+
 struct MemoryOptimizationPhase {
   static const char* phase_name() { return "memory optimization"; }
 
@@ -1062,15 +1078,18 @@ struct LateOptimizationPhase {
 
   void Run(PipelineData* data, Zone* temp_zone) {
     JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
+    BranchElimination branch_condition_elimination(&graph_reducer,
+                                                   data->jsgraph(), temp_zone);
     DeadCodeElimination dead_code_elimination(&graph_reducer, data->graph(),
                                               data->common());
-    ValueNumberingReducer value_numbering(temp_zone);
+    ValueNumberingReducer value_numbering(temp_zone, data->graph()->zone());
     MachineOperatorReducer machine_reducer(data->jsgraph());
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
     SelectLowering select_lowering(data->jsgraph()->graph(),
                                    data->jsgraph()->common());
     TailCallOptimization tco(data->common(), data->graph());
+    AddReducer(data, &graph_reducer, &branch_condition_elimination);
     AddReducer(data, &graph_reducer, &dead_code_elimination);
     AddReducer(data, &graph_reducer, &value_numbering);
     AddReducer(data, &graph_reducer, &machine_reducer);
@@ -1435,6 +1454,14 @@ bool PipelineImpl::CreateGraph() {
     Run<TypedLoweringPhase>();
     RunPrintAndVerify("Lowered typed");
 
+    if (FLAG_turbo_loop_peeling) {
+      Run<LoopPeelingPhase>();
+      RunPrintAndVerify("Loops peeled", true);
+    } else {
+      Run<LoopExitEliminationPhase>();
+      RunPrintAndVerify("Loop exits eliminated", true);
+    }
+
     if (FLAG_turbo_stress_loop_peeling) {
       Run<StressLoopPeelingPhase>();
       RunPrintAndVerify("Loop peeled");
@@ -1445,10 +1472,17 @@ bool PipelineImpl::CreateGraph() {
       RunPrintAndVerify("Escape Analysed");
     }
 
-    // Select representations.
-    Run<RepresentationSelectionPhase>();
-    RunPrintAndVerify("Representations selected", true);
+    if (FLAG_turbo_load_elimination) {
+      Run<LoadEliminationPhase>();
+      RunPrintAndVerify("Load eliminated");
+    }
   }
+
+  // Select representations. This has to run w/o the Typer decorator, because
+  // we cannot compute meaningful types anyways, and the computed types might
+  // even conflict with the representation/truncation logic.
+  Run<RepresentationSelectionPhase>();
+  RunPrintAndVerify("Representations selected", true);
 
 #ifdef DEBUG
   // From now on it is invalid to look at types on the nodes, because:
@@ -1488,9 +1522,6 @@ bool PipelineImpl::OptimizeGraph(Linkage* linkage) {
     Run<StoreStoreEliminationPhase>();
     RunPrintAndVerify("Store-store elimination", true);
   }
-
-  Run<BranchEliminationPhase>();
-  RunPrintAndVerify("Branch conditions eliminated", true);
 
   // Optimize control flow.
   if (FLAG_turbo_cf_optimization) {
@@ -1667,9 +1698,8 @@ bool PipelineImpl::ScheduleAndSelectInstructions(Linkage* linkage) {
   bool run_verifier = FLAG_turbo_verify_allocation;
 
   // Allocate registers.
-  AllocateRegisters(
-      RegisterConfiguration::ArchDefault(RegisterConfiguration::TURBOFAN),
-      call_descriptor, run_verifier);
+  AllocateRegisters(RegisterConfiguration::Turbofan(), call_descriptor,
+                    run_verifier);
   Run<FrameElisionPhase>();
   if (data->compilation_failed()) {
     info()->AbortOptimization(kNotEnoughVirtualRegistersRegalloc);

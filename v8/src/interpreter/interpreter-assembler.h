@@ -7,9 +7,10 @@
 
 #include "src/allocation.h"
 #include "src/base/smart-pointers.h"
-#include "src/builtins.h"
+#include "src/builtins/builtins.h"
 #include "src/code-stub-assembler.h"
 #include "src/frames.h"
+#include "src/interpreter/bytecode-register.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/runtime/runtime.h"
 
@@ -88,6 +89,18 @@ class InterpreterAssembler : public CodeStubAssembler {
 
   // Load the TypeFeedbackVector for the current function.
   compiler::Node* LoadTypeFeedbackVector();
+
+  // Call JSFunction or Callable |function| with |arg_count|
+  // arguments (not including receiver) and the first argument
+  // located at |first_arg|. Type feedback is collected in the
+  // slot at index |slot_id|.
+  compiler::Node* CallJSWithFeedback(compiler::Node* function,
+                                     compiler::Node* context,
+                                     compiler::Node* first_arg,
+                                     compiler::Node* arg_count,
+                                     compiler::Node* slot_id,
+                                     compiler::Node* type_feedback_vector,
+                                     TailCallMode tail_call_mode);
 
   // Call JSFunction or Callable |function| with |arg_count|
   // arguments (not including receiver) and the first argument

@@ -138,7 +138,14 @@ void VisitBinop(InstructionSelector* selector, Node* node,
     inputs[input_count++] = g.Label(cont->false_block());
   }
 
-  outputs[output_count++] = g.DefineAsRegister(node);
+  if (cont->IsDeoptimize()) {
+    // If we can deoptimize as a result of the binop, we need to make sure that
+    // the deopt inputs are not overwritten by the binop result. One way
+    // to achieve that is to declare the output register as same-as-first.
+    outputs[output_count++] = g.DefineSameAsFirst(node);
+  } else {
+    outputs[output_count++] = g.DefineAsRegister(node);
+  }
   if (cont->IsSet()) {
     outputs[output_count++] = g.DefineAsRegister(cont->result());
   }
@@ -1864,7 +1871,7 @@ void InstructionSelector::EmitPrepareArguments(
   // Prepare for C function call.
   if (descriptor->IsCFunctionCall()) {
     Emit(kArchPrepareCallCFunction |
-             MiscField::encode(static_cast<int>(descriptor->CParameterCount())),
+             MiscField::encode(static_cast<int>(descriptor->ParameterCount())),
          0, nullptr, 0, nullptr);
 
     // Poke any stack arguments.

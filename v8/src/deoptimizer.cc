@@ -159,20 +159,12 @@ DeoptimizedFrameInfo* Deoptimizer::DebuggerInspectableFrame(
   return info;
 }
 
-
-void Deoptimizer::DeleteDebuggerInspectableFrame(DeoptimizedFrameInfo* info,
-                                                 Isolate* isolate) {
-  delete info;
-}
-
-
 void Deoptimizer::GenerateDeoptimizationEntries(MacroAssembler* masm,
                                                 int count,
                                                 BailoutType type) {
   TableEntryGenerator generator(masm, type, count);
   generator.Generate();
 }
-
 
 void Deoptimizer::VisitAllOptimizedFunctionsForContext(
     Context* context, OptimizedFunctionVisitor* visitor) {
@@ -2760,13 +2752,13 @@ Deoptimizer::DeoptInfo Deoptimizer::GetDeoptInfo(Code* code, Address pc) {
   int last_deopt_id = Deoptimizer::DeoptInfo::kNoDeoptId;
   int mask = RelocInfo::ModeMask(RelocInfo::DEOPT_REASON) |
              RelocInfo::ModeMask(RelocInfo::DEOPT_ID) |
-             RelocInfo::ModeMask(RelocInfo::POSITION);
+             RelocInfo::ModeMask(RelocInfo::DEOPT_POSITION);
   for (RelocIterator it(code, mask); !it.done(); it.next()) {
     RelocInfo* info = it.rinfo();
     if (info->pc() >= pc) {
       return DeoptInfo(last_position, last_reason, last_deopt_id);
     }
-    if (info->rmode() == RelocInfo::POSITION) {
+    if (info->rmode() == RelocInfo::DEOPT_POSITION) {
       int raw_position = static_cast<int>(info->data());
       last_position = raw_position ? SourcePosition::FromRaw(raw_position)
                                    : SourcePosition::Unknown();
@@ -2783,19 +2775,20 @@ Deoptimizer::DeoptInfo Deoptimizer::GetDeoptInfo(Code* code, Address pc) {
 // static
 int Deoptimizer::ComputeSourcePosition(SharedFunctionInfo* shared,
                                        BailoutId node_id) {
-  if (shared->HasBytecodeArray()) {
-    BytecodeArray* bytecodes = shared->bytecode_array();
+  AbstractCode* abstract_code = shared->abstract_code();
+  int code_offset;
+  if (abstract_code->IsBytecodeArray()) {
     // BailoutId points to the next bytecode in the bytecode aray. Subtract
     // 1 to get the end of current bytecode.
-    return bytecodes->SourcePosition(node_id.ToInt() - 1);
+    code_offset = node_id.ToInt() - 1;
   } else {
-    Code* non_optimized_code = shared->code();
-    FixedArray* raw_data = non_optimized_code->deoptimization_data();
+    FixedArray* raw_data = abstract_code->GetCode()->deoptimization_data();
     DeoptimizationOutputData* data = DeoptimizationOutputData::cast(raw_data);
     unsigned pc_and_state = Deoptimizer::GetOutputInfo(data, node_id, shared);
-    unsigned pc_offset = FullCodeGenerator::PcField::decode(pc_and_state);
-    return non_optimized_code->SourcePosition(pc_offset);
+    code_offset =
+        static_cast<int>(FullCodeGenerator::PcField::decode(pc_and_state));
   }
+  return abstract_code->SourcePosition(code_offset);
 }
 
 // static
@@ -3449,7 +3442,8 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       float value = registers->GetFloatRegister(input_reg);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%e ; %s (float)", value,
-               FloatRegister::from_code(input_reg).ToString());
+               RegisterConfiguration::Crankshaft()->GetFloatRegisterName(
+                   input_reg));
       }
       return TranslatedValue::NewFloat(this, value);
     }
@@ -3460,7 +3454,8 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       double value = registers->GetDoubleRegister(input_reg);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%e ; %s (double)", value,
-               DoubleRegister::from_code(input_reg).ToString());
+               RegisterConfiguration::Crankshaft()->GetDoubleRegisterName(
+                   input_reg));
       }
       return TranslatedValue::NewDouble(this, value);
     }

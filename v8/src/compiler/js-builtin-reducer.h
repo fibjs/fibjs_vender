@@ -29,13 +29,21 @@ class JSBuiltinReducer final : public AdvancedReducer {
   Reduction Reduce(Node* node) final;
 
  private:
+  Reduction ReduceMathAbs(Node* node);
+  Reduction ReduceMathAcos(Node* node);
+  Reduction ReduceMathAcosh(Node* node);
+  Reduction ReduceMathAsin(Node* node);
+  Reduction ReduceMathAsinh(Node* node);
   Reduction ReduceMathAtan(Node* node);
-  Reduction ReduceMathAtan2(Node* node);
   Reduction ReduceMathAtanh(Node* node);
+  Reduction ReduceMathAtan2(Node* node);
+  Reduction ReduceMathCbrt(Node* node);
   Reduction ReduceMathCeil(Node* node);
   Reduction ReduceMathClz32(Node* node);
   Reduction ReduceMathCos(Node* node);
+  Reduction ReduceMathCosh(Node* node);
   Reduction ReduceMathExp(Node* node);
+  Reduction ReduceMathExpm1(Node* node);
   Reduction ReduceMathFloor(Node* node);
   Reduction ReduceMathFround(Node* node);
   Reduction ReduceMathImul(Node* node);
@@ -45,13 +53,16 @@ class JSBuiltinReducer final : public AdvancedReducer {
   Reduction ReduceMathLog2(Node* node);
   Reduction ReduceMathMax(Node* node);
   Reduction ReduceMathMin(Node* node);
-  Reduction ReduceMathCbrt(Node* node);
-  Reduction ReduceMathExpm1(Node* node);
+  Reduction ReduceMathPow(Node* node);
   Reduction ReduceMathRound(Node* node);
+  Reduction ReduceMathSign(Node* node);
   Reduction ReduceMathSin(Node* node);
+  Reduction ReduceMathSinh(Node* node);
   Reduction ReduceMathSqrt(Node* node);
   Reduction ReduceMathTan(Node* node);
+  Reduction ReduceMathTanh(Node* node);
   Reduction ReduceMathTrunc(Node* node);
+  Reduction ReduceNumberParseInt(Node* node);
   Reduction ReduceStringFromCharCode(Node* node);
 
   Node* ToNumber(Node* value);

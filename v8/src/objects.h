@@ -12,15 +12,15 @@
 #include "src/base/bits.h"
 #include "src/base/flags.h"
 #include "src/base/smart-pointers.h"
-#include "src/builtins.h"
+#include "src/builtins/builtins.h"
 #include "src/checks.h"
 #include "src/elements-kind.h"
 #include "src/field-index.h"
 #include "src/flags.h"
 #include "src/list.h"
 #include "src/property-details.h"
-#include "src/unicode.h"
 #include "src/unicode-decoder.h"
+#include "src/unicode.h"
 #include "src/zone.h"
 
 #if V8_TARGET_ARCH_ARM
@@ -64,7 +64,6 @@
 //         - JSRegExp
 //         - JSFunction
 //         - JSGeneratorObject
-//         - JSModule
 //         - JSGlobalObject
 //         - JSGlobalProxy
 //         - JSValue
@@ -168,16 +167,6 @@ enum KeyedAccessStoreMode {
   STORE_NO_TRANSITION_IGNORE_OUT_OF_BOUNDS,
   STORE_NO_TRANSITION_HANDLE_COW
 };
-
-
-// Valid hints for the abstract operation ToPrimitive,
-// implemented according to ES6, section 7.1.1.
-enum class ToPrimitiveHint { kDefault, kNumber, kString };
-
-
-// Valid hints for the abstract operation OrdinaryToPrimitive,
-// implemented according to ES6, section 7.1.1.
-enum class OrdinaryToPrimitiveHint { kNumber, kString };
 
 
 enum TypeofMode : int { INSIDE_TYPEOF, NOT_INSIDE_TYPEOF };
@@ -778,22 +767,42 @@ STATIC_ASSERT(FOREIGN_TYPE == Internals::kForeignType);
 
 std::ostream& operator<<(std::ostream& os, InstanceType instance_type);
 
-
 #define FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(V) \
-  V(FAST_ELEMENTS_SUB_TYPE)                   \
+  V(CODE_STUBS_TABLE_SUB_TYPE)                \
+  V(CONTEXT_SUB_TYPE)                         \
+  V(COPY_ON_WRITE_SUB_TYPE)                   \
+  V(DEOPTIMIZATION_DATA_SUB_TYPE)             \
+  V(DESCRIPTOR_ARRAY_SUB_TYPE)                \
+  V(EMBEDDED_OBJECT_SUB_TYPE)                 \
+  V(ENUM_CACHE_SUB_TYPE)                      \
+  V(ENUM_INDICES_CACHE_SUB_TYPE)              \
   V(DICTIONARY_ELEMENTS_SUB_TYPE)             \
-  V(FAST_PROPERTIES_SUB_TYPE)                 \
   V(DICTIONARY_PROPERTIES_SUB_TYPE)           \
+  V(FAST_ELEMENTS_SUB_TYPE)                   \
+  V(FAST_PROPERTIES_SUB_TYPE)                 \
+  V(INTRINSIC_FUNCTION_NAMES_SUB_TYPE)        \
+  V(LITERALS_ARRAY_SUB_TYPE)                  \
   V(MAP_CODE_CACHE_SUB_TYPE)                  \
+  V(NUMBER_STRING_CACHE_SUB_TYPE)             \
+  V(OBJECT_TO_CODE_SUB_TYPE)                  \
+  V(REGEXP_MULTIPLE_CACHE_SUB_TYPE)           \
   V(SCOPE_INFO_SUB_TYPE)                      \
+  V(SERIALIZED_TEMPLATES_SUB_TYPE)            \
+  V(SHARED_FUNCTION_INFOS_SUB_TYPE)           \
+  V(SINGLE_CHARACTER_STRING_CACHE_SUB_TYPE)   \
+  V(STRING_SPLIT_CACHE_SUB_TYPE)              \
   V(STRING_TABLE_SUB_TYPE)                    \
-  V(DESCRIPTOR_ARRAY_SUB_TYPE)
+  V(TEMPLATE_INSTANTIATIONS_CACHE_SUB_TYPE)   \
+  V(TYPE_FEEDBACK_VECTOR_SUB_TYPE)            \
+  V(TYPE_FEEDBACK_METADATA_SUB_TYPE)          \
+  V(WEAK_COLLECTION_SUB_TYPE)                 \
+  V(WEAK_NEW_SPACE_OBJECT_TO_CODE_SUB_TYPE)
 
 enum FixedArraySubInstanceType {
 #define DEFINE_FIXED_ARRAY_SUB_INSTANCE_TYPE(name) name,
   FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(DEFINE_FIXED_ARRAY_SUB_INSTANCE_TYPE)
 #undef DEFINE_FIXED_ARRAY_SUB_INSTANCE_TYPE
-      LAST_FIXED_ARRAY_SUB_TYPE = DESCRIPTOR_ARRAY_SUB_TYPE
+      LAST_FIXED_ARRAY_SUB_TYPE = WEAK_NEW_SPACE_OBJECT_TO_CODE_SUB_TYPE
 };
 
 
@@ -888,121 +897,124 @@ template <class C> inline bool Is(Object* obj);
   V(Primitive)              \
   V(Number)
 
-#define HEAP_OBJECT_TYPE_LIST(V)   \
-  V(HeapNumber)                    \
-  V(MutableHeapNumber)             \
-  V(Simd128Value)                  \
-  V(Float32x4)                     \
-  V(Int32x4)                       \
-  V(Uint32x4)                      \
-  V(Bool32x4)                      \
-  V(Int16x8)                       \
-  V(Uint16x8)                      \
-  V(Bool16x8)                      \
-  V(Int8x16)                       \
-  V(Uint8x16)                      \
-  V(Bool8x16)                      \
-  V(Name)                          \
-  V(UniqueName)                    \
-  V(String)                        \
-  V(SeqString)                     \
-  V(ExternalString)                \
-  V(ConsString)                    \
-  V(SlicedString)                  \
-  V(ExternalTwoByteString)         \
-  V(ExternalOneByteString)         \
-  V(SeqTwoByteString)              \
-  V(SeqOneByteString)              \
-  V(InternalizedString)            \
-  V(Symbol)                        \
-                                   \
-  V(FixedTypedArrayBase)           \
-  V(FixedUint8Array)               \
-  V(FixedInt8Array)                \
-  V(FixedUint16Array)              \
-  V(FixedInt16Array)               \
-  V(FixedUint32Array)              \
-  V(FixedInt32Array)               \
-  V(FixedFloat32Array)             \
-  V(FixedFloat64Array)             \
-  V(FixedUint8ClampedArray)        \
-  V(ByteArray)                     \
-  V(BytecodeArray)                 \
-  V(FreeSpace)                     \
-  V(JSReceiver)                    \
-  V(JSObject)                      \
-  V(JSContextExtensionObject)      \
-  V(JSGeneratorObject)             \
-  V(JSModule)                      \
-  V(Map)                           \
-  V(DescriptorArray)               \
-  V(TransitionArray)               \
-  V(LiteralsArray)                 \
-  V(TypeFeedbackMetadata)          \
-  V(TypeFeedbackVector)            \
-  V(DeoptimizationInputData)       \
-  V(DeoptimizationOutputData)      \
-  V(DependentCode)                 \
-  V(HandlerTable)                  \
-  V(FixedArray)                    \
-  V(FixedDoubleArray)              \
-  V(WeakFixedArray)                \
-  V(ArrayList)                     \
-  V(Context)                       \
-  V(ScriptContextTable)            \
-  V(NativeContext)                 \
-  V(ScopeInfo)                     \
-  V(JSBoundFunction)               \
-  V(JSFunction)                    \
-  V(Code)                          \
-  V(AbstractCode)                  \
-  V(Oddball)                       \
-  V(SharedFunctionInfo)            \
-  V(JSValue)                       \
-  V(JSDate)                        \
-  V(JSMessageObject)               \
-  V(StringWrapper)                 \
-  V(Foreign)                       \
-  V(Boolean)                       \
-  V(JSArray)                       \
-  V(JSArrayBuffer)                 \
-  V(JSArrayBufferView)             \
-  V(JSTypedArray)                  \
-  V(JSDataView)                    \
-  V(JSProxy)                       \
-  V(JSSet)                         \
-  V(JSMap)                         \
-  V(JSSetIterator)                 \
-  V(JSMapIterator)                 \
-  V(JSWeakCollection)              \
-  V(JSWeakMap)                     \
-  V(JSWeakSet)                     \
-  V(JSRegExp)                      \
-  V(HashTable)                     \
-  V(Dictionary)                    \
-  V(StringTable)                   \
-  V(StringSet)                     \
-  V(NormalizedMapCache)            \
-  V(CompilationCacheTable)         \
-  V(CodeCacheHashTable)            \
-  V(MapCache)                      \
-  V(JSGlobalObject)                \
-  V(JSGlobalProxy)                 \
-  V(Undetectable)                  \
-  V(AccessCheckNeeded)             \
-  V(Callable)                      \
-  V(Function)                      \
-  V(Constructor)                   \
-  V(TemplateInfo)                  \
-  V(Filler)                        \
-  V(FixedArrayBase)                \
-  V(External)                      \
-  V(Struct)                        \
-  V(Cell)                          \
-  V(PropertyCell)                  \
-  V(WeakCell)                      \
-  V(ObjectHashTable)               \
-  V(WeakHashTable)                 \
+#define HEAP_OBJECT_TYPE_LIST(V) \
+  V(HeapNumber)                  \
+  V(MutableHeapNumber)           \
+  V(Simd128Value)                \
+  V(Float32x4)                   \
+  V(Int32x4)                     \
+  V(Uint32x4)                    \
+  V(Bool32x4)                    \
+  V(Int16x8)                     \
+  V(Uint16x8)                    \
+  V(Bool16x8)                    \
+  V(Int8x16)                     \
+  V(Uint8x16)                    \
+  V(Bool8x16)                    \
+  V(Name)                        \
+  V(UniqueName)                  \
+  V(String)                      \
+  V(SeqString)                   \
+  V(ExternalString)              \
+  V(ConsString)                  \
+  V(SlicedString)                \
+  V(ExternalTwoByteString)       \
+  V(ExternalOneByteString)       \
+  V(SeqTwoByteString)            \
+  V(SeqOneByteString)            \
+  V(InternalizedString)          \
+  V(Symbol)                      \
+                                 \
+  V(FixedTypedArrayBase)         \
+  V(FixedUint8Array)             \
+  V(FixedInt8Array)              \
+  V(FixedUint16Array)            \
+  V(FixedInt16Array)             \
+  V(FixedUint32Array)            \
+  V(FixedInt32Array)             \
+  V(FixedFloat32Array)           \
+  V(FixedFloat64Array)           \
+  V(FixedUint8ClampedArray)      \
+  V(ByteArray)                   \
+  V(BytecodeArray)               \
+  V(FreeSpace)                   \
+  V(JSReceiver)                  \
+  V(JSObject)                    \
+  V(JSContextExtensionObject)    \
+  V(JSGeneratorObject)           \
+  V(Map)                         \
+  V(DescriptorArray)             \
+  V(TransitionArray)             \
+  V(LiteralsArray)               \
+  V(TypeFeedbackMetadata)        \
+  V(TypeFeedbackVector)          \
+  V(DeoptimizationInputData)     \
+  V(DeoptimizationOutputData)    \
+  V(DependentCode)               \
+  V(HandlerTable)                \
+  V(FixedArray)                  \
+  V(FixedDoubleArray)            \
+  V(WeakFixedArray)              \
+  V(ArrayList)                   \
+  V(Context)                     \
+  V(ScriptContextTable)          \
+  V(NativeContext)               \
+  V(ScopeInfo)                   \
+  V(JSBoundFunction)             \
+  V(JSFunction)                  \
+  V(Code)                        \
+  V(AbstractCode)                \
+  V(Oddball)                     \
+  V(SharedFunctionInfo)          \
+  V(JSValue)                     \
+  V(JSDate)                      \
+  V(JSMessageObject)             \
+  V(StringWrapper)               \
+  V(Foreign)                     \
+  V(Boolean)                     \
+  V(JSArray)                     \
+  V(JSArrayBuffer)               \
+  V(JSArrayBufferView)           \
+  V(JSTypedArray)                \
+  V(JSDataView)                  \
+  V(JSProxy)                     \
+  V(JSError)                     \
+  V(JSPromise)                   \
+  V(JSSet)                       \
+  V(JSMap)                       \
+  V(JSSetIterator)               \
+  V(JSMapIterator)               \
+  V(JSWeakCollection)            \
+  V(JSWeakMap)                   \
+  V(JSWeakSet)                   \
+  V(JSRegExp)                    \
+  V(HashTable)                   \
+  V(Dictionary)                  \
+  V(UnseededNumberDictionary)    \
+  V(StringTable)                 \
+  V(StringSet)                   \
+  V(NormalizedMapCache)          \
+  V(CompilationCacheTable)       \
+  V(CodeCacheHashTable)          \
+  V(MapCache)                    \
+  V(JSGlobalObject)              \
+  V(JSGlobalProxy)               \
+  V(Undetectable)                \
+  V(AccessCheckNeeded)           \
+  V(Callable)                    \
+  V(Function)                    \
+  V(Constructor)                 \
+  V(TemplateInfo)                \
+  V(Filler)                      \
+  V(FixedArrayBase)              \
+  V(External)                    \
+  V(Struct)                      \
+  V(Cell)                        \
+  V(PropertyCell)                \
+  V(WeakCell)                    \
+  V(ObjectHashTable)             \
+  V(ObjectHashSet)               \
+  V(WeakHashTable)               \
   V(OrderedHashTable)
 
 #define ODDBALL_LIST(V)                 \
@@ -1077,10 +1089,8 @@ class Object {
   INLINE(bool IsNameDictionary() const);
   INLINE(bool IsGlobalDictionary() const);
   INLINE(bool IsSeededNumberDictionary() const);
-  INLINE(bool IsUnseededNumberDictionary() const);
   INLINE(bool IsOrderedHashSet() const);
   INLINE(bool IsOrderedHashMap() const);
-  static bool IsPromise(Handle<Object> object);
 
   // Extract the number.
   inline double Number() const;
@@ -1188,9 +1198,6 @@ class Object {
   // Get length property and apply ToLength.
   MUST_USE_RESULT static MaybeHandle<Object> GetLengthFromArrayLike(
       Isolate* isolate, Handle<Object> object);
-
-  // Check whether |object| is an instance of Error or NativeError.
-  static bool IsErrorObject(Isolate* isolate, Handle<Object> object);
 
   // ES6 section 12.5.6 The typeof Operator
   static Handle<String> TypeOf(Isolate* isolate, Handle<Object> object);
@@ -1837,6 +1844,8 @@ class JSReceiver: public HeapObject {
   MUST_USE_RESULT static MaybeHandle<Object> ToPrimitive(
       Handle<JSReceiver> receiver,
       ToPrimitiveHint hint = ToPrimitiveHint::kDefault);
+
+  // ES6 section 7.1.1.1 OrdinaryToPrimitive
   MUST_USE_RESULT static MaybeHandle<Object> OrdinaryToPrimitive(
       Handle<JSReceiver> receiver, OrdinaryToPrimitiveHint hint);
 
@@ -2349,6 +2358,10 @@ class JSObject: public JSReceiver {
                                                   bool from_javascript,
                                                   ShouldThrow should_throw);
 
+  // Makes the object prototype immutable
+  // Never called from JavaScript
+  static void SetImmutableProto(Handle<JSObject> object);
+
   // Initializes the body starting at |start_offset|. It is responsibility of
   // the caller to initialize object header. Fill the pre-allocated fields with
   // pre_allocated_value and the rest with filler_value.
@@ -2481,12 +2494,6 @@ class JSObject: public JSReceiver {
 
   MUST_USE_RESULT static Maybe<bool> SetPropertyWithFailedAccessCheck(
       LookupIterator* it, Handle<Object> value, ShouldThrow should_throw);
-
-  // Add a property to a slow-case object.
-  static void AddSlowProperty(Handle<JSObject> object,
-                              Handle<Name> name,
-                              Handle<Object> value,
-                              PropertyAttributes attributes);
 
   MUST_USE_RESULT static Maybe<bool> DeletePropertyWithInterceptor(
       LookupIterator* it, ShouldThrow should_throw);
@@ -2647,6 +2654,12 @@ class FixedArray: public FixedArrayBase {
   inline Object* get(int index) const;
   static inline Handle<Object> get(FixedArray* array, int index,
                                    Isolate* isolate);
+  template <class T>
+  MaybeHandle<T> GetValue(int index) const;
+
+  template <class T>
+  Handle<T> GetValueChecked(int index) const;
+
   // Setter that uses write barrier.
   inline void set(int index, Object* value);
   inline bool is_the_hole(int index);
@@ -2857,7 +2870,8 @@ class ArrayList : public FixedArray {
   inline void SetLength(int length);
   inline Object* Get(int index);
   inline Object** Slot(int index);
-  inline void Set(int index, Object* obj);
+  inline void Set(int index, Object* obj,
+                  WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
   inline void Clear(int index, Object* undefined);
   bool IsFull();
   DECLARE_CAST(ArrayList)
@@ -3126,6 +3140,7 @@ class BaseShape {
     DCHECK(UsesSeed);
     return HashForObject(key, object);
   }
+  static inline Map* GetMap(Isolate* isolate);
 };
 
 
@@ -3233,15 +3248,19 @@ class HashTable : public HashTableBase {
   inline int FindEntry(Key key);
   inline int FindEntry(Isolate* isolate, Key key, int32_t hash);
   int FindEntry(Isolate* isolate, Key key);
+  inline bool Has(Isolate* isolate, Key key);
+  inline bool Has(Key key);
 
   // Rehashes the table in-place.
   void Rehash(Key key);
 
   // Returns the key at entry.
-  Object* KeyAt(int entry) { return get(EntryToIndex(entry)); }
+  Object* KeyAt(int entry) { return get(EntryToIndex(entry) + kEntryKeyIndex); }
 
   static const int kElementsStartIndex = kPrefixStartIndex + Shape::kPrefixSize;
   static const int kEntrySize = Shape::kEntrySize;
+  STATIC_ASSERT(kEntrySize > 0);
+  static const int kEntryKeyIndex = 0;
   static const int kElementsStartOffset =
       kHeaderSize + kElementsStartIndex * kPointerSize;
   static const int kCapacityOffset =
@@ -3457,11 +3476,13 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
 
   // Collect the keys into the given KeyAccumulator, in ascending chronological
   // order of property creation.
-  static void CollectKeysTo(Handle<Dictionary<Derived, Shape, Key> > dictionary,
-                            KeyAccumulator* keys, PropertyFilter filter);
+  static void CollectKeysTo(Handle<Dictionary<Derived, Shape, Key>> dictionary,
+                            KeyAccumulator* keys);
 
   // Copies enumerable keys to preallocated fixed array.
-  void CopyEnumKeysTo(FixedArray* storage);
+  static void CopyEnumKeysTo(Handle<Dictionary<Derived, Shape, Key>> dictionary,
+                             Handle<FixedArray> storage, KeyCollectionMode mode,
+                             KeyAccumulator* accumulator);
 
   // Accessors for next enumeration index.
   void SetNextEnumerationIndex(int index) {
@@ -3503,11 +3524,10 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
                        Handle<Object> value,
                        PropertyDetails details);
 
-  MUST_USE_RESULT static Handle<Derived> Add(
-      Handle<Derived> dictionary,
-      Key key,
-      Handle<Object> value,
-      PropertyDetails details);
+  MUST_USE_RESULT static Handle<Derived> Add(Handle<Derived> dictionary,
+                                             Key key, Handle<Object> value,
+                                             PropertyDetails details,
+                                             int* entry_out = nullptr);
 
   // Returns iteration indices array for the |dictionary|.
   // Values are direct indices in the |HashTable| array.
@@ -3521,13 +3541,9 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
       Key key,
       Handle<Object> value);
 
-  // Add entry to dictionary.
-  static void AddEntry(
-      Handle<Derived> dictionary,
-      Key key,
-      Handle<Object> value,
-      PropertyDetails details,
-      uint32_t hash);
+  // Add entry to dictionary. Returns entry value.
+  static int AddEntry(Handle<Derived> dictionary, Key key, Handle<Object> value,
+                      PropertyDetails details, uint32_t hash);
 
   // Generate new enumeration indices to avoid enumeration index overflow.
   // Returns iteration indices array for the |dictionary|.
@@ -3556,15 +3572,16 @@ class BaseDictionaryShape : public BaseShape<Key> {
   static inline PropertyDetails DetailsAt(Dictionary* dict, int entry) {
     STATIC_ASSERT(Dictionary::kEntrySize == 3);
     DCHECK(entry >= 0);  // Not found is -1, which is not caught by get().
-    return PropertyDetails(
-        Smi::cast(dict->get(Dictionary::EntryToIndex(entry) + 2)));
+    return PropertyDetails(Smi::cast(dict->get(
+        Dictionary::EntryToIndex(entry) + Dictionary::kEntryDetailsIndex)));
   }
 
   template <typename Dictionary>
   static inline void DetailsAtPut(Dictionary* dict, int entry,
                                   PropertyDetails value) {
     STATIC_ASSERT(Dictionary::kEntrySize == 3);
-    dict->set(Dictionary::EntryToIndex(entry) + 2, value.AsSmi());
+    dict->set(Dictionary::EntryToIndex(entry) + Dictionary::kEntryDetailsIndex,
+              value.AsSmi());
   }
 
   template <typename Dictionary>
@@ -3586,6 +3603,8 @@ class NameDictionaryShape : public BaseDictionaryShape<Handle<Name> > {
   static inline Handle<Object> AsHandle(Isolate* isolate, Handle<Name> key);
   static const int kPrefixSize = 2;
   static const int kEntrySize = 3;
+  static const int kEntryValueIndex = 1;
+  static const int kEntryDetailsIndex = 2;
   static const bool kIsEnumerable = true;
 };
 
@@ -3600,6 +3619,9 @@ class NameDictionary
 
   inline static Handle<FixedArray> DoGenerateNewEnumerationIndices(
       Handle<NameDictionary> dictionary);
+
+  static const int kEntryValueIndex = 1;
+  static const int kEntryDetailsIndex = 2;
 };
 
 
@@ -3627,6 +3649,8 @@ class GlobalDictionary
     : public NameDictionaryBase<GlobalDictionary, GlobalDictionaryShape> {
  public:
   DECLARE_CAST(GlobalDictionary)
+
+  static const int kEntryValueIndex = 1;
 };
 
 
@@ -3634,7 +3658,6 @@ class NumberDictionaryShape : public BaseDictionaryShape<uint32_t> {
  public:
   static inline bool IsMatch(uint32_t key, Object* other);
   static inline Handle<Object> AsHandle(Isolate* isolate, uint32_t key);
-  static const int kEntrySize = 3;
   static const bool kIsEnumerable = false;
 };
 
@@ -3643,6 +3666,7 @@ class SeededNumberDictionaryShape : public NumberDictionaryShape {
  public:
   static const bool UsesSeed = true;
   static const int kPrefixSize = 2;
+  static const int kEntrySize = 3;
 
   static inline uint32_t SeededHash(uint32_t key, uint32_t seed);
   static inline uint32_t SeededHashForObject(uint32_t key,
@@ -3654,9 +3678,24 @@ class SeededNumberDictionaryShape : public NumberDictionaryShape {
 class UnseededNumberDictionaryShape : public NumberDictionaryShape {
  public:
   static const int kPrefixSize = 0;
+  static const int kEntrySize = 2;
 
   static inline uint32_t Hash(uint32_t key);
   static inline uint32_t HashForObject(uint32_t key, Object* object);
+
+  template <typename Dictionary>
+  static inline PropertyDetails DetailsAt(Dictionary* dict, int entry) {
+    UNREACHABLE();
+    return PropertyDetails::Empty();
+  }
+
+  template <typename Dictionary>
+  static inline void DetailsAtPut(Dictionary* dict, int entry,
+                                  PropertyDetails value) {
+    UNREACHABLE();
+  }
+
+  static inline Map* GetMap(Isolate* isolate);
 };
 
 
@@ -3700,6 +3739,9 @@ class SeededNumberDictionary
   // requires_slow_elements returns false.
   inline uint32_t max_number_key();
 
+  static const int kEntryValueIndex = 1;
+  static const int kEntryDetailsIndex = 2;
+
   // Bit masks.
   static const int kRequiresSlowElementsMask = 1;
   static const int kRequiresSlowElementsTagSize = 1;
@@ -3730,6 +3772,9 @@ class UnseededNumberDictionary
       Handle<UnseededNumberDictionary> dictionary,
       uint32_t key,
       Handle<Object> value);
+
+  static const int kEntryValueIndex = 1;
+  static const int kEntryDetailsIndex = 2;
 };
 
 
@@ -3793,6 +3838,23 @@ class ObjectHashTable: public HashTable<ObjectHashTable,
   }
 };
 
+class ObjectHashSetShape : public ObjectHashTableShape {
+ public:
+  static const int kPrefixSize = 0;
+  static const int kEntrySize = 1;
+};
+
+class ObjectHashSet
+    : public HashTable<ObjectHashSet, ObjectHashSetShape, Handle<Object>> {
+ public:
+  static Handle<ObjectHashSet> Add(Handle<ObjectHashSet> set,
+                                   Handle<Object> key);
+
+  inline bool Has(Isolate* isolate, Handle<Object> key, int32_t hash);
+  inline bool Has(Isolate* isolate, Handle<Object> key);
+
+  DECLARE_CAST(ObjectHashSet)
+};
 
 // OrderedHashTable is a HashTable with Object keys that preserves
 // insertion order. There are Map and Set interfaces (OrderedHashMap
@@ -4369,6 +4431,7 @@ class ByteArray: public FixedArrayBase {
   // Setter and getter.
   inline byte get(int index);
   inline void set(int index, byte value);
+  inline const byte* data() const;
 
   // Copy in / copy out whole byte slices.
   inline void copy_out(int index, byte* buffer, int length);
@@ -4925,6 +4988,9 @@ class Code: public HeapObject {
   // [deoptimization_data]: Array containing data for deopt.
   DECL_ACCESSORS(deoptimization_data, FixedArray)
 
+  // [source_position_table]: ByteArray for the source positions table.
+  DECL_ACCESSORS(source_position_table, ByteArray)
+
   // [raw_type_feedback_info]: This field stores various things, depending on
   // the kind of the code object.
   //   FUNCTION           => type feedback information.
@@ -5008,6 +5074,12 @@ class Code: public HeapObject {
   // embedded objects in code should be treated weakly.
   inline bool can_have_weak_objects();
   inline void set_can_have_weak_objects(bool value);
+
+  // [is_construct_stub]: For kind BUILTIN, tells whether the code object
+  // represents a hand-written construct stub
+  // (e.g., NumberConstructor_ConstructStub).
+  inline bool is_construct_stub();
+  inline void set_is_construct_stub(bool value);
 
   // [has_deoptimization_support]: For FUNCTION kind, tells if it has
   // deoptimization support.
@@ -5129,7 +5201,8 @@ class Code: public HeapObject {
   // Returns the address right after the last instruction.
   inline byte* instruction_end();
 
-  // Returns the size of the instructions, padding, and relocation information.
+  // Returns the size of the instructions, padding, relocation and unwinding
+  // information.
   inline int body_size();
 
   // Returns the size of code and its metadata. This includes the size of code
@@ -5138,6 +5211,49 @@ class Code: public HeapObject {
 
   // Returns the address of the first relocation info (read backwards!).
   inline byte* relocation_start();
+
+  // [has_unwinding_info]: Whether this code object has unwinding information.
+  // If it doesn't, unwinding_information_start() will point to invalid data.
+  //
+  // The body of all code objects has the following layout.
+  //
+  //  +--------------------------+  <-- instruction_start()
+  //  |       instructions       |
+  //  |           ...            |
+  //  +--------------------------+
+  //  |      relocation info     |
+  //  |           ...            |
+  //  +--------------------------+  <-- instruction_end()
+  //
+  // If has_unwinding_info() is false, instruction_end() points to the first
+  // memory location after the end of the code object. Otherwise, the body
+  // continues as follows:
+  //
+  //  +--------------------------+
+  //  |    padding to the next   |
+  //  |  8-byte aligned address  |
+  //  +--------------------------+  <-- instruction_end()
+  //  |   [unwinding_info_size]  |
+  //  |        as uint64_t       |
+  //  +--------------------------+  <-- unwinding_info_start()
+  //  |       unwinding info     |
+  //  |            ...           |
+  //  +--------------------------+  <-- unwinding_info_end()
+  //
+  // and unwinding_info_end() points to the first memory location after the end
+  // of the code object.
+  //
+  DECL_BOOLEAN_ACCESSORS(has_unwinding_info)
+
+  // [unwinding_info_size]: Size of the unwinding information.
+  inline int unwinding_info_size() const;
+  inline void set_unwinding_info_size(int value);
+
+  // Returns the address of the unwinding information, if any.
+  inline byte* unwinding_info_start();
+
+  // Returns the address right after the end of the unwinding information.
+  inline byte* unwinding_info_end();
 
   // Code entry point.
   inline byte* entry();
@@ -5161,10 +5277,6 @@ class Code: public HeapObject {
   // Calculate the size of the code object to report for log events. This takes
   // the layout of the code object into account.
   inline int ExecutableSize();
-
-  // Locating source position.
-  int SourcePosition(int code_offset);
-  int SourceStatementPosition(int code_offset);
 
   DECLARE_CAST(Code)
 
@@ -5246,9 +5358,11 @@ class Code: public HeapObject {
   static const int kHandlerTableOffset = kRelocationInfoOffset + kPointerSize;
   static const int kDeoptimizationDataOffset =
       kHandlerTableOffset + kPointerSize;
+  static const int kSourcePositionTableOffset =
+      kDeoptimizationDataOffset + kPointerSize;
   // For FUNCTION kind, we store the type feedback info here.
   static const int kTypeFeedbackInfoOffset =
-      kDeoptimizationDataOffset + kPointerSize;
+      kSourcePositionTableOffset + kPointerSize;
   static const int kNextCodeLinkOffset = kTypeFeedbackInfoOffset + kPointerSize;
   static const int kGCMetadataOffset = kNextCodeLinkOffset + kPointerSize;
   static const int kInstructionSizeOffset = kGCMetadataOffset + kPointerSize;
@@ -5269,6 +5383,8 @@ class Code: public HeapObject {
   static const int kHeaderSize =
       (kHeaderPaddingStart + kCodeAlignmentMask) & ~kCodeAlignmentMask;
 
+  inline int GetUnwindingInfoSizeOffset() const;
+
   class BodyDescriptor;
 
   // Byte offsets within kKindSpecificFlags1Offset.
@@ -5282,9 +5398,11 @@ class Code: public HeapObject {
   class ProfilerTicksField : public BitField<int, 4, 28> {};
 
   // Flags layout.  BitField<type, shift, size>.
-  class ICStateField : public BitField<InlineCacheState, 0, 3> {};
+  class ICStateField : public BitField<InlineCacheState, 0, 2> {};
+  class HasUnwindingInfoField : public BitField<bool, ICStateField::kNext, 1> {
+  };
   class CacheHolderField
-      : public BitField<CacheHolderFlag, ICStateField::kNext, 2> {};
+      : public BitField<CacheHolderFlag, HasUnwindingInfoField::kNext, 2> {};
   class KindField : public BitField<Kind, CacheHolderField::kNext, 5> {};
   STATIC_ASSERT(NUMBER_OF_KINDS <= KindField::kMax);
   class ExtraICStateField : public BitField<ExtraICState, KindField::kNext,
@@ -5298,9 +5416,11 @@ class Code: public HeapObject {
       kStackSlotsFirstBit + kStackSlotsBitCount;
   static const int kIsTurbofannedBit = kMarkedForDeoptimizationBit + 1;
   static const int kCanHaveWeakObjects = kIsTurbofannedBit + 1;
+  // Could be moved to overlap previous bits when we need more space.
+  static const int kIsConstructStub = kCanHaveWeakObjects + 1;
 
   STATIC_ASSERT(kStackSlotsFirstBit + kStackSlotsBitCount <= 32);
-  STATIC_ASSERT(kCanHaveWeakObjects + 1 <= 32);
+  STATIC_ASSERT(kIsConstructStub + 1 <= 32);
 
   class StackSlotsField: public BitField<int,
       kStackSlotsFirstBit, kStackSlotsBitCount> {};  // NOLINT
@@ -5310,6 +5430,8 @@ class Code: public HeapObject {
   };  // NOLINT
   class CanHaveWeakObjectsField
       : public BitField<bool, kCanHaveWeakObjects, 1> {};  // NOLINT
+  class IsConstructStubField : public BitField<bool, kIsConstructStub, 1> {
+  };  // NOLINT
 
   // KindSpecificFlags2 layout (ALL)
   static const int kIsCrankshaftedBit = 0;
@@ -5385,6 +5507,9 @@ class AbstractCode : public HeapObject {
 
   // Returns the size of the code instructions.
   inline int instruction_size();
+
+  // Return the source position table.
+  inline ByteArray* source_position_table();
 
   // Returns the size of instructions and the metadata.
   inline int SizeIncludingMetadata();
@@ -5592,7 +5717,7 @@ class Map: public HeapObject {
   class Deprecated : public BitField<bool, 23, 1> {};
   class IsUnstable : public BitField<bool, 24, 1> {};
   class IsMigrationTarget : public BitField<bool, 25, 1> {};
-  // Bit 26 is free.
+  class ImmutablePrototype : public BitField<bool, 26, 1> {};
   class NewTargetIsBase : public BitField<bool, 27, 1> {};
   // Bit 28 is free.
 
@@ -5880,6 +6005,8 @@ class Map: public HeapObject {
   inline bool is_stable();
   inline void set_migration_target(bool value);
   inline bool is_migration_target();
+  inline void set_immutable_proto(bool value);
+  inline bool is_immutable_proto();
   inline void set_construction_counter(int value);
   inline int construction_counter();
   inline void deprecate();
@@ -6051,6 +6178,8 @@ class Map: public HeapObject {
   static Handle<Map> TransitionToPrototype(Handle<Map> map,
                                            Handle<Object> prototype,
                                            PrototypeOptimizationMode mode);
+
+  static Handle<Map> TransitionToImmutableProto(Handle<Map> map);
 
   static const int kMaxPreAllocatedPropertyFields = 255;
 
@@ -6384,7 +6513,8 @@ class Script: public Struct {
   enum Type {
     TYPE_NATIVE = 0,
     TYPE_EXTENSION = 1,
-    TYPE_NORMAL = 2
+    TYPE_NORMAL = 2,
+    TYPE_WASM = 3
   };
 
   // Script compilation types.
@@ -6446,8 +6576,16 @@ class Script: public Struct {
   // [source_url]: sourceURL from magic comment
   DECL_ACCESSORS(source_url, Object)
 
-  // [source_url]: sourceMappingURL magic comment
+  // [source_mapping_url]: sourceMappingURL magic comment
   DECL_ACCESSORS(source_mapping_url, Object)
+
+  // [wasm_object]: the wasm object this script belongs to.
+  // This must only be called if the type of this script is TYPE_WASM.
+  DECL_ACCESSORS(wasm_object, JSObject)
+
+  // [wasm_function_index]: the wasm function index this script belongs to.
+  // This must only be called if the type of this script is TYPE_WASM.
+  DECL_INT_ACCESSORS(wasm_function_index)
 
   // [compilation_type]: how the the script was compiled. Encoded in the
   // 'flags' field.
@@ -6613,17 +6751,24 @@ class Script: public Struct {
   V(Math, max, MathMax)                                     \
   V(Math, min, MathMin)                                     \
   V(Math, cos, MathCos)                                     \
+  V(Math, cosh, MathCosh)                                   \
+  V(Math, sign, MathSign)                                   \
   V(Math, sin, MathSin)                                     \
+  V(Math, sinh, MathSinh)                                   \
   V(Math, tan, MathTan)                                     \
+  V(Math, tanh, MathTanh)                                   \
   V(Math, acos, MathAcos)                                   \
+  V(Math, acosh, MathAcosh)                                 \
   V(Math, asin, MathAsin)                                   \
+  V(Math, asinh, MathAsinh)                                 \
   V(Math, atan, MathAtan)                                   \
   V(Math, atan2, MathAtan2)                                 \
   V(Math, atanh, MathAtanh)                                 \
   V(Math, imul, MathImul)                                   \
   V(Math, clz32, MathClz32)                                 \
   V(Math, fround, MathFround)                               \
-  V(Math, trunc, MathTrunc)
+  V(Math, trunc, MathTrunc)                                 \
+  V(Number, parseInt, NumberParseInt)
 
 #define ATOMIC_FUNCTIONS_WITH_ID_LIST(V) \
   V(Atomics, load, AtomicsLoad)          \
@@ -6640,12 +6785,14 @@ enum BuiltinFunctionId {
   // list of math functions.
   kMathPowHalf,
   // These are manually assigned to special getters during bootstrapping.
+  kArrayBufferByteLength,
   kDataViewBuffer,
   kDataViewByteLength,
   kDataViewByteOffset,
   kTypedArrayByteLength,
   kTypedArrayByteOffset,
   kTypedArrayLength,
+  kSharedArrayBufferByteLength,
 };
 
 
@@ -6753,6 +6900,10 @@ class SharedFunctionInfo: public HeapObject {
   // [construct stub]: Code stub for constructing instances of this function.
   DECL_ACCESSORS(construct_stub, Code)
 
+  // Sets the given code as the construct stub, and marks builtin code objects
+  // as a construct stub.
+  void SetConstructStub(Code* code);
+
   // Returns if this function has been compiled to native code yet.
   inline bool is_compiled();
 
@@ -6794,6 +6945,7 @@ class SharedFunctionInfo: public HeapObject {
   // Currently it has one of:
   //  - a FunctionTemplateInfo to make benefit the API [IsApiFunction()].
   //  - a BytecodeArray for the interpreter [HasBytecodeArray()].
+  //  - a FixedArray with Asm->Wasm conversion [HasAsmWasmData()].
   DECL_ACCESSORS(function_data, Object)
 
   inline bool IsApiFunction();
@@ -6803,6 +6955,10 @@ class SharedFunctionInfo: public HeapObject {
   inline BytecodeArray* bytecode_array();
   inline void set_bytecode_array(BytecodeArray* bytecode);
   inline void ClearBytecodeArray();
+  inline bool HasAsmWasmData();
+  inline FixedArray* asm_wasm_data();
+  inline void set_asm_wasm_data(FixedArray* data);
+  inline void ClearAsmWasmData();
 
   // [function identifier]: This field holds an additional identifier for the
   // function.
@@ -7309,9 +7465,21 @@ class SharedFunctionInfo: public HeapObject {
   static const int kHasDuplicateParametersBit =
       kHasDuplicateParameters + kCompilerHintsSmiTagSize;
 
+  static const int kIsArrowBit = kIsArrow + kCompilerHintsSmiTagSize;
+  static const int kIsGeneratorBit = kIsGenerator + kCompilerHintsSmiTagSize;
+  static const int kIsConciseMethodBit =
+      kIsConciseMethod + kCompilerHintsSmiTagSize;
+  static const int kIsAsyncFunctionBit =
+      kIsAsyncFunction + kCompilerHintsSmiTagSize;
+
+  static const int kAccessorFunctionBits =
+      FunctionKind::kAccessorFunction
+      << (kFunctionKind + kCompilerHintsSmiTagSize);
   static const int kClassConstructorBits =
       FunctionKind::kClassConstructor
       << (kFunctionKind + kCompilerHintsSmiTagSize);
+  static const int kFunctionKindMaskBits = FunctionKindBits::kMask
+                                           << kCompilerHintsSmiTagSize;
 
   // Constants for optimizing codegen for strict mode function and
   // native tests.
@@ -7428,31 +7596,6 @@ class JSGeneratorObject: public JSObject {
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSGeneratorObject);
-};
-
-
-// Representation for module instance objects.
-class JSModule: public JSObject {
- public:
-  // [context]: the context holding the module's locals, or undefined if none.
-  DECL_ACCESSORS(context, Object)
-
-  // [scope_info]: Scope info.
-  DECL_ACCESSORS(scope_info, ScopeInfo)
-
-  DECLARE_CAST(JSModule)
-
-  // Dispatched behavior.
-  DECLARE_PRINTER(JSModule)
-  DECLARE_VERIFIER(JSModule)
-
-  // Layout description.
-  static const int kContextOffset = JSObject::kHeaderSize;
-  static const int kScopeInfoOffset = kContextOffset + kPointerSize;
-  static const int kSize = kScopeInfoOffset + kPointerSize;
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(JSModule);
 };
 
 
@@ -7743,8 +7886,9 @@ class JSGlobalObject : public JSObject {
   static void InvalidatePropertyCell(Handle<JSGlobalObject> object,
                                      Handle<Name> name);
   // Ensure that the global object has a cell for the given property name.
-  static Handle<PropertyCell> EnsurePropertyCell(Handle<JSGlobalObject> global,
-                                                 Handle<Name> name);
+  static Handle<PropertyCell> EnsureEmptyPropertyCell(
+      Handle<JSGlobalObject> global, Handle<Name> name,
+      PropertyCellType cell_type, int* entry_out = nullptr);
 
   DECLARE_CAST(JSGlobalObject)
 
@@ -9594,8 +9738,12 @@ class PropertyCell : public HeapObject {
   static PropertyCellType UpdatedType(Handle<PropertyCell> cell,
                                       Handle<Object> value,
                                       PropertyDetails details);
-  static void UpdateCell(Handle<GlobalDictionary> dictionary, int entry,
-                         Handle<Object> value, PropertyDetails details);
+  // Prepares property cell at given entry for receiving given value.
+  // As a result the old cell could be invalidated and/or dependent code could
+  // be deoptimized. Returns the prepared property cell.
+  static Handle<PropertyCell> PrepareForValue(
+      Handle<GlobalDictionary> dictionary, int entry, Handle<Object> value,
+      PropertyDetails details);
 
   static Handle<PropertyCell> InvalidateEntry(
       Handle<GlobalDictionary> dictionary, int entry);
@@ -9920,6 +10068,8 @@ class JSMapIterator: public OrderedHashTableIterator<JSMapIterator,
 // Base class for both JSWeakMap and JSWeakSet
 class JSWeakCollection: public JSObject {
  public:
+  DECLARE_CAST(JSWeakCollection)
+
   // [table]: the backing hash table mapping keys to values.
   DECL_ACCESSORS(table, Object)
 
@@ -10408,6 +10558,8 @@ class AccessorPair: public Struct {
 class AccessCheckInfo: public Struct {
  public:
   DECL_ACCESSORS(callback, Object)
+  DECL_ACCESSORS(named_interceptor, Object)
+  DECL_ACCESSORS(indexed_interceptor, Object)
   DECL_ACCESSORS(data, Object)
 
   DECLARE_CAST(AccessCheckInfo)
@@ -10416,8 +10568,13 @@ class AccessCheckInfo: public Struct {
   DECLARE_PRINTER(AccessCheckInfo)
   DECLARE_VERIFIER(AccessCheckInfo)
 
+  static AccessCheckInfo* Get(Isolate* isolate, Handle<JSObject> receiver);
+
   static const int kCallbackOffset = HeapObject::kHeaderSize;
-  static const int kDataOffset = kCallbackOffset + kPointerSize;
+  static const int kNamedInterceptorOffset = kCallbackOffset + kPointerSize;
+  static const int kIndexedInterceptorOffset =
+      kNamedInterceptorOffset + kPointerSize;
+  static const int kDataOffset = kIndexedInterceptorOffset + kPointerSize;
   static const int kSize = kDataOffset + kPointerSize;
 
  private:
@@ -10592,7 +10749,9 @@ class FunctionTemplateInfo: public TemplateInfo {
 class ObjectTemplateInfo: public TemplateInfo {
  public:
   DECL_ACCESSORS(constructor, Object)
-  DECL_ACCESSORS(internal_field_count, Object)
+  DECL_ACCESSORS(data, Object)
+  DECL_INT_ACCESSORS(internal_field_count)
+  DECL_BOOLEAN_ACCESSORS(immutable_proto)
 
   DECLARE_CAST(ObjectTemplateInfo)
 
@@ -10601,9 +10760,14 @@ class ObjectTemplateInfo: public TemplateInfo {
   DECLARE_VERIFIER(ObjectTemplateInfo)
 
   static const int kConstructorOffset = TemplateInfo::kHeaderSize;
-  static const int kInternalFieldCountOffset =
-      kConstructorOffset + kPointerSize;
-  static const int kSize = kInternalFieldCountOffset + kPointerSize;
+  // LSB is for immutable_proto, higher bits for internal_field_count
+  static const int kDataOffset = kConstructorOffset + kPointerSize;
+  static const int kSize = kDataOffset + kPointerSize;
+
+ private:
+  class IsImmutablePrototype : public BitField<bool, 0, 1> {};
+  class InternalFieldCount
+      : public BitField<int, IsImmutablePrototype::kNext, 29> {};
 };
 
 

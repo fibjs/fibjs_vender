@@ -65,6 +65,8 @@ class CodeFactory final {
   // code-stubs.h.
   static Callable InstanceOf(Isolate* isolate);
 
+  static Callable GetProperty(Isolate* isolate);
+
   static Callable ToBoolean(Isolate* isolate);
 
   static Callable ToNumber(Isolate* isolate);
@@ -75,6 +77,10 @@ class CodeFactory final {
   static Callable ToInteger(Isolate* isolate);
   static Callable ToLength(Isolate* isolate);
   static Callable ToObject(Isolate* isolate);
+  static Callable NonPrimitiveToPrimitive(
+      Isolate* isolate, ToPrimitiveHint hint = ToPrimitiveHint::kDefault);
+  static Callable OrdinaryToPrimitive(Isolate* isolate,
+                                      OrdinaryToPrimitiveHint hint);
   static Callable NumberToString(Isolate* isolate);
 
   static Callable RegExpConstructResult(Isolate* isolate);
@@ -120,8 +126,7 @@ class CodeFactory final {
   static Callable FastCloneShallowObject(Isolate* isolate, int length);
 
   static Callable FastNewContext(Isolate* isolate, int slot_count);
-  static Callable FastNewClosure(Isolate* isolate, LanguageMode language_mode,
-                                 FunctionKind kind);
+  static Callable FastNewClosure(Isolate* isolate);
   static Callable FastNewObject(Isolate* isolate);
   static Callable FastNewRestParameter(Isolate* isolate,
                                        bool skip_stub_frame = false);
@@ -146,10 +151,9 @@ class CodeFactory final {
   static Callable ConstructFunction(Isolate* isolate);
   static Callable HasProperty(Isolate* isolate);
 
-  static Callable MathPow(Isolate* isolate);
-
-  static Callable InterpreterPushArgsAndCall(Isolate* isolate,
-                                             TailCallMode tail_call_mode);
+  static Callable InterpreterPushArgsAndCall(
+      Isolate* isolate, TailCallMode tail_call_mode,
+      CallableType function_type = CallableType::kAny);
   static Callable InterpreterPushArgsAndConstruct(Isolate* isolate);
   static Callable InterpreterCEntry(Isolate* isolate, int result_size = 1);
 };

@@ -65,6 +65,9 @@ void LCodeGen::FinishCode(Handle<Code> code) {
   DCHECK(is_done());
   code->set_stack_slots(GetTotalFrameSlotCount());
   code->set_safepoint_table_offset(safepoints_.GetCodeOffset());
+  Handle<ByteArray> source_positions =
+      source_position_table_builder_.ToSourcePositionTable();
+  code->set_source_position_table(*source_positions);
   PopulateDeoptimizationData(code);
 }
 
@@ -173,10 +176,10 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       __ Push(info()->scope()->GetScopeInfo(info()->isolate()));
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
-    } else if (slots <= FastNewContextStub::kMaximumSlots) {
-      FastNewContextStub stub(isolate(), slots);
+    } else if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
+      FastNewFunctionContextStub stub(isolate(), slots);
       __ CallStub(&stub);
-      // Result of FastNewContextStub is always in new space.
+      // Result of FastNewFunctionContextStub is always in new space.
       need_write_barrier = false;
     } else {
       __ push(r4);
@@ -834,12 +837,6 @@ void LCodeGen::RecordSafepointWithRegisters(LPointerMap* pointers,
                                             int arguments,
                                             Safepoint::DeoptMode deopt_mode) {
   RecordSafepoint(pointers, Safepoint::kWithRegisters, arguments, deopt_mode);
-}
-
-
-void LCodeGen::RecordAndWritePosition(int position) {
-  if (position == RelocInfo::kNoPosition) return;
-  masm()->positions_recorder()->RecordPosition(position);
 }
 
 
@@ -2701,11 +2698,8 @@ void LCodeGen::EmitVectorStoreICRegisters(T* instr) {
 
 void LCodeGen::DoLoadGlobalGeneric(LLoadGlobalGeneric* instr) {
   DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(ToRegister(instr->global_object())
-             .is(LoadDescriptor::ReceiverRegister()));
   DCHECK(ToRegister(instr->result()).is(r3));
 
-  __ mov(LoadDescriptor::NameRegister(), Operand(instr->name()));
   EmitVectorLoadICRegisters<LLoadGlobalGeneric>(instr);
   Handle<Code> ic =
       CodeFactory::LoadGlobalICInOptimizedCode(isolate(), instr->typeof_mode())
@@ -3399,6 +3393,8 @@ void LCodeGen::DoDeclareGlobals(LDeclareGlobals* instr) {
   __ push(scratch0());
   __ LoadSmiLiteral(scratch0(), Smi::FromInt(instr->hydrogen()->flags()));
   __ push(scratch0());
+  __ Move(scratch0(), instr->hydrogen()->feedback_vector());
+  __ push(scratch0());
   CallRuntime(Runtime::kDeclareGlobals, instr);
 }
 
@@ -3823,7 +3819,9 @@ void LCodeGen::PrepareForTailCall(const ParameterCount& actual,
 #endif
   if (FLAG_code_comments) {
     if (actual.is_reg()) {
-      Comment(";;; PrepareForTailCall, actual: %s {", actual.reg().ToString());
+      Comment(";;; PrepareForTailCall, actual: %s {",
+              RegisterConfiguration::Crankshaft()->GetGeneralRegisterName(
+                  actual.reg().code()));
     } else {
       Comment(";;; PrepareForTailCall, actual: %d {", actual.immediate());
     }
@@ -4747,13 +4745,10 @@ void LCodeGen::DoDeferredNumberTagIU(LInstruction* instr, LOperand* value,
 
     // Preserve the value of all registers.
     PushSafepointRegistersScope scope(this);
-
-    // NumberTagI and NumberTagD use the context from the frame, rather than
-    // the environment's HContext or HInlinedContext value.
-    // They only call Runtime::kAllocateHeapNumber.
-    // The corresponding HChange instructions are added in a phase that does
-    // not have easy access to the local context.
-    __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+    // Reset the context register.
+    if (!dst.is(cp)) {
+      __ li(cp, Operand::Zero());
+    }
     __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
     RecordSafepointWithRegisters(instr->pointer_map(), 0,
                                  Safepoint::kNoLazyDeopt);
@@ -4805,12 +4800,10 @@ void LCodeGen::DoDeferredNumberTagD(LNumberTagD* instr) {
   __ li(reg, Operand::Zero());
 
   PushSafepointRegistersScope scope(this);
-  // NumberTagI and NumberTagD use the context from the frame, rather than
-  // the environment's HContext or HInlinedContext value.
-  // They only call Runtime::kAllocateHeapNumber.
-  // The corresponding HChange instructions are added in a phase that does
-  // not have easy access to the local context.
-  __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  // Reset the context register.
+  if (!reg.is(cp)) {
+    __ li(cp, Operand::Zero());
+  }
   __ CallRuntimeSaveDoubles(Runtime::kAllocateHeapNumber);
   RecordSafepointWithRegisters(instr->pointer_map(), 0,
                                Safepoint::kNoLazyDeopt);
@@ -5297,18 +5290,6 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
   __ ClampUint8(result_reg, result_reg);
 
   __ bind(&done);
-}
-
-
-void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
-  DoubleRegister value_reg = ToDoubleRegister(instr->value());
-  Register result_reg = ToRegister(instr->result());
-
-  if (instr->hydrogen()->bits() == HDoubleBits::HIGH) {
-    __ MovDoubleHighToInt(result_reg, value_reg);
-  } else {
-    __ MovDoubleLowToInt(result_reg, value_reg);
-  }
 }
 
 

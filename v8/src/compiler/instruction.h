@@ -439,8 +439,9 @@ class LocationOperand : public InstructionOperand {
   }
 
   DoubleRegister GetDoubleRegister() const {
-    // TODO(bbudge) Tighten this test to IsDoubleRegister when all code
-    // generators are changed to use the correct Get*Register method.
+    // On platforms where FloatRegister, DoubleRegister, and Simd128Register
+    // are all the same type, it's convenient to treat everything as a
+    // DoubleRegister, so be lax about type checking here.
     DCHECK(IsFPRegister());
     return DoubleRegister::from_code(register_code());
   }
@@ -604,18 +605,23 @@ bool InstructionOperand::IsSimd128StackSlot() const {
 
 uint64_t InstructionOperand::GetCanonicalizedValue() const {
   if (IsAllocated() || IsExplicit()) {
-    MachineRepresentation rep = LocationOperand::cast(this)->representation();
-    // Preserve FP representation so we can check for interference on
-    // architectures with complex register aliasing.
-    MachineRepresentation canonical =
-        IsFPRegister() ? rep : MachineRepresentation::kNone;
+    MachineRepresentation canonical = MachineRepresentation::kNone;
+    if (IsFPRegister()) {
+      if (kSimpleFPAliasing) {
+        // We treat all FP register operands the same for simple aliasing.
+        canonical = MachineRepresentation::kFloat64;
+      } else {
+        // We need to distinguish FP register operands of different reps when
+        // aliasing is not simple (e.g. ARM).
+        canonical = LocationOperand::cast(this)->representation();
+      }
+    }
     return InstructionOperand::KindField::update(
         LocationOperand::RepresentationField::update(this->value_, canonical),
         LocationOperand::EXPLICIT);
   }
   return this->value_;
 }
-
 
 // Required for maps that don't care about machine type.
 struct CompareOperandModuloType {

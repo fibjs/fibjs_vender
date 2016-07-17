@@ -229,7 +229,6 @@ Operand::Operand(Handle<Object> handle) {
   // Verify all Objects referred by code are NOT in new space.
   Object* obj = *handle;
   if (obj->IsHeapObject()) {
-    DCHECK(!HeapObject::cast(obj)->GetHeap()->InNewSpace(obj));
     imm32_ = reinterpret_cast<intptr_t>(handle.location());
     rmode_ = RelocInfo::EMBEDDED_OBJECT;
   } else {
@@ -288,11 +287,9 @@ const Instr kLwSwInstrTypeMask = 0xffe00000;
 const Instr kLwSwInstrArgumentMask  = ~kLwSwInstrTypeMask;
 const Instr kLwSwOffsetMask = kImm16Mask;
 
-
 Assembler::Assembler(Isolate* isolate, void* buffer, int buffer_size)
     : AssemblerBase(isolate, buffer, buffer_size),
-      recorded_ast_id_(TypeFeedbackId::None()),
-      positions_recorder_(this) {
+      recorded_ast_id_(TypeFeedbackId::None()) {
   reloc_info_writer.Reposition(buffer_ + buffer_size_, pc_);
 
   last_trampoline_pool_end_ = 0;
@@ -323,6 +320,8 @@ void Assembler::GetCode(CodeDesc* desc) {
   desc->reloc_size = (buffer_ + buffer_size_) - reloc_info_writer.pos();
   desc->origin = this;
   desc->constant_pool_size = 0;
+  desc->unwinding_info_size = 0;
+  desc->unwinding_info = nullptr;
 }
 
 
@@ -1916,7 +1915,6 @@ void Assembler::aui(Register rt, Register rs, int32_t j) {
   GenInstrImmediate(LUI, rs, rt, j);
 }
 
-
 // ---------PC-Relative instructions-----------
 
 void Assembler::addiupc(Register rs, int32_t imm19) {
@@ -2151,6 +2149,21 @@ void Assembler::align(Register rd, Register rs, Register rt, uint8_t bp) {
   GenInstrRegister(SPECIAL3, rs, rt, rd, sa, BSHFL);
 }
 
+// Byte swap.
+void Assembler::wsbh(Register rd, Register rt) {
+  DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+  GenInstrRegister(SPECIAL3, zero_reg, rt, rd, WSBH, BSHFL);
+}
+
+void Assembler::seh(Register rd, Register rt) {
+  DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+  GenInstrRegister(SPECIAL3, zero_reg, rt, rd, SEH, BSHFL);
+}
+
+void Assembler::seb(Register rd, Register rt) {
+  DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6));
+  GenInstrRegister(SPECIAL3, zero_reg, rt, rd, SEB, BSHFL);
+}
 
 // --------Coprocessor-instructions----------------
 
@@ -2997,9 +3010,7 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   if (rmode >= RelocInfo::COMMENT &&
       rmode <= RelocInfo::DEBUG_BREAK_SLOT_AT_TAIL_CALL) {
     // Adjust code for new modes.
-    DCHECK(RelocInfo::IsDebugBreakSlot(rmode)
-           || RelocInfo::IsComment(rmode)
-           || RelocInfo::IsPosition(rmode));
+    DCHECK(RelocInfo::IsDebugBreakSlot(rmode) || RelocInfo::IsComment(rmode));
     // These modes do not need an entry in the constant pool.
   }
   if (!RelocInfo::IsNone(rinfo.rmode())) {
