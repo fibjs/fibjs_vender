@@ -13,9 +13,11 @@
 #include "thread.h"
 #include "fiber.h"
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <cxxabi.h>
 #include <dlfcn.h>
+#else
+#include <process.h>
 #endif
 
 namespace exlib
@@ -31,6 +33,10 @@ void *OSThread::Entry(void *arg)
     th_current = thread;
     thread->Run();
     thread->Unref();
+
+#ifdef _WIN32
+    _endthreadex(0);
+#endif
 
     return 0;
 }
@@ -72,7 +78,6 @@ void OSThread::bindCurrent()
     th_current = this;
 
 #ifdef _WIN32
-    threadid = GetCurrentThreadId();
     thread_ = GetCurrentThread();
 #else
     thread_ = pthread_self();
@@ -87,22 +92,21 @@ void OSThread::destroy()
 
 #ifdef _WIN32
 
-OSThread::OSThread() : thread_(0), threadid(0)
+OSThread::OSThread() : thread_(0)
 {
 }
 
 void OSThread::start()
 {
     assert(thread_ == 0);
-    assert(threadid == 0);
     Ref();
-    thread_ = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Entry, this, 0, &threadid);
+    thread_ = (HANDLE)_beginthreadex(NULL, 0, (unsigned (*)(void*))Entry,
+                                     this, 0, NULL);
 }
 
 void OSThread::join()
 {
     assert(thread_ != 0);
-    assert(threadid != 0);
 
     WaitForSingleObject(thread_, INFINITE);
 }
@@ -113,7 +117,6 @@ OSThread::~OSThread()
     {
         CloseHandle(thread_);
         thread_ = NULL;
-        threadid = 0;
     }
 }
 

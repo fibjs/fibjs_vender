@@ -505,7 +505,6 @@ private:
 public:
 #ifdef _WIN32
     HANDLE thread_;
-    DWORD threadid;
 #else
     pthread_t thread_;
 #endif
