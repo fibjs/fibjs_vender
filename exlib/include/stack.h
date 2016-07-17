@@ -49,6 +49,10 @@ public:
     intptr_t Rdx;
     intptr_t Rsi;
     intptr_t Rdi;
+    intptr_t R8;
+    intptr_t R9;
+    intptr_t R10;
+    intptr_t R11;
     intptr_t R12;
     intptr_t R13;
     intptr_t R14;
