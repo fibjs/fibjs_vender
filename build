@@ -94,7 +94,7 @@ fi
 
 if [ ${BUILD_TYPE} = 'clean' ]; then
 	if [ -e "${OUT_PATH}" ]; then
-		rm -rf "${OUT_PATH}/${TARGET_OS}_*"
+		rm -rf ${OUT_PATH}/${TARGET_OS}_*
 	fi
 
 	exit 0
