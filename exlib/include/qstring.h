@@ -294,6 +294,23 @@ public:
 		return sz1 > sz2 ? 1 : -1;
 	}
 
+	int32_t compare(const T* str) const
+	{
+		const T* s1 = c_str();
+		if (s1 == str)
+			return 0;
+
+		size_t sz1 = length();
+		size_t sz2 = qstrlen(str);
+
+		size_t sz = sz1 > sz2 ? sz2 : sz1;
+		int32_t r = qmemcmp(s1, str, sz);
+		if (r != 0 || sz1 == sz2)
+			return r;
+
+		return sz1 > sz2 ? 1 : -1;
+	}
+
 public:
 	basic_string<T>& append(size_t n, T ch)
 	{
@@ -529,10 +546,38 @@ bool operator<(const basic_string<T>& lhs,
 }
 
 template<typename T>
+bool operator<(const basic_string<T>& lhs,
+               const T* rhs)
+{
+	return lhs.compare(rhs) < 0;
+}
+
+template<typename T>
+bool operator<(const T* lhs,
+               const basic_string<T>& rhs)
+{
+	return rhs.compare(lhs) > 0;
+}
+
+template<typename T>
 bool operator>(const basic_string<T>& lhs,
                const basic_string<T>& rhs)
 {
 	return lhs.compare(rhs) > 0;
+}
+
+template<typename T>
+bool operator>(const basic_string<T>& lhs,
+               const T* rhs)
+{
+	return lhs.compare(rhs) > 0;
+}
+
+template<typename T>
+bool operator>(const T* lhs,
+               const basic_string<T>& rhs)
+{
+	return rhs.compare(lhs) < 0;
 }
 
 template<typename T>
@@ -543,10 +588,38 @@ bool operator<=(const basic_string<T>& lhs,
 }
 
 template<typename T>
+bool operator<=(const basic_string<T>& lhs,
+                const T* rhs)
+{
+	return lhs.compare(rhs) <= 0;
+}
+
+template<typename T>
+bool operator<=(const T* lhs,
+                const basic_string<T>& rhs)
+{
+	return rhs.compare(lhs) >= 0;
+}
+
+template<typename T>
 bool operator>=(const basic_string<T>& lhs,
                 const basic_string<T>& rhs)
 {
 	return lhs.compare(rhs) >= 0;
+}
+
+template<typename T>
+bool operator>=(const basic_string<T>& lhs,
+                const T* rhs)
+{
+	return lhs.compare(rhs) >= 0;
+}
+
+template<typename T>
+bool operator>=(const T* lhs,
+                const basic_string<T>& rhs)
+{
+	return rhs.compare(lhs) <= 0;
 }
 
 template<typename T>
@@ -557,10 +630,38 @@ bool operator==(const basic_string<T>& lhs,
 }
 
 template<typename T>
+bool operator==(const basic_string<T>& lhs,
+                const T* rhs)
+{
+	return lhs.compare(rhs) == 0;
+}
+
+template<typename T>
+bool operator==(const T* lhs,
+                const basic_string<T>& rhs)
+{
+	return rhs.compare(lhs) == 0;
+}
+
+template<typename T>
 bool operator!=(const basic_string<T>& lhs,
                 const basic_string<T>& rhs)
 {
 	return lhs.compare(rhs) != 0;
+}
+
+template<typename T>
+bool operator!=(const basic_string<T>& lhs,
+                const T* rhs)
+{
+	return lhs.compare(rhs) != 0;
+}
+
+template<typename T>
+bool operator!=(const T* lhs,
+                const basic_string<T>& rhs)
+{
+	return rhs.compare(lhs) != 0;
 }
 
 #ifdef _WIN32
