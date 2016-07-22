@@ -74,71 +74,42 @@ private:
 	Runtime* m_rt;
 };
 
-class Value
+class js_value
 {
 public:
-	Value() : m_cx(NULL), m_v(JSVAL_NULL)
+	js_value() : m_v(JSVAL_NULL)
 	{}
 
-	Value(JSContext *cx, jsval v) : m_cx(cx), m_v(v)
-	{
-	}
-
-	Value(const Value& v) : m_cx(v.m_cx), m_v(v.m_v)
-	{
-	}
-
-	Value& operator=(const Value &v)
-	{
-		m_cx = v.m_cx;
-		m_v = v.m_v;
-		return *this;
-	}
+	js_value(const jsval& v) : m_v(v)
+	{}
 
 public:
-	bool isEmpty() const
+	jsval operator=(const jsval& v)
 	{
-		return m_v == NULL;
+		return m_v = v;
 	}
 
-public:
-	bool toBoolean() const
+	jsval operator=(const js_value& v)
 	{
-		return _api->ValueToBoolean(*this);
+		return m_v = v.m_v;
 	}
 
-	bool isBoolean() const
+	operator jsval() const
 	{
-		return _api->ValueIsBoolean(*this);
+		return m_v;
 	}
 
-	double toNumber() const
+	bool IsEmpty() const
 	{
-		return _api->ValueToNumber(*this);
-	}
-
-	bool isNumber() const
-	{
-		return _api->ValueIsNumber(*this);
-	}
-
-	exlib::string toString() const
-	{
-		return _api->ValueToString(*this);
-	}
-
-	bool isString() const
-	{
-		return _api->ValueIsString(*this);
+		return m_v == 0;
 	}
 
 private:
-	JSContext *m_cx;
 	jsval m_v;
-
-	friend class Api_SpiderMonkey;
 };
 
 }
+
+#include "jssdk-pub.h"
 
 #endif // _jssdk_sm_h__

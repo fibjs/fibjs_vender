@@ -8,6 +8,7 @@
 
 #include "jssdk-SpiderMonkey.h"
 #include "utf8.h"
+#include <vector>
 
 namespace js
 {
@@ -68,11 +69,11 @@ public:
 		jsval rval;
 		JSBool ok;
 
-		ok = JS_EvaluateScript(m_cx, m_global, code.c_str(), code.length(),
+		ok = JS_EvaluateScript(m_cx, m_global, code.c_str(), (int32_t)code.length(),
 		                       soname.c_str(), 0, &rval);
 
 		if (ok)
-			return Value(m_cx, rval);
+			return Value(this, rval);
 
 		return Value();
 	}
@@ -108,41 +109,45 @@ public:
 		return new SpiderMonkey_Runtime();
 	}
 
+	bool ValueIsUndefined(const Value& v)
+	{
+		return v.m_v != 0 && JSVAL_IS_VOID(v.m_v);
+	}
+
 	Value NewBoolean(Runtime* rt, bool b)
 	{
-		return Value(((SpiderMonkey_Runtime*)rt)->m_cx,
-		             b ? JSVAL_TRUE : JSVAL_FALSE);
+		return Value(rt, b ? JSVAL_TRUE : JSVAL_FALSE);
 	}
 
 	bool ValueToBoolean(const Value& v)
 	{
 		JSBool b;
-		JS_ValueToBoolean(v.m_cx, v.m_v, &b);
+		JS_ValueToBoolean(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, v.m_v, &b);
 		return b ? true : false;
 	}
 
 	bool ValueIsBoolean(const Value& v)
 	{
-		return v.m_v != NULL && JSVAL_IS_BOOLEAN(v.m_v);
+		return v.m_v != 0 && JSVAL_IS_BOOLEAN(v.m_v);
 	}
 
 	Value NewNumber(Runtime* rt, double d)
 	{
 		jsval v;
 		JS_NewNumberValue(((SpiderMonkey_Runtime*)rt)->m_cx, d, &v);
-		return Value(((SpiderMonkey_Runtime*)rt)->m_cx, v);
+		return Value(rt, v);
 	}
 
 	double ValueToNumber(const Value& v)
 	{
 		jsdouble d;
-		JS_ValueToNumber(v.m_cx, v.m_v, &d);
+		JS_ValueToNumber(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, v.m_v, &d);
 		return d;
 	}
 
 	bool ValueIsNumber(const Value& v)
 	{
-		return v.m_v != NULL && JSVAL_IS_NUMBER(v.m_v);
+		return v.m_v != 0 && JSVAL_IS_NUMBER(v.m_v);
 	}
 
 	Value NewString(Runtime* rt, exlib::string s)
@@ -151,22 +156,117 @@ public:
 
 		jsval v = STRING_TO_JSVAL(JS_NewUCStringCopyN(((SpiderMonkey_Runtime*)rt)->m_cx,
 		                          (jschar*)ws.c_str(), ws.length()));
-		return Value(((SpiderMonkey_Runtime*)rt)->m_cx, v);
+		return Value(rt, v);
 	}
 
 	exlib::string ValueToString(const Value& v)
 	{
-		JSString* s = JS_ValueToString(v.m_cx, v.m_v);
+		JSString* s = JS_ValueToString(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, v.m_v);
 		if (s)
-			return utf16to8String(exlib::wstring((exlib::wchar*)JS_GetStringChars(s), JS_GetStringLength(s)));
+			return utf16to8String(exlib::wstring((exlib::wchar*)JS_GetStringChars(s),
+			                                     JS_GetStringLength(s)));
 		return exlib::string();
 	}
 
 	bool ValueIsString(const Value& v)
 	{
-		return v.m_v != NULL && JSVAL_IS_STRING(v.m_v);
+		return v.m_v != 0 && JSVAL_IS_STRING(v.m_v);
 	}
 
+	Object NewObject(Runtime* rt)
+	{
+		return Value(rt,
+		             OBJECT_TO_JSVAL(JS_NewObject(((SpiderMonkey_Runtime*)rt)->m_cx,
+		                             NULL, NULL, NULL)));
+	}
+
+	bool ObjectHas(const Object& o, exlib::string key)
+	{
+		JSBool r;
+		JS_HasProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		               key.c_str(), &r);
+		return r == JSVAL_TRUE;
+	}
+
+	Value ObjectGet(const Object& o, exlib::string key)
+	{
+		jsval v;
+		JS_GetProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		               key.c_str(), &v);
+		return Value(o.m_rt, v);
+	}
+
+	void ObjectSet(const Object& o, exlib::string key, const Value& v)
+	{
+		JS_SetProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		               key.c_str(), (jsval*)&v.m_v);
+	}
+
+	void ObjectRemove(const Object& o, exlib::string key)
+	{
+		JS_DeleteProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		                  key.c_str());
+	}
+
+	Array ObjectKeys(const Object& o)
+	{
+		JSIdArray* ids = JS_Enumerate(((SpiderMonkey_Runtime*)o.m_rt)->m_cx,
+		                              JSVAL_TO_OBJECT(o.m_v));
+		std::vector<jsval> vals;
+
+		int32_t i, length = ids->length;
+
+		vals.resize(length);
+		for (i = 0; i < length; i ++)
+			JS_IdToValue(((SpiderMonkey_Runtime*)o.m_rt)->m_cx,
+			             ids->vector[i], &vals[i]);
+		return Value(o.m_rt,
+		             OBJECT_TO_JSVAL(JS_NewArrayObject(((SpiderMonkey_Runtime*)o.m_rt)->m_cx,
+		                             length, vals.data())));
+	}
+
+	bool ValueIsObject(const Value& v)
+	{
+		return v.m_v != 0 && JSVAL_IS_OBJECT(v.m_v);
+	}
+
+	Array NewArray(Runtime* rt, int32_t sz)
+	{
+		return Value(rt,
+		             OBJECT_TO_JSVAL(JS_NewArrayObject(((SpiderMonkey_Runtime*)rt)->m_cx, sz, 0)));
+	}
+
+	int32_t ArrayGetLength(const Array& a)
+	{
+		jsuint n;
+		JS_GetArrayLength(((SpiderMonkey_Runtime*)a.m_rt)->m_cx, JSVAL_TO_OBJECT(a.m_v), &n);
+		return n;
+	}
+
+	Value ArrayGet(const Array& a, int32_t idx)
+	{
+		jsval v;
+		JS_GetElement(((SpiderMonkey_Runtime*)a.m_rt)->m_cx, JSVAL_TO_OBJECT(a.m_v), idx, &v);
+		return Value(a.m_rt, v);
+	}
+
+	void ArraySet(const Array& a, int32_t idx, const Value& v)
+	{
+		JS_SetElement(((SpiderMonkey_Runtime*)a.m_rt)->m_cx, JSVAL_TO_OBJECT(a.m_v),
+		              idx, (jsval*)&v.m_v);
+	}
+
+	void ArrayRemove(const Array& a, int32_t idx)
+	{
+		JS_DeleteElement(((SpiderMonkey_Runtime*)a.m_rt)->m_cx, JSVAL_TO_OBJECT(a.m_v), idx);
+	}
+
+	bool ValueIsArray(const Value& v)
+	{
+		if (!ValueIsObject(v))
+			return false;
+		return JS_IsArrayObject(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v)) == JSVAL_TRUE;
+	}
 };
 
 static Api_SpiderMonkey s_api;

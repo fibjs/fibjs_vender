@@ -81,70 +81,10 @@ private:
 	friend class v8_Runtime;
 };
 
-class Value
-{
-public:
-	Value()
-	{}
-
-	Value(v8::Local<v8::Value> v) : m_v(v)
-	{
-	}
-
-	Value(const Value& v) : m_v(v.m_v)
-	{
-	}
-
-	Value& operator=(const Value &v)
-	{
-		m_v = v.m_v;
-		return *this;
-	}
-
-public:
-	bool isEmpty() const
-	{
-		return m_v.IsEmpty();
-	}
-
-public:
-	bool toBoolean() const
-	{
-		return _api->ValueToBoolean(*this);
-	}
-
-	bool isBoolean() const
-	{
-		return _api->ValueIsBoolean(*this);
-	}
-
-	double toNumber() const
-	{
-		return _api->ValueToNumber(*this);
-	}
-
-	bool isNumber() const
-	{
-		return _api->ValueIsNumber(*this);
-	}
-
-	exlib::string toString() const
-	{
-		return _api->ValueToString(*this);
-	}
-
-	bool isString() const
-	{
-		return _api->ValueIsString(*this);
-	}
-
-
-private:
-	v8::Local<v8::Value> m_v;
-
-	friend class Api_v8;
-};
+typedef v8::Local<v8::Value> js_value;
 
 }
+
+#include "jssdk-pub.h"
 
 #endif // _jssdk_v8_h__

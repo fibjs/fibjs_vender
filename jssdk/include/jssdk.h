@@ -16,12 +16,17 @@ namespace js
 {
 
 class Value;
+class Array;
+class Object;
 class Locker;
 class Unlocker;
 class Scope;
 
 class Runtime
 {
+public:
+	virtual ~Runtime() {}
+
 public:
 	virtual void destroy() = 0;
 
@@ -49,6 +54,8 @@ public:
 	virtual void init() = 0;
 	virtual Runtime* createRuntime() = 0;
 
+	virtual bool ValueIsUndefined(const Value& v) = 0;
+
 	virtual Value NewBoolean(Runtime* rt, bool b) = 0;
 	virtual bool ValueToBoolean(const Value& v) = 0;
 	virtual bool ValueIsBoolean(const Value& v) = 0;
@@ -60,6 +67,22 @@ public:
 	virtual Value NewString(Runtime* rt, exlib::string s) = 0;
 	virtual exlib::string ValueToString(const Value& v) = 0;
 	virtual bool ValueIsString(const Value& v) = 0;
+
+	virtual Object NewObject(Runtime* rt) = 0;
+	virtual bool ObjectHas(const Object& o, exlib::string key) = 0;
+	virtual Value ObjectGet(const Object& o, exlib::string key) = 0;
+	virtual void ObjectSet(const Object& o, exlib::string key, const Value& v) = 0;
+	virtual void ObjectRemove(const Object& o, exlib::string key) = 0;
+	virtual Array ObjectKeys(const Object& o) = 0;
+	virtual bool ValueIsObject(const Value& v) = 0;
+
+	virtual Array NewArray(Runtime* rt, int32_t sz) = 0;
+	virtual int32_t ArrayGetLength(const Array& a) = 0;
+	virtual Value ArrayGet(const Array& a, int32_t idx) = 0;
+	virtual void ArraySet(const Array& a, int32_t idx, const Value& v) = 0;
+	virtual void ArrayRemove(const Array& a, int32_t idx) = 0;
+	virtual bool ValueIsArray(const Value& v) = 0;
+
 };
 
 extern Api* v8_api;

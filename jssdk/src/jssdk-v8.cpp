@@ -112,12 +112,14 @@ public:
 	{
 		v8::Local<v8::Context> context = v8::Context::New(m_isolate);
 		v8::Local<v8::String> str_code = v8::String::NewFromUtf8(m_isolate,
-		                                 code.c_str(), v8::String::kNormalString, code.length());
+		                                 code.c_str(), v8::String::kNormalString,
+		                                 (int32_t)code.length());
 		v8::Local<v8::String> str_name = v8::String::NewFromUtf8(m_isolate,
-		                                 soname.c_str(), v8::String::kNormalString, soname.length());
+		                                 soname.c_str(), v8::String::kNormalString,
+		                                 (int32_t)soname.length());
 		v8::Local<v8::Script> script = v8::Script::Compile(str_code, str_name);
 
-		return Value(script->Run(context).ToLocalChecked());
+		return Value(this, script->Run(context).ToLocalChecked());
 	}
 
 private:
@@ -156,9 +158,14 @@ public:
 		return new v8_Runtime();
 	}
 
+	bool ValueIsUndefined(const Value& v)
+	{
+		return !v.m_v.IsEmpty() && v.m_v->IsUndefined();
+	}
+
 	Value NewBoolean(Runtime* rt, bool b)
 	{
-		return Value(b ? v8::True(((v8_Runtime*)rt)->m_isolate) :
+		return Value(rt, b ? v8::True(((v8_Runtime*)rt)->m_isolate) :
 		             v8::False(((v8_Runtime*)rt)->m_isolate));
 	}
 
@@ -174,7 +181,7 @@ public:
 
 	Value NewNumber(Runtime* rt, double d)
 	{
-		return Value(v8::Number::New(((v8_Runtime*)rt)->m_isolate, d));
+		return Value(rt, v8::Number::New(((v8_Runtime*)rt)->m_isolate, d));
 	}
 
 	double ValueToNumber(const Value& v)
@@ -189,9 +196,9 @@ public:
 
 	Value NewString(Runtime* rt, exlib::string s)
 	{
-		return Value(v8::String::NewFromUtf8(((v8_Runtime*)rt)->m_isolate,
-		                                     s.c_str(), v8::String::kNormalString,
-		                                     (int32_t)s.length()));
+		return Value(rt, v8::String::NewFromUtf8(((v8_Runtime*)rt)->m_isolate,
+		             s.c_str(), v8::String::kNormalString,
+		             (int32_t)s.length()));
 	}
 
 	exlib::string ValueToString(const Value& v)
@@ -205,6 +212,83 @@ public:
 	bool ValueIsString(const Value& v)
 	{
 		return !v.m_v.IsEmpty() && (v.m_v->IsString() || v.m_v->IsStringObject());
+	}
+
+	Object NewObject(Runtime* rt)
+	{
+		return Value(rt, v8::Object::New(((v8_Runtime*)rt)->m_isolate));
+	}
+
+	bool ObjectHas(const Object& o, exlib::string key)
+	{
+		return v8::Local<v8::Object>::Cast(o.m_v)->Has(
+		           v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		                                   key.c_str(), v8::String::kNormalString,
+		                                   (int32_t)key.length()));
+	}
+
+	Value ObjectGet(const Object& o, exlib::string key)
+	{
+		return Value(o.m_rt, v8::Local<v8::Object>::Cast(o.m_v)->Get(
+		                 v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		                         key.c_str(), v8::String::kNormalString,
+		                         (int32_t)key.length())));
+	}
+
+	void ObjectSet(const Object& o, exlib::string key, const Value& v)
+	{
+		v8::Local<v8::Object>::Cast(o.m_v)->Set(
+		    v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		                            key.c_str(), v8::String::kNormalString,
+		                            (int32_t)key.length()), v.m_v);
+	}
+
+	void ObjectRemove(const Object& o, exlib::string key)
+	{
+		v8::Local<v8::Object>::Cast(o.m_v)->Delete(
+		    v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		                            key.c_str(), v8::String::kNormalString,
+		                            (int32_t)key.length()));
+	}
+
+	Array ObjectKeys(const Object& o)
+	{
+		return Array(o.m_rt, v8::Local<v8::Object>::Cast(o.m_v)->GetPropertyNames());
+	}
+
+	bool ValueIsObject(const Value& v)
+	{
+		return !v.m_v.IsEmpty() && v.m_v->IsObject();
+	}
+
+	Array NewArray(Runtime* rt, int32_t sz)
+	{
+		return Value(rt, v8::Array::New(((v8_Runtime*)rt)->m_isolate, sz));
+	}
+
+	int32_t ArrayGetLength(const Array& a)
+	{
+		return v8::Local<v8::Array>::Cast(a.m_v)->Length();
+	}
+
+	Value ArrayGet(const Array& a, int32_t idx)
+	{
+		return Value(a.m_rt, v8::Local<v8::Array>::Cast(a.m_v)->Get(idx));
+	}
+
+	void ArraySet(const Array& a, int32_t idx, const Value& v)
+	{
+		v8::Local<v8::Array>::Cast(a.m_v)->Set(idx, v.m_v);
+	}
+
+	void ArrayRemove(const Array& a, int32_t idx)
+	{
+		v8::Local<v8::Array>::Cast(a.m_v)->Delete(idx);
+	}
+
+	bool ValueIsArray(const Value& v)
+	{
+		return !v.m_v.IsEmpty() && v.m_v->IsArray();
 	}
 };
 
