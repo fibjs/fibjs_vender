@@ -50,13 +50,16 @@ public:
 	virtual Runtime* createRuntime() = 0;
 
 	virtual Value NewBoolean(Runtime* rt, bool b) = 0;
-	virtual bool ValueToBoolean(Value& v) = 0;
+	virtual bool ValueToBoolean(const Value& v) = 0;
+	virtual bool ValueIsBoolean(const Value& v) = 0;
 
 	virtual Value NewNumber(Runtime* rt, double d) = 0;
-	virtual double ValueToNumber(Value& v) = 0;
+	virtual double ValueToNumber(const Value& v) = 0;
+	virtual bool ValueIsNumber(const Value& v) = 0;
 
 	virtual Value NewString(Runtime* rt, exlib::string s) = 0;
-	virtual exlib::string ValueToString(Value& v) = 0;
+	virtual exlib::string ValueToString(const Value& v) = 0;
+	virtual bool ValueIsString(const Value& v) = 0;
 };
 
 extern Api* v8_api;

@@ -162,9 +162,14 @@ public:
 		             v8::False(((v8_Runtime*)rt)->m_isolate));
 	}
 
-	bool ValueToBoolean(Value& v)
+	bool ValueToBoolean(const Value& v)
 	{
 		return v.m_v->BooleanValue();
+	}
+
+	bool ValueIsBoolean(const Value& v)
+	{
+		return !v.m_v.IsEmpty() && (v.m_v->IsBoolean() || v.m_v->IsBooleanObject());
 	}
 
 	Value NewNumber(Runtime* rt, double d)
@@ -172,9 +177,14 @@ public:
 		return Value(v8::Number::New(((v8_Runtime*)rt)->m_isolate, d));
 	}
 
-	double ValueToNumber(Value& v)
+	double ValueToNumber(const Value& v)
 	{
 		return v.m_v->NumberValue();
+	}
+
+	bool ValueIsNumber(const Value& v)
+	{
+		return !v.m_v.IsEmpty() && (v.m_v->IsNumber() || v.m_v->IsNumberObject());
 	}
 
 	Value NewString(Runtime* rt, exlib::string s)
@@ -184,12 +194,17 @@ public:
 		                                     (int32_t)s.length()));
 	}
 
-	exlib::string ValueToString(Value& v)
+	exlib::string ValueToString(const Value& v)
 	{
 		v8::String::Utf8Value tmp(v.m_v);
 		if (*tmp)
 			return exlib::string(*tmp, tmp.length());
 		return exlib::string();
+	}
+
+	bool ValueIsString(const Value& v)
+	{
+		return !v.m_v.IsEmpty() && (v.m_v->IsString() || v.m_v->IsStringObject());
 	}
 };
 

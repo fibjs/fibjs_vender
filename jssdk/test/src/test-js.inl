@@ -17,27 +17,31 @@ TEST(ENG(api), Runtime)
 	EXPECT_NE((void*)NULL, rt);
 }
 
-TEST(ENG(api), Value_toBoolean)
+TEST(ENG(api), Value_Boolean)
 {
 	js::Scope scope(rt);
 
+	EXPECT_EQ(true, js::_api->NewBoolean(rt, true).isBoolean());
 	EXPECT_EQ(true, js::_api->NewBoolean(rt, true).toBoolean());
 	EXPECT_EQ(false, js::_api->NewBoolean(rt, false).toBoolean());
 	EXPECT_EQ(true, js::_api->NewString(rt, "true").toBoolean());
 }
 
-TEST(ENG(api), Value_toNumber)
+TEST(ENG(api), Value_Number)
 {
 	js::Scope scope(rt);
 
+	EXPECT_EQ(true, js::_api->NewNumber(rt, 100.5).isNumber());
+	EXPECT_EQ(false, js::_api->NewBoolean(rt, true).isNumber());
 	EXPECT_EQ(100.5, js::_api->NewNumber(rt, 100.5).toNumber());
 	EXPECT_EQ(100.5, js::_api->NewString(rt, "100.5").toNumber());
 }
 
-TEST(ENG(api), Value_toString)
+TEST(ENG(api), Value_String)
 {
 	js::Scope scope(rt);
 
+	EXPECT_EQ(true, js::_api->NewString(rt, "abcd").isString());
 	EXPECT_EQ("abcd", js::_api->NewString(rt, "abcd").toString());
 	EXPECT_EQ("10.5", js::_api->NewNumber(rt, 10.5).toString());
 }

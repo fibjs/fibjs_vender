@@ -102,19 +102,40 @@ public:
 	}
 
 public:
-	bool toBoolean()
+	bool isEmpty() const
+	{
+		return m_v.IsEmpty();
+	}
+
+public:
+	bool toBoolean() const
 	{
 		return _api->ValueToBoolean(*this);
 	}
 
-	double toNumber()
+	bool isBoolean() const
+	{
+		return _api->ValueIsBoolean(*this);
+	}
+
+	double toNumber() const
 	{
 		return _api->ValueToNumber(*this);
 	}
 
-	exlib::string toString()
+	bool isNumber() const
+	{
+		return _api->ValueIsNumber(*this);
+	}
+
+	exlib::string toString() const
 	{
 		return _api->ValueToString(*this);
+	}
+
+	bool isString() const
+	{
+		return _api->ValueIsString(*this);
 	}
 
 

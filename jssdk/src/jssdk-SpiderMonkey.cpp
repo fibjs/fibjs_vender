@@ -114,11 +114,16 @@ public:
 		             b ? JSVAL_TRUE : JSVAL_FALSE);
 	}
 
-	bool ValueToBoolean(Value& v)
+	bool ValueToBoolean(const Value& v)
 	{
 		JSBool b;
 		JS_ValueToBoolean(v.m_cx, v.m_v, &b);
 		return b ? true : false;
+	}
+
+	bool ValueIsBoolean(const Value& v)
+	{
+		return v.m_v != NULL && JSVAL_IS_BOOLEAN(v.m_v);
 	}
 
 	Value NewNumber(Runtime* rt, double d)
@@ -128,11 +133,16 @@ public:
 		return Value(((SpiderMonkey_Runtime*)rt)->m_cx, v);
 	}
 
-	double ValueToNumber(Value& v)
+	double ValueToNumber(const Value& v)
 	{
 		jsdouble d;
 		JS_ValueToNumber(v.m_cx, v.m_v, &d);
 		return d;
+	}
+
+	bool ValueIsNumber(const Value& v)
+	{
+		return v.m_v != NULL && JSVAL_IS_NUMBER(v.m_v);
 	}
 
 	Value NewString(Runtime* rt, exlib::string s)
@@ -144,12 +154,17 @@ public:
 		return Value(((SpiderMonkey_Runtime*)rt)->m_cx, v);
 	}
 
-	exlib::string ValueToString(Value& v)
+	exlib::string ValueToString(const Value& v)
 	{
 		JSString* s = JS_ValueToString(v.m_cx, v.m_v);
 		if (s)
 			return utf16to8String(exlib::wstring((exlib::wchar*)JS_GetStringChars(s), JS_GetStringLength(s)));
 		return exlib::string();
+	}
+
+	bool ValueIsString(const Value& v)
+	{
+		return v.m_v != NULL && JSVAL_IS_STRING(v.m_v);
 	}
 
 };
