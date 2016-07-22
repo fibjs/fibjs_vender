@@ -11,7 +11,9 @@
 #define _ex_qstring_h__
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+#include <string>
 #include "utils.h"
 
 namespace exlib
