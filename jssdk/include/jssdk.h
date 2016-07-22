@@ -10,6 +10,7 @@
 #define _jssdk_h__
 
 #include <stdint.h>
+#include <exlib/include/qstring.h>
 
 namespace js
 {
@@ -33,7 +34,7 @@ public:
 	virtual void Scope_enter(Scope& scope) = 0;
 	virtual void Scope_leave(Scope& scope) = 0;
 
-	virtual Value execute(const char* code, int32_t size, const char* soname) = 0;
+	virtual Value execute(exlib::string code, exlib::string soname) = 0;
 
 };
 
@@ -53,6 +54,9 @@ public:
 
 	virtual Value NewNumber(Runtime* rt, double d) = 0;
 	virtual double ValueToNumber(Value& v) = 0;
+
+	virtual Value NewString(Runtime* rt, exlib::string s) = 0;
+	virtual exlib::string ValueToString(Value& v) = 0;
 };
 
 extern Api* v8_api;

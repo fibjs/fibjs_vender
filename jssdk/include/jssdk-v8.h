@@ -112,6 +112,11 @@ public:
 		return _api->ValueToNumber(*this);
 	}
 
+	exlib::string toString()
+	{
+		return _api->ValueToString(*this);
+	}
+
 
 private:
 	v8::Local<v8::Value> m_v;

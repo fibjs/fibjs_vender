@@ -7,6 +7,7 @@
  */
 
 #include "jssdk-SpiderMonkey.h"
+#include "utf8.h"
 
 namespace js
 {
@@ -62,13 +63,13 @@ public:
 
 	}
 
-	Value execute(const char* code, int32_t size, const char* soname)
+	Value execute(exlib::string code, exlib::string soname)
 	{
 		jsval rval;
 		JSBool ok;
 
-		ok = JS_EvaluateScript(m_cx, m_global, code, size,
-		                       soname, 0, &rval);
+		ok = JS_EvaluateScript(m_cx, m_global, code.c_str(), code.length(),
+		                       soname.c_str(), 0, &rval);
 
 		if (ok)
 			return Value(m_cx, rval);
@@ -132,6 +133,23 @@ public:
 		jsdouble d;
 		JS_ValueToNumber(v.m_cx, v.m_v, &d);
 		return d;
+	}
+
+	Value NewString(Runtime* rt, exlib::string s)
+	{
+		exlib::wstring ws = utf8to16String(s);
+
+		jsval v = STRING_TO_JSVAL(JS_NewUCStringCopyN(((SpiderMonkey_Runtime*)rt)->m_cx,
+		                          (jschar*)ws.c_str(), ws.length()));
+		return Value(((SpiderMonkey_Runtime*)rt)->m_cx, v);
+	}
+
+	exlib::string ValueToString(Value& v)
+	{
+		JSString* s = JS_ValueToString(v.m_cx, v.m_v);
+		if (s)
+			return utf16to8String(exlib::wstring((exlib::wchar*)JS_GetStringChars(s), JS_GetStringLength(s)));
+		return exlib::string();
 	}
 
 };

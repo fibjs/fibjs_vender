@@ -108,13 +108,14 @@ public:
 		((v8::Locker*)scope.m_locker)->~Locker();
 	}
 
-	Value execute(const char* code, int32_t size, const char* soname)
+	Value execute(exlib::string code, exlib::string soname)
 	{
 		v8::Local<v8::Context> context = v8::Context::New(m_isolate);
-		v8::Local<v8::String> str = v8::String::NewFromUtf8(m_isolate,
-		                            code, v8::String::kNormalString, size);
-		v8::Local<v8::Script> script = v8::Script::Compile(str,
-		                               v8::String::NewFromUtf8(m_isolate, code));
+		v8::Local<v8::String> str_code = v8::String::NewFromUtf8(m_isolate,
+		                                 code.c_str(), v8::String::kNormalString, code.length());
+		v8::Local<v8::String> str_name = v8::String::NewFromUtf8(m_isolate,
+		                                 soname.c_str(), v8::String::kNormalString, soname.length());
+		v8::Local<v8::Script> script = v8::Script::Compile(str_code, str_name);
 
 		return Value(script->Run(context).ToLocalChecked());
 	}
@@ -174,6 +175,21 @@ public:
 	double ValueToNumber(Value& v)
 	{
 		return v.m_v->NumberValue();
+	}
+
+	Value NewString(Runtime* rt, exlib::string s)
+	{
+		return Value(v8::String::NewFromUtf8(((v8_Runtime*)rt)->m_isolate,
+		                                     s.c_str(), v8::String::kNormalString,
+		                                     (int32_t)s.length()));
+	}
+
+	exlib::string ValueToString(Value& v)
+	{
+		v8::String::Utf8Value tmp(v.m_v);
+		if (*tmp)
+			return exlib::string(*tmp, tmp.length());
+		return exlib::string();
 	}
 };
 

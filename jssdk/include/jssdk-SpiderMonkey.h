@@ -106,6 +106,11 @@ public:
 		return _api->ValueToNumber(*this);
 	}
 
+	exlib::string toString()
+	{
+		return _api->ValueToString(*this);
+	}
+
 private:
 	JSContext *m_cx;
 	jsval m_v;
