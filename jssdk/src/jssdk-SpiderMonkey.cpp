@@ -123,7 +123,7 @@ public:
 	{
 		JSBool b;
 		JS_ValueToBoolean(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, v.m_v, &b);
-		return b ? true : false;
+		return (bool)b;
 	}
 
 	bool ValueIsBoolean(const Value& v)
@@ -185,7 +185,7 @@ public:
 		JSBool r;
 		JS_HasProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
 		               key.c_str(), &r);
-		return r == JSVAL_TRUE;
+		return (bool)r;
 	}
 
 	Value ObjectGet(const Object& o, exlib::string key)
@@ -265,7 +265,7 @@ public:
 	{
 		if (!ValueIsObject(v))
 			return false;
-		return JS_IsArrayObject(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v)) == JSVAL_TRUE;
+		return (bool)JS_IsArrayObject(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
 	}
 };
 
