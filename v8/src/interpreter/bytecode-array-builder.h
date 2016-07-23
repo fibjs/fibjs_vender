@@ -215,7 +215,8 @@ class BytecodeArrayBuilder final : public ZoneObject {
   BytecodeArrayBuilder& CastAccumulatorToBoolean();
   BytecodeArrayBuilder& CastAccumulatorToJSObject();
   BytecodeArrayBuilder& CastAccumulatorToName();
-  BytecodeArrayBuilder& CastAccumulatorToNumber();
+  // Does not update the accumulator but stores to |out| instead.
+  BytecodeArrayBuilder& CastAccumulatorToNumber(Register out);
 
   // Flow Control.
   BytecodeArrayBuilder& Bind(BytecodeLabel* label);
@@ -250,7 +251,8 @@ class BytecodeArrayBuilder final : public ZoneObject {
   BytecodeArrayBuilder& ResumeGenerator(Register generator);
 
   // Exception handling.
-  BytecodeArrayBuilder& MarkHandler(int handler_id, bool will_catch);
+  BytecodeArrayBuilder& MarkHandler(int handler_id,
+                                    HandlerTable::CatchPrediction will_catch);
   BytecodeArrayBuilder& MarkTryBegin(int handler_id, Register context);
   BytecodeArrayBuilder& MarkTryEnd(int handler_id);
 

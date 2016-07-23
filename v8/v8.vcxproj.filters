@@ -55,6 +55,9 @@
     <Filter Include="Source Files\compiler">
       <UniqueIdentifier>{99e52990-fb59-1eaf-e932-48f9c3481633}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\compiler-dispatcher">
+      <UniqueIdentifier>{ff94ca21-7a4c-bf6e-22f3-020ad35b00b7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\compiler\ia32">
       <UniqueIdentifier>{afd14b90-34a2-9841-1aad-7fccf917eda4}</UniqueIdentifier>
     </Filter>
@@ -507,6 +510,9 @@
     <ClInclude Include="src\bootstrapper.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-utils.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -551,6 +557,12 @@
     </ClInclude>
     <ClInclude Include="src\compilation-statistics.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-job.h">
+      <Filter>Source Files\compiler-dispatcher</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler-dispatcher\optimizing-compile-dispatcher.h">
+      <Filter>Source Files\compiler-dispatcher</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler.h">
       <Filter>Source Files</Filter>
@@ -1068,6 +1080,9 @@
     <ClInclude Include="src\debug\liveedit.h">
       <Filter>Source Files\debug</Filter>
     </ClInclude>
+    <ClInclude Include="src\deoptimize-reason.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\deoptimizer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1338,6 +1353,9 @@
     <ClInclude Include="src\interpreter\bytecode-peephole-optimizer.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-peephole-table.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-pipeline.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
@@ -1453,9 +1471,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\objects.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\optimizing-compile-dispatcher.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ostreams.h">
@@ -2081,6 +2096,66 @@
     <ClCompile Include="src\bootstrapper.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-array.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-arraybuffer.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-boolean.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-callsite.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-dataview.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-date.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-error.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-function.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-global.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-internal.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-json.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-math.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-number.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-object.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-proxy.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-reflect.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-sharedarraybuffer.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-string.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-symbol.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-typedarray.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2131,6 +2206,12 @@
     </ClCompile>
     <ClCompile Include="src\compilation-statistics.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-job.cc">
+      <Filter>Source Files\compiler-dispatcher</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler-dispatcher\optimizing-compile-dispatcher.cc">
+      <Filter>Source Files\compiler-dispatcher</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler.cc">
       <Filter>Source Files</Filter>
@@ -2654,6 +2735,9 @@
     <ClCompile Include="src\debug\x87\debug-x87.cc">
       <Filter>Source Files\debug\x87</Filter>
     </ClCompile>
+    <ClCompile Include="src\deoptimize-reason.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\deoptimizer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2743,6 +2827,9 @@
     </ClCompile>
     <ClCompile Include="src\gdb-jit.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gen\bytecode-peephole-table.cc">
+      <Filter>Source Files\gen</Filter>
     </ClCompile>
     <ClCompile Include="src\gen\experimental-extras-libraries.cc">
       <Filter>Source Files\gen</Filter>
@@ -3051,9 +3138,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\objects.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\optimizing-compile-dispatcher.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ostreams.cc">

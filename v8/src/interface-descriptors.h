@@ -77,6 +77,7 @@ class PlatformInterfaceDescriptor;
   V(Keyed)                             \
   V(Named)                             \
   V(HasProperty)                       \
+  V(ForInFilter)                       \
   V(GetProperty)                       \
   V(CallHandler)                       \
   V(ArgumentAdaptor)                   \
@@ -216,6 +217,8 @@ class CallInterfaceDescriptor {
 
   void Initialize(Isolate* isolate, CallDescriptors::Key key) {
     if (!data()->IsInitialized()) {
+      // We should only initialize descriptors on the isolate's main thread.
+      DCHECK(ThreadId::Current().Equals(isolate->thread_id()));
       CallInterfaceDescriptorData* d = isolate->call_descriptor_data(key);
       DCHECK(d == data());  // d should be a modifiable pointer to data().
       InitializePlatformSpecific(d);
@@ -528,6 +531,13 @@ class HasPropertyDescriptor final : public CallInterfaceDescriptor {
   enum ParameterIndices { kKeyIndex, kObjectIndex };
 
   DECLARE_DEFAULT_DESCRIPTOR(HasPropertyDescriptor, CallInterfaceDescriptor, 2)
+};
+
+class ForInFilterDescriptor final : public CallInterfaceDescriptor {
+ public:
+  enum ParameterIndices { kKeyIndex, kObjectIndex };
+
+  DECLARE_DEFAULT_DESCRIPTOR(ForInFilterDescriptor, CallInterfaceDescriptor, 2)
 };
 
 class GetPropertyDescriptor final : public CallInterfaceDescriptor {

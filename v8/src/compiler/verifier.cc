@@ -736,6 +736,8 @@ void Verifier::Visitor::Check(Node* node) {
       CheckUpperIs(node, Type::Unsigned32());
       break;
     case IrOpcode::kNumberAtan2:
+    case IrOpcode::kNumberMax:
+    case IrOpcode::kNumberMin:
     case IrOpcode::kNumberPow:
       // (Number, Number) -> Number
       CheckValueInputIs(node, 0, Type::Number());
@@ -829,6 +831,12 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kAllocate:
       CheckValueInputIs(node, 0, Type::PlainNumber());
       CheckUpperIs(node, Type::TaggedPointer());
+      break;
+    case IrOpcode::kTransitionElementsKind:
+      CheckValueInputIs(node, 0, Type::Any());
+      CheckValueInputIs(node, 1, Type::Internal());
+      CheckValueInputIs(node, 2, Type::Internal());
+      CheckNotTyped(node);
       break;
 
     case IrOpcode::kChangeTaggedSignedToInt32: {
@@ -1084,8 +1092,6 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kFloat32Neg:
     case IrOpcode::kFloat32Mul:
     case IrOpcode::kFloat32Div:
-    case IrOpcode::kFloat32Max:
-    case IrOpcode::kFloat32Min:
     case IrOpcode::kFloat32Abs:
     case IrOpcode::kFloat32Sqrt:
     case IrOpcode::kFloat32Equal:
@@ -1178,6 +1184,8 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kLoadStackPointer:
     case IrOpcode::kLoadFramePointer:
     case IrOpcode::kLoadParentFramePointer:
+    case IrOpcode::kUnalignedLoad:
+    case IrOpcode::kUnalignedStore:
     case IrOpcode::kCheckedLoad:
     case IrOpcode::kCheckedStore:
     case IrOpcode::kAtomicLoad:

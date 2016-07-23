@@ -129,7 +129,26 @@ std::ostream& operator<<(std::ostream&, CheckTaggedHoleMode);
 
 CheckTaggedHoleMode CheckTaggedHoleModeOf(const Operator*) WARN_UNUSED_RESULT;
 
-Type* TypeOf(const Operator* op) WARN_UNUSED_RESULT;
+enum class CheckForMinusZeroMode : uint8_t {
+  kCheckForMinusZero,
+  kDontCheckForMinusZero,
+};
+
+size_t hash_value(CheckForMinusZeroMode);
+
+std::ostream& operator<<(std::ostream&, CheckForMinusZeroMode);
+
+CheckForMinusZeroMode CheckMinusZeroModeOf(const Operator*) WARN_UNUSED_RESULT;
+
+// A descriptor for elements kind transitions.
+enum class ElementsTransition : uint8_t {
+  kFastTransition,  // simple transition, just updating the map.
+  kSlowTransition   // full transition, round-trip to the runtime.
+};
+
+std::ostream& operator<<(std::ostream&, ElementsTransition);
+
+ElementsTransition ElementsTransitionOf(const Operator* op) WARN_UNUSED_RESULT;
 
 BinaryOperationHints::Hint BinaryOperationHintOf(const Operator* op);
 
@@ -199,6 +218,8 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* NumberLog1p();
   const Operator* NumberLog10();
   const Operator* NumberLog2();
+  const Operator* NumberMax();
+  const Operator* NumberMin();
   const Operator* NumberPow();
   const Operator* NumberRound();
   const Operator* NumberSign();
@@ -261,7 +282,7 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* CheckedInt32Mod();
   const Operator* CheckedUint32Div();
   const Operator* CheckedUint32Mod();
-  const Operator* CheckedInt32Mul();
+  const Operator* CheckedInt32Mul(CheckForMinusZeroMode);
   const Operator* CheckedUint32ToInt32();
   const Operator* CheckedFloat64ToInt32();
   const Operator* CheckedTaggedToInt32();
@@ -276,6 +297,9 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* ObjectIsSmi();
   const Operator* ObjectIsString();
   const Operator* ObjectIsUndetectable();
+
+  // transition-elements-kind object, from-map, to-map
+  const Operator* TransitionElementsKind(ElementsTransition transition);
 
   const Operator* Allocate(PretenureFlag pretenure = NOT_TENURED);
 

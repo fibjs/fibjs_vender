@@ -158,7 +158,7 @@ void VisitBinop(InstructionSelector* selector, Node* node,
   opcode = cont->Encode(opcode);
   if (cont->IsDeoptimize()) {
     selector->EmitDeoptimize(opcode, output_count, outputs, input_count, inputs,
-                             cont->frame_state());
+                             cont->reason(), cont->frame_state());
   } else {
     selector->Emit(opcode, output_count, outputs, input_count, inputs);
   }
@@ -331,6 +331,11 @@ void InstructionSelector::VisitStore(Node* node) {
   }
 }
 
+// Architecture supports unaligned access, therefore VisitLoad is used instead
+void InstructionSelector::VisitUnalignedLoad(Node* node) { UNREACHABLE(); }
+
+// Architecture supports unaligned access, therefore VisitStore is used instead
+void InstructionSelector::VisitUnalignedStore(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitCheckedLoad(Node* node) {
   CheckedLoadRepresentation load_rep = CheckedLoadRepresentationOf(node->op());
@@ -993,6 +998,36 @@ void InstructionSelector::VisitInt64Sub(Node* node) {
 }
 #endif
 
+namespace {
+
+void VisitCompare(InstructionSelector* selector, InstructionCode opcode,
+                  InstructionOperand left, InstructionOperand right,
+                  FlagsContinuation* cont);
+void EmitInt32MulWithOverflow(InstructionSelector* selector, Node* node,
+                              FlagsContinuation* cont) {
+  PPCOperandGenerator g(selector);
+  Int32BinopMatcher m(node);
+  InstructionOperand result_operand = g.DefineAsRegister(node);
+  InstructionOperand high32_operand = g.TempRegister();
+  InstructionOperand temp_operand = g.TempRegister();
+  {
+    InstructionOperand outputs[] = {result_operand, high32_operand};
+    InstructionOperand inputs[] = {g.UseRegister(m.left().node()),
+                                   g.UseRegister(m.right().node())};
+    selector->Emit(kPPC_Mul32WithHigh32, 2, outputs, 2, inputs);
+  }
+  {
+    InstructionOperand shift_31 = g.UseImmediate(31);
+    InstructionOperand outputs[] = {temp_operand};
+    InstructionOperand inputs[] = {result_operand, shift_31};
+    selector->Emit(kPPC_ShiftRightAlg32, 1, outputs, 2, inputs);
+  }
+
+  VisitCompare(selector, kPPC_Cmp32, high32_operand, temp_operand, cont);
+}
+
+}  // namespace
+
 
 void InstructionSelector::VisitInt32Mul(Node* node) {
   VisitRRR(this, kPPC_Mul32, node);
@@ -1300,20 +1335,19 @@ void InstructionSelector::VisitFloat64Mod(Node* node) {
 }
 
 
-void InstructionSelector::VisitFloat32Max(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat64Max(Node* node) {
+  VisitRRR(this, kPPC_MaxDouble, node);
+}
 
-
-void InstructionSelector::VisitFloat64Max(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitFloat64SilenceNaN(Node* node) {
   VisitRR(this, kPPC_Float64SilenceNaN, node);
 }
 
 
-void InstructionSelector::VisitFloat32Min(Node* node) { UNREACHABLE(); }
-
-
-void InstructionSelector::VisitFloat64Min(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat64Min(Node* node) {
+  VisitRRR(this, kPPC_MinDouble, node);
+}
 
 
 void InstructionSelector::VisitFloat32Abs(Node* node) {
@@ -1472,7 +1506,7 @@ void VisitCompare(InstructionSelector* selector, InstructionCode opcode,
     selector->Emit(opcode, g.NoOutput(), left, right,
                    g.Label(cont->true_block()), g.Label(cont->false_block()));
   } else if (cont->IsDeoptimize()) {
-    selector->EmitDeoptimize(opcode, g.NoOutput(), left, right,
+    selector->EmitDeoptimize(opcode, g.NoOutput(), left, right, cont->reason(),
                              cont->frame_state());
   } else {
     DCHECK(cont->IsSet());
@@ -1630,6 +1664,9 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
                 return VisitBinop<Int32BinopMatcher>(selector, node,
                                                      kPPC_SubWithOverflow32,
                                                      kInt16Imm_Negate, cont);
+              case IrOpcode::kInt32MulWithOverflow:
+                cont->OverwriteAndNegateIfEqual(kNotEqual);
+                return EmitInt32MulWithOverflow(selector, node, cont);
 #if V8_TARGET_ARCH_PPC64
               case IrOpcode::kInt64AddWithOverflow:
                 cont->OverwriteAndNegateIfEqual(kOverflow);
@@ -1712,14 +1749,14 @@ void InstructionSelector::VisitBranch(Node* branch, BasicBlock* tbranch,
 }
 
 void InstructionSelector::VisitDeoptimizeIf(Node* node) {
-  FlagsContinuation cont =
-      FlagsContinuation::ForDeoptimize(kNotEqual, node->InputAt(1));
+  FlagsContinuation cont = FlagsContinuation::ForDeoptimize(
+      kNotEqual, DeoptimizeReasonOf(node->op()), node->InputAt(1));
   VisitWord32CompareZero(this, node, node->InputAt(0), &cont);
 }
 
 void InstructionSelector::VisitDeoptimizeUnless(Node* node) {
-  FlagsContinuation cont =
-      FlagsContinuation::ForDeoptimize(kEqual, node->InputAt(1));
+  FlagsContinuation cont = FlagsContinuation::ForDeoptimize(
+      kEqual, DeoptimizeReasonOf(node->op()), node->InputAt(1));
   VisitWord32CompareZero(this, node, node->InputAt(0), &cont);
 }
 
@@ -1823,6 +1860,15 @@ void InstructionSelector::VisitUint64LessThanOrEqual(Node* node) {
   VisitWord64Compare(this, node, &cont);
 }
 #endif
+
+void InstructionSelector::VisitInt32MulWithOverflow(Node* node) {
+  if (Node* ovf = NodeProperties::FindProjection(node, 1)) {
+    FlagsContinuation cont = FlagsContinuation::ForSet(kNotEqual, ovf);
+    return EmitInt32MulWithOverflow(this, node, &cont);
+  }
+  FlagsContinuation cont;
+  EmitInt32MulWithOverflow(this, node, &cont);
+}
 
 
 void InstructionSelector::VisitFloat32Equal(Node* node) {

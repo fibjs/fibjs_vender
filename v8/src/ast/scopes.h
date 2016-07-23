@@ -90,8 +90,24 @@ class Scope: public ZoneObject {
   // Construction
 
   Scope(Zone* zone, Scope* outer_scope, ScopeType scope_type,
-        AstValueFactory* value_factory,
         FunctionKind function_kind = kNormalFunction);
+
+  class Snapshot final BASE_EMBEDDED {
+   public:
+    explicit Snapshot(Scope* scope)
+        : outer_scope_(scope),
+          top_inner_scope_(scope->inner_scope_),
+          top_unresolved_(scope->unresolved_),
+          top_temp_(scope->ClosureScope()->temps_.length()) {}
+
+    void Reparent(Scope* new_parent) const;
+
+   private:
+    Scope* outer_scope_;
+    Scope* top_inner_scope_;
+    VariableProxy* top_unresolved_;
+    int top_temp_;
+  };
 
   // Compute top scope and allocate variables. For lazy compilation the top
   // scope only contains the single lazily compiled function, so this
@@ -99,14 +115,16 @@ class Scope: public ZoneObject {
   static bool Analyze(ParseInfo* info);
 
   static Scope* DeserializeScopeChain(Isolate* isolate, Zone* zone,
-                                      Context* context, Scope* script_scope);
+                                      Context* context, Scope* script_scope,
+                                      AstValueFactory* ast_value_factory);
 
   // The scope name is only used for printing/debugging.
   void SetScopeName(const AstRawString* scope_name) {
     scope_name_ = scope_name;
   }
 
-  void Initialize();
+  void DeclareThis(AstValueFactory* ast_value_factory);
+  void DeclareDefaultFunctionVariables(AstValueFactory* ast_value_factory);
 
   // Checks if the block scope is redundant, i.e. it does not contain any
   // block scoped declarations. In that case it is removed from the scope
@@ -114,7 +132,7 @@ class Scope: public ZoneObject {
   Scope* FinalizeBlockScope();
 
   // Inserts outer_scope into this scope's scope chain (and removes this
-  // from the current outer_scope_'s inner_scopes_).
+  // from the current outer_scope_'s inner scope list).
   // Assumes outer_scope_ is non-null.
   void ReplaceOuterScope(Scope* outer_scope);
 
@@ -122,7 +140,7 @@ class Scope: public ZoneObject {
   // to the passed-in scope.
   void PropagateUsageFlagsToScope(Scope* other);
 
-  Zone* zone() const { return zone_; }
+  Zone* zone() const { return variables_.zone(); }
 
   // ---------------------------------------------------------------------------
   // Declarations
@@ -155,9 +173,9 @@ class Scope: public ZoneObject {
   // Declare a parameter in this scope.  When there are duplicated
   // parameters the rightmost one 'wins'.  However, the implementation
   // expects all parameters to be declared and from left to right.
-  Variable* DeclareParameter(
-      const AstRawString* name, VariableMode mode,
-      bool is_optional, bool is_rest, bool* is_duplicate);
+  Variable* DeclareParameter(const AstRawString* name, VariableMode mode,
+                             bool is_optional, bool is_rest, bool* is_duplicate,
+                             AstValueFactory* ast_value_factory);
 
   // Declare a local variable in this scope. If the variable has been
   // declared before, the previously declared variable is returned.
@@ -183,14 +201,16 @@ class Scope: public ZoneObject {
     DCHECK(!already_resolved());
     VariableProxy* proxy =
         factory->NewVariableProxy(name, kind, start_position, end_position);
-    unresolved_.Add(proxy, zone_);
+    proxy->set_next_unresolved(unresolved_);
+    unresolved_ = proxy;
     return proxy;
   }
 
   void AddUnresolved(VariableProxy* proxy) {
     DCHECK(!already_resolved());
     DCHECK(!proxy->is_resolved());
-    unresolved_.Add(proxy, zone_);
+    proxy->set_next_unresolved(unresolved_);
+    unresolved_ = proxy;
   }
 
   // Remove a unresolved variable. During parsing, an unresolved variable
@@ -249,9 +269,6 @@ class Scope: public ZoneObject {
 
   // Inform the scope that the corresponding code contains an eval call.
   void RecordEvalCall() { scope_calls_eval_ = true; }
-
-  // Inform the scope that the corresponding code uses "arguments".
-  void RecordArgumentsUsage() { scope_uses_arguments_ = true; }
 
   // Inform the scope that the corresponding code uses "super".
   void RecordSuperPropertyUsage() { scope_uses_super_property_ = true; }
@@ -356,8 +373,6 @@ class Scope: public ZoneObject {
   // Is this scope inside a with statement.
   bool inside_with() const { return scope_inside_with_; }
 
-  // Does this scope access "arguments".
-  bool uses_arguments() const { return scope_uses_arguments_; }
   // Does this scope access "super" property (super.foo).
   bool uses_super_property() const { return scope_uses_super_property_; }
   // Does this scope have the potential to execute declarations non-linearly?
@@ -490,8 +505,11 @@ class Scope: public ZoneObject {
   // Declarations list.
   ZoneList<Declaration*>* declarations() { return &decls_; }
 
-  // Inner scope list.
-  ZoneList<Scope*>* inner_scopes() { return &inner_scopes_; }
+  // inner_scope() and sibling() together implement the inner scope list of a
+  // scope. Inner scope points to the an inner scope of the function, and
+  // "sibling" points to a next inner scope of the outer scope of this scope.
+  Scope* inner_scope() const { return inner_scope_; }
+  Scope* sibling() const { return sibling_; }
 
   // The scope immediately surrounding this scope, or NULL.
   Scope* outer_scope() const { return outer_scope_; }
@@ -605,12 +623,13 @@ class Scope: public ZoneObject {
  private:
   // Scope tree.
   Scope* outer_scope_;  // the immediately enclosing outer scope, or NULL
-  ZoneList<Scope*> inner_scopes_;  // the immediately enclosed inner scopes
+  Scope* inner_scope_;  // an inner scope of this scope
+  Scope* sibling_;  // a sibling inner scope of the outer scope of this scope.
 
   // The scope type.
-  ScopeType scope_type_;
+  const ScopeType scope_type_;
   // If the scope is a function scope, this is the function kind.
-  FunctionKind function_kind_;
+  const FunctionKind function_kind_;
 
   // Debugging support.
   const AstRawString* scope_name_;
@@ -629,8 +648,9 @@ class Scope: public ZoneObject {
   ZoneList<Variable*> params_;
   // Variables that must be looked up dynamically.
   DynamicScopePart* dynamics_;
-  // Unresolved variables referred to from this scope.
-  ZoneList<VariableProxy*> unresolved_;
+  // Unresolved variables referred to from this scope. The proxies themselves
+  // form a linked list of all unresolved proxies.
+  VariableProxy* unresolved_;
   // Declarations.
   ZoneList<Declaration*> decls_;
   // Convenience variable.
@@ -656,10 +676,10 @@ class Scope: public ZoneObject {
   // This scope or a nested catch scope or with scope contain an 'eval' call. At
   // the 'eval' call site this scope is the declaration scope.
   bool scope_calls_eval_;
-  // This scope uses "arguments".
-  bool scope_uses_arguments_;
   // This scope uses "super" property ('super.foo').
   bool scope_uses_super_property_;
+  // This scope has a parameter called "arguments".
+  bool has_arguments_parameter_;
   // This scope contains an "use asm" annotation.
   bool asm_module_;
   // This scope's outer context is an asm module.
@@ -772,16 +792,18 @@ class Scope: public ZoneObject {
   // Predicates.
   bool MustAllocate(Variable* var);
   bool MustAllocateInContext(Variable* var);
-  bool HasArgumentsParameter(Isolate* isolate);
 
   // Variable allocation.
   void AllocateStackSlot(Variable* var);
   void AllocateHeapSlot(Variable* var);
-  void AllocateParameterLocals(Isolate* isolate);
-  void AllocateNonParameterLocal(Isolate* isolate, Variable* var);
-  void AllocateDeclaredGlobal(Isolate* isolate, Variable* var);
-  void AllocateNonParameterLocalsAndDeclaredGlobals(Isolate* isolate);
-  void AllocateVariablesRecursively(Isolate* isolate);
+  void AllocateParameterLocals();
+  void AllocateNonParameterLocal(Variable* var,
+                                 AstValueFactory* ast_value_factory);
+  void AllocateDeclaredGlobal(Variable* var,
+                              AstValueFactory* ast_value_factory);
+  void AllocateNonParameterLocalsAndDeclaredGlobals(
+      AstValueFactory* ast_value_factory);
+  void AllocateVariablesRecursively(AstValueFactory* ast_value_factory);
   void AllocateParameter(Variable* var, int index);
   void AllocateReceiver();
 
@@ -798,35 +820,36 @@ class Scope: public ZoneObject {
 
   // Construct a scope based on the scope info.
   Scope(Zone* zone, Scope* inner_scope, ScopeType type,
-        Handle<ScopeInfo> scope_info, AstValueFactory* value_factory);
+        Handle<ScopeInfo> scope_info);
 
   // Construct a catch scope with a binding for the name.
-  Scope(Zone* zone, Scope* inner_scope, const AstRawString* catch_variable_name,
-        AstValueFactory* value_factory);
+  Scope(Zone* zone, Scope* inner_scope,
+        const AstRawString* catch_variable_name);
 
   void AddInnerScope(Scope* inner_scope) {
-    if (inner_scope != NULL) {
-      inner_scopes_.Add(inner_scope, zone_);
+    if (inner_scope != nullptr) {
+      inner_scope->sibling_ = inner_scope_;
+      inner_scope_ = inner_scope;
       inner_scope->outer_scope_ = this;
     }
   }
 
   void RemoveInnerScope(Scope* inner_scope) {
     DCHECK_NOT_NULL(inner_scope);
-    for (int i = 0; i < inner_scopes_.length(); i++) {
-      if (inner_scopes_[i] == inner_scope) {
-        inner_scopes_.Remove(i);
-        break;
+    if (inner_scope == inner_scope_) {
+      inner_scope_ = inner_scope_->sibling_;
+      return;
+    }
+    for (Scope* scope = inner_scope_; scope != nullptr;
+         scope = scope->sibling_) {
+      if (scope->sibling_ == inner_scope) {
+        scope->sibling_ = scope->sibling_->sibling_;
+        return;
       }
     }
   }
 
-  void SetDefaults(ScopeType type, Scope* outer_scope,
-                   Handle<ScopeInfo> scope_info,
-                   FunctionKind function_kind = kNormalFunction);
-
-  AstValueFactory* ast_value_factory_;
-  Zone* zone_;
+  void SetDefaults();
 
   PendingCompilationErrorHandler pending_error_handler_;
 };

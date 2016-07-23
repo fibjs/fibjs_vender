@@ -112,6 +112,7 @@
     <ClInclude Include="src\bignum.h" />
     <ClInclude Include="src\bit-vector.h" />
     <ClInclude Include="src\bootstrapper.h" />
+    <ClInclude Include="src\builtins\builtins-utils.h" />
     <ClInclude Include="src\builtins\builtins.h" />
     <ClInclude Include="src\cached-powers.h" />
     <ClInclude Include="src\cancelable-task.h" />
@@ -127,6 +128,8 @@
     <ClInclude Include="src\compilation-cache.h" />
     <ClInclude Include="src\compilation-dependencies.h" />
     <ClInclude Include="src\compilation-statistics.h" />
+    <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-job.h" />
+    <ClInclude Include="src\compiler-dispatcher\optimizing-compile-dispatcher.h" />
     <ClInclude Include="src\compiler.h" />
     <ClInclude Include="src\compiler\access-builder.h" />
     <ClInclude Include="src\compiler\access-info.h" />
@@ -299,6 +302,7 @@
     <ClInclude Include="src\debug\debug-scopes.h" />
     <ClInclude Include="src\debug\debug.h" />
     <ClInclude Include="src\debug\liveedit.h" />
+    <ClInclude Include="src\deoptimize-reason.h" />
     <ClInclude Include="src\deoptimizer.h" />
     <ClInclude Include="src\disasm.h" />
     <ClInclude Include="src\disassembler.h" />
@@ -389,6 +393,7 @@
     <ClInclude Include="src\interpreter\bytecode-generator.h" />
     <ClInclude Include="src\interpreter\bytecode-label.h" />
     <ClInclude Include="src\interpreter\bytecode-peephole-optimizer.h" />
+    <ClInclude Include="src\interpreter\bytecode-peephole-table.h" />
     <ClInclude Include="src\interpreter\bytecode-pipeline.h" />
     <ClInclude Include="src\interpreter\bytecode-register-allocator.h" />
     <ClInclude Include="src\interpreter\bytecode-register-optimizer.h" />
@@ -428,7 +433,6 @@
     <ClInclude Include="src\objects-body-descriptors.h" />
     <ClInclude Include="src\objects-inl.h" />
     <ClInclude Include="src\objects.h" />
-    <ClInclude Include="src\optimizing-compile-dispatcher.h" />
     <ClInclude Include="src\ostreams.h" />
     <ClInclude Include="src\parsing\expression-classifier.h" />
     <ClInclude Include="src\parsing\func-name-inferrer.h" />
@@ -638,6 +642,26 @@
     <ClCompile Include="src\bignum.cc" />
     <ClCompile Include="src\bit-vector.cc" />
     <ClCompile Include="src\bootstrapper.cc" />
+    <ClCompile Include="src\builtins\builtins-array.cc" />
+    <ClCompile Include="src\builtins\builtins-arraybuffer.cc" />
+    <ClCompile Include="src\builtins\builtins-boolean.cc" />
+    <ClCompile Include="src\builtins\builtins-callsite.cc" />
+    <ClCompile Include="src\builtins\builtins-dataview.cc" />
+    <ClCompile Include="src\builtins\builtins-date.cc" />
+    <ClCompile Include="src\builtins\builtins-error.cc" />
+    <ClCompile Include="src\builtins\builtins-function.cc" />
+    <ClCompile Include="src\builtins\builtins-global.cc" />
+    <ClCompile Include="src\builtins\builtins-internal.cc" />
+    <ClCompile Include="src\builtins\builtins-json.cc" />
+    <ClCompile Include="src\builtins\builtins-math.cc" />
+    <ClCompile Include="src\builtins\builtins-number.cc" />
+    <ClCompile Include="src\builtins\builtins-object.cc" />
+    <ClCompile Include="src\builtins\builtins-proxy.cc" />
+    <ClCompile Include="src\builtins\builtins-reflect.cc" />
+    <ClCompile Include="src\builtins\builtins-sharedarraybuffer.cc" />
+    <ClCompile Include="src\builtins\builtins-string.cc" />
+    <ClCompile Include="src\builtins\builtins-symbol.cc" />
+    <ClCompile Include="src\builtins\builtins-typedarray.cc" />
     <ClCompile Include="src\builtins\builtins.cc" />
     <ClCompile Include="src\builtins\ia32\builtins-ia32.cc" />
     <ClCompile Include="src\builtins\ppc\builtins-ppc.cc" />
@@ -655,6 +679,8 @@
     <ClCompile Include="src\compilation-cache.cc" />
     <ClCompile Include="src\compilation-dependencies.cc" />
     <ClCompile Include="src\compilation-statistics.cc" />
+    <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-job.cc" />
+    <ClCompile Include="src\compiler-dispatcher\optimizing-compile-dispatcher.cc" />
     <ClCompile Include="src\compiler.cc" />
     <ClCompile Include="src\compiler\access-builder.cc" />
     <ClCompile Include="src\compiler\access-info.cc" />
@@ -829,6 +855,7 @@
     <ClCompile Include="src\debug\s390\debug-s390.cc" />
     <ClCompile Include="src\debug\x64\debug-x64.cc" />
     <ClCompile Include="src\debug\x87\debug-x87.cc" />
+    <ClCompile Include="src\deoptimize-reason.cc" />
     <ClCompile Include="src\deoptimizer.cc" />
     <ClCompile Include="src\disassembler.cc" />
     <ClCompile Include="src\diy-fp.cc" />
@@ -859,6 +886,7 @@
     <ClCompile Include="src\full-codegen\x87\full-codegen-x87.cc" />
     <ClCompile Include="src\futex-emulation.cc" />
     <ClCompile Include="src\gdb-jit.cc" />
+    <ClCompile Include="src\gen\bytecode-peephole-table.cc" />
     <ClCompile Include="src\gen\experimental-extras-libraries.cc" />
     <ClCompile Include="src\gen\experimental-libraries.cc" />
     <ClCompile Include="src\gen\extras-libraries.cc" />
@@ -962,7 +990,6 @@
     <ClCompile Include="src\objects-debug.cc" />
     <ClCompile Include="src\objects-printer.cc" />
     <ClCompile Include="src\objects.cc" />
-    <ClCompile Include="src\optimizing-compile-dispatcher.cc" />
     <ClCompile Include="src\ostreams.cc" />
     <ClCompile Include="src\parsing\func-name-inferrer.cc" />
     <ClCompile Include="src\parsing\parameter-initializer-rewriter.cc" />

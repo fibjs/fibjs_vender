@@ -3326,6 +3326,15 @@ void JSObject::MigrateToMap(Handle<JSObject> object, Handle<Map> new_map,
   // When adding code here, add a DisallowHeapAllocation too.
 }
 
+void JSObject::ForceSetPrototype(Handle<JSObject> object,
+                                 Handle<Object> proto) {
+  // object.__proto__ = proto;
+  Handle<Map> old_map = Handle<Map>(object->map());
+  Handle<Map> new_map = Map::Copy(old_map, "ForceSetPrototype");
+  Map::SetPrototype(new_map, proto, FAST_PROTOTYPE);
+  JSObject::MigrateToMap(object, new_map);
+}
+
 int Map::NumberOfFields() {
   DescriptorArray* descriptors = instance_descriptors();
   int result = 0;
@@ -11198,6 +11207,42 @@ ComparisonResult String::Compare(Handle<String> x, Handle<String> y) {
   return result;
 }
 
+int String::IndexOf(Isolate* isolate, Handle<String> sub, Handle<String> pat,
+                    int start_index) {
+  DCHECK(0 <= start_index);
+  DCHECK(start_index <= sub->length());
+
+  int pattern_length = pat->length();
+  if (pattern_length == 0) return start_index;
+
+  int subject_length = sub->length();
+  if (start_index + pattern_length > subject_length) return -1;
+
+  sub = String::Flatten(sub);
+  pat = String::Flatten(pat);
+
+  DisallowHeapAllocation no_gc;  // ensure vectors stay valid
+  // Extract flattened substrings of cons strings before getting encoding.
+  String::FlatContent seq_sub = sub->GetFlatContent();
+  String::FlatContent seq_pat = pat->GetFlatContent();
+
+  // dispatch on type of strings
+  if (seq_pat.IsOneByte()) {
+    Vector<const uint8_t> pat_vector = seq_pat.ToOneByteVector();
+    if (seq_sub.IsOneByte()) {
+      return SearchString(isolate, seq_sub.ToOneByteVector(), pat_vector,
+                          start_index);
+    }
+    return SearchString(isolate, seq_sub.ToUC16Vector(), pat_vector,
+                        start_index);
+  }
+  Vector<const uc16> pat_vector = seq_pat.ToUC16Vector();
+  if (seq_sub.IsOneByte()) {
+    return SearchString(isolate, seq_sub.ToOneByteVector(), pat_vector,
+                        start_index);
+  }
+  return SearchString(isolate, seq_sub.ToUC16Vector(), pat_vector, start_index);
+}
 
 bool String::IsUtf8EqualTo(Vector<const char> str, bool allow_prefix_match) {
   int slen = length();
@@ -12626,13 +12671,12 @@ Handle<String> JSFunction::ToString(Handle<JSFunction> function) {
 
 void Oddball::Initialize(Isolate* isolate, Handle<Oddball> oddball,
                          const char* to_string, Handle<Object> to_number,
-                         bool to_boolean, const char* type_of, byte kind) {
+                         const char* type_of, byte kind) {
   Handle<String> internalized_to_string =
       isolate->factory()->InternalizeUtf8String(to_string);
   Handle<String> internalized_type_of =
       isolate->factory()->InternalizeUtf8String(type_of);
   oddball->set_to_number_raw(to_number->Number());
-  oddball->set_to_boolean(isolate->heap()->ToBoolean(to_boolean));
   oddball->set_to_number(*to_number);
   oddball->set_to_string(*internalized_to_string);
   oddball->set_type_of(*internalized_type_of);
@@ -12822,22 +12866,13 @@ int Script::GetLineNumber(int code_pos) {
 
 Handle<Object> Script::GetNameOrSourceURL(Handle<Script> script) {
   Isolate* isolate = script->GetIsolate();
-  Handle<String> name_or_source_url_key =
-      isolate->factory()->InternalizeOneByteString(
-          STATIC_CHAR_VECTOR("nameOrSourceURL"));
-  Handle<JSObject> script_wrapper = Script::GetWrapper(script);
-  Handle<Object> property =
-      JSReceiver::GetProperty(script_wrapper, name_or_source_url_key)
-          .ToHandleChecked();
-  DCHECK(property->IsJSFunction());
-  Handle<Object> result;
-  // Do not check against pending exception, since this function may be called
-  // when an exception has already been pending.
-  if (!Execution::TryCall(isolate, property, script_wrapper, 0, NULL)
-           .ToHandle(&result)) {
-    return isolate->factory()->undefined_value();
+
+  // Keep in sync with ScriptNameOrSourceURL in messages.js.
+
+  if (!script->source_url()->IsUndefined(isolate)) {
+    return handle(script->source_url(), isolate);
   }
-  return result;
+  return handle(script->name(), isolate);
 }
 
 
@@ -13823,14 +13858,14 @@ Code* Code::GetCodeAgeStub(Isolate* isolate, Age age, MarkingParity parity) {
 void Code::PrintDeoptLocation(FILE* out, Address pc) {
   Deoptimizer::DeoptInfo info = Deoptimizer::GetDeoptInfo(this, pc);
   class SourcePosition pos = info.position;
-  if (info.deopt_reason != Deoptimizer::kNoReason || !pos.IsUnknown()) {
+  if (info.deopt_reason != DeoptimizeReason::kNoReason || !pos.IsUnknown()) {
     if (FLAG_hydrogen_track_positions) {
       PrintF(out, "            ;;; deoptimize at %d_%d: %s\n",
              pos.inlining_id(), pos.position(),
-             Deoptimizer::GetDeoptReason(info.deopt_reason));
+             DeoptimizeReasonToString(info.deopt_reason));
     } else {
       PrintF(out, "            ;;; deoptimize at %d: %s\n", pos.raw(),
-             Deoptimizer::GetDeoptReason(info.deopt_reason));
+             DeoptimizeReasonToString(info.deopt_reason));
     }
   }
 }
@@ -16278,7 +16313,7 @@ Handle<Derived> HashTable<Derived, Shape, Key>::EnsureCapacity(
   int capacity = table->Capacity();
   int nof = table->NumberOfElements() + n;
 
-  if (table->HasSufficientCapacity(n)) return table;
+  if (table->HasSufficientCapacityToAdd(n)) return table;
 
   const int kMinCapacityForPretenure = 256;
   bool should_pretenure = pretenure == TENURED ||
@@ -16294,16 +16329,16 @@ Handle<Derived> HashTable<Derived, Shape, Key>::EnsureCapacity(
   return new_table;
 }
 
-
 template <typename Derived, typename Shape, typename Key>
-bool HashTable<Derived, Shape, Key>::HasSufficientCapacity(int n) {
+bool HashTable<Derived, Shape, Key>::HasSufficientCapacityToAdd(
+    int number_of_additional_elements) {
   int capacity = Capacity();
-  int nof = NumberOfElements() + n;
+  int nof = NumberOfElements() + number_of_additional_elements;
   int nod = NumberOfDeletedElements();
   // Return true if:
-  //   50% is still free after adding n elements and
+  //   50% is still free after adding number_of_additional_elements elements and
   //   at most 50% of the free elements are deleted elements.
-  if (nod <= (capacity - nof) >> 1) {
+  if ((nof < capacity) && ((nod <= (capacity - nof) >> 1))) {
     int needed_free = nof >> 1;
     if (nof + needed_free <= capacity) return true;
   }
@@ -17275,7 +17310,7 @@ void Dictionary<Derived, Shape, Key>::SetRequiresCopyOnCapacityChange() {
   DCHECK_EQ(0, DerivedHashTable::NumberOfDeletedElements());
   // Make sure that HashTable::EnsureCapacity will create a copy.
   DerivedHashTable::SetNumberOfDeletedElements(DerivedHashTable::Capacity());
-  DCHECK(!DerivedHashTable::HasSufficientCapacity(1));
+  DCHECK(!DerivedHashTable::HasSufficientCapacityToAdd(1));
 }
 
 
@@ -17427,6 +17462,17 @@ Handle<UnseededNumberDictionary> UnseededNumberDictionary::AddNumberEntry(
   return Add(dictionary, key, value, PropertyDetails::Empty());
 }
 
+Handle<UnseededNumberDictionary> UnseededNumberDictionary::DeleteKey(
+    Handle<UnseededNumberDictionary> dictionary, uint32_t key) {
+  int entry = dictionary->FindEntry(key);
+  if (entry == kNotFound) return dictionary;
+
+  Factory* factory = dictionary->GetIsolate()->factory();
+  dictionary->SetEntry(entry, factory->the_hole_value(),
+                       factory->the_hole_value());
+  dictionary->ElementRemoved();
+  return dictionary->Shrink(dictionary, key);
+}
 
 Handle<SeededNumberDictionary> SeededNumberDictionary::AtNumberPut(
     Handle<SeededNumberDictionary> dictionary, uint32_t key,
@@ -17527,7 +17573,7 @@ void Dictionary<Derived, Shape, Key>::CopyEnumKeysTo(
     }
     if (dictionary->IsDeleted(i)) continue;
     if (is_shadowing_key) {
-      accumulator->AddShadowKey(key);
+      accumulator->AddShadowingKey(key);
       continue;
     } else {
       storage->set(properties, Smi::FromInt(i));
@@ -17567,7 +17613,7 @@ void Dictionary<Derived, Shape, Key>::CollectKeysTo(
       if (raw_dict->IsDeleted(i)) continue;
       PropertyDetails details = raw_dict->DetailsAt(i);
       if ((details.attributes() & filter) != 0) {
-        keys->AddShadowKey(k);
+        keys->AddShadowingKey(k);
         continue;
       }
       if (filter & ONLY_ALL_CAN_READ) {
@@ -17695,8 +17741,8 @@ Handle<ObjectHashTable> ObjectHashTable::Put(Handle<ObjectHashTable> table,
   }
   // If we're out of luck, we didn't get a GC recently, and so rehashing
   // isn't enough to avoid a crash.
-  int nof = table->NumberOfElements() + 1;
-  if (!table->HasSufficientCapacity(nof)) {
+  if (!table->HasSufficientCapacityToAdd(1)) {
+    int nof = table->NumberOfElements() + 1;
     int capacity = ObjectHashTable::ComputeCapacity(nof * 2);
     if (capacity > ObjectHashTable::kMaxCapacity) {
       for (size_t i = 0; i < 2; ++i) {
@@ -18938,6 +18984,15 @@ AccessCheckInfo* AccessCheckInfo::Get(Isolate* isolate,
   if (data_obj->IsUndefined(isolate)) return nullptr;
 
   return AccessCheckInfo::cast(data_obj);
+}
+
+bool JSReceiver::HasProxyInPrototype(Isolate* isolate) {
+  for (PrototypeIterator iter(isolate, this, kStartAtReceiver,
+                              PrototypeIterator::END_AT_NULL);
+       !iter.IsAtEnd(); iter.AdvanceIgnoringProxies()) {
+    if (iter.GetCurrent<Object>()->IsJSProxy()) return true;
+  }
+  return false;
 }
 
 }  // namespace internal

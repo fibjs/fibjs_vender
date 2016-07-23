@@ -765,7 +765,6 @@ class Assembler : public AssemblerBase {
   RRE_FORM(cdr);
   RXE_FORM(cdb);
   RXE_FORM(ceb);
-  RRE_FORM(cefbr);
   RXE_FORM(ddb);
   RRE_FORM(ddbr);
   SS1_FORM(ed);
@@ -1144,7 +1143,7 @@ class Assembler : public AssemblerBase {
   void cegbr(DoubleRegister fltReg, Register fixReg);
   void cdgbr(DoubleRegister fltReg, Register fixReg);
   void cfebr(Condition m3, Register fixReg, DoubleRegister fltReg);
-  void cefbr(DoubleRegister fltReg, Register fixReg);
+  void cefbr(Condition m3, DoubleRegister fltReg, Register fixReg);
 
   // Floating Point Compare Instructions
   void cebr(DoubleRegister r1, DoubleRegister r2);
@@ -1241,7 +1240,7 @@ class Assembler : public AssemblerBase {
 
   // Record a deoptimization reason that can be used by a log or cpu profiler.
   // Use --trace-deopt to enable.
-  void RecordDeoptReason(const int reason, int raw_position, int id);
+  void RecordDeoptReason(DeoptimizeReason reason, int raw_position, int id);
 
   // Writes a single byte or word of data in the code stream.  Used
   // for inline tables, e.g., jump-tables.

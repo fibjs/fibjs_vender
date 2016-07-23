@@ -125,6 +125,10 @@ bool Expression::ToBooleanIsFalse() const {
 }
 
 bool Expression::IsValidReferenceExpression() const {
+  // We don't want expressions wrapped inside RewritableExpression to be
+  // considered as valid reference expressions, as they will be rewritten
+  // to something (most probably involving a do expression).
+  if (IsRewritableExpression()) return false;
   return IsProperty() ||
          (IsVariableProxy() && AsVariableProxy()->IsValidReferenceExpression());
 }
@@ -177,8 +181,9 @@ VariableProxy::VariableProxy(Zone* zone, Variable* var, int start_position,
       bit_field_(IsThisField::encode(var->is_this()) |
                  IsAssignedField::encode(false) |
                  IsResolvedField::encode(false)),
+      end_position_(end_position),
       raw_name_(var->raw_name()),
-      end_position_(end_position) {
+      next_unresolved_(nullptr) {
   BindTo(var);
 }
 
@@ -189,8 +194,9 @@ VariableProxy::VariableProxy(Zone* zone, const AstRawString* name,
       bit_field_(IsThisField::encode(variable_kind == Variable::THIS) |
                  IsAssignedField::encode(false) |
                  IsResolvedField::encode(false)),
+      end_position_(end_position),
       raw_name_(name),
-      end_position_(end_position) {}
+      next_unresolved_(nullptr) {}
 
 void VariableProxy::BindTo(Variable* var) {
   DCHECK((is_this() && var->is_this()) || raw_name() == var->raw_name());
@@ -964,8 +970,6 @@ void AstTraversalVisitor::VisitVariableDeclaration(VariableDeclaration* decl) {}
 void AstTraversalVisitor::VisitFunctionDeclaration(FunctionDeclaration* decl) {
   RECURSE(Visit(decl->fun()));
 }
-
-void AstTraversalVisitor::VisitImportDeclaration(ImportDeclaration* decl) {}
 
 void AstTraversalVisitor::VisitBlock(Block* stmt) {
   RECURSE(VisitStatements(stmt->statements()));

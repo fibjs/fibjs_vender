@@ -99,6 +99,11 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   // Check that the value is a positive smi.
   compiler::Node* WordIsPositiveSmi(compiler::Node* a);
 
+  void BranchIfSmiEqual(compiler::Node* a, compiler::Node* b, Label* if_true,
+                        Label* if_false) {
+    BranchIf(SmiEqual(a, b), if_true, if_false);
+  }
+
   void BranchIfSmiLessThan(compiler::Node* a, compiler::Node* b, Label* if_true,
                            Label* if_false) {
     BranchIf(SmiLessThan(a, b), if_true, if_false);
@@ -113,6 +118,11 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                             Label* if_false) {
     BranchIfFloat64Equal(value, value, if_false, if_true);
   }
+
+  // Branches to {if_true} if ToBoolean applied to {value} yields true,
+  // otherwise goes to {if_false}.
+  void BranchIfToBooleanIsTrue(compiler::Node* value, Label* if_true,
+                               Label* if_false);
 
   // Load value from current frame by given offset in bytes.
   compiler::Node* LoadFromFrame(int offset,
@@ -440,11 +450,9 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                              int unroll_count);
 
   compiler::Node* StubCachePrimaryOffset(compiler::Node* name,
-                                         Code::Flags flags,
                                          compiler::Node* map);
 
   compiler::Node* StubCacheSecondaryOffset(compiler::Node* name,
-                                           Code::Flags flags,
                                            compiler::Node* seed);
 
   // This enum is used here as a replacement for StubCache::Table to avoid
@@ -453,9 +461,9 @@ class CodeStubAssembler : public compiler::CodeAssembler {
 
   void TryProbeStubCacheTable(StubCache* stub_cache, StubCacheTable table_id,
                               compiler::Node* entry_offset,
-                              compiler::Node* name, Code::Flags flags,
-                              compiler::Node* map, Label* if_handler,
-                              Variable* var_handler, Label* if_miss);
+                              compiler::Node* name, compiler::Node* map,
+                              Label* if_handler, Variable* var_handler,
+                              Label* if_miss);
 
   void TryProbeStubCache(StubCache* stub_cache, compiler::Node* receiver,
                          compiler::Node* name, Label* if_handler,
@@ -463,6 +471,15 @@ class CodeStubAssembler : public compiler::CodeAssembler {
 
   void LoadIC(const LoadICParameters* p);
   void LoadGlobalIC(const LoadICParameters* p);
+
+  // Get the enumerable length from |map| and return the result as a Smi.
+  compiler::Node* EnumLength(compiler::Node* map);
+
+  // Check the cache validity for |receiver|. Branch to |use_cache| if
+  // the cache is valid, otherwise branch to |use_runtime|.
+  void CheckEnumCache(compiler::Node* receiver,
+                      CodeStubAssembler::Label* use_cache,
+                      CodeStubAssembler::Label* use_runtime);
 
  private:
   compiler::Node* ElementOffsetFromIndex(compiler::Node* index,

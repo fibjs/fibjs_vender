@@ -101,10 +101,6 @@ void CallPrinter::VisitVariableDeclaration(VariableDeclaration* node) {}
 void CallPrinter::VisitFunctionDeclaration(FunctionDeclaration* node) {}
 
 
-void CallPrinter::VisitImportDeclaration(ImportDeclaration* node) {
-}
-
-
 void CallPrinter::VisitExpressionStatement(ExpressionStatement* node) {
   Find(node->expression());
 }
@@ -743,13 +739,6 @@ void AstPrinter::VisitFunctionDeclaration(FunctionDeclaration* node) {
 }
 
 
-void AstPrinter::VisitImportDeclaration(ImportDeclaration* node) {
-  IndentedScope indent(this, "IMPORT", node->position());
-  PrintLiteralIndented("NAME", node->proxy()->name(), true);
-  PrintLiteralIndented("FROM", node->module_specifier()->string(), true);
-}
-
-
 void AstPrinter::VisitExpressionStatement(ExpressionStatement* node) {
   IndentedScope indent(this, "EXPRESSION STATEMENT", node->position());
   Visit(node->expression());
@@ -896,8 +885,20 @@ void AstPrinter::VisitTryFinallyStatement(TryFinallyStatement* node) {
 
 void AstPrinter::PrintTryStatement(TryStatement* node) {
   PrintIndentedVisit("TRY", node->try_block());
-  PrintIndented("CATCH PREDICTED");
-  Print(" %d\n", node->catch_predicted());
+  PrintIndented("CATCH PREDICTION");
+  const char* prediction = "";
+  switch (node->catch_prediction()) {
+    case HandlerTable::UNCAUGHT:
+      prediction = "UNCAUGHT";
+      break;
+    case HandlerTable::CAUGHT:
+      prediction = "CAUGHT";
+      break;
+    case HandlerTable::PROMISE:
+      prediction = "PROMISE";
+      break;
+  }
+  Print(" %s\n", prediction);
 }
 
 void AstPrinter::VisitDebuggerStatement(DebuggerStatement* node) {

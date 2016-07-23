@@ -609,8 +609,7 @@ Node* WasmGraphBuilder::Binop(wasm::WasmOpcode opcode, Node* left, Node* right,
     case wasm::kExprF64Max:
       return BuildF64Max(left, right);
     case wasm::kExprF64Pow:
-      op = m->Float64Pow();
-      break;
+      return BuildF64Pow(left, right);
     case wasm::kExprF64Atan2:
       op = m->Float64Atan2();
       break;
@@ -1488,6 +1487,13 @@ Node* WasmGraphBuilder::BuildF64Asin(Node* input) {
   ExternalReference ref =
       ExternalReference::f64_asin_wrapper_function(jsgraph()->isolate());
   return BuildCFuncInstruction(ref, type, input);
+}
+
+Node* WasmGraphBuilder::BuildF64Pow(Node* left, Node* right) {
+  MachineType type = MachineType::Float64();
+  ExternalReference ref =
+      ExternalReference::wasm_float64_pow(jsgraph()->isolate());
+  return BuildCFuncInstruction(ref, type, left, right);
 }
 
 Node* WasmGraphBuilder::BuildF64Mod(Node* left, Node* right) {
@@ -2881,7 +2887,8 @@ Node* WasmGraphBuilder::ChangeToRuntimeCall(Node* node,
 }
 
 Node* WasmGraphBuilder::LoadGlobal(uint32_t index) {
-  MachineType mem_type = module_->GetGlobalType(index);
+  MachineType mem_type =
+      wasm::WasmOpcodes::MachineTypeFor(module_->GetGlobalType(index));
   Node* addr = jsgraph()->RelocatableIntPtrConstant(
       reinterpret_cast<uintptr_t>(module_->instance->globals_start +
                                   module_->module->globals[index].offset),
@@ -2894,7 +2901,8 @@ Node* WasmGraphBuilder::LoadGlobal(uint32_t index) {
 }
 
 Node* WasmGraphBuilder::StoreGlobal(uint32_t index, Node* val) {
-  MachineType mem_type = module_->GetGlobalType(index);
+  MachineType mem_type =
+      wasm::WasmOpcodes::MachineTypeFor(module_->GetGlobalType(index));
   Node* addr = jsgraph()->RelocatableIntPtrConstant(
       reinterpret_cast<uintptr_t>(module_->instance->globals_start +
                                   module_->module->globals[index].offset),
@@ -2939,128 +2947,6 @@ void WasmGraphBuilder::BoundsCheckMem(MachineType memtype, Node* index,
   trap_->AddTrapIfFalse(wasm::kTrapMemOutOfBounds, cond, position);
 }
 
-MachineType WasmGraphBuilder::GetTypeForUnalignedAccess(uint32_t alignment,
-                                                        bool signExtend) {
-  switch (alignment) {
-    case 0:
-      return signExtend ? MachineType::Int8() : MachineType::Uint8();
-    case 1:
-      return signExtend ? MachineType::Int16() : MachineType::Uint16();
-    case 2:
-      return signExtend ? MachineType::Int32() : MachineType::Uint32();
-    default:
-      UNREACHABLE();
-      return MachineType::None();
-  }
-}
-
-Node* WasmGraphBuilder::GetUnalignedLoadOffsetNode(Node* baseOffset,
-                                                   int numberOfBytes,
-                                                   int stride, int current) {
-  int offset;
-  wasm::WasmOpcode addOpcode;
-
-#if defined(V8_TARGET_LITTLE_ENDIAN)
-  offset = numberOfBytes - stride - current;
-#elif defined(V8_TARGET_BIG_ENDIAN)
-  offset = current;
-#else
-#error Unsupported endianness
-#endif
-
-#if WASM_64
-  addOpcode = wasm::kExprI64Add;
-#else
-  addOpcode = wasm::kExprI32Add;
-#endif
-
-  if (offset == 0) {
-    return baseOffset;
-  } else {
-    return Binop(addOpcode, baseOffset, jsgraph()->Int32Constant(offset));
-  }
-}
-
-Node* WasmGraphBuilder::BuildUnalignedLoad(wasm::LocalType type,
-                                           MachineType memtype, Node* index,
-                                           uint32_t offset,
-                                           uint32_t alignment) {
-  Node* result;
-  Node* load;
-  bool extendTo64Bit = false;
-
-  wasm::WasmOpcode shiftOpcode;
-  wasm::WasmOpcode orOpcode;
-  Node* shiftConst;
-
-  bool signExtend = memtype.IsSigned();
-
-  bool isFloat = IsFloatingPoint(memtype.representation());
-  int stride =
-      1 << ElementSizeLog2Of(
-          GetTypeForUnalignedAccess(alignment, false).representation());
-  int numberOfBytes = 1 << ElementSizeLog2Of(memtype.representation());
-  DCHECK(numberOfBytes % stride == 0);
-
-  switch (type) {
-    case wasm::kAstI64:
-    case wasm::kAstF64:
-      shiftOpcode = wasm::kExprI64Shl;
-      orOpcode = wasm::kExprI64Ior;
-      result = jsgraph()->Int64Constant(0);
-      shiftConst = jsgraph()->Int64Constant(8 * stride);
-      extendTo64Bit = true;
-      break;
-    case wasm::kAstI32:
-    case wasm::kAstF32:
-      shiftOpcode = wasm::kExprI32Shl;
-      orOpcode = wasm::kExprI32Ior;
-      result = jsgraph()->Int32Constant(0);
-      shiftConst = jsgraph()->Int32Constant(8 * stride);
-      break;
-    default:
-      UNREACHABLE();
-  }
-
-  Node* baseOffset = MemBuffer(offset);
-
-  for (int i = 0; i < numberOfBytes; i += stride) {
-    result = Binop(shiftOpcode, result, shiftConst);
-    load = graph()->NewNode(
-        jsgraph()->machine()->Load(
-            GetTypeForUnalignedAccess(alignment, signExtend)),
-        GetUnalignedLoadOffsetNode(baseOffset, numberOfBytes, stride, i), index,
-        *effect_, *control_);
-    *effect_ = load;
-    if (extendTo64Bit) {
-      if (signExtend) {
-        load =
-            graph()->NewNode(jsgraph()->machine()->ChangeInt32ToInt64(), load);
-      } else {
-        load = graph()->NewNode(jsgraph()->machine()->ChangeUint32ToUint64(),
-                                load);
-      }
-    }
-    signExtend = false;
-    result = Binop(orOpcode, result, load);
-  }
-
-  // Convert to float
-  if (isFloat) {
-    switch (type) {
-      case wasm::kAstF32:
-        result = Unop(wasm::kExprF32ReinterpretI32, result);
-        break;
-      case wasm::kAstF64:
-        result = Unop(wasm::kExprF64ReinterpretI64, result);
-        break;
-      default:
-        UNREACHABLE();
-    }
-  }
-
-  return result;
-}
 
 Node* WasmGraphBuilder::LoadMem(wasm::LocalType type, MachineType memtype,
                                 Node* index, uint32_t offset,
@@ -3077,10 +2963,13 @@ Node* WasmGraphBuilder::LoadMem(wasm::LocalType type, MachineType memtype,
       jsgraph()->machine()->UnalignedLoadSupported(memtype, alignment)) {
     load = graph()->NewNode(jsgraph()->machine()->Load(memtype),
                             MemBuffer(offset), index, *effect_, *control_);
-    *effect_ = load;
   } else {
-    load = BuildUnalignedLoad(type, memtype, index, offset, alignment);
+    load = graph()->NewNode(jsgraph()->machine()->UnalignedLoad(memtype),
+                            MemBuffer(offset), index, *effect_, *control_);
   }
+
+  *effect_ = load;
+
 #if defined(V8_TARGET_BIG_ENDIAN)
   // TODO(john.yan) Implement byte swap turbofan operator
   // and use it if available for better performance
@@ -3103,97 +2992,6 @@ Node* WasmGraphBuilder::LoadMem(wasm::LocalType type, MachineType memtype,
   return load;
 }
 
-Node* WasmGraphBuilder::GetUnalignedStoreOffsetNode(Node* baseOffset,
-                                                    int numberOfBytes,
-                                                    int stride, int current) {
-  int offset;
-  wasm::WasmOpcode addOpcode;
-
-#if defined(V8_TARGET_LITTLE_ENDIAN)
-  offset = current;
-#elif defined(V8_TARGET_BIG_ENDIAN)
-  offset = numberOfBytes - stride - current;
-#else
-#error Unsupported endianness
-#endif
-
-#if WASM_64
-  addOpcode = wasm::kExprI64Add;
-#else
-  addOpcode = wasm::kExprI32Add;
-#endif
-
-  if (offset == 0) {
-    return baseOffset;
-  } else {
-    return Binop(addOpcode, baseOffset, jsgraph()->Int32Constant(offset));
-  }
-}
-
-Node* WasmGraphBuilder::BuildUnalignedStore(MachineType memtype, Node* index,
-                                            uint32_t offset, uint32_t alignment,
-                                            Node* val) {
-  Node* store;
-  Node* newValue;
-
-  wasm::WasmOpcode shiftOpcode;
-
-  Node* shiftConst;
-  bool extendTo64Bit = false;
-  bool isFloat = IsFloatingPoint(memtype.representation());
-  int stride = 1 << ElementSizeLog2Of(
-                   GetTypeForUnalignedAccess(alignment).representation());
-  int numberOfBytes = 1 << ElementSizeLog2Of(memtype.representation());
-  DCHECK(numberOfBytes % stride == 0);
-
-  StoreRepresentation rep(GetTypeForUnalignedAccess(alignment).representation(),
-                          kNoWriteBarrier);
-
-  if (ElementSizeLog2Of(memtype.representation()) <= 2) {
-    shiftOpcode = wasm::kExprI32ShrU;
-    shiftConst = jsgraph()->Int32Constant(8 * stride);
-  } else {
-    shiftOpcode = wasm::kExprI64ShrU;
-    shiftConst = jsgraph()->Int64Constant(8 * stride);
-    extendTo64Bit = true;
-  }
-
-  newValue = val;
-  if (isFloat) {
-    switch (memtype.representation()) {
-      case MachineRepresentation::kFloat64:
-        newValue = Unop(wasm::kExprI64ReinterpretF64, val);
-        break;
-      case MachineRepresentation::kFloat32:
-        newValue = Unop(wasm::kExprI32ReinterpretF32, val);
-        break;
-      default:
-        UNREACHABLE();
-    }
-  }
-
-  Node* baseOffset = MemBuffer(offset);
-
-  for (int i = 0; i < numberOfBytes - stride; i += stride) {
-    store = graph()->NewNode(
-        jsgraph()->machine()->Store(rep),
-        GetUnalignedStoreOffsetNode(baseOffset, numberOfBytes, stride, i),
-        index,
-        extendTo64Bit ? Unop(wasm::kExprI32ConvertI64, newValue) : newValue,
-        *effect_, *control_);
-    newValue = Binop(shiftOpcode, newValue, shiftConst);
-    *effect_ = store;
-  }
-  store = graph()->NewNode(
-      jsgraph()->machine()->Store(rep),
-      GetUnalignedStoreOffsetNode(baseOffset, numberOfBytes, stride,
-                                  numberOfBytes - stride),
-      index,
-      extendTo64Bit ? Unop(wasm::kExprI32ConvertI64, newValue) : newValue,
-      *effect_, *control_);
-  *effect_ = store;
-  return val;
-}
 
 Node* WasmGraphBuilder::StoreMem(MachineType memtype, Node* index,
                                  uint32_t offset, uint32_t alignment, Node* val,
@@ -3218,10 +3016,14 @@ Node* WasmGraphBuilder::StoreMem(MachineType memtype, Node* index,
     store =
         graph()->NewNode(jsgraph()->machine()->Store(rep), MemBuffer(offset),
                          index, val, *effect_, *control_);
-    *effect_ = store;
   } else {
-    store = BuildUnalignedStore(memtype, index, offset, alignment, val);
+    UnalignedStoreRepresentation rep(memtype.representation());
+    store =
+        graph()->NewNode(jsgraph()->machine()->UnalignedStore(rep),
+                         MemBuffer(offset), index, val, *effect_, *control_);
   }
+
+  *effect_ = store;
 
   return store;
 }
@@ -3547,7 +3349,8 @@ WasmCompilationUnit::WasmCompilationUnit(wasm::ErrorThrower* thrower,
           new (graph_zone()) CommonOperatorBuilder(graph_zone()), nullptr,
           nullptr, new (graph_zone()) MachineOperatorBuilder(
                        graph_zone(), MachineType::PointerRepresentation(),
-                       InstructionSelector::SupportedMachineOperatorFlags()))),
+                       InstructionSelector::SupportedMachineOperatorFlags(),
+                       InstructionSelector::AlignmentRequirements()))),
       compilation_zone_(isolate->allocator()),
       info_(function->name_length != 0
                 ? module_env->module->GetNameOrNull(function->name_offset,

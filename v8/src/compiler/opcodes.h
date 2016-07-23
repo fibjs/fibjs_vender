@@ -248,6 +248,8 @@
   V(NumberLog1p)                      \
   V(NumberLog2)                       \
   V(NumberLog10)                      \
+  V(NumberMax)                        \
+  V(NumberMin)                        \
   V(NumberCbrt)                       \
   V(NumberPow)                        \
   V(NumberRound)                      \
@@ -281,7 +283,8 @@
   V(ObjectIsReceiver)                 \
   V(ObjectIsSmi)                      \
   V(ObjectIsString)                   \
-  V(ObjectIsUndetectable)
+  V(ObjectIsUndetectable)             \
+  V(TransitionElementsKind)
 
 #define SIMPLIFIED_OP_LIST(V)      \
   SIMPLIFIED_CHANGE_OP_LIST(V)     \
@@ -394,8 +397,6 @@
   V(Float32Neg)                 \
   V(Float32Mul)                 \
   V(Float32Div)                 \
-  V(Float32Max)                 \
-  V(Float32Min)                 \
   V(Float32Abs)                 \
   V(Float32Sqrt)                \
   V(Float32RoundDown)           \
@@ -448,6 +449,8 @@
   V(LoadParentFramePointer)     \
   V(CheckedLoad)                \
   V(CheckedStore)               \
+  V(UnalignedLoad)              \
+  V(UnalignedStore)             \
   V(Int32PairAdd)               \
   V(Int32PairSub)               \
   V(Int32PairMul)               \

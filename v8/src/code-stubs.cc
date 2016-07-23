@@ -3741,130 +3741,6 @@ void ToLengthStub::GenerateAssembly(CodeStubAssembler* assembler) const {
   }
 }
 
-// static
-compiler::Node* ToBooleanStub::Generate(CodeStubAssembler* assembler,
-                                        compiler::Node* value,
-                                        compiler::Node* context) {
-  typedef compiler::Node Node;
-  typedef CodeStubAssembler::Label Label;
-  typedef CodeStubAssembler::Variable Variable;
-
-  Variable result(assembler, MachineRepresentation::kTagged);
-  Label if_valueissmi(assembler), if_valueisnotsmi(assembler),
-      return_true(assembler), return_false(assembler), end(assembler);
-
-  // Check if {value} is a Smi or a HeapObject.
-  assembler->Branch(assembler->WordIsSmi(value), &if_valueissmi,
-                    &if_valueisnotsmi);
-
-  assembler->Bind(&if_valueissmi);
-  {
-    // The {value} is a Smi, only need to check against zero.
-    assembler->Branch(assembler->SmiEqual(value, assembler->SmiConstant(0)),
-                      &return_false, &return_true);
-  }
-
-  assembler->Bind(&if_valueisnotsmi);
-  {
-    Label if_valueisstring(assembler), if_valueisnotstring(assembler),
-        if_valueisheapnumber(assembler), if_valueisoddball(assembler),
-        if_valueisother(assembler);
-
-    // The {value} is a HeapObject, load its map.
-    Node* value_map = assembler->LoadMap(value);
-
-    // Load the {value}s instance type.
-    Node* value_instance_type = assembler->Load(
-        MachineType::Uint8(), value_map,
-        assembler->IntPtrConstant(Map::kInstanceTypeOffset - kHeapObjectTag));
-
-    // Dispatch based on the instance type; we distinguish all String instance
-    // types, the HeapNumber type and the Oddball type.
-    assembler->Branch(assembler->Int32LessThan(
-                          value_instance_type,
-                          assembler->Int32Constant(FIRST_NONSTRING_TYPE)),
-                      &if_valueisstring, &if_valueisnotstring);
-    assembler->Bind(&if_valueisnotstring);
-    size_t const kNumCases = 2;
-    Label* case_labels[kNumCases];
-    int32_t case_values[kNumCases];
-    case_labels[0] = &if_valueisheapnumber;
-    case_values[0] = HEAP_NUMBER_TYPE;
-    case_labels[1] = &if_valueisoddball;
-    case_values[1] = ODDBALL_TYPE;
-    assembler->Switch(value_instance_type, &if_valueisother, case_values,
-                      case_labels, arraysize(case_values));
-
-    assembler->Bind(&if_valueisstring);
-    {
-      // Load the string length field of the {value}.
-      Node* value_length =
-          assembler->LoadObjectField(value, String::kLengthOffset);
-
-      // Check if the {value} is the empty string.
-      assembler->Branch(
-          assembler->SmiEqual(value_length, assembler->SmiConstant(0)),
-          &return_false, &return_true);
-    }
-
-    assembler->Bind(&if_valueisheapnumber);
-    {
-      Node* value_value = assembler->Load(
-          MachineType::Float64(), value,
-          assembler->IntPtrConstant(HeapNumber::kValueOffset - kHeapObjectTag));
-
-      Label if_valueisnotpositive(assembler);
-      assembler->Branch(assembler->Float64LessThan(
-                            assembler->Float64Constant(0.0), value_value),
-                        &return_true, &if_valueisnotpositive);
-
-      assembler->Bind(&if_valueisnotpositive);
-      assembler->Branch(assembler->Float64LessThan(
-                            value_value, assembler->Float64Constant(0.0)),
-                        &return_true, &return_false);
-    }
-
-    assembler->Bind(&if_valueisoddball);
-    {
-      // The {value} is an Oddball, and every Oddball knows its boolean value.
-      Node* value_toboolean =
-          assembler->LoadObjectField(value, Oddball::kToBooleanOffset);
-      result.Bind(value_toboolean);
-      assembler->Goto(&end);
-    }
-
-    assembler->Bind(&if_valueisother);
-    {
-      Node* value_map_bitfield = assembler->Load(
-          MachineType::Uint8(), value_map,
-          assembler->IntPtrConstant(Map::kBitFieldOffset - kHeapObjectTag));
-      Node* value_map_undetectable = assembler->Word32And(
-          value_map_bitfield,
-          assembler->Int32Constant(1 << Map::kIsUndetectable));
-
-      // Check if the {value} is undetectable.
-      assembler->Branch(assembler->Word32Equal(value_map_undetectable,
-                                               assembler->Int32Constant(0)),
-                        &return_true, &return_false);
-    }
-  }
-
-  assembler->Bind(&return_false);
-  {
-    result.Bind(assembler->BooleanConstant(false));
-    assembler->Goto(&end);
-  }
-
-  assembler->Bind(&return_true);
-  {
-    result.Bind(assembler->BooleanConstant(true));
-    assembler->Goto(&end);
-  }
-
-  assembler->Bind(&end);
-  return result.value();
-}
-
 void ToIntegerStub::GenerateAssembly(CodeStubAssembler* assembler) const {
   typedef CodeStubAssembler::Label Label;
   typedef compiler::Node Node;
@@ -4298,11 +4174,11 @@ void TypeofStub::GenerateAheadOfTime(Isolate* isolate) {
   stub.GetCode();
 }
 
-// static
-compiler::Node* HasPropertyStub::Generate(CodeStubAssembler* assembler,
-                                          compiler::Node* key,
-                                          compiler::Node* object,
-                                          compiler::Node* context) {
+namespace {
+
+compiler::Node* GenerateHasProperty(
+    CodeStubAssembler* assembler, compiler::Node* object, compiler::Node* key,
+    compiler::Node* context, Runtime::FunctionId fallback_runtime_function_id) {
   typedef compiler::Node Node;
   typedef CodeStubAssembler::Label Label;
   typedef CodeStubAssembler::Variable Variable;
@@ -4347,13 +4223,63 @@ compiler::Node* HasPropertyStub::Generate(CodeStubAssembler* assembler,
 
   assembler->Bind(&call_runtime);
   {
-    result.Bind(
-        assembler->CallRuntime(Runtime::kHasProperty, context, key, object));
+    result.Bind(assembler->CallRuntime(fallback_runtime_function_id, context,
+                                       object, key));
     assembler->Goto(&end);
   }
 
   assembler->Bind(&end);
   return result.value();
+}
+
+}  // namespace
+
+// static
+compiler::Node* HasPropertyStub::Generate(CodeStubAssembler* assembler,
+                                          compiler::Node* key,
+                                          compiler::Node* object,
+                                          compiler::Node* context) {
+  return GenerateHasProperty(assembler, object, key, context,
+                             Runtime::kHasProperty);
+}
+
+// static
+compiler::Node* ForInFilterStub::Generate(CodeStubAssembler* assembler,
+                                          compiler::Node* key,
+                                          compiler::Node* object,
+                                          compiler::Node* context) {
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Label Label;
+  typedef CodeStubAssembler::Variable Variable;
+
+  Label return_undefined(assembler, Label::kDeferred),
+      return_to_name(assembler), end(assembler);
+
+  Variable var_result(assembler, MachineRepresentation::kTagged);
+
+  Node* has_property = GenerateHasProperty(assembler, object, key, context,
+                                           Runtime::kForInHasProperty);
+
+  assembler->Branch(
+      assembler->WordEqual(has_property, assembler->BooleanConstant(true)),
+      &return_to_name, &return_undefined);
+
+  assembler->Bind(&return_to_name);
+  {
+    // TODO(cbruni): inline ToName here.
+    Callable callable = CodeFactory::ToName(assembler->isolate());
+    var_result.Bind(assembler->CallStub(callable, context, key));
+    assembler->Goto(&end);
+  }
+
+  assembler->Bind(&return_undefined);
+  {
+    var_result.Bind(assembler->UndefinedConstant());
+    assembler->Goto(&end);
+  }
+
+  assembler->Bind(&end);
+  return var_result.value();
 }
 
 void GetPropertyStub::GenerateAssembly(CodeStubAssembler* assembler) const {

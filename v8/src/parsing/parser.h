@@ -542,8 +542,9 @@ class ParserTraits {
       ZoneList<Statement*>* body, bool accept_IN,
       Type::ExpressionClassifier* classifier, int pos, bool* ok);
 
-  V8_INLINE Scope* NewScope(Scope* parent_scope, ScopeType scope_type,
-                            FunctionKind kind = kNormalFunction);
+  V8_INLINE Scope* NewScope(ScopeType scope_type);
+  V8_INLINE Scope* NewFunctionScope(FunctionKind kind);
+  V8_INLINE Scope* NewScopeWithParent(Scope* parent, ScopeType scope_type);
 
   V8_INLINE void AddFormalParameter(ParserFormalParameters* parameters,
                                     Expression* pattern,
@@ -557,8 +558,8 @@ class ParserTraits {
                                           bool* ok);
   void ParseArrowFunctionFormalParameterList(
       ParserFormalParameters* parameters, Expression* params,
-      const Scanner::Location& params_loc,
-      Scanner::Location* duplicate_loc, bool* ok);
+      const Scanner::Location& params_loc, Scanner::Location* duplicate_loc,
+      const Scope::Snapshot& scope_snapshot, bool* ok);
 
   V8_INLINE Expression* ParseAsyncFunctionExpression(bool* ok);
 
@@ -666,6 +667,7 @@ class ParserTraits {
 
   void SetFunctionNameFromIdentifierRef(Expression* value,
                                         Expression* identifier);
+  void SetFunctionName(Expression* value, const AstRawString* name);
 
   // Rewrite expressions that are not used as patterns
   V8_INLINE void RewriteNonPattern(Type::ExpressionClassifier* classifier,
@@ -716,6 +718,7 @@ class Parser : public ParserBase<ParserTraits> {
 
  private:
   friend class ParserTraits;
+  friend class DiscardableZoneScope;
 
   // Runtime encoding of different completion modes.
   enum CompletionKind {
@@ -760,19 +763,29 @@ class Parser : public ParserBase<ParserTraits> {
   // which is set to false if parsing failed; it is unchanged otherwise.
   // By making the 'exception handling' explicit, we are forced to check
   // for failure at the call sites.
-  void* ParseStatementList(ZoneList<Statement*>* body, int end_token, bool* ok);
+  void ParseStatementList(ZoneList<Statement*>* body, int end_token, bool* ok);
   Statement* ParseStatementListItem(bool* ok);
-  void* ParseModuleItemList(ZoneList<Statement*>* body, bool* ok);
+  void ParseModuleItemList(ZoneList<Statement*>* body, bool* ok);
   Statement* ParseModuleItem(bool* ok);
   const AstRawString* ParseModuleSpecifier(bool* ok);
-  Statement* ParseImportDeclaration(bool* ok);
+  void ParseImportDeclaration(bool* ok);
   Statement* ParseExportDeclaration(bool* ok);
   Statement* ParseExportDefault(bool* ok);
-  void* ParseExportClause(ZoneList<const AstRawString*>* export_names,
-                          ZoneList<Scanner::Location>* export_locations,
-                          ZoneList<const AstRawString*>* local_names,
-                          Scanner::Location* reserved_loc, bool* ok);
-  ZoneList<ImportDeclaration*>* ParseNamedImports(int pos, bool* ok);
+  void ParseExportClause(ZoneList<const AstRawString*>* export_names,
+                         ZoneList<Scanner::Location>* export_locations,
+                         ZoneList<const AstRawString*>* local_names,
+                         Scanner::Location* reserved_loc, bool* ok);
+  struct NamedImport : public ZoneObject {
+    const AstRawString* import_name;
+    const AstRawString* local_name;
+    const Scanner::Location location;
+    NamedImport(const AstRawString* import_name, const AstRawString* local_name,
+                Scanner::Location location)
+        : import_name(import_name),
+          local_name(local_name),
+          location(location) {}
+  };
+  ZoneList<const NamedImport*>* ParseNamedImports(int pos, bool* ok);
   Statement* ParseStatement(ZoneList<const AstRawString*>* labels,
                             AllowLabelledFunctionStatement allow_function,
                             bool* ok);
@@ -1026,6 +1039,7 @@ class Parser : public ParserBase<ParserTraits> {
   Variable* Declare(Declaration* declaration,
                     DeclarationDescriptor::Kind declaration_kind, bool resolve,
                     bool* ok, Scope* declaration_scope = nullptr);
+  void DeclareImport(const AstRawString* local_name, int pos, bool* ok);
 
   bool TargetStackContainsLabel(const AstRawString* label);
   BreakableStatement* LookupBreakTarget(const AstRawString* label, bool* ok);
@@ -1035,7 +1049,7 @@ class Parser : public ParserBase<ParserTraits> {
 
   // Factory methods.
   FunctionLiteral* DefaultConstructor(const AstRawString* name, bool call_super,
-                                      Scope* scope, int pos, int end_pos,
+                                      int pos, int end_pos,
                                       LanguageMode language_mode);
 
   // Skip over a lazy function, either using cached data if we have it, or
@@ -1130,12 +1144,17 @@ bool ParserTraits::IsFutureStrictReserved(
   return parser_->scanner()->IdentifierIsFutureStrictReserved(identifier);
 }
 
-
-Scope* ParserTraits::NewScope(Scope* parent_scope, ScopeType scope_type,
-                              FunctionKind kind) {
-  return parser_->NewScope(parent_scope, scope_type, kind);
+Scope* ParserTraits::NewScopeWithParent(Scope* parent, ScopeType scope_type) {
+  return parser_->NewScopeWithParent(parent, scope_type);
 }
 
+Scope* ParserTraits::NewScope(ScopeType scope_type) {
+  return parser_->NewScope(scope_type);
+}
+
+Scope* ParserTraits::NewFunctionScope(FunctionKind kind) {
+  return parser_->NewFunctionScope(kind);
+}
 
 const AstRawString* ParserTraits::EmptyIdentifierString() {
   return parser_->ast_value_factory()->empty_string();
@@ -1261,8 +1280,9 @@ void ParserTraits::DeclareFormalParameter(
   auto mode = is_simple || parameter.is_rest ? VAR : TEMPORARY;
   if (!is_simple) scope->SetHasNonSimpleParameters();
   bool is_optional = parameter.initializer != nullptr;
-  Variable* var = scope->DeclareParameter(
-      name, mode, is_optional, parameter.is_rest, &is_duplicate);
+  Variable* var =
+      scope->DeclareParameter(name, mode, is_optional, parameter.is_rest,
+                              &is_duplicate, parser_->ast_value_factory());
   if (is_duplicate) {
     classifier->RecordDuplicateFormalParameterError(
         parser_->scanner()->location());

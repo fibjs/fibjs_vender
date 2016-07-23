@@ -187,7 +187,7 @@ namespace internal {
   F(DebugPrepareStepInIfStepping, 1, 1)         \
   F(DebugPrepareStepInSuspendedGenerator, 0, 1) \
   F(DebugRecordAsyncFunction, 1, 1)             \
-  F(DebugPushPromise, 2, 1)                     \
+  F(DebugPushPromise, 1, 1)                     \
   F(DebugPopPromise, 0, 1)                      \
   F(DebugAsyncTaskEvent, 1, 1)                  \
   F(DebugIsActive, 0, 1)                        \
@@ -199,6 +199,7 @@ namespace internal {
   F(ForInDone, 2, 1)                \
   F(ForInEnumerate, 1, 1)           \
   F(ForInFilter, 2, 1)              \
+  F(ForInHasProperty, 2, 1)         \
   F(ForInNext, 4, 1)                \
   F(ForInStep, 1, 1)
 
@@ -307,20 +308,9 @@ namespace internal {
   F(AllocateInTargetSpace, 2, 1)                    \
   F(AllocateSeqOneByteString, 1, 1)                 \
   F(AllocateSeqTwoByteString, 1, 1)                 \
-  F(CollectStackTrace, 2, 1)                        \
   F(MessageGetStartPosition, 1, 1)                  \
   F(MessageGetScript, 1, 1)                         \
   F(FormatMessageString, 4, 1)                      \
-  F(CallSiteGetFileNameRT, 1, 1)                    \
-  F(CallSiteGetFunctionNameRT, 1, 1)                \
-  F(CallSiteGetScriptNameOrSourceUrlRT, 1, 1)       \
-  F(CallSiteGetMethodNameRT, 1, 1)                  \
-  F(CallSiteGetLineNumberRT, 1, 1)                  \
-  F(CallSiteGetColumnNumberRT, 1, 1)                \
-  F(CallSiteIsNativeRT, 1, 1)                       \
-  F(CallSiteIsToplevelRT, 1, 1)                     \
-  F(CallSiteIsEvalRT, 1, 1)                         \
-  F(CallSiteIsConstructorRT, 1, 1)                  \
   F(IS_VAR, 1, 1)                                   \
   F(ThrowConstructedNonConstructable, 1, 1)         \
   F(ThrowDerivedConstructorReturnedNonObject, 0, 1) \

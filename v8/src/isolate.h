@@ -17,6 +17,7 @@
 #include "src/base/hashmap.h"
 #include "src/builtins/builtins.h"
 #include "src/cancelable-task.h"
+#include "src/compiler-dispatcher/optimizing-compile-dispatcher.h"
 #include "src/contexts.h"
 #include "src/date.h"
 #include "src/execution.h"
@@ -26,7 +27,6 @@
 #include "src/handles.h"
 #include "src/heap/heap.h"
 #include "src/messages.h"
-#include "src/optimizing-compile-dispatcher.h"
 #include "src/regexp/regexp-stack.h"
 #include "src/runtime-profiler.h"
 #include "src/runtime/runtime.h"
@@ -660,7 +660,7 @@ class Isolate {
   bool OptionalRescheduleException(bool is_bottom_call);
 
   // Push and pop a promise and the current try-catch handler.
-  void PushPromise(Handle<JSObject> promise, Handle<JSFunction> function);
+  void PushPromise(Handle<JSObject> promise);
   void PopPromise();
   Handle<Object> GetPromiseOnStackOnThrow();
 
@@ -696,11 +696,13 @@ class Isolate {
       int frame_limit,
       StackTrace::StackTraceOptions options);
   Handle<Object> CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
+                                         FrameSkipMode mode,
                                          Handle<Object> caller);
   MaybeHandle<JSReceiver> CaptureAndSetDetailedStackTrace(
       Handle<JSReceiver> error_object);
   MaybeHandle<JSReceiver> CaptureAndSetSimpleStackTrace(
-      Handle<JSReceiver> error_object, Handle<Object> caller);
+      Handle<JSReceiver> error_object, FrameSkipMode mode,
+      Handle<Object> caller);
   Handle<JSArray> GetDetailedStackTrace(Handle<JSObject> error_object);
 
   // Returns if the given context may access the given global object. If
@@ -983,6 +985,7 @@ class Isolate {
   inline bool IsArraySpeciesLookupChainIntact();
   inline bool IsHasInstanceLookupChainIntact();
   bool IsIsConcatSpreadableLookupChainIntact();
+  bool IsIsConcatSpreadableLookupChainIntact(JSReceiver* receiver);
 
   // On intent to set an element in object, make sure that appropriate
   // notifications occur if the set is on the elements of the array or
@@ -1173,7 +1176,7 @@ class Isolate {
   // the Isolate. The top of the stack points to a thread which is currently
   // running the Isolate. When the stack is empty, the Isolate is considered
   // not entered by any thread and can be Disposed.
-  // If the same thread enters the Isolate more then once, the entry_count_
+  // If the same thread enters the Isolate more than once, the entry_count_
   // is incremented rather then a new item pushed to the stack.
   class EntryStackItem {
    public:
@@ -1436,15 +1439,12 @@ class Isolate {
 
 class PromiseOnStack {
  public:
-  PromiseOnStack(Handle<JSFunction> function, Handle<JSObject> promise,
-                 PromiseOnStack* prev)
-      : function_(function), promise_(promise), prev_(prev) {}
-  Handle<JSFunction> function() { return function_; }
+  PromiseOnStack(Handle<JSObject> promise, PromiseOnStack* prev)
+      : promise_(promise), prev_(prev) {}
   Handle<JSObject> promise() { return promise_; }
   PromiseOnStack* prev() { return prev_; }
 
  private:
-  Handle<JSFunction> function_;
   Handle<JSObject> promise_;
   PromiseOnStack* prev_;
 };

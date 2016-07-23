@@ -2008,6 +2008,8 @@ class JSReceiver: public HeapObject {
   static const int kPropertiesOffset = HeapObject::kHeaderSize;
   static const int kHeaderSize = HeapObject::kHeaderSize + kPointerSize;
 
+  bool HasProxyInPrototype(Isolate* isolate);
+
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSReceiver);
 };
@@ -2307,6 +2309,10 @@ class JSObject: public JSReceiver {
   // and ignored otherwise.
   static void MigrateToMap(Handle<JSObject> object, Handle<Map> new_map,
                            int expected_additional_properties = 0);
+
+  // Forces a prototype without any of the checks that the regular SetPrototype
+  // would do.
+  static void ForceSetPrototype(Handle<JSObject> object, Handle<Object> proto);
 
   // Convert the object to use the canonical dictionary
   // representation. If the object is expected to have additional properties
@@ -3289,7 +3295,7 @@ class HashTable : public HashTableBase {
       PretenureFlag pretenure = NOT_TENURED);
 
   // Returns true if this table has sufficient capacity for adding n elements.
-  bool HasSufficientCapacity(int n);
+  bool HasSufficientCapacityToAdd(int number_of_additional_elements);
 
   // Sets the capacity of the hash table.
   void SetCapacity(int capacity) {
@@ -3765,6 +3771,8 @@ class UnseededNumberDictionary
       Handle<UnseededNumberDictionary> dictionary,
       uint32_t key,
       Handle<Object> value);
+  static Handle<UnseededNumberDictionary> DeleteKey(
+      Handle<UnseededNumberDictionary> dictionary, uint32_t key);
 
   // Set an existing entry or add a new one if needed.
   // Return the updated dictionary.
@@ -4860,7 +4868,11 @@ class HandlerTable : public FixedArray {
   // Conservative prediction whether a given handler will locally catch an
   // exception or cause a re-throw to outside the code boundary. Since this is
   // undecidable it is merely an approximation (e.g. useful for debugger).
-  enum CatchPrediction { UNCAUGHT, CAUGHT };
+  enum CatchPrediction {
+    UNCAUGHT,  // the handler will (likely) rethrow the exception.
+    CAUGHT,    // the exception will be caught by the handler.
+    PROMISE    // the exception will be caught and cause a promise rejection.
+  };
 
   // Getters for handler table based on ranges.
   inline int GetRangeStart(int index) const;
@@ -4915,8 +4927,8 @@ class HandlerTable : public FixedArray {
   static const int kReturnEntrySize = 2;
 
   // Encoding of the {handler} field.
-  class HandlerPredictionField : public BitField<CatchPrediction, 0, 1> {};
-  class HandlerOffsetField : public BitField<int, 1, 30> {};
+  class HandlerPredictionField : public BitField<CatchPrediction, 0, 2> {};
+  class HandlerOffsetField : public BitField<int, 2, 30> {};
 };
 
 
@@ -5398,9 +5410,7 @@ class Code: public HeapObject {
   class ProfilerTicksField : public BitField<int, 4, 28> {};
 
   // Flags layout.  BitField<type, shift, size>.
-  class ICStateField : public BitField<InlineCacheState, 0, 2> {};
-  class HasUnwindingInfoField : public BitField<bool, ICStateField::kNext, 1> {
-  };
+  class HasUnwindingInfoField : public BitField<bool, 0, 1> {};
   class CacheHolderField
       : public BitField<CacheHolderFlag, HasUnwindingInfoField::kNext, 2> {};
   class KindField : public BitField<Kind, CacheHolderField::kNext, 5> {};
@@ -9021,6 +9031,11 @@ class String: public Name {
   MUST_USE_RESULT static ComparisonResult Compare(Handle<String> x,
                                                   Handle<String> y);
 
+  // Perform string match of pattern on subject, starting at start index.
+  // Caller must ensure that 0 <= start_index <= sub->length().
+  static int IndexOf(Isolate* isolate, Handle<String> sub, Handle<String> pat,
+                     int start_index);
+
   // String equality operations.
   inline bool Equals(String* other);
   inline static bool Equals(Handle<String> one, Handle<String> two);
@@ -9628,9 +9643,6 @@ class Oddball: public HeapObject {
   // [to_number]: Cached to_number computed at startup.
   DECL_ACCESSORS(to_number, Object)
 
-  // [to_number]: Cached to_boolean computed at startup.
-  DECL_ACCESSORS(to_boolean, Oddball)
-
   // [typeof]: Cached type_of computed at startup.
   DECL_ACCESSORS(type_of, String)
 
@@ -9648,14 +9660,13 @@ class Oddball: public HeapObject {
   // Initialize the fields.
   static void Initialize(Isolate* isolate, Handle<Oddball> oddball,
                          const char* to_string, Handle<Object> to_number,
-                         bool to_boolean, const char* type_of, byte kind);
+                         const char* type_of, byte kind);
 
   // Layout description.
   static const int kToNumberRawOffset = HeapObject::kHeaderSize;
   static const int kToStringOffset = kToNumberRawOffset + kDoubleSize;
   static const int kToNumberOffset = kToStringOffset + kPointerSize;
-  static const int kToBooleanOffset = kToNumberOffset + kPointerSize;
-  static const int kTypeOfOffset = kToBooleanOffset + kPointerSize;
+  static const int kTypeOfOffset = kToNumberOffset + kPointerSize;
   static const int kKindOffset = kTypeOfOffset + kPointerSize;
   static const int kSize = kKindOffset + kPointerSize;
 

@@ -18,7 +18,7 @@ namespace internal {
 
 #define __ ACCESS_MASM(masm)
 
-void Builtins::Generate_Adaptor(MacroAssembler* masm, CFunctionId id,
+void Builtins::Generate_Adaptor(MacroAssembler* masm, Address address,
                                 ExitFrameType exit_frame_type) {
   // ----------- S t a t e -------------
   //  -- rax                 : number of arguments excluding receiver
@@ -53,7 +53,7 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm, CFunctionId id,
   __ Push(rdx);
   __ PushReturnAddressFrom(kScratchRegister);
 
-  __ JumpToExternalReference(ExternalReference(id, masm->isolate()),
+  __ JumpToExternalReference(ExternalReference(address, masm->isolate()),
                              exit_frame_type == BUILTIN_EXIT);
 }
 
@@ -2117,6 +2117,19 @@ void Builtins::Generate_AllocateInOldSpace(MacroAssembler* masm) {
   __ PushReturnAddressFrom(rcx);
   __ Move(rsi, Smi::FromInt(0));
   __ TailCallRuntime(Runtime::kAllocateInTargetSpace);
+}
+
+// static
+void Builtins::Generate_Abort(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- rdx    : message_id as Smi
+  //  -- rsp[0] : return address
+  // -----------------------------------
+  __ PopReturnAddressTo(rcx);
+  __ Push(rdx);
+  __ PushReturnAddressFrom(rcx);
+  __ Move(rsi, Smi::FromInt(0));
+  __ TailCallRuntime(Runtime::kAbort);
 }
 
 void Builtins::Generate_StringToNumber(MacroAssembler* masm) {

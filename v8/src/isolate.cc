@@ -330,11 +330,32 @@ static Handle<FixedArray> MaybeGrow(Isolate* isolate,
 
 class StackTraceHelper {
  public:
-  StackTraceHelper(Isolate* isolate, Handle<Object> caller)
-      : isolate_(isolate), caller_(caller) {
-    // If the caller parameter is a function we skip frames until we're
-    // under it before starting to collect.
-    seen_caller_ = !caller->IsJSFunction();
+  StackTraceHelper(Isolate* isolate, FrameSkipMode mode, Handle<Object> caller)
+      : isolate_(isolate),
+        mode_(mode),
+        caller_(caller),
+        skip_next_frame_(true) {
+    // The caller parameter can be used to skip a specific set of frames in the
+    // stack trace. It can be:
+    // * null, when called from a standard error constructor. We unconditionally
+    //   skip the top frame, which is always a builtin-exit frame for the error
+    //   constructor builtin.
+    // * a JSFunction, when called by the user from Error.captureStackTrace().
+    //   We skip each frame until encountering the caller function.
+    // * For any other value, all frames are included in the trace.
+    switch (mode_) {
+      case SKIP_FIRST:
+        DCHECK(caller_.is_null());
+        skip_next_frame_ = true;
+        break;
+      case SKIP_UNTIL_SEEN:
+        DCHECK(caller_->IsJSFunction());
+        skip_next_frame_ = true;
+        break;
+      case SKIP_NONE:
+        skip_next_frame_ = false;
+        break;
+    }
     encountered_strict_function_ = false;
     sloppy_frames_ = 0;
   }
@@ -356,26 +377,34 @@ class StackTraceHelper {
   // Determines whether the given stack frame should be displayed in a stack
   // trace.
   bool IsVisibleInStackTrace(JSFunction* fun) {
-    return IsAfterCaller(fun) && IsNotInNativeScript(fun) &&
+    return ShouldIncludeFrame(fun) && IsNotInNativeScript(fun) &&
            IsInSameSecurityContext(fun);
   }
 
   int sloppy_frames() const { return sloppy_frames_; }
 
  private:
-  // The caller is the error constructor that asked
-  // for the stack trace to be collected.  The first time a construct
-  // call to this function is encountered it is skipped.  The seen_caller
-  // in/out parameter is used to remember if the caller has been seen
-  // yet.
-  bool IsAfterCaller(JSFunction* fun) {
-    if ((fun == *caller_) && !(seen_caller_)) {
-      seen_caller_ = true;
-      return false;
+  // This mechanism excludes a number of uninteresting frames from the stack
+  // trace. This can be be the first frame (which will be a builtin-exit frame
+  // for the error constructor builtin) or every frame until encountering a
+  // user-specified function.
+  bool ShouldIncludeFrame(JSFunction* fun) {
+    switch (mode_) {
+      case SKIP_NONE:
+        return true;
+      case SKIP_FIRST:
+        if (!skip_next_frame_) return true;
+        skip_next_frame_ = false;
+        return false;
+      case SKIP_UNTIL_SEEN:
+        if (skip_next_frame_ && (fun == *caller_)) {
+          skip_next_frame_ = false;
+          return false;
+        }
+        return !skip_next_frame_;
     }
-    // Skip all frames until we've seen the caller.
-    if (!seen_caller_) return false;
-    return true;
+    UNREACHABLE();
+    return false;
   }
 
   bool IsNotInNativeScript(JSFunction* fun) {
@@ -394,15 +423,20 @@ class StackTraceHelper {
   }
 
   Isolate* isolate_;
-  Handle<Object> caller_;
 
-  bool seen_caller_;
+  const FrameSkipMode mode_;
+  const Handle<Object> caller_;
+  bool skip_next_frame_;
+
   int sloppy_frames_;
   bool encountered_strict_function_;
 };
 
 Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
+                                                FrameSkipMode mode,
                                                 Handle<Object> caller) {
+  DisallowJavascriptExecution no_js(this);
+
   // Get stack trace limit.
   Handle<JSObject> error = error_function();
   Handle<String> stackTraceLimit =
@@ -418,7 +452,7 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
   Handle<FixedArray> elements =
       factory()->NewFixedArrayWithHoles(initial_size * 4 + 1);
 
-  StackTraceHelper helper(this, caller);
+  StackTraceHelper helper(this, mode, caller);
 
   // First element is reserved to store the number of sloppy frames.
   int cursor = 1;
@@ -537,10 +571,12 @@ MaybeHandle<JSReceiver> Isolate::CaptureAndSetDetailedStackTrace(
 }
 
 MaybeHandle<JSReceiver> Isolate::CaptureAndSetSimpleStackTrace(
-    Handle<JSReceiver> error_object, Handle<Object> caller) {
+    Handle<JSReceiver> error_object, FrameSkipMode mode,
+    Handle<Object> caller) {
   // Capture stack trace for simple stack trace string formatting.
   Handle<Name> key = factory()->stack_trace_symbol();
-  Handle<Object> stack_trace = CaptureSimpleStackTrace(error_object, caller);
+  Handle<Object> stack_trace =
+      CaptureSimpleStackTrace(error_object, mode, caller);
   RETURN_ON_EXCEPTION(
       this, JSReceiver::SetProperty(error_object, key, stack_trace, STRICT),
       JSReceiver);
@@ -738,6 +774,7 @@ int PositionFromStackTrace(Handle<FixedArray> elements, int index) {
 
 Handle<JSArray> Isolate::CaptureCurrentStackTrace(
     int frame_limit, StackTrace::StackTraceOptions options) {
+  DisallowJavascriptExecution no_js(this);
   CaptureStackTraceHelper helper(this, options);
 
   // Ensure no negative values.
@@ -921,21 +958,16 @@ bool Isolate::MayAccess(Handle<Context> accessing_context,
 
 
 Object* Isolate::StackOverflow() {
+  DisallowJavascriptExecution no_js(this);
   HandleScope scope(this);
-  // At this point we cannot create an Error object using its javascript
-  // constructor.  Instead, we copy the pre-constructed boilerplate and
-  // attach the stack trace as a hidden property.
+
+  Handle<JSFunction> fun = range_error_function();
+  Handle<Object> msg = factory()->NewStringFromAsciiChecked(
+      MessageTemplate::TemplateString(MessageTemplate::kStackOverflow));
   Handle<Object> exception;
-  if (bootstrapper()->IsActive()) {
-    // There is no boilerplate to use during bootstrapping.
-    exception = factory()->NewStringFromAsciiChecked(
-        MessageTemplate::TemplateString(MessageTemplate::kStackOverflow));
-  } else {
-    Handle<JSObject> boilerplate = stack_overflow_boilerplate();
-    Handle<JSObject> copy = factory()->CopyJSObject(boilerplate);
-    CaptureAndSetSimpleStackTrace(copy, factory()->undefined_value());
-    exception = copy;
-  }
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      this, exception, ConstructError(this, fun, fun, msg, SKIP_NONE, true));
+
   Throw(*exception, nullptr);
 
 #ifdef VERIFY_HEAP
@@ -1274,7 +1306,7 @@ Isolate::CatchType Isolate::PredictExceptionCatcher() {
       if (js_frame->LookupExceptionHandlerInTable(nullptr, &prediction) > 0) {
         // We are conservative with our prediction: try-finally is considered
         // to always rethrow, to meet the expectation of the debugger.
-        if (prediction == HandlerTable::CAUGHT) return CAUGHT_BY_JAVASCRIPT;
+        if (prediction != HandlerTable::UNCAUGHT) return CAUGHT_BY_JAVASCRIPT;
       }
     }
 
@@ -1659,17 +1691,12 @@ bool Isolate::OptionalRescheduleException(bool is_bottom_call) {
   return true;
 }
 
-
-void Isolate::PushPromise(Handle<JSObject> promise,
-                          Handle<JSFunction> function) {
+void Isolate::PushPromise(Handle<JSObject> promise) {
   ThreadLocalTop* tltop = thread_local_top();
   PromiseOnStack* prev = tltop->promise_on_stack_;
   Handle<JSObject> global_promise =
       Handle<JSObject>::cast(global_handles()->Create(*promise));
-  Handle<JSFunction> global_function =
-      Handle<JSFunction>::cast(global_handles()->Create(*function));
-  tltop->promise_on_stack_ =
-      new PromiseOnStack(global_function, global_promise, prev);
+  tltop->promise_on_stack_ = new PromiseOnStack(global_promise, prev);
 }
 
 
@@ -1677,11 +1704,9 @@ void Isolate::PopPromise() {
   ThreadLocalTop* tltop = thread_local_top();
   if (tltop->promise_on_stack_ == NULL) return;
   PromiseOnStack* prev = tltop->promise_on_stack_->prev();
-  Handle<Object> global_function = tltop->promise_on_stack_->function();
   Handle<Object> global_promise = tltop->promise_on_stack_->promise();
   delete tltop->promise_on_stack_;
   tltop->promise_on_stack_ = prev;
-  global_handles()->Destroy(global_function.location());
   global_handles()->Destroy(global_promise.location());
 }
 
@@ -1690,15 +1715,15 @@ Handle<Object> Isolate::GetPromiseOnStackOnThrow() {
   Handle<Object> undefined = factory()->undefined_value();
   ThreadLocalTop* tltop = thread_local_top();
   if (tltop->promise_on_stack_ == NULL) return undefined;
-  Handle<JSFunction> promise_function = tltop->promise_on_stack_->function();
   // Find the top-most try-catch or try-finally handler.
   if (PredictExceptionCatcher() != CAUGHT_BY_JAVASCRIPT) return undefined;
   for (JavaScriptFrameIterator it(this); !it.done(); it.Advance()) {
     JavaScriptFrame* frame = it.frame();
-    if (frame->LookupExceptionHandlerInTable(nullptr, nullptr) > 0) {
+    HandlerTable::CatchPrediction prediction;
+    if (frame->LookupExceptionHandlerInTable(nullptr, &prediction) > 0) {
       // Throwing inside a Promise only leads to a reject if not caught by an
       // inner try-catch or try-finally.
-      if (frame->function() == *promise_function) {
+      if (prediction == HandlerTable::PROMISE) {
         return tltop->promise_on_stack_->promise();
       }
       return undefined;
@@ -2293,6 +2318,9 @@ bool Isolate::Init(Deserializer* des) {
 
   bootstrapper_->Initialize(create_heap_objects);
   builtins_.SetUp(this, create_heap_objects);
+  if (create_heap_objects) {
+    heap_.CreateFixedStubs();
+  }
 
   if (FLAG_log_internal_timer_events) {
     set_event_logger(Logger::DefaultEventLoggerSentinel);
@@ -2657,6 +2685,11 @@ bool Isolate::IsIsConcatSpreadableLookupChainIntact() {
   return !is_is_concat_spreadable_set;
 }
 
+bool Isolate::IsIsConcatSpreadableLookupChainIntact(JSReceiver* receiver) {
+  if (!IsIsConcatSpreadableLookupChainIntact()) return false;
+  return !receiver->HasProxyInPrototype(this);
+}
+
 void Isolate::UpdateArrayProtectorOnSetElement(Handle<JSObject> object) {
   DisallowHeapAllocation no_gc;
   if (!object->map()->is_prototype_map()) return;
@@ -2887,10 +2920,13 @@ void Isolate::RunMicrotasksInternal() {
             Handle<JSFunction>::cast(microtask);
         SaveContext save(this);
         set_context(microtask_function->context()->native_context());
+        handle_scope_implementer_->EnterMicrotaskContext(
+            handle(microtask_function->context(), this));
         MaybeHandle<Object> maybe_exception;
         MaybeHandle<Object> result = Execution::TryCall(
             this, microtask_function, factory()->undefined_value(), 0, NULL,
             &maybe_exception);
+        handle_scope_implementer_->LeaveMicrotaskContext();
         // If execution is terminating, just bail out.
         Handle<Object> exception;
         if (result.is_null() && maybe_exception.is_null()) {

@@ -549,7 +549,7 @@ BytecodeGenerator::BytecodeGenerator(CompilationInfo* info)
       register_allocator_(nullptr),
       generator_resume_points_(info->literal()->yield_count(), info->zone()),
       generator_state_() {
-  InitializeAstVisitor(isolate());
+  InitializeAstVisitor(isolate()->stack_guard()->real_climit());
 }
 
 Handle<BytecodeArray> BytecodeGenerator::MakeBytecode() {
@@ -805,10 +805,6 @@ void BytecodeGenerator::VisitFunctionDeclaration(FunctionDeclaration* decl) {
           Runtime::kDeclareEvalFunction, name, 2);
     }
   }
-}
-
-void BytecodeGenerator::VisitImportDeclaration(ImportDeclaration* decl) {
-  UNIMPLEMENTED();
 }
 
 void BytecodeGenerator::VisitDeclarations(
@@ -1170,7 +1166,6 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
 void BytecodeGenerator::VisitForOfStatement(ForOfStatement* stmt) {
   LoopBuilder loop_builder(builder());
-  ControlScopeForIteration control_scope(this, stmt, &loop_builder);
 
   builder()->SetExpressionAsStatementPosition(stmt->assign_iterator());
   VisitForEffect(stmt->assign_iterator());
@@ -1188,7 +1183,7 @@ void BytecodeGenerator::VisitForOfStatement(ForOfStatement* stmt) {
 }
 
 void BytecodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
-  TryCatchBuilder try_control_builder(builder(), stmt->catch_predicted());
+  TryCatchBuilder try_control_builder(builder(), stmt->catch_prediction());
   Register no_reg;
 
   // Preserve the context in a dedicated register, so that it can be restored
@@ -1224,7 +1219,7 @@ void BytecodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
 }
 
 void BytecodeGenerator::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
-  TryFinallyBuilder try_control_builder(builder(), stmt->catch_predicted());
+  TryFinallyBuilder try_control_builder(builder(), stmt->catch_prediction());
   Register no_reg;
 
   // We keep a record of all paths that enter the finally-block to be able to
@@ -1489,21 +1484,21 @@ void BytecodeGenerator::VisitConditional(Conditional* expr) {
 
 void BytecodeGenerator::VisitLiteral(Literal* expr) {
   if (!execution_result()->IsEffect()) {
-    Handle<Object> value = expr->value();
-    if (value->IsSmi()) {
-      builder()->LoadLiteral(Smi::cast(*value));
-    } else if (value->IsUndefined(isolate())) {
+    const AstValue* raw_value = expr->raw_value();
+    if (raw_value->IsSmi()) {
+      builder()->LoadLiteral(raw_value->AsSmi());
+    } else if (raw_value->IsUndefined()) {
       builder()->LoadUndefined();
-    } else if (value->IsTrue(isolate())) {
+    } else if (raw_value->IsTrue()) {
       builder()->LoadTrue();
-    } else if (value->IsFalse(isolate())) {
+    } else if (raw_value->IsFalse()) {
       builder()->LoadFalse();
-    } else if (value->IsNull(isolate())) {
+    } else if (raw_value->IsNull()) {
       builder()->LoadNull();
-    } else if (value->IsTheHole(isolate())) {
+    } else if (raw_value->IsTheHole()) {
       builder()->LoadTheHole();
     } else {
-      builder()->LoadLiteral(value);
+      builder()->LoadLiteral(raw_value->value());
     }
     execution_result()->SetResultInAccumulator();
   }
@@ -2795,7 +2790,7 @@ void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
     old_value = register_allocator()->outer()->NewRegister();
 
     // Convert old value into a number before saving it.
-    builder()->CastAccumulatorToNumber().StoreAccumulatorInRegister(old_value);
+    builder()->CastAccumulatorToNumber(old_value);
   }
 
   // Perform +1/-1 operation.
@@ -2866,6 +2861,8 @@ void BytecodeGenerator::VisitCompareOperation(CompareOperation* expr) {
 }
 
 void BytecodeGenerator::VisitArithmeticExpression(BinaryOperation* expr) {
+  // TODO(rmcilroy): Special case "x * 1.0" and "x * -1" which are generated for
+  // +x and -x by the parser.
   Register lhs = VisitForRegisterValue(expr->left());
   VisitForAccumulatorValue(expr->right());
   builder()->BinaryOperation(expr->op(), lhs);

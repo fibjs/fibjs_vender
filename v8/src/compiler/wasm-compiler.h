@@ -234,19 +234,6 @@ class WasmGraphBuilder {
   void BoundsCheckMem(MachineType memtype, Node* index, uint32_t offset,
                       wasm::WasmCodePosition position);
 
-  MachineType GetTypeForUnalignedAccess(uint32_t alignment,
-                                        bool signExtend = false);
-
-  Node* GetUnalignedLoadOffsetNode(Node* baseOffset, int numberOfBytes,
-                                   int stride, int current);
-
-  Node* BuildUnalignedLoad(wasm::LocalType type, MachineType memtype,
-                           Node* index, uint32_t offset, uint32_t alignment);
-  Node* GetUnalignedStoreOffsetNode(Node* baseOffset, int numberOfBytes,
-                                    int stride, int current);
-  Node* BuildUnalignedStore(MachineType memtype, Node* index, uint32_t offset,
-                            uint32_t alignment, Node* val);
-
   Node* BuildChangeEndianness(Node* node, MachineType type,
                               wasm::LocalType wasmtype = wasm::kAstStmt);
 
@@ -291,6 +278,7 @@ class WasmGraphBuilder {
 
   Node* BuildF64Acos(Node* input);
   Node* BuildF64Asin(Node* input);
+  Node* BuildF64Pow(Node* left, Node* right);
   Node* BuildF64Mod(Node* left, Node* right);
 
   Node* BuildIntToFloatConversionInstruction(

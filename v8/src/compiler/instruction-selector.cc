@@ -644,9 +644,9 @@ void InstructionSelector::InitializeCallBuffer(Node* call, CallBuffer* buffer,
       }
     }
 
-    InstructionSequence::StateId state_id =
-        sequence()->AddFrameStateDescriptor(buffer->frame_state_descriptor);
-    buffer->instruction_args.push_back(g.TempImmediate(state_id.ToInt()));
+    int const state_id = sequence()->AddDeoptimizationEntry(
+        buffer->frame_state_descriptor, DeoptimizeReason::kNoReason);
+    buffer->instruction_args.push_back(g.TempImmediate(state_id));
 
     StateObjectDeduplicator deduplicator(instruction_zone());
 
@@ -717,6 +717,7 @@ void InstructionSelector::VisitBlock(BasicBlock* block) {
   int effect_level = 0;
   for (Node* const node : *block) {
     if (node->opcode() == IrOpcode::kStore ||
+        node->opcode() == IrOpcode::kUnalignedStore ||
         node->opcode() == IrOpcode::kCheckedStore ||
         node->opcode() == IrOpcode::kCall) {
       ++effect_level;
@@ -833,9 +834,9 @@ void InstructionSelector::VisitControl(BasicBlock* block) {
       return VisitReturn(input);
     }
     case BasicBlock::kDeoptimize: {
-      DeoptimizeKind kind = DeoptimizeKindOf(input->op());
+      DeoptimizeParameters p = DeoptimizeParametersOf(input->op());
       Node* value = input->InputAt(0);
-      return VisitDeoptimize(kind, value);
+      return VisitDeoptimize(p.kind(), p.reason(), value);
     }
     case BasicBlock::kThrow:
       DCHECK_EQ(IrOpcode::kThrow, input->opcode());
@@ -1113,10 +1114,6 @@ void InstructionSelector::VisitNode(Node* node) {
       return MarkAsFloat32(node), VisitFloat32Mul(node);
     case IrOpcode::kFloat32Div:
       return MarkAsFloat32(node), VisitFloat32Div(node);
-    case IrOpcode::kFloat32Min:
-      return MarkAsFloat32(node), VisitFloat32Min(node);
-    case IrOpcode::kFloat32Max:
-      return MarkAsFloat32(node), VisitFloat32Max(node);
     case IrOpcode::kFloat32Abs:
       return MarkAsFloat32(node), VisitFloat32Abs(node);
     case IrOpcode::kFloat32Sqrt:
@@ -1231,6 +1228,14 @@ void InstructionSelector::VisitNode(Node* node) {
       return VisitLoadFramePointer(node);
     case IrOpcode::kLoadParentFramePointer:
       return VisitLoadParentFramePointer(node);
+    case IrOpcode::kUnalignedLoad: {
+      UnalignedLoadRepresentation type =
+          UnalignedLoadRepresentationOf(node->op());
+      MarkAsRepresentation(type.representation(), node);
+      return VisitUnalignedLoad(node);
+    }
+    case IrOpcode::kUnalignedStore:
+      return VisitUnalignedStore(node);
     case IrOpcode::kCheckedLoad: {
       MachineRepresentation rep =
           CheckedLoadRepresentationOf(node->op()).representation();
@@ -1712,6 +1717,8 @@ void InstructionSelector::VisitCall(Node* node, BasicBlock* handler) {
     IfExceptionHint hint = OpParameter<IfExceptionHint>(handler->front());
     if (hint == IfExceptionHint::kLocallyCaught) {
       flags |= CallDescriptor::kHasLocalCatchHandler;
+    } else if (hint == IfExceptionHint::kLocallyCaughtForPromiseReject) {
+      flags |= CallDescriptor::kHasLocalCatchHandlerForPromiseReject;
     }
     flags |= CallDescriptor::kHasExceptionHandler;
     buffer.instruction_args.push_back(g.Label(handler));
@@ -1883,21 +1890,20 @@ void InstructionSelector::VisitReturn(Node* ret) {
   }
 }
 
-Instruction* InstructionSelector::EmitDeoptimize(InstructionCode opcode,
-                                                 InstructionOperand output,
-                                                 InstructionOperand a,
-                                                 InstructionOperand b,
-                                                 Node* frame_state) {
+Instruction* InstructionSelector::EmitDeoptimize(
+    InstructionCode opcode, InstructionOperand output, InstructionOperand a,
+    InstructionOperand b, DeoptimizeReason reason, Node* frame_state) {
   size_t output_count = output.IsInvalid() ? 0 : 1;
   InstructionOperand inputs[] = {a, b};
   size_t input_count = arraysize(inputs);
   return EmitDeoptimize(opcode, output_count, &output, input_count, inputs,
-                        frame_state);
+                        reason, frame_state);
 }
 
 Instruction* InstructionSelector::EmitDeoptimize(
     InstructionCode opcode, size_t output_count, InstructionOperand* outputs,
-    size_t input_count, InstructionOperand* inputs, Node* frame_state) {
+    size_t input_count, InstructionOperand* inputs, DeoptimizeReason reason,
+    Node* frame_state) {
   OperandGenerator g(this);
   FrameStateDescriptor* const descriptor = GetFrameStateDescriptor(frame_state);
   InstructionOperandVector args(instruction_zone());
@@ -1906,9 +1912,8 @@ Instruction* InstructionSelector::EmitDeoptimize(
     args.push_back(inputs[i]);
   }
   opcode |= MiscField::encode(static_cast<int>(input_count));
-  InstructionSequence::StateId const state_id =
-      sequence()->AddFrameStateDescriptor(descriptor);
-  args.push_back(g.TempImmediate(state_id.ToInt()));
+  int const state_id = sequence()->AddDeoptimizationEntry(descriptor, reason);
+  args.push_back(g.TempImmediate(state_id));
   StateObjectDeduplicator deduplicator(instruction_zone());
   AddInputsToFrameStateDescriptor(descriptor, frame_state, &g, &deduplicator,
                                   &args, FrameStateInputKind::kAny,
@@ -1923,7 +1928,9 @@ void InstructionSelector::EmitIdentity(Node* node) {
   Emit(kArchNop, g.DefineSameAsFirst(node), g.Use(value));
 }
 
-void InstructionSelector::VisitDeoptimize(DeoptimizeKind kind, Node* value) {
+void InstructionSelector::VisitDeoptimize(DeoptimizeKind kind,
+                                          DeoptimizeReason reason,
+                                          Node* value) {
   InstructionCode opcode = kArchDeoptimize;
   switch (kind) {
     case DeoptimizeKind::kEager:
@@ -1933,7 +1940,7 @@ void InstructionSelector::VisitDeoptimize(DeoptimizeKind kind, Node* value) {
       opcode |= MiscField::encode(Deoptimizer::SOFT);
       break;
   }
-  EmitDeoptimize(opcode, 0, nullptr, 0, nullptr, value);
+  EmitDeoptimize(opcode, 0, nullptr, 0, nullptr, reason, value);
 }
 
 

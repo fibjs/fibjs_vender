@@ -80,19 +80,7 @@ BreakLocation::BreakLocation(Handle<DebugInfo> debug_info, DebugBreakType type,
       code_offset_(code_offset),
       type_(type),
       position_(position),
-      statement_position_(statement_position) {
-  if (type == DEBUG_BREAK_SLOT_AT_RETURN) {
-    int return_position = 0;
-    SharedFunctionInfo* shared = debug_info->shared();
-    if (shared->HasSourceCode()) {
-      return_position =
-          std::max(shared->end_position() - shared->start_position() - 1, 0);
-    }
-    // TODO(yangguo): find out why return position is wrong for liveedit.
-    position_ = return_position;
-    statement_position = return_position;
-  }
-}
+      statement_position_(statement_position) {}
 
 BreakLocation::Iterator* BreakLocation::GetIterator(
     Handle<DebugInfo> debug_info, BreakLocatorType type) {
@@ -104,10 +92,10 @@ BreakLocation::Iterator* BreakLocation::GetIterator(
 }
 
 BreakLocation::Iterator::Iterator(Handle<DebugInfo> debug_info)
-    : debug_info_(debug_info),
-      break_index_(-1),
-      position_(1),
-      statement_position_(1) {}
+    : debug_info_(debug_info), break_index_(-1) {
+  position_ = debug_info->shared()->start_position();
+  statement_position_ = position_;
+}
 
 BreakLocation::CodeIterator::CodeIterator(Handle<DebugInfo> debug_info,
                                           BreakLocatorType type)
@@ -115,8 +103,7 @@ BreakLocation::CodeIterator::CodeIterator(Handle<DebugInfo> debug_info,
       reloc_iterator_(debug_info->abstract_code()->GetCode(),
                       GetModeMask(type)),
       source_position_iterator_(
-          debug_info->abstract_code()->GetCode()->source_position_table()),
-      start_position_(debug_info_->shared()->start_position()) {
+          debug_info->abstract_code()->GetCode()->source_position_table()) {
   // There is at least one break location.
   DCHECK(!Done());
   Next();
@@ -150,7 +137,7 @@ void BreakLocation::CodeIterator::Next() {
   int offset = code_offset();
   while (!source_position_iterator_.done() &&
          source_position_iterator_.code_offset() <= offset) {
-    position_ = source_position_iterator_.source_position() - start_position_;
+    position_ = source_position_iterator_.source_position();
     if (source_position_iterator_.is_statement()) {
       statement_position_ = position_;
     }
@@ -189,8 +176,7 @@ BreakLocation::BytecodeArrayIterator::BytecodeArrayIterator(
       source_position_iterator_(debug_info->abstract_code()
                                     ->GetBytecodeArray()
                                     ->source_position_table()),
-      break_locator_type_(type),
-      start_position_(debug_info->shared()->start_position()) {
+      break_locator_type_(type) {
   // There is at least one break location.
   DCHECK(!Done());
   Next();
@@ -204,7 +190,7 @@ void BreakLocation::BytecodeArrayIterator::Next() {
     if (!first) source_position_iterator_.Advance();
     first = false;
     if (Done()) return;
-    position_ = source_position_iterator_.source_position() - start_position_;
+    position_ = source_position_iterator_.source_position();
     if (source_position_iterator_.is_statement()) {
       statement_position_ = position_;
     }
@@ -806,28 +792,22 @@ bool Debug::SetBreakPointForScript(Handle<Script> script,
 
   // Find position within function. The script position might be before the
   // source position of the first function.
-  int position;
   if (shared->start_position() > *source_position) {
-    position = 0;
-  } else {
-    position = *source_position - shared->start_position();
+    *source_position = shared->start_position();
   }
 
   Handle<DebugInfo> debug_info(shared->GetDebugInfo());
-  // Source positions starts with zero.
-  DCHECK(position >= 0);
 
   // Find the break point and change it.
   BreakLocation location =
-      BreakLocation::FromPosition(debug_info, position, alignment);
+      BreakLocation::FromPosition(debug_info, *source_position, alignment);
   location.SetBreakPoint(break_point_object);
 
   feature_tracker()->Track(DebugFeatureTracker::kBreakPoint);
 
-  position = (alignment == STATEMENT_ALIGNED) ? location.statement_position()
-                                              : location.position();
-
-  *source_position = position + shared->start_position();
+  *source_position = (alignment == STATEMENT_ALIGNED)
+                         ? location.statement_position()
+                         : location.position();
 
   // At least one active break point now.
   DCHECK(debug_info->GetBreakPointCount() > 0);

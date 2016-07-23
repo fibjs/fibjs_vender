@@ -154,7 +154,7 @@ class Arm64OperandConverter final : public InstructionOperandConverter {
       case kMode_Operand2_R_SXTH:
         return Operand(InputRegister64(index), SXTH);
       case kMode_Operand2_R_SXTW:
-        return Operand(InputRegister32(index), SXTW);
+        return Operand(InputRegister64(index), SXTW);
       case kMode_MRI:
       case kMode_MRR:
         break;
@@ -1275,17 +1275,13 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ Rbit(i.OutputRegister32(), i.InputRegister32(0));
       break;
     case kArm64Cmp:
-      if (AddressingModeField::decode(opcode) == kMode_Operand2_R_SXTW) {
-        __ Cmp(i.InputOrZeroRegister64(0), i.InputOperand2_32(1));
-      } else {
-        __ Cmp(i.InputOrZeroRegister64(0), i.InputOperand(1));
-      }
+      __ Cmp(i.InputOrZeroRegister64(0), i.InputOperand2_64(1));
       break;
     case kArm64Cmp32:
       __ Cmp(i.InputOrZeroRegister32(0), i.InputOperand2_32(1));
       break;
     case kArm64Cmn:
-      __ Cmn(i.InputOrZeroRegister64(0), i.InputOperand(1));
+      __ Cmn(i.InputOrZeroRegister64(0), i.InputOperand2_64(1));
       break;
     case kArm64Cmn32:
       __ Cmn(i.InputOrZeroRegister32(0), i.InputOperand2_32(1));
@@ -1321,18 +1317,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArm64Float32Div:
       __ Fdiv(i.OutputFloat32Register(), i.InputFloat32Register(0),
               i.InputFloat32Register(1));
-      break;
-    case kArm64Float32Max:
-      // (b < a) ? a : b
-      __ Fcmp(i.InputFloat32Register(1), i.InputFloat32Register(0));
-      __ Fcsel(i.OutputFloat32Register(), i.InputFloat32Register(0),
-               i.InputFloat32Register(1), lo);
-      break;
-    case kArm64Float32Min:
-      // (a < b) ? a : b
-      __ Fcmp(i.InputFloat32Register(0), i.InputFloat32Register(1));
-      __ Fcsel(i.OutputFloat32Register(), i.InputFloat32Register(0),
-               i.InputFloat32Register(1), lo);
       break;
     case kArm64Float32Abs:
       __ Fabs(i.OutputFloat32Register(), i.InputFloat32Register(0));
@@ -1380,18 +1364,16 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                        0, 2);
       break;
     }
-    case kArm64Float64Max:
-      // (b < a) ? a : b
-      __ Fcmp(i.InputDoubleRegister(1), i.InputDoubleRegister(0));
-      __ Fcsel(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-               i.InputDoubleRegister(1), lo);
+    case kArm64Float64Max: {
+      __ Fmax(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+              i.InputDoubleRegister(1));
       break;
-    case kArm64Float64Min:
-      // (a < b) ? a : b
-      __ Fcmp(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
-      __ Fcsel(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-               i.InputDoubleRegister(1), lo);
+    }
+    case kArm64Float64Min: {
+      __ Fmin(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+              i.InputDoubleRegister(1));
       break;
+    }
     case kArm64Float64Abs:
       __ Fabs(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       break;
@@ -1765,6 +1747,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleDeoptimizerCall(
   Address deopt_entry = Deoptimizer::GetDeoptimizationEntry(
       isolate(), deoptimization_id, bailout_type);
   if (deopt_entry == nullptr) return kTooManyDeoptimizationBailouts;
+  DeoptimizeReason deoptimization_reason =
+      GetDeoptimizationReason(deoptimization_id);
+  __ RecordDeoptReason(deoptimization_reason, 0, deoptimization_id);
   __ Call(deopt_entry, RelocInfo::RUNTIME_ENTRY);
   return kSuccess;
 }

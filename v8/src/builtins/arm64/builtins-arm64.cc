@@ -33,7 +33,7 @@ static void GenerateLoadInternalArrayFunction(MacroAssembler* masm,
   __ LoadNativeContextSlot(Context::INTERNAL_ARRAY_FUNCTION_INDEX, result);
 }
 
-void Builtins::Generate_Adaptor(MacroAssembler* masm, CFunctionId id,
+void Builtins::Generate_Adaptor(MacroAssembler* masm, Address address,
                                 ExitFrameType exit_frame_type) {
   // ----------- S t a t e -------------
   //  -- x0                 : number of arguments excluding receiver
@@ -62,7 +62,7 @@ void Builtins::Generate_Adaptor(MacroAssembler* masm, CFunctionId id,
   __ Push(x0, x1, x3);
   __ SmiUntag(x0);
 
-  __ JumpToExternalReference(ExternalReference(id, masm->isolate()),
+  __ JumpToExternalReference(ExternalReference(address, masm->isolate()),
                              exit_frame_type == BUILTIN_EXIT);
 }
 
@@ -2812,6 +2812,19 @@ void Builtins::Generate_AllocateInOldSpace(MacroAssembler* masm) {
   __ Push(x1, x2);
   __ Move(cp, Smi::FromInt(0));
   __ TailCallRuntime(Runtime::kAllocateInTargetSpace);
+}
+
+// static
+void Builtins::Generate_Abort(MacroAssembler* masm) {
+  ASM_LOCATION("Builtins::Generate_Abort");
+  // ----------- S t a t e -------------
+  //  -- x1 : message_id as Smi
+  //  -- lr : return address
+  // -----------------------------------
+  MacroAssembler::NoUseRealAbortsScope no_use_real_aborts(masm);
+  __ Push(x1);
+  __ Move(cp, Smi::FromInt(0));
+  __ TailCallRuntime(Runtime::kAbort);
 }
 
 // static

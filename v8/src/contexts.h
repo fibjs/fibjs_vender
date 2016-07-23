@@ -101,6 +101,7 @@ enum BindingFlags {
   V(ASYNC_FUNCTION_AWAIT_INDEX, JSFunction, async_function_await)           \
   V(DERIVED_GET_TRAP_INDEX, JSFunction, derived_get_trap)                   \
   V(ERROR_FUNCTION_INDEX, JSFunction, error_function)                       \
+  V(ERROR_FORMAT_STACK_TRACE_INDEX, JSFunction, error_format_stack_trace)   \
   V(EVAL_ERROR_FUNCTION_INDEX, JSFunction, eval_error_function)             \
   V(GET_STACK_TRACE_LINE_INDEX, JSFunction, get_stack_trace_line_fun)       \
   V(GLOBAL_EVAL_FUN_INDEX, JSFunction, global_eval_fun)                     \
@@ -132,7 +133,6 @@ enum BindingFlags {
   V(SET_ADD_METHOD_INDEX, JSFunction, set_add)                              \
   V(SET_DELETE_METHOD_INDEX, JSFunction, set_delete)                        \
   V(SET_HAS_METHOD_INDEX, JSFunction, set_has)                              \
-  V(STACK_OVERFLOW_BOILERPLATE_INDEX, JSObject, stack_overflow_boilerplate) \
   V(SYNTAX_ERROR_FUNCTION_INDEX, JSFunction, syntax_error_function)         \
   V(TYPE_ERROR_FUNCTION_INDEX, JSFunction, type_error_function)             \
   V(URI_ERROR_FUNCTION_INDEX, JSFunction, uri_error_function)

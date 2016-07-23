@@ -97,6 +97,9 @@ ScopeIterator::ScopeIterator(Isolate* isolate, FrameInspector* frame_inspector,
       DCHECK(scope_info->scope_type() == EVAL_SCOPE);
       info->set_eval();
       info->set_context(Handle<Context>(function->context()));
+      // Language mode may be inherited from the eval caller.
+      // Retrieve it from shared function info.
+      info->set_language_mode(shared_info->language_mode());
     }
   } else {
     // Inner function.
@@ -796,8 +799,8 @@ void ScopeIterator::GetNestedScopeChain(Isolate* isolate, Scope* scope,
                                               scope->start_position(),
                                               scope->end_position()));
   }
-  for (int i = 0; i < scope->inner_scopes()->length(); i++) {
-    Scope* inner_scope = scope->inner_scopes()->at(i);
+  for (Scope* inner_scope = scope->inner_scope(); inner_scope != nullptr;
+       inner_scope = inner_scope->sibling()) {
     int beg_pos = inner_scope->start_position();
     int end_pos = inner_scope->end_position();
     DCHECK((beg_pos >= 0 && end_pos >= 0) || inner_scope->is_hidden());

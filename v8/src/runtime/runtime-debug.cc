@@ -408,7 +408,7 @@ RUNTIME_FUNCTION(Runtime_DebugGetProperty) {
 
   DCHECK(args.length() == 2);
 
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, obj, 0);
   CONVERT_ARG_HANDLE_CHECKED(Name, name, 1);
 
   LookupIterator it(obj, name);
@@ -1582,7 +1582,7 @@ static Handle<Object> GetJSPositionInfo(Handle<Script> script, int position,
                                         Isolate* isolate) {
   Script::PositionInfo info;
   if (!script->GetPositionInfo(position, &info, offset_flag)) {
-    return handle(isolate->heap()->null_value(), isolate);
+    return isolate->factory()->null_value();
   }
 
   Handle<String> source = handle(String::cast(script->source()), isolate);
@@ -1754,11 +1754,10 @@ RUNTIME_FUNCTION(Runtime_DebugRecordAsyncFunction) {
 }
 
 RUNTIME_FUNCTION(Runtime_DebugPushPromise) {
-  DCHECK(args.length() == 2);
+  DCHECK(args.length() == 1);
   HandleScope scope(isolate);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 1);
-  isolate->PushPromise(promise, function);
+  isolate->PushPromise(promise);
   return isolate->heap()->undefined_value();
 }
 

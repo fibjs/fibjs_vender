@@ -783,6 +783,45 @@ class ElementsAccessorBase : public ElementsAccessor {
     return new_elements;
   }
 
+  static void TransitionElementsKindImpl(Handle<JSObject> object,
+                                         Handle<Map> to_map) {
+    Handle<Map> from_map = handle(object->map());
+    ElementsKind from_kind = from_map->elements_kind();
+    ElementsKind to_kind = to_map->elements_kind();
+    if (IsFastHoleyElementsKind(from_kind)) {
+      to_kind = GetHoleyElementsKind(to_kind);
+    }
+    if (from_kind != to_kind) {
+      // This method should never be called for any other case.
+      DCHECK(IsFastElementsKind(from_kind));
+      DCHECK(IsFastElementsKind(to_kind));
+      DCHECK_NE(TERMINAL_FAST_ELEMENTS_KIND, from_kind);
+
+      Handle<FixedArrayBase> from_elements(object->elements());
+      if (object->elements() == object->GetHeap()->empty_fixed_array() ||
+          IsFastDoubleElementsKind(from_kind) ==
+              IsFastDoubleElementsKind(to_kind)) {
+        // No change is needed to the elements() buffer, the transition
+        // only requires a map change.
+        JSObject::MigrateToMap(object, to_map);
+      } else {
+        DCHECK((IsFastSmiElementsKind(from_kind) &&
+                IsFastDoubleElementsKind(to_kind)) ||
+               (IsFastDoubleElementsKind(from_kind) &&
+                IsFastObjectElementsKind(to_kind)));
+        uint32_t capacity = static_cast<uint32_t>(object->elements()->length());
+        Handle<FixedArrayBase> elements = ConvertElementsWithCapacity(
+            object, from_elements, from_kind, capacity);
+        JSObject::SetMapAndElements(object, to_map, elements);
+      }
+      if (FLAG_trace_elements_transitions) {
+        JSObject::PrintElementsTransition(stdout, object, from_kind,
+                                          from_elements, to_kind,
+                                          handle(object->elements()));
+      }
+    }
+  }
+
   static void GrowCapacityAndConvertImpl(Handle<JSObject> object,
                                          uint32_t capacity) {
     ElementsKind from_kind = object->GetElementsKind();
@@ -820,6 +859,10 @@ class ElementsAccessorBase : public ElementsAccessor {
       JSObject::PrintElementsTransition(stdout, object, from_kind, old_elements,
                                         to_kind, elements);
     }
+  }
+
+  void TransitionElementsKind(Handle<JSObject> object, Handle<Map> map) final {
+    Subclass::TransitionElementsKindImpl(object, map);
   }
 
   void GrowCapacityAndConvert(Handle<JSObject> object,
@@ -982,19 +1025,22 @@ class ElementsAccessorBase : public ElementsAccessor {
     Isolate* isolate = object->GetIsolate();
     uint32_t nof_property_keys = keys->length();
     uint32_t initial_list_length =
-        Subclass::GetCapacityImpl(*object, *backing_store);
+        Subclass::GetMaxNumberOfEntries(*object, *backing_store);
     initial_list_length += nof_property_keys;
+
+    bool needs_sorting =
+        IsDictionaryElementsKind(kind()) || IsSloppyArgumentsElements(kind());
 
     // Collect the element indices into a new list.
     uint32_t nof_indices = 0;
     Handle<FixedArray> combined_keys =
         isolate->factory()->NewFixedArray(initial_list_length);
     combined_keys = Subclass::DirectCollectElementIndicesImpl(
-        isolate, object, backing_store, convert, filter, combined_keys,
-        &nof_indices);
+        isolate, object, backing_store,
+        needs_sorting ? GetKeysConversion::kKeepNumbers : convert, filter,
+        combined_keys, &nof_indices);
 
-    // Sort the indices list if necessary.
-    if (IsDictionaryElementsKind(kind()) || IsSloppyArgumentsElements(kind())) {
+    if (needs_sorting) {
       SortIndices(combined_keys, nof_indices, SKIP_WRITE_BARRIER);
       uint32_t array_length = 0;
       // Indices from dictionary elements should only be converted after
@@ -1021,7 +1067,9 @@ class ElementsAccessorBase : public ElementsAccessor {
     CopyObjectToObjectElements(*keys, FAST_ELEMENTS, 0, *combined_keys,
                                FAST_ELEMENTS, nof_indices, nof_property_keys);
 
-    if (IsHoleyElementsKind(kind())) {
+    // For holey elements and arguments we might have to shrink the collected
+    // keys since the estimates might be off.
+    if (IsHoleyElementsKind(kind()) || IsSloppyArgumentsElements(kind())) {
       // Shrink combined_keys to the final size.
       int final_size = nof_indices + nof_property_keys;
       DCHECK_LE(final_size, combined_keys->length());
@@ -1327,7 +1375,7 @@ class DictionaryElementsAccessor
       if (!dictionary->IsKey(isolate, raw_key)) continue;
       uint32_t key = FilterKey(dictionary, i, raw_key, filter);
       if (key == kMaxUInt32) {
-        keys->AddShadowKey(raw_key);
+        keys->AddShadowingKey(raw_key);
         continue;
       }
       elements->set(insertion_index, raw_key);
@@ -2255,6 +2303,11 @@ class SloppyArgumentsElementsAccessor
     }
   }
 
+  static void TransitionElementsKindImpl(Handle<JSObject> object,
+                                         Handle<Map> map) {
+    UNREACHABLE();
+  }
+
   static void GrowCapacityAndConvertImpl(Handle<JSObject> object,
                                          uint32_t capacity) {
     UNREACHABLE();
@@ -2303,6 +2356,14 @@ class SloppyArgumentsElementsAccessor
     FixedArrayBase* arguments = FixedArrayBase::cast(parameter_map->get(1));
     return parameter_map->length() - 2 +
            ArgumentsAccessor::GetCapacityImpl(holder, arguments);
+  }
+
+  static uint32_t GetMaxNumberOfEntries(JSObject* holder,
+                                        FixedArrayBase* backing_store) {
+    FixedArray* parameter_map = FixedArray::cast(backing_store);
+    FixedArrayBase* arguments = FixedArrayBase::cast(parameter_map->get(1));
+    return parameter_map->length() - 2 +
+           ArgumentsAccessor::GetMaxNumberOfEntries(holder, arguments);
   }
 
   static void AddElementsToKeyAccumulatorImpl(Handle<JSObject> receiver,

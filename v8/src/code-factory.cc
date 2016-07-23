@@ -145,8 +145,8 @@ Callable CodeFactory::GetProperty(Isolate* isolate) {
 
 // static
 Callable CodeFactory::ToBoolean(Isolate* isolate) {
-  ToBooleanStub stub(isolate);
-  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+  return Callable(isolate->builtins()->ToBoolean(),
+                  TypeConversionDescriptor(isolate));
 }
 
 
@@ -567,6 +567,12 @@ Callable CodeFactory::ConstructFunction(Isolate* isolate) {
 // static
 Callable CodeFactory::HasProperty(Isolate* isolate) {
   HasPropertyStub stub(isolate);
+  return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
+}
+
+// static
+Callable CodeFactory::ForInFilter(Isolate* isolate) {
+  ForInFilterStub stub(isolate);
   return Callable(stub.GetCode(), stub.GetCallInterfaceDescriptor());
 }
 

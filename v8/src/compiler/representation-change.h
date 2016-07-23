@@ -28,17 +28,18 @@ class Truncation final {
   }
 
   // Queries.
-  bool TruncatesToWord32() const {
+  bool IsUnused() const { return kind_ == TruncationKind::kNone; }
+  bool IsUsedAsWord32() const {
     return LessGeneral(kind_, TruncationKind::kWord32);
   }
-  bool TruncatesToFloat64() const {
+  bool IsUsedAsFloat64() const {
     return LessGeneral(kind_, TruncationKind::kFloat64);
   }
-  bool TruncatesNaNToZero() {
+  bool IdentifiesNaNAndZero() {
     return LessGeneral(kind_, TruncationKind::kWord32) ||
            LessGeneral(kind_, TruncationKind::kBool);
   }
-  bool TruncatesUndefinedToZeroOrNaN() {
+  bool IdentifiesUndefinedAndNaNAndZero() {
     return LessGeneral(kind_, TruncationKind::kFloat64) ||
            LessGeneral(kind_, TruncationKind::kWord64);
   }

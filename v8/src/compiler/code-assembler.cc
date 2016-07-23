@@ -51,7 +51,8 @@ CodeAssembler::CodeAssembler(Isolate* isolate, Zone* zone,
     : raw_assembler_(new RawMachineAssembler(
           isolate, new (zone) Graph(zone), call_descriptor,
           MachineType::PointerRepresentation(),
-          InstructionSelector::SupportedMachineOperatorFlags())),
+          InstructionSelector::SupportedMachineOperatorFlags(),
+          InstructionSelector::AlignmentRequirements())),
       flags_(flags),
       name_(name),
       code_generated_(false),
@@ -209,11 +210,18 @@ CODE_ASSEMBLER_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_BINARY_OP)
 #undef DEFINE_CODE_ASSEMBLER_BINARY_OP
 
 Node* CodeAssembler::WordShl(Node* value, int shift) {
-  return raw_assembler_->WordShl(value, IntPtrConstant(shift));
+  return (shift != 0) ? raw_assembler_->WordShl(value, IntPtrConstant(shift))
+                      : value;
 }
 
 Node* CodeAssembler::WordShr(Node* value, int shift) {
-  return raw_assembler_->WordShr(value, IntPtrConstant(shift));
+  return (shift != 0) ? raw_assembler_->WordShr(value, IntPtrConstant(shift))
+                      : value;
+}
+
+Node* CodeAssembler::Word32Shr(Node* value, int shift) {
+  return (shift != 0) ? raw_assembler_->Word32Shr(value, IntPtrConstant(shift))
+                      : value;
 }
 
 Node* CodeAssembler::ChangeUint32ToWord(Node* value) {

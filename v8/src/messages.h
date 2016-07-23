@@ -62,6 +62,8 @@ class CallSite {
   bool IsJavaScript() { return !fun_.is_null(); }
   bool IsWasm() { return !wasm_obj_.is_null(); }
 
+  int wasm_func_index() const { return wasm_func_index_; }
+
  private:
   Isolate* isolate_;
   Handle<Object> receiver_;
@@ -70,6 +72,26 @@ class CallSite {
   Handle<JSObject> wasm_obj_;
   uint32_t wasm_func_index_ = static_cast<uint32_t>(-1);
 };
+
+// Formats a textual stack trace from the given structured stack trace.
+// Note that this can call arbitrary JS code through Error.prepareStackTrace.
+MaybeHandle<Object> FormatStackTrace(Isolate* isolate, Handle<JSObject> error,
+                                     Handle<Object> stack_trace);
+
+// Determines how stack trace collection skips frames.
+enum FrameSkipMode {
+  // Unconditionally skips the first frame. Used e.g. when the Error constructor
+  // is called, in which case the first frame is always a BUILTIN_EXIT frame.
+  SKIP_FIRST,
+  // Skip all frames until a specified caller function is seen.
+  SKIP_UNTIL_SEEN,
+  SKIP_NONE,
+};
+
+MaybeHandle<Object> ConstructError(Isolate* isolate, Handle<JSFunction> target,
+                                   Handle<Object> new_target,
+                                   Handle<Object> message, FrameSkipMode mode,
+                                   bool suppress_detailed_trace);
 
 #define MESSAGE_TEMPLATES(T)                                                   \
   /* Error */                                                                  \

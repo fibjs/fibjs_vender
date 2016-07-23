@@ -5,6 +5,7 @@
 #include "src/messages.h"
 
 #include "src/api.h"
+#include "src/bootstrapper.h"
 #include "src/execution.h"
 #include "src/isolate-inl.h"
 #include "src/keys.h"
@@ -261,15 +262,13 @@ Handle<Object> CallSite::GetMethodName() {
 
   Handle<JSObject> obj = Handle<JSObject>::cast(receiver);
   Handle<Object> function_name(fun_->shared()->name(), isolate_);
-  if (function_name->IsName()) {
-    Handle<Name> name = Handle<Name>::cast(function_name);
+  if (function_name->IsString()) {
+    Handle<String> name = Handle<String>::cast(function_name);
     // ES2015 gives getters and setters name prefixes which must
     // be stripped to find the property name.
-    Handle<String> name_string = Handle<String>::cast(name);
-    if (name_string->IsUtf8EqualTo(CStrVector("get "), true) ||
-        name_string->IsUtf8EqualTo(CStrVector("set "), true)) {
-      name = isolate_->factory()->NewProperSubString(name_string, 4,
-                                                     name_string->length());
+    if (name->IsUtf8EqualTo(CStrVector("get "), true) ||
+        name->IsUtf8EqualTo(CStrVector("set "), true)) {
+      name = isolate_->factory()->NewProperSubString(name, 4, name->length());
     }
     if (CheckMethodName(isolate_, obj, name, fun_,
                         LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR)) {
@@ -365,6 +364,23 @@ bool CallSite::IsConstructor() {
   return constructor.is_identical_to(fun_);
 }
 
+MaybeHandle<Object> FormatStackTrace(Isolate* isolate, Handle<JSObject> error,
+                                     Handle<Object> stack_trace) {
+  // TODO(jgruber): Port FormatStackTrace from JS.
+  Handle<JSFunction> fun = isolate->error_format_stack_trace();
+
+  int argc = 2;
+  ScopedVector<Handle<Object>> argv(argc);
+  argv[0] = error;
+  argv[1] = stack_trace;
+
+  Handle<Object> formatted_stack_trace;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, formatted_stack_trace,
+      Execution::Call(isolate, fun, error, argc, argv.start()), Object);
+
+  return formatted_stack_trace;
+}
 
 Handle<String> MessageTemplate::FormatMessage(Isolate* isolate,
                                               int template_index,
@@ -447,6 +463,62 @@ MaybeHandle<String> MessageTemplate::FormatMessage(int template_index,
   return builder.Finish();
 }
 
+MaybeHandle<Object> ConstructError(Isolate* isolate, Handle<JSFunction> target,
+                                   Handle<Object> new_target,
+                                   Handle<Object> message, FrameSkipMode mode,
+                                   bool suppress_detailed_trace) {
+  // 1. If NewTarget is undefined, let newTarget be the active function object,
+  // else let newTarget be NewTarget.
+
+  Handle<JSReceiver> new_target_recv =
+      new_target->IsJSReceiver() ? Handle<JSReceiver>::cast(new_target)
+                                 : Handle<JSReceiver>::cast(target);
+
+  // 2. Let O be ? OrdinaryCreateFromConstructor(newTarget, "%ErrorPrototype%",
+  //    « [[ErrorData]] »).
+  Handle<JSObject> err;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, err,
+                             JSObject::New(target, new_target_recv), Object);
+
+  // 3. If message is not undefined, then
+  //  a. Let msg be ? ToString(message).
+  //  b. Let msgDesc be the PropertyDescriptor{[[Value]]: msg, [[Writable]]:
+  //     true, [[Enumerable]]: false, [[Configurable]]: true}.
+  //  c. Perform ! DefinePropertyOrThrow(O, "message", msgDesc).
+  // 4. Return O.
+
+  if (!message->IsUndefined(isolate)) {
+    Handle<String> msg_string;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, msg_string,
+                               Object::ToString(isolate, message), Object);
+    RETURN_ON_EXCEPTION(isolate, JSObject::SetOwnPropertyIgnoreAttributes(
+                                     err, isolate->factory()->message_string(),
+                                     msg_string, DONT_ENUM),
+                        Object);
+  }
+
+  // Optionally capture a more detailed stack trace for the message.
+  if (!suppress_detailed_trace) {
+    RETURN_ON_EXCEPTION(isolate, isolate->CaptureAndSetDetailedStackTrace(err),
+                        Object);
+  }
+
+  // When we're passed a JSFunction as new target, we can skip frames until that
+  // specific function is seen instead of unconditionally skipping the first
+  // frame.
+  Handle<Object> caller;
+  if (mode == SKIP_FIRST && new_target->IsJSFunction()) {
+    mode = SKIP_UNTIL_SEEN;
+    caller = new_target;
+  }
+
+  // Capture a simple stack trace for the stack property.
+  RETURN_ON_EXCEPTION(isolate,
+                      isolate->CaptureAndSetSimpleStackTrace(err, mode, caller),
+                      Object);
+
+  return err;
+}
 
 }  // namespace internal
 }  // namespace v8

@@ -605,6 +605,79 @@ Node* CodeStubAssembler::InnerAllocate(Node* previous, int offset) {
   return InnerAllocate(previous, IntPtrConstant(offset));
 }
 
+void CodeStubAssembler::BranchIfToBooleanIsTrue(Node* value, Label* if_true,
+                                                Label* if_false) {
+  Label if_valueissmi(this), if_valueisnotsmi(this), if_valueisstring(this),
+      if_valueisheapnumber(this), if_valueisother(this);
+
+  // Fast check for Boolean {value}s (common case).
+  GotoIf(WordEqual(value, BooleanConstant(true)), if_true);
+  GotoIf(WordEqual(value, BooleanConstant(false)), if_false);
+
+  // Check if {value} is a Smi or a HeapObject.
+  Branch(WordIsSmi(value), &if_valueissmi, &if_valueisnotsmi);
+
+  Bind(&if_valueissmi);
+  {
+    // The {value} is a Smi, only need to check against zero.
+    BranchIfSmiEqual(value, SmiConstant(0), if_false, if_true);
+  }
+
+  Bind(&if_valueisnotsmi);
+  {
+    // The {value} is a HeapObject, load its map.
+    Node* value_map = LoadMap(value);
+
+    // Load the {value}s instance type.
+    Node* value_instance_type = LoadMapInstanceType(value_map);
+
+    // Dispatch based on the instance type; we distinguish all String instance
+    // types, the HeapNumber type and everything else.
+    GotoIf(Word32Equal(value_instance_type, Int32Constant(HEAP_NUMBER_TYPE)),
+           &if_valueisheapnumber);
+    Branch(
+        Int32LessThan(value_instance_type, Int32Constant(FIRST_NONSTRING_TYPE)),
+        &if_valueisstring, &if_valueisother);
+
+    Bind(&if_valueisstring);
+    {
+      // Load the string length field of the {value}.
+      Node* value_length = LoadObjectField(value, String::kLengthOffset);
+
+      // Check if the {value} is the empty string.
+      BranchIfSmiEqual(value_length, SmiConstant(0), if_false, if_true);
+    }
+
+    Bind(&if_valueisheapnumber);
+    {
+      // Load the floating point value of {value}.
+      Node* value_value = LoadObjectField(value, HeapNumber::kValueOffset,
+                                          MachineType::Float64());
+
+      // Check if the floating point {value} is neither 0.0, -0.0 nor NaN.
+      Node* zero = Float64Constant(0.0);
+      GotoIf(Float64LessThan(zero, value_value), if_true);
+      BranchIfFloat64LessThan(value_value, zero, if_true, if_false);
+    }
+
+    Bind(&if_valueisother);
+    {
+      // Load the bit field from the {value}s map. The {value} is now either
+      // Null or Undefined, which have the undetectable bit set (so we always
+      // return false for those), or a Symbol or Simd128Value, whose maps never
+      // have the undetectable bit set (so we always return true for those), or
+      // a JSReceiver, which may or may not have the undetectable bit set.
+      Node* value_map_bitfield = LoadMapBitField(value_map);
+      Node* value_map_undetectable = Word32And(
+          value_map_bitfield, Int32Constant(1 << Map::kIsUndetectable));
+
+      // Check if the {value} is undetectable.
+      BranchIfWord32Equal(value_map_undetectable, Int32Constant(0), if_true,
+                          if_false);
+    }
+  }
+}
+
 compiler::Node* CodeStubAssembler::LoadFromFrame(int offset, MachineType rep) {
   Node* frame_pointer = LoadFramePointer();
   return Load(rep, frame_pointer, IntPtrConstant(offset));
@@ -1697,7 +1770,7 @@ Node* CodeStubAssembler::StringFromCharCode(Node* code) {
 Node* CodeStubAssembler::BitFieldDecode(Node* word32, uint32_t shift,
                                         uint32_t mask) {
   return Word32Shr(Word32And(word32, Int32Constant(mask)),
-                   Int32Constant(shift));
+                   static_cast<int>(shift));
 }
 
 void CodeStubAssembler::SetCounter(StatsCounter* counter, int value) {
@@ -2418,9 +2491,10 @@ void CodeStubAssembler::TryPrototypeChainLookup(
   {
     Label if_objectisreceiver(this);
     STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
-    Branch(Int32GreaterThanOrEqual(instance_type,
-                                   Int32Constant(FIRST_JS_RECEIVER_TYPE)),
-           &if_objectisreceiver, if_bailout);
+    STATIC_ASSERT(FIRST_JS_RECEIVER_TYPE == JS_PROXY_TYPE);
+    Branch(
+        Int32GreaterThan(instance_type, Int32Constant(FIRST_JS_RECEIVER_TYPE)),
+        &if_objectisreceiver, if_bailout);
     Bind(&if_objectisreceiver);
   }
 
@@ -2790,7 +2864,6 @@ void CodeStubAssembler::HandlePolymorphicCase(
 }
 
 compiler::Node* CodeStubAssembler::StubCachePrimaryOffset(compiler::Node* name,
-                                                          Code::Flags flags,
                                                           compiler::Node* map) {
   // See v8::internal::StubCache::PrimaryOffset().
   STATIC_ASSERT(StubCache::kCacheIndexShift == Name::kHashShift);
@@ -2804,28 +2877,20 @@ compiler::Node* CodeStubAssembler::StubCachePrimaryOffset(compiler::Node* name,
   // risk of collision even if the heap is spread over an area larger than
   // 4Gb (and not at all if it isn't).
   Node* hash = Int32Add(hash_field, map);
-  // We always set the in_loop bit to zero when generating the lookup code
-  // so do it here too so the hash codes match.
-  uint32_t iflags =
-      (static_cast<uint32_t>(flags) & ~Code::kFlagsNotUsedInLookup);
-  // Base the offset on a simple combination of name, flags, and map.
-  hash = Word32Xor(hash, Int32Constant(iflags));
+  // Base the offset on a simple combination of name and map.
+  hash = Word32Xor(hash, Int32Constant(StubCache::kPrimaryMagic));
   uint32_t mask = (StubCache::kPrimaryTableSize - 1)
                   << StubCache::kCacheIndexShift;
   return Word32And(hash, Int32Constant(mask));
 }
 
 compiler::Node* CodeStubAssembler::StubCacheSecondaryOffset(
-    compiler::Node* name, Code::Flags flags, compiler::Node* seed) {
+    compiler::Node* name, compiler::Node* seed) {
   // See v8::internal::StubCache::SecondaryOffset().
 
   // Use the seed from the primary cache in the secondary cache.
   Node* hash = Int32Sub(seed, name);
-  // We always set the in_loop bit to zero when generating the lookup code
-  // so do it here too so the hash codes match.
-  uint32_t iflags =
-      (static_cast<uint32_t>(flags) & ~Code::kFlagsNotUsedInLookup);
-  hash = Int32Add(hash, Int32Constant(iflags));
+  hash = Int32Add(hash, Int32Constant(StubCache::kSecondaryMagic));
   int32_t mask = (StubCache::kSecondaryTableSize - 1)
                  << StubCache::kCacheIndexShift;
   return Word32And(hash, Int32Constant(mask));
@@ -2838,9 +2903,8 @@ enum CodeStubAssembler::StubCacheTable : int {
 
 void CodeStubAssembler::TryProbeStubCacheTable(
     StubCache* stub_cache, StubCacheTable table_id,
-    compiler::Node* entry_offset, compiler::Node* name, Code::Flags flags,
-    compiler::Node* map, Label* if_handler, Variable* var_handler,
-    Label* if_miss) {
+    compiler::Node* entry_offset, compiler::Node* name, compiler::Node* map,
+    Label* if_handler, Variable* var_handler, Label* if_miss) {
   StubCache::Table table = static_cast<StubCache::Table>(table_id);
 #ifdef DEBUG
   if (FLAG_test_secondary_stub_cache && table == StubCache::kPrimary) {
@@ -2870,18 +2934,10 @@ void CodeStubAssembler::TryProbeStubCacheTable(
            Int32Add(entry_offset, Int32Constant(kPointerSize * 2)));
   GotoIf(WordNotEqual(map, entry_map), if_miss);
 
-  // Check that the flags match what we're looking for.
   DCHECK_EQ(kPointerSize, stub_cache->value_reference(table).address() -
                               stub_cache->key_reference(table).address());
   Node* code = Load(MachineType::Pointer(), key_base,
                     Int32Add(entry_offset, Int32Constant(kPointerSize)));
-
-  Node* code_flags =
-      LoadObjectField(code, Code::kFlagsOffset, MachineType::Uint32());
-  GotoIf(Word32NotEqual(Int32Constant(flags),
-                        Word32And(code_flags,
-                                  Int32Constant(~Code::kFlagsNotUsedInLookup))),
-         if_miss);
 
   // We found the handler.
   var_handler->Bind(code);
@@ -2891,9 +2947,6 @@ void CodeStubAssembler::TryProbeStubCacheTable(
 void CodeStubAssembler::TryProbeStubCache(
     StubCache* stub_cache, compiler::Node* receiver, compiler::Node* name,
     Label* if_handler, Variable* var_handler, Label* if_miss) {
-  Code::Flags flags = Code::RemoveHolderFromFlags(
-      Code::ComputeHandlerFlags(stub_cache->ic_kind()));
-
   Label try_secondary(this), miss(this);
 
   Counters* counters = isolate()->counters();
@@ -2905,17 +2958,16 @@ void CodeStubAssembler::TryProbeStubCache(
   Node* receiver_map = LoadMap(receiver);
 
   // Probe the primary table.
-  Node* primary_offset = StubCachePrimaryOffset(name, flags, receiver_map);
-  TryProbeStubCacheTable(stub_cache, kPrimary, primary_offset, name, flags,
+  Node* primary_offset = StubCachePrimaryOffset(name, receiver_map);
+  TryProbeStubCacheTable(stub_cache, kPrimary, primary_offset, name,
                          receiver_map, if_handler, var_handler, &try_secondary);
 
   Bind(&try_secondary);
   {
     // Probe the secondary table.
-    Node* secondary_offset =
-        StubCacheSecondaryOffset(name, flags, primary_offset);
+    Node* secondary_offset = StubCacheSecondaryOffset(name, primary_offset);
     TryProbeStubCacheTable(stub_cache, kSecondary, secondary_offset, name,
-                           flags, receiver_map, if_handler, var_handler, &miss);
+                           receiver_map, if_handler, var_handler, &miss);
   }
 
   Bind(&miss);
@@ -3061,6 +3113,73 @@ void CodeStubAssembler::LoadGlobalIC(const LoadICParameters* p) {
   {
     TailCallRuntime(Runtime::kLoadGlobalIC_Miss, p->context, p->slot,
                     p->vector);
+  }
+}
+
+Node* CodeStubAssembler::EnumLength(Node* map) {
+  Node* bitfield_3 = LoadMapBitField3(map);
+  Node* enum_length = BitFieldDecode<Map::EnumLengthBits>(bitfield_3);
+  return SmiTag(enum_length);
+}
+
+void CodeStubAssembler::CheckEnumCache(Node* receiver, Label* use_cache,
+                                       Label* use_runtime) {
+  Variable current_js_object(this, MachineRepresentation::kTagged);
+  current_js_object.Bind(receiver);
+
+  Variable current_map(this, MachineRepresentation::kTagged);
+  current_map.Bind(LoadMap(current_js_object.value()));
+
+  // These variables are updated in the loop below.
+  Variable* loop_vars[2] = {&current_js_object, &current_map};
+  Label loop(this, 2, loop_vars), next(this);
+
+  // Check if the enum length field is properly initialized, indicating that
+  // there is an enum cache.
+  {
+    Node* invalid_enum_cache_sentinel =
+        SmiConstant(Smi::FromInt(kInvalidEnumCacheSentinel));
+    Node* enum_length = EnumLength(current_map.value());
+    BranchIfWordEqual(enum_length, invalid_enum_cache_sentinel, use_runtime,
+                      &loop);
+  }
+
+  // Check that there are no elements. |current_js_object| contains
+  // the current JS object we've reached through the prototype chain.
+  Bind(&loop);
+  {
+    Label if_elements(this), if_no_elements(this);
+    Node* elements = LoadElements(current_js_object.value());
+    Node* empty_fixed_array = LoadRoot(Heap::kEmptyFixedArrayRootIndex);
+    // Check that there are no elements.
+    BranchIfWordEqual(elements, empty_fixed_array, &if_no_elements,
+                      &if_elements);
+    Bind(&if_elements);
+    {
+      // Second chance, the object may be using the empty slow element
+      // dictionary.
+      Node* slow_empty_dictionary =
+          LoadRoot(Heap::kEmptySlowElementDictionaryRootIndex);
+      BranchIfWordNotEqual(elements, slow_empty_dictionary, use_runtime,
+                           &if_no_elements);
+    }
+
+    Bind(&if_no_elements);
+    {
+      // Update map prototype.
+      current_js_object.Bind(LoadMapPrototype(current_map.value()));
+      BranchIfWordEqual(current_js_object.value(), NullConstant(), use_cache,
+                        &next);
+    }
+  }
+
+  Bind(&next);
+  {
+    // For all objects but the receiver, check that the cache is empty.
+    current_map.Bind(LoadMap(current_js_object.value()));
+    Node* enum_length = EnumLength(current_map.value());
+    Node* zero_constant = SmiConstant(Smi::FromInt(0));
+    BranchIf(WordEqual(enum_length, zero_constant), &loop, use_runtime);
   }
 }
 

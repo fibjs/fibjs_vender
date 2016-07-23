@@ -12,12 +12,20 @@
 namespace v8 {
 namespace internal {
 
+enum FunctionMode {
+  // With prototype.
+  FUNCTION_WITH_WRITEABLE_PROTOTYPE,
+  FUNCTION_WITH_READONLY_PROTOTYPE,
+  // Without prototype.
+  FUNCTION_WITHOUT_PROTOTYPE
+};
+
 // Interface for handle based allocation.
 class Factory final {
  public:
   Handle<Oddball> NewOddball(Handle<Map> map, const char* to_string,
-                             Handle<Object> to_number, bool to_boolean,
-                             const char* type_of, byte kind);
+                             Handle<Object> to_number, const char* type_of,
+                             byte kind);
 
   // Allocates a fixed array initialized with undefined values.
   Handle<FixedArray> NewFixedArray(
@@ -644,6 +652,16 @@ class Factory final {
                                                    MaybeHandle<Code> code,
                                                    bool is_constructor);
 
+  static bool IsFunctionModeWithPrototype(FunctionMode function_mode) {
+    return (function_mode == FUNCTION_WITH_WRITEABLE_PROTOTYPE ||
+            function_mode == FUNCTION_WITH_READONLY_PROTOTYPE);
+  }
+
+  Handle<Map> CreateSloppyFunctionMap(FunctionMode function_mode);
+
+  Handle<Map> CreateStrictFunctionMap(FunctionMode function_mode,
+                                      Handle<JSFunction> empty_function);
+
   // Allocates a new JSMessageObject object.
   Handle<JSMessageObject> NewJSMessageObject(MessageTemplate::Template message,
                                              Handle<Object> argument,
@@ -717,6 +735,12 @@ class Factory final {
   // Create a JSArray with no elements and no length.
   Handle<JSArray> NewJSArray(ElementsKind elements_kind,
                              PretenureFlag pretenure = NOT_TENURED);
+
+  void SetFunctionInstanceDescriptor(Handle<Map> map,
+                                     FunctionMode function_mode);
+
+  void SetStrictFunctionInstanceDescriptor(Handle<Map> map,
+                                           FunctionMode function_mode);
 };
 
 }  // namespace internal

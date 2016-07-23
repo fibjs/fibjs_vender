@@ -997,13 +997,17 @@ void Interpreter::DoShiftRightSmi(InterpreterAssembler* assembler) {
   __ Dispatch();
 }
 
-void Interpreter::DoUnaryOp(Callable callable,
-                            InterpreterAssembler* assembler) {
+Node* Interpreter::BuildUnaryOp(Callable callable,
+                                InterpreterAssembler* assembler) {
   Node* target = __ HeapConstant(callable.code());
   Node* accumulator = __ GetAccumulator();
   Node* context = __ GetContext();
-  Node* result =
-      __ CallStub(callable.descriptor(), target, context, accumulator);
+  return __ CallStub(callable.descriptor(), target, context, accumulator);
+}
+
+void Interpreter::DoUnaryOp(Callable callable,
+                            InterpreterAssembler* assembler) {
+  Node* result = BuildUnaryOp(callable, assembler);
   __ SetAccumulator(result);
   __ Dispatch();
 }
@@ -1028,7 +1032,9 @@ void Interpreter::DoToName(InterpreterAssembler* assembler) {
 //
 // Cast the object referenced by the accumulator to a number.
 void Interpreter::DoToNumber(InterpreterAssembler* assembler) {
-  DoUnaryOp(CodeFactory::ToNumber(isolate_), assembler);
+  Node* result = BuildUnaryOp(CodeFactory::ToNumber(isolate_), assembler);
+  __ StoreRegister(result, __ BytecodeOperandReg(0));
+  __ Dispatch();
 }
 
 // ToObject
@@ -1052,14 +1058,39 @@ void Interpreter::DoDec(InterpreterAssembler* assembler) {
   DoUnaryOp<DecStub>(assembler);
 }
 
-Node* Interpreter::BuildToBoolean(Node* value,
-                                  InterpreterAssembler* assembler) {
-  Node* context = __ GetContext();
-  return ToBooleanStub::Generate(assembler, value, context);
+// LogicalNot
+//
+// Perform logical-not on the accumulator, first casting the
+// accumulator to a boolean value if required.
+// ToBooleanLogicalNot
+void Interpreter::DoToBooleanLogicalNot(InterpreterAssembler* assembler) {
+  Node* value = __ GetAccumulator();
+  Variable result(assembler, MachineRepresentation::kTagged);
+  Label if_true(assembler), if_false(assembler), end(assembler);
+  Node* true_value = __ BooleanConstant(true);
+  Node* false_value = __ BooleanConstant(false);
+  __ BranchIfToBooleanIsTrue(value, &if_true, &if_false);
+  __ Bind(&if_true);
+  {
+    result.Bind(false_value);
+    __ Goto(&end);
+  }
+  __ Bind(&if_false);
+  {
+    result.Bind(true_value);
+    __ Goto(&end);
+  }
+  __ Bind(&end);
+  __ SetAccumulator(result.value());
+  __ Dispatch();
 }
 
-Node* Interpreter::BuildLogicalNot(Node* value,
-                                   InterpreterAssembler* assembler) {
+// LogicalNot
+//
+// Perform logical-not on the accumulator, which must already be a boolean
+// value.
+void Interpreter::DoLogicalNot(InterpreterAssembler* assembler) {
+  Node* value = __ GetAccumulator();
   Variable result(assembler, MachineRepresentation::kTagged);
   Label if_true(assembler), if_false(assembler), end(assembler);
   Node* true_value = __ BooleanConstant(true);
@@ -1080,30 +1111,7 @@ Node* Interpreter::BuildLogicalNot(Node* value,
     __ Goto(&end);
   }
   __ Bind(&end);
-  return result.value();
-}
-
-// LogicalNot
-//
-// Perform logical-not on the accumulator, first casting the
-// accumulator to a boolean value if required.
-// ToBooleanLogicalNot
-void Interpreter::DoToBooleanLogicalNot(InterpreterAssembler* assembler) {
-  Node* value = __ GetAccumulator();
-  Node* to_boolean_value = BuildToBoolean(value, assembler);
-  Node* result = BuildLogicalNot(to_boolean_value, assembler);
-  __ SetAccumulator(result);
-  __ Dispatch();
-}
-
-// LogicalNot
-//
-// Perform logical-not on the accumulator, which must already be a boolean
-// value.
-void Interpreter::DoLogicalNot(InterpreterAssembler* assembler) {
-  Node* value = __ GetAccumulator();
-  Node* result = BuildLogicalNot(value, assembler);
-  __ SetAccumulator(result);
+  __ SetAccumulator(result.value());
   __ Dispatch();
 }
 
@@ -1438,11 +1446,14 @@ void Interpreter::DoJumpIfFalseConstant(InterpreterAssembler* assembler) {
 // Jump by number of bytes represented by an immediate operand if the object
 // referenced by the accumulator is true when the object is cast to boolean.
 void Interpreter::DoJumpIfToBooleanTrue(InterpreterAssembler* assembler) {
-  Node* accumulator = __ GetAccumulator();
-  Node* to_boolean_value = BuildToBoolean(accumulator, assembler);
+  Node* value = __ GetAccumulator();
   Node* relative_jump = __ BytecodeOperandImm(0);
-  Node* true_value = __ BooleanConstant(true);
-  __ JumpIfWordEqual(to_boolean_value, true_value, relative_jump);
+  Label if_true(assembler), if_false(assembler);
+  __ BranchIfToBooleanIsTrue(value, &if_true, &if_false);
+  __ Bind(&if_true);
+  __ Jump(relative_jump);
+  __ Bind(&if_false);
+  __ Dispatch();
 }
 
 // JumpIfToBooleanTrueConstant <idx>
@@ -1452,13 +1463,16 @@ void Interpreter::DoJumpIfToBooleanTrue(InterpreterAssembler* assembler) {
 // to boolean.
 void Interpreter::DoJumpIfToBooleanTrueConstant(
     InterpreterAssembler* assembler) {
-  Node* accumulator = __ GetAccumulator();
-  Node* to_boolean_value = BuildToBoolean(accumulator, assembler);
+  Node* value = __ GetAccumulator();
   Node* index = __ BytecodeOperandIdx(0);
   Node* constant = __ LoadConstantPoolEntry(index);
   Node* relative_jump = __ SmiUntag(constant);
-  Node* true_value = __ BooleanConstant(true);
-  __ JumpIfWordEqual(to_boolean_value, true_value, relative_jump);
+  Label if_true(assembler), if_false(assembler);
+  __ BranchIfToBooleanIsTrue(value, &if_true, &if_false);
+  __ Bind(&if_true);
+  __ Jump(relative_jump);
+  __ Bind(&if_false);
+  __ Dispatch();
 }
 
 // JumpIfToBooleanFalse <imm>
@@ -1466,11 +1480,14 @@ void Interpreter::DoJumpIfToBooleanTrueConstant(
 // Jump by number of bytes represented by an immediate operand if the object
 // referenced by the accumulator is false when the object is cast to boolean.
 void Interpreter::DoJumpIfToBooleanFalse(InterpreterAssembler* assembler) {
-  Node* accumulator = __ GetAccumulator();
-  Node* to_boolean_value = BuildToBoolean(accumulator, assembler);
+  Node* value = __ GetAccumulator();
   Node* relative_jump = __ BytecodeOperandImm(0);
-  Node* false_value = __ BooleanConstant(false);
-  __ JumpIfWordEqual(to_boolean_value, false_value, relative_jump);
+  Label if_true(assembler), if_false(assembler);
+  __ BranchIfToBooleanIsTrue(value, &if_true, &if_false);
+  __ Bind(&if_true);
+  __ Dispatch();
+  __ Bind(&if_false);
+  __ Jump(relative_jump);
 }
 
 // JumpIfToBooleanFalseConstant <idx>
@@ -1480,13 +1497,16 @@ void Interpreter::DoJumpIfToBooleanFalse(InterpreterAssembler* assembler) {
 // to boolean.
 void Interpreter::DoJumpIfToBooleanFalseConstant(
     InterpreterAssembler* assembler) {
-  Node* accumulator = __ GetAccumulator();
-  Node* to_boolean_value = BuildToBoolean(accumulator, assembler);
+  Node* value = __ GetAccumulator();
   Node* index = __ BytecodeOperandIdx(0);
   Node* constant = __ LoadConstantPoolEntry(index);
   Node* relative_jump = __ SmiUntag(constant);
-  Node* false_value = __ BooleanConstant(false);
-  __ JumpIfWordEqual(to_boolean_value, false_value, relative_jump);
+  Label if_true(assembler), if_false(assembler);
+  __ BranchIfToBooleanIsTrue(value, &if_true, &if_false);
+  __ Bind(&if_true);
+  __ Dispatch();
+  __ Bind(&if_false);
+  __ Jump(relative_jump);
 }
 
 // JumpIfNull <imm>
@@ -1648,6 +1668,7 @@ void Interpreter::DoCreateObjectLiteral(InterpreterAssembler* assembler) {
         __ CallRuntime(Runtime::kCreateObjectLiteral, context, closure,
                        literal_index, constant_elements, flags);
     __ SetAccumulator(result);
+    // TODO(klaasb) build a single dispatch once the call is inlined
     __ Dispatch();
   }
 }
@@ -1826,6 +1847,17 @@ void Interpreter::DoDebugger(InterpreterAssembler* assembler) {
 DEBUG_BREAK_BYTECODE_LIST(DEBUG_BREAK);
 #undef DEBUG_BREAK
 
+void Interpreter::BuildForInPrepareResult(Node* output_register,
+                                          Node* cache_type, Node* cache_array,
+                                          Node* cache_length,
+                                          InterpreterAssembler* assembler) {
+  __ StoreRegister(cache_type, output_register);
+  output_register = __ NextRegister(output_register);
+  __ StoreRegister(cache_array, output_register);
+  output_register = __ NextRegister(output_register);
+  __ StoreRegister(cache_length, output_register);
+}
+
 // ForInPrepare <cache_info_triple>
 //
 // Returns state for for..in loop execution based on the object in the
@@ -1835,17 +1867,92 @@ DEBUG_BREAK_BYTECODE_LIST(DEBUG_BREAK);
 void Interpreter::DoForInPrepare(InterpreterAssembler* assembler) {
   Node* object = __ GetAccumulator();
   Node* context = __ GetContext();
-  Node* result_triple = __ CallRuntime(Runtime::kForInPrepare, context, object);
+  Node* const zero_smi = __ SmiConstant(Smi::FromInt(0));
 
-  // Set output registers:
-  //   0 == cache_type, 1 == cache_array, 2 == cache_length
-  Node* output_register = __ BytecodeOperandReg(0);
-  for (int i = 0; i < 3; i++) {
-    Node* cache_info = __ Projection(i, result_triple);
-    __ StoreRegister(cache_info, output_register);
-    output_register = __ NextRegister(output_register);
+  Label test_if_null(assembler), test_if_undefined(assembler),
+      nothing_to_iterate(assembler, Label::kDeferred),
+      convert_to_receiver(assembler, Label::kDeferred),
+      already_receiver(assembler), check_enum_cache(assembler);
+
+  Variable receiver(assembler, MachineRepresentation::kTagged);
+
+  // Test if object is already a receiver, no conversion necessary if so.
+  Node* instance_type = __ LoadInstanceType(object);
+  Node* first_receiver_type = __ Int32Constant(FIRST_JS_RECEIVER_TYPE);
+  __ BranchIfInt32GreaterThanOrEqual(instance_type, first_receiver_type,
+                                     &already_receiver, &test_if_null);
+
+  __ Bind(&test_if_null);
+  {
+    __ BranchIfWordEqual(object, assembler->NullConstant(), &nothing_to_iterate,
+                         &test_if_undefined);
   }
-  __ Dispatch();
+
+  __ Bind(&test_if_undefined);
+  {
+    __ BranchIfWordEqual(object, assembler->UndefinedConstant(),
+                         &nothing_to_iterate, &convert_to_receiver);
+  }
+
+  __ Bind(&convert_to_receiver);
+  {
+    Callable callable = CodeFactory::ToObject(assembler->isolate());
+    Node* target = __ HeapConstant(callable.code());
+    Node* result = __ CallStub(callable.descriptor(), target, context, object);
+    receiver.Bind(result);
+    __ Goto(&check_enum_cache);
+  }
+
+  __ Bind(&already_receiver);
+  {
+    receiver.Bind(object);
+    __ Goto(&check_enum_cache);
+  }
+
+  Label use_enum_cache(assembler), use_runtime(assembler, Label::kDeferred);
+  __ Bind(&check_enum_cache);
+  { __ CheckEnumCache(receiver.value(), &use_enum_cache, &use_runtime); }
+
+  __ Bind(&use_enum_cache);
+  {
+    // The enum cache is valid.  Load the map of the object being
+    // iterated over and use the cache for the iteration.
+    Node* cache_type = __ LoadMap(receiver.value());
+    Node* cache_length = __ EnumLength(cache_type);
+    __ GotoIf(assembler->WordEqual(cache_length, zero_smi),
+              &nothing_to_iterate);
+    Node* descriptors = __ LoadMapDescriptors(cache_type);
+    Node* cache_offset =
+        __ LoadObjectField(descriptors, DescriptorArray::kEnumCacheOffset);
+    Node* cache_array = __ LoadObjectField(
+        cache_offset, DescriptorArray::kEnumCacheBridgeCacheOffset);
+    Node* output_register = __ BytecodeOperandReg(0);
+    BuildForInPrepareResult(output_register, cache_type, cache_array,
+                            cache_length, assembler);
+    __ Dispatch();
+  }
+
+  __ Bind(&use_runtime);
+  {
+    Node* result_triple =
+        __ CallRuntime(Runtime::kForInPrepare, context, object);
+    Node* cache_type = __ Projection(0, result_triple);
+    Node* cache_array = __ Projection(1, result_triple);
+    Node* cache_length = __ Projection(2, result_triple);
+    Node* output_register = __ BytecodeOperandReg(0);
+    BuildForInPrepareResult(output_register, cache_type, cache_array,
+                            cache_length, assembler);
+    __ Dispatch();
+  }
+
+  __ Bind(&nothing_to_iterate);
+  {
+    // Receiver is null or undefined or descriptors are zero length.
+    Node* output_register = __ BytecodeOperandReg(0);
+    BuildForInPrepareResult(output_register, zero_smi, zero_smi, zero_smi,
+                            assembler);
+    __ Dispatch();
+  }
 }
 
 // ForInNext <receiver> <index> <cache_info_pair>
@@ -1868,8 +1975,7 @@ void Interpreter::DoForInNext(InterpreterAssembler* assembler) {
   // Check if we can use the for-in fast path potentially using the enum cache.
   Label if_fast(assembler), if_slow(assembler, Label::kDeferred);
   Node* receiver_map = __ LoadObjectField(receiver, HeapObject::kMapOffset);
-  Node* condition = __ WordEqual(receiver_map, cache_type);
-  __ BranchIf(condition, &if_fast, &if_slow);
+  __ BranchIfWordEqual(receiver_map, cache_type, &if_fast, &if_slow);
   __ Bind(&if_fast);
   {
     // Enum cache in use for {receiver}, the {key} is definitely valid.

@@ -296,6 +296,9 @@ inline LanguageMode construct_language_mode(bool strict_bit) {
 // This constant is used as an undefined value when passing source positions.
 const int kNoSourcePosition = -1;
 
+// This constant is used to indicate missing deoptimization information.
+const int kNoDeoptimizationId = -1;
+
 // Mask for the sign bit in a smi.
 const intptr_t kSmiSignMask = kIntptrSignBit;
 
@@ -867,6 +870,9 @@ enum VariableMode {
 
   LET,  // declared via 'let' declarations (first lexical)
 
+  // TODO(neis): Is it correct to make this one of the lexical modes?
+  IMPORT,  // declared via 'import' declarations (except namespace imports)
+
   CONST,  // declared via 'const' declarations (last lexical)
 
   // Variables introduced by the compiler:
@@ -902,7 +908,7 @@ inline bool IsLexicalVariableMode(VariableMode mode) {
 
 
 inline bool IsImmutableVariableMode(VariableMode mode) {
-  return mode == CONST || mode == CONST_LEGACY;
+  return mode == CONST || mode == CONST_LEGACY || mode == IMPORT;
 }
 
 

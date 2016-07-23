@@ -133,10 +133,10 @@ namespace internal {
   V(StringLessThanOrEqual)                  \
   V(StringGreaterThan)                      \
   V(StringGreaterThanOrEqual)               \
-  V(ToBoolean)                              \
   V(ToInteger)                              \
   V(ToLength)                               \
   V(HasProperty)                            \
+  V(ForInFilter)                            \
   V(GetProperty)                            \
   V(LoadICTrampolineTF)                     \
   V(LoadICTF)                               \
@@ -933,14 +933,6 @@ class StringGreaterThanOrEqualStub final : public TurboFanCodeStub {
   DEFINE_TURBOFAN_CODE_STUB(StringGreaterThanOrEqual, TurboFanCodeStub);
 };
 
-class ToBooleanStub final : public TurboFanCodeStub {
- public:
-  explicit ToBooleanStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(TypeConversion);
-  DEFINE_TURBOFAN_UNARY_OP_CODE_STUB(ToBoolean, TurboFanCodeStub);
-};
-
 class ToIntegerStub final : public TurboFanCodeStub {
  public:
   explicit ToIntegerStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
@@ -989,6 +981,14 @@ class HasPropertyStub : public TurboFanCodeStub {
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(HasProperty);
   DEFINE_TURBOFAN_BINARY_OP_CODE_STUB(HasProperty, TurboFanCodeStub);
+};
+
+class ForInFilterStub : public TurboFanCodeStub {
+ public:
+  explicit ForInFilterStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
+
+  DEFINE_CALL_INTERFACE_DESCRIPTOR(ForInFilter);
+  DEFINE_TURBOFAN_BINARY_OP_CODE_STUB(ForInFilter, TurboFanCodeStub);
 };
 
 // ES6 [[Get]] operation.
@@ -1386,6 +1386,7 @@ class FunctionPrototypeStub : public PlatformCodeStub {
       : PlatformCodeStub(isolate) {}
 
   Code::Kind GetCodeKind() const override { return Code::HANDLER; }
+  ExtraICState GetExtraICState() const override { return Code::LOAD_IC; }
 
   // TODO(mvstanton): only the receiver register is accessed. When this is
   // translated to a hydrogen code stub, a new CallInterfaceDescriptor
@@ -1404,6 +1405,7 @@ class LoadIndexedStringStub : public PlatformCodeStub {
       : PlatformCodeStub(isolate) {}
 
   Code::Kind GetCodeKind() const override { return Code::HANDLER; }
+  ExtraICState GetExtraICState() const override { return Code::KEYED_LOAD_IC; }
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(Load);
   DEFINE_PLATFORM_CODE_STUB(LoadIndexedString, PlatformCodeStub);
@@ -2693,6 +2695,7 @@ class StoreFastElementStub : public HydrogenCodeStub {
   }
 
   Code::Kind GetCodeKind() const override { return Code::HANDLER; }
+  ExtraICState GetExtraICState() const override { return Code::KEYED_STORE_IC; }
 
  private:
   class ElementsKindBits : public BitField<ElementsKind, 3, 8> {};
@@ -2890,6 +2893,7 @@ class StoreElementStub : public PlatformCodeStub {
   }
 
   Code::Kind GetCodeKind() const override { return Code::HANDLER; }
+  ExtraICState GetExtraICState() const override { return Code::KEYED_STORE_IC; }
 
  private:
   ElementsKind elements_kind() const {
@@ -2994,6 +2998,7 @@ class ElementsTransitionAndStoreStub : public HydrogenCodeStub {
 
   CallInterfaceDescriptor GetCallInterfaceDescriptor() const override;
   Code::Kind GetCodeKind() const override { return Code::HANDLER; }
+  ExtraICState GetExtraICState() const override { return Code::KEYED_STORE_IC; }
 
  private:
   class FromBits : public BitField<ElementsKind, 3, 8> {};

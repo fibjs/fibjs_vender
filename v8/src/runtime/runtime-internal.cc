@@ -365,26 +365,6 @@ RUNTIME_FUNCTION(Runtime_AllocateSeqTwoByteString) {
   return *result;
 }
 
-// Collect the raw data for a stack trace.  Returns an array of 4
-// element segments each containing a receiver, function, code and
-// native code offset.
-RUNTIME_FUNCTION(Runtime_CollectStackTrace) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, error_object, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, caller, 1);
-
-  if (!isolate->bootstrapper()->IsActive()) {
-    // Optionally capture a more detailed stack trace for the message.
-    RETURN_FAILURE_ON_EXCEPTION(
-        isolate, isolate->CaptureAndSetDetailedStackTrace(error_object));
-    // Capture a simple stack trace for the stack property.
-    RETURN_FAILURE_ON_EXCEPTION(
-        isolate, isolate->CaptureAndSetSimpleStackTrace(error_object, caller));
-  }
-  return isolate->heap()->undefined_value();
-}
-
 
 RUNTIME_FUNCTION(Runtime_MessageGetStartPosition) {
   SealHandleScope shs(isolate);
@@ -413,47 +393,6 @@ RUNTIME_FUNCTION(Runtime_FormatMessageString) {
   RETURN_RESULT_OR_FAILURE(isolate, MessageTemplate::FormatMessage(
                                         template_index, arg0, arg1, arg2));
 }
-
-#define CALLSITE_GET(NAME, RETURN)                          \
-  RUNTIME_FUNCTION(Runtime_CallSite##NAME##RT) {            \
-    HandleScope scope(isolate);                             \
-    DCHECK(args.length() == 1);                             \
-    CONVERT_ARG_HANDLE_CHECKED(JSObject, call_site_obj, 0); \
-    Handle<String> result;                                  \
-    CallSite call_site(isolate, call_site_obj);             \
-    CHECK(call_site.IsJavaScript() || call_site.IsWasm());  \
-    return RETURN(call_site.NAME(), isolate);               \
-  }
-
-static inline Object* ReturnDereferencedHandle(Handle<Object> obj,
-                                               Isolate* isolate) {
-  return *obj;
-}
-
-
-static inline Object* ReturnPositiveNumberOrNull(int value, Isolate* isolate) {
-  if (value >= 0) return *isolate->factory()->NewNumberFromInt(value);
-  return isolate->heap()->null_value();
-}
-
-
-static inline Object* ReturnBoolean(bool value, Isolate* isolate) {
-  return isolate->heap()->ToBoolean(value);
-}
-
-
-CALLSITE_GET(GetFileName, ReturnDereferencedHandle)
-CALLSITE_GET(GetFunctionName, ReturnDereferencedHandle)
-CALLSITE_GET(GetScriptNameOrSourceUrl, ReturnDereferencedHandle)
-CALLSITE_GET(GetMethodName, ReturnDereferencedHandle)
-CALLSITE_GET(GetLineNumber, ReturnPositiveNumberOrNull)
-CALLSITE_GET(GetColumnNumber, ReturnPositiveNumberOrNull)
-CALLSITE_GET(IsNative, ReturnBoolean)
-CALLSITE_GET(IsToplevel, ReturnBoolean)
-CALLSITE_GET(IsEval, ReturnBoolean)
-CALLSITE_GET(IsConstructor, ReturnBoolean)
-
-#undef CALLSITE_GET
 
 
 RUNTIME_FUNCTION(Runtime_IS_VAR) {

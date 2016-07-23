@@ -706,9 +706,8 @@ void LCodeGen::RegisterEnvironmentForDeoptimization(LEnvironment* environment,
   }
 }
 
-
 void LCodeGen::DeoptimizeIf(Condition cc, LInstruction* instr,
-                            Deoptimizer::DeoptReason deopt_reason,
+                            DeoptimizeReason deopt_reason,
                             Deoptimizer::BailoutType bailout_type) {
   LEnvironment* environment = instr->environment();
   RegisterEnvironmentForDeoptimization(environment, Safepoint::kNoLazyDeopt);
@@ -779,9 +778,8 @@ void LCodeGen::DeoptimizeIf(Condition cc, LInstruction* instr,
   }
 }
 
-
 void LCodeGen::DeoptimizeIf(Condition cc, LInstruction* instr,
-                            Deoptimizer::DeoptReason deopt_reason) {
+                            DeoptimizeReason deopt_reason) {
   Deoptimizer::BailoutType bailout_type = info()->IsStub()
       ? Deoptimizer::LAZY
       : Deoptimizer::EAGER;
@@ -914,7 +912,7 @@ void LCodeGen::DoModByPowerOf2I(LModByPowerOf2I* instr) {
     __ andl(dividend, Immediate(mask));
     __ negl(dividend);
     if (hmod->CheckFlag(HValue::kBailoutOnMinusZero)) {
-      DeoptimizeIf(zero, instr, Deoptimizer::kMinusZero);
+      DeoptimizeIf(zero, instr, DeoptimizeReason::kMinusZero);
     }
     __ jmp(&done, Label::kNear);
   }
@@ -931,7 +929,7 @@ void LCodeGen::DoModByConstI(LModByConstI* instr) {
   DCHECK(ToRegister(instr->result()).is(rax));
 
   if (divisor == 0) {
-    DeoptimizeIf(no_condition, instr, Deoptimizer::kDivisionByZero);
+    DeoptimizeIf(no_condition, instr, DeoptimizeReason::kDivisionByZero);
     return;
   }
 
@@ -946,7 +944,7 @@ void LCodeGen::DoModByConstI(LModByConstI* instr) {
     Label remainder_not_zero;
     __ j(not_zero, &remainder_not_zero, Label::kNear);
     __ cmpl(dividend, Immediate(0));
-    DeoptimizeIf(less, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(less, instr, DeoptimizeReason::kMinusZero);
     __ bind(&remainder_not_zero);
   }
 }
@@ -968,7 +966,7 @@ void LCodeGen::DoModI(LModI* instr) {
   // deopt in this case because we can't return a NaN.
   if (hmod->CheckFlag(HValue::kCanBeDivByZero)) {
     __ testl(right_reg, right_reg);
-    DeoptimizeIf(zero, instr, Deoptimizer::kDivisionByZero);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kDivisionByZero);
   }
 
   // Check for kMinInt % -1, idiv would signal a divide error. We
@@ -979,7 +977,7 @@ void LCodeGen::DoModI(LModI* instr) {
     __ j(not_zero, &no_overflow_possible, Label::kNear);
     __ cmpl(right_reg, Immediate(-1));
     if (hmod->CheckFlag(HValue::kBailoutOnMinusZero)) {
-      DeoptimizeIf(equal, instr, Deoptimizer::kMinusZero);
+      DeoptimizeIf(equal, instr, DeoptimizeReason::kMinusZero);
     } else {
       __ j(not_equal, &no_overflow_possible, Label::kNear);
       __ Set(result_reg, 0);
@@ -999,7 +997,7 @@ void LCodeGen::DoModI(LModI* instr) {
     __ j(not_sign, &positive_left, Label::kNear);
     __ idivl(right_reg);
     __ testl(result_reg, result_reg);
-    DeoptimizeIf(zero, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kMinusZero);
     __ jmp(&done, Label::kNear);
     __ bind(&positive_left);
   }
@@ -1025,13 +1023,13 @@ void LCodeGen::DoFlooringDivByPowerOf2I(LFlooringDivByPowerOf2I* instr) {
   // If the divisor is negative, we have to negate and handle edge cases.
   __ negl(dividend);
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
-    DeoptimizeIf(zero, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kMinusZero);
   }
 
   // Dividing by -1 is basically negation, unless we overflow.
   if (divisor == -1) {
     if (instr->hydrogen()->CheckFlag(HValue::kLeftCanBeMinInt)) {
-      DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+      DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
     }
     return;
   }
@@ -1058,7 +1056,7 @@ void LCodeGen::DoFlooringDivByConstI(LFlooringDivByConstI* instr) {
   DCHECK(ToRegister(instr->result()).is(rdx));
 
   if (divisor == 0) {
-    DeoptimizeIf(no_condition, instr, Deoptimizer::kDivisionByZero);
+    DeoptimizeIf(no_condition, instr, DeoptimizeReason::kDivisionByZero);
     return;
   }
 
@@ -1066,7 +1064,7 @@ void LCodeGen::DoFlooringDivByConstI(LFlooringDivByConstI* instr) {
   HMathFloorOfDiv* hdiv = instr->hydrogen();
   if (hdiv->CheckFlag(HValue::kBailoutOnMinusZero) && divisor < 0) {
     __ testl(dividend, dividend);
-    DeoptimizeIf(zero, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kMinusZero);
   }
 
   // Easy case: We need no dynamic check for the dividend and the flooring
@@ -1113,7 +1111,7 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
   // Check for x / 0.
   if (hdiv->CheckFlag(HValue::kCanBeDivByZero)) {
     __ testl(divisor, divisor);
-    DeoptimizeIf(zero, instr, Deoptimizer::kDivisionByZero);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kDivisionByZero);
   }
 
   // Check for (0 / -x) that will produce negative zero.
@@ -1122,7 +1120,7 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
     __ testl(dividend, dividend);
     __ j(not_zero, &dividend_not_zero, Label::kNear);
     __ testl(divisor, divisor);
-    DeoptimizeIf(sign, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(sign, instr, DeoptimizeReason::kMinusZero);
     __ bind(&dividend_not_zero);
   }
 
@@ -1132,7 +1130,7 @@ void LCodeGen::DoFlooringDivI(LFlooringDivI* instr) {
     __ cmpl(dividend, Immediate(kMinInt));
     __ j(not_zero, &dividend_not_min_int, Label::kNear);
     __ cmpl(divisor, Immediate(-1));
-    DeoptimizeIf(zero, instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kOverflow);
     __ bind(&dividend_not_min_int);
   }
 
@@ -1161,19 +1159,19 @@ void LCodeGen::DoDivByPowerOf2I(LDivByPowerOf2I* instr) {
   HDiv* hdiv = instr->hydrogen();
   if (hdiv->CheckFlag(HValue::kBailoutOnMinusZero) && divisor < 0) {
     __ testl(dividend, dividend);
-    DeoptimizeIf(zero, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kMinusZero);
   }
   // Check for (kMinInt / -1).
   if (hdiv->CheckFlag(HValue::kCanOverflow) && divisor == -1) {
     __ cmpl(dividend, Immediate(kMinInt));
-    DeoptimizeIf(zero, instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kOverflow);
   }
   // Deoptimize if remainder will not be 0.
   if (!hdiv->CheckFlag(HInstruction::kAllUsesTruncatingToInt32) &&
       divisor != 1 && divisor != -1) {
     int32_t mask = divisor < 0 ? -(divisor + 1) : (divisor - 1);
     __ testl(dividend, Immediate(mask));
-    DeoptimizeIf(not_zero, instr, Deoptimizer::kLostPrecision);
+    DeoptimizeIf(not_zero, instr, DeoptimizeReason::kLostPrecision);
   }
   __ Move(result, dividend);
   int32_t shift = WhichPowerOf2Abs(divisor);
@@ -1194,7 +1192,7 @@ void LCodeGen::DoDivByConstI(LDivByConstI* instr) {
   DCHECK(ToRegister(instr->result()).is(rdx));
 
   if (divisor == 0) {
-    DeoptimizeIf(no_condition, instr, Deoptimizer::kDivisionByZero);
+    DeoptimizeIf(no_condition, instr, DeoptimizeReason::kDivisionByZero);
     return;
   }
 
@@ -1202,7 +1200,7 @@ void LCodeGen::DoDivByConstI(LDivByConstI* instr) {
   HDiv* hdiv = instr->hydrogen();
   if (hdiv->CheckFlag(HValue::kBailoutOnMinusZero) && divisor < 0) {
     __ testl(dividend, dividend);
-    DeoptimizeIf(zero, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kMinusZero);
   }
 
   __ TruncatingDiv(dividend, Abs(divisor));
@@ -1212,7 +1210,7 @@ void LCodeGen::DoDivByConstI(LDivByConstI* instr) {
     __ movl(rax, rdx);
     __ imull(rax, rax, Immediate(divisor));
     __ subl(rax, dividend);
-    DeoptimizeIf(not_equal, instr, Deoptimizer::kLostPrecision);
+    DeoptimizeIf(not_equal, instr, DeoptimizeReason::kLostPrecision);
   }
 }
 
@@ -1232,7 +1230,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
   // Check for x / 0.
   if (hdiv->CheckFlag(HValue::kCanBeDivByZero)) {
     __ testl(divisor, divisor);
-    DeoptimizeIf(zero, instr, Deoptimizer::kDivisionByZero);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kDivisionByZero);
   }
 
   // Check for (0 / -x) that will produce negative zero.
@@ -1241,7 +1239,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
     __ testl(dividend, dividend);
     __ j(not_zero, &dividend_not_zero, Label::kNear);
     __ testl(divisor, divisor);
-    DeoptimizeIf(sign, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(sign, instr, DeoptimizeReason::kMinusZero);
     __ bind(&dividend_not_zero);
   }
 
@@ -1251,7 +1249,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
     __ cmpl(dividend, Immediate(kMinInt));
     __ j(not_zero, &dividend_not_min_int, Label::kNear);
     __ cmpl(divisor, Immediate(-1));
-    DeoptimizeIf(zero, instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(zero, instr, DeoptimizeReason::kOverflow);
     __ bind(&dividend_not_min_int);
   }
 
@@ -1262,7 +1260,7 @@ void LCodeGen::DoDivI(LDivI* instr) {
   if (!hdiv->CheckFlag(HValue::kAllUsesTruncatingToInt32)) {
     // Deoptimize if remainder is not 0.
     __ testl(remainder, remainder);
-    DeoptimizeIf(not_zero, instr, Deoptimizer::kLostPrecision);
+    DeoptimizeIf(not_zero, instr, DeoptimizeReason::kLostPrecision);
   }
 }
 
@@ -1339,7 +1337,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
   }
 
   if (can_overflow) {
-    DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
   }
 
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
@@ -1358,10 +1356,10 @@ void LCodeGen::DoMulI(LMulI* instr) {
           ? !instr->hydrogen_value()->representation().IsSmi()
           : SmiValuesAre31Bits());
       if (ToInteger32(LConstantOperand::cast(right)) < 0) {
-        DeoptimizeIf(no_condition, instr, Deoptimizer::kMinusZero);
+        DeoptimizeIf(no_condition, instr, DeoptimizeReason::kMinusZero);
       } else if (ToInteger32(LConstantOperand::cast(right)) == 0) {
         __ cmpl(kScratchRegister, Immediate(0));
-        DeoptimizeIf(less, instr, Deoptimizer::kMinusZero);
+        DeoptimizeIf(less, instr, DeoptimizeReason::kMinusZero);
       }
     } else if (right->IsStackSlot()) {
       if (instr->hydrogen_value()->representation().IsSmi()) {
@@ -1369,7 +1367,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
       } else {
         __ orl(kScratchRegister, ToOperand(right));
       }
-      DeoptimizeIf(sign, instr, Deoptimizer::kMinusZero);
+      DeoptimizeIf(sign, instr, DeoptimizeReason::kMinusZero);
     } else {
       // Test the non-zero operand for negative sign.
       if (instr->hydrogen_value()->representation().IsSmi()) {
@@ -1377,7 +1375,7 @@ void LCodeGen::DoMulI(LMulI* instr) {
       } else {
         __ orl(kScratchRegister, ToRegister(right));
       }
-      DeoptimizeIf(sign, instr, Deoptimizer::kMinusZero);
+      DeoptimizeIf(sign, instr, DeoptimizeReason::kMinusZero);
     }
     __ bind(&done);
   }
@@ -1490,7 +1488,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
         __ shrl_cl(ToRegister(left));
         if (instr->can_deopt()) {
           __ testl(ToRegister(left), ToRegister(left));
-          DeoptimizeIf(negative, instr, Deoptimizer::kNegativeValue);
+          DeoptimizeIf(negative, instr, DeoptimizeReason::kNegativeValue);
         }
         break;
       case Token::SHL:
@@ -1519,7 +1517,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
           __ shrl(ToRegister(left), Immediate(shift_count));
         } else if (instr->can_deopt()) {
           __ testl(ToRegister(left), ToRegister(left));
-          DeoptimizeIf(negative, instr, Deoptimizer::kNegativeValue);
+          DeoptimizeIf(negative, instr, DeoptimizeReason::kNegativeValue);
         }
         break;
       case Token::SHL:
@@ -1534,7 +1532,7 @@ void LCodeGen::DoShiftI(LShiftI* instr) {
                   __ shll(ToRegister(left), Immediate(shift_count - 1));
                 }
                 __ Integer32ToSmi(ToRegister(left), ToRegister(left));
-                DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+                DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
               } else {
                 __ shll(ToRegister(left), Immediate(shift_count));
               }
@@ -1577,7 +1575,7 @@ void LCodeGen::DoSubI(LSubI* instr) {
   }
 
   if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
-    DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
   }
 }
 
@@ -1752,7 +1750,7 @@ void LCodeGen::DoAddI(LAddI* instr) {
       }
     }
     if (instr->hydrogen()->CheckFlag(HValue::kCanOverflow)) {
-      DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+      DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
     }
   }
 }
@@ -2030,7 +2028,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
       } else if (expected.NeedsMap()) {
         // If we need a map later and have a Smi -> deopt.
         __ testb(reg, Immediate(kSmiTagMask));
-        DeoptimizeIf(zero, instr, Deoptimizer::kSmi);
+        DeoptimizeIf(zero, instr, DeoptimizeReason::kSmi);
       }
 
       const Register map = kScratchRegister;
@@ -2090,7 +2088,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
       if (!expected.IsGeneric()) {
         // We've seen something for the first time -> deopt.
         // This can only happen if we are not generic already.
-        DeoptimizeIf(no_condition, instr, Deoptimizer::kUnexpectedObject);
+        DeoptimizeIf(no_condition, instr, DeoptimizeReason::kUnexpectedObject);
       }
     }
   }
@@ -2459,10 +2457,10 @@ void LCodeGen::DoHasInPrototypeChainAndBranch(
   // Deoptimize if the object needs to be access checked.
   __ testb(FieldOperand(object_map, Map::kBitFieldOffset),
            Immediate(1 << Map::kIsAccessCheckNeeded));
-  DeoptimizeIf(not_zero, instr, Deoptimizer::kAccessCheck);
+  DeoptimizeIf(not_zero, instr, DeoptimizeReason::kAccessCheck);
   // Deoptimize for proxies.
   __ CmpInstanceType(object_map, JS_PROXY_TYPE);
-  DeoptimizeIf(equal, instr, Deoptimizer::kProxy);
+  DeoptimizeIf(equal, instr, DeoptimizeReason::kProxy);
 
   __ movp(object_prototype, FieldOperand(object_map, Map::kPrototypeOffset));
   __ CompareRoot(object_prototype, Heap::kNullValueRootIndex);
@@ -2577,7 +2575,7 @@ void LCodeGen::DoLoadContextSlot(LLoadContextSlot* instr) {
   if (instr->hydrogen()->RequiresHoleCheck()) {
     __ CompareRoot(result, Heap::kTheHoleValueRootIndex);
     if (instr->hydrogen()->DeoptimizesOnHole()) {
-      DeoptimizeIf(equal, instr, Deoptimizer::kHole);
+      DeoptimizeIf(equal, instr, DeoptimizeReason::kHole);
     } else {
       Label is_not_hole;
       __ j(not_equal, &is_not_hole, Label::kNear);
@@ -2598,7 +2596,7 @@ void LCodeGen::DoStoreContextSlot(LStoreContextSlot* instr) {
   if (instr->hydrogen()->RequiresHoleCheck()) {
     __ CompareRoot(target, Heap::kTheHoleValueRootIndex);
     if (instr->hydrogen()->DeoptimizesOnHole()) {
-      DeoptimizeIf(equal, instr, Deoptimizer::kHole);
+      DeoptimizeIf(equal, instr, DeoptimizeReason::kHole);
     } else {
       __ j(not_equal, &skip_assignment);
     }
@@ -2695,7 +2693,7 @@ void LCodeGen::DoLoadFunctionPrototype(LLoadFunctionPrototype* instr) {
 
   // Check that the function has a prototype or an initial map.
   __ CompareRoot(result, Heap::kTheHoleValueRootIndex);
-  DeoptimizeIf(equal, instr, Deoptimizer::kHole);
+  DeoptimizeIf(equal, instr, DeoptimizeReason::kHole);
 
   // If the function does not have an initial map, we're done.
   Label done;
@@ -2797,7 +2795,7 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
         __ movl(result, operand);
         if (!instr->hydrogen()->CheckFlag(HInstruction::kUint32)) {
           __ testl(result, result);
-          DeoptimizeIf(negative, instr, Deoptimizer::kNegativeValue);
+          DeoptimizeIf(negative, instr, DeoptimizeReason::kNegativeValue);
         }
         break;
       case FLOAT32_ELEMENTS:
@@ -2838,7 +2836,7 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
         FAST_DOUBLE_ELEMENTS,
         instr->base_offset() + sizeof(kHoleNanLower32));
     __ cmpl(hole_check_operand, Immediate(kHoleNanUpper32));
-    DeoptimizeIf(equal, instr, Deoptimizer::kHole);
+    DeoptimizeIf(equal, instr, DeoptimizeReason::kHole);
   }
 
   Operand double_load_operand = BuildFastArrayOperand(
@@ -2895,10 +2893,10 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
   if (requires_hole_check) {
     if (IsFastSmiElementsKind(hinstr->elements_kind())) {
       Condition smi = __ CheckSmi(result);
-      DeoptimizeIf(NegateCondition(smi), instr, Deoptimizer::kNotASmi);
+      DeoptimizeIf(NegateCondition(smi), instr, DeoptimizeReason::kNotASmi);
     } else {
       __ CompareRoot(result, Heap::kTheHoleValueRootIndex);
-      DeoptimizeIf(equal, instr, Deoptimizer::kHole);
+      DeoptimizeIf(equal, instr, DeoptimizeReason::kHole);
     }
   } else if (hinstr->hole_mode() == CONVERT_HOLE_TO_UNDEFINED) {
     DCHECK(hinstr->elements_kind() == FAST_HOLEY_ELEMENTS);
@@ -2912,7 +2910,7 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
       __ LoadRoot(result, Heap::kArrayProtectorRootIndex);
       __ Cmp(FieldOperand(result, Cell::kValueOffset),
              Smi::FromInt(Isolate::kArrayProtectorValid));
-      DeoptimizeIf(not_equal, instr, Deoptimizer::kHole);
+      DeoptimizeIf(not_equal, instr, DeoptimizeReason::kHole);
     }
     __ Move(result, isolate()->factory()->undefined_value());
     __ bind(&done);
@@ -3061,9 +3059,9 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
 
   // The receiver should be a JS object.
   Condition is_smi = __ CheckSmi(receiver);
-  DeoptimizeIf(is_smi, instr, Deoptimizer::kSmi);
+  DeoptimizeIf(is_smi, instr, DeoptimizeReason::kSmi);
   __ CmpObjectType(receiver, FIRST_JS_RECEIVER_TYPE, kScratchRegister);
-  DeoptimizeIf(below, instr, Deoptimizer::kNotAJavaScriptObject);
+  DeoptimizeIf(below, instr, DeoptimizeReason::kNotAJavaScriptObject);
 
   __ jmp(&receiver_ok, Label::kNear);
   __ bind(&global_object);
@@ -3088,7 +3086,7 @@ void LCodeGen::DoApplyArguments(LApplyArguments* instr) {
   // adaptor frame below it.
   const uint32_t kArgumentsLimit = 1 * KB;
   __ cmpp(length, Immediate(kArgumentsLimit));
-  DeoptimizeIf(above, instr, Deoptimizer::kTooManyArguments);
+  DeoptimizeIf(above, instr, DeoptimizeReason::kTooManyArguments);
 
   __ Push(receiver);
   __ movp(receiver, length);
@@ -3259,7 +3257,7 @@ void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LMathAbs* instr) {
   Register input_reg = ToRegister(instr->value());
   __ CompareRoot(FieldOperand(input_reg, HeapObject::kMapOffset),
                  Heap::kHeapNumberMapRootIndex);
-  DeoptimizeIf(not_equal, instr, Deoptimizer::kNotAHeapNumber);
+  DeoptimizeIf(not_equal, instr, DeoptimizeReason::kNotAHeapNumber);
 
   Label slow, allocated, done;
   uint32_t available_regs = rax.bit() | rcx.bit() | rdx.bit() | rbx.bit();
@@ -3316,7 +3314,7 @@ void LCodeGen::EmitIntegerMathAbs(LMathAbs* instr) {
   Label is_positive;
   __ j(not_sign, &is_positive, Label::kNear);
   __ negl(input_reg);  // Sets flags.
-  DeoptimizeIf(negative, instr, Deoptimizer::kOverflow);
+  DeoptimizeIf(negative, instr, DeoptimizeReason::kOverflow);
   __ bind(&is_positive);
 }
 
@@ -3327,7 +3325,7 @@ void LCodeGen::EmitSmiMathAbs(LMathAbs* instr) {
   Label is_positive;
   __ j(not_sign, &is_positive, Label::kNear);
   __ negp(input_reg);  // Sets flags.
-  DeoptimizeIf(negative, instr, Deoptimizer::kOverflow);
+  DeoptimizeIf(negative, instr, DeoptimizeReason::kOverflow);
   __ bind(&is_positive);
 }
 
@@ -3389,18 +3387,18 @@ void LCodeGen::DoMathFloorI(LMathFloorI* instr) {
       // Deoptimize if minus zero.
       __ Movq(output_reg, input_reg);
       __ subq(output_reg, Immediate(1));
-      DeoptimizeIf(overflow, instr, Deoptimizer::kMinusZero);
+      DeoptimizeIf(overflow, instr, DeoptimizeReason::kMinusZero);
     }
     __ Roundsd(xmm_scratch, input_reg, kRoundDown);
     __ Cvttsd2si(output_reg, xmm_scratch);
     __ cmpl(output_reg, Immediate(0x1));
-    DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
   } else {
     Label negative_sign, done;
     // Deoptimize on unordered.
     __ Xorpd(xmm_scratch, xmm_scratch);  // Zero the register.
     __ Ucomisd(input_reg, xmm_scratch);
-    DeoptimizeIf(parity_even, instr, Deoptimizer::kNaN);
+    DeoptimizeIf(parity_even, instr, DeoptimizeReason::kNaN);
     __ j(below, &negative_sign, Label::kNear);
 
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
@@ -3409,7 +3407,7 @@ void LCodeGen::DoMathFloorI(LMathFloorI* instr) {
       __ j(above, &positive_sign, Label::kNear);
       __ Movmskpd(output_reg, input_reg);
       __ testl(output_reg, Immediate(1));
-      DeoptimizeIf(not_zero, instr, Deoptimizer::kMinusZero);
+      DeoptimizeIf(not_zero, instr, DeoptimizeReason::kMinusZero);
       __ Set(output_reg, 0);
       __ jmp(&done);
       __ bind(&positive_sign);
@@ -3419,7 +3417,7 @@ void LCodeGen::DoMathFloorI(LMathFloorI* instr) {
     __ Cvttsd2si(output_reg, input_reg);
     // Overflow is signalled with minint.
     __ cmpl(output_reg, Immediate(0x1));
-    DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
     __ jmp(&done, Label::kNear);
 
     // Non-zero negative reaches here.
@@ -3430,7 +3428,7 @@ void LCodeGen::DoMathFloorI(LMathFloorI* instr) {
     __ Ucomisd(input_reg, xmm_scratch);
     __ j(equal, &done, Label::kNear);
     __ subl(output_reg, Immediate(1));
-    DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
 
     __ bind(&done);
   }
@@ -3472,7 +3470,7 @@ void LCodeGen::DoMathRoundI(LMathRoundI* instr) {
   __ Cvttsd2si(output_reg, xmm_scratch);
   // Overflow is signalled with minint.
   __ cmpl(output_reg, Immediate(0x1));
-  DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+  DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
   __ jmp(&done, dist);
 
   __ bind(&below_one_half);
@@ -3488,7 +3486,7 @@ void LCodeGen::DoMathRoundI(LMathRoundI* instr) {
   __ Cvttsd2si(output_reg, input_temp);
   // Catch minint due to overflow, and to prevent overflow when compensating.
   __ cmpl(output_reg, Immediate(0x1));
-  DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+  DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
 
   __ Cvtlsi2sd(xmm_scratch, output_reg);
   __ Ucomisd(xmm_scratch, input_temp);
@@ -3503,7 +3501,7 @@ void LCodeGen::DoMathRoundI(LMathRoundI* instr) {
   if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
     __ Movq(output_reg, input_reg);
     __ testq(output_reg, output_reg);
-    DeoptimizeIf(negative, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(negative, instr, DeoptimizeReason::kMinusZero);
   }
   __ Set(output_reg, 0);
   __ bind(&done);
@@ -3582,7 +3580,7 @@ void LCodeGen::DoPower(LPower* instr) {
     Label no_deopt;
     __ JumpIfSmi(tagged_exponent, &no_deopt, Label::kNear);
     __ CmpObjectType(tagged_exponent, HEAP_NUMBER_TYPE, rcx);
-    DeoptimizeIf(not_equal, instr, Deoptimizer::kNotAHeapNumber);
+    DeoptimizeIf(not_equal, instr, DeoptimizeReason::kNotAHeapNumber);
     __ bind(&no_deopt);
     MathPowStub stub(isolate(), MathPowStub::TAGGED);
     __ CallStub(&stub);
@@ -3978,7 +3976,7 @@ void LCodeGen::DoBoundsCheck(LBoundsCheck* instr) {
     __ int3();
     __ bind(&done);
   } else {
-    DeoptimizeIf(cc, instr, Deoptimizer::kOutOfBounds);
+    DeoptimizeIf(cc, instr, DeoptimizeReason::kOutOfBounds);
   }
 }
 
@@ -4277,7 +4275,7 @@ void LCodeGen::DoDeferredMaybeGrowElements(LMaybeGrowElements* instr) {
 
   // Deopt on smi, which means the elements array changed to dictionary mode.
   Condition is_smi = __ CheckSmi(result);
-  DeoptimizeIf(is_smi, instr, Deoptimizer::kSmi);
+  DeoptimizeIf(is_smi, instr, DeoptimizeReason::kSmi);
 }
 
 
@@ -4317,7 +4315,7 @@ void LCodeGen::DoTrapAllocationMemento(LTrapAllocationMemento* instr) {
   Register temp = ToRegister(instr->temp());
   Label no_memento_found;
   __ TestJSArrayForAllocationMemento(object, temp, &no_memento_found);
-  DeoptimizeIf(equal, instr, Deoptimizer::kMementoFound);
+  DeoptimizeIf(equal, instr, DeoptimizeReason::kMementoFound);
   __ bind(&no_memento_found);
 }
 
@@ -4633,12 +4631,12 @@ void LCodeGen::DoSmiTag(LSmiTag* instr) {
   if (hchange->CheckFlag(HValue::kCanOverflow) &&
       hchange->value()->CheckFlag(HValue::kUint32)) {
     Condition is_smi = __ CheckUInteger32ValidSmiValue(input);
-    DeoptimizeIf(NegateCondition(is_smi), instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(NegateCondition(is_smi), instr, DeoptimizeReason::kOverflow);
   }
   __ Integer32ToSmi(output, input);
   if (hchange->CheckFlag(HValue::kCanOverflow) &&
       !hchange->value()->CheckFlag(HValue::kUint32)) {
-    DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+    DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
   }
 }
 
@@ -4648,7 +4646,7 @@ void LCodeGen::DoSmiUntag(LSmiUntag* instr) {
   Register input = ToRegister(instr->value());
   if (instr->needs_check()) {
     Condition is_smi = __ CheckSmi(input);
-    DeoptimizeIf(NegateCondition(is_smi), instr, Deoptimizer::kNotASmi);
+    DeoptimizeIf(NegateCondition(is_smi), instr, DeoptimizeReason::kNotASmi);
   } else {
     __ AssertSmi(input);
   }
@@ -4679,7 +4677,7 @@ void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
     if (can_convert_undefined_to_nan) {
       __ j(not_equal, &convert, Label::kNear);
     } else {
-      DeoptimizeIf(not_equal, instr, Deoptimizer::kNotAHeapNumber);
+      DeoptimizeIf(not_equal, instr, DeoptimizeReason::kNotAHeapNumber);
     }
 
     if (deoptimize_on_minus_zero) {
@@ -4689,7 +4687,7 @@ void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
       __ j(not_equal, &done, Label::kNear);
       __ Movmskpd(kScratchRegister, result_reg);
       __ testl(kScratchRegister, Immediate(1));
-      DeoptimizeIf(not_zero, instr, Deoptimizer::kMinusZero);
+      DeoptimizeIf(not_zero, instr, DeoptimizeReason::kMinusZero);
     }
     __ jmp(&done, Label::kNear);
 
@@ -4698,7 +4696,8 @@ void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
 
       // Convert undefined (and hole) to NaN. Compute NaN as 0/0.
       __ CompareRoot(input_reg, Heap::kUndefinedValueRootIndex);
-      DeoptimizeIf(not_equal, instr, Deoptimizer::kNotAHeapNumberUndefined);
+      DeoptimizeIf(not_equal, instr,
+                   DeoptimizeReason::kNotAHeapNumberUndefined);
 
       __ Pcmpeqd(result_reg, result_reg);
       __ jmp(&done, Label::kNear);
@@ -4745,27 +4744,27 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr, Label* done) {
     __ bind(&check_false);
     __ CompareRoot(input_reg, Heap::kFalseValueRootIndex);
     DeoptimizeIf(not_equal, instr,
-                 Deoptimizer::kNotAHeapNumberUndefinedBoolean);
+                 DeoptimizeReason::kNotAHeapNumberUndefinedBoolean);
     __ Set(input_reg, 0);
   } else {
     XMMRegister scratch = ToDoubleRegister(instr->temp());
     DCHECK(!scratch.is(double_scratch0()));
     __ CompareRoot(FieldOperand(input_reg, HeapObject::kMapOffset),
                    Heap::kHeapNumberMapRootIndex);
-    DeoptimizeIf(not_equal, instr, Deoptimizer::kNotAHeapNumber);
+    DeoptimizeIf(not_equal, instr, DeoptimizeReason::kNotAHeapNumber);
     __ Movsd(double_scratch0(),
              FieldOperand(input_reg, HeapNumber::kValueOffset));
     __ Cvttsd2si(input_reg, double_scratch0());
     __ Cvtlsi2sd(scratch, input_reg);
     __ Ucomisd(double_scratch0(), scratch);
-    DeoptimizeIf(not_equal, instr, Deoptimizer::kLostPrecision);
-    DeoptimizeIf(parity_even, instr, Deoptimizer::kNaN);
+    DeoptimizeIf(not_equal, instr, DeoptimizeReason::kLostPrecision);
+    DeoptimizeIf(parity_even, instr, DeoptimizeReason::kNaN);
     if (instr->hydrogen()->GetMinusZeroMode() == FAIL_ON_MINUS_ZERO) {
       __ testl(input_reg, input_reg);
       __ j(not_zero, done);
       __ Movmskpd(input_reg, double_scratch0());
       __ andl(input_reg, Immediate(1));
-      DeoptimizeIf(not_zero, instr, Deoptimizer::kMinusZero);
+      DeoptimizeIf(not_zero, instr, DeoptimizeReason::kMinusZero);
     }
   }
 }
@@ -4836,11 +4835,11 @@ void LCodeGen::DoDoubleToI(LDoubleToI* instr) {
                  &is_nan, &minus_zero, dist);
     __ jmp(&done, dist);
     __ bind(&lost_precision);
-    DeoptimizeIf(no_condition, instr, Deoptimizer::kLostPrecision);
+    DeoptimizeIf(no_condition, instr, DeoptimizeReason::kLostPrecision);
     __ bind(&is_nan);
-    DeoptimizeIf(no_condition, instr, Deoptimizer::kNaN);
+    DeoptimizeIf(no_condition, instr, DeoptimizeReason::kNaN);
     __ bind(&minus_zero);
-    DeoptimizeIf(no_condition, instr, Deoptimizer::kMinusZero);
+    DeoptimizeIf(no_condition, instr, DeoptimizeReason::kMinusZero);
     __ bind(&done);
   }
 }
@@ -4863,21 +4862,21 @@ void LCodeGen::DoDoubleToSmi(LDoubleToSmi* instr) {
                &minus_zero, dist);
   __ jmp(&done, dist);
   __ bind(&lost_precision);
-  DeoptimizeIf(no_condition, instr, Deoptimizer::kLostPrecision);
+  DeoptimizeIf(no_condition, instr, DeoptimizeReason::kLostPrecision);
   __ bind(&is_nan);
-  DeoptimizeIf(no_condition, instr, Deoptimizer::kNaN);
+  DeoptimizeIf(no_condition, instr, DeoptimizeReason::kNaN);
   __ bind(&minus_zero);
-  DeoptimizeIf(no_condition, instr, Deoptimizer::kMinusZero);
+  DeoptimizeIf(no_condition, instr, DeoptimizeReason::kMinusZero);
   __ bind(&done);
   __ Integer32ToSmi(result_reg, result_reg);
-  DeoptimizeIf(overflow, instr, Deoptimizer::kOverflow);
+  DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
 }
 
 
 void LCodeGen::DoCheckSmi(LCheckSmi* instr) {
   LOperand* input = instr->value();
   Condition cc = masm()->CheckSmi(ToRegister(input));
-  DeoptimizeIf(NegateCondition(cc), instr, Deoptimizer::kNotASmi);
+  DeoptimizeIf(NegateCondition(cc), instr, DeoptimizeReason::kNotASmi);
 }
 
 
@@ -4885,7 +4884,7 @@ void LCodeGen::DoCheckNonSmi(LCheckNonSmi* instr) {
   if (!instr->hydrogen()->value()->type().IsHeapObject()) {
     LOperand* input = instr->value();
     Condition cc = masm()->CheckSmi(ToRegister(input));
-    DeoptimizeIf(cc, instr, Deoptimizer::kSmi);
+    DeoptimizeIf(cc, instr, DeoptimizeReason::kSmi);
   }
 }
 
@@ -4898,7 +4897,7 @@ void LCodeGen::DoCheckArrayBufferNotNeutered(
           FieldOperand(view, JSArrayBufferView::kBufferOffset));
   __ testb(FieldOperand(kScratchRegister, JSArrayBuffer::kBitFieldOffset),
            Immediate(1 << JSArrayBuffer::WasNeutered::kShift));
-  DeoptimizeIf(not_zero, instr, Deoptimizer::kOutOfBounds);
+  DeoptimizeIf(not_zero, instr, DeoptimizeReason::kOutOfBounds);
 }
 
 
@@ -4917,14 +4916,14 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
 
     // If there is only one type in the interval check for equality.
     if (first == last) {
-      DeoptimizeIf(not_equal, instr, Deoptimizer::kWrongInstanceType);
+      DeoptimizeIf(not_equal, instr, DeoptimizeReason::kWrongInstanceType);
     } else {
-      DeoptimizeIf(below, instr, Deoptimizer::kWrongInstanceType);
+      DeoptimizeIf(below, instr, DeoptimizeReason::kWrongInstanceType);
       // Omit check for the last type.
       if (last != LAST_TYPE) {
         __ cmpb(FieldOperand(kScratchRegister, Map::kInstanceTypeOffset),
                 Immediate(static_cast<int8_t>(last)));
-        DeoptimizeIf(above, instr, Deoptimizer::kWrongInstanceType);
+        DeoptimizeIf(above, instr, DeoptimizeReason::kWrongInstanceType);
       }
     }
   } else {
@@ -4937,13 +4936,13 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
       __ testb(FieldOperand(kScratchRegister, Map::kInstanceTypeOffset),
                Immediate(mask));
       DeoptimizeIf(tag == 0 ? not_zero : zero, instr,
-                   Deoptimizer::kWrongInstanceType);
+                   DeoptimizeReason::kWrongInstanceType);
     } else {
       __ movzxbl(kScratchRegister,
                  FieldOperand(kScratchRegister, Map::kInstanceTypeOffset));
       __ andb(kScratchRegister, Immediate(mask));
       __ cmpb(kScratchRegister, Immediate(tag));
-      DeoptimizeIf(not_equal, instr, Deoptimizer::kWrongInstanceType);
+      DeoptimizeIf(not_equal, instr, DeoptimizeReason::kWrongInstanceType);
     }
   }
 }
@@ -4952,7 +4951,7 @@ void LCodeGen::DoCheckInstanceType(LCheckInstanceType* instr) {
 void LCodeGen::DoCheckValue(LCheckValue* instr) {
   Register reg = ToRegister(instr->value());
   __ Cmp(reg, instr->hydrogen()->object().handle());
-  DeoptimizeIf(not_equal, instr, Deoptimizer::kValueMismatch);
+  DeoptimizeIf(not_equal, instr, DeoptimizeReason::kValueMismatch);
 }
 
 
@@ -4967,7 +4966,7 @@ void LCodeGen::DoDeferredInstanceMigration(LCheckMaps* instr, Register object) {
 
     __ testp(rax, Immediate(kSmiTagMask));
   }
-  DeoptimizeIf(zero, instr, Deoptimizer::kInstanceMigrationFailed);
+  DeoptimizeIf(zero, instr, DeoptimizeReason::kInstanceMigrationFailed);
 }
 
 
@@ -5021,7 +5020,7 @@ void LCodeGen::DoCheckMaps(LCheckMaps* instr) {
   if (instr->hydrogen()->HasMigrationTarget()) {
     __ j(not_equal, deferred->entry());
   } else {
-    DeoptimizeIf(not_equal, instr, Deoptimizer::kWrongMap);
+    DeoptimizeIf(not_equal, instr, DeoptimizeReason::kWrongMap);
   }
 
   __ bind(&success);
@@ -5060,7 +5059,7 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
   // Check for undefined. Undefined is converted to zero for clamping
   // conversions.
   __ Cmp(input_reg, factory()->undefined_value());
-  DeoptimizeIf(not_equal, instr, Deoptimizer::kNotAHeapNumberUndefined);
+  DeoptimizeIf(not_equal, instr, DeoptimizeReason::kNotAHeapNumberUndefined);
   __ xorl(input_reg, input_reg);
   __ jmp(&done, Label::kNear);
 
@@ -5491,7 +5490,7 @@ void LCodeGen::DoForInCacheArray(LForInCacheArray* instr) {
           FieldOperand(result, FixedArray::SizeFor(instr->idx())));
   __ bind(&done);
   Condition cc = masm()->CheckSmi(result);
-  DeoptimizeIf(cc, instr, Deoptimizer::kNoCache);
+  DeoptimizeIf(cc, instr, DeoptimizeReason::kNoCache);
 }
 
 
@@ -5499,7 +5498,7 @@ void LCodeGen::DoCheckMapValue(LCheckMapValue* instr) {
   Register object = ToRegister(instr->value());
   __ cmpp(ToRegister(instr->map()),
           FieldOperand(object, HeapObject::kMapOffset));
-  DeoptimizeIf(not_equal, instr, Deoptimizer::kWrongMap);
+  DeoptimizeIf(not_equal, instr, DeoptimizeReason::kWrongMap);
 }
 
 

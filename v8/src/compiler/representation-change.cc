@@ -184,7 +184,7 @@ Node* RepresentationChanger::GetTaggedRepresentationFor(
       } else if (output_type->Is(Type::Unsigned32())) {
         uint32_t value = static_cast<uint32_t>(OpParameter<int32_t>(node));
         return jsgraph()->Constant(static_cast<double>(value));
-      } else if (output_rep == MachineRepresentation::kBit) {
+      } else if (output_type->Is(Type::Boolean())) {
         return OpParameter<int32_t>(node) == 0 ? jsgraph()->FalseConstant()
                                                : jsgraph()->TrueConstant();
       } else {
@@ -201,7 +201,12 @@ Node* RepresentationChanger::GetTaggedRepresentationFor(
   // Select the correct X -> Tagged operator.
   const Operator* op;
   if (output_rep == MachineRepresentation::kBit) {
-    op = simplified()->ChangeBitToTagged();
+    if (output_type->Is(Type::Boolean())) {
+      op = simplified()->ChangeBitToTagged();
+    } else {
+      return TypeError(node, output_rep, output_type,
+                       MachineRepresentation::kTagged);
+    }
   } else if (IsWord(output_rep)) {
     if (output_type->Is(Type::Signed31())) {
       op = simplified()->ChangeInt31ToTaggedSigned();
@@ -273,7 +278,7 @@ Node* RepresentationChanger::GetFloat32RepresentationFor(
       node = jsgraph()->graph()->NewNode(op, node);
       op = machine()->TruncateFloat64ToFloat32();
     } else if (output_type->Is(Type::Unsigned32()) ||
-               truncation.TruncatesToWord32()) {
+               truncation.IsUsedAsWord32()) {
       // Either the output is uint32 or the uses only care about the
       // low 32 bits (so we can pick uint32 safely).
 
@@ -335,11 +340,13 @@ Node* RepresentationChanger::GetFloat64RepresentationFor(
     if (output_type->Is(Type::Signed32())) {
       op = machine()->ChangeInt32ToFloat64();
     } else if (output_type->Is(Type::Unsigned32()) ||
-               use_info.truncation().TruncatesToWord32()) {
+               use_info.truncation().IsUsedAsWord32()) {
       // Either the output is uint32 or the uses only care about the
       // low 32 bits (so we can pick uint32 safely).
       op = machine()->ChangeUint32ToFloat64();
     }
+  } else if (output_rep == MachineRepresentation::kBit) {
+    op = machine()->ChangeUint32ToFloat64();
   } else if (output_rep == MachineRepresentation::kTagged) {
     if (output_type->Is(Type::Undefined())) {
       return jsgraph()->Float64Constant(
@@ -408,7 +415,7 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
       op = machine()->ChangeFloat64ToUint32();
     } else if (output_type->Is(Type::Signed32())) {
       op = machine()->ChangeFloat64ToInt32();
-    } else if (use_info.truncation().TruncatesToWord32()) {
+    } else if (use_info.truncation().IsUsedAsWord32()) {
       op = machine()->TruncateFloat64ToWord32();
     } else if (use_info.type_check() == TypeCheckKind::kSigned32) {
       op = simplified()->CheckedFloat64ToInt32();
@@ -419,7 +426,7 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
       op = machine()->ChangeFloat64ToUint32();
     } else if (output_type->Is(Type::Signed32())) {
       op = machine()->ChangeFloat64ToInt32();
-    } else if (use_info.truncation().TruncatesToWord32()) {
+    } else if (use_info.truncation().IsUsedAsWord32()) {
       op = machine()->TruncateFloat64ToWord32();
     } else if (use_info.type_check() == TypeCheckKind::kSigned32) {
       op = simplified()->CheckedFloat64ToInt32();
@@ -431,7 +438,7 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
       op = simplified()->ChangeTaggedToUint32();
     } else if (output_type->Is(Type::Signed32())) {
       op = simplified()->ChangeTaggedToInt32();
-    } else if (use_info.truncation().TruncatesToWord32()) {
+    } else if (use_info.truncation().IsUsedAsWord32()) {
       op = simplified()->TruncateTaggedToWord32();
     } else if (use_info.type_check() == TypeCheckKind::kSigned32) {
       op = simplified()->CheckedTaggedToInt32();
@@ -536,7 +543,7 @@ Node* RepresentationChanger::GetCheckedWord32RepresentationFor(
       op = machine()->ChangeFloat64ToUint32();
     } else if (output_type->Is(Type::Signed32())) {
       op = machine()->ChangeFloat64ToInt32();
-    } else if (truncation.TruncatesToWord32()) {
+    } else if (truncation.IsUsedAsWord32()) {
       op = machine()->TruncateFloat64ToWord32();
     } else if (check == TypeCheckKind::kSigned32) {
       op = simplified()->CheckedFloat64ToInt32();
@@ -547,7 +554,7 @@ Node* RepresentationChanger::GetCheckedWord32RepresentationFor(
       op = machine()->ChangeFloat64ToUint32();
     } else if (output_type->Is(Type::Signed32())) {
       op = machine()->ChangeFloat64ToInt32();
-    } else if (truncation.TruncatesToWord32()) {
+    } else if (truncation.IsUsedAsWord32()) {
       op = machine()->TruncateFloat64ToWord32();
     } else if (check == TypeCheckKind::kSigned32) {
       op = simplified()->CheckedFloat64ToInt32();
@@ -559,7 +566,7 @@ Node* RepresentationChanger::GetCheckedWord32RepresentationFor(
       op = simplified()->ChangeTaggedToUint32();
     } else if (output_type->Is(Type::Signed32())) {
       op = simplified()->ChangeTaggedToInt32();
-    } else if (truncation.TruncatesToWord32()) {
+    } else if (truncation.IsUsedAsWord32()) {
       op = simplified()->TruncateTaggedToWord32();
     } else if (check == TypeCheckKind::kSigned32) {
       op = simplified()->CheckedTaggedToInt32();
@@ -627,8 +634,6 @@ const Operator* RepresentationChanger::Int32OverflowOperatorFor(
       return simplified()->CheckedInt32Div();
     case IrOpcode::kSpeculativeNumberModulus:
       return simplified()->CheckedInt32Mod();
-    case IrOpcode::kSpeculativeNumberMultiply:
-      return simplified()->CheckedInt32Mul();
     default:
       UNREACHABLE();
       return nullptr;
@@ -746,6 +751,10 @@ const Operator* RepresentationChanger::Float64OperatorFor(
       return machine()->Float64Log2();
     case IrOpcode::kNumberLog10:
       return machine()->Float64Log10();
+    case IrOpcode::kNumberMax:
+      return machine()->Float64Max();
+    case IrOpcode::kNumberMin:
+      return machine()->Float64Min();
     case IrOpcode::kNumberPow:
       return machine()->Float64Pow();
     case IrOpcode::kNumberSin:

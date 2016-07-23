@@ -1,6 +1,7 @@
 #!/bin/js
 
 var fs = require('fs');
+var path = require('path');
 var process = require('process');
 
 var v8Folder = process.argv[2];
@@ -58,10 +59,11 @@ function clean_folder(path) {
 }
 
 var files = {
-	'src/natives-external.cc': 1,
-	'src/snapshot-external.cc': 1,
-	'src/mksnapshot.cc': 1,
 	'src/v8dll-main.cc': 1,
+	'src/interpreter/mkpeephole.cc': 1,
+	'src/snapshot/mksnapshot.cc': 1,
+	'src/snapshot/natives-external.cc': 1,
+	'src/snapshot/snapshot-external.cc': 1,
 	'src/base/platform/platform-qnx.cc': 1,
 	'src/base/platform/platform-cygwin.cc': 1
 };
@@ -112,17 +114,18 @@ function cp_folder(path, to) {
 
 
 var gens = [
-	'libraries.cc',
-	'experimental-libraries.cc',
-	'extras-libraries.cc',
-	// 'code-stub-libraries.cc',
-	'experimental-extras-libraries.cc'
+	'/out/ia32.release/obj/gen/libraries.cc',
+	'/out/ia32.release/obj/gen/experimental-libraries.cc',
+	'/out/ia32.release/obj/gen/extras-libraries.cc',
+	'/out/ia32.release/obj/gen/experimental-extras-libraries.cc',
+	'/out/ia32.release/obj.target/v8_base/geni/bytecode-peephole-table.cc'
 ];
 
 function cp_gen() {
 	fs.mkdir('src/gen');
 	gens.forEach(function(f) {
-		fs.writeFile('src/gen/' + f, fs.readFile(v8Folder + '/out/ia32.release/obj/gen/' + f));
+		console.log("cp " + f);
+		fs.writeFile('src/gen/' + path.basename(f), fs.readFile(v8Folder + f));
 	});
 }
 
@@ -271,10 +274,5 @@ patch_macro();
 patch_flag();
 
 //fs.unlink('src/version_gen.cc');
-
-fs.unlink('src/snapshot/mksnapshot.cc')
-fs.unlink('src/snapshot/natives-external.cc')
-fs.unlink('src/snapshot/snapshot-external.cc')
-
 
 run('./vsmake.js');

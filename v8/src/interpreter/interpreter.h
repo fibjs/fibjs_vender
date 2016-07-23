@@ -79,7 +79,8 @@ class Interpreter {
   template <class Generator>
   void DoBinaryOpWithImmediate(InterpreterAssembler* assembler);
 
-  // Generates code to perform the unary operation via |callable|.
+  // Generates code to perform the unary operation via |callable| and stores
+  // the result to the accumulator.
   void DoUnaryOp(Callable callable, InterpreterAssembler* assembler);
 
   // Generates code to perform the unary operation via |Generator|.
@@ -143,15 +144,18 @@ class Interpreter {
   compiler::Node* BuildLoadKeyedProperty(Callable ic,
                                          InterpreterAssembler* assembler);
 
-  // Generates code to perform logical-not on boolean |value| and returns the
-  // result.
-  compiler::Node* BuildLogicalNot(compiler::Node* value,
-                                  InterpreterAssembler* assembler);
+  // Generates code to prepare the result for ForInPrepare. Cache data
+  // are placed into the consecutive series of registers starting at
+  // |output_register|.
+  void BuildForInPrepareResult(compiler::Node* output_register,
+                               compiler::Node* cache_type,
+                               compiler::Node* cache_array,
+                               compiler::Node* cache_length,
+                               InterpreterAssembler* assembler);
 
-  // Generates code to convert |value| to a boolean and returns the
-  // result.
-  compiler::Node* BuildToBoolean(compiler::Node* value,
-                                 InterpreterAssembler* assembler);
+  // Generates code to perform the unary operation via |callable|.
+  compiler::Node* BuildUnaryOp(Callable callable,
+                               InterpreterAssembler* assembler);
 
   uintptr_t GetDispatchCounter(Bytecode from, Bytecode to) const;
 

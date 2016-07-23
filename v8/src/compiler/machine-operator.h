@@ -70,6 +70,15 @@ std::ostream& operator<<(std::ostream&, StoreRepresentation);
 
 StoreRepresentation const& StoreRepresentationOf(Operator const*);
 
+typedef MachineType UnalignedLoadRepresentation;
+
+UnalignedLoadRepresentation UnalignedLoadRepresentationOf(Operator const*);
+
+// An UnalignedStore needs a MachineType.
+typedef MachineRepresentation UnalignedStoreRepresentation;
+
+UnalignedStoreRepresentation const& UnalignedStoreRepresentationOf(
+    Operator const*);
 
 // A CheckedLoad needs a MachineType.
 typedef MachineType CheckedLoadRepresentation;
@@ -93,7 +102,7 @@ class MachineOperatorBuilder final : public ZoneObject {
  public:
   // Flags that specify which operations are available. This is useful
   // for operations that are unsupported by some back-ends.
-  enum Flag {
+  enum Flag : unsigned {
     kNoFlags = 0u,
     // Note that Float*Max behaves like `(b < a) ? a : b`, not like Math.max().
     // Note that Float*Min behaves like `(a < b) ? a : b`, not like Math.min().
@@ -198,7 +207,7 @@ class MachineOperatorBuilder final : public ZoneObject {
       MachineRepresentation word = MachineType::PointerRepresentation(),
       Flags supportedOperators = kNoFlags,
       AlignmentRequirements alignmentRequirements =
-          AlignmentRequirements::NoUnalignedAccessSupport());
+          AlignmentRequirements::FullUnalignedAccessSupport());
 
   const Operator* Comment(const char* msg);
   const Operator* DebugBreak();
@@ -344,13 +353,9 @@ class MachineOperatorBuilder final : public ZoneObject {
   const Operator* Float64LessThan();
   const Operator* Float64LessThanOrEqual();
 
-  // Floating point min/max complying to IEEE 754 (single-precision).
-  const OptionalOperator Float32Max();
-  const OptionalOperator Float32Min();
-
-  // Floating point min/max complying to IEEE 754 (double-precision).
-  const OptionalOperator Float64Max();
-  const OptionalOperator Float64Min();
+  // Floating point min/max complying to EcmaScript 6 (double-precision).
+  const Operator* Float64Max();
+  const Operator* Float64Min();
 
   // Floating point abs complying to IEEE 754 (single-precision).
   const Operator* Float32Abs();
@@ -601,6 +606,12 @@ class MachineOperatorBuilder final : public ZoneObject {
 
   // store [base + index], value
   const Operator* Store(StoreRepresentation rep);
+
+  // unaligned load [base + index]
+  const Operator* UnalignedLoad(UnalignedLoadRepresentation rep);
+
+  // unaligned store [base + index], value
+  const Operator* UnalignedStore(UnalignedStoreRepresentation rep);
 
   const Operator* StackSlot(MachineRepresentation rep);
 

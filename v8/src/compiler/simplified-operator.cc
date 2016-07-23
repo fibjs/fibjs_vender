@@ -201,6 +201,26 @@ CheckFloat64HoleMode CheckFloat64HoleModeOf(const Operator* op) {
   return OpParameter<CheckFloat64HoleMode>(op);
 }
 
+CheckForMinusZeroMode CheckMinusZeroModeOf(const Operator* op) {
+  DCHECK_EQ(IrOpcode::kCheckedInt32Mul, op->opcode());
+  return OpParameter<CheckForMinusZeroMode>(op);
+}
+
+size_t hash_value(CheckForMinusZeroMode mode) {
+  return static_cast<size_t>(mode);
+}
+
+std::ostream& operator<<(std::ostream& os, CheckForMinusZeroMode mode) {
+  switch (mode) {
+    case CheckForMinusZeroMode::kCheckForMinusZero:
+      return os << "check-for-minus-zero";
+    case CheckForMinusZeroMode::kDontCheckForMinusZero:
+      return os << "dont-check-for-minus-zero";
+  }
+  UNREACHABLE();
+  return os;
+}
+
 size_t hash_value(CheckTaggedHoleMode mode) {
   return static_cast<size_t>(mode);
 }
@@ -219,6 +239,26 @@ std::ostream& operator<<(std::ostream& os, CheckTaggedHoleMode mode) {
 CheckTaggedHoleMode CheckTaggedHoleModeOf(const Operator* op) {
   DCHECK_EQ(IrOpcode::kCheckTaggedHole, op->opcode());
   return OpParameter<CheckTaggedHoleMode>(op);
+}
+
+size_t hash_value(ElementsTransition transition) {
+  return static_cast<uint8_t>(transition);
+}
+
+std::ostream& operator<<(std::ostream& os, ElementsTransition transition) {
+  switch (transition) {
+    case ElementsTransition::kFastTransition:
+      return os << "fast-transition";
+    case ElementsTransition::kSlowTransition:
+      return os << "slow-transition";
+  }
+  UNREACHABLE();
+  return os;
+}
+
+ElementsTransition ElementsTransitionOf(const Operator* op) {
+  DCHECK_EQ(IrOpcode::kTransitionElementsKind, op->opcode());
+  return OpParameter<ElementsTransition>(op);
 }
 
 BinaryOperationHints::Hint BinaryOperationHintOf(const Operator* op) {
@@ -276,6 +316,8 @@ CompareOperationHints::Hint CompareOperationHintOf(const Operator* op) {
   V(NumberLog1p, Operator::kNoProperties, 1)               \
   V(NumberLog10, Operator::kNoProperties, 1)               \
   V(NumberLog2, Operator::kNoProperties, 1)                \
+  V(NumberMax, Operator::kNoProperties, 2)                 \
+  V(NumberMin, Operator::kNoProperties, 2)                 \
   V(NumberPow, Operator::kNoProperties, 2)                 \
   V(NumberRound, Operator::kNoProperties, 1)               \
   V(NumberSign, Operator::kNoProperties, 1)                \
@@ -334,7 +376,6 @@ CompareOperationHints::Hint CompareOperationHintOf(const Operator* op) {
   V(CheckedInt32Mod, 2, 1)       \
   V(CheckedUint32Div, 2, 1)      \
   V(CheckedUint32Mod, 2, 1)      \
-  V(CheckedInt32Mul, 2, 1)       \
   V(CheckedUint32ToInt32, 1, 1)  \
   V(CheckedFloat64ToInt32, 1, 1) \
   V(CheckedTaggedToInt32, 1, 1)  \
@@ -361,6 +402,20 @@ struct SimplifiedOperatorGlobalCache final {
   Name##Operator k##Name;
   CHECKED_OP_LIST(CHECKED)
 #undef CHECKED
+
+  template <CheckForMinusZeroMode kMode>
+  struct CheckedInt32MulOperator final
+      : public Operator1<CheckForMinusZeroMode> {
+    CheckedInt32MulOperator()
+        : Operator1<CheckForMinusZeroMode>(
+              IrOpcode::kCheckedInt32Mul,
+              Operator::kFoldable | Operator::kNoThrow, "CheckedInt32Mul", 2, 1,
+              1, 1, 1, 0, kMode) {}
+  };
+  CheckedInt32MulOperator<CheckForMinusZeroMode::kCheckForMinusZero>
+      kCheckedInt32MulCheckForMinusZeroOperator;
+  CheckedInt32MulOperator<CheckForMinusZeroMode::kDontCheckForMinusZero>
+      kCheckedInt32MulDontCheckForMinusZeroOperator;
 
   template <CheckFloat64HoleMode kMode>
   struct CheckFloat64HoleNaNOperator final
@@ -441,6 +496,18 @@ PURE_OP_LIST(GET_FROM_CACHE)
 CHECKED_OP_LIST(GET_FROM_CACHE)
 #undef GET_FROM_CACHE
 
+const Operator* SimplifiedOperatorBuilder::CheckedInt32Mul(
+    CheckForMinusZeroMode mode) {
+  switch (mode) {
+    case CheckForMinusZeroMode::kCheckForMinusZero:
+      return &cache_.kCheckedInt32MulCheckForMinusZeroOperator;
+    case CheckForMinusZeroMode::kDontCheckForMinusZero:
+      return &cache_.kCheckedInt32MulDontCheckForMinusZeroOperator;
+  }
+  UNREACHABLE();
+  return nullptr;
+}
+
 const Operator* SimplifiedOperatorBuilder::CheckFloat64Hole(
     CheckFloat64HoleMode mode) {
   switch (mode) {
@@ -469,6 +536,16 @@ const Operator* SimplifiedOperatorBuilder::ReferenceEqual(Type* type) {
   return new (zone()) Operator(IrOpcode::kReferenceEqual,
                                Operator::kCommutative | Operator::kPure,
                                "ReferenceEqual", 2, 0, 0, 1, 0, 0);
+}
+
+const Operator* SimplifiedOperatorBuilder::TransitionElementsKind(
+    ElementsTransition transition) {
+  return new (zone()) Operator1<ElementsTransition>(  // --
+      IrOpcode::kTransitionElementsKind,              // opcode
+      Operator::kNoDeopt | Operator::kNoThrow,        // flags
+      "TransitionElementsKind",                       // name
+      3, 1, 1, 0, 1, 0,                               // counts
+      transition);                                    // parameter
 }
 
 const Operator* SimplifiedOperatorBuilder::Allocate(PretenureFlag pretenure) {
