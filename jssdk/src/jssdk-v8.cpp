@@ -48,8 +48,6 @@ public:
 		v8::Isolate::Scope isolate_scope(m_isolate);
 
 		m_context.Reset(m_isolate, v8::Context::New(m_isolate));
-
-		// v8::Number::New(m_isolate, 100);
 	}
 
 public:
@@ -147,10 +145,17 @@ public:
 
 	virtual void init()
 	{
-		v8::Platform *platform = v8::platform::CreateDefaultPlatform();
-		v8::V8::InitializePlatform(platform);
+		static bool s_bInit = false;
 
-		v8::V8::Initialize();
+		if (!s_bInit)
+		{
+			s_bInit = true;
+
+			v8::Platform *platform = v8::platform::CreateDefaultPlatform();
+			v8::V8::InitializePlatform(platform);
+
+			v8::V8::Initialize();
+		}
 	}
 
 	virtual Runtime* createRuntime()
@@ -254,6 +259,50 @@ public:
 	Array ObjectKeys(const Object& o)
 	{
 		return Array(o.m_rt, v8::Local<v8::Object>::Cast(o.m_v)->GetPropertyNames());
+	}
+
+	bool ObjectHasPrivate(const Object& o, exlib::string key)
+	{
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(((v8_Runtime*)o.m_rt)->m_isolate,
+		                              v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		                                      key.c_str(), v8::String::kNormalString,
+		                                      (int32_t)key.length()));
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(((v8_Runtime*)o.m_rt)->m_isolate,
+		                                 ((v8_Runtime*)o.m_rt)->m_context);
+		return v8::Local<v8::Object>::Cast(o.m_v)->HasPrivate(context, pkey).FromJust();
+	}
+
+	Value ObjectGetPrivate(const Object& o, exlib::string key)
+	{
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(((v8_Runtime*)o.m_rt)->m_isolate,
+		                              v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		                                      key.c_str(), v8::String::kNormalString,
+		                                      (int32_t)key.length()));
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(((v8_Runtime*)o.m_rt)->m_isolate,
+		                                 ((v8_Runtime*)o.m_rt)->m_context);
+		return Value(o.m_rt, v8::Local<v8::Object>::Cast(o.m_v)->GetPrivate(context, pkey).ToLocalChecked());
+	}
+
+	void ObjectSetPrivate(const Object& o, exlib::string key, const Value& v)
+	{
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(((v8_Runtime*)o.m_rt)->m_isolate,
+		                              v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		                                      key.c_str(), v8::String::kNormalString,
+		                                      (int32_t)key.length()));
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(((v8_Runtime*)o.m_rt)->m_isolate,
+		                                 ((v8_Runtime*)o.m_rt)->m_context);
+		v8::Local<v8::Object>::Cast(o.m_v)->SetPrivate(context, pkey, v.m_v);
+	}
+
+	void ObjectRemovePrivate(const Object& o, exlib::string key)
+	{
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(((v8_Runtime*)o.m_rt)->m_isolate,
+		                              v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		                                      key.c_str(), v8::String::kNormalString,
+		                                      (int32_t)key.length()));
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(((v8_Runtime*)o.m_rt)->m_isolate,
+		                                 ((v8_Runtime*)o.m_rt)->m_context);
+		v8::Local<v8::Object>::Cast(o.m_v)->DeletePrivate(context, pkey);
 	}
 
 	bool ValueIsObject(const Value& v)

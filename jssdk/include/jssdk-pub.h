@@ -127,6 +127,26 @@ public:
 	}
 
 	Array keys();
+
+	bool hasPrivate(exlib::string key)
+	{
+		return _api->ObjectHasPrivate(*this, key);
+	}
+
+	Value getPrivate(exlib::string key)
+	{
+		return _api->ObjectGetPrivate(*this, key);
+	}
+
+	void setPrivate(exlib::string key, const Value& v)
+	{
+		_api->ObjectSetPrivate(*this, key, v);
+	}
+
+	void removePrivate(exlib::string key)
+	{
+		_api->ObjectRemovePrivate(*this, key);
+	}
 };
 
 class Array: public Object

@@ -96,6 +96,31 @@ TEST(ENG(api), Value_Object)
 	EXPECT_EQ(0, v.keys().length());
 }
 
+TEST(ENG(api), Value_Object_Private)
+{
+	js::Scope scope(rt);
+
+	js::Object v = js::_api->NewObject(rt);
+
+	ASSERT_TRUE(v.isObject());
+	EXPECT_FALSE(v.isArray());
+
+	ASSERT_FALSE(v.has("key1"));
+	v.set("key1", js::_api->NewNumber(rt, 100.5));
+	ASSERT_TRUE(v.has("key1"));
+	ASSERT_FALSE(v.hasPrivate("key1"));
+
+	v.setPrivate("key1", js::_api->NewNumber(rt, 200.25));
+	ASSERT_TRUE(v.hasPrivate("key1"));
+
+	ASSERT_DOUBLE_EQ(100.5, v.get("key1").toNumber());
+	ASSERT_DOUBLE_EQ(200.25, v.getPrivate("key1").toNumber());
+
+	v.removePrivate("key1");
+	ASSERT_FALSE(v.hasPrivate("key1"));
+	ASSERT_TRUE(v.has("key1"));
+}
+
 TEST(ENG(api), execute)
 {
 	js::Scope scope(rt);

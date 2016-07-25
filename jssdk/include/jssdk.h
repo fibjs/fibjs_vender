@@ -74,6 +74,10 @@ public:
 	virtual void ObjectSet(const Object& o, exlib::string key, const Value& v) = 0;
 	virtual void ObjectRemove(const Object& o, exlib::string key) = 0;
 	virtual Array ObjectKeys(const Object& o) = 0;
+	virtual bool ObjectHasPrivate(const Object& o, exlib::string key) = 0;
+	virtual Value ObjectGetPrivate(const Object& o, exlib::string key) = 0;
+	virtual void ObjectSetPrivate(const Object& o, exlib::string key, const Value& v) = 0;
+	virtual void ObjectRemovePrivate(const Object& o, exlib::string key) = 0;
 	virtual bool ValueIsObject(const Value& v) = 0;
 
 	virtual Array NewArray(Runtime* rt, int32_t sz) = 0;

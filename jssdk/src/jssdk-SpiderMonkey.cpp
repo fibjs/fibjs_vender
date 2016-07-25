@@ -56,12 +56,12 @@ public:
 
 	void Scope_enter(Scope& scope)
 	{
-
+		JS_EnterLocalRootScope(m_cx);
 	}
 
 	void Scope_leave(Scope& scope)
 	{
-
+		JS_LeaveLocalRootScope(m_cx);
 	}
 
 	Value execute(exlib::string code, exlib::string soname)
@@ -163,8 +163,8 @@ public:
 	{
 		JSString* s = JS_ValueToString(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, v.m_v);
 		if (s)
-			return utf16to8String(exlib::wstring((exlib::wchar*)JS_GetStringChars(s),
-			                                     JS_GetStringLength(s)));
+			return utf16to8String((exlib::wchar*)JS_GetStringChars(s),
+			                      JS_GetStringLength(s));
 		return exlib::string();
 	}
 
@@ -183,29 +183,34 @@ public:
 	bool ObjectHas(const Object& o, exlib::string key)
 	{
 		JSBool r;
-		JS_HasProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
-		               key.c_str(), &r);
+		exlib::wstring wkey(utf8to16String(key));
+		JS_HasUCProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		                 (jschar*)wkey.c_str(), wkey.length(), &r);
 		return (bool)r;
 	}
 
 	Value ObjectGet(const Object& o, exlib::string key)
 	{
 		jsval v;
-		JS_GetProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
-		               key.c_str(), &v);
+		exlib::wstring wkey(utf8to16String(key));
+		JS_GetUCProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		                 (jschar*)wkey.c_str(), wkey.length(), &v);
 		return Value(o.m_rt, v);
 	}
 
 	void ObjectSet(const Object& o, exlib::string key, const Value& v)
 	{
-		JS_SetProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
-		               key.c_str(), (jsval*)&v.m_v);
+		exlib::wstring wkey(utf8to16String(key));
+		JS_SetUCProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		                 (jschar*)wkey.c_str(), wkey.length(), (jsval*)&v.m_v);
 	}
 
 	void ObjectRemove(const Object& o, exlib::string key)
 	{
-		JS_DeleteProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
-		                  key.c_str());
+		jsval v;
+		exlib::wstring wkey(utf8to16String(key));
+		JS_DeleteUCProperty2(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		                     (jschar*)wkey.c_str(), wkey.length(), &v);
 	}
 
 	Array ObjectKeys(const Object& o)
@@ -223,6 +228,31 @@ public:
 		return Value(o.m_rt,
 		             OBJECT_TO_JSVAL(JS_NewArrayObject(((SpiderMonkey_Runtime*)o.m_rt)->m_cx,
 		                             length, vals.data())));
+	}
+
+	Object ObjectGetSlot(const Object& o)
+	{
+		return o;
+	}
+
+	bool ObjectHasPrivate(const Object& o, exlib::string key)
+	{
+		return ObjectGetSlot(o).has(key);
+	}
+
+	Value ObjectGetPrivate(const Object& o, exlib::string key)
+	{
+		return ObjectGetSlot(o).get(key);
+	}
+
+	void ObjectSetPrivate(const Object& o, exlib::string key, const Value& v)
+	{
+		ObjectGetSlot(o).set(key, v);
+	}
+
+	void ObjectRemovePrivate(const Object& o, exlib::string key)
+	{
+		ObjectGetSlot(o).remove(key);
 	}
 
 	bool ValueIsObject(const Value& v)
