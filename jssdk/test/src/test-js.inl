@@ -21,36 +21,36 @@ TEST(ENG(api), Value_Boolean)
 {
 	js::Scope scope(rt);
 
-	ASSERT_TRUE(js::_api->NewBoolean(rt, true).isBoolean());
-	ASSERT_TRUE(js::_api->NewBoolean(rt, true).toBoolean());
-	EXPECT_FALSE(js::_api->NewBoolean(rt, false).toBoolean());
-	ASSERT_TRUE(js::_api->NewString(rt, "true").toBoolean());
+	ASSERT_TRUE(rt->NewBoolean(true).isBoolean());
+	ASSERT_TRUE(rt->NewBoolean(true).toBoolean());
+	EXPECT_FALSE(rt->NewBoolean(false).toBoolean());
+	ASSERT_TRUE(rt->NewString("true").toBoolean());
 }
 
 TEST(ENG(api), Value_Number)
 {
 	js::Scope scope(rt);
 
-	ASSERT_TRUE(js::_api->NewNumber(rt, 100.5).isNumber());
-	EXPECT_FALSE(js::_api->NewBoolean(rt, true).isNumber());
-	ASSERT_DOUBLE_EQ(100.5, js::_api->NewNumber(rt, 100.5).toNumber());
-	ASSERT_DOUBLE_EQ(100.5, js::_api->NewString(rt, "100.5").toNumber());
+	ASSERT_TRUE(rt->NewNumber(100.5).isNumber());
+	EXPECT_FALSE(rt->NewBoolean(true).isNumber());
+	ASSERT_DOUBLE_EQ(100.5, rt->NewNumber(100.5).toNumber());
+	ASSERT_DOUBLE_EQ(100.5, rt->NewString("100.5").toNumber());
 }
 
 TEST(ENG(api), Value_String)
 {
 	js::Scope scope(rt);
 
-	ASSERT_TRUE(js::_api->NewString(rt, "abcd").isString());
-	EXPECT_EQ("abcd", js::_api->NewString(rt, "abcd").toString());
-	EXPECT_EQ("10.5", js::_api->NewNumber(rt, 10.5).toString());
+	ASSERT_TRUE(rt->NewString("abcd").isString());
+	EXPECT_EQ("abcd", rt->NewString("abcd").toString());
+	EXPECT_EQ("10.5", rt->NewNumber(10.5).toString());
 }
 
 TEST(ENG(api), Value_Array)
 {
 	js::Scope scope(rt);
 
-	js::Array v = js::_api->NewArray(rt, 10);
+	js::Array v = rt->NewArray(10);
 
 	ASSERT_TRUE(v.isObject());
 	ASSERT_TRUE(v.isArray());
@@ -58,7 +58,7 @@ TEST(ENG(api), Value_Array)
 
 	ASSERT_TRUE(v.get(0).isUndefined());
 
-	v.set(1, js::_api->NewNumber(rt, 100.5));
+	v.set(1, rt->NewNumber(100.5));
 	EXPECT_EQ(10, v.length());
 	ASSERT_DOUBLE_EQ(100.5, v.get(1).toNumber());
 
@@ -66,7 +66,7 @@ TEST(ENG(api), Value_Array)
 	EXPECT_EQ(10, v.length());
 	ASSERT_TRUE(v.get(1).isUndefined());
 
-	v.set(10, js::_api->NewNumber(rt, 1011));
+	v.set(10, rt->NewNumber(1011));
 	EXPECT_EQ(11, v.length());
 	EXPECT_EQ(1011, v.get(10).toNumber());
 }
@@ -75,7 +75,7 @@ TEST(ENG(api), Value_Object)
 {
 	js::Scope scope(rt);
 
-	js::Object v = js::_api->NewObject(rt);
+	js::Object v = rt->NewObject();
 
 	ASSERT_TRUE(v.isObject());
 	EXPECT_FALSE(v.isArray());
@@ -84,7 +84,7 @@ TEST(ENG(api), Value_Object)
 	ASSERT_TRUE(v.get("key1").isUndefined());
 	EXPECT_EQ(0, v.keys().length());
 
-	v.set("key1", js::_api->NewNumber(rt, 100.5));
+	v.set("key1", rt->NewNumber(100.5));
 	ASSERT_TRUE(v.has("key1"));
 	ASSERT_DOUBLE_EQ(100.5, v.get("key1").toNumber());
 	EXPECT_EQ(1, v.keys().length());
@@ -100,17 +100,17 @@ TEST(ENG(api), Value_Object_Private)
 {
 	js::Scope scope(rt);
 
-	js::Object v = js::_api->NewObject(rt);
+	js::Object v = rt->NewObject();
 
 	ASSERT_TRUE(v.isObject());
 	EXPECT_FALSE(v.isArray());
 
 	ASSERT_FALSE(v.has("key1"));
-	v.set("key1", js::_api->NewNumber(rt, 100.5));
+	v.set("key1", rt->NewNumber(100.5));
 	ASSERT_TRUE(v.has("key1"));
 	ASSERT_FALSE(v.hasPrivate("key1"));
 
-	v.setPrivate("key1", js::_api->NewNumber(rt, 200.25));
+	v.setPrivate("key1", rt->NewNumber(200.25));
 	ASSERT_TRUE(v.hasPrivate("key1"));
 
 	ASSERT_DOUBLE_EQ(100.5, v.get("key1").toNumber());

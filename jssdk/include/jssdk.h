@@ -41,6 +41,11 @@ public:
 
 	virtual Value execute(exlib::string code, exlib::string soname) = 0;
 
+	Value NewBoolean(bool b);
+	Value NewNumber(double d);
+	Value NewString(exlib::string s);
+	Object NewObject();
+	Array NewArray(int32_t sz);
 };
 
 class Api

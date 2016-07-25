@@ -12,7 +12,6 @@
 namespace js
 {
 
-
 class Value
 {
 public:
@@ -188,6 +187,31 @@ public:
 inline Array Object::keys()
 {
 	return _api->ObjectKeys(*this);
+}
+
+inline Value Runtime::NewBoolean(bool b)
+{
+	return _api->NewBoolean(this, b);
+}
+
+inline Value Runtime::NewNumber(double d)
+{
+	return _api->NewNumber(this, d);
+}
+
+inline Value Runtime::NewString(exlib::string s)
+{
+	return _api->NewString(this, s);
+}
+
+inline Object Runtime::NewObject()
+{
+	return _api->NewObject(this);
+}
+
+inline Array Runtime::NewArray(int32_t sz)
+{
+	return _api->NewArray(this, sz);
 }
 
 }
