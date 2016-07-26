@@ -163,6 +163,11 @@ public:
 		return new v8_Runtime();
 	}
 
+	Value NewUndefined(Runtime* rt)
+	{
+		return Value(rt, v8::Undefined(((v8_Runtime*)rt)->m_isolate));
+	}
+
 	bool ValueIsUndefined(const Value& v)
 	{
 		return !v.m_v.IsEmpty() && v.m_v->IsUndefined();

@@ -189,6 +189,11 @@ inline Array Object::keys()
 	return _api->ObjectKeys(*this);
 }
 
+inline Value Runtime::NewUndefined()
+{
+	return _api->NewUndefined(this);
+}
+
 inline Value Runtime::NewBoolean(bool b)
 {
 	return _api->NewBoolean(this, b);

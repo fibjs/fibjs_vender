@@ -109,6 +109,11 @@ public:
 		return new SpiderMonkey_Runtime();
 	}
 
+	Value NewUndefined(Runtime* rt)
+	{
+		return Value(rt, JSVAL_VOID);
+	}
+
 	bool ValueIsUndefined(const Value& v)
 	{
 		return v.m_v != 0 && JSVAL_IS_VOID(v.m_v);

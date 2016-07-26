@@ -17,6 +17,13 @@ TEST(ENG(api), Runtime)
 	EXPECT_NE((void*)NULL, rt);
 }
 
+TEST(ENG(api), Value_Undefined)
+{
+	js::Scope scope(rt);
+
+	ASSERT_TRUE(rt->NewUndefined().isUndefined());
+}
+
 TEST(ENG(api), Value_Boolean)
 {
 	js::Scope scope(rt);

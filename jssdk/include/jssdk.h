@@ -41,6 +41,7 @@ public:
 
 	virtual Value execute(exlib::string code, exlib::string soname) = 0;
 
+	Value NewUndefined();
 	Value NewBoolean(bool b);
 	Value NewNumber(double d);
 	Value NewString(exlib::string s);
@@ -59,6 +60,7 @@ public:
 	virtual void init() = 0;
 	virtual Runtime* createRuntime() = 0;
 
+	virtual Value NewUndefined(Runtime* rt) = 0;
 	virtual bool ValueIsUndefined(const Value& v) = 0;
 
 	virtual Value NewBoolean(Runtime* rt, bool b) = 0;
