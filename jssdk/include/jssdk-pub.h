@@ -85,6 +85,11 @@ public:
 		return _api->ValueIsObject(*this);
 	}
 
+	bool isFunction() const
+	{
+		return _api->ValueIsFunction(*this);
+	}
+
 public:
 	Runtime *m_rt;
 	js_value m_v;
@@ -181,6 +186,27 @@ public:
 	void remove(int32_t idx)
 	{
 		_api->ArrayRemove(*this, idx);
+	}
+};
+
+class Function: public Object
+{
+public:
+	Function()
+	{}
+
+	Function(Runtime *rt, js_value v) : Object(rt, v)
+	{
+	}
+
+	Function(const Value& v) : Object(v)
+	{
+	}
+
+public:
+	Value ncall(Value* args, int32_t argn)
+	{
+		return _api->FunctionCall(*this, args, argn);
 	}
 };
 

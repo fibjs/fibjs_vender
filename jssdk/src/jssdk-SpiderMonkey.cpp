@@ -302,6 +302,32 @@ public:
 			return false;
 		return (bool)JS_IsArrayObject(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
 	}
+
+	Value FunctionCall(const Function& f, Value* args, int32_t argn)
+	{
+		SpiderMonkey_Runtime* rt = (SpiderMonkey_Runtime*)f.m_rt;
+		JSFunction * func = JS_ValueToFunction(rt->m_cx, f.m_v);
+		std::vector<jsval> _args;
+		int32_t i;
+
+		_args.resize(argn);
+		for (i = 0; i < argn; i ++)
+			_args[i] = args[i].m_v;
+
+		jsval result;
+
+		JSBool r = JS_CallFunction(rt->m_cx, NULL, func, argn,
+		                           _args.data(), &result);
+
+		return Value(rt, result);
+	}
+
+	bool ValueIsFunction(const Value& v)
+	{
+		if (!ValueIsObject(v))
+			return false;
+		return (bool)JS_ObjectIsFunction(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
+	}
 };
 
 static Api_SpiderMonkey s_api;

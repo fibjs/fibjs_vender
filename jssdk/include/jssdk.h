@@ -16,8 +16,9 @@ namespace js
 {
 
 class Value;
-class Array;
 class Object;
+class Array;
+class Function;
 class Locker;
 class Unlocker;
 class Scope;
@@ -94,6 +95,8 @@ public:
 	virtual void ArrayRemove(const Array& a, int32_t idx) = 0;
 	virtual bool ValueIsArray(const Value& v) = 0;
 
+	virtual Value FunctionCall(const Function& f, Value* args, int32_t argn) = 0;
+	virtual bool ValueIsFunction(const Value& v) = 0;
 };
 
 extern Api* v8_api;

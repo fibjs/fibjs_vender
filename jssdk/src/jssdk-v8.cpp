@@ -10,6 +10,7 @@
 #include "libplatform/libplatform.h"
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 
 namespace js
 {
@@ -231,32 +232,36 @@ public:
 
 	bool ObjectHas(const Object& o, exlib::string key)
 	{
+		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
 		return v8::Local<v8::Object>::Cast(o.m_v)->Has(
-		           v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		           v8::String::NewFromUtf8(rt->m_isolate,
 		                                   key.c_str(), v8::String::kNormalString,
 		                                   (int32_t)key.length()));
 	}
 
 	Value ObjectGet(const Object& o, exlib::string key)
 	{
+		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
 		return Value(o.m_rt, v8::Local<v8::Object>::Cast(o.m_v)->Get(
-		                 v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		                 v8::String::NewFromUtf8(rt->m_isolate,
 		                         key.c_str(), v8::String::kNormalString,
 		                         (int32_t)key.length())));
 	}
 
 	void ObjectSet(const Object& o, exlib::string key, const Value& v)
 	{
+		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
 		v8::Local<v8::Object>::Cast(o.m_v)->Set(
-		    v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		    v8::String::NewFromUtf8(rt->m_isolate,
 		                            key.c_str(), v8::String::kNormalString,
 		                            (int32_t)key.length()), v.m_v);
 	}
 
 	void ObjectRemove(const Object& o, exlib::string key)
 	{
+		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
 		v8::Local<v8::Object>::Cast(o.m_v)->Delete(
-		    v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		    v8::String::NewFromUtf8(rt->m_isolate,
 		                            key.c_str(), v8::String::kNormalString,
 		                            (int32_t)key.length()));
 	}
@@ -268,45 +273,49 @@ public:
 
 	bool ObjectHasPrivate(const Object& o, exlib::string key)
 	{
-		v8::Local<v8::Private> pkey = v8::Private::ForApi(((v8_Runtime*)o.m_rt)->m_isolate,
-		                              v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(rt->m_isolate,
+		                              v8::String::NewFromUtf8(rt->m_isolate,
 		                                      key.c_str(), v8::String::kNormalString,
 		                                      (int32_t)key.length()));
-		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(((v8_Runtime*)o.m_rt)->m_isolate,
-		                                 ((v8_Runtime*)o.m_rt)->m_context);
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
+		                                 rt->m_context);
 		return v8::Local<v8::Object>::Cast(o.m_v)->HasPrivate(context, pkey).FromJust();
 	}
 
 	Value ObjectGetPrivate(const Object& o, exlib::string key)
 	{
-		v8::Local<v8::Private> pkey = v8::Private::ForApi(((v8_Runtime*)o.m_rt)->m_isolate,
-		                              v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(rt->m_isolate,
+		                              v8::String::NewFromUtf8(rt->m_isolate,
 		                                      key.c_str(), v8::String::kNormalString,
 		                                      (int32_t)key.length()));
-		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(((v8_Runtime*)o.m_rt)->m_isolate,
-		                                 ((v8_Runtime*)o.m_rt)->m_context);
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
+		                                 rt->m_context);
 		return Value(o.m_rt, v8::Local<v8::Object>::Cast(o.m_v)->GetPrivate(context, pkey).ToLocalChecked());
 	}
 
 	void ObjectSetPrivate(const Object& o, exlib::string key, const Value& v)
 	{
-		v8::Local<v8::Private> pkey = v8::Private::ForApi(((v8_Runtime*)o.m_rt)->m_isolate,
-		                              v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(rt->m_isolate,
+		                              v8::String::NewFromUtf8(rt->m_isolate,
 		                                      key.c_str(), v8::String::kNormalString,
 		                                      (int32_t)key.length()));
-		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(((v8_Runtime*)o.m_rt)->m_isolate,
-		                                 ((v8_Runtime*)o.m_rt)->m_context);
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
+		                                 rt->m_context);
 		v8::Local<v8::Object>::Cast(o.m_v)->SetPrivate(context, pkey, v.m_v);
 	}
 
 	void ObjectRemovePrivate(const Object& o, exlib::string key)
 	{
-		v8::Local<v8::Private> pkey = v8::Private::ForApi(((v8_Runtime*)o.m_rt)->m_isolate,
-		                              v8::String::NewFromUtf8(((v8_Runtime*)o.m_rt)->m_isolate,
+		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(rt->m_isolate,
+		                              v8::String::NewFromUtf8(rt->m_isolate,
 		                                      key.c_str(), v8::String::kNormalString,
 		                                      (int32_t)key.length()));
-		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(((v8_Runtime*)o.m_rt)->m_isolate,
-		                                 ((v8_Runtime*)o.m_rt)->m_context);
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
+		                                 rt->m_context);
 		v8::Local<v8::Object>::Cast(o.m_v)->DeletePrivate(context, pkey);
 	}
 
@@ -343,6 +352,32 @@ public:
 	bool ValueIsArray(const Value& v)
 	{
 		return !v.m_v.IsEmpty() && v.m_v->IsArray();
+	}
+
+	Value FunctionCall(const Function& f, Value* args, int32_t argn)
+	{
+		v8_Runtime* rt = (v8_Runtime*)f.m_rt;
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
+		                                 rt->m_context);
+		v8::Local<v8::Value> recv = v8::Undefined(rt->m_isolate);
+		std::vector<v8::Local<v8::Value> > _args;
+		int32_t i;
+
+		_args.resize(argn);
+		for (i = 0; i < argn; i ++)
+			_args[i] = args[i].m_v;
+
+		v8::Local<v8::Value> result;
+
+		result = v8::Local<v8::Function>::Cast(f.m_v)->Call(context,
+		         recv, argn, _args.data()).ToLocalChecked();
+
+		return Value(rt, result);
+	}
+
+	bool ValueIsFunction(const Value& v)
+	{
+		return !v.m_v.IsEmpty() && v.m_v->IsFunction();
 	}
 };
 

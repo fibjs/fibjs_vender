@@ -135,6 +135,23 @@ TEST(ENG(api), execute)
 	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 }
 
+TEST(ENG(api), Value_Function)
+{
+	js::Scope scope(rt);
+
+	js::Value r = rt->execute("(function(a,b){return a+b;});", "test.js");
+	ASSERT_TRUE(r.isFunction());
+
+	js::Function f(r);
+
+	js::Value args[2];
+	args[0] = rt->NewNumber(100);
+	args[1] = rt->NewNumber(200);
+
+	js::Value r1 = f.ncall(args, 2);
+	EXPECT_EQ(300, r1.toNumber());
+}
+
 TEST(ENG(api), json)
 {
 	js::Scope scope(rt);
