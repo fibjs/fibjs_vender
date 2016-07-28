@@ -128,7 +128,7 @@ public:
 	{
 		JSBool b;
 		JS_ValueToBoolean(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, v.m_v, &b);
-		return (bool)b;
+		return JS_FALSE != b;
 	}
 
 	bool ValueIsBoolean(const Value& v)
@@ -169,7 +169,7 @@ public:
 		JSString* s = JS_ValueToString(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, v.m_v);
 		if (s)
 			return utf16to8String((exlib::wchar*)JS_GetStringChars(s),
-			                      JS_GetStringLength(s));
+			                      (int32_t)JS_GetStringLength(s));
 		return exlib::string();
 	}
 
@@ -191,7 +191,7 @@ public:
 		exlib::wstring wkey(utf8to16String(key));
 		JS_HasUCProperty(((SpiderMonkey_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
 		                 (jschar*)wkey.c_str(), wkey.length(), &r);
-		return (bool)r;
+		return JS_FALSE != r;
 	}
 
 	Value ObjectGet(const Object& o, exlib::string key)
@@ -300,7 +300,7 @@ public:
 	{
 		if (!ValueIsObject(v))
 			return false;
-		return (bool)JS_IsArrayObject(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
+		return JS_FALSE != JS_IsArrayObject(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
 	}
 
 	Value FunctionCall(const Function& f, Value* args, int32_t argn)
@@ -326,7 +326,7 @@ public:
 	{
 		if (!ValueIsObject(v))
 			return false;
-		return (bool)JS_ObjectIsFunction(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
+		return JS_FALSE != JS_ObjectIsFunction(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
 	}
 };
 
