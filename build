@@ -116,6 +116,7 @@ gtest
 expat
 gumbo
 gd
+icu
 tiff
 jpeg
 png
