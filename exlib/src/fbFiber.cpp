@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <time.h>
+#include <chrono>
 
 #include "osconfig.h"
 #include "service.h"
@@ -21,20 +22,6 @@
 #include <cxxabi.h>
 #include <dlfcn.h>
 #endif
-
-namespace v8
-{
-namespace base
-{
-
-class OS
-{
-public:
-    static double TimeCurrentMillis();
-};
-
-}
-}
 
 namespace exlib
 {
@@ -167,7 +154,8 @@ public:
 
             wait();
 
-            m_tm = v8::base::OS::TimeCurrentMillis();
+            m_tm = (double)std::chrono::duration_cast<std::chrono::milliseconds>(
+                       std::chrono::system_clock::now().time_since_epoch()).count();
 
             while ((p = m_acSleep.getHead()) != NULL)
             {
