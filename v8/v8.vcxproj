@@ -366,6 +366,7 @@
     <ClInclude Include="src\heap\spaces-inl.h" />
     <ClInclude Include="src\heap\spaces.h" />
     <ClInclude Include="src\heap\store-buffer.h" />
+    <ClInclude Include="src\i18n.h" />
     <ClInclude Include="src\ia32\assembler-ia32-inl.h" />
     <ClInclude Include="src\ia32\assembler-ia32.h" />
     <ClInclude Include="src\ia32\code-stubs-ia32.h" />
@@ -909,6 +910,7 @@
     <ClCompile Include="src\heap\scavenger.cc" />
     <ClCompile Include="src\heap\spaces.cc" />
     <ClCompile Include="src\heap\store-buffer.cc" />
+    <ClCompile Include="src\i18n.cc" />
     <ClCompile Include="src\ia32\assembler-ia32.cc" />
     <ClCompile Include="src\ia32\code-stubs-ia32.cc" />
     <ClCompile Include="src\ia32\codegen-ia32.cc" />
@@ -1215,8 +1217,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;V8_I18N_SUPPORT;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4091;4244;4267;4312;4800;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -1236,8 +1238,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;V8_I18N_SUPPORT;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4091;4244;4267;4312;4800;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -1259,8 +1261,8 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;V8_I18N_SUPPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -1286,8 +1288,8 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;V8_I18N_SUPPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>

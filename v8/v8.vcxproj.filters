@@ -1272,6 +1272,9 @@
     <ClInclude Include="src\heap\store-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\i18n.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\ia32\assembler-ia32-inl.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
@@ -2896,6 +2899,9 @@
     </ClCompile>
     <ClCompile Include="src\heap\store-buffer.cc">
       <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\i18n.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ia32\assembler-ia32.cc">
       <Filter>Source Files\ia32</Filter>
