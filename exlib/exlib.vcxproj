@@ -40,10 +40,10 @@
   <ItemGroup>
     <CustomBuild Include="src\fb_switch.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ml64 /c /Fo$(SolutionDir)out\Windows_amd64_debug\fb_switch.obj src\fb_switch.asm</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ml64 /c /Fo$(SolutionDir)out\Windows_amd64_release\fb_switch.obj src\fb_switch.asm</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)out\Windows_amd64_debug\fb_switch.obj</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)out\Windows_amd64_release\fb_switch.obj</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ml64 /c /Fo$(SolutionDir)out\Windows_amd64_debug\exlib\fb_switch.obj src\fb_switch.asm</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ml64 /c /Fo$(SolutionDir)out\Windows_amd64_release\exlib\fb_switch.obj src\fb_switch.asm</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)out\Windows_amd64_debug\exlib\fb_switch.obj</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)out\Windows_amd64_release\exlib\fb_switch.obj</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
