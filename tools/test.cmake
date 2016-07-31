@@ -62,7 +62,7 @@ set(CMAKE_CXX_FLAGS "${flags} ${ccflags}")
 
 target_link_libraries(${name}_test pthread)
 
-include_directories(${PROJECT_SOURCE_DIR}/../ "${PROJECT_SOURCE_DIR}/../include" "${PROJECT_SOURCE_DIR}/../../" "/usr/local/include/")
+include_directories(${PROJECT_SOURCE_DIR}/../ "${PROJECT_SOURCE_DIR}/../include" "${PROJECT_SOURCE_DIR}/../../")
 
 if(link_flags)
 	set_target_properties(${name}_test PROPERTIES LINK_FLAGS ${link_flags})

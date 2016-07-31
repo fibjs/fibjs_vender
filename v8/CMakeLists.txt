@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 include(../tools/basic.cmake)
 
-include_directories("${PROJECT_SOURCE_DIR}/../icu/include/")
+include_directories("${PROJECT_SOURCE_DIR}/../icu/include/" "/usr/local/include/")
 
 add_definitions(-DV8_NO_FAST_TLS=1 -DV8_DEPRECATION_WARNINGS=1 -DENABLE_HANDLE_ZAPPING=1 -DV8_I18N_SUPPORT=1)
 if(${BUILD_TYPE} STREQUAL "Debug")
