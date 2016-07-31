@@ -240,6 +240,9 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* SpeculativeNumberDivide(BinaryOperationHints::Hint hint);
   const Operator* SpeculativeNumberModulus(BinaryOperationHints::Hint hint);
   const Operator* SpeculativeNumberShiftLeft(BinaryOperationHints::Hint hint);
+  const Operator* SpeculativeNumberShiftRight(BinaryOperationHints::Hint hint);
+  const Operator* SpeculativeNumberShiftRightLogical(
+      BinaryOperationHints::Hint hint);
 
   const Operator* SpeculativeNumberLessThan(CompareOperationHints::Hint hint);
   const Operator* SpeculativeNumberLessThanOrEqual(
@@ -251,6 +254,7 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* StringEqual();
   const Operator* StringLessThan();
   const Operator* StringLessThanOrEqual();
+  const Operator* StringCharCodeAt();
   const Operator* StringFromCharCode();
 
   const Operator* PlainPrimitiveToNumber();
@@ -272,7 +276,9 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
 
   const Operator* CheckIf();
   const Operator* CheckBounds();
+  const Operator* CheckMaps(int map_input_count);
   const Operator* CheckNumber();
+  const Operator* CheckString();
   const Operator* CheckTaggedPointer();
   const Operator* CheckTaggedSigned();
 
@@ -287,6 +293,7 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* CheckedFloat64ToInt32();
   const Operator* CheckedTaggedToInt32();
   const Operator* CheckedTaggedToFloat64();
+  const Operator* CheckedTruncateTaggedToWord32();
 
   const Operator* CheckFloat64Hole(CheckFloat64HoleMode);
   const Operator* CheckTaggedHole(CheckTaggedHoleMode);

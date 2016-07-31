@@ -85,6 +85,11 @@ class ParseInfo {
     source_stream_encoding_ = source_stream_encoding;
   }
 
+  Utf16CharacterStream* character_stream() const { return character_stream_; }
+  void set_character_stream(Utf16CharacterStream* character_stream) {
+    character_stream_ = character_stream;
+  }
+
   v8::Extension* extension() { return extension_; }
   void set_extension(v8::Extension* extension) { extension_ = extension; }
 
@@ -175,6 +180,7 @@ class ParseInfo {
   unsigned flags_;
   ScriptCompiler::ExternalSourceStream* source_stream_;
   ScriptCompiler::StreamedSource::Encoding source_stream_encoding_;
+  Utf16CharacterStream* character_stream_;
   v8::Extension* extension_;
   ScriptCompiler::CompileOptions compile_options_;
   Scope* script_scope_;
@@ -582,11 +588,11 @@ class ParserTraits {
       const ParserFormalParameters& parameters, FunctionKind kind,
       FunctionLiteral::FunctionType function_type, bool* ok);
 
-  ClassLiteral* ParseClassLiteral(Type::ExpressionClassifier* classifier,
-                                  const AstRawString* name,
-                                  Scanner::Location class_name_location,
-                                  bool name_is_strict_reserved, int pos,
-                                  bool* ok);
+  Expression* ParseClassLiteral(Type::ExpressionClassifier* classifier,
+                                const AstRawString* name,
+                                Scanner::Location class_name_location,
+                                bool name_is_strict_reserved, int pos,
+                                bool* ok);
 
   V8_INLINE void MarkCollectedTailCallExpressions();
   V8_INLINE void MarkTailPosition(Expression* expression);
@@ -853,7 +859,7 @@ class Parser : public ParserBase<ParserTraits> {
     Scanner::Location bindings_loc;
   };
 
-  class PatternRewriter final : private AstVisitor<PatternRewriter> {
+  class PatternRewriter final : public AstVisitor<PatternRewriter> {
    public:
     static void DeclareAndInitializeVariables(
         Block* block, const DeclarationDescriptor* declaration_descriptor,
@@ -1002,11 +1008,11 @@ class Parser : public ParserBase<ParserTraits> {
       int function_token_position, FunctionLiteral::FunctionType type,
       LanguageMode language_mode, bool* ok);
 
-  ClassLiteral* ParseClassLiteral(ExpressionClassifier* classifier,
-                                  const AstRawString* name,
-                                  Scanner::Location class_name_location,
-                                  bool name_is_strict_reserved, int pos,
-                                  bool* ok);
+  Expression* ParseClassLiteral(ExpressionClassifier* classifier,
+                                const AstRawString* name,
+                                Scanner::Location class_name_location,
+                                bool name_is_strict_reserved, int pos,
+                                bool* ok);
 
   // Magical syntax support.
   Expression* ParseV8Intrinsic(bool* ok);

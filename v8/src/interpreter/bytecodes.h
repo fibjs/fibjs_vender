@@ -211,9 +211,9 @@ namespace interpreter {
   V(TestIn, AccumulatorUse::kReadWrite, OperandType::kReg)                     \
                                                                                \
   /* Cast operators */                                                         \
-  V(ToName, AccumulatorUse::kReadWrite)                                        \
+  V(ToName, AccumulatorUse::kRead, OperandType::kRegOut)                       \
   V(ToNumber, AccumulatorUse::kRead, OperandType::kRegOut)                     \
-  V(ToObject, AccumulatorUse::kReadWrite)                                      \
+  V(ToObject, AccumulatorUse::kRead, OperandType::kRegOut)                     \
                                                                                \
   /* Literals */                                                               \
   V(CreateRegExpLiteral, AccumulatorUse::kWrite, OperandType::kIdx,            \
@@ -251,7 +251,8 @@ namespace interpreter {
   V(JumpIfNotHoleConstant, AccumulatorUse::kRead, OperandType::kIdx)           \
                                                                                \
   /* Complex flow control For..in */                                           \
-  V(ForInPrepare, AccumulatorUse::kRead, OperandType::kRegOutTriple)           \
+  V(ForInPrepare, AccumulatorUse::kNone, OperandType::kReg,                    \
+    OperandType::kRegOutTriple)                                                \
   V(ForInDone, AccumulatorUse::kWrite, OperandType::kReg, OperandType::kReg)   \
   V(ForInNext, AccumulatorUse::kWrite, OperandType::kReg, OperandType::kReg,   \
     OperandType::kRegPair, OperandType::kIdx)                                  \
@@ -259,6 +260,9 @@ namespace interpreter {
                                                                                \
   /* Perform a stack guard check */                                            \
   V(StackCheck, AccumulatorUse::kNone)                                         \
+                                                                               \
+  /* Perform a check to trigger on-stack replacement */                        \
+  V(OsrPoll, AccumulatorUse::kNone, OperandType::kImm)                         \
                                                                                \
   /* Non-local flow control */                                                 \
   V(Throw, AccumulatorUse::kRead)                                              \

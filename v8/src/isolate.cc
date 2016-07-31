@@ -515,7 +515,7 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
         // we reuse the receiver field to pass along a special symbol.
         Handle<Object> recv;
         if (exit_frame->IsConstructor()) {
-          recv = handle(heap()->call_site_constructor_symbol(), this);
+          recv = factory()->call_site_constructor_symbol();
         } else {
           recv = handle(exit_frame->receiver(), this);
         }
@@ -532,7 +532,7 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSReceiver> error_object,
         WasmFrame* wasm_frame = WasmFrame::cast(frame);
         Code* code = wasm_frame->unchecked_code();
         Handle<AbstractCode> abstract_code =
-            Handle<AbstractCode>(AbstractCode::cast(code));
+            Handle<AbstractCode>(AbstractCode::cast(code), this);
         int offset =
             static_cast<int>(wasm_frame->pc() - code->instruction_start());
         elements = MaybeGrow(this, elements, cursor, cursor + 4);
@@ -642,7 +642,7 @@ class CaptureStackTraceHelper {
                                        bool is_constructor) {
     Handle<JSObject> stack_frame =
         factory()->NewJSObject(isolate_->object_function());
-    Handle<Script> script(Script::cast(fun->shared()->script()));
+    Handle<Script> script(Script::cast(fun->shared()->script()), isolate_);
 
     if (!line_key_.is_null()) {
       Script::PositionInfo info;
@@ -1404,7 +1404,7 @@ void Isolate::PrintCurrentStackTrace(FILE* out) {
     JavaScriptFrame* js_frame = JavaScriptFrame::cast(frame);
     Handle<Object> pos_obj(Smi::FromInt(pos), this);
     // Fetch function and receiver.
-    Handle<JSFunction> fun(js_frame->function());
+    Handle<JSFunction> fun(js_frame->function(), this);
     Handle<Object> recv(js_frame->receiver(), this);
     // Advance to the next JavaScript frame and determine if the
     // current frame is the top-level frame.
@@ -1432,7 +1432,7 @@ bool Isolate::ComputeLocation(MessageLocation* target) {
       (Script::cast(script)->source()->IsUndefined(this))) {
     return false;
   }
-  Handle<Script> casted_script(Script::cast(script));
+  Handle<Script> casted_script(Script::cast(script), this);
   // Compute the location from the function and the relocation info of the
   // baseline code. For optimized code this will use the deoptimization
   // information to get canonical location information.
@@ -1440,7 +1440,7 @@ bool Isolate::ComputeLocation(MessageLocation* target) {
   JavaScriptFrame::cast(frame)->Summarize(&frames);
   FrameSummary& summary = frames.last();
   int pos = summary.abstract_code()->SourcePosition(summary.code_offset());
-  *target = MessageLocation(casted_script, pos, pos + 1, handle(fun));
+  *target = MessageLocation(casted_script, pos, pos + 1, handle(fun, this));
   return true;
 }
 
@@ -1620,9 +1620,9 @@ void Isolate::ReportPendingMessages() {
   // Actually report the pending message to all message handlers.
   if (!message_obj->IsTheHole(this) && should_report_exception) {
     HandleScope scope(this);
-    Handle<JSMessageObject> message(JSMessageObject::cast(message_obj));
-    Handle<JSValue> script_wrapper(JSValue::cast(message->script()));
-    Handle<Script> script(Script::cast(script_wrapper->value()));
+    Handle<JSMessageObject> message(JSMessageObject::cast(message_obj), this);
+    Handle<JSValue> script_wrapper(JSValue::cast(message->script()), this);
+    Handle<Script> script(Script::cast(script_wrapper->value()), this);
     int start_pos = message->start_position();
     int end_pos = message->end_position();
     MessageLocation location(script, start_pos, end_pos);
@@ -1637,9 +1637,9 @@ MessageLocation Isolate::GetMessageLocation() {
   if (thread_local_top_.pending_exception_ != heap()->termination_exception() &&
       !thread_local_top_.pending_message_obj_->IsTheHole(this)) {
     Handle<JSMessageObject> message_obj(
-        JSMessageObject::cast(thread_local_top_.pending_message_obj_));
-    Handle<JSValue> script_wrapper(JSValue::cast(message_obj->script()));
-    Handle<Script> script(Script::cast(script_wrapper->value()));
+        JSMessageObject::cast(thread_local_top_.pending_message_obj_), this);
+    Handle<JSValue> script_wrapper(JSValue::cast(message_obj->script()), this);
+    Handle<Script> script(Script::cast(script_wrapper->value()), this);
     int start_pos = message_obj->start_position();
     int end_pos = message_obj->end_position();
     return MessageLocation(script, start_pos, end_pos);
@@ -1749,11 +1749,6 @@ void Isolate::SetAbortOnUncaughtExceptionCallback(
 }
 
 
-Handle<Context> Isolate::native_context() {
-  return handle(context()->native_context());
-}
-
-
 Handle<Context> Isolate::GetCallingNativeContext() {
   JavaScriptFrameIterator it(this);
   if (debug_->in_debug_scope()) {
@@ -1770,7 +1765,7 @@ Handle<Context> Isolate::GetCallingNativeContext() {
   if (it.done()) return Handle<Context>::null();
   JavaScriptFrame* frame = it.frame();
   Context* context = Context::cast(frame->context());
-  return Handle<Context>(context->native_context());
+  return Handle<Context>(context->native_context(), this);
 }
 
 
@@ -1865,6 +1860,52 @@ void Isolate::ThreadDataTable::RemoveAllThreads(Isolate* isolate) {
 #define TRACE_ISOLATE(tag)
 #endif
 
+class VerboseAccountingAllocator : public base::AccountingAllocator {
+ public:
+  VerboseAccountingAllocator(Heap* heap, size_t sample_bytes)
+      : heap_(heap), last_memory_usage_(0), sample_bytes_(sample_bytes) {}
+
+  void* Allocate(size_t size) override {
+    void* memory = base::AccountingAllocator::Allocate(size);
+    if (memory) {
+      size_t current = GetCurrentMemoryUsage();
+      if (last_memory_usage_.Value() + sample_bytes_ < current) {
+        PrintJSON(current);
+        last_memory_usage_.SetValue(current);
+      }
+    }
+    return memory;
+  }
+
+  void Free(void* memory, size_t bytes) override {
+    base::AccountingAllocator::Free(memory, bytes);
+    size_t current = GetCurrentMemoryUsage();
+    if (current + sample_bytes_ < last_memory_usage_.Value()) {
+      PrintJSON(current);
+      last_memory_usage_.SetValue(current);
+    }
+  }
+
+ private:
+  void PrintJSON(size_t sample) {
+    // Note: Neither isolate, nor heap is locked, so be careful with accesses
+    // as the allocator is potentially used on a concurrent thread.
+    double time = heap_->isolate()->time_millis_since_init();
+    PrintF(
+        "{"
+        "\"type\": \"malloced\", "
+        "\"isolate\": \"%p\", "
+        "\"time\": %f, "
+        "\"value\": %zu"
+        "}\n",
+        reinterpret_cast<void*>(heap_->isolate()), time, sample);
+  }
+
+  Heap* heap_;
+  base::AtomicNumber<size_t> last_memory_usage_;
+  size_t sample_bytes_;
+};
+
 Isolate::Isolate(bool enable_serializer)
     : embedder_data_(),
       entry_stack_(NULL),
@@ -1890,8 +1931,11 @@ Isolate::Isolate(bool enable_serializer)
       descriptor_lookup_cache_(NULL),
       handle_scope_implementer_(NULL),
       unicode_cache_(NULL),
-      runtime_zone_(&allocator_),
-      interface_descriptor_zone_(&allocator_),
+      allocator_(FLAG_trace_gc_object_stats
+                     ? new VerboseAccountingAllocator(&heap_, 256 * KB)
+                     : new base::AccountingAllocator()),
+      runtime_zone_(new Zone(allocator_)),
+      interface_descriptor_zone_(new Zone(allocator_)),
       inner_pointer_to_code_cache_(NULL),
       global_handles_(NULL),
       eternal_handles_(NULL),
@@ -2088,7 +2132,7 @@ Isolate::~Isolate() {
   TRACE_ISOLATE(destructor);
 
   // Has to be called while counters_ are still alive
-  runtime_zone_.DeleteKeptSegment();
+  runtime_zone_->DeleteKeptSegment();
 
   // The entry stack must be empty when we get here.
   DCHECK(entry_stack_ == NULL || entry_stack_->previous_item == NULL);
@@ -2165,6 +2209,15 @@ Isolate::~Isolate() {
 
   delete cancelable_task_manager_;
   cancelable_task_manager_ = nullptr;
+
+  delete runtime_zone_;
+  runtime_zone_ = nullptr;
+
+  delete interface_descriptor_zone_;
+  interface_descriptor_zone_ = nullptr;
+
+  delete allocator_;
+  allocator_ = nullptr;
 
 #if USE_SIMULATOR
   Simulator::TearDown(simulator_i_cache_, simulator_redirection_);
@@ -2808,13 +2861,6 @@ void Isolate::RemoveBeforeCallEnteredCallback(
 }
 
 
-void Isolate::FireBeforeCallEnteredCallback() {
-  for (int i = 0; i < before_call_entered_callbacks_.length(); i++) {
-    before_call_entered_callbacks_.at(i)(reinterpret_cast<v8::Isolate*>(this));
-  }
-}
-
-
 void Isolate::AddCallCompletedCallback(CallCompletedCallback callback) {
   for (int i = 0; i < call_completed_callbacks_.length(); i++) {
     if (callback == call_completed_callbacks_.at(i)) return;
@@ -3026,7 +3072,7 @@ void Isolate::SetTailCallEliminationEnabled(bool enabled) {
 void Isolate::AddDetachedContext(Handle<Context> context) {
   HandleScope scope(this);
   Handle<WeakCell> cell = factory()->NewWeakCell(context);
-  Handle<FixedArray> detached_contexts(heap()->detached_contexts());
+  Handle<FixedArray> detached_contexts = factory()->detached_contexts();
   int length = detached_contexts->length();
   detached_contexts = factory()->CopyFixedArrayAndGrow(detached_contexts, 2);
   detached_contexts->set(length, Smi::FromInt(0));
@@ -3037,7 +3083,7 @@ void Isolate::AddDetachedContext(Handle<Context> context) {
 
 void Isolate::CheckDetachedContextsAfterGC() {
   HandleScope scope(this);
-  Handle<FixedArray> detached_contexts(heap()->detached_contexts());
+  Handle<FixedArray> detached_contexts = factory()->detached_contexts();
   int length = detached_contexts->length();
   if (length == 0) return;
   int new_length = 0;

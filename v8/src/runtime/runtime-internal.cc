@@ -4,6 +4,8 @@
 
 #include "src/runtime/runtime-utils.h"
 
+#include <memory>
+
 #include "src/arguments.h"
 #include "src/ast/prettyprinter.h"
 #include "src/bootstrapper.h"
@@ -431,7 +433,7 @@ Handle<String> RenderCallSite(Isolate* isolate, Handle<Object> object) {
   MessageLocation location;
   if (ComputeLocation(isolate, &location)) {
     Zone zone(isolate->allocator());
-    base::SmartPointer<ParseInfo> info(
+    std::unique_ptr<ParseInfo> info(
         location.function()->shared()->is_function()
             ? new ParseInfo(&zone, location.function())
             : new ParseInfo(&zone, location.script()));
@@ -581,6 +583,13 @@ RUNTIME_FUNCTION(Runtime_IsWasmObject) {
   bool is_wasm_object =
       object->IsJSObject() && wasm::IsWasmObject(JSObject::cast(object));
   return *isolate->factory()->ToBoolean(is_wasm_object);
+}
+
+RUNTIME_FUNCTION(Runtime_Typeof) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+  return *Object::TypeOf(isolate, object);
 }
 
 }  // namespace internal

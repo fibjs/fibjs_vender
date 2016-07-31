@@ -63,7 +63,11 @@ class EffectControlLinearizer {
                                                Node* control);
   ValueEffectControl LowerCheckBounds(Node* node, Node* frame_state,
                                       Node* effect, Node* control);
+  ValueEffectControl LowerCheckMaps(Node* node, Node* frame_state, Node* effect,
+                                    Node* control);
   ValueEffectControl LowerCheckNumber(Node* node, Node* frame_state,
+                                      Node* effect, Node* control);
+  ValueEffectControl LowerCheckString(Node* node, Node* frame_state,
                                       Node* effect, Node* control);
   ValueEffectControl LowerCheckIf(Node* node, Node* frame_state, Node* effect,
                                   Node* control);
@@ -99,6 +103,10 @@ class EffectControlLinearizer {
                                                   Node* control);
   ValueEffectControl LowerTruncateTaggedToWord32(Node* node, Node* effect,
                                                  Node* control);
+  ValueEffectControl LowerCheckedTruncateTaggedToWord32(Node* node,
+                                                        Node* frame_state,
+                                                        Node* effect,
+                                                        Node* control);
   ValueEffectControl LowerObjectIsCallable(Node* node, Node* effect,
                                            Node* control);
   ValueEffectControl LowerObjectIsNumber(Node* node, Node* effect,
@@ -110,6 +118,8 @@ class EffectControlLinearizer {
                                          Node* control);
   ValueEffectControl LowerObjectIsUndetectable(Node* node, Node* effect,
                                                Node* control);
+  ValueEffectControl LowerStringCharCodeAt(Node* node, Node* effect,
+                                           Node* control);
   ValueEffectControl LowerStringFromCharCode(Node* node, Node* effect,
                                              Node* control);
   ValueEffectControl LowerCheckFloat64Hole(Node* node, Node* frame_state,

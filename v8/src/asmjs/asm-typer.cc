@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <string>
 
 #include "src/v8.h"
@@ -313,7 +314,7 @@ AsmTyper::VariableInfo* AsmTyper::ImportLookup(Property* import) {
     return obj_info;
   }
 
-  base::SmartArrayPointer<char> aname = key->AsPropertyName()->ToCString();
+  std::unique_ptr<char[]> aname = key->AsPropertyName()->ToCString();
   ObjectTypeMap::iterator i = stdlib->find(std::string(aname.get()));
   if (i == stdlib->end()) {
     return nullptr;
@@ -2461,9 +2462,7 @@ AsmType* AsmTyper::ValidateHeapAccess(Property* heap,
         }
         return obj_type->StoreType();
       }
-      // TODO(jpp): it may be the case that, if type is not an Intish, we could
-      // fail here instead of letting the validator try using the "leniency"
-      // rule (i.e., allow unshifted indexes for heap views of 8-bit integers.
+      FAIL(key_as_binop, "Invalid heap access index.");
     }
   }
 

@@ -6,10 +6,10 @@
 
 #include "src/base/flags.h"
 #include "src/bootstrapper.h"
-#include "src/compilation-dependencies.h"
 #include "src/compiler/common-operator.h"
 #include "src/compiler/graph-reducer.h"
 #include "src/compiler/js-operator.h"
+#include "src/compiler/loop-variable-optimizer.h"
 #include "src/compiler/node-properties.h"
 #include "src/compiler/node.h"
 #include "src/compiler/operation-typer.h"
@@ -30,12 +30,9 @@ class Typer::Decorator final : public GraphDecorator {
   Typer* const typer_;
 };
 
-Typer::Typer(Isolate* isolate, Graph* graph, Flags flags,
-             CompilationDependencies* dependencies)
+Typer::Typer(Isolate* isolate, Graph* graph)
     : isolate_(isolate),
       graph_(graph),
-      flags_(flags),
-      dependencies_(dependencies),
       decorator_(nullptr),
       cache_(TypeCache::Get()),
       operation_typer_(isolate, zone()) {
@@ -77,8 +74,10 @@ Typer::~Typer() {
 
 class Typer::Visitor : public Reducer {
  public:
-  explicit Visitor(Typer* typer)
-      : typer_(typer), weakened_nodes_(typer->zone()) {}
+  explicit Visitor(Typer* typer, LoopVariableOptimizer* induction_vars)
+      : typer_(typer),
+        induction_vars_(induction_vars),
+        weakened_nodes_(typer->zone()) {}
 
   Reduction Reduce(Node* node) override {
     if (node->op()->ValueOutputCount() == 0) return NoChange();
@@ -189,6 +188,7 @@ class Typer::Visitor : public Reducer {
 
  private:
   Typer* typer_;
+  LoopVariableOptimizer* induction_vars_;
   ZoneSet<NodeId> weakened_nodes_;
 
 #define DECLARE_METHOD(x) inline Type* Type##x(Node* node);
@@ -218,10 +218,6 @@ class Typer::Visitor : public Reducer {
   Zone* zone() { return typer_->zone(); }
   Isolate* isolate() { return typer_->isolate(); }
   Graph* graph() { return typer_->graph(); }
-  Typer::Flags flags() const { return typer_->flags(); }
-  CompilationDependencies* dependencies() const {
-    return typer_->dependencies();
-  }
 
   void SetWeakened(NodeId node_id) { weakened_nodes_.insert(node_id); }
   bool IsWeakened(NodeId node_id) {
@@ -308,18 +304,23 @@ class Typer::Visitor : public Reducer {
   }
 };
 
+void Typer::Run() { Run(NodeVector(zone()), nullptr); }
 
-void Typer::Run() { Run(NodeVector(zone())); }
-
-
-void Typer::Run(const NodeVector& roots) {
-  Visitor visitor(this);
+void Typer::Run(const NodeVector& roots,
+                LoopVariableOptimizer* induction_vars) {
+  if (induction_vars != nullptr) {
+    induction_vars->ChangeToInductionVariablePhis();
+  }
+  Visitor visitor(this, induction_vars);
   GraphReducer graph_reducer(zone(), graph());
   graph_reducer.AddReducer(&visitor);
   for (Node* const root : roots) graph_reducer.ReduceNode(root);
   graph_reducer.ReduceGraph();
-}
 
+  if (induction_vars != nullptr) {
+    induction_vars->ChangeFromInductionVariablePhis();
+  }
+}
 
 void Typer::Decorator::Decorate(Node* node) {
   if (node->op()->ValueOutputCount() > 0) {
@@ -327,7 +328,7 @@ void Typer::Decorator::Decorate(Node* node) {
     // Other cases will generally require a proper fixpoint iteration with Run.
     bool is_typed = NodeProperties::IsTyped(node);
     if (is_typed || NodeProperties::AllValueInputsAreTyped(node)) {
-      Visitor typing(typer_);
+      Visitor typing(typer_, nullptr);
       Type* type = typing.TypeNode(node);
       if (is_typed) {
         type = Type::Intersect(type, NodeProperties::GetType(node),
@@ -736,7 +737,6 @@ Type* Typer::Visitor::TypeSelect(Node* node) {
   return Type::Union(Operand(node, 1), Operand(node, 2), zone());
 }
 
-
 Type* Typer::Visitor::TypePhi(Node* node) {
   int arity = node->op()->ValueInputCount();
   Type* type = Operand(node, 0);
@@ -746,6 +746,89 @@ Type* Typer::Visitor::TypePhi(Node* node) {
   return type;
 }
 
+Type* Typer::Visitor::TypeInductionVariablePhi(Node* node) {
+  int arity = NodeProperties::GetControlInput(node)->op()->ControlInputCount();
+  DCHECK_EQ(IrOpcode::kLoop, NodeProperties::GetControlInput(node)->opcode());
+  DCHECK_EQ(2, NodeProperties::GetControlInput(node)->InputCount());
+
+  Type* initial_type = Operand(node, 0);
+  Type* increment_type = Operand(node, 2);
+
+  // We only handle integer induction variables (otherwise ranges
+  // do not apply and we cannot do anything).
+  if (!initial_type->Is(typer_->cache_.kInteger) ||
+      !increment_type->Is(typer_->cache_.kInteger)) {
+    // Fallback to normal phi typing.
+    Type* type = Operand(node, 0);
+    for (int i = 1; i < arity; ++i) {
+      type = Type::Union(type, Operand(node, i), zone());
+    }
+    return type;
+  }
+  // If we do not have enough type information for the initial value or
+  // the increment, just return the initial value's type.
+  if (!initial_type->IsInhabited() || !increment_type->IsInhabited()) {
+    return initial_type;
+  }
+
+  // Now process the bounds.
+  auto res = induction_vars_->induction_variables().find(node->id());
+  DCHECK(res != induction_vars_->induction_variables().end());
+  InductionVariable* induction_var = res->second;
+
+  double min = -V8_INFINITY;
+  double max = V8_INFINITY;
+  if (increment_type->Min() >= 0) {
+    min = initial_type->Min();
+    for (auto bound : induction_var->upper_bounds()) {
+      Type* bound_type = TypeOrNone(bound.bound);
+      // If the type is not an integer, just skip the bound.
+      if (!bound_type->Is(typer_->cache_.kInteger)) continue;
+      // If the type is not inhabited, then we can take the initial value.
+      if (!bound_type->IsInhabited()) {
+        max = initial_type->Max();
+        break;
+      }
+      double bound_max = bound_type->Max();
+      if (bound.kind == InductionVariable::kStrict) {
+        bound_max -= 1;
+      }
+      max = std::min(max, bound_max + increment_type->Max());
+    }
+    // The upper bound must be at least the initial value's upper bound.
+    max = std::max(max, initial_type->Max());
+  } else if (increment_type->Max() <= 0) {
+    max = initial_type->Max();
+    for (auto bound : induction_var->lower_bounds()) {
+      Type* bound_type = TypeOrNone(bound.bound);
+      // If the type is not an integer, just skip the bound.
+      if (!bound_type->Is(typer_->cache_.kInteger)) continue;
+      // If the type is not inhabited, then we can take the initial value.
+      if (!bound_type->IsInhabited()) {
+        min = initial_type->Min();
+        break;
+      }
+      double bound_min = bound_type->Min();
+      if (bound.kind == InductionVariable::kStrict) {
+        bound_min += 1;
+      }
+      min = std::max(min, bound_min + increment_type->Min());
+    }
+    // The lower bound must be at most the initial value's lower bound.
+    min = std::min(min, initial_type->Min());
+  } else {
+    // Shortcut: If the increment can be both positive and negative,
+    // the variable can go arbitrarily far, so just return integer.
+    return typer_->cache_.kInteger;
+  }
+  if (FLAG_trace_turbo_loop) {
+    OFStream os(stdout);
+    os << "Loop (" << NodeProperties::GetControlInput(node)->id()
+       << ") variable bounds for phi " << node->id() << ": (" << min << ", "
+       << max << ")\n";
+  }
+  return Type::Range(min, max, typer_->zone());
+}
 
 Type* Typer::Visitor::TypeEffectPhi(Node* node) {
   UNREACHABLE();
@@ -810,9 +893,7 @@ Type* Typer::Visitor::TypeProjection(Node* node) {
   return Type::Any();
 }
 
-
-Type* Typer::Visitor::TypeDead(Node* node) { return Type::Any(); }
-
+Type* Typer::Visitor::TypeDead(Node* node) { return Type::None(); }
 
 // JS comparison operators.
 
@@ -1616,6 +1697,14 @@ Type* Typer::Visitor::TypeSpeculativeNumberShiftLeft(Node* node) {
   return Type::Signed32();
 }
 
+Type* Typer::Visitor::TypeSpeculativeNumberShiftRight(Node* node) {
+  return Type::Signed32();
+}
+
+Type* Typer::Visitor::TypeSpeculativeNumberShiftRightLogical(Node* node) {
+  return Type::Unsigned32();
+}
+
 Type* Typer::Visitor::TypeNumberMultiply(Node* node) { return Type::Number(); }
 
 Type* Typer::Visitor::TypeNumberDivide(Node* node) { return Type::Number(); }
@@ -1794,6 +1883,11 @@ Type* Typer::Visitor::StringFromCharCodeTyper(Type* type, Typer* t) {
   return Type::String();
 }
 
+Type* Typer::Visitor::TypeStringCharCodeAt(Node* node) {
+  // TODO(bmeurer): We could do better here based on inputs.
+  return Type::Range(0, kMaxUInt16, zone());
+}
+
 Type* Typer::Visitor::TypeStringFromCharCode(Node* node) {
   return TypeUnaryOp(node, StringFromCharCodeTyper);
 }
@@ -1803,9 +1897,19 @@ Type* Typer::Visitor::TypeCheckBounds(Node* node) {
   return Type::Unsigned31();
 }
 
+Type* Typer::Visitor::TypeCheckMaps(Node* node) {
+  UNREACHABLE();
+  return nullptr;
+}
+
 Type* Typer::Visitor::TypeCheckNumber(Node* node) {
   Type* arg = Operand(node, 0);
   return Type::Intersect(arg, Type::Number(), zone());
+}
+
+Type* Typer::Visitor::TypeCheckString(Node* node) {
+  Type* arg = Operand(node, 0);
+  return Type::Intersect(arg, Type::String(), zone());
 }
 
 Type* Typer::Visitor::TypeCheckIf(Node* node) {
@@ -1848,56 +1952,9 @@ Type* Typer::Visitor::TypeCheckTaggedHole(Node* node) {
 
 Type* Typer::Visitor::TypeAllocate(Node* node) { return Type::TaggedPointer(); }
 
-
-namespace {
-
-MaybeHandle<Map> GetStableMapFromObjectType(Type* object_type) {
-  if (object_type->IsConstant() &&
-      object_type->AsConstant()->Value()->IsHeapObject()) {
-    Handle<Map> object_map(
-        Handle<HeapObject>::cast(object_type->AsConstant()->Value())->map());
-    if (object_map->is_stable()) return object_map;
-  } else if (object_type->IsClass()) {
-    Handle<Map> object_map = object_type->AsClass()->Map();
-    if (object_map->is_stable()) return object_map;
-  }
-  return MaybeHandle<Map>();
-}
-
-}  // namespace
-
-
 Type* Typer::Visitor::TypeLoadField(Node* node) {
-  FieldAccess const& access = FieldAccessOf(node->op());
-  if (access.base_is_tagged == kTaggedBase &&
-      access.offset == HeapObject::kMapOffset) {
-    // The type of LoadField[Map](o) is Constant(map) if map is stable and
-    // either
-    //  (a) o has type Constant(object) and map == object->map, or
-    //  (b) o has type Class(map),
-    // and either
-    //  (1) map cannot transition further, or
-    //  (2) deoptimization is enabled and we can add a code dependency on the
-    //      stability of map (to guard the Constant type information).
-    Type* const object = Operand(node, 0);
-    if (object->Is(Type::None())) return Type::None();
-    Handle<Map> object_map;
-    if (GetStableMapFromObjectType(object).ToHandle(&object_map)) {
-      if (object_map->CanTransition()) {
-        if (flags() & kDeoptimizationEnabled) {
-          dependencies()->AssumeMapStable(object_map);
-        } else {
-          return access.type;
-        }
-      }
-      Type* object_map_type = Type::Constant(object_map, zone());
-      DCHECK(object_map_type->Is(access.type));
-      return object_map_type;
-    }
-  }
-  return access.type;
+  return FieldAccessOf(node->op()).type;
 }
-
 
 Type* Typer::Visitor::TypeLoadBuffer(Node* node) {
   // TODO(bmeurer): This typing is not yet correct. Since we can still access
@@ -2013,6 +2070,9 @@ Type* Typer::Visitor::TypeWord32ReverseBits(Node* node) {
   return Type::Integral32();
 }
 
+Type* Typer::Visitor::TypeWord32ReverseBytes(Node* node) {
+  return Type::Integral32();
+}
 
 Type* Typer::Visitor::TypeWord32Popcnt(Node* node) {
   return Type::Integral32();
@@ -2050,6 +2110,9 @@ Type* Typer::Visitor::TypeWord64ReverseBits(Node* node) {
   return Type::Internal();
 }
 
+Type* Typer::Visitor::TypeWord64ReverseBytes(Node* node) {
+  return Type::Internal();
+}
 
 Type* Typer::Visitor::TypeWord64Popcnt(Node* node) { return Type::Internal(); }
 
@@ -2230,16 +2293,35 @@ Type* Typer::Visitor::TypeChangeInt32ToInt64(Node* node) {
   return Type::Internal();
 }
 
-
 Type* Typer::Visitor::TypeChangeUint32ToFloat64(Node* node) {
   return Type::Intersect(Type::Unsigned32(), Type::UntaggedFloat64(), zone());
 }
-
 
 Type* Typer::Visitor::TypeChangeUint32ToUint64(Node* node) {
   return Type::Internal();
 }
 
+Type* Typer::Visitor::TypeImpossibleToWord32(Node* node) {
+  return Type::None();
+}
+
+Type* Typer::Visitor::TypeImpossibleToWord64(Node* node) {
+  return Type::None();
+}
+
+Type* Typer::Visitor::TypeImpossibleToFloat32(Node* node) {
+  return Type::None();
+}
+
+Type* Typer::Visitor::TypeImpossibleToFloat64(Node* node) {
+  return Type::None();
+}
+
+Type* Typer::Visitor::TypeImpossibleToTagged(Node* node) {
+  return Type::None();
+}
+
+Type* Typer::Visitor::TypeImpossibleToBit(Node* node) { return Type::None(); }
 
 Type* Typer::Visitor::TypeTruncateFloat64ToFloat32(Node* node) {
   return Type::Intersect(Type::Number(), Type::UntaggedFloat32(), zone());
@@ -2249,7 +2331,6 @@ Type* Typer::Visitor::TypeTruncateFloat64ToWord32(Node* node) {
   return Type::Intersect(Type::Integral32(), Type::UntaggedIntegral32(),
                          zone());
 }
-
 
 Type* Typer::Visitor::TypeTruncateInt64ToInt32(Node* node) {
   return Type::Intersect(Type::Signed32(), Type::UntaggedIntegral32(), zone());

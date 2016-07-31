@@ -6,7 +6,6 @@
 #define V8_INTERPRETER_INTERPRETER_ASSEMBLER_H_
 
 #include "src/allocation.h"
-#include "src/base/smart-pointers.h"
 #include "src/builtins/builtins.h"
 #include "src/code-stub-assembler.h"
 #include "src/frames.h"
@@ -145,6 +144,9 @@ class InterpreterAssembler : public CodeStubAssembler {
 
   // Updates the profiler interrupt budget for a return.
   void UpdateInterruptBudgetOnReturn();
+
+  // Returns the OSR nesting level from the bytecode header.
+  compiler::Node* LoadOSRNestingLevel();
 
   // Dispatch to the bytecode.
   compiler::Node* Dispatch();

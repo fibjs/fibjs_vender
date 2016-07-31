@@ -38,10 +38,9 @@ InterpreterAssembler::InterpreterAssembler(Isolate* isolate, Zone* zone,
       made_call_(false),
       disable_stack_check_across_call_(false),
       stack_pointer_before_call_(nullptr) {
-  accumulator_.Bind(
-      Parameter(InterpreterDispatchDescriptor::kAccumulatorParameter));
+  accumulator_.Bind(Parameter(InterpreterDispatchDescriptor::kAccumulator));
   bytecode_offset_.Bind(
-      Parameter(InterpreterDispatchDescriptor::kBytecodeOffsetParameter));
+      Parameter(InterpreterDispatchDescriptor::kBytecodeOffset));
   if (FLAG_trace_ignition) {
     TraceBytecode(Runtime::kInterpreterTraceBytecodeEntry);
   }
@@ -95,12 +94,12 @@ Node* InterpreterAssembler::BytecodeArrayTaggedPointer() {
     // the debugger has swapped us to the patched debugger bytecode array.
     return LoadRegister(Register::bytecode_array());
   } else {
-    return Parameter(InterpreterDispatchDescriptor::kBytecodeArrayParameter);
+    return Parameter(InterpreterDispatchDescriptor::kBytecodeArray);
   }
 }
 
 Node* InterpreterAssembler::DispatchTableRawPointer() {
-  return Parameter(InterpreterDispatchDescriptor::kDispatchTableParameter);
+  return Parameter(InterpreterDispatchDescriptor::kDispatchTable);
 }
 
 Node* InterpreterAssembler::RegisterLocation(Node* reg_index) {
@@ -549,10 +548,8 @@ Node* InterpreterAssembler::CallJSWithFeedback(Node* function, Node* context,
       StoreFixedArrayElement(type_feedback_vector, call_count_slot,
                              SmiTag(Int32Constant(1)), SKIP_WRITE_BARRIER);
 
-      CreateWeakCellStub weak_cell_stub(isolate());
-      CallStub(weak_cell_stub.GetCallInterfaceDescriptor(),
-               HeapConstant(weak_cell_stub.GetCode()), context,
-               type_feedback_vector, SmiTag(slot_id), function);
+      CreateWeakCellInFeedbackVector(type_feedback_vector, SmiTag(slot_id),
+                                     function);
 
       // Call using call function builtin.
       Callable callable = CodeFactory::InterpreterPushArgsAndCall(
@@ -848,6 +845,12 @@ Node* InterpreterAssembler::StackCheckTriggeredInterrupt() {
   return UintPtrLessThan(sp, stack_limit);
 }
 
+Node* InterpreterAssembler::LoadOSRNestingLevel() {
+  Node* offset =
+      IntPtrConstant(BytecodeArray::kOSRNestingLevelOffset - kHeapObjectTag);
+  return Load(MachineType::Int8(), BytecodeArrayTaggedPointer(), offset);
+}
+
 void InterpreterAssembler::Abort(BailoutReason bailout_reason) {
   disable_stack_check_across_call_ = true;
   Node* abort_id = SmiTag(Int32Constant(bailout_reason));
@@ -905,10 +908,10 @@ void InterpreterAssembler::TraceBytecodeDispatch(Node* target_bytecode) {
 bool InterpreterAssembler::TargetSupportsUnalignedAccess() {
 #if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64
   return false;
-#elif V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_PPC
+#elif V8_TARGET_ARCH_PPC
   return CpuFeatures::IsSupported(UNALIGNED_ACCESSES);
 #elif V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_X87 || \
-    V8_TARGET_ARCH_S390
+    V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64
   return true;
 #else
 #error "Unknown Architecture"

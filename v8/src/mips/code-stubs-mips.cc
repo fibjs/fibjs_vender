@@ -863,11 +863,11 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 
   // double_exponent may not contain the exponent value if the input was a
   // smi.  We set it with exponent value before bailing out.
+  __ bind(&bail_out);
   __ mtc1(exponent, single_scratch);
   __ cvt_d_w(double_exponent, single_scratch);
 
   // Returning or bailing out.
-  __ bind(&bail_out);
   __ push(ra);
   {
     AllowExternalCallThatCantCauseGC scope(masm);
@@ -1770,7 +1770,8 @@ static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub) {
   const RegList kSavedRegs = 1 << 4 |  // a0
                              1 << 5 |  // a1
                              1 << 6 |  // a2
-                             1 << 7;   // a3
+                             1 << 7 |  // a3
+                             1 << cp.code();
 
   // Number-of-arguments register must be smi-tagged to call out.
   __ SmiTag(a0);
@@ -2068,9 +2069,9 @@ void CallICStub::Generate(MacroAssembler* masm) {
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     CreateWeakCellStub create_stub(masm->isolate());
-    __ Push(a1);
+    __ Push(cp, a1);
     __ CallStub(&create_stub);
-    __ Pop(a1);
+    __ Pop(cp, a1);
   }
 
   __ Branch(&call_function);

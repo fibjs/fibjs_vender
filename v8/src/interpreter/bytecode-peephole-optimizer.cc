@@ -221,18 +221,6 @@ void BytecodePeepholeOptimizer::ElideCurrentIfOperand0MatchesAction(
   }
 }
 
-void BytecodePeepholeOptimizer::ElideCurrentIfLoadingNameConstantAction(
-    BytecodeNode* const node, const PeepholeActionAndData* action_data) {
-  DCHECK_EQ(last()->bytecode(), Bytecode::kLdaConstant);
-  DCHECK(!Bytecodes::IsJump(node->bytecode()));
-
-  if (GetConstantForIndexOperand(last(), 0)->IsName()) {
-    ElideCurrentAction(node);
-  } else {
-    DefaultAction(node);
-  }
-}
-
 void BytecodePeepholeOptimizer::ElideLastAction(
     BytecodeNode* const node, const PeepholeActionAndData* action_data) {
   DCHECK(LastIsValid());
@@ -256,7 +244,7 @@ void BytecodePeepholeOptimizer::ChangeBytecodeAction(
   DCHECK(LastIsValid());
   DCHECK(!Bytecodes::IsJump(node->bytecode()));
 
-  node->set_bytecode(action_data->bytecode);
+  node->replace_bytecode(action_data->bytecode);
   DefaultAction(node);
 }
 
@@ -301,6 +289,17 @@ void BytecodePeepholeOptimizer::
   }
 }
 
+void BytecodePeepholeOptimizer::TransformToStarIfLoadingNameConstantAction(
+    BytecodeNode* const node, const PeepholeActionAndData* action_data) {
+  DCHECK_EQ(last()->bytecode(), Bytecode::kLdaConstant);
+  DCHECK(!Bytecodes::IsJump(node->bytecode()));
+
+  if (GetConstantForIndexOperand(last(), 0)->IsName()) {
+    node->replace_bytecode(Bytecode::kStar);
+  }
+  DefaultAction(node);
+}
+
 void BytecodePeepholeOptimizer::DefaultJumpAction(
     BytecodeNode* const node, const PeepholeActionAndData* action_data) {
   DCHECK(LastIsValid());
@@ -330,12 +329,11 @@ void BytecodePeepholeOptimizer::ElideLastBeforeJumpAction(
     BytecodeNode* const node, const PeepholeActionAndData* action_data) {
   DCHECK(LastIsValid());
   DCHECK(Bytecodes::IsJump(node->bytecode()));
-  DCHECK(CanElideLastBasedOnSourcePosition(node));
 
-  if (!node->source_info().is_valid()) {
-    node->source_info().Clone(last()->source_info());
-  } else {
+  if (!CanElideLastBasedOnSourcePosition(node)) {
     next_stage()->Write(last());
+  } else if (!node->source_info().is_valid()) {
+    node->source_info().Clone(last()->source_info());
   }
   InvalidateLast();
 }

@@ -169,6 +169,9 @@
     <Filter Include="Source Files\libplatform">
       <UniqueIdentifier>{d55c839e-d9e9-0541-edc0-1b7cf01a3405}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\libplatform\tracing">
+      <UniqueIdentifier>{fd512d84-e1bc-7d6f-b891-e00612bd8233}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\libsampler">
       <UniqueIdentifier>{f2a6d3b6-5280-3743-7fe3-95515bcbd0f9}</UniqueIdentifier>
     </Filter>
@@ -235,6 +238,9 @@
       <Filter>Header Files\base\trace_event\common</Filter>
     </ClInclude>
     <ClInclude Include="include\libplatform\libplatform.h">
+      <Filter>Header Files\libplatform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\libplatform\v8-tracing.h">
       <Filter>Header Files\libplatform</Filter>
     </ClInclude>
     <ClInclude Include="include\v8-debug.h">
@@ -315,13 +321,13 @@
     <ClInclude Include="src\ast\ast-expression-rewriter.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast\ast-expression-visitor.h">
-      <Filter>Source Files\ast</Filter>
-    </ClInclude>
     <ClInclude Include="src\ast\ast-literal-reindexer.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\ast-numbering.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\ast-traversal-visitor.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\ast-type-bounds.h">
@@ -382,9 +388,6 @@
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\atomicops_internals_mips_gcc.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_portable.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\atomicops_internals_ppc_gcc.h">
@@ -481,9 +484,6 @@
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\safe_math_impl.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\smart-pointers.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\sys-info.h">
@@ -748,6 +748,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\loop-peeling.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\loop-variable-optimizer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\machine-operator-reducer.h">
@@ -1422,6 +1425,12 @@
     <ClInclude Include="src\libplatform\task-queue.h">
       <Filter>Source Files\libplatform</Filter>
     </ClInclude>
+    <ClInclude Include="src\libplatform\tracing\trace-buffer.h">
+      <Filter>Source Files\libplatform\tracing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\libplatform\tracing\trace-writer.h">
+      <Filter>Source Files\libplatform\tracing</Filter>
+    </ClInclude>
     <ClInclude Include="src\libplatform\worker-thread.h">
       <Filter>Source Files\libplatform</Filter>
     </ClInclude>
@@ -1973,9 +1982,6 @@
     <ClCompile Include="src\ast\ast-expression-rewriter.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast\ast-expression-visitor.cc">
-      <Filter>Source Files\ast</Filter>
-    </ClCompile>
     <ClCompile Include="src\ast\ast-literal-reindexer.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
@@ -2099,6 +2105,9 @@
     <ClCompile Include="src\bootstrapper.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-api.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-array.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2108,7 +2117,13 @@
     <ClCompile Include="src\builtins\builtins-boolean.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-call.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-callsite.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-conversion.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-dataview.cc">
@@ -2117,16 +2132,28 @@
     <ClCompile Include="src\builtins\builtins-date.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-debug.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-error.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-function.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-generator.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-global.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-handler.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-internal.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-interpreter.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-json.cc">
@@ -2397,6 +2424,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\loop-peeling.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\loop-variable-optimizer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\machine-operator-reducer.cc">
@@ -3115,6 +3145,21 @@
     </ClCompile>
     <ClCompile Include="src\libplatform\task-queue.cc">
       <Filter>Source Files\libplatform</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libplatform\tracing\trace-buffer.cc">
+      <Filter>Source Files\libplatform\tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libplatform\tracing\trace-config.cc">
+      <Filter>Source Files\libplatform\tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libplatform\tracing\trace-object.cc">
+      <Filter>Source Files\libplatform\tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libplatform\tracing\trace-writer.cc">
+      <Filter>Source Files\libplatform\tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\libplatform\tracing\tracing-controller.cc">
+      <Filter>Source Files\libplatform\tracing</Filter>
     </ClCompile>
     <ClCompile Include="src\libplatform\worker-thread.cc">
       <Filter>Source Files\libplatform</Filter>

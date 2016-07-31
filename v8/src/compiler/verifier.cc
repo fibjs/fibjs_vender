@@ -386,6 +386,11 @@ void Verifier::Visitor::Check(Node* node) {
       */
       break;
     }
+    case IrOpcode::kInductionVariablePhi: {
+      // This is only a temporary node for the typer.
+      UNREACHABLE();
+      break;
+    }
     case IrOpcode::kEffectPhi: {
       // EffectPhi input count matches parent control node.
       CHECK_EQ(0, value_count);
@@ -716,12 +721,16 @@ void Verifier::Visitor::Check(Node* node) {
       CheckUpperIs(node, Type::Signed32());
       break;
     case IrOpcode::kSpeculativeNumberShiftLeft:
+    case IrOpcode::kSpeculativeNumberShiftRight:
       CheckUpperIs(node, Type::Signed32());
       break;
     case IrOpcode::kNumberShiftRightLogical:
       // (Unsigned32, Unsigned32) -> Unsigned32
       CheckValueInputIs(node, 0, Type::Unsigned32());
       CheckValueInputIs(node, 1, Type::Unsigned32());
+      CheckUpperIs(node, Type::Unsigned32());
+      break;
+    case IrOpcode::kSpeculativeNumberShiftRightLogical:
       CheckUpperIs(node, Type::Unsigned32());
       break;
     case IrOpcode::kNumberImul:
@@ -807,6 +816,12 @@ void Verifier::Visitor::Check(Node* node) {
       CheckValueInputIs(node, 0, Type::String());
       CheckValueInputIs(node, 1, Type::String());
       CheckUpperIs(node, Type::Boolean());
+      break;
+    case IrOpcode::kStringCharCodeAt:
+      // (String, Unsigned32) -> UnsignedSmall
+      CheckValueInputIs(node, 0, Type::String());
+      CheckValueInputIs(node, 1, Type::Unsigned32());
+      CheckUpperIs(node, Type::UnsignedSmall());
       break;
     case IrOpcode::kStringFromCharCode:
       // Number -> String
@@ -948,15 +963,34 @@ void Verifier::Visitor::Check(Node* node) {
       // CheckUpperIs(node, to));
       break;
     }
+    case IrOpcode::kImpossibleToWord32:
+    case IrOpcode::kImpossibleToWord64:
+    case IrOpcode::kImpossibleToFloat32:
+    case IrOpcode::kImpossibleToFloat64:
+    case IrOpcode::kImpossibleToTagged:
+    case IrOpcode::kImpossibleToBit:
+      break;
 
     case IrOpcode::kCheckBounds:
       CheckValueInputIs(node, 0, Type::Any());
       CheckValueInputIs(node, 1, Type::Unsigned31());
       CheckUpperIs(node, Type::Unsigned31());
       break;
+    case IrOpcode::kCheckMaps:
+      // (Any, Internal, ..., Internal) -> Any
+      CheckValueInputIs(node, 0, Type::Any());
+      for (int i = 1; i < node->op()->ValueInputCount(); ++i) {
+        CheckValueInputIs(node, i, Type::Internal());
+      }
+      CheckNotTyped(node);
+      break;
     case IrOpcode::kCheckNumber:
       CheckValueInputIs(node, 0, Type::Any());
       CheckUpperIs(node, Type::Number());
+      break;
+    case IrOpcode::kCheckString:
+      CheckValueInputIs(node, 0, Type::Any());
+      CheckUpperIs(node, Type::String());
       break;
     case IrOpcode::kCheckIf:
       CheckValueInputIs(node, 0, Type::Boolean());
@@ -982,6 +1016,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kCheckedFloat64ToInt32:
     case IrOpcode::kCheckedTaggedToInt32:
     case IrOpcode::kCheckedTaggedToFloat64:
+    case IrOpcode::kCheckedTruncateTaggedToWord32:
       break;
 
     case IrOpcode::kCheckFloat64Hole:
@@ -1044,6 +1079,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kWord32Clz:
     case IrOpcode::kWord32Ctz:
     case IrOpcode::kWord32ReverseBits:
+    case IrOpcode::kWord32ReverseBytes:
     case IrOpcode::kWord32Popcnt:
     case IrOpcode::kWord64And:
     case IrOpcode::kWord64Or:
@@ -1056,6 +1092,7 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kWord64Popcnt:
     case IrOpcode::kWord64Ctz:
     case IrOpcode::kWord64ReverseBits:
+    case IrOpcode::kWord64ReverseBytes:
     case IrOpcode::kWord64Equal:
     case IrOpcode::kInt32Add:
     case IrOpcode::kInt32AddWithOverflow:

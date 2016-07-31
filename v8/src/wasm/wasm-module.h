@@ -5,6 +5,8 @@
 #ifndef V8_WASM_MODULE_H_
 #define V8_WASM_MODULE_H_
 
+#include <memory>
+
 #include "src/api.h"
 #include "src/handles.h"
 #include "src/wasm/wasm-opcodes.h"
@@ -41,7 +43,6 @@ const uint8_t kWasmFunctionTypeForm = 0x40;
   F(FunctionBodies, 8, "code")         \
   F(DataSegments, 9, "data")           \
   F(Names, 10, "name")                 \
-  F(FunctionTablePad, 11, "table_pad") \
   F(Globals, 0, "global")              \
   F(End, 0, "end")
 
@@ -59,8 +60,6 @@ const uint8_t kWasmFunctionTypeForm = 0x40;
   8, 'f', 'u', 'n', 'c', 't', 'i', 'o', 'n'
 #define WASM_SECTION_FUNCTION_BODIES 4, 'c', 'o', 'd', 'e'
 #define WASM_SECTION_NAMES 4, 'n', 'a', 'm', 'e'
-#define WASM_SECTION_FUNCTION_TABLE_PAD \
-  9, 't', 'a', 'b', 'l', 'e', '_', 'p', 'a', 'd'
 
 // Constants for the above section headers' size (LEB128 + characters).
 #define WASM_SECTION_MEMORY_SIZE ((size_t)7)
@@ -75,7 +74,6 @@ const uint8_t kWasmFunctionTypeForm = 0x40;
 #define WASM_SECTION_FUNCTION_SIGNATURES_SIZE ((size_t)9)
 #define WASM_SECTION_FUNCTION_BODIES_SIZE ((size_t)5)
 #define WASM_SECTION_NAMES_SIZE ((size_t)5)
-#define WASM_SECTION_FUNCTION_TABLE_PAD_SIZE ((size_t)10)
 
 class WasmDebugInfo;
 
@@ -151,6 +149,13 @@ struct WasmDataSegment {
   bool init;               // true if loaded upon instantiation.
 };
 
+// Static representation of a wasm indirect call table.
+struct WasmIndirectFunctionTable {
+  uint32_t size;                 // initial table size.
+  uint32_t max_size;             // maximum table size.
+  std::vector<uint16_t> values;  // function table.
+};
+
 enum ModuleOrigin { kWasmOrigin, kAsmJsOrigin };
 
 // Static representation of a module.
@@ -173,12 +178,10 @@ struct WasmModule {
 
   std::vector<WasmGlobal> globals;             // globals in this module.
   uint32_t globals_size;                       // size of globals table.
-  uint32_t indirect_table_size;                // size of indirect function
-                                               //     table (includes padding).
   std::vector<FunctionSig*> signatures;        // signatures in this module.
   std::vector<WasmFunction> functions;         // functions in this module.
   std::vector<WasmDataSegment> data_segments;  // data segments in this module.
-  std::vector<uint16_t> function_table;        // function table.
+  std::vector<WasmIndirectFunctionTable> function_tables;  // function tables.
   std::vector<WasmImport> import_table;        // import table.
   std::vector<WasmExport> export_table;        // export table.
   // We store the semaphore here to extend its lifetime. In <libc-2.21, which we
@@ -188,7 +191,7 @@ struct WasmModule {
   // invalid-semaphore error in the compilation tasks.
   // TODO(wasm): Move this semaphore back to CompileInParallel when the try bots
   // switch to libc-2.21 or higher.
-  base::SmartPointer<base::Semaphore> pending_tasks;
+  std::unique_ptr<base::Semaphore> pending_tasks;
 
   WasmModule() : WasmModule(nullptr) {}
   explicit WasmModule(byte* module_start);
@@ -236,13 +239,8 @@ struct WasmModule {
   MaybeHandle<FixedArray> CompileFunctions(Isolate* isolate,
                                            ErrorThrower* thrower) const;
 
-  uint32_t FunctionTableSize() const {
-    if (indirect_table_size > 0) {
-      return indirect_table_size;
-    }
-    DCHECK_LE(function_table.size(), UINT32_MAX);
-    return static_cast<uint32_t>(function_table.size());
-  }
+ private:
+  DISALLOW_COPY_AND_ASSIGN(WasmModule);
 };
 
 // An instantiated WASM module, including memory, function table, etc.
@@ -253,7 +251,7 @@ struct WasmModuleInstance {
   Handle<Context> context;               // JavaScript native context.
   Handle<JSArrayBuffer> mem_buffer;      // Handle to array buffer of memory.
   Handle<JSArrayBuffer> globals_buffer;  // Handle to array buffer of globals.
-  Handle<FixedArray> function_table;     // indirect function table.
+  std::vector<Handle<FixedArray>> function_tables;  // indirect function tables.
   std::vector<Handle<Code>> function_code;  // code objects for each function.
   std::vector<Handle<Code>> import_code;    // code objects for each import.
   // -- raw memory ------------------------------------------------------------
@@ -264,6 +262,7 @@ struct WasmModuleInstance {
 
   explicit WasmModuleInstance(const WasmModule* m)
       : module(m),
+        function_tables(m->function_tables.size()),
         function_code(m->functions.size()),
         import_code(m->import_table.size()),
         mem_start(nullptr),
@@ -281,17 +280,20 @@ struct ModuleEnv {
   // reloc infos.
   std::vector<Handle<Code>> placeholders;
 
-  bool IsValidGlobal(uint32_t index) {
+  bool IsValidGlobal(uint32_t index) const {
     return module && index < module->globals.size();
   }
   bool IsValidFunction(uint32_t index) const {
     return module && index < module->functions.size();
   }
-  bool IsValidSignature(uint32_t index) {
+  bool IsValidSignature(uint32_t index) const {
     return module && index < module->signatures.size();
   }
-  bool IsValidImport(uint32_t index) {
+  bool IsValidImport(uint32_t index) const {
     return module && index < module->import_table.size();
+  }
+  bool IsValidTable(uint32_t index) const {
+    return module && index < module->function_tables.size();
   }
   LocalType GetGlobalType(uint32_t index) {
     DCHECK(IsValidGlobal(index));
@@ -309,8 +311,9 @@ struct ModuleEnv {
     DCHECK(IsValidSignature(index));
     return module->signatures[index];
   }
-  uint32_t FunctionTableSize() const {
-    return module->FunctionTableSize();
+  const WasmIndirectFunctionTable* GetTable(uint32_t index) const {
+    DCHECK(IsValidTable(index));
+    return &module->function_tables[index];
   }
 
   bool asm_js() { return origin == kAsmJsOrigin; }
@@ -381,6 +384,16 @@ bool IsWasmObject(Object* object);
 bool UpdateWasmModuleMemory(Handle<JSObject> object, Address old_start,
                             Address new_start, uint32_t old_size,
                             uint32_t new_size);
+
+// Constructs a single function table as a FixedArray of double size,
+// populating it with function signature indices and function indices.
+Handle<FixedArray> BuildFunctionTable(Isolate* isolate, uint32_t index,
+                                      const WasmModule* module);
+
+// Populates a function table by replacing function indices with handles to
+// the compiled code.
+void PopulateFunctionTable(Handle<FixedArray> table, uint32_t table_size,
+                           const std::vector<Handle<Code>>* code_table);
 
 namespace testing {
 

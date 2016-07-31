@@ -453,15 +453,13 @@ void FullCodeGenerator::EmitReturnSequence() {
     // Make sure that the constant pool is not emitted inside of the return
     // sequence.
     { Assembler::BlockTrampolinePoolScope block_trampoline_pool(masm_);
-      // Here we use masm_-> instead of the __ macro to avoid the code coverage
-      // tool from instrumenting as we rely on the code size here.
       int32_t arg_count = info_->scope()->num_parameters() + 1;
       int32_t sp_delta = arg_count * kPointerSize;
       SetReturnPosition(literal());
-      masm_->mov(sp, fp);
-      masm_->MultiPop(static_cast<RegList>(fp.bit() | ra.bit()));
-      masm_->Daddu(sp, sp, Operand(sp_delta));
-      masm_->Jump(ra);
+      __ mov(sp, fp);
+      __ MultiPop(static_cast<RegList>(fp.bit() | ra.bit()));
+      __ Daddu(sp, sp, Operand(sp_delta));
+      __ Jump(ra);
     }
   }
 }
@@ -3209,25 +3207,23 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
         VisitForStackValue(prop->obj()->AsSuperPropertyReference()->this_var());
         VisitForAccumulatorValue(
             prop->obj()->AsSuperPropertyReference()->home_object());
-        PushOperand(result_register());
         const Register scratch = a1;
-        __ ld(scratch, MemOperand(sp, kPointerSize));
-        PushOperands(scratch, result_register());
+        __ ld(scratch, MemOperand(sp, 0));  // this
+        PushOperands(result_register(), scratch, result_register());
         EmitNamedSuperPropertyLoad(prop);
         break;
       }
 
       case KEYED_SUPER_PROPERTY: {
         VisitForStackValue(prop->obj()->AsSuperPropertyReference()->this_var());
-        VisitForAccumulatorValue(
+        VisitForStackValue(
             prop->obj()->AsSuperPropertyReference()->home_object());
-        const Register scratch = a1;
-        const Register scratch1 = a4;
-        __ Move(scratch, result_register());
         VisitForAccumulatorValue(prop->key());
-        PushOperands(scratch, result_register());
-        __ ld(scratch1, MemOperand(sp, 2 * kPointerSize));
-        PushOperands(scratch1, scratch, result_register());
+        const Register scratch1 = a1;
+        const Register scratch2 = a4;
+        __ ld(scratch1, MemOperand(sp, 1 * kPointerSize));  // this
+        __ ld(scratch2, MemOperand(sp, 0 * kPointerSize));  // home object
+        PushOperands(result_register(), scratch1, scratch2, result_register());
         EmitKeyedSuperPropertyLoad(prop);
         break;
       }

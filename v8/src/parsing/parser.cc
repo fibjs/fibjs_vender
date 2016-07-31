@@ -4,11 +4,13 @@
 
 #include "src/parsing/parser.h"
 
+#include <memory>
+
 #include "src/api.h"
 #include "src/ast/ast.h"
 #include "src/ast/ast-expression-rewriter.h"
-#include "src/ast/ast-expression-visitor.h"
 #include "src/ast/ast-literal-reindexer.h"
+#include "src/ast/ast-traversal-visitor.h"
 #include "src/ast/scopeinfo.h"
 #include "src/bailout-reason.h"
 #include "src/base/platform/platform.h"
@@ -44,6 +46,7 @@ ParseInfo::ParseInfo(Zone* zone)
       flags_(0),
       source_stream_(nullptr),
       source_stream_encoding_(ScriptCompiler::StreamedSource::ONE_BYTE),
+      character_stream_(nullptr),
       extension_(nullptr),
       compile_options_(ScriptCompiler::kNoCompileOptions),
       script_scope_(nullptr),
@@ -794,7 +797,7 @@ FunctionLiteral* ParserTraits::ParseFunctionLiteral(
       function_token_position, type, language_mode, ok);
 }
 
-ClassLiteral* ParserTraits::ParseClassLiteral(
+Expression* ParserTraits::ParseClassLiteral(
     Type::ExpressionClassifier* classifier, const AstRawString* name,
     Scanner::Location class_name_location, bool name_is_strict_reserved,
     int pos, bool* ok) {
@@ -826,7 +829,8 @@ Parser::Parser(ParseInfo* info)
   // Even though we were passed ParseInfo, we should not store it in
   // Parser - this makes sure that Isolate is not accidentally accessed via
   // ParseInfo during background parsing.
-  DCHECK(!info->script().is_null() || info->source_stream() != NULL);
+  DCHECK(!info->script().is_null() || info->source_stream() != nullptr ||
+         info->character_stream() != nullptr);
   set_allow_lazy(info->allow_lazy_parsing());
   set_allow_natives(FLAG_allow_natives_syntax || info->is_native());
   set_allow_tailcalls(FLAG_harmony_tailcalls && !info->is_native() &&
@@ -886,17 +890,19 @@ FunctionLiteral* Parser::ParseProgram(Isolate* isolate, ParseInfo* info) {
   source = String::Flatten(source);
   FunctionLiteral* result;
 
-  if (source->IsExternalTwoByteString()) {
-    // Notice that the stream is destroyed at the end of the branch block.
-    // The last line of the blocks can't be moved outside, even though they're
-    // identical calls.
-    ExternalTwoByteStringUtf16CharacterStream stream(
-        Handle<ExternalTwoByteString>::cast(source), 0, source->length());
-    scanner_.Initialize(&stream);
-    result = DoParseProgram(info);
-  } else {
-    GenericStringUtf16CharacterStream stream(source, 0, source->length());
-    scanner_.Initialize(&stream);
+  {
+    std::unique_ptr<Utf16CharacterStream> stream;
+    if (source->IsExternalTwoByteString()) {
+      stream.reset(new ExternalTwoByteStringUtf16CharacterStream(
+          Handle<ExternalTwoByteString>::cast(source), 0, source->length()));
+    } else if (source->IsExternalOneByteString()) {
+      stream.reset(new ExternalOneByteStringUtf16CharacterStream(
+          Handle<ExternalOneByteString>::cast(source), 0, source->length()));
+    } else {
+      stream.reset(
+          new GenericStringUtf16CharacterStream(source, 0, source->length()));
+    }
+    scanner_.Initialize(stream.get());
     result = DoParseProgram(info);
   }
   if (result != NULL) {
@@ -910,7 +916,7 @@ FunctionLiteral* Parser::ParseProgram(Isolate* isolate, ParseInfo* info) {
       PrintF("[parsing eval");
     } else if (info->script()->name()->IsString()) {
       String* name = String::cast(info->script()->name());
-      base::SmartArrayPointer<char> name_chars = name->ToCString();
+      std::unique_ptr<char[]> name_chars = name->ToCString();
       PrintF("[parsing script: %s", name_chars.get());
     } else {
       PrintF("[parsing script");
@@ -1047,23 +1053,26 @@ FunctionLiteral* Parser::ParseLazy(Isolate* isolate, ParseInfo* info) {
   // Initialize parser state.
   source = String::Flatten(source);
   FunctionLiteral* result;
-  if (source->IsExternalTwoByteString()) {
-    ExternalTwoByteStringUtf16CharacterStream stream(
-        Handle<ExternalTwoByteString>::cast(source),
-        shared_info->start_position(),
-        shared_info->end_position());
-    result = ParseLazy(isolate, info, &stream);
-  } else {
-    GenericStringUtf16CharacterStream stream(source,
-                                             shared_info->start_position(),
-                                             shared_info->end_position());
-    result = ParseLazy(isolate, info, &stream);
+  {
+    std::unique_ptr<Utf16CharacterStream> stream;
+    if (source->IsExternalTwoByteString()) {
+      stream.reset(new ExternalTwoByteStringUtf16CharacterStream(
+          Handle<ExternalTwoByteString>::cast(source),
+          shared_info->start_position(), shared_info->end_position()));
+    } else if (source->IsExternalOneByteString()) {
+      stream.reset(new ExternalOneByteStringUtf16CharacterStream(
+          Handle<ExternalOneByteString>::cast(source),
+          shared_info->start_position(), shared_info->end_position()));
+    } else {
+      stream.reset(new GenericStringUtf16CharacterStream(
+          source, shared_info->start_position(), shared_info->end_position()));
+    }
+    result = ParseLazy(isolate, info, stream.get());
   }
 
   if (FLAG_trace_parse && result != NULL) {
     double ms = timer.Elapsed().InMillisecondsF();
-    base::SmartArrayPointer<char> name_chars =
-        result->debug_name()->ToCString();
+    std::unique_ptr<char[]> name_chars = result->debug_name()->ToCString();
     PrintF("[parsing function: %s - took %0.3f ms]\n", name_chars.get(), ms);
   }
   return result;
@@ -2266,8 +2275,8 @@ Statement* Parser::ParseClassDeclaration(ZoneList<const AstRawString*>* names,
     variable_name = name;
   }
 
-  ClassLiteral* value = ParseClassLiteral(nullptr, name, scanner()->location(),
-                                          is_strict_reserved, pos, CHECK_OK);
+  Expression* value = ParseClassLiteral(nullptr, name, scanner()->location(),
+                                        is_strict_reserved, pos, CHECK_OK);
 
   VariableProxy* proxy = NewUnresolved(variable_name, LET);
   Declaration* declaration =
@@ -2993,18 +3002,18 @@ TryStatement* Parser::ParseTryStatement(bool* ok) {
   }
 
   Token::Value tok = peek();
+
   bool catch_for_promise_reject = false;
+  if (allow_natives() && tok == Token::MOD) {
+    Consume(Token::MOD);
+    catch_for_promise_reject = true;
+    tok = peek();
+  }
+
   if (tok != Token::CATCH && tok != Token::FINALLY) {
-    if (allow_natives() && tok == Token::MOD) {
-      Consume(Token::MOD);
-      catch_for_promise_reject = true;
-      tok = peek();
-      DCHECK_EQ(Token::CATCH, tok);
-    } else {
-      ReportMessage(MessageTemplate::kNoCatchOrFinally);
-      *ok = false;
-      return NULL;
-    }
+    ReportMessage(MessageTemplate::kNoCatchOrFinally);
+    *ok = false;
+    return NULL;
   }
 
   Scope* catch_scope = NULL;
@@ -4631,28 +4640,31 @@ Statement* Parser::BuildAssertIsCoercible(Variable* var) {
 }
 
 
-class InitializerRewriter : public AstExpressionVisitor {
+class InitializerRewriter final
+    : public AstTraversalVisitor<InitializerRewriter> {
  public:
   InitializerRewriter(uintptr_t stack_limit, Expression* root, Parser* parser,
                       Scope* scope)
-      : AstExpressionVisitor(stack_limit, root),
+      : AstTraversalVisitor(stack_limit, root),
         parser_(parser),
         scope_(scope) {}
 
  private:
-  void VisitExpression(Expression* expr) override {
-    RewritableExpression* to_rewrite = expr->AsRewritableExpression();
-    if (to_rewrite == nullptr || to_rewrite->is_rewritten()) return;
+  // This is required so that the overriden Visit* methods can be
+  // called by the base class (template).
+  friend class AstTraversalVisitor<InitializerRewriter>;
 
+  // Just rewrite destructuring assignments wrapped in RewritableExpressions.
+  void VisitRewritableExpression(RewritableExpression* to_rewrite) {
+    if (to_rewrite->is_rewritten()) return;
     Parser::PatternRewriter::RewriteDestructuringAssignment(parser_, to_rewrite,
                                                             scope_);
   }
 
   // Code in function literals does not need to be eagerly rewritten, it will be
   // rewritten when scheduled.
-  void VisitFunctionLiteral(FunctionLiteral* expr) override {}
+  void VisitFunctionLiteral(FunctionLiteral* expr) {}
 
- private:
   Parser* parser_;
   Scope* scope_;
 };
@@ -5001,11 +5013,11 @@ PreParser::PreParseResult Parser::ParseLazyFunctionBodyWithPreParser(
   return result;
 }
 
-ClassLiteral* Parser::ParseClassLiteral(ExpressionClassifier* classifier,
-                                        const AstRawString* name,
-                                        Scanner::Location class_name_location,
-                                        bool name_is_strict_reserved, int pos,
-                                        bool* ok) {
+Expression* Parser::ParseClassLiteral(ExpressionClassifier* classifier,
+                                      const AstRawString* name,
+                                      Scanner::Location class_name_location,
+                                      bool name_is_strict_reserved, int pos,
+                                      bool* ok) {
   // All parts of a ClassDeclaration and ClassExpression are strict code.
   if (name_is_strict_reserved) {
     ReportMessageAt(class_name_location,
@@ -5107,8 +5119,21 @@ ClassLiteral* Parser::ParseClassLiteral(ExpressionClassifier* classifier,
     proxy->var()->set_initializer_position(end_pos);
   }
 
-  return factory()->NewClassLiteral(block_scope, proxy, extends, constructor,
-                                    properties, pos, end_pos);
+  Block* do_block = factory()->NewBlock(nullptr, 1, false, pos);
+  do_block->set_scope(block_scope);
+  Variable* result_var =
+      block_scope->NewTemporary(ast_value_factory()->empty_string());
+  DoExpression* do_expr = factory()->NewDoExpression(do_block, result_var, pos);
+
+  ClassLiteral* class_literal = factory()->NewClassLiteral(
+      proxy, extends, constructor, properties, pos, end_pos);
+
+  do_block->statements()->Add(
+      factory()->NewExpressionStatement(class_literal, pos), zone());
+  do_expr->set_represented_function(constructor);
+  Rewriter::Rewrite(this, do_expr, ast_value_factory());
+
+  return do_expr;
 }
 
 
@@ -5453,10 +5478,18 @@ void Parser::ParseOnBackground(ParseInfo* info) {
   CompleteParserRecorder recorder;
   if (produce_cached_parse_data()) log_ = &recorder;
 
-  DCHECK(info->source_stream() != NULL);
-  ExternalStreamingStream stream(info->source_stream(),
-                                 info->source_stream_encoding());
-  scanner_.Initialize(&stream);
+  std::unique_ptr<Utf16CharacterStream> stream;
+  Utf16CharacterStream* stream_ptr;
+  if (info->character_stream()) {
+    DCHECK(info->source_stream() == nullptr);
+    stream_ptr = info->character_stream();
+  } else {
+    DCHECK(info->character_stream() == nullptr);
+    stream.reset(new ExternalStreamingStream(info->source_stream(),
+                                             info->source_stream_encoding()));
+    stream_ptr = stream.get();
+  }
+  scanner_.Initialize(stream_ptr);
   DCHECK(info->context().is_null() || info->context()->IsNativeContext());
 
   // When streaming, we don't know the length of the source until we have parsed
@@ -6102,8 +6135,8 @@ void ParserTraits::SetFunctionName(Expression* value,
   if (function != nullptr) {
     function->set_raw_name(name);
   } else {
-    DCHECK(value->IsClassLiteral());
-    value->AsClassLiteral()->constructor()->set_raw_name(name);
+    DCHECK(value->IsDoExpression());
+    value->AsDoExpression()->represented_function()->set_raw_name(name);
   }
 }
 

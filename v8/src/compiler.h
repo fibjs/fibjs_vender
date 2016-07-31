@@ -5,6 +5,8 @@
 #ifndef V8_COMPILER_H_
 #define V8_COMPILER_H_
 
+#include <memory>
+
 #include "src/allocation.h"
 #include "src/ast/ast.h"
 #include "src/bailout-reason.h"
@@ -37,6 +39,7 @@ class Compiler : public AllStatic {
  public:
   enum ClearExceptionFlag { KEEP_EXCEPTION, CLEAR_EXCEPTION };
   enum ConcurrencyMode { NOT_CONCURRENT, CONCURRENT };
+  enum CompilationTier { INTERPRETED, BASELINE, OPTIMIZED };
 
   // ===========================================================================
   // The following family of methods ensures a given function is compiled. The
@@ -65,6 +68,12 @@ class Compiler : public AllStatic {
   static bool Analyze(ParseInfo* info);
   // Adds deoptimization support, requires ParseAndAnalyze.
   static bool EnsureDeoptimizationSupport(CompilationInfo* info);
+  // Ensures that bytecode is generated, calls ParseAndAnalyze internally.
+  static bool EnsureBytecode(CompilationInfo* info);
+
+  // The next compilation tier which the function should  be compiled to for
+  // optimization. This is used as a hint by the runtime profiler.
+  static CompilationTier NextCompilationTier(JSFunction* function);
 
   // ===========================================================================
   // The following family of methods instantiates new functions for scripts or
@@ -427,7 +436,7 @@ class CompilationInfo final {
     inlined_functions_.push_back(InlinedFunctionHolder(inlined_function));
   }
 
-  base::SmartArrayPointer<char> GetDebugName() const;
+  std::unique_ptr<char[]> GetDebugName() const;
 
   Code::Kind output_code_kind() const {
     return Code::ExtractKindFromFlags(code_flags_);

@@ -552,7 +552,7 @@ void IC::ConfigureVectorState(Handle<Name> name, Handle<Map> map,
     nexus->ConfigureHandlerMode(Handle<Code>::cast(handler));
   } else if (kind() == Code::KEYED_LOAD_IC) {
     KeyedLoadICNexus* nexus = casted_nexus<KeyedLoadICNexus>();
-    nexus->ConfigureMonomorphic(name, map, Handle<Code>::cast(handler));
+    nexus->ConfigureMonomorphic(name, map, handler);
   } else if (kind() == Code::STORE_IC) {
     StoreICNexus* nexus = casted_nexus<StoreICNexus>();
     nexus->ConfigureMonomorphic(map, Handle<Code>::cast(handler));
@@ -781,7 +781,8 @@ bool IC::IsTransitionOfMonomorphicTarget(Map* source_map, Map* target_map) {
 }
 
 void IC::PatchCache(Handle<Name> name, Handle<Object> code) {
-  DCHECK(code->IsCode() || (kind() == Code::LOAD_IC && code->IsSmi()));
+  DCHECK(code->IsCode() || (code->IsSmi() && (kind() == Code::LOAD_IC ||
+                                              kind() == Code::KEYED_LOAD_IC)));
   switch (state()) {
     case UNINITIALIZED:
     case PREMONOMORPHIC:
@@ -816,31 +817,6 @@ void IC::PatchCache(Handle<Name> name, Handle<Object> code) {
   }
 }
 
-Handle<Code> LoadIC::initialize_stub_in_optimized_code(Isolate* isolate) {
-  if (FLAG_tf_load_ic_stub) {
-    return LoadICTFStub(isolate).GetCode();
-  }
-  return LoadICStub(isolate).GetCode();
-}
-
-Handle<Code> LoadGlobalIC::initialize_stub_in_optimized_code(
-    Isolate* isolate, ExtraICState extra_state) {
-  return LoadGlobalICStub(isolate, LoadGlobalICState(extra_state)).GetCode();
-}
-
-Handle<Code> KeyedLoadIC::initialize_stub_in_optimized_code(
-    Isolate* isolate, ExtraICState extra_state) {
-  // TODO(ishell): remove extra_ic_state
-  return KeyedLoadICStub(isolate).GetCode();
-}
-
-Handle<Code> KeyedStoreIC::initialize_stub_in_optimized_code(
-    Isolate* isolate, LanguageMode language_mode) {
-  StoreICState state = StoreICState(language_mode);
-  return KeyedStoreICStub(isolate, state).GetCode();
-}
-
-
 Handle<Code> KeyedStoreIC::ChooseMegamorphicStub(Isolate* isolate,
                                                  ExtraICState extra_state) {
   LanguageMode mode = StoreICState::GetLanguageMode(extra_state);
@@ -850,10 +826,9 @@ Handle<Code> KeyedStoreIC::ChooseMegamorphicStub(Isolate* isolate,
 }
 
 Handle<Object> LoadIC::SimpleFieldLoad(FieldIndex index) {
-  if (kind() == Code::LOAD_IC && FLAG_tf_load_ic_stub) {
+  if (FLAG_tf_load_ic_stub) {
     return handle(Smi::FromInt(index.GetLoadByFieldOffset()), isolate());
   }
-  DCHECK(kind() == Code::KEYED_LOAD_IC || !FLAG_tf_load_ic_stub);
   TRACE_HANDLER_STATS(isolate(), LoadIC_LoadFieldStub);
   LoadFieldStub stub(isolate(), index);
   return stub.GetCode();
@@ -1354,8 +1329,7 @@ void KeyedLoadIC::UpdateLoadElement(Handle<HeapObject> receiver) {
 
   if (target_receiver_maps.length() == 0) {
     Handle<Code> handler =
-        PropertyICCompiler::ComputeKeyedLoadMonomorphicHandler(
-            receiver_map, extra_ic_state());
+        ElementHandlerCompiler::GetKeyedLoadHandler(receiver_map, isolate());
     return ConfigureVectorState(Handle<Name>(), receiver_map, handler);
   }
 
@@ -1384,8 +1358,7 @@ void KeyedLoadIC::UpdateLoadElement(Handle<HeapObject> receiver) {
           target_receiver_maps.at(0)->elements_kind(),
           Handle<JSObject>::cast(receiver)->GetElementsKind())) {
     Handle<Code> handler =
-        PropertyICCompiler::ComputeKeyedLoadMonomorphicHandler(
-            receiver_map, extra_ic_state());
+        ElementHandlerCompiler::GetKeyedLoadHandler(receiver_map, isolate());
     return ConfigureVectorState(Handle<Name>(), receiver_map, handler);
   }
 
@@ -1408,7 +1381,6 @@ void KeyedLoadIC::UpdateLoadElement(Handle<HeapObject> receiver) {
   }
 
   List<Handle<Object>> handlers(target_receiver_maps.length());
-  TRACE_HANDLER_STATS(isolate(), KeyedLoadIC_PolymorphicElement);
   ElementHandlerCompiler compiler(isolate());
   compiler.CompileElementHandlers(&target_receiver_maps, &handlers);
   ConfigureVectorState(Handle<Name>(), &target_receiver_maps, &handlers);
@@ -1594,20 +1566,6 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object, Handle<Name> name,
   MAYBE_RETURN_NULL(
       Object::SetProperty(&it, value, language_mode(), store_mode));
   return value;
-}
-
-Handle<Code> CallIC::initialize_stub_in_optimized_code(
-    Isolate* isolate, int argc, ConvertReceiverMode mode,
-    TailCallMode tail_call_mode) {
-  CallICStub stub(isolate, CallICState(argc, mode, tail_call_mode));
-  Handle<Code> code = stub.GetCode();
-  return code;
-}
-
-Handle<Code> StoreIC::initialize_stub_in_optimized_code(
-    Isolate* isolate, LanguageMode language_mode) {
-  StoreICStub stub(isolate, StoreICState(language_mode));
-  return stub.GetCode();
 }
 
 void StoreIC::UpdateCaches(LookupIterator* lookup, Handle<Object> value,
@@ -2378,12 +2336,13 @@ RUNTIME_FUNCTION(Runtime_KeyedLoadIC_MissFromStubFailure) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
-  Handle<Object> receiver = args.at<Object>(0);
-  Handle<Object> key = args.at<Object>(1);
-
-  DCHECK(args.length() == 4);
-  Handle<Smi> slot = args.at<Smi>(2);
-  Handle<TypeFeedbackVector> vector = args.at<TypeFeedbackVector>(3);
+  DCHECK_EQ(4, args.length());
+  typedef LoadWithVectorDescriptor Descriptor;
+  Handle<Object> receiver = args.at<Object>(Descriptor::kReceiver);
+  Handle<Object> key = args.at<Object>(Descriptor::kName);
+  Handle<Smi> slot = args.at<Smi>(Descriptor::kSlot);
+  Handle<TypeFeedbackVector> vector =
+      args.at<TypeFeedbackVector>(Descriptor::kVector);
   FeedbackVectorSlot vector_slot = vector->ToSlot(slot->value());
   KeyedLoadICNexus nexus(vector, vector_slot);
   KeyedLoadIC ic(IC::EXTRA_CALL_FRAME, isolate, &nexus);
@@ -2425,12 +2384,44 @@ RUNTIME_FUNCTION(Runtime_StoreIC_MissFromStubFailure) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
+  DCHECK_EQ(5, args.length());
+  typedef StoreWithVectorDescriptor Descriptor;
+  Handle<Object> receiver = args.at<Object>(Descriptor::kReceiver);
+  Handle<Name> key = args.at<Name>(Descriptor::kName);
+  Handle<Object> value = args.at<Object>(Descriptor::kValue);
+  Handle<Smi> slot = args.at<Smi>(Descriptor::kSlot);
+  Handle<TypeFeedbackVector> vector =
+      args.at<TypeFeedbackVector>(Descriptor::kVector);
+
+  FeedbackVectorSlot vector_slot = vector->ToSlot(slot->value());
+  if (vector->GetKind(vector_slot) == FeedbackVectorSlotKind::STORE_IC) {
+    StoreICNexus nexus(vector, vector_slot);
+    StoreIC ic(IC::EXTRA_CALL_FRAME, isolate, &nexus);
+    ic.UpdateState(receiver, key);
+    RETURN_RESULT_OR_FAILURE(isolate, ic.Store(receiver, key, value));
+  } else {
+    DCHECK_EQ(FeedbackVectorSlotKind::KEYED_STORE_IC,
+              vector->GetKind(vector_slot));
+    KeyedStoreICNexus nexus(vector, vector_slot);
+    KeyedStoreIC ic(IC::EXTRA_CALL_FRAME, isolate, &nexus);
+    ic.UpdateState(receiver, key);
+    RETURN_RESULT_OR_FAILURE(isolate, ic.Store(receiver, key, value));
+  }
+}
+
+RUNTIME_FUNCTION(Runtime_TransitionStoreIC_MissFromStubFailure) {
+  TimerEventScope<TimerEventIcMiss> timer(isolate);
+  TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
+  HandleScope scope(isolate);
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Name> key = args.at<Name>(1);
   Handle<Object> value = args.at<Object>(2);
 
   int length = args.length();
   DCHECK(length == 5 || length == 6);
+  // TODO(ishell): use VectorStoreTransitionDescriptor indices here and update
+  // this comment:
+  //
   // We might have slot and vector, for a normal miss (slot(3), vector(4)).
   // Or, map and vector for a transitioning store miss (map(3), vector(4)).
   // In this case, we need to recover the slot from a virtual register.
@@ -2438,15 +2429,10 @@ RUNTIME_FUNCTION(Runtime_StoreIC_MissFromStubFailure) {
   Handle<Smi> slot;
   Handle<TypeFeedbackVector> vector;
   if (length == 5) {
-    if (args.at<Object>(3)->IsMap()) {
-      vector = args.at<TypeFeedbackVector>(4);
-      slot = handle(
-          *reinterpret_cast<Smi**>(isolate->virtual_slot_register_address()),
-          isolate);
-    } else {
-      vector = args.at<TypeFeedbackVector>(4);
-      slot = args.at<Smi>(3);
-    }
+    vector = args.at<TypeFeedbackVector>(4);
+    slot = handle(
+        *reinterpret_cast<Smi**>(isolate->virtual_slot_register_address()),
+        isolate);
   } else {
     vector = args.at<TypeFeedbackVector>(5);
     slot = args.at<Smi>(4);
@@ -2468,17 +2454,15 @@ RUNTIME_FUNCTION(Runtime_StoreIC_MissFromStubFailure) {
   }
 }
 
-
 // Used from ic-<arch>.cc.
 RUNTIME_FUNCTION(Runtime_KeyedStoreIC_Miss) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
+  DCHECK_EQ(5, args.length());
   Handle<Object> receiver = args.at<Object>(0);
   Handle<Object> key = args.at<Object>(1);
   Handle<Object> value = args.at<Object>(2);
-
-  DCHECK(args.length() == 5);
   Handle<Smi> slot = args.at<Smi>(3);
   Handle<TypeFeedbackVector> vector = args.at<TypeFeedbackVector>(4);
   FeedbackVectorSlot vector_slot = vector->ToSlot(slot->value());
@@ -2493,13 +2477,14 @@ RUNTIME_FUNCTION(Runtime_KeyedStoreIC_MissFromStubFailure) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
-  Handle<Object> receiver = args.at<Object>(0);
-  Handle<Object> key = args.at<Object>(1);
-  Handle<Object> value = args.at<Object>(2);
-
-  DCHECK(args.length() == 5);
-  Handle<Smi> slot = args.at<Smi>(3);
-  Handle<TypeFeedbackVector> vector = args.at<TypeFeedbackVector>(4);
+  DCHECK_EQ(5, args.length());
+  typedef StoreWithVectorDescriptor Descriptor;
+  Handle<Object> receiver = args.at<Object>(Descriptor::kReceiver);
+  Handle<Object> key = args.at<Object>(Descriptor::kName);
+  Handle<Object> value = args.at<Object>(Descriptor::kValue);
+  Handle<Smi> slot = args.at<Smi>(Descriptor::kSlot);
+  Handle<TypeFeedbackVector> vector =
+      args.at<TypeFeedbackVector>(Descriptor::kVector);
   FeedbackVectorSlot vector_slot = vector->ToSlot(slot->value());
   KeyedStoreICNexus nexus(vector, vector_slot);
   KeyedStoreIC ic(IC::EXTRA_CALL_FRAME, isolate, &nexus);
@@ -2510,7 +2495,7 @@ RUNTIME_FUNCTION(Runtime_KeyedStoreIC_MissFromStubFailure) {
 
 RUNTIME_FUNCTION(Runtime_KeyedStoreIC_Slow) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 5);
+  DCHECK_EQ(5, args.length());
   Handle<Object> object = args.at<Object>(0);
   Handle<Object> key = args.at<Object>(1);
   Handle<Object> value = args.at<Object>(2);
@@ -2671,8 +2656,9 @@ RUNTIME_FUNCTION(Runtime_BinaryOpIC_Miss) {
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   DCHECK_EQ(2, args.length());
-  Handle<Object> left = args.at<Object>(BinaryOpICStub::kLeft);
-  Handle<Object> right = args.at<Object>(BinaryOpICStub::kRight);
+  typedef BinaryOpDescriptor Descriptor;
+  Handle<Object> left = args.at<Object>(Descriptor::kLeft);
+  Handle<Object> right = args.at<Object>(Descriptor::kRight);
   BinaryOpIC ic(isolate);
   RETURN_RESULT_OR_FAILURE(
       isolate, ic.Transition(Handle<AllocationSite>::null(), left, right));
@@ -2684,11 +2670,11 @@ RUNTIME_FUNCTION(Runtime_BinaryOpIC_MissWithAllocationSite) {
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
   DCHECK_EQ(3, args.length());
+  typedef BinaryOpWithAllocationSiteDescriptor Descriptor;
   Handle<AllocationSite> allocation_site =
-      args.at<AllocationSite>(BinaryOpWithAllocationSiteStub::kAllocationSite);
-  Handle<Object> left = args.at<Object>(BinaryOpWithAllocationSiteStub::kLeft);
-  Handle<Object> right =
-      args.at<Object>(BinaryOpWithAllocationSiteStub::kRight);
+      args.at<AllocationSite>(Descriptor::kAllocationSite);
+  Handle<Object> left = args.at<Object>(Descriptor::kLeft);
+  Handle<Object> right = args.at<Object>(Descriptor::kRight);
   BinaryOpIC ic(isolate);
   RETURN_RESULT_OR_FAILURE(isolate,
                            ic.Transition(allocation_site, left, right));
@@ -2702,14 +2688,6 @@ Code* CompareIC::GetRawUninitialized(Isolate* isolate, Token::Value op) {
   CHECK(stub.FindCodeInCache(&code));
   return code;
 }
-
-Handle<Code> CompareIC::GetUninitialized(Isolate* isolate, Token::Value op) {
-  CompareICStub stub(isolate, op, CompareICState::UNINITIALIZED,
-                     CompareICState::UNINITIALIZED,
-                     CompareICState::UNINITIALIZED);
-  return stub.GetCode();
-}
-
 
 Code* CompareIC::UpdateCaches(Handle<Object> x, Handle<Object> y) {
   HandleScope scope(isolate());
@@ -2993,12 +2971,13 @@ RUNTIME_FUNCTION(Runtime_LoadIC_MissFromStubFailure) {
   TimerEventScope<TimerEventIcMiss> timer(isolate);
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8"), "V8.IcMiss");
   HandleScope scope(isolate);
-  Handle<Object> receiver = args.at<Object>(0);
-  Handle<Name> key = args.at<Name>(1);
-
-  DCHECK(args.length() == 4);
-  Handle<Smi> slot = args.at<Smi>(2);
-  Handle<TypeFeedbackVector> vector = args.at<TypeFeedbackVector>(3);
+  DCHECK_EQ(4, args.length());
+  typedef LoadWithVectorDescriptor Descriptor;
+  Handle<Object> receiver = args.at<Object>(Descriptor::kReceiver);
+  Handle<Name> key = args.at<Name>(Descriptor::kName);
+  Handle<Smi> slot = args.at<Smi>(Descriptor::kSlot);
+  Handle<TypeFeedbackVector> vector =
+      args.at<TypeFeedbackVector>(Descriptor::kVector);
   FeedbackVectorSlot vector_slot = vector->ToSlot(slot->value());
   // A monomorphic or polymorphic KeyedLoadIC with a string key can call the
   // LoadIC miss handler if the handler misses. Since the vector Nexus is

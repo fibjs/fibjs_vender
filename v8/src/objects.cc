@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <iomanip>
+#include <memory>
 #include <sstream>
 
 #include "src/objects-inl.h"
@@ -2460,8 +2461,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
 
     case SHARED_FUNCTION_INFO_TYPE: {
       SharedFunctionInfo* shared = SharedFunctionInfo::cast(this);
-      base::SmartArrayPointer<char> debug_name =
-          shared->DebugName()->ToCString();
+      std::unique_ptr<char[]> debug_name = shared->DebugName()->ToCString();
       if (debug_name[0] != 0) {
         os << "<SharedFunctionInfo " << debug_name.get() << ">";
       } else {
@@ -4374,15 +4374,18 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
                                     value, it->GetReceiver(), language_mode);
 
       case LookupIterator::INTERCEPTOR: {
-        Handle<Map> store_target_map =
-            handle(it->GetStoreTarget()->map(), it->isolate());
+        Handle<Map> store_target_map;
+        if (it->GetReceiver()->IsJSObject()) {
+          store_target_map = handle(it->GetStoreTarget()->map(), it->isolate());
+        }
         if (it->HolderIsReceiverOrHiddenPrototype()) {
           Maybe<bool> result =
               JSObject::SetPropertyWithInterceptor(it, should_throw, value);
           if (result.IsNothing() || result.FromJust()) return result;
           // Interceptor modified the store target but failed to set the
           // property.
-          Utils::ApiCheck(*store_target_map == it->GetStoreTarget()->map(),
+          Utils::ApiCheck(store_target_map.is_null() ||
+                              *store_target_map == it->GetStoreTarget()->map(),
                           it->IsElement() ? "v8::IndexedPropertySetterCallback"
                                           : "v8::NamedPropertySetterCallback",
                           "Interceptor silently changed store target.");
@@ -4395,7 +4398,8 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
           }
           // Interceptor modified the store target but failed to set the
           // property.
-          Utils::ApiCheck(*store_target_map == it->GetStoreTarget()->map(),
+          Utils::ApiCheck(store_target_map.is_null() ||
+                              *store_target_map == it->GetStoreTarget()->map(),
                           it->IsElement() ? "v8::IndexedPropertySetterCallback"
                                           : "v8::NamedPropertySetterCallback",
                           "Interceptor silently changed store target.");
@@ -9751,6 +9755,24 @@ Code* CodeCacheHashTable::Lookup(Name* name, Code::Flags flags) {
   return Code::cast(FixedArray::cast(get(EntryToIndex(entry)))->get(1));
 }
 
+Handle<FixedArray> FixedArray::SetAndGrow(Handle<FixedArray> array, int index,
+                                          Handle<Object> value) {
+  if (index < array->length()) {
+    array->set(index, *value);
+    return array;
+  }
+  int capacity = array->length();
+  do {
+    capacity = JSObject::NewElementsCapacity(capacity);
+  } while (capacity < index);
+  Handle<FixedArray> new_array =
+      array->GetIsolate()->factory()->NewUninitializedFixedArray(capacity);
+  array->CopyTo(0, *new_array, 0, array->length());
+  new_array->FillWithHoles(array->length(), new_array->length());
+  new_array->set(index, *value);
+  return new_array;
+}
+
 void FixedArray::Shrink(int new_length) {
   DCHECK(0 <= new_length && new_length <= length());
   if (new_length < length()) {
@@ -10412,13 +10434,12 @@ String::FlatContent String::GetFlatContent() {
   }
 }
 
-
-base::SmartArrayPointer<char> String::ToCString(AllowNullsFlag allow_nulls,
-                                                RobustnessFlag robust_flag,
-                                                int offset, int length,
-                                                int* length_return) {
+std::unique_ptr<char[]> String::ToCString(AllowNullsFlag allow_nulls,
+                                          RobustnessFlag robust_flag,
+                                          int offset, int length,
+                                          int* length_return) {
   if (robust_flag == ROBUST_STRING_TRAVERSAL && !LooksValid()) {
-    return base::SmartArrayPointer<char>(NULL);
+    return std::unique_ptr<char[]>();
   }
   // Negative length means the to the end of the string.
   if (length < 0) length = kMaxInt - offset;
@@ -10455,13 +10476,12 @@ base::SmartArrayPointer<char> String::ToCString(AllowNullsFlag allow_nulls,
     last = character;
   }
   result[utf8_byte_position] = 0;
-  return base::SmartArrayPointer<char>(result);
+  return std::unique_ptr<char[]>(result);
 }
 
-
-base::SmartArrayPointer<char> String::ToCString(AllowNullsFlag allow_nulls,
-                                                RobustnessFlag robust_flag,
-                                                int* length_return) {
+std::unique_ptr<char[]> String::ToCString(AllowNullsFlag allow_nulls,
+                                          RobustnessFlag robust_flag,
+                                          int* length_return) {
   return ToCString(allow_nulls, robust_flag, 0, -1, length_return);
 }
 
@@ -11622,8 +11642,8 @@ Handle<LiteralsArray> SharedFunctionInfo::FindOrCreateLiterals(
 
   Handle<TypeFeedbackVector> feedback_vector =
       TypeFeedbackVector::New(isolate, handle(shared->feedback_metadata()));
-  Handle<LiteralsArray> literals = LiteralsArray::New(
-      isolate, feedback_vector, shared->num_literals(), TENURED);
+  Handle<LiteralsArray> literals =
+      LiteralsArray::New(isolate, feedback_vector, shared->num_literals());
   Handle<Code> code;
   if (result.code != nullptr) {
     code = Handle<Code>(result.code, isolate);
@@ -12546,7 +12566,7 @@ MaybeHandle<Map> JSFunction::GetDerivedMap(Isolate* isolate,
 
 
 void JSFunction::PrintName(FILE* out) {
-  base::SmartArrayPointer<char> name = shared()->DebugName()->ToCString();
+  std::unique_ptr<char[]> name = shared()->DebugName()->ToCString();
   PrintF(out, "%s", name.get());
 }
 
@@ -16423,20 +16443,23 @@ template class Dictionary<UnseededNumberDictionary,
                           uint32_t>;
 
 template Handle<SeededNumberDictionary>
-Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape, uint32_t>::
-    New(Isolate*, int at_least_space_for, PretenureFlag pretenure);
+Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape, uint32_t>::New(
+    Isolate*, int at_least_space_for, PretenureFlag pretenure,
+    MinimumCapacity capacity_option);
 
 template Handle<UnseededNumberDictionary>
-Dictionary<UnseededNumberDictionary, UnseededNumberDictionaryShape, uint32_t>::
-    New(Isolate*, int at_least_space_for, PretenureFlag pretenure);
+Dictionary<UnseededNumberDictionary, UnseededNumberDictionaryShape,
+           uint32_t>::New(Isolate*, int at_least_space_for,
+                          PretenureFlag pretenure,
+                          MinimumCapacity capacity_option);
 
 template Handle<NameDictionary>
-Dictionary<NameDictionary, NameDictionaryShape, Handle<Name> >::
-    New(Isolate*, int n, PretenureFlag pretenure);
+Dictionary<NameDictionary, NameDictionaryShape, Handle<Name>>::New(
+    Isolate*, int n, PretenureFlag pretenure, MinimumCapacity capacity_option);
 
 template Handle<GlobalDictionary>
-Dictionary<GlobalDictionary, GlobalDictionaryShape, Handle<Name> >::New(
-    Isolate*, int n, PretenureFlag pretenure);
+Dictionary<GlobalDictionary, GlobalDictionaryShape, Handle<Name>>::New(
+    Isolate*, int n, PretenureFlag pretenure, MinimumCapacity capacity_option);
 
 template Handle<SeededNumberDictionary>
 Dictionary<SeededNumberDictionary, SeededNumberDictionaryShape, uint32_t>::
@@ -17228,17 +17251,13 @@ void CompilationCacheTable::Remove(Object* value) {
   return;
 }
 
-
-template<typename Derived, typename Shape, typename Key>
+template <typename Derived, typename Shape, typename Key>
 Handle<Derived> Dictionary<Derived, Shape, Key>::New(
-    Isolate* isolate,
-    int at_least_space_for,
-    PretenureFlag pretenure) {
+    Isolate* isolate, int at_least_space_for, PretenureFlag pretenure,
+    MinimumCapacity capacity_option) {
   DCHECK(0 <= at_least_space_for);
-  Handle<Derived> dict = DerivedHashTable::New(isolate,
-                                               at_least_space_for,
-                                               USE_DEFAULT_MINIMUM_CAPACITY,
-                                               pretenure);
+  Handle<Derived> dict = DerivedHashTable::New(isolate, at_least_space_for,
+                                               capacity_option, pretenure);
 
   // Initialize the next enumeration index.
   dict->SetNextEnumerationIndex(PropertyDetails::kInitialIndex);

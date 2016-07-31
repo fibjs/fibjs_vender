@@ -1170,9 +1170,11 @@ static void CallStubInRecordCallTarget(MacroAssembler* masm, CodeStub* stub) {
   __ Integer32ToSmi(rdx, rdx);
   __ Push(rdx);
   __ Push(rbx);
+  __ Push(rsi);
 
   __ CallStub(stub);
 
+  __ Pop(rsi);
   __ Pop(rbx);
   __ Pop(rdx);
   __ Pop(rdi);
@@ -1470,7 +1472,9 @@ void CallICStub::Generate(MacroAssembler* masm) {
 
     __ Integer32ToSmi(rdx, rdx);
     __ Push(rdi);
+    __ Push(rsi);
     __ CallStub(&create_stub);
+    __ Pop(rsi);
     __ Pop(rdi);
   }
 

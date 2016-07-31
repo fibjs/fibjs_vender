@@ -35,6 +35,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void VisitStatements(ZoneList<Statement*>* statments);
 
  private:
+  class AccumulatorResultScope;
   class ContextScope;
   class ControlScope;
   class ControlScopeForBreakable;
@@ -44,11 +45,12 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   class ControlScopeForTryFinally;
   class ExpressionResultScope;
   class EffectResultScope;
-  class AccumulatorResultScope;
+  class GlobalDeclarationsBuilder;
   class RegisterResultScope;
   class RegisterAllocationScope;
 
-  void MakeBytecodeBody();
+  void GenerateBytecode();
+  void GenerateBytecodeBody();
 
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 
@@ -125,7 +127,6 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void VisitArgumentsObject(Variable* variable);
   void VisitRestArgumentsArray(Variable* rest);
   void VisitCallSuper(Call* call);
-  void VisitClassLiteralContents(ClassLiteral* expr);
   void VisitClassLiteralForRuntimeDefinition(ClassLiteral* expr);
   void VisitClassLiteralProperties(ClassLiteral* expr, Register literal,
                                    Register prototype);
@@ -196,7 +197,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
     return register_allocator_;
   }
 
-  ZoneVector<Handle<Object>>* globals() { return &globals_; }
+  GlobalDeclarationsBuilder* globals_builder() { return globals_builder_; }
   inline LanguageMode language_mode() const;
   int feedback_index(FeedbackVectorSlot slot) const;
 
@@ -205,13 +206,15 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   BytecodeArrayBuilder* builder_;
   CompilationInfo* info_;
   Scope* scope_;
-  ZoneVector<Handle<Object>> globals_;
+  GlobalDeclarationsBuilder* globals_builder_;
+  ZoneVector<GlobalDeclarationsBuilder*> global_declarations_;
   ControlScope* execution_control_;
   ContextScope* execution_context_;
   ExpressionResultScope* execution_result_;
   RegisterAllocationScope* register_allocator_;
   ZoneVector<BytecodeLabel> generator_resume_points_;
   Register generator_state_;
+  int loop_depth_;
 };
 
 }  // namespace interpreter

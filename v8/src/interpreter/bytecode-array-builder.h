@@ -79,6 +79,7 @@ class BytecodeArrayBuilder final : public ZoneObject {
   bool TemporaryRegisterIsLive(Register reg) const;
 
   // Constant loads to accumulator.
+  BytecodeArrayBuilder& LoadConstantPoolEntry(size_t entry);
   BytecodeArrayBuilder& LoadLiteral(v8::internal::Smi* value);
   BytecodeArrayBuilder& LoadLiteral(Handle<Object> object);
   BytecodeArrayBuilder& LoadUndefined();
@@ -211,11 +212,12 @@ class BytecodeArrayBuilder final : public ZoneObject {
   // Tests.
   BytecodeArrayBuilder& CompareOperation(Token::Value op, Register reg);
 
-  // Casts.
+  // Casts accumulator and stores result in accumulator.
   BytecodeArrayBuilder& CastAccumulatorToBoolean();
-  BytecodeArrayBuilder& CastAccumulatorToJSObject();
-  BytecodeArrayBuilder& CastAccumulatorToName();
-  // Does not update the accumulator but stores to |out| instead.
+
+  // Casts accumulator and stores result in register |out|.
+  BytecodeArrayBuilder& CastAccumulatorToJSObject(Register out);
+  BytecodeArrayBuilder& CastAccumulatorToName(Register out);
   BytecodeArrayBuilder& CastAccumulatorToNumber(Register out);
 
   // Flow Control.
@@ -231,6 +233,8 @@ class BytecodeArrayBuilder final : public ZoneObject {
 
   BytecodeArrayBuilder& StackCheck(int position);
 
+  BytecodeArrayBuilder& OsrPoll(int loop_depth);
+
   BytecodeArrayBuilder& Throw();
   BytecodeArrayBuilder& ReThrow();
   BytecodeArrayBuilder& Return();
@@ -239,7 +243,8 @@ class BytecodeArrayBuilder final : public ZoneObject {
   BytecodeArrayBuilder& Debugger();
 
   // Complex flow control.
-  BytecodeArrayBuilder& ForInPrepare(Register cache_info_triple);
+  BytecodeArrayBuilder& ForInPrepare(Register receiver,
+                                     Register cache_info_triple);
   BytecodeArrayBuilder& ForInDone(Register index, Register cache_length);
   BytecodeArrayBuilder& ForInNext(Register receiver, Register index,
                                   Register cache_type_array_pair,
@@ -259,6 +264,11 @@ class BytecodeArrayBuilder final : public ZoneObject {
   // Creates a new handler table entry and returns a {hander_id} identifying the
   // entry, so that it can be referenced by above exception handling support.
   int NewHandlerEntry() { return handler_table_builder()->NewHandlerEntry(); }
+
+  // Allocates a slot in the constant pool which can later be inserted.
+  size_t AllocateConstantPoolEntry();
+  // Inserts a entry into an allocated constant pool entry.
+  void InsertConstantPoolEntryAt(size_t entry, Handle<Object> object);
 
   void InitializeReturnPosition(FunctionLiteral* literal);
 

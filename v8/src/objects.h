@@ -6,12 +6,12 @@
 #define V8_OBJECTS_H_
 
 #include <iosfwd>
+#include <memory>
 
 #include "src/assert-scope.h"
 #include "src/bailout-reason.h"
 #include "src/base/bits.h"
 #include "src/base/flags.h"
-#include "src/base/smart-pointers.h"
 #include "src/builtins/builtins.h"
 #include "src/checks.h"
 #include "src/elements-kind.h"
@@ -767,35 +767,47 @@ STATIC_ASSERT(FOREIGN_TYPE == Internals::kForeignType);
 
 std::ostream& operator<<(std::ostream& os, InstanceType instance_type);
 
-#define FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(V) \
-  V(CODE_STUBS_TABLE_SUB_TYPE)                \
-  V(CONTEXT_SUB_TYPE)                         \
-  V(COPY_ON_WRITE_SUB_TYPE)                   \
-  V(DEOPTIMIZATION_DATA_SUB_TYPE)             \
-  V(DESCRIPTOR_ARRAY_SUB_TYPE)                \
-  V(EMBEDDED_OBJECT_SUB_TYPE)                 \
-  V(ENUM_CACHE_SUB_TYPE)                      \
-  V(ENUM_INDICES_CACHE_SUB_TYPE)              \
-  V(DICTIONARY_ELEMENTS_SUB_TYPE)             \
-  V(DICTIONARY_PROPERTIES_SUB_TYPE)           \
-  V(FAST_ELEMENTS_SUB_TYPE)                   \
-  V(FAST_PROPERTIES_SUB_TYPE)                 \
-  V(INTRINSIC_FUNCTION_NAMES_SUB_TYPE)        \
-  V(LITERALS_ARRAY_SUB_TYPE)                  \
-  V(MAP_CODE_CACHE_SUB_TYPE)                  \
-  V(NUMBER_STRING_CACHE_SUB_TYPE)             \
-  V(OBJECT_TO_CODE_SUB_TYPE)                  \
-  V(REGEXP_MULTIPLE_CACHE_SUB_TYPE)           \
-  V(SCOPE_INFO_SUB_TYPE)                      \
-  V(SERIALIZED_TEMPLATES_SUB_TYPE)            \
-  V(SHARED_FUNCTION_INFOS_SUB_TYPE)           \
-  V(SINGLE_CHARACTER_STRING_CACHE_SUB_TYPE)   \
-  V(STRING_SPLIT_CACHE_SUB_TYPE)              \
-  V(STRING_TABLE_SUB_TYPE)                    \
-  V(TEMPLATE_INSTANTIATIONS_CACHE_SUB_TYPE)   \
-  V(TYPE_FEEDBACK_VECTOR_SUB_TYPE)            \
-  V(TYPE_FEEDBACK_METADATA_SUB_TYPE)          \
-  V(WEAK_COLLECTION_SUB_TYPE)                 \
+#define FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(V)    \
+  V(BYTECODE_ARRAY_CONSTANT_POOL_SUB_TYPE)       \
+  V(BYTECODE_ARRAY_HANDLER_TABLE_SUB_TYPE)       \
+  V(CODE_STUBS_TABLE_SUB_TYPE)                   \
+  V(CONTEXT_SUB_TYPE)                            \
+  V(COPY_ON_WRITE_SUB_TYPE)                      \
+  V(DEOPTIMIZATION_DATA_SUB_TYPE)                \
+  V(DESCRIPTOR_ARRAY_SUB_TYPE)                   \
+  V(EMBEDDED_OBJECT_SUB_TYPE)                    \
+  V(ENUM_CACHE_SUB_TYPE)                         \
+  V(ENUM_INDICES_CACHE_SUB_TYPE)                 \
+  V(DEPENDENT_CODE_SUB_TYPE)                     \
+  V(DICTIONARY_ELEMENTS_SUB_TYPE)                \
+  V(DICTIONARY_PROPERTIES_SUB_TYPE)              \
+  V(EMPTY_PROPERTIES_DICTIONARY_SUB_TYPE)        \
+  V(FAST_ELEMENTS_SUB_TYPE)                      \
+  V(FAST_PROPERTIES_SUB_TYPE)                    \
+  V(FAST_TEMPLATE_INSTANTIATIONS_CACHE_SUB_TYPE) \
+  V(HANDLER_TABLE_SUB_TYPE)                      \
+  V(INTRINSIC_FUNCTION_NAMES_SUB_TYPE)           \
+  V(JS_COLLECTION_SUB_TYPE)                      \
+  V(JS_WEAK_COLLECTION_SUB_TYPE)                 \
+  V(LITERALS_ARRAY_SUB_TYPE)                     \
+  V(MAP_CODE_CACHE_SUB_TYPE)                     \
+  V(NOSCRIPT_SHARED_FUNCTION_INFOS_SUB_TYPE)     \
+  V(NUMBER_STRING_CACHE_SUB_TYPE)                \
+  V(OBJECT_TO_CODE_SUB_TYPE)                     \
+  V(OPTIMIZED_CODE_MAP_SUB_TYPE)                 \
+  V(PROTOTYPE_USERS_SUB_TYPE)                    \
+  V(REGEXP_MULTIPLE_CACHE_SUB_TYPE)              \
+  V(RETAINED_MAPS_SUB_TYPE)                      \
+  V(SCOPE_INFO_SUB_TYPE)                         \
+  V(SCRIPT_LIST_SUB_TYPE)                        \
+  V(SERIALIZED_TEMPLATES_SUB_TYPE)               \
+  V(SHARED_FUNCTION_INFOS_SUB_TYPE)              \
+  V(SINGLE_CHARACTER_STRING_CACHE_SUB_TYPE)      \
+  V(SLOW_TEMPLATE_INSTANTIATIONS_CACHE_SUB_TYPE) \
+  V(STRING_SPLIT_CACHE_SUB_TYPE)                 \
+  V(STRING_TABLE_SUB_TYPE)                       \
+  V(TYPE_FEEDBACK_VECTOR_SUB_TYPE)               \
+  V(TYPE_FEEDBACK_METADATA_SUB_TYPE)             \
   V(WEAK_NEW_SPACE_OBJECT_TO_CODE_SUB_TYPE)
 
 enum FixedArraySubInstanceType {
@@ -975,6 +987,7 @@ template <class C> inline bool Is(Object* obj);
   V(JSArray)                     \
   V(JSArrayBuffer)               \
   V(JSArrayBufferView)           \
+  V(JSCollection)                \
   V(JSTypedArray)                \
   V(JSDataView)                  \
   V(JSProxy)                     \
@@ -2661,10 +2674,14 @@ class FixedArray: public FixedArrayBase {
   static inline Handle<Object> get(FixedArray* array, int index,
                                    Isolate* isolate);
   template <class T>
-  MaybeHandle<T> GetValue(int index) const;
+  MaybeHandle<T> GetValue(Isolate* isolate, int index) const;
 
   template <class T>
-  Handle<T> GetValueChecked(int index) const;
+  Handle<T> GetValueChecked(Isolate* isolate, int index) const;
+
+  // Return a grown copy if the index is bigger than the array's length.
+  static Handle<FixedArray> SetAndGrow(Handle<FixedArray> array, int index,
+                                       Handle<Object> value);
 
   // Setter that uses write barrier.
   inline void set(int index, Object* value);
@@ -3502,9 +3519,9 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
 
   // Creates a new dictionary.
   MUST_USE_RESULT static Handle<Derived> New(
-      Isolate* isolate,
-      int at_least_space_for,
-      PretenureFlag pretenure = NOT_TENURED);
+      Isolate* isolate, int at_least_space_for,
+      PretenureFlag pretenure = NOT_TENURED,
+      MinimumCapacity capacity_option = USE_DEFAULT_MINIMUM_CAPACITY);
 
   // Ensures that a new dictionary is created when the capacity is checked.
   void SetRequiresCopyOnCapacityChange();
@@ -4517,6 +4534,10 @@ class BytecodeArray : public FixedArrayBase {
   inline int interrupt_budget() const;
   inline void set_interrupt_budget(int interrupt_budget);
 
+  // Accessors for OSR loop nesting level.
+  inline int osr_loop_nesting_level() const;
+  inline void set_osr_loop_nesting_level(int depth);
+
   // Accessors for the constant pool.
   DECL_ACCESSORS(constant_pool, FixedArray)
 
@@ -4556,7 +4577,8 @@ class BytecodeArray : public FixedArrayBase {
   static const int kFrameSizeOffset = kSourcePositionTableOffset + kPointerSize;
   static const int kParameterSizeOffset = kFrameSizeOffset + kIntSize;
   static const int kInterruptBudgetOffset = kParameterSizeOffset + kIntSize;
-  static const int kHeaderSize = kInterruptBudgetOffset + kIntSize;
+  static const int kOSRNestingLevelOffset = kInterruptBudgetOffset + kIntSize;
+  static const int kHeaderSize = kOSRNestingLevelOffset + kCharSize;
 
   // Maximal memory consumption for a single BytecodeArray.
   static const int kMaxSize = 512 * MB;
@@ -4842,7 +4864,7 @@ class LiteralsArray : public FixedArray {
   static Handle<LiteralsArray> New(Isolate* isolate,
                                    Handle<TypeFeedbackVector> vector,
                                    int number_of_literals,
-                                   PretenureFlag pretenure);
+                                   PretenureFlag pretenure = TENURED);
 
   DECLARE_CAST(LiteralsArray)
 
@@ -5358,10 +5380,6 @@ class Code: public HeapObject {
   static Handle<WeakCell> WeakCellFor(Handle<Code> code);
   WeakCell* CachedWeakCell();
 
-  // Max loop nesting marker used to postpose OSR. We don't take loop
-  // nesting that is deeper than 5 levels into account.
-  static const int kMaxLoopNestingMarker = 6;
-
   static const int kConstantPoolSize =
       FLAG_enable_embedded_constant_pool ? kIntSize : 0;
 
@@ -5465,7 +5483,6 @@ class Code: public HeapObject {
       kIsCrankshaftedBit + 1, 27> {};  // NOLINT
   class AllowOSRAtLoopNestingLevelField: public BitField<int,
       kIsCrankshaftedBit + 1 + 27, 4> {};  // NOLINT
-  STATIC_ASSERT(AllowOSRAtLoopNestingLevelField::kMax >= kMaxLoopNestingMarker);
 
   static const int kArgumentsBits = 16;
   static const int kMaxArguments = (1 << kArgumentsBits) - 1;
@@ -5537,6 +5554,12 @@ class AbstractCode : public HeapObject {
   DECLARE_CAST(AbstractCode)
   inline Code* GetCode();
   inline BytecodeArray* GetBytecodeArray();
+
+  // Max loop nesting marker used to postpose OSR. We don't take loop
+  // nesting that is deeper than 5 levels into account.
+  static const int kMaxLoopNestingMarker = 6;
+  STATIC_ASSERT(Code::AllowOSRAtLoopNestingLevelField::kMax >=
+                kMaxLoopNestingMarker);
 };
 
 // Dependent code is a singly linked list of fixed arrays. Each array contains
@@ -5590,6 +5613,9 @@ class DependentCode: public FixedArray {
   };
 
   static const int kGroupCount = kAllocationSiteTransitionChangedGroup + 1;
+  static const int kNextLinkIndex = 0;
+  static const int kFlagsIndex = 1;
+  static const int kCodesStartIndex = 2;
 
   bool Contains(DependencyGroup group, WeakCell* code_cell);
   bool IsEmpty(DependencyGroup group);
@@ -5650,9 +5676,6 @@ class DependentCode: public FixedArray {
   class GroupField : public BitField<int, 0, 3> {};
   class CountField : public BitField<int, 3, 27> {};
   STATIC_ASSERT(kGroupCount <= GroupField::kMax + 1);
-  static const int kNextLinkIndex = 0;
-  static const int kFlagsIndex = 1;
-  static const int kCodesStartIndex = 2;
 };
 
 
@@ -7717,7 +7740,7 @@ class JSFunction: public JSObject {
   // necessary so that we do not dynamically lookup the object, regexp
   // or array functions.  Performing a dynamic lookup, we might end up
   // using the functions from a new context that we should not have
-  // access to.
+  // access to. For API objects we store the boilerplate in the literal array.
   DECL_ACCESSORS(literals, LiteralsArray)
 
   static void EnsureLiterals(Handle<JSFunction> function);
@@ -9051,11 +9074,10 @@ class String: public Name {
   // ROBUST_STRING_TRAVERSAL invokes behaviour that is robust  This means it
   // handles unexpected data without causing assert failures and it does not
   // do any heap allocations.  This is useful when printing stack traces.
-  base::SmartArrayPointer<char> ToCString(AllowNullsFlag allow_nulls,
-                                          RobustnessFlag robustness_flag,
-                                          int offset, int length,
-                                          int* length_output = 0);
-  base::SmartArrayPointer<char> ToCString(
+  std::unique_ptr<char[]> ToCString(AllowNullsFlag allow_nulls,
+                                    RobustnessFlag robustness_flag, int offset,
+                                    int length, int* length_output = 0);
+  std::unique_ptr<char[]> ToCString(
       AllowNullsFlag allow_nulls = DISALLOW_NULLS,
       RobustnessFlag robustness_flag = FAST_STRING_TRAVERSAL,
       int* length_output = 0);
@@ -10674,6 +10696,8 @@ class TemplateInfo: public Struct {
       kPropertyAccessorsOffset + kPointerSize;
   static const int kHeaderSize = kPropertyIntrinsicsOffset + kPointerSize;
 
+  static const int kFastTemplateInstantiationsCacheSize = 1 * KB;
+
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(TemplateInfo);
 };
@@ -10692,6 +10716,7 @@ class FunctionTemplateInfo: public TemplateInfo {
   DECL_ACCESSORS(instance_call_handler, Object)
   DECL_ACCESSORS(access_check_info, Object)
   DECL_ACCESSORS(shared_function_info, Object)
+  DECL_ACCESSORS(js_function, Object)
   DECL_INT_ACCESSORS(flag)
 
   inline int length() const;
@@ -10738,6 +10763,8 @@ class FunctionTemplateInfo: public TemplateInfo {
 
   static Handle<SharedFunctionInfo> GetOrCreateSharedFunctionInfo(
       Isolate* isolate, Handle<FunctionTemplateInfo> info);
+  // Returns parent function template or null.
+  inline FunctionTemplateInfo* GetParent(Isolate* isolate);
   // Returns true if |object| is an instance of this function template.
   inline bool IsTemplateFor(JSObject* object);
   bool IsTemplateFor(Map* map);
@@ -10774,6 +10801,10 @@ class ObjectTemplateInfo: public TemplateInfo {
   // LSB is for immutable_proto, higher bits for internal_field_count
   static const int kDataOffset = kConstructorOffset + kPointerSize;
   static const int kSize = kDataOffset + kPointerSize;
+
+  // Starting from given object template's constructor walk up the inheritance
+  // chain till a function template that has an instance template is found.
+  inline ObjectTemplateInfo* GetParent(Isolate* isolate);
 
  private:
   class IsImmutablePrototype : public BitField<bool, 0, 1> {};

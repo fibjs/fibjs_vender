@@ -10,7 +10,6 @@
 #include "src/ast/variables.h"
 #include "src/bailout-reason.h"
 #include "src/base/flags.h"
-#include "src/base/smart-pointers.h"
 #include "src/factory.h"
 #include "src/globals.h"
 #include "src/isolate.h"
@@ -475,10 +474,18 @@ class DoExpression final : public Expression {
   void set_block(Block* b) { block_ = b; }
   VariableProxy* result() { return result_; }
   void set_result(VariableProxy* v) { result_ = v; }
+  FunctionLiteral* represented_function() { return represented_function_; }
+  void set_represented_function(FunctionLiteral* f) {
+    represented_function_ = f;
+  }
+  bool IsAnonymousFunctionDefinition() const;
 
  protected:
   DoExpression(Zone* zone, Block* block, VariableProxy* result, int pos)
-      : Expression(zone, pos, kDoExpression), block_(block), result_(result) {
+      : Expression(zone, pos, kDoExpression),
+        block_(block),
+        result_(result),
+        represented_function_(nullptr) {
     DCHECK_NOT_NULL(block_);
     DCHECK_NOT_NULL(result_);
   }
@@ -489,6 +496,7 @@ class DoExpression final : public Expression {
 
   Block* block_;
   VariableProxy* result_;
+  FunctionLiteral* represented_function_;
 };
 
 
@@ -2716,7 +2724,6 @@ class ClassLiteral final : public Expression {
 
   DECLARE_NODE_TYPE(ClassLiteral)
 
-  Scope* scope() const { return scope_; }
   VariableProxy* class_variable_proxy() const { return class_variable_proxy_; }
   Expression* extends() const { return extends_; }
   void set_extends(Expression* e) { extends_ = e; }
@@ -2726,18 +2733,15 @@ class ClassLiteral final : public Expression {
   int start_position() const { return position(); }
   int end_position() const { return end_position_; }
 
-  BailoutId EntryId() const { return BailoutId(local_id(0)); }
-  BailoutId DeclsId() const { return BailoutId(local_id(1)); }
-  BailoutId ExitId() { return BailoutId(local_id(2)); }
-  BailoutId CreateLiteralId() const { return BailoutId(local_id(3)); }
-  BailoutId PrototypeId() { return BailoutId(local_id(4)); }
+  BailoutId CreateLiteralId() const { return BailoutId(local_id(0)); }
+  BailoutId PrototypeId() { return BailoutId(local_id(1)); }
 
   // Return an AST id for a property that is used in simulate instructions.
-  BailoutId GetIdForProperty(int i) { return BailoutId(local_id(i + 5)); }
+  BailoutId GetIdForProperty(int i) { return BailoutId(local_id(i + 2)); }
 
   // Unlike other AST nodes, this number of bailout IDs allocated for an
   // ClassLiteral can vary, so num_ids() is not a static method.
-  int num_ids() const { return parent_num_ids() + 5 + properties()->length(); }
+  int num_ids() const { return parent_num_ids() + 2 + properties()->length(); }
 
   // Object literals need one feedback slot for each non-trivial value, as well
   // as some slots for home objects.
@@ -2752,18 +2756,14 @@ class ClassLiteral final : public Expression {
   FeedbackVectorSlot PrototypeSlot() const { return prototype_slot_; }
   FeedbackVectorSlot ProxySlot() const { return proxy_slot_; }
 
-  bool IsAnonymousFunctionDefinition() const {
-    return constructor()->raw_name()->length() == 0;
-  }
 
  protected:
-  ClassLiteral(Zone* zone, Scope* scope, VariableProxy* class_variable_proxy,
+  ClassLiteral(Zone* zone, VariableProxy* class_variable_proxy,
                Expression* extends, FunctionLiteral* constructor,
                ZoneList<Property*>* properties, int start_position,
                int end_position)
       : Expression(zone, start_position, kClassLiteral),
         end_position_(end_position),
-        scope_(scope),
         class_variable_proxy_(class_variable_proxy),
         extends_(extends),
         constructor_(constructor),
@@ -2777,7 +2777,6 @@ class ClassLiteral final : public Expression {
   int end_position_;
   FeedbackVectorSlot prototype_slot_;
   FeedbackVectorSlot proxy_slot_;
-  Scope* scope_;
   VariableProxy* class_variable_proxy_;
   Expression* extends_;
   FunctionLiteral* constructor_;
@@ -2893,7 +2892,7 @@ class EmptyParentheses final : public Expression {
 template <class Subclass>
 class AstVisitor BASE_EMBEDDED {
  public:
-  void Visit(AstNode* node) { This()->Visit(node); }
+  void Visit(AstNode* node) { impl()->Visit(node); }
 
   void VisitDeclarations(ZoneList<Declaration*>* declarations) {
     for (int i = 0; i < declarations->length(); i++) {
@@ -2920,13 +2919,13 @@ class AstVisitor BASE_EMBEDDED {
     }
   }
 
- private:
-  Subclass* This() { return static_cast<Subclass*>(this); }
+ protected:
+  Subclass* impl() { return static_cast<Subclass*>(this); }
 };
 
-#define GENERATE_VISIT_CASE(NodeType) \
-  case AstNode::k##NodeType:          \
-    return Visit##NodeType(static_cast<NodeType*>(node));
+#define GENERATE_VISIT_CASE(NodeType)                                   \
+  case AstNode::k##NodeType:                                            \
+    return this->impl()->Visit##NodeType(static_cast<NodeType*>(node));
 
 #define GENERATE_AST_VISITOR_SWITCH()  \
   switch (node->node_type()) {         \
@@ -3037,38 +3036,6 @@ class AstVisitor BASE_EMBEDDED {
     AST_REWRITE(Type, _list->at(_index), _list->Set(_index, replacement)); \
   } while (false)
 
-
-// ----------------------------------------------------------------------------
-// Traversing visitor
-// - fully traverses the entire AST.
-
-// This AstVistor is not final, and provides the AstVisitor methods as virtual
-// methods so they can be specialized by subclasses.
-class AstTraversalVisitor : public AstVisitor<AstTraversalVisitor> {
- public:
-  explicit AstTraversalVisitor(Isolate* isolate);
-  explicit AstTraversalVisitor(uintptr_t stack_limit);
-  virtual ~AstTraversalVisitor() {}
-
-  // Iteration left-to-right.
-  void VisitDeclarations(ZoneList<Declaration*>* declarations);
-  void VisitStatements(ZoneList<Statement*>* statements);
-
-// Individual nodes
-#define DECLARE_VISIT(type) virtual void Visit##type(type* node);
-  AST_NODE_LIST(DECLARE_VISIT)
-#undef DECLARE_VISIT
-
- protected:
-  int depth() { return depth_; }
-
- private:
-  DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
-
-  int depth_;
-
-  DISALLOW_COPY_AND_ASSIGN(AstTraversalVisitor);
-};
 
 // ----------------------------------------------------------------------------
 // AstNode factory
@@ -3458,14 +3425,13 @@ class AstNodeFactory final BASE_EMBEDDED {
         false);
   }
 
-  ClassLiteral* NewClassLiteral(Scope* scope, VariableProxy* proxy,
-                                Expression* extends,
+  ClassLiteral* NewClassLiteral(VariableProxy* proxy, Expression* extends,
                                 FunctionLiteral* constructor,
                                 ZoneList<ObjectLiteral::Property*>* properties,
                                 int start_position, int end_position) {
     return new (local_zone_)
-        ClassLiteral(local_zone_, scope, proxy, extends, constructor,
-                     properties, start_position, end_position);
+        ClassLiteral(local_zone_, proxy, extends, constructor, properties,
+                     start_position, end_position);
   }
 
   NativeFunctionLiteral* NewNativeFunctionLiteral(const AstRawString* name,

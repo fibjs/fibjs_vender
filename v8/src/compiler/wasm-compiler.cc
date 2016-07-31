@@ -4,6 +4,8 @@
 
 #include "src/compiler/wasm-compiler.h"
 
+#include <memory>
+
 #include "src/isolate-inl.h"
 
 #include "src/base/platform/elapsed-timer.h"
@@ -276,7 +278,7 @@ WasmGraphBuilder::WasmGraphBuilder(
       module_(nullptr),
       mem_buffer_(nullptr),
       mem_size_(nullptr),
-      function_table_(nullptr),
+      function_tables_(zone),
       control_(nullptr),
       effect_(nullptr),
       cur_buffer_(def_buffer_),
@@ -1005,14 +1007,23 @@ Node* WasmGraphBuilder::MaskShiftCount64(Node* node) {
   return node;
 }
 
+static bool ReverseBytesSupported(MachineOperatorBuilder* m,
+                                  size_t size_in_bytes) {
+  switch (size_in_bytes) {
+    case 4:
+      return m->Word32ReverseBytes().IsSupported();
+    case 8:
+      return m->Word64ReverseBytes().IsSupported();
+    default:
+      break;
+  }
+  return false;
+}
+
 Node* WasmGraphBuilder::BuildChangeEndianness(Node* node, MachineType memtype,
                                               wasm::LocalType wasmtype) {
   Node* result;
   Node* value = node;
-  const Operator* shiftLeftOpcode;
-  const Operator* shiftRightOpcode;
-  const Operator* andOpcode;
-  const Operator* orOpcode;
   MachineOperatorBuilder* m = jsgraph()->machine();
   int valueSizeInBytes = 1 << ElementSizeLog2Of(memtype.representation());
   int valueSizeInBits = 8 * valueSizeInBytes;
@@ -1023,10 +1034,6 @@ Node* WasmGraphBuilder::BuildChangeEndianness(Node* node, MachineType memtype,
       value = graph()->NewNode(m->BitcastFloat64ToInt64(), node);
       isFloat = true;
     case MachineRepresentation::kWord64:
-      shiftLeftOpcode = m->Word64Shl();
-      shiftRightOpcode = m->Word64Shr();
-      andOpcode = m->Word64And();
-      orOpcode = m->Word64Or();
       result = jsgraph()->Int64Constant(0);
       break;
     case MachineRepresentation::kFloat32:
@@ -1034,10 +1041,6 @@ Node* WasmGraphBuilder::BuildChangeEndianness(Node* node, MachineType memtype,
       isFloat = true;
     case MachineRepresentation::kWord32:
     case MachineRepresentation::kWord16:
-      shiftLeftOpcode = m->Word32Shl();
-      shiftRightOpcode = m->Word32Shr();
-      andOpcode = m->Word32And();
-      orOpcode = m->Word32Or();
       result = jsgraph()->Int32Constant(0);
       break;
     case MachineRepresentation::kWord8:
@@ -1052,44 +1055,64 @@ Node* WasmGraphBuilder::BuildChangeEndianness(Node* node, MachineType memtype,
   int i;
   uint32_t shiftCount;
 
-  for (i = 0, shiftCount = valueSizeInBits - 8; i < valueSizeInBits / 2;
-       i += 8, shiftCount -= 16) {
-    Node* shiftLower;
-    Node* shiftHigher;
-    Node* lowerByte;
-    Node* higherByte;
-
-    DCHECK(shiftCount > 0);
-    DCHECK((shiftCount + 8) % 16 == 0);
-
-    if (valueSizeInBits > 32) {
-      shiftLower = graph()->NewNode(shiftLeftOpcode, value,
-                                    jsgraph()->Int64Constant(shiftCount));
-      shiftHigher = graph()->NewNode(shiftRightOpcode, value,
-                                     jsgraph()->Int64Constant(shiftCount));
-      lowerByte = graph()->NewNode(
-          andOpcode, shiftLower,
-          jsgraph()->Int64Constant(static_cast<uint64_t>(0xFF)
-                                   << (valueSizeInBits - 8 - i)));
-      higherByte = graph()->NewNode(
-          andOpcode, shiftHigher,
-          jsgraph()->Int64Constant(static_cast<uint64_t>(0xFF) << i));
-    } else {
-      shiftLower = graph()->NewNode(shiftLeftOpcode, value,
-                                    jsgraph()->Int32Constant(shiftCount));
-      shiftHigher = graph()->NewNode(shiftRightOpcode, value,
-                                     jsgraph()->Int32Constant(shiftCount));
-      lowerByte = graph()->NewNode(
-          andOpcode, shiftLower,
-          jsgraph()->Int32Constant(static_cast<uint32_t>(0xFF)
-                                   << (valueSizeInBits - 8 - i)));
-      higherByte = graph()->NewNode(
-          andOpcode, shiftHigher,
-          jsgraph()->Int32Constant(static_cast<uint32_t>(0xFF) << i));
+  if (ReverseBytesSupported(m, valueSizeInBytes < 4 ? 4 : valueSizeInBytes)) {
+    switch (valueSizeInBytes) {
+      case 2:
+        result =
+            graph()->NewNode(m->Word32ReverseBytes().op(),
+                             graph()->NewNode(m->Word32Shl(), value,
+                                              jsgraph()->Int32Constant(16)));
+        break;
+      case 4:
+        result = graph()->NewNode(m->Word32ReverseBytes().op(), value);
+        break;
+      case 8:
+        result = graph()->NewNode(m->Word64ReverseBytes().op(), value);
+        break;
+      default:
+        UNREACHABLE();
     }
+  } else {
+    for (i = 0, shiftCount = valueSizeInBits - 8; i < valueSizeInBits / 2;
+         i += 8, shiftCount -= 16) {
+      Node* shiftLower;
+      Node* shiftHigher;
+      Node* lowerByte;
+      Node* higherByte;
 
-    result = graph()->NewNode(orOpcode, result, lowerByte);
-    result = graph()->NewNode(orOpcode, result, higherByte);
+      DCHECK(shiftCount > 0);
+      DCHECK((shiftCount + 8) % 16 == 0);
+
+      if (valueSizeInBits > 32) {
+        shiftLower = graph()->NewNode(m->Word64Shl(), value,
+                                      jsgraph()->Int64Constant(shiftCount));
+        shiftHigher = graph()->NewNode(m->Word64Shr(), value,
+                                       jsgraph()->Int64Constant(shiftCount));
+        lowerByte = graph()->NewNode(
+            m->Word64And(), shiftLower,
+            jsgraph()->Int64Constant(static_cast<uint64_t>(0xFF)
+                                     << (valueSizeInBits - 8 - i)));
+        higherByte = graph()->NewNode(
+            m->Word64And(), shiftHigher,
+            jsgraph()->Int64Constant(static_cast<uint64_t>(0xFF) << i));
+        result = graph()->NewNode(m->Word64Or(), result, lowerByte);
+        result = graph()->NewNode(m->Word64Or(), result, higherByte);
+      } else {
+        shiftLower = graph()->NewNode(m->Word32Shl(), value,
+                                      jsgraph()->Int32Constant(shiftCount));
+        shiftHigher = graph()->NewNode(m->Word32Shr(), value,
+                                       jsgraph()->Int32Constant(shiftCount));
+        lowerByte = graph()->NewNode(
+            m->Word32And(), shiftLower,
+            jsgraph()->Int32Constant(static_cast<uint32_t>(0xFF)
+                                     << (valueSizeInBits - 8 - i)));
+        higherByte = graph()->NewNode(
+            m->Word32And(), shiftHigher,
+            jsgraph()->Int32Constant(static_cast<uint32_t>(0xFF) << i));
+        result = graph()->NewNode(m->Word32Or(), result, lowerByte);
+        result = graph()->NewNode(m->Word32Or(), result, higherByte);
+      }
+    }
   }
 
   if (isFloat) {
@@ -1118,7 +1141,9 @@ Node* WasmGraphBuilder::BuildChangeEndianness(Node* node, MachineType memtype,
         shiftBitCount = jsgraph()->Int32Constant(64 - valueSizeInBits);
         result = graph()->NewNode(
             m->Word64Sar(),
-            graph()->NewNode(m->Word64Shl(), result, shiftBitCount),
+            graph()->NewNode(m->Word64Shl(),
+                             graph()->NewNode(m->ChangeInt32ToInt64(), result),
+                             shiftBitCount),
             shiftBitCount);
       } else if (wasmtype == wasm::kAstI32) {
         shiftBitCount = jsgraph()->Int32Constant(32 - valueSizeInBits);
@@ -2057,11 +2082,14 @@ Node* WasmGraphBuilder::CallIndirect(uint32_t index, Node** args,
   // Compute the code object by loading it from the function table.
   Node* key = args[0];
 
+  // Assume only one table for now.
+  DCHECK_LE(module_->instance->function_tables.size(), 1u);
   // Bounds check the index.
-  int table_size = static_cast<int>(module_->FunctionTableSize());
+  uint32_t table_size =
+      module_->IsValidTable(0) ? module_->GetTable(0)->max_size : 0;
   if (table_size > 0) {
     // Bounds check against the table size.
-    Node* size = Int32Constant(static_cast<int>(table_size));
+    Node* size = Uint32Constant(table_size);
     Node* in_bounds = graph()->NewNode(machine->Uint32LessThan(), key, size);
     trap_->AddTrapIfFalse(wasm::kTrapFuncInvalid, in_bounds, position);
   } else {
@@ -2069,7 +2097,7 @@ Node* WasmGraphBuilder::CallIndirect(uint32_t index, Node** args,
     trap_->AddTrapIfFalse(wasm::kTrapFuncInvalid, Int32Constant(0), position);
     return trap_->GetTrapValue(module_->GetSignature(index));
   }
-  Node* table = FunctionTable();
+  Node* table = FunctionTable(0);
 
   // Load signature from the table and check.
   // The table is a FixedArray; signatures are encoded as SMIs.
@@ -2091,13 +2119,13 @@ Node* WasmGraphBuilder::CallIndirect(uint32_t index, Node** args,
   }
 
   // Load code object from the table.
-  int offset = fixed_offset + kPointerSize * table_size;
+  uint32_t offset = fixed_offset + kPointerSize * table_size;
   Node* load_code = graph()->NewNode(
       machine->Load(MachineType::AnyTagged()), table,
       graph()->NewNode(machine->Int32Add(),
                        graph()->NewNode(machine->Word32Shl(), key,
                                         Int32Constant(kPointerSizeLog2)),
-                       Int32Constant(offset)),
+                       Uint32Constant(offset)),
       *effect_, *control_);
 
   args[0] = load_code;
@@ -2129,10 +2157,13 @@ Node* WasmGraphBuilder::JITSingleFunction(Node* const base, Node* const length,
 
   // Bounds check the index.
   {
-    int table_size = static_cast<int>(module_->FunctionTableSize());
+    // Assume only one table for now.
+    DCHECK_LE(module_->instance->function_tables.size(), 1u);
+    uint32_t table_size =
+        module_->IsValidTable(0) ? module_->GetTable(0)->max_size : 0;
     if (table_size > 0) {
       // Bounds check against the table size.
-      Node* size = Int32Constant(static_cast<int>(table_size));
+      Node* size = Uint32Constant(table_size);
       Node* in_bounds =
           graph()->NewNode(machine->Uint32LessThan(), index, size);
       trap_->AddTrapIfFalse(wasm::kTrapInvalidIndex, in_bounds, position);
@@ -2162,7 +2193,7 @@ Node* WasmGraphBuilder::JITSingleFunction(Node* const base, Node* const length,
   inputs[1] = BuildChangeUint32ToSmi(base);
   inputs[2] = BuildChangeUint32ToSmi(length);
   inputs[3] = BuildChangeUint32ToSmi(index);
-  inputs[4] = FunctionTable();
+  inputs[4] = FunctionTable(0);
   inputs[5] = Uint32Constant(sig_index);
   inputs[6] = BuildChangeUint32ToSmi(Uint32Constant(return_count));
 
@@ -2804,13 +2835,17 @@ Node* WasmGraphBuilder::DefaultS128Value() {
                           zero, zero);
 }
 
-Node* WasmGraphBuilder::FunctionTable() {
+Node* WasmGraphBuilder::FunctionTable(uint32_t index) {
   DCHECK(module_ && module_->instance &&
-         !module_->instance->function_table.is_null());
-  if (!function_table_) {
-    function_table_ = HeapConstant(module_->instance->function_table);
+         index < module_->instance->function_tables.size());
+  if (!function_tables_.size()) {
+    for (size_t i = 0; i < module_->instance->function_tables.size(); ++i) {
+      DCHECK(!module_->instance->function_tables[i].is_null());
+      function_tables_.push_back(
+          HeapConstant(module_->instance->function_tables[i]));
+    }
   }
-  return function_table_;
+  return function_tables_[index];
 }
 
 Node* WasmGraphBuilder::ChangeToRuntimeCall(Node* node,
@@ -2971,8 +3006,6 @@ Node* WasmGraphBuilder::LoadMem(wasm::LocalType type, MachineType memtype,
   *effect_ = load;
 
 #if defined(V8_TARGET_BIG_ENDIAN)
-  // TODO(john.yan) Implement byte swap turbofan operator
-  // and use it if available for better performance
   load = BuildChangeEndianness(load, memtype, type);
 #endif
 
@@ -3001,12 +3034,11 @@ Node* WasmGraphBuilder::StoreMem(MachineType memtype, Node* index,
   // WASM semantics throw on OOB. Introduce explicit bounds check.
   BoundsCheckMem(memtype, index, offset, position);
   StoreRepresentation rep(memtype.representation(), kNoWriteBarrier);
+
   bool aligned = static_cast<int>(alignment) >=
                  ElementSizeLog2Of(memtype.representation());
 
 #if defined(V8_TARGET_BIG_ENDIAN)
-  // TODO(john.yan) Implement byte swap turbofan operator
-  // and use it if available for better performance
   val = BuildChangeEndianness(val, memtype);
 #endif
 
@@ -3379,7 +3411,7 @@ void WasmCompilationUnit::ExecuteCompilation() {
   double decode_ms = 0;
   size_t node_count = 0;
 
-  base::SmartPointer<Zone> graph_zone(graph_zone_.Detach());
+  std::unique_ptr<Zone> graph_zone(graph_zone_.release());
   SourcePositionTable* source_positions = BuildGraphForWasmFunction(&decode_ms);
 
   if (graph_construction_result_.failed()) {
@@ -3400,7 +3432,7 @@ void WasmCompilationUnit::ExecuteCompilation() {
     descriptor =
         module_env_->GetI32WasmCallDescriptor(&compilation_zone_, descriptor);
   }
-  job_.Reset(Pipeline::NewWasmCompilationJob(&info_, jsgraph_->graph(),
+  job_.reset(Pipeline::NewWasmCompilationJob(&info_, jsgraph_->graph(),
                                              descriptor, source_positions));
 
   // The function name {OptimizeGraph()} is misleading but necessary because we

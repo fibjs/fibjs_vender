@@ -705,6 +705,8 @@ bool HeapObject::IsJSWeakCollection() const {
   return IsJSWeakMap() || IsJSWeakSet();
 }
 
+bool HeapObject::IsJSCollection() const { return IsJSMap() || IsJSSet(); }
+
 bool HeapObject::IsDescriptorArray() const { return IsFixedArray(); }
 
 bool HeapObject::IsArrayList() const { return IsFixedArray(); }
@@ -1993,9 +1995,10 @@ void WeakCell::initialize(HeapObject* val) {
   // We just have to execute the generational barrier here because we never
   // mark through a weak cell and collect evacuation candidates when we process
   // all weak cells.
-  WriteBarrierMode mode = Marking::IsBlack(ObjectMarking::MarkBitFrom(this))
-                              ? UPDATE_WRITE_BARRIER
-                              : UPDATE_WEAK_WRITE_BARRIER;
+  WriteBarrierMode mode =
+      Page::FromAddress(this->address())->IsFlagSet(Page::BLACK_PAGE)
+          ? UPDATE_WRITE_BARRIER
+          : UPDATE_WEAK_WRITE_BARRIER;
   CONDITIONAL_WRITE_BARRIER(GetHeap(), this, kValueOffset, val, mode);
 }
 
@@ -2315,17 +2318,17 @@ Handle<Object> FixedArray::get(FixedArray* array, int index, Isolate* isolate) {
 }
 
 template <class T>
-MaybeHandle<T> FixedArray::GetValue(int index) const {
+MaybeHandle<T> FixedArray::GetValue(Isolate* isolate, int index) const {
   Object* obj = get(index);
-  if (obj->IsUndefined(GetIsolate())) return MaybeHandle<T>();
-  return Handle<T>(T::cast(obj));
+  if (obj->IsUndefined(isolate)) return MaybeHandle<T>();
+  return Handle<T>(T::cast(obj), isolate);
 }
 
 template <class T>
-Handle<T> FixedArray::GetValueChecked(int index) const {
+Handle<T> FixedArray::GetValueChecked(Isolate* isolate, int index) const {
   Object* obj = get(index);
-  CHECK(!obj->IsUndefined(GetIsolate()));
-  return Handle<T>(T::cast(obj));
+  CHECK(!obj->IsUndefined(isolate));
+  return Handle<T>(T::cast(obj), isolate);
 }
 
 bool FixedArray::is_the_hole(int index) {
@@ -4095,6 +4098,16 @@ void BytecodeArray::set_interrupt_budget(int interrupt_budget) {
   WRITE_INT_FIELD(this, kInterruptBudgetOffset, interrupt_budget);
 }
 
+int BytecodeArray::osr_loop_nesting_level() const {
+  return READ_INT8_FIELD(this, kOSRNestingLevelOffset);
+}
+
+void BytecodeArray::set_osr_loop_nesting_level(int depth) {
+  DCHECK(0 <= depth && depth <= AbstractCode::kMaxLoopNestingMarker);
+  STATIC_ASSERT(AbstractCode::kMaxLoopNestingMarker < kMaxInt8);
+  WRITE_INT8_FIELD(this, kOSRNestingLevelOffset, depth);
+}
+
 int BytecodeArray::parameter_count() const {
   // Parameter count is stored as the size on stack of the parameters to allow
   // it to be used directly by generated code.
@@ -5053,7 +5066,7 @@ int Code::allow_osr_at_loop_nesting_level() {
 
 void Code::set_allow_osr_at_loop_nesting_level(int level) {
   DCHECK_EQ(FUNCTION, kind());
-  DCHECK(level >= 0 && level <= kMaxLoopNestingMarker);
+  DCHECK(level >= 0 && level <= AbstractCode::kMaxLoopNestingMarker);
   int previous = READ_UINT32_FIELD(this, kKindSpecificFlags2Offset);
   int updated = AllowOSRAtLoopNestingLevelField::update(previous, level);
   WRITE_UINT32_FIELD(this, kKindSpecificFlags2Offset, updated);
@@ -5588,6 +5601,27 @@ bool PrototypeInfo::HasObjectCreateMap() {
 
 bool FunctionTemplateInfo::instantiated() {
   return shared_function_info()->IsSharedFunctionInfo();
+}
+
+FunctionTemplateInfo* FunctionTemplateInfo::GetParent(Isolate* isolate) {
+  Object* parent = parent_template();
+  return parent->IsUndefined(isolate) ? nullptr
+                                      : FunctionTemplateInfo::cast(parent);
+}
+
+ObjectTemplateInfo* ObjectTemplateInfo::GetParent(Isolate* isolate) {
+  Object* maybe_ctor = constructor();
+  if (maybe_ctor->IsUndefined(isolate)) return nullptr;
+  FunctionTemplateInfo* constructor = FunctionTemplateInfo::cast(maybe_ctor);
+  while (true) {
+    constructor = constructor->GetParent(isolate);
+    if (constructor == nullptr) return nullptr;
+    Object* maybe_obj = constructor->instance_template();
+    if (!maybe_obj->IsUndefined(isolate)) {
+      return ObjectTemplateInfo::cast(maybe_obj);
+    }
+  }
+  return nullptr;
 }
 
 ACCESSORS(PrototypeInfo, prototype_users, Object, kPrototypeUsersOffset)

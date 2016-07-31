@@ -266,7 +266,10 @@ class BytecodeGenerator::ControlScopeForIteration final
                            LoopBuilder* loop_builder)
       : ControlScope(generator),
         statement_(statement),
-        loop_builder_(loop_builder) {}
+        loop_builder_(loop_builder) {
+    generator->loop_depth_++;
+  }
+  ~ControlScopeForIteration() { generator()->loop_depth_--; }
 
  protected:
   bool Execute(Command command, Statement* statement) override {
@@ -532,6 +535,53 @@ class BytecodeGenerator::RegisterResultScope final
   Register result_register_;
 };
 
+// Used to build a list of global declaration initial value pairs.
+class BytecodeGenerator::GlobalDeclarationsBuilder final : public ZoneObject {
+ public:
+  GlobalDeclarationsBuilder(Isolate* isolate, Zone* zone)
+      : isolate_(isolate),
+        declaration_pairs_(0, zone),
+        constant_pool_entry_(0),
+        has_constant_pool_entry_(false) {}
+
+  void AddDeclaration(FeedbackVectorSlot slot, Handle<Object> initial_value) {
+    DCHECK(!slot.IsInvalid());
+    declaration_pairs_.push_back(handle(Smi::FromInt(slot.ToInt()), isolate_));
+    declaration_pairs_.push_back(initial_value);
+  }
+
+  Handle<FixedArray> AllocateDeclarationPairs() {
+    DCHECK(has_constant_pool_entry_);
+    int array_index = 0;
+    Handle<FixedArray> data = isolate_->factory()->NewFixedArray(
+        static_cast<int>(declaration_pairs_.size()), TENURED);
+    for (Handle<Object> obj : declaration_pairs_) {
+      data->set(array_index++, *obj);
+    }
+    return data;
+  }
+
+  size_t constant_pool_entry() {
+    DCHECK(has_constant_pool_entry_);
+    return constant_pool_entry_;
+  }
+
+  void set_constant_pool_entry(size_t constant_pool_entry) {
+    DCHECK(!empty());
+    DCHECK(!has_constant_pool_entry_);
+    constant_pool_entry_ = constant_pool_entry;
+    has_constant_pool_entry_ = true;
+  }
+
+  bool empty() { return declaration_pairs_.empty(); }
+
+ private:
+  Isolate* isolate_;
+  ZoneVector<Handle<Object>> declaration_pairs_;
+  size_t constant_pool_entry_;
+  bool has_constant_pool_entry_;
+};
+
 BytecodeGenerator::BytecodeGenerator(CompilationInfo* info)
     : isolate_(info->isolate()),
       zone_(info->zone()),
@@ -542,17 +592,34 @@ BytecodeGenerator::BytecodeGenerator(CompilationInfo* info)
           info->SourcePositionRecordingMode())),
       info_(info),
       scope_(info->scope()),
-      globals_(0, info->zone()),
+      globals_builder_(new (zone()) GlobalDeclarationsBuilder(info->isolate(),
+                                                              info->zone())),
+      global_declarations_(0, info->zone()),
       execution_control_(nullptr),
       execution_context_(nullptr),
       execution_result_(nullptr),
       register_allocator_(nullptr),
       generator_resume_points_(info->literal()->yield_count(), info->zone()),
-      generator_state_() {
+      generator_state_(),
+      loop_depth_(0) {
   InitializeAstVisitor(isolate()->stack_guard()->real_climit());
 }
 
 Handle<BytecodeArray> BytecodeGenerator::MakeBytecode() {
+  GenerateBytecode();
+
+  // Build global declaration pair arrays.
+  for (GlobalDeclarationsBuilder* globals_builder : global_declarations_) {
+    Handle<FixedArray> declarations =
+        globals_builder->AllocateDeclarationPairs();
+    builder()->InsertConstantPoolEntryAt(globals_builder->constant_pool_entry(),
+                                         declarations);
+  }
+
+  return builder()->ToBytecodeArray();
+}
+
+void BytecodeGenerator::GenerateBytecode() {
   // Initialize the incoming context.
   ContextScope incoming_context(this, scope(), false);
 
@@ -572,9 +639,9 @@ Handle<BytecodeArray> BytecodeGenerator::MakeBytecode() {
     VisitNewLocalFunctionContext();
     ContextScope local_function_context(this, scope(), false);
     VisitBuildLocalActivationContext();
-    MakeBytecodeBody();
+    GenerateBytecodeBody();
   } else {
-    MakeBytecodeBody();
+    GenerateBytecodeBody();
   }
 
   // In generator functions, we may not have visited every yield in the AST
@@ -586,10 +653,9 @@ Handle<BytecodeArray> BytecodeGenerator::MakeBytecode() {
   }
 
   builder()->EnsureReturn();
-  return builder()->ToBytecodeArray();
 }
 
-void BytecodeGenerator::MakeBytecodeBody() {
+void BytecodeGenerator::GenerateBytecodeBody() {
   // Build the arguments object if it is used.
   VisitArgumentsObject(scope()->arguments());
 
@@ -651,6 +717,14 @@ void BytecodeGenerator::VisitIterationHeader(IterationStatement* stmt,
   }
 
   loop_builder->LoopHeader(&resume_points_in_loop);
+
+  // Insert an explicit {OsrPoll} right after the loop header, to trigger
+  // on-stack replacement when armed for the given loop nesting depth.
+  if (FLAG_ignition_osr) {
+    // TODO(4764): Merge this with another bytecode (e.g. {Jump} back edge).
+    int level = Min(loop_depth_, AbstractCode::kMaxLoopNestingMarker - 1);
+    builder()->OsrPoll(level);
+  }
 
   if (stmt->yield_count() > 0) {
     // If we are not resuming, fall through to loop body.
@@ -723,9 +797,8 @@ void BytecodeGenerator::VisitVariableDeclaration(VariableDeclaration* decl) {
     case VariableLocation::UNALLOCATED: {
       DCHECK(!variable->binding_needs_init());
       FeedbackVectorSlot slot = decl->proxy()->VariableFeedbackSlot();
-      DCHECK(!slot.IsInvalid());
-      globals()->push_back(handle(Smi::FromInt(slot.ToInt()), isolate()));
-      globals()->push_back(isolate()->factory()->undefined_value());
+      globals_builder()->AddDeclaration(
+          slot, isolate()->factory()->undefined_value());
       break;
     }
     case VariableLocation::LOCAL:
@@ -773,9 +846,7 @@ void BytecodeGenerator::VisitFunctionDeclaration(FunctionDeclaration* decl) {
       // Check for stack-overflow exception.
       if (function.is_null()) return SetStackOverflow();
       FeedbackVectorSlot slot = decl->proxy()->VariableFeedbackSlot();
-      DCHECK(!slot.IsInvalid());
-      globals()->push_back(handle(Smi::FromInt(slot.ToInt()), isolate()));
-      globals()->push_back(function);
+      globals_builder()->AddDeclaration(slot, function);
       break;
     }
     case VariableLocation::PARAMETER:
@@ -810,34 +881,35 @@ void BytecodeGenerator::VisitFunctionDeclaration(FunctionDeclaration* decl) {
 void BytecodeGenerator::VisitDeclarations(
     ZoneList<Declaration*>* declarations) {
   RegisterAllocationScope register_scope(this);
-  DCHECK(globals()->empty());
+  DCHECK(globals_builder()->empty());
   for (int i = 0; i < declarations->length(); i++) {
     RegisterAllocationScope register_scope(this);
     Visit(declarations->at(i));
   }
-  if (globals()->empty()) return;
-  int array_index = 0;
-  Handle<FixedArray> data = isolate()->factory()->NewFixedArray(
-      static_cast<int>(globals()->size()), TENURED);
-  for (Handle<Object> obj : *globals()) data->set(array_index++, *obj);
+  if (globals_builder()->empty()) return;
+
+  globals_builder()->set_constant_pool_entry(
+      builder()->AllocateConstantPoolEntry());
   int encoded_flags = info()->GetDeclareGlobalsFlags();
 
   register_allocator()->PrepareForConsecutiveAllocations(3);
 
   Register pairs = register_allocator()->NextConsecutiveRegister();
-  builder()->LoadLiteral(data);
-  builder()->StoreAccumulatorInRegister(pairs);
-
   Register flags = register_allocator()->NextConsecutiveRegister();
-  builder()->LoadLiteral(Smi::FromInt(encoded_flags));
-  builder()->StoreAccumulatorInRegister(flags);
-  DCHECK(flags.index() == pairs.index() + 1);
-
   Register function = register_allocator()->NextConsecutiveRegister();
-  builder()->MoveRegister(Register::function_closure(), function);
 
-  builder()->CallRuntime(Runtime::kDeclareGlobalsForInterpreter, pairs, 3);
-  globals()->clear();
+  // Emit code to declare globals.
+  builder()
+      ->LoadConstantPoolEntry(globals_builder()->constant_pool_entry())
+      .StoreAccumulatorInRegister(pairs)
+      .LoadLiteral(Smi::FromInt(encoded_flags))
+      .StoreAccumulatorInRegister(flags)
+      .MoveRegister(Register::function_closure(), function)
+      .CallRuntime(Runtime::kDeclareGlobalsForInterpreter, pairs, 3);
+
+  // Push and reset globals builder.
+  global_declarations_.push_back(globals_builder());
+  globals_builder_ = new (zone()) GlobalDeclarationsBuilder(isolate(), zone());
 }
 
 void BytecodeGenerator::VisitStatements(ZoneList<Statement*>* statements) {
@@ -911,7 +983,6 @@ void BytecodeGenerator::VisitReturnStatement(ReturnStatement* stmt) {
 void BytecodeGenerator::VisitWithStatement(WithStatement* stmt) {
   builder()->SetStatementPosition(stmt);
   VisitForAccumulatorValue(stmt->expression());
-  builder()->CastAccumulatorToJSObject();
   VisitNewLocalWithContext();
   VisitInScope(stmt->statement(), stmt->scope());
 }
@@ -1129,8 +1200,7 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   builder()->JumpIfUndefined(&subject_undefined_label);
   builder()->JumpIfNull(&subject_null_label);
   Register receiver = register_allocator()->NewRegister();
-  builder()->CastAccumulatorToJSObject();
-  builder()->StoreAccumulatorInRegister(receiver);
+  builder()->CastAccumulatorToJSObject(receiver);
 
   register_allocator()->PrepareForConsecutiveAllocations(3);
   Register cache_type = register_allocator()->NextConsecutiveRegister();
@@ -1138,7 +1208,7 @@ void BytecodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   Register cache_length = register_allocator()->NextConsecutiveRegister();
   // Used as kRegTriple and kRegPair in ForInPrepare and ForInNext.
   USE(cache_array);
-  builder()->ForInPrepare(cache_type);
+  builder()->ForInPrepare(receiver, cache_type);
 
   // Set up loop counter
   Register index = register_allocator()->NewRegister();
@@ -1301,18 +1371,6 @@ void BytecodeGenerator::VisitFunctionLiteral(FunctionLiteral* expr) {
 }
 
 void BytecodeGenerator::VisitClassLiteral(ClassLiteral* expr) {
-  if (expr->scope()->ContextLocalCount() > 0) {
-    VisitNewLocalBlockContext(expr->scope());
-    ContextScope scope(this, expr->scope());
-    VisitDeclarations(expr->scope()->declarations());
-    VisitClassLiteralContents(expr);
-  } else {
-    VisitDeclarations(expr->scope()->declarations());
-    VisitClassLiteralContents(expr);
-  }
-}
-
-void BytecodeGenerator::VisitClassLiteralContents(ClassLiteral* expr) {
   VisitClassLiteralForRuntimeDefinition(expr);
 
   // Load the "prototype" from the constructor.
@@ -1388,7 +1446,7 @@ void BytecodeGenerator::VisitClassLiteralProperties(ClassLiteral* expr,
     }
 
     VisitForAccumulatorValue(property->key());
-    builder()->CastAccumulatorToName().StoreAccumulatorInRegister(key);
+    builder()->CastAccumulatorToName(key);
     // The static prototype property is read only. We handle the non computed
     // property name case in the parser. Since this is the only case where we
     // need to check for an own read only property we special case this so we do
@@ -1674,7 +1732,7 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 
     builder()->MoveRegister(literal, literal_argument);
     VisitForAccumulatorValue(property->key());
-    builder()->CastAccumulatorToName().StoreAccumulatorInRegister(key);
+    builder()->CastAccumulatorToName(key);
     VisitForAccumulatorValue(property->value());
     builder()->StoreAccumulatorInRegister(value);
     VisitSetHomeObject(value, literal, property);
@@ -2721,8 +2779,7 @@ void BytecodeGenerator::VisitCountOperation(CountOperation* expr) {
   Property* property = expr->expression()->AsProperty();
   LhsKind assign_type = Property::GetAssignType(property);
 
-  // TODO(rmcilroy): Set is_postfix to false if visiting for effect.
-  bool is_postfix = expr->is_postfix();
+  bool is_postfix = expr->is_postfix() && !execution_result()->IsEffect();
 
   // Evaluate LHS expression and get old value.
   Register object, home_object, key, old_value, value;
@@ -3012,7 +3069,7 @@ void BytecodeGenerator::VisitNewLocalWithContext() {
   Register extension_object = register_allocator()->NextConsecutiveRegister();
   Register closure = register_allocator()->NextConsecutiveRegister();
 
-  builder()->StoreAccumulatorInRegister(extension_object);
+  builder()->CastAccumulatorToJSObject(extension_object);
   VisitFunctionClosureForContext();
   builder()->StoreAccumulatorInRegister(closure).CallRuntime(
       Runtime::kPushWithContext, extension_object, 2);

@@ -5,6 +5,8 @@
 #ifndef V8_RUNTIME_RUNTIME_H_
 #define V8_RUNTIME_RUNTIME_H_
 
+#include <memory>
+
 #include "src/allocation.h"
 #include "src/base/platform/time.h"
 #include "src/objects.h"
@@ -322,7 +324,8 @@ namespace internal {
   F(EnqueueMicrotask, 1, 1)                         \
   F(RunMicrotasks, 0, 1)                            \
   F(OrdinaryHasInstance, 2, 1)                      \
-  F(IsWasmObject, 1, 1)
+  F(IsWasmObject, 1, 1)                             \
+  F(Typeof, 1, 1)
 
 #define FOR_EACH_INTRINSIC_LITERALS(F) \
   F(CreateRegExpLiteral, 4, 1)         \
@@ -922,28 +925,29 @@ namespace internal {
 
 // Most intrinsics are implemented in the runtime/ directory, but ICs are
 // implemented in ic.cc for now.
-#define FOR_EACH_INTRINSIC_IC(F)             \
-  F(BinaryOpIC_Miss, 2, 1)                   \
-  F(BinaryOpIC_MissWithAllocationSite, 3, 1) \
-  F(CallIC_Miss, 3, 1)                       \
-  F(CompareIC_Miss, 3, 1)                    \
-  F(ElementsTransitionAndStoreIC_Miss, 5, 1) \
-  F(KeyedLoadIC_Miss, 4, 1)                  \
-  F(KeyedLoadIC_MissFromStubFailure, 4, 1)   \
-  F(KeyedStoreIC_Miss, 5, 1)                 \
-  F(KeyedStoreIC_MissFromStubFailure, 5, 1)  \
-  F(KeyedStoreIC_Slow, 5, 1)                 \
-  F(LoadElementWithInterceptor, 2, 1)        \
-  F(LoadGlobalIC_Miss, 2, 1)                 \
-  F(LoadIC_Miss, 4, 1)                       \
-  F(LoadIC_MissFromStubFailure, 4, 1)        \
-  F(LoadPropertyWithInterceptor, 3, 1)       \
-  F(LoadPropertyWithInterceptorOnly, 3, 1)   \
-  F(StoreCallbackProperty, 6, 1)             \
-  F(StoreIC_Miss, 5, 1)                      \
-  F(StoreIC_MissFromStubFailure, 5, 1)       \
-  F(StorePropertyWithInterceptor, 3, 1)      \
-  F(ToBooleanIC_Miss, 1, 1)                  \
+#define FOR_EACH_INTRINSIC_IC(F)                 \
+  F(BinaryOpIC_Miss, 2, 1)                       \
+  F(BinaryOpIC_MissWithAllocationSite, 3, 1)     \
+  F(CallIC_Miss, 3, 1)                           \
+  F(CompareIC_Miss, 3, 1)                        \
+  F(ElementsTransitionAndStoreIC_Miss, 5, 1)     \
+  F(KeyedLoadIC_Miss, 4, 1)                      \
+  F(KeyedLoadIC_MissFromStubFailure, 4, 1)       \
+  F(KeyedStoreIC_Miss, 5, 1)                     \
+  F(KeyedStoreIC_MissFromStubFailure, 5, 1)      \
+  F(KeyedStoreIC_Slow, 5, 1)                     \
+  F(LoadElementWithInterceptor, 2, 1)            \
+  F(LoadGlobalIC_Miss, 2, 1)                     \
+  F(LoadIC_Miss, 4, 1)                           \
+  F(LoadIC_MissFromStubFailure, 4, 1)            \
+  F(LoadPropertyWithInterceptor, 3, 1)           \
+  F(LoadPropertyWithInterceptorOnly, 3, 1)       \
+  F(StoreCallbackProperty, 6, 1)                 \
+  F(StoreIC_Miss, 5, 1)                          \
+  F(StoreIC_MissFromStubFailure, 5, 1)           \
+  F(TransitionStoreIC_MissFromStubFailure, 6, 1) \
+  F(StorePropertyWithInterceptor, 3, 1)          \
+  F(ToBooleanIC_Miss, 1, 1)                      \
   F(Unreachable, 0, 1)
 
 #define FOR_EACH_INTRINSIC_RETURN_OBJECT(F) \
@@ -1096,7 +1100,7 @@ class RuntimeState {
 
   void set_redirected_intrinsic_functions(
       Runtime::Function* redirected_intrinsic_functions) {
-    redirected_intrinsic_functions_.Reset(redirected_intrinsic_functions);
+    redirected_intrinsic_functions_.reset(redirected_intrinsic_functions);
   }
 
  private:
@@ -1104,8 +1108,7 @@ class RuntimeState {
   unibrow::Mapping<unibrow::ToUppercase, 128> to_upper_mapping_;
   unibrow::Mapping<unibrow::ToLowercase, 128> to_lower_mapping_;
 
-
-  base::SmartArrayPointer<Runtime::Function> redirected_intrinsic_functions_;
+  std::unique_ptr<Runtime::Function[]> redirected_intrinsic_functions_;
 
   friend class Isolate;
   friend class Runtime;

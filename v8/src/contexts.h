@@ -172,8 +172,10 @@ enum BindingFlags {
   V(FLOAT32_ARRAY_FUN_INDEX, JSFunction, float32_array_fun)                    \
   V(FLOAT32X4_FUNCTION_INDEX, JSFunction, float32x4_function)                  \
   V(FLOAT64_ARRAY_FUN_INDEX, JSFunction, float64_array_fun)                    \
-  V(TEMPLATE_INSTANTIATIONS_CACHE_INDEX, UnseededNumberDictionary,             \
-    template_instantiations_cache)                                             \
+  V(FAST_TEMPLATE_INSTANTIATIONS_CACHE_INDEX, FixedArray,                      \
+    fast_template_instantiations_cache)                                        \
+  V(SLOW_TEMPLATE_INSTANTIATIONS_CACHE_INDEX, UnseededNumberDictionary,        \
+    slow_template_instantiations_cache)                                        \
   V(FUNCTION_FUNCTION_INDEX, JSFunction, function_function)                    \
   V(GENERATOR_FUNCTION_FUNCTION_INDEX, JSFunction,                             \
     generator_function_function)                                               \
@@ -331,9 +333,7 @@ class ScriptContextTable : public FixedArray {
 //                statically allocated context slots. The names are needed
 //                for dynamic lookups in the presence of 'with' or 'eval'.
 //
-// [ previous  ]  A pointer to the previous context. It is NULL for
-//                function contexts, and non-NULL for 'with' contexts.
-//                Used to implement the 'with' statement.
+// [ previous  ]  A pointer to the previous context.
 //
 // [ extension ]  A pointer to an extension JSObject, or "the hole". Used to
 //                implement 'with' statements and dynamic declarations
@@ -348,9 +348,7 @@ class ScriptContextTable : public FixedArray {
 //                SloppyBlockWithEvalContextExtension, pairing the ScopeInfo
 //                with an extension object.
 //
-// [ global_object ]  A pointer to the global object. Provided for quick
-//                access to the global object from inside the code (since
-//                we always have a context pointer).
+// [ native_context ]  A pointer to the native context.
 //
 // In addition, function contexts may have statically allocated context slots
 // to store local variables/functions that are accessed from inner functions

@@ -4,6 +4,8 @@
 
 #include "src/runtime/runtime-utils.h"
 
+#include <memory>
+
 #include "src/arguments.h"
 #include "src/deoptimizer.h"
 #include "src/frames-inl.h"
@@ -35,6 +37,7 @@ RUNTIME_FUNCTION(Runtime_DeoptimizeFunction) {
   }
   Handle<JSFunction> function = Handle<JSFunction>::cast(function_object);
 
+  // If the function is not optimized, just return.
   if (!function->IsOptimized()) return isolate->heap()->undefined_value();
 
   // TODO(turbofan): Deoptimization is not supported yet.
@@ -55,17 +58,12 @@ RUNTIME_FUNCTION(Runtime_DeoptimizeNow) {
 
   Handle<JSFunction> function;
 
-  // If the argument is 'undefined', deoptimize the topmost
-  // function.
+  // Find the JavaScript function on the top of the stack.
   JavaScriptFrameIterator it(isolate);
-  while (!it.done()) {
-    if (it.frame()->is_java_script()) {
-      function = Handle<JSFunction>(it.frame()->function());
-      break;
-    }
-  }
+  if (!it.done()) function = Handle<JSFunction>(it.frame()->function());
   if (function.is_null()) return isolate->heap()->undefined_value();
 
+  // If the function is not optimized, just return.
   if (!function->IsOptimized()) return isolate->heap()->undefined_value();
 
   // TODO(turbofan): Deoptimization is not supported yet.
@@ -153,12 +151,7 @@ RUNTIME_FUNCTION(Runtime_OptimizeOsr) {
   if (args.length() == 0) {
     // Find the JavaScript function on the top of the stack.
     JavaScriptFrameIterator it(isolate);
-    while (!it.done()) {
-      if (it.frame()->is_java_script()) {
-        function = Handle<JSFunction>(it.frame()->function());
-        break;
-      }
-    }
+    if (!it.done()) function = Handle<JSFunction>(it.frame()->function());
     if (function.is_null()) return isolate->heap()->undefined_value();
   } else {
     // Function was passed as an argument.
@@ -166,27 +159,19 @@ RUNTIME_FUNCTION(Runtime_OptimizeOsr) {
     function = arg;
   }
 
-  // The following condition was lifted from the DCHECK inside
-  // JSFunction::MarkForOptimization().
-  if (!(function->shared()->allows_lazy_compilation() ||
-        !function->shared()->optimization_disabled())) {
-    return isolate->heap()->undefined_value();
-  }
-
-  // If function is interpreted, just return. OSR is not supported.
-  // TODO(4764): Remove this check when OSR is enabled in the interpreter.
-  if (function->shared()->HasBytecodeArray()) {
+  // If function is interpreted but OSR hasn't been enabled, just return.
+  if (function->shared()->HasBytecodeArray() && !FLAG_ignition_osr) {
     return isolate->heap()->undefined_value();
   }
 
   // If the function is already optimized, just return.
   if (function->IsOptimized()) return isolate->heap()->undefined_value();
 
-  Code* unoptimized = function->shared()->code();
-  if (unoptimized->kind() == Code::FUNCTION) {
-    DCHECK(BackEdgeTable::Verify(isolate, unoptimized));
+  // Make the profiler arm all back edges in unoptimized code.
+  if (function->shared()->HasBytecodeArray() ||
+      function->shared()->code()->kind() == Code::FUNCTION) {
     isolate->runtime_profiler()->AttemptOnStackReplacement(
-        *function, Code::kMaxLoopNestingMarker);
+        *function, AbstractCode::kMaxLoopNestingMarker);
   }
 
   return isolate->heap()->undefined_value();
@@ -399,7 +384,7 @@ RUNTIME_FUNCTION(Runtime_SetFlags) {
   SealHandleScope shs(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_CHECKED(String, arg, 0);
-  base::SmartArrayPointer<char> flags =
+  std::unique_ptr<char[]> flags =
       arg->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
   FlagList::SetFlagsFromString(flags.get(), StrLength(flags.get()));
   return isolate->heap()->undefined_value();

@@ -40,7 +40,6 @@ const auto GetRegConfig = RegisterConfiguration::Crankshaft;
 class S390Debugger {
  public:
   explicit S390Debugger(Simulator* sim) : sim_(sim) {}
-  ~S390Debugger();
 
   void Stop(Instruction* instr);
   void Debug();
@@ -73,48 +72,6 @@ class S390Debugger {
   void RedoBreakpoints();
 };
 
-S390Debugger::~S390Debugger() {}
-
-#ifdef GENERATED_CODE_COVERAGE
-static FILE* coverage_log = NULL;
-
-static void InitializeCoverage() {
-  char* file_name = getenv("V8_GENERATED_CODE_COVERAGE_LOG");
-  if (file_name != NULL) {
-    coverage_log = fopen(file_name, "aw+");
-  }
-}
-
-void S390Debugger::Stop(Instruction* instr) {
-  // Get the stop code.
-  uint32_t code = instr->SvcValue() & kStopCodeMask;
-  // Retrieve the encoded address, which comes just after this stop.
-  char** msg_address =
-      reinterpret_cast<char**>(sim_->get_pc() + sizeof(FourByteInstr));
-  char* msg = *msg_address;
-  DCHECK(msg != NULL);
-
-  // Update this stop description.
-  if (isWatchedStop(code) && !watched_stops_[code].desc) {
-    watched_stops_[code].desc = msg;
-  }
-
-  if (strlen(msg) > 0) {
-    if (coverage_log != NULL) {
-      fprintf(coverage_log, "%s\n", msg);
-      fflush(coverage_log);
-    }
-    // Overwrite the instruction and address with nops.
-    instr->SetInstructionBits(kNopInstr);
-    reinterpret_cast<Instruction*>(msg_address)->SetInstructionBits(kNopInstr);
-  }
-  sim_->set_pc(sim_->get_pc() + sizeof(FourByteInstr) + kPointerSize);
-}
-
-#else  // ndef GENERATED_CODE_COVERAGE
-
-static void InitializeCoverage() {}
-
 void S390Debugger::Stop(Instruction* instr) {
   // Get the stop code.
   // use of kStopCodeMask not right on PowerPC
@@ -134,7 +91,6 @@ void S390Debugger::Stop(Instruction* instr) {
   sim_->set_pc(sim_->get_pc() + sizeof(FourByteInstr) + kPointerSize);
   Debug();
 }
-#endif
 
 intptr_t S390Debugger::GetRegisterValue(int regnum) {
   return sim_->get_register(regnum);
@@ -1559,7 +1515,6 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
   // some buffer below.
   registers_[sp] =
       reinterpret_cast<intptr_t>(stack_) + stack_size - stack_protection_size_;
-  InitializeCoverage();
 
   last_debugger_input_ = NULL;
 }
@@ -1794,6 +1749,11 @@ void Simulator::TrashCallerSaveRegisters() {
 
 uint32_t Simulator::ReadWU(intptr_t addr, Instruction* instr) {
   uint32_t* ptr = reinterpret_cast<uint32_t*>(addr);
+  return *ptr;
+}
+
+int64_t Simulator::ReadW64(intptr_t addr, Instruction* instr) {
+  int64_t* ptr = reinterpret_cast<int64_t*>(addr);
   return *ptr;
 }
 
@@ -5562,15 +5522,31 @@ bool Simulator::DecodeSixByteArithmetic(Instruction* instr) {
 }
 
 int16_t Simulator::ByteReverse(int16_t hword) {
+#if defined(__GNUC__)
+  return __builtin_bswap16(hword);
+#else
   return (hword << 8) | ((hword >> 8) & 0x00ff);
+#endif
 }
 
 int32_t Simulator::ByteReverse(int32_t word) {
+#if defined(__GNUC__)
+  return __builtin_bswap32(word);
+#else
   int32_t result = word << 24;
   result |= (word << 8) & 0x00ff0000;
   result |= (word >> 8) & 0x0000ff00;
   result |= (word >> 24) & 0x00000ff;
   return result;
+#endif
+}
+
+int64_t Simulator::ByteReverse(int64_t dword) {
+#if defined(__GNUC__)
+  return __builtin_bswap64(dword);
+#else
+#error unsupport __builtin_bswap64
+#endif
 }
 
 int Simulator::DecodeInstructionOriginal(Instruction* instr) {
@@ -9871,9 +9847,13 @@ EVALUATE(DSGR) {
 }
 
 EVALUATE(LRVGR) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
+  DCHECK_OPCODE(LRVGR);
+  DECODE_RRE_INSTRUCTION(r1, r2);
+  int64_t r2_val = get_register(r2);
+  int64_t r1_val = ByteReverse(r2_val);
+
+  set_register(r1, r1_val);
+  return length;
 }
 
 EVALUATE(LPGFR) {
@@ -9986,9 +9966,13 @@ EVALUATE(KMAC) {
 }
 
 EVALUATE(LRVR) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
+  DCHECK_OPCODE(LRVR);
+  DECODE_RRE_INSTRUCTION(r1, r2);
+  int32_t r2_val = get_low_register<int32_t>(r2);
+  int32_t r1_val = ByteReverse(r2_val);
+
+  set_low_register(r1, r1_val);
+  return length;
 }
 
 EVALUATE(CGR) {
@@ -10787,12 +10771,6 @@ EVALUATE(CVBG) {
   return 0;
 }
 
-EVALUATE(LRVG) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
-}
-
 EVALUATE(LT) {
   DCHECK_OPCODE(LT);
   DECODE_RXY_A_INSTRUCTION(r1, x2, b2, d2);
@@ -10889,6 +10867,17 @@ EVALUATE(DSGF) {
   return 0;
 }
 
+EVALUATE(LRVG) {
+  DCHECK_OPCODE(LRVG);
+  DECODE_RXY_A_INSTRUCTION(r1, x2, b2, d2);
+  int64_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+  int64_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+  intptr_t mem_addr = b2_val + x2_val + d2;
+  int64_t mem_val = ReadW64(mem_addr, instr);
+  set_register(r1, ByteReverse(mem_val));
+  return length;
+}
+
 EVALUATE(LRV) {
   DCHECK_OPCODE(LRV);
   DECODE_RXY_A_INSTRUCTION(r1, x2, b2, d2);
@@ -10956,12 +10945,6 @@ EVALUATE(CVDG) {
   return 0;
 }
 
-EVALUATE(STRVG) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
-}
-
 EVALUATE(CGF) {
   UNIMPLEMENTED();
   USE(instr);
@@ -11000,6 +10983,17 @@ EVALUATE(STRV) {
   int64_t b2_val = (b2 == 0) ? 0 : get_register(b2);
   intptr_t mem_addr = b2_val + x2_val + d2;
   WriteW(mem_addr, ByteReverse(r1_val), instr);
+  return length;
+}
+
+EVALUATE(STRVG) {
+  DCHECK_OPCODE(STRVG);
+  DECODE_RXY_A_INSTRUCTION(r1, x2, b2, d2);
+  int64_t r1_val = get_register(r1);
+  int64_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+  int64_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+  intptr_t mem_addr = b2_val + x2_val + d2;
+  WriteDW(mem_addr, ByteReverse(r1_val));
   return length;
 }
 

@@ -4,6 +4,8 @@
 
 #include "src/debug/debug-scopes.h"
 
+#include <memory>
+
 #include "src/ast/scopes.h"
 #include "src/compiler.h"
 #include "src/debug/debug.h"
@@ -85,11 +87,11 @@ ScopeIterator::ScopeIterator(Isolate* isolate, FrameInspector* frame_inspector,
   // Reparse the code and analyze the scopes.
   // Check whether we are in global, eval or function code.
   Zone zone(isolate->allocator());
-  base::SmartPointer<ParseInfo> info;
+  std::unique_ptr<ParseInfo> info;
   if (scope_info->scope_type() != FUNCTION_SCOPE) {
     // Global or eval code.
     Handle<Script> script(Script::cast(shared_info->script()));
-    info.Reset(new ParseInfo(&zone, script));
+    info.reset(new ParseInfo(&zone, script));
     info->set_toplevel();
     if (scope_info->scope_type() == SCRIPT_SCOPE) {
       info->set_global();
@@ -103,7 +105,7 @@ ScopeIterator::ScopeIterator(Isolate* isolate, FrameInspector* frame_inspector,
     }
   } else {
     // Inner function.
-    info.Reset(new ParseInfo(&zone, function));
+    info.reset(new ParseInfo(&zone, function));
   }
   Scope* scope = NULL;
   if (Compiler::ParseAndAnalyze(info.get())) scope = info->literal()->scope();
@@ -790,6 +792,11 @@ void ScopeIterator::CopyContextExtensionToScopeObject(
 
 void ScopeIterator::GetNestedScopeChain(Isolate* isolate, Scope* scope,
                                         int position) {
+  if (scope->is_function_scope()) {
+    // Do not collect scopes of nested inner functions inside the current one.
+    Handle<JSFunction> function = frame_inspector_->GetFunction();
+    if (scope->end_position() < function->shared()->end_position()) return;
+  }
   if (scope->is_hidden()) {
     // We need to add this chain element in case the scope has a context
     // associated. We need to keep the scope chain and context chain in sync.

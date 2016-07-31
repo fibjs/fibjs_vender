@@ -145,6 +145,12 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(ChangeInt32ToInt64, Operator::kNoProperties, 1, 0, 1)                    \
   V(ChangeUint32ToFloat64, Operator::kNoProperties, 1, 0, 1)                 \
   V(ChangeUint32ToUint64, Operator::kNoProperties, 1, 0, 1)                  \
+  V(ImpossibleToWord32, Operator::kNoProperties, 1, 0, 1)                    \
+  V(ImpossibleToWord64, Operator::kNoProperties, 1, 0, 1)                    \
+  V(ImpossibleToFloat32, Operator::kNoProperties, 1, 0, 1)                   \
+  V(ImpossibleToFloat64, Operator::kNoProperties, 1, 0, 1)                   \
+  V(ImpossibleToTagged, Operator::kNoProperties, 1, 0, 1)                    \
+  V(ImpossibleToBit, Operator::kNoProperties, 1, 0, 1)                       \
   V(TruncateFloat64ToFloat32, Operator::kNoProperties, 1, 0, 1)              \
   V(TruncateInt64ToInt32, Operator::kNoProperties, 1, 0, 1)                  \
   V(BitcastFloat32ToInt32, Operator::kNoProperties, 1, 0, 1)                 \
@@ -386,6 +392,8 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Word64Ctz, Operator::kNoProperties, 1, 0, 1)            \
   V(Word32ReverseBits, Operator::kNoProperties, 1, 0, 1)    \
   V(Word64ReverseBits, Operator::kNoProperties, 1, 0, 1)    \
+  V(Word32ReverseBytes, Operator::kNoProperties, 1, 0, 1)   \
+  V(Word64ReverseBytes, Operator::kNoProperties, 1, 0, 1)   \
   V(Word32Popcnt, Operator::kNoProperties, 1, 0, 1)         \
   V(Word64Popcnt, Operator::kNoProperties, 1, 0, 1)         \
   V(Float32RoundDown, Operator::kNoProperties, 1, 0, 1)     \

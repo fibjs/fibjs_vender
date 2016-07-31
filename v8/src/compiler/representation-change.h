@@ -139,6 +139,10 @@ class UseInfo {
     return UseInfo(MachineRepresentation::kFloat64, Truncation::Any(),
                    TypeCheckKind::kNumberOrOddball);
   }
+  static UseInfo CheckedNumberOrOddballAsWord32() {
+    return UseInfo(MachineRepresentation::kWord32, Truncation::Word32(),
+                   TypeCheckKind::kNumberOrOddball);
+  }
 
   // Undetermined representation.
   static UseInfo Any() {
@@ -222,11 +226,6 @@ class RepresentationChanger final {
                                 Type* output_type);
   Node* GetWord64RepresentationFor(Node* node, MachineRepresentation output_rep,
                                    Type* output_type);
-  Node* GetCheckedWord32RepresentationFor(Node* node,
-                                          MachineRepresentation output_rep,
-                                          Type* output_type, Node* use_node,
-                                          Truncation truncation,
-                                          TypeCheckKind check);
   Node* TypeError(Node* node, MachineRepresentation output_rep,
                   Type* output_type, MachineRepresentation use);
   Node* MakeTruncatedInt32Constant(double value);

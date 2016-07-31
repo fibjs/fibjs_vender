@@ -4,6 +4,7 @@
 
 #include "src/crankshaft/hydrogen.h"
 
+#include <memory>
 #include <sstream>
 
 #include "src/allocation-site-scopes.h"
@@ -1359,6 +1360,7 @@ void HGraphBuilder::LoopBuilder::EndBody() {
 
 
 HGraph* HGraphBuilder::CreateGraph() {
+  DCHECK(!FLAG_minimal);
   graph_ = new (zone()) HGraph(info_, descriptor_);
   if (FLAG_hydrogen_stats) isolate()->GetHStatistics()->Initialize(info_);
   if (!info_->IsStub() && info_->is_tracking_positions()) {
@@ -8154,7 +8156,7 @@ void HOptimizedGraphBuilder::HandlePolymorphicCallNamed(Call* expr,
     bool try_inline = FLAG_polymorphic_inlining && !needs_wrapping;
     if (FLAG_trace_inlining && try_inline) {
       Handle<JSFunction> caller = current_info()->closure();
-      base::SmartArrayPointer<char> caller_name =
+      std::unique_ptr<char[]> caller_name =
           caller->shared()->DebugName()->ToCString();
       PrintF("Trying to inline the polymorphic call to %s from %s\n",
              name->ToCString().get(),
@@ -8241,9 +8243,9 @@ void HOptimizedGraphBuilder::TraceInline(Handle<JSFunction> target,
                                          const char* reason,
                                          TailCallMode tail_call_mode) {
   if (FLAG_trace_inlining) {
-    base::SmartArrayPointer<char> target_name =
+    std::unique_ptr<char[]> target_name =
         target->shared()->DebugName()->ToCString();
-    base::SmartArrayPointer<char> caller_name =
+    std::unique_ptr<char[]> caller_name =
         caller->shared()->DebugName()->ToCString();
     if (reason == NULL) {
       const char* call_mode =
@@ -13093,7 +13095,7 @@ void HTracer::TraceCompilation(CompilationInfo* info) {
       }
     }
   }
-  base::SmartArrayPointer<char> method_name = info->GetDebugName();
+  std::unique_ptr<char[]> method_name = info->GetDebugName();
   name.append(method_name.get());
   if (info->IsOptimizing()) {
     PrintStringProperty("name", name.c_str());

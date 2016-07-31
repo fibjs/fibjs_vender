@@ -1156,13 +1156,18 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     SimpleInstallFunction(prototype, factory->apply_string(),
                           Builtins::kFunctionPrototypeApply, 2, false);
 
-    FastFunctionBindStub bind_stub(isolate);
-    Handle<JSFunction> bind_function = factory->NewFunctionWithoutPrototype(
-        factory->bind_string(), bind_stub.GetCode(), false);
-    bind_function->shared()->DontAdaptArguments();
-    bind_function->shared()->set_length(1);
-    InstallFunction(prototype, bind_function, factory->bind_string(),
-                    DONT_ENUM);
+    if (FLAG_minimal) {
+      SimpleInstallFunction(prototype, factory->bind_string(),
+                            Builtins::kFunctionPrototypeBind, 1, false);
+    } else {
+      FastFunctionBindStub bind_stub(isolate);
+      Handle<JSFunction> bind_function = factory->NewFunctionWithoutPrototype(
+          factory->bind_string(), bind_stub.GetCode(), false);
+      bind_function->shared()->DontAdaptArguments();
+      bind_function->shared()->set_length(1);
+      InstallFunction(prototype, bind_function, factory->bind_string(),
+                      DONT_ENUM);
+    }
 
     SimpleInstallFunction(prototype, factory->call_string(),
                           Builtins::kFunctionPrototypeCall, 1, false);
@@ -2671,7 +2676,8 @@ void Bootstrapper::ExportFromRuntime(Isolate* isolate,
           {"isConstructor", Builtins::kCallSitePrototypeIsConstructor},
           {"isEval", Builtins::kCallSitePrototypeIsEval},
           {"isNative", Builtins::kCallSitePrototypeIsNative},
-          {"isToplevel", Builtins::kCallSitePrototypeIsToplevel}};
+          {"isToplevel", Builtins::kCallSitePrototypeIsToplevel},
+          {"toString", Builtins::kCallSitePrototypeToString}};
 
       PropertyAttributes attrs =
           static_cast<PropertyAttributes>(DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -2990,11 +2996,15 @@ bool Genesis::InstallNatives(GlobalContextType context_type) {
   }
 
   if (!CallUtilsFunction(isolate(), "PostNatives")) return false;
+  auto fast_template_instantiations_cache = isolate()->factory()->NewFixedArray(
+      TemplateInfo::kFastTemplateInstantiationsCacheSize);
+  native_context()->set_fast_template_instantiations_cache(
+      *fast_template_instantiations_cache);
 
-  auto template_instantiations_cache = UnseededNumberDictionary::New(
+  auto slow_template_instantiations_cache = UnseededNumberDictionary::New(
       isolate(), ApiNatives::kInitialFunctionCacheSize);
-  native_context()->set_template_instantiations_cache(
-      *template_instantiations_cache);
+  native_context()->set_slow_template_instantiations_cache(
+      *slow_template_instantiations_cache);
 
   // Store the map for the %ObjectPrototype% after the natives has been compiled
   // and the Object function has been set up.

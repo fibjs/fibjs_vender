@@ -44,17 +44,23 @@ BUILTIN(ErrorCaptureStackTrace) {
 
   Handle<Object> stack_trace =
       isolate->CaptureSimpleStackTrace(object, mode, caller);
+  if (!stack_trace->IsJSArray()) return *isolate->factory()->undefined_value();
 
   Handle<Object> formatted_stack_trace;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, formatted_stack_trace,
       FormatStackTrace(isolate, object, stack_trace));
 
-  RETURN_FAILURE_ON_EXCEPTION(
-      isolate, JSObject::SetProperty(object, isolate->factory()->stack_string(),
-                                     formatted_stack_trace, STRICT));
-
-  return *isolate->factory()->undefined_value();
+  PropertyDescriptor desc;
+  desc.set_configurable(true);
+  desc.set_writable(true);
+  desc.set_value(formatted_stack_trace);
+  Maybe<bool> status = JSReceiver::DefineOwnProperty(
+      isolate, object, isolate->factory()->stack_string(), &desc,
+      Object::THROW_ON_ERROR);
+  if (!status.IsJust()) return isolate->heap()->exception();
+  CHECK(status.FromJust());
+  return isolate->heap()->undefined_value();
 }
 
 namespace {

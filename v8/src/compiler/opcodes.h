@@ -43,23 +43,24 @@
   V(RelocatableInt32Constant) \
   V(RelocatableInt64Constant)
 
-#define INNER_OP_LIST(V) \
-  V(Select)              \
-  V(Phi)                 \
-  V(EffectPhi)           \
-  V(Checkpoint)          \
-  V(BeginRegion)         \
-  V(FinishRegion)        \
-  V(FrameState)          \
-  V(StateValues)         \
-  V(TypedStateValues)    \
-  V(ObjectState)         \
-  V(Call)                \
-  V(Parameter)           \
-  V(OsrValue)            \
-  V(LoopExit)            \
-  V(LoopExitValue)       \
-  V(LoopExitEffect)      \
+#define INNER_OP_LIST(V)  \
+  V(Select)               \
+  V(Phi)                  \
+  V(EffectPhi)            \
+  V(InductionVariablePhi) \
+  V(Checkpoint)           \
+  V(BeginRegion)          \
+  V(FinishRegion)         \
+  V(FrameState)           \
+  V(StateValues)          \
+  V(TypedStateValues)     \
+  V(ObjectState)          \
+  V(Call)                 \
+  V(Parameter)            \
+  V(OsrValue)             \
+  V(LoopExit)             \
+  V(LoopExitValue)        \
+  V(LoopExitEffect)       \
   V(Projection)
 
 #define COMMON_OP_LIST(V) \
@@ -191,6 +192,7 @@
   V(CheckedUint32ToInt32)             \
   V(CheckedFloat64ToInt32)            \
   V(CheckedTaggedToInt32)             \
+  V(CheckedTruncateTaggedToWord32)    \
   V(CheckedTaggedToFloat64)
 
 #define SIMPLIFIED_COMPARE_BINOP_LIST(V) \
@@ -202,88 +204,93 @@
   V(StringLessThan)                      \
   V(StringLessThanOrEqual)
 
-#define SIMPLIFIED_OTHER_OP_LIST(V)   \
-  V(PlainPrimitiveToNumber)           \
-  V(PlainPrimitiveToWord32)           \
-  V(PlainPrimitiveToFloat64)          \
-  V(BooleanNot)                       \
-  V(SpeculativeNumberAdd)             \
-  V(SpeculativeNumberSubtract)        \
-  V(SpeculativeNumberMultiply)        \
-  V(SpeculativeNumberDivide)          \
-  V(SpeculativeNumberModulus)         \
-  V(SpeculativeNumberEqual)           \
-  V(SpeculativeNumberLessThan)        \
-  V(SpeculativeNumberLessThanOrEqual) \
-  V(NumberAdd)                        \
-  V(NumberSubtract)                   \
-  V(NumberMultiply)                   \
-  V(NumberDivide)                     \
-  V(NumberModulus)                    \
-  V(NumberBitwiseOr)                  \
-  V(NumberBitwiseXor)                 \
-  V(NumberBitwiseAnd)                 \
-  V(NumberShiftLeft)                  \
-  V(SpeculativeNumberShiftLeft)       \
-  V(NumberShiftRight)                 \
-  V(NumberShiftRightLogical)          \
-  V(NumberImul)                       \
-  V(NumberAbs)                        \
-  V(NumberClz32)                      \
-  V(NumberCeil)                       \
-  V(NumberCos)                        \
-  V(NumberCosh)                       \
-  V(NumberFloor)                      \
-  V(NumberFround)                     \
-  V(NumberAcos)                       \
-  V(NumberAcosh)                      \
-  V(NumberAsin)                       \
-  V(NumberAsinh)                      \
-  V(NumberAtan)                       \
-  V(NumberAtanh)                      \
-  V(NumberAtan2)                      \
-  V(NumberExp)                        \
-  V(NumberExpm1)                      \
-  V(NumberLog)                        \
-  V(NumberLog1p)                      \
-  V(NumberLog2)                       \
-  V(NumberLog10)                      \
-  V(NumberMax)                        \
-  V(NumberMin)                        \
-  V(NumberCbrt)                       \
-  V(NumberPow)                        \
-  V(NumberRound)                      \
-  V(NumberSign)                       \
-  V(NumberSin)                        \
-  V(NumberSinh)                       \
-  V(NumberSqrt)                       \
-  V(NumberTan)                        \
-  V(NumberTanh)                       \
-  V(NumberTrunc)                      \
-  V(NumberToInt32)                    \
-  V(NumberToUint32)                   \
-  V(NumberSilenceNaN)                 \
-  V(StringFromCharCode)               \
-  V(CheckBounds)                      \
-  V(CheckIf)                          \
-  V(CheckNumber)                      \
-  V(CheckTaggedPointer)               \
-  V(CheckTaggedSigned)                \
-  V(CheckFloat64Hole)                 \
-  V(CheckTaggedHole)                  \
-  V(Allocate)                         \
-  V(LoadField)                        \
-  V(LoadBuffer)                       \
-  V(LoadElement)                      \
-  V(StoreField)                       \
-  V(StoreBuffer)                      \
-  V(StoreElement)                     \
-  V(ObjectIsCallable)                 \
-  V(ObjectIsNumber)                   \
-  V(ObjectIsReceiver)                 \
-  V(ObjectIsSmi)                      \
-  V(ObjectIsString)                   \
-  V(ObjectIsUndetectable)             \
+#define SIMPLIFIED_OTHER_OP_LIST(V)     \
+  V(PlainPrimitiveToNumber)             \
+  V(PlainPrimitiveToWord32)             \
+  V(PlainPrimitiveToFloat64)            \
+  V(BooleanNot)                         \
+  V(SpeculativeNumberAdd)               \
+  V(SpeculativeNumberSubtract)          \
+  V(SpeculativeNumberMultiply)          \
+  V(SpeculativeNumberDivide)            \
+  V(SpeculativeNumberModulus)           \
+  V(SpeculativeNumberEqual)             \
+  V(SpeculativeNumberLessThan)          \
+  V(SpeculativeNumberLessThanOrEqual)   \
+  V(NumberAdd)                          \
+  V(NumberSubtract)                     \
+  V(NumberMultiply)                     \
+  V(NumberDivide)                       \
+  V(NumberModulus)                      \
+  V(NumberBitwiseOr)                    \
+  V(NumberBitwiseXor)                   \
+  V(NumberBitwiseAnd)                   \
+  V(NumberShiftLeft)                    \
+  V(SpeculativeNumberShiftLeft)         \
+  V(SpeculativeNumberShiftRight)        \
+  V(SpeculativeNumberShiftRightLogical) \
+  V(NumberShiftRight)                   \
+  V(NumberShiftRightLogical)            \
+  V(NumberImul)                         \
+  V(NumberAbs)                          \
+  V(NumberClz32)                        \
+  V(NumberCeil)                         \
+  V(NumberCos)                          \
+  V(NumberCosh)                         \
+  V(NumberFloor)                        \
+  V(NumberFround)                       \
+  V(NumberAcos)                         \
+  V(NumberAcosh)                        \
+  V(NumberAsin)                         \
+  V(NumberAsinh)                        \
+  V(NumberAtan)                         \
+  V(NumberAtanh)                        \
+  V(NumberAtan2)                        \
+  V(NumberExp)                          \
+  V(NumberExpm1)                        \
+  V(NumberLog)                          \
+  V(NumberLog1p)                        \
+  V(NumberLog2)                         \
+  V(NumberLog10)                        \
+  V(NumberMax)                          \
+  V(NumberMin)                          \
+  V(NumberCbrt)                         \
+  V(NumberPow)                          \
+  V(NumberRound)                        \
+  V(NumberSign)                         \
+  V(NumberSin)                          \
+  V(NumberSinh)                         \
+  V(NumberSqrt)                         \
+  V(NumberTan)                          \
+  V(NumberTanh)                         \
+  V(NumberTrunc)                        \
+  V(NumberToInt32)                      \
+  V(NumberToUint32)                     \
+  V(NumberSilenceNaN)                   \
+  V(StringCharCodeAt)                   \
+  V(StringFromCharCode)                 \
+  V(CheckBounds)                        \
+  V(CheckIf)                            \
+  V(CheckMaps)                          \
+  V(CheckNumber)                        \
+  V(CheckString)                        \
+  V(CheckTaggedPointer)                 \
+  V(CheckTaggedSigned)                  \
+  V(CheckFloat64Hole)                   \
+  V(CheckTaggedHole)                    \
+  V(Allocate)                           \
+  V(LoadField)                          \
+  V(LoadBuffer)                         \
+  V(LoadElement)                        \
+  V(StoreField)                         \
+  V(StoreBuffer)                        \
+  V(StoreElement)                       \
+  V(ObjectIsCallable)                   \
+  V(ObjectIsNumber)                     \
+  V(ObjectIsReceiver)                   \
+  V(ObjectIsSmi)                        \
+  V(ObjectIsString)                     \
+  V(ObjectIsUndetectable)               \
   V(TransitionElementsKind)
 
 #define SIMPLIFIED_OP_LIST(V)      \
@@ -328,6 +335,7 @@
   V(Word32Clz)                  \
   V(Word32Ctz)                  \
   V(Word32ReverseBits)          \
+  V(Word32ReverseBytes)         \
   V(Word32Popcnt)               \
   V(Word64Popcnt)               \
   V(Word64And)                  \
@@ -340,6 +348,7 @@
   V(Word64Clz)                  \
   V(Word64Ctz)                  \
   V(Word64ReverseBits)          \
+  V(Word64ReverseBytes)         \
   V(Int32Add)                   \
   V(Int32AddWithOverflow)       \
   V(Int32Sub)                   \
@@ -378,6 +387,12 @@
   V(ChangeInt32ToInt64)         \
   V(ChangeUint32ToFloat64)      \
   V(ChangeUint32ToUint64)       \
+  V(ImpossibleToBit)            \
+  V(ImpossibleToWord32)         \
+  V(ImpossibleToWord64)         \
+  V(ImpossibleToFloat32)        \
+  V(ImpossibleToFloat64)        \
+  V(ImpossibleToTagged)         \
   V(TruncateFloat64ToFloat32)   \
   V(TruncateInt64ToInt32)       \
   V(RoundFloat64ToInt32)        \

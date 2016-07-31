@@ -130,13 +130,16 @@ class MachineOperatorBuilder final : public ZoneObject {
     kWord64ReverseBits = 1u << 21,
     kFloat32Neg = 1u << 22,
     kFloat64Neg = 1u << 23,
-    kAllOptionalOps =
-        kFloat32Max | kFloat32Min | kFloat64Max | kFloat64Min |
-        kFloat32RoundDown | kFloat64RoundDown | kFloat32RoundUp |
-        kFloat64RoundUp | kFloat32RoundTruncate | kFloat64RoundTruncate |
-        kFloat64RoundTiesAway | kFloat32RoundTiesEven | kFloat64RoundTiesEven |
-        kWord32Ctz | kWord64Ctz | kWord32Popcnt | kWord64Popcnt |
-        kWord32ReverseBits | kWord64ReverseBits | kFloat32Neg | kFloat64Neg
+    kWord32ReverseBytes = 1u << 24,
+    kWord64ReverseBytes = 1u << 25,
+    kAllOptionalOps = kFloat32Max | kFloat32Min | kFloat64Max | kFloat64Min |
+                      kFloat32RoundDown | kFloat64RoundDown | kFloat32RoundUp |
+                      kFloat64RoundUp | kFloat32RoundTruncate |
+                      kFloat64RoundTruncate | kFloat64RoundTiesAway |
+                      kFloat32RoundTiesEven | kFloat64RoundTiesEven |
+                      kWord32Ctz | kWord64Ctz | kWord32Popcnt | kWord64Popcnt |
+                      kWord32ReverseBits | kWord64ReverseBits | kFloat32Neg |
+                      kFloat64Neg | kWord32ReverseBytes | kWord64ReverseBytes
   };
   typedef base::Flags<Flag, unsigned> Flags;
 
@@ -146,13 +149,13 @@ class MachineOperatorBuilder final : public ZoneObject {
 
     bool IsUnalignedLoadSupported(const MachineType& machineType,
                                   uint8_t alignment) const {
-      return IsUnalignedSupported(unalignedLoadSupportedTypes_, machineType,
+      return IsUnalignedSupported(unalignedLoadUnsupportedTypes_, machineType,
                                   alignment);
     }
 
     bool IsUnalignedStoreSupported(const MachineType& machineType,
                                    uint8_t alignment) const {
-      return IsUnalignedSupported(unalignedStoreSupportedTypes_, machineType,
+      return IsUnalignedSupported(unalignedStoreUnsupportedTypes_, machineType,
                                   alignment);
     }
 
@@ -162,25 +165,25 @@ class MachineOperatorBuilder final : public ZoneObject {
     static AlignmentRequirements NoUnalignedAccessSupport() {
       return AlignmentRequirements(kNoSupport);
     }
-    static AlignmentRequirements SomeUnalignedAccessSupport(
-        const Vector<MachineType>& unalignedLoadSupportedTypes,
-        const Vector<MachineType>& unalignedStoreSupportedTypes) {
-      return AlignmentRequirements(kSomeSupport, unalignedLoadSupportedTypes,
-                                   unalignedStoreSupportedTypes);
+    static AlignmentRequirements SomeUnalignedAccessUnsupported(
+        const Vector<MachineType>& unalignedLoadUnsupportedTypes,
+        const Vector<MachineType>& unalignedStoreUnsupportedTypes) {
+      return AlignmentRequirements(kSomeSupport, unalignedLoadUnsupportedTypes,
+                                   unalignedStoreUnsupportedTypes);
     }
 
    private:
     explicit AlignmentRequirements(
         AlignmentRequirements::UnalignedAccessSupport unalignedAccessSupport,
-        Vector<MachineType> unalignedLoadSupportedTypes =
+        Vector<MachineType> unalignedLoadUnsupportedTypes =
             Vector<MachineType>(NULL, 0),
-        Vector<MachineType> unalignedStoreSupportedTypes =
+        Vector<MachineType> unalignedStoreUnsupportedTypes =
             Vector<MachineType>(NULL, 0))
         : unalignedSupport_(unalignedAccessSupport),
-          unalignedLoadSupportedTypes_(unalignedLoadSupportedTypes),
-          unalignedStoreSupportedTypes_(unalignedStoreSupportedTypes) {}
+          unalignedLoadUnsupportedTypes_(unalignedLoadUnsupportedTypes),
+          unalignedStoreUnsupportedTypes_(unalignedStoreUnsupportedTypes) {}
 
-    bool IsUnalignedSupported(const Vector<MachineType>& supported,
+    bool IsUnalignedSupported(const Vector<MachineType>& unsupported,
                               const MachineType& machineType,
                               uint8_t alignment) const {
       if (unalignedSupport_ == kFullSupport) {
@@ -188,18 +191,18 @@ class MachineOperatorBuilder final : public ZoneObject {
       } else if (unalignedSupport_ == kNoSupport) {
         return false;
       } else {
-        for (MachineType m : supported) {
+        for (MachineType m : unsupported) {
           if (m == machineType) {
-            return true;
+            return false;
           }
         }
-        return false;
+        return true;
       }
     }
 
     const AlignmentRequirements::UnalignedAccessSupport unalignedSupport_;
-    const Vector<MachineType> unalignedLoadSupportedTypes_;
-    const Vector<MachineType> unalignedStoreSupportedTypes_;
+    const Vector<MachineType> unalignedLoadUnsupportedTypes_;
+    const Vector<MachineType> unalignedStoreUnsupportedTypes_;
   };
 
   explicit MachineOperatorBuilder(
@@ -226,6 +229,8 @@ class MachineOperatorBuilder final : public ZoneObject {
   const OptionalOperator Word64Popcnt();
   const OptionalOperator Word32ReverseBits();
   const OptionalOperator Word64ReverseBits();
+  const OptionalOperator Word32ReverseBytes();
+  const OptionalOperator Word64ReverseBytes();
   bool Word32ShiftIsSafe() const { return flags_ & kWord32ShiftIsSafe; }
 
   const Operator* Word64And();
@@ -304,6 +309,16 @@ class MachineOperatorBuilder final : public ZoneObject {
   const Operator* ChangeInt32ToInt64();
   const Operator* ChangeUint32ToFloat64();
   const Operator* ChangeUint32ToUint64();
+
+  // These are changes from impossible values (for example a smi-checked
+  // string).  They can safely emit an abort instruction, which should
+  // never be reached.
+  const Operator* ImpossibleToWord32();
+  const Operator* ImpossibleToWord64();
+  const Operator* ImpossibleToFloat32();
+  const Operator* ImpossibleToFloat64();
+  const Operator* ImpossibleToTagged();
+  const Operator* ImpossibleToBit();
 
   // These operators truncate or round numbers, both changing the representation
   // of the number and mapping multiple input values onto the same output value.

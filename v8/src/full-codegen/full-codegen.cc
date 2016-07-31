@@ -29,6 +29,7 @@ namespace internal {
 bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
 
+  DCHECK(!FLAG_minimal);
   RuntimeCallTimerScope runtimeTimer(isolate,
                                      &RuntimeCallStats::CompileFullCode);
   TimerEventScope<TimerEventCompileFullCode> timer(info->isolate());
@@ -224,7 +225,7 @@ void FullCodeGenerator::RecordBackEdge(BailoutId ast_id) {
   // The pc offset does not need to be encoded and packed together with a state.
   DCHECK(masm_->pc_offset() > 0);
   DCHECK(loop_depth() > 0);
-  uint8_t depth = Min(loop_depth(), Code::kMaxLoopNestingMarker);
+  uint8_t depth = Min(loop_depth(), AbstractCode::kMaxLoopNestingMarker);
   BackEdgeEntry entry =
       { ast_id, static_cast<unsigned>(masm_->pc_offset()), depth };
   back_edges_.Add(entry, zone());
@@ -1030,6 +1031,7 @@ void FullCodeGenerator::EmitKeyedPropertyLoad(Property* prop) {
   __ Move(LoadDescriptor::SlotRegister(),
           SmiFromSlot(prop->PropertyFeedbackSlot()));
   CallIC(ic);
+  if (FLAG_tf_load_ic_stub) RestoreContext();
 }
 
 void FullCodeGenerator::EmitKeyedSuperPropertyLoad(Property* prop) {
@@ -1446,45 +1448,38 @@ void FullCodeGenerator::VisitFunctionLiteral(FunctionLiteral* expr) {
 void FullCodeGenerator::VisitClassLiteral(ClassLiteral* lit) {
   Comment cmnt(masm_, "[ ClassLiteral");
 
-  {
-    NestedClassLiteral nested_class_literal(this, lit);
-    EnterBlockScopeIfNeeded block_scope_state(
-        this, lit->scope(), lit->EntryId(), lit->DeclsId(), lit->ExitId());
+  if (lit->extends() != NULL) {
+    VisitForStackValue(lit->extends());
+  } else {
+    PushOperand(isolate()->factory()->the_hole_value());
+  }
 
-    if (lit->extends() != NULL) {
-      VisitForStackValue(lit->extends());
-    } else {
-      PushOperand(isolate()->factory()->the_hole_value());
-    }
+  VisitForStackValue(lit->constructor());
 
-    VisitForStackValue(lit->constructor());
+  PushOperand(Smi::FromInt(lit->start_position()));
+  PushOperand(Smi::FromInt(lit->end_position()));
 
-    PushOperand(Smi::FromInt(lit->start_position()));
-    PushOperand(Smi::FromInt(lit->end_position()));
+  CallRuntimeWithOperands(Runtime::kDefineClass);
+  PrepareForBailoutForId(lit->CreateLiteralId(), BailoutState::TOS_REGISTER);
+  PushOperand(result_register());
 
-    CallRuntimeWithOperands(Runtime::kDefineClass);
-    PrepareForBailoutForId(lit->CreateLiteralId(), BailoutState::TOS_REGISTER);
-    PushOperand(result_register());
+  // Load the "prototype" from the constructor.
+  __ Move(LoadDescriptor::ReceiverRegister(), result_register());
+  __ LoadRoot(LoadDescriptor::NameRegister(), Heap::kprototype_stringRootIndex);
+  __ Move(LoadDescriptor::SlotRegister(), SmiFromSlot(lit->PrototypeSlot()));
+  CallLoadIC();
+  PrepareForBailoutForId(lit->PrototypeId(), BailoutState::TOS_REGISTER);
+  PushOperand(result_register());
 
-    // Load the "prototype" from the constructor.
-    __ Move(LoadDescriptor::ReceiverRegister(), result_register());
-    __ LoadRoot(LoadDescriptor::NameRegister(),
-                Heap::kprototype_stringRootIndex);
-    __ Move(LoadDescriptor::SlotRegister(), SmiFromSlot(lit->PrototypeSlot()));
-    CallLoadIC();
-    PrepareForBailoutForId(lit->PrototypeId(), BailoutState::TOS_REGISTER);
-    PushOperand(result_register());
+  EmitClassDefineProperties(lit);
+  DropOperands(1);
 
-    EmitClassDefineProperties(lit);
-    DropOperands(1);
+  // Set the constructor to have fast properties.
+  CallRuntimeWithOperands(Runtime::kToFastProperties);
 
-    // Set the constructor to have fast properties.
-    CallRuntimeWithOperands(Runtime::kToFastProperties);
-
-    if (lit->class_variable_proxy() != nullptr) {
-      EmitVariableAssignment(lit->class_variable_proxy()->var(), Token::INIT,
-                             lit->ProxySlot());
-    }
+  if (lit->class_variable_proxy() != nullptr) {
+    EmitVariableAssignment(lit->class_variable_proxy()->var(), Token::INIT,
+                           lit->ProxySlot());
   }
 
   context()->Plug(result_register());
@@ -1771,7 +1766,7 @@ void BackEdgeTable::Patch(Isolate* isolate, Code* unoptimized) {
   // to find the matching loops to patch the interrupt
   // call to an unconditional call to the replacement code.
   int loop_nesting_level = unoptimized->allow_osr_at_loop_nesting_level() + 1;
-  if (loop_nesting_level > Code::kMaxLoopNestingMarker) return;
+  if (loop_nesting_level > AbstractCode::kMaxLoopNestingMarker) return;
 
   BackEdgeTable back_edges(unoptimized, &no_gc);
   for (uint32_t i = 0; i < back_edges.length(); i++) {
@@ -1818,7 +1813,7 @@ bool BackEdgeTable::Verify(Isolate* isolate, Code* unoptimized) {
   BackEdgeTable back_edges(unoptimized, &no_gc);
   for (uint32_t i = 0; i < back_edges.length(); i++) {
     uint32_t loop_depth = back_edges.loop_depth(i);
-    CHECK_LE(static_cast<int>(loop_depth), Code::kMaxLoopNestingMarker);
+    CHECK_LE(static_cast<int>(loop_depth), AbstractCode::kMaxLoopNestingMarker);
     // Assert that all back edges for shallower loops (and only those)
     // have already been patched.
     CHECK_EQ((static_cast<int>(loop_depth) <= loop_nesting_level),

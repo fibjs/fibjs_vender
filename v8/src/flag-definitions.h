@@ -216,8 +216,6 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
 #define HARMONY_STAGED_BASE(V)                                               \
   V(harmony_regexp_lookbehind, "harmony regexp lookbehind")                  \
   V(harmony_tailcalls, "harmony tail calls")                                 \
-  V(harmony_object_own_property_descriptors,                                 \
-    "harmony Object.getOwnPropertyDescriptors()")                            \
   V(harmony_async_await, "harmony async-await")                              \
   V(harmony_string_padding, "harmony String-padding methods")
 
@@ -234,7 +232,9 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
   V(harmony_restrictive_declarations,                                        \
     "harmony limitations on sloppy mode function declarations")              \
   V(harmony_exponentiation_operator, "harmony exponentiation operator `**`") \
-  V(harmony_object_values_entries, "harmony Object.values / Object.entries")
+  V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
+  V(harmony_object_own_property_descriptors,                                 \
+    "harmony Object.getOwnPropertyDescriptors()")
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
 // from HARMONY_SHIPPING, all occurrences of the FLAG_ variable are removed,
@@ -296,12 +296,15 @@ DEFINE_BOOL(string_slices, true, "use string slices")
 
 // Flags for Ignition.
 DEFINE_BOOL(ignition, false, "use ignition interpreter")
+DEFINE_BOOL(ignition_staging, false, "use ignition with all staged features")
+DEFINE_IMPLICATION(ignition_staging, ignition)
+DEFINE_IMPLICATION(ignition_staging, ignition_osr)
+DEFINE_IMPLICATION(ignition_staging, turbo_from_bytecode)
 DEFINE_BOOL(ignition_eager, false, "eagerly compile and parse with ignition")
-DEFINE_BOOL(ignition_generators, true,
-            "enable experimental ignition support for generators")
 DEFINE_STRING(ignition_filter, "*", "filter for ignition interpreter")
 DEFINE_BOOL(ignition_deadcode, true,
             "use ignition dead code elimination optimizer")
+DEFINE_BOOL(ignition_osr, false, "enable support for OSR from ignition code")
 DEFINE_BOOL(ignition_peephole, true, "use ignition peephole optimizer")
 DEFINE_BOOL(ignition_reo, true, "use ignition register equivalence optimizer")
 DEFINE_BOOL(ignition_filter_expression_positions, true,
@@ -443,6 +446,7 @@ DEFINE_BOOL(trace_turbo_reduction, false, "trace TurboFan's various reducers")
 DEFINE_BOOL(trace_turbo_trimming, false, "trace TurboFan's graph trimmer")
 DEFINE_BOOL(trace_turbo_jt, false, "trace TurboFan's jump threading")
 DEFINE_BOOL(trace_turbo_ceq, false, "trace TurboFan's control equivalence")
+DEFINE_BOOL(trace_turbo_loop, false, "trace TurboFan's loop optimizations")
 DEFINE_BOOL(turbo_asm, true, "enable TurboFan for asm.js code")
 DEFINE_BOOL(turbo_asm_deoptimization, false,
             "enable deoptimization in TurboFan for asm.js code")
@@ -474,6 +478,7 @@ DEFINE_BOOL(turbo_jt, true, "enable jump threading in TurboFan")
 DEFINE_BOOL(turbo_stress_loop_peeling, false,
             "stress loop peeling optimization")
 DEFINE_BOOL(turbo_loop_peeling, false, "Turbofan loop peeling")
+DEFINE_BOOL(turbo_loop_variable, false, "Turbofan loop variable optimization")
 DEFINE_BOOL(turbo_cf_optimization, true, "optimize control flow in TurboFan")
 DEFINE_BOOL(turbo_frame_elision, true, "elide frames in TurboFan")
 DEFINE_BOOL(turbo_cache_shared_code, true, "cache context-independent code")
@@ -485,6 +490,14 @@ DEFINE_BOOL(turbo_stress_instruction_scheduling, false,
             "randomly schedule instructions to stress dependency tracking")
 DEFINE_BOOL(turbo_store_elimination, false,
             "enable store-store elimination in TurboFan")
+
+// Flags to help platform porters
+DEFINE_BOOL(minimal, false,
+            "simplifies execution model to make porting "
+            "easier (e.g. always use Ignition, never use Crankshaft")
+DEFINE_IMPLICATION(minimal, ignition)
+DEFINE_NEG_IMPLICATION(minimal, crankshaft)
+DEFINE_NEG_IMPLICATION(minimal, use_ic)
 
 // Flags for native WebAssembly.
 DEFINE_BOOL(expose_wasm, false, "expose WASM interface to JavaScript")
@@ -559,8 +572,6 @@ DEFINE_BOOL(enable_sudiv, true,
 DEFINE_BOOL(enable_movw_movt, false,
             "enable loading 32-bit constant by means of movw/movt "
             "instruction pairs (ARM only)")
-DEFINE_BOOL(enable_unaligned_accesses, true,
-            "enable unaligned accesses for ARMv7 (ARM only)")
 DEFINE_BOOL(enable_32dregs, ENABLE_32DREGS_DEFAULT,
             "enable use of d16-d31 registers on ARM - this requires VFP3")
 DEFINE_BOOL(enable_vldr_imm, false,
@@ -568,6 +579,10 @@ DEFINE_BOOL(enable_vldr_imm, false,
 DEFINE_BOOL(force_long_branches, false,
             "force all emitted branches to be in long mode (MIPS/PPC only)")
 DEFINE_STRING(mcpu, "auto", "enable optimization for specific cpu")
+
+// regexp-macro-assembler-*.cc
+DEFINE_BOOL(enable_regexp_unaligned_accesses, true,
+            "enable unaligned accesses for the regexp engine")
 
 DEFINE_IMPLICATION(enable_armv8, enable_vfp3)
 DEFINE_IMPLICATION(enable_armv8, enable_neon)
