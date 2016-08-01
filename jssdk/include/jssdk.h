@@ -15,6 +15,7 @@
 namespace js
 {
 
+class Api;
 class Value;
 class Object;
 class Array;
@@ -48,6 +49,9 @@ public:
 	Value NewString(exlib::string s);
 	Object NewObject();
 	Array NewArray(int32_t sz);
+
+public:
+	class Api* m_api;
 };
 
 class Api

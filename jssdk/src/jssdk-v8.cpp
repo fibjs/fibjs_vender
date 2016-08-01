@@ -39,8 +39,9 @@ private:
 	};
 
 public:
-	v8_Runtime()
+	v8_Runtime(class Api* api)
 	{
+		m_api = api;
 		create_params.array_buffer_allocator = &array_buffer_allocator;
 		m_isolate = v8::Isolate::New(create_params);
 
@@ -161,7 +162,7 @@ public:
 
 	virtual Runtime* createRuntime()
 	{
-		return new v8_Runtime();
+		return new v8_Runtime(this);
 	}
 
 	Value NewUndefined(Runtime* rt)

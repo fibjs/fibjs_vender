@@ -16,8 +16,9 @@ namespace js
 class SpiderMonkey_Runtime : public Runtime
 {
 public:
-	SpiderMonkey_Runtime()
+	SpiderMonkey_Runtime(class Api* api)
 	{
+		m_api = api;
 		m_rt = JS_NewRuntime(8L * 1024L * 1024L);
 		m_cx = JS_NewContext(m_rt, 8192);
 		JS_BeginRequest(m_cx);
@@ -106,7 +107,7 @@ public:
 
 	virtual Runtime* createRuntime()
 	{
-		return new SpiderMonkey_Runtime();
+		return new SpiderMonkey_Runtime(this);
 	}
 
 	Value NewUndefined(Runtime* rt)

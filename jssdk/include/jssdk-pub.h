@@ -42,52 +42,52 @@ public:
 public:
 	bool isUndefined() const
 	{
-		return _api->ValueIsUndefined(*this);
+		return m_rt->m_api->ValueIsUndefined(*this);
 	}
 
 	bool toBoolean() const
 	{
-		return _api->ValueToBoolean(*this);
+		return m_rt->m_api->ValueToBoolean(*this);
 	}
 
 	bool isBoolean() const
 	{
-		return _api->ValueIsBoolean(*this);
+		return m_rt->m_api->ValueIsBoolean(*this);
 	}
 
 	double toNumber() const
 	{
-		return _api->ValueToNumber(*this);
+		return m_rt->m_api->ValueToNumber(*this);
 	}
 
 	bool isNumber() const
 	{
-		return _api->ValueIsNumber(*this);
+		return m_rt->m_api->ValueIsNumber(*this);
 	}
 
 	exlib::string toString() const
 	{
-		return _api->ValueToString(*this);
+		return m_rt->m_api->ValueToString(*this);
 	}
 
 	bool isString() const
 	{
-		return _api->ValueIsString(*this);
+		return m_rt->m_api->ValueIsString(*this);
 	}
 
 	bool isArray() const
 	{
-		return _api->ValueIsArray(*this);
+		return m_rt->m_api->ValueIsArray(*this);
 	}
 
 	bool isObject() const
 	{
-		return _api->ValueIsObject(*this);
+		return m_rt->m_api->ValueIsObject(*this);
 	}
 
 	bool isFunction() const
 	{
-		return _api->ValueIsFunction(*this);
+		return m_rt->m_api->ValueIsFunction(*this);
 	}
 
 public:
@@ -112,44 +112,44 @@ public:
 public:
 	bool has(exlib::string key)
 	{
-		return _api->ObjectHas(*this, key);
+		return m_rt->m_api->ObjectHas(*this, key);
 	}
 
 	Value get(exlib::string key)
 	{
-		return _api->ObjectGet(*this, key);
+		return m_rt->m_api->ObjectGet(*this, key);
 	}
 
 	void set(exlib::string key, const Value& v)
 	{
-		_api->ObjectSet(*this, key, v);
+		m_rt->m_api->ObjectSet(*this, key, v);
 	}
 
 	void remove(exlib::string key)
 	{
-		_api->ObjectRemove(*this, key);
+		m_rt->m_api->ObjectRemove(*this, key);
 	}
 
 	Array keys();
 
 	bool hasPrivate(exlib::string key)
 	{
-		return _api->ObjectHasPrivate(*this, key);
+		return m_rt->m_api->ObjectHasPrivate(*this, key);
 	}
 
 	Value getPrivate(exlib::string key)
 	{
-		return _api->ObjectGetPrivate(*this, key);
+		return m_rt->m_api->ObjectGetPrivate(*this, key);
 	}
 
 	void setPrivate(exlib::string key, const Value& v)
 	{
-		_api->ObjectSetPrivate(*this, key, v);
+		m_rt->m_api->ObjectSetPrivate(*this, key, v);
 	}
 
 	void removePrivate(exlib::string key)
 	{
-		_api->ObjectRemovePrivate(*this, key);
+		m_rt->m_api->ObjectRemovePrivate(*this, key);
 	}
 };
 
@@ -170,22 +170,22 @@ public:
 public:
 	int32_t length()
 	{
-		return _api->ArrayGetLength(*this);
+		return m_rt->m_api->ArrayGetLength(*this);
 	}
 
 	Value get(int32_t idx)
 	{
-		return _api->ArrayGet(*this, idx);
+		return m_rt->m_api->ArrayGet(*this, idx);
 	}
 
 	void set(int32_t idx, const Value& v)
 	{
-		_api->ArraySet(*this, idx, v);
+		m_rt->m_api->ArraySet(*this, idx, v);
 	}
 
 	void remove(int32_t idx)
 	{
-		_api->ArrayRemove(*this, idx);
+		m_rt->m_api->ArrayRemove(*this, idx);
 	}
 };
 
@@ -206,43 +206,43 @@ public:
 public:
 	Value ncall(Value* args, int32_t argn)
 	{
-		return _api->FunctionCall(*this, args, argn);
+		return m_rt->m_api->FunctionCall(*this, args, argn);
 	}
 };
 
 inline Array Object::keys()
 {
-	return _api->ObjectKeys(*this);
+	return m_rt->m_api->ObjectKeys(*this);
 }
 
 inline Value Runtime::NewUndefined()
 {
-	return _api->NewUndefined(this);
+	return m_api->NewUndefined(this);
 }
 
 inline Value Runtime::NewBoolean(bool b)
 {
-	return _api->NewBoolean(this, b);
+	return m_api->NewBoolean(this, b);
 }
 
 inline Value Runtime::NewNumber(double d)
 {
-	return _api->NewNumber(this, d);
+	return m_api->NewNumber(this, d);
 }
 
 inline Value Runtime::NewString(exlib::string s)
 {
-	return _api->NewString(this, s);
+	return m_api->NewString(this, s);
 }
 
 inline Object Runtime::NewObject()
 {
-	return _api->NewObject(this);
+	return m_api->NewObject(this);
 }
 
 inline Array Runtime::NewArray(int32_t sz)
 {
-	return _api->NewArray(this, sz);
+	return m_api->NewArray(this, sz);
 }
 
 }
