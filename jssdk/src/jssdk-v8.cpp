@@ -153,6 +153,11 @@ public:
 		return Value(this, v8::Array::New(m_isolate, sz));
 	}
 
+	Function NewFunction(NativeFunction callback)
+	{
+		return Function(this, v8::Function::New(m_isolate, (v8::FunctionCallback)callback));
+	}
+
 private:
 	v8::Isolate *m_isolate;
 	v8::Persistent<v8::Context> m_context;

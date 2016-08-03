@@ -116,6 +116,12 @@ public:
 		return Value(this, OBJECT_TO_JSVAL(JS_NewArrayObject(m_cx, sz, 0)));
 	}
 
+	Function NewFunction(NativeFunction callback)
+	{
+		return Function(this, OBJECT_TO_JSVAL(JS_NewFunction(m_cx, (JSNative)callback,
+		                                      0, 0, NULL, NULL)));
+	}
+
 private:
 	JSRuntime *m_rt;
 	JSContext *m_cx;

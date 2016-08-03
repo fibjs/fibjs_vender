@@ -24,6 +24,8 @@ class Locker;
 class Unlocker;
 class Scope;
 
+typedef intptr_t (*NativeFunction)(...);
+
 class Runtime
 {
 public:
@@ -49,6 +51,7 @@ public:
 	virtual Value NewString(exlib::string s) = 0;
 	virtual Object NewObject() = 0;
 	virtual Array NewArray(int32_t sz) = 0;
+	virtual Function NewFunction(NativeFunction callback) = 0;
 
 public:
 	class Api* m_api;
