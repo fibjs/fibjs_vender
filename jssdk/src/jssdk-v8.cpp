@@ -122,6 +122,37 @@ public:
 		return Value(this, script->Run(context).ToLocalChecked());
 	}
 
+	Value NewUndefined()
+	{
+		return Value(this, v8::Undefined(m_isolate));
+	}
+
+	Value NewBoolean(bool b)
+	{
+		return Value(this, b ? v8::True(m_isolate) : v8::False(m_isolate));
+	}
+
+	Value NewNumber(double d)
+	{
+		return Value(this, v8::Number::New(m_isolate, d));
+	}
+
+	Value NewString(exlib::string s)
+	{
+		return Value(this, v8::String::NewFromUtf8(m_isolate, s.c_str(),
+		             v8::String::kNormalString, (int32_t)s.length()));
+	}
+
+	Object NewObject()
+	{
+		return Value(this, v8::Object::New(m_isolate));
+	}
+
+	Array NewArray(int32_t sz)
+	{
+		return Value(this, v8::Array::New(m_isolate, sz));
+	}
+
 private:
 	v8::Isolate *m_isolate;
 	v8::Persistent<v8::Context> m_context;
@@ -165,20 +196,9 @@ public:
 		return new v8_Runtime(this);
 	}
 
-	Value NewUndefined(Runtime* rt)
-	{
-		return Value(rt, v8::Undefined(((v8_Runtime*)rt)->m_isolate));
-	}
-
 	bool ValueIsUndefined(const Value& v)
 	{
 		return !v.m_v.IsEmpty() && v.m_v->IsUndefined();
-	}
-
-	Value NewBoolean(Runtime* rt, bool b)
-	{
-		return Value(rt, b ? v8::True(((v8_Runtime*)rt)->m_isolate) :
-		             v8::False(((v8_Runtime*)rt)->m_isolate));
 	}
 
 	bool ValueToBoolean(const Value& v)
@@ -191,11 +211,6 @@ public:
 		return !v.m_v.IsEmpty() && (v.m_v->IsBoolean() || v.m_v->IsBooleanObject());
 	}
 
-	Value NewNumber(Runtime* rt, double d)
-	{
-		return Value(rt, v8::Number::New(((v8_Runtime*)rt)->m_isolate, d));
-	}
-
 	double ValueToNumber(const Value& v)
 	{
 		return v.m_v->NumberValue();
@@ -204,13 +219,6 @@ public:
 	bool ValueIsNumber(const Value& v)
 	{
 		return !v.m_v.IsEmpty() && (v.m_v->IsNumber() || v.m_v->IsNumberObject());
-	}
-
-	Value NewString(Runtime* rt, exlib::string s)
-	{
-		return Value(rt, v8::String::NewFromUtf8(((v8_Runtime*)rt)->m_isolate,
-		             s.c_str(), v8::String::kNormalString,
-		             (int32_t)s.length()));
 	}
 
 	exlib::string ValueToString(const Value& v)
@@ -224,11 +232,6 @@ public:
 	bool ValueIsString(const Value& v)
 	{
 		return !v.m_v.IsEmpty() && (v.m_v->IsString() || v.m_v->IsStringObject());
-	}
-
-	Object NewObject(Runtime* rt)
-	{
-		return Value(rt, v8::Object::New(((v8_Runtime*)rt)->m_isolate));
 	}
 
 	bool ObjectHas(const Object& o, exlib::string key)
@@ -323,11 +326,6 @@ public:
 	bool ValueIsObject(const Value& v)
 	{
 		return !v.m_v.IsEmpty() && v.m_v->IsObject();
-	}
-
-	Array NewArray(Runtime* rt, int32_t sz)
-	{
-		return Value(rt, v8::Array::New(((v8_Runtime*)rt)->m_isolate, sz));
 	}
 
 	int32_t ArrayGetLength(const Array& a)

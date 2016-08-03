@@ -43,12 +43,12 @@ public:
 
 	virtual Value execute(exlib::string code, exlib::string soname) = 0;
 
-	Value NewUndefined();
-	Value NewBoolean(bool b);
-	Value NewNumber(double d);
-	Value NewString(exlib::string s);
-	Object NewObject();
-	Array NewArray(int32_t sz);
+	virtual Value NewUndefined() = 0;
+	virtual Value NewBoolean(bool b) = 0;
+	virtual Value NewNumber(double d) = 0;
+	virtual Value NewString(exlib::string s) = 0;
+	virtual Object NewObject() = 0;
+	virtual Array NewArray(int32_t sz) = 0;
 
 public:
 	class Api* m_api;
@@ -65,22 +65,17 @@ public:
 	virtual void init() = 0;
 	virtual Runtime* createRuntime() = 0;
 
-	virtual Value NewUndefined(Runtime* rt) = 0;
 	virtual bool ValueIsUndefined(const Value& v) = 0;
 
-	virtual Value NewBoolean(Runtime* rt, bool b) = 0;
 	virtual bool ValueToBoolean(const Value& v) = 0;
 	virtual bool ValueIsBoolean(const Value& v) = 0;
 
-	virtual Value NewNumber(Runtime* rt, double d) = 0;
 	virtual double ValueToNumber(const Value& v) = 0;
 	virtual bool ValueIsNumber(const Value& v) = 0;
 
-	virtual Value NewString(Runtime* rt, exlib::string s) = 0;
 	virtual exlib::string ValueToString(const Value& v) = 0;
 	virtual bool ValueIsString(const Value& v) = 0;
 
-	virtual Object NewObject(Runtime* rt) = 0;
 	virtual bool ObjectHas(const Object& o, exlib::string key) = 0;
 	virtual Value ObjectGet(const Object& o, exlib::string key) = 0;
 	virtual void ObjectSet(const Object& o, exlib::string key, const Value& v) = 0;
@@ -92,7 +87,6 @@ public:
 	virtual void ObjectRemovePrivate(const Object& o, exlib::string key) = 0;
 	virtual bool ValueIsObject(const Value& v) = 0;
 
-	virtual Array NewArray(Runtime* rt, int32_t sz) = 0;
 	virtual int32_t ArrayGetLength(const Array& a) = 0;
 	virtual Value ArrayGet(const Array& a, int32_t idx) = 0;
 	virtual void ArraySet(const Array& a, int32_t idx, const Value& v) = 0;

@@ -79,6 +79,43 @@ public:
 		return Value();
 	}
 
+	Value NewUndefined()
+	{
+		return Value(this, JSVAL_VOID);
+	}
+
+	Value NewBoolean(bool b)
+	{
+		return Value(this, b ? JSVAL_TRUE : JSVAL_FALSE);
+	}
+
+	Value NewNumber(double d)
+	{
+		jsval v;
+		JS_NewNumberValue(m_cx, d, &v);
+		return Value(this, v);
+	}
+
+	Value NewString(exlib::string s)
+	{
+		exlib::wstring ws = utf8to16String(s);
+
+		jsval v = STRING_TO_JSVAL(JS_NewUCStringCopyN(m_cx, (jschar*)ws.c_str(),
+		                          ws.length()));
+		return Value(this, v);
+	}
+
+	Object NewObject()
+	{
+		return Value(this, OBJECT_TO_JSVAL(JS_NewObject(m_cx,
+		                                   NULL, NULL, NULL)));
+	}
+
+	Array NewArray(int32_t sz)
+	{
+		return Value(this, OBJECT_TO_JSVAL(JS_NewArrayObject(m_cx, sz, 0)));
+	}
+
 private:
 	JSRuntime *m_rt;
 	JSContext *m_cx;
@@ -110,19 +147,9 @@ public:
 		return new SpiderMonkey_Runtime(this);
 	}
 
-	Value NewUndefined(Runtime* rt)
-	{
-		return Value(rt, JSVAL_VOID);
-	}
-
 	bool ValueIsUndefined(const Value& v)
 	{
 		return v.m_v != 0 && JSVAL_IS_VOID(v.m_v);
-	}
-
-	Value NewBoolean(Runtime* rt, bool b)
-	{
-		return Value(rt, b ? JSVAL_TRUE : JSVAL_FALSE);
 	}
 
 	bool ValueToBoolean(const Value& v)
@@ -137,13 +164,6 @@ public:
 		return v.m_v != 0 && JSVAL_IS_BOOLEAN(v.m_v);
 	}
 
-	Value NewNumber(Runtime* rt, double d)
-	{
-		jsval v;
-		JS_NewNumberValue(((SpiderMonkey_Runtime*)rt)->m_cx, d, &v);
-		return Value(rt, v);
-	}
-
 	double ValueToNumber(const Value& v)
 	{
 		jsdouble d;
@@ -154,15 +174,6 @@ public:
 	bool ValueIsNumber(const Value& v)
 	{
 		return v.m_v != 0 && JSVAL_IS_NUMBER(v.m_v);
-	}
-
-	Value NewString(Runtime* rt, exlib::string s)
-	{
-		exlib::wstring ws = utf8to16String(s);
-
-		jsval v = STRING_TO_JSVAL(JS_NewUCStringCopyN(((SpiderMonkey_Runtime*)rt)->m_cx,
-		                          (jschar*)ws.c_str(), ws.length()));
-		return Value(rt, v);
 	}
 
 	exlib::string ValueToString(const Value& v)
@@ -177,13 +188,6 @@ public:
 	bool ValueIsString(const Value& v)
 	{
 		return v.m_v != 0 && JSVAL_IS_STRING(v.m_v);
-	}
-
-	Object NewObject(Runtime* rt)
-	{
-		return Value(rt,
-		             OBJECT_TO_JSVAL(JS_NewObject(((SpiderMonkey_Runtime*)rt)->m_cx,
-		                             NULL, NULL, NULL)));
 	}
 
 	bool ObjectHas(const Object& o, exlib::string key)
@@ -266,12 +270,6 @@ public:
 		return v.m_v != 0 && JSVAL_IS_OBJECT(v.m_v);
 	}
 
-	Array NewArray(Runtime* rt, int32_t sz)
-	{
-		return Value(rt,
-		             OBJECT_TO_JSVAL(JS_NewArrayObject(((SpiderMonkey_Runtime*)rt)->m_cx, sz, 0)));
-	}
-
 	int32_t ArrayGetLength(const Array& a)
 	{
 		jsuint n;
@@ -317,8 +315,7 @@ public:
 
 		jsval result;
 
-		JSBool r = JS_CallFunction(rt->m_cx, NULL, func, argn,
-		                           _args.data(), &result);
+		JSBool r = JS_CallFunction(rt->m_cx, NULL, func, argn, _args.data(), &result);
 
 		return Value(rt, result);
 	}

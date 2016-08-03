@@ -215,36 +215,6 @@ inline Array Object::keys()
 	return m_rt->m_api->ObjectKeys(*this);
 }
 
-inline Value Runtime::NewUndefined()
-{
-	return m_api->NewUndefined(this);
-}
-
-inline Value Runtime::NewBoolean(bool b)
-{
-	return m_api->NewBoolean(this, b);
-}
-
-inline Value Runtime::NewNumber(double d)
-{
-	return m_api->NewNumber(this, d);
-}
-
-inline Value Runtime::NewString(exlib::string s)
-{
-	return m_api->NewString(this, s);
-}
-
-inline Object Runtime::NewObject()
-{
-	return m_api->NewObject(this);
-}
-
-inline Array Runtime::NewArray(int32_t sz)
-{
-	return m_api->NewArray(this, sz);
-}
-
 }
 
 #endif // _jssdk_pub_h__
