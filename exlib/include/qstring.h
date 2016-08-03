@@ -95,6 +95,8 @@ inline const T* qmemfind(const T* s1, size_t sz1, const T* s2, size_t sz2)
 }
 
 #define MAX_SMALL   16
+#define SSO_MARK	(1LL << (sizeof(size_t) * 8 - 1))
+#define SSO_MASK	(SIZE_MAX ^ SSO_MARK)
 
 template<typename T>
 class basic_string
@@ -109,55 +111,50 @@ private:
 	};
 #pragma pack()
 
+	bool is_sso() const
+	{
+		return !(m_length & SSO_MARK);
+	}
+
 	void unref()
 	{
-		if (m_buffer != NULL)
-		{
-			if (m_buffer->refs_.dec() == 0)
-				free(m_buffer);
-			m_buffer = NULL;
-		}
+		if (!is_sso() && m_buffer->refs_.dec() == 0)
+			free(m_buffer);
 	}
 
 public:
 	basic_string() :
 		m_length(0), m_buffer(NULL)
 	{
-		m_small_data[0] = 0;
 	}
 
 	basic_string(size_t n, T ch) :
 		m_length(0), m_buffer(NULL)
 	{
-		m_small_data[0] = 0;
 		assign(n, ch);
 	}
 
 	basic_string(const T* str) :
 		m_length(0), m_buffer(NULL)
 	{
-		m_small_data[0] = 0;
 		assign(str);
 	}
 
 	basic_string(const T* str, size_t sz) :
 		m_length(0), m_buffer(NULL)
 	{
-		m_small_data[0] = 0;
 		assign(str, sz);
 	}
 
 	basic_string(const std::basic_string<T>& v) :
 		m_length(0), m_buffer(NULL)
 	{
-		m_small_data[0] = 0;
 		assign(v);
 	}
 
 	basic_string(const basic_string<T>& v) :
 		m_length(0), m_buffer(NULL)
 	{
-		m_small_data[0] = 0;
 		assign(v);
 	}
 
@@ -172,22 +169,26 @@ public:
 public:
 	const T* c_str() const
 	{
-		return m_buffer ? m_buffer->data : m_small_data;
+		return is_sso() ? m_small_data : m_buffer->data;
 	}
 
 	T* c_buffer()
 	{
-		if (!m_buffer)
+		if (is_sso())
 			return m_small_data;
 
 		if (m_buffer->refs_ > 1)
 		{
-			size_t sz = m_length;
+			size_t sz = m_length & SSO_MASK;
 
 			if (sz < MAX_SMALL)
 			{
-				qmemcpy(m_small_data, m_buffer->data, sz + 1);
-				unref();
+				buffer* _buffer = m_buffer;
+				qmemcpy(m_small_data, _buffer->data, sz + 1);
+				if (_buffer->refs_.dec() == 0)
+					free(m_buffer);
+
+				m_length = sz;
 
 				return m_small_data;
 			} else
@@ -212,7 +213,7 @@ public:
 
 	size_t length() const
 	{
-		return m_length;
+		return m_length & SSO_MASK;
 	}
 
 	void resize(size_t sz)
@@ -222,7 +223,7 @@ public:
 			unref();
 			m_length = 0;
 			m_small_data[0] = 0;
-		} else if (sz < MAX_SMALL && m_buffer == 0)
+		} else if (sz < MAX_SMALL && is_sso())
 		{
 			m_length = sz;
 			m_small_data[sz] = 0;
@@ -230,7 +231,7 @@ public:
 		else
 		{
 			size_t blk_size = (sz + 15) & (SIZE_MAX - 15);
-			size_t sz1 = m_length;
+			size_t sz1 = m_length & SSO_MASK;
 
 			if (sz1 == 0)
 			{
@@ -238,14 +239,16 @@ public:
 
 				m_buffer->refs_ = 1;
 				m_buffer->blk_size = blk_size;
-			} else if (m_buffer ==  NULL)
+			} else if (is_sso())
 			{
-				m_buffer = (buffer*)malloc(blk_size * sizeof(T) + sizeof(buffer));
+				buffer* _buffer = (buffer*)malloc(blk_size * sizeof(T) + sizeof(buffer));
 
-				m_buffer->refs_ = 1;
-				m_buffer->blk_size = blk_size;
+				_buffer->refs_ = 1;
+				_buffer->blk_size = blk_size;
 
-				qmemcpy(m_buffer->data, m_small_data, sz < sz1 ? sz : sz1);
+				qmemcpy(_buffer->data, m_small_data, sz < sz1 ? sz : sz1);
+
+				m_buffer = _buffer;
 			} else if (m_buffer->refs_ > 1)
 			{
 				buffer* _buffer = (buffer*)malloc(blk_size * sizeof(T) + sizeof(buffer));
@@ -263,7 +266,7 @@ public:
 				m_buffer->blk_size = blk_size;
 			}
 
-			m_length = sz;
+			m_length = sz | SSO_MARK;
 			m_buffer->data[sz] = 0;
 		}
 	}
@@ -365,7 +368,7 @@ public:
 	{
 		unref();
 
-		if (str.m_buffer == NULL)
+		if (str.is_sso())
 		{
 			m_length = str.m_length;
 			qmemcpy(m_small_data, str.m_small_data, m_length + 1);
@@ -373,8 +376,7 @@ public:
 		{
 			m_length = str.m_length;
 			m_buffer = str.m_buffer;
-			if (m_buffer)
-				m_buffer->refs_.inc();
+			m_buffer->refs_.inc();
 		}
 
 		return *this;
@@ -495,8 +497,10 @@ public:
 
 private:
 	size_t m_length;
-	buffer* m_buffer;
-	T m_small_data[MAX_SMALL];
+	union {
+		buffer* m_buffer;
+		T m_small_data[MAX_SMALL];
+	};
 };
 
 template<typename T>
