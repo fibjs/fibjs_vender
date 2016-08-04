@@ -108,6 +108,11 @@ public:
 		((v8::Locker*)scope.m_locker)->~Locker();
 	}
 
+	Object GetGlobal()
+	{
+		return Object(this, v8::Local<v8::Context>::New(m_isolate, m_context)->Global());
+	}
+
 	Value execute(exlib::string code, exlib::string soname)
 	{
 		v8::Local<v8::Context> context = v8::Context::New(m_isolate);
@@ -119,7 +124,12 @@ public:
 		                                 (int32_t)soname.length());
 		v8::Local<v8::Script> script = v8::Script::Compile(str_code, str_name);
 
-		return Value(this, script->Run(context).ToLocalChecked());
+		v8::MaybeLocal<v8::Value> result = script->Run(context);
+
+		if (result.IsEmpty())
+			return Value();
+
+		return Value(this, result.ToLocalChecked());
 	}
 
 	Value NewUndefined()
@@ -145,12 +155,12 @@ public:
 
 	Object NewObject()
 	{
-		return Value(this, v8::Object::New(m_isolate));
+		return Object(this, v8::Object::New(m_isolate));
 	}
 
 	Array NewArray(int32_t sz)
 	{
-		return Value(this, v8::Array::New(m_isolate, sz));
+		return Array(this, v8::Array::New(m_isolate, sz));
 	}
 
 	Function NewFunction(NativeFunction callback)
@@ -301,7 +311,13 @@ public:
 		                                      (int32_t)key.length()));
 		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
 		                                 rt->m_context);
-		return Value(o.m_rt, v8::Local<v8::Object>::Cast(o.m_v)->GetPrivate(context, pkey).ToLocalChecked());
+
+		v8::MaybeLocal<v8::Value> result = v8::Local<v8::Object>::Cast(o.m_v)->GetPrivate(context, pkey);
+
+		if (result.IsEmpty())
+			return Value();
+
+		return Value(rt, result.ToLocalChecked());
 	}
 
 	void ObjectSetPrivate(const Object& o, exlib::string key, const Value& v)
@@ -371,12 +387,13 @@ public:
 		for (i = 0; i < argn; i ++)
 			_args[i] = args[i].m_v;
 
-		v8::Local<v8::Value> result;
+		v8::MaybeLocal<v8::Value> result = v8::Local<v8::Function>::Cast(f.m_v)->Call(context,
+		                                   recv, argn, _args.data());
 
-		result = v8::Local<v8::Function>::Cast(f.m_v)->Call(context,
-		         recv, argn, _args.data()).ToLocalChecked();
+		if (result.IsEmpty())
+			return Value();
 
-		return Value(rt, result);
+		return Value(rt, result.ToLocalChecked());
 	}
 
 	bool ValueIsFunction(const Value& v)

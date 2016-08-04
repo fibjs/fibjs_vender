@@ -22,8 +22,7 @@ public:
 		m_rt = JS_NewRuntime(8L * 1024L * 1024L);
 		m_cx = JS_NewContext(m_rt, 8192);
 		JS_BeginRequest(m_cx);
-		m_global = JS_NewObject(m_cx, NULL, 0, 0);
-		JS_InitStandardClasses(m_cx, m_global);
+		JS_InitStandardClasses(m_cx, JS_NewObject(m_cx, NULL, 0, 0));
 	}
 
 public:
@@ -65,13 +64,17 @@ public:
 		JS_LeaveLocalRootScope(m_cx);
 	}
 
+	Object GetGlobal()
+	{
+		return Object(this, OBJECT_TO_JSVAL(JS_GetGlobalObject(m_cx)));
+	}
+
 	Value execute(exlib::string code, exlib::string soname)
 	{
 		jsval rval;
-		JSBool ok;
 
-		ok = JS_EvaluateScript(m_cx, m_global, code.c_str(), (int32_t)code.length(),
-		                       soname.c_str(), 0, &rval);
+		JSBool ok = JS_EvaluateScript(m_cx, JS_GetGlobalObject(m_cx), code.c_str(),
+		                              (int32_t)code.length(), soname.c_str(), 0, &rval);
 
 		if (ok)
 			return Value(this, rval);
@@ -107,13 +110,13 @@ public:
 
 	Object NewObject()
 	{
-		return Value(this, OBJECT_TO_JSVAL(JS_NewObject(m_cx,
-		                                   NULL, NULL, NULL)));
+		return Object(this, OBJECT_TO_JSVAL(JS_NewObject(m_cx,
+		                                    NULL, NULL, NULL)));
 	}
 
 	Array NewArray(int32_t sz)
 	{
-		return Value(this, OBJECT_TO_JSVAL(JS_NewArrayObject(m_cx, sz, 0)));
+		return Array(this, OBJECT_TO_JSVAL(JS_NewArrayObject(m_cx, sz, 0)));
 	}
 
 	Function NewFunction(NativeFunction callback)
@@ -125,7 +128,6 @@ public:
 private:
 	JSRuntime *m_rt;
 	JSContext *m_cx;
-	JSObject *m_global;
 
 	friend class Api_SpiderMonkey;
 };
@@ -321,9 +323,11 @@ public:
 
 		jsval result;
 
-		JSBool r = JS_CallFunction(rt->m_cx, NULL, func, argn, _args.data(), &result);
+		JSBool ok = JS_CallFunction(rt->m_cx, NULL, func, argn, _args.data(), &result);
+		if (ok)
+			return Value(rt, result);
 
-		return Value(rt, result);
+		return Value();
 	}
 
 	bool ValueIsFunction(const Value& v)

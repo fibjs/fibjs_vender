@@ -43,6 +43,8 @@ public:
 	virtual void Scope_enter(Scope& scope) = 0;
 	virtual void Scope_leave(Scope& scope) = 0;
 
+	virtual Object GetGlobal() = 0;
+
 	virtual Value execute(exlib::string code, exlib::string soname) = 0;
 
 	virtual Value NewUndefined() = 0;

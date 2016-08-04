@@ -135,6 +135,17 @@ TEST(ENG(api), execute)
 	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 }
 
+TEST(ENG(api), Global)
+{
+	js::Scope scope(rt);
+
+	js::Object g = rt->GetGlobal();
+
+	ASSERT_TRUE(rt->execute("global_test_1", "test.js").isEmpty());
+	g.set("global_test_1", rt->NewNumber(205));
+	EXPECT_EQ(205, rt->execute("global_test_1", "test.js").toNumber());
+}
+
 static intptr_t my_func1(...)
 {
 	puts("----------------");
