@@ -214,6 +214,15 @@ TEST(ENG(api), fiber)
 			exlib::Fiber::sleep(1);
 		ASSERT_TRUE(s_fiber_test);
 	}
+
+	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
+
+	{
+		js::Locker l(rt);
+		EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
+	}
+
+	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 }
 
 TEST(ENG(api), json)
