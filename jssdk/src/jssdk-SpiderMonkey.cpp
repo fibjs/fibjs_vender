@@ -17,54 +17,82 @@ namespace js
 class SpiderMonkey_Runtime : public Runtime
 {
 public:
-	SpiderMonkey_Runtime(class Api* api)
+	SpiderMonkey_Runtime(class Api* api) : m_count(0)
 	{
 		m_api = api;
 		m_rt = JS_NewRuntime(8L * 1024L * 1024L);
 		m_cx = JS_NewContext(m_rt, 8192);
+
 		JS_BeginRequest(m_cx);
 		JS_InitStandardClasses(m_cx, JS_NewObject(m_cx, NULL, 0, 0));
+		JS_EndRequest(m_cx);
 	}
 
 public:
 	void destroy()
 	{
-		JS_EndRequest(m_cx);
+		JS_SetContextThread(m_cx);
 		JS_DestroyContext(m_cx);
 		JS_DestroyRuntime(m_rt);
 		delete this;
 	}
 
-	void Locker_enter(Locker& locker)
+	void lock()
 	{
 		m_lock.lock();
+
+		assert(m_lock.owned());
+
+		if (++m_count == 1)
+		{
+			JS_SetContextThread(m_cx);
+			JS_BeginRequest(m_cx);
+		}
+	}
+
+	void unlock()
+	{
+		if (--m_count == 0)
+		{
+			JS_EndRequest(m_cx);
+			JS_ClearContextThread(m_cx);
+		}
+
+		assert(m_lock.owned());
+
+		m_lock.unlock();
+	}
+
+	void Locker_enter(Locker& locker)
+	{
+		lock();
 	}
 
 	void Locker_leave(Locker& locker)
 	{
-		m_lock.unlock();
+		unlock();
 	}
 
 	void Unlocker_enter(Unlocker& unlocker)
 	{
-		m_lock.unlock();
+		unlock();
 	}
 
 	void Unlocker_leave(Unlocker& unlocker)
 	{
-		m_lock.lock();
+		lock();
 	}
 
 	void Scope_enter(Scope& scope)
 	{
+		lock();
 		JS_EnterLocalRootScope(m_cx);
-		m_lock.lock();
 	}
 
 	void Scope_leave(Scope& scope)
 	{
-		m_lock.unlock();
 		JS_LeaveLocalRootScope(m_cx);
+		unlock();
 	}
 
 	Object GetGlobal()
@@ -133,6 +161,7 @@ private:
 	JSContext *m_cx;
 
 	exlib::Locker m_lock;
+	intptr_t m_count;
 
 	friend class Api_SpiderMonkey;
 };
