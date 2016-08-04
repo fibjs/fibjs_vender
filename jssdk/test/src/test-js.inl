@@ -21,14 +21,14 @@ TEST(ENG(api), Runtime)
 
 TEST(ENG(api), Value_Undefined)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	ASSERT_TRUE(rt->NewUndefined().isUndefined());
 }
 
 TEST(ENG(api), Value_Boolean)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	ASSERT_TRUE(rt->NewBoolean(true).isBoolean());
 	ASSERT_TRUE(rt->NewBoolean(true).toBoolean());
@@ -38,7 +38,7 @@ TEST(ENG(api), Value_Boolean)
 
 TEST(ENG(api), Value_Number)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	ASSERT_TRUE(rt->NewNumber(100.5).isNumber());
 	EXPECT_FALSE(rt->NewBoolean(true).isNumber());
@@ -48,7 +48,7 @@ TEST(ENG(api), Value_Number)
 
 TEST(ENG(api), Value_String)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	ASSERT_TRUE(rt->NewString("abcd").isString());
 	EXPECT_EQ("abcd", rt->NewString("abcd").toString());
@@ -57,7 +57,7 @@ TEST(ENG(api), Value_String)
 
 TEST(ENG(api), Value_Array)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	js::Array v = rt->NewArray(10);
 
@@ -82,7 +82,7 @@ TEST(ENG(api), Value_Array)
 
 TEST(ENG(api), Value_Object)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	js::Object v = rt->NewObject();
 
@@ -107,7 +107,7 @@ TEST(ENG(api), Value_Object)
 
 TEST(ENG(api), Value_Object_Private)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	js::Object v = rt->NewObject();
 
@@ -132,14 +132,14 @@ TEST(ENG(api), Value_Object_Private)
 
 TEST(ENG(api), execute)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 }
 
 TEST(ENG(api), Global)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	js::Object g = rt->GetGlobal();
 
@@ -158,7 +158,7 @@ static intptr_t my_func1(...)
 
 TEST(ENG(api), Value_Function)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	js::Value r = rt->execute("(function(a,b){return a+b;});", "test.js");
 	ASSERT_TRUE(r.isFunction());
@@ -189,7 +189,7 @@ static intptr_t my_func_fiber(...)
 
 static void *fiber_proc(void *p)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	rt->execute("my_func_fiber();", "test.js");
 	return NULL;
@@ -197,7 +197,7 @@ static void *fiber_proc(void *p)
 
 TEST(ENG(api), fiber)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	js::Object g = rt->GetGlobal();
 
@@ -209,7 +209,7 @@ TEST(ENG(api), fiber)
 		exlib::Fiber::sleep(100);
 		ASSERT_FALSE(s_fiber_test);
 
-		js::Unlocker un(rt);
+		js::Runtime::Unlocker un(rt);
 		while (!s_fiber_test)
 			exlib::Fiber::sleep(1);
 		ASSERT_TRUE(s_fiber_test);
@@ -218,7 +218,7 @@ TEST(ENG(api), fiber)
 	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 
 	{
-		js::Locker l(rt);
+		js::Runtime::Locker l(rt);
 		EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 	}
 
@@ -227,7 +227,7 @@ TEST(ENG(api), fiber)
 
 TEST(ENG(api), scope)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	{
 		js::HandleScope handle_scope(rt);
@@ -253,7 +253,7 @@ TEST(ENG(api), scope)
 
 TEST(ENG(api), json)
 {
-	js::Scope scope(rt);
+	js::Runtime::Scope scope(rt);
 
 	EXPECT_EQ(100, rt->execute("JSON.parse(\'{\"a\":100}\').a", "test.js").toNumber());
 }

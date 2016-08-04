@@ -20,7 +20,7 @@ namespace js
 class Api_v8;
 class v8_Runtime;
 
-class Locker
+class Runtime::Locker
 {
 public:
 	Locker(Runtime* rt) : m_rt(rt)
@@ -40,7 +40,7 @@ private:
 	friend class v8_Runtime;
 };
 
-class Unlocker
+class Runtime::Unlocker
 {
 public:
 	Unlocker(Runtime* rt) : m_rt(rt)
@@ -60,7 +60,7 @@ private:
 	friend class v8_Runtime;
 };
 
-class Scope
+class Runtime::Scope
 {
 public:
 	Scope(Runtime* rt) : m_rt(rt)

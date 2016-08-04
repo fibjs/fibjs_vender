@@ -23,7 +23,7 @@ namespace js
 class Api_SpiderMonkey;
 class SpiderMonkey_Runtime;
 
-class Locker
+class Runtime::Locker
 {
 public:
 	Locker(Runtime* rt) : m_rt(rt)
@@ -40,7 +40,7 @@ private:
 	Runtime* m_rt;
 };
 
-class Unlocker
+class Runtime::Unlocker
 {
 public:
 	Unlocker(Runtime* rt) : m_rt(rt)
@@ -57,7 +57,7 @@ private:
 	Runtime* m_rt;
 };
 
-class Scope
+class Runtime::Scope
 {
 public:
 	Scope(Runtime* rt) : m_rt(rt)

@@ -20,9 +20,6 @@ class Value;
 class Object;
 class Array;
 class Function;
-class Locker;
-class Unlocker;
-class Scope;
 class HandleScope;
 class EscapableHandleScope;
 
@@ -30,6 +27,11 @@ typedef intptr_t (*NativeFunction)(...);
 
 class Runtime
 {
+public:
+	class Locker;
+	class Unlocker;
+	class Scope;
+
 public:
 	virtual ~Runtime() {}
 
