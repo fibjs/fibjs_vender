@@ -86,12 +86,10 @@ public:
 	void Scope_enter(Scope& scope)
 	{
 		lock();
-		JS_EnterLocalRootScope(m_cx);
 	}
 
 	void Scope_leave(Scope& scope)
 	{
-		JS_LeaveLocalRootScope(m_cx);
 		unlock();
 	}
 
