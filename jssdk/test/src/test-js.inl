@@ -158,6 +158,8 @@ static intptr_t my_func1(...)
 
 TEST(ENG(api), Value_Function)
 {
+	s_func_test = false;
+
 	js::Runtime::Scope scope(rt);
 
 	js::Value r = rt->execute("(function(a,b){return a+b;});", "test.js");
@@ -197,6 +199,8 @@ static void *fiber_proc(void *p)
 
 TEST(ENG(api), fiber)
 {
+	s_fiber_test = false;
+
 	js::Runtime::Scope scope(rt);
 
 	js::Object g = rt->GetGlobal();
