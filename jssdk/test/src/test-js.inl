@@ -225,6 +225,32 @@ TEST(ENG(api), fiber)
 	EXPECT_EQ(105, rt->execute("100+5", "test.js").toNumber());
 }
 
+TEST(ENG(api), scope)
+{
+	js::Scope scope(rt);
+
+	{
+		js::HandleScope handle_scope(rt);
+		rt->NewObject();
+	}
+
+	rt->gc();
+
+	js::Object v1;
+
+	{
+		js::EscapableHandleScope handle_scope1(rt);
+		js::Object v = rt->NewObject();
+		v.set("key1", rt->NewNumber(100.5));
+		v1 = handle_scope1.escape(v);
+	}
+
+	rt->gc();
+
+	ASSERT_DOUBLE_EQ(100.5, v1.get("key1").toNumber());
+	ASSERT_TRUE(v1.isObject());
+}
+
 TEST(ENG(api), json)
 {
 	js::Scope scope(rt);

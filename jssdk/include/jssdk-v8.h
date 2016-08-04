@@ -81,6 +81,49 @@ private:
 	friend class v8_Runtime;
 };
 
+class HandleScope
+{
+public:
+	HandleScope(Runtime* rt) : m_rt(rt)
+	{
+		rt->HandleScope_enter(*this);
+	}
+
+	~HandleScope()
+	{
+		m_rt->HandleScope_leave(*this);
+	}
+
+private:
+	Runtime* m_rt;
+	char m_handle_scope[sizeof(v8::HandleScope)];
+
+	friend class v8_Runtime;
+};
+
+class EscapableHandleScope
+{
+public:
+	EscapableHandleScope(Runtime* rt) : m_rt(rt)
+	{
+		rt->EscapableHandleScope_enter(*this);
+	}
+
+	~EscapableHandleScope()
+	{
+		m_rt->EscapableHandleScope_leave(*this);
+	}
+
+public:
+	Value escape(Value v);
+
+private:
+	Runtime* m_rt;
+	char m_handle_scope[sizeof(v8::EscapableHandleScope)];
+
+	friend class v8_Runtime;
+};
+
 typedef v8::Local<v8::Value> js_value;
 
 }

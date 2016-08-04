@@ -106,6 +106,63 @@ public:
 		m_isolate->Exit();
 		((v8::HandleScope*)scope.m_handle_scope)->~HandleScope();
 		((v8::Locker*)scope.m_locker)->~Locker();
+		m_isolate->DiscardThreadSpecificMetadata();
+	}
+
+	void HandleScope_enter(HandleScope& scope)
+	{
+		class HandleScope : public v8::HandleScope
+		{
+		public:
+			HandleScope(v8::Isolate *rt) : v8::HandleScope(rt)
+			{}
+
+		public:
+			static void *operator new(size_t, void * p)
+			{
+				return p;
+			}
+		};
+
+		new (scope.m_handle_scope) HandleScope(m_isolate);
+	}
+
+	void HandleScope_leave(HandleScope& scope)
+	{
+		((v8::HandleScope*)scope.m_handle_scope)->~HandleScope();
+	}
+
+	void EscapableHandleScope_enter(EscapableHandleScope& scope)
+	{
+		class EscapableHandleScope : public v8::EscapableHandleScope
+		{
+		public:
+			EscapableHandleScope(v8::Isolate *rt) : v8::EscapableHandleScope(rt)
+			{}
+
+		public:
+			static void *operator new(size_t, void * p)
+			{
+				return p;
+			}
+		};
+
+		new (scope.m_handle_scope) EscapableHandleScope(m_isolate);
+	}
+
+	void EscapableHandleScope_leave(EscapableHandleScope& scope)
+	{
+		((v8::EscapableHandleScope*)scope.m_handle_scope)->~EscapableHandleScope();
+	}
+
+	Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value& v)
+	{
+		return Value(scope.m_rt, ((v8::EscapableHandleScope*)scope.m_handle_scope)->Escape(v.m_v));
+	}
+
+	void gc()
+	{
+		m_isolate->LowMemoryNotification();
 	}
 
 	Object GetGlobal()

@@ -23,6 +23,8 @@ class Function;
 class Locker;
 class Unlocker;
 class Scope;
+class HandleScope;
+class EscapableHandleScope;
 
 typedef intptr_t (*NativeFunction)(...);
 
@@ -42,6 +44,15 @@ public:
 
 	virtual void Scope_enter(Scope& scope) = 0;
 	virtual void Scope_leave(Scope& scope) = 0;
+
+	virtual void HandleScope_enter(HandleScope& scope) = 0;
+	virtual void HandleScope_leave(HandleScope& scope) = 0;
+
+	virtual void EscapableHandleScope_enter(EscapableHandleScope& scope) = 0;
+	virtual void EscapableHandleScope_leave(EscapableHandleScope& scope) = 0;
+	virtual Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value& v) = 0;
+
+	virtual void gc() = 0;
 
 	virtual Object GetGlobal() = 0;
 

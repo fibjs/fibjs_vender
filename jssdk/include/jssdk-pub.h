@@ -215,6 +215,12 @@ inline Array Object::keys()
 	return m_rt->m_api->ObjectKeys(*this);
 }
 
+inline Value EscapableHandleScope::escape(Value v)
+{
+	return m_rt->EscapableHandleScope_escape(*this, v);
+}
+
+
 }
 
 #endif // _jssdk_pub_h__

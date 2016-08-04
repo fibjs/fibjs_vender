@@ -74,6 +74,46 @@ private:
 	Runtime* m_rt;
 };
 
+class HandleScope
+{
+public:
+	HandleScope(Runtime* rt) : m_rt(rt)
+	{
+		rt->HandleScope_enter(*this);
+	}
+
+	~HandleScope()
+	{
+		m_rt->HandleScope_leave(*this);
+	}
+
+private:
+	Runtime* m_rt;
+};
+
+class EscapableHandleScope
+{
+public:
+	EscapableHandleScope(Runtime* rt) : m_rt(rt), m_result(JSVAL_NULL)
+	{
+		rt->EscapableHandleScope_enter(*this);
+	}
+
+	~EscapableHandleScope()
+	{
+		m_rt->EscapableHandleScope_leave(*this);
+	}
+
+public:
+	Value escape(Value v);
+
+private:
+	Runtime* m_rt;
+	jsval m_result;
+
+	friend class SpiderMonkey_Runtime;
+};
+
 class js_value
 {
 public:

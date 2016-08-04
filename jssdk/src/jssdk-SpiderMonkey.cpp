@@ -86,11 +86,44 @@ public:
 	void Scope_enter(Scope& scope)
 	{
 		lock();
+		JS_EnterLocalRootScope(m_cx);
 	}
 
 	void Scope_leave(Scope& scope)
 	{
+		JS_LeaveLocalRootScope(m_cx);
 		unlock();
+	}
+
+	void HandleScope_enter(HandleScope& scope)
+	{
+		JS_EnterLocalRootScope(m_cx);
+	}
+
+	void HandleScope_leave(HandleScope& scope)
+	{
+		JS_LeaveLocalRootScope(m_cx);
+	}
+
+	void EscapableHandleScope_enter(EscapableHandleScope& scope)
+	{
+		JS_EnterLocalRootScope(m_cx);
+	}
+
+	void EscapableHandleScope_leave(EscapableHandleScope& scope)
+	{
+		JS_LeaveLocalRootScopeWithResult(m_cx, scope.m_result);
+	}
+
+	Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value& v)
+	{
+		scope.m_result = v.m_v;
+		return v;
+	}
+
+	void gc()
+	{
+		JS_GC(m_cx);
 	}
 
 	Object GetGlobal()
