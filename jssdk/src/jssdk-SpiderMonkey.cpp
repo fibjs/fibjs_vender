@@ -9,6 +9,7 @@
 #include "jssdk-SpiderMonkey.h"
 #include "utf8.h"
 #include <vector>
+#include "exlib/include/fiber.h"
 
 namespace js
 {
@@ -36,31 +37,33 @@ public:
 
 	void Locker_enter(Locker& locker)
 	{
-
+		m_lock.lock();
 	}
 
 	void Locker_leave(Locker& locker)
 	{
-
+		m_lock.unlock();
 	}
 
 	void Unlocker_enter(Unlocker& unlocker)
 	{
-
+		m_lock.unlock();
 	}
 
 	void Unlocker_leave(Unlocker& unlocker)
 	{
-
+		m_lock.lock();
 	}
 
 	void Scope_enter(Scope& scope)
 	{
 		JS_EnterLocalRootScope(m_cx);
+		m_lock.lock();
 	}
 
 	void Scope_leave(Scope& scope)
 	{
+		m_lock.unlock();
 		JS_LeaveLocalRootScope(m_cx);
 	}
 
@@ -128,6 +131,8 @@ public:
 private:
 	JSRuntime *m_rt;
 	JSContext *m_cx;
+
+	exlib::Locker m_lock;
 
 	friend class Api_SpiderMonkey;
 };

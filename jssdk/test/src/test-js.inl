@@ -1,3 +1,5 @@
+#include "exlib/include/service.h"
+
 TEST(ENG(api), version)
 {
 	EXPECT_EQ(js::Api::version, js::_api->getVersion());
@@ -146,9 +148,11 @@ TEST(ENG(api), Global)
 	EXPECT_EQ(205, rt->execute("global_test_1", "test.js").toNumber());
 }
 
+static bool s_func_test = false;
+
 static intptr_t my_func1(...)
 {
-	puts("----------------");
+	s_func_test = true;
 	return 0;
 }
 
@@ -169,7 +173,47 @@ TEST(ENG(api), Value_Function)
 	EXPECT_EQ(300, r.toNumber());
 
 	f = rt->NewFunction(my_func1);
+
+	ASSERT_FALSE(s_func_test);
 	f.ncall(args, 0);
+	ASSERT_TRUE(s_func_test);
+}
+
+static bool s_fiber_test = false;
+
+static intptr_t my_func_fiber(...)
+{
+	s_fiber_test = true;
+	return 0;
+}
+
+static void *fiber_proc(void *p)
+{
+	js::Scope scope(rt);
+
+	rt->execute("my_func_fiber();", "test.js");
+	return NULL;
+}
+
+TEST(ENG(api), fiber)
+{
+	js::Scope scope(rt);
+
+	js::Object g = rt->GetGlobal();
+
+	g.set("my_func_fiber", rt->NewFunction(my_func_fiber));
+
+	exlib::Service::Create(fiber_proc, 0, 128 * 1024);
+	{
+		ASSERT_FALSE(s_fiber_test);
+		exlib::Fiber::sleep(100);
+		ASSERT_FALSE(s_fiber_test);
+
+		js::Unlocker un(rt);
+		while (!s_fiber_test)
+			exlib::Fiber::sleep(1);
+		ASSERT_TRUE(s_fiber_test);
+	}
 }
 
 TEST(ENG(api), json)
