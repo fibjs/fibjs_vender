@@ -116,7 +116,7 @@ public:
 };
 
 extern Api* v8_api;
-extern Api* SpiderMonkey_api;
+extern Api* spider_api;
 
 extern Api* _v8_api;
 extern bool set_v8_api(Api* _api);
@@ -125,11 +125,11 @@ inline bool setup_v8()
 	return set_v8_api(_v8_api);
 }
 
-extern Api* _SpiderMonkey_api;
-extern bool set_SpiderMonkey_api(Api* _api);
-inline bool setup_SpiderMonkey()
+extern Api* _spider_api;
+extern bool set_spider_api(Api* _api);
+inline bool setup_spider()
 {
-	return set_SpiderMonkey_api(_SpiderMonkey_api);
+	return set_spider_api(_spider_api);
 }
 
 }

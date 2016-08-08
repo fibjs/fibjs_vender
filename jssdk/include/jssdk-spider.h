@@ -1,5 +1,5 @@
 /*
- *  jssdk-SpiderMonkey.h
+ *  jssdk-spider.h
  *  Created on: Jun 4, 2016
  *
  *  Copyright (c) 2016 by Leo Hoo
@@ -18,10 +18,10 @@
 namespace js
 {
 
-#define _api SpiderMonkey_api
+#define _api spider_api
 
-class Api_SpiderMonkey;
-class SpiderMonkey_Runtime;
+class Api_spider;
+class spider_Runtime;
 
 class Runtime::Locker
 {
@@ -111,7 +111,7 @@ private:
 	Runtime* m_rt;
 	jsval m_result;
 
-	friend class SpiderMonkey_Runtime;
+	friend class spider_Runtime;
 };
 
 class js_value

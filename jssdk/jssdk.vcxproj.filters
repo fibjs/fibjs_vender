@@ -18,7 +18,7 @@
     <ClInclude Include="include\jssdk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\jssdk-SpiderMonkey.h">
+    <ClInclude Include="include\jssdk-spider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\jssdk-v8.h">
@@ -31,7 +31,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\jssdk-SpiderMonkey.cpp">
+    <ClCompile Include="src\jssdk-spider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\jssdk-v8.cpp">

@@ -14,7 +14,7 @@ namespace js
 
 const int32_t Api::version = 1;
 Api* v8_api;
-Api* SpiderMonkey_api;
+Api* spider_api;
 
 bool set_js_api(Api*& api, Api* _api, const char* eng)
 {
@@ -31,9 +31,9 @@ bool set_v8_api(Api* _api)
 	return set_js_api(v8_api, _api, "v8");
 }
 
-bool set_SpiderMonkey_api(Api* _api)
+bool set_spider_api(Api* _api)
 {
-	return set_js_api(SpiderMonkey_api, _api, "SpiderMonkey");
+	return set_js_api(spider_api, _api, "spider");
 }
 
 };

@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 	testing::InitGoogleTest(&argc, argv);
 
 	js::setup_v8();
-	js::setup_SpiderMonkey();
+	js::setup_spider();
 
 	exlib::Service::init(3);
 	exlib::Service::Create(fiber_proc, 0, 128 * 1024);
