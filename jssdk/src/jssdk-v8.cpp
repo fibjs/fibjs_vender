@@ -440,18 +440,23 @@ public:
 	}
 
 public:
-	Value FunctionCall(const Function& f, Value* args, int32_t argn)
+	Value FunctionCall(const Function& f, Object obj, Value* args, int32_t argn)
 	{
 		v8_Runtime* rt = (v8_Runtime*)f.m_rt;
 		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
 		                                 rt->m_context);
-		v8::Local<v8::Value> recv = v8::Undefined(rt->m_isolate);
 		std::vector<v8::Local<v8::Value> > _args;
 		int32_t i;
 
 		_args.resize(argn);
 		for (i = 0; i < argn; i ++)
 			_args[i] = args[i].m_v;
+
+		v8::Local<v8::Value> recv;
+
+		if (obj.isEmpty())
+			recv = v8::Undefined(rt->m_isolate);
+		else recv = obj.m_v;
 
 		v8::MaybeLocal<v8::Value> result = v8::Local<v8::Function>::Cast(f.m_v)->Call(context,
 		                                   recv, argn, _args.data());

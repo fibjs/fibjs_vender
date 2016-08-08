@@ -212,12 +212,22 @@ public:
 public:
 	Value call(Value* args, int32_t argn)
 	{
-		return m_rt->m_api->FunctionCall(*this, args, argn);
+		return m_rt->m_api->FunctionCall(*this, Object(), args, argn);
 	}
 
 	Value call()
 	{
-		return m_rt->m_api->FunctionCall(*this, NULL, 0);
+		return m_rt->m_api->FunctionCall(*this, Object(), NULL, 0);
+	}
+
+	Value call(Object obj, Value* args, int32_t argn)
+	{
+		return m_rt->m_api->FunctionCall(*this, obj, args, argn);
+	}
+
+	Value call(Object obj)
+	{
+		return m_rt->m_api->FunctionCall(*this, obj, NULL, 0);
 	}
 };
 

@@ -242,8 +242,7 @@ public:
 
 		jsval args[2] = {m_stub, OBJECT_TO_JSVAL(func)};
 		jsval result = JSVAL_NULL;
-		JSBool r = JS_CallFunctionValue(m_cx, JS_GetGlobalObject(m_cx), m_func_factory,
-		                                2, args, &result);
+		JSBool r = JS_CallFunctionValue(m_cx, NULL, m_func_factory, 2, args, &result);
 		assert(r != JS_FALSE);
 		assert(JSVAL_IS_OBJECT(result));
 		assert(JS_ObjectIsFunction(m_cx, JSVAL_TO_OBJECT(result)));
@@ -449,7 +448,7 @@ public:
 	}
 
 public:
-	Value FunctionCall(const Function& f, Value* args, int32_t argn)
+	Value FunctionCall(const Function& f, Object obj, Value* args, int32_t argn)
 	{
 		spider_Runtime* rt = (spider_Runtime*)f.m_rt;
 		std::vector<jsval> _args;
@@ -461,7 +460,7 @@ public:
 
 		jsval result;
 
-		JSBool ok = JS_CallFunctionValue(rt->m_cx, JS_GetGlobalObject(rt->m_cx), f.m_v,
+		JSBool ok = JS_CallFunctionValue(rt->m_cx, JSVAL_TO_OBJECT(obj.m_v), f.m_v,
 		                                 argn, _args.data(), &result);
 		if (ok)
 			return Value(rt, result);
