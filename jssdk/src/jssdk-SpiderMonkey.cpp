@@ -21,6 +21,8 @@ public:
 	{
 		m_api = api;
 		m_rt = JS_NewRuntime(8L * 1024L * 1024L);
+		JS_SetRuntimePrivate(m_rt, this);
+
 		m_cx = JS_NewContext(m_rt, 8192);
 
 		JS_BeginRequest(m_cx);
@@ -115,7 +117,7 @@ public:
 		JS_LeaveLocalRootScopeWithResult(m_cx, scope.m_result);
 	}
 
-	Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value& v)
+	Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value v)
 	{
 		scope.m_result = v.m_v;
 		return v;
@@ -220,11 +222,13 @@ public:
 		return new SpiderMonkey_Runtime(this);
 	}
 
+public:
 	bool ValueIsUndefined(const Value& v)
 	{
 		return v.m_v != 0 && JSVAL_IS_VOID(v.m_v);
 	}
 
+public:
 	bool ValueToBoolean(const Value& v)
 	{
 		JSBool b;
@@ -237,6 +241,7 @@ public:
 		return v.m_v != 0 && JSVAL_IS_BOOLEAN(v.m_v);
 	}
 
+public:
 	double ValueToNumber(const Value& v)
 	{
 		jsdouble d;
@@ -249,6 +254,7 @@ public:
 		return v.m_v != 0 && JSVAL_IS_NUMBER(v.m_v);
 	}
 
+public:
 	exlib::string ValueToString(const Value& v)
 	{
 		JSString* s = JS_ValueToString(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, v.m_v);
@@ -263,6 +269,7 @@ public:
 		return v.m_v != 0 && JSVAL_IS_STRING(v.m_v);
 	}
 
+public:
 	bool ObjectHas(const Object& o, exlib::string key)
 	{
 		JSBool r;
@@ -343,6 +350,7 @@ public:
 		return v.m_v != 0 && JSVAL_IS_OBJECT(v.m_v);
 	}
 
+public:
 	int32_t ArrayGetLength(const Array& a)
 	{
 		jsuint n;
@@ -375,6 +383,7 @@ public:
 		return JS_FALSE != JS_IsArrayObject(((SpiderMonkey_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
 	}
 
+public:
 	Value FunctionCall(const Function& f, Value* args, int32_t argn)
 	{
 		SpiderMonkey_Runtime* rt = (SpiderMonkey_Runtime*)f.m_rt;

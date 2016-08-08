@@ -45,6 +45,8 @@ public:
 		create_params.array_buffer_allocator = &array_buffer_allocator;
 		m_isolate = v8::Isolate::New(create_params);
 
+		m_isolate->SetData(0, this);
+
 		v8::Locker locker(m_isolate);
 		v8::HandleScope handle_scope(m_isolate);
 		v8::Isolate::Scope isolate_scope(m_isolate);
@@ -155,7 +157,7 @@ public:
 		((v8::EscapableHandleScope*)scope.m_handle_scope)->~EscapableHandleScope();
 	}
 
-	Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value& v)
+	Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value v)
 	{
 		return Value(scope.m_rt, ((v8::EscapableHandleScope*)scope.m_handle_scope)->Escape(v.m_v));
 	}
@@ -268,11 +270,13 @@ public:
 		return new v8_Runtime(this);
 	}
 
+public:
 	bool ValueIsUndefined(const Value& v)
 	{
 		return !v.m_v.IsEmpty() && v.m_v->IsUndefined();
 	}
 
+public:
 	bool ValueToBoolean(const Value& v)
 	{
 		return v.m_v->BooleanValue();
@@ -283,6 +287,7 @@ public:
 		return !v.m_v.IsEmpty() && (v.m_v->IsBoolean() || v.m_v->IsBooleanObject());
 	}
 
+public:
 	double ValueToNumber(const Value& v)
 	{
 		return v.m_v->NumberValue();
@@ -293,6 +298,7 @@ public:
 		return !v.m_v.IsEmpty() && (v.m_v->IsNumber() || v.m_v->IsNumberObject());
 	}
 
+public:
 	exlib::string ValueToString(const Value& v)
 	{
 		v8::String::Utf8Value tmp(v.m_v);
@@ -306,6 +312,7 @@ public:
 		return !v.m_v.IsEmpty() && (v.m_v->IsString() || v.m_v->IsStringObject());
 	}
 
+public:
 	bool ObjectHas(const Object& o, exlib::string key)
 	{
 		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
@@ -406,6 +413,7 @@ public:
 		return !v.m_v.IsEmpty() && v.m_v->IsObject();
 	}
 
+public:
 	int32_t ArrayGetLength(const Array& a)
 	{
 		return v8::Local<v8::Array>::Cast(a.m_v)->Length();
@@ -431,6 +439,7 @@ public:
 		return !v.m_v.IsEmpty() && v.m_v->IsArray();
 	}
 
+public:
 	Value FunctionCall(const Function& f, Value* args, int32_t argn)
 	{
 		v8_Runtime* rt = (v8_Runtime*)f.m_rt;

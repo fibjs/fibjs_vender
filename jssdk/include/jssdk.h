@@ -52,7 +52,7 @@ public:
 
 	virtual void EscapableHandleScope_enter(EscapableHandleScope& scope) = 0;
 	virtual void EscapableHandleScope_leave(EscapableHandleScope& scope) = 0;
-	virtual Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value& v) = 0;
+	virtual Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value v) = 0;
 
 	virtual void gc() = 0;
 
