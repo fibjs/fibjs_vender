@@ -222,7 +222,7 @@ public:
 		return Array(this, v8::Array::New(m_isolate, sz));
 	}
 
-	Function NewFunction(NativeFunction callback)
+	Function NewFunction(FunctionCallback callback)
 	{
 		return Function(this, v8::Function::New(m_isolate, (v8::FunctionCallback)callback));
 	}

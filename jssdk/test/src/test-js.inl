@@ -150,10 +150,9 @@ TEST(ENG(api), Global)
 
 static bool s_func_test = false;
 
-static intptr_t my_func1(...)
+static void my_func1(const js::FunctionCallbackInfo& info)
 {
 	s_func_test = true;
-	return 0;
 }
 
 TEST(ENG(api), Value_Function)
@@ -171,22 +170,30 @@ TEST(ENG(api), Value_Function)
 	args[0] = rt->NewNumber(100);
 	args[1] = rt->NewNumber(200);
 
-	r = f.ncall(args, 2);
+	r = f.call(args, 2);
 	EXPECT_EQ(300, r.toNumber());
+
+	f = rt->execute("(function(){var c=300;return function(a,b){return a+b+c;};});", "test.js");
+	ASSERT_TRUE(f.isFunction());
+
+	f = f.call();
+	ASSERT_TRUE(f.isFunction());
+
+	r = f.call(args, 2);
+	EXPECT_EQ(600, r.toNumber());
 
 	f = rt->NewFunction(my_func1);
 
 	ASSERT_FALSE(s_func_test);
-	f.ncall(args, 0);
+	f.call();
 	ASSERT_TRUE(s_func_test);
 }
 
 static bool s_fiber_test = false;
 
-static intptr_t my_func_fiber(...)
+static void my_func_fiber(const js::FunctionCallbackInfo& info)
 {
 	s_fiber_test = true;
-	return 0;
 }
 
 static void *fiber_proc(void *p)

@@ -16,9 +16,37 @@ namespace js
 
 class spider_Runtime : public Runtime
 {
+
+private:
+	static JSBool func_stub(JSContext *cx, JSObject *obj, uintN argc,
+	                        jsval *argv, jsval *rval)
+	{
+		jsval v;
+
+		JS_GetProperty(cx, obj, "func", &v);
+		JS_GetReservedSlot(cx, JSVAL_TO_OBJECT(v), 0, &v);
+		FunctionCallback callback = (FunctionCallback)JSVAL_TO_PRIVATE(v);
+
+		FunctionCallbackInfo info;
+
+		callback(info);
+
+		return 0;
+	}
+
 public:
 	spider_Runtime(class Api* api) : m_count(0)
 	{
+		static char func_stub_src[] =
+		    "(function(stub, func) { "
+		    "	return (function() { "
+		    "		return stub.apply({ "
+		    "			\"this\": this, "
+		    "			\"func\": func "
+		    "		}, arguments); "
+		    "	}); "
+		    "});";
+
 		m_api = api;
 		m_rt = JS_NewRuntime(8L * 1024L * 1024L);
 		JS_SetRuntimePrivate(m_rt, this);
@@ -27,12 +55,28 @@ public:
 
 		JS_BeginRequest(m_cx);
 		JS_InitStandardClasses(m_cx, JS_NewObject(m_cx, NULL, 0, 0));
+
+		JS_SetOptions(m_cx, JSOPTION_STRICT | JSOPTION_VAROBJFIX);
+
+		JS_EvaluateScript(m_cx, JS_GetGlobalObject(m_cx), func_stub_src,
+		                  sizeof(func_stub_src) - 1, "", 1, &m_func_factory);
+		assert(JSVAL_IS_OBJECT(m_func_factory));
+		assert(JS_ObjectIsFunction(m_cx, JSVAL_TO_OBJECT(m_func_factory)));
+		JS_AddRoot(m_cx, &m_func_factory);
+
+		m_stub = OBJECT_TO_JSVAL(JS_NewFunction(m_cx, func_stub,
+		                                        0, 0, NULL, NULL));
+		assert(JSVAL_IS_OBJECT(m_stub));
+		JS_AddRoot(m_cx, &m_stub);
+
 		JS_EndRequest(m_cx);
 	}
 
 public:
 	void destroy()
 	{
+		JS_RemoveRoot(m_cx, &m_stub);
+		JS_RemoveRoot(m_cx, &m_func_factory);
 		JS_SetContextThread(m_cx);
 		JS_DestroyContext(m_cx);
 		JS_DestroyRuntime(m_rt);
@@ -136,9 +180,10 @@ public:
 	Value execute(exlib::string code, exlib::string soname)
 	{
 		jsval rval;
+		exlib::wstring wcode(utf8to16String(code));
 
-		JSBool ok = JS_EvaluateScript(m_cx, JS_GetGlobalObject(m_cx), code.c_str(),
-		                              (int32_t)code.length(), soname.c_str(), 0, &rval);
+		JSBool ok = JS_EvaluateUCScript(m_cx, JS_GetGlobalObject(m_cx), wcode.c_str(),
+		                                (int32_t)wcode.length(), soname.c_str(), 0, &rval);
 
 		if (ok)
 			return Value(this, rval);
@@ -183,15 +228,35 @@ public:
 		return Array(this, OBJECT_TO_JSVAL(JS_NewArrayObject(m_cx, sz, 0)));
 	}
 
-	Function NewFunction(NativeFunction callback)
+	Function NewFunction(FunctionCallback callback)
 	{
-		return Function(this, OBJECT_TO_JSVAL(JS_NewFunction(m_cx, (JSNative)callback,
-		                                      0, 0, NULL, NULL)));
+		static JSClass func_CallbackData = {
+			"CallbackData", JSCLASS_HAS_PRIVATE | JSCLASS_HAS_RESERVED_SLOTS(1),
+			JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+			JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+			JSCLASS_NO_OPTIONAL_MEMBERS
+		};
+
+		JSObject* func = JS_NewObject(m_cx, &func_CallbackData, NULL, NULL);
+		JS_SetReservedSlot(m_cx, func, 0, PRIVATE_TO_JSVAL(callback));
+
+		jsval args[2] = {m_stub, OBJECT_TO_JSVAL(func)};
+		jsval result = JSVAL_NULL;
+		JSBool r = JS_CallFunctionValue(m_cx, JS_GetGlobalObject(m_cx), m_func_factory,
+		                                2, args, &result);
+		assert(r != JS_FALSE);
+		assert(JSVAL_IS_OBJECT(result));
+		assert(JS_ObjectIsFunction(m_cx, JSVAL_TO_OBJECT(result)));
+
+		return Function(this, result);
 	}
 
 private:
 	JSRuntime *m_rt;
 	JSContext *m_cx;
+
+	jsval m_func_factory;
+	jsval m_stub;
 
 	exlib::Locker m_lock;
 	intptr_t m_count;
@@ -387,7 +452,6 @@ public:
 	Value FunctionCall(const Function& f, Value* args, int32_t argn)
 	{
 		spider_Runtime* rt = (spider_Runtime*)f.m_rt;
-		JSFunction * func = JS_ValueToFunction(rt->m_cx, f.m_v);
 		std::vector<jsval> _args;
 		int32_t i;
 
@@ -397,7 +461,8 @@ public:
 
 		jsval result;
 
-		JSBool ok = JS_CallFunction(rt->m_cx, NULL, func, argn, _args.data(), &result);
+		JSBool ok = JS_CallFunctionValue(rt->m_cx, JS_GetGlobalObject(rt->m_cx), f.m_v,
+		                                 argn, _args.data(), &result);
 		if (ok)
 			return Value(rt, result);
 

@@ -148,6 +148,11 @@ private:
 	jsval m_v;
 };
 
+class FunctionCallbackInfo
+{
+
+};
+
 }
 
 #include "jssdk-pub.h"

@@ -126,6 +126,11 @@ private:
 
 typedef v8::Local<v8::Value> js_value;
 
+class FunctionCallbackInfo : private v8::FunctionCallbackInfo<v8::Value>
+{
+
+};
+
 }
 
 #include "jssdk-pub.h"

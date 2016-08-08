@@ -103,10 +103,12 @@ public:
 
 	Object(Runtime *rt, js_value v) : Value(rt, v)
 	{
+		assert(isObject());
 	}
 
 	Object(const Value& v) : Value(v)
 	{
+		assert(isObject());
 	}
 
 public:
@@ -161,10 +163,12 @@ public:
 
 	Array(Runtime *rt, js_value v) : Object(rt, v)
 	{
+		assert(isArray());
 	}
 
 	Array(const Value& v) : Object(v)
 	{
+		assert(isArray());
 	}
 
 public:
@@ -197,16 +201,23 @@ public:
 
 	Function(Runtime *rt, js_value v) : Object(rt, v)
 	{
+		assert(isFunction());
 	}
 
 	Function(const Value& v) : Object(v)
 	{
+		assert(isFunction());
 	}
 
 public:
-	Value ncall(Value* args, int32_t argn)
+	Value call(Value* args, int32_t argn)
 	{
 		return m_rt->m_api->FunctionCall(*this, args, argn);
+	}
+
+	Value call()
+	{
+		return m_rt->m_api->FunctionCall(*this, NULL, 0);
 	}
 };
 
