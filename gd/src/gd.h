@@ -47,7 +47,7 @@ extern "C" {
 /* http://gcc.gnu.org/wiki/Visibility */
 #if defined(_WIN32) || defined(CYGWIN) || defined(_WIN32_WCE)
 # define BGD_EXPORT_DATA_PROT
-# define BGD_STDCALL __stdcall
+# define BGD_STDCALL
 # define BGD_EXPORT_DATA_IMPL
 #else
 # if defined(HAVE_VISIBILITY) && HAVE_VISIBILITY==1
