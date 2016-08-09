@@ -182,7 +182,7 @@ public:
 		jsval rval;
 		exlib::wstring wcode(utf8to16String(code));
 
-		JSBool ok = JS_EvaluateUCScript(m_cx, JS_GetGlobalObject(m_cx), wcode.c_str(),
+		JSBool ok = JS_EvaluateUCScript(m_cx, JS_GetGlobalObject(m_cx), (jschar*)wcode.c_str(),
 		                                (int32_t)wcode.length(), soname.c_str(), 0, &rval);
 
 		if (ok)

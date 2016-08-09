@@ -6,6 +6,8 @@
  *  lion@9465.net
  */
 
+#include <assert.h>
+
 #ifndef _jssdk_pub_h__
 #define _jssdk_pub_h__
 
