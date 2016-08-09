@@ -2,6 +2,7 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
 
 #ifndef GD_H
 #define GD_H 1
@@ -11,8 +12,8 @@ extern "C" {
  * whitespace, take the form GD_*_VERSION and contain the magical
  * trailing comment. */
 #define GD_MAJOR_VERSION    2           /*version605b5d1778*/
-#define GD_MINOR_VERSION    1           /*version605b5d1778*/
-#define GD_RELEASE_VERSION  1           /*version605b5d1778*/
+#define GD_MINOR_VERSION    2           /*version605b5d1778*/
+#define GD_RELEASE_VERSION  3           /*version605b5d1778*/
 #define GD_EXTRA_VERSION    ""          /*version605b5d1778*/
 /* End parsable section. */
 
@@ -44,17 +45,22 @@ extern "C" {
    the gd sources in a project. */
 
 /* http://gcc.gnu.org/wiki/Visibility */
-// #ifdef _MSC_VER
-// #  define BGD_STDCALL __stdcall
-// #else
-#  define BGD_STDCALL
-// #endif
-#define BGD_EXPORT_DATA_PROT
-#define BGD_EXPORT_DATA_IMPL
+#if defined(_WIN32) || defined(CYGWIN) || defined(_WIN32_WCE)
+# define BGD_EXPORT_DATA_PROT
+# define BGD_STDCALL __stdcall
+# define BGD_EXPORT_DATA_IMPL
+#else
+# if defined(HAVE_VISIBILITY) && HAVE_VISIBILITY==1
+#  define BGD_EXPORT_DATA_PROT __attribute__ ((visibility ("default")))
+#  define BGD_EXPORT_DATA_IMPL __attribute__ ((visibility ("hidden")))
+# else
+#  define BGD_EXPORT_DATA_PROT
+#  define BGD_EXPORT_DATA_IMPL
+# endif
+# define BGD_STDCALL
+#endif
 
 #define BGD_DECLARE(rt) BGD_EXPORT_DATA_PROT rt BGD_STDCALL
-
-#include <stdio.h>
 
 /* VS2012+ disable keyword macroizing unless _ALLOW_KEYWORD_MACROS is set
    We define inline, snprintf, and strcasecmp if they're missing 
@@ -67,9 +73,9 @@ extern "C" {
 #  ifndef strcasecmp
 #    define strcasecmp _stricmp
 #  endif 
-#  ifndef snprintf 
-#   define snprintf _snprintf
-#  endif 
+#if _MSC_VER < 1900
+     extern int snprintf(char*, size_t, const char*, ...);
+#endif
 #endif 
 
 #ifdef __cplusplus
@@ -89,6 +95,7 @@ extern "C" {
  * documentation. */
 
 /* stdio is needed for file I/O. */
+#include <stdio.h>
 #include <stdarg.h>
 #include "gd_io.h"
 
@@ -185,6 +192,7 @@ enum gdPaletteQuantizationMethod {
  *  GD_SINC				 - Sinc
  *  GD_TRIANGLE			 - Triangle
  *  GD_WEIGHTED4		 - 4 pixels weighted bilinear interpolation
+ *  GD_LINEAR            - bilinear interpolation
  *
  * See also:
  *  <gdSetInterpolationMethod>
@@ -212,7 +220,8 @@ typedef enum {
 	GD_SINC,
 	GD_TRIANGLE,
 	GD_WEIGHTED4,
-	GD_METHOD_COUNT = 21
+	GD_LINEAR,
+	GD_METHOD_COUNT = 23
 } gdInterpolationMethod;
 
 /* define struct with name and func ptr and add it to gdImageStruct gdInterpolationMethod interpolation; */
@@ -897,14 +906,11 @@ BGD_DECLARE(void *) gdImageWBMPPtr (gdImagePtr im, int *size, int fg);
 
 /* 100 is highest quality (there is always a little loss with JPEG).
    0 is lowest. 10 is about the lowest useful setting. */
-BGD_DECLARE(void) gdImageJpeg (gdImagePtr im, FILE * out, int quality,
-	unsigned char *ex_data, unsigned int ex_size);
-BGD_DECLARE(void) gdImageJpegCtx (gdImagePtr im, gdIOCtx * out, int quality,
-	unsigned char *ex_data, unsigned int ex_size);
+BGD_DECLARE(void) gdImageJpeg (gdImagePtr im, FILE * out, int quality);
+BGD_DECLARE(void) gdImageJpegCtx (gdImagePtr im, gdIOCtx * out, int quality);
 
 /* Best to free this memory with gdFree(), not free() */
-BGD_DECLARE(void *) gdImageJpegPtr (gdImagePtr im, int *size, int quality,
-	unsigned char *ex_data, unsigned int ex_size);
+BGD_DECLARE(void *) gdImageJpegPtr (gdImagePtr im, int *size, int quality);
 
 BGD_DECLARE(void) gdImageWebpEx (gdImagePtr im, FILE * outFile, int quantization);
 BGD_DECLARE(void) gdImageWebp (gdImagePtr im, FILE * outFile);

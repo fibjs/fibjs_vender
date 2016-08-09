@@ -20,6 +20,9 @@ gdImagePtr gdImageCreateFromWebp (FILE * inFile)
 {
 	gdImagePtr im;
 	gdIOCtx *in = gdNewFileCtx(inFile);
+	if (!in) {
+		return 0;
+	}
 	im = gdImageCreateFromWebpCtx(in);
 	in->gd_free(in);
 
@@ -95,8 +98,7 @@ gdImagePtr gdImageCreateFromWebpCtx (gdIOCtx * infile)
 			im->tpixels[y][x] = gdTrueColorAlpha(r, g, b, a);
 		}
 	}
-
-    /* do not use gdFree here, in case gdFree/alloc is mapped to something else than libc */
+	/* do not use gdFree here, in case gdFree/alloc is mapped to something else than libc */
 	free(argb);
 	gdFree(temp);
 	im->saveAlphaFlag = 1;
@@ -158,24 +160,42 @@ freeargb:
 	gdFree(argb);
 }
 
+/*
+	Function: gdImageWebpEx
+*/
 BGD_DECLARE(void) gdImageWebpEx (gdImagePtr im, FILE * outFile, int quantization)
 {
 	gdIOCtx *out = gdNewFileCtx(outFile);
+	if (out == NULL) {
+		return;
+	}
 	gdImageWebpCtx(im, out, quantization);
 	out->gd_free(out);
 }
 
+/*
+	Function: gdImageWebp
+*/
 BGD_DECLARE(void) gdImageWebp (gdImagePtr im, FILE * outFile)
 {
 	gdIOCtx *out = gdNewFileCtx(outFile);
+	if (out == NULL) {
+		return;
+	}
 	gdImageWebpCtx(im, out, -1);
 	out->gd_free(out);
 }
 
+/*
+	Function: gdImageWebpPtr
+*/
 BGD_DECLARE(void *) gdImageWebpPtr (gdImagePtr im, int *size)
 {
 	void *rv;
 	gdIOCtx *out = gdNewDynamicCtx(2048, NULL);
+	if (out == NULL) {
+		return NULL;
+	}
 	gdImageWebpCtx(im, out, -1);
 	rv = gdDPExtractData(out, size);
 	out->gd_free(out);
@@ -183,10 +203,16 @@ BGD_DECLARE(void *) gdImageWebpPtr (gdImagePtr im, int *size)
 	return rv;
 }
 
+/*
+	Function: gdImageWebpPtrEx
+*/
 BGD_DECLARE(void *) gdImageWebpPtrEx (gdImagePtr im, int *size, int quantization)
 {
 	void *rv;
 	gdIOCtx *out = gdNewDynamicCtx(2048, NULL);
+	if (out == NULL) {
+		return NULL;
+	}
 	gdImageWebpCtx(im, out, quantization);
 	rv = gdDPExtractData(out, size);
 	out->gd_free(out);

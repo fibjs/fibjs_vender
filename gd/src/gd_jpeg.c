@@ -192,12 +192,11 @@ static void fatal_jpeg_error(j_common_ptr cinfo)
 
 */
 
-BGD_DECLARE(void) gdImageJpeg(gdImagePtr im, FILE *outFile, int quality,
-		unsigned char *ex_data, unsigned int ex_size)
+BGD_DECLARE(void) gdImageJpeg(gdImagePtr im, FILE *outFile, int quality)
 {
 	gdIOCtx *out = gdNewFileCtx(outFile);
 	if (out == NULL) return;
-	gdImageJpegCtx(im, out, quality, ex_data, ex_size);
+	gdImageJpegCtx(im, out, quality);
 	out->gd_free(out);
 }
 
@@ -226,13 +225,12 @@ BGD_DECLARE(void) gdImageJpeg(gdImagePtr im, FILE *outFile, int quality,
     A pointer to the JPEG data or NULL if an error occurred.
 
 */
-BGD_DECLARE(void *) gdImageJpegPtr(gdImagePtr im, int *size, int quality,
-		unsigned char *ex_data, unsigned int ex_size)
+BGD_DECLARE(void *) gdImageJpegPtr(gdImagePtr im, int *size, int quality)
 {
 	void *rv;
 	gdIOCtx *out = gdNewDynamicCtx(2048, NULL);
 	if (out == NULL) return NULL;
-	gdImageJpegCtx(im, out, quality, ex_data, ex_size);
+	gdImageJpegCtx(im, out, quality);
 	rv = gdDPExtractData(out, size);
 	out->gd_free(out);
 	return rv;
@@ -253,8 +251,7 @@ void jpeg_gdIOCtx_dest(j_compress_ptr cinfo, gdIOCtx *outfile);
     quality - Image quality. 
 
 */
-BGD_DECLARE(void) gdImageJpegCtx(gdImagePtr im, gdIOCtx *outfile, int quality,
-		unsigned char *ex_data, unsigned int ex_size)
+BGD_DECLARE(void) gdImageJpegCtx(gdImagePtr im, gdIOCtx *outfile, int quality)
 {
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
@@ -310,6 +307,10 @@ BGD_DECLARE(void) gdImageJpegCtx(gdImagePtr im, gdIOCtx *outfile, int quality,
 
 	if(quality >= 0) {
 		jpeg_set_quality(&cinfo, quality, TRUE);
+		if (quality >= 90) {
+			cinfo.comp_info[0].h_samp_factor = 1;
+			cinfo.comp_info[0].v_samp_factor = 1;
+		}
 	}
 
 	/* If user requests interlace, translate that to progressive JPEG */
@@ -332,7 +333,7 @@ BGD_DECLARE(void) gdImageJpegCtx(gdImagePtr im, gdIOCtx *outfile, int quality,
 	rowptr[0] = row;
 
 	jpeg_start_compress(&cinfo, TRUE);
-/*
+
 	sprintf(comment, "CREATOR: gd-jpeg v%s (using IJG JPEG v%d),", GD_JPEG_VERSION, JPEG_LIB_VERSION);
 
 	if(quality >= 0) {
@@ -342,9 +343,6 @@ BGD_DECLARE(void) gdImageJpegCtx(gdImagePtr im, gdIOCtx *outfile, int quality,
 	}
 
 	jpeg_write_marker(&cinfo, JPEG_COM, (unsigned char *) comment, (unsigned int)strlen(comment));
-*/
-	if (ex_data)
-		jpeg_write_marker(&cinfo, JPEG_APP0 + 1, ex_data, ex_size);
 
 	if(im->trueColor) {
 #if BITS_IN_JSAMPLE == 12
@@ -869,26 +867,12 @@ static int CMYKToRGB(int c, int m, int y, int k, int inverted)
  * almost a simple global replace from T. Lane's stdio versions.
  */
 
-/* Different versions of libjpeg use either 'jboolean' or 'boolean', and
- * some platforms define 'boolean', and so forth. Deal with this
- * madness by typedeffing 'safeboolean' to 'boolean' if HAVE_BOOLEAN
- * is already set, because this is the test that libjpeg uses.
- * Otherwise, typedef it to int, because that's what libjpeg does
- * if HAVE_BOOLEAN is not defined. -TBB
- */
-
-#ifdef HAVE_BOOLEAN
-typedef boolean safeboolean;
-#else
-typedef int safeboolean;
-#endif /* HAVE_BOOLEAN */
-
 /* Expanded data source object for gdIOCtx input */
 typedef struct {
 	struct jpeg_source_mgr pub;	/* public fields */
 	gdIOCtx *infile;			/* source stream */
 	unsigned char *buffer;		/* start of buffer */
-	safeboolean start_of_file;	/* have we gotten any data yet? */
+	boolean start_of_file;	/* have we gotten any data yet? */
 }
 my_source_mgr;
 
@@ -948,7 +932,7 @@ void init_source(j_decompress_ptr cinfo)
 
 #define END_JPEG_SEQUENCE "\r\n[*]--:END JPEG:--[*]\r\n"
 
-safeboolean fill_input_buffer(j_decompress_ptr cinfo)
+boolean fill_input_buffer(j_decompress_ptr cinfo)
 {
 	my_src_ptr src = (my_src_ptr)cinfo->src;
 	/* 2.0.12: signed size. Thanks to Geert Jansen */
@@ -1138,7 +1122,7 @@ void init_destination(j_compress_ptr cinfo)
  * write it out when emptying the buffer externally.
  */
 
-safeboolean empty_output_buffer(j_compress_ptr cinfo)
+boolean empty_output_buffer(j_compress_ptr cinfo)
 {
 	my_dest_ptr dest = (my_dest_ptr)cinfo->dest;
 

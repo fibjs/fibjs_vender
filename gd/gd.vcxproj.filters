@@ -99,6 +99,12 @@
     <ClInclude Include="src\msinttypes\stdint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\gd_errors.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gdpp.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\gd.c">
@@ -216,6 +222,30 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\gd_webp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gd_color_match.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gd_filename.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gd_io_stream.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gd_version.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gd_xbm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gdpp.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\snprintf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wbmp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

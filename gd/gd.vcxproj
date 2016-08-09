@@ -35,9 +35,11 @@
     <ClInclude Include="src\gdfontt.h" />
     <ClInclude Include="src\gdfx.h" />
     <ClInclude Include="src\gdhelpers.h" />
+    <ClInclude Include="src\gdpp.h" />
     <ClInclude Include="src\gd_color.h" />
     <ClInclude Include="src\gd_color_map.h" />
     <ClInclude Include="src\gd_error.h" />
+    <ClInclude Include="src\gd_errors.h" />
     <ClInclude Include="src\gd_intern.h" />
     <ClInclude Include="src\gd_io.h" />
     <ClInclude Include="src\gd_io_stream.h" />
@@ -59,12 +61,15 @@
     <ClCompile Include="src\gdft.c" />
     <ClCompile Include="src\gdfx.c" />
     <ClCompile Include="src\gdhelpers.c" />
+    <ClCompile Include="src\gdpp.cxx" />
     <ClCompile Include="src\gdtables.c" />
     <ClCompile Include="src\gdxpm.c" />
     <ClCompile Include="src\gd_bmp.c" />
     <ClCompile Include="src\gd_color.c" />
     <ClCompile Include="src\gd_color_map.c" />
+    <ClCompile Include="src\gd_color_match.c" />
     <ClCompile Include="src\gd_crop.c" />
+    <ClCompile Include="src\gd_filename.c" />
     <ClCompile Include="src\gd_filter.c" />
     <ClCompile Include="src\gd_gd.c" />
     <ClCompile Include="src\gd_gd2.c" />
@@ -75,6 +80,7 @@
     <ClCompile Include="src\gd_io_dp.c" />
     <ClCompile Include="src\gd_io_file.c" />
     <ClCompile Include="src\gd_io_ss.c" />
+    <ClCompile Include="src\gd_io_stream.cxx" />
     <ClCompile Include="src\gd_jpeg.c" />
     <ClCompile Include="src\gd_matrix.c" />
     <ClCompile Include="src\gd_nnquant.c" />
@@ -86,8 +92,12 @@
     <ClCompile Include="src\gd_tiff.c" />
     <ClCompile Include="src\gd_topal.c" />
     <ClCompile Include="src\gd_transform.c" />
+    <ClCompile Include="src\gd_version.c" />
     <ClCompile Include="src\gd_wbmp.c" />
     <ClCompile Include="src\gd_webp.c" />
+    <ClCompile Include="src\gd_xbm.c" />
+    <ClCompile Include="src\snprintf.c" />
+    <ClCompile Include="src\wbmp.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1F77AB58-706B-4BB5-BE73-00000000009d}</ProjectGuid>
