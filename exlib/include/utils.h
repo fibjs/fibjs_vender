@@ -25,6 +25,8 @@
 #include "utils_arm.h"
 #elif defined(mips)
 #include "utils_mips.h"
+#elif defined(mips64)
+#include "utils_mips64.h"
 #else
 #error unknoen arch....
 #endif

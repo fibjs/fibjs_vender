@@ -183,6 +183,10 @@ void Service::Create(fiber_func func, void *data, int32_t stacksize, const char*
     fb->m_cntxt.ra = (intptr_t) fiber_proc;
     fb->m_cntxt.a0 = (intptr_t) func;
     fb->m_cntxt.a1 = (intptr_t) fb;
+#elif defined(mips64)
+    fb->m_cntxt.ra = (intptr_t) fiber_proc;
+    fb->m_cntxt.a0 = (intptr_t) func;
+    fb->m_cntxt.a1 = (intptr_t) fb;
 #endif
 
 #ifdef DEBUG
