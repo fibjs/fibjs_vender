@@ -21,16 +21,10 @@ namespace exlib
 extern "C" void win_switch(void *from, void *to);
 #define fb_switch win_switch
 
-extern "C" void win_save(void *now);
-#define fb_save win_save
-
 #else
 
 extern "C" void nix_switch(void *from, void *to);
 #define fb_switch nix_switch
-
-extern "C" void nix_save(void *now);
-#define fb_save nix_save
 
 #endif
 
@@ -177,11 +171,6 @@ public:
     void switchto(void *to)
     {
         fb_switch(this, to);
-    }
-
-    void save()
-    {
-        fb_save(this);
     }
 };
 

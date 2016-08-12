@@ -1,6 +1,5 @@
 
 PUBLIC win_switch
-PUBLIC win_save
 
 _TEXT   SEGMENT
 
@@ -41,24 +40,6 @@ win_switch:
 	mov	rsp, [rcx + 070h]
 
 	mov	rcx, [rcx + 010h]
-
-	ret
-
-win_save:
-	mov	[rcx], rbp
-	mov	[rcx + 008h], rbx
-
-    mov	[rcx + 018h], rdx
-	mov	[rcx + 020h], rsi
-	mov	[rcx + 028h], rdi
-	mov	[rcx + 030h], r8
-	mov	[rcx + 038h], r9
-	mov	[rcx + 040h], r10
-	mov	[rcx + 048h], r11
-	mov	[rcx + 050h], r12
-	mov	[rcx + 058h], r13
-	mov	[rcx + 060h], r14
-	mov	[rcx + 068h], r15
 
 	ret
 
