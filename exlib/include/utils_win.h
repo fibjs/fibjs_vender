@@ -11,6 +11,52 @@
 namespace exlib
 {
 
+#pragma pack (1)
+
+class registers
+{
+public:
+#if defined(amd64)
+	union {
+		intptr_t Rbp;
+		intptr_t fp;
+	};
+	intptr_t Rbx;
+	intptr_t Rcx;
+	intptr_t Rdx;
+	intptr_t Rsi;
+	intptr_t Rdi;
+	intptr_t R8;
+	intptr_t R9;
+	intptr_t R10;
+	intptr_t R11;
+	intptr_t R12;
+	intptr_t R13;
+	intptr_t R14;
+	intptr_t R15;
+	union {
+		intptr_t Rsp;
+		intptr_t sp;
+	};
+#elif defined(i386)
+	union {
+		intptr_t Ebp;
+		intptr_t fp;
+	};
+	intptr_t Ebx;
+	intptr_t Ecx;
+	intptr_t Edx;
+	intptr_t Esi;
+	intptr_t Edi;
+	union {
+		intptr_t Esp;
+		intptr_t sp;
+	};
+#endif
+};
+
+#pragma pack ()
+
 #ifdef amd64
 inline void MemoryBarrier()
 {

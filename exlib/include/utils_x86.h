@@ -13,6 +13,28 @@
 namespace exlib
 {
 
+#pragma pack (1)
+
+class registers
+{
+public:
+	union {
+		intptr_t Ebp;
+		intptr_t fp;
+	};
+	intptr_t Ebx;
+	intptr_t Ecx;
+	intptr_t Edx;
+	intptr_t Esi;
+	intptr_t Edi;
+	union {
+		intptr_t Esp;
+		intptr_t sp;
+	};
+};
+
+#pragma pack ()
+
 #if defined(Darwin)
 inline void MemoryBarrier()
 {
