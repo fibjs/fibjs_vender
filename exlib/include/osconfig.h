@@ -84,6 +84,18 @@
 #  endif
 # endif
 
+# if (defined(__MIPSEB__) || defined(__MIPSEL__))
+#  if defined(__mips64)
+#   ifndef mips64
+#    define mips64
+#   endif
+#  else
+#   ifndef mips
+#    define mips
+#   endif
+#  endif
+# endif
+
 #if defined(__ppc__) || defined(__ppc) || defined(__powerpc__) \
       || defined(_ARCH_COM) || defined(_ARCH_PWR) || defined(_ARCH_PPC)  \
       || defined(_M_MPPC) || defined(_M_PPC)
