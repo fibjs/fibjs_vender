@@ -89,6 +89,9 @@
 #   ifndef mips64
 #    define mips64
 #   endif
+#   ifdef mips
+#    undef mips
+#   endif
 #  else
 #   ifndef mips
 #    define mips
