@@ -14,6 +14,24 @@
 namespace js
 {
 
+class Runtime: public Runtime_core
+{
+public:
+	virtual void gc() = 0;
+
+	virtual Object GetGlobal() = 0;
+
+	virtual Value execute(exlib::string code, exlib::string soname) = 0;
+
+	virtual Value NewUndefined() = 0;
+	virtual Value NewBoolean(bool b) = 0;
+	virtual Value NewNumber(double d) = 0;
+	virtual Value NewString(exlib::string s) = 0;
+	virtual Object NewObject() = 0;
+	virtual Array NewArray(int32_t sz) = 0;
+	virtual Function NewFunction(FunctionCallback callback) = 0;
+};
+
 class Value
 {
 public:

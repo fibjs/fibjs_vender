@@ -20,10 +20,10 @@ namespace js
 class Api_v8;
 class v8_Runtime;
 
-class Runtime::Locker
+class Runtime_core::Locker
 {
 public:
-	Locker(Runtime* rt) : m_rt(rt)
+	Locker(Runtime_core* rt) : m_rt(rt)
 	{
 		rt->Locker_enter(*this);
 	}
@@ -34,16 +34,16 @@ public:
 	}
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 	char m_locker[sizeof(v8::Locker)];
 
 	friend class v8_Runtime;
 };
 
-class Runtime::Unlocker
+class Runtime_core::Unlocker
 {
 public:
-	Unlocker(Runtime* rt) : m_rt(rt)
+	Unlocker(Runtime_core* rt) : m_rt(rt)
 	{
 		rt->Unlocker_enter(*this);
 	}
@@ -54,16 +54,16 @@ public:
 	}
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 	char m_unlocker[sizeof(v8::Unlocker)];
 
 	friend class v8_Runtime;
 };
 
-class Runtime::Scope
+class Runtime_core::Scope
 {
 public:
-	Scope(Runtime* rt) : m_rt(rt)
+	Scope(Runtime_core* rt) : m_rt(rt)
 	{
 		rt->Scope_enter(*this);
 	}
@@ -74,7 +74,7 @@ public:
 	}
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 	char m_locker[sizeof(v8::Locker)];
 	char m_handle_scope[sizeof(v8::HandleScope)];
 
@@ -84,7 +84,7 @@ private:
 class HandleScope
 {
 public:
-	HandleScope(Runtime* rt) : m_rt(rt)
+	HandleScope(Runtime_core* rt) : m_rt(rt)
 	{
 		rt->HandleScope_enter(*this);
 	}
@@ -95,7 +95,7 @@ public:
 	}
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 	char m_handle_scope[sizeof(v8::HandleScope)];
 
 	friend class v8_Runtime;
@@ -104,7 +104,7 @@ private:
 class EscapableHandleScope
 {
 public:
-	EscapableHandleScope(Runtime* rt) : m_rt(rt)
+	EscapableHandleScope(Runtime_core* rt) : m_rt(rt)
 	{
 		rt->EscapableHandleScope_enter(*this);
 	}
@@ -118,13 +118,16 @@ public:
 	Value escape(Value v);
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 	char m_handle_scope[sizeof(v8::EscapableHandleScope)];
 
 	friend class v8_Runtime;
 };
 
 typedef v8::Local<v8::Value> js_value;
+
+class FunctionCallbackInfo;
+typedef void (*FunctionCallback)(const FunctionCallbackInfo& info);
 
 class FunctionCallbackInfo : private v8::FunctionCallbackInfo<v8::Value>
 {

@@ -159,7 +159,8 @@ public:
 
 	Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value v)
 	{
-		return Value(scope.m_rt, ((v8::EscapableHandleScope*)scope.m_handle_scope)->Escape(v.m_v));
+		return Value((Runtime*)scope.m_rt,
+		             ((v8::EscapableHandleScope*)scope.m_handle_scope)->Escape(v.m_v));
 	}
 
 	void gc()

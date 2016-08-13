@@ -22,11 +22,9 @@ class Array;
 class Function;
 class HandleScope;
 class EscapableHandleScope;
+class Runtime;
 
-class FunctionCallbackInfo;
-typedef void (*FunctionCallback)(const FunctionCallbackInfo& info);
-
-class Runtime
+class Runtime_core
 {
 public:
 	class Locker;
@@ -34,7 +32,7 @@ public:
 	class Scope;
 
 public:
-	virtual ~Runtime() {}
+	virtual ~Runtime_core() {}
 
 public:
 	virtual void destroy() = 0;
@@ -54,20 +52,6 @@ public:
 	virtual void EscapableHandleScope_enter(EscapableHandleScope& scope) = 0;
 	virtual void EscapableHandleScope_leave(EscapableHandleScope& scope) = 0;
 	virtual Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value v) = 0;
-
-	virtual void gc() = 0;
-
-	virtual Object GetGlobal() = 0;
-
-	virtual Value execute(exlib::string code, exlib::string soname) = 0;
-
-	virtual Value NewUndefined() = 0;
-	virtual Value NewBoolean(bool b) = 0;
-	virtual Value NewNumber(double d) = 0;
-	virtual Value NewString(exlib::string s) = 0;
-	virtual Object NewObject() = 0;
-	virtual Array NewArray(int32_t sz) = 0;
-	virtual Function NewFunction(FunctionCallback callback) = 0;
 
 public:
 	class Api* m_api;

@@ -23,10 +23,10 @@ namespace js
 class Api_spider;
 class spider_Runtime;
 
-class Runtime::Locker
+class Runtime_core::Locker
 {
 public:
-	Locker(Runtime* rt) : m_rt(rt)
+	Locker(Runtime_core* rt) : m_rt(rt)
 	{
 		rt->Locker_enter(*this);
 	}
@@ -37,13 +37,13 @@ public:
 	}
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 };
 
-class Runtime::Unlocker
+class Runtime_core::Unlocker
 {
 public:
-	Unlocker(Runtime* rt) : m_rt(rt)
+	Unlocker(Runtime_core* rt) : m_rt(rt)
 	{
 		rt->Unlocker_enter(*this);
 	}
@@ -54,13 +54,13 @@ public:
 	}
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 };
 
-class Runtime::Scope
+class Runtime_core::Scope
 {
 public:
-	Scope(Runtime* rt) : m_rt(rt)
+	Scope(Runtime_core* rt) : m_rt(rt)
 	{
 		rt->Scope_enter(*this);
 	}
@@ -71,13 +71,13 @@ public:
 	}
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 };
 
 class HandleScope
 {
 public:
-	HandleScope(Runtime* rt) : m_rt(rt)
+	HandleScope(Runtime_core* rt) : m_rt(rt)
 	{
 		rt->HandleScope_enter(*this);
 	}
@@ -88,13 +88,13 @@ public:
 	}
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 };
 
 class EscapableHandleScope
 {
 public:
-	EscapableHandleScope(Runtime* rt) : m_rt(rt), m_result(JSVAL_NULL)
+	EscapableHandleScope(Runtime_core* rt) : m_rt(rt), m_result(JSVAL_NULL)
 	{
 		rt->EscapableHandleScope_enter(*this);
 	}
@@ -108,7 +108,7 @@ public:
 	Value escape(Value v);
 
 private:
-	Runtime* m_rt;
+	Runtime_core* m_rt;
 	jsval m_result;
 
 	friend class spider_Runtime;
@@ -147,6 +147,9 @@ public:
 private:
 	jsval m_v;
 };
+
+class FunctionCallbackInfo;
+typedef void (*FunctionCallback)(const FunctionCallbackInfo& info);
 
 class FunctionCallbackInfo
 {
