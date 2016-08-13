@@ -256,6 +256,56 @@ inline Array Object::keys()
 	return m_rt->m_api->ObjectKeys(*this);
 }
 
+inline Runtime_core::Locker::Locker(Runtime* rt) : m_rt(rt)
+{
+	rt->Locker_enter(*this);
+}
+
+inline Runtime_core::Locker::~Locker()
+{
+	m_rt->Locker_leave(*this);
+}
+
+inline Runtime_core::Unlocker::Unlocker(Runtime* rt) : m_rt(rt)
+{
+	rt->Unlocker_enter(*this);
+}
+
+inline Runtime_core::Unlocker::~Unlocker()
+{
+	m_rt->Unlocker_leave(*this);
+}
+
+inline Runtime_core::Scope::Scope(Runtime* rt) : m_rt(rt)
+{
+	rt->Scope_enter(*this);
+}
+
+inline Runtime_core::Scope::~Scope()
+{
+	m_rt->Scope_leave(*this);
+}
+
+inline HandleScope::HandleScope(Runtime* rt) : m_rt(rt)
+{
+	rt->HandleScope_enter(*this);
+}
+
+inline HandleScope::~HandleScope()
+{
+	m_rt->HandleScope_leave(*this);
+}
+
+inline EscapableHandleScope::EscapableHandleScope(Runtime* rt) : m_rt(rt)
+{
+	rt->EscapableHandleScope_enter(*this);
+}
+
+inline EscapableHandleScope::~EscapableHandleScope()
+{
+	m_rt->EscapableHandleScope_leave(*this);
+}
+
 inline Value EscapableHandleScope::escape(Value v)
 {
 	return m_rt->EscapableHandleScope_escape(*this, v);
