@@ -227,48 +227,6 @@ public:
 		return Function(this, v8::Function::New(m_isolate, (v8::FunctionCallback)callback));
 	}
 
-private:
-	v8::Isolate *m_isolate;
-	v8::Persistent<v8::Context> m_context;
-
-	v8::Isolate::CreateParams create_params;
-	ShellArrayBufferAllocator array_buffer_allocator;
-
-	friend class Api_v8;
-};
-
-class Api_v8 : public Api
-{
-public:
-	virtual const char* getEngine()
-	{
-		return "v8";
-	}
-
-	virtual int32_t getVersion()
-	{
-		return version;
-	}
-
-	virtual void init()
-	{
-		static bool s_bInit = false;
-
-		if (!s_bInit)
-		{
-			s_bInit = true;
-
-			v8::Platform *platform = v8::platform::CreateDefaultPlatform();
-			v8::V8::InitializePlatform(platform);
-
-			v8::V8::Initialize();
-		}
-	}
-
-	virtual Runtime* createRuntime()
-	{
-		return new v8_Runtime(this);
-	}
 
 public:
 	bool ValueIsUndefined(const Value& v)
@@ -315,96 +273,88 @@ public:
 public:
 	bool ObjectHas(const Object& o, exlib::string key)
 	{
-		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
 		return v8::Local<v8::Object>::Cast(o.m_v)->Has(
-		           v8::String::NewFromUtf8(rt->m_isolate,
+		           v8::String::NewFromUtf8(m_isolate,
 		                                   key.c_str(), v8::String::kNormalString,
 		                                   (int32_t)key.length()));
 	}
 
 	Value ObjectGet(const Object& o, exlib::string key)
 	{
-		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
-		return Value(o.m_rt, v8::Local<v8::Object>::Cast(o.m_v)->Get(
-		                 v8::String::NewFromUtf8(rt->m_isolate,
+		return Value(this, v8::Local<v8::Object>::Cast(o.m_v)->Get(
+		                 v8::String::NewFromUtf8(m_isolate,
 		                         key.c_str(), v8::String::kNormalString,
 		                         (int32_t)key.length())));
 	}
 
 	void ObjectSet(const Object& o, exlib::string key, const Value& v)
 	{
-		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
 		v8::Local<v8::Object>::Cast(o.m_v)->Set(
-		    v8::String::NewFromUtf8(rt->m_isolate,
+		    v8::String::NewFromUtf8(m_isolate,
 		                            key.c_str(), v8::String::kNormalString,
 		                            (int32_t)key.length()), v.m_v);
 	}
 
 	void ObjectRemove(const Object& o, exlib::string key)
 	{
-		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
 		v8::Local<v8::Object>::Cast(o.m_v)->Delete(
-		    v8::String::NewFromUtf8(rt->m_isolate,
+		    v8::String::NewFromUtf8(m_isolate,
 		                            key.c_str(), v8::String::kNormalString,
 		                            (int32_t)key.length()));
 	}
 
 	Array ObjectKeys(const Object& o)
 	{
-		return Array(o.m_rt, v8::Local<v8::Object>::Cast(o.m_v)->GetPropertyNames());
+		return Array(this, v8::Local<v8::Object>::Cast(o.m_v)->GetPropertyNames());
 	}
 
 	bool ObjectHasPrivate(const Object& o, exlib::string key)
 	{
-		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
-		v8::Local<v8::Private> pkey = v8::Private::ForApi(rt->m_isolate,
-		                              v8::String::NewFromUtf8(rt->m_isolate,
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(m_isolate,
+		                              v8::String::NewFromUtf8(m_isolate,
 		                                      key.c_str(), v8::String::kNormalString,
 		                                      (int32_t)key.length()));
-		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
-		                                 rt->m_context);
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
+		                                 m_context);
 		return v8::Local<v8::Object>::Cast(o.m_v)->HasPrivate(context, pkey).FromJust();
 	}
 
 	Value ObjectGetPrivate(const Object& o, exlib::string key)
 	{
-		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
-		v8::Local<v8::Private> pkey = v8::Private::ForApi(rt->m_isolate,
-		                              v8::String::NewFromUtf8(rt->m_isolate,
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(m_isolate,
+		                              v8::String::NewFromUtf8(m_isolate,
 		                                      key.c_str(), v8::String::kNormalString,
 		                                      (int32_t)key.length()));
-		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
-		                                 rt->m_context);
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
+		                                 m_context);
 
 		v8::MaybeLocal<v8::Value> result = v8::Local<v8::Object>::Cast(o.m_v)->GetPrivate(context, pkey);
 
 		if (result.IsEmpty())
 			return Value();
 
-		return Value(rt, result.ToLocalChecked());
+		return Value(this, result.ToLocalChecked());
 	}
 
 	void ObjectSetPrivate(const Object& o, exlib::string key, const Value& v)
 	{
-		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
-		v8::Local<v8::Private> pkey = v8::Private::ForApi(rt->m_isolate,
-		                              v8::String::NewFromUtf8(rt->m_isolate,
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(m_isolate,
+		                              v8::String::NewFromUtf8(m_isolate,
 		                                      key.c_str(), v8::String::kNormalString,
 		                                      (int32_t)key.length()));
-		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
-		                                 rt->m_context);
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
+		                                 m_context);
 		v8::Local<v8::Object>::Cast(o.m_v)->SetPrivate(context, pkey, v.m_v);
 	}
 
 	void ObjectRemovePrivate(const Object& o, exlib::string key)
 	{
-		v8_Runtime* rt = (v8_Runtime*)o.m_rt;
-		v8::Local<v8::Private> pkey = v8::Private::ForApi(rt->m_isolate,
-		                              v8::String::NewFromUtf8(rt->m_isolate,
+		v8::Local<v8::Private> pkey = v8::Private::ForApi(m_isolate,
+		                              v8::String::NewFromUtf8(m_isolate,
 		                                      key.c_str(), v8::String::kNormalString,
 		                                      (int32_t)key.length()));
-		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
-		                                 rt->m_context);
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
+		                                 m_context);
 		v8::Local<v8::Object>::Cast(o.m_v)->DeletePrivate(context, pkey);
 	}
 
@@ -421,7 +371,7 @@ public:
 
 	Value ArrayGet(const Array& a, int32_t idx)
 	{
-		return Value(a.m_rt, v8::Local<v8::Array>::Cast(a.m_v)->Get(idx));
+		return Value(this, v8::Local<v8::Array>::Cast(a.m_v)->Get(idx));
 	}
 
 	void ArraySet(const Array& a, int32_t idx, const Value& v)
@@ -442,9 +392,8 @@ public:
 public:
 	Value FunctionCall(const Function& f, Object obj, Value* args, int32_t argn)
 	{
-		v8_Runtime* rt = (v8_Runtime*)f.m_rt;
-		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(rt->m_isolate,
-		                                 rt->m_context);
+		v8::Local<v8::Context> context = v8::Local<v8::Context>::New(m_isolate,
+		                                 m_context);
 		std::vector<v8::Local<v8::Value> > _args;
 		int32_t i;
 
@@ -455,7 +404,7 @@ public:
 		v8::Local<v8::Value> recv;
 
 		if (obj.isEmpty())
-			recv = v8::Undefined(rt->m_isolate);
+			recv = v8::Undefined(m_isolate);
 		else recv = obj.m_v;
 
 		v8::MaybeLocal<v8::Value> result = v8::Local<v8::Function>::Cast(f.m_v)->Call(context,
@@ -464,12 +413,55 @@ public:
 		if (result.IsEmpty())
 			return Value();
 
-		return Value(rt, result.ToLocalChecked());
+		return Value(this, result.ToLocalChecked());
 	}
 
 	bool ValueIsFunction(const Value& v)
 	{
 		return !v.m_v.IsEmpty() && v.m_v->IsFunction();
+	}
+
+private:
+	v8::Isolate *m_isolate;
+	v8::Persistent<v8::Context> m_context;
+
+	v8::Isolate::CreateParams create_params;
+	ShellArrayBufferAllocator array_buffer_allocator;
+
+	friend class Api_v8;
+};
+
+class Api_v8 : public Api
+{
+public:
+	virtual const char* getEngine()
+	{
+		return "v8";
+	}
+
+	virtual int32_t getVersion()
+	{
+		return version;
+	}
+
+	virtual void init()
+	{
+		static bool s_bInit = false;
+
+		if (!s_bInit)
+		{
+			s_bInit = true;
+
+			v8::Platform *platform = v8::platform::CreateDefaultPlatform();
+			v8::V8::InitializePlatform(platform);
+
+			v8::V8::Initialize();
+		}
+	}
+
+	virtual Runtime* createRuntime()
+	{
+		return new v8_Runtime(this);
 	}
 };
 

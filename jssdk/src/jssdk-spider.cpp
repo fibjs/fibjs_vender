@@ -250,41 +250,6 @@ public:
 		return Function(this, result);
 	}
 
-private:
-	JSRuntime *m_rt;
-	JSContext *m_cx;
-
-	jsval m_func_factory;
-	jsval m_stub;
-
-	exlib::Locker m_lock;
-	intptr_t m_count;
-
-	friend class Api_spider;
-};
-
-class Api_spider : public Api
-{
-public:
-	virtual const char* getEngine()
-	{
-		return "spider";
-	}
-
-	virtual int32_t getVersion()
-	{
-		return version;
-	}
-
-	virtual void init()
-	{
-
-	}
-
-	virtual Runtime* createRuntime()
-	{
-		return new spider_Runtime(this);
-	}
 
 public:
 	bool ValueIsUndefined(const Value& v)
@@ -296,7 +261,7 @@ public:
 	bool ValueToBoolean(const Value& v)
 	{
 		JSBool b;
-		JS_ValueToBoolean(((spider_Runtime*)v.m_rt)->m_cx, v.m_v, &b);
+		JS_ValueToBoolean(m_cx, v.m_v, &b);
 		return JS_FALSE != b;
 	}
 
@@ -309,7 +274,7 @@ public:
 	double ValueToNumber(const Value& v)
 	{
 		jsdouble d;
-		JS_ValueToNumber(((spider_Runtime*)v.m_rt)->m_cx, v.m_v, &d);
+		JS_ValueToNumber(m_cx, v.m_v, &d);
 		return d;
 	}
 
@@ -321,7 +286,7 @@ public:
 public:
 	exlib::string ValueToString(const Value& v)
 	{
-		JSString* s = JS_ValueToString(((spider_Runtime*)v.m_rt)->m_cx, v.m_v);
+		JSString* s = JS_ValueToString(m_cx, v.m_v);
 		if (s)
 			return utf16to8String((exlib::wchar*)JS_GetStringChars(s),
 			                      (int32_t)JS_GetStringLength(s));
@@ -338,7 +303,7 @@ public:
 	{
 		JSBool r;
 		exlib::wstring wkey(utf8to16String(key));
-		JS_HasUCProperty(((spider_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		JS_HasUCProperty(m_cx, JSVAL_TO_OBJECT(o.m_v),
 		                 (jschar*)wkey.c_str(), wkey.length(), &r);
 		return JS_FALSE != r;
 	}
@@ -347,15 +312,15 @@ public:
 	{
 		jsval v;
 		exlib::wstring wkey(utf8to16String(key));
-		JS_GetUCProperty(((spider_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		JS_GetUCProperty(m_cx, JSVAL_TO_OBJECT(o.m_v),
 		                 (jschar*)wkey.c_str(), wkey.length(), &v);
-		return Value(o.m_rt, v);
+		return Value(this, v);
 	}
 
 	void ObjectSet(const Object& o, exlib::string key, const Value& v)
 	{
 		exlib::wstring wkey(utf8to16String(key));
-		JS_SetUCProperty(((spider_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		JS_SetUCProperty(m_cx, JSVAL_TO_OBJECT(o.m_v),
 		                 (jschar*)wkey.c_str(), wkey.length(), (jsval*)&v.m_v);
 	}
 
@@ -363,13 +328,13 @@ public:
 	{
 		jsval v;
 		exlib::wstring wkey(utf8to16String(key));
-		JS_DeleteUCProperty2(((spider_Runtime*)o.m_rt)->m_cx, JSVAL_TO_OBJECT(o.m_v),
+		JS_DeleteUCProperty2(m_cx, JSVAL_TO_OBJECT(o.m_v),
 		                     (jschar*)wkey.c_str(), wkey.length(), &v);
 	}
 
 	Array ObjectKeys(const Object& o)
 	{
-		JSIdArray* ids = JS_Enumerate(((spider_Runtime*)o.m_rt)->m_cx,
+		JSIdArray* ids = JS_Enumerate(m_cx,
 		                              JSVAL_TO_OBJECT(o.m_v));
 		std::vector<jsval> vals;
 
@@ -377,11 +342,10 @@ public:
 
 		vals.resize(length);
 		for (i = 0; i < length; i ++)
-			JS_IdToValue(((spider_Runtime*)o.m_rt)->m_cx,
+			JS_IdToValue(m_cx,
 			             ids->vector[i], &vals[i]);
-		return Value(o.m_rt,
-		             OBJECT_TO_JSVAL(JS_NewArrayObject(((spider_Runtime*)o.m_rt)->m_cx,
-		                             length, vals.data())));
+		return Value(this, OBJECT_TO_JSVAL(JS_NewArrayObject(m_cx,
+		                                   length, vals.data())));
 	}
 
 	Object ObjectGetSlot(const Object& o)
@@ -418,39 +382,38 @@ public:
 	int32_t ArrayGetLength(const Array& a)
 	{
 		jsuint n;
-		JS_GetArrayLength(((spider_Runtime*)a.m_rt)->m_cx, JSVAL_TO_OBJECT(a.m_v), &n);
+		JS_GetArrayLength(m_cx, JSVAL_TO_OBJECT(a.m_v), &n);
 		return n;
 	}
 
 	Value ArrayGet(const Array& a, int32_t idx)
 	{
 		jsval v;
-		JS_GetElement(((spider_Runtime*)a.m_rt)->m_cx, JSVAL_TO_OBJECT(a.m_v), idx, &v);
-		return Value(a.m_rt, v);
+		JS_GetElement(m_cx, JSVAL_TO_OBJECT(a.m_v), idx, &v);
+		return Value(this, v);
 	}
 
 	void ArraySet(const Array& a, int32_t idx, const Value& v)
 	{
-		JS_SetElement(((spider_Runtime*)a.m_rt)->m_cx, JSVAL_TO_OBJECT(a.m_v),
+		JS_SetElement(m_cx, JSVAL_TO_OBJECT(a.m_v),
 		              idx, (jsval*)&v.m_v);
 	}
 
 	void ArrayRemove(const Array& a, int32_t idx)
 	{
-		JS_DeleteElement(((spider_Runtime*)a.m_rt)->m_cx, JSVAL_TO_OBJECT(a.m_v), idx);
+		JS_DeleteElement(m_cx, JSVAL_TO_OBJECT(a.m_v), idx);
 	}
 
 	bool ValueIsArray(const Value& v)
 	{
 		if (!ValueIsObject(v))
 			return false;
-		return JS_FALSE != JS_IsArrayObject(((spider_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
+		return JS_FALSE != JS_IsArrayObject(m_cx, JSVAL_TO_OBJECT(v.m_v));
 	}
 
 public:
 	Value FunctionCall(const Function& f, Object obj, Value* args, int32_t argn)
 	{
-		spider_Runtime* rt = (spider_Runtime*)f.m_rt;
 		std::vector<jsval> _args;
 		int32_t i;
 
@@ -460,10 +423,10 @@ public:
 
 		jsval result;
 
-		JSBool ok = JS_CallFunctionValue(rt->m_cx, JSVAL_TO_OBJECT(obj.m_v), f.m_v,
+		JSBool ok = JS_CallFunctionValue(m_cx, JSVAL_TO_OBJECT(obj.m_v), f.m_v,
 		                                 argn, _args.data(), &result);
 		if (ok)
-			return Value(rt, result);
+			return Value(this, result);
 
 		return Value();
 	}
@@ -472,7 +435,43 @@ public:
 	{
 		if (!ValueIsObject(v))
 			return false;
-		return JS_FALSE != JS_ObjectIsFunction(((spider_Runtime*)v.m_rt)->m_cx, JSVAL_TO_OBJECT(v.m_v));
+		return JS_FALSE != JS_ObjectIsFunction(m_cx, JSVAL_TO_OBJECT(v.m_v));
+	}
+
+private:
+	JSRuntime *m_rt;
+	JSContext *m_cx;
+
+	jsval m_func_factory;
+	jsval m_stub;
+
+	exlib::Locker m_lock;
+	intptr_t m_count;
+
+	friend class Api_spider;
+};
+
+class Api_spider : public Api
+{
+public:
+	virtual const char* getEngine()
+	{
+		return "spider";
+	}
+
+	virtual int32_t getVersion()
+	{
+		return version;
+	}
+
+	virtual void init()
+	{
+
+	}
+
+	virtual Runtime* createRuntime()
+	{
+		return new spider_Runtime(this);
 	}
 };
 

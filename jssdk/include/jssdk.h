@@ -67,37 +67,6 @@ public:
 	virtual int32_t getVersion() = 0;
 	virtual void init() = 0;
 	virtual Runtime* createRuntime() = 0;
-
-	virtual bool ValueIsUndefined(const Value& v) = 0;
-
-	virtual bool ValueToBoolean(const Value& v) = 0;
-	virtual bool ValueIsBoolean(const Value& v) = 0;
-
-	virtual double ValueToNumber(const Value& v) = 0;
-	virtual bool ValueIsNumber(const Value& v) = 0;
-
-	virtual exlib::string ValueToString(const Value& v) = 0;
-	virtual bool ValueIsString(const Value& v) = 0;
-
-	virtual bool ObjectHas(const Object& o, exlib::string key) = 0;
-	virtual Value ObjectGet(const Object& o, exlib::string key) = 0;
-	virtual void ObjectSet(const Object& o, exlib::string key, const Value& v) = 0;
-	virtual void ObjectRemove(const Object& o, exlib::string key) = 0;
-	virtual Array ObjectKeys(const Object& o) = 0;
-	virtual bool ObjectHasPrivate(const Object& o, exlib::string key) = 0;
-	virtual Value ObjectGetPrivate(const Object& o, exlib::string key) = 0;
-	virtual void ObjectSetPrivate(const Object& o, exlib::string key, const Value& v) = 0;
-	virtual void ObjectRemovePrivate(const Object& o, exlib::string key) = 0;
-	virtual bool ValueIsObject(const Value& v) = 0;
-
-	virtual int32_t ArrayGetLength(const Array& a) = 0;
-	virtual Value ArrayGet(const Array& a, int32_t idx) = 0;
-	virtual void ArraySet(const Array& a, int32_t idx, const Value& v) = 0;
-	virtual void ArrayRemove(const Array& a, int32_t idx) = 0;
-	virtual bool ValueIsArray(const Value& v) = 0;
-
-	virtual Value FunctionCall(const Function& f, Object obj, Value* args, int32_t argn) = 0;
-	virtual bool ValueIsFunction(const Value& v) = 0;
 };
 
 extern Api* v8_api;
