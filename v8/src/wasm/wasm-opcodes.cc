@@ -38,6 +38,18 @@ const char* WasmOpcodes::ShortOpcodeName(WasmOpcode opcode) {
   return "Unknown";
 }
 
+bool WasmOpcodes::IsPrefixOpcode(WasmOpcode opcode) {
+  switch (opcode) {
+#define CHECK_PREFIX(name, opcode) \
+  case k##name##Prefix:            \
+    return true;
+    FOREACH_PREFIX(CHECK_PREFIX)
+#undef CHECK_PREFIX
+    default:
+      return false;
+  }
+}
+
 std::ostream& operator<<(std::ostream& os, const FunctionSig& sig) {
   if (sig.return_count() == 0) os << "v";
   for (size_t i = 0; i < sig.return_count(); ++i) {
@@ -88,7 +100,7 @@ static void InitSigTables() {
 #define SET_SIG_TABLE(name, opcode, sig) \
   simd_index = opcode & 0xff;            \
   kSimdExprSigTable[simd_index] = static_cast<int>(kSigEnum_##sig) + 1;
-  FOREACH_SIMD_OPCODE(SET_SIG_TABLE)
+  FOREACH_SIMD_0_OPERAND_OPCODE(SET_SIG_TABLE)
 #undef SET_SIG_TABLE
 }
 

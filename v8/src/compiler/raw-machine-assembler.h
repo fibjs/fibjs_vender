@@ -433,9 +433,6 @@ class RawMachineAssembler {
   Node* Float32Sub(Node* a, Node* b) {
     return AddNode(machine()->Float32Sub(), a, b);
   }
-  Node* Float32SubPreserveNan(Node* a, Node* b) {
-    return AddNode(machine()->Float32SubPreserveNan(), a, b);
-  }
   Node* Float32Mul(Node* a, Node* b) {
     return AddNode(machine()->Float32Mul(), a, b);
   }
@@ -443,7 +440,7 @@ class RawMachineAssembler {
     return AddNode(machine()->Float32Div(), a, b);
   }
   Node* Float32Abs(Node* a) { return AddNode(machine()->Float32Abs(), a); }
-  Node* Float32Neg(Node* a) { return Float32Sub(Float32Constant(-0.0f), a); }
+  Node* Float32Neg(Node* a) { return AddNode(machine()->Float32Neg(), a); }
   Node* Float32Sqrt(Node* a) { return AddNode(machine()->Float32Sqrt(), a); }
   Node* Float32Equal(Node* a, Node* b) {
     return AddNode(machine()->Float32Equal(), a, b);
@@ -461,15 +458,17 @@ class RawMachineAssembler {
   Node* Float32GreaterThanOrEqual(Node* a, Node* b) {
     return Float32LessThanOrEqual(b, a);
   }
-
+  Node* Float32Max(Node* a, Node* b) {
+    return AddNode(machine()->Float32Max(), a, b);
+  }
+  Node* Float32Min(Node* a, Node* b) {
+    return AddNode(machine()->Float32Min(), a, b);
+  }
   Node* Float64Add(Node* a, Node* b) {
     return AddNode(machine()->Float64Add(), a, b);
   }
   Node* Float64Sub(Node* a, Node* b) {
     return AddNode(machine()->Float64Sub(), a, b);
-  }
-  Node* Float64SubPreserveNan(Node* a, Node* b) {
-    return AddNode(machine()->Float64SubPreserveNan(), a, b);
   }
   Node* Float64Mul(Node* a, Node* b) {
     return AddNode(machine()->Float64Mul(), a, b);
@@ -487,7 +486,7 @@ class RawMachineAssembler {
     return AddNode(machine()->Float64Min(), a, b);
   }
   Node* Float64Abs(Node* a) { return AddNode(machine()->Float64Abs(), a); }
-  Node* Float64Neg(Node* a) { return Float64Sub(Float64Constant(-0.0), a); }
+  Node* Float64Neg(Node* a) { return AddNode(machine()->Float64Neg(), a); }
   Node* Float64Acos(Node* a) { return AddNode(machine()->Float64Acos(), a); }
   Node* Float64Acosh(Node* a) { return AddNode(machine()->Float64Acosh(), a); }
   Node* Float64Asin(Node* a) { return AddNode(machine()->Float64Asin(), a); }
@@ -745,6 +744,10 @@ class RawMachineAssembler {
   // Tail call to a runtime function with five arguments.
   Node* TailCallRuntime5(Runtime::FunctionId function, Node* arg1, Node* arg2,
                          Node* arg3, Node* arg4, Node* arg5, Node* context);
+  // Tail call to a runtime function with six arguments.
+  Node* TailCallRuntime6(Runtime::FunctionId function, Node* arg1, Node* arg2,
+                         Node* arg3, Node* arg4, Node* arg5, Node* arg6,
+                         Node* context);
 
   // ===========================================================================
   // The following utility methods deal with control flow, hence might switch
@@ -754,8 +757,9 @@ class RawMachineAssembler {
   void Goto(RawMachineLabel* label);
   void Branch(Node* condition, RawMachineLabel* true_val,
               RawMachineLabel* false_val);
-  void Switch(Node* index, RawMachineLabel* default_label, int32_t* case_values,
-              RawMachineLabel** case_labels, size_t case_count);
+  void Switch(Node* index, RawMachineLabel* default_label,
+              const int32_t* case_values, RawMachineLabel** case_labels,
+              size_t case_count);
   void Return(Node* value);
   void Return(Node* v1, Node* v2);
   void Return(Node* v1, Node* v2, Node* v3);
@@ -763,6 +767,11 @@ class RawMachineAssembler {
   void Deoptimize(Node* state);
   void DebugBreak();
   void Comment(const char* msg);
+
+  // Add success / exception successor blocks and ends the current block ending
+  // in a potentially throwing call node.
+  void Continuations(Node* call, RawMachineLabel* if_success,
+                     RawMachineLabel* if_exception);
 
   // Variables.
   Node* Phi(MachineRepresentation rep, Node* n1, Node* n2) {

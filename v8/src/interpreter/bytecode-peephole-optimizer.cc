@@ -4,7 +4,6 @@
 
 #include "src/interpreter/bytecode-peephole-optimizer.h"
 
-#include "src/interpreter/constant-array-builder.h"
 #include "src/objects-inl.h"
 #include "src/objects.h"
 
@@ -13,19 +12,18 @@ namespace internal {
 namespace interpreter {
 
 BytecodePeepholeOptimizer::BytecodePeepholeOptimizer(
-    ConstantArrayBuilder* constant_array_builder,
     BytecodePipelineStage* next_stage)
-    : constant_array_builder_(constant_array_builder), next_stage_(next_stage) {
+    : next_stage_(next_stage) {
   InvalidateLast();
 }
 
 // override
 Handle<BytecodeArray> BytecodePeepholeOptimizer::ToBytecodeArray(
-    int fixed_register_count, int parameter_count,
+    Isolate* isolate, int fixed_register_count, int parameter_count,
     Handle<FixedArray> handler_table) {
   Flush();
-  return next_stage_->ToBytecodeArray(fixed_register_count, parameter_count,
-                                      handler_table);
+  return next_stage_->ToBytecodeArray(isolate, fixed_register_count,
+                                      parameter_count, handler_table);
 }
 
 // override
@@ -81,14 +79,6 @@ void BytecodePeepholeOptimizer::SetLast(const BytecodeNode* const node) {
   DCHECK(node->bytecode() != Bytecode::kNop || node->source_info().is_valid());
 
   last_.Clone(node);
-}
-
-Handle<Object> BytecodePeepholeOptimizer::GetConstantForIndexOperand(
-    const BytecodeNode* const node, int index) const {
-  DCHECK_LE(index, node->operand_count());
-  DCHECK_EQ(Bytecodes::GetOperandType(node->bytecode(), 0), OperandType::kIdx);
-  uint32_t index_operand = node->operand(0);
-  return constant_array_builder_->At(index_operand);
 }
 
 bool BytecodePeepholeOptimizer::CanElideLastBasedOnSourcePosition(
@@ -149,7 +139,8 @@ void TransformLdaSmiBinaryOpToBinaryOpWithSmi(Bytecode new_bytecode,
                                               BytecodeNode* const last,
                                               BytecodeNode* const current) {
   DCHECK_EQ(last->bytecode(), Bytecode::kLdaSmi);
-  current->set_bytecode(new_bytecode, last->operand(0), current->operand(0));
+  current->set_bytecode(new_bytecode, last->operand(0), current->operand(0),
+                        current->operand(1));
   if (last->source_info().is_valid()) {
     current->source_info().Clone(last->source_info());
   }
@@ -159,7 +150,8 @@ void TransformLdaZeroBinaryOpToBinaryOpWithZero(Bytecode new_bytecode,
                                                 BytecodeNode* const last,
                                                 BytecodeNode* const current) {
   DCHECK_EQ(last->bytecode(), Bytecode::kLdaZero);
-  current->set_bytecode(new_bytecode, 0, current->operand(0));
+  current->set_bytecode(new_bytecode, 0, current->operand(0),
+                        current->operand(1));
   if (last->source_info().is_valid()) {
     current->source_info().Clone(last->source_info());
   }
@@ -287,17 +279,6 @@ void BytecodePeepholeOptimizer::
   } else {
     DefaultAction(node);
   }
-}
-
-void BytecodePeepholeOptimizer::TransformToStarIfLoadingNameConstantAction(
-    BytecodeNode* const node, const PeepholeActionAndData* action_data) {
-  DCHECK_EQ(last()->bytecode(), Bytecode::kLdaConstant);
-  DCHECK(!Bytecodes::IsJump(node->bytecode()));
-
-  if (GetConstantForIndexOperand(last(), 0)->IsName()) {
-    node->replace_bytecode(Bytecode::kStar);
-  }
-  DefaultAction(node);
 }
 
 void BytecodePeepholeOptimizer::DefaultJumpAction(

@@ -15,6 +15,9 @@
 
 namespace v8 {
 namespace internal {
+
+class CompilationInfo;
+
 namespace compiler {
 
 // Forward declarations.
@@ -57,7 +60,7 @@ class CodeGenerator final : public GapResolver::Assembler {
   InstructionSequence* code() const { return code_; }
   FrameAccessState* frame_access_state() const { return frame_access_state_; }
   const Frame* frame() const { return frame_access_state_->frame(); }
-  Isolate* isolate() const { return info_->isolate(); }
+  Isolate* isolate() const;
   Linkage* linkage() const { return linkage_; }
 
   Label* GetLabel(RpoNumber rpo) { return &labels_[rpo.ToSize()]; }
@@ -250,7 +253,6 @@ class CodeGenerator final : public GapResolver::Assembler {
   };
 
   struct HandlerInfo {
-    HandlerTable::CatchPrediction catch_prediction;
     Label* handler;
     int pc_offset;
   };

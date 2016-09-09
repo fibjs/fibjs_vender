@@ -697,12 +697,12 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ leal(rdx, Operand(rax, rax, times_1, 2));
 
   // rdx: Number of capture registers
-  // Check that the fourth object is a JSArray object.
+  // Check that the fourth object is a JSObject.
   __ movp(r15, args.GetArgumentOperand(LAST_MATCH_INFO_ARGUMENT_INDEX));
   __ JumpIfSmi(r15, &runtime);
-  __ CmpObjectType(r15, JS_ARRAY_TYPE, kScratchRegister);
+  __ CmpObjectType(r15, JS_OBJECT_TYPE, kScratchRegister);
   __ j(not_equal, &runtime);
-  // Check that the JSArray is in fast case.
+  // Check that the object has fast elements.
   __ movp(rbx, FieldOperand(r15, JSArray::kElementsOffset));
   __ movp(rax, FieldOperand(rbx, HeapObject::kMapOffset));
   __ CompareRoot(rax, Heap::kFixedArrayMapRootIndex);
@@ -1525,7 +1525,6 @@ void CodeStub::GenerateStubsAheadOfTime(Isolate* isolate) {
   BinaryOpICStub::GenerateAheadOfTime(isolate);
   BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(isolate);
   StoreFastElementStub::GenerateAheadOfTime(isolate);
-  TypeofStub::GenerateAheadOfTime(isolate);
 }
 
 
@@ -1793,10 +1792,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // Invoke: Link this frame into the handler chain.
   __ bind(&invoke);
   __ PushStackHandler();
-
-  // Clear any pending exceptions.
-  __ LoadRoot(rax, Heap::kTheHoleValueRootIndex);
-  __ Store(pending_exception, rax);
 
   // Fake a receiver (NULL).
   __ Push(Immediate(0));  // receiver
@@ -4317,7 +4312,7 @@ void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
     // Fall back to %AllocateInNewSpace (if not too big).
     Label too_big_for_new_space;
     __ bind(&allocate);
-    __ cmpl(rcx, Immediate(Page::kMaxRegularHeapObjectSize));
+    __ cmpl(rcx, Immediate(kMaxRegularHeapObjectSize));
     __ j(greater, &too_big_for_new_space);
     {
       FrameScope scope(masm, StackFrame::INTERNAL);
@@ -4680,7 +4675,7 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   // Fall back to %AllocateInNewSpace (if not too big).
   Label too_big_for_new_space;
   __ bind(&allocate);
-  __ cmpl(rcx, Immediate(Page::kMaxRegularHeapObjectSize));
+  __ cmpl(rcx, Immediate(kMaxRegularHeapObjectSize));
   __ j(greater, &too_big_for_new_space);
   {
     FrameScope scope(masm, StackFrame::INTERNAL);

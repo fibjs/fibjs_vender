@@ -82,7 +82,9 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kSSEFloat64Neg:
     case kSSEFloat64Sqrt:
     case kSSEFloat64Round:
+    case kSSEFloat32Max:
     case kSSEFloat64Max:
+    case kSSEFloat32Min:
     case kSSEFloat64Min:
     case kSSEFloat64ToFloat32:
     case kSSEFloat32ToInt32:
@@ -129,14 +131,20 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kX64Lea:
     case kX64Dec32:
     case kX64Inc32:
+    case kX64Int32x4Create:
+    case kX64Int32x4ExtractLane:
       return (instr->addressing_mode() == kMode_None)
           ? kNoOpcodeFlags
           : kIsLoadOperation | kHasSideEffect;
 
     case kX64Movsxbl:
     case kX64Movzxbl:
+    case kX64Movsxbq:
+    case kX64Movzxbq:
     case kX64Movsxwl:
     case kX64Movzxwl:
+    case kX64Movsxwq:
+    case kX64Movzxwq:
     case kX64Movsxlq:
       DCHECK(instr->InputCount() >= 1);
       return instr->InputAt(0)->IsRegister() ? kNoOpcodeFlags

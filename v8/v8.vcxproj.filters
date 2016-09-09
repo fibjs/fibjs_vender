@@ -28,6 +28,9 @@
     <Filter Include="Source Files\base">
       <UniqueIdentifier>{68529cf3-5a67-0bb1-84a4-c91e13c58f94}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\base\debug">
+      <UniqueIdentifier>{f3682420-fae6-25a2-e8a7-7d9093ff04e0}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\base\platform">
       <UniqueIdentifier>{239131b8-80a7-f586-d5c6-ed3f8f4829f6}</UniqueIdentifier>
     </Filter>
@@ -160,6 +163,12 @@
     <Filter Include="Source Files\ic\x87">
       <UniqueIdentifier>{8aedb8d2-fb2e-3ad0-c5d0-dd320eeecd95}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\inspector">
+      <UniqueIdentifier>{8a8df99f-2e87-6e46-023e-4c5e3ee4a40a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\inspector\build">
+      <UniqueIdentifier>{6fdf77f4-9579-ae72-149f-79cb5de83d64}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\interpreter">
       <UniqueIdentifier>{59810ce5-926b-7a85-f08d-bf58feae40cd}</UniqueIdentifier>
     </Filter>
@@ -220,9 +229,6 @@
     <Filter Include="Source Files\tracing">
       <UniqueIdentifier>{0b421633-1f84-f485-f589-7a71eb8cdce2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\v8.xcodeproj">
-      <UniqueIdentifier>{1f9b478c-90cc-d923-d8db-1822188c6980}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\wasm">
       <UniqueIdentifier>{3a7f7d48-d621-6ae7-ac90-1da78babcc0a}</UniqueIdentifier>
     </Filter>
@@ -247,6 +253,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\v8-experimental.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\v8-inspector-protocol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\v8-inspector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\v8-platform.h">
@@ -333,19 +345,25 @@
     <ClInclude Include="src\ast\ast-type-bounds.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
+    <ClInclude Include="src\ast\ast-types.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
     <ClInclude Include="src\ast\ast-value-factory.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\ast.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
+    <ClInclude Include="src\ast\compile-time-value.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\context-slot-cache.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
     <ClInclude Include="src\ast\modules.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\prettyprinter.h">
-      <Filter>Source Files\ast</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ast\scopeinfo.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\scopes.h">
@@ -417,6 +435,9 @@
     <ClInclude Include="src\base\cpu.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
+    <ClInclude Include="src\base\debug\stack_trace.h">
+      <Filter>Source Files\base\debug</Filter>
+    </ClInclude>
     <ClInclude Include="src\base\division-by-constant.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
@@ -427,6 +448,9 @@
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\format-macros.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\free_deleter.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\functional.h">
@@ -555,6 +579,9 @@
     <ClInclude Include="src\compilation-dependencies.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\compilation-info.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\compilation-statistics.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -592,6 +619,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\bytecode-graph-builder.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\bytecode-loop-analysis.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\checkpoint-elimination.h">
@@ -834,9 +864,6 @@
     <ClInclude Include="src\compiler\select-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\simd-lowering.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\simplified-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -858,13 +885,22 @@
     <ClInclude Include="src\compiler\tail-call-optimization.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\type-cache.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\type-hint-analyzer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\type-hints.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\typed-optimization.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\typer.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\types.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\unwinding-info-writer.h">
@@ -1308,6 +1344,9 @@
     <ClInclude Include="src\ic\handler-compiler.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
+    <ClInclude Include="src\ic\handler-configuration.h">
+      <Filter>Source Files\ic</Filter>
+    </ClInclude>
     <ClInclude Include="src\ic\ic-compiler.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
@@ -1328,6 +1367,96 @@
     </ClInclude>
     <ClInclude Include="src\identity-map.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\Allocator.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\Atomics.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\InjectedScript.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\InjectedScriptNative.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\InspectedContext.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\JavaScriptCallFrame.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\ProtocolPlatform.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\RemoteObjectId.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\ScriptBreakpoint.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\SearchUtil.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\String16.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\StringUtil.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8Console.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8ConsoleAgentImpl.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8ConsoleMessage.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8Debugger.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8DebuggerAgentImpl.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8DebuggerScript.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8FunctionCall.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8HeapProfilerAgentImpl.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8InjectedScriptHost.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8InspectorImpl.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8InspectorSessionImpl.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8InternalValueType.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8ProfilerAgentImpl.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8Regex.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8RuntimeAgentImpl.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8SchemaAgentImpl.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8StackTraceImpl.h">
+      <Filter>Source Files\inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inspector\V8ValueCopier.h">
+      <Filter>Source Files\inspector</Filter>
     </ClInclude>
     <ClInclude Include="src\interface-descriptors.h">
       <Filter>Source Files</Filter>
@@ -1458,6 +1587,12 @@
     <ClInclude Include="src\log.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\lookup-cache-inl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lookup-cache.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\lookup.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1488,6 +1623,9 @@
     <ClInclude Include="src\ostreams.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\parsing\duplicate-finder.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
     <ClInclude Include="src\parsing\expression-classifier.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
@@ -1495,6 +1633,9 @@
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\parsing\parameter-initializer-rewriter.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\parse-info.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\parsing\parser-base.h">
@@ -1776,9 +1917,6 @@
     <ClInclude Include="src\transitions.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\type-cache.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\type-feedback-vector-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1786,9 +1924,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\type-info.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\types.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\unicode-cache-inl.h">
@@ -1822,6 +1957,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\v8threads.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\value-serializer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\vector.h">
@@ -1988,10 +2126,19 @@
     <ClCompile Include="src\ast\ast-numbering.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
+    <ClCompile Include="src\ast\ast-types.cc">
+      <Filter>Source Files\ast</Filter>
+    </ClCompile>
     <ClCompile Include="src\ast\ast-value-factory.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\ast.cc">
+      <Filter>Source Files\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\compile-time-value.cc">
+      <Filter>Source Files\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\context-slot-cache.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\modules.cc">
@@ -2026,6 +2173,18 @@
     </ClCompile>
     <ClCompile Include="src\base\cpu.cc">
       <Filter>Source Files\base</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\debug\stack_trace.cc">
+      <Filter>Source Files\base\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\debug\stack_trace_android.cc">
+      <Filter>Source Files\base\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\debug\stack_trace_posix.cc">
+      <Filter>Source Files\base\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\debug\stack_trace_win.cc">
+      <Filter>Source Files\base\debug</Filter>
     </ClCompile>
     <ClCompile Include="src\base\division-by-constant.cc">
       <Filter>Source Files\base</Filter>
@@ -2234,6 +2393,9 @@
     <ClCompile Include="src\compilation-dependencies.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\compilation-info.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\compilation-statistics.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2271,6 +2433,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\bytecode-graph-builder.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\bytecode-loop-analysis.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\c-linkage.cc">
@@ -2519,9 +2684,6 @@
     <ClCompile Include="src\compiler\select-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\simd-lowering.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\simplified-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2543,13 +2705,22 @@
     <ClCompile Include="src\compiler\tail-call-optimization.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\type-cache.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\type-hint-analyzer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\type-hints.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\typed-optimization.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\typer.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\types.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\value-numbering-reducer.cc">
@@ -3089,6 +3260,9 @@
     <ClCompile Include="src\interpreter\bytecode-generator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-label.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-peephole-optimizer.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -3173,6 +3347,9 @@
     <ClCompile Include="src\log.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\lookup-cache.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\lookup.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3194,10 +3371,16 @@
     <ClCompile Include="src\ostreams.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\parsing\duplicate-finder.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
     <ClCompile Include="src\parsing\func-name-inferrer.cc">
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\parameter-initializer-rewriter.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\parse-info.cc">
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\parser.cc">
@@ -3362,6 +3545,9 @@
     <ClCompile Include="src\runtime\runtime-debug.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
+    <ClCompile Include="src\runtime\runtime-error.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
     <ClCompile Include="src\runtime\runtime-forin.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
@@ -3518,16 +3704,10 @@
     <ClCompile Include="src\transitions.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\type-cache.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\type-feedback-vector.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\type-info.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\types.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\unicode-decoder.cc">
@@ -3546,6 +3726,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\v8threads.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\value-serializer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\version.cc">

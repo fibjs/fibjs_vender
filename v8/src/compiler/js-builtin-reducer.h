@@ -5,30 +5,46 @@
 #ifndef V8_COMPILER_JS_BUILTIN_REDUCER_H_
 #define V8_COMPILER_JS_BUILTIN_REDUCER_H_
 
+#include "src/base/flags.h"
 #include "src/compiler/graph-reducer.h"
 
 namespace v8 {
 namespace internal {
 
 // Forward declarations.
-class TypeCache;
+class CompilationDependencies;
+class Factory;
 
 namespace compiler {
 
 // Forward declarations.
 class CommonOperatorBuilder;
+struct FieldAccess;
 class JSGraph;
 class SimplifiedOperatorBuilder;
-
+class TypeCache;
 
 class JSBuiltinReducer final : public AdvancedReducer {
  public:
-  explicit JSBuiltinReducer(Editor* editor, JSGraph* jsgraph);
+  // Flags that control the mode of operation.
+  enum Flag {
+    kNoFlags = 0u,
+    kDeoptimizationEnabled = 1u << 0,
+  };
+  typedef base::Flags<Flag> Flags;
+
+  JSBuiltinReducer(Editor* editor, JSGraph* jsgraph, Flags flags,
+                   CompilationDependencies* dependencies);
   ~JSBuiltinReducer() final {}
 
   Reduction Reduce(Node* node) final;
 
  private:
+  Reduction ReduceArrayPop(Node* node);
+  Reduction ReduceArrayPush(Node* node);
+  Reduction ReduceDateGetTime(Node* node);
+  Reduction ReduceGlobalIsFinite(Node* node);
+  Reduction ReduceGlobalIsNaN(Node* node);
   Reduction ReduceMathAbs(Node* node);
   Reduction ReduceMathAcos(Node* node);
   Reduction ReduceMathAcosh(Node* node);
@@ -62,23 +78,37 @@ class JSBuiltinReducer final : public AdvancedReducer {
   Reduction ReduceMathTan(Node* node);
   Reduction ReduceMathTanh(Node* node);
   Reduction ReduceMathTrunc(Node* node);
+  Reduction ReduceNumberIsFinite(Node* node);
+  Reduction ReduceNumberIsInteger(Node* node);
+  Reduction ReduceNumberIsNaN(Node* node);
+  Reduction ReduceNumberIsSafeInteger(Node* node);
   Reduction ReduceNumberParseInt(Node* node);
   Reduction ReduceStringCharAt(Node* node);
   Reduction ReduceStringCharCodeAt(Node* node);
   Reduction ReduceStringFromCharCode(Node* node);
+  Reduction ReduceArrayBufferViewAccessor(Node* node,
+                                          InstanceType instance_type,
+                                          FieldAccess const& access);
 
   Node* ToNumber(Node* value);
   Node* ToUint32(Node* value);
 
+  Flags flags() const { return flags_; }
   Graph* graph() const;
+  Factory* factory() const;
   JSGraph* jsgraph() const { return jsgraph_; }
   Isolate* isolate() const;
   CommonOperatorBuilder* common() const;
   SimplifiedOperatorBuilder* simplified() const;
+  CompilationDependencies* dependencies() const { return dependencies_; }
 
+  CompilationDependencies* const dependencies_;
+  Flags const flags_;
   JSGraph* const jsgraph_;
   TypeCache const& type_cache_;
 };
+
+DEFINE_OPERATORS_FOR_FLAGS(JSBuiltinReducer::Flags)
 
 }  // namespace compiler
 }  // namespace internal

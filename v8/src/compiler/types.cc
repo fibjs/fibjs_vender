@@ -4,14 +4,14 @@
 
 #include <iomanip>
 
-#include "src/types.h"
+#include "src/compiler/types.h"
 
 #include "src/handles-inl.h"
 #include "src/ostreams.h"
 
 namespace v8 {
 namespace internal {
-
+namespace compiler {
 
 // NOTE: If code is marked as being a "shortcut", this means that removing
 // the code won't affect the semantics of the surrounding function definition.
@@ -58,17 +58,15 @@ bool Type::Contains(RangeType* lhs, RangeType* rhs) {
 
 bool Type::Contains(RangeType* lhs, ConstantType* rhs) {
   DisallowHeapAllocation no_allocation;
-  return IsInteger(*rhs->Value()) &&
-         lhs->Min() <= rhs->Value()->Number() &&
+  return IsInteger(*rhs->Value()) && lhs->Min() <= rhs->Value()->Number() &&
          rhs->Value()->Number() <= lhs->Max();
 }
 
 bool Type::Contains(RangeType* range, i::Object* val) {
   DisallowHeapAllocation no_allocation;
-  return IsInteger(val) &&
-         range->Min() <= val->Number() && val->Number() <= range->Max();
+  return IsInteger(val) && range->Min() <= val->Number() &&
+         val->Number() <= range->Max();
 }
-
 
 // -----------------------------------------------------------------------------
 // Min and Max computation.
@@ -105,10 +103,8 @@ double Type::Max() {
   return 0;
 }
 
-
 // -----------------------------------------------------------------------------
 // Glb and lub computation.
-
 
 // The largest bitset subsumed by this type.
 Type::bitset BitsetType::Glb(Type* type) {
@@ -129,7 +125,6 @@ Type::bitset BitsetType::Glb(Type* type) {
   }
 }
 
-
 // The smallest bitset subsuming this type, possibly not a proper one.
 Type::bitset BitsetType::Lub(Type* type) {
   DisallowHeapAllocation no_allocation;
@@ -144,13 +139,9 @@ Type::bitset BitsetType::Lub(Type* type) {
     }
     return bitset;
   }
-  if (type->IsClass()) return type->AsClass()->Lub();
   if (type->IsConstant()) return type->AsConstant()->Lub();
   if (type->IsRange()) return type->AsRange()->Lub();
-  if (type->IsContext()) return kInternal & kTaggedPointer;
-  if (type->IsArray()) return kOtherObject;
-  if (type->IsFunction()) return kFunction;
-  if (type->IsTuple()) return kInternal;
+  if (type->IsTuple()) return kOtherInternal;
   UNREACHABLE();
   return kNone;
 }
@@ -187,14 +178,14 @@ Type::bitset BitsetType::Lub(i::Map* map) {
       if (map == heap->undefined_map()) return kUndefined;
       if (map == heap->null_map()) return kNull;
       if (map == heap->boolean_map()) return kBoolean;
-      DCHECK(map == heap->the_hole_map() ||
-             map == heap->uninitialized_map() ||
+      if (map == heap->the_hole_map()) return kHole;
+      DCHECK(map == heap->uninitialized_map() ||
              map == heap->no_interceptor_result_sentinel_map() ||
              map == heap->termination_exception_map() ||
              map == heap->arguments_marker_map() ||
              map == heap->optimized_out_map() ||
              map == heap->stale_register_map());
-      return kInternal & kTaggedPointer;
+      return kOtherInternal & kTaggedPointer;
     }
     case HEAP_NUMBER_TYPE:
       return kNumber & kTaggedPointer;
@@ -250,10 +241,10 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case SCRIPT_TYPE:
     case CODE_TYPE:
     case PROPERTY_CELL_TYPE:
-      return kInternal & kTaggedPointer;
+      return kOtherInternal & kTaggedPointer;
 
     // Remaining instance types are unsupported for now. If any of them do
-    // require bit set types, they should get kInternal & kTaggedPointer.
+    // require bit set types, they should get kOtherInternal & kTaggedPointer.
     case MUTABLE_HEAP_NUMBER_TYPE:
     case FREE_SPACE_TYPE:
 #define FIXED_TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
@@ -278,7 +269,7 @@ Type::bitset BitsetType::Lub(i::Map* map) {
     case CELL_TYPE:
     case WEAK_CELL_TYPE:
     case PROTOTYPE_INFO_TYPE:
-    case SLOPPY_BLOCK_WITH_EVAL_CONTEXT_EXTENSION_TYPE:
+    case CONTEXT_EXTENSION_TYPE:
       UNREACHABLE();
       return kNone;
   }
@@ -290,7 +281,7 @@ Type::bitset BitsetType::Lub(i::Object* value) {
   DisallowHeapAllocation no_allocation;
   if (value->IsNumber()) {
     return Lub(value->Number()) &
-        (value->IsSmi() ? kTaggedSigned : kTaggedPointer);
+           (value->IsSmi() ? kTaggedSigned : kTaggedPointer);
   }
   return Lub(i::HeapObject::cast(value)->map());
 }
@@ -302,7 +293,6 @@ Type::bitset BitsetType::Lub(double value) {
   if (IsUint32Double(value) || IsInt32Double(value)) return Lub(value, value);
   return kOtherNumber;
 }
-
 
 // Minimum values of plain numeric bitsets.
 const BitsetType::Boundary BitsetType::BoundariesArray[] = {
@@ -341,7 +331,7 @@ Type::bitset BitsetType::Lub(double min, double max) {
 
   for (size_t i = 1; i < BoundariesSize(); ++i) {
     if (min < mins[i].min) {
-      lub |= mins[i-1].internal;
+      lub |= mins[i - 1].internal;
       if (max < mins[i].min) return lub;
     }
   }
@@ -395,49 +385,21 @@ double BitsetType::Max(bitset bits) {
   }
   for (size_t i = BoundariesSize() - 1; i-- > 0;) {
     if (Is(SEMANTIC(mins[i].internal), bits)) {
-      return mz ?
-          std::max(0.0, mins[i+1].min - 1) : mins[i+1].min - 1;
+      return mz ? std::max(0.0, mins[i + 1].min - 1) : mins[i + 1].min - 1;
     }
   }
   if (mz) return 0;
   return std::numeric_limits<double>::quiet_NaN();
 }
 
-
 // -----------------------------------------------------------------------------
 // Predicates.
 
 bool Type::SimplyEquals(Type* that) {
   DisallowHeapAllocation no_allocation;
-  if (this->IsClass()) {
-    return that->IsClass()
-        && *this->AsClass()->Map() == *that->AsClass()->Map();
-  }
   if (this->IsConstant()) {
-    return that->IsConstant()
-        && *this->AsConstant()->Value() == *that->AsConstant()->Value();
-  }
-  if (this->IsContext()) {
-    return that->IsContext()
-        && this->AsContext()->Outer()->Equals(that->AsContext()->Outer());
-  }
-  if (this->IsArray()) {
-    return that->IsArray()
-        && this->AsArray()->Element()->Equals(that->AsArray()->Element());
-  }
-  if (this->IsFunction()) {
-    if (!that->IsFunction()) return false;
-    FunctionType* this_fun = this->AsFunction();
-    FunctionType* that_fun = that->AsFunction();
-    if (this_fun->Arity() != that_fun->Arity() ||
-        !this_fun->Result()->Equals(that_fun->Result()) ||
-        !this_fun->Receiver()->Equals(that_fun->Receiver())) {
-      return false;
-    }
-    for (int i = 0, n = this_fun->Arity(); i < n; ++i) {
-      if (!this_fun->Parameter(i)->Equals(that_fun->Parameter(i))) return false;
-    }
-    return true;
+    return that->IsConstant() &&
+           *this->AsConstant()->Value() == *that->AsConstant()->Value();
   }
   if (this->IsTuple()) {
     if (!that->IsTuple()) return false;
@@ -458,7 +420,6 @@ bool Type::SimplyEquals(Type* that) {
 Type::bitset Type::Representation() {
   return REPRESENTATION(this->BitsetLub());
 }
-
 
 // Check if [this] <= [that].
 bool Type::SlowIs(Type* that) {
@@ -481,7 +442,6 @@ bool Type::SlowIs(Type* that) {
   // Check the semantic part.
   return SemanticIs(that);
 }
-
 
 // Check if SEMANTIC([this]) <= SEMANTIC([that]). The result of the method
 // should be independent of the representation axis of the types.
@@ -524,53 +484,6 @@ bool Type::SemanticIs(Type* that) {
   return this->SimplyEquals(that);
 }
 
-// Most precise _current_ type of a value (usually its class).
-Type* Type::NowOf(i::Object* value, Zone* zone) {
-  if (value->IsSmi() ||
-      i::HeapObject::cast(value)->map()->instance_type() == HEAP_NUMBER_TYPE) {
-    return Of(value, zone);
-  }
-  return Class(i::handle(i::HeapObject::cast(value)->map()), zone);
-}
-
-bool Type::NowContains(i::Object* value) {
-  DisallowHeapAllocation no_allocation;
-  if (this->IsAny()) return true;
-  if (value->IsHeapObject()) {
-    i::Map* map = i::HeapObject::cast(value)->map();
-    for (Iterator<i::Map> it = this->Classes(); !it.Done(); it.Advance()) {
-      if (*it.Current() == map) return true;
-    }
-  }
-  return this->Contains(value);
-}
-
-bool Type::NowIs(Type* that) {
-  DisallowHeapAllocation no_allocation;
-
-  // TODO(rossberg): this is incorrect for
-  //   Union(Constant(V), T)->NowIs(Class(M))
-  // but fuzzing does not cover that!
-  if (this->IsConstant()) {
-    i::Object* object = *this->AsConstant()->Value();
-    if (object->IsHeapObject()) {
-      i::Map* map = i::HeapObject::cast(object)->map();
-      for (Iterator<i::Map> it = that->Classes(); !it.Done(); it.Advance()) {
-        if (*it.Current() == map) return true;
-      }
-    }
-  }
-  return this->Is(that);
-}
-
-
-// Check if [this] contains only (currently) stable classes.
-bool Type::NowStable() {
-  DisallowHeapAllocation no_allocation;
-  return !this->IsClass() || this->AsClass()->Map()->is_stable();
-}
-
-
 // Check if [this] and [that] overlap.
 bool Type::Maybe(Type* that) {
   DisallowHeapAllocation no_allocation;
@@ -607,8 +520,6 @@ bool Type::SemanticMaybe(Type* that) {
 
   if (this->IsBitset() && that->IsBitset()) return true;
 
-  if (this->IsClass() != that->IsClass()) return true;
-
   if (this->IsRange()) {
     if (that->IsConstant()) {
       return Contains(this->AsRange(), that->AsConstant());
@@ -634,7 +545,6 @@ bool Type::SemanticMaybe(Type* that) {
 
   return this->SimplyEquals(that);
 }
-
 
 // Return the range in [this], or [NULL].
 Type* Type::GetRange() {
@@ -668,7 +578,7 @@ bool UnionType::Wellformed() {
   // 5. No element (except the bitset) is a subtype of any other.
   // 6. If there is a range, then the bitset type does not contain
   //    plain number bits.
-  DCHECK(this->Length() >= 2);  // (1)
+  DCHECK(this->Length() >= 2);       // (1)
   DCHECK(this->Get(0)->IsBitset());  // (2a)
 
   for (int i = 0; i < this->Length(); ++i) {
@@ -686,15 +596,12 @@ bool UnionType::Wellformed() {
   return true;
 }
 
-
 // -----------------------------------------------------------------------------
 // Union and intersection
 
-
 static bool AddIsSafe(int x, int y) {
-  return x >= 0 ?
-      y <= std::numeric_limits<int>::max() - x :
-      y >= std::numeric_limits<int>::min() - x;
+  return x >= 0 ? y <= std::numeric_limits<int>::max() - x
+                : y >= std::numeric_limits<int>::min() - x;
 }
 
 Type* Type::Intersect(Type* type1, Type* type2, Zone* zone) {
@@ -772,7 +679,7 @@ int Type::UpdateRange(Type* range, UnionType* result, int size, Zone* zone) {
   }
 
   // Remove any components that just got subsumed.
-  for (int i = 2; i < size; ) {
+  for (int i = 2; i < size;) {
     if (result->Get(i)->SemanticIs(range)) {
       result->Set(i, result->Get(--size));
     } else {
@@ -830,10 +737,6 @@ int Type::IntersectAux(Type* lhs, Type* rhs, UnionType* result, int size,
       }
       return size;
     }
-    if (rhs->IsClass()) {
-      *lims =
-          RangeType::Limits::Union(RangeType::Limits(lhs->AsRange()), *lims);
-    }
     if (rhs->IsConstant() && Contains(lhs->AsRange(), rhs->AsConstant())) {
       return AddToUnion(rhs, result, size, zone);
     }
@@ -853,15 +756,11 @@ int Type::IntersectAux(Type* lhs, Type* rhs, UnionType* result, int size,
   if (lhs->IsBitset() || rhs->IsBitset()) {
     return AddToUnion(lhs->IsBitset() ? rhs : lhs, result, size, zone);
   }
-  if (lhs->IsClass() != rhs->IsClass()) {
-    return AddToUnion(lhs->IsClass() ? rhs : lhs, result, size, zone);
-  }
   if (lhs->SimplyEquals(rhs)) {
     return AddToUnion(lhs, result, size, zone);
   }
   return size;
 }
-
 
 // Make sure that we produce a well-formed range and bitset:
 // If the range is non-empty, the number bits in the bitset should be
@@ -968,7 +867,6 @@ Type* Type::Union(Type* type1, Type* type2, Zone* zone) {
   return NormalizeUnion(result_type, size, zone);
 }
 
-
 // Add [type] to [result] unless [type] is bitset, range, or already subsumed.
 // Return new size of [result].
 int Type::AddToUnion(Type* type, UnionType* result, int size, Zone* zone) {
@@ -1012,7 +910,6 @@ Type* Type::NormalizeUnion(Type* union_type, int size, Zone* zone) {
   return union_type;
 }
 
-
 // -----------------------------------------------------------------------------
 // Component extraction
 
@@ -1021,30 +918,13 @@ Type* Type::Representation(Type* t, Zone* zone) {
   return BitsetType::New(t->Representation());
 }
 
-
 // static
 Type* Type::Semantic(Type* t, Zone* zone) {
   return Intersect(t, BitsetType::New(BitsetType::kSemantic), zone);
 }
 
-
 // -----------------------------------------------------------------------------
 // Iteration.
-
-int Type::NumClasses() {
-  DisallowHeapAllocation no_allocation;
-  if (this->IsClass()) {
-    return 1;
-  } else if (this->IsUnion()) {
-    int result = 0;
-    for (int i = 0, n = this->AsUnion()->Length(); i < n; ++i) {
-      if (this->AsUnion()->Get(i)->IsClass()) ++result;
-    }
-    return result;
-  } else {
-    return 0;
-  }
-}
 
 int Type::NumConstants() {
   DisallowHeapAllocation no_allocation;
@@ -1067,21 +947,12 @@ Type* Type::Iterator<T>::get_type() {
   return type_->IsUnion() ? type_->AsUnion()->Get(index_) : type_;
 }
 
-
 // C++ cannot specialise nested templates, so we have to go through this
 // contortion with an auxiliary template to simulate it.
 template <class T>
 struct TypeImplIteratorAux {
   static bool matches(Type* type);
   static i::Handle<T> current(Type* type);
-};
-
-template <>
-struct TypeImplIteratorAux<i::Map> {
-  static bool matches(Type* type) { return type->IsClass(); }
-  static i::Handle<i::Map> current(Type* type) {
-    return type->AsClass()->Map();
-  }
 };
 
 template <>
@@ -1116,23 +987,25 @@ void Type::Iterator<T>::Advance() {
   index_ = -1;
 }
 
-
 // -----------------------------------------------------------------------------
 // Printing.
 
 const char* BitsetType::Name(bitset bits) {
   switch (bits) {
-    case REPRESENTATION(kAny): return "Any";
-    #define RETURN_NAMED_REPRESENTATION_TYPE(type, value) \
-    case REPRESENTATION(k##type): return #type;
-    REPRESENTATION_BITSET_TYPE_LIST(RETURN_NAMED_REPRESENTATION_TYPE)
-    #undef RETURN_NAMED_REPRESENTATION_TYPE
+    case REPRESENTATION(kAny):
+      return "Any";
+#define RETURN_NAMED_REPRESENTATION_TYPE(type, value) \
+  case REPRESENTATION(k##type):                       \
+    return #type;
+      REPRESENTATION_BITSET_TYPE_LIST(RETURN_NAMED_REPRESENTATION_TYPE)
+#undef RETURN_NAMED_REPRESENTATION_TYPE
 
-    #define RETURN_NAMED_SEMANTIC_TYPE(type, value) \
-    case SEMANTIC(k##type): return #type;
-    SEMANTIC_BITSET_TYPE_LIST(RETURN_NAMED_SEMANTIC_TYPE)
-    INTERNAL_BITSET_TYPE_LIST(RETURN_NAMED_SEMANTIC_TYPE)
-    #undef RETURN_NAMED_SEMANTIC_TYPE
+#define RETURN_NAMED_SEMANTIC_TYPE(type, value) \
+  case SEMANTIC(k##type):                       \
+    return #type;
+      SEMANTIC_BITSET_TYPE_LIST(RETURN_NAMED_SEMANTIC_TYPE)
+      INTERNAL_BITSET_TYPE_LIST(RETURN_NAMED_SEMANTIC_TYPE)
+#undef RETURN_NAMED_SEMANTIC_TYPE
 
     default:
       return NULL;
@@ -1181,10 +1054,6 @@ void Type::PrintTo(std::ostream& os, PrintDimension dim) {
   if (dim != REPRESENTATION_DIM) {
     if (this->IsBitset()) {
       BitsetType::Print(os, SEMANTIC(this->AsBitset()));
-    } else if (this->IsClass()) {
-      os << "Class(" << static_cast<void*>(*this->AsClass()->Map()) << " < ";
-      BitsetType::New(BitsetType::Lub(this))->PrintTo(os, dim);
-      os << ")";
     } else if (this->IsConstant()) {
       os << "Constant(" << Brief(*this->AsConstant()->Value()) << ")";
     } else if (this->IsRange()) {
@@ -1194,10 +1063,6 @@ void Type::PrintTo(std::ostream& os, PrintDimension dim) {
          << ")";
       os.flags(saved_flags);
       os.precision(saved_precision);
-    } else if (this->IsContext()) {
-      os << "Context(";
-      this->AsContext()->Outer()->PrintTo(os, dim);
-      os << ")";
     } else if (this->IsUnion()) {
       os << "(";
       for (int i = 0, n = this->AsUnion()->Length(); i < n; ++i) {
@@ -1206,22 +1071,6 @@ void Type::PrintTo(std::ostream& os, PrintDimension dim) {
         type_i->PrintTo(os, dim);
       }
       os << ")";
-    } else if (this->IsArray()) {
-      os << "Array(";
-      AsArray()->Element()->PrintTo(os, dim);
-      os << ")";
-    } else if (this->IsFunction()) {
-      if (!this->AsFunction()->Receiver()->IsAny()) {
-        this->AsFunction()->Receiver()->PrintTo(os, dim);
-        os << ".";
-      }
-      os << "(";
-      for (int i = 0; i < this->AsFunction()->Arity(); ++i) {
-        if (i > 0) os << ", ";
-        this->AsFunction()->Parameter(i)->PrintTo(os, dim);
-      }
-      os << ")->";
-      this->AsFunction()->Result()->PrintTo(os, dim);
     } else if (this->IsTuple()) {
       os << "<";
       for (int i = 0, n = this->AsTuple()->Arity(); i < n; ++i) {
@@ -1239,7 +1088,6 @@ void Type::PrintTo(std::ostream& os, PrintDimension dim) {
     BitsetType::Print(os, REPRESENTATION(this->BitsetLub()));
   }
 }
-
 
 #ifdef DEBUG
 void Type::Print() {
@@ -1262,18 +1110,11 @@ BitsetType::bitset BitsetType::UnsignedSmall() {
   return i::SmiValuesAre31Bits() ? kUnsigned30 : kUnsigned31;
 }
 
-#define CONSTRUCT_SIMD_TYPE(NAME, Name, name, lane_count, lane_type) \
-  Type* Type::Name(Isolate* isolate, Zone* zone) {                   \
-    return Class(i::handle(isolate->heap()->name##_map()), zone);    \
-  }
-SIMD128_TYPES(CONSTRUCT_SIMD_TYPE)
-#undef CONSTRUCT_SIMD_TYPE
-
 // -----------------------------------------------------------------------------
 // Instantiations.
 
-template class Type::Iterator<i::Map>;
 template class Type::Iterator<i::Object>;
 
+}  // namespace compiler
 }  // namespace internal
 }  // namespace v8

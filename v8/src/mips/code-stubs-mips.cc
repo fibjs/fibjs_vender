@@ -900,7 +900,6 @@ void CodeStub::GenerateStubsAheadOfTime(Isolate* isolate) {
   RestoreRegistersStateStub::GenerateAheadOfTime(isolate);
   BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(isolate);
   StoreFastElementStub::GenerateAheadOfTime(isolate);
-  TypeofStub::GenerateAheadOfTime(isolate);
 }
 
 
@@ -1225,12 +1224,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // returns control to the code after the bal(&invoke) above, which
   // restores all kCalleeSaved registers (including cp and fp) to their
   // saved values before returning a failure to C.
-
-  // Clear any pending exceptions.
-  __ LoadRoot(t1, Heap::kTheHoleValueRootIndex);
-  __ li(t0, Operand(ExternalReference(Isolate::kPendingExceptionAddress,
-                                      isolate)));
-  __ sw(t1, MemOperand(t0));
 
   // Invoke the function by calling through JS entry trampoline builtin.
   // Notice that we cannot store a reference to the trampoline code directly in
@@ -1639,8 +1632,8 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
   __ lw(a0, MemOperand(sp, kLastMatchInfoOffset));
   __ JumpIfSmi(a0, &runtime);
   __ GetObjectType(a0, a2, a2);
-  __ Branch(&runtime, ne, a2, Operand(JS_ARRAY_TYPE));
-  // Check that the JSArray is in fast case.
+  __ Branch(&runtime, ne, a2, Operand(JS_OBJECT_TYPE));
+  // Check that the object has fast elements.
   __ lw(last_match_info_elements,
         FieldMemOperand(a0, JSArray::kElementsOffset));
   __ lw(a0, FieldMemOperand(last_match_info_elements, HeapObject::kMapOffset));
@@ -4635,7 +4628,7 @@ void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
     Label too_big_for_new_space;
     __ bind(&allocate);
     __ Branch(&too_big_for_new_space, gt, t0,
-              Operand(Page::kMaxRegularHeapObjectSize));
+              Operand(kMaxRegularHeapObjectSize));
     {
       FrameScope scope(masm, StackFrame::INTERNAL);
       __ SmiTag(t0);
@@ -4979,8 +4972,7 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   // Fall back to %AllocateInNewSpace (if not too big).
   Label too_big_for_new_space;
   __ bind(&allocate);
-  __ Branch(&too_big_for_new_space, gt, t0,
-            Operand(Page::kMaxRegularHeapObjectSize));
+  __ Branch(&too_big_for_new_space, gt, t0, Operand(kMaxRegularHeapObjectSize));
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
     __ SmiTag(t0);

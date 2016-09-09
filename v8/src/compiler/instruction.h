@@ -105,6 +105,7 @@ class InstructionOperand {
 
   bool InterferesWith(const InstructionOperand& that) const;
 
+  // APIs to aid debugging. For general-stream APIs, use operator<<
   void Print(const RegisterConfiguration* config) const;
   void Print() const;
 
@@ -466,6 +467,8 @@ class LocationOperand : public InstructionOperand {
       case MachineRepresentation::kFloat32:
       case MachineRepresentation::kFloat64:
       case MachineRepresentation::kSimd128:
+      case MachineRepresentation::kTaggedSigned:
+      case MachineRepresentation::kTaggedPointer:
       case MachineRepresentation::kTagged:
         return true;
       case MachineRepresentation::kBit:
@@ -670,6 +673,7 @@ class MoveOperands final : public ZoneObject {
     return source_.IsInvalid();
   }
 
+  // APIs to aid debugging. For general-stream APIs, use operator<<
   void Print(const RegisterConfiguration* config) const;
   void Print() const;
 
@@ -854,10 +858,7 @@ class Instruction final {
     reference_map_ = nullptr;
   }
 
-  bool IsNop() const {
-    return arch_opcode() == kArchNop && InputCount() == 0 &&
-           OutputCount() == 0 && TempCount() == 0;
-  }
+  bool IsNop() const { return arch_opcode() == kArchNop; }
 
   bool IsDeoptimizeCall() const {
     return arch_opcode() == ArchOpcode::kArchDeoptimize ||
@@ -913,6 +914,7 @@ class Instruction final {
     block_ = block;
   }
 
+  // APIs to aid debugging. For general-stream APIs, use operator<<
   void Print(const RegisterConfiguration* config) const;
   void Print() const;
 
@@ -1283,6 +1285,17 @@ class InstructionBlock final : public ZoneObject {
   RpoNumber last_deferred_;
 };
 
+class InstructionSequence;
+
+struct PrintableInstructionBlock {
+  const RegisterConfiguration* register_configuration_;
+  const InstructionBlock* block_;
+  const InstructionSequence* code_;
+};
+
+std::ostream& operator<<(std::ostream& os,
+                         const PrintableInstructionBlock& printable_block);
+
 typedef ZoneDeque<Constant> ConstantDeque;
 typedef std::map<int, Constant, std::less<int>,
                  zone_allocator<std::pair<const int, Constant> > > ConstantMap;
@@ -1341,8 +1354,7 @@ class InstructionSequence final : public ZoneObject {
   void MarkAsRepresentation(MachineRepresentation rep, int virtual_register);
 
   bool IsReference(int virtual_register) const {
-    return GetRepresentation(virtual_register) ==
-           MachineRepresentation::kTagged;
+    return CanBeTaggedPointer(GetRepresentation(virtual_register));
   }
   bool IsFP(int virtual_register) const {
     return IsFloatingPoint(GetRepresentation(virtual_register));
@@ -1443,6 +1455,8 @@ class InstructionSequence final : public ZoneObject {
     }
     return false;
   }
+
+  // APIs to aid debugging. For general-stream APIs, use operator<<
   void Print(const RegisterConfiguration* config) const;
   void Print() const;
 

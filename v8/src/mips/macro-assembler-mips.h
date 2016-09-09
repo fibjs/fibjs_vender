@@ -688,8 +688,8 @@ class MacroAssembler: public Assembler {
   // Pseudo-instructions.
 
   // Change endianness
-  void ByteSwapSigned(Register reg, int operand_size);
-  void ByteSwapUnsigned(Register reg, int operand_size);
+  void ByteSwapSigned(Register dest, Register src, int operand_size);
+  void ByteSwapUnsigned(Register dest, Register src, int operand_size);
 
   void mov(Register rd, Register rt) { or_(rd, rt, zero_reg); }
 
@@ -830,6 +830,12 @@ class MacroAssembler: public Assembler {
   // MIPS32 R2 instruction macro.
   void Ins(Register rt, Register rs, uint16_t pos, uint16_t size);
   void Ext(Register rt, Register rs, uint16_t pos, uint16_t size);
+  void Neg_s(FPURegister fd, FPURegister fs);
+  void Neg_d(FPURegister fd, FPURegister fs);
+
+  // MIPS32 R6 instruction macros.
+  void Bovc(Register rt, Register rs, Label* L);
+  void Bnvc(Register rt, Register rs, Label* L);
 
   // Int64Lowering instructions
   void AddPair(Register dst_low, Register dst_high, Register left_low,
@@ -874,12 +880,6 @@ class MacroAssembler: public Assembler {
   void Round_w_d(FPURegister fd, FPURegister fs);
   void Floor_w_d(FPURegister fd, FPURegister fs);
   void Ceil_w_d(FPURegister fd, FPURegister fs);
-
-  // Preserve value of a NaN operand
-  void SubNanPreservePayloadAndSign_s(FPURegister fd, FPURegister fs,
-                                      FPURegister ft);
-  void SubNanPreservePayloadAndSign_d(FPURegister fd, FPURegister fs,
-                                      FPURegister ft);
 
   // FP32 mode: Move the general purpose register into
   // the high part of the double-register pair.

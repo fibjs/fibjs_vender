@@ -146,12 +146,29 @@ static void VisitBinop(InstructionSelector* selector, Node* node,
   VisitBinop(selector, node, opcode, &cont);
 }
 
+void EmitLoad(InstructionSelector* selector, Node* node, InstructionCode opcode,
+              Node* output = nullptr) {
+  Mips64OperandGenerator g(selector);
+  Node* base = node->InputAt(0);
+  Node* index = node->InputAt(1);
+
+  if (g.CanBeImmediate(index, opcode)) {
+    selector->Emit(opcode | AddressingModeField::encode(kMode_MRI),
+                   g.DefineAsRegister(output == nullptr ? node : output),
+                   g.UseRegister(base), g.UseImmediate(index));
+  } else {
+    InstructionOperand addr_reg = g.TempRegister();
+    selector->Emit(kMips64Dadd | AddressingModeField::encode(kMode_None),
+                   addr_reg, g.UseRegister(index), g.UseRegister(base));
+    // Emit desired load opcode, using temp addr_reg.
+    selector->Emit(opcode | AddressingModeField::encode(kMode_MRI),
+                   g.DefineAsRegister(output == nullptr ? node : output),
+                   addr_reg, g.TempImmediate(0));
+  }
+}
 
 void InstructionSelector::VisitLoad(Node* node) {
   LoadRepresentation load_rep = LoadRepresentationOf(node->op());
-  Mips64OperandGenerator g(this);
-  Node* base = node->InputAt(0);
-  Node* index = node->InputAt(1);
 
   ArchOpcode opcode = kArchNop;
   switch (load_rep.representation()) {
@@ -171,6 +188,8 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord32:
       opcode = load_rep.IsUnsigned() ? kMips64Lwu : kMips64Lw;
       break;
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:  // Fall through.
     case MachineRepresentation::kWord64:
       opcode = kMips64Ld;
@@ -181,17 +200,7 @@ void InstructionSelector::VisitLoad(Node* node) {
       return;
   }
 
-  if (g.CanBeImmediate(index, opcode)) {
-    Emit(opcode | AddressingModeField::encode(kMode_MRI),
-         g.DefineAsRegister(node), g.UseRegister(base), g.UseImmediate(index));
-  } else {
-    InstructionOperand addr_reg = g.TempRegister();
-    Emit(kMips64Dadd | AddressingModeField::encode(kMode_None), addr_reg,
-         g.UseRegister(index), g.UseRegister(base));
-    // Emit desired load opcode, using temp addr_reg.
-    Emit(opcode | AddressingModeField::encode(kMode_MRI),
-         g.DefineAsRegister(node), addr_reg, g.TempImmediate(0));
-  }
+  EmitLoad(this, node, opcode);
 }
 
 
@@ -207,7 +216,7 @@ void InstructionSelector::VisitStore(Node* node) {
 
   // TODO(mips): I guess this could be done in a better way.
   if (write_barrier_kind != kNoWriteBarrier) {
-    DCHECK_EQ(MachineRepresentation::kTagged, rep);
+    DCHECK(CanBeTaggedPointer(rep));
     InstructionOperand inputs[3];
     size_t input_count = 0;
     inputs[input_count++] = g.UseUniqueRegister(base);
@@ -252,6 +261,8 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kWord32:
         opcode = kMips64Sw;
         break;
+      case MachineRepresentation::kTaggedSigned:   // Fall through.
+      case MachineRepresentation::kTaggedPointer:  // Fall through.
       case MachineRepresentation::kTagged:  // Fall through.
       case MachineRepresentation::kWord64:
         opcode = kMips64Sd;
@@ -501,7 +512,7 @@ void InstructionSelector::VisitWord64Shl(Node* node) {
   Mips64OperandGenerator g(this);
   Int64BinopMatcher m(node);
   if ((m.left().IsChangeInt32ToInt64() || m.left().IsChangeUint32ToUint64()) &&
-      m.right().IsInRange(32, 63)) {
+      m.right().IsInRange(32, 63) && CanCover(node, m.left().node())) {
     // There's no need to sign/zero-extend to 64-bit if we shift out the upper
     // 32 bits anyway.
     Emit(kMips64Dshl, g.DefineSameAsFirst(node),
@@ -583,9 +594,17 @@ void InstructionSelector::VisitWord32ReverseBits(Node* node) { UNREACHABLE(); }
 
 void InstructionSelector::VisitWord64ReverseBits(Node* node) { UNREACHABLE(); }
 
-void InstructionSelector::VisitWord64ReverseBytes(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitWord64ReverseBytes(Node* node) {
+  Mips64OperandGenerator g(this);
+  Emit(kMips64ByteSwap64, g.DefineAsRegister(node),
+       g.UseRegister(node->InputAt(0)));
+}
 
-void InstructionSelector::VisitWord32ReverseBytes(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitWord32ReverseBytes(Node* node) {
+  Mips64OperandGenerator g(this);
+  Emit(kMips64ByteSwap32, g.DefineAsRegister(node),
+       g.UseRegister(node->InputAt(0)));
+}
 
 void InstructionSelector::VisitWord32Ctz(Node* node) {
   Mips64OperandGenerator g(this);
@@ -1056,9 +1075,32 @@ void InstructionSelector::VisitTryTruncateFloat64ToUint64(Node* node) {
 
 
 void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
-  Mips64OperandGenerator g(this);
-  Emit(kMips64Shl, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
-       g.TempImmediate(0));
+  Node* value = node->InputAt(0);
+  if (value->opcode() == IrOpcode::kLoad && CanCover(node, value)) {
+    // Generate sign-extending load.
+    LoadRepresentation load_rep = LoadRepresentationOf(value->op());
+    InstructionCode opcode = kArchNop;
+    switch (load_rep.representation()) {
+      case MachineRepresentation::kBit:  // Fall through.
+      case MachineRepresentation::kWord8:
+        opcode = load_rep.IsUnsigned() ? kMips64Lbu : kMips64Lb;
+        break;
+      case MachineRepresentation::kWord16:
+        opcode = load_rep.IsUnsigned() ? kMips64Lhu : kMips64Lh;
+        break;
+      case MachineRepresentation::kWord32:
+        opcode = kMips64Lw;
+        break;
+      default:
+        UNREACHABLE();
+        return;
+    }
+    EmitLoad(this, value, opcode, node);
+  } else {
+    Mips64OperandGenerator g(this);
+    Emit(kMips64Shl, g.DefineAsRegister(node), g.UseRegister(node->InputAt(0)),
+         g.TempImmediate(0));
+  }
 }
 
 
@@ -1173,30 +1215,8 @@ void InstructionSelector::VisitFloat32Sub(Node* node) {
   VisitRRR(this, kMips64SubS, node);
 }
 
-void InstructionSelector::VisitFloat32SubPreserveNan(Node* node) {
-  VisitRRR(this, kMips64SubPreserveNanS, node);
-}
-
 void InstructionSelector::VisitFloat64Sub(Node* node) {
-  Mips64OperandGenerator g(this);
-  Float64BinopMatcher m(node);
-  if (m.left().IsMinusZero() && m.right().IsFloat64RoundDown() &&
-      CanCover(m.node(), m.right().node())) {
-    if (m.right().InputAt(0)->opcode() == IrOpcode::kFloat64Sub &&
-        CanCover(m.right().node(), m.right().InputAt(0))) {
-      Float64BinopMatcher mright0(m.right().InputAt(0));
-      if (mright0.left().IsMinusZero()) {
-        Emit(kMips64Float64RoundUp, g.DefineAsRegister(node),
-             g.UseRegister(mright0.right().node()));
-        return;
-      }
-    }
-  }
   VisitRRR(this, kMips64SubD, node);
-}
-
-void InstructionSelector::VisitFloat64SubPreserveNan(Node* node) {
-  VisitRRR(this, kMips64SubPreserveNanD, node);
 }
 
 void InstructionSelector::VisitFloat32Mul(Node* node) {
@@ -1226,6 +1246,11 @@ void InstructionSelector::VisitFloat64Mod(Node* node) {
        g.UseFixed(node->InputAt(1), f14))->MarkAsCall();
 }
 
+void InstructionSelector::VisitFloat32Max(Node* node) {
+  Mips64OperandGenerator g(this);
+  Emit(kMips64Float32Max, g.DefineAsRegister(node),
+       g.UseRegister(node->InputAt(0)), g.UseRegister(node->InputAt(1)));
+}
 
 void InstructionSelector::VisitFloat64Max(Node* node) {
   Mips64OperandGenerator g(this);
@@ -1233,6 +1258,11 @@ void InstructionSelector::VisitFloat64Max(Node* node) {
        g.UseRegister(node->InputAt(0)), g.UseRegister(node->InputAt(1)));
 }
 
+void InstructionSelector::VisitFloat32Min(Node* node) {
+  Mips64OperandGenerator g(this);
+  Emit(kMips64Float32Min, g.DefineAsRegister(node),
+       g.UseRegister(node->InputAt(0)), g.UseRegister(node->InputAt(1)));
+}
 
 void InstructionSelector::VisitFloat64Min(Node* node) {
   Mips64OperandGenerator g(this);
@@ -1304,9 +1334,13 @@ void InstructionSelector::VisitFloat64RoundTiesEven(Node* node) {
   VisitRR(this, kMips64Float64RoundTiesEven, node);
 }
 
-void InstructionSelector::VisitFloat32Neg(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat32Neg(Node* node) {
+  VisitRR(this, kMips64NegS, node);
+}
 
-void InstructionSelector::VisitFloat64Neg(Node* node) { UNREACHABLE(); }
+void InstructionSelector::VisitFloat64Neg(Node* node) {
+  VisitRR(this, kMips64NegD, node);
+}
 
 void InstructionSelector::VisitFloat64Ieee754Binop(Node* node,
                                                    InstructionCode opcode) {
@@ -1387,6 +1421,8 @@ void InstructionSelector::VisitUnalignedLoad(Node* node) {
     case MachineRepresentation::kWord32:
       opcode = load_rep.IsUnsigned() ? kMips64Ulwu : kMips64Ulw;
       break;
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:  // Fall through.
     case MachineRepresentation::kWord64:
       opcode = kMips64Uld;
@@ -1435,6 +1471,8 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
     case MachineRepresentation::kWord32:
       opcode = kMips64Usw;
       break;
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:  // Fall through.
     case MachineRepresentation::kWord64:
       opcode = kMips64Usd;
@@ -1485,6 +1523,8 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
       opcode = kCheckedLoadFloat64;
       break;
     case MachineRepresentation::kBit:
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:
     case MachineRepresentation::kSimd128:
     case MachineRepresentation::kNone:
@@ -1535,6 +1575,8 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
       opcode = kCheckedStoreFloat64;
       break;
     case MachineRepresentation::kBit:
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:
     case MachineRepresentation::kSimd128:
     case MachineRepresentation::kNone:
@@ -2147,7 +2189,9 @@ InstructionSelector::SupportedMachineOperatorFlags() {
          MachineOperatorBuilder::kFloat64RoundTruncate |
          MachineOperatorBuilder::kFloat32RoundTruncate |
          MachineOperatorBuilder::kFloat64RoundTiesEven |
-         MachineOperatorBuilder::kFloat32RoundTiesEven;
+         MachineOperatorBuilder::kFloat32RoundTiesEven |
+         MachineOperatorBuilder::kWord32ReverseBytes |
+         MachineOperatorBuilder::kWord64ReverseBytes;
 }
 
 // static

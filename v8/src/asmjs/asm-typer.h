@@ -7,14 +7,15 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_set>
 
 #include "src/allocation.h"
 #include "src/asmjs/asm-types.h"
 #include "src/ast/ast-type-bounds.h"
+#include "src/ast/ast-types.h"
 #include "src/ast/ast.h"
 #include "src/effects.h"
 #include "src/type-info.h"
-#include "src/types.h"
 #include "src/zone-containers.h"
 #include "src/zone.h"
 
@@ -47,6 +48,7 @@ class AsmTyper final {
     kMathFloor,
     kMathSqrt,
     kMathAbs,
+    kMathClz32,
     kMathMin,
     kMathMax,
     kMathAtan2,
@@ -72,6 +74,10 @@ class AsmTyper final {
 
   AsmType* TypeOf(AstNode* node) const;
   StandardMember VariableAsStandardMember(Variable* var);
+
+  typedef std::unordered_set<StandardMember, std::hash<int> > StdlibSet;
+
+  StdlibSet StdlibUses() const { return stdlib_uses_; }
 
  private:
   friend class v8::internal::wasm::AsmTyperHarnessBuilder;
@@ -319,6 +325,7 @@ class AsmTyper final {
   AsmType* fround_type_;
   AsmType* ffi_type_;
   char error_message_[kErrorMessageLimit];
+  StdlibSet stdlib_uses_;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(AsmTyper);
 };

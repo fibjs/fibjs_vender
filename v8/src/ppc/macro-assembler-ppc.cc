@@ -286,9 +286,7 @@ void MacroAssembler::StoreRoot(Register source, Heap::RootListIndex index,
 void MacroAssembler::InNewSpace(Register object, Register scratch,
                                 Condition cond, Label* branch) {
   DCHECK(cond == eq || cond == ne);
-  const int mask =
-      (1 << MemoryChunk::IN_FROM_SPACE) | (1 << MemoryChunk::IN_TO_SPACE);
-  CheckPageFlag(object, scratch, mask, cond, branch);
+  CheckPageFlag(object, scratch, MemoryChunk::kIsInNewSpaceMask, cond, branch);
 }
 
 
@@ -1818,7 +1816,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss, Register elements,
 void MacroAssembler::Allocate(int object_size, Register result,
                               Register scratch1, Register scratch2,
                               Label* gc_required, AllocationFlags flags) {
-  DCHECK(object_size <= Page::kMaxRegularHeapObjectSize);
+  DCHECK(object_size <= kMaxRegularHeapObjectSize);
   DCHECK((flags & ALLOCATION_FOLDED) == 0);
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
@@ -2074,7 +2072,7 @@ void MacroAssembler::FastAllocate(Register object_size, Register result,
 void MacroAssembler::FastAllocate(int object_size, Register result,
                                   Register scratch1, Register scratch2,
                                   AllocationFlags flags) {
-  DCHECK(object_size <= Page::kMaxRegularHeapObjectSize);
+  DCHECK(object_size <= kMaxRegularHeapObjectSize);
   DCHECK(!AreAliased(result, scratch1, scratch2, ip));
 
   // Make object size into bytes.
@@ -3333,50 +3331,9 @@ void MacroAssembler::CopyBytes(Register src, Register dst, Register length,
   LoadP(scratch, MemOperand(src));
   addi(src, src, Operand(kPointerSize));
   subi(length, length, Operand(kPointerSize));
-  if (CpuFeatures::IsSupported(UNALIGNED_ACCESSES)) {
-    // currently false for PPC - but possible future opt
-    StoreP(scratch, MemOperand(dst));
-    addi(dst, dst, Operand(kPointerSize));
-  } else {
-#if V8_TARGET_LITTLE_ENDIAN
-    stb(scratch, MemOperand(dst, 0));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 1));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 2));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 3));
-#if V8_TARGET_ARCH_PPC64
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 4));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 5));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 6));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 7));
-#endif
-#else
-#if V8_TARGET_ARCH_PPC64
-    stb(scratch, MemOperand(dst, 7));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 6));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 5));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 4));
-    ShiftRightImm(scratch, scratch, Operand(8));
-#endif
-    stb(scratch, MemOperand(dst, 3));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 2));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 1));
-    ShiftRightImm(scratch, scratch, Operand(8));
-    stb(scratch, MemOperand(dst, 0));
-#endif
-    addi(dst, dst, Operand(kPointerSize));
-  }
+
+  StoreP(scratch, MemOperand(dst));
+  addi(dst, dst, Operand(kPointerSize));
   bdnz(&word_loop);
 
   // Copy the last bytes if any left.

@@ -4,7 +4,6 @@
 
 #include "src/interpreter/bytecode-array-builder.h"
 
-#include "src/compiler.h"
 #include "src/globals.h"
 #include "src/interpreter/bytecode-array-writer.h"
 #include "src/interpreter/bytecode-dead-code-optimizer.h"
@@ -21,17 +20,16 @@ BytecodeArrayBuilder::BytecodeArrayBuilder(
     Isolate* isolate, Zone* zone, int parameter_count, int context_count,
     int locals_count, FunctionLiteral* literal,
     SourcePositionTableBuilder::RecordingMode source_position_mode)
-    : isolate_(isolate),
-      zone_(zone),
+    : zone_(zone),
       bytecode_generated_(false),
-      constant_array_builder_(isolate, zone),
-      handler_table_builder_(isolate, zone),
+      constant_array_builder_(zone, isolate->factory()->the_hole_value()),
+      handler_table_builder_(zone),
       return_seen_in_block_(false),
       parameter_count_(parameter_count),
       local_register_count_(locals_count),
       context_register_count_(context_count),
       temporary_allocator_(zone, fixed_register_count()),
-      bytecode_array_writer_(isolate, zone, &constant_array_builder_,
+      bytecode_array_writer_(zone, &constant_array_builder_,
                              source_position_mode),
       pipeline_(&bytecode_array_writer_) {
   DCHECK_GE(parameter_count_, 0);
@@ -43,8 +41,7 @@ BytecodeArrayBuilder::BytecodeArrayBuilder(
   }
 
   if (FLAG_ignition_peephole) {
-    pipeline_ = new (zone)
-        BytecodePeepholeOptimizer(&constant_array_builder_, pipeline_);
+    pipeline_ = new (zone) BytecodePeepholeOptimizer(pipeline_);
   }
 
   if (FLAG_ignition_reo) {
@@ -76,14 +73,15 @@ bool BytecodeArrayBuilder::RegisterIsParameterOrLocal(Register reg) const {
   return reg.is_parameter() || reg.index() < locals_count();
 }
 
-Handle<BytecodeArray> BytecodeArrayBuilder::ToBytecodeArray() {
+Handle<BytecodeArray> BytecodeArrayBuilder::ToBytecodeArray(Isolate* isolate) {
   DCHECK(return_seen_in_block_);
   DCHECK(!bytecode_generated_);
   bytecode_generated_ = true;
 
-  Handle<FixedArray> handler_table = handler_table_builder()->ToHandlerTable();
-  return pipeline_->ToBytecodeArray(fixed_register_count(), parameter_count(),
-                                    handler_table);
+  Handle<FixedArray> handler_table =
+      handler_table_builder()->ToHandlerTable(isolate);
+  return pipeline_->ToBytecodeArray(isolate, fixed_register_count(),
+                                    parameter_count(), handler_table);
 }
 
 namespace {
@@ -152,13 +150,16 @@ void BytecodeArrayBuilder::Output(Bytecode bytecode) {
 }
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::BinaryOperation(Token::Value op,
-                                                            Register reg) {
-  Output(BytecodeForBinaryOperation(op), RegisterOperand(reg));
+                                                            Register reg,
+                                                            int feedback_slot) {
+  Output(BytecodeForBinaryOperation(op), RegisterOperand(reg),
+         UnsignedOperand(feedback_slot));
   return *this;
 }
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::CountOperation(Token::Value op) {
-  Output(BytecodeForCountOperation(op));
+BytecodeArrayBuilder& BytecodeArrayBuilder::CountOperation(Token::Value op,
+                                                           int feedback_slot) {
+  Output(BytecodeForCountOperation(op), UnsignedOperand(feedback_slot));
   return *this;
 }
 
@@ -173,9 +174,14 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::TypeOf() {
   return *this;
 }
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::CompareOperation(Token::Value op,
-                                                             Register reg) {
-  Output(BytecodeForCompareOperation(op), RegisterOperand(reg));
+BytecodeArrayBuilder& BytecodeArrayBuilder::CompareOperation(
+    Token::Value op, Register reg, int feedback_slot) {
+  if (op == Token::INSTANCEOF || op == Token::IN) {
+    Output(BytecodeForCompareOperation(op), RegisterOperand(reg));
+  } else {
+    Output(BytecodeForCompareOperation(op), RegisterOperand(reg),
+           UnsignedOperand(feedback_slot));
+  }
   return *this;
 }
 
@@ -329,11 +335,39 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::StoreKeyedProperty(
   return *this;
 }
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::CreateClosure(
-    Handle<SharedFunctionInfo> shared_info, int flags) {
-  size_t entry = GetConstantPoolEntry(shared_info);
+BytecodeArrayBuilder& BytecodeArrayBuilder::CreateClosure(size_t entry,
+                                                          int flags) {
   Output(Bytecode::kCreateClosure, UnsignedOperand(entry),
          UnsignedOperand(flags));
+  return *this;
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::CreateBlockContext(
+    Handle<ScopeInfo> scope_info) {
+  size_t entry = GetConstantPoolEntry(scope_info);
+  Output(Bytecode::kCreateBlockContext, UnsignedOperand(entry));
+  return *this;
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::CreateCatchContext(
+    Register exception, Handle<String> name, Handle<ScopeInfo> scope_info) {
+  size_t name_index = GetConstantPoolEntry(name);
+  size_t scope_info_index = GetConstantPoolEntry(scope_info);
+  Output(Bytecode::kCreateCatchContext, RegisterOperand(exception),
+         UnsignedOperand(name_index), UnsignedOperand(scope_info_index));
+  return *this;
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::CreateFunctionContext(int slots) {
+  Output(Bytecode::kCreateFunctionContext, UnsignedOperand(slots));
+  return *this;
+}
+
+BytecodeArrayBuilder& BytecodeArrayBuilder::CreateWithContext(
+    Register object, Handle<ScopeInfo> scope_info) {
+  size_t scope_info_index = GetConstantPoolEntry(scope_info);
+  Output(Bytecode::kCreateWithContext, RegisterOperand(object),
+         UnsignedOperand(scope_info_index));
   return *this;
 }
 
@@ -365,11 +399,13 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::CreateArrayLiteral(
 }
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::CreateObjectLiteral(
-    Handle<FixedArray> constant_properties, int literal_index, int flags) {
+    Handle<FixedArray> constant_properties, int literal_index, int flags,
+    Register output) {
   size_t constant_properties_entry = GetConstantPoolEntry(constant_properties);
   Output(Bytecode::kCreateObjectLiteral,
          UnsignedOperand(constant_properties_entry),
-         UnsignedOperand(literal_index), UnsignedOperand(flags));
+         UnsignedOperand(literal_index), UnsignedOperand(flags),
+         RegisterOperand(output));
   return *this;
 }
 
@@ -383,19 +419,19 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::PopContext(Register context) {
   return *this;
 }
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::CastAccumulatorToJSObject(
+BytecodeArrayBuilder& BytecodeArrayBuilder::ConvertAccumulatorToObject(
     Register out) {
   Output(Bytecode::kToObject, RegisterOperand(out));
   return *this;
 }
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::CastAccumulatorToName(
+BytecodeArrayBuilder& BytecodeArrayBuilder::ConvertAccumulatorToName(
     Register out) {
   Output(Bytecode::kToName, RegisterOperand(out));
   return *this;
 }
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::CastAccumulatorToNumber(
+BytecodeArrayBuilder& BytecodeArrayBuilder::ConvertAccumulatorToNumber(
     Register out) {
   Output(Bytecode::kToNumber, RegisterOperand(out));
   return *this;
@@ -505,9 +541,9 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::ForInPrepare(
   return *this;
 }
 
-BytecodeArrayBuilder& BytecodeArrayBuilder::ForInDone(Register index,
-                                                      Register cache_length) {
-  Output(Bytecode::kForInDone, RegisterOperand(index),
+BytecodeArrayBuilder& BytecodeArrayBuilder::ForInContinue(
+    Register index, Register cache_length) {
+  Output(Bytecode::kForInContinue, RegisterOperand(index),
          RegisterOperand(cache_length));
   return *this;
 }
@@ -584,13 +620,15 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::Call(Register callable,
 
 BytecodeArrayBuilder& BytecodeArrayBuilder::New(Register constructor,
                                                 Register first_arg,
-                                                size_t arg_count) {
+                                                size_t arg_count,
+                                                int feedback_slot_id) {
   if (!first_arg.is_valid()) {
     DCHECK_EQ(0u, arg_count);
     first_arg = Register(0);
   }
   Output(Bytecode::kNew, RegisterOperand(constructor),
-         RegisterOperand(first_arg), UnsignedOperand(arg_count));
+         RegisterOperand(first_arg), UnsignedOperand(arg_count),
+         UnsignedOperand(feedback_slot_id));
   return *this;
 }
 

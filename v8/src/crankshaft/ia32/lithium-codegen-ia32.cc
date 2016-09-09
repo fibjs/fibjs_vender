@@ -73,9 +73,6 @@ void LCodeGen::FinishCode(Handle<Code> code) {
   code->set_stack_slots(GetTotalFrameSlotCount());
   code->set_safepoint_table_offset(safepoints_.GetCodeOffset());
   PopulateDeoptimizationData(code);
-  Handle<ByteArray> source_positions =
-      source_position_table_builder_.ToSourcePositionTable();
-  code->set_source_position_table(*source_positions);
   if (info()->ShouldEnsureSpaceForLazyDeopt()) {
     Deoptimizer::EnsureRelocSpaceForLazyDeoptimization(code);
   }
@@ -171,7 +168,7 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
   Comment(";;; Prologue begin");
 
   // Possibly allocate a local context.
-  if (info_->scope()->num_heap_slots() > 0) {
+  if (info_->scope()->NeedsContext()) {
     Comment(";;; Allocate local context");
     bool need_write_barrier = true;
     // Argument to NewContext is the function, which is still in edi.
@@ -179,17 +176,16 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
     Safepoint::DeoptMode deopt_mode = Safepoint::kNoLazyDeopt;
     if (info()->scope()->is_script_scope()) {
       __ push(edi);
-      __ Push(info()->scope()->GetScopeInfo(info()->isolate()));
+      __ Push(info()->scope()->scope_info());
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
-    } else if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
-      FastNewFunctionContextStub stub(isolate(), slots);
+    } else {
+      FastNewFunctionContextStub stub(isolate());
+      __ mov(FastNewFunctionContextDescriptor::SlotsRegister(),
+             Immediate(slots));
       __ CallStub(&stub);
       // Result of FastNewFunctionContextStub is always in new space.
       need_write_barrier = false;
-    } else {
-      __ push(edi);
-      __ CallRuntime(Runtime::kNewFunctionContext);
     }
     RecordSafepoint(deopt_mode);
 
@@ -199,10 +195,11 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
     __ mov(Operand(ebp, StandardFrameConstants::kContextOffset), eax);
 
     // Copy parameters into context if necessary.
-    int num_parameters = scope()->num_parameters();
-    int first_parameter = scope()->has_this_declaration() ? -1 : 0;
+    int num_parameters = info()->scope()->num_parameters();
+    int first_parameter = info()->scope()->has_this_declaration() ? -1 : 0;
     for (int i = first_parameter; i < num_parameters; i++) {
-      Variable* var = (i == -1) ? scope()->receiver() : scope()->parameter(i);
+      Variable* var = (i == -1) ? info()->scope()->receiver()
+                                : info()->scope()->parameter(i);
       if (var->IsContextSlot()) {
         int parameter_offset = StandardFrameConstants::kCallerSPOffset +
             (num_parameters - 1 - i) * kPointerSize;
@@ -3987,8 +3984,7 @@ void LCodeGen::DoDeferredMaybeGrowElements(LMaybeGrowElements* instr) {
       __ SmiTag(ebx);
     }
 
-    GrowArrayElementsStub stub(isolate(), instr->hydrogen()->is_js_array(),
-                               instr->hydrogen()->kind());
+    GrowArrayElementsStub stub(isolate(), instr->hydrogen()->kind());
     __ CallStub(&stub);
     RecordSafepointWithLazyDeopt(
         instr, RECORD_SAFEPOINT_WITH_REGISTERS_AND_NO_ARGUMENTS);
@@ -4405,7 +4401,8 @@ void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
       DeoptimizeIf(not_equal, instr,
                    DeoptimizeReason::kNotAHeapNumberUndefined);
 
-      __ pcmpeqd(result_reg, result_reg);
+      __ xorpd(result_reg, result_reg);
+      __ divsd(result_reg, result_reg);
       __ jmp(&done, Label::kNear);
     }
   } else {
@@ -4833,7 +4830,7 @@ void LCodeGen::DoAllocate(LAllocate* instr) {
 
   if (instr->size()->IsConstantOperand()) {
     int32_t size = ToInteger32(LConstantOperand::cast(instr->size()));
-    CHECK(size <= Page::kMaxRegularHeapObjectSize);
+    CHECK(size <= kMaxRegularHeapObjectSize);
     __ Allocate(size, result, temp, no_reg, deferred->entry(), flags);
   } else {
     Register size = ToRegister(instr->size());
@@ -4876,7 +4873,7 @@ void LCodeGen::DoFastAllocate(LFastAllocate* instr) {
   }
   if (instr->size()->IsConstantOperand()) {
     int32_t size = ToInteger32(LConstantOperand::cast(instr->size()));
-    CHECK(size <= Page::kMaxRegularHeapObjectSize);
+    CHECK(size <= kMaxRegularHeapObjectSize);
     __ FastAllocate(size, result, temp, flags);
   } else {
     Register size = ToRegister(instr->size());
@@ -4950,8 +4947,8 @@ void LCodeGen::DoTypeof(LTypeof* instr) {
   __ mov(eax, Immediate(isolate()->factory()->number_string()));
   __ jmp(&end);
   __ bind(&do_call);
-  TypeofStub stub(isolate());
-  CallCode(stub.GetCode(), RelocInfo::CODE_TARGET, instr);
+  Callable callable = CodeFactory::Typeof(isolate());
+  CallCode(callable.code(), RelocInfo::CODE_TARGET, instr);
   __ bind(&end);
 }
 

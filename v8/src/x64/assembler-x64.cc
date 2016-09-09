@@ -1590,6 +1590,13 @@ void Assembler::movsxbq(Register dst, const Operand& src) {
   emit_operand(dst, src);
 }
 
+void Assembler::movsxbq(Register dst, Register src) {
+  EnsureSpace ensure_space(this);
+  emit_rex_64(dst, src);
+  emit(0x0F);
+  emit(0xBE);
+  emit_modrm(dst, src);
+}
 
 void Assembler::movsxwl(Register dst, Register src) {
   EnsureSpace ensure_space(this);
@@ -1617,6 +1624,13 @@ void Assembler::movsxwq(Register dst, const Operand& src) {
   emit_operand(dst, src);
 }
 
+void Assembler::movsxwq(Register dst, Register src) {
+  EnsureSpace ensure_space(this);
+  emit_rex_64(dst, src);
+  emit(0x0F);
+  emit(0xBF);
+  emit_modrm(dst, src);
+}
 
 void Assembler::movsxlq(Register dst, Register src) {
   EnsureSpace ensure_space(this);
@@ -3223,28 +3237,33 @@ void Assembler::cmpps(XMMRegister dst, XMMRegister src, int8_t cmp) {
   emit(cmp);
 }
 
-void Assembler::cmpeqps(XMMRegister dst, XMMRegister src) {
-  cmpps(dst, src, 0x0);
+void Assembler::cmpps(XMMRegister dst, const Operand& src, int8_t cmp) {
+  EnsureSpace ensure_space(this);
+  emit_optional_rex_32(dst, src);
+  emit(0x0F);
+  emit(0xC2);
+  emit_sse_operand(dst, src);
+  emit(cmp);
 }
 
-void Assembler::cmpltps(XMMRegister dst, XMMRegister src) {
-  cmpps(dst, src, 0x1);
+void Assembler::cmppd(XMMRegister dst, XMMRegister src, int8_t cmp) {
+  EnsureSpace ensure_space(this);
+  emit_optional_rex_32(dst, src);
+  emit(0x66);
+  emit(0x0F);
+  emit(0xC2);
+  emit_sse_operand(dst, src);
+  emit(cmp);
 }
 
-void Assembler::cmpleps(XMMRegister dst, XMMRegister src) {
-  cmpps(dst, src, 0x2);
-}
-
-void Assembler::cmpneqps(XMMRegister dst, XMMRegister src) {
-  cmpps(dst, src, 0x4);
-}
-
-void Assembler::cmpnltps(XMMRegister dst, XMMRegister src) {
-  cmpps(dst, src, 0x5);
-}
-
-void Assembler::cmpnleps(XMMRegister dst, XMMRegister src) {
-  cmpps(dst, src, 0x6);
+void Assembler::cmppd(XMMRegister dst, const Operand& src, int8_t cmp) {
+  EnsureSpace ensure_space(this);
+  emit_optional_rex_32(dst, src);
+  emit(0x66);
+  emit(0x0F);
+  emit(0xC2);
+  emit_sse_operand(dst, src);
+  emit(cmp);
 }
 
 void Assembler::cvttss2si(Register dst, const Operand& src) {

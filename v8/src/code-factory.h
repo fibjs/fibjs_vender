@@ -126,7 +126,7 @@ class CodeFactory final {
   static Callable FastCloneShallowArray(Isolate* isolate);
   static Callable FastCloneShallowObject(Isolate* isolate, int length);
 
-  static Callable FastNewContext(Isolate* isolate, int slot_count);
+  static Callable FastNewFunctionContext(Isolate* isolate);
   static Callable FastNewClosure(Isolate* isolate);
   static Callable FastNewObject(Isolate* isolate);
   static Callable FastNewRestParameter(Isolate* isolate,
@@ -135,6 +135,10 @@ class CodeFactory final {
                                          bool skip_stub_frame = false);
   static Callable FastNewStrictArguments(Isolate* isolate,
                                          bool skip_stub_frame = false);
+
+  static Callable CopyFastSmiOrObjectElements(Isolate* isolate);
+  static Callable GrowFastDoubleElements(Isolate* isolate);
+  static Callable GrowFastSmiOrObjectElements(Isolate* isolate);
 
   static Callable AllocateHeapNumber(Isolate* isolate);
 #define SIMD128_ALLOC(TYPE, Type, type, lane_count, lane_type) \
@@ -156,7 +160,9 @@ class CodeFactory final {
   static Callable InterpreterPushArgsAndCall(
       Isolate* isolate, TailCallMode tail_call_mode,
       CallableType function_type = CallableType::kAny);
-  static Callable InterpreterPushArgsAndConstruct(Isolate* isolate);
+  static Callable InterpreterPushArgsAndConstruct(
+      Isolate* isolate, CallableType function_type = CallableType::kAny);
+  static Callable InterpreterPushArgsAndConstructArray(Isolate* isolate);
   static Callable InterpreterCEntry(Isolate* isolate, int result_size = 1);
   static Callable InterpreterOnStackReplacement(Isolate* isolate);
 };

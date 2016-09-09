@@ -956,11 +956,24 @@ class MacroAssembler: public Assembler {
   AVX_OP2_XO(Addsd, addsd)
   AVX_OP2_XO(Subsd, subsd)
   AVX_OP2_XO(Mulsd, mulsd)
+  AVX_OP2_XO(Divss, divss)
   AVX_OP2_XO(Divsd, divsd)
   AVX_OP2_XO(Andps, andps)
   AVX_OP2_XO(Andpd, andpd)
   AVX_OP2_XO(Orpd, orpd)
   AVX_OP2_XO(Xorpd, xorpd)
+  AVX_OP2_XO(Cmpeqps, cmpeqps)
+  AVX_OP2_XO(Cmpltps, cmpltps)
+  AVX_OP2_XO(Cmpleps, cmpleps)
+  AVX_OP2_XO(Cmpneqps, cmpneqps)
+  AVX_OP2_XO(Cmpnltps, cmpnltps)
+  AVX_OP2_XO(Cmpnleps, cmpnleps)
+  AVX_OP2_XO(Cmpeqpd, cmpeqpd)
+  AVX_OP2_XO(Cmpltpd, cmpltpd)
+  AVX_OP2_XO(Cmplepd, cmplepd)
+  AVX_OP2_XO(Cmpneqpd, cmpneqpd)
+  AVX_OP2_XO(Cmpnltpd, cmpnltpd)
+  AVX_OP2_XO(Cmpnlepd, cmpnlepd)
   AVX_OP2_X(Pcmpeqd, pcmpeqd)
   AVX_OP2_WITH_TYPE(Psllq, psllq, byte)
   AVX_OP2_WITH_TYPE(Psrlq, psrlq, byte)
@@ -987,6 +1000,7 @@ class MacroAssembler: public Assembler {
   void Movups(XMMRegister dst, XMMRegister src);
   void Movups(XMMRegister dst, const Operand& src);
   void Movups(const Operand& dst, XMMRegister src);
+  void Movmskps(Register dst, XMMRegister src);
   void Movapd(XMMRegister dst, XMMRegister src);
   void Movupd(XMMRegister dst, const Operand& src);
   void Movupd(const Operand& dst, XMMRegister src);

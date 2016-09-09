@@ -75,36 +75,6 @@ DeoptimizeParameters const& DeoptimizeParametersOf(Operator const* const op) {
   return OpParameter<DeoptimizeParameters>(op);
 }
 
-IfExceptionHint ExceptionHintFromCatchPrediction(
-    HandlerTable::CatchPrediction prediction) {
-  switch (prediction) {
-    case HandlerTable::UNCAUGHT:
-      return IfExceptionHint::kLocallyUncaught;
-    case HandlerTable::CAUGHT:
-      return IfExceptionHint::kLocallyCaught;
-    case HandlerTable::PROMISE:
-      return IfExceptionHint::kLocallyCaughtForPromiseReject;
-  }
-  UNREACHABLE();
-  return IfExceptionHint::kLocallyUncaught;
-}
-
-size_t hash_value(IfExceptionHint hint) { return static_cast<size_t>(hint); }
-
-
-std::ostream& operator<<(std::ostream& os, IfExceptionHint hint) {
-  switch (hint) {
-    case IfExceptionHint::kLocallyUncaught:
-      return os << "Uncaught";
-    case IfExceptionHint::kLocallyCaught:
-      return os << "Caught";
-    case IfExceptionHint::kLocallyCaughtForPromiseReject:
-      return os << "CaughtForPromiseReject";
-  }
-  UNREACHABLE();
-  return os;
-}
-
 
 bool operator==(SelectParameters const& lhs, SelectParameters const& rhs) {
   return lhs.representation() == rhs.representation() &&
@@ -221,6 +191,11 @@ RegionObservability RegionObservabilityOf(Operator const* op) {
   return OpParameter<RegionObservability>(op);
 }
 
+Type* TypeGuardTypeOf(Operator const* op) {
+  DCHECK_EQ(IrOpcode::kTypeGuard, op->opcode());
+  return OpParameter<Type*>(op);
+}
+
 std::ostream& operator<<(std::ostream& os,
                          const ZoneVector<MachineType>* types) {
   // Print all the MachineTypes, separated by commas.
@@ -235,21 +210,23 @@ std::ostream& operator<<(std::ostream& os,
   return os;
 }
 
-#define CACHED_OP_LIST(V)                                    \
-  V(Dead, Operator::kFoldable, 0, 0, 0, 1, 1, 1)             \
-  V(IfTrue, Operator::kKontrol, 0, 0, 1, 0, 0, 1)            \
-  V(IfFalse, Operator::kKontrol, 0, 0, 1, 0, 0, 1)           \
-  V(IfSuccess, Operator::kKontrol, 0, 0, 1, 0, 0, 1)         \
-  V(IfDefault, Operator::kKontrol, 0, 0, 1, 0, 0, 1)         \
-  V(Throw, Operator::kKontrol, 1, 1, 1, 0, 0, 1)             \
-  V(Terminate, Operator::kKontrol, 0, 1, 1, 0, 0, 1)         \
-  V(OsrNormalEntry, Operator::kFoldable, 0, 1, 1, 0, 1, 1)   \
-  V(OsrLoopEntry, Operator::kFoldable, 0, 1, 1, 0, 1, 1)     \
-  V(LoopExit, Operator::kKontrol, 0, 0, 2, 0, 0, 1)          \
-  V(LoopExitValue, Operator::kPure, 1, 0, 1, 1, 0, 0)        \
-  V(LoopExitEffect, Operator::kNoThrow, 0, 1, 1, 0, 1, 0)    \
-  V(Checkpoint, Operator::kKontrol, 0, 1, 1, 0, 1, 0)        \
-  V(FinishRegion, Operator::kKontrol, 1, 1, 0, 1, 1, 0)
+#define CACHED_OP_LIST(V)                                                     \
+  V(Dead, Operator::kFoldable, 0, 0, 0, 1, 1, 1)                              \
+  V(IfTrue, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                             \
+  V(IfFalse, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                            \
+  V(IfSuccess, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                          \
+  V(IfException, Operator::kKontrol, 0, 1, 1, 1, 1, 1)                        \
+  V(IfDefault, Operator::kKontrol, 0, 0, 1, 0, 0, 1)                          \
+  V(Throw, Operator::kKontrol, 1, 1, 1, 0, 0, 1)                              \
+  V(Terminate, Operator::kKontrol, 0, 1, 1, 0, 0, 1)                          \
+  V(OsrNormalEntry, Operator::kFoldable, 0, 1, 1, 0, 1, 1)                    \
+  V(OsrLoopEntry, Operator::kFoldable | Operator::kNoThrow, 0, 1, 1, 0, 1, 1) \
+  V(LoopExit, Operator::kKontrol, 0, 0, 2, 0, 0, 1)                           \
+  V(LoopExitValue, Operator::kPure, 1, 0, 1, 1, 0, 0)                         \
+  V(LoopExitEffect, Operator::kNoThrow, 0, 1, 1, 0, 1, 0)                     \
+  V(Checkpoint, Operator::kKontrol, 0, 1, 1, 0, 1, 0)                         \
+  V(FinishRegion, Operator::kKontrol, 1, 1, 0, 1, 1, 0)                       \
+  V(Retain, Operator::kKontrol, 1, 1, 0, 0, 1, 0)
 
 #define CACHED_RETURN_LIST(V) \
   V(1)                        \
@@ -297,6 +274,30 @@ std::ostream& operator<<(std::ostream& os,
   V(7)                       \
   V(8)
 
+#define CACHED_DEOPTIMIZE_LIST(V)                        \
+  V(Eager, MinusZero)                                    \
+  V(Eager, NoReason)                                     \
+  V(Eager, WrongMap)                                     \
+  V(Soft, InsufficientTypeFeedbackForGenericKeyedAccess) \
+  V(Soft, InsufficientTypeFeedbackForGenericNamedAccess)
+
+#define CACHED_DEOPTIMIZE_IF_LIST(V) \
+  V(DivisionByZero)                  \
+  V(Hole)                            \
+  V(MinusZero)                       \
+  V(Overflow)                        \
+  V(Smi)
+
+#define CACHED_DEOPTIMIZE_UNLESS_LIST(V) \
+  V(LostPrecision)                       \
+  V(LostPrecisionOrNaN)                  \
+  V(NoReason)                            \
+  V(NotAHeapNumber)                      \
+  V(NotAHeapNumberUndefinedBoolean)      \
+  V(NotASmi)                             \
+  V(OutOfBounds)                         \
+  V(WrongInstanceType)                   \
+  V(WrongMap)
 
 #define CACHED_PARAMETER_LIST(V) \
   V(0)                           \
@@ -356,20 +357,6 @@ struct CommonOperatorGlobalCache final {
   Name##Operator k##Name##Operator;
   CACHED_OP_LIST(CACHED)
 #undef CACHED
-
-  template <IfExceptionHint kCaughtLocally>
-  struct IfExceptionOperator final : public Operator1<IfExceptionHint> {
-    IfExceptionOperator()
-        : Operator1<IfExceptionHint>(                      // --
-              IrOpcode::kIfException, Operator::kKontrol,  // opcode
-              "IfException",                               // name
-              0, 1, 1, 1, 1, 1,                            // counts
-              kCaughtLocally) {}                           // parameter
-  };
-  IfExceptionOperator<IfExceptionHint::kLocallyUncaught> kIfExceptionUOperator;
-  IfExceptionOperator<IfExceptionHint::kLocallyCaught> kIfExceptionCOperator;
-  IfExceptionOperator<IfExceptionHint::kLocallyCaughtForPromiseReject>
-      kIfExceptionPOperator;
 
   template <size_t kInputCount>
   struct EndOperator final : public Operator {
@@ -462,6 +449,54 @@ struct CommonOperatorGlobalCache final {
   MergeOperator<input_count> kMerge##input_count##Operator;
   CACHED_MERGE_LIST(CACHED_MERGE)
 #undef CACHED_MERGE
+
+  template <DeoptimizeKind kKind, DeoptimizeReason kReason>
+  struct DeoptimizeOperator final : public Operator1<DeoptimizeParameters> {
+    DeoptimizeOperator()
+        : Operator1<DeoptimizeParameters>(               // --
+              IrOpcode::kDeoptimize,                     // opcode
+              Operator::kFoldable | Operator::kNoThrow,  // properties
+              "Deoptimize",                              // name
+              1, 1, 1, 0, 0, 1,                          // counts
+              DeoptimizeParameters(kKind, kReason)) {}   // parameter
+  };
+#define CACHED_DEOPTIMIZE(Kind, Reason)                                    \
+  DeoptimizeOperator<DeoptimizeKind::k##Kind, DeoptimizeReason::k##Reason> \
+      kDeoptimize##Kind##Reason##Operator;
+  CACHED_DEOPTIMIZE_LIST(CACHED_DEOPTIMIZE)
+#undef CACHED_DEOPTIMIZE
+
+  template <DeoptimizeReason kReason>
+  struct DeoptimizeIfOperator final : public Operator1<DeoptimizeReason> {
+    DeoptimizeIfOperator()
+        : Operator1<DeoptimizeReason>(                   // --
+              IrOpcode::kDeoptimizeIf,                   // opcode
+              Operator::kFoldable | Operator::kNoThrow,  // properties
+              "DeoptimizeIf",                            // name
+              2, 1, 1, 0, 1, 1,                          // counts
+              kReason) {}                                // parameter
+  };
+#define CACHED_DEOPTIMIZE_IF(Reason)                \
+  DeoptimizeIfOperator<DeoptimizeReason::k##Reason> \
+      kDeoptimizeIf##Reason##Operator;
+  CACHED_DEOPTIMIZE_IF_LIST(CACHED_DEOPTIMIZE_IF)
+#undef CACHED_DEOPTIMIZE_IF
+
+  template <DeoptimizeReason kReason>
+  struct DeoptimizeUnlessOperator final : public Operator1<DeoptimizeReason> {
+    DeoptimizeUnlessOperator()
+        : Operator1<DeoptimizeReason>(                   // --
+              IrOpcode::kDeoptimizeUnless,               // opcode
+              Operator::kFoldable | Operator::kNoThrow,  // properties
+              "DeoptimizeUnless",                        // name
+              2, 1, 1, 0, 1, 1,                          // counts
+              kReason) {}                                // parameter
+  };
+#define CACHED_DEOPTIMIZE_UNLESS(Reason)                \
+  DeoptimizeUnlessOperator<DeoptimizeReason::k##Reason> \
+      kDeoptimizeUnless##Reason##Operator;
+  CACHED_DEOPTIMIZE_UNLESS_LIST(CACHED_DEOPTIMIZE_UNLESS)
+#undef CACHED_DEOPTIMIZE_UNLESS
 
   template <MachineRepresentation kRep, int kInputCount>
   struct PhiOperator final : public Operator1<MachineRepresentation> {
@@ -606,7 +641,14 @@ const Operator* CommonOperatorBuilder::Branch(BranchHint hint) {
 
 const Operator* CommonOperatorBuilder::Deoptimize(DeoptimizeKind kind,
                                                   DeoptimizeReason reason) {
-  // TODO(turbofan): Cache the most common versions of this.
+#define CACHED_DEOPTIMIZE(Kind, Reason)                 \
+  if (kind == DeoptimizeKind::k##Kind &&                \
+      reason == DeoptimizeReason::k##Reason) {          \
+    return &cache_.kDeoptimize##Kind##Reason##Operator; \
+  }
+  CACHED_DEOPTIMIZE_LIST(CACHED_DEOPTIMIZE)
+#undef CACHED_DEOPTIMIZE
+  // Uncached
   DeoptimizeParameters parameter(kind, reason);
   return new (zone()) Operator1<DeoptimizeParameters>(  // --
       IrOpcode::kDeoptimize,                            // opcodes
@@ -617,7 +659,16 @@ const Operator* CommonOperatorBuilder::Deoptimize(DeoptimizeKind kind,
 }
 
 const Operator* CommonOperatorBuilder::DeoptimizeIf(DeoptimizeReason reason) {
-  // TODO(turbofan): Cache the most common versions of this.
+  switch (reason) {
+#define CACHED_DEOPTIMIZE_IF(Reason) \
+  case DeoptimizeReason::k##Reason:  \
+    return &cache_.kDeoptimizeIf##Reason##Operator;
+    CACHED_DEOPTIMIZE_IF_LIST(CACHED_DEOPTIMIZE_IF)
+#undef CACHED_DEOPTIMIZE_IF
+    default:
+      break;
+  }
+  // Uncached
   return new (zone()) Operator1<DeoptimizeReason>(  // --
       IrOpcode::kDeoptimizeIf,                      // opcode
       Operator::kFoldable | Operator::kNoThrow,     // properties
@@ -628,26 +679,22 @@ const Operator* CommonOperatorBuilder::DeoptimizeIf(DeoptimizeReason reason) {
 
 const Operator* CommonOperatorBuilder::DeoptimizeUnless(
     DeoptimizeReason reason) {
-  // TODO(turbofan): Cache the most common versions of this.
+  switch (reason) {
+#define CACHED_DEOPTIMIZE_UNLESS(Reason) \
+  case DeoptimizeReason::k##Reason:      \
+    return &cache_.kDeoptimizeUnless##Reason##Operator;
+    CACHED_DEOPTIMIZE_UNLESS_LIST(CACHED_DEOPTIMIZE_UNLESS)
+#undef CACHED_DEOPTIMIZE_UNLESS
+    default:
+      break;
+  }
+  // Uncached
   return new (zone()) Operator1<DeoptimizeReason>(  // --
       IrOpcode::kDeoptimizeUnless,                  // opcode
       Operator::kFoldable | Operator::kNoThrow,     // properties
       "DeoptimizeUnless",                           // name
       2, 1, 1, 0, 1, 1,                             // counts
       reason);                                      // parameter
-}
-
-const Operator* CommonOperatorBuilder::IfException(IfExceptionHint hint) {
-  switch (hint) {
-    case IfExceptionHint::kLocallyUncaught:
-      return &cache_.kIfExceptionUOperator;
-    case IfExceptionHint::kLocallyCaught:
-      return &cache_.kIfExceptionCOperator;
-    case IfExceptionHint::kLocallyCaughtForPromiseReject:
-      return &cache_.kIfExceptionPOperator;
-  }
-  UNREACHABLE();
-  return nullptr;
 }
 
 
@@ -669,10 +716,10 @@ const Operator* CommonOperatorBuilder::IfValue(int32_t index) {
 
 
 const Operator* CommonOperatorBuilder::Start(int value_output_count) {
-  return new (zone()) Operator(               // --
-      IrOpcode::kStart, Operator::kFoldable,  // opcode
-      "Start",                                // name
-      0, 0, 0, value_output_count, 1, 1);     // counts
+  return new (zone()) Operator(                                    // --
+      IrOpcode::kStart, Operator::kFoldable | Operator::kNoThrow,  // opcode
+      "Start",                                                     // name
+      0, 0, 0, value_output_count, 1, 1);                          // counts
 }
 
 
@@ -853,6 +900,13 @@ const Operator* CommonOperatorBuilder::Phi(MachineRepresentation rep,
       rep);                                              // parameter
 }
 
+const Operator* CommonOperatorBuilder::TypeGuard(Type* type) {
+  return new (zone()) Operator1<Type*>(       // --
+      IrOpcode::kTypeGuard, Operator::kPure,  // opcode
+      "TypeGuard",                            // name
+      1, 0, 1, 1, 0, 0,                       // counts
+      type);                                  // parameter
+}
 
 const Operator* CommonOperatorBuilder::EffectPhi(int effect_input_count) {
   DCHECK(effect_input_count > 0);  // Disallow empty effect phis.
@@ -977,7 +1031,8 @@ const Operator* CommonOperatorBuilder::TailCall(
    public:
     explicit TailCallOperator(const CallDescriptor* descriptor)
         : Operator1<const CallDescriptor*>(
-              IrOpcode::kTailCall, descriptor->properties(), "TailCall",
+              IrOpcode::kTailCall,
+              descriptor->properties() | Operator::kNoThrow, "TailCall",
               descriptor->InputCount() + descriptor->FrameStateCount(), 1, 1, 0,
               0, 1, descriptor) {}
 

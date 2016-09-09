@@ -286,7 +286,7 @@ template <class Subclass>
 void AstTraversalVisitor<Subclass>::VisitFunctionLiteral(
     FunctionLiteral* expr) {
   PROCESS_EXPRESSION(expr);
-  Scope* scope = expr->scope();
+  DeclarationScope* scope = expr->scope();
   RECURSE_EXPRESSION(VisitDeclarations(scope->declarations()));
   RECURSE_EXPRESSION(VisitStatements(expr->body()));
 }
@@ -447,9 +447,9 @@ void AstTraversalVisitor<Subclass>::VisitClassLiteral(ClassLiteral* expr) {
     RECURSE_EXPRESSION(Visit(expr->extends()));
   }
   RECURSE_EXPRESSION(Visit(expr->constructor()));
-  ZoneList<ObjectLiteralProperty*>* props = expr->properties();
+  ZoneList<ClassLiteralProperty*>* props = expr->properties();
   for (int i = 0; i < props->length(); ++i) {
-    ObjectLiteralProperty* prop = props->at(i);
+    ClassLiteralProperty* prop = props->at(i);
     if (!prop->key()->IsLiteral()) {
       RECURSE_EXPRESSION(Visit(prop->key()));
     }

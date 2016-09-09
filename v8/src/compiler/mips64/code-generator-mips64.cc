@@ -6,8 +6,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/ast/scopes.h"
 #include "src/compiler/code-generator.h"
+#include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
@@ -706,9 +706,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArchDebugBreak:
       __ stop("kArchDebugBreak");
       break;
-    case kArchImpossible:
-      __ Abort(kConversionFromImpossibleValue);
-      break;
     case kArchComment: {
       Address comment_string = i.InputExternalReference(0).address();
       __ RecordComment(reinterpret_cast<const char*>(comment_string));
@@ -1268,11 +1265,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ sub_s(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
                i.InputDoubleRegister(1));
       break;
-    case kMips64SubPreserveNanS:
-      __ SubNanPreservePayloadAndSign_s(i.OutputDoubleRegister(),
-                                        i.InputDoubleRegister(0),
-                                        i.InputDoubleRegister(1));
-      break;
     case kMips64MulS:
       // TODO(plind): add special case: right op is -1.0, see arm port.
       __ mul_s(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
@@ -1299,6 +1291,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kMips64AbsS:
       __ abs_s(i.OutputSingleRegister(), i.InputSingleRegister(0));
       break;
+    case kMips64NegS:
+      __ Neg_s(i.OutputSingleRegister(), i.InputSingleRegister(0));
+      break;
     case kMips64SqrtS: {
       __ sqrt_s(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       break;
@@ -1322,11 +1317,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kMips64SubD:
       __ sub_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
                i.InputDoubleRegister(1));
-      break;
-    case kMips64SubPreserveNanD:
-      __ SubNanPreservePayloadAndSign_d(i.OutputDoubleRegister(),
-                                        i.InputDoubleRegister(0),
-                                        i.InputDoubleRegister(1));
       break;
     case kMips64MulD:
       // TODO(plind): add special case: right op is -1.0, see arm port.
@@ -1352,6 +1342,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kMips64AbsD:
       __ abs_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
+      break;
+    case kMips64NegD:
+      __ Neg_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
       break;
     case kMips64SqrtD: {
       __ sqrt_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0));
@@ -1397,6 +1390,17 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_ROUND_FLOAT_TO_FLOAT(round);
       break;
     }
+    case kMips64Float32Max: {
+      Label compare_nan, done_compare;
+      __ MaxNaNCheck_s(i.OutputSingleRegister(), i.InputSingleRegister(0),
+                       i.InputSingleRegister(1), &compare_nan);
+      __ Branch(&done_compare);
+      __ bind(&compare_nan);
+      __ Move(i.OutputSingleRegister(),
+              std::numeric_limits<float>::quiet_NaN());
+      __ bind(&done_compare);
+      break;
+    }
     case kMips64Float64Max: {
       Label compare_nan, done_compare;
       __ MaxNaNCheck_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
@@ -1405,6 +1409,17 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ bind(&compare_nan);
       __ Move(i.OutputDoubleRegister(),
               std::numeric_limits<double>::quiet_NaN());
+      __ bind(&done_compare);
+      break;
+    }
+    case kMips64Float32Min: {
+      Label compare_nan, done_compare;
+      __ MinNaNCheck_s(i.OutputSingleRegister(), i.InputSingleRegister(0),
+                       i.InputSingleRegister(1), &compare_nan);
+      __ Branch(&done_compare);
+      __ bind(&compare_nan);
+      __ Move(i.OutputSingleRegister(),
+              std::numeric_limits<float>::quiet_NaN());
       __ bind(&done_compare);
       break;
     }
@@ -1740,6 +1755,15 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       } else {
         __ sd(i.InputRegister(0), MemOperand(sp, i.InputInt32(1)));
       }
+      break;
+    }
+    case kMips64ByteSwap64: {
+      __ ByteSwapSigned(i.OutputRegister(0), i.InputRegister(0), 8);
+      break;
+    }
+    case kMips64ByteSwap32: {
+      __ ByteSwapUnsigned(i.OutputRegister(0), i.InputRegister(0), 4);
+      __ dsrl32(i.OutputRegister(0), i.OutputRegister(0), 0);
       break;
     }
     case kCheckedLoadInt8:

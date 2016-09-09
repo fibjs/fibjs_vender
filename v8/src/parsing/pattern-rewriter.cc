@@ -12,7 +12,8 @@ namespace v8 {
 namespace internal {
 
 void Parser::PatternRewriter::DeclareAndInitializeVariables(
-    Block* block, const DeclarationDescriptor* declaration_descriptor,
+    Parser* parser, Block* block,
+    const DeclarationDescriptor* declaration_descriptor,
     const DeclarationParsingResult::Declaration* declaration,
     ZoneList<const AstRawString*>* names, bool* ok) {
   PatternRewriter rewriter;
@@ -20,7 +21,7 @@ void Parser::PatternRewriter::DeclareAndInitializeVariables(
   DCHECK(block->ignore_completion_value());
 
   rewriter.scope_ = declaration_descriptor->scope;
-  rewriter.parser_ = declaration_descriptor->parser;
+  rewriter.parser_ = parser;
   rewriter.context_ = BINDING;
   rewriter.pattern_ = declaration->pattern;
   rewriter.initializer_position_ = declaration->initializer_position;
@@ -139,31 +140,28 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
   // which the variable or constant is declared. Only function variables have
   // an initial value in the declaration (because they are initialized upon
   // entering the function).
-  //
-  // If we have a legacy const declaration, in an inner scope, the proxy
-  // is always bound to the declared variable (independent of possibly
-  // surrounding 'with' statements).
-  // For let/const declarations in harmony mode, we can also immediately
-  // pre-resolve the proxy because it resides in the same scope as the
-  // declaration.
   const AstRawString* name = pattern->raw_name();
-  VariableProxy* proxy = parser_->NewUnresolved(name, descriptor_->mode);
+  VariableProxy* proxy = descriptor_->scope->NewUnresolved(
+      factory(), name, parser_->scanner()->location().beg_pos,
+      parser_->scanner()->location().end_pos);
   Declaration* declaration = factory()->NewVariableDeclaration(
-      proxy, descriptor_->mode, descriptor_->scope,
-      descriptor_->declaration_pos);
-  Variable* var =
-      parser_->Declare(declaration, descriptor_->declaration_kind,
-                       descriptor_->mode != VAR, ok_, descriptor_->hoist_scope);
+      proxy, descriptor_->scope, descriptor_->declaration_pos);
+  Variable* var = parser_->Declare(
+      declaration, descriptor_->declaration_kind, descriptor_->mode,
+      Variable::DefaultInitializationFlag(descriptor_->mode), ok_,
+      descriptor_->hoist_scope);
   if (!*ok_) return;
   DCHECK_NOT_NULL(var);
-  DCHECK(!proxy->is_resolved() || proxy->var() == var);
+  DCHECK(proxy->is_resolved());
+  DCHECK(initializer_position_ != kNoSourcePosition);
   var->set_initializer_position(initializer_position_);
 
-  DCHECK(initializer_position_ != kNoSourcePosition);
-
+  // TODO(adamk): This should probably be checking hoist_scope.
+  // Move it to Parser::Declare() to make it easier to test
+  // the right scope.
   Scope* declaration_scope = IsLexicalVariableMode(descriptor_->mode)
                                  ? descriptor_->scope
-                                 : descriptor_->scope->DeclarationScope();
+                                 : descriptor_->scope->GetDeclarationScope();
   if (declaration_scope->num_var() > kMaxNumFunctionLocals) {
     parser_->ReportMessage(MessageTemplate::kTooManyVariables);
     *ok_ = false;
@@ -173,8 +171,10 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
     names_->Add(name, zone());
   }
 
-  // Initialize variables if needed. A
-  // declaration of the form:
+  // If there's no initializer, we're done.
+  if (value == nullptr) return;
+
+  // A declaration of the form:
   //
   //    var v = x;
   //
@@ -182,119 +182,57 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
   //
   //    var v; v = x;
   //
-  // In particular, we need to re-lookup 'v' (in scope_, not
-  // declaration_scope) as it may be a different 'v' than the 'v' in the
-  // declaration (e.g., if we are inside a 'with' statement or 'catch'
-  // block).
-  //
-  // However, note that const declarations are different! A const
-  // declaration of the form:
-  //
-  //   const c = x;
-  //
-  // is *not* syntactic sugar for:
-  //
-  //   const c; c = x;
-  //
-  // The "variable" c initialized to x is the same as the declared
-  // one - there is no re-lookup (see the last parameter of the
-  // Declare() call above).
-  Scope* initialization_scope = IsImmutableVariableMode(descriptor_->mode)
-                                    ? declaration_scope
-                                    : descriptor_->scope;
+  // In particular, we need to re-lookup 'v' as it may be a different
+  // 'v' than the 'v' in the declaration (e.g., if we are inside a
+  // 'with' statement or 'catch' block). Global var declarations
+  // also need special treatment.
+  Scope* var_init_scope = descriptor_->scope;
 
+  if (descriptor_->mode == VAR && var_init_scope->is_script_scope()) {
+    // Global variable declarations must be compiled in a specific
+    // way. When the script containing the global variable declaration
+    // is entered, the global variable must be declared, so that if it
+    // doesn't exist (on the global object itself, see ES5 errata) it
+    // gets created with an initial undefined value. This is handled
+    // by the declarations part of the function representing the
+    // top-level global code; see Runtime::DeclareGlobalVariable. If
+    // it already exists (in the object or in a prototype), it is
+    // *not* touched until the variable declaration statement is
+    // executed.
+    //
+    // Executing the variable declaration statement will always
+    // guarantee to give the global object an own property.
+    // This way, global variable declarations can shadow
+    // properties in the prototype chain, but only after the variable
+    // declaration statement has been executed. This is important in
+    // browsers where the global object (window) has lots of
+    // properties defined in prototype objects.
 
-  // Global variable declarations must be compiled in a specific
-  // way. When the script containing the global variable declaration
-  // is entered, the global variable must be declared, so that if it
-  // doesn't exist (on the global object itself, see ES5 errata) it
-  // gets created with an initial undefined value. This is handled
-  // by the declarations part of the function representing the
-  // top-level global code; see Runtime::DeclareGlobalVariable. If
-  // it already exists (in the object or in a prototype), it is
-  // *not* touched until the variable declaration statement is
-  // executed.
-  //
-  // Executing the variable declaration statement will always
-  // guarantee to give the global object an own property.
-  // This way, global variable declarations can shadow
-  // properties in the prototype chain, but only after the variable
-  // declaration statement has been executed. This is important in
-  // browsers where the global object (window) has lots of
-  // properties defined in prototype objects.
-  if (initialization_scope->is_script_scope() &&
-      !IsLexicalVariableMode(descriptor_->mode)) {
-    // Compute the arguments for the runtime
-    // call.test-parsing/InitializedDeclarationsInStrictForOfError
     ZoneList<Expression*>* arguments =
         new (zone()) ZoneList<Expression*>(3, zone());
-    // We have at least 1 parameter.
     arguments->Add(
         factory()->NewStringLiteral(name, descriptor_->declaration_pos),
         zone());
-    CallRuntime* initialize;
+    arguments->Add(factory()->NewNumberLiteral(var_init_scope->language_mode(),
+                                               kNoSourcePosition),
+                   zone());
+    arguments->Add(value, zone());
 
-    if (IsImmutableVariableMode(descriptor_->mode)) {
-      arguments->Add(value, zone());
-      // Construct the call to Runtime_InitializeConstGlobal
-      // and add it to the initialization statement block.
-      // Note that the function does different things depending on
-      // the number of arguments (1 or 2).
-      initialize = factory()->NewCallRuntime(Runtime::kInitializeConstGlobal,
-                                             arguments, value->position());
-      value = NULL;  // zap the value to avoid the unnecessary assignment
-    } else {
-      // Add language mode.
-      // We may want to pass singleton to avoid Literal allocations.
-      LanguageMode language_mode = initialization_scope->language_mode();
-      arguments->Add(
-          factory()->NewNumberLiteral(language_mode, kNoSourcePosition),
-          zone());
-
-      // Be careful not to assign a value to the global variable if
-      // we're in a with. The initialization value should not
-      // necessarily be stored in the global object in that case,
-      // which is why we need to generate a separate assignment node.
-      if (value != NULL && !descriptor_->scope->inside_with()) {
-        arguments->Add(value, zone());
-        // Construct the call to Runtime_InitializeVarGlobal
-        // and add it to the initialization statement block.
-        initialize = factory()->NewCallRuntime(Runtime::kInitializeVarGlobal,
-                                               arguments, value->position());
-        value = NULL;  // zap the value to avoid the unnecessary assignment
-      } else {
-        initialize = NULL;
-      }
-    }
-
-    if (initialize != NULL) {
-      block_->statements()->Add(
-          factory()->NewExpressionStatement(initialize, initialize->position()),
-          zone());
-    }
-  } else if (value != nullptr && IsLexicalVariableMode(descriptor_->mode)) {
+    CallRuntime* initialize = factory()->NewCallRuntime(
+        Runtime::kInitializeVarGlobal, arguments, value->position());
+    block_->statements()->Add(
+        factory()->NewExpressionStatement(initialize, initialize->position()),
+        zone());
+  } else {
     // For 'let' and 'const' declared variables the initialization always
     // assigns to the declared variable.
-    DCHECK_NOT_NULL(proxy);
-    DCHECK_NOT_NULL(proxy->var());
-    DCHECK_NOT_NULL(value);
-    // Add break location for destructured sub-pattern.
-    int pos = IsSubPattern() ? pattern->position() : value->position();
-    Assignment* assignment =
-        factory()->NewAssignment(Token::INIT, proxy, value, pos);
-    block_->statements()->Add(
-        factory()->NewExpressionStatement(assignment, pos), zone());
-    value = NULL;
-  }
-
-  // Add an assignment node to the initialization statement block if we still
-  // have a pending initialization value.
-  if (value != NULL) {
-    DCHECK(descriptor_->mode == VAR);
-    // 'var' initializations are simply assignments (with all the consequences
-    // if they are inside a 'with' statement - they may change a 'with' object
-    // property).
-    VariableProxy* proxy = initialization_scope->NewUnresolved(factory(), name);
+    // But for var declarations we need to do a new lookup.
+    if (descriptor_->mode == VAR) {
+      proxy = var_init_scope->NewUnresolved(factory(), name);
+    } else {
+      DCHECK_NOT_NULL(proxy);
+      DCHECK_NOT_NULL(proxy->var());
+    }
     // Add break location for destructured sub-pattern.
     int pos = IsSubPattern() ? pattern->position() : value->position();
     Assignment* assignment =
@@ -323,11 +261,13 @@ Variable* Parser::PatternRewriter::CreateTempVar(Expression* value) {
 void Parser::PatternRewriter::VisitRewritableExpression(
     RewritableExpression* node) {
   // If this is not a destructuring assignment...
-  if (!IsAssignmentContext() || !node->expression()->IsAssignment()) {
+  if (!IsAssignmentContext()) {
     // Mark the node as rewritten to prevent redundant rewriting, and
     // perform BindingPattern rewriting
     DCHECK(!node->is_rewritten());
     node->Rewrite(node->expression());
+    return Visit(node->expression());
+  } else if (!node->expression()->IsAssignment()) {
     return Visit(node->expression());
   }
 
@@ -430,7 +370,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
 
   auto temp = *temp_var = CreateTempVar(current_value_);
   auto iterator = CreateTempVar(parser_->GetIterator(
-      factory()->NewVariableProxy(temp), factory(), kNoSourcePosition));
+      factory()->NewVariableProxy(temp), kNoSourcePosition));
   auto done =
       CreateTempVar(factory()->NewBooleanLiteral(false, kNoSourcePosition));
   auto result = CreateTempVar();

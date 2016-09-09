@@ -4,14 +4,15 @@
 
 #include "src/compiler/js-builtin-reducer.h"
 
+#include "src/compilation-dependencies.h"
 #include "src/compiler/access-builder.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/node-properties.h"
 #include "src/compiler/simplified-operator.h"
+#include "src/compiler/type-cache.h"
+#include "src/compiler/types.h"
 #include "src/objects-inl.h"
-#include "src/type-cache.h"
-#include "src/types.h"
 
 namespace v8 {
 namespace internal {
@@ -93,10 +94,319 @@ class JSCallReduction {
   Node* node_;
 };
 
-JSBuiltinReducer::JSBuiltinReducer(Editor* editor, JSGraph* jsgraph)
+JSBuiltinReducer::JSBuiltinReducer(Editor* editor, JSGraph* jsgraph,
+                                   Flags flags,
+                                   CompilationDependencies* dependencies)
     : AdvancedReducer(editor),
+      dependencies_(dependencies),
+      flags_(flags),
       jsgraph_(jsgraph),
       type_cache_(TypeCache::Get()) {}
+
+namespace {
+
+MaybeHandle<Map> GetMapWitness(Node* node) {
+  Node* receiver = NodeProperties::GetValueInput(node, 1);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  // Check if the {node} is dominated by a CheckMaps with a single map
+  // for the {receiver}, and if so use that map for the lowering below.
+  for (Node* dominator = effect;;) {
+    if (dominator->opcode() == IrOpcode::kCheckMaps &&
+        dominator->InputAt(0) == receiver) {
+      if (dominator->op()->ValueInputCount() == 2) {
+        HeapObjectMatcher m(dominator->InputAt(1));
+        if (m.HasValue()) return Handle<Map>::cast(m.Value());
+      }
+      return MaybeHandle<Map>();
+    }
+    if (dominator->op()->EffectInputCount() != 1) {
+      // Didn't find any appropriate CheckMaps node.
+      return MaybeHandle<Map>();
+    }
+    dominator = NodeProperties::GetEffectInput(dominator);
+  }
+}
+
+// TODO(turbofan): This was copied from Crankshaft, might be too restrictive.
+bool IsReadOnlyLengthDescriptor(Handle<Map> jsarray_map) {
+  DCHECK(!jsarray_map->is_dictionary_map());
+  Isolate* isolate = jsarray_map->GetIsolate();
+  Handle<Name> length_string = isolate->factory()->length_string();
+  DescriptorArray* descriptors = jsarray_map->instance_descriptors();
+  int number =
+      descriptors->SearchWithCache(isolate, *length_string, *jsarray_map);
+  DCHECK_NE(DescriptorArray::kNotFound, number);
+  return descriptors->GetDetails(number).IsReadOnly();
+}
+
+// TODO(turbofan): This was copied from Crankshaft, might be too restrictive.
+bool CanInlineArrayResizeOperation(Handle<Map> receiver_map) {
+  Isolate* const isolate = receiver_map->GetIsolate();
+  if (!receiver_map->prototype()->IsJSArray()) return false;
+  Handle<JSArray> receiver_prototype(JSArray::cast(receiver_map->prototype()),
+                                     isolate);
+  // Ensure that all prototypes of the {receiver} are stable.
+  for (PrototypeIterator it(isolate, receiver_prototype, kStartAtReceiver);
+       !it.IsAtEnd(); it.Advance()) {
+    Handle<JSReceiver> current = PrototypeIterator::GetCurrent<JSReceiver>(it);
+    if (!current->map()->is_stable()) return false;
+  }
+  return receiver_map->instance_type() == JS_ARRAY_TYPE &&
+         IsFastElementsKind(receiver_map->elements_kind()) &&
+         !receiver_map->is_dictionary_map() && receiver_map->is_extensible() &&
+         (!receiver_map->is_prototype_map() || receiver_map->is_stable()) &&
+         isolate->IsFastArrayConstructorPrototypeChainIntact() &&
+         isolate->IsAnyInitialArrayPrototype(receiver_prototype) &&
+         !IsReadOnlyLengthDescriptor(receiver_map);
+}
+
+}  // namespace
+
+// ES6 section 22.1.3.17 Array.prototype.pop ( )
+Reduction JSBuiltinReducer::ReduceArrayPop(Node* node) {
+  Handle<Map> receiver_map;
+  Node* receiver = NodeProperties::GetValueInput(node, 1);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+  // TODO(turbofan): Extend this to also handle fast (holey) double elements
+  // once we got the hole NaN mess sorted out in TurboFan/V8.
+  if (GetMapWitness(node).ToHandle(&receiver_map) &&
+      CanInlineArrayResizeOperation(receiver_map) &&
+      IsFastSmiOrObjectElementsKind(receiver_map->elements_kind())) {
+    // Install code dependencies on the {receiver} prototype maps and the
+    // global array protector cell.
+    dependencies()->AssumePropertyCell(factory()->array_protector());
+    dependencies()->AssumePrototypeMapsStable(receiver_map);
+
+    // Load the "length" property of the {receiver}.
+    Node* length = effect = graph()->NewNode(
+        simplified()->LoadField(
+            AccessBuilder::ForJSArrayLength(receiver_map->elements_kind())),
+        receiver, effect, control);
+
+    // Check if the {receiver} has any elements.
+    Node* check = graph()->NewNode(simplified()->NumberEqual(), length,
+                                   jsgraph()->ZeroConstant());
+    Node* branch =
+        graph()->NewNode(common()->Branch(BranchHint::kFalse), check, control);
+
+    Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+    Node* etrue = effect;
+    Node* vtrue = jsgraph()->UndefinedConstant();
+
+    Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
+    Node* efalse = effect;
+    Node* vfalse;
+    {
+      // Load the elements backing store from the {receiver}.
+      Node* elements = efalse = graph()->NewNode(
+          simplified()->LoadField(AccessBuilder::ForJSObjectElements()),
+          receiver, efalse, if_false);
+
+      // Ensure that we aren't popping from a copy-on-write backing store.
+      elements = efalse =
+          graph()->NewNode(simplified()->EnsureWritableFastElements(), receiver,
+                           elements, efalse, if_false);
+
+      // Compute the new {length}.
+      length = graph()->NewNode(simplified()->NumberSubtract(), length,
+                                jsgraph()->OneConstant());
+
+      // Store the new {length} to the {receiver}.
+      efalse = graph()->NewNode(
+          simplified()->StoreField(
+              AccessBuilder::ForJSArrayLength(receiver_map->elements_kind())),
+          receiver, length, efalse, if_false);
+
+      // Load the last entry from the {elements}.
+      vfalse = efalse = graph()->NewNode(
+          simplified()->LoadElement(AccessBuilder::ForFixedArrayElement(
+              receiver_map->elements_kind())),
+          elements, length, efalse, if_false);
+
+      // Store a hole to the element we just removed from the {receiver}.
+      efalse = graph()->NewNode(
+          simplified()->StoreElement(AccessBuilder::ForFixedArrayElement(
+              GetHoleyElementsKind(receiver_map->elements_kind()))),
+          elements, length, jsgraph()->TheHoleConstant(), efalse, if_false);
+    }
+
+    control = graph()->NewNode(common()->Merge(2), if_true, if_false);
+    effect = graph()->NewNode(common()->EffectPhi(2), etrue, efalse, control);
+    Node* value =
+        graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
+                         vtrue, vfalse, control);
+
+    // Convert the hole to undefined. Do this last, so that we can optimize
+    // conversion operator via some smart strength reduction in many cases.
+    if (IsFastHoleyElementsKind(receiver_map->elements_kind())) {
+      value =
+          graph()->NewNode(simplified()->ConvertTaggedHoleToUndefined(), value);
+    }
+
+    ReplaceWithValue(node, value, effect, control);
+    return Replace(value);
+  }
+  return NoChange();
+}
+
+// ES6 section 22.1.3.18 Array.prototype.push ( )
+Reduction JSBuiltinReducer::ReduceArrayPush(Node* node) {
+  Handle<Map> receiver_map;
+  // We need exactly target, receiver and value parameters.
+  if (node->op()->ValueInputCount() != 3) return NoChange();
+  Node* receiver = NodeProperties::GetValueInput(node, 1);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+  Node* value = NodeProperties::GetValueInput(node, 2);
+  if (GetMapWitness(node).ToHandle(&receiver_map) &&
+      CanInlineArrayResizeOperation(receiver_map)) {
+    // Install code dependencies on the {receiver} prototype maps and the
+    // global array protector cell.
+    dependencies()->AssumePropertyCell(factory()->array_protector());
+    dependencies()->AssumePrototypeMapsStable(receiver_map);
+
+    // TODO(turbofan): Perform type checks on the {value}. We are not guaranteed
+    // to learn from these checks in case they fail, as the witness (i.e. the
+    // map check from the LoadIC for a.push) might not be executed in baseline
+    // code (after we stored the value in the builtin and thereby changed the
+    // elements kind of a) before be decide to optimize this function again. We
+    // currently don't have a proper way to deal with this; the proper solution
+    // here is to learn on deopt, i.e. disable Array.prototype.push inlining
+    // for this function.
+    if (IsFastSmiElementsKind(receiver_map->elements_kind())) {
+      value = effect = graph()->NewNode(simplified()->CheckTaggedSigned(),
+                                        value, effect, control);
+    } else if (IsFastDoubleElementsKind(receiver_map->elements_kind())) {
+      value = effect =
+          graph()->NewNode(simplified()->CheckNumber(), value, effect, control);
+      // Make sure we do not store signaling NaNs into double arrays.
+      value = graph()->NewNode(simplified()->NumberSilenceNaN(), value);
+    }
+
+    // Load the "length" property of the {receiver}.
+    Node* length = effect = graph()->NewNode(
+        simplified()->LoadField(
+            AccessBuilder::ForJSArrayLength(receiver_map->elements_kind())),
+        receiver, effect, control);
+
+    // Load the elements backing store of the {receiver}.
+    Node* elements = effect = graph()->NewNode(
+        simplified()->LoadField(AccessBuilder::ForJSObjectElements()), receiver,
+        effect, control);
+
+    // TODO(turbofan): Check if we need to grow the {elements} backing store.
+    // This will deopt if we cannot grow the array further, and we currently
+    // don't necessarily learn from it. See the comment on the value type check
+    // above.
+    GrowFastElementsFlags flags = GrowFastElementsFlag::kArrayObject;
+    if (IsFastDoubleElementsKind(receiver_map->elements_kind())) {
+      flags |= GrowFastElementsFlag::kDoubleElements;
+    }
+    elements = effect =
+        graph()->NewNode(simplified()->MaybeGrowFastElements(flags), receiver,
+                         elements, length, length, effect, control);
+
+    // Append the value to the {elements}.
+    effect = graph()->NewNode(
+        simplified()->StoreElement(
+            AccessBuilder::ForFixedArrayElement(receiver_map->elements_kind())),
+        elements, length, value, effect, control);
+
+    ReplaceWithValue(node, value, effect, control);
+    return Replace(value);
+  }
+  return NoChange();
+}
+
+namespace {
+
+bool HasInstanceTypeWitness(Node* receiver, Node* effect,
+                            InstanceType instance_type) {
+  for (Node* dominator = effect;;) {
+    if (dominator->opcode() == IrOpcode::kCheckMaps &&
+        dominator->InputAt(0) == receiver) {
+      // Check if all maps have the given {instance_type}.
+      for (int i = 1; i < dominator->op()->ValueInputCount(); ++i) {
+        Node* const map = NodeProperties::GetValueInput(dominator, i);
+        Type* const map_type = NodeProperties::GetType(map);
+        if (!map_type->IsConstant()) return false;
+        Handle<Map> const map_value =
+            Handle<Map>::cast(map_type->AsConstant()->Value());
+        if (map_value->instance_type() != instance_type) return false;
+      }
+      return true;
+    }
+    switch (dominator->opcode()) {
+      case IrOpcode::kStoreField: {
+        FieldAccess const& access = FieldAccessOf(dominator->op());
+        if (access.base_is_tagged == kTaggedBase &&
+            access.offset == HeapObject::kMapOffset) {
+          return false;
+        }
+        break;
+      }
+      case IrOpcode::kStoreElement:
+      case IrOpcode::kStoreTypedElement:
+        break;
+      default: {
+        DCHECK_EQ(1, dominator->op()->EffectOutputCount());
+        if (dominator->op()->EffectInputCount() != 1 ||
+            !dominator->op()->HasProperty(Operator::kNoWrite)) {
+          // Didn't find any appropriate CheckMaps node.
+          return false;
+        }
+        break;
+      }
+    }
+    dominator = NodeProperties::GetEffectInput(dominator);
+  }
+}
+
+}  // namespace
+
+// ES6 section 20.3.4.10 Date.prototype.getTime ( )
+Reduction JSBuiltinReducer::ReduceDateGetTime(Node* node) {
+  Node* receiver = NodeProperties::GetValueInput(node, 1);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+  if (HasInstanceTypeWitness(receiver, effect, JS_DATE_TYPE)) {
+    Node* value = effect = graph()->NewNode(
+        simplified()->LoadField(AccessBuilder::ForJSDateValue()), receiver,
+        effect, control);
+    ReplaceWithValue(node, value, effect, control);
+    return Replace(value);
+  }
+  return NoChange();
+}
+
+// ES6 section 18.2.2 isFinite ( number )
+Reduction JSBuiltinReducer::ReduceGlobalIsFinite(Node* node) {
+  JSCallReduction r(node);
+  if (r.InputsMatchOne(Type::PlainPrimitive())) {
+    // isFinite(a:plain-primitive) -> NumberEqual(a', a')
+    // where a' = NumberSubtract(ToNumber(a), ToNumber(a))
+    Node* input = ToNumber(r.GetJSCallInput(0));
+    Node* diff = graph()->NewNode(simplified()->NumberSubtract(), input, input);
+    Node* value = graph()->NewNode(simplified()->NumberEqual(), diff, diff);
+    return Replace(value);
+  }
+  return NoChange();
+}
+
+// ES6 section 18.2.3 isNaN ( number )
+Reduction JSBuiltinReducer::ReduceGlobalIsNaN(Node* node) {
+  JSCallReduction r(node);
+  if (r.InputsMatchOne(Type::PlainPrimitive())) {
+    // isNaN(a:plain-primitive) -> BooleanNot(NumberEqual(a', a'))
+    // where a' = ToNumber(a)
+    Node* input = ToNumber(r.GetJSCallInput(0));
+    Node* check = graph()->NewNode(simplified()->NumberEqual(), input, input);
+    Node* value = graph()->NewNode(simplified()->BooleanNot(), check);
+    return Replace(value);
+  }
+  return NoChange();
+}
 
 // ES6 section 20.2.2.1 Math.abs ( x )
 Reduction JSBuiltinReducer::ReduceMathAbs(Node* node) {
@@ -512,6 +822,60 @@ Reduction JSBuiltinReducer::ReduceMathTrunc(Node* node) {
   return NoChange();
 }
 
+// ES6 section 20.1.2.2 Number.isFinite ( number )
+Reduction JSBuiltinReducer::ReduceNumberIsFinite(Node* node) {
+  JSCallReduction r(node);
+  if (r.InputsMatchOne(Type::Number())) {
+    // Number.isFinite(a:number) -> NumberEqual(a', a')
+    // where a' = NumberSubtract(a, a)
+    Node* input = r.GetJSCallInput(0);
+    Node* diff = graph()->NewNode(simplified()->NumberSubtract(), input, input);
+    Node* value = graph()->NewNode(simplified()->NumberEqual(), diff, diff);
+    return Replace(value);
+  }
+  return NoChange();
+}
+
+// ES6 section 20.1.2.3 Number.isInteger ( number )
+Reduction JSBuiltinReducer::ReduceNumberIsInteger(Node* node) {
+  JSCallReduction r(node);
+  if (r.InputsMatchOne(Type::Number())) {
+    // Number.isInteger(x:number) -> NumberEqual(NumberSubtract(x, x'), #0)
+    // where x' = NumberTrunc(x)
+    Node* input = r.GetJSCallInput(0);
+    Node* trunc = graph()->NewNode(simplified()->NumberTrunc(), input);
+    Node* diff = graph()->NewNode(simplified()->NumberSubtract(), input, trunc);
+    Node* value = graph()->NewNode(simplified()->NumberEqual(), diff,
+                                   jsgraph()->ZeroConstant());
+    return Replace(value);
+  }
+  return NoChange();
+}
+
+// ES6 section 20.1.2.4 Number.isNaN ( number )
+Reduction JSBuiltinReducer::ReduceNumberIsNaN(Node* node) {
+  JSCallReduction r(node);
+  if (r.InputsMatchOne(Type::Number())) {
+    // Number.isNaN(a:number) -> BooleanNot(NumberEqual(a, a))
+    Node* input = r.GetJSCallInput(0);
+    Node* check = graph()->NewNode(simplified()->NumberEqual(), input, input);
+    Node* value = graph()->NewNode(simplified()->BooleanNot(), check);
+    return Replace(value);
+  }
+  return NoChange();
+}
+
+// ES6 section 20.1.2.5 Number.isSafeInteger ( number )
+Reduction JSBuiltinReducer::ReduceNumberIsSafeInteger(Node* node) {
+  JSCallReduction r(node);
+  if (r.InputsMatchOne(type_cache_.kSafeInteger)) {
+    // Number.isInteger(x:safe-integer) -> #true
+    Node* value = jsgraph()->TrueConstant();
+    return Replace(value);
+  }
+  return NoChange();
+}
+
 // ES6 section 20.1.2.13 Number.parseInt ( string, radix )
 Reduction JSBuiltinReducer::ReduceNumberParseInt(Node* node) {
   JSCallReduction r(node);
@@ -543,7 +907,7 @@ Reduction JSBuiltinReducer::ReduceStringFromCharCode(Node* node) {
 
 namespace {
 
-Node* GetStringReceiver(Node* node) {
+Node* GetStringWitness(Node* node) {
   Node* receiver = NodeProperties::GetValueInput(node, 1);
   Type* receiver_type = NodeProperties::GetType(receiver);
   Node* effect = NodeProperties::GetEffectInput(node);
@@ -576,7 +940,7 @@ Reduction JSBuiltinReducer::ReduceStringCharAt(Node* node) {
     Node* control = NodeProperties::GetControlInput(node);
 
     if (index_type->Is(Type::Unsigned32())) {
-      if (Node* receiver = GetStringReceiver(node)) {
+      if (Node* receiver = GetStringWitness(node)) {
         // Determine the {receiver} length.
         Node* receiver_length = effect = graph()->NewNode(
             simplified()->LoadField(AccessBuilder::ForStringLength()), receiver,
@@ -627,7 +991,7 @@ Reduction JSBuiltinReducer::ReduceStringCharCodeAt(Node* node) {
     Node* control = NodeProperties::GetControlInput(node);
 
     if (index_type->Is(Type::Unsigned32())) {
-      if (Node* receiver = GetStringReceiver(node)) {
+      if (Node* receiver = GetStringWitness(node)) {
         // Determine the {receiver} length.
         Node* receiver_length = effect = graph()->NewNode(
             simplified()->LoadField(AccessBuilder::ForStringLength()), receiver,
@@ -662,6 +1026,35 @@ Reduction JSBuiltinReducer::ReduceStringCharCodeAt(Node* node) {
   return NoChange();
 }
 
+Reduction JSBuiltinReducer::ReduceArrayBufferViewAccessor(
+    Node* node, InstanceType instance_type, FieldAccess const& access) {
+  Node* receiver = NodeProperties::GetValueInput(node, 1);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+  if (HasInstanceTypeWitness(receiver, effect, instance_type)) {
+    // Load the {receiver}s field.
+    Node* receiver_value = effect = graph()->NewNode(
+        simplified()->LoadField(access), receiver, effect, control);
+
+    // Check if the {receiver}s buffer was neutered.
+    Node* receiver_buffer = effect = graph()->NewNode(
+        simplified()->LoadField(AccessBuilder::ForJSArrayBufferViewBuffer()),
+        receiver, effect, control);
+    Node* check = effect =
+        graph()->NewNode(simplified()->ArrayBufferWasNeutered(),
+                         receiver_buffer, effect, control);
+
+    // Default to zero if the {receiver}s buffer was neutered.
+    Node* value = graph()->NewNode(
+        common()->Select(MachineRepresentation::kTagged, BranchHint::kFalse),
+        check, jsgraph()->ZeroConstant(), receiver_value);
+
+    ReplaceWithValue(node, value, effect, control);
+    return Replace(value);
+  }
+  return NoChange();
+}
+
 Reduction JSBuiltinReducer::Reduce(Node* node) {
   Reduction reduction = NoChange();
   JSCallReduction r(node);
@@ -669,6 +1062,18 @@ Reduction JSBuiltinReducer::Reduce(Node* node) {
   // Dispatch according to the BuiltinFunctionId if present.
   if (!r.HasBuiltinFunctionId()) return NoChange();
   switch (r.GetBuiltinFunctionId()) {
+    case kArrayPop:
+      return ReduceArrayPop(node);
+    case kArrayPush:
+      return ReduceArrayPush(node);
+    case kDateGetTime:
+      return ReduceDateGetTime(node);
+    case kGlobalIsFinite:
+      reduction = ReduceGlobalIsFinite(node);
+      break;
+    case kGlobalIsNaN:
+      reduction = ReduceGlobalIsNaN(node);
+      break;
     case kMathAbs:
       reduction = ReduceMathAbs(node);
       break;
@@ -768,6 +1173,18 @@ Reduction JSBuiltinReducer::Reduce(Node* node) {
     case kMathTrunc:
       reduction = ReduceMathTrunc(node);
       break;
+    case kNumberIsFinite:
+      reduction = ReduceNumberIsFinite(node);
+      break;
+    case kNumberIsInteger:
+      reduction = ReduceNumberIsInteger(node);
+      break;
+    case kNumberIsNaN:
+      reduction = ReduceNumberIsNaN(node);
+      break;
+    case kNumberIsSafeInteger:
+      reduction = ReduceNumberIsSafeInteger(node);
+      break;
     case kNumberParseInt:
       reduction = ReduceNumberParseInt(node);
       break;
@@ -778,6 +1195,25 @@ Reduction JSBuiltinReducer::Reduce(Node* node) {
       return ReduceStringCharAt(node);
     case kStringCharCodeAt:
       return ReduceStringCharCodeAt(node);
+    case kDataViewByteLength:
+      return ReduceArrayBufferViewAccessor(
+          node, JS_DATA_VIEW_TYPE,
+          AccessBuilder::ForJSArrayBufferViewByteLength());
+    case kDataViewByteOffset:
+      return ReduceArrayBufferViewAccessor(
+          node, JS_DATA_VIEW_TYPE,
+          AccessBuilder::ForJSArrayBufferViewByteOffset());
+    case kTypedArrayByteLength:
+      return ReduceArrayBufferViewAccessor(
+          node, JS_TYPED_ARRAY_TYPE,
+          AccessBuilder::ForJSArrayBufferViewByteLength());
+    case kTypedArrayByteOffset:
+      return ReduceArrayBufferViewAccessor(
+          node, JS_TYPED_ARRAY_TYPE,
+          AccessBuilder::ForJSArrayBufferViewByteOffset());
+    case kTypedArrayLength:
+      return ReduceArrayBufferViewAccessor(
+          node, JS_TYPED_ARRAY_TYPE, AccessBuilder::ForJSTypedArrayLength());
     default:
       break;
   }
@@ -804,6 +1240,7 @@ Node* JSBuiltinReducer::ToUint32(Node* input) {
 
 Graph* JSBuiltinReducer::graph() const { return jsgraph()->graph(); }
 
+Factory* JSBuiltinReducer::factory() const { return isolate()->factory(); }
 
 Isolate* JSBuiltinReducer::isolate() const { return jsgraph()->isolate(); }
 

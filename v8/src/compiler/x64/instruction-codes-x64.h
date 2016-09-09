@@ -78,7 +78,9 @@ namespace compiler {
   V(SSEFloat64Neg)                 \
   V(SSEFloat64Sqrt)                \
   V(SSEFloat64Round)               \
+  V(SSEFloat32Max)                 \
   V(SSEFloat64Max)                 \
+  V(SSEFloat32Min)                 \
   V(SSEFloat64Min)                 \
   V(SSEFloat64ToFloat32)           \
   V(SSEFloat64ToInt32)             \
@@ -117,9 +119,13 @@ namespace compiler {
   V(AVXFloat32Neg)                 \
   V(X64Movsxbl)                    \
   V(X64Movzxbl)                    \
+  V(X64Movsxbq)                    \
+  V(X64Movzxbq)                    \
   V(X64Movb)                       \
   V(X64Movsxwl)                    \
   V(X64Movzxwl)                    \
+  V(X64Movsxwq)                    \
+  V(X64Movzxwq)                    \
   V(X64Movw)                       \
   V(X64Movl)                       \
   V(X64Movsxlq)                    \
@@ -139,7 +145,9 @@ namespace compiler {
   V(X64StackCheck)                 \
   V(X64Xchgb)                      \
   V(X64Xchgw)                      \
-  V(X64Xchgl)
+  V(X64Xchgl)                      \
+  V(X64Int32x4Create)              \
+  V(X64Int32x4ExtractLane)
 
 // Addressing modes represent the "shape" of inputs to an instruction.
 // Many instructions support multiple addressing modes. Addressing modes

@@ -282,8 +282,34 @@ extern TRACE_EVENT_API_ATOMIC_WORD g_trace_state[3];
   INTERNAL_TRACE_EVENT_UID(ScopedContext)                                  \
   INTERNAL_TRACE_EVENT_UID(scoped_context)(context.raw_id());
 
+#define TRACE_EVENT_RUNTIME_CALL_STATS_TRACING_ENABLED() \
+  base::NoBarrier_Load(&v8::internal::tracing::kRuntimeCallStatsTracingEnabled)
+
+#define TRACE_EVENT_CALL_STATS_SCOPED(isolate, category_group, name) \
+  INTERNAL_TRACE_EVENT_CALL_STATS_SCOPED(isolate, category_group, name)
+
+#define INTERNAL_TRACE_EVENT_CALL_STATS_SCOPED(isolate, category_group, name)  \
+  {                                                                            \
+    INTERNAL_TRACE_EVENT_GET_CATEGORY_INFO(                                    \
+        TRACE_DISABLED_BY_DEFAULT("v8.runtime_stats"));                        \
+    base::NoBarrier_Store(                                                     \
+        &v8::internal::tracing::kRuntimeCallStatsTracingEnabled,               \
+        INTERNAL_TRACE_EVENT_CATEGORY_GROUP_ENABLED_FOR_RECORDING_MODE());     \
+  }                                                                            \
+  INTERNAL_TRACE_EVENT_GET_CATEGORY_INFO(category_group);                      \
+  v8::internal::tracing::CallStatsScopedTracer INTERNAL_TRACE_EVENT_UID(       \
+      tracer);                                                                 \
+  if (INTERNAL_TRACE_EVENT_CATEGORY_GROUP_ENABLED_FOR_RECORDING_MODE()) {      \
+    INTERNAL_TRACE_EVENT_UID(tracer)                                           \
+        .Initialize(isolate, INTERNAL_TRACE_EVENT_UID(category_group_enabled), \
+                    name);                                                     \
+  }
+
 namespace v8 {
 namespace internal {
+
+class Isolate;
+
 namespace tracing {
 
 // Specify these values when the corresponding argument of AddTraceEvent is not
@@ -291,6 +317,8 @@ namespace tracing {
 const int kZeroNumArgs = 0;
 const decltype(nullptr) kGlobalScope = nullptr;
 const uint64_t kNoId = 0;
+
+extern base::Atomic32 kRuntimeCallStatsTracingEnabled;
 
 class TraceEventHelper {
  public:
@@ -588,6 +616,31 @@ class TraceEventSamplingStateScope {
 
  private:
   const char* previous_state_;
+};
+
+// Do not use directly.
+class CallStatsScopedTracer {
+ public:
+  CallStatsScopedTracer() : p_data_(nullptr) {}
+  ~CallStatsScopedTracer() {
+    if (V8_UNLIKELY(p_data_ && *data_.category_group_enabled)) {
+      AddEndTraceEvent();
+    }
+  }
+
+  void Initialize(v8::internal::Isolate* isolate,
+                  const uint8_t* category_group_enabled, const char* name);
+
+ private:
+  void AddEndTraceEvent();
+  struct Data {
+    const uint8_t* category_group_enabled;
+    const char* name;
+    v8::internal::Isolate* isolate;
+  };
+  bool has_parent_scope_;
+  Data* p_data_;
+  Data data_;
 };
 
 }  // namespace tracing

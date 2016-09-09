@@ -10,7 +10,7 @@
 
 #include "src/arm64/frames-arm64.h"
 #include "src/arm64/macro-assembler-arm64.h"
-#include "src/ast/scopes.h"
+#include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
@@ -770,9 +770,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArchDebugBreak:
       __ Debug("kArchDebugBreak", 0, BREAK);
       break;
-    case kArchImpossible:
-      __ Abort(kConversionFromImpossibleValue);
-      break;
     case kArchComment: {
       Address comment_string = i.InputExternalReference(0).address();
       __ RecordComment(reinterpret_cast<const char*>(comment_string));
@@ -1367,9 +1364,19 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                        0, 2);
       break;
     }
+    case kArm64Float32Max: {
+      __ Fmax(i.OutputFloat32Register(), i.InputFloat32Register(0),
+              i.InputFloat32Register(1));
+      break;
+    }
     case kArm64Float64Max: {
       __ Fmax(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
               i.InputDoubleRegister(1));
+      break;
+    }
+    case kArm64Float32Min: {
+      __ Fmin(i.OutputFloat32Register(), i.InputFloat32Register(0),
+              i.InputFloat32Register(1));
       break;
     }
     case kArm64Float64Min: {
@@ -1534,6 +1541,9 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kArm64Strh:
       __ Strh(i.InputOrZeroRegister64(0), i.MemoryOperand(1));
+      break;
+    case kArm64Ldrsw:
+      __ Ldrsw(i.OutputRegister(), i.MemoryOperand());
       break;
     case kArm64LdrW:
       __ Ldr(i.OutputRegister32(), i.MemoryOperand());

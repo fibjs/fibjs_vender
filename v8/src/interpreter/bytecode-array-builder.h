@@ -34,7 +34,7 @@ class BytecodeArrayBuilder final : public ZoneObject {
       SourcePositionTableBuilder::RecordingMode source_position_mode =
           SourcePositionTableBuilder::RECORD_SOURCE_POSITIONS);
 
-  Handle<BytecodeArray> ToBytecodeArray();
+  Handle<BytecodeArray> ToBytecodeArray(Isolate* isolate);
 
   // Get the number of parameters expected by function.
   int parameter_count() const {
@@ -131,9 +131,27 @@ class BytecodeArrayBuilder final : public ZoneObject {
   BytecodeArrayBuilder& StoreLookupSlot(const Handle<String> name,
                                         LanguageMode language_mode);
 
-  // Create a new closure for the SharedFunctionInfo.
-  BytecodeArrayBuilder& CreateClosure(Handle<SharedFunctionInfo> shared_info,
-                                      int flags);
+  // Create a new closure for a SharedFunctionInfo which will be inserted at
+  // constant pool index |entry|.
+  BytecodeArrayBuilder& CreateClosure(size_t entry, int flags);
+
+  // Create a new local context for a |scope_info| and a closure which should be
+  // in the accumulator.
+  BytecodeArrayBuilder& CreateBlockContext(Handle<ScopeInfo> scope_info);
+
+  // Create a new context for a catch block with |exception|, |name|,
+  // |scope_info|, and the closure in the accumulator.
+  BytecodeArrayBuilder& CreateCatchContext(Register exception,
+                                           Handle<String> name,
+                                           Handle<ScopeInfo> scope_info);
+
+  // Create a new context with size |slots|.
+  BytecodeArrayBuilder& CreateFunctionContext(int slots);
+
+  // Creates a new context with the given |scope_info| for a with-statement
+  // with the |object| in a register and the closure in the accumulator.
+  BytecodeArrayBuilder& CreateWithContext(Register object,
+                                          Handle<ScopeInfo> scope_info);
 
   // Create a new arguments object in the accumulator.
   BytecodeArrayBuilder& CreateArguments(CreateArgumentsType type);
@@ -144,7 +162,8 @@ class BytecodeArrayBuilder final : public ZoneObject {
   BytecodeArrayBuilder& CreateArrayLiteral(Handle<FixedArray> constant_elements,
                                            int literal_index, int flags);
   BytecodeArrayBuilder& CreateObjectLiteral(
-      Handle<FixedArray> constant_properties, int literal_index, int flags);
+      Handle<FixedArray> constant_properties, int literal_index, int flags,
+      Register output);
 
   // Push the context in accumulator as the new context, and store in register
   // |context|.
@@ -173,7 +192,7 @@ class BytecodeArrayBuilder final : public ZoneObject {
   // consecutive arguments starting at |first_arg| for the constuctor
   // invocation.
   BytecodeArrayBuilder& New(Register constructor, Register first_arg,
-                            size_t arg_count);
+                            size_t arg_count, int feedback_slot);
 
   // Call the runtime function with |function_id|. The first argument should be
   // in |first_arg| and all subsequent arguments should be in registers
@@ -196,10 +215,13 @@ class BytecodeArrayBuilder final : public ZoneObject {
                                       size_t receiver_args_count);
 
   // Operators (register holds the lhs value, accumulator holds the rhs value).
-  BytecodeArrayBuilder& BinaryOperation(Token::Value binop, Register reg);
+  // Type feedback will be recorded in the |feedback_slot|
+  BytecodeArrayBuilder& BinaryOperation(Token::Value binop, Register reg,
+                                        int feedback_slot);
 
   // Count Operators (value stored in accumulator).
-  BytecodeArrayBuilder& CountOperation(Token::Value op);
+  // Type feedback will be recorded in the |feedback_slot|
+  BytecodeArrayBuilder& CountOperation(Token::Value op, int feedback_slot);
 
   // Unary Operators.
   BytecodeArrayBuilder& LogicalNot();
@@ -210,15 +232,13 @@ class BytecodeArrayBuilder final : public ZoneObject {
   BytecodeArrayBuilder& Delete(Register object, LanguageMode language_mode);
 
   // Tests.
-  BytecodeArrayBuilder& CompareOperation(Token::Value op, Register reg);
+  BytecodeArrayBuilder& CompareOperation(Token::Value op, Register reg,
+                                         int feedback_slot = kNoFeedbackSlot);
 
-  // Casts accumulator and stores result in accumulator.
-  BytecodeArrayBuilder& CastAccumulatorToBoolean();
-
-  // Casts accumulator and stores result in register |out|.
-  BytecodeArrayBuilder& CastAccumulatorToJSObject(Register out);
-  BytecodeArrayBuilder& CastAccumulatorToName(Register out);
-  BytecodeArrayBuilder& CastAccumulatorToNumber(Register out);
+  // Converts accumulator and stores result in register |out|.
+  BytecodeArrayBuilder& ConvertAccumulatorToObject(Register out);
+  BytecodeArrayBuilder& ConvertAccumulatorToName(Register out);
+  BytecodeArrayBuilder& ConvertAccumulatorToNumber(Register out);
 
   // Flow Control.
   BytecodeArrayBuilder& Bind(BytecodeLabel* label);
@@ -245,7 +265,7 @@ class BytecodeArrayBuilder final : public ZoneObject {
   // Complex flow control.
   BytecodeArrayBuilder& ForInPrepare(Register receiver,
                                      Register cache_info_triple);
-  BytecodeArrayBuilder& ForInDone(Register index, Register cache_length);
+  BytecodeArrayBuilder& ForInContinue(Register index, Register cache_length);
   BytecodeArrayBuilder& ForInNext(Register receiver, Register index,
                                   Register cache_type_array_pair,
                                   int feedback_slot);
@@ -352,7 +372,6 @@ class BytecodeArrayBuilder final : public ZoneObject {
 
   void LeaveBasicBlock() { return_seen_in_block_ = false; }
 
-  Isolate* isolate() const { return isolate_; }
   BytecodeArrayWriter* bytecode_array_writer() {
     return &bytecode_array_writer_;
   }
@@ -367,7 +386,6 @@ class BytecodeArrayBuilder final : public ZoneObject {
     return &handler_table_builder_;
   }
 
-  Isolate* isolate_;
   Zone* zone_;
   bool bytecode_generated_;
   ConstantArrayBuilder constant_array_builder_;
@@ -381,6 +399,8 @@ class BytecodeArrayBuilder final : public ZoneObject {
   BytecodeArrayWriter bytecode_array_writer_;
   BytecodePipelineStage* pipeline_;
   BytecodeSourceInfo latest_source_info_;
+
+  static int const kNoFeedbackSlot = 0;
 
   DISALLOW_COPY_AND_ASSIGN(BytecodeArrayBuilder);
 };

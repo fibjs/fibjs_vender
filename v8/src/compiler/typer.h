@@ -7,18 +7,13 @@
 
 #include "src/compiler/graph.h"
 #include "src/compiler/operation-typer.h"
-#include "src/types.h"
 
 namespace v8 {
 namespace internal {
-
-// Forward declarations.
-class TypeCache;
-
 namespace compiler {
 
+// Forward declarations.
 class LoopVariableOptimizer;
-class OperationTyper;
 
 class Typer {
  public:
@@ -48,8 +43,6 @@ class Typer {
   Type* singleton_false_;
   Type* singleton_true_;
   Type* singleton_the_hole_;
-  Type* signed32ish_;
-  Type* unsigned32ish_;
   Type* falsish_;
   Type* truish_;
 

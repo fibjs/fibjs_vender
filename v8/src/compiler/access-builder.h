@@ -6,6 +6,7 @@
 #define V8_COMPILER_ACCESS_BUILDER_H_
 
 #include "src/compiler/simplified-operator.h"
+#include "src/elements-kind.h"
 
 namespace v8 {
 namespace internal {
@@ -16,6 +17,12 @@ namespace compiler {
 // parameters to simplified load/store operators.
 class AccessBuilder final : public AllStatic {
  public:
+  // ===========================================================================
+  // Access to external values (based on external references).
+
+  // Provides access to a double field identified by an external reference.
+  static FieldAccess ForExternalDoubleValue();
+
   // ===========================================================================
   // Access to heap object fields and elements (based on tagged pointer).
 
@@ -79,6 +86,18 @@ class AccessBuilder final : public AllStatic {
   // Provides access to JSArrayBufferView::buffer() field.
   static FieldAccess ForJSArrayBufferViewBuffer();
 
+  // Provides access to JSArrayBufferView::byteLength() field.
+  static FieldAccess ForJSArrayBufferViewByteLength();
+
+  // Provides access to JSArrayBufferView::byteOffset() field.
+  static FieldAccess ForJSArrayBufferViewByteOffset();
+
+  // Provides access to JSTypedArray::length() field.
+  static FieldAccess ForJSTypedArrayLength();
+
+  // Provides access to JSDate::value() field.
+  static FieldAccess ForJSDateValue();
+
   // Provides access to JSDate fields.
   static FieldAccess ForJSDateField(JSDate::FieldIndex index);
 
@@ -96,6 +115,12 @@ class AccessBuilder final : public AllStatic {
 
   // Provides access to FixedArray::length() field.
   static FieldAccess ForFixedArrayLength();
+
+  // Provides access to FixedTypedArrayBase::base_pointer() field.
+  static FieldAccess ForFixedTypedArrayBaseBasePointer();
+
+  // Provides access to FixedTypedArrayBase::external_pointer() field.
+  static FieldAccess ForFixedTypedArrayBaseExternalPointer();
 
   // Provides access to DescriptorArray::enum_cache() field.
   static FieldAccess ForDescriptorArrayEnumCache();
@@ -170,12 +195,13 @@ class AccessBuilder final : public AllStatic {
   // Provides access to Context slots.
   static FieldAccess ForContextSlot(size_t index);
 
-  // Provides access to PropertyCell::value() field.
-  static FieldAccess ForPropertyCellValue();
-  static FieldAccess ForPropertyCellValue(Type* type);
+  // Provides access to ContextExtension fields.
+  static FieldAccess ForContextExtensionScopeInfo();
+  static FieldAccess ForContextExtensionExtension();
 
   // Provides access to FixedArray elements.
   static ElementAccess ForFixedArrayElement();
+  static ElementAccess ForFixedArrayElement(ElementsKind kind);
 
   // Provides access to FixedDoubleArray elements.
   static ElementAccess ForFixedDoubleArrayElement();

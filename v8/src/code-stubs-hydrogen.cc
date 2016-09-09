@@ -59,7 +59,8 @@ class CodeStubGraphBuilderBase : public HGraphBuilder {
     return parameters_[parameter];
   }
   Representation GetParameterRepresentation(int parameter) {
-    return RepresentationFromType(descriptor_.GetParameterType(parameter));
+    return RepresentationFromMachineType(
+        descriptor_.GetParameterType(parameter));
   }
   bool IsParameterCountRegister(int index) const {
     return descriptor_.GetRegisterParameter(index)
@@ -334,176 +335,11 @@ template <>
 HValue* CodeStubGraphBuilder<NumberToStringStub>::BuildCodeStub() {
   info()->MarkAsSavesCallerDoubles();
   HValue* number = GetParameter(Descriptor::kArgument);
-  return BuildNumberToString(number, Type::Number());
+  return BuildNumberToString(number, AstType::Number());
 }
 
 
 Handle<Code> NumberToStringStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-// Returns the type string of a value; see ECMA-262, 11.4.3 (p 47).
-template <>
-HValue* CodeStubGraphBuilder<TypeofStub>::BuildCodeStub() {
-  Factory* factory = isolate()->factory();
-  HConstant* number_string = Add<HConstant>(factory->number_string());
-  HValue* object = GetParameter(Descriptor::kObject);
-
-  IfBuilder is_smi(this);
-  HValue* smi_check = is_smi.If<HIsSmiAndBranch>(object);
-  is_smi.Then();
-  { Push(number_string); }
-  is_smi.Else();
-  {
-    IfBuilder is_number(this);
-    is_number.If<HCompareMap>(object, isolate()->factory()->heap_number_map());
-    is_number.Then();
-    { Push(number_string); }
-    is_number.Else();
-    {
-      HValue* map = AddLoadMap(object, smi_check);
-      HValue* instance_type = Add<HLoadNamedField>(
-          map, nullptr, HObjectAccess::ForMapInstanceType());
-      IfBuilder is_string(this);
-      is_string.If<HCompareNumericAndBranch>(
-          instance_type, Add<HConstant>(FIRST_NONSTRING_TYPE), Token::LT);
-      is_string.Then();
-      { Push(Add<HConstant>(factory->string_string())); }
-      is_string.Else();
-      {
-        HConstant* object_string = Add<HConstant>(factory->object_string());
-        IfBuilder is_oddball(this);
-        is_oddball.If<HCompareNumericAndBranch>(
-            instance_type, Add<HConstant>(ODDBALL_TYPE), Token::EQ);
-        is_oddball.Then();
-        {
-          Push(Add<HLoadNamedField>(object, nullptr,
-                                    HObjectAccess::ForOddballTypeOf()));
-        }
-        is_oddball.Else();
-        {
-          IfBuilder is_symbol(this);
-          is_symbol.If<HCompareNumericAndBranch>(
-              instance_type, Add<HConstant>(SYMBOL_TYPE), Token::EQ);
-          is_symbol.Then();
-          { Push(Add<HConstant>(factory->symbol_string())); }
-          is_symbol.Else();
-          {
-            HValue* bit_field = Add<HLoadNamedField>(
-                map, nullptr, HObjectAccess::ForMapBitField());
-            HValue* bit_field_masked = AddUncasted<HBitwise>(
-                Token::BIT_AND, bit_field,
-                Add<HConstant>((1 << Map::kIsCallable) |
-                               (1 << Map::kIsUndetectable)));
-            IfBuilder is_function(this);
-            is_function.If<HCompareNumericAndBranch>(
-                bit_field_masked, Add<HConstant>(1 << Map::kIsCallable),
-                Token::EQ);
-            is_function.Then();
-            { Push(Add<HConstant>(factory->function_string())); }
-            is_function.Else();
-            {
-#define SIMD128_BUILDER_OPEN(TYPE, Type, type, lane_count, lane_type) \
-  IfBuilder is_##type(this);                                          \
-  is_##type.If<HCompareObjectEqAndBranch>(                            \
-      map, Add<HConstant>(factory->type##_map()));                    \
-  is_##type.Then();                                                   \
-  { Push(Add<HConstant>(factory->type##_string())); }                 \
-  is_##type.Else(); {
-              SIMD128_TYPES(SIMD128_BUILDER_OPEN)
-#undef SIMD128_BUILDER_OPEN
-              // Is it an undetectable object?
-              IfBuilder is_undetectable(this);
-              is_undetectable.If<HCompareNumericAndBranch>(
-                  bit_field_masked, graph()->GetConstant0(), Token::NE);
-              is_undetectable.Then();
-              {
-                // typeof an undetectable object is 'undefined'.
-                Push(Add<HConstant>(factory->undefined_string()));
-              }
-              is_undetectable.Else();
-              {
-                // For any kind of object not handled above, the spec rule for
-                // host objects gives that it is okay to return "object".
-                Push(object_string);
-              }
-#define SIMD128_BUILDER_CLOSE(TYPE, Type, type, lane_count, lane_type) }
-              SIMD128_TYPES(SIMD128_BUILDER_CLOSE)
-#undef SIMD128_BUILDER_CLOSE
-            }
-            is_function.End();
-          }
-          is_symbol.End();
-        }
-        is_oddball.End();
-      }
-      is_string.End();
-    }
-    is_number.End();
-  }
-  is_smi.End();
-
-  return environment()->Pop();
-}
-
-
-Handle<Code> TypeofStub::GenerateCode() { return DoGenerateCode(this); }
-
-
-template <>
-HValue* CodeStubGraphBuilder<FastCloneRegExpStub>::BuildCodeStub() {
-  HValue* closure = GetParameter(Descriptor::kClosure);
-  HValue* literal_index = GetParameter(Descriptor::kLiteralIndex);
-
-  // This stub is very performance sensitive, the generated code must be tuned
-  // so that it doesn't build and eager frame.
-  info()->MarkMustNotHaveEagerFrame();
-
-  HValue* literals_array = Add<HLoadNamedField>(
-      closure, nullptr, HObjectAccess::ForLiteralsPointer());
-  HInstruction* boilerplate = Add<HLoadKeyed>(
-      literals_array, literal_index, nullptr, nullptr, FAST_ELEMENTS,
-      NEVER_RETURN_HOLE, LiteralsArray::kOffsetToFirstLiteral - kHeapObjectTag);
-
-  IfBuilder if_notundefined(this);
-  if_notundefined.IfNot<HCompareObjectEqAndBranch>(
-      boilerplate, graph()->GetConstantUndefined());
-  if_notundefined.Then();
-  {
-    int result_size =
-        JSRegExp::kSize + JSRegExp::kInObjectFieldCount * kPointerSize;
-    HValue* result =
-        Add<HAllocate>(Add<HConstant>(result_size), HType::JSObject(),
-                       NOT_TENURED, JS_REGEXP_TYPE, graph()->GetConstant0());
-    Add<HStoreNamedField>(
-        result, HObjectAccess::ForMap(),
-        Add<HLoadNamedField>(boilerplate, nullptr, HObjectAccess::ForMap()));
-    Add<HStoreNamedField>(
-        result, HObjectAccess::ForPropertiesPointer(),
-        Add<HLoadNamedField>(boilerplate, nullptr,
-                             HObjectAccess::ForPropertiesPointer()));
-    Add<HStoreNamedField>(
-        result, HObjectAccess::ForElementsPointer(),
-        Add<HLoadNamedField>(boilerplate, nullptr,
-                             HObjectAccess::ForElementsPointer()));
-    for (int offset = JSObject::kHeaderSize; offset < result_size;
-         offset += kPointerSize) {
-      HObjectAccess access = HObjectAccess::ForObservableJSObjectOffset(offset);
-      Add<HStoreNamedField>(result, access,
-                            Add<HLoadNamedField>(boilerplate, nullptr, access));
-    }
-    Push(result);
-  }
-  if_notundefined.ElseDeopt(
-      DeoptimizeReason::kUninitializedBoilerplateInFastClone);
-  if_notundefined.End();
-
-  return Pop();
-}
-
-
-Handle<Code> FastCloneRegExpStub::GenerateCode() {
   return DoGenerateCode(this);
 }
 
@@ -1003,36 +839,6 @@ Handle<Code> FastFunctionBindStub::GenerateCode() {
 }
 
 template <>
-HValue* CodeStubGraphBuilder<GrowArrayElementsStub>::BuildCodeStub() {
-  ElementsKind kind = casted_stub()->elements_kind();
-  if (IsFastDoubleElementsKind(kind)) {
-    info()->MarkAsSavesCallerDoubles();
-  }
-
-  HValue* object = GetParameter(Descriptor::kObject);
-  HValue* key = GetParameter(Descriptor::kKey);
-
-  HValue* elements = AddLoadElements(object);
-  HValue* current_capacity = Add<HLoadNamedField>(
-      elements, nullptr, HObjectAccess::ForFixedArrayLength());
-
-  HValue* length =
-      casted_stub()->is_js_array()
-          ? Add<HLoadNamedField>(object, static_cast<HValue*>(NULL),
-                                 HObjectAccess::ForArrayLength(kind))
-          : current_capacity;
-
-  return BuildCheckAndGrowElementsCapacity(object, elements, kind, length,
-                                           current_capacity, key);
-}
-
-
-Handle<Code> GrowArrayElementsStub::GenerateCode() {
-  return DoGenerateCode(this);
-}
-
-
-template <>
 HValue* CodeStubGraphBuilder<LoadFastElementStub>::BuildCodeStub() {
   LoadKeyedHoleMode hole_mode = casted_stub()->convert_hole_to_undefined()
                                     ? CONVERT_HOLE_TO_UNDEFINED
@@ -1334,7 +1140,7 @@ HValue* CodeStubGraphBuilder<StoreTransitionStub>::BuildCodeStub() {
       // Grow properties array.
       ElementsKind kind = FAST_ELEMENTS;
       Add<HBoundsCheck>(new_capacity,
-                        Add<HConstant>((Page::kMaxRegularHeapObjectSize -
+                        Add<HConstant>((kMaxRegularHeapObjectSize -
                                         FixedArray::kHeaderSize) >>
                                        ElementsKindToShiftSize(kind)));
 
@@ -1457,26 +1263,26 @@ HValue* CodeStubGraphBuilder<BinaryOpICStub>::BuildCodeInitializedStub() {
   HValue* left = GetParameter(Descriptor::kLeft);
   HValue* right = GetParameter(Descriptor::kRight);
 
-  Type* left_type = state.GetLeftType();
-  Type* right_type = state.GetRightType();
-  Type* result_type = state.GetResultType();
+  AstType* left_type = state.GetLeftType();
+  AstType* right_type = state.GetRightType();
+  AstType* result_type = state.GetResultType();
 
-  DCHECK(!left_type->Is(Type::None()) && !right_type->Is(Type::None()) &&
-         (state.HasSideEffects() || !result_type->Is(Type::None())));
+  DCHECK(!left_type->Is(AstType::None()) && !right_type->Is(AstType::None()) &&
+         (state.HasSideEffects() || !result_type->Is(AstType::None())));
 
   HValue* result = NULL;
   HAllocationMode allocation_mode(NOT_TENURED);
-  if (state.op() == Token::ADD &&
-      (left_type->Maybe(Type::String()) || right_type->Maybe(Type::String())) &&
-      !left_type->Is(Type::String()) && !right_type->Is(Type::String())) {
+  if (state.op() == Token::ADD && (left_type->Maybe(AstType::String()) ||
+                                   right_type->Maybe(AstType::String())) &&
+      !left_type->Is(AstType::String()) && !right_type->Is(AstType::String())) {
     // For the generic add stub a fast case for string addition is performance
     // critical.
-    if (left_type->Maybe(Type::String())) {
+    if (left_type->Maybe(AstType::String())) {
       IfBuilder if_leftisstring(this);
       if_leftisstring.If<HIsStringAndBranch>(left);
       if_leftisstring.Then();
       {
-        Push(BuildBinaryOperation(state.op(), left, right, Type::String(),
+        Push(BuildBinaryOperation(state.op(), left, right, AstType::String(),
                                   right_type, result_type,
                                   state.fixed_right_arg(), allocation_mode));
       }
@@ -1494,7 +1300,7 @@ HValue* CodeStubGraphBuilder<BinaryOpICStub>::BuildCodeInitializedStub() {
       if_rightisstring.Then();
       {
         Push(BuildBinaryOperation(state.op(), left, right, left_type,
-                                  Type::String(), result_type,
+                                  AstType::String(), result_type,
                                   state.fixed_right_arg(), allocation_mode));
       }
       if_rightisstring.Else();
@@ -1535,9 +1341,9 @@ HValue* CodeStubGraphBuilder<BinaryOpWithAllocationSiteStub>::BuildCodeStub() {
   HValue* left = GetParameter(Descriptor::kLeft);
   HValue* right = GetParameter(Descriptor::kRight);
 
-  Type* left_type = state.GetLeftType();
-  Type* right_type = state.GetRightType();
-  Type* result_type = state.GetResultType();
+  AstType* left_type = state.GetLeftType();
+  AstType* right_type = state.GetRightType();
+  AstType* result_type = state.GetResultType();
   HAllocationMode allocation_mode(allocation_site);
 
   return BuildBinaryOperation(state.op(), left, right, left_type, right_type,
@@ -1558,7 +1364,7 @@ HValue* CodeStubGraphBuilderBase::BuildToString(HValue* input, bool convert) {
   if_inputissmi.Then();
   {
     // Convert the input smi to a string.
-    Push(BuildNumberToString(input, Type::SignedSmall()));
+    Push(BuildNumberToString(input, AstType::SignedSmall()));
   }
   if_inputissmi.Else();
   {
@@ -1852,15 +1658,6 @@ Handle<Code> ElementsTransitionAndStoreStub::GenerateCode() {
   return DoGenerateCode(this);
 }
 
-
-template <>
-HValue* CodeStubGraphBuilder<ToObjectStub>::BuildCodeStub() {
-  HValue* receiver = GetParameter(Descriptor::kArgument);
-  return BuildToObject(receiver);
-}
-
-
-Handle<Code> ToObjectStub::GenerateCode() { return DoGenerateCode(this); }
 
 template <>
 HValue* CodeStubGraphBuilder<LoadDictionaryElementStub>::BuildCodeStub() {

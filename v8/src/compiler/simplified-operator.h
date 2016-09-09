@@ -8,7 +8,7 @@
 #include <iosfwd>
 
 #include "src/compiler/operator.h"
-#include "src/compiler/type-hints.h"
+#include "src/compiler/types.h"
 #include "src/handles.h"
 #include "src/machine-type.h"
 #include "src/objects.h"
@@ -17,9 +17,7 @@ namespace v8 {
 namespace internal {
 
 // Forward declarations.
-class Type;
 class Zone;
-
 
 namespace compiler {
 
@@ -107,6 +105,8 @@ std::ostream& operator<<(std::ostream&, ElementAccess const&);
 
 ElementAccess const& ElementAccessOf(const Operator* op) WARN_UNUSED_RESULT;
 
+ExternalArrayType ExternalArrayTypeOf(const Operator* op) WARN_UNUSED_RESULT;
+
 enum class CheckFloat64HoleMode : uint8_t {
   kNeverReturnHole,  // Never return the hole (deoptimize instead).
   kAllowReturnHole   // Allow to return the hole (signaling NaN).
@@ -118,16 +118,16 @@ std::ostream& operator<<(std::ostream&, CheckFloat64HoleMode);
 
 CheckFloat64HoleMode CheckFloat64HoleModeOf(const Operator*) WARN_UNUSED_RESULT;
 
-enum class CheckTaggedHoleMode : uint8_t {
-  kNeverReturnHole,        // Never return the hole (deoptimize instead).
-  kConvertHoleToUndefined  // Convert the hole to undefined.
+enum class CheckTaggedInputMode : uint8_t {
+  kNumber,
+  kNumberOrOddball,
 };
 
-size_t hash_value(CheckTaggedHoleMode);
+size_t hash_value(CheckTaggedInputMode);
 
-std::ostream& operator<<(std::ostream&, CheckTaggedHoleMode);
+std::ostream& operator<<(std::ostream&, CheckTaggedInputMode);
 
-CheckTaggedHoleMode CheckTaggedHoleModeOf(const Operator*) WARN_UNUSED_RESULT;
+CheckTaggedInputMode CheckTaggedInputModeOf(const Operator*) WARN_UNUSED_RESULT;
 
 enum class CheckForMinusZeroMode : uint8_t {
   kCheckForMinusZero,
@@ -140,19 +140,48 @@ std::ostream& operator<<(std::ostream&, CheckForMinusZeroMode);
 
 CheckForMinusZeroMode CheckMinusZeroModeOf(const Operator*) WARN_UNUSED_RESULT;
 
+// A descriptor for growing elements backing stores.
+enum class GrowFastElementsFlag : uint8_t {
+  kNone = 0u,
+  kArrayObject = 1u << 0,     // Update JSArray::length field.
+  kHoleyElements = 1u << 1,   // Backing store is holey.
+  kDoubleElements = 1u << 2,  // Backing store contains doubles.
+};
+typedef base::Flags<GrowFastElementsFlag> GrowFastElementsFlags;
+
+DEFINE_OPERATORS_FOR_FLAGS(GrowFastElementsFlags)
+
+std::ostream& operator<<(std::ostream&, GrowFastElementsFlags);
+
+GrowFastElementsFlags GrowFastElementsFlagsOf(const Operator*)
+    WARN_UNUSED_RESULT;
+
 // A descriptor for elements kind transitions.
 enum class ElementsTransition : uint8_t {
   kFastTransition,  // simple transition, just updating the map.
   kSlowTransition   // full transition, round-trip to the runtime.
 };
 
+size_t hash_value(ElementsTransition);
+
 std::ostream& operator<<(std::ostream&, ElementsTransition);
 
 ElementsTransition ElementsTransitionOf(const Operator* op) WARN_UNUSED_RESULT;
 
-BinaryOperationHints::Hint BinaryOperationHintOf(const Operator* op);
+// A hint for speculative number operations.
+enum class NumberOperationHint : uint8_t {
+  kSignedSmall,      // Inputs were always Smi so far, output was in Smi range.
+  kSigned32,         // Inputs and output were Signed32 so far.
+  kNumber,           // Inputs were Number, output was Number.
+  kNumberOrOddball,  // Inputs were Number or Oddball, output was Number.
+};
 
-CompareOperationHints::Hint CompareOperationHintOf(const Operator* op);
+size_t hash_value(NumberOperationHint);
+
+std::ostream& operator<<(std::ostream&, NumberOperationHint);
+
+NumberOperationHint NumberOperationHintOf(const Operator* op)
+    WARN_UNUSED_RESULT;
 
 // Interface for building simplified operators, which represent the
 // medium-level operations of V8, including adding numbers, allocating objects,
@@ -229,27 +258,29 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* NumberTan();
   const Operator* NumberTanh();
   const Operator* NumberTrunc();
+  const Operator* NumberToBoolean();
   const Operator* NumberToInt32();
   const Operator* NumberToUint32();
 
   const Operator* NumberSilenceNaN();
 
-  const Operator* SpeculativeNumberAdd(BinaryOperationHints::Hint hint);
-  const Operator* SpeculativeNumberSubtract(BinaryOperationHints::Hint hint);
-  const Operator* SpeculativeNumberMultiply(BinaryOperationHints::Hint hint);
-  const Operator* SpeculativeNumberDivide(BinaryOperationHints::Hint hint);
-  const Operator* SpeculativeNumberModulus(BinaryOperationHints::Hint hint);
-  const Operator* SpeculativeNumberShiftLeft(BinaryOperationHints::Hint hint);
-  const Operator* SpeculativeNumberShiftRight(BinaryOperationHints::Hint hint);
-  const Operator* SpeculativeNumberShiftRightLogical(
-      BinaryOperationHints::Hint hint);
+  const Operator* SpeculativeNumberAdd(NumberOperationHint hint);
+  const Operator* SpeculativeNumberSubtract(NumberOperationHint hint);
+  const Operator* SpeculativeNumberMultiply(NumberOperationHint hint);
+  const Operator* SpeculativeNumberDivide(NumberOperationHint hint);
+  const Operator* SpeculativeNumberModulus(NumberOperationHint hint);
+  const Operator* SpeculativeNumberShiftLeft(NumberOperationHint hint);
+  const Operator* SpeculativeNumberShiftRight(NumberOperationHint hint);
+  const Operator* SpeculativeNumberShiftRightLogical(NumberOperationHint hint);
+  const Operator* SpeculativeNumberBitwiseAnd(NumberOperationHint hint);
+  const Operator* SpeculativeNumberBitwiseOr(NumberOperationHint hint);
+  const Operator* SpeculativeNumberBitwiseXor(NumberOperationHint hint);
 
-  const Operator* SpeculativeNumberLessThan(CompareOperationHints::Hint hint);
-  const Operator* SpeculativeNumberLessThanOrEqual(
-      CompareOperationHints::Hint hint);
-  const Operator* SpeculativeNumberEqual(CompareOperationHints::Hint hint);
+  const Operator* SpeculativeNumberLessThan(NumberOperationHint hint);
+  const Operator* SpeculativeNumberLessThanOrEqual(NumberOperationHint hint);
+  const Operator* SpeculativeNumberEqual(NumberOperationHint hint);
 
-  const Operator* ReferenceEqual(Type* type);
+  const Operator* ReferenceEqual();
 
   const Operator* StringEqual();
   const Operator* StringLessThan();
@@ -268,7 +299,7 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* ChangeInt31ToTaggedSigned();
   const Operator* ChangeInt32ToTagged();
   const Operator* ChangeUint32ToTagged();
-  const Operator* ChangeFloat64ToTagged();
+  const Operator* ChangeFloat64ToTagged(CheckForMinusZeroMode);
   const Operator* ChangeTaggedToBit();
   const Operator* ChangeBitToTagged();
   const Operator* TruncateTaggedToWord32();
@@ -290,13 +321,15 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* CheckedUint32Mod();
   const Operator* CheckedInt32Mul(CheckForMinusZeroMode);
   const Operator* CheckedUint32ToInt32();
-  const Operator* CheckedFloat64ToInt32();
-  const Operator* CheckedTaggedToInt32();
-  const Operator* CheckedTaggedToFloat64();
+  const Operator* CheckedFloat64ToInt32(CheckForMinusZeroMode);
+  const Operator* CheckedTaggedSignedToInt32();
+  const Operator* CheckedTaggedToInt32(CheckForMinusZeroMode);
+  const Operator* CheckedTaggedToFloat64(CheckTaggedInputMode);
   const Operator* CheckedTruncateTaggedToWord32();
 
   const Operator* CheckFloat64Hole(CheckFloat64HoleMode);
-  const Operator* CheckTaggedHole(CheckTaggedHoleMode);
+  const Operator* CheckTaggedHole();
+  const Operator* ConvertTaggedHoleToUndefined();
 
   const Operator* ObjectIsCallable();
   const Operator* ObjectIsNumber();
@@ -304,6 +337,15 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   const Operator* ObjectIsSmi();
   const Operator* ObjectIsString();
   const Operator* ObjectIsUndetectable();
+
+  // array-buffer-was-neutered buffer
+  const Operator* ArrayBufferWasNeutered();
+
+  // ensure-writable-fast-elements object, elements
+  const Operator* EnsureWritableFastElements();
+
+  // maybe-grow-fast-elements object, elements, index, length
+  const Operator* MaybeGrowFastElements(GrowFastElementsFlags flags);
 
   // transition-elements-kind object, from-map, to-map
   const Operator* TransitionElementsKind(ElementsTransition transition);
@@ -319,11 +361,17 @@ class SimplifiedOperatorBuilder final : public ZoneObject {
   // store-buffer buffer, offset, length, value
   const Operator* StoreBuffer(BufferAccess);
 
-  // load-element [base + index], length
+  // load-element [base + index]
   const Operator* LoadElement(ElementAccess const&);
 
-  // store-element [base + index], length, value
+  // store-element [base + index], value
   const Operator* StoreElement(ElementAccess const&);
+
+  // load-typed-element buffer, [base + external + index]
+  const Operator* LoadTypedElement(ExternalArrayType const&);
+
+  // store-typed-element buffer, [base + external + index], value
+  const Operator* StoreTypedElement(ExternalArrayType const&);
 
  private:
   Zone* zone() const { return zone_; }

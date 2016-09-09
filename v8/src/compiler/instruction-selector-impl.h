@@ -90,6 +90,12 @@ class OperandGenerator {
                                         GetVReg(node)));
   }
 
+  InstructionOperand UseAnyAtEnd(Node* node) {
+    return Use(node, UnallocatedOperand(UnallocatedOperand::ANY,
+                                        UnallocatedOperand::USED_AT_END,
+                                        GetVReg(node)));
+  }
+
   InstructionOperand UseAny(Node* node) {
     return Use(node, UnallocatedOperand(UnallocatedOperand::ANY,
                                         UnallocatedOperand::USED_AT_START,
@@ -384,6 +390,25 @@ class FlagsContinuation final {
     bool negate = condition_ == kEqual;
     condition_ = condition;
     if (negate) Negate();
+  }
+
+  void OverwriteUnsignedIfSigned() {
+    switch (condition_) {
+      case kSignedLessThan:
+        condition_ = kUnsignedLessThan;
+        break;
+      case kSignedLessThanOrEqual:
+        condition_ = kUnsignedLessThanOrEqual;
+        break;
+      case kSignedGreaterThan:
+        condition_ = kUnsignedGreaterThan;
+        break;
+      case kSignedGreaterThanOrEqual:
+        condition_ = kUnsignedGreaterThanOrEqual;
+        break;
+      default:
+        break;
+    }
   }
 
   // Encodes this flags continuation into the given opcode.

@@ -29,12 +29,9 @@ class Zone;
 namespace compiler {
 
 class CallDescriptor;
-class Graph;
 class Node;
-class Operator;
 class RawMachineAssembler;
 class RawMachineLabel;
-class Schedule;
 
 #define CODE_ASSEMBLER_COMPARE_BINARY_OP_LIST(V) \
   V(Float32Equal)                                \
@@ -57,7 +54,9 @@ class Schedule;
   V(IntPtrGreaterThanOrEqual)                    \
   V(IntPtrEqual)                                 \
   V(Uint32LessThan)                              \
+  V(Uint32GreaterThanOrEqual)                    \
   V(UintPtrLessThan)                             \
+  V(UintPtrGreaterThan)                          \
   V(UintPtrGreaterThanOrEqual)                   \
   V(WordEqual)                                   \
   V(WordNotEqual)                                \
@@ -206,14 +205,6 @@ class CodeAssembler {
     CodeAssembler* assembler_;
   };
 
-  enum AllocationFlag : uint8_t {
-    kNone = 0,
-    kDoubleAlignment = 1,
-    kPretenured = 1 << 1
-  };
-
-  typedef base::Flags<AllocationFlag> AllocationFlags;
-
   // ===========================================================================
   // Base Assembler
   // ===========================================================================
@@ -246,7 +237,7 @@ class CodeAssembler {
   void GotoUnless(Node* condition, Label* false_label);
   void Branch(Node* condition, Label* true_label, Label* false_label);
 
-  void Switch(Node* index, Label* default_label, int32_t* case_values,
+  void Switch(Node* index, Label* default_label, const int32_t* case_values,
               Label** case_labels, size_t case_count);
 
   Node* Select(Node* condition, Node* true_value, Node* false_value,
@@ -293,6 +284,10 @@ class CodeAssembler {
   CODE_ASSEMBLER_UNARY_OP_LIST(DECLARE_CODE_ASSEMBLER_UNARY_OP)
 #undef DECLARE_CODE_ASSEMBLER_UNARY_OP
 
+  // Changes an intptr_t to a double, e.g. for storing an element index
+  // outside Smi range in a HeapNumber. Lossless on 32-bit,
+  // rounds on 64-bit (which doesn't affect valid element indices).
+  Node* RoundIntPtrToFloat64(Node* value);
   // No-op on 32-bit, otherwise zero extend.
   Node* ChangeUint32ToWord(Node* value);
   // No-op on 32-bit, otherwise sign extend.
@@ -325,6 +320,9 @@ class CodeAssembler {
   Node* TailCallRuntime(Runtime::FunctionId function_id, Node* context,
                         Node* arg1, Node* arg2, Node* arg3, Node* arg4,
                         Node* arg5);
+  Node* TailCallRuntime(Runtime::FunctionId function_id, Node* context,
+                        Node* arg1, Node* arg2, Node* arg3, Node* arg4,
+                        Node* arg5, Node* arg6);
 
   // A pair of a zero-based argument index and a value.
   // It helps writing arguments order independent code.
@@ -416,6 +414,10 @@ class CodeAssembler {
   Node* CallJS(Callable const& callable, Node* context, Node* function,
                Node* receiver, Node* arg1, Node* arg2, size_t result_size = 1);
 
+  // Exception handling support.
+  void GotoIfException(Node* node, Label* if_exception,
+                       Variable* exception_var = nullptr);
+
   // Branching helpers.
   void BranchIf(Node* condition, Label* if_true, Label* if_false);
 
@@ -432,11 +434,6 @@ class CodeAssembler {
   Zone* zone() const;
 
  protected:
-  // Protected helpers which delegate to RawMachineAssembler.
-  Graph* graph() const;
-
-  Node* SmiShiftBitsConstant();
-
   // Enables subclasses to perform operations before and after a call.
   virtual void CallPrologue();
   virtual void CallEpilogue();
@@ -456,8 +453,6 @@ class CodeAssembler {
 
   DISALLOW_COPY_AND_ASSIGN(CodeAssembler);
 };
-
-DEFINE_OPERATORS_FOR_FLAGS(CodeAssembler::AllocationFlags);
 
 class CodeAssembler::Label {
  public:

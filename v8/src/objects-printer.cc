@@ -318,18 +318,37 @@ void JSObject::PrintProperties(std::ostream& os) {  // NOLINT
   }
 }
 
+namespace {
+
+template <class T>
+double GetScalarElement(T* array, int index) {
+  return array->get_scalar(index);
+}
+
+double GetScalarElement(FixedDoubleArray* array, int index) {
+  if (array->is_the_hole(index)) return bit_cast<double>(kHoleNanInt64);
+  return array->get_scalar(index);
+}
+
+bool is_the_hole(double maybe_hole) {
+  return bit_cast<uint64_t>(maybe_hole) == kHoleNanInt64;
+}
+
+}  // namespace
+
 template <class T, bool print_the_hole>
 static void DoPrintElements(std::ostream& os, Object* object) {  // NOLINT
   T* array = T::cast(object);
   if (array->length() == 0) return;
   int previous_index = 0;
-  double previous_value = array->get_scalar(0);
+  double previous_value = GetScalarElement(array, 0);
   double value = 0.0;
   int i;
   for (i = 1; i <= array->length(); i++) {
-    if (i < array->length()) value = array->get_scalar(i);
+    if (i < array->length()) value = GetScalarElement(array, i);
     bool values_are_nan = std::isnan(previous_value) && std::isnan(value);
-    if ((previous_value == value || values_are_nan) && i != array->length()) {
+    if (i != array->length() && (previous_value == value || values_are_nan) &&
+        is_the_hole(previous_value) == is_the_hole(value)) {
       continue;
     }
     os << "\n";
@@ -339,8 +358,7 @@ static void DoPrintElements(std::ostream& os, Object* object) {  // NOLINT
       ss << '-' << (i - 1);
     }
     os << std::setw(12) << ss.str() << ": ";
-    if (print_the_hole &&
-        FixedDoubleArray::cast(object)->is_the_hole(previous_index)) {
+    if (print_the_hole && is_the_hole(previous_value)) {
       os << "<the_hole>";
     } else {
       os << previous_value;
@@ -1136,10 +1154,8 @@ void PrototypeInfo::PrototypeInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-
-void SloppyBlockWithEvalContextExtension::
-    SloppyBlockWithEvalContextExtensionPrint(std::ostream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "SloppyBlockWithEvalContextExtension");
+void ContextExtension::ContextExtensionPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "ContextExtension");
   os << "\n - scope_info: " << Brief(scope_info());
   os << "\n - extension: " << Brief(extension());
   os << "\n";
@@ -1278,7 +1294,7 @@ void Script::ScriptPrint(std::ostream& os) {  // NOLINT
 void DebugInfo::DebugInfoPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "DebugInfo");
   os << "\n - shared: " << Brief(shared());
-  os << "\n - code: " << Brief(abstract_code());
+  os << "\n - debug bytecode array: " << Brief(debug_bytecode_array());
   os << "\n - break_points: ";
   break_points()->Print(os);
 }
@@ -1286,9 +1302,7 @@ void DebugInfo::DebugInfoPrint(std::ostream& os) {  // NOLINT
 
 void BreakPointInfo::BreakPointInfoPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "BreakPointInfo");
-  os << "\n - code_offset: " << code_offset();
   os << "\n - source_position: " << source_position();
-  os << "\n - statement_position: " << statement_position();
   os << "\n - break_point_objects: " << Brief(break_point_objects());
   os << "\n";
 }

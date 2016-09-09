@@ -104,7 +104,10 @@ function cp_folder(path, to) {
 			} else {
 				if (chk_file(fnameto)) {
 					console.log("copy", fnameto);
-					fs.writeFile(fnameto, fs.readFile(v8Folder + '/' + fname));
+					var txt = fs.readFile(v8Folder + '/' + fname);
+					txt = txt.replace('#include "testing/gtest', '// #include "testing/gtest');
+					txt = txt.replace(/FRIEND_TEST/g, '// FRIEND_TEST');
+					fs.writeFile(fnameto, txt);
 				}
 			}
 		}
@@ -203,6 +206,27 @@ function patch_plat() {
 	}
 }
 
+
+var traces = {
+	'android': "V8_OS_ANDROID",
+	'posix': "V8_OS_POSIX",
+	'win': "V8_OS_WIN"
+};
+
+function patch_trace() {
+	for (var f in traces) {
+		var fname = 'src/base/debug/stack_trace_' + f + '.cc';
+		var txt = fs.readFile(fname);
+		var txt1;
+		var val = traces[f];
+
+		console.log("patch", fname);
+		txt1 = txt.replace('#include "src/base/debug/stack_trace.h"\n', '#include "src/base/debug/stack_trace.h"\n#ifdef ' + val);
+
+		fs.writeFile(fname, txt1 + "\n#endif");
+	}
+}
+
 function patch_samp() {
 	var fname = "src/profiler/sampler.cc";
 	var txt = fs.readFile(fname);
@@ -269,6 +293,7 @@ update_plat();
 
 patch_src('src');
 patch_plat();
+patch_trace();
 patch_macro();
 patch_flag();
 

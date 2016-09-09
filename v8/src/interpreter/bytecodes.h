@@ -146,33 +146,41 @@ namespace interpreter {
     OperandType::kReg, OperandType::kIdx)                                      \
                                                                                \
   /* Binary Operators */                                                       \
-  V(Add, AccumulatorUse::kReadWrite, OperandType::kReg)                        \
-  V(Sub, AccumulatorUse::kReadWrite, OperandType::kReg)                        \
-  V(Mul, AccumulatorUse::kReadWrite, OperandType::kReg)                        \
-  V(Div, AccumulatorUse::kReadWrite, OperandType::kReg)                        \
-  V(Mod, AccumulatorUse::kReadWrite, OperandType::kReg)                        \
-  V(BitwiseOr, AccumulatorUse::kReadWrite, OperandType::kReg)                  \
-  V(BitwiseXor, AccumulatorUse::kReadWrite, OperandType::kReg)                 \
-  V(BitwiseAnd, AccumulatorUse::kReadWrite, OperandType::kReg)                 \
-  V(ShiftLeft, AccumulatorUse::kReadWrite, OperandType::kReg)                  \
-  V(ShiftRight, AccumulatorUse::kReadWrite, OperandType::kReg)                 \
-  V(ShiftRightLogical, AccumulatorUse::kReadWrite, OperandType::kReg)          \
+  V(Add, AccumulatorUse::kReadWrite, OperandType::kReg, OperandType::kIdx)     \
+  V(Sub, AccumulatorUse::kReadWrite, OperandType::kReg, OperandType::kIdx)     \
+  V(Mul, AccumulatorUse::kReadWrite, OperandType::kReg, OperandType::kIdx)     \
+  V(Div, AccumulatorUse::kReadWrite, OperandType::kReg, OperandType::kIdx)     \
+  V(Mod, AccumulatorUse::kReadWrite, OperandType::kReg, OperandType::kIdx)     \
+  V(BitwiseOr, AccumulatorUse::kReadWrite, OperandType::kReg,                  \
+    OperandType::kIdx)                                                         \
+  V(BitwiseXor, AccumulatorUse::kReadWrite, OperandType::kReg,                 \
+    OperandType::kIdx)                                                         \
+  V(BitwiseAnd, AccumulatorUse::kReadWrite, OperandType::kReg,                 \
+    OperandType::kIdx)                                                         \
+  V(ShiftLeft, AccumulatorUse::kReadWrite, OperandType::kReg,                  \
+    OperandType::kIdx)                                                         \
+  V(ShiftRight, AccumulatorUse::kReadWrite, OperandType::kReg,                 \
+    OperandType::kIdx)                                                         \
+  V(ShiftRightLogical, AccumulatorUse::kReadWrite, OperandType::kReg,          \
+    OperandType::kIdx)                                                         \
                                                                                \
   /* Binary operators with immediate operands */                               \
-  V(AddSmi, AccumulatorUse::kWrite, OperandType::kImm, OperandType::kReg)      \
-  V(SubSmi, AccumulatorUse::kWrite, OperandType::kImm, OperandType::kReg)      \
+  V(AddSmi, AccumulatorUse::kWrite, OperandType::kImm, OperandType::kReg,      \
+    OperandType::kIdx)                                                         \
+  V(SubSmi, AccumulatorUse::kWrite, OperandType::kImm, OperandType::kReg,      \
+    OperandType::kIdx)                                                         \
   V(BitwiseOrSmi, AccumulatorUse::kWrite, OperandType::kImm,                   \
-    OperandType::kReg)                                                         \
+    OperandType::kReg, OperandType::kIdx)                                      \
   V(BitwiseAndSmi, AccumulatorUse::kWrite, OperandType::kImm,                  \
-    OperandType::kReg)                                                         \
+    OperandType::kReg, OperandType::kIdx)                                      \
   V(ShiftLeftSmi, AccumulatorUse::kWrite, OperandType::kImm,                   \
-    OperandType::kReg)                                                         \
+    OperandType::kReg, OperandType::kIdx)                                      \
   V(ShiftRightSmi, AccumulatorUse::kWrite, OperandType::kImm,                  \
-    OperandType::kReg)                                                         \
+    OperandType::kReg, OperandType::kIdx)                                      \
                                                                                \
   /* Unary Operators */                                                        \
-  V(Inc, AccumulatorUse::kReadWrite)                                           \
-  V(Dec, AccumulatorUse::kReadWrite)                                           \
+  V(Inc, AccumulatorUse::kReadWrite, OperandType::kIdx)                        \
+  V(Dec, AccumulatorUse::kReadWrite, OperandType::kIdx)                        \
   V(ToBooleanLogicalNot, AccumulatorUse::kReadWrite)                           \
   V(LogicalNot, AccumulatorUse::kReadWrite)                                    \
   V(TypeOf, AccumulatorUse::kReadWrite)                                        \
@@ -197,16 +205,23 @@ namespace interpreter {
                                                                                \
   /* New operator */                                                           \
   V(New, AccumulatorUse::kReadWrite, OperandType::kReg,                        \
-    OperandType::kMaybeReg, OperandType::kRegCount)                            \
+    OperandType::kMaybeReg, OperandType::kRegCount, OperandType::kIdx)         \
                                                                                \
   /* Test Operators */                                                         \
-  V(TestEqual, AccumulatorUse::kReadWrite, OperandType::kReg)                  \
-  V(TestNotEqual, AccumulatorUse::kReadWrite, OperandType::kReg)               \
-  V(TestEqualStrict, AccumulatorUse::kReadWrite, OperandType::kReg)            \
-  V(TestLessThan, AccumulatorUse::kReadWrite, OperandType::kReg)               \
-  V(TestGreaterThan, AccumulatorUse::kReadWrite, OperandType::kReg)            \
-  V(TestLessThanOrEqual, AccumulatorUse::kReadWrite, OperandType::kReg)        \
-  V(TestGreaterThanOrEqual, AccumulatorUse::kReadWrite, OperandType::kReg)     \
+  V(TestEqual, AccumulatorUse::kReadWrite, OperandType::kReg,                  \
+    OperandType::kIdx)                                                         \
+  V(TestNotEqual, AccumulatorUse::kReadWrite, OperandType::kReg,               \
+    OperandType::kIdx)                                                         \
+  V(TestEqualStrict, AccumulatorUse::kReadWrite, OperandType::kReg,            \
+    OperandType::kIdx)                                                         \
+  V(TestLessThan, AccumulatorUse::kReadWrite, OperandType::kReg,               \
+    OperandType::kIdx)                                                         \
+  V(TestGreaterThan, AccumulatorUse::kReadWrite, OperandType::kReg,            \
+    OperandType::kIdx)                                                         \
+  V(TestLessThanOrEqual, AccumulatorUse::kReadWrite, OperandType::kReg,        \
+    OperandType::kIdx)                                                         \
+  V(TestGreaterThanOrEqual, AccumulatorUse::kReadWrite, OperandType::kReg,     \
+    OperandType::kIdx)                                                         \
   V(TestInstanceOf, AccumulatorUse::kReadWrite, OperandType::kReg)             \
   V(TestIn, AccumulatorUse::kReadWrite, OperandType::kReg)                     \
                                                                                \
@@ -220,12 +235,21 @@ namespace interpreter {
     OperandType::kIdx, OperandType::kFlag8)                                    \
   V(CreateArrayLiteral, AccumulatorUse::kWrite, OperandType::kIdx,             \
     OperandType::kIdx, OperandType::kFlag8)                                    \
-  V(CreateObjectLiteral, AccumulatorUse::kWrite, OperandType::kIdx,            \
-    OperandType::kIdx, OperandType::kFlag8)                                    \
+  V(CreateObjectLiteral, AccumulatorUse::kNone, OperandType::kIdx,             \
+    OperandType::kIdx, OperandType::kFlag8, OperandType::kRegOut)              \
                                                                                \
   /* Closure allocation */                                                     \
   V(CreateClosure, AccumulatorUse::kWrite, OperandType::kIdx,                  \
     OperandType::kFlag8)                                                       \
+                                                                               \
+  /* Context allocation */                                                     \
+  V(CreateBlockContext, AccumulatorUse::kReadWrite, OperandType::kIdx)         \
+  V(CreateCatchContext, AccumulatorUse::kReadWrite, OperandType::kReg,         \
+    OperandType::kIdx, OperandType::kIdx)                                      \
+  /* TODO(klaasb) rename Idx or add unsigned Imm OperandType? */               \
+  V(CreateFunctionContext, AccumulatorUse::kWrite, OperandType::kIdx)          \
+  V(CreateWithContext, AccumulatorUse::kReadWrite, OperandType::kReg,          \
+    OperandType::kIdx)                                                         \
                                                                                \
   /* Arguments allocation */                                                   \
   V(CreateMappedArguments, AccumulatorUse::kWrite)                             \
@@ -253,7 +277,8 @@ namespace interpreter {
   /* Complex flow control For..in */                                           \
   V(ForInPrepare, AccumulatorUse::kNone, OperandType::kReg,                    \
     OperandType::kRegOutTriple)                                                \
-  V(ForInDone, AccumulatorUse::kWrite, OperandType::kReg, OperandType::kReg)   \
+  V(ForInContinue, AccumulatorUse::kWrite, OperandType::kReg,                  \
+    OperandType::kReg)                                                         \
   V(ForInNext, AccumulatorUse::kWrite, OperandType::kReg, OperandType::kReg,   \
     OperandType::kRegPair, OperandType::kIdx)                                  \
   V(ForInStep, AccumulatorUse::kWrite, OperandType::kReg)                      \

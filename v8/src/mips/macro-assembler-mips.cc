@@ -22,19 +22,6 @@
 namespace v8 {
 namespace internal {
 
-// Floating point constants.
-const uint32_t kDoubleSignMask = HeapNumber::kSignMask;
-const uint32_t kDoubleExponentShift = HeapNumber::kExponentShift;
-const uint32_t kDoubleNaNShift = kDoubleExponentShift - 1;
-const uint32_t kDoubleNaNMask =
-    HeapNumber::kExponentMask | (1 << kDoubleNaNShift);
-
-const uint32_t kSingleSignMask = kBinary32SignMask;
-const uint32_t kSingleExponentMask = kBinary32ExponentMask;
-const uint32_t kSingleExponentShift = kBinary32ExponentShift;
-const uint32_t kSingleNaNShift = kSingleExponentShift - 1;
-const uint32_t kSingleNaNMask = kSingleExponentMask | (1 << kSingleNaNShift);
-
 MacroAssembler::MacroAssembler(Isolate* arg_isolate, void* buffer, int size,
                                CodeObjectRequired create_code_object)
     : Assembler(arg_isolate, buffer, size),
@@ -201,9 +188,7 @@ void MacroAssembler::InNewSpace(Register object,
                                 Condition cc,
                                 Label* branch) {
   DCHECK(cc == eq || cc == ne);
-  const int mask =
-      1 << MemoryChunk::IN_FROM_SPACE | 1 << MemoryChunk::IN_TO_SPACE;
-  CheckPageFlag(object, scratch, mask, cc, branch);
+  CheckPageFlag(object, scratch, MemoryChunk::kIsInNewSpaceMask, cc, branch);
 }
 
 
@@ -1203,78 +1188,101 @@ void MacroAssembler::Lsa(Register rd, Register rt, Register rs, uint8_t sa,
   }
 }
 
+void MacroAssembler::Bovc(Register rs, Register rt, Label* L) {
+  if (is_trampoline_emitted()) {
+    Label skip;
+    bnvc(rs, rt, &skip);
+    BranchLong(L, PROTECT);
+    bind(&skip);
+  } else {
+    bovc(rs, rt, L);
+  }
+}
+
+void MacroAssembler::Bnvc(Register rs, Register rt, Label* L) {
+  if (is_trampoline_emitted()) {
+    Label skip;
+    bovc(rs, rt, &skip);
+    BranchLong(L, PROTECT);
+    bind(&skip);
+  } else {
+    bnvc(rs, rt, L);
+  }
+}
 
 // ------------Pseudo-instructions-------------
 
 // Word Swap Byte
-void MacroAssembler::ByteSwapSigned(Register reg, int operand_size) {
+void MacroAssembler::ByteSwapSigned(Register dest, Register src,
+                                    int operand_size) {
   DCHECK(operand_size == 1 || operand_size == 2 || operand_size == 4);
   if (IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) {
     if (operand_size == 2) {
-      seh(reg, reg);
+      seh(src, src);
     } else if (operand_size == 1) {
-      seb(reg, reg);
+      seb(src, src);
     }
     // No need to do any preparation if operand_size is 4
 
-    wsbh(reg, reg);
-    rotr(reg, reg, 16);
+    wsbh(dest, src);
+    rotr(dest, dest, 16);
   } else if (IsMipsArchVariant(kMips32r1) || IsMipsArchVariant(kLoongson)) {
     if (operand_size == 1) {
-      sll(reg, reg, 24);
-      sra(reg, reg, 24);
+      sll(src, src, 24);
+      sra(src, src, 24);
     } else if (operand_size == 2) {
-      sll(reg, reg, 16);
-      sra(reg, reg, 16);
+      sll(src, src, 16);
+      sra(src, src, 16);
     }
     // No need to do any preparation if operand_size is 4
 
     Register tmp = t0;
     Register tmp2 = t1;
 
-    andi(tmp2, reg, 0xFF);
+    andi(tmp2, src, 0xFF);
     sll(tmp2, tmp2, 24);
     or_(tmp, zero_reg, tmp2);
 
-    andi(tmp2, reg, 0xFF00);
+    andi(tmp2, src, 0xFF00);
     sll(tmp2, tmp2, 8);
     or_(tmp, tmp, tmp2);
 
-    srl(reg, reg, 8);
-    andi(tmp2, reg, 0xFF00);
+    srl(src, src, 8);
+    andi(tmp2, src, 0xFF00);
     or_(tmp, tmp, tmp2);
 
-    srl(reg, reg, 16);
-    andi(tmp2, reg, 0xFF);
+    srl(src, src, 16);
+    andi(tmp2, src, 0xFF);
     or_(tmp, tmp, tmp2);
 
-    or_(reg, tmp, zero_reg);
+    or_(dest, tmp, zero_reg);
   }
 }
 
-void MacroAssembler::ByteSwapUnsigned(Register reg, int operand_size) {
+void MacroAssembler::ByteSwapUnsigned(Register dest, Register src,
+                                      int operand_size) {
   DCHECK(operand_size == 1 || operand_size == 2);
 
   if (IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r6)) {
     if (operand_size == 1) {
-      andi(reg, reg, 0xFF);
+      andi(src, src, 0xFF);
     } else {
-      andi(reg, reg, 0xFFFF);
+      andi(src, src, 0xFFFF);
     }
     // No need to do any preparation if operand_size is 4
 
-    wsbh(reg, reg);
-    rotr(reg, reg, 16);
+    wsbh(dest, src);
+    rotr(dest, dest, 16);
   } else if (IsMipsArchVariant(kMips32r1) || IsMipsArchVariant(kLoongson)) {
     if (operand_size == 1) {
-      sll(reg, reg, 24);
+      sll(src, src, 24);
     } else {
       Register tmp = t0;
 
-      andi(tmp, reg, 0xFF00);
-      sll(reg, reg, 24);
+      andi(tmp, src, 0xFF00);
+      sll(src, src, 24);
       sll(tmp, tmp, 8);
-      or_(reg, tmp, reg);
+      or_(dest, tmp, src);
     }
   }
 }
@@ -1908,6 +1916,57 @@ void MacroAssembler::Ins(Register rt,
   }
 }
 
+void MacroAssembler::Neg_s(FPURegister fd, FPURegister fs) {
+  if (IsMipsArchVariant(kMips32r6)) {
+    // r6 neg_s changes the sign for NaN-like operands as well.
+    neg_s(fd, fs);
+  } else {
+    DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r1) ||
+           IsMipsArchVariant(kLoongson));
+    Label is_nan, done;
+    Register scratch1 = t8;
+    Register scratch2 = t9;
+    BranchF32(nullptr, &is_nan, eq, fs, fs);
+    Branch(USE_DELAY_SLOT, &done);
+    // For NaN input, neg_s will return the same NaN value,
+    // while the sign has to be changed separately.
+    neg_s(fd, fs);  // In delay slot.
+    bind(&is_nan);
+    mfc1(scratch1, fs);
+    And(scratch2, scratch1, Operand(~kBinary32SignMask));
+    And(scratch1, scratch1, Operand(kBinary32SignMask));
+    Xor(scratch1, scratch1, Operand(kBinary32SignMask));
+    Or(scratch2, scratch2, scratch1);
+    mtc1(scratch2, fd);
+    bind(&done);
+  }
+}
+
+void MacroAssembler::Neg_d(FPURegister fd, FPURegister fs) {
+  if (IsMipsArchVariant(kMips32r6)) {
+    // r6 neg_d changes the sign for NaN-like operands as well.
+    neg_d(fd, fs);
+  } else {
+    DCHECK(IsMipsArchVariant(kMips32r2) || IsMipsArchVariant(kMips32r1) ||
+           IsMipsArchVariant(kLoongson));
+    Label is_nan, done;
+    Register scratch1 = t8;
+    Register scratch2 = t9;
+    BranchF64(nullptr, &is_nan, eq, fs, fs);
+    Branch(USE_DELAY_SLOT, &done);
+    // For NaN input, neg_d will return the same NaN value,
+    // while the sign has to be changed separately.
+    neg_d(fd, fs);  // In delay slot.
+    bind(&is_nan);
+    Mfhc1(scratch1, fs);
+    And(scratch2, scratch1, Operand(~HeapNumber::kSignMask));
+    And(scratch1, scratch1, Operand(HeapNumber::kSignMask));
+    Xor(scratch1, scratch1, Operand(HeapNumber::kSignMask));
+    Or(scratch2, scratch2, scratch1);
+    Mthc1(scratch2, fd);
+    bind(&done);
+  }
+}
 
 void MacroAssembler::Cvt_d_uw(FPURegister fd, Register rs,
                               FPURegister scratch) {
@@ -2313,7 +2372,7 @@ void MacroAssembler::Move(FPURegister dst, double imm) {
   if (imm_bits == bit_cast<int64_t>(0.0) && has_double_zero_reg_set_) {
     mov_d(dst, kDoubleRegZero);
   } else if (imm_bits == bit_cast<int64_t>(-0.0) && has_double_zero_reg_set_) {
-    neg_d(dst, kDoubleRegZero);
+    Neg_d(dst, kDoubleRegZero);
   } else {
     uint32_t lo, hi;
     DoubleAsTwoUInt32(imm, &lo, &hi);
@@ -3354,7 +3413,6 @@ bool MacroAssembler::BranchShortCheck(int32_t offset, Label* L, Condition cond,
                                       Register rs, const Operand& rt,
                                       BranchDelaySlot bdslot) {
   BRANCH_ARGS_CHECK(cond, rs, rt);
-
   if (!L) {
     if (IsMipsArchVariant(kMips32r6) && bdslot == PROTECT) {
       DCHECK(is_int26(offset));
@@ -4155,7 +4213,7 @@ void MacroAssembler::Allocate(int object_size,
                               Register scratch2,
                               Label* gc_required,
                               AllocationFlags flags) {
-  DCHECK(object_size <= Page::kMaxRegularHeapObjectSize);
+  DCHECK(object_size <= kMaxRegularHeapObjectSize);
   DCHECK((flags & ALLOCATION_FOLDED) == 0);
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
@@ -4337,7 +4395,7 @@ void MacroAssembler::Allocate(Register object_size, Register result,
 void MacroAssembler::FastAllocate(int object_size, Register result,
                                   Register scratch1, Register scratch2,
                                   AllocationFlags flags) {
-  DCHECK(object_size <= Page::kMaxRegularHeapObjectSize);
+  DCHECK(object_size <= kMaxRegularHeapObjectSize);
   DCHECK(!AreAliased(result, scratch1, scratch2, t9, at));
 
   // Make object size into bytes.
@@ -4759,75 +4817,6 @@ void MacroAssembler::StoreNumberToDoubleElements(Register value_reg,
   Lsa(scratch1, scratch1, key_reg, kDoubleSizeLog2 - kSmiTagSize);
   // scratch1 is now effective address of the double element
   sdc1(double_result, MemOperand(scratch1, 0));
-}
-
-void MacroAssembler::SubNanPreservePayloadAndSign_s(FloatRegister fd,
-                                                    FloatRegister fs,
-                                                    FloatRegister ft) {
-  FloatRegister dest = fd.is(fs) || fd.is(ft) ? kLithiumScratchDouble : fd;
-  Label check_nan, save_payload, done;
-  Register scratch1 = t8;
-  Register scratch2 = t9;
-
-  sub_s(dest, fs, ft);
-  // Check if the result of subtraction is NaN.
-  BranchF32(nullptr, &check_nan, eq, fs, ft);
-  Branch(USE_DELAY_SLOT, &done);
-  dest.is(fd) ? nop() : mov_s(fd, dest);
-
-  bind(&check_nan);
-  // Check if first operand is a NaN.
-  mfc1(scratch1, fs);
-  BranchF32(nullptr, &save_payload, eq, fs, fs);
-  // Second operand must be a NaN.
-  mfc1(scratch1, ft);
-
-  bind(&save_payload);
-  // Reserve payload.
-  And(scratch1, scratch1,
-      Operand(kSingleSignMask | ((1 << kSingleNaNShift) - 1)));
-  mfc1(scratch2, dest);
-  And(scratch2, scratch2, Operand(kSingleNaNMask));
-  Or(scratch2, scratch2, scratch1);
-  mtc1(scratch2, fd);
-
-  bind(&done);
-}
-
-void MacroAssembler::SubNanPreservePayloadAndSign_d(DoubleRegister fd,
-                                                    DoubleRegister fs,
-                                                    DoubleRegister ft) {
-  FloatRegister dest = fd.is(fs) || fd.is(ft) ? kLithiumScratchDouble : fd;
-  Label check_nan, save_payload, done;
-  Register scratch1 = t8;
-  Register scratch2 = t9;
-
-  sub_d(dest, fs, ft);
-  // Check if the result of subtraction is NaN.
-  BranchF64(nullptr, &check_nan, eq, fs, ft);
-  Branch(USE_DELAY_SLOT, &done);
-  dest.is(fd) ? nop() : mov_d(fd, dest);
-
-  bind(&check_nan);
-  // Check if first operand is a NaN.
-  Mfhc1(scratch1, fs);
-  mov_s(dest, fs);
-  BranchF64(nullptr, &save_payload, eq, fs, fs);
-  // Second operand must be a NaN.
-  Mfhc1(scratch1, ft);
-  mov_s(dest, ft);
-
-  bind(&save_payload);
-  // Reserve payload.
-  And(scratch1, scratch1,
-      Operand(kDoubleSignMask | ((1 << kDoubleNaNShift) - 1)));
-  Mfhc1(scratch2, dest);
-  And(scratch2, scratch2, Operand(kDoubleNaNMask));
-  Or(scratch2, scratch2, scratch1);
-  Move_s(fd, dest);
-  Mthc1(scratch2, fd);
-
-  bind(&done);
 }
 
 void MacroAssembler::CompareMapAndBranch(Register obj,
@@ -5480,9 +5469,9 @@ void MacroAssembler::AddBranchOvf(Register dst, Register left, Register right,
       Move(left_reg, left);
       Move(right_reg, right);
       addu(dst, left, right);
-      bnvc(left_reg, right_reg, no_overflow_label);
+      Bnvc(left_reg, right_reg, no_overflow_label);
     } else {
-      bovc(left, right, overflow_label);
+      Bovc(left, right, overflow_label);
       addu(dst, left, right);
       if (no_overflow_label) bc(no_overflow_label);
     }

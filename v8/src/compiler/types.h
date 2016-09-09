@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_TYPES_H_
-#define V8_TYPES_H_
+#ifndef V8_COMPILER_TYPES_H_
+#define V8_COMPILER_TYPES_H_
 
 #include "src/conversions.h"
 #include "src/handles.h"
@@ -12,6 +12,7 @@
 
 namespace v8 {
 namespace internal {
+namespace compiler {
 
 // SUMMARY
 //
@@ -39,29 +40,11 @@ namespace internal {
 //   InternalizedString < String
 //
 //   Receiver = Object \/ Proxy
-//   Array < Object
-//   Function < Object
 //   RegExp < Object
 //   OtherUndetectable < Object
 //   DetectableReceiver = Receiver - OtherUndetectable
 //
-//   Class(map) < T   iff instance_type(map) < T
 //   Constant(x) < T  iff instance_type(map(x)) < T
-//   Array(T) < Array
-//   Function(R, S, T0, T1, ...) < Function
-//   Context(T) < Internal
-//
-// Both structural Array and Function types are invariant in all parameters;
-// relaxing this would make Union and Intersect operations more involved.
-// There is no subtyping relation between Array, Function, or Context types
-// and respective Constant types, since these types cannot be reconstructed
-// for arbitrary heap values.
-// Note also that Constant(x) < Class(map(x)) does _not_ hold, since x's map can
-// change! (Its instance type cannot, however.)
-// TODO(rossberg): the latter is not currently true for proxies, because of fix,
-// but will hold once we implement direct proxies.
-// However, we also define a 'temporal' variant of the subtyping relation that
-// considers the _current_ state only, i.e., Constant(x) <_now Class(map(x)).
 //
 //
 // REPRESENTATIONAL DIMENSION
@@ -140,10 +123,9 @@ namespace internal {
 // IMPLEMENTATION
 //
 // Internally, all 'primitive' types, and their unions, are represented as
-// bitsets. Bit 0 is reserved for tagging. Class is a heap pointer to the
-// respective map. Only structured types require allocation.
+// bitsets. Bit 0 is reserved for tagging. Only structured types require
+// allocation.
 // Note that the bitset representation is closed under both Union and Intersect.
-
 
 // -----------------------------------------------------------------------------
 // Values for bitset types
@@ -199,41 +181,49 @@ namespace internal {
   V(OtherUndetectable,   1u << 16 | REPRESENTATION(kTaggedPointer)) \
   V(Proxy,               1u << 18 | REPRESENTATION(kTaggedPointer)) \
   V(Function,            1u << 19 | REPRESENTATION(kTaggedPointer)) \
-  V(Internal,            1u << 20 | REPRESENTATION(kTagged | kUntagged)) \
+  V(Hole,                1u << 20 | REPRESENTATION(kTaggedPointer)) \
+  V(OtherInternal,       1u << 21 | REPRESENTATION(kTagged | kUntagged)) \
   \
-  V(Signed31,                 kUnsigned30 | kNegative31) \
-  V(Signed32,                 kSigned31 | kOtherUnsigned31 | kOtherSigned32) \
-  V(Negative32,               kNegative31 | kOtherSigned32) \
-  V(Unsigned31,               kUnsigned30 | kOtherUnsigned31) \
-  V(Unsigned32,               kUnsigned30 | kOtherUnsigned31 | \
-                              kOtherUnsigned32) \
-  V(Integral32,               kSigned32 | kUnsigned32) \
-  V(PlainNumber,              kIntegral32 | kOtherNumber) \
-  V(OrderedNumber,            kPlainNumber | kMinusZero) \
-  V(MinusZeroOrNaN,           kMinusZero | kNaN) \
-  V(Number,                   kOrderedNumber | kNaN) \
-  V(String,                   kInternalizedString | kOtherString) \
-  V(UniqueName,               kSymbol | kInternalizedString) \
-  V(Name,                     kSymbol | kString) \
-  V(BooleanOrNumber,          kBoolean | kNumber) \
-  V(BooleanOrNullOrUndefined, kBoolean | kNull | kUndefined) \
-  V(NullOrUndefined,          kNull | kUndefined) \
-  V(Undetectable,             kNullOrUndefined | kOtherUndetectable) \
-  V(NumberOrOddball,          kNumber | kNullOrUndefined | kBoolean) \
-  V(NumberOrSimdOrString,     kNumber | kSimd | kString) \
-  V(NumberOrString,           kNumber | kString) \
-  V(NumberOrUndefined,        kNumber | kUndefined) \
-  V(PlainPrimitive,           kNumberOrString | kBoolean | kNullOrUndefined) \
-  V(Primitive,                kSymbol | kSimd | kPlainPrimitive) \
-  V(DetectableReceiver,       kFunction | kOtherObject | kProxy) \
-  V(Object,                   kFunction | kOtherObject | kOtherUndetectable) \
-  V(Receiver,                 kObject | kProxy) \
-  V(StringOrReceiver,         kString | kReceiver) \
-  V(Unique,                   kBoolean | kUniqueName | kNull | kUndefined | \
-                              kReceiver) \
-  V(NonInternal,              kPrimitive | kReceiver) \
-  V(NonNumber,                kUnique | kString | kInternal) \
-  V(Any,                      0xfffffffeu)
+  V(Signed31,                   kUnsigned30 | kNegative31) \
+  V(Signed32,                   kSigned31 | kOtherUnsigned31 | kOtherSigned32) \
+  V(Signed32OrMinusZero,        kSigned32 | kMinusZero) \
+  V(Signed32OrMinusZeroOrNaN,   kSigned32 | kMinusZero | kNaN) \
+  V(Negative32,                 kNegative31 | kOtherSigned32) \
+  V(Unsigned31,                 kUnsigned30 | kOtherUnsigned31) \
+  V(Unsigned32,                 kUnsigned30 | kOtherUnsigned31 | \
+                                kOtherUnsigned32) \
+  V(Unsigned32OrMinusZero,      kUnsigned32 | kMinusZero) \
+  V(Unsigned32OrMinusZeroOrNaN, kUnsigned32 | kMinusZero | kNaN) \
+  V(Integral32,                 kSigned32 | kUnsigned32) \
+  V(PlainNumber,                kIntegral32 | kOtherNumber) \
+  V(OrderedNumber,              kPlainNumber | kMinusZero) \
+  V(MinusZeroOrNaN,             kMinusZero | kNaN) \
+  V(Number,                     kOrderedNumber | kNaN) \
+  V(String,                     kInternalizedString | kOtherString) \
+  V(UniqueName,                 kSymbol | kInternalizedString) \
+  V(Name,                       kSymbol | kString) \
+  V(BooleanOrNumber,            kBoolean | kNumber) \
+  V(BooleanOrNullOrNumber,      kBooleanOrNumber | kNull) \
+  V(BooleanOrNullOrUndefined,   kBoolean | kNull | kUndefined) \
+  V(NullOrNumber,               kNull | kNumber) \
+  V(NullOrUndefined,            kNull | kUndefined) \
+  V(Undetectable,               kNullOrUndefined | kOtherUndetectable) \
+  V(NumberOrOddball,            kNumber | kNullOrUndefined | kBoolean | kHole) \
+  V(NumberOrSimdOrString,       kNumber | kSimd | kString) \
+  V(NumberOrString,             kNumber | kString) \
+  V(NumberOrUndefined,          kNumber | kUndefined) \
+  V(PlainPrimitive,             kNumberOrString | kBoolean | kNullOrUndefined) \
+  V(Primitive,                  kSymbol | kSimd | kPlainPrimitive) \
+  V(DetectableReceiver,         kFunction | kOtherObject | kProxy) \
+  V(Object,                     kFunction | kOtherObject | kOtherUndetectable) \
+  V(Receiver,                   kObject | kProxy) \
+  V(StringOrReceiver,           kString | kReceiver) \
+  V(Unique,                     kBoolean | kUniqueName | kNull | kUndefined | \
+                                kReceiver) \
+  V(Internal,                   kHole | kOtherInternal) \
+  V(NonInternal,                kPrimitive | kReceiver) \
+  V(NonNumber,                  kUnique | kString | kInternal) \
+  V(Any,                        0xfffffffeu)
 
 // clang-format on
 
@@ -253,7 +243,7 @@ namespace internal {
  * occur as part of PlainNumber.
  */
 
-#define PROPER_BITSET_TYPE_LIST(V) \
+#define PROPER_BITSET_TYPE_LIST(V)   \
   REPRESENTATION_BITSET_TYPE_LIST(V) \
   SEMANTIC_BITSET_TYPE_LIST(V)
 
@@ -347,16 +337,7 @@ class TypeBase {
  protected:
   friend class Type;
 
-  enum Kind {
-    kClass,
-    kConstant,
-    kContext,
-    kArray,
-    kFunction,
-    kTuple,
-    kUnion,
-    kRange
-  };
+  enum Kind { kConstant, kTuple, kUnion, kRange };
 
   Kind kind() const { return kind_; }
   explicit TypeBase(Kind kind) : kind_(kind) {}
@@ -375,36 +356,6 @@ class TypeBase {
 
  private:
   Kind kind_;
-};
-
-// -----------------------------------------------------------------------------
-// Class types.
-
-class ClassType : public TypeBase {
- public:
-  i::Handle<i::Map> Map() { return map_; }
-
- private:
-  friend class Type;
-  friend class BitsetType;
-
-  static Type* New(i::Handle<i::Map> map, Zone* zone) {
-    return AsType(new (zone->New(sizeof(ClassType)))
-                      ClassType(BitsetType::Lub(*map), map));
-  }
-
-  static ClassType* cast(Type* type) {
-    DCHECK(IsKind(type, kClass));
-    return static_cast<ClassType*>(FromType(type));
-  }
-
-  ClassType(BitsetType::bitset bitset, i::Handle<i::Map> map)
-      : TypeBase(kClass), bitset_(bitset), map_(map) {}
-
-  BitsetType::bitset Lub() { return bitset_; }
-
-  BitsetType::bitset bitset_;
-  Handle<i::Map> map_;
 };
 
 // -----------------------------------------------------------------------------
@@ -498,54 +449,6 @@ class RangeType : public TypeBase {
 };
 
 // -----------------------------------------------------------------------------
-// Context types.
-
-class ContextType : public TypeBase {
- public:
-  Type* Outer() { return outer_; }
-
- private:
-  friend class Type;
-
-  static Type* New(Type* outer, Zone* zone) {
-    return AsType(new (zone->New(sizeof(ContextType))) ContextType(outer));
-  }
-
-  static ContextType* cast(Type* type) {
-    DCHECK(IsKind(type, kContext));
-    return static_cast<ContextType*>(FromType(type));
-  }
-
-  explicit ContextType(Type* outer) : TypeBase(kContext), outer_(outer) {}
-
-  Type* outer_;
-};
-
-// -----------------------------------------------------------------------------
-// Array types.
-
-class ArrayType : public TypeBase {
- public:
-  Type* Element() { return element_; }
-
- private:
-  friend class Type;
-
-  explicit ArrayType(Type* element) : TypeBase(kArray), element_(element) {}
-
-  static Type* New(Type* element, Zone* zone) {
-    return AsType(new (zone->New(sizeof(ArrayType))) ArrayType(element));
-  }
-
-  static ArrayType* cast(Type* type) {
-    DCHECK(IsKind(type, kArray));
-    return static_cast<ArrayType*>(FromType(type));
-  }
-
-  Type* element_;
-};
-
-// -----------------------------------------------------------------------------
 // Superclass for types with variable number of type fields.
 class StructuralType : public TypeBase {
  public:
@@ -579,38 +482,6 @@ class StructuralType : public TypeBase {
  private:
   int length_;
   Type** elements_;
-};
-
-// -----------------------------------------------------------------------------
-// Function types.
-
-class FunctionType : public StructuralType {
- public:
-  int Arity() { return this->Length() - 2; }
-  Type* Result() { return this->Get(0); }
-  Type* Receiver() { return this->Get(1); }
-  Type* Parameter(int i) { return this->Get(2 + i); }
-
-  void InitParameter(int i, Type* type) { this->Set(2 + i, type); }
-
- private:
-  friend class Type;
-
-  FunctionType(Type* result, Type* receiver, int arity, Zone* zone)
-      : StructuralType(kFunction, 2 + arity, zone) {
-    Set(0, result);
-    Set(1, receiver);
-  }
-
-  static Type* New(Type* result, Type* receiver, int arity, Zone* zone) {
-    return AsType(new (zone->New(sizeof(FunctionType)))
-                      FunctionType(result, receiver, arity, zone));
-  }
-
-  static FunctionType* cast(Type* type) {
-    DCHECK(IsKind(type, kFunction));
-    return static_cast<FunctionType*>(FromType(type));
-  }
 };
 
 // -----------------------------------------------------------------------------
@@ -681,9 +552,6 @@ class Type {
     return BitsetType::New(BitsetType::UnsignedSmall());
   }
 
-  static Type* Class(i::Handle<i::Map> map, Zone* zone) {
-    return ClassType::New(map, zone);
-  }
   static Type* Constant(i::Handle<i::Object> value, Zone* zone) {
     return ConstantType::New(value, zone);
   }
@@ -691,44 +559,6 @@ class Type {
     return RangeType::New(min, max, REPRESENTATION(BitsetType::kTagged |
                                                    BitsetType::kUntaggedNumber),
                           zone);
-  }
-  static Type* Context(Type* outer, Zone* zone) {
-    return ContextType::New(outer, zone);
-  }
-  static Type* Array(Type* element, Zone* zone) {
-    return ArrayType::New(element, zone);
-  }
-  static Type* Function(Type* result, Type* receiver, int arity, Zone* zone) {
-    return FunctionType::New(result, receiver, arity, zone);
-  }
-  static Type* Function(Type* result, Zone* zone) {
-    return Function(result, Any(), 0, zone);
-  }
-  static Type* Function(Type* result, Type* param0, Zone* zone) {
-    Type* function = Function(result, Any(), 1, zone);
-    function->AsFunction()->InitParameter(0, param0);
-    return function;
-  }
-  static Type* Function(Type* result, Type* param0, Type* param1, Zone* zone) {
-    Type* function = Function(result, Any(), 2, zone);
-    function->AsFunction()->InitParameter(0, param0);
-    function->AsFunction()->InitParameter(1, param1);
-    return function;
-  }
-  static Type* Function(Type* result, Type* param0, Type* param1, Type* param2,
-                        Zone* zone) {
-    Type* function = Function(result, Any(), 3, zone);
-    function->AsFunction()->InitParameter(0, param0);
-    function->AsFunction()->InitParameter(1, param1);
-    function->AsFunction()->InitParameter(2, param2);
-    return function;
-  }
-  static Type* Function(Type* result, int arity, Type** params, Zone* zone) {
-    Type* function = Function(result, Any(), arity, zone);
-    for (int i = 0; i < arity; ++i) {
-      function->AsFunction()->InitParameter(i, params[i]);
-    }
-    return function;
   }
   static Type* Tuple(Type* first, Type* second, Type* third, Zone* zone) {
     Type* tuple = TupleType::New(3, zone);
@@ -738,13 +568,8 @@ class Type {
     return tuple;
   }
 
-#define CONSTRUCT_SIMD_TYPE(NAME, Name, name, lane_count, lane_type) \
-  static Type* Name(Isolate* isolate, Zone* zone);
-  SIMD128_TYPES(CONSTRUCT_SIMD_TYPE)
-#undef CONSTRUCT_SIMD_TYPE
-
-  static Type* Union(Type* type1, Type* type2, Zone* reg);
-  static Type* Intersect(Type* type1, Type* type2, Zone* reg);
+  static Type* Union(Type* type1, Type* type2, Zone* zone);
+  static Type* Intersect(Type* type1, Type* type2, Zone* zone);
 
   static Type* Of(double value, Zone* zone) {
     return BitsetType::New(BitsetType::ExpandInternals(BitsetType::Lub(value)));
@@ -755,6 +580,11 @@ class Type {
   static Type* Of(i::Handle<i::Object> value, Zone* zone) {
     return Of(*value, zone);
   }
+
+  static Type* For(i::Map* map) {
+    return BitsetType::New(BitsetType::ExpandInternals(BitsetType::Lub(map)));
+  }
+  static Type* For(i::Handle<i::Map> map) { return For(*map); }
 
   // Extraction of components.
   static Type* Representation(Type* t, Zone* zone);
@@ -771,33 +601,13 @@ class Type {
   bool Contains(i::Object* val);
   bool Contains(i::Handle<i::Object> val) { return this->Contains(*val); }
 
-  // State-dependent versions of the above that consider subtyping between
-  // a constant and its map class.
-  static Type* NowOf(i::Object* value, Zone* zone);
-  static Type* NowOf(i::Handle<i::Object> value, Zone* zone) {
-    return NowOf(*value, zone);
-  }
-  bool NowIs(Type* that);
-  bool NowContains(i::Object* val);
-  bool NowContains(i::Handle<i::Object> val) { return this->NowContains(*val); }
-
-  bool NowStable();
-
   // Inspection.
   bool IsRange() { return IsKind(TypeBase::kRange); }
-  bool IsClass() { return IsKind(TypeBase::kClass); }
   bool IsConstant() { return IsKind(TypeBase::kConstant); }
-  bool IsContext() { return IsKind(TypeBase::kContext); }
-  bool IsArray() { return IsKind(TypeBase::kArray); }
-  bool IsFunction() { return IsKind(TypeBase::kFunction); }
   bool IsTuple() { return IsKind(TypeBase::kTuple); }
 
-  ClassType* AsClass() { return ClassType::cast(this); }
   ConstantType* AsConstant() { return ConstantType::cast(this); }
   RangeType* AsRange() { return RangeType::cast(this); }
-  ContextType* AsContext() { return ContextType::cast(this); }
-  ArrayType* AsArray() { return ArrayType::cast(this); }
-  FunctionType* AsFunction() { return FunctionType::cast(this); }
   TupleType* AsTuple() { return TupleType::cast(this); }
 
   // Minimum and maximum of a numeric type.
@@ -816,7 +626,6 @@ class Type {
     return nearbyint(x) == x && !i::IsMinusZero(x);  // Allows for infinities.
   }
 
-  int NumClasses();
   int NumConstants();
 
   template <class T>
@@ -839,10 +648,6 @@ class Type {
     int index_;
   };
 
-  Iterator<i::Map> Classes() {
-    if (this->IsBitset()) return Iterator<i::Map>();
-    return Iterator<i::Map>(this);
-  }
   Iterator<i::Object> Constants() {
     if (this->IsBitset()) return Iterator<i::Object>();
     return Iterator<i::Object>(this);
@@ -967,8 +772,8 @@ struct Bounds {
     return that.lower->Is(this->lower) && this->upper->Is(that.upper);
   }
 };
-
+}  // namespace compiler
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_TYPES_H_
+#endif  // V8_COMPILER_TYPES_H_

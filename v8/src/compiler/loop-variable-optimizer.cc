@@ -28,7 +28,7 @@ LoopVariableOptimizer::LoopVariableOptimizer(Graph* graph,
     : graph_(graph),
       common_(common),
       zone_(zone),
-      limits_(zone),
+      limits_(graph->NodeCount(), zone),
       induction_vars_(zone) {}
 
 void LoopVariableOptimizer::Run() {
@@ -40,14 +40,13 @@ void LoopVariableOptimizer::Run() {
     queue.pop();
     queued.Set(node, false);
 
-    DCHECK(limits_.find(node->id()) == limits_.end());
+    DCHECK_NULL(limits_[node->id()]);
     bool all_inputs_visited = true;
     int inputs_end = (node->opcode() == IrOpcode::kLoop)
                          ? kFirstBackedge
                          : node->op()->ControlInputCount();
     for (int i = 0; i < inputs_end; i++) {
-      auto input = limits_.find(NodeProperties::GetControlInput(node, i)->id());
-      if (input == limits_.end()) {
+      if (limits_[NodeProperties::GetControlInput(node, i)->id()] == nullptr) {
         all_inputs_visited = false;
         break;
       }
@@ -55,7 +54,7 @@ void LoopVariableOptimizer::Run() {
     if (!all_inputs_visited) continue;
 
     VisitNode(node);
-    DCHECK(limits_.find(node->id()) != limits_.end());
+    DCHECK_NOT_NULL(limits_[node->id()]);
 
     // Queue control outputs.
     for (Edge edge : node->use_edges()) {
@@ -149,8 +148,7 @@ class LoopVariableOptimizer::VariableLimits : public ZoneObject {
 };
 
 void InductionVariable::AddUpperBound(Node* bound,
-                                      InductionVariable::ConstraintKind kind,
-                                      Zone* graph_zone) {
+                                      InductionVariable::ConstraintKind kind) {
   if (FLAG_trace_turbo_loop) {
     OFStream os(stdout);
     os << "New upper bound for " << phi()->id() << " (loop "
@@ -161,8 +159,7 @@ void InductionVariable::AddUpperBound(Node* bound,
 }
 
 void InductionVariable::AddLowerBound(Node* bound,
-                                      InductionVariable::ConstraintKind kind,
-                                      Zone* graph_zone) {
+                                      InductionVariable::ConstraintKind kind) {
   if (FLAG_trace_turbo_loop) {
     OFStream os(stdout);
     os << "New lower bound for " << phi()->id() << " (loop "
@@ -183,16 +180,14 @@ void LoopVariableOptimizer::VisitBackedge(Node* from, Node* loop) {
         NodeProperties::GetControlInput(constraint->left()) == loop) {
       auto var = induction_vars_.find(constraint->left()->id());
       if (var != induction_vars_.end()) {
-        var->second->AddUpperBound(constraint->right(), constraint->kind(),
-                                   graph()->zone());
+        var->second->AddUpperBound(constraint->right(), constraint->kind());
       }
     }
     if (constraint->right()->opcode() == IrOpcode::kPhi &&
         NodeProperties::GetControlInput(constraint->right()) == loop) {
       auto var = induction_vars_.find(constraint->right()->id());
       if (var != induction_vars_.end()) {
-        var->second->AddUpperBound(constraint->left(), constraint->kind(),
-                                   graph()->zone());
+        var->second->AddLowerBound(constraint->left(), constraint->kind());
       }
     }
   }
@@ -221,7 +216,7 @@ void LoopVariableOptimizer::VisitMerge(Node* node) {
   // Merge the limits of all incoming edges.
   VariableLimits* merged = limits_[node->InputAt(0)->id()]->Copy(zone());
   for (int i = 1; i < node->InputCount(); i++) {
-    merged->Merge(limits_[node->InputAt(0)->id()]);
+    merged->Merge(limits_[node->InputAt(i)->id()]);
   }
   limits_[node->id()] = merged;
 }
@@ -307,10 +302,15 @@ InductionVariable* LoopVariableOptimizer::TryGetInductionVariable(Node* phi) {
   DCHECK_EQ(IrOpcode::kLoop, NodeProperties::GetControlInput(phi)->opcode());
   Node* initial = phi->InputAt(0);
   Node* arith = phi->InputAt(1);
-  // TODO(jarin) Support subtraction.
-  if (arith->opcode() != IrOpcode::kJSAdd) {
+  InductionVariable::ArithmeticType arithmeticType;
+  if (arith->opcode() == IrOpcode::kJSAdd) {
+    arithmeticType = InductionVariable::ArithmeticType::kAddition;
+  } else if (arith->opcode() == IrOpcode::kJSSubtract) {
+    arithmeticType = InductionVariable::ArithmeticType::kSubtraction;
+  } else {
     return nullptr;
   }
+
   // TODO(jarin) Support both sides.
   if (arith->InputAt(0) != phi) {
     if (arith->InputAt(0)->opcode() != IrOpcode::kJSToNumber ||
@@ -319,7 +319,8 @@ InductionVariable* LoopVariableOptimizer::TryGetInductionVariable(Node* phi) {
     }
   }
   Node* incr = arith->InputAt(1);
-  return new (zone()) InductionVariable(phi, arith, incr, initial, zone());
+  return new (zone())
+      InductionVariable(phi, arith, incr, initial, zone(), arithmeticType);
 }
 
 void LoopVariableOptimizer::DetectInductionVariables(Node* loop) {
@@ -369,10 +370,11 @@ void LoopVariableOptimizer::ChangeToInductionVariablePhis() {
   }
 }
 
-void LoopVariableOptimizer::ChangeFromInductionVariablePhis() {
+void LoopVariableOptimizer::ChangeToPhisAndInsertGuards() {
   for (auto entry : induction_vars_) {
     InductionVariable* induction_var = entry.second;
     if (induction_var->phi()->opcode() == IrOpcode::kInductionVariablePhi) {
+      // Turn the induction variable phi back to normal phi.
       int value_count = 2;
       Node* control = NodeProperties::GetControlInput(induction_var->phi());
       DCHECK_EQ(value_count, control->op()->ControlInputCount());
@@ -381,6 +383,19 @@ void LoopVariableOptimizer::ChangeFromInductionVariablePhis() {
       NodeProperties::ChangeOp(
           induction_var->phi(),
           common()->Phi(MachineRepresentation::kTagged, value_count));
+
+      // If the backedge is not a subtype of the phi's type, we insert a sigma
+      // to get the typing right.
+      Node* backedge_value = induction_var->phi()->InputAt(1);
+      Type* backedge_type = NodeProperties::GetType(backedge_value);
+      Type* phi_type = NodeProperties::GetType(induction_var->phi());
+      if (!backedge_type->Is(phi_type)) {
+        Node* backedge_control =
+            NodeProperties::GetControlInput(induction_var->phi())->InputAt(1);
+        Node* rename = graph()->NewNode(common()->TypeGuard(phi_type),
+                                        backedge_value, backedge_control);
+        induction_var->phi()->ReplaceInput(1, rename);
+      }
     }
   }
 }

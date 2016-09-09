@@ -1056,13 +1056,15 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ ldr(kInterpreterBytecodeArrayRegister,
          FieldMemOperand(r0, SharedFunctionInfo::kFunctionDataOffset), eq);
   __ ldr(kInterpreterBytecodeArrayRegister,
-         FieldMemOperand(debug_info, DebugInfo::kAbstractCodeIndex), ne);
+         FieldMemOperand(debug_info, DebugInfo::kDebugBytecodeArrayIndex), ne);
+
+  // Check whether we should continue to use the interpreter.
+  Label switch_to_different_code_kind;
+  __ ldr(r0, FieldMemOperand(r0, SharedFunctionInfo::kCodeOffset));
+  __ cmp(r0, Operand(masm->CodeObject()));  // Self-reference to this code.
+  __ b(ne, &switch_to_different_code_kind);
 
   // Check function data field is actually a BytecodeArray object.
-  Label bytecode_array_not_present;
-  __ CompareRoot(kInterpreterBytecodeArrayRegister,
-                 Heap::kUndefinedValueRootIndex);
-  __ b(eq, &bytecode_array_not_present);
   if (FLAG_debug_code) {
     __ SmiTst(kInterpreterBytecodeArrayRegister);
     __ Assert(ne, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
@@ -1126,10 +1128,10 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   LeaveInterpreterFrame(masm, r2);
   __ Jump(lr);
 
-  // If the bytecode array is no longer present, then the underlying function
-  // has been switched to a different kind of code and we heal the closure by
-  // switching the code entry field over to the new code object as well.
-  __ bind(&bytecode_array_not_present);
+  // If the shared code is no longer this entry trampoline, then the underlying
+  // function has been switched to a different kind of code and we heal the
+  // closure by switching the code entry field over to the new code as well.
+  __ bind(&switch_to_different_code_kind);
   __ LeaveFrame(StackFrame::JAVA_SCRIPT);
   __ ldr(r4, FieldMemOperand(r1, JSFunction::kSharedFunctionInfoOffset));
   __ ldr(r4, FieldMemOperand(r4, SharedFunctionInfo::kCodeOffset));
@@ -1164,8 +1166,15 @@ void Builtins::Generate_InterpreterMarkBaselineOnReturn(MacroAssembler* masm) {
   __ Jump(lr);
 }
 
-static void Generate_InterpreterPushArgs(MacroAssembler* masm, Register index,
+static void Generate_InterpreterPushArgs(MacroAssembler* masm,
+                                         Register num_args, Register index,
                                          Register limit, Register scratch) {
+  // Find the address of the last argument.
+  __ mov(limit, num_args);
+  __ mov(limit, Operand(limit, LSL, kPointerSizeLog2));
+  __ sub(limit, index, limit);
+
+  // TODO(mythria): Add a stack check before pushing arguments.
   Label loop_header, loop_check;
   __ b(al, &loop_check);
   __ bind(&loop_header);
@@ -1188,13 +1197,10 @@ void Builtins::Generate_InterpreterPushArgsAndCallImpl(
   //  -- r1 : the target to call (can be any Object).
   // -----------------------------------
 
-  // Find the address of the last argument.
   __ add(r3, r0, Operand(1));  // Add one for receiver.
-  __ mov(r3, Operand(r3, LSL, kPointerSizeLog2));
-  __ sub(r3, r2, r3);
 
-  // Push the arguments.
-  Generate_InterpreterPushArgs(masm, r2, r3, r4);
+  // Push the arguments. r2, r4, r5 will be modified.
+  Generate_InterpreterPushArgs(masm, r3, r2, r4, r5);
 
   // Call the target.
   if (function_type == CallableType::kJSFunction) {
@@ -1210,27 +1216,63 @@ void Builtins::Generate_InterpreterPushArgsAndCallImpl(
 }
 
 // static
-void Builtins::Generate_InterpreterPushArgsAndConstruct(MacroAssembler* masm) {
+void Builtins::Generate_InterpreterPushArgsAndConstructImpl(
+    MacroAssembler* masm, CallableType construct_type) {
   // ----------- S t a t e -------------
   // -- r0 : argument count (not including receiver)
   // -- r3 : new target
   // -- r1 : constructor to call
-  // -- r2 : address of the first argument
+  // -- r2 : allocation site feedback if available, undefined otherwise.
+  // -- r4 : address of the first argument
   // -----------------------------------
-
-  // Find the address of the last argument.
-  __ mov(r4, Operand(r0, LSL, kPointerSizeLog2));
-  __ sub(r4, r2, r4);
 
   // Push a slot for the receiver to be constructed.
   __ mov(ip, Operand::Zero());
   __ push(ip);
 
-  // Push the arguments.
-  Generate_InterpreterPushArgs(masm, r2, r4, r5);
+  // TODO(mythria): Add a stack check before pushing arguments.
+  // Push the arguments. r5, r4, r6 will be modified.
+  Generate_InterpreterPushArgs(masm, r0, r4, r5, r6);
 
-  // Call the constructor with r0, r1, and r3 unmodified.
-  __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
+  __ AssertUndefinedOrAllocationSite(r2, r5);
+  if (construct_type == CallableType::kJSFunction) {
+    __ AssertFunction(r1);
+
+    // Tail call to the function-specific construct stub (still in the caller
+    // context at this point).
+    __ ldr(r4, FieldMemOperand(r1, JSFunction::kSharedFunctionInfoOffset));
+    __ ldr(r4, FieldMemOperand(r4, SharedFunctionInfo::kConstructStubOffset));
+    // Jump to the construct function.
+    __ add(pc, r4, Operand(Code::kHeaderSize - kHeapObjectTag));
+
+  } else {
+    DCHECK_EQ(construct_type, CallableType::kAny);
+    // Call the constructor with r0, r1, and r3 unmodified.
+    __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
+  }
+}
+
+// static
+void Builtins::Generate_InterpreterPushArgsAndConstructArray(
+    MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  // -- r0 : argument count (not including receiver)
+  // -- r1 : target to call verified to be Array function
+  // -- r2 : allocation site feedback if available, undefined otherwise.
+  // -- r3 : address of the first argument
+  // -----------------------------------
+
+  __ add(r4, r0, Operand(1));  // Add one for receiver.
+
+  // TODO(mythria): Add a stack check before pushing arguments.
+  // Push the arguments. r3, r5, r6 will be modified.
+  Generate_InterpreterPushArgs(masm, r4, r3, r5, r6);
+
+  // Array constructor expects constructor in r3. It is same as r1 here.
+  __ mov(r3, r1);
+
+  ArrayConstructorStub stub(masm->isolate());
+  __ TailCallStub(&stub);
 }
 
 void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
@@ -1453,6 +1495,8 @@ void Builtins::Generate_InstantiateAsmJs(MacroAssembler* masm) {
   Label failed;
   {
     FrameScope scope(masm, StackFrame::INTERNAL);
+    // Preserve argument count for later compare.
+    __ Move(r4, r0);
     // Push the number of arguments to the callee.
     __ SmiTag(r0);
     __ push(r0);
@@ -1463,17 +1507,40 @@ void Builtins::Generate_InstantiateAsmJs(MacroAssembler* masm) {
     // The function.
     __ push(r1);
     // Copy arguments from caller (stdlib, foreign, heap).
-    for (int i = 2; i >= 0; --i) {
-      __ ldr(r4, MemOperand(fp, StandardFrameConstants::kCallerSPOffset +
-                                    i * kPointerSize));
-      __ push(r4);
+    Label args_done;
+    for (int j = 0; j < 4; ++j) {
+      Label over;
+      if (j < 3) {
+        __ cmp(r4, Operand(j));
+        __ b(ne, &over);
+      }
+      for (int i = j - 1; i >= 0; --i) {
+        __ ldr(r4, MemOperand(fp, StandardFrameConstants::kCallerSPOffset +
+                                      i * kPointerSize));
+        __ push(r4);
+      }
+      for (int i = 0; i < 3 - j; ++i) {
+        __ PushRoot(Heap::kUndefinedValueRootIndex);
+      }
+      if (j < 3) {
+        __ jmp(&args_done);
+        __ bind(&over);
+      }
     }
+    __ bind(&args_done);
+
     // Call runtime, on success unwind frame, and parent frame.
     __ CallRuntime(Runtime::kInstantiateAsmJs, 4);
     // A smi 0 is returned on failure, an object on success.
     __ JumpIfSmi(r0, &failed);
+
+    __ Drop(2);
+    __ pop(r4);
+    __ SmiUntag(r4);
     scope.GenerateLeaveFrame();
-    __ Drop(4);
+
+    __ add(r4, r4, Operand(1));
+    __ Drop(r4);
     __ Ret();
 
     __ bind(&failed);
@@ -1844,6 +1911,16 @@ void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
     __ Move(r0, Smi::FromInt(0));
     __ EnterBuiltinFrame(cp, r1, r0);
     __ CallRuntime(Runtime::kThrowNotDateError);
+
+    // It's far from obvious, but this final trailing instruction after the call
+    // is required for StackFrame::LookupCode to work correctly. To illustrate
+    // why: if call were the final instruction in the code object, then the pc
+    // (== return address) would point beyond the code object when the stack is
+    // traversed. When we then try to look up the code object through
+    // StackFrame::LookupCode, we actually return the next code object that
+    // happens to be on the same page in memory.
+    // TODO(jgruber): A proper fix for this would be nice.
+    __ nop();
   }
 }
 
@@ -2404,8 +2481,10 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
         __ SmiTag(r0);
         __ Push(r0, r1);
         __ mov(r0, r3);
+        __ Push(cp);
         ToObjectStub stub(masm->isolate());
         __ CallStub(&stub);
+        __ Pop(cp);
         __ mov(r3, r0);
         __ Pop(r0, r1);
         __ SmiUntag(r0);
@@ -2759,31 +2838,6 @@ void Builtins::Generate_Abort(MacroAssembler* masm) {
   __ Push(r1);
   __ Move(cp, Smi::FromInt(0));
   __ TailCallRuntime(Runtime::kAbort);
-}
-
-// static
-void Builtins::Generate_StringToNumber(MacroAssembler* masm) {
-  // The StringToNumber stub takes one argument in r0.
-  __ AssertString(r0);
-
-  // Check if string has a cached array index.
-  Label runtime;
-  __ ldr(r2, FieldMemOperand(r0, String::kHashFieldOffset));
-  __ tst(r2, Operand(String::kContainsCachedArrayIndexMask));
-  __ b(ne, &runtime);
-  __ IndexFromHash(r2, r0);
-  __ Ret();
-
-  __ bind(&runtime);
-  {
-    FrameScope frame(masm, StackFrame::INTERNAL);
-    // Push argument.
-    __ Push(r0);
-    // We cannot use a tail call here because this builtin can also be called
-    // from wasm.
-    __ CallRuntime(Runtime::kStringToNumber);
-  }
-  __ Ret();
 }
 
 void Builtins::Generate_ToNumber(MacroAssembler* masm) {

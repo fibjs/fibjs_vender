@@ -74,14 +74,24 @@ class Truncation final {
   static bool LessGeneral(TruncationKind rep1, TruncationKind rep2);
 };
 
-enum class TypeCheckKind : uint8_t { kNone, kSigned32, kNumberOrOddball };
+enum class TypeCheckKind : uint8_t {
+  kNone,
+  kSignedSmall,
+  kSigned32,
+  kNumber,
+  kNumberOrOddball
+};
 
 inline std::ostream& operator<<(std::ostream& os, TypeCheckKind type_check) {
   switch (type_check) {
     case TypeCheckKind::kNone:
       return os << "None";
+    case TypeCheckKind::kSignedSmall:
+      return os << "SignedSmall";
     case TypeCheckKind::kSigned32:
       return os << "Signed32";
+    case TypeCheckKind::kNumber:
+      return os << "Number";
     case TypeCheckKind::kNumberOrOddball:
       return os << "NumberOrOddball";
   }
@@ -129,11 +139,29 @@ class UseInfo {
   static UseInfo AnyTagged() {
     return UseInfo(MachineRepresentation::kTagged, Truncation::Any());
   }
+  static UseInfo TaggedSigned() {
+    return UseInfo(MachineRepresentation::kTaggedSigned, Truncation::Any());
+  }
+  static UseInfo TaggedPointer() {
+    return UseInfo(MachineRepresentation::kTaggedPointer, Truncation::Any());
+  }
 
   // Possibly deoptimizing conversions.
+  static UseInfo CheckedSignedSmallAsWord32() {
+    return UseInfo(MachineRepresentation::kWord32, Truncation::Any(),
+                   TypeCheckKind::kSignedSmall);
+  }
   static UseInfo CheckedSigned32AsWord32() {
     return UseInfo(MachineRepresentation::kWord32, Truncation::Any(),
                    TypeCheckKind::kSigned32);
+  }
+  static UseInfo CheckedNumberAsFloat64() {
+    return UseInfo(MachineRepresentation::kFloat64, Truncation::Float64(),
+                   TypeCheckKind::kNumber);
+  }
+  static UseInfo CheckedNumberAsWord32() {
+    return UseInfo(MachineRepresentation::kWord32, Truncation::Word32(),
+                   TypeCheckKind::kNumber);
   }
   static UseInfo CheckedNumberOrOddballAsFloat64() {
     return UseInfo(MachineRepresentation::kFloat64, Truncation::Any(),
@@ -210,8 +238,14 @@ class RepresentationChanger final {
   bool testing_type_errors_;  // If {true}, don't abort on a type error.
   bool type_error_;           // Set when a type error is detected.
 
+  Node* GetTaggedSignedRepresentationFor(Node* node,
+                                         MachineRepresentation output_rep,
+                                         Type* output_type);
+  Node* GetTaggedPointerRepresentationFor(Node* node,
+                                          MachineRepresentation output_rep,
+                                          Type* output_type);
   Node* GetTaggedRepresentationFor(Node* node, MachineRepresentation output_rep,
-                                   Type* output_type);
+                                   Type* output_type, Truncation truncation);
   Node* GetFloat32RepresentationFor(Node* node,
                                     MachineRepresentation output_rep,
                                     Type* output_type, Truncation truncation);

@@ -18,13 +18,12 @@ STATIC_CONST_MEMBER_DEFINITION const size_t
     BytecodeArrayWriter::kMaxSizeOfPackedBytecode;
 
 BytecodeArrayWriter::BytecodeArrayWriter(
-    Isolate* isolate, Zone* zone, ConstantArrayBuilder* constant_array_builder,
+    Zone* zone, ConstantArrayBuilder* constant_array_builder,
     SourcePositionTableBuilder::RecordingMode source_position_mode)
-    : isolate_(isolate),
-      bytecodes_(zone),
+    : bytecodes_(zone),
       max_register_count_(0),
       unbound_jumps_(0),
-      source_position_table_builder_(isolate, zone, source_position_mode),
+      source_position_table_builder_(zone, source_position_mode),
       constant_array_builder_(constant_array_builder) {}
 
 // override
@@ -32,7 +31,7 @@ BytecodeArrayWriter::~BytecodeArrayWriter() {}
 
 // override
 Handle<BytecodeArray> BytecodeArrayWriter::ToBytecodeArray(
-    int fixed_register_count, int parameter_count,
+    Isolate* isolate, int fixed_register_count, int parameter_count,
     Handle<FixedArray> handler_table) {
   DCHECK_EQ(0, unbound_jumps_);
 
@@ -43,16 +42,16 @@ Handle<BytecodeArray> BytecodeArrayWriter::ToBytecodeArray(
   int frame_size_for_locals = fixed_register_count * kPointerSize;
   int frame_size_used = max_register_count() * kPointerSize;
   int frame_size = std::max(frame_size_for_locals, frame_size_used);
-  Handle<FixedArray> constant_pool = constant_array_builder()->ToFixedArray();
-  Handle<BytecodeArray> bytecode_array = isolate_->factory()->NewBytecodeArray(
+  Handle<FixedArray> constant_pool =
+      constant_array_builder()->ToFixedArray(isolate);
+  Handle<BytecodeArray> bytecode_array = isolate->factory()->NewBytecodeArray(
       bytecode_size, &bytecodes()->front(), frame_size, parameter_count,
       constant_pool);
   bytecode_array->set_handler_table(*handler_table);
   Handle<ByteArray> source_position_table =
-      source_position_table_builder()->ToSourcePositionTable();
+      source_position_table_builder()->ToSourcePositionTable(
+          isolate, Handle<AbstractCode>::cast(bytecode_array));
   bytecode_array->set_source_position_table(*source_position_table);
-  source_position_table_builder()->EndJitLogging(
-      AbstractCode::cast(*bytecode_array));
   return bytecode_array;
 }
 
@@ -258,7 +257,7 @@ void BytecodeArrayWriter::PatchJumpWith8BitOperand(size_t jump_location,
     // commit reservation putting the offset into the constant pool,
     // and update the jump instruction and operand.
     size_t entry = constant_array_builder()->CommitReservedEntry(
-        OperandSize::kByte, handle(Smi::FromInt(delta), isolate()));
+        OperandSize::kByte, Smi::FromInt(delta));
     DCHECK_LE(entry, kMaxUInt32);
     DCHECK_EQ(Bytecodes::SizeForUnsignedOperand(static_cast<uint32_t>(entry)),
               OperandSize::kByte);
@@ -281,7 +280,7 @@ void BytecodeArrayWriter::PatchJumpWith16BitOperand(size_t jump_location,
     jump_bytecode = GetJumpWithConstantOperand(jump_bytecode);
     bytecodes()->at(jump_location) = Bytecodes::ToByte(jump_bytecode);
     size_t entry = constant_array_builder()->CommitReservedEntry(
-        OperandSize::kShort, handle(Smi::FromInt(delta), isolate()));
+        OperandSize::kShort, Smi::FromInt(delta));
     WriteUnalignedUInt16(operand_bytes, static_cast<uint16_t>(entry));
   }
   DCHECK(bytecodes()->at(operand_location) == k8BitJumpPlaceholder &&

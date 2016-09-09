@@ -5,6 +5,8 @@
 #include "src/compiler-dispatcher/optimizing-compile-dispatcher.h"
 
 #include "src/base/atomicops.h"
+#include "src/compilation-info.h"
+#include "src/compiler.h"
 #include "src/full-codegen/full-codegen.h"
 #include "src/isolate.h"
 #include "src/tracing/trace-event.h"
@@ -107,7 +109,7 @@ void OptimizingCompileDispatcher::CompileNext(CompilationJob* job) {
   if (!job) return;
 
   // The function may have already been optimized by OSR.  Simply continue.
-  CompilationJob::Status status = job->OptimizeGraph();
+  CompilationJob::Status status = job->ExecuteJob();
   USE(status);  // Prevent an unused-variable error.
 
   // The function may have already been optimized by OSR.  Simply continue.

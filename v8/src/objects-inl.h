@@ -27,6 +27,7 @@
 #include "src/isolate.h"
 #include "src/keys.h"
 #include "src/layout-descriptor-inl.h"
+#include "src/lookup-cache-inl.h"
 #include "src/lookup.h"
 #include "src/objects.h"
 #include "src/property.h"
@@ -709,6 +710,8 @@ bool HeapObject::IsJSCollection() const { return IsJSMap() || IsJSSet(); }
 
 bool HeapObject::IsDescriptorArray() const { return IsFixedArray(); }
 
+bool HeapObject::IsFrameArray() const { return IsFixedArray(); }
+
 bool HeapObject::IsArrayList() const { return IsFixedArray(); }
 
 bool Object::IsLayoutDescriptor() const {
@@ -752,6 +755,14 @@ bool HeapObject::IsHandlerTable() const {
   return true;
 }
 
+bool HeapObject::IsTemplateList() const {
+  if (!IsFixedArray()) return false;
+  // There's actually no way to see the difference between a fixed array and
+  // a template list.
+  if (FixedArray::cast(this)->length() < 1) return false;
+  return true;
+}
+
 bool HeapObject::IsDependentCode() const {
   if (!IsFixedArray()) return false;
   // There's actually no way to see the difference between a fixed array and
@@ -782,6 +793,9 @@ bool HeapObject::IsScopeInfo() const {
   return map() == GetHeap()->scope_info_map();
 }
 
+bool HeapObject::IsModuleInfo() const {
+  return map() == GetHeap()->module_info_map();
+}
 
 TYPE_CHECKER(JSBoundFunction, JS_BOUND_FUNCTION_TYPE)
 TYPE_CHECKER(JSFunction, JS_FUNCTION_TYPE)
@@ -1134,6 +1148,20 @@ MUST_USE_RESULT MaybeHandle<FixedArray> JSReceiver::OwnPropertyKeys(
   return KeyAccumulator::GetKeys(object, KeyCollectionMode::kOwnOnly,
                                  ALL_PROPERTIES,
                                  GetKeysConversion::kConvertToString);
+}
+
+bool JSObject::PrototypeHasNoElements(Isolate* isolate, JSObject* object) {
+  DisallowHeapAllocation no_gc;
+  HeapObject* prototype = HeapObject::cast(object->map()->prototype());
+  HeapObject* null = isolate->heap()->null_value();
+  HeapObject* empty = isolate->heap()->empty_fixed_array();
+  while (prototype != null) {
+    Map* map = prototype->map();
+    if (map->instance_type() <= LAST_CUSTOM_ELEMENTS_RECEIVER) return false;
+    if (JSObject::cast(prototype)->elements() != empty) return false;
+    prototype = HeapObject::cast(map->prototype());
+  }
+  return true;
 }
 
 #define FIELD_ADDR(p, offset) \
@@ -1995,10 +2023,9 @@ void WeakCell::initialize(HeapObject* val) {
   // We just have to execute the generational barrier here because we never
   // mark through a weak cell and collect evacuation candidates when we process
   // all weak cells.
-  WriteBarrierMode mode =
-      Page::FromAddress(this->address())->IsFlagSet(Page::BLACK_PAGE)
-          ? UPDATE_WRITE_BARRIER
-          : UPDATE_WEAK_WRITE_BARRIER;
+  WriteBarrierMode mode = Marking::IsBlack(ObjectMarking::MarkBitFrom(this))
+                              ? UPDATE_WRITE_BARRIER
+                              : UPDATE_WEAK_WRITE_BARRIER;
   CONDITIONAL_WRITE_BARRIER(GetHeap(), this, kValueOffset, val, mode);
 }
 
@@ -2589,6 +2616,29 @@ Object** FixedArray::RawFieldOfElementAt(int index) {
   return HeapObject::RawField(this, OffsetOfElementAt(index));
 }
 
+#define DEFINE_FRAME_ARRAY_ACCESSORS(name, type)                              \
+  type* FrameArray::name(int frame_ix) const {                                \
+    Object* obj =                                                             \
+        get(kFirstIndex + frame_ix * kElementsPerFrame + k##name##Offset);    \
+    return type::cast(obj);                                                   \
+  }                                                                           \
+                                                                              \
+  void FrameArray::Set##name(int frame_ix, type* value) {                     \
+    set(kFirstIndex + frame_ix * kElementsPerFrame + k##name##Offset, value); \
+  }
+FRAME_ARRAY_FIELD_LIST(DEFINE_FRAME_ARRAY_ACCESSORS)
+#undef DEFINE_FRAME_ARRAY_ACCESSORS
+
+bool FrameArray::IsWasmFrame(int frame_ix) const {
+  const int flags = Flags(frame_ix)->value();
+  return (flags & kIsWasmFrame) != 0;
+}
+
+int FrameArray::FrameCount() const {
+  const int frame_count = Smi::cast(get(kFrameCountIndex))->value();
+  DCHECK_LE(0, frame_count);
+  return frame_count;
+}
 
 bool DescriptorArray::IsEmpty() {
   DCHECK(length() >= kFirstIndex ||
@@ -3202,6 +3252,7 @@ CAST_ACCESSOR(FixedDoubleArray)
 CAST_ACCESSOR(FixedTypedArrayBase)
 CAST_ACCESSOR(Float32x4)
 CAST_ACCESSOR(Foreign)
+CAST_ACCESSOR(FrameArray)
 CAST_ACCESSOR(GlobalDictionary)
 CAST_ACCESSOR(HandlerTable)
 CAST_ACCESSOR(HeapObject)
@@ -3234,6 +3285,7 @@ CAST_ACCESSOR(JSWeakMap)
 CAST_ACCESSOR(JSWeakSet)
 CAST_ACCESSOR(LayoutDescriptor)
 CAST_ACCESSOR(Map)
+CAST_ACCESSOR(ModuleInfo)
 CAST_ACCESSOR(Name)
 CAST_ACCESSOR(NameDictionary)
 CAST_ACCESSOR(NormalizedMapCache)
@@ -3244,6 +3296,7 @@ CAST_ACCESSOR(Oddball)
 CAST_ACCESSOR(OrderedHashMap)
 CAST_ACCESSOR(OrderedHashSet)
 CAST_ACCESSOR(PropertyCell)
+CAST_ACCESSOR(TemplateList)
 CAST_ACCESSOR(ScopeInfo)
 CAST_ACCESSOR(SeededNumberDictionary)
 CAST_ACCESSOR(SeqOneByteString)
@@ -3258,6 +3311,7 @@ CAST_ACCESSOR(StringSet)
 CAST_ACCESSOR(StringTable)
 CAST_ACCESSOR(Struct)
 CAST_ACCESSOR(Symbol)
+CAST_ACCESSOR(TemplateInfo)
 CAST_ACCESSOR(Uint16x8)
 CAST_ACCESSOR(Uint32x4)
 CAST_ACCESSOR(Uint8x16)
@@ -3442,12 +3496,6 @@ int HandlerTable::GetRangeData(int index) const {
   return Smi::cast(get(index * kRangeEntrySize + kRangeDataIndex))->value();
 }
 
-HandlerTable::CatchPrediction HandlerTable::GetRangePrediction(
-    int index) const {
-  return HandlerPredictionField::decode(
-      Smi::cast(get(index * kRangeEntrySize + kRangeHandlerIndex))->value());
-}
-
 void HandlerTable::SetRangeStart(int index, int value) {
   set(index * kRangeEntrySize + kRangeStartIndex, Smi::FromInt(value));
 }
@@ -3474,11 +3522,8 @@ void HandlerTable::SetReturnOffset(int index, int value) {
   set(index * kReturnEntrySize + kReturnOffsetIndex, Smi::FromInt(value));
 }
 
-
-void HandlerTable::SetReturnHandler(int index, int offset,
-                                    CatchPrediction prediction) {
-  int value = HandlerOffsetField::encode(offset) |
-              HandlerPredictionField::encode(prediction);
+void HandlerTable::SetReturnHandler(int index, int offset) {
+  int value = HandlerOffsetField::encode(offset);
   set(index * kReturnEntrySize + kReturnHandlerIndex, Smi::FromInt(value));
 }
 
@@ -5327,6 +5372,24 @@ ByteArray* AbstractCode::source_position_table() {
   }
 }
 
+void AbstractCode::set_source_position_table(ByteArray* source_position_table) {
+  if (IsCode()) {
+    GetCode()->set_source_position_table(source_position_table);
+  } else {
+    GetBytecodeArray()->set_source_position_table(source_position_table);
+  }
+}
+
+int AbstractCode::LookupRangeInHandlerTable(
+    int code_offset, int* data, HandlerTable::CatchPrediction* prediction) {
+  if (IsCode()) {
+    return GetCode()->LookupRangeInHandlerTable(code_offset, data, prediction);
+  } else {
+    return GetBytecodeArray()->LookupRangeInHandlerTable(code_offset, data,
+                                                         prediction);
+  }
+}
+
 int AbstractCode::SizeIncludingMetadata() {
   if (IsCode()) {
     return GetCode()->SizeIncludingMetadata();
@@ -5392,13 +5455,13 @@ void Map::set_prototype(Object* value, WriteBarrierMode mode) {
 
 
 LayoutDescriptor* Map::layout_descriptor_gc_safe() {
-  Object* layout_desc = READ_FIELD(this, kLayoutDecriptorOffset);
+  Object* layout_desc = READ_FIELD(this, kLayoutDescriptorOffset);
   return LayoutDescriptor::cast_gc_safe(layout_desc);
 }
 
 
 bool Map::HasFastPointerLayout() const {
-  Object* layout_desc = READ_FIELD(this, kLayoutDecriptorOffset);
+  Object* layout_desc = READ_FIELD(this, kLayoutDescriptorOffset);
   return LayoutDescriptor::IsFastPointerLayout(layout_desc);
 }
 
@@ -5446,8 +5509,7 @@ void Map::InitializeDescriptors(DescriptorArray* descriptors,
 
 
 ACCESSORS(Map, instance_descriptors, DescriptorArray, kDescriptorsOffset)
-ACCESSORS(Map, layout_descriptor, LayoutDescriptor, kLayoutDecriptorOffset)
-
+ACCESSORS(Map, layout_descriptor, LayoutDescriptor, kLayoutDescriptorOffset)
 
 void Map::set_bit_field3(uint32_t bits) {
   if (kInt32Size != kPointerSize) {
@@ -5631,10 +5693,8 @@ ACCESSORS(PrototypeInfo, validity_cell, Object, kValidityCellOffset)
 SMI_ACCESSORS(PrototypeInfo, bit_field, kBitFieldOffset)
 BOOL_ACCESSORS(PrototypeInfo, bit_field, should_be_fast_map, kShouldBeFastBit)
 
-ACCESSORS(SloppyBlockWithEvalContextExtension, scope_info, ScopeInfo,
-          kScopeInfoOffset)
-ACCESSORS(SloppyBlockWithEvalContextExtension, extension, JSObject,
-          kExtensionOffset)
+ACCESSORS(ContextExtension, scope_info, ScopeInfo, kScopeInfoOffset)
+ACCESSORS(ContextExtension, extension, Object, kExtensionOffset)
 
 ACCESSORS(AccessorPair, getter, Object, kGetterOffset)
 ACCESSORS(AccessorPair, setter, Object, kSetterOffset)
@@ -5648,8 +5708,10 @@ ACCESSORS(AccessCheckInfo, data, Object, kDataOffset)
 ACCESSORS(InterceptorInfo, getter, Object, kGetterOffset)
 ACCESSORS(InterceptorInfo, setter, Object, kSetterOffset)
 ACCESSORS(InterceptorInfo, query, Object, kQueryOffset)
+ACCESSORS(InterceptorInfo, descriptor, Object, kDescriptorOffset)
 ACCESSORS(InterceptorInfo, deleter, Object, kDeleterOffset)
 ACCESSORS(InterceptorInfo, enumerator, Object, kEnumeratorOffset)
+ACCESSORS(InterceptorInfo, definer, Object, kDefinerOffset)
 ACCESSORS(InterceptorInfo, data, Object, kDataOffset)
 SMI_ACCESSORS(InterceptorInfo, flags, kFlagsOffset)
 BOOL_ACCESSORS(InterceptorInfo, flags, can_intercept_symbols,
@@ -5690,23 +5752,39 @@ SMI_ACCESSORS(FunctionTemplateInfo, flag, kFlagOffset)
 
 ACCESSORS(ObjectTemplateInfo, constructor, Object, kConstructorOffset)
 ACCESSORS(ObjectTemplateInfo, data, Object, kDataOffset)
+
 int ObjectTemplateInfo::internal_field_count() const {
   Object* value = data();
   DCHECK(value->IsSmi());
   return InternalFieldCount::decode(Smi::cast(value)->value());
 }
+
 void ObjectTemplateInfo::set_internal_field_count(int count) {
   return set_data(Smi::FromInt(
       InternalFieldCount::update(Smi::cast(data())->value(), count)));
 }
+
 bool ObjectTemplateInfo::immutable_proto() const {
   Object* value = data();
   DCHECK(value->IsSmi());
   return IsImmutablePrototype::decode(Smi::cast(value)->value());
 }
+
 void ObjectTemplateInfo::set_immutable_proto(bool immutable) {
   return set_data(Smi::FromInt(
       IsImmutablePrototype::update(Smi::cast(data())->value(), immutable)));
+}
+
+int TemplateList::length() const {
+  return Smi::cast(FixedArray::cast(this)->get(kLengthIndex))->value();
+}
+
+Object* TemplateList::get(int index) const {
+  return FixedArray::cast(this)->get(kFirstElementIndex + index);
+}
+
+void TemplateList::set(int index, Object* value) {
+  FixedArray::cast(this)->set(kFirstElementIndex + index, value);
 }
 
 ACCESSORS(AllocationSite, transition_info, Object, kTransitionInfoOffset)
@@ -5773,16 +5851,36 @@ void Script::set_origin_options(ScriptOriginOptions origin_options) {
 
 
 ACCESSORS(DebugInfo, shared, SharedFunctionInfo, kSharedFunctionInfoIndex)
-ACCESSORS(DebugInfo, abstract_code, AbstractCode, kAbstractCodeIndex)
+ACCESSORS(DebugInfo, debug_bytecode_array, Object, kDebugBytecodeArrayIndex)
 ACCESSORS(DebugInfo, break_points, FixedArray, kBreakPointsStateIndex)
 
-BytecodeArray* DebugInfo::original_bytecode_array() {
+bool DebugInfo::HasDebugBytecodeArray() {
+  return debug_bytecode_array()->IsBytecodeArray();
+}
+
+bool DebugInfo::HasDebugCode() {
+  Code* code = shared()->code();
+  bool has = code->kind() == Code::FUNCTION;
+  DCHECK(!has || code->has_debug_break_slots());
+  return has;
+}
+
+BytecodeArray* DebugInfo::OriginalBytecodeArray() {
+  DCHECK(HasDebugBytecodeArray());
   return shared()->bytecode_array();
 }
 
-SMI_ACCESSORS(BreakPointInfo, code_offset, kCodeOffsetIndex)
+BytecodeArray* DebugInfo::DebugBytecodeArray() {
+  DCHECK(HasDebugBytecodeArray());
+  return BytecodeArray::cast(debug_bytecode_array());
+}
+
+Code* DebugInfo::DebugCode() {
+  DCHECK(HasDebugCode());
+  return shared()->code();
+}
+
 SMI_ACCESSORS(BreakPointInfo, source_position, kSourcePositionIndex)
-SMI_ACCESSORS(BreakPointInfo, statement_position, kStatementPositionIndex)
 ACCESSORS(BreakPointInfo, break_point_objects, Object, kBreakPointObjectsIndex)
 
 ACCESSORS(SharedFunctionInfo, name, Object, kNameOffset)
@@ -5948,14 +6046,14 @@ void SharedFunctionInfo::set_optimization_disabled(bool disable) {
 
 
 LanguageMode SharedFunctionInfo::language_mode() {
-  STATIC_ASSERT(LANGUAGE_END == 3);
+  STATIC_ASSERT(LANGUAGE_END == 2);
   return construct_language_mode(
       BooleanBit::get(compiler_hints(), kStrictModeFunction));
 }
 
 
 void SharedFunctionInfo::set_language_mode(LanguageMode language_mode) {
-  STATIC_ASSERT(LANGUAGE_END == 3);
+  STATIC_ASSERT(LANGUAGE_END == 2);
   // We only allow language mode transitions that set the same language mode
   // again or go up in the chain:
   DCHECK(is_sloppy(this->language_mode()) || is_strict(language_mode));
@@ -6001,6 +6099,8 @@ BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_setter_function,
                kIsSetterFunction)
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_default_constructor,
                kIsDefaultConstructor)
+BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_asm_wasm_broken,
+               kIsAsmWasmBroken)
 
 inline bool SharedFunctionInfo::is_resumable() const {
   return is_generator() || is_async();
@@ -6067,6 +6167,9 @@ void SharedFunctionInfo::ReplaceCode(Code* value) {
   if (is_compiled()) set_never_compiled(false);
 }
 
+bool SharedFunctionInfo::HasBaselineCode() const {
+  return code()->kind() == Code::FUNCTION;
+}
 
 ScopeInfo* SharedFunctionInfo::scope_info() const {
   return reinterpret_cast<ScopeInfo*>(READ_FIELD(this, kScopeInfoOffset));
@@ -6083,8 +6186,7 @@ void SharedFunctionInfo::set_scope_info(ScopeInfo* value,
                             mode);
 }
 
-
-bool SharedFunctionInfo::is_compiled() {
+bool SharedFunctionInfo::is_compiled() const {
   Builtins* builtins = GetIsolate()->builtins();
   DCHECK(code() != builtins->builtin(Builtins::kCompileOptimizedConcurrent));
   DCHECK(code() != builtins->builtin(Builtins::kCompileOptimized));
@@ -6112,8 +6214,8 @@ DebugInfo* SharedFunctionInfo::GetDebugInfo() {
 
 
 bool SharedFunctionInfo::HasDebugCode() {
-  return HasBytecodeArray() ||
-         (code()->kind() == Code::FUNCTION && code()->has_debug_break_slots());
+  if (HasBaselineCode()) return code()->has_debug_break_slots();
+  return HasBytecodeArray();
 }
 
 
@@ -7819,6 +7921,20 @@ bool ScopeInfo::HasSimpleParameters() {
 FOR_EACH_SCOPE_INFO_NUMERIC_FIELD(SCOPE_INFO_FIELD_ACCESSORS)
 #undef SCOPE_INFO_FIELD_ACCESSORS
 
+FixedArray* ModuleInfo::special_exports() const {
+  return FixedArray::cast(get(kSpecialExportsIndex));
+}
+
+FixedArray* ModuleInfo::regular_exports() const {
+  return FixedArray::cast(get(kRegularExportsIndex));
+}
+
+#ifdef DEBUG
+bool ModuleInfo::Equals(ModuleInfo* other) const {
+  return get(kSpecialExportsIndex) == other->get(kSpecialExportsIndex) &&
+         get(kRegularExportsIndex) == other->get(kRegularExportsIndex);
+}
+#endif
 
 void Map::ClearCodeCache(Heap* heap) {
   // No write barrier is needed since empty_fixed_array is not in new space.

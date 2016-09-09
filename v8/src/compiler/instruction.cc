@@ -180,6 +180,12 @@ std::ostream& operator<<(std::ostream& os,
         case MachineRepresentation::kSimd128:
           os << "|s128";
           break;
+        case MachineRepresentation::kTaggedSigned:
+          os << "|ts";
+          break;
+        case MachineRepresentation::kTaggedPointer:
+          os << "|tp";
+          break;
         case MachineRepresentation::kTagged:
           os << "|t";
           break;
@@ -307,7 +313,6 @@ bool Instruction::AreMovesRedundant() const {
   }
   return true;
 }
-
 
 void Instruction::Print(const RegisterConfiguration* config) const {
   OFStream os(stdout);
@@ -625,6 +630,58 @@ static InstructionBlock* InstructionBlockFor(Zone* zone,
   return instr_block;
 }
 
+std::ostream& operator<<(std::ostream& os,
+                         PrintableInstructionBlock& printable_block) {
+  const InstructionBlock* block = printable_block.block_;
+  const RegisterConfiguration* config = printable_block.register_configuration_;
+  const InstructionSequence* code = printable_block.code_;
+
+  os << "B" << block->rpo_number();
+  os << ": AO#" << block->ao_number();
+  if (block->IsDeferred()) os << " (deferred)";
+  if (!block->needs_frame()) os << " (no frame)";
+  if (block->must_construct_frame()) os << " (construct frame)";
+  if (block->must_deconstruct_frame()) os << " (deconstruct frame)";
+  if (block->IsLoopHeader()) {
+    os << " loop blocks: [" << block->rpo_number() << ", " << block->loop_end()
+       << ")";
+  }
+  os << "  instructions: [" << block->code_start() << ", " << block->code_end()
+     << ")" << std::endl
+     << " predecessors:";
+
+  for (RpoNumber pred : block->predecessors()) {
+    os << " B" << pred.ToInt();
+  }
+  os << std::endl;
+
+  for (const PhiInstruction* phi : block->phis()) {
+    PrintableInstructionOperand printable_op = {config, phi->output()};
+    os << "     phi: " << printable_op << " =";
+    for (int input : phi->operands()) {
+      os << " v" << input;
+    }
+    os << std::endl;
+  }
+
+  ScopedVector<char> buf(32);
+  PrintableInstruction printable_instr;
+  printable_instr.register_configuration_ = config;
+  for (int j = block->first_instruction_index();
+       j <= block->last_instruction_index(); j++) {
+    // TODO(svenpanne) Add some basic formatting to our streams.
+    SNPrintF(buf, "%5d", j);
+    printable_instr.instr_ = code->InstructionAt(j);
+    os << "   " << buf.start() << ": " << printable_instr << std::endl;
+  }
+
+  for (RpoNumber succ : block->successors()) {
+    os << " B" << succ.ToInt();
+  }
+  os << std::endl;
+  return os;
+}
+
 InstructionBlocks* InstructionSequence::InstructionBlocksFor(
     Zone* zone, const Schedule* schedule) {
   InstructionBlocks* blocks = zone->NewArray<InstructionBlocks>(1);
@@ -795,6 +852,8 @@ static MachineRepresentation FilterRepresentation(MachineRepresentation rep) {
     case MachineRepresentation::kFloat32:
     case MachineRepresentation::kFloat64:
     case MachineRepresentation::kSimd128:
+    case MachineRepresentation::kTaggedSigned:
+    case MachineRepresentation::kTaggedPointer:
     case MachineRepresentation::kTagged:
       return rep;
     case MachineRepresentation::kNone:
@@ -866,7 +925,6 @@ void InstructionSequence::SetSourcePosition(const Instruction* instr,
   source_positions_.insert(std::make_pair(instr, value));
 }
 
-
 void InstructionSequence::Print(const RegisterConfiguration* config) const {
   OFStream os(stdout);
   PrintableInstructionSequence wrapper;
@@ -883,49 +941,8 @@ void InstructionSequence::PrintBlock(const RegisterConfiguration* config,
   RpoNumber rpo = RpoNumber::FromInt(block_id);
   const InstructionBlock* block = InstructionBlockAt(rpo);
   CHECK(block->rpo_number() == rpo);
-
-  os << "B" << block->rpo_number();
-  os << ": AO#" << block->ao_number();
-  if (block->IsDeferred()) os << " (deferred)";
-  if (!block->needs_frame()) os << " (no frame)";
-  if (block->must_construct_frame()) os << " (construct frame)";
-  if (block->must_deconstruct_frame()) os << " (deconstruct frame)";
-  if (block->IsLoopHeader()) {
-    os << " loop blocks: [" << block->rpo_number() << ", " << block->loop_end()
-       << ")";
-  }
-  os << "  instructions: [" << block->code_start() << ", " << block->code_end()
-     << ")\n  predecessors:";
-
-  for (RpoNumber pred : block->predecessors()) {
-    os << " B" << pred.ToInt();
-  }
-  os << "\n";
-
-  for (const PhiInstruction* phi : block->phis()) {
-    PrintableInstructionOperand printable_op = {config, phi->output()};
-    os << "     phi: " << printable_op << " =";
-    for (int input : phi->operands()) {
-      os << " v" << input;
-    }
-    os << "\n";
-  }
-
-  ScopedVector<char> buf(32);
-  PrintableInstruction printable_instr;
-  printable_instr.register_configuration_ = config;
-  for (int j = block->first_instruction_index();
-       j <= block->last_instruction_index(); j++) {
-    // TODO(svenpanne) Add some basic formatting to our streams.
-    SNPrintF(buf, "%5d", j);
-    printable_instr.instr_ = InstructionAt(j);
-    os << "   " << buf.start() << ": " << printable_instr << "\n";
-  }
-
-  for (RpoNumber succ : block->successors()) {
-    os << " B" << succ.ToInt();
-  }
-  os << "\n";
+  PrintableInstructionBlock printable_block = {config, block, this};
+  os << printable_block << std::endl;
 }
 
 void InstructionSequence::PrintBlock(int block_id) const {
@@ -1012,8 +1029,11 @@ std::ostream& operator<<(std::ostream& os,
        it != code.constants_.end(); ++i, ++it) {
     os << "CST#" << i << ": v" << it->first << " = " << it->second << "\n";
   }
+  PrintableInstructionBlock printable_block = {
+      printable.register_configuration_, nullptr, printable.sequence_};
   for (int i = 0; i < code.InstructionBlockCount(); i++) {
-    printable.sequence_->PrintBlock(printable.register_configuration_, i);
+    printable_block.block_ = code.InstructionBlockAt(RpoNumber::FromInt(i));
+    os << printable_block;
   }
   return os;
 }

@@ -71,6 +71,8 @@ int GetByteWidth(MachineRepresentation rep) {
     case MachineRepresentation::kWord8:
     case MachineRepresentation::kWord16:
     case MachineRepresentation::kWord32:
+    case MachineRepresentation::kTaggedSigned:
+    case MachineRepresentation::kTaggedPointer:
     case MachineRepresentation::kTagged:
       return kPointerSize;
     case MachineRepresentation::kFloat32:
@@ -1039,6 +1041,8 @@ void TopLevelLiveRange::Merge(TopLevelLiveRange* other, Zone* zone) {
 
   TopLevel()->UpdateParentForAllChildren(TopLevel());
   TopLevel()->UpdateSpillRangePostMerge(other);
+  TopLevel()->set_has_slot_use(TopLevel()->has_slot_use() ||
+                               other->has_slot_use());
 
 #if DEBUG
   Verify();
@@ -1111,9 +1115,9 @@ void TopLevelLiveRange::AddUseInterval(LifetimePosition start,
       first_interval_ = interval;
     } else {
       // Order of instruction's processing (see ProcessInstructions) guarantees
-      // that each new use interval either precedes or intersects with
-      // last added interval.
-      DCHECK(start < first_interval_->end());
+      // that each new use interval either precedes, intersects with or touches
+      // the last added interval.
+      DCHECK(start <= first_interval_->end());
       first_interval_->set_start(Min(start, first_interval_->start()));
       first_interval_->set_end(Max(end, first_interval_->end()));
     }
@@ -3271,8 +3275,8 @@ void ReferenceMapPopulator::PopulateReferenceMaps() {
         spill_operand = range->GetSpillRangeOperand();
       }
       DCHECK(spill_operand.IsStackSlot());
-      DCHECK_EQ(MachineRepresentation::kTagged,
-                AllocatedOperand::cast(spill_operand).representation());
+      DCHECK(CanBeTaggedPointer(
+          AllocatedOperand::cast(spill_operand).representation()));
     }
 
     LiveRange* cur = range;
@@ -3334,8 +3338,8 @@ void ReferenceMapPopulator::PopulateReferenceMaps() {
             safe_point);
         InstructionOperand operand = cur->GetAssignedOperand();
         DCHECK(!operand.IsStackSlot());
-        DCHECK_EQ(MachineRepresentation::kTagged,
-                  AllocatedOperand::cast(operand).representation());
+        DCHECK(CanBeTaggedPointer(
+            AllocatedOperand::cast(operand).representation()));
         map->RecordReference(AllocatedOperand::cast(operand));
       }
     }

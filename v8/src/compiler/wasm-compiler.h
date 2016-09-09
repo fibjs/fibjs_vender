@@ -9,6 +9,7 @@
 
 // Clients of this interface shouldn't depend on lots of compiler internals.
 // Do not include anything from src/compiler here!
+#include "src/compilation-info.h"
 #include "src/compiler.h"
 #include "src/wasm/wasm-opcodes.h"
 #include "src/wasm/wasm-result.h"
@@ -24,7 +25,6 @@ class JSGraph;
 class Graph;
 class Operator;
 class SourcePositionTable;
-class MachineOperatorBuilder;
 }  // namespace compiler
 
 namespace wasm {
@@ -82,8 +82,7 @@ class WasmCompilationUnit final {
 };
 
 // Wraps a JS function, producing a code object that can be called from WASM.
-Handle<Code> CompileWasmToJSWrapper(Isolate* isolate,
-                                    Handle<JSFunction> function,
+Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, Handle<JSReceiver> target,
                                     wasm::FunctionSig* sig, uint32_t index,
                                     Handle<String> import_module,
                                     MaybeHandle<String> import_function);
@@ -95,7 +94,6 @@ Handle<Code> CompileJSToWasmWrapper(Isolate* isolate, wasm::ModuleEnv* module,
 // Abstracts details of building TurboFan graph nodes for WASM to separate
 // the WASM decoder from the internal details of TurboFan.
 class WasmTrapHelper;
-enum class Conversion { kNone, kOpaque, kInt32, kFloat32, kFloat64 };
 typedef ZoneVector<Node*> NodeVector;
 class WasmGraphBuilder {
  public:
@@ -131,7 +129,6 @@ class WasmGraphBuilder {
   Node* Float32Constant(float value);
   Node* Float64Constant(double value);
   Node* HeapConstant(Handle<HeapObject> value);
-  Node* DefaultS128Value();
   Node* Binop(wasm::WasmOpcode opcode, Node* left, Node* right,
               wasm::WasmCodePosition position = wasm::kNoCodePosition);
   Node* Unop(wasm::WasmOpcode opcode, Node* input,
@@ -140,6 +137,8 @@ class WasmGraphBuilder {
   bool IsPhiWithMerge(Node* phi, Node* merge);
   void AppendToMerge(Node* merge, Node* from);
   void AppendToPhi(Node* phi, Node* from);
+
+  void StackCheck(wasm::WasmCodePosition position);
 
   //-----------------------------------------------------------------------
   // Operations that read and/or write {control} and {effect}.
@@ -158,26 +157,20 @@ class WasmGraphBuilder {
                    wasm::WasmCodePosition position);
   Node* CallIndirect(uint32_t index, Node** args,
                      wasm::WasmCodePosition position);
-  Node* JITSingleFunction(Node* base, Node* length, Node* index,
-                          uint32_t sig_index, wasm::FunctionSig* sig,
-                          wasm::WasmCodePosition position);
   void BuildJSToWasmWrapper(Handle<Code> wasm_code, wasm::FunctionSig* sig);
-  void BuildWasmToJSWrapper(Handle<JSFunction> function,
-                            wasm::FunctionSig* sig);
+  void BuildWasmToJSWrapper(Handle<JSReceiver> target, wasm::FunctionSig* sig);
 
-  Node* ToJS(Node* node, Node* context, wasm::LocalType type);
+  Node* ToJS(Node* node, wasm::LocalType type);
   Node* FromJS(Node* node, Node* context, wasm::LocalType type);
   Node* Invert(Node* node);
   Node* FunctionTable(uint32_t index);
-  Node* ChangeToRuntimeCall(Node* node, Runtime::FunctionId function_id,
-                            Signature<Conversion>* signature);
 
   //-----------------------------------------------------------------------
   // Operations that concern the linear memory.
   //-----------------------------------------------------------------------
   Node* MemSize(uint32_t offset);
-  Node* LoadGlobal(uint32_t index);
-  Node* StoreGlobal(uint32_t index, Node* val);
+  Node* GetGlobal(uint32_t index);
+  Node* SetGlobal(uint32_t index, Node* val);
   Node* LoadMem(wasm::LocalType type, MachineType memtype, Node* index,
                 uint32_t offset, uint32_t alignment,
                 wasm::WasmCodePosition position);
@@ -202,9 +195,10 @@ class WasmGraphBuilder {
 
   void SetSourcePosition(Node* node, wasm::WasmCodePosition position);
 
-  Node* SimdOp(wasm::WasmOpcode opcode, const NodeVector& inputs);
+  Node* DefaultS128Value();
 
-  bool has_simd_ops() { return has_simd_ops_; }
+  Node* SimdOp(wasm::WasmOpcode opcode, const NodeVector& inputs);
+  Node* SimdExtractLane(wasm::WasmOpcode opcode, uint8_t lane, Node* input);
 
  private:
   static const int kDefaultBufferSize = 16;
@@ -227,7 +221,6 @@ class WasmGraphBuilder {
   SetOncePointer<const Operator> allocate_heap_number_operator_;
 
   compiler::SourcePositionTable* source_position_table_ = nullptr;
-  bool has_simd_ops_ = false;
 
   // Internal helper methods.
   JSGraph* jsgraph() { return jsgraph_; }
@@ -248,14 +241,8 @@ class WasmGraphBuilder {
   Node* BuildWasmCall(wasm::FunctionSig* sig, Node** args,
                       wasm::WasmCodePosition position);
 
-  Node* BuildF32Neg(Node* input);
-  Node* BuildF64Neg(Node* input);
   Node* BuildF32CopySign(Node* left, Node* right);
   Node* BuildF64CopySign(Node* left, Node* right);
-  Node* BuildF32Min(Node* left, Node* right);
-  Node* BuildF32Max(Node* left, Node* right);
-  Node* BuildF64Min(Node* left, Node* right);
-  Node* BuildF64Max(Node* left, Node* right);
   Node* BuildI32SConvertF32(Node* input, wasm::WasmCodePosition position);
   Node* BuildI32SConvertF64(Node* input, wasm::WasmCodePosition position);
   Node* BuildI32UConvertF32(Node* input, wasm::WasmCodePosition position);
@@ -319,7 +306,6 @@ class WasmGraphBuilder {
   Node* BuildJavaScriptToNumber(Node* node, Node* context, Node* effect,
                                 Node* control);
   Node* BuildChangeInt32ToTagged(Node* value);
-  Node* BuildChangeTaggedToInt32(Node* value);
   Node* BuildChangeFloat64ToTagged(Node* value);
   Node* BuildChangeTaggedToFloat64(Node* value);
 
@@ -353,8 +339,8 @@ class WasmGraphBuilder {
     return buf;
   }
 
-  // Simd helper functions
-  MachineOperatorBuilder* simd();
+  int AddParameterNodes(Node** args, int pos, int param_count,
+                        wasm::FunctionSig* sig);
 };
 }  // namespace compiler
 }  // namespace internal

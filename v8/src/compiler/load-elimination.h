@@ -12,17 +12,53 @@ namespace internal {
 namespace compiler {
 
 // Foward declarations.
+class CommonOperatorBuilder;
 struct FieldAccess;
+class Graph;
+class JSGraph;
 
 class LoadElimination final : public AdvancedReducer {
  public:
-  LoadElimination(Editor* editor, Zone* zone)
-      : AdvancedReducer(editor), node_states_(zone) {}
+  LoadElimination(Editor* editor, JSGraph* jsgraph, Zone* zone)
+      : AdvancedReducer(editor), node_states_(zone), jsgraph_(jsgraph) {}
   ~LoadElimination() final {}
 
   Reduction Reduce(Node* node) final;
 
  private:
+  static const size_t kMaxTrackedChecks = 8;
+
+  // Abstract state to approximate the current state of checks that are
+  // only invalidated by calls, i.e. array buffer neutering checks, along
+  // the effect paths through the graph.
+  class AbstractChecks final : public ZoneObject {
+   public:
+    explicit AbstractChecks(Zone* zone) {
+      for (size_t i = 0; i < arraysize(nodes_); ++i) {
+        nodes_[i] = nullptr;
+      }
+    }
+    AbstractChecks(Node* node, Zone* zone) : AbstractChecks(zone) {
+      nodes_[next_index_++] = node;
+    }
+
+    AbstractChecks const* Extend(Node* node, Zone* zone) const {
+      AbstractChecks* that = new (zone) AbstractChecks(*this);
+      that->nodes_[that->next_index_] = node;
+      that->next_index_ = (that->next_index_ + 1) % arraysize(nodes_);
+      return that;
+    }
+    Node* Lookup(Node* node) const;
+    bool Equals(AbstractChecks const* that) const;
+    AbstractChecks const* Merge(AbstractChecks const* that, Zone* zone) const;
+
+    void Print() const;
+
+   private:
+    Node* nodes_[kMaxTrackedChecks];
+    size_t next_index_ = 0;
+  };
+
   static const size_t kMaxTrackedElements = 8;
 
   // Abstract state to approximate the current state of an element along the
@@ -51,6 +87,8 @@ class LoadElimination final : public AdvancedReducer {
     bool Equals(AbstractElements const* that) const;
     AbstractElements const* Merge(AbstractElements const* that,
                                   Zone* zone) const;
+
+    void Print() const;
 
    private:
     struct Element {
@@ -103,6 +141,8 @@ class LoadElimination final : public AdvancedReducer {
       return copy;
     }
 
+    void Print() const;
+
    private:
     ZoneMap<Node*, Node*> info_for_node_;
   };
@@ -132,7 +172,13 @@ class LoadElimination final : public AdvancedReducer {
                                      Zone* zone) const;
     Node* LookupElement(Node* object, Node* index) const;
 
+    AbstractState const* AddCheck(Node* node, Zone* zone) const;
+    Node* LookupCheck(Node* node) const;
+
+    void Print() const;
+
    private:
+    AbstractChecks const* checks_ = nullptr;
     AbstractElements const* elements_ = nullptr;
     AbstractField const* fields_[kMaxTrackedFields];
   };
@@ -149,12 +195,16 @@ class LoadElimination final : public AdvancedReducer {
     ZoneVector<AbstractState const*> info_for_node_;
   };
 
+  Reduction ReduceArrayBufferWasNeutered(Node* node);
   Reduction ReduceCheckMaps(Node* node);
+  Reduction ReduceEnsureWritableFastElements(Node* node);
+  Reduction ReduceMaybeGrowFastElements(Node* node);
   Reduction ReduceTransitionElementsKind(Node* node);
   Reduction ReduceLoadField(Node* node);
   Reduction ReduceStoreField(Node* node);
   Reduction ReduceLoadElement(Node* node);
   Reduction ReduceStoreElement(Node* node);
+  Reduction ReduceStoreTypedElement(Node* node);
   Reduction ReduceEffectPhi(Node* node);
   Reduction ReduceStart(Node* node);
   Reduction ReduceOtherNode(Node* node);
@@ -164,13 +214,18 @@ class LoadElimination final : public AdvancedReducer {
   AbstractState const* ComputeLoopState(Node* node,
                                         AbstractState const* state) const;
 
+  static int FieldIndexOf(int offset);
   static int FieldIndexOf(FieldAccess const& access);
 
+  CommonOperatorBuilder* common() const;
   AbstractState const* empty_state() const { return &empty_state_; }
+  Graph* graph() const;
+  JSGraph* jsgraph() const { return jsgraph_; }
   Zone* zone() const { return node_states_.zone(); }
 
   AbstractState const empty_state_;
   AbstractStateForEffectNodes node_states_;
+  JSGraph* const jsgraph_;
 
   DISALLOW_COPY_AND_ASSIGN(LoadElimination);
 };

@@ -8,6 +8,7 @@
 #include "src/api-natives.h"
 #include "src/base/ieee754.h"
 #include "src/code-stubs.h"
+#include "src/compiler.h"
 #include "src/extensions/externalize-string-extension.h"
 #include "src/extensions/free-buffer-extension.h"
 #include "src/extensions/gc-extension.h"
@@ -209,8 +210,9 @@ class Genesis BASE_EMBEDDED {
   HARMONY_INPROGRESS(DECLARE_FEATURE_INITIALIZATION)
   HARMONY_STAGED(DECLARE_FEATURE_INITIALIZATION)
   HARMONY_SHIPPING(DECLARE_FEATURE_INITIALIZATION)
-  DECLARE_FEATURE_INITIALIZATION(promise_extra, "")
+#ifdef V8_I18N_SUPPORT
   DECLARE_FEATURE_INITIALIZATION(intl_extra, "")
+#endif
 #undef DECLARE_FEATURE_INITIALIZATION
 
   Handle<JSFunction> InstallArrayBuffer(Handle<JSObject> target,
@@ -372,6 +374,7 @@ Handle<JSFunction> InstallGetter(Handle<JSObject> target,
   Handle<Object> setter = target->GetIsolate()->factory()->undefined_value();
   JSObject::DefineAccessor(target, property_name, getter, setter, attributes)
       .Check();
+  getter->shared()->set_native(true);
   return getter;
 }
 
@@ -449,6 +452,15 @@ Handle<JSFunction> SimpleInstallFunction(Handle<JSObject> base,
   Factory* const factory = base->GetIsolate()->factory();
   return SimpleInstallFunction(base, factory->InternalizeUtf8String(name), call,
                                len, adapt, attrs);
+}
+
+Handle<JSFunction> SimpleInstallFunction(Handle<JSObject> base,
+                                         const char* name, Builtins::Name call,
+                                         int len, bool adapt,
+                                         BuiltinFunctionId id) {
+  Handle<JSFunction> fun = SimpleInstallFunction(base, name, call, len, adapt);
+  fun->shared()->set_builtin_function_id(id);
+  return fun;
 }
 
 Handle<JSFunction> SimpleInstallGetter(Handle<JSObject> base,
@@ -819,8 +831,8 @@ void Genesis::CreateRoots() {
 
   // Allocate the message listeners object.
   {
-    v8::NeanderArray listeners(isolate());
-    native_context()->set_message_listeners(*listeners.value());
+    Handle<TemplateList> list = TemplateList::New(isolate(), 1);
+    native_context()->set_message_listeners(*list);
   }
 }
 
@@ -1002,12 +1014,19 @@ static void InstallError(Isolate* isolate, Handle<JSObject> global,
     JSObject::AddProperty(prototype, factory->constructor_string(), error_fun,
                           DONT_ENUM);
 
-    Handle<JSFunction> to_string_fun =
-        SimpleInstallFunction(prototype, factory->toString_string(),
-                              Builtins::kErrorPrototypeToString, 0, true);
-    to_string_fun->shared()->set_native(true);
+    if (context_index == Context::ERROR_FUNCTION_INDEX) {
+      Handle<JSFunction> to_string_fun =
+          SimpleInstallFunction(prototype, factory->toString_string(),
+                                Builtins::kErrorPrototypeToString, 0, true);
+      to_string_fun->shared()->set_native(true);
+      isolate->native_context()->set_error_to_string(*to_string_fun);
+    } else {
+      DCHECK(context_index != Context::ERROR_FUNCTION_INDEX);
+      DCHECK(isolate->native_context()->error_to_string()->IsJSFunction());
 
-    if (context_index != Context::ERROR_FUNCTION_INDEX) {
+      InstallFunction(prototype, isolate->error_to_string(),
+                      factory->toString_string(), DONT_ENUM);
+
       Handle<JSFunction> global_error = isolate->error_function();
       CHECK(JSReceiver::SetPrototype(error_fun, global_error, false,
                                      Object::THROW_ON_ERROR)
@@ -1032,6 +1051,15 @@ static void InstallError(Isolate* isolate, Handle<JSObject> global,
                                  error_stack, attribs);
     initial_map->AppendDescriptor(&d);
   }
+}
+
+static void InstallMakeError(Isolate* isolate, Handle<Code> code,
+                             int context_index) {
+  Handle<JSFunction> function =
+      isolate->factory()->NewFunction(isolate->factory()->empty_string(), code,
+                                      JS_OBJECT_TYPE, JSObject::kHeaderSize);
+  function->shared()->DontAdaptArguments();
+  isolate->native_context()->set(context_index, *function);
 }
 
 // This is only called if we are not using snapshots.  The equivalent
@@ -1277,6 +1305,15 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     // Install i18n fallback functions.
     SimpleInstallFunction(prototype, "toLocaleString",
                           Builtins::kNumberPrototypeToLocaleString, 0, false);
+
+    // Install the Number functions.
+    SimpleInstallFunction(number_fun, "isFinite", Builtins::kNumberIsFinite, 1,
+                          true);
+    SimpleInstallFunction(number_fun, "isInteger", Builtins::kNumberIsInteger,
+                          1, true);
+    SimpleInstallFunction(number_fun, "isNaN", Builtins::kNumberIsNaN, 1, true);
+    SimpleInstallFunction(number_fun, "isSafeInteger",
+                          Builtins::kNumberIsSafeInteger, 1, true);
   }
 
   {  // --- B o o l e a n ---
@@ -1549,10 +1586,9 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
   {  // -- R e g E x p
     // Builtin functions for RegExp.prototype.
-    Handle<JSFunction> regexp_fun =
-        InstallFunction(global, "RegExp", JS_REGEXP_TYPE, JSRegExp::kSize,
-                        isolate->initial_object_prototype(),
-                        Builtins::kIllegal);
+    Handle<JSFunction> regexp_fun = InstallFunction(
+        global, "RegExp", JS_REGEXP_TYPE, JSRegExp::kSize,
+        isolate->initial_object_prototype(), Builtins::kIllegal);
     InstallWithIntrinsicDefaultProto(isolate, regexp_fun,
                                      Context::REGEXP_FUNCTION_INDEX);
     regexp_fun->shared()->SetConstructStub(
@@ -1583,6 +1619,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
   {  // -- E r r o r
     InstallError(isolate, global, factory->Error_string(),
                  Context::ERROR_FUNCTION_INDEX);
+    InstallMakeError(isolate, isolate->builtins()->MakeError(),
+                     Context::MAKE_ERROR_INDEX);
   }
 
   {  // -- E v a l E r r o r
@@ -1593,6 +1631,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
   {  // -- R a n g e E r r o r
     InstallError(isolate, global, factory->RangeError_string(),
                  Context::RANGE_ERROR_FUNCTION_INDEX);
+    InstallMakeError(isolate, isolate->builtins()->MakeRangeError(),
+                     Context::MAKE_RANGE_ERROR_INDEX);
   }
 
   {  // -- R e f e r e n c e E r r o r
@@ -1603,16 +1643,22 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
   {  // -- S y n t a x E r r o r
     InstallError(isolate, global, factory->SyntaxError_string(),
                  Context::SYNTAX_ERROR_FUNCTION_INDEX);
+    InstallMakeError(isolate, isolate->builtins()->MakeSyntaxError(),
+                     Context::MAKE_SYNTAX_ERROR_INDEX);
   }
 
   {  // -- T y p e E r r o r
     InstallError(isolate, global, factory->TypeError_string(),
                  Context::TYPE_ERROR_FUNCTION_INDEX);
+    InstallMakeError(isolate, isolate->builtins()->MakeTypeError(),
+                     Context::MAKE_TYPE_ERROR_INDEX);
   }
 
   {  // -- U R I E r r o r
     InstallError(isolate, global, factory->URIError_string(),
                  Context::URI_ERROR_FUNCTION_INDEX);
+    InstallMakeError(isolate, isolate->builtins()->MakeURIError(),
+                     Context::MAKE_URI_ERROR_INDEX);
   }
 
   // Initialize the embedder data slot.
@@ -1804,6 +1850,39 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     SimpleInstallGetter(prototype, factory->byte_offset_string(),
                         Builtins::kDataViewPrototypeGetByteOffset, false,
                         kDataViewByteOffset);
+
+    SimpleInstallFunction(prototype, "getInt8",
+                          Builtins::kDataViewPrototypeGetInt8, 1, false);
+    SimpleInstallFunction(prototype, "setInt8",
+                          Builtins::kDataViewPrototypeSetInt8, 2, false);
+    SimpleInstallFunction(prototype, "getUint8",
+                          Builtins::kDataViewPrototypeGetUint8, 1, false);
+    SimpleInstallFunction(prototype, "setUint8",
+                          Builtins::kDataViewPrototypeSetUint8, 2, false);
+    SimpleInstallFunction(prototype, "getInt16",
+                          Builtins::kDataViewPrototypeGetInt16, 1, false);
+    SimpleInstallFunction(prototype, "setInt16",
+                          Builtins::kDataViewPrototypeSetInt16, 2, false);
+    SimpleInstallFunction(prototype, "getUint16",
+                          Builtins::kDataViewPrototypeGetUint16, 1, false);
+    SimpleInstallFunction(prototype, "setUint16",
+                          Builtins::kDataViewPrototypeSetUint16, 2, false);
+    SimpleInstallFunction(prototype, "getInt32",
+                          Builtins::kDataViewPrototypeGetInt32, 1, false);
+    SimpleInstallFunction(prototype, "setInt32",
+                          Builtins::kDataViewPrototypeSetInt32, 2, false);
+    SimpleInstallFunction(prototype, "getUint32",
+                          Builtins::kDataViewPrototypeGetUint32, 1, false);
+    SimpleInstallFunction(prototype, "setUint32",
+                          Builtins::kDataViewPrototypeSetUint32, 2, false);
+    SimpleInstallFunction(prototype, "getFloat32",
+                          Builtins::kDataViewPrototypeGetFloat32, 1, false);
+    SimpleInstallFunction(prototype, "setFloat32",
+                          Builtins::kDataViewPrototypeSetFloat32, 2, false);
+    SimpleInstallFunction(prototype, "getFloat64",
+                          Builtins::kDataViewPrototypeGetFloat64, 1, false);
+    SimpleInstallFunction(prototype, "setFloat64",
+                          Builtins::kDataViewPrototypeSetFloat64, 2, false);
   }
 
   {  // -- M a p
@@ -2141,8 +2220,9 @@ void Genesis::InitializeExperimentalGlobal() {
   HARMONY_INPROGRESS(FEATURE_INITIALIZE_GLOBAL)
   HARMONY_STAGED(FEATURE_INITIALIZE_GLOBAL)
   HARMONY_SHIPPING(FEATURE_INITIALIZE_GLOBAL)
-  FEATURE_INITIALIZE_GLOBAL(promise_extra, "")
+#ifdef V8_I18N_SUPPORT
   FEATURE_INITIALIZE_GLOBAL(intl_extra, "")
+#endif
 #undef FEATURE_INITIALIZE_GLOBAL
 }
 
@@ -2460,7 +2540,7 @@ void Bootstrapper::ExportFromRuntime(Isolate* isolate,
     // Builtin functions for Script.
     Handle<JSFunction> script_fun = InstallFunction(
         container, "Script", JS_VALUE_TYPE, JSValue::kSize,
-        isolate->initial_object_prototype(), Builtins::kIllegal);
+        isolate->initial_object_prototype(), Builtins::kUnsupportedThrower);
     Handle<JSObject> prototype =
         factory->NewJSObject(isolate->object_function(), TENURED);
     Accessors::FunctionSetPrototype(script_fun, prototype).Assert();
@@ -2643,11 +2723,17 @@ void Bootstrapper::ExportFromRuntime(Isolate* isolate,
   {  // -- C a l l S i t e
     // Builtin functions for CallSite.
 
+    // CallSites are a special case; the constructor is for our private use
+    // only, therefore we set it up as a builtin that throws. Internally, we use
+    // CallSiteUtils::Construct to create CallSite objects.
+
     Handle<JSFunction> callsite_fun = InstallFunction(
         container, "CallSite", JS_OBJECT_TYPE, JSObject::kHeaderSize,
-        isolate->initial_object_prototype(), Builtins::kCallSiteConstructor);
+        isolate->initial_object_prototype(), Builtins::kUnsupportedThrower);
     callsite_fun->shared()->DontAdaptArguments();
     callsite_fun->shared()->set_native(true);
+
+    isolate->native_context()->set_callsite_function(*callsite_fun);
 
     {
       Handle<JSObject> proto =
@@ -2698,6 +2784,7 @@ void Bootstrapper::ExportExperimentalFromRuntime(Isolate* isolate,
                                                  Handle<JSObject> container) {
   HandleScope scope(isolate);
 
+#ifdef V8_I18N_SUPPORT
 #define INITIALIZE_FLAG(FLAG)                                         \
   {                                                                   \
     Handle<String> name =                                             \
@@ -2709,6 +2796,7 @@ void Bootstrapper::ExportExperimentalFromRuntime(Isolate* isolate,
   INITIALIZE_FLAG(FLAG_intl_extra)
 
 #undef INITIALIZE_FLAG
+#endif
 }
 
 
@@ -2721,15 +2809,14 @@ EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_lookbehind)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_named_captures)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_regexp_property)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_function_sent)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(promise_extra)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(intl_extra)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_explicit_tailcalls)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_tailcalls)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_restrictive_declarations)
-EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_exponentiation_operator)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_string_padding)
 #ifdef V8_I18N_SUPPORT
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(datetime_format_to_parts)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(icu_case_mapping)
+EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(intl_extra)
 #endif
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_async_await)
 EMPTY_INITIALIZE_GLOBAL_FOR_FEATURE(harmony_restrictive_generators)
@@ -3035,27 +3122,29 @@ bool Genesis::InstallNatives(GlobalContextType context_type) {
 
   // Install Global.decodeURI.
   SimpleInstallFunction(global_object, "decodeURI", Builtins::kGlobalDecodeURI,
-                        1, false);
+                        1, false, kGlobalDecodeURI);
 
   // Install Global.decodeURIComponent.
   SimpleInstallFunction(global_object, "decodeURIComponent",
-                        Builtins::kGlobalDecodeURIComponent, 1, false);
+                        Builtins::kGlobalDecodeURIComponent, 1, false,
+                        kGlobalDecodeURIComponent);
 
   // Install Global.encodeURI.
   SimpleInstallFunction(global_object, "encodeURI", Builtins::kGlobalEncodeURI,
-                        1, false);
+                        1, false, kGlobalEncodeURI);
 
   // Install Global.encodeURIComponent.
   SimpleInstallFunction(global_object, "encodeURIComponent",
-                        Builtins::kGlobalEncodeURIComponent, 1, false);
+                        Builtins::kGlobalEncodeURIComponent, 1, false,
+                        kGlobalEncodeURIComponent);
 
   // Install Global.escape.
   SimpleInstallFunction(global_object, "escape", Builtins::kGlobalEscape, 1,
-                        false);
+                        false, kGlobalEscape);
 
   // Install Global.unescape.
   SimpleInstallFunction(global_object, "unescape", Builtins::kGlobalUnescape, 1,
-                        false);
+                        false, kGlobalUnescape);
 
   // Install Global.eval.
   {
@@ -3064,6 +3153,14 @@ bool Genesis::InstallNatives(GlobalContextType context_type) {
                               Builtins::kGlobalEval, 1, false);
     native_context()->set_global_eval_fun(*eval);
   }
+
+  // Install Global.isFinite
+  SimpleInstallFunction(global_object, "isFinite", Builtins::kGlobalIsFinite, 1,
+                        true, kGlobalIsFinite);
+
+  // Install Global.isNaN
+  SimpleInstallFunction(global_object, "isNaN", Builtins::kGlobalIsNaN, 1, true,
+                        kGlobalIsNaN);
 
   // Install Array.prototype.concat
   {
@@ -3308,19 +3405,18 @@ bool Genesis::InstallExperimentalNatives() {
   static const char* harmony_regexp_named_captures_natives[] = {nullptr};
   static const char* harmony_regexp_property_natives[] = {nullptr};
   static const char* harmony_function_sent_natives[] = {nullptr};
-  static const char* promise_extra_natives[] = {"native promise-extra.js",
-                                                nullptr};
-  static const char* intl_extra_natives[] = {"native intl-extra.js", nullptr};
   static const char* harmony_object_values_entries_natives[] = {nullptr};
   static const char* harmony_object_own_property_descriptors_natives[] = {
       nullptr};
   static const char* harmony_array_prototype_values_natives[] = {nullptr};
-  static const char* harmony_exponentiation_operator_natives[] = {nullptr};
   static const char* harmony_string_padding_natives[] = {
       "native harmony-string-padding.js", nullptr};
 #ifdef V8_I18N_SUPPORT
   static const char* icu_case_mapping_natives[] = {"native icu-case-mapping.js",
                                                    nullptr};
+  static const char* intl_extra_natives[] = {"native intl-extra.js", nullptr};
+  static const char* datetime_format_to_parts_natives[] = {
+      "native datetime-format-to-parts.js", nullptr};
 #endif
   static const char* harmony_async_await_natives[] = {
       "native harmony-async-await.js", nullptr};
@@ -3344,8 +3440,9 @@ bool Genesis::InstallExperimentalNatives() {
     HARMONY_INPROGRESS(INSTALL_EXPERIMENTAL_NATIVES);
     HARMONY_STAGED(INSTALL_EXPERIMENTAL_NATIVES);
     HARMONY_SHIPPING(INSTALL_EXPERIMENTAL_NATIVES);
+#ifdef V8_I18N_SUPPORT
     INSTALL_EXPERIMENTAL_NATIVES(intl_extra, "");
-    INSTALL_EXPERIMENTAL_NATIVES(promise_extra, "");
+#endif
 #undef INSTALL_EXPERIMENTAL_NATIVES
   }
 
@@ -3966,9 +4063,7 @@ Genesis::Genesis(Isolate* isolate,
 
   // Check that the script context table is empty except for the 'this' binding.
   // We do not need script contexts for native scripts.
-  if (!FLAG_global_var_shortcuts) {
-    DCHECK_EQ(1, native_context()->script_context_table()->used());
-  }
+  DCHECK_EQ(1, native_context()->script_context_table()->used());
 
   result_ = native_context();
 }

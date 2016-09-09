@@ -6,6 +6,7 @@
 
 #include "src/address-map.h"
 #include "src/base/adapters.h"
+#include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/linkage.h"
 #include "src/compiler/pipeline.h"
@@ -55,13 +56,15 @@ CodeGenerator::CodeGenerator(Frame* frame, Linkage* linkage,
       jump_tables_(nullptr),
       ools_(nullptr),
       osr_pc_offset_(-1),
-      source_position_table_builder_(info->isolate(), code->zone(),
+      source_position_table_builder_(code->zone(),
                                      info->SourcePositionRecordingMode()) {
   for (int i = 0; i < code->InstructionBlockCount(); ++i) {
     new (&labels_[i]) Label;
   }
   CreateFrameAccessState(frame);
 }
+
+Isolate* CodeGenerator::isolate() const { return info_->isolate(); }
 
 void CodeGenerator::CreateFrameAccessState(Frame* frame) {
   FinishFrame(frame);
@@ -217,9 +220,9 @@ Handle<Code> CodeGenerator::GenerateCode() {
   result->set_stack_slots(frame()->GetTotalFrameSlotCount());
   result->set_safepoint_table_offset(safepoints()->GetCodeOffset());
   Handle<ByteArray> source_positions =
-      source_position_table_builder_.ToSourcePositionTable();
+      source_position_table_builder_.ToSourcePositionTable(
+          isolate(), Handle<AbstractCode>::cast(result));
   result->set_source_position_table(*source_positions);
-  source_position_table_builder_.EndJitLogging(AbstractCode::cast(*result));
 
   // Emit exception handler table.
   if (!handlers_.empty()) {
@@ -228,10 +231,8 @@ Handle<Code> CodeGenerator::GenerateCode() {
             HandlerTable::LengthForReturn(static_cast<int>(handlers_.size())),
             TENURED));
     for (size_t i = 0; i < handlers_.size(); ++i) {
-      int position = handlers_[i].handler->pos();
       table->SetReturnOffset(static_cast<int>(i), handlers_[i].pc_offset);
-      table->SetReturnHandler(static_cast<int>(i), position,
-                              handlers_[i].catch_prediction);
+      table->SetReturnHandler(static_cast<int>(i), handlers_[i].handler->pos());
     }
     result->set_handler_table(*table);
   }
@@ -283,7 +284,7 @@ void CodeGenerator::RecordSafepoint(ReferenceMap* references,
 bool CodeGenerator::IsMaterializableFromFrame(Handle<HeapObject> object,
                                               int* slot_return) {
   if (linkage()->GetIncomingDescriptor()->IsJSFunctionCall()) {
-    if (object.is_identical_to(info()->context()) && !info()->is_osr()) {
+    if (*object == info()->context() && !info()->is_osr()) {
       *slot_return = Frame::kContextSlot;
       return true;
     } else if (object.is_identical_to(info()->closure())) {
@@ -603,15 +604,8 @@ void CodeGenerator::RecordCallPosition(Instruction* instr) {
 
   if (flags & CallDescriptor::kHasExceptionHandler) {
     InstructionOperandConverter i(this, instr);
-    HandlerTable::CatchPrediction prediction = HandlerTable::UNCAUGHT;
-    if (flags & CallDescriptor::kHasLocalCatchHandler) {
-      prediction = HandlerTable::CAUGHT;
-    } else if (flags & CallDescriptor::kHasLocalCatchHandlerForPromiseReject) {
-      prediction = HandlerTable::PROMISE;
-    }
     RpoNumber handler_rpo = i.InputRpo(instr->InputCount() - 1);
-    handlers_.push_back(
-        {prediction, GetLabel(handler_rpo), masm()->pc_offset()});
+    handlers_.push_back({GetLabel(handler_rpo), masm()->pc_offset()});
   }
 
   if (needs_frame_state) {
@@ -778,6 +772,12 @@ void CodeGenerator::BuildTranslationForFrameStateDescriptor(
           shared_info_id,
           static_cast<unsigned int>(descriptor->parameters_count()));
       break;
+    case FrameStateType::kGetterStub:
+      translation->BeginGetterStubFrame(shared_info_id);
+      break;
+    case FrameStateType::kSetterStub:
+      translation->BeginSetterStubFrame(shared_info_id);
+      break;
   }
 
   TranslateFrameStateDescriptorOperands(descriptor, iter, state_combine,
@@ -823,7 +823,7 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
     } else if (type == MachineType::Uint8() || type == MachineType::Uint16() ||
                type == MachineType::Uint32()) {
       translation->StoreUint32StackSlot(LocationOperand::cast(op)->index());
-    } else if (type.representation() == MachineRepresentation::kTagged) {
+    } else if (IsAnyTagged(type.representation())) {
       translation->StoreStackSlot(LocationOperand::cast(op)->index());
     } else {
       CHECK(false);
@@ -845,7 +845,7 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
     } else if (type == MachineType::Uint8() || type == MachineType::Uint16() ||
                type == MachineType::Uint32()) {
       translation->StoreUint32Register(converter.ToRegister(op));
-    } else if (type.representation() == MachineRepresentation::kTagged) {
+    } else if (IsAnyTagged(type.representation())) {
       translation->StoreRegister(converter.ToRegister(op));
     } else {
       CHECK(false);
@@ -864,27 +864,48 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
     Handle<Object> constant_object;
     switch (constant.type()) {
       case Constant::kInt32:
-        DCHECK(type == MachineType::Int32() || type == MachineType::Uint32() ||
-               type.representation() == MachineRepresentation::kBit ||
-               type.representation() == MachineRepresentation::kNone);
-        DCHECK(type.representation() != MachineRepresentation::kNone ||
-               constant.ToInt32() == FrameStateDescriptor::kImpossibleValue);
+        if (type.representation() == MachineRepresentation::kTagged ||
+            type.representation() == MachineRepresentation::kTaggedSigned) {
+          // When pointers are 4 bytes, we can use int32 constants to represent
+          // Smis.
+          DCHECK_EQ(4, kPointerSize);
+          constant_object =
+              handle(reinterpret_cast<Smi*>(constant.ToInt32()), isolate());
+          DCHECK(constant_object->IsSmi());
+        } else {
+          DCHECK(type == MachineType::Int32() ||
+                 type == MachineType::Uint32() ||
+                 type.representation() == MachineRepresentation::kBit ||
+                 type.representation() == MachineRepresentation::kNone);
+          DCHECK(type.representation() != MachineRepresentation::kNone ||
+                 constant.ToInt32() == FrameStateDescriptor::kImpossibleValue);
 
+          constant_object =
+              isolate()->factory()->NewNumberFromInt(constant.ToInt32());
+        }
+        break;
+      case Constant::kInt64:
+        // When pointers are 8 bytes, we can use int64 constants to represent
+        // Smis.
+        DCHECK(type.representation() == MachineRepresentation::kTagged ||
+               type.representation() == MachineRepresentation::kTaggedSigned);
+        DCHECK_EQ(8, kPointerSize);
         constant_object =
-            isolate()->factory()->NewNumberFromInt(constant.ToInt32());
+            handle(reinterpret_cast<Smi*>(constant.ToInt64()), isolate());
+        DCHECK(constant_object->IsSmi());
         break;
       case Constant::kFloat32:
         DCHECK(type.representation() == MachineRepresentation::kFloat32 ||
-               type.representation() == MachineRepresentation::kTagged);
+               CanBeTaggedPointer(type.representation()));
         constant_object = isolate()->factory()->NewNumber(constant.ToFloat32());
         break;
       case Constant::kFloat64:
         DCHECK(type.representation() == MachineRepresentation::kFloat64 ||
-               type.representation() == MachineRepresentation::kTagged);
+               CanBeTaggedPointer(type.representation()));
         constant_object = isolate()->factory()->NewNumber(constant.ToFloat64());
         break;
       case Constant::kHeapObject:
-        DCHECK(type.representation() == MachineRepresentation::kTagged);
+        DCHECK(CanBeTaggedPointer(type.representation()));
         constant_object = constant.ToHeapObject();
         break;
       default:

@@ -392,6 +392,26 @@ Node* InterpreterAssembler::LoadConstantPoolEntry(Node* index) {
   return Load(MachineType::AnyTagged(), constant_pool, entry_offset);
 }
 
+Node* InterpreterAssembler::LoadAndUntagConstantPoolEntry(Node* index) {
+  Node* constant_pool = LoadObjectField(BytecodeArrayTaggedPointer(),
+                                        BytecodeArray::kConstantPoolOffset);
+  int offset = FixedArray::kHeaderSize - kHeapObjectTag;
+#if V8_TARGET_LITTLE_ENDIAN
+  if (Is64()) {
+    offset += kPointerSize / 2;
+  }
+#endif
+  Node* entry_offset =
+      IntPtrAdd(IntPtrConstant(offset), WordShl(index, kPointerSizeLog2));
+  if (Is64()) {
+    return ChangeInt32ToInt64(
+        Load(MachineType::Int32(), constant_pool, entry_offset));
+  } else {
+    return SmiUntag(
+        Load(MachineType::AnyTagged(), constant_pool, entry_offset));
+  }
+}
+
 Node* InterpreterAssembler::LoadContextSlot(Node* context, int slot_index) {
   return Load(MachineType::AnyTagged(), context,
               IntPtrConstant(Context::SlotOffset(slot_index)));
@@ -461,7 +481,8 @@ Node* InterpreterAssembler::CallJSWithFeedback(Node* function, Node* context,
                 WeakCell::kValueOffset == Symbol::kHashFieldSlot);
 
   Variable return_value(this, MachineRepresentation::kTagged);
-  Label handle_monomorphic(this), extra_checks(this), end(this), call(this);
+  Label handle_monomorphic(this), extra_checks(this), end(this), call(this),
+      call_function(this);
 
   // Slot id of 0 is used to indicate no typefeedback is available. Call using
   // call builtin.
@@ -469,7 +490,7 @@ Node* InterpreterAssembler::CallJSWithFeedback(Node* function, Node* context,
   Node* is_feedback_unavailable = Word32Equal(slot_id, Int32Constant(0));
   GotoIf(is_feedback_unavailable, &call);
 
-  // The checks. First, does rdi match the recorded monomorphic target?
+  // The checks. First, does function match the recorded monomorphic target?
   Node* feedback_element = LoadFixedArrayElement(type_feedback_vector, slot_id);
   Node* feedback_value = LoadWeakCellValue(feedback_element);
   Node* is_monomorphic = WordEqual(function, feedback_value);
@@ -503,12 +524,48 @@ Node* InterpreterAssembler::CallJSWithFeedback(Node* function, Node* context,
 
   Bind(&extra_checks);
   {
-    Label check_initialized(this, Label::kDeferred), mark_megamorphic(this);
+    Label check_initialized(this, Label::kDeferred), mark_megamorphic(this),
+        check_allocation_site(this),
+        create_allocation_site(this, Label::kDeferred);
     // Check if it is a megamorphic target
     Node* is_megamorphic = WordEqual(
         feedback_element,
         HeapConstant(TypeFeedbackVector::MegamorphicSentinel(isolate())));
-    BranchIf(is_megamorphic, &call, &check_initialized);
+    BranchIf(is_megamorphic, &call, &check_allocation_site);
+
+    Bind(&check_allocation_site);
+    {
+      Node* is_allocation_site =
+          WordEqual(LoadMap(feedback_element),
+                    LoadRoot(Heap::kAllocationSiteMapRootIndex));
+      GotoUnless(is_allocation_site, &check_initialized);
+
+      // If it is not the Array() function, mark megamorphic.
+      Node* context_slot =
+          LoadFixedArrayElement(LoadNativeContext(context),
+                                Int32Constant(Context::ARRAY_FUNCTION_INDEX));
+      Node* is_array_function = WordEqual(context_slot, function);
+      GotoUnless(is_array_function, &mark_megamorphic);
+
+      // It is a monomorphic Array function. Increment the call count.
+      Node* call_count_slot = IntPtrAdd(slot_id, IntPtrConstant(1));
+      Node* call_count =
+          LoadFixedArrayElement(type_feedback_vector, call_count_slot);
+      Node* new_count = SmiAdd(call_count, SmiTag(Int32Constant(1)));
+      // Count is Smi, so we don't need a write barrier.
+      StoreFixedArrayElement(type_feedback_vector, call_count_slot, new_count,
+                             SKIP_WRITE_BARRIER);
+
+      // Call ArrayConstructorStub.
+      Callable callable_call =
+          CodeFactory::InterpreterPushArgsAndConstructArray(isolate());
+      Node* code_target_call = HeapConstant(callable_call.code());
+      Node* ret_value =
+          CallStub(callable_call.descriptor(), code_target_call, context,
+                   arg_count, function, feedback_element, first_arg);
+      return_value.Bind(ret_value);
+      Goto(&end);
+    }
 
     Bind(&check_initialized);
     {
@@ -528,12 +585,12 @@ Node* InterpreterAssembler::CallJSWithFeedback(Node* function, Node* context,
           WordEqual(instance_type, Int32Constant(JS_FUNCTION_TYPE));
       GotoUnless(is_js_function, &mark_megamorphic);
 
-      // Check that it is not the Array() function.
+      // Check if it is the Array() function.
       Node* context_slot =
           LoadFixedArrayElement(LoadNativeContext(context),
                                 Int32Constant(Context::ARRAY_FUNCTION_INDEX));
       Node* is_array_function = WordEqual(context_slot, function);
-      GotoIf(is_array_function, &mark_megamorphic);
+      GotoIf(is_array_function, &create_allocation_site);
 
       // Check if the function belongs to the same native context
       Node* native_context = LoadNativeContext(
@@ -552,13 +609,27 @@ Node* InterpreterAssembler::CallJSWithFeedback(Node* function, Node* context,
                                      function);
 
       // Call using call function builtin.
-      Callable callable = CodeFactory::InterpreterPushArgsAndCall(
-          isolate(), tail_call_mode, CallableType::kJSFunction);
-      Node* code_target = HeapConstant(callable.code());
-      Node* ret_value = CallStub(callable.descriptor(), code_target, context,
-                                 arg_count, first_arg, function);
-      return_value.Bind(ret_value);
-      Goto(&end);
+      Goto(&call_function);
+    }
+
+    Bind(&create_allocation_site);
+    {
+      // TODO(mythria): Inline the creation of the allocation site.
+      CreateAllocationSiteStub create_stub(isolate());
+      CallStub(create_stub.GetCallInterfaceDescriptor(),
+               HeapConstant(create_stub.GetCode()), context,
+               type_feedback_vector, SmiTag(slot_id));
+
+      // Initialize the count to 1.
+      Node* call_count_slot = IntPtrAdd(slot_id, IntPtrConstant(1));
+      // Count is Smi, so we don't need a write barrier.
+      StoreFixedArrayElement(type_feedback_vector, call_count_slot,
+                             SmiTag(Int32Constant(1)), SKIP_WRITE_BARRIER);
+
+      // Call using CallFunction builtin. CallICs have a PREMONOMORPHIC state.
+      // They start collecting feedback only when a call is executed the second
+      // time. So, do not pass any feedback here.
+      Goto(&call_function);
     }
 
     Bind(&mark_megamorphic);
@@ -573,6 +644,17 @@ Node* InterpreterAssembler::CallJSWithFeedback(Node* function, Node* context,
           SKIP_WRITE_BARRIER);
       Goto(&call);
     }
+  }
+
+  Bind(&call_function);
+  {
+    Callable callable_call = CodeFactory::InterpreterPushArgsAndCall(
+        isolate(), tail_call_mode, CallableType::kJSFunction);
+    Node* code_target_call = HeapConstant(callable_call.code());
+    Node* ret_value = CallStub(callable_call.descriptor(), code_target_call,
+                               context, arg_count, first_arg, function);
+    return_value.Bind(ret_value);
+    Goto(&end);
   }
 
   Bind(&call);
@@ -603,11 +685,201 @@ Node* InterpreterAssembler::CallJS(Node* function, Node* context,
 
 Node* InterpreterAssembler::CallConstruct(Node* constructor, Node* context,
                                           Node* new_target, Node* first_arg,
-                                          Node* arg_count) {
-  Callable callable = CodeFactory::InterpreterPushArgsAndConstruct(isolate());
-  Node* code_target = HeapConstant(callable.code());
-  return CallStub(callable.descriptor(), code_target, context, arg_count,
-                  new_target, constructor, first_arg);
+                                          Node* arg_count, Node* slot_id,
+                                          Node* type_feedback_vector) {
+  Label call_construct(this), js_function(this), end(this);
+  Variable return_value(this, MachineRepresentation::kTagged);
+  Variable allocation_feedback(this, MachineRepresentation::kTagged);
+  allocation_feedback.Bind(UndefinedConstant());
+
+  // Slot id of 0 is used to indicate no type feedback is available.
+  STATIC_ASSERT(TypeFeedbackVector::kReservedIndexCount > 0);
+  Node* is_feedback_unavailable = Word32Equal(slot_id, Int32Constant(0));
+  GotoIf(is_feedback_unavailable, &call_construct);
+
+  // Check that the constructor is not a smi.
+  Node* is_smi = WordIsSmi(constructor);
+  GotoIf(is_smi, &call_construct);
+
+  // Check that constructor is a JSFunction.
+  Node* instance_type = LoadInstanceType(constructor);
+  Node* is_js_function =
+      WordEqual(instance_type, Int32Constant(JS_FUNCTION_TYPE));
+  BranchIf(is_js_function, &js_function, &call_construct);
+
+  Bind(&js_function);
+  {
+    // Cache the called function in a feedback vector slot. Cache states
+    // are uninitialized, monomorphic (indicated by a JSFunction), and
+    // megamorphic.
+    // TODO(mythria/v8:5210): Check if it is better to mark extra_checks as a
+    // deferred block so that call_construct_function will be scheduled just
+    // after increment_count and in the fast path we can reduce one branch in
+    // the
+    // fast path.
+    Label increment_count(this), extra_checks(this),
+        call_construct_function(this);
+
+    Node* feedback_element =
+        LoadFixedArrayElement(type_feedback_vector, slot_id);
+    Node* feedback_value = LoadWeakCellValue(feedback_element);
+    Node* is_monomorphic = WordEqual(constructor, feedback_value);
+    BranchIf(is_monomorphic, &increment_count, &extra_checks);
+
+    Bind(&extra_checks);
+    {
+      Label mark_megamorphic(this), initialize(this),
+          check_allocation_site(this), check_initialized(this),
+          set_alloc_feedback_and_inc_count(this);
+      {
+        // Check if it is a megamorphic target
+        Comment("check if megamorphic");
+        Node* is_megamorphic = WordEqual(
+            feedback_element,
+            HeapConstant(TypeFeedbackVector::MegamorphicSentinel(isolate())));
+        GotoIf(is_megamorphic, &call_construct_function);
+
+        Comment("check if weak cell");
+        Node* is_weak_cell = WordEqual(LoadMap(feedback_element),
+                                       LoadRoot(Heap::kWeakCellMapRootIndex));
+        GotoUnless(is_weak_cell, &check_allocation_site);
+        // If the weak cell is cleared, we have a new chance to become
+        // monomorphic.
+        Comment("check if weak cell is cleared");
+        Node* is_smi = WordIsSmi(feedback_value);
+        BranchIf(is_smi, &initialize, &mark_megamorphic);
+      }
+
+      Bind(&check_allocation_site);
+      {
+        Comment("check if it is an allocation site");
+        Node* is_allocation_site =
+            WordEqual(LoadObjectField(feedback_element, 0),
+                      LoadRoot(Heap::kAllocationSiteMapRootIndex));
+        GotoUnless(is_allocation_site, &check_initialized);
+
+        // Make sure the function is the Array() function
+        Node* context_slot =
+            LoadFixedArrayElement(LoadNativeContext(context),
+                                  Int32Constant(Context::ARRAY_FUNCTION_INDEX));
+        Node* is_array_function = WordEqual(context_slot, constructor);
+        BranchIf(is_array_function, &set_alloc_feedback_and_inc_count,
+                 &mark_megamorphic);
+      }
+
+      Bind(&set_alloc_feedback_and_inc_count);
+      {
+        allocation_feedback.Bind(feedback_element);
+        Goto(&increment_count);
+      }
+
+      Bind(&check_initialized);
+      {
+        // Check if it is uninitialized.
+        Comment("check if uninitialized");
+        Node* is_uninitialized = WordEqual(
+            feedback_element, LoadRoot(Heap::kuninitialized_symbolRootIndex));
+        BranchIf(is_uninitialized, &initialize, &mark_megamorphic);
+      }
+
+      Bind(&initialize);
+      {
+        Label initialize_count(this), create_weak_cell(this),
+            create_allocation_site(this);
+        Comment("initialize the feedback element");
+        // Check that it is the Array() function.
+        Node* context_slot =
+            LoadFixedArrayElement(LoadNativeContext(context),
+                                  Int32Constant(Context::ARRAY_FUNCTION_INDEX));
+        Node* is_array_function = WordEqual(context_slot, constructor);
+        BranchIf(is_array_function, &create_allocation_site, &create_weak_cell);
+
+        Bind(&create_allocation_site);
+        {
+          // TODO(mythria): Inline the creation of allocation site.
+          CreateAllocationSiteStub create_stub(isolate());
+          CallStub(create_stub.GetCallInterfaceDescriptor(),
+                   HeapConstant(create_stub.GetCode()), context,
+                   type_feedback_vector, SmiTag(slot_id));
+          Node* feedback_element =
+              LoadFixedArrayElement(type_feedback_vector, slot_id);
+          allocation_feedback.Bind(feedback_element);
+          Goto(&initialize_count);
+        }
+
+        Bind(&create_weak_cell);
+        {
+          CreateWeakCellInFeedbackVector(type_feedback_vector, SmiTag(slot_id),
+                                         constructor);
+          Goto(&initialize_count);
+        }
+
+        Bind(&initialize_count);
+        {
+          Node* call_count_slot = IntPtrAdd(slot_id, IntPtrConstant(1));
+          // Count is Smi, so we don't need a write barrier.
+          StoreFixedArrayElement(type_feedback_vector, call_count_slot,
+                                 SmiTag(Int32Constant(1)), SKIP_WRITE_BARRIER);
+          Goto(&call_construct_function);
+        }
+      }
+
+      Bind(&mark_megamorphic);
+      {
+        // MegamorphicSentinel is an immortal immovable object so
+        // write-barrier is not needed.
+        Comment("transition to megamorphic");
+        DCHECK(
+            Heap::RootIsImmortalImmovable(Heap::kmegamorphic_symbolRootIndex));
+        StoreFixedArrayElement(
+            type_feedback_vector, slot_id,
+            HeapConstant(TypeFeedbackVector::MegamorphicSentinel(isolate())),
+            SKIP_WRITE_BARRIER);
+        Goto(&call_construct_function);
+      }
+    }
+
+    Bind(&increment_count);
+    {
+      // Increment the call count.
+      Comment("increment call count");
+      Node* call_count_slot = IntPtrAdd(slot_id, IntPtrConstant(1));
+      Node* call_count =
+          LoadFixedArrayElement(type_feedback_vector, call_count_slot);
+      Node* new_count = SmiAdd(call_count, SmiTag(Int32Constant(1)));
+      // Count is Smi, so we don't need a write barrier.
+      StoreFixedArrayElement(type_feedback_vector, call_count_slot, new_count,
+                             SKIP_WRITE_BARRIER);
+      Goto(&call_construct_function);
+    }
+
+    Bind(&call_construct_function);
+    {
+      Comment("call using callConstructFunction");
+      Callable callable_function = CodeFactory::InterpreterPushArgsAndConstruct(
+          isolate(), CallableType::kJSFunction);
+      return_value.Bind(CallStub(callable_function.descriptor(),
+                                 HeapConstant(callable_function.code()),
+                                 context, arg_count, new_target, constructor,
+                                 allocation_feedback.value(), first_arg));
+      Goto(&end);
+    }
+  }
+
+  Bind(&call_construct);
+  {
+    Comment("call using callConstruct builtin");
+    Callable callable = CodeFactory::InterpreterPushArgsAndConstruct(
+        isolate(), CallableType::kAny);
+    Node* code_target = HeapConstant(callable.code());
+    return_value.Bind(CallStub(callable.descriptor(), code_target, context,
+                               arg_count, new_target, constructor,
+                               UndefinedConstant(), first_arg));
+    Goto(&end);
+  }
+
+  Bind(&end);
+  return return_value.value();
 }
 
 Node* InterpreterAssembler::CallRuntimeN(Node* function_id, Node* context,
@@ -825,6 +1097,67 @@ void InterpreterAssembler::DispatchWide(OperandScale operand_scale) {
   DispatchToBytecodeHandlerEntry(target_code_entry, next_bytecode_offset);
 }
 
+Node* InterpreterAssembler::TruncateTaggedToWord32WithFeedback(
+    Node* context, Node* value, Variable* var_type_feedback) {
+  // We might need to loop once due to ToNumber conversion.
+  Variable var_value(this, MachineRepresentation::kTagged),
+      var_result(this, MachineRepresentation::kWord32);
+  Variable* loop_vars[] = {&var_value, var_type_feedback};
+  Label loop(this, 2, loop_vars), done_loop(this, &var_result);
+  var_value.Bind(value);
+  var_type_feedback->Bind(Int32Constant(BinaryOperationFeedback::kNone));
+  Goto(&loop);
+  Bind(&loop);
+  {
+    // Load the current {value}.
+    value = var_value.value();
+
+    // Check if the {value} is a Smi or a HeapObject.
+    Label if_valueissmi(this), if_valueisnotsmi(this);
+    Branch(WordIsSmi(value), &if_valueissmi, &if_valueisnotsmi);
+
+    Bind(&if_valueissmi);
+    {
+      // Convert the Smi {value}.
+      var_result.Bind(SmiToWord32(value));
+      var_type_feedback->Bind(
+          Word32Or(var_type_feedback->value(),
+                   Int32Constant(BinaryOperationFeedback::kSignedSmall)));
+      Goto(&done_loop);
+    }
+
+    Bind(&if_valueisnotsmi);
+    {
+      // Check if {value} is a HeapNumber.
+      Label if_valueisheapnumber(this),
+          if_valueisnotheapnumber(this, Label::kDeferred);
+      Branch(WordEqual(LoadMap(value), HeapNumberMapConstant()),
+             &if_valueisheapnumber, &if_valueisnotheapnumber);
+
+      Bind(&if_valueisheapnumber);
+      {
+        // Truncate the floating point value.
+        var_result.Bind(TruncateHeapNumberValueToWord32(value));
+        var_type_feedback->Bind(
+            Word32Or(var_type_feedback->value(),
+                     Int32Constant(BinaryOperationFeedback::kNumber)));
+        Goto(&done_loop);
+      }
+
+      Bind(&if_valueisnotheapnumber);
+      {
+        // Convert the {value} to a Number first.
+        Callable callable = CodeFactory::NonNumberToNumber(isolate());
+        var_value.Bind(CallStub(callable, context, value));
+        var_type_feedback->Bind(Int32Constant(BinaryOperationFeedback::kAny));
+        Goto(&loop);
+      }
+    }
+  }
+  Bind(&done_loop);
+  return var_result.value();
+}
+
 void InterpreterAssembler::UpdateInterruptBudgetOnReturn() {
   // TODO(rmcilroy): Investigate whether it is worth supporting self
   // optimization of primitive functions like FullCodegen.
@@ -908,10 +1241,9 @@ void InterpreterAssembler::TraceBytecodeDispatch(Node* target_bytecode) {
 bool InterpreterAssembler::TargetSupportsUnalignedAccess() {
 #if V8_TARGET_ARCH_MIPS || V8_TARGET_ARCH_MIPS64
   return false;
-#elif V8_TARGET_ARCH_PPC
-  return CpuFeatures::IsSupported(UNALIGNED_ACCESSES);
 #elif V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_X87 || \
-    V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64
+    V8_TARGET_ARCH_S390 || V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_ARM64 || \
+    V8_TARGET_ARCH_PPC
   return true;
 #else
 #error "Unknown Architecture"
@@ -927,7 +1259,7 @@ Node* InterpreterAssembler::RegisterCount() {
 
 Node* InterpreterAssembler::ExportRegisterFile(Node* array) {
   if (FLAG_debug_code) {
-    Node* array_size = SmiUntag(LoadFixedArrayBaseLength(array));
+    Node* array_size = LoadAndUntagFixedArrayBaseLength(array);
     AbortIfWordNotEqual(
         array_size, RegisterCount(), kInvalidRegisterFileInGenerator);
   }
@@ -962,7 +1294,7 @@ Node* InterpreterAssembler::ExportRegisterFile(Node* array) {
 
 Node* InterpreterAssembler::ImportRegisterFile(Node* array) {
   if (FLAG_debug_code) {
-    Node* array_size = SmiUntag(LoadFixedArrayBaseLength(array));
+    Node* array_size = LoadAndUntagFixedArrayBaseLength(array);
     AbortIfWordNotEqual(
         array_size, RegisterCount(), kInvalidRegisterFileInGenerator);
   }

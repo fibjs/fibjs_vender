@@ -8,7 +8,7 @@
 
 #include "src/compiler/code-generator.h"
 
-#include "src/ast/scopes.h"
+#include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
@@ -201,17 +201,33 @@ class OutOfLineLoadInteger final : public OutOfLineCode {
   Register const result_;
 };
 
-class OutOfLineLoadNaN final : public OutOfLineCode {
+class OutOfLineLoadFloat32NaN final : public OutOfLineCode {
  public:
-  OutOfLineLoadNaN(CodeGenerator* gen, XMMRegister result)
+  OutOfLineLoadFloat32NaN(CodeGenerator* gen, XMMRegister result)
       : OutOfLineCode(gen), result_(result) {}
 
-  void Generate() final { __ pcmpeqd(result_, result_); }
+  void Generate() final {
+    __ xorps(result_, result_);
+    __ divss(result_, result_);
+  }
 
  private:
   XMMRegister const result_;
 };
 
+class OutOfLineLoadFloat64NaN final : public OutOfLineCode {
+ public:
+  OutOfLineLoadFloat64NaN(CodeGenerator* gen, XMMRegister result)
+      : OutOfLineCode(gen), result_(result) {}
+
+  void Generate() final {
+    __ xorpd(result_, result_);
+    __ divsd(result_, result_);
+  }
+
+ private:
+  XMMRegister const result_;
+};
 
 class OutOfLineTruncateDoubleToI final : public OutOfLineCode {
  public:
@@ -274,7 +290,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
 
 }  // namespace
 
-#define ASSEMBLE_CHECKED_LOAD_FLOAT(asm_instr)                        \
+#define ASSEMBLE_CHECKED_LOAD_FLOAT(asm_instr, OutOfLineLoadNaN)      \
   do {                                                                \
     auto result = i.OutputDoubleRegister();                           \
     auto offset = i.InputRegister(0);                                 \
@@ -624,9 +640,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     }
     case kArchDebugBreak:
       __ int3();
-      break;
-    case kArchImpossible:
-      __ Abort(kConversionFromImpossibleValue);
       break;
     case kArchNop:
     case kArchThrowTerminator:
@@ -1036,6 +1049,32 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       // when there is a (v)mulsd depending on the result.
       __ movaps(i.OutputDoubleRegister(), i.OutputDoubleRegister());
       break;
+    case kSSEFloat32Max: {
+      Label compare_nan, compare_swap, done_compare;
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ ucomiss(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+      } else {
+        __ ucomiss(i.InputDoubleRegister(0), i.InputOperand(1));
+      }
+      auto ool =
+          new (zone()) OutOfLineLoadFloat32NaN(this, i.OutputDoubleRegister());
+      __ j(parity_even, ool->entry());
+      __ j(above, &done_compare, Label::kNear);
+      __ j(below, &compare_swap, Label::kNear);
+      __ movmskps(i.TempRegister(0), i.InputDoubleRegister(0));
+      __ test(i.TempRegister(0), Immediate(1));
+      __ j(zero, &done_compare, Label::kNear);
+      __ bind(&compare_swap);
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ movss(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+      } else {
+        __ movss(i.InputDoubleRegister(0), i.InputOperand(1));
+      }
+      __ bind(&done_compare);
+      __ bind(ool->exit());
+      break;
+    }
+
     case kSSEFloat64Max: {
       Label compare_nan, compare_swap, done_compare;
       if (instr->InputAt(1)->IsFPRegister()) {
@@ -1043,7 +1082,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       } else {
         __ ucomisd(i.InputDoubleRegister(0), i.InputOperand(1));
       }
-      auto ool = new (zone()) OutOfLineLoadNaN(this, i.OutputDoubleRegister());
+      auto ool =
+          new (zone()) OutOfLineLoadFloat64NaN(this, i.OutputDoubleRegister());
       __ j(parity_even, ool->entry());
       __ j(above, &done_compare, Label::kNear);
       __ j(below, &compare_swap, Label::kNear);
@@ -1060,6 +1100,36 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ bind(ool->exit());
       break;
     }
+    case kSSEFloat32Min: {
+      Label compare_swap, done_compare;
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ ucomiss(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+      } else {
+        __ ucomiss(i.InputDoubleRegister(0), i.InputOperand(1));
+      }
+      auto ool =
+          new (zone()) OutOfLineLoadFloat32NaN(this, i.OutputDoubleRegister());
+      __ j(parity_even, ool->entry());
+      __ j(below, &done_compare, Label::kNear);
+      __ j(above, &compare_swap, Label::kNear);
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ movmskps(i.TempRegister(0), i.InputDoubleRegister(1));
+      } else {
+        __ movss(kScratchDoubleReg, i.InputOperand(1));
+        __ movmskps(i.TempRegister(0), kScratchDoubleReg);
+      }
+      __ test(i.TempRegister(0), Immediate(1));
+      __ j(zero, &done_compare, Label::kNear);
+      __ bind(&compare_swap);
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ movss(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+      } else {
+        __ movss(i.InputDoubleRegister(0), i.InputOperand(1));
+      }
+      __ bind(&done_compare);
+      __ bind(ool->exit());
+      break;
+    }
     case kSSEFloat64Min: {
       Label compare_swap, done_compare;
       if (instr->InputAt(1)->IsFPRegister()) {
@@ -1067,7 +1137,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       } else {
         __ ucomisd(i.InputDoubleRegister(0), i.InputOperand(1));
       }
-      auto ool = new (zone()) OutOfLineLoadNaN(this, i.OutputDoubleRegister());
+      auto ool =
+          new (zone()) OutOfLineLoadFloat64NaN(this, i.OutputDoubleRegister());
       __ j(parity_even, ool->entry());
       __ j(below, &done_compare, Label::kNear);
       __ j(above, &compare_swap, Label::kNear);
@@ -1500,10 +1571,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_CHECKED_LOAD_INTEGER(mov);
       break;
     case kCheckedLoadFloat32:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(movss);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(movss, OutOfLineLoadFloat32NaN);
       break;
     case kCheckedLoadFloat64:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(movsd);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(movsd, OutOfLineLoadFloat64NaN);
       break;
     case kCheckedStoreWord8:
       ASSEMBLE_CHECKED_STORE_INTEGER(mov_b);

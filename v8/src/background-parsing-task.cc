@@ -3,10 +3,18 @@
 // found in the LICENSE file.
 
 #include "src/background-parsing-task.h"
+
 #include "src/debug/debug.h"
+#include "src/parsing/parser.h"
 
 namespace v8 {
 namespace internal {
+
+void StreamedSource::Release() {
+  parser.reset();
+  info.reset();
+  zone.reset();
+}
 
 BackgroundParsingTask::BackgroundParsingTask(
     StreamedSource* source, ScriptCompiler::CompileOptions options,
@@ -42,6 +50,9 @@ BackgroundParsingTask::BackgroundParsingTask(
   // Parser needs to stay alive for finalizing the parsing on the main
   // thread.
   source_->parser.reset(new Parser(source_->info.get()));
+  source_->parser->DeserializeScopeChain(
+      source_->info.get(), Handle<Context>::null(),
+      Scope::DeserializationMode::kDeserializeOffHeap);
 }
 
 

@@ -68,8 +68,6 @@ namespace internal {
     "Unexpected cell contents in global store")                               \
   V(UnexpectedObject, "unexpected object")                                    \
   V(UnexpectedRHSOfBinaryOperation, "Unexpected RHS of binary operation")     \
-  V(UninitializedBoilerplateInFastClone,                                      \
-    "Uninitialized boilerplate in fast clone")                                \
   V(UninitializedBoilerplateLiterals, "Uninitialized boilerplate literals")   \
   V(UnknownMapInPolymorphicAccess, "Unknown map in polymorphic access")       \
   V(UnknownMapInPolymorphicCall, "Unknown map in polymorphic call")           \
@@ -92,7 +90,7 @@ std::ostream& operator<<(std::ostream&, DeoptimizeReason);
 
 size_t hash_value(DeoptimizeReason reason);
 
-char const* const DeoptimizeReasonToString(DeoptimizeReason reason);
+char const* DeoptimizeReasonToString(DeoptimizeReason reason);
 
 }  // namespace internal
 }  // namespace v8

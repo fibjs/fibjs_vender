@@ -525,6 +525,8 @@ class StackFrame BASE_EMBEDDED {
 
   Isolate* isolate() const { return isolate_; }
 
+  void operator=(const StackFrame& original) = delete;
+
  protected:
   inline explicit StackFrame(StackFrameIteratorBase* iterator);
   virtual ~StackFrame() { }
@@ -563,9 +565,6 @@ class StackFrame BASE_EMBEDDED {
   friend class StackFrameIteratorBase;
   friend class StackHandlerIterator;
   friend class SafeStackFrameIterator;
-
- private:
-  void operator=(const StackFrame& original);
 };
 
 
@@ -710,11 +709,11 @@ class FrameSummary BASE_EMBEDDED {
 
   static FrameSummary GetFirst(JavaScriptFrame* frame);
 
-  Handle<Object> receiver() { return receiver_; }
-  Handle<JSFunction> function() { return function_; }
-  Handle<AbstractCode> abstract_code() { return abstract_code_; }
-  int code_offset() { return code_offset_; }
-  bool is_constructor() { return is_constructor_; }
+  Handle<Object> receiver() const { return receiver_; }
+  Handle<JSFunction> function() const { return function_; }
+  Handle<AbstractCode> abstract_code() const { return abstract_code_; }
+  int code_offset() const { return code_offset_; }
+  bool is_constructor() const { return is_constructor_; }
 
   void Print();
 

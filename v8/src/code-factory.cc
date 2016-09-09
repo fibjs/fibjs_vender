@@ -82,6 +82,10 @@ Callable CodeFactory::KeyedLoadICInOptimizedCode(Isolate* isolate) {
 
 // static
 Callable CodeFactory::KeyedLoadIC_Megamorphic(Isolate* isolate) {
+  if (FLAG_tf_load_ic_stub) {
+    return Callable(isolate->builtins()->KeyedLoadIC_Megamorphic_TF(),
+                    LoadWithVectorDescriptor(isolate));
+  }
   return Callable(isolate->builtins()->KeyedLoadIC_Megamorphic(),
                   LoadWithVectorDescriptor(isolate));
 }
@@ -471,8 +475,8 @@ Callable CodeFactory::FastCloneShallowObject(Isolate* isolate, int length) {
 
 
 // static
-Callable CodeFactory::FastNewContext(Isolate* isolate, int slot_count) {
-  FastNewFunctionContextStub stub(isolate, slot_count);
+Callable CodeFactory::FastNewFunctionContext(Isolate* isolate) {
+  FastNewFunctionContextStub stub(isolate);
   return make_callable(stub);
 }
 
@@ -507,6 +511,24 @@ Callable CodeFactory::FastNewStrictArguments(Isolate* isolate,
                                              bool skip_stub_frame) {
   FastNewStrictArgumentsStub stub(isolate, skip_stub_frame);
   return make_callable(stub);
+}
+
+// static
+Callable CodeFactory::CopyFastSmiOrObjectElements(Isolate* isolate) {
+  return Callable(isolate->builtins()->CopyFastSmiOrObjectElements(),
+                  CopyFastSmiOrObjectElementsDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::GrowFastDoubleElements(Isolate* isolate) {
+  return Callable(isolate->builtins()->GrowFastDoubleElements(),
+                  GrowArrayElementsDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::GrowFastSmiOrObjectElements(Isolate* isolate) {
+  return Callable(isolate->builtins()->GrowFastSmiOrObjectElements(),
+                  GrowArrayElementsDescriptor(isolate));
 }
 
 // static
@@ -576,9 +598,17 @@ Callable CodeFactory::InterpreterPushArgsAndCall(Isolate* isolate,
 }
 
 // static
-Callable CodeFactory::InterpreterPushArgsAndConstruct(Isolate* isolate) {
-  return Callable(isolate->builtins()->InterpreterPushArgsAndConstruct(),
-                  InterpreterPushArgsAndConstructDescriptor(isolate));
+Callable CodeFactory::InterpreterPushArgsAndConstruct(
+    Isolate* isolate, CallableType function_type) {
+  return Callable(
+      isolate->builtins()->InterpreterPushArgsAndConstruct(function_type),
+      InterpreterPushArgsAndConstructDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::InterpreterPushArgsAndConstructArray(Isolate* isolate) {
+  return Callable(isolate->builtins()->InterpreterPushArgsAndConstructArray(),
+                  InterpreterPushArgsAndConstructArrayDescriptor(isolate));
 }
 
 // static

@@ -13,7 +13,6 @@
 namespace v8 {
 namespace internal {
 
-
 // static
 LookupIterator LookupIterator::PropertyOrElement(Isolate* isolate,
                                                  Handle<Object> receiver,

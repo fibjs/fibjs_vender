@@ -19,7 +19,7 @@ namespace compiler {
 class CallDescriptor;
 struct CommonOperatorGlobalCache;
 class Operator;
-
+class Type;
 
 // Prediction hint for branches.
 enum class BranchHint : uint8_t { kNone, kTrue, kFalse };
@@ -75,20 +75,6 @@ size_t hast_value(DeoptimizeParameters p);
 std::ostream& operator<<(std::ostream&, DeoptimizeParameters p);
 
 DeoptimizeParameters const& DeoptimizeParametersOf(Operator const* const);
-
-// Prediction whether throw-site is surrounded by any local catch-scope.
-enum class IfExceptionHint {
-  kLocallyUncaught,
-  kLocallyCaught,
-  kLocallyCaughtForPromiseReject
-};
-
-IfExceptionHint ExceptionHintFromCatchPrediction(
-    HandlerTable::CatchPrediction prediction);
-
-size_t hash_value(IfExceptionHint hint);
-
-std::ostream& operator<<(std::ostream&, IfExceptionHint);
 
 
 class SelectParameters final {
@@ -183,6 +169,8 @@ RegionObservability RegionObservabilityOf(Operator const*) WARN_UNUSED_RESULT;
 std::ostream& operator<<(std::ostream& os,
                          const ZoneVector<MachineType>* types);
 
+Type* TypeGuardTypeOf(Operator const*) WARN_UNUSED_RESULT;
+
 // Interface for building common operators that can be used at any level of IR,
 // including JavaScript, mid-level, and low-level.
 class CommonOperatorBuilder final : public ZoneObject {
@@ -195,7 +183,7 @@ class CommonOperatorBuilder final : public ZoneObject {
   const Operator* IfTrue();
   const Operator* IfFalse();
   const Operator* IfSuccess();
-  const Operator* IfException(IfExceptionHint hint);
+  const Operator* IfException();
   const Operator* Switch(size_t control_output_count);
   const Operator* IfValue(int32_t value);
   const Operator* IfDefault();
@@ -248,6 +236,8 @@ class CommonOperatorBuilder final : public ZoneObject {
   const Operator* Call(const CallDescriptor* descriptor);
   const Operator* TailCall(const CallDescriptor* descriptor);
   const Operator* Projection(size_t index);
+  const Operator* Retain();
+  const Operator* TypeGuard(Type* type);
 
   // Constructs a new merge or phi operator with the same opcode as {op}, but
   // with {size} inputs.

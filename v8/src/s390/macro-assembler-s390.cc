@@ -255,10 +255,7 @@ void MacroAssembler::StoreRoot(Register source, Heap::RootListIndex index,
 void MacroAssembler::InNewSpace(Register object, Register scratch,
                                 Condition cond, Label* branch) {
   DCHECK(cond == eq || cond == ne);
-  // TODO(joransiu): check if we can merge mov Operand into AndP.
-  const int mask =
-      (1 << MemoryChunk::IN_FROM_SPACE) | (1 << MemoryChunk::IN_TO_SPACE);
-  CheckPageFlag(object, scratch, mask, cond, branch);
+  CheckPageFlag(object, scratch, MemoryChunk::kIsInNewSpaceMask, cond, branch);
 }
 
 void MacroAssembler::RecordWriteField(
@@ -1713,7 +1710,7 @@ void MacroAssembler::LoadFromNumberDictionary(Label* miss, Register elements,
 void MacroAssembler::Allocate(int object_size, Register result,
                               Register scratch1, Register scratch2,
                               Label* gc_required, AllocationFlags flags) {
-  DCHECK(object_size <= Page::kMaxRegularHeapObjectSize);
+  DCHECK(object_size <= kMaxRegularHeapObjectSize);
   DCHECK((flags & ALLOCATION_FOLDED) == 0);
   if (!FLAG_inline_new) {
     if (emit_debug_code()) {
@@ -1969,7 +1966,7 @@ void MacroAssembler::FastAllocate(Register object_size, Register result,
 void MacroAssembler::FastAllocate(int object_size, Register result,
                                   Register scratch1, Register scratch2,
                                   AllocationFlags flags) {
-  DCHECK(object_size <= Page::kMaxRegularHeapObjectSize);
+  DCHECK(object_size <= kMaxRegularHeapObjectSize);
   DCHECK(!AreAliased(result, scratch1, scratch2, ip));
 
   // Make object size into bytes.
@@ -2190,89 +2187,6 @@ void MacroAssembler::StoreNumberToDoubleElements(
   StoreDouble(double_scratch,
               FieldMemOperand(elements_reg, scratch1,
                               FixedDoubleArray::kHeaderSize - elements_offset));
-}
-
-void MacroAssembler::AddAndCheckForOverflow(Register dst, Register left,
-                                            Register right,
-                                            Register overflow_dst,
-                                            Register scratch) {
-  DCHECK(!dst.is(overflow_dst));
-  DCHECK(!dst.is(scratch));
-  DCHECK(!overflow_dst.is(scratch));
-  DCHECK(!overflow_dst.is(left));
-  DCHECK(!overflow_dst.is(right));
-
-  // TODO(joransiu): Optimize paths for left == right.
-  bool left_is_right = left.is(right);
-
-  // C = A+B; C overflows if A/B have same sign and C has diff sign than A
-  if (dst.is(left)) {
-    LoadRR(scratch, left);             // Preserve left.
-    AddP(dst, left, right);            // Left is overwritten.
-    XorP(overflow_dst, scratch, dst);  // Original left.
-    if (!left_is_right) XorP(scratch, dst, right);
-  } else if (dst.is(right)) {
-    LoadRR(scratch, right);  // Preserve right.
-    AddP(dst, left, right);  // Right is overwritten.
-    XorP(overflow_dst, dst, left);
-    if (!left_is_right) XorP(scratch, dst, scratch);
-  } else {
-    AddP(dst, left, right);
-    XorP(overflow_dst, dst, left);
-    if (!left_is_right) XorP(scratch, dst, right);
-  }
-  if (!left_is_right) AndP(overflow_dst, scratch, overflow_dst);
-  LoadAndTestRR(overflow_dst, overflow_dst);
-}
-
-void MacroAssembler::AddAndCheckForOverflow(Register dst, Register left,
-                                            intptr_t right,
-                                            Register overflow_dst,
-                                            Register scratch) {
-  DCHECK(!dst.is(overflow_dst));
-  DCHECK(!dst.is(scratch));
-  DCHECK(!overflow_dst.is(scratch));
-  DCHECK(!overflow_dst.is(left));
-
-  mov(r1, Operand(right));
-  AddAndCheckForOverflow(dst, left, r1, overflow_dst, scratch);
-}
-
-void MacroAssembler::SubAndCheckForOverflow(Register dst, Register left,
-                                            Register right,
-                                            Register overflow_dst,
-                                            Register scratch) {
-  DCHECK(!dst.is(overflow_dst));
-  DCHECK(!dst.is(scratch));
-  DCHECK(!overflow_dst.is(scratch));
-  DCHECK(!overflow_dst.is(left));
-  DCHECK(!overflow_dst.is(right));
-
-  // C = A-B; C overflows if A/B have diff signs and C has diff sign than A
-  if (dst.is(left)) {
-    LoadRR(scratch, left);   // Preserve left.
-    SubP(dst, left, right);  // Left is overwritten.
-    XorP(overflow_dst, dst, scratch);
-    XorP(scratch, right);
-    AndP(overflow_dst, scratch /*, SetRC*/);
-    LoadAndTestRR(overflow_dst, overflow_dst);
-    // Should be okay to remove rc
-  } else if (dst.is(right)) {
-    LoadRR(scratch, right);  // Preserve right.
-    SubP(dst, left, right);  // Right is overwritten.
-    XorP(overflow_dst, dst, left);
-    XorP(scratch, left);
-    AndP(overflow_dst, scratch /*, SetRC*/);
-    LoadAndTestRR(overflow_dst, overflow_dst);
-    // Should be okay to remove rc
-  } else {
-    SubP(dst, left, right);
-    XorP(overflow_dst, dst, left);
-    XorP(scratch, left, right);
-    AndP(overflow_dst, scratch /*, SetRC*/);
-    LoadAndTestRR(overflow_dst, overflow_dst);
-    // Should be okay to remove rc
-  }
 }
 
 void MacroAssembler::CompareMap(Register obj, Register scratch, Handle<Map> map,
@@ -3784,6 +3698,36 @@ void MacroAssembler::mov(Register dst, const Operand& src) {
 #endif
 }
 
+void MacroAssembler::Mul32(Register dst, const MemOperand& src1) {
+  if (is_uint12(src1.offset())) {
+    ms(dst, src1);
+  } else if (is_int20(src1.offset())) {
+    msy(dst, src1);
+  } else {
+    UNIMPLEMENTED();
+  }
+}
+
+void MacroAssembler::Mul32(Register dst, Register src1) { msr(dst, src1); }
+
+void MacroAssembler::Mul32(Register dst, const Operand& src1) {
+  msfi(dst, src1);
+}
+
+void MacroAssembler::Mul64(Register dst, const MemOperand& src1) {
+  if (is_int20(src1.offset())) {
+    msg(dst, src1);
+  } else {
+    UNIMPLEMENTED();
+  }
+}
+
+void MacroAssembler::Mul64(Register dst, Register src1) { msgr(dst, src1); }
+
+void MacroAssembler::Mul64(Register dst, const Operand& src1) {
+  msgfi(dst, src1);
+}
+
 void MacroAssembler::Mul(Register dst, Register src1, Register src2) {
   if (dst.is(src2)) {
     MulP(dst, src1);
@@ -4163,15 +4107,18 @@ void MacroAssembler::SubP_ExtendSrc(Register dst, Register src) {
 // Subtract 32-bit (Register = Register - Register)
 void MacroAssembler::Sub32(Register dst, Register src1, Register src2) {
   // Use non-clobbering version if possible
-  if (CpuFeatures::IsSupported(DISTINCT_OPS) && !dst.is(src1)) {
+  if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
     srk(dst, src1, src2);
     return;
   }
   if (!dst.is(src1) && !dst.is(src2)) lr(dst, src1);
   // In scenario where we have dst = src - dst, we need to swap and negate
   if (!dst.is(src1) && dst.is(src2)) {
-    sr(dst, src1);  // dst = (dst - src)
+    Label done;
     lcr(dst, dst);  // dst = -dst
+    b(overflow, &done);
+    ar(dst, src1);  // dst = dst + src
+    bind(&done);
   } else {
     sr(dst, src2);
   }
@@ -4180,15 +4127,18 @@ void MacroAssembler::Sub32(Register dst, Register src1, Register src2) {
 // Subtract Pointer Sized (Register = Register - Register)
 void MacroAssembler::SubP(Register dst, Register src1, Register src2) {
   // Use non-clobbering version if possible
-  if (CpuFeatures::IsSupported(DISTINCT_OPS) && !dst.is(src1)) {
+  if (CpuFeatures::IsSupported(DISTINCT_OPS)) {
     SubP_RRR(dst, src1, src2);
     return;
   }
   if (!dst.is(src1) && !dst.is(src2)) LoadRR(dst, src1);
   // In scenario where we have dst = src - dst, we need to swap and negate
   if (!dst.is(src1) && dst.is(src2)) {
-    SubP(dst, src1);             // dst = (dst - src)
+    Label done;
     LoadComplementRR(dst, dst);  // dst = -dst
+    b(overflow, &done);
+    AddP(dst, src1);  // dst = dst + src
+    bind(&done);
   } else {
     SubP(dst, src2);
   }
@@ -4206,8 +4156,8 @@ void MacroAssembler::SubP_ExtendSrc(Register dst, Register src1,
   // In scenario where we have dst = src - dst, we need to swap and negate
   if (!dst.is(src1) && dst.is(src2)) {
     lgfr(dst, dst);              // Sign extend this operand first.
-    SubP(dst, src1);             // dst = (dst - src)
     LoadComplementRR(dst, dst);  // dst = -dst
+    AddP(dst, src1);             // dst = -dst + src
   } else {
     sgfr(dst, src2);
   }
@@ -4589,12 +4539,22 @@ void MacroAssembler::XorP(Register dst, Register src, const Operand& opnd) {
   XorP(dst, opnd);
 }
 
-void MacroAssembler::NotP(Register dst) {
-#if V8_TARGET_ARCH_S390X
+void MacroAssembler::Not32(Register dst, Register src) {
+  if (!src.is(no_reg) && !src.is(dst)) lr(dst, src);
+  xilf(dst, Operand(0xFFFFFFFF));
+}
+
+void MacroAssembler::Not64(Register dst, Register src) {
+  if (!src.is(no_reg) && !src.is(dst)) lgr(dst, src);
   xihf(dst, Operand(0xFFFFFFFF));
   xilf(dst, Operand(0xFFFFFFFF));
+}
+
+void MacroAssembler::NotP(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  Not64(dst, src);
 #else
-  XorP(dst, Operand(0xFFFFFFFF));
+  Not32(dst, src);
 #endif
 }
 
@@ -5082,6 +5042,22 @@ void MacroAssembler::LoadlW(Register dst, const MemOperand& mem,
 #endif
 }
 
+void MacroAssembler::LoadLogicalHalfWordP(Register dst, const MemOperand& mem) {
+#if V8_TARGET_ARCH_S390X
+  llgh(dst, mem);
+#else
+  llh(dst, mem);
+#endif
+}
+
+void MacroAssembler::LoadLogicalHalfWordP(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  llghr(dst, src);
+#else
+  llhr(dst, src);
+#endif
+}
+
 void MacroAssembler::LoadB(Register dst, const MemOperand& mem) {
 #if V8_TARGET_ARCH_S390X
   lgb(dst, mem);
@@ -5105,6 +5081,20 @@ void MacroAssembler::LoadlB(Register dst, const MemOperand& mem) {
   llc(dst, mem);
 #endif
 }
+
+void MacroAssembler::LoadLogicalReversedWordP(Register dst,
+                                              const MemOperand& mem) {
+  lrv(dst, mem);
+  LoadlW(dst, dst);
+}
+
+
+void MacroAssembler::LoadLogicalReversedHalfWordP(Register dst,
+                                              const MemOperand& mem) {
+  lrvh(dst, mem);
+  LoadLogicalHalfWordP(dst, dst);
+}
+
 
 // Load And Test (Reg <- Reg)
 void MacroAssembler::LoadAndTest32(Register dst, Register src) {
@@ -5143,6 +5133,16 @@ void MacroAssembler::LoadAndTestP(Register dst, const MemOperand& mem) {
   ltg(dst, mem);
 #else
   lt_z(dst, mem);
+#endif
+}
+
+// Load On Condition Pointer Sized (Reg <- Reg)
+void MacroAssembler::LoadOnConditionP(Condition cond, Register dst,
+                                      Register src) {
+#if V8_TARGET_ARCH_S390X
+  locgr(cond, dst, src);
+#else
+  locr(cond, dst, src);
 #endif
 }
 

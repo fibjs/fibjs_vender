@@ -52,6 +52,9 @@ class Factory final {
       int size,
       PretenureFlag pretenure = NOT_TENURED);
 
+  Handle<FrameArray> NewFrameArray(int number_of_frames,
+                                   PretenureFlag pretenure = NOT_TENURED);
+
   Handle<OrderedHashSet> NewOrderedHashSet();
   Handle<OrderedHashMap> NewOrderedHashMap();
 
@@ -61,10 +64,9 @@ class Factory final {
   // Create a new PrototypeInfo struct.
   Handle<PrototypeInfo> NewPrototypeInfo();
 
-  // Create a new SloppyBlockWithEvalContextExtension struct.
-  Handle<SloppyBlockWithEvalContextExtension>
-  NewSloppyBlockWithEvalContextExtension(Handle<ScopeInfo> scope_info,
-                                         Handle<JSObject> extension);
+  // Create a new ContextExtension struct.
+  Handle<ContextExtension> NewContextExtension(Handle<ScopeInfo> scope_info,
+                                               Handle<Object> extension);
 
   // Create a pre-tenured empty AccessorPair.
   Handle<AccessorPair> NewAccessorPair();
@@ -263,15 +265,18 @@ class Factory final {
   // Create a catch context.
   Handle<Context> NewCatchContext(Handle<JSFunction> function,
                                   Handle<Context> previous,
+                                  Handle<ScopeInfo> scope_info,
                                   Handle<String> name,
                                   Handle<Object> thrown_object);
 
   // Create a 'with' context.
   Handle<Context> NewWithContext(Handle<JSFunction> function,
                                  Handle<Context> previous,
+                                 Handle<ScopeInfo> scope_info,
                                  Handle<JSReceiver> extension);
 
   Handle<Context> NewDebugEvaluateContext(Handle<Context> previous,
+                                          Handle<ScopeInfo> scope_info,
                                           Handle<JSReceiver> extension,
                                           Handle<Context> wrapped,
                                           Handle<StringSet> whitelist);
@@ -376,6 +381,16 @@ class Factory final {
     // intptr_t, and casting from size_t could create a bogus sign bit.
     if (value <= static_cast<size_t>(Smi::kMaxValue)) {
       return Handle<Object>(Smi::FromIntptr(static_cast<intptr_t>(value)),
+                            isolate());
+    }
+    return NewNumber(static_cast<double>(value), pretenure);
+  }
+  Handle<Object> NewNumberFromInt64(int64_t value,
+                                    PretenureFlag pretenure = NOT_TENURED) {
+    if (value <= std::numeric_limits<int32_t>::max() &&
+        value >= std::numeric_limits<int32_t>::min() &&
+        Smi::IsValid(static_cast<int32_t>(value))) {
+      return Handle<Object>(Smi::FromInt(static_cast<int32_t>(value)),
                             isolate());
     }
     return NewNumber(static_cast<double>(value), pretenure);
@@ -543,6 +558,8 @@ class Factory final {
 
   // Create a serialized scope info.
   Handle<ScopeInfo> NewScopeInfo(int length);
+
+  Handle<ModuleInfo> NewModuleInfo();
 
   // Create an External object for V8's external API.
   Handle<JSObject> NewExternal(void* value);

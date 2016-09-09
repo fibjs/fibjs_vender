@@ -17,7 +17,6 @@
 #include "src/base/bits.h"
 #include "src/codegen.h"
 #include "src/globals.h"
-#include "src/type-cache.h"
 #include "src/utils.h"
 
 #define FAIL(node, msg)                                        \
@@ -178,6 +177,9 @@ void AsmTyper::InitializeStdlib() {
   s2s->AsFunctionType()->AddArgument(s);
 
   auto* i = AsmType::Int();
+  auto* i2s = AsmType::Function(zone_, s);
+  i2s->AsFunctionType()->AddArgument(i);
+
   auto* ii2s = AsmType::Function(zone_, s);
   ii2s->AsFunctionType()->AddArgument(i);
   ii2s->AsFunctionType()->AddArgument(i);
@@ -248,6 +250,10 @@ void AsmTyper::InitializeStdlib() {
       {"SQRT1_2", kMathSQRT1_2, d},
       {"imul", kMathImul, ii2s},
       {"abs", kMathAbs, abs},
+      // NOTE: clz32 should return fixnum. The current typer can only return
+      // Signed, Float, or Double, so it returns Signed in our version of
+      // asm.js.
+      {"clz32", kMathClz32, i2s},
       {"ceil", kMathCeil, ceil},
       {"floor", kMathFloor, floor},
       {"fround", kMathFround, fround},
@@ -319,6 +325,7 @@ AsmTyper::VariableInfo* AsmTyper::ImportLookup(Property* import) {
   if (i == stdlib->end()) {
     return nullptr;
   }
+  stdlib_uses_.insert(i->second->standard_member());
   return i->second;
 }
 
@@ -421,7 +428,8 @@ AsmTyper::StandardMember AsmTyper::VariableAsStandardMember(Variable* var) {
   if (var_info == nullptr) {
     return kNone;
   }
-  return var_info->standard_member();
+  StandardMember member = var_info->standard_member();
+  return member;
 }
 
 bool AsmTyper::Validate() {
@@ -551,7 +559,7 @@ class SourceLayoutTracker {
 AsmType* AsmTyper::ValidateModule(FunctionLiteral* fun) {
   SourceLayoutTracker source_layout;
 
-  Scope* scope = fun->scope();
+  DeclarationScope* scope = fun->scope();
   if (!scope->is_function_scope()) FAIL(fun, "Not at function scope.");
   if (!ValidAsmIdentifier(fun->name()))
     FAIL(fun, "Invalid asm.js identifier in module name.");
@@ -588,7 +596,23 @@ AsmType* AsmTyper::ValidateModule(FunctionLiteral* fun) {
   ZoneVector<Assignment*> function_pointer_tables(zone_);
   FlattenedStatements iter(zone_, fun->body());
   auto* use_asm_directive = iter.Next();
-  if (use_asm_directive == nullptr || !IsUseAsmDirective(use_asm_directive)) {
+  if (use_asm_directive == nullptr) {
+    FAIL(fun, "Missing \"use asm\".");
+  }
+  // Check for extra assignment inserted by the parser when in this form:
+  // (function Module(a, b, c) {... })
+  ExpressionStatement* estatement = use_asm_directive->AsExpressionStatement();
+  if (estatement != nullptr) {
+    Assignment* assignment = estatement->expression()->AsAssignment();
+    if (assignment != nullptr && assignment->target()->IsVariableProxy() &&
+        assignment->target()
+            ->AsVariableProxy()
+            ->var()
+            ->is_sloppy_function_name()) {
+      use_asm_directive = iter.Next();
+    }
+  }
+  if (!IsUseAsmDirective(use_asm_directive)) {
     FAIL(fun, "Missing \"use asm\".");
   }
   source_layout.AddUseAsm(*use_asm_directive);
@@ -1721,7 +1745,11 @@ AsmType* AsmTyper::ValidateAssignmentExpression(Assignment* assignment) {
       return value_type;
     }
 
-    DCHECK(target_info->type() != AsmType::None());
+    if (!target_info->IsMutable()) {
+      FAIL(assignment, "Can't assign to immutable symbol.");
+    }
+
+    DCHECK_NE(AsmType::None(), target_info->type());
     if (!value_type->IsA(target_info->type())) {
       FAIL(assignment, "Type mismatch in assignment.");
     }

@@ -25,39 +25,6 @@ enum ContextLookupFlags {
 };
 
 
-// ES5 10.2 defines lexical environments with mutable and immutable bindings.
-// Immutable bindings have two states, initialized and uninitialized, and
-// their state is changed by the InitializeImmutableBinding method. The
-// BindingFlags enum represents information if a binding has definitely been
-// initialized. A mutable binding does not need to be checked and thus has
-// the BindingFlag BINDING_IS_INITIALIZED.
-//
-// There is one possibility for legacy immutable bindings:
-//  * The function name of a named function literal. The binding is immediately
-//    initialized when entering the function and thus does not need to be
-//    checked. it gets the BindingFlag BINDING_IS_INITIALIZED.
-//
-// The harmony proposal for block scoped bindings also introduces the
-// uninitialized state for mutable bindings.
-//  * A 'let' declared variable. They are initialized when evaluating the
-//    corresponding declaration statement. They need to be checked for being
-//    initialized and thus get the flag BINDING_CHECK_INITIALIZED.
-//  * A 'var' declared variable. It is initialized immediately upon creation
-//    and thus doesn't need to be checked. It gets the flag
-//    BINDING_IS_INITIALIZED.
-//  * Catch bound variables, function parameters and variables introduced by
-//    function declarations are initialized immediately and do not need to be
-//    checked. Thus they get the flag BINDING_IS_INITIALIZED.
-// Accessing an uninitialized binding produces a reference error.
-//
-// In V8 uninitialized bindings are set to the hole value upon creation and set
-// to a different value upon initialization.
-enum BindingFlags {
-  BINDING_IS_INITIALIZED,
-  BINDING_CHECK_INITIALIZED,
-  MISSING_BINDING
-};
-
 // Heap-allocated activation contexts.
 //
 // Contexts are implemented as FixedArray objects; the Context
@@ -70,8 +37,11 @@ enum BindingFlags {
 #define NATIVE_CONTEXT_INTRINSIC_FUNCTIONS(V)                           \
   V(IS_ARRAYLIKE, JSFunction, is_arraylike)                             \
   V(GET_TEMPLATE_CALL_SITE_INDEX, JSFunction, get_template_call_site)   \
+  V(MAKE_ERROR_INDEX, JSFunction, make_error)                           \
   V(MAKE_RANGE_ERROR_INDEX, JSFunction, make_range_error)               \
+  V(MAKE_SYNTAX_ERROR_INDEX, JSFunction, make_syntax_error)             \
   V(MAKE_TYPE_ERROR_INDEX, JSFunction, make_type_error)                 \
+  V(MAKE_URI_ERROR_INDEX, JSFunction, make_uri_error)                   \
   V(OBJECT_DEFINE_PROPERTIES, JSFunction, object_define_properties)     \
   V(OBJECT_DEFINE_PROPERTY, JSFunction, object_define_property)         \
   V(OBJECT_FREEZE, JSFunction, object_freeze)                           \
@@ -89,52 +59,44 @@ enum BindingFlags {
   V(MATH_FLOOR_INDEX, JSFunction, math_floor)                           \
   V(MATH_POW_INDEX, JSFunction, math_pow)
 
-#define NATIVE_CONTEXT_IMPORTED_FIELDS(V)                                   \
-  V(ARRAY_CONCAT_INDEX, JSFunction, array_concat)                           \
-  V(ARRAY_POP_INDEX, JSFunction, array_pop)                                 \
-  V(ARRAY_PUSH_INDEX, JSFunction, array_push)                               \
-  V(ARRAY_SHIFT_INDEX, JSFunction, array_shift)                             \
-  V(ARRAY_SPLICE_INDEX, JSFunction, array_splice)                           \
-  V(ARRAY_SLICE_INDEX, JSFunction, array_slice)                             \
-  V(ARRAY_UNSHIFT_INDEX, JSFunction, array_unshift)                         \
-  V(ARRAY_VALUES_ITERATOR_INDEX, JSFunction, array_values_iterator)         \
-  V(ASYNC_FUNCTION_AWAIT_INDEX, JSFunction, async_function_await)           \
-  V(DERIVED_GET_TRAP_INDEX, JSFunction, derived_get_trap)                   \
-  V(ERROR_FUNCTION_INDEX, JSFunction, error_function)                       \
-  V(ERROR_FORMAT_STACK_TRACE_INDEX, JSFunction, error_format_stack_trace)   \
-  V(EVAL_ERROR_FUNCTION_INDEX, JSFunction, eval_error_function)             \
-  V(GET_STACK_TRACE_LINE_INDEX, JSFunction, get_stack_trace_line_fun)       \
-  V(GLOBAL_EVAL_FUN_INDEX, JSFunction, global_eval_fun)                     \
-  V(MAKE_ERROR_FUNCTION_INDEX, JSFunction, make_error_function)             \
-  V(MAP_DELETE_METHOD_INDEX, JSFunction, map_delete)                        \
-  V(MAP_GET_METHOD_INDEX, JSFunction, map_get)                              \
-  V(MAP_HAS_METHOD_INDEX, JSFunction, map_has)                              \
-  V(MAP_SET_METHOD_INDEX, JSFunction, map_set)                              \
-  V(MESSAGE_GET_COLUMN_NUMBER_INDEX, JSFunction, message_get_column_number) \
-  V(MESSAGE_GET_LINE_NUMBER_INDEX, JSFunction, message_get_line_number)     \
-  V(MESSAGE_GET_SOURCE_LINE_INDEX, JSFunction, message_get_source_line)     \
-  V(NO_SIDE_EFFECTS_TO_STRING_FUN_INDEX, JSFunction,                        \
-    no_side_effects_to_string_fun)                                          \
-  V(OBJECT_VALUE_OF, JSFunction, object_value_of)                           \
-  V(OBJECT_TO_STRING, JSFunction, object_to_string)                         \
-  V(PROMISE_CATCH_INDEX, JSFunction, promise_catch)                         \
-  V(PROMISE_CHAIN_INDEX, JSFunction, promise_chain)                         \
-  V(PROMISE_CREATE_INDEX, JSFunction, promise_create)                       \
-  V(PROMISE_FUNCTION_INDEX, JSFunction, promise_function)                   \
-  V(PROMISE_HAS_USER_DEFINED_REJECT_HANDLER_INDEX, JSFunction,              \
-    promise_has_user_defined_reject_handler)                                \
-  V(PROMISE_REJECT_INDEX, JSFunction, promise_reject)                       \
-  V(PROMISE_RESOLVE_INDEX, JSFunction, promise_resolve)                     \
-  V(PROMISE_CREATE_RESOLVED_INDEX, JSFunction, promise_create_resolved)     \
-  V(PROMISE_CREATE_REJECTED_INDEX, JSFunction, promise_create_rejected)     \
-  V(PROMISE_THEN_INDEX, JSFunction, promise_then)                           \
-  V(RANGE_ERROR_FUNCTION_INDEX, JSFunction, range_error_function)           \
-  V(REFERENCE_ERROR_FUNCTION_INDEX, JSFunction, reference_error_function)   \
-  V(SET_ADD_METHOD_INDEX, JSFunction, set_add)                              \
-  V(SET_DELETE_METHOD_INDEX, JSFunction, set_delete)                        \
-  V(SET_HAS_METHOD_INDEX, JSFunction, set_has)                              \
-  V(SYNTAX_ERROR_FUNCTION_INDEX, JSFunction, syntax_error_function)         \
-  V(TYPE_ERROR_FUNCTION_INDEX, JSFunction, type_error_function)             \
+#define NATIVE_CONTEXT_IMPORTED_FIELDS(V)                                 \
+  V(ARRAY_CONCAT_INDEX, JSFunction, array_concat)                         \
+  V(ARRAY_POP_INDEX, JSFunction, array_pop)                               \
+  V(ARRAY_PUSH_INDEX, JSFunction, array_push)                             \
+  V(ARRAY_SHIFT_INDEX, JSFunction, array_shift)                           \
+  V(ARRAY_SPLICE_INDEX, JSFunction, array_splice)                         \
+  V(ARRAY_SLICE_INDEX, JSFunction, array_slice)                           \
+  V(ARRAY_UNSHIFT_INDEX, JSFunction, array_unshift)                       \
+  V(ARRAY_VALUES_ITERATOR_INDEX, JSFunction, array_values_iterator)       \
+  V(ASYNC_FUNCTION_AWAIT_INDEX, JSFunction, async_function_await)         \
+  V(DERIVED_GET_TRAP_INDEX, JSFunction, derived_get_trap)                 \
+  V(ERROR_FUNCTION_INDEX, JSFunction, error_function)                     \
+  V(ERROR_TO_STRING, JSFunction, error_to_string)                         \
+  V(EVAL_ERROR_FUNCTION_INDEX, JSFunction, eval_error_function)           \
+  V(GLOBAL_EVAL_FUN_INDEX, JSFunction, global_eval_fun)                   \
+  V(MAP_DELETE_METHOD_INDEX, JSFunction, map_delete)                      \
+  V(MAP_GET_METHOD_INDEX, JSFunction, map_get)                            \
+  V(MAP_HAS_METHOD_INDEX, JSFunction, map_has)                            \
+  V(MAP_SET_METHOD_INDEX, JSFunction, map_set)                            \
+  V(OBJECT_VALUE_OF, JSFunction, object_value_of)                         \
+  V(OBJECT_TO_STRING, JSFunction, object_to_string)                       \
+  V(PROMISE_CATCH_INDEX, JSFunction, promise_catch)                       \
+  V(PROMISE_CREATE_INDEX, JSFunction, promise_create)                     \
+  V(PROMISE_FUNCTION_INDEX, JSFunction, promise_function)                 \
+  V(PROMISE_HAS_USER_DEFINED_REJECT_HANDLER_INDEX, JSFunction,            \
+    promise_has_user_defined_reject_handler)                              \
+  V(PROMISE_REJECT_INDEX, JSFunction, promise_reject)                     \
+  V(PROMISE_RESOLVE_INDEX, JSFunction, promise_resolve)                   \
+  V(PROMISE_THEN_INDEX, JSFunction, promise_then)                         \
+  V(RANGE_ERROR_FUNCTION_INDEX, JSFunction, range_error_function)         \
+  V(REJECT_PROMISE_NO_DEBUG_EVENT_INDEX, JSFunction,                      \
+    reject_promise_no_debug_event)                                        \
+  V(REFERENCE_ERROR_FUNCTION_INDEX, JSFunction, reference_error_function) \
+  V(SET_ADD_METHOD_INDEX, JSFunction, set_add)                            \
+  V(SET_DELETE_METHOD_INDEX, JSFunction, set_delete)                      \
+  V(SET_HAS_METHOD_INDEX, JSFunction, set_has)                            \
+  V(SYNTAX_ERROR_FUNCTION_INDEX, JSFunction, syntax_error_function)       \
+  V(TYPE_ERROR_FUNCTION_INDEX, JSFunction, type_error_function)           \
   V(URI_ERROR_FUNCTION_INDEX, JSFunction, uri_error_function)
 
 #define NATIVE_CONTEXT_FIELDS(V)                                               \
@@ -159,6 +121,7 @@ enum BindingFlags {
   V(CALL_AS_CONSTRUCTOR_DELEGATE_INDEX, JSFunction,                            \
     call_as_constructor_delegate)                                              \
   V(CALL_AS_FUNCTION_DELEGATE_INDEX, JSFunction, call_as_function_delegate)    \
+  V(CALLSITE_FUNCTION_INDEX, JSFunction, callsite_function)                    \
   V(CONTEXT_EXTENSION_FUNCTION_INDEX, JSFunction, context_extension_function)  \
   V(DATA_PROPERTY_DESCRIPTOR_MAP_INDEX, Map, data_property_descriptor_map)     \
   V(DATA_VIEW_FUN_INDEX, JSFunction, data_view_fun)                            \
@@ -211,7 +174,7 @@ enum BindingFlags {
   V(MAP_CACHE_INDEX, Object, map_cache)                                        \
   V(MAP_ITERATOR_MAP_INDEX, Map, map_iterator_map)                             \
   V(STRING_ITERATOR_MAP_INDEX, Map, string_iterator_map)                       \
-  V(MESSAGE_LISTENERS_INDEX, JSObject, message_listeners)                      \
+  V(MESSAGE_LISTENERS_INDEX, TemplateList, message_listeners)                  \
   V(NATIVES_UTILS_OBJECT_INDEX, Object, natives_utils_object)                  \
   V(NORMALIZED_MAP_CACHE_INDEX, Object, normalized_map_cache)                  \
   V(NUMBER_FUNCTION_INDEX, JSFunction, number_function)                        \
@@ -335,18 +298,29 @@ class ScriptContextTable : public FixedArray {
 //
 // [ previous  ]  A pointer to the previous context.
 //
-// [ extension ]  A pointer to an extension JSObject, or "the hole". Used to
-//                implement 'with' statements and dynamic declarations
-//                (through 'eval'). The object in a 'with' statement is
-//                stored in the extension slot of a 'with' context.
-//                Dynamically declared variables/functions are also added
-//                to lazily allocated extension object. Context::Lookup
-//                searches the extension object for properties.
-//                For script and block contexts, contains the respective
-//                ScopeInfo. For block contexts representing sloppy declaration
-//                block scopes, it may also be a struct being a
-//                SloppyBlockWithEvalContextExtension, pairing the ScopeInfo
-//                with an extension object.
+// [ extension ]  Additional data.
+//
+//                For script contexts, it contains the respective ScopeInfo.
+//
+//                For catch contexts, it contains a ContextExtension object
+//                consisting of the ScopeInfo and the name of the catch
+//                variable.
+//
+//                For module contexts, it contains the module object.
+//
+//                For block contexts, it contains either the respective
+//                ScopeInfo or a ContextExtension object consisting of the
+//                ScopeInfo and an "extension object" (see below).
+//
+//                For with contexts, it contains a ContextExtension object
+//                consisting of the ScopeInfo and an "extension object".
+//
+//                An "extension object" is used to dynamically extend a context
+//                with additional variables, namely in the implementation of the
+//                'with' construct and the 'eval' construct.  For instance,
+//                Context::Lookup also searches the extension object for
+//                properties.  (Storing the extension object is the original
+//                purpose of this context slot, hence the name.)
 //
 // [ native_context ]  A pointer to the native context.
 //
@@ -460,9 +434,6 @@ class Context: public FixedArray {
 
   inline bool HasSameSecurityTokenAs(Context* that);
 
-  // Initializes global variable bindings in given script context.
-  void InitializeGlobalSlots();
-
   // A native context holds a list of all functions with optimized code.
   void AddOptimizedFunction(JSFunction* function);
   void RemoveOptimizedFunction(JSFunction* function);
@@ -506,11 +477,10 @@ class Context: public FixedArray {
   // 3) result.is_null():
   //    There was no binding found, *index is always -1 and *attributes is
   //    always ABSENT.
-  Handle<Object> Lookup(Handle<String> name,
-                        ContextLookupFlags flags,
-                        int* index,
-                        PropertyAttributes* attributes,
-                        BindingFlags* binding_flags);
+  Handle<Object> Lookup(Handle<String> name, ContextLookupFlags flags,
+                        int* index, PropertyAttributes* attributes,
+                        InitializationFlag* init_flag,
+                        VariableMode* variable_mode);
 
   // Code generation support.
   static int SlotOffset(int index) {

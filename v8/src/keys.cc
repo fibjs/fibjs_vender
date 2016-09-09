@@ -35,10 +35,9 @@ static bool ContainsOnlyValidKeys(Handle<FixedArray> array) {
 // static
 MaybeHandle<FixedArray> KeyAccumulator::GetKeys(
     Handle<JSReceiver> object, KeyCollectionMode mode, PropertyFilter filter,
-    GetKeysConversion keys_conversion, bool filter_proxy_keys, bool is_for_in) {
+    GetKeysConversion keys_conversion, bool is_for_in) {
   Isolate* isolate = object->GetIsolate();
   FastKeyAccumulator accumulator(isolate, object, mode, filter);
-  accumulator.set_filter_proxy_keys(filter_proxy_keys);
   accumulator.set_is_for_in(is_for_in);
   return accumulator.GetKeys(keys_conversion);
 }
@@ -135,16 +134,16 @@ MaybeHandle<FixedArray> FilterProxyKeys(KeyAccumulator* accumulator,
 // Returns "nothing" in case of exception, "true" on success.
 Maybe<bool> KeyAccumulator::AddKeysFromJSProxy(Handle<JSProxy> proxy,
                                                Handle<FixedArray> keys) {
-  if (filter_proxy_keys_) {
-    DCHECK(!is_for_in_);
+  // Postpone the enumerable check for for-in to the ForInFilter step.
+  if (!is_for_in_) {
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
         isolate_, keys, FilterProxyKeys(this, proxy, keys, filter_),
         Nothing<bool>());
-  }
-  if (mode_ == KeyCollectionMode::kOwnOnly && !is_for_in_) {
-    // If we collect only the keys from a JSProxy do not sort or deduplicate it.
-    keys_ = keys;
-    return Just(true);
+    if (mode_ == KeyCollectionMode::kOwnOnly) {
+      // If we collect only the keys from a JSProxy do not sort or deduplicate.
+      keys_ = keys;
+      return Just(true);
+    }
   }
   AddKeys(keys, is_for_in_ ? CONVERT_TO_ARRAY_INDEX : DO_NOT_CONVERT);
   return Just(true);
@@ -349,9 +348,9 @@ Handle<FixedArray> GetFastEnumPropertyKeys(Isolate* isolate,
 }
 
 template <bool fast_properties>
-Handle<FixedArray> GetOwnKeysWithElements(Isolate* isolate,
-                                          Handle<JSObject> object,
-                                          GetKeysConversion convert) {
+MaybeHandle<FixedArray> GetOwnKeysWithElements(Isolate* isolate,
+                                               Handle<JSObject> object,
+                                               GetKeysConversion convert) {
   Handle<FixedArray> keys;
   ElementsAccessor* accessor = object->GetElementsAccessor();
   if (fast_properties) {
@@ -360,12 +359,12 @@ Handle<FixedArray> GetOwnKeysWithElements(Isolate* isolate,
     // TODO(cbruni): preallocate big enough array to also hold elements.
     keys = KeyAccumulator::GetOwnEnumPropertyKeys(isolate, object);
   }
-  Handle<FixedArray> result =
+  MaybeHandle<FixedArray> result =
       accessor->PrependElementIndices(object, keys, convert, ONLY_ENUMERABLE);
 
   if (FLAG_trace_for_in_enumerate) {
     PrintF("| strings=%d symbols=0 elements=%u || prototypes>=1 ||\n",
-           keys->length(), result->length() - keys->length());
+           keys->length(), result.ToHandleChecked()->length() - keys->length());
   }
   return result;
 }
@@ -397,11 +396,14 @@ bool OnlyHasSimpleProperties(Map* map) {
 
 MaybeHandle<FixedArray> FastKeyAccumulator::GetKeys(
     GetKeysConversion keys_conversion) {
-  Handle<FixedArray> keys;
-  if (filter_ == ENUMERABLE_STRINGS &&
-      GetKeysFast(keys_conversion).ToHandle(&keys)) {
-    return keys;
+  if (filter_ == ENUMERABLE_STRINGS) {
+    Handle<FixedArray> keys;
+    if (GetKeysFast(keys_conversion).ToHandle(&keys)) {
+      return keys;
+    }
+    if (isolate_->has_pending_exception()) return MaybeHandle<FixedArray>();
   }
+
   return GetKeysSlow(keys_conversion);
 }
 
@@ -444,7 +446,6 @@ MaybeHandle<FixedArray> FastKeyAccumulator::GetKeysFast(
 MaybeHandle<FixedArray> FastKeyAccumulator::GetKeysSlow(
     GetKeysConversion keys_conversion) {
   KeyAccumulator accumulator(isolate_, mode_, filter_);
-  accumulator.set_filter_proxy_keys(filter_proxy_keys_);
   accumulator.set_is_for_in(is_for_in_);
   accumulator.set_last_non_empty_prototype(last_non_empty_prototype_);
 
@@ -860,13 +861,9 @@ Maybe<bool> KeyAccumulator::CollectOwnJSProxyTargetKeys(
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
       isolate_, keys,
       KeyAccumulator::GetKeys(target, KeyCollectionMode::kOwnOnly, filter_,
-                              GetKeysConversion::kConvertToString,
-                              filter_proxy_keys_, is_for_in_),
+                              GetKeysConversion::kConvertToString, is_for_in_),
       Nothing<bool>());
-  bool prev_filter_proxy_keys_ = filter_proxy_keys_;
-  filter_proxy_keys_ = false;
   Maybe<bool> result = AddKeysFromJSProxy(proxy, keys);
-  filter_proxy_keys_ = prev_filter_proxy_keys_;
   return result;
 }
 

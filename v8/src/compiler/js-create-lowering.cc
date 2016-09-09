@@ -102,7 +102,7 @@ class AllocationBuilder final {
 
 // Retrieves the frame state holding actual argument values.
 Node* GetArgumentsFrameState(Node* frame_state) {
-  Node* const outer_state = NodeProperties::GetFrameStateInput(frame_state, 0);
+  Node* const outer_state = NodeProperties::GetFrameStateInput(frame_state);
   FrameStateInfo outer_state_info = OpParameter<FrameStateInfo>(outer_state);
   return outer_state_info.type() == FrameStateType::kArgumentsAdaptor
              ? outer_state
@@ -279,7 +279,7 @@ Reduction JSCreateLowering::ReduceJSCreate(Node* node) {
 Reduction JSCreateLowering::ReduceJSCreateArguments(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCreateArguments, node->opcode());
   CreateArgumentsType type = CreateArgumentsTypeOf(node->op());
-  Node* const frame_state = NodeProperties::GetFrameStateInput(node, 0);
+  Node* const frame_state = NodeProperties::GetFrameStateInput(node);
   Node* const outer_state = frame_state->InputAt(kFrameStateOuterStateInput);
   Node* const control = graph()->start();
   FrameStateInfo state_info = OpParameter<FrameStateInfo>(frame_state);
@@ -555,8 +555,8 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
     Node* effect = NodeProperties::GetEffectInput(node);
     Node* control = NodeProperties::GetControlInput(node);
     Node* length = NodeProperties::GetValueInput(node, 2);
-    Node* equal = graph()->NewNode(simplified()->ReferenceEqual(Type::Any()),
-                                   length, jsgraph()->ZeroConstant());
+    Node* equal = graph()->NewNode(simplified()->ReferenceEqual(), length,
+                                   jsgraph()->ZeroConstant());
 
     Node* branch =
         graph()->NewNode(common()->Branch(BranchHint::kFalse), equal, control);
@@ -565,7 +565,7 @@ Reduction JSCreateLowering::ReduceNewArrayToStubCall(
     Node* if_success_packed;
     Node* if_success_holey;
     Node* context = NodeProperties::GetContextInput(node);
-    Node* frame_state = NodeProperties::GetFrameStateInput(node, 0);
+    Node* frame_state = NodeProperties::GetFrameStateInput(node);
     Node* if_equal = graph()->NewNode(common()->IfTrue(), branch);
     {
       ArraySingleArgumentConstructorStub stub(isolate(), elements_kind,
@@ -815,6 +815,7 @@ Reduction JSCreateLowering::ReduceJSCreateFunctionContext(Node* node) {
 
 Reduction JSCreateLowering::ReduceJSCreateWithContext(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCreateWithContext, node->opcode());
+  Handle<ScopeInfo> scope_info = OpParameter<Handle<ScopeInfo>>(node);
   Node* object = NodeProperties::GetValueInput(node, 0);
   Node* closure = NodeProperties::GetValueInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
@@ -823,12 +824,20 @@ Reduction JSCreateLowering::ReduceJSCreateWithContext(Node* node) {
   Node* native_context = effect = graph()->NewNode(
       javascript()->LoadContext(0, Context::NATIVE_CONTEXT_INDEX, true),
       context, context, effect);
-  AllocationBuilder a(jsgraph(), effect, control);
+
+  AllocationBuilder aa(jsgraph(), effect, control);
+  aa.Allocate(ContextExtension::kSize);
+  aa.Store(AccessBuilder::ForMap(), factory()->context_extension_map());
+  aa.Store(AccessBuilder::ForContextExtensionScopeInfo(), scope_info);
+  aa.Store(AccessBuilder::ForContextExtensionExtension(), object);
+  Node* extension = aa.Finish();
+
+  AllocationBuilder a(jsgraph(), extension, control);
   STATIC_ASSERT(Context::MIN_CONTEXT_SLOTS == 4);  // Ensure fully covered.
   a.AllocateArray(Context::MIN_CONTEXT_SLOTS, factory()->with_context_map());
   a.Store(AccessBuilder::ForContextSlot(Context::CLOSURE_INDEX), closure);
   a.Store(AccessBuilder::ForContextSlot(Context::PREVIOUS_INDEX), context);
-  a.Store(AccessBuilder::ForContextSlot(Context::EXTENSION_INDEX), object);
+  a.Store(AccessBuilder::ForContextSlot(Context::EXTENSION_INDEX), extension);
   a.Store(AccessBuilder::ForContextSlot(Context::NATIVE_CONTEXT_INDEX),
           native_context);
   RelaxControls(node);
@@ -838,7 +847,8 @@ Reduction JSCreateLowering::ReduceJSCreateWithContext(Node* node) {
 
 Reduction JSCreateLowering::ReduceJSCreateCatchContext(Node* node) {
   DCHECK_EQ(IrOpcode::kJSCreateCatchContext, node->opcode());
-  Handle<String> name = OpParameter<Handle<String>>(node);
+  const CreateCatchContextParameters& parameters =
+      CreateCatchContextParametersOf(node->op());
   Node* exception = NodeProperties::GetValueInput(node, 0);
   Node* closure = NodeProperties::GetValueInput(node, 1);
   Node* effect = NodeProperties::GetEffectInput(node);
@@ -847,13 +857,23 @@ Reduction JSCreateLowering::ReduceJSCreateCatchContext(Node* node) {
   Node* native_context = effect = graph()->NewNode(
       javascript()->LoadContext(0, Context::NATIVE_CONTEXT_INDEX, true),
       context, context, effect);
-  AllocationBuilder a(jsgraph(), effect, control);
+
+  AllocationBuilder aa(jsgraph(), effect, control);
+  aa.Allocate(ContextExtension::kSize);
+  aa.Store(AccessBuilder::ForMap(), factory()->context_extension_map());
+  aa.Store(AccessBuilder::ForContextExtensionScopeInfo(),
+           parameters.scope_info());
+  aa.Store(AccessBuilder::ForContextExtensionExtension(),
+           parameters.catch_name());
+  Node* extension = aa.Finish();
+
+  AllocationBuilder a(jsgraph(), extension, control);
   STATIC_ASSERT(Context::MIN_CONTEXT_SLOTS == 4);  // Ensure fully covered.
   a.AllocateArray(Context::MIN_CONTEXT_SLOTS + 1,
                   factory()->catch_context_map());
   a.Store(AccessBuilder::ForContextSlot(Context::CLOSURE_INDEX), closure);
   a.Store(AccessBuilder::ForContextSlot(Context::PREVIOUS_INDEX), context);
-  a.Store(AccessBuilder::ForContextSlot(Context::EXTENSION_INDEX), name);
+  a.Store(AccessBuilder::ForContextSlot(Context::EXTENSION_INDEX), extension);
   a.Store(AccessBuilder::ForContextSlot(Context::NATIVE_CONTEXT_INDEX),
           native_context);
   a.Store(AccessBuilder::ForContextSlot(Context::THROWN_OBJECT_INDEX),
@@ -1013,10 +1033,17 @@ Node* JSCreateLowering::AllocateElements(Node* effect, Node* control,
   ElementAccess access = IsFastDoubleElementsKind(elements_kind)
                              ? AccessBuilder::ForFixedDoubleArrayElement()
                              : AccessBuilder::ForFixedArrayElement();
-  Node* value =
-      IsFastDoubleElementsKind(elements_kind)
-          ? jsgraph()->Float64Constant(bit_cast<double>(kHoleNanInt64))
-          : jsgraph()->TheHoleConstant();
+  Node* value;
+  if (IsFastDoubleElementsKind(elements_kind)) {
+    // Load the hole NaN pattern from the canonical location.
+    value = effect = graph()->NewNode(
+        simplified()->LoadField(AccessBuilder::ForExternalDoubleValue()),
+        jsgraph()->ExternalConstant(
+            ExternalReference::address_of_the_hole_nan()),
+        effect, control);
+  } else {
+    value = jsgraph()->TheHoleConstant();
+  }
 
   // Actually allocate the backing store.
   AllocationBuilder a(jsgraph(), effect, control);
@@ -1169,18 +1196,18 @@ Node* JSCreateLowering::AllocateFastLiteralElements(
   if (elements_map->instance_type() == FIXED_DOUBLE_ARRAY_TYPE) {
     Handle<FixedDoubleArray> elements =
         Handle<FixedDoubleArray>::cast(boilerplate_elements);
+    Node* the_hole_value = nullptr;
     for (int i = 0; i < elements_length; ++i) {
       if (elements->is_the_hole(i)) {
-        // TODO(turbofan): We cannot currently safely pass thru the (signaling)
-        // hole NaN in C++ code, as the C++ compiler on Intel might use FPU
-        // instructions/registers for doubles and therefore make the NaN quiet.
-        // We should consider passing doubles in the compiler as raw int64
-        // values to prevent this.
-        elements_values[i] = effect =
-            graph()->NewNode(simplified()->LoadElement(
-                                 AccessBuilder::ForFixedDoubleArrayElement()),
-                             jsgraph()->HeapConstant(elements),
-                             jsgraph()->Constant(i), effect, control);
+        if (the_hole_value == nullptr) {
+          // Load the hole NaN pattern from the canonical location.
+          the_hole_value = effect = graph()->NewNode(
+              simplified()->LoadField(AccessBuilder::ForExternalDoubleValue()),
+              jsgraph()->ExternalConstant(
+                  ExternalReference::address_of_the_hole_nan()),
+              effect, control);
+        }
+        elements_values[i] = the_hole_value;
       } else {
         elements_values[i] = jsgraph()->Constant(elements->get_scalar(i));
       }

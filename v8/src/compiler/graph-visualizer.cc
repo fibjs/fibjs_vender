@@ -9,13 +9,14 @@
 #include <string>
 
 #include "src/code-stubs.h"
+#include "src/compilation-info.h"
 #include "src/compiler/all-nodes.h"
 #include "src/compiler/graph.h"
-#include "src/compiler/node.h"
 #include "src/compiler/node-properties.h"
+#include "src/compiler/node.h"
 #include "src/compiler/opcodes.h"
-#include "src/compiler/operator.h"
 #include "src/compiler/operator-properties.h"
+#include "src/compiler/operator.h"
 #include "src/compiler/register-allocator.h"
 #include "src/compiler/schedule.h"
 #include "src/compiler/scheduler.h"
@@ -85,7 +86,7 @@ static const char* SafeMnemonic(Node* node) {
 class Escaped {
  public:
   explicit Escaped(const std::ostringstream& os,
-                   const char* escaped_chars = "<>|{}")
+                   const char* escaped_chars = "<>|{}\\")
       : str_(os.str()), escaped_chars_(escaped_chars) {}
 
   friend std::ostream& operator<<(std::ostream& os, const Escaped& e) {
@@ -113,10 +114,14 @@ class JSONGraphNodeWriter {
  public:
   JSONGraphNodeWriter(std::ostream& os, Zone* zone, const Graph* graph,
                       const SourcePositionTable* positions)
-      : os_(os), all_(zone, graph), positions_(positions), first_node_(true) {}
+      : os_(os),
+        all_(zone, graph, false),
+        live_(zone, graph, true),
+        positions_(positions),
+        first_node_(true) {}
 
   void Print() {
-    for (Node* const node : all_.live) PrintNode(node);
+    for (Node* const node : all_.reachable) PrintNode(node);
     os_ << "\n";
   }
 
@@ -126,12 +131,15 @@ class JSONGraphNodeWriter {
     } else {
       os_ << ",\n";
     }
-    std::ostringstream label, title;
+    std::ostringstream label, title, properties;
     node->op()->PrintTo(label, Operator::PrintVerbosity::kSilent);
     node->op()->PrintTo(title, Operator::PrintVerbosity::kVerbose);
-    os_ << "{\"id\":" << SafeId(node) << ",\"label\":\"" << Escaped(label, "\"")
-        << "\""
-        << ",\"title\":\"" << Escaped(title, "\"") << "\"";
+    node->op()->PrintPropsTo(properties);
+    os_ << "{\"id\":" << SafeId(node) << ",\"label\":\""
+        << Escaped(label, "\"\\") << "\""
+        << ",\"title\":\"" << Escaped(title, "\"\\") << "\""
+        << ",\"live\": " << (live_.IsLive(node) ? "true" : "false")
+        << ",\"properties\":\"" << Escaped(properties, "\"\\") << "\"";
     IrOpcode::Value opcode = node->opcode();
     if (IrOpcode::IsPhiOpcode(opcode)) {
       os_ << ",\"rankInputs\":[0," << NodeProperties::FirstControlIndex(node)
@@ -153,11 +161,17 @@ class JSONGraphNodeWriter {
     os_ << ",\"opcode\":\"" << IrOpcode::Mnemonic(node->opcode()) << "\"";
     os_ << ",\"control\":" << (NodeProperties::IsControl(node) ? "true"
                                                                : "false");
+    os_ << ",\"opinfo\":\"" << node->op()->ValueInputCount() << " v "
+        << node->op()->EffectInputCount() << " eff "
+        << node->op()->ControlInputCount() << " ctrl in, "
+        << node->op()->ValueOutputCount() << " v "
+        << node->op()->EffectOutputCount() << " eff "
+        << node->op()->ControlOutputCount() << " ctrl out\"";
     if (NodeProperties::IsTyped(node)) {
       Type* type = NodeProperties::GetType(node);
       std::ostringstream type_out;
       type->PrintTo(type_out);
-      os_ << ",\"type\":\"" << Escaped(type_out, "\"") << "\"";
+      os_ << ",\"type\":\"" << Escaped(type_out, "\"\\") << "\"";
     }
     os_ << "}";
   }
@@ -165,6 +179,7 @@ class JSONGraphNodeWriter {
  private:
   std::ostream& os_;
   AllNodes all_;
+  AllNodes live_;
   const SourcePositionTable* positions_;
   bool first_node_;
 
@@ -175,10 +190,10 @@ class JSONGraphNodeWriter {
 class JSONGraphEdgeWriter {
  public:
   JSONGraphEdgeWriter(std::ostream& os, Zone* zone, const Graph* graph)
-      : os_(os), all_(zone, graph), first_edge_(true) {}
+      : os_(os), all_(zone, graph, false), first_edge_(true) {}
 
   void Print() {
-    for (Node* const node : all_.live) PrintEdges(node);
+    for (Node* const node : all_.reachable) PrintEdges(node);
     os_ << "\n";
   }
 

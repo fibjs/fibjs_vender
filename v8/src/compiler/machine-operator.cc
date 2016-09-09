@@ -145,12 +145,6 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(ChangeInt32ToInt64, Operator::kNoProperties, 1, 0, 1)                    \
   V(ChangeUint32ToFloat64, Operator::kNoProperties, 1, 0, 1)                 \
   V(ChangeUint32ToUint64, Operator::kNoProperties, 1, 0, 1)                  \
-  V(ImpossibleToWord32, Operator::kNoProperties, 1, 0, 1)                    \
-  V(ImpossibleToWord64, Operator::kNoProperties, 1, 0, 1)                    \
-  V(ImpossibleToFloat32, Operator::kNoProperties, 1, 0, 1)                   \
-  V(ImpossibleToFloat64, Operator::kNoProperties, 1, 0, 1)                   \
-  V(ImpossibleToTagged, Operator::kNoProperties, 1, 0, 1)                    \
-  V(ImpossibleToBit, Operator::kNoProperties, 1, 0, 1)                       \
   V(TruncateFloat64ToFloat32, Operator::kNoProperties, 1, 0, 1)              \
   V(TruncateInt64ToInt32, Operator::kNoProperties, 1, 0, 1)                  \
   V(BitcastFloat32ToInt32, Operator::kNoProperties, 1, 0, 1)                 \
@@ -160,10 +154,12 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Float32Abs, Operator::kNoProperties, 1, 0, 1)                            \
   V(Float32Add, Operator::kCommutative, 2, 0, 1)                             \
   V(Float32Sub, Operator::kNoProperties, 2, 0, 1)                            \
-  V(Float32SubPreserveNan, Operator::kNoProperties, 2, 0, 1)                 \
   V(Float32Mul, Operator::kCommutative, 2, 0, 1)                             \
   V(Float32Div, Operator::kNoProperties, 2, 0, 1)                            \
+  V(Float32Neg, Operator::kNoProperties, 1, 0, 1)                            \
   V(Float32Sqrt, Operator::kNoProperties, 1, 0, 1)                           \
+  V(Float32Max, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
+  V(Float32Min, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
   V(Float64Abs, Operator::kNoProperties, 1, 0, 1)                            \
   V(Float64Acos, Operator::kNoProperties, 1, 0, 1)                           \
   V(Float64Acosh, Operator::kNoProperties, 1, 0, 1)                          \
@@ -181,11 +177,11 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Float64Log1p, Operator::kNoProperties, 1, 0, 1)                          \
   V(Float64Log2, Operator::kNoProperties, 1, 0, 1)                           \
   V(Float64Log10, Operator::kNoProperties, 1, 0, 1)                          \
-  V(Float64Max, Operator::kNoProperties, 2, 0, 1)                            \
-  V(Float64Min, Operator::kNoProperties, 2, 0, 1)                            \
+  V(Float64Max, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
+  V(Float64Min, Operator::kAssociative | Operator::kCommutative, 2, 0, 1)    \
+  V(Float64Neg, Operator::kNoProperties, 1, 0, 1)                            \
   V(Float64Add, Operator::kCommutative, 2, 0, 1)                             \
   V(Float64Sub, Operator::kNoProperties, 2, 0, 1)                            \
-  V(Float64SubPreserveNan, Operator::kNoProperties, 2, 0, 1)                 \
   V(Float64Mul, Operator::kCommutative, 2, 0, 1)                             \
   V(Float64Div, Operator::kNoProperties, 2, 0, 1)                            \
   V(Float64Mod, Operator::kNoProperties, 2, 0, 1)                            \
@@ -404,9 +400,7 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Float64RoundTruncate, Operator::kNoProperties, 1, 0, 1) \
   V(Float64RoundTiesAway, Operator::kNoProperties, 1, 0, 1) \
   V(Float32RoundTiesEven, Operator::kNoProperties, 1, 0, 1) \
-  V(Float64RoundTiesEven, Operator::kNoProperties, 1, 0, 1) \
-  V(Float32Neg, Operator::kNoProperties, 1, 0, 1)           \
-  V(Float64Neg, Operator::kNoProperties, 1, 0, 1)
+  V(Float64RoundTiesEven, Operator::kNoProperties, 1, 0, 1)
 
 #define OVERFLOW_OP_LIST(V)                                                \
   V(Int32AddWithOverflow, Operator::kAssociative | Operator::kCommutative) \
@@ -428,6 +422,8 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(Int64)                   \
   V(Uint64)                  \
   V(Pointer)                 \
+  V(TaggedSigned)            \
+  V(TaggedPointer)           \
   V(AnyTagged)
 
 #define MACHINE_REPRESENTATION_LIST(V) \
@@ -438,6 +434,8 @@ MachineRepresentation AtomicStoreRepresentationOf(Operator const* op) {
   V(kWord16)                           \
   V(kWord32)                           \
   V(kWord64)                           \
+  V(kTaggedSigned)                     \
+  V(kTaggedPointer)                    \
   V(kTagged)
 
 #define ATOMIC_TYPE_LIST(V) \
@@ -611,6 +609,13 @@ struct MachineOperatorGlobalCache {
                    0, 0, 0, 0, 0) {}
   };
   DebugBreakOperator kDebugBreak;
+
+  struct UnsafePointerAddOperator final : public Operator {
+    UnsafePointerAddOperator()
+        : Operator(IrOpcode::kUnsafePointerAdd, Operator::kKontrol,
+                   "UnsafePointerAdd", 2, 1, 1, 1, 1, 0) {}
+  };
+  UnsafePointerAddOperator kUnsafePointerAdd;
 };
 
 struct CommentOperator : public Operator1<const char*> {
@@ -726,6 +731,10 @@ const Operator* MachineOperatorBuilder::Store(StoreRepresentation store_rep) {
   }
   UNREACHABLE();
   return nullptr;
+}
+
+const Operator* MachineOperatorBuilder::UnsafePointerAdd() {
+  return &cache_.kUnsafePointerAdd;
 }
 
 const Operator* MachineOperatorBuilder::DebugBreak() {

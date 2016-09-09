@@ -47,9 +47,9 @@ void Rewriter::VisitClassLiteral(ClassLiteral* class_literal) {
   }
   // No need to visit the constructor since it will have the class
   // scope on its scope chain.
-  ZoneList<ObjectLiteralProperty*>* props = class_literal->properties();
+  ZoneList<ClassLiteralProperty*>* props = class_literal->properties();
   for (int i = 0; i < props->length(); ++i) {
-    ObjectLiteralProperty* prop = props->at(i);
+    ClassLiteralProperty* prop = props->at(i);
     if (!prop->key()->IsLiteral()) {
       Visit(prop->key());
     }
@@ -68,7 +68,7 @@ void Rewriter::VisitVariableProxy(VariableProxy* proxy) {
   } else {
     // Ensure that temporaries we find are already in the correct scope.
     DCHECK(proxy->var()->mode() != TEMPORARY ||
-           proxy->var()->scope() == param_scope_->ClosureScope());
+           proxy->var()->scope() == param_scope_->GetClosureScope());
   }
 }
 

@@ -27,7 +27,6 @@
 
 #include "src/allocation.h"
 #include "src/ast/ast-traversal-visitor.h"
-#include "src/compiler.h"
 
 namespace v8 {
 namespace internal {
@@ -73,20 +72,6 @@ class LiveEditFunctionTracker
 
 class LiveEdit : AllStatic {
  public:
-  // Describes how exactly a frame has been dropped from stack.
-  enum FrameDropMode {
-    // No frame has been dropped.
-    FRAMES_UNTOUCHED,
-    // The top JS frame had been calling debug break slot stub. Patch the
-    // address this stub jumps to in the end.
-    FRAME_DROPPED_IN_DEBUG_SLOT_CALL,
-    // The top JS frame had been calling some C++ function. The return address
-    // gets patched automatically.
-    FRAME_DROPPED_IN_DIRECT_CALL,
-    FRAME_DROPPED_IN_RETURN_CALL,
-    CURRENTLY_SET_MODE
-  };
-
   static void InitializeThreadLocal(Debug* debug);
 
   static bool SetAfterBreakTarget(Debug* debug);
@@ -295,14 +280,13 @@ class FunctionInfoWrapper : public JSArrayBasedStruct<FunctionInfoWrapper> {
                             int end_position, int param_num, int literal_count,
                             int parent_index);
 
-  void SetFunctionCode(Handle<AbstractCode> function_code,
-                       Handle<HeapObject> code_scope_info);
-
   void SetFunctionScopeInfo(Handle<Object> scope_info_array) {
     this->SetField(kFunctionScopeInfoOffset_, scope_info_array);
   }
 
   void SetSharedFunctionInfo(Handle<SharedFunctionInfo> info);
+
+  Handle<SharedFunctionInfo> GetSharedFunctionInfo();
 
   int GetLiteralCount() {
     return this->GetSmiValueField(kLiteralNumOffset_);
@@ -311,12 +295,6 @@ class FunctionInfoWrapper : public JSArrayBasedStruct<FunctionInfoWrapper> {
   int GetParentIndex() {
     return this->GetSmiValueField(kParentIndexOffset_);
   }
-
-  Handle<AbstractCode> GetFunctionCode();
-
-  MaybeHandle<TypeFeedbackMetadata> GetFeedbackMetadata();
-
-  Handle<Object> GetCodeScopeInfo();
 
   int GetStartPosition() {
     return this->GetSmiValueField(kStartPositionOffset_);
@@ -329,13 +307,11 @@ class FunctionInfoWrapper : public JSArrayBasedStruct<FunctionInfoWrapper> {
   static const int kStartPositionOffset_ = 1;
   static const int kEndPositionOffset_ = 2;
   static const int kParamNumOffset_ = 3;
-  static const int kCodeOffset_ = 4;
-  static const int kCodeScopeInfoOffset_ = 5;
-  static const int kFunctionScopeInfoOffset_ = 6;
-  static const int kParentIndexOffset_ = 7;
-  static const int kSharedFunctionInfoOffset_ = 8;
-  static const int kLiteralNumOffset_ = 9;
-  static const int kSize_ = 10;
+  static const int kFunctionScopeInfoOffset_ = 4;
+  static const int kParentIndexOffset_ = 5;
+  static const int kSharedFunctionInfoOffset_ = 6;
+  static const int kLiteralNumOffset_ = 7;
+  static const int kSize_ = 8;
 
   friend class JSArrayBasedStruct<FunctionInfoWrapper>;
 };

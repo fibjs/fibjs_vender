@@ -974,6 +974,20 @@ void Assembler::rxy_form(Opcode op, Register r1, Register x2, Register b2,
   emit6bytes(code);
 }
 
+void Assembler::rxy_form(Opcode op, Register r1, Condition m3, Register b2,
+                         Disp d2) {
+  DCHECK(is_int20(d2));
+  DCHECK(is_uint16(op));
+  uint64_t code = (static_cast<uint64_t>(op & 0xFF00)) * B32 |
+                  (static_cast<uint64_t>(r1.code())) * B36 |
+                  (static_cast<uint64_t>(m3 & 0xF)) * B32 |
+                  (static_cast<uint64_t>(b2.code())) * B28 |
+                  (static_cast<uint64_t>(d2 & 0x0FFF)) * B16 |
+                  (static_cast<uint64_t>(d2 & 0x0FF000)) >> 4 |
+                  (static_cast<uint64_t>(op & 0x00FF));
+  emit6bytes(code);
+}
+
 void Assembler::rxy_form(Opcode op, DoubleRegister r1, Register x2, Register b2,
                          Disp d2) {
   DCHECK(is_int20(d2));
@@ -1421,7 +1435,6 @@ RIL1_FORM_EMIT(llihf, LLIHF)
 RIL1_FORM_EMIT(llilf, LLILF)
 RRE_FORM_EMIT(lngr, LNGR)
 RR_FORM_EMIT(lnr, LNR)
-RSY1_FORM_EMIT(loc, LOC)
 RRE_FORM_EMIT(lrvr, LRVR)
 RRE_FORM_EMIT(lrvgr, LRVGR)
 RXY_FORM_EMIT(lrv, LRV)
@@ -1606,6 +1619,26 @@ void Assembler::llhr(Register r1, Register r2) { rre_form(LLHR, r1, r2); }
 
 // Load Logical halfword Register-Register (64)
 void Assembler::llghr(Register r1, Register r2) { rre_form(LLGHR, r1, r2); }
+
+// Load On Condition R-R (32)
+void Assembler::locr(Condition m3, Register r1, Register r2) {
+  rrf2_form(LOCR << 16 | m3 * B12 | r1.code() * B4 | r2.code());
+}
+
+// Load On Condition R-R (64)
+void Assembler::locgr(Condition m3, Register r1, Register r2) {
+  rrf2_form(LOCGR << 16 | m3 * B12 | r1.code() * B4 | r2.code());
+}
+
+// Load On Condition R-M (32)
+void Assembler::loc(Condition m3, Register r1, const MemOperand& src) {
+  rxy_form(LOC, r1, m3, src.rb(), src.offset());
+}
+
+// Load On Condition R-M (64)
+void Assembler::locg(Condition m3, Register r1, const MemOperand& src) {
+  rxy_form(LOCG, r1, m3, src.rb(), src.offset());
+}
 
 // -------------------
 // Branch Instructions
@@ -1890,7 +1923,7 @@ void Assembler::agf(Register r1, const MemOperand& opnd) {
 
 // Add Immediate (64)
 void Assembler::agfi(Register r1, const Operand& opnd) {
-  ril_form(ALFI, r1, opnd);
+  ril_form(AGFI, r1, opnd);
 }
 
 // Add Register-Register (64<-32)
@@ -2069,7 +2102,13 @@ void Assembler::slgrk(Register r1, Register r2, Register r3) {
 // ----------------------------
 // Multiply Register-Storage (64<32)
 void Assembler::m(Register r1, const MemOperand& opnd) {
+  DCHECK(r1.code() % 2 == 0);
   rx_form(M, r1, opnd.rx(), opnd.rb(), opnd.offset());
+}
+
+void Assembler::mfy(Register r1, const MemOperand& opnd) {
+  DCHECK(r1.code() % 2 == 0);
+  rxy_form(MFY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Multiply Register (64<32)
@@ -2616,6 +2655,11 @@ void Assembler::iill(Register r1, const Operand& opnd) {
   ri_form(IILL, r1, opnd);
 }
 
+// Load Immediate 32->64
+void Assembler::lgfi(Register r1, const Operand& opnd) {
+  ril_form(LGFI, r1, opnd);
+}
+
 // GPR <-> FPR Instructions
 
 // Floating point instructions
@@ -2748,6 +2792,12 @@ void Assembler::ldebr(DoubleRegister r1, DoubleRegister r2) {
 // Load Complement Register-Register (LB)
 void Assembler::lcdbr(DoubleRegister r1, DoubleRegister r2) {
   rre_form(LCDBR, Register::from_code(r1.code()),
+           Register::from_code(r2.code()));
+}
+
+// Load Complement Register-Register (LB)
+void Assembler::lcebr(DoubleRegister r1, DoubleRegister r2) {
+  rre_form(LCEBR, Register::from_code(r1.code()),
            Register::from_code(r2.code()));
 }
 

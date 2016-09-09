@@ -256,14 +256,7 @@ void VisitBinop(InstructionSelector* selector, Node* node,
     inputs[input_count++] = g.Label(cont->false_block());
   }
 
-  if (cont->IsDeoptimize()) {
-    // If we can deoptimize as a result of the binop, we need to make sure that
-    // the deopt inputs are not overwritten by the binop result. One way
-    // to achieve that is to declare the output register as same-as-first.
-    outputs[output_count++] = g.DefineSameAsFirst(node);
-  } else {
-    outputs[output_count++] = g.DefineAsRegister(node);
-  }
+  outputs[output_count++] = g.DefineAsRegister(node);
   if (cont->IsSet()) {
     outputs[output_count++] = g.DefineAsRegister(cont->result());
   }
@@ -406,6 +399,8 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord16:
       opcode = load_rep.IsUnsigned() ? kArmLdrh : kArmLdrsh;
       break;
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:  // Fall through.
     case MachineRepresentation::kWord32:
       opcode = kArmLdr;
@@ -433,7 +428,7 @@ void InstructionSelector::VisitStore(Node* node) {
   MachineRepresentation rep = store_rep.representation();
 
   if (write_barrier_kind != kNoWriteBarrier) {
-    DCHECK_EQ(MachineRepresentation::kTagged, rep);
+    DCHECK(CanBeTaggedPointer(rep));
     AddressingMode addressing_mode;
     InstructionOperand inputs[3];
     size_t input_count = 0;
@@ -485,6 +480,8 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kWord16:
         opcode = kArmStrh;
         break;
+      case MachineRepresentation::kTaggedSigned:   // Fall through.
+      case MachineRepresentation::kTaggedPointer:  // Fall through.
       case MachineRepresentation::kTagged:  // Fall through.
       case MachineRepresentation::kWord32:
         opcode = kArmStr;
@@ -644,6 +641,8 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
       opcode = kCheckedLoadFloat64;
       break;
     case MachineRepresentation::kBit:      // Fall through.
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:   // Fall through.
     case MachineRepresentation::kWord64:   // Fall through.
     case MachineRepresentation::kSimd128:  // Fall through.
@@ -686,6 +685,8 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
       opcode = kCheckedStoreFloat64;
       break;
     case MachineRepresentation::kBit:      // Fall through.
+    case MachineRepresentation::kTaggedSigned:   // Fall through.
+    case MachineRepresentation::kTaggedPointer:  // Fall through.
     case MachineRepresentation::kTagged:   // Fall through.
     case MachineRepresentation::kWord64:   // Fall through.
     case MachineRepresentation::kSimd128:  // Fall through.
@@ -1420,76 +1421,30 @@ void InstructionSelector::VisitFloat64Add(Node* node) {
   VisitRRR(this, kArmVaddF64, node);
 }
 
-namespace {
-void VisitFloat32SubHelper(InstructionSelector* selector, Node* node) {
-  ArmOperandGenerator g(selector);
-  Float32BinopMatcher m(node);
-  if (m.right().IsFloat32Mul() && selector->CanCover(node, m.right().node())) {
-    Float32BinopMatcher mright(m.right().node());
-    selector->Emit(kArmVmlsF32, g.DefineSameAsFirst(node),
-                   g.UseRegister(m.left().node()),
-                   g.UseRegister(mright.left().node()),
-                   g.UseRegister(mright.right().node()));
-    return;
-  }
-  VisitRRR(selector, kArmVsubF32, node);
-}
-
-void VisitFloat64SubHelper(InstructionSelector* selector, Node* node) {
-  ArmOperandGenerator g(selector);
-  Float64BinopMatcher m(node);
-  if (m.right().IsFloat64Mul() && selector->CanCover(node, m.right().node())) {
-    Float64BinopMatcher mright(m.right().node());
-    selector->Emit(kArmVmlsF64, g.DefineSameAsFirst(node),
-                   g.UseRegister(m.left().node()),
-                   g.UseRegister(mright.left().node()),
-                   g.UseRegister(mright.right().node()));
-    return;
-  }
-  VisitRRR(selector, kArmVsubF64, node);
-}
-}  // namespace
-
 void InstructionSelector::VisitFloat32Sub(Node* node) {
   ArmOperandGenerator g(this);
   Float32BinopMatcher m(node);
-  if (m.left().IsMinusZero()) {
-    Emit(kArmVnegF32, g.DefineAsRegister(node),
-         g.UseRegister(m.right().node()));
+  if (m.right().IsFloat32Mul() && CanCover(node, m.right().node())) {
+    Float32BinopMatcher mright(m.right().node());
+    Emit(kArmVmlsF32, g.DefineSameAsFirst(node), g.UseRegister(m.left().node()),
+         g.UseRegister(mright.left().node()),
+         g.UseRegister(mright.right().node()));
     return;
   }
-  VisitFloat32SubHelper(this, node);
-}
-
-void InstructionSelector::VisitFloat32SubPreserveNan(Node* node) {
-  VisitFloat32SubHelper(this, node);
+  VisitRRR(this, kArmVsubF32, node);
 }
 
 void InstructionSelector::VisitFloat64Sub(Node* node) {
   ArmOperandGenerator g(this);
   Float64BinopMatcher m(node);
-  if (m.left().IsMinusZero()) {
-    if (m.right().IsFloat64RoundDown() &&
-        CanCover(m.node(), m.right().node())) {
-      if (m.right().InputAt(0)->opcode() == IrOpcode::kFloat64Sub &&
-          CanCover(m.right().node(), m.right().InputAt(0))) {
-        Float64BinopMatcher mright0(m.right().InputAt(0));
-        if (mright0.left().IsMinusZero()) {
-          Emit(kArmVrintpF64, g.DefineAsRegister(node),
-               g.UseRegister(mright0.right().node()));
-          return;
-        }
-      }
-    }
-    Emit(kArmVnegF64, g.DefineAsRegister(node),
-         g.UseRegister(m.right().node()));
+  if (m.right().IsFloat64Mul() && CanCover(node, m.right().node())) {
+    Float64BinopMatcher mright(m.right().node());
+    Emit(kArmVmlsF64, g.DefineSameAsFirst(node), g.UseRegister(m.left().node()),
+         g.UseRegister(mright.left().node()),
+         g.UseRegister(mright.right().node()));
     return;
   }
-  VisitFloat64SubHelper(this, node);
-}
-
-void InstructionSelector::VisitFloat64SubPreserveNan(Node* node) {
-  VisitFloat64SubHelper(this, node);
+  VisitRRR(this, kArmVsubF64, node);
 }
 
 void InstructionSelector::VisitFloat32Mul(Node* node) {
@@ -1518,12 +1473,20 @@ void InstructionSelector::VisitFloat64Mod(Node* node) {
        g.UseFixed(node->InputAt(1), d1))->MarkAsCall();
 }
 
+void InstructionSelector::VisitFloat32Max(Node* node) {
+  VisitRRR(this, kArmFloat32Max, node);
+}
+
 void InstructionSelector::VisitFloat64Max(Node* node) {
   VisitRRR(this, kArmFloat64Max, node);
 }
 
 void InstructionSelector::VisitFloat64SilenceNaN(Node* node) {
   VisitRR(this, kArmFloat64SilenceNaN, node);
+}
+
+void InstructionSelector::VisitFloat32Min(Node* node) {
+  VisitRRR(this, kArmFloat32Min, node);
 }
 
 void InstructionSelector::VisitFloat64Min(Node* node) {
@@ -1999,6 +1962,10 @@ void VisitWordCompareZero(InstructionSelector* selector, Node* user,
     break;
   }
 
+  if (user->opcode() == IrOpcode::kWord32Equal) {
+    return VisitWordCompare(selector, user, cont);
+  }
+
   // Continuation could not be combined with a compare, emit compare against 0.
   ArmOperandGenerator g(selector);
   InstructionCode const opcode =
@@ -2289,9 +2256,7 @@ InstructionSelector::SupportedMachineOperatorFlags() {
              MachineOperatorBuilder::kFloat64RoundTruncate |
              MachineOperatorBuilder::kFloat64RoundTiesAway |
              MachineOperatorBuilder::kFloat32RoundTiesEven |
-             MachineOperatorBuilder::kFloat64RoundTiesEven |
-             MachineOperatorBuilder::kFloat32Neg |
-             MachineOperatorBuilder::kFloat64Neg;
+             MachineOperatorBuilder::kFloat64RoundTiesEven;
   }
   return flags;
 }

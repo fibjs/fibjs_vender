@@ -5,25 +5,24 @@
 #ifndef V8_ASMJS_ASM_JS_H_
 #define V8_ASMJS_ASM_JS_H_
 
-#ifndef V8_SHARED
-#include "src/allocation.h"
-#include "src/base/hashmap.h"
-#else
-#include "include/v8.h"
-#include "src/base/compiler-specific.h"
-#endif  // !V8_SHARED
-#include "src/parsing/parser.h"
+#include "src/globals.h"
 
 namespace v8 {
 namespace internal {
+
+class JSArrayBuffer;
+class ParseInfo;
+
 // Interface to compile and instantiate for asmjs.
 class AsmJs {
  public:
-  static MaybeHandle<FixedArray> ConvertAsmToWasm(i::ParseInfo* info);
-  static MaybeHandle<Object> InstantiateAsmWasm(i::Isolate* isolate,
+  static MaybeHandle<FixedArray> ConvertAsmToWasm(ParseInfo* info);
+  static bool IsStdlibValid(Isolate* isolate, Handle<FixedArray> wasm_data,
+                            Handle<JSReceiver> stdlib);
+  static MaybeHandle<Object> InstantiateAsmWasm(Isolate* isolate,
                                                 Handle<FixedArray> wasm_data,
                                                 Handle<JSArrayBuffer> memory,
-                                                Handle<JSObject> foreign);
+                                                Handle<JSReceiver> foreign);
 };
 
 }  // namespace internal

@@ -8,7 +8,7 @@
 
 #include "src/compiler/code-generator.h"
 
-#include "src/ast/scopes.h"
+#include "src/compilation-info.h"
 #include "src/compiler/code-generator-impl.h"
 #include "src/compiler/gap-resolver.h"
 #include "src/compiler/node-matchers.h"
@@ -168,18 +168,33 @@ class OutOfLineLoadZero final : public OutOfLineCode {
   Register const result_;
 };
 
-
-class OutOfLineLoadNaN final : public OutOfLineCode {
+class OutOfLineLoadFloat32NaN final : public OutOfLineCode {
  public:
-  OutOfLineLoadNaN(CodeGenerator* gen, XMMRegister result)
+  OutOfLineLoadFloat32NaN(CodeGenerator* gen, XMMRegister result)
       : OutOfLineCode(gen), result_(result) {}
 
-  void Generate() final { __ Pcmpeqd(result_, result_); }
+  void Generate() final {
+    __ Xorps(result_, result_);
+    __ Divss(result_, result_);
+  }
 
  private:
   XMMRegister const result_;
 };
 
+class OutOfLineLoadFloat64NaN final : public OutOfLineCode {
+ public:
+  OutOfLineLoadFloat64NaN(CodeGenerator* gen, XMMRegister result)
+      : OutOfLineCode(gen), result_(result) {}
+
+  void Generate() final {
+    __ Xorpd(result_, result_);
+    __ Divsd(result_, result_);
+  }
+
+ private:
+  XMMRegister const result_;
+};
 
 class OutOfLineTruncateDoubleToI final : public OutOfLineCode {
  public:
@@ -385,7 +400,7 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
     }                                                                  \
   } while (0)
 
-#define ASSEMBLE_CHECKED_LOAD_FLOAT(asm_instr)                               \
+#define ASSEMBLE_CHECKED_LOAD_FLOAT(asm_instr, OutOfLineLoadNaN)             \
   do {                                                                       \
     auto result = i.OutputDoubleRegister();                                  \
     auto buffer = i.InputRegister(0);                                        \
@@ -855,9 +870,6 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kArchDebugBreak:
       __ int3();
       break;
-    case kArchImpossible:
-      __ Abort(kConversionFromImpossibleValue);
-      break;
     case kArchNop:
     case kArchThrowTerminator:
       // don't emit code for nops.
@@ -1286,6 +1298,61 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                                                        -kDoubleSize);
       break;
     }
+    case kSSEFloat32Max: {
+      Label compare_nan, compare_swap, done_compare;
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ Ucomiss(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+      } else {
+        __ Ucomiss(i.InputDoubleRegister(0), i.InputOperand(1));
+      }
+      auto ool =
+          new (zone()) OutOfLineLoadFloat32NaN(this, i.OutputDoubleRegister());
+      __ j(parity_even, ool->entry());
+      __ j(above, &done_compare, Label::kNear);
+      __ j(below, &compare_swap, Label::kNear);
+      __ Movmskps(kScratchRegister, i.InputDoubleRegister(0));
+      __ testl(kScratchRegister, Immediate(1));
+      __ j(zero, &done_compare, Label::kNear);
+      __ bind(&compare_swap);
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ Movss(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+      } else {
+        __ Movss(i.InputDoubleRegister(0), i.InputOperand(1));
+      }
+      __ bind(&done_compare);
+      __ bind(ool->exit());
+      break;
+    }
+    case kSSEFloat32Min: {
+      Label compare_swap, done_compare;
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ Ucomiss(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+      } else {
+        __ Ucomiss(i.InputDoubleRegister(0), i.InputOperand(1));
+      }
+      auto ool =
+          new (zone()) OutOfLineLoadFloat32NaN(this, i.OutputDoubleRegister());
+      __ j(parity_even, ool->entry());
+      __ j(below, &done_compare, Label::kNear);
+      __ j(above, &compare_swap, Label::kNear);
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ Movmskps(kScratchRegister, i.InputDoubleRegister(1));
+      } else {
+        __ Movss(kScratchDoubleReg, i.InputOperand(1));
+        __ Movmskps(kScratchRegister, kScratchDoubleReg);
+      }
+      __ testl(kScratchRegister, Immediate(1));
+      __ j(zero, &done_compare, Label::kNear);
+      __ bind(&compare_swap);
+      if (instr->InputAt(1)->IsFPRegister()) {
+        __ Movss(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
+      } else {
+        __ Movss(i.InputDoubleRegister(0), i.InputOperand(1));
+      }
+      __ bind(&done_compare);
+      __ bind(ool->exit());
+      break;
+    }
     case kSSEFloat64Max: {
       Label compare_nan, compare_swap, done_compare;
       if (instr->InputAt(1)->IsFPRegister()) {
@@ -1293,7 +1360,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       } else {
         __ Ucomisd(i.InputDoubleRegister(0), i.InputOperand(1));
       }
-      auto ool = new (zone()) OutOfLineLoadNaN(this, i.OutputDoubleRegister());
+      auto ool =
+          new (zone()) OutOfLineLoadFloat64NaN(this, i.OutputDoubleRegister());
       __ j(parity_even, ool->entry());
       __ j(above, &done_compare, Label::kNear);
       __ j(below, &compare_swap, Label::kNear);
@@ -1317,7 +1385,8 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       } else {
         __ Ucomisd(i.InputDoubleRegister(0), i.InputOperand(1));
       }
-      auto ool = new (zone()) OutOfLineLoadNaN(this, i.OutputDoubleRegister());
+      auto ool =
+          new (zone()) OutOfLineLoadFloat64NaN(this, i.OutputDoubleRegister());
       __ j(parity_even, ool->entry());
       __ j(below, &done_compare, Label::kNear);
       __ j(above, &compare_swap, Label::kNear);
@@ -1741,6 +1810,13 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_MOVX(movzxbl);
       __ AssertZeroExtended(i.OutputRegister());
       break;
+    case kX64Movsxbq:
+      ASSEMBLE_MOVX(movsxbq);
+      break;
+    case kX64Movzxbq:
+      ASSEMBLE_MOVX(movzxbq);
+      __ AssertZeroExtended(i.OutputRegister());
+      break;
     case kX64Movb: {
       size_t index = 0;
       Operand operand = i.MemoryOperand(&index);
@@ -1757,6 +1833,13 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     case kX64Movzxwl:
       ASSEMBLE_MOVX(movzxwl);
+      __ AssertZeroExtended(i.OutputRegister());
+      break;
+    case kX64Movsxwq:
+      ASSEMBLE_MOVX(movsxwq);
+      break;
+    case kX64Movzxwq:
+      ASSEMBLE_MOVX(movzxwq);
       __ AssertZeroExtended(i.OutputRegister());
       break;
     case kX64Movw: {
@@ -1950,6 +2033,18 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ xchgl(i.InputRegister(index), operand);
       break;
     }
+    case kX64Int32x4Create: {
+      CpuFeatureScope sse_scope(masm(), SSE4_1);
+      XMMRegister dst = i.OutputSimd128Register();
+      __ Movd(dst, i.InputRegister(0));
+      __ shufps(dst, dst, 0x0);
+      break;
+    }
+    case kX64Int32x4ExtractLane: {
+      CpuFeatureScope sse_scope(masm(), SSE4_1);
+      __ Pextrd(i.OutputRegister(), i.InputSimd128Register(0), i.InputInt8(1));
+      break;
+    }
     case kCheckedLoadInt8:
       ASSEMBLE_CHECKED_LOAD_INTEGER(movsxbl);
       break;
@@ -1969,10 +2064,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       ASSEMBLE_CHECKED_LOAD_INTEGER(movq);
       break;
     case kCheckedLoadFloat32:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(Movss);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(Movss, OutOfLineLoadFloat32NaN);
       break;
     case kCheckedLoadFloat64:
-      ASSEMBLE_CHECKED_LOAD_FLOAT(Movsd);
+      ASSEMBLE_CHECKED_LOAD_FLOAT(Movsd, OutOfLineLoadFloat64NaN);
       break;
     case kCheckedStoreWord8:
       ASSEMBLE_CHECKED_STORE_INTEGER(movb);
@@ -2367,7 +2462,11 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
             if (value == 0) {
               __ xorl(dst, dst);
             } else {
-              __ movl(dst, Immediate(value));
+              if (src.rmode() == RelocInfo::WASM_MEMORY_SIZE_REFERENCE) {
+                __ movl(dst, Immediate(value, src.rmode()));
+              } else {
+                __ movl(dst, Immediate(value));
+              }
             }
           }
           break;

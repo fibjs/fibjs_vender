@@ -8,7 +8,6 @@
 
 #include "src/accessors.h"
 #include "src/arguments.h"
-#include "src/ast/scopeinfo.h"
 #include "src/ast/scopes.h"
 #include "src/deoptimizer.h"
 #include "src/frames-inl.h"
@@ -210,42 +209,6 @@ RUNTIME_FUNCTION(Runtime_InitializeVarGlobal) {
       isolate, Object::SetProperty(global, name, value, language_mode));
 }
 
-
-RUNTIME_FUNCTION(Runtime_InitializeConstGlobal) {
-  HandleScope handle_scope(isolate);
-  DCHECK_EQ(2, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(String, name, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, value, 1);
-
-  Handle<JSGlobalObject> global(isolate->global_object());
-
-  // Lookup the property as own on the global object.
-  LookupIterator it(global, name, global, LookupIterator::OWN_SKIP_INTERCEPTOR);
-  Maybe<PropertyAttributes> maybe = JSReceiver::GetPropertyAttributes(&it);
-  DCHECK(maybe.IsJust());
-  PropertyAttributes old_attributes = maybe.FromJust();
-
-  PropertyAttributes attr =
-      static_cast<PropertyAttributes>(DONT_DELETE | READ_ONLY);
-  // Set the value if the property is either missing, or the property attributes
-  // allow setting the value without invoking an accessor.
-  if (it.IsFound()) {
-    // Ignore if we can't reconfigure the value.
-    if ((old_attributes & DONT_DELETE) != 0) {
-      if ((old_attributes & READ_ONLY) != 0 ||
-          it.state() == LookupIterator::ACCESSOR) {
-        return *value;
-      }
-      attr = static_cast<PropertyAttributes>(old_attributes | READ_ONLY);
-    }
-  }
-
-  RETURN_FAILURE_ON_EXCEPTION(
-      isolate, JSObject::DefineOwnPropertyIgnoreAttributes(&it, value, attr));
-
-  return *value;
-}
-
 namespace {
 
 Object* DeclareEvalHelper(Isolate* isolate, Handle<String> name,
@@ -267,11 +230,13 @@ Object* DeclareEvalHelper(Isolate* isolate, Handle<String> name,
 
   int index;
   PropertyAttributes attributes;
-  BindingFlags binding_flags;
+  InitializationFlag init_flag;
+  VariableMode mode;
 
   // Check for a conflict with a lexically scoped variable
-  context_arg->Lookup(name, LEXICAL_TEST, &index, &attributes, &binding_flags);
-  if (attributes != ABSENT && binding_flags == BINDING_CHECK_INITIALIZED) {
+  context_arg->Lookup(name, LEXICAL_TEST, &index, &attributes, &init_flag,
+                      &mode);
+  if (attributes != ABSENT && IsLexicalVariableMode(mode)) {
     // ES#sec-evaldeclarationinstantiation 5.a.i.1:
     // If varEnvRec.HasLexicalDeclaration(name) is true, throw a SyntaxError
     // exception.
@@ -282,7 +247,7 @@ Object* DeclareEvalHelper(Isolate* isolate, Handle<String> name,
   }
 
   Handle<Object> holder = context->Lookup(name, DONT_FOLLOW_CHAINS, &index,
-                                          &attributes, &binding_flags);
+                                          &attributes, &init_flag, &mode);
   DCHECK(!isolate->has_pending_exception());
 
   Handle<JSObject> object;
@@ -329,9 +294,8 @@ Object* DeclareEvalHelper(Isolate* isolate, Handle<String> name,
       DCHECK(context->IsBlockContext());
       object = isolate->factory()->NewJSObject(
           isolate->context_extension_function());
-      Handle<HeapObject> extension =
-          isolate->factory()->NewSloppyBlockWithEvalContextExtension(
-              handle(context->scope_info()), object);
+      Handle<HeapObject> extension = isolate->factory()->NewContextExtension(
+          handle(context->scope_info()), object);
       context->set_extension(*extension);
     } else {
       object = handle(context->extension_object(), isolate);
@@ -700,8 +664,6 @@ RUNTIME_FUNCTION(Runtime_NewScriptContext) {
   Handle<Context> result =
       isolate->factory()->NewScriptContext(closure, scope_info);
 
-  result->InitializeGlobalSlots();
-
   DCHECK(function->context() == isolate->context());
   DCHECK(*global_object == result->global_object());
 
@@ -726,12 +688,13 @@ RUNTIME_FUNCTION(Runtime_NewFunctionContext) {
 
 RUNTIME_FUNCTION(Runtime_PushWithContext) {
   HandleScope scope(isolate);
-  DCHECK_EQ(2, args.length());
+  DCHECK_EQ(3, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, extension_object, 0);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 1);
+  CONVERT_ARG_HANDLE_CHECKED(ScopeInfo, scope_info, 1);
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 2);
   Handle<Context> current(isolate->context());
-  Handle<Context> context =
-      isolate->factory()->NewWithContext(function, current, extension_object);
+  Handle<Context> context = isolate->factory()->NewWithContext(
+      function, current, scope_info, extension_object);
   isolate->set_context(*context);
   return *context;
 }
@@ -739,13 +702,14 @@ RUNTIME_FUNCTION(Runtime_PushWithContext) {
 
 RUNTIME_FUNCTION(Runtime_PushCatchContext) {
   HandleScope scope(isolate);
-  DCHECK_EQ(3, args.length());
+  DCHECK_EQ(4, args.length());
   CONVERT_ARG_HANDLE_CHECKED(String, name, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, thrown_object, 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 2);
+  CONVERT_ARG_HANDLE_CHECKED(ScopeInfo, scope_info, 2);
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 3);
   Handle<Context> current(isolate->context());
   Handle<Context> context = isolate->factory()->NewCatchContext(
-      function, current, name, thrown_object);
+      function, current, scope_info, name, thrown_object);
   isolate->set_context(*context);
   return *context;
 }
@@ -771,9 +735,10 @@ RUNTIME_FUNCTION(Runtime_DeleteLookupSlot) {
 
   int index;
   PropertyAttributes attributes;
-  BindingFlags flags;
+  InitializationFlag flag;
+  VariableMode mode;
   Handle<Object> holder = isolate->context()->Lookup(
-      name, FOLLOW_CHAINS, &index, &attributes, &flags);
+      name, FOLLOW_CHAINS, &index, &attributes, &flag, &mode);
 
   // If the slot was not found the result is true.
   if (holder.is_null()) {
@@ -806,9 +771,10 @@ MaybeHandle<Object> LoadLookupSlot(Handle<String> name,
 
   int index;
   PropertyAttributes attributes;
-  BindingFlags flags;
+  InitializationFlag flag;
+  VariableMode mode;
   Handle<Object> holder = isolate->context()->Lookup(
-      name, FOLLOW_CHAINS, &index, &attributes, &flags);
+      name, FOLLOW_CHAINS, &index, &attributes, &flag, &mode);
   if (isolate->has_pending_exception()) return MaybeHandle<Object>();
 
   if (index != Context::kNotFound) {
@@ -818,22 +784,14 @@ MaybeHandle<Object> LoadLookupSlot(Handle<String> name,
     Handle<Object> receiver = isolate->factory()->undefined_value();
     Handle<Object> value = handle(Context::cast(*holder)->get(index), isolate);
     // Check for uninitialized bindings.
-    switch (flags) {
-      case BINDING_CHECK_INITIALIZED:
-        if (value->IsTheHole(isolate)) {
-          THROW_NEW_ERROR(isolate,
-                          NewReferenceError(MessageTemplate::kNotDefined, name),
-                          Object);
-        }
-      // FALLTHROUGH
-      case BINDING_IS_INITIALIZED:
-        DCHECK(!value->IsTheHole(isolate));
-        if (receiver_return) *receiver_return = receiver;
-        return value;
-      case MISSING_BINDING:
-        break;
+    if (flag == kNeedsInitialization && value->IsTheHole(isolate)) {
+      THROW_NEW_ERROR(isolate,
+                      NewReferenceError(MessageTemplate::kNotDefined, name),
+                      Object);
     }
-    UNREACHABLE();
+    DCHECK(!value->IsTheHole(isolate));
+    if (receiver_return) *receiver_return = receiver;
+    return value;
   }
 
   // Otherwise, if the slot was found the holder is a context extension
@@ -909,9 +867,10 @@ MaybeHandle<Object> StoreLookupSlot(Handle<String> name, Handle<Object> value,
 
   int index;
   PropertyAttributes attributes;
-  BindingFlags flags;
+  InitializationFlag flag;
+  VariableMode mode;
   Handle<Object> holder =
-      context->Lookup(name, FOLLOW_CHAINS, &index, &attributes, &flags);
+      context->Lookup(name, FOLLOW_CHAINS, &index, &attributes, &flag, &mode);
   if (holder.is_null()) {
     // In case of JSProxy, an exception might have been thrown.
     if (isolate->has_pending_exception()) return MaybeHandle<Object>();
@@ -919,7 +878,7 @@ MaybeHandle<Object> StoreLookupSlot(Handle<String> name, Handle<Object> value,
 
   // The property was found in a context slot.
   if (index != Context::kNotFound) {
-    if (flags == BINDING_CHECK_INITIALIZED &&
+    if (flag == kNeedsInitialization &&
         Handle<Context>::cast(holder)->is_the_hole(index)) {
       THROW_NEW_ERROR(isolate,
                       NewReferenceError(MessageTemplate::kNotDefined, name),

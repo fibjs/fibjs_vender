@@ -17,40 +17,42 @@ namespace {
 
 class InvokeScope {
  public:
-  explicit InvokeScope(Isolate* isolate)
-      : isolate_(isolate), save_context_(isolate) {}
+  explicit InvokeScope(Isolate* isolate) : save_context_(isolate) {}
   ~InvokeScope() {
-    bool has_exception = isolate_->has_pending_exception();
+    Isolate* isolate = save_context_.isolate();
+    bool has_exception = isolate->has_pending_exception();
     if (has_exception) {
-      isolate_->ReportPendingMessages();
+      isolate->ReportPendingMessages();
     } else {
-      isolate_->clear_pending_message();
+      isolate->clear_pending_message();
     }
   }
 
  private:
-  Isolate* isolate_;
   SaveContext save_context_;
 };
 
-MaybeHandle<JSObject> InstantiateObject(Isolate* isolate,
-                                        Handle<ObjectTemplateInfo> data,
-                                        Handle<JSReceiver> new_target,
-                                        bool is_hidden_prototype);
+enum class CacheCheck { kCheck, kSkip };
 
-MaybeHandle<JSFunction> InstantiateFunction(Isolate* isolate,
-                                            Handle<FunctionTemplateInfo> data,
-                                            Handle<Name> name = Handle<Name>());
+MaybeHandle<JSObject> InstantiateObject(
+    Isolate* isolate, Handle<ObjectTemplateInfo> data,
+    Handle<JSReceiver> new_target, CacheCheck cache_check = CacheCheck::kCheck,
+    bool is_hidden_prototype = false);
 
+MaybeHandle<JSFunction> InstantiateFunction(
+    Isolate* isolate, Handle<FunctionTemplateInfo> data,
+    CacheCheck cache_check = CacheCheck::kCheck,
+    Handle<Name> name = Handle<Name>());
 
 MaybeHandle<Object> Instantiate(Isolate* isolate, Handle<Object> data,
                                 Handle<Name> name = Handle<Name>()) {
   if (data->IsFunctionTemplateInfo()) {
     return InstantiateFunction(isolate,
-                               Handle<FunctionTemplateInfo>::cast(data), name);
+                               Handle<FunctionTemplateInfo>::cast(data),
+                               CacheCheck::kCheck, name);
   } else if (data->IsObjectTemplateInfo()) {
     return InstantiateObject(isolate, Handle<ObjectTemplateInfo>::cast(data),
-                             Handle<JSReceiver>(), false);
+                             Handle<JSReceiver>());
   } else {
     return data;
   }
@@ -184,13 +186,9 @@ MaybeHandle<JSObject> ConfigureInstance(Isolate* isolate, Handle<JSObject> obj,
   int max_number_of_properties = 0;
   TemplateInfoT* info = *data;
   while (info != nullptr) {
-    if (!info->property_accessors()->IsUndefined(isolate)) {
-      Object* props = info->property_accessors();
-      if (!props->IsUndefined(isolate)) {
-        Handle<Object> props_handle(props, isolate);
-        NeanderArray props_array(props_handle);
-        max_number_of_properties += props_array.length();
-      }
+    Object* props = info->property_accessors();
+    if (!props->IsUndefined(isolate)) {
+      max_number_of_properties += TemplateList::cast(props)->length();
     }
     info = info->GetParent(isolate);
   }
@@ -201,15 +199,14 @@ MaybeHandle<JSObject> ConfigureInstance(Isolate* isolate, Handle<JSObject> obj,
     Handle<FixedArray> array =
         isolate->factory()->NewFixedArray(max_number_of_properties);
 
-    info = *data;
-    while (info != nullptr) {
+    for (Handle<TemplateInfoT> temp(*data); *temp != nullptr;
+         temp = handle(temp->GetParent(isolate), isolate)) {
       // Accumulate accessors.
-      if (!info->property_accessors()->IsUndefined(isolate)) {
-        Handle<Object> props(info->property_accessors(), isolate);
-        valid_descriptors =
-            AccessorInfo::AppendUnique(props, array, valid_descriptors);
+      Object* maybe_properties = temp->property_accessors();
+      if (!maybe_properties->IsUndefined(isolate)) {
+        valid_descriptors = AccessorInfo::AppendUnique(
+            handle(maybe_properties, isolate), array, valid_descriptors);
       }
-      info = info->GetParent(isolate);
     }
 
     // Install accumulated accessors.
@@ -219,29 +216,29 @@ MaybeHandle<JSObject> ConfigureInstance(Isolate* isolate, Handle<JSObject> obj,
     }
   }
 
-  auto property_list = handle(data->property_list(), isolate);
-  if (property_list->IsUndefined(isolate)) return obj;
-  // TODO(dcarney): just use a FixedArray here.
-  NeanderArray properties(property_list);
-  if (properties.length() == 0) return obj;
+  Object* maybe_property_list = data->property_list();
+  if (maybe_property_list->IsUndefined(isolate)) return obj;
+  Handle<TemplateList> properties(TemplateList::cast(maybe_property_list),
+                                  isolate);
+  if (properties->length() == 0) return obj;
 
   int i = 0;
   for (int c = 0; c < data->number_of_properties(); c++) {
-    auto name = handle(Name::cast(properties.get(i++)), isolate);
-    Object* bit = properties.get(i++);
+    auto name = handle(Name::cast(properties->get(i++)), isolate);
+    Object* bit = properties->get(i++);
     if (bit->IsSmi()) {
       PropertyDetails details(Smi::cast(bit));
       PropertyAttributes attributes = details.attributes();
       PropertyKind kind = details.kind();
 
       if (kind == kData) {
-        auto prop_data = handle(properties.get(i++), isolate);
+        auto prop_data = handle(properties->get(i++), isolate);
         RETURN_ON_EXCEPTION(isolate, DefineDataProperty(isolate, obj, name,
                                                         prop_data, attributes),
                             JSObject);
       } else {
-        auto getter = handle(properties.get(i++), isolate);
-        auto setter = handle(properties.get(i++), isolate);
+        auto getter = handle(properties->get(i++), isolate);
+        auto setter = handle(properties->get(i++), isolate);
         RETURN_ON_EXCEPTION(
             isolate, DefineAccessorProperty(isolate, obj, name, getter, setter,
                                             attributes, is_hidden_prototype),
@@ -250,12 +247,12 @@ MaybeHandle<JSObject> ConfigureInstance(Isolate* isolate, Handle<JSObject> obj,
     } else {
       // Intrinsic data property --- Get appropriate value from the current
       // context.
-      PropertyDetails details(Smi::cast(properties.get(i++)));
+      PropertyDetails details(Smi::cast(properties->get(i++)));
       PropertyAttributes attributes = details.attributes();
       DCHECK_EQ(kData, details.kind());
 
       v8::Intrinsic intrinsic =
-          static_cast<v8::Intrinsic>(Smi::cast(properties.get(i++))->value());
+          static_cast<v8::Intrinsic>(Smi::cast(properties->get(i++))->value());
       auto prop_data = handle(GetIntrinsic(isolate, intrinsic), isolate);
 
       RETURN_ON_EXCEPTION(isolate, DefineDataProperty(isolate, obj, name,
@@ -338,13 +335,20 @@ bool IsSimpleInstantiation(Isolate* isolate, ObjectTemplateInfo* info,
   JSFunction* fun = JSFunction::cast(new_target);
   if (fun->shared()->function_data() != info->constructor()) return false;
   if (info->immutable_proto()) return false;
-  return fun->context()->native_context() !=
-         isolate->context()->native_context();
+  return fun->context()->native_context() == isolate->raw_native_context();
+}
+
+MaybeHandle<JSObject> InstantiateObjectWithInvokeScope(
+    Isolate* isolate, Handle<ObjectTemplateInfo> info,
+    Handle<JSReceiver> new_target) {
+  InvokeScope invoke_scope(isolate);
+  return InstantiateObject(isolate, info, new_target, CacheCheck::kSkip);
 }
 
 MaybeHandle<JSObject> InstantiateObject(Isolate* isolate,
                                         Handle<ObjectTemplateInfo> info,
                                         Handle<JSReceiver> new_target,
+                                        CacheCheck cache_check,
                                         bool is_hidden_prototype) {
   Handle<JSFunction> constructor;
   int serial_number = Smi::cast(info->serial_number())->value();
@@ -358,7 +362,7 @@ MaybeHandle<JSObject> InstantiateObject(Isolate* isolate,
   }
   // Fast path.
   Handle<JSObject> result;
-  if (serial_number) {
+  if (serial_number && cache_check == CacheCheck::kCheck) {
     if (ProbeInstantiationsCache(isolate, serial_number).ToHandle(&result)) {
       return isolate->factory()->CopyJSObject(result);
     }
@@ -392,7 +396,6 @@ MaybeHandle<JSObject> InstantiateObject(Isolate* isolate,
   if (info->immutable_proto()) {
     JSObject::SetImmutableProto(object);
   }
-  // TODO(dcarney): is this necessary?
   JSObject::MigrateSlowToFast(result, 0, "ApiNatives::InstantiateObject");
 
   if (serial_number) {
@@ -402,12 +405,18 @@ MaybeHandle<JSObject> InstantiateObject(Isolate* isolate,
   return result;
 }
 
+MaybeHandle<JSFunction> InstantiateFunctionWithInvokeScope(
+    Isolate* isolate, Handle<FunctionTemplateInfo> info) {
+  InvokeScope invoke_scope(isolate);
+  return InstantiateFunction(isolate, info, CacheCheck::kSkip);
+}
 
 MaybeHandle<JSFunction> InstantiateFunction(Isolate* isolate,
                                             Handle<FunctionTemplateInfo> data,
+                                            CacheCheck cache_check,
                                             Handle<Name> name) {
   int serial_number = Smi::cast(data->serial_number())->value();
-  if (serial_number) {
+  if (serial_number && cache_check == CacheCheck::kCheck) {
     Handle<JSObject> result;
     if (ProbeInstantiationsCache(isolate, serial_number).ToHandle(&result)) {
       return Handle<JSFunction>::cast(result);
@@ -424,7 +433,8 @@ MaybeHandle<JSFunction> InstantiateFunction(Isolate* isolate,
           InstantiateObject(
               isolate,
               handle(ObjectTemplateInfo::cast(prototype_templ), isolate),
-              Handle<JSReceiver>(), data->hidden_prototype()),
+              Handle<JSReceiver>(), CacheCheck::kCheck,
+              data->hidden_prototype()),
           JSFunction);
     }
     Object* parent = data->parent_template();
@@ -473,37 +483,52 @@ MaybeHandle<JSFunction> InstantiateFunction(Isolate* isolate,
 
 void AddPropertyToPropertyList(Isolate* isolate, Handle<TemplateInfo> templ,
                                int length, Handle<Object>* data) {
-  auto list = handle(templ->property_list(), isolate);
-  if (list->IsUndefined(isolate)) {
-    list = NeanderArray(isolate).value();
-    templ->set_property_list(*list);
+  Object* maybe_list = templ->property_list();
+  Handle<TemplateList> list;
+  if (maybe_list->IsUndefined(isolate)) {
+    list = TemplateList::New(isolate, length);
+  } else {
+    list = handle(TemplateList::cast(maybe_list), isolate);
   }
   templ->set_number_of_properties(templ->number_of_properties() + 1);
-  NeanderArray array(list);
   for (int i = 0; i < length; i++) {
     Handle<Object> value =
         data[i].is_null()
             ? Handle<Object>::cast(isolate->factory()->undefined_value())
             : data[i];
-    array.add(isolate, value);
+    list = TemplateList::Add(isolate, list, value);
   }
+  templ->set_property_list(*list);
 }
 
 }  // namespace
 
-
 MaybeHandle<JSFunction> ApiNatives::InstantiateFunction(
-    Handle<FunctionTemplateInfo> data) {
-  Isolate* isolate = data->GetIsolate();
-  InvokeScope invoke_scope(isolate);
-  return ::v8::internal::InstantiateFunction(isolate, data);
+    Handle<FunctionTemplateInfo> info) {
+  Isolate* isolate = info->GetIsolate();
+  int serial_number = Smi::cast(info->serial_number())->value();
+  if (serial_number) {
+    Handle<JSObject> result;
+    if (ProbeInstantiationsCache(isolate, serial_number).ToHandle(&result)) {
+      return Handle<JSFunction>::cast(result);
+    }
+  }
+  return InstantiateFunctionWithInvokeScope(isolate, info);
 }
 
 MaybeHandle<JSObject> ApiNatives::InstantiateObject(
-    Handle<ObjectTemplateInfo> data, Handle<JSReceiver> new_target) {
-  Isolate* isolate = data->GetIsolate();
-  InvokeScope invoke_scope(isolate);
-  return ::v8::internal::InstantiateObject(isolate, data, new_target, false);
+    Handle<ObjectTemplateInfo> info, Handle<JSReceiver> new_target) {
+  Isolate* isolate = info->GetIsolate();
+  int serial_number = Smi::cast(info->serial_number())->value();
+  if (serial_number && !new_target.is_null() &&
+      IsSimpleInstantiation(isolate, *info, *new_target)) {
+    // Fast path.
+    Handle<JSObject> result;
+    if (ProbeInstantiationsCache(isolate, serial_number).ToHandle(&result)) {
+      return isolate->factory()->CopyJSObject(result);
+    }
+  }
+  return InstantiateObjectWithInvokeScope(isolate, info, new_target);
 }
 
 MaybeHandle<JSObject> ApiNatives::InstantiateRemoteObject(
@@ -577,13 +602,15 @@ void ApiNatives::AddAccessorProperty(Isolate* isolate,
 void ApiNatives::AddNativeDataProperty(Isolate* isolate,
                                        Handle<TemplateInfo> info,
                                        Handle<AccessorInfo> property) {
-  auto list = handle(info->property_accessors(), isolate);
-  if (list->IsUndefined(isolate)) {
-    list = NeanderArray(isolate).value();
-    info->set_property_accessors(*list);
+  Object* maybe_list = info->property_accessors();
+  Handle<TemplateList> list;
+  if (maybe_list->IsUndefined(isolate)) {
+    list = TemplateList::New(isolate, 1);
+  } else {
+    list = handle(TemplateList::cast(maybe_list), isolate);
   }
-  NeanderArray array(list);
-  array.add(isolate, property);
+  list = TemplateList::Add(isolate, list, property);
+  info->set_property_accessors(*list);
 }
 
 

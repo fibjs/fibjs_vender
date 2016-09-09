@@ -109,6 +109,16 @@ void Builtins::Generate_NonPrimitiveToPrimitive_String(
   Generate_NonPrimitiveToPrimitive(assembler, ToPrimitiveHint::kString);
 }
 
+void Builtins::Generate_StringToNumber(CodeStubAssembler* assembler) {
+  typedef compiler::Node Node;
+  typedef TypeConversionDescriptor Descriptor;
+
+  Node* input = assembler->Parameter(Descriptor::kArgument);
+  Node* context = assembler->Parameter(Descriptor::kContext);
+
+  assembler->Return(assembler->StringToNumber(context, input));
+}
+
 // ES6 section 7.1.3 ToNumber ( argument )
 void Builtins::Generate_NonNumberToNumber(CodeStubAssembler* assembler) {
   typedef CodeStubAssembler::Label Label;
@@ -151,9 +161,7 @@ void Builtins::Generate_NonNumberToNumber(CodeStubAssembler* assembler) {
     assembler->Bind(&if_inputisstring);
     {
       // The {input} is a String, use the fast stub to convert it to a Number.
-      // TODO(bmeurer): Consider inlining the StringToNumber logic here.
-      Callable callable = CodeFactory::StringToNumber(assembler->isolate());
-      assembler->TailCallStub(callable, context, input);
+      assembler->Return(assembler->StringToNumber(context, input));
     }
 
     assembler->Bind(&if_inputisoddball);

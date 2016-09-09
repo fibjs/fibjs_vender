@@ -98,7 +98,7 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
       current_function_builder_->EmitGetLocal(static_cast<uint32_t>(pos));
       ForeignVariable* fv = &foreign_variables_[pos];
       uint32_t index = LookupOrInsertGlobal(fv->var, fv->type);
-      current_function_builder_->EmitWithVarInt(kExprStoreGlobal, index);
+      current_function_builder_->EmitWithVarInt(kExprSetGlobal, index);
     }
     current_function_builder_ = nullptr;
   }
@@ -269,7 +269,7 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
   void VisitWithStatement(WithStatement* stmt) { UNREACHABLE(); }
 
   void HandleCase(CaseNode* node,
-                  const ZoneMap<int, unsigned int>& case_to_block,
+                  ZoneMap<int, unsigned int>& case_to_block,
                   VariableProxy* tag, int default_block, int if_depth) {
     int prev_if_depth = if_depth;
     if (node->left != nullptr) {
@@ -300,7 +300,7 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
       DCHECK(case_to_block.find(node->begin) != case_to_block.end());
       current_function_builder_->EmitWithU8(kExprBr, ARITY_0);
       current_function_builder_->EmitVarInt(1 + if_depth +
-                                            case_to_block.at(node->begin));
+                                            case_to_block[node->begin]);
       current_function_builder_->Emit(kExprEnd);
     } else {
       if (node->begin != 0) {
@@ -314,7 +314,7 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
       current_function_builder_->EmitVarInt(node->end - node->begin + 1);
       for (int v = node->begin; v <= node->end; v++) {
         if (case_to_block.find(v) != case_to_block.end()) {
-          byte break_code[] = {BR_TARGET(if_depth + case_to_block.at(v))};
+          byte break_code[] = {BR_TARGET(if_depth + case_to_block[v])};
           current_function_builder_->EmitCode(break_code, sizeof(break_code));
         } else {
           byte break_code[] = {BR_TARGET(if_depth + default_block)};
@@ -443,7 +443,7 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
   void VisitDebuggerStatement(DebuggerStatement* stmt) { UNREACHABLE(); }
 
   void VisitFunctionLiteral(FunctionLiteral* expr) {
-    Scope* scope = expr->scope();
+    DeclarationScope* scope = expr->scope();
     if (scope_ == kFuncScope) {
       if (auto* func_type = typer_->TypeOf(expr)->AsFunctionType()) {
         // Build the signature for the function.
@@ -546,7 +546,7 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
       DCHECK_NE(kAstStmt, var_type);
       if (var->IsContextSlot()) {
         current_function_builder_->EmitWithVarInt(
-            kExprLoadGlobal, LookupOrInsertGlobal(var, var_type));
+            kExprGetGlobal, LookupOrInsertGlobal(var, var_type));
       } else {
         current_function_builder_->EmitGetLocal(
             LookupOrInsertLocal(var, var_type));
@@ -784,7 +784,7 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
       DCHECK_NE(kAstStmt, var_type);
       if (var->IsContextSlot()) {
         current_function_builder_->EmitWithVarInt(
-            kExprStoreGlobal, LookupOrInsertGlobal(var, var_type));
+            kExprSetGlobal, LookupOrInsertGlobal(var, var_type));
       } else {
         current_function_builder_->EmitSetLocal(
             LookupOrInsertLocal(var, var_type));
@@ -830,6 +830,12 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
   void VisitAssignment(Assignment* expr) {
     bool as_init = false;
     if (scope_ == kModuleScope) {
+      // Skip extra assignment inserted by the parser when in this form:
+      // (function Module(a, b, c) {... })
+      if (expr->target()->IsVariableProxy() &&
+          expr->target()->AsVariableProxy()->var()->is_sloppy_function_name()) {
+        return;
+      }
       Property* prop = expr->value()->AsProperty();
       if (prop != nullptr) {
         VariableProxy* vp = prop->obj()->AsVariableProxy();
@@ -1085,13 +1091,19 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
         }
         break;
       }
+      case AsmTyper::kMathClz32: {
+        VisitCallArgs(call);
+        DCHECK(call_type == kAstI32);
+        current_function_builder_->Emit(kExprI32Clz);
+        break;
+      }
       case AsmTyper::kMathAbs: {
         if (call_type == kAstI32) {
-          uint32_t tmp = current_function_builder_->AddLocal(kAstI32);
+          WasmTemporary tmp(current_function_builder_, kAstI32);
 
           // if set_local(tmp, x) < 0
           Visit(call->arguments()->at(0));
-          current_function_builder_->EmitSetLocal(tmp);
+          current_function_builder_->EmitSetLocal(tmp.index());
           byte code[] = {WASM_I8(0)};
           current_function_builder_->EmitCode(code, sizeof(code));
           current_function_builder_->Emit(kExprI32LtS);
@@ -1099,12 +1111,12 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
 
           // then (0 - tmp)
           current_function_builder_->EmitCode(code, sizeof(code));
-          current_function_builder_->EmitGetLocal(tmp);
+          current_function_builder_->EmitGetLocal(tmp.index());
           current_function_builder_->Emit(kExprI32Sub);
 
           // else tmp
           current_function_builder_->Emit(kExprElse);
-          current_function_builder_->EmitGetLocal(tmp);
+          current_function_builder_->EmitGetLocal(tmp.index());
           // end
           current_function_builder_->Emit(kExprEnd);
 
@@ -1122,25 +1134,25 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
       case AsmTyper::kMathMin: {
         // TODO(bradnelson): Change wasm to match Math.min in asm.js mode.
         if (call_type == kAstI32) {
-          uint32_t tmp_x = current_function_builder_->AddLocal(kAstI32);
-          uint32_t tmp_y = current_function_builder_->AddLocal(kAstI32);
+          WasmTemporary tmp_x(current_function_builder_, kAstI32);
+          WasmTemporary tmp_y(current_function_builder_, kAstI32);
 
           // if set_local(tmp_x, x) < set_local(tmp_y, y)
           Visit(call->arguments()->at(0));
-          current_function_builder_->EmitSetLocal(tmp_x);
+          current_function_builder_->EmitSetLocal(tmp_x.index());
 
           Visit(call->arguments()->at(1));
-          current_function_builder_->EmitSetLocal(tmp_y);
+          current_function_builder_->EmitSetLocal(tmp_y.index());
 
           current_function_builder_->Emit(kExprI32LeS);
           current_function_builder_->Emit(kExprIf);
 
           // then tmp_x
-          current_function_builder_->EmitGetLocal(tmp_x);
+          current_function_builder_->EmitGetLocal(tmp_x.index());
 
           // else tmp_y
           current_function_builder_->Emit(kExprElse);
-          current_function_builder_->EmitGetLocal(tmp_y);
+          current_function_builder_->EmitGetLocal(tmp_y.index());
           current_function_builder_->Emit(kExprEnd);
 
         } else if (call_type == kAstF32) {
@@ -1157,26 +1169,26 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
       case AsmTyper::kMathMax: {
         // TODO(bradnelson): Change wasm to match Math.max in asm.js mode.
         if (call_type == kAstI32) {
-          uint32_t tmp_x = current_function_builder_->AddLocal(kAstI32);
-          uint32_t tmp_y = current_function_builder_->AddLocal(kAstI32);
+          WasmTemporary tmp_x(current_function_builder_, kAstI32);
+          WasmTemporary tmp_y(current_function_builder_, kAstI32);
 
           // if set_local(tmp_x, x) < set_local(tmp_y, y)
           Visit(call->arguments()->at(0));
 
-          current_function_builder_->EmitSetLocal(tmp_x);
+          current_function_builder_->EmitSetLocal(tmp_x.index());
 
           Visit(call->arguments()->at(1));
-          current_function_builder_->EmitSetLocal(tmp_y);
+          current_function_builder_->EmitSetLocal(tmp_y.index());
 
           current_function_builder_->Emit(kExprI32LeS);
           current_function_builder_->Emit(kExprIf);
 
           // then tmp_y
-          current_function_builder_->EmitGetLocal(tmp_y);
+          current_function_builder_->EmitGetLocal(tmp_y.index());
 
           // else tmp_x
           current_function_builder_->Emit(kExprElse);
-          current_function_builder_->EmitGetLocal(tmp_x);
+          current_function_builder_->EmitGetLocal(tmp_x.index());
           current_function_builder_->Emit(kExprEnd);
 
         } else if (call_type == kAstF32) {
@@ -1256,7 +1268,7 @@ class AsmWasmBuilderImpl final : public AstVisitor<AsmWasmBuilderImpl> {
   }
 
   void VisitCall(Call* expr) {
-    Call::CallType call_type = expr->GetCallType(isolate_);
+    Call::CallType call_type = expr->GetCallType();
     switch (call_type) {
       case Call::OTHER_CALL: {
         DCHECK_EQ(kFuncScope, scope_);

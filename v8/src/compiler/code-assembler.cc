@@ -69,8 +69,8 @@ Handle<Code> CodeAssembler::GenerateCode() {
 
   Schedule* schedule = raw_assembler_->Export();
   Handle<Code> code = Pipeline::GenerateCodeForCodeStub(
-      isolate(), raw_assembler_->call_descriptor(), graph(), schedule, flags_,
-      name_);
+      isolate(), raw_assembler_->call_descriptor(), raw_assembler_->graph(),
+      schedule, flags_, name_);
 
   code_generated_ = true;
   return code;
@@ -198,10 +198,6 @@ Node* CodeAssembler::LoadStackPointer() {
   return raw_assembler_->LoadStackPointer();
 }
 
-Node* CodeAssembler::SmiShiftBitsConstant() {
-  return IntPtrConstant(kSmiShiftSize + kSmiTagSize);
-}
-
 #define DEFINE_CODE_ASSEMBLER_BINARY_OP(name)   \
   Node* CodeAssembler::name(Node* a, Node* b) { \
     return raw_assembler_->name(a, b);          \
@@ -236,6 +232,13 @@ Node* CodeAssembler::ChangeInt32ToIntPtr(Node* value) {
     value = raw_assembler_->ChangeInt32ToInt64(value);
   }
   return value;
+}
+
+Node* CodeAssembler::RoundIntPtrToFloat64(Node* value) {
+  if (raw_assembler_->machine()->Is64()) {
+    return raw_assembler_->RoundInt64ToFloat64(value);
+  }
+  return raw_assembler_->ChangeInt32ToFloat64(value);
 }
 
 #define DEFINE_CODE_ASSEMBLER_UNARY_OP(name) \
@@ -314,6 +317,26 @@ void CodeAssembler::BranchIf(Node* condition, Label* if_true, Label* if_false) {
   Goto(if_true);
   Bind(&if_condition_is_false);
   Goto(if_false);
+}
+
+void CodeAssembler::GotoIfException(Node* node, Label* if_exception,
+                                    Variable* exception_var) {
+  Label success(this), exception(this, Label::kDeferred);
+  success.MergeVariables();
+  exception.MergeVariables();
+  DCHECK(!node->op()->HasProperty(Operator::kNoThrow));
+
+  raw_assembler_->Continuations(node, success.label_, exception.label_);
+
+  Bind(&exception);
+  const Operator* op = raw_assembler_->common()->IfException();
+  Node* exception_value = raw_assembler_->AddNode(op, node, node);
+  if (exception_var != nullptr) {
+    exception_var->Bind(exception_value);
+  }
+  Goto(if_exception);
+
+  Bind(&success);
 }
 
 Node* CodeAssembler::CallN(CallDescriptor* descriptor, Node* code_target,
@@ -407,6 +430,14 @@ Node* CodeAssembler::TailCallRuntime(Runtime::FunctionId function_id,
                                      Node* arg3, Node* arg4, Node* arg5) {
   return raw_assembler_->TailCallRuntime5(function_id, arg1, arg2, arg3, arg4,
                                           arg5, context);
+}
+
+Node* CodeAssembler::TailCallRuntime(Runtime::FunctionId function_id,
+                                     Node* context, Node* arg1, Node* arg2,
+                                     Node* arg3, Node* arg4, Node* arg5,
+                                     Node* arg6) {
+  return raw_assembler_->TailCallRuntime6(function_id, arg1, arg2, arg3, arg4,
+                                          arg5, arg6, context);
 }
 
 Node* CodeAssembler::CallStub(Callable const& callable, Node* context,
@@ -869,7 +900,7 @@ void CodeAssembler::Branch(Node* condition, CodeAssembler::Label* true_label,
 }
 
 void CodeAssembler::Switch(Node* index, Label* default_label,
-                           int32_t* case_values, Label** case_labels,
+                           const int32_t* case_values, Label** case_labels,
                            size_t case_count) {
   RawMachineLabel** labels =
       new (zone()->New(sizeof(RawMachineLabel*) * case_count))
@@ -908,8 +939,6 @@ Node* CodeAssembler::Select(Node* condition, Node* true_value,
 Isolate* CodeAssembler::isolate() const { return raw_assembler_->isolate(); }
 
 Factory* CodeAssembler::factory() const { return isolate()->factory(); }
-
-Graph* CodeAssembler::graph() const { return raw_assembler_->graph(); }
 
 Zone* CodeAssembler::zone() const { return raw_assembler_->zone(); }
 

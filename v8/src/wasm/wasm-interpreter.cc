@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 #include "src/wasm/wasm-interpreter.h"
+
+#include "src/utils.h"
 #include "src/wasm/ast-decoder.h"
 #include "src/wasm/decoder.h"
 #include "src/wasm/wasm-external-refs.h"
@@ -323,15 +325,11 @@ static inline float ExecuteF32Sub(float a, float b, TrapReason* trap) {
 }
 
 static inline float ExecuteF32Min(float a, float b, TrapReason* trap) {
-  if (std::isnan(a)) return quiet(a);
-  if (std::isnan(b)) return quiet(b);
-  return std::min(a, b);
+  return JSMin(a, b);
 }
 
 static inline float ExecuteF32Max(float a, float b, TrapReason* trap) {
-  if (std::isnan(a)) return quiet(a);
-  if (std::isnan(b)) return quiet(b);
-  return std::max(a, b);
+  return JSMax(a, b);
 }
 
 static inline float ExecuteF32CopySign(float a, float b, TrapReason* trap) {
@@ -350,15 +348,11 @@ static inline double ExecuteF64Sub(double a, double b, TrapReason* trap) {
 }
 
 static inline double ExecuteF64Min(double a, double b, TrapReason* trap) {
-  if (std::isnan(a)) return quiet(a);
-  if (std::isnan(b)) return quiet(b);
-  return std::min(a, b);
+  return JSMin(a, b);
 }
 
 static inline double ExecuteF64Max(double a, double b, TrapReason* trap) {
-  if (std::isnan(a)) return quiet(a);
-  if (std::isnan(b)) return quiet(b);
-  return std::max(a, b);
+  return JSMax(a, b);
 }
 
 static inline double ExecuteF64CopySign(double a, double b, TrapReason* trap) {
@@ -1405,7 +1399,7 @@ class ThreadImpl : public WasmInterpreter::Thread {
           UNIMPLEMENTED();
           break;
         }
-        case kExprLoadGlobal: {
+        case kExprGetGlobal: {
           GlobalIndexOperand operand(&decoder, code->at(pc));
           const WasmGlobal* global = &module()->globals[operand.index];
           byte* ptr = instance()->globals_start + global->offset;
@@ -1426,7 +1420,7 @@ class ThreadImpl : public WasmInterpreter::Thread {
           len = 1 + operand.length;
           break;
         }
-        case kExprStoreGlobal: {
+        case kExprSetGlobal: {
           GlobalIndexOperand operand(&decoder, code->at(pc));
           const WasmGlobal* global = &module()->globals[operand.index];
           byte* ptr = instance()->globals_start + global->offset;
@@ -1450,7 +1444,7 @@ class ThreadImpl : public WasmInterpreter::Thread {
 
 #define LOAD_CASE(name, ctype, mtype)                                       \
   case kExpr##name: {                                                       \
-    MemoryAccessOperand operand(&decoder, code->at(pc));                    \
+    MemoryAccessOperand operand(&decoder, code->at(pc), sizeof(ctype));     \
     uint32_t index = Pop().to<uint32_t>();                                  \
     size_t effective_mem_size = instance()->mem_size - sizeof(mtype);       \
     if (operand.offset > effective_mem_size ||                              \
@@ -1482,7 +1476,7 @@ class ThreadImpl : public WasmInterpreter::Thread {
 
 #define STORE_CASE(name, ctype, mtype)                                        \
   case kExpr##name: {                                                         \
-    MemoryAccessOperand operand(&decoder, code->at(pc));                      \
+    MemoryAccessOperand operand(&decoder, code->at(pc), sizeof(ctype));       \
     WasmVal val = Pop();                                                      \
     uint32_t index = Pop().to<uint32_t>();                                    \
     size_t effective_mem_size = instance()->mem_size - sizeof(mtype);         \

@@ -85,9 +85,16 @@ void RawMachineAssembler::Branch(Node* condition, RawMachineLabel* true_val,
   current_block_ = nullptr;
 }
 
+void RawMachineAssembler::Continuations(Node* call, RawMachineLabel* if_success,
+                                        RawMachineLabel* if_exception) {
+  DCHECK_NOT_NULL(schedule_);
+  DCHECK_NOT_NULL(current_block_);
+  schedule()->AddCall(CurrentBlock(), call, Use(if_success), Use(if_exception));
+  current_block_ = nullptr;
+}
 
 void RawMachineAssembler::Switch(Node* index, RawMachineLabel* default_label,
-                                 int32_t* case_values,
+                                 const int32_t* case_values,
                                  RawMachineLabel** case_labels,
                                  size_t case_count) {
   DCHECK_NE(schedule()->end(), current_block_);
@@ -388,6 +395,30 @@ Node* RawMachineAssembler::TailCallRuntime5(Runtime::FunctionId function,
   Node* arity = Int32Constant(kArity);
 
   Node* nodes[] = {centry, arg1, arg2, arg3, arg4, arg5, ref, arity, context};
+  Node* tail_call = MakeNode(common()->TailCall(desc), arraysize(nodes), nodes);
+
+  schedule()->AddTailCall(CurrentBlock(), tail_call);
+  current_block_ = nullptr;
+  return tail_call;
+}
+
+Node* RawMachineAssembler::TailCallRuntime6(Runtime::FunctionId function,
+                                            Node* arg1, Node* arg2, Node* arg3,
+                                            Node* arg4, Node* arg5, Node* arg6,
+                                            Node* context) {
+  const int kArity = 6;
+  CallDescriptor* desc = Linkage::GetRuntimeCallDescriptor(
+      zone(), function, kArity, Operator::kNoProperties,
+      CallDescriptor::kSupportsTailCalls);
+  int return_count = static_cast<int>(desc->ReturnCount());
+
+  Node* centry = HeapConstant(CEntryStub(isolate(), return_count).GetCode());
+  Node* ref = AddNode(
+      common()->ExternalConstant(ExternalReference(function, isolate())));
+  Node* arity = Int32Constant(kArity);
+
+  Node* nodes[] = {centry, arg1, arg2, arg3,  arg4,
+                   arg5,   arg6, ref,  arity, context};
   Node* tail_call = MakeNode(common()->TailCall(desc), arraysize(nodes), nodes);
 
   schedule()->AddTailCall(CurrentBlock(), tail_call);

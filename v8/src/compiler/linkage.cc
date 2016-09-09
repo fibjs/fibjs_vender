@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/compiler/linkage.h"
+
 #include "src/ast/scopes.h"
+#include "src/builtins/builtins-utils.h"
 #include "src/code-stubs.h"
-#include "src/compiler.h"
+#include "src/compilation-info.h"
 #include "src/compiler/common-operator.h"
 #include "src/compiler/frame.h"
-#include "src/compiler/linkage.h"
 #include "src/compiler/node.h"
 #include "src/compiler/osr.h"
 #include "src/compiler/pipeline.h"
@@ -20,34 +22,6 @@ namespace {
 
 LinkageLocation regloc(Register reg, MachineType type) {
   return LinkageLocation::ForRegister(reg.code(), type);
-}
-
-MachineType reptyp(Representation representation) {
-  switch (representation.kind()) {
-    case Representation::kInteger8:
-      return MachineType::Int8();
-    case Representation::kUInteger8:
-      return MachineType::Uint8();
-    case Representation::kInteger16:
-      return MachineType::Int16();
-    case Representation::kUInteger16:
-      return MachineType::Uint16();
-    case Representation::kInteger32:
-      return MachineType::Int32();
-    case Representation::kSmi:
-    case Representation::kTagged:
-    case Representation::kHeapObject:
-      return MachineType::AnyTagged();
-    case Representation::kDouble:
-      return MachineType::Float64();
-    case Representation::kExternal:
-      return MachineType::Pointer();
-    case Representation::kNone:
-    case Representation::kNumRepresentations:
-      break;
-  }
-  UNREACHABLE();
-  return MachineType::None();
 }
 
 }  // namespace
@@ -159,8 +133,6 @@ bool Linkage::NeedsFrameStateInput(Runtime::FunctionId function) {
     case Runtime::kCreateIterResultObject:
     case Runtime::kDefineGetterPropertyUnchecked:  // TODO(jarin): Is it safe?
     case Runtime::kDefineSetterPropertyUnchecked:  // TODO(jarin): Is it safe?
-    case Runtime::kForInDone:
-    case Runtime::kForInStep:
     case Runtime::kGeneratorGetContinuation:
     case Runtime::kGetSuperConstructor:
     case Runtime::kIsFunction:
@@ -222,6 +194,23 @@ bool CallDescriptor::UsesOnlyRegisters() const {
 CallDescriptor* Linkage::GetRuntimeCallDescriptor(
     Zone* zone, Runtime::FunctionId function_id, int js_parameter_count,
     Operator::Properties properties, CallDescriptor::Flags flags) {
+  const Runtime::Function* function = Runtime::FunctionForId(function_id);
+  const int return_count = function->result_size;
+  const char* debug_name = function->name;
+
+  if (!Linkage::NeedsFrameStateInput(function_id)) {
+    flags = static_cast<CallDescriptor::Flags>(
+        flags & ~CallDescriptor::kNeedsFrameState);
+  }
+
+  return GetCEntryStubCallDescriptor(zone, return_count, js_parameter_count,
+                                     debug_name, properties, flags);
+}
+
+CallDescriptor* Linkage::GetCEntryStubCallDescriptor(
+    Zone* zone, int return_count, int js_parameter_count,
+    const char* debug_name, Operator::Properties properties,
+    CallDescriptor::Flags flags) {
   const size_t function_count = 1;
   const size_t num_args_count = 1;
   const size_t context_count = 1;
@@ -229,10 +218,8 @@ CallDescriptor* Linkage::GetRuntimeCallDescriptor(
                                  static_cast<size_t>(js_parameter_count) +
                                  num_args_count + context_count;
 
-  const Runtime::Function* function = Runtime::FunctionForId(function_id);
-  const size_t return_count = static_cast<size_t>(function->result_size);
-
-  LocationSignature::Builder locations(zone, return_count, parameter_count);
+  LocationSignature::Builder locations(zone, static_cast<size_t>(return_count),
+                                       static_cast<size_t>(parameter_count));
 
   // Add returns.
   if (locations.return_count_ > 0) {
@@ -252,19 +239,14 @@ CallDescriptor* Linkage::GetRuntimeCallDescriptor(
   }
   // Add runtime function itself.
   locations.AddParam(
-      regloc(kRuntimeCallFunctionRegister, MachineType::AnyTagged()));
+      regloc(kRuntimeCallFunctionRegister, MachineType::Pointer()));
 
   // Add runtime call argument count.
   locations.AddParam(
-      regloc(kRuntimeCallArgCountRegister, MachineType::AnyTagged()));
+      regloc(kRuntimeCallArgCountRegister, MachineType::Int32()));
 
   // Add context.
   locations.AddParam(regloc(kContextRegister, MachineType::AnyTagged()));
-
-  if (!Linkage::NeedsFrameStateInput(function_id)) {
-    flags = static_cast<CallDescriptor::Flags>(
-        flags & ~CallDescriptor::kNeedsFrameState);
-  }
 
   // The target for runtime calls is a code object.
   MachineType target_type = MachineType::AnyTagged();
@@ -280,9 +262,8 @@ CallDescriptor* Linkage::GetRuntimeCallDescriptor(
       kNoCalleeSaved,                   // callee-saved
       kNoCalleeSaved,                   // callee-saved fp
       flags,                            // flags
-      function->name);                  // debug name
+      debug_name);                      // debug name
 }
-
 
 CallDescriptor* Linkage::GetJSCallDescriptor(Zone* zone, bool is_osr,
                                              int js_parameter_count,
@@ -371,8 +352,7 @@ CallDescriptor* Linkage::GetStubCallDescriptor(
     if (i < register_parameter_count) {
       // The first parameters go in registers.
       Register reg = descriptor.GetRegisterParameter(i);
-      MachineType type =
-          reptyp(RepresentationFromType(descriptor.GetParameterType(i)));
+      MachineType type = descriptor.GetParameterType(i);
       locations.AddParam(regloc(reg, type));
     } else {
       // The rest of the parameters go on the stack.
@@ -441,8 +421,7 @@ CallDescriptor* Linkage::GetBytecodeDispatchCallDescriptor(
     if (i < register_parameter_count) {
       // The first parameters go in registers.
       Register reg = descriptor.GetRegisterParameter(i);
-      MachineType type =
-          reptyp(RepresentationFromType(descriptor.GetParameterType(i)));
+      MachineType type = descriptor.GetParameterType(i);
       locations.AddParam(regloc(reg, type));
     } else {
       // The rest of the parameters go on the stack.

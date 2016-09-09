@@ -4158,6 +4158,7 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
     case CFEBR:
     case CEFBR:
     case LCDBR:
+    case LCEBR:
     case LPDBR:
     case LPEBR: {
       RREInstruction* rreInstr = reinterpret_cast<RREInstruction*>(instr);
@@ -4262,6 +4263,18 @@ bool Simulator::DecodeFourByteFloatingPoint(Instruction* instr) {
         } else if (r2_val < 0) {
           condition_reg_ = CC_LT;
         } else if (r2_val > 0) {
+          condition_reg_ = CC_GT;
+        }
+      } else if (op == LCEBR) {
+        fr1_val = -fr2_val;
+        set_d_register_from_float32(r1, fr1_val);
+        if (fr2_val != fr2_val) {  // input is NaN
+          condition_reg_ = CC_OF;
+        } else if (fr2_val == 0) {
+          condition_reg_ = CC_EQ;
+        } else if (fr2_val < 0) {
+          condition_reg_ = CC_LT;
+        } else if (fr2_val > 0) {
           condition_reg_ = CC_GT;
         }
       } else if (op == LPDBR) {
@@ -5982,6 +5995,12 @@ uintptr_t Simulator::PopAddress() {
   int r3 = AS(RRFInstruction)->R3Value();    \
   int length = 4;
 
+#define DECODE_RRF_C_INSTRUCTION(r1, r2, m3)                            \
+  int r1 = AS(RRFInstruction)->R1Value();                               \
+  int r2 = AS(RRFInstruction)->R2Value();                               \
+  Condition m3 = static_cast<Condition>(AS(RRFInstruction)->M3Value()); \
+  int length = 4;
+
 #define DECODE_RR_INSTRUCTION(r1, r2)    \
   int r1 = AS(RRInstruction)->R1Value(); \
   int r2 = AS(RRInstruction)->R2Value(); \
@@ -6569,7 +6588,6 @@ EVALUATE(MR) {
   int32_t low_bits = product & 0x00000000FFFFFFFF;
   set_low_register(r1, high_bits);
   set_low_register(r1 + 1, low_bits);
-  set_low_register(r1, r1_val);
   return length;
 }
 
@@ -6925,9 +6943,22 @@ EVALUATE(S) {
 }
 
 EVALUATE(M) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
+  DCHECK_OPCODE(M);
+  DECODE_RX_A_INSTRUCTION(x2, b2, r1, d2_val);
+  int64_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+  int64_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+  intptr_t addr = b2_val + x2_val + d2_val;
+  DCHECK(r1 % 2 == 0);
+  int32_t mem_val = ReadW(addr, instr);
+  int32_t r1_val = get_low_register<int32_t>(r1 + 1);
+  int64_t product =
+      static_cast<int64_t>(r1_val) * static_cast<int64_t>(mem_val);
+  int32_t high_bits = product >> 32;
+  r1_val = high_bits;
+  int32_t low_bits = product & 0x00000000FFFFFFFF;
+  set_low_register(r1, high_bits);
+  set_low_register(r1 + 1, low_bits);
+  return length;
 }
 
 EVALUATE(D) {
@@ -7822,9 +7853,10 @@ EVALUATE(LARL) {
 }
 
 EVALUATE(LGFI) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
+  DCHECK_OPCODE(LGFI);
+  DECODE_RIL_A_INSTRUCTION(r1, imm);
+  set_register(r1, static_cast<int64_t>(static_cast<int32_t>(imm)));
+  return length;
 }
 
 EVALUATE(BRASL) {
@@ -8503,9 +8535,22 @@ EVALUATE(LTEBR) {
 }
 
 EVALUATE(LCEBR) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
+  DCHECK_OPCODE(LCEBR);
+  DECODE_RRE_INSTRUCTION(r1, r2);
+  float fr1_val = get_float32_from_d_register(r1);
+  float fr2_val = get_float32_from_d_register(r2);
+  fr1_val = -fr2_val;
+  set_d_register_from_float32(r1, fr1_val);
+  if (fr2_val != fr2_val) {  // input is NaN
+    condition_reg_ = CC_OF;
+  } else if (fr2_val == 0) {
+    condition_reg_ = CC_EQ;
+  } else if (fr2_val < 0) {
+    condition_reg_ = CC_LT;
+  } else if (fr2_val > 0) {
+    condition_reg_ = CC_GT;
+  }
+  return length;
 }
 
 EVALUATE(LDEBR) {
@@ -10471,9 +10516,12 @@ EVALUATE(POPCNT_Z) {
 }
 
 EVALUATE(LOCGR) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
+  DCHECK_OPCODE(LOCGR);
+  DECODE_RRF_C_INSTRUCTION(r1, r2, m3);
+  if (TestConditionCode(m3)) {
+    set_register(r1, get_register(r2));
+  }
+  return length;
 }
 
 EVALUATE(NGRK) {
@@ -10568,9 +10616,12 @@ EVALUATE(SLGRK) {
 }
 
 EVALUATE(LOCR) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
+  DCHECK_OPCODE(LOCR);
+  DECODE_RRF_C_INSTRUCTION(r1, r2, m3);
+  if (TestConditionCode(m3)) {
+    set_low_register(r1, get_low_register<int32_t>(r2));
+  }
+  return length;
 }
 
 EVALUATE(NRK) {
@@ -11121,9 +11172,21 @@ EVALUATE(SY) {
 }
 
 EVALUATE(MFY) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
+  DCHECK_OPCODE(MFY);
+  DECODE_RXY_A_INSTRUCTION(r1, x2, b2, d2);
+  int64_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+  int64_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+  DCHECK(r1 % 2 == 0);
+  int32_t mem_val = ReadW(b2_val + x2_val + d2, instr);
+  int32_t r1_val = get_low_register<int32_t>(r1 + 1);
+  int64_t product =
+      static_cast<int64_t>(r1_val) * static_cast<int64_t>(mem_val);
+  int32_t high_bits = product >> 32;
+  r1_val = high_bits;
+  int32_t low_bits = product & 0x00000000FFFFFFFF;
+  set_low_register(r1, high_bits);
+  set_low_register(r1 + 1, low_bits);
+  return length;
 }
 
 EVALUATE(ALY) {
@@ -11393,9 +11456,21 @@ EVALUATE(LLH) {
 }
 
 EVALUATE(ML) {
-  UNIMPLEMENTED();
-  USE(instr);
-  return 0;
+  DCHECK_OPCODE(ML);
+  DECODE_RXY_A_INSTRUCTION(r1, x2, b2, d2);
+  int64_t x2_val = (x2 == 0) ? 0 : get_register(x2);
+  int64_t b2_val = (b2 == 0) ? 0 : get_register(b2);
+  DCHECK(r1 % 2 == 0);
+  uint32_t mem_val = ReadWU(b2_val + x2_val + d2, instr);
+  uint32_t r1_val = get_low_register<uint32_t>(r1 + 1);
+  uint64_t product =
+      static_cast<uint64_t>(r1_val) * static_cast<uint64_t>(mem_val);
+  uint32_t high_bits = product >> 32;
+  r1_val = high_bits;
+  uint32_t low_bits = product & 0x00000000FFFFFFFF;
+  set_low_register(r1, high_bits);
+  set_low_register(r1 + 1, low_bits);
+  return length;
 }
 
 EVALUATE(DL) {

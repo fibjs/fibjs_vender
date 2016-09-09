@@ -24,6 +24,11 @@ void CallInterfaceDescriptor::DefaultInitializePlatformSpecific(
                                    default_stub_registers);
 }
 
+const Register FastNewFunctionContextDescriptor::FunctionRegister() {
+  return a1;
+}
+const Register FastNewFunctionContextDescriptor::SlotsRegister() { return a0; }
+
 const Register LoadDescriptor::ReceiverRegister() { return a1; }
 const Register LoadDescriptor::NameRegister() { return a2; }
 const Register LoadDescriptor::SlotRegister() { return a0; }
@@ -72,12 +77,6 @@ const Register GrowArrayElementsDescriptor::KeyRegister() { return a3; }
 void FastNewClosureDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {a2};
-  data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
-}
-
-void FastNewFunctionContextDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {a1};
   data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
 }
 
@@ -299,6 +298,17 @@ void BinaryOpWithAllocationSiteDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(arraysize(registers), registers, NULL);
 }
 
+void BinaryOpWithVectorDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  // register state
+  // a1 -- lhs
+  // a0 -- rhs
+  // a4 -- slot id
+  // a3 -- vector
+  Register registers[] = {a1, a0, a4, a3};
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
 void CountOpDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {a1};
@@ -385,7 +395,19 @@ void InterpreterPushArgsAndConstructDescriptor::InitializePlatformSpecific(
       a0,  // argument count (not including receiver)
       a3,  // new target
       a1,  // constructor to call
-      a2   // address of the first argument
+      a2,  // allocation site feedback if available, undefined otherwise.
+      a4   // address of the first argument
+  };
+  data->InitializePlatformSpecific(arraysize(registers), registers);
+}
+
+void InterpreterPushArgsAndConstructArrayDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      a0,  // argument count (not including receiver)
+      a1,  // the target to call verified to be Array function
+      a2,  // allocation site feedback
+      a3,  // address of first argument
   };
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }

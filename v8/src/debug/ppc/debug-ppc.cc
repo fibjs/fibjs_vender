@@ -8,8 +8,10 @@
 
 #if V8_TARGET_ARCH_PPC
 
-#include "src/codegen.h"
 #include "src/debug/debug.h"
+
+#include "src/codegen.h"
+#include "src/debug/liveedit.h"
 
 namespace v8 {
 namespace internal {

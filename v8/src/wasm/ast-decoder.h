@@ -21,6 +21,8 @@ class WasmGraphBuilder;
 
 namespace wasm {
 
+const uint32_t kMaxNumWasmLocals = 8000000;
+
 // Helpers for decoding different kinds of operands which follow bytecodes.
 struct LocalIndexOperand {
   uint32_t index;
@@ -148,16 +150,6 @@ struct CallImportOperand {
   }
 };
 
-struct JITSingleFunctionOperand {
-  uint32_t sig_index;
-  FunctionSig* sig;
-  unsigned length;
-  inline JITSingleFunctionOperand(Decoder* decoder, const byte* pc) {
-    sig_index = decoder->checked_read_u32v(pc, 1, &length, "signature index");
-    sig = nullptr;
-  }
-};
-
 struct BranchTableOperand {
   uint32_t arity;
   uint32_t table_count;
@@ -193,10 +185,17 @@ struct MemoryAccessOperand {
   uint32_t alignment;
   uint32_t offset;
   unsigned length;
-  inline MemoryAccessOperand(Decoder* decoder, const byte* pc) {
+  inline MemoryAccessOperand(Decoder* decoder, const byte* pc,
+                             uint32_t max_alignment) {
     unsigned alignment_length;
     alignment =
         decoder->checked_read_u32v(pc, 1, &alignment_length, "alignment");
+    if (max_alignment < alignment) {
+      decoder->error(pc, pc + 1,
+                     "invalid alignment; expected maximum alignment is %u, "
+                     "actual alignment is %u",
+                     max_alignment, alignment);
+    }
     unsigned offset_length;
     offset = decoder->checked_read_u32v(pc, 1 + alignment_length,
                                         &offset_length, "offset");

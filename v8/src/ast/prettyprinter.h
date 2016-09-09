@@ -8,6 +8,7 @@
 #include "src/allocation.h"
 #include "src/ast/ast.h"
 #include "src/base/compiler-specific.h"
+#include "src/string-builder.h"
 
 namespace v8 {
 namespace internal {
@@ -15,15 +16,10 @@ namespace internal {
 class CallPrinter final : public AstVisitor<CallPrinter> {
  public:
   explicit CallPrinter(Isolate* isolate, bool is_builtin);
-  ~CallPrinter();
 
   // The following routine prints the node with position |position| into a
-  // string. The result string is alive as long as the CallPrinter is alive.
-  const char* Print(FunctionLiteral* program, int position);
-
-  void PRINTF_FORMAT(2, 3) Print(const char* format, ...);
-
-  void Find(AstNode* node, bool print = false);
+  // string.
+  Handle<String> Print(FunctionLiteral* program, int position);
 
 // Individual nodes
 #define DECLARE_VISIT(type) void Visit##type(type* node);
@@ -31,11 +27,14 @@ class CallPrinter final : public AstVisitor<CallPrinter> {
 #undef DECLARE_VISIT
 
  private:
-  void Init();
+  void Print(const char* str);
+  void Print(Handle<String> str);
+
+  void Find(AstNode* node, bool print = false);
+
   Isolate* isolate_;
-  char* output_;  // output string buffer
-  int size_;      // output_ size
-  int pos_;       // current printing position
+  int num_prints_;
+  IncrementalStringBuilder builder_;
   int position_;  // position of ast node to print
   bool found_;
   bool done_;
@@ -44,7 +43,7 @@ class CallPrinter final : public AstVisitor<CallPrinter> {
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 
  protected:
-  void PrintLiteral(Object* value, bool quote);
+  void PrintLiteral(Handle<Object> value, bool quote);
   void PrintLiteral(const AstRawString* value, bool quote);
   void FindStatements(ZoneList<Statement*>* statements);
   void FindArguments(ZoneList<Expression*>* arguments);
@@ -86,7 +85,7 @@ class AstPrinter final : public AstVisitor<AstPrinter> {
 
   void PrintStatements(ZoneList<Statement*>* statements);
   void PrintDeclarations(ZoneList<Declaration*>* declarations);
-  void PrintParameters(Scope* scope);
+  void PrintParameters(DeclarationScope* scope);
   void PrintArguments(ZoneList<Expression*>* arguments);
   void PrintCaseClause(CaseClause* clause);
   void PrintLiteralIndented(const char* info, Handle<Object> value, bool quote);
@@ -94,7 +93,8 @@ class AstPrinter final : public AstVisitor<AstPrinter> {
                                     Variable* var,
                                     Handle<Object> value);
   void PrintLabelsIndented(ZoneList<const AstRawString*>* labels);
-  void PrintProperties(ZoneList<ObjectLiteral::Property*>* properties);
+  void PrintObjectProperties(ZoneList<ObjectLiteral::Property*>* properties);
+  void PrintClassProperties(ZoneList<ClassLiteral::Property*>* properties);
   void PrintTryStatement(TryStatement* try_statement);
 
   void inc_indent() { indent_++; }

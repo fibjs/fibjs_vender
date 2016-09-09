@@ -2,22 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "src/compiler/osr.h"
 #include "src/ast/scopes.h"
-#include "src/compiler.h"
+#include "src/compilation-info.h"
 #include "src/compiler/all-nodes.h"
-#include "src/compiler/common-operator.h"
 #include "src/compiler/common-operator-reducer.h"
+#include "src/compiler/common-operator.h"
 #include "src/compiler/dead-code-elimination.h"
 #include "src/compiler/frame.h"
-#include "src/compiler/graph.h"
 #include "src/compiler/graph-reducer.h"
 #include "src/compiler/graph-trimmer.h"
 #include "src/compiler/graph-visualizer.h"
+#include "src/compiler/graph.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/loop-analysis.h"
-#include "src/compiler/node.h"
 #include "src/compiler/node-marker.h"
-#include "src/compiler/osr.h"
+#include "src/compiler/node.h"
 
 namespace v8 {
 namespace internal {
@@ -84,8 +84,8 @@ static void PeelOuterLoopsForOsr(Graph* graph, CommonOperatorBuilder* common,
     }
 
     // Copy all nodes.
-    for (size_t i = 0; i < all.live.size(); i++) {
-      Node* orig = all.live[i];
+    for (size_t i = 0; i < all.reachable.size(); i++) {
+      Node* orig = all.reachable[i];
       Node* copy = mapping->at(orig->id());
       if (copy != sentinel) {
         // Mapping already exists.
@@ -113,7 +113,7 @@ static void PeelOuterLoopsForOsr(Graph* graph, CommonOperatorBuilder* common,
     }
 
     // Fix missing inputs.
-    for (Node* orig : all.live) {
+    for (Node* orig : all.reachable) {
       Node* copy = mapping->at(orig->id());
       for (int j = 0; j < copy->InputCount(); j++) {
         if (copy->InputAt(j) == sentinel) {

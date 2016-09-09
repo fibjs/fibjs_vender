@@ -25,6 +25,7 @@
 #include "src/profiler/profiler-listener.h"
 #include "src/profiler/tick-sample.h"
 #include "src/runtime-profiler.h"
+#include "src/source-position-table.h"
 #include "src/string-stream.h"
 #include "src/vm-state-inl.h"
 
@@ -415,10 +416,6 @@ void LowLevelLogger::CodeMovingGCEvent() {
   LogWriteBytes(&tag, sizeof(tag));
 }
 
-
-#define JIT_LOG(Call) if (jit_logger_) jit_logger_->Call;
-
-
 class JitLogger : public CodeEventLogger {
  public:
   explicit JitLogger(JitCodeEventHandler code_event_handler);
@@ -645,15 +642,9 @@ class Ticker: public sampler::Sampler {
 
   void SampleStack(const v8::RegisterState& state) override {
     if (!profiler_) return;
-#if defined(USE_SIMULATOR)
-    Isolate* i_isolate = reinterpret_cast<Isolate*>(isolate());
-    v8::RegisterState regs;
-    if (!SimulatorHelper::FillRegisters(i_isolate, &regs)) return;
-#else
-    const v8::RegisterState& regs = state;
-#endif
-    v8::TickSample sample;
-    sample.Init(isolate(), regs, v8::TickSample::kIncludeCEntryFrame, true);
+    Isolate* isolate = reinterpret_cast<Isolate*>(this->isolate());
+    TickSample sample;
+    sample.Init(isolate, state, TickSample::kIncludeCEntryFrame, true);
     profiler_->Insert(&sample);
   }
 
@@ -1207,34 +1198,24 @@ void Logger::CodeMoveEvent(AbstractCode* from, Address to) {
   MoveEventInternal(CodeEventListener::CODE_MOVE_EVENT, from->address(), to);
 }
 
-void Logger::CodeLinePosInfoAddPositionEvent(void* jit_handler_data,
-                                             int pc_offset, int position) {
-  JIT_LOG(AddCodeLinePosInfoEvent(jit_handler_data,
-                                  pc_offset,
-                                  position,
-                                  JitCodeEvent::POSITION));
+void Logger::CodeLinePosInfoRecordEvent(AbstractCode* code,
+                                        ByteArray* source_position_table) {
+  if (jit_logger_) {
+    void* jit_handler_data = jit_logger_->StartCodePosInfoEvent();
+    for (SourcePositionTableIterator iter(source_position_table); !iter.done();
+         iter.Advance()) {
+      if (iter.is_statement()) {
+        jit_logger_->AddCodeLinePosInfoEvent(
+            jit_handler_data, iter.code_offset(), iter.source_position(),
+            JitCodeEvent::STATEMENT_POSITION);
+      }
+      jit_logger_->AddCodeLinePosInfoEvent(jit_handler_data, iter.code_offset(),
+                                           iter.source_position(),
+                                           JitCodeEvent::POSITION);
+    }
+    jit_logger_->EndCodePosInfoEvent(code, jit_handler_data);
+  }
 }
-
-
-void Logger::CodeLinePosInfoAddStatementPositionEvent(void* jit_handler_data,
-                                                      int pc_offset,
-                                                      int position) {
-  JIT_LOG(AddCodeLinePosInfoEvent(jit_handler_data,
-                                  pc_offset,
-                                  position,
-                                  JitCodeEvent::STATEMENT_POSITION));
-}
-
-void Logger::CodeStartLinePosInfoRecordEvent(void** jit_handler_data_out) {
-  *jit_handler_data_out =
-      (jit_logger_ == NULL) ? NULL : jit_logger_->StartCodePosInfoEvent();
-}
-
-void Logger::CodeEndLinePosInfoRecordEvent(AbstractCode* code,
-                                           void* jit_handler_data) {
-  JIT_LOG(EndCodePosInfoEvent(code, jit_handler_data));
-}
-
 
 void Logger::CodeNameEvent(Address addr, int pos, const char* code_name) {
   if (code_name == NULL) return;  // Not a code object.
@@ -1552,8 +1533,6 @@ void Logger::LogCodeObject(Object* object) {
 
 void Logger::LogCodeObjects() {
   Heap* heap = isolate_->heap();
-  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask,
-                          "Logger::LogCodeObjects");
   HeapIterator iterator(heap);
   DisallowHeapAllocation no_gc;
   for (HeapObject* obj = iterator.next(); obj != NULL; obj = iterator.next()) {
@@ -1640,8 +1619,6 @@ void Logger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
 
 void Logger::LogCompiledFunctions() {
   Heap* heap = isolate_->heap();
-  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask,
-                          "Logger::LogCompiledFunctions");
   HandleScope scope(isolate_);
   const int compiled_funcs_count = EnumerateCompiledFunctions(heap, NULL, NULL);
   ScopedVector< Handle<SharedFunctionInfo> > sfis(compiled_funcs_count);
@@ -1660,8 +1637,6 @@ void Logger::LogCompiledFunctions() {
 
 void Logger::LogAccessorCallbacks() {
   Heap* heap = isolate_->heap();
-  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask,
-                          "Logger::LogAccessorCallbacks");
   HeapIterator iterator(heap);
   DisallowHeapAllocation no_gc;
   for (HeapObject* obj = iterator.next(); obj != NULL; obj = iterator.next()) {

@@ -74,7 +74,6 @@ class AstGraphBuilder : public AstVisitor<AstGraphBuilder> {
   class ControlScopeForCatch;
   class ControlScopeForFinally;
   class Environment;
-  class FrameStateBeforeAndAfter;
   friend class ControlBuilder;
 
   Isolate* isolate_;
@@ -100,9 +99,6 @@ class AstGraphBuilder : public AstVisitor<AstGraphBuilder> {
 
   // Tracks how many try-blocks are currently entered.
   int try_nesting_level_;
-
-  // Tracks the prediction of the innermost try-block.
-  HandlerTable::CatchPrediction try_catch_prediction_;
 
   // Temporary storage for building node input lists.
   int input_buffer_size_;
@@ -282,8 +278,8 @@ class AstGraphBuilder : public AstVisitor<AstGraphBuilder> {
   // Builder to create an arguments object if it is used.
   Node* BuildArgumentsObject(Variable* arguments);
 
-  // Builder to create an array of rest parameters if used
-  Node* BuildRestArgumentsArray(Variable* rest, int index);
+  // Builder to create an array of rest parameters if used.
+  Node* BuildRestArgumentsArray(Variable* rest);
 
   // Builder that assigns to the {.this_function} internal variable if needed.
   Node* BuildThisFunctionVariable(Variable* this_function_var);
@@ -346,8 +342,7 @@ class AstGraphBuilder : public AstVisitor<AstGraphBuilder> {
   // Builder for adding the [[HomeObject]] to a value if the value came from a
   // function literal and needs a home object. Do nothing otherwise.
   Node* BuildSetHomeObject(Node* value, Node* home_object,
-                           ObjectLiteralProperty* property,
-                           int slot_number = 0);
+                           LiteralProperty* property, int slot_number = 0);
 
   // Builders for error reporting at runtime.
   Node* BuildThrowError(Node* exception, BailoutId bailout_id);
@@ -472,7 +467,8 @@ class AstGraphBuilder : public AstVisitor<AstGraphBuilder> {
 //
 class AstGraphBuilder::Environment : public ZoneObject {
  public:
-  Environment(AstGraphBuilder* builder, Scope* scope, Node* control_dependency);
+  Environment(AstGraphBuilder* builder, DeclarationScope* scope,
+              Node* control_dependency);
 
   int parameters_count() const { return parameters_count_; }
   int locals_count() const { return locals_count_; }

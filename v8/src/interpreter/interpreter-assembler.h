@@ -77,6 +77,9 @@ class InterpreterAssembler : public CodeStubAssembler {
   // Load constant at |index| in the constant pool.
   compiler::Node* LoadConstantPoolEntry(compiler::Node* index);
 
+  // Load and untag constant at |index| in the constant pool.
+  compiler::Node* LoadAndUntagConstantPoolEntry(compiler::Node* index);
+
   // Load |slot_index| from |context|.
   compiler::Node* LoadContextSlot(compiler::Node* context, int slot_index);
   compiler::Node* LoadContextSlot(compiler::Node* context,
@@ -117,7 +120,9 @@ class InterpreterAssembler : public CodeStubAssembler {
                                 compiler::Node* context,
                                 compiler::Node* new_target,
                                 compiler::Node* first_arg,
-                                compiler::Node* arg_count);
+                                compiler::Node* arg_count,
+                                compiler::Node* slot_id,
+                                compiler::Node* type_feedback_vector);
 
   // Call runtime function with |arg_count| arguments and the first argument
   // located at |first_arg|.
@@ -158,6 +163,12 @@ class InterpreterAssembler : public CodeStubAssembler {
 
   // Dispatch bytecode as wide operand variant.
   void DispatchWide(OperandScale operand_scale);
+
+  // Truncate tagged |value| to word32 and store the type feedback in
+  // |var_type_feedback|.
+  compiler::Node* TruncateTaggedToWord32WithFeedback(
+      compiler::Node* context, compiler::Node* value,
+      Variable* var_type_feedback);
 
   // Abort with the given bailout reason.
   void Abort(BailoutReason bailout_reason);

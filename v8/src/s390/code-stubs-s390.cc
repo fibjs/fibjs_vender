@@ -835,7 +835,6 @@ void CodeStub::GenerateStubsAheadOfTime(Isolate* isolate) {
   RestoreRegistersStateStub::GenerateAheadOfTime(isolate);
   BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(isolate);
   StoreFastElementStub::GenerateAheadOfTime(isolate);
-  TypeofStub::GenerateAheadOfTime(isolate);
 }
 
 void StoreRegistersStateStub::GenerateAheadOfTime(Isolate* isolate) {
@@ -1154,12 +1153,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // returns control to the code after the b(&invoke) above, which
   // restores all kCalleeSaved registers (including cp and fp) to their
   // saved values before returning a failure to C.
-
-  // Clear any pending exceptions.
-  __ mov(ip, Operand(ExternalReference(Isolate::kPendingExceptionAddress,
-                                       isolate())));
-  __ mov(r7, Operand(isolate()->factory()->the_hole_value()));
-  __ StoreP(r7, MemOperand(ip));
 
   // Invoke the function by calling through JS entry trampoline builtin.
   // Notice that we cannot store a reference to the trampoline code directly in
@@ -1599,9 +1592,9 @@ void RegExpExecStub::Generate(MacroAssembler* masm) {
 
   __ LoadP(r2, MemOperand(sp, kLastMatchInfoOffset));
   __ JumpIfSmi(r2, &runtime);
-  __ CompareObjectType(r2, r4, r4, JS_ARRAY_TYPE);
+  __ CompareObjectType(r2, r4, r4, JS_OBJECT_TYPE);
   __ bne(&runtime);
-  // Check that the JSArray is in fast case.
+  // Check that the object has fast elements.
   __ LoadP(last_match_info_elements,
            FieldMemOperand(r2, JSArray::kElementsOffset));
   __ LoadP(r2,
@@ -4532,7 +4525,7 @@ void FastNewRestParameterStub::Generate(MacroAssembler* masm) {
     // Fall back to %AllocateInNewSpace (if not too big).
     Label too_big_for_new_space;
     __ bind(&allocate);
-    __ CmpP(r9, Operand(Page::kMaxRegularHeapObjectSize));
+    __ CmpP(r9, Operand(kMaxRegularHeapObjectSize));
     __ bgt(&too_big_for_new_space);
     {
       FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
@@ -4907,7 +4900,7 @@ void FastNewStrictArgumentsStub::Generate(MacroAssembler* masm) {
   // Fall back to %AllocateInNewSpace (if not too big).
   Label too_big_for_new_space;
   __ bind(&allocate);
-  __ CmpP(r9, Operand(Page::kMaxRegularHeapObjectSize));
+  __ CmpP(r9, Operand(kMaxRegularHeapObjectSize));
   __ bgt(&too_big_for_new_space);
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);

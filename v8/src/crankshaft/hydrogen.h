@@ -8,14 +8,14 @@
 #include "src/accessors.h"
 #include "src/allocation.h"
 #include "src/ast/ast-type-bounds.h"
-#include "src/ast/ast.h"
 #include "src/ast/scopes.h"
 #include "src/bailout-reason.h"
+#include "src/compilation-info.h"
 #include "src/compiler.h"
 #include "src/crankshaft/compilation-phase.h"
 #include "src/crankshaft/hydrogen-instructions.h"
 #include "src/globals.h"
-#include "src/parsing/parser.h"
+#include "src/parsing/parse-info.h"
 #include "src/zone.h"
 
 namespace v8 {
@@ -36,7 +36,7 @@ class LiveRange;
 class HCompilationJob final : public CompilationJob {
  public:
   explicit HCompilationJob(Handle<JSFunction> function)
-      : CompilationJob(&info_, "Crankshaft"),
+      : CompilationJob(function->GetIsolate(), &info_, "Crankshaft"),
         zone_(function->GetIsolate()->allocator()),
         parse_info_(&zone_, function),
         info_(&parse_info_, function),
@@ -44,9 +44,9 @@ class HCompilationJob final : public CompilationJob {
         chunk_(nullptr) {}
 
  protected:
-  virtual Status CreateGraphImpl();
-  virtual Status OptimizeGraphImpl();
-  virtual Status GenerateCodeImpl();
+  virtual Status PrepareJobImpl();
+  virtual Status ExecuteJobImpl();
+  virtual Status FinalizeJobImpl();
 
  private:
   Zone zone_;
@@ -1396,7 +1396,7 @@ class HGraphBuilder {
                                    ElementsKind to_kind,
                                    bool is_jsarray);
 
-  HValue* BuildNumberToString(HValue* object, Type* type);
+  HValue* BuildNumberToString(HValue* object, AstType* type);
   HValue* BuildToNumber(HValue* input);
   HValue* BuildToObject(HValue* receiver);
 
@@ -1500,8 +1500,8 @@ class HGraphBuilder {
                         HValue** shift_amount);
 
   HValue* BuildBinaryOperation(Token::Value op, HValue* left, HValue* right,
-                               Type* left_type, Type* right_type,
-                               Type* result_type, Maybe<int> fixed_right_arg,
+                               AstType* left_type, AstType* right_type,
+                               AstType* result_type, Maybe<int> fixed_right_arg,
                                HAllocationMode allocation_mode,
                                BailoutId opt_id = BailoutId::None());
 
@@ -1514,8 +1514,8 @@ class HGraphBuilder {
 
   HValue* AddLoadJSBuiltin(int context_index);
 
-  HValue* EnforceNumberType(HValue* number, Type* expected);
-  HValue* TruncateToNumber(HValue* value, Type** expected);
+  HValue* EnforceNumberType(HValue* number, AstType* expected);
+  HValue* TruncateToNumber(HValue* value, AstType** expected);
 
   void FinishExitWithHardDeoptimization(DeoptimizeReason reason);
 
@@ -2360,7 +2360,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder,
   template <class Instruction> HInstruction* PreProcessCall(Instruction* call);
   void PushArgumentsFromEnvironment(int count);
 
-  void SetUpScope(Scope* scope);
+  void SetUpScope(DeclarationScope* scope);
   void VisitStatements(ZoneList<Statement*>* statements);
 
 #define DECLARE_VISIT(type) virtual void Visit##type(type* node);
@@ -2707,8 +2707,8 @@ class HOptimizedGraphBuilder : public HGraphBuilder,
   };
 
   HControlInstruction* BuildCompareInstruction(
-      Token::Value op, HValue* left, HValue* right, Type* left_type,
-      Type* right_type, Type* combined_type, SourcePosition left_position,
+      Token::Value op, HValue* left, HValue* right, AstType* left_type,
+      AstType* right_type, AstType* combined_type, SourcePosition left_position,
       SourcePosition right_position, PushBeforeSimulateBehavior push_sim_result,
       BailoutId bailout_id);
 

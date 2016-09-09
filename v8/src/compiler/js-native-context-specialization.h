@@ -16,8 +16,6 @@ namespace internal {
 class CompilationDependencies;
 class Factory;
 class FeedbackNexus;
-class TypeCache;
-
 
 namespace compiler {
 
@@ -30,7 +28,7 @@ class JSOperatorBuilder;
 class MachineOperatorBuilder;
 class PropertyAccessInfo;
 class SimplifiedOperatorBuilder;
-
+class TypeCache;
 
 // Specializes a given JSGraph to a given native context, potentially constant
 // folding some {LoadGlobal} nodes or strength reducing some {StoreGlobal}
@@ -41,8 +39,9 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
   // Flags that control the mode of operation.
   enum Flag {
     kNoFlags = 0u,
-    kBailoutOnUninitialized = 1u << 0,
-    kDeoptimizationEnabled = 1u << 1,
+    kAccessorInliningEnabled = 1u << 0,
+    kBailoutOnUninitialized = 1u << 1,
+    kDeoptimizationEnabled = 1u << 2,
   };
   typedef base::Flags<Flag> Flags;
 
@@ -70,10 +69,11 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
                               KeyedICNexus const& nexus, AccessMode access_mode,
                               LanguageMode language_mode,
                               KeyedAccessStoreMode store_mode);
-  Reduction ReduceNamedAccess(Node* node, Node* value,
-                              FeedbackNexus const& nexus, Handle<Name> name,
-                              AccessMode access_mode,
-                              LanguageMode language_mode);
+  Reduction ReduceNamedAccessFromNexus(Node* node, Node* value,
+                                       FeedbackNexus const& nexus,
+                                       Handle<Name> name,
+                                       AccessMode access_mode,
+                                       LanguageMode language_mode);
   Reduction ReduceNamedAccess(Node* node, Node* value,
                               MapHandleList const& receiver_maps,
                               Handle<Name> name, AccessMode access_mode,
@@ -100,6 +100,7 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
 
   // Construct the appropriate subgraph for property access.
   ValueEffectControl BuildPropertyAccess(Node* receiver, Node* value,
+                                         Node* context, Node* frame_state,
                                          Node* effect, Node* control,
                                          Handle<Name> name,
                                          Handle<Context> native_context,
@@ -107,12 +108,10 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
                                          AccessMode access_mode);
 
   // Construct the appropriate subgraph for element access.
-  ValueEffectControl BuildElementAccess(Node* receiver, Node* index,
-                                        Node* value, Node* effect,
-                                        Node* control,
-                                        Handle<Context> native_context,
-                                        ElementAccessInfo const& access_info,
-                                        AccessMode access_mode);
+  ValueEffectControl BuildElementAccess(
+      Node* receiver, Node* index, Node* value, Node* effect, Node* control,
+      Handle<Context> native_context, ElementAccessInfo const& access_info,
+      AccessMode access_mode, KeyedAccessStoreMode store_mode);
 
   // Construct an appropriate map check.
   Node* BuildCheckMaps(Node* receiver, Node* effect, Node* control,
@@ -126,6 +125,12 @@ class JSNativeContextSpecialization final : public AdvancedReducer {
   void AssumePrototypesStable(std::vector<Handle<Map>> const& receiver_maps,
                               Handle<Context> native_context,
                               Handle<JSObject> holder);
+
+  // Checks if we can turn the hole into undefined when loading an element
+  // from an object with one of the {receiver_maps}; sets up appropriate
+  // code dependencies and might use the array protector cell.
+  bool CanTreatHoleAsUndefined(std::vector<Handle<Map>> const& receiver_maps,
+                               Handle<Context> native_context);
 
   // Extract receiver maps from {nexus} and filter based on {receiver} if
   // possible.

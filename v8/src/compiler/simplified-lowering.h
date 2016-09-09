@@ -12,17 +12,13 @@
 
 namespace v8 {
 namespace internal {
-
-// Forward declarations.
-class TypeCache;
-
-
 namespace compiler {
 
 // Forward declarations.
 class RepresentationChanger;
 class RepresentationSelector;
 class SourcePositionTable;
+class TypeCache;
 
 class SimplifiedLowering final {
  public:
@@ -45,6 +41,9 @@ class SimplifiedLowering final {
   void DoStoreBuffer(Node* node);
   void DoShift(Node* node, Operator const* op, Type* rhs_type);
   void DoStringToNumber(Node* node);
+  void DoIntegral32ToBit(Node* node);
+  void DoOrderedNumberToBit(Node* node);
+  void DoNumberToBit(Node* node);
 
  private:
   JSGraph* const jsgraph_;
@@ -60,11 +59,8 @@ class SimplifiedLowering final {
   // position information via the SourcePositionWrapper like all other reducers.
   SourcePositionTable* source_positions_;
 
-  Node* Float64Ceil(Node* const node);
-  Node* Float64Floor(Node* const node);
   Node* Float64Round(Node* const node);
   Node* Float64Sign(Node* const node);
-  Node* Float64Trunc(Node* const node);
   Node* Int32Abs(Node* const node);
   Node* Int32Div(Node* const node);
   Node* Int32Mod(Node* const node);

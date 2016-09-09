@@ -601,7 +601,8 @@ void Oddball::OddballVerify() {
   VerifyHeapPointer(to_string());
   Object* number = to_number();
   if (number->IsHeapObject()) {
-    CHECK(number == heap->nan_value());
+    CHECK(number == heap->nan_value() ||
+          number == heap->hole_nan_value());
   } else {
     CHECK(number->IsSmi());
     int value = Smi::cast(number)->value();
@@ -910,10 +911,8 @@ void PrototypeInfo::PrototypeInfoVerify() {
   CHECK(validity_cell()->IsCell() || validity_cell()->IsSmi());
 }
 
-
-void SloppyBlockWithEvalContextExtension::
-    SloppyBlockWithEvalContextExtensionVerify() {
-  CHECK(IsSloppyBlockWithEvalContextExtension());
+void ContextExtension::ContextExtensionVerify() {
+  CHECK(IsContextExtension());
   VerifyObjectField(kScopeInfoOffset);
   VerifyObjectField(kExtensionOffset);
 }
@@ -1035,7 +1034,7 @@ void NormalizedMapCache::NormalizedMapCacheVerify() {
 void DebugInfo::DebugInfoVerify() {
   CHECK(IsDebugInfo());
   VerifyPointer(shared());
-  VerifyPointer(abstract_code());
+  VerifyPointer(debug_bytecode_array());
   VerifyPointer(break_points());
 }
 

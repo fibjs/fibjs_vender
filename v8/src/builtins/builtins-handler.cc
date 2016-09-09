@@ -14,6 +14,21 @@ void Builtins::Generate_KeyedLoadIC_Megamorphic(MacroAssembler* masm) {
   KeyedLoadIC::GenerateMegamorphic(masm);
 }
 
+void Builtins::Generate_KeyedLoadIC_Megamorphic_TF(
+    CodeStubAssembler* assembler) {
+  typedef compiler::Node Node;
+  typedef LoadWithVectorDescriptor Descriptor;
+
+  Node* receiver = assembler->Parameter(Descriptor::kReceiver);
+  Node* name = assembler->Parameter(Descriptor::kName);
+  Node* slot = assembler->Parameter(Descriptor::kSlot);
+  Node* vector = assembler->Parameter(Descriptor::kVector);
+  Node* context = assembler->Parameter(Descriptor::kContext);
+
+  CodeStubAssembler::LoadICParameters p(context, receiver, name, slot, vector);
+  assembler->KeyedLoadICGeneric(&p);
+}
+
 void Builtins::Generate_KeyedLoadIC_Miss(MacroAssembler* masm) {
   KeyedLoadIC::GenerateMiss(masm);
 }
@@ -49,29 +64,16 @@ void Builtins::Generate_LoadGlobalIC_Miss(CodeStubAssembler* assembler) {
                              vector);
 }
 
-namespace {
-void Generate_LoadGlobalIC_Slow(CodeStubAssembler* assembler, TypeofMode mode) {
+void Builtins::Generate_LoadGlobalIC_Slow(CodeStubAssembler* assembler) {
   typedef compiler::Node Node;
   typedef LoadGlobalWithVectorDescriptor Descriptor;
 
   Node* slot = assembler->Parameter(Descriptor::kSlot);
   Node* vector = assembler->Parameter(Descriptor::kVector);
   Node* context = assembler->Parameter(Descriptor::kContext);
-  Node* typeof_mode = assembler->SmiConstant(Smi::FromInt(mode));
 
-  assembler->TailCallRuntime(Runtime::kGetGlobal, context, slot, vector,
-                             typeof_mode);
-}
-}  // anonymous namespace
-
-void Builtins::Generate_LoadGlobalIC_SlowInsideTypeof(
-    CodeStubAssembler* assembler) {
-  Generate_LoadGlobalIC_Slow(assembler, INSIDE_TYPEOF);
-}
-
-void Builtins::Generate_LoadGlobalIC_SlowNotInsideTypeof(
-    CodeStubAssembler* assembler) {
-  Generate_LoadGlobalIC_Slow(assembler, NOT_INSIDE_TYPEOF);
+  assembler->TailCallRuntime(Runtime::kLoadGlobalIC_Slow, context, slot,
+                             vector);
 }
 
 void Builtins::Generate_LoadIC_Getter_ForDeopt(MacroAssembler* masm) {

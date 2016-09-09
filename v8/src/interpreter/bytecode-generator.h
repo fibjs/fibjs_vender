@@ -24,7 +24,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
  public:
   explicit BytecodeGenerator(CompilationInfo* info);
 
-  Handle<BytecodeArray> MakeBytecode();
+  void GenerateBytecode(uintptr_t stack_limit);
+  Handle<BytecodeArray> FinalizeBytecode(Isolate* isolate);
 
 #define DECLARE_VISIT(type) void Visit##type(type* node);
   AST_NODE_LIST(DECLARE_VISIT)
@@ -48,9 +49,12 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   class GlobalDeclarationsBuilder;
   class RegisterResultScope;
   class RegisterAllocationScope;
+  class TestResultScope;
 
-  void GenerateBytecode();
+  enum class TestFallthrough { kThen, kElse, kNone };
+
   void GenerateBytecodeBody();
+  void AllocateDeferredConstants();
 
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 
@@ -112,9 +116,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildAbort(BailoutReason bailout_reason);
   void BuildThrowIfHole(Handle<String> name);
   void BuildThrowIfNotHole(Handle<String> name);
-  void BuildThrowReassignConstant(Handle<String> name);
   void BuildThrowReferenceError(Handle<String> name);
-  void BuildHoleCheckForVariableLoad(VariableMode mode, Handle<String> name);
+  void BuildHoleCheckForVariableLoad(Variable* variable);
   void BuildHoleCheckForVariableAssignment(Variable* variable, Token::Value op);
 
   // Build jump to targets[value], where
@@ -137,11 +140,11 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void VisitBuildLocalActivationContext();
   void VisitBlockDeclarationsAndStatements(Block* stmt);
   void VisitNewLocalBlockContext(Scope* scope);
-  void VisitNewLocalCatchContext(Variable* variable);
-  void VisitNewLocalWithContext();
+  void VisitNewLocalCatchContext(Variable* variable, Scope* scope);
+  void VisitNewLocalWithContext(Scope* scope);
   void VisitFunctionClosureForContext();
   void VisitSetHomeObject(Register value, Register home_object,
-                          ObjectLiteralProperty* property, int slot_number = 0);
+                          LiteralProperty* property, int slot_number = 0);
   void VisitObjectLiteralAccessor(Register home_object,
                                   ObjectLiteralProperty* property,
                                   Register value_out);
@@ -162,6 +165,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   MUST_USE_RESULT Register VisitForRegisterValue(Expression* expr);
   void VisitForRegisterValue(Expression* expr, Register destination);
   void VisitForEffect(Expression* expr);
+  void VisitForTest(Expression* expr, BytecodeLabels* then_labels,
+                    BytecodeLabels* else_labels, TestFallthrough fallthrough);
 
   // Methods for tracking and remapping register.
   void RecordStoreToRegister(Register reg);
@@ -172,9 +177,8 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void InitializeWithConsecutiveRegisters(Register (&registers)[N]);
 
   inline BytecodeArrayBuilder* builder() const { return builder_; }
-  inline Isolate* isolate() const { return isolate_; }
   inline Zone* zone() const { return zone_; }
-  inline Scope* scope() const { return scope_; }
+  inline DeclarationScope* scope() const { return scope_; }
   inline CompilationInfo* info() const { return info_; }
 
   inline ControlScope* execution_control() const { return execution_control_; }
@@ -201,20 +205,31 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   inline LanguageMode language_mode() const;
   int feedback_index(FeedbackVectorSlot slot) const;
 
-  Isolate* isolate_;
+  Handle<Name> home_object_symbol() const { return home_object_symbol_; }
+  Handle<Name> prototype_string() const { return prototype_string_; }
+
   Zone* zone_;
   BytecodeArrayBuilder* builder_;
   CompilationInfo* info_;
-  Scope* scope_;
+  DeclarationScope* scope_;
+
   GlobalDeclarationsBuilder* globals_builder_;
   ZoneVector<GlobalDeclarationsBuilder*> global_declarations_;
+  ZoneVector<std::pair<FunctionLiteral*, size_t>> function_literals_;
+  ZoneVector<std::pair<NativeFunctionLiteral*, size_t>>
+      native_function_literals_;
+
   ControlScope* execution_control_;
   ContextScope* execution_context_;
   ExpressionResultScope* execution_result_;
   RegisterAllocationScope* register_allocator_;
+
   ZoneVector<BytecodeLabel> generator_resume_points_;
   Register generator_state_;
   int loop_depth_;
+
+  Handle<Name> home_object_symbol_;
+  Handle<Name> prototype_string_;
 };
 
 }  // namespace interpreter
