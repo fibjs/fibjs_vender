@@ -81,23 +81,27 @@ public:
 		((v8::Unlocker*)unlocker.m_unlocker)->~Unlocker();
 	}
 
+	class _HandleScope : public v8::HandleScope
+	{
+	public:
+		_HandleScope(v8::Isolate *rt) : v8::HandleScope(rt)
+		{}
+
+		void operator delete(void* p, size_t sz)
+		{
+		}
+
+	public:
+		static void *operator new(size_t, void * p)
+		{
+			return p;
+		}
+	};
+
 	void Scope_enter(Scope& scope)
 	{
-		class HandleScope : public v8::HandleScope
-		{
-		public:
-			HandleScope(v8::Isolate *rt) : v8::HandleScope(rt)
-			{}
-
-		public:
-			static void *operator new(size_t, void * p)
-			{
-				return p;
-			}
-		};
-
 		new (scope.m_locker) v8::Locker(m_isolate);
-		new (scope.m_handle_scope) HandleScope(m_isolate);
+		new (scope.m_handle_scope) _HandleScope(m_isolate);
 		m_isolate->Enter();
 		v8::Local<v8::Context>::New(m_isolate, m_context)->Enter();
 	}
@@ -106,55 +110,46 @@ public:
 	{
 		v8::Local<v8::Context>::New(m_isolate, m_context)->Exit();
 		m_isolate->Exit();
-		((v8::HandleScope*)scope.m_handle_scope)->~HandleScope();
+		((_HandleScope*)scope.m_handle_scope)->~_HandleScope();
 		((v8::Locker*)scope.m_locker)->~Locker();
 		m_isolate->DiscardThreadSpecificMetadata();
 	}
 
 	void HandleScope_enter(HandleScope& scope)
 	{
-		class HandleScope : public v8::HandleScope
-		{
-		public:
-			HandleScope(v8::Isolate *rt) : v8::HandleScope(rt)
-			{}
-
-		public:
-			static void *operator new(size_t, void * p)
-			{
-				return p;
-			}
-		};
-
-		new (scope.m_handle_scope) HandleScope(m_isolate);
+		new (scope.m_handle_scope) _HandleScope(m_isolate);
 	}
 
 	void HandleScope_leave(HandleScope& scope)
 	{
-		((v8::HandleScope*)scope.m_handle_scope)->~HandleScope();
+		((_HandleScope*)scope.m_handle_scope)->~_HandleScope();
 	}
+
+	class _EscapableHandleScope : public v8::EscapableHandleScope
+	{
+	public:
+		_EscapableHandleScope(v8::Isolate *rt) : v8::EscapableHandleScope(rt)
+		{}
+
+	public:
+		static void *operator new(size_t, void * p)
+		{
+			return p;
+		}
+
+		void operator delete(void* p, size_t sz)
+		{
+		}
+	};
 
 	void EscapableHandleScope_enter(EscapableHandleScope& scope)
 	{
-		class EscapableHandleScope : public v8::EscapableHandleScope
-		{
-		public:
-			EscapableHandleScope(v8::Isolate *rt) : v8::EscapableHandleScope(rt)
-			{}
-
-		public:
-			static void *operator new(size_t, void * p)
-			{
-				return p;
-			}
-		};
-
-		new (scope.m_handle_scope) EscapableHandleScope(m_isolate);
+		new (scope.m_handle_scope) _EscapableHandleScope(m_isolate);
 	}
 
 	void EscapableHandleScope_leave(EscapableHandleScope& scope)
 	{
-		((v8::EscapableHandleScope*)scope.m_handle_scope)->~EscapableHandleScope();
+		((_EscapableHandleScope*)scope.m_handle_scope)->~_EscapableHandleScope();
 	}
 
 	Value EscapableHandleScope_escape(EscapableHandleScope& scope, Value v)
