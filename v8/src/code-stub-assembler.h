@@ -274,6 +274,7 @@ class CodeStubAssembler : public compiler::CodeAssembler {
       MachineType machine_type = MachineType::Float64());
 
   // Context manipulation
+  compiler::Node* LoadContextElement(compiler::Node* context, int slot_index);
   compiler::Node* LoadNativeContext(compiler::Node* context);
 
   compiler::Node* LoadJSArrayElementsMap(ElementsKind kind,
@@ -304,9 +305,10 @@ class CodeStubAssembler : public compiler::CodeAssembler {
       ParameterMode parameter_mode = INTEGER_PARAMETERS);
 
   // Allocate a HeapNumber without initializing its value.
-  compiler::Node* AllocateHeapNumber();
+  compiler::Node* AllocateHeapNumber(MutableMode mode = IMMUTABLE);
   // Allocate a HeapNumber with a specific value.
-  compiler::Node* AllocateHeapNumberWithValue(compiler::Node* value);
+  compiler::Node* AllocateHeapNumberWithValue(compiler::Node* value,
+                                              MutableMode mode = IMMUTABLE);
   // Allocate a SeqOneByteString with the given length.
   compiler::Node* AllocateSeqOneByteString(int length);
   compiler::Node* AllocateSeqOneByteString(compiler::Node* context,
@@ -366,11 +368,28 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* CalculateNewElementsCapacity(
       compiler::Node* old_capacity, ParameterMode mode = INTEGER_PARAMETERS);
 
-  compiler::Node* CheckAndGrowElementsCapacity(compiler::Node* context,
-                                               compiler::Node* elements,
-                                               ElementsKind kind,
-                                               compiler::Node* key,
-                                               Label* fail);
+  // Tries to grow the |elements| array of given |object| to store the |key|
+  // or bails out if the growing gap is too big. Returns new elements.
+  compiler::Node* TryGrowElementsCapacity(compiler::Node* object,
+                                          compiler::Node* elements,
+                                          ElementsKind kind,
+                                          compiler::Node* key, Label* bailout);
+
+  // Tries to grow the |capacity|-length |elements| array of given |object|
+  // to store the |key| or bails out if the growing gap is too big. Returns
+  // new elements.
+  compiler::Node* TryGrowElementsCapacity(compiler::Node* object,
+                                          compiler::Node* elements,
+                                          ElementsKind kind,
+                                          compiler::Node* key,
+                                          compiler::Node* capacity,
+                                          ParameterMode mode, Label* bailout);
+
+  // Grows elements capacity of given object. Returns new elements.
+  compiler::Node* GrowElementsCapacity(
+      compiler::Node* object, compiler::Node* elements, ElementsKind from_kind,
+      ElementsKind to_kind, compiler::Node* capacity,
+      compiler::Node* new_capacity, ParameterMode mode, Label* bailout);
 
   // Allocation site manipulation
   void InitializeAllocationMemento(compiler::Node* base_allocation,
@@ -412,6 +431,13 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   // Convert a String to a Number.
   compiler::Node* StringToNumber(compiler::Node* context,
                                  compiler::Node* input);
+  // Convert an object to a name.
+  compiler::Node* ToName(compiler::Node* context, compiler::Node* input);
+  // Convert a Non-Number object to a Number.
+  compiler::Node* NonNumberToNumber(compiler::Node* context,
+                                    compiler::Node* input);
+  // Convert any object to a Number.
+  compiler::Node* ToNumber(compiler::Node* context, compiler::Node* input);
 
   // Returns a node that contains a decoded (unsigned!) value of a bit
   // field |T| in |word32|. Returns result as an uint32 node.
@@ -611,6 +637,55 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                          compiler::Node* name, Label* if_handler,
                          Variable* var_handler, Label* if_miss);
 
+  compiler::Node* PrepareValueForWrite(compiler::Node* value,
+                                       Representation representation,
+                                       Label* bailout);
+
+  void StoreNamedField(compiler::Node* object, FieldIndex index,
+                       Representation representation, compiler::Node* value,
+                       bool transition_to_field);
+
+  // Emits keyed sloppy arguments load. Returns either the loaded value.
+  compiler::Node* LoadKeyedSloppyArguments(compiler::Node* receiver,
+                                           compiler::Node* key,
+                                           Label* bailout) {
+    return EmitKeyedSloppyArguments(receiver, key, nullptr, bailout);
+  }
+
+  // Emits keyed sloppy arguments store.
+  void StoreKeyedSloppyArguments(compiler::Node* receiver, compiler::Node* key,
+                                 compiler::Node* value, Label* bailout) {
+    DCHECK_NOT_NULL(value);
+    EmitKeyedSloppyArguments(receiver, key, value, bailout);
+  }
+
+  // Loads script context from the script context table.
+  compiler::Node* LoadScriptContext(compiler::Node* context, int context_index);
+
+  compiler::Node* ClampedToUint8(compiler::Node* int32_value);
+
+  // Store value to an elements array with given elements kind.
+  void StoreElement(compiler::Node* elements, ElementsKind kind,
+                    compiler::Node* index, compiler::Node* value,
+                    ParameterMode mode);
+
+  void EmitElementStore(compiler::Node* object, compiler::Node* key,
+                        compiler::Node* value, bool is_jsarray,
+                        ElementsKind elements_kind,
+                        KeyedAccessStoreMode store_mode, Label* bailout);
+
+  compiler::Node* CheckForCapacityGrow(compiler::Node* object,
+                                       compiler::Node* elements,
+                                       ElementsKind kind,
+                                       compiler::Node* length,
+                                       compiler::Node* key, ParameterMode mode,
+                                       bool is_js_array, Label* bailout);
+
+  compiler::Node* CopyElementsOnWrite(compiler::Node* object,
+                                      compiler::Node* elements,
+                                      ElementsKind kind, compiler::Node* length,
+                                      ParameterMode mode, Label* bailout);
+
   void LoadIC(const LoadICParameters* p);
   void LoadGlobalIC(const LoadICParameters* p);
   void KeyedLoadIC(const LoadICParameters* p);
@@ -630,6 +705,10 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* CreateWeakCellInFeedbackVector(
       compiler::Node* feedback_vector, compiler::Node* slot,
       compiler::Node* value);
+
+  // Create a new AllocationSite and install it into a feedback vector.
+  compiler::Node* CreateAllocationSiteInFeedbackVector(
+      compiler::Node* feedback_vector, compiler::Node* slot);
 
   compiler::Node* GetFixedAarrayAllocationSize(compiler::Node* element_count,
                                                ElementsKind kind,
@@ -674,6 +753,13 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                                        compiler::Node* limit_address);
 
   compiler::Node* SmiShiftBitsConstant();
+
+  // Emits keyed sloppy arguments load if the |value| is nullptr or store
+  // otherwise. Returns either the loaded value or |value|.
+  compiler::Node* EmitKeyedSloppyArguments(compiler::Node* receiver,
+                                           compiler::Node* key,
+                                           compiler::Node* value,
+                                           Label* bailout);
 
   static const int kElementLoopUnrollThreshold = 8;
 };

@@ -25,6 +25,9 @@ class PreParserIdentifier {
   static PreParserIdentifier Default() {
     return PreParserIdentifier(kUnknownIdentifier);
   }
+  static PreParserIdentifier Empty() {
+    return PreParserIdentifier(kEmptyIdentifier);
+  }
   static PreParserIdentifier Eval() {
     return PreParserIdentifier(kEvalIdentifier);
   }
@@ -64,6 +67,7 @@ class PreParserIdentifier {
   static PreParserIdentifier Async() {
     return PreParserIdentifier(kAsyncIdentifier);
   }
+  bool IsEmpty() const { return type_ == kEmptyIdentifier; }
   bool IsEval() const { return type_ == kEvalIdentifier; }
   bool IsArguments() const { return type_ == kArgumentsIdentifier; }
   bool IsEvalOrArguments() const { return IsEval() || IsArguments(); }
@@ -91,6 +95,7 @@ class PreParserIdentifier {
 
  private:
   enum Type {
+    kEmptyIdentifier,
     kUnknownIdentifier,
     kFutureReservedIdentifier,
     kFutureStrictReservedIdentifier,
@@ -311,6 +316,8 @@ class PreParserExpression {
   int position() const { return kNoSourcePosition; }
   void set_function_token_position(int position) {}
 
+  void set_is_class_field_initializer(bool is_class_field_initializer) {}
+
  private:
   enum Type {
     kEmpty,
@@ -389,12 +396,16 @@ class PreParserStatement {
     return PreParserStatement(kUnknownStatement);
   }
 
-  static PreParserStatement Jump() {
-    return PreParserStatement(kJumpStatement);
+  static PreParserStatement Null() {
+    return PreParserStatement(kNullStatement);
   }
 
-  static PreParserStatement FunctionDeclaration() {
-    return PreParserStatement(kFunctionDeclaration);
+  static PreParserStatement Empty() {
+    return PreParserStatement(kEmptyStatement);
+  }
+
+  static PreParserStatement Jump() {
+    return PreParserStatement(kJumpStatement);
   }
 
   // Creates expression statement from expression.
@@ -425,13 +436,13 @@ class PreParserStatement {
 
   bool IsUseAsmLiteral() { return code_ == kUseAsmExpressionStatement; }
 
-  bool IsFunctionDeclaration() {
-    return code_ == kFunctionDeclaration;
-  }
-
   bool IsJumpStatement() {
     return code_ == kJumpStatement;
   }
+
+  bool IsNullStatement() { return code_ == kNullStatement; }
+
+  bool IsEmptyStatement() { return code_ == kEmptyStatement; }
 
   // Dummy implementation for making statement->somefunc() work in both Parser
   // and PreParser.
@@ -439,15 +450,17 @@ class PreParserStatement {
 
   PreParserStatementList statements() { return PreParserStatementList(); }
   void set_scope(Scope* scope) {}
+  void Initialize(PreParserExpression cond, PreParserStatement body) {}
 
  private:
   enum Type {
+    kNullStatement,
+    kEmptyStatement,
     kUnknownStatement,
     kJumpStatement,
     kStringLiteralExpressionStatement,
     kUseStrictExpressionStatement,
     kUseAsmExpressionStatement,
-    kFunctionDeclaration
   };
 
   explicit PreParserStatement(Type code) : code_(code) {}
@@ -466,15 +479,13 @@ class PreParserFactory {
                                        int pos) {
     return PreParserExpression::Default();
   }
+  PreParserExpression NewUndefinedLiteral(int pos) {
+    return PreParserExpression::Default();
+  }
   PreParserExpression NewRegExpLiteral(PreParserIdentifier js_pattern,
                                        int js_flags, int literal_index,
                                        int pos) {
     return PreParserExpression::Default();
-  }
-  PreParserExpression NewArrayLiteral(PreParserExpressionList values,
-                                      int literal_index,
-                                      int pos) {
-    return PreParserExpression::ArrayLiteral();
   }
   PreParserExpression NewArrayLiteral(PreParserExpressionList values,
                                       int first_spread_index, int literal_index,
@@ -573,7 +584,7 @@ class PreParserFactory {
   }
   PreParserStatement NewReturnStatement(PreParserExpression expression,
                                         int pos) {
-    return PreParserStatement::Default();
+    return PreParserStatement::Jump();
   }
   PreParserExpression NewFunctionLiteral(
       PreParserIdentifier name, Scope* scope, PreParserStatementList body,
@@ -606,6 +617,52 @@ class PreParserFactory {
   }
 
   PreParserStatement NewDebuggerStatement(int pos) {
+    return PreParserStatement::Default();
+  }
+
+  PreParserStatement NewExpressionStatement(PreParserExpression expr, int pos) {
+    return PreParserStatement::ExpressionStatement(expr);
+  }
+
+  PreParserStatement NewIfStatement(PreParserExpression condition,
+                                    PreParserStatement then_statement,
+                                    PreParserStatement else_statement,
+                                    int pos) {
+    // This must return a jump statement iff both clauses are jump statements.
+    return else_statement.IsJumpStatement() ? then_statement : else_statement;
+  }
+
+  PreParserStatement NewBreakStatement(PreParserStatement target, int pos) {
+    return PreParserStatement::Jump();
+  }
+
+  PreParserStatement NewContinueStatement(PreParserStatement target, int pos) {
+    return PreParserStatement::Jump();
+  }
+
+  PreParserStatement NewWithStatement(Scope* scope,
+                                      PreParserExpression expression,
+                                      PreParserStatement statement, int pos) {
+    return PreParserStatement::Default();
+  }
+
+  PreParserStatement NewDoWhileStatement(ZoneList<const AstRawString*>* labels,
+                                         int pos) {
+    return PreParserStatement::Default();
+  }
+
+  PreParserStatement NewWhileStatement(ZoneList<const AstRawString*>* labels,
+                                       int pos) {
+    return PreParserStatement::Default();
+  }
+
+  PreParserStatement NewSwitchStatement(ZoneList<const AstRawString*>* labels,
+                                        int pos) {
+    return PreParserStatement::Default();
+  }
+
+  PreParserStatement NewCaseClause(PreParserExpression label,
+                                   PreParserStatementList statements, int pos) {
     return PreParserStatement::Default();
   }
 
@@ -662,6 +719,8 @@ struct ParserTypes<PreParser> {
   typedef PreParserStatement Statement;
   typedef PreParserStatementList StatementList;
   typedef PreParserStatement Block;
+  typedef PreParserStatement BreakableStatement;
+  typedef PreParserStatement IterationStatement;
 
   // For constructing objects returned by the traversing functions.
   typedef PreParserFactory Factory;
@@ -764,38 +823,16 @@ class PreParser : public ParserBase<PreParser> {
   // which is set to false if parsing failed; it is unchanged otherwise.
   // By making the 'exception handling' explicit, we are forced to check
   // for failure at the call sites.
-  Statement ParseHoistableDeclaration(ZoneList<const AstRawString*>* names,
-                                      bool default_export, bool* ok);
-  Statement ParseHoistableDeclaration(int pos, ParseFunctionFlags flags,
-                                      ZoneList<const AstRawString*>* names,
-                                      bool default_export, bool* ok);
   Statement ParseFunctionDeclaration(bool* ok);
   Statement ParseAsyncFunctionDeclaration(ZoneList<const AstRawString*>* names,
                                           bool default_export, bool* ok);
   Expression ParseAsyncFunctionExpression(bool* ok);
   Statement ParseClassDeclaration(ZoneList<const AstRawString*>* names,
                                   bool default_export, bool* ok);
-  Statement ParseExpressionOrLabelledStatement(
-      ZoneList<const AstRawString*>* names,
-      AllowLabelledFunctionStatement allow_function, bool* ok);
-  Statement ParseIfStatement(ZoneList<const AstRawString*>* labels, bool* ok);
-  Statement ParseContinueStatement(bool* ok);
-  Statement ParseBreakStatement(ZoneList<const AstRawString*>* labels,
-                                bool* ok);
-  Statement ParseReturnStatement(bool* ok);
-  Statement ParseWithStatement(ZoneList<const AstRawString*>* labels, bool* ok);
-  Statement ParseSwitchStatement(ZoneList<const AstRawString*>* labels,
-                                 bool* ok);
-  Statement ParseDoWhileStatement(ZoneList<const AstRawString*>* labels,
-                                  bool* ok);
-  Statement ParseWhileStatement(ZoneList<const AstRawString*>* labels,
-                                bool* ok);
   Statement ParseForStatement(ZoneList<const AstRawString*>* labels, bool* ok);
-  Statement ParseThrowStatement(bool* ok);
   Statement ParseTryStatement(bool* ok);
   Expression ParseConditionalExpression(bool accept_IN, bool* ok);
   Expression ParseObjectLiteral(bool* ok);
-  Expression ParseDoExpression(bool* ok);
 
   V8_INLINE PreParserStatementList ParseEagerFunctionBody(
       PreParserIdentifier function_name, int pos,
@@ -856,6 +893,11 @@ class PreParser : public ParserBase<PreParser> {
                                               PreParserExpressionList args,
                                               int pos);
 
+  V8_INLINE PreParserExpression
+  RewriteSuperCall(PreParserExpression call_expression) {
+    return call_expression;
+  }
+
   V8_INLINE void RewriteDestructuringAssignments() {}
 
   V8_INLINE PreParserExpression RewriteExponentiation(PreParserExpression left,
@@ -884,6 +926,59 @@ class PreParser : public ParserBase<PreParser> {
       const DeclarationDescriptor* declaration_descriptor,
       const DeclarationParsingResult::Declaration* declaration,
       ZoneList<const AstRawString*>* names, bool* ok) {}
+  V8_INLINE ZoneList<const AstRawString*>* DeclareLabel(
+      ZoneList<const AstRawString*>* labels, PreParserExpression expr,
+      bool* ok) {
+    DCHECK(!expr.AsIdentifier().IsEnum());
+    DCHECK(!parsing_module_ || !expr.AsIdentifier().IsAwait());
+    DCHECK(is_sloppy(language_mode()) ||
+           !IsFutureStrictReserved(expr.AsIdentifier()));
+    return labels;
+  }
+
+  V8_INLINE PreParserStatement ParseNativeDeclaration(bool* ok) {
+    UNREACHABLE();
+    return PreParserStatement::Default();
+  }
+
+  // TODO(nikolaos): The preparser currently does not keep track of labels.
+  V8_INLINE bool ContainsLabel(ZoneList<const AstRawString*>* labels,
+                               PreParserIdentifier label) {
+    return false;
+  }
+
+  V8_INLINE PreParserExpression RewriteReturn(PreParserExpression return_value,
+                                              int pos) {
+    return return_value;
+  }
+  V8_INLINE PreParserStatement RewriteSwitchStatement(
+      PreParserExpression tag, PreParserStatement switch_statement,
+      PreParserStatementList cases, Scope* scope) {
+    return PreParserStatement::Default();
+  }
+
+  V8_INLINE PreParserExpression RewriteDoExpression(PreParserStatement body,
+                                                    int pos, bool* ok) {
+    return PreParserExpression::Default();
+  }
+
+  // TODO(nikolaos): The preparser currently does not keep track of labels
+  // and targets.
+  V8_INLINE PreParserStatement LookupBreakTarget(PreParserIdentifier label,
+                                                 bool* ok) {
+    return PreParserStatement::Default();
+  }
+  V8_INLINE PreParserStatement LookupContinueTarget(PreParserIdentifier label,
+                                                    bool* ok) {
+    return PreParserStatement::Default();
+  }
+
+  V8_INLINE PreParserStatement DeclareFunction(
+      PreParserIdentifier variable_name, PreParserExpression function, int pos,
+      bool is_generator, bool is_async, ZoneList<const AstRawString*>* names,
+      bool* ok) {
+    return Statement::Default();
+  }
 
   V8_INLINE void QueueDestructuringAssignmentForRewriting(
       PreParserExpression assignment) {}
@@ -929,6 +1024,11 @@ class PreParser : public ParserBase<PreParser> {
     return expression.AsIdentifier();
   }
 
+  V8_INLINE static PreParserExpression AsIdentifierExpression(
+      PreParserExpression expression) {
+    return expression;
+  }
+
   V8_INLINE bool IsPrototype(PreParserIdentifier identifier) const {
     return identifier.IsPrototype();
   }
@@ -943,6 +1043,14 @@ class PreParser : public ParserBase<PreParser> {
 
   V8_INLINE static bool IsBoilerplateProperty(PreParserExpression property) {
     // PreParser doesn't count boilerplate properties.
+    return false;
+  }
+
+  V8_INLINE bool IsNative(PreParserExpression expr) const {
+    // Preparsing is disabled for extensions (because the extension
+    // details aren't passed to lazily compiled functions), so we
+    // don't accept "native function" in the preparser and there is
+    // no need to keep track of "native".
     return false;
   }
 
@@ -968,11 +1076,16 @@ class PreParser : public ParserBase<PreParser> {
     return PreParserExpression::Default();
   }
 
+  V8_INLINE static void GetDefaultStrings(
+      PreParserIdentifier* default_string,
+      PreParserIdentifier* star_default_star_string) {}
+
   // Functions for encapsulating the differences between parsing and preparsing;
   // operations interleaved with the recursive descent.
   V8_INLINE static void PushLiteralName(PreParserIdentifier id) {}
   V8_INLINE static void PushVariableName(PreParserIdentifier id) {}
   V8_INLINE void PushPropertyName(PreParserExpression expression) {}
+  V8_INLINE void PushEnclosingName(PreParserIdentifier name) {}
   V8_INLINE static void InferFunctionName(PreParserExpression expression) {}
 
   V8_INLINE static void CheckAssigningFunctionLiteralToProperty(
@@ -1028,14 +1141,17 @@ class PreParser : public ParserBase<PreParser> {
 
   V8_INLINE void ReportMessageAt(Scanner::Location source_location,
                                  MessageTemplate::Template message,
-                                 const AstRawString* arg,
+                                 PreParserIdentifier arg,
                                  ParseErrorType error_type = kSyntaxError) {
     UNREACHABLE();
   }
 
   // "null" return type creators.
   V8_INLINE static PreParserIdentifier EmptyIdentifier() {
-    return PreParserIdentifier::Default();
+    return PreParserIdentifier::Empty();
+  }
+  V8_INLINE static bool IsEmptyIdentifier(PreParserIdentifier name) {
+    return name.IsEmpty();
   }
   V8_INLINE static PreParserExpression EmptyExpression() {
     return PreParserExpression::Empty();
@@ -1077,9 +1193,12 @@ class PreParser : public ParserBase<PreParser> {
     return PreParserStatement::Default();
   }
 
-  V8_INLINE bool IsNullOrEmptyStatement(PreParserStatement stmt) {
-    // TODO(nikolaos): See if this needs to be consistent for the preparser.
-    return false;
+  V8_INLINE bool IsNullStatement(PreParserStatement stmt) {
+    return stmt.IsNullStatement();
+  }
+
+  V8_INLINE bool IsEmptyStatement(PreParserStatement stmt) {
+    return stmt.IsEmptyStatement();
   }
 
   V8_INLINE static PreParserStatement NullBlock() {
@@ -1160,6 +1279,10 @@ class PreParser : public ParserBase<PreParser> {
     return PreParserStatementList();
   }
 
+  PreParserStatementList NewCaseClauseList(int size) {
+    return PreParserStatementList();
+  }
+
   V8_INLINE static PreParserStatement NewBlock(
       ZoneList<const AstRawString*>* labels, int capacity,
       bool ignore_completion_value, int pos) {
@@ -1170,6 +1293,11 @@ class PreParser : public ParserBase<PreParser> {
   NewV8Intrinsic(PreParserIdentifier name, PreParserExpressionList arguments,
                  int pos, bool* ok) {
     return PreParserExpression::Default();
+  }
+
+  V8_INLINE PreParserStatement NewThrowStatement(PreParserExpression exception,
+                                                 int pos) {
+    return PreParserStatement::Jump();
   }
 
   V8_INLINE void AddParameterInitializationBlock(

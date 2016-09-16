@@ -9,6 +9,7 @@
 #include "src/ast/ast-value-factory.h"
 #include "src/ast/scopes.h"
 #include "src/base/platform/platform.h"
+#include "src/globals.h"
 
 namespace v8 {
 namespace internal {
@@ -603,8 +604,8 @@ void AstPrinter::PrintLiteralWithModeIndented(const char* info,
     PrintLiteralIndented(info, value, true);
   } else {
     EmbeddedVector<char, 256> buf;
-    int pos = SNPrintF(buf, "%s (mode = %s", info,
-                       Variable::Mode2String(var->mode()));
+    int pos =
+        SNPrintF(buf, "%s (mode = %s", info, VariableMode2String(var->mode()));
     SNPrintF(buf + pos, ")");
     PrintLiteralIndented(buf.start(), value, true);
   }
@@ -870,6 +871,9 @@ void AstPrinter::PrintTryStatement(TryStatement* node) {
     case HandlerTable::DESUGARING:
       prediction = "DESUGARING";
       break;
+    case HandlerTable::ASYNC_AWAIT:
+      prediction = "ASYNC_AWAIT";
+      break;
   }
   Print(" %s\n", prediction);
 }
@@ -914,6 +918,9 @@ void AstPrinter::PrintClassProperties(
         break;
       case ClassLiteral::Property::SETTER:
         prop_kind = "SETTER";
+        break;
+      case ClassLiteral::Property::FIELD:
+        prop_kind = "FIELD";
         break;
     }
     EmbeddedVector<char, 128> buf;

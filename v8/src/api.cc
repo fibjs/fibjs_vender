@@ -104,6 +104,16 @@ namespace v8 {
   PREPARE_FOR_EXECUTION_GENERIC(isolate, context, class_name, function_name,   \
                                 bailout_value, HandleScopeClass, do_callback);
 
+#define PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(      \
+    category, name, context, class_name, function_name, bailout_value,       \
+    HandleScopeClass, do_callback)                                           \
+  auto isolate = context.IsEmpty()                                           \
+                     ? i::Isolate::Current()                                 \
+                     : reinterpret_cast<i::Isolate*>(context->GetIsolate()); \
+  TRACE_EVENT_CALL_STATS_SCOPED(isolate, category, name);                    \
+  PREPARE_FOR_EXECUTION_GENERIC(isolate, context, class_name, function_name, \
+                                bailout_value, HandleScopeClass, do_callback);
+
 #define PREPARE_FOR_EXECUTION_WITH_ISOLATE(isolate, class_name, function_name, \
                                            T)                                  \
   PREPARE_FOR_EXECUTION_GENERIC(isolate, Local<Context>(), class_name,         \
@@ -1840,17 +1850,29 @@ Local<Value> UnboundScript::GetSourceMappingURL() {
 
 
 MaybeLocal<Value> Script::Run(Local<Context> context) {
-  PREPARE_FOR_EXECUTION_WITH_CALLBACK(context, Script, Run, Value)
+  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
+      "v8", "V8.Execute", context, Script, Run, MaybeLocal<Value>(),
+      InternalEscapableScope, true);
   i::HistogramTimerScope execute_timer(isolate->counters()->execute(), true);
   i::AggregatingHistogramTimerScope timer(isolate->counters()->compile_lazy());
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
-  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
   auto fun = i::Handle<i::JSFunction>::cast(Utils::OpenHandle(this));
-  i::Handle<i::Object> receiver = isolate->global_proxy();
+
+  i::Handle<i::Object> receiver;
   Local<Value> result;
-  has_pending_exception =
-      !ToLocal<Value>(i::Execution::Call(isolate, fun, receiver, 0, NULL),
-                      &result);
+
+  if (fun->shared()->scope_info()->scope_type() == i::MODULE_SCOPE) {
+    receiver = isolate->factory()->undefined_value();
+    i::Handle<i::Object> argv[] = {
+        handle(isolate->native_context()->current_module())};
+    has_pending_exception = !ToLocal<Value>(
+        i::Execution::Call(isolate, fun, receiver, 1, argv), &result);
+  } else {
+    receiver = isolate->global_proxy();
+    has_pending_exception = !ToLocal<Value>(
+        i::Execution::Call(isolate, fun, receiver, 0, nullptr), &result);
+  }
+
   RETURN_ON_FAILED_EXECUTION(Value);
   RETURN_ESCAPED(result);
 }
@@ -1991,7 +2013,34 @@ MaybeLocal<Script> ScriptCompiler::CompileModule(Local<Context> context,
   Local<UnboundScript> generic;
   if (!maybe.ToLocal(&generic)) return MaybeLocal<Script>();
   v8::Context::Scope scope(context);
-  return generic->BindToCurrentContext();
+  auto result = generic->BindToCurrentContext();
+
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Handle<i::JSModule> module = i_isolate->factory()->NewJSModule();
+  // TODO(neis): Storing the module into the native context is a temporary hack
+  // to pass it to the Script::Run function.  This will be removed once we
+  // support modules in the API.
+  i_isolate->native_context()->set_current_module(*module);
+
+  i::Handle<i::SharedFunctionInfo> shared =
+      i::Handle<i::SharedFunctionInfo>::cast(Utils::OpenHandle(*generic));
+  i::Handle<i::FixedArray> regular_exports =
+      i::handle(shared->scope_info()->ModuleDescriptorInfo()->regular_exports(),
+                i_isolate);
+  // TODO(neis): This will create multiple cells for the same local variable if
+  // exported under multiple names, which is wrong but cannot be observed at the
+  // moment. This will be fixed by doing the full-fledged linking here once we
+  // get there.
+  for (int i = 0; i < regular_exports->length(); ++i) {
+    i::Handle<i::ModuleInfoEntry> entry =
+        i::handle(i::ModuleInfoEntry::cast(regular_exports->get(i)), i_isolate);
+    DCHECK(entry->import_name()->IsUndefined(i_isolate));
+    i::Handle<i::String> export_name =
+        handle(i::String::cast(entry->export_name()), i_isolate);
+    i::JSModule::CreateExport(module, export_name);
+  }
+
+  return result;
 }
 
 
@@ -2183,17 +2232,19 @@ MaybeLocal<Script> ScriptCompiler::Compile(Local<Context> context,
   }
 
   source->info->set_script(script);
-  source->info->set_context(isolate->native_context());
 
-  // Create a canonical handle scope before internalizing parsed values if
-  // compiling bytecode. This is required for off-thread bytecode generation.
-  std::unique_ptr<i::CanonicalHandleScope> canonical;
-  if (i::FLAG_ignition) canonical.reset(new i::CanonicalHandleScope(isolate));
+  {
+    // Create a canonical handle scope if compiling ignition bytecode. This is
+    // required by the constant array builder to de-duplicate objects without
+    // dereferencing handles.
+    std::unique_ptr<i::CanonicalHandleScope> canonical;
+    if (i::FLAG_ignition) canonical.reset(new i::CanonicalHandleScope(isolate));
 
-  // Do the parsing tasks which need to be done on the main thread. This will
-  // also handle parse errors.
-  source->parser->Internalize(isolate, script,
-                              source->info->literal() == nullptr);
+    // Do the parsing tasks which need to be done on the main thread. This will
+    // also handle parse errors.
+    source->parser->Internalize(isolate, script,
+                                source->info->literal() == nullptr);
+  }
   source->parser->HandleSourceURLComments(isolate, script);
 
   i::Handle<i::SharedFunctionInfo> result;
@@ -2847,6 +2898,15 @@ MaybeLocal<String> JSON::Stringify(Local<Context> context,
 
 // --- V a l u e   S e r i a l i z a t i o n ---
 
+Maybe<bool> ValueSerializer::Delegate::WriteHostObject(Isolate* v8_isolate,
+                                                       Local<Object> object) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+  isolate->ScheduleThrow(*isolate->factory()->NewError(
+      isolate->error_function(), i::MessageTemplate::kDataCloneError,
+      Utils::OpenHandle(*object)));
+  return Nothing<bool>();
+}
+
 struct ValueSerializer::PrivateData {
   explicit PrivateData(i::Isolate* i, ValueSerializer::Delegate* delegate)
       : isolate(i), serializer(i, delegate) {}
@@ -2891,9 +2951,30 @@ void ValueSerializer::TransferSharedArrayBuffer(
       transfer_id, Utils::OpenHandle(*shared_array_buffer));
 }
 
+void ValueSerializer::WriteUint32(uint32_t value) {
+  private_->serializer.WriteUint32(value);
+}
+
+void ValueSerializer::WriteUint64(uint64_t value) {
+  private_->serializer.WriteUint64(value);
+}
+
+void ValueSerializer::WriteRawBytes(const void* source, size_t length) {
+  private_->serializer.WriteRawBytes(source, length);
+}
+
+MaybeLocal<Object> ValueDeserializer::Delegate::ReadHostObject(
+    Isolate* v8_isolate) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+  isolate->ScheduleThrow(*isolate->factory()->NewError(
+      isolate->error_function(),
+      i::MessageTemplate::kDataCloneDeserializationError));
+  return MaybeLocal<Object>();
+}
+
 struct ValueDeserializer::PrivateData {
-  PrivateData(i::Isolate* i, i::Vector<const uint8_t> data)
-      : isolate(i), deserializer(i, data) {}
+  PrivateData(i::Isolate* i, i::Vector<const uint8_t> data, Delegate* delegate)
+      : isolate(i), deserializer(i, data, delegate) {}
   i::Isolate* isolate;
   i::ValueDeserializer deserializer;
   bool has_aborted = false;
@@ -2901,14 +2982,18 @@ struct ValueDeserializer::PrivateData {
 };
 
 ValueDeserializer::ValueDeserializer(Isolate* isolate, const uint8_t* data,
-                                     size_t size) {
+                                     size_t size)
+    : ValueDeserializer(isolate, data, size, nullptr) {}
+
+ValueDeserializer::ValueDeserializer(Isolate* isolate, const uint8_t* data,
+                                     size_t size, Delegate* delegate) {
   if (base::IsValueInRangeForNumericType<int>(size)) {
-    private_ =
-        new PrivateData(reinterpret_cast<i::Isolate*>(isolate),
-                        i::Vector<const uint8_t>(data, static_cast<int>(size)));
+    private_ = new PrivateData(
+        reinterpret_cast<i::Isolate*>(isolate),
+        i::Vector<const uint8_t>(data, static_cast<int>(size)), delegate);
   } else {
     private_ = new PrivateData(reinterpret_cast<i::Isolate*>(isolate),
-                               i::Vector<const uint8_t>(nullptr, 0));
+                               i::Vector<const uint8_t>(nullptr, 0), nullptr);
     private_->has_aborted = true;
   }
 }
@@ -2988,6 +3073,18 @@ void ValueDeserializer::TransferSharedArrayBuffer(
   CHECK(!private_->has_aborted);
   private_->deserializer.TransferArrayBuffer(
       transfer_id, Utils::OpenHandle(*shared_array_buffer));
+}
+
+bool ValueDeserializer::ReadUint32(uint32_t* value) {
+  return private_->deserializer.ReadUint32(value);
+}
+
+bool ValueDeserializer::ReadUint64(uint64_t* value) {
+  return private_->deserializer.ReadUint64(value);
+}
+
+bool ValueDeserializer::ReadRawBytes(size_t length, const void** data) {
+  return private_->deserializer.ReadRawBytes(length, data);
 }
 
 // --- D a t a ---
@@ -4664,9 +4761,10 @@ bool v8::Object::IsConstructor() {
 MaybeLocal<Value> Object::CallAsFunction(Local<Context> context,
                                          Local<Value> recv, int argc,
                                          Local<Value> argv[]) {
-  PREPARE_FOR_EXECUTION_WITH_CALLBACK(context, Object, CallAsFunction, Value);
+  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
+      "v8", "V8.Execute", context, Object, CallAsFunction, MaybeLocal<Value>(),
+      InternalEscapableScope, true);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
-  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
   auto self = Utils::OpenHandle(this);
   auto recv_obj = Utils::OpenHandle(*recv);
   STATIC_ASSERT(sizeof(v8::Local<v8::Value>) == sizeof(i::Object**));
@@ -4690,10 +4788,10 @@ Local<v8::Value> Object::CallAsFunction(v8::Local<v8::Value> recv, int argc,
 
 MaybeLocal<Value> Object::CallAsConstructor(Local<Context> context, int argc,
                                             Local<Value> argv[]) {
-  PREPARE_FOR_EXECUTION_WITH_CALLBACK(context, Object, CallAsConstructor,
-                                      Value);
+  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
+      "v8", "V8.Execute", context, Object, CallAsConstructor,
+      MaybeLocal<Value>(), InternalEscapableScope, true);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
-  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
   auto self = Utils::OpenHandle(this);
   STATIC_ASSERT(sizeof(v8::Local<v8::Value>) == sizeof(i::Object**));
   i::Handle<i::Object>* args = reinterpret_cast<i::Handle<i::Object>*>(argv);
@@ -4741,9 +4839,10 @@ Local<v8::Object> Function::NewInstance() const {
 
 MaybeLocal<Object> Function::NewInstance(Local<Context> context, int argc,
                                          v8::Local<v8::Value> argv[]) const {
-  PREPARE_FOR_EXECUTION_WITH_CALLBACK(context, Function, NewInstance, Object);
+  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
+      "v8", "V8.Execute", context, Function, NewInstance, MaybeLocal<Object>(),
+      InternalEscapableScope, true);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
-  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
   auto self = Utils::OpenHandle(this);
   STATIC_ASSERT(sizeof(v8::Local<v8::Value>) == sizeof(i::Object**));
   i::Handle<i::Object>* args = reinterpret_cast<i::Handle<i::Object>*>(argv);
@@ -4765,9 +4864,10 @@ Local<v8::Object> Function::NewInstance(int argc,
 MaybeLocal<v8::Value> Function::Call(Local<Context> context,
                                      v8::Local<v8::Value> recv, int argc,
                                      v8::Local<v8::Value> argv[]) {
-  PREPARE_FOR_EXECUTION_WITH_CALLBACK(context, Function, Call, Value);
+  PREPARE_FOR_EXECUTION_WITH_CONTEXT_IN_RUNTIME_CALL_STATS_SCOPE(
+      "v8", "V8.Execute", context, Function, Call, MaybeLocal<Value>(),
+      InternalEscapableScope, true);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
-  TRACE_EVENT_CALL_STATS_SCOPED(isolate, "v8", "V8.Execute");
   auto self = Utils::OpenHandle(this);
   i::Handle<i::Object> recv_obj = Utils::OpenHandle(*recv);
   STATIC_ASSERT(sizeof(v8::Local<v8::Value>) == sizeof(i::Object**));
@@ -8579,13 +8679,16 @@ Local<String> CpuProfileNode::GetFunctionName() const {
   }
 }
 
+const char* CpuProfileNode::GetFunctionNameStr() const {
+  const i::ProfileNode* node = reinterpret_cast<const i::ProfileNode*>(this);
+  return node->entry()->name();
+}
 
 int CpuProfileNode::GetScriptId() const {
   const i::ProfileNode* node = reinterpret_cast<const i::ProfileNode*>(this);
   const i::CodeEntry* entry = node->entry();
   return entry->script_id();
 }
-
 
 Local<String> CpuProfileNode::GetScriptResourceName() const {
   const i::ProfileNode* node = reinterpret_cast<const i::ProfileNode*>(this);
@@ -8594,6 +8697,10 @@ Local<String> CpuProfileNode::GetScriptResourceName() const {
       node->entry()->resource_name()));
 }
 
+const char* CpuProfileNode::GetScriptResourceNameStr() const {
+  const i::ProfileNode* node = reinterpret_cast<const i::ProfileNode*>(this);
+  return node->entry()->resource_name();
+}
 
 int CpuProfileNode::GetLineNumber() const {
   return reinterpret_cast<const i::ProfileNode*>(this)->entry()->line_number();

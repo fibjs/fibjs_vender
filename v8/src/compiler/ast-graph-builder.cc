@@ -411,14 +411,15 @@ class AstGraphBuilder::ControlScopeForFinally : public ControlScope {
   TryFinallyBuilder* control_;
 };
 
-
 AstGraphBuilder::AstGraphBuilder(Zone* local_zone, CompilationInfo* info,
-                                 JSGraph* jsgraph, LoopAssignmentAnalysis* loop,
+                                 JSGraph* jsgraph, float invocation_frequency,
+                                 LoopAssignmentAnalysis* loop,
                                  TypeHintAnalysis* type_hint_analysis)
     : isolate_(info->isolate()),
       local_zone_(local_zone),
       info_(info),
       jsgraph_(jsgraph),
+      invocation_frequency_(invocation_frequency),
       environment_(nullptr),
       ast_context_(nullptr),
       globals_(0, local_zone),
@@ -1651,6 +1652,10 @@ void AstGraphBuilder::VisitClassLiteral(ClassLiteral* expr) {
         NewNode(op, receiver, key, value, attr);
         break;
       }
+      case ClassLiteral::Property::FIELD: {
+        UNREACHABLE();
+        break;
+      }
     }
   }
 
@@ -1948,8 +1953,8 @@ void AstGraphBuilder::VisitArrayLiteral(ArrayLiteral* expr) {
 
   // Create nodes to evaluate all the non-constant subexpressions and to store
   // them into the newly cloned array.
-  int array_index = 0;
-  for (; array_index < expr->values()->length(); array_index++) {
+  for (int array_index = 0; array_index < expr->values()->length();
+       array_index++) {
     Expression* subexpr = expr->values()->at(array_index);
     DCHECK(!subexpr->IsSpread());
     if (CompileTimeValue::IsCompileTimeValue(subexpr)) continue;
@@ -1962,26 +1967,6 @@ void AstGraphBuilder::VisitArrayLiteral(ArrayLiteral* expr) {
     Node* store = BuildKeyedStore(literal, index, value, pair);
     PrepareFrameState(store, expr->GetIdForElement(array_index),
                       OutputFrameStateCombine::Ignore());
-  }
-
-  // In case the array literal contains spread expressions it has two parts. The
-  // first part is  the "static" array which has a literal index is handled
-  // above. The second part is the part after the first spread expression
-  // (inclusive) and these elements gets appended to the array. Note that the
-  // number elements an iterable produces is unknown ahead of time.
-  for (; array_index < expr->values()->length(); array_index++) {
-    Expression* subexpr = expr->values()->at(array_index);
-    DCHECK(!subexpr->IsSpread());
-
-    VisitForValue(subexpr);
-    {
-      Node* value = environment()->Pop();
-      Node* array = environment()->Pop();
-      const Operator* op = javascript()->CallRuntime(Runtime::kAppendElement);
-      Node* result = NewNode(op, array, value);
-      PrepareFrameState(result, expr->GetIdForElement(array_index));
-      environment()->Push(result);
-    }
   }
 
   ast_context()->ProduceValue(expr, environment()->Pop());
@@ -2450,9 +2435,11 @@ void AstGraphBuilder::VisitCall(Call* expr) {
   }
 
   // Create node to perform the function call.
+  float const frequency = ComputeCallFrequency(expr->CallFeedbackICSlot());
   VectorSlotPair feedback = CreateVectorSlotPair(expr->CallFeedbackICSlot());
-  const Operator* call = javascript()->CallFunction(
-      args->length() + 2, feedback, receiver_hint, expr->tail_call_mode());
+  const Operator* call =
+      javascript()->CallFunction(args->length() + 2, frequency, feedback,
+                                 receiver_hint, expr->tail_call_mode());
   PrepareEagerCheckpoint(possibly_eval ? expr->EvalId() : expr->CallId());
   Node* value = ProcessArguments(call, args->length() + 2);
   // The callee passed to the call, we just need to push something here to
@@ -2486,7 +2473,7 @@ void AstGraphBuilder::VisitCallSuper(Call* expr) {
 
   // Create node to perform the super call.
   const Operator* call =
-      javascript()->CallConstruct(args->length() + 2, VectorSlotPair());
+      javascript()->CallConstruct(args->length() + 2, 0.0f, VectorSlotPair());
   Node* value = ProcessArguments(call, args->length() + 2);
   PrepareFrameState(value, expr->ReturnId(), OutputFrameStateCombine::Push());
   ast_context()->ProduceValue(expr, value);
@@ -2504,9 +2491,10 @@ void AstGraphBuilder::VisitCallNew(CallNew* expr) {
   environment()->Push(environment()->Peek(args->length()));
 
   // Create node to perform the construct call.
+  float const frequency = ComputeCallFrequency(expr->CallNewFeedbackSlot());
   VectorSlotPair feedback = CreateVectorSlotPair(expr->CallNewFeedbackSlot());
   const Operator* call =
-      javascript()->CallConstruct(args->length() + 2, feedback);
+      javascript()->CallConstruct(args->length() + 2, frequency, feedback);
   Node* value = ProcessArguments(call, args->length() + 2);
   PrepareFrameState(value, expr->ReturnId(), OutputFrameStateCombine::Push());
   ast_context()->ProduceValue(expr, value);
@@ -3116,6 +3104,13 @@ uint32_t AstGraphBuilder::ComputeBitsetForDynamicContext(Variable* variable) {
   return check_depths;
 }
 
+float AstGraphBuilder::ComputeCallFrequency(FeedbackVectorSlot slot) const {
+  if (slot.IsInvalid()) return 0.0f;
+  Handle<TypeFeedbackVector> feedback_vector(
+      info()->closure()->feedback_vector(), isolate());
+  CallICNexus nexus(feedback_vector, slot);
+  return nexus.ComputeCallFrequency() * invocation_frequency_;
+}
 
 Node* AstGraphBuilder::ProcessArguments(const Operator* op, int arity) {
   DCHECK(environment()->stack_height() >= arity);

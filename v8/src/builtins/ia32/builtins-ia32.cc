@@ -594,6 +594,13 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ cmp(ecx, FieldOperand(eax, SharedFunctionInfo::kCodeOffset));
   __ j(not_equal, &switch_to_different_code_kind);
 
+  // Increment invocation count for the function.
+  __ EmitLoadTypeFeedbackVector(ecx);
+  __ add(FieldOperand(ecx,
+                      TypeFeedbackVector::kInvocationCountIndex * kPointerSize +
+                          TypeFeedbackVector::kHeaderSize),
+         Immediate(Smi::FromInt(1)));
+
   // Check function data field is actually a BytecodeArray object.
   if (FLAG_debug_code) {
     __ AssertNotSmi(kInterpreterBytecodeArrayRegister);
@@ -1354,71 +1361,6 @@ void Builtins::Generate_NotifySoftDeoptimized(MacroAssembler* masm) {
 
 void Builtins::Generate_NotifyLazyDeoptimized(MacroAssembler* masm) {
   Generate_NotifyDeoptimizedHelper(masm, Deoptimizer::LAZY);
-}
-
-// static
-void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
-                                               int field_index) {
-  // ----------- S t a t e -------------
-  //  -- eax    : number of arguments
-  //  -- edi    : function
-  //  -- esi    : context
-  //  -- esp[0] : return address
-  //  -- esp[4] : receiver
-  // -----------------------------------
-
-  // 1. Load receiver into eax and check that it's actually a JSDate object.
-  Label receiver_not_date;
-  {
-    __ mov(eax, Operand(esp, kPointerSize));
-    __ JumpIfSmi(eax, &receiver_not_date);
-    __ CmpObjectType(eax, JS_DATE_TYPE, ebx);
-    __ j(not_equal, &receiver_not_date);
-  }
-
-  // 2. Load the specified date field, falling back to the runtime as necessary.
-  if (field_index == JSDate::kDateValue) {
-    __ mov(eax, FieldOperand(eax, JSDate::kValueOffset));
-  } else {
-    if (field_index < JSDate::kFirstUncachedField) {
-      Label stamp_mismatch;
-      __ mov(edx, Operand::StaticVariable(
-                      ExternalReference::date_cache_stamp(masm->isolate())));
-      __ cmp(edx, FieldOperand(eax, JSDate::kCacheStampOffset));
-      __ j(not_equal, &stamp_mismatch, Label::kNear);
-      __ mov(eax, FieldOperand(
-                      eax, JSDate::kValueOffset + field_index * kPointerSize));
-      __ ret(1 * kPointerSize);
-      __ bind(&stamp_mismatch);
-    }
-    FrameScope scope(masm, StackFrame::INTERNAL);
-    __ PrepareCallCFunction(2, ebx);
-    __ mov(Operand(esp, 0), eax);
-    __ mov(Operand(esp, 1 * kPointerSize),
-           Immediate(Smi::FromInt(field_index)));
-    __ CallCFunction(
-        ExternalReference::get_date_field_function(masm->isolate()), 2);
-  }
-  __ ret(1 * kPointerSize);
-
-  // 3. Raise a TypeError if the receiver is not a date.
-  __ bind(&receiver_not_date);
-  {
-    FrameScope scope(masm, StackFrame::MANUAL);
-    __ Move(ebx, Immediate(0));
-    __ EnterBuiltinFrame(esi, edi, ebx);
-    __ CallRuntime(Runtime::kThrowNotDateError);
-
-    // It's far from obvious, but this final trailing instruction after the call
-    // is required for StackFrame::LookupCode to work correctly. To illustrate
-    // why: if call were the final instruction in the code object, then the pc
-    // (== return address) would point beyond the code object when the stack is
-    // traversed. When we then try to look up the code object through
-    // StackFrame::LookupCode, we actually return the next code object that
-    // happens to be on the same page in memory.
-    // TODO(jgruber): A proper fix for this would be nice.
-    __ nop();
-  }
 }
 
 // static
@@ -2886,24 +2828,6 @@ void Builtins::Generate_Abort(MacroAssembler* masm) {
   __ PushReturnAddressFrom(ecx);
   __ Move(esi, Smi::FromInt(0));
   __ TailCallRuntime(Runtime::kAbort);
-}
-
-// static
-void Builtins::Generate_ToNumber(MacroAssembler* masm) {
-  // The ToNumber stub takes one argument in eax.
-  Label not_smi;
-  __ JumpIfNotSmi(eax, &not_smi, Label::kNear);
-  __ Ret();
-  __ bind(&not_smi);
-
-  Label not_heap_number;
-  __ CompareMap(eax, masm->isolate()->factory()->heap_number_map());
-  __ j(not_equal, &not_heap_number, Label::kNear);
-  __ Ret();
-  __ bind(&not_heap_number);
-
-  __ Jump(masm->isolate()->builtins()->NonNumberToNumber(),
-          RelocInfo::CODE_TARGET);
 }
 
 void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {

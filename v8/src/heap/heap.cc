@@ -112,7 +112,6 @@ Heap::Heap()
       allocation_timeout_(0),
 #endif  // DEBUG
       old_generation_allocation_limit_(initial_old_generation_size_),
-      old_gen_exhausted_(false),
       inline_allocation_disabled_(false),
       total_regexp_code_generated_(0),
       tracer_(nullptr),
@@ -279,15 +278,6 @@ GarbageCollector Heap::SelectGarbageCollector(AllocationSpace space,
   if (OldGenerationAllocationLimitReached()) {
     isolate_->counters()->gc_compactor_caused_by_promoted_data()->Increment();
     *reason = "promotion limit reached";
-    return MARK_COMPACTOR;
-  }
-
-  // Have allocation in OLD and LO failed?
-  if (old_gen_exhausted_) {
-    isolate_->counters()
-        ->gc_compactor_caused_by_oldspace_exhaustion()
-        ->Increment();
-    *reason = "old generations exhausted";
     return MARK_COMPACTOR;
   }
 
@@ -939,7 +929,7 @@ void Heap::ReportExternalMemoryPressure() {
                             pressure * kMaxStepSizeOnExternalLimit;
     incremental_marking()->AdvanceIncrementalMarking(
         deadline, IncrementalMarking::GC_VIA_STACK_GUARD,
-        IncrementalMarking::FORCE_COMPLETION);
+        IncrementalMarking::FORCE_COMPLETION, StepOrigin::kV8);
   }
 }
 
@@ -1056,7 +1046,9 @@ bool Heap::CollectGarbage(GarbageCollector collector,
 
   // Start incremental marking for the next cycle. The heap snapshot
   // generator needs incremental marking to stay off after it aborted.
-  if (!ShouldAbortIncrementalMarking()) {
+  // We do this only for scavenger to avoid a loop where mark-compact
+  // causes another mark-compact.
+  if (collector == SCAVENGER && !ShouldAbortIncrementalMarking()) {
     StartIncrementalMarkingIfAllocationLimitIsReached(kNoGCFlags,
                                                       kNoGCCallbackFlags);
   }
@@ -1339,7 +1331,6 @@ bool Heap::PerformGarbageCollection(
       UpdateOldGenerationAllocationCounter();
       // Perform mark-sweep with optional compaction.
       MarkCompact();
-      old_gen_exhausted_ = false;
       old_generation_size_configured_ = true;
       // This should be updated before PostGarbageCollectionProcessing, which
       // can cause another GC. Take into account the objects promoted during GC.
@@ -2309,7 +2300,9 @@ bool Heap::CreateInitialMaps() {
     DCHECK_NE(fixed_array_map(), fixed_cow_array_map());
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, scope_info)
+    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, module_info_entry)
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, module_info)
+    ALLOCATE_MAP(JS_MODULE_TYPE, JSModule::kSize, js_module)
     ALLOCATE_PRIMITIVE_MAP(HEAP_NUMBER_TYPE, HeapNumber::kSize, heap_number,
                            Context::NUMBER_FUNCTION_INDEX)
     ALLOCATE_MAP(MUTABLE_HEAP_NUMBER_TYPE, HeapNumber::kSize,
@@ -2756,12 +2749,6 @@ void Heap::CreateInitialObjects() {
 #undef SYMBOL_INIT
   }
 
-  // Allocate the dictionary of intrinsic function names.
-  Handle<NameDictionary> intrinsic_names =
-      NameDictionary::New(isolate(), Runtime::kNumFunctions, TENURED);
-  Runtime::InitializeIntrinsicFunctionNames(isolate(), intrinsic_names);
-  set_intrinsic_function_names(*intrinsic_names);
-
   Handle<NameDictionary> empty_properties_dictionary =
       NameDictionary::New(isolate(), 0, TENURED);
   empty_properties_dictionary->SetRequiresCopyOnCapacityChange();
@@ -2833,9 +2820,26 @@ void Heap::CreateInitialObjects() {
   }
 
   {
+    // Create a canonical empty TypeFeedbackVector, which is shared by all
+    // functions that don't need actual type feedback slots. Note however
+    // that all these functions will share the same invocation count, but
+    // that shouldn't matter since we only use the invocation count to
+    // relativize the absolute call counts, but we can only have call counts
+    // if we have actual feedback slots.
+    Handle<FixedArray> empty_type_feedback_vector = factory->NewFixedArray(
+        TypeFeedbackVector::kReservedIndexCount, TENURED);
+    empty_type_feedback_vector->set(TypeFeedbackVector::kMetadataIndex,
+                                    empty_fixed_array());
+    empty_type_feedback_vector->set(TypeFeedbackVector::kInvocationCountIndex,
+                                    Smi::FromInt(0));
+    set_empty_type_feedback_vector(*empty_type_feedback_vector);
+
+    // We use a canonical empty LiteralsArray for all functions that neither
+    // have literals nor need a TypeFeedbackVector (besides the invocation
+    // count special slot).
     Handle<FixedArray> empty_literals_array =
         factory->NewFixedArray(1, TENURED);
-    empty_literals_array->set(0, *factory->empty_fixed_array());
+    empty_literals_array->set(0, *empty_type_feedback_vector);
     set_empty_literals_array(*empty_literals_array);
   }
 
@@ -4302,15 +4306,16 @@ bool Heap::PerformIdleTimeAction(GCIdleTimeAction action,
       result = true;
       break;
     case DO_INCREMENTAL_STEP: {
-      if (incremental_marking()->incremental_marking_job()->IdleTaskPending()) {
-        result = true;
-      } else {
-        incremental_marking()
-            ->incremental_marking_job()
-            ->NotifyIdleTaskProgress();
-        result = IncrementalMarkingJob::IdleTask::Step(this, deadline_in_ms) ==
-                 IncrementalMarkingJob::IdleTask::kDone;
+      const double remaining_idle_time_in_ms =
+          incremental_marking()->AdvanceIncrementalMarking(
+              deadline_in_ms, IncrementalMarking::NO_GC_VIA_STACK_GUARD,
+              IncrementalMarking::FORCE_COMPLETION, StepOrigin::kTask);
+      if (remaining_idle_time_in_ms > 0.0) {
+        TryFinalizeIdleIncrementalMarking(
+            remaining_idle_time_in_ms,
+            GarbageCollectionReason::kFinalizeMarkingViaTask);
       }
+      result = incremental_marking()->IsStopped();
       break;
     }
     case DO_FULL_GC: {

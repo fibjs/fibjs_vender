@@ -673,7 +673,13 @@ class Isolate {
   // Push and pop a promise and the current try-catch handler.
   void PushPromise(Handle<JSObject> promise);
   void PopPromise();
+
+  // Return the relevant Promise that a throw/rejection pertains to, based
+  // on the contents of the Promise stack
   Handle<Object> GetPromiseOnStackOnThrow();
+
+  // Heuristically guess whether a Promise is handled by user catch handler
+  bool PromiseHasUserDefinedRejectHandler(Handle<Object> promise);
 
   class ExceptionScope {
    public:
@@ -751,7 +757,9 @@ class Isolate {
     NOT_CAUGHT,
     CAUGHT_BY_JAVASCRIPT,
     CAUGHT_BY_EXTERNAL,
-    CAUGHT_BY_DESUGARING
+    CAUGHT_BY_DESUGARING,
+    CAUGHT_BY_PROMISE,
+    CAUGHT_BY_ASYNC_AWAIT
   };
   CatchType PredictExceptionCatcher();
 
@@ -1164,6 +1172,10 @@ class Isolate {
 
   PRINTF_FORMAT(2, 3) void PrintWithTimestamp(const char* format, ...);
 
+#ifdef USE_SIMULATOR
+  base::Mutex* simulator_i_cache_mutex() { return &simulator_i_cache_mutex_; }
+#endif
+
  protected:
   explicit Isolate(bool enable_serializer);
   bool IsArrayOrObjectPrototype(Object* object);
@@ -1439,6 +1451,10 @@ class Isolate {
 
   v8::Isolate::AbortOnUncaughtExceptionCallback
       abort_on_uncaught_exception_callback_;
+
+#ifdef USE_SIMULATOR
+  base::Mutex simulator_i_cache_mutex_;
+#endif
 
   friend class ExecutionAccess;
   friend class HandleScopeImplementer;

@@ -932,8 +932,6 @@ Node* WasmGraphBuilder::Unop(wasm::WasmOpcode opcode, Node* input,
       return BuildI64UConvertF32(input, position);
     case wasm::kExprI64UConvertF64:
       return BuildI64UConvertF64(input, position);
-    case wasm::kExprGrowMemory:
-      return BuildGrowMemory(input);
     case wasm::kExprI32AsmjsLoadMem8S:
       return BuildAsmjsLoadMem(MachineType::Int8(), input);
     case wasm::kExprI32AsmjsLoadMem8U:
@@ -1667,7 +1665,7 @@ Node* WasmGraphBuilder::BuildFloatToIntConversionInstruction(
   return load;
 }
 
-Node* WasmGraphBuilder::BuildGrowMemory(Node* input) {
+Node* WasmGraphBuilder::GrowMemory(Node* input) {
   Diamond check_input_range(
       graph(), jsgraph()->common(),
       graph()->NewNode(
@@ -1703,6 +1701,29 @@ Node* WasmGraphBuilder::BuildGrowMemory(Node* input) {
                               check_input_range.merge);
   *control_ = check_input_range.merge;
   return result;
+}
+
+Node* WasmGraphBuilder::Throw(Node* input) {
+  MachineOperatorBuilder* machine = jsgraph()->machine();
+
+  // Pass the thrown value as two SMIs:
+  //
+  // upper = static_cast<uint32_t>(input) >> 16;
+  // lower = input & 0xFFFF;
+  //
+  // This is needed because we can't safely call BuildChangeInt32ToTagged from
+  // this method.
+  //
+  // TODO(wasm): figure out how to properly pass this to the runtime function.
+  Node* upper = BuildChangeInt32ToSmi(
+      graph()->NewNode(machine->Word32Shr(), input, Int32Constant(16)));
+  Node* lower = BuildChangeInt32ToSmi(
+      graph()->NewNode(machine->Word32And(), input, Int32Constant(0xFFFFu)));
+
+  Node* parameters[] = {lower, upper};  // thrown value
+  return BuildCallToRuntime(Runtime::kWasmThrow, jsgraph(),
+                            module_->instance->context, parameters,
+                            arraysize(parameters), effect_, *control_);
 }
 
 Node* WasmGraphBuilder::BuildI32DivS(Node* left, Node* right,
@@ -2772,15 +2793,26 @@ Node* WasmGraphBuilder::LoadMem(wasm::LocalType type, MachineType memtype,
   Node* load;
 
   // WASM semantics throw on OOB. Introduce explicit bounds check.
-  BoundsCheckMem(memtype, index, offset, position);
+  if (!FLAG_wasm_trap_handler) {
+    BoundsCheckMem(memtype, index, offset, position);
+  }
   bool aligned = static_cast<int>(alignment) >=
                  ElementSizeLog2Of(memtype.representation());
 
   if (aligned ||
       jsgraph()->machine()->UnalignedLoadSupported(memtype, alignment)) {
-    load = graph()->NewNode(jsgraph()->machine()->Load(memtype),
-                            MemBuffer(offset), index, *effect_, *control_);
+    if (FLAG_wasm_trap_handler) {
+      Node* context = HeapConstant(module_->instance->context);
+      Node* position_node = jsgraph()->Int32Constant(position);
+      load = graph()->NewNode(jsgraph()->machine()->ProtectedLoad(memtype),
+                              MemBuffer(offset), index, context, position_node,
+                              *effect_, *control_);
+    } else {
+      load = graph()->NewNode(jsgraph()->machine()->Load(memtype),
+                              MemBuffer(offset), index, *effect_, *control_);
+    }
   } else {
+    DCHECK(!FLAG_wasm_trap_handler);
     load = graph()->NewNode(jsgraph()->machine()->UnalignedLoad(memtype),
                             MemBuffer(offset), index, *effect_, *control_);
   }

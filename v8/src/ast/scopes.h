@@ -5,9 +5,9 @@
 #ifndef V8_AST_SCOPES_H_
 #define V8_AST_SCOPES_H_
 
-#include "src/ast/variables.h"
 #include "src/base/hashmap.h"
 #include "src/globals.h"
+#include "src/objects.h"
 #include "src/zone.h"
 
 namespace v8 {
@@ -19,6 +19,7 @@ class AstRawString;
 class Declaration;
 class ParseInfo;
 class SloppyBlockFunctionStatement;
+class StringSet;
 class VariableProxy;
 
 // A hash map to support fast variable declaration and lookup.
@@ -27,7 +28,7 @@ class VariableMap: public ZoneHashMap {
   explicit VariableMap(Zone* zone);
 
   Variable* Declare(Zone* zone, Scope* scope, const AstRawString* name,
-                    VariableMode mode, Variable::Kind kind,
+                    VariableMode mode, VariableKind kind,
                     InitializationFlag initialization_flag,
                     MaybeAssignedFlag maybe_assigned_flag = kNotAssigned,
                     bool* added = nullptr);
@@ -97,10 +98,10 @@ class Scope: public ZoneObject {
     int top_decl_;
   };
 
-  enum class DeserializationMode { kDeserializeOffHeap, kKeepScopeInfo };
+  enum class DeserializationMode { kIncludingVariables, kScopesOnly };
 
   static Scope* DeserializeScopeChain(Isolate* isolate, Zone* zone,
-                                      Context* context,
+                                      ScopeInfo* scope_info,
                                       DeclarationScope* script_scope,
                                       AstValueFactory* ast_value_factory,
                                       DeserializationMode deserialization_mode);
@@ -140,7 +141,7 @@ class Scope: public ZoneObject {
   // Declare a local variable in this scope. If the variable has been
   // declared before, the previously declared variable is returned.
   Variable* DeclareLocal(const AstRawString* name, VariableMode mode,
-                         InitializationFlag init_flag, Variable::Kind kind,
+                         InitializationFlag init_flag, VariableKind kind,
                          MaybeAssignedFlag maybe_assigned_flag = kNotAssigned);
 
   Variable* DeclareVariable(Declaration* declaration, VariableMode mode,
@@ -159,7 +160,7 @@ class Scope: public ZoneObject {
                                const AstRawString* name,
                                int start_position = kNoSourcePosition,
                                int end_position = kNoSourcePosition,
-                               Variable::Kind kind = Variable::NORMAL);
+                               VariableKind kind = NORMAL_VARIABLE);
 
   void AddUnresolved(VariableProxy* proxy);
 
@@ -370,6 +371,9 @@ class Scope: public ZoneObject {
   // 'this' is bound, and what determines the function kind.
   DeclarationScope* GetReceiverScope();
 
+  // Find the module scope, assuming there is one.
+  ModuleScope* GetModuleScope();
+
   // Analyze() must have been called once to create the ScopeInfo.
   Handle<ScopeInfo> scope_info() {
     DCHECK(!scope_info_.is_null());
@@ -405,6 +409,7 @@ class Scope: public ZoneObject {
   // Retrieve `IsSimpleParameterList` of current or outer function.
   bool HasSimpleParameters();
   void set_is_debug_evaluate_scope() { is_debug_evaluate_scope_ = true; }
+  bool is_debug_evaluate_scope() const { return is_debug_evaluate_scope_; }
 
  protected:
   explicit Scope(Zone* zone);
@@ -415,7 +420,7 @@ class Scope: public ZoneObject {
 
  private:
   Variable* Declare(Zone* zone, Scope* scope, const AstRawString* name,
-                    VariableMode mode, Variable::Kind kind,
+                    VariableMode mode, VariableKind kind,
                     InitializationFlag initialization_flag,
                     MaybeAssignedFlag maybe_assigned_flag = kNotAssigned) {
     bool added;
@@ -571,9 +576,6 @@ class Scope: public ZoneObject {
 
   void SetDefaults();
 
-  void DeserializeScopeInfo(Isolate* isolate,
-                            AstValueFactory* ast_value_factory);
-
   friend class DeclarationScope;
 };
 
@@ -649,7 +651,7 @@ class DeclarationScope : public Scope {
   // scope) by a reference to an unresolved variable with no intervening
   // with statements or eval calls.
   Variable* DeclareDynamicGlobal(const AstRawString* name,
-                                 Variable::Kind variable_kind);
+                                 VariableKind variable_kind);
 
   // The variable corresponding to the 'this' value.
   Variable* receiver() {
@@ -676,14 +678,21 @@ class DeclarationScope : public Scope {
   }
 
   // Parameters. The left-most parameter has index 0.
-  // Only valid for function scopes.
+  // Only valid for function and module scopes.
   Variable* parameter(int index) const {
-    DCHECK(is_function_scope());
+    DCHECK(is_function_scope() || is_module_scope());
     return params_[index];
   }
 
   // Returns the default function arity excluding default or rest parameters.
-  int default_function_length() const { return arity_; }
+  // This will be used to set the length of the function, by default.
+  // Class field initializers use this property to indicate the number of
+  // fields being initialized.
+  int arity() const { return arity_; }
+
+  // Normal code should not need to call this. Class field initializers use this
+  // property to indicate the number of fields being initialized.
+  void set_arity(int arity) { arity_ = arity; }
 
   // Returns the number of formal parameters, excluding a possible rest
   // parameter.  Examples:
@@ -743,7 +752,7 @@ class DeclarationScope : public Scope {
 
   // Go through sloppy_block_function_map_ and hoist those (into this scope)
   // which should be hoisted.
-  void HoistSloppyBlockFunctions(AstNodeFactory* factory, bool* ok);
+  void HoistSloppyBlockFunctions(AstNodeFactory* factory);
 
   SloppyBlockFunctionMap* sloppy_block_function_map() {
     return &sloppy_block_function_map_;

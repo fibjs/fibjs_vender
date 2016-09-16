@@ -306,6 +306,10 @@ Node* CodeAssembler::StoreRoot(Heap::RootListIndex root_index, Node* value) {
                              IntPtrConstant(root_index * kPointerSize), value);
 }
 
+Node* CodeAssembler::Retain(Node* value) {
+  return raw_assembler_->Retain(value);
+}
+
 Node* CodeAssembler::Projection(int index, Node* value) {
   return raw_assembler_->Projection(index, value);
 }
@@ -872,6 +876,14 @@ Node* CodeAssembler::CallJS(Callable const& callable, Node* context,
   args[5] = context;
 
   return CallN(call_descriptor, target, args);
+}
+
+Node* CodeAssembler::CallCFunction2(MachineType return_type,
+                                    MachineType arg0_type,
+                                    MachineType arg1_type, Node* function,
+                                    Node* arg0, Node* arg1) {
+  return raw_assembler_->CallCFunction2(return_type, arg0_type, arg1_type,
+                                        function, arg0, arg1);
 }
 
 void CodeAssembler::Goto(CodeAssembler::Label* label) {

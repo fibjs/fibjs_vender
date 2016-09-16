@@ -6606,13 +6606,13 @@ Maybe<bool> JSReceiver::OrdinaryDefineOwnProperty(Isolate* isolate,
       if (!store_target_map.is_null() &&
           *store_target_map != it.GetStoreTarget()->map()) {
         it.isolate()->PushStackTraceAndDie(
-            0xabababaa, v8::ToCData<void*>(it.GetInterceptor()->setter()),
+            0xabababaa, v8::ToCData<void*>(it.GetInterceptor()->definer()),
             nullptr, 0xabababab);
       }
       Utils::ApiCheck(store_target_map.is_null() ||
                           *store_target_map == it.GetStoreTarget()->map(),
-                      it.IsElement() ? "v8::IndexedPropertySetterCallback"
-                                     : "v8::NamedPropertySetterCallback",
+                      it.IsElement() ? "v8::IndexedPropertyDefinerCallback"
+                                     : "v8::NamedPropertyDefinerCallback",
                       "Interceptor silently changed store target.");
     }
   }
@@ -13630,7 +13630,7 @@ void SharedFunctionInfo::InitFromFunctionLiteral(
     Handle<SharedFunctionInfo> shared_info, FunctionLiteral* lit) {
   // When adding fields here, make sure DeclarationScope::AnalyzePartially is
   // updated accordingly.
-  shared_info->set_length(lit->scope()->default_function_length());
+  shared_info->set_length(lit->scope()->arity());
   shared_info->set_internal_formal_parameter_count(lit->parameter_count());
   shared_info->set_function_token_position(lit->function_token_position());
   shared_info->set_start_position(lit->start_position());
@@ -13654,6 +13654,9 @@ void SharedFunctionInfo::InitFromFunctionLiteral(
   }
   shared_info->set_needs_home_object(lit->scope()->NeedsHomeObject());
   shared_info->set_asm_function(lit->scope()->asm_function());
+  shared_info->set_requires_class_field_init(lit->requires_class_field_init());
+  shared_info->set_is_class_field_initializer(
+      lit->is_class_field_initializer());
   SetExpectedNofPropertiesFromEstimate(shared_info, lit);
 }
 
@@ -19468,6 +19471,29 @@ bool JSReceiver::HasProxyInPrototype(Isolate* isolate) {
     if (iter.GetCurrent<Object>()->IsJSProxy()) return true;
   }
   return false;
+}
+
+void JSModule::CreateExport(Handle<JSModule> module, Handle<String> name) {
+  Isolate* isolate = module->GetIsolate();
+  Handle<Cell> cell =
+      isolate->factory()->NewCell(isolate->factory()->undefined_value());
+  LookupIterator it(module, name);
+  JSObject::CreateDataProperty(&it, cell, Object::THROW_ON_ERROR).ToChecked();
+}
+
+void JSModule::StoreExport(Handle<JSModule> module, Handle<String> name,
+                           Handle<Object> value) {
+  LookupIterator it(module, name);
+  Handle<Cell> cell = Handle<Cell>::cast(JSObject::GetDataProperty(&it));
+  cell->set_value(*value);
+}
+
+Handle<Object> JSModule::LoadExport(Handle<JSModule> module,
+                                    Handle<String> name) {
+  Isolate* isolate = module->GetIsolate();
+  LookupIterator it(module, name);
+  Handle<Cell> cell = Handle<Cell>::cast(JSObject::GetDataProperty(&it));
+  return handle(cell->value(), isolate);
 }
 
 }  // namespace internal

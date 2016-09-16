@@ -57,7 +57,8 @@ bool ScriptContextTable::Lookup(Handle<ScriptContextTable> table,
 
 
 bool Context::is_declaration_context() {
-  if (IsFunctionContext() || IsNativeContext() || IsScriptContext()) {
+  if (IsFunctionContext() || IsNativeContext() || IsScriptContext() ||
+      IsModuleContext()) {
     return true;
   }
   if (!IsBlockContext()) return false;
@@ -123,6 +124,13 @@ ScopeInfo* Context::scope_info() {
   return ScopeInfo::cast(object);
 }
 
+JSModule* Context::module() {
+  Context* current = this;
+  while (!current->IsModuleContext()) {
+    current = current->previous();
+  }
+  return JSModule::cast(current->extension());
+}
 
 String* Context::catch_name() {
   DCHECK(IsCatchContext());
@@ -189,6 +197,7 @@ Handle<Object> Context::Lookup(Handle<String> name, ContextLookupFlags flags,
                                int* index, PropertyAttributes* attributes,
                                InitializationFlag* init_flag,
                                VariableMode* variable_mode) {
+  DCHECK(!IsModuleContext());
   Isolate* isolate = GetIsolate();
   Handle<Context> context(this, isolate);
 
@@ -532,6 +541,17 @@ int Context::IntrinsicIndexForName(Handle<String> string) {
 
 #undef COMPARE_NAME
 
+#define COMPARE_NAME(index, type, name) \
+  if (strncmp(string, #name, length) == 0) return index;
+
+int Context::IntrinsicIndexForName(const unsigned char* unsigned_string,
+                                   int length) {
+  const char* string = reinterpret_cast<const char*>(unsigned_string);
+  NATIVE_CONTEXT_INTRINSIC_FUNCTIONS(COMPARE_NAME);
+  return kNotFound;
+}
+
+#undef COMPARE_NAME
 
 #ifdef DEBUG
 

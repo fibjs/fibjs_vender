@@ -87,27 +87,28 @@ const AstRawString* FromStringOrUndefined(Isolate* isolate,
 
 }  // namespace
 
-Handle<FixedArray> ModuleDescriptor::Entry::Serialize(Isolate* isolate) const {
-  Handle<FixedArray> result = isolate->factory()->NewFixedArray(4);
-  result->set(0, *ToStringOrUndefined(isolate, export_name));
-  result->set(1, *ToStringOrUndefined(isolate, local_name));
-  result->set(2, *ToStringOrUndefined(isolate, import_name));
-  result->set(3, *ToStringOrUndefined(isolate, module_request));
-  return result;
+Handle<ModuleInfoEntry> ModuleDescriptor::Entry::Serialize(
+    Isolate* isolate) const {
+  return ModuleInfoEntry::New(isolate,
+                              ToStringOrUndefined(isolate, export_name),
+                              ToStringOrUndefined(isolate, local_name),
+                              ToStringOrUndefined(isolate, import_name),
+                              ToStringOrUndefined(isolate, module_request));
 }
 
 ModuleDescriptor::Entry* ModuleDescriptor::Entry::Deserialize(
-    Isolate* isolate, AstValueFactory* avfactory, Handle<FixedArray> data) {
-  Entry* entry = new (avfactory->zone()) Entry(Scanner::Location::invalid());
-  entry->export_name =
-      FromStringOrUndefined(isolate, avfactory, handle(data->get(0), isolate));
-  entry->local_name =
-      FromStringOrUndefined(isolate, avfactory, handle(data->get(1), isolate));
-  entry->import_name =
-      FromStringOrUndefined(isolate, avfactory, handle(data->get(2), isolate));
-  entry->module_request =
-      FromStringOrUndefined(isolate, avfactory, handle(data->get(3), isolate));
-  return entry;
+    Isolate* isolate, AstValueFactory* avfactory,
+    Handle<ModuleInfoEntry> entry) {
+  Entry* result = new (avfactory->zone()) Entry(Scanner::Location::invalid());
+  result->export_name = FromStringOrUndefined(
+      isolate, avfactory, handle(entry->export_name(), isolate));
+  result->local_name = FromStringOrUndefined(
+      isolate, avfactory, handle(entry->local_name(), isolate));
+  result->import_name = FromStringOrUndefined(
+      isolate, avfactory, handle(entry->import_name(), isolate));
+  result->module_request = FromStringOrUndefined(
+      isolate, avfactory, handle(entry->module_request(), isolate));
+  return result;
 }
 
 void ModuleDescriptor::MakeIndirectExportsExplicit(Zone* zone) {
@@ -133,19 +134,40 @@ void ModuleDescriptor::MakeIndirectExportsExplicit(Zone* zone) {
   }
 }
 
+namespace {
+
+const ModuleDescriptor::Entry* BetterDuplicate(
+    const ModuleDescriptor::Entry* candidate,
+    ZoneMap<const AstRawString*, const ModuleDescriptor::Entry*>& export_names,
+    const ModuleDescriptor::Entry* current_duplicate) {
+  DCHECK_NOT_NULL(candidate->export_name);
+  DCHECK(candidate->location.IsValid());
+  auto insert_result =
+      export_names.insert(std::make_pair(candidate->export_name, candidate));
+  if (insert_result.second) return current_duplicate;
+  if (current_duplicate == nullptr) {
+    current_duplicate = insert_result.first->second;
+  }
+  return (candidate->location.beg_pos > current_duplicate->location.beg_pos)
+             ? candidate
+             : current_duplicate;
+}
+
+}  // namespace
+
 const ModuleDescriptor::Entry* ModuleDescriptor::FindDuplicateExport(
     Zone* zone) const {
-  ZoneSet<const AstRawString*> export_names(zone);
+  const ModuleDescriptor::Entry* duplicate = nullptr;
+  ZoneMap<const AstRawString*, const ModuleDescriptor::Entry*> export_names(
+      zone);
   for (const auto& it : regular_exports_) {
-    const Entry* entry = it.second;
-    DCHECK_NOT_NULL(entry->export_name);
-    if (!export_names.insert(entry->export_name).second) return entry;
+    duplicate = BetterDuplicate(it.second, export_names, duplicate);
   }
   for (auto entry : special_exports_) {
     if (entry->export_name == nullptr) continue;  // Star export.
-    if (!export_names.insert(entry->export_name).second) return entry;
+    duplicate = BetterDuplicate(entry, export_names, duplicate);
   }
-  return nullptr;
+  return duplicate;
 }
 
 bool ModuleDescriptor::Validate(ModuleScope* module_scope,

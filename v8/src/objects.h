@@ -70,6 +70,7 @@
 //         - JSValue
 //           - JSDate
 //         - JSMessageObject
+//         - JSModule
 //       - JSProxy
 //     - FixedArrayBase
 //       - ByteArray
@@ -94,6 +95,7 @@
 //         - TemplateList
 //         - TransitionArray
 //         - ScopeInfo
+//         - ModuleInfoEntry
 //         - ModuleInfo
 //         - ScriptContextTable
 //         - WeakFixedArray
@@ -789,7 +791,6 @@ std::ostream& operator<<(std::ostream& os, InstanceType instance_type);
   V(FAST_PROPERTIES_SUB_TYPE)                    \
   V(FAST_TEMPLATE_INSTANTIATIONS_CACHE_SUB_TYPE) \
   V(HANDLER_TABLE_SUB_TYPE)                      \
-  V(INTRINSIC_FUNCTION_NAMES_SUB_TYPE)           \
   V(JS_COLLECTION_SUB_TYPE)                      \
   V(JS_WEAK_COLLECTION_SUB_TYPE)                 \
   V(LITERALS_ARRAY_SUB_TYPE)                     \
@@ -879,6 +880,7 @@ class LiteralsArray;
 class LookupIterator;
 class FieldType;
 class ModuleDescriptor;
+class ModuleInfoEntry;
 class ModuleInfo;
 class ObjectHashTable;
 class ObjectVisitor;
@@ -961,6 +963,7 @@ template <class C> inline bool Is(Object* obj);
   V(JSObject)                    \
   V(JSContextExtensionObject)    \
   V(JSGeneratorObject)           \
+  V(JSModule)                    \
   V(Map)                         \
   V(DescriptorArray)             \
   V(FrameArray)                  \
@@ -980,6 +983,7 @@ template <class C> inline bool Is(Object* obj);
   V(ScriptContextTable)          \
   V(NativeContext)               \
   V(ScopeInfo)                   \
+  V(ModuleInfoEntry)             \
   V(ModuleInfo)                  \
   V(JSBoundFunction)             \
   V(JSFunction)                  \
@@ -4390,6 +4394,13 @@ class ScopeInfo : public FixedArray {
   // Returns true if this ScopeInfo is linked to a outer ScopeInfo.
   bool HasOuterScopeInfo();
 
+  // Returns true if this ScopeInfo was created for a debug-evaluate scope.
+  bool IsDebugEvaluateScope();
+
+  // Can be used to mark a ScopeInfo that looks like a with-scope as actually
+  // being a debug-evaluate scope.
+  void SetIsDebugEvaluateScope();
+
   // Return the outer ScopeInfo if present.
   ScopeInfo* OuterScopeInfo();
 
@@ -4412,7 +4423,7 @@ class ScopeInfo : public FixedArray {
 
   // The layout of the static part of a ScopeInfo is as follows. Each entry is
   // numeric and occupies one array slot.
-  // 1. A set of properties of the scope
+// 1. A set of properties of the scope.
 // 2. The number of parameters. For non-function scopes this is 0.
 // 3. The number of non-parameter variables allocated on the stack.
 // 4. The number of non-parameter and parameter variables allocated in the
@@ -4438,7 +4449,7 @@ class ScopeInfo : public FixedArray {
 
  private:
   // The layout of the variable part of a ScopeInfo is as follows:
-  // 1. ParameterEntries:
+  // 1. ParameterNames:
   //    This part stores the names of the parameters for function scopes. One
   //    slot is used per parameter, so in total this part occupies
   //    ParameterCount() slots in the array. For other scopes than function
@@ -4446,48 +4457,48 @@ class ScopeInfo : public FixedArray {
   // 2. StackLocalFirstSlot:
   //    Index of a first stack slot for stack local. Stack locals belonging to
   //    this scope are located on a stack at slots starting from this index.
-  // 3. StackLocalEntries:
+  // 3. StackLocalNames:
   //    Contains the names of local variables that are allocated on the stack,
   //    in increasing order of the stack slot index. First local variable has a
   //    stack slot index defined in StackLocalFirstSlot (point 2 above).
   //    One slot is used per stack local, so in total this part occupies
   //    StackLocalCount() slots in the array.
-  // 4. ContextLocalNameEntries:
+  // 4. ContextLocalNames:
   //    Contains the names of local variables and parameters that are allocated
   //    in the context. They are stored in increasing order of the context slot
   //    index starting with Context::MIN_CONTEXT_SLOTS. One slot is used per
   //    context local, so in total this part occupies ContextLocalCount() slots
   //    in the array.
-  // 5. ContextLocalInfoEntries:
+  // 5. ContextLocalInfos:
   //    Contains the variable modes and initialization flags corresponding to
-  //    the context locals in ContextLocalNameEntries. One slot is used per
+  //    the context locals in ContextLocalNames. One slot is used per
   //    context local, so in total this part occupies ContextLocalCount()
   //    slots in the array.
-  // 6. ReceiverEntry:
+  // 6. ReceiverInfo:
   //    If the scope binds a "this" value, one slot is reserved to hold the
   //    context or stack slot index for the variable.
-  // 7. FunctionNameEntry:
+  // 7. FunctionNameInfo:
   //    If the scope belongs to a named function expression this part contains
   //    information about the function variable. It always occupies two array
   //    slots:  a. The name of the function variable.
   //            b. The context or stack slot index for the variable.
-  // 8. OuterScopeInfoEntryIndex:
+  // 8. OuterScopeInfoIndex:
   //    The outer scope's ScopeInfo or the hole if there's none.
-  // 9. ModuleInfoEntry, ModuleVariableCount, and ModuleVariableEntries:
+  // 9. ModuleInfo, ModuleVariableCount, and ModuleVariables:
   //    For a module scope, this part contains the ModuleInfo, the number of
   //    MODULE-allocated variables, and the metadata of those variables.  For
   //    non-module scopes it is empty.
-  int ParameterEntriesIndex();
+  int ParameterNamesIndex();
   int StackLocalFirstSlotIndex();
-  int StackLocalEntriesIndex();
-  int ContextLocalNameEntriesIndex();
-  int ContextLocalInfoEntriesIndex();
-  int ReceiverEntryIndex();
-  int FunctionNameEntryIndex();
-  int OuterScopeInfoEntryIndex();
-  int ModuleInfoEntryIndex();
+  int StackLocalNamesIndex();
+  int ContextLocalNamesIndex();
+  int ContextLocalInfosIndex();
+  int ReceiverInfoIndex();
+  int FunctionNameInfoIndex();
+  int OuterScopeInfoIndex();
+  int ModuleInfoIndex();
   int ModuleVariableCountIndex();
-  int ModuleVariableEntriesIndex();
+  int ModuleVariablesIndex();
 
   int Lookup(Handle<String> name, int start, int end, VariableMode* mode,
              VariableLocation* location, InitializationFlag* init_flag,
@@ -4521,6 +4532,8 @@ class ScopeInfo : public FixedArray {
       : public BitField<FunctionKind, HasSimpleParametersField::kNext, 9> {};
   class HasOuterScopeInfoField
       : public BitField<bool, FunctionKindField::kNext, 1> {};
+  class IsDebugEvaluateScopeField
+      : public BitField<bool, HasOuterScopeInfoField::kNext, 1> {};
 
   // Properties of variables.
   class VariableModeField : public BitField<VariableMode, 0, 3> {};
@@ -4528,6 +4541,30 @@ class ScopeInfo : public FixedArray {
   class MaybeAssignedFlagField : public BitField<MaybeAssignedFlag, 4, 1> {};
 
   friend class ScopeIterator;
+};
+
+class ModuleInfoEntry : public FixedArray {
+ public:
+  DECLARE_CAST(ModuleInfoEntry)
+  static Handle<ModuleInfoEntry> New(Isolate* isolate,
+                                     Handle<Object> export_name,
+                                     Handle<Object> local_name,
+                                     Handle<Object> import_name,
+                                     Handle<Object> module_request);
+  inline Object* export_name() const;
+  inline Object* local_name() const;
+  inline Object* import_name() const;
+  inline Object* module_request() const;
+
+ private:
+  friend class Factory;
+  enum {
+    kExportNameIndex,
+    kLocalNameIndex,
+    kImportNameIndex,
+    kModuleRequestIndex,
+    kLength
+  };
 };
 
 // ModuleInfo is to ModuleDescriptor what ScopeInfo is to Scope.
@@ -4597,6 +4634,9 @@ class HandlerTable : public FixedArray {
                  // catching are part of a desugaring and should therefore not
                  // be visible to the user (we won't notify the debugger of such
                  // exceptions).
+    ASYNC_AWAIT,  // The exception will be caught and cause a promise rejection
+                  // in the desugaring of an async function, so special
+                  // async/await handling in the debugger can take place.
   };
 
   // Getters for handler table based on ranges.
@@ -4649,8 +4689,8 @@ class HandlerTable : public FixedArray {
   static const int kReturnEntrySize = 2;
 
   // Encoding of the {handler} field.
-  class HandlerPredictionField : public BitField<CatchPrediction, 0, 2> {};
-  class HandlerOffsetField : public BitField<int, 2, 30> {};
+  class HandlerPredictionField : public BitField<CatchPrediction, 0, 3> {};
+  class HandlerOffsetField : public BitField<int, 3, 29> {};
 };
 
 // ByteArray represents fixed sized byte arrays.  Used for the relocation info
@@ -6337,6 +6377,7 @@ class Map: public HeapObject {
   inline bool IsJSFunctionMap();
   inline bool IsStringMap();
   inline bool IsJSProxyMap();
+  inline bool IsJSModuleMap();
   inline bool IsJSGlobalProxyMap();
   inline bool IsJSGlobalObjectMap();
   inline bool IsJSTypedArrayMap();
@@ -7343,6 +7384,12 @@ class SharedFunctionInfo: public HeapObject {
   // Indicates that this function is a default constructor.
   DECL_BOOLEAN_ACCESSORS(is_default_constructor)
 
+  // Indicates that this is a constructor for a base class with instance fields.
+  DECL_BOOLEAN_ACCESSORS(requires_class_field_init)
+  // Indicates that this is a synthesized function to set up class instance
+  // fields.
+  DECL_BOOLEAN_ACCESSORS(is_class_field_initializer)
+
   // Indicates that this function is an asm function.
   DECL_BOOLEAN_ACCESSORS(asm_function)
 
@@ -7631,6 +7678,8 @@ class SharedFunctionInfo: public HeapObject {
     kDeserialized,
     kIsDeclaration,
     kIsAsmWasmBroken,
+    kRequiresClassFieldInit,
+    kIsClassFieldInitializer,
     kCompilerHintsCount,  // Pseudo entry
   };
   // kFunctionKind has to be byte-aligned
@@ -7814,6 +7863,21 @@ class JSGeneratorObject: public JSObject {
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSGeneratorObject);
 };
 
+// A JSModule object is a mapping from export names to cells
+// This is still very much in flux.
+class JSModule : public JSObject {
+ public:
+  DECLARE_CAST(JSModule)
+  DECLARE_VERIFIER(JSModule)
+
+  static const int kSize = JSObject::kHeaderSize;
+
+  static void CreateExport(Handle<JSModule> module, Handle<String> name);
+  static void StoreExport(Handle<JSModule> module, Handle<String> name,
+                          Handle<Object> value);
+  static Handle<Object> LoadExport(Handle<JSModule> module,
+                                   Handle<String> name);
+};
 
 // JSBoundFunction describes a bound function exotic object.
 class JSBoundFunction : public JSObject {

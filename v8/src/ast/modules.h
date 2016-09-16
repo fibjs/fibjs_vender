@@ -14,7 +14,7 @@ namespace internal {
 
 
 class AstRawString;
-
+class ModuleInfoEntry;
 
 class ModuleDescriptor : public ZoneObject {
  public:
@@ -80,6 +80,7 @@ class ModuleDescriptor : public ZoneObject {
     const AstRawString* import_name;
     const AstRawString* module_request;
 
+    // TODO(neis): Remove local_name component?
     explicit Entry(Scanner::Location loc)
         : location(loc),
           export_name(nullptr),
@@ -87,9 +88,12 @@ class ModuleDescriptor : public ZoneObject {
           import_name(nullptr),
           module_request(nullptr) {}
 
-    Handle<FixedArray> Serialize(Isolate* isolate) const;
+    // (De-)serialization support.
+    // Note that the location value is not preserved as it's only needed by the
+    // parser.  (A Deserialize'd entry has an invalid location.)
+    Handle<ModuleInfoEntry> Serialize(Isolate* isolate) const;
     static Entry* Deserialize(Isolate* isolate, AstValueFactory* avfactory,
-                              Handle<FixedArray> data);
+                              Handle<ModuleInfoEntry> entry);
   };
 
   // Empty imports and namespace imports.
@@ -147,8 +151,8 @@ class ModuleDescriptor : public ZoneObject {
   ZoneMultimap<const AstRawString*, Entry*> regular_exports_;
   ZoneMap<const AstRawString*, const Entry*> regular_imports_;
 
-  // If there are multiple export entries with the same export name, return one
-  // of them.  Otherwise return nullptr.
+  // If there are multiple export entries with the same export name, return the
+  // last of them (in source order).  Otherwise return nullptr.
   const Entry* FindDuplicateExport(Zone* zone) const;
 
   // Find any implicitly indirect exports and make them explicit.

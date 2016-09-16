@@ -416,6 +416,10 @@ void InstructionSelector::VisitLoad(Node* node) {
   EmitLoad(this, opcode, &output, base, index);
 }
 
+void InstructionSelector::VisitProtectedLoad(Node* node) {
+  // TODO(eholk)
+  UNIMPLEMENTED();
+}
 
 void InstructionSelector::VisitStore(Node* node) {
   ArmOperandGenerator g(this);

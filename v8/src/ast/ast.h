@@ -1176,10 +1176,6 @@ class SloppyBlockFunctionStatement final : public Statement {
  public:
   Statement* statement() const { return statement_; }
   void set_statement(Statement* statement) { statement_ = statement; }
-  VariableProxy* from() const { return from_; }
-  void set_from(VariableProxy* from) { from_ = from; }
-  VariableProxy* to() const { return to_; }
-  void set_to(VariableProxy* to) { to_ = to; }
   Scope* scope() const { return scope_; }
   SloppyBlockFunctionStatement* next() { return next_; }
   void set_next(SloppyBlockFunctionStatement* next) { next_ = next; }
@@ -1190,14 +1186,10 @@ class SloppyBlockFunctionStatement final : public Statement {
   SloppyBlockFunctionStatement(Statement* statement, Scope* scope)
       : Statement(kNoSourcePosition, kSloppyBlockFunctionStatement),
         statement_(statement),
-        from_(nullptr),
-        to_(nullptr),
         scope_(scope),
         next_(nullptr) {}
 
   Statement* statement_;
-  VariableProxy* from_;
-  VariableProxy* to_;
   Scope* const scope_;
   SloppyBlockFunctionStatement* next_;
 };
@@ -1654,7 +1646,7 @@ class VariableProxy final : public Expression {
   friend class AstNodeFactory;
 
   VariableProxy(Variable* var, int start_position, int end_position);
-  VariableProxy(const AstRawString* name, Variable::Kind variable_kind,
+  VariableProxy(const AstRawString* name, VariableKind variable_kind,
                 int start_position, int end_position);
   explicit VariableProxy(const VariableProxy* copy_from);
 
@@ -1921,10 +1913,9 @@ class CallNew final : public Expression {
   // Type feedback information.
   void AssignFeedbackVectorSlots(Isolate* isolate, FeedbackVectorSpec* spec,
                                  FeedbackVectorSlotCache* cache) {
-    callnew_feedback_slot_ = spec->AddGeneralSlot();
-    // Construct calls have two slots, one right after the other.
-    // The second slot stores the call count for monomorphic calls.
-    spec->AddGeneralSlot();
+    // CallNew stores feedback in the exact same way as Call. We can
+    // piggyback on the type feedback infrastructure for calls.
+    callnew_feedback_slot_ = spec->AddCallICSlot();
   }
 
   FeedbackVectorSlot CallNewFeedbackSlot() {
@@ -1985,6 +1976,10 @@ class CallRuntime final : public Expression {
   int context_index() const {
     DCHECK(is_jsruntime());
     return context_index_;
+  }
+  void set_context_index(int index) {
+    DCHECK(is_jsruntime());
+    context_index_ = index;
   }
   const Runtime::Function* function() const {
     DCHECK(!is_jsruntime());
@@ -2631,6 +2626,21 @@ class FunctionLiteral final : public Expression {
   int yield_count() { return yield_count_; }
   void set_yield_count(int yield_count) { yield_count_ = yield_count; }
 
+  bool requires_class_field_init() {
+    return RequiresClassFieldInit::decode(bitfield_);
+  }
+  void set_requires_class_field_init(bool requires_class_field_init) {
+    bitfield_ =
+        RequiresClassFieldInit::update(bitfield_, requires_class_field_init);
+  }
+  bool is_class_field_initializer() {
+    return IsClassFieldInitializer::decode(bitfield_);
+  }
+  void set_is_class_field_initializer(bool is_class_field_initializer) {
+    bitfield_ =
+        IsClassFieldInitializer::update(bitfield_, is_class_field_initializer);
+  }
+
  private:
   friend class AstNodeFactory;
 
@@ -2660,21 +2670,23 @@ class FunctionLiteral final : public Expression {
                                        kHasDuplicateParameters) |
         IsFunction::encode(is_function) |
         ShouldEagerCompile::encode(eager_compile_hint == kShouldEagerCompile) |
+        RequiresClassFieldInit::encode(false) |
+        IsClassFieldInitializer::encode(false) |
         FunctionKindBits::encode(kind) | ShouldBeUsedOnceHint::encode(false);
     DCHECK(IsValidFunctionKind(kind));
   }
 
-  class FunctionTypeBits : public BitField16<FunctionType, 0, 2> {};
-  class Pretenure : public BitField16<bool, 2, 1> {};
-  class HasDuplicateParameters : public BitField16<bool, 3, 1> {};
-  class IsFunction : public BitField16<bool, 4, 1> {};
-  class ShouldEagerCompile : public BitField16<bool, 5, 1> {};
-  class ShouldBeUsedOnceHint : public BitField16<bool, 6, 1> {};
-  class FunctionKindBits : public BitField16<FunctionKind, 7, 9> {};
+  class FunctionTypeBits : public BitField<FunctionType, 0, 2> {};
+  class Pretenure : public BitField<bool, 2, 1> {};
+  class HasDuplicateParameters : public BitField<bool, 3, 1> {};
+  class IsFunction : public BitField<bool, 4, 1> {};
+  class ShouldEagerCompile : public BitField<bool, 5, 1> {};
+  class ShouldBeUsedOnceHint : public BitField<bool, 6, 1> {};
+  class RequiresClassFieldInit : public BitField<bool, 7, 1> {};
+  class IsClassFieldInitializer : public BitField<bool, 8, 1> {};
+  class FunctionKindBits : public BitField<FunctionKind, 9, 9> {};
 
-  // Start with 16-bit field, which should get packed together
-  // with Expression's trailing 16-bit field.
-  uint16_t bitfield_;
+  uint32_t bitfield_;
 
   BailoutReason dont_optimize_reason_;
 
@@ -2696,7 +2708,7 @@ class FunctionLiteral final : public Expression {
 // about a class literal's properties from the parser to the code generator.
 class ClassLiteralProperty final : public LiteralProperty {
  public:
-  enum Kind : uint8_t { METHOD, GETTER, SETTER };
+  enum Kind : uint8_t { METHOD, GETTER, SETTER, FIELD };
 
   Kind kind() const { return kind_; }
 
@@ -2724,6 +2736,13 @@ class ClassLiteral final : public Expression {
   ZoneList<Property*>* properties() const { return properties_; }
   int start_position() const { return position(); }
   int end_position() const { return end_position_; }
+
+  VariableProxy* static_initializer_proxy() const {
+    return static_initializer_proxy_;
+  }
+  void set_static_initializer_proxy(VariableProxy* proxy) {
+    static_initializer_proxy_ = proxy;
+  }
 
   BailoutId CreateLiteralId() const { return BailoutId(local_id(0)); }
   BailoutId PrototypeId() { return BailoutId(local_id(1)); }
@@ -2759,7 +2778,8 @@ class ClassLiteral final : public Expression {
         class_variable_proxy_(class_variable_proxy),
         extends_(extends),
         constructor_(constructor),
-        properties_(properties) {}
+        properties_(properties),
+        static_initializer_proxy_(nullptr) {}
 
   static int parent_num_ids() { return Expression::num_ids(); }
   int local_id(int n) const { return base_id() + parent_num_ids() + n; }
@@ -2771,6 +2791,7 @@ class ClassLiteral final : public Expression {
   Expression* extends_;
   FunctionLiteral* constructor_;
   ZoneList<Property*>* properties_;
+  VariableProxy* static_initializer_proxy_;
 };
 
 
@@ -3144,6 +3165,16 @@ class AstNodeFactory final BASE_EMBEDDED {
         try_block, scope, variable, catch_block, HandlerTable::DESUGARING, pos);
   }
 
+  TryCatchStatement* NewTryCatchStatementForAsyncAwait(Block* try_block,
+                                                       Scope* scope,
+                                                       Variable* variable,
+                                                       Block* catch_block,
+                                                       int pos) {
+    return new (zone_)
+        TryCatchStatement(try_block, scope, variable, catch_block,
+                          HandlerTable::ASYNC_AWAIT, pos);
+  }
+
   TryFinallyStatement* NewTryFinallyStatement(Block* try_block,
                                               Block* finally_block, int pos) {
     return new (zone_) TryFinallyStatement(try_block, finally_block, pos);
@@ -3247,7 +3278,7 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   VariableProxy* NewVariableProxy(const AstRawString* name,
-                                  Variable::Kind variable_kind,
+                                  VariableKind variable_kind,
                                   int start_position = kNoSourcePosition,
                                   int end_position = kNoSourcePosition) {
     DCHECK_NOT_NULL(name);
@@ -3378,11 +3409,12 @@ class AstNodeFactory final BASE_EMBEDDED {
   // the Function constructor.
   FunctionLiteral* NewScriptOrEvalFunctionLiteral(
       DeclarationScope* scope, ZoneList<Statement*>* body,
-      int materialized_literal_count, int expected_property_count) {
+      int materialized_literal_count, int expected_property_count,
+      int parameter_count) {
     return new (zone_) FunctionLiteral(
         zone_, ast_value_factory_->empty_string(), ast_value_factory_, scope,
-        body, materialized_literal_count, expected_property_count, 0,
-        FunctionLiteral::kAnonymousExpression,
+        body, materialized_literal_count, expected_property_count,
+        parameter_count, FunctionLiteral::kAnonymousExpression,
         FunctionLiteral::kNoDuplicateParameters,
         FunctionLiteral::kShouldLazyCompile, FunctionKind::kNormalFunction, 0,
         false);

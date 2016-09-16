@@ -394,6 +394,7 @@ namespace internal {
   F(IsJSGlobalProxy, 1, 1)                           \
   F(DefineAccessorPropertyUnchecked, 5, 1)           \
   F(DefineDataPropertyInLiteral, 5, 1)               \
+  F(DefineDataProperty, 5, 1)                        \
   F(GetDataProperty, 2, 1)                           \
   F(GetConstructorName, 1, 1)                        \
   F(HasFastPackedElements, 1, 1)                     \
@@ -416,7 +417,9 @@ namespace internal {
   F(HasInPrototypeChain, 2, 1)                       \
   F(CreateIterResultObject, 2, 1)                    \
   F(IsAccessCheckNeeded, 1, 1)                       \
-  F(CreateDataProperty, 3, 1)
+  F(CreateDataProperty, 3, 1)                        \
+  F(LoadModuleExport, 1, 1)                          \
+  F(StoreModuleExport, 2, 1)
 
 #define FOR_EACH_INTRINSIC_OPERATORS(F) \
   F(Multiply, 2, 1)                     \
@@ -475,6 +478,7 @@ namespace internal {
   F(NewClosure_Tenured, 1, 1)           \
   F(NewScriptContext, 2, 1)             \
   F(NewFunctionContext, 1, 1)           \
+  F(PushModuleContext, 3, 1)            \
   F(PushWithContext, 3, 1)              \
   F(PushCatchContext, 4, 1)             \
   F(PushBlockContext, 2, 1)             \
@@ -798,7 +802,6 @@ namespace internal {
   F(StringReplaceOneCharWithString, 3, 1) \
   F(StringIndexOf, 3, 1)                  \
   F(StringLastIndexOf, 3, 1)              \
-  F(StringLocaleCompare, 2, 1)            \
   F(SubString, 3, 1)                      \
   F(StringAdd, 2, 1)                      \
   F(InternalizeString, 1, 1)              \
@@ -888,7 +891,10 @@ namespace internal {
   F(SerializeWasmModule, 1, 1)                \
   F(DeserializeWasmModule, 1, 1)              \
   F(IsAsmWasmCode, 1, 1)                      \
-  F(IsNotAsmWasmCode, 1, 1)
+  F(IsNotAsmWasmCode, 1, 1)                   \
+  F(ValidateWasmInstancesChain, 2, 1)         \
+  F(ValidateWasmModuleState, 1, 1)            \
+  F(ValidateWasmOrphanedInstance, 1, 1)
 
 #define FOR_EACH_INTRINSIC_TYPEDARRAY(F)     \
   F(ArrayBufferGetByteLength, 1, 1)          \
@@ -909,7 +915,8 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_WASM(F) \
   F(WasmGrowMemory, 1, 1)          \
-  F(WasmThrowTypeError, 0, 1)
+  F(WasmThrowTypeError, 0, 1)      \
+  F(WasmThrow, 2, 1)
 
 #define FOR_EACH_INTRINSIC_RETURN_PAIR(F) \
   F(LoadLookupSlotForCall, 1, 2)
@@ -1028,13 +1035,8 @@ class Runtime : public AllStatic {
 
   static const int kNotFound = -1;
 
-  // Add internalized strings for all the intrinsic function names to a
-  // StringDictionary.
-  static void InitializeIntrinsicFunctionNames(Isolate* isolate,
-                                               Handle<NameDictionary> dict);
-
-  // Get the intrinsic function with the given name, which must be internalized.
-  static const Function* FunctionForName(Handle<String> name);
+  // Get the intrinsic function with the given name.
+  static const Function* FunctionForName(const unsigned char* name, int length);
 
   // Get the intrinsic function with the given FunctionId.
   static const Function* FunctionForId(FunctionId id);

@@ -272,6 +272,14 @@ function patch_flag() {
 	fs.writeFile(fname, txt1);
 }
 
+function patch_serializer() {
+	var fname = "src/snapshot/code-serializer.cc";
+	var txt = fs.readFile(fname);
+	txt = txt.replace("if (source_hash", "// if (source_hash");
+	txt = txt.replace("if (flags_hash", "// if (flags_hash");
+	fs.writeFile(fname, txt);
+}
+
 save_plat();
 
 clean_folder('include');
@@ -296,6 +304,7 @@ patch_plat();
 patch_trace();
 patch_macro();
 patch_flag();
+patch_serializer();
 
 //fs.unlink('src/version_gen.cc');
 

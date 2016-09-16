@@ -963,6 +963,12 @@ void Decoder::DecodeTypeRegisterSRsType(Instruction* instr) {
       case CVT_D_S:
         Format(instr, "cvt.d.'t 'fd, 'fs");
         break;
+      case MADDF_S:
+        Format(instr, "maddf.s  'fd, 'fs, 'ft");
+        break;
+      case MSUBF_S:
+        Format(instr, "msubf.s  'fd, 'fs, 'ft");
+        break;
       default:
         Format(instr, "unknown.cop1.'t");
         break;
@@ -973,7 +979,17 @@ void Decoder::DecodeTypeRegisterSRsType(Instruction* instr) {
 
 void Decoder::DecodeTypeRegisterDRsType(Instruction* instr) {
   if (!DecodeTypeRegisterRsType(instr)) {
-    Format(instr, "unknown.cop1.'t");
+    switch (instr->FunctionFieldRaw()) {
+      case MADDF_D:
+        Format(instr, "maddf.d  'fd, 'fs, 'ft");
+        break;
+      case MSUBF_D:
+        Format(instr, "msubf.d  'fd, 'fs, 'ft");
+        break;
+      default:
+        Format(instr, "unknown.cop1.'t");
+        break;
+    }
   }
 }
 
@@ -1119,8 +1135,17 @@ void Decoder::DecodeTypeRegisterCOP1(Instruction* instr) {
 
 void Decoder::DecodeTypeRegisterCOP1X(Instruction* instr) {
   switch (instr->FunctionFieldRaw()) {
+    case MADD_S:
+      Format(instr, "madd.s  'fd, 'fr, 'fs, 'ft");
+      break;
     case MADD_D:
       Format(instr, "madd.d  'fd, 'fr, 'fs, 'ft");
+      break;
+    case MSUB_S:
+      Format(instr, "msub.s  'fd, 'fr, 'fs, 'ft");
+      break;
+    case MSUB_D:
+      Format(instr, "msub.d  'fd, 'fr, 'fs, 'ft");
       break;
     default:
       UNREACHABLE();
@@ -1485,6 +1510,10 @@ void Decoder::DecodeTypeRegisterSPECIAL3(Instruction* instr) {
           break;
         }
       }
+      break;
+    }
+    case DINS: {
+      Format(instr, "dins    'rt, 'rs, 'sa, 'ss2");
       break;
     }
     case DBSHFL: {

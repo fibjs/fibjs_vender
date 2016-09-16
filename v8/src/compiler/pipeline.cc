@@ -443,14 +443,14 @@ class AstGraphBuilderWithPositions final : public AstGraphBuilder {
                                LoopAssignmentAnalysis* loop_assignment,
                                TypeHintAnalysis* type_hint_analysis,
                                SourcePositionTable* source_positions)
-      : AstGraphBuilder(local_zone, info, jsgraph, loop_assignment,
+      : AstGraphBuilder(local_zone, info, jsgraph, 1.0f, loop_assignment,
                         type_hint_analysis),
         source_positions_(source_positions),
         start_position_(info->shared_info()->start_position()) {}
 
-  bool CreateGraph(bool stack_check) {
+  bool CreateGraph() {
     SourcePositionTable::Scope pos_scope(source_positions_, start_position_);
-    return AstGraphBuilder::CreateGraph(stack_check);
+    return AstGraphBuilder::CreateGraph();
   }
 
 #define DEF_VISIT(type)                                               \
@@ -604,6 +604,9 @@ PipelineCompilationJob::Status PipelineCompilationJob::PrepareJobImpl() {
     }
     if (FLAG_native_context_specialization) {
       info()->MarkAsNativeContextSpecializing();
+    }
+    if (FLAG_turbo_inlining) {
+      info()->MarkAsInliningEnabled();
     }
   }
   if (!info()->shared_info()->asm_function() || FLAG_turbo_asm_deoptimization) {
@@ -761,18 +764,17 @@ struct GraphBuilderPhase {
   static const char* phase_name() { return "graph builder"; }
 
   void Run(PipelineData* data, Zone* temp_zone) {
-    bool stack_check = !data->info()->IsStub();
     bool succeeded = false;
 
     if (data->info()->is_optimizing_from_bytecode()) {
       BytecodeGraphBuilder graph_builder(temp_zone, data->info(),
-                                         data->jsgraph());
+                                         data->jsgraph(), 1.0f);
       succeeded = graph_builder.CreateGraph();
     } else {
       AstGraphBuilderWithPositions graph_builder(
           temp_zone, data->info(), data->jsgraph(), data->loop_assignment(),
           data->type_hint_analysis(), data->source_positions());
-      succeeded = graph_builder.CreateGraph(stack_check);
+      succeeded = graph_builder.CreateGraph();
     }
 
     if (!succeeded) {
@@ -842,9 +844,7 @@ struct InliningPhase {
     AddReducer(data, &graph_reducer, &context_specialization);
     AddReducer(data, &graph_reducer, &intrinsic_lowering);
     AddReducer(data, &graph_reducer, &call_reducer);
-    if (!data->info()->is_optimizing_from_bytecode()) {
-      AddReducer(data, &graph_reducer, &inlining);
-    }
+    AddReducer(data, &graph_reducer, &inlining);
     graph_reducer.ReduceGraph();
   }
 };

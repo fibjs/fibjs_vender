@@ -520,37 +520,44 @@ compiler::Node* Interpreter::BuildLoadContextSlot(
   Node* reg_index = __ BytecodeOperandReg(0);
   Node* context = __ LoadRegister(reg_index);
   Node* slot_index = __ BytecodeOperandIdx(1);
-  return __ LoadContextSlot(context, slot_index);
+  Node* depth = __ BytecodeOperandUImm(2);
+  Node* slot_context = __ GetContextAtDepth(context, depth);
+  return __ LoadContextSlot(slot_context, slot_index);
 }
 
-// LdaContextSlot <context> <slot_index>
+// LdaContextSlot <context> <slot_index> <depth>
 //
-// Load the object in |slot_index| of |context| into the accumulator.
+// Load the object in |slot_index| of the context at |depth| in the context
+// chain starting at |context| into the accumulator.
 void Interpreter::DoLdaContextSlot(InterpreterAssembler* assembler) {
   Node* result = BuildLoadContextSlot(assembler);
   __ SetAccumulator(result);
   __ Dispatch();
 }
 
-// LdrContextSlot <context> <slot_index> <reg>
+// LdrContextSlot <context> <slot_index> <depth> <reg>
 //
-// Load the object in <slot_index> of <context> into register <reg>.
+// Load the object in |slot_index| of the context at |depth| in the context
+// chain of |context| into register |reg|.
 void Interpreter::DoLdrContextSlot(InterpreterAssembler* assembler) {
   Node* result = BuildLoadContextSlot(assembler);
-  Node* destination = __ BytecodeOperandReg(2);
+  Node* destination = __ BytecodeOperandReg(3);
   __ StoreRegister(result, destination);
   __ Dispatch();
 }
 
-// StaContextSlot <context> <slot_index>
+// StaContextSlot <context> <slot_index> <depth>
 //
-// Stores the object in the accumulator into |slot_index| of |context|.
+// Stores the object in the accumulator into |slot_index| of the context at
+// |depth| in the context chain starting at |context|.
 void Interpreter::DoStaContextSlot(InterpreterAssembler* assembler) {
   Node* value = __ GetAccumulator();
   Node* reg_index = __ BytecodeOperandReg(0);
   Node* context = __ LoadRegister(reg_index);
   Node* slot_index = __ BytecodeOperandIdx(1);
-  __ StoreContextSlot(context, slot_index, value);
+  Node* depth = __ BytecodeOperandUImm(2);
+  Node* slot_context = __ GetContextAtDepth(context, depth);
+  __ StoreContextSlot(slot_context, slot_index, value);
   __ Dispatch();
 }
 
@@ -1303,7 +1310,9 @@ void Interpreter::DoUnaryOpWithFeedback(InterpreterAssembler* assembler) {
 //
 // Convert the object referenced by the accumulator to a name.
 void Interpreter::DoToName(InterpreterAssembler* assembler) {
-  Node* result = BuildUnaryOp(CodeFactory::ToName(isolate_), assembler);
+  Node* object = __ GetAccumulator();
+  Node* context = __ GetContext();
+  Node* result = __ ToName(context, object);
   __ StoreRegister(result, __ BytecodeOperandReg(0));
   __ Dispatch();
 }
@@ -1312,7 +1321,9 @@ void Interpreter::DoToName(InterpreterAssembler* assembler) {
 //
 // Convert the object referenced by the accumulator to a number.
 void Interpreter::DoToNumber(InterpreterAssembler* assembler) {
-  Node* result = BuildUnaryOp(CodeFactory::ToNumber(isolate_), assembler);
+  Node* object = __ GetAccumulator();
+  Node* context = __ GetContext();
+  Node* result = __ ToNumber(context, object);
   __ StoreRegister(result, __ BytecodeOperandReg(0));
   __ Dispatch();
 }
@@ -1843,6 +1854,35 @@ void Interpreter::DoJumpIfNotHoleConstant(InterpreterAssembler* assembler) {
   __ JumpIfWordNotEqual(accumulator, the_hole_value, relative_jump);
 }
 
+// JumpLoop <imm> <loop_depth>
+//
+// Jump by number of bytes represented by the immediate operand |imm|. Also
+// performs a loop nesting check and potentially triggers OSR in case the
+// current OSR level matches (or exceeds) the specified |loop_depth|.
+void Interpreter::DoJumpLoop(InterpreterAssembler* assembler) {
+  Node* relative_jump = __ BytecodeOperandImm(0);
+  Node* loop_depth = __ BytecodeOperandImm(1);
+  Node* osr_level = __ LoadOSRNestingLevel();
+
+  // Check if OSR points at the given {loop_depth} are armed by comparing it to
+  // the current {osr_level} loaded from the header of the BytecodeArray.
+  Label ok(assembler), osr_armed(assembler, Label::kDeferred);
+  Node* condition = __ Int32GreaterThanOrEqual(loop_depth, osr_level);
+  __ Branch(condition, &ok, &osr_armed);
+
+  __ Bind(&ok);
+  __ Jump(relative_jump);
+
+  __ Bind(&osr_armed);
+  {
+    Callable callable = CodeFactory::InterpreterOnStackReplacement(isolate_);
+    Node* target = __ HeapConstant(callable.code());
+    Node* context = __ GetContext();
+    __ CallStub(callable.descriptor(), target, context);
+    __ Jump(relative_jump);
+  }
+}
+
 // CreateRegExpLiteral <pattern_idx> <literal_idx> <flags>
 //
 // Creates a regular expression literal for literal index <literal_idx> with
@@ -1999,7 +2039,7 @@ void Interpreter::DoCreateCatchContext(InterpreterAssembler* assembler) {
 // Creates a new context with number of |slots| for the function closure.
 void Interpreter::DoCreateFunctionContext(InterpreterAssembler* assembler) {
   Node* closure = __ LoadRegister(Register::function_closure());
-  Node* slots = __ BytecodeOperandIdx(0);
+  Node* slots = __ BytecodeOperandUImm(0);
   Node* context = __ GetContext();
   __ SetAccumulator(
       FastNewFunctionContextStub::Generate(assembler, closure, slots, context));
@@ -2109,32 +2149,6 @@ void Interpreter::DoStackCheck(InterpreterAssembler* assembler) {
   {
     Node* context = __ GetContext();
     __ CallRuntime(Runtime::kStackGuard, context);
-    __ Dispatch();
-  }
-}
-
-// OsrPoll <loop_depth>
-//
-// Performs a loop nesting check and potentially triggers OSR.
-void Interpreter::DoOsrPoll(InterpreterAssembler* assembler) {
-  Node* loop_depth = __ BytecodeOperandImm(0);
-  Node* osr_level = __ LoadOSRNestingLevel();
-
-  // Check if OSR points at the given {loop_depth} are armed by comparing it to
-  // the current {osr_level} loaded from the header of the BytecodeArray.
-  Label ok(assembler), osr_armed(assembler, Label::kDeferred);
-  Node* condition = __ Int32GreaterThanOrEqual(loop_depth, osr_level);
-  __ Branch(condition, &ok, &osr_armed);
-
-  __ Bind(&ok);
-  __ Dispatch();
-
-  __ Bind(&osr_armed);
-  {
-    Callable callable = CodeFactory::InterpreterOnStackReplacement(isolate_);
-    Node* target = __ HeapConstant(callable.code());
-    Node* context = __ GetContext();
-    __ CallStub(callable.descriptor(), target, context);
     __ Dispatch();
   }
 }

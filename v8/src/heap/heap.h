@@ -48,7 +48,9 @@ using v8::MemoryPressureLevel;
   V(Map, one_byte_string_map, OneByteStringMap)                                \
   V(Map, one_byte_internalized_string_map, OneByteInternalizedStringMap)       \
   V(Map, scope_info_map, ScopeInfoMap)                                         \
+  V(Map, module_info_entry_map, ModuleInfoEntryMap)                            \
   V(Map, module_info_map, ModuleInfoMap)                                       \
+  V(Map, js_module_map, JSModuleMap)                                           \
   V(Map, shared_function_info_map, SharedFunctionInfoMap)                      \
   V(Map, code_map, CodeMap)                                                    \
   V(Map, function_context_map, FunctionContextMap)                             \
@@ -59,6 +61,7 @@ using v8::MemoryPressureLevel;
   V(Map, heap_number_map, HeapNumberMap)                                       \
   V(Map, transition_array_map, TransitionArrayMap)                             \
   V(FixedArray, empty_literals_array, EmptyLiteralsArray)                      \
+  V(FixedArray, empty_type_feedback_vector, EmptyTypeFeedbackVector)           \
   V(FixedArray, empty_fixed_array, EmptyFixedArray)                            \
   V(FixedArray, cleared_optimized_code_map, ClearedOptimizedCodeMap)           \
   V(DescriptorArray, empty_descriptor_array, EmptyDescriptorArray)             \
@@ -185,7 +188,6 @@ using v8::MemoryPressureLevel;
   V(FixedArray, experimental_extra_natives_source_cache,                       \
     ExperimentalExtraNativesSourceCache)                                       \
   /* Lists and dictionaries */                                                 \
-  V(NameDictionary, intrinsic_function_names, IntrinsicFunctionNames)          \
   V(NameDictionary, empty_properties_dictionary, EmptyPropertiesDictionary)    \
   V(Object, symbol_registry, SymbolRegistry)                                   \
   V(Object, script_list, ScriptList)                                           \
@@ -275,7 +277,9 @@ using v8::MemoryPressureLevel;
   V(FixedArrayMap)                      \
   V(CodeMap)                            \
   V(ScopeInfoMap)                       \
+  V(ModuleInfoEntryMap)                 \
   V(ModuleInfoMap)                      \
+  V(JSModuleMap)                        \
   V(FixedCOWArrayMap)                   \
   V(FixedDoubleArrayMap)                \
   V(WeakCellMap)                        \
@@ -2160,10 +2164,6 @@ class Heap {
   // which collector to invoke, before expanding a paged space in the old
   // generation and on every allocation in large object space.
   intptr_t old_generation_allocation_limit_;
-
-  // Indicates that an allocation has failed in the old generation since the
-  // last GC.
-  bool old_gen_exhausted_;
 
   // Indicates that inline bump-pointer allocation has been globally disabled
   // for all spaces. This is used to disable allocations in generated code.

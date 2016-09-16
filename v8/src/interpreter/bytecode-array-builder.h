@@ -94,11 +94,15 @@ class BytecodeArrayBuilder final : public ZoneObject {
                                     int feedback_slot,
                                     LanguageMode language_mode);
 
-  // Load the object at |slot_index| in |context| into the accumulator.
-  BytecodeArrayBuilder& LoadContextSlot(Register context, int slot_index);
+  // Load the object at |slot_index| at |depth| in the context chain starting
+  // with |context| into the accumulator.
+  BytecodeArrayBuilder& LoadContextSlot(Register context, int slot_index,
+                                        int depth);
 
-  // Stores the object in the accumulator into |slot_index| of |context|.
-  BytecodeArrayBuilder& StoreContextSlot(Register context, int slot_index);
+  // Stores the object in the accumulator into |slot_index| at |depth| in the
+  // context chain starting with |context|.
+  BytecodeArrayBuilder& StoreContextSlot(Register context, int slot_index,
+                                         int depth);
 
   // Register-accumulator transfers.
   BytecodeArrayBuilder& LoadAccumulatorWithRegister(Register reg);
@@ -250,10 +254,9 @@ class BytecodeArrayBuilder final : public ZoneObject {
   BytecodeArrayBuilder& JumpIfNotHole(BytecodeLabel* label);
   BytecodeArrayBuilder& JumpIfNull(BytecodeLabel* label);
   BytecodeArrayBuilder& JumpIfUndefined(BytecodeLabel* label);
+  BytecodeArrayBuilder& JumpLoop(BytecodeLabel* label, int loop_depth);
 
   BytecodeArrayBuilder& StackCheck(int position);
-
-  BytecodeArrayBuilder& OsrPoll(int loop_depth);
 
   BytecodeArrayBuilder& Throw();
   BytecodeArrayBuilder& ReThrow();
@@ -348,8 +351,7 @@ class BytecodeArrayBuilder final : public ZoneObject {
   void Output(Bytecode bytecode, uint32_t operand0);
   void Output(Bytecode bytecode);
 
-  BytecodeArrayBuilder& OutputJump(Bytecode jump_bytecode,
-                                   BytecodeLabel* label);
+  BytecodeArrayBuilder& OutputJump(BytecodeNode* node, BytecodeLabel* label);
 
   bool RegisterIsValid(Register reg) const;
   bool OperandsAreValid(Bytecode bytecode, int operand_count,

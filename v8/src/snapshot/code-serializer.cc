@@ -98,6 +98,10 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
     UNREACHABLE();
   }
 
+  if (ElideObject(obj)) {
+    return SerializeObject(*isolate()->factory()->undefined_value(),
+                           how_to_code, where_to_point, skip);
+  }
   // Past this point we should not see any (context-specific) maps anymore.
   CHECK(!obj->IsMap());
   // There should be no references to the global object embedded.
@@ -345,11 +349,11 @@ SerializedCodeData::SanityCheckResult SerializedCodeData::SanityCheck(
   uint32_t c1 = GetHeaderValue(kChecksum1Offset);
   uint32_t c2 = GetHeaderValue(kChecksum2Offset);
   if (version_hash != Version::Hash()) return VERSION_MISMATCH;
-  if (source_hash != expected_source_hash) return SOURCE_MISMATCH;
+  // if (source_hash != expected_source_hash) return SOURCE_MISMATCH;
   if (cpu_features != static_cast<uint32_t>(CpuFeatures::SupportedFeatures())) {
     return CPU_FEATURES_MISMATCH;
   }
-  if (flags_hash != FlagList::Hash()) return FLAGS_MISMATCH;
+  // if (flags_hash != FlagList::Hash()) return FLAGS_MISMATCH;
   if (!Checksum(DataWithoutHeader()).Check(c1, c2)) return CHECKSUM_MISMATCH;
   return CHECK_SUCCESS;
 }

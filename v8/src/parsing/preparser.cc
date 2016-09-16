@@ -121,28 +121,6 @@ PreParser::PreParseResult PreParser::PreParseLazyFunction(
 // That means that contextual checks (like a label being declared where
 // it is used) are generally omitted.
 
-PreParser::Statement PreParser::ParseHoistableDeclaration(
-    int pos, ParseFunctionFlags flags, ZoneList<const AstRawString*>* names,
-    bool default_export, bool* ok) {
-  const bool is_generator = flags & ParseFunctionFlags::kIsGenerator;
-  const bool is_async = flags & ParseFunctionFlags::kIsAsync;
-  DCHECK(!is_generator || !is_async);
-
-  bool is_strict_reserved = false;
-  Identifier name = ParseIdentifierOrStrictReservedWord(
-      &is_strict_reserved, CHECK_OK);
-
-  ParseFunctionLiteral(name, scanner()->location(),
-                       is_strict_reserved ? kFunctionNameIsStrictReserved
-                                          : kFunctionNameValidityUnknown,
-                       is_generator ? FunctionKind::kGeneratorFunction
-                                    : is_async ? FunctionKind::kAsyncFunction
-                                               : FunctionKind::kNormalFunction,
-                       pos, FunctionLiteral::kDeclaration, language_mode(),
-                       CHECK_OK);
-  return Statement::FunctionDeclaration();
-}
-
 PreParser::Statement PreParser::ParseAsyncFunctionDeclaration(
     ZoneList<const AstRawString*>* names, bool default_export, bool* ok) {
   // AsyncFunctionDeclaration ::
@@ -152,23 +130,6 @@ PreParser::Statement PreParser::ParseAsyncFunctionDeclaration(
   int pos = position();
   Expect(Token::FUNCTION, CHECK_OK);
   ParseFunctionFlags flags = ParseFunctionFlags::kIsAsync;
-  return ParseHoistableDeclaration(pos, flags, names, default_export, ok);
-}
-
-PreParser::Statement PreParser::ParseHoistableDeclaration(
-    ZoneList<const AstRawString*>* names, bool default_export, bool* ok) {
-  // FunctionDeclaration ::
-  //   'function' Identifier '(' FormalParameterListopt ')' '{' FunctionBody '}'
-  // GeneratorDeclaration ::
-  //   'function' '*' Identifier '(' FormalParameterListopt ')'
-  //      '{' FunctionBody '}'
-
-  Expect(Token::FUNCTION, CHECK_OK);
-  int pos = position();
-  ParseFunctionFlags flags = ParseFunctionFlags::kIsNormal;
-  if (Check(Token::MUL)) {
-    flags |= ParseFunctionFlags::kIsGenerator;
-  }
   return ParseHoistableDeclaration(pos, flags, names, default_export, ok);
 }
 
@@ -197,240 +158,10 @@ PreParser::Statement PreParser::ParseFunctionDeclaration(bool* ok) {
       return Statement::Default();
     }
   }
+  // PreParser is not able to parse "export default" yet (since PreParser is
+  // at the moment only used for functions, and it cannot occur
+  // there). TODO(marja): update this when it is.
   return ParseHoistableDeclaration(pos, flags, nullptr, false, ok);
-}
-
-PreParser::Statement PreParser::ParseExpressionOrLabelledStatement(
-    ZoneList<const AstRawString*>* names,
-    AllowLabelledFunctionStatement allow_function, bool* ok) {
-  // ExpressionStatement | LabelledStatement ::
-  //   Expression ';'
-  //   Identifier ':' Statement
-
-  switch (peek()) {
-    case Token::FUNCTION:
-    case Token::LBRACE:
-      UNREACHABLE();  // Always handled by the callers.
-    case Token::CLASS:
-      ReportUnexpectedToken(Next());
-      *ok = false;
-      return Statement::Default();
-
-    default:
-      break;
-  }
-
-  bool starts_with_identifier = peek_any_identifier();
-  ExpressionClassifier classifier(this);
-  Expression expr = ParseExpressionCoverGrammar(true, CHECK_OK);
-  ValidateExpression(CHECK_OK);
-
-  // Even if the expression starts with an identifier, it is not necessarily an
-  // identifier. For example, "foo + bar" starts with an identifier but is not
-  // an identifier.
-  if (starts_with_identifier && expr.IsIdentifier() && peek() == Token::COLON) {
-    // Expression is a single identifier, and not, e.g., a parenthesized
-    // identifier.
-    DCHECK(!expr.AsIdentifier().IsEnum());
-    DCHECK(!parsing_module_ || !expr.AsIdentifier().IsAwait());
-    DCHECK(is_sloppy(language_mode()) ||
-           !IsFutureStrictReserved(expr.AsIdentifier()));
-    Consume(Token::COLON);
-    // ES#sec-labelled-function-declarations Labelled Function Declarations
-    if (peek() == Token::FUNCTION && is_sloppy(language_mode())) {
-      if (allow_function == kAllowLabelledFunctionStatement) {
-        return ParseFunctionDeclaration(ok);
-      } else {
-        return ParseScopedStatement(names, true, ok);
-      }
-    }
-    Statement statement =
-        ParseStatement(nullptr, kDisallowLabelledFunctionStatement, ok);
-    return statement.IsJumpStatement() ? Statement::Default() : statement;
-    // Preparsing is disabled for extensions (because the extension details
-    // aren't passed to lazily compiled functions), so we don't
-    // accept "native function" in the preparser.
-  }
-  // Parsed expression statement.
-  ExpectSemicolon(CHECK_OK);
-  return Statement::ExpressionStatement(expr);
-}
-
-PreParser::Statement PreParser::ParseIfStatement(
-    ZoneList<const AstRawString*>* labels, bool* ok) {
-  // IfStatement ::
-  //   'if' '(' Expression ')' Statement ('else' Statement)?
-
-  Expect(Token::IF, CHECK_OK);
-  Expect(Token::LPAREN, CHECK_OK);
-  ParseExpression(true, CHECK_OK);
-  Expect(Token::RPAREN, CHECK_OK);
-  Statement stat = ParseScopedStatement(labels, false, CHECK_OK);
-  if (peek() == Token::ELSE) {
-    Next();
-    Statement else_stat = ParseScopedStatement(labels, false, CHECK_OK);
-    stat = (stat.IsJumpStatement() && else_stat.IsJumpStatement()) ?
-        Statement::Jump() : Statement::Default();
-  } else {
-    stat = Statement::Default();
-  }
-  return stat;
-}
-
-
-PreParser::Statement PreParser::ParseContinueStatement(bool* ok) {
-  // ContinueStatement ::
-  //   'continue' [no line terminator] Identifier? ';'
-
-  Expect(Token::CONTINUE, CHECK_OK);
-  Token::Value tok = peek();
-  if (!scanner()->HasAnyLineTerminatorBeforeNext() &&
-      tok != Token::SEMICOLON &&
-      tok != Token::RBRACE &&
-      tok != Token::EOS) {
-    // ECMA allows "eval" or "arguments" as labels even in strict mode.
-    ParseIdentifier(kAllowRestrictedIdentifiers, CHECK_OK);
-  }
-  ExpectSemicolon(CHECK_OK);
-  return Statement::Jump();
-}
-
-PreParser::Statement PreParser::ParseBreakStatement(
-    ZoneList<const AstRawString*>* labels, bool* ok) {
-  // BreakStatement ::
-  //   'break' [no line terminator] Identifier? ';'
-
-  Expect(Token::BREAK, CHECK_OK);
-  Token::Value tok = peek();
-  if (!scanner()->HasAnyLineTerminatorBeforeNext() &&
-      tok != Token::SEMICOLON &&
-      tok != Token::RBRACE &&
-      tok != Token::EOS) {
-    // ECMA allows "eval" or "arguments" as labels even in strict mode.
-    ParseIdentifier(kAllowRestrictedIdentifiers, CHECK_OK);
-  }
-  ExpectSemicolon(CHECK_OK);
-  return Statement::Jump();
-}
-
-
-PreParser::Statement PreParser::ParseReturnStatement(bool* ok) {
-  // ReturnStatement ::
-  //   'return' [no line terminator] Expression? ';'
-
-  // Consume the return token. It is necessary to do before
-  // reporting any errors on it, because of the way errors are
-  // reported (underlining).
-  Expect(Token::RETURN, CHECK_OK);
-
-  // An ECMAScript program is considered syntactically incorrect if it
-  // contains a return statement that is not within the body of a
-  // function. See ECMA-262, section 12.9, page 67.
-  // This is not handled during preparsing.
-
-  Token::Value tok = peek();
-  if (!scanner()->HasAnyLineTerminatorBeforeNext() &&
-      tok != Token::SEMICOLON &&
-      tok != Token::RBRACE &&
-      tok != Token::EOS) {
-    // Because of the return code rewriting that happens in case of a subclass
-    // constructor we don't want to accept tail calls, therefore we don't set
-    // ReturnExprScope to kInsideValidReturnStatement here.
-    ReturnExprContext return_expr_context =
-        IsSubclassConstructor(function_state_->kind())
-            ? function_state_->return_expr_context()
-            : ReturnExprContext::kInsideValidReturnStatement;
-
-    ReturnExprScope maybe_allow_tail_calls(function_state_,
-                                           return_expr_context);
-    ParseExpression(true, CHECK_OK);
-  }
-  ExpectSemicolon(CHECK_OK);
-  return Statement::Jump();
-}
-
-PreParser::Statement PreParser::ParseWithStatement(
-    ZoneList<const AstRawString*>* labels, bool* ok) {
-  // WithStatement ::
-  //   'with' '(' Expression ')' Statement
-  Expect(Token::WITH, CHECK_OK);
-  if (is_strict(language_mode())) {
-    ReportMessageAt(scanner()->location(), MessageTemplate::kStrictWith);
-    *ok = false;
-    return Statement::Default();
-  }
-  Expect(Token::LPAREN, CHECK_OK);
-  ParseExpression(true, CHECK_OK);
-  Expect(Token::RPAREN, CHECK_OK);
-
-  Scope* with_scope = NewScope(WITH_SCOPE);
-  BlockState block_state(&scope_state_, with_scope);
-  ParseScopedStatement(labels, true, CHECK_OK);
-  return Statement::Default();
-}
-
-PreParser::Statement PreParser::ParseSwitchStatement(
-    ZoneList<const AstRawString*>* labels, bool* ok) {
-  // SwitchStatement ::
-  //   'switch' '(' Expression ')' '{' CaseClause* '}'
-
-  Expect(Token::SWITCH, CHECK_OK);
-  Expect(Token::LPAREN, CHECK_OK);
-  ParseExpression(true, CHECK_OK);
-  Expect(Token::RPAREN, CHECK_OK);
-
-  {
-    BlockState cases_block_state(&scope_state_);
-    Expect(Token::LBRACE, CHECK_OK);
-    Token::Value token = peek();
-    while (token != Token::RBRACE) {
-      if (token == Token::CASE) {
-        Expect(Token::CASE, CHECK_OK);
-        ParseExpression(true, CHECK_OK);
-      } else {
-        Expect(Token::DEFAULT, CHECK_OK);
-      }
-      Expect(Token::COLON, CHECK_OK);
-      token = peek();
-      Statement statement = Statement::Jump();
-      while (token != Token::CASE &&
-             token != Token::DEFAULT &&
-             token != Token::RBRACE) {
-        statement = ParseStatementListItem(CHECK_OK);
-        token = peek();
-      }
-    }
-  }
-  Expect(Token::RBRACE, ok);
-  return Statement::Default();
-}
-
-PreParser::Statement PreParser::ParseDoWhileStatement(
-    ZoneList<const AstRawString*>* labels, bool* ok) {
-  // DoStatement ::
-  //   'do' Statement 'while' '(' Expression ')' ';'
-
-  Expect(Token::DO, CHECK_OK);
-  ParseScopedStatement(nullptr, true, CHECK_OK);
-  Expect(Token::WHILE, CHECK_OK);
-  Expect(Token::LPAREN, CHECK_OK);
-  ParseExpression(true, CHECK_OK);
-  Expect(Token::RPAREN, ok);
-  if (peek() == Token::SEMICOLON) Consume(Token::SEMICOLON);
-  return Statement::Default();
-}
-
-PreParser::Statement PreParser::ParseWhileStatement(
-    ZoneList<const AstRawString*>* labels, bool* ok) {
-  // WhileStatement ::
-  //   'while' '(' Expression ')' Statement
-
-  Expect(Token::WHILE, CHECK_OK);
-  Expect(Token::LPAREN, CHECK_OK);
-  ParseExpression(true, CHECK_OK);
-  Expect(Token::RPAREN, CHECK_OK);
-  ParseScopedStatement(nullptr, true, ok);
-  return Statement::Default();
 }
 
 PreParser::Statement PreParser::ParseForStatement(
@@ -564,22 +295,6 @@ PreParser::Statement PreParser::ParseForStatement(
     ParseScopedStatement(nullptr, true, ok);
   }
   return Statement::Default();
-}
-
-
-PreParser::Statement PreParser::ParseThrowStatement(bool* ok) {
-  // ThrowStatement ::
-  //   'throw' [no line terminator] Expression ';'
-
-  Expect(Token::THROW, CHECK_OK);
-  if (scanner()->HasAnyLineTerminatorBeforeNext()) {
-    ReportMessageAt(scanner()->location(), MessageTemplate::kNewlineAfterThrow);
-    *ok = false;
-    return Statement::Default();
-  }
-  ParseExpression(true, CHECK_OK);
-  ExpectSemicolon(ok);
-  return Statement::Jump();
 }
 
 
@@ -812,18 +527,6 @@ PreParserExpression PreParser::ParseClassLiteral(
   Expect(Token::RBRACE, CHECK_OK);
 
   return Expression::Default();
-}
-
-PreParserExpression PreParser::ParseDoExpression(bool* ok) {
-  // AssignmentExpression ::
-  //     do '{' StatementList '}'
-  Expect(Token::DO, CHECK_OK);
-  Expect(Token::LBRACE, CHECK_OK);
-  while (peek() != Token::RBRACE) {
-    ParseStatementListItem(CHECK_OK);
-  }
-  Expect(Token::RBRACE, CHECK_OK);
-  return PreParserExpression::Default();
 }
 
 void PreParser::ParseAsyncArrowSingleExpressionBody(PreParserStatementList body,

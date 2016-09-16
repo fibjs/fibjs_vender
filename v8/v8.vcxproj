@@ -396,7 +396,6 @@
     <ClInclude Include="src\icu_util.h" />
     <ClInclude Include="src\identity-map.h" />
     <ClInclude Include="src\inspector\Allocator.h" />
-    <ClInclude Include="src\inspector\Atomics.h" />
     <ClInclude Include="src\inspector\InjectedScript.h" />
     <ClInclude Include="src\inspector\InjectedScriptNative.h" />
     <ClInclude Include="src\inspector\InspectedContext.h" />
@@ -619,6 +618,7 @@
     <ClInclude Include="src\x64\frames-x64.h" />
     <ClInclude Include="src\x64\macro-assembler-x64.h" />
     <ClInclude Include="src\x64\simulator-x64.h" />
+    <ClInclude Include="src\x64\sse-instr.h" />
     <ClInclude Include="src\x87\assembler-x87-inl.h" />
     <ClInclude Include="src\x87\assembler-x87.h" />
     <ClInclude Include="src\x87\code-stubs-x87.h" />

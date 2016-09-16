@@ -172,10 +172,10 @@ VariableProxy::VariableProxy(Variable* var, int start_position,
 }
 
 VariableProxy::VariableProxy(const AstRawString* name,
-                             Variable::Kind variable_kind, int start_position,
+                             VariableKind variable_kind, int start_position,
                              int end_position)
     : Expression(start_position, kVariableProxy),
-      bit_field_(IsThisField::encode(variable_kind == Variable::THIS) |
+      bit_field_(IsThisField::encode(variable_kind == THIS_VARIABLE) |
                  IsAssignedField::encode(false) |
                  IsResolvedField::encode(false)),
       end_position_(end_position),
@@ -649,8 +649,7 @@ void ArrayLiteral::AssignFeedbackVectorSlots(Isolate* isolate,
                                              FeedbackVectorSlotCache* cache) {
   // This logic that computes the number of slots needed for vector store
   // ics must mirror FullCodeGenerator::VisitArrayLiteral.
-  int array_index = 0;
-  for (; array_index < values()->length(); array_index++) {
+  for (int array_index = 0; array_index < values()->length(); array_index++) {
     Expression* subexpr = values()->at(array_index);
     DCHECK(!subexpr->IsSpread());
     if (CompileTimeValue::IsCompileTimeValue(subexpr)) continue;

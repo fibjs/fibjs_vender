@@ -1055,6 +1055,17 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ Branch(&switch_to_different_code_kind, ne, a0,
             Operand(masm->CodeObject()));  // Self-reference to this code.
 
+  // Increment invocation count for the function.
+  __ lw(a0, FieldMemOperand(a1, JSFunction::kLiteralsOffset));
+  __ lw(a0, FieldMemOperand(a0, LiteralsArray::kFeedbackVectorOffset));
+  __ lw(t0, FieldMemOperand(
+                a0, TypeFeedbackVector::kInvocationCountIndex * kPointerSize +
+                        TypeFeedbackVector::kHeaderSize));
+  __ Addu(t0, t0, Operand(Smi::FromInt(1)));
+  __ sw(t0, FieldMemOperand(
+                a0, TypeFeedbackVector::kInvocationCountIndex * kPointerSize +
+                        TypeFeedbackVector::kHeaderSize));
+
   // Check function data field is actually a BytecodeArray object.
   if (FLAG_debug_code) {
     __ SmiTst(kInterpreterBytecodeArrayRegister, t0);
@@ -1843,71 +1854,6 @@ void Builtins::Generate_OnStackReplacement(MacroAssembler* masm) {
 
 void Builtins::Generate_InterpreterOnStackReplacement(MacroAssembler* masm) {
   Generate_OnStackReplacementHelper(masm, true);
-}
-
-// static
-void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
-                                               int field_index) {
-  // ----------- S t a t e -------------
-  //  -- a0    : number of arguments
-  //  -- a1    : function
-  //  -- cp    : context
-  //  -- sp[0] : receiver
-  // -----------------------------------
-
-  // 1. Pop receiver into a0 and check that it's actually a JSDate object.
-  Label receiver_not_date;
-  {
-    __ Pop(a0);
-    __ JumpIfSmi(a0, &receiver_not_date);
-    __ GetObjectType(a0, t0, t0);
-    __ Branch(&receiver_not_date, ne, t0, Operand(JS_DATE_TYPE));
-  }
-
-  // 2. Load the specified date field, falling back to the runtime as necessary.
-  if (field_index == JSDate::kDateValue) {
-    __ Ret(USE_DELAY_SLOT);
-    __ lw(v0, FieldMemOperand(a0, JSDate::kValueOffset));  // In delay slot.
-  } else {
-    if (field_index < JSDate::kFirstUncachedField) {
-      Label stamp_mismatch;
-      __ li(a1, Operand(ExternalReference::date_cache_stamp(masm->isolate())));
-      __ lw(a1, MemOperand(a1));
-      __ lw(t0, FieldMemOperand(a0, JSDate::kCacheStampOffset));
-      __ Branch(&stamp_mismatch, ne, t0, Operand(a1));
-      __ Ret(USE_DELAY_SLOT);
-      __ lw(v0, FieldMemOperand(
-                    a0, JSDate::kValueOffset +
-                            field_index * kPointerSize));  // In delay slot.
-      __ bind(&stamp_mismatch);
-    }
-    FrameScope scope(masm, StackFrame::INTERNAL);
-    __ PrepareCallCFunction(2, t0);
-    __ li(a1, Operand(Smi::FromInt(field_index)));
-    __ CallCFunction(
-        ExternalReference::get_date_field_function(masm->isolate()), 2);
-  }
-  __ Ret();
-
-  // 3. Raise a TypeError if the receiver is not a date.
-  __ bind(&receiver_not_date);
-  {
-    FrameScope scope(masm, StackFrame::MANUAL);
-    __ Push(a0);
-    __ Move(a0, Smi::FromInt(0));
-    __ EnterBuiltinFrame(cp, a1, a0);
-    __ CallRuntime(Runtime::kThrowNotDateError);
-
-    // It's far from obvious, but this final trailing instruction after the call
-    // is required for StackFrame::LookupCode to work correctly. To illustrate
-    // why: if call were the final instruction in the code object, then the pc
-    // (== return address) would point beyond the code object when the stack is
-    // traversed. When we then try to look up the code object through
-    // StackFrame::LookupCode, we actually return the next code object that
-    // happens to be on the same page in memory.
-    // TODO(jgruber): A proper fix for this would be nice.
-    __ nop();
-  }
 }
 
 // static
@@ -2903,28 +2849,6 @@ void Builtins::Generate_Abort(MacroAssembler* masm) {
   __ Push(a0);
   __ Move(cp, Smi::FromInt(0));
   __ TailCallRuntime(Runtime::kAbort);
-}
-
-// static
-void Builtins::Generate_ToNumber(MacroAssembler* masm) {
-  // The ToNumber stub takes one argument in a0.
-  Label not_smi;
-  __ JumpIfNotSmi(a0, &not_smi);
-  __ Ret(USE_DELAY_SLOT);
-  __ mov(v0, a0);
-  __ bind(&not_smi);
-
-  Label not_heap_number;
-  __ GetObjectType(a0, a1, a1);
-  // a0: receiver
-  // a1: receiver instance type
-  __ Branch(&not_heap_number, ne, a1, Operand(HEAP_NUMBER_TYPE));
-  __ Ret(USE_DELAY_SLOT);
-  __ mov(v0, a0);
-  __ bind(&not_heap_number);
-
-  __ Jump(masm->isolate()->builtins()->NonNumberToNumber(),
-          RelocInfo::CODE_TARGET);
 }
 
 void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {

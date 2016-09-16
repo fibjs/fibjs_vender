@@ -1091,6 +1091,17 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   __ CmpP(r2, Operand(masm->CodeObject()));  // Self-reference to this code.
   __ bne(&switch_to_different_code_kind);
 
+  // Increment invocation count for the function.
+  __ LoadP(r6, FieldMemOperand(r3, JSFunction::kLiteralsOffset));
+  __ LoadP(r6, FieldMemOperand(r6, LiteralsArray::kFeedbackVectorOffset));
+  __ LoadP(r1, FieldMemOperand(r6, TypeFeedbackVector::kInvocationCountIndex *
+                                           kPointerSize +
+                                       TypeFeedbackVector::kHeaderSize));
+  __ AddSmiLiteral(r1, r1, Smi::FromInt(1), r0);
+  __ StoreP(r1, FieldMemOperand(r6, TypeFeedbackVector::kInvocationCountIndex *
+                                            kPointerSize +
+                                        TypeFeedbackVector::kHeaderSize));
+
   // Check function data field is actually a BytecodeArray object.
   if (FLAG_debug_code) {
     __ TestIfSmi(kInterpreterBytecodeArrayRegister);
@@ -1887,72 +1898,6 @@ void Builtins::Generate_OnStackReplacement(MacroAssembler* masm) {
 
 void Builtins::Generate_InterpreterOnStackReplacement(MacroAssembler* masm) {
   Generate_OnStackReplacementHelper(masm, true);
-}
-
-// static
-void Builtins::Generate_DatePrototype_GetField(MacroAssembler* masm,
-                                               int field_index) {
-  // ----------- S t a t e -------------
-  //  -- r2    : number of arguments
-  //  -- r3    : function
-  //  -- cp    : context
-
-  //  -- lr    : return address
-  //  -- sp[0] : receiver
-  // -----------------------------------
-
-  // 1. Pop receiver into r2 and check that it's actually a JSDate object.
-  Label receiver_not_date;
-  {
-    __ Pop(r2);
-    __ JumpIfSmi(r2, &receiver_not_date);
-    __ CompareObjectType(r2, r4, r5, JS_DATE_TYPE);
-    __ bne(&receiver_not_date);
-  }
-
-  // 2. Load the specified date field, falling back to the runtime as necessary.
-  if (field_index == JSDate::kDateValue) {
-    __ LoadP(r2, FieldMemOperand(r2, JSDate::kValueOffset));
-  } else {
-    if (field_index < JSDate::kFirstUncachedField) {
-      Label stamp_mismatch;
-      __ mov(r3, Operand(ExternalReference::date_cache_stamp(masm->isolate())));
-      __ LoadP(r3, MemOperand(r3));
-      __ LoadP(ip, FieldMemOperand(r2, JSDate::kCacheStampOffset));
-      __ CmpP(r3, ip);
-      __ bne(&stamp_mismatch);
-      __ LoadP(r2, FieldMemOperand(
-                       r2, JSDate::kValueOffset + field_index * kPointerSize));
-      __ Ret();
-      __ bind(&stamp_mismatch);
-    }
-    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
-    __ PrepareCallCFunction(2, r3);
-    __ LoadSmiLiteral(r3, Smi::FromInt(field_index));
-    __ CallCFunction(
-        ExternalReference::get_date_field_function(masm->isolate()), 2);
-  }
-  __ Ret();
-
-  // 3. Raise a TypeError if the receiver is not a date.
-  __ bind(&receiver_not_date);
-  {
-    FrameScope scope(masm, StackFrame::MANUAL);
-    __ push(r2);
-    __ LoadSmiLiteral(r2, Smi::FromInt(0));
-    __ EnterBuiltinFrame(cp, r3, r2);
-    __ CallRuntime(Runtime::kThrowNotDateError);
-
-    // It's far from obvious, but this final trailing instruction after the call
-    // is required for StackFrame::LookupCode to work correctly. To illustrate
-    // why: if call were the final instruction in the code object, then the pc
-    // (== return address) would point beyond the code object when the stack is
-    // traversed. When we then try to look up the code object through
-    // StackFrame::LookupCode, we actually return the next code object that
-    // happens to be on the same page in memory.
-    // TODO(jgruber): A proper fix for this would be nice.
-    __ nop();
-  }
 }
 
 // static
@@ -2929,22 +2874,6 @@ void Builtins::Generate_Abort(MacroAssembler* masm) {
   __ push(r3);
   __ LoadSmiLiteral(cp, Smi::FromInt(0));
   __ TailCallRuntime(Runtime::kAbort);
-}
-
-// static
-void Builtins::Generate_ToNumber(MacroAssembler* masm) {
-  // The ToNumber stub takes one argument in r2.
-  STATIC_ASSERT(kSmiTag == 0);
-  __ TestIfSmi(r2);
-  __ Ret(eq);
-
-  __ CompareObjectType(r2, r3, r3, HEAP_NUMBER_TYPE);
-  // r2: receiver
-  // r3: receiver instance type
-  __ Ret(eq);
-
-  __ Jump(masm->isolate()->builtins()->NonNumberToNumber(),
-          RelocInfo::CODE_TARGET);
 }
 
 void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {

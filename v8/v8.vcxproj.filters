@@ -1371,9 +1371,6 @@
     <ClInclude Include="src\inspector\Allocator.h">
       <Filter>Source Files\inspector</Filter>
     </ClInclude>
-    <ClInclude Include="src\inspector\Atomics.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
     <ClInclude Include="src\inspector\InjectedScript.h">
       <Filter>Source Files\inspector</Filter>
     </ClInclude>
@@ -2038,6 +2035,9 @@
       <Filter>Source Files\x64</Filter>
     </ClInclude>
     <ClInclude Include="src\x64\simulator-x64.h">
+      <Filter>Source Files\x64</Filter>
+    </ClInclude>
+    <ClInclude Include="src\x64\sse-instr.h">
       <Filter>Source Files\x64</Filter>
     </ClInclude>
     <ClInclude Include="src\x87\assembler-x87-inl.h">

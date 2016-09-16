@@ -180,11 +180,6 @@ DEFINE_BOOL(harmony, false, "enable all completed harmony features")
 DEFINE_BOOL(harmony_shipping, true, "enable all shipped harmony features")
 DEFINE_IMPLICATION(es_staging, harmony)
 
-#ifdef V8_I18N_SUPPORT
-DEFINE_BOOL(intl_extra, false, "additional V8 Intl functions")
-// Removing extra Intl functions is shipped
-DEFINE_NEG_VALUE_IMPLICATION(harmony_shipping, intl_extra, true)
-#endif
 
 // Activate on ClusterFuzz.
 DEFINE_IMPLICATION(es_staging, harmony_regexp_lookbehind)
@@ -204,7 +199,8 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
   V(harmony_regexp_property, "harmony unicode regexp property classes") \
   V(harmony_for_in, "harmony for-in syntax")                            \
   V(harmony_trailing_commas,                                            \
-    "harmony trailing commas in function parameter lists")
+    "harmony trailing commas in function parameter lists")              \
+  V(harmony_class_fields, "harmony public fields in class literals")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED_BASE(V)                                               \
@@ -531,6 +527,10 @@ DEFINE_BOOL(wasm_simd_prototype, false,
 DEFINE_BOOL(wasm_eh_prototype, false,
             "enable prototype exception handling opcodes for wasm")
 
+DEFINE_BOOL(wasm_trap_handler, false,
+            "use signal handlers to catch out of bounds memory access in wasm"
+            " (currently Linux x86_64 only)")
+
 // Profiler flags.
 DEFINE_INT(frame_count, 1, "number of stack frames inspected by the profiler")
 // 0x1800 fits in the immediate field of an ARM instruction.
@@ -549,6 +549,7 @@ DEFINE_IMPLICATION(trace_opt_verbose, trace_opt)
 DEFINE_BOOL(debug_code, false, "generate extra code (assertions) for debugging")
 DEFINE_BOOL(code_comments, false, "emit comments in code disassembly")
 DEFINE_BOOL(enable_sse3, true, "enable use of SSE3 instructions if available")
+DEFINE_BOOL(enable_ssse3, true, "enable use of SSSE3 instructions if available")
 DEFINE_BOOL(enable_sse4_1, true,
             "enable use of SSE4.1 instructions if available")
 DEFINE_BOOL(enable_sahf, true,

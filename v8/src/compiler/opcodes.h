@@ -179,7 +179,8 @@
   V(ChangeTaggedToBit)               \
   V(ChangeBitToTagged)               \
   V(TruncateTaggedToWord32)          \
-  V(TruncateTaggedToFloat64)
+  V(TruncateTaggedToFloat64)         \
+  V(TruncateTaggedToBit)
 
 #define SIMPLIFIED_CHECKED_OP_LIST(V) \
   V(CheckedInt32Add)                  \
@@ -486,6 +487,7 @@
   V(Word32PairShl)              \
   V(Word32PairShr)              \
   V(Word32PairSar)              \
+  V(ProtectedLoad)              \
   V(AtomicLoad)                 \
   V(AtomicStore)                \
   V(UnsafePointerAdd)

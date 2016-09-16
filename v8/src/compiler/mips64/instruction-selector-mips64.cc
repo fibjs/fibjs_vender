@@ -203,6 +203,10 @@ void InstructionSelector::VisitLoad(Node* node) {
   EmitLoad(this, node, opcode);
 }
 
+void InstructionSelector::VisitProtectedLoad(Node* node) {
+  // TODO(eholk)
+  UNIMPLEMENTED();
+}
 
 void InstructionSelector::VisitStore(Node* node) {
   Mips64OperandGenerator g(this);
