@@ -70,6 +70,7 @@ var files = {
 
 var re = [
 	/^src\/d8.*$/,
+	/^src\/i18n\..*$/,
 	/^.*unittest.*\.cc$/,
 	/^src\/test\/.*\.cc$/
 ];
