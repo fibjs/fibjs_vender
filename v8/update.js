@@ -297,6 +297,9 @@ cp_gen();
 clean_folder('src/third_party/vtune');
 fs.rmdir('src/third_party/vtune');
 
+clean_folder('src/inspector');
+fs.rmdir('src/inspector');
+
 update_plat();
 //patch_samp();
 

@@ -163,12 +163,6 @@
     <Filter Include="Source Files\ic\x87">
       <UniqueIdentifier>{8aedb8d2-fb2e-3ad0-c5d0-dd320eeecd95}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\inspector">
-      <UniqueIdentifier>{8a8df99f-2e87-6e46-023e-4c5e3ee4a40a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\inspector\build">
-      <UniqueIdentifier>{6fdf77f4-9579-ae72-149f-79cb5de83d64}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\interpreter">
       <UniqueIdentifier>{59810ce5-926b-7a85-f08d-bf58feae40cd}</UniqueIdentifier>
     </Filter>
@@ -237,6 +231,9 @@
     </Filter>
     <Filter Include="Source Files\x87">
       <UniqueIdentifier>{acef08ff-e260-9824-5923-978cb77e35fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\zone">
+      <UniqueIdentifier>{a1a66989-d449-b493-33f8-40e6adb38e0d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -378,9 +375,6 @@
     <ClInclude Include="src\bailout-reason.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\base\accounting-allocator.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
     <ClInclude Include="src\base\adapters.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
@@ -454,6 +448,9 @@
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\functional.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\hashmap-entry.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\hashmap.h">
@@ -889,9 +886,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\type-hint-analyzer.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\type-hints.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\typed-optimization.h">
@@ -1365,93 +1359,6 @@
     <ClInclude Include="src\identity-map.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\inspector\Allocator.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\InjectedScript.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\InjectedScriptNative.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\InspectedContext.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\JavaScriptCallFrame.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\ProtocolPlatform.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\RemoteObjectId.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\ScriptBreakpoint.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\SearchUtil.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\String16.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\StringUtil.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8Console.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8ConsoleAgentImpl.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8ConsoleMessage.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8Debugger.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8DebuggerAgentImpl.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8DebuggerScript.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8FunctionCall.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8HeapProfilerAgentImpl.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8InjectedScriptHost.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8InspectorImpl.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8InspectorSessionImpl.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8InternalValueType.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8ProfilerAgentImpl.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8Regex.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8RuntimeAgentImpl.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8SchemaAgentImpl.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8StackTraceImpl.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inspector\V8ValueCopier.h">
-      <Filter>Source Files\inspector</Filter>
-    </ClInclude>
     <ClInclude Include="src\interface-descriptors.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1477,6 +1384,9 @@
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-label.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-operands.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-peephole-optimizer.h">
@@ -1917,6 +1827,9 @@
     <ClInclude Include="src\type-feedback-vector.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\type-hints.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\type-info.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -2058,14 +1971,20 @@
     <ClInclude Include="src\x87\simulator-x87.h">
       <Filter>Source Files\x87</Filter>
     </ClInclude>
-    <ClInclude Include="src\zone-allocator.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\zone\accounting-allocator.h">
+      <Filter>Source Files\zone</Filter>
     </ClInclude>
-    <ClInclude Include="src\zone-containers.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\zone\zone-allocator.h">
+      <Filter>Source Files\zone</Filter>
     </ClInclude>
-    <ClInclude Include="src\zone.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\zone\zone-containers.h">
+      <Filter>Source Files\zone</Filter>
+    </ClInclude>
+    <ClInclude Include="src\zone\zone-segment.h">
+      <Filter>Source Files\zone</Filter>
+    </ClInclude>
+    <ClInclude Include="src\zone\zone.h">
+      <Filter>Source Files\zone</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2158,9 +2077,6 @@
     </ClCompile>
     <ClCompile Include="src\bailout-reason.cc">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\base\accounting-allocator.cc">
-      <Filter>Source Files\base</Filter>
     </ClCompile>
     <ClCompile Include="src\base\atomicops_internals_x86_gcc.cc">
       <Filter>Source Files\base</Filter>
@@ -2310,6 +2226,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-interpreter.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-iterator.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-json.cc">
@@ -2706,9 +2625,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\type-hint-analyzer.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\type-hints.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\typed-optimization.cc">
@@ -3257,6 +3173,9 @@
     <ClCompile Include="src\interpreter\bytecode-label.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-operands.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-peephole-optimizer.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -3701,6 +3620,9 @@
     <ClCompile Include="src\type-feedback-vector.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\type-hints.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\type-info.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3827,8 +3749,11 @@
     <ClCompile Include="src\x87\simulator-x87.cc">
       <Filter>Source Files\x87</Filter>
     </ClCompile>
-    <ClCompile Include="src\zone.cc">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\zone\accounting-allocator.cc">
+      <Filter>Source Files\zone</Filter>
+    </ClCompile>
+    <ClCompile Include="src\zone\zone.cc">
+      <Filter>Source Files\zone</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

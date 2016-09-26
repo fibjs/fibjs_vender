@@ -72,6 +72,9 @@ class CodeStubAssembler : public compiler::CodeAssembler {
 
   compiler::Node* BooleanMapConstant();
   compiler::Node* EmptyStringConstant();
+  compiler::Node* FixedArrayMapConstant();
+  compiler::Node* FixedCowArrayMapConstant();
+  compiler::Node* FixedDoubleArrayMapConstant();
   compiler::Node* HeapNumberMapConstant();
   compiler::Node* NoContextConstant();
   compiler::Node* NanConstant();
@@ -108,7 +111,9 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* SmiSub(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiSubWithOverflow(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiEqual(compiler::Node* a, compiler::Node* b);
+  compiler::Node* SmiAbove(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiAboveOrEqual(compiler::Node* a, compiler::Node* b);
+  compiler::Node* SmiBelow(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiLessThan(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiLessThanOrEqual(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiMin(compiler::Node* a, compiler::Node* b);
@@ -116,6 +121,9 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* SmiMod(compiler::Node* a, compiler::Node* b);
   // Computes a * b for Smi inputs a and b; result is not necessarily a Smi.
   compiler::Node* SmiMul(compiler::Node* a, compiler::Node* b);
+  compiler::Node* SmiOr(compiler::Node* a, compiler::Node* b) {
+    return WordOr(a, b);
+  }
 
   // Allocate an object of the given size.
   compiler::Node* Allocate(compiler::Node* size, AllocationFlags flags = kNone);
@@ -128,8 +136,10 @@ class CodeStubAssembler : public compiler::CodeAssembler {
 
   // Check a value for smi-ness
   compiler::Node* WordIsSmi(compiler::Node* a);
-  // Check that the value is a positive smi.
+  // Check that the value is a non-negative smi.
   compiler::Node* WordIsPositiveSmi(compiler::Node* a);
+  // Check that the value is a negative smi.
+  compiler::Node* WordIsNotPositiveSmi(compiler::Node* a);
 
   void BranchIfSmiEqual(compiler::Node* a, compiler::Node* b, Label* if_true,
                         Label* if_false) {
@@ -210,6 +220,8 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* LoadProperties(compiler::Node* object);
   // Load the elements backing store of a JSObject.
   compiler::Node* LoadElements(compiler::Node* object);
+  // Load the length of a JSArray instance.
+  compiler::Node* LoadJSArrayLength(compiler::Node* array);
   // Load the length of a fixed array base instance.
   compiler::Node* LoadFixedArrayBaseLength(compiler::Node* array);
   // Load the length of a fixed array base instance.
@@ -317,12 +329,36 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* AllocateSeqTwoByteString(int length);
   compiler::Node* AllocateSeqTwoByteString(compiler::Node* context,
                                            compiler::Node* length);
-  // Allocated an JSArray
-  compiler::Node* AllocateJSArray(ElementsKind kind, compiler::Node* array_map,
-                                  compiler::Node* capacity,
-                                  compiler::Node* length,
-                                  compiler::Node* allocation_site = nullptr,
-                                  ParameterMode mode = INTEGER_PARAMETERS);
+
+  // Allocate a SlicedOneByteString with the given length, parent and offset.
+  // |length| and |offset| are expected to be tagged.
+  compiler::Node* AllocateSlicedOneByteString(compiler::Node* length,
+                                              compiler::Node* parent,
+                                              compiler::Node* offset);
+  // Allocate a SlicedTwoByteString with the given length, parent and offset.
+  // |length| and |offset| are expected to be tagged.
+  compiler::Node* AllocateSlicedTwoByteString(compiler::Node* length,
+                                              compiler::Node* parent,
+                                              compiler::Node* offset);
+
+  // Allocate a JSArray without elements and initialize the header fields.
+  compiler::Node* AllocateUninitializedJSArrayWithoutElements(
+      ElementsKind kind, compiler::Node* array_map, compiler::Node* length,
+      compiler::Node* allocation_site);
+  // Allocate and return a JSArray with initialized header fields and its
+  // uninitialized elements.
+  // The ParameterMode argument is only used for the capacity parameter.
+  std::pair<compiler::Node*, compiler::Node*>
+  AllocateUninitializedJSArrayWithElements(
+      ElementsKind kind, compiler::Node* array_map, compiler::Node* length,
+      compiler::Node* allocation_site, compiler::Node* capacity,
+      ParameterMode capacity_mode = INTEGER_PARAMETERS);
+  // Allocate a JSArray and fill elements with the hole.
+  // The ParameterMode argument is only used for the capacity parameter.
+  compiler::Node* AllocateJSArray(
+      ElementsKind kind, compiler::Node* array_map, compiler::Node* capacity,
+      compiler::Node* length, compiler::Node* allocation_site = nullptr,
+      ParameterMode capacity_mode = INTEGER_PARAMETERS);
 
   compiler::Node* AllocateFixedArray(ElementsKind kind,
                                      compiler::Node* capacity,
@@ -354,6 +390,16 @@ class CodeStubAssembler : public compiler::CodeAssembler {
       compiler::Node* capacity,
       WriteBarrierMode barrier_mode = UPDATE_WRITE_BARRIER,
       ParameterMode mode = INTEGER_PARAMETERS);
+
+  // Copies |character_count| elements from |from_string| to |to_string|
+  // starting at the |from_index|'th character. |from_index| and
+  // |character_count| must be Smis s.t.
+  // 0 <= |from_index| <= |from_index| + |character_count| < from_string.length.
+  void CopyStringCharacters(compiler::Node* from_string,
+                            compiler::Node* to_string,
+                            compiler::Node* from_index,
+                            compiler::Node* character_count,
+                            String::Encoding encoding);
 
   // Loads an element from |array| of |from_kind| elements by given |offset|
   // (NOTE: not index!), does a hole check if |if_hole| is provided and
@@ -426,6 +472,10 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                                    compiler::Node* smi_index);
   // Return the single character string with only {code}.
   compiler::Node* StringFromCharCode(compiler::Node* code);
+  // Return a new string object which holds a substring containing the range
+  // [from,to[ of string.  |from| and |to| are expected to be tagged.
+  compiler::Node* SubString(compiler::Node* context, compiler::Node* string,
+                            compiler::Node* from, compiler::Node* to);
 
   // Type conversion helpers.
   // Convert a String to a Number.
@@ -438,6 +488,15 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                                     compiler::Node* input);
   // Convert any object to a Number.
   compiler::Node* ToNumber(compiler::Node* context, compiler::Node* input);
+
+  enum ToIntegerTruncationMode {
+    kNoTruncation,
+    kTruncateMinusZero,
+  };
+
+  // Convert any object to an Integer.
+  compiler::Node* ToInteger(compiler::Node* context, compiler::Node* input,
+                            ToIntegerTruncationMode mode = kNoTruncation);
 
   // Returns a node that contains a decoded (unsigned!) value of a bit
   // field |T| in |word32|. Returns result as an uint32 node.
@@ -637,6 +696,9 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                          compiler::Node* name, Label* if_handler,
                          Variable* var_handler, Label* if_miss);
 
+  // Extends properties backing store by JSObject::kFieldsAdded elements.
+  void ExtendPropertiesBackingStore(compiler::Node* object);
+
   compiler::Node* PrepareValueForWrite(compiler::Node* value,
                                        Representation representation,
                                        Label* bailout);
@@ -691,6 +753,14 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   void KeyedLoadIC(const LoadICParameters* p);
   void KeyedLoadICGeneric(const LoadICParameters* p);
 
+  void TransitionElementsKind(compiler::Node* object, compiler::Node* map,
+                              ElementsKind from_kind, ElementsKind to_kind,
+                              bool is_jsarray, Label* bailout);
+
+  void TrapAllocationMemento(compiler::Node* object, Label* memento_found);
+
+  compiler::Node* PageFromAddress(compiler::Node* address);
+
   // Get the enumerable length from |map| and return the result as a Smi.
   compiler::Node* EnumLength(compiler::Node* map);
 
@@ -719,6 +789,16 @@ class CodeStubAssembler : public compiler::CodeAssembler {
 
  private:
   enum ElementSupport { kOnlyProperties, kSupportElements };
+
+  void DescriptorLookupLinear(compiler::Node* unique_name,
+                              compiler::Node* descriptors, compiler::Node* nof,
+                              Label* if_found, Variable* var_name_index,
+                              Label* if_not_found);
+  compiler::Node* CallGetterIfAccessor(compiler::Node* value,
+                                       compiler::Node* details,
+                                       compiler::Node* context,
+                                       compiler::Node* receiver,
+                                       Label* if_bailout);
 
   void HandleLoadICHandlerCase(
       const LoadICParameters* p, compiler::Node* handler, Label* miss,
@@ -751,6 +831,13 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                                        AllocationFlags flags,
                                        compiler::Node* top_adddress,
                                        compiler::Node* limit_address);
+  // Allocate and return a JSArray of given total size in bytes with header
+  // fields initialized.
+  compiler::Node* AllocateUninitializedJSArray(ElementsKind kind,
+                                               compiler::Node* array_map,
+                                               compiler::Node* length,
+                                               compiler::Node* allocation_site,
+                                               compiler::Node* size_in_bytes);
 
   compiler::Node* SmiShiftBitsConstant();
 

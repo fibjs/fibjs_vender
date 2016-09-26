@@ -281,21 +281,6 @@ void CodeGenerator::RecordSafepoint(ReferenceMap* references,
   }
 }
 
-bool CodeGenerator::IsMaterializableFromFrame(Handle<HeapObject> object,
-                                              int* slot_return) {
-  if (linkage()->GetIncomingDescriptor()->IsJSFunctionCall()) {
-    if (*object == info()->context() && !info()->is_osr()) {
-      *slot_return = Frame::kContextSlot;
-      return true;
-    } else if (object.is_identical_to(info()->closure())) {
-      *slot_return = Frame::kJSFunctionSlot;
-      return true;
-    }
-  }
-  return false;
-}
-
-
 bool CodeGenerator::IsMaterializableFromRoot(
     Handle<HeapObject> object, Heap::RootListIndex* index_return) {
   const CallDescriptor* incoming_descriptor =
@@ -895,13 +880,21 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
         DCHECK(constant_object->IsSmi());
         break;
       case Constant::kFloat32:
-        DCHECK(type.representation() == MachineRepresentation::kFloat32 ||
-               CanBeTaggedPointer(type.representation()));
+        if (type.representation() == MachineRepresentation::kTaggedSigned) {
+          DCHECK(IsSmiDouble(constant.ToFloat32()));
+        } else {
+          DCHECK(type.representation() == MachineRepresentation::kFloat32 ||
+                 CanBeTaggedPointer(type.representation()));
+        }
         constant_object = isolate()->factory()->NewNumber(constant.ToFloat32());
         break;
       case Constant::kFloat64:
-        DCHECK(type.representation() == MachineRepresentation::kFloat64 ||
-               CanBeTaggedPointer(type.representation()));
+        if (type.representation() == MachineRepresentation::kTaggedSigned) {
+          DCHECK(IsSmiDouble(constant.ToFloat64()));
+        } else {
+          DCHECK(type.representation() == MachineRepresentation::kFloat64 ||
+                 CanBeTaggedPointer(type.representation()));
+        }
         constant_object = isolate()->factory()->NewNumber(constant.ToFloat64());
         break;
       case Constant::kHeapObject:
