@@ -232,8 +232,10 @@ class ZoneSplayTree final : public SplayTree<Config, ZoneAllocationPolicy> {
   void operator delete(void* pointer, Zone* zone) { UNREACHABLE(); }
 };
 
-typedef base::TemplateHashMapImpl<void*, void*, ZoneAllocationPolicy>
-    ZoneHashMap;
+typedef base::PointerTemplateHashMapImpl<ZoneAllocationPolicy> ZoneHashMap;
+
+typedef base::CustomMatcherTemplateHashMapImpl<ZoneAllocationPolicy>
+    CustomMatcherZoneHashMap;
 
 }  // namespace internal
 }  // namespace v8

@@ -244,13 +244,6 @@ Code* IC::GetCode() const {
   return code;
 }
 
-
-bool IC::AddressIsOptimizedCode() const {
-  Code* host =
-      isolate()->inner_pointer_to_code_cache()->GetCacheEntry(address())->code;
-  return host->kind() == Code::OPTIMIZED_FUNCTION;
-}
-
 static void LookupForRead(LookupIterator* it) {
   for (; it->IsFound(); it->Next()) {
     switch (it->state()) {
@@ -283,7 +276,7 @@ static void LookupForRead(LookupIterator* it) {
   }
 }
 
-bool IC::ShouldRecomputeHandler(Handle<Object> receiver, Handle<String> name) {
+bool IC::ShouldRecomputeHandler(Handle<String> name) {
   if (!RecomputeHandlerForName(name)) return false;
 
   DCHECK(UseVector());
@@ -333,7 +326,7 @@ void IC::UpdateState(Handle<Object> receiver, Handle<Object> name) {
   // Remove the target from the code cache if it became invalid
   // because of changes in the prototype chain to avoid hitting it
   // again.
-  if (ShouldRecomputeHandler(receiver, Handle<String>::cast(name))) {
+  if (ShouldRecomputeHandler(Handle<String>::cast(name))) {
     MarkRecomputeHandler(name);
   }
 }
@@ -741,7 +734,6 @@ bool IC::UpdatePolymorphicIC(Handle<Name> name, Handle<Object> code) {
 
   number_of_valid_maps++;
   if (number_of_valid_maps > 1 && is_keyed()) return false;
-  Handle<Code> ic;
   if (number_of_valid_maps == 1) {
     ConfigureVectorState(name, receiver_map(), code);
   } else {
@@ -1436,6 +1428,7 @@ MaybeHandle<Object> KeyedLoadIC::Load(Handle<Object> object,
   if (!is_vector_set()) {
     ConfigureVectorState(MEGAMORPHIC, key);
     TRACE_GENERIC_IC(isolate(), "KeyedLoadIC", "set generic");
+    TRACE_IC("LoadIC", key);
   }
 
   if (!load_handle.is_null()) return load_handle;

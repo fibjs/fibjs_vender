@@ -802,9 +802,7 @@ bool HInstruction::CanDeoptimize() {
     case HValue::kIsUndetectableAndBranch:
     case HValue::kLeaveInlined:
     case HValue::kLoadFieldByIndex:
-    case HValue::kLoadGlobalGeneric:
     case HValue::kLoadNamedField:
-    case HValue::kLoadNamedGeneric:
     case HValue::kLoadRoot:
     case HValue::kMathMinMax:
     case HValue::kParameter:
@@ -2883,13 +2881,6 @@ std::ostream& HLoadNamedField::PrintDataTo(std::ostream& os) const {  // NOLINT
 }
 
 
-std::ostream& HLoadNamedGeneric::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
-  Handle<String> n = Handle<String>::cast(name());
-  return os << NameOf(object()) << "." << n->ToCString().get();
-}
-
-
 std::ostream& HLoadKeyed::PrintDataTo(std::ostream& os) const {  // NOLINT
   if (!is_fixed_typed_array()) {
     os << NameOf(elements());
@@ -3055,12 +3046,6 @@ std::ostream& HTransitionElementsKind::PrintDataTo(
      << ElementsAccessor::ForKind(to_kind)->name() << "]";
   if (IsSimpleMapChangeTransition(from_kind, to_kind)) os << " (simple)";
   return os;
-}
-
-
-std::ostream& HLoadGlobalGeneric::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
-  return os << name()->ToCString().get() << " ";
 }
 
 

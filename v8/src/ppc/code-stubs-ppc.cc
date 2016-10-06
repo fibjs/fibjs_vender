@@ -2211,35 +2211,6 @@ void StringHelper::GenerateCopyCharacters(MacroAssembler* masm, Register dest,
   __ bind(&done);
 }
 
-void ToStringStub::Generate(MacroAssembler* masm) {
-  // The ToString stub takes one argument in r3.
-  Label is_number;
-  __ JumpIfSmi(r3, &is_number);
-
-  __ CompareObjectType(r3, r4, r4, FIRST_NONSTRING_TYPE);
-  // r3: receiver
-  // r4: receiver instance type
-  __ Ret(lt);
-
-  Label not_heap_number;
-  __ cmpi(r4, Operand(HEAP_NUMBER_TYPE));
-  __ bne(&not_heap_number);
-  __ bind(&is_number);
-  NumberToStringStub stub(isolate());
-  __ TailCallStub(&stub);
-  __ bind(&not_heap_number);
-
-  Label not_oddball;
-  __ cmpi(r4, Operand(ODDBALL_TYPE));
-  __ bne(&not_oddball);
-  __ LoadP(r3, FieldMemOperand(r3, Oddball::kToStringOffset));
-  __ Ret();
-  __ bind(&not_oddball);
-
-  __ push(r3);  // Push argument.
-  __ TailCallRuntime(Runtime::kToString);
-}
-
 
 void StringHelper::GenerateFlatOneByteStringEquals(MacroAssembler* masm,
                                                    Register left,
@@ -3152,19 +3123,6 @@ void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
   Label on_black;
   Label need_incremental;
   Label need_incremental_pop_scratch;
-
-  DCHECK((~Page::kPageAlignmentMask & 0xffff) == 0);
-  __ lis(r0, Operand((~Page::kPageAlignmentMask >> 16)));
-  __ and_(regs_.scratch0(), regs_.object(), r0);
-  __ LoadP(
-      regs_.scratch1(),
-      MemOperand(regs_.scratch0(), MemoryChunk::kWriteBarrierCounterOffset));
-  __ subi(regs_.scratch1(), regs_.scratch1(), Operand(1));
-  __ StoreP(
-      regs_.scratch1(),
-      MemOperand(regs_.scratch0(), MemoryChunk::kWriteBarrierCounterOffset));
-  __ cmpi(regs_.scratch1(), Operand::Zero());  // PPC, we could do better here
-  __ blt(&need_incremental);
 
   // Let's look at the color of the object:  If it is not black we don't have
   // to inform the incremental marker.

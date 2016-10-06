@@ -916,7 +916,7 @@ MaybeHandle<Code> GetBaselineCode(Handle<JSFunction> function) {
   // baseline code because there might be suspended activations stored in
   // generator objects on the heap. We could eventually go directly to
   // TurboFan in this case.
-  if (function->shared()->is_resumable()) {
+  if (IsResumableFunction(function->shared()->kind())) {
     return MaybeHandle<Code>();
   }
 
@@ -991,18 +991,16 @@ MaybeHandle<Code> GetLazyCode(Handle<JSFunction> function) {
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.CompileCode");
   AggregatedHistogramTimerScope timer(isolate->counters()->compile_lazy());
 
-  if (FLAG_turbo_cache_shared_code) {
-    Handle<Code> cached_code;
-    if (GetCodeFromOptimizedCodeMap(function, BailoutId::None())
-            .ToHandle(&cached_code)) {
-      if (FLAG_trace_opt) {
-        PrintF("[found optimized code for ");
-        function->ShortPrint();
-        PrintF(" during unoptimized compile]\n");
-      }
-      DCHECK(function->shared()->is_compiled());
-      return cached_code;
+  Handle<Code> cached_code;
+  if (GetCodeFromOptimizedCodeMap(function, BailoutId::None())
+          .ToHandle(&cached_code)) {
+    if (FLAG_trace_opt) {
+      PrintF("[found optimized code for ");
+      function->ShortPrint();
+      PrintF(" during unoptimized compile]\n");
     }
+    DCHECK(function->shared()->is_compiled());
+    return cached_code;
   }
 
   if (function->shared()->is_compiled()) {
@@ -1387,7 +1385,7 @@ bool Compiler::EnsureDeoptimizationSupport(CompilationInfo* info) {
     // baseline code because there might be suspended activations stored in
     // generator objects on the heap. We could eventually go directly to
     // TurboFan in this case.
-    if (shared->is_resumable()) return false;
+    if (IsResumableFunction(shared->kind())) return false;
 
     // TODO(4280): For now we disable switching to baseline code in the presence
     // of interpreter activations of the given function. The reasons is that the

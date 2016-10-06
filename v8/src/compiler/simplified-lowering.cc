@@ -161,7 +161,8 @@ void ReplaceEffectControlUses(Node* node, Node* effect, Node* control) {
     } else if (NodeProperties::IsEffectEdge(edge)) {
       edge.UpdateTo(effect);
     } else {
-      DCHECK(NodeProperties::IsValueEdge(edge));
+      DCHECK(NodeProperties::IsValueEdge(edge) ||
+             NodeProperties::IsContextEdge(edge));
     }
   }
 }
@@ -1243,7 +1244,7 @@ class RepresentationSelector {
       // based on the feedback types of the inputs.
       VisitBinop(node,
                  UseInfo(MachineRepresentation::kWord32, Truncation::Float64()),
-                 MachineRepresentation::kWord32);
+                 MachineRepresentation::kWord32, Type::Number());
       if (lower()) DeferReplacement(node, lowering->Uint32Mod(node));
       return;
     }
@@ -1255,7 +1256,7 @@ class RepresentationSelector {
       // based on the feedback types of the inputs.
       VisitBinop(node,
                  UseInfo(MachineRepresentation::kWord32, Truncation::Float64()),
-                 MachineRepresentation::kWord32);
+                 MachineRepresentation::kWord32, Type::Number());
       if (lower()) DeferReplacement(node, lowering->Int32Mod(node));
       return;
     }
@@ -1264,6 +1265,30 @@ class RepresentationSelector {
                MachineRepresentation::kFloat64, Type::Number());
     if (lower()) ChangeToPureOp(node, Float64Op(node));
     return;
+  }
+
+  void VisitOsrGuard(Node* node) {
+    VisitInputs(node);
+
+    // Insert a dynamic check for the OSR value type if necessary.
+    switch (OsrGuardTypeOf(node->op())) {
+      case OsrGuardType::kUninitialized:
+        // At this point, we should always have a type for the OsrValue.
+        UNREACHABLE();
+        break;
+      case OsrGuardType::kSignedSmall:
+        if (lower()) {
+          NodeProperties::ChangeOp(node,
+                                   simplified()->CheckedTaggedToTaggedSigned());
+        }
+        return SetOutput(node, MachineRepresentation::kTaggedSigned);
+      case OsrGuardType::kAny:  // Nothing to check.
+        if (lower()) {
+          DeferReplacement(node, node->InputAt(0));
+        }
+        return SetOutput(node, MachineRepresentation::kTagged);
+    }
+    UNREACHABLE();
   }
 
   // Dispatching routine for visiting the node {node} with the usage {use}.
@@ -2040,62 +2065,11 @@ class RepresentationSelector {
         }
         return;
       }
-      case IrOpcode::kStringEqual: {
-        VisitBinop(node, UseInfo::AnyTagged(), MachineRepresentation::kTagged);
-        if (lower()) {
-          // StringEqual(x, y) => Call(StringEqualStub, x, y, no-context)
-          Operator::Properties properties =
-              Operator::kCommutative | Operator::kEliminatable;
-          Callable callable = CodeFactory::StringEqual(jsgraph_->isolate());
-          CallDescriptor::Flags flags = CallDescriptor::kNoFlags;
-          CallDescriptor* desc = Linkage::GetStubCallDescriptor(
-              jsgraph_->isolate(), jsgraph_->zone(), callable.descriptor(), 0,
-              flags, properties);
-          node->InsertInput(jsgraph_->zone(), 0,
-                            jsgraph_->HeapConstant(callable.code()));
-          node->AppendInput(jsgraph_->zone(), jsgraph_->NoContextConstant());
-          node->AppendInput(jsgraph_->zone(), jsgraph_->graph()->start());
-          NodeProperties::ChangeOp(node, jsgraph_->common()->Call(desc));
-        }
-        return;
-      }
-      case IrOpcode::kStringLessThan: {
-        VisitBinop(node, UseInfo::AnyTagged(), MachineRepresentation::kTagged);
-        if (lower()) {
-          // StringLessThan(x, y) => Call(StringLessThanStub, x, y, no-context)
-          Operator::Properties properties = Operator::kEliminatable;
-          Callable callable = CodeFactory::StringLessThan(jsgraph_->isolate());
-          CallDescriptor::Flags flags = CallDescriptor::kNoFlags;
-          CallDescriptor* desc = Linkage::GetStubCallDescriptor(
-              jsgraph_->isolate(), jsgraph_->zone(), callable.descriptor(), 0,
-              flags, properties);
-          node->InsertInput(jsgraph_->zone(), 0,
-                            jsgraph_->HeapConstant(callable.code()));
-          node->AppendInput(jsgraph_->zone(), jsgraph_->NoContextConstant());
-          node->AppendInput(jsgraph_->zone(), jsgraph_->graph()->start());
-          NodeProperties::ChangeOp(node, jsgraph_->common()->Call(desc));
-        }
-        return;
-      }
+      case IrOpcode::kStringEqual:
+      case IrOpcode::kStringLessThan:
       case IrOpcode::kStringLessThanOrEqual: {
-        VisitBinop(node, UseInfo::AnyTagged(), MachineRepresentation::kTagged);
-        if (lower()) {
-          // StringLessThanOrEqual(x, y)
-          //   => Call(StringLessThanOrEqualStub, x, y, no-context)
-          Operator::Properties properties = Operator::kEliminatable;
-          Callable callable =
-              CodeFactory::StringLessThanOrEqual(jsgraph_->isolate());
-          CallDescriptor::Flags flags = CallDescriptor::kNoFlags;
-          CallDescriptor* desc = Linkage::GetStubCallDescriptor(
-              jsgraph_->isolate(), jsgraph_->zone(), callable.descriptor(), 0,
-              flags, properties);
-          node->InsertInput(jsgraph_->zone(), 0,
-                            jsgraph_->HeapConstant(callable.code()));
-          node->AppendInput(jsgraph_->zone(), jsgraph_->NoContextConstant());
-          node->AppendInput(jsgraph_->zone(), jsgraph_->graph()->start());
-          NodeProperties::ChangeOp(node, jsgraph_->common()->Call(desc));
-        }
-        return;
+        return VisitBinop(node, UseInfo::AnyTagged(),
+                          MachineRepresentation::kTagged);
       }
       case IrOpcode::kStringCharCodeAt: {
         VisitBinop(node, UseInfo::AnyTagged(), UseInfo::TruncatingWord32(),
@@ -2103,6 +2077,11 @@ class RepresentationSelector {
         return;
       }
       case IrOpcode::kStringFromCharCode: {
+        VisitUnop(node, UseInfo::TruncatingWord32(),
+                  MachineRepresentation::kTagged);
+        return;
+      }
+      case IrOpcode::kStringFromCodePoint: {
         VisitUnop(node, UseInfo::TruncatingWord32(),
                   MachineRepresentation::kTagged);
         return;
@@ -2460,6 +2439,9 @@ class RepresentationSelector {
         return;
       }
 
+      case IrOpcode::kOsrGuard:
+        return VisitOsrGuard(node);
+
       // Operators with all inputs tagged and no or tagged output have uniform
       // handling.
       case IrOpcode::kEnd:
@@ -2478,9 +2460,9 @@ class RepresentationSelector {
       case IrOpcode::kThrow:
       case IrOpcode::kBeginRegion:
       case IrOpcode::kFinishRegion:
-      case IrOpcode::kOsrValue:
       case IrOpcode::kProjection:
       case IrOpcode::kObjectState:
+      case IrOpcode::kOsrValue:
 // All JavaScript operators except JSToNumber have uniform handling.
 #define OPCODE_CASE(name) case IrOpcode::k##name:
         JS_SIMPLE_BINOP_LIST(OPCODE_CASE)

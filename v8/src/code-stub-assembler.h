@@ -19,6 +19,20 @@ class StubCache;
 
 enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
 
+#define HEAP_CONSTANT_LIST(V)                 \
+  V(BooleanMap, BooleanMap)                   \
+  V(empty_string, EmptyString)                \
+  V(EmptyFixedArray, EmptyFixedArray)         \
+  V(FixedArrayMap, FixedArrayMap)             \
+  V(FixedCOWArrayMap, FixedCOWArrayMap)       \
+  V(FixedDoubleArrayMap, FixedDoubleArrayMap) \
+  V(HeapNumberMap, HeapNumberMap)             \
+  V(MinusZeroValue, MinusZero)                \
+  V(NanValue, Nan)                            \
+  V(NullValue, Null)                          \
+  V(TheHoleValue, TheHole)                    \
+  V(UndefinedValue, Undefined)
+
 // Provides JavaScript-specific "macro-assembler" functionality on top of the
 // CodeAssembler. By factoring the JavaScript-isms out of the CodeAssembler,
 // it's possible to add JavaScript-specific useful CodeAssembler "macros"
@@ -70,18 +84,16 @@ class CodeStubAssembler : public compiler::CodeAssembler {
     return value;
   }
 
-  compiler::Node* BooleanMapConstant();
-  compiler::Node* EmptyStringConstant();
-  compiler::Node* FixedArrayMapConstant();
-  compiler::Node* FixedCowArrayMapConstant();
-  compiler::Node* FixedDoubleArrayMapConstant();
-  compiler::Node* HeapNumberMapConstant();
   compiler::Node* NoContextConstant();
-  compiler::Node* NanConstant();
-  compiler::Node* NullConstant();
-  compiler::Node* MinusZeroConstant();
-  compiler::Node* UndefinedConstant();
-  compiler::Node* TheHoleConstant();
+#define HEAP_CONSTANT_ACCESSOR(rootName, name) compiler::Node* name##Constant();
+  HEAP_CONSTANT_LIST(HEAP_CONSTANT_ACCESSOR)
+#undef HEAP_CONSTANT_ACCESSOR
+
+#define HEAP_CONSTANT_TEST(rootName, name) \
+  compiler::Node* Is##name(compiler::Node* value);
+  HEAP_CONSTANT_LIST(HEAP_CONSTANT_TEST)
+#undef HEAP_CONSTANT_TEST
+
   compiler::Node* HashSeed();
   compiler::Node* StaleRegisterConstant();
 
@@ -116,6 +128,7 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* SmiBelow(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiLessThan(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiLessThanOrEqual(compiler::Node* a, compiler::Node* b);
+  compiler::Node* SmiMax(compiler::Node* a, compiler::Node* b);
   compiler::Node* SmiMin(compiler::Node* a, compiler::Node* b);
   // Computes a % b for Smi inputs a and b; result is not necessarily a Smi.
   compiler::Node* SmiMod(compiler::Node* a, compiler::Node* b);
@@ -138,8 +151,6 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* WordIsSmi(compiler::Node* a);
   // Check that the value is a non-negative smi.
   compiler::Node* WordIsPositiveSmi(compiler::Node* a);
-  // Check that the value is a negative smi.
-  compiler::Node* WordIsNotPositiveSmi(compiler::Node* a);
 
   void BranchIfSmiEqual(compiler::Node* a, compiler::Node* b, Label* if_true,
                         Label* if_false) {
@@ -174,10 +185,6 @@ class CodeStubAssembler : public compiler::CodeAssembler {
     BranchIfSimd128Equal(lhs, LoadMap(lhs), rhs, LoadMap(rhs), if_equal,
                          if_notequal);
   }
-
-  void BranchIfSameValueZero(compiler::Node* a, compiler::Node* b,
-                             compiler::Node* context, Label* if_true,
-                             Label* if_false);
 
   void BranchIfFastJSArray(compiler::Node* object, compiler::Node* context,
                            Label* if_true, Label* if_false);
@@ -234,6 +241,8 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* LoadMapBitField3(compiler::Node* map);
   // Load the instance type of a map.
   compiler::Node* LoadMapInstanceType(compiler::Node* map);
+  // Load the ElementsKind of a map.
+  compiler::Node* LoadMapElementsKind(compiler::Node* map);
   // Load the instance descriptors of a map.
   compiler::Node* LoadMapDescriptors(compiler::Node* map);
   // Load the prototype of a map.
@@ -298,8 +307,14 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   // Store a field to an object on the heap.
   compiler::Node* StoreObjectField(
       compiler::Node* object, int offset, compiler::Node* value);
+  compiler::Node* StoreObjectField(compiler::Node* object,
+                                   compiler::Node* offset,
+                                   compiler::Node* value);
   compiler::Node* StoreObjectFieldNoWriteBarrier(
       compiler::Node* object, int offset, compiler::Node* value,
+      MachineRepresentation rep = MachineRepresentation::kTagged);
+  compiler::Node* StoreObjectFieldNoWriteBarrier(
+      compiler::Node* object, compiler::Node* offset, compiler::Node* value,
       MachineRepresentation rep = MachineRepresentation::kTagged);
   // Store the Map of an HeapObject.
   compiler::Node* StoreMapNoWriteBarrier(compiler::Node* object,
@@ -340,6 +355,15 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* AllocateSlicedTwoByteString(compiler::Node* length,
                                               compiler::Node* parent,
                                               compiler::Node* offset);
+
+  // Allocate a RegExpResult with the given length (the number of captures,
+  // including the match itself), index (the index where the match starts),
+  // and input string. |length| and |index| are expected to be tagged, and
+  // |input| must be a string.
+  compiler::Node* AllocateRegExpResult(compiler::Node* context,
+                                       compiler::Node* length,
+                                       compiler::Node* index,
+                                       compiler::Node* input);
 
   // Allocate a JSArray without elements and initialize the header fields.
   compiler::Node* AllocateUninitializedJSArrayWithoutElements(
@@ -466,6 +490,17 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                               PrimitiveType primitive_type,
                               char const* method_name);
 
+  // Throws a TypeError for {method_name} if {value} is not of the given
+  // instance type. Returns {value}'s map.
+  compiler::Node* ThrowIfNotInstanceType(compiler::Node* context,
+                                         compiler::Node* value,
+                                         InstanceType instance_type,
+                                         char const* method_name);
+
+  // Type checks.
+  compiler::Node* IsStringInstanceType(compiler::Node* instance_type);
+  compiler::Node* IsJSReceiverInstanceType(compiler::Node* instance_type);
+
   // String helpers.
   // Load a character from a String (might flatten a ConsString).
   compiler::Node* StringCharCodeAt(compiler::Node* string,
@@ -476,6 +511,9 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   // [from,to[ of string.  |from| and |to| are expected to be tagged.
   compiler::Node* SubString(compiler::Node* context, compiler::Node* string,
                             compiler::Node* from, compiler::Node* to);
+
+  compiler::Node* StringFromCodePoint(compiler::Node* codepoint,
+                                      UnicodeEncoding encoding);
 
   // Type conversion helpers.
   // Convert a String to a Number.
@@ -637,7 +675,7 @@ class CodeStubAssembler : public compiler::CodeAssembler {
                                       compiler::Node* callable,
                                       compiler::Node* object);
 
-  // LoadIC helpers.
+  // Load/StoreIC helpers.
   struct LoadICParameters {
     LoadICParameters(compiler::Node* context, compiler::Node* receiver,
                      compiler::Node* name, compiler::Node* slot,
@@ -655,6 +693,15 @@ class CodeStubAssembler : public compiler::CodeAssembler {
     compiler::Node* vector;
   };
 
+  struct StoreICParameters : public LoadICParameters {
+    StoreICParameters(compiler::Node* context, compiler::Node* receiver,
+                      compiler::Node* name, compiler::Node* value,
+                      compiler::Node* slot, compiler::Node* vector)
+        : LoadICParameters(context, receiver, name, slot, vector),
+          value(value) {}
+    compiler::Node* value;
+  };
+
   // Load type feedback vector from the stub caller's frame.
   compiler::Node* LoadTypeFeedbackVectorForStub();
 
@@ -666,12 +713,12 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* LoadReceiverMap(compiler::Node* receiver);
 
   // Checks monomorphic case. Returns {feedback} entry of the vector.
-  compiler::Node* TryMonomorphicCase(const LoadICParameters* p,
+  compiler::Node* TryMonomorphicCase(compiler::Node* slot,
+                                     compiler::Node* vector,
                                      compiler::Node* receiver_map,
                                      Label* if_handler, Variable* var_handler,
                                      Label* if_miss);
-  void HandlePolymorphicCase(const LoadICParameters* p,
-                             compiler::Node* receiver_map,
+  void HandlePolymorphicCase(compiler::Node* receiver_map,
                              compiler::Node* feedback, Label* if_handler,
                              Variable* var_handler, Label* if_miss,
                              int unroll_count);
@@ -706,6 +753,10 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   void StoreNamedField(compiler::Node* object, FieldIndex index,
                        Representation representation, compiler::Node* value,
                        bool transition_to_field);
+
+  void StoreNamedField(compiler::Node* object, compiler::Node* offset,
+                       bool is_inobject, Representation representation,
+                       compiler::Node* value, bool transition_to_field);
 
   // Emits keyed sloppy arguments load. Returns either the loaded value.
   compiler::Node* LoadKeyedSloppyArguments(compiler::Node* receiver,
@@ -752,6 +803,7 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   void LoadGlobalIC(const LoadICParameters* p);
   void KeyedLoadIC(const LoadICParameters* p);
   void KeyedLoadICGeneric(const LoadICParameters* p);
+  void StoreIC(const StoreICParameters* p);
 
   void TransitionElementsKind(compiler::Node* object, compiler::Node* map,
                               ElementsKind from_kind, ElementsKind to_kind,
@@ -780,9 +832,30 @@ class CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* CreateAllocationSiteInFeedbackVector(
       compiler::Node* feedback_vector, compiler::Node* slot);
 
-  compiler::Node* GetFixedAarrayAllocationSize(compiler::Node* element_count,
-                                               ElementsKind kind,
-                                               ParameterMode mode) {
+  enum class IndexAdvanceMode { kPre, kPost };
+
+  void BuildFastLoop(
+      MachineRepresentation index_rep, compiler::Node* start_index,
+      compiler::Node* end_index,
+      std::function<void(CodeStubAssembler* assembler, compiler::Node* index)>
+          body,
+      int increment, IndexAdvanceMode mode = IndexAdvanceMode::kPre);
+
+  enum class ForEachDirection { kForward, kReverse };
+
+  void BuildFastFixedArrayForEach(
+      compiler::Node* fixed_array, ElementsKind kind,
+      compiler::Node* first_element_inclusive,
+      compiler::Node* last_element_exclusive,
+      std::function<void(CodeStubAssembler* assembler,
+                         compiler::Node* fixed_array, compiler::Node* offset)>
+          body,
+      ParameterMode mode = INTPTR_PARAMETERS,
+      ForEachDirection direction = ForEachDirection::kReverse);
+
+  compiler::Node* GetFixedArrayAllocationSize(compiler::Node* element_count,
+                                              ElementsKind kind,
+                                              ParameterMode mode) {
     return ElementOffsetFromIndex(element_count, kind, mode,
                                   FixedArray::kHeaderSize);
   }

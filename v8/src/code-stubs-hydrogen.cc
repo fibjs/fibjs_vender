@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "src/bailout-reason.h"
+#include "src/code-factory.h"
 #include "src/crankshaft/hydrogen.h"
 #include "src/crankshaft/lithium.h"
 #include "src/field-index.h"
@@ -37,7 +38,7 @@ static LChunk* OptimizeGraph(HGraph* graph) {
 class CodeStubGraphBuilderBase : public HGraphBuilder {
  public:
   explicit CodeStubGraphBuilderBase(CompilationInfo* info, CodeStub* code_stub)
-      : HGraphBuilder(info, code_stub->GetCallInterfaceDescriptor()),
+      : HGraphBuilder(info, code_stub->GetCallInterfaceDescriptor(), false),
         arguments_length_(NULL),
         info_(info),
         code_stub_(code_stub),
@@ -1042,10 +1043,10 @@ HValue* CodeStubGraphBuilderBase::BuildToString(HValue* input, bool convert) {
       }
       if_inputisprimitive.End();
       // Convert the primitive to a string value.
-      ToStringStub stub(isolate());
       HValue* values[] = {context(), Pop()};
-      Push(AddUncasted<HCallWithDescriptor>(Add<HConstant>(stub.GetCode()), 0,
-                                            stub.GetCallInterfaceDescriptor(),
+      Callable toString = CodeFactory::ToString(isolate());
+      Push(AddUncasted<HCallWithDescriptor>(Add<HConstant>(toString.code()), 0,
+                                            toString.descriptor(),
                                             ArrayVector(values)));
     }
     if_inputisstring.End();

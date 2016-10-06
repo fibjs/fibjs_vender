@@ -16,9 +16,9 @@
 #include "src/objects.h"
 #include "src/parsing/parse-info.h"
 
-#include "src/wasm/encoder.h"
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-js.h"
+#include "src/wasm/wasm-module-builder.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-result.h"
 
@@ -207,7 +207,8 @@ MaybeHandle<Object> AsmJs::InstantiateAsmWasm(i::Isolate* isolate,
   ErrorThrower thrower(isolate, "Asm.js -> WebAssembly instantiation");
 
   i::MaybeHandle<i::JSObject> maybe_module_object =
-      i::wasm::WasmModule::Instantiate(isolate, module, foreign, memory);
+      i::wasm::WasmModule::Instantiate(isolate, &thrower, module, foreign,
+                                       memory);
   if (maybe_module_object.is_null()) {
     return MaybeHandle<Object>();
   }

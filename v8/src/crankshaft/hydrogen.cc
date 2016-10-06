@@ -75,7 +75,9 @@ const auto GetRegConfig = RegisterConfiguration::Crankshaft;
 class HOptimizedGraphBuilderWithPositions : public HOptimizedGraphBuilder {
  public:
   explicit HOptimizedGraphBuilderWithPositions(CompilationInfo* info)
-      : HOptimizedGraphBuilder(info) {}
+      : HOptimizedGraphBuilder(info, true) {
+    SetSourcePosition(info->shared_info()->start_position());
+  }
 
 #define DEF_VISIT(type)                                      \
   void Visit##type(type* node) override {                    \
@@ -178,9 +180,10 @@ HCompilationJob::Status HCompilationJob::PrepareJobImpl() {
   }
 
   HOptimizedGraphBuilder* graph_builder =
-      (info()->is_tracking_positions() || FLAG_trace_ic)
+      (FLAG_hydrogen_track_positions || isolate()->is_profiling() ||
+       FLAG_trace_ic)
           ? new (info()->zone()) HOptimizedGraphBuilderWithPositions(info())
-          : new (info()->zone()) HOptimizedGraphBuilder(info());
+          : new (info()->zone()) HOptimizedGraphBuilder(info(), false);
 
   // Type-check the function.
   AstTyper(info()->isolate(), info()->zone(), info()->closure(),
@@ -1362,7 +1365,7 @@ HGraph* HGraphBuilder::CreateGraph() {
   DCHECK(!FLAG_minimal);
   graph_ = new (zone()) HGraph(info_, descriptor_);
   if (FLAG_hydrogen_stats) isolate()->GetHStatistics()->Initialize(info_);
-  if (!info_->IsStub() && info_->is_tracking_positions()) {
+  if (!info_->IsStub() && is_tracking_positions()) {
     TraceInlinedFunction(info_->shared_info(), SourcePosition::Unknown());
   }
   CompilationPhase phase("H_Block building", info_);
@@ -1374,7 +1377,7 @@ HGraph* HGraphBuilder::CreateGraph() {
 
 int HGraphBuilder::TraceInlinedFunction(Handle<SharedFunctionInfo> shared,
                                         SourcePosition position) {
-  DCHECK(info_->is_tracking_positions());
+  DCHECK(is_tracking_positions());
 
   int inline_id = static_cast<int>(graph()->inlined_function_infos().size());
   HInlinedFunctionInfo info(shared->start_position());
@@ -3366,8 +3369,9 @@ HValue* HGraphBuilder::AddLoadJSBuiltin(int context_index) {
   return Add<HLoadNamedField>(native_context, nullptr, function_access);
 }
 
-HOptimizedGraphBuilder::HOptimizedGraphBuilder(CompilationInfo* info)
-    : HGraphBuilder(info, CallInterfaceDescriptor()),
+HOptimizedGraphBuilder::HOptimizedGraphBuilder(CompilationInfo* info,
+                                               bool track_positions)
+    : HGraphBuilder(info, CallInterfaceDescriptor(), track_positions),
       function_state_(NULL),
       initial_function_state_(this, info, NORMAL_RETURN, 0,
                               TailCallMode::kAllow),
@@ -3382,9 +3386,6 @@ HOptimizedGraphBuilder::HOptimizedGraphBuilder(CompilationInfo* info)
   // to know it's the initial state.
   function_state_ = &initial_function_state_;
   InitializeAstVisitor(info->isolate());
-  if (top_info()->is_tracking_positions()) {
-    SetSourcePosition(info->shared_info()->start_position());
-  }
 }
 
 
@@ -3951,7 +3952,7 @@ FunctionState::FunctionState(HOptimizedGraphBuilder* owner,
   // Push on the state stack.
   owner->set_function_state(this);
 
-  if (compilation_info_->is_tracking_positions()) {
+  if (owner->is_tracking_positions()) {
     outer_source_position_ = owner->source_position();
     owner->EnterInlinedSource(
       info->shared_info()->start_position(),
@@ -3965,7 +3966,7 @@ FunctionState::~FunctionState() {
   delete test_context_;
   owner_->set_function_state(outer_);
 
-  if (compilation_info_->is_tracking_positions()) {
+  if (owner_->is_tracking_positions()) {
     owner_->set_source_position(outer_source_position_);
     owner_->EnterInlinedSource(
       outer_->compilation_info()->shared_info()->start_position(),
@@ -5589,9 +5590,16 @@ void HOptimizedGraphBuilder::VisitVariableProxy(VariableProxy* expr) {
         }
       } else {
         Handle<TypeFeedbackVector> vector(current_feedback_vector(), isolate());
-        HLoadGlobalGeneric* instr = New<HLoadGlobalGeneric>(
-            variable->name(), ast_context()->typeof_mode(), vector,
-            expr->VariableFeedbackSlot());
+
+        HValue* vector_value = Add<HConstant>(vector);
+        HValue* slot_value =
+            Add<HConstant>(vector->GetIndex(expr->VariableFeedbackSlot()));
+        Callable callable = CodeFactory::LoadGlobalICInOptimizedCode(
+            isolate(), ast_context()->typeof_mode());
+        HValue* stub = Add<HConstant>(callable.code());
+        HValue* values[] = {context(), slot_value, vector_value};
+        HCallWithDescriptor* instr = New<HCallWithDescriptor>(
+            stub, 0, callable.descriptor(), ArrayVector(values));
         return ast_context()->ReturnInstruction(instr, expr->id());
       }
     }
@@ -7037,7 +7045,7 @@ void HOptimizedGraphBuilder::VisitThrow(Throw* expr) {
   CHECK_ALIVE(VisitForValue(expr->exception()));
 
   HValue* value = environment()->Pop();
-  if (!top_info()->is_tracking_positions()) SetSourcePosition(expr->position());
+  if (!is_tracking_positions()) SetSourcePosition(expr->position());
   Add<HPushArguments>(value);
   Add<HCallRuntime>(Runtime::FunctionForId(Runtime::kThrow), 1);
   Add<HSimulate>(expr->id());
@@ -7089,36 +7097,35 @@ HInstruction* HOptimizedGraphBuilder::BuildNamedGeneric(
         DeoptimizeReason::kInsufficientTypeFeedbackForGenericNamedAccess,
         Deoptimizer::SOFT);
   }
-  if (access_type == LOAD) {
-    Handle<TypeFeedbackVector> vector =
-        handle(current_feedback_vector(), isolate());
+  Handle<TypeFeedbackVector> vector(current_feedback_vector(), isolate());
 
+  HValue* key = Add<HConstant>(name);
+  HValue* vector_value = Add<HConstant>(vector);
+  HValue* slot_value = Add<HConstant>(vector->GetIndex(slot));
+
+  if (access_type == LOAD) {
+    HValue* values[] = {context(), object, key, slot_value, vector_value};
     if (!expr->AsProperty()->key()->IsPropertyName()) {
       // It's possible that a keyed load of a constant string was converted
       // to a named load. Here, at the last minute, we need to make sure to
       // use a generic Keyed Load if we are using the type vector, because
       // it has to share information with full code.
-      HConstant* key = Add<HConstant>(name);
       HLoadKeyedGeneric* result =
           New<HLoadKeyedGeneric>(object, key, vector, slot);
       return result;
     }
 
-    HLoadNamedGeneric* result =
-        New<HLoadNamedGeneric>(object, name, vector, slot);
+    Callable callable = CodeFactory::LoadICInOptimizedCode(isolate());
+    HValue* stub = Add<HConstant>(callable.code());
+    HCallWithDescriptor* result = New<HCallWithDescriptor>(
+        stub, 0, callable.descriptor(), ArrayVector(values));
     return result;
-  } else {
-    Handle<TypeFeedbackVector> vector =
-        handle(current_feedback_vector(), isolate());
 
-    HValue* key = Add<HConstant>(name);
-    HValue* vector_value = Add<HConstant>(vector);
-    HValue* slot_value = Add<HConstant>(vector->GetIndex(slot));
+  } else {
     HValue* values[] = {context(), object,     key,
                         value,     slot_value, vector_value};
 
-    if (current_feedback_vector()->GetKind(slot) ==
-        FeedbackVectorSlotKind::KEYED_STORE_IC) {
+    if (vector->GetKind(slot) == FeedbackVectorSlotKind::KEYED_STORE_IC) {
       // It's possible that a keyed store of a constant string was converted
       // to a named store. Here, at the last minute, we need to make sure to
       // use a generic Keyed Store if we are using the type vector, because
@@ -8343,7 +8350,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
       .Run();
 
   int inlining_id = 0;
-  if (top_info()->is_tracking_positions()) {
+  if (is_tracking_positions()) {
     inlining_id = TraceInlinedFunction(target_shared, source_position());
   }
 
@@ -8392,7 +8399,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
       return_id, target, context, arguments_count, function,
       function_state()->inlining_kind(), function->scope()->arguments(),
       arguments_object, syntactic_tail_call_mode);
-  if (top_info()->is_tracking_positions()) {
+  if (is_tracking_positions()) {
     enter_inlined->set_inlining_id(inlining_id);
   }
   function_state()->set_entry(enter_inlined);
@@ -9591,7 +9598,7 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
   DCHECK(!HasStackOverflow());
   DCHECK(current_block() != NULL);
   DCHECK(current_block()->HasPredecessor());
-  if (!top_info()->is_tracking_positions()) SetSourcePosition(expr->position());
+  if (!is_tracking_positions()) SetSourcePosition(expr->position());
   Expression* callee = expr->expression();
   int argument_count = expr->arguments()->length() + 1;  // Plus receiver.
   HInstruction* call = NULL;
@@ -9873,7 +9880,7 @@ void HOptimizedGraphBuilder::VisitCallNew(CallNew* expr) {
   DCHECK(!HasStackOverflow());
   DCHECK(current_block() != NULL);
   DCHECK(current_block()->HasPredecessor());
-  if (!top_info()->is_tracking_positions()) SetSourcePosition(expr->position());
+  if (!is_tracking_positions()) SetSourcePosition(expr->position());
   int argument_count = expr->arguments()->length() + 1;  // Plus constructor.
   Factory* factory = isolate()->factory();
 
@@ -10273,6 +10280,8 @@ void HOptimizedGraphBuilder::GenerateTypedArrayInitialize(
 
     HInstruction* length = AddUncasted<HDiv>(byte_length,
         Add<HConstant>(static_cast<int32_t>(element_size)));
+    // Callers (in typedarray.js) ensure that length <= %_MaxSmi().
+    length = AddUncasted<HForceRepresentation>(length, Representation::Smi());
 
     Add<HStoreNamedField>(obj,
         HObjectAccess::ForJSTypedArrayLength(),
@@ -10598,7 +10607,7 @@ void HOptimizedGraphBuilder::VisitCountOperation(CountOperation* expr) {
   DCHECK(!HasStackOverflow());
   DCHECK(current_block() != NULL);
   DCHECK(current_block()->HasPredecessor());
-  if (!top_info()->is_tracking_positions()) SetSourcePosition(expr->position());
+  if (!is_tracking_positions()) SetSourcePosition(expr->position());
   Expression* target = expr->expression();
   VariableProxy* proxy = target->AsVariableProxy();
   Property* prop = target->AsProperty();
@@ -11314,7 +11323,7 @@ void HOptimizedGraphBuilder::VisitArithmeticExpression(BinaryOperation* expr) {
       BuildBinaryOperation(expr, left, right,
           ast_context()->IsEffect() ? NO_PUSH_BEFORE_SIMULATE
                                     : PUSH_BEFORE_SIMULATE);
-  if (top_info()->is_tracking_positions() && result->IsBinaryOperation()) {
+  if (is_tracking_positions() && result->IsBinaryOperation()) {
     HBinaryOperation::cast(result)->SetOperandPositions(
         zone(),
         ScriptPositionToSourcePosition(expr->left()->position()),
@@ -11356,7 +11365,7 @@ void HOptimizedGraphBuilder::VisitCompareOperation(CompareOperation* expr) {
   DCHECK(current_block() != NULL);
   DCHECK(current_block()->HasPredecessor());
 
-  if (!top_info()->is_tracking_positions()) SetSourcePosition(expr->position());
+  if (!is_tracking_positions()) SetSourcePosition(expr->position());
 
   // Check for a few fast cases. The AST visiting behavior must be in sync
   // with the full codegen: We don't push both left and right values onto
@@ -11499,7 +11508,7 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
         AddCheckMap(operand_to_check, map);
         HCompareObjectEqAndBranch* result =
             New<HCompareObjectEqAndBranch>(left, right);
-        if (top_info()->is_tracking_positions()) {
+        if (is_tracking_positions()) {
           result->set_operand_position(zone(), 0, left_position);
           result->set_operand_position(zone(), 1, right_position);
         }
@@ -11642,7 +11651,7 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
       HCompareNumericAndBranch* result =
           New<HCompareNumericAndBranch>(left, right, op);
       result->set_observed_input_representation(left_rep, right_rep);
-      if (top_info()->is_tracking_positions()) {
+      if (is_tracking_positions()) {
         result->SetOperandPositions(zone(), left_position, right_position);
       }
       return result;
@@ -11658,7 +11667,7 @@ void HOptimizedGraphBuilder::HandleLiteralCompareNil(CompareOperation* expr,
   DCHECK(current_block() != NULL);
   DCHECK(current_block()->HasPredecessor());
   DCHECK(expr->op() == Token::EQ || expr->op() == Token::EQ_STRICT);
-  if (!top_info()->is_tracking_positions()) SetSourcePosition(expr->position());
+  if (!is_tracking_positions()) SetSourcePosition(expr->position());
   CHECK_ALIVE(VisitForValue(sub_expr));
   HValue* value = Pop();
   HControlInstruction* instr;
@@ -12299,16 +12308,6 @@ void HOptimizedGraphBuilder::GenerateStringCharCodeAt(CallRuntime* call) {
   HValue* index = Pop();
   HValue* string = Pop();
   HInstruction* result = BuildStringCharCodeAt(string, index);
-  return ast_context()->ReturnInstruction(result, call->id());
-}
-
-
-// Fast support for string.charAt(n) and string[n].
-void HOptimizedGraphBuilder::GenerateStringCharFromCode(CallRuntime* call) {
-  DCHECK(call->arguments()->length() == 1);
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
-  HValue* char_code = Pop();
-  HInstruction* result = NewUncasted<HStringCharFromCode>(char_code);
   return ast_context()->ReturnInstruction(result, call->id());
 }
 
@@ -13081,8 +13080,7 @@ void HTracer::Trace(const char* name, HGraph* graph, LChunk* chunk) {
         PrintIndent();
         std::ostringstream os;
         os << "0 " << uses << " " << NameOf(instruction) << " " << *instruction;
-        if (graph->info()->is_tracking_positions() &&
-            instruction->has_position() && instruction->position().raw() != 0) {
+        if (instruction->has_position() && instruction->position().raw() != 0) {
           const SourcePosition pos = instruction->position();
           os << " pos:";
           if (pos.inlining_id() != 0) os << pos.inlining_id() << "_";

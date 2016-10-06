@@ -10,6 +10,408 @@
 namespace v8 {
 namespace internal {
 
+namespace {
+
+enum ResultMode { kDontNegateResult, kNegateResult };
+
+void GenerateStringEqual(CodeStubAssembler* assembler, ResultMode mode) {
+  // Here's pseudo-code for the algorithm below in case of kDontNegateResult
+  // mode; for kNegateResult mode we properly negate the result.
+  //
+  // if (lhs == rhs) return true;
+  // if (lhs->length() != rhs->length()) return false;
+  // if (lhs->IsInternalizedString() && rhs->IsInternalizedString()) {
+  //   return false;
+  // }
+  // if (lhs->IsSeqOneByteString() && rhs->IsSeqOneByteString()) {
+  //   for (i = 0; i != lhs->length(); ++i) {
+  //     if (lhs[i] != rhs[i]) return false;
+  //   }
+  //   return true;
+  // }
+  // return %StringEqual(lhs, rhs);
+
+  typedef CodeStubAssembler::Label Label;
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Variable Variable;
+
+  Node* lhs = assembler->Parameter(0);
+  Node* rhs = assembler->Parameter(1);
+  Node* context = assembler->Parameter(2);
+
+  Label if_equal(assembler), if_notequal(assembler);
+
+  // Fast check to see if {lhs} and {rhs} refer to the same String object.
+  Label if_same(assembler), if_notsame(assembler);
+  assembler->Branch(assembler->WordEqual(lhs, rhs), &if_same, &if_notsame);
+
+  assembler->Bind(&if_same);
+  assembler->Goto(&if_equal);
+
+  assembler->Bind(&if_notsame);
+  {
+    // The {lhs} and {rhs} don't refer to the exact same String object.
+
+    // Load the length of {lhs} and {rhs}.
+    Node* lhs_length = assembler->LoadStringLength(lhs);
+    Node* rhs_length = assembler->LoadStringLength(rhs);
+
+    // Check if the lengths of {lhs} and {rhs} are equal.
+    Label if_lengthisequal(assembler), if_lengthisnotequal(assembler);
+    assembler->Branch(assembler->WordEqual(lhs_length, rhs_length),
+                      &if_lengthisequal, &if_lengthisnotequal);
+
+    assembler->Bind(&if_lengthisequal);
+    {
+      // Load instance types of {lhs} and {rhs}.
+      Node* lhs_instance_type = assembler->LoadInstanceType(lhs);
+      Node* rhs_instance_type = assembler->LoadInstanceType(rhs);
+
+      // Combine the instance types into a single 16-bit value, so we can check
+      // both of them at once.
+      Node* both_instance_types = assembler->Word32Or(
+          lhs_instance_type,
+          assembler->Word32Shl(rhs_instance_type, assembler->Int32Constant(8)));
+
+      // Check if both {lhs} and {rhs} are internalized.
+      int const kBothInternalizedMask =
+          kIsNotInternalizedMask | (kIsNotInternalizedMask << 8);
+      int const kBothInternalizedTag =
+          kInternalizedTag | (kInternalizedTag << 8);
+      Label if_bothinternalized(assembler), if_notbothinternalized(assembler);
+      assembler->Branch(assembler->Word32Equal(
+                            assembler->Word32And(both_instance_types,
+                                                 assembler->Int32Constant(
+                                                     kBothInternalizedMask)),
+                            assembler->Int32Constant(kBothInternalizedTag)),
+                        &if_bothinternalized, &if_notbothinternalized);
+
+      assembler->Bind(&if_bothinternalized);
+      {
+        // Fast negative check for internalized-to-internalized equality.
+        assembler->Goto(&if_notequal);
+      }
+
+      assembler->Bind(&if_notbothinternalized);
+      {
+        // Check that both {lhs} and {rhs} are flat one-byte strings.
+        int const kBothSeqOneByteStringMask =
+            kStringEncodingMask | kStringRepresentationMask |
+            ((kStringEncodingMask | kStringRepresentationMask) << 8);
+        int const kBothSeqOneByteStringTag =
+            kOneByteStringTag | kSeqStringTag |
+            ((kOneByteStringTag | kSeqStringTag) << 8);
+        Label if_bothonebyteseqstrings(assembler),
+            if_notbothonebyteseqstrings(assembler);
+        assembler->Branch(
+            assembler->Word32Equal(
+                assembler->Word32And(
+                    both_instance_types,
+                    assembler->Int32Constant(kBothSeqOneByteStringMask)),
+                assembler->Int32Constant(kBothSeqOneByteStringTag)),
+            &if_bothonebyteseqstrings, &if_notbothonebyteseqstrings);
+
+        assembler->Bind(&if_bothonebyteseqstrings);
+        {
+          // Compute the effective offset of the first character.
+          Node* begin = assembler->IntPtrConstant(
+              SeqOneByteString::kHeaderSize - kHeapObjectTag);
+
+          // Compute the first offset after the string from the length.
+          Node* end =
+              assembler->IntPtrAdd(begin, assembler->SmiUntag(lhs_length));
+
+          // Loop over the {lhs} and {rhs} strings to see if they are equal.
+          Variable var_offset(assembler, MachineType::PointerRepresentation());
+          Label loop(assembler, &var_offset);
+          var_offset.Bind(begin);
+          assembler->Goto(&loop);
+          assembler->Bind(&loop);
+          {
+            // Check if {offset} equals {end}.
+            Node* offset = var_offset.value();
+            Label if_done(assembler), if_notdone(assembler);
+            assembler->Branch(assembler->WordEqual(offset, end), &if_done,
+                              &if_notdone);
+
+            assembler->Bind(&if_notdone);
+            {
+              // Load the next characters from {lhs} and {rhs}.
+              Node* lhs_value =
+                  assembler->Load(MachineType::Uint8(), lhs, offset);
+              Node* rhs_value =
+                  assembler->Load(MachineType::Uint8(), rhs, offset);
+
+              // Check if the characters match.
+              Label if_valueissame(assembler), if_valueisnotsame(assembler);
+              assembler->Branch(assembler->Word32Equal(lhs_value, rhs_value),
+                                &if_valueissame, &if_valueisnotsame);
+
+              assembler->Bind(&if_valueissame);
+              {
+                // Advance to next character.
+                var_offset.Bind(
+                    assembler->IntPtrAdd(offset, assembler->IntPtrConstant(1)));
+              }
+              assembler->Goto(&loop);
+
+              assembler->Bind(&if_valueisnotsame);
+              assembler->Goto(&if_notequal);
+            }
+
+            assembler->Bind(&if_done);
+            assembler->Goto(&if_equal);
+          }
+        }
+
+        assembler->Bind(&if_notbothonebyteseqstrings);
+        {
+          // TODO(bmeurer): Add fast case support for flattened cons strings;
+          // also add support for two byte string equality checks.
+          Runtime::FunctionId function_id = (mode == kDontNegateResult)
+                                                ? Runtime::kStringEqual
+                                                : Runtime::kStringNotEqual;
+          assembler->TailCallRuntime(function_id, context, lhs, rhs);
+        }
+      }
+    }
+
+    assembler->Bind(&if_lengthisnotequal);
+    {
+      // Mismatch in length of {lhs} and {rhs}, cannot be equal.
+      assembler->Goto(&if_notequal);
+    }
+  }
+
+  assembler->Bind(&if_equal);
+  assembler->Return(assembler->BooleanConstant(mode == kDontNegateResult));
+
+  assembler->Bind(&if_notequal);
+  assembler->Return(assembler->BooleanConstant(mode == kNegateResult));
+}
+
+enum RelationalComparisonMode {
+  kLessThan,
+  kLessThanOrEqual,
+  kGreaterThan,
+  kGreaterThanOrEqual
+};
+
+void GenerateStringRelationalComparison(CodeStubAssembler* assembler,
+                                        RelationalComparisonMode mode) {
+  typedef CodeStubAssembler::Label Label;
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Variable Variable;
+
+  Node* lhs = assembler->Parameter(0);
+  Node* rhs = assembler->Parameter(1);
+  Node* context = assembler->Parameter(2);
+
+  Label if_less(assembler), if_equal(assembler), if_greater(assembler);
+
+  // Fast check to see if {lhs} and {rhs} refer to the same String object.
+  Label if_same(assembler), if_notsame(assembler);
+  assembler->Branch(assembler->WordEqual(lhs, rhs), &if_same, &if_notsame);
+
+  assembler->Bind(&if_same);
+  assembler->Goto(&if_equal);
+
+  assembler->Bind(&if_notsame);
+  {
+    // Load instance types of {lhs} and {rhs}.
+    Node* lhs_instance_type = assembler->LoadInstanceType(lhs);
+    Node* rhs_instance_type = assembler->LoadInstanceType(rhs);
+
+    // Combine the instance types into a single 16-bit value, so we can check
+    // both of them at once.
+    Node* both_instance_types = assembler->Word32Or(
+        lhs_instance_type,
+        assembler->Word32Shl(rhs_instance_type, assembler->Int32Constant(8)));
+
+    // Check that both {lhs} and {rhs} are flat one-byte strings.
+    int const kBothSeqOneByteStringMask =
+        kStringEncodingMask | kStringRepresentationMask |
+        ((kStringEncodingMask | kStringRepresentationMask) << 8);
+    int const kBothSeqOneByteStringTag =
+        kOneByteStringTag | kSeqStringTag |
+        ((kOneByteStringTag | kSeqStringTag) << 8);
+    Label if_bothonebyteseqstrings(assembler),
+        if_notbothonebyteseqstrings(assembler);
+    assembler->Branch(assembler->Word32Equal(
+                          assembler->Word32And(both_instance_types,
+                                               assembler->Int32Constant(
+                                                   kBothSeqOneByteStringMask)),
+                          assembler->Int32Constant(kBothSeqOneByteStringTag)),
+                      &if_bothonebyteseqstrings, &if_notbothonebyteseqstrings);
+
+    assembler->Bind(&if_bothonebyteseqstrings);
+    {
+      // Load the length of {lhs} and {rhs}.
+      Node* lhs_length = assembler->LoadStringLength(lhs);
+      Node* rhs_length = assembler->LoadStringLength(rhs);
+
+      // Determine the minimum length.
+      Node* length = assembler->SmiMin(lhs_length, rhs_length);
+
+      // Compute the effective offset of the first character.
+      Node* begin = assembler->IntPtrConstant(SeqOneByteString::kHeaderSize -
+                                              kHeapObjectTag);
+
+      // Compute the first offset after the string from the length.
+      Node* end = assembler->IntPtrAdd(begin, assembler->SmiUntag(length));
+
+      // Loop over the {lhs} and {rhs} strings to see if they are equal.
+      Variable var_offset(assembler, MachineType::PointerRepresentation());
+      Label loop(assembler, &var_offset);
+      var_offset.Bind(begin);
+      assembler->Goto(&loop);
+      assembler->Bind(&loop);
+      {
+        // Check if {offset} equals {end}.
+        Node* offset = var_offset.value();
+        Label if_done(assembler), if_notdone(assembler);
+        assembler->Branch(assembler->WordEqual(offset, end), &if_done,
+                          &if_notdone);
+
+        assembler->Bind(&if_notdone);
+        {
+          // Load the next characters from {lhs} and {rhs}.
+          Node* lhs_value = assembler->Load(MachineType::Uint8(), lhs, offset);
+          Node* rhs_value = assembler->Load(MachineType::Uint8(), rhs, offset);
+
+          // Check if the characters match.
+          Label if_valueissame(assembler), if_valueisnotsame(assembler);
+          assembler->Branch(assembler->Word32Equal(lhs_value, rhs_value),
+                            &if_valueissame, &if_valueisnotsame);
+
+          assembler->Bind(&if_valueissame);
+          {
+            // Advance to next character.
+            var_offset.Bind(
+                assembler->IntPtrAdd(offset, assembler->IntPtrConstant(1)));
+          }
+          assembler->Goto(&loop);
+
+          assembler->Bind(&if_valueisnotsame);
+          assembler->BranchIf(assembler->Uint32LessThan(lhs_value, rhs_value),
+                              &if_less, &if_greater);
+        }
+
+        assembler->Bind(&if_done);
+        {
+          // All characters up to the min length are equal, decide based on
+          // string length.
+          Label if_lengthisequal(assembler), if_lengthisnotequal(assembler);
+          assembler->Branch(assembler->SmiEqual(lhs_length, rhs_length),
+                            &if_lengthisequal, &if_lengthisnotequal);
+
+          assembler->Bind(&if_lengthisequal);
+          assembler->Goto(&if_equal);
+
+          assembler->Bind(&if_lengthisnotequal);
+          assembler->BranchIfSmiLessThan(lhs_length, rhs_length, &if_less,
+                                         &if_greater);
+        }
+      }
+    }
+
+    assembler->Bind(&if_notbothonebyteseqstrings);
+    {
+      // TODO(bmeurer): Add fast case support for flattened cons strings;
+      // also add support for two byte string relational comparisons.
+      switch (mode) {
+        case kLessThan:
+          assembler->TailCallRuntime(Runtime::kStringLessThan, context, lhs,
+                                     rhs);
+          break;
+        case kLessThanOrEqual:
+          assembler->TailCallRuntime(Runtime::kStringLessThanOrEqual, context,
+                                     lhs, rhs);
+          break;
+        case kGreaterThan:
+          assembler->TailCallRuntime(Runtime::kStringGreaterThan, context, lhs,
+                                     rhs);
+          break;
+        case kGreaterThanOrEqual:
+          assembler->TailCallRuntime(Runtime::kStringGreaterThanOrEqual,
+                                     context, lhs, rhs);
+          break;
+      }
+    }
+  }
+
+  assembler->Bind(&if_less);
+  switch (mode) {
+    case kLessThan:
+    case kLessThanOrEqual:
+      assembler->Return(assembler->BooleanConstant(true));
+      break;
+
+    case kGreaterThan:
+    case kGreaterThanOrEqual:
+      assembler->Return(assembler->BooleanConstant(false));
+      break;
+  }
+
+  assembler->Bind(&if_equal);
+  switch (mode) {
+    case kLessThan:
+    case kGreaterThan:
+      assembler->Return(assembler->BooleanConstant(false));
+      break;
+
+    case kLessThanOrEqual:
+    case kGreaterThanOrEqual:
+      assembler->Return(assembler->BooleanConstant(true));
+      break;
+  }
+
+  assembler->Bind(&if_greater);
+  switch (mode) {
+    case kLessThan:
+    case kLessThanOrEqual:
+      assembler->Return(assembler->BooleanConstant(false));
+      break;
+
+    case kGreaterThan:
+    case kGreaterThanOrEqual:
+      assembler->Return(assembler->BooleanConstant(true));
+      break;
+  }
+}
+
+}  // namespace
+
+// static
+void Builtins::Generate_StringEqual(CodeStubAssembler* assembler) {
+  GenerateStringEqual(assembler, kDontNegateResult);
+}
+
+// static
+void Builtins::Generate_StringNotEqual(CodeStubAssembler* assembler) {
+  GenerateStringEqual(assembler, kNegateResult);
+}
+
+// static
+void Builtins::Generate_StringLessThan(CodeStubAssembler* assembler) {
+  GenerateStringRelationalComparison(assembler, kLessThan);
+}
+
+// static
+void Builtins::Generate_StringLessThanOrEqual(CodeStubAssembler* assembler) {
+  GenerateStringRelationalComparison(assembler, kLessThanOrEqual);
+}
+
+// static
+void Builtins::Generate_StringGreaterThan(CodeStubAssembler* assembler) {
+  GenerateStringRelationalComparison(assembler, kGreaterThan);
+}
+
+// static
+void Builtins::Generate_StringGreaterThanOrEqual(CodeStubAssembler* assembler) {
+  GenerateStringRelationalComparison(assembler, kGreaterThanOrEqual);
+}
+
 // -----------------------------------------------------------------------------
 // ES6 section 21.1 String Objects
 
@@ -471,6 +873,239 @@ BUILTIN(StringPrototypeNormalize) {
   return *string;
 }
 
+// ES6 section B.2.3.1 String.prototype.substr ( start, length )
+void Builtins::Generate_StringPrototypeSubstr(CodeStubAssembler* a) {
+  typedef CodeStubAssembler::Label Label;
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Variable Variable;
+
+  Label out(a), handle_length(a);
+
+  Variable var_start(a, MachineRepresentation::kTagged);
+  Variable var_length(a, MachineRepresentation::kTagged);
+
+  Node* const receiver = a->Parameter(0);
+  Node* const start = a->Parameter(1);
+  Node* const length = a->Parameter(2);
+  Node* const context = a->Parameter(5);
+
+  Node* const zero = a->SmiConstant(Smi::FromInt(0));
+
+  // Check that {receiver} is coercible to Object and convert it to a String.
+  Node* const string =
+      a->ToThisString(context, receiver, "String.prototype.substr");
+
+  Node* const string_length = a->LoadStringLength(string);
+
+  // Conversions and bounds-checks for {start}.
+  {
+    Node* const start_int =
+        a->ToInteger(context, start, CodeStubAssembler::kTruncateMinusZero);
+
+    Label if_issmi(a), if_isheapnumber(a, Label::kDeferred);
+    a->Branch(a->WordIsSmi(start_int), &if_issmi, &if_isheapnumber);
+
+    a->Bind(&if_issmi);
+    {
+      Node* const length_plus_start = a->SmiAdd(string_length, start_int);
+      var_start.Bind(a->Select(a->SmiLessThan(start_int, zero),
+                               a->SmiMax(length_plus_start, zero), start_int));
+      a->Goto(&handle_length);
+    }
+
+    a->Bind(&if_isheapnumber);
+    {
+      // If {start} is a heap number, it is definitely out of bounds. If it is
+      // negative, {start} = max({string_length} + {start}),0) = 0'. If it is
+      // positive, set {start} to {string_length} which ultimately results in
+      // returning an empty string.
+      Node* const float_zero = a->Float64Constant(0.);
+      Node* const start_float = a->LoadHeapNumberValue(start_int);
+      var_start.Bind(a->Select(a->Float64LessThan(start_float, float_zero),
+                               zero, string_length));
+      a->Goto(&handle_length);
+    }
+  }
+
+  // Conversions and bounds-checks for {length}.
+  a->Bind(&handle_length);
+  {
+    Label if_issmi(a), if_isheapnumber(a, Label::kDeferred);
+
+    // Default to {string_length} if {length} is undefined.
+    {
+      Label if_isundefined(a, Label::kDeferred), if_isnotundefined(a);
+      a->Branch(a->WordEqual(length, a->UndefinedConstant()), &if_isundefined,
+                &if_isnotundefined);
+
+      a->Bind(&if_isundefined);
+      var_length.Bind(string_length);
+      a->Goto(&if_issmi);
+
+      a->Bind(&if_isnotundefined);
+      var_length.Bind(
+          a->ToInteger(context, length, CodeStubAssembler::kTruncateMinusZero));
+    }
+
+    a->Branch(a->WordIsSmi(var_length.value()), &if_issmi, &if_isheapnumber);
+
+    // Set {length} to min(max({length}, 0), {string_length} - {start}
+    a->Bind(&if_issmi);
+    {
+      Node* const positive_length = a->SmiMax(var_length.value(), zero);
+
+      Node* const minimal_length = a->SmiSub(string_length, var_start.value());
+      var_length.Bind(a->SmiMin(positive_length, minimal_length));
+
+      a->GotoUnless(a->SmiLessThanOrEqual(var_length.value(), zero), &out);
+      a->Return(a->EmptyStringConstant());
+    }
+
+    a->Bind(&if_isheapnumber);
+    {
+      // If {length} is a heap number, it is definitely out of bounds. There are
+      // two cases according to the spec: if it is negative, "" is returned; if
+      // it is positive, then length is set to {string_length} - {start}.
+
+      a->Assert(a->WordEqual(a->LoadMap(var_length.value()),
+                             a->HeapNumberMapConstant()));
+
+      Label if_isnegative(a), if_ispositive(a);
+      Node* const float_zero = a->Float64Constant(0.);
+      Node* const length_float = a->LoadHeapNumberValue(var_length.value());
+      a->Branch(a->Float64LessThan(length_float, float_zero), &if_isnegative,
+                &if_ispositive);
+
+      a->Bind(&if_isnegative);
+      a->Return(a->EmptyStringConstant());
+
+      a->Bind(&if_ispositive);
+      {
+        var_length.Bind(a->SmiSub(string_length, var_start.value()));
+        a->GotoUnless(a->SmiLessThanOrEqual(var_length.value(), zero), &out);
+        a->Return(a->EmptyStringConstant());
+      }
+    }
+  }
+
+  a->Bind(&out);
+  {
+    Node* const end = a->SmiAdd(var_start.value(), var_length.value());
+    Node* const result = a->SubString(context, string, var_start.value(), end);
+    a->Return(result);
+  }
+}
+
+namespace {
+
+compiler::Node* ToSmiBetweenZeroAnd(CodeStubAssembler* a,
+                                    compiler::Node* context,
+                                    compiler::Node* value,
+                                    compiler::Node* limit) {
+  typedef CodeStubAssembler::Label Label;
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Variable Variable;
+
+  Label out(a);
+  Variable var_result(a, MachineRepresentation::kTagged);
+
+  Node* const value_int =
+      a->ToInteger(context, value, CodeStubAssembler::kTruncateMinusZero);
+
+  Label if_issmi(a), if_isnotsmi(a, Label::kDeferred);
+  a->Branch(a->WordIsSmi(value_int), &if_issmi, &if_isnotsmi);
+
+  a->Bind(&if_issmi);
+  {
+    Label if_isinbounds(a), if_isoutofbounds(a, Label::kDeferred);
+    a->Branch(a->SmiAbove(value_int, limit), &if_isoutofbounds, &if_isinbounds);
+
+    a->Bind(&if_isinbounds);
+    {
+      var_result.Bind(value_int);
+      a->Goto(&out);
+    }
+
+    a->Bind(&if_isoutofbounds);
+    {
+      Node* const zero = a->SmiConstant(Smi::FromInt(0));
+      var_result.Bind(a->Select(a->SmiLessThan(value_int, zero), zero, limit));
+      a->Goto(&out);
+    }
+  }
+
+  a->Bind(&if_isnotsmi);
+  {
+    // {value} is a heap number - in this case, it is definitely out of bounds.
+    a->Assert(a->WordEqual(a->LoadMap(value_int), a->HeapNumberMapConstant()));
+
+    Node* const float_zero = a->Float64Constant(0.);
+    Node* const smi_zero = a->SmiConstant(Smi::FromInt(0));
+    Node* const value_float = a->LoadHeapNumberValue(value_int);
+    var_result.Bind(a->Select(a->Float64LessThan(value_float, float_zero),
+                              smi_zero, limit));
+    a->Goto(&out);
+  }
+
+  a->Bind(&out);
+  return var_result.value();
+}
+
+}  // namespace
+
+// ES6 section 21.1.3.19 String.prototype.substring ( start, end )
+void Builtins::Generate_StringPrototypeSubstring(CodeStubAssembler* a) {
+  typedef CodeStubAssembler::Label Label;
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Variable Variable;
+
+  Label out(a);
+
+  Variable var_start(a, MachineRepresentation::kTagged);
+  Variable var_end(a, MachineRepresentation::kTagged);
+
+  Node* const receiver = a->Parameter(0);
+  Node* const start = a->Parameter(1);
+  Node* const end = a->Parameter(2);
+  Node* const context = a->Parameter(5);
+
+  // Check that {receiver} is coercible to Object and convert it to a String.
+  Node* const string =
+      a->ToThisString(context, receiver, "String.prototype.substring");
+
+  Node* const length = a->LoadStringLength(string);
+
+  // Conversion and bounds-checks for {start}.
+  var_start.Bind(ToSmiBetweenZeroAnd(a, context, start, length));
+
+  // Conversion and bounds-checks for {end}.
+  {
+    var_end.Bind(length);
+    a->GotoIf(a->WordEqual(end, a->UndefinedConstant()), &out);
+
+    var_end.Bind(ToSmiBetweenZeroAnd(a, context, end, length));
+
+    Label if_endislessthanstart(a);
+    a->Branch(a->SmiLessThan(var_end.value(), var_start.value()),
+              &if_endislessthanstart, &out);
+
+    a->Bind(&if_endislessthanstart);
+    {
+      Node* const tmp = var_end.value();
+      var_end.Bind(var_start.value());
+      var_start.Bind(tmp);
+      a->Goto(&out);
+    }
+  }
+
+  a->Bind(&out);
+  {
+    Node* result =
+        a->SubString(context, string, var_start.value(), var_end.value());
+    a->Return(result);
+  }
+}
+
 // ES6 section 21.1.3.25 String.prototype.toString ()
 void Builtins::Generate_StringPrototypeToString(CodeStubAssembler* assembler) {
   typedef compiler::Node Node;
@@ -516,58 +1151,197 @@ void Builtins::Generate_StringPrototypeValueOf(CodeStubAssembler* assembler) {
   assembler->Return(result);
 }
 
-BUILTIN(StringPrototypeIterator) {
-  HandleScope scope(isolate);
-  TO_THIS_STRING(object, "String.prototype[Symbol.iterator]");
+void Builtins::Generate_StringPrototypeIterator(CodeStubAssembler* assembler) {
+  typedef compiler::Node Node;
 
-  Handle<String> string;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, string,
-                                     Object::ToString(isolate, object));
+  Node* receiver = assembler->Parameter(0);
+  Node* context = assembler->Parameter(3);
 
-  return *isolate->factory()->NewJSStringIterator(string);
+  Node* string = assembler->ToThisString(context, receiver,
+                                         "String.prototype[Symbol.iterator]");
+
+  Node* native_context = assembler->LoadNativeContext(context);
+  Node* map = assembler->LoadFixedArrayElement(
+      native_context,
+      assembler->IntPtrConstant(Context::STRING_ITERATOR_MAP_INDEX), 0,
+      CodeStubAssembler::INTPTR_PARAMETERS);
+  Node* iterator = assembler->Allocate(JSStringIterator::kSize);
+  assembler->StoreMapNoWriteBarrier(iterator, map);
+  assembler->StoreObjectFieldRoot(iterator, JSValue::kPropertiesOffset,
+                                  Heap::kEmptyFixedArrayRootIndex);
+  assembler->StoreObjectFieldRoot(iterator, JSObject::kElementsOffset,
+                                  Heap::kEmptyFixedArrayRootIndex);
+  assembler->StoreObjectFieldNoWriteBarrier(
+      iterator, JSStringIterator::kStringOffset, string);
+  Node* index = assembler->SmiConstant(Smi::FromInt(0));
+  assembler->StoreObjectFieldNoWriteBarrier(
+      iterator, JSStringIterator::kNextIndexOffset, index);
+  assembler->Return(iterator);
 }
 
-BUILTIN(StringIteratorPrototypeNext) {
-  HandleScope scope(isolate);
+namespace {
 
-  if (!args.receiver()->IsJSStringIterator()) {
-    Handle<String> reason = isolate->factory()->NewStringFromAsciiChecked(
-        "String Iterator.prototype.next");
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate,
-        NewTypeError(MessageTemplate::kIncompatibleMethodReceiver, reason));
-  }
-  Handle<JSStringIterator> iterator =
-      Handle<JSStringIterator>::cast(args.receiver());
-  Handle<String> string(iterator->string());
+// Return the |word32| codepoint at {index}. Supports SeqStrings and
+// ExternalStrings.
+compiler::Node* LoadSurrogatePairInternal(CodeStubAssembler* assembler,
+                                          compiler::Node* string,
+                                          compiler::Node* length,
+                                          compiler::Node* index,
+                                          UnicodeEncoding encoding) {
+  typedef CodeStubAssembler::Label Label;
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Variable Variable;
+  Label handle_surrogate_pair(assembler), return_result(assembler);
+  Variable var_result(assembler, MachineRepresentation::kWord32);
+  Variable var_trail(assembler, MachineRepresentation::kWord16);
+  var_result.Bind(assembler->StringCharCodeAt(string, index));
+  var_trail.Bind(assembler->Int32Constant(0));
 
-  int position = iterator->index();
-  int length = string->length();
+  assembler->GotoIf(assembler->Word32NotEqual(
+                        assembler->Word32And(var_result.value(),
+                                             assembler->Int32Constant(0xFC00)),
+                        assembler->Int32Constant(0xD800)),
+                    &return_result);
+  Node* next_index =
+      assembler->SmiAdd(index, assembler->SmiConstant(Smi::FromInt(1)));
 
-  if (position < length) {
-    uint16_t lead = string->Get(position);
-    if (lead >= 0xD800 && lead <= 0xDBFF && position + 1 < length) {
-      uint16_t trail = string->Get(position + 1);
-      if (V8_LIKELY(trail >= 0xDC00 && trail <= 0xDFFF)) {
-        // Return surrogate pair code units
-        iterator->set_index(position + 2);
-        Handle<String> value =
-            isolate->factory()->NewSurrogatePairString(lead, trail);
-        return *isolate->factory()->NewJSIteratorResult(value, false);
+  assembler->GotoUnless(assembler->SmiLessThan(next_index, length),
+                        &return_result);
+  var_trail.Bind(assembler->StringCharCodeAt(string, next_index));
+  assembler->Branch(assembler->Word32Equal(
+                        assembler->Word32And(var_trail.value(),
+                                             assembler->Int32Constant(0xFC00)),
+                        assembler->Int32Constant(0xDC00)),
+                    &handle_surrogate_pair, &return_result);
+
+  assembler->Bind(&handle_surrogate_pair);
+  {
+    Node* lead = var_result.value();
+    Node* trail = var_trail.value();
+#ifdef ENABLE_SLOW_DCHECKS
+    // Check that this path is only taken if a surrogate pair is found
+    assembler->Assert(assembler->Uint32GreaterThanOrEqual(
+        lead, assembler->Int32Constant(0xD800)));
+    assembler->Assert(
+        assembler->Uint32LessThan(lead, assembler->Int32Constant(0xDC00)));
+    assembler->Assert(assembler->Uint32GreaterThanOrEqual(
+        trail, assembler->Int32Constant(0xDC00)));
+    assembler->Assert(
+        assembler->Uint32LessThan(trail, assembler->Int32Constant(0xE000)));
+#endif
+
+    switch (encoding) {
+      case UnicodeEncoding::UTF16:
+        var_result.Bind(assembler->WordOr(
+            assembler->WordShl(trail, assembler->Int32Constant(16)), lead));
+        break;
+
+      case UnicodeEncoding::UTF32: {
+        // Convert UTF16 surrogate pair into |word32| code point, encoded as
+        // UTF32.
+        Node* surrogate_offset =
+            assembler->Int32Constant(0x10000 - (0xD800 << 10) - 0xDC00);
+
+        // (lead << 10) + trail + SURROGATE_OFFSET
+        var_result.Bind(assembler->Int32Add(
+            assembler->WordShl(lead, assembler->Int32Constant(10)),
+            assembler->Int32Add(trail, surrogate_offset)));
+        break;
       }
     }
-
-    // Return single code unit
-    iterator->set_index(position + 1);
-    Handle<String> value =
-        isolate->factory()->LookupSingleCharacterStringFromCode(lead);
-    return *isolate->factory()->NewJSIteratorResult(value, false);
+    assembler->Goto(&return_result);
   }
 
-  iterator->set_string(isolate->heap()->empty_string());
+  assembler->Bind(&return_result);
+  return var_result.value();
+}
 
-  return *isolate->factory()->NewJSIteratorResult(
-      isolate->factory()->undefined_value(), true);
+compiler::Node* LoadSurrogatePairAt(CodeStubAssembler* assembler,
+                                    compiler::Node* string,
+                                    compiler::Node* length,
+                                    compiler::Node* index) {
+  return LoadSurrogatePairInternal(assembler, string, length, index,
+                                   UnicodeEncoding::UTF16);
+}
+
+}  // namespace
+
+void Builtins::Generate_StringIteratorPrototypeNext(
+    CodeStubAssembler* assembler) {
+  typedef CodeStubAssembler::Label Label;
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Variable Variable;
+
+  Variable var_value(assembler, MachineRepresentation::kTagged);
+  Variable var_done(assembler, MachineRepresentation::kTagged);
+
+  var_value.Bind(assembler->UndefinedConstant());
+  var_done.Bind(assembler->BooleanConstant(true));
+
+  Label throw_bad_receiver(assembler), next_codepoint(assembler),
+      return_result(assembler);
+
+  Node* iterator = assembler->Parameter(0);
+  Node* context = assembler->Parameter(3);
+
+  assembler->GotoIf(assembler->WordIsSmi(iterator), &throw_bad_receiver);
+  assembler->GotoUnless(
+      assembler->WordEqual(assembler->LoadInstanceType(iterator),
+                           assembler->Int32Constant(JS_STRING_ITERATOR_TYPE)),
+      &throw_bad_receiver);
+
+  Node* string =
+      assembler->LoadObjectField(iterator, JSStringIterator::kStringOffset);
+  Node* position =
+      assembler->LoadObjectField(iterator, JSStringIterator::kNextIndexOffset);
+  Node* length = assembler->LoadObjectField(string, String::kLengthOffset);
+
+  assembler->Branch(assembler->SmiLessThan(position, length), &next_codepoint,
+                    &return_result);
+
+  assembler->Bind(&next_codepoint);
+  {
+    Node* ch = LoadSurrogatePairAt(assembler, string, length, position);
+    Node* value = assembler->StringFromCodePoint(ch, UnicodeEncoding::UTF16);
+    var_value.Bind(value);
+    Node* length = assembler->LoadObjectField(value, String::kLengthOffset);
+    assembler->StoreObjectFieldNoWriteBarrier(
+        iterator, JSStringIterator::kNextIndexOffset,
+        assembler->SmiAdd(position, length));
+    var_done.Bind(assembler->BooleanConstant(false));
+    assembler->Goto(&return_result);
+  }
+
+  assembler->Bind(&return_result);
+  {
+    Node* native_context = assembler->LoadNativeContext(context);
+    Node* map = assembler->LoadFixedArrayElement(
+        native_context,
+        assembler->IntPtrConstant(Context::ITERATOR_RESULT_MAP_INDEX), 0,
+        CodeStubAssembler::INTPTR_PARAMETERS);
+    Node* result = assembler->Allocate(JSIteratorResult::kSize);
+    assembler->StoreMapNoWriteBarrier(result, map);
+    assembler->StoreObjectFieldRoot(result, JSIteratorResult::kPropertiesOffset,
+                                    Heap::kEmptyFixedArrayRootIndex);
+    assembler->StoreObjectFieldRoot(result, JSIteratorResult::kElementsOffset,
+                                    Heap::kEmptyFixedArrayRootIndex);
+    assembler->StoreObjectFieldNoWriteBarrier(
+        result, JSIteratorResult::kValueOffset, var_value.value());
+    assembler->StoreObjectFieldNoWriteBarrier(
+        result, JSIteratorResult::kDoneOffset, var_done.value());
+    assembler->Return(result);
+  }
+
+  assembler->Bind(&throw_bad_receiver);
+  {
+    // The {receiver} is not a valid JSGeneratorObject.
+    Node* result = assembler->CallRuntime(
+        Runtime::kThrowIncompatibleMethodReceiver, context,
+        assembler->HeapConstant(assembler->factory()->NewStringFromAsciiChecked(
+            "String Iterator.prototype.next", TENURED)),
+        iterator);
+    assembler->Return(result);  // Never reached.
+  }
 }
 
 }  // namespace internal

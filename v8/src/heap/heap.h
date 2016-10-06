@@ -337,11 +337,10 @@ class Scavenger;
 class ScavengeJob;
 class Space;
 class StoreBuffer;
+class TracePossibleWrapperReporter;
 class WeakObjectRetainer;
 
 typedef void (*ObjectSlotCallback)(HeapObject** from, HeapObject* to);
-
-enum PromotionMode { PROMOTE_MARKED, DEFAULT_PROMOTION };
 
 enum ArrayStorageAllocationMode {
   DONT_INITIALIZE_ARRAY_ELEMENTS,
@@ -436,6 +435,10 @@ class PromotionQueue {
 
 class AllocationResult {
  public:
+  static inline AllocationResult Retry(AllocationSpace space = NEW_SPACE) {
+    return AllocationResult(space);
+  }
+
   // Implicit constructor from Object*.
   AllocationResult(Object* object)  // NOLINT
       : object_(object) {
@@ -446,11 +449,9 @@ class AllocationResult {
 
   AllocationResult() : object_(Smi::FromInt(NEW_SPACE)) {}
 
-  static inline AllocationResult Retry(AllocationSpace space = NEW_SPACE) {
-    return AllocationResult(space);
-  }
-
   inline bool IsRetry() { return object_->IsSmi(); }
+  inline HeapObject* ToObjectChecked();
+  inline AllocationSpace RetrySpace();
 
   template <typename T>
   bool To(T** obj) {
@@ -458,13 +459,6 @@ class AllocationResult {
     *obj = T::cast(object_);
     return true;
   }
-
-  Object* ToObjectChecked() {
-    CHECK(!IsRetry());
-    return object_;
-  }
-
-  inline AllocationSpace RetrySpace();
 
  private:
   explicit AllocationResult(AllocationSpace space)
@@ -708,21 +702,10 @@ class Heap {
   // should not happen during deserialization.
   void NotifyDeserializationComplete();
 
-  intptr_t old_generation_allocation_limit() const {
-    return old_generation_allocation_limit_;
-  }
-
-  bool always_allocate() { return always_allocate_scope_count_.Value() != 0; }
-
   inline Address* NewSpaceAllocationTopAddress();
   inline Address* NewSpaceAllocationLimitAddress();
   inline Address* OldSpaceAllocationTopAddress();
   inline Address* OldSpaceAllocationLimitAddress();
-
-  bool CanExpandOldGeneration(int size) {
-    if (force_oom_) return false;
-    return (OldGenerationCapacity() + size) < MaxOldGenerationSize();
-  }
 
   // Clear the Instanceof cache (used when a prototype changes).
   inline void ClearInstanceofCache();
@@ -846,22 +829,15 @@ class Heap {
   // Check new space expansion criteria and expand semispaces if it was hit.
   void CheckNewSpaceExpansionCriteria();
 
-  inline bool HeapIsFullEnoughToStartIncrementalMarking(intptr_t limit);
-
   void VisitExternalResources(v8::ExternalResourceVisitor* visitor);
 
   // An object should be promoted if the object has survived a
   // scavenge operation.
-  template <PromotionMode promotion_mode>
   inline bool ShouldBePromoted(Address old_address, int object_size);
-
-  inline PromotionMode CurrentPromotionMode();
 
   void ClearNormalizedMapCaches();
 
   void IncrementDeferredCount(v8::Isolate::UseCounterFeature feature);
-
-  inline bool OldGenerationAllocationLimitReached();
 
   // Completely clear the Instanceof cache (to stop it keeping objects alive
   // around a GC).
@@ -1042,6 +1018,14 @@ class Heap {
   Handle<Object> root_handle(RootListIndex index) {
     return Handle<Object>(&roots_[index]);
   }
+  template <typename T>
+  bool IsRootHandle(Handle<T> handle, RootListIndex* index) const {
+    Object** const handle_location = bit_cast<Object**>(handle.address());
+    if (handle_location >= &roots_[kRootListLength]) return false;
+    if (handle_location < &roots_[0]) return false;
+    *index = static_cast<RootListIndex>(handle_location - &roots_[0]);
+    return true;
+  }
 
   // Generated code can embed this address to get access to the roots.
   Object** roots_array_start() { return roots_; }
@@ -1204,11 +1188,25 @@ class Heap {
 
   void SetEmbedderHeapTracer(EmbedderHeapTracer* tracer);
 
-  bool UsingEmbedderHeapTracer();
+  bool UsingEmbedderHeapTracer() { return embedder_heap_tracer() != nullptr; }
 
   void TracePossibleWrapper(JSObject* js_object);
 
   void RegisterExternallyReferencedObject(Object** object);
+
+  void RegisterWrappersWithEmbedderHeapTracer();
+
+  // In order to avoid running out of memory we force tracing wrappers if there
+  // are too many of them.
+  bool RequiresImmediateWrapperProcessing();
+
+  EmbedderHeapTracer* embedder_heap_tracer() { return embedder_heap_tracer_; }
+
+  EmbedderReachableReferenceReporter* embedder_reachable_reference_reporter() {
+    return embedder_reference_reporter_;
+  }
+
+  size_t wrappers_to_trace() { return wrappers_to_trace_.size(); }
 
   // ===========================================================================
   // External string table API. ================================================
@@ -1295,19 +1293,19 @@ class Heap {
   intptr_t OldGenerationCapacity();
 
   // Returns the amount of memory currently committed for the heap.
-  intptr_t CommittedMemory();
+  size_t CommittedMemory();
 
   // Returns the amount of memory currently committed for the old space.
-  intptr_t CommittedOldGenerationMemory();
+  size_t CommittedOldGenerationMemory();
 
   // Returns the amount of executable memory currently committed for the heap.
-  intptr_t CommittedMemoryExecutable();
+  size_t CommittedMemoryExecutable();
 
   // Returns the amount of phyical memory currently committed for the heap.
   size_t CommittedPhysicalMemory();
 
   // Returns the maximum amount of memory ever committed for the heap.
-  intptr_t MaximumCommittedMemory() { return maximum_committed_; }
+  size_t MaximumCommittedMemory() { return maximum_committed_; }
 
   // Updates the maximum committed memory for the heap. Should be called
   // whenever a space grows.
@@ -1373,16 +1371,18 @@ class Heap {
   }
 
   void UpdateOldGenerationAllocationCounter() {
-    old_generation_allocation_counter_ = OldGenerationAllocationCounter();
+    old_generation_allocation_counter_at_last_gc_ =
+        OldGenerationAllocationCounter();
   }
 
   size_t OldGenerationAllocationCounter() {
-    return old_generation_allocation_counter_ + PromotedSinceLastGC();
+    return old_generation_allocation_counter_at_last_gc_ +
+           PromotedSinceLastGC();
   }
 
   // This should be used only for testing.
-  void set_old_generation_allocation_counter(size_t new_value) {
-    old_generation_allocation_counter_ = new_value;
+  void set_old_generation_allocation_counter_at_last_gc(size_t new_value) {
+    old_generation_allocation_counter_at_last_gc_ = new_value;
   }
 
   size_t PromotedSinceLastGC() {
@@ -1709,10 +1709,6 @@ class Heap {
   // Flush the number to string cache.
   void FlushNumberStringCache();
 
-  // TODO(hpayer): Allocation site pretenuring may make this method obsolete.
-  // Re-visit incremental marking heuristics.
-  bool IsHighSurvivalRate() { return high_survival_rate_period_length_ > 0; }
-
   void ConfigureInitialOldGenerationSize();
 
   bool HasLowYoungGenerationAllocationRate();
@@ -1785,8 +1781,7 @@ class Heap {
   // Performs a minor collection in new generation.
   void Scavenge();
 
-  Address DoScavenge(ObjectVisitor* scavenge_visitor, Address new_space_front,
-                     PromotionMode promotion_mode);
+  Address DoScavenge(ObjectVisitor* scavenge_visitor, Address new_space_front);
 
   void UpdateNewSpaceReferencesInExternalStringTable(
       ExternalStringTableUpdaterCallback updater_func);
@@ -1808,18 +1803,7 @@ class Heap {
     return old_generation_allocation_limit_ - PromotedTotalSize();
   }
 
-  // Returns maximum GC pause.
-  double get_max_gc_pause() { return max_gc_pause_; }
-
-  // Returns maximum size of objects alive after GC.
-  intptr_t get_max_alive_after_gc() { return max_alive_after_gc_; }
-
-  // Returns minimal interval between two subsequent collections.
-  double get_min_in_mutator() { return min_in_mutator_; }
-
-  // Update GC statistics that are tracked on the Heap.
-  void UpdateCumulativeGCStatistics(double duration, double spent_in_mutator,
-                                    double marking_time);
+  void UpdateTotalGCTime(double duration);
 
   bool MaximumSizeScavenge() { return maximum_size_scavenges_ > 0; }
 
@@ -1844,6 +1828,22 @@ class Heap {
                                        double mutator_speed);
 
   intptr_t MinimumAllocationLimitGrowingStep();
+
+  intptr_t old_generation_allocation_limit() const {
+    return old_generation_allocation_limit_;
+  }
+
+  bool always_allocate() { return always_allocate_scope_count_.Value() != 0; }
+
+  bool CanExpandOldGeneration(int size) {
+    if (force_oom_) return false;
+    return (OldGenerationCapacity() + size) < MaxOldGenerationSize();
+  }
+
+  bool ShouldExpandOldGenerationOnAllocationFailure();
+
+  enum class IncrementalMarkingLimit { kNoLimit, kSoftLimit, kHardLimit };
+  IncrementalMarkingLimit IncrementalMarkingLimitReached();
 
   // ===========================================================================
   // Idle notification. ========================================================
@@ -2100,7 +2100,7 @@ class Heap {
   intptr_t initial_old_generation_size_;
   bool old_generation_size_configured_;
   intptr_t max_executable_size_;
-  intptr_t maximum_committed_;
+  size_t maximum_committed_;
 
   // For keeping track of how much data has survived
   // scavenge since last new space expansion.
@@ -2132,6 +2132,8 @@ class Heap {
   OldSpace* code_space_;
   MapSpace* map_space_;
   LargeObjectSpace* lo_space_;
+  // Map from the space id to the space.
+  Space* space_[LAST_SPACE + 1];
   HeapState gc_state_;
   int gc_post_processing_depth_;
   Address new_space_top_after_last_gc_;
@@ -2196,7 +2198,6 @@ class Heap {
 
   GCTracer* tracer_;
 
-  int high_survival_rate_period_length_;
   intptr_t promoted_objects_size_;
   double promotion_ratio_;
   double promotion_rate_;
@@ -2213,23 +2214,8 @@ class Heap {
   // of the allocation site.
   unsigned int maximum_size_scavenges_;
 
-  // Maximum GC pause.
-  double max_gc_pause_;
-
   // Total time spent in GC.
   double total_gc_time_ms_;
-
-  // Maximum size of objects alive after GC.
-  intptr_t max_alive_after_gc_;
-
-  // Minimal interval between two subsequent collections.
-  double min_in_mutator_;
-
-  // Cumulative GC time spent in marking.
-  double marking_time_;
-
-  // Cumulative GC time spent in sweeping.
-  double sweeping_time_;
 
   // Last time an idle notification happened.
   double last_idle_notification_time_;
@@ -2270,7 +2256,7 @@ class Heap {
   // This counter is increased before each GC and never reset. To
   // account for the bytes allocated since the last GC, use the
   // OldGenerationAllocationCounter() function.
-  size_t old_generation_allocation_counter_;
+  size_t old_generation_allocation_counter_at_last_gc_;
 
   // The size of objects in old generation after the last MarkCompact GC.
   size_t old_generation_size_at_last_gc_;
@@ -2321,6 +2307,10 @@ class Heap {
   // The depth of HeapIterator nestings.
   int heap_iterator_depth_;
 
+  EmbedderHeapTracer* embedder_heap_tracer_;
+  EmbedderReachableReferenceReporter* embedder_reference_reporter_;
+  std::vector<std::pair<void*, void*>> wrappers_to_trace_;
+
   // Used for testing purposes.
   bool force_oom_;
 
@@ -2331,12 +2321,15 @@ class Heap {
   friend class HeapIterator;
   friend class IdleScavengeObserver;
   friend class IncrementalMarking;
+  friend class IncrementalMarkingJob;
   friend class IteratePromotedObjectsVisitor;
+  friend class LargeObjectSpace;
   friend class MarkCompactCollector;
   friend class MarkCompactMarkingVisitor;
   friend class NewSpace;
   friend class ObjectStatsCollector;
   friend class Page;
+  friend class PagedSpace;
   friend class Scavenger;
   friend class StoreBuffer;
   friend class TestMemoryAllocatorScope;
@@ -2455,23 +2448,17 @@ class PagedSpaces BASE_EMBEDDED {
 };
 
 
-// Space iterator for iterating over all spaces of the heap.
-// For each space an object iterator is provided. The deallocation of the
-// returned object iterators is handled by the space iterator.
 class SpaceIterator : public Malloced {
  public:
   explicit SpaceIterator(Heap* heap);
   virtual ~SpaceIterator();
 
   bool has_next();
-  ObjectIterator* next();
+  Space* next();
 
  private:
-  ObjectIterator* CreateIterator();
-
   Heap* heap_;
   int current_space_;         // from enum AllocationSpace.
-  ObjectIterator* iterator_;  // object iterator for the current space.
 };
 
 
@@ -2517,7 +2504,7 @@ class HeapIterator BASE_EMBEDDED {
   // Space iterator for iterating all the spaces.
   SpaceIterator* space_iterator_;
   // Object iterator for the space currently being iterated.
-  ObjectIterator* object_iterator_;
+  std::unique_ptr<ObjectIterator> object_iterator_;
 };
 
 // Abstract base class for checking whether a weak object should be retained.
@@ -2642,6 +2629,18 @@ class AllocationObserver {
   friend class NewSpace;
   friend class PagedSpace;
   DISALLOW_COPY_AND_ASSIGN(AllocationObserver);
+};
+
+class TracePossibleWrapperReporter : public EmbedderReachableReferenceReporter {
+ public:
+  explicit TracePossibleWrapperReporter(Heap* heap) : heap_(heap) {}
+  void ReportExternalReference(Value* object) override {
+    heap_->RegisterExternallyReferencedObject(
+        reinterpret_cast<Object**>(object));
+  }
+
+ private:
+  Heap* heap_;
 };
 
 }  // namespace internal

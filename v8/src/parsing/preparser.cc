@@ -35,11 +35,13 @@ namespace internal {
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
-#define CHECK_OK CHECK_OK_VALUE(Statement::Default())
+#define CHECK_OK CHECK_OK_VALUE(Expression::Default())
 #define CHECK_OK_VOID CHECK_OK_VALUE(this->Void())
 
-PreParserIdentifier PreParser::GetSymbol() const {
-  switch (scanner()->current_token()) {
+namespace {
+
+PreParserIdentifier GetSymbolHelper(Scanner* scanner) {
+  switch (scanner->current_token()) {
     case Token::ENUM:
       return PreParserIdentifier::Enum();
     case Token::AWAIT:
@@ -55,41 +57,53 @@ PreParserIdentifier PreParser::GetSymbol() const {
     case Token::ASYNC:
       return PreParserIdentifier::Async();
     default:
-      if (scanner()->UnescapedLiteralMatches("eval", 4))
+      if (scanner->UnescapedLiteralMatches("eval", 4))
         return PreParserIdentifier::Eval();
-      if (scanner()->UnescapedLiteralMatches("arguments", 9))
+      if (scanner->UnescapedLiteralMatches("arguments", 9))
         return PreParserIdentifier::Arguments();
-      if (scanner()->UnescapedLiteralMatches("undefined", 9))
+      if (scanner->UnescapedLiteralMatches("undefined", 9))
         return PreParserIdentifier::Undefined();
-      if (scanner()->LiteralMatches("prototype", 9))
+      if (scanner->LiteralMatches("prototype", 9))
         return PreParserIdentifier::Prototype();
-      if (scanner()->LiteralMatches("constructor", 11))
+      if (scanner->LiteralMatches("constructor", 11))
         return PreParserIdentifier::Constructor();
       return PreParserIdentifier::Default();
   }
 }
 
+}  // unnamed namespace
+
+PreParserIdentifier PreParser::GetSymbol() const {
+  PreParserIdentifier symbol = GetSymbolHelper(scanner());
+  if (track_unresolved_variables_) {
+    const AstRawString* result = scanner()->CurrentSymbol(ast_value_factory());
+    DCHECK_NOT_NULL(result);
+    symbol.string_ = result;
+  }
+  return symbol;
+}
+
 PreParser::PreParseResult PreParser::PreParseLazyFunction(
-    LanguageMode language_mode, FunctionKind kind, bool has_simple_parameters,
-    bool parsing_module, ParserRecorder* log, bool may_abort, int* use_counts) {
+    DeclarationScope* function_scope, bool parsing_module, ParserRecorder* log,
+    bool is_inner_function, bool may_abort, int* use_counts) {
+  DCHECK_EQ(FUNCTION_SCOPE, function_scope->scope_type());
   parsing_module_ = parsing_module;
   log_ = log;
   use_counts_ = use_counts;
-  // Lazy functions always have trivial outer scopes (no with/catch scopes).
+  DCHECK(!track_unresolved_variables_);
+  track_unresolved_variables_ = is_inner_function;
+
+  // The caller passes the function_scope which is not yet inserted into the
+  // scope_state_. All scopes above the function_scope are ignored by the
+  // PreParser.
   DCHECK_NULL(scope_state_);
-  DeclarationScope* top_scope = NewScriptScope();
-  FunctionState top_state(&function_state_, &scope_state_, top_scope,
-                          kNormalFunction);
-  scope()->SetLanguageMode(language_mode);
-  DeclarationScope* function_scope = NewFunctionScope(kind);
-  if (!has_simple_parameters) function_scope->SetHasNonSimpleParameters();
-  FunctionState function_state(&function_state_, &scope_state_, function_scope,
-                               kind);
+  FunctionState function_state(&function_state_, &scope_state_, function_scope);
   DCHECK_EQ(Token::LBRACE, scanner()->current_token());
   bool ok = true;
   int start_position = peek_position();
   LazyParsingResult result = ParseLazyFunctionLiteralBody(may_abort, &ok);
   use_counts_ = nullptr;
+  track_unresolved_variables_ = false;
   if (result == kLazyParsingAborted) {
     return kPreParseAbort;
   } else if (stack_overflow()) {
@@ -98,7 +112,7 @@ PreParser::PreParseResult PreParser::PreParseLazyFunction(
     ReportUnexpectedToken(scanner()->current_token());
   } else {
     DCHECK_EQ(Token::RBRACE, scanner()->peek());
-    if (is_strict(scope()->language_mode())) {
+    if (is_strict(function_scope->language_mode())) {
       int end_pos = scanner()->location().end_pos;
       CheckStrictOctalLiteral(start_position, end_pos, &ok);
       CheckDecimalLiteralWithLeadingZero(start_position, end_pos);
@@ -121,53 +135,6 @@ PreParser::PreParseResult PreParser::PreParseLazyFunction(
 // That means that contextual checks (like a label being declared where
 // it is used) are generally omitted.
 
-PreParser::Statement PreParser::ParseAsyncFunctionDeclaration(
-    ZoneList<const AstRawString*>* names, bool default_export, bool* ok) {
-  // AsyncFunctionDeclaration ::
-  //   async [no LineTerminator here] function BindingIdentifier[Await]
-  //       ( FormalParameters[Await] ) { AsyncFunctionBody }
-  DCHECK_EQ(scanner()->current_token(), Token::ASYNC);
-  int pos = position();
-  Expect(Token::FUNCTION, CHECK_OK);
-  ParseFunctionFlags flags = ParseFunctionFlags::kIsAsync;
-  return ParseHoistableDeclaration(pos, flags, names, default_export, ok);
-}
-
-PreParser::Statement PreParser::ParseClassDeclaration(
-    ZoneList<const AstRawString*>* names, bool default_export, bool* ok) {
-  int pos = position();
-  bool is_strict_reserved = false;
-  Identifier name =
-      ParseIdentifierOrStrictReservedWord(&is_strict_reserved, CHECK_OK);
-  ExpressionClassifier no_classifier(this);
-  ParseClassLiteral(name, scanner()->location(), is_strict_reserved, pos,
-                    CHECK_OK);
-  return Statement::Default();
-}
-
-PreParser::Statement PreParser::ParseFunctionDeclaration(bool* ok) {
-  Consume(Token::FUNCTION);
-  int pos = position();
-  ParseFunctionFlags flags = ParseFunctionFlags::kIsNormal;
-  if (Check(Token::MUL)) {
-    flags |= ParseFunctionFlags::kIsGenerator;
-    if (allow_harmony_restrictive_declarations()) {
-      ReportMessageAt(scanner()->location(),
-                      MessageTemplate::kGeneratorInLegacyContext);
-      *ok = false;
-      return Statement::Default();
-    }
-  }
-  // PreParser is not able to parse "export default" yet (since PreParser is
-  // at the moment only used for functions, and it cannot occur
-  // there). TODO(marja): update this when it is.
-  return ParseHoistableDeclaration(pos, flags, nullptr, false, ok);
-}
-
-// Redefinition of CHECK_OK for parsing expressions.
-#undef CHECK_OK
-#define CHECK_OK CHECK_OK_VALUE(Expression::Default())
-
 PreParser::Expression PreParser::ParseFunctionLiteral(
     Identifier function_name, Scanner::Location function_name_location,
     FunctionNameValidity function_name_validity, FunctionKind kind,
@@ -181,8 +148,7 @@ PreParser::Expression PreParser::ParseFunctionLiteral(
   bool outer_is_script_scope = scope()->is_script_scope();
   DeclarationScope* function_scope = NewFunctionScope(kind);
   function_scope->SetLanguageMode(language_mode);
-  FunctionState function_state(&function_state_, &scope_state_, function_scope,
-                               kind);
+  FunctionState function_state(&function_state_, &scope_state_, function_scope);
   DuplicateFinder duplicate_finder(scanner()->unicode_cache());
   ExpressionClassifier formals_classifier(this, &duplicate_finder);
 
@@ -230,33 +196,6 @@ PreParser::Expression PreParser::ParseFunctionLiteral(
   return Expression::Default();
 }
 
-PreParser::Expression PreParser::ParseAsyncFunctionExpression(bool* ok) {
-  // AsyncFunctionDeclaration ::
-  //   async [no LineTerminator here] function ( FormalParameters[Await] )
-  //       { AsyncFunctionBody }
-  //
-  //   async [no LineTerminator here] function BindingIdentifier[Await]
-  //       ( FormalParameters[Await] ) { AsyncFunctionBody }
-  int pos = position();
-  Expect(Token::FUNCTION, CHECK_OK);
-  bool is_strict_reserved = false;
-  Identifier name;
-  FunctionLiteral::FunctionType type = FunctionLiteral::kAnonymousExpression;
-
-  if (peek_any_identifier()) {
-    type = FunctionLiteral::kNamedExpression;
-    name = ParseIdentifierOrStrictReservedWord(FunctionKind::kAsyncFunction,
-                                               &is_strict_reserved, CHECK_OK);
-  }
-
-  ParseFunctionLiteral(name, scanner()->location(),
-                       is_strict_reserved ? kFunctionNameIsStrictReserved
-                                          : kFunctionNameValidityUnknown,
-                       FunctionKind::kAsyncFunction, pos, type, language_mode(),
-                       CHECK_OK);
-  return Expression::Default();
-}
-
 PreParser::LazyParsingResult PreParser::ParseLazyFunctionLiteralBody(
     bool may_abort, bool* ok) {
   int body_start = position();
@@ -277,67 +216,42 @@ PreParser::LazyParsingResult PreParser::ParseLazyFunctionLiteralBody(
   return kLazyParsingComplete;
 }
 
-PreParserExpression PreParser::ParseClassLiteral(
-    PreParserIdentifier name, Scanner::Location class_name_location,
-    bool name_is_strict_reserved, int pos, bool* ok) {
-  // All parts of a ClassDeclaration and ClassExpression are strict code.
-  if (name_is_strict_reserved) {
-    ReportMessageAt(class_name_location,
-                    MessageTemplate::kUnexpectedStrictReserved);
-    *ok = false;
-    return EmptyExpression();
+PreParserExpression PreParser::ExpressionFromIdentifier(
+    PreParserIdentifier name, int start_position, int end_position,
+    InferName infer) {
+  if (track_unresolved_variables_) {
+    AstNodeFactory factory(ast_value_factory());
+    // Setting the Zone is necessary because zone_ might be the temp Zone, and
+    // AstValueFactory doesn't know about it.
+    factory.set_zone(zone());
+    DCHECK_NOT_NULL(name.string_);
+    scope()->NewUnresolved(&factory, name.string_, start_position, end_position,
+                           NORMAL_VARIABLE);
   }
-  if (IsEvalOrArguments(name)) {
-    ReportMessageAt(class_name_location, MessageTemplate::kStrictEvalArguments);
-    *ok = false;
-    return EmptyExpression();
-  }
-
-  LanguageMode class_language_mode = language_mode();
-  BlockState block_state(&scope_state_);
-  scope()->SetLanguageMode(
-      static_cast<LanguageMode>(class_language_mode | STRICT));
-  // TODO(marja): Make PreParser use scope names too.
-  // this->scope()->SetScopeName(name);
-
-  bool has_extends = Check(Token::EXTENDS);
-  if (has_extends) {
-    ExpressionClassifier extends_classifier(this);
-    ParseLeftHandSideExpression(CHECK_OK);
-    CheckNoTailCallExpressions(CHECK_OK);
-    ValidateExpression(CHECK_OK);
-    impl()->AccumulateFormalParameterContainmentErrors();
-  }
-
-  ClassLiteralChecker checker(this);
-  bool has_seen_constructor = false;
-
-  Expect(Token::LBRACE, CHECK_OK);
-  while (peek() != Token::RBRACE) {
-    if (Check(Token::SEMICOLON)) continue;
-    bool is_computed_name = false;  // Classes do not care about computed
-                                    // property names here.
-    ExpressionClassifier property_classifier(this);
-    ParseClassPropertyDefinition(&checker, has_extends, &is_computed_name,
-                                 &has_seen_constructor, CHECK_OK);
-    ValidateExpression(CHECK_OK);
-    impl()->AccumulateFormalParameterContainmentErrors();
-  }
-
-  Expect(Token::RBRACE, CHECK_OK);
-
-  return Expression::Default();
+  return PreParserExpression::FromIdentifier(name);
 }
 
-void PreParser::ParseAsyncArrowSingleExpressionBody(PreParserStatementList body,
-                                                    bool accept_IN, int pos,
-                                                    bool* ok) {
-  scope()->ForceContextAllocation();
+void PreParser::DeclareAndInitializeVariables(
+    PreParserStatement block,
+    const DeclarationDescriptor* declaration_descriptor,
+    const DeclarationParsingResult::Declaration* declaration,
+    ZoneList<const AstRawString*>* names, bool* ok) {
+  if (declaration->pattern.string_) {
+    /* Mimic what Parser does when declaring variables (see
+       Parser::PatternRewriter::VisitVariableProxy).
 
-  PreParserExpression return_value =
-      ParseAssignmentExpression(accept_IN, CHECK_OK_VOID);
+       var + no initializer -> RemoveUnresolved
+       let + no initializer -> RemoveUnresolved
+       var + initializer -> RemoveUnresolved followed by NewUnresolved
+       let + initializer -> RemoveUnresolved
+    */
 
-  body->Add(PreParserStatement::ExpressionStatement(return_value), zone());
+    if (declaration->initializer.IsEmpty() ||
+        declaration_descriptor->mode == VariableMode::LET) {
+      declaration_descriptor->scope->RemoveUnresolved(
+          declaration->pattern.string_);
+    }
+  }
 }
 
 #undef CHECK_OK

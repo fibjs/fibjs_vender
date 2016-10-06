@@ -25,7 +25,7 @@ namespace internal {
 //       this is ensured.
 
 VariableMap::VariableMap(Zone* zone)
-    : ZoneHashMap(ZoneHashMap::PointersMatch, 8, ZoneAllocationPolicy(zone)) {}
+    : ZoneHashMap(8, ZoneAllocationPolicy(zone)) {}
 
 Variable* VariableMap::Declare(Zone* zone, Scope* scope,
                                const AstRawString* name, VariableMode mode,
@@ -75,7 +75,7 @@ Variable* VariableMap::Lookup(const AstRawString* name) {
 }
 
 SloppyBlockFunctionMap::SloppyBlockFunctionMap(Zone* zone)
-    : ZoneHashMap(ZoneHashMap::PointersMatch, 8, ZoneAllocationPolicy(zone)) {}
+    : ZoneHashMap(8, ZoneAllocationPolicy(zone)) {}
 
 void SloppyBlockFunctionMap::Declare(Zone* zone, const AstRawString* name,
                                      SloppyBlockFunctionStatement* stmt) {
@@ -115,7 +115,6 @@ Scope::Scope(Zone* zone, Scope* outer_scope, ScopeType scope_type)
   force_context_allocation_ =
       !is_function_scope() && outer_scope->has_forced_context_allocation();
   outer_scope_->AddInnerScope(this);
-  if (outer_scope_->is_lazily_parsed_) is_lazily_parsed_ = true;
 }
 
 Scope::Snapshot::Snapshot(Scope* scope)
@@ -153,7 +152,8 @@ DeclarationScope::DeclarationScope(Zone* zone, Scope* outer_scope,
 
 ModuleScope::ModuleScope(DeclarationScope* script_scope,
                          AstValueFactory* ast_value_factory)
-    : DeclarationScope(ast_value_factory->zone(), script_scope, MODULE_SCOPE) {
+    : DeclarationScope(ast_value_factory->zone(), script_scope, MODULE_SCOPE,
+                       kModule) {
   Zone* zone = ast_value_factory->zone();
   module_descriptor_ = new (zone) ModuleDescriptor(zone);
   set_language_mode(STRICT);
@@ -278,6 +278,7 @@ void Scope::SetDefaults() {
 #ifdef DEBUG
   scope_name_ = nullptr;
   already_resolved_ = false;
+  needs_migration_ = false;
 #endif
   inner_scope_ = nullptr;
   sibling_ = nullptr;
@@ -606,6 +607,7 @@ void DeclarationScope::DeclareDefaultFunctionVariables(
   DCHECK(is_function_scope());
   DCHECK(!is_arrow_scope());
 
+  DeclareThis(ast_value_factory);
   new_target_ = Declare(zone(), this, ast_value_factory->new_target_string(),
                         CONST, NORMAL_VARIABLE, kCreatedInitialized);
 
@@ -953,7 +955,7 @@ VariableProxy* Scope::NewUnresolved(AstNodeFactory* factory,
   // the same name because they may be removed selectively via
   // RemoveUnresolved().
   DCHECK(!already_resolved_);
-  DCHECK_EQ(factory->zone(), zone());
+  DCHECK_EQ(!needs_migration_, factory->zone() == zone());
   VariableProxy* proxy =
       factory->NewVariableProxy(name, kind, start_position, end_position);
   proxy->set_next_unresolved(unresolved_);
@@ -995,6 +997,25 @@ bool Scope::RemoveUnresolved(VariableProxy* var) {
   return false;
 }
 
+bool Scope::RemoveUnresolved(const AstRawString* name) {
+  if (unresolved_->raw_name() == name) {
+    VariableProxy* removed = unresolved_;
+    unresolved_ = unresolved_->next_unresolved();
+    removed->set_next_unresolved(nullptr);
+    return true;
+  }
+  VariableProxy* current = unresolved_;
+  while (current != nullptr) {
+    VariableProxy* next = current->next_unresolved();
+    if (next->raw_name() == name) {
+      current->set_next_unresolved(next->next_unresolved());
+      next->set_next_unresolved(nullptr);
+      return true;
+    }
+    current = next;
+  }
+  return false;
+}
 
 Variable* Scope::NewTemporary(const AstRawString* name) {
   DeclarationScope* scope = GetClosureScope();
@@ -1073,12 +1094,14 @@ void DeclarationScope::AllocateVariables(ParseInfo* info, AnalyzeMode mode) {
   }
 }
 
-bool Scope::AllowsLazyParsing() const {
-  // If we are inside a block scope, we must parse eagerly to find out how
-  // to allocate variables on the block scope. At this point, declarations may
-  // not have yet been parsed.
+bool Scope::AllowsLazyParsingWithoutUnresolvedVariables() const {
+  // If we are inside a block scope, we must find unresolved variables in the
+  // inner scopes to find out how to allocate variables on the block scope. At
+  // this point, declarations may not have yet been parsed.
   for (const Scope* s = this; s != nullptr; s = s->outer_scope_) {
     if (s->is_block_scope()) return false;
+    // TODO(marja): Refactor parsing modes: also add s->is_function_scope()
+    // here.
   }
   return true;
 }
@@ -1178,7 +1201,7 @@ Scope* Scope::GetOuterScopeWithContext() {
 
 Handle<StringSet> DeclarationScope::CollectNonLocals(
     ParseInfo* info, Handle<StringSet> non_locals) {
-  VariableProxy* free_variables = FetchFreeVariables(this, info);
+  VariableProxy* free_variables = FetchFreeVariables(this, true, info);
   for (VariableProxy* proxy = free_variables; proxy != nullptr;
        proxy = proxy->next_unresolved()) {
     non_locals = StringSet::Add(non_locals, proxy->name());
@@ -1186,35 +1209,73 @@ Handle<StringSet> DeclarationScope::CollectNonLocals(
   return non_locals;
 }
 
-void DeclarationScope::AnalyzePartially(DeclarationScope* migrate_to,
-                                        AstNodeFactory* ast_node_factory) {
-  // Try to resolve unresolved variables for this Scope and migrate those which
-  // cannot be resolved inside. It doesn't make sense to try to resolve them in
-  // the outer Scopes here, because they are incomplete.
-  for (VariableProxy* proxy = FetchFreeVariables(this); proxy != nullptr;
-       proxy = proxy->next_unresolved()) {
-    DCHECK(!proxy->is_resolved());
-    VariableProxy* copy = ast_node_factory->CopyVariableProxy(proxy);
-    migrate_to->AddUnresolved(copy);
+void DeclarationScope::ResetAfterPreparsing(AstValueFactory* ast_value_factory,
+                                            bool aborted) {
+  DCHECK(is_function_scope());
+
+  // Reset all non-trivial members.
+  decls_.Rewind(0);
+  locals_.Rewind(0);
+  sloppy_block_function_map_.Clear();
+  variables_.Clear();
+  // Make sure we won't walk the scope tree from here on.
+  inner_scope_ = nullptr;
+  unresolved_ = nullptr;
+
+  // TODO(verwaest): We should properly preparse the parameters (no declarations
+  // should be created), and reparse on abort.
+  if (aborted) {
+    if (!IsArrowFunction(function_kind_)) {
+      DeclareDefaultFunctionVariables(ast_value_factory);
+    }
+    // Recreate declarations for parameters.
+    for (int i = 0; i < params_.length(); i++) {
+      Variable* var = params_[i];
+      if (var->mode() == TEMPORARY) {
+        locals_.Add(var, zone());
+      } else if (variables_.Lookup(var->raw_name()) == nullptr) {
+        variables_.Add(zone(), var);
+        locals_.Add(var, zone());
+      }
+    }
+  } else {
+    params_.Rewind(0);
   }
 
-  // Push scope data up to migrate_to. Note that migrate_to and this Scope
-  // describe the same Scope, just in different Zones.
-  PropagateUsageFlagsToScope(migrate_to);
-  if (scope_uses_super_property_) migrate_to->scope_uses_super_property_ = true;
-  if (inner_scope_calls_eval_) migrate_to->inner_scope_calls_eval_ = true;
-  if (is_lazily_parsed_) migrate_to->is_lazily_parsed_ = true;
+#ifdef DEBUG
+  needs_migration_ = false;
+#endif
+
+  is_lazily_parsed_ = !aborted;
+}
+
+void DeclarationScope::AnalyzePartially(AstNodeFactory* ast_node_factory) {
   DCHECK(!force_eager_compilation_);
-  migrate_to->set_start_position(start_position_);
-  migrate_to->set_end_position(end_position_);
-  migrate_to->set_language_mode(language_mode());
-  migrate_to->arity_ = arity_;
-  migrate_to->force_context_allocation_ = force_context_allocation_;
-  outer_scope_->RemoveInnerScope(this);
-  DCHECK_EQ(outer_scope_, migrate_to->outer_scope_);
-  DCHECK_EQ(outer_scope_->zone(), migrate_to->zone());
-  DCHECK_EQ(NeedsHomeObject(), migrate_to->NeedsHomeObject());
-  DCHECK_EQ(asm_function_, migrate_to->asm_function_);
+  VariableProxy* unresolved = nullptr;
+
+  if (!outer_scope_->is_script_scope()) {
+    // Try to resolve unresolved variables for this Scope and migrate those
+    // which cannot be resolved inside. It doesn't make sense to try to resolve
+    // them in the outer Scopes here, because they are incomplete.
+    for (VariableProxy* proxy =
+             FetchFreeVariables(this, !FLAG_lazy_inner_functions);
+         proxy != nullptr; proxy = proxy->next_unresolved()) {
+      DCHECK(!proxy->is_resolved());
+      VariableProxy* copy = ast_node_factory->CopyVariableProxy(proxy);
+      copy->set_next_unresolved(unresolved);
+      unresolved = copy;
+    }
+
+    // Clear arguments_ if unused. This is used as a signal for optimization.
+    if (arguments_ != nullptr &&
+        !(MustAllocate(arguments_) && !has_arguments_parameter_)) {
+      arguments_ = nullptr;
+    }
+  }
+
+  ResetAfterPreparsing(ast_node_factory->ast_value_factory(), false);
+
+  unresolved_ = unresolved;
 }
 
 #ifdef DEBUG
@@ -1413,8 +1474,10 @@ void Scope::CheckScopePositions() {
 }
 
 void Scope::CheckZones() {
+  DCHECK(!needs_migration_);
   for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
     CHECK_EQ(scope->zone(), zone());
+    scope->CheckZones();
   }
 }
 #endif  // DEBUG
@@ -1515,6 +1578,29 @@ void Scope::ResolveVariable(ParseInfo* info, VariableProxy* proxy) {
   DCHECK(!proxy->is_resolved());
   Variable* var = LookupRecursive(proxy, nullptr);
   ResolveTo(info, proxy, var);
+
+  if (FLAG_lazy_inner_functions) {
+    if (info != nullptr && info->is_native()) return;
+    // Pessimistically force context allocation for all variables to which inner
+    // scope variables could potentially resolve to.
+    Scope* scope = GetClosureScope()->outer_scope_;
+    while (scope != nullptr && scope->scope_info_.is_null()) {
+      var = scope->LookupLocal(proxy->raw_name());
+      if (var != nullptr) {
+        // Since we don't lazy parse inner arrow functions, inner functions
+        // cannot refer to the outer "this".
+        if (!var->is_dynamic() && !var->is_this() &&
+            !var->has_forced_context_allocation()) {
+          var->ForceContextAllocation();
+          var->set_is_used();
+          // We don't know what the (potentially lazy parsed) inner function
+          // does with the variable; pessimistically assume that it's assigned.
+          var->set_maybe_assigned();
+        }
+      }
+      scope = scope->outer_scope_;
+    }
+  }
 }
 
 void Scope::ResolveTo(ParseInfo* info, VariableProxy* proxy, Variable* var) {
@@ -1560,18 +1646,23 @@ void Scope::ResolveVariablesRecursively(ParseInfo* info) {
 }
 
 VariableProxy* Scope::FetchFreeVariables(DeclarationScope* max_outer_scope,
-                                         ParseInfo* info,
+                                         bool try_to_resolve, ParseInfo* info,
                                          VariableProxy* stack) {
   for (VariableProxy *proxy = unresolved_, *next = nullptr; proxy != nullptr;
        proxy = next) {
     next = proxy->next_unresolved();
     DCHECK(!proxy->is_resolved());
-    Variable* var = LookupRecursive(proxy, max_outer_scope->outer_scope());
+    Variable* var = nullptr;
+    if (try_to_resolve) {
+      var = LookupRecursive(proxy, max_outer_scope->outer_scope());
+    }
     if (var == nullptr) {
       proxy->set_next_unresolved(stack);
       stack = proxy;
     } else if (info != nullptr) {
       ResolveTo(info, proxy, var);
+    } else {
+      var->set_is_used();
     }
   }
 
@@ -1579,7 +1670,8 @@ VariableProxy* Scope::FetchFreeVariables(DeclarationScope* max_outer_scope,
   unresolved_ = nullptr;
 
   for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {
-    stack = scope->FetchFreeVariables(max_outer_scope, info, stack);
+    stack =
+        scope->FetchFreeVariables(max_outer_scope, try_to_resolve, info, stack);
   }
 
   return stack;
@@ -1670,6 +1762,7 @@ void DeclarationScope::AllocateParameterLocals() {
     DCHECK(!has_rest_ || var != rest_parameter());
     DCHECK_EQ(this, var->scope());
     if (uses_sloppy_arguments) {
+      var->set_is_used();
       var->ForceContextAllocation();
     }
     AllocateParameter(var, i);
@@ -1757,6 +1850,8 @@ void ModuleScope::AllocateModuleVariables() {
 void Scope::AllocateVariablesRecursively() {
   DCHECK(!already_resolved_);
   DCHECK_EQ(0, num_stack_slots_);
+  // Don't allocate variables of preparsed scopes.
+  if (is_lazily_parsed_) return;
 
   // Allocate variables for inner scopes.
   for (Scope* scope = inner_scope_; scope != nullptr; scope = scope->sibling_) {

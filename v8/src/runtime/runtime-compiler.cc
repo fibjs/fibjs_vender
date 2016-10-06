@@ -362,10 +362,18 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
       function->shared()->increment_deopt_count();
 
       if (result->is_turbofanned()) {
-        // TurboFanned OSR code cannot be installed into the function.
-        // But the function is obviously hot, so optimize it next time.
-        function->ReplaceCode(
-            isolate->builtins()->builtin(Builtins::kCompileOptimized));
+        // When we're waiting for concurrent optimization, set to compile on
+        // the next call - otherwise we'd run unoptimized once more
+        // and potentially compile for OSR another time as well.
+        if (function->IsMarkedForConcurrentOptimization()) {
+          if (FLAG_trace_osr) {
+            PrintF("[OSR - Re-marking ");
+            function->PrintName();
+            PrintF(" for non-concurrent optimization]\n");
+          }
+          function->ReplaceCode(
+              isolate->builtins()->builtin(Builtins::kCompileOptimized));
+        }
       } else {
         // Crankshafted OSR code can be installed into the function.
         function->ReplaceCode(*result);

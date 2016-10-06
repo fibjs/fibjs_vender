@@ -467,7 +467,7 @@ class MarkCompactCollector {
   static const size_t kMinMarkingDequeSize = 256 * KB;
 
   void EnsureMarkingDequeIsCommittedAndInitialize(size_t max_size) {
-    if (!marking_deque_.in_use()) {
+    if (!marking_deque()->in_use()) {
       EnsureMarkingDequeIsCommitted(max_size);
       InitializeMarkingDeque();
     }
@@ -489,24 +489,6 @@ class MarkCompactCollector {
   void RemoveObjectSlots(Address start_slot, Address end_slot);
 
   Sweeper& sweeper() { return sweeper_; }
-
-  // ===========================================================================
-  // Embedder heap tracer support. =============================================
-  // ===========================================================================
-
-  void SetEmbedderHeapTracer(EmbedderHeapTracer* tracer);
-  EmbedderHeapTracer* embedder_heap_tracer() { return embedder_heap_tracer_; }
-  bool UsingEmbedderHeapTracer() { return embedder_heap_tracer(); }
-
-  // In order to avoid running out of memory we force tracing wrappers if there
-  // are too many of them.
-  bool RequiresImmediateWrapperProcessing();
-
-  void RegisterWrappersWithEmbedderHeapTracer();
-
-  void TracePossibleWrapper(JSObject* js_object);
-
-  size_t wrappers_to_trace() { return wrappers_to_trace_.size(); }
 
  private:
   class EvacuateNewSpacePageVisitor;
@@ -747,11 +729,8 @@ class MarkCompactCollector {
   base::VirtualMemory* marking_deque_memory_;
   size_t marking_deque_memory_committed_;
   MarkingDeque marking_deque_;
-  std::vector<std::pair<void*, void*>> wrappers_to_trace_;
 
   CodeFlusher* code_flusher_;
-
-  EmbedderHeapTracer* embedder_heap_tracer_;
 
   List<Page*> evacuation_candidates_;
   List<Page*> newspace_evacuation_candidates_;

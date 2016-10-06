@@ -160,6 +160,29 @@ void StoreTransitionDescriptor::InitializePlatformIndependent(
                                       machine_types);
 }
 
+void StoreNamedTransitionDescriptor::InitializePlatformIndependent(
+    CallInterfaceDescriptorData* data) {
+  // kReceiver, kFieldOffset, kMap, kValue, kSlot, kVector, kName
+  MachineType machine_types[] = {
+      MachineType::AnyTagged(),    MachineType::TaggedSigned(),
+      MachineType::AnyTagged(),    MachineType::AnyTagged(),
+      MachineType::TaggedSigned(), MachineType::AnyTagged(),
+      MachineType::AnyTagged()};
+  data->InitializePlatformIndependent(arraysize(machine_types), 0,
+                                      machine_types);
+}
+
+void StoreNamedTransitionDescriptor::InitializePlatformSpecific(
+    CallInterfaceDescriptorData* data) {
+  Register registers[] = {
+      ReceiverRegister(), FieldOffsetRegister(), MapRegister(),
+      ValueRegister(),    SlotRegister(),        VectorRegister(),
+      NameRegister(),
+  };
+  int len = arraysize(registers) - kStackArgumentsCount;
+  data->InitializePlatformSpecific(len, registers);
+}
+
 void StoreGlobalViaContextDescriptor::InitializePlatformIndependent(
     CallInterfaceDescriptorData* data) {
   // kSlot, kValue
@@ -417,9 +440,48 @@ void ApiCallbackDescriptor::InitializePlatformIndependent(
 void InterpreterDispatchDescriptor::InitializePlatformIndependent(
     CallInterfaceDescriptorData* data) {
   // kAccumulator, kBytecodeOffset, kBytecodeArray, kDispatchTable
-  MachineType machine_types[] = {MachineType::AnyTagged(), MachineType::Int32(),
-                                 MachineType::AnyTagged(),
+  MachineType machine_types[] = {
+      MachineType::AnyTagged(), MachineType::IntPtr(), MachineType::AnyTagged(),
+      MachineType::AnyTagged()};
+  data->InitializePlatformIndependent(arraysize(machine_types), 0,
+                                      machine_types);
+}
+
+void InterpreterPushArgsAndCallDescriptor::InitializePlatformIndependent(
+    CallInterfaceDescriptorData* data) {
+  // kNumberOfArguments, kFirstArgument, kFunction
+  MachineType machine_types[] = {MachineType::Int32(), MachineType::Pointer(),
                                  MachineType::AnyTagged()};
+  data->InitializePlatformIndependent(arraysize(machine_types), 0,
+                                      machine_types);
+}
+
+void InterpreterPushArgsAndConstructDescriptor::InitializePlatformIndependent(
+    CallInterfaceDescriptorData* data) {
+  // kNumberOfArguments, kNewTarget, kConstructor, kFeedbackElement,
+  // kFirstArgument
+  MachineType machine_types[] = {
+      MachineType::Int32(), MachineType::AnyTagged(), MachineType::AnyTagged(),
+      MachineType::AnyTagged(), MachineType::Pointer()};
+  data->InitializePlatformIndependent(arraysize(machine_types), 0,
+                                      machine_types);
+}
+
+void InterpreterPushArgsAndConstructArrayDescriptor::
+    InitializePlatformIndependent(CallInterfaceDescriptorData* data) {
+  // kNumberOfArguments, kFunction, kFeedbackElement, kFirstArgument
+  MachineType machine_types[] = {MachineType::Int32(), MachineType::AnyTagged(),
+                                 MachineType::AnyTagged(),
+                                 MachineType::Pointer()};
+  data->InitializePlatformIndependent(arraysize(machine_types), 0,
+                                      machine_types);
+}
+
+void InterpreterCEntryDescriptor::InitializePlatformIndependent(
+    CallInterfaceDescriptorData* data) {
+  // kNumberOfArguments, kFirstArgument, kFunctionEntry
+  MachineType machine_types[] = {MachineType::Int32(), MachineType::Pointer(),
+                                 MachineType::Pointer()};
   data->InitializePlatformIndependent(arraysize(machine_types), 0,
                                       machine_types);
 }

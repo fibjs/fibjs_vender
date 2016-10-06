@@ -383,10 +383,9 @@ void Builtins::Generate_StringConstructor(MacroAssembler* masm) {
   __ Bind(&to_string);
   {
     FrameScope scope(masm, StackFrame::MANUAL);
-    ToStringStub stub(masm->isolate());
     __ SmiTag(x2);
     __ EnterBuiltinFrame(cp, x1, x2);
-    __ CallStub(&stub);
+    __ Call(masm->isolate()->builtins()->ToString(), RelocInfo::CODE_TARGET);
     __ LeaveBuiltinFrame(cp, x1, x2);
     __ SmiUntag(x2);
   }
@@ -446,12 +445,11 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ Bind(&convert);
     {
       FrameScope scope(masm, StackFrame::MANUAL);
-      ToStringStub stub(masm->isolate());
       __ SmiTag(x6);
       __ EnterBuiltinFrame(cp, x1, x6);
       __ Push(x3);
       __ Move(x0, x2);
-      __ CallStub(&stub);
+      __ Call(masm->isolate()->builtins()->ToString(), RelocInfo::CODE_TARGET);
       __ Move(x2, x0);
       __ Pop(x3);
       __ LeaveBuiltinFrame(cp, x1, x6);
@@ -2464,11 +2462,9 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
   Label class_constructor;
   __ Ldr(x2, FieldMemOperand(x1, JSFunction::kSharedFunctionInfoOffset));
   __ Ldr(w3, FieldMemOperand(x2, SharedFunctionInfo::kCompilerHintsOffset));
-  __ TestAndBranchIfAnySet(
-      w3, (1 << SharedFunctionInfo::kIsDefaultConstructor) |
-              (1 << SharedFunctionInfo::kIsSubclassConstructor) |
-              (1 << SharedFunctionInfo::kIsBaseConstructor),
-      &class_constructor);
+  __ TestAndBranchIfAnySet(w3, FunctionKind::kClassConstructor
+                                   << SharedFunctionInfo::kFunctionKindShift,
+                           &class_constructor);
 
   // Enter the context of the function; ToObject has to run in the function
   // context, and we also need to take the global proxy from the function

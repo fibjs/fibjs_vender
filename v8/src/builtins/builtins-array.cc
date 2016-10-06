@@ -1381,9 +1381,7 @@ void Builtins::Generate_ArrayIncludes(CodeStubAssembler* assembler) {
                                     &if_packed_doubles, &if_holey_doubles};
 
   Node* map = assembler->LoadMap(array);
-  Node* bit_field2 = assembler->LoadMapBitField2(map);
-  Node* elements_kind =
-      assembler->BitFieldDecode<Map::ElementsKindBits>(bit_field2);
+  Node* elements_kind = assembler->LoadMapElementsKind(map);
   Node* elements = assembler->LoadElements(array);
   assembler->Switch(elements_kind, &return_false, kElementsKind,
                     element_kind_handlers, arraysize(kElementsKind));
@@ -1412,10 +1410,8 @@ void Builtins::Generate_ArrayIncludes(CodeStubAssembler* assembler) {
 
     assembler->Bind(&not_heap_num);
     Node* search_type = assembler->LoadMapInstanceType(map);
-    assembler->GotoIf(
-        assembler->Int32LessThan(
-            search_type, assembler->Int32Constant(FIRST_NONSTRING_TYPE)),
-        &string_loop);
+    assembler->GotoIf(assembler->IsStringInstanceType(search_type),
+                      &string_loop);
     assembler->GotoIf(
         assembler->Word32Equal(search_type,
                                assembler->Int32Constant(SIMD128_VALUE_TYPE)),
@@ -1519,9 +1515,8 @@ void Builtins::Generate_ArrayIncludes(CodeStubAssembler* assembler) {
       Node* element_k = assembler->LoadFixedArrayElement(
           elements, index_var.value(), 0, CodeStubAssembler::INTPTR_PARAMETERS);
       assembler->GotoIf(assembler->WordIsSmi(element_k), &continue_loop);
-      assembler->GotoUnless(assembler->Int32LessThan(
-                                assembler->LoadInstanceType(element_k),
-                                assembler->Int32Constant(FIRST_NONSTRING_TYPE)),
+      assembler->GotoUnless(assembler->IsStringInstanceType(
+                                assembler->LoadInstanceType(element_k)),
                             &continue_loop);
 
       // TODO(bmeurer): Consider inlining the StringEqual logic here.
@@ -1828,9 +1823,7 @@ void Builtins::Generate_ArrayIndexOf(CodeStubAssembler* assembler) {
                                     &if_packed_doubles, &if_holey_doubles};
 
   Node* map = assembler->LoadMap(array);
-  Node* bit_field2 = assembler->LoadMapBitField2(map);
-  Node* elements_kind =
-      assembler->BitFieldDecode<Map::ElementsKindBits>(bit_field2);
+  Node* elements_kind = assembler->LoadMapElementsKind(map);
   Node* elements = assembler->LoadElements(array);
   assembler->Switch(elements_kind, &return_not_found, kElementsKind,
                     element_kind_handlers, arraysize(kElementsKind));
@@ -1859,10 +1852,8 @@ void Builtins::Generate_ArrayIndexOf(CodeStubAssembler* assembler) {
 
     assembler->Bind(&not_heap_num);
     Node* search_type = assembler->LoadMapInstanceType(map);
-    assembler->GotoIf(
-        assembler->Int32LessThan(
-            search_type, assembler->Int32Constant(FIRST_NONSTRING_TYPE)),
-        &string_loop);
+    assembler->GotoIf(assembler->IsStringInstanceType(search_type),
+                      &string_loop);
     assembler->GotoIf(
         assembler->Word32Equal(search_type,
                                assembler->Int32Constant(SIMD128_VALUE_TYPE)),
@@ -1941,9 +1932,8 @@ void Builtins::Generate_ArrayIndexOf(CodeStubAssembler* assembler) {
       Node* element_k = assembler->LoadFixedArrayElement(
           elements, index_var.value(), 0, CodeStubAssembler::INTPTR_PARAMETERS);
       assembler->GotoIf(assembler->WordIsSmi(element_k), &continue_loop);
-      assembler->GotoUnless(assembler->Int32LessThan(
-                                assembler->LoadInstanceType(element_k),
-                                assembler->Int32Constant(FIRST_NONSTRING_TYPE)),
+      assembler->GotoUnless(assembler->IsStringInstanceType(
+                                assembler->LoadInstanceType(element_k)),
                             &continue_loop);
 
       // TODO(bmeurer): Consider inlining the StringEqual logic here.

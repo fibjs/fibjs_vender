@@ -208,8 +208,7 @@ CheckFloat64HoleMode CheckFloat64HoleModeOf(const Operator* op) {
 }
 
 CheckForMinusZeroMode CheckMinusZeroModeOf(const Operator* op) {
-  DCHECK(op->opcode() == IrOpcode::kChangeFloat64ToTagged ||
-         op->opcode() == IrOpcode::kCheckedInt32Mul ||
+  DCHECK(op->opcode() == IrOpcode::kCheckedInt32Mul ||
          op->opcode() == IrOpcode::kCheckedFloat64ToInt32 ||
          op->opcode() == IrOpcode::kCheckedTaggedToInt32);
   return OpParameter<CheckForMinusZeroMode>(op);
@@ -337,6 +336,11 @@ PretenureFlag PretenureFlagOf(const Operator* op) {
   return OpParameter<PretenureFlag>(op);
 }
 
+UnicodeEncoding UnicodeEncodingOf(const Operator* op) {
+  DCHECK(op->opcode() == IrOpcode::kStringFromCodePoint);
+  return OpParameter<UnicodeEncoding>(op);
+}
+
 #define PURE_OP_LIST(V)                                          \
   V(BooleanNot, Operator::kNoProperties, 1, 0)                   \
   V(NumberEqual, Operator::kCommutative, 2, 0)                   \
@@ -399,6 +403,7 @@ PretenureFlag PretenureFlagOf(const Operator* op) {
   V(ChangeTaggedToInt32, Operator::kNoProperties, 1, 0)          \
   V(ChangeTaggedToUint32, Operator::kNoProperties, 1, 0)         \
   V(ChangeTaggedToFloat64, Operator::kNoProperties, 1, 0)        \
+  V(ChangeFloat64ToTagged, Operator::kNoProperties, 1, 0)        \
   V(ChangeInt31ToTaggedSigned, Operator::kNoProperties, 1, 0)    \
   V(ChangeInt32ToTagged, Operator::kNoProperties, 1, 0)          \
   V(ChangeUint32ToTagged, Operator::kNoProperties, 1, 0)         \
@@ -468,25 +473,23 @@ struct SimplifiedOperatorGlobalCache final {
   CHECKED_OP_LIST(CHECKED)
 #undef CHECKED
 
+  template <UnicodeEncoding kEncoding>
+  struct StringFromCodePointOperator final : public Operator {
+    StringFromCodePointOperator()
+        : Operator(IrOpcode::kStringFromCodePoint, Operator::kPure,
+                   "StringFromCodePoint", 1, 0, 0, 1, 0, 0) {}
+  };
+  StringFromCodePointOperator<UnicodeEncoding::UTF16>
+      kStringFromCodePointOperatorUTF16;
+  StringFromCodePointOperator<UnicodeEncoding::UTF32>
+      kStringFromCodePointOperatorUTF32;
+
   struct ArrayBufferWasNeuteredOperator final : public Operator {
     ArrayBufferWasNeuteredOperator()
         : Operator(IrOpcode::kArrayBufferWasNeutered, Operator::kEliminatable,
                    "ArrayBufferWasNeutered", 1, 1, 1, 1, 1, 0) {}
   };
   ArrayBufferWasNeuteredOperator kArrayBufferWasNeutered;
-
-  template <CheckForMinusZeroMode kMode>
-  struct ChangeFloat64ToTaggedOperator final
-      : public Operator1<CheckForMinusZeroMode> {
-    ChangeFloat64ToTaggedOperator()
-        : Operator1<CheckForMinusZeroMode>(
-              IrOpcode::kChangeFloat64ToTagged, Operator::kPure,
-              "ChangeFloat64ToTagged", 1, 0, 0, 1, 0, 0, kMode) {}
-  };
-  ChangeFloat64ToTaggedOperator<CheckForMinusZeroMode::kCheckForMinusZero>
-      kChangeFloat64ToTaggedCheckForMinusZeroOperator;
-  ChangeFloat64ToTaggedOperator<CheckForMinusZeroMode::kDontCheckForMinusZero>
-      kChangeFloat64ToTaggedDontCheckForMinusZeroOperator;
 
   template <CheckForMinusZeroMode kMode>
   struct CheckedInt32MulOperator final
@@ -634,18 +637,6 @@ CHECKED_OP_LIST(GET_FROM_CACHE)
 GET_FROM_CACHE(ArrayBufferWasNeutered)
 #undef GET_FROM_CACHE
 
-const Operator* SimplifiedOperatorBuilder::ChangeFloat64ToTagged(
-    CheckForMinusZeroMode mode) {
-  switch (mode) {
-    case CheckForMinusZeroMode::kCheckForMinusZero:
-      return &cache_.kChangeFloat64ToTaggedCheckForMinusZeroOperator;
-    case CheckForMinusZeroMode::kDontCheckForMinusZero:
-      return &cache_.kChangeFloat64ToTaggedDontCheckForMinusZeroOperator;
-  }
-  UNREACHABLE();
-  return nullptr;
-}
-
 const Operator* SimplifiedOperatorBuilder::CheckedInt32Mul(
     CheckForMinusZeroMode mode) {
   switch (mode) {
@@ -774,6 +765,18 @@ const Operator* SimplifiedOperatorBuilder::StoreBuffer(BufferAccess access) {
     return &cache_.kStoreBuffer##Type;
     TYPED_ARRAYS(STORE_BUFFER)
 #undef STORE_BUFFER
+  }
+  UNREACHABLE();
+  return nullptr;
+}
+
+const Operator* SimplifiedOperatorBuilder::StringFromCodePoint(
+    UnicodeEncoding encoding) {
+  switch (encoding) {
+    case UnicodeEncoding::UTF16:
+      return &cache_.kStringFromCodePointOperatorUTF16;
+    case UnicodeEncoding::UTF32:
+      return &cache_.kStringFromCodePointOperatorUTF32;
   }
   UNREACHABLE();
   return nullptr;

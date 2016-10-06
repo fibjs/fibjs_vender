@@ -5719,6 +5719,17 @@ SMI_ACCESSORS(Module, flags, kFlagsOffset)
 BOOL_ACCESSORS(Module, flags, evaluated, kEvaluatedBit)
 ACCESSORS(Module, embedder_data, Object, kEmbedderDataOffset)
 
+SharedFunctionInfo* Module::shared() const {
+  return code()->IsSharedFunctionInfo() ? SharedFunctionInfo::cast(code())
+                                        : JSFunction::cast(code())->shared();
+}
+
+ModuleInfo* Module::info() const {
+  return shared()->scope_info()->ModuleDescriptorInfo();
+}
+
+uint32_t Module::Hash() const { return Symbol::cast(shared()->name())->Hash(); }
+
 ACCESSORS(AccessorPair, getter, Object, kGetterOffset)
 ACCESSORS(AccessorPair, setter, Object, kSetterOffset)
 
@@ -6085,8 +6096,7 @@ void SharedFunctionInfo::set_language_mode(LanguageMode language_mode) {
   set_compiler_hints(hints);
 }
 
-
-FunctionKind SharedFunctionInfo::kind() {
+FunctionKind SharedFunctionInfo::kind() const {
   return FunctionKindBits::decode(compiler_hints());
 }
 
@@ -6111,27 +6121,12 @@ BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_function, kIsFunction)
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, dont_crankshaft,
                kDontCrankshaft)
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, dont_flush, kDontFlush)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_arrow, kIsArrow)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_generator, kIsGenerator)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_async, kIsAsyncFunction)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_concise_method,
-               kIsConciseMethod)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_getter_function,
-               kIsGetterFunction)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_setter_function,
-               kIsSetterFunction)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_default_constructor,
-               kIsDefaultConstructor)
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_asm_wasm_broken,
                kIsAsmWasmBroken)
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, requires_class_field_init,
                kRequiresClassFieldInit)
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_class_field_initializer,
                kIsClassFieldInitializer)
-
-inline bool SharedFunctionInfo::is_resumable() const {
-  return is_generator() || is_async();
-}
 
 bool Script::HasValidSource() {
   Object* src = this->source();
@@ -7959,14 +7954,6 @@ Object* ModuleInfoEntry::import_name() const { return get(kImportNameIndex); }
 
 Object* ModuleInfoEntry::module_request() const {
   return get(kModuleRequestIndex);
-}
-
-ModuleInfo* Module::info() const {
-  DisallowHeapAllocation no_gc;
-  SharedFunctionInfo* shared = code()->IsSharedFunctionInfo()
-                                   ? SharedFunctionInfo::cast(code())
-                                   : JSFunction::cast(code())->shared();
-  return shared->scope_info()->ModuleDescriptorInfo();
 }
 
 FixedArray* ModuleInfo::module_requests() const {

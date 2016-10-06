@@ -16,7 +16,6 @@
 #include "src/objects.h"
 #include "src/parsing/parse-info.h"
 
-#include "src/wasm/encoder.h"
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-js.h"
 #include "src/wasm/wasm-module.h"
@@ -160,7 +159,7 @@ i::MaybeHandle<i::JSObject> InstantiateModule(
     }
 
     object = i::wasm::WasmModule::Instantiate(
-        isolate, module_object.ToHandleChecked(), ffi, memory);
+        isolate, thrower, module_object.ToHandleChecked(), ffi, memory);
     if (!object.is_null()) {
       args.GetReturnValue().Set(v8::Utils::ToLocal(object.ToHandleChecked()));
     }
@@ -196,6 +195,21 @@ static i::MaybeHandle<i::JSObject> CreateModuleObject(
   return i::wasm::CreateModuleObjectFromBytes(
       i_isolate, buffer.start, buffer.end, thrower,
       i::wasm::ModuleOrigin::kWasmOrigin);
+}
+
+static bool ValidateModule(v8::Isolate* isolate,
+                           const v8::Local<v8::Value> source,
+                           ErrorThrower* thrower) {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::MaybeHandle<i::JSObject> nothing;
+
+  RawBuffer buffer = GetRawBufferSource(source, thrower);
+  if (buffer.start == nullptr) return false;
+
+  DCHECK(source->IsArrayBuffer() || source->IsTypedArray());
+  return i::wasm::ValidateModuleBytes(i_isolate, buffer.start, buffer.end,
+                                      thrower,
+                                      i::wasm::ModuleOrigin::kWasmOrigin);
 }
 
 bool BrandCheck(Isolate* isolate, i::Handle<i::Object> value,
@@ -234,6 +248,25 @@ void WebAssemblyCompile(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
   v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
   return_value.Set(resolver->GetPromise());
+}
+
+void WebAssemblyValidate(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Isolate* isolate = args.GetIsolate();
+  HandleScope scope(isolate);
+  ErrorThrower thrower(reinterpret_cast<i::Isolate*>(isolate),
+                       "WebAssembly.validate()");
+
+  if (args.Length() < 1) {
+    thrower.TypeError("Argument 0 must be a buffer source");
+    return;
+  }
+
+  v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
+  if (ValidateModule(isolate, args[0], &thrower)) {
+    return_value.Set(v8::True(isolate));
+  } else {
+    return_value.Set(v8::False(isolate));
+  }
 }
 
 void WebAssemblyModule(const v8::FunctionCallbackInfo<v8::Value>& args) {
@@ -296,10 +329,10 @@ void WebAssemblyInstance(const v8::FunctionCallbackInfo<v8::Value>& args) {
     i::Handle<i::Object> mem_obj = v8::Utils::OpenHandle(*obj);
     memory = i::Handle<i::JSArrayBuffer>(i::JSArrayBuffer::cast(*mem_obj));
   }
-  i::MaybeHandle<i::JSObject> instance =
-      i::wasm::WasmModule::Instantiate(i_isolate, module_obj, ffi, memory);
+  i::MaybeHandle<i::JSObject> instance = i::wasm::WasmModule::Instantiate(
+      i_isolate, &thrower, module_obj, ffi, memory);
   if (instance.is_null()) {
-    thrower.Error("Could not instantiate module");
+    if (!thrower.error()) thrower.Error("Could not instantiate module");
     return;
   }
   v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
@@ -312,7 +345,7 @@ bool GetIntegerProperty(v8::Isolate* isolate, ErrorThrower* thrower,
                         int upper_bound) {
   v8::MaybeLocal<v8::Value> maybe = object->Get(context, property);
   v8::Local<v8::Value> value;
-  if (maybe.ToLocal(&value) && !value->IsUndefined()) {
+  if (maybe.ToLocal(&value)) {
     int64_t number;
     if (!value->IntegerValue(context).To(&number)) return false;
     if (number < static_cast<int64_t>(lower_bound)) {
@@ -321,19 +354,13 @@ bool GetIntegerProperty(v8::Isolate* isolate, ErrorThrower* thrower,
                           number, lower_bound);
       return false;
     }
-    if (number > static_cast<int64_t>(std::numeric_limits<int>::max())) {
-      thrower->RangeError("Property value %" PRId64 " is out of integer range",
-                          number);
-      return false;
-    }
-    int num = static_cast<int>(number);
-    if (num > upper_bound) {
+    if (number > static_cast<int64_t>(upper_bound)) {
       thrower->RangeError("Property value %" PRId64
                           " is above the upper bound %d",
                           number, upper_bound);
       return false;
     }
-    *result = num;
+    *result = static_cast<int>(number);
     return true;
   }
   return false;
@@ -374,32 +401,33 @@ void WebAssemblyTable(const v8::FunctionCallbackInfo<v8::Value>& args) {
     return;
   }
   // The descriptor's 'maximum'.
-  int maximum;
-  bool has_maximum = true;
-  if (!GetIntegerProperty(isolate, &thrower, context, descriptor,
-                          v8_str(isolate, "maximum"), &maximum, initial,
-                          max_table_size)) {
-    if (reinterpret_cast<i::Isolate*>(isolate)->has_pending_exception() ||
-        thrower.error()) {
+  int maximum = 0;
+  Local<String> maximum_key = v8_str(isolate, "maximum");
+  Maybe<bool> has_maximum = descriptor->Has(context, maximum_key);
+
+  if (has_maximum.IsNothing()) {
+    // There has been an exception, just return.
+    return;
+  }
+  if (has_maximum.FromJust()) {
+    if (!GetIntegerProperty(isolate, &thrower, context, descriptor, maximum_key,
+                            &maximum, initial, max_table_size)) {
       return;
-    } else {
-      // There was no error, the property just does not exist.
-      has_maximum = false;
     }
   }
 
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  i::Handle<i::JSFunction> table_cons(
+  i::Handle<i::JSFunction> table_ctor(
       i_isolate->native_context()->wasm_table_constructor());
   i::Handle<i::JSObject> table_obj =
-      i_isolate->factory()->NewJSObject(table_cons);
+      i_isolate->factory()->NewJSObject(table_ctor);
   i::Handle<i::FixedArray> fixed_array =
       i_isolate->factory()->NewFixedArray(initial);
   i::Object* null = i_isolate->heap()->null_value();
   for (int i = 0; i < initial; ++i) fixed_array->set(i, null);
   table_obj->SetInternalField(0, *fixed_array);
   table_obj->SetInternalField(
-      1, has_maximum
+      1, has_maximum.FromJust()
              ? static_cast<i::Object*>(i::Smi::FromInt(maximum))
              : static_cast<i::Object*>(i_isolate->heap()->undefined_value()));
   i::Handle<i::Symbol> table_sym(i_isolate->native_context()->wasm_table_sym());
@@ -407,6 +435,7 @@ void WebAssemblyTable(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
   return_value.Set(Utils::ToLocal(table_obj));
 }
+
 void WebAssemblyMemory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   HandleScope scope(isolate);
@@ -420,40 +449,34 @@ void WebAssemblyMemory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Local<v8::Object> descriptor = args[0]->ToObject(context).ToLocalChecked();
   // The descriptor's 'initial'.
   int initial;
-  GetIntegerProperty(isolate, &thrower, context, descriptor,
-                     v8_str(isolate, "initial"), &initial, 0, 65536);
-  // The descriptor's 'maximum'.
-  int maximum;
-  bool has_maximum = true;
   if (!GetIntegerProperty(isolate, &thrower, context, descriptor,
-                          v8_str(isolate, "maximum"), &maximum, initial,
-                          65536)) {
-    if (reinterpret_cast<i::Isolate*>(isolate)->has_pending_exception() ||
-        thrower.error()) {
+                          v8_str(isolate, "initial"), &initial, 0, 65536)) {
+    return;
+  }
+  // The descriptor's 'maximum'.
+  int maximum = 0;
+  Local<String> maximum_key = v8_str(isolate, "maximum");
+  Maybe<bool> has_maximum = descriptor->Has(context, maximum_key);
+
+  if (has_maximum.IsNothing()) {
+    // There has been an exception, just return.
+    return;
+  }
+  if (has_maximum.FromJust()) {
+    if (!GetIntegerProperty(isolate, &thrower, context, descriptor, maximum_key,
+                            &maximum, initial, 65536)) {
       return;
-    } else {
-      // There was no error, the property just does not exist.
-      has_maximum = false;
     }
   }
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  i::Handle<i::JSFunction> memory_cons(
-      i_isolate->native_context()->wasm_memory_constructor());
-  i::Handle<i::JSObject> memory_obj =
-      i_isolate->factory()->NewJSObject(memory_cons);
   i::Handle<i::JSArrayBuffer> buffer =
       i_isolate->factory()->NewJSArrayBuffer(i::SharedFlag::kNotShared);
   size_t size = static_cast<size_t>(i::wasm::WasmModule::kPageSize) *
                 static_cast<size_t>(initial);
   i::JSArrayBuffer::SetupAllocatingData(buffer, i_isolate, size);
-  memory_obj->SetInternalField(0, *buffer);
-  memory_obj->SetInternalField(
-      1, has_maximum
-             ? static_cast<i::Object*>(i::Smi::FromInt(maximum))
-             : static_cast<i::Object*>(i_isolate->heap()->undefined_value()));
-  i::Handle<i::Symbol> memory_sym(
-      i_isolate->native_context()->wasm_memory_sym());
-  i::Object::SetProperty(memory_obj, memory_sym, memory_obj, i::STRICT).Check();
+
+  i::Handle<i::JSObject> memory_obj = i::WasmJs::CreateWasmMemoryObject(
+      i_isolate, buffer, has_maximum.FromJust(), maximum);
   v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
   return_value.Set(Utils::ToLocal(memory_obj));
 }
@@ -492,6 +515,24 @@ void WebAssemblyMemoryGetBuffer(
   return_value.Set(Utils::ToLocal(buffer));
 }
 }  // namespace
+
+i::Handle<i::JSObject> i::WasmJs::CreateWasmMemoryObject(
+    i::Isolate* i_isolate, i::Handle<i::JSArrayBuffer> buffer, bool has_maximum,
+    int maximum) {
+  i::Handle<i::JSFunction> memory_ctor(
+      i_isolate->native_context()->wasm_memory_constructor());
+  i::Handle<i::JSObject> memory_obj =
+      i_isolate->factory()->NewJSObject(memory_ctor);
+  memory_obj->SetInternalField(0, *buffer);
+  memory_obj->SetInternalField(
+      1, has_maximum
+             ? static_cast<i::Object*>(i::Smi::FromInt(maximum))
+             : static_cast<i::Object*>(i_isolate->heap()->undefined_value()));
+  i::Handle<i::Symbol> memory_sym(
+      i_isolate->native_context()->wasm_memory_sym());
+  i::Object::SetProperty(memory_obj, memory_sym, memory_obj, i::STRICT).Check();
+  return memory_obj;
+}
 
 // TODO(titzer): we use the API to create the function template because the
 // internal guts are too ugly to replicate here.
@@ -570,6 +611,9 @@ void WasmJs::InstallWasmConstructors(Isolate* isolate,
 
   // Setup compile
   InstallFunc(isolate, wasm_object, "compile", WebAssemblyCompile);
+
+  // Setup compile
+  InstallFunc(isolate, wasm_object, "validate", WebAssemblyValidate);
 
   // Setup Module
   Handle<JSFunction> module_constructor =

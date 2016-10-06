@@ -27,6 +27,7 @@
 #include "src/external-reference-table.h"
 #include "src/frames-inl.h"
 #include "src/ic/stub-cache.h"
+#include "src/interface-descriptors.h"
 #include "src/interpreter/interpreter.h"
 #include "src/isolate-inl.h"
 #include "src/libsampler/sampler.h"
@@ -924,6 +925,10 @@ bool Isolate::MayAccess(Handle<Context> accessing_context,
 
 
 Object* Isolate::StackOverflow() {
+  if (FLAG_abort_on_stack_overflow) {
+    FATAL("Aborting on stack overflow");
+  }
+
   DisallowJavascriptExecution no_js(this);
   HandleScope scope(this);
 
@@ -1144,8 +1149,8 @@ Object* Isolate::UnwindAndFindHandler() {
   Address handler_sp = nullptr;
   Address handler_fp = nullptr;
 
-  // Special handling of termination exceptions, uncatchable by JavaScript code,
-  // we unwind the handlers until the top ENTRY handler is found.
+  // Special handling of termination exceptions, uncatchable by JavaScript and
+  // Wasm code, we unwind the handlers until the top ENTRY handler is found.
   bool catchable_by_js = is_catchable_by_javascript(exception);
 
   // Compute handler and stack unwinding information by performing a full walk
@@ -1165,6 +1170,28 @@ Object* Isolate::UnwindAndFindHandler() {
       handler_sp = handler->address() + StackHandlerConstants::kSize;
       offset = Smi::cast(code->handler_table()->get(0))->value();
       break;
+    }
+
+    if (FLAG_wasm_eh_prototype) {
+      if (frame->is_wasm() && is_catchable_by_wasm(exception)) {
+        int stack_slots = 0;  // Will contain stack slot count of frame.
+        WasmFrame* wasm_frame = static_cast<WasmFrame*>(frame);
+        offset = wasm_frame->LookupExceptionHandlerInTable(&stack_slots);
+        if (offset >= 0) {
+          // Compute the stack pointer from the frame pointer. This ensures that
+          // argument slots on the stack are dropped as returning would.
+          Address return_sp = frame->fp() +
+                              StandardFrameConstants::kFixedFrameSizeAboveFp -
+                              stack_slots * kPointerSize;
+
+          // Gather information from the frame.
+          code = frame->LookupCode();
+
+          handler_sp = return_sp;
+          handler_fp = frame->fp();
+          break;
+        }
+      }
     }
 
     // For optimized frames we perform a lookup in the handler table.
@@ -1975,7 +2002,6 @@ Isolate::Isolate(bool enable_serializer)
       allocator_(FLAG_trace_gc_object_stats
                      ? new VerboseAccountingAllocator(&heap_, 256 * KB)
                      : new AccountingAllocator()),
-      runtime_zone_(new Zone(allocator_)),
       inner_pointer_to_code_cache_(NULL),
       global_handles_(NULL),
       eternal_handles_(NULL),
@@ -2170,9 +2196,6 @@ void Isolate::SetIsolateThreadLocals(Isolate* isolate,
 Isolate::~Isolate() {
   TRACE_ISOLATE(destructor);
 
-  // Has to be called while counters_ are still alive
-  runtime_zone_->DeleteKeptSegment();
-
   // The entry stack must be empty when we get here.
   DCHECK(entry_stack_ == NULL || entry_stack_->previous_item == NULL);
 
@@ -2248,9 +2271,6 @@ Isolate::~Isolate() {
 
   delete cancelable_task_manager_;
   cancelable_task_manager_ = nullptr;
-
-  delete runtime_zone_;
-  runtime_zone_ = nullptr;
 
   delete allocator_;
   allocator_ = nullptr;
@@ -2389,6 +2409,12 @@ bool Isolate::Init(Deserializer* des) {
     V8::FatalProcessOutOfMemory("heap setup");
     return false;
   }
+
+// Initialize the interface descriptors ahead of time.
+#define INTERFACE_DESCRIPTOR(V) \
+  { V##Descriptor(this); }
+  INTERFACE_DESCRIPTOR_LIST(INTERFACE_DESCRIPTOR)
+#undef INTERFACE_DESCRIPTOR
 
   deoptimizer_data_ = new DeoptimizerData(heap()->memory_allocator());
 

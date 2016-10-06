@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_WASM_ENCODER_H_
-#define V8_WASM_ENCODER_H_
+#ifndef V8_WASM_WASM_MODULE_BUILDER_H_
+#define V8_WASM_WASM_MODULE_BUILDER_H_
 
 #include "src/signature.h"
 #include "src/zone/zone-containers.h"
@@ -121,33 +121,45 @@ class V8_EXPORT_PRIVATE WasmFunctionBuilder : public ZoneObject {
   void Emit(WasmOpcode opcode);
   void EmitGetLocal(uint32_t index);
   void EmitSetLocal(uint32_t index);
+  void EmitTeeLocal(uint32_t index);
   void EmitI32Const(int32_t val);
   void EmitWithU8(WasmOpcode opcode, const byte immediate);
   void EmitWithU8U8(WasmOpcode opcode, const byte imm1, const byte imm2);
   void EmitWithVarInt(WasmOpcode opcode, uint32_t immediate);
+  void EmitDirectCallIndex(uint32_t index);
   void SetExported();
   void SetName(const char* name, int name_length);
-  bool exported() { return exported_; }
 
-  // Writing methods.
   void WriteSignature(ZoneBuffer& buffer) const;
-  void WriteExport(ZoneBuffer& buffer, uint32_t func_index) const;
+  void WriteExport(ZoneBuffer& buffer) const;
   void WriteBody(ZoneBuffer& buffer) const;
+
+  bool exported() { return exported_; }
+  uint32_t func_index() { return func_index_; }
+  FunctionSig* signature();
 
  private:
   explicit WasmFunctionBuilder(WasmModuleBuilder* builder);
   friend class WasmModuleBuilder;
   friend class WasmTemporary;
+
+  struct DirectCallIndex {
+    size_t offset;
+    uint32_t direct_index;
+  };
+
   WasmModuleBuilder* builder_;
   LocalDeclEncoder locals_;
   uint32_t signature_index_;
   bool exported_;
+  uint32_t func_index_;
   ZoneVector<uint8_t> body_;
   ZoneVector<char> name_;
   ZoneVector<uint32_t> i32_temps_;
   ZoneVector<uint32_t> i64_temps_;
   ZoneVector<uint32_t> f32_temps_;
   ZoneVector<uint32_t> f64_temps_;
+  ZoneVector<DirectCallIndex> direct_calls_;
 };
 
 class WasmTemporary {
@@ -189,37 +201,22 @@ class WasmTemporary {
   uint32_t index_;
 };
 
-// TODO(titzer): kill!
-class WasmDataSegmentEncoder : public ZoneObject {
- public:
-  WasmDataSegmentEncoder(Zone* zone, const byte* data, uint32_t size,
-                         uint32_t dest);
-  void Write(ZoneBuffer& buffer) const;
-
- private:
-  ZoneVector<byte> data_;
-  uint32_t dest_;
-};
-
-struct WasmFunctionImport {
-  uint32_t sig_index;
-  const char* name;
-  int name_length;
-};
-
 class V8_EXPORT_PRIVATE WasmModuleBuilder : public ZoneObject {
  public:
   explicit WasmModuleBuilder(Zone* zone);
 
   // Building methods.
-  uint32_t AddFunction();
-  uint32_t AddGlobal(LocalType type, bool exported);
-  WasmFunctionBuilder* FunctionAt(size_t index);
-  void AddDataSegment(WasmDataSegmentEncoder* data);
+  uint32_t AddImport(const char* name, int name_length, FunctionSig* sig);
+  void SetImportName(uint32_t index, const char* name, int name_length) {
+    imports_[index].name = name;
+    imports_[index].name_length = name_length;
+  }
+  WasmFunctionBuilder* AddFunction(FunctionSig* sig = nullptr);
+  uint32_t AddGlobal(LocalType type, bool exported, bool mutability = true);
+  void AddDataSegment(const byte* data, uint32_t size, uint32_t dest);
   uint32_t AddSignature(FunctionSig* sig);
   void AddIndirectFunction(uint32_t index);
-  void MarkStartFunction(uint32_t index);
-  uint32_t AddImport(const char* name, int name_length, FunctionSig* sig);
+  void MarkStartFunction(WasmFunctionBuilder* builder);
 
   // Writing methods.
   void WriteTo(ZoneBuffer& buffer) const;
@@ -231,20 +228,44 @@ class V8_EXPORT_PRIVATE WasmModuleBuilder : public ZoneObject {
 
   Zone* zone() { return zone_; }
 
+  FunctionSig* GetSignature(uint32_t index) { return signatures_[index]; }
+
  private:
+  struct WasmFunctionImport {
+    uint32_t sig_index;
+    const char* name;
+    int name_length;
+  };
+
+  struct WasmGlobal {
+    LocalType type;
+    bool exported;
+    bool mutability;
+  };
+
+  struct WasmDataSegment {
+    ZoneVector<byte> data;
+    uint32_t dest;
+  };
+
+  friend class WasmFunctionBuilder;
   Zone* zone_;
   ZoneVector<FunctionSig*> signatures_;
   ZoneVector<WasmFunctionImport> imports_;
   ZoneVector<WasmFunctionBuilder*> functions_;
-  ZoneVector<WasmDataSegmentEncoder*> data_segments_;
+  ZoneVector<WasmDataSegment> data_segments_;
   ZoneVector<uint32_t> indirect_functions_;
-  ZoneVector<std::pair<LocalType, bool>> globals_;
+  ZoneVector<WasmGlobal> globals_;
   SignatureMap signature_map_;
   int start_function_index_;
 };
+
+inline FunctionSig* WasmFunctionBuilder::signature() {
+  return builder_->signatures_[signature_index_];
+}
 
 }  // namespace wasm
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_WASM_ENCODER_H_
+#endif  // V8_WASM_WASM_MODULE_BUILDER_H_

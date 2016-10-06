@@ -719,8 +719,20 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
     case IrOpcode::kStringFromCharCode:
       state = LowerStringFromCharCode(node, *effect, *control);
       break;
+    case IrOpcode::kStringFromCodePoint:
+      state = LowerStringFromCodePoint(node, *effect, *control);
+      break;
     case IrOpcode::kStringCharCodeAt:
       state = LowerStringCharCodeAt(node, *effect, *control);
+      break;
+    case IrOpcode::kStringEqual:
+      state = LowerStringEqual(node, *effect, *control);
+      break;
+    case IrOpcode::kStringLessThan:
+      state = LowerStringLessThan(node, *effect, *control);
+      break;
+    case IrOpcode::kStringLessThanOrEqual:
+      state = LowerStringLessThanOrEqual(node, *effect, *control);
       break;
     case IrOpcode::kCheckFloat64Hole:
       state = LowerCheckFloat64Hole(node, frame_state, *effect, *control);
@@ -776,75 +788,8 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
 EffectControlLinearizer::ValueEffectControl
 EffectControlLinearizer::LowerChangeFloat64ToTagged(Node* node, Node* effect,
                                                     Node* control) {
-  CheckForMinusZeroMode mode = CheckMinusZeroModeOf(node->op());
   Node* value = node->InputAt(0);
-
-  Node* value32 = graph()->NewNode(machine()->RoundFloat64ToInt32(), value);
-  Node* check_same = graph()->NewNode(
-      machine()->Float64Equal(), value,
-      graph()->NewNode(machine()->ChangeInt32ToFloat64(), value32));
-  Node* branch_same = graph()->NewNode(common()->Branch(), check_same, control);
-
-  Node* if_smi = graph()->NewNode(common()->IfTrue(), branch_same);
-  Node* vsmi;
-  Node* if_box = graph()->NewNode(common()->IfFalse(), branch_same);
-
-  if (mode == CheckForMinusZeroMode::kCheckForMinusZero) {
-    // Check if {value} is -0.
-    Node* check_zero = graph()->NewNode(machine()->Word32Equal(), value32,
-                                        jsgraph()->Int32Constant(0));
-    Node* branch_zero = graph()->NewNode(common()->Branch(BranchHint::kFalse),
-                                         check_zero, if_smi);
-
-    Node* if_zero = graph()->NewNode(common()->IfTrue(), branch_zero);
-    Node* if_notzero = graph()->NewNode(common()->IfFalse(), branch_zero);
-
-    // In case of 0, we need to check the high bits for the IEEE -0 pattern.
-    Node* check_negative = graph()->NewNode(
-        machine()->Int32LessThan(),
-        graph()->NewNode(machine()->Float64ExtractHighWord32(), value),
-        jsgraph()->Int32Constant(0));
-    Node* branch_negative = graph()->NewNode(
-        common()->Branch(BranchHint::kFalse), check_negative, if_zero);
-
-    Node* if_negative = graph()->NewNode(common()->IfTrue(), branch_negative);
-    Node* if_notnegative =
-        graph()->NewNode(common()->IfFalse(), branch_negative);
-
-    // We need to create a box for negative 0.
-    if_smi = graph()->NewNode(common()->Merge(2), if_notzero, if_notnegative);
-    if_box = graph()->NewNode(common()->Merge(2), if_box, if_negative);
-  }
-
-  // On 64-bit machines we can just wrap the 32-bit integer in a smi, for 32-bit
-  // machines we need to deal with potential overflow and fallback to boxing.
-  if (machine()->Is64()) {
-    vsmi = ChangeInt32ToSmi(value32);
-  } else {
-    Node* smi_tag = graph()->NewNode(machine()->Int32AddWithOverflow(), value32,
-                                     value32, if_smi);
-
-    Node* check_ovf =
-        graph()->NewNode(common()->Projection(1), smi_tag, if_smi);
-    Node* branch_ovf = graph()->NewNode(common()->Branch(BranchHint::kFalse),
-                                        check_ovf, if_smi);
-
-    Node* if_ovf = graph()->NewNode(common()->IfTrue(), branch_ovf);
-    if_box = graph()->NewNode(common()->Merge(2), if_ovf, if_box);
-
-    if_smi = graph()->NewNode(common()->IfFalse(), branch_ovf);
-    vsmi = graph()->NewNode(common()->Projection(0), smi_tag, if_smi);
-  }
-
-  // Allocate the box for the {value}.
-  ValueEffectControl box = AllocateHeapNumberWithValue(value, effect, if_box);
-
-  control = graph()->NewNode(common()->Merge(2), if_smi, box.control);
-  value = graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
-                           vsmi, box.value, control);
-  effect =
-      graph()->NewNode(common()->EffectPhi(2), effect, box.effect, control);
-  return ValueEffectControl(value, effect, control);
+  return AllocateHeapNumberWithValue(value, effect, control);
 }
 
 EffectControlLinearizer::ValueEffectControl
@@ -2602,6 +2547,236 @@ EffectControlLinearizer::LowerStringFromCharCode(Node* node, Node* effect,
                            vtrue0, vfalse0, control);
 
   return ValueEffectControl(value, effect, control);
+}
+
+EffectControlLinearizer::ValueEffectControl
+EffectControlLinearizer::LowerStringFromCodePoint(Node* node, Node* effect,
+                                                  Node* control) {
+  Node* value = node->InputAt(0);
+  Node* code = value;
+
+  Node* etrue0 = effect;
+  Node* vtrue0;
+
+  // Check if the {code} is a single code unit
+  Node* check0 = graph()->NewNode(machine()->Uint32LessThanOrEqual(), code,
+                                  jsgraph()->Uint32Constant(0xFFFF));
+  Node* branch0 =
+      graph()->NewNode(common()->Branch(BranchHint::kTrue), check0, control);
+
+  Node* if_true0 = graph()->NewNode(common()->IfTrue(), branch0);
+  {
+    // Check if the {code} is a one byte character
+    Node* check1 = graph()->NewNode(
+        machine()->Uint32LessThanOrEqual(), code,
+        jsgraph()->Uint32Constant(String::kMaxOneByteCharCode));
+    Node* branch1 =
+        graph()->NewNode(common()->Branch(BranchHint::kTrue), check1, if_true0);
+
+    Node* if_true1 = graph()->NewNode(common()->IfTrue(), branch1);
+    Node* etrue1 = etrue0;
+    Node* vtrue1;
+    {
+      // Load the isolate wide single character string cache.
+      Node* cache =
+          jsgraph()->HeapConstant(factory()->single_character_string_cache());
+
+      // Compute the {cache} index for {code}.
+      Node* index =
+          machine()->Is32()
+              ? code
+              : graph()->NewNode(machine()->ChangeUint32ToUint64(), code);
+
+      // Check if we have an entry for the {code} in the single character string
+      // cache already.
+      Node* entry = etrue1 = graph()->NewNode(
+          simplified()->LoadElement(AccessBuilder::ForFixedArrayElement()),
+          cache, index, etrue1, if_true1);
+
+      Node* check2 = graph()->NewNode(machine()->WordEqual(), entry,
+                                      jsgraph()->UndefinedConstant());
+      Node* branch2 = graph()->NewNode(common()->Branch(BranchHint::kFalse),
+                                       check2, if_true1);
+
+      Node* if_true2 = graph()->NewNode(common()->IfTrue(), branch2);
+      Node* etrue2 = etrue1;
+      Node* vtrue2;
+      {
+        // Allocate a new SeqOneByteString for {code}.
+        vtrue2 = etrue2 = graph()->NewNode(
+            simplified()->Allocate(NOT_TENURED),
+            jsgraph()->Int32Constant(SeqOneByteString::SizeFor(1)), etrue2,
+            if_true2);
+        etrue2 = graph()->NewNode(
+            simplified()->StoreField(AccessBuilder::ForMap()), vtrue2,
+            jsgraph()->HeapConstant(factory()->one_byte_string_map()), etrue2,
+            if_true2);
+        etrue2 = graph()->NewNode(
+            simplified()->StoreField(AccessBuilder::ForNameHashField()), vtrue2,
+            jsgraph()->IntPtrConstant(Name::kEmptyHashField), etrue2, if_true2);
+        etrue2 = graph()->NewNode(
+            simplified()->StoreField(AccessBuilder::ForStringLength()), vtrue2,
+            jsgraph()->SmiConstant(1), etrue2, if_true2);
+        etrue2 = graph()->NewNode(
+            machine()->Store(StoreRepresentation(MachineRepresentation::kWord8,
+                                                 kNoWriteBarrier)),
+            vtrue2, jsgraph()->IntPtrConstant(SeqOneByteString::kHeaderSize -
+                                              kHeapObjectTag),
+            code, etrue2, if_true2);
+
+        // Remember it in the {cache}.
+        etrue2 = graph()->NewNode(
+            simplified()->StoreElement(AccessBuilder::ForFixedArrayElement()),
+            cache, index, vtrue2, etrue2, if_true2);
+      }
+
+      // Use the {entry} from the {cache}.
+      Node* if_false2 = graph()->NewNode(common()->IfFalse(), branch2);
+      Node* efalse2 = etrue0;
+      Node* vfalse2 = entry;
+
+      if_true1 = graph()->NewNode(common()->Merge(2), if_true2, if_false2);
+      etrue1 =
+          graph()->NewNode(common()->EffectPhi(2), etrue2, efalse2, if_true1);
+      vtrue1 =
+          graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
+                           vtrue2, vfalse2, if_true1);
+    }
+
+    Node* if_false1 = graph()->NewNode(common()->IfFalse(), branch1);
+    Node* efalse1 = effect;
+    Node* vfalse1;
+    {
+      // Allocate a new SeqTwoByteString for {code}.
+      vfalse1 = efalse1 = graph()->NewNode(
+          simplified()->Allocate(NOT_TENURED),
+          jsgraph()->Int32Constant(SeqTwoByteString::SizeFor(1)), efalse1,
+          if_false1);
+      efalse1 = graph()->NewNode(
+          simplified()->StoreField(AccessBuilder::ForMap()), vfalse1,
+          jsgraph()->HeapConstant(factory()->string_map()), efalse1, if_false1);
+      efalse1 = graph()->NewNode(
+          simplified()->StoreField(AccessBuilder::ForNameHashField()), vfalse1,
+          jsgraph()->IntPtrConstant(Name::kEmptyHashField), efalse1, if_false1);
+      efalse1 = graph()->NewNode(
+          simplified()->StoreField(AccessBuilder::ForStringLength()), vfalse1,
+          jsgraph()->SmiConstant(1), efalse1, if_false1);
+      efalse1 = graph()->NewNode(
+          machine()->Store(StoreRepresentation(MachineRepresentation::kWord16,
+                                               kNoWriteBarrier)),
+          vfalse1, jsgraph()->IntPtrConstant(SeqTwoByteString::kHeaderSize -
+                                             kHeapObjectTag),
+          code, efalse1, if_false1);
+    }
+
+    if_true0 = graph()->NewNode(common()->Merge(2), if_true1, if_false1);
+    etrue0 =
+        graph()->NewNode(common()->EffectPhi(2), etrue1, efalse1, if_true0);
+    vtrue0 = graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
+                              vtrue1, vfalse1, if_true0);
+  }
+
+  // Generate surrogate pair string
+  Node* if_false0 = graph()->NewNode(common()->IfFalse(), branch0);
+  Node* efalse0 = effect;
+  Node* vfalse0;
+  {
+    switch (UnicodeEncodingOf(node->op())) {
+      case UnicodeEncoding::UTF16:
+        break;
+
+      case UnicodeEncoding::UTF32: {
+        // Convert UTF32 to UTF16 code units, and store as a 32 bit word.
+        Node* lead_offset = jsgraph()->Int32Constant(0xD800 - (0x10000 >> 10));
+
+        // lead = (codepoint >> 10) + LEAD_OFFSET
+        Node* lead =
+            graph()->NewNode(machine()->Int32Add(),
+                             graph()->NewNode(machine()->Word32Shr(), code,
+                                              jsgraph()->Int32Constant(10)),
+                             lead_offset);
+
+        // trail = (codepoint & 0x3FF) + 0xDC00;
+        Node* trail =
+            graph()->NewNode(machine()->Int32Add(),
+                             graph()->NewNode(machine()->Word32And(), code,
+                                              jsgraph()->Int32Constant(0x3FF)),
+                             jsgraph()->Int32Constant(0xDC00));
+
+        // codpoint = (trail << 16) | lead;
+        code = graph()->NewNode(machine()->Word32Or(),
+                                graph()->NewNode(machine()->Word32Shl(), trail,
+                                                 jsgraph()->Int32Constant(16)),
+                                lead);
+        break;
+      }
+    }
+
+    // Allocate a new SeqTwoByteString for {code}.
+    vfalse0 = efalse0 =
+        graph()->NewNode(simplified()->Allocate(NOT_TENURED),
+                         jsgraph()->Int32Constant(SeqTwoByteString::SizeFor(2)),
+                         efalse0, if_false0);
+    efalse0 = graph()->NewNode(
+        simplified()->StoreField(AccessBuilder::ForMap()), vfalse0,
+        jsgraph()->HeapConstant(factory()->string_map()), efalse0, if_false0);
+    efalse0 = graph()->NewNode(
+        simplified()->StoreField(AccessBuilder::ForNameHashField()), vfalse0,
+        jsgraph()->IntPtrConstant(Name::kEmptyHashField), efalse0, if_false0);
+    efalse0 = graph()->NewNode(
+        simplified()->StoreField(AccessBuilder::ForStringLength()), vfalse0,
+        jsgraph()->SmiConstant(2), efalse0, if_false0);
+    efalse0 = graph()->NewNode(
+        machine()->Store(StoreRepresentation(MachineRepresentation::kWord32,
+                                             kNoWriteBarrier)),
+        vfalse0, jsgraph()->IntPtrConstant(SeqTwoByteString::kHeaderSize -
+                                           kHeapObjectTag),
+        code, efalse0, if_false0);
+  }
+
+  control = graph()->NewNode(common()->Merge(2), if_true0, if_false0);
+  effect = graph()->NewNode(common()->EffectPhi(2), etrue0, efalse0, control);
+  value = graph()->NewNode(common()->Phi(MachineRepresentation::kTagged, 2),
+                           vtrue0, vfalse0, control);
+
+  return ValueEffectControl(value, effect, control);
+}
+
+EffectControlLinearizer::ValueEffectControl
+EffectControlLinearizer::LowerStringComparison(Callable const& callable,
+                                               Node* node, Node* effect,
+                                               Node* control) {
+  Operator::Properties properties = Operator::kEliminatable;
+  CallDescriptor::Flags flags = CallDescriptor::kNoFlags;
+  CallDescriptor* desc = Linkage::GetStubCallDescriptor(
+      isolate(), graph()->zone(), callable.descriptor(), 0, flags, properties);
+  node->InsertInput(graph()->zone(), 0,
+                    jsgraph()->HeapConstant(callable.code()));
+  node->AppendInput(graph()->zone(), jsgraph()->NoContextConstant());
+  node->AppendInput(graph()->zone(), effect);
+  NodeProperties::ChangeOp(node, common()->Call(desc));
+  return ValueEffectControl(node, node, control);
+}
+
+EffectControlLinearizer::ValueEffectControl
+EffectControlLinearizer::LowerStringEqual(Node* node, Node* effect,
+                                          Node* control) {
+  return LowerStringComparison(CodeFactory::StringEqual(isolate()), node,
+                               effect, control);
+}
+
+EffectControlLinearizer::ValueEffectControl
+EffectControlLinearizer::LowerStringLessThan(Node* node, Node* effect,
+                                             Node* control) {
+  return LowerStringComparison(CodeFactory::StringLessThan(isolate()), node,
+                               effect, control);
+}
+
+EffectControlLinearizer::ValueEffectControl
+EffectControlLinearizer::LowerStringLessThanOrEqual(Node* node, Node* effect,
+                                                    Node* control) {
+  return LowerStringComparison(CodeFactory::StringLessThanOrEqual(isolate()),
+                               node, effect, control);
 }
 
 EffectControlLinearizer::ValueEffectControl

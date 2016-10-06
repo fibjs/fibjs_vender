@@ -133,9 +133,13 @@ void PropertyHandlerCompiler::DiscardVectorAndSlot() {
   __ Addu(sp, sp, Operand(2 * kPointerSize));
 }
 
-void PropertyHandlerCompiler::PushReturnAddress(Register tmp) { UNREACHABLE(); }
+void PropertyHandlerCompiler::PushReturnAddress(Register tmp) {
+  // No-op. Return address is in ra register.
+}
 
-void PropertyHandlerCompiler::PopReturnAddress(Register tmp) { UNREACHABLE(); }
+void PropertyHandlerCompiler::PopReturnAddress(Register tmp) {
+  // No-op. Return address is in ra register.
+}
 
 void PropertyHandlerCompiler::GenerateDictionaryNegativeLookup(
     MacroAssembler* masm, Label* miss_label, Register receiver,
@@ -667,7 +671,7 @@ Handle<Code> NamedLoadHandlerCompiler::CompileLoadGlobal(
     DiscardVectorAndSlot();
   }
   __ Ret(USE_DELAY_SLOT);
-  __ mov(v0, result);
+  __ Move(v0, result);  // Ensure the stub returns correct value.
 
   FrontendFooter(name, &miss);
 

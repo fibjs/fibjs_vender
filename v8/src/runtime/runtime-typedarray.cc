@@ -200,7 +200,6 @@ RUNTIME_FUNCTION(Runtime_TypedArrayInitializeFromArrayLike) {
   size_t length = 0;
   if (source->IsJSTypedArray() &&
       JSTypedArray::cast(*source)->type() == array_type) {
-    length_obj = handle(JSTypedArray::cast(*source)->length(), isolate);
     length = JSTypedArray::cast(*source)->length_value();
   } else {
     CHECK(TryNumberToSize(*length_obj, &length));
@@ -246,6 +245,7 @@ RUNTIME_FUNCTION(Runtime_TypedArrayInitializeFromArrayLike) {
   Handle<Object> byte_length_obj(
       isolate->factory()->NewNumberFromSize(byte_length));
   holder->set_byte_length(*byte_length_obj);
+  length_obj = isolate->factory()->NewNumberFromSize(length);
   holder->set_length(*length_obj);
 
   Handle<FixedTypedArrayBase> elements =

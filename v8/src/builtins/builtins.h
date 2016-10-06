@@ -97,6 +97,14 @@ namespace internal {
   ASM(InterruptCheck)                                                         \
   ASM(StackCheck)                                                             \
                                                                               \
+  /* String helpers */                                                        \
+  TFS(StringEqual, BUILTIN, kNoExtraICState, Compare)                         \
+  TFS(StringNotEqual, BUILTIN, kNoExtraICState, Compare)                      \
+  TFS(StringLessThan, BUILTIN, kNoExtraICState, Compare)                      \
+  TFS(StringLessThanOrEqual, BUILTIN, kNoExtraICState, Compare)               \
+  TFS(StringGreaterThan, BUILTIN, kNoExtraICState, Compare)                   \
+  TFS(StringGreaterThanOrEqual, BUILTIN, kNoExtraICState, Compare)            \
+                                                                              \
   /* Interpreter */                                                           \
   ASM(InterpreterEntryTrampoline)                                             \
   ASM(InterpreterMarkBaselineOnReturn)                                        \
@@ -163,6 +171,7 @@ namespace internal {
   TFS(ToName, BUILTIN, kNoExtraICState, TypeConversion)                       \
   TFS(NonNumberToNumber, BUILTIN, kNoExtraICState, TypeConversion)            \
   TFS(ToNumber, BUILTIN, kNoExtraICState, TypeConversion)                     \
+  TFS(ToString, BUILTIN, kNoExtraICState, TypeConversion)                     \
                                                                               \
   /* Handlers */                                                              \
   ASH(KeyedLoadIC_Megamorphic, KEYED_LOAD_IC, kNoExtraICState)                \
@@ -523,6 +532,10 @@ namespace internal {
   CPP(ReflectSet)                                                             \
   CPP(ReflectSetPrototypeOf)                                                  \
                                                                               \
+  /* RegExp */                                                                \
+  CPP(RegExpConstructor)                                                      \
+  TFJ(RegExpPrototypeExec, 2)                                                 \
+                                                                              \
   /* SharedArrayBuffer */                                                     \
   CPP(SharedArrayBufferPrototypeGetByteLength)                                \
   TFJ(AtomicsLoad, 3)                                                         \
@@ -545,6 +558,10 @@ namespace internal {
   CPP(StringPrototypeLocaleCompare)                                           \
   /* ES6 section 21.1.3.12 String.prototype.normalize ( [form] ) */           \
   CPP(StringPrototypeNormalize)                                               \
+  /* ES6 section B.2.3.1 String.prototype.substr ( start, length ) */         \
+  TFJ(StringPrototypeSubstr, 3)                                               \
+  /* ES6 section 21.1.3.19 String.prototype.substring ( start, end ) */       \
+  TFJ(StringPrototypeSubstring, 3)                                            \
   /* ES6 section 21.1.3.25 String.prototype.toString () */                    \
   TFJ(StringPrototypeToString, 1)                                             \
   CPP(StringPrototypeTrim)                                                    \
@@ -553,10 +570,10 @@ namespace internal {
   /* ES6 section 21.1.3.28 String.prototype.valueOf () */                     \
   TFJ(StringPrototypeValueOf, 1)                                              \
   /* ES6 #sec-string.prototype-@@iterator */                                  \
-  CPP(StringPrototypeIterator)                                                \
+  TFJ(StringPrototypeIterator, 1)                                             \
                                                                               \
   /* StringIterator */                                                        \
-  CPP(StringIteratorPrototypeNext)                                            \
+  TFJ(StringIteratorPrototypeNext, 1)                                         \
                                                                               \
   /* Symbol */                                                                \
   CPP(SymbolConstructor)                                                      \

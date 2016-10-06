@@ -453,10 +453,10 @@ class MemoryChunk {
 
   inline void set_skip_list(SkipList* skip_list) { skip_list_ = skip_list; }
 
-  inline SlotSet* old_to_new_slots() { return old_to_new_slots_; }
+  inline SlotSet* old_to_new_slots() { return old_to_new_slots_.Value(); }
   inline SlotSet* old_to_old_slots() { return old_to_old_slots_; }
   inline TypedSlotSet* typed_old_to_new_slots() {
-    return typed_old_to_new_slots_;
+    return typed_old_to_new_slots_.Value();
   }
   inline TypedSlotSet* typed_old_to_old_slots() {
     return typed_old_to_old_slots_;
@@ -498,7 +498,6 @@ class MemoryChunk {
   void ResetProgressBar() {
     if (IsFlagSet(MemoryChunk::HAS_PROGRESS_BAR)) {
       set_progress_bar(0);
-      ClearFlag(MemoryChunk::HAS_PROGRESS_BAR);
     }
   }
 
@@ -654,9 +653,9 @@ class MemoryChunk {
   // A single slot set for small pages (of size kPageSize) or an array of slot
   // set for large pages. In the latter case the number of entries in the array
   // is ceil(size() / kPageSize).
-  SlotSet* old_to_new_slots_;
+  base::AtomicValue<SlotSet*> old_to_new_slots_;
   SlotSet* old_to_old_slots_;
-  TypedSlotSet* typed_old_to_new_slots_;
+  base::AtomicValue<TypedSlotSet*> typed_old_to_new_slots_;
   TypedSlotSet* typed_old_to_old_slots_;
 
   SkipList* skip_list_;
@@ -910,9 +909,9 @@ class Space : public Malloced {
 
   // Return the total amount committed memory for this space, i.e., allocatable
   // memory and page headers.
-  virtual intptr_t CommittedMemory() { return committed_; }
+  virtual size_t CommittedMemory() { return committed_; }
 
-  virtual intptr_t MaximumCommittedMemory() { return max_committed_; }
+  virtual size_t MaximumCommittedMemory() { return max_committed_; }
 
   // Returns allocated size.
   virtual intptr_t Size() = 0;
@@ -935,18 +934,19 @@ class Space : public Malloced {
     }
   }
 
-  void AccountCommitted(intptr_t bytes) {
-    DCHECK_GE(bytes, 0);
+  virtual std::unique_ptr<ObjectIterator> GetObjectIterator() = 0;
+
+  void AccountCommitted(size_t bytes) {
+    DCHECK_GE(committed_ + bytes, committed_);
     committed_ += bytes;
     if (committed_ > max_committed_) {
       max_committed_ = committed_;
     }
   }
 
-  void AccountUncommitted(intptr_t bytes) {
-    DCHECK_GE(bytes, 0);
+  void AccountUncommitted(size_t bytes) {
+    DCHECK_GE(committed_, committed_ - bytes);
     committed_ -= bytes;
-    DCHECK_GE(committed_, 0);
   }
 
 #ifdef DEBUG
@@ -963,8 +963,8 @@ class Space : public Malloced {
   Executability executable_;
 
   // Keeps track of committed memory in a space.
-  intptr_t committed_;
-  intptr_t max_committed_;
+  size_t committed_;
+  size_t max_committed_;
 
   DISALLOW_COPY_AND_ASSIGN(Space);
 };
@@ -1230,11 +1230,30 @@ class MemoryAllocator {
     kRegular,
     kPooled,
   };
+
   enum FreeMode {
     kFull,
     kPreFreeAndQueue,
     kPooledAndQueue,
   };
+
+  static int CodePageGuardStartOffset();
+
+  static int CodePageGuardSize();
+
+  static int CodePageAreaStartOffset();
+
+  static int CodePageAreaEndOffset();
+
+  static int CodePageAreaSize() {
+    return CodePageAreaEndOffset() - CodePageAreaStartOffset();
+  }
+
+  static int PageAreaSize(AllocationSpace space) {
+    DCHECK_NE(LO_SPACE, space);
+    return (space == CODE_SPACE) ? CodePageAreaSize()
+                                 : Page::kAllocatableMemory;
+  }
 
   explicit MemoryAllocator(Isolate* isolate);
 
@@ -1261,26 +1280,26 @@ class MemoryAllocator {
   bool CanFreeMemoryChunk(MemoryChunk* chunk);
 
   // Returns allocated spaces in bytes.
-  intptr_t Size() { return size_.Value(); }
+  size_t Size() { return size_.Value(); }
 
   // Returns allocated executable spaces in bytes.
-  intptr_t SizeExecutable() { return size_executable_.Value(); }
+  size_t SizeExecutable() { return size_executable_.Value(); }
 
   // Returns the maximum available bytes of heaps.
-  intptr_t Available() {
-    intptr_t size = Size();
+  size_t Available() {
+    const size_t size = Size();
     return capacity_ < size ? 0 : capacity_ - size;
   }
 
   // Returns the maximum available executable bytes of heaps.
-  intptr_t AvailableExecutable() {
-    intptr_t executable_size = SizeExecutable();
+  size_t AvailableExecutable() {
+    const size_t executable_size = SizeExecutable();
     if (capacity_executable_ < executable_size) return 0;
     return capacity_executable_ - executable_size;
   }
 
   // Returns maximum available bytes that the old space can have.
-  intptr_t MaxAvailable() {
+  size_t MaxAvailable() {
     return (Available() / Page::kPageSize) * Page::kAllocatableMemory;
   }
 
@@ -1290,11 +1309,6 @@ class MemoryAllocator {
     return address < lowest_ever_allocated_.Value() ||
            address >= highest_ever_allocated_.Value();
   }
-
-#ifdef DEBUG
-  // Reports statistic info of the space.
-  void ReportStatistics();
-#endif
 
   // Returns a MemoryChunk in which the memory region from commit_area_size to
   // reserve_area_size of the chunk area is reserved but not committed, it
@@ -1333,30 +1347,17 @@ class MemoryAllocator {
   // filling it up with a recognizable non-NULL bit pattern.
   void ZapBlock(Address start, size_t size);
 
-  static int CodePageGuardStartOffset();
-
-  static int CodePageGuardSize();
-
-  static int CodePageAreaStartOffset();
-
-  static int CodePageAreaEndOffset();
-
-  static int CodePageAreaSize() {
-    return CodePageAreaEndOffset() - CodePageAreaStartOffset();
-  }
-
-  static int PageAreaSize(AllocationSpace space) {
-    DCHECK_NE(LO_SPACE, space);
-    return (space == CODE_SPACE) ? CodePageAreaSize()
-                                 : Page::kAllocatableMemory;
-  }
-
   MUST_USE_RESULT bool CommitExecutableMemory(base::VirtualMemory* vm,
                                               Address start, size_t commit_size,
                                               size_t reserved_size);
 
   CodeRange* code_range() { return code_range_; }
   Unmapper* unmapper() { return &unmapper_; }
+
+#ifdef DEBUG
+  // Reports statistic info of the space.
+  void ReportStatistics();
+#endif
 
  private:
   // PreFree logically frees the object, i.e., it takes care of the size
@@ -1370,28 +1371,6 @@ class MemoryAllocator {
   // pools for NOT_EXECUTABLE pages of size MemoryChunk::kPageSize.
   template <typename SpaceType>
   MemoryChunk* AllocatePagePooled(SpaceType* owner);
-
-  Isolate* isolate_;
-
-  CodeRange* code_range_;
-
-  // Maximum space size in bytes.
-  intptr_t capacity_;
-  // Maximum subset of capacity_ that can be executable
-  intptr_t capacity_executable_;
-
-  // Allocated space size in bytes.
-  base::AtomicNumber<intptr_t> size_;
-  // Allocated executable space size in bytes.
-  base::AtomicNumber<intptr_t> size_executable_;
-
-  // We keep the lowest and highest addresses allocated as a quick way
-  // of determining that pointers are outside the heap. The estimate is
-  // conservative, i.e. not all addrsses in 'allocated' space are allocated
-  // to our heap. The range is [lowest, highest[, inclusive on the low end
-  // and exclusive on the high end.
-  base::AtomicValue<void*> lowest_ever_allocated_;
-  base::AtomicValue<void*> highest_ever_allocated_;
 
   // Initializes pages in a chunk. Returns the first page address.
   // This function and GetChunkId() are provided for the mark-compact
@@ -1412,6 +1391,27 @@ class MemoryAllocator {
       ptr = highest_ever_allocated_.Value();
     } while ((high > ptr) && !highest_ever_allocated_.TrySetValue(ptr, high));
   }
+
+  Isolate* isolate_;
+  CodeRange* code_range_;
+
+  // Maximum space size in bytes.
+  size_t capacity_;
+  // Maximum subset of capacity_ that can be executable
+  size_t capacity_executable_;
+
+  // Allocated space size in bytes.
+  base::AtomicNumber<size_t> size_;
+  // Allocated executable space size in bytes.
+  base::AtomicNumber<size_t> size_executable_;
+
+  // We keep the lowest and highest addresses allocated as a quick way
+  // of determining that pointers are outside the heap. The estimate is
+  // conservative, i.e. not all addresses in 'allocated' space are allocated
+  // to our heap. The range is [lowest, highest[, inclusive on the low end
+  // and exclusive on the high end.
+  base::AtomicValue<void*> lowest_ever_allocated_;
+  base::AtomicValue<void*> highest_ever_allocated_;
 
   base::VirtualMemory last_chunk_;
   Unmapper unmapper_;
@@ -2146,6 +2146,8 @@ class PagedSpace : public Space {
   // using the high water mark.
   void ShrinkImmortalImmovablePages();
 
+  std::unique_ptr<ObjectIterator> GetObjectIterator() override;
+
  protected:
   // PagedSpaces that should be included in snapshots have different, i.e.,
   // smaller, initial pages.
@@ -2326,6 +2328,11 @@ class SemiSpace : public Space {
     return 0;
   }
 
+  iterator begin() { return iterator(anchor_.next_page()); }
+  iterator end() { return iterator(anchor()); }
+
+  std::unique_ptr<ObjectIterator> GetObjectIterator() override;
+
 #ifdef DEBUG
   void Print() override;
   // Validate a range of of addresses in a SemiSpace.
@@ -2340,9 +2347,6 @@ class SemiSpace : public Space {
 #ifdef VERIFY_HEAP
   virtual void Verify();
 #endif
-
-  iterator begin() { return iterator(anchor_.next_page()); }
-  iterator end() { return iterator(anchor()); }
 
  private:
   void RewindPages(Page* start, int num_pages);
@@ -2449,10 +2453,7 @@ class NewSpace : public Space {
            static_cast<int>(top() - to_space_.page_low());
   }
 
-  // The same, but returning an int.  We have to have the one that returns
-  // intptr_t because it is inherited, but if we know we are dealing with the
-  // new space, which can't get as big as the other spaces then this is useful:
-  int SizeAsInt() { return static_cast<int>(Size()); }
+  intptr_t SizeOfObjects() override { return Size(); }
 
   // Return the allocatable capacity of a semispace.
   intptr_t Capacity() {
@@ -2470,11 +2471,11 @@ class NewSpace : public Space {
 
   // Committed memory for NewSpace is the committed memory of both semi-spaces
   // combined.
-  intptr_t CommittedMemory() override {
+  size_t CommittedMemory() override {
     return from_space_.CommittedMemory() + to_space_.CommittedMemory();
   }
 
-  intptr_t MaximumCommittedMemory() override {
+  size_t MaximumCommittedMemory() override {
     return from_space_.MaximumCommittedMemory() +
            to_space_.MaximumCommittedMemory();
   }
@@ -2674,6 +2675,8 @@ class NewSpace : public Space {
 
   iterator begin() { return to_space_.begin(); }
   iterator end() { return to_space_.end(); }
+
+  std::unique_ptr<ObjectIterator> GetObjectIterator() override;
 
  private:
   // Update allocation info to match the current to-space page.
@@ -2887,6 +2890,8 @@ class LargeObjectSpace : public Space {
 
   iterator begin() { return iterator(first_page_); }
   iterator end() { return iterator(nullptr); }
+
+  std::unique_ptr<ObjectIterator> GetObjectIterator() override;
 
 #ifdef VERIFY_HEAP
   virtual void Verify();

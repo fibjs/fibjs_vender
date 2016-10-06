@@ -780,6 +780,9 @@
     <ClInclude Include="src\compiler\loop-variable-optimizer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\machine-graph-verifier.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\machine-operator-reducer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -1641,6 +1644,9 @@
     <ClInclude Include="src\profiler\tick-sample.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\profiler\tracing-cpu-profiler.h">
+      <Filter>Source Files\profiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\profiler\unbound-queue-inl.h">
       <Filter>Source Files\profiler</Filter>
     </ClInclude>
@@ -1887,9 +1893,6 @@
     <ClInclude Include="src\wasm\decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\encoder.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
     <ClInclude Include="src\wasm\leb-helper.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -1915,6 +1918,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-macro-gen.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-module-builder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-module.h">
@@ -2249,6 +2255,9 @@
     <ClCompile Include="src\builtins\builtins-reflect.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-regexp.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-sharedarraybuffer.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2508,6 +2517,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\loop-variable-optimizer.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\machine-graph-verifier.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\machine-operator-reducer.cc">
@@ -3182,9 +3194,6 @@
     <ClCompile Include="src\interpreter\bytecode-pipeline.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
-    <ClCompile Include="src\interpreter\bytecode-register-allocator.cc">
-      <Filter>Source Files\interpreter</Filter>
-    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-register-optimizer.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
@@ -3384,6 +3393,9 @@
       <Filter>Source Files\profiler</Filter>
     </ClCompile>
     <ClCompile Include="src\profiler\tick-sample.cc">
+      <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\profiler\tracing-cpu-profiler.cc">
       <Filter>Source Files\profiler</Filter>
     </ClCompile>
     <ClCompile Include="src\property-descriptor.cc">
@@ -3653,9 +3665,6 @@
     <ClCompile Include="src\wasm\ast-decoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
-    <ClCompile Include="src\wasm\encoder.cc">
-      <Filter>Source Files\wasm</Filter>
-    </ClCompile>
     <ClCompile Include="src\wasm\module-decoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
@@ -3675,6 +3684,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-js.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-module-builder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-module.cc">
@@ -3750,6 +3762,9 @@
       <Filter>Source Files\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\zone\accounting-allocator.cc">
+      <Filter>Source Files\zone</Filter>
+    </ClCompile>
+    <ClCompile Include="src\zone\zone-segment.cc">
       <Filter>Source Files\zone</Filter>
     </ClCompile>
     <ClCompile Include="src\zone\zone.cc">

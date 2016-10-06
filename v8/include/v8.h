@@ -468,6 +468,16 @@ class WeakCallbackInfo {
 enum class WeakCallbackType { kParameter, kInternalFields, kFinalizer };
 
 /**
+ * A reporter class that embedder will use to report reachable references found
+ * by EmbedderHeapTracer.
+ */
+class V8_EXPORT EmbedderReachableReferenceReporter {
+ public:
+  virtual void ReportExternalReference(Value* object) = 0;
+  virtual ~EmbedderReachableReferenceReporter() = default;
+};
+
+/**
  * An object reference that is independent of any handle scope.  Where
  * a Local handle only lives as long as the HandleScope in which it was
  * allocated, a PersistentBase handle remains valid until it is explicitly
@@ -564,11 +574,18 @@ template <class T> class PersistentBase {
   V8_INLINE void ClearWeak() { ClearWeak<void>(); }
 
   /**
+   * Deprecated.
+   * TODO(hlopko): remove once migration to reporter is finished.
+   */
+  V8_INLINE void RegisterExternalReference(Isolate* isolate) const {}
+
+  /**
    * Allows the embedder to tell the v8 garbage collector that a certain object
    * is alive. Only allowed when the embedder is asked to trace its heap by
    * EmbedderHeapTracer.
    */
-  V8_INLINE void RegisterExternalReference(Isolate* isolate) const;
+  V8_INLINE void RegisterExternalReference(
+      EmbedderReachableReferenceReporter* reporter) const;
 
   /**
    * Marks the reference to this object independent. Garbage collector is free
@@ -1772,6 +1789,7 @@ class V8_EXPORT ValueSerializer {
    */
   void WriteUint32(uint32_t value);
   void WriteUint64(uint64_t value);
+  void WriteDouble(double value);
   void WriteRawBytes(const void* source, size_t length);
 
  private:
@@ -1858,6 +1876,7 @@ class V8_EXPORT ValueDeserializer {
    */
   V8_WARN_UNUSED_RESULT bool ReadUint32(uint32_t* value);
   V8_WARN_UNUSED_RESULT bool ReadUint64(uint64_t* value);
+  V8_WARN_UNUSED_RESULT bool ReadDouble(double* value);
   V8_WARN_UNUSED_RESULT bool ReadRawBytes(size_t length, const void** data);
 
  private:
@@ -2968,6 +2987,21 @@ class V8_EXPORT Object : public Value {
       Local<Context> context, Local<String> key);
 
   V8_DEPRECATE_SOON("Use maybe version", bool Has(Local<Value> key));
+  /**
+   * Object::Has() calls the abstract operation HasProperty(O, P) described
+   * in ECMA-262, 7.3.10. Has() returns
+   * true, if the object has the property, either own or on the prototype chain.
+   * Interceptors, i.e., PropertyQueryCallbacks, are called if present.
+   *
+   * Has() has the same side effects as JavaScript's `variable in object`.
+   * For example, calling Has() on a revoked proxy will throw an exception.
+   *
+   * \note Has() converts the key to a name, which possibly calls back into
+   * JavaScript.
+   *
+   * See also v8::Object::HasOwnProperty() and
+   * v8::Object::HasRealNamedProperty().
+   */
   V8_WARN_UNUSED_RESULT Maybe<bool> Has(Local<Context> context,
                                         Local<Value> key);
 
@@ -3132,12 +3166,31 @@ class V8_EXPORT Object : public Value {
 
   // Testers for local properties.
   V8_DEPRECATED("Use maybe version", bool HasOwnProperty(Local<String> key));
+
+  /**
+   * HasOwnProperty() is like JavaScript's Object.prototype.hasOwnProperty().
+   *
+   * See also v8::Object::Has() and v8::Object::HasRealNamedProperty().
+   */
   V8_WARN_UNUSED_RESULT Maybe<bool> HasOwnProperty(Local<Context> context,
                                                    Local<Name> key);
   V8_WARN_UNUSED_RESULT Maybe<bool> HasOwnProperty(Local<Context> context,
                                                    uint32_t index);
   V8_DEPRECATE_SOON("Use maybe version",
                     bool HasRealNamedProperty(Local<String> key));
+  /**
+   * Use HasRealNamedProperty() if you want to check if an object has an own
+   * property without causing side effects, i.e., without calling interceptors.
+   *
+   * This function is similar to v8::Object::HasOwnProperty(), but it does not
+   * call interceptors.
+   *
+   * \note Consider using non-masking interceptors, i.e., the interceptors are
+   * not called if the receiver has the real named property. See
+   * `v8::PropertyHandlerFlags::kNonMasking`.
+   *
+   * See also v8::Object::Has().
+   */
   V8_WARN_UNUSED_RESULT Maybe<bool> HasRealNamedProperty(Local<Context> context,
                                                          Local<Name> key);
   V8_DEPRECATE_SOON("Use maybe version",
@@ -3219,6 +3272,12 @@ class V8_EXPORT Object : public Value {
    * Returns the context in which the object was created.
    */
   Local<Context> CreationContext();
+
+  /** Same as above, but works for Persistents */
+  V8_INLINE static Local<Context> CreationContext(
+      const PersistentBase<Object>& object) {
+    return object.val_->CreationContext();
+  }
 
   /**
    * Checks whether a callback is set by the
@@ -5126,16 +5185,31 @@ class V8_EXPORT FunctionTemplate : public Template {
   friend class ObjectTemplate;
 };
 
+/**
+ * Configuration flags for v8::NamedPropertyHandlerConfiguration or
+ * v8::IndexedPropertyHandlerConfiguration.
+ */
 enum class PropertyHandlerFlags {
+  /**
+   * None.
+   */
   kNone = 0,
-  // See ALL_CAN_READ above.
+
+  /**
+   * See ALL_CAN_READ above.
+   */
   kAllCanRead = 1,
-  // Will not call into interceptor for properties on the receiver or prototype
-  // chain, i.e., only call into interceptor for properties that do not exist.
-  // Currently only valid for named interceptors.
+
+  /** Will not call into interceptor for properties on the receiver or prototype
+   * chain, i.e., only call into interceptor for properties that do not exist.
+   * Currently only valid for named interceptors.
+   */
   kNonMasking = 1 << 1,
-  // Will not call into interceptor for symbol lookup.  Only meaningful for
-  // named interceptors.
+
+  /**
+   * Will not call into interceptor for symbol lookup.  Only meaningful for
+   * named interceptors.
+   */
   kOnlyInterceptStrings = 1 << 2,
 };
 
@@ -6074,8 +6148,8 @@ enum class MemoryPressureLevel { kNone, kModerate, kCritical };
  * Interface for tracing through the embedder heap. During the v8 garbage
  * collection, v8 collects hidden fields of all potential wrappers, and at the
  * end of its marking phase iterates the collection and asks the embedder to
- * trace through its heap and call PersistentBase::RegisterExternalReference on
- * each js object reachable from any of the given wrappers.
+ * trace through its heap and use reporter to report each js object reachable
+ * from any of the given wrappers.
  *
  * Before the first call to the TraceWrappersFrom function TracePrologue will be
  * called. When the garbage collection cycle is finished, TraceEpilogue will be
@@ -6101,14 +6175,21 @@ class V8_EXPORT EmbedderHeapTracer {
       const std::vector<std::pair<void*, void*> >& internal_fields) = 0;
 
   /**
-   * V8 will call this method at the beginning of a GC cycle.
+   * Deprecated.
+   * TODO(hlopko) Remove once the migration to reporter is finished.
    */
-  virtual void TracePrologue() = 0;
+  virtual void TracePrologue() {}
+
+  /**
+   * V8 will call this method at the beginning of a GC cycle. Embedder is
+   * expected to use EmbedderReachableReferenceReporter for reporting all
+   * reachable v8 objects.
+   */
+  virtual void TracePrologue(EmbedderReachableReferenceReporter* reporter) {}
 
   /**
    * Embedder is expected to trace its heap starting from wrappers reported by
-   * RegisterV8References method, and call
-   * PersistentBase::RegisterExternalReference() on all reachable wrappers.
+   * RegisterV8References method, and use reporter for all reachable wrappers.
    * Embedder is expected to stop tracing by the given deadline.
    *
    * Returns true if there is still work to do.
@@ -7425,8 +7506,6 @@ class V8_EXPORT V8 {
                          int* index);
   static Local<Value> GetEternal(Isolate* isolate, int index);
 
-  static void RegisterExternallyReferencedObject(internal::Object** object,
-                                                 internal::Isolate* isolate);
   template <class K, class V, class T>
   friend class PersistentValueMapBase;
 
@@ -8487,11 +8566,10 @@ P* PersistentBase<T>::ClearWeak() {
 }
 
 template <class T>
-void PersistentBase<T>::RegisterExternalReference(Isolate* isolate) const {
+void PersistentBase<T>::RegisterExternalReference(
+    EmbedderReachableReferenceReporter* reporter) const {
   if (IsEmpty()) return;
-  V8::RegisterExternallyReferencedObject(
-      reinterpret_cast<internal::Object**>(this->val_),
-      reinterpret_cast<internal::Isolate*>(isolate));
+  reporter->ReportExternalReference(this->val_);
 }
 
 template <class T>

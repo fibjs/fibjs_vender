@@ -787,6 +787,12 @@ AstGraphBuilder::Environment::CopyAsUnreachable() {
   return env;
 }
 
+AstGraphBuilder::Environment* AstGraphBuilder::Environment::CopyForOsrEntry() {
+  LivenessAnalyzerBlock* copy_block =
+      liveness_block() == nullptr ? nullptr
+                                  : builder_->liveness_analyzer()->NewBlock();
+  return new (zone()) Environment(this, copy_block);
+}
 
 AstGraphBuilder::Environment*
 AstGraphBuilder::Environment::CopyAndShareLiveness() {
@@ -801,8 +807,15 @@ AstGraphBuilder::Environment::CopyAndShareLiveness() {
 
 AstGraphBuilder::Environment* AstGraphBuilder::Environment::CopyForLoop(
     BitVector* assigned, bool is_osr) {
-  PrepareForLoop(assigned, is_osr);
-  return CopyAndShareLiveness();
+  PrepareForLoop(assigned);
+  Environment* loop = CopyAndShareLiveness();
+  if (is_osr) {
+    // Create and merge the OSR entry if necessary.
+    Environment* osr_env = CopyForOsrEntry();
+    osr_env->PrepareForOsrEntry();
+    loop->Merge(osr_env);
+  }
+  return loop;
 }
 
 
@@ -4182,9 +4195,61 @@ void AstGraphBuilder::Environment::Merge(Environment* other) {
   }
 }
 
+void AstGraphBuilder::Environment::PrepareForOsrEntry() {
+  int size = static_cast<int>(values()->size());
+  Graph* graph = builder_->graph();
 
-void AstGraphBuilder::Environment::PrepareForLoop(BitVector* assigned,
-                                                  bool is_osr) {
+  // Set the control and effect to the OSR loop entry.
+  Node* osr_loop_entry = graph->NewNode(builder_->common()->OsrLoopEntry(),
+                                        graph->start(), graph->start());
+  UpdateControlDependency(osr_loop_entry);
+  UpdateEffectDependency(osr_loop_entry);
+
+  // Set OSR values.
+  for (int i = 0; i < size; ++i) {
+    values()->at(i) =
+        graph->NewNode(builder_->common()->OsrValue(i), osr_loop_entry);
+  }
+
+  // Set the innermost context.
+  const Operator* op_inner =
+      builder_->common()->OsrValue(Linkage::kOsrContextSpillSlotIndex);
+  contexts()->back() = graph->NewNode(op_inner, osr_loop_entry);
+
+  // Create a checkpoint.
+  Node* frame_state = Checkpoint(builder_->info()->osr_ast_id());
+  Node* checkpoint = graph->NewNode(common()->Checkpoint(), frame_state,
+                                    osr_loop_entry, osr_loop_entry);
+  UpdateEffectDependency(checkpoint);
+
+  // Create the OSR guard nodes.
+  const Operator* guard_op =
+      builder_->info()->is_deoptimization_enabled()
+          ? builder_->common()->OsrGuard(OsrGuardType::kUninitialized)
+          : builder_->common()->OsrGuard(OsrGuardType::kAny);
+  Node* effect = checkpoint;
+  for (int i = 0; i < size; ++i) {
+    values()->at(i) = effect =
+        graph->NewNode(guard_op, values()->at(i), effect, osr_loop_entry);
+  }
+  contexts()->back() = effect =
+      graph->NewNode(guard_op, contexts()->back(), effect, osr_loop_entry);
+
+  // The innermost context is the OSR value, and the outer contexts are
+  // reconstructed by dynamically walking up the context chain.
+  const Operator* load_op =
+      builder_->javascript()->LoadContext(0, Context::PREVIOUS_INDEX, true);
+  Node* osr_context = effect = contexts()->back();
+  int last = static_cast<int>(contexts()->size() - 1);
+  for (int i = last - 1; i >= 0; i--) {
+    osr_context = effect =
+        graph->NewNode(load_op, osr_context, osr_context, effect);
+    contexts()->at(i) = osr_context;
+  }
+  UpdateEffectDependency(effect);
+}
+
+void AstGraphBuilder::Environment::PrepareForLoop(BitVector* assigned) {
   int size = static_cast<int>(values()->size());
 
   Node* control = builder_->NewLoop();
@@ -4217,40 +4282,6 @@ void AstGraphBuilder::Environment::PrepareForLoop(BitVector* assigned,
     for (size_t i = 0; i < contexts()->size(); ++i) {
       Node* context = contexts()->at(i);
       contexts()->at(i) = builder_->NewPhi(1, context, control);
-    }
-  }
-
-  if (is_osr) {
-    // Merge OSR values as inputs to the phis of the loop.
-    Graph* graph = builder_->graph();
-    Node* osr_loop_entry = builder_->graph()->NewNode(
-        builder_->common()->OsrLoopEntry(), graph->start(), graph->start());
-
-    builder_->MergeControl(control, osr_loop_entry);
-    builder_->MergeEffect(effect, osr_loop_entry, control);
-
-    for (int i = 0; i < size; ++i) {
-      Node* value = values()->at(i);
-      Node* osr_value =
-          graph->NewNode(builder_->common()->OsrValue(i), osr_loop_entry);
-      values()->at(i) = builder_->MergeValue(value, osr_value, control);
-    }
-
-    // Rename all the contexts in the environment.
-    // The innermost context is the OSR value, and the outer contexts are
-    // reconstructed by dynamically walking up the context chain.
-    Node* osr_context = nullptr;
-    const Operator* op =
-        builder_->javascript()->LoadContext(0, Context::PREVIOUS_INDEX, true);
-    const Operator* op_inner =
-        builder_->common()->OsrValue(Linkage::kOsrContextSpillSlotIndex);
-    int last = static_cast<int>(contexts()->size() - 1);
-    for (int i = last; i >= 0; i--) {
-      Node* context = contexts()->at(i);
-      osr_context = (i == last) ? graph->NewNode(op_inner, osr_loop_entry)
-                                : graph->NewNode(op, osr_context, osr_context,
-                                                 osr_loop_entry);
-      contexts()->at(i) = builder_->MergeValue(context, osr_context, control);
     }
   }
 }

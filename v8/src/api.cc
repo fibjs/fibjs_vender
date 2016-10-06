@@ -786,11 +786,6 @@ i::Object** V8::CopyPersistent(i::Object** obj) {
   return result.location();
 }
 
-void V8::RegisterExternallyReferencedObject(i::Object** object,
-                                            i::Isolate* isolate) {
-  isolate->heap()->RegisterExternallyReferencedObject(object);
-}
-
 void V8::MakeWeak(i::Object** location, void* parameter,
                   int internal_field_index1, int internal_field_index2,
                   WeakCallbackInfo<void>::Callback weak_callback) {
@@ -1915,108 +1910,12 @@ Local<Value> Module::GetEmbedderData() const {
       i::handle(self->embedder_data(), self->GetIsolate()));
 }
 
-MUST_USE_RESULT
-static bool InstantiateModule(Local<Module> v8_module,
-                              Local<Context> v8_context,
-                              Module::ResolveCallback callback,
-                              Local<Value> callback_data) {
-  i::Handle<i::Module> module = Utils::OpenHandle(*v8_module);
-  i::Isolate* isolate = module->GetIsolate();
-
-  // Already instantiated.
-  if (module->code()->IsJSFunction()) return true;
-
-  i::Handle<i::SharedFunctionInfo> shared(
-      i::SharedFunctionInfo::cast(module->code()), isolate);
-  i::Handle<i::Context> context = Utils::OpenHandle(*v8_context);
-  i::Handle<i::JSFunction> function =
-      isolate->factory()->NewFunctionFromSharedFunctionInfo(
-          shared, handle(context->native_context(), isolate));
-  module->set_code(*function);
-
-  i::Handle<i::FixedArray> regular_exports = i::handle(
-      shared->scope_info()->ModuleDescriptorInfo()->regular_exports(), isolate);
-  i::Handle<i::FixedArray> regular_imports = i::handle(
-      shared->scope_info()->ModuleDescriptorInfo()->regular_imports(), isolate);
-  i::Handle<i::FixedArray> special_exports = i::handle(
-      shared->scope_info()->ModuleDescriptorInfo()->special_exports(), isolate);
-
-  // Set up local exports.
-  for (int i = 0, n = regular_exports->length(); i < n; i += 2) {
-    i::Handle<i::FixedArray> export_names(
-        i::FixedArray::cast(regular_exports->get(i + 1)), isolate);
-    i::Module::CreateExport(module, export_names);
-  }
-
-  // Partially set up indirect exports.
-  // For each indirect export, we create the appropriate slot in the export
-  // table and store its ModuleInfoEntry there.  When we later find the correct
-  // Cell in the module that actually provides the value, we replace the
-  // ModuleInfoEntry by that Cell (see ResolveExport).
-  for (int i = 0, n = special_exports->length(); i < n; ++i) {
-    i::Handle<i::ModuleInfoEntry> entry(
-        i::ModuleInfoEntry::cast(special_exports->get(i)), isolate);
-    i::Handle<i::Object> export_name(entry->export_name(), isolate);
-    if (export_name->IsUndefined(isolate)) continue;  // Star export.
-    i::Module::CreateIndirectExport(
-        module, i::Handle<i::String>::cast(export_name), entry);
-  }
-
-  for (int i = 0, length = v8_module->GetModuleRequestsLength(); i < length;
-       ++i) {
-    Local<Module> requested_module;
-    // TODO(adamk): Revisit these failure cases once d8 knows how to
-    // persist a module_map across multiple top-level module loads, as
-    // the current module is left in a "half-instantiated" state.
-    if (!callback(v8_context, v8_module->GetModuleRequest(i), v8_module,
-                  callback_data)
-             .ToLocal(&requested_module)) {
-      // TODO(adamk): Give this a better error message. But this is a
-      // misuse of the API anyway.
-      isolate->ThrowIllegalOperation();
-      return false;
-    }
-    module->requested_modules()->set(i, *Utils::OpenHandle(*requested_module));
-    if (!InstantiateModule(requested_module, v8_context, callback,
-                           callback_data)) {
-      return false;
-    }
-  }
-
-  // Resolve imports.
-  for (int i = 0, n = regular_imports->length(); i < n; ++i) {
-    i::Handle<i::ModuleInfoEntry> entry(
-        i::ModuleInfoEntry::cast(regular_imports->get(i)), isolate);
-    i::Handle<i::String> name(i::String::cast(entry->import_name()), isolate);
-    int module_request = i::Smi::cast(entry->module_request())->value();
-    if (i::Module::ResolveImport(module, name, module_request, true)
-            .is_null()) {
-      return false;
-    }
-  }
-
-  // Resolve indirect exports.
-  for (int i = 0, n = special_exports->length(); i < n; ++i) {
-    i::Handle<i::ModuleInfoEntry> entry(
-        i::ModuleInfoEntry::cast(special_exports->get(i)), isolate);
-    i::Handle<i::Object> name(entry->export_name(), isolate);
-    if (name->IsUndefined(isolate)) continue;  // Star export.
-    if (i::Module::ResolveExport(module, i::Handle<i::String>::cast(name), true)
-            .is_null()) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 bool Module::Instantiate(Local<Context> context,
                          Module::ResolveCallback callback,
                          Local<Value> callback_data) {
   PREPARE_FOR_EXECUTION_BOOL(context, Module, Instantiate);
-  has_pending_exception =
-      !InstantiateModule(Utils::ToLocal(Utils::OpenHandle(this)), context,
-                         callback, callback_data);
+  has_pending_exception = !i::Module::Instantiate(
+      Utils::OpenHandle(this), context, callback, callback_data);
   RETURN_ON_FAILED_EXECUTION_BOOL();
   return true;
 }
@@ -2033,29 +1932,8 @@ MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
   // It's an API error to call Evaluate before Instantiate.
   CHECK(self->code()->IsJSFunction());
 
-  // Each module can only be evaluated once.
-  if (self->evaluated()) return Undefined(reinterpret_cast<Isolate*>(isolate));
-  self->set_evaluated(true);
-
-  i::Handle<i::FixedArray> requested_modules(self->requested_modules(),
-                                             isolate);
-  for (int i = 0, length = requested_modules->length(); i < length; ++i) {
-    i::Handle<i::Module> import(i::Module::cast(requested_modules->get(i)),
-                                isolate);
-    MaybeLocal<Value> maybe_result = Utils::ToLocal(import)->Evaluate(context);
-    if (maybe_result.IsEmpty()) return maybe_result;
-  }
-
-  i::Handle<i::JSFunction> function(i::JSFunction::cast(self->code()), isolate);
-  DCHECK_EQ(i::MODULE_SCOPE, function->shared()->scope_info()->scope_type());
-  i::Handle<i::Object> receiver = isolate->factory()->undefined_value();
-
   Local<Value> result;
-  i::Handle<i::Object> argv[] = {self};
-  has_pending_exception = !ToLocal<Value>(
-      i::Execution::Call(isolate, function, receiver, arraysize(argv), argv),
-      &result);
-
+  has_pending_exception = !ToLocal(i::Module::Evaluate(self), &result);
   RETURN_ON_FAILED_EXECUTION(Value);
   RETURN_ESCAPED(result);
 }
@@ -2337,6 +2215,9 @@ Local<Function> ScriptCompiler::CompileFunctionInContext(
 
 ScriptCompiler::ScriptStreamingTask* ScriptCompiler::StartStreamingScript(
     Isolate* v8_isolate, StreamedSource* source, CompileOptions options) {
+  if (!i::FLAG_script_streaming) {
+    return nullptr;
+  }
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
   return new i::BackgroundParsingTask(source->impl(), options,
                                       i::FLAG_stack_size, isolate);
@@ -3097,6 +2978,10 @@ void ValueSerializer::WriteUint64(uint64_t value) {
   private_->serializer.WriteUint64(value);
 }
 
+void ValueSerializer::WriteDouble(double value) {
+  private_->serializer.WriteDouble(value);
+}
+
 void ValueSerializer::WriteRawBytes(const void* source, size_t length) {
   private_->serializer.WriteRawBytes(source, length);
 }
@@ -3219,6 +3104,10 @@ bool ValueDeserializer::ReadUint32(uint32_t* value) {
 
 bool ValueDeserializer::ReadUint64(uint64_t* value) {
   return private_->deserializer.ReadUint64(value);
+}
+
+bool ValueDeserializer::ReadDouble(double* value) {
+  return private_->deserializer.ReadDouble(value);
 }
 
 bool ValueDeserializer::ReadRawBytes(size_t length, const void** data) {
@@ -3416,14 +3305,14 @@ bool Value::IsAsyncFunction() const {
   i::Handle<i::Object> obj = Utils::OpenHandle(this);
   if (!obj->IsJSFunction()) return false;
   i::Handle<i::JSFunction> func = i::Handle<i::JSFunction>::cast(obj);
-  return func->shared()->is_async();
+  return i::IsAsyncFunction(func->shared()->kind());
 }
 
 bool Value::IsGeneratorFunction() const {
   i::Handle<i::Object> obj = Utils::OpenHandle(this);
   if (!obj->IsJSFunction()) return false;
   i::Handle<i::JSFunction> func = i::Handle<i::JSFunction>::cast(obj);
-  return func->shared()->is_generator();
+  return i::IsGeneratorFunction(func->shared()->kind());
 }
 
 

@@ -24,6 +24,7 @@ class PlatformInterfaceDescriptor;
   V(LoadGlobalWithVector)                 \
   V(Store)                                \
   V(StoreWithVector)                      \
+  V(StoreNamedTransition)                 \
   V(StoreTransition)                      \
   V(VarArgFunction)                       \
   V(FastNewClosure)                       \
@@ -347,6 +348,24 @@ class StoreTransitionDescriptor : public StoreDescriptor {
 
   // Pass value, slot and vector through the stack.
   static const int kStackArgumentsCount = kPassLastArgsOnStack ? 3 : 0;
+};
+
+class StoreNamedTransitionDescriptor : public StoreTransitionDescriptor {
+ public:
+  DEFINE_PARAMETERS(kReceiver, kFieldOffset, kMap, kValue, kSlot, kVector,
+                    kName)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(StoreNamedTransitionDescriptor,
+                                               StoreTransitionDescriptor)
+
+  // Always pass name on the stack.
+  static const bool kPassLastArgsOnStack = true;
+  static const int kStackArgumentsCount =
+      StoreTransitionDescriptor::kStackArgumentsCount + 1;
+
+  static const Register NameRegister() { return no_reg; }
+  static const Register FieldOffsetRegister() {
+    return StoreTransitionDescriptor::NameRegister();
+  }
 };
 
 class StoreWithVectorDescriptor : public StoreDescriptor {
@@ -764,28 +783,35 @@ class InterpreterDispatchDescriptor : public CallInterfaceDescriptor {
 
 class InterpreterPushArgsAndCallDescriptor : public CallInterfaceDescriptor {
  public:
-  DECLARE_DESCRIPTOR(InterpreterPushArgsAndCallDescriptor,
-                     CallInterfaceDescriptor)
+  DEFINE_PARAMETERS(kNumberOfArguments, kFirstArgument, kFunction)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+      InterpreterPushArgsAndCallDescriptor, CallInterfaceDescriptor)
 };
 
 
 class InterpreterPushArgsAndConstructDescriptor
     : public CallInterfaceDescriptor {
  public:
-  DECLARE_DESCRIPTOR(InterpreterPushArgsAndConstructDescriptor,
-                     CallInterfaceDescriptor)
+  DEFINE_PARAMETERS(kNumberOfArguments, kNewTarget, kConstructor,
+                    kFeedbackElement, kFirstArgument)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+      InterpreterPushArgsAndConstructDescriptor, CallInterfaceDescriptor)
 };
 
 class InterpreterPushArgsAndConstructArrayDescriptor
     : public CallInterfaceDescriptor {
  public:
-  DECLARE_DESCRIPTOR(InterpreterPushArgsAndConstructArrayDescriptor,
-                     CallInterfaceDescriptor)
+  DEFINE_PARAMETERS(kNumberOfArguments, kFunction, kFeedbackElement,
+                    kFirstArgument)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
+      InterpreterPushArgsAndConstructArrayDescriptor, CallInterfaceDescriptor)
 };
 
 class InterpreterCEntryDescriptor : public CallInterfaceDescriptor {
  public:
-  DECLARE_DESCRIPTOR(InterpreterCEntryDescriptor, CallInterfaceDescriptor)
+  DEFINE_PARAMETERS(kNumberOfArguments, kFirstArgument, kFunctionEntry)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(InterpreterCEntryDescriptor,
+                                               CallInterfaceDescriptor)
 };
 
 class ResumeGeneratorDescriptor final : public CallInterfaceDescriptor {

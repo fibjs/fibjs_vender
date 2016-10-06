@@ -200,6 +200,7 @@
     <ClInclude Include="src\compiler\loop-analysis.h" />
     <ClInclude Include="src\compiler\loop-peeling.h" />
     <ClInclude Include="src\compiler\loop-variable-optimizer.h" />
+    <ClInclude Include="src\compiler\machine-graph-verifier.h" />
     <ClInclude Include="src\compiler\machine-operator-reducer.h" />
     <ClInclude Include="src\compiler\machine-operator.h" />
     <ClInclude Include="src\compiler\memory-optimizer.h" />
@@ -487,6 +488,7 @@
     <ClInclude Include="src\profiler\sampling-heap-profiler.h" />
     <ClInclude Include="src\profiler\strings-storage.h" />
     <ClInclude Include="src\profiler\tick-sample.h" />
+    <ClInclude Include="src\profiler\tracing-cpu-profiler.h" />
     <ClInclude Include="src\profiler\unbound-queue-inl.h" />
     <ClInclude Include="src\profiler\unbound-queue.h" />
     <ClInclude Include="src\property-descriptor.h" />
@@ -569,7 +571,6 @@
     <ClInclude Include="src\vm-state.h" />
     <ClInclude Include="src\wasm\ast-decoder.h" />
     <ClInclude Include="src\wasm\decoder.h" />
-    <ClInclude Include="src\wasm\encoder.h" />
     <ClInclude Include="src\wasm\leb-helper.h" />
     <ClInclude Include="src\wasm\module-decoder.h" />
     <ClInclude Include="src\wasm\switch-logic.h" />
@@ -579,6 +580,7 @@
     <ClInclude Include="src\wasm\wasm-interpreter.h" />
     <ClInclude Include="src\wasm\wasm-js.h" />
     <ClInclude Include="src\wasm\wasm-macro-gen.h" />
+    <ClInclude Include="src\wasm\wasm-module-builder.h" />
     <ClInclude Include="src\wasm\wasm-module.h" />
     <ClInclude Include="src\wasm\wasm-opcodes.h" />
     <ClInclude Include="src\wasm\wasm-result.h" />
@@ -691,6 +693,7 @@
     <ClCompile Include="src\builtins\builtins-object.cc" />
     <ClCompile Include="src\builtins\builtins-proxy.cc" />
     <ClCompile Include="src\builtins\builtins-reflect.cc" />
+    <ClCompile Include="src\builtins\builtins-regexp.cc" />
     <ClCompile Include="src\builtins\builtins-sharedarraybuffer.cc" />
     <ClCompile Include="src\builtins\builtins-string.cc" />
     <ClCompile Include="src\builtins\builtins-symbol.cc" />
@@ -778,6 +781,7 @@
     <ClCompile Include="src\compiler\loop-analysis.cc" />
     <ClCompile Include="src\compiler\loop-peeling.cc" />
     <ClCompile Include="src\compiler\loop-variable-optimizer.cc" />
+    <ClCompile Include="src\compiler\machine-graph-verifier.cc" />
     <ClCompile Include="src\compiler\machine-operator-reducer.cc" />
     <ClCompile Include="src\compiler\machine-operator.cc" />
     <ClCompile Include="src\compiler\memory-optimizer.cc" />
@@ -1002,7 +1006,6 @@
     <ClCompile Include="src\interpreter\bytecode-operands.cc" />
     <ClCompile Include="src\interpreter\bytecode-peephole-optimizer.cc" />
     <ClCompile Include="src\interpreter\bytecode-pipeline.cc" />
-    <ClCompile Include="src\interpreter\bytecode-register-allocator.cc" />
     <ClCompile Include="src\interpreter\bytecode-register-optimizer.cc" />
     <ClCompile Include="src\interpreter\bytecode-register.cc" />
     <ClCompile Include="src\interpreter\bytecodes.cc" />
@@ -1070,6 +1073,7 @@
     <ClCompile Include="src\profiler\sampling-heap-profiler.cc" />
     <ClCompile Include="src\profiler\strings-storage.cc" />
     <ClCompile Include="src\profiler\tick-sample.cc" />
+    <ClCompile Include="src\profiler\tracing-cpu-profiler.cc" />
     <ClCompile Include="src\property-descriptor.cc" />
     <ClCompile Include="src\property.cc" />
     <ClCompile Include="src\regexp\ia32\regexp-macro-assembler-ia32.cc" />
@@ -1159,7 +1163,6 @@
     <ClCompile Include="src\value-serializer.cc" />
     <ClCompile Include="src\version.cc" />
     <ClCompile Include="src\wasm\ast-decoder.cc" />
-    <ClCompile Include="src\wasm\encoder.cc" />
     <ClCompile Include="src\wasm\module-decoder.cc" />
     <ClCompile Include="src\wasm\switch-logic.cc" />
     <ClCompile Include="src\wasm\wasm-debug.cc" />
@@ -1167,6 +1170,7 @@
     <ClCompile Include="src\wasm\wasm-function-name-table.cc" />
     <ClCompile Include="src\wasm\wasm-interpreter.cc" />
     <ClCompile Include="src\wasm\wasm-js.cc" />
+    <ClCompile Include="src\wasm\wasm-module-builder.cc" />
     <ClCompile Include="src\wasm\wasm-module.cc" />
     <ClCompile Include="src\wasm\wasm-opcodes.cc" />
     <ClCompile Include="src\wasm\wasm-result.cc" />
@@ -1192,6 +1196,7 @@
     <ClCompile Include="src\x87\macro-assembler-x87.cc" />
     <ClCompile Include="src\x87\simulator-x87.cc" />
     <ClCompile Include="src\zone\accounting-allocator.cc" />
+    <ClCompile Include="src\zone\zone-segment.cc" />
     <ClCompile Include="src\zone\zone.cc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

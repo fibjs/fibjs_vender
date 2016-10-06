@@ -123,10 +123,14 @@ void TypeFeedbackVector::Set(FeedbackVectorSlot slot, Object* value,
 // Helper function to transform the feedback to BinaryOperationHint.
 BinaryOperationHint BinaryOperationHintFromFeedback(int type_feedback) {
   switch (type_feedback) {
+    case BinaryOperationFeedback::kNone:
+      return BinaryOperationHint::kNone;
     case BinaryOperationFeedback::kSignedSmall:
       return BinaryOperationHint::kSignedSmall;
     case BinaryOperationFeedback::kNumber:
       return BinaryOperationHint::kNumberOrOddball;
+    case BinaryOperationFeedback::kString:
+      return BinaryOperationHint::kString;
     case BinaryOperationFeedback::kAny:
     default:
       return BinaryOperationHint::kAny;
@@ -138,6 +142,8 @@ BinaryOperationHint BinaryOperationHintFromFeedback(int type_feedback) {
 // Helper function to transform the feedback to CompareOperationHint.
 CompareOperationHint CompareOperationHintFromFeedback(int type_feedback) {
   switch (type_feedback) {
+    case CompareOperationFeedback::kNone:
+      return CompareOperationHint::kNone;
     case CompareOperationFeedback::kSignedSmall:
       return CompareOperationHint::kSignedSmall;
     case CompareOperationFeedback::kNumber:
@@ -145,6 +151,8 @@ CompareOperationHint CompareOperationHintFromFeedback(int type_feedback) {
     default:
       return CompareOperationHint::kAny;
   }
+  UNREACHABLE();
+  return CompareOperationHint::kNone;
 }
 
 void TypeFeedbackVector::ComputeCounts(int* with_type_info, int* generic,

@@ -189,23 +189,26 @@ class WasmTrapHelper : public ZoneObject {
 
   Node* GetTrapValue(wasm::FunctionSig* sig) {
     if (sig->return_count() > 0) {
-      switch (sig->GetReturn()) {
-        case wasm::kAstI32:
-          return jsgraph()->Int32Constant(0xdeadbeef);
-        case wasm::kAstI64:
-          return jsgraph()->Int64Constant(0xdeadbeefdeadbeef);
-        case wasm::kAstF32:
-          return jsgraph()->Float32Constant(bit_cast<float>(0xdeadbeef));
-        case wasm::kAstF64:
-          return jsgraph()->Float64Constant(
-              bit_cast<double>(0xdeadbeefdeadbeef));
-          break;
-        default:
-          UNREACHABLE();
-          return nullptr;
-      }
+      return GetTrapValue(sig->GetReturn());
     } else {
       return jsgraph()->Int32Constant(0xdeadbeef);
+    }
+  }
+
+  Node* GetTrapValue(wasm::LocalType type) {
+    switch (type) {
+      case wasm::kAstI32:
+        return jsgraph()->Int32Constant(0xdeadbeef);
+      case wasm::kAstI64:
+        return jsgraph()->Int64Constant(0xdeadbeefdeadbeef);
+      case wasm::kAstF32:
+        return jsgraph()->Float32Constant(bit_cast<float>(0xdeadbeef));
+      case wasm::kAstF64:
+        return jsgraph()->Float64Constant(bit_cast<double>(0xdeadbeefdeadbeef));
+        break;
+      default:
+        UNREACHABLE();
+        return nullptr;
     }
   }
 
@@ -332,6 +335,19 @@ unsigned WasmGraphBuilder::InputCount(Node* node) {
 bool WasmGraphBuilder::IsPhiWithMerge(Node* phi, Node* merge) {
   return phi && IrOpcode::IsPhiOpcode(phi->opcode()) &&
          NodeProperties::GetControlInput(phi) == merge;
+}
+
+bool WasmGraphBuilder::ThrowsException(Node* node, Node** if_success,
+                                       Node** if_exception) {
+  if (node->op()->HasProperty(compiler::Operator::kNoThrow)) {
+    return false;
+  }
+
+  *if_success = graph()->NewNode(jsgraph()->common()->IfSuccess(), node);
+  *if_exception =
+      graph()->NewNode(jsgraph()->common()->IfException(), node, node);
+
+  return true;
 }
 
 void WasmGraphBuilder::AppendToMerge(Node* merge, Node* from) {
@@ -993,16 +1009,11 @@ Node* WasmGraphBuilder::Return(unsigned count, Node** vals) {
   DCHECK_NOT_NULL(*control_);
   DCHECK_NOT_NULL(*effect_);
 
-  if (count == 0) {
-    // Handle a return of void.
-    vals[0] = jsgraph()->Int32Constant(0);
-    count = 1;
-  }
-
   Node** buf = Realloc(vals, count, count + 2);
   buf[count] = *effect_;
   buf[count + 1] = *control_;
-  Node* ret = graph()->NewNode(jsgraph()->common()->Return(), count + 2, vals);
+  Node* ret =
+      graph()->NewNode(jsgraph()->common()->Return(count), count + 2, vals);
 
   MergeControlToEnd(jsgraph(), ret);
   return ret;
@@ -1726,6 +1737,50 @@ Node* WasmGraphBuilder::Throw(Node* input) {
                             arraysize(parameters), effect_, *control_);
 }
 
+Node* WasmGraphBuilder::Catch(Node* input, wasm::WasmCodePosition position) {
+  CommonOperatorBuilder* common = jsgraph()->common();
+
+  Node* parameters[] = {input};  // caught value
+  Node* value =
+      BuildCallToRuntime(Runtime::kWasmGetCaughtExceptionValue, jsgraph(),
+                         module_->instance->context, parameters,
+                         arraysize(parameters), effect_, *control_);
+
+  Node* is_smi;
+  Node* is_heap;
+  Branch(BuildTestNotSmi(value), &is_heap, &is_smi);
+
+  // is_smi
+  Node* smi_i32 = BuildChangeSmiToInt32(value);
+  Node* is_smi_effect = *effect_;
+
+  // is_heap
+  *control_ = is_heap;
+  Node* heap_f64 = BuildLoadHeapNumberValue(value, is_heap);
+
+  // *control_ needs to point to the current control dependency (is_heap) in
+  // case BuildI32SConvertF64 needs to insert nodes that depend on the "current"
+  // control node.
+  Node* heap_i32 = BuildI32SConvertF64(heap_f64, position);
+  // *control_ contains the control node that should be used when merging the
+  // result for the catch clause. It may be different than *control_ because
+  // BuildI32SConvertF64 may introduce a new control node (used for trapping if
+  // heap_f64 cannot be converted to an i32.
+  is_heap = *control_;
+  Node* is_heap_effect = *effect_;
+
+  Node* merge = graph()->NewNode(common->Merge(2), is_heap, is_smi);
+  Node* effect_merge = graph()->NewNode(common->EffectPhi(2), is_heap_effect,
+                                        is_smi_effect, merge);
+
+  Node* value_i32 = graph()->NewNode(
+      common->Phi(MachineRepresentation::kWord32, 2), heap_i32, smi_i32, merge);
+
+  *control_ = merge;
+  *effect_ = effect_merge;
+  return value_i32;
+}
+
 Node* WasmGraphBuilder::BuildI32DivS(Node* left, Node* right,
                                      wasm::WasmCodePosition position) {
   MachineOperatorBuilder* m = jsgraph()->machine();
@@ -1995,6 +2050,7 @@ Node* WasmGraphBuilder::BuildCCall(MachineSignature* sig, Node** args) {
 }
 
 Node* WasmGraphBuilder::BuildWasmCall(wasm::FunctionSig* sig, Node** args,
+                                      Node*** rets,
                                       wasm::WasmCodePosition position) {
   const size_t params = sig->parameter_count();
   const size_t extra = 2;  // effect and control inputs.
@@ -2014,32 +2070,37 @@ Node* WasmGraphBuilder::BuildWasmCall(wasm::FunctionSig* sig, Node** args,
   SetSourcePosition(call, position);
 
   *effect_ = call;
+  size_t ret_count = sig->return_count();
+  if (ret_count == 0) return call;  // No return value.
+
+  *rets = Buffer(ret_count);
+  if (ret_count == 1) {
+    // Only a single return value.
+    (*rets)[0] = call;
+  } else {
+    // Create projections for all return values.
+    for (size_t i = 0; i < ret_count; i++) {
+      (*rets)[i] = graph()->NewNode(jsgraph()->common()->Projection(i), call,
+                                    graph()->start());
+    }
+  }
   return call;
 }
 
-Node* WasmGraphBuilder::CallDirect(uint32_t index, Node** args,
+Node* WasmGraphBuilder::CallDirect(uint32_t index, Node** args, Node*** rets,
                                    wasm::WasmCodePosition position) {
   DCHECK_NULL(args[0]);
 
   // Add code object as constant.
-  args[0] = HeapConstant(module_->GetCodeOrPlaceholder(index));
+  Handle<Code> code = module_->GetFunctionCode(index);
+  DCHECK(!code.is_null());
+  args[0] = HeapConstant(code);
   wasm::FunctionSig* sig = module_->GetFunctionSignature(index);
 
-  return BuildWasmCall(sig, args, position);
+  return BuildWasmCall(sig, args, rets, position);
 }
 
-Node* WasmGraphBuilder::CallImport(uint32_t index, Node** args,
-                                   wasm::WasmCodePosition position) {
-  DCHECK_NULL(args[0]);
-
-  // Add code object as constant.
-  args[0] = HeapConstant(module_->GetImportCode(index));
-  wasm::FunctionSig* sig = module_->GetImportSignature(index);
-
-  return BuildWasmCall(sig, args, position);
-}
-
-Node* WasmGraphBuilder::CallIndirect(uint32_t index, Node** args,
+Node* WasmGraphBuilder::CallIndirect(uint32_t index, Node** args, Node*** rets,
                                      wasm::WasmCodePosition position) {
   DCHECK_NOT_NULL(args[0]);
   DCHECK(module_ && module_->instance);
@@ -2054,6 +2115,7 @@ Node* WasmGraphBuilder::CallIndirect(uint32_t index, Node** args,
   // Bounds check the index.
   uint32_t table_size =
       module_->IsValidTable(0) ? module_->GetTable(0)->max_size : 0;
+  wasm::FunctionSig* sig = module_->GetSignature(index);
   if (table_size > 0) {
     // Bounds check against the table size.
     Node* size = Uint32Constant(table_size);
@@ -2062,7 +2124,11 @@ Node* WasmGraphBuilder::CallIndirect(uint32_t index, Node** args,
   } else {
     // No function table. Generate a trap and return a constant.
     trap_->AddTrapIfFalse(wasm::kTrapFuncInvalid, Int32Constant(0), position);
-    return trap_->GetTrapValue(module_->GetSignature(index));
+    (*rets) = Buffer(sig->return_count());
+    for (size_t i = 0; i < sig->return_count(); i++) {
+      (*rets)[i] = trap_->GetTrapValue(sig->GetReturn(i));
+    }
+    return trap_->GetTrapValue(sig);
   }
   Node* table = FunctionTable(0);
 
@@ -2096,8 +2162,7 @@ Node* WasmGraphBuilder::CallIndirect(uint32_t index, Node** args,
       *effect_, *control_);
 
   args[0] = load_code;
-  wasm::FunctionSig* sig = module_->GetSignature(index);
-  return BuildWasmCall(sig, args, position);
+  return BuildWasmCall(sig, args, rets, position);
 }
 
 Node* WasmGraphBuilder::BuildI32Rol(Node* left, Node* right) {
@@ -2693,6 +2758,30 @@ Node* WasmGraphBuilder::MemBuffer(uint32_t offset) {
   }
 }
 
+Node* WasmGraphBuilder::CurrentMemoryPages() {
+  Runtime::FunctionId function_id = Runtime::kWasmMemorySize;
+  const Runtime::Function* function = Runtime::FunctionForId(function_id);
+  CallDescriptor* desc = Linkage::GetRuntimeCallDescriptor(
+      jsgraph()->zone(), function_id, function->nargs, Operator::kNoThrow,
+      CallDescriptor::kNoFlags);
+  wasm::ModuleEnv* module = module_;
+  Node* inputs[] = {
+      jsgraph()->CEntryStubConstant(function->result_size),  // C entry
+      jsgraph()->ExternalConstant(
+          ExternalReference(function_id, jsgraph()->isolate())),  // ref
+      jsgraph()->Int32Constant(function->nargs),                  // arity
+      jsgraph()->HeapConstant(module->instance->context),         // context
+      *effect_,
+      *control_};
+  Node* call = graph()->NewNode(jsgraph()->common()->Call(desc),
+                                static_cast<int>(arraysize(inputs)), inputs);
+
+  Node* result = BuildChangeSmiToInt32(call);
+
+  *effect_ = call;
+  return result;
+}
+
 Node* WasmGraphBuilder::MemSize(uint32_t offset) {
   DCHECK(module_ && module_->instance);
   uint32_t size = static_cast<uint32_t>(module_->instance->mem_size);
@@ -2758,19 +2847,34 @@ void WasmGraphBuilder::BoundsCheckMem(MachineType memtype, Node* index,
 
   // Check against the effective size.
   size_t effective_size;
-  if (offset >= size || (static_cast<uint64_t>(offset) + memsize) > size) {
+  if (size == 0) {
     effective_size = 0;
+  } else if (offset >= size ||
+             (static_cast<uint64_t>(offset) + memsize) > size) {
+    // Two checks are needed in the case where the offset is statically
+    // out of bounds; one check for the offset being in bounds, and the next for
+    // the offset + index being out of bounds for code to be patched correctly
+    // on relocation.
+    effective_size = size - memsize + 1;
+    Node* cond = graph()->NewNode(jsgraph()->machine()->Uint32LessThan(),
+                                  jsgraph()->IntPtrConstant(offset),
+                                  jsgraph()->RelocatableInt32Constant(
+                                      static_cast<uint32_t>(effective_size),
+                                      RelocInfo::WASM_MEMORY_SIZE_REFERENCE));
+    trap_->AddTrapIfFalse(wasm::kTrapMemOutOfBounds, cond, position);
+    DCHECK(offset >= effective_size);
+    effective_size = offset - effective_size;
   } else {
     effective_size = size - offset - memsize + 1;
-  }
-  CHECK(effective_size <= kMaxUInt32);
+    CHECK(effective_size <= kMaxUInt32);
 
-  Uint32Matcher m(index);
-  if (m.HasValue()) {
-    uint32_t value = m.Value();
-    if (value < effective_size) {
-      // The bounds check will always succeed.
-      return;
+    Uint32Matcher m(index);
+    if (m.HasValue()) {
+      uint32_t value = m.Value();
+      if (value < effective_size) {
+        // The bounds check will always succeed.
+        return;
+      }
     }
   }
 

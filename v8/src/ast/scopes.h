@@ -74,6 +74,7 @@ class Scope: public ZoneObject {
   void SetScopeName(const AstRawString* scope_name) {
     scope_name_ = scope_name;
   }
+  void set_needs_migration() { needs_migration_ = true; }
 #endif
 
   // TODO(verwaest): Is this needed on Scope?
@@ -171,6 +172,7 @@ class Scope: public ZoneObject {
   // allocated globally as a "ghost" variable. RemoveUnresolved removes
   // such a variable again if it was added; otherwise this is a no-op.
   bool RemoveUnresolved(VariableProxy* var);
+  bool RemoveUnresolved(const AstRawString* name);
 
   // Creates a new temporary variable in this scope's TemporaryScope.  The
   // name is only used for printing and cannot be used to find the variable.
@@ -342,8 +344,9 @@ class Scope: public ZoneObject {
   int StackLocalCount() const;
   int ContextLocalCount() const;
 
-  // Determine if we can parse a function literal in this scope lazily.
-  bool AllowsLazyParsing() const;
+  // Determine if we can parse a function literal in this scope lazily without
+  // caring about the unresolved variables within.
+  bool AllowsLazyParsingWithoutUnresolvedVariables() const;
 
   // The number of contexts between this and scope; zero if this == scope.
   int ContextChainLength(Scope* scope) const;
@@ -414,9 +417,7 @@ class Scope: public ZoneObject {
   void set_is_debug_evaluate_scope() { is_debug_evaluate_scope_ = true; }
   bool is_debug_evaluate_scope() const { return is_debug_evaluate_scope_; }
 
-  void set_is_lazily_parsed(bool is_lazily_parsed) {
-    is_lazily_parsed_ = is_lazily_parsed;
-  }
+  bool is_lazily_parsed() const { return is_lazily_parsed_; }
 
  protected:
   explicit Scope(Zone* zone);
@@ -484,7 +485,10 @@ class Scope: public ZoneObject {
 
   // True if it doesn't need scope resolution (e.g., if the scope was
   // constructed based on a serialized scope info or a catch context).
-  bool already_resolved_ : 1;
+  bool already_resolved_;
+  // True if this scope may contain objects from a temp zone that needs to be
+  // fixed up.
+  bool needs_migration_;
 #endif
 
   // Source positions.
@@ -538,6 +542,7 @@ class Scope: public ZoneObject {
   // list along the way, so full resolution cannot be done afterwards.
   // If a ParseInfo* is passed, non-free variables will be resolved.
   VariableProxy* FetchFreeVariables(DeclarationScope* max_outer_scope,
+                                    bool try_to_resolve = true,
                                     ParseInfo* info = nullptr,
                                     VariableProxy* stack = nullptr);
 
@@ -564,6 +569,7 @@ class Scope: public ZoneObject {
         Handle<ScopeInfo> scope_info);
 
   void AddInnerScope(Scope* inner_scope) {
+    DCHECK_EQ(!needs_migration_, inner_scope->zone() == zone());
     inner_scope->sibling_ = inner_scope_;
     inner_scope_ = inner_scope;
     inner_scope->outer_scope_ = this;
@@ -777,8 +783,7 @@ class DeclarationScope : public Scope {
   // records variables which cannot be resolved inside the Scope (we don't yet
   // know what they will resolve to since the outer Scopes are incomplete) and
   // migrates them into migrate_to.
-  void AnalyzePartially(DeclarationScope* migrate_to,
-                        AstNodeFactory* ast_node_factory);
+  void AnalyzePartially(AstNodeFactory* ast_node_factory);
 
   Handle<StringSet> CollectNonLocals(ParseInfo* info,
                                      Handle<StringSet> non_locals);
@@ -805,6 +810,8 @@ class DeclarationScope : public Scope {
   void AllocateLocals();
   void AllocateParameterLocals();
   void AllocateReceiver();
+
+  void ResetAfterPreparsing(AstValueFactory* ast_value_factory, bool aborted);
 
  private:
   void AllocateParameter(Variable* var, int index);

@@ -152,7 +152,8 @@ struct ParserTypes<Parser> {
   typedef ObjectLiteral::Property* ObjectLiteralProperty;
   typedef ClassLiteral::Property* ClassLiteralProperty;
   typedef ZoneList<v8::internal::Expression*>* ExpressionList;
-  typedef ZoneList<ObjectLiteral::Property*>* PropertyList;
+  typedef ZoneList<ObjectLiteral::Property*>* ObjectPropertyList;
+  typedef ZoneList<ClassLiteral::Property*>* ClassPropertyList;
   typedef ParserFormalParameters FormalParameters;
   typedef v8::internal::Statement* Statement;
   typedef ZoneList<v8::internal::Statement*>* StatementList;
@@ -211,11 +212,11 @@ class Parser : public ParserBase<Parser> {
     kAbruptCompletion
   };
 
-  enum class FunctionBodyType { kNormal, kSingleExpression };
-
   Variable* NewTemporary(const AstRawString* name) {
     return scope()->NewTemporary(name);
   }
+
+  void PrepareGeneratorVariables(FunctionState* function_state);
 
   // Limit the allowed number of local variables in a function. The hard limit
   // is that offsets computed by FullCodeGenerator::StackOperand and similar
@@ -270,13 +271,6 @@ class Parser : public ParserBase<Parser> {
           location(location) {}
   };
   ZoneList<const NamedImport*>* ParseNamedImports(int pos, bool* ok);
-  Statement* ParseFunctionDeclaration(bool* ok);
-  Statement* ParseAsyncFunctionDeclaration(ZoneList<const AstRawString*>* names,
-                                           bool default_export, bool* ok);
-  Expression* ParseAsyncFunctionExpression(bool* ok);
-  Statement* ParseClassDeclaration(ZoneList<const AstRawString*>* names,
-                                   bool default_export, bool* ok);
-  Statement* ParseNativeDeclaration(bool* ok);
   Block* BuildInitializationBlock(DeclarationParsingResult* parsing_result,
                                   ZoneList<const AstRawString*>* names,
                                   bool* ok);
@@ -302,8 +296,21 @@ class Parser : public ParserBase<Parser> {
                              FunctionLiteral* function, int pos,
                              bool is_generator, bool is_async,
                              ZoneList<const AstRawString*>* names, bool* ok);
-
-  Expression* ParseYieldStarExpression(bool* ok);
+  V8_INLINE Statement* DeclareClass(const AstRawString* variable_name,
+                                    Expression* value,
+                                    ZoneList<const AstRawString*>* names,
+                                    int class_token_pos, int end_pos, bool* ok);
+  V8_INLINE void DeclareClassVariable(const AstRawString* name,
+                                      Scope* block_scope, ClassInfo* class_info,
+                                      int class_token_pos, bool* ok);
+  V8_INLINE void DeclareClassProperty(const AstRawString* class_name,
+                                      ClassLiteralProperty* property,
+                                      ClassInfo* class_info, bool* ok);
+  V8_INLINE Expression* RewriteClassLiteral(const AstRawString* name,
+                                            ClassInfo* class_info, int pos,
+                                            bool* ok);
+  V8_INLINE Statement* DeclareNative(const AstRawString* name, int pos,
+                                     bool* ok);
 
   class PatternRewriter final : public AstVisitor<PatternRewriter> {
    public:
@@ -411,10 +418,6 @@ class Parser : public ParserBase<Parser> {
       ForStatement* loop, Statement* init, Expression* cond, Statement* next,
       Statement* body, Scope* inner_scope, const ForInfo& for_info, bool* ok);
 
-  void DesugarAsyncFunctionBody(Scope* scope, ZoneList<Statement*>* body,
-                                FunctionKind kind, FunctionBodyType type,
-                                bool accept_IN, int pos, bool* ok);
-
   Expression* RewriteDoExpression(Block* body, int pos, bool* ok);
 
   FunctionLiteral* ParseFunctionLiteral(
@@ -427,11 +430,6 @@ class Parser : public ParserBase<Parser> {
                                 Expression* home_object);
   FunctionLiteral* SynthesizeClassFieldInitializer(int count);
   FunctionLiteral* InsertClassFieldInitializer(FunctionLiteral* constructor);
-
-  Expression* ParseClassLiteral(const AstRawString* name,
-                                Scanner::Location class_name_location,
-                                bool name_is_strict_reserved, int pos,
-                                bool* ok);
 
   // Get odd-ball literals.
   Literal* GetLiteralUndefined(int position);
@@ -484,10 +482,11 @@ class Parser : public ParserBase<Parser> {
   // in order to force the function to be eagerly parsed, after all.
   LazyParsingResult SkipLazyFunctionBody(int* materialized_literal_count,
                                          int* expected_property_count,
-                                         bool may_abort, bool* ok);
+                                         bool is_inner_function, bool may_abort,
+                                         bool* ok);
 
   PreParser::PreParseResult ParseLazyFunctionBodyWithPreParser(
-      SingletonLogger* logger, bool may_abort);
+      SingletonLogger* logger, bool is_inner_function, bool may_abort);
 
   Block* BuildParameterInitializationBlock(
       const ParserFormalParameters& parameters, bool* ok);
@@ -540,14 +539,6 @@ class Parser : public ParserBase<Parser> {
                                    Expression* tag);
   uint32_t ComputeTemplateLiteralHash(const TemplateLiteral* lit);
 
-  void ParseAsyncArrowSingleExpressionBody(ZoneList<Statement*>* body,
-                                           bool accept_IN,
-                                           int pos, bool* ok) {
-    DesugarAsyncFunctionBody(scope(), body, kAsyncArrowFunction,
-                             FunctionBodyType::kSingleExpression, accept_IN,
-                             pos, ok);
-  }
-
   ZoneList<Expression*>* PrepareSpreadArguments(ZoneList<Expression*>* list);
   Expression* SpreadCall(Expression* function, ZoneList<Expression*>* args,
                          int pos);
@@ -583,6 +574,7 @@ class Parser : public ParserBase<Parser> {
   friend class InitializerRewriter;
   void RewriteParameterInitializer(Expression* expr, Scope* scope);
 
+  Expression* BuildInitialYield(int pos, FunctionKind kind);
   Expression* BuildCreateJSGeneratorObject(int pos, FunctionKind kind);
   Expression* BuildResolvePromise(Expression* value, int pos);
   Expression* BuildRejectPromise(Expression* value, int pos);
@@ -606,13 +598,18 @@ class Parser : public ParserBase<Parser> {
   Statement* CheckCallable(Variable* var, Expression* error, int pos);
 
   V8_INLINE Expression* RewriteAwaitExpression(Expression* value, int pos);
+  V8_INLINE void PrepareAsyncFunctionBody(ZoneList<Statement*>* body,
+                                          FunctionKind kind, int pos);
+  V8_INLINE void RewriteAsyncFunctionBody(ZoneList<Statement*>* body,
+                                          Block* block,
+                                          Expression* return_value, bool* ok);
 
   Expression* RewriteYieldStar(Expression* generator, Expression* expression,
                                int pos);
 
-  void ParseArrowFunctionFormalParameters(ParserFormalParameters* parameters,
-                                          Expression* params, int end_pos,
-                                          bool* ok);
+  void AddArrowFunctionFormalParameters(ParserFormalParameters* parameters,
+                                        Expression* params, int end_pos,
+                                        bool* ok);
   void SetFunctionName(Expression* value, const AstRawString* name);
 
   // Helper functions for recursive descent.
@@ -750,8 +747,14 @@ class Parser : public ParserBase<Parser> {
     fni_->PushEnclosingName(name);
   }
 
-  V8_INLINE void InferFunctionName(FunctionLiteral* func_to_infer) {
+  V8_INLINE void AddFunctionForNameInference(FunctionLiteral* func_to_infer) {
+    DCHECK_NOT_NULL(fni_);
     fni_->AddFunction(func_to_infer);
+  }
+
+  V8_INLINE void InferFunctionName() {
+    DCHECK_NOT_NULL(fni_);
+    fni_->Infer();
   }
 
   // If we assign a function literal to a property we pretenure the
@@ -947,7 +950,7 @@ class Parser : public ParserBase<Parser> {
   V8_INLINE ZoneList<Expression*>* NewExpressionList(int size) const {
     return new (zone()) ZoneList<Expression*>(size, zone());
   }
-  V8_INLINE ZoneList<ObjectLiteral::Property*>* NewPropertyList(
+  V8_INLINE ZoneList<ObjectLiteral::Property*>* NewObjectPropertyList(
       int size) const {
     return new (zone()) ZoneList<ObjectLiteral::Property*>(size, zone());
   }
@@ -1024,10 +1027,11 @@ class Parser : public ParserBase<Parser> {
     }
   }
 
-  void ParseArrowFunctionFormalParameterList(
-      ParserFormalParameters* parameters, Expression* params,
-      const Scanner::Location& params_loc, Scanner::Location* duplicate_loc,
-      const Scope::Snapshot& scope_snapshot, bool* ok);
+  void DeclareArrowFunctionFormalParameters(ParserFormalParameters* parameters,
+                                            Expression* params,
+                                            const Scanner::Location& params_loc,
+                                            Scanner::Location* duplicate_loc,
+                                            bool* ok);
 
   void ReindexLiterals(const ParserFormalParameters& parameters);
 
@@ -1063,6 +1067,9 @@ class Parser : public ParserBase<Parser> {
   }
 
   // Parser's private field members.
+  friend class DiscardableZoneScope;  // Uses reusable_preparser_.
+  // FIXME(marja): Make reusable_preparser_ always use its own temp Zone (call
+  // DeleteAll after each function), so this won't be needed.
 
   Scanner scanner_;
   PreParser* reusable_preparser_;

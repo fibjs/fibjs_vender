@@ -186,11 +186,8 @@ VariableProxy::VariableProxy(const VariableProxy* copy_from)
       end_position_(copy_from->end_position_),
       next_unresolved_(nullptr) {
   bit_field_ = copy_from->bit_field_;
-  if (copy_from->is_resolved()) {
-    var_ = copy_from->var_;
-  } else {
-    raw_name_ = copy_from->raw_name_;
-  }
+  DCHECK(!copy_from->is_resolved());
+  raw_name_ = copy_from->raw_name_;
 }
 
 void VariableProxy::BindTo(Variable* var) {
@@ -316,6 +313,7 @@ LanguageMode FunctionLiteral::language_mode() const {
   return scope()->language_mode();
 }
 
+FunctionKind FunctionLiteral::kind() const { return scope()->function_kind(); }
 
 bool FunctionLiteral::NeedsHomeObject(Expression* expr) {
   if (expr == nullptr || !expr->IsFunctionLiteral()) return false;
@@ -460,8 +458,8 @@ void ObjectLiteral::CalculateEmitStore(Zone* zone) {
 
   ZoneAllocationPolicy allocator(zone);
 
-  ZoneHashMap table(Literal::Match, ZoneHashMap::kDefaultHashMapCapacity,
-                    allocator);
+  CustomMatcherZoneHashMap table(
+      Literal::Match, ZoneHashMap::kDefaultHashMapCapacity, allocator);
   for (int i = properties()->length() - 1; i >= 0; i--) {
     ObjectLiteral::Property* property = properties()->at(i);
     if (property->is_computed_name()) continue;

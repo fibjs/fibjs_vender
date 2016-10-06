@@ -25,6 +25,16 @@
 namespace v8 {
 namespace internal {
 
+AllocationSpace AllocationResult::RetrySpace() {
+  DCHECK(IsRetry());
+  return static_cast<AllocationSpace>(Smi::cast(object_)->value());
+}
+
+HeapObject* AllocationResult::ToObjectChecked() {
+  CHECK(!IsRetry());
+  return HeapObject::cast(object_);
+}
+
 void PromotionQueue::insert(HeapObject* target, int32_t size,
                             bool was_marked_black) {
   if (emergency_stack_ != NULL) {
@@ -146,30 +156,12 @@ ROOT_LIST(ROOT_ACCESSOR)
 #undef ROOT_ACCESSOR
 
 PagedSpace* Heap::paged_space(int idx) {
-  switch (idx) {
-    case OLD_SPACE:
-      return old_space();
-    case MAP_SPACE:
-      return map_space();
-    case CODE_SPACE:
-      return code_space();
-    case NEW_SPACE:
-    case LO_SPACE:
-      UNREACHABLE();
-  }
-  return NULL;
+  DCHECK_NE(idx, LO_SPACE);
+  DCHECK_NE(idx, NEW_SPACE);
+  return static_cast<PagedSpace*>(space_[idx]);
 }
 
-Space* Heap::space(int idx) {
-  switch (idx) {
-    case NEW_SPACE:
-      return new_space();
-    case LO_SPACE:
-      return lo_space();
-    default:
-      return paged_space(idx);
-  }
-}
+Space* Heap::space(int idx) { return space_[idx]; }
 
 Address* Heap::NewSpaceAllocationTopAddress() {
   return new_space_->allocation_top_address();
@@ -185,18 +177,6 @@ Address* Heap::OldSpaceAllocationTopAddress() {
 
 Address* Heap::OldSpaceAllocationLimitAddress() {
   return old_space_->allocation_limit_address();
-}
-
-bool Heap::HeapIsFullEnoughToStartIncrementalMarking(intptr_t limit) {
-  if (FLAG_stress_compaction && (gc_count_ & 1) != 0) return true;
-
-  intptr_t adjusted_allocation_limit = limit - new_space_->Capacity();
-
-  if (PromotedTotalSize() >= adjusted_allocation_limit) return true;
-
-  if (HighMemoryPressure()) return true;
-
-  return false;
 }
 
 void Heap::UpdateNewSpaceAllocationCounter() {
@@ -510,35 +490,11 @@ bool Heap::InOldSpaceSlow(Address address) {
   return old_space_->ContainsSlow(address);
 }
 
-bool Heap::OldGenerationAllocationLimitReached() {
-  if (!incremental_marking()->IsStopped() && !ShouldOptimizeForMemoryUsage()) {
-    return false;
-  }
-  return OldGenerationSpaceAvailable() < 0;
-}
-
-template <PromotionMode promotion_mode>
 bool Heap::ShouldBePromoted(Address old_address, int object_size) {
   Page* page = Page::FromAddress(old_address);
   Address age_mark = new_space_->age_mark();
-
-  if (promotion_mode == PROMOTE_MARKED) {
-    MarkBit mark_bit = ObjectMarking::MarkBitFrom(old_address);
-    if (!Marking::IsWhite(mark_bit)) {
-      return true;
-    }
-  }
-
   return page->IsFlagSet(MemoryChunk::NEW_SPACE_BELOW_AGE_MARK) &&
          (!page->ContainsLimit(age_mark) || old_address < age_mark);
-}
-
-PromotionMode Heap::CurrentPromotionMode() {
-  if (incremental_marking()->IsMarking()) {
-    return PROMOTE_MARKED;
-  } else {
-    return DEFAULT_PROMOTION;
-  }
 }
 
 void Heap::RecordWrite(Object* object, int offset, Object* o) {

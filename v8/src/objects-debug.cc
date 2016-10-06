@@ -786,6 +786,7 @@ void JSStringIterator::JSStringIteratorVerify() {
   CHECK(IsJSStringIterator());
   JSObjectVerify();
   CHECK(string()->IsString());
+
   CHECK_GE(index(), 0);
   CHECK_LE(index(), String::kMaxLength);
 }
@@ -887,9 +888,7 @@ void JSTypedArray::JSTypedArrayVerify() {
   CHECK(IsJSTypedArray());
   JSArrayBufferViewVerify();
   VerifyPointer(raw_length());
-  CHECK(raw_length()->IsSmi() || raw_length()->IsHeapNumber() ||
-        raw_length()->IsUndefined(GetIsolate()));
-
+  CHECK(raw_length()->IsSmi() || raw_length()->IsUndefined(GetIsolate()));
   VerifyPointer(elements());
 }
 
@@ -928,6 +927,7 @@ void Module::ModuleVerify() {
   requested_modules()->ObjectVerify();
   VerifySmiField(kFlagsOffset);
   embedder_data()->ObjectVerify();
+  CHECK(shared()->name()->IsSymbol());
   // TODO(neis): Check more.
 }
 
