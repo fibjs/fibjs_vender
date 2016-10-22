@@ -365,7 +365,7 @@ void FullCodeGenerator::Generate() {
 
 
 void FullCodeGenerator::ClearAccumulator() {
-  DCHECK(Smi::FromInt(0) == 0);
+  DCHECK(Smi::kZero == 0);
   __ mov(v0, zero_reg);
 }
 
@@ -1016,8 +1016,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ LoadRoot(at, Heap::kUndefinedValueRootIndex);  // In delay slot.
   __ Branch(&exit, eq, a0, Operand(at));
   __ bind(&convert);
-  ToObjectStub stub(isolate());
-  __ CallStub(&stub);
+  __ Call(isolate()->builtins()->ToObject(), RelocInfo::CODE_TARGET);
   RestoreContext();
   __ mov(a0, v0);
   __ bind(&done_convert);
@@ -1056,14 +1055,14 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ bind(&use_cache);
 
   __ EnumLength(a1, v0);
-  __ Branch(&no_descriptors, eq, a1, Operand(Smi::FromInt(0)));
+  __ Branch(&no_descriptors, eq, a1, Operand(Smi::kZero));
 
   __ LoadInstanceDescriptors(v0, a2);
   __ ld(a2, FieldMemOperand(a2, DescriptorArray::kEnumCacheOffset));
   __ ld(a2, FieldMemOperand(a2, DescriptorArray::kEnumCacheBridgeCacheOffset));
 
   // Set up the four remaining stack slots.
-  __ li(a0, Operand(Smi::FromInt(0)));
+  __ li(a0, Operand(Smi::kZero));
   // Push map, enumeration cache, enumeration cache length (as smi) and zero.
   __ Push(v0, a2, a1, a0);
   __ jmp(&loop);
@@ -1080,7 +1079,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ ld(a1, FieldMemOperand(v0, FixedArray::kLengthOffset));
   __ Push(a1);  // Fixed array length (as smi).
   PrepareForBailoutForId(stmt->PrepareId(), BailoutState::NO_REGISTERS);
-  __ li(a0, Operand(Smi::FromInt(0)));
+  __ li(a0, Operand(Smi::kZero));
   __ Push(a0);  // Initial index.
 
   // Generate code for doing the condition check.
@@ -1118,10 +1117,9 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
   __ mov(a0, result_register());
   // a0 contains the key. The receiver in a1 is the second argument to the
-  // ForInFilterStub. ForInFilter returns undefined if the receiver doesn't
+  // ForInFilter. ForInFilter returns undefined if the receiver doesn't
   // have the key or returns the name-converted key.
-  ForInFilterStub filter_stub(isolate());
-  __ CallStub(&filter_stub);
+  __ Call(isolate()->builtins()->ForInFilter(), RelocInfo::CODE_TARGET);
   RestoreContext();
   PrepareForBailoutForId(stmt->FilterId(), BailoutState::TOS_REGISTER);
   __ LoadRoot(at, Heap::kUndefinedValueRootIndex);
@@ -1294,7 +1292,7 @@ void FullCodeGenerator::EmitVariableLoad(VariableProxy* proxy,
       DCHECK_EQ(NOT_INSIDE_TYPEOF, typeof_mode);
       Comment cmnt(masm_, var->IsContextSlot() ? "[ Context variable"
                                                : "[ Stack variable");
-      if (NeedsHoleCheckForLoad(proxy)) {
+      if (proxy->needs_hole_check()) {
         // Throw a reference error when using an uninitialized let/const
         // binding in harmony mode.
         Label done;
@@ -1936,7 +1934,7 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       __ Branch(USE_DELAY_SLOT, &done, ne, v0, Operand(zero_reg));
       __ Daddu(scratch2, right, left);
       __ Branch(&stub_call, lt, scratch2, Operand(zero_reg));
-      DCHECK(Smi::FromInt(0) == 0);
+      DCHECK(Smi::kZero == 0);
       __ mov(v0, zero_reg);
       break;
     }
@@ -2397,14 +2395,12 @@ void FullCodeGenerator::EmitCall(Call* expr, ConvertReceiverMode mode) {
     // not return to this function.
     EmitProfilingCounterHandlingForReturnSequence(true);
   }
-  Handle<Code> ic =
-      CodeFactory::CallIC(isolate(), arg_count, mode, expr->tail_call_mode())
-          .code();
+  Handle<Code> code =
+      CodeFactory::CallIC(isolate(), mode, expr->tail_call_mode()).code();
   __ li(a3, Operand(SmiFromSlot(expr->CallFeedbackICSlot())));
   __ ld(a1, MemOperand(sp, (arg_count + 1) * kPointerSize));
-  // Don't assign a type feedback id to the IC, since type feedback is provided
-  // by the vector above.
-  CallIC(ic);
+  __ li(a0, Operand(arg_count));
+  __ Call(code, RelocInfo::CODE_TARGET);
   OperandStackDepthDecrement(arg_count + 1);
 
   RecordJSReturnSite(expr);
@@ -2507,11 +2503,13 @@ void FullCodeGenerator::EmitPossiblyEvalCall(Call* expr) {
   PrepareForBailoutForId(expr->EvalId(), BailoutState::NO_REGISTERS);
   // Record source position for debugger.
   SetCallPosition(expr);
+  Handle<Code> code = CodeFactory::CallIC(isolate(), ConvertReceiverMode::kAny,
+                                          expr->tail_call_mode())
+                          .code();
+  __ li(a3, Operand(SmiFromSlot(expr->CallFeedbackICSlot())));
   __ ld(a1, MemOperand(sp, (arg_count + 1) * kPointerSize));
   __ li(a0, Operand(arg_count));
-  __ Call(isolate()->builtins()->Call(ConvertReceiverMode::kAny,
-                                      expr->tail_call_mode()),
-          RelocInfo::CODE_TARGET);
+  __ Call(code, RelocInfo::CODE_TARGET);
   OperandStackDepthDecrement(arg_count + 1);
   RecordJSReturnSite(expr);
   RestoreContext();
@@ -2847,42 +2845,6 @@ void FullCodeGenerator::EmitCall(CallRuntime* expr) {
   context()->DropAndPlug(1, v0);
 }
 
-
-void FullCodeGenerator::EmitHasCachedArrayIndex(CallRuntime* expr) {
-  ZoneList<Expression*>* args = expr->arguments();
-  VisitForAccumulatorValue(args->at(0));
-
-  Label materialize_true, materialize_false;
-  Label* if_true = NULL;
-  Label* if_false = NULL;
-  Label* fall_through = NULL;
-  context()->PrepareTest(&materialize_true, &materialize_false,
-                         &if_true, &if_false, &fall_through);
-
-  __ lwu(a0, FieldMemOperand(v0, String::kHashFieldOffset));
-  __ And(a0, a0, Operand(String::kContainsCachedArrayIndexMask));
-
-  PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  Split(eq, a0, Operand(zero_reg), if_true, if_false, fall_through);
-
-  context()->Plug(if_true, if_false);
-}
-
-
-void FullCodeGenerator::EmitGetCachedArrayIndex(CallRuntime* expr) {
-  ZoneList<Expression*>* args = expr->arguments();
-  DCHECK(args->length() == 1);
-  VisitForAccumulatorValue(args->at(0));
-
-  __ AssertString(v0);
-
-  __ lwu(v0, FieldMemOperand(v0, String::kHashFieldOffset));
-  __ IndexFromHash(v0, v0);
-
-  context()->Plug(v0);
-}
-
-
 void FullCodeGenerator::EmitGetSuperConstructor(CallRuntime* expr) {
   ZoneList<Expression*>* args = expr->arguments();
   DCHECK_EQ(1, args->length());
@@ -3061,8 +3023,7 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
         VisitForTypeofValue(expr->expression());
       }
       __ mov(a3, v0);
-      TypeofStub typeof_stub(isolate());
-      __ CallStub(&typeof_stub);
+      __ Call(isolate()->builtins()->Typeof(), RelocInfo::CODE_TARGET);
       context()->Plug(v0);
       break;
     }
@@ -3089,7 +3050,7 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
   } else {
     // Reserve space for result of postfix operation.
     if (expr->is_postfix() && !context()->IsEffect()) {
-      __ li(at, Operand(Smi::FromInt(0)));
+      __ li(at, Operand(Smi::kZero));
       PushOperand(at);
     }
     switch (assign_type) {
@@ -3431,8 +3392,7 @@ void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
       SetExpressionPosition(expr);
       __ mov(a0, result_register());
       PopOperand(a1);
-      InstanceOfStub stub(isolate());
-      __ CallStub(&stub);
+      __ Call(isolate()->builtins()->InstanceOf(), RelocInfo::CODE_TARGET);
       PrepareForBailoutBeforeSplit(expr, false, NULL, NULL);
       __ LoadRoot(a4, Heap::kTrueValueRootIndex);
       Split(eq, v0, Operand(a4), if_true, if_false, fall_through);

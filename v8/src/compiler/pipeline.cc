@@ -70,7 +70,7 @@
 #include "src/compiler/typer.h"
 #include "src/compiler/value-numbering-reducer.h"
 #include "src/compiler/verifier.h"
-#include "src/compiler/zone-pool.h"
+#include "src/compiler/zone-stats.h"
 #include "src/isolate-inl.h"
 #include "src/ostreams.h"
 #include "src/parsing/parse-info.h"
@@ -85,19 +85,19 @@ namespace compiler {
 class PipelineData {
  public:
   // For main entry point.
-  PipelineData(ZonePool* zone_pool, CompilationInfo* info,
+  PipelineData(ZoneStats* zone_stats, CompilationInfo* info,
                PipelineStatistics* pipeline_statistics)
       : isolate_(info->isolate()),
         info_(info),
         debug_name_(info_->GetDebugName()),
         outer_zone_(info_->zone()),
-        zone_pool_(zone_pool),
+        zone_stats_(zone_stats),
         pipeline_statistics_(pipeline_statistics),
-        graph_zone_scope_(zone_pool_),
+        graph_zone_scope_(zone_stats_, ZONE_NAME),
         graph_zone_(graph_zone_scope_.zone()),
-        instruction_zone_scope_(zone_pool_),
+        instruction_zone_scope_(zone_stats_, ZONE_NAME),
         instruction_zone_(instruction_zone_scope_.zone()),
-        register_allocation_zone_scope_(zone_pool_),
+        register_allocation_zone_scope_(zone_stats_, ZONE_NAME),
         register_allocation_zone_(register_allocation_zone_scope_.zone()) {
     PhaseScope scope(pipeline_statistics, "init pipeline data");
     graph_ = new (graph_zone_) Graph(graph_zone_);
@@ -114,48 +114,48 @@ class PipelineData {
   }
 
   // For WASM compile entry point.
-  PipelineData(ZonePool* zone_pool, CompilationInfo* info, Graph* graph,
+  PipelineData(ZoneStats* zone_stats, CompilationInfo* info, Graph* graph,
                SourcePositionTable* source_positions)
       : isolate_(info->isolate()),
         info_(info),
         debug_name_(info_->GetDebugName()),
-        zone_pool_(zone_pool),
-        graph_zone_scope_(zone_pool_),
+        zone_stats_(zone_stats),
+        graph_zone_scope_(zone_stats_, ZONE_NAME),
         graph_(graph),
         source_positions_(source_positions),
-        instruction_zone_scope_(zone_pool_),
+        instruction_zone_scope_(zone_stats_, ZONE_NAME),
         instruction_zone_(instruction_zone_scope_.zone()),
-        register_allocation_zone_scope_(zone_pool_),
+        register_allocation_zone_scope_(zone_stats_, ZONE_NAME),
         register_allocation_zone_(register_allocation_zone_scope_.zone()) {}
 
   // For machine graph testing entry point.
-  PipelineData(ZonePool* zone_pool, CompilationInfo* info, Graph* graph,
+  PipelineData(ZoneStats* zone_stats, CompilationInfo* info, Graph* graph,
                Schedule* schedule)
       : isolate_(info->isolate()),
         info_(info),
         debug_name_(info_->GetDebugName()),
-        zone_pool_(zone_pool),
-        graph_zone_scope_(zone_pool_),
+        zone_stats_(zone_stats),
+        graph_zone_scope_(zone_stats_, ZONE_NAME),
         graph_(graph),
         source_positions_(new (info->zone()) SourcePositionTable(graph_)),
         schedule_(schedule),
-        instruction_zone_scope_(zone_pool_),
+        instruction_zone_scope_(zone_stats_, ZONE_NAME),
         instruction_zone_(instruction_zone_scope_.zone()),
-        register_allocation_zone_scope_(zone_pool_),
+        register_allocation_zone_scope_(zone_stats_, ZONE_NAME),
         register_allocation_zone_(register_allocation_zone_scope_.zone()) {}
 
   // For register allocation testing entry point.
-  PipelineData(ZonePool* zone_pool, CompilationInfo* info,
+  PipelineData(ZoneStats* zone_stats, CompilationInfo* info,
                InstructionSequence* sequence)
       : isolate_(info->isolate()),
         info_(info),
         debug_name_(info_->GetDebugName()),
-        zone_pool_(zone_pool),
-        graph_zone_scope_(zone_pool_),
-        instruction_zone_scope_(zone_pool_),
+        zone_stats_(zone_stats),
+        graph_zone_scope_(zone_stats_, ZONE_NAME),
+        instruction_zone_scope_(zone_stats_, ZONE_NAME),
         instruction_zone_(sequence->zone()),
         sequence_(sequence),
-        register_allocation_zone_scope_(zone_pool_),
+        register_allocation_zone_scope_(zone_stats_, ZONE_NAME),
         register_allocation_zone_(register_allocation_zone_scope_.zone()) {}
 
   ~PipelineData() {
@@ -166,7 +166,7 @@ class PipelineData {
 
   Isolate* isolate() const { return isolate_; }
   CompilationInfo* info() const { return info_; }
-  ZonePool* zone_pool() const { return zone_pool_; }
+  ZoneStats* zone_stats() const { return zone_stats_; }
   PipelineStatistics* pipeline_statistics() { return pipeline_statistics_; }
   bool compilation_failed() const { return compilation_failed_; }
   void set_compilation_failed() { compilation_failed_ = true; }
@@ -186,11 +186,11 @@ class PipelineData {
   CommonOperatorBuilder* common() const { return common_; }
   JSOperatorBuilder* javascript() const { return javascript_; }
   JSGraph* jsgraph() const { return jsgraph_; }
-  MaybeHandle<Context> native_context() const {
-    if (info()->is_native_context_specializing()) {
-      return handle(info()->native_context(), isolate());
-    }
-    return MaybeHandle<Context>();
+  Handle<Context> native_context() const {
+    return handle(info()->native_context(), isolate());
+  }
+  Handle<JSGlobalObject> global_object() const {
+    return handle(info()->global_object(), isolate());
   }
 
   LoopAssignmentAnalysis* loop_assignment() const { return loop_assignment_; }
@@ -313,14 +313,14 @@ class PipelineData {
   CompilationInfo* const info_;
   std::unique_ptr<char[]> debug_name_;
   Zone* outer_zone_ = nullptr;
-  ZonePool* const zone_pool_;
+  ZoneStats* const zone_stats_;
   PipelineStatistics* pipeline_statistics_ = nullptr;
   bool compilation_failed_ = false;
   Handle<Code> code_ = Handle<Code>::null();
 
   // All objects in the following group of fields are allocated in graph_zone_.
   // They are all set to nullptr when the graph_zone_ is destroyed.
-  ZonePool::Scope graph_zone_scope_;
+  ZoneStats::Scope graph_zone_scope_;
   Zone* graph_zone_ = nullptr;
   Graph* graph_ = nullptr;
   SourcePositionTable* source_positions_ = nullptr;
@@ -337,7 +337,7 @@ class PipelineData {
   // instruction_zone_.  They are all set to nullptr when the instruction_zone_
   // is
   // destroyed.
-  ZonePool::Scope instruction_zone_scope_;
+  ZoneStats::Scope instruction_zone_scope_;
   Zone* instruction_zone_;
   InstructionSequence* sequence_ = nullptr;
   Frame* frame_ = nullptr;
@@ -345,7 +345,7 @@ class PipelineData {
   // All objects in the following group of fields are allocated in
   // register_allocation_zone_.  They are all set to nullptr when the zone is
   // destroyed.
-  ZonePool::Scope register_allocation_zone_scope_;
+  ZoneStats::Scope register_allocation_zone_scope_;
   Zone* register_allocation_zone_;
   RegisterAllocationData* register_allocation_data_ = nullptr;
 
@@ -389,7 +389,7 @@ class PipelineImpl final {
   // Perform the actual code generation and return handle to a code object.
   Handle<Code> GenerateCode(Linkage* linkage);
 
-  bool ScheduleAndSelectInstructions(Linkage* linkage);
+  bool ScheduleAndSelectInstructions(Linkage* linkage, bool trim_graph);
   void RunPrintAndVerify(const char* phase, bool untyped = false);
   Handle<Code> ScheduleAndGenerateCode(CallDescriptor* call_descriptor);
   void AllocateRegisters(const RegisterConfiguration* config,
@@ -518,21 +518,21 @@ class PipelineRunScope {
       : phase_scope_(
             phase_name == nullptr ? nullptr : data->pipeline_statistics(),
             phase_name),
-        zone_scope_(data->zone_pool()) {}
+        zone_scope_(data->zone_stats(), ZONE_NAME) {}
 
   Zone* zone() { return zone_scope_.zone(); }
 
  private:
   PhaseScope phase_scope_;
-  ZonePool::Scope zone_scope_;
+  ZoneStats::Scope zone_scope_;
 };
 
 PipelineStatistics* CreatePipelineStatistics(CompilationInfo* info,
-                                             ZonePool* zone_pool) {
+                                             ZoneStats* zone_stats) {
   PipelineStatistics* pipeline_statistics = nullptr;
 
   if (FLAG_turbo_stats || FLAG_turbo_stats_nvp) {
-    pipeline_statistics = new PipelineStatistics(info, zone_pool);
+    pipeline_statistics = new PipelineStatistics(info, zone_stats);
     pipeline_statistics->BeginPhaseKind("initializing");
   }
 
@@ -568,12 +568,12 @@ class PipelineCompilationJob final : public CompilationJob {
       // Note that the CompilationInfo is not initialized at the time we pass it
       // to the CompilationJob constructor, but it is not dereferenced there.
       : CompilationJob(isolate, &info_, "TurboFan"),
-        zone_(isolate->allocator()),
-        zone_pool_(isolate->allocator()),
-        parse_info_(&zone_, function),
+        zone_(isolate->allocator(), ZONE_NAME),
+        zone_stats_(isolate->allocator()),
+        parse_info_(&zone_, handle(function->shared())),
         info_(&parse_info_, function),
-        pipeline_statistics_(CreatePipelineStatistics(info(), &zone_pool_)),
-        data_(&zone_pool_, info(), pipeline_statistics_.get()),
+        pipeline_statistics_(CreatePipelineStatistics(info(), &zone_stats_)),
+        data_(&zone_stats_, info(), pipeline_statistics_.get()),
         pipeline_(&data_),
         linkage_(nullptr) {}
 
@@ -584,7 +584,7 @@ class PipelineCompilationJob final : public CompilationJob {
 
  private:
   Zone zone_;
-  ZonePool zone_pool_;
+  ZoneStats zone_stats_;
   ParseInfo parse_info_;
   CompilationInfo info_;
   std::unique_ptr<PipelineStatistics> pipeline_statistics_;
@@ -602,9 +602,6 @@ PipelineCompilationJob::Status PipelineCompilationJob::PrepareJobImpl() {
   } else {
     if (!FLAG_always_opt) {
       info()->MarkAsBailoutOnUninitialized();
-    }
-    if (FLAG_native_context_specialization) {
-      info()->MarkAsNativeContextSpecializing();
     }
     if (FLAG_turbo_inlining) {
       info()->MarkAsInliningEnabled();
@@ -662,8 +659,8 @@ class PipelineWasmCompilationJob final : public CompilationJob {
                                       SourcePositionTable* source_positions)
       : CompilationJob(info->isolate(), info, "TurboFan",
                        State::kReadyToExecute),
-        zone_pool_(info->isolate()->allocator()),
-        data_(&zone_pool_, info, graph, source_positions),
+        zone_stats_(info->isolate()->allocator()),
+        data_(&zone_stats_, info, graph, source_positions),
         pipeline_(&data_),
         linkage_(descriptor) {}
 
@@ -673,7 +670,7 @@ class PipelineWasmCompilationJob final : public CompilationJob {
   Status FinalizeJobImpl() final;
 
  private:
-  ZonePool zone_pool_;
+  ZoneStats zone_stats_;
   PipelineData data_;
   PipelineImpl pipeline_;
   Linkage linkage_;
@@ -695,7 +692,7 @@ PipelineWasmCompilationJob::ExecuteJobImpl() {
 
   pipeline_.RunPrintAndVerify("Machine", true);
 
-  if (!pipeline_.ScheduleAndSelectInstructions(&linkage_)) return FAILED;
+  if (!pipeline_.ScheduleAndSelectInstructions(&linkage_, true)) return FAILED;
   return SUCCEEDED;
 }
 
@@ -761,7 +758,8 @@ struct GraphBuilderPhase {
 
     if (data->info()->is_optimizing_from_bytecode()) {
       BytecodeGraphBuilder graph_builder(temp_zone, data->info(),
-                                         data->jsgraph(), 1.0f);
+                                         data->jsgraph(), 1.0f,
+                                         data->source_positions());
       succeeded = graph_builder.CreateGraph();
     } else {
       AstGraphBuilderWithPositions graph_builder(
@@ -803,7 +801,7 @@ struct InliningPhase {
     JSFrameSpecialization frame_specialization(
         &graph_reducer, data->info()->osr_frame(), data->jsgraph());
     JSGlobalObjectSpecialization global_object_specialization(
-        &graph_reducer, data->jsgraph(), data->native_context(),
+        &graph_reducer, data->jsgraph(), data->global_object(),
         data->info()->dependencies());
     JSNativeContextSpecialization::Flags flags =
         JSNativeContextSpecialization::kNoFlags;
@@ -931,10 +929,7 @@ struct TypedLoweringPhase {
             ? JSBuiltinReducer::kDeoptimizationEnabled
             : JSBuiltinReducer::kNoFlags,
         data->info()->dependencies());
-    MaybeHandle<LiteralsArray> literals_array =
-        data->info()->is_native_context_specializing()
-            ? handle(data->info()->closure()->literals(), data->isolate())
-            : MaybeHandle<LiteralsArray>();
+    Handle<LiteralsArray> literals_array(data->info()->closure()->literals());
     JSCreateLowering create_lowering(
         &graph_reducer, data->info()->dependencies(), data->jsgraph(),
         literals_array, data->native_context(), temp_zone);
@@ -1211,7 +1206,9 @@ struct LateGraphTrimmingPhase {
   void Run(PipelineData* data, Zone* temp_zone) {
     GraphTrimmer trimmer(temp_zone, data->graph());
     NodeVector roots(temp_zone);
-    data->jsgraph()->GetCachedNodes(&roots);
+    if (data->jsgraph()) {
+      data->jsgraph()->GetCachedNodes(&roots);
+    }
     trimmer.TrimGraph(roots.begin(), roots.end());
   }
 };
@@ -1574,14 +1571,16 @@ bool PipelineImpl::CreateGraph() {
       RunPrintAndVerify("Loop peeled");
     }
 
-    if (FLAG_turbo_escape) {
-      Run<EscapeAnalysisPhase>();
-      RunPrintAndVerify("Escape Analysed");
-    }
+    if (!info()->shared_info()->asm_function()) {
+      if (FLAG_turbo_load_elimination) {
+        Run<LoadEliminationPhase>();
+        RunPrintAndVerify("Load eliminated");
+      }
 
-    if (!info()->shared_info()->asm_function() && FLAG_turbo_load_elimination) {
-      Run<LoadEliminationPhase>();
-      RunPrintAndVerify("Load eliminated");
+      if (FLAG_turbo_escape) {
+        Run<EscapeAnalysisPhase>();
+        RunPrintAndVerify("Escape Analysed");
+      }
     }
   }
 
@@ -1653,13 +1652,9 @@ bool PipelineImpl::OptimizeGraph(Linkage* linkage) {
   // TODO(jarin, rossberg): Remove UNTYPED once machine typing works.
   RunPrintAndVerify("Late optimized", true);
 
-  Run<LateGraphTrimmingPhase>();
-  // TODO(jarin, rossberg): Remove UNTYPED once machine typing works.
-  RunPrintAndVerify("Late trimmed", true);
-
   data->source_positions()->RemoveDecorator();
 
-  return ScheduleAndSelectInstructions(linkage);
+  return ScheduleAndSelectInstructions(linkage, true);
 }
 
 Handle<Code> Pipeline::GenerateCodeForCodeStub(Isolate* isolate,
@@ -1671,11 +1666,11 @@ Handle<Code> Pipeline::GenerateCodeForCodeStub(Isolate* isolate,
   if (isolate->serializer_enabled()) info.PrepareForSerializing();
 
   // Construct a pipeline for scheduling and code generation.
-  ZonePool zone_pool(isolate->allocator());
-  PipelineData data(&zone_pool, &info, graph, schedule);
+  ZoneStats zone_stats(isolate->allocator());
+  PipelineData data(&zone_stats, &info, graph, schedule);
   std::unique_ptr<PipelineStatistics> pipeline_statistics;
   if (FLAG_turbo_stats || FLAG_turbo_stats_nvp) {
-    pipeline_statistics.reset(new PipelineStatistics(&info, &zone_pool));
+    pipeline_statistics.reset(new PipelineStatistics(&info, &zone_stats));
     pipeline_statistics->BeginPhaseKind("stub codegen");
   }
 
@@ -1697,10 +1692,10 @@ Handle<Code> Pipeline::GenerateCodeForCodeStub(Isolate* isolate,
 
 // static
 Handle<Code> Pipeline::GenerateCodeForTesting(CompilationInfo* info) {
-  ZonePool zone_pool(info->isolate()->allocator());
+  ZoneStats zone_stats(info->isolate()->allocator());
   std::unique_ptr<PipelineStatistics> pipeline_statistics(
-      CreatePipelineStatistics(info, &zone_pool));
-  PipelineData data(&zone_pool, info, pipeline_statistics.get());
+      CreatePipelineStatistics(info, &zone_stats));
+  PipelineData data(&zone_stats, info, pipeline_statistics.get());
   PipelineImpl pipeline(&data);
 
   Linkage linkage(Linkage::ComputeIncoming(data.instruction_zone(), info));
@@ -1725,11 +1720,11 @@ Handle<Code> Pipeline::GenerateCodeForTesting(CompilationInfo* info,
                                               Graph* graph,
                                               Schedule* schedule) {
   // Construct a pipeline for scheduling and code generation.
-  ZonePool zone_pool(info->isolate()->allocator());
-  PipelineData data(&zone_pool, info, graph, schedule);
+  ZoneStats zone_stats(info->isolate()->allocator());
+  PipelineData data(&zone_stats, info, graph, schedule);
   std::unique_ptr<PipelineStatistics> pipeline_statistics;
   if (FLAG_turbo_stats || FLAG_turbo_stats_nvp) {
-    pipeline_statistics.reset(new PipelineStatistics(info, &zone_pool));
+    pipeline_statistics.reset(new PipelineStatistics(info, &zone_stats));
     pipeline_statistics->BeginPhaseKind("test codegen");
   }
 
@@ -1764,20 +1759,25 @@ bool Pipeline::AllocateRegistersForTesting(const RegisterConfiguration* config,
                                            bool run_verifier) {
   CompilationInfo info(ArrayVector("testing"), sequence->isolate(),
                        sequence->zone(), Code::ComputeFlags(Code::STUB));
-  ZonePool zone_pool(sequence->isolate()->allocator());
-  PipelineData data(&zone_pool, &info, sequence);
+  ZoneStats zone_stats(sequence->isolate()->allocator());
+  PipelineData data(&zone_stats, &info, sequence);
   PipelineImpl pipeline(&data);
   pipeline.data_->InitializeFrameData(nullptr);
   pipeline.AllocateRegisters(config, nullptr, run_verifier);
   return !data.compilation_failed();
 }
 
-bool PipelineImpl::ScheduleAndSelectInstructions(Linkage* linkage) {
+bool PipelineImpl::ScheduleAndSelectInstructions(Linkage* linkage,
+                                                 bool trim_graph) {
   CallDescriptor* call_descriptor = linkage->GetIncomingDescriptor();
   PipelineData* data = this->data_;
 
   DCHECK_NOT_NULL(data->graph());
 
+  if (trim_graph) {
+    Run<LateGraphTrimmingPhase>();
+    RunPrintAndVerify("Late trimmed", true);
+  }
   if (data->schedule() == nullptr) Run<ComputeSchedulePhase>();
   TraceSchedule(data->info(), data->schedule());
 
@@ -1786,8 +1786,11 @@ bool PipelineImpl::ScheduleAndSelectInstructions(Linkage* linkage) {
         info(), data->graph(), data->schedule()));
   }
 
-  if (FLAG_turbo_verify_machine_graph) {
-    Zone temp_zone(data->isolate()->allocator());
+  if (FLAG_turbo_verify_machine_graph != nullptr &&
+      (!strcmp(FLAG_turbo_verify_machine_graph, "*") ||
+       !strcmp(FLAG_turbo_verify_machine_graph,
+               data->info()->GetDebugName().get()))) {
+    Zone temp_zone(data->isolate()->allocator(), ZONE_NAME);
     MachineGraphVerifier::Run(data->graph(), data->schedule(), linkage,
                               &temp_zone);
   }
@@ -1897,7 +1900,7 @@ Handle<Code> PipelineImpl::ScheduleAndGenerateCode(
   Linkage linkage(call_descriptor);
 
   // Schedule the graph, perform instruction selection and register allocation.
-  if (!ScheduleAndSelectInstructions(&linkage)) return Handle<Code>();
+  if (!ScheduleAndSelectInstructions(&linkage, false)) return Handle<Code>();
 
   // Generate the final machine code.
   return GenerateCode(&linkage);
@@ -1911,7 +1914,7 @@ void PipelineImpl::AllocateRegisters(const RegisterConfiguration* config,
   std::unique_ptr<Zone> verifier_zone;
   RegisterAllocatorVerifier* verifier = nullptr;
   if (run_verifier) {
-    verifier_zone.reset(new Zone(isolate()->allocator()));
+    verifier_zone.reset(new Zone(isolate()->allocator(), ZONE_NAME));
     verifier = new (verifier_zone.get()) RegisterAllocatorVerifier(
         verifier_zone.get(), config, data->sequence());
   }

@@ -1647,190 +1647,6 @@ HValue* HGraphBuilder::BuildCopyElementsOnWrite(HValue* object,
   return environment()->Pop();
 }
 
-
-void HGraphBuilder::BuildJSObjectCheck(HValue* receiver,
-                                       int bit_field_mask) {
-  // Check that the object isn't a smi.
-  Add<HCheckHeapObject>(receiver);
-
-  // Get the map of the receiver.
-  HValue* map =
-      Add<HLoadNamedField>(receiver, nullptr, HObjectAccess::ForMap());
-
-  // Check the instance type and if an access check is needed, this can be
-  // done with a single load, since both bytes are adjacent in the map.
-  HObjectAccess access(HObjectAccess::ForMapInstanceTypeAndBitField());
-  HValue* instance_type_and_bit_field =
-      Add<HLoadNamedField>(map, nullptr, access);
-
-  HValue* mask = Add<HConstant>(0x00FF | (bit_field_mask << 8));
-  HValue* and_result = AddUncasted<HBitwise>(Token::BIT_AND,
-                                             instance_type_and_bit_field,
-                                             mask);
-  HValue* sub_result = AddUncasted<HSub>(and_result,
-                                         Add<HConstant>(JS_OBJECT_TYPE));
-  Add<HBoundsCheck>(sub_result,
-                    Add<HConstant>(LAST_JS_OBJECT_TYPE + 1 - JS_OBJECT_TYPE));
-}
-
-
-void HGraphBuilder::BuildKeyedIndexCheck(HValue* key,
-                                         HIfContinuation* join_continuation) {
-  // The sometimes unintuitively backward ordering of the ifs below is
-  // convoluted, but necessary.  All of the paths must guarantee that the
-  // if-true of the continuation returns a smi element index and the if-false of
-  // the continuation returns either a symbol or a unique string key. All other
-  // object types cause a deopt to fall back to the runtime.
-
-  IfBuilder key_smi_if(this);
-  key_smi_if.If<HIsSmiAndBranch>(key);
-  key_smi_if.Then();
-  {
-    Push(key);  // Nothing to do, just continue to true of continuation.
-  }
-  key_smi_if.Else();
-  {
-    HValue* map = Add<HLoadNamedField>(key, nullptr, HObjectAccess::ForMap());
-    HValue* instance_type =
-        Add<HLoadNamedField>(map, nullptr, HObjectAccess::ForMapInstanceType());
-
-    // Non-unique string, check for a string with a hash code that is actually
-    // an index.
-    STATIC_ASSERT(LAST_UNIQUE_NAME_TYPE == FIRST_NONSTRING_TYPE);
-    IfBuilder not_string_or_name_if(this);
-    not_string_or_name_if.If<HCompareNumericAndBranch>(
-        instance_type,
-        Add<HConstant>(LAST_UNIQUE_NAME_TYPE),
-        Token::GT);
-
-    not_string_or_name_if.Then();
-    {
-      // Non-smi, non-Name, non-String: Try to convert to smi in case of
-      // HeapNumber.
-      // TODO(danno): This could call some variant of ToString
-      Push(AddUncasted<HForceRepresentation>(key, Representation::Smi()));
-    }
-    not_string_or_name_if.Else();
-    {
-      // String or Name: check explicitly for Name, they can short-circuit
-      // directly to unique non-index key path.
-      IfBuilder not_symbol_if(this);
-      not_symbol_if.If<HCompareNumericAndBranch>(
-          instance_type,
-          Add<HConstant>(SYMBOL_TYPE),
-          Token::NE);
-
-      not_symbol_if.Then();
-      {
-        // String: check whether the String is a String of an index. If it is,
-        // extract the index value from the hash.
-        HValue* hash = Add<HLoadNamedField>(key, nullptr,
-                                            HObjectAccess::ForNameHashField());
-        HValue* not_index_mask = Add<HConstant>(static_cast<int>(
-            String::kContainsCachedArrayIndexMask));
-
-        HValue* not_index_test = AddUncasted<HBitwise>(
-            Token::BIT_AND, hash, not_index_mask);
-
-        IfBuilder string_index_if(this);
-        string_index_if.If<HCompareNumericAndBranch>(not_index_test,
-                                                     graph()->GetConstant0(),
-                                                     Token::EQ);
-        string_index_if.Then();
-        {
-          // String with index in hash: extract string and merge to index path.
-          Push(BuildDecodeField<String::ArrayIndexValueBits>(hash));
-        }
-        string_index_if.Else();
-        {
-          // Key is a non-index String, check for uniqueness/internalization.
-          // If it's not internalized yet, internalize it now.
-          HValue* not_internalized_bit = AddUncasted<HBitwise>(
-              Token::BIT_AND,
-              instance_type,
-              Add<HConstant>(static_cast<int>(kIsNotInternalizedMask)));
-
-          IfBuilder internalized(this);
-          internalized.If<HCompareNumericAndBranch>(not_internalized_bit,
-                                                    graph()->GetConstant0(),
-                                                    Token::EQ);
-          internalized.Then();
-          Push(key);
-
-          internalized.Else();
-          Add<HPushArguments>(key);
-          HValue* intern_key = Add<HCallRuntime>(
-              Runtime::FunctionForId(Runtime::kInternalizeString), 1);
-          Push(intern_key);
-
-          internalized.End();
-          // Key guaranteed to be a unique string
-        }
-        string_index_if.JoinContinuation(join_continuation);
-      }
-      not_symbol_if.Else();
-      {
-        Push(key);  // Key is symbol
-      }
-      not_symbol_if.JoinContinuation(join_continuation);
-    }
-    not_string_or_name_if.JoinContinuation(join_continuation);
-  }
-  key_smi_if.JoinContinuation(join_continuation);
-}
-
-
-void HGraphBuilder::BuildNonGlobalObjectCheck(HValue* receiver) {
-  // Get the the instance type of the receiver, and make sure that it is
-  // not one of the global object types.
-  HValue* map =
-      Add<HLoadNamedField>(receiver, nullptr, HObjectAccess::ForMap());
-  HValue* instance_type =
-      Add<HLoadNamedField>(map, nullptr, HObjectAccess::ForMapInstanceType());
-  HValue* global_type = Add<HConstant>(JS_GLOBAL_OBJECT_TYPE);
-
-  IfBuilder if_global_object(this);
-  if_global_object.If<HCompareNumericAndBranch>(instance_type, global_type,
-                                                Token::EQ);
-  if_global_object.ThenDeopt(DeoptimizeReason::kReceiverWasAGlobalObject);
-  if_global_object.End();
-}
-
-
-void HGraphBuilder::BuildTestForDictionaryProperties(
-    HValue* object,
-    HIfContinuation* continuation) {
-  HValue* properties = Add<HLoadNamedField>(
-      object, nullptr, HObjectAccess::ForPropertiesPointer());
-  HValue* properties_map =
-      Add<HLoadNamedField>(properties, nullptr, HObjectAccess::ForMap());
-  HValue* hash_map = Add<HLoadRoot>(Heap::kHashTableMapRootIndex);
-  IfBuilder builder(this);
-  builder.If<HCompareObjectEqAndBranch>(properties_map, hash_map);
-  builder.CaptureContinuation(continuation);
-}
-
-
-HValue* HGraphBuilder::BuildKeyedLookupCacheHash(HValue* object,
-                                                 HValue* key) {
-  // Load the map of the receiver, compute the keyed lookup cache hash
-  // based on 32 bits of the map pointer and the string hash.
-  HValue* object_map =
-      Add<HLoadNamedField>(object, nullptr, HObjectAccess::ForMapAsInteger32());
-  HValue* shifted_map = AddUncasted<HShr>(
-      object_map, Add<HConstant>(KeyedLookupCache::kMapHashShift));
-  HValue* string_hash =
-      Add<HLoadNamedField>(key, nullptr, HObjectAccess::ForStringHashField());
-  HValue* shifted_hash = AddUncasted<HShr>(
-      string_hash, Add<HConstant>(String::kHashShift));
-  HValue* xor_result = AddUncasted<HBitwise>(Token::BIT_XOR, shifted_map,
-                                             shifted_hash);
-  int mask = (KeyedLookupCache::kCapacityMask & KeyedLookupCache::kHashMask);
-  return AddUncasted<HBitwise>(Token::BIT_AND, xor_result,
-                               Add<HConstant>(mask));
-}
-
-
 HValue* HGraphBuilder::BuildElementIndexHash(HValue* index) {
   int32_t seed_value = static_cast<uint32_t>(isolate()->heap()->HashSeed());
   HValue* seed = Add<HConstant>(seed_value);
@@ -1996,7 +1812,6 @@ HValue* HGraphBuilder::BuildUncheckedDictionaryElementLoad(HValue* receiver,
 
   return Pop();
 }
-
 
 HValue* HGraphBuilder::BuildCreateIterResultObject(HValue* value,
                                                    HValue* done) {
@@ -2232,12 +2047,13 @@ HValue* HGraphBuilder::BuildNumberToString(HValue* object, AstType* type) {
 }
 
 HValue* HGraphBuilder::BuildToNumber(HValue* input) {
-  if (input->type().IsTaggedNumber()) {
+  if (input->type().IsTaggedNumber() ||
+      input->representation().IsSpecialization()) {
     return input;
   }
   Callable callable = CodeFactory::ToNumber(isolate());
   HValue* stub = Add<HConstant>(callable.code());
-  HValue* values[] = {context(), input};
+  HValue* values[] = {input};
   HCallWithDescriptor* instr = Add<HCallWithDescriptor>(
       stub, 0, callable.descriptor(), ArrayVector(values));
   instr->set_type(HType::TaggedNumber());
@@ -5261,11 +5077,10 @@ void HOptimizedGraphBuilder::BuildForInBody(ForInStatement* stmt,
     }
     set_current_block(if_slow);
     {
-      ForInFilterStub stub(isolate());
-      HValue* values[] = {context(), key, enumerable};
-      HConstant* stub_value = Add<HConstant>(stub.GetCode());
-      Push(Add<HCallWithDescriptor>(stub_value, 0,
-                                    stub.GetCallInterfaceDescriptor(),
+      Callable callable = CodeFactory::ForInFilter(isolate());
+      HValue* values[] = {key, enumerable};
+      HConstant* stub_value = Add<HConstant>(callable.code());
+      Push(Add<HCallWithDescriptor>(stub_value, 0, callable.descriptor(),
                                     ArrayVector(values)));
       Add<HSimulate>(stmt->FilterId());
       FinishCurrentBlock(New<HCompareObjectEqAndBranch>(
@@ -5371,7 +5186,7 @@ void HOptimizedGraphBuilder::VisitFunctionLiteral(FunctionLiteral* expr) {
   if (!expr->pretenure()) {
     FastNewClosureStub stub(isolate());
     FastNewClosureDescriptor descriptor(isolate());
-    HValue* values[] = {context(), shared_info_value};
+    HValue* values[] = {shared_info_value};
     HConstant* stub_value = Add<HConstant>(stub.GetCode());
     instr = New<HCallWithDescriptor>(stub_value, 0, descriptor,
                                      ArrayVector(values));
@@ -5597,9 +5412,10 @@ void HOptimizedGraphBuilder::VisitVariableProxy(VariableProxy* expr) {
         Callable callable = CodeFactory::LoadGlobalICInOptimizedCode(
             isolate(), ast_context()->typeof_mode());
         HValue* stub = Add<HConstant>(callable.code());
-        HValue* values[] = {context(), slot_value, vector_value};
+        HValue* values[] = {slot_value, vector_value};
         HCallWithDescriptor* instr = New<HCallWithDescriptor>(
-            stub, 0, callable.descriptor(), ArrayVector(values));
+            Code::LOAD_GLOBAL_IC, stub, 0, callable.descriptor(),
+            ArrayVector(values));
         return ast_context()->ReturnInstruction(instr, expr->id());
       }
     }
@@ -5655,9 +5471,9 @@ void HOptimizedGraphBuilder::VisitRegExpLiteral(RegExpLiteral* expr) {
   DCHECK(current_block() != NULL);
   DCHECK(current_block()->HasPredecessor());
   Callable callable = CodeFactory::FastCloneRegExp(isolate());
-  HValue* values[] = {
-      context(), AddThisFunction(), Add<HConstant>(expr->literal_index()),
-      Add<HConstant>(expr->pattern()), Add<HConstant>(expr->flags())};
+  HValue* values[] = {AddThisFunction(), Add<HConstant>(expr->literal_index()),
+                      Add<HConstant>(expr->pattern()),
+                      Add<HConstant>(expr->flags())};
   HConstant* stub_value = Add<HConstant>(callable.code());
   HInstruction* instr = New<HCallWithDescriptor>(
       stub_value, 0, callable.descriptor(), ArrayVector(values));
@@ -6223,7 +6039,7 @@ bool HOptimizedGraphBuilder::PropertyAccessInfo::LoadFieldMaps(
   DCHECK(field_type_.IsHeapObject());
 
   // Add dependency on the map that introduced the field.
-  top_info()->dependencies()->AssumeFieldType(GetFieldOwnerFromMap(map));
+  top_info()->dependencies()->AssumeFieldOwner(GetFieldOwnerFromMap(map));
   return true;
 }
 
@@ -6795,10 +6611,9 @@ void HOptimizedGraphBuilder::HandleGlobalVariableAssignment(
     Callable callable = CodeFactory::StoreICInOptimizedCode(
         isolate(), function_language_mode());
     HValue* stub = Add<HConstant>(callable.code());
-    HValue* values[] = {context(), global_object, name,
-                        value,     slot_value,    vector_value};
+    HValue* values[] = {global_object, name, value, slot_value, vector_value};
     HCallWithDescriptor* instr = Add<HCallWithDescriptor>(
-        stub, 0, callable.descriptor(), ArrayVector(values));
+        Code::STORE_IC, stub, 0, callable.descriptor(), ArrayVector(values));
     USE(instr);
     DCHECK(instr->HasObservableSideEffects());
     Add<HSimulate>(ast_id, REMOVABLE_SIMULATE);
@@ -7104,27 +6919,27 @@ HInstruction* HOptimizedGraphBuilder::BuildNamedGeneric(
   HValue* slot_value = Add<HConstant>(vector->GetIndex(slot));
 
   if (access_type == LOAD) {
-    HValue* values[] = {context(), object, key, slot_value, vector_value};
+    HValue* values[] = {object, key, slot_value, vector_value};
     if (!expr->AsProperty()->key()->IsPropertyName()) {
       // It's possible that a keyed load of a constant string was converted
       // to a named load. Here, at the last minute, we need to make sure to
       // use a generic Keyed Load if we are using the type vector, because
       // it has to share information with full code.
-      HLoadKeyedGeneric* result =
-          New<HLoadKeyedGeneric>(object, key, vector, slot);
+      Callable callable = CodeFactory::KeyedLoadICInOptimizedCode(isolate());
+      HValue* stub = Add<HConstant>(callable.code());
+      HCallWithDescriptor* result =
+          New<HCallWithDescriptor>(Code::KEYED_LOAD_IC, stub, 0,
+                                   callable.descriptor(), ArrayVector(values));
       return result;
     }
-
     Callable callable = CodeFactory::LoadICInOptimizedCode(isolate());
     HValue* stub = Add<HConstant>(callable.code());
     HCallWithDescriptor* result = New<HCallWithDescriptor>(
-        stub, 0, callable.descriptor(), ArrayVector(values));
+        Code::LOAD_IC, stub, 0, callable.descriptor(), ArrayVector(values));
     return result;
 
   } else {
-    HValue* values[] = {context(), object,     key,
-                        value,     slot_value, vector_value};
-
+    HValue* values[] = {object, key, value, slot_value, vector_value};
     if (vector->GetKind(slot) == FeedbackVectorSlotKind::KEYED_STORE_IC) {
       // It's possible that a keyed store of a constant string was converted
       // to a named store. Here, at the last minute, we need to make sure to
@@ -7133,15 +6948,16 @@ HInstruction* HOptimizedGraphBuilder::BuildNamedGeneric(
       Callable callable = CodeFactory::KeyedStoreICInOptimizedCode(
           isolate(), function_language_mode());
       HValue* stub = Add<HConstant>(callable.code());
-      HCallWithDescriptor* result = New<HCallWithDescriptor>(
-          stub, 0, callable.descriptor(), ArrayVector(values));
+      HCallWithDescriptor* result =
+          New<HCallWithDescriptor>(Code::KEYED_STORE_IC, stub, 0,
+                                   callable.descriptor(), ArrayVector(values));
       return result;
     }
     Callable callable = CodeFactory::StoreICInOptimizedCode(
         isolate(), function_language_mode());
     HValue* stub = Add<HConstant>(callable.code());
     HCallWithDescriptor* result = New<HCallWithDescriptor>(
-        stub, 0, callable.descriptor(), ArrayVector(values));
+        Code::STORE_IC, stub, 0, callable.descriptor(), ArrayVector(values));
     return result;
   }
 }
@@ -7150,23 +6966,28 @@ HInstruction* HOptimizedGraphBuilder::BuildNamedGeneric(
 HInstruction* HOptimizedGraphBuilder::BuildKeyedGeneric(
     PropertyAccessType access_type, Expression* expr, FeedbackVectorSlot slot,
     HValue* object, HValue* key, HValue* value) {
-  Handle<TypeFeedbackVector> vector =
-      handle(current_feedback_vector(), isolate());
+  Handle<TypeFeedbackVector> vector(current_feedback_vector(), isolate());
+  HValue* vector_value = Add<HConstant>(vector);
+  HValue* slot_value = Add<HConstant>(vector->GetIndex(slot));
+
   if (access_type == LOAD) {
-    HLoadKeyedGeneric* result =
-        New<HLoadKeyedGeneric>(object, key, vector, slot);
+    HValue* values[] = {object, key, slot_value, vector_value};
+
+    Callable callable = CodeFactory::KeyedLoadICInOptimizedCode(isolate());
+    HValue* stub = Add<HConstant>(callable.code());
+    HCallWithDescriptor* result =
+        New<HCallWithDescriptor>(Code::KEYED_LOAD_IC, stub, 0,
+                                 callable.descriptor(), ArrayVector(values));
     return result;
   } else {
-    HValue* vector_value = Add<HConstant>(vector);
-    HValue* slot_value = Add<HConstant>(vector->GetIndex(slot));
-    HValue* values[] = {context(), object,     key,
-                        value,     slot_value, vector_value};
+    HValue* values[] = {object, key, value, slot_value, vector_value};
 
     Callable callable = CodeFactory::KeyedStoreICInOptimizedCode(
         isolate(), function_language_mode());
     HValue* stub = Add<HConstant>(callable.code());
-    HCallWithDescriptor* result = New<HCallWithDescriptor>(
-        stub, 0, callable.descriptor(), ArrayVector(values));
+    HCallWithDescriptor* result =
+        New<HCallWithDescriptor>(Code::KEYED_STORE_IC, stub, 0,
+                                 callable.descriptor(), ArrayVector(values));
     return result;
   }
 }
@@ -7859,7 +7680,7 @@ HInstruction* HOptimizedGraphBuilder::NewCallFunction(
   }
   HValue* arity = Add<HConstant>(argument_count - 1);
 
-  HValue* op_vals[] = {context(), function, arity};
+  HValue* op_vals[] = {function, arity};
 
   Callable callable =
       CodeFactory::Call(isolate(), convert_mode, tail_call_mode);
@@ -7881,13 +7702,13 @@ HInstruction* HOptimizedGraphBuilder::NewCallFunctionViaIC(
   }
   int arity = argument_count - 1;
   Handle<TypeFeedbackVector> vector(current_feedback_vector(), isolate());
+  HValue* arity_val = Add<HConstant>(arity);
   HValue* index_val = Add<HConstant>(vector->GetIndex(slot));
   HValue* vector_val = Add<HConstant>(vector);
 
-  HValue* op_vals[] = {context(), function, index_val, vector_val};
-
+  HValue* op_vals[] = {function, arity_val, index_val, vector_val};
   Callable callable = CodeFactory::CallICInOptimizedCode(
-      isolate(), arity, convert_mode, tail_call_mode);
+      isolate(), convert_mode, tail_call_mode);
   HConstant* stub = Add<HConstant>(callable.code());
 
   return New<HCallWithDescriptor>(stub, argument_count, callable.descriptor(),
@@ -8239,13 +8060,13 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
   // Parse and allocate variables.
   // Use the same AstValueFactory for creating strings in the sub-compilation
   // step, but don't transfer ownership to target_info.
-  ParseInfo parse_info(zone(), target);
+  Handle<SharedFunctionInfo> target_shared(target->shared());
+  ParseInfo parse_info(zone(), target_shared);
   parse_info.set_ast_value_factory(
       top_info()->parse_info()->ast_value_factory());
   parse_info.set_ast_value_factory_owned(false);
 
   CompilationInfo target_info(&parse_info, target);
-  Handle<SharedFunctionInfo> target_shared(target->shared());
 
   if (inlining_kind != CONSTRUCT_CALL_RETURN &&
       IsClassConstructor(target_shared->kind())) {
@@ -9234,7 +9055,7 @@ bool HOptimizedGraphBuilder::TryInlineApiCall(
                                             isolate());
   HValue* api_function_address = Add<HConstant>(ExternalReference(ref));
 
-  HValue* op_vals[] = {context(), Add<HConstant>(function), call_data, holder,
+  HValue* op_vals[] = {Add<HConstant>(function), call_data, holder,
                        api_function_address};
 
   HInstruction* call = nullptr;
@@ -9743,7 +9564,7 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
                                      syntactic_tail_call_mode, tail_call_mode);
     } else {
       PushArgumentsFromEnvironment(argument_count);
-      if (expr->is_uninitialized() && expr->IsUsingCallFeedbackICSlot()) {
+      if (expr->is_uninitialized()) {
         // We've never seen this call before, so let's have Crankshaft learn
         // through the type vector.
         call = NewCallFunctionViaIC(function, argument_count,
@@ -9973,7 +9794,7 @@ void HOptimizedGraphBuilder::VisitCallNew(CallNew* expr) {
   }
 
   HValue* arity = Add<HConstant>(argument_count - 1);
-  HValue* op_vals[] = {context(), function, function, arity};
+  HValue* op_vals[] = {function, function, arity};
   Callable callable = CodeFactory::Construct(isolate());
   HConstant* stub = Add<HConstant>(callable.code());
   PushArgumentsFromEnvironment(argument_count);
@@ -10230,9 +10051,9 @@ void HOptimizedGraphBuilder::GenerateTypedArrayInitialize(
   HValue* byte_offset;
   bool is_zero_byte_offset;
 
-  if (arguments->at(kByteOffsetArg)->IsLiteral()
-      && Smi::FromInt(0) ==
-      *static_cast<Literal*>(arguments->at(kByteOffsetArg))->value()) {
+  if (arguments->at(kByteOffsetArg)->IsLiteral() &&
+      Smi::kZero ==
+          *static_cast<Literal*>(arguments->at(kByteOffsetArg))->value()) {
     byte_offset = Add<HConstant>(static_cast<int32_t>(0));
     is_zero_byte_offset = true;
   } else {
@@ -11039,7 +10860,7 @@ HValue* HGraphBuilder::BuildBinaryOperation(
   // inline several instructions (including the two pushes) for every tagged
   // operation in optimized code, which is more expensive, than a stub call.
   if (graph()->info()->IsStub() && is_non_primitive) {
-    HValue* values[] = {context(), left, right};
+    HValue* values[] = {left, right};
 #define GET_STUB(Name)                                                       \
   do {                                                                       \
     Callable callable = CodeFactory::Name(isolate());                        \
@@ -11439,7 +11260,7 @@ void HOptimizedGraphBuilder::VisitCompareOperation(CompareOperation* expr) {
 
     Callable callable = CodeFactory::InstanceOf(isolate());
     HValue* stub = Add<HConstant>(callable.code());
-    HValue* values[] = {context(), left, right};
+    HValue* values[] = {left, right};
     HCallWithDescriptor* result = New<HCallWithDescriptor>(
         stub, 0, callable.descriptor(), ArrayVector(values));
     result->set_type(HType::Boolean());
@@ -11448,7 +11269,7 @@ void HOptimizedGraphBuilder::VisitCompareOperation(CompareOperation* expr) {
   } else if (op == Token::IN) {
     Callable callable = CodeFactory::HasProperty(isolate());
     HValue* stub = Add<HConstant>(callable.code());
-    HValue* values[] = {context(), left, right};
+    HValue* values[] = {left, right};
     HInstruction* result =
         New<HCallWithDescriptor>(stub, 0, callable.descriptor(),
                                  Vector<HValue*>(values, arraysize(values)));
@@ -12139,17 +11960,6 @@ void HOptimizedGraphBuilder::GenerateIsJSReceiver(CallRuntime* call) {
   return ast_context()->ReturnControl(result, call->id());
 }
 
-
-void HOptimizedGraphBuilder::GenerateHasCachedArrayIndex(CallRuntime* call) {
-  DCHECK(call->arguments()->length() == 1);
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
-  HValue* value = Pop();
-  HHasCachedArrayIndexAndBranch* result =
-      New<HHasCachedArrayIndexAndBranch>(value);
-  return ast_context()->ReturnControl(result, call->id());
-}
-
-
 void HOptimizedGraphBuilder::GenerateIsArray(CallRuntime* call) {
   DCHECK(call->arguments()->length() == 1);
   CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
@@ -12189,7 +11999,7 @@ void HOptimizedGraphBuilder::GenerateToInteger(CallRuntime* call) {
   } else {
     Callable callable = CodeFactory::ToInteger(isolate());
     HValue* stub = Add<HConstant>(callable.code());
-    HValue* values[] = {context(), input};
+    HValue* values[] = {input};
     HInstruction* result = New<HCallWithDescriptor>(
         stub, 0, callable.descriptor(), ArrayVector(values));
     return ast_context()->ReturnInstruction(result, call->id());
@@ -12215,7 +12025,7 @@ void HOptimizedGraphBuilder::GenerateToString(CallRuntime* call) {
   } else {
     Callable callable = CodeFactory::ToString(isolate());
     HValue* stub = Add<HConstant>(callable.code());
-    HValue* values[] = {context(), input};
+    HValue* values[] = {input};
     HInstruction* result = New<HCallWithDescriptor>(
         stub, 0, callable.descriptor(), ArrayVector(values));
     return ast_context()->ReturnInstruction(result, call->id());
@@ -12229,7 +12039,7 @@ void HOptimizedGraphBuilder::GenerateToLength(CallRuntime* call) {
   Callable callable = CodeFactory::ToLength(isolate());
   HValue* input = Pop();
   HValue* stub = Add<HConstant>(callable.code());
-  HValue* values[] = {context(), input};
+  HValue* values[] = {input};
   HInstruction* result = New<HCallWithDescriptor>(
       stub, 0, callable.descriptor(), ArrayVector(values));
   return ast_context()->ReturnInstruction(result, call->id());
@@ -12321,7 +12131,7 @@ void HOptimizedGraphBuilder::GenerateSubString(CallRuntime* call) {
   HValue* to = Pop();
   HValue* from = Pop();
   HValue* string = Pop();
-  HValue* values[] = {context(), string, from, to};
+  HValue* values[] = {string, from, to};
   HInstruction* result = New<HCallWithDescriptor>(
       stub, 0, callable.descriptor(), ArrayVector(values));
   result->set_type(HType::String());
@@ -12334,7 +12144,7 @@ void HOptimizedGraphBuilder::GenerateNewObject(CallRuntime* call) {
   CHECK_ALIVE(VisitExpressions(call->arguments()));
   FastNewObjectStub stub(isolate());
   FastNewObjectDescriptor descriptor(isolate());
-  HValue* values[] = {context(), Pop(), Pop()};
+  HValue* values[] = {Pop(), Pop()};
   HConstant* stub_value = Add<HConstant>(stub.GetCode());
   HInstruction* result =
       New<HCallWithDescriptor>(stub_value, 0, descriptor, ArrayVector(values));
@@ -12351,8 +12161,7 @@ void HOptimizedGraphBuilder::GenerateRegExpExec(CallRuntime* call) {
   HValue* subject = Pop();
   HValue* regexp_object = Pop();
   HValue* stub = Add<HConstant>(callable.code());
-  HValue* values[] = {context(), regexp_object, subject, index,
-                      last_match_info};
+  HValue* values[] = {regexp_object, subject, index, last_match_info};
   HInstruction* result = New<HCallWithDescriptor>(
       stub, 0, callable.descriptor(), ArrayVector(values));
   return ast_context()->ReturnInstruction(result, call->id());
@@ -12411,8 +12220,7 @@ void HOptimizedGraphBuilder::GenerateCall(CallRuntime* call) {
   PushArgumentsFromEnvironment(call->arguments()->length() - 1);
   HValue* trampoline = Add<HConstant>(isolate()->builtins()->Call());
   HValue* target = Pop();
-  HValue* values[] = {context(), target,
-                      Add<HConstant>(call->arguments()->length() - 2)};
+  HValue* values[] = {target, Add<HConstant>(call->arguments()->length() - 2)};
   HInstruction* result =
       New<HCallWithDescriptor>(trampoline, call->arguments()->length() - 1,
                                descriptor, ArrayVector(values));
@@ -12599,16 +12407,6 @@ void HOptimizedGraphBuilder::GenerateMapClear(CallRuntime* call) {
   BuildOrderedHashTableClear<OrderedHashMap>(receiver);
   return ast_context()->ReturnValue(graph()->GetConstantUndefined());
 }
-
-
-void HOptimizedGraphBuilder::GenerateGetCachedArrayIndex(CallRuntime* call) {
-  DCHECK(call->arguments()->length() == 1);
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
-  HValue* value = Pop();
-  HGetCachedArrayIndex* result = New<HGetCachedArrayIndex>(value);
-  return ast_context()->ReturnInstruction(result, call->id());
-}
-
 
 void HOptimizedGraphBuilder::GenerateDebugBreakInOptimizedCode(
     CallRuntime* call) {

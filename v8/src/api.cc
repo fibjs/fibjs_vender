@@ -73,6 +73,7 @@
 #include "src/version.h"
 #include "src/vm-state-inl.h"
 #include "src/wasm/wasm-module.h"
+#include "src/wasm/wasm-result.h"
 
 namespace v8 {
 
@@ -273,10 +274,23 @@ void i::V8::FatalProcessOutOfMemory(const char* location, bool is_heap_oom) {
   i::Isolate* isolate = i::Isolate::Current();
   char last_few_messages[Heap::kTraceRingBufferSize + 1];
   char js_stacktrace[Heap::kStacktraceBufferSize + 1];
+  i::HeapStats heap_stats;
+
+  if (isolate == nullptr) {
+    // On a background thread -> we cannot retrieve memory information from the
+    // Isolate. Write easy-to-recognize values on the stack.
+    memset(last_few_messages, 0x0badc0de, Heap::kTraceRingBufferSize + 1);
+    memset(js_stacktrace, 0x0badc0de, Heap::kStacktraceBufferSize + 1);
+    memset(&heap_stats, 0xbadc0de, sizeof(heap_stats));
+    // Note that the embedder's oom handler won't be called in this case. We
+    // just crash.
+    FATAL("API fatal error handler returned after process out of memory");
+    return;
+  }
+
   memset(last_few_messages, 0, Heap::kTraceRingBufferSize + 1);
   memset(js_stacktrace, 0, Heap::kStacktraceBufferSize + 1);
 
-  i::HeapStats heap_stats;
   intptr_t start_marker;
   heap_stats.start_marker = &start_marker;
   size_t new_space_size;
@@ -696,13 +710,13 @@ Extension::Extension(const char* name,
   CHECK(source != NULL || source_length_ == 0);
 }
 
-
 ResourceConstraints::ResourceConstraints()
     : max_semi_space_size_(0),
       max_old_space_size_(0),
       max_executable_size_(0),
       stack_limit_(NULL),
-      code_range_size_(0) { }
+      code_range_size_(0),
+      max_zone_pool_size_(0) {}
 
 void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
                                             uint64_t virtual_memory_limit) {
@@ -722,18 +736,25 @@ void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
     set_max_semi_space_size(i::Heap::kMaxSemiSpaceSizeLowMemoryDevice);
     set_max_old_space_size(i::Heap::kMaxOldSpaceSizeLowMemoryDevice);
     set_max_executable_size(i::Heap::kMaxExecutableSizeLowMemoryDevice);
+    set_max_zone_pool_size(i::AccountingAllocator::kMaxPoolSizeLowMemoryDevice);
   } else if (physical_memory <= medium_limit) {
     set_max_semi_space_size(i::Heap::kMaxSemiSpaceSizeMediumMemoryDevice);
     set_max_old_space_size(i::Heap::kMaxOldSpaceSizeMediumMemoryDevice);
     set_max_executable_size(i::Heap::kMaxExecutableSizeMediumMemoryDevice);
+    set_max_zone_pool_size(
+        i::AccountingAllocator::kMaxPoolSizeMediumMemoryDevice);
   } else if (physical_memory <= high_limit) {
     set_max_semi_space_size(i::Heap::kMaxSemiSpaceSizeHighMemoryDevice);
     set_max_old_space_size(i::Heap::kMaxOldSpaceSizeHighMemoryDevice);
     set_max_executable_size(i::Heap::kMaxExecutableSizeHighMemoryDevice);
+    set_max_zone_pool_size(
+        i::AccountingAllocator::kMaxPoolSizeHighMemoryDevice);
   } else {
     set_max_semi_space_size(i::Heap::kMaxSemiSpaceSizeHugeMemoryDevice);
     set_max_old_space_size(i::Heap::kMaxOldSpaceSizeHugeMemoryDevice);
     set_max_executable_size(i::Heap::kMaxExecutableSizeHugeMemoryDevice);
+    set_max_zone_pool_size(
+        i::AccountingAllocator::kMaxPoolSizeHugeMemoryDevice);
   }
 
   if (virtual_memory_limit > 0 && i::kRequiresCodeRange) {
@@ -752,11 +773,14 @@ void SetResourceConstraints(i::Isolate* isolate,
   int old_space_size = constraints.max_old_space_size();
   int max_executable_size = constraints.max_executable_size();
   size_t code_range_size = constraints.code_range_size();
+  size_t max_pool_size = constraints.max_zone_pool_size();
   if (semi_space_size != 0 || old_space_size != 0 ||
       max_executable_size != 0 || code_range_size != 0) {
     isolate->heap()->ConfigureHeap(semi_space_size, old_space_size,
                                    max_executable_size, code_range_size);
   }
+  isolate->allocator()->ConfigureSegmentPool(max_pool_size);
+
   if (constraints.stack_limit() != NULL) {
     uintptr_t limit = reinterpret_cast<uintptr_t>(constraints.stack_limit());
     isolate->stack_guard()->SetStackLimit(limit);
@@ -1061,7 +1085,7 @@ void Template::Set(v8::Local<Name> name, v8::Local<Data> value,
   auto value_obj = Utils::OpenHandle(*value);
   CHECK(!value_obj->IsJSReceiver() || value_obj->IsTemplateInfo());
   if (value_obj->IsObjectTemplateInfo()) {
-    templ->set_serial_number(i::Smi::FromInt(0));
+    templ->set_serial_number(i::Smi::kZero);
     if (templ->IsFunctionTemplateInfo()) {
       i::Handle<i::FunctionTemplateInfo>::cast(templ)->set_do_not_cache(true);
     }
@@ -1395,7 +1419,7 @@ static Local<ObjectTemplate> ObjectTemplateNew(
   obj->set_serial_number(i::Smi::FromInt(next_serial_number));
   if (!constructor.IsEmpty())
     obj->set_constructor(*Utils::OpenHandle(*constructor));
-  obj->set_data(i::Smi::FromInt(0));
+  obj->set_data(i::Smi::kZero);
   return Utils::ToLocal(obj);
 }
 
@@ -1900,22 +1924,13 @@ Local<String> Module::GetModuleRequest(int i) const {
   return ToApiHandle<String>(i::handle(module_requests->get(i), isolate));
 }
 
-void Module::SetEmbedderData(Local<Value> data) {
-  Utils::OpenHandle(this)->set_embedder_data(*Utils::OpenHandle(*data));
-}
-
-Local<Value> Module::GetEmbedderData() const {
-  auto self = Utils::OpenHandle(this);
-  return ToApiHandle<Value>(
-      i::handle(self->embedder_data(), self->GetIsolate()));
-}
+int Module::GetIdentityHash() const { return Utils::OpenHandle(this)->hash(); }
 
 bool Module::Instantiate(Local<Context> context,
-                         Module::ResolveCallback callback,
-                         Local<Value> callback_data) {
+                         Module::ResolveCallback callback) {
   PREPARE_FOR_EXECUTION_BOOL(context, Module, Instantiate);
-  has_pending_exception = !i::Module::Instantiate(
-      Utils::OpenHandle(this), context, callback, callback_data);
+  has_pending_exception =
+      !i::Module::Instantiate(Utils::OpenHandle(this), context, callback);
   RETURN_ON_FAILED_EXECUTION_BOOL();
   return true;
 }
@@ -1930,7 +1945,7 @@ MaybeLocal<Value> Module::Evaluate(Local<Context> context) {
 
   i::Handle<i::Module> self = Utils::OpenHandle(this);
   // It's an API error to call Evaluate before Instantiate.
-  CHECK(self->code()->IsJSFunction());
+  CHECK(self->instantiated());
 
   Local<Value> result;
   has_pending_exception = !ToLocal(i::Module::Evaluate(self), &result);
@@ -2253,11 +2268,10 @@ MaybeLocal<Script> ScriptCompiler::Compile(Local<Context> context,
   source->info->set_script(script);
 
   {
-    // Create a canonical handle scope if compiling ignition bytecode. This is
+    // Create a canonical handle scope for compiling Ignition bytecode. This is
     // required by the constant array builder to de-duplicate objects without
     // dereferencing handles.
-    std::unique_ptr<i::CanonicalHandleScope> canonical;
-    if (i::FLAG_ignition) canonical.reset(new i::CanonicalHandleScope(isolate));
+    i::CanonicalHandleScope canonical(isolate);
 
     // Do the parsing tasks which need to be done on the main thread. This will
     // also handle parse errors.
@@ -7184,24 +7198,35 @@ MaybeLocal<Proxy> Proxy::New(Local<Context> context, Local<Object> local_target,
   RETURN_ESCAPED(result);
 }
 
+Local<String> WasmCompiledModule::GetWasmWireBytes() {
+  i::Handle<i::JSObject> obj =
+      i::Handle<i::JSObject>::cast(Utils::OpenHandle(this));
+  i::Handle<i::wasm::WasmCompiledModule> compiled_part =
+      i::handle(i::wasm::WasmCompiledModule::cast(obj->GetInternalField(0)));
+  i::Handle<i::String> wire_bytes = compiled_part->module_bytes();
+  return Local<String>::Cast(Utils::ToLocal(wire_bytes));
+}
+
 WasmCompiledModule::SerializedModule WasmCompiledModule::Serialize() {
   i::Handle<i::JSObject> obj =
       i::Handle<i::JSObject>::cast(Utils::OpenHandle(this));
-  i::Handle<i::FixedArray> compiled_part =
-      i::handle(i::FixedArray::cast(obj->GetInternalField(0)));
+  i::Handle<i::wasm::WasmCompiledModule> compiled_part =
+      i::handle(i::wasm::WasmCompiledModule::cast(obj->GetInternalField(0)));
+
   std::unique_ptr<i::ScriptData> script_data =
       i::WasmCompiledModuleSerializer::SerializeWasmModule(obj->GetIsolate(),
                                                            compiled_part);
   script_data->ReleaseDataOwnership();
+
   size_t size = static_cast<size_t>(script_data->length());
   return {std::unique_ptr<const uint8_t[]>(script_data->data()), size};
 }
 
 MaybeLocal<WasmCompiledModule> WasmCompiledModule::Deserialize(
     Isolate* isolate,
-    const WasmCompiledModule::SerializedModule& serialized_data) {
-  int size = static_cast<int>(serialized_data.second);
-  i::ScriptData sc(serialized_data.first.get(), size);
+    const WasmCompiledModule::CallerOwnedBuffer& serialized_module) {
+  int size = static_cast<int>(serialized_module.second);
+  i::ScriptData sc(serialized_module.first, size);
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   i::MaybeHandle<i::FixedArray> maybe_compiled_part =
       i::WasmCompiledModuleSerializer::DeserializeWasmModule(i_isolate, &sc);
@@ -7209,9 +7234,53 @@ MaybeLocal<WasmCompiledModule> WasmCompiledModule::Deserialize(
   if (!maybe_compiled_part.ToHandle(&compiled_part)) {
     return MaybeLocal<WasmCompiledModule>();
   }
+  i::Handle<i::wasm::WasmCompiledModule> compiled_module =
+      handle(i::wasm::WasmCompiledModule::cast(*compiled_part));
   return Local<WasmCompiledModule>::Cast(
-      Utils::ToLocal(i::wasm::CreateCompiledModuleObject(
-          i_isolate, compiled_part, i::wasm::ModuleOrigin::kWasmOrigin)));
+      Utils::ToLocal(i::wasm::CreateWasmModuleObject(
+          i_isolate, compiled_module, i::wasm::ModuleOrigin::kWasmOrigin)));
+}
+
+MaybeLocal<WasmCompiledModule> WasmCompiledModule::DeserializeOrCompile(
+    Isolate* isolate,
+    const WasmCompiledModule::CallerOwnedBuffer& serialized_module,
+    const WasmCompiledModule::CallerOwnedBuffer& wire_bytes) {
+  MaybeLocal<WasmCompiledModule> ret = Deserialize(isolate, serialized_module);
+  if (!ret.IsEmpty()) {
+    // TODO(mtrofin): once we stop taking a dependency on Deserialize,
+    // clean this up to avoid the back and forth between internal
+    // and external representations.
+    i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+    i::Vector<const uint8_t> str(wire_bytes.first,
+                                 static_cast<int>(wire_bytes.second));
+    i::Handle<i::SeqOneByteString> wire_bytes_as_string(
+        i::SeqOneByteString::cast(
+            *i_isolate->factory()->NewStringFromOneByte(str).ToHandleChecked()),
+        i_isolate);
+
+    i::Handle<i::JSObject> obj =
+        i::Handle<i::JSObject>::cast(Utils::OpenHandle(*ret.ToLocalChecked()));
+    i::Handle<i::wasm::WasmCompiledModule> compiled_part =
+        i::handle(i::wasm::WasmCompiledModule::cast(obj->GetInternalField(0)));
+    compiled_part->set_module_bytes(wire_bytes_as_string);
+    return ret;
+  }
+  return Compile(isolate, wire_bytes.first, wire_bytes.second);
+}
+
+MaybeLocal<WasmCompiledModule> WasmCompiledModule::Compile(Isolate* isolate,
+                                                           const uint8_t* start,
+                                                           size_t length) {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::wasm::ErrorThrower thrower(i_isolate, "WasmCompiledModule::Deserialize()");
+  i::MaybeHandle<i::JSObject> maybe_compiled =
+      i::wasm::CreateModuleObjectFromBytes(
+          i_isolate, start, start + length, &thrower,
+          i::wasm::ModuleOrigin::kWasmOrigin, i::Handle<i::Script>::null(),
+          nullptr, nullptr);
+  if (maybe_compiled.is_null()) return MaybeLocal<WasmCompiledModule>();
+  return Local<WasmCompiledModule>::Cast(
+      Utils::ToLocal(maybe_compiled.ToHandleChecked()));
 }
 
 // static
@@ -8245,6 +8314,7 @@ void Isolate::IsolateInBackgroundNotification() {
 void Isolate::MemoryPressureNotification(MemoryPressureLevel level) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
   isolate->heap()->MemoryPressureNotification(level, Locker::IsLocked(this));
+  isolate->allocator()->MemoryPressureNotification(level);
 }
 
 void Isolate::SetRAILMode(RAILMode rail_mode) {
@@ -8693,6 +8763,72 @@ MaybeLocal<Array> Debug::GetInternalProperties(Isolate* v8_isolate,
   return Utils::ToLocal(result);
 }
 
+bool DebugInterface::SetDebugEventListener(Isolate* isolate,
+                                           DebugInterface::EventCallback that,
+                                           Local<Value> data) {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  ENTER_V8(i_isolate);
+  i::HandleScope scope(i_isolate);
+  i::Handle<i::Object> foreign = i_isolate->factory()->undefined_value();
+  if (that != NULL) {
+    foreign = i_isolate->factory()->NewForeign(FUNCTION_ADDR(that));
+  }
+  i_isolate->debug()->SetEventListener(foreign, Utils::OpenHandle(*data, true));
+  return true;
+}
+
+Local<Context> DebugInterface::GetDebugContext(Isolate* isolate) {
+  return Debug::GetDebugContext(isolate);
+}
+
+MaybeLocal<Value> DebugInterface::Call(Local<Context> context,
+                                       v8::Local<v8::Function> fun,
+                                       v8::Local<v8::Value> data) {
+  return Debug::Call(context, fun, data);
+}
+
+void DebugInterface::SetLiveEditEnabled(Isolate* isolate, bool enable) {
+  Debug::SetLiveEditEnabled(isolate, enable);
+}
+
+void DebugInterface::DebugBreak(Isolate* isolate) {
+  Debug::DebugBreak(isolate);
+}
+
+void DebugInterface::CancelDebugBreak(Isolate* isolate) {
+  Debug::CancelDebugBreak(isolate);
+}
+
+MaybeLocal<Array> DebugInterface::GetInternalProperties(Isolate* isolate,
+                                                        Local<Value> value) {
+  return Debug::GetInternalProperties(isolate, value);
+}
+
+void DebugInterface::ChangeBreakOnException(Isolate* isolate,
+                                            ExceptionBreakState type) {
+  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  internal_isolate->debug()->ChangeBreakOnException(
+      i::BreakException, type == BreakOnAnyException);
+  internal_isolate->debug()->ChangeBreakOnException(i::BreakUncaughtException,
+                                                    type != NoBreakOnException);
+}
+
+void DebugInterface::PrepareStep(Isolate* v8_isolate, StepAction action) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+  ENTER_V8(isolate);
+  CHECK(isolate->debug()->CheckExecutionState());
+  // Clear all current stepping setup.
+  isolate->debug()->ClearStepping();
+  // Prepare step.
+  isolate->debug()->PrepareStep(static_cast<i::StepAction>(action));
+}
+
+void DebugInterface::ClearStepping(Isolate* v8_isolate) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+  ENTER_V8(isolate);
+  // Clear all current stepping setup.
+  isolate->debug()->ClearStepping();
+}
 
 Local<String> CpuProfileNode::GetFunctionName() const {
   const i::ProfileNode* node = reinterpret_cast<const i::ProfileNode*>(this);

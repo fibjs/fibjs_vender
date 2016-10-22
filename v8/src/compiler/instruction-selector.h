@@ -12,6 +12,7 @@
 #include "src/compiler/instruction.h"
 #include "src/compiler/machine-operator.h"
 #include "src/compiler/node.h"
+#include "src/globals.h"
 #include "src/zone/zone-containers.h"
 
 namespace v8 {
@@ -42,7 +43,7 @@ class PushParameter {
 };
 
 // Instruction selection generates an InstructionSequence for a given Schedule.
-class InstructionSelector final {
+class V8_EXPORT_PRIVATE InstructionSelector final {
  public:
   // Forward declarations.
   class Features;
@@ -345,6 +346,8 @@ class InstructionSelector final {
     instruction_selection_failed_ = true;
   }
   bool instruction_selection_failed() { return instruction_selection_failed_; }
+
+  void MarkPairProjectionsAsWord32(Node* node);
 
   // ===========================================================================
 

@@ -63,7 +63,6 @@ using v8::MemoryPressureLevel;
   V(FixedArray, empty_type_feedback_vector, EmptyTypeFeedbackVector)           \
   V(FixedArray, empty_fixed_array, EmptyFixedArray)                            \
   V(ScopeInfo, empty_scope_info, EmptyScopeInfo)                               \
-  V(FixedArray, cleared_optimized_code_map, ClearedOptimizedCodeMap)           \
   V(DescriptorArray, empty_descriptor_array, EmptyDescriptorArray)             \
   /* Entries beyond the first 32                                            */ \
   /* The roots above this line should be boring from a GC point of view.    */ \
@@ -624,8 +623,8 @@ class Heap {
   static const int kTraceRingBufferSize = 512;
   static const int kStacktraceBufferSize = 512;
 
-  static const double kMinHeapGrowingFactor;
-  static const double kMaxHeapGrowingFactor;
+  V8_EXPORT_PRIVATE static const double kMinHeapGrowingFactor;
+  V8_EXPORT_PRIVATE static const double kMaxHeapGrowingFactor;
   static const double kMaxHeapGrowingFactorMemoryConstrained;
   static const double kMaxHeapGrowingFactorIdle;
   static const double kConservativeHeapGrowingFactor;
@@ -688,7 +687,8 @@ class Heap {
 #endif
   }
 
-  static double HeapGrowingFactor(double gc_speed, double mutator_speed);
+  V8_EXPORT_PRIVATE static double HeapGrowingFactor(double gc_speed,
+                                                    double mutator_speed);
 
   // Copy block of memory from src to dst. Size of block should be aligned
   // by pointer size.

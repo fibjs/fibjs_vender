@@ -9,11 +9,13 @@
 #include "src/compiler/bytecode-loop-analysis.h"
 #include "src/compiler/js-graph.h"
 #include "src/compiler/liveness-analyzer.h"
+#include "src/compiler/source-position.h"
 #include "src/compiler/state-values-utils.h"
 #include "src/compiler/type-hint-analyzer.h"
 #include "src/interpreter/bytecode-array-iterator.h"
 #include "src/interpreter/bytecode-flags.h"
 #include "src/interpreter/bytecodes.h"
+#include "src/source-position-table.h"
 
 namespace v8 {
 namespace internal {
@@ -27,14 +29,14 @@ namespace compiler {
 class BytecodeGraphBuilder {
  public:
   BytecodeGraphBuilder(Zone* local_zone, CompilationInfo* info,
-                       JSGraph* jsgraph, float invocation_frequency);
+                       JSGraph* jsgraph, float invocation_frequency,
+                       SourcePositionTable* source_positions);
 
   // Creates a graph by visiting bytecodes.
   bool CreateGraph();
 
  private:
   class Environment;
-  class FrameStateBeforeAndAfter;
 
   void VisitBytecodes();
 
@@ -117,11 +119,20 @@ class BytecodeGraphBuilder {
                                     interpreter::Register first_arg,
                                     size_t arity);
 
+  // Prepare information for eager deoptimization. This information is carried
+  // by dedicated {Checkpoint} nodes that are wired into the effect chain.
+  // Conceptually this frame state is "before" a given operation.
+  void PrepareEagerCheckpoint();
+
+  // Prepare information for lazy deoptimization. This information is attached
+  // to the given node and the output value produced by the node is combined.
+  // Conceptually this frame state is "after" a given operation.
+  void PrepareFrameState(Node* node, OutputFrameStateCombine combine);
+
   // Computes register liveness and replaces dead ones in frame states with the
   // undefined values.
   void ClearNonLiveSlotsInFrameStates();
 
-  void BuildCreateLiteral(const Operator* op);
   void BuildCreateArguments(CreateArgumentsType type);
   Node* BuildLoadContextSlot();
   Node* BuildLoadGlobal(uint32_t feedback_slot_index, TypeofMode typeof_mode);
@@ -300,6 +311,13 @@ class BytecodeGraphBuilder {
 
   // Analyzer of register liveness.
   LivenessAnalyzer liveness_analyzer_;
+
+  // The Turbofan source position table, to be populated.
+  SourcePositionTable* source_positions_;
+
+  // Update [source_positions_]'s current position to that of the bytecode at
+  // [offset], if any.
+  void UpdateCurrentSourcePosition(SourcePositionTableIterator* it, int offset);
 
   static int const kBinaryOperationHintIndex = 1;
   static int const kCountOperationHintIndex = 0;

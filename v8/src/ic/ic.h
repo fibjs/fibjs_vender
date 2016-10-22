@@ -81,6 +81,8 @@ class IC {
 
   static InlineCacheState StateFromCode(Code* code);
 
+  static inline bool IsHandler(Object* object);
+
  protected:
   Address fp() const { return fp_; }
   Address pc() const { return *pc_address_; }
@@ -309,6 +311,18 @@ class LoadIC : public IC {
  private:
   Handle<Object> SimpleFieldLoad(FieldIndex index);
 
+  // Returns true if the validity cell check is enough to ensure that the
+  // prototype chain from |receiver_map| till |holder| did not change.
+  bool IsPrototypeValidityCellCheckEnough(Handle<Map> receiver_map,
+                                          Handle<JSObject> holder);
+
+  // Creates a data handler that represents a prototype chain check followed
+  // by given Smi-handler that encoded a load from the holder.
+  // Can be used only if IsPrototypeValidityCellCheckEnough() predicate is true.
+  Handle<Object> SimpleLoadFromPrototype(Handle<Map> receiver_map,
+                                         Handle<JSObject> holder,
+                                         Handle<Object> smi_handler);
+
   friend class IC;
 };
 
@@ -341,10 +355,6 @@ class KeyedLoadIC : public LoadIC {
   // Code generator routines.
   static void GenerateMiss(MacroAssembler* masm);
   static void GenerateRuntimeGetProperty(MacroAssembler* masm);
-  static void GenerateMegamorphic(MacroAssembler* masm);
-
-  static Handle<Code> ChooseMegamorphicStub(Isolate* isolate,
-                                            ExtraICState extra_state);
 
   static void Clear(Isolate* isolate, Code* host, KeyedLoadICNexus* nexus);
 

@@ -6,13 +6,15 @@
 #include "src/builtins/builtins-utils.h"
 
 #include "src/code-factory.h"
+#include "src/regexp/regexp-utils.h"
 
 namespace v8 {
 namespace internal {
 
-namespace {
+typedef CodeStubAssembler::ResultMode ResultMode;
+typedef CodeStubAssembler::RelationalComparisonMode RelationalComparisonMode;
 
-enum ResultMode { kDontNegateResult, kNegateResult };
+namespace {
 
 void GenerateStringEqual(CodeStubAssembler* assembler, ResultMode mode) {
   // Here's pseudo-code for the algorithm below in case of kDontNegateResult
@@ -168,9 +170,10 @@ void GenerateStringEqual(CodeStubAssembler* assembler, ResultMode mode) {
         {
           // TODO(bmeurer): Add fast case support for flattened cons strings;
           // also add support for two byte string equality checks.
-          Runtime::FunctionId function_id = (mode == kDontNegateResult)
-                                                ? Runtime::kStringEqual
-                                                : Runtime::kStringNotEqual;
+          Runtime::FunctionId function_id =
+              (mode == ResultMode::kDontNegateResult)
+                  ? Runtime::kStringEqual
+                  : Runtime::kStringNotEqual;
           assembler->TailCallRuntime(function_id, context, lhs, rhs);
         }
       }
@@ -184,18 +187,14 @@ void GenerateStringEqual(CodeStubAssembler* assembler, ResultMode mode) {
   }
 
   assembler->Bind(&if_equal);
-  assembler->Return(assembler->BooleanConstant(mode == kDontNegateResult));
+  assembler->Return(
+      assembler->BooleanConstant(mode == ResultMode::kDontNegateResult));
 
   assembler->Bind(&if_notequal);
-  assembler->Return(assembler->BooleanConstant(mode == kNegateResult));
+  assembler->Return(
+      assembler->BooleanConstant(mode == ResultMode::kNegateResult));
 }
 
-enum RelationalComparisonMode {
-  kLessThan,
-  kLessThanOrEqual,
-  kGreaterThan,
-  kGreaterThanOrEqual
-};
 
 void GenerateStringRelationalComparison(CodeStubAssembler* assembler,
                                         RelationalComparisonMode mode) {
@@ -293,8 +292,8 @@ void GenerateStringRelationalComparison(CodeStubAssembler* assembler,
           assembler->Goto(&loop);
 
           assembler->Bind(&if_valueisnotsame);
-          assembler->BranchIf(assembler->Uint32LessThan(lhs_value, rhs_value),
-                              &if_less, &if_greater);
+          assembler->Branch(assembler->Uint32LessThan(lhs_value, rhs_value),
+                            &if_less, &if_greater);
         }
 
         assembler->Bind(&if_done);
@@ -320,19 +319,19 @@ void GenerateStringRelationalComparison(CodeStubAssembler* assembler,
       // TODO(bmeurer): Add fast case support for flattened cons strings;
       // also add support for two byte string relational comparisons.
       switch (mode) {
-        case kLessThan:
+        case RelationalComparisonMode::kLessThan:
           assembler->TailCallRuntime(Runtime::kStringLessThan, context, lhs,
                                      rhs);
           break;
-        case kLessThanOrEqual:
+        case RelationalComparisonMode::kLessThanOrEqual:
           assembler->TailCallRuntime(Runtime::kStringLessThanOrEqual, context,
                                      lhs, rhs);
           break;
-        case kGreaterThan:
+        case RelationalComparisonMode::kGreaterThan:
           assembler->TailCallRuntime(Runtime::kStringGreaterThan, context, lhs,
                                      rhs);
           break;
-        case kGreaterThanOrEqual:
+        case RelationalComparisonMode::kGreaterThanOrEqual:
           assembler->TailCallRuntime(Runtime::kStringGreaterThanOrEqual,
                                      context, lhs, rhs);
           break;
@@ -342,39 +341,39 @@ void GenerateStringRelationalComparison(CodeStubAssembler* assembler,
 
   assembler->Bind(&if_less);
   switch (mode) {
-    case kLessThan:
-    case kLessThanOrEqual:
+    case RelationalComparisonMode::kLessThan:
+    case RelationalComparisonMode::kLessThanOrEqual:
       assembler->Return(assembler->BooleanConstant(true));
       break;
 
-    case kGreaterThan:
-    case kGreaterThanOrEqual:
+    case RelationalComparisonMode::kGreaterThan:
+    case RelationalComparisonMode::kGreaterThanOrEqual:
       assembler->Return(assembler->BooleanConstant(false));
       break;
   }
 
   assembler->Bind(&if_equal);
   switch (mode) {
-    case kLessThan:
-    case kGreaterThan:
+    case RelationalComparisonMode::kLessThan:
+    case RelationalComparisonMode::kGreaterThan:
       assembler->Return(assembler->BooleanConstant(false));
       break;
 
-    case kLessThanOrEqual:
-    case kGreaterThanOrEqual:
+    case RelationalComparisonMode::kLessThanOrEqual:
+    case RelationalComparisonMode::kGreaterThanOrEqual:
       assembler->Return(assembler->BooleanConstant(true));
       break;
   }
 
   assembler->Bind(&if_greater);
   switch (mode) {
-    case kLessThan:
-    case kLessThanOrEqual:
+    case RelationalComparisonMode::kLessThan:
+    case RelationalComparisonMode::kLessThanOrEqual:
       assembler->Return(assembler->BooleanConstant(false));
       break;
 
-    case kGreaterThan:
-    case kGreaterThanOrEqual:
+    case RelationalComparisonMode::kGreaterThan:
+    case RelationalComparisonMode::kGreaterThanOrEqual:
       assembler->Return(assembler->BooleanConstant(true));
       break;
   }
@@ -384,32 +383,36 @@ void GenerateStringRelationalComparison(CodeStubAssembler* assembler,
 
 // static
 void Builtins::Generate_StringEqual(CodeStubAssembler* assembler) {
-  GenerateStringEqual(assembler, kDontNegateResult);
+  GenerateStringEqual(assembler, ResultMode::kDontNegateResult);
 }
 
 // static
 void Builtins::Generate_StringNotEqual(CodeStubAssembler* assembler) {
-  GenerateStringEqual(assembler, kNegateResult);
+  GenerateStringEqual(assembler, ResultMode::kNegateResult);
 }
 
 // static
 void Builtins::Generate_StringLessThan(CodeStubAssembler* assembler) {
-  GenerateStringRelationalComparison(assembler, kLessThan);
+  GenerateStringRelationalComparison(assembler,
+                                     RelationalComparisonMode::kLessThan);
 }
 
 // static
 void Builtins::Generate_StringLessThanOrEqual(CodeStubAssembler* assembler) {
-  GenerateStringRelationalComparison(assembler, kLessThanOrEqual);
+  GenerateStringRelationalComparison(
+      assembler, RelationalComparisonMode::kLessThanOrEqual);
 }
 
 // static
 void Builtins::Generate_StringGreaterThan(CodeStubAssembler* assembler) {
-  GenerateStringRelationalComparison(assembler, kGreaterThan);
+  GenerateStringRelationalComparison(assembler,
+                                     RelationalComparisonMode::kGreaterThan);
 }
 
 // static
 void Builtins::Generate_StringGreaterThanOrEqual(CodeStubAssembler* assembler) {
-  GenerateStringRelationalComparison(assembler, kGreaterThanOrEqual);
+  GenerateStringRelationalComparison(
+      assembler, RelationalComparisonMode::kGreaterThanOrEqual);
 }
 
 // -----------------------------------------------------------------------------
@@ -711,7 +714,8 @@ void Builtins::Generate_StringPrototypeCharAt(CodeStubAssembler* assembler) {
     Label return_emptystring(assembler, Label::kDeferred);
     position = assembler->ToInteger(context, position,
                                     CodeStubAssembler::kTruncateMinusZero);
-    assembler->GotoUnless(assembler->WordIsSmi(position), &return_emptystring);
+    assembler->GotoUnless(assembler->TaggedIsSmi(position),
+                          &return_emptystring);
 
     // Determine the actual length of the {receiver} String.
     Node* receiver_length =
@@ -756,7 +760,7 @@ void Builtins::Generate_StringPrototypeCharCodeAt(
     Label return_nan(assembler, Label::kDeferred);
     position = assembler->ToInteger(context, position,
                                     CodeStubAssembler::kTruncateMinusZero);
-    assembler->GotoUnless(assembler->WordIsSmi(position), &return_nan);
+    assembler->GotoUnless(assembler->TaggedIsSmi(position), &return_nan);
 
     // Determine the actual length of the {receiver} String.
     Node* receiver_length =
@@ -777,6 +781,100 @@ void Builtins::Generate_StringPrototypeCharCodeAt(
   Node* value = assembler->StringCharCodeAt(receiver, position);
   Node* result = assembler->SmiFromWord32(value);
   assembler->Return(result);
+}
+
+// ES6 section 21.1.3.6
+// String.prototype.endsWith ( searchString [ , endPosition ] )
+BUILTIN(StringPrototypeEndsWith) {
+  HandleScope handle_scope(isolate);
+  TO_THIS_STRING(str, "String.prototype.endsWith");
+
+  // Check if the search string is a regExp and fail if it is.
+  Handle<Object> search = args.atOrUndefined(isolate, 1);
+  Maybe<bool> is_reg_exp = RegExpUtils::IsRegExp(isolate, search);
+  if (is_reg_exp.IsNothing()) {
+    DCHECK(isolate->has_pending_exception());
+    return isolate->heap()->exception();
+  }
+  if (is_reg_exp.FromJust()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kFirstArgumentNotRegExp,
+                              isolate->factory()->NewStringFromStaticChars(
+                                  "String.prototype.endsWith")));
+  }
+  Handle<String> search_string;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, search_string,
+                                     Object::ToString(isolate, search));
+
+  Handle<Object> position = args.atOrUndefined(isolate, 2);
+  int end;
+
+  if (position->IsUndefined(isolate)) {
+    end = str->length();
+  } else {
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, position,
+                                       Object::ToInteger(isolate, position));
+    double index = std::max(position->Number(), 0.0);
+    index = std::min(index, static_cast<double>(str->length()));
+    end = static_cast<uint32_t>(index);
+  }
+
+  int start = end - search_string->length();
+  if (start < 0) return *isolate->factory()->false_value();
+
+  FlatStringReader str_reader(isolate, String::Flatten(str));
+  FlatStringReader search_reader(isolate, String::Flatten(search_string));
+
+  for (int i = 0; i < search_string->length(); i++) {
+    if (str_reader.Get(start + i) != search_reader.Get(i)) {
+      return *isolate->factory()->false_value();
+    }
+  }
+  return *isolate->factory()->true_value();
+}
+
+// ES6 section 21.1.3.7
+// String.prototype.includes ( searchString [ , position ] )
+BUILTIN(StringPrototypeIncludes) {
+  HandleScope handle_scope(isolate);
+  TO_THIS_STRING(str, "String.prototype.includes");
+
+  // Check if the search string is a regExp and fail if it is.
+  Handle<Object> search = args.atOrUndefined(isolate, 1);
+  Maybe<bool> is_reg_exp = RegExpUtils::IsRegExp(isolate, search);
+  if (is_reg_exp.IsNothing()) {
+    DCHECK(isolate->has_pending_exception());
+    return isolate->heap()->exception();
+  }
+  if (is_reg_exp.FromJust()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kFirstArgumentNotRegExp,
+                              isolate->factory()->NewStringFromStaticChars(
+                                  "String.prototype.includes")));
+  }
+  Handle<String> search_string;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, search_string,
+                                     Object::ToString(isolate, search));
+  Handle<Object> position;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+      isolate, position,
+      Object::ToInteger(isolate, args.atOrUndefined(isolate, 2)));
+
+  double index = std::max(position->Number(), 0.0);
+  index = std::min(index, static_cast<double>(str->length()));
+
+  int index_in_str = String::IndexOf(isolate, str, search_string,
+                                     static_cast<uint32_t>(index));
+  return *isolate->factory()->ToBoolean(index_in_str != -1);
+}
+
+// ES6 section 21.1.3.8 String.prototype.indexOf ( searchString [ , position ] )
+BUILTIN(StringPrototypeIndexOf) {
+  HandleScope handle_scope(isolate);
+
+  return String::IndexOf(isolate, args.receiver(),
+                         args.atOrUndefined(isolate, 1),
+                         args.atOrUndefined(isolate, 2));
 }
 
 // ES6 section 21.1.3.9
@@ -803,13 +901,13 @@ BUILTIN(StringPrototypeLocaleCompare) {
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, str2, Object::ToString(isolate, args.at<Object>(1)));
 
-  if (str1.is_identical_to(str2)) return Smi::FromInt(0);  // Equal.
+  if (str1.is_identical_to(str2)) return Smi::kZero;  // Equal.
   int str1_length = str1->length();
   int str2_length = str2->length();
 
   // Decide trivial cases without flattening.
   if (str1_length == 0) {
-    if (str2_length == 0) return Smi::FromInt(0);  // Equal.
+    if (str2_length == 0) return Smi::kZero;  // Equal.
     return Smi::FromInt(-str2_length);
   } else {
     if (str2_length == 0) return Smi::FromInt(str1_length);
@@ -889,7 +987,7 @@ void Builtins::Generate_StringPrototypeSubstr(CodeStubAssembler* a) {
   Node* const length = a->Parameter(2);
   Node* const context = a->Parameter(5);
 
-  Node* const zero = a->SmiConstant(Smi::FromInt(0));
+  Node* const zero = a->SmiConstant(Smi::kZero);
 
   // Check that {receiver} is coercible to Object and convert it to a String.
   Node* const string =
@@ -903,7 +1001,7 @@ void Builtins::Generate_StringPrototypeSubstr(CodeStubAssembler* a) {
         a->ToInteger(context, start, CodeStubAssembler::kTruncateMinusZero);
 
     Label if_issmi(a), if_isheapnumber(a, Label::kDeferred);
-    a->Branch(a->WordIsSmi(start_int), &if_issmi, &if_isheapnumber);
+    a->Branch(a->TaggedIsSmi(start_int), &if_issmi, &if_isheapnumber);
 
     a->Bind(&if_issmi);
     {
@@ -947,7 +1045,7 @@ void Builtins::Generate_StringPrototypeSubstr(CodeStubAssembler* a) {
           a->ToInteger(context, length, CodeStubAssembler::kTruncateMinusZero));
     }
 
-    a->Branch(a->WordIsSmi(var_length.value()), &if_issmi, &if_isheapnumber);
+    a->Branch(a->TaggedIsSmi(var_length.value()), &if_issmi, &if_isheapnumber);
 
     // Set {length} to min(max({length}, 0), {string_length} - {start}
     a->Bind(&if_issmi);
@@ -1013,7 +1111,7 @@ compiler::Node* ToSmiBetweenZeroAnd(CodeStubAssembler* a,
       a->ToInteger(context, value, CodeStubAssembler::kTruncateMinusZero);
 
   Label if_issmi(a), if_isnotsmi(a, Label::kDeferred);
-  a->Branch(a->WordIsSmi(value_int), &if_issmi, &if_isnotsmi);
+  a->Branch(a->TaggedIsSmi(value_int), &if_issmi, &if_isnotsmi);
 
   a->Bind(&if_issmi);
   {
@@ -1028,7 +1126,7 @@ compiler::Node* ToSmiBetweenZeroAnd(CodeStubAssembler* a,
 
     a->Bind(&if_isoutofbounds);
     {
-      Node* const zero = a->SmiConstant(Smi::FromInt(0));
+      Node* const zero = a->SmiConstant(Smi::kZero);
       var_result.Bind(a->Select(a->SmiLessThan(value_int, zero), zero, limit));
       a->Goto(&out);
     }
@@ -1040,7 +1138,7 @@ compiler::Node* ToSmiBetweenZeroAnd(CodeStubAssembler* a,
     a->Assert(a->WordEqual(a->LoadMap(value_int), a->HeapNumberMapConstant()));
 
     Node* const float_zero = a->Float64Constant(0.);
-    Node* const smi_zero = a->SmiConstant(Smi::FromInt(0));
+    Node* const smi_zero = a->SmiConstant(Smi::kZero);
     Node* const value_float = a->LoadHeapNumberValue(value_int);
     var_result.Bind(a->Select(a->Float64LessThan(value_float, float_zero),
                               smi_zero, limit));
@@ -1104,6 +1202,55 @@ void Builtins::Generate_StringPrototypeSubstring(CodeStubAssembler* a) {
         a->SubString(context, string, var_start.value(), var_end.value());
     a->Return(result);
   }
+}
+
+BUILTIN(StringPrototypeStartsWith) {
+  HandleScope handle_scope(isolate);
+  TO_THIS_STRING(str, "String.prototype.startsWith");
+
+  // Check if the search string is a regExp and fail if it is.
+  Handle<Object> search = args.atOrUndefined(isolate, 1);
+  Maybe<bool> is_reg_exp = RegExpUtils::IsRegExp(isolate, search);
+  if (is_reg_exp.IsNothing()) {
+    DCHECK(isolate->has_pending_exception());
+    return isolate->heap()->exception();
+  }
+  if (is_reg_exp.FromJust()) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate, NewTypeError(MessageTemplate::kFirstArgumentNotRegExp,
+                              isolate->factory()->NewStringFromStaticChars(
+                                  "String.prototype.startsWith")));
+  }
+  Handle<String> search_string;
+  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, search_string,
+                                     Object::ToString(isolate, search));
+
+  Handle<Object> position = args.atOrUndefined(isolate, 2);
+  int start;
+
+  if (position->IsUndefined(isolate)) {
+    start = 0;
+  } else {
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, position,
+                                       Object::ToInteger(isolate, position));
+    double index = std::max(position->Number(), 0.0);
+    index = std::min(index, static_cast<double>(str->length()));
+    start = static_cast<uint32_t>(index);
+  }
+
+  if (start + search_string->length() > str->length()) {
+    return *isolate->factory()->false_value();
+  }
+
+  FlatStringReader str_reader(isolate, String::Flatten(str));
+  FlatStringReader search_reader(isolate, String::Flatten(search_string));
+
+  for (int i = 0; i < search_string->length(); i++) {
+    if (str_reader.Get(start + i) != search_reader.Get(i)) {
+      return *isolate->factory()->false_value();
+    }
+  }
+  return *isolate->factory()->true_value();
 }
 
 // ES6 section 21.1.3.25 String.prototype.toString ()
@@ -1173,7 +1320,7 @@ void Builtins::Generate_StringPrototypeIterator(CodeStubAssembler* assembler) {
                                   Heap::kEmptyFixedArrayRootIndex);
   assembler->StoreObjectFieldNoWriteBarrier(
       iterator, JSStringIterator::kStringOffset, string);
-  Node* index = assembler->SmiConstant(Smi::FromInt(0));
+  Node* index = assembler->SmiConstant(Smi::kZero);
   assembler->StoreObjectFieldNoWriteBarrier(
       iterator, JSStringIterator::kNextIndexOffset, index);
   assembler->Return(iterator);
@@ -1284,7 +1431,7 @@ void Builtins::Generate_StringIteratorPrototypeNext(
   Node* iterator = assembler->Parameter(0);
   Node* context = assembler->Parameter(3);
 
-  assembler->GotoIf(assembler->WordIsSmi(iterator), &throw_bad_receiver);
+  assembler->GotoIf(assembler->TaggedIsSmi(iterator), &throw_bad_receiver);
   assembler->GotoUnless(
       assembler->WordEqual(assembler->LoadInstanceType(iterator),
                            assembler->Int32Constant(JS_STRING_ITERATOR_TYPE)),

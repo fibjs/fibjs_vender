@@ -1105,7 +1105,7 @@ static int TranslatePosition(int original_position,
 void TranslateSourcePositionTable(Handle<AbstractCode> code,
                                   Handle<JSArray> position_change_array) {
   Isolate* isolate = code->GetIsolate();
-  Zone zone(isolate->allocator());
+  Zone zone(isolate->allocator(), ZONE_NAME);
   SourcePositionTableBuilder builder(&zone);
 
   Handle<ByteArray> source_position_table(code->source_position_table());
@@ -1426,7 +1426,7 @@ static const char* DropFrames(Vector<StackFrame*> frames, int top_frame_index,
   for (Address a = unused_stack_top;
       a < unused_stack_bottom;
       a += kPointerSize) {
-    Memory::Object_at(a) = Smi::FromInt(0);
+    Memory::Object_at(a) = Smi::kZero;
   }
 
   return NULL;
@@ -1517,7 +1517,7 @@ static const char* DropActivationsInActiveThreadImpl(Isolate* isolate,
                                                      TARGET& target,  // NOLINT
                                                      bool do_drop) {
   Debug* debug = isolate->debug();
-  Zone zone(isolate->allocator());
+  Zone zone(isolate->allocator(), ZONE_NAME);
   Vector<StackFrame*> frames = CreateStackMap(isolate, &zone);
 
 

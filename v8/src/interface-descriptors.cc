@@ -183,22 +183,6 @@ void StoreNamedTransitionDescriptor::InitializePlatformSpecific(
   data->InitializePlatformSpecific(len, registers);
 }
 
-void StoreGlobalViaContextDescriptor::InitializePlatformIndependent(
-    CallInterfaceDescriptorData* data) {
-  // kSlot, kValue
-  MachineType machine_types[] = {MachineType::Int32(),
-                                 MachineType::AnyTagged()};
-  data->InitializePlatformIndependent(arraysize(machine_types), 0,
-                                      machine_types);
-}
-
-void StoreGlobalViaContextDescriptor::InitializePlatformSpecific(
-    CallInterfaceDescriptorData* data) {
-  Register registers[] = {SlotRegister(), ValueRegister()};
-  data->InitializePlatformSpecific(arraysize(registers), registers);
-}
-
-
 void StringCompareDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
   Register registers[] = {LeftRegister(), RightRegister()};
@@ -378,10 +362,10 @@ void CallFunctionWithFeedbackDescriptor::InitializePlatformIndependent(
 
 void CallFunctionWithFeedbackAndVectorDescriptor::InitializePlatformIndependent(
     CallInterfaceDescriptorData* data) {
-  // kFunction, kSlot, kVector
-  MachineType machine_types[] = {MachineType::TaggedPointer(),
-                                 MachineType::TaggedSigned(),
-                                 MachineType::AnyTagged()};
+  // kFunction, kActualArgumentsCount, kSlot, kVector
+  MachineType machine_types[] = {
+      MachineType::TaggedPointer(), MachineType::Int32(),
+      MachineType::TaggedSigned(), MachineType::AnyTagged()};
   data->InitializePlatformIndependent(arraysize(machine_types), 0,
                                       machine_types);
 }

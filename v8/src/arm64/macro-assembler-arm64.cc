@@ -2173,62 +2173,6 @@ void MacroAssembler::ClampDoubleToUint8(Register output,
   Fcvtnu(output, dbl_scratch);
 }
 
-
-void MacroAssembler::CopyBytes(Register dst,
-                               Register src,
-                               Register length,
-                               Register scratch,
-                               CopyHint hint) {
-  UseScratchRegisterScope temps(this);
-  Register tmp1 = temps.AcquireX();
-  Register tmp2 = temps.AcquireX();
-  DCHECK(!AreAliased(src, dst, length, scratch, tmp1, tmp2));
-  DCHECK(!AreAliased(src, dst, csp));
-
-  if (emit_debug_code()) {
-    // Check copy length.
-    Cmp(length, 0);
-    Assert(ge, kUnexpectedNegativeValue);
-
-    // Check src and dst buffers don't overlap.
-    Add(scratch, src, length);  // Calculate end of src buffer.
-    Cmp(scratch, dst);
-    Add(scratch, dst, length);  // Calculate end of dst buffer.
-    Ccmp(scratch, src, ZFlag, gt);
-    Assert(le, kCopyBuffersOverlap);
-  }
-
-  Label short_copy, short_loop, bulk_loop, done;
-
-  if ((hint == kCopyLong || hint == kCopyUnknown) && !FLAG_optimize_for_size) {
-    Register bulk_length = scratch;
-    int pair_size = 2 * kXRegSize;
-    int pair_mask = pair_size - 1;
-
-    Bic(bulk_length, length, pair_mask);
-    Cbz(bulk_length, &short_copy);
-    Bind(&bulk_loop);
-    Sub(bulk_length, bulk_length, pair_size);
-    Ldp(tmp1, tmp2, MemOperand(src, pair_size, PostIndex));
-    Stp(tmp1, tmp2, MemOperand(dst, pair_size, PostIndex));
-    Cbnz(bulk_length, &bulk_loop);
-
-    And(length, length, pair_mask);
-  }
-
-  Bind(&short_copy);
-  Cbz(length, &done);
-  Bind(&short_loop);
-  Sub(length, length, 1);
-  Ldrb(tmp1, MemOperand(src, 1, PostIndex));
-  Strb(tmp1, MemOperand(dst, 1, PostIndex));
-  Cbnz(length, &short_loop);
-
-
-  Bind(&done);
-}
-
-
 void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
                                                 Register end_address,
                                                 Register filler) {
@@ -3723,20 +3667,6 @@ void MacroAssembler::TestAndSplit(const Register& reg,
   }
 }
 
-
-void MacroAssembler::CheckFastElements(Register map,
-                                       Register scratch,
-                                       Label* fail) {
-  STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
-  STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
-  STATIC_ASSERT(FAST_ELEMENTS == 2);
-  STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
-  Ldrb(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  Cmp(scratch, Map::kMaximumBitField2FastHoleyElementValue);
-  B(hi, fail);
-}
-
-
 void MacroAssembler::CheckFastObjectElements(Register map,
                                              Register scratch,
                                              Label* fail) {
@@ -3794,19 +3724,6 @@ bool MacroAssembler::AllowThisStubCall(CodeStub* stub) {
   return has_frame_ || !stub->SometimesSetsUpAFrame();
 }
 
-
-void MacroAssembler::IndexFromHash(Register hash, Register index) {
-  // If the hash field contains an array index pick it out. The assert checks
-  // that the constants for the maximum number of digits for an array index
-  // cached in the hash field and the number of bits reserved for it does not
-  // conflict.
-  DCHECK(TenToThe(String::kMaxCachedArrayIndexLength) <
-         (1 << String::kArrayIndexValueBits));
-  DecodeField<String::ArrayIndexValueBits>(index, hash);
-  SmiTag(index, index);
-}
-
-
 void MacroAssembler::EmitSeqStringSetCharCheck(
     Register string,
     Register index,
@@ -3834,7 +3751,7 @@ void MacroAssembler::EmitSeqStringSetCharCheck(
   Cmp(index, index_type == kIndexIsSmi ? scratch : Operand::UntagSmi(scratch));
   Check(lt, kIndexIsTooLarge);
 
-  DCHECK_EQ(static_cast<Smi*>(0), Smi::FromInt(0));
+  DCHECK_EQ(static_cast<Smi*>(0), Smi::kZero);
   Cmp(index, 0);
   Check(ge, kIndexIsNegative);
 }
@@ -3946,69 +3863,6 @@ void MacroAssembler::GetNumberHash(Register key, Register scratch) {
   // hash = hash ^ (hash >> 16);
   Eor(key, key, Operand(key, LSR, 16));
   Bic(key, key, Operand(0xc0000000u));
-}
-
-
-void MacroAssembler::LoadFromNumberDictionary(Label* miss,
-                                              Register elements,
-                                              Register key,
-                                              Register result,
-                                              Register scratch0,
-                                              Register scratch1,
-                                              Register scratch2,
-                                              Register scratch3) {
-  DCHECK(!AreAliased(elements, key, scratch0, scratch1, scratch2, scratch3));
-
-  Label done;
-
-  SmiUntag(scratch0, key);
-  GetNumberHash(scratch0, scratch1);
-
-  // Compute the capacity mask.
-  Ldrsw(scratch1,
-        UntagSmiFieldMemOperand(elements,
-                                SeededNumberDictionary::kCapacityOffset));
-  Sub(scratch1, scratch1, 1);
-
-  // Generate an unrolled loop that performs a few probes before giving up.
-  for (int i = 0; i < kNumberDictionaryProbes; i++) {
-    // Compute the masked index: (hash + i + i * i) & mask.
-    if (i > 0) {
-      Add(scratch2, scratch0, SeededNumberDictionary::GetProbeOffset(i));
-    } else {
-      Mov(scratch2, scratch0);
-    }
-    And(scratch2, scratch2, scratch1);
-
-    // Scale the index by multiplying by the element size.
-    DCHECK(SeededNumberDictionary::kEntrySize == 3);
-    Add(scratch2, scratch2, Operand(scratch2, LSL, 1));
-
-    // Check if the key is identical to the name.
-    Add(scratch2, elements, Operand(scratch2, LSL, kPointerSizeLog2));
-    Ldr(scratch3,
-        FieldMemOperand(scratch2,
-                        SeededNumberDictionary::kElementsStartOffset));
-    Cmp(key, scratch3);
-    if (i != (kNumberDictionaryProbes - 1)) {
-      B(eq, &done);
-    } else {
-      B(ne, miss);
-    }
-  }
-
-  Bind(&done);
-  // Check that the value is a field property.
-  const int kDetailsOffset =
-      SeededNumberDictionary::kElementsStartOffset + 2 * kPointerSize;
-  Ldrsw(scratch1, UntagSmiFieldMemOperand(scratch2, kDetailsOffset));
-  DCHECK_EQ(DATA, 0);
-  TestAndBranchIfAnySet(scratch1, PropertyDetails::TypeField::kMask, miss);
-
-  // Get the value at the masked, scaled index and return.
-  const int kValueOffset =
-      SeededNumberDictionary::kElementsStartOffset + kPointerSize;
-  Ldr(result, FieldMemOperand(scratch2, kValueOffset));
 }
 
 void MacroAssembler::RecordWriteCodeEntryField(Register js_function,

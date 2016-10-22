@@ -47,7 +47,7 @@ RUNTIME_FUNCTION(Runtime_DebugBreakOnBytecode) {
   isolate->debug()->Break(it.frame());
 
   // If live-edit has dropped frames, we are not going back to dispatch.
-  if (LiveEdit::SetAfterBreakTarget(isolate->debug())) return Smi::FromInt(0);
+  if (LiveEdit::SetAfterBreakTarget(isolate->debug())) return Smi::kZero;
 
   // Return the handler from the original bytecode array.
   DCHECK(it.frame()->is_interpreted());
@@ -457,7 +457,7 @@ RUNTIME_FUNCTION(Runtime_GetFrameCount) {
   StackFrame::Id id = isolate->debug()->break_frame_id();
   if (id == StackFrame::NO_ID) {
     // If there is no JavaScript stack frame count is 0.
-    return Smi::FromInt(0);
+    return Smi::kZero;
   }
 
   for (StackTraceFrameIterator it(isolate, id); !it.done(); it.Advance()) {
@@ -551,10 +551,10 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
     details->set(kFrameDetailsFrameIdIndex, *frame_id);
 
     // Add the function name.
-    Handle<Object> wasm_obj(it.wasm_frame()->wasm_obj(), isolate);
+    Handle<Object> wasm_instance(it.wasm_frame()->wasm_instance(), isolate);
     int func_index = it.wasm_frame()->function_index();
     Handle<String> func_name =
-        wasm::GetWasmFunctionName(isolate, wasm_obj, func_index);
+        wasm::GetWasmFunctionName(isolate, wasm_instance, func_index);
     details->set(kFrameDetailsFunctionIndex, *func_name);
 
     // Add the script wrapper
@@ -563,10 +563,10 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
     details->set(kFrameDetailsScriptIndex, *script_wrapper);
 
     // Add the arguments count.
-    details->set(kFrameDetailsArgumentCountIndex, Smi::FromInt(0));
+    details->set(kFrameDetailsArgumentCountIndex, Smi::kZero);
 
     // Add the locals count
-    details->set(kFrameDetailsLocalCountIndex, Smi::FromInt(0));
+    details->set(kFrameDetailsLocalCountIndex, Smi::kZero);
 
     // Add the source position.
     if (position != kNoSourcePosition) {
@@ -929,7 +929,7 @@ RUNTIME_FUNCTION(Runtime_GetGeneratorScopeCount) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
 
-  if (!args[0]->IsJSGeneratorObject()) return Smi::FromInt(0);
+  if (!args[0]->IsJSGeneratorObject()) return Smi::kZero;
 
   // Check arguments.
   CONVERT_ARG_HANDLE_CHECKED(JSGeneratorObject, gen, 0);
@@ -1601,7 +1601,7 @@ RUNTIME_FUNCTION(Runtime_ScriptLineStartPosition) {
   if (line < 0 || line > line_count) {
     return Smi::FromInt(-1);
   } else if (line == 0) {
-    return Smi::FromInt(0);
+    return Smi::kZero;
   } else {
     DCHECK(0 < line && line <= line_count);
     const int pos = Smi::cast(line_ends_array->get(line - 1))->value() + 1;
@@ -1822,12 +1822,19 @@ RUNTIME_FUNCTION(Runtime_DebugPopPromise) {
   return isolate->heap()->undefined_value();
 }
 
+RUNTIME_FUNCTION(Runtime_DebugNextMicrotaskId) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 0);
+  return Smi::FromInt(isolate->GetNextDebugMicrotaskId());
+}
 
 RUNTIME_FUNCTION(Runtime_DebugAsyncTaskEvent) {
-  DCHECK(args.length() == 1);
+  DCHECK(args.length() == 3);
   HandleScope scope(isolate);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, data, 0);
-  isolate->debug()->OnAsyncTaskEvent(data);
+  CONVERT_ARG_HANDLE_CHECKED(String, type, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, id, 1);
+  CONVERT_ARG_HANDLE_CHECKED(String, name, 2);
+  isolate->debug()->OnAsyncTaskEvent(type, id, name);
   return isolate->heap()->undefined_value();
 }
 
@@ -1852,7 +1859,7 @@ RUNTIME_FUNCTION(Runtime_GetWasmFunctionOffsetTable) {
   Handle<Script> script = Handle<Script>(Script::cast(script_val->value()));
 
   Handle<wasm::WasmDebugInfo> debug_info =
-      wasm::GetDebugInfo(handle(script->wasm_object(), isolate));
+      wasm::GetDebugInfo(handle(script->wasm_instance(), isolate));
   Handle<FixedArray> elements = wasm::WasmDebugInfo::GetFunctionOffsetTable(
       debug_info, script->wasm_function_index());
   return *isolate->factory()->NewJSArrayWithElements(elements);
@@ -1867,7 +1874,7 @@ RUNTIME_FUNCTION(Runtime_DisassembleWasmFunction) {
   Handle<Script> script = Handle<Script>(Script::cast(script_val->value()));
 
   Handle<wasm::WasmDebugInfo> debug_info =
-      wasm::GetDebugInfo(handle(script->wasm_object(), isolate));
+      wasm::GetDebugInfo(handle(script->wasm_instance(), isolate));
   return *wasm::WasmDebugInfo::DisassembleFunction(
       debug_info, script->wasm_function_index());
 }

@@ -35,6 +35,7 @@ namespace internal {
   V(kBailoutWasNotPrepared, "Bailout was not prepared")                        \
   V(kBothRegistersWereSmisInSelectNonSmi,                                      \
     "Both registers were smis in SelectNonSmi")                                \
+  V(kClassConstructorFunction, "Class constructor function")                   \
   V(kClassLiteral, "Class literal")                                            \
   V(kCodeGenerationFailed, "Code generation failed")                           \
   V(kCodeObjectNotProperlyPatched, "Code object not properly patched")         \
@@ -74,7 +75,6 @@ namespace internal {
   V(kExpectedPositiveZero, "Expected +0.0")                                    \
   V(kExpectedNewSpaceObject, "Expected new space object")                      \
   V(kExpectedUndefinedOrCell, "Expected undefined or cell in register")        \
-  V(kExpectingAlignmentForCopyBytes, "Expecting alignment for CopyBytes")      \
   V(kExternalStringExpectedButNotFound,                                        \
     "External string expected, but not found")                                 \
   V(kForInStatementWithNonLocalEachVariable,                                   \

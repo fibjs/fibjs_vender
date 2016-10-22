@@ -1887,85 +1887,6 @@ void MacroAssembler::GetNumberHash(Register t0, Register scratch) {
   bic(t0, t0, Operand(0xc0000000u));
 }
 
-
-void MacroAssembler::LoadFromNumberDictionary(Label* miss,
-                                              Register elements,
-                                              Register key,
-                                              Register result,
-                                              Register t0,
-                                              Register t1,
-                                              Register t2) {
-  // Register use:
-  //
-  // elements - holds the slow-case elements of the receiver on entry.
-  //            Unchanged unless 'result' is the same register.
-  //
-  // key      - holds the smi key on entry.
-  //            Unchanged unless 'result' is the same register.
-  //
-  // result   - holds the result on exit if the load succeeded.
-  //            Allowed to be the same as 'key' or 'result'.
-  //            Unchanged on bailout so 'key' or 'result' can be used
-  //            in further computation.
-  //
-  // Scratch registers:
-  //
-  // t0 - holds the untagged key on entry and holds the hash once computed.
-  //
-  // t1 - used to hold the capacity mask of the dictionary
-  //
-  // t2 - used for the index into the dictionary.
-  Label done;
-
-  GetNumberHash(t0, t1);
-
-  // Compute the capacity mask.
-  ldr(t1, FieldMemOperand(elements, SeededNumberDictionary::kCapacityOffset));
-  SmiUntag(t1);
-  sub(t1, t1, Operand(1));
-
-  // Generate an unrolled loop that performs a few probes before giving up.
-  for (int i = 0; i < kNumberDictionaryProbes; i++) {
-    // Use t2 for index calculations and keep the hash intact in t0.
-    mov(t2, t0);
-    // Compute the masked index: (hash + i + i * i) & mask.
-    if (i > 0) {
-      add(t2, t2, Operand(SeededNumberDictionary::GetProbeOffset(i)));
-    }
-    and_(t2, t2, Operand(t1));
-
-    // Scale the index by multiplying by the element size.
-    DCHECK(SeededNumberDictionary::kEntrySize == 3);
-    add(t2, t2, Operand(t2, LSL, 1));  // t2 = t2 * 3
-
-    // Check if the key is identical to the name.
-    add(t2, elements, Operand(t2, LSL, kPointerSizeLog2));
-    ldr(ip, FieldMemOperand(t2, SeededNumberDictionary::kElementsStartOffset));
-    cmp(key, Operand(ip));
-    if (i != kNumberDictionaryProbes - 1) {
-      b(eq, &done);
-    } else {
-      b(ne, miss);
-    }
-  }
-
-  bind(&done);
-  // Check that the value is a field property.
-  // t2: elements + (index * kPointerSize)
-  const int kDetailsOffset =
-      SeededNumberDictionary::kElementsStartOffset + 2 * kPointerSize;
-  ldr(t1, FieldMemOperand(t2, kDetailsOffset));
-  DCHECK_EQ(DATA, 0);
-  tst(t1, Operand(Smi::FromInt(PropertyDetails::TypeField::kMask)));
-  b(ne, miss);
-
-  // Get the value at the masked, scaled index and return.
-  const int kValueOffset =
-      SeededNumberDictionary::kElementsStartOffset + kPointerSize;
-  ldr(result, FieldMemOperand(t2, kValueOffset));
-}
-
-
 void MacroAssembler::Allocate(int object_size,
                               Register result,
                               Register scratch1,
@@ -2422,20 +2343,6 @@ void MacroAssembler::CompareRoot(Register obj,
   cmp(obj, ip);
 }
 
-
-void MacroAssembler::CheckFastElements(Register map,
-                                       Register scratch,
-                                       Label* fail) {
-  STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
-  STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
-  STATIC_ASSERT(FAST_ELEMENTS == 2);
-  STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
-  ldrb(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  cmp(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
-  b(hi, fail);
-}
-
-
 void MacroAssembler::CheckFastObjectElements(Register map,
                                              Register scratch,
                                              Label* fail) {
@@ -2637,18 +2544,6 @@ void MacroAssembler::TailCallStub(CodeStub* stub, Condition cond) {
 bool MacroAssembler::AllowThisStubCall(CodeStub* stub) {
   return has_frame_ || !stub->SometimesSetsUpAFrame();
 }
-
-
-void MacroAssembler::IndexFromHash(Register hash, Register index) {
-  // If the hash field contains an array index pick it out. The assert checks
-  // that the constants for the maximum number of digits for an array index
-  // cached in the hash field and the number of bits reserved for it does not
-  // conflict.
-  DCHECK(TenToThe(String::kMaxCachedArrayIndexLength) <
-         (1 << String::kArrayIndexValueBits));
-  DecodeFieldToSmi<String::ArrayIndexValueBits>(index, hash);
-}
-
 
 void MacroAssembler::SmiToDouble(LowDwVfpRegister value, Register smi) {
   if (CpuFeatures::IsSupported(VFPv3)) {
@@ -3354,50 +3249,6 @@ void MacroAssembler::AllocateJSValue(Register result, Register constructor,
   STATIC_ASSERT(JSValue::kSize == 4 * kPointerSize);
 }
 
-
-void MacroAssembler::CopyBytes(Register src,
-                               Register dst,
-                               Register length,
-                               Register scratch) {
-  Label align_loop_1, word_loop, byte_loop, byte_loop_1, done;
-
-  // Align src before copying in word size chunks.
-  cmp(length, Operand(kPointerSize));
-  b(le, &byte_loop);
-
-  bind(&align_loop_1);
-  tst(src, Operand(kPointerSize - 1));
-  b(eq, &word_loop);
-  ldrb(scratch, MemOperand(src, 1, PostIndex));
-  strb(scratch, MemOperand(dst, 1, PostIndex));
-  sub(length, length, Operand(1), SetCC);
-  b(&align_loop_1);
-  // Copy bytes in word size chunks.
-  bind(&word_loop);
-  if (emit_debug_code()) {
-    tst(src, Operand(kPointerSize - 1));
-    Assert(eq, kExpectingAlignmentForCopyBytes);
-  }
-  cmp(length, Operand(kPointerSize));
-  b(lt, &byte_loop);
-  ldr(scratch, MemOperand(src, kPointerSize, PostIndex));
-  str(scratch, MemOperand(dst, kPointerSize, PostIndex));
-  sub(length, length, Operand(kPointerSize));
-  b(&word_loop);
-
-  // Copy the last bytes if any left.
-  bind(&byte_loop);
-  cmp(length, Operand::Zero());
-  b(eq, &done);
-  bind(&byte_loop_1);
-  ldrb(scratch, MemOperand(src, 1, PostIndex));
-  strb(scratch, MemOperand(dst, 1, PostIndex));
-  sub(length, length, Operand(1), SetCC);
-  b(ne, &byte_loop_1);
-  bind(&done);
-}
-
-
 void MacroAssembler::InitializeFieldsWithFiller(Register current_address,
                                                 Register end_address,
                                                 Register filler) {
@@ -3657,7 +3508,7 @@ void MacroAssembler::EmitSeqStringSetCharCheck(Register string,
   cmp(index, ip);
   Check(lt, kIndexIsTooLarge);
 
-  cmp(index, Operand(Smi::FromInt(0)));
+  cmp(index, Operand(Smi::kZero));
   Check(ge, kIndexIsNegative);
 
   SmiUntag(index, index);
@@ -3947,7 +3798,7 @@ void MacroAssembler::CheckEnumCache(Label* call_runtime) {
 
   // For all objects but the receiver, check that the cache is empty.
   EnumLength(r3, r1);
-  cmp(r3, Operand(Smi::FromInt(0)));
+  cmp(r3, Operand(Smi::kZero));
   b(ne, call_runtime);
 
   bind(&start);

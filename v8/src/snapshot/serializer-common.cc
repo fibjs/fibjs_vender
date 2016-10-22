@@ -8,6 +8,11 @@
 #include "src/ic/stub-cache.h"
 #include "src/list-inl.h"
 
+#if defined(DEBUG) && defined(V8_OS_LINUX) && !defined(V8_OS_ANDROID)
+#define SYMBOLIZE_FUNCTION
+#include <execinfo.h>
+#endif  // DEBUG && V8_OS_LINUX && !V8_OS_ANDROID
+
 namespace v8 {
 namespace internal {
 
@@ -33,7 +38,14 @@ uint32_t ExternalReferenceEncoder::Encode(Address address) const {
   DCHECK_NOT_NULL(address);
   base::HashMap::Entry* entry =
       const_cast<base::HashMap*>(map_)->Lookup(address, Hash(address));
-  DCHECK_NOT_NULL(entry);
+  if (entry == nullptr) {
+    void* function_addr = address;
+    v8::base::OS::PrintError("Unknown external reference %p.\n", function_addr);
+#ifdef SYMBOLIZE_FUNCTION
+    v8::base::OS::PrintError("%s\n", backtrace_symbols(&function_addr, 1)[0]);
+#endif  // SYMBOLIZE_FUNCTION
+    v8::base::OS::Abort();
+  }
   return static_cast<uint32_t>(reinterpret_cast<intptr_t>(entry->value));
 }
 
@@ -64,7 +76,7 @@ void SerializerDeserializer::Iterate(Isolate* isolate, ObjectVisitor* visitor) {
   List<Object*>* cache = isolate->partial_snapshot_cache();
   for (int i = 0;; ++i) {
     // Extend the array ready to get a value when deserializing.
-    if (cache->length() <= i) cache->Add(Smi::FromInt(0));
+    if (cache->length() <= i) cache->Add(Smi::kZero);
     // During deserialization, the visitor populates the partial snapshot cache
     // and eventually terminates the cache with undefined.
     visitor->VisitPointer(&cache->at(i));

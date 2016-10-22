@@ -1451,7 +1451,7 @@ Handle<Object> Debug::FindSharedFunctionInfoInScript(Handle<Script> script,
       }
     }
     // If not, compile to reveal inner functions, if possible.
-    if (shared->allows_lazy_compilation_without_context()) {
+    if (shared->allows_lazy_compilation()) {
       HandleScope scope(isolate_);
       if (!Compiler::CompileDebugCode(handle(shared))) break;
       continue;
@@ -1470,7 +1470,7 @@ Handle<Object> Debug::FindSharedFunctionInfoInScript(Handle<Script> script,
           candidate = candidate_closure->shared();
         } else if (object->IsSharedFunctionInfo()) {
           candidate = SharedFunctionInfo::cast(object);
-          if (!candidate->allows_lazy_compilation_without_context()) continue;
+          if (!candidate->allows_lazy_compilation()) continue;
         } else {
           continue;
         }
@@ -1658,10 +1658,12 @@ MaybeHandle<Object> Debug::MakeCompileEvent(Handle<Script> script,
   return CallFunction("MakeCompileEvent", arraysize(argv), argv);
 }
 
-
-MaybeHandle<Object> Debug::MakeAsyncTaskEvent(Handle<JSObject> task_event) {
+MaybeHandle<Object> Debug::MakeAsyncTaskEvent(Handle<String> type,
+                                              Handle<Object> id,
+                                              Handle<String> name) {
+  DCHECK(id->IsNumber());
   // Create the async task event object.
-  Handle<Object> argv[] = { task_event };
+  Handle<Object> argv[] = {type, id, name};
   return CallFunction("MakeAsyncTaskEvent", arraysize(argv), argv);
 }
 
@@ -1781,8 +1783,9 @@ void Debug::OnAfterCompile(Handle<Script> script) {
   ProcessCompileEvent(v8::AfterCompile, script);
 }
 
-
-void Debug::OnAsyncTaskEvent(Handle<JSObject> data) {
+void Debug::OnAsyncTaskEvent(Handle<String> type, Handle<Object> id,
+                             Handle<String> name) {
+  DCHECK(id->IsNumber());
   if (in_debug_scope() || ignore_events()) return;
 
   HandleScope scope(isolate_);
@@ -1792,7 +1795,7 @@ void Debug::OnAsyncTaskEvent(Handle<JSObject> data) {
   // Create the script collected state object.
   Handle<Object> event_data;
   // Bail out and don't call debugger if exception.
-  if (!MakeAsyncTaskEvent(data).ToHandle(&event_data)) return;
+  if (!MakeAsyncTaskEvent(type, id, name).ToHandle(&event_data)) return;
 
   // Process debug event.
   ProcessDebugEvent(v8::AsyncTaskEvent,
@@ -1838,8 +1841,8 @@ void Debug::CallEventCallback(v8::DebugEvent event,
   in_debug_event_listener_ = true;
   if (event_listener_->IsForeign()) {
     // Invoke the C debug event listener.
-    v8::Debug::EventCallback callback =
-        FUNCTION_CAST<v8::Debug::EventCallback>(
+    v8::DebugInterface::EventCallback callback =
+        FUNCTION_CAST<v8::DebugInterface::EventCallback>(
             Handle<Foreign>::cast(event_listener_)->foreign_address());
     EventDetailsImpl event_details(event,
                                    Handle<JSObject>::cast(exec_state),

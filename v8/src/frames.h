@@ -308,10 +308,9 @@ class ConstructFrameConstants : public TypedFrameConstants {
  public:
   // FP-relative.
   static const int kContextOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(0);
-  static const int kAllocationSiteOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(1);
-  static const int kLengthOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(2);
-  static const int kImplicitReceiverOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(3);
-  DEFINE_TYPED_FRAME_SIZES(4);
+  static const int kLengthOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(1);
+  static const int kImplicitReceiverOffset = TYPED_FRAME_PUSHED_VALUE_OFFSET(2);
+  DEFINE_TYPED_FRAME_SIZES(3);
 };
 
 class StubFailureTrampolineFrameConstants : public InternalFrameConstants {
@@ -734,6 +733,7 @@ class StandardFrame : public StackFrame {
   virtual Object* receiver() const;
   virtual Script* script() const;
   virtual Object* context() const;
+  virtual int position() const;
 
   // Access the expressions in the stack frame including locals.
   inline Object* GetExpression(int index) const;
@@ -871,8 +871,8 @@ class JavaScriptFrame : public StandardFrame {
     return static_cast<JavaScriptFrame*>(frame);
   }
 
-  static void PrintFunctionAndOffset(JSFunction* function, Code* code,
-                                     Address pc, FILE* file,
+  static void PrintFunctionAndOffset(JSFunction* function, AbstractCode* code,
+                                     int code_offset, FILE* file,
                                      bool print_line_number);
 
   static void PrintTop(Isolate* isolate, FILE* file, bool print_args,
@@ -957,6 +957,9 @@ class InterpretedFrame : public JavaScriptFrame {
  public:
   Type type() const override { return INTERPRETED; }
 
+  // Accessors.
+  int position() const override;
+
   // Lookup exception handler for current {pc}, returns -1 if none found.
   int LookupExceptionHandlerInTable(
       int* data, HandlerTable::CatchPrediction* prediction) override;
@@ -983,6 +986,8 @@ class InterpretedFrame : public JavaScriptFrame {
   void Summarize(
       List<FrameSummary>* frames,
       FrameSummary::Mode mode = FrameSummary::kExactSummary) const override;
+
+  static int GetBytecodeOffset(Address fp);
 
  protected:
   inline explicit InterpretedFrame(StackFrameIteratorBase* iterator);
@@ -1064,9 +1069,10 @@ class WasmFrame : public StandardFrame {
   Code* unchecked_code() const override;
 
   // Accessors.
-  Object* wasm_obj() const;
+  Object* wasm_instance() const;
   uint32_t function_index() const;
   Script* script() const override;
+  int position() const override;
 
   static WasmFrame* cast(StackFrame* frame) {
     DCHECK(frame->is_wasm());

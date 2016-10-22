@@ -1976,7 +1976,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
       EmitBranch(instr, equal);
     } else if (type.IsSmi()) {
       DCHECK(!info()->IsStub());
-      __ SmiCompare(reg, Smi::FromInt(0));
+      __ SmiCompare(reg, Smi::kZero);
       EmitBranch(instr, not_equal);
     } else if (type.IsJSArray()) {
       DCHECK(!info()->IsStub());
@@ -2018,7 +2018,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
 
       if (expected.Contains(ToBooleanICStub::SMI)) {
         // Smis: 0 -> false, all other -> true.
-        __ Cmp(reg, Smi::FromInt(0));
+        __ Cmp(reg, Smi::kZero);
         __ j(equal, instr->FalseLabel(chunk_));
         __ JumpIfSmi(reg, instr->TrueLabel(chunk_));
       } else if (expected.NeedsMap()) {
@@ -2336,29 +2336,6 @@ void LCodeGen::DoHasInstanceTypeAndBranch(LHasInstanceTypeAndBranch* instr) {
   EmitBranch(instr, BranchCondition(instr->hydrogen()));
 }
 
-
-void LCodeGen::DoGetCachedArrayIndex(LGetCachedArrayIndex* instr) {
-  Register input = ToRegister(instr->value());
-  Register result = ToRegister(instr->result());
-
-  __ AssertString(input);
-
-  __ movl(result, FieldOperand(input, String::kHashFieldOffset));
-  DCHECK(String::kHashShift >= kSmiTagSize);
-  __ IndexFromHash(result, result);
-}
-
-
-void LCodeGen::DoHasCachedArrayIndexAndBranch(
-    LHasCachedArrayIndexAndBranch* instr) {
-  Register input = ToRegister(instr->value());
-
-  __ testl(FieldOperand(input, String::kHashFieldOffset),
-           Immediate(String::kContainsCachedArrayIndexMask));
-  EmitBranch(instr, equal);
-}
-
-
 // Branches to a label or falls through with the answer in the z flag.
 // Trashes the temp register.
 void LCodeGen::EmitClassOfTest(Label* is_true,
@@ -2518,23 +2495,6 @@ void LCodeGen::DoReturn(LReturn* instr) {
     __ addp(rsp, reg);
     __ jmp(return_addr_reg);
   }
-}
-
-
-template <class T>
-void LCodeGen::EmitVectorLoadICRegisters(T* instr) {
-  Register vector_register = ToRegister(instr->temp_vector());
-  Register slot_register = LoadWithVectorDescriptor::SlotRegister();
-  DCHECK(vector_register.is(LoadWithVectorDescriptor::VectorRegister()));
-  DCHECK(slot_register.is(rax));
-
-  AllowDeferredHandleDereference vector_structure_check;
-  Handle<TypeFeedbackVector> vector = instr->hydrogen()->feedback_vector();
-  __ Move(vector_register, vector);
-  // No need to allocate this register.
-  FeedbackVectorSlot slot = instr->hydrogen()->slot();
-  int index = vector->GetIndex(slot);
-  __ Move(slot_register, Smi::FromInt(index));
 }
 
 
@@ -2912,18 +2872,6 @@ Operand LCodeGen::BuildFastArrayOperand(
                    scale_factor,
                    offset);
   }
-}
-
-
-void LCodeGen::DoLoadKeyedGeneric(LLoadKeyedGeneric* instr) {
-  DCHECK(ToRegister(instr->context()).is(rsi));
-  DCHECK(ToRegister(instr->object()).is(LoadDescriptor::ReceiverRegister()));
-  DCHECK(ToRegister(instr->key()).is(LoadDescriptor::NameRegister()));
-
-  EmitVectorLoadICRegisters<LLoadKeyedGeneric>(instr);
-
-  Handle<Code> ic = CodeFactory::KeyedLoadICInOptimizedCode(isolate()).code();
-  CallCode(ic, RelocInfo::CODE_TARGET, instr);
 }
 
 
@@ -4165,7 +4113,7 @@ void LCodeGen::DoDeferredMaybeGrowElements(LMaybeGrowElements* instr) {
   // result register contain a valid pointer because it is already
   // contained in the register pointer map.
   Register result = rax;
-  __ Move(result, Smi::FromInt(0));
+  __ Move(result, Smi::kZero);
 
   // We have to call a stub.
   {
@@ -4534,7 +4482,7 @@ void LCodeGen::DoDeferredNumberTagD(LNumberTagD* instr) {
   // result register contain a valid pointer because it is already
   // contained in the register pointer map.
   Register reg = ToRegister(instr->result());
-  __ Move(reg, Smi::FromInt(0));
+  __ Move(reg, Smi::kZero);
 
   {
     PushSafepointRegistersScope scope(this);
@@ -5098,7 +5046,7 @@ void LCodeGen::DoDeferredAllocate(LAllocate* instr) {
   // TODO(3095996): Get rid of this. For now, we need to make the
   // result register contain a valid pointer because it is already
   // contained in the register pointer map.
-  __ Move(result, Smi::FromInt(0));
+  __ Move(result, Smi::kZero);
 
   PushSafepointRegistersScope scope(this);
   if (instr->size()->IsRegister()) {
@@ -5406,7 +5354,7 @@ void LCodeGen::DoForInCacheArray(LForInCacheArray* instr) {
   Register result = ToRegister(instr->result());
   Label load_cache, done;
   __ EnumLength(result, map);
-  __ Cmp(result, Smi::FromInt(0));
+  __ Cmp(result, Smi::kZero);
   __ j(not_equal, &load_cache, Label::kNear);
   __ LoadRoot(result, Heap::kEmptyFixedArrayRootIndex);
   __ jmp(&done, Label::kNear);

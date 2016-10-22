@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "src/assembler.h"
+#include "src/globals.h"
 #include "src/macro-assembler.h"
 
 namespace v8 {
@@ -82,7 +83,6 @@ class PlatformInterfaceDescriptor;
   V(ArgumentAdaptor)                      \
   V(ApiCallback)                          \
   V(ApiGetter)                            \
-  V(StoreGlobalViaContext)                \
   V(MathPowTagged)                        \
   V(MathPowInteger)                       \
   V(GrowArrayElements)                    \
@@ -93,7 +93,7 @@ class PlatformInterfaceDescriptor;
   V(InterpreterCEntry)                    \
   V(ResumeGenerator)
 
-class CallInterfaceDescriptorData {
+class V8_EXPORT_PRIVATE CallInterfaceDescriptorData {
  public:
   CallInterfaceDescriptorData() : register_param_count_(-1), param_count_(-1) {}
 
@@ -553,7 +553,7 @@ class CallFunctionWithFeedbackDescriptor : public CallInterfaceDescriptor {
 class CallFunctionWithFeedbackAndVectorDescriptor
     : public CallInterfaceDescriptor {
  public:
-  DEFINE_PARAMETERS(kFunction, kSlot, kVector)
+  DEFINE_PARAMETERS(kFunction, kActualArgumentsCount, kSlot, kVector)
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(
       CallFunctionWithFeedbackAndVectorDescriptor, CallInterfaceDescriptor)
 };
@@ -575,17 +575,6 @@ class RegExpConstructResultDescriptor : public CallInterfaceDescriptor {
  public:
   DEFINE_PARAMETERS(kLength, kIndex, kInput)
   DECLARE_DESCRIPTOR(RegExpConstructResultDescriptor, CallInterfaceDescriptor)
-};
-
-
-class StoreGlobalViaContextDescriptor : public CallInterfaceDescriptor {
- public:
-  DEFINE_PARAMETERS(kSlot, kValue)
-  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(StoreGlobalViaContextDescriptor,
-                                               CallInterfaceDescriptor)
-
-  static const Register SlotRegister();
-  static const Register ValueRegister();
 };
 
 class CopyFastSmiOrObjectElementsDescriptor : public CallInterfaceDescriptor {

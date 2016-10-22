@@ -15,6 +15,7 @@
 #include "src/objects.h"
 #include "src/runtime/runtime.h"
 #include "src/tracing/trace-event.h"
+#include "src/tracing/traced-value.h"
 
 namespace v8 {
 namespace internal {
@@ -483,8 +484,8 @@ double AggregatedMemoryHistogram<Histogram>::Aggregate(double current_ms,
 
 struct RuntimeCallCounter {
   explicit RuntimeCallCounter(const char* name) : name(name) {}
-  void Reset();
-  V8_NOINLINE void Dump(std::stringstream& out);
+  V8_NOINLINE void Reset();
+  V8_NOINLINE void Dump(v8::tracing::TracedValue* value);
 
   const char* name;
   int64_t count = 0;
@@ -678,6 +679,7 @@ class RuntimeCallTimer {
   V(CompileEval)                                    \
   V(CompileFullCode)                                \
   V(CompileIgnition)                                \
+  V(CompilerDispatcher)                             \
   V(CompileSerialize)                               \
   V(DeoptimizeCode)                                 \
   V(FunctionCallback)                               \
@@ -701,8 +703,8 @@ class RuntimeCallTimer {
   V(Map_TransitionToDataProperty)                   \
   V(Object_DeleteProperty)                          \
   V(OptimizeCode)                                   \
-  V(Parse)                                          \
-  V(ParseLazy)                                      \
+  V(ParseProgram)                                   \
+  V(ParseFunction)                                  \
   V(PropertyCallback)                               \
   V(PrototypeMap_TransitionToAccessorProperty)      \
   V(PrototypeMap_TransitionToDataProperty)          \
@@ -717,6 +719,7 @@ class RuntimeCallTimer {
   V(KeyedLoadIC_LoadIndexedStringStub)          \
   V(KeyedLoadIC_LoadIndexedInterceptorStub)     \
   V(KeyedLoadIC_KeyedLoadSloppyArgumentsStub)   \
+  V(KeyedLoadIC_LoadElementDH)                  \
   V(KeyedLoadIC_LoadFastElementStub)            \
   V(KeyedLoadIC_LoadDictionaryElementStub)      \
   V(KeyedLoadIC_SlowStub)                       \
@@ -727,8 +730,12 @@ class RuntimeCallTimer {
   V(LoadIC_FunctionPrototypeStub)               \
   V(LoadIC_LoadApiGetterStub)                   \
   V(LoadIC_LoadCallback)                        \
+  V(LoadIC_LoadConstantDH)                      \
+  V(LoadIC_LoadConstantFromPrototypeDH)         \
   V(LoadIC_LoadConstant)                        \
   V(LoadIC_LoadConstantStub)                    \
+  V(LoadIC_LoadFieldDH)                         \
+  V(LoadIC_LoadFieldFromPrototypeDH)            \
   V(LoadIC_LoadField)                           \
   V(LoadIC_LoadFieldStub)                       \
   V(LoadIC_LoadGlobal)                          \
@@ -792,8 +799,8 @@ class RuntimeCallStats {
                                       CounterId counter_id);
 
   void Reset();
-  V8_NOINLINE void Print(std::ostream& os);
-  V8_NOINLINE std::string Dump();
+  void Print(std::ostream& os);
+  V8_NOINLINE void Dump(v8::tracing::TracedValue* value);
 
   RuntimeCallStats() {
     Reset();
@@ -804,7 +811,6 @@ class RuntimeCallStats {
   bool InUse() { return in_use_; }
 
  private:
-  std::stringstream buffer_;
   // Counter to track recursive time events.
   RuntimeCallTimer* current_timer_ = NULL;
   // Used to track nested tracing scopes.

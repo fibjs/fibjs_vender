@@ -50,10 +50,6 @@ const Register StoreTransitionDescriptor::SlotRegister() { return r4; }
 const Register StoreTransitionDescriptor::VectorRegister() { return r3; }
 const Register StoreTransitionDescriptor::MapRegister() { return r5; }
 
-const Register StoreGlobalViaContextDescriptor::SlotRegister() { return r2; }
-const Register StoreGlobalViaContextDescriptor::ValueRegister() { return r0; }
-
-
 const Register StringCompareDescriptor::LeftRegister() { return r1; }
 const Register StringCompareDescriptor::RightRegister() { return r0; }
 
@@ -166,7 +162,7 @@ void CallFunctionWithFeedbackDescriptor::InitializePlatformSpecific(
 
 void CallFunctionWithFeedbackAndVectorDescriptor::InitializePlatformSpecific(
     CallInterfaceDescriptorData* data) {
-  Register registers[] = {r1, r3, r2};
+  Register registers[] = {r1, r0, r3, r2};
   data->InitializePlatformSpecific(arraysize(registers), registers);
 }
 

@@ -240,6 +240,9 @@
     <ClInclude Include="include\base\trace_event\common\trace_event_common.h">
       <Filter>Header Files\base\trace_event\common</Filter>
     </ClInclude>
+    <ClInclude Include="include\libplatform\libplatform-export.h">
+      <Filter>Header Files\libplatform</Filter>
+    </ClInclude>
     <ClInclude Include="include\libplatform\libplatform.h">
       <Filter>Header Files\libplatform</Filter>
     </ClInclude>
@@ -321,6 +324,9 @@
     <ClInclude Include="src\asmjs\asm-wasm-builder.h">
       <Filter>Source Files\asmjs</Filter>
     </ClInclude>
+    <ClInclude Include="src\asmjs\switch-logic.h">
+      <Filter>Source Files\asmjs</Filter>
+    </ClInclude>
     <ClInclude Include="src\assembler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -384,37 +390,16 @@
     <ClInclude Include="src\base\atomicops.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_arm64_gcc.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_arm_gcc.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
     <ClInclude Include="src\base\atomicops_internals_atomicword_compat.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_mac.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_mips64_gcc.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_mips_gcc.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_ppc_gcc.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_s390_gcc.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_tsan.h">
-      <Filter>Source Files\base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\atomicops_internals_x86_gcc.h">
+    <ClInclude Include="src\base\atomicops_internals_portable.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\atomicops_internals_x86_msvc.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\base-export.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\bits.h">
@@ -493,6 +478,9 @@
       <Filter>Source Files\base\platform</Filter>
     </ClInclude>
     <ClInclude Include="src\base\qnx-math.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\ring-buffer.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\safe_conversions.h">
@@ -583,6 +571,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-job.h">
+      <Filter>Source Files\compiler-dispatcher</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-tracer.h">
       <Filter>Source Files\compiler-dispatcher</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler-dispatcher\optimizing-compile-dispatcher.h">
@@ -864,6 +855,9 @@
     <ClInclude Include="src\compiler\select-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
+    <ClInclude Include="src\compiler\simd-scalar-lowering.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
     <ClInclude Include="src\compiler\simplified-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -921,7 +915,7 @@
     <ClInclude Include="src\compiler\x87\instruction-codes-x87.h">
       <Filter>Source Files\compiler\x87</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\zone-pool.h">
+    <ClInclude Include="src\compiler\zone-stats.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\context-measure.h">
@@ -1105,6 +1099,9 @@
       <Filter>Source Files\debug</Filter>
     </ClInclude>
     <ClInclude Include="src\debug\debug-frames.h">
+      <Filter>Source Files\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="src\debug\debug-interface.h">
       <Filter>Source Files\debug</Filter>
     </ClInclude>
     <ClInclude Include="src\debug\debug-scopes.h">
@@ -1329,6 +1326,9 @@
     <ClInclude Include="src\ia32\simulator-ia32.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
+    <ClInclude Include="src\ic\access-compiler-data.h">
+      <Filter>Source Files\ic</Filter>
+    </ClInclude>
     <ClInclude Include="src\ic\access-compiler.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
@@ -1336,6 +1336,9 @@
       <Filter>Source Files\ic</Filter>
     </ClInclude>
     <ClInclude Include="src\ic\handler-compiler.h">
+      <Filter>Source Files\ic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ic\handler-configuration-inl.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
     <ClInclude Include="src\ic\handler-configuration.h">
@@ -1704,6 +1707,9 @@
     <ClInclude Include="src\regexp\regexp-stack.h">
       <Filter>Source Files\regexp</Filter>
     </ClInclude>
+    <ClInclude Include="src\regexp\regexp-utils.h">
+      <Filter>Source Files\regexp</Filter>
+    </ClInclude>
     <ClInclude Include="src\regexp\s390\regexp-macro-assembler-s390.h">
       <Filter>Source Files\regexp\s390</Filter>
     </ClInclude>
@@ -1821,6 +1827,9 @@
     <ClInclude Include="src\tracing\trace-event.h">
       <Filter>Source Files\tracing</Filter>
     </ClInclude>
+    <ClInclude Include="src\tracing\traced-value.h">
+      <Filter>Source Files\tracing</Filter>
+    </ClInclude>
     <ClInclude Include="src\transitions-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1896,10 +1905,13 @@
     <ClInclude Include="src\wasm\leb-helper.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\managed.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\module-decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\switch-logic.h">
+    <ClInclude Include="src\wasm\signature-map.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-debug.h">
@@ -2033,6 +2045,9 @@
     <ClCompile Include="src\asmjs\asm-wasm-builder.cc">
       <Filter>Source Files\asmjs</Filter>
     </ClCompile>
+    <ClCompile Include="src\asmjs\switch-logic.cc">
+      <Filter>Source Files\asmjs</Filter>
+    </ClCompile>
     <ClCompile Include="src\assembler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2083,9 +2098,6 @@
     </ClCompile>
     <ClCompile Include="src\bailout-reason.cc">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\base\atomicops_internals_x86_gcc.cc">
-      <Filter>Source Files\base</Filter>
     </ClCompile>
     <ClCompile Include="src\base\bits.cc">
       <Filter>Source Files\base</Filter>
@@ -2325,6 +2337,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-job.cc">
+      <Filter>Source Files\compiler-dispatcher</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-tracer.cc">
       <Filter>Source Files\compiler-dispatcher</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler-dispatcher\optimizing-compile-dispatcher.cc">
@@ -2612,6 +2627,9 @@
     <ClCompile Include="src\compiler\select-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\simd-scalar-lowering.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
     <ClCompile Include="src\compiler\simplified-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2681,7 +2699,7 @@
     <ClCompile Include="src\compiler\x87\instruction-selector-x87.cc">
       <Filter>Source Files\compiler\x87</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\zone-pool.cc">
+    <ClCompile Include="src\compiler\zone-stats.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\context-measure.cc">
@@ -3009,9 +3027,6 @@
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\objects-visiting.cc">
-      <Filter>Source Files\heap</Filter>
-    </ClCompile>
-    <ClCompile Include="src\heap\remembered-set.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
     <ClCompile Include="src\heap\scavenge-job.cc">
@@ -3434,6 +3449,9 @@
     <ClCompile Include="src\regexp\regexp-stack.cc">
       <Filter>Source Files\regexp</Filter>
     </ClCompile>
+    <ClCompile Include="src\regexp\regexp-utils.cc">
+      <Filter>Source Files\regexp</Filter>
+    </ClCompile>
     <ClCompile Include="src\regexp\s390\regexp-macro-assembler-s390.cc">
       <Filter>Source Files\regexp\s390</Filter>
     </ClCompile>
@@ -3501,6 +3519,9 @@
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-maths.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="src\runtime\runtime-module.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
     <ClCompile Include="src\runtime\runtime-numbers.cc">
@@ -3626,6 +3647,9 @@
     <ClCompile Include="src\tracing\trace-event.cc">
       <Filter>Source Files\tracing</Filter>
     </ClCompile>
+    <ClCompile Include="src\tracing\traced-value.cc">
+      <Filter>Source Files\tracing</Filter>
+    </ClCompile>
     <ClCompile Include="src\transitions.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3668,7 +3692,7 @@
     <ClCompile Include="src\wasm\module-decoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
-    <ClCompile Include="src\wasm\switch-logic.cc">
+    <ClCompile Include="src\wasm\signature-map.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-debug.cc">

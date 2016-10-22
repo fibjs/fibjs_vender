@@ -1437,7 +1437,7 @@ void LCodeGen::DoDeferredAllocate(LAllocate* instr) {
   // TODO(3095996): Get rid of this. For now, we need to make the
   // result register contain a valid pointer because it is already
   // contained in the register pointer map.
-  __ Mov(ToRegister(instr->result()), Smi::FromInt(0));
+  __ Mov(ToRegister(instr->result()), Smi::kZero);
 
   PushSafepointRegistersScope scope(this);
   LoadContextFromDeferred(instr->context());
@@ -1747,7 +1747,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
       EmitBranch(instr, eq);
     } else if (type.IsSmi()) {
       DCHECK(!info()->IsStub());
-      EmitCompareAndBranch(instr, ne, value, Smi::FromInt(0));
+      EmitCompareAndBranch(instr, ne, value, Smi::kZero);
     } else if (type.IsJSArray()) {
       DCHECK(!info()->IsStub());
       EmitGoto(instr->TrueDestination(chunk()));
@@ -1790,7 +1790,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
 
       if (expected.Contains(ToBooleanICStub::SMI)) {
         // Smis: 0 -> false, all other -> true.
-        DCHECK(Smi::FromInt(0) == 0);
+        DCHECK(Smi::kZero == 0);
         __ Cbz(value, false_label);
         __ JumpIfSmi(value, true_label);
       } else if (expected.NeedsMap()) {
@@ -2663,20 +2663,6 @@ void LCodeGen::DoForInPrepareMap(LForInPrepareMap* instr) {
   __ Bind(&use_cache);
 }
 
-
-void LCodeGen::DoGetCachedArrayIndex(LGetCachedArrayIndex* instr) {
-  Register input = ToRegister(instr->value());
-  Register result = ToRegister(instr->result());
-
-  __ AssertString(input);
-
-  // Assert that we can use a W register load to get the hash.
-  DCHECK((String::kHashShift + String::kArrayIndexValueBits) < kWRegSizeInBits);
-  __ Ldr(result.W(), FieldMemOperand(input, String::kHashFieldOffset));
-  __ IndexFromHash(result, result);
-}
-
-
 void LCodeGen::EmitGoto(int block) {
   // Do not emit jump if we are emitting a goto to the next block.
   if (!IsNextEmittedBlock(block)) {
@@ -2684,24 +2670,9 @@ void LCodeGen::EmitGoto(int block) {
   }
 }
 
-
 void LCodeGen::DoGoto(LGoto* instr) {
   EmitGoto(instr->block_id());
 }
-
-
-void LCodeGen::DoHasCachedArrayIndexAndBranch(
-    LHasCachedArrayIndexAndBranch* instr) {
-  Register input = ToRegister(instr->value());
-  Register temp = ToRegister32(instr->temp());
-
-  // Assert that the cache status bits fit in a W register.
-  DCHECK(is_uint32(String::kContainsCachedArrayIndexMask));
-  __ Ldr(temp, FieldMemOperand(input, String::kHashFieldOffset));
-  __ Tst(temp, String::kContainsCachedArrayIndexMask);
-  EmitBranch(instr, eq);
-}
-
 
 // HHasInstanceTypeAndBranch instruction is built with an interval of type
 // to test but is only used in very restricted ways. The only possible kinds
@@ -3012,23 +2983,6 @@ void LCodeGen::DoLoadFunctionPrototype(LLoadFunctionPrototype* instr) {
 }
 
 
-template <class T>
-void LCodeGen::EmitVectorLoadICRegisters(T* instr) {
-  Register vector_register = ToRegister(instr->temp_vector());
-  Register slot_register = LoadWithVectorDescriptor::SlotRegister();
-  DCHECK(vector_register.is(LoadWithVectorDescriptor::VectorRegister()));
-  DCHECK(slot_register.is(x0));
-
-  AllowDeferredHandleDereference vector_structure_check;
-  Handle<TypeFeedbackVector> vector = instr->hydrogen()->feedback_vector();
-  __ Mov(vector_register, vector);
-  // No need to allocate this register.
-  FeedbackVectorSlot slot = instr->hydrogen()->slot();
-  int index = vector->GetIndex(slot);
-  __ Mov(slot_register, Smi::FromInt(index));
-}
-
-
 MemOperand LCodeGen::PrepareKeyedExternalArrayOperand(
     Register key,
     Register base,
@@ -3274,20 +3228,6 @@ void LCodeGen::DoLoadKeyedFixed(LLoadKeyedFixed* instr) {
     __ LoadRoot(result, Heap::kUndefinedValueRootIndex);
     __ Bind(&done);
   }
-}
-
-
-void LCodeGen::DoLoadKeyedGeneric(LLoadKeyedGeneric* instr) {
-  DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(ToRegister(instr->object()).is(LoadDescriptor::ReceiverRegister()));
-  DCHECK(ToRegister(instr->key()).is(LoadDescriptor::NameRegister()));
-
-  EmitVectorLoadICRegisters<LLoadKeyedGeneric>(instr);
-
-  Handle<Code> ic = CodeFactory::KeyedLoadICInOptimizedCode(isolate()).code();
-  CallCode(ic, RelocInfo::CODE_TARGET, instr);
-
-  DCHECK(ToRegister(instr->result()).Is(x0));
 }
 
 
@@ -5624,7 +5564,7 @@ void LCodeGen::DoLoadFieldByIndex(LLoadFieldByIndex* instr) {
       index, reinterpret_cast<uint64_t>(Smi::FromInt(1)), deferred->entry());
   __ Mov(index, Operand(index, ASR, 1));
 
-  __ Cmp(index, Smi::FromInt(0));
+  __ Cmp(index, Smi::kZero);
   __ B(lt, &out_of_object);
 
   STATIC_ASSERT(kPointerSizeLog2 > kSmiTagSize);

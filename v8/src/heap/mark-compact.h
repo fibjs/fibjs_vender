@@ -288,6 +288,11 @@ class MarkCompactCollector {
 
     enum FreeListRebuildingMode { REBUILD_FREE_LIST, IGNORE_FREE_LIST };
     enum FreeSpaceTreatmentMode { IGNORE_FREE_SPACE, ZAP_FREE_SPACE };
+    enum ClearOldToNewSlotsMode {
+      DO_NOT_CLEAR,
+      CLEAR_REGULAR_SLOTS,
+      CLEAR_TYPED_SLOTS
+    };
 
     typedef std::deque<Page*> SweepingList;
     typedef List<Page*> SweptList;
@@ -299,24 +304,25 @@ class MarkCompactCollector {
         : heap_(heap),
           pending_sweeper_tasks_semaphore_(0),
           sweeping_in_progress_(false),
-          late_pages_(false),
           num_sweeping_tasks_(0) {}
 
     bool sweeping_in_progress() { return sweeping_in_progress_; }
-    bool contains_late_pages() { return late_pages_; }
 
     void AddPage(AllocationSpace space, Page* page);
-    void AddLatePage(AllocationSpace space, Page* page);
 
     int ParallelSweepSpace(AllocationSpace identity, int required_freed_bytes,
                            int max_pages = 0);
     int ParallelSweepPage(Page* page, AllocationSpace identity);
 
+    // After calling this function sweeping is considered to be in progress
+    // and the main thread can sweep lazily, but the background sweeper tasks
+    // are not running yet.
     void StartSweeping();
-    void StartSweepingHelper(AllocationSpace space_to_start);
+    void StartSweeperTasks();
     void EnsureCompleted();
     void EnsureNewSpaceCompleted();
-    bool IsSweepingCompleted();
+    bool AreSweeperTasksRunning();
+    bool IsSweepingCompleted(AllocationSpace space);
     void SweepOrWaitUntilSweepingCompleted(Page* page);
 
     void AddSweptPageSafe(PagedSpace* space, Page* page);
@@ -324,6 +330,8 @@ class MarkCompactCollector {
 
    private:
     static const int kAllocationSpaces = LAST_PAGED_SPACE + 1;
+
+    static ClearOldToNewSlotsMode GetClearOldToNewSlotsMode(Page* p);
 
     template <typename Callback>
     void ForAllSweepingSpaces(Callback callback) {
@@ -343,7 +351,6 @@ class MarkCompactCollector {
     SweptList swept_list_[kAllocationSpaces];
     SweepingList sweeping_list_[kAllocationSpaces];
     bool sweeping_in_progress_;
-    bool late_pages_;
     base::AtomicNumber<intptr_t> num_sweeping_tasks_;
   };
 
@@ -478,16 +485,6 @@ class MarkCompactCollector {
 
   void InitializeMarkingDeque();
 
-  // The following two methods can just be called after marking, when the
-  // whole transitive closure is known. They must be called before sweeping
-  // when mark bits are still intact.
-  bool IsSlotInBlackObject(MemoryChunk* p, Address slot);
-  HeapObject* FindBlackObjectBySlotSlow(Address slot);
-
-  // Removes all the slots in the slot buffers that are within the given
-  // address range.
-  void RemoveObjectSlots(Address start_slot, Address end_slot);
-
   Sweeper& sweeper() { return sweeper_; }
 
  private:
@@ -502,11 +499,10 @@ class MarkCompactCollector {
   explicit MarkCompactCollector(Heap* heap);
 
   bool WillBeDeoptimized(Code* code);
-  void ClearInvalidRememberedSetSlots();
 
-  void ComputeEvacuationHeuristics(int area_size,
+  void ComputeEvacuationHeuristics(size_t area_size,
                                    int* target_fragmentation_percent,
-                                   int* max_evacuated_bytes);
+                                   size_t* max_evacuated_bytes);
 
   void VisitAllObjects(HeapObjectVisitor* visitor);
 
@@ -644,21 +640,10 @@ class MarkCompactCollector {
 
   void AbortTransitionArrays();
 
-  // -----------------------------------------------------------------------
-  // Phase 2: Sweeping to clear mark bits and free non-live objects for
-  // a non-compacting collection.
-  //
-  //  Before: Live objects are marked and non-live objects are unmarked.
-  //
-  //   After: Live objects are unmarked, non-live regions have been added to
-  //          their space's free list. Active eden semispace is compacted by
-  //          evacuation.
-  //
-
-  // If we are not compacting the heap, we simply sweep the spaces except
-  // for the large object space, clearing mark bits and adding unmarked
-  // regions to each space's free list.
-  void SweepSpaces();
+  // Starts sweeping of spaces by contributing on the main thread and setting
+  // up other pages for sweeping. Does not start sweeper tasks.
+  void StartSweepSpaces();
+  void StartSweepSpace(PagedSpace* space);
 
   void EvacuateNewSpacePrologue();
 
@@ -681,9 +666,6 @@ class MarkCompactCollector {
 
   void ReleaseEvacuationCandidates();
 
-  // Starts sweeping of a space by contributing on the main thread and setting
-  // up other pages for sweeping.
-  void StartSweepSpace(PagedSpace* space);
 
 #ifdef DEBUG
   friend class MarkObjectVisitor;

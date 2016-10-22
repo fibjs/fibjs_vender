@@ -471,8 +471,8 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
     }
   }
 
-  Zone zone(info_->isolate()->allocator());
-  ParseInfo parse_info(&zone, function);
+  Zone zone(info_->isolate()->allocator(), ZONE_NAME);
+  ParseInfo parse_info(&zone, shared_info);
   CompilationInfo info(&parse_info, function);
   if (info_->is_deoptimization_enabled()) info.MarkAsDeoptimizationEnabled();
   if (info_->is_type_feedback_enabled()) info.MarkAsTypeFeedbackEnabled();
@@ -530,7 +530,7 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
     // Run the BytecodeGraphBuilder to create the subgraph.
     Graph::SubgraphScope scope(graph());
     BytecodeGraphBuilder graph_builder(&zone, &info, jsgraph(),
-                                       call.frequency());
+                                       call.frequency(), nullptr);
     graph_builder.CreateGraph();
 
     // Extract the inlinee start/end nodes.
@@ -590,7 +590,7 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
     // constructor dispatch (allocate implicit receiver and check return value).
     // This models the behavior usually accomplished by our {JSConstructStub}.
     // Note that the context has to be the callers context (input to call node).
-    Node* receiver = jsgraph()->UndefinedConstant();  // Implicit receiver.
+    Node* receiver = jsgraph()->TheHoleConstant();  // Implicit receiver.
     if (NeedsImplicitReceiver(shared_info)) {
       Node* frame_state_before = NodeProperties::FindFrameStateBefore(node);
       Node* effect = NodeProperties::GetEffectInput(node);

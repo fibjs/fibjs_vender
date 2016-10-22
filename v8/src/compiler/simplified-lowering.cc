@@ -87,12 +87,14 @@ MachineRepresentation MachineRepresentationFromArrayType(
   return MachineRepresentation::kNone;
 }
 
-UseInfo CheckedUseInfoAsWord32FromHint(NumberOperationHint hint) {
+UseInfo CheckedUseInfoAsWord32FromHint(
+    NumberOperationHint hint, CheckForMinusZeroMode minus_zero_mode =
+                                  CheckForMinusZeroMode::kCheckForMinusZero) {
   switch (hint) {
     case NumberOperationHint::kSignedSmall:
-      return UseInfo::CheckedSignedSmallAsWord32();
+      return UseInfo::CheckedSignedSmallAsWord32(minus_zero_mode);
     case NumberOperationHint::kSigned32:
-      return UseInfo::CheckedSigned32AsWord32();
+      return UseInfo::CheckedSigned32AsWord32(minus_zero_mode);
     case NumberOperationHint::kNumber:
       return UseInfo::CheckedNumberAsWord32();
     case NumberOperationHint::kNumberOrOddball:
@@ -127,7 +129,7 @@ UseInfo TruncatingUseInfoFromRepresentation(MachineRepresentation rep) {
     case MachineRepresentation::kFloat64:
       return UseInfo::TruncatingFloat64();
     case MachineRepresentation::kFloat32:
-      return UseInfo::TruncatingFloat32();
+      return UseInfo::Float32();
     case MachineRepresentation::kWord64:
       return UseInfo::TruncatingWord64();
     case MachineRepresentation::kWord8:
@@ -1031,10 +1033,8 @@ class RepresentationSelector {
         // undefined, because these special oddballs are always in the root set.
         return kNoWriteBarrier;
       }
-      if (value_type->IsConstant() &&
-          value_type->AsConstant()->Value()->IsHeapObject()) {
-        Handle<HeapObject> value_object =
-            Handle<HeapObject>::cast(value_type->AsConstant()->Value());
+      if (value_type->IsHeapConstant()) {
+        Handle<HeapObject> value_object = value_type->AsHeapConstant()->Value();
         RootIndexMap root_index_map(jsgraph_->isolate());
         int root_index = root_index_map.Lookup(*value_object);
         if (root_index != RootIndexMap::kInvalidRootIndex &&
@@ -1148,8 +1148,15 @@ class RepresentationSelector {
 
     if (hint == NumberOperationHint::kSignedSmall ||
         hint == NumberOperationHint::kSigned32) {
-      VisitBinop(node, CheckedUseInfoAsWord32FromHint(hint),
-                 MachineRepresentation::kWord32, Type::Signed32());
+      UseInfo left_use = CheckedUseInfoAsWord32FromHint(hint);
+      // For CheckedInt32Add and CheckedInt32Sub, we don't need to do
+      // a minus zero check for the right hand side, since we already
+      // know that the left hand side is a proper Signed32 value,
+      // potentially guarded by a check.
+      UseInfo right_use = CheckedUseInfoAsWord32FromHint(
+          hint, CheckForMinusZeroMode::kDontCheckForMinusZero);
+      VisitBinop(node, left_use, right_use, MachineRepresentation::kWord32,
+                 Type::Signed32());
       if (lower()) ChangeToInt32OverflowOp(node);
       return;
     }

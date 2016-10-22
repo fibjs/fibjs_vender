@@ -116,15 +116,15 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
   GenerateTailCallToSharedCode(masm);
 }
 
-static void Generate_JSConstructStubHelper(MacroAssembler* masm,
-                                           bool is_api_function,
-                                           bool create_implicit_receiver,
-                                           bool check_derived_construct) {
+namespace {
+
+void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
+                                    bool create_implicit_receiver,
+                                    bool check_derived_construct) {
   // ----------- S t a t e -------------
   //  -- rax: number of arguments
   //  -- rsi: context
   //  -- rdi: constructor function
-  //  -- rbx: allocation site or undefined
   //  -- rdx: new target
   // -----------------------------------
 
@@ -133,10 +133,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     FrameScope scope(masm, StackFrame::CONSTRUCT);
 
     // Preserve the incoming parameters on the stack.
-    __ AssertUndefinedOrAllocationSite(rbx);
-    __ Push(rsi);
-    __ Push(rbx);
     __ Integer32ToSmi(rcx, rax);
+    __ Push(rsi);
     __ Push(rcx);
 
     if (create_implicit_receiver) {
@@ -201,13 +199,13 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
       // on page 74.
       Label use_receiver, exit;
       // If the result is a smi, it is *not* an object in the ECMA sense.
-      __ JumpIfSmi(rax, &use_receiver);
+      __ JumpIfSmi(rax, &use_receiver, Label::kNear);
 
       // If the type of the result (stored in its map) is less than
       // FIRST_JS_RECEIVER_TYPE, it is not an object in the ECMA sense.
       STATIC_ASSERT(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
       __ CmpObjectType(rax, FIRST_JS_RECEIVER_TYPE, rcx);
-      __ j(above_equal, &exit);
+      __ j(above_equal, &exit, Label::kNear);
 
       // Throw away the result of the constructor invocation and use the
       // on-stack receiver as the result.
@@ -249,6 +247,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
   }
   __ ret(0);
 }
+
+}  // namespace
 
 void Builtins::Generate_JSConstructStubGeneric(MacroAssembler* masm) {
   Generate_JSConstructStubHelper(masm, false, true, false);
@@ -662,7 +662,7 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
   // it is present) and load it into kInterpreterBytecodeArrayRegister.
   __ movp(rax, FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
   Label load_debug_bytecode_array, bytecode_array_loaded;
-  DCHECK_EQ(Smi::FromInt(0), DebugInfo::uninitialized());
+  DCHECK_EQ(Smi::kZero, DebugInfo::uninitialized());
   __ cmpp(FieldOperand(rax, SharedFunctionInfo::kDebugInfoOffset),
           Immediate(0));
   __ j(not_equal, &load_debug_bytecode_array);
@@ -990,7 +990,7 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
   // trampoline.
   Smi* interpreter_entry_return_pc_offset(
       masm->isolate()->heap()->interpreter_entry_return_pc_offset());
-  DCHECK_NE(interpreter_entry_return_pc_offset, Smi::FromInt(0));
+  DCHECK_NE(interpreter_entry_return_pc_offset, Smi::kZero);
   __ Move(rbx, masm->isolate()->builtins()->InterpreterEntryTrampoline());
   __ addp(rbx, Immediate(interpreter_entry_return_pc_offset->value() +
                          Code::kHeaderSize - kHeapObjectTag));
@@ -1035,7 +1035,6 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   // -----------------------------------
   // First lookup code, maybe we don't need to compile!
   Label gotta_call_runtime;
-  Label maybe_call_runtime;
   Label try_shared;
   Label loop_top, loop_bottom;
 
@@ -1089,13 +1088,10 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ movp(entry, FieldOperand(map, index, times_pointer_size,
                               SharedFunctionInfo::kOffsetToPreviousCachedCode));
   __ movp(entry, FieldOperand(entry, WeakCell::kValueOffset));
-  __ JumpIfSmi(entry, &maybe_call_runtime);
+  __ JumpIfSmi(entry, &try_shared);
 
   // Found literals and code. Get them into the closure and return.
   __ leap(entry, FieldOperand(entry, Code::kHeaderSize));
-
-  Label install_optimized_code_and_tailcall;
-  __ bind(&install_optimized_code_and_tailcall);
   __ movp(FieldOperand(closure, JSFunction::kCodeEntryOffset), entry);
   __ RecordWriteCodeEntryField(closure, entry, r15);
 
@@ -1128,21 +1124,16 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   // We found neither literals nor code.
   __ jmp(&gotta_call_runtime);
 
-  __ bind(&maybe_call_runtime);
-
-  // Last possibility. Check the context free optimized code map entry.
-  __ movp(entry, FieldOperand(map, FixedArray::kHeaderSize +
-                                       SharedFunctionInfo::kSharedCodeIndex));
-  __ movp(entry, FieldOperand(entry, WeakCell::kValueOffset));
-  __ JumpIfSmi(entry, &try_shared);
-
-  // Store code entry in the closure.
-  __ leap(entry, FieldOperand(entry, Code::kHeaderSize));
-  __ jmp(&install_optimized_code_and_tailcall);
-
   __ bind(&try_shared);
-  // Is the full code valid?
   __ movp(entry, FieldOperand(closure, JSFunction::kSharedFunctionInfoOffset));
+  // Is the shared function marked for optimization?
+  __ testb(
+      FieldOperand(entry,
+                   SharedFunctionInfo::kWasMarkedForOptimizationByteOffset),
+      Immediate(
+          1 << SharedFunctionInfo::kWasMarkedForOptimizationBitWithinByte));
+  __ j(not_zero, &gotta_call_runtime);
+  // Is the full code valid?
   __ movp(entry, FieldOperand(entry, SharedFunctionInfo::kCodeOffset));
   __ movl(rbx, FieldOperand(entry, Code::kFlagsOffset));
   __ andl(rbx, Immediate(Code::KindField::kMask));
@@ -1908,7 +1899,7 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
     __ movp(rbx, args.GetArgumentOperand(1));
     __ jmp(&done, Label::kNear);
     __ bind(&no_arguments);
-    __ Move(rbx, Smi::FromInt(0));
+    __ Move(rbx, Smi::kZero);
     __ bind(&done);
   }
 
@@ -2161,7 +2152,7 @@ void Builtins::Generate_AllocateInNewSpace(MacroAssembler* masm) {
   __ PopReturnAddressTo(rcx);
   __ Push(rdx);
   __ PushReturnAddressFrom(rcx);
-  __ Move(rsi, Smi::FromInt(0));
+  __ Move(rsi, Smi::kZero);
   __ TailCallRuntime(Runtime::kAllocateInNewSpace);
 }
 
@@ -2176,7 +2167,7 @@ void Builtins::Generate_AllocateInOldSpace(MacroAssembler* masm) {
   __ Push(rdx);
   __ Push(Smi::FromInt(AllocateTargetSpace::encode(OLD_SPACE)));
   __ PushReturnAddressFrom(rcx);
-  __ Move(rsi, Smi::FromInt(0));
+  __ Move(rsi, Smi::kZero);
   __ TailCallRuntime(Runtime::kAllocateInTargetSpace);
 }
 
@@ -2189,7 +2180,7 @@ void Builtins::Generate_Abort(MacroAssembler* masm) {
   __ PopReturnAddressTo(rcx);
   __ Push(rdx);
   __ PushReturnAddressFrom(rcx);
-  __ Move(rsi, Smi::FromInt(0));
+  __ Move(rsi, Smi::kZero);
   __ TailCallRuntime(Runtime::kAbort);
 }
 
@@ -2587,8 +2578,8 @@ void Builtins::Generate_CallFunction(MacroAssembler* masm,
         __ Push(rdi);
         __ movp(rax, rcx);
         __ Push(rsi);
-        ToObjectStub stub(masm->isolate());
-        __ CallStub(&stub);
+        __ Call(masm->isolate()->builtins()->ToObject(),
+                RelocInfo::CODE_TARGET);
         __ Pop(rsi);
         __ movp(rcx, rax);
         __ Pop(rdi);

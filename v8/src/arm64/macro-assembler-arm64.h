@@ -1099,16 +1099,6 @@ class MacroAssembler : public Assembler {
   void InitializeFieldsWithFiller(Register current_address,
                                   Register end_address, Register filler);
 
-  // Copies a number of bytes from src to dst. All passed registers are
-  // clobbered. On exit src and dst will point to the place just after where the
-  // last byte was read or written and length will be zero. Hint may be used to
-  // determine which is the most efficient algorithm to use for copying.
-  void CopyBytes(Register dst,
-                 Register src,
-                 Register length,
-                 Register scratch,
-                 CopyHint hint = kCopyUnknown);
-
   // ---- String Utilities ----
 
 
@@ -1576,10 +1566,6 @@ class MacroAssembler : public Assembler {
                     Label* if_any_set,
                     Label* fall_through);
 
-  // Check if a map for a JSObject indicates that the object has fast elements.
-  // Jump to the specified label if it does not.
-  void CheckFastElements(Register map, Register scratch, Label* fail);
-
   // Check if a map for a JSObject indicates that the object can have both smi
   // and HeapObject elements.  Jump to the specified label if it does not.
   void CheckFastObjectElements(Register map, Register scratch, Label* fail);
@@ -1594,12 +1580,6 @@ class MacroAssembler : public Assembler {
                                    FPRegister fpscratch1,
                                    Label* fail,
                                    int elements_offset = 0);
-
-  // Picks out an array index from the hash field.
-  // Register use:
-  //   hash - holds the index's hash. Clobbered.
-  //   index - holds the overwritten index on exit.
-  void IndexFromHash(Register hash, Register index);
 
   // ---------------------------------------------------------------------------
   // Inline caching support.
@@ -1621,27 +1601,6 @@ class MacroAssembler : public Assembler {
   // Hash the interger value in 'key' register.
   // It uses the same algorithm as ComputeIntegerHash in utils.h.
   void GetNumberHash(Register key, Register scratch);
-
-  // Load value from the dictionary.
-  //
-  // elements - holds the slow-case elements of the receiver on entry.
-  //            Unchanged unless 'result' is the same register.
-  //
-  // key      - holds the smi key on entry.
-  //            Unchanged unless 'result' is the same register.
-  //
-  // result   - holds the result on exit if the load succeeded.
-  //            Allowed to be the same as 'key' or 'result'.
-  //            Unchanged on bailout so 'key' or 'result' can be used
-  //            in further computation.
-  void LoadFromNumberDictionary(Label* miss,
-                                Register elements,
-                                Register key,
-                                Register result,
-                                Register scratch0,
-                                Register scratch1,
-                                Register scratch2,
-                                Register scratch3);
 
   // ---------------------------------------------------------------------------
   // Frames.

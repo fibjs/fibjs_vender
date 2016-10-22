@@ -207,12 +207,6 @@ void LHasInstanceTypeAndBranch::PrintDataTo(StringStream* stream) {
   stream->Add(") then B%d else B%d", true_block_id(), false_block_id());
 }
 
-void LHasCachedArrayIndexAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if has_cached_array_index(");
-  value()->PrintTo(stream);
-  stream->Add(") then B%d else B%d", true_block_id(), false_block_id());
-}
-
 void LClassOfTestAndBranch::PrintDataTo(StringStream* stream) {
   stream->Add("if class_of_test(");
   value()->PrintTo(stream);
@@ -1556,21 +1550,6 @@ LInstruction* LChunkBuilder::DoHasInstanceTypeAndBranch(
   return new (zone()) LHasInstanceTypeAndBranch(value);
 }
 
-LInstruction* LChunkBuilder::DoGetCachedArrayIndex(
-    HGetCachedArrayIndex* instr) {
-  DCHECK(instr->value()->representation().IsTagged());
-  LOperand* value = UseRegisterAtStart(instr->value());
-
-  return DefineAsRegister(new (zone()) LGetCachedArrayIndex(value));
-}
-
-LInstruction* LChunkBuilder::DoHasCachedArrayIndexAndBranch(
-    HHasCachedArrayIndexAndBranch* instr) {
-  DCHECK(instr->value()->representation().IsTagged());
-  return new (zone())
-      LHasCachedArrayIndexAndBranch(UseRegisterAtStart(instr->value()));
-}
-
 LInstruction* LChunkBuilder::DoClassOfTestAndBranch(
     HClassOfTestAndBranch* instr) {
   DCHECK(instr->value()->representation().IsTagged());
@@ -1892,18 +1871,6 @@ LInstruction* LChunkBuilder::DoLoadKeyed(HLoadKeyed* instr) {
     result = AssignEnvironment(result);
   }
   return result;
-}
-
-LInstruction* LChunkBuilder::DoLoadKeyedGeneric(HLoadKeyedGeneric* instr) {
-  LOperand* context = UseFixed(instr->context(), cp);
-  LOperand* object =
-      UseFixed(instr->object(), LoadDescriptor::ReceiverRegister());
-  LOperand* key = UseFixed(instr->key(), LoadDescriptor::NameRegister());
-  LOperand* vector = FixedTemp(LoadWithVectorDescriptor::VectorRegister());
-
-  LInstruction* result = DefineFixed(
-      new (zone()) LLoadKeyedGeneric(context, object, key, vector), r2);
-  return MarkAsCall(result, instr);
 }
 
 LInstruction* LChunkBuilder::DoStoreKeyed(HStoreKeyed* instr) {

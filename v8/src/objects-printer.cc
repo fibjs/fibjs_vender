@@ -166,6 +166,9 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     case JS_WEAK_SET_TYPE:
       JSWeakSet::cast(this)->JSWeakSetPrint(os);
       break;
+    case JS_MODULE_NAMESPACE_TYPE:
+      JSModuleNamespace::cast(this)->JSModuleNamespacePrint(os);
+      break;
     case FOREIGN_TYPE:
       Foreign::cast(this)->ForeignPrint(os);
       break;
@@ -189,6 +192,9 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
       break;
     case JS_TYPED_ARRAY_TYPE:
       JSTypedArray::cast(this)->JSTypedArrayPrint(os);
+      break;
+    case JS_FIXED_ARRAY_ITERATOR_TYPE:
+      JSFixedArrayIterator::cast(this)->JSFixedArrayIteratorPrint(os);
       break;
     case JS_DATA_VIEW_TYPE:
       JSDataView::cast(this)->JSDataViewPrint(os);
@@ -946,6 +952,14 @@ void JSTypedArray::JSTypedArrayPrint(std::ostream& os) {  // NOLINT
   JSObjectPrintBody(os, this, !WasNeutered());
 }
 
+void JSFixedArrayIterator::JSFixedArrayIteratorPrint(
+    std::ostream& os) {  // NOLINT
+  JSObjectPrintHeader(os, this, "JSFixedArrayIterator");
+  os << "\n - array = " << Brief(array());
+  os << "\n - index = " << index();
+  os << "\n - initial_next = " << Brief(initial_next());
+  JSObjectPrintBody(os, this);
+}
 
 void JSDataView::JSDataViewPrint(std::ostream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSDataView");
@@ -1147,14 +1161,27 @@ void Box::BoxPrint(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-void PromiseContainer::PromiseContainerPrint(std::ostream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "PromiseContainer");
+void PromiseResolveThenableJobInfo::PromiseResolveThenableJobInfoPrint(
+    std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "PromiseResolveThenableJobInfo");
   os << "\n - thenable: " << Brief(thenable());
   os << "\n - then: " << Brief(then());
   os << "\n - resolve: " << Brief(resolve());
   os << "\n - reject: " << Brief(reject());
-  os << "\n - before debug event: " << Brief(before_debug_event());
-  os << "\n - after debug event: " << Brief(after_debug_event());
+  os << "\n - debug id: " << Brief(debug_id());
+  os << "\n - debug name: " << Brief(debug_name());
+  os << "\n";
+}
+
+void PromiseReactionJobInfo::PromiseReactionJobInfoPrint(
+    std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "PromiseReactionJobInfo");
+  os << "\n - value: " << Brief(value());
+  os << "\n - tasks: " << Brief(tasks());
+  os << "\n - deferred: " << Brief(deferred());
+  os << "\n - debug id: " << Brief(debug_id());
+  os << "\n - debug name: " << Brief(debug_name());
+  os << "\n - reaction context: " << Brief(context());
   os << "\n";
 }
 
@@ -1164,15 +1191,30 @@ void Module::ModulePrint(std::ostream& os) {  // NOLINT
   os << "\n - exports: " << Brief(exports());
   os << "\n - requested_modules: " << Brief(requested_modules());
   os << "\n - evaluated: " << evaluated();
-  os << "\n - embedder_data: " << Brief(embedder_data());
+  os << "\n";
+}
+
+void JSModuleNamespace::JSModuleNamespacePrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "JSModuleNamespace");
+  os << "\n - module: " << Brief(module());
   os << "\n";
 }
 
 void PrototypeInfo::PrototypeInfoPrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "PrototypeInfo");
+  os << "\n - weak cell: " << Brief(weak_cell());
   os << "\n - prototype users: " << Brief(prototype_users());
   os << "\n - registry slot: " << registry_slot();
   os << "\n - validity cell: " << Brief(validity_cell());
+  os << "\n - object create map: " << Brief(object_create_map());
+  os << "\n";
+}
+
+void Tuple3::Tuple3Print(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "Tuple3");
+  os << "\n - value1: " << Brief(value1());
+  os << "\n - value2: " << Brief(value2());
+  os << "\n - value3: " << Brief(value3());
   os << "\n";
 }
 

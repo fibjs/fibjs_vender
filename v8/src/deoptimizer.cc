@@ -276,7 +276,7 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
 
   // Move marked code from the optimized code list to the deoptimized
   // code list, collecting them into a ZoneList.
-  Zone zone(isolate->allocator());
+  Zone zone(isolate->allocator(), ZONE_NAME);
   ZoneList<Code*> codes(10, &zone);
 
   // Walk over all optimized code objects in this native context.
@@ -1024,7 +1024,7 @@ void Deoptimizer::DoComputeJSFrame(TranslatedFrame* translated_frame,
   // and will be materialized by {Runtime_NotifyDeoptimized}. For additional
   // safety we use Smi(0) instead of the potential {arguments_marker} here.
   if (is_topmost) {
-    intptr_t context_value = reinterpret_cast<intptr_t>(Smi::FromInt(0));
+    intptr_t context_value = reinterpret_cast<intptr_t>(Smi::kZero);
     Register context_reg = JavaScriptFrame::context_register();
     output_frame->SetRegister(context_reg.code(), context_value);
   }
@@ -1292,7 +1292,7 @@ void Deoptimizer::DoComputeInterpretedFrame(TranslatedFrame* translated_frame,
   // and will be materialized by {Runtime_NotifyDeoptimized}. For additional
   // safety we use Smi(0) instead of the potential {arguments_marker} here.
   if (is_topmost) {
-    intptr_t context_value = reinterpret_cast<intptr_t>(Smi::FromInt(0));
+    intptr_t context_value = reinterpret_cast<intptr_t>(Smi::kZero);
     Register context_reg = JavaScriptFrame::context_register();
     output_frame->SetRegister(context_reg.code(), context_value);
   }
@@ -1602,12 +1602,6 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
   output_frame->SetFrameSlot(output_offset, value);
   DebugPrintOutputSlot(value, frame_index, output_offset, "context\n");
 
-  // The allocation site.
-  output_offset -= kPointerSize;
-  value = reinterpret_cast<intptr_t>(isolate_->heap()->undefined_value());
-  output_frame->SetFrameSlot(output_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "allocation site\n");
-
   // Number of incoming arguments.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(Smi::FromInt(height - 1));
@@ -1659,7 +1653,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
   // and will be materialized by {Runtime_NotifyDeoptimized}. For additional
   // safety we use Smi(0) instead of the potential {arguments_marker} here.
   if (is_topmost) {
-    intptr_t context_value = reinterpret_cast<intptr_t>(Smi::FromInt(0));
+    intptr_t context_value = reinterpret_cast<intptr_t>(Smi::kZero);
     Register context_reg = JavaScriptFrame::context_register();
     output_frame->SetRegister(context_reg.code(), context_value);
   }
@@ -1843,7 +1837,7 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslatedFrame* translated_frame,
   // and will be materialized by {Runtime_NotifyDeoptimized}. For additional
   // safety we use Smi(0) instead of the potential {arguments_marker} here.
   if (is_topmost) {
-    intptr_t context_value = reinterpret_cast<intptr_t>(Smi::FromInt(0));
+    intptr_t context_value = reinterpret_cast<intptr_t>(Smi::kZero);
     Register context_reg = JavaScriptFrame::context_register();
     output_frame->SetRegister(context_reg.code(), context_value);
   }

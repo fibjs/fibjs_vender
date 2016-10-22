@@ -7,6 +7,7 @@
 
 #include "src/assert-scope.h"
 #include "src/checks.h"
+#include "src/globals.h"
 #include "src/handles.h"
 #include "src/zone/zone-containers.h"
 
@@ -30,7 +31,7 @@ struct PositionTableEntry {
   bool is_statement;
 };
 
-class SourcePositionTableBuilder {
+class V8_EXPORT_PRIVATE SourcePositionTableBuilder {
  public:
   enum RecordingMode { OMIT_SOURCE_POSITIONS, RECORD_SOURCE_POSITIONS };
 
@@ -55,7 +56,7 @@ class SourcePositionTableBuilder {
   PositionTableEntry previous_;  // Previously written entry, to compute delta.
 };
 
-class SourcePositionTableIterator {
+class V8_EXPORT_PRIVATE SourcePositionTableIterator {
  public:
   explicit SourcePositionTableIterator(ByteArray* byte_array);
 

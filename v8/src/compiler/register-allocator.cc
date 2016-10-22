@@ -342,6 +342,11 @@ UsePositionHintType UsePosition::HintTypeForOperand(
   return UsePositionHintType::kNone;
 }
 
+void UsePosition::SetHint(UsePosition* use_pos) {
+  DCHECK_NOT_NULL(use_pos);
+  hint_ = use_pos;
+  flags_ = HintTypeField::update(flags_, UsePositionHintType::kUsePos);
+}
 
 void UsePosition::ResolveHint(UsePosition* use_pos) {
   DCHECK_NOT_NULL(use_pos);
@@ -581,7 +586,9 @@ void LiveRange::AdvanceLastProcessedMarker(
 LiveRange* LiveRange::SplitAt(LifetimePosition position, Zone* zone) {
   int new_id = TopLevel()->GetNextChildId();
   LiveRange* child = new (zone) LiveRange(new_id, representation(), TopLevel());
-  DetachAt(position, child, zone);
+  // If we split, we do so because we're about to switch registers or move
+  // to/from a slot, so there's no value in connecting hints.
+  DetachAt(position, child, zone, DoNotConnectHints);
 
   child->top_level_ = TopLevel();
   child->next_ = next_;
@@ -589,9 +596,9 @@ LiveRange* LiveRange::SplitAt(LifetimePosition position, Zone* zone) {
   return child;
 }
 
-
 UsePosition* LiveRange::DetachAt(LifetimePosition position, LiveRange* result,
-                                 Zone* zone) {
+                                 Zone* zone,
+                                 HintConnectionOption connect_hints) {
   DCHECK(Start() < position);
   DCHECK(End() > position);
   DCHECK(result->IsEmpty());
@@ -670,6 +677,10 @@ UsePosition* LiveRange::DetachAt(LifetimePosition position, LiveRange* result,
   last_processed_use_ = nullptr;
   current_interval_ = nullptr;
 
+  if (connect_hints == ConnectHints && use_before != nullptr &&
+      use_after != nullptr) {
+    use_after->SetHint(use_before);
+  }
 #ifdef DEBUG
   VerifyChildStructure();
   result->VerifyChildStructure();
@@ -912,17 +923,21 @@ void TopLevelLiveRange::Splinter(LifetimePosition start, LifetimePosition end,
 
   if (end >= End()) {
     DCHECK(start > Start());
-    DetachAt(start, &splinter_temp, zone);
+    DetachAt(start, &splinter_temp, zone, ConnectHints);
     next_ = nullptr;
   } else {
     DCHECK(start < End() && Start() < end);
 
     const int kInvalidId = std::numeric_limits<int>::max();
 
-    UsePosition* last = DetachAt(start, &splinter_temp, zone);
+    UsePosition* last = DetachAt(start, &splinter_temp, zone, ConnectHints);
 
     LiveRange end_part(kInvalidId, this->representation(), nullptr);
-    last_in_splinter = splinter_temp.DetachAt(end, &end_part, zone);
+    // The last chunk exits the deferred region, and we don't want to connect
+    // hints here, because the non-deferred region shouldn't be affected
+    // by allocation decisions on the deferred path.
+    last_in_splinter =
+        splinter_temp.DetachAt(end, &end_part, zone, DoNotConnectHints);
 
     next_ = end_part.next_;
     last_interval_->set_next(end_part.first_interval_);
@@ -2149,33 +2164,112 @@ void LiveRangeBuilder::ProcessPhis(const InstructionBlock* block,
     // block.
     int phi_vreg = phi->virtual_register();
     live->Remove(phi_vreg);
-    // Select the hint from the first predecessor block that preceeds this block
-    // in the rpo ordering. Prefer non-deferred blocks. The enforcement of
-    // hinting in rpo order is required because hint resolution that happens
-    // later in the compiler pipeline visits instructions in reverse rpo,
-    // relying on the fact that phis are encountered before their hints.
-    const Instruction* instr = nullptr;
-    const InstructionBlock::Predecessors& predecessors = block->predecessors();
-    for (size_t i = 0; i < predecessors.size(); ++i) {
-      const InstructionBlock* predecessor_block =
-          code()->InstructionBlockAt(predecessors[i]);
-      if (predecessor_block->rpo_number() < block->rpo_number()) {
-        instr = GetLastInstruction(code(), predecessor_block);
-        if (!predecessor_block->IsDeferred()) break;
-      }
-    }
-    DCHECK_NOT_NULL(instr);
-
+    // Select a hint from a predecessor block that preceeds this block in the
+    // rpo order. In order of priority:
+    // - Avoid hints from deferred blocks.
+    // - Prefer hints from allocated (or explicit) operands.
+    // - Prefer hints from empty blocks (containing just parallel moves and a
+    //   jump). In these cases, if we can elide the moves, the jump threader
+    //   is likely to be able to elide the jump.
+    // The enforcement of hinting in rpo order is required because hint
+    // resolution that happens later in the compiler pipeline visits
+    // instructions in reverse rpo order, relying on the fact that phis are
+    // encountered before their hints.
     InstructionOperand* hint = nullptr;
-    for (MoveOperands* move : *instr->GetParallelMove(Instruction::END)) {
-      InstructionOperand& to = move->destination();
-      if (to.IsUnallocated() &&
-          UnallocatedOperand::cast(to).virtual_register() == phi_vreg) {
-        hint = &move->source();
-        break;
+    int hint_preference = 0;
+
+    // The cost of hinting increases with the number of predecessors. At the
+    // same time, the typical benefit decreases, since this hinting only
+    // optimises the execution path through one predecessor. A limit of 2 is
+    // sufficient to hit the common if/else pattern.
+    int predecessor_limit = 2;
+
+    for (RpoNumber predecessor : block->predecessors()) {
+      const InstructionBlock* predecessor_block =
+          code()->InstructionBlockAt(predecessor);
+      DCHECK_EQ(predecessor_block->rpo_number(), predecessor);
+
+      // Only take hints from earlier rpo numbers.
+      if (predecessor >= block->rpo_number()) continue;
+
+      // Look up the predecessor instruction.
+      const Instruction* predecessor_instr =
+          GetLastInstruction(code(), predecessor_block);
+      InstructionOperand* predecessor_hint = nullptr;
+      // Phis are assigned in the END position of the last instruction in each
+      // predecessor block.
+      for (MoveOperands* move :
+           *predecessor_instr->GetParallelMove(Instruction::END)) {
+        InstructionOperand& to = move->destination();
+        if (to.IsUnallocated() &&
+            UnallocatedOperand::cast(to).virtual_register() == phi_vreg) {
+          predecessor_hint = &move->source();
+          break;
+        }
       }
+      DCHECK_NOT_NULL(predecessor_hint);
+
+      // For each predecessor, generate a score according to the priorities
+      // described above, and pick the best one. Flags in higher-order bits have
+      // a higher priority than those in lower-order bits.
+      int predecessor_hint_preference = 0;
+      const int kNotDeferredBlockPreference = (1 << 2);
+      const int kMoveIsAllocatedPreference = (1 << 1);
+      const int kBlockIsEmptyPreference = (1 << 0);
+
+      // - Avoid hints from deferred blocks.
+      if (!predecessor_block->IsDeferred()) {
+        predecessor_hint_preference |= kNotDeferredBlockPreference;
+      }
+
+      // - Prefer hints from allocated (or explicit) operands.
+      //
+      // Already-allocated or explicit operands are typically assigned using
+      // the parallel moves on the last instruction. For example:
+      //
+      //      gap (v101 = [x0|R|w32]) (v100 = v101)
+      //      ArchJmp
+      //    ...
+      //    phi: v100 = v101 v102
+      //
+      // We have already found the END move, so look for a matching START move
+      // from an allocated (or explicit) operand.
+      //
+      // Note that we cannot simply look up data()->live_ranges()[vreg] here
+      // because the live ranges are still being built when this function is
+      // called.
+      // TODO(v8): Find a way to separate hinting from live range analysis in
+      // BuildLiveRanges so that we can use the O(1) live-range look-up.
+      auto moves = predecessor_instr->GetParallelMove(Instruction::START);
+      if (moves != nullptr) {
+        for (MoveOperands* move : *moves) {
+          InstructionOperand& to = move->destination();
+          if (predecessor_hint->Equals(to)) {
+            if (move->source().IsAllocated() || move->source().IsExplicit()) {
+              predecessor_hint_preference |= kMoveIsAllocatedPreference;
+            }
+            break;
+          }
+        }
+      }
+
+      // - Prefer hints from empty blocks.
+      if (predecessor_block->last_instruction_index() ==
+          predecessor_block->first_instruction_index()) {
+        predecessor_hint_preference |= kBlockIsEmptyPreference;
+      }
+
+      if ((hint == nullptr) ||
+          (predecessor_hint_preference > hint_preference)) {
+        // Take the hint from this predecessor.
+        hint = predecessor_hint;
+        hint_preference = predecessor_hint_preference;
+      }
+
+      if (--predecessor_limit <= 0) break;
     }
-    DCHECK(hint != nullptr);
+    DCHECK_NOT_NULL(hint);
+
     LifetimePosition block_start = LifetimePosition::GapFromInstructionIndex(
         block->first_instruction_index());
     UsePosition* use_pos = Define(block_start, &phi->output(), hint,
@@ -2401,7 +2495,13 @@ void RegisterAllocator::SplitAndSpillRangesDefinedByMemoryOperand() {
     if (next_pos.IsGapPosition()) {
       next_pos = next_pos.NextStart();
     }
-    UsePosition* pos = range->NextUsePositionRegisterIsBeneficial(next_pos);
+
+    // With splinters, we can be more strict and skip over positions
+    // not strictly needing registers.
+    UsePosition* pos =
+        range->IsSplinter()
+            ? range->NextRegisterPosition(next_pos)
+            : range->NextUsePositionRegisterIsBeneficial(next_pos);
     // If the range already has a spill operand and it doesn't need a
     // register immediately, split it and spill the first part of the range.
     if (pos == nullptr) {
@@ -2634,14 +2734,30 @@ void LinearScanAllocator::AllocateRegisters() {
 
     DCHECK(!current->HasRegisterAssigned() && !current->spilled());
 
-    bool result = TryAllocateFreeReg(current);
-    if (!result) AllocateBlockedReg(current);
-    if (current->HasRegisterAssigned()) {
-      AddToActive(current);
-    }
+    ProcessCurrentRange(current);
   }
 }
 
+bool LinearScanAllocator::TrySplitAndSpillSplinter(LiveRange* range) {
+  DCHECK(range->TopLevel()->IsSplinter());
+  // If we can spill the whole range, great. Otherwise, split above the
+  // first use needing a register and spill the top part.
+  const UsePosition* next_reg = range->NextRegisterPosition(range->Start());
+  if (next_reg == nullptr) {
+    Spill(range);
+    return true;
+  } else if (range->FirstHintPosition() == nullptr) {
+    // If there was no hint, but we have a use position requiring a
+    // register, apply the hot path heuristics.
+    return false;
+  } else if (next_reg->pos().PrevStart() > range->Start()) {
+    LiveRange* tail = SplitRangeAt(range, next_reg->pos().PrevStart());
+    AddToUnhandledSorted(tail);
+    Spill(range);
+    return true;
+  }
+  return false;
+}
 
 void LinearScanAllocator::SetLiveRangeAssignedRegister(LiveRange* range,
                                                        int reg) {
@@ -2757,35 +2873,88 @@ void LinearScanAllocator::InactiveToActive(LiveRange* range) {
         range->TopLevel()->vreg(), range->relative_id());
 }
 
-
-bool LinearScanAllocator::TryAllocateFreeReg(LiveRange* current) {
+void LinearScanAllocator::FindFreeRegistersForRange(
+    LiveRange* range, Vector<LifetimePosition> positions) {
   int num_regs = num_registers();
-  int num_codes = num_allocatable_registers();
-  const int* codes = allocatable_register_codes();
+  DCHECK_GE(positions.length(), num_regs);
 
-  LifetimePosition free_until_pos[RegisterConfiguration::kMaxFPRegisters];
   for (int i = 0; i < num_regs; i++) {
-    free_until_pos[i] = LifetimePosition::MaxPosition();
+    positions[i] = LifetimePosition::MaxPosition();
   }
 
   for (LiveRange* cur_active : active_live_ranges()) {
     int cur_reg = cur_active->assigned_register();
-    free_until_pos[cur_reg] = LifetimePosition::GapFromInstructionIndex(0);
+    positions[cur_reg] = LifetimePosition::GapFromInstructionIndex(0);
     TRACE("Register %s is free until pos %d (1)\n", RegisterName(cur_reg),
           LifetimePosition::GapFromInstructionIndex(0).value());
   }
 
   for (LiveRange* cur_inactive : inactive_live_ranges()) {
-    DCHECK(cur_inactive->End() > current->Start());
-    LifetimePosition next_intersection =
-        cur_inactive->FirstIntersection(current);
+    DCHECK(cur_inactive->End() > range->Start());
+    LifetimePosition next_intersection = cur_inactive->FirstIntersection(range);
     if (!next_intersection.IsValid()) continue;
     int cur_reg = cur_inactive->assigned_register();
-    free_until_pos[cur_reg] = Min(free_until_pos[cur_reg], next_intersection);
+    positions[cur_reg] = Min(positions[cur_reg], next_intersection);
     TRACE("Register %s is free until pos %d (2)\n", RegisterName(cur_reg),
-          Min(free_until_pos[cur_reg], next_intersection).value());
+          Min(positions[cur_reg], next_intersection).value());
   }
+}
 
+// High-level register allocation summary:
+//
+// For regular, or hot (i.e. not splinter) ranges, we attempt to first
+// allocate first the preferred (hint) register. If that is not possible,
+// we find a register that's free, and allocate that. If that's not possible,
+// we search for a register to steal from a range that was allocated. The
+// goal is to optimize for throughput by avoiding register-to-memory
+// moves, which are expensive.
+//
+// For splinters, the goal is to minimize the number of moves. First we try
+// to allocate the preferred register (more discussion follows). Failing that,
+// we bail out and spill as far as we can, unless the first use is at start,
+// case in which we apply the same behavior as we do for regular ranges.
+// If there is no hint, we apply the hot-path behavior.
+//
+// For the splinter, the hint register may come from:
+//
+// - the hot path (we set it at splintering time with SetHint). In this case, if
+// we cannot offer the hint register, spilling is better because it's at most
+// 1 move, while trying to find and offer another register is at least 1 move.
+//
+// - a constraint. If we cannot offer that register, it's because  there is some
+// interference. So offering the hint register up to the interference would
+// result
+// in a move at the interference, plus a move to satisfy the constraint. This is
+// also the number of moves if we spill, with the potential of the range being
+// already spilled and thus saving a move (the spill).
+// Note that this can only be an input constraint, if it were an output one,
+// the range wouldn't be a splinter because it means it'd be defined in a
+// deferred
+// block, and we don't mark those as splinters (they live in deferred blocks
+// only).
+//
+// - a phi. The same analysis as in the case of the input constraint applies.
+//
+void LinearScanAllocator::ProcessCurrentRange(LiveRange* current) {
+  LifetimePosition free_until_pos_buff[RegisterConfiguration::kMaxFPRegisters];
+  Vector<LifetimePosition> free_until_pos(
+      free_until_pos_buff, RegisterConfiguration::kMaxFPRegisters);
+  FindFreeRegistersForRange(current, free_until_pos);
+  if (!TryAllocatePreferredReg(current, free_until_pos)) {
+    if (current->TopLevel()->IsSplinter()) {
+      if (TrySplitAndSpillSplinter(current)) return;
+    }
+    if (!TryAllocateFreeReg(current, free_until_pos)) {
+      AllocateBlockedReg(current);
+    }
+  }
+  if (current->HasRegisterAssigned()) {
+    AddToActive(current);
+  }
+}
+
+bool LinearScanAllocator::TryAllocatePreferredReg(
+    LiveRange* current, const Vector<LifetimePosition>& free_until_pos) {
   int hint_register;
   if (current->FirstHintPosition(&hint_register) != nullptr) {
     TRACE(
@@ -2803,6 +2972,14 @@ bool LinearScanAllocator::TryAllocateFreeReg(LiveRange* current) {
       return true;
     }
   }
+  return false;
+}
+
+bool LinearScanAllocator::TryAllocateFreeReg(
+    LiveRange* current, const Vector<LifetimePosition>& free_until_pos) {
+  int num_codes = num_allocatable_registers();
+  const int* codes = allocatable_register_codes();
+  DCHECK_GE(free_until_pos.length(), num_codes);
 
   // Find the register which stays free for the longest time.
   int reg = codes[0];
@@ -2836,7 +3013,6 @@ bool LinearScanAllocator::TryAllocateFreeReg(LiveRange* current) {
 
   return true;
 }
-
 
 void LinearScanAllocator::AllocateBlockedReg(LiveRange* current) {
   UsePosition* register_use = current->NextRegisterPosition(current->Start());

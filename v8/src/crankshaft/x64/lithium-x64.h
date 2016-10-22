@@ -71,9 +71,7 @@ class LCodeGen;
   V(FlooringDivI)                            \
   V(ForInCacheArray)                         \
   V(ForInPrepareMap)                         \
-  V(GetCachedArrayIndex)                     \
   V(Goto)                                    \
-  V(HasCachedArrayIndexAndBranch)            \
   V(HasInPrototypeChainAndBranch)            \
   V(HasInstanceTypeAndBranch)                \
   V(InnerAllocatedObject)                    \
@@ -90,7 +88,6 @@ class LCodeGen;
   V(LoadFieldByIndex)                        \
   V(LoadFunctionPrototype)                   \
   V(LoadKeyed)                               \
-  V(LoadKeyedGeneric)                        \
   V(LoadNamedField)                          \
   V(MathAbs)                                 \
   V(MathClz32)                               \
@@ -1072,36 +1069,6 @@ class LHasInstanceTypeAndBranch final : public LControlInstruction<1, 0> {
   void PrintDataTo(StringStream* stream) override;
 };
 
-
-class LGetCachedArrayIndex final : public LTemplateInstruction<1, 1, 0> {
- public:
-  explicit LGetCachedArrayIndex(LOperand* value) {
-    inputs_[0] = value;
-  }
-
-  LOperand* value() { return inputs_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(GetCachedArrayIndex, "get-cached-array-index")
-  DECLARE_HYDROGEN_ACCESSOR(GetCachedArrayIndex)
-};
-
-
-class LHasCachedArrayIndexAndBranch final : public LControlInstruction<1, 0> {
- public:
-  explicit LHasCachedArrayIndexAndBranch(LOperand* value) {
-    inputs_[0] = value;
-  }
-
-  LOperand* value() { return inputs_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(HasCachedArrayIndexAndBranch,
-                               "has-cached-array-index-and-branch")
-  DECLARE_HYDROGEN_ACCESSOR(HasCachedArrayIndexAndBranch)
-
-  void PrintDataTo(StringStream* stream) override;
-};
-
-
 class LClassOfTestAndBranch final : public LControlInstruction<1, 2> {
  public:
   LClassOfTestAndBranch(LOperand* value, LOperand* temp, LOperand* temp2) {
@@ -1546,25 +1513,6 @@ class LLoadKeyed final : public LTemplateInstruction<1, 3, 0> {
   }
 };
 
-
-class LLoadKeyedGeneric final : public LTemplateInstruction<1, 3, 1> {
- public:
-  LLoadKeyedGeneric(LOperand* context, LOperand* obj, LOperand* key,
-                    LOperand* vector) {
-    inputs_[0] = context;
-    inputs_[1] = obj;
-    inputs_[2] = key;
-    temps_[0] = vector;
-  }
-
-  DECLARE_CONCRETE_INSTRUCTION(LoadKeyedGeneric, "load-keyed-generic")
-  DECLARE_HYDROGEN_ACCESSOR(LoadKeyedGeneric)
-
-  LOperand* context() { return inputs_[0]; }
-  LOperand* object() { return inputs_[1]; }
-  LOperand* key() { return inputs_[2]; }
-  LOperand* temp_vector() { return temps_[0]; }
-};
 
 class LLoadContextSlot final : public LTemplateInstruction<1, 1, 0> {
  public:

@@ -2391,30 +2391,6 @@ void LCodeGen::DoHasInstanceTypeAndBranch(LHasInstanceTypeAndBranch* instr) {
   EmitBranch(instr, BranchCondition(instr->hydrogen()));
 }
 
-
-void LCodeGen::DoGetCachedArrayIndex(LGetCachedArrayIndex* instr) {
-  Register input = ToRegister(instr->value());
-  Register result = ToRegister(instr->result());
-
-  __ AssertString(input);
-
-  __ ldr(result, FieldMemOperand(input, String::kHashFieldOffset));
-  __ IndexFromHash(result, result);
-}
-
-
-void LCodeGen::DoHasCachedArrayIndexAndBranch(
-    LHasCachedArrayIndexAndBranch* instr) {
-  Register input = ToRegister(instr->value());
-  Register scratch = scratch0();
-
-  __ ldr(scratch,
-         FieldMemOperand(input, String::kHashFieldOffset));
-  __ tst(scratch, Operand(String::kContainsCachedArrayIndexMask));
-  EmitBranch(instr, eq);
-}
-
-
 // Branches to a label or falls through with the answer in flags.  Trashes
 // the temp registers, but not the input.
 void LCodeGen::EmitClassOfTest(Label* is_true,
@@ -2580,23 +2556,6 @@ void LCodeGen::DoReturn(LReturn* instr) {
 
     __ Jump(lr);
   }
-}
-
-
-template <class T>
-void LCodeGen::EmitVectorLoadICRegisters(T* instr) {
-  Register vector_register = ToRegister(instr->temp_vector());
-  Register slot_register = LoadDescriptor::SlotRegister();
-  DCHECK(vector_register.is(LoadWithVectorDescriptor::VectorRegister()));
-  DCHECK(slot_register.is(r0));
-
-  AllowDeferredHandleDereference vector_structure_check;
-  Handle<TypeFeedbackVector> vector = instr->hydrogen()->feedback_vector();
-  __ Move(vector_register, vector);
-  // No need to allocate this register.
-  FeedbackVectorSlot slot = instr->hydrogen()->slot();
-  int index = vector->GetIndex(slot);
-  __ mov(slot_register, Operand(Smi::FromInt(index)));
 }
 
 
@@ -2963,18 +2922,6 @@ MemOperand LCodeGen::PrepareKeyedOperand(Register key,
     __ add(scratch0(), base, Operand(key, ASR, 1));
     return MemOperand(scratch0(), base_offset);
   }
-}
-
-
-void LCodeGen::DoLoadKeyedGeneric(LLoadKeyedGeneric* instr) {
-  DCHECK(ToRegister(instr->context()).is(cp));
-  DCHECK(ToRegister(instr->object()).is(LoadDescriptor::ReceiverRegister()));
-  DCHECK(ToRegister(instr->key()).is(LoadDescriptor::NameRegister()));
-
-  EmitVectorLoadICRegisters<LLoadKeyedGeneric>(instr);
-
-  Handle<Code> ic = CodeFactory::KeyedLoadICInOptimizedCode(isolate()).code();
-  CallCode(ic, RelocInfo::CODE_TARGET, instr, NEVER_INLINE_TARGET_ADDRESS);
 }
 
 
@@ -5025,7 +4972,7 @@ void LCodeGen::DoDeferredAllocate(LAllocate* instr) {
   // TODO(3095996): Get rid of this. For now, we need to make the
   // result register contain a valid pointer because it is already
   // contained in the register pointer map.
-  __ mov(result, Operand(Smi::FromInt(0)));
+  __ mov(result, Operand(Smi::kZero));
 
   PushSafepointRegistersScope scope(this);
   if (instr->size()->IsRegister()) {
@@ -5359,7 +5306,7 @@ void LCodeGen::DoForInCacheArray(LForInCacheArray* instr) {
   Register result = ToRegister(instr->result());
   Label load_cache, done;
   __ EnumLength(result, map);
-  __ cmp(result, Operand(Smi::FromInt(0)));
+  __ cmp(result, Operand(Smi::kZero));
   __ b(ne, &load_cache);
   __ mov(result, Operand(isolate()->factory()->empty_fixed_array()));
   __ jmp(&done);

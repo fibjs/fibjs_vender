@@ -10,11 +10,13 @@
 #include <map>
 #include <set>
 
+#include "src/base/compiler-specific.h"
 #include "src/compiler/common-operator.h"
 #include "src/compiler/frame.h"
 #include "src/compiler/instruction-codes.h"
 #include "src/compiler/opcodes.h"
 #include "src/compiler/source-position.h"
+#include "src/globals.h"
 #include "src/macro-assembler.h"
 #include "src/register-configuration.h"
 #include "src/zone/zone-allocator.h"
@@ -516,8 +518,8 @@ class LocationOperand : public InstructionOperand {
   class IndexField : public BitField64<int32_t, 35, 29> {};
 };
 
-
-class ExplicitOperand : public LocationOperand {
+class V8_EXPORT_PRIVATE ExplicitOperand
+    : public NON_EXPORTED_BASE(LocationOperand) {
  public:
   ExplicitOperand(LocationKind kind, MachineRepresentation rep, int index);
 
@@ -792,7 +794,7 @@ std::ostream& operator<<(std::ostream& os, const ReferenceMap& pm);
 
 class InstructionBlock;
 
-class Instruction final {
+class V8_EXPORT_PRIVATE Instruction final {
  public:
   size_t OutputCount() const { return OutputCountField::decode(bit_field_); }
   const InstructionOperand* OutputAt(size_t i) const {
@@ -1019,8 +1021,7 @@ class RpoNumber final {
 
 std::ostream& operator<<(std::ostream&, const RpoNumber&);
 
-
-class Constant final {
+class V8_EXPORT_PRIVATE Constant final {
  public:
   enum Type {
     kInt32,
@@ -1211,7 +1212,8 @@ class DeoptimizationEntry final {
 
 typedef ZoneVector<DeoptimizationEntry> DeoptimizationVector;
 
-class PhiInstruction final : public ZoneObject {
+class V8_EXPORT_PRIVATE PhiInstruction final
+    : public NON_EXPORTED_BASE(ZoneObject) {
  public:
   typedef ZoneVector<InstructionOperand> Inputs;
 
@@ -1236,7 +1238,8 @@ class PhiInstruction final : public ZoneObject {
 
 
 // Analogue of BasicBlock for Instructions instead of Nodes.
-class InstructionBlock final : public ZoneObject {
+class V8_EXPORT_PRIVATE InstructionBlock final
+    : public NON_EXPORTED_BASE(ZoneObject) {
  public:
   InstructionBlock(Zone* zone, RpoNumber rpo_number, RpoNumber loop_header,
                    RpoNumber loop_end, bool deferred, bool handler);
@@ -1300,9 +1303,6 @@ class InstructionBlock final : public ZoneObject {
   bool must_deconstruct_frame() const { return must_deconstruct_frame_; }
   void mark_must_deconstruct_frame() { must_deconstruct_frame_ = true; }
 
-  void set_last_deferred(RpoNumber last) { last_deferred_ = last; }
-  RpoNumber last_deferred() const { return last_deferred_; }
-
  private:
   Successors successors_;
   Predecessors predecessors_;
@@ -1318,7 +1318,6 @@ class InstructionBlock final : public ZoneObject {
   bool needs_frame_;
   bool must_construct_frame_;
   bool must_deconstruct_frame_;
-  RpoNumber last_deferred_;
 };
 
 class InstructionSequence;
@@ -1347,7 +1346,8 @@ struct PrintableInstructionSequence;
 
 // Represents architecture-specific generated code before, during, and after
 // register allocation.
-class InstructionSequence final : public ZoneObject {
+class V8_EXPORT_PRIVATE InstructionSequence final
+    : public NON_EXPORTED_BASE(ZoneObject) {
  public:
   static InstructionBlocks* InstructionBlocksFor(Zone* zone,
                                                  const Schedule* schedule);
@@ -1505,8 +1505,8 @@ class InstructionSequence final : public ZoneObject {
   void ValidateSSA() const;
 
  private:
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const PrintableInstructionSequence& code);
+  friend V8_EXPORT_PRIVATE std::ostream& operator<<(
+      std::ostream& os, const PrintableInstructionSequence& code);
 
   typedef ZoneMap<const Instruction*, SourcePosition> SourcePositionMap;
 
@@ -1534,9 +1534,8 @@ struct PrintableInstructionSequence {
   const InstructionSequence* sequence_;
 };
 
-
-std::ostream& operator<<(std::ostream& os,
-                         const PrintableInstructionSequence& code);
+V8_EXPORT_PRIVATE std::ostream& operator<<(
+    std::ostream& os, const PrintableInstructionSequence& code);
 
 }  // namespace compiler
 }  // namespace internal

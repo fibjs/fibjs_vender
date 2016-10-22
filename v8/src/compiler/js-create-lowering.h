@@ -5,7 +5,9 @@
 #ifndef V8_COMPILER_JS_CREATE_LOWERING_H_
 #define V8_COMPILER_JS_CREATE_LOWERING_H_
 
+#include "src/base/compiler-specific.h"
 #include "src/compiler/graph-reducer.h"
+#include "src/globals.h"
 
 namespace v8 {
 namespace internal {
@@ -27,11 +29,12 @@ class SimplifiedOperatorBuilder;
 
 
 // Lowers JSCreate-level operators to fast (inline) allocations.
-class JSCreateLowering final : public AdvancedReducer {
+class V8_EXPORT_PRIVATE JSCreateLowering final
+    : public NON_EXPORTED_BASE(AdvancedReducer) {
  public:
   JSCreateLowering(Editor* editor, CompilationDependencies* dependencies,
                    JSGraph* jsgraph, MaybeHandle<LiteralsArray> literals_array,
-                   MaybeHandle<Context> native_context, Zone* zone)
+                   Handle<Context> native_context, Zone* zone)
       : AdvancedReducer(editor),
         dependencies_(dependencies),
         jsgraph_(jsgraph),
@@ -77,13 +80,12 @@ class JSCreateLowering final : public AdvancedReducer {
 
   // Infers the LiteralsArray to use for a given {node}.
   MaybeHandle<LiteralsArray> GetSpecializationLiterals(Node* node);
-  // Infers the native context to use for a given {node}.
-  MaybeHandle<Context> GetSpecializationNativeContext(Node* node);
 
   Factory* factory() const;
   Graph* graph() const;
   JSGraph* jsgraph() const { return jsgraph_; }
   Isolate* isolate() const;
+  Handle<Context> native_context() const { return native_context_; }
   JSOperatorBuilder* javascript() const;
   CommonOperatorBuilder* common() const;
   SimplifiedOperatorBuilder* simplified() const;
@@ -94,7 +96,7 @@ class JSCreateLowering final : public AdvancedReducer {
   CompilationDependencies* const dependencies_;
   JSGraph* const jsgraph_;
   MaybeHandle<LiteralsArray> const literals_array_;
-  MaybeHandle<Context> const native_context_;
+  Handle<Context> const native_context_;
   Zone* const zone_;
 };
 

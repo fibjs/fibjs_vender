@@ -5,7 +5,9 @@
 #ifndef V8_REGISTER_ALLOCATOR_H_
 #define V8_REGISTER_ALLOCATOR_H_
 
+#include "src/base/compiler-specific.h"
 #include "src/compiler/instruction.h"
+#include "src/globals.h"
 #include "src/ostreams.h"
 #include "src/register-configuration.h"
 #include "src/zone/zone-containers.h"
@@ -246,7 +248,8 @@ static_assert(kUnassignedRegister <= RegisterConfiguration::kMaxFPRegisters,
               "kUnassignedRegister too small");
 
 // Representation of a use position.
-class UsePosition final : public ZoneObject {
+class V8_EXPORT_PRIVATE UsePosition final
+    : public NON_EXPORTED_BASE(ZoneObject) {
  public:
   UsePosition(LifetimePosition pos, InstructionOperand* operand, void* hint,
               UsePositionHintType hint_type);
@@ -275,6 +278,7 @@ class UsePosition final : public ZoneObject {
   }
   bool HasHint() const;
   bool HintRegister(int* register_code) const;
+  void SetHint(UsePosition* use_pos);
   void ResolveHint(UsePosition* use_pos);
   bool IsResolved() const {
     return hint_type() != UsePositionHintType::kUnresolved;
@@ -304,7 +308,7 @@ class LiveRangeGroup;
 
 // Representation of SSA values' live ranges as a collection of (continuous)
 // intervals over the instruction ordering.
-class LiveRange : public ZoneObject {
+class V8_EXPORT_PRIVATE LiveRange : public NON_EXPORTED_BASE(ZoneObject) {
  public:
   UseInterval* first_interval() const { return first_interval_; }
   UsePosition* first_pos() const { return first_pos_; }
@@ -368,8 +372,12 @@ class LiveRange : public ZoneObject {
   // live range to the result live range.
   // The current range will terminate at position, while result will start from
   // position.
+  enum HintConnectionOption : bool {
+    DoNotConnectHints = false,
+    ConnectHints = true
+  };
   UsePosition* DetachAt(LifetimePosition position, LiveRange* result,
-                        Zone* zone);
+                        Zone* zone, HintConnectionOption connect_hints);
 
   // Detaches at position, and then links the resulting ranges. Returns the
   // child, which starts at position.
@@ -471,8 +479,7 @@ class LiveRangeGroup final : public ZoneObject {
   DISALLOW_COPY_AND_ASSIGN(LiveRangeGroup);
 };
 
-
-class TopLevelLiveRange final : public LiveRange {
+class V8_EXPORT_PRIVATE TopLevelLiveRange final : public LiveRange {
  public:
   explicit TopLevelLiveRange(int vreg, MachineRepresentation rep);
   int spill_start_index() const { return spill_start_index_; }
@@ -1047,8 +1054,15 @@ class LinearScanAllocator final : public RegisterAllocator {
 
   // Helper methods for allocating registers.
   bool TryReuseSpillForPhi(TopLevelLiveRange* range);
-  bool TryAllocateFreeReg(LiveRange* range);
+  bool TryAllocateFreeReg(LiveRange* range,
+                          const Vector<LifetimePosition>& free_until_pos);
+  bool TryAllocatePreferredReg(LiveRange* range,
+                               const Vector<LifetimePosition>& free_until_pos);
+  void FindFreeRegistersForRange(LiveRange* range,
+                                 Vector<LifetimePosition> free_until_pos);
+  void ProcessCurrentRange(LiveRange* current);
   void AllocateBlockedReg(LiveRange* range);
+  bool TrySplitAndSpillSplinter(LiveRange* range);
 
   // Spill the given life range after position pos.
   void SpillAfter(LiveRange* range, LifetimePosition pos);

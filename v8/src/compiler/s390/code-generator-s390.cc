@@ -1163,39 +1163,46 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ lr(i.OutputRegister(0), r1);
       __ srag(i.OutputRegister(1), r1, Operand(32));
       break;
-    case kS390_ShiftLeftPair:
+    case kS390_ShiftLeftPair: {
+      Register second_output =
+          instr->OutputCount() >= 2 ? i.OutputRegister(1) : i.TempRegister(0);
       if (instr->InputAt(2)->IsImmediate()) {
-        __ ShiftLeftPair(i.OutputRegister(0), i.OutputRegister(1),
-                         i.InputRegister(0), i.InputRegister(1),
-                         i.InputInt32(2));
+        __ ShiftLeftPair(i.OutputRegister(0), second_output, i.InputRegister(0),
+                         i.InputRegister(1), i.InputInt32(2));
       } else {
-        __ ShiftLeftPair(i.OutputRegister(0), i.OutputRegister(1),
-                         i.InputRegister(0), i.InputRegister(1), kScratchReg,
-                         i.InputRegister(2));
+        __ ShiftLeftPair(i.OutputRegister(0), second_output, i.InputRegister(0),
+                         i.InputRegister(1), kScratchReg, i.InputRegister(2));
       }
       break;
-    case kS390_ShiftRightPair:
+    }
+    case kS390_ShiftRightPair: {
+      Register second_output =
+          instr->OutputCount() >= 2 ? i.OutputRegister(1) : i.TempRegister(0);
       if (instr->InputAt(2)->IsImmediate()) {
-        __ ShiftRightPair(i.OutputRegister(0), i.OutputRegister(1),
+        __ ShiftRightPair(i.OutputRegister(0), second_output,
                           i.InputRegister(0), i.InputRegister(1),
                           i.InputInt32(2));
       } else {
-        __ ShiftRightPair(i.OutputRegister(0), i.OutputRegister(1),
+        __ ShiftRightPair(i.OutputRegister(0), second_output,
                           i.InputRegister(0), i.InputRegister(1), kScratchReg,
                           i.InputRegister(2));
       }
       break;
-    case kS390_ShiftRightArithPair:
+    }
+    case kS390_ShiftRightArithPair: {
+      Register second_output =
+          instr->OutputCount() >= 2 ? i.OutputRegister(1) : i.TempRegister(0);
       if (instr->InputAt(2)->IsImmediate()) {
-        __ ShiftRightArithPair(i.OutputRegister(0), i.OutputRegister(1),
+        __ ShiftRightArithPair(i.OutputRegister(0), second_output,
                                i.InputRegister(0), i.InputRegister(1),
                                i.InputInt32(2));
       } else {
-        __ ShiftRightArithPair(i.OutputRegister(0), i.OutputRegister(1),
+        __ ShiftRightArithPair(i.OutputRegister(0), second_output,
                                i.InputRegister(0), i.InputRegister(1),
                                kScratchReg, i.InputRegister(2));
       }
       break;
+    }
 #endif
     case kS390_RotRight32:
       if (HasRegisterInput(instr, 1)) {
@@ -1244,7 +1251,21 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
 #if V8_TARGET_ARCH_S390X
     case kS390_RotLeftAndClear64:
-      UNIMPLEMENTED();  // Find correct instruction
+      if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+        int shiftAmount = i.InputInt32(1);
+        int endBit = 63 - shiftAmount;
+        int startBit = 63 - i.InputInt32(2);
+        __ risbg(i.OutputRegister(), i.InputRegister(0), Operand(startBit),
+                 Operand(endBit), Operand(shiftAmount), true);
+      } else {
+        int shiftAmount = i.InputInt32(1);
+        int clearBit = 63 - i.InputInt32(2);
+        __ rllg(i.OutputRegister(), i.InputRegister(0), Operand(shiftAmount));
+        __ sllg(i.OutputRegister(), i.OutputRegister(), Operand(clearBit));
+        __ srlg(i.OutputRegister(), i.OutputRegister(),
+                Operand(clearBit + shiftAmount));
+        __ sllg(i.OutputRegister(), i.OutputRegister(), Operand(shiftAmount));
+      }
       break;
     case kS390_RotLeftAndClearLeft64:
       if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {

@@ -165,8 +165,9 @@ VariableProxy::VariableProxy(Variable* var, int start_position,
       end_position_(end_position),
       raw_name_(var->raw_name()),
       next_unresolved_(nullptr) {
-  bit_field_ |= IsThisField::encode(var->is_this()) |
-                IsAssignedField::encode(false) | IsResolvedField::encode(false);
+  bit_field_ |=
+      IsThisField::encode(var->is_this()) | IsAssignedField::encode(false) |
+      IsResolvedField::encode(false) | NeedsHoleCheckField::encode(false);
   BindTo(var);
 }
 
@@ -178,7 +179,9 @@ VariableProxy::VariableProxy(const AstRawString* name,
       raw_name_(name),
       next_unresolved_(nullptr) {
   bit_field_ |= IsThisField::encode(variable_kind == THIS_VARIABLE) |
-                IsAssignedField::encode(false) | IsResolvedField::encode(false);
+                IsAssignedField::encode(false) |
+                IsResolvedField::encode(false) |
+                NeedsHoleCheckField::encode(false);
 }
 
 VariableProxy::VariableProxy(const VariableProxy* copy_from)
@@ -288,14 +291,16 @@ Token::Value Assignment::binary_op() const {
   return Token::ILLEGAL;
 }
 
+bool FunctionLiteral::ShouldEagerCompile() const {
+  return scope()->ShouldEagerCompile();
+}
+
+void FunctionLiteral::SetShouldEagerCompile() {
+  scope()->set_should_eager_compile();
+}
 
 bool FunctionLiteral::AllowsLazyCompilation() {
   return scope()->AllowsLazyCompilation();
-}
-
-
-bool FunctionLiteral::AllowsLazyCompilationWithoutContext() {
-  return scope()->AllowsLazyCompilationWithoutContext();
 }
 
 
@@ -610,7 +615,7 @@ void ArrayLiteral::BuildConstantElements(Isolate* isolate) {
     }
 
     if (boilerplate_value->IsUninitialized(isolate)) {
-      boilerplate_value = handle(Smi::FromInt(0), isolate);
+      boilerplate_value = handle(Smi::kZero, isolate);
       is_simple = false;
     }
 
@@ -887,25 +892,9 @@ bool Expression::IsMonomorphic() const {
   }
 }
 
-bool Call::IsUsingCallFeedbackICSlot() const {
-  return GetCallType() != POSSIBLY_EVAL_CALL;
-}
-
-bool Call::IsUsingCallFeedbackSlot() const {
-  // SuperConstructorCall uses a CallConstructStub, which wants
-  // a Slot, in addition to any IC slots requested elsewhere.
-  return GetCallType() == SUPER_CALL;
-}
-
-
 void Call::AssignFeedbackVectorSlots(Isolate* isolate, FeedbackVectorSpec* spec,
                                      FeedbackVectorSlotCache* cache) {
-  if (IsUsingCallFeedbackICSlot()) {
-    ic_slot_ = spec->AddCallICSlot();
-  }
-  if (IsUsingCallFeedbackSlot()) {
-    stub_slot_ = spec->AddGeneralSlot();
-  }
+  ic_slot_ = spec->AddCallICSlot();
 }
 
 Call::CallType Call::GetCallType() const {

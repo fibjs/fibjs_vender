@@ -478,8 +478,6 @@ class FullCodeGenerator final : public AstVisitor<FullCodeGenerator> {
   F(Call)                               \
   F(NewObject)                          \
   F(IsJSReceiver)                       \
-  F(HasCachedArrayIndex)                \
-  F(GetCachedArrayIndex)                \
   F(GetSuperConstructor)                \
   F(DebugBreakInOptimizedCode)          \
   F(ClassOf)                            \
@@ -519,8 +517,6 @@ class FullCodeGenerator final : public AstVisitor<FullCodeGenerator> {
                         TypeofMode typeof_mode = NOT_INSIDE_TYPEOF);
 
   void EmitAccessor(ObjectLiteralProperty* property);
-
-  bool NeedsHoleCheckForLoad(VariableProxy* proxy);
 
   // Expects the arguments and the function already pushed.
   void EmitResolvePossiblyDirectEval(Call* expr);

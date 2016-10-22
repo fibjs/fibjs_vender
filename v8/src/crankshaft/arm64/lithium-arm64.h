@@ -74,9 +74,7 @@ class LCodeGen;
   V(FlooringDivI)                            \
   V(ForInCacheArray)                         \
   V(ForInPrepareMap)                         \
-  V(GetCachedArrayIndex)                     \
   V(Goto)                                    \
-  V(HasCachedArrayIndexAndBranch)            \
   V(HasInPrototypeChainAndBranch)            \
   V(HasInstanceTypeAndBranch)                \
   V(InnerAllocatedObject)                    \
@@ -94,7 +92,6 @@ class LCodeGen;
   V(LoadKeyedExternal)                       \
   V(LoadKeyedFixed)                          \
   V(LoadKeyedFixedDouble)                    \
-  V(LoadKeyedGeneric)                        \
   V(LoadNamedField)                          \
   V(LoadRoot)                                \
   V(MathAbs)                                 \
@@ -1280,38 +1277,6 @@ class LForInPrepareMap final : public LTemplateInstruction<1, 2, 0> {
   DECLARE_CONCRETE_INSTRUCTION(ForInPrepareMap, "for-in-prepare-map")
 };
 
-
-class LGetCachedArrayIndex final : public LTemplateInstruction<1, 1, 0> {
- public:
-  explicit LGetCachedArrayIndex(LOperand* value) {
-    inputs_[0] = value;
-  }
-
-  LOperand* value() { return inputs_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(GetCachedArrayIndex, "get-cached-array-index")
-  DECLARE_HYDROGEN_ACCESSOR(GetCachedArrayIndex)
-};
-
-
-class LHasCachedArrayIndexAndBranch final : public LControlInstruction<1, 1> {
- public:
-  LHasCachedArrayIndexAndBranch(LOperand* value, LOperand* temp) {
-    inputs_[0] = value;
-    temps_[0] = temp;
-  }
-
-  LOperand* value() { return inputs_[0]; }
-  LOperand* temp() { return temps_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(HasCachedArrayIndexAndBranch,
-                               "has-cached-array-index-and-branch")
-  DECLARE_HYDROGEN_ACCESSOR(HasCachedArrayIndexAndBranch)
-
-  void PrintDataTo(StringStream* stream) override;
-};
-
-
 class LHasInstanceTypeAndBranch final : public LControlInstruction<1, 1> {
  public:
   LHasInstanceTypeAndBranch(LOperand* value, LOperand* temp) {
@@ -1614,26 +1579,6 @@ class LLoadKeyedFixedDouble: public LLoadKeyed<1> {
   LOperand* temp() { return temps_[0]; }
 
   DECLARE_CONCRETE_INSTRUCTION(LoadKeyedFixedDouble, "load-keyed-fixed-double");
-};
-
-
-class LLoadKeyedGeneric final : public LTemplateInstruction<1, 3, 1> {
- public:
-  LLoadKeyedGeneric(LOperand* context, LOperand* object, LOperand* key,
-                    LOperand* vector) {
-    inputs_[0] = context;
-    inputs_[1] = object;
-    inputs_[2] = key;
-    temps_[0] = vector;
-  }
-
-  LOperand* context() { return inputs_[0]; }
-  LOperand* object() { return inputs_[1]; }
-  LOperand* key() { return inputs_[2]; }
-  LOperand* temp_vector() { return temps_[0]; }
-
-  DECLARE_CONCRETE_INSTRUCTION(LoadKeyedGeneric, "load-keyed-generic")
-  DECLARE_HYDROGEN_ACCESSOR(LoadKeyedGeneric)
 };
 
 
