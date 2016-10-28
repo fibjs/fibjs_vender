@@ -1809,8 +1809,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
       {
         Handle<JSFunction> fun = SimpleInstallFunction(
-            prototype, "exec", Builtins::kRegExpPrototypeExec, 1, true,
-            DONT_ENUM);
+            prototype, factory->exec_string(), Builtins::kRegExpPrototypeExec,
+            1, true, DONT_ENUM);
         native_context()->set_regexp_exec_function(*fun);
       }
 
@@ -1836,7 +1836,7 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
                             Builtins::kRegExpPrototypeToString, 0, false,
                             DONT_ENUM);
       SimpleInstallFunction(prototype, "test", Builtins::kRegExpPrototypeTest,
-                            1, false, DONT_ENUM);
+                            1, true, DONT_ENUM);
 
       {
         Handle<JSFunction> fun = SimpleCreateFunction(
@@ -1874,14 +1874,6 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     {
       // RegExp getters and setters.
 
-      // TODO(jgruber): This should really be DONT_ENUM | DONT_DELETE.
-      // However, that currently breaks layout test expectations. Note that
-      // Firefox sets a couple of these as enumerable.
-      // On the other hand, installing attributes as DONT_ENUM matches the draft
-      // specification at
-      // https://github.com/claudepache/es-regexp-legacy-static-properties.
-      const PropertyAttributes no_enum = DONT_ENUM;
-
       SimpleInstallGetter(regexp_fun,
                           factory->InternalizeUtf8String("[Symbol.species]"),
                           factory->species_symbol(),
@@ -1889,9 +1881,10 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
 
       // Static properties set by a successful match.
 
+      const PropertyAttributes no_enum = DONT_ENUM;
       SimpleInstallGetterSetter(regexp_fun, factory->input_string(),
                                 Builtins::kRegExpInputGetter,
-                                Builtins::kRegExpInputSetter, DONT_DELETE);
+                                Builtins::kRegExpInputSetter, no_enum);
       SimpleInstallGetterSetter(
           regexp_fun, factory->InternalizeUtf8String("$_"),
           Builtins::kRegExpInputGetter, Builtins::kRegExpInputSetter, no_enum);
@@ -1928,11 +1921,10 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
                                 Builtins::kRegExpRightContextGetter,
                                 Builtins::kEmptyFunction, no_enum);
 
-#define INSTALL_CAPTURE_GETTER(i)                                   \
-  SimpleInstallGetterSetter(regexp_fun,                             \
-                            factory->InternalizeUtf8String("$" #i), \
-                            Builtins::kRegExpCapture##i##Getter,    \
-                            Builtins::kEmptyFunction, DONT_DELETE)
+#define INSTALL_CAPTURE_GETTER(i)                         \
+  SimpleInstallGetterSetter(                              \
+      regexp_fun, factory->InternalizeUtf8String("$" #i), \
+      Builtins::kRegExpCapture##i##Getter, Builtins::kEmptyFunction, no_enum)
       INSTALL_CAPTURE_GETTER(1);
       INSTALL_CAPTURE_GETTER(2);
       INSTALL_CAPTURE_GETTER(3);
@@ -3528,12 +3520,13 @@ bool Genesis::InstallNatives(GlobalContextType context_type) {
       HeapObject::cast(object_function->initial_map()->prototype())->map());
 
   // Set up the map for Object.create(null) instances.
-  Handle<Map> object_with_null_prototype_map =
+  Handle<Map> slow_object_with_null_prototype_map =
       Map::CopyInitialMap(handle(object_function->initial_map(), isolate()));
-  Map::SetPrototype(object_with_null_prototype_map,
+  slow_object_with_null_prototype_map->set_dictionary_map(true);
+  Map::SetPrototype(slow_object_with_null_prototype_map,
                     isolate()->factory()->null_value());
-  native_context()->set_object_with_null_prototype_map(
-      *object_with_null_prototype_map);
+  native_context()->set_slow_object_with_null_prototype_map(
+      *slow_object_with_null_prototype_map);
 
   // Store the map for the %StringPrototype% after the natives has been compiled
   // and the String function has been set up.
@@ -4541,7 +4534,7 @@ Genesis::Genesis(Isolate* isolate,
   factory()->ReinitializeJSGlobalProxy(global_proxy, global_proxy_function);
 
   // HookUpGlobalProxy.
-  global_proxy->set_native_context(*factory()->null_value());
+  global_proxy->set_native_context(heap()->null_value());
 
   // DetachGlobal.
   JSObject::ForceSetPrototype(global_proxy, factory()->null_value());

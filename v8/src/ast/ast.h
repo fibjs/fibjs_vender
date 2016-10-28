@@ -1671,14 +1671,13 @@ class VariableProxy final : public Expression {
     bit_field_ = IsNewTargetField::update(bit_field_, true);
   }
 
-  bool needs_hole_check() const {
-    return NeedsHoleCheckField::decode(bit_field_);
+  HoleCheckMode hole_check_mode() const {
+    return HoleCheckModeField::decode(bit_field_);
   }
   void set_needs_hole_check() {
-    bit_field_ = NeedsHoleCheckField::update(bit_field_, true);
+    bit_field_ =
+        HoleCheckModeField::update(bit_field_, HoleCheckMode::kRequired);
   }
-
-  int end_position() const { return end_position_; }
 
   // Bind this proxy to the variable var.
   void BindTo(Variable* var);
@@ -1700,9 +1699,9 @@ class VariableProxy final : public Expression {
  private:
   friend class AstNodeFactory;
 
-  VariableProxy(Variable* var, int start_position, int end_position);
+  VariableProxy(Variable* var, int start_position);
   VariableProxy(const AstRawString* name, VariableKind variable_kind,
-                int start_position, int end_position);
+                int start_position);
   explicit VariableProxy(const VariableProxy* copy_from);
 
   static int parent_num_ids() { return Expression::num_ids(); }
@@ -1713,13 +1712,9 @@ class VariableProxy final : public Expression {
   class IsAssignedField : public BitField<bool, IsThisField::kNext, 1> {};
   class IsResolvedField : public BitField<bool, IsAssignedField::kNext, 1> {};
   class IsNewTargetField : public BitField<bool, IsResolvedField::kNext, 1> {};
-  class NeedsHoleCheckField
-      : public BitField<bool, IsNewTargetField::kNext, 1> {};
+  class HoleCheckModeField
+      : public BitField<HoleCheckMode, IsNewTargetField::kNext, 1> {};
 
-  // Position is stored in the AstNode superclass, but VariableProxy needs to
-  // know its end position too (for error messages). It cannot be inferred from
-  // the variable name length because it can contain escapes.
-  int end_position_;
   FeedbackVectorSlot variable_feedback_slot_;
   union {
     const AstRawString* raw_name_;  // if !is_resolved_
@@ -3340,18 +3335,15 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   VariableProxy* NewVariableProxy(Variable* var,
-                                  int start_position = kNoSourcePosition,
-                                  int end_position = kNoSourcePosition) {
-    return new (zone_) VariableProxy(var, start_position, end_position);
+                                  int start_position = kNoSourcePosition) {
+    return new (zone_) VariableProxy(var, start_position);
   }
 
   VariableProxy* NewVariableProxy(const AstRawString* name,
                                   VariableKind variable_kind,
-                                  int start_position = kNoSourcePosition,
-                                  int end_position = kNoSourcePosition) {
+                                  int start_position = kNoSourcePosition) {
     DCHECK_NOT_NULL(name);
-    return new (zone_)
-        VariableProxy(name, variable_kind, start_position, end_position);
+    return new (zone_) VariableProxy(name, variable_kind, start_position);
   }
 
   // Recreates the VariableProxy in this Zone.

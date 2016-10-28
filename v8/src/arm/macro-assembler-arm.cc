@@ -1055,6 +1055,69 @@ void MacroAssembler::VmovLow(DwVfpRegister dst, Register src) {
   }
 }
 
+void MacroAssembler::VmovExtended(Register dst, int src_code) {
+  DCHECK_LE(32, src_code);
+  DCHECK_GT(64, src_code);
+  if (src_code & 0x1) {
+    VmovHigh(dst, DwVfpRegister::from_code(src_code / 2));
+  } else {
+    VmovLow(dst, DwVfpRegister::from_code(src_code / 2));
+  }
+}
+
+void MacroAssembler::VmovExtended(int dst_code, Register src) {
+  DCHECK_LE(32, dst_code);
+  DCHECK_GT(64, dst_code);
+  if (dst_code & 0x1) {
+    VmovHigh(DwVfpRegister::from_code(dst_code / 2), src);
+  } else {
+    VmovLow(DwVfpRegister::from_code(dst_code / 2), src);
+  }
+}
+
+void MacroAssembler::VmovExtended(int dst_code, int src_code,
+                                  Register scratch) {
+  if (src_code < 32 && dst_code < 32) {
+    // src and dst are both s-registers.
+    vmov(SwVfpRegister::from_code(dst_code),
+         SwVfpRegister::from_code(src_code));
+  } else if (src_code < 32) {
+    // src is an s-register.
+    vmov(scratch, SwVfpRegister::from_code(src_code));
+    VmovExtended(dst_code, scratch);
+  } else if (dst_code < 32) {
+    // dst is an s-register.
+    VmovExtended(scratch, src_code);
+    vmov(SwVfpRegister::from_code(dst_code), scratch);
+  } else {
+    // Neither src or dst are s-registers.
+    DCHECK_GT(64, src_code);
+    DCHECK_GT(64, dst_code);
+    VmovExtended(scratch, src_code);
+    VmovExtended(dst_code, scratch);
+  }
+}
+
+void MacroAssembler::VmovExtended(int dst_code, const MemOperand& src,
+                                  Register scratch) {
+  if (dst_code >= 32) {
+    ldr(scratch, src);
+    VmovExtended(dst_code, scratch);
+  } else {
+    vldr(SwVfpRegister::from_code(dst_code), src);
+  }
+}
+
+void MacroAssembler::VmovExtended(const MemOperand& dst, int src_code,
+                                  Register scratch) {
+  if (src_code >= 32) {
+    VmovExtended(scratch, src_code);
+    str(scratch, dst);
+  } else {
+    vstr(SwVfpRegister::from_code(src_code), dst);
+  }
+}
+
 void MacroAssembler::LslPair(Register dst_low, Register dst_high,
                              Register src_low, Register src_high,
                              Register scratch, Register shift) {
@@ -1768,90 +1831,6 @@ void MacroAssembler::PopStackHandler() {
   mov(ip, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
   add(sp, sp, Operand(StackHandlerConstants::kSize - kPointerSize));
   str(r1, MemOperand(ip));
-}
-
-
-void MacroAssembler::CheckAccessGlobalProxy(Register holder_reg,
-                                            Register scratch,
-                                            Label* miss) {
-  Label same_contexts;
-
-  DCHECK(!holder_reg.is(scratch));
-  DCHECK(!holder_reg.is(ip));
-  DCHECK(!scratch.is(ip));
-
-  // Load current lexical context from the active StandardFrame, which
-  // may require crawling past STUB frames.
-  Label load_context;
-  Label has_context;
-  DCHECK(!ip.is(scratch));
-  mov(ip, fp);
-  bind(&load_context);
-  ldr(scratch, MemOperand(ip, CommonFrameConstants::kContextOrFrameTypeOffset));
-  JumpIfNotSmi(scratch, &has_context);
-  ldr(ip, MemOperand(ip, CommonFrameConstants::kCallerFPOffset));
-  b(&load_context);
-  bind(&has_context);
-
-  // In debug mode, make sure the lexical context is set.
-#ifdef DEBUG
-  cmp(scratch, Operand::Zero());
-  Check(ne, kWeShouldNotHaveAnEmptyLexicalContext);
-#endif
-
-  // Load the native context of the current context.
-  ldr(scratch, ContextMemOperand(scratch, Context::NATIVE_CONTEXT_INDEX));
-
-  // Check the context is a native context.
-  if (emit_debug_code()) {
-    // Cannot use ip as a temporary in this verification code. Due to the fact
-    // that ip is clobbered as part of cmp with an object Operand.
-    push(holder_reg);  // Temporarily save holder on the stack.
-    // Read the first word and compare to the native_context_map.
-    ldr(holder_reg, FieldMemOperand(scratch, HeapObject::kMapOffset));
-    LoadRoot(ip, Heap::kNativeContextMapRootIndex);
-    cmp(holder_reg, ip);
-    Check(eq, kJSGlobalObjectNativeContextShouldBeANativeContext);
-    pop(holder_reg);  // Restore holder.
-  }
-
-  // Check if both contexts are the same.
-  ldr(ip, FieldMemOperand(holder_reg, JSGlobalProxy::kNativeContextOffset));
-  cmp(scratch, Operand(ip));
-  b(eq, &same_contexts);
-
-  // Check the context is a native context.
-  if (emit_debug_code()) {
-    // Cannot use ip as a temporary in this verification code. Due to the fact
-    // that ip is clobbered as part of cmp with an object Operand.
-    push(holder_reg);  // Temporarily save holder on the stack.
-    mov(holder_reg, ip);  // Move ip to its holding place.
-    LoadRoot(ip, Heap::kNullValueRootIndex);
-    cmp(holder_reg, ip);
-    Check(ne, kJSGlobalProxyContextShouldNotBeNull);
-
-    ldr(holder_reg, FieldMemOperand(holder_reg, HeapObject::kMapOffset));
-    LoadRoot(ip, Heap::kNativeContextMapRootIndex);
-    cmp(holder_reg, ip);
-    Check(eq, kJSGlobalObjectNativeContextShouldBeANativeContext);
-    // Restore ip is not needed. ip is reloaded below.
-    pop(holder_reg);  // Restore holder.
-    // Restore ip to holder's context.
-    ldr(ip, FieldMemOperand(holder_reg, JSGlobalProxy::kNativeContextOffset));
-  }
-
-  // Check that the security token in the calling global object is
-  // compatible with the security token in the receiving global
-  // object.
-  int token_offset = Context::kHeaderSize +
-                     Context::SECURITY_TOKEN_INDEX * kPointerSize;
-
-  ldr(scratch, FieldMemOperand(scratch, token_offset));
-  ldr(ip, FieldMemOperand(ip, token_offset));
-  cmp(scratch, Operand(ip));
-  b(ne, miss);
-
-  bind(&same_contexts);
 }
 
 

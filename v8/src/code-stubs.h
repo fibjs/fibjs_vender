@@ -78,7 +78,6 @@ class ObjectLiteral;
   V(BinaryOpIC)                               \
   V(BinaryOpWithAllocationSite)               \
   V(ToBooleanIC)                              \
-  V(RegExpConstructResult)                    \
   V(TransitionElementsKind)                   \
   /* --- TurboFanCodeStubs --- */             \
   V(AllocateHeapNumber)                       \
@@ -863,6 +862,8 @@ class FastNewClosureStub : public TurboFanCodeStub {
 
 class FastNewFunctionContextStub final : public TurboFanCodeStub {
  public:
+  static const int kMaximumSlots = 0x8000;
+
   explicit FastNewFunctionContextStub(Isolate* isolate)
       : TurboFanCodeStub(isolate) {}
 
@@ -872,6 +873,11 @@ class FastNewFunctionContextStub final : public TurboFanCodeStub {
                                   compiler::Node* context);
 
  private:
+  // FastNewFunctionContextStub can only allocate closures which fit in the
+  // new space.
+  STATIC_ASSERT(((kMaximumSlots + Context::MIN_CONTEXT_SLOTS) * kPointerSize +
+                 FixedArray::kHeaderSize) < kMaxRegularHeapObjectSize);
+
   DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewFunctionContext);
   DEFINE_TURBOFAN_CODE_STUB(FastNewFunctionContext, TurboFanCodeStub);
 };
@@ -1791,17 +1797,6 @@ class RegExpExecStub: public PlatformCodeStub {
   DEFINE_CALL_INTERFACE_DESCRIPTOR(RegExpExec);
   DEFINE_PLATFORM_CODE_STUB(RegExpExec, PlatformCodeStub);
 };
-
-// TODO(jgruber): Remove this once all uses in regexp.js have been removed.
-class RegExpConstructResultStub final : public HydrogenCodeStub {
- public:
-  explicit RegExpConstructResultStub(Isolate* isolate)
-      : HydrogenCodeStub(isolate) { }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(RegExpConstructResult);
-  DEFINE_HYDROGEN_CODE_STUB(RegExpConstructResult, HydrogenCodeStub);
-};
-
 
 // TODO(bmeurer/mvstanton): Turn CallConstructStub into ConstructICStub.
 class CallConstructStub final : public PlatformCodeStub {

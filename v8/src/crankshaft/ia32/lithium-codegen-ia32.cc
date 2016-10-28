@@ -180,12 +180,17 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
     } else {
-      FastNewFunctionContextStub stub(isolate());
-      __ mov(FastNewFunctionContextDescriptor::SlotsRegister(),
-             Immediate(slots));
-      __ CallStub(&stub);
-      // Result of FastNewFunctionContextStub is always in new space.
-      need_write_barrier = false;
+      if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
+        FastNewFunctionContextStub stub(isolate());
+        __ mov(FastNewFunctionContextDescriptor::SlotsRegister(),
+               Immediate(slots));
+        __ CallStub(&stub);
+        // Result of FastNewFunctionContextStub is always in new space.
+        need_write_barrier = false;
+      } else {
+        __ push(edi);
+        __ CallRuntime(Runtime::kNewFunctionContext);
+      }
     }
     RecordSafepoint(deopt_mode);
 
@@ -4241,8 +4246,7 @@ void LCodeGen::DoSmiUntag(LSmiUntag* instr) {
 void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
                                 Register temp_reg, XMMRegister result_reg,
                                 NumberUntagDMode mode) {
-  bool can_convert_undefined_to_nan =
-      instr->hydrogen()->can_convert_undefined_to_nan();
+  bool can_convert_undefined_to_nan = instr->truncating();
   bool deoptimize_on_minus_zero = instr->hydrogen()->deoptimize_on_minus_zero();
 
   Label convert, load_smi, done;
@@ -4308,34 +4312,18 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr, Label* done) {
   __ lea(input_reg, Operand(input_reg, times_2, kHeapObjectTag));
 
   if (instr->truncating()) {
-    Label no_heap_number, check_bools, check_false;
-
-    // Heap number map check.
+    Label truncate;
+    Label::Distance truncate_distance =
+        DeoptEveryNTimes() ? Label::kFar : Label::kNear;
     __ cmp(FieldOperand(input_reg, HeapObject::kMapOffset),
            factory()->heap_number_map());
-    __ j(not_equal, &no_heap_number, Label::kNear);
+    __ j(equal, &truncate, truncate_distance);
+    __ push(input_reg);
+    __ CmpObjectType(input_reg, ODDBALL_TYPE, input_reg);
+    __ pop(input_reg);
+    DeoptimizeIf(not_equal, instr, DeoptimizeReason::kNotANumberOrOddball);
+    __ bind(&truncate);
     __ TruncateHeapNumberToI(input_reg, input_reg);
-    __ jmp(done);
-
-    __ bind(&no_heap_number);
-    // Check for Oddballs. Undefined/False is converted to zero and True to one
-    // for truncating conversions.
-    __ cmp(input_reg, factory()->undefined_value());
-    __ j(not_equal, &check_bools, Label::kNear);
-    __ Move(input_reg, Immediate(0));
-    __ jmp(done);
-
-    __ bind(&check_bools);
-    __ cmp(input_reg, factory()->true_value());
-    __ j(not_equal, &check_false, Label::kNear);
-    __ Move(input_reg, Immediate(1));
-    __ jmp(done);
-
-    __ bind(&check_false);
-    __ cmp(input_reg, factory()->false_value());
-    DeoptimizeIf(not_equal, instr,
-                 DeoptimizeReason::kNotAHeapNumberUndefinedBoolean);
-    __ Move(input_reg, Immediate(0));
   } else {
     XMMRegister scratch = ToDoubleRegister(instr->temp());
     DCHECK(!scratch.is(xmm0));

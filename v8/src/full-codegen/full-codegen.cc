@@ -652,10 +652,6 @@ void FullCodeGenerator::EmitToObject(CallRuntime* expr) {
 }
 
 
-void FullCodeGenerator::EmitRegExpConstructResult(CallRuntime* expr) {
-  EmitIntrinsicAsStubCall(expr, CodeFactory::RegExpConstructResult(isolate()));
-}
-
 void FullCodeGenerator::EmitHasProperty() {
   Callable callable = CodeFactory::HasProperty(isolate());
   PopOperand(callable.descriptor().GetRegisterParameter(1));
@@ -1582,7 +1578,7 @@ void FullCodeGenerator::VisitClassLiteral(ClassLiteral* lit) {
 
   if (lit->class_variable_proxy() != nullptr) {
     EmitVariableAssignment(lit->class_variable_proxy()->var(), Token::INIT,
-                           lit->ProxySlot());
+                           lit->ProxySlot(), HoleCheckMode::kElided);
   }
 
   context()->Plug(result_register());

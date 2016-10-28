@@ -268,7 +268,6 @@
     <ClInclude Include="src\crankshaft\hydrogen-infer-types.h" />
     <ClInclude Include="src\crankshaft\hydrogen-instructions.h" />
     <ClInclude Include="src\crankshaft\hydrogen-load-elimination.h" />
-    <ClInclude Include="src\crankshaft\hydrogen-mark-deoptimize.h" />
     <ClInclude Include="src\crankshaft\hydrogen-mark-unreachable.h" />
     <ClInclude Include="src\crankshaft\hydrogen-osr.h" />
     <ClInclude Include="src\crankshaft\hydrogen-range-analysis.h" />
@@ -580,7 +579,6 @@
     <ClInclude Include="src\wasm\signature-map.h" />
     <ClInclude Include="src\wasm\wasm-debug.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
-    <ClInclude Include="src\wasm\wasm-function-name-table.h" />
     <ClInclude Include="src\wasm\wasm-interpreter.h" />
     <ClInclude Include="src\wasm\wasm-js.h" />
     <ClInclude Include="src\wasm\wasm-macro-gen.h" />
@@ -605,6 +603,7 @@
     <ClInclude Include="src\x87\simulator-x87.h" />
     <ClInclude Include="src\zone\accounting-allocator.h" />
     <ClInclude Include="src\zone\zone-allocator.h" />
+    <ClInclude Include="src\zone\zone-chunk-list.h" />
     <ClInclude Include="src\zone\zone-containers.h" />
     <ClInclude Include="src\zone\zone-segment.h" />
     <ClInclude Include="src\zone\zone.h" />
@@ -859,7 +858,6 @@
     <ClCompile Include="src\crankshaft\hydrogen-infer-types.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-instructions.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-load-elimination.cc" />
-    <ClCompile Include="src\crankshaft\hydrogen-mark-deoptimize.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-mark-unreachable.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-osr.cc" />
     <ClCompile Include="src\crankshaft\hydrogen-range-analysis.cc" />
@@ -1119,6 +1117,7 @@
     <ClCompile Include="src\runtime\runtime-numbers.cc" />
     <ClCompile Include="src\runtime\runtime-object.cc" />
     <ClCompile Include="src\runtime\runtime-operators.cc" />
+    <ClCompile Include="src\runtime\runtime-promise.cc" />
     <ClCompile Include="src\runtime\runtime-proxy.cc" />
     <ClCompile Include="src\runtime\runtime-regexp.cc" />
     <ClCompile Include="src\runtime\runtime-scopes.cc" />
@@ -1175,7 +1174,6 @@
     <ClCompile Include="src\wasm\signature-map.cc" />
     <ClCompile Include="src\wasm\wasm-debug.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />
-    <ClCompile Include="src\wasm\wasm-function-name-table.cc" />
     <ClCompile Include="src\wasm\wasm-interpreter.cc" />
     <ClCompile Include="src\wasm\wasm-js.cc" />
     <ClCompile Include="src\wasm\wasm-module-builder.cc" />

@@ -275,6 +275,8 @@ DEFINE_BOOL(track_field_types, true, "track field types")
 DEFINE_IMPLICATION(track_field_types, track_fields)
 DEFINE_IMPLICATION(track_field_types, track_heap_object_fields)
 DEFINE_BOOL(smi_binop, true, "support smi representation in binary operations")
+DEFINE_BOOL(mark_shared_functions_for_tier_up, false,
+            "mark shared functions for tier up")
 
 // Flags for optimization types.
 DEFINE_BOOL(optimize_for_size, false,
@@ -425,7 +427,6 @@ DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
 DEFINE_BOOL(turbo, false, "enable TurboFan compiler")
 DEFINE_IMPLICATION(turbo, turbo_asm_deoptimization)
 DEFINE_IMPLICATION(turbo, turbo_loop_peeling)
-DEFINE_BOOL(turbo_from_bytecode, true, "enable building graphs from bytecode")
 DEFINE_BOOL(turbo_sp_frame_access, false,
             "use stack pointer-relative access to frame wherever possible")
 DEFINE_BOOL(turbo_preprocess_ranges, true,
@@ -526,6 +527,8 @@ DEFINE_BOOL(wasm_eh_prototype, false,
             "enable prototype exception handling opcodes for wasm")
 DEFINE_BOOL(wasm_mv_prototype, false,
             "enable prototype multi-value support for wasm")
+DEFINE_BOOL(wasm_atomics_prototype, false,
+            "enable prototype atomic opcodes for wasm")
 
 DEFINE_BOOL(wasm_trap_handler, false,
             "use signal handlers to catch out of bounds memory access in wasm"
@@ -795,6 +798,8 @@ DEFINE_BOOL(use_ic, true, "use inline caching")
 DEFINE_BOOL(trace_ic, false, "trace inline cache state transitions")
 DEFINE_BOOL_READONLY(tf_load_ic_stub, true, "use TF LoadIC stub")
 DEFINE_BOOL(tf_store_ic_stub, true, "use TF StoreIC stub")
+DEFINE_BOOL(store_ic_smi_handlers, true, "use data based StoreIC handlers")
+DEFINE_IMPLICATION(store_ic_smi_handlers, tf_store_ic_stub)
 
 // macro-assembler-ia32.cc
 DEFINE_BOOL(native_code_counters, false,

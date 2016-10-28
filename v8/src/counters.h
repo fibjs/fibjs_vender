@@ -671,6 +671,11 @@ class RuntimeCallTimer {
 #define FOR_EACH_MANUAL_COUNTER(V)                  \
   V(AccessorGetterCallback)                         \
   V(AccessorNameGetterCallback)                     \
+  V(AccessorNameGetterCallback_ArrayLength)         \
+  V(AccessorNameGetterCallback_BoundFunctionLength) \
+  V(AccessorNameGetterCallback_BoundFunctionName)   \
+  V(AccessorNameGetterCallback_FunctionPrototype)   \
+  V(AccessorNameGetterCallback_StringLength)        \
   V(AccessorNameSetterCallback)                     \
   V(Compile)                                        \
   V(CompileCode)                                    \
@@ -749,6 +754,7 @@ class RuntimeCallTimer {
   V(StoreIC_SlowStub)                           \
   V(StoreIC_StoreCallback)                      \
   V(StoreIC_StoreField)                         \
+  V(StoreIC_StoreFieldDH)                       \
   V(StoreIC_StoreFieldStub)                     \
   V(StoreIC_StoreGlobal)                        \
   V(StoreIC_StoreGlobalTransition)              \
@@ -863,10 +869,6 @@ class RuntimeCallStats {
      MILLISECOND)                                                              \
   HT(gc_low_memory_notification, V8.GCLowMemoryNotification, 10000,            \
      MILLISECOND)                                                              \
-  /* Parsing timers. */                                                        \
-  HT(parse, V8.ParseMicroSeconds, 1000000, MICROSECOND)                        \
-  HT(parse_lazy, V8.ParseLazyMicroSeconds, 1000000, MICROSECOND)               \
-  HT(pre_parse, V8.PreParseMicroSeconds, 1000000, MICROSECOND)                 \
   /* Compilation times. */                                                     \
   HT(compile, V8.CompileMicroSeconds, 1000000, MICROSECOND)                    \
   HT(compile_eval, V8.CompileEvalMicroSeconds, 1000000, MICROSECOND)           \

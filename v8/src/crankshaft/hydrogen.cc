@@ -23,7 +23,6 @@
 #include "src/crankshaft/hydrogen-infer-representation.h"
 #include "src/crankshaft/hydrogen-infer-types.h"
 #include "src/crankshaft/hydrogen-load-elimination.h"
-#include "src/crankshaft/hydrogen-mark-deoptimize.h"
 #include "src/crankshaft/hydrogen-mark-unreachable.h"
 #include "src/crankshaft/hydrogen-osr.h"
 #include "src/crankshaft/hydrogen-range-analysis.h"
@@ -1844,67 +1843,6 @@ HValue* HGraphBuilder::BuildCreateIterResultObject(HValue* value,
 }
 
 
-HValue* HGraphBuilder::BuildRegExpConstructResult(HValue* length,
-                                                  HValue* index,
-                                                  HValue* input) {
-  NoObservableSideEffectsScope scope(this);
-  HConstant* max_length = Add<HConstant>(JSArray::kInitialMaxFastElementArray);
-  Add<HBoundsCheck>(length, max_length);
-
-  // Generate size calculation code here in order to make it dominate
-  // the JSRegExpResult allocation.
-  ElementsKind elements_kind = FAST_ELEMENTS;
-  HValue* size = BuildCalculateElementsSize(elements_kind, length);
-
-  // Allocate the JSRegExpResult and the FixedArray in one step.
-  HValue* result =
-      Add<HAllocate>(Add<HConstant>(JSRegExpResult::kSize), HType::JSArray(),
-                     NOT_TENURED, JS_ARRAY_TYPE, graph()->GetConstant0());
-
-  // Initialize the JSRegExpResult header.
-  HValue* native_context = Add<HLoadNamedField>(
-      context(), nullptr,
-      HObjectAccess::ForContextSlot(Context::NATIVE_CONTEXT_INDEX));
-  Add<HStoreNamedField>(
-      result, HObjectAccess::ForMap(),
-      Add<HLoadNamedField>(
-          native_context, nullptr,
-          HObjectAccess::ForContextSlot(Context::REGEXP_RESULT_MAP_INDEX)));
-  HConstant* empty_fixed_array =
-      Add<HConstant>(isolate()->factory()->empty_fixed_array());
-  Add<HStoreNamedField>(
-      result, HObjectAccess::ForJSArrayOffset(JSArray::kPropertiesOffset),
-      empty_fixed_array);
-  Add<HStoreNamedField>(
-      result, HObjectAccess::ForJSArrayOffset(JSArray::kElementsOffset),
-      empty_fixed_array);
-  Add<HStoreNamedField>(
-      result, HObjectAccess::ForJSArrayOffset(JSArray::kLengthOffset), length);
-
-  // Initialize the additional fields.
-  Add<HStoreNamedField>(
-      result, HObjectAccess::ForJSArrayOffset(JSRegExpResult::kIndexOffset),
-      index);
-  Add<HStoreNamedField>(
-      result, HObjectAccess::ForJSArrayOffset(JSRegExpResult::kInputOffset),
-      input);
-
-  // Allocate and initialize the elements header.
-  HAllocate* elements = BuildAllocateElements(elements_kind, size);
-  BuildInitializeElementsHeader(elements, elements_kind, length);
-
-  Add<HStoreNamedField>(
-      result, HObjectAccess::ForJSArrayOffset(JSArray::kElementsOffset),
-      elements);
-
-  // Initialize the elements contents with undefined.
-  BuildFillElementsWithValue(
-      elements, elements_kind, graph()->GetConstant0(), length,
-      graph()->GetConstantUndefined());
-
-  return result;
-}
-
 HValue* HGraphBuilder::BuildNumberToString(HValue* object, AstType* type) {
   NoObservableSideEffectsScope scope(this);
 
@@ -3031,12 +2969,12 @@ void HGraphBuilder::BuildCopyElements(HValue* from_elements,
       if_hole.Else();
       HStoreKeyed* store =
           Add<HStoreKeyed>(to_elements, key, element, nullptr, kind);
-      store->SetFlag(HValue::kAllowUndefinedAsNaN);
+      store->SetFlag(HValue::kTruncatingToNumber);
       if_hole.End();
     } else {
       HStoreKeyed* store =
           Add<HStoreKeyed>(to_elements, key, element, nullptr, kind);
-      store->SetFlag(HValue::kAllowUndefinedAsNaN);
+      store->SetFlag(HValue::kTruncatingToNumber);
     }
 
     builder.EndBody();
@@ -4192,7 +4130,6 @@ bool HGraph::Optimize(BailoutReason* bailout_reason) {
   // This must happen after inferring representations.
   Run<HMergeRemovableSimulatesPhase>();
 
-  Run<HMarkDeoptimizeOnUndefinedPhase>();
   Run<HRepresentationChangesPhase>();
 
   Run<HInferTypesPhase>();
@@ -4211,8 +4148,6 @@ bool HGraph::Optimize(BailoutReason* bailout_reason) {
   if (FLAG_store_elimination) Run<HStoreEliminationPhase>();
 
   Run<HRangeAnalysisPhase>();
-
-  Run<HComputeChangeUndefinedToNaN>();
 
   // Eliminate redundant stack checks on backwards branches.
   Run<HStackCheckEliminationPhase>();
@@ -6583,11 +6518,19 @@ void HOptimizedGraphBuilder::HandleGlobalVariableAssignment(
           access = access.WithRepresentation(Representation::Smi());
           break;
         case PropertyCellConstantType::kStableMap: {
-          // The map may no longer be stable, deopt if it's ever different from
-          // what is currently there, which will allow for restablization.
-          Handle<Map> map(HeapObject::cast(cell->value())->map());
+          // First check that the previous value of the {cell} still has the
+          // map that we are about to check the new {value} for. If not, then
+          // the stable map assumption was invalidated and we cannot continue
+          // with the optimized code.
+          Handle<HeapObject> cell_value(HeapObject::cast(cell->value()));
+          Handle<Map> cell_value_map(cell_value->map());
+          if (!cell_value_map->is_stable()) {
+            return Bailout(kUnstableConstantTypeHeapObject);
+          }
+          top_info()->dependencies()->AssumeMapStable(cell_value_map);
+          // Now check that the new {value} is a HeapObject with the same map.
           Add<HCheckHeapObject>(value);
-          value = Add<HCheckMaps>(value, map);
+          value = Add<HCheckMaps>(value, cell_value_map);
           access = access.WithRepresentation(Representation::HeapObject());
           break;
         }
@@ -8830,7 +8773,7 @@ bool HOptimizedGraphBuilder::TryInlineBuiltinMethodCall(
                                           copy_kind, ALLOW_RETURN_HOLE);
               HStoreKeyed* store = Add<HStoreKeyed>(elements, new_key, element,
                                                     nullptr, copy_kind);
-              store->SetFlag(HValue::kAllowUndefinedAsNaN);
+              store->SetFlag(HValue::kTruncatingToNumber);
             }
             loop.EndBody();
 
@@ -11773,7 +11716,7 @@ void HOptimizedGraphBuilder::BuildEmitFixedDoubleArray(
                         kind, ALLOW_RETURN_HOLE);
     HInstruction* store = Add<HStoreKeyed>(object_elements, key_constant,
                                            value_instruction, nullptr, kind);
-    store->SetFlag(HValue::kAllowUndefinedAsNaN);
+    store->SetFlag(HValue::kTruncatingToNumber);
   }
 }
 
@@ -12165,40 +12108,6 @@ void HOptimizedGraphBuilder::GenerateRegExpExec(CallRuntime* call) {
   HInstruction* result = New<HCallWithDescriptor>(
       stub, 0, callable.descriptor(), ArrayVector(values));
   return ast_context()->ReturnInstruction(result, call->id());
-}
-
-
-void HOptimizedGraphBuilder::GenerateRegExpFlags(CallRuntime* call) {
-  DCHECK_EQ(1, call->arguments()->length());
-  CHECK_ALIVE(VisitExpressions(call->arguments()));
-  HValue* regexp = Pop();
-  HInstruction* result =
-      New<HLoadNamedField>(regexp, nullptr, HObjectAccess::ForJSRegExpFlags());
-  return ast_context()->ReturnInstruction(result, call->id());
-}
-
-
-void HOptimizedGraphBuilder::GenerateRegExpSource(CallRuntime* call) {
-  DCHECK_EQ(1, call->arguments()->length());
-  CHECK_ALIVE(VisitExpressions(call->arguments()));
-  HValue* regexp = Pop();
-  HInstruction* result =
-      New<HLoadNamedField>(regexp, nullptr, HObjectAccess::ForJSRegExpSource());
-  return ast_context()->ReturnInstruction(result, call->id());
-}
-
-
-// Construct a RegExp exec result with two in-object properties.
-void HOptimizedGraphBuilder::GenerateRegExpConstructResult(CallRuntime* call) {
-  DCHECK_EQ(3, call->arguments()->length());
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(1)));
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(2)));
-  HValue* input = Pop();
-  HValue* index = Pop();
-  HValue* length = Pop();
-  HValue* result = BuildRegExpConstructResult(length, index, input);
-  return ast_context()->ReturnValue(result);
 }
 
 

@@ -187,6 +187,7 @@ namespace internal {
   F(ScriptLineStartPosition, 2, 1)              \
   F(ScriptLineEndPosition, 2, 1)                \
   F(ScriptLocationFromLine, 4, 1)               \
+  F(ScriptLocationFromLine2, 4, 1)              \
   F(ScriptPositionInfo, 3, 1)                   \
   F(ScriptSourceLine, 2, 1)                     \
   F(DebugPrepareStepInIfStepping, 1, 1)         \
@@ -221,6 +222,7 @@ namespace internal {
   F(FunctionSetName, 2, 1)                 \
   F(FunctionRemovePrototype, 1, 1)         \
   F(FunctionGetScript, 1, 1)               \
+  F(FunctionGetScriptId, 1, 1)             \
   F(FunctionGetSourceCode, 1, 1)           \
   F(FunctionGetScriptSourcePosition, 1, 1) \
   F(FunctionGetContextData, 1, 1)          \
@@ -290,7 +292,7 @@ namespace internal {
   F(CheckIsBootstrapping, 0, 1)                     \
   F(CreateListFromArrayLike, 1, 1)                  \
   F(EnqueueMicrotask, 1, 1)                         \
-  F(EnqueuePromiseReactionJob, 5, 1)                \
+  F(EnqueuePromiseReactionJob, 4, 1)                \
   F(EnqueuePromiseResolveThenableJob, 4, 1)         \
   F(GetAndResetRuntimeCallStats, -1 /* <= 2 */, 1)  \
   F(ExportExperimentalFromRuntime, 1, 1)            \
@@ -304,7 +306,8 @@ namespace internal {
   F(NewSyntaxError, 2, 1)                           \
   F(NewTypeError, 2, 1)                             \
   F(OrdinaryHasInstance, 2, 1)                      \
-  F(PromiseRejectEvent, 3, 1)                       \
+  F(PromiseReject, 3, 1)                            \
+  F(PromiseFulfill, 4, 1)                           \
   F(PromiseRejectEventFromStack, 2, 1)              \
   F(PromiseRevokeReject, 1, 1)                      \
   F(PromoteScheduledException, 0, 1)                \
@@ -458,16 +461,12 @@ namespace internal {
 
 #define FOR_EACH_INTRINSIC_REGEXP(F)                \
   F(IsRegExp, 1, 1)                                 \
-  F(RegExpConstructResult, 3, 1)                    \
   F(RegExpCreate, 1, 1)                             \
   F(RegExpExec, 4, 1)                               \
   F(RegExpExecMultiple, 4, 1)                       \
   F(RegExpExecReThrow, 4, 1)                        \
-  F(RegExpFlags, 1, 1)                              \
-  F(RegExpInitializeAndCompile, 3, 1)               \
   F(RegExpInternalReplace, 3, 1)                    \
   F(RegExpReplace, 3, 1)                            \
-  F(RegExpSource, 1, 1)                             \
   F(StringReplaceGlobalRegExpWithString, 4, 1)      \
   F(StringReplaceNonGlobalRegExpWithFunction, 3, 1) \
   F(StringSplit, 3, 1)
@@ -897,7 +896,7 @@ namespace internal {
   F(HasFixedUint8ClampedElements, 1, 1)       \
   F(SpeciesProtector, 0, 1)                   \
   F(SerializeWasmModule, 1, 1)                \
-  F(DeserializeWasmModule, 1, 1)              \
+  F(DeserializeWasmModule, 2, 1)              \
   F(IsAsmWasmCode, 1, 1)                      \
   F(IsNotAsmWasmCode, 1, 1)                   \
   F(ValidateWasmInstancesChain, 2, 1)         \

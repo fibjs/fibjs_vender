@@ -48,8 +48,6 @@ using v8::MemoryPressureLevel;
   V(Map, one_byte_string_map, OneByteStringMap)                                \
   V(Map, one_byte_internalized_string_map, OneByteInternalizedStringMap)       \
   V(Map, scope_info_map, ScopeInfoMap)                                         \
-  V(Map, module_info_entry_map, ModuleInfoEntryMap)                            \
-  V(Map, module_info_map, ModuleInfoMap)                                       \
   V(Map, shared_function_info_map, SharedFunctionInfoMap)                      \
   V(Map, code_map, CodeMap)                                                    \
   V(Map, function_context_map, FunctionContextMap)                             \
@@ -62,7 +60,6 @@ using v8::MemoryPressureLevel;
   V(FixedArray, empty_literals_array, EmptyLiteralsArray)                      \
   V(FixedArray, empty_type_feedback_vector, EmptyTypeFeedbackVector)           \
   V(FixedArray, empty_fixed_array, EmptyFixedArray)                            \
-  V(ScopeInfo, empty_scope_info, EmptyScopeInfo)                               \
   V(DescriptorArray, empty_descriptor_array, EmptyDescriptorArray)             \
   /* Entries beyond the first 32                                            */ \
   /* The roots above this line should be boring from a GC point of view.    */ \
@@ -91,9 +88,10 @@ using v8::MemoryPressureLevel;
   V(Map, unseeded_number_dictionary_map, UnseededNumberDictionaryMap)          \
   V(Map, sloppy_arguments_elements_map, SloppyArgumentsElementsMap)            \
   V(Map, message_object_map, JSMessageObjectMap)                               \
-  V(Map, neander_map, NeanderMap)                                              \
   V(Map, external_map, ExternalMap)                                            \
   V(Map, bytecode_array_map, BytecodeArrayMap)                                 \
+  V(Map, module_info_entry_map, ModuleInfoEntryMap)                            \
+  V(Map, module_info_map, ModuleInfoMap)                                       \
   /* String maps */                                                            \
   V(Map, native_source_string_map, NativeSourceStringMap)                      \
   V(Map, string_map, StringMap)                                                \
@@ -142,6 +140,7 @@ using v8::MemoryPressureLevel;
   V(Map, uint8x16_map, Uint8x16Map)                                            \
   V(Map, bool8x16_map, Bool8x16Map)                                            \
   /* Canonical empty values */                                                 \
+  V(ScopeInfo, empty_scope_info, EmptyScopeInfo)                               \
   V(ByteArray, empty_byte_array, EmptyByteArray)                               \
   V(FixedTypedArrayBase, empty_fixed_uint8_array, EmptyFixedUint8Array)        \
   V(FixedTypedArrayBase, empty_fixed_int8_array, EmptyFixedInt8Array)          \
@@ -306,7 +305,6 @@ using v8::MemoryPressureLevel;
   V(ArgumentsMarkerMap)                 \
   V(JSMessageObjectMap)                 \
   V(ForeignMap)                         \
-  V(NeanderMap)                         \
   V(NanValue)                           \
   V(InfinityValue)                      \
   V(MinusZeroValue)                     \
@@ -1442,6 +1440,10 @@ class Heap {
   // ArrayBuffer tracking. =====================================================
   // ===========================================================================
 
+  // TODO(gc): API usability: encapsulate mutation of JSArrayBuffer::is_external
+  // in the registration/unregistration APIs. Consider dropping the "New" from
+  // "RegisterNewArrayBuffer" because one can re-register a previously
+  // unregistered buffer, too, and the name is confusing.
   void RegisterNewArrayBuffer(JSArrayBuffer* buffer);
   void UnregisterArrayBuffer(JSArrayBuffer* buffer);
 
@@ -2313,6 +2315,7 @@ class Heap {
 
   // Used for testing purposes.
   bool force_oom_;
+  bool delay_sweeper_tasks_for_testing_;
 
   // Classes in "heap" can be friends.
   friend class AlwaysAllocateScope;

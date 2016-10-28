@@ -1417,12 +1417,20 @@ Maybe<bool> Object::SetPropertyWithAccessor(LookupIterator* it,
       return Nothing<bool>();
     }
 
-    v8::AccessorNameSetterCallback call_fun =
-        v8::ToCData<v8::AccessorNameSetterCallback>(info->setter());
-    // TODO(verwaest): We should not get here anymore once all AccessorInfos are
-    // marked as special_data_property. They cannot both be writable and not
-    // have a setter.
-    if (call_fun == nullptr) return Just(true);
+    // The actual type of call_fun is either v8::AccessorNameSetterCallback or
+    // i::Accesors::AccessorNameBooleanSetterCallback, depending on whether the
+    // AccessorInfo was created by the API or internally (see accessors.cc).
+    // Here we handle both cases using GenericNamedPropertySetterCallback and
+    // its Call method.
+    GenericNamedPropertySetterCallback call_fun =
+        v8::ToCData<GenericNamedPropertySetterCallback>(info->setter());
+
+    if (call_fun == nullptr) {
+      // TODO(verwaest): We should not get here anymore once all AccessorInfos
+      // are marked as special_data_property. They cannot both be writable and
+      // not have a setter.
+      return Just(true);
+    }
 
     if (info->is_sloppy() && !receiver->IsJSReceiver()) {
       ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -1432,9 +1440,15 @@ Maybe<bool> Object::SetPropertyWithAccessor(LookupIterator* it,
 
     PropertyCallbackArguments args(isolate, info->data(), *receiver, *holder,
                                    should_throw);
-    args.Call(call_fun, name, value);
+    Handle<Object> result = args.Call(call_fun, name, value);
+    // In the case of AccessorNameSetterCallback, we know that the result value
+    // cannot have been set, so the result of Call will be null.  In the case of
+    // AccessorNameBooleanSetterCallback, the result will either be null
+    // (signalling an exception) or a boolean Oddball.
     RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate, Nothing<bool>());
-    return Just(true);
+    if (result.is_null()) return Just(true);
+    DCHECK(result->BooleanValue() || should_throw == DONT_THROW);
+    return Just(result->BooleanValue());
   }
 
   // Regular accessor.
@@ -3432,7 +3446,8 @@ void MigrateFastToSlow(Handle<JSObject> object, Handle<Map> new_map,
   if (expected_additional_properties > 0) {
     property_count += expected_additional_properties;
   } else {
-    property_count += 2;  // Make space for two more properties.
+    // Make space for two more properties.
+    property_count += NameDictionary::kInitialCapacity;
   }
   Handle<NameDictionary> dictionary =
       NameDictionary::New(isolate, property_count);
@@ -5781,17 +5796,10 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
             it->TransitionToAccessorPair(accessors, attributes);
           }
 
-          Maybe<bool> result =
-              JSObject::SetPropertyWithAccessor(it, value, should_throw);
-
-          if (current_attributes == attributes || result.IsNothing()) {
-            return result;
-          }
-
-        } else {
-          it->ReconfigureDataProperty(value, attributes);
+          return JSObject::SetPropertyWithAccessor(it, value, should_throw);
         }
 
+        it->ReconfigureDataProperty(value, attributes);
         return Just(true);
       }
       case LookupIterator::INTEGER_INDEXED_EXOTIC:
@@ -12197,6 +12205,9 @@ void JSFunction::MarkForBaseline() {
   set_code_no_write_barrier(
       isolate->builtins()->builtin(Builtins::kCompileBaseline));
   // No write barrier required, since the builtin is part of the root set.
+  if (FLAG_mark_shared_functions_for_tier_up) {
+    shared()->set_marked_for_tier_up(true);
+  }
 }
 
 void JSFunction::MarkForOptimization() {
@@ -12207,14 +12218,13 @@ void JSFunction::MarkForOptimization() {
   set_code_no_write_barrier(
       isolate->builtins()->builtin(Builtins::kCompileOptimized));
   // No write barrier required, since the builtin is part of the root set.
+  if (FLAG_mark_shared_functions_for_tier_up) {
+    shared()->set_marked_for_tier_up(true);
+  }
 }
 
 
 void JSFunction::AttemptConcurrentOptimization() {
-  // Mark the shared function for optimization regardless of whether the
-  // optimization is concurrent or not.
-  shared()->set_was_marked_for_optimization(true);
-
   Isolate* isolate = GetIsolate();
   if (!isolate->concurrent_recompilation_enabled() ||
       isolate->bootstrapper()->IsActive()) {
@@ -12235,6 +12245,11 @@ void JSFunction::AttemptConcurrentOptimization() {
   set_code_no_write_barrier(
       isolate->builtins()->builtin(Builtins::kCompileOptimizedConcurrent));
   // No write barrier required, since the builtin is part of the root set.
+  if (FLAG_mark_shared_functions_for_tier_up) {
+    // TODO(leszeks): The compilation isn't concurrent if we trigger it using
+    // this bit.
+    shared()->set_marked_for_tier_up(true);
+  }
 }
 
 // static
@@ -16774,7 +16789,8 @@ Handle<Derived> HashTable<Derived, Shape, Key>::New(
     MinimumCapacity capacity_option,
     PretenureFlag pretenure) {
   DCHECK(0 <= at_least_space_for);
-  DCHECK(!capacity_option || base::bits::IsPowerOfTwo32(at_least_space_for));
+  DCHECK_IMPLIES(capacity_option == USE_CUSTOM_MINIMUM_CAPACITY,
+                 base::bits::IsPowerOfTwo32(at_least_space_for));
 
   int capacity = (capacity_option == USE_CUSTOM_MINIMUM_CAPACITY)
                      ? at_least_space_for
@@ -19844,17 +19860,18 @@ Handle<Object> Module::LoadImport(Handle<Module> module, Handle<String> name,
 
 MaybeHandle<Cell> Module::ResolveImport(Handle<Module> module,
                                         Handle<String> name, int module_request,
-                                        bool must_resolve,
+                                        MessageLocation loc, bool must_resolve,
                                         Module::ResolveSet* resolve_set) {
   Isolate* isolate = module->GetIsolate();
   Handle<Module> requested_module(
       Module::cast(module->requested_modules()->get(module_request)), isolate);
-  return Module::ResolveExport(requested_module, name, must_resolve,
+  return Module::ResolveExport(requested_module, name, loc, must_resolve,
                                resolve_set);
 }
 
 MaybeHandle<Cell> Module::ResolveExport(Handle<Module> module,
-                                        Handle<String> name, bool must_resolve,
+                                        Handle<String> name,
+                                        MessageLocation loc, bool must_resolve,
                                         Module::ResolveSet* resolve_set) {
   Isolate* isolate = module->GetIsolate();
   Handle<Object> object(module->exports()->Lookup(name), isolate);
@@ -19876,10 +19893,10 @@ MaybeHandle<Cell> Module::ResolveExport(Handle<Module> module,
     } else if (name_set->count(name)) {
       // Cycle detected.
       if (must_resolve) {
-        THROW_NEW_ERROR(
-            isolate,
-            NewSyntaxError(MessageTemplate::kCyclicModuleDependency, name),
-            Cell);
+        return isolate->Throw<Cell>(
+            isolate->factory()->NewSyntaxError(
+                MessageTemplate::kCyclicModuleDependency, name),
+            &loc);
       }
       return MaybeHandle<Cell>();
     }
@@ -19891,9 +19908,14 @@ MaybeHandle<Cell> Module::ResolveExport(Handle<Module> module,
     Handle<ModuleInfoEntry> entry = Handle<ModuleInfoEntry>::cast(object);
     int module_request = Smi::cast(entry->module_request())->value();
     Handle<String> import_name(String::cast(entry->import_name()), isolate);
+    Handle<Script> script(
+        Script::cast(JSFunction::cast(module->code())->shared()->script()),
+        isolate);
+    MessageLocation new_loc(script, entry->beg_pos(), entry->end_pos());
 
     Handle<Cell> cell;
-    if (!ResolveImport(module, import_name, module_request, true, resolve_set)
+    if (!ResolveImport(module, import_name, module_request, new_loc, true,
+                       resolve_set)
              .ToHandle(&cell)) {
       DCHECK(isolate->has_pending_exception());
       return MaybeHandle<Cell>();
@@ -19910,13 +19932,13 @@ MaybeHandle<Cell> Module::ResolveExport(Handle<Module> module,
   }
 
   DCHECK(object->IsTheHole(isolate));
-  return Module::ResolveExportUsingStarExports(module, name, must_resolve,
+  return Module::ResolveExportUsingStarExports(module, name, loc, must_resolve,
                                                resolve_set);
 }
 
 MaybeHandle<Cell> Module::ResolveExportUsingStarExports(
-    Handle<Module> module, Handle<String> name, bool must_resolve,
-    Module::ResolveSet* resolve_set) {
+    Handle<Module> module, Handle<String> name, MessageLocation loc,
+    bool must_resolve, Module::ResolveSet* resolve_set) {
   Isolate* isolate = module->GetIsolate();
   if (!name->Equals(isolate->heap()->default_string())) {
     // Go through all star exports looking for the given name.  If multiple star
@@ -19932,14 +19954,21 @@ MaybeHandle<Cell> Module::ResolveExportUsingStarExports(
       }
       int module_request = Smi::cast(entry->module_request())->value();
 
+      Handle<Script> script(
+          Script::cast(JSFunction::cast(module->code())->shared()->script()),
+          isolate);
+      MessageLocation new_loc(script, entry->beg_pos(), entry->end_pos());
+
       Handle<Cell> cell;
-      if (ResolveImport(module, name, module_request, false, resolve_set)
+      if (ResolveImport(module, name, module_request, new_loc, false,
+                        resolve_set)
               .ToHandle(&cell)) {
         if (unique_cell.is_null()) unique_cell = cell;
         if (*unique_cell != *cell) {
-          THROW_NEW_ERROR(
-              isolate, NewSyntaxError(MessageTemplate::kAmbiguousExport, name),
-              Cell);
+          return isolate->Throw<Cell>(
+              isolate->factory()->NewSyntaxError(
+                  MessageTemplate::kAmbiguousExport, name),
+              &loc);
         }
       } else if (isolate->has_pending_exception()) {
         return MaybeHandle<Cell>();
@@ -19958,9 +19987,9 @@ MaybeHandle<Cell> Module::ResolveExportUsingStarExports(
 
   // Unresolvable.
   if (must_resolve) {
-    THROW_NEW_ERROR(isolate,
-                    NewSyntaxError(MessageTemplate::kUnresolvableExport, name),
-                    Cell);
+    return isolate->Throw<Cell>(isolate->factory()->NewSyntaxError(
+                                    MessageTemplate::kUnresolvableExport, name),
+                                &loc);
   }
   return MaybeHandle<Cell>();
 }
@@ -20035,8 +20064,12 @@ bool Module::Instantiate(Handle<Module> module, v8::Local<v8::Context> context,
         ModuleInfoEntry::cast(regular_imports->get(i)), isolate);
     Handle<String> name(String::cast(entry->import_name()), isolate);
     int module_request = Smi::cast(entry->module_request())->value();
+    Handle<Script> script(
+        Script::cast(JSFunction::cast(module->code())->shared()->script()),
+        isolate);
+    MessageLocation loc(script, entry->beg_pos(), entry->end_pos());
     ResolveSet resolve_set(&zone);
-    if (ResolveImport(module, name, module_request, true, &resolve_set)
+    if (ResolveImport(module, name, module_request, loc, true, &resolve_set)
             .is_null()) {
       return false;
     }
@@ -20048,8 +20081,13 @@ bool Module::Instantiate(Handle<Module> module, v8::Local<v8::Context> context,
         ModuleInfoEntry::cast(special_exports->get(i)), isolate);
     Handle<Object> name(entry->export_name(), isolate);
     if (name->IsUndefined(isolate)) continue;  // Star export.
+    Handle<Script> script(
+        Script::cast(JSFunction::cast(module->code())->shared()->script()),
+        isolate);
+    MessageLocation loc(script, entry->beg_pos(), entry->end_pos());
     ResolveSet resolve_set(&zone);
-    if (ResolveExport(module, Handle<String>::cast(name), true, &resolve_set)
+    if (ResolveExport(module, Handle<String>::cast(name), loc, true,
+                      &resolve_set)
             .is_null()) {
       return false;
     }

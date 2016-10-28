@@ -95,13 +95,15 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void VisitPropertyLoadForAccumulator(Register obj, Property* expr);
 
   void BuildVariableLoad(Variable* variable, FeedbackVectorSlot slot,
-                         bool needs_hole_check,
+                         HoleCheckMode hole_check_mode,
                          TypeofMode typeof_mode = NOT_INSIDE_TYPEOF);
   void BuildVariableLoadForAccumulatorValue(
-      Variable* variable, FeedbackVectorSlot slot, bool needs_hole_check,
+      Variable* variable, FeedbackVectorSlot slot,
+      HoleCheckMode hole_check_mode,
       TypeofMode typeof_mode = NOT_INSIDE_TYPEOF);
   void BuildVariableAssignment(Variable* variable, Token::Value op,
-                               FeedbackVectorSlot slot, bool needs_hole_check);
+                               FeedbackVectorSlot slot,
+                               HoleCheckMode hole_check_mode);
 
   void BuildReturn();
   void BuildReThrow();
@@ -192,6 +194,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
 
   Handle<Name> home_object_symbol() const { return home_object_symbol_; }
   Handle<Name> prototype_string() const { return prototype_string_; }
+  Handle<FixedArray> empty_fixed_array() const { return empty_fixed_array_; }
 
   Zone* zone_;
   BytecodeArrayBuilder* builder_;
@@ -214,6 +217,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
 
   Handle<Name> home_object_symbol_;
   Handle<Name> prototype_string_;
+  Handle<FixedArray> empty_fixed_array_;
 };
 
 }  // namespace interpreter

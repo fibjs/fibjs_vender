@@ -360,9 +360,9 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadNamed(Node* node) {
   // Check if we have a constant receiver.
   HeapObjectMatcher m(receiver);
   if (m.HasValue()) {
-    // Optimize "prototype" property of functions.
     if (m.Value()->IsJSFunction() &&
         p.name().is_identical_to(factory()->prototype_string())) {
+      // Optimize "prototype" property of functions.
       Handle<JSFunction> function = Handle<JSFunction>::cast(m.Value());
       if (function->has_initial_map()) {
         // We need to add a code dependency on the initial map of the
@@ -378,6 +378,13 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadNamed(Node* node) {
           return Replace(value);
         }
       }
+    } else if (m.Value()->IsString() &&
+               p.name().is_identical_to(factory()->length_string())) {
+      // Constant-fold "length" property on constant strings.
+      Handle<String> string = Handle<String>::cast(m.Value());
+      Node* value = jsgraph()->Constant(string->length());
+      ReplaceWithValue(node, value);
+      return Replace(value);
     }
   }
 
@@ -665,8 +672,37 @@ Reduction JSNativeContextSpecialization::ReduceKeyedAccess(
     KeyedAccessStoreMode store_mode) {
   DCHECK(node->opcode() == IrOpcode::kJSLoadProperty ||
          node->opcode() == IrOpcode::kJSStoreProperty);
-  Node* const receiver = NodeProperties::GetValueInput(node, 0);
-  Node* const effect = NodeProperties::GetEffectInput(node);
+  Node* receiver = NodeProperties::GetValueInput(node, 0);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+
+  // Optimize access for constant {receiver}.
+  HeapObjectMatcher mreceiver(receiver);
+  if (mreceiver.HasValue() && mreceiver.Value()->IsString()) {
+    Handle<String> string = Handle<String>::cast(mreceiver.Value());
+
+    // We can only assume that the {index} is a valid array index if the IC
+    // is in element access mode and not MEGAMORPHIC, otherwise there's no
+    // guard for the bounds check below.
+    if (nexus.ic_state() != MEGAMORPHIC && nexus.GetKeyType() == ELEMENT) {
+      // Strings are immutable in JavaScript.
+      if (access_mode == AccessMode::kStore) return NoChange();
+
+      // Ensure that {index} is less than {receiver} length.
+      Node* length = jsgraph()->Constant(string->length());
+      index = effect = graph()->NewNode(simplified()->CheckBounds(), index,
+                                        length, effect, control);
+
+      // Load the character from the {receiver}.
+      value = graph()->NewNode(simplified()->StringCharCodeAt(), receiver,
+                               index, control);
+
+      // Return it as a single character string.
+      value = graph()->NewNode(simplified()->StringFromCharCode(), value);
+      ReplaceWithValue(node, value, effect, control);
+      return Replace(value);
+    }
+  }
 
   // Check if the {nexus} reports type feedback for the IC.
   if (nexus.IsUninitialized()) {
@@ -723,6 +759,12 @@ Reduction JSNativeContextSpecialization::ReduceKeyedAccess(
     // The KeyedLoad/StoreIC has seen non-element accesses, so we cannot assume
     // that the {index} is a valid array index, thus we just let the IC continue
     // to deal with this load/store.
+    return NoChange();
+  } else if (nexus.ic_state() == MEGAMORPHIC) {
+    // The KeyedLoad/StoreIC uses the MEGAMORPHIC state to guard the assumption
+    // that a numeric {index} is within the valid bounds for {receiver}, i.e.
+    // it transitions to MEGAMORPHIC once it sees an out-of-bounds access. Thus
+    // we cannot continue here if the IC state is MEGAMORPHIC.
     return NoChange();
   }
 

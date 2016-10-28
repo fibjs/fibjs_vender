@@ -58,8 +58,7 @@ MarkCompactCollector::MarkCompactCollector(Heap* heap)
       compacting_(false),
       black_allocation_(false),
       have_code_to_deoptimize_(false),
-      marking_deque_memory_(NULL),
-      marking_deque_memory_committed_(0),
+      marking_deque_(heap),
       code_flusher_(nullptr),
       sweeper_(heap) {
 }
@@ -240,9 +239,7 @@ void MarkCompactCollector::SetUp() {
   DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
   DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
   DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
-
-  EnsureMarkingDequeIsReserved();
-  EnsureMarkingDequeIsCommitted(kMinMarkingDequeSize);
+  marking_deque()->SetUp();
 
   if (FLAG_flush_code) {
     code_flusher_ = new CodeFlusher(isolate());
@@ -255,7 +252,7 @@ void MarkCompactCollector::SetUp() {
 
 void MarkCompactCollector::TearDown() {
   AbortCompaction();
-  delete marking_deque_memory_;
+  marking_deque()->TearDown();
   delete code_flusher_;
 }
 
@@ -783,6 +780,10 @@ void MarkCompactCollector::Prepare() {
     EnsureSweepingCompleted();
   }
 
+  if (heap()->incremental_marking()->IsSweeping()) {
+    heap()->incremental_marking()->Stop();
+  }
+
   // If concurrent unmapping tasks are still running, we should wait for
   // them here.
   heap()->memory_allocator()->unmapper()->WaitUntilCompleted();
@@ -799,6 +800,7 @@ void MarkCompactCollector::Prepare() {
     if (heap_->UsingEmbedderHeapTracer()) {
       heap_->embedder_heap_tracer()->AbortTracing();
     }
+    marking_deque()->Clear();
     was_marked_incrementally_ = false;
   }
 
@@ -838,7 +840,9 @@ void MarkCompactCollector::Prepare() {
 void MarkCompactCollector::Finish() {
   TRACE_GC(heap()->tracer(), GCTracer::Scope::MC_FINISH);
 
-  sweeper().StartSweeperTasks();
+  if (!heap()->delay_sweeper_tasks_for_testing_) {
+    sweeper().StartSweeperTasks();
+  }
 
   // The hashing of weak_object_to_code_table is no longer valid.
   heap()->weak_object_to_code_table()->Rehash(
@@ -2106,85 +2110,101 @@ void MarkCompactCollector::ProcessTopOptimizedFrame(ObjectVisitor* visitor) {
   }
 }
 
-
-void MarkCompactCollector::EnsureMarkingDequeIsReserved() {
-  DCHECK(!marking_deque()->in_use());
-  if (marking_deque_memory_ == NULL) {
-    marking_deque_memory_ = new base::VirtualMemory(kMaxMarkingDequeSize);
-    marking_deque_memory_committed_ = 0;
-  }
-  if (marking_deque_memory_ == NULL) {
-    V8::FatalProcessOutOfMemory("EnsureMarkingDequeIsReserved");
+void MarkingDeque::SetUp() {
+  backing_store_ = new base::VirtualMemory(kMaxSize);
+  backing_store_committed_size_ = 0;
+  if (backing_store_ == nullptr) {
+    V8::FatalProcessOutOfMemory("MarkingDeque::SetUp");
   }
 }
 
+void MarkingDeque::TearDown() {
+  CancelOrWaitForUncommitTask();
+  delete backing_store_;
+}
 
-void MarkCompactCollector::EnsureMarkingDequeIsCommitted(size_t max_size) {
-  // If the marking deque is too small, we try to allocate a bigger one.
-  // If that fails, make do with a smaller one.
-  CHECK(!marking_deque()->in_use());
-  for (size_t size = max_size; size >= kMinMarkingDequeSize; size >>= 1) {
-    base::VirtualMemory* memory = marking_deque_memory_;
-    size_t currently_committed = marking_deque_memory_committed_;
-
-    if (currently_committed == size) return;
-
-    if (currently_committed > size) {
-      bool success = marking_deque_memory_->Uncommit(
-          reinterpret_cast<Address>(marking_deque_memory_->address()) + size,
-          currently_committed - size);
-      if (success) {
-        marking_deque_memory_committed_ = size;
-        return;
-      }
-      UNREACHABLE();
-    }
-
-    bool success = memory->Commit(
-        reinterpret_cast<Address>(memory->address()) + currently_committed,
-        size - currently_committed,
-        false);  // Not executable.
-    if (success) {
-      marking_deque_memory_committed_ = size;
-      return;
-    }
+void MarkingDeque::StartUsing() {
+  base::LockGuard<base::Mutex> guard(&mutex_);
+  if (in_use_) {
+    // This can happen in mark-compact GC if the incremental marker already
+    // started using the marking deque.
+    return;
   }
-  V8::FatalProcessOutOfMemory("EnsureMarkingDequeIsCommitted");
-}
-
-
-void MarkCompactCollector::InitializeMarkingDeque() {
-  DCHECK(!marking_deque()->in_use());
-  DCHECK(marking_deque_memory_committed_ > 0);
-  Address addr = static_cast<Address>(marking_deque_memory_->address());
-  size_t size = marking_deque_memory_committed_;
-  if (FLAG_force_marking_deque_overflows) size = 64 * kPointerSize;
-  marking_deque()->Initialize(addr, addr + size);
-}
-
-
-void MarkingDeque::Initialize(Address low, Address high) {
-  DCHECK(!in_use_);
-  HeapObject** obj_low = reinterpret_cast<HeapObject**>(low);
-  HeapObject** obj_high = reinterpret_cast<HeapObject**>(high);
-  array_ = obj_low;
-  mask_ = base::bits::RoundDownToPowerOfTwo32(
-              static_cast<uint32_t>(obj_high - obj_low)) -
-          1;
+  in_use_ = true;
+  EnsureCommitted();
+  array_ = reinterpret_cast<HeapObject**>(backing_store_->address());
+  size_t size = FLAG_force_marking_deque_overflows
+                    ? 64 * kPointerSize
+                    : backing_store_committed_size_;
+  DCHECK(
+      base::bits::IsPowerOfTwo32(static_cast<uint32_t>(size / kPointerSize)));
+  mask_ = static_cast<int>((size / kPointerSize) - 1);
   top_ = bottom_ = 0;
   overflowed_ = false;
-  in_use_ = true;
 }
 
-
-void MarkingDeque::Uninitialize(bool aborting) {
-  if (!aborting) {
-    DCHECK(IsEmpty());
-    DCHECK(!overflowed_);
-  }
-  DCHECK(in_use_);
-  top_ = bottom_ = 0xdecbad;
+void MarkingDeque::StopUsing() {
+  base::LockGuard<base::Mutex> guard(&mutex_);
+  DCHECK(IsEmpty());
+  DCHECK(!overflowed_);
+  top_ = bottom_ = mask_ = 0;
   in_use_ = false;
+  if (FLAG_concurrent_sweeping) {
+    StartUncommitTask();
+  } else {
+    Uncommit();
+  }
+}
+
+void MarkingDeque::Clear() {
+  DCHECK(in_use_);
+  top_ = bottom_ = 0;
+  overflowed_ = false;
+}
+
+void MarkingDeque::Uncommit() {
+  DCHECK(!in_use_);
+  bool success = backing_store_->Uncommit(backing_store_->address(),
+                                          backing_store_committed_size_);
+  backing_store_committed_size_ = 0;
+  CHECK(success);
+}
+
+void MarkingDeque::EnsureCommitted() {
+  DCHECK(in_use_);
+  if (backing_store_committed_size_ > 0) return;
+
+  for (size_t size = kMaxSize; size >= kMinSize; size /= 2) {
+    if (backing_store_->Commit(backing_store_->address(), size, false)) {
+      backing_store_committed_size_ = size;
+      break;
+    }
+  }
+  if (backing_store_committed_size_ == 0) {
+    V8::FatalProcessOutOfMemory("MarkingDeque::EnsureCommitted");
+  }
+}
+
+void MarkingDeque::StartUncommitTask() {
+  if (!uncommit_task_pending_) {
+    UncommitTask* task = new UncommitTask(heap_->isolate(), this);
+    uncommit_task_id_ = task->id();
+    uncommit_task_pending_ = true;
+    V8::GetCurrentPlatform()->CallOnBackgroundThread(
+        task, v8::Platform::kShortRunningTask);
+  }
+}
+
+void MarkingDeque::CancelOrWaitForUncommitTask() {
+  base::LockGuard<base::Mutex> guard(&mutex_);
+  if (!uncommit_task_pending_ ||
+      heap_->isolate()->cancelable_task_manager()->TryAbort(
+          uncommit_task_id_) != CancelableTaskManager::kTaskRunning) {
+    return;
+  }
+  while (uncommit_task_pending_) {
+    uncommit_task_barrier_.Wait(&mutex_);
+  }
 }
 
 class MarkCompactCollector::ObjectStatsVisitor
@@ -2260,11 +2280,7 @@ void MarkCompactCollector::MarkLiveObjects() {
     if (was_marked_incrementally_) {
       incremental_marking->Finalize();
     } else {
-      // Abort any pending incremental activities e.g. incremental sweeping.
-      incremental_marking->Stop();
-      if (marking_deque()->in_use()) {
-        marking_deque()->Uninitialize(true);
-      }
+      CHECK(incremental_marking->IsStopped());
     }
   }
 
@@ -2273,8 +2289,7 @@ void MarkCompactCollector::MarkLiveObjects() {
   state_ = MARK_LIVE_OBJECTS;
 #endif
 
-  EnsureMarkingDequeIsCommittedAndInitialize(
-      MarkCompactCollector::kMaxMarkingDequeSize);
+  marking_deque()->StartUsing();
 
   {
     TRACE_GC(heap()->tracer(), GCTracer::Scope::MC_MARK_PREPARE_CODE_FLUSH);

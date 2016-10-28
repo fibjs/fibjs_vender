@@ -1925,9 +1925,6 @@ void InstructionSelector::VisitTailCall(Node* node) {
         case CallDescriptor::kCallCodeObject:
           opcode = kArchTailCallCodeObject;
           break;
-        case CallDescriptor::kCallJSFunction:
-          opcode = kArchTailCallJSFunction;
-          break;
         case CallDescriptor::kCallAddress:
           opcode = kArchTailCallAddress;
           break;
@@ -2015,6 +2012,18 @@ void InstructionSelector::VisitReturn(Node* ret) {
     }
     Emit(kArchRet, 0, nullptr, ret_count, value_locations);
   }
+}
+
+Instruction* InstructionSelector::EmitDeoptimize(InstructionCode opcode,
+                                                 InstructionOperand output,
+                                                 InstructionOperand a,
+                                                 DeoptimizeReason reason,
+                                                 Node* frame_state) {
+  size_t output_count = output.IsInvalid() ? 0 : 1;
+  InstructionOperand inputs[] = {a};
+  size_t input_count = arraysize(inputs);
+  return EmitDeoptimize(opcode, output_count, &output, input_count, inputs,
+                        reason, frame_state);
 }
 
 Instruction* InstructionSelector::EmitDeoptimize(

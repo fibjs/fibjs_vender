@@ -95,6 +95,7 @@ enum ContextLookupFlags {
   V(PROMISE_HANDLE_INDEX, JSFunction, promise_handle)                     \
   V(PROMISE_HAS_USER_DEFINED_REJECT_HANDLER_INDEX, JSFunction,            \
     promise_has_user_defined_reject_handler)                              \
+  V(PROMISE_DEBUG_GET_INFO_INDEX, JSFunction, promise_debug_get_info)     \
   V(PROMISE_REJECT_INDEX, JSFunction, promise_reject)                     \
   V(PROMISE_RESOLVE_INDEX, JSFunction, promise_resolve)                   \
   V(PROMISE_THEN_INDEX, JSFunction, promise_then)                         \
@@ -263,7 +264,8 @@ enum ContextLookupFlags {
   V(NORMALIZED_MAP_CACHE_INDEX, Object, normalized_map_cache)                  \
   V(NUMBER_FUNCTION_INDEX, JSFunction, number_function)                        \
   V(OBJECT_FUNCTION_INDEX, JSFunction, object_function)                        \
-  V(OBJECT_WITH_NULL_PROTOTYPE_MAP, Map, object_with_null_prototype_map)       \
+  V(SLOW_OBJECT_WITH_NULL_PROTOTYPE_MAP, Map,                                  \
+    slow_object_with_null_prototype_map)                                       \
   V(OBJECT_FUNCTION_PROTOTYPE_MAP_INDEX, Map, object_function_prototype_map)   \
   V(OPAQUE_REFERENCE_FUNCTION_INDEX, JSFunction, opaque_reference_function)    \
   V(PROXY_CALLABLE_MAP_INDEX, Map, proxy_callable_map)                         \

@@ -430,12 +430,6 @@ class V8_EXPORT_PRIVATE Factory final {
   SIMD128_TYPES(SIMD128_NEW_DECL)
 #undef SIMD128_NEW_DECL
 
-  // These objects are used by the api to create env-independent data
-  // structures in the heap.
-  inline Handle<JSObject> NewNeanderObject() {
-    return NewJSObjectFromMap(neander_map());
-  }
-
   Handle<JSWeakMap> NewJSWeakMap();
 
   Handle<JSObject> NewArgumentsObject(Handle<JSFunction> callee, int length);
@@ -644,7 +638,7 @@ class V8_EXPORT_PRIVATE Factory final {
   DECLARE_ERROR(TypeError)
   DECLARE_ERROR(WasmCompileError)
   DECLARE_ERROR(WasmRuntimeError)
-#undef DEFINE_ERROR
+#undef DECLARE_ERROR
 
   Handle<String> NumberToString(Handle<Object> number,
                                 bool check_number_string_cache = true);

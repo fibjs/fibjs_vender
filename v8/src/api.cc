@@ -523,7 +523,8 @@ size_t SnapshotCreator::AddTemplate(Local<Template> template_obj) {
 }
 
 StartupData SnapshotCreator::CreateBlob(
-    SnapshotCreator::FunctionCodeHandling function_code_handling) {
+    SnapshotCreator::FunctionCodeHandling function_code_handling,
+    SerializeInternalFieldsCallback callback) {
   SnapshotCreatorData* data = SnapshotCreatorData::cast(data_);
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(data->isolate_);
   DCHECK(!data->created_);
@@ -564,7 +565,8 @@ StartupData SnapshotCreator::CreateBlob(
   // Serialize each context with a new partial serializer.
   i::List<i::SnapshotData*> context_snapshots(num_contexts);
   for (int i = 0; i < num_contexts; i++) {
-    i::PartialSerializer partial_serializer(isolate, &startup_serializer);
+    i::PartialSerializer partial_serializer(isolate, &startup_serializer,
+                                            callback);
     partial_serializer.Serialize(&contexts[i]);
     context_snapshots.Add(new i::SnapshotData(&partial_serializer));
   }
@@ -2267,17 +2269,10 @@ MaybeLocal<Script> ScriptCompiler::Compile(Local<Context> context,
 
   source->info->set_script(script);
 
-  {
-    // Create a canonical handle scope for compiling Ignition bytecode. This is
-    // required by the constant array builder to de-duplicate objects without
-    // dereferencing handles.
-    i::CanonicalHandleScope canonical(isolate);
-
-    // Do the parsing tasks which need to be done on the main thread. This will
-    // also handle parse errors.
-    source->parser->Internalize(isolate, script,
-                                source->info->literal() == nullptr);
-  }
+  // Do the parsing tasks which need to be done on the main thread. This will
+  // also handle parse errors.
+  source->parser->Internalize(isolate, script,
+                              source->info->literal() == nullptr);
   source->parser->HandleSourceURLComments(isolate, script);
 
   i::Handle<i::SharedFunctionInfo> result;
@@ -7224,12 +7219,15 @@ WasmCompiledModule::SerializedModule WasmCompiledModule::Serialize() {
 
 MaybeLocal<WasmCompiledModule> WasmCompiledModule::Deserialize(
     Isolate* isolate,
-    const WasmCompiledModule::CallerOwnedBuffer& serialized_module) {
+    const WasmCompiledModule::CallerOwnedBuffer& serialized_module,
+    const WasmCompiledModule::CallerOwnedBuffer& wire_bytes) {
   int size = static_cast<int>(serialized_module.second);
   i::ScriptData sc(serialized_module.first, size);
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   i::MaybeHandle<i::FixedArray> maybe_compiled_part =
-      i::WasmCompiledModuleSerializer::DeserializeWasmModule(i_isolate, &sc);
+      i::WasmCompiledModuleSerializer::DeserializeWasmModule(
+          i_isolate, &sc,
+          {wire_bytes.first, static_cast<int>(wire_bytes.second)});
   i::Handle<i::FixedArray> compiled_part;
   if (!maybe_compiled_part.ToHandle(&compiled_part)) {
     return MaybeLocal<WasmCompiledModule>();
@@ -7245,24 +7243,9 @@ MaybeLocal<WasmCompiledModule> WasmCompiledModule::DeserializeOrCompile(
     Isolate* isolate,
     const WasmCompiledModule::CallerOwnedBuffer& serialized_module,
     const WasmCompiledModule::CallerOwnedBuffer& wire_bytes) {
-  MaybeLocal<WasmCompiledModule> ret = Deserialize(isolate, serialized_module);
+  MaybeLocal<WasmCompiledModule> ret =
+      Deserialize(isolate, serialized_module, wire_bytes);
   if (!ret.IsEmpty()) {
-    // TODO(mtrofin): once we stop taking a dependency on Deserialize,
-    // clean this up to avoid the back and forth between internal
-    // and external representations.
-    i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-    i::Vector<const uint8_t> str(wire_bytes.first,
-                                 static_cast<int>(wire_bytes.second));
-    i::Handle<i::SeqOneByteString> wire_bytes_as_string(
-        i::SeqOneByteString::cast(
-            *i_isolate->factory()->NewStringFromOneByte(str).ToHandleChecked()),
-        i_isolate);
-
-    i::Handle<i::JSObject> obj =
-        i::Handle<i::JSObject>::cast(Utils::OpenHandle(*ret.ToLocalChecked()));
-    i::Handle<i::wasm::WasmCompiledModule> compiled_part =
-        i::handle(i::wasm::WasmCompiledModule::cast(obj->GetInternalField(0)));
-    compiled_part->set_module_bytes(wire_bytes_as_string);
     return ret;
   }
   return Compile(isolate, wire_bytes.first, wire_bytes.second);
@@ -7908,6 +7891,8 @@ Isolate* Isolate::New(const Isolate::CreateParams& params) {
   }
 
   isolate->set_api_external_references(params.external_references);
+  isolate->set_deserialize_internal_fields_callback(
+      params.deserialize_internal_fields_callback);
   SetResourceConstraints(isolate, params.constraints);
   // TODO(jochen): Once we got rid of Isolate::Current(), we can remove this.
   Isolate::Scope isolate_scope(v8_isolate);

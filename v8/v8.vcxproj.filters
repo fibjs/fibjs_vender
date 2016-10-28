@@ -984,9 +984,6 @@
     <ClInclude Include="src\crankshaft\hydrogen-load-elimination.h">
       <Filter>Source Files\crankshaft</Filter>
     </ClInclude>
-    <ClInclude Include="src\crankshaft\hydrogen-mark-deoptimize.h">
-      <Filter>Source Files\crankshaft</Filter>
-    </ClInclude>
     <ClInclude Include="src\crankshaft\hydrogen-mark-unreachable.h">
       <Filter>Source Files\crankshaft</Filter>
     </ClInclude>
@@ -1920,9 +1917,6 @@
     <ClInclude Include="src\wasm\wasm-external-refs.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\wasm-function-name-table.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
     <ClInclude Include="src\wasm\wasm-interpreter.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -1993,6 +1987,9 @@
       <Filter>Source Files\zone</Filter>
     </ClInclude>
     <ClInclude Include="src\zone\zone-allocator.h">
+      <Filter>Source Files\zone</Filter>
+    </ClInclude>
+    <ClInclude Include="src\zone\zone-chunk-list.h">
       <Filter>Source Files\zone</Filter>
     </ClInclude>
     <ClInclude Include="src\zone\zone-containers.h">
@@ -2751,9 +2748,6 @@
       <Filter>Source Files\crankshaft</Filter>
     </ClCompile>
     <ClCompile Include="src\crankshaft\hydrogen-load-elimination.cc">
-      <Filter>Source Files\crankshaft</Filter>
-    </ClCompile>
-    <ClCompile Include="src\crankshaft\hydrogen-mark-deoptimize.cc">
       <Filter>Source Files\crankshaft</Filter>
     </ClCompile>
     <ClCompile Include="src\crankshaft\hydrogen-mark-unreachable.cc">
@@ -3533,6 +3527,9 @@
     <ClCompile Include="src\runtime\runtime-operators.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
+    <ClCompile Include="src\runtime\runtime-promise.cc">
+      <Filter>Source Files\runtime</Filter>
+    </ClCompile>
     <ClCompile Include="src\runtime\runtime-proxy.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
@@ -3699,9 +3696,6 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-external-refs.cc">
-      <Filter>Source Files\wasm</Filter>
-    </ClCompile>
-    <ClCompile Include="src\wasm\wasm-function-name-table.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-interpreter.cc">

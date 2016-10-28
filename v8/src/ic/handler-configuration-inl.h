@@ -29,6 +29,17 @@ Handle<Object> LoadHandler::LoadConstant(Isolate* isolate, int descriptor) {
   return handle(Smi::FromInt(config), isolate);
 }
 
+Handle<Object> LoadHandler::EnableNegativeLookupOnReceiver(
+    Isolate* isolate, Handle<Object> smi_handler) {
+  int config = Smi::cast(*smi_handler)->value();
+#ifdef DEBUG
+  Kind kind = KindBits::decode(config);
+  DCHECK(kind == kForFields || kind == kForConstants);
+#endif
+  config = DoNegativeLookupOnReceiverBits::update(config, true);
+  return handle(Smi::FromInt(config), isolate);
+}
+
 Handle<Object> LoadHandler::LoadElement(Isolate* isolate,
                                         ElementsKind elements_kind,
                                         bool convert_hole_to_undefined,
@@ -37,6 +48,37 @@ Handle<Object> LoadHandler::LoadElement(Isolate* isolate,
                ElementsKindBits::encode(elements_kind) |
                ConvertHoleBits::encode(convert_hole_to_undefined) |
                IsJsArrayBits::encode(is_js_array);
+  return handle(Smi::FromInt(config), isolate);
+}
+
+Handle<Object> StoreHandler::StoreField(Isolate* isolate, int descriptor,
+                                        FieldIndex field_index,
+                                        Representation representation) {
+  StoreHandler::FieldRepresentation field_rep;
+  switch (representation.kind()) {
+    case Representation::kSmi:
+      field_rep = StoreHandler::kSmi;
+      break;
+    case Representation::kDouble:
+      field_rep = StoreHandler::kDouble;
+      break;
+    case Representation::kHeapObject:
+      field_rep = StoreHandler::kHeapObject;
+      break;
+    case Representation::kTagged:
+      field_rep = StoreHandler::kTagged;
+      break;
+    default:
+      UNREACHABLE();
+      return Handle<Object>::null();
+  }
+  int value_index = DescriptorArray::ToValueIndex(descriptor);
+
+  int config = StoreHandler::KindBits::encode(StoreHandler::kForFields) |
+               StoreHandler::IsInobjectBits::encode(field_index.is_inobject()) |
+               StoreHandler::FieldRepresentationBits::encode(field_rep) |
+               StoreHandler::DescriptorValueIndexBits::encode(value_index) |
+               StoreHandler::FieldOffsetBits::encode(field_index.offset());
   return handle(Smi::FromInt(config), isolate);
 }
 

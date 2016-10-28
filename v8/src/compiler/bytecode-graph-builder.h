@@ -135,6 +135,7 @@ class BytecodeGraphBuilder {
 
   void BuildCreateArguments(CreateArgumentsType type);
   Node* BuildLoadContextSlot();
+  Node* BuildLoadCurrentContextSlot();
   Node* BuildLoadGlobal(uint32_t feedback_slot_index, TypeofMode typeof_mode);
   void BuildStoreGlobal(LanguageMode language_mode);
   Node* BuildNamedLoad();
@@ -145,7 +146,8 @@ class BytecodeGraphBuilder {
   void BuildLdaLookupContextSlot(TypeofMode typeof_mode);
   void BuildLdaLookupGlobalSlot(TypeofMode typeof_mode);
   void BuildStaLookupSlot(LanguageMode language_mode);
-  void BuildCall(TailCallMode tail_call_mode);
+  void BuildCall(TailCallMode tail_call_mode,
+                 ConvertReceiverMode receiver_hint);
   void BuildThrow();
   void BuildBinaryOp(const Operator* op);
   void BuildBinaryOpWithImmediate(const Operator* op);

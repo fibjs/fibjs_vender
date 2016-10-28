@@ -6508,7 +6508,6 @@ EVALUATE(LCR) {
   DCHECK_OPCODE(LCR);
   DECODE_RR_INSTRUCTION(r1, r2);
   int32_t r2_val = get_low_register<int32_t>(r2);
-  int32_t original_r2_val = r2_val;
   r2_val = ~r2_val;
   r2_val = r2_val + 1;
   set_low_register(r1, r2_val);
@@ -6517,7 +6516,7 @@ EVALUATE(LCR) {
   // Cannot do int comparison due to GCC 4.8 bug on x86.
   // Detect INT_MIN alternatively, as it is the only value where both
   // original and result are negative due to overflow.
-  if (r2_val < 0 && original_r2_val < 0) {
+  if (r2_val == (static_cast<int32_t>(1) << 31)) {
     SetS390OverflowCode(true);
   }
   return length;
@@ -9841,7 +9840,7 @@ EVALUATE(LCGR) {
   set_register(r1, r2_val);
   SetS390ConditionCode<int64_t>(r2_val, 0);
   // if the input is INT_MIN, loading its compliment would be overflowing
-  if (r2_val < 0 && (r2_val + 1) > 0) {
+  if (r2_val == (static_cast<int64_t>(1) << 63)) {
     SetS390OverflowCode(true);
   }
   return length;

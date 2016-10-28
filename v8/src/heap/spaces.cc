@@ -394,14 +394,13 @@ void MemoryAllocator::Unmapper::ReconsiderDelayedChunks() {
 }
 
 bool MemoryAllocator::CanFreeMemoryChunk(MemoryChunk* chunk) {
-  // We cannot free memory chunks in new space while the sweeper is running
-  // since a sweeper thread might be stuck right before trying to lock the
-  // corresponding page.
-
+  MarkCompactCollector* mc = isolate_->heap()->mark_compact_collector();
+  // We cannot free a memory chunk in new space while the sweeper is running
+  // because the memory chunk can be in the queue of a sweeper task.
   // Chunks in old generation are unmapped if they are empty.
   DCHECK(chunk->InNewSpace() || chunk->SweepingDone());
-  return !chunk->InNewSpace() || !FLAG_concurrent_sweeping ||
-         chunk->SweepingDone();
+  return !chunk->InNewSpace() || mc == nullptr || !FLAG_concurrent_sweeping ||
+         mc->sweeper().IsSweepingCompleted(NEW_SPACE);
 }
 
 bool MemoryAllocator::CommitMemory(Address base, size_t size,
@@ -2564,6 +2563,13 @@ FreeSpace* FreeList::FindNodeFor(size_t size_in_bytes, size_t* node_size) {
 HeapObject* FreeList::Allocate(size_t size_in_bytes) {
   DCHECK(size_in_bytes <= kMaxBlockSize);
   DCHECK(IsAligned(size_in_bytes, kPointerSize));
+  DCHECK_LE(owner_->top(), owner_->limit());
+#ifdef DEBUG
+  if (owner_->top() != owner_->limit()) {
+    DCHECK_EQ(Page::FromAddress(owner_->top()),
+              Page::FromAddress(owner_->limit() - 1));
+  }
+#endif
   // Don't free list allocate if there is linear space available.
   DCHECK_LT(static_cast<size_t>(owner_->limit() - owner_->top()),
             size_in_bytes);

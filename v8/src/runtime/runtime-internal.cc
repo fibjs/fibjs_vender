@@ -287,64 +287,6 @@ RUNTIME_FUNCTION(Runtime_ThrowApplyNonFunction) {
       isolate, NewTypeError(MessageTemplate::kApplyNonFunction, object, type));
 }
 
-namespace {
-
-void PromiseRejectEvent(Isolate* isolate, Handle<JSObject> promise,
-                        Handle<Object> rejected_promise, Handle<Object> value,
-                        bool debug_event) {
-  if (isolate->debug()->is_active() && debug_event) {
-    isolate->debug()->OnPromiseReject(rejected_promise, value);
-  }
-  Handle<Symbol> key = isolate->factory()->promise_has_handler_symbol();
-  // Do not report if we actually have a handler.
-  if (JSReceiver::GetDataProperty(promise, key)->IsUndefined(isolate)) {
-    isolate->ReportPromiseReject(promise, value,
-                                 v8::kPromiseRejectWithNoHandler);
-  }
-}
-
-}  // namespace
-
-RUNTIME_FUNCTION(Runtime_PromiseRejectEvent) {
-  DCHECK(args.length() == 3);
-  HandleScope scope(isolate);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, value, 1);
-  CONVERT_BOOLEAN_ARG_CHECKED(debug_event, 2);
-
-  PromiseRejectEvent(isolate, promise, promise, value, debug_event);
-  return isolate->heap()->undefined_value();
-}
-
-RUNTIME_FUNCTION(Runtime_PromiseRejectEventFromStack) {
-  DCHECK(args.length() == 2);
-  HandleScope scope(isolate);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, value, 1);
-
-  Handle<Object> rejected_promise = promise;
-  if (isolate->debug()->is_active()) {
-    // If the Promise.reject call is caught, then this will return
-    // undefined, which will be interpreted by PromiseRejectEvent
-    // as being a caught exception event.
-    rejected_promise = isolate->GetPromiseOnStackOnThrow();
-  }
-  PromiseRejectEvent(isolate, promise, rejected_promise, value, true);
-  return isolate->heap()->undefined_value();
-}
-
-RUNTIME_FUNCTION(Runtime_PromiseRevokeReject) {
-  DCHECK(args.length() == 1);
-  HandleScope scope(isolate);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
-  Handle<Symbol> key = isolate->factory()->promise_has_handler_symbol();
-  // At this point, no revocation has been issued before
-  CHECK(JSReceiver::GetDataProperty(promise, key)->IsUndefined(isolate));
-  isolate->ReportPromiseReject(promise, Handle<Object>(),
-                               v8::kPromiseHandlerAddedAfterReject);
-  return isolate->heap()->undefined_value();
-}
-
 
 RUNTIME_FUNCTION(Runtime_StackGuard) {
   SealHandleScope shs(isolate);
@@ -569,64 +511,6 @@ RUNTIME_FUNCTION(Runtime_GetAndResetRuntimeCallStats) {
       std::fflush(f);
     return isolate->heap()->undefined_value();
   }
-}
-
-RUNTIME_FUNCTION(Runtime_EnqueuePromiseReactionJob) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 5);
-  CONVERT_ARG_HANDLE_CHECKED(Object, value, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, tasks, 1);
-  CONVERT_ARG_HANDLE_CHECKED(Object, deferred, 2);
-  CONVERT_ARG_HANDLE_CHECKED(Object, debug_id, 3);
-  CONVERT_ARG_HANDLE_CHECKED(Object, debug_name, 4);
-  Handle<PromiseReactionJobInfo> info =
-      isolate->factory()->NewPromiseReactionJobInfo(value, tasks, deferred,
-                                                    debug_id, debug_name,
-                                                    isolate->native_context());
-  isolate->EnqueueMicrotask(info);
-  return isolate->heap()->undefined_value();
-}
-
-RUNTIME_FUNCTION(Runtime_EnqueuePromiseResolveThenableJob) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 4);
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, resolution, 0);
-  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, then, 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, resolve, 2);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, reject, 3);
-  Handle<Object> debug_id;
-  Handle<Object> debug_name;
-  if (isolate->debug()->is_active()) {
-    debug_id =
-        handle(Smi::FromInt(isolate->GetNextDebugMicrotaskId()), isolate);
-    debug_name = isolate->factory()->PromiseResolveThenableJob_string();
-    isolate->debug()->OnAsyncTaskEvent(isolate->factory()->enqueue_string(),
-                                       debug_id,
-                                       Handle<String>::cast(debug_name));
-  } else {
-    debug_id = isolate->factory()->undefined_value();
-    debug_name = isolate->factory()->undefined_value();
-  }
-  Handle<PromiseResolveThenableJobInfo> info =
-      isolate->factory()->NewPromiseResolveThenableJobInfo(
-          resolution, then, resolve, reject, debug_id, debug_name);
-  isolate->EnqueueMicrotask(info);
-  return isolate->heap()->undefined_value();
-}
-
-RUNTIME_FUNCTION(Runtime_EnqueueMicrotask) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSFunction, microtask, 0);
-  isolate->EnqueueMicrotask(microtask);
-  return isolate->heap()->undefined_value();
-}
-
-RUNTIME_FUNCTION(Runtime_RunMicrotasks) {
-  HandleScope scope(isolate);
-  DCHECK(args.length() == 0);
-  isolate->RunMicrotasks();
-  return isolate->heap()->undefined_value();
 }
 
 RUNTIME_FUNCTION(Runtime_OrdinaryHasInstance) {

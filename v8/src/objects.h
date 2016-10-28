@@ -3489,6 +3489,9 @@ class HashTableBase : public FixedArray {
   // Constant used for denoting a absent entry.
   static const int kNotFound = -1;
 
+  // Minimum capacity for newly created hash tables.
+  static const int kMinCapacity = 4;
+
  protected:
   // Update the number of elements in the hash table.
   inline void SetNumberOfElements(int nof);
@@ -3566,8 +3569,11 @@ class HashTable : public HashTableBase {
   static const int kEntryKeyIndex = 0;
   static const int kElementsStartOffset =
       kHeaderSize + kElementsStartIndex * kPointerSize;
-  static const int kCapacityOffset =
-      kHeaderSize + kCapacityIndex * kPointerSize;
+  // Maximal capacity of HashTable. Based on maximal length of underlying
+  // FixedArray. Staying below kMaxCapacity also ensures that EntryToIndex
+  // cannot overflow.
+  static const int kMaxCapacity =
+      (FixedArray::kMaxLength - kElementsStartIndex) / kEntrySize;
 
   // Returns the index for an entry (of the key)
   static inline int EntryToIndex(int entry) {
@@ -3603,12 +3609,6 @@ class HashTable : public HashTableBase {
     DCHECK(capacity <= kMaxCapacity);
     set(kCapacityIndex, Smi::FromInt(capacity));
   }
-
-  // Maximal capacity of HashTable. Based on maximal length of underlying
-  // FixedArray. Staying below kMaxCapacity also ensures that EntryToIndex
-  // cannot overflow.
-  static const int kMaxCapacity =
-      (FixedArray::kMaxLength - kElementsStartOffset) / kEntrySize;
 
  private:
   // Returns _expected_ if one of entries given by the first _probe_ probes is
@@ -3838,23 +3838,22 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
   static Handle<FixedArray> BuildIterationIndicesArray(
       Handle<Derived> dictionary);
 
+  static const int kMaxNumberKeyIndex = DerivedHashTable::kPrefixStartIndex;
+  static const int kNextEnumerationIndexIndex = kMaxNumberKeyIndex + 1;
+
  protected:
   // Generic at put operation.
   MUST_USE_RESULT static Handle<Derived> AtPut(
       Handle<Derived> dictionary,
       Key key,
       Handle<Object> value);
-
   // Add entry to dictionary. Returns entry value.
   static int AddEntry(Handle<Derived> dictionary, Key key, Handle<Object> value,
                       PropertyDetails details, uint32_t hash);
-
   // Generate new enumeration indices to avoid enumeration index overflow.
   // Returns iteration indices array for the |dictionary|.
   static Handle<FixedArray> GenerateNewEnumerationIndices(
       Handle<Derived> dictionary);
-  static const int kMaxNumberKeyIndex = DerivedHashTable::kPrefixStartIndex;
-  static const int kNextEnumerationIndexIndex = kMaxNumberKeyIndex + 1;
 };
 
 
@@ -3926,6 +3925,7 @@ class NameDictionary
 
   static const int kEntryValueIndex = 1;
   static const int kEntryDetailsIndex = 2;
+  static const int kInitialCapacity = 2;
 };
 
 
@@ -4686,6 +4686,14 @@ class ScopeInfo : public FixedArray {
              VariableLocation* location, InitializationFlag* init_flag,
              MaybeAssignedFlag* maybe_assigned_flag);
 
+  // Get metadata of i-th MODULE-allocated variable, where 0 <= i <
+  // ModuleVariableCount.  The metadata is returned via out-arguments, which may
+  // be nullptr if the corresponding information is not requested
+  void ModuleVariable(int i, String** name, int* index,
+                      VariableMode* mode = nullptr,
+                      InitializationFlag* init_flag = nullptr,
+                      MaybeAssignedFlag* maybe_assigned_flag = nullptr);
+
   // Used for the function name variable for named function expressions, and for
   // the receiver.
   enum VariableAllocationInfo { NONE, STACK, CONTEXT, UNUSED };
@@ -4732,11 +4740,14 @@ class ModuleInfoEntry : public FixedArray {
                                      Handle<Object> export_name,
                                      Handle<Object> local_name,
                                      Handle<Object> import_name,
-                                     Handle<Object> module_request);
+                                     Handle<Object> module_request, int beg_pos,
+                                     int end_pos);
   inline Object* export_name() const;
   inline Object* local_name() const;
   inline Object* import_name() const;
   inline Object* module_request() const;
+  inline int beg_pos() const;
+  inline int end_pos() const;
 
  private:
   friend class Factory;
@@ -4745,6 +4756,8 @@ class ModuleInfoEntry : public FixedArray {
     kLocalNameIndex,
     kImportNameIndex,
     kModuleRequestIndex,
+    kBegPosIndex,
+    kEndPosIndex,
     kLength
   };
 };
@@ -4753,13 +4766,18 @@ class ModuleInfoEntry : public FixedArray {
 class ModuleInfo : public FixedArray {
  public:
   DECLARE_CAST(ModuleInfo)
+
   static Handle<ModuleInfo> New(Isolate* isolate, Zone* zone,
                                 ModuleDescriptor* descr);
+
   inline FixedArray* module_requests() const;
   inline FixedArray* special_exports() const;
   inline FixedArray* regular_exports() const;
   inline FixedArray* namespace_imports() const;
   inline FixedArray* regular_imports() const;
+
+  static Handle<ModuleInfoEntry> LookupRegularImport(Handle<ModuleInfo> info,
+                                                     Handle<String> local_name);
 
 #ifdef DEBUG
   inline bool Equals(ModuleInfo* other) const;
@@ -7655,8 +7673,8 @@ class SharedFunctionInfo: public HeapObject {
   // Whether this function was created from a FunctionDeclaration.
   DECL_BOOLEAN_ACCESSORS(is_declaration)
 
-  // Whether this function was marked to be optimized.
-  DECL_BOOLEAN_ACCESSORS(was_marked_for_optimization)
+  // Whether this function was marked to be tiered up.
+  DECL_BOOLEAN_ACCESSORS(marked_for_tier_up)
 
   // Indicates that asm->wasm conversion failed and should not be re-attempted.
   DECL_BOOLEAN_ACCESSORS(is_asm_wasm_broken)
@@ -7907,7 +7925,7 @@ class SharedFunctionInfo: public HeapObject {
   enum CompilerHints {
     // byte 0
     kAllowLazyCompilation,
-    kWasMarkedForOptimization,
+    kMarkedForTierUp,
     kOptimizationDisabled,
     kNeverCompiled,
     kNative,
@@ -7975,8 +7993,8 @@ class SharedFunctionInfo: public HeapObject {
   static const int kAllFunctionKindBitsMask = FunctionKindBits::kMask
                                               << kCompilerHintsSmiTagSize;
 
-  static const int kWasMarkedForOptimizationBit =
-      kWasMarkedForOptimization + kCompilerHintsSmiTagSize;
+  static const int kMarkedForTierUpBit =
+      kMarkedForTierUp + kCompilerHintsSmiTagSize;
 
   // Constants for optimizing codegen for strict mode function and
   // native tests.
@@ -7990,8 +8008,8 @@ class SharedFunctionInfo: public HeapObject {
       FunctionKind::kClassConstructor << kCompilerHintsSmiTagSize;
   STATIC_ASSERT(kClassConstructorBitsWithinByte < (1 << kBitsPerByte));
 
-  static const int kWasMarkedForOptimizationBitWithinByte =
-      kWasMarkedForOptimizationBit % kBitsPerByte;
+  static const int kMarkedForTierUpBitWithinByte =
+      kMarkedForTierUpBit % kBitsPerByte;
 
 #if defined(V8_TARGET_LITTLE_ENDIAN)
 #define BYTE_OFFSET(compiler_hint) \
@@ -8009,8 +8027,7 @@ class SharedFunctionInfo: public HeapObject {
   static const int kFunctionKindByteOffset = BYTE_OFFSET(kFunctionKind);
   static const int kHasDuplicateParametersByteOffset =
       BYTE_OFFSET(kHasDuplicateParameters);
-  static const int kWasMarkedForOptimizationByteOffset =
-      BYTE_OFFSET(kWasMarkedForOptimization);
+  static const int kMarkedForTierUpByteOffset = BYTE_OFFSET(kMarkedForTierUp);
 #undef BYTE_OFFSET
 
  private:
@@ -8210,16 +8227,16 @@ class Module : public Struct {
   // exception (so check manually!).
   class ResolveSet;
   static MUST_USE_RESULT MaybeHandle<Cell> ResolveExport(
-      Handle<Module> module, Handle<String> name, bool must_resolve,
-      ResolveSet* resolve_set);
+      Handle<Module> module, Handle<String> name, MessageLocation loc,
+      bool must_resolve, ResolveSet* resolve_set);
   static MUST_USE_RESULT MaybeHandle<Cell> ResolveImport(
       Handle<Module> module, Handle<String> name, int module_request,
-      bool must_resolve, ResolveSet* resolve_set);
+      MessageLocation loc, bool must_resolve, ResolveSet* resolve_set);
 
   // Helper for ResolveExport.
   static MUST_USE_RESULT MaybeHandle<Cell> ResolveExportUsingStarExports(
-      Handle<Module> module, Handle<String> name, bool must_resolve,
-      ResolveSet* resolve_set);
+      Handle<Module> module, Handle<String> name, MessageLocation loc,
+      bool must_resolve, ResolveSet* resolve_set);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Module);
 };

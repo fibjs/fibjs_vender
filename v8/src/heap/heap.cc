@@ -157,7 +157,8 @@ Heap::Heap()
       heap_iterator_depth_(0),
       embedder_heap_tracer_(nullptr),
       embedder_reference_reporter_(new TracePossibleWrapperReporter(this)),
-      force_oom_(false) {
+      force_oom_(false),
+      delay_sweeper_tasks_for_testing_(false) {
 // Allow build-time customization of the max semispace size. Building
 // V8 with snapshots and a non-default max semispace size is much
 // easier if you can define it as part of the build environment.
@@ -439,7 +440,7 @@ void Heap::GarbageCollectionPrologue() {
   }
   CheckNewSpaceExpansionCriteria();
   UpdateNewSpaceAllocationCounter();
-  store_buffer()->MoveEntriesToRememberedSet();
+  store_buffer()->MoveAllEntriesToRememberedSet();
 }
 
 
@@ -1457,11 +1458,7 @@ void Heap::MarkCompactEpilogue() {
   PreprocessStackTraces();
   DCHECK(incremental_marking()->IsStopped());
 
-  // We finished a marking cycle. We can uncommit the marking deque until
-  // we start marking again.
-  mark_compact_collector()->marking_deque()->Uninitialize();
-  mark_compact_collector()->EnsureMarkingDequeIsCommitted(
-      MarkCompactCollector::kMinMarkingDequeSize);
+  mark_compact_collector()->marking_deque()->StopUsing();
 }
 
 
@@ -2541,16 +2538,6 @@ AllocationResult Heap::AllocateTransitionArray(int capacity) {
 
 void Heap::CreateApiObjects() {
   HandleScope scope(isolate());
-  Factory* factory = isolate()->factory();
-  Handle<Map> new_neander_map =
-      factory->NewMap(JS_OBJECT_TYPE, JSObject::kHeaderSize);
-
-  // Don't use Smi-only elements optimizations for objects with the neander
-  // map. There are too many cases where element values are set directly with a
-  // bottleneck to trap the Smi-only -> fast elements transition, and there
-  // appears to be no benefit for optimize this case.
-  new_neander_map->set_elements_kind(TERMINAL_FAST_ELEMENTS_KIND);
-  set_neander_map(*new_neander_map);
   set_message_listeners(*TemplateList::New(isolate(), 2));
 }
 
@@ -5919,11 +5906,15 @@ void Heap::CheckHandleCount() {
 
 void Heap::ClearRecordedSlot(HeapObject* object, Object** slot) {
   if (!InNewSpace(object)) {
-    store_buffer()->MoveEntriesToRememberedSet();
     Address slot_addr = reinterpret_cast<Address>(slot);
     Page* page = Page::FromAddress(slot_addr);
     DCHECK_EQ(page->owner()->identity(), OLD_SPACE);
-    RememberedSet<OLD_TO_NEW>::Remove(page, slot_addr);
+    if (gc_state_ == NOT_IN_GC) {
+      store_buffer()->DeleteEntry(slot_addr);
+    } else {
+      DCHECK(store_buffer()->Empty());
+      RememberedSet<OLD_TO_NEW>::Remove(page, slot_addr);
+    }
     RememberedSet<OLD_TO_OLD>::Remove(page, slot_addr);
   }
 }
@@ -5931,10 +5922,14 @@ void Heap::ClearRecordedSlot(HeapObject* object, Object** slot) {
 void Heap::ClearRecordedSlotRange(Address start, Address end) {
   Page* page = Page::FromAddress(start);
   if (!page->InNewSpace()) {
-    store_buffer()->MoveEntriesToRememberedSet();
     DCHECK_EQ(page->owner()->identity(), OLD_SPACE);
-    RememberedSet<OLD_TO_NEW>::RemoveRange(page, start, end,
-                                           SlotSet::PREFREE_EMPTY_BUCKETS);
+    if (gc_state_ == NOT_IN_GC) {
+      store_buffer()->DeleteEntry(start, end);
+    } else {
+      DCHECK(store_buffer()->Empty());
+      RememberedSet<OLD_TO_NEW>::RemoveRange(page, start, end,
+                                             SlotSet::PREFREE_EMPTY_BUCKETS);
+    }
     RememberedSet<OLD_TO_OLD>::RemoveRange(page, start, end,
                                            SlotSet::FREE_EMPTY_BUCKETS);
   }

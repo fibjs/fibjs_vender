@@ -420,21 +420,23 @@ class LocalDeclEncoder {
 #define WASM_CALL_FUNCTION(index, ...) \
   __VA_ARGS__, kExprCallFunction, static_cast<byte>(index)
 
+#define TABLE_ZERO 0
+
 // TODO(titzer): change usages of these macros to put func last.
 #define WASM_CALL_INDIRECT0(index, func) \
-  func, kExprCallIndirect, static_cast<byte>(index)
+  func, kExprCallIndirect, static_cast<byte>(index), TABLE_ZERO
 #define WASM_CALL_INDIRECT1(index, func, a) \
-  a, func, kExprCallIndirect, static_cast<byte>(index)
+  a, func, kExprCallIndirect, static_cast<byte>(index), TABLE_ZERO
 #define WASM_CALL_INDIRECT2(index, func, a, b) \
-  a, b, func, kExprCallIndirect, static_cast<byte>(index)
+  a, b, func, kExprCallIndirect, static_cast<byte>(index), TABLE_ZERO
 #define WASM_CALL_INDIRECT3(index, func, a, b, c) \
-  a, b, c, func, kExprCallIndirect, static_cast<byte>(index)
+  a, b, c, func, kExprCallIndirect, static_cast<byte>(index), TABLE_ZERO
 #define WASM_CALL_INDIRECT4(index, func, a, b, c, d) \
-  a, b, c, d, func, kExprCallIndirect, static_cast<byte>(index)
+  a, b, c, d, func, kExprCallIndirect, static_cast<byte>(index), TABLE_ZERO
 #define WASM_CALL_INDIRECT5(index, func, a, b, c, d, e) \
-  a, b, c, d, e, func, kExprCallIndirect, static_cast<byte>(index)
+  a, b, c, d, e, func, kExprCallIndirect, static_cast<byte>(index), TABLE_ZERO
 #define WASM_CALL_INDIRECTN(arity, index, func, ...) \
-  __VA_ARGS__, func, kExprCallIndirect, static_cast<byte>(index)
+  __VA_ARGS__, func, kExprCallIndirect, static_cast<byte>(index), TABLE_ZERO
 
 #define WASM_NOT(x) x, kExprI32Eqz
 #define WASM_SEQ(...) __VA_ARGS__
@@ -491,6 +493,14 @@ class LocalDeclEncoder {
 #define WASM_I32_CTZ(x) x, kExprI32Ctz
 #define WASM_I32_POPCNT(x) x, kExprI32Popcnt
 #define WASM_I32_EQZ(x) x, kExprI32Eqz
+
+//------------------------------------------------------------------------------
+// Asmjs Int32 operations
+//------------------------------------------------------------------------------
+#define WASM_I32_ASMJS_DIVS(x, y) x, y, kExprI32AsmjsDivS
+#define WASM_I32_ASMJS_REMS(x, y) x, y, kExprI32AsmjsRemS
+#define WASM_I32_ASMJS_DIVU(x, y) x, y, kExprI32AsmjsDivU
+#define WASM_I32_ASMJS_REMU(x, y) x, y, kExprI32AsmjsRemU
 
 //------------------------------------------------------------------------------
 // Int64 operations
@@ -605,8 +615,8 @@ class LocalDeclEncoder {
 //------------------------------------------------------------------------------
 // Memory Operations.
 //------------------------------------------------------------------------------
-#define WASM_GROW_MEMORY(x) x, kExprGrowMemory
-#define WASM_MEMORY_SIZE kExprMemorySize
+#define WASM_GROW_MEMORY(x) x, kExprGrowMemory, 0
+#define WASM_MEMORY_SIZE kExprMemorySize, 0
 
 //------------------------------------------------------------------------------
 // Simd Operations.

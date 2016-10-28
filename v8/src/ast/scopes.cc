@@ -956,15 +956,13 @@ Variable* Scope::DeclareVariable(
 
 VariableProxy* Scope::NewUnresolved(AstNodeFactory* factory,
                                     const AstRawString* name,
-                                    int start_position, int end_position,
-                                    VariableKind kind) {
+                                    int start_position, VariableKind kind) {
   // Note that we must not share the unresolved variables with
   // the same name because they may be removed selectively via
   // RemoveUnresolved().
   DCHECK(!already_resolved_);
   DCHECK_EQ(!needs_migration_, factory->zone() == zone());
-  VariableProxy* proxy =
-      factory->NewVariableProxy(name, kind, start_position, end_position);
+  VariableProxy* proxy = factory->NewVariableProxy(name, kind, start_position);
   proxy->set_next_unresolved(unresolved_);
   unresolved_ = proxy;
   return proxy;
@@ -1082,6 +1080,10 @@ Declaration* Scope::CheckLexDeclarationsConflictingWith(
 }
 
 void DeclarationScope::AllocateVariables(ParseInfo* info, AnalyzeMode mode) {
+  // Module variables must be allocated before variable resolution
+  // to ensure that AccessNeedsHoleCheck() can detect import variables.
+  if (is_module_scope()) AsModuleScope()->AllocateModuleVariables();
+
   ResolveVariablesRecursively(info);
   AllocateVariablesRecursively();
 
@@ -1920,7 +1922,12 @@ void DeclarationScope::AllocateLocals() {
   }
 }
 
-void ModuleScope::AllocateModuleExports() {
+void ModuleScope::AllocateModuleVariables() {
+  for (const auto& it : module()->regular_imports()) {
+    Variable* var = LookupLocal(it.first);
+    var->AllocateTo(VariableLocation::MODULE, Variable::kModuleImportIndex);
+  }
+
   for (const auto& it : module()->regular_exports()) {
     Variable* var = LookupLocal(it.first);
     var->AllocateTo(VariableLocation::MODULE, Variable::kModuleExportIndex);
@@ -1946,9 +1953,7 @@ void Scope::AllocateVariablesRecursively() {
   // Allocate variables for this scope.
   // Parameters must be allocated first, if any.
   if (is_declaration_scope()) {
-    if (is_module_scope()) {
-      AsModuleScope()->AllocateModuleExports();
-    } else if (is_function_scope()) {
+    if (is_function_scope()) {
       AsDeclarationScope()->AllocateParameterLocals();
     }
     AsDeclarationScope()->AllocateReceiver();

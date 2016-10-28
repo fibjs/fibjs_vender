@@ -317,6 +317,11 @@ class WasmDecoder : public Decoder {
         ImmI64Operand operand(this, pc);
         return 1 + operand.length;
       }
+      case kExprGrowMemory:
+      case kExprMemorySize: {
+        MemoryIndexOperand operand(this, pc);
+        return 1 + operand.length;
+      }
       case kExprI8Const:
         return 2;
       case kExprF32Const:
@@ -324,7 +329,7 @@ class WasmDecoder : public Decoder {
       case kExprF64Const:
         return 9;
       case kSimdPrefix: {
-        byte simd_index = *(pc + 1);
+        byte simd_index = checked_read_u8(pc, 1, "simd_index");
         WasmOpcode opcode =
             static_cast<WasmOpcode>(kSimdPrefix << 8 | simd_index);
         switch (opcode) {
@@ -341,7 +346,8 @@ class WasmDecoder : public Decoder {
             return 3;
           }
           default:
-            UNREACHABLE();
+            error("invalid SIMD opcode");
+            return 2;
         }
       }
       default:
@@ -1101,17 +1107,23 @@ class WasmFullDecoder : public WasmDecoder {
           case kExprF64StoreMem:
             len = DecodeStoreMem(kAstF64, MachineType::Float64());
             break;
-          case kExprGrowMemory:
+          case kExprGrowMemory: {
+            MemoryIndexOperand operand(this, pc_);
             if (module_->origin != kAsmJsOrigin) {
               Value val = Pop(0, kAstI32);
               Push(kAstI32, BUILD(GrowMemory, val.node));
             } else {
               error("grow_memory is not supported for asmjs modules");
             }
+            len = 1 + operand.length;
             break;
-          case kExprMemorySize:
+          }
+          case kExprMemorySize: {
+            MemoryIndexOperand operand(this, pc_);
             Push(kAstI32, BUILD(CurrentMemoryPages));
+            len = 1 + operand.length;
             break;
+          }
           case kExprCallFunction: {
             CallFunctionOperand operand(this, pc_);
             if (Validate(pc_, operand)) {
@@ -1139,11 +1151,29 @@ class WasmFullDecoder : public WasmDecoder {
           case kSimdPrefix: {
             CHECK_PROTOTYPE_OPCODE(wasm_simd_prototype);
             len++;
-            byte simd_index = *(pc_ + 1);
+            byte simd_index = checked_read_u8(pc_, 1, "simd index");
             opcode = static_cast<WasmOpcode>(opcode << 8 | simd_index);
             TRACE("  @%-4d #%02x #%02x:%-20s|", startrel(pc_), kSimdPrefix,
                   simd_index, WasmOpcodes::ShortOpcodeName(opcode));
             len += DecodeSimdOpcode(opcode);
+            break;
+          }
+          case kAtomicPrefix: {
+            if (!module_ || module_->origin != kAsmJsOrigin) {
+              error("Atomics are allowed only in AsmJs modules");
+              break;
+            }
+            if (!FLAG_wasm_atomics_prototype) {
+              error("Invalid opcode (enable with --wasm_atomics_prototype)");
+              break;
+            }
+            len = 2;
+            byte atomic_opcode = checked_read_u8(pc_, 1, "atomic index");
+            opcode = static_cast<WasmOpcode>(opcode << 8 | atomic_opcode);
+            sig = WasmOpcodes::AtomicSignature(opcode);
+            if (sig) {
+              BuildAtomicOperator(opcode);
+            }
             break;
           }
           default: {
@@ -1327,6 +1357,8 @@ class WasmFullDecoder : public WasmDecoder {
     }
     return len;
   }
+
+  void BuildAtomicOperator(WasmOpcode opcode) { UNIMPLEMENTED(); }
 
   void DoReturn() {
     int count = static_cast<int>(sig_->return_count());

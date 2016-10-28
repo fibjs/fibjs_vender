@@ -3173,7 +3173,6 @@ void HashTableBase::ElementsRemoved(int n) {
 
 // static
 int HashTableBase::ComputeCapacity(int at_least_space_for) {
-  const int kMinCapacity = 4;
   int capacity = base::bits::RoundUpToPowerOfTwo32(at_least_space_for * 2);
   return Max(capacity, kMinCapacity);
 }
@@ -6050,8 +6049,8 @@ BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, never_compiled,
                kNeverCompiled)
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_declaration,
                kIsDeclaration)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, was_marked_for_optimization,
-               kWasMarkedForOptimization)
+BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, marked_for_tier_up,
+               kMarkedForTierUp)
 
 #if V8_HOST_ARCH_32_BIT
 SMI_ACCESSORS(SharedFunctionInfo, length, kLengthOffset)
@@ -6496,9 +6495,9 @@ bool SharedFunctionInfo::IsBuiltin() {
   return type != Script::TYPE_NORMAL;
 }
 
-
-bool SharedFunctionInfo::IsSubjectToDebugging() { return !IsBuiltin(); }
-
+bool SharedFunctionInfo::IsSubjectToDebugging() {
+  return !IsBuiltin() && !HasAsmWasmData();
+}
 
 bool SharedFunctionInfo::OptimizedCodeMapIsCleared() const {
   return optimized_code_map() == GetHeap()->empty_fixed_array();
@@ -7577,7 +7576,7 @@ void JSReceiver::initialize_properties() {
 
 
 bool JSReceiver::HasFastProperties() {
-  DCHECK(properties()->IsDictionary() == map()->is_dictionary_map());
+  DCHECK_EQ(properties()->IsDictionary(), map()->is_dictionary_map());
   return !properties()->IsDictionary();
 }
 
@@ -7868,7 +7867,7 @@ uint32_t UnseededNumberDictionaryShape::HashForObject(uint32_t key,
 }
 
 Map* UnseededNumberDictionaryShape::GetMap(Isolate* isolate) {
-  return *isolate->factory()->unseeded_number_dictionary_map();
+  return isolate->heap()->unseeded_number_dictionary_map();
 }
 
 uint32_t SeededNumberDictionaryShape::SeededHash(uint32_t key, uint32_t seed) {
@@ -8047,6 +8046,14 @@ Object* ModuleInfoEntry::import_name() const { return get(kImportNameIndex); }
 
 Object* ModuleInfoEntry::module_request() const {
   return get(kModuleRequestIndex);
+}
+
+int ModuleInfoEntry::beg_pos() const {
+  return Smi::cast(get(kBegPosIndex))->value();
+}
+
+int ModuleInfoEntry::end_pos() const {
+  return Smi::cast(get(kEndPosIndex))->value();
 }
 
 FixedArray* ModuleInfo::module_requests() const {

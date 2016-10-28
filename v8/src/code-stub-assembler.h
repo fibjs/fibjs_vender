@@ -108,6 +108,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                          compiler::Node* right);
   compiler::Node* IntPtrSubFoldConstants(compiler::Node* left,
                                          compiler::Node* right);
+  // Round the 32bits payload of the provided word up to the next power of two.
+  compiler::Node* IntPtrRoundUpToPowerOfTwo32(compiler::Node* value);
+  compiler::Node* IntPtrMax(compiler::Node* left, compiler::Node* right);
 
   // Float64 operations.
   compiler::Node* Float64Ceil(compiler::Node* x);
@@ -167,6 +170,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* WordIsPositiveSmi(compiler::Node* a);
   // Check that a word has a word-aligned address.
   compiler::Node* WordIsWordAligned(compiler::Node* word);
+  compiler::Node* WordIsPowerOfTwo(compiler::Node* value);
 
   void BranchIfSmiEqual(compiler::Node* a, compiler::Node* b, Label* if_true,
                         Label* if_false) {
@@ -206,7 +210,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                           Label* if_false);
   void BranchIfJSObject(compiler::Node* object, Label* if_true,
                         Label* if_false);
-
   void BranchIfFastJSArray(compiler::Node* object, compiler::Node* context,
                            Label* if_true, Label* if_false);
 
@@ -244,8 +247,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* LoadInstanceType(compiler::Node* object);
   // Compare the instance the type of the object against the provided one.
   compiler::Node* HasInstanceType(compiler::Node* object, InstanceType type);
-  // Checks that given heap object has given instance type.
-  void AssertInstanceType(compiler::Node* object, InstanceType instance_type);
   // Load the properties backing store of a JSObject.
   compiler::Node* LoadProperties(compiler::Node* object);
   // Load the elements backing store of a JSObject.
@@ -282,10 +283,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* LoadMapConstructorFunctionIndex(compiler::Node* map);
   // Load the constructor of a Map (equivalent to Map::GetConstructor()).
   compiler::Node* LoadMapConstructor(compiler::Node* map);
-  // Check whether the map is for an object with special properties, such as a
-  // JSProxy or an object with interceptors.
-  compiler::Node* IsSpecialReceiverMap(compiler::Node* map);
-  compiler::Node* IsSpecialReceiverInstanceType(compiler::Node* instance_type);
+  // Check if the map is set for slow properties.
+  compiler::Node* IsDictionaryMap(compiler::Node* map);
 
   // Load the hash field of a name as an uint32 value.
   compiler::Node* LoadNameHashField(compiler::Node* name);
@@ -300,6 +299,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Load value field of a JSValue object.
   compiler::Node* LoadJSValueValue(compiler::Node* object);
   // Load value field of a WeakCell object.
+  compiler::Node* LoadWeakCellValueUnchecked(compiler::Node* weak_cell);
   compiler::Node* LoadWeakCellValue(compiler::Node* weak_cell,
                                     Label* if_cleared = nullptr);
 
@@ -359,6 +359,14 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* StoreObjectFieldRoot(compiler::Node* object, int offset,
                                        Heap::RootListIndex root);
   // Store an array element to a FixedArray.
+  compiler::Node* StoreFixedArrayElement(
+      compiler::Node* object, int index, compiler::Node* value,
+      WriteBarrierMode barrier_mode = UPDATE_WRITE_BARRIER,
+      ParameterMode parameter_mode = INTEGER_PARAMETERS) {
+    return StoreFixedArrayElement(object, Int32Constant(index), value,
+                                  barrier_mode, parameter_mode);
+  }
+
   compiler::Node* StoreFixedArrayElement(
       compiler::Node* object, compiler::Node* index, compiler::Node* value,
       WriteBarrierMode barrier_mode = UPDATE_WRITE_BARRIER,
@@ -430,6 +438,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                        compiler::Node* length,
                                        compiler::Node* index,
                                        compiler::Node* input);
+
+  compiler::Node* AllocateNameDictionary(int capacity);
+  compiler::Node* AllocateNameDictionary(compiler::Node* capacity);
 
   compiler::Node* AllocateJSObjectFromMap(compiler::Node* map,
                                           compiler::Node* properties = nullptr,
@@ -592,10 +603,26 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                          char const* method_name);
 
   // Type checks.
+  // Check whether the map is for an object with special properties, such as a
+  // JSProxy or an object with interceptors.
+  compiler::Node* IsSpecialReceiverMap(compiler::Node* map);
+  compiler::Node* IsSpecialReceiverInstanceType(compiler::Node* instance_type);
   compiler::Node* IsStringInstanceType(compiler::Node* instance_type);
+  compiler::Node* IsString(compiler::Node* object);
+  compiler::Node* IsJSObject(compiler::Node* object);
   compiler::Node* IsJSReceiverInstanceType(compiler::Node* instance_type);
-
+  compiler::Node* IsJSReceiver(compiler::Node* object);
+  compiler::Node* IsMap(compiler::Node* object);
   compiler::Node* IsCallableMap(compiler::Node* map);
+  compiler::Node* IsName(compiler::Node* object);
+  compiler::Node* IsJSValue(compiler::Node* object);
+  compiler::Node* IsJSArray(compiler::Node* object);
+  compiler::Node* IsNativeContext(compiler::Node* object);
+  compiler::Node* IsWeakCell(compiler::Node* object);
+  compiler::Node* IsFixedDoubleArray(compiler::Node* object);
+  compiler::Node* IsHashTable(compiler::Node* object);
+  compiler::Node* IsDictionary(compiler::Node* object);
+  compiler::Node* IsUnseededNumberDictionary(compiler::Node* object);
 
   // String helpers.
   // Load a character from a String (might flatten a ConsString).
@@ -690,7 +717,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Returns true if any of the |T|'s bits in given |word32| are set.
   template <typename T>
   compiler::Node* IsSetWord32(compiler::Node* word32) {
-    return Word32NotEqual(Word32And(word32, Int32Constant(T::kMask)),
+    return IsSetWord32(word32, T::kMask);
+  }
+
+  // Returns true if any of the mask's bits in given |word32| are set.
+  compiler::Node* IsSetWord32(compiler::Node* word32, uint32_t mask) {
+    return Word32NotEqual(Word32And(word32, Int32Constant(mask)),
                           Int32Constant(0));
   }
 
@@ -722,6 +754,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   compiler::Node* EntryToIndex(compiler::Node* entry) {
     return EntryToIndex<Dictionary>(entry, Dictionary::kEntryKeyIndex);
   }
+  // Calculate a valid size for the a hash table.
+  compiler::Node* HashTableComputeCapacity(compiler::Node* at_least_space_for);
 
   // Looks up an entry in a NameDictionaryBase successor. If the entry is found
   // control goes to {if_found} and {var_name_index} contains an index of the
@@ -1077,6 +1111,32 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   void HandleLoadICHandlerCase(
       const LoadICParameters* p, compiler::Node* handler, Label* miss,
       ElementSupport support_elements = kOnlyProperties);
+
+  void HandleLoadICProtoHandler(const LoadICParameters* p,
+                                compiler::Node* handler, Variable* var_holder,
+                                Variable* var_smi_handler,
+                                Label* if_smi_handler, Label* miss);
+
+  void CheckPrototype(compiler::Node* prototype_cell, compiler::Node* name,
+                      Label* miss);
+
+  void NameDictionaryNegativeLookup(compiler::Node* object,
+                                    compiler::Node* name, Label* miss);
+
+  void HandleStoreFieldAndReturn(compiler::Node* handler_word,
+                                 compiler::Node* holder,
+                                 Representation representation,
+                                 compiler::Node* value,
+                                 bool transition_to_field, Label* miss);
+
+  void HandleStoreICSmiHandlerCase(compiler::Node* handler_word,
+                                   compiler::Node* holder,
+                                   compiler::Node* value,
+                                   bool transition_to_field, Label* miss);
+
+  void HandleStoreICHandlerCase(const StoreICParameters* p,
+                                compiler::Node* handler, Label* miss);
+
   compiler::Node* TryToIntptr(compiler::Node* key, Label* miss);
   void EmitFastElementsBoundsCheck(compiler::Node* object,
                                    compiler::Node* elements,
@@ -1122,10 +1182,26 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                            compiler::Node* value,
                                            Label* bailout);
 
+  compiler::Node* AllocateSlicedString(Heap::RootListIndex map_root_index,
+                                       compiler::Node* length,
+                                       compiler::Node* parent,
+                                       compiler::Node* offset);
+
+  compiler::Node* AllocateConsString(Heap::RootListIndex map_root_index,
+                                     compiler::Node* length,
+                                     compiler::Node* first,
+                                     compiler::Node* second,
+                                     AllocationFlags flags);
+
   static const int kElementLoopUnrollThreshold = 8;
 };
 
 #define CSA_ASSERT(x) Assert((x), #x, __FILE__, __LINE__)
+#ifdef ENABLE_SLOW_DCHECKS
+#define CSA_SLOW_ASSERT(x) Assert((x), #x, __FILE__, __LINE__)
+#else
+#define CSA_SLOW_ASSERT(x)
+#endif
 
 DEFINE_OPERATORS_FOR_FLAGS(CodeStubAssembler::AllocationFlags);
 
