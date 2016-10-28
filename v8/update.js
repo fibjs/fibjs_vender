@@ -4,7 +4,18 @@ var fs = require('fs');
 var path = require('path');
 var process = require('process');
 
-var v8Folder = process.argv[2];
+var workFolder = process.cwd();
+var v8Folder = path.fullpath("../../../source/js/v8/v8");
+
+console.log(v8Folder);
+
+process.chdir(v8Folder);
+process.run("make", [
+	"ia32.release",
+	"i18nsupport=off",
+	"-j8"
+]);
+process.chdir(workFolder);
 
 var paltFolder = 'src/base/platform';
 var plats = [
@@ -228,8 +239,25 @@ function patch_trace() {
 	}
 }
 
+function patch_trace_win() {
+	var fname = "src/base/debug/stack_trace_win.cc";
+
+	console.log("patch", fname);
+	var txt = fs.readFile(fname);
+	txt = txt.replace("bool InitializeSymbols()",
+		"bool InitializeSymbols() {\n" +
+		"  g_init_error = ERROR_SUCCESS;\n" +
+		"  return true;\n" +
+		"}\n" +
+		"\n" +
+		"inline bool InitializeSymbols1()");
+	fs.writeFile(fname, txt);
+}
+
 function patch_samp() {
 	var fname = "src/profiler/sampler.cc";
+
+	console.log("patch", fname);
 	var txt = fs.readFile(fname);
 
 	var idx = txt.lastIndexOf("#if defined(USE_SIGNALS)");
@@ -252,12 +280,16 @@ function patch_samp() {
 
 function patch_macro() {
 	var fname = "src/macro-assembler.h";
+
+	console.log("patch", fname);
 	var txt = fs.readFile(fname);
 	fs.writeFile(fname, '#include "src/v8.h"\n\n' + txt);
 }
 
 function patch_flag() {
 	var fname = "src/flags.cc";
+
+	console.log("patch", fname);
 	var txt = fs.readFile(fname);
 
 	var idx1 = txt.lastIndexOf("CpuFeatures::PrintTarget();");
@@ -275,9 +307,20 @@ function patch_flag() {
 
 function patch_serializer() {
 	var fname = "src/snapshot/code-serializer.cc";
+
+	console.log("patch", fname);
 	var txt = fs.readFile(fname);
 	txt = txt.replace("if (source_hash", "// if (source_hash");
 	txt = txt.replace("if (flags_hash", "// if (flags_hash");
+	fs.writeFile(fname, txt);
+}
+
+function patch_ntver() {
+	var fname = "src/base/win32-headers.h";
+
+	console.log("patch", fname);
+	var txt = fs.readFile(fname);
+	txt = "#ifndef _WIN32_WINNT\n#define _WIN32_WINNT 0x0501\n#endif\n\n" + txt;
 	fs.writeFile(fname, txt);
 }
 
@@ -306,9 +349,11 @@ update_plat();
 patch_src('src');
 patch_plat();
 patch_trace();
+patch_trace_win();
 patch_macro();
 patch_flag();
 patch_serializer();
+patch_ntver();
 
 //fs.unlink('src/version_gen.cc');
 
