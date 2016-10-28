@@ -150,10 +150,7 @@ public:
 class OSSemaphore
 {
 public:
-    OSSemaphore(int32_t start_val = 0)
-    {
-        m_sem = CreateSemaphoreEx(NULL, start_val, LONG_MAX, NULL, 0, EVENT_ALL_ACCESS);
-    }
+    OSSemaphore(int32_t start_val = 0);
 
     ~OSSemaphore()
     {
@@ -184,37 +181,89 @@ public:
     HANDLE m_sem;
 };
 
-class OSCondVar
+class OSCondVarOld
 {
 public:
-    OSCondVar(OSMutex *mu) : _mu(mu)
-    {
-        InitializeConditionVariable(&_cv);
-    }
-
-    ~OSCondVar()
-    {
-        WakeAllConditionVariable(&_cv);
-    }
+    OSCondVarOld(OSMutex *user_lock);
+    ~OSCondVarOld();
 
     void Wait()
     {
-        SleepConditionVariableCS(&_cv, &_mu->cs_, INFINITE);
+        TimedWait(INFINITE);
     }
 
-    void Signal()
+    void TimedWait(DWORD dwMilliseconds);
+    void Signal();
+    void SignalAll();
+private:
+    class Event
     {
-        WakeConditionVariable(&_cv);
-    }
+    public:
+        Event();
+        ~Event();
 
-    void SignalAll()
-    {
-        WakeAllConditionVariable(&_cv);
-    }
+        void InitListElement();
 
+        bool IsEmpty() const;
+        void PushBack(Event *other);
+        Event *PopFront();
+        Event *PopBack();
+
+        HANDLE handle() const;
+        Event *Extract();
+
+        bool IsSingleton() const;
+
+    private:
+        bool ValidateAsDistinct(Event *other) const;
+        bool ValidateAsItem() const;
+        bool ValidateAsList() const;
+        bool ValidateLinks() const;
+
+        HANDLE handle_;
+        Event *next_;
+        Event *prev_;
+    };
+
+private:
+    enum RunState { SHUTDOWN = 0, RUNNING = 64213 };
+
+    Event *GetEventForWaiting();
+    void RecycleEvent(Event *used_event);
+
+    RunState run_state_;
+    OSMutex internal_lock_;
+    OSMutex &user_lock_;
+    Event waiting_list_;
+    Event recycling_list_;
+    int32_t recycling_list_size_;
+    int32_t allocation_counter_;
+};
+
+class OSCondVarNew
+{
+public:
+    OSCondVarNew(OSMutex *mu);
+    ~OSCondVarNew();
+    void Wait();
+    void Signal();
+    void SignalAll();
 private:
     CONDITION_VARIABLE _cv;
     OSMutex *_mu;
+};
+
+class OSCondVar
+{
+public:
+    OSCondVar(OSMutex *mu);
+    ~OSCondVar();
+    void Wait();
+    void Signal();
+    void SignalAll();
+
+private:
+    void *_cd;
 };
 
 #else

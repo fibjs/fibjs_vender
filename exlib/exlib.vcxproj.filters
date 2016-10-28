@@ -101,6 +101,9 @@
     <ClCompile Include="src\thread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\win_lock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\osx_tls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

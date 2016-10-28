@@ -30,7 +30,7 @@
 // Require Windows Vista or higher (this is required for the
 // QueryThreadCycleTime function to be present).
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
+#define _WIN32_WINNT 0x0501
 #endif
 
 #include <windows.h>
