@@ -6,6 +6,10 @@
 /********************************************/
 
 
+/**
+ * File: FreeType font rendering
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,7 +21,6 @@
 
 #include "gd.h"
 #include "gdhelpers.h"
-#include "entities.h"
 #include "gd_intern.h"
 
 /* 2.0.10: WIN32, not MSWIN32 */
@@ -46,7 +49,10 @@ static int fontConfigFlag = 0;
 static char *font_pattern(char **fontpath, char *fontpattern);
 #endif
 
+#ifdef HAVE_LIBFREETYPE
+#include "entities.h"
 static char *font_path(char **fontpath, char *name_list);
+#endif
 
 /* 2.0.30: move these up here so we can build correctly without freetype
 	but with fontconfig */
@@ -92,9 +98,11 @@ static char *font_path(char **fontpath, char *name_list);
 #define TRUE !FALSE
 #endif
 
-/*
-	Function: gdImageStringTTF
-*/
+/**
+ * Function: gdImageStringTTF
+ *
+ * Alias of <gdImageStringFT>.
+ */
 BGD_DECLARE(char *) gdImageStringTTF (gdImage * im, int *brect, int fg, char *fontlist,
                                       double ptsize, double angle, int x, int y, char *string)
 {
@@ -138,16 +146,6 @@ BGD_DECLARE(char *) gdImageStringFT (gdImage * im, int *brect, int fg, char *fon
 	return "libgd was not built with FreeType font support\n";
 }
 #else
-
-#ifndef HAVE_LIBFONTCONFIG
-static char * font_pattern(char **fontpath, char *fontpattern)
-{
-	(void)fontpath;
-	(void)fontpattern;
-
-	return "libgd was not built with FontConfig support\n";
-}
-#endif /* HAVE_LIBFONTCONFIG */
 
 #include "gdcache.h"
 /* 2.0.16 Christophe Thomas: starting with FreeType 2.1.6, this is
@@ -434,6 +432,107 @@ gdTcl_UtfToUniChar (char *str, Tcl_UniChar * chPtr)
 	return 1;
 }
 
+#ifdef HAVE_LIBRAQM
+#include <raqm.h>
+#endif
+
+typedef struct {
+	unsigned int index;
+	FT_Pos x_advance;
+	FT_Pos x_offset;
+	FT_Pos y_offset;
+	uint32_t cluster;
+} glyphInfo;
+
+static size_t
+textLayout(uint32_t *text, int len,
+		FT_Face face, gdFTStringExtraPtr strex,
+		glyphInfo **glyph_info)
+{
+	size_t count;
+	glyphInfo *info;
+
+#ifdef HAVE_LIBRAQM
+	size_t i;
+	raqm_glyph_t *glyphs;
+	raqm_t *rq = raqm_create ();
+
+	if (!rq || !raqm_set_text (rq, text, len) ||
+		!raqm_set_freetype_face (rq, face) ||
+		!raqm_set_par_direction (rq, RAQM_DIRECTION_DEFAULT) ||
+		!raqm_layout (rq)) {
+		raqm_destroy (rq);
+		return 0;
+	}
+
+	glyphs = raqm_get_glyphs (rq, &count);
+	if (!glyphs) {
+		raqm_destroy (rq);
+		return 0;
+	}
+
+	info = (glyphInfo*) gdMalloc (sizeof (glyphInfo) * count);
+	if (!info) {
+		raqm_destroy (rq);
+		return 0;
+	}
+
+	for (i = 0; i < count; i++) {
+		info[i].index = glyphs[i].index;
+		info[i].x_offset = glyphs[i].x_offset;
+		info[i].y_offset = glyphs[i].y_offset;
+		info[i].x_advance = glyphs[i].x_advance;
+		info[i].cluster = glyphs[i].cluster;
+	}
+
+	raqm_destroy (rq);
+#else
+	FT_UInt glyph_index = 0, previous = 0;
+	FT_Vector delta;
+	FT_Error err;
+	info = (glyphInfo*) gdMalloc (sizeof (glyphInfo) * len);
+	if (!info) {
+		return 0;
+	}
+	for (count = 0; count < len; count++) {
+		/* Convert character code to glyph index */
+		glyph_index = FT_Get_Char_Index (face, text[count]);
+
+		/* retrieve kerning distance */
+		if (! (strex && (strex->flags & gdFTEX_DISABLE_KERNING))
+			&& ! FT_IS_FIXED_WIDTH(face)
+			&& FT_HAS_KERNING(face)
+			&& previous
+			&& glyph_index)
+			FT_Get_Kerning (face, previous, glyph_index, ft_kerning_default, &delta);
+		else
+			delta.x = delta.y = 0;
+
+		err = FT_Load_Glyph (face, glyph_index, FT_LOAD_DEFAULT);
+		if (err) {
+			gdFree (info);
+			return 0;
+		}
+		info[count].index = glyph_index;
+		info[count].x_offset = 0;
+		info[count].y_offset = 0;
+		if (delta.x != 0)
+			info[count - 1].x_advance += delta.x;
+		info[count].x_advance = face->glyph->metrics.horiAdvance;
+		info[count].cluster = count;
+
+		/* carriage returns or newlines */
+		if (text[count] == '\r' || text[count] == '\n')
+			previous = 0;	/* clear kerning flag */
+		else
+			previous = glyph_index;
+	}
+#endif
+
+	*glyph_info = info;
+	return count;
+}
+
 /********************************************************************/
 /* font cache functions                                             */
 
@@ -446,15 +545,15 @@ fontTest (void *element, void *key)
 	return (strcmp (a->fontlist, b->fontlist) == 0 && a->flags == b->flags);
 }
 
+#ifdef HAVE_LIBFONTCONFIG
 static int useFontConfig(int flag)
 {
-#ifdef HAVE_LIBFONTCONFIG
 	if (fontConfigFlag) {
 		return (!(flag & gdFTEX_FONTPATHNAME));
 	}
-#endif
 	return flag & gdFTEX_FONTCONFIG;
 }
+#endif
 
 static void *
 fontFetch (char **error, void *key)
@@ -768,17 +867,26 @@ gdft_draw_bitmap (gdCache_head_t * tc_cache, gdImage * im, int fg,
 	return (char *) NULL;
 }
 
-/*
-	Function: gdFreeFontCache
-*/
+/**
+ * Function: gdFreeFontCache
+ *
+ * Alias of <gdFontCacheShutdown>.
+ */
 BGD_DECLARE(void) gdFreeFontCache ()
 {
 	gdFontCacheShutdown ();
 }
 
-/*
-	Function: gdFontCacheShutdown
-*/
+/**
+ * Function: gdFontCacheShutdown
+ *
+ * Shut down the font cache and free the allocated resources.
+ *
+ * Important:
+ *  This function has to be called whenever FreeType operations have been
+ *  invoked, to avoid resource leaks. It doesn't harm to call this function
+ *  multiple times.
+ */
 BGD_DECLARE(void) gdFontCacheShutdown ()
 {
 	if (fontCache) {
@@ -792,11 +900,31 @@ BGD_DECLARE(void) gdFontCacheShutdown ()
 	}
 }
 
-/*
-	Function: gdImageStringFT
-
-	Render a utf8 string onto a gd image.
-*/
+/**
+ * Function: gdImageStringFT
+ *
+ * Render an UTF-8 string onto a gd image.
+ *
+ * Parameters:
+ *	im       - The image to draw onto.
+ *  brect    - The bounding rectangle as array of 8 integers where each pair
+ *             represents the x- and y-coordinate of a point. The points
+ *             specify the lower left, lower right, upper right and upper left
+ *             corner.
+ *	fg       - The font color.
+ *	fontlist - The semicolon delimited list of font filenames to look for.
+ *	ptsize   - The height of the font in typographical points (pt).
+ *	angle    - The angle in radian to rotate the font counter-clockwise.
+ *	x        - The x-coordinate of the basepoint (roughly the lower left corner) of the first letter.
+ *	y        - The y-coordinate of the basepoint (roughly the lower left corner) of the first letter.
+ *	string   - The string to render.
+ *
+ * Variant:
+ *  - <gdImageStringFTEx>
+ *
+ * See also:
+ *  - <gdImageString>
+ */
 BGD_DECLARE(char *) gdImageStringFT (gdImage * im, int *brect, int fg, char *fontlist,
                                      double ptsize, double angle, int x, int y, char *string)
 {
@@ -804,9 +932,15 @@ BGD_DECLARE(char *) gdImageStringFT (gdImage * im, int *brect, int fg, char *fon
 	                          ptsize, angle, x, y, string, 0);
 }
 
-/*
-	Function: gdFontCacheSetup
-*/
+/**
+ * Function: gdFontCacheSetup
+ *
+ * Set up the font cache.
+ *
+ * This is called automatically from the string rendering functions, if it
+ * has not already been called. So there's no need to call this function
+ * explicitly.
+ */
 BGD_DECLARE(int) gdFontCacheSetup (void)
 {
 	if (fontCache) {
@@ -834,23 +968,26 @@ BGD_DECLARE(int) gdFontCacheSetup (void)
   If the strex parameter is not null, it must point to a
   gdFTStringExtra structure. As of gd 2.0.5, this structure is defined
   as follows:
+  (start code)
 
-  > typedef struct {
-  >     // logical OR of gdFTEX_ values
-  >     int flags; 
-  > 
-  >     // fine tune line spacing for '\n'
-  >     double linespacing; 
-  > 
-  >     // Preferred character mapping
-  >     int charmap;
-  > 
-  >     // Rendering resolution
-  >     int hdpi;
-  >     int vdpi;
-  >     char *xshow;
-  >     char *fontpath;
-  > } gdFTStringExtra, *gdFTStringExtraPtr;
+  typedef struct {
+      // logical OR of gdFTEX_ values
+      int flags;
+   
+      // fine tune line spacing for '\n'
+      double linespacing;
+   
+      // Preferred character mapping
+      int charmap;
+   
+      // Rendering resolution
+      int hdpi;
+      int vdpi;
+      char *xshow;
+      char *fontpath;
+  } gdFTStringExtra, *gdFTStringExtraPtr;
+
+  (end code)
 
   To output multiline text with a specific line spacing, include
   gdFTEX_LINESPACE in the setting of flags:
@@ -919,14 +1056,14 @@ BGD_DECLARE(int) gdFontCacheSetup (void)
   GD 2.0.29 and later can use fontconfig to resolve font names,
   including fontconfig patterns, if the gdFTEX_FONTCONFIG flag is
   set. As a convenience, this behavior can be made the default by
-  calling gdFTUseFontConfig with a nonzero value. In that situation it
+  calling <gdFTUseFontConfig> with a nonzero value. In that situation it
   is not necessary to set the gdFTEX_FONTCONFIG flag on every call;
   however explicit font path names can still be used if the
   gdFTEX_FONTPATHNAME flag is set:
 
     > flags | gdFTEX_FONTPATHNAME;
 
-  Unless gdFTUseFontConfig has been called with a nonzero value, GD
+  Unless <gdFTUseFontConfig> has been called with a nonzero value, GD
   2.0.29 and later will still expect the fontlist argument to the
   freetype text output functions to be a font file name or list
   thereof as in previous versions. If you do not wish to make
@@ -939,7 +1076,7 @@ BGD_DECLARE(int) gdFontCacheSetup (void)
   GD 2.0.29 and above can use fontconfig to resolve font names,
   including fontconfig patterns, if the gdFTEX_FONTCONFIG flag is
   set. As a convenience, this behavior can be made the default by
-  calling gdFTUseFontConfig with a nonzero value. In that situation it
+  calling <gdFTUseFontConfig> with a nonzero value. In that situation it
   is not necessary to set the gdFTEX_FONTCONFIG flag on every call;
   however explicit font path names can still be used if the
   gdFTEX_FONTPATHNAME flag is set:
@@ -958,20 +1095,23 @@ BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *f
                                        gdFTStringExtraPtr strex)
 {
 	FT_Matrix matrix;
-	FT_Vector penf, oldpenf, delta, total_min = {0,0}, total_max = {0,0}, glyph_min, glyph_max;
+	FT_Vector penf, oldpenf, total_min = {0,0}, total_max = {0,0}, glyph_min, glyph_max;
 	FT_Face face;
 	FT_CharMap charmap = NULL;
 	FT_Glyph image;
 	FT_GlyphSlot slot;
 	FT_Error err;
-	FT_UInt glyph_index, previous;
+	FT_UInt glyph_index;
 	double sin_a = sin (angle);
 	double cos_a = cos (angle);
-	int len, i, ch;
+	int  i, ch;
 	font_t *font;
 	fontkey_t fontkey;
 	char *next;
 	char *tmpstr = 0;
+	uint32_t *text;
+	glyphInfo *info = NULL;
+	size_t count;
 	int render = (im && (im->trueColor || (fg <= 255 && fg >= -255)));
 	FT_BitmapGlyph bm;
 	/* 2.0.13: Bob Ostermann: don't force autohint, that's just for testing
@@ -1184,31 +1324,11 @@ BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *f
 
 	oldpenf.x = oldpenf.y = 0; /* for postscript xshow operator */
 	penf.x = penf.y = 0;	/* running position of non-rotated glyphs */
-	previous = 0;		/* index of previous glyph for kerning calculations */
-	for (i=0; *next; i++) {
-		FT_Activate_Size (platform_independent);
-
+	text = (uint32_t*) gdCalloc (sizeof (uint32_t), strlen(next));
+	i = 0;
+	while (*next) {
+		int len;
 		ch = *next;
-
-		/* carriage returns */
-		if (ch == '\r') {
-			penf.x = 0;
-			previous = 0;		/* clear kerning flag */
-			next++;
-			continue;
-		}
-		/* newlines */
-		if (ch == '\n') {
-			/* 2.0.13: reset penf.x. Christopher J. Grayce */
-			penf.x = 0;
-			penf.y += linespace * ptsize * 64 * METRIC_RES / 72;
-			penf.y &= ~63;	/* round down to 1/METRIC_RES */
-			previous = 0;		/* clear kerning flag */
-			next++;
-			continue;
-		}
-
-
 		switch (encoding) {
 		case gdFTEX_Unicode: {
 			/* use UTF-8 mapping from ASCII */
@@ -1284,22 +1404,42 @@ BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *f
 			next++;
 			break;
 		}
+		text[i] = ch;
+		i++;
+	}
 
-		/* Convert character code to glyph index */
-		glyph_index = FT_Get_Char_Index (face, ch);
+	FT_Activate_Size (platform_independent);
 
-		/* retrieve kerning distance */
-		if ( ! (strex && (strex->flags & gdFTEX_DISABLE_KERNING))
-		        && ! FT_IS_FIXED_WIDTH(face)
-		        && FT_HAS_KERNING(face)
-		        && previous
-		        && glyph_index)
-			FT_Get_Kerning (face, previous, glyph_index, ft_kerning_default, &delta);
-		else
-			delta.x = delta.y = 0;
+	count = textLayout (text , i, face, strex, &info);
 
-		penf.x += delta.x;
+	if (!count) {
+		gdFree (tmpstr);
+		gdCacheDelete (tc_cache);
+		gdMutexUnlock (gdFontCacheMutex);
+		return "Problem doing text layout";
+	}
 
+	for (i = 0; i < count; i++) {
+		FT_Activate_Size (platform_independent);
+
+		ch = text[info[i].cluster];
+
+		/* carriage returns */
+		if (ch == '\r') {
+			penf.x = 0;
+			continue;
+		}
+
+		/* newlines */
+		if (ch == '\n') {
+			/* 2.0.13: reset penf.x. Christopher J. Grayce */
+			penf.x = 0;
+			penf.y += linespace * ptsize * 64 * METRIC_RES / 72;
+			penf.y &= ~63;	/* round down to 1/METRIC_RES */
+			continue;
+		}
+
+		glyph_index = info[i].index;
 		/* When we know the position of the second or subsequent character,
 		save the (kerned) advance from the preceeding character in the
 		xshow vector */
@@ -1312,6 +1452,7 @@ BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *f
 				if (!strex->xshow) {
 					if (tmpstr)
 						gdFree (tmpstr);
+					gdFree(text);
 					gdCacheDelete (tc_cache);
 					gdMutexUnlock (gdFontCacheMutex);
 					return "Problem allocating memory";
@@ -1323,6 +1464,7 @@ BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *f
 				if (!strex->xshow) {
 					if (tmpstr)
 						gdFree (tmpstr);
+					gdFree(text);
 					gdCacheDelete (tc_cache);
 					gdMutexUnlock (gdFontCacheMutex);
 					return "Problem allocating memory";
@@ -1338,12 +1480,13 @@ BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *f
 		if (err) {
 			if (tmpstr)
 				gdFree (tmpstr);
+			gdFree(text);
 			gdCacheDelete (tc_cache);
 			gdMutexUnlock (gdFontCacheMutex);
 			return "Problem loading glyph";
 		}
 
-		horiAdvance = slot->metrics.horiAdvance;
+		horiAdvance = info[i].x_advance;
 
 		if (brect) {
 			/* only if need brect */
@@ -1385,6 +1528,7 @@ BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *f
 			if (err) {
 				if (tmpstr)
 					gdFree (tmpstr);
+				gdFree(text);
 				gdCacheDelete (tc_cache);
 				gdMutexUnlock (gdFontCacheMutex);
 				return "Problem loading glyph";
@@ -1399,6 +1543,7 @@ BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *f
 					FT_Done_Glyph(image);
 					if (tmpstr)
 						gdFree (tmpstr);
+					gdFree(text);
 					gdCacheDelete (tc_cache);
 					gdMutexUnlock (gdFontCacheMutex);
 					return "Problem rendering glyph";
@@ -1409,18 +1554,21 @@ BGD_DECLARE(char *) gdImageStringFTEx (gdImage * im, int *brect, int fg, char *f
 			bm = (FT_BitmapGlyph) image;
 			/* position rounded down to nearest pixel at current dpi
 			(the estimate was rounded up to next 1/METRIC_RES, so this should fit) */
+			FT_Pos pen_x = penf.x + info[i].x_offset;
+			FT_Pos pen_y = penf.y - info[i].y_offset;
 			gdft_draw_bitmap (tc_cache, im, fg, bm->bitmap,
-			                  (int)(x + (penf.x * cos_a + penf.y * sin_a)*hdpi/(METRIC_RES*64) + bm->left),
-			                  (int)(y - (penf.x * sin_a - penf.y * cos_a)*vdpi/(METRIC_RES*64) - bm->top));
+					  (int)(x + (pen_x * cos_a + pen_y * sin_a)*hdpi/(METRIC_RES*64) + bm->left),
+					  (int)(y - (pen_x * sin_a - pen_y * cos_a)*vdpi/(METRIC_RES*64) - bm->top));
 
 			FT_Done_Glyph (image);
 		}
 
-		/* record current glyph index for kerning */
-		previous = glyph_index;
 
 		penf.x += horiAdvance;
 	}
+
+	gdFree(text);
+	gdFree(info);
 
 	/* Save the (unkerned) advance from the last character in the xshow vector */
 	if (strex && (strex->flags & gdFTEX_XSHOW) && strex->xshow) {
@@ -1630,6 +1778,7 @@ static char * font_pattern(char **fontpath, char *fontpattern)
 
 #endif /* HAVE_LIBFONTCONFIG */
 
+#ifdef HAVE_LIBFREETYPE
 /* Look up font using font names as file names. */
 static char * font_path(char **fontpath, char *name_list)
 {
@@ -1748,10 +1897,21 @@ static char * font_path(char **fontpath, char *name_list)
 	*fontpath = fullname;
 	return NULL;
 }
+#endif
 
-/*
-	Function: gdFTUseFontConfig
-*/
+/**
+ * Function: gdFTUseFontConfig
+ *
+ * Enable or disable fontconfig by default.
+ *
+ * If GD is built without libfontconfig support, this function is a NOP.
+ *
+ * Parameters:
+ *  flag - Zero to disable, nonzero to enable.
+ *
+ * See also:
+ *  - <gdImageStringFTEx>
+ */
 BGD_DECLARE(int) gdFTUseFontConfig(int flag)
 {
 #ifdef HAVE_LIBFONTCONFIG

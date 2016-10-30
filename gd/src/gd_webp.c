@@ -1,3 +1,9 @@
+/**
+ * File: WebP IO
+ *
+ * Read and write WebP images.
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -16,7 +22,43 @@
 
 #define GD_WEBP_ALLOC_STEP (4*1024)
 
-gdImagePtr gdImageCreateFromWebp (FILE * inFile)
+/*
+  Function: gdImageCreateFromWebp
+
+    <gdImageCreateFromWebp> is called to load truecolor images from
+    WebP format files. Invoke <gdImageCreateFromWebp> with an
+    already opened pointer to a file containing the desired
+    image. <gdImageCreateFromWebp> returns a <gdImagePtr> to the new
+    truecolor image, or NULL if unable to load the image (most often
+    because the file is corrupt or does not contain a WebP
+    image). <gdImageCreateFromWebp> does not close the file.
+
+    You can inspect the sx and sy members of the image to determine
+    its size. The image must eventually be destroyed using
+    <gdImageDestroy>.
+
+    *The returned image is always a truecolor image.*
+
+  Variants:
+
+    <gdImageCreateFromJpegPtr> creates an image from WebP data
+    already in memory.
+
+    <gdImageCreateFromJpegCtx> reads its data via the function
+    pointers in a <gdIOCtx> structure.
+
+  Parameters:
+
+    infile - The input FILE pointer.
+
+  Returns:
+
+    A pointer to the new *truecolor* image.  This will need to be
+    destroyed with <gdImageDestroy> once it is no longer needed.
+
+    On error, returns NULL.
+*/
+BGD_DECLARE(gdImagePtr) gdImageCreateFromWebp (FILE * inFile)
 {
 	gdImagePtr im;
 	gdIOCtx *in = gdNewFileCtx(inFile);
@@ -30,7 +72,17 @@ gdImagePtr gdImageCreateFromWebp (FILE * inFile)
 }
 
 
-gdImagePtr gdImageCreateFromWebpPtr (int size, void *data)
+/*
+  Function: gdImageCreateFromWebpPtr
+
+    See <gdImageCreateFromWebp>.
+
+  Parameters:
+
+    size            - size of WebP data in bytes.
+    data            - pointer to WebP data.
+*/
+BGD_DECLARE(gdImagePtr) gdImageCreateFromWebpPtr (int size, void *data)
 {
 	gdImagePtr im;
 	gdIOCtx *in = gdNewDynamicCtxEx(size, data, 0);
@@ -41,7 +93,12 @@ gdImagePtr gdImageCreateFromWebpPtr (int size, void *data)
 	return im;
 }
 
-gdImagePtr gdImageCreateFromWebpCtx (gdIOCtx * infile)
+/*
+  Function: gdImageCreateFromWebpCtx
+
+    See <gdImageCreateFromWebp>.
+*/
+BGD_DECLARE(gdImagePtr) gdImageCreateFromWebpCtx (gdIOCtx * infile)
 {
 	int    width, height;
 	uint8_t   *filedata = NULL;
@@ -105,7 +162,23 @@ gdImagePtr gdImageCreateFromWebpCtx (gdIOCtx * infile)
 	return im;
 }
 
-void gdImageWebpCtx (gdImagePtr im, gdIOCtx * outfile, int quantization)
+/*
+  Function: gdImageWebpCtx
+
+    Write the image as WebP data via a <gdIOCtx>. See <gdImageWebpEx>
+    for more details.
+
+  Parameters:
+
+    im      - The image to write.
+    outfile - The output sink.
+    quality - Image quality.
+
+  Returns:
+
+    Nothing.
+*/
+BGD_DECLARE(void) gdImageWebpCtx (gdImagePtr im, gdIOCtx * outfile, int quality)
 {
 	uint8_t *argb;
 	int x, y;
@@ -122,8 +195,16 @@ void gdImageWebpCtx (gdImagePtr im, gdIOCtx * outfile, int quantization)
 		return;
 	}
 
-	if (quantization == -1) {
-		quantization = 80;
+	if (quality == -1) {
+		quality = 80;
+	}
+
+	if (overflow2(gdImageSX(im), 4)) {
+		return;
+	}
+
+	if (overflow2(gdImageSX(im) * 4, gdImageSY(im))) {
+		return;
 	}
 
 	argb = (uint8_t *)gdMalloc(gdImageSX(im) * 4 * gdImageSY(im));
@@ -148,7 +229,7 @@ void gdImageWebpCtx (gdImagePtr im, gdIOCtx * outfile, int quantization)
 			*(p++) = a;
 		}
 	}
-	out_size = WebPEncodeRGBA(argb, gdImageSX(im), gdImageSY(im), gdImageSX(im) * 4, quantization, &out);
+	out_size = WebPEncodeRGBA(argb, gdImageSX(im), gdImageSY(im), gdImageSX(im) * 4, quality, &out);
 	if (out_size == 0) {
 		gd_error("gd-webp encoding failed");
 		goto freeargb;
@@ -161,20 +242,59 @@ freeargb:
 }
 
 /*
-	Function: gdImageWebpEx
+  Function: gdImageWebpEx
+
+    <gdImageWebpEx> outputs the specified image to the specified file in
+    WebP format. The file must be open for writing. Under MSDOS and
+    all versions of Windows, it is important to use "wb" as opposed to
+    simply "w" as the mode when opening the file, and under Unix there
+    is no penalty for doing so. <gdImageWebpEx> does not close the file;
+    your code must do so.
+
+	If _quality_ is -1, a reasonable quality value (which should yield a
+	good general quality / size tradeoff for most situations) is used. Otherwise
+	_quality_ should be a value in the range 0-100, higher quality values
+	usually implying both higher quality and larger image sizes.
+
+  Variants:
+
+    <gdImageWebpCtx> stores the image using a <gdIOCtx> struct.
+
+    <gdImageWebpPtrEx> stores the image to RAM.
+
+  Parameters:
+
+    im      - The image to save.
+    outFile - The FILE pointer to write to.
+    quality - Compression quality (0-100).
+
+  Returns:
+
+    Nothing.
 */
-BGD_DECLARE(void) gdImageWebpEx (gdImagePtr im, FILE * outFile, int quantization)
+BGD_DECLARE(void) gdImageWebpEx (gdImagePtr im, FILE * outFile, int quality)
 {
 	gdIOCtx *out = gdNewFileCtx(outFile);
 	if (out == NULL) {
 		return;
 	}
-	gdImageWebpCtx(im, out, quantization);
+	gdImageWebpCtx(im, out, quality);
 	out->gd_free(out);
 }
 
 /*
-	Function: gdImageWebp
+  Function: gdImageWebp
+
+    Variant of <gdImageWebpEx> which uses the default quality (-1).
+
+  Parameters:
+
+    im      - The image to save
+    outFile - The FILE pointer to write to.
+
+  Returns:
+
+    Nothing.
 */
 BGD_DECLARE(void) gdImageWebp (gdImagePtr im, FILE * outFile)
 {
@@ -187,7 +307,9 @@ BGD_DECLARE(void) gdImageWebp (gdImagePtr im, FILE * outFile)
 }
 
 /*
-	Function: gdImageWebpPtr
+  Function: gdImageWebpPtr
+
+    See <gdImageWebpEx>.
 */
 BGD_DECLARE(void *) gdImageWebpPtr (gdImagePtr im, int *size)
 {
@@ -204,16 +326,18 @@ BGD_DECLARE(void *) gdImageWebpPtr (gdImagePtr im, int *size)
 }
 
 /*
-	Function: gdImageWebpPtrEx
+  Function: gdImageWebpPtrEx
+
+    See <gdImageWebpEx>.
 */
-BGD_DECLARE(void *) gdImageWebpPtrEx (gdImagePtr im, int *size, int quantization)
+BGD_DECLARE(void *) gdImageWebpPtrEx (gdImagePtr im, int *size, int quality)
 {
 	void *rv;
 	gdIOCtx *out = gdNewDynamicCtx(2048, NULL);
 	if (out == NULL) {
 		return NULL;
 	}
-	gdImageWebpCtx(im, out, quantization);
+	gdImageWebpCtx(im, out, quality);
 	rv = gdDPExtractData(out, size);
 	out->gd_free(out);
 	return rv;
