@@ -638,6 +638,9 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
   std::vector<LiveBytesPagePair> pages;
   pages.reserve(number_of_pages);
 
+  DCHECK(!sweeping_in_progress());
+  DCHECK(!FLAG_concurrent_sweeping ||
+         sweeper().IsSweepingCompleted(space->identity()));
   for (Page* p : *space) {
     if (p->NeverEvacuate()) continue;
     // Invariant: Evacuation candidates are just created when marking is
@@ -2119,7 +2122,6 @@ void MarkingDeque::SetUp() {
 }
 
 void MarkingDeque::TearDown() {
-  CancelOrWaitForUncommitTask();
   delete backing_store_;
 }
 
@@ -2187,23 +2189,10 @@ void MarkingDeque::EnsureCommitted() {
 
 void MarkingDeque::StartUncommitTask() {
   if (!uncommit_task_pending_) {
-    UncommitTask* task = new UncommitTask(heap_->isolate(), this);
-    uncommit_task_id_ = task->id();
     uncommit_task_pending_ = true;
+    UncommitTask* task = new UncommitTask(heap_->isolate(), this);
     V8::GetCurrentPlatform()->CallOnBackgroundThread(
         task, v8::Platform::kShortRunningTask);
-  }
-}
-
-void MarkingDeque::CancelOrWaitForUncommitTask() {
-  base::LockGuard<base::Mutex> guard(&mutex_);
-  if (!uncommit_task_pending_ ||
-      heap_->isolate()->cancelable_task_manager()->TryAbort(
-          uncommit_task_id_) != CancelableTaskManager::kTaskRunning) {
-    return;
-  }
-  while (uncommit_task_pending_) {
-    uncommit_task_barrier_.Wait(&mutex_);
   }
 }
 

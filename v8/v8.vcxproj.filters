@@ -270,6 +270,9 @@
     <ClInclude Include="include\v8-testing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\v8-tracing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\v8-util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1825,6 +1828,9 @@
       <Filter>Source Files\tracing</Filter>
     </ClInclude>
     <ClInclude Include="src\tracing\traced-value.h">
+      <Filter>Source Files\tracing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tracing\tracing-category-observer.h">
       <Filter>Source Files\tracing</Filter>
     </ClInclude>
     <ClInclude Include="src\transitions-inl.h">
@@ -3645,6 +3651,9 @@
       <Filter>Source Files\tracing</Filter>
     </ClCompile>
     <ClCompile Include="src\tracing\traced-value.cc">
+      <Filter>Source Files\tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tracing\tracing-category-observer.cc">
       <Filter>Source Files\tracing</Filter>
     </ClCompile>
     <ClCompile Include="src\transitions.cc">

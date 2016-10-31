@@ -499,6 +499,7 @@ class RuntimeCallTimer {
   RuntimeCallTimer() {}
   RuntimeCallCounter* counter() { return counter_; }
   base::ElapsedTimer timer() { return timer_; }
+  RuntimeCallTimer* parent() const { return parent_; }
 
  private:
   friend class RuntimeCallStats;
@@ -519,6 +520,16 @@ class RuntimeCallTimer {
       parent_->counter_->time -= delta;
     }
     return parent_;
+  }
+
+  inline void Elapsed() {
+    base::TimeDelta delta = timer_.Elapsed();
+    counter_->time += delta;
+    if (parent_ != nullptr) {
+      parent_->counter_->time -= delta;
+      parent_->Elapsed();
+    }
+    timer_.Restart();
   }
 
   RuntimeCallCounter* counter_ = nullptr;

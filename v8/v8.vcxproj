@@ -30,6 +30,7 @@
     <ClInclude Include="include\v8-platform.h" />
     <ClInclude Include="include\v8-profiler.h" />
     <ClInclude Include="include\v8-testing.h" />
+    <ClInclude Include="include\v8-tracing.h" />
     <ClInclude Include="include\v8-util.h" />
     <ClInclude Include="include\v8-version.h" />
     <ClInclude Include="include\v8.h" />
@@ -549,6 +550,7 @@
     <ClInclude Include="src\third_party\valgrind\valgrind.h" />
     <ClInclude Include="src\tracing\trace-event.h" />
     <ClInclude Include="src\tracing\traced-value.h" />
+    <ClInclude Include="src\tracing\tracing-category-observer.h" />
     <ClInclude Include="src\transitions-inl.h" />
     <ClInclude Include="src\transitions.h" />
     <ClInclude Include="src\type-feedback-vector-inl.h" />
@@ -1157,6 +1159,7 @@
     <ClCompile Include="src\strtod.cc" />
     <ClCompile Include="src\tracing\trace-event.cc" />
     <ClCompile Include="src\tracing\traced-value.cc" />
+    <ClCompile Include="src\tracing\tracing-category-observer.cc" />
     <ClCompile Include="src\transitions.cc" />
     <ClCompile Include="src\type-feedback-vector.cc" />
     <ClCompile Include="src\type-hints.cc" />

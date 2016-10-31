@@ -403,8 +403,7 @@ DEFINE_BOOL(flush_optimized_code_cache, false,
 DEFINE_BOOL(inline_construct, true, "inline constructor calls")
 DEFINE_BOOL(inline_arguments, true, "inline functions with arguments object")
 DEFINE_BOOL(inline_accessors, true, "inline JavaScript accessors")
-DEFINE_BOOL(inline_into_try, false, "inline into try blocks")
-DEFINE_IMPLICATION(turbo, inline_into_try)
+DEFINE_BOOL(inline_into_try, true, "inline into try blocks")
 DEFINE_INT(escape_analysis_iterations, 2,
            "maximum number of escape analysis fix-point iterations")
 
@@ -886,6 +885,9 @@ DEFINE_BOOL(print_all_exceptions, false,
 
 // runtime.cc
 DEFINE_BOOL(runtime_call_stats, false, "report runtime call counts and times")
+DEFINE_INT(runtime_stats, 0,
+           "internal usage only for controlling runtime statistics")
+DEFINE_VALUE_IMPLICATION(runtime_call_stats, runtime_stats, 1)
 
 // snapshot-common.cc
 DEFINE_BOOL(profile_deserialization, false,
@@ -1161,6 +1163,14 @@ DEFINE_IMPLICATION(print_all_code, trace_codegen)
 #define FLAG FLAG_FULL
 
 //
+// Predictable mode related flags.
+//
+
+DEFINE_BOOL(predictable, false, "enable predictable mode")
+DEFINE_IMPLICATION(predictable, single_threaded)
+DEFINE_NEG_IMPLICATION(predictable, memory_reducer)
+
+//
 // Threading related flags.
 //
 
@@ -1169,13 +1179,6 @@ DEFINE_NEG_IMPLICATION(single_threaded, concurrent_recompilation)
 DEFINE_NEG_IMPLICATION(single_threaded, concurrent_sweeping)
 DEFINE_NEG_IMPLICATION(single_threaded, parallel_compaction)
 
-//
-// Predictable mode related flags.
-//
-
-DEFINE_BOOL(predictable, false, "enable predictable mode")
-DEFINE_IMPLICATION(predictable, single_threaded)
-DEFINE_NEG_IMPLICATION(predictable, memory_reducer)
 
 #undef FLAG
 

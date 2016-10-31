@@ -1297,10 +1297,13 @@ template <typename Getter, typename Setter>
 i::Handle<i::AccessorInfo> MakeAccessorInfo(
     v8::Local<Name> name, Getter getter, Setter setter, v8::Local<Value> data,
     v8::AccessControl settings, v8::PropertyAttribute attributes,
-    v8::Local<AccessorSignature> signature, bool is_special_data_property) {
+    v8::Local<AccessorSignature> signature, bool is_special_data_property,
+    bool replace_on_access) {
   i::Isolate* isolate = Utils::OpenHandle(*name)->GetIsolate();
   i::Handle<i::AccessorInfo> obj = isolate->factory()->NewAccessorInfo();
   SET_FIELD_WRAPPED(obj, set_getter, getter);
+  DCHECK_IMPLIES(replace_on_access,
+                 is_special_data_property && setter == nullptr);
   if (is_special_data_property && setter == nullptr) {
     setter = reinterpret_cast<Setter>(&i::Accessors::ReconfigureToDataProperty);
   }
@@ -1312,6 +1315,7 @@ i::Handle<i::AccessorInfo> MakeAccessorInfo(
   }
   obj->set_data(*Utils::OpenHandle(*data));
   obj->set_is_special_data_property(is_special_data_property);
+  obj->set_replace_on_access(replace_on_access);
   return SetAccessorInfoProperties(obj, name, settings, attributes, signature);
 }
 
@@ -1463,20 +1467,21 @@ static i::Handle<i::FunctionTemplateInfo> EnsureConstructor(
   return constructor;
 }
 
-
 template <typename Getter, typename Setter, typename Data, typename Template>
 static bool TemplateSetAccessor(Template* template_obj, v8::Local<Name> name,
                                 Getter getter, Setter setter, Data data,
                                 AccessControl settings,
                                 PropertyAttribute attribute,
                                 v8::Local<AccessorSignature> signature,
-                                bool is_special_data_property) {
+                                bool is_special_data_property,
+                                bool replace_on_access) {
   auto info = Utils::OpenHandle(template_obj);
   auto isolate = info->GetIsolate();
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
-  auto obj = MakeAccessorInfo(name, getter, setter, data, settings, attribute,
-                              signature, is_special_data_property);
+  auto obj =
+      MakeAccessorInfo(name, getter, setter, data, settings, attribute,
+                       signature, is_special_data_property, replace_on_access);
   if (obj.is_null()) return false;
   i::ApiNatives::AddNativeDataProperty(isolate, info, obj);
   return true;
@@ -1491,7 +1496,7 @@ void Template::SetNativeDataProperty(v8::Local<String> name,
                                      v8::Local<AccessorSignature> signature,
                                      AccessControl settings) {
   TemplateSetAccessor(this, name, getter, setter, data, settings, attribute,
-                      signature, true);
+                      signature, true, false);
 }
 
 
@@ -1503,9 +1508,17 @@ void Template::SetNativeDataProperty(v8::Local<Name> name,
                                      v8::Local<AccessorSignature> signature,
                                      AccessControl settings) {
   TemplateSetAccessor(this, name, getter, setter, data, settings, attribute,
-                      signature, true);
+                      signature, true, false);
 }
 
+void Template::SetLazyDataProperty(v8::Local<Name> name,
+                                   AccessorNameGetterCallback getter,
+                                   v8::Local<Value> data,
+                                   PropertyAttribute attribute) {
+  TemplateSetAccessor(
+      this, name, getter, static_cast<AccessorNameSetterCallback>(nullptr),
+      data, DEFAULT, attribute, Local<AccessorSignature>(), true, true);
+}
 
 void Template::SetIntrinsicDataProperty(Local<Name> name, Intrinsic intrinsic,
                                         PropertyAttribute attribute) {
@@ -1526,7 +1539,7 @@ void ObjectTemplate::SetAccessor(v8::Local<String> name,
                                  PropertyAttribute attribute,
                                  v8::Local<AccessorSignature> signature) {
   TemplateSetAccessor(this, name, getter, setter, data, settings, attribute,
-                      signature, i::FLAG_disable_old_api_accessors);
+                      signature, i::FLAG_disable_old_api_accessors, false);
 }
 
 
@@ -1537,7 +1550,7 @@ void ObjectTemplate::SetAccessor(v8::Local<Name> name,
                                  PropertyAttribute attribute,
                                  v8::Local<AccessorSignature> signature) {
   TemplateSetAccessor(this, name, getter, setter, data, settings, attribute,
-                      signature, i::FLAG_disable_old_api_accessors);
+                      signature, i::FLAG_disable_old_api_accessors, false);
 }
 
 template <typename Getter, typename Setter, typename Query, typename Descriptor,
@@ -4488,8 +4501,9 @@ static Maybe<bool> ObjectSetAccessor(Local<Context> context, Object* self,
   i::Handle<i::JSObject> obj =
       i::Handle<i::JSObject>::cast(Utils::OpenHandle(self));
   v8::Local<AccessorSignature> signature;
-  auto info = MakeAccessorInfo(name, getter, setter, data, settings, attributes,
-                               signature, i::FLAG_disable_old_api_accessors);
+  auto info =
+      MakeAccessorInfo(name, getter, setter, data, settings, attributes,
+                       signature, i::FLAG_disable_old_api_accessors, false);
   if (info.is_null()) return Nothing<bool>();
   bool fast = obj->HasFastProperties();
   i::Handle<i::Object> result;
@@ -8813,6 +8827,133 @@ void DebugInterface::ClearStepping(Isolate* v8_isolate) {
   ENTER_V8(isolate);
   // Clear all current stepping setup.
   isolate->debug()->ClearStepping();
+}
+
+v8::Isolate* DebugInterface::Script::GetIsolate() const {
+  return reinterpret_cast<v8::Isolate*>(Utils::OpenHandle(this)->GetIsolate());
+}
+
+ScriptOriginOptions DebugInterface::Script::OriginOptions() const {
+  return Utils::OpenHandle(this)->origin_options();
+}
+
+bool DebugInterface::Script::WasCompiled() const {
+  return Utils::OpenHandle(this)->compilation_state() ==
+         i::Script::COMPILATION_STATE_COMPILED;
+}
+
+int DebugInterface::Script::Id() const { return Utils::OpenHandle(this)->id(); }
+
+int DebugInterface::Script::LineOffset() const {
+  return Utils::OpenHandle(this)->line_offset();
+}
+
+int DebugInterface::Script::ColumnOffset() const {
+  return Utils::OpenHandle(this)->column_offset();
+}
+
+std::vector<int> DebugInterface::Script::LineEnds() const {
+  i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
+  i::HandleScope scope(isolate);
+  i::Script::InitLineEnds(Utils::OpenHandle(this));
+  i::Handle<i::Object> line_ends_obj(Utils::OpenHandle(this)->line_ends(),
+                                     isolate);
+  std::vector<int> result;
+  if (!line_ends_obj->IsFixedArray()) return result;
+  i::Handle<i::FixedArray> line_ends =
+      i::Handle<i::FixedArray>::cast(line_ends_obj);
+  for (int i = 0; i < line_ends->length(); ++i) {
+    i::Handle<i::Object> line_end = i::FixedArray::get(*line_ends, i, isolate);
+    if (line_end->IsSmi()) {
+      result.push_back(i::Handle<i::Smi>::cast(line_end)->value());
+    } else {
+      result.push_back(0);
+    }
+  }
+  return result;
+}
+
+MaybeLocal<String> DebugInterface::Script::Name() const {
+  i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
+  i::HandleScope handle_scope(isolate);
+  i::Handle<i::Script> script = Utils::OpenHandle(this);
+  i::Handle<i::Object> value(script->name(), isolate);
+  if (!value->IsString()) return MaybeLocal<String>();
+  return Utils::ToLocal(
+      handle_scope.CloseAndEscape(i::Handle<i::String>::cast(value)));
+}
+
+MaybeLocal<String> DebugInterface::Script::SourceURL() const {
+  i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
+  i::HandleScope handle_scope(isolate);
+  i::Handle<i::Script> script = Utils::OpenHandle(this);
+  i::Handle<i::Object> value(script->source_url(), isolate);
+  if (!value->IsString()) return MaybeLocal<String>();
+  return Utils::ToLocal(
+      handle_scope.CloseAndEscape(i::Handle<i::String>::cast(value)));
+}
+
+MaybeLocal<String> DebugInterface::Script::SourceMappingURL() const {
+  i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
+  i::HandleScope handle_scope(isolate);
+  i::Handle<i::Script> script = Utils::OpenHandle(this);
+  i::Handle<i::Object> value(script->source_mapping_url(), isolate);
+  if (!value->IsString()) return MaybeLocal<String>();
+  return Utils::ToLocal(
+      handle_scope.CloseAndEscape(i::Handle<i::String>::cast(value)));
+}
+
+MaybeLocal<String> DebugInterface::Script::ContextData() const {
+  i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
+  i::HandleScope handle_scope(isolate);
+  i::Handle<i::Script> script = Utils::OpenHandle(this);
+  i::Handle<i::Object> value(script->context_data(), isolate);
+  if (!value->IsString()) return MaybeLocal<String>();
+  return Utils::ToLocal(
+      handle_scope.CloseAndEscape(i::Handle<i::String>::cast(value)));
+}
+
+MaybeLocal<String> DebugInterface::Script::Source() const {
+  i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
+  i::HandleScope handle_scope(isolate);
+  i::Handle<i::Script> script = Utils::OpenHandle(this);
+  i::Handle<i::Object> value(script->source(), isolate);
+  if (!value->IsString()) return MaybeLocal<String>();
+  return Utils::ToLocal(
+      handle_scope.CloseAndEscape(i::Handle<i::String>::cast(value)));
+}
+
+MaybeLocal<DebugInterface::Script> DebugInterface::Script::Wrap(
+    v8::Isolate* v8_isolate, v8::Local<v8::Object> script) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+  ENTER_V8(isolate);
+  i::HandleScope handle_scope(isolate);
+  i::Handle<i::JSReceiver> script_receiver(Utils::OpenHandle(*script));
+  if (!script_receiver->IsJSValue()) return MaybeLocal<Script>();
+  i::Handle<i::Object> script_value(
+      i::Handle<i::JSValue>::cast(script_receiver)->value(), isolate);
+  if (!script_value->IsScript()) {
+    return MaybeLocal<Script>();
+  }
+  i::Handle<i::Script> script_obj = i::Handle<i::Script>::cast(script_value);
+  if (script_obj->type() != i::Script::TYPE_NORMAL) return MaybeLocal<Script>();
+  return ToApiHandle<DebugInterface::Script>(
+      handle_scope.CloseAndEscape(script_obj));
+}
+
+void DebugInterface::GetLoadedScripts(
+    v8::Isolate* v8_isolate,
+    PersistentValueVector<DebugInterface::Script>& scripts) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+  ENTER_V8(isolate);
+  i::HandleScope handle_scope(isolate);
+  i::Handle<i::FixedArray> instances = isolate->debug()->GetLoadedScripts();
+  for (int i = 0; i < instances->length(); i++) {
+    i::Handle<i::Script> script =
+        i::Handle<i::Script>(i::Script::cast(instances->get(i)));
+    if (script->type() != i::Script::TYPE_NORMAL) continue;
+    scripts.Append(ToApiHandle<Script>(script));
+  }
 }
 
 Local<String> CpuProfileNode::GetFunctionName() const {
