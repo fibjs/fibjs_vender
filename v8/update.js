@@ -33,7 +33,7 @@ function save_plat() {
 	platTxts = [];
 	plats.forEach(function(f) {
 		console.log("save", paltFolder + '/' + f);
-		platTxts.push(fs.readFile(paltFolder + '/' + f));
+		platTxts.push(fs.readTextFile(paltFolder + '/' + f));
 	});
 }
 
@@ -116,7 +116,7 @@ function cp_folder(path, to) {
 			} else {
 				if (chk_file(fnameto)) {
 					console.log("copy", fnameto);
-					var txt = fs.readFile(v8Folder + '/' + fname);
+					var txt = fs.readTextFile(v8Folder + '/' + fname);
 					txt = txt.replace('#include "testing/gtest', '// #include "testing/gtest');
 					txt = txt.replace(/FRIEND_TEST/g, '// FRIEND_TEST');
 					fs.writeFile(fnameto, txt);
@@ -139,7 +139,7 @@ function cp_gen() {
 	fs.mkdir('src/gen');
 	gens.forEach(function(f) {
 		console.log("cp " + f);
-		fs.writeFile('src/gen/' + path.basename(f), fs.readFile(v8Folder + f));
+		fs.writeFile('src/gen/' + path.basename(f), fs.readTextFile(v8Folder + f));
 	});
 }
 
@@ -149,7 +149,7 @@ function fix_src(path, val) {
 		var name = f.name;
 		if (name.substr(name.length - 3, 3) == '.cc') {
 			var fname = path + '/' + name;
-			var txt = fs.readFile(fname);
+			var txt = fs.readTextFile(fname);
 
 			console.log("fix", fname);
 			fs.writeFile(fname, '#include "src/v8.h"\n\n#if ' + val + '\n\n' + txt + '\n\n#endif  // ' + val);
@@ -199,7 +199,7 @@ var plats1 = {
 function patch_plat() {
 	for (var f in plats1) {
 		var fname = paltFolder + '/platform-' + f + '.cc';
-		var txt = fs.readFile(fname);
+		var txt = fs.readTextFile(fname);
 		var txt1;
 		var val = plats1[f];
 
@@ -228,7 +228,7 @@ var traces = {
 function patch_trace() {
 	for (var f in traces) {
 		var fname = 'src/base/debug/stack_trace_' + f + '.cc';
-		var txt = fs.readFile(fname);
+		var txt = fs.readTextFile(fname);
 		var txt1;
 		var val = traces[f];
 
@@ -243,7 +243,7 @@ function patch_trace_win() {
 	var fname = "src/base/debug/stack_trace_win.cc";
 
 	console.log("patch", fname);
-	var txt = fs.readFile(fname);
+	var txt = fs.readTextFile(fname);
 	txt = txt.replace("bool InitializeSymbols()",
 		"bool InitializeSymbols() {\n" +
 		"  g_init_error = ERROR_SUCCESS;\n" +
@@ -258,7 +258,7 @@ function patch_samp() {
 	var fname = "src/profiler/sampler.cc";
 
 	console.log("patch", fname);
-	var txt = fs.readFile(fname);
+	var txt = fs.readTextFile(fname);
 
 	var idx = txt.lastIndexOf("#if defined(USE_SIGNALS)");
 	if (idx < 0)
@@ -282,7 +282,7 @@ function patch_macro() {
 	var fname = "src/macro-assembler.h";
 
 	console.log("patch", fname);
-	var txt = fs.readFile(fname);
+	var txt = fs.readTextFile(fname);
 	fs.writeFile(fname, '#include "src/v8.h"\n\n' + txt);
 }
 
@@ -290,7 +290,7 @@ function patch_flag() {
 	var fname = "src/flags.cc";
 
 	console.log("patch", fname);
-	var txt = fs.readFile(fname);
+	var txt = fs.readTextFile(fname);
 
 	var idx1 = txt.lastIndexOf("CpuFeatures::PrintTarget();");
 	var idx2 = txt.lastIndexOf("<< \"Options:\\n\";");
@@ -309,7 +309,7 @@ function patch_serializer() {
 	var fname = "src/snapshot/code-serializer.cc";
 
 	console.log("patch", fname);
-	var txt = fs.readFile(fname);
+	var txt = fs.readTextFile(fname);
 	txt = txt.replace("if (source_hash", "// if (source_hash");
 	txt = txt.replace("if (flags_hash", "// if (flags_hash");
 	fs.writeFile(fname, txt);
@@ -319,7 +319,7 @@ function patch_ntver() {
 	var fname = "src/base/win32-headers.h";
 
 	console.log("patch", fname);
-	var txt = fs.readFile(fname);
+	var txt = fs.readTextFile(fname);
 	txt = "#ifndef _WIN32_WINNT\n#define _WIN32_WINNT 0x0501\n#endif\n\n" + txt;
 	fs.writeFile(fname, txt);
 }

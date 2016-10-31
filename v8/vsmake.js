@@ -42,8 +42,8 @@ function do_folder(path, base) {
 do_folder("include", "Header Files");
 do_folder("src", "Source Files");
 
-var proj = fs.readFile('tools/proj.txt');
-var filter = fs.readFile('tools/filter.txt');
+var proj = fs.readTextFile('tools/proj.txt');
+var filter = fs.readTextFile('tools/filter.txt');
 
 var txts, f, s, h;
 
