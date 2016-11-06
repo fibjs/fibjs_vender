@@ -296,7 +296,7 @@ public:
 		if (r != 0 || sz1 == sz2)
 			return r;
 
-		return sz1 > sz2 ? 1 : -1;
+		return sz1 > sz2 ? 1 : npos;
 	}
 
 	int32_t compare(const T* str) const
@@ -313,7 +313,7 @@ public:
 		if (r != 0 || sz1 == sz2)
 			return r;
 
-		return sz1 > sz2 ? 1 : -1;
+		return sz1 > sz2 ? 1 : npos;
 	}
 
 public:
@@ -426,6 +426,33 @@ public:
 			return basic_string<T>(*this);
 
 		return basic_string<T>(c_str() + pos, len);
+	}
+
+	size_t find(const T* s, size_t pos, size_t n) const
+	{
+		const T* s1 = c_str();
+		size_t n1 = length();
+
+		if (n > n1 + pos)
+			return npos;
+
+		const T* s2 = qmemfind(s1 + pos, n1 - pos, s, n);
+		return s2 ? s2 - s1 : npos;
+	}
+
+	size_t find(const T* s, size_t pos = 0) const
+	{
+		return find(s, pos, qstrlen(s));
+	}
+
+	size_t find(const basic_string<char>& str, size_t pos = 0) const
+	{
+		return find(str.c_str(), pos, str.length());
+	}
+
+	size_t find(T c, size_t pos = 0) const
+	{
+		return find(&c, pos, 1);
 	}
 
 	basic_string<char> hex() const
