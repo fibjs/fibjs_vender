@@ -4434,7 +4434,8 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver_reg,
   ExternalReference new_space_allocation_top_adr =
       ExternalReference::new_space_allocation_top_address(isolate());
   const int kMementoMapOffset = JSArray::kSize - kHeapObjectTag;
-  const int kMementoEndOffset = kMementoMapOffset + AllocationMemento::kSize;
+  const int kMementoLastWordOffset =
+      kMementoMapOffset + AllocationMemento::kSize - kPointerSize;
   Register mask = scratch2_reg;
 
   DCHECK(!AreAliased(receiver_reg, scratch_reg, mask));
@@ -4444,7 +4445,7 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver_reg,
 
   DCHECK((~Page::kPageAlignmentMask & 0xffff) == 0);
   lis(mask, Operand((~Page::kPageAlignmentMask >> 16)));
-  addi(scratch_reg, receiver_reg, Operand(kMementoEndOffset));
+  addi(scratch_reg, receiver_reg, Operand(kMementoLastWordOffset));
 
   // If the object is in new space, we need to check whether it is on the same
   // page as the current top.
@@ -4465,7 +4466,7 @@ void MacroAssembler::TestJSArrayForAllocationMemento(Register receiver_reg,
   // we are below top.
   bind(&top_check);
   cmp(scratch_reg, ip);
-  bgt(no_memento_found);
+  bge(no_memento_found);
   // Memento map check.
   bind(&map_check);
   LoadP(scratch_reg, MemOperand(receiver_reg, kMementoMapOffset));

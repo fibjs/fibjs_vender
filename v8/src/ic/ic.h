@@ -140,6 +140,8 @@ class IC {
   static void OnTypeFeedbackChanged(Isolate* isolate, Code* host);
   static void PostPatching(Address address, Code* target, Code* old_target);
 
+  void TraceHandlerCacheHitStats(LookupIterator* lookup);
+
   // Compute the handler either by compiling or by retrieving a cached version.
   Handle<Object> ComputeHandler(LookupIterator* lookup,
                                 Handle<Object> value = Handle<Code>::null());
@@ -147,11 +149,11 @@ class IC {
     UNREACHABLE();
     return Handle<Code>::null();
   }
-  virtual Handle<Code> CompileHandler(LookupIterator* lookup,
-                                      Handle<Object> value,
-                                      CacheHolderFlag cache_holder) {
+  virtual Handle<Object> CompileHandler(LookupIterator* lookup,
+                                        Handle<Object> value,
+                                        CacheHolderFlag cache_holder) {
     UNREACHABLE();
-    return Handle<Code>::null();
+    return Handle<Object>::null();
   }
 
   void UpdateMonomorphicIC(Handle<Object> handler, Handle<Name> name);
@@ -305,25 +307,30 @@ class LoadIC : public IC {
 
   Handle<Object> GetMapIndependentHandler(LookupIterator* lookup) override;
 
-  Handle<Code> CompileHandler(LookupIterator* lookup, Handle<Object> unused,
-                              CacheHolderFlag cache_holder) override;
+  Handle<Object> CompileHandler(LookupIterator* lookup, Handle<Object> unused,
+                                CacheHolderFlag cache_holder) override;
 
  private:
+  // Creates a data handler that represents a load of a field by given index.
   Handle<Object> SimpleFieldLoad(FieldIndex index);
 
   // Returns 0 if the validity cell check is enough to ensure that the
   // prototype chain from |receiver_map| till |holder| did not change.
+  // If the |holder| is an empty handle then the full prototype chain is
+  // checked.
   // Returns -1 if the handler has to be compiled or the number of prototype
   // checks otherwise.
   int GetPrototypeCheckCount(Handle<Map> receiver_map, Handle<JSObject> holder);
 
   // Creates a data handler that represents a prototype chain check followed
   // by given Smi-handler that encoded a load from the holder.
-  // Can be used only if IsPrototypeValidityCellCheckEnough() predicate is true.
-  Handle<Object> SimpleLoadFromPrototype(Handle<Map> receiver_map,
-                                         Handle<JSObject> holder,
-                                         Handle<Name> name,
-                                         Handle<Object> smi_handler);
+  // Can be used only if GetPrototypeCheckCount() returns non negative value.
+  Handle<Object> LoadFromPrototype(Handle<Map> receiver_map,
+                                   Handle<JSObject> holder, Handle<Name> name,
+                                   Handle<Object> smi_handler);
+
+  // Creates a data handler that represents a load of a non-existent property.
+  Handle<Object> LoadNonExistent(Handle<Map> receiver_map, Handle<Name> name);
 
   friend class IC;
 };
@@ -414,8 +421,8 @@ class StoreIC : public IC {
   void UpdateCaches(LookupIterator* lookup, Handle<Object> value,
                     JSReceiver::StoreFromKeyed store_mode);
   Handle<Object> GetMapIndependentHandler(LookupIterator* lookup) override;
-  Handle<Code> CompileHandler(LookupIterator* lookup, Handle<Object> value,
-                              CacheHolderFlag cache_holder) override;
+  Handle<Object> CompileHandler(LookupIterator* lookup, Handle<Object> value,
+                                CacheHolderFlag cache_holder) override;
 
  private:
   friend class IC;

@@ -1512,12 +1512,6 @@ Handle<ScopeInfo> Factory::NewScopeInfo(int length) {
   return scope_info;
 }
 
-Handle<ModuleInfoEntry> Factory::NewModuleInfoEntry() {
-  Handle<FixedArray> array = NewFixedArray(ModuleInfoEntry::kLength, TENURED);
-  array->set_map_no_write_barrier(*module_info_entry_map());
-  return Handle<ModuleInfoEntry>::cast(array);
-}
-
 Handle<ModuleInfo> Factory::NewModuleInfo() {
   Handle<FixedArray> array = NewFixedArray(ModuleInfo::kLength, TENURED);
   array->set_map_no_write_barrier(*module_info_map());
@@ -1822,7 +1816,11 @@ Handle<Module> Factory::NewModule(Handle<SharedFunctionInfo> code) {
   Handle<ModuleInfo> module_info(code->scope_info()->ModuleDescriptorInfo(),
                                  isolate());
   Handle<ObjectHashTable> exports =
-      ObjectHashTable::New(isolate(), module_info->regular_exports()->length());
+      ObjectHashTable::New(isolate(), module_info->RegularExportCount());
+  Handle<FixedArray> regular_exports =
+      NewFixedArray(module_info->RegularExportCount());
+  Handle<FixedArray> regular_imports =
+      NewFixedArray(module_info->regular_imports()->length());
   int requested_modules_length = module_info->module_requests()->length();
   Handle<FixedArray> requested_modules =
       requested_modules_length > 0 ? NewFixedArray(requested_modules_length)
@@ -1831,6 +1829,8 @@ Handle<Module> Factory::NewModule(Handle<SharedFunctionInfo> code) {
   Handle<Module> module = Handle<Module>::cast(NewStruct(MODULE_TYPE));
   module->set_code(*code);
   module->set_exports(*exports);
+  module->set_regular_exports(*regular_exports);
+  module->set_regular_imports(*regular_imports);
   module->set_hash(isolate()->GenerateIdentityHash(Smi::kMaxValue));
   module->set_module_namespace(isolate()->heap()->undefined_value());
   module->set_requested_modules(*requested_modules);
@@ -2178,11 +2178,10 @@ Handle<JSProxy> Factory::NewJSProxy(Handle<JSReceiver> target,
   return result;
 }
 
-
-Handle<JSGlobalProxy> Factory::NewUninitializedJSGlobalProxy() {
+Handle<JSGlobalProxy> Factory::NewUninitializedJSGlobalProxy(int size) {
   // Create an empty shell of a JSGlobalProxy that needs to be reinitialized
   // via ReinitializeJSGlobalProxy later.
-  Handle<Map> map = NewMap(JS_GLOBAL_PROXY_TYPE, JSGlobalProxy::kSize);
+  Handle<Map> map = NewMap(JS_GLOBAL_PROXY_TYPE, size);
   // Maintain invariant expected from any JSGlobalProxy.
   map->set_is_access_check_needed(true);
   CALL_HEAP_FUNCTION(

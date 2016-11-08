@@ -66,11 +66,12 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
       break;
     case HEAP_NUMBER_TYPE:
       HeapNumber::cast(this)->HeapNumberPrint(os);
+      os << "\n";
       break;
     case MUTABLE_HEAP_NUMBER_TYPE:
       os << "<mutable ";
       HeapNumber::cast(this)->HeapNumberPrint(os);
-      os << ">";
+      os << ">\n";
       break;
     case SIMD128_VALUE_TYPE:
       Simd128Value::cast(this)->Simd128ValuePrint(os);
@@ -1185,6 +1186,18 @@ void PromiseReactionJobInfo::PromiseReactionJobInfoPrint(
   os << "\n";
 }
 
+void ModuleInfoEntry::ModuleInfoEntryPrint(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "ModuleInfoEntry");
+  os << "\n - export_name: " << Brief(export_name());
+  os << "\n - local_name: " << Brief(local_name());
+  os << "\n - import_name: " << Brief(import_name());
+  os << "\n - module_request: " << module_request();
+  os << "\n - cell_index: " << cell_index();
+  os << "\n - beg_pos: " << beg_pos();
+  os << "\n - end_pos: " << end_pos();
+  os << "\n";
+}
+
 void Module::ModulePrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Module");
   os << "\n - code: " << Brief(code());
@@ -1280,6 +1293,7 @@ void FunctionTemplateInfo::FunctionTemplateInfoPrint(
   os << "\n - instance_template: " << Brief(instance_template());
   os << "\n - signature: " << Brief(signature());
   os << "\n - access_check_info: " << Brief(access_check_info());
+  os << "\n - cached_property_name: " << Brief(cached_property_name());
   os << "\n - hidden_prototype: " << (hidden_prototype() ? "true" : "false");
   os << "\n - undetectable: " << (undetectable() ? "true" : "false");
   os << "\n - need_access_check: " << (needs_access_check() ? "true" : "false");

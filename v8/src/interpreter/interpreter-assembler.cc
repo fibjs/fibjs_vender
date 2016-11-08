@@ -104,7 +104,7 @@ Node* InterpreterAssembler::GetContextAtDepth(Node* context, Node* depth) {
   {
     cur_depth.Bind(Int32Sub(cur_depth.value(), Int32Constant(1)));
     cur_context.Bind(
-        LoadContextSlot(cur_context.value(), Context::PREVIOUS_INDEX));
+        LoadContextElement(cur_context.value(), Context::PREVIOUS_INDEX));
 
     Branch(Word32Equal(cur_depth.value(), Int32Constant(0)), &context_found,
            &context_search);
@@ -135,14 +135,14 @@ void InterpreterAssembler::GotoIfHasContextExtensionUpToDepth(Node* context,
     // contexts actually need to be checked.
 
     Node* extension_slot =
-        LoadContextSlot(cur_context.value(), Context::EXTENSION_INDEX);
+        LoadContextElement(cur_context.value(), Context::EXTENSION_INDEX);
 
     // Jump to the target if the extension slot is not a hole.
     GotoIf(WordNotEqual(extension_slot, TheHoleConstant()), target);
 
     cur_depth.Bind(Int32Sub(cur_depth.value(), Int32Constant(1)));
     cur_context.Bind(
-        LoadContextSlot(cur_context.value(), Context::PREVIOUS_INDEX));
+        LoadContextElement(cur_context.value(), Context::PREVIOUS_INDEX));
 
     GotoIf(Word32NotEqual(cur_depth.value(), Int32Constant(0)),
            &context_search);
@@ -483,26 +483,6 @@ Node* InterpreterAssembler::LoadAndUntagConstantPoolEntry(Node* index) {
     return SmiUntag(
         Load(MachineType::AnyTagged(), constant_pool, entry_offset));
   }
-}
-
-Node* InterpreterAssembler::LoadContextSlot(Node* context, int slot_index) {
-  return Load(MachineType::AnyTagged(), context,
-              IntPtrConstant(Context::SlotOffset(slot_index)));
-}
-
-Node* InterpreterAssembler::LoadContextSlot(Node* context, Node* slot_index) {
-  Node* offset =
-      IntPtrAdd(WordShl(slot_index, kPointerSizeLog2),
-                IntPtrConstant(Context::kHeaderSize - kHeapObjectTag));
-  return Load(MachineType::AnyTagged(), context, offset);
-}
-
-Node* InterpreterAssembler::StoreContextSlot(Node* context, Node* slot_index,
-                                             Node* value) {
-  Node* offset =
-      IntPtrAdd(WordShl(slot_index, kPointerSizeLog2),
-                IntPtrConstant(Context::kHeaderSize - kHeapObjectTag));
-  return Store(MachineRepresentation::kTagged, context, offset, value);
 }
 
 Node* InterpreterAssembler::LoadTypeFeedbackVector() {

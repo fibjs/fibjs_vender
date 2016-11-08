@@ -184,7 +184,7 @@ Reduction JSInliner::InlineCall(Node* call, Node* new_target, Node* context,
   for (Node* const input : end->inputs()) {
     switch (input->opcode()) {
       case IrOpcode::kReturn:
-        values.push_back(NodeProperties::GetValueInput(input, 0));
+        values.push_back(NodeProperties::GetValueInput(input, 1));
         effects.push_back(NodeProperties::GetEffectInput(input));
         controls.push_back(NodeProperties::GetControlInput(input));
         break;
@@ -282,6 +282,19 @@ Node* JSInliner::CreateTailCallerFrameState(Node* node, Node* frame_state) {
 
 namespace {
 
+// TODO(turbofan): Shall we move this to the NodeProperties? Or some (untyped)
+// alias analyzer?
+bool IsSame(Node* a, Node* b) {
+  if (a == b) {
+    return true;
+  } else if (a->opcode() == IrOpcode::kCheckHeapObject) {
+    return IsSame(a->InputAt(0), b);
+  } else if (b->opcode() == IrOpcode::kCheckHeapObject) {
+    return IsSame(a, b->InputAt(0));
+  }
+  return false;
+}
+
 // TODO(bmeurer): Unify this with the witness helper functions in the
 // js-builtin-reducer.cc once we have a better understanding of the
 // map tracking we want to do, and eventually changed the CheckMaps
@@ -296,7 +309,7 @@ namespace {
 bool NeedsConvertReceiver(Node* receiver, Node* effect) {
   for (Node* dominator = effect;;) {
     if (dominator->opcode() == IrOpcode::kCheckMaps &&
-        dominator->InputAt(0) == receiver) {
+        IsSame(dominator->InputAt(0), receiver)) {
       // Check if all maps have the given {instance_type}.
       for (int i = 1; i < dominator->op()->ValueInputCount(); ++i) {
         HeapObjectMatcher m(NodeProperties::GetValueInput(dominator, i));
@@ -531,7 +544,7 @@ Reduction JSInliner::ReduceJSCall(Node* node, Handle<JSFunction> function) {
     Graph::SubgraphScope scope(graph());
     BytecodeGraphBuilder graph_builder(&zone, &info, jsgraph(),
                                        call.frequency(), nullptr);
-    graph_builder.CreateGraph();
+    graph_builder.CreateGraph(false);
 
     // Extract the inlinee start/end nodes.
     start = graph()->start();

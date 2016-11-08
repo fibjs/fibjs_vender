@@ -600,6 +600,9 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
     case IrOpcode::kChangeFloat64ToTagged:
       state = LowerChangeFloat64ToTagged(node, *effect, *control);
       break;
+    case IrOpcode::kChangeFloat64ToTaggedPointer:
+      state = LowerChangeFloat64ToTaggedPointer(node, *effect, *control);
+      break;
     case IrOpcode::kChangeTaggedSignedToInt32:
       state = LowerChangeTaggedSignedToInt32(node, *effect, *control);
       break;
@@ -635,9 +638,6 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
       break;
     case IrOpcode::kCheckIf:
       state = LowerCheckIf(node, frame_state, *effect, *control);
-      break;
-    case IrOpcode::kCheckHeapObject:
-      state = LowerCheckHeapObject(node, frame_state, *effect, *control);
       break;
     case IrOpcode::kCheckedInt32Add:
       state = LowerCheckedInt32Add(node, frame_state, *effect, *control);
@@ -687,6 +687,10 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
     case IrOpcode::kCheckedTaggedToTaggedSigned:
       state = LowerCheckedTaggedToTaggedSigned(node, frame_state, *effect,
                                                *control);
+      break;
+    case IrOpcode::kCheckedTaggedToTaggedPointer:
+      state = LowerCheckedTaggedToTaggedPointer(node, frame_state, *effect,
+                                                *control);
       break;
     case IrOpcode::kTruncateTaggedToWord32:
       state = LowerTruncateTaggedToWord32(node, *effect, *control);
@@ -788,6 +792,14 @@ bool EffectControlLinearizer::TryWireInStateEffect(Node* node,
 EffectControlLinearizer::ValueEffectControl
 EffectControlLinearizer::LowerChangeFloat64ToTagged(Node* node, Node* effect,
                                                     Node* control) {
+  Node* value = node->InputAt(0);
+  return AllocateHeapNumberWithValue(value, effect, control);
+}
+
+EffectControlLinearizer::ValueEffectControl
+EffectControlLinearizer::LowerChangeFloat64ToTaggedPointer(Node* node,
+                                                           Node* effect,
+                                                           Node* control) {
   Node* value = node->InputAt(0);
   return AllocateHeapNumberWithValue(value, effect, control);
 }
@@ -901,15 +913,14 @@ EffectControlLinearizer::ValueEffectControl
 EffectControlLinearizer::LowerTruncateTaggedToBit(Node* node, Node* effect,
                                                   Node* control) {
   Node* value = node->InputAt(0);
-  Node* one = jsgraph()->Int32Constant(1);
   Node* zero = jsgraph()->Int32Constant(0);
   Node* fzero = jsgraph()->Float64Constant(0.0);
 
   // Collect effect/control/value triples.
   int count = 0;
-  Node* values[7];
-  Node* effects[7];
-  Node* controls[6];
+  Node* values[6];
+  Node* effects[6];
+  Node* controls[5];
 
   // Check if {value} is a Smi.
   Node* check_smi = ObjectIsSmi(value);
@@ -925,7 +936,7 @@ EffectControlLinearizer::LowerTruncateTaggedToBit(Node* node, Node* effect,
     values[count] =
         graph()->NewNode(machine()->Word32Equal(),
                          graph()->NewNode(machine()->WordEqual(), value,
-                                          jsgraph()->ZeroConstant()),
+                                          jsgraph()->IntPtrConstant(0)),
                          zero);
     count++;
   }
@@ -978,7 +989,7 @@ EffectControlLinearizer::LowerTruncateTaggedToBit(Node* node, Node* effect,
     values[count] =
         graph()->NewNode(machine()->Word32Equal(),
                          graph()->NewNode(machine()->WordEqual(), value_length,
-                                          jsgraph()->ZeroConstant()),
+                                          jsgraph()->IntPtrConstant(0)),
                          zero);
     count++;
   }
@@ -1000,20 +1011,12 @@ EffectControlLinearizer::LowerTruncateTaggedToBit(Node* node, Node* effect,
         simplified()->LoadField(AccessBuilder::ForHeapNumberValue()), value,
         eheapnumber, if_heapnumber);
 
-    // Check if {value} is either less than 0.0 or greater than 0.0.
-    Node* check =
-        graph()->NewNode(machine()->Float64LessThan(), fzero, value_value);
-    Node* branch = graph()->NewNode(common()->Branch(), check, if_heapnumber);
-
-    controls[count] = graph()->NewNode(common()->IfTrue(), branch);
+    // Check if {value} is not one of 0, -0, or NaN.
+    controls[count] = if_heapnumber;
     effects[count] = eheapnumber;
-    values[count] = one;
-    count++;
-
-    controls[count] = graph()->NewNode(common()->IfFalse(), branch);
-    effects[count] = eheapnumber;
-    values[count] =
-        graph()->NewNode(machine()->Float64LessThan(), value_value, fzero);
+    values[count] = graph()->NewNode(
+        machine()->Float64LessThan(), fzero,
+        graph()->NewNode(machine()->Float64Abs(), value_value));
     count++;
   }
   control = graph()->NewNode(common()->IfFalse(), branch_heapnumber);
@@ -1269,19 +1272,6 @@ EffectControlLinearizer::LowerCheckIf(Node* node, Node* frame_state,
   control = effect =
       graph()->NewNode(common()->DeoptimizeUnless(DeoptimizeReason::kNoReason),
                        value, frame_state, effect, control);
-
-  return ValueEffectControl(value, effect, control);
-}
-
-EffectControlLinearizer::ValueEffectControl
-EffectControlLinearizer::LowerCheckHeapObject(Node* node, Node* frame_state,
-                                              Node* effect, Node* control) {
-  Node* value = node->InputAt(0);
-
-  Node* check = ObjectIsSmi(value);
-  control = effect =
-      graph()->NewNode(common()->DeoptimizeIf(DeoptimizeReason::kSmi), check,
-                       frame_state, effect, control);
 
   return ValueEffectControl(value, effect, control);
 }
@@ -1878,6 +1868,21 @@ EffectControlLinearizer::LowerCheckedTaggedToTaggedSigned(Node* node,
   control = effect =
       graph()->NewNode(common()->DeoptimizeUnless(DeoptimizeReason::kNotASmi),
                        check, frame_state, effect, control);
+
+  return ValueEffectControl(value, effect, control);
+}
+
+EffectControlLinearizer::ValueEffectControl
+EffectControlLinearizer::LowerCheckedTaggedToTaggedPointer(Node* node,
+                                                           Node* frame_state,
+                                                           Node* effect,
+                                                           Node* control) {
+  Node* value = node->InputAt(0);
+
+  Node* check = ObjectIsSmi(value);
+  control = effect =
+      graph()->NewNode(common()->DeoptimizeIf(DeoptimizeReason::kSmi), check,
+                       frame_state, effect, control);
 
   return ValueEffectControl(value, effect, control);
 }

@@ -1133,6 +1133,7 @@ class MemoryAllocator {
 
     void FreeQueuedChunks();
     bool WaitUntilCompleted();
+    void TearDown();
 
    private:
     enum ChunkQueueType {
@@ -2065,8 +2066,6 @@ class PagedSpace : public Space {
 
   Page* FirstPage() { return anchor_.next_page(); }
   Page* LastPage() { return anchor_.prev_page(); }
-
-  void EvictEvacuationCandidatesFromLinearAllocationArea();
 
   bool CanExpand(size_t size);
 

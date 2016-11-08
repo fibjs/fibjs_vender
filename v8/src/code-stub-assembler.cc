@@ -141,7 +141,8 @@ Node* CodeStubAssembler::WordIsPowerOfTwo(Node* value) {
   // value && !(value & (value - 1))
   return WordEqual(
       Select(WordEqual(value, IntPtrConstant(0)), IntPtrConstant(1),
-             WordAnd(value, IntPtrSub(value, IntPtrConstant(1)))),
+             WordAnd(value, IntPtrSub(value, IntPtrConstant(1))),
+             MachineType::PointerRepresentation()),
       IntPtrConstant(0));
 }
 
@@ -879,9 +880,8 @@ void CodeStubAssembler::BranchIfToBooleanIsTrue(Node* value, Label* if_true,
                                           MachineType::Float64());
 
       // Check if the floating point {value} is neither 0.0, -0.0 nor NaN.
-      Node* zero = Float64Constant(0.0);
-      GotoIf(Float64LessThan(zero, value_value), if_true);
-      Branch(Float64LessThan(value_value, zero), if_true, if_false);
+      Branch(Float64LessThan(Float64Constant(0.0), Float64Abs(value_value)),
+             if_true, if_false);
     }
 
     Bind(&if_valueisother);
@@ -1265,11 +1265,26 @@ Node* CodeStubAssembler::LoadContextElement(Node* context, int slot_index) {
   return Load(MachineType::AnyTagged(), context, IntPtrConstant(offset));
 }
 
+Node* CodeStubAssembler::LoadContextElement(Node* context, Node* slot_index) {
+  Node* offset =
+      IntPtrAdd(WordShl(slot_index, kPointerSizeLog2),
+                IntPtrConstant(Context::kHeaderSize - kHeapObjectTag));
+  return Load(MachineType::AnyTagged(), context, offset);
+}
+
 Node* CodeStubAssembler::StoreContextElement(Node* context, int slot_index,
                                              Node* value) {
   int offset = Context::SlotOffset(slot_index);
   return Store(MachineRepresentation::kTagged, context, IntPtrConstant(offset),
                value);
+}
+
+Node* CodeStubAssembler::StoreContextElement(Node* context, Node* slot_index,
+                                             Node* value) {
+  Node* offset =
+      IntPtrAdd(WordShl(slot_index, kPointerSizeLog2),
+                IntPtrConstant(Context::kHeaderSize - kHeapObjectTag));
+  return Store(MachineRepresentation::kTagged, context, offset, value);
 }
 
 Node* CodeStubAssembler::LoadNativeContext(Node* context) {
@@ -1709,6 +1724,7 @@ Node* CodeStubAssembler::AllocateNameDictionary(Node* at_least_space_for) {
                          SKIP_WRITE_BARRIER);
 
   // Initialize NameDictionary elements.
+  result = BitcastTaggedToWord(result);
   Node* start_address = IntPtrAdd(
       result, IntPtrConstant(NameDictionary::OffsetOfElementAt(
                                  NameDictionary::kElementsStartIndex) -
@@ -1773,13 +1789,12 @@ void CodeStubAssembler::StoreFieldsNoWriteBarrier(Node* start_address,
   Comment("StoreFieldsNoWriteBarrier");
   CSA_ASSERT(WordIsWordAligned(start_address));
   CSA_ASSERT(WordIsWordAligned(end_address));
-  BuildFastLoop(MachineType::PointerRepresentation(), start_address,
-                end_address,
-                [value](CodeStubAssembler* a, Node* current) {
-                  a->StoreNoWriteBarrier(MachineType::PointerRepresentation(),
-                                         current, value);
-                },
-                kPointerSize, IndexAdvanceMode::kPost);
+  BuildFastLoop(
+      MachineType::PointerRepresentation(), start_address, end_address,
+      [value](CodeStubAssembler* a, Node* current) {
+        a->StoreNoWriteBarrier(MachineRepresentation::kTagged, current, value);
+      },
+      kPointerSize, IndexAdvanceMode::kPost);
 }
 
 Node* CodeStubAssembler::AllocateUninitializedJSArrayWithoutElements(
@@ -2073,47 +2088,66 @@ void CodeStubAssembler::CopyFixedArrayElements(
   Comment("] CopyFixedArrayElements");
 }
 
-void CodeStubAssembler::CopyStringCharacters(compiler::Node* from_string,
-                                             compiler::Node* to_string,
-                                             compiler::Node* from_index,
-                                             compiler::Node* to_index,
-                                             compiler::Node* character_count,
-                                             String::Encoding encoding,
-                                             ParameterMode mode) {
-  bool one_byte = encoding == String::ONE_BYTE_ENCODING;
-  Comment(one_byte ? "CopyStringCharacters ONE_BYTE_ENCODING"
-                   : "CopyStringCharacters TWO_BYTE_ENCODING");
+void CodeStubAssembler::CopyStringCharacters(
+    compiler::Node* from_string, compiler::Node* to_string,
+    compiler::Node* from_index, compiler::Node* to_index,
+    compiler::Node* character_count, String::Encoding from_encoding,
+    String::Encoding to_encoding, ParameterMode mode) {
+  bool from_one_byte = from_encoding == String::ONE_BYTE_ENCODING;
+  bool to_one_byte = to_encoding == String::ONE_BYTE_ENCODING;
+  DCHECK_IMPLIES(to_one_byte, from_one_byte);
+  Comment("CopyStringCharacters %s -> %s",
+          from_one_byte ? "ONE_BYTE_ENCODING" : "TWO_BYTE_ENCODING",
+          to_one_byte ? "ONE_BYTE_ENCODING" : "TWO_BYTE_ENCODING");
 
-  ElementsKind kind = one_byte ? UINT8_ELEMENTS : UINT16_ELEMENTS;
-  int header_size = (one_byte ? SeqOneByteString::kHeaderSize
-                              : SeqTwoByteString::kHeaderSize) -
-                    kHeapObjectTag;
-  Node* from_offset = ElementOffsetFromIndex(from_index, kind, mode);
-  Node* to_offset = ElementOffsetFromIndex(to_index, kind, mode);
-  Node* byte_count = ElementOffsetFromIndex(character_count, kind, mode);
+  ElementsKind from_kind = from_one_byte ? UINT8_ELEMENTS : UINT16_ELEMENTS;
+  ElementsKind to_kind = to_one_byte ? UINT8_ELEMENTS : UINT16_ELEMENTS;
+  STATIC_ASSERT(SeqOneByteString::kHeaderSize == SeqTwoByteString::kHeaderSize);
+  int header_size = SeqOneByteString::kHeaderSize - kHeapObjectTag;
+  Node* from_offset =
+      ElementOffsetFromIndex(from_index, from_kind, mode, header_size);
+  Node* to_offset =
+      ElementOffsetFromIndex(to_index, to_kind, mode, header_size);
+  Node* byte_count = ElementOffsetFromIndex(character_count, from_kind, mode);
   Node* limit_offset = IntPtrAddFoldConstants(from_offset, byte_count);
 
   // Prepare the fast loop
-  MachineType type = one_byte ? MachineType::Uint8() : MachineType::Uint16();
-  MachineRepresentation rep =
-      one_byte ? MachineRepresentation::kWord8 : MachineRepresentation::kWord16;
-  int increment = -(1 << ElementsKindToShiftSize(kind));
+  MachineType type =
+      from_one_byte ? MachineType::Uint8() : MachineType::Uint16();
+  MachineRepresentation rep = to_one_byte ? MachineRepresentation::kWord8
+                                          : MachineRepresentation::kWord16;
+  int from_increment = 1 << ElementsKindToShiftSize(from_kind);
+  int to_increment = 1 << ElementsKindToShiftSize(to_kind);
 
-  Node* to_string_adjusted = IntPtrAddFoldConstants(
-      to_string, IntPtrSubFoldConstants(to_offset, from_offset));
-  limit_offset =
-      IntPtrAddFoldConstants(limit_offset, IntPtrConstant(header_size));
-  from_offset =
-      IntPtrAddFoldConstants(from_offset, IntPtrConstant(header_size));
-
-  BuildFastLoop(MachineType::PointerRepresentation(), limit_offset, from_offset,
-                [from_string, to_string_adjusted, type, rep](
-                    CodeStubAssembler* assembler, Node* offset) {
+  Variable current_to_offset(this, MachineType::PointerRepresentation());
+  VariableList vars({&current_to_offset}, zone());
+  current_to_offset.Bind(to_offset);
+  int to_index_constant = 0, from_index_constant = 0;
+  Smi* to_index_smi = nullptr;
+  Smi* from_index_smi = nullptr;
+  bool index_same = (from_encoding == to_encoding) &&
+                    (from_index == to_index ||
+                     (ToInt32Constant(from_index, from_index_constant) &&
+                      ToInt32Constant(to_index, to_index_constant) &&
+                      from_index_constant == to_index_constant) ||
+                     (ToSmiConstant(from_index, from_index_smi) &&
+                      ToSmiConstant(to_index, to_index_smi) &&
+                      to_index_smi == from_index_smi));
+  BuildFastLoop(vars, MachineType::PointerRepresentation(), from_offset,
+                limit_offset,
+                [from_string, to_string, &current_to_offset, to_increment, type,
+                 rep, index_same](CodeStubAssembler* assembler, Node* offset) {
                   Node* value = assembler->Load(type, from_string, offset);
-                  assembler->StoreNoWriteBarrier(rep, to_string_adjusted,
-                                                 offset, value);
+                  assembler->StoreNoWriteBarrier(
+                      rep, to_string,
+                      index_same ? offset : current_to_offset.value(), value);
+                  if (!index_same) {
+                    current_to_offset.Bind(assembler->IntPtrAdd(
+                        current_to_offset.value(),
+                        assembler->IntPtrConstant(to_increment)));
+                  }
                 },
-                increment);
+                from_increment, IndexAdvanceMode::kPost);
 }
 
 Node* CodeStubAssembler::LoadElementAndPrepareForStore(Node* array,
@@ -2983,6 +3017,7 @@ Node* AllocAndCopyStringCharacters(CodeStubAssembler* a, Node* context,
         a->AllocateSeqOneByteString(context, a->SmiToWord(character_count));
     a->CopyStringCharacters(from, result, from_index, smi_zero, character_count,
                             String::ONE_BYTE_ENCODING,
+                            String::ONE_BYTE_ENCODING,
                             CodeStubAssembler::SMI_PARAMETERS);
     var_result.Bind(result);
 
@@ -2995,6 +3030,7 @@ Node* AllocAndCopyStringCharacters(CodeStubAssembler* a, Node* context,
     Node* result =
         a->AllocateSeqTwoByteString(context, a->SmiToWord(character_count));
     a->CopyStringCharacters(from, result, from_index, smi_zero, character_count,
+                            String::TWO_BYTE_ENCODING,
                             String::TWO_BYTE_ENCODING,
                             CodeStubAssembler::SMI_PARAMETERS);
     var_result.Bind(result);
@@ -3297,9 +3333,11 @@ Node* CodeStubAssembler::StringAdd(Node* context, Node* left, Node* right,
       AllocateSeqOneByteString(context, new_length, SMI_PARAMETERS);
   CopyStringCharacters(left, new_string, SmiConstant(Smi::kZero),
                        SmiConstant(Smi::kZero), left_length,
-                       String::ONE_BYTE_ENCODING, SMI_PARAMETERS);
+                       String::ONE_BYTE_ENCODING, String::ONE_BYTE_ENCODING,
+                       SMI_PARAMETERS);
   CopyStringCharacters(right, new_string, SmiConstant(Smi::kZero), left_length,
-                       right_length, String::ONE_BYTE_ENCODING, SMI_PARAMETERS);
+                       right_length, String::ONE_BYTE_ENCODING,
+                       String::ONE_BYTE_ENCODING, SMI_PARAMETERS);
   result.Bind(new_string);
   Goto(&done_native);
 
@@ -3309,10 +3347,11 @@ Node* CodeStubAssembler::StringAdd(Node* context, Node* left, Node* right,
     new_string = AllocateSeqTwoByteString(context, new_length, SMI_PARAMETERS);
     CopyStringCharacters(left, new_string, SmiConstant(Smi::kZero),
                          SmiConstant(Smi::kZero), left_length,
-                         String::TWO_BYTE_ENCODING, SMI_PARAMETERS);
+                         String::TWO_BYTE_ENCODING, String::TWO_BYTE_ENCODING,
+                         SMI_PARAMETERS);
     CopyStringCharacters(right, new_string, SmiConstant(Smi::kZero),
                          left_length, right_length, String::TWO_BYTE_ENCODING,
-                         SMI_PARAMETERS);
+                         String::TWO_BYTE_ENCODING, SMI_PARAMETERS);
     result.Bind(new_string);
     Goto(&done_native);
   }
@@ -3989,7 +4028,8 @@ Node* CodeStubAssembler::HashTableComputeCapacity(Node* at_least_space_for) {
 }
 
 Node* CodeStubAssembler::IntPtrMax(Node* left, Node* right) {
-  return Select(IntPtrGreaterThanOrEqual(left, right), left, right);
+  return Select(IntPtrGreaterThanOrEqual(left, right), left, right,
+                MachineType::PointerRepresentation());
 }
 
 template <typename Dictionary>
@@ -5608,13 +5648,18 @@ void CodeStubAssembler::HandleLoadICProtoHandler(
             LoadHandler::kValidityCellOffset);
 
   // Both FixedArray and Tuple3 handlers have validity cell at the same offset.
+  Label validity_cell_check_done(this);
   Node* validity_cell =
       LoadObjectField(handler, LoadHandler::kValidityCellOffset);
+  GotoIf(WordEqual(validity_cell, IntPtrConstant(0)),
+         &validity_cell_check_done);
   Node* cell_value = LoadObjectField(validity_cell, Cell::kValueOffset);
   GotoIf(WordNotEqual(cell_value,
                       SmiConstant(Smi::FromInt(Map::kPrototypeChainValid))),
          miss);
+  Goto(&validity_cell_check_done);
 
+  Bind(&validity_cell_check_done);
   Node* smi_handler = LoadObjectField(handler, LoadHandler::kSmiHandlerOffset);
   CSA_ASSERT(TaggedIsSmi(smi_handler));
 
@@ -5636,6 +5681,12 @@ void CodeStubAssembler::HandleLoadICProtoHandler(
 
   Bind(&tuple_handler);
   {
+    Label load_existent(this);
+    GotoIf(WordNotEqual(maybe_holder_cell, NullConstant()), &load_existent);
+    // This is a handler for a load of a non-existent value.
+    Return(UndefinedConstant());
+
+    Bind(&load_existent);
     Node* holder = LoadWeakCellValue(maybe_holder_cell);
     // The |holder| is guaranteed to be alive at this point since we passed
     // both the receiver map check and the validity cell check.
@@ -5658,10 +5709,16 @@ void CodeStubAssembler::HandleLoadICProtoHandler(
                   },
                   1, IndexAdvanceMode::kPost);
 
-    Node* holder_cell = LoadFixedArrayElement(
+    Node* maybe_holder_cell = LoadFixedArrayElement(
         handler, IntPtrConstant(LoadHandler::kHolderCellIndex), 0,
         INTPTR_PARAMETERS);
-    Node* holder = LoadWeakCellValue(holder_cell);
+    Label load_existent(this);
+    GotoIf(WordNotEqual(maybe_holder_cell, NullConstant()), &load_existent);
+    // This is a handler for a load of a non-existent value.
+    Return(UndefinedConstant());
+
+    Bind(&load_existent);
+    Node* holder = LoadWeakCellValue(maybe_holder_cell);
     // The |holder| is guaranteed to be alive at this point since we passed
     // the receiver map check, the validity cell check and the prototype chain
     // check.
@@ -6776,7 +6833,8 @@ void CodeStubAssembler::TrapAllocationMemento(Node* object,
   Node* new_space_top_address = ExternalConstant(
       ExternalReference::new_space_allocation_top_address(isolate()));
   const int kMementoMapOffset = JSArray::kSize - kHeapObjectTag;
-  const int kMementoEndOffset = kMementoMapOffset + AllocationMemento::kSize;
+  const int kMementoLastWordOffset =
+      kMementoMapOffset + AllocationMemento::kSize - kPointerSize;
 
   // Bail out if the object is not in new space.
   Node* object_page = PageFromAddress(object);
@@ -6789,28 +6847,29 @@ void CodeStubAssembler::TrapAllocationMemento(Node* object,
         &no_memento_found);
   }
 
-  Node* memento_end = IntPtrAdd(object, IntPtrConstant(kMementoEndOffset));
-  Node* memento_end_page = PageFromAddress(memento_end);
+  Node* memento_last_word =
+      IntPtrAdd(object, IntPtrConstant(kMementoLastWordOffset));
+  Node* memento_last_word_page = PageFromAddress(memento_last_word);
 
   Node* new_space_top = Load(MachineType::Pointer(), new_space_top_address);
   Node* new_space_top_page = PageFromAddress(new_space_top);
 
-  // If the object is in new space, we need to check whether it is and
-  // respective potential memento object on the same page as the current top.
-  GotoIf(WordEqual(memento_end_page, new_space_top_page), &top_check);
+  // If the object is in new space, we need to check whether respective
+  // potential memento object is on the same page as the current top.
+  GotoIf(WordEqual(memento_last_word_page, new_space_top_page), &top_check);
 
   // The object is on a different page than allocation top. Bail out if the
   // object sits on the page boundary as no memento can follow and we cannot
   // touch the memory following it.
-  Branch(WordEqual(object_page, memento_end_page), &map_check,
+  Branch(WordEqual(object_page, memento_last_word_page), &map_check,
          &no_memento_found);
 
   // If top is on the same page as the current object, we need to check whether
   // we are below top.
   Bind(&top_check);
   {
-    Branch(UintPtrGreaterThan(memento_end, new_space_top), &no_memento_found,
-           &map_check);
+    Branch(UintPtrGreaterThanOrEqual(memento_last_word, new_space_top),
+           &no_memento_found, &map_check);
   }
 
   // Memento map check.
@@ -6962,12 +7021,15 @@ Node* CodeStubAssembler::CreateWeakCellInFeedbackVector(Node* feedback_vector,
 }
 
 void CodeStubAssembler::BuildFastLoop(
+    const CodeStubAssembler::VariableList& vars,
     MachineRepresentation index_rep, Node* start_index, Node* end_index,
     std::function<void(CodeStubAssembler* assembler, Node* index)> body,
     int increment, IndexAdvanceMode mode) {
   Variable var(this, index_rep);
+  VariableList vars_copy(vars, zone());
+  vars_copy.Add(&var, zone());
   var.Bind(start_index);
-  Label loop(this, &var);
+  Label loop(this, vars_copy);
   Label after_loop(this);
   // Introduce an explicit second check of the termination condition before the
   // loop that helps turbofan generate better code. If there's only a single
@@ -8725,6 +8787,77 @@ compiler::Node* CodeStubAssembler::IsDetachedBuffer(compiler::Node* buffer) {
 
   return Word32NotEqual(Word32And(buffer_bit_field, was_neutered_mask),
                         Int32Constant(0));
+}
+
+CodeStubArguments::CodeStubArguments(CodeStubAssembler* assembler,
+                                     compiler::Node* argc,
+                                     CodeStubAssembler::ParameterMode mode)
+    : assembler_(assembler),
+      argc_(argc),
+      arguments_(nullptr),
+      fp_(assembler->LoadFramePointer()) {
+  compiler::Node* offset = assembler->ElementOffsetFromIndex(
+      argc_, FAST_ELEMENTS, mode,
+      (StandardFrameConstants::kFixedSlotCountAboveFp - 1) * kPointerSize);
+  arguments_ = assembler_->IntPtrAddFoldConstants(fp_, offset);
+  if (mode == CodeStubAssembler::INTEGER_PARAMETERS) {
+    argc_ = assembler->ChangeInt32ToIntPtr(argc_);
+  } else if (mode == CodeStubAssembler::SMI_PARAMETERS) {
+    argc_ = assembler->SmiUntag(argc_);
+  }
+}
+
+compiler::Node* CodeStubArguments::GetReceiver() {
+  return assembler_->Load(MachineType::AnyTagged(), arguments_,
+                          assembler_->IntPtrConstant(kPointerSize));
+}
+
+compiler::Node* CodeStubArguments::AtIndex(
+    compiler::Node* index, CodeStubAssembler::ParameterMode mode) {
+  typedef compiler::Node Node;
+  Node* negated_index = assembler_->IntPtrSubFoldConstants(
+      assembler_->IntPtrOrSmiConstant(0, mode), index);
+  Node* offset =
+      assembler_->ElementOffsetFromIndex(negated_index, FAST_ELEMENTS, mode, 0);
+  return assembler_->Load(MachineType::AnyTagged(), arguments_, offset);
+}
+
+compiler::Node* CodeStubArguments::AtIndex(int index) {
+  return AtIndex(assembler_->IntPtrConstant(index));
+}
+
+void CodeStubArguments::ForEach(const CodeStubAssembler::VariableList& vars,
+                                CodeStubArguments::ForEachBodyFunction body,
+                                compiler::Node* first, compiler::Node* last,
+                                CodeStubAssembler::ParameterMode mode) {
+  assembler_->Comment("CodeStubArguments::ForEach");
+  DCHECK_IMPLIES(first == nullptr || last == nullptr,
+                 mode == CodeStubAssembler::INTPTR_PARAMETERS);
+  if (first == nullptr) {
+    first = assembler_->IntPtrOrSmiConstant(0, mode);
+  }
+  if (last == nullptr) {
+    last = argc_;
+  }
+  compiler::Node* start = assembler_->IntPtrSubFoldConstants(
+      arguments_,
+      assembler_->ElementOffsetFromIndex(first, FAST_ELEMENTS, mode));
+  compiler::Node* end = assembler_->IntPtrSubFoldConstants(
+      arguments_,
+      assembler_->ElementOffsetFromIndex(last, FAST_ELEMENTS, mode));
+  assembler_->BuildFastLoop(
+      vars, MachineType::PointerRepresentation(), start, end,
+      [body](CodeStubAssembler* assembler, compiler::Node* current) {
+        Node* arg = assembler->Load(MachineType::AnyTagged(), current);
+        body(assembler, arg);
+      },
+      -kPointerSize, CodeStubAssembler::IndexAdvanceMode::kPost);
+}
+
+void CodeStubArguments::PopAndReturn(compiler::Node* value) {
+  assembler_->PopAndReturn(
+      assembler_->IntPtrAddFoldConstants(argc_, assembler_->IntPtrConstant(1)),
+      value);
 }
 
 }  // namespace internal

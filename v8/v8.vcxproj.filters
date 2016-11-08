@@ -270,9 +270,6 @@
     <ClInclude Include="include\v8-testing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\v8-tracing.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\v8-util.h">
       <Filter>Header Files</Filter>
     </ClInclude>

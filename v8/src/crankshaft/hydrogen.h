@@ -2116,7 +2116,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder,
 
   FunctionState* function_state() const { return function_state_; }
 
-  void VisitDeclarations(ZoneList<Declaration*>* declarations);
+  void VisitDeclarations(Declaration::List* declarations);
 
   AstTypeBounds* bounds() { return &bounds_; }
 
@@ -2333,13 +2333,15 @@ class HOptimizedGraphBuilder : public HGraphBuilder,
 #undef DECLARE_VISIT
 
  private:
-  // Helpers for flow graph construction.
-  enum GlobalPropertyAccess {
-    kUseCell,
-    kUseGeneric
-  };
-  GlobalPropertyAccess LookupGlobalProperty(Variable* var, LookupIterator* it,
-                                            PropertyAccessType access_type);
+  bool CanInlineGlobalPropertyAccess(Variable* var, LookupIterator* it,
+                                     PropertyAccessType access_type);
+
+  bool CanInlineGlobalPropertyAccess(LookupIterator* it,
+                                     PropertyAccessType access_type);
+
+  void InlineGlobalPropertyLoad(LookupIterator* it, BailoutId ast_id);
+  HInstruction* InlineGlobalPropertyStore(LookupIterator* it, HValue* value,
+                                          BailoutId ast_id);
 
   void EnsureArgumentsArePushedForAccess();
   bool TryArgumentsAccess(Property* expr);
@@ -2797,6 +2799,8 @@ class HOptimizedGraphBuilder : public HGraphBuilder,
                                         TailCallMode tail_call_mode);
 
   bool CanBeFunctionApplyArguments(Call* expr);
+
+  bool IsAnyParameterContextAllocated();
 
   // The translation state of the currently-being-translated function.
   FunctionState* function_state_;

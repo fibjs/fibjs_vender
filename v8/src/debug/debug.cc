@@ -1352,6 +1352,84 @@ bool Debug::PrepareFunctionForBreakPoints(Handle<SharedFunctionInfo> shared) {
   return true;
 }
 
+namespace {
+template <typename Iterator>
+void GetBreakablePositions(Iterator* it, int start_position, int end_position,
+                           BreakPositionAlignment alignment,
+                           std::set<int>* positions) {
+  it->SkipToPosition(start_position, alignment);
+  while (!it->Done() && it->position() < end_position &&
+         it->position() >= start_position) {
+    positions->insert(alignment == STATEMENT_ALIGNED ? it->statement_position()
+                                                     : it->position());
+    it->Next();
+  }
+}
+
+void FindBreakablePositions(Handle<DebugInfo> debug_info, int start_position,
+                            int end_position, BreakPositionAlignment alignment,
+                            std::set<int>* positions) {
+  if (debug_info->HasDebugCode()) {
+    CodeBreakIterator it(debug_info, ALL_BREAK_LOCATIONS);
+    GetBreakablePositions(&it, start_position, end_position, alignment,
+                          positions);
+  } else {
+    DCHECK(debug_info->HasDebugBytecodeArray());
+    BytecodeArrayBreakIterator it(debug_info, ALL_BREAK_LOCATIONS);
+    GetBreakablePositions(&it, start_position, end_position, alignment,
+                          positions);
+  }
+}
+}  // namespace
+
+bool Debug::GetPossibleBreakpoints(Handle<Script> script, int start_position,
+                                   int end_position, std::set<int>* positions) {
+  while (true) {
+    if (!script->shared_function_infos()->IsWeakFixedArray()) return false;
+
+    WeakFixedArray* infos =
+        WeakFixedArray::cast(script->shared_function_infos());
+    HandleScope scope(isolate_);
+    List<Handle<SharedFunctionInfo>> candidates;
+    {
+      WeakFixedArray::Iterator iterator(infos);
+      SharedFunctionInfo* info;
+      while ((info = iterator.Next<SharedFunctionInfo>())) {
+        if (info->end_position() < start_position ||
+            info->start_position() >= end_position) {
+          continue;
+        }
+        if (!info->IsSubjectToDebugging()) continue;
+        if (!info->HasDebugCode() && !info->allows_lazy_compilation()) continue;
+        candidates.Add(i::handle(info));
+      }
+    }
+
+    bool was_compiled = false;
+    for (int i = 0; i < candidates.length(); ++i) {
+      if (!candidates[i]->HasDebugCode()) {
+        if (!Compiler::CompileDebugCode(candidates[i])) {
+          return false;
+        } else {
+          was_compiled = true;
+        }
+      }
+      if (!candidates[i]->HasDebugInfo()) CreateDebugInfo(candidates[i]);
+    }
+    if (was_compiled) continue;
+
+    for (int i = 0; i < candidates.length(); ++i) {
+      CHECK(candidates[i]->HasDebugInfo());
+      Handle<DebugInfo> debug_info(candidates[i]->GetDebugInfo());
+      FindBreakablePositions(debug_info, start_position, end_position,
+                             STATEMENT_ALIGNED, positions);
+    }
+    return true;
+  }
+  UNREACHABLE();
+  return false;
+}
+
 void Debug::RecordAsyncFunction(Handle<JSGeneratorObject> generator_object) {
   if (last_step_action() <= StepOut) return;
   if (!IsAsyncFunction(generator_object->function()->shared()->kind())) return;
@@ -1850,7 +1928,7 @@ void Debug::CallEventCallback(v8::DebugEvent event,
                                    event_listener_data_,
                                    client_data);
     callback(event_details);
-    DCHECK(!isolate_->has_scheduled_exception());
+    CHECK(!isolate_->has_scheduled_exception());
   } else {
     // Invoke the JavaScript debug event listener.
     DCHECK(event_listener_->IsJSFunction());
@@ -1859,8 +1937,10 @@ void Debug::CallEventCallback(v8::DebugEvent event,
                               event_data,
                               event_listener_data_ };
     Handle<JSReceiver> global = isolate_->global_proxy();
-    Execution::TryCall(isolate_, Handle<JSFunction>::cast(event_listener_),
-                       global, arraysize(argv), argv);
+    MaybeHandle<Object> result =
+        Execution::Call(isolate_, Handle<JSFunction>::cast(event_listener_),
+                        global, arraysize(argv), argv);
+    CHECK(!result.is_null());  // Listeners may not throw.
   }
   in_debug_event_listener_ = previous;
 }

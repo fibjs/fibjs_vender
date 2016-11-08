@@ -331,7 +331,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   // Context manipulation
   compiler::Node* LoadContextElement(compiler::Node* context, int slot_index);
+  compiler::Node* LoadContextElement(compiler::Node* context,
+                                     compiler::Node* slot_index);
   compiler::Node* StoreContextElement(compiler::Node* context, int slot_index,
+                                      compiler::Node* value);
+  compiler::Node* StoreContextElement(compiler::Node* context,
+                                      compiler::Node* slot_index,
                                       compiler::Node* value);
   compiler::Node* LoadNativeContext(compiler::Node* context);
 
@@ -518,7 +523,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   // Copies |character_count| elements from |from_string| to |to_string|
   // starting at the |from_index|'th character. |from_string| and |to_string|
-  // must be either both one-byte strings or both two-byte strings.
+  // can either be one-byte strings or two-byte strings, although if
+  // |from_string| is two-byte, then |to_string| must be two-byte.
   // |from_index|, |to_index| and |character_count| must be either Smis or
   // intptr_ts depending on |mode| s.t. 0 <= |from_index| <= |from_index| +
   // |character_count| <= from_string.length and 0 <= |to_index| <= |to_index| +
@@ -528,7 +534,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                             compiler::Node* from_index,
                             compiler::Node* to_index,
                             compiler::Node* character_count,
-                            String::Encoding encoding, ParameterMode mode);
+                            String::Encoding from_encoding,
+                            String::Encoding to_encoding, ParameterMode mode);
 
   // Loads an element from |array| of |from_kind| elements by given |offset|
   // (NOTE: not index!), does a hole check if |if_hole| is provided and
@@ -1023,11 +1030,21 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   enum class IndexAdvanceMode { kPre, kPost };
 
   void BuildFastLoop(
+      const VariableList& var_list, MachineRepresentation index_rep,
+      compiler::Node* start_index, compiler::Node* end_index,
+      std::function<void(CodeStubAssembler* assembler, compiler::Node* index)>
+          body,
+      int increment, IndexAdvanceMode mode = IndexAdvanceMode::kPre);
+
+  void BuildFastLoop(
       MachineRepresentation index_rep, compiler::Node* start_index,
       compiler::Node* end_index,
       std::function<void(CodeStubAssembler* assembler, compiler::Node* index)>
           body,
-      int increment, IndexAdvanceMode mode = IndexAdvanceMode::kPre);
+      int increment, IndexAdvanceMode mode = IndexAdvanceMode::kPre) {
+    BuildFastLoop(VariableList(0, zone()), index_rep, start_index, end_index,
+                  body, increment, mode);
+  }
 
   enum class ForEachDirection { kForward, kReverse };
 
@@ -1095,7 +1112,13 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // TypedArray/ArrayBuffer helpers
   compiler::Node* IsDetachedBuffer(compiler::Node* buffer);
 
+  compiler::Node* ElementOffsetFromIndex(compiler::Node* index,
+                                         ElementsKind kind, ParameterMode mode,
+                                         int base_size = 0);
+
  private:
+  friend class CodeStubArguments;
+
   enum ElementSupport { kOnlyProperties, kSupportElements };
 
   void DescriptorLookupLinear(compiler::Node* unique_name,
@@ -1153,10 +1176,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                         Label* definitely_no_elements,
                                         Label* possibly_elements);
 
-  compiler::Node* ElementOffsetFromIndex(compiler::Node* index,
-                                         ElementsKind kind, ParameterMode mode,
-                                         int base_size = 0);
-
   compiler::Node* AllocateRawAligned(compiler::Node* size_in_bytes,
                                      AllocationFlags flags,
                                      compiler::Node* top_address,
@@ -1194,6 +1213,53 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                      AllocationFlags flags);
 
   static const int kElementLoopUnrollThreshold = 8;
+};
+
+class CodeStubArguments {
+ public:
+  // |argc| specifies the number of arguments passed to the builtin excluding
+  // the receiver.
+  CodeStubArguments(CodeStubAssembler* assembler, compiler::Node* argc,
+                    CodeStubAssembler::ParameterMode mode =
+                        CodeStubAssembler::INTPTR_PARAMETERS);
+
+  compiler::Node* GetReceiver();
+
+  // |index| is zero-based and does not include the receiver
+  compiler::Node* AtIndex(compiler::Node* index,
+                          CodeStubAssembler::ParameterMode mode =
+                              CodeStubAssembler::INTPTR_PARAMETERS);
+
+  compiler::Node* AtIndex(int index);
+
+  typedef std::function<void(CodeStubAssembler* assembler, compiler::Node* arg)>
+      ForEachBodyFunction;
+
+  // Iteration doesn't include the receiver. |first| and |last| are zero-based.
+  void ForEach(ForEachBodyFunction body, compiler::Node* first = nullptr,
+               compiler::Node* last = nullptr,
+               CodeStubAssembler::ParameterMode mode =
+                   CodeStubAssembler::INTPTR_PARAMETERS) {
+    CodeStubAssembler::VariableList list(0, assembler_->zone());
+    ForEach(list, body, first, last);
+  }
+
+  // Iteration doesn't include the receiver. |first| and |last| are zero-based.
+  void ForEach(const CodeStubAssembler::VariableList& vars,
+               ForEachBodyFunction body, compiler::Node* first = nullptr,
+               compiler::Node* last = nullptr,
+               CodeStubAssembler::ParameterMode mode =
+                   CodeStubAssembler::INTPTR_PARAMETERS);
+
+  void PopAndReturn(compiler::Node* value);
+
+ private:
+  compiler::Node* GetArguments();
+
+  CodeStubAssembler* assembler_;
+  compiler::Node* argc_;
+  compiler::Node* arguments_;
+  compiler::Node* fp_;
 };
 
 #define CSA_ASSERT(x) Assert((x), #x, __FILE__, __LINE__)

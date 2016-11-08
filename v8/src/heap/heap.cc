@@ -156,7 +156,6 @@ Heap::Heap()
       strong_roots_list_(NULL),
       heap_iterator_depth_(0),
       embedder_heap_tracer_(nullptr),
-      embedder_reference_reporter_(new TracePossibleWrapperReporter(this)),
       force_oom_(false),
       delay_sweeper_tasks_for_testing_(false) {
 // Allow build-time customization of the max semispace size. Building
@@ -1017,7 +1016,6 @@ bool Heap::CollectGarbage(GarbageCollector collector,
           (committed_memory_before - committed_memory_after) > MB ||
           HasHighFragmentation(used_memory_after, committed_memory_after) ||
           (detached_contexts()->length() > 0);
-      event.committed_memory = committed_memory_after;
       if (deserialization_complete_) {
         memory_reducer_->NotifyMarkCompact(event);
       }
@@ -2266,7 +2264,6 @@ bool Heap::CreateInitialMaps() {
     DCHECK_NE(fixed_array_map(), fixed_cow_array_map());
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, scope_info)
-    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, module_info_entry)
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, module_info)
     ALLOCATE_PRIMITIVE_MAP(HEAP_NUMBER_TYPE, HeapNumber::kSize, heap_number,
                            Context::NUMBER_FUNCTION_INDEX)
@@ -5473,7 +5470,7 @@ bool Heap::SetUp() {
   mark_compact_collector_ = new MarkCompactCollector(this);
   gc_idle_time_handler_ = new GCIdleTimeHandler();
   memory_reducer_ = new MemoryReducer(this);
-  if (FLAG_track_gc_object_stats) {
+  if (V8_UNLIKELY(FLAG_gc_stats)) {
     live_object_stats_ = new ObjectStats(this);
     dead_object_stats_ = new ObjectStats(this);
   }
@@ -5552,8 +5549,7 @@ void Heap::NotifyDeserializationComplete() {
 }
 
 void Heap::SetEmbedderHeapTracer(EmbedderHeapTracer* tracer) {
-  DCHECK_NOT_NULL(tracer);
-  CHECK_NULL(embedder_heap_tracer_);
+  DCHECK_EQ(gc_state_, HeapState::NOT_IN_GC);
   embedder_heap_tracer_ = tracer;
 }
 
@@ -5711,9 +5707,6 @@ void Heap::TearDown() {
 
   delete memory_allocator_;
   memory_allocator_ = nullptr;
-
-  delete embedder_reference_reporter_;
-  embedder_reference_reporter_ = nullptr;
 }
 
 

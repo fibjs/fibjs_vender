@@ -311,13 +311,7 @@ bool MemoryAllocator::SetUp(intptr_t capacity, intptr_t capacity_executable,
 
 
 void MemoryAllocator::TearDown() {
-  unmapper()->WaitUntilCompleted();
-
-  MemoryChunk* chunk = nullptr;
-  while ((chunk = unmapper()->TryGetPooledMemoryChunkSafe()) != nullptr) {
-    FreeMemory(reinterpret_cast<Address>(chunk), MemoryChunk::kPageSize,
-               NOT_EXECUTABLE);
-  }
+  unmapper()->TearDown();
 
   // Check that spaces were torn down before MemoryAllocator.
   DCHECK_EQ(size_.Value(), 0);
@@ -382,6 +376,13 @@ void MemoryAllocator::Unmapper::PerformFreeMemoryOnQueuedChunks() {
   while ((chunk = GetMemoryChunkSafe<kNonRegular>()) != nullptr) {
     allocator_->PerformFreeMemory(chunk);
   }
+}
+
+void MemoryAllocator::Unmapper::TearDown() {
+  WaitUntilCompleted();
+  ReconsiderDelayedChunks();
+  CHECK(delayed_regular_chunks_.empty());
+  PerformFreeMemoryOnQueuedChunks();
 }
 
 void MemoryAllocator::Unmapper::ReconsiderDelayedChunks() {
@@ -2795,20 +2796,6 @@ void PagedSpace::RepairFreeListsAfterDeserialization() {
     Address address = page->OffsetToAddress(Page::kPageSize - size);
     heap()->CreateFillerObjectAt(address, static_cast<int>(size),
                                  ClearRecordedSlots::kNo);
-  }
-}
-
-
-void PagedSpace::EvictEvacuationCandidatesFromLinearAllocationArea() {
-  if (allocation_info_.top() >= allocation_info_.limit()) return;
-
-  if (!Page::FromAllocationAreaAddress(allocation_info_.top())->CanAllocate()) {
-    // Create filler object to keep page iterable if it was iterable.
-    int remaining =
-        static_cast<int>(allocation_info_.limit() - allocation_info_.top());
-    heap()->CreateFillerObjectAt(allocation_info_.top(), remaining,
-                                 ClearRecordedSlots::kNo);
-    allocation_info_.Reset(nullptr, nullptr);
   }
 }
 

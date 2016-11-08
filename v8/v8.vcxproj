@@ -30,7 +30,6 @@
     <ClInclude Include="include\v8-platform.h" />
     <ClInclude Include="include\v8-profiler.h" />
     <ClInclude Include="include\v8-testing.h" />
-    <ClInclude Include="include\v8-tracing.h" />
     <ClInclude Include="include\v8-util.h" />
     <ClInclude Include="include\v8-version.h" />
     <ClInclude Include="include\v8.h" />
