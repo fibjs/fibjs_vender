@@ -101,7 +101,7 @@ void OSThread::start()
     assert(thread_ == 0);
     Ref();
     thread_ = (HANDLE)_beginthreadex(NULL, 0, (unsigned (__stdcall*)(void*))Entry,
-                                     this, 0, NULL);
+                                     this, 0, &thread_id);
 }
 
 void OSThread::join()
