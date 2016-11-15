@@ -505,7 +505,7 @@ private:
 public:
 #ifdef _WIN32
     HANDLE thread_;
-    uintptr_t thread_id;
+    uint32_t thread_id;
 #else
     pthread_t thread_;
 #endif
