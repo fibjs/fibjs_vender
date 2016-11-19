@@ -296,7 +296,7 @@ public:
 		if (r != 0 || sz1 == sz2)
 			return r;
 
-		return sz1 > sz2 ? 1 : npos;
+		return sz1 > sz2 ? 1 : -1;
 	}
 
 	int32_t compare(const T* str) const
@@ -313,7 +313,7 @@ public:
 		if (r != 0 || sz1 == sz2)
 			return r;
 
-		return sz1 > sz2 ? 1 : npos;
+		return sz1 > sz2 ? 1 : -1;
 	}
 
 public:
