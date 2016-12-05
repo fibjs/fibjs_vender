@@ -30,6 +30,7 @@ class Zone;
 namespace compiler {
 
 class CallDescriptor;
+class CodeAssemblerState;
 class Node;
 class RawMachineAssembler;
 class RawMachineLabel;
@@ -150,9 +151,11 @@ class RawMachineLabel;
   V(ChangeUint32ToFloat64)              \
   V(ChangeUint32ToUint64)               \
   V(RoundFloat64ToInt32)                \
+  V(RoundInt32ToFloat32)                \
   V(Float64SilenceNaN)                  \
   V(Float64RoundDown)                   \
   V(Float64RoundUp)                     \
+  V(Float64RoundTiesEven)               \
   V(Float64RoundTruncate)               \
   V(Word32Clz)                          \
   V(Word32BinaryNot)
@@ -173,26 +176,22 @@ class RawMachineLabel;
 // clients, CodeAssembler also provides an abstraction for creating variables
 // and enhanced Label functionality to merge variable values along paths where
 // they have differing values, including loops.
+//
+// The CodeAssembler itself is stateless (and instances are expected to be
+// temporary-scoped and short-lived); all its state is encapsulated into
+// a CodeAssemblerState instance.
 class V8_EXPORT_PRIVATE CodeAssembler {
  public:
-  // Create with CallStub linkage.
-  // |result_size| specifies the number of results returned by the stub.
-  // TODO(rmcilroy): move result_size to the CallInterfaceDescriptor.
-  CodeAssembler(Isolate* isolate, Zone* zone,
-                const CallInterfaceDescriptor& descriptor, Code::Flags flags,
-                const char* name, size_t result_size = 1);
-
-  // Create with JSCall linkage.
-  CodeAssembler(Isolate* isolate, Zone* zone, int parameter_count,
-                Code::Flags flags, const char* name);
+  explicit CodeAssembler(CodeAssemblerState* state) : state_(state) {}
 
   virtual ~CodeAssembler();
 
-  Handle<Code> GenerateCode();
+  static Handle<Code> GenerateCode(CodeAssemblerState* state);
 
   bool Is64() const;
   bool IsFloat64RoundUpSupported() const;
   bool IsFloat64RoundDownSupported() const;
+  bool IsFloat64RoundTiesEvenSupported() const;
   bool IsFloat64RoundTruncateSupported() const;
 
   class Label;
@@ -207,9 +206,10 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 
    private:
     friend class CodeAssembler;
+    friend class CodeAssemblerState;
     class Impl;
     Impl* impl_;
-    CodeAssembler* assembler_;
+    CodeAssemblerState* state_;
   };
 
   typedef ZoneList<Variable*> VariableList;
@@ -252,9 +252,6 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   void Switch(Node* index, Label* default_label, const int32_t* case_values,
               Label** case_labels, size_t case_count);
 
-  Node* Select(Node* condition, Node* true_value, Node* false_value,
-               MachineRepresentation rep = MachineRepresentation::kTagged);
-
   // Access to the frame pointer
   Node* LoadFramePointer();
   Node* LoadParentFramePointer();
@@ -264,19 +261,20 @@ class V8_EXPORT_PRIVATE CodeAssembler {
 
   // Load raw memory location.
   Node* Load(MachineType rep, Node* base);
-  Node* Load(MachineType rep, Node* base, Node* index);
-  Node* AtomicLoad(MachineType rep, Node* base, Node* index);
+  Node* Load(MachineType rep, Node* base, Node* offset);
+  Node* AtomicLoad(MachineType rep, Node* base, Node* offset);
 
   // Load a value from the root array.
   Node* LoadRoot(Heap::RootListIndex root_index);
 
   // Store value to raw memory location.
-  Node* Store(MachineRepresentation rep, Node* base, Node* value);
-  Node* Store(MachineRepresentation rep, Node* base, Node* index, Node* value);
+  Node* Store(Node* base, Node* value);
+  Node* Store(Node* base, Node* offset, Node* value);
+  Node* StoreWithMapWriteBarrier(Node* base, Node* offset, Node* value);
   Node* StoreNoWriteBarrier(MachineRepresentation rep, Node* base, Node* value);
-  Node* StoreNoWriteBarrier(MachineRepresentation rep, Node* base, Node* index,
+  Node* StoreNoWriteBarrier(MachineRepresentation rep, Node* base, Node* offset,
                             Node* value);
-  Node* AtomicStore(MachineRepresentation rep, Node* base, Node* index,
+  Node* AtomicStore(MachineRepresentation rep, Node* base, Node* offset,
                     Node* value);
 
   // Store a value to the root array.
@@ -471,17 +469,12 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   virtual void CallEpilogue();
 
  private:
-  CodeAssembler(Isolate* isolate, Zone* zone, CallDescriptor* call_descriptor,
-                Code::Flags flags, const char* name);
-
   Node* CallN(CallDescriptor* descriptor, Node* code_target, Node** args);
   Node* TailCallN(CallDescriptor* descriptor, Node* code_target, Node** args);
 
-  std::unique_ptr<RawMachineAssembler> raw_assembler_;
-  Code::Flags flags_;
-  const char* name_;
-  bool code_generated_;
-  ZoneSet<Variable::Impl*> variables_;
+  RawMachineAssembler* raw_assembler() const;
+
+  CodeAssemblerState* state_;
 
   DISALLOW_COPY_AND_ASSIGN(CodeAssembler);
 };
@@ -513,7 +506,7 @@ class CodeAssembler::Label {
 
   bool bound_;
   size_t merge_count_;
-  CodeAssembler* assembler_;
+  CodeAssemblerState* state_;
   RawMachineLabel* label_;
   // Map of variables that need to be merged to their phi nodes (or placeholders
   // for those phis).
@@ -521,6 +514,38 @@ class CodeAssembler::Label {
   // Map of variables to the list of value nodes that have been added from each
   // merge path in their order of merging.
   std::map<Variable::Impl*, std::vector<Node*>> variable_merges_;
+};
+
+class V8_EXPORT_PRIVATE CodeAssemblerState {
+ public:
+  // Create with CallStub linkage.
+  // |result_size| specifies the number of results returned by the stub.
+  // TODO(rmcilroy): move result_size to the CallInterfaceDescriptor.
+  CodeAssemblerState(Isolate* isolate, Zone* zone,
+                     const CallInterfaceDescriptor& descriptor,
+                     Code::Flags flags, const char* name,
+                     size_t result_size = 1);
+
+  // Create with JSCall linkage.
+  CodeAssemblerState(Isolate* isolate, Zone* zone, int parameter_count,
+                     Code::Flags flags, const char* name);
+
+  ~CodeAssemblerState();
+
+ private:
+  friend class CodeAssembler;
+
+  CodeAssemblerState(Isolate* isolate, Zone* zone,
+                     CallDescriptor* call_descriptor, Code::Flags flags,
+                     const char* name);
+
+  std::unique_ptr<RawMachineAssembler> raw_assembler_;
+  Code::Flags flags_;
+  const char* name_;
+  bool code_generated_;
+  ZoneSet<CodeAssembler::Variable::Impl*> variables_;
+
+  DISALLOW_COPY_AND_ASSIGN(CodeAssemblerState);
 };
 
 }  // namespace compiler

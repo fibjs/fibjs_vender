@@ -458,6 +458,7 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
   const Operator* CreateClosure(Handle<SharedFunctionInfo> shared_info,
                                 PretenureFlag pretenure);
   const Operator* CreateIterResultObject();
+  const Operator* CreateKeyValueArray();
   const Operator* CreateLiteralArray(Handle<FixedArray> constant_elements,
                                      int literal_flags, int literal_index,
                                      int number_of_elements);
@@ -488,6 +489,8 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
   const Operator* StoreNamed(LanguageMode language_mode, Handle<Name> name,
                              VectorSlotPair const& feedback);
 
+  const Operator* StoreDataPropertyInLiteral();
+
   const Operator* DeleteProperty(LanguageMode language_mode);
 
   const Operator* HasProperty();
@@ -502,8 +505,12 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
   const Operator* LoadContext(size_t depth, size_t index, bool immutable);
   const Operator* StoreContext(size_t depth, size_t index);
 
+  const Operator* LoadModule(int32_t cell_index);
+  const Operator* StoreModule(int32_t cell_index);
+
   const Operator* TypeOf();
   const Operator* InstanceOf();
+  const Operator* OrdinaryHasInstance();
 
   const Operator* ForInNext();
   const Operator* ForInPrepare();

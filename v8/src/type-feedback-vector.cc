@@ -37,17 +37,6 @@ FeedbackVectorSlotKind TypeFeedbackMetadata::GetKind(
   return VectorICComputer::decode(data, slot.ToInt());
 }
 
-String* TypeFeedbackMetadata::GetName(FeedbackVectorSlot slot) const {
-  DCHECK(SlotRequiresName(GetKind(slot)));
-  UnseededNumberDictionary* names =
-      UnseededNumberDictionary::cast(get(kNamesTableIndex));
-  int entry = names->FindEntry(GetIsolate(), slot.ToInt());
-  CHECK_NE(UnseededNumberDictionary::kNotFound, entry);
-  Object* name = names->ValueAt(entry);
-  DCHECK(name->IsString());
-  return String::cast(name);
-}
-
 void TypeFeedbackMetadata::SetKind(FeedbackVectorSlot slot,
                                    FeedbackVectorSlotKind kind) {
   int index = VectorICComputer::index(kReservedIndexCount, slot.ToInt());
@@ -97,31 +86,10 @@ Handle<TypeFeedbackMetadata> TypeFeedbackMetadata::New(Isolate* isolate,
   Handle<TypeFeedbackMetadata> metadata =
       Handle<TypeFeedbackMetadata>::cast(array);
 
-  // Add names to NamesTable.
-  const int name_count = spec->name_count();
-
-  Handle<UnseededNumberDictionary> names;
-  if (name_count) {
-    names = UnseededNumberDictionary::New(isolate, name_count, TENURED);
-  }
-
-  int name_index = 0;
   for (int i = 0; i < slot_count; i++) {
     FeedbackVectorSlotKind kind = spec->GetKind(i);
     metadata->SetKind(FeedbackVectorSlot(i), kind);
-    if (SlotRequiresName(kind)) {
-      Handle<String> name = spec->GetName(name_index);
-      DCHECK(!name.is_null());
-      Handle<UnseededNumberDictionary> new_names =
-          UnseededNumberDictionary::AtNumberPut(names, i, name);
-      DCHECK_EQ(*new_names, *names);
-      names = new_names;
-      name_index++;
-    }
   }
-  DCHECK_EQ(name_count, name_index);
-  metadata->set(kNamesTableIndex,
-                name_count ? static_cast<Object*>(*names) : Smi::kZero);
 
   // It's important that the TypeFeedbackMetadata have a COW map, since it's
   // pointed to by both a SharedFunctionInfo and indirectly by closures through
@@ -141,7 +109,6 @@ bool TypeFeedbackMetadata::SpecDiffersFrom(
   }
 
   int slots = slot_count();
-  int name_index = 0;
   for (int i = 0; i < slots;) {
     FeedbackVectorSlot slot(i);
     FeedbackVectorSlotKind kind = GetKind(slot);
@@ -149,14 +116,6 @@ bool TypeFeedbackMetadata::SpecDiffersFrom(
 
     if (kind != other_spec->GetKind(i)) {
       return true;
-    }
-    if (SlotRequiresName(kind)) {
-      String* name = GetName(slot);
-      DCHECK(name != GetHeap()->empty_string());
-      String* other_name = *other_spec->GetName(name_index++);
-      if (name != other_name) {
-        return true;
-      }
     }
     i += entry_size;
   }
@@ -176,11 +135,6 @@ bool TypeFeedbackMetadata::DiffersFrom(
     int entry_size = TypeFeedbackMetadata::GetSlotSize(kind);
     if (GetKind(slot) != other_metadata->GetKind(slot)) {
       return true;
-    }
-    if (SlotRequiresName(kind)) {
-      if (GetName(slot) != other_metadata->GetName(slot)) {
-        return true;
-      }
     }
     i += entry_size;
   }
@@ -220,11 +174,6 @@ FeedbackVectorSlotKind TypeFeedbackVector::GetKind(
     FeedbackVectorSlot slot) const {
   DCHECK(!is_empty());
   return metadata()->GetKind(slot);
-}
-
-String* TypeFeedbackVector::GetName(FeedbackVectorSlot slot) const {
-  DCHECK(!is_empty());
-  return metadata()->GetName(slot);
 }
 
 // static
@@ -372,50 +321,6 @@ void TypeFeedbackVector::ClearSlotsImpl(SharedFunctionInfo* shared,
           UNREACHABLE();
           break;
       }
-    }
-  }
-}
-
-
-// static
-void TypeFeedbackVector::ClearAllKeyedStoreICs(Isolate* isolate) {
-  SharedFunctionInfo::Iterator iterator(isolate);
-  SharedFunctionInfo* shared;
-  while ((shared = iterator.Next())) {
-    if (!shared->OptimizedCodeMapIsCleared()) {
-      FixedArray* optimized_code_map = shared->optimized_code_map();
-      int length = optimized_code_map->length();
-      for (int i = SharedFunctionInfo::kEntriesStart; i < length;
-           i += SharedFunctionInfo::kEntryLength) {
-        WeakCell* cell = WeakCell::cast(
-            optimized_code_map->get(i + SharedFunctionInfo::kLiteralsOffset));
-        if (cell->value()->IsLiteralsArray()) {
-          TypeFeedbackVector* vector =
-              LiteralsArray::cast(cell->value())->feedback_vector();
-          vector->ClearKeyedStoreICs(shared);
-        }
-      }
-    }
-  }
-}
-
-
-void TypeFeedbackVector::ClearKeyedStoreICs(SharedFunctionInfo* shared) {
-  Isolate* isolate = GetIsolate();
-
-  Code* host = shared->code();
-  Object* uninitialized_sentinel =
-      TypeFeedbackVector::RawUninitializedSentinel(isolate);
-
-  TypeFeedbackMetadataIterator iter(metadata());
-  while (iter.HasNext()) {
-    FeedbackVectorSlot slot = iter.Next();
-    FeedbackVectorSlotKind kind = iter.kind();
-    if (kind != FeedbackVectorSlotKind::KEYED_STORE_IC) continue;
-    Object* obj = Get(slot);
-    if (obj != uninitialized_sentinel) {
-      KeyedStoreICNexus nexus(this, slot);
-      nexus.Clear(host);
     }
   }
 }
@@ -713,7 +618,7 @@ void LoadGlobalICNexus::ConfigurePropertyCellMode(Handle<PropertyCell> cell) {
                    SKIP_WRITE_BARRIER);
 }
 
-void LoadGlobalICNexus::ConfigureHandlerMode(Handle<Code> handler) {
+void LoadGlobalICNexus::ConfigureHandlerMode(Handle<Object> handler) {
   SetFeedback(GetIsolate()->heap()->empty_weak_cell());
   SetFeedbackExtra(*handler);
 }
@@ -811,10 +716,9 @@ void KeyedStoreICNexus::ConfigurePolymorphic(Handle<Name> name,
   InstallHandlers(array, maps, handlers);
 }
 
-
 void KeyedStoreICNexus::ConfigurePolymorphic(MapHandleList* maps,
                                              MapHandleList* transitioned_maps,
-                                             CodeHandleList* handlers) {
+                                             List<Handle<Object>>* handlers) {
   int receiver_count = maps->length();
   DCHECK(receiver_count > 1);
   Handle<FixedArray> array = EnsureArrayOfSize(receiver_count * 3);
@@ -1011,7 +915,14 @@ KeyedAccessStoreMode KeyedStoreICNexus::GetKeyedAccessStoreMode() const {
   FindHandlers(&handlers, maps.length());
   for (int i = 0; i < handlers.length(); i++) {
     // The first handler that isn't the slow handler will have the bits we need.
-    Handle<Code> handler = Handle<Code>::cast(handlers.at(i));
+    Handle<Object> maybe_code_handler = handlers.at(i);
+    Handle<Code> handler;
+    if (maybe_code_handler->IsTuple2()) {
+      Handle<Tuple2> data_handler = Handle<Tuple2>::cast(maybe_code_handler);
+      handler = handle(Code::cast(data_handler->value2()));
+    } else {
+      handler = Handle<Code>::cast(maybe_code_handler);
+    }
     CodeStub::Major major_key = CodeStub::MajorKeyFromKey(handler->stub_key());
     uint32_t minor_key = CodeStub::MinorKeyFromKey(handler->stub_key());
     CHECK(major_key == CodeStub::KeyedStoreSloppyArguments ||

@@ -37,13 +37,10 @@ namespace interpreter {
   V(LdaFalse, AccumulatorUse::kWrite)                                          \
   V(LdaConstant, AccumulatorUse::kWrite, OperandType::kIdx)                    \
                                                                                \
-  /* Loading registers */                                                      \
-  V(LdrUndefined, AccumulatorUse::kNone, OperandType::kRegOut)                 \
-                                                                               \
   /* Globals */                                                                \
-  V(LdaGlobal, AccumulatorUse::kWrite, OperandType::kIdx)                      \
-  V(LdrGlobal, AccumulatorUse::kNone, OperandType::kIdx, OperandType::kRegOut) \
-  V(LdaGlobalInsideTypeof, AccumulatorUse::kWrite, OperandType::kIdx)          \
+  V(LdaGlobal, AccumulatorUse::kWrite, OperandType::kIdx, OperandType::kIdx)   \
+  V(LdaGlobalInsideTypeof, AccumulatorUse::kWrite, OperandType::kIdx,          \
+    OperandType::kIdx)                                                         \
   V(StaGlobalSloppy, AccumulatorUse::kRead, OperandType::kIdx,                 \
     OperandType::kIdx)                                                         \
   V(StaGlobalStrict, AccumulatorUse::kRead, OperandType::kIdx,                 \
@@ -55,10 +52,6 @@ namespace interpreter {
   V(LdaContextSlot, AccumulatorUse::kWrite, OperandType::kReg,                 \
     OperandType::kIdx, OperandType::kUImm)                                     \
   V(LdaCurrentContextSlot, AccumulatorUse::kWrite, OperandType::kIdx)          \
-  V(LdrContextSlot, AccumulatorUse::kNone, OperandType::kReg,                  \
-    OperandType::kIdx, OperandType::kUImm, OperandType::kRegOut)               \
-  V(LdrCurrentContextSlot, AccumulatorUse::kNone, OperandType::kIdx,           \
-    OperandType::kRegOut)                                                      \
   V(StaContextSlot, AccumulatorUse::kRead, OperandType::kReg,                  \
     OperandType::kIdx, OperandType::kUImm)                                     \
   V(StaCurrentContextSlot, AccumulatorUse::kRead, OperandType::kIdx)           \
@@ -87,12 +80,14 @@ namespace interpreter {
   /* Property loads (LoadIC) operations */                                     \
   V(LdaNamedProperty, AccumulatorUse::kWrite, OperandType::kReg,               \
     OperandType::kIdx, OperandType::kIdx)                                      \
-  V(LdrNamedProperty, AccumulatorUse::kNone, OperandType::kReg,                \
-    OperandType::kIdx, OperandType::kIdx, OperandType::kRegOut)                \
   V(LdaKeyedProperty, AccumulatorUse::kReadWrite, OperandType::kReg,           \
     OperandType::kIdx)                                                         \
-  V(LdrKeyedProperty, AccumulatorUse::kRead, OperandType::kReg,                \
-    OperandType::kIdx, OperandType::kRegOut)                                   \
+                                                                               \
+  /* Operations on module variables */                                         \
+  V(LdaModuleVariable, AccumulatorUse::kWrite, OperandType::kImm,              \
+    OperandType::kUImm)                                                        \
+  V(StaModuleVariable, AccumulatorUse::kRead, OperandType::kImm,               \
+    OperandType::kUImm)                                                        \
                                                                                \
   /* Propery stores (StoreIC) operations */                                    \
   V(StaNamedPropertySloppy, AccumulatorUse::kRead, OperandType::kReg,          \
@@ -103,6 +98,8 @@ namespace interpreter {
     OperandType::kReg, OperandType::kIdx)                                      \
   V(StaKeyedPropertyStrict, AccumulatorUse::kRead, OperandType::kReg,          \
     OperandType::kReg, OperandType::kIdx)                                      \
+  V(StaDataPropertyInLiteral, AccumulatorUse::kRead, OperandType::kReg,        \
+    OperandType::kReg, OperandType::kReg, OperandType::kReg)                   \
                                                                                \
   /* Binary Operators */                                                       \
   V(Add, AccumulatorUse::kReadWrite, OperandType::kReg, OperandType::kIdx)     \
@@ -246,6 +243,9 @@ namespace interpreter {
                                                                                \
   /* Perform a stack guard check */                                            \
   V(StackCheck, AccumulatorUse::kNone)                                         \
+                                                                               \
+  /* Update the pending message */                                             \
+  V(SetPendingMessage, AccumulatorUse::kReadWrite)                             \
                                                                                \
   /* Non-local flow control */                                                 \
   V(Throw, AccumulatorUse::kRead)                                              \
@@ -428,15 +428,16 @@ class V8_EXPORT_PRIVATE Bytecodes final {
            bytecode == Bytecode::kLdaTrue || bytecode == Bytecode::kLdaFalse ||
            bytecode == Bytecode::kLdaUndefined ||
            bytecode == Bytecode::kLdaTheHole ||
-           bytecode == Bytecode::kLdaConstant;
+           bytecode == Bytecode::kLdaConstant ||
+           bytecode == Bytecode::kLdaContextSlot ||
+           bytecode == Bytecode::kLdaCurrentContextSlot;
   }
 
   // Return true if |bytecode| is a register load without effects,
-  // e.g. Mov, Star, LdrUndefined.
+  // e.g. Mov, Star.
   static CONSTEXPR bool IsRegisterLoadWithoutEffects(Bytecode bytecode) {
     return bytecode == Bytecode::kMov || bytecode == Bytecode::kPopContext ||
-           bytecode == Bytecode::kPushContext || bytecode == Bytecode::kStar ||
-           bytecode == Bytecode::kLdrUndefined;
+           bytecode == Bytecode::kPushContext || bytecode == Bytecode::kStar;
   }
 
   // Returns true if the bytecode is a conditional jump taking
@@ -470,6 +471,12 @@ class V8_EXPORT_PRIVATE Bytecodes final {
            IsConditionalJumpConstant(bytecode);
   }
 
+  // Returns true if the bytecode is an unconditional jump.
+  static CONSTEXPR bool IsUnconditionalJump(Bytecode bytecode) {
+    return bytecode == Bytecode::kJump || bytecode == Bytecode::kJumpConstant ||
+           bytecode == Bytecode::kJumpLoop;
+  }
+
   // Returns true if the bytecode is a jump or a conditional jump taking
   // an immediate byte operand (OperandType::kImm).
   static CONSTEXPR bool IsJumpImmediate(Bytecode bytecode) {
@@ -497,6 +504,12 @@ class V8_EXPORT_PRIVATE Bytecodes final {
   // any kind of operand.
   static CONSTEXPR bool IsJump(Bytecode bytecode) {
     return IsJumpImmediate(bytecode) || IsJumpConstant(bytecode);
+  }
+
+  // Returns true if the bytecode is a forward jump or conditional jump taking
+  // any kind of operand.
+  static CONSTEXPR bool IsForwardJump(Bytecode bytecode) {
+    return bytecode != Bytecode::kJumpLoop && IsJump(bytecode);
   }
 
   // Returns true if the bytecode is a conditional jump, a jump, or a return.

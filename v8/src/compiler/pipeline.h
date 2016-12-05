@@ -9,6 +9,7 @@
 // Do not include anything from src/compiler here!
 #include "src/globals.h"
 #include "src/objects.h"
+#include "src/zone/zone-containers.h"
 
 namespace v8 {
 namespace internal {
@@ -17,9 +18,14 @@ class CompilationInfo;
 class CompilationJob;
 class RegisterConfiguration;
 
+namespace trap_handler {
+struct ProtectedInstructionData;
+}  // namespace trap_handler
+
 namespace compiler {
 
 class CallDescriptor;
+class JSGraph;
 class Graph;
 class InstructionSequence;
 class Schedule;
@@ -32,8 +38,10 @@ class Pipeline : public AllStatic {
 
   // Returns a new compilation job for the WebAssembly compilation info.
   static CompilationJob* NewWasmCompilationJob(
-      CompilationInfo* info, Graph* graph, CallDescriptor* descriptor,
-      SourcePositionTable* source_positions);
+      CompilationInfo* info, JSGraph* jsgraph, CallDescriptor* descriptor,
+      SourcePositionTable* source_positions,
+      ZoneVector<trap_handler::ProtectedInstructionData>*
+          protected_instructions);
 
   // Run the pipeline on a machine graph and generate code. The {schedule} must
   // be valid, hence the given {graph} does not need to be schedulable.

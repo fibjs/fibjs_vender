@@ -120,7 +120,7 @@ class IC {
   // keyed stores).
   void ConfigureVectorState(MapHandleList* maps,
                             MapHandleList* transitioned_maps,
-                            CodeHandleList* handlers);
+                            List<Handle<Object>>* handlers);
 
   char TransitionMarkFromState(IC::State state);
   void TraceIC(const char* type, Handle<Object> name);
@@ -314,14 +314,6 @@ class LoadIC : public IC {
   // Creates a data handler that represents a load of a field by given index.
   Handle<Object> SimpleFieldLoad(FieldIndex index);
 
-  // Returns 0 if the validity cell check is enough to ensure that the
-  // prototype chain from |receiver_map| till |holder| did not change.
-  // If the |holder| is an empty handle then the full prototype chain is
-  // checked.
-  // Returns -1 if the handler has to be compiled or the number of prototype
-  // checks otherwise.
-  int GetPrototypeCheckCount(Handle<Map> receiver_map, Handle<JSObject> holder);
-
   // Creates a data handler that represents a prototype chain check followed
   // by given Smi-handler that encoded a load from the holder.
   // Can be used only if GetPrototypeCheckCount() returns non negative value.
@@ -425,6 +417,10 @@ class StoreIC : public IC {
                                 CacheHolderFlag cache_holder) override;
 
  private:
+  Handle<Object> StoreTransition(Handle<Map> receiver_map,
+                                 Handle<JSObject> holder,
+                                 Handle<Map> transition, Handle<Name> name);
+
   friend class IC;
 };
 
@@ -454,9 +450,6 @@ class KeyedStoreIC : public StoreIC {
   static void GenerateSlow(MacroAssembler* masm);
   static void GenerateMegamorphic(MacroAssembler* masm,
                                   LanguageMode language_mode);
-
-  static Handle<Code> ChooseMegamorphicStub(Isolate* isolate,
-                                            ExtraICState extra_state);
 
   static void Clear(Isolate* isolate, Code* host, KeyedStoreICNexus* nexus);
 

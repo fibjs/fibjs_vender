@@ -19,6 +19,7 @@ class AstNumberingVisitor final : public AstVisitor<AstNumberingVisitor> {
         yield_count_(0),
         properties_(zone),
         slot_cache_(zone),
+        disable_crankshaft_reason_(kNoReason),
         dont_optimize_reason_(kNoReason),
         catch_prediction_(HandlerTable::UNCAUGHT) {
     InitializeAstVisitor(isolate);
@@ -55,8 +56,9 @@ class AstNumberingVisitor final : public AstVisitor<AstNumberingVisitor> {
     dont_optimize_reason_ = reason;
     DisableSelfOptimization();
   }
-  void DisableCrankshaft(BailoutReason reason) {
-    properties_.flags() |= AstProperties::kDontCrankshaft;
+  void DisableFullCodegenAndCrankshaft(BailoutReason reason) {
+    disable_crankshaft_reason_ = reason;
+    properties_.flags() |= AstProperties::kMustUseIgnitionTurbo;
   }
 
   template <typename Node>
@@ -74,6 +76,7 @@ class AstNumberingVisitor final : public AstVisitor<AstNumberingVisitor> {
   AstProperties properties_;
   // The slot cache allows us to reuse certain feedback vector slots.
   FeedbackVectorSlotCache slot_cache_;
+  BailoutReason disable_crankshaft_reason_;
   BailoutReason dont_optimize_reason_;
   HandlerTable::CatchPrediction catch_prediction_;
 
@@ -147,8 +150,19 @@ void AstNumberingVisitor::VisitRegExpLiteral(RegExpLiteral* node) {
 
 void AstNumberingVisitor::VisitVariableProxyReference(VariableProxy* node) {
   IncrementNodeCount();
-  if (node->var()->IsLookupSlot()) {
-    DisableCrankshaft(kReferenceToAVariableWhichRequiresDynamicLookup);
+  switch (node->var()->location()) {
+    case VariableLocation::LOOKUP:
+      DisableFullCodegenAndCrankshaft(
+          kReferenceToAVariableWhichRequiresDynamicLookup);
+      break;
+    case VariableLocation::MODULE:
+      DisableFullCodegenAndCrankshaft(kReferenceToModuleVariable);
+      break;
+    default:
+      break;
+  }
+  if (IsLexicalVariableMode(node->var()->mode())) {
+    DisableFullCodegenAndCrankshaft(kReferenceToLetOrConstVariable);
   }
   node->set_base_id(ReserveIdRange(VariableProxy::num_ids()));
 }
@@ -169,7 +183,7 @@ void AstNumberingVisitor::VisitThisFunction(ThisFunction* node) {
 void AstNumberingVisitor::VisitSuperPropertyReference(
     SuperPropertyReference* node) {
   IncrementNodeCount();
-  DisableCrankshaft(kSuperReference);
+  DisableFullCodegenAndCrankshaft(kSuperReference);
   node->set_base_id(ReserveIdRange(SuperPropertyReference::num_ids()));
   Visit(node->this_var());
   Visit(node->home_object());
@@ -178,7 +192,7 @@ void AstNumberingVisitor::VisitSuperPropertyReference(
 
 void AstNumberingVisitor::VisitSuperCallReference(SuperCallReference* node) {
   IncrementNodeCount();
-  DisableCrankshaft(kSuperReference);
+  DisableFullCodegenAndCrankshaft(kSuperReference);
   node->set_base_id(ReserveIdRange(SuperCallReference::num_ids()));
   Visit(node->this_var());
   Visit(node->new_target_var());
@@ -275,8 +289,7 @@ void AstNumberingVisitor::VisitCallRuntime(CallRuntime* node) {
 
 void AstNumberingVisitor::VisitWithStatement(WithStatement* node) {
   IncrementNodeCount();
-  DisableCrankshaft(kWithStatement);
-  node->set_base_id(ReserveIdRange(WithStatement::num_ids()));
+  DisableFullCodegenAndCrankshaft(kWithStatement);
   Visit(node->expression());
   Visit(node->statement());
 }
@@ -306,7 +319,7 @@ void AstNumberingVisitor::VisitWhileStatement(WhileStatement* node) {
 
 void AstNumberingVisitor::VisitTryCatchStatement(TryCatchStatement* node) {
   IncrementNodeCount();
-  DisableCrankshaft(kTryCatchStatement);
+  DisableFullCodegenAndCrankshaft(kTryCatchStatement);
   {
     const HandlerTable::CatchPrediction old_prediction = catch_prediction_;
     // This node uses its own prediction, unless it's "uncaught", in which case
@@ -325,7 +338,7 @@ void AstNumberingVisitor::VisitTryCatchStatement(TryCatchStatement* node) {
 
 void AstNumberingVisitor::VisitTryFinallyStatement(TryFinallyStatement* node) {
   IncrementNodeCount();
-  DisableCrankshaft(kTryFinallyStatement);
+  DisableFullCodegenAndCrankshaft(kTryFinallyStatement);
   // We can't know whether the finally block will override ("catch") an
   // exception thrown in the try block, so we just adopt the outer prediction.
   node->set_catch_prediction(catch_prediction_);
@@ -386,9 +399,13 @@ void AstNumberingVisitor::VisitCompareOperation(CompareOperation* node) {
   ReserveFeedbackSlots(node);
 }
 
-
-void AstNumberingVisitor::VisitSpread(Spread* node) { UNREACHABLE(); }
-
+void AstNumberingVisitor::VisitSpread(Spread* node) {
+  IncrementNodeCount();
+  // We can only get here from super calls currently.
+  DisableFullCodegenAndCrankshaft(kSuperReference);
+  node->set_base_id(ReserveIdRange(Spread::num_ids()));
+  Visit(node->expression());
+}
 
 void AstNumberingVisitor::VisitEmptyParentheses(EmptyParentheses* node) {
   UNREACHABLE();
@@ -410,7 +427,7 @@ void AstNumberingVisitor::VisitForInStatement(ForInStatement* node) {
 
 void AstNumberingVisitor::VisitForOfStatement(ForOfStatement* node) {
   IncrementNodeCount();
-  DisableCrankshaft(kForOfStatement);
+  DisableFullCodegenAndCrankshaft(kForOfStatement);
   node->set_base_id(ReserveIdRange(ForOfStatement::num_ids()));
   Visit(node->assign_iterator());  // Not part of loop.
   node->set_first_yield_id(yield_count_);
@@ -477,8 +494,8 @@ void AstNumberingVisitor::VisitForStatement(ForStatement* node) {
 
 void AstNumberingVisitor::VisitClassLiteral(ClassLiteral* node) {
   IncrementNodeCount();
-  DisableCrankshaft(kClassLiteral);
-  node->set_base_id(ReserveIdRange(node->num_ids()));
+  DisableFullCodegenAndCrankshaft(kClassLiteral);
+  node->set_base_id(ReserveIdRange(ClassLiteral::num_ids()));
   if (node->extends()) Visit(node->extends());
   if (node->constructor()) Visit(node->constructor());
   if (node->class_variable_proxy()) {
@@ -506,7 +523,8 @@ void AstNumberingVisitor::VisitObjectLiteral(ObjectLiteral* node) {
 }
 
 void AstNumberingVisitor::VisitLiteralProperty(LiteralProperty* node) {
-  if (node->is_computed_name()) DisableCrankshaft(kComputedPropertyName);
+  if (node->is_computed_name())
+    DisableFullCodegenAndCrankshaft(kComputedPropertyName);
   Visit(node->key());
   Visit(node->value());
 }
@@ -523,6 +541,9 @@ void AstNumberingVisitor::VisitArrayLiteral(ArrayLiteral* node) {
 
 
 void AstNumberingVisitor::VisitCall(Call* node) {
+  if (node->is_possibly_eval()) {
+    DisableFullCodegenAndCrankshaft(kFunctionCallsEval);
+  }
   IncrementNodeCount();
   ReserveFeedbackSlots(node);
   node->set_base_id(ReserveIdRange(Call::num_ids()));
@@ -577,22 +598,26 @@ void AstNumberingVisitor::VisitRewritableExpression(
 
 bool AstNumberingVisitor::Renumber(FunctionLiteral* node) {
   DeclarationScope* scope = node->scope();
-  if (scope->new_target_var()) DisableCrankshaft(kSuperReference);
-  if (scope->calls_eval()) DisableCrankshaft(kFunctionCallsEval);
-  if (scope->arguments() != NULL && !scope->arguments()->IsStackAllocated()) {
-    DisableCrankshaft(kContextAllocatedArguments);
+  if (scope->new_target_var() != nullptr ||
+      scope->this_function_var() != nullptr) {
+    DisableFullCodegenAndCrankshaft(kSuperReference);
+  }
+
+  if (scope->arguments() != nullptr &&
+      !scope->arguments()->IsStackAllocated()) {
+    DisableFullCodegenAndCrankshaft(kContextAllocatedArguments);
   }
 
   if (scope->rest_parameter() != nullptr) {
-    DisableCrankshaft(kRestParameter);
+    DisableFullCodegenAndCrankshaft(kRestParameter);
   }
 
-  if (IsGeneratorFunction(node->kind()) || IsAsyncFunction(node->kind())) {
-    DisableCrankshaft(kGenerator);
+  if (IsResumableFunction(node->kind())) {
+    DisableFullCodegenAndCrankshaft(kGenerator);
   }
 
   if (IsClassConstructor(node->kind())) {
-    DisableCrankshaft(kClassConstructorFunction);
+    DisableFullCodegenAndCrankshaft(kClassConstructorFunction);
   }
 
   VisitDeclarations(scope->declarations());
@@ -601,6 +626,15 @@ bool AstNumberingVisitor::Renumber(FunctionLiteral* node) {
   node->set_ast_properties(&properties_);
   node->set_dont_optimize_reason(dont_optimize_reason());
   node->set_yield_count(yield_count_);
+
+  if (FLAG_trace_opt) {
+    if (disable_crankshaft_reason_ != kNoReason) {
+      PrintF("[enforcing Ignition and TurboFan for %s because: %s\n",
+             node->debug_name()->ToCString().get(),
+             GetBailoutReason(disable_crankshaft_reason_));
+    }
+  }
+
   return !HasStackOverflow();
 }
 

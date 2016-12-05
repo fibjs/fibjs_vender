@@ -153,6 +153,7 @@ class WasmStackFrame : public StackFrameBase {
 
   Isolate* isolate_;
 
+  // TODO(wasm): Use proper typing.
   Handle<Object> wasm_instance_;
   uint32_t wasm_func_index_;
   Handle<AbstractCode> code_;
@@ -172,7 +173,6 @@ class AsmJsWasmStackFrame : public WasmStackFrame {
   Handle<Object> GetFunction() const override;
 
   Handle<Object> GetFileName() override;
-  Handle<Object> GetFunctionName() override;
   Handle<Object> GetScriptNameOrSourceUrl() override;
 
   int GetPosition() const override;
@@ -503,8 +503,8 @@ class ErrorUtils : public AllStatic {
   T(InvalidStringLength, "Invalid string length")                              \
   T(InvalidTimeValue, "Invalid time value")                                    \
   T(InvalidTypedArrayAlignment, "% of % should be a multiple of %")            \
+  T(InvalidTypedArrayIndex, "Invalid typed array index")                       \
   T(InvalidTypedArrayLength, "Invalid typed array length")                     \
-  T(InvalidTypedArrayOffset, "Start offset is too large:")                     \
   T(InvalidSimdIndex, "Index out of bounds for SIMD operation")                \
   T(InvalidSimdLaneValue, "Lane value out of bounds for SIMD operation")       \
   T(LetInLexicalBinding, "let is disallowed as a lexically bound name")        \

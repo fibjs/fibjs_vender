@@ -2541,11 +2541,11 @@ void Simulator::DecodeTypeRegisterDRsType() {
       break;
     case MADDF_D:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      set_fpu_register_double(fd_reg(), fd + (fs * ft));
+      set_fpu_register_double(fd_reg(), std::fma(fs, ft, fd));
       break;
     case MSUBF_D:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      set_fpu_register_double(fd_reg(), fd - (fs * ft));
+      set_fpu_register_double(fd_reg(), std::fma(-fs, ft, fd));
       break;
     case MUL_D:
       set_fpu_register_double(
@@ -2968,11 +2968,11 @@ void Simulator::DecodeTypeRegisterSRsType() {
       break;
     case MADDF_S:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      set_fpu_register_float(fd_reg(), fd + (fs * ft));
+      set_fpu_register_float(fd_reg(), std::fma(fs, ft, fd));
       break;
     case MSUBF_S:
       DCHECK(IsMipsArchVariant(kMips32r6));
-      set_fpu_register_float(fd_reg(), fd - (fs * ft));
+      set_fpu_register_float(fd_reg(), std::fma(-fs, ft, fd));
       break;
     case MUL_S:
       set_fpu_register_float(

@@ -358,7 +358,7 @@ class StackTraceHelper {
   // Determines whether the given stack frame should be displayed in a stack
   // trace.
   bool IsVisibleInStackTrace(JSFunction* fun) {
-    return ShouldIncludeFrame(fun) && IsNotInNativeScript(fun) &&
+    return ShouldIncludeFrame(fun) && IsNotHidden(fun) &&
            IsInSameSecurityContext(fun);
   }
 
@@ -386,12 +386,12 @@ class StackTraceHelper {
     return false;
   }
 
-  bool IsNotInNativeScript(JSFunction* fun) {
-    // Functions defined in native scripts are not visible unless directly
+  bool IsNotHidden(JSFunction* fun) {
+    // Functions defined not in user scripts are not visible unless directly
     // exposed, in which case the native flag is set.
     // The --builtins-in-stack-traces command line flag allows including
     // internal call sites in the stack trace for debugging purposes.
-    if (!FLAG_builtins_in_stack_traces && fun->shared()->IsBuiltin()) {
+    if (!FLAG_builtins_in_stack_traces && !fun->shared()->IsUserJavaScript()) {
       return fun->shared()->native();
     }
     return true;
@@ -634,7 +634,7 @@ class CaptureStackTraceHelper {
     if (!line_key_.is_null()) {
       Script::PositionInfo info;
       bool valid_pos =
-          script->GetPositionInfo(position, &info, Script::WITH_OFFSET);
+          Script::GetPositionInfo(script, position, &info, Script::WITH_OFFSET);
 
       if (!column_key_.is_null() && valid_pos) {
         JSObject::AddProperty(stack_frame, column_key_,
@@ -706,13 +706,14 @@ class CaptureStackTraceHelper {
           frame->function_index());
       JSObject::AddProperty(stack_frame, function_key_, name, NONE);
     }
-    // Encode the function index as line number.
+    // Encode the function index as line number (1-based).
     if (!line_key_.is_null()) {
       JSObject::AddProperty(
           stack_frame, line_key_,
-          isolate_->factory()->NewNumberFromInt(frame->function_index()), NONE);
+          isolate_->factory()->NewNumberFromInt(frame->function_index() + 1),
+          NONE);
     }
-    // Encode the byte offset as column.
+    // Encode the byte offset as column (1-based).
     if (!column_key_.is_null()) {
       Code* code = frame->LookupCode();
       int offset = static_cast<int>(frame->pc() - code->instruction_start());
@@ -1268,9 +1269,19 @@ Object* Isolate::UnwindAndFindHandler() {
     // For interpreted frame we perform a range lookup in the handler table.
     if (frame->is_interpreted() && catchable_by_js) {
       InterpretedFrame* js_frame = static_cast<InterpretedFrame*>(frame);
+      int register_slots = js_frame->GetBytecodeArray()->register_count();
       int context_reg = 0;  // Will contain register index holding context.
       offset = js_frame->LookupExceptionHandlerInTable(&context_reg, nullptr);
       if (offset >= 0) {
+        // Compute the stack pointer from the frame pointer. This ensures that
+        // argument slots on the stack are dropped as returning would.
+        // Note: This is only needed for interpreted frames that have been
+        //       materialized by the deoptimizer. If there is a handler frame
+        //       in between then {frame->sp()} would already be correct.
+        Address return_sp = frame->fp() -
+                            InterpreterFrameConstants::kFixedFrameSizeFromFp -
+                            register_slots * kPointerSize;
+
         // Patch the bytecode offset in the interpreted frame to reflect the
         // position of the exception handler. The special builtin below will
         // take care of continuing to dispatch at that position. Also restore
@@ -1281,33 +1292,17 @@ Object* Isolate::UnwindAndFindHandler() {
 
         // Gather information from the frame.
         code = *builtins()->InterpreterEnterBytecodeDispatch();
-        handler_sp = frame->sp();
+        handler_sp = return_sp;
         handler_fp = frame->fp();
         break;
       }
     }
 
-    // For JavaScript frames we perform a range lookup in the handler table.
+    // For JavaScript frames we are guaranteed not to find a handler.
     if (frame->is_java_script() && catchable_by_js) {
       JavaScriptFrame* js_frame = static_cast<JavaScriptFrame*>(frame);
-      int stack_depth = 0;  // Will contain operand stack depth of handler.
-      offset = js_frame->LookupExceptionHandlerInTable(&stack_depth, nullptr);
-      if (offset >= 0) {
-        // Compute the stack pointer from the frame pointer. This ensures that
-        // operand stack slots are dropped for nested statements. Also restore
-        // correct context for the handler which is pushed within the try-block.
-        Address return_sp = frame->fp() -
-                            StandardFrameConstants::kFixedFrameSizeFromFp -
-                            stack_depth * kPointerSize;
-        STATIC_ASSERT(TryBlockConstant::kElementCount == 1);
-        context = Context::cast(Memory::Object_at(return_sp - kPointerSize));
-
-        // Gather information from the frame.
-        code = frame->LookupCode();
-        handler_sp = return_sp;
-        handler_fp = frame->fp();
-        break;
-      }
+      offset = js_frame->LookupExceptionHandlerInTable(nullptr, nullptr);
+      CHECK_EQ(-1, offset);
     }
 
     RemoveMaterializedObjectsOnUnwind(frame);
@@ -1340,15 +1335,22 @@ HandlerTable::CatchPrediction PredictException(JavaScriptFrame* frame) {
       frame->Summarize(&summaries);
       for (const FrameSummary& summary : summaries) {
         Handle<AbstractCode> code = summary.abstract_code();
+        if (code->IsCode() && code->kind() == AbstractCode::BUILTIN &&
+            code->GetCode()->is_promise_rejection()) {
+          return HandlerTable::PROMISE;
+        }
         if (code->kind() == AbstractCode::OPTIMIZED_FUNCTION) {
           DCHECK(summary.function()->shared()->asm_function());
           DCHECK(!FLAG_turbo_asm_deoptimization);
           // asm code cannot contain try-catch.
           continue;
         }
+        // Must have been constructed from a bytecode array.
+        CHECK_EQ(AbstractCode::INTERPRETED_FUNCTION, code->kind());
         int code_offset = summary.code_offset();
-        int index =
-            code->LookupRangeInHandlerTable(code_offset, nullptr, &prediction);
+        BytecodeArray* bytecode = code->GetBytecodeArray();
+        HandlerTable* table = HandlerTable::cast(bytecode->handler_table());
+        int index = table->LookupRange(code_offset, nullptr, &prediction);
         if (index <= 0) continue;
         if (prediction == HandlerTable::UNCAUGHT) continue;
         return prediction;
@@ -1775,6 +1777,9 @@ void Isolate::PopPromise() {
 bool Isolate::PromiseHasUserDefinedRejectHandler(Handle<Object> promise) {
   Handle<JSFunction> fun = promise_has_user_defined_reject_handler();
   Handle<Object> has_reject_handler;
+  // If we are, e.g., overflowing the stack, don't try to call out to JS
+  if (!AllowJavascriptExecution::IsAllowed(this)) return false;
+  // Call the registered function to check for a handler
   if (Execution::TryCall(this, fun, promise, 0, NULL)
           .ToHandle(&has_reject_handler)) {
     return has_reject_handler->IsTrue(this);
@@ -2120,7 +2125,6 @@ Isolate::Isolate(bool enable_serializer)
       optimizing_compile_dispatcher_(NULL),
       stress_deopt_count_(0),
       next_optimization_id_(0),
-      js_calls_from_api_counter_(0),
 #if TRACE_MAPS
       next_unique_sfi_id_(0),
 #endif
@@ -2266,7 +2270,6 @@ void Isolate::Deinit() {
 
   delete interpreter_;
   interpreter_ = NULL;
-
 
   delete compiler_dispatcher_tracer_;
   compiler_dispatcher_tracer_ = nullptr;
@@ -2820,7 +2823,7 @@ bool Isolate::IsFastArrayConstructorPrototypeChainIntact() {
   PropertyCell* no_elements_cell = heap()->array_protector();
   bool cell_reports_intact =
       no_elements_cell->value()->IsSmi() &&
-      Smi::cast(no_elements_cell->value())->value() == kArrayProtectorValid;
+      Smi::cast(no_elements_cell->value())->value() == kProtectorValid;
 
 #ifdef DEBUG
   Map* root_array_map =
@@ -2879,7 +2882,7 @@ bool Isolate::IsIsConcatSpreadableLookupChainIntact() {
   Cell* is_concat_spreadable_cell = heap()->is_concat_spreadable_protector();
   bool is_is_concat_spreadable_set =
       Smi::cast(is_concat_spreadable_cell->value())->value() ==
-      kArrayProtectorInvalid;
+      kProtectorInvalid;
 #ifdef DEBUG
   Map* root_array_map = get_initial_js_array_map(GetInitialFastElementsKind());
   if (root_array_map == NULL) {
@@ -2914,7 +2917,7 @@ void Isolate::UpdateArrayProtectorOnSetElement(Handle<JSObject> object) {
   if (!IsArrayOrObjectPrototype(*object)) return;
   PropertyCell::SetValueWithInvalidation(
       factory()->array_protector(),
-      handle(Smi::FromInt(kArrayProtectorInvalid), this));
+      handle(Smi::FromInt(kProtectorInvalid), this));
 }
 
 void Isolate::InvalidateHasInstanceProtector() {
@@ -2922,7 +2925,7 @@ void Isolate::InvalidateHasInstanceProtector() {
   DCHECK(IsHasInstanceLookupChainIntact());
   PropertyCell::SetValueWithInvalidation(
       factory()->has_instance_protector(),
-      handle(Smi::FromInt(kArrayProtectorInvalid), this));
+      handle(Smi::FromInt(kProtectorInvalid), this));
   DCHECK(!IsHasInstanceLookupChainIntact());
 }
 
@@ -2930,15 +2933,14 @@ void Isolate::InvalidateIsConcatSpreadableProtector() {
   DCHECK(factory()->is_concat_spreadable_protector()->value()->IsSmi());
   DCHECK(IsIsConcatSpreadableLookupChainIntact());
   factory()->is_concat_spreadable_protector()->set_value(
-      Smi::FromInt(kArrayProtectorInvalid));
+      Smi::FromInt(kProtectorInvalid));
   DCHECK(!IsIsConcatSpreadableLookupChainIntact());
 }
 
 void Isolate::InvalidateArraySpeciesProtector() {
   DCHECK(factory()->species_protector()->value()->IsSmi());
   DCHECK(IsArraySpeciesLookupChainIntact());
-  factory()->species_protector()->set_value(
-      Smi::FromInt(kArrayProtectorInvalid));
+  factory()->species_protector()->set_value(Smi::FromInt(kProtectorInvalid));
   DCHECK(!IsArraySpeciesLookupChainIntact());
 }
 
@@ -2947,8 +2949,25 @@ void Isolate::InvalidateStringLengthOverflowProtector() {
   DCHECK(IsStringLengthOverflowIntact());
   PropertyCell::SetValueWithInvalidation(
       factory()->string_length_protector(),
-      handle(Smi::FromInt(kArrayProtectorInvalid), this));
+      handle(Smi::FromInt(kProtectorInvalid), this));
   DCHECK(!IsStringLengthOverflowIntact());
+}
+
+void Isolate::InvalidateArrayIteratorProtector() {
+  DCHECK(factory()->array_iterator_protector()->value()->IsSmi());
+  DCHECK(IsArrayIteratorLookupChainIntact());
+  factory()->array_iterator_protector()->set_value(
+      Smi::FromInt(kProtectorInvalid));
+  DCHECK(!IsArrayIteratorLookupChainIntact());
+}
+
+void Isolate::InvalidateArrayBufferNeuteringProtector() {
+  DCHECK(factory()->array_buffer_neutering_protector()->value()->IsSmi());
+  DCHECK(IsArrayBufferNeuteringIntact());
+  PropertyCell::SetValueWithInvalidation(
+      factory()->array_buffer_neutering_protector(),
+      handle(Smi::FromInt(kProtectorInvalid), this));
+  DCHECK(!IsArrayBufferNeuteringIntact());
 }
 
 bool Isolate::IsAnyInitialArrayPrototype(Handle<JSArray> array) {
@@ -3255,9 +3274,8 @@ void Isolate::RunMicrotasksInternal() {
         if (microtask->IsJSFunction()) {
           context = Handle<JSFunction>::cast(microtask)->context();
         } else if (microtask->IsPromiseResolveThenableJobInfo()) {
-          context = Handle<PromiseResolveThenableJobInfo>::cast(microtask)
-                        ->resolve()
-                        ->context();
+          context =
+              Handle<PromiseResolveThenableJobInfo>::cast(microtask)->context();
         } else {
           context = Handle<PromiseReactionJobInfo>::cast(microtask)->context();
         }
@@ -3419,8 +3437,7 @@ void Isolate::CheckDetachedContextsAfterGC() {
   if (new_length == 0) {
     heap()->set_detached_contexts(heap()->empty_fixed_array());
   } else if (new_length < length) {
-    heap()->RightTrimFixedArray<Heap::CONCURRENT_TO_SWEEPER>(
-        *detached_contexts, length - new_length);
+    heap()->RightTrimFixedArray(*detached_contexts, length - new_length);
   }
 }
 

@@ -331,8 +331,7 @@ bool LCodeGen::GenerateDeferredCode() {
 
       HValue* value =
           instructions_->at(code->instruction_index())->hydrogen_value();
-      RecordAndWritePosition(
-          chunk()->graph()->SourcePositionToScriptPosition(value->position()));
+      RecordAndWritePosition(value->position());
 
       Comment(";;; <@%d,#%d> "
               "-------------------- Deferred %s --------------------",
@@ -1858,16 +1857,15 @@ void LCodeGen::DoBranch(LBranch* instr) {
       __ cmp(FieldOperand(reg, String::kLengthOffset), Immediate(0));
       EmitBranch(instr, not_equal);
     } else {
-      ToBooleanICStub::Types expected =
-          instr->hydrogen()->expected_input_types();
-      if (expected.IsEmpty()) expected = ToBooleanICStub::Types::Generic();
+      ToBooleanHints expected = instr->hydrogen()->expected_input_types();
+      if (expected == ToBooleanHint::kNone) expected = ToBooleanHint::kAny;
 
-      if (expected.Contains(ToBooleanICStub::UNDEFINED)) {
+      if (expected & ToBooleanHint::kUndefined) {
         // undefined -> false.
         __ cmp(reg, factory()->undefined_value());
         __ j(equal, instr->FalseLabel(chunk_));
       }
-      if (expected.Contains(ToBooleanICStub::BOOLEAN)) {
+      if (expected & ToBooleanHint::kBoolean) {
         // true -> true.
         __ cmp(reg, factory()->true_value());
         __ j(equal, instr->TrueLabel(chunk_));
@@ -1875,30 +1873,30 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ cmp(reg, factory()->false_value());
         __ j(equal, instr->FalseLabel(chunk_));
       }
-      if (expected.Contains(ToBooleanICStub::NULL_TYPE)) {
+      if (expected & ToBooleanHint::kNull) {
         // 'null' -> false.
         __ cmp(reg, factory()->null_value());
         __ j(equal, instr->FalseLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanICStub::SMI)) {
+      if (expected & ToBooleanHint::kSmallInteger) {
         // Smis: 0 -> false, all other -> true.
         __ test(reg, Operand(reg));
         __ j(equal, instr->FalseLabel(chunk_));
         __ JumpIfSmi(reg, instr->TrueLabel(chunk_));
-      } else if (expected.NeedsMap()) {
+      } else if (expected & ToBooleanHint::kNeedsMap) {
         // If we need a map later and have a Smi -> deopt.
         __ test(reg, Immediate(kSmiTagMask));
         DeoptimizeIf(zero, instr, DeoptimizeReason::kSmi);
       }
 
       Register map = no_reg;  // Keep the compiler happy.
-      if (expected.NeedsMap()) {
+      if (expected & ToBooleanHint::kNeedsMap) {
         map = ToRegister(instr->temp());
         DCHECK(!map.is(reg));
         __ mov(map, FieldOperand(reg, HeapObject::kMapOffset));
 
-        if (expected.CanBeUndetectable()) {
+        if (expected & ToBooleanHint::kCanBeUndetectable) {
           // Undetectable -> false.
           __ test_b(FieldOperand(map, Map::kBitFieldOffset),
                     Immediate(1 << Map::kIsUndetectable));
@@ -1906,13 +1904,13 @@ void LCodeGen::DoBranch(LBranch* instr) {
         }
       }
 
-      if (expected.Contains(ToBooleanICStub::SPEC_OBJECT)) {
+      if (expected & ToBooleanHint::kReceiver) {
         // spec object -> true.
         __ CmpInstanceType(map, FIRST_JS_RECEIVER_TYPE);
         __ j(above_equal, instr->TrueLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanICStub::STRING)) {
+      if (expected & ToBooleanHint::kString) {
         // String value -> false iff empty.
         Label not_string;
         __ CmpInstanceType(map, FIRST_NONSTRING_TYPE);
@@ -1923,19 +1921,19 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ bind(&not_string);
       }
 
-      if (expected.Contains(ToBooleanICStub::SYMBOL)) {
+      if (expected & ToBooleanHint::kSymbol) {
         // Symbol value -> true.
         __ CmpInstanceType(map, SYMBOL_TYPE);
         __ j(equal, instr->TrueLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanICStub::SIMD_VALUE)) {
+      if (expected & ToBooleanHint::kSimdValue) {
         // SIMD value -> true.
         __ CmpInstanceType(map, SIMD128_VALUE_TYPE);
         __ j(equal, instr->TrueLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanICStub::HEAP_NUMBER)) {
+      if (expected & ToBooleanHint::kHeapNumber) {
         // heap number -> false iff +0, -0, or NaN.
         Label not_heap_number;
         __ cmp(FieldOperand(reg, HeapObject::kMapOffset),
@@ -1949,7 +1947,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ bind(&not_heap_number);
       }
 
-      if (!expected.IsGeneric()) {
+      if (expected != ToBooleanHint::kAny) {
         // We've seen something for the first time -> deopt.
         // This can only happen if we are not generic already.
         DeoptimizeIf(no_condition, instr, DeoptimizeReason::kUnexpectedObject);
@@ -2631,11 +2629,11 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
     __ j(not_equal, &done);
     if (info()->IsStub()) {
       // A stub can safely convert the hole to undefined only if the array
-      // protector cell contains (Smi) Isolate::kArrayProtectorValid.
+      // protector cell contains (Smi) Isolate::kProtectorValid.
       // Otherwise it needs to bail out.
       __ LoadRoot(result, Heap::kArrayProtectorRootIndex);
       __ cmp(FieldOperand(result, PropertyCell::kValueOffset),
-             Immediate(Smi::FromInt(Isolate::kArrayProtectorValid)));
+             Immediate(Smi::FromInt(Isolate::kProtectorValid)));
       DeoptimizeIf(not_equal, instr, DeoptimizeReason::kHole);
     }
     __ mov(result, isolate()->factory()->undefined_value());
@@ -2875,7 +2873,7 @@ void LCodeGen::DoContext(LContext* instr) {
 
 void LCodeGen::DoDeclareGlobals(LDeclareGlobals* instr) {
   DCHECK(ToRegister(instr->context()).is(esi));
-  __ push(Immediate(instr->hydrogen()->pairs()));
+  __ push(Immediate(instr->hydrogen()->declarations()));
   __ push(Immediate(Smi::FromInt(instr->hydrogen()->flags())));
   __ push(Immediate(instr->hydrogen()->feedback_vector()));
   CallRuntime(Runtime::kDeclareGlobals, instr);

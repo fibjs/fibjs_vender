@@ -167,13 +167,35 @@ void Accessors::ArrayLengthSetter(
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(info.GetIsolate());
   HandleScope scope(isolate);
 
+  DCHECK(Utils::OpenHandle(*name)->SameValue(isolate->heap()->length_string()));
+
   Handle<JSReceiver> object = Utils::OpenHandle(*info.Holder());
   Handle<JSArray> array = Handle<JSArray>::cast(object);
   Handle<Object> length_obj = Utils::OpenHandle(*val);
 
+  bool was_readonly = JSArray::HasReadOnlyLength(array);
+
   uint32_t length = 0;
   if (!JSArray::AnythingToArrayLength(isolate, length_obj, &length)) {
     isolate->OptionalRescheduleException(false);
+    return;
+  }
+
+  if (!was_readonly && V8_UNLIKELY(JSArray::HasReadOnlyLength(array)) &&
+      length != array->length()->Number()) {
+    // AnythingToArrayLength() may have called setter re-entrantly and modified
+    // its property descriptor. Don't perform this check if "length" was
+    // previously readonly, as this may have been called during
+    // DefineOwnPropertyIgnoreAttributes().
+    if (info.ShouldThrowOnError()) {
+      Factory* factory = isolate->factory();
+      isolate->Throw(*factory->NewTypeError(
+          MessageTemplate::kStrictReadOnlyProperty, Utils::OpenHandle(*name),
+          i::Object::TypeOf(isolate, object), object));
+      isolate->OptionalRescheduleException(false);
+    } else {
+      info.GetReturnValue().Set(false);
+    }
     return;
   }
 
@@ -469,40 +491,6 @@ Handle<AccessorInfo> Accessors::ScriptCompilationTypeInfo(
 
 
 //
-// Accessors::ScriptGetLineEnds
-//
-
-
-void Accessors::ScriptLineEndsGetter(
-    v8::Local<v8::Name> name,
-    const v8::PropertyCallbackInfo<v8::Value>& info) {
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(info.GetIsolate());
-  HandleScope scope(isolate);
-  Handle<Object> object = Utils::OpenHandle(*info.Holder());
-  Handle<Script> script(
-      Script::cast(Handle<JSValue>::cast(object)->value()), isolate);
-  Script::InitLineEnds(script);
-  DCHECK(script->line_ends()->IsFixedArray());
-  Handle<FixedArray> line_ends(FixedArray::cast(script->line_ends()));
-  // We do not want anyone to modify this array from JS.
-  DCHECK(*line_ends == isolate->heap()->empty_fixed_array() ||
-         line_ends->map() == isolate->heap()->fixed_cow_array_map());
-  Handle<JSArray> js_array =
-      isolate->factory()->NewJSArrayWithElements(line_ends);
-  info.GetReturnValue().Set(Utils::ToLocal(js_array));
-}
-
-
-Handle<AccessorInfo> Accessors::ScriptLineEndsInfo(
-      Isolate* isolate, PropertyAttributes attributes) {
-  Handle<String> name(isolate->factory()->InternalizeOneByteString(
-      STATIC_CHAR_VECTOR("line_ends")));
-  return MakeAccessor(isolate, name, &ScriptLineEndsGetter, nullptr,
-                      attributes);
-}
-
-
-//
 // Accessors::ScriptSourceUrl
 //
 
@@ -548,34 +536,6 @@ Handle<AccessorInfo> Accessors::ScriptSourceMappingUrlInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   return MakeAccessor(isolate, isolate->factory()->source_mapping_url_string(),
                       &ScriptSourceMappingUrlGetter, nullptr, attributes);
-}
-
-
-//
-// Accessors::ScriptIsEmbedderDebugScript
-//
-
-
-void Accessors::ScriptIsEmbedderDebugScriptGetter(
-    v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(info.GetIsolate());
-  DisallowHeapAllocation no_allocation;
-  HandleScope scope(isolate);
-  Object* object = *Utils::OpenHandle(*info.Holder());
-  bool is_embedder_debug_script = Script::cast(JSValue::cast(object)->value())
-                                      ->origin_options()
-                                      .IsEmbedderDebugScript();
-  Object* res = *isolate->factory()->ToBoolean(is_embedder_debug_script);
-  info.GetReturnValue().Set(Utils::ToLocal(Handle<Object>(res, isolate)));
-}
-
-
-Handle<AccessorInfo> Accessors::ScriptIsEmbedderDebugScriptInfo(
-    Isolate* isolate, PropertyAttributes attributes) {
-  Handle<String> name(isolate->factory()->InternalizeOneByteString(
-      STATIC_CHAR_VECTOR("is_debugger_script")));
-  return MakeAccessor(isolate, name, &ScriptIsEmbedderDebugScriptGetter,
-                      nullptr, attributes);
 }
 
 
@@ -863,8 +823,8 @@ static Handle<Object> ArgumentsForInlinedFunction(
   Handle<FixedArray> array = factory->NewFixedArray(argument_count);
   bool should_deoptimize = false;
   for (int i = 0; i < argument_count; ++i) {
-    // If we materialize any object, we should deopt because we might alias
-    // an object that was eliminated by escape analysis.
+    // If we materialize any object, we should deoptimize the frame because we
+    // might alias an object that was eliminated by escape analysis.
     should_deoptimize = should_deoptimize || iter->IsMaterializedObject();
     Handle<Object> value = iter->GetValue();
     array->set(i, *value);
@@ -873,7 +833,7 @@ static Handle<Object> ArgumentsForInlinedFunction(
   arguments->set_elements(*array);
 
   if (should_deoptimize) {
-    translated_values.StoreMaterializedValuesAndDeopt();
+    translated_values.StoreMaterializedValuesAndDeopt(frame);
   }
 
   // Return the freshly allocated arguments object.
@@ -1059,10 +1019,11 @@ MaybeHandle<JSFunction> FindCaller(Isolate* isolate,
     if (caller == NULL) return MaybeHandle<JSFunction>();
   } while (caller->shared()->is_toplevel());
 
-  // If caller is a built-in function and caller's caller is also built-in,
+  // If caller is not user code and caller's caller is also not user code,
   // use that instead.
   JSFunction* potential_caller = caller;
-  while (potential_caller != NULL && potential_caller->shared()->IsBuiltin()) {
+  while (potential_caller != NULL &&
+         !potential_caller->shared()->IsUserJavaScript()) {
     caller = potential_caller;
     potential_caller = it.next();
   }

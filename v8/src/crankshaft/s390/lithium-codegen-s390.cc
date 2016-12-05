@@ -39,6 +39,23 @@ class SafepointGenerator final : public CallWrapper {
   Safepoint::DeoptMode deopt_mode_;
 };
 
+LCodeGen::PushSafepointRegistersScope::PushSafepointRegistersScope(
+    LCodeGen* codegen)
+    : codegen_(codegen) {
+  DCHECK(codegen_->info()->is_calling());
+  DCHECK(codegen_->expected_safepoint_kind_ == Safepoint::kSimple);
+  codegen_->expected_safepoint_kind_ = Safepoint::kWithRegisters;
+  StoreRegistersStateStub stub(codegen_->isolate());
+  codegen_->masm_->CallStub(&stub);
+}
+
+LCodeGen::PushSafepointRegistersScope::~PushSafepointRegistersScope() {
+  DCHECK(codegen_->expected_safepoint_kind_ == Safepoint::kWithRegisters);
+  RestoreRegistersStateStub stub(codegen_->isolate());
+  codegen_->masm_->CallStub(&stub);
+  codegen_->expected_safepoint_kind_ = Safepoint::kSimple;
+}
+
 #define __ masm()->
 
 bool LCodeGen::GenerateCode() {
@@ -70,8 +87,8 @@ void LCodeGen::SaveCallerDoubles() {
   BitVector* doubles = chunk()->allocated_double_registers();
   BitVector::Iterator save_iterator(doubles);
   while (!save_iterator.Done()) {
-    __ std(DoubleRegister::from_code(save_iterator.Current()),
-           MemOperand(sp, count * kDoubleSize));
+    __ StoreDouble(DoubleRegister::from_code(save_iterator.Current()),
+                   MemOperand(sp, count * kDoubleSize));
     save_iterator.Advance();
     count++;
   }
@@ -85,8 +102,8 @@ void LCodeGen::RestoreCallerDoubles() {
   BitVector::Iterator save_iterator(doubles);
   int count = 0;
   while (!save_iterator.Done()) {
-    __ ld(DoubleRegister::from_code(save_iterator.Current()),
-          MemOperand(sp, count * kDoubleSize));
+    __ LoadDouble(DoubleRegister::from_code(save_iterator.Current()),
+                  MemOperand(sp, count * kDoubleSize));
     save_iterator.Advance();
     count++;
   }
@@ -245,8 +262,7 @@ bool LCodeGen::GenerateDeferredCode() {
 
       HValue* value =
           instructions_->at(code->instruction_index())->hydrogen_value();
-      RecordAndWritePosition(
-          chunk()->graph()->SourcePositionToScriptPosition(value->position()));
+      RecordAndWritePosition(value->position());
 
       Comment(
           ";;; <@%d,#%d> "
@@ -2093,7 +2109,8 @@ void LCodeGen::DoBranch(LBranch* instr) {
       EmitBranch(instr, al);
     } else if (type.IsHeapNumber()) {
       DCHECK(!info()->IsStub());
-      __ ld(dbl_scratch, FieldMemOperand(reg, HeapNumber::kValueOffset));
+      __ LoadDouble(dbl_scratch,
+                    FieldMemOperand(reg, HeapNumber::kValueOffset));
       // Test the double value. Zero and NaN are false.
       __ lzdr(kDoubleRegZero);
       __ cdbr(dbl_scratch, kDoubleRegZero);
@@ -2105,45 +2122,44 @@ void LCodeGen::DoBranch(LBranch* instr) {
       __ CmpP(ip, Operand::Zero());
       EmitBranch(instr, ne);
     } else {
-      ToBooleanICStub::Types expected =
-          instr->hydrogen()->expected_input_types();
+      ToBooleanHints expected = instr->hydrogen()->expected_input_types();
       // Avoid deopts in the case where we've never executed this path before.
-      if (expected.IsEmpty()) expected = ToBooleanICStub::Types::Generic();
+      if (expected == ToBooleanHint::kNone) expected = ToBooleanHint::kAny;
 
-      if (expected.Contains(ToBooleanICStub::UNDEFINED)) {
+      if (expected & ToBooleanHint::kUndefined) {
         // undefined -> false.
         __ CompareRoot(reg, Heap::kUndefinedValueRootIndex);
         __ beq(instr->FalseLabel(chunk_));
       }
-      if (expected.Contains(ToBooleanICStub::BOOLEAN)) {
+      if (expected & ToBooleanHint::kBoolean) {
         // Boolean -> its value.
         __ CompareRoot(reg, Heap::kTrueValueRootIndex);
         __ beq(instr->TrueLabel(chunk_));
         __ CompareRoot(reg, Heap::kFalseValueRootIndex);
         __ beq(instr->FalseLabel(chunk_));
       }
-      if (expected.Contains(ToBooleanICStub::NULL_TYPE)) {
+      if (expected & ToBooleanHint::kNull) {
         // 'null' -> false.
         __ CompareRoot(reg, Heap::kNullValueRootIndex);
         __ beq(instr->FalseLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanICStub::SMI)) {
+      if (expected & ToBooleanHint::kSmallInteger) {
         // Smis: 0 -> false, all other -> true.
         __ CmpP(reg, Operand::Zero());
         __ beq(instr->FalseLabel(chunk_));
         __ JumpIfSmi(reg, instr->TrueLabel(chunk_));
-      } else if (expected.NeedsMap()) {
+      } else if (expected & ToBooleanHint::kNeedsMap) {
         // If we need a map later and have a Smi -> deopt.
         __ TestIfSmi(reg);
         DeoptimizeIf(eq, instr, DeoptimizeReason::kSmi, cr0);
       }
 
       const Register map = scratch0();
-      if (expected.NeedsMap()) {
+      if (expected & ToBooleanHint::kNeedsMap) {
         __ LoadP(map, FieldMemOperand(reg, HeapObject::kMapOffset));
 
-        if (expected.CanBeUndetectable()) {
+        if (expected & ToBooleanHint::kCanBeUndetectable) {
           // Undetectable -> false.
           __ tm(FieldMemOperand(map, Map::kBitFieldOffset),
                 Operand(1 << Map::kIsUndetectable));
@@ -2151,13 +2167,13 @@ void LCodeGen::DoBranch(LBranch* instr) {
         }
       }
 
-      if (expected.Contains(ToBooleanICStub::SPEC_OBJECT)) {
+      if (expected & ToBooleanHint::kReceiver) {
         // spec object -> true.
         __ CompareInstanceType(map, ip, FIRST_JS_RECEIVER_TYPE);
         __ bge(instr->TrueLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanICStub::STRING)) {
+      if (expected & ToBooleanHint::kString) {
         // String value -> false iff empty.
         Label not_string;
         __ CompareInstanceType(map, ip, FIRST_NONSTRING_TYPE);
@@ -2169,20 +2185,20 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ bind(&not_string);
       }
 
-      if (expected.Contains(ToBooleanICStub::SYMBOL)) {
+      if (expected & ToBooleanHint::kSymbol) {
         // Symbol value -> true.
         __ CompareInstanceType(map, ip, SYMBOL_TYPE);
         __ beq(instr->TrueLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanICStub::SIMD_VALUE)) {
+      if (expected & ToBooleanHint::kSimdValue) {
         // SIMD value -> true.
         Label not_simd;
         __ CompareInstanceType(map, ip, SIMD128_VALUE_TYPE);
         __ beq(instr->TrueLabel(chunk_));
       }
 
-      if (expected.Contains(ToBooleanICStub::HEAP_NUMBER)) {
+      if (expected & ToBooleanHint::kHeapNumber) {
         // heap number -> false iff +0, -0, or NaN.
         Label not_heap_number;
         __ CompareRoot(map, Heap::kHeapNumberMapRootIndex);
@@ -2197,7 +2213,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ bind(&not_heap_number);
       }
 
-      if (!expected.IsGeneric()) {
+      if (expected != ToBooleanHint::kAny) {
         // We've seen something for the first time -> deopt.
         // This can only happen if we are not generic already.
         DeoptimizeIf(al, instr, DeoptimizeReason::kUnexpectedObject);
@@ -2682,7 +2698,7 @@ void LCodeGen::DoLoadNamedField(LLoadNamedField* instr) {
   if (instr->hydrogen()->representation().IsDouble()) {
     DCHECK(access.IsInobject());
     DoubleRegister result = ToDoubleRegister(instr->result());
-    __ ld(result, FieldMemOperand(object, offset));
+    __ LoadDouble(result, FieldMemOperand(object, offset));
     return;
   }
 
@@ -2820,9 +2836,10 @@ void LCodeGen::DoLoadKeyedExternalArray(LLoadKeyed* instr) {
       }
     } else {  // i.e. elements_kind == EXTERNAL_DOUBLE_ELEMENTS
       if (!use_scratch) {
-        __ ld(result, MemOperand(external_pointer, base_offset));
+        __ LoadDouble(result, MemOperand(external_pointer, base_offset));
       } else {
-        __ ld(result, MemOperand(scratch0(), external_pointer, base_offset));
+        __ LoadDouble(result,
+                      MemOperand(scratch0(), external_pointer, base_offset));
       }
     }
   } else {
@@ -2917,9 +2934,9 @@ void LCodeGen::DoLoadKeyedFixedDoubleArray(LLoadKeyed* instr) {
   }
 
   if (!use_scratch) {
-    __ ld(result, MemOperand(elements, base_offset));
+    __ LoadDouble(result, MemOperand(elements, base_offset));
   } else {
-    __ ld(result, MemOperand(scratch, elements, base_offset));
+    __ LoadDouble(result, MemOperand(scratch, elements, base_offset));
   }
 
   if (instr->hydrogen()->RequiresHoleCheck()) {
@@ -2996,11 +3013,11 @@ void LCodeGen::DoLoadKeyedFixedArray(LLoadKeyed* instr) {
     __ bne(&done);
     if (info()->IsStub()) {
       // A stub can safely convert the hole to undefined only if the array
-      // protector cell contains (Smi) Isolate::kArrayProtectorValid. Otherwise
+      // protector cell contains (Smi) Isolate::kProtectorValid. Otherwise
       // it needs to bail out.
       __ LoadRoot(result, Heap::kArrayProtectorRootIndex);
-      __ LoadP(result, FieldMemOperand(result, Cell::kValueOffset));
-      __ CmpSmiLiteral(result, Smi::FromInt(Isolate::kArrayProtectorValid), r0);
+      __ LoadP(result, FieldMemOperand(result, PropertyCell::kValueOffset));
+      __ CmpSmiLiteral(result, Smi::FromInt(Isolate::kProtectorValid), r0);
       DeoptimizeIf(ne, instr, DeoptimizeReason::kHole);
     }
     __ LoadRoot(result, Heap::kUndefinedValueRootIndex);
@@ -3244,7 +3261,7 @@ void LCodeGen::DoContext(LContext* instr) {
 
 void LCodeGen::DoDeclareGlobals(LDeclareGlobals* instr) {
   DCHECK(ToRegister(instr->context()).is(cp));
-  __ Move(scratch0(), instr->hydrogen()->pairs());
+  __ Move(scratch0(), instr->hydrogen()->declarations());
   __ push(scratch0());
   __ LoadSmiLiteral(scratch0(), Smi::FromInt(instr->hydrogen()->flags()));
   __ push(scratch0());
@@ -3840,7 +3857,7 @@ void LCodeGen::DoStoreNamedField(LStoreNamedField* instr) {
     DCHECK(!hinstr->NeedsWriteBarrier());
     DoubleRegister value = ToDoubleRegister(instr->value());
     DCHECK(offset >= 0);
-    __ std(value, FieldMemOperand(object, offset));
+    __ StoreDouble(value, FieldMemOperand(object, offset));
     return;
   }
 
@@ -3865,7 +3882,7 @@ void LCodeGen::DoStoreNamedField(LStoreNamedField* instr) {
   if (FLAG_unbox_double_fields && representation.IsDouble()) {
     DCHECK(access.IsInobject());
     DoubleRegister value = ToDoubleRegister(instr->value());
-    __ std(value, FieldMemOperand(object, offset));
+    __ StoreDouble(value, FieldMemOperand(object, offset));
     if (hinstr->NeedsWriteBarrier()) {
       record_value = ToRegister(instr->value());
     }
@@ -4094,14 +4111,15 @@ void LCodeGen::DoStoreKeyedFixedDoubleArray(LStoreKeyed* instr) {
     __ CanonicalizeNaN(double_scratch, value);
     DCHECK(address_offset >= 0);
     if (use_scratch)
-      __ std(double_scratch, MemOperand(scratch, elements, address_offset));
+      __ StoreDouble(double_scratch,
+                     MemOperand(scratch, elements, address_offset));
     else
-      __ std(double_scratch, MemOperand(elements, address_offset));
+      __ StoreDouble(double_scratch, MemOperand(elements, address_offset));
   } else {
     if (use_scratch)
-      __ std(value, MemOperand(scratch, elements, address_offset));
+      __ StoreDouble(value, MemOperand(scratch, elements, address_offset));
     else
-      __ std(value, MemOperand(elements, address_offset));
+      __ StoreDouble(value, MemOperand(elements, address_offset));
   }
 }
 
@@ -4681,7 +4699,8 @@ void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
       DeoptimizeIf(ne, instr, DeoptimizeReason::kNotAHeapNumber);
     }
     // load heap number
-    __ ld(result_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
+    __ LoadDouble(result_reg,
+                  FieldMemOperand(input_reg, HeapNumber::kValueOffset));
     if (deoptimize_on_minus_zero) {
       __ TestDoubleIsMinusZero(result_reg, scratch, ip);
       DeoptimizeIf(eq, instr, DeoptimizeReason::kMinusZero);
@@ -4693,7 +4712,8 @@ void LCodeGen::EmitNumberUntagD(LNumberUntagD* instr, Register input_reg,
       __ CompareRoot(input_reg, Heap::kUndefinedValueRootIndex);
       DeoptimizeIf(ne, instr, DeoptimizeReason::kNotAHeapNumberUndefined);
       __ LoadRoot(scratch, Heap::kNanValueRootIndex);
-      __ ld(result_reg, FieldMemOperand(scratch, HeapNumber::kValueOffset));
+      __ LoadDouble(result_reg,
+                    FieldMemOperand(scratch, HeapNumber::kValueOffset));
       __ b(&done, Label::kNear);
     }
   } else {
@@ -4735,8 +4755,8 @@ void LCodeGen::DoDeferredTaggedToI(LTaggedToI* instr) {
     // Deoptimize if we don't have a heap number.
     DeoptimizeIf(ne, instr, DeoptimizeReason::kNotAHeapNumber);
 
-    __ ld(double_scratch2,
-          FieldMemOperand(input_reg, HeapNumber::kValueOffset));
+    __ LoadDouble(double_scratch2,
+                  FieldMemOperand(input_reg, HeapNumber::kValueOffset));
     if (instr->hydrogen()->CheckFlag(HValue::kBailoutOnMinusZero)) {
       // preserve heap number pointer in scratch2 for minus zero check below
       __ LoadRR(scratch2, input_reg);
@@ -5050,7 +5070,7 @@ void LCodeGen::DoClampTToUint8(LClampTToUint8* instr) {
 
   // Heap number
   __ bind(&heap_number);
-  __ ld(temp_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
+  __ LoadDouble(temp_reg, FieldMemOperand(input_reg, HeapNumber::kValueOffset));
   __ ClampDoubleToUint8(result_reg, temp_reg, double_scratch0());
   __ b(&done, Label::kNear);
 

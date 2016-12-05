@@ -130,18 +130,18 @@ Object* DeclareGlobal(
   return isolate->heap()->undefined_value();
 }
 
-Object* DeclareGlobals(Isolate* isolate, Handle<FixedArray> pairs, int flags,
-                       Handle<TypeFeedbackVector> feedback_vector) {
+Object* DeclareGlobals(Isolate* isolate, Handle<FixedArray> declarations,
+                       int flags, Handle<TypeFeedbackVector> feedback_vector) {
   HandleScope scope(isolate);
   Handle<JSGlobalObject> global(isolate->global_object());
   Handle<Context> context(isolate->context());
 
   // Traverse the name/value pairs and set the properties.
-  int length = pairs->length();
-  FOR_WITH_HANDLE_SCOPE(isolate, int, i = 0, i, i < length, i += 2, {
-    FeedbackVectorSlot slot(Smi::cast(pairs->get(i))->value());
-    Handle<String> name(feedback_vector->GetName(slot), isolate);
-    Handle<Object> initial_value(pairs->get(i + 1), isolate);
+  int length = declarations->length();
+  FOR_WITH_HANDLE_SCOPE(isolate, int, i = 0, i, i < length, i += 3, {
+    Handle<String> name(String::cast(declarations->get(i)), isolate);
+    FeedbackVectorSlot slot(Smi::cast(declarations->get(i + 1))->value());
+    Handle<Object> initial_value(declarations->get(i + 2), isolate);
 
     bool is_var = initial_value->IsUndefined(isolate);
     bool is_function = initial_value->IsSharedFunctionInfo();
@@ -186,11 +186,11 @@ RUNTIME_FUNCTION(Runtime_DeclareGlobals) {
   HandleScope scope(isolate);
   DCHECK_EQ(3, args.length());
 
-  CONVERT_ARG_HANDLE_CHECKED(FixedArray, pairs, 0);
+  CONVERT_ARG_HANDLE_CHECKED(FixedArray, declarations, 0);
   CONVERT_SMI_ARG_CHECKED(flags, 1);
   CONVERT_ARG_HANDLE_CHECKED(TypeFeedbackVector, feedback_vector, 2);
 
-  return DeclareGlobals(isolate, pairs, flags, feedback_vector);
+  return DeclareGlobals(isolate, declarations, flags, feedback_vector);
 }
 
 // TODO(ishell): merge this with Runtime::kDeclareGlobals once interpreter
@@ -199,13 +199,13 @@ RUNTIME_FUNCTION(Runtime_DeclareGlobalsForInterpreter) {
   HandleScope scope(isolate);
   DCHECK_EQ(3, args.length());
 
-  CONVERT_ARG_HANDLE_CHECKED(FixedArray, pairs, 0);
+  CONVERT_ARG_HANDLE_CHECKED(FixedArray, declarations, 0);
   CONVERT_SMI_ARG_CHECKED(flags, 1);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, closure, 2);
 
   Handle<TypeFeedbackVector> feedback_vector(closure->feedback_vector(),
                                              isolate);
-  return DeclareGlobals(isolate, pairs, flags, feedback_vector);
+  return DeclareGlobals(isolate, declarations, flags, feedback_vector);
 }
 
 RUNTIME_FUNCTION(Runtime_InitializeVarGlobal) {
@@ -377,6 +377,8 @@ std::unique_ptr<Handle<Object>[]> GetCallerArguments(Isolate* isolate,
         NewArray<Handle<Object>>(*total_argc));
     bool should_deoptimize = false;
     for (int i = 0; i < argument_count; i++) {
+      // If we materialize any object, we should deoptimize the frame because we
+      // might alias an object that was eliminated by escape analysis.
       should_deoptimize = should_deoptimize || iter->IsMaterializedObject();
       Handle<Object> value = iter->GetValue();
       param_data[i] = value;
@@ -384,7 +386,7 @@ std::unique_ptr<Handle<Object>[]> GetCallerArguments(Isolate* isolate,
     }
 
     if (should_deoptimize) {
-      translated_values.StoreMaterializedValuesAndDeopt();
+      translated_values.StoreMaterializedValuesAndDeopt(frame);
     }
 
     return param_data;
@@ -670,8 +672,9 @@ RUNTIME_FUNCTION(Runtime_NewScriptContext) {
   // Script contexts have a canonical empty function as their closure, not the
   // anonymous closure containing the global code.  See
   // FullCodeGenerator::PushFunctionArgumentForContextAllocation.
-  Handle<JSFunction> closure(
-      function->shared()->IsBuiltin() ? *function : native_context->closure());
+  Handle<JSFunction> closure(function->shared()->IsUserJavaScript()
+                                 ? native_context->closure()
+                                 : *function);
   Handle<Context> result =
       isolate->factory()->NewScriptContext(closure, scope_info);
 
@@ -903,7 +906,7 @@ MaybeHandle<Object> StoreLookupSlot(Handle<String> name, Handle<Object> value,
   // The property was found in a context slot.
   if (index != Context::kNotFound) {
     if (flag == kNeedsInitialization &&
-        Handle<Context>::cast(holder)->is_the_hole(index)) {
+        Handle<Context>::cast(holder)->is_the_hole(isolate, index)) {
       THROW_NEW_ERROR(isolate,
                       NewReferenceError(MessageTemplate::kNotDefined, name),
                       Object);

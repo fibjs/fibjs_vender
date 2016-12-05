@@ -79,13 +79,13 @@ class StackGuard final {
   // it has been set up.
   void ClearThread(const ExecutionAccess& lock);
 
-#define INTERRUPT_LIST(V)                                          \
-  V(DEBUGBREAK, DebugBreak, 0)                                     \
-  V(DEBUGCOMMAND, DebugCommand, 1)                                 \
-  V(TERMINATE_EXECUTION, TerminateExecution, 2)                    \
-  V(GC_REQUEST, GC, 3)                                             \
-  V(INSTALL_CODE, InstallCode, 4)                                  \
-  V(API_INTERRUPT, ApiInterrupt, 5)                                \
+#define INTERRUPT_LIST(V)                       \
+  V(DEBUGBREAK, DebugBreak, 0)                  \
+  V(DEBUGCOMMAND, DebugCommand, 1)              \
+  V(TERMINATE_EXECUTION, TerminateExecution, 2) \
+  V(GC_REQUEST, GC, 3)                          \
+  V(INSTALL_CODE, InstallCode, 4)               \
+  V(API_INTERRUPT, ApiInterrupt, 5)             \
   V(DEOPT_MARKED_ALLOCATION_SITES, DeoptMarkedAllocationSites, 6)
 
 #define V(NAME, Name, id)                                          \

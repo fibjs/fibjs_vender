@@ -61,6 +61,8 @@ namespace internal {
   V(kEliminatedBoundsCheckFailed, "Eliminated bounds check failed")            \
   V(kEmitLoadRegisterUnsupportedDoubleImmediate,                               \
     "EmitLoadRegister: Unsupported double immediate")                          \
+  V(kCyclicObjectStateDetectedInEscapeAnalysis,                                \
+    "Cyclic object state detected by escape analysis")                         \
   V(kEval, "eval")                                                             \
   V(kExpectedAllocationSite, "Expected allocation site")                       \
   V(kExpectedBooleanValue, "Expected boolean value")                           \
@@ -123,6 +125,7 @@ namespace internal {
   V(kLookupVariableInCountOperation, "Lookup variable in count operation")     \
   V(kMapBecameDeprecated, "Map became deprecated")                             \
   V(kMapBecameUnstable, "Map became unstable")                                 \
+  V(kMissingBytecodeArray, "Missing bytecode array from function")             \
   V(kNativeFunctionLiteral, "Native function literal")                         \
   V(kNeedSmiLiteral, "Need a Smi literal here")                                \
   V(kNoCasesLeft, "No cases left")                                             \
@@ -136,7 +139,6 @@ namespace internal {
   V(kNotEnoughSpillSlotsForOsr, "Not enough spill slots for OSR")              \
   V(kNotEnoughVirtualRegistersRegalloc,                                        \
     "Not enough virtual registers (regalloc)")                                 \
-  V(kObjectFoundInSmiOnlyArray, "Object found in smi-only array")              \
   V(kObjectLiteralWithComplexProperty, "Object literal with complex property") \
   V(kOffsetOutOfRange, "Offset out of range")                                  \
   V(kOperandIsANumber, "Operand is a number")                                  \
@@ -163,7 +165,7 @@ namespace internal {
   V(kObjectNotTagged, "The object is not tagged")                              \
   V(kOptimizationDisabled, "Optimization disabled")                            \
   V(kOptimizationDisabledForTest, "Optimization disabled for test")            \
-  V(kOptimizedTooManyTimes, "Optimized too many times")                        \
+  V(kDeoptimizedTooManyTimes, "Deoptimized too many times")                    \
   V(kOutOfVirtualRegistersWhileTryingToAllocateTempRegister,                   \
     "Out of virtual registers while trying to allocate temp register")         \
   V(kParseScopeError, "Parse/scope error")                                     \
@@ -171,7 +173,9 @@ namespace internal {
   V(kReceivedInvalidReturnAddress, "Received invalid return address")          \
   V(kReferenceToAVariableWhichRequiresDynamicLookup,                           \
     "Reference to a variable which requires dynamic lookup")                   \
+  V(kReferenceToLetOrConstVariable, "Reference to let or const variable")      \
   V(kReferenceToGlobalLexicalVariable, "Reference to global lexical variable") \
+  V(kReferenceToModuleVariable, "Reference to module-allocated variable")      \
   V(kReferenceToUninitializedVariable, "Reference to uninitialized variable")  \
   V(kRegisterDidNotMatchExpectedRoot, "Register did not match expected root")  \
   V(kRegisterWasClobbered, "Register was clobbered")                           \
@@ -243,6 +247,7 @@ namespace internal {
   V(kUnsupportedLetCompoundAssignment, "Unsupported let compound assignment")  \
   V(kUnsupportedLookupSlotInDeclaration,                                       \
     "Unsupported lookup slot in declaration")                                  \
+  V(kUnsupportedModuleOperation, "Unsupported module operation")               \
   V(kUnsupportedNonPrimitiveCompare, "Unsupported non-primitive compare")      \
   V(kUnsupportedPhiUseOfArguments, "Unsupported phi use of arguments")         \
   V(kUnsupportedPhiUseOfConstVariable,                                         \

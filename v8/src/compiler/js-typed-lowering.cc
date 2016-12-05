@@ -4,6 +4,7 @@
 
 #include "src/compiler/js-typed-lowering.h"
 
+#include "src/ast/modules.h"
 #include "src/builtins/builtins-utils.h"
 #include "src/code-factory.h"
 #include "src/compilation-dependencies.h"
@@ -68,6 +69,7 @@ class JSBinopReduction final {
           return true;
         case CompareOperationHint::kAny:
         case CompareOperationHint::kNone:
+        case CompareOperationHint::kString:
           break;
       }
     }
@@ -625,33 +627,44 @@ Reduction JSTypedLowering::ReduceCreateConsString(Node* node) {
   // Check if we would overflow the allowed maximum string length.
   Node* check = graph()->NewNode(simplified()->NumberLessThanOrEqual(), length,
                                  jsgraph()->Constant(String::kMaxLength));
-  Node* branch =
-      graph()->NewNode(common()->Branch(BranchHint::kTrue), check, control);
-  Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
-  Node* efalse = effect;
-  {
-    // Throw a RangeError in case of overflow.
-    Node* vfalse = efalse = graph()->NewNode(
-        javascript()->CallRuntime(Runtime::kThrowInvalidStringLength), context,
-        frame_state, efalse, if_false);
-    if_false = graph()->NewNode(common()->IfSuccess(), vfalse);
-    if_false = graph()->NewNode(common()->Throw(), vfalse, efalse, if_false);
-    // TODO(bmeurer): This should be on the AdvancedReducer somehow.
-    NodeProperties::MergeControlToEnd(graph(), common(), if_false);
-    Revisit(graph()->end());
+  if (isolate()->IsStringLengthOverflowIntact()) {
+    // Add a code dependency on the string length overflow protector.
+    dependencies()->AssumePropertyCell(factory()->string_length_protector());
 
-    // Update potential {IfException} uses of {node} to point to the
-    // %ThrowInvalidStringLength runtime call node instead.
-    for (Edge edge : node->use_edges()) {
-      if (edge.from()->opcode() == IrOpcode::kIfException) {
-        DCHECK(NodeProperties::IsControlEdge(edge) ||
-               NodeProperties::IsEffectEdge(edge));
-        edge.UpdateTo(vfalse);
-        Revisit(edge.from());
+    // We can just deoptimize if the {check} fails. Besides generating a
+    // shorter code sequence than the version below, this has the additional
+    // benefit of not holding on to the lazy {frame_state} and thus potentially
+    // reduces the number of live ranges and allows for more truncations.
+    effect = graph()->NewNode(simplified()->CheckIf(), check, effect, control);
+  } else {
+    Node* branch =
+        graph()->NewNode(common()->Branch(BranchHint::kTrue), check, control);
+    Node* if_false = graph()->NewNode(common()->IfFalse(), branch);
+    Node* efalse = effect;
+    {
+      // Throw a RangeError in case of overflow.
+      Node* vfalse = efalse = graph()->NewNode(
+          javascript()->CallRuntime(Runtime::kThrowInvalidStringLength),
+          context, frame_state, efalse, if_false);
+      if_false = graph()->NewNode(common()->IfSuccess(), vfalse);
+      if_false = graph()->NewNode(common()->Throw(), vfalse, efalse, if_false);
+      // TODO(bmeurer): This should be on the AdvancedReducer somehow.
+      NodeProperties::MergeControlToEnd(graph(), common(), if_false);
+      Revisit(graph()->end());
+
+      // Update potential {IfException} uses of {node} to point to the
+      // %ThrowInvalidStringLength runtime call node instead.
+      for (Edge edge : node->use_edges()) {
+        if (edge.from()->opcode() == IrOpcode::kIfException) {
+          DCHECK(NodeProperties::IsControlEdge(edge) ||
+                 NodeProperties::IsEffectEdge(edge));
+          edge.UpdateTo(vfalse);
+          Revisit(edge.from());
+        }
       }
     }
+    control = graph()->NewNode(common()->IfTrue(), branch);
   }
-  control = graph()->NewNode(common()->IfTrue(), branch);
 
   // Figure out the map for the resulting ConsString.
   // TODO(turbofan): We currently just use the cons_string_map here for
@@ -671,7 +684,7 @@ Reduction JSTypedLowering::ReduceCreateConsString(Node* node) {
                             value, value_map, effect, control);
   effect = graph()->NewNode(
       simplified()->StoreField(AccessBuilder::ForNameHashField()), value,
-      jsgraph()->Uint32Constant(Name::kEmptyHashField), effect, control);
+      jsgraph()->Constant(Name::kEmptyHashField), effect, control);
   effect = graph()->NewNode(
       simplified()->StoreField(AccessBuilder::ForStringLength()), value, length,
       effect, control);
@@ -946,7 +959,6 @@ Reduction JSTypedLowering::ReduceJSToBoolean(Node* node) {
     return Replace(input);
   } else if (input_type->Is(Type::OrderedNumber())) {
     // JSToBoolean(x:ordered-number) => BooleanNot(NumberEqual(x,#0))
-    RelaxEffectsAndControls(node);
     node->ReplaceInput(0, graph()->NewNode(simplified()->NumberEqual(), input,
                                            jsgraph()->ZeroConstant()));
     node->TrimInputCount(1);
@@ -954,9 +966,24 @@ Reduction JSTypedLowering::ReduceJSToBoolean(Node* node) {
     return Changed(node);
   } else if (input_type->Is(Type::Number())) {
     // JSToBoolean(x:number) => NumberToBoolean(x)
-    RelaxEffectsAndControls(node);
     node->TrimInputCount(1);
     NodeProperties::ChangeOp(node, simplified()->NumberToBoolean());
+    return Changed(node);
+  } else if (input_type->Is(Type::DetectableReceiverOrNull())) {
+    // JSToBoolean(x:detectable receiver \/ null)
+    //   => BooleanNot(ReferenceEqual(x,#null))
+    node->ReplaceInput(0, graph()->NewNode(simplified()->ReferenceEqual(),
+                                           input, jsgraph()->NullConstant()));
+    node->TrimInputCount(1);
+    NodeProperties::ChangeOp(node, simplified()->BooleanNot());
+    return Changed(node);
+  } else if (input_type->Is(Type::ReceiverOrNullOrUndefined())) {
+    // JSToBoolean(x:receiver \/ null \/ undefined)
+    //   => BooleanNot(ObjectIsUndetectable(x))
+    node->ReplaceInput(
+        0, graph()->NewNode(simplified()->ObjectIsUndetectable(), input));
+    node->TrimInputCount(1);
+    NodeProperties::ChangeOp(node, simplified()->BooleanNot());
     return Changed(node);
   }
   return NoChange();
@@ -967,6 +994,17 @@ Reduction JSTypedLowering::ReduceJSToInteger(Node* node) {
   Type* const input_type = NodeProperties::GetType(input);
   if (input_type->Is(type_cache_.kIntegerOrMinusZero)) {
     // JSToInteger(x:integer) => x
+    ReplaceWithValue(node, input);
+    return Replace(input);
+  }
+  return NoChange();
+}
+
+Reduction JSTypedLowering::ReduceJSToName(Node* node) {
+  Node* const input = NodeProperties::GetValueInput(node, 0);
+  Type* const input_type = NodeProperties::GetType(input);
+  if (input_type->Is(Type::Name())) {
+    // JSToName(x:name) => x
     ReplaceWithValue(node, input);
     return Replace(input);
   }
@@ -1288,47 +1326,54 @@ Reduction JSTypedLowering::ReduceJSStoreProperty(Node* node) {
   return NoChange();
 }
 
-Reduction JSTypedLowering::ReduceJSInstanceOf(Node* node) {
-  DCHECK_EQ(IrOpcode::kJSInstanceOf, node->opcode());
-  Node* const context = NodeProperties::GetContextInput(node);
-  Node* const frame_state = NodeProperties::GetFrameStateInput(node);
+Reduction JSTypedLowering::ReduceJSOrdinaryHasInstance(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSOrdinaryHasInstance, node->opcode());
+  Node* constructor = NodeProperties::GetValueInput(node, 0);
+  Type* constructor_type = NodeProperties::GetType(constructor);
+  Node* object = NodeProperties::GetValueInput(node, 1);
+  Type* object_type = NodeProperties::GetType(object);
+  Node* context = NodeProperties::GetContextInput(node);
+  Node* frame_state = NodeProperties::GetFrameStateInput(node);
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
 
-  // If deoptimization is disabled, we cannot optimize.
-  if (!(flags() & kDeoptimizationEnabled)) return NoChange();
-
-  // If we are in a try block, don't optimize since the runtime call
-  // in the proxy case can throw.
-  if (NodeProperties::IsExceptionalCall(node)) return NoChange();
-
-  JSBinopReduction r(this, node);
-  Node* object = r.left();
-  Node* effect = r.effect();
-  Node* control = r.control();
-
-  if (!r.right_type()->IsHeapConstant() ||
-      !r.right_type()->AsHeapConstant()->Value()->IsJSFunction()) {
-    return NoChange();
+  // Check if the {constructor} cannot be callable.
+  // See ES6 section 7.3.19 OrdinaryHasInstance ( C, O ) step 1.
+  if (!constructor_type->Maybe(Type::Callable())) {
+    Node* value = jsgraph()->FalseConstant();
+    ReplaceWithValue(node, value, effect, control);
+    return Replace(value);
   }
 
+  // If the {constructor} cannot be a JSBoundFunction and then {object}
+  // cannot be a JSReceiver, then this can be constant-folded to false.
+  // See ES6 section 7.3.19 OrdinaryHasInstance ( C, O ) step 2 and 3.
+  if (!object_type->Maybe(Type::Receiver()) &&
+      !constructor_type->Maybe(Type::BoundFunction())) {
+    Node* value = jsgraph()->FalseConstant();
+    ReplaceWithValue(node, value, effect, control);
+    return Replace(value);
+  }
+
+  // Check if the {constructor} is a (known) JSFunction.
+  if (!constructor_type->IsHeapConstant() ||
+      !constructor_type->AsHeapConstant()->Value()->IsJSFunction()) {
+    return NoChange();
+  }
   Handle<JSFunction> function =
-      Handle<JSFunction>::cast(r.right_type()->AsHeapConstant()->Value());
-  Handle<SharedFunctionInfo> shared(function->shared(), isolate());
+      Handle<JSFunction>::cast(constructor_type->AsHeapConstant()->Value());
 
-  // Make sure the prototype of {function} is the %FunctionPrototype%, and it
-  // already has a meaningful initial map (i.e. we constructed at least one
-  // instance using the constructor {function}).
-  if (function->map()->prototype() != function->native_context()->closure() ||
-      function->map()->has_non_instance_prototype() ||
-      !function->has_initial_map()) {
-    return NoChange();
-  }
+  // Check if the {function} already has an initial map (i.e. the
+  // {function} has been used as a constructor at least once).
+  if (!function->has_initial_map()) return NoChange();
 
-  // We can only use the fast case if @@hasInstance was not used so far.
-  if (!isolate()->IsHasInstanceLookupChainIntact()) return NoChange();
-  dependencies()->AssumePropertyCell(factory()->has_instance_protector());
+  // Check if the {function}s "prototype" is a JSReceiver.
+  if (!function->prototype()->IsJSReceiver()) return NoChange();
 
+  // Install a code dependency on the {function}s initial map.
   Handle<Map> initial_map(function->initial_map(), isolate());
   dependencies()->AssumeInitialMapCantChange(initial_map);
+
   Node* prototype =
       jsgraph()->Constant(handle(initial_map->prototype(), isolate()));
 
@@ -1396,6 +1441,15 @@ Reduction JSTypedLowering::ReduceJSInstanceOf(Node* node) {
         javascript()->CallRuntime(Runtime::kHasInPrototypeChain), object,
         prototype, context, frame_state, efalse1, if_false1);
     if_false1 = graph()->NewNode(common()->IfSuccess(), vfalse1);
+
+    // Replace any potential IfException on {node} to catch exceptions
+    // from this %HasInPrototypeChain runtime call instead.
+    for (Edge edge : node->use_edges()) {
+      if (edge.from()->opcode() == IrOpcode::kIfException) {
+        edge.UpdateTo(vfalse1);
+        Revisit(edge.from());
+      }
+    }
   }
 
   // Load the {object} prototype.
@@ -1453,16 +1507,17 @@ Reduction JSTypedLowering::ReduceJSLoadContext(Node* node) {
   DCHECK_EQ(IrOpcode::kJSLoadContext, node->opcode());
   ContextAccess const& access = ContextAccessOf(node->op());
   Node* effect = NodeProperties::GetEffectInput(node);
+  Node* context = NodeProperties::GetContextInput(node);
   Node* control = graph()->start();
   for (size_t i = 0; i < access.depth(); ++i) {
-    Node* previous = effect = graph()->NewNode(
+    context = effect = graph()->NewNode(
         simplified()->LoadField(
             AccessBuilder::ForContextSlot(Context::PREVIOUS_INDEX)),
-        NodeProperties::GetValueInput(node, 0), effect, control);
-    node->ReplaceInput(0, previous);
+        context, effect, control);
   }
+  node->ReplaceInput(0, context);
   node->ReplaceInput(1, effect);
-  node->ReplaceInput(2, control);
+  node->AppendInput(jsgraph()->zone(), control);
   NodeProperties::ChangeOp(
       node,
       simplified()->LoadField(AccessBuilder::ForContextSlot(access.index())));
@@ -1473,20 +1528,97 @@ Reduction JSTypedLowering::ReduceJSStoreContext(Node* node) {
   DCHECK_EQ(IrOpcode::kJSStoreContext, node->opcode());
   ContextAccess const& access = ContextAccessOf(node->op());
   Node* effect = NodeProperties::GetEffectInput(node);
+  Node* context = NodeProperties::GetContextInput(node);
   Node* control = graph()->start();
+  Node* value = NodeProperties::GetValueInput(node, 0);
   for (size_t i = 0; i < access.depth(); ++i) {
-    Node* previous = effect = graph()->NewNode(
+    context = effect = graph()->NewNode(
         simplified()->LoadField(
             AccessBuilder::ForContextSlot(Context::PREVIOUS_INDEX)),
-        NodeProperties::GetValueInput(node, 0), effect, control);
-    node->ReplaceInput(0, previous);
+        context, effect, control);
   }
-  node->RemoveInput(2);
+  node->ReplaceInput(0, context);
+  node->ReplaceInput(1, value);
   node->ReplaceInput(2, effect);
   NodeProperties::ChangeOp(
       node,
       simplified()->StoreField(AccessBuilder::ForContextSlot(access.index())));
   return Changed(node);
+}
+
+Reduction JSTypedLowering::ReduceJSLoadModule(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSLoadModule, node->opcode());
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+
+  int32_t cell_index = OpParameter<int32_t>(node);
+  Node* module = NodeProperties::GetValueInput(node, 0);
+
+  Node* array;
+  int index;
+  if (ModuleDescriptor::GetCellIndexKind(cell_index) ==
+      ModuleDescriptor::kExport) {
+    array = effect = graph()->NewNode(
+        simplified()->LoadField(AccessBuilder::ForModuleRegularExports()),
+        module, effect, control);
+    index = cell_index - 1;
+  } else {
+    DCHECK_EQ(ModuleDescriptor::GetCellIndexKind(cell_index),
+              ModuleDescriptor::kImport);
+    array = effect = graph()->NewNode(
+        simplified()->LoadField(AccessBuilder::ForModuleRegularImports()),
+        module, effect, control);
+    index = -cell_index - 1;
+  }
+
+  Node* cell = effect = graph()->NewNode(
+      simplified()->LoadField(AccessBuilder::ForFixedArraySlot(index)), array,
+      effect, control);
+
+  Node* value = effect =
+      graph()->NewNode(simplified()->LoadField(AccessBuilder::ForCellValue()),
+                       cell, effect, control);
+
+  ReplaceWithValue(node, value, effect, control);
+  return Changed(value);
+}
+
+Reduction JSTypedLowering::ReduceJSStoreModule(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSStoreModule, node->opcode());
+  Node* effect = NodeProperties::GetEffectInput(node);
+  Node* control = NodeProperties::GetControlInput(node);
+
+  int32_t cell_index = OpParameter<int32_t>(node);
+  Node* module = NodeProperties::GetValueInput(node, 0);
+  Node* value = NodeProperties::GetValueInput(node, 1);
+
+  Node* array;
+  int index;
+  if (ModuleDescriptor::GetCellIndexKind(cell_index) ==
+      ModuleDescriptor::kExport) {
+    array = effect = graph()->NewNode(
+        simplified()->LoadField(AccessBuilder::ForModuleRegularExports()),
+        module, effect, control);
+    index = cell_index - 1;
+  } else {
+    DCHECK_EQ(ModuleDescriptor::GetCellIndexKind(cell_index),
+              ModuleDescriptor::kImport);
+    array = effect = graph()->NewNode(
+        simplified()->LoadField(AccessBuilder::ForModuleRegularImports()),
+        module, effect, control);
+    index = -cell_index - 1;
+  }
+
+  Node* cell = effect = graph()->NewNode(
+      simplified()->LoadField(AccessBuilder::ForFixedArraySlot(index)), array,
+      effect, control);
+
+  effect =
+      graph()->NewNode(simplified()->StoreField(AccessBuilder::ForCellValue()),
+                       cell, value, effect, control);
+
+  ReplaceWithValue(node, effect, effect, control);
+  return Changed(value);
 }
 
 Reduction JSTypedLowering::ReduceJSConvertReceiver(Node* node) {
@@ -1519,10 +1651,10 @@ Reduction JSTypedLowering::ReduceJSConvertReceiver(Node* node) {
     } else {
       Node* native_context = effect = graph()->NewNode(
           javascript()->LoadContext(0, Context::NATIVE_CONTEXT_INDEX, true),
-          context, context, effect);
+          context, effect);
       receiver = effect = graph()->NewNode(
           javascript()->LoadContext(0, Context::GLOBAL_PROXY_INDEX, true),
-          native_context, native_context, effect);
+          native_context, effect);
     }
     ReplaceWithValue(node, receiver, effect, control);
     return Replace(receiver);
@@ -1624,10 +1756,10 @@ Reduction JSTypedLowering::ReduceJSConvertReceiver(Node* node) {
     } else {
       Node* native_context = eglobal = graph()->NewNode(
           javascript()->LoadContext(0, Context::NATIVE_CONTEXT_INDEX, true),
-          context, context, eglobal);
+          context, eglobal);
       rglobal = eglobal = graph()->NewNode(
           javascript()->LoadContext(0, Context::GLOBAL_PROXY_INDEX, true),
-          native_context, native_context, eglobal);
+          native_context, eglobal);
     }
   }
 
@@ -1773,7 +1905,7 @@ Reduction JSTypedLowering::ReduceJSCallConstruct(Node* node) {
       node->InsertInput(graph()->zone(), 0,
                         jsgraph()->HeapConstant(callable.code()));
       node->InsertInput(graph()->zone(), 2, new_target);
-      node->InsertInput(graph()->zone(), 3, jsgraph()->Int32Constant(arity));
+      node->InsertInput(graph()->zone(), 3, jsgraph()->Constant(arity));
       node->InsertInput(graph()->zone(), 4, jsgraph()->UndefinedConstant());
       node->InsertInput(graph()->zone(), 5, jsgraph()->UndefinedConstant());
       NodeProperties::ChangeOp(
@@ -1792,7 +1924,7 @@ Reduction JSTypedLowering::ReduceJSCallConstruct(Node* node) {
     node->InsertInput(graph()->zone(), 0,
                       jsgraph()->HeapConstant(callable.code()));
     node->InsertInput(graph()->zone(), 2, new_target);
-    node->InsertInput(graph()->zone(), 3, jsgraph()->Int32Constant(arity));
+    node->InsertInput(graph()->zone(), 3, jsgraph()->Constant(arity));
     node->InsertInput(graph()->zone(), 4, jsgraph()->UndefinedConstant());
     NodeProperties::ChangeOp(
         node, common()->Call(Linkage::GetStubCallDescriptor(
@@ -1863,7 +1995,7 @@ Reduction JSTypedLowering::ReduceJSCallFunction(Node* node) {
     }
 
     Node* new_target = jsgraph()->UndefinedConstant();
-    Node* argument_count = jsgraph()->Int32Constant(arity);
+    Node* argument_count = jsgraph()->Constant(arity);
     if (NeedsArgumentAdaptorFrame(shared, arity)) {
       // Patch {node} to an indirect call via the ArgumentsAdaptorTrampoline.
       Callable callable = CodeFactory::ArgumentAdaptor(isolate());
@@ -1873,7 +2005,7 @@ Reduction JSTypedLowering::ReduceJSCallFunction(Node* node) {
       node->InsertInput(graph()->zone(), 3, argument_count);
       node->InsertInput(
           graph()->zone(), 4,
-          jsgraph()->Int32Constant(shared->internal_formal_parameter_count()));
+          jsgraph()->Constant(shared->internal_formal_parameter_count()));
       NodeProperties::ChangeOp(
           node, common()->Call(Linkage::GetStubCallDescriptor(
                     isolate(), graph()->zone(), callable.descriptor(),
@@ -1905,7 +2037,7 @@ Reduction JSTypedLowering::ReduceJSCallFunction(Node* node) {
     Callable callable = CodeFactory::CallFunction(isolate(), convert_mode);
     node->InsertInput(graph()->zone(), 0,
                       jsgraph()->HeapConstant(callable.code()));
-    node->InsertInput(graph()->zone(), 2, jsgraph()->Int32Constant(arity));
+    node->InsertInput(graph()->zone(), 2, jsgraph()->Constant(arity));
     NodeProperties::ChangeOp(
         node, common()->Call(Linkage::GetStubCallDescriptor(
                   isolate(), graph()->zone(), callable.descriptor(), 1 + arity,
@@ -2000,7 +2132,7 @@ Reduction JSTypedLowering::ReduceJSGeneratorStore(Node* node) {
   Node* control = NodeProperties::GetControlInput(node);
   int register_count = OpParameter<int>(node);
 
-  FieldAccess array_field = AccessBuilder::ForJSGeneratorObjectOperandStack();
+  FieldAccess array_field = AccessBuilder::ForJSGeneratorObjectRegisterFile();
   FieldAccess context_field = AccessBuilder::ForJSGeneratorObjectContext();
   FieldAccess continuation_field =
       AccessBuilder::ForJSGeneratorObjectContinuation();
@@ -2054,7 +2186,7 @@ Reduction JSTypedLowering::ReduceJSGeneratorRestoreRegister(Node* node) {
   Node* control = NodeProperties::GetControlInput(node);
   int index = OpParameter<int>(node);
 
-  FieldAccess array_field = AccessBuilder::ForJSGeneratorObjectOperandStack();
+  FieldAccess array_field = AccessBuilder::ForJSGeneratorObjectRegisterFile();
   FieldAccess element_field = AccessBuilder::ForFixedArraySlot(index);
 
   Node* array = effect = graph()->NewNode(simplified()->LoadField(array_field),
@@ -2100,12 +2232,16 @@ Reduction JSTypedLowering::Reduce(Node* node) {
     case IrOpcode::kJSDivide:
     case IrOpcode::kJSModulus:
       return ReduceNumberBinop(node);
+    case IrOpcode::kJSOrdinaryHasInstance:
+      return ReduceJSOrdinaryHasInstance(node);
     case IrOpcode::kJSToBoolean:
       return ReduceJSToBoolean(node);
     case IrOpcode::kJSToInteger:
       return ReduceJSToInteger(node);
     case IrOpcode::kJSToLength:
       return ReduceJSToLength(node);
+    case IrOpcode::kJSToName:
+      return ReduceJSToName(node);
     case IrOpcode::kJSToNumber:
       return ReduceJSToNumber(node);
     case IrOpcode::kJSToString:
@@ -2120,12 +2256,14 @@ Reduction JSTypedLowering::Reduce(Node* node) {
       return ReduceJSLoadProperty(node);
     case IrOpcode::kJSStoreProperty:
       return ReduceJSStoreProperty(node);
-    case IrOpcode::kJSInstanceOf:
-      return ReduceJSInstanceOf(node);
     case IrOpcode::kJSLoadContext:
       return ReduceJSLoadContext(node);
     case IrOpcode::kJSStoreContext:
       return ReduceJSStoreContext(node);
+    case IrOpcode::kJSLoadModule:
+      return ReduceJSLoadModule(node);
+    case IrOpcode::kJSStoreModule:
+      return ReduceJSStoreModule(node);
     case IrOpcode::kJSConvertReceiver:
       return ReduceJSConvertReceiver(node);
     case IrOpcode::kJSCallConstruct:

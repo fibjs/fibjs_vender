@@ -142,11 +142,8 @@ int CodeEntry::GetSourceLine(int pc_offset) const {
 }
 
 void CodeEntry::AddInlineStack(int pc_offset,
-                               std::vector<CodeEntry*>& inline_stack) {
-  // It's better to use std::move to place the vector into the map,
-  // but it's not supported by the current stdlibc++ on MacOS.
-  inline_locations_.insert(std::make_pair(pc_offset, std::vector<CodeEntry*>()))
-      .first->second.swap(inline_stack);
+                               std::vector<CodeEntry*> inline_stack) {
+  inline_locations_.insert(std::make_pair(pc_offset, std::move(inline_stack)));
 }
 
 const std::vector<CodeEntry*>* CodeEntry::GetInlineStack(int pc_offset) const {
@@ -155,12 +152,9 @@ const std::vector<CodeEntry*>* CodeEntry::GetInlineStack(int pc_offset) const {
 }
 
 void CodeEntry::AddDeoptInlinedFrames(
-    int deopt_id, std::vector<DeoptInlinedFrame>& inlined_frames) {
-  // It's better to use std::move to place the vector into the map,
-  // but it's not supported by the current stdlibc++ on MacOS.
-  deopt_inlined_frames_
-      .insert(std::make_pair(deopt_id, std::vector<DeoptInlinedFrame>()))
-      .first->second.swap(inlined_frames);
+    int deopt_id, std::vector<CpuProfileDeoptFrame> inlined_frames) {
+  deopt_inlined_frames_.insert(
+      std::make_pair(deopt_id, std::move(inlined_frames)));
 }
 
 bool CodeEntry::HasDeoptInlinedFramesFor(int deopt_id) const {
@@ -183,16 +177,9 @@ CpuProfileDeoptInfo CodeEntry::GetDeoptInfo() {
   DCHECK_NE(kNoDeoptimizationId, deopt_id_);
   if (deopt_inlined_frames_.find(deopt_id_) == deopt_inlined_frames_.end()) {
     info.stack.push_back(CpuProfileDeoptFrame(
-        {script_id_, position_ + deopt_position_.position()}));
+        {script_id_, static_cast<size_t>(std::max(0, position()))}));
   } else {
-    size_t deopt_position = deopt_position_.raw();
-    // Copy stack of inlined frames where the deopt happened.
-    std::vector<DeoptInlinedFrame>& frames = deopt_inlined_frames_[deopt_id_];
-    for (DeoptInlinedFrame& inlined_frame : base::Reversed(frames)) {
-      info.stack.push_back(CpuProfileDeoptFrame(
-          {inlined_frame.script_id, deopt_position + inlined_frame.position}));
-      deopt_position = 0;  // Done with innermost frame.
-    }
+    info.stack = deopt_inlined_frames_[deopt_id_];
   }
   return info;
 }
@@ -650,7 +637,16 @@ void CpuProfilesCollection::AddPathToCurrentProfiles(
 
 ProfileGenerator::ProfileGenerator(Isolate* isolate,
                                    CpuProfilesCollection* profiles)
-    : isolate_(isolate), profiles_(profiles) {}
+    : isolate_(isolate), profiles_(profiles) {
+  RuntimeCallStats* rcs = isolate_->counters()->runtime_call_stats();
+  for (int i = 0; i < RuntimeCallStats::counters_count; ++i) {
+    RuntimeCallCounter* counter = &(rcs->*(RuntimeCallStats::counters[i]));
+    DCHECK(counter->name());
+    auto entry = new CodeEntry(CodeEventListener::FUNCTION_TAG, counter->name(),
+                               CodeEntry::kEmptyNamePrefix, "native V8Runtime");
+    code_map_.AddCode(reinterpret_cast<Address>(counter), entry, 1);
+  }
+}
 
 void ProfileGenerator::RecordTickSample(const TickSample& sample) {
   std::vector<CodeEntry*> entries;
@@ -755,20 +751,7 @@ void ProfileGenerator::RecordTickSample(const TickSample& sample) {
 }
 
 CodeEntry* ProfileGenerator::FindEntry(void* address) {
-  CodeEntry* entry = code_map_.FindEntry(reinterpret_cast<Address>(address));
-  if (!entry) {
-    RuntimeCallStats* rcs = isolate_->counters()->runtime_call_stats();
-    void* start = reinterpret_cast<void*>(rcs);
-    void* end = reinterpret_cast<void*>(rcs + 1);
-    if (start <= address && address < end) {
-      RuntimeCallCounter* counter =
-          reinterpret_cast<RuntimeCallCounter*>(address);
-      entry = new CodeEntry(CodeEventListener::FUNCTION_TAG, counter->name,
-                            CodeEntry::kEmptyNamePrefix, "native V8Runtime");
-      code_map_.AddCode(reinterpret_cast<Address>(address), entry, 1);
-    }
-  }
-  return entry;
+  return code_map_.FindEntry(reinterpret_cast<Address>(address));
 }
 
 CodeEntry* ProfileGenerator::EntryForVMState(StateTag tag) {

@@ -43,6 +43,29 @@ class SafepointGenerator final : public CallWrapper {
   Safepoint::DeoptMode deopt_mode_;
 };
 
+LCodeGen::PushSafepointRegistersScope::PushSafepointRegistersScope(
+    LCodeGen* codegen)
+    : codegen_(codegen) {
+  DCHECK(codegen_->info()->is_calling());
+  DCHECK(codegen_->expected_safepoint_kind_ == Safepoint::kSimple);
+  codegen_->expected_safepoint_kind_ = Safepoint::kWithRegisters;
+
+  UseScratchRegisterScope temps(codegen_->masm_);
+  // Preserve the value of lr which must be saved on the stack (the call to
+  // the stub will clobber it).
+  Register to_be_pushed_lr =
+      temps.UnsafeAcquire(StoreRegistersStateStub::to_be_pushed_lr());
+  codegen_->masm_->Mov(to_be_pushed_lr, lr);
+  StoreRegistersStateStub stub(codegen_->isolate());
+  codegen_->masm_->CallStub(&stub);
+}
+
+LCodeGen::PushSafepointRegistersScope::~PushSafepointRegistersScope() {
+  DCHECK(codegen_->expected_safepoint_kind_ == Safepoint::kWithRegisters);
+  RestoreRegistersStateStub stub(codegen_->isolate());
+  codegen_->masm_->CallStub(&stub);
+  codegen_->expected_safepoint_kind_ = Safepoint::kSimple;
+}
 
 #define __ masm()->
 
@@ -685,8 +708,7 @@ bool LCodeGen::GenerateDeferredCode() {
 
       HValue* value =
           instructions_->at(code->instruction_index())->hydrogen_value();
-      RecordAndWritePosition(
-          chunk()->graph()->SourcePositionToScriptPosition(value->position()));
+      RecordAndWritePosition(value->position());
 
       Comment(";;; <@%d,#%d> "
               "-------------------- Deferred %s --------------------",
@@ -1768,18 +1790,17 @@ void LCodeGen::DoBranch(LBranch* instr) {
       __ Ldr(temp, FieldMemOperand(value, String::kLengthOffset));
       EmitCompareAndBranch(instr, ne, temp, 0);
     } else {
-      ToBooleanICStub::Types expected =
-          instr->hydrogen()->expected_input_types();
+      ToBooleanHints expected = instr->hydrogen()->expected_input_types();
       // Avoid deopts in the case where we've never executed this path before.
-      if (expected.IsEmpty()) expected = ToBooleanICStub::Types::Generic();
+      if (expected == ToBooleanHint::kNone) expected = ToBooleanHint::kAny;
 
-      if (expected.Contains(ToBooleanICStub::UNDEFINED)) {
+      if (expected & ToBooleanHint::kUndefined) {
         // undefined -> false.
         __ JumpIfRoot(
             value, Heap::kUndefinedValueRootIndex, false_label);
       }
 
-      if (expected.Contains(ToBooleanICStub::BOOLEAN)) {
+      if (expected & ToBooleanHint::kBoolean) {
         // Boolean -> its value.
         __ JumpIfRoot(
             value, Heap::kTrueValueRootIndex, true_label);
@@ -1787,18 +1808,18 @@ void LCodeGen::DoBranch(LBranch* instr) {
             value, Heap::kFalseValueRootIndex, false_label);
       }
 
-      if (expected.Contains(ToBooleanICStub::NULL_TYPE)) {
+      if (expected & ToBooleanHint::kNull) {
         // 'null' -> false.
         __ JumpIfRoot(
             value, Heap::kNullValueRootIndex, false_label);
       }
 
-      if (expected.Contains(ToBooleanICStub::SMI)) {
+      if (expected & ToBooleanHint::kSmallInteger) {
         // Smis: 0 -> false, all other -> true.
         DCHECK(Smi::kZero == 0);
         __ Cbz(value, false_label);
         __ JumpIfSmi(value, true_label);
-      } else if (expected.NeedsMap()) {
+      } else if (expected & ToBooleanHint::kNeedsMap) {
         // If we need a map later and have a smi, deopt.
         DeoptimizeIfSmi(value, instr, DeoptimizeReason::kSmi);
       }
@@ -1806,14 +1827,14 @@ void LCodeGen::DoBranch(LBranch* instr) {
       Register map = NoReg;
       Register scratch = NoReg;
 
-      if (expected.NeedsMap()) {
+      if (expected & ToBooleanHint::kNeedsMap) {
         DCHECK((instr->temp1() != NULL) && (instr->temp2() != NULL));
         map = ToRegister(instr->temp1());
         scratch = ToRegister(instr->temp2());
 
         __ Ldr(map, FieldMemOperand(value, HeapObject::kMapOffset));
 
-        if (expected.CanBeUndetectable()) {
+        if (expected & ToBooleanHint::kCanBeUndetectable) {
           // Undetectable -> false.
           __ Ldrb(scratch, FieldMemOperand(map, Map::kBitFieldOffset));
           __ TestAndBranchIfAnySet(
@@ -1821,13 +1842,13 @@ void LCodeGen::DoBranch(LBranch* instr) {
         }
       }
 
-      if (expected.Contains(ToBooleanICStub::SPEC_OBJECT)) {
+      if (expected & ToBooleanHint::kReceiver) {
         // spec object -> true.
         __ CompareInstanceType(map, scratch, FIRST_JS_RECEIVER_TYPE);
         __ B(ge, true_label);
       }
 
-      if (expected.Contains(ToBooleanICStub::STRING)) {
+      if (expected & ToBooleanHint::kString) {
         // String value -> false iff empty.
         Label not_string;
         __ CompareInstanceType(map, scratch, FIRST_NONSTRING_TYPE);
@@ -1838,19 +1859,19 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ Bind(&not_string);
       }
 
-      if (expected.Contains(ToBooleanICStub::SYMBOL)) {
+      if (expected & ToBooleanHint::kSymbol) {
         // Symbol value -> true.
         __ CompareInstanceType(map, scratch, SYMBOL_TYPE);
         __ B(eq, true_label);
       }
 
-      if (expected.Contains(ToBooleanICStub::SIMD_VALUE)) {
+      if (expected & ToBooleanHint::kSimdValue) {
         // SIMD value -> true.
         __ CompareInstanceType(map, scratch, SIMD128_VALUE_TYPE);
         __ B(eq, true_label);
       }
 
-      if (expected.Contains(ToBooleanICStub::HEAP_NUMBER)) {
+      if (expected & ToBooleanHint::kHeapNumber) {
         Label not_heap_number;
         __ JumpIfNotRoot(map, Heap::kHeapNumberMapRootIndex, &not_heap_number);
 
@@ -1864,7 +1885,7 @@ void LCodeGen::DoBranch(LBranch* instr) {
         __ Bind(&not_heap_number);
       }
 
-      if (!expected.IsGeneric()) {
+      if (expected != ToBooleanHint::kAny) {
         // We've seen something for the first time -> deopt.
         // This can only happen if we are not generic already.
         Deoptimize(instr, DeoptimizeReason::kUnexpectedObject);
@@ -3223,11 +3244,11 @@ void LCodeGen::DoLoadKeyedFixed(LLoadKeyedFixed* instr) {
     __ B(ne, &done);
     if (info()->IsStub()) {
       // A stub can safely convert the hole to undefined only if the array
-      // protector cell contains (Smi) Isolate::kArrayProtectorValid. Otherwise
+      // protector cell contains (Smi) Isolate::kProtectorValid. Otherwise
       // it needs to bail out.
       __ LoadRoot(result, Heap::kArrayProtectorRootIndex);
-      __ Ldr(result, FieldMemOperand(result, Cell::kValueOffset));
-      __ Cmp(result, Operand(Smi::FromInt(Isolate::kArrayProtectorValid)));
+      __ Ldr(result, FieldMemOperand(result, PropertyCell::kValueOffset));
+      __ Cmp(result, Operand(Smi::FromInt(Isolate::kProtectorValid)));
       DeoptimizeIf(ne, instr, DeoptimizeReason::kHole);
     }
     __ LoadRoot(result, Heap::kUndefinedValueRootIndex);
@@ -4578,7 +4599,7 @@ void LCodeGen::DoDeclareGlobals(LDeclareGlobals* instr) {
 
   // TODO(all): if Mov could handle object in new space then it could be used
   // here.
-  __ LoadHeapObject(scratch1, instr->hydrogen()->pairs());
+  __ LoadHeapObject(scratch1, instr->hydrogen()->declarations());
   __ Mov(scratch2, Smi::FromInt(instr->hydrogen()->flags()));
   __ Push(scratch1, scratch2);
   __ LoadHeapObject(scratch1, instr->hydrogen()->feedback_vector());

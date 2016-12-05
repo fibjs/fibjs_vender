@@ -223,6 +223,9 @@
     <Filter Include="Source Files\tracing">
       <UniqueIdentifier>{0b421633-1f84-f485-f589-7a71eb8cdce2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\trap-handler">
+      <UniqueIdentifier>{3a8ba6bd-6434-f12b-6f46-6e35264ec152}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\wasm">
       <UniqueIdentifier>{3a7f7d48-d621-6ae7-ac90-1da78babcc0a}</UniqueIdentifier>
     </Filter>
@@ -334,6 +337,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\ast-expression-rewriter.h">
+      <Filter>Source Files\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\ast-function-literal-id-reindexer.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\ast-literal-reindexer.h">
@@ -603,13 +609,13 @@
     <ClInclude Include="src\compiler\branch-elimination.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\bytecode-branch-analysis.h">
+    <ClInclude Include="src\compiler\bytecode-analysis.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\bytecode-graph-builder.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\bytecode-loop-analysis.h">
+    <ClInclude Include="src\compiler\bytecode-liveness-map.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\checkpoint-elimination.h">
@@ -631,6 +637,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\common-operator.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\compiler-source-position-table.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\control-builders.h">
@@ -867,9 +876,6 @@
     <ClInclude Include="src\compiler\simplified-operator.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\source-position.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\state-values-utils.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -880,9 +886,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\type-cache.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\compiler\type-hint-analyzer.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\typed-optimization.h">
@@ -1329,6 +1332,12 @@
     <ClInclude Include="src\ic\access-compiler.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
+    <ClInclude Include="src\ic\accessor-assembler-impl.h">
+      <Filter>Source Files\ic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ic\accessor-assembler.h">
+      <Filter>Source Files\ic</Filter>
+    </ClInclude>
     <ClInclude Include="src\ic\call-optimization.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
@@ -1353,6 +1362,9 @@
     <ClInclude Include="src\ic\ic.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
+    <ClInclude Include="src\ic\keyed-store-generic.h">
+      <Filter>Source Files\ic</Filter>
+    </ClInclude>
     <ClInclude Include="src\ic\stub-cache.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
@@ -1365,10 +1377,16 @@
     <ClInclude Include="src\interface-descriptors.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-array-accessor.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-array-builder.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-array-iterator.h">
+      <Filter>Source Files\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\bytecode-array-reverse-iterator.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-array-writer.h">
@@ -1551,6 +1569,9 @@
     <ClInclude Include="src\parsing\parser.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
+    <ClInclude Include="src\parsing\parsing.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
     <ClInclude Include="src\parsing\preparse-data-format.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
@@ -1652,6 +1673,9 @@
     </ClInclude>
     <ClInclude Include="src\profiler\unbound-queue.h">
       <Filter>Source Files\profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\promise-utils.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\property-descriptor.h">
       <Filter>Source Files</Filter>
@@ -1836,6 +1860,9 @@
     <ClInclude Include="src\transitions.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\trap-handler\trap-handler.h">
+      <Filter>Source Files\trap-handler</Filter>
+    </ClInclude>
     <ClInclude Include="src\type-feedback-vector-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1914,9 +1941,6 @@
     <ClInclude Include="src\wasm\signature-map.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\wasm-debug.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
     <ClInclude Include="src\wasm\wasm-external-refs.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
@@ -1924,6 +1948,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-js.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-limits.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-macro-gen.h">
@@ -1935,10 +1962,16 @@
     <ClInclude Include="src\wasm\wasm-module.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
+    <ClInclude Include="src\wasm\wasm-objects.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
     <ClInclude Include="src\wasm\wasm-opcodes.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-result.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-text.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\x64\assembler-x64-inl.h">
@@ -2055,6 +2088,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\ast-expression-rewriter.cc">
+      <Filter>Source Files\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\ast-function-literal-id-reindexer.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\ast-literal-reindexer.cc">
@@ -2261,6 +2297,9 @@
     <ClCompile Include="src\builtins\builtins-object.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-promise.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-proxy.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2369,13 +2408,13 @@
     <ClCompile Include="src\compiler\branch-elimination.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\bytecode-branch-analysis.cc">
+    <ClCompile Include="src\compiler\bytecode-analysis.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\bytecode-graph-builder.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\bytecode-loop-analysis.cc">
+    <ClCompile Include="src\compiler\bytecode-liveness-map.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\c-linkage.cc">
@@ -2397,6 +2436,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\common-operator.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\compiler-source-position-table.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\control-builders.cc">
@@ -2639,9 +2681,6 @@
     <ClCompile Include="src\compiler\simplified-operator.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\source-position.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\state-values-utils.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2652,9 +2691,6 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\type-cache.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\type-hint-analyzer.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\typed-optimization.cc">
@@ -3071,6 +3107,9 @@
     <ClCompile Include="src\ic\access-compiler.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
+    <ClCompile Include="src\ic\accessor-assembler.cc">
+      <Filter>Source Files\ic</Filter>
+    </ClCompile>
     <ClCompile Include="src\ic\call-optimization.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
@@ -3083,13 +3122,7 @@
     <ClCompile Include="src\ic\ia32\handler-compiler-ia32.cc">
       <Filter>Source Files\ic\ia32</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\ia32\ic-compiler-ia32.cc">
-      <Filter>Source Files\ic\ia32</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\ia32\ic-ia32.cc">
-      <Filter>Source Files\ic\ia32</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\ia32\stub-cache-ia32.cc">
       <Filter>Source Files\ic\ia32</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\ic-compiler.cc">
@@ -3101,19 +3134,16 @@
     <ClCompile Include="src\ic\ic.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
+    <ClCompile Include="src\ic\keyed-store-generic.cc">
+      <Filter>Source Files\ic</Filter>
+    </ClCompile>
     <ClCompile Include="src\ic\ppc\access-compiler-ppc.cc">
       <Filter>Source Files\ic\ppc</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\ppc\handler-compiler-ppc.cc">
       <Filter>Source Files\ic\ppc</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\ppc\ic-compiler-ppc.cc">
-      <Filter>Source Files\ic\ppc</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\ppc\ic-ppc.cc">
-      <Filter>Source Files\ic\ppc</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\ppc\stub-cache-ppc.cc">
       <Filter>Source Files\ic\ppc</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\s390\access-compiler-s390.cc">
@@ -3122,13 +3152,7 @@
     <ClCompile Include="src\ic\s390\handler-compiler-s390.cc">
       <Filter>Source Files\ic\s390</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\s390\ic-compiler-s390.cc">
-      <Filter>Source Files\ic\s390</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\s390\ic-s390.cc">
-      <Filter>Source Files\ic\s390</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\s390\stub-cache-s390.cc">
       <Filter>Source Files\ic\s390</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\stub-cache.cc">
@@ -3140,13 +3164,7 @@
     <ClCompile Include="src\ic\x64\handler-compiler-x64.cc">
       <Filter>Source Files\ic\x64</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\x64\ic-compiler-x64.cc">
-      <Filter>Source Files\ic\x64</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\x64\ic-x64.cc">
-      <Filter>Source Files\ic\x64</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\x64\stub-cache-x64.cc">
       <Filter>Source Files\ic\x64</Filter>
     </ClCompile>
     <ClCompile Include="src\ic\x87\access-compiler-x87.cc">
@@ -3155,13 +3173,7 @@
     <ClCompile Include="src\ic\x87\handler-compiler-x87.cc">
       <Filter>Source Files\ic\x87</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\x87\ic-compiler-x87.cc">
-      <Filter>Source Files\ic\x87</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\x87\ic-x87.cc">
-      <Filter>Source Files\ic\x87</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ic\x87\stub-cache-x87.cc">
       <Filter>Source Files\ic\x87</Filter>
     </ClCompile>
     <ClCompile Include="src\icu_util.cc">
@@ -3173,10 +3185,16 @@
     <ClCompile Include="src\interface-descriptors.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-array-accessor.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-array-builder.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-array-iterator.cc">
+      <Filter>Source Files\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\bytecode-array-reverse-iterator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-array-writer.cc">
@@ -3320,6 +3338,9 @@
     <ClCompile Include="src\parsing\parser.cc">
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
+    <ClCompile Include="src\parsing\parsing.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
     <ClCompile Include="src\parsing\pattern-rewriter.cc">
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
@@ -3409,6 +3430,9 @@
     </ClCompile>
     <ClCompile Include="src\profiler\tracing-cpu-profiler.cc">
       <Filter>Source Files\profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\promise-utils.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\property-descriptor.cc">
       <Filter>Source Files</Filter>
@@ -3632,6 +3656,9 @@
     <ClCompile Include="src\source-position-table.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\source-position.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\startup-data-util.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3716,10 +3743,16 @@
     <ClCompile Include="src\wasm\wasm-module.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
+    <ClCompile Include="src\wasm\wasm-objects.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
     <ClCompile Include="src\wasm\wasm-opcodes.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-result.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-text.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\x64\assembler-x64.cc">

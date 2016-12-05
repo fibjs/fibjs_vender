@@ -17,6 +17,7 @@
 #include "src/snapshot/code-serializer.h"
 #include "src/snapshot/natives.h"
 #include "src/wasm/wasm-module.h"
+#include "src/wasm/wasm-objects.h"
 
 namespace v8 {
 namespace internal {
@@ -123,6 +124,12 @@ RUNTIME_FUNCTION(Runtime_OptimizeFunctionOnNextCall) {
   if (!(function->shared()->allows_lazy_compilation() ||
         (function->code()->kind() == Code::FUNCTION &&
          !function->shared()->optimization_disabled()))) {
+    return isolate->heap()->undefined_value();
+  }
+
+  // If function isn't compiled, compile it now.
+  if (!function->shared()->is_compiled() &&
+      !Compiler::Compile(function, Compiler::CLEAR_EXCEPTION)) {
     return isolate->heap()->undefined_value();
   }
 
@@ -267,6 +274,9 @@ RUNTIME_FUNCTION(Runtime_GetOptimizationStatus) {
   if (function->IsOptimized() && function->code()->is_turbofanned()) {
     return Smi::FromInt(7);  // 7 == "TurboFan compiler".
   }
+  if (function->IsInterpreted()) {
+    return Smi::FromInt(8);  // 8 == "Interpreted".
+  }
   return function->IsOptimized() ? Smi::FromInt(1)   // 1 == "yes".
                                  : Smi::FromInt(2);  // 2 == "no".
 }
@@ -289,6 +299,9 @@ RUNTIME_FUNCTION(Runtime_GetOptimizationCount) {
   return Smi::FromInt(function->shared()->opt_count());
 }
 
+static void ReturnThis(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  args.GetReturnValue().Set(args.This());
+}
 
 RUNTIME_FUNCTION(Runtime_GetUndetectable) {
   HandleScope scope(isolate);
@@ -297,6 +310,7 @@ RUNTIME_FUNCTION(Runtime_GetUndetectable) {
 
   Local<v8::ObjectTemplate> desc = v8::ObjectTemplate::New(v8_isolate);
   desc->MarkAsUndetectable();
+  desc->SetCallAsFunctionHandler(ReturnThis);
   Local<v8::Object> obj;
   if (!desc->NewInstance(v8_isolate->GetCurrentContext()).ToLocal(&obj)) {
     return nullptr;
@@ -732,15 +746,18 @@ RUNTIME_FUNCTION(Runtime_SpeciesProtector) {
   return isolate->heap()->ToBoolean(isolate->IsArraySpeciesLookupChainIntact());
 }
 
+#define CONVERT_ARG_HANDLE_CHECKED_2(Type, name, index) \
+  CHECK(Type::Is##Type(args[index]));                   \
+  Handle<Type> name = args.at<Type>(index);
+
 // Take a compiled wasm module, serialize it and copy the buffer into an array
 // buffer, which is then returned.
 RUNTIME_FUNCTION(Runtime_SerializeWasmModule) {
   HandleScope shs(isolate);
   DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, module_obj, 0);
+  CONVERT_ARG_HANDLE_CHECKED_2(WasmModuleObject, module_obj, 0);
 
-  Handle<FixedArray> orig =
-      handle(FixedArray::cast(module_obj->GetInternalField(0)));
+  Handle<WasmCompiledModule> orig = handle(module_obj->get_compiled_module());
   std::unique_ptr<ScriptData> data =
       WasmCompiledModuleSerializer::SerializeWasmModule(isolate, orig);
   void* buff = isolate->array_buffer_allocator()->Allocate(data->length());
@@ -783,15 +800,14 @@ RUNTIME_FUNCTION(Runtime_DeserializeWasmModule) {
   if (!maybe_compiled_module.ToHandle(&compiled_module)) {
     return isolate->heap()->undefined_value();
   }
-  return *wasm::CreateWasmModuleObject(
-      isolate, Handle<wasm::WasmCompiledModule>::cast(compiled_module),
-      wasm::kWasmOrigin);
+  return *WasmModuleObject::New(
+      isolate, Handle<WasmCompiledModule>::cast(compiled_module));
 }
 
 RUNTIME_FUNCTION(Runtime_ValidateWasmInstancesChain) {
   HandleScope shs(isolate);
   DCHECK(args.length() == 2);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, module_obj, 0);
+  CONVERT_ARG_HANDLE_CHECKED_2(WasmModuleObject, module_obj, 0);
   CONVERT_ARG_HANDLE_CHECKED(Smi, instance_count, 1);
   wasm::testing::ValidateInstancesChain(isolate, module_obj,
                                         instance_count->value());
@@ -801,7 +817,7 @@ RUNTIME_FUNCTION(Runtime_ValidateWasmInstancesChain) {
 RUNTIME_FUNCTION(Runtime_ValidateWasmModuleState) {
   HandleScope shs(isolate);
   DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, module_obj, 0);
+  CONVERT_ARG_HANDLE_CHECKED_2(WasmModuleObject, module_obj, 0);
   wasm::testing::ValidateModuleState(isolate, module_obj);
   return isolate->heap()->ToBoolean(true);
 }
@@ -809,8 +825,8 @@ RUNTIME_FUNCTION(Runtime_ValidateWasmModuleState) {
 RUNTIME_FUNCTION(Runtime_ValidateWasmOrphanedInstance) {
   HandleScope shs(isolate);
   DCHECK(args.length() == 1);
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, instance_obj, 0);
-  wasm::testing::ValidateOrphanedInstance(isolate, instance_obj);
+  CONVERT_ARG_HANDLE_CHECKED_2(WasmInstanceObject, instance, 0);
+  wasm::testing::ValidateOrphanedInstance(isolate, instance);
   return isolate->heap()->ToBoolean(true);
 }
 

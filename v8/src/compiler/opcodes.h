@@ -41,6 +41,7 @@
   V(Float64Constant)          \
   V(ExternalConstant)         \
   V(NumberConstant)           \
+  V(PointerConstant)          \
   V(HeapConstant)             \
   V(RelocatableInt32Constant) \
   V(RelocatableInt64Constant)
@@ -57,6 +58,7 @@
   V(StateValues)          \
   V(TypedStateValues)     \
   V(ObjectState)          \
+  V(TypedObjectState)     \
   V(Call)                 \
   V(Parameter)            \
   V(OsrValue)             \
@@ -102,7 +104,9 @@
 #define JS_SIMPLE_BINOP_LIST(V) \
   JS_COMPARE_BINOP_LIST(V)      \
   JS_BITWISE_BINOP_LIST(V)      \
-  JS_ARITH_BINOP_LIST(V)
+  JS_ARITH_BINOP_LIST(V)        \
+  V(JSInstanceOf)               \
+  V(JSOrdinaryHasInstance)
 
 #define JS_CONVERSION_UNOP_LIST(V) \
   V(JSToBoolean)                   \
@@ -120,24 +124,25 @@
   JS_CONVERSION_UNOP_LIST(V)   \
   JS_OTHER_UNOP_LIST(V)
 
-#define JS_OBJECT_OP_LIST(V)  \
-  V(JSCreate)                 \
-  V(JSCreateArguments)        \
-  V(JSCreateArray)            \
-  V(JSCreateClosure)          \
-  V(JSCreateIterResultObject) \
-  V(JSCreateLiteralArray)     \
-  V(JSCreateLiteralObject)    \
-  V(JSCreateLiteralRegExp)    \
-  V(JSLoadProperty)           \
-  V(JSLoadNamed)              \
-  V(JSLoadGlobal)             \
-  V(JSStoreProperty)          \
-  V(JSStoreNamed)             \
-  V(JSStoreGlobal)            \
-  V(JSDeleteProperty)         \
-  V(JSHasProperty)            \
-  V(JSInstanceOf)
+#define JS_OBJECT_OP_LIST(V)      \
+  V(JSCreate)                     \
+  V(JSCreateArguments)            \
+  V(JSCreateArray)                \
+  V(JSCreateClosure)              \
+  V(JSCreateIterResultObject)     \
+  V(JSCreateKeyValueArray)        \
+  V(JSCreateLiteralArray)         \
+  V(JSCreateLiteralObject)        \
+  V(JSCreateLiteralRegExp)        \
+  V(JSLoadProperty)               \
+  V(JSLoadNamed)                  \
+  V(JSLoadGlobal)                 \
+  V(JSStoreProperty)              \
+  V(JSStoreNamed)                 \
+  V(JSStoreGlobal)                \
+  V(JSStoreDataPropertyInLiteral) \
+  V(JSDeleteProperty)             \
+  V(JSHasProperty)
 
 #define JS_CONTEXT_OP_LIST(V) \
   V(JSLoadContext)            \
@@ -157,6 +162,8 @@
   V(JSForInPrepare)                 \
   V(JSLoadMessage)                  \
   V(JSStoreMessage)                 \
+  V(JSLoadModule)                   \
+  V(JSStoreModule)                  \
   V(JSGeneratorStore)               \
   V(JSGeneratorRestoreContinuation) \
   V(JSGeneratorRestoreRegister)     \
@@ -280,6 +287,7 @@
   V(NumberToBoolean)                   \
   V(NumberToInt32)                     \
   V(NumberToUint32)                    \
+  V(NumberToUint8Clamped)              \
   V(NumberSilenceNaN)
 
 #define SIMPLIFIED_OTHER_OP_LIST(V) \
@@ -520,6 +528,7 @@
   V(Word32PairShr)              \
   V(Word32PairSar)              \
   V(ProtectedLoad)              \
+  V(ProtectedStore)             \
   V(AtomicLoad)                 \
   V(AtomicStore)                \
   V(UnsafePointerAdd)
@@ -546,9 +555,6 @@
   V(Float32x4LessThanOrEqual)               \
   V(Float32x4GreaterThan)                   \
   V(Float32x4GreaterThanOrEqual)            \
-  V(Float32x4Select)                        \
-  V(Float32x4Swizzle)                       \
-  V(Float32x4Shuffle)                       \
   V(Float32x4FromInt32x4)                   \
   V(Float32x4FromUint32x4)                  \
   V(CreateInt32x4)                          \
@@ -567,9 +573,6 @@
   V(Int32x4LessThanOrEqual)                 \
   V(Int32x4GreaterThan)                     \
   V(Int32x4GreaterThanOrEqual)              \
-  V(Int32x4Select)                          \
-  V(Int32x4Swizzle)                         \
-  V(Int32x4Shuffle)                         \
   V(Int32x4FromFloat32x4)                   \
   V(Uint32x4Min)                            \
   V(Uint32x4Max)                            \
@@ -702,7 +705,10 @@
   V(Simd128And)                         \
   V(Simd128Or)                          \
   V(Simd128Xor)                         \
-  V(Simd128Not)
+  V(Simd128Not)                         \
+  V(Simd32x4Select)                     \
+  V(Simd32x4Swizzle)                    \
+  V(Simd32x4Shuffle)
 
 #define MACHINE_SIMD_OP_LIST(V)       \
   MACHINE_SIMD_RETURN_SIMD_OP_LIST(V) \

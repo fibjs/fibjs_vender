@@ -168,6 +168,8 @@
 namespace v8 {
 namespace internal {
 
+struct InliningPosition;
+
 enum KeyedAccessStoreMode {
   STANDARD_STORE,
   STORE_TRANSITION_TO_OBJECT,
@@ -178,10 +180,6 @@ enum KeyedAccessStoreMode {
   STORE_NO_TRANSITION_IGNORE_OUT_OF_BOUNDS,
   STORE_NO_TRANSITION_HANDLE_COW
 };
-
-
-enum TypeofMode : int { INSIDE_TYPEOF, NOT_INSIDE_TYPEOF };
-
 
 enum MutableMode {
   MUTABLE,
@@ -284,19 +282,6 @@ enum SimpleTransitionFlag {
 enum DescriptorFlag {
   ALL_DESCRIPTORS,
   OWN_DESCRIPTORS
-};
-
-// The GC maintains a bit of information, the MarkingParity, which toggles
-// from odd to even and back every time marking is completed. Incremental
-// marking can visit an object twice during a marking phase, so algorithms that
-// that piggy-back on marking can use the parity to ensure that they only
-// perform an operation on an object once per marking phase: they record the
-// MarkingParity when they visit an object, and only re-visit the object when it
-// is marked again and the MarkingParity changes.
-enum MarkingParity {
-  NO_MARKING_PARITY,
-  ODD_MARKING_PARITY,
-  EVEN_MARKING_PARITY
 };
 
 // ICs store extra state in a Code object. The default extra state is
@@ -404,6 +389,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(PROMISE_RESOLVE_THENABLE_JOB_INFO_TYPE)                     \
   V(PROMISE_REACTION_JOB_INFO_TYPE)                             \
   V(PROTOTYPE_INFO_TYPE)                                        \
+  V(TUPLE2_TYPE)                                                \
   V(TUPLE3_TYPE)                                                \
   V(CONTEXT_EXTENSION_TYPE)                                     \
   V(MODULE_TYPE)                                                \
@@ -571,6 +557,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(DEBUG_INFO, DebugInfo, debug_info)                                       \
   V(BREAK_POINT_INFO, BreakPointInfo, break_point_info)                      \
   V(PROTOTYPE_INFO, PrototypeInfo, prototype_info)                           \
+  V(TUPLE2, Tuple2, tuple2)                                                  \
   V(TUPLE3, Tuple3, tuple3)                                                  \
   V(MODULE, Module, module)                                                  \
   V(MODULE_INFO_ENTRY, ModuleInfoEntry, module_info_entry)                   \
@@ -750,6 +737,7 @@ enum InstanceType {
   TRANSITION_ARRAY_TYPE,
   PROPERTY_CELL_TYPE,
   PROTOTYPE_INFO_TYPE,
+  TUPLE2_TYPE,
   TUPLE3_TYPE,
   CONTEXT_EXTENSION_TYPE,
   MODULE_TYPE,
@@ -1624,7 +1612,7 @@ class Smi: public Object {
   V8_EXPORT_PRIVATE void SmiPrint(std::ostream& os) const;  // NOLINT
   DECLARE_VERIFIER(Smi)
 
-  V8_EXPORT_PRIVATE static Smi* const kZero;
+  static constexpr Smi* const kZero = nullptr;
   static const int kMinValue =
       (static_cast<unsigned int>(-1)) << (kSmiValueSize - 1);
   static const int kMaxValue = -(kMinValue + 1);
@@ -2351,6 +2339,11 @@ class JSObject: public JSReceiver {
   static bool UnregisterPrototypeUser(Handle<Map> user, Isolate* isolate);
   static void InvalidatePrototypeChains(Map* map);
 
+  // Updates prototype chain tracking information when an object changes its
+  // map from |old_map| to |new_map|.
+  static void NotifyMapChange(Handle<Map> old_map, Handle<Map> new_map,
+                              Isolate* isolate);
+
   // Utility used by many Array builtins and runtime functions
   static inline bool PrototypeHasNoElements(Isolate* isolate, JSObject* object);
 
@@ -2839,7 +2832,7 @@ class FixedArray: public FixedArrayBase {
 
   // Setter that uses write barrier.
   inline void set(int index, Object* value);
-  inline bool is_the_hole(int index);
+  inline bool is_the_hole(Isolate* isolate, int index);
 
   // Setter that doesn't need write barrier.
   inline void set(int index, Smi* value);
@@ -2848,8 +2841,11 @@ class FixedArray: public FixedArrayBase {
 
   // Setters for frequently used oddballs located in old space.
   inline void set_undefined(int index);
+  inline void set_undefined(Isolate* isolate, int index);
   inline void set_null(int index);
+  inline void set_null(Isolate* isolate, int index);
   inline void set_the_hole(int index);
+  inline void set_the_hole(Isolate* isolate, int index);
 
   inline Object** GetFirstElementAddress();
   inline bool ContainsOnlySmisOrHoles();
@@ -2926,9 +2922,11 @@ class FixedDoubleArray: public FixedArrayBase {
   static inline Handle<Object> get(FixedDoubleArray* array, int index,
                                    Isolate* isolate);
   inline void set(int index, double value);
+  inline void set_the_hole(Isolate* isolate, int index);
   inline void set_the_hole(int index);
 
   // Checking for the hole.
+  inline bool is_the_hole(Isolate* isolate, int index);
   inline bool is_the_hole(int index);
 
   // Garbage collection support.
@@ -3843,6 +3841,8 @@ class Dictionary: public HashTable<Derived, Shape, Key> {
   static const int kMaxNumberKeyIndex = DerivedHashTable::kPrefixStartIndex;
   static const int kNextEnumerationIndexIndex = kMaxNumberKeyIndex + 1;
 
+  static const bool kIsEnumerable = Shape::kIsEnumerable;
+
  protected:
   // Generic at put operation.
   MUST_USE_RESULT static Handle<Derived> AtPut(
@@ -4015,18 +4015,20 @@ class SeededNumberDictionary
   // Type specific at put (default NONE attributes is used when adding).
   MUST_USE_RESULT static Handle<SeededNumberDictionary> AtNumberPut(
       Handle<SeededNumberDictionary> dictionary, uint32_t key,
-      Handle<Object> value, bool used_as_prototype);
+      Handle<Object> value, Handle<JSObject> dictionary_holder);
   MUST_USE_RESULT static Handle<SeededNumberDictionary> AddNumberEntry(
       Handle<SeededNumberDictionary> dictionary, uint32_t key,
-      Handle<Object> value, PropertyDetails details, bool used_as_prototype);
+      Handle<Object> value, PropertyDetails details,
+      Handle<JSObject> dictionary_holder);
 
   // Set an existing entry or add a new one if needed.
   // Return the updated dictionary.
   MUST_USE_RESULT static Handle<SeededNumberDictionary> Set(
       Handle<SeededNumberDictionary> dictionary, uint32_t key,
-      Handle<Object> value, PropertyDetails details, bool used_as_prototype);
+      Handle<Object> value, PropertyDetails details,
+      Handle<JSObject> dictionary_holder);
 
-  void UpdateMaxNumberKey(uint32_t key, bool used_as_prototype);
+  void UpdateMaxNumberKey(uint32_t key, Handle<JSObject> dictionary_holder);
 
   // Returns true if the dictionary contains any elements that are non-writable,
   // non-configurable, non-enumerable, or have getters/setters.
@@ -4807,7 +4809,9 @@ class HandlerTable : public FixedArray {
   inline void SetReturnOffset(int index, int value);
   inline void SetReturnHandler(int index, int offset);
 
-  // Lookup handler in a table based on ranges.
+  // Lookup handler in a table based on ranges. The {pc_offset} is an offset to
+  // the start of the potentially throwing instruction (using return addresses
+  // for this value would be invalid).
   int LookupRange(int pc_offset, int* data, CatchPrediction* prediction);
 
   // Lookup handler in a table based on return addresses.
@@ -4901,10 +4905,47 @@ class ByteArray: public FixedArrayBase {
   DISALLOW_IMPLICIT_CONSTRUCTORS(ByteArray);
 };
 
+// Wrapper class for ByteArray which can store arbitrary C++ classes, as long
+// as they can be copied with memcpy.
+template <class T>
+class PodArray : public ByteArray {
+ public:
+  static Handle<PodArray<T>> New(Isolate* isolate, int length,
+                                 PretenureFlag pretenure = NOT_TENURED);
+  void copy_out(int index, T* result) {
+    ByteArray::copy_out(index * sizeof(T), reinterpret_cast<byte*>(result),
+                        sizeof(T));
+  }
+  T get(int index) {
+    T result;
+    copy_out(index, &result);
+    return result;
+  }
+  void set(int index, const T& value) {
+    copy_in(index * sizeof(T), reinterpret_cast<const byte*>(&value),
+            sizeof(T));
+  }
+  int length() { return ByteArray::length() / sizeof(T); }
+  DECLARE_CAST(PodArray<T>)
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(PodArray<T>);
+};
 
 // BytecodeArray represents a sequence of interpreter bytecodes.
 class BytecodeArray : public FixedArrayBase {
  public:
+#define DECLARE_BYTECODE_AGE_ENUM(X) k##X##BytecodeAge,
+  enum Age {
+    kNoAgeBytecodeAge = 0,
+    CODE_AGE_LIST(DECLARE_BYTECODE_AGE_ENUM) kAfterLastBytecodeAge,
+    kFirstBytecodeAge = kNoAgeBytecodeAge,
+    kLastBytecodeAge = kAfterLastBytecodeAge - 1,
+    kBytecodeAgeCount = kAfterLastBytecodeAge - kFirstBytecodeAge - 1,
+    kIsOldBytecodeAge = kSexagenarianBytecodeAge
+  };
+#undef DECLARE_BYTECODE_AGE_ENUM
+
   static int SizeFor(int length) {
     return OBJECT_POINTER_ALIGN(kHeaderSize + length);
   }
@@ -4934,6 +4975,10 @@ class BytecodeArray : public FixedArrayBase {
   // Accessors for OSR loop nesting level.
   inline int osr_loop_nesting_level() const;
   inline void set_osr_loop_nesting_level(int depth);
+
+  // Accessors for bytecode's code age.
+  inline Age bytecode_age() const;
+  inline void set_bytecode_age(Age age);
 
   // Accessors for the constant pool.
   DECL_ACCESSORS(constant_pool, FixedArray)
@@ -4966,8 +5011,9 @@ class BytecodeArray : public FixedArrayBase {
 
   void CopyBytecodesTo(BytecodeArray* to);
 
-  int LookupRangeInHandlerTable(int code_offset, int* data,
-                                HandlerTable::CatchPrediction* prediction);
+  // Bytecode aging
+  bool IsOld() const;
+  void MakeOlder();
 
   // Layout description.
   static const int kConstantPoolOffset = FixedArrayBase::kHeaderSize;
@@ -4978,7 +5024,8 @@ class BytecodeArray : public FixedArrayBase {
   static const int kParameterSizeOffset = kFrameSizeOffset + kIntSize;
   static const int kInterruptBudgetOffset = kParameterSizeOffset + kIntSize;
   static const int kOSRNestingLevelOffset = kInterruptBudgetOffset + kIntSize;
-  static const int kHeaderSize = kOSRNestingLevelOffset + kCharSize;
+  static const int kBytecodeAgeOffset = kOSRNestingLevelOffset + kCharSize;
+  static const int kHeaderSize = kBytecodeAgeOffset + kCharSize;
 
   // Maximal memory consumption for a single BytecodeArray.
   static const int kMaxSize = 512 * MB;
@@ -5133,7 +5180,6 @@ TYPED_ARRAYS(FIXED_TYPED_ARRAY_TRAITS)
 
 #undef FIXED_TYPED_ARRAY_TRAITS
 
-
 // DeoptimizationInputData is a fixed array used to hold the deoptimization
 // data for code generated by the Hydrogen/Lithium compiler.  It also
 // contains information about functions that were inlined.  If N different
@@ -5152,7 +5198,8 @@ class DeoptimizationInputData: public FixedArray {
   static const int kOptimizationIdIndex = 5;
   static const int kSharedFunctionInfoIndex = 6;
   static const int kWeakCellCacheIndex = 7;
-  static const int kFirstDeoptEntryIndex = 8;
+  static const int kInliningPositionsIndex = 8;
+  static const int kFirstDeoptEntryIndex = 9;
 
   // Offsets of deopt entry elements relative to the start of the entry.
   static const int kAstIdRawOffset = 0;
@@ -5174,6 +5221,7 @@ class DeoptimizationInputData: public FixedArray {
   DECLARE_ELEMENT_ACCESSORS(OptimizationId, Smi)
   DECLARE_ELEMENT_ACCESSORS(SharedFunctionInfo, Object)
   DECLARE_ELEMENT_ACCESSORS(WeakCellCache, Object)
+  DECLARE_ELEMENT_ACCESSORS(InliningPositions, PodArray<InliningPosition>)
 
 #undef DECLARE_ELEMENT_ACCESSORS
 
@@ -5195,6 +5243,12 @@ class DeoptimizationInputData: public FixedArray {
 
   inline int DeoptCount();
 
+  static const int kNotInlinedIndex = -1;
+
+  // Returns the inlined function at the given position in LiteralArray, or the
+  // outer function if index == kNotInlinedIndex.
+  class SharedFunctionInfo* GetInlinedFunction(int index);
+
   // Allocates a DeoptimizationInputData.
   static Handle<DeoptimizationInputData> New(Isolate* isolate,
                                              int deopt_entry_count,
@@ -5214,7 +5268,6 @@ class DeoptimizationInputData: public FixedArray {
 
   static int LengthFor(int entry_count) { return IndexForEntry(entry_count); }
 };
-
 
 // DeoptimizationOutputData is a fixed array used to hold the deoptimization
 // data for code generated by the full compiler.
@@ -5373,6 +5426,10 @@ class Code: public HeapObject {
   // [source_position_table]: ByteArray for the source positions table.
   DECL_ACCESSORS(source_position_table, ByteArray)
 
+  // [protected_instructions]: Fixed array containing protected instruction and
+  // corresponding landing pad offsets.
+  DECL_ACCESSORS(protected_instructions, FixedArray)
+
   // [raw_type_feedback_info]: This field stores various things, depending on
   // the kind of the code object.
   //   FUNCTION           => type feedback information.
@@ -5521,6 +5578,11 @@ class Code: public HeapObject {
   // the code is going to be deoptimized because of dead embedded maps.
   inline bool marked_for_deoptimization();
   inline void set_marked_for_deoptimization(bool flag);
+
+  // [is_promise_rejection]: For kind BUILTIN tells whether the exception
+  // thrown by the code will lead to promise rejection.
+  inline bool is_promise_rejection();
+  inline void set_is_promise_rejection(bool flag);
 
   // [constant_pool]: The constant pool for this function.
   inline Address constant_pool();
@@ -5671,9 +5733,6 @@ class Code: public HeapObject {
   BailoutId TranslatePcOffsetToAstId(uint32_t pc_offset);
   uint32_t TranslateAstIdToPcOffset(BailoutId ast_id);
 
-  int LookupRangeInHandlerTable(int code_offset, int* data,
-                                HandlerTable::CatchPrediction* prediction);
-
 #define DECLARE_CODE_AGE_ENUM(X) k##X##CodeAge,
   enum Age {
     kToBeExecutedOnceCodeAge = -3,
@@ -5699,12 +5758,12 @@ class Code: public HeapObject {
   void MakeYoung(Isolate* isolate);
   void PreAge(Isolate* isolate);
   void MarkToBeExecutedOnce(Isolate* isolate);
-  void MakeOlder(MarkingParity);
+  void MakeOlder();
   static bool IsYoungSequence(Isolate* isolate, byte* sequence);
   bool IsOld();
   Age GetAge();
   static inline Code* GetPreAgedCodeAgeStub(Isolate* isolate) {
-    return GetCodeAgeStub(isolate, kNotExecutedCodeAge, NO_MARKING_PARITY);
+    return GetCodeAgeStub(isolate, kNotExecutedCodeAge);
   }
 
   void PrintDeoptLocation(FILE* out, Address pc);
@@ -5755,7 +5814,12 @@ class Code: public HeapObject {
   static const int kConstantPoolOffset = kPrologueOffset + kIntSize;
   static const int kBuiltinIndexOffset =
       kConstantPoolOffset + kConstantPoolSize;
-  static const int kHeaderPaddingStart = kBuiltinIndexOffset + kIntSize;
+  static const int kProtectedInstructionOffset = kBuiltinIndexOffset + kIntSize;
+
+  enum TrapFields { kTrapCodeOffset, kTrapLandingOffset, kTrapDataSize };
+
+  static const int kHeaderPaddingStart =
+      kProtectedInstructionOffset + kPointerSize;
 
   // Add padding to align the instruction start following right after
   // the Code object header.
@@ -5796,9 +5860,10 @@ class Code: public HeapObject {
   static const int kCanHaveWeakObjects = kIsTurbofannedBit + 1;
   // Could be moved to overlap previous bits when we need more space.
   static const int kIsConstructStub = kCanHaveWeakObjects + 1;
+  static const int kIsPromiseRejection = kIsConstructStub + 1;
 
   STATIC_ASSERT(kStackSlotsFirstBit + kStackSlotsBitCount <= 32);
-  STATIC_ASSERT(kIsConstructStub + 1 <= 32);
+  STATIC_ASSERT(kIsPromiseRejection + 1 <= 32);
 
   class StackSlotsField: public BitField<int,
       kStackSlotsFirstBit, kStackSlotsBitCount> {};  // NOLINT
@@ -5810,6 +5875,8 @@ class Code: public HeapObject {
       : public BitField<bool, kCanHaveWeakObjects, 1> {};  // NOLINT
   class IsConstructStubField : public BitField<bool, kIsConstructStub, 1> {
   };  // NOLINT
+  class IsPromiseRejectionField
+      : public BitField<bool, kIsPromiseRejection, 1> {};  // NOLINT
 
   // KindSpecificFlags2 layout (ALL)
   static const int kIsCrankshaftedBit = 0;
@@ -5846,16 +5913,12 @@ class Code: public HeapObject {
 
   // Code aging
   byte* FindCodeAgeSequence();
-  static void GetCodeAgeAndParity(Code* code, Age* age,
-                                  MarkingParity* parity);
-  static void GetCodeAgeAndParity(Isolate* isolate, byte* sequence, Age* age,
-                                  MarkingParity* parity);
-  static Code* GetCodeAgeStub(Isolate* isolate, Age age, MarkingParity parity);
+  static Age GetCodeAge(Isolate* isolate, byte* sequence);
+  static Age GetAgeOfCodeAgeStub(Code* code);
+  static Code* GetCodeAgeStub(Isolate* isolate, Age age);
 
   // Code aging -- platform-specific
-  static void PatchPlatformCodeAge(Isolate* isolate,
-                                   byte* sequence, Age age,
-                                   MarkingParity parity);
+  static void PatchPlatformCodeAge(Isolate* isolate, byte* sequence, Age age);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Code);
 };
@@ -5890,10 +5953,6 @@ class AbstractCode : public HeapObject {
 
   // Set the source position table.
   inline void set_source_position_table(ByteArray* source_position_table);
-
-  // Return the exception handler table.
-  inline int LookupRangeInHandlerTable(
-      int code_offset, int* data, HandlerTable::CatchPrediction* prediction);
 
   // Returns the size of instructions and the metadata.
   inline int SizeIncludingMetadata();
@@ -6812,6 +6871,7 @@ class PromiseResolveThenableJobInfo : public Struct {
   DECL_ACCESSORS(reject, JSFunction)
   DECL_ACCESSORS(debug_id, Object)
   DECL_ACCESSORS(debug_name, Object)
+  DECL_ACCESSORS(context, Context)
 
   static const int kThenableOffset = Struct::kHeaderSize;
   static const int kThenOffset = kThenableOffset + kPointerSize;
@@ -6819,7 +6879,8 @@ class PromiseResolveThenableJobInfo : public Struct {
   static const int kRejectOffset = kResolveOffset + kPointerSize;
   static const int kDebugIdOffset = kRejectOffset + kPointerSize;
   static const int kDebugNameOffset = kDebugIdOffset + kPointerSize;
-  static const int kSize = kDebugNameOffset + kPointerSize;
+  static const int kContextOffset = kDebugNameOffset + kPointerSize;
+  static const int kSize = kContextOffset + kPointerSize;
 
   DECLARE_CAST(PromiseResolveThenableJobInfo)
   DECLARE_PRINTER(PromiseResolveThenableJobInfo)
@@ -6933,10 +6994,27 @@ class PrototypeInfo : public Struct {
   DISALLOW_IMPLICIT_CONSTRUCTORS(PrototypeInfo);
 };
 
-class Tuple3 : public Struct {
+class Tuple2 : public Struct {
  public:
   DECL_ACCESSORS(value1, Object)
   DECL_ACCESSORS(value2, Object)
+
+  DECLARE_CAST(Tuple2)
+
+  // Dispatched behavior.
+  DECLARE_PRINTER(Tuple2)
+  DECLARE_VERIFIER(Tuple2)
+
+  static const int kValue1Offset = HeapObject::kHeaderSize;
+  static const int kValue2Offset = kValue1Offset + kPointerSize;
+  static const int kSize = kValue2Offset + kPointerSize;
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(Tuple2);
+};
+
+class Tuple3 : public Tuple2 {
+ public:
   DECL_ACCESSORS(value3, Object)
 
   DECLARE_CAST(Tuple3)
@@ -6945,9 +7023,7 @@ class Tuple3 : public Struct {
   DECLARE_PRINTER(Tuple3)
   DECLARE_VERIFIER(Tuple3)
 
-  static const int kValue1Offset = HeapObject::kHeaderSize;
-  static const int kValue2Offset = kValue1Offset + kPointerSize;
-  static const int kValue3Offset = kValue2Offset + kPointerSize;
+  static const int kValue3Offset = Tuple2::kSize;
   static const int kSize = kValue3Offset + kPointerSize;
 
  private:
@@ -6989,7 +7065,8 @@ class Script: public Struct {
     TYPE_NATIVE = 0,
     TYPE_EXTENSION = 1,
     TYPE_NORMAL = 2,
-    TYPE_WASM = 3
+    TYPE_WASM = 3,
+    TYPE_INSPECTOR = 4
   };
 
   // Script compilation types.
@@ -7054,13 +7131,9 @@ class Script: public Struct {
   // [source_mapping_url]: sourceMappingURL magic comment
   DECL_ACCESSORS(source_mapping_url, Object)
 
-  // [wasm_instance]: the wasm instance this script belongs to.
+  // [wasm_compiled_module]: the compiled wasm module this script belongs to.
   // This must only be called if the type of this script is TYPE_WASM.
-  DECL_ACCESSORS(wasm_instance, JSObject)
-
-  // [wasm_function_index]: the wasm function index this script belongs to.
-  // This must only be called if the type of this script is TYPE_WASM.
-  DECL_INT_ACCESSORS(wasm_function_index)
+  DECL_ACCESSORS(wasm_compiled_module, Object)
 
   // [compilation_type]: how the the script was compiled. Encoded in the
   // 'flags' field.
@@ -7071,11 +7144,6 @@ class Script: public Struct {
   // compiled. Encoded in the 'flags' field.
   inline CompilationState compilation_state();
   inline void set_compilation_state(CompilationState state);
-
-  // [hide_source]: determines whether the script source can be exposed as
-  // function source. Encoded in the 'flags' field.
-  inline bool hide_source();
-  inline void set_hide_source(bool value);
 
   // [origin_options]: optional attributes set by the embedder via ScriptOrigin,
   // and used by the embedder to make decisions about the script. V8 just passes
@@ -7101,14 +7169,6 @@ class Script: public Struct {
   // Init line_ends array with source code positions of line ends.
   static void InitLineEnds(Handle<Script> script);
 
-  // Convert code offset into column number.
-  static int GetColumnNumber(Handle<Script> script, int code_offset);
-
-  // Convert code offset into (zero-based) line number.
-  // The non-handlified version does not allocate, but may be much slower.
-  static int GetLineNumber(Handle<Script> script, int code_offset);
-  int GetLineNumber(int code_pos);
-
   // Carries information about a source position.
   struct PositionInfo {
     PositionInfo() : line(-1), column(-1), line_start(-1), line_end(-1) {}
@@ -7116,7 +7176,7 @@ class Script: public Struct {
     int line;        // Zero-based line number.
     int column;      // Zero-based column number.
     int line_start;  // Position of first character in line.
-    int line_end;    // Position of last (non-linebreak) character in line.
+    int line_end;    // Position of final linebreak character in line.
   };
 
   // Specifies whether to add offsets to position infos.
@@ -7125,8 +7185,20 @@ class Script: public Struct {
   // Retrieves information about the given position, optionally with an offset.
   // Returns false on failure, and otherwise writes into the given info object
   // on success.
+  // The static method should is preferable for handlified callsites because it
+  // initializes the line ends array, avoiding expensive recomputations.
+  // The non-static version is not allocating and safe for unhandlified
+  // callsites.
+  static bool GetPositionInfo(Handle<Script> script, int position,
+                              PositionInfo* info, OffsetFlag offset_flag);
   bool GetPositionInfo(int position, PositionInfo* info,
-                       OffsetFlag offset_flag);
+                       OffsetFlag offset_flag) const;
+
+  // Wrappers for GetPositionInfo
+  static int GetColumnNumber(Handle<Script> script, int code_offset);
+  int GetColumnNumber(int code_pos) const;
+  static int GetLineNumber(Handle<Script> script, int code_offset);
+  int GetLineNumber(int code_pos) const;
 
   // Get the JS object wrapping the given script; create it if none exists.
   static Handle<JSObject> GetWrapper(Handle<Script> script);
@@ -7170,13 +7242,10 @@ class Script: public Struct {
   static const int kSize = kSourceMappingUrlOffset + kPointerSize;
 
  private:
-  int GetLineNumberWithArray(int code_pos);
-
   // Bit positions in the flags field.
   static const int kCompilationTypeBit = 0;
   static const int kCompilationStateBit = 1;
-  static const int kHideSourceBit = 2;
-  static const int kOriginOptionsShift = 3;
+  static const int kOriginOptionsShift = 2;
   static const int kOriginOptionsSize = 3;
   static const int kOriginOptionsMask = ((1 << kOriginOptionsSize) - 1)
                                         << kOriginOptionsShift;
@@ -7195,11 +7264,26 @@ class Script: public Struct {
 // Installation of ids for the selected builtin functions is handled
 // by the bootstrapper.
 #define FUNCTIONS_WITH_ID_LIST(V)                           \
+  V(Array.prototype, concat, ArrayConcat)                   \
+  V(Array.prototype, every, ArrayEvery)                     \
+  V(Array.prototype, fill, ArrayFill)                       \
+  V(Array.prototype, filter, ArrayFilter)                   \
+  V(Array.prototype, findIndex, ArrayFindIndex)             \
+  V(Array.prototype, forEach, ArrayForEach)                 \
+  V(Array.prototype, includes, ArrayIncludes)               \
   V(Array.prototype, indexOf, ArrayIndexOf)                 \
+  V(Array.prototype, join, ArrayJoin)                       \
   V(Array.prototype, lastIndexOf, ArrayLastIndexOf)         \
-  V(Array.prototype, push, ArrayPush)                       \
+  V(Array.prototype, map, ArrayMap)                         \
   V(Array.prototype, pop, ArrayPop)                         \
+  V(Array.prototype, push, ArrayPush)                       \
+  V(Array.prototype, reverse, ArrayReverse)                 \
   V(Array.prototype, shift, ArrayShift)                     \
+  V(Array.prototype, slice, ArraySlice)                     \
+  V(Array.prototype, some, ArraySome)                       \
+  V(Array.prototype, splice, ArraySplice)                   \
+  V(Array.prototype, unshift, ArrayUnshift)                 \
+  V(Date, now, DateNow)                                     \
   V(Date.prototype, getDate, DateGetDate)                   \
   V(Date.prototype, getDay, DateGetDay)                     \
   V(Date.prototype, getFullYear, DateGetFullYear)           \
@@ -7212,13 +7296,33 @@ class Script: public Struct {
   V(Function.prototype, apply, FunctionApply)               \
   V(Function.prototype, call, FunctionCall)                 \
   V(Object.prototype, hasOwnProperty, ObjectHasOwnProperty) \
+  V(RegExp.prototype, compile, RegExpCompile)               \
+  V(RegExp.prototype, exec, RegExpExec)                     \
+  V(RegExp.prototype, test, RegExpTest)                     \
+  V(RegExp.prototype, toString, RegExpToString)             \
   V(String.prototype, charCodeAt, StringCharCodeAt)         \
   V(String.prototype, charAt, StringCharAt)                 \
+  V(String.prototype, codePointAt, StringCodePointAt)       \
   V(String.prototype, concat, StringConcat)                 \
+  V(String.prototype, endsWith, StringEndsWith)             \
+  V(String.prototype, includes, StringIncludes)             \
+  V(String.prototype, indexOf, StringIndexOf)               \
+  V(String.prototype, lastIndexOf, StringLastIndexOf)       \
+  V(String.prototype, repeat, StringRepeat)                 \
+  V(String.prototype, slice, StringSlice)                   \
+  V(String.prototype, startsWith, StringStartsWith)         \
   V(String.prototype, substr, StringSubstr)                 \
+  V(String.prototype, substring, StringSubstring)           \
   V(String.prototype, toLowerCase, StringToLowerCase)       \
+  V(String.prototype, toString, StringToString)             \
   V(String.prototype, toUpperCase, StringToUpperCase)       \
+  V(String.prototype, trim, StringTrim)                     \
+  V(String.prototype, trimLeft, StringTrimLeft)             \
+  V(String.prototype, trimRight, StringTrimRight)           \
+  V(String.prototype, valueOf, StringValueOf)               \
   V(String, fromCharCode, StringFromCharCode)               \
+  V(String, fromCodePoint, StringFromCodePoint)             \
+  V(String, raw, StringRaw)                                 \
   V(Math, random, MathRandom)                               \
   V(Math, floor, MathFloor)                                 \
   V(Math, round, MathRound)                                 \
@@ -7277,9 +7381,14 @@ enum BuiltinFunctionId {
   kMathPowHalf,
   // These are manually assigned to special getters during bootstrapping.
   kArrayBufferByteLength,
+  kArrayEntries,
+  kArrayKeys,
+  kArrayValues,
+  kArrayIteratorNext,
   kDataViewBuffer,
   kDataViewByteLength,
   kDataViewByteOffset,
+  kFunctionHasInstance,
   kGlobalDecodeURI,
   kGlobalDecodeURIComponent,
   kGlobalEncodeURI,
@@ -7290,7 +7399,10 @@ enum BuiltinFunctionId {
   kGlobalIsNaN,
   kTypedArrayByteLength,
   kTypedArrayByteOffset,
+  kTypedArrayEntries,
+  kTypedArrayKeys,
   kTypedArrayLength,
+  kTypedArrayValues,
   kSharedArrayBufferByteLength,
   kStringIterator,
   kStringIteratorNext,
@@ -7318,6 +7430,14 @@ class SharedFunctionInfo: public HeapObject {
   // Get the abstract code associated with the function, which will either be
   // a Code object or a BytecodeArray.
   inline AbstractCode* abstract_code();
+
+  // Tells whether or not this shared function info is interpreted.
+  //
+  // Note: function->IsInterpreted() does not necessarily return the same value
+  // as function->shared()->IsInterpreted() because the shared function info
+  // could tier up to baseline via a different function closure. The interpreter
+  // entry stub will "self-heal" this divergence when the function is executed.
+  inline bool IsInterpreted() const;
 
   inline void ReplaceCode(Code* code);
   inline bool HasBaselineCode() const;
@@ -7431,6 +7551,12 @@ class SharedFunctionInfo: public HeapObject {
   // (increasingly) from crankshafted code where sufficient feedback isn't
   // available.
   DECL_ACCESSORS(feedback_metadata, TypeFeedbackMetadata)
+
+  // [function_literal_id] - uniquely identifies the FunctionLiteral this
+  // SharedFunctionInfo represents within its script, or -1 if this
+  // SharedFunctionInfo object doesn't correspond to a parsed FunctionLiteral.
+  inline int function_literal_id() const;
+  inline void set_function_literal_id(int value);
 
 #if TRACE_MAPS
   // [unique_id] - For --trace-maps purposes, an identifier that's persistent
@@ -7593,8 +7719,10 @@ class SharedFunctionInfo: public HeapObject {
   // Is this a function or top-level/eval code.
   DECL_BOOLEAN_ACCESSORS(is_function)
 
-  // Indicates that code for this function cannot be compiled with Crankshaft.
-  DECL_BOOLEAN_ACCESSORS(dont_crankshaft)
+  // Indicates that code for this function must be compiled through the
+  // Ignition / TurboFan pipeline, and is unsupported by
+  // FullCodegen / Crankshaft.
+  DECL_BOOLEAN_ACCESSORS(must_use_ignition_turbo)
 
   // Indicates that code for this function cannot be flushed.
   DECL_BOOLEAN_ACCESSORS(dont_flush)
@@ -7677,8 +7805,8 @@ class SharedFunctionInfo: public HeapObject {
   // Tells whether this function should be subject to debugging.
   inline bool IsSubjectToDebugging();
 
-  // Whether this function is defined in native code or extensions.
-  inline bool IsBuiltin();
+  // Whether this function is defined in user-provided JavaScript code.
+  inline bool IsUserJavaScript();
 
   // Check whether or not this function is inlineable.
   bool IsInlineable();
@@ -7738,13 +7866,15 @@ class SharedFunctionInfo: public HeapObject {
   static const int kFunctionIdentifierOffset = kDebugInfoOffset + kPointerSize;
   static const int kFeedbackMetadataOffset =
       kFunctionIdentifierOffset + kPointerSize;
+  static const int kFunctionLiteralIdOffset =
+      kFeedbackMetadataOffset + kPointerSize;
 #if TRACE_MAPS
-  static const int kUniqueIdOffset = kFeedbackMetadataOffset + kPointerSize;
+  static const int kUniqueIdOffset = kFunctionLiteralIdOffset + kPointerSize;
   static const int kLastPointerFieldOffset = kUniqueIdOffset;
 #else
   // Just to not break the postmortrem support with conditional offsets
-  static const int kUniqueIdOffset = kFeedbackMetadataOffset;
-  static const int kLastPointerFieldOffset = kFeedbackMetadataOffset;
+  static const int kUniqueIdOffset = kFunctionLiteralIdOffset;
+  static const int kLastPointerFieldOffset = kFunctionLiteralIdOffset;
 #endif
 
 #if V8_HOST_ARCH_32_BIT
@@ -7883,7 +8013,7 @@ class SharedFunctionInfo: public HeapObject {
     kIsAnonymousExpression,
     kNameShouldPrintAsAnonymous,
     kIsFunction,
-    kDontCrankshaft,
+    kMustUseIgnitionTurbo,
     kDontFlush,
     // byte 2
     kFunctionKind,
@@ -8010,8 +8140,7 @@ class JSGeneratorObject: public JSObject {
 
   // [input_or_debug_pos]
   // For executing generators: the most recent input value.
-  // For suspended new-style generators: debug information (bytecode offset).
-  // For suspended old-style generators: unused.
+  // For suspended generators: debug information (bytecode offset).
   // There is currently no need to remember the most recent input value for a
   // suspended generator.
   DECL_ACCESSORS(input_or_debug_pos, Object)
@@ -8035,8 +8164,8 @@ class JSGeneratorObject: public JSObject {
   // is suspended.
   int source_position() const;
 
-  // [operand_stack]: Saved operand stack.
-  DECL_ACCESSORS(operand_stack, FixedArray)
+  // [register_file]: Saved interpreter register file.
+  DECL_ACCESSORS(register_file, FixedArray)
 
   DECLARE_CAST(JSGeneratorObject)
 
@@ -8054,8 +8183,8 @@ class JSGeneratorObject: public JSObject {
   static const int kInputOrDebugPosOffset = kReceiverOffset + kPointerSize;
   static const int kResumeModeOffset = kInputOrDebugPosOffset + kPointerSize;
   static const int kContinuationOffset = kResumeModeOffset + kPointerSize;
-  static const int kOperandStackOffset = kContinuationOffset + kPointerSize;
-  static const int kSize = kOperandStackOffset + kPointerSize;
+  static const int kRegisterFileOffset = kContinuationOffset + kPointerSize;
+  static const int kSize = kRegisterFileOffset + kPointerSize;
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSGeneratorObject);
@@ -8352,6 +8481,14 @@ class JSFunction: public JSObject {
 
   // Tells whether this function inlines the given shared function info.
   bool Inlines(SharedFunctionInfo* candidate);
+
+  // Tells whether or not this function is interpreted.
+  //
+  // Note: function->IsInterpreted() does not necessarily return the same value
+  // as function->shared()->IsInterpreted() because the shared function info
+  // could tier up to baseline via a different function closure. The interpreter
+  // entry stub will "self-heal" this divergence when the function is executed.
+  inline bool IsInterpreted();
 
   // Tells whether or not this function has been optimized.
   inline bool IsOptimized();
@@ -9187,7 +9324,7 @@ class AllocationSite: public Struct {
   DECLARE_CAST(AllocationSite)
   static inline AllocationSiteMode GetMode(
       ElementsKind boilerplate_elements_kind);
-  static inline AllocationSiteMode GetMode(ElementsKind from, ElementsKind to);
+  static AllocationSiteMode GetMode(ElementsKind from, ElementsKind to);
   static inline bool CanTrack(InstanceType type);
 
   static const int kTransitionInfoOffset = HeapObject::kHeaderSize;
@@ -9530,14 +9667,15 @@ class Symbol: public Name {
   static const int kFlagsOffset = kNameOffset + kPointerSize;
   static const int kSize = kFlagsOffset + kPointerSize;
 
+  // Flags layout.
+  static const int kPrivateBit = 0;
+  static const int kWellKnownSymbolBit = 1;
+
   typedef FixedBodyDescriptor<kNameOffset, kFlagsOffset, kSize> BodyDescriptor;
 
   void SymbolShortPrint(std::ostream& os);
 
  private:
-  static const int kPrivateBit = 0;
-  static const int kWellKnownSymbolBit = 1;
-
   const char* PrivateSymbolToName() const;
 
 #if TRACE_MAPS
@@ -10691,6 +10829,10 @@ class JSArrayIterator : public JSObject {
   // allocated.
   DECL_ACCESSORS(object_map, Object)
 
+  // Return the ElementsKind that a JSArrayIterator's [[IteratedObject]] is
+  // expected to have, based on its instance type.
+  static ElementsKind ElementsKindForInstanceType(InstanceType instance_type);
+
   static const int kIteratedObjectOffset = JSObject::kHeaderSize;
   static const int kNextIndexOffset = kIteratedObjectOffset + kPointerSize;
   static const int kIteratedObjectMapOffset = kNextIndexOffset + kPointerSize;
@@ -10955,6 +11097,9 @@ class JSArrayBuffer: public JSObject {
   inline bool is_shared();
   inline void set_is_shared(bool value);
 
+  inline bool has_guard_region();
+  inline void set_has_guard_region(bool value);
+
   DECLARE_CAST(JSArrayBuffer)
 
   void Neuter();
@@ -10994,6 +11139,7 @@ class JSArrayBuffer: public JSObject {
   class IsNeuterable : public BitField<bool, 2, 1> {};
   class WasNeutered : public BitField<bool, 3, 1> {};
   class IsShared : public BitField<bool, 4, 1> {};
+  class HasGuardRegion : public BitField<bool, 5, 1> {};
 
  private:
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSArrayBuffer);
@@ -11037,6 +11183,11 @@ class JSTypedArray: public JSArrayBufferView {
   // [length]: length of typed array in elements.
   DECL_ACCESSORS(length, Object)
   inline uint32_t length_value() const;
+
+  // ES6 9.4.5.3
+  MUST_USE_RESULT static Maybe<bool> DefineOwnProperty(
+      Isolate* isolate, Handle<JSTypedArray> o, Handle<Object> key,
+      PropertyDescriptor* desc, ShouldThrow should_throw);
 
   DECLARE_CAST(JSTypedArray)
 
@@ -11475,6 +11626,7 @@ class FunctionTemplateInfo: public TemplateInfo {
  public:
   DECL_ACCESSORS(call_code, Object)
   DECL_ACCESSORS(prototype_template, Object)
+  DECL_ACCESSORS(prototype_provider_template, Object)
   DECL_ACCESSORS(parent_template, Object)
   DECL_ACCESSORS(named_property_handler, Object)
   DECL_ACCESSORS(indexed_property_handler, Object)
@@ -11512,8 +11664,10 @@ class FunctionTemplateInfo: public TemplateInfo {
   static const int kCallCodeOffset = TemplateInfo::kHeaderSize;
   static const int kPrototypeTemplateOffset =
       kCallCodeOffset + kPointerSize;
-  static const int kParentTemplateOffset =
+  static const int kPrototypeProviderTemplateOffset =
       kPrototypeTemplateOffset + kPointerSize;
+  static const int kParentTemplateOffset =
+      kPrototypeProviderTemplateOffset + kPointerSize;
   static const int kNamedPropertyHandlerOffset =
       kParentTemplateOffset + kPointerSize;
   static const int kIndexedPropertyHandlerOffset =

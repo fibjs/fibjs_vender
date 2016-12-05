@@ -59,7 +59,7 @@ void Scanner::BookmarkScope::Apply() {
   } else {
     scanner_->SeekNext(bookmark_);
     scanner_->Next();
-    DCHECK_EQ(scanner_->location().beg_pos, bookmark_);
+    DCHECK_EQ(scanner_->location().beg_pos, static_cast<int>(bookmark_));
   }
   bookmark_ = kBookmarkWasApplied;
 }
@@ -1152,8 +1152,9 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
         }
 
         if (next_.literal_chars->one_byte_literal().length() <= 10 &&
-            value <= Smi::kMaxValue && c0_ != '.' && c0_ != 'e' && c0_ != 'E') {
-          next_.smi_value_ = static_cast<int>(value);
+            value <= Smi::kMaxValue && c0_ != '.' &&
+            (c0_ == kEndOfInput || !unicode_cache_->IsIdentifierStart(c0_))) {
+          next_.smi_value_ = static_cast<uint32_t>(value);
           literal.Complete();
           HandleLeadSurrogate();
 
@@ -1336,19 +1337,6 @@ static Token::Value KeywordOrIdentifierToken(const uint8_t* input,
     KEYWORDS(KEYWORD_GROUP_CASE, KEYWORD)
   }
   return Token::IDENTIFIER;
-}
-
-
-bool Scanner::IdentifierIsFutureStrictReserved(
-    const AstRawString* string) const {
-  // Keywords are always 1-byte strings.
-  if (!string->is_one_byte()) return false;
-  if (string->IsOneByteEqualTo("let") || string->IsOneByteEqualTo("static") ||
-      string->IsOneByteEqualTo("yield")) {
-    return true;
-  }
-  return Token::FUTURE_STRICT_RESERVED_WORD ==
-         KeywordOrIdentifierToken(string->raw_data(), string->length());
 }
 
 
@@ -1612,14 +1600,13 @@ bool Scanner::ContainsDot() {
   return std::find(str.begin(), str.end(), '.') != str.end();
 }
 
-
-int Scanner::FindSymbol(DuplicateFinder* finder, int value) {
+bool Scanner::FindSymbol(DuplicateFinder* finder) {
   // TODO(vogelheim): Move this logic into the calling class; this can be fully
   //                  implemented using the public interface.
   if (is_literal_one_byte()) {
-    return finder->AddOneByteSymbol(literal_one_byte_string(), value);
+    return finder->AddOneByteSymbol(literal_one_byte_string());
   }
-  return finder->AddTwoByteSymbol(literal_two_byte_string(), value);
+  return finder->AddTwoByteSymbol(literal_two_byte_string());
 }
 
 void Scanner::SeekNext(size_t position) {
@@ -1638,7 +1625,7 @@ void Scanner::SeekNext(size_t position) {
   // 3, re-scan, by scanning the look-ahead char + 1 token (next_).
   c0_ = source_->Advance();
   Next();
-  DCHECK_EQ(next_.location.beg_pos, position);
+  DCHECK_EQ(next_.location.beg_pos, static_cast<int>(position));
 }
 
 }  // namespace internal

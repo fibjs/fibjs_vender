@@ -113,6 +113,11 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   // tree and its children are reparented.
   Scope* FinalizeBlockScope();
 
+  bool HasBeenRemoved() const;
+
+  // Find the first scope that hasn't been removed.
+  Scope* GetUnremovedScope();
+
   // Inserts outer_scope into this scope's scope chain (and removes this
   // from the current outer_scope_'s inner scope list).
   // Assumes outer_scope_ is non-null.
@@ -202,14 +207,11 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   // Scope-specific info.
 
   // Inform the scope and outer scopes that the corresponding code contains an
-  // eval call. We don't record eval calls from innner scopes in the outer most
-  // script scope, as we only see those when parsing eagerly. If we recorded the
-  // calls then, the outer most script scope would look different depending on
-  // whether we parsed eagerly or not which is undesirable.
+  // eval call.
   void RecordEvalCall() {
     scope_calls_eval_ = true;
     inner_scope_calls_eval_ = true;
-    for (Scope* scope = outer_scope(); scope && !scope->is_script_scope();
+    for (Scope* scope = outer_scope(); scope != nullptr;
          scope = scope->outer_scope()) {
       scope->inner_scope_calls_eval_ = true;
     }
@@ -418,6 +420,22 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   void set_is_debug_evaluate_scope() { is_debug_evaluate_scope_ = true; }
   bool is_debug_evaluate_scope() const { return is_debug_evaluate_scope_; }
 
+  bool RemoveInnerScope(Scope* inner_scope) {
+    DCHECK_NOT_NULL(inner_scope);
+    if (inner_scope == inner_scope_) {
+      inner_scope_ = inner_scope_->sibling_;
+      return true;
+    }
+    for (Scope* scope = inner_scope_; scope != nullptr;
+         scope = scope->sibling_) {
+      if (scope->sibling_ == inner_scope) {
+        scope->sibling_ = scope->sibling_->sibling_;
+        return true;
+      }
+    }
+    return false;
+  }
+
  protected:
   explicit Scope(Zone* zone);
 
@@ -426,9 +444,8 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   }
 
  private:
-  Variable* Declare(Zone* zone, Scope* scope, const AstRawString* name,
-                    VariableMode mode, VariableKind kind,
-                    InitializationFlag initialization_flag,
+  Variable* Declare(Zone* zone, const AstRawString* name, VariableMode mode,
+                    VariableKind kind, InitializationFlag initialization_flag,
                     MaybeAssignedFlag maybe_assigned_flag = kNotAssigned);
 
   // This method should only be invoked on scopes created during parsing (i.e.,
@@ -551,25 +568,9 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
         Handle<ScopeInfo> scope_info);
 
   void AddInnerScope(Scope* inner_scope) {
-    DCHECK_EQ(!needs_migration_, inner_scope->zone() == zone());
     inner_scope->sibling_ = inner_scope_;
     inner_scope_ = inner_scope;
     inner_scope->outer_scope_ = this;
-  }
-
-  void RemoveInnerScope(Scope* inner_scope) {
-    DCHECK_NOT_NULL(inner_scope);
-    if (inner_scope == inner_scope_) {
-      inner_scope_ = inner_scope_->sibling_;
-      return;
-    }
-    for (Scope* scope = inner_scope_; scope != nullptr;
-         scope = scope->sibling_) {
-      if (scope->sibling_ == inner_scope) {
-        scope->sibling_ = scope->sibling_->sibling_;
-        return;
-      }
-    }
   }
 
   void SetDefaults();
@@ -624,7 +625,7 @@ class DeclarationScope : public Scope {
   bool asm_module() const { return asm_module_; }
   void set_asm_module();
   bool asm_function() const { return asm_function_; }
-  void set_asm_function() { asm_module_ = true; }
+  void set_asm_function() { asm_function_ = true; }
 
   void DeclareThis(AstValueFactory* ast_value_factory);
   void DeclareArguments(AstValueFactory* ast_value_factory);

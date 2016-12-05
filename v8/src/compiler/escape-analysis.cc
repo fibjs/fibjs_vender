@@ -420,7 +420,7 @@ bool IsEquivalentPhi(Node* node1, Node* node2) {
 
 bool IsEquivalentPhi(Node* phi, ZoneVector<Node*>& inputs) {
   if (phi->opcode() != IrOpcode::kPhi) return false;
-  if (phi->op()->ValueInputCount() != inputs.size()) {
+  if (static_cast<size_t>(phi->op()->ValueInputCount()) != inputs.size()) {
     return false;
   }
   for (size_t i = 0; i < inputs.size(); ++i) {
@@ -476,14 +476,15 @@ bool VirtualObject::MergeFrom(MergeCache* cache, Node* at, Graph* graph,
          at->opcode() == IrOpcode::kPhi);
   bool changed = false;
   for (size_t i = 0; i < field_count(); ++i) {
-    if (Node* field = cache->GetFields(i)) {
+    Node* field = cache->GetFields(i);
+    if (field && !IsCreatedPhi(i)) {
       changed = changed || GetField(i) != field;
       SetField(i, field);
       TRACE("    Field %zu agree on rep #%d\n", i, field->id());
     } else {
-      int arity = at->opcode() == IrOpcode::kEffectPhi
-                      ? at->op()->EffectInputCount()
-                      : at->op()->ValueInputCount();
+      size_t arity = at->opcode() == IrOpcode::kEffectPhi
+                         ? at->op()->EffectInputCount()
+                         : at->op()->ValueInputCount();
       if (cache->fields().size() == arity) {
         changed = MergeFields(i, at, cache, graph, common) || changed;
       } else {
@@ -795,6 +796,7 @@ bool EscapeStatusAnalysis::CheckUsesForEscape(Node* uses, Node* rep,
       case IrOpcode::kSelect:
       // TODO(mstarzinger): The following list of operators will eventually be
       // handled by the EscapeAnalysisReducer (similar to ObjectIsSmi).
+      case IrOpcode::kConvertTaggedHoleToUndefined:
       case IrOpcode::kStringEqual:
       case IrOpcode::kStringLessThan:
       case IrOpcode::kStringLessThanOrEqual:
@@ -966,6 +968,7 @@ void EscapeAnalysis::RunObjectAnalysis() {
           // VirtualObjects, and we want to delay phis to improve performance.
           if (use->opcode() == IrOpcode::kEffectPhi) {
             if (!status_analysis_->IsInQueue(use->id())) {
+              status_analysis_->SetInQueue(use->id(), true);
               queue.push_front(use);
             }
           } else if ((use->opcode() != IrOpcode::kLoadField &&
@@ -1135,7 +1138,17 @@ VirtualObject* EscapeAnalysis::CopyForModificationAt(VirtualObject* obj,
                                                      Node* node) {
   if (obj->NeedCopyForModification()) {
     state = CopyForModificationAt(state, node);
-    return state->Copy(obj, status_analysis_->GetAlias(obj->id()));
+    // TODO(tebbi): this copies the complete virtual state. Replace with a more
+    // precise analysis of which objects are actually affected by the change.
+    Alias changed_alias = status_analysis_->GetAlias(obj->id());
+    for (Alias alias = 0; alias < state->size(); ++alias) {
+      if (VirtualObject* next_obj = state->VirtualObjectFromAlias(alias)) {
+        if (alias != changed_alias && next_obj->NeedCopyForModification()) {
+          state->Copy(next_obj, alias);
+        }
+      }
+    }
+    return state->Copy(obj, changed_alias);
   }
   return obj;
 }
@@ -1578,8 +1591,8 @@ Node* EscapeAnalysis::GetOrCreateObjectState(Node* effect, Node* node) {
         }
         int input_count = static_cast<int>(cache_->fields().size());
         Node* new_object_state =
-            graph()->NewNode(common()->ObjectState(input_count, vobj->id()),
-                             input_count, &cache_->fields().front());
+            graph()->NewNode(common()->ObjectState(input_count), input_count,
+                             &cache_->fields().front());
         vobj->SetObjectState(new_object_state);
         TRACE(
             "Creating object state #%d for vobj %p (from node #%d) at effect "

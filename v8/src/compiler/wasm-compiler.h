@@ -11,6 +11,8 @@
 // Do not include anything from src/compiler here!
 #include "src/compilation-info.h"
 #include "src/compiler.h"
+#include "src/trap-handler/trap-handler.h"
+#include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-opcodes.h"
 #include "src/wasm/wasm-result.h"
 #include "src/zone/zone.h"
@@ -29,8 +31,10 @@ class SourcePositionTable;
 
 namespace wasm {
 // Forward declarations for some WASM data structures.
+struct ModuleBytesEnv;
 struct ModuleEnv;
 struct WasmFunction;
+struct WasmModule;
 class ErrorThrower;
 struct DecodeStruct;
 
@@ -43,7 +47,7 @@ namespace compiler {
 class WasmCompilationUnit final {
  public:
   WasmCompilationUnit(wasm::ErrorThrower* thrower, Isolate* isolate,
-                      wasm::ModuleEnv* module_env,
+                      wasm::ModuleBytesEnv* module_env,
                       const wasm::WasmFunction* function, uint32_t index);
 
   Zone* graph_zone() { return graph_zone_.get(); }
@@ -54,19 +58,21 @@ class WasmCompilationUnit final {
 
   static Handle<Code> CompileWasmFunction(wasm::ErrorThrower* thrower,
                                           Isolate* isolate,
-                                          wasm::ModuleEnv* module_env,
+                                          wasm::ModuleBytesEnv* module_env,
                                           const wasm::WasmFunction* function) {
-    WasmCompilationUnit unit(thrower, isolate, module_env, function, 0);
+    WasmCompilationUnit unit(thrower, isolate, module_env, function,
+                             function->func_index);
     unit.ExecuteCompilation();
     return unit.FinishCompilation();
   }
 
  private:
   SourcePositionTable* BuildGraphForWasmFunction(double* decode_ms);
+  Handle<FixedArray> PackProtectedInstructions() const;
 
   wasm::ErrorThrower* thrower_;
   Isolate* isolate_;
-  wasm::ModuleEnv* module_env_;
+  wasm::ModuleBytesEnv* module_env_;
   const wasm::WasmFunction* function_;
   // The graph zone is deallocated at the end of ExecuteCompilation.
   std::unique_ptr<Zone> graph_zone_;
@@ -77,6 +83,9 @@ class WasmCompilationUnit final {
   uint32_t index_;
   wasm::Result<wasm::DecodeStruct*> graph_construction_result_;
   bool ok_;
+  ZoneVector<trap_handler::ProtectedInstructionData>
+      protected_instructions_;  // Instructions that are protected by the signal
+                                // handler.
 
   DISALLOW_COPY_AND_ASSIGN(WasmCompilationUnit);
 };
@@ -88,7 +97,8 @@ Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, Handle<JSReceiver> target,
                                     MaybeHandle<String> import_name);
 
 // Wraps a given wasm code object, producing a code object.
-Handle<Code> CompileJSToWasmWrapper(Isolate* isolate, wasm::ModuleEnv* module,
+Handle<Code> CompileJSToWasmWrapper(Isolate* isolate,
+                                    const wasm::WasmModule* module,
                                     Handle<Code> wasm_code, uint32_t index);
 
 // Abstracts details of building TurboFan graph nodes for WASM to separate
@@ -208,6 +218,8 @@ class WasmGraphBuilder {
 
   Node* SimdOp(wasm::WasmOpcode opcode, const NodeVector& inputs);
   Node* SimdExtractLane(wasm::WasmOpcode opcode, uint8_t lane, Node* input);
+  Node* SimdReplaceLane(wasm::WasmOpcode opcode, uint8_t lane, Node* input,
+                        Node* replacement);
 
  private:
   static const int kDefaultBufferSize = 16;

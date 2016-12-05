@@ -154,7 +154,7 @@ class AstProperties final BASE_EMBEDDED {
   enum Flag {
     kNoFlags = 0,
     kDontSelfOptimize = 1 << 0,
-    kDontCrankshaft = 1 << 1
+    kMustUseIgnitionTurbo = 1 << 1
   };
 
   typedef base::Flags<Flag> Flags;
@@ -756,7 +756,6 @@ class ForInStatement final : public ForEachStatement {
   BailoutId FilterId() const { return BailoutId(local_id(4)); }
   BailoutId AssignmentId() const { return BailoutId(local_id(5)); }
   BailoutId IncrementId() const { return BailoutId(local_id(6)); }
-  BailoutId ContinueId() const { return EntryId(); }
   BailoutId StackCheckId() const { return BodyId(); }
 
  private:
@@ -827,12 +826,6 @@ class ForOfStatement final : public ForEachStatement {
   void set_result_done(Expression* e) { result_done_ = e; }
   void set_assign_each(Expression* e) { assign_each_ = e; }
 
-  BailoutId ContinueId() const { return EntryId(); }
-  BailoutId StackCheckId() const { return BackEdgeId(); }
-
-  static int num_ids() { return parent_num_ids() + 1; }
-  BailoutId BackEdgeId() const { return BailoutId(local_id(0)); }
-
  private:
   friend class AstNodeFactory;
 
@@ -843,8 +836,6 @@ class ForOfStatement final : public ForEachStatement {
         next_result_(NULL),
         result_done_(NULL),
         assign_each_(NULL) {}
-  static int parent_num_ids() { return ForEachStatement::num_ids(); }
-  int local_id(int n) const { return base_id() + parent_num_ids() + n; }
 
   Variable* iterator_;
   Expression* assign_iterator_;
@@ -931,30 +922,16 @@ class WithStatement final : public Statement {
   Statement* statement() const { return statement_; }
   void set_statement(Statement* s) { statement_ = s; }
 
-  void set_base_id(int id) { base_id_ = id; }
-  static int num_ids() { return parent_num_ids() + 2; }
-  BailoutId ToObjectId() const { return BailoutId(local_id(0)); }
-  BailoutId EntryId() const { return BailoutId(local_id(1)); }
-
  private:
   friend class AstNodeFactory;
 
   WithStatement(Scope* scope, Expression* expression, Statement* statement,
                 int pos)
       : Statement(pos, kWithStatement),
-        base_id_(BailoutId::None().ToInt()),
         scope_(scope),
         expression_(expression),
         statement_(statement) {}
 
-  static int parent_num_ids() { return 0; }
-  int base_id() const {
-    DCHECK(!BailoutId(base_id_).IsNone());
-    return base_id_;
-  }
-  int local_id(int n) const { return base_id() + parent_num_ids() + n; }
-
-  int base_id_;
   Scope* scope_;
   Expression* expression_;
   Statement* statement_;
@@ -1466,18 +1443,11 @@ class ObjectLiteral final : public MaterializedLiteral {
   BailoutId CreateLiteralId() const { return BailoutId(local_id(0)); }
 
   // Return an AST id for a property that is used in simulate instructions.
-  BailoutId GetIdForPropertyName(int i) {
-    return BailoutId(local_id(2 * i + 1));
-  }
-  BailoutId GetIdForPropertySet(int i) {
-    return BailoutId(local_id(2 * i + 2));
-  }
+  BailoutId GetIdForPropertySet(int i) { return BailoutId(local_id(i + 1)); }
 
   // Unlike other AST nodes, this number of bailout IDs allocated for an
   // ObjectLiteral can vary, so num_ids() is not a static method.
-  int num_ids() const {
-    return parent_num_ids() + 1 + 2 * properties()->length();
-  }
+  int num_ids() const { return parent_num_ids() + 1 + properties()->length(); }
 
   // Object literals need one feedback slot for each non-trivial value, as well
   // as some slots for home objects.
@@ -1663,6 +1633,7 @@ class VariableProxy final : public Expression {
 
   bool is_assigned() const { return IsAssignedField::decode(bit_field_); }
   void set_is_assigned() {
+    DCHECK(!is_resolved());
     bit_field_ = IsAssignedField::update(bit_field_, true);
   }
 
@@ -1901,9 +1872,8 @@ class Call final : public Expression {
   void MarkTail() { bit_field_ = IsTailField::update(bit_field_, true); }
 
   enum CallType {
-    POSSIBLY_EVAL_CALL,
     GLOBAL_CALL,
-    LOOKUP_SLOT_CALL,
+    WITH_CALL,
     NAMED_PROPERTY_CALL,
     KEYED_PROPERTY_CALL,
     NAMED_SUPER_PROPERTY_CALL,
@@ -2573,6 +2543,8 @@ class FunctionLiteral final : public Expression {
     kAccessorOrMethod
   };
 
+  enum IdType { kIdTypeInvalid = -1, kIdTypeTopLevel = 0 };
+
   enum ParameterFlag { kNoDuplicateParameters, kHasDuplicateParameters };
 
   enum EagerCompileHint { kShouldEagerCompile, kShouldLazyCompile };
@@ -2708,6 +2680,15 @@ class FunctionLiteral final : public Expression {
         IsClassFieldInitializer::update(bit_field_, is_class_field_initializer);
   }
 
+  int return_position() {
+    return std::max(start_position(), end_position() - (has_braces_ ? 1 : 0));
+  }
+
+  int function_literal_id() const { return function_literal_id_; }
+  void set_function_literal_id(int function_literal_id) {
+    function_literal_id_ = function_literal_id;
+  }
+
  private:
   friend class AstNodeFactory;
 
@@ -2718,7 +2699,7 @@ class FunctionLiteral final : public Expression {
                   int function_length, FunctionType function_type,
                   ParameterFlag has_duplicate_parameters,
                   EagerCompileHint eager_compile_hint, int position,
-                  bool is_function)
+                  bool is_function, bool has_braces, int function_literal_id)
       : Expression(position, kFunctionLiteral),
         materialized_literal_count_(materialized_literal_count),
         expected_property_count_(expected_property_count),
@@ -2726,11 +2707,13 @@ class FunctionLiteral final : public Expression {
         function_length_(function_length),
         function_token_position_(kNoSourcePosition),
         yield_count_(0),
+        has_braces_(has_braces),
         raw_name_(name),
         scope_(scope),
         body_(body),
         raw_inferred_name_(ast_value_factory->empty_string()),
-        ast_properties_(zone) {
+        ast_properties_(zone),
+        function_literal_id_(function_literal_id) {
     bit_field_ |=
         FunctionTypeBits::encode(function_type) | Pretenure::encode(false) |
         HasDuplicateParameters::encode(has_duplicate_parameters ==
@@ -2763,6 +2746,7 @@ class FunctionLiteral final : public Expression {
   int function_length_;
   int function_token_position_;
   int yield_count_;
+  bool has_braces_;
 
   const AstString* raw_name_;
   DeclarationScope* scope_;
@@ -2770,6 +2754,7 @@ class FunctionLiteral final : public Expression {
   const AstString* raw_inferred_name_;
   Handle<String> inferred_name_;
   AstProperties ast_properties_;
+  int function_literal_id_;
 };
 
 // Property is used for passing information
@@ -2812,16 +2797,6 @@ class ClassLiteral final : public Expression {
     static_initializer_proxy_ = proxy;
   }
 
-  BailoutId CreateLiteralId() const { return BailoutId(local_id(0)); }
-  BailoutId PrototypeId() { return BailoutId(local_id(1)); }
-
-  // Return an AST id for a property that is used in simulate instructions.
-  BailoutId GetIdForProperty(int i) { return BailoutId(local_id(i + 2)); }
-
-  // Unlike other AST nodes, this number of bailout IDs allocated for an
-  // ClassLiteral can vary, so num_ids() is not a static method.
-  int num_ids() const { return parent_num_ids() + 2 + properties()->length(); }
-
   // Object literals need one feedback slot for each non-trivial value, as well
   // as some slots for home objects.
   void AssignFeedbackVectorSlots(Isolate* isolate, FeedbackVectorSpec* spec,
@@ -2848,9 +2823,6 @@ class ClassLiteral final : public Expression {
         constructor_(constructor),
         properties_(properties),
         static_initializer_proxy_(nullptr) {}
-
-  static int parent_num_ids() { return Expression::num_ids(); }
-  int local_id(int n) const { return base_id() + parent_num_ids() + n; }
 
   int end_position_;
   FeedbackVectorSlot prototype_slot_;
@@ -3278,7 +3250,7 @@ class AstNodeFactory final BASE_EMBEDDED {
         Literal(ast_value_factory_->NewNumber(number, with_dot), pos);
   }
 
-  Literal* NewSmiLiteral(int number, int pos) {
+  Literal* NewSmiLiteral(uint32_t number, int pos) {
     return new (zone_) Literal(ast_value_factory_->NewSmi(number), pos);
   }
 
@@ -3458,12 +3430,13 @@ class AstNodeFactory final BASE_EMBEDDED {
       int expected_property_count, int parameter_count, int function_length,
       FunctionLiteral::ParameterFlag has_duplicate_parameters,
       FunctionLiteral::FunctionType function_type,
-      FunctionLiteral::EagerCompileHint eager_compile_hint, int position) {
+      FunctionLiteral::EagerCompileHint eager_compile_hint, int position,
+      bool has_braces, int function_literal_id) {
     return new (zone_) FunctionLiteral(
         zone_, name, ast_value_factory_, scope, body,
         materialized_literal_count, expected_property_count, parameter_count,
         function_length, function_type, has_duplicate_parameters,
-        eager_compile_hint, position, true);
+        eager_compile_hint, position, true, has_braces, function_literal_id);
   }
 
   // Creates a FunctionLiteral representing a top-level script, the
@@ -3478,7 +3451,8 @@ class AstNodeFactory final BASE_EMBEDDED {
         body, materialized_literal_count, expected_property_count,
         parameter_count, parameter_count, FunctionLiteral::kAnonymousExpression,
         FunctionLiteral::kNoDuplicateParameters,
-        FunctionLiteral::kShouldLazyCompile, 0, false);
+        FunctionLiteral::kShouldLazyCompile, 0, false, true,
+        FunctionLiteral::kIdTypeTopLevel);
   }
 
   ClassLiteral::Property* NewClassLiteralProperty(

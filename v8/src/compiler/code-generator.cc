@@ -33,8 +33,10 @@ class CodeGenerator::JumpTable final : public ZoneObject {
   size_t const target_count_;
 };
 
-CodeGenerator::CodeGenerator(Frame* frame, Linkage* linkage,
-                             InstructionSequence* code, CompilationInfo* info)
+CodeGenerator::CodeGenerator(
+    Frame* frame, Linkage* linkage, InstructionSequence* code,
+    CompilationInfo* info,
+    ZoneVector<trap_handler::ProtectedInstructionData>* protected_instructions)
     : frame_access_state_(nullptr),
       linkage_(linkage),
       code_(code),
@@ -56,8 +58,10 @@ CodeGenerator::CodeGenerator(Frame* frame, Linkage* linkage,
       jump_tables_(nullptr),
       ools_(nullptr),
       osr_pc_offset_(-1),
+      optimized_out_literal_id_(-1),
       source_position_table_builder_(code->zone(),
-                                     info->SourcePositionRecordingMode()) {
+                                     info->SourcePositionRecordingMode()),
+      protected_instructions_(protected_instructions) {
   for (int i = 0; i < code->InstructionBlockCount(); ++i) {
     new (&labels_[i]) Label;
   }
@@ -69,6 +73,15 @@ Isolate* CodeGenerator::isolate() const { return info_->isolate(); }
 void CodeGenerator::CreateFrameAccessState(Frame* frame) {
   FinishFrame(frame);
   frame_access_state_ = new (code()->zone()) FrameAccessState(frame);
+}
+
+void CodeGenerator::AddProtectedInstruction(int instr_offset,
+                                            int landing_offset) {
+  if (protected_instructions_ != nullptr) {
+    trap_handler::ProtectedInstructionData data = {instr_offset,
+                                                   landing_offset};
+    protected_instructions_->emplace_back(data);
+  }
 }
 
 Handle<Code> CodeGenerator::GenerateCode() {
@@ -88,10 +101,11 @@ Handle<Code> CodeGenerator::GenerateCode() {
 
   // Define deoptimization literals for all inlined functions.
   DCHECK_EQ(0u, deoptimization_literals_.size());
-  for (const CompilationInfo::InlinedFunctionHolder& inlined :
+  for (CompilationInfo::InlinedFunctionHolder& inlined :
        info->inlined_functions()) {
     if (!inlined.shared_info.is_identical_to(info->shared_info())) {
-      DefineDeoptimizationLiteral(inlined.shared_info);
+      int index = DefineDeoptimizationLiteral(inlined.shared_info);
+      inlined.RegisterInlinedFunctionId(index);
     }
   }
   inlined_function_count_ = deoptimization_literals_.size();
@@ -469,29 +483,19 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleInstruction(
 
 
 void CodeGenerator::AssembleSourcePosition(Instruction* instr) {
-  SourcePosition source_position;
+  SourcePosition source_position = SourcePosition::Unknown();
   if (!code()->GetSourcePosition(instr, &source_position)) return;
   if (source_position == current_source_position_) return;
   current_source_position_ = source_position;
-  if (source_position.IsUnknown()) return;
-  int code_pos = source_position.raw();
-  source_position_table_builder_.AddPosition(masm()->pc_offset(), code_pos,
-                                             false);
+  if (!source_position.IsKnown()) return;
+  source_position_table_builder_.AddPosition(masm()->pc_offset(),
+                                             source_position, false);
   if (FLAG_code_comments) {
     CompilationInfo* info = this->info();
     if (!info->parse_info()) return;
-    Vector<char> buffer = Vector<char>::New(256);
-    int ln = Script::GetLineNumber(info->script(), code_pos);
-    int cn = Script::GetColumnNumber(info->script(), code_pos);
-    if (info->script()->name()->IsString()) {
-      Handle<String> file(String::cast(info->script()->name()));
-      base::OS::SNPrintF(buffer.start(), buffer.length(), "-- %s:%d:%d --",
-                         file->ToCString().get(), ln, cn);
-    } else {
-      base::OS::SNPrintF(buffer.start(), buffer.length(),
-                         "-- <unknown>:%d:%d --", ln, cn);
-    }
-    masm()->RecordComment(buffer.start());
+    std::ostringstream buffer;
+    buffer << "-- " << source_position.InliningStack(info) << " --";
+    masm()->RecordComment(StrDup(buffer.str().c_str()));
   }
 }
 
@@ -516,6 +520,26 @@ void CodeGenerator::AssembleGaps(Instruction* instr) {
   }
 }
 
+namespace {
+
+Handle<PodArray<InliningPosition>> CreateInliningPositions(
+    CompilationInfo* info) {
+  const CompilationInfo::InlinedFunctionList& inlined_functions =
+      info->inlined_functions();
+  if (inlined_functions.size() == 0) {
+    return Handle<PodArray<InliningPosition>>::cast(
+        info->isolate()->factory()->empty_byte_array());
+  }
+  Handle<PodArray<InliningPosition>> inl_positions =
+      PodArray<InliningPosition>::New(
+          info->isolate(), static_cast<int>(inlined_functions.size()), TENURED);
+  for (size_t i = 0; i < inlined_functions.size(); ++i) {
+    inl_positions->set(static_cast<int>(i), inlined_functions[i].position);
+  }
+  return inl_positions;
+}
+
+}  // namespace
 
 void CodeGenerator::PopulateDeoptimizationData(Handle<Code> code_object) {
   CompilationInfo* info = this->info();
@@ -547,6 +571,9 @@ void CodeGenerator::PopulateDeoptimizationData(Handle<Code> code_object) {
     }
     data->SetLiteralArray(*literals);
   }
+
+  Handle<PodArray<InliningPosition>> inl_pos = CreateInliningPositions(info);
+  data->SetInliningPositions(*inl_pos);
 
   if (info->is_osr()) {
     DCHECK(osr_pc_offset_ >= 0);
@@ -614,15 +641,6 @@ void CodeGenerator::RecordCallPosition(Instruction* instr) {
       deopt_state_id = BuildTranslation(instr, -1, frame_state_offset,
                                         OutputFrameStateCombine::Ignore());
     }
-#if DEBUG
-    // Make sure all the values live in stack slots or they are immediates.
-    // (The values should not live in register because registers are clobbered
-    // by calls.)
-    for (size_t i = 0; i < descriptor->GetSize(); i++) {
-      InstructionOperand* op = instr->InputAt(frame_state_offset + 1 + i);
-      CHECK(op->IsStackSlot() || op->IsFPStackSlot() || op->IsImmediate());
-    }
-#endif
     safepoints()->RecordLazyDeoptimizationIndex(deopt_state_id);
   }
 }
@@ -652,19 +670,26 @@ DeoptimizeReason CodeGenerator::GetDeoptimizationReason(
 }
 
 void CodeGenerator::TranslateStateValueDescriptor(
-    StateValueDescriptor* desc, Translation* translation,
-    InstructionOperandIterator* iter) {
+    StateValueDescriptor* desc, StateValueList* nested,
+    Translation* translation, InstructionOperandIterator* iter) {
   if (desc->IsNested()) {
-    translation->BeginCapturedObject(static_cast<int>(desc->size()));
-    for (size_t index = 0; index < desc->fields().size(); index++) {
-      TranslateStateValueDescriptor(&desc->fields()[index], translation, iter);
+    translation->BeginCapturedObject(static_cast<int>(nested->size()));
+    for (auto field : *nested) {
+      TranslateStateValueDescriptor(field.desc, field.nested, translation,
+                                    iter);
     }
   } else if (desc->IsDuplicate()) {
     translation->DuplicateObject(static_cast<int>(desc->id()));
-  } else {
-    DCHECK(desc->IsPlain());
+  } else if (desc->IsPlain()) {
     AddTranslationForOperand(translation, iter->instruction(), iter->Advance(),
                              desc->type());
+  } else {
+    DCHECK(desc->IsOptimizedOut());
+    if (optimized_out_literal_id_ == -1) {
+      optimized_out_literal_id_ =
+          DefineDeoptimizationLiteral(isolate()->factory()->optimized_out());
+    }
+    translation->StoreLiteral(optimized_out_literal_id_);
   }
 }
 
@@ -672,44 +697,39 @@ void CodeGenerator::TranslateStateValueDescriptor(
 void CodeGenerator::TranslateFrameStateDescriptorOperands(
     FrameStateDescriptor* desc, InstructionOperandIterator* iter,
     OutputFrameStateCombine combine, Translation* translation) {
-  for (size_t index = 0; index < desc->GetSize(combine); index++) {
-    switch (combine.kind()) {
-      case OutputFrameStateCombine::kPushOutput: {
-        DCHECK(combine.GetPushCount() <= iter->instruction()->OutputCount());
-        size_t size_without_output =
-            desc->GetSize(OutputFrameStateCombine::Ignore());
-        // If the index is past the existing stack items in values_.
-        if (index >= size_without_output) {
-          // Materialize the result of the call instruction in this slot.
-          AddTranslationForOperand(
-              translation, iter->instruction(),
-              iter->instruction()->OutputAt(index - size_without_output),
-              MachineType::AnyTagged());
-          continue;
-        }
-        break;
+  size_t index = 0;
+  StateValueList* values = desc->GetStateValueDescriptors();
+  for (StateValueList::iterator it = values->begin(); it != values->end();
+       ++it, ++index) {
+    if (combine.kind() == OutputFrameStateCombine::kPokeAt) {
+      // The result of the call should be placed at position
+      // [index_from_top] in the stack (overwriting whatever was
+      // previously there).
+      size_t index_from_top =
+          desc->GetSize(combine) - 1 - combine.GetOffsetToPokeAt();
+      if (index >= index_from_top &&
+          index < index_from_top + iter->instruction()->OutputCount()) {
+        AddTranslationForOperand(
+            translation, iter->instruction(),
+            iter->instruction()->OutputAt(index - index_from_top),
+            MachineType::AnyTagged());
+        iter->Advance();  // We do not use this input, but we need to
+                          // advace, as the input got replaced.
+        continue;
       }
-      case OutputFrameStateCombine::kPokeAt:
-        // The result of the call should be placed at position
-        // [index_from_top] in the stack (overwriting whatever was
-        // previously there).
-        size_t index_from_top =
-            desc->GetSize(combine) - 1 - combine.GetOffsetToPokeAt();
-        if (index >= index_from_top &&
-            index < index_from_top + iter->instruction()->OutputCount()) {
-          AddTranslationForOperand(
-              translation, iter->instruction(),
-              iter->instruction()->OutputAt(index - index_from_top),
-              MachineType::AnyTagged());
-          iter->Advance();  // We do not use this input, but we need to
-                            // advace, as the input got replaced.
-          continue;
-        }
-        break;
     }
-    StateValueDescriptor* value_desc = desc->GetStateValueDescriptor();
-    TranslateStateValueDescriptor(&value_desc->fields()[index], translation,
-                                  iter);
+    TranslateStateValueDescriptor((*it).desc, (*it).nested, translation, iter);
+  }
+  DCHECK_EQ(desc->GetSize(OutputFrameStateCombine::Ignore()), index);
+
+  if (combine.kind() == OutputFrameStateCombine::kPushOutput) {
+    DCHECK(combine.GetPushCount() <= iter->instruction()->OutputCount());
+    for (size_t output = 0; output < combine.GetPushCount(); output++) {
+      // Materialize the result of the call instruction in this slot.
+      AddTranslationForOperand(translation, iter->instruction(),
+                               iter->instruction()->OutputAt(output),
+                               MachineType::AnyTagged());
+    }
   }
 }
 
@@ -858,10 +878,19 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
           constant_object =
               handle(reinterpret_cast<Smi*>(constant.ToInt32()), isolate());
           DCHECK(constant_object->IsSmi());
+        } else if (type.representation() == MachineRepresentation::kBit) {
+          if (constant.ToInt32() == 0) {
+            constant_object = isolate()->factory()->false_value();
+          } else {
+            DCHECK_EQ(1, constant.ToInt32());
+            constant_object = isolate()->factory()->true_value();
+          }
         } else {
+          // TODO(jarin,bmeurer): We currently pass in raw pointers to the
+          // JSFunction::entry here. We should really consider fixing this.
           DCHECK(type == MachineType::Int32() ||
                  type == MachineType::Uint32() ||
-                 type.representation() == MachineRepresentation::kBit ||
+                 type.representation() == MachineRepresentation::kWord32 ||
                  type.representation() == MachineRepresentation::kNone);
           DCHECK(type.representation() != MachineRepresentation::kNone ||
                  constant.ToInt32() == FrameStateDescriptor::kImpossibleValue);
@@ -873,7 +902,10 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
       case Constant::kInt64:
         // When pointers are 8 bytes, we can use int64 constants to represent
         // Smis.
-        DCHECK(type.representation() == MachineRepresentation::kTagged ||
+        // TODO(jarin,bmeurer): We currently pass in raw pointers to the
+        // JSFunction::entry here. We should really consider fixing this.
+        DCHECK(type.representation() == MachineRepresentation::kWord64 ||
+               type.representation() == MachineRepresentation::kTagged ||
                type.representation() == MachineRepresentation::kTaggedSigned);
         DCHECK_EQ(8, kPointerSize);
         constant_object =

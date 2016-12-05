@@ -919,18 +919,20 @@ LInstruction* LChunkBuilder::DoBranch(HBranch* instr) {
   HValue* value = instr->value();
   Representation r = value->representation();
   HType type = value->type();
-  ToBooleanICStub::Types expected = instr->expected_input_types();
-  if (expected.IsEmpty()) expected = ToBooleanICStub::Types::Generic();
+  ToBooleanHints expected = instr->expected_input_types();
+  if (expected == ToBooleanHint::kNone) expected = ToBooleanHint::kAny;
 
   bool easy_case = !r.IsTagged() || type.IsBoolean() || type.IsSmi() ||
       type.IsJSArray() || type.IsHeapNumber() || type.IsString();
-  LOperand* temp = !easy_case && expected.NeedsMap() ? TempRegister() : NULL;
+  LOperand* temp = !easy_case && (expected & ToBooleanHint::kNeedsMap)
+                       ? TempRegister()
+                       : NULL;
   LInstruction* branch =
       temp != NULL ? new (zone()) LBranch(UseRegister(value), temp)
                    : new (zone()) LBranch(UseRegisterAtStart(value), temp);
-  if (!easy_case &&
-      ((!expected.Contains(ToBooleanICStub::SMI) && expected.NeedsMap()) ||
-       !expected.IsGeneric())) {
+  if (!easy_case && ((!(expected & ToBooleanHint::kSmallInteger) &&
+                      (expected & ToBooleanHint::kNeedsMap)) ||
+                     expected != ToBooleanHint::kAny)) {
     branch = AssignEnvironment(branch);
   }
   return branch;
@@ -2418,7 +2420,6 @@ LInstruction* LChunkBuilder::DoEnterInlined(HEnterInlined* instr) {
   inner->BindContext(instr->closure_context());
   inner->set_entry(instr);
   current_block_->UpdateEnvironment(inner);
-  chunk_->AddInlinedFunction(instr->shared());
   return NULL;
 }
 

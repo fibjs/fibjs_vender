@@ -19,12 +19,14 @@ ParseInfo::ParseInfo(Zone* zone)
       extension_(nullptr),
       compile_options_(ScriptCompiler::kNoCompileOptions),
       script_scope_(nullptr),
+      asm_function_scope_(nullptr),
       unicode_cache_(nullptr),
       stack_limit_(0),
       hash_seed_(0),
       compiler_hints_(0),
       start_position_(0),
       end_position_(0),
+      function_literal_id_(FunctionLiteral::kIdTypeInvalid),
       isolate_(nullptr),
       cached_data_(nullptr),
       ast_value_factory_(nullptr),
@@ -43,10 +45,12 @@ ParseInfo::ParseInfo(Zone* zone, Handle<SharedFunctionInfo> shared)
   set_compiler_hints(shared->compiler_hints());
   set_start_position(shared->start_position());
   set_end_position(shared->end_position());
+  function_literal_id_ = shared->function_literal_id();
   set_stack_limit(isolate_->stack_guard()->real_climit());
   set_unicode_cache(isolate_->unicode_cache());
   set_language_mode(shared->language_mode());
   set_shared_info(shared);
+  set_module(shared->kind() == FunctionKind::kModule);
 
   Handle<Script> script(Script::cast(shared->script()));
   set_script(script);
@@ -63,8 +67,7 @@ ParseInfo::ParseInfo(Zone* zone, Handle<SharedFunctionInfo> shared)
 ParseInfo::ParseInfo(Zone* zone, Handle<Script> script) : ParseInfo(zone) {
   isolate_ = script->GetIsolate();
 
-  set_allow_lazy_parsing(String::cast(script->source())->length() >
-                         FLAG_min_preparse_length);
+  set_allow_lazy_parsing();
   set_toplevel();
   set_hash_seed(isolate_->heap()->HashSeed());
   set_stack_limit(isolate_->stack_guard()->real_climit());

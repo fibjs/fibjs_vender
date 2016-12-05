@@ -64,6 +64,7 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   // Code stubs. Add methods here as needed to reduce dependency on
   // code-stubs.h.
   static Callable InstanceOf(Isolate* isolate);
+  static Callable OrdinaryHasInstance(Isolate* isolate);
 
   static Callable StringFromCharCode(Isolate* isolate);
 
@@ -165,6 +166,9 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable InterpreterPushArgsAndConstructArray(Isolate* isolate);
   static Callable InterpreterCEntry(Isolate* isolate, int result_size = 1);
   static Callable InterpreterOnStackReplacement(Isolate* isolate);
+
+  static Callable ArrayPush(Isolate* isolate);
+  static Callable FunctionPrototypeBind(Isolate* isolate);
 };
 
 }  // namespace internal

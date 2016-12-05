@@ -101,32 +101,25 @@ Callable CodeFactory::StoreICInOptimizedCode(Isolate* isolate,
 // static
 Callable CodeFactory::KeyedStoreIC(Isolate* isolate,
                                    LanguageMode language_mode) {
-  if (FLAG_tf_store_ic_stub) {
-    KeyedStoreICTrampolineTFStub stub(isolate, StoreICState(language_mode));
-    return make_callable(stub);
-  }
-  KeyedStoreICTrampolineStub stub(isolate, StoreICState(language_mode));
+  KeyedStoreICTrampolineTFStub stub(isolate, StoreICState(language_mode));
   return make_callable(stub);
 }
 
 // static
 Callable CodeFactory::KeyedStoreICInOptimizedCode(Isolate* isolate,
                                                   LanguageMode language_mode) {
-  if (FLAG_tf_store_ic_stub) {
-    KeyedStoreICTFStub stub(isolate, StoreICState(language_mode));
-    return make_callable(stub);
-  }
-  KeyedStoreICStub stub(isolate, StoreICState(language_mode));
+  KeyedStoreICTFStub stub(isolate, StoreICState(language_mode));
   return make_callable(stub);
 }
 
 // static
 Callable CodeFactory::KeyedStoreIC_Megamorphic(Isolate* isolate,
                                                LanguageMode language_mode) {
-  return Callable(language_mode == STRICT
-                      ? isolate->builtins()->KeyedStoreIC_Megamorphic_Strict()
-                      : isolate->builtins()->KeyedStoreIC_Megamorphic(),
-                  StoreWithVectorDescriptor(isolate));
+  return Callable(
+      language_mode == STRICT
+          ? isolate->builtins()->KeyedStoreIC_Megamorphic_Strict_TF()
+          : isolate->builtins()->KeyedStoreIC_Megamorphic_TF(),
+      StoreWithVectorDescriptor(isolate));
 }
 
 // static
@@ -247,7 +240,10 @@ TFS_BUILTIN(ToLength)
 TFS_BUILTIN(ToObject)
 TFS_BUILTIN(Typeof)
 TFS_BUILTIN(InstanceOf)
+TFS_BUILTIN(OrdinaryHasInstance)
 TFS_BUILTIN(ForInFilter)
+
+#undef TFS_BUILTIN
 
 // static
 Callable CodeFactory::Inc(Isolate* isolate) {
@@ -497,6 +493,17 @@ Callable CodeFactory::InterpreterCEntry(Isolate* isolate, int result_size) {
 Callable CodeFactory::InterpreterOnStackReplacement(Isolate* isolate) {
   return Callable(isolate->builtins()->InterpreterOnStackReplacement(),
                   ContextOnlyDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::ArrayPush(Isolate* isolate) {
+  return Callable(isolate->builtins()->ArrayPush(), BuiltinDescriptor(isolate));
+}
+
+// static
+Callable CodeFactory::FunctionPrototypeBind(Isolate* isolate) {
+  return Callable(isolate->builtins()->FunctionPrototypeBind(),
+                  BuiltinDescriptor(isolate));
 }
 
 }  // namespace internal

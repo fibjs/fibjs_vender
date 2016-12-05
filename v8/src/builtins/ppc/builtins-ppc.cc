@@ -816,13 +816,14 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     __ bind(&done_loop);
   }
 
-  // Dispatch on the kind of generator object.
-  Label old_generator;
-  __ LoadP(r6, FieldMemOperand(r6, SharedFunctionInfo::kFunctionDataOffset));
-  __ CompareObjectType(r6, r6, r6, BYTECODE_ARRAY_TYPE);
-  __ bne(&old_generator);
+  // Underlying function needs to have bytecode available.
+  if (FLAG_debug_code) {
+    __ LoadP(r6, FieldMemOperand(r6, SharedFunctionInfo::kFunctionDataOffset));
+    __ CompareObjectType(r6, r6, r6, BYTECODE_ARRAY_TYPE);
+    __ Assert(eq, kMissingBytecodeArray);
+  }
 
-  // New-style (ignition/turbofan) generator object
+  // Resume (Ignition/TurboFan) generator object.
   {
     // We abuse new.target both to indicate that this is a resume call and to
     // pass in the generator object.  In ordinary calls, new.target is always
@@ -831,57 +832,6 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     __ mr(r4, r7);
     __ LoadP(ip, FieldMemOperand(r4, JSFunction::kCodeEntryOffset));
     __ JumpToJSEntry(ip);
-  }
-
-  // Old-style (full-codegen) generator object
-  __ bind(&old_generator);
-  {
-    // Enter a new JavaScript frame, and initialize its slots as they were when
-    // the generator was suspended.
-    FrameScope scope(masm, StackFrame::MANUAL);
-    __ PushStandardFrame(r7);
-
-    // Restore the operand stack.
-    __ LoadP(r3, FieldMemOperand(r4, JSGeneratorObject::kOperandStackOffset));
-    __ LoadP(r6, FieldMemOperand(r3, FixedArray::kLengthOffset));
-    __ addi(r3, r3,
-            Operand(FixedArray::kHeaderSize - kHeapObjectTag - kPointerSize));
-    {
-      Label loop, done_loop;
-      __ SmiUntag(r6, SetRC);
-      __ beq(&done_loop, cr0);
-      __ mtctr(r6);
-      __ bind(&loop);
-      __ LoadPU(ip, MemOperand(r3, kPointerSize));
-      __ Push(ip);
-      __ bdnz(&loop);
-      __ bind(&done_loop);
-    }
-
-    // Reset operand stack so we don't leak.
-    __ LoadRoot(ip, Heap::kEmptyFixedArrayRootIndex);
-    __ StoreP(ip, FieldMemOperand(r4, JSGeneratorObject::kOperandStackOffset),
-              r0);
-
-    // Resume the generator function at the continuation.
-    __ LoadP(r6, FieldMemOperand(r7, JSFunction::kSharedFunctionInfoOffset));
-    __ LoadP(r6, FieldMemOperand(r6, SharedFunctionInfo::kCodeOffset));
-    __ addi(r6, r6, Operand(Code::kHeaderSize - kHeapObjectTag));
-    {
-      ConstantPoolUnavailableScope constant_pool_unavailable(masm);
-      if (FLAG_enable_embedded_constant_pool) {
-        __ LoadConstantPoolPointerRegisterFromCodeTargetAddress(r6);
-      }
-      __ LoadP(r5, FieldMemOperand(r4, JSGeneratorObject::kContinuationOffset));
-      __ SmiUntag(r5);
-      __ add(r6, r6, r5);
-      __ LoadSmiLiteral(r5,
-                        Smi::FromInt(JSGeneratorObject::kGeneratorExecuting));
-      __ StoreP(r5, FieldMemOperand(r4, JSGeneratorObject::kContinuationOffset),
-                r0);
-      __ mr(r3, r4);  // Continuation expects generator object in r3.
-      __ Jump(r6);
-    }
   }
 
   __ bind(&prepare_step_in_if_stepping);
@@ -1109,6 +1059,12 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     __ Assert(eq, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
   }
 
+  // Reset code age.
+  __ mov(r8, Operand(BytecodeArray::kNoAgeBytecodeAge));
+  __ StoreByte(r8, FieldMemOperand(kInterpreterBytecodeArrayRegister,
+                                   BytecodeArray::kBytecodeAgeOffset),
+               r0);
+
   // Load initial bytecode offset.
   __ mov(kInterpreterBytecodeOffsetRegister,
          Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
@@ -1328,7 +1284,7 @@ void Builtins::Generate_InterpreterPushArgsAndConstructArray(
   }
 }
 
-void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
+static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
   // Set the return address to the correct point in the interpreter entry
   // trampoline.
   Smi* interpreter_entry_return_pc_offset(
@@ -1368,6 +1324,31 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
   __ ShiftLeftImm(ip, r4, Operand(kPointerSizeLog2));
   __ LoadPX(ip, MemOperand(kInterpreterDispatchTableRegister, ip));
   __ Jump(ip);
+}
+
+void Builtins::Generate_InterpreterEnterBytecodeAdvance(MacroAssembler* masm) {
+  // Advance the current bytecode offset stored within the given interpreter
+  // stack frame. This simulates what all bytecode handlers do upon completion
+  // of the underlying operation.
+  __ LoadP(r4, MemOperand(fp, InterpreterFrameConstants::kBytecodeArrayFromFp));
+  __ LoadP(r5,
+           MemOperand(fp, InterpreterFrameConstants::kBytecodeOffsetFromFp));
+  __ LoadP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ Push(kInterpreterAccumulatorRegister, r4, r5);
+    __ CallRuntime(Runtime::kInterpreterAdvanceBytecodeOffset);
+    __ Move(r5, r3);  // Result is the new bytecode offset.
+    __ Pop(kInterpreterAccumulatorRegister);
+  }
+  __ StoreP(r5,
+            MemOperand(fp, InterpreterFrameConstants::kBytecodeOffsetFromFp));
+
+  Generate_InterpreterEnterBytecode(masm);
+}
+
+void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
+  Generate_InterpreterEnterBytecode(masm);
 }
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
@@ -1485,7 +1466,7 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ lbz(r8, FieldMemOperand(entry,
                              SharedFunctionInfo::kMarkedForTierUpByteOffset));
   __ TestBit(r8, SharedFunctionInfo::kMarkedForTierUpBitWithinByte, r0);
-  __ beq(&gotta_call_runtime);
+  __ bne(&gotta_call_runtime, cr0);
   // Is the full code valid?
   __ LoadP(entry, FieldMemOperand(entry, SharedFunctionInfo::kCodeOffset));
   __ lwz(r8, FieldMemOperand(entry, Code::kFlagsOffset));
@@ -1606,14 +1587,9 @@ static void GenerateMakeCodeYoungAgainCommon(MacroAssembler* masm) {
   __ Jump(ip);
 }
 
-#define DEFINE_CODE_AGE_BUILTIN_GENERATOR(C)                  \
-  void Builtins::Generate_Make##C##CodeYoungAgainEvenMarking( \
-      MacroAssembler* masm) {                                 \
-    GenerateMakeCodeYoungAgainCommon(masm);                   \
-  }                                                           \
-  void Builtins::Generate_Make##C##CodeYoungAgainOddMarking(  \
-      MacroAssembler* masm) {                                 \
-    GenerateMakeCodeYoungAgainCommon(masm);                   \
+#define DEFINE_CODE_AGE_BUILTIN_GENERATOR(C)                              \
+  void Builtins::Generate_Make##C##CodeYoungAgain(MacroAssembler* masm) { \
+    GenerateMakeCodeYoungAgainCommon(masm);                               \
   }
 CODE_AGE_LIST(DEFINE_CODE_AGE_BUILTIN_GENERATOR)
 #undef DEFINE_CODE_AGE_BUILTIN_GENERATOR

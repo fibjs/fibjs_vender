@@ -13,6 +13,12 @@
 namespace v8 {
 namespace internal {
 
+typedef compiler::Node Node;
+typedef CodeStubAssembler::Label CLabel;
+typedef CodeStubAssembler::Variable CVariable;
+typedef CodeStubAssembler::ParameterMode ParameterMode;
+typedef compiler::CodeAssemblerState CodeAssemblerState;
+
 // -----------------------------------------------------------------------------
 // ES6 section 21.2 RegExp Objects
 
@@ -170,103 +176,68 @@ BUILTIN(RegExpPrototypeCompile) {
 
 namespace {
 
-compiler::Node* LoadLastIndex(CodeStubAssembler* a, compiler::Node* context,
-                              compiler::Node* has_initialmap,
-                              compiler::Node* regexp) {
-  typedef CodeStubAssembler::Variable Variable;
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
+Node* FastLoadLastIndex(CodeStubAssembler* a, Node* regexp) {
+  // Load the in-object field.
+  static const int field_offset =
+      JSRegExp::kSize + JSRegExp::kLastIndexFieldIndex * kPointerSize;
+  return a->LoadObjectField(regexp, field_offset);
+}
 
-  Variable var_value(a, MachineRepresentation::kTagged);
+Node* SlowLoadLastIndex(CodeStubAssembler* a, Node* context, Node* regexp) {
+  // Load through the GetProperty stub.
+  Node* const name =
+      a->HeapConstant(a->isolate()->factory()->lastIndex_string());
+  Callable getproperty_callable = CodeFactory::GetProperty(a->isolate());
+  return a->CallStub(getproperty_callable, context, regexp, name);
+}
 
-  Label out(a), if_unmodified(a), if_modified(a, Label::kDeferred);
-  a->Branch(has_initialmap, &if_unmodified, &if_modified);
-
-  a->Bind(&if_unmodified);
-  {
-    // Load the in-object field.
-    static const int field_offset =
-        JSRegExp::kSize + JSRegExp::kLastIndexFieldIndex * kPointerSize;
-    var_value.Bind(a->LoadObjectField(regexp, field_offset));
-    a->Goto(&out);
-  }
-
-  a->Bind(&if_modified);
-  {
-    // Load through the GetProperty stub.
-    Node* const name =
-        a->HeapConstant(a->isolate()->factory()->lastIndex_string());
-    Callable getproperty_callable = CodeFactory::GetProperty(a->isolate());
-    var_value.Bind(a->CallStub(getproperty_callable, context, regexp, name));
-    a->Goto(&out);
-  }
-
-  a->Bind(&out);
-  return var_value.value();
+Node* LoadLastIndex(CodeStubAssembler* a, Node* context, Node* regexp,
+                    bool is_fastpath) {
+  return is_fastpath ? FastLoadLastIndex(a, regexp)
+                     : SlowLoadLastIndex(a, context, regexp);
 }
 
 // The fast-path of StoreLastIndex when regexp is guaranteed to be an unmodified
 // JSRegExp instance.
-void FastStoreLastIndex(CodeStubAssembler* a, compiler::Node* context,
-                        compiler::Node* regexp, compiler::Node* value) {
+void FastStoreLastIndex(CodeStubAssembler* a, Node* regexp, Node* value) {
   // Store the in-object field.
   static const int field_offset =
       JSRegExp::kSize + JSRegExp::kLastIndexFieldIndex * kPointerSize;
   a->StoreObjectField(regexp, field_offset, value);
 }
 
-void StoreLastIndex(CodeStubAssembler* a, compiler::Node* context,
-                    compiler::Node* has_initialmap, compiler::Node* regexp,
-                    compiler::Node* value) {
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
-
-  Label out(a), if_unmodified(a), if_modified(a, Label::kDeferred);
-  a->Branch(has_initialmap, &if_unmodified, &if_modified);
-
-  a->Bind(&if_unmodified);
-  {
-    FastStoreLastIndex(a, context, regexp, value);
-    a->Goto(&out);
-  }
-
-  a->Bind(&if_modified);
-  {
-    // Store through runtime.
-    // TODO(ishell): Use SetPropertyStub here once available.
-    Node* const name =
-        a->HeapConstant(a->isolate()->factory()->lastIndex_string());
-    Node* const language_mode = a->SmiConstant(Smi::FromInt(STRICT));
-    a->CallRuntime(Runtime::kSetProperty, context, regexp, name, value,
-                   language_mode);
-    a->Goto(&out);
-  }
-
-  a->Bind(&out);
+void SlowStoreLastIndex(CodeStubAssembler* a, Node* context, Node* regexp,
+                        Node* value) {
+  // Store through runtime.
+  // TODO(ishell): Use SetPropertyStub here once available.
+  Node* const name =
+      a->HeapConstant(a->isolate()->factory()->lastIndex_string());
+  Node* const language_mode = a->SmiConstant(Smi::FromInt(STRICT));
+  a->CallRuntime(Runtime::kSetProperty, context, regexp, name, value,
+                 language_mode);
 }
 
-compiler::Node* ConstructNewResultFromMatchInfo(Isolate* isolate,
-                                                CodeStubAssembler* a,
-                                                compiler::Node* context,
-                                                compiler::Node* match_info,
-                                                compiler::Node* string) {
-  typedef CodeStubAssembler::Variable Variable;
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
+void StoreLastIndex(CodeStubAssembler* a, Node* context, Node* regexp,
+                    Node* value, bool is_fastpath) {
+  if (is_fastpath) {
+    FastStoreLastIndex(a, regexp, value);
+  } else {
+    SlowStoreLastIndex(a, context, regexp, value);
+  }
+}
 
-  Label out(a);
+Node* ConstructNewResultFromMatchInfo(Isolate* isolate, CodeStubAssembler* a,
+                                      Node* context, Node* match_info,
+                                      Node* string) {
+  CLabel out(a);
 
-  CodeStubAssembler::ParameterMode mode = CodeStubAssembler::INTPTR_PARAMETERS;
   Node* const num_indices = a->SmiUntag(a->LoadFixedArrayElement(
-      match_info, a->IntPtrConstant(RegExpMatchInfo::kNumberOfCapturesIndex), 0,
-      mode));
+      match_info, RegExpMatchInfo::kNumberOfCapturesIndex));
   Node* const num_results = a->SmiTag(a->WordShr(num_indices, 1));
-  Node* const start = a->LoadFixedArrayElement(
-      match_info, a->IntPtrConstant(RegExpMatchInfo::kFirstCaptureIndex), 0,
-      mode);
+  Node* const start =
+      a->LoadFixedArrayElement(match_info, RegExpMatchInfo::kFirstCaptureIndex);
   Node* const end = a->LoadFixedArrayElement(
-      match_info, a->IntPtrConstant(RegExpMatchInfo::kFirstCaptureIndex + 1), 0,
-      mode);
+      match_info, RegExpMatchInfo::kFirstCaptureIndex + 1);
 
   // Calculate the substring of the first match before creating the result array
   // to avoid an unnecessary write barrier storing the first result.
@@ -276,8 +247,7 @@ compiler::Node* ConstructNewResultFromMatchInfo(Isolate* isolate,
       a->AllocateRegExpResult(context, num_results, start, string);
   Node* const result_elements = a->LoadElements(result);
 
-  a->StoreFixedArrayElement(result_elements, a->IntPtrConstant(0), first,
-                            SKIP_WRITE_BARRIER);
+  a->StoreFixedArrayElement(result_elements, 0, first, SKIP_WRITE_BARRIER);
 
   a->GotoIf(a->SmiEqual(num_results, a->SmiConstant(Smi::FromInt(1))), &out);
 
@@ -285,15 +255,15 @@ compiler::Node* ConstructNewResultFromMatchInfo(Isolate* isolate,
   Node* const limit = a->IntPtrAdd(
       a->IntPtrConstant(RegExpMatchInfo::kFirstCaptureIndex), num_indices);
 
-  Variable var_from_cursor(a, MachineType::PointerRepresentation());
-  Variable var_to_cursor(a, MachineType::PointerRepresentation());
+  CVariable var_from_cursor(a, MachineType::PointerRepresentation());
+  CVariable var_to_cursor(a, MachineType::PointerRepresentation());
 
   var_from_cursor.Bind(
       a->IntPtrConstant(RegExpMatchInfo::kFirstCaptureIndex + 2));
   var_to_cursor.Bind(a->IntPtrConstant(1));
 
-  Variable* vars[] = {&var_from_cursor, &var_to_cursor};
-  Label loop(a, 2, vars);
+  CVariable* vars[] = {&var_from_cursor, &var_to_cursor};
+  CLabel loop(a, 2, vars);
 
   a->Goto(&loop);
   a->Bind(&loop);
@@ -302,7 +272,7 @@ compiler::Node* ConstructNewResultFromMatchInfo(Isolate* isolate,
     Node* const to_cursor = var_to_cursor.value();
     Node* const start = a->LoadFixedArrayElement(match_info, from_cursor);
 
-    Label next_iter(a);
+    CLabel next_iter(a);
     a->GotoIf(a->SmiEqual(start, a->SmiConstant(Smi::FromInt(-1))), &next_iter);
 
     Node* const from_cursor_plus1 =
@@ -325,39 +295,31 @@ compiler::Node* ConstructNewResultFromMatchInfo(Isolate* isolate,
 
 // ES#sec-regexp.prototype.exec
 // RegExp.prototype.exec ( string )
-compiler::Node* RegExpPrototypeExecInternal(CodeStubAssembler* a,
-                                            compiler::Node* context,
-                                            compiler::Node* maybe_receiver,
-                                            compiler::Node* maybe_string) {
-  typedef CodeStubAssembler::Variable Variable;
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
-
+// Implements the core of RegExp.prototype.exec but without actually
+// constructing the JSRegExpResult. Returns either null (if the RegExp did not
+// match) or a fixed array containing match indices as returned by
+// RegExpExecStub.
+Node* RegExpPrototypeExecBodyWithoutResult(
+    CodeStubAssembler* a, Node* const context, Node* const regexp,
+    Node* const string, CLabel* if_didnotmatch, const bool is_fastpath) {
   Isolate* const isolate = a->isolate();
 
   Node* const null = a->NullConstant();
   Node* const int_zero = a->IntPtrConstant(0);
   Node* const smi_zero = a->SmiConstant(Smi::kZero);
 
-  Variable var_result(a, MachineRepresentation::kTagged);
-  Label out(a);
+  if (!is_fastpath) {
+    a->ThrowIfNotInstanceType(context, regexp, JS_REGEXP_TYPE,
+                              "RegExp.prototype.exec");
+  }
 
-  // Ensure {maybe_receiver} is a JSRegExp.
-  Node* const regexp_map = a->ThrowIfNotInstanceType(
-      context, maybe_receiver, JS_REGEXP_TYPE, "RegExp.prototype.exec");
-  Node* const regexp = maybe_receiver;
+  CSA_ASSERT(a, a->IsStringInstanceType(a->LoadInstanceType(string)));
+  CSA_ASSERT(a, a->HasInstanceType(regexp, JS_REGEXP_TYPE));
 
-  // Check whether the regexp instance is unmodified.
+  CVariable var_result(a, MachineRepresentation::kTagged);
+  CLabel out(a);
+
   Node* const native_context = a->LoadNativeContext(context);
-  Node* const regexp_fun =
-      a->LoadContextElement(native_context, Context::REGEXP_FUNCTION_INDEX);
-  Node* const initial_map =
-      a->LoadObjectField(regexp_fun, JSFunction::kPrototypeOrInitialMapOffset);
-  Node* const has_initialmap = a->WordEqual(regexp_map, initial_map);
-
-  // Convert {maybe_string} to a string.
-  Callable tostring_callable = CodeFactory::ToString(isolate);
-  Node* const string = a->CallStub(tostring_callable, context, maybe_string);
   Node* const string_length = a->LoadStringLength(string);
 
   // Check whether the regexp is global or sticky, which determines whether we
@@ -370,32 +332,47 @@ compiler::Node* RegExpPrototypeExecInternal(CodeStubAssembler* a,
       a->WordNotEqual(is_global_or_sticky, int_zero);
 
   // Grab and possibly update last index.
-  Label run_exec(a);
-  Variable var_lastindex(a, MachineRepresentation::kTagged);
+  CLabel run_exec(a);
+  CVariable var_lastindex(a, MachineRepresentation::kTagged);
   {
-    Label if_doupdate(a), if_dontupdate(a);
+    CLabel if_doupdate(a), if_dontupdate(a);
     a->Branch(should_update_last_index, &if_doupdate, &if_dontupdate);
 
     a->Bind(&if_doupdate);
     {
       Node* const regexp_lastindex =
-          LoadLastIndex(a, context, has_initialmap, regexp);
+          LoadLastIndex(a, context, regexp, is_fastpath);
+      var_lastindex.Bind(regexp_lastindex);
 
-      Callable tolength_callable = CodeFactory::ToLength(isolate);
-      Node* const lastindex =
-          a->CallStub(tolength_callable, context, regexp_lastindex);
-      var_lastindex.Bind(lastindex);
+      // Omit ToLength if lastindex is a non-negative smi.
+      {
+        CLabel call_tolength(a, CLabel::kDeferred), next(a);
+        a->Branch(a->WordIsPositiveSmi(regexp_lastindex), &next,
+                  &call_tolength);
 
-      Label if_isoob(a, Label::kDeferred);
+        a->Bind(&call_tolength);
+        {
+          Callable tolength_callable = CodeFactory::ToLength(isolate);
+          var_lastindex.Bind(
+              a->CallStub(tolength_callable, context, regexp_lastindex));
+          a->Goto(&next);
+        }
+
+        a->Bind(&next);
+      }
+
+      Node* const lastindex = var_lastindex.value();
+
+      CLabel if_isoob(a, CLabel::kDeferred);
       a->GotoUnless(a->TaggedIsSmi(lastindex), &if_isoob);
       a->GotoUnless(a->SmiLessThanOrEqual(lastindex, string_length), &if_isoob);
       a->Goto(&run_exec);
 
       a->Bind(&if_isoob);
       {
-        StoreLastIndex(a, context, has_initialmap, regexp, smi_zero);
+        StoreLastIndex(a, context, regexp, smi_zero, is_fastpath);
         var_result.Bind(null);
-        a->Goto(&out);
+        a->Goto(if_didnotmatch);
       }
     }
 
@@ -407,7 +384,7 @@ compiler::Node* RegExpPrototypeExecInternal(CodeStubAssembler* a,
   }
 
   Node* match_indices;
-  Label successful_match(a);
+  CLabel successful_match(a);
   a->Bind(&run_exec);
   {
     // Get last match info from the context.
@@ -418,77 +395,73 @@ compiler::Node* RegExpPrototypeExecInternal(CodeStubAssembler* a,
     Callable exec_callable = CodeFactory::RegExpExec(isolate);
     match_indices = a->CallStub(exec_callable, context, regexp, string,
                                 var_lastindex.value(), last_match_info);
+    var_result.Bind(match_indices);
 
     // {match_indices} is either null or the RegExpMatchInfo array.
     // Return early if exec failed, possibly updating last index.
     a->GotoUnless(a->WordEqual(match_indices, null), &successful_match);
 
-    Label return_null(a);
-    a->GotoUnless(should_update_last_index, &return_null);
+    a->GotoUnless(should_update_last_index, if_didnotmatch);
 
-    StoreLastIndex(a, context, has_initialmap, regexp, smi_zero);
-    a->Goto(&return_null);
-
-    a->Bind(&return_null);
-    var_result.Bind(null);
-    a->Goto(&out);
+    StoreLastIndex(a, context, regexp, smi_zero, is_fastpath);
+    a->Goto(if_didnotmatch);
   }
 
-  Label construct_result(a);
   a->Bind(&successful_match);
   {
-    a->GotoUnless(should_update_last_index, &construct_result);
+    a->GotoUnless(should_update_last_index, &out);
 
     // Update the new last index from {match_indices}.
     Node* const new_lastindex = a->LoadFixedArrayElement(
-        match_indices,
-        a->IntPtrConstant(RegExpMatchInfo::kFirstCaptureIndex + 1));
+        match_indices, RegExpMatchInfo::kFirstCaptureIndex + 1);
 
-    StoreLastIndex(a, context, has_initialmap, regexp, new_lastindex);
-    a->Goto(&construct_result);
-
-    a->Bind(&construct_result);
-    {
-      Node* result = ConstructNewResultFromMatchInfo(isolate, a, context,
-                                                     match_indices, string);
-      var_result.Bind(result);
-      a->Goto(&out);
-    }
+    StoreLastIndex(a, context, regexp, new_lastindex, is_fastpath);
+    a->Goto(&out);
   }
 
   a->Bind(&out);
   return var_result.value();
 }
 
-}  // namespace
-
 // ES#sec-regexp.prototype.exec
 // RegExp.prototype.exec ( string )
-void Builtins::Generate_RegExpPrototypeExec(CodeStubAssembler* a) {
-  typedef compiler::Node Node;
+Node* RegExpPrototypeExecBody(CodeStubAssembler* a, Node* const context,
+                              Node* const regexp, Node* const string,
+                              const bool is_fastpath) {
+  Isolate* const isolate = a->isolate();
+  Node* const null = a->NullConstant();
 
-  Node* const maybe_receiver = a->Parameter(0);
-  Node* const maybe_string = a->Parameter(1);
-  Node* const context = a->Parameter(4);
+  CVariable var_result(a, MachineRepresentation::kTagged);
 
-  Node* const result =
-      RegExpPrototypeExecInternal(a, context, maybe_receiver, maybe_string);
-  a->Return(result);
+  CLabel if_didnotmatch(a), out(a);
+  Node* const indices_or_null = RegExpPrototypeExecBodyWithoutResult(
+      a, context, regexp, string, &if_didnotmatch, is_fastpath);
+
+  // Successful match.
+  {
+    Node* const match_indices = indices_or_null;
+    Node* const result = ConstructNewResultFromMatchInfo(isolate, a, context,
+                                                         match_indices, string);
+    var_result.Bind(result);
+    a->Goto(&out);
+  }
+
+  a->Bind(&if_didnotmatch);
+  {
+    var_result.Bind(null);
+    a->Goto(&out);
+  }
+
+  a->Bind(&out);
+  return var_result.value();
 }
 
-namespace {
-
-compiler::Node* ThrowIfNotJSReceiver(CodeStubAssembler* a, Isolate* isolate,
-                                     compiler::Node* context,
-                                     compiler::Node* value,
-                                     MessageTemplate::Template msg_template,
-                                     char const* method_name) {
-  typedef compiler::Node Node;
-  typedef CodeStubAssembler::Label Label;
-  typedef CodeStubAssembler::Variable Variable;
-
-  Label out(a), throw_exception(a, Label::kDeferred);
-  Variable var_value_map(a, MachineRepresentation::kTagged);
+Node* ThrowIfNotJSReceiver(CodeStubAssembler* a, Isolate* isolate,
+                           Node* context, Node* value,
+                           MessageTemplate::Template msg_template,
+                           char const* method_name) {
+  CLabel out(a), throw_exception(a, CLabel::kDeferred);
+  CVariable var_value_map(a, MachineRepresentation::kTagged);
 
   a->GotoIf(a->TaggedIsSmi(value), &throw_exception);
 
@@ -520,11 +493,7 @@ compiler::Node* ThrowIfNotJSReceiver(CodeStubAssembler* a, Isolate* isolate,
   return var_value_map.value();
 }
 
-compiler::Node* IsInitialRegExpMap(CodeStubAssembler* a,
-                                   compiler::Node* context,
-                                   compiler::Node* map) {
-  typedef compiler::Node Node;
-
+Node* IsInitialRegExpMap(CodeStubAssembler* a, Node* context, Node* map) {
   Node* const native_context = a->LoadNativeContext(context);
   Node* const regexp_fun =
       a->LoadContextElement(native_context, Context::REGEXP_FUNCTION_INDEX);
@@ -539,12 +508,8 @@ compiler::Node* IsInitialRegExpMap(CodeStubAssembler* a,
 // We use a fairly coarse granularity for this and simply check whether both
 // the regexp itself is unmodified (i.e. its map has not changed) and its
 // prototype is unmodified.
-void BranchIfFastPath(CodeStubAssembler* a, compiler::Node* context,
-                      compiler::Node* map,
-                      CodeStubAssembler::Label* if_isunmodified,
-                      CodeStubAssembler::Label* if_ismodified) {
-  typedef compiler::Node Node;
-
+void BranchIfFastPath(CodeStubAssembler* a, Node* context, Node* map,
+                      CLabel* if_isunmodified, CLabel* if_ismodified) {
   Node* const native_context = a->LoadNativeContext(context);
   Node* const regexp_fun =
       a->LoadContextElement(native_context, Context::REGEXP_FUNCTION_INDEX);
@@ -566,60 +531,103 @@ void BranchIfFastPath(CodeStubAssembler* a, compiler::Node* context,
   a->Branch(proto_has_initialmap, if_isunmodified, if_ismodified);
 }
 
+void BranchIfFastRegExpResult(CodeStubAssembler* a, Node* context, Node* map,
+                              CLabel* if_isunmodified, CLabel* if_ismodified) {
+  Node* const native_context = a->LoadNativeContext(context);
+  Node* const initial_regexp_result_map =
+      a->LoadContextElement(native_context, Context::REGEXP_RESULT_MAP_INDEX);
+
+  a->Branch(a->WordEqual(map, initial_regexp_result_map), if_isunmodified,
+            if_ismodified);
+}
+
 }  // namespace
 
-void Builtins::Generate_RegExpPrototypeFlagsGetter(CodeStubAssembler* a) {
-  typedef CodeStubAssembler::Variable Variable;
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
+// ES#sec-regexp.prototype.exec
+// RegExp.prototype.exec ( string )
+void Builtins::Generate_RegExpPrototypeExec(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
 
-  Node* const receiver = a->Parameter(0);
-  Node* const context = a->Parameter(3);
+  Node* const maybe_receiver = a.Parameter(0);
+  Node* const maybe_string = a.Parameter(1);
+  Node* const context = a.Parameter(4);
 
-  Isolate* isolate = a->isolate();
-  Node* const int_zero = a->IntPtrConstant(0);
-  Node* const int_one = a->IntPtrConstant(1);
+  // Ensure {maybe_receiver} is a JSRegExp.
+  Node* const regexp_map = a.ThrowIfNotInstanceType(
+      context, maybe_receiver, JS_REGEXP_TYPE, "RegExp.prototype.exec");
+  Node* const receiver = maybe_receiver;
 
-  Node* const map = ThrowIfNotJSReceiver(a, isolate, context, receiver,
+  // Convert {maybe_string} to a String.
+  Node* const string = a.ToString(context, maybe_string);
+
+  CLabel if_isfastpath(&a), if_isslowpath(&a);
+  a.Branch(IsInitialRegExpMap(&a, context, regexp_map), &if_isfastpath,
+           &if_isslowpath);
+
+  a.Bind(&if_isfastpath);
+  {
+    Node* const result =
+        RegExpPrototypeExecBody(&a, context, receiver, string, true);
+    a.Return(result);
+  }
+
+  a.Bind(&if_isslowpath);
+  {
+    Node* const result =
+        RegExpPrototypeExecBody(&a, context, receiver, string, false);
+    a.Return(result);
+  }
+}
+
+void Builtins::Generate_RegExpPrototypeFlagsGetter(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
+
+  Node* const receiver = a.Parameter(0);
+  Node* const context = a.Parameter(3);
+
+  Isolate* isolate = a.isolate();
+  Node* const int_zero = a.IntPtrConstant(0);
+  Node* const int_one = a.IntPtrConstant(1);
+
+  Node* const map = ThrowIfNotJSReceiver(&a, isolate, context, receiver,
                                          MessageTemplate::kRegExpNonObject,
                                          "RegExp.prototype.flags");
 
-  Variable var_length(a, MachineType::PointerRepresentation());
-  Variable var_flags(a, MachineType::PointerRepresentation());
+  CVariable var_length(&a, MachineType::PointerRepresentation());
+  CVariable var_flags(&a, MachineType::PointerRepresentation());
 
   // First, count the number of characters we will need and check which flags
   // are set.
 
   var_length.Bind(int_zero);
 
-  Label if_isunmodifiedjsregexp(a),
-      if_isnotunmodifiedjsregexp(a, Label::kDeferred);
-  a->Branch(IsInitialRegExpMap(a, context, map), &if_isunmodifiedjsregexp,
-            &if_isnotunmodifiedjsregexp);
+  CLabel if_isunmodifiedjsregexp(&a),
+      if_isnotunmodifiedjsregexp(&a, CLabel::kDeferred);
+  a.Branch(IsInitialRegExpMap(&a, context, map), &if_isunmodifiedjsregexp,
+           &if_isnotunmodifiedjsregexp);
 
-  Label construct_string(a);
-  a->Bind(&if_isunmodifiedjsregexp);
+  CLabel construct_string(&a);
+  a.Bind(&if_isunmodifiedjsregexp);
   {
     // Refer to JSRegExp's flag property on the fast-path.
-    Node* const flags_smi =
-        a->LoadObjectField(receiver, JSRegExp::kFlagsOffset);
-    Node* const flags_intptr = a->SmiUntag(flags_smi);
+    Node* const flags_smi = a.LoadObjectField(receiver, JSRegExp::kFlagsOffset);
+    Node* const flags_intptr = a.SmiUntag(flags_smi);
     var_flags.Bind(flags_intptr);
 
-    Label label_global(a), label_ignorecase(a), label_multiline(a),
-        label_unicode(a), label_sticky(a);
+    CLabel label_global(&a), label_ignorecase(&a), label_multiline(&a),
+        label_unicode(&a), label_sticky(&a);
 
-#define CASE_FOR_FLAG(FLAG, LABEL, NEXT_LABEL)                        \
-  do {                                                                \
-    a->Bind(&LABEL);                                                  \
-    Node* const mask = a->IntPtrConstant(FLAG);                       \
-    a->GotoIf(a->WordEqual(a->WordAnd(flags_intptr, mask), int_zero), \
-              &NEXT_LABEL);                                           \
-    var_length.Bind(a->IntPtrAdd(var_length.value(), int_one));       \
-    a->Goto(&NEXT_LABEL);                                             \
+#define CASE_FOR_FLAG(FLAG, LABEL, NEXT_LABEL)                     \
+  do {                                                             \
+    a.Bind(&LABEL);                                                \
+    Node* const mask = a.IntPtrConstant(FLAG);                     \
+    a.GotoIf(a.WordEqual(a.WordAnd(flags_intptr, mask), int_zero), \
+             &NEXT_LABEL);                                         \
+    var_length.Bind(a.IntPtrAdd(var_length.value(), int_one));     \
+    a.Goto(&NEXT_LABEL);                                           \
   } while (false)
 
-    a->Goto(&label_global);
+    a.Goto(&label_global);
     CASE_FOR_FLAG(JSRegExp::kGlobal, label_global, label_ignorecase);
     CASE_FOR_FLAG(JSRegExp::kIgnoreCase, label_ignorecase, label_multiline);
     CASE_FOR_FLAG(JSRegExp::kMultiline, label_multiline, label_unicode);
@@ -628,31 +636,31 @@ void Builtins::Generate_RegExpPrototypeFlagsGetter(CodeStubAssembler* a) {
 #undef CASE_FOR_FLAG
   }
 
-  a->Bind(&if_isnotunmodifiedjsregexp);
+  a.Bind(&if_isnotunmodifiedjsregexp);
   {
     // Fall back to GetProperty stub on the slow-path.
     var_flags.Bind(int_zero);
 
-    Callable getproperty_callable = CodeFactory::GetProperty(a->isolate());
-    Label label_global(a), label_ignorecase(a), label_multiline(a),
-        label_unicode(a), label_sticky(a);
+    Callable getproperty_callable = CodeFactory::GetProperty(a.isolate());
+    CLabel label_global(&a), label_ignorecase(&a), label_multiline(&a),
+        label_unicode(&a), label_sticky(&a);
 
-#define CASE_FOR_FLAG(NAME, FLAG, LABEL, NEXT_LABEL)                          \
-  do {                                                                        \
-    a->Bind(&LABEL);                                                          \
-    Node* const name =                                                        \
-        a->HeapConstant(isolate->factory()->NewStringFromAsciiChecked(NAME)); \
-    Node* const flag =                                                        \
-        a->CallStub(getproperty_callable, context, receiver, name);           \
-    Label if_isflagset(a);                                                    \
-    a->BranchIfToBooleanIsTrue(flag, &if_isflagset, &NEXT_LABEL);             \
-    a->Bind(&if_isflagset);                                                   \
-    var_length.Bind(a->IntPtrAdd(var_length.value(), int_one));               \
-    var_flags.Bind(a->WordOr(var_flags.value(), a->IntPtrConstant(FLAG)));    \
-    a->Goto(&NEXT_LABEL);                                                     \
+#define CASE_FOR_FLAG(NAME, FLAG, LABEL, NEXT_LABEL)                         \
+  do {                                                                       \
+    a.Bind(&LABEL);                                                          \
+    Node* const name =                                                       \
+        a.HeapConstant(isolate->factory()->NewStringFromAsciiChecked(NAME)); \
+    Node* const flag =                                                       \
+        a.CallStub(getproperty_callable, context, receiver, name);           \
+    CLabel if_isflagset(&a);                                                 \
+    a.BranchIfToBooleanIsTrue(flag, &if_isflagset, &NEXT_LABEL);             \
+    a.Bind(&if_isflagset);                                                   \
+    var_length.Bind(a.IntPtrAdd(var_length.value(), int_one));               \
+    var_flags.Bind(a.WordOr(var_flags.value(), a.IntPtrConstant(FLAG)));     \
+    a.Goto(&NEXT_LABEL);                                                     \
   } while (false)
 
-    a->Goto(&label_global);
+    a.Goto(&label_global);
     CASE_FOR_FLAG("global", JSRegExp::kGlobal, label_global, label_ignorecase);
     CASE_FOR_FLAG("ignoreCase", JSRegExp::kIgnoreCase, label_ignorecase,
                   label_multiline);
@@ -666,33 +674,33 @@ void Builtins::Generate_RegExpPrototypeFlagsGetter(CodeStubAssembler* a) {
   // Allocate a string of the required length and fill it with the corresponding
   // char for each set flag.
 
-  a->Bind(&construct_string);
+  a.Bind(&construct_string);
   {
     Node* const result =
-        a->AllocateSeqOneByteString(context, var_length.value());
+        a.AllocateSeqOneByteString(context, var_length.value());
     Node* const flags_intptr = var_flags.value();
 
-    Variable var_offset(a, MachineType::PointerRepresentation());
+    CVariable var_offset(&a, MachineType::PointerRepresentation());
     var_offset.Bind(
-        a->IntPtrConstant(SeqOneByteString::kHeaderSize - kHeapObjectTag));
+        a.IntPtrConstant(SeqOneByteString::kHeaderSize - kHeapObjectTag));
 
-    Label label_global(a), label_ignorecase(a), label_multiline(a),
-        label_unicode(a), label_sticky(a), out(a);
+    CLabel label_global(&a), label_ignorecase(&a), label_multiline(&a),
+        label_unicode(&a), label_sticky(&a), out(&a);
 
-#define CASE_FOR_FLAG(FLAG, CHAR, LABEL, NEXT_LABEL)                  \
-  do {                                                                \
-    a->Bind(&LABEL);                                                  \
-    Node* const mask = a->IntPtrConstant(FLAG);                       \
-    a->GotoIf(a->WordEqual(a->WordAnd(flags_intptr, mask), int_zero), \
-              &NEXT_LABEL);                                           \
-    Node* const value = a->IntPtrConstant(CHAR);                      \
-    a->StoreNoWriteBarrier(MachineRepresentation::kWord8, result,     \
-                           var_offset.value(), value);                \
-    var_offset.Bind(a->IntPtrAdd(var_offset.value(), int_one));       \
-    a->Goto(&NEXT_LABEL);                                             \
+#define CASE_FOR_FLAG(FLAG, CHAR, LABEL, NEXT_LABEL)               \
+  do {                                                             \
+    a.Bind(&LABEL);                                                \
+    Node* const mask = a.IntPtrConstant(FLAG);                     \
+    a.GotoIf(a.WordEqual(a.WordAnd(flags_intptr, mask), int_zero), \
+             &NEXT_LABEL);                                         \
+    Node* const value = a.IntPtrConstant(CHAR);                    \
+    a.StoreNoWriteBarrier(MachineRepresentation::kWord8, result,   \
+                          var_offset.value(), value);              \
+    var_offset.Bind(a.IntPtrAdd(var_offset.value(), int_one));     \
+    a.Goto(&NEXT_LABEL);                                           \
   } while (false)
 
-    a->Goto(&label_global);
+    a.Goto(&label_global);
     CASE_FOR_FLAG(JSRegExp::kGlobal, 'g', label_global, label_ignorecase);
     CASE_FOR_FLAG(JSRegExp::kIgnoreCase, 'i', label_ignorecase,
                   label_multiline);
@@ -701,30 +709,66 @@ void Builtins::Generate_RegExpPrototypeFlagsGetter(CodeStubAssembler* a) {
     CASE_FOR_FLAG(JSRegExp::kSticky, 'y', label_sticky, out);
 #undef CASE_FOR_FLAG
 
-    a->Bind(&out);
-    a->Return(result);
+    a.Bind(&out);
+    a.Return(result);
   }
 }
 
 // ES6 21.2.5.10.
-BUILTIN(RegExpPrototypeSourceGetter) {
-  HandleScope scope(isolate);
+void Builtins::Generate_RegExpPrototypeSourceGetter(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
+  Node* const receiver = a.Parameter(0);
+  Node* const context = a.Parameter(3);
 
-  Handle<Object> recv = args.receiver();
-  if (!recv->IsJSRegExp()) {
-    Handle<JSFunction> regexp_fun = isolate->regexp_function();
-    if (*recv == regexp_fun->prototype()) {
-      isolate->CountUsage(v8::Isolate::kRegExpPrototypeSourceGetter);
-      return *isolate->factory()->NewStringFromAsciiChecked("(?:)");
-    }
-    THROW_NEW_ERROR_RETURN_FAILURE(
-        isolate, NewTypeError(MessageTemplate::kRegExpNonRegExp,
-                              isolate->factory()->NewStringFromAsciiChecked(
-                                  "RegExp.prototype.source")));
+  // Check whether we have an unmodified regexp instance.
+  CLabel if_isjsregexp(&a), if_isnotjsregexp(&a, CLabel::kDeferred);
+
+  a.GotoIf(a.TaggedIsSmi(receiver), &if_isnotjsregexp);
+  a.Branch(a.HasInstanceType(receiver, JS_REGEXP_TYPE), &if_isjsregexp,
+           &if_isnotjsregexp);
+
+  a.Bind(&if_isjsregexp);
+  {
+    Node* const source = a.LoadObjectField(receiver, JSRegExp::kSourceOffset);
+    a.Return(source);
   }
 
-  Handle<JSRegExp> regexp = Handle<JSRegExp>::cast(recv);
-  return regexp->source();
+  a.Bind(&if_isnotjsregexp);
+  {
+    Isolate* isolate = a.isolate();
+    Node* const native_context = a.LoadNativeContext(context);
+    Node* const regexp_fun =
+        a.LoadContextElement(native_context, Context::REGEXP_FUNCTION_INDEX);
+    Node* const initial_map =
+        a.LoadObjectField(regexp_fun, JSFunction::kPrototypeOrInitialMapOffset);
+    Node* const initial_prototype = a.LoadMapPrototype(initial_map);
+
+    CLabel if_isprototype(&a), if_isnotprototype(&a);
+    a.Branch(a.WordEqual(receiver, initial_prototype), &if_isprototype,
+             &if_isnotprototype);
+
+    a.Bind(&if_isprototype);
+    {
+      const int counter = v8::Isolate::kRegExpPrototypeSourceGetter;
+      Node* const counter_smi = a.SmiConstant(counter);
+      a.CallRuntime(Runtime::kIncrementUseCounter, context, counter_smi);
+
+      Node* const result =
+          a.HeapConstant(isolate->factory()->NewStringFromAsciiChecked("(?:)"));
+      a.Return(result);
+    }
+
+    a.Bind(&if_isnotprototype);
+    {
+      Node* const message_id =
+          a.SmiConstant(Smi::FromInt(MessageTemplate::kRegExpNonRegExp));
+      Node* const method_name_str =
+          a.HeapConstant(isolate->factory()->NewStringFromAsciiChecked(
+              "RegExp.prototype.source"));
+      a.TailCallRuntime(Runtime::kThrowTypeError, context, message_id,
+                        method_name_str);
+    }
+  }
 }
 
 BUILTIN(RegExpPrototypeToString) {
@@ -765,19 +809,18 @@ BUILTIN(RegExpPrototypeToString) {
 }
 
 // ES6 21.2.4.2.
-BUILTIN(RegExpPrototypeSpeciesGetter) {
-  HandleScope scope(isolate);
-  return *args.receiver();
+void Builtins::Generate_RegExpPrototypeSpeciesGetter(
+    CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
+  Node* const receiver = a.Parameter(0);
+  a.Return(receiver);
 }
 
 namespace {
 
 // Fast-path implementation for flag checks on an unmodified JSRegExp instance.
-compiler::Node* FastFlagGetter(CodeStubAssembler* a,
-                               compiler::Node* const regexp,
-                               JSRegExp::Flag flag) {
-  typedef compiler::Node Node;
-
+Node* FastFlagGetter(CodeStubAssembler* a, Node* const regexp,
+                     JSRegExp::Flag flag) {
   Node* const smi_zero = a->SmiConstant(Smi::kZero);
   Node* const flags = a->LoadObjectField(regexp, JSRegExp::kFlagsOffset);
   Node* const mask = a->SmiConstant(Smi::FromInt(flag));
@@ -786,20 +829,78 @@ compiler::Node* FastFlagGetter(CodeStubAssembler* a,
   return is_flag_set;
 }
 
+// Load through the GetProperty stub.
+compiler::Node* SlowFlagGetter(CodeStubAssembler* a,
+                               compiler::Node* const context,
+                               compiler::Node* const regexp,
+                               JSRegExp::Flag flag) {
+  Factory* factory = a->isolate()->factory();
+
+  CLabel out(a);
+  CVariable var_result(a, MachineType::PointerRepresentation());
+
+  Node* name;
+
+  switch (flag) {
+    case JSRegExp::kGlobal:
+      name = a->HeapConstant(factory->global_string());
+      break;
+    case JSRegExp::kIgnoreCase:
+      name = a->HeapConstant(factory->ignoreCase_string());
+      break;
+    case JSRegExp::kMultiline:
+      name = a->HeapConstant(factory->multiline_string());
+      break;
+    case JSRegExp::kSticky:
+      name = a->HeapConstant(factory->sticky_string());
+      break;
+    case JSRegExp::kUnicode:
+      name = a->HeapConstant(factory->unicode_string());
+      break;
+    default:
+      UNREACHABLE();
+  }
+
+  Callable getproperty_callable = CodeFactory::GetProperty(a->isolate());
+  Node* const value = a->CallStub(getproperty_callable, context, regexp, name);
+
+  CLabel if_true(a), if_false(a);
+  a->BranchIfToBooleanIsTrue(value, &if_true, &if_false);
+
+  a->Bind(&if_true);
+  {
+    var_result.Bind(a->IntPtrConstant(1));
+    a->Goto(&out);
+  }
+
+  a->Bind(&if_false);
+  {
+    var_result.Bind(a->IntPtrConstant(0));
+    a->Goto(&out);
+  }
+
+  a->Bind(&out);
+  return var_result.value();
+}
+
+compiler::Node* FlagGetter(CodeStubAssembler* a, compiler::Node* const context,
+                           compiler::Node* const regexp, JSRegExp::Flag flag,
+                           bool is_fastpath) {
+  return is_fastpath ? FastFlagGetter(a, regexp, flag)
+                     : SlowFlagGetter(a, context, regexp, flag);
+}
+
 void Generate_FlagGetter(CodeStubAssembler* a, JSRegExp::Flag flag,
                          v8::Isolate::UseCounterFeature counter,
                          const char* method_name) {
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
-
   Node* const receiver = a->Parameter(0);
   Node* const context = a->Parameter(3);
 
   Isolate* isolate = a->isolate();
 
   // Check whether we have an unmodified regexp instance.
-  Label if_isunmodifiedjsregexp(a),
-      if_isnotunmodifiedjsregexp(a, Label::kDeferred);
+  CLabel if_isunmodifiedjsregexp(a),
+      if_isnotunmodifiedjsregexp(a, CLabel::kDeferred);
 
   a->GotoIf(a->TaggedIsSmi(receiver), &if_isnotunmodifiedjsregexp);
 
@@ -813,7 +914,7 @@ void Generate_FlagGetter(CodeStubAssembler* a, JSRegExp::Flag flag,
   {
     // Refer to JSRegExp's flag property on the fast-path.
     Node* const is_flag_set = FastFlagGetter(a, receiver, flag);
-    a->Return(a->Select(is_flag_set, a->TrueConstant(), a->FalseConstant()));
+    a->Return(a->SelectBooleanConstant(is_flag_set));
   }
 
   a->Bind(&if_isnotunmodifiedjsregexp);
@@ -825,7 +926,7 @@ void Generate_FlagGetter(CodeStubAssembler* a, JSRegExp::Flag flag,
         regexp_fun, JSFunction::kPrototypeOrInitialMapOffset);
     Node* const initial_prototype = a->LoadMapPrototype(initial_map);
 
-    Label if_isprototype(a), if_isnotprototype(a);
+    CLabel if_isprototype(a), if_isnotprototype(a);
     a->Branch(a->WordEqual(receiver, initial_prototype), &if_isprototype,
               &if_isnotprototype);
 
@@ -852,36 +953,44 @@ void Generate_FlagGetter(CodeStubAssembler* a, JSRegExp::Flag flag,
 }  // namespace
 
 // ES6 21.2.5.4.
-void Builtins::Generate_RegExpPrototypeGlobalGetter(CodeStubAssembler* a) {
-  Generate_FlagGetter(a, JSRegExp::kGlobal,
+void Builtins::Generate_RegExpPrototypeGlobalGetter(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
+  Generate_FlagGetter(&a, JSRegExp::kGlobal,
                       v8::Isolate::kRegExpPrototypeOldFlagGetter,
                       "RegExp.prototype.global");
 }
 
 // ES6 21.2.5.5.
-void Builtins::Generate_RegExpPrototypeIgnoreCaseGetter(CodeStubAssembler* a) {
-  Generate_FlagGetter(a, JSRegExp::kIgnoreCase,
+void Builtins::Generate_RegExpPrototypeIgnoreCaseGetter(
+    CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
+  Generate_FlagGetter(&a, JSRegExp::kIgnoreCase,
                       v8::Isolate::kRegExpPrototypeOldFlagGetter,
                       "RegExp.prototype.ignoreCase");
 }
 
 // ES6 21.2.5.7.
-void Builtins::Generate_RegExpPrototypeMultilineGetter(CodeStubAssembler* a) {
-  Generate_FlagGetter(a, JSRegExp::kMultiline,
+void Builtins::Generate_RegExpPrototypeMultilineGetter(
+    CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
+  Generate_FlagGetter(&a, JSRegExp::kMultiline,
                       v8::Isolate::kRegExpPrototypeOldFlagGetter,
                       "RegExp.prototype.multiline");
 }
 
 // ES6 21.2.5.12.
-void Builtins::Generate_RegExpPrototypeStickyGetter(CodeStubAssembler* a) {
-  Generate_FlagGetter(a, JSRegExp::kSticky,
+void Builtins::Generate_RegExpPrototypeStickyGetter(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
+  Generate_FlagGetter(&a, JSRegExp::kSticky,
                       v8::Isolate::kRegExpPrototypeStickyGetter,
                       "RegExp.prototype.sticky");
 }
 
 // ES6 21.2.5.15.
-void Builtins::Generate_RegExpPrototypeUnicodeGetter(CodeStubAssembler* a) {
-  Generate_FlagGetter(a, JSRegExp::kUnicode,
+void Builtins::Generate_RegExpPrototypeUnicodeGetter(
+    CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
+  Generate_FlagGetter(&a, JSRegExp::kUnicode,
                       v8::Isolate::kRegExpPrototypeUnicodeGetter,
                       "RegExp.prototype.unicode");
 }
@@ -972,30 +1081,27 @@ BUILTIN(RegExpRightContextGetter) {
 namespace {
 
 // ES#sec-regexpexec Runtime Semantics: RegExpExec ( R, S )
-compiler::Node* RegExpExec(CodeStubAssembler* a, compiler::Node* context,
-                           compiler::Node* recv, compiler::Node* string) {
-  typedef CodeStubAssembler::Variable Variable;
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
-
+Node* RegExpExec(CodeStubAssembler* a, Node* context, Node* recv,
+                 Node* string) {
   Isolate* isolate = a->isolate();
 
   Node* const null = a->NullConstant();
 
-  Variable var_result(a, MachineRepresentation::kTagged);
-  Label out(a), call_builtin_exec(a), slow_path(a, Label::kDeferred);
+  CVariable var_result(a, MachineRepresentation::kTagged);
+  CLabel out(a), if_isfastpath(a), if_isslowpath(a);
 
   Node* const map = a->LoadMap(recv);
-  BranchIfFastPath(a, context, map, &call_builtin_exec, &slow_path);
+  BranchIfFastPath(a, context, map, &if_isfastpath, &if_isslowpath);
 
-  a->Bind(&call_builtin_exec);
+  a->Bind(&if_isfastpath);
   {
-    Node* const result = RegExpPrototypeExecInternal(a, context, recv, string);
+    Node* const result =
+        RegExpPrototypeExecBody(a, context, recv, string, true);
     var_result.Bind(result);
     a->Goto(&out);
   }
 
-  a->Bind(&slow_path);
+  a->Bind(&if_isslowpath);
   {
     // Take the slow path of fetching the exec property, calling it, and
     // verifying its return value.
@@ -1006,7 +1112,7 @@ compiler::Node* RegExpExec(CodeStubAssembler* a, compiler::Node* context,
     Node* const exec = a->CallStub(getproperty_callable, context, recv, name);
 
     // Is {exec} callable?
-    Label if_iscallable(a), if_isnotcallable(a);
+    CLabel if_iscallable(a), if_isnotcallable(a);
 
     a->GotoIf(a->TaggedIsSmi(exec), &if_isnotcallable);
 
@@ -1032,7 +1138,11 @@ compiler::Node* RegExpExec(CodeStubAssembler* a, compiler::Node* context,
     {
       a->ThrowIfNotInstanceType(context, recv, JS_REGEXP_TYPE,
                                 "RegExp.prototype.exec");
-      a->Goto(&call_builtin_exec);
+
+      Node* const result =
+          RegExpPrototypeExecBody(a, context, recv, string, false);
+      var_result.Bind(result);
+      a->Goto(&out);
     }
   }
 
@@ -1044,512 +1154,852 @@ compiler::Node* RegExpExec(CodeStubAssembler* a, compiler::Node* context,
 
 // ES#sec-regexp.prototype.test
 // RegExp.prototype.test ( S )
-void Builtins::Generate_RegExpPrototypeTest(CodeStubAssembler* a) {
-  typedef compiler::Node Node;
+void Builtins::Generate_RegExpPrototypeTest(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
 
-  Isolate* const isolate = a->isolate();
+  Isolate* const isolate = a.isolate();
 
-  Node* const maybe_receiver = a->Parameter(0);
-  Node* const maybe_string = a->Parameter(1);
-  Node* const context = a->Parameter(4);
+  Node* const maybe_receiver = a.Parameter(0);
+  Node* const maybe_string = a.Parameter(1);
+  Node* const context = a.Parameter(4);
 
   // Ensure {maybe_receiver} is a JSReceiver.
-  ThrowIfNotJSReceiver(a, isolate, context, maybe_receiver,
-                       MessageTemplate::kIncompatibleMethodReceiver,
-                       "RegExp.prototype.test");
+  Node* const map = ThrowIfNotJSReceiver(
+      &a, isolate, context, maybe_receiver,
+      MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.test");
   Node* const receiver = maybe_receiver;
 
   // Convert {maybe_string} to a String.
-  Node* const string = a->ToString(context, maybe_string);
+  Node* const string = a.ToString(context, maybe_string);
 
-  // Call exec.
-  Node* const match_indices = RegExpExec(a, context, receiver, string);
+  CLabel fast_path(&a), slow_path(&a);
+  BranchIfFastPath(&a, context, map, &fast_path, &slow_path);
 
-  // Return true iff exec matched successfully.
-  Node* const result = a->Select(a->WordEqual(match_indices, a->NullConstant()),
-                                 a->FalseConstant(), a->TrueConstant());
-  a->Return(result);
-}
+  a.Bind(&fast_path);
+  {
+    CLabel if_didnotmatch(&a);
+    RegExpPrototypeExecBodyWithoutResult(&a, context, receiver, string,
+                                         &if_didnotmatch, true);
+    a.Return(a.TrueConstant());
 
-// ES#sec-regexp.prototype-@@match
-// RegExp.prototype [ @@match ] ( string )
-BUILTIN(RegExpPrototypeMatch) {
-  HandleScope scope(isolate);
-  CHECK_RECEIVER(JSReceiver, recv, "RegExp.prototype.@@match");
-
-  Handle<Object> string_obj = args.atOrUndefined(isolate, 1);
-
-  Handle<String> string;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, string,
-                                     Object::ToString(isolate, string_obj));
-
-  Handle<Object> global_obj;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, global_obj,
-      JSReceiver::GetProperty(recv, isolate->factory()->global_string()));
-  const bool global = global_obj->BooleanValue();
-
-  if (!global) {
-    RETURN_RESULT_OR_FAILURE(
-        isolate,
-        RegExpUtils::RegExpExec(isolate, recv, string,
-                                isolate->factory()->undefined_value()));
+    a.Bind(&if_didnotmatch);
+    a.Return(a.FalseConstant());
   }
 
-  Handle<Object> unicode_obj;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, unicode_obj,
-      JSReceiver::GetProperty(recv, isolate->factory()->unicode_string()));
-  const bool unicode = unicode_obj->BooleanValue();
+  a.Bind(&slow_path);
+  {
+    // Call exec.
+    Node* const match_indices = RegExpExec(&a, context, receiver, string);
 
-  RETURN_FAILURE_ON_EXCEPTION(isolate,
-                              RegExpUtils::SetLastIndex(isolate, recv, 0));
-
-  static const int kInitialArraySize = 8;
-  Handle<FixedArray> elems =
-      isolate->factory()->NewFixedArrayWithHoles(kInitialArraySize);
-
-  int n = 0;
-  for (;; n++) {
-    Handle<Object> result;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, result,
-        RegExpUtils::RegExpExec(isolate, recv, string,
-                                isolate->factory()->undefined_value()));
-
-    if (result->IsNull(isolate)) {
-      if (n == 0) return isolate->heap()->null_value();
-      break;
-    }
-
-    Handle<Object> match_obj;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, match_obj,
-                                       Object::GetElement(isolate, result, 0));
-
-    Handle<String> match;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, match,
-                                       Object::ToString(isolate, match_obj));
-
-    elems = FixedArray::SetAndGrow(elems, n, match);
-
-    if (match->length() == 0) {
-      RETURN_FAILURE_ON_EXCEPTION(isolate, RegExpUtils::SetAdvancedStringIndex(
-                                               isolate, recv, string, unicode));
-    }
+    // Return true iff exec matched successfully.
+    Node* const result = a.SelectBooleanConstant(
+        a.WordNotEqual(match_indices, a.NullConstant()));
+    a.Return(result);
   }
-
-  elems->Shrink(n);
-  return *isolate->factory()->NewJSArrayWithElements(elems);
-}
-
-// ES#sec-regexp.prototype-@@search
-// RegExp.prototype [ @@search ] ( string )
-BUILTIN(RegExpPrototypeSearch) {
-  HandleScope scope(isolate);
-  CHECK_RECEIVER(JSReceiver, recv, "RegExp.prototype.@@search");
-
-  Handle<Object> string_obj = args.atOrUndefined(isolate, 1);
-
-  Handle<String> string;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, string,
-                                     Object::ToString(isolate, string_obj));
-
-  Handle<Object> previous_last_index_obj;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, previous_last_index_obj,
-                                     RegExpUtils::GetLastIndex(isolate, recv));
-
-  if (!previous_last_index_obj->SameValue(Smi::kZero)) {
-    RETURN_FAILURE_ON_EXCEPTION(isolate,
-                                RegExpUtils::SetLastIndex(isolate, recv, 0));
-  }
-
-  Handle<Object> result;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result,
-      RegExpUtils::RegExpExec(isolate, recv, string,
-                              isolate->factory()->undefined_value()));
-
-  Handle<Object> current_last_index_obj;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, current_last_index_obj,
-                                     RegExpUtils::GetLastIndex(isolate, recv));
-
-  const bool is_last_index_unchanged =
-      current_last_index_obj->SameValue(*previous_last_index_obj);
-  if (!is_last_index_unchanged) {
-    if (previous_last_index_obj->IsSmi()) {
-      RETURN_FAILURE_ON_EXCEPTION(
-          isolate,
-          RegExpUtils::SetLastIndex(
-              isolate, recv, Smi::cast(*previous_last_index_obj)->value()));
-    } else {
-      RETURN_FAILURE_ON_EXCEPTION(
-          isolate,
-          Object::SetProperty(recv, isolate->factory()->lastIndex_string(),
-                              previous_last_index_obj, STRICT));
-    }
-  }
-
-  if (result->IsNull(isolate)) return Smi::FromInt(-1);
-
-  RETURN_RESULT_OR_FAILURE(
-      isolate, Object::GetProperty(result, isolate->factory()->index_string()));
 }
 
 namespace {
 
-MUST_USE_RESULT MaybeHandle<Object> ToUint32(Isolate* isolate,
-                                             Handle<Object> object,
-                                             uint32_t* out) {
-  if (object->IsUndefined(isolate)) {
-    *out = kMaxUInt32;
-    return object;
+Node* AdvanceStringIndex(CodeStubAssembler* a, Node* const string,
+                         Node* const index, Node* const is_unicode) {
+  CVariable var_result(a, MachineRepresentation::kTagged);
+
+  // Default to last_index + 1.
+  Node* const index_plus_one = a->SmiAdd(index, a->SmiConstant(1));
+  var_result.Bind(index_plus_one);
+
+  CLabel if_isunicode(a), out(a);
+  a->Branch(is_unicode, &if_isunicode, &out);
+
+  a->Bind(&if_isunicode);
+  {
+    Node* const string_length = a->LoadStringLength(string);
+    a->GotoUnless(a->SmiLessThan(index_plus_one, string_length), &out);
+
+    Node* const lead = a->StringCharCodeAt(string, index);
+    a->GotoUnless(a->Word32Equal(a->Word32And(lead, a->Int32Constant(0xFC00)),
+                                 a->Int32Constant(0xD800)),
+                  &out);
+
+    Node* const trail = a->StringCharCodeAt(string, index_plus_one);
+    a->GotoUnless(a->Word32Equal(a->Word32And(trail, a->Int32Constant(0xFC00)),
+                                 a->Int32Constant(0xDC00)),
+                  &out);
+
+    // At a surrogate pair, return index + 2.
+    Node* const index_plus_two = a->SmiAdd(index, a->SmiConstant(2));
+    var_result.Bind(index_plus_two);
+
+    a->Goto(&out);
   }
 
-  Handle<Object> number;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, number, Object::ToNumber(object), Object);
-  *out = NumberToUint32(*number);
-  return object;
+  a->Bind(&out);
+  return var_result.value();
 }
 
-bool AtSurrogatePair(Isolate* isolate, Handle<String> string, int index) {
-  if (index + 1 >= string->length()) return false;
-  const uint16_t first = string->Get(index);
-  if (first < 0xD800 || first > 0xDBFF) return false;
-  const uint16_t second = string->Get(index + 1);
-  return (second >= 0xDC00 && second <= 0xDFFF);
-}
-
-Handle<JSArray> NewJSArrayWithElements(Isolate* isolate,
-                                       Handle<FixedArray> elems,
-                                       int num_elems) {
-  elems->Shrink(num_elems);
-  return isolate->factory()->NewJSArrayWithElements(elems);
-}
-
-MaybeHandle<JSArray> RegExpSplit(Isolate* isolate, Handle<JSRegExp> regexp,
-                                 Handle<String> string,
-                                 Handle<Object> limit_obj) {
-  Factory* factory = isolate->factory();
-
-  uint32_t limit;
-  RETURN_ON_EXCEPTION(isolate, ToUint32(isolate, limit_obj, &limit), JSArray);
-
-  const int length = string->length();
-
-  if (limit == 0) return factory->NewJSArray(0);
-
-  Handle<RegExpMatchInfo> last_match_info = isolate->regexp_last_match_info();
-
-  if (length == 0) {
-    Handle<Object> match_indices;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, match_indices,
-        RegExpImpl::Exec(regexp, string, 0, last_match_info), JSArray);
-
-    if (!match_indices->IsNull(isolate)) return factory->NewJSArray(0);
-
-    Handle<FixedArray> elems = factory->NewUninitializedFixedArray(1);
-    elems->set(0, *string);
-    return factory->NewJSArrayWithElements(elems);
+// Utility class implementing a growable fixed array through CSA.
+class GrowableFixedArray {
+ public:
+  explicit GrowableFixedArray(CodeStubAssembler* a)
+      : assembler_(a),
+        var_array_(a, MachineRepresentation::kTagged),
+        var_length_(a, MachineType::PointerRepresentation()),
+        var_capacity_(a, MachineType::PointerRepresentation()) {
+    Initialize();
   }
 
-  int current_index = 0;
-  int start_index = 0;
-  int start_match = 0;
+  Node* length() const { return var_length_.value(); }
 
-  static const int kInitialArraySize = 8;
-  Handle<FixedArray> elems = factory->NewFixedArrayWithHoles(kInitialArraySize);
-  int num_elems = 0;
+  CVariable* var_array() { return &var_array_; }
+  CVariable* var_length() { return &var_length_; }
+  CVariable* var_capacity() { return &var_capacity_; }
 
-  while (true) {
-    if (start_index == length) {
-      Handle<String> substr =
-          factory->NewSubString(string, current_index, length);
-      elems = FixedArray::SetAndGrow(elems, num_elems++, substr);
-      break;
-    }
+  void Push(Node* const value) {
+    CodeStubAssembler* a = assembler_;
 
-    Handle<Object> match_indices_obj;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, match_indices_obj,
-        RegExpImpl::Exec(regexp, string, start_index,
-                         isolate->regexp_last_match_info()),
-        JSArray);
+    const WriteBarrierMode barrier_mode = UPDATE_WRITE_BARRIER;
+    const ParameterMode mode = CodeStubAssembler::INTPTR_PARAMETERS;
 
-    if (match_indices_obj->IsNull(isolate)) {
-      Handle<String> substr =
-          factory->NewSubString(string, current_index, length);
-      elems = FixedArray::SetAndGrow(elems, num_elems++, substr);
-      break;
-    }
+    Node* const length = var_length_.value();
+    Node* const capacity = var_capacity_.value();
 
-    auto match_indices = Handle<RegExpMatchInfo>::cast(match_indices_obj);
+    CLabel grow(a), store(a);
+    a->Branch(a->IntPtrEqual(capacity, length), &grow, &store);
 
-    start_match = match_indices->Capture(0);
-
-    if (start_match == length) {
-      Handle<String> substr =
-          factory->NewSubString(string, current_index, length);
-      elems = FixedArray::SetAndGrow(elems, num_elems++, substr);
-      break;
-    }
-
-    const int end_index = match_indices->Capture(1);
-
-    if (start_index == end_index && end_index == current_index) {
-      const bool unicode = (regexp->GetFlags() & JSRegExp::kUnicode) != 0;
-      if (unicode && AtSurrogatePair(isolate, string, start_index)) {
-        start_index += 2;
-      } else {
-        start_index += 1;
-      }
-      continue;
-    }
-
+    a->Bind(&grow);
     {
-      Handle<String> substr =
-          factory->NewSubString(string, current_index, start_match);
-      elems = FixedArray::SetAndGrow(elems, num_elems++, substr);
+      Node* const new_capacity = NewCapacity(a, capacity);
+      Node* const new_array = GrowFixedArray(capacity, new_capacity, mode);
+
+      var_capacity_.Bind(new_capacity);
+      var_array_.Bind(new_array);
+      a->Goto(&store);
     }
 
-    if (num_elems == limit) break;
+    a->Bind(&store);
+    {
+      Node* const array = var_array_.value();
+      a->StoreFixedArrayElement(array, length, value, barrier_mode, 0, mode);
 
-    for (int i = 2; i < match_indices->NumberOfCaptureRegisters(); i += 2) {
-      const int start = match_indices->Capture(i);
-      const int end = match_indices->Capture(i + 1);
-
-      if (end != -1) {
-        Handle<String> substr = factory->NewSubString(string, start, end);
-        elems = FixedArray::SetAndGrow(elems, num_elems++, substr);
-      } else {
-        elems = FixedArray::SetAndGrow(elems, num_elems++,
-                                       factory->undefined_value());
-      }
-
-      if (num_elems == limit) {
-        return NewJSArrayWithElements(isolate, elems, num_elems);
-      }
+      Node* const new_length = a->IntPtrAdd(length, a->IntPtrConstant(1));
+      var_length_.Bind(new_length);
     }
-
-    start_index = current_index = end_index;
   }
 
-  return NewJSArrayWithElements(isolate, elems, num_elems);
+  Node* ToJSArray(Node* const context) {
+    CodeStubAssembler* a = assembler_;
+
+    const ElementsKind kind = FAST_ELEMENTS;
+
+    Node* const native_context = a->LoadNativeContext(context);
+    Node* const array_map = a->LoadJSArrayElementsMap(kind, native_context);
+
+    Node* const result_length = a->SmiTag(length());
+    Node* const result = a->AllocateUninitializedJSArrayWithoutElements(
+        kind, array_map, result_length, nullptr);
+
+    // Note: We do not currently shrink the fixed array.
+
+    a->StoreObjectField(result, JSObject::kElementsOffset, var_array_.value());
+
+    return result;
+  }
+
+ private:
+  void Initialize() {
+    CodeStubAssembler* a = assembler_;
+
+    const ElementsKind kind = FAST_ELEMENTS;
+    const ParameterMode mode = CodeStubAssembler::INTPTR_PARAMETERS;
+
+    static const int kInitialArraySize = 8;
+    Node* const capacity = a->IntPtrConstant(kInitialArraySize);
+    Node* const array = a->AllocateFixedArray(kind, capacity, mode);
+
+    a->FillFixedArrayWithValue(kind, array, a->IntPtrConstant(0), capacity,
+                               Heap::kTheHoleValueRootIndex, mode);
+
+    var_array_.Bind(array);
+    var_capacity_.Bind(capacity);
+    var_length_.Bind(a->IntPtrConstant(0));
+  }
+
+  Node* NewCapacity(CodeStubAssembler* a, Node* const current_capacity) {
+    CSA_ASSERT(a, a->IntPtrGreaterThan(current_capacity, a->IntPtrConstant(0)));
+
+    // Growth rate is analog to JSObject::NewElementsCapacity:
+    // new_capacity = (current_capacity + (current_capacity >> 1)) + 16.
+
+    Node* const new_capacity = a->IntPtrAdd(
+        a->IntPtrAdd(current_capacity, a->WordShr(current_capacity, 1)),
+        a->IntPtrConstant(16));
+
+    return new_capacity;
+  }
+
+  Node* GrowFixedArray(Node* const current_capacity, Node* const new_capacity,
+                       ParameterMode mode) {
+    DCHECK(mode == CodeStubAssembler::INTPTR_PARAMETERS);
+
+    CodeStubAssembler* a = assembler_;
+
+    CSA_ASSERT(a, a->IntPtrGreaterThan(current_capacity, a->IntPtrConstant(0)));
+    CSA_ASSERT(a, a->IntPtrGreaterThan(new_capacity, current_capacity));
+
+    const ElementsKind kind = FAST_ELEMENTS;
+    const WriteBarrierMode barrier_mode = UPDATE_WRITE_BARRIER;
+
+    Node* const from_array = var_array_.value();
+    Node* const to_array = a->AllocateFixedArray(kind, new_capacity, mode);
+    a->CopyFixedArrayElements(kind, from_array, kind, to_array,
+                              current_capacity, new_capacity, barrier_mode,
+                              mode);
+
+    return to_array;
+  }
+
+ private:
+  CodeStubAssembler* const assembler_;
+  CVariable var_array_;
+  CVariable var_length_;
+  CVariable var_capacity_;
+};
+
+void RegExpPrototypeMatchBody(CodeStubAssembler* a, Node* const receiver,
+                              Node* const string, Node* const context,
+                              const bool is_fastpath) {
+  Isolate* const isolate = a->isolate();
+
+  Node* const null = a->NullConstant();
+  Node* const int_zero = a->IntPtrConstant(0);
+  Node* const smi_zero = a->SmiConstant(Smi::kZero);
+
+  Node* const regexp = receiver;
+  Node* const is_global =
+      FlagGetter(a, context, regexp, JSRegExp::kGlobal, is_fastpath);
+
+  CLabel if_isglobal(a), if_isnotglobal(a);
+  a->Branch(is_global, &if_isglobal, &if_isnotglobal);
+
+  a->Bind(&if_isnotglobal);
+  {
+    Node* const result =
+        is_fastpath ? RegExpPrototypeExecBody(a, context, regexp, string, true)
+                    : RegExpExec(a, context, regexp, string);
+    a->Return(result);
+  }
+
+  a->Bind(&if_isglobal);
+  {
+    Node* const is_unicode =
+        FlagGetter(a, context, regexp, JSRegExp::kUnicode, is_fastpath);
+
+    StoreLastIndex(a, context, regexp, smi_zero, is_fastpath);
+
+    // Allocate an array to store the resulting match strings.
+
+    GrowableFixedArray array(a);
+
+    // Loop preparations. Within the loop, collect results from RegExpExec
+    // and store match strings in the array.
+
+    CVariable* vars[] = {array.var_array(), array.var_length(),
+                         array.var_capacity()};
+    CLabel loop(a, 3, vars), out(a);
+    a->Goto(&loop);
+
+    a->Bind(&loop);
+    {
+      CVariable var_match(a, MachineRepresentation::kTagged);
+
+      CLabel if_didmatch(a), if_didnotmatch(a);
+      if (is_fastpath) {
+        // On the fast path, grab the matching string from the raw match index
+        // array.
+        Node* const match_indices = RegExpPrototypeExecBodyWithoutResult(
+            a, context, regexp, string, &if_didnotmatch, true);
+
+        Node* const match_from = a->LoadFixedArrayElement(
+            match_indices, RegExpMatchInfo::kFirstCaptureIndex);
+        Node* const match_to = a->LoadFixedArrayElement(
+            match_indices, RegExpMatchInfo::kFirstCaptureIndex + 1);
+
+        Node* match = a->SubString(context, string, match_from, match_to);
+        var_match.Bind(match);
+
+        a->Goto(&if_didmatch);
+      } else {
+        DCHECK(!is_fastpath);
+        Node* const result = RegExpExec(a, context, regexp, string);
+
+        CLabel load_match(a);
+        a->Branch(a->WordEqual(result, null), &if_didnotmatch, &load_match);
+
+        a->Bind(&load_match);
+        {
+          CLabel fast_result(a), slow_result(a);
+          BranchIfFastRegExpResult(a, context, a->LoadMap(result), &fast_result,
+                                   &slow_result);
+
+          a->Bind(&fast_result);
+          {
+            Node* const result_fixed_array = a->LoadElements(result);
+            Node* const match = a->LoadFixedArrayElement(result_fixed_array, 0);
+
+            // The match is guaranteed to be a string on the fast path.
+            CSA_ASSERT(a, a->IsStringInstanceType(a->LoadInstanceType(match)));
+
+            var_match.Bind(match);
+            a->Goto(&if_didmatch);
+          }
+
+          a->Bind(&slow_result);
+          {
+            // TODO(ishell): Use GetElement stub once it's available.
+            Node* const name = smi_zero;
+            Callable getproperty_callable = CodeFactory::GetProperty(isolate);
+            Node* const match =
+                a->CallStub(getproperty_callable, context, result, name);
+
+            var_match.Bind(a->ToString(context, match));
+            a->Goto(&if_didmatch);
+          }
+        }
+      }
+
+      a->Bind(&if_didnotmatch);
+      {
+        // Return null if there were no matches, otherwise just exit the loop.
+        a->GotoUnless(a->IntPtrEqual(array.length(), int_zero), &out);
+        a->Return(null);
+      }
+
+      a->Bind(&if_didmatch);
+      {
+        Node* match = var_match.value();
+
+        // Store the match, growing the fixed array if needed.
+
+        array.Push(match);
+
+        // Advance last index if the match is the empty string.
+
+        Node* const match_length = a->LoadStringLength(match);
+        a->GotoUnless(a->SmiEqual(match_length, smi_zero), &loop);
+
+        Node* last_index = LoadLastIndex(a, context, regexp, is_fastpath);
+
+        Callable tolength_callable = CodeFactory::ToLength(isolate);
+        last_index = a->CallStub(tolength_callable, context, last_index);
+
+        Node* const new_last_index =
+            AdvanceStringIndex(a, string, last_index, is_unicode);
+
+        StoreLastIndex(a, context, regexp, new_last_index, is_fastpath);
+
+        a->Goto(&loop);
+      }
+    }
+
+    a->Bind(&out);
+    {
+      // Wrap the match in a JSArray.
+
+      Node* const result = array.ToJSArray(context);
+      a->Return(result);
+    }
+  }
 }
 
-// ES##sec-speciesconstructor
-// SpeciesConstructor ( O, defaultConstructor )
-MUST_USE_RESULT MaybeHandle<Object> SpeciesConstructor(
-    Isolate* isolate, Handle<JSReceiver> recv,
-    Handle<JSFunction> default_ctor) {
-  Handle<Object> ctor_obj;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, ctor_obj,
-      JSObject::GetProperty(recv, isolate->factory()->constructor_string()),
-      Object);
+}  // namespace
 
-  if (ctor_obj->IsUndefined(isolate)) return default_ctor;
+// ES#sec-regexp.prototype-@@match
+// RegExp.prototype [ @@match ] ( string )
+void Builtins::Generate_RegExpPrototypeMatch(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
 
-  if (!ctor_obj->IsJSReceiver()) {
-    THROW_NEW_ERROR(isolate,
-                    NewTypeError(MessageTemplate::kConstructorNotReceiver),
-                    Object);
+  Node* const maybe_receiver = a.Parameter(0);
+  Node* const maybe_string = a.Parameter(1);
+  Node* const context = a.Parameter(4);
+
+  // Ensure {maybe_receiver} is a JSReceiver.
+  Node* const map = ThrowIfNotJSReceiver(
+      &a, a.isolate(), context, maybe_receiver,
+      MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.@@match");
+  Node* const receiver = maybe_receiver;
+
+  // Convert {maybe_string} to a String.
+  Node* const string = a.ToString(context, maybe_string);
+
+  CLabel fast_path(&a), slow_path(&a);
+  BranchIfFastPath(&a, context, map, &fast_path, &slow_path);
+
+  a.Bind(&fast_path);
+  RegExpPrototypeMatchBody(&a, receiver, string, context, true);
+
+  a.Bind(&slow_path);
+  RegExpPrototypeMatchBody(&a, receiver, string, context, false);
+}
+
+namespace {
+
+void RegExpPrototypeSearchBodyFast(CodeStubAssembler* a, Node* const receiver,
+                                   Node* const string, Node* const context) {
+  // Grab the initial value of last index.
+  Node* const previous_last_index = FastLoadLastIndex(a, receiver);
+
+  // Ensure last index is 0.
+  FastStoreLastIndex(a, receiver, a->SmiConstant(Smi::kZero));
+
+  // Call exec.
+  CLabel if_didnotmatch(a);
+  Node* const match_indices = RegExpPrototypeExecBodyWithoutResult(
+      a, context, receiver, string, &if_didnotmatch, true);
+
+  // Successful match.
+  {
+    // Reset last index.
+    FastStoreLastIndex(a, receiver, previous_last_index);
+
+    // Return the index of the match.
+    Node* const index = a->LoadFixedArrayElement(
+        match_indices, RegExpMatchInfo::kFirstCaptureIndex);
+    a->Return(index);
   }
 
-  Handle<JSReceiver> ctor = Handle<JSReceiver>::cast(ctor_obj);
+  a->Bind(&if_didnotmatch);
+  {
+    // Reset last index and return -1.
+    FastStoreLastIndex(a, receiver, previous_last_index);
+    a->Return(a->SmiConstant(-1));
+  }
+}
 
-  Handle<Object> species;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, species,
-      JSObject::GetProperty(ctor, isolate->factory()->species_symbol()),
-      Object);
+void RegExpPrototypeSearchBodySlow(CodeStubAssembler* a, Node* const receiver,
+                                   Node* const string, Node* const context) {
+  Isolate* const isolate = a->isolate();
 
-  if (species->IsNull(isolate) || species->IsUndefined(isolate)) {
-    return default_ctor;
+  Node* const smi_zero = a->SmiConstant(Smi::kZero);
+
+  // Grab the initial value of last index.
+  Node* const previous_last_index = SlowLoadLastIndex(a, context, receiver);
+
+  // Ensure last index is 0.
+  {
+    CLabel next(a);
+    a->GotoIf(a->SameValue(previous_last_index, smi_zero, context), &next);
+
+    SlowStoreLastIndex(a, context, receiver, smi_zero);
+    a->Goto(&next);
+    a->Bind(&next);
   }
 
-  if (species->IsConstructor()) return species;
+  // Call exec.
+  Node* const exec_result = RegExpExec(a, context, receiver, string);
 
-  THROW_NEW_ERROR(
-      isolate, NewTypeError(MessageTemplate::kSpeciesNotConstructor), Object);
+  // Reset last index if necessary.
+  {
+    CLabel next(a);
+    Node* const current_last_index = SlowLoadLastIndex(a, context, receiver);
+
+    a->GotoIf(a->SameValue(current_last_index, previous_last_index, context),
+              &next);
+
+    SlowStoreLastIndex(a, context, receiver, previous_last_index);
+    a->Goto(&next);
+
+    a->Bind(&next);
+  }
+
+  // Return -1 if no match was found.
+  {
+    CLabel next(a);
+    a->GotoUnless(a->WordEqual(exec_result, a->NullConstant()), &next);
+    a->Return(a->SmiConstant(-1));
+    a->Bind(&next);
+  }
+
+  // Return the index of the match.
+  {
+    CLabel fast_result(a), slow_result(a, CLabel::kDeferred);
+    BranchIfFastRegExpResult(a, context, a->LoadMap(exec_result), &fast_result,
+                             &slow_result);
+
+    a->Bind(&fast_result);
+    {
+      Node* const index =
+          a->LoadObjectField(exec_result, JSRegExpResult::kIndexOffset);
+      a->Return(index);
+    }
+
+    a->Bind(&slow_result);
+    {
+      Node* const name = a->HeapConstant(isolate->factory()->index_string());
+      Callable getproperty_callable = CodeFactory::GetProperty(a->isolate());
+      Node* const index =
+          a->CallStub(getproperty_callable, context, exec_result, name);
+      a->Return(index);
+    }
+  }
+}
+
+}  // namespace
+
+// ES#sec-regexp.prototype-@@search
+// RegExp.prototype [ @@search ] ( string )
+void Builtins::Generate_RegExpPrototypeSearch(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
+
+  Isolate* const isolate = a.isolate();
+
+  Node* const maybe_receiver = a.Parameter(0);
+  Node* const maybe_string = a.Parameter(1);
+  Node* const context = a.Parameter(4);
+
+  // Ensure {maybe_receiver} is a JSReceiver.
+  Node* const map =
+      ThrowIfNotJSReceiver(&a, isolate, context, maybe_receiver,
+                           MessageTemplate::kIncompatibleMethodReceiver,
+                           "RegExp.prototype.@@search");
+  Node* const receiver = maybe_receiver;
+
+  // Convert {maybe_string} to a String.
+  Node* const string = a.ToString(context, maybe_string);
+
+  CLabel fast_path(&a), slow_path(&a);
+  BranchIfFastPath(&a, context, map, &fast_path, &slow_path);
+
+  a.Bind(&fast_path);
+  RegExpPrototypeSearchBodyFast(&a, receiver, string, context);
+
+  a.Bind(&slow_path);
+  RegExpPrototypeSearchBodySlow(&a, receiver, string, context);
+}
+
+namespace {
+
+// Generates the fast path for @@split. {regexp} is an unmodified JSRegExp,
+// {string} is a String, and {limit} is a Smi.
+void Generate_RegExpPrototypeSplitBody(CodeStubAssembler* a, Node* const regexp,
+                                       Node* const string, Node* const limit,
+                                       Node* const context) {
+  Isolate* isolate = a->isolate();
+
+  Node* const null = a->NullConstant();
+  Node* const smi_zero = a->SmiConstant(0);
+  Node* const int_zero = a->IntPtrConstant(0);
+  Node* const int_limit = a->SmiUntag(limit);
+
+  const ElementsKind kind = FAST_ELEMENTS;
+  const ParameterMode mode = CodeStubAssembler::INTPTR_PARAMETERS;
+
+  Node* const allocation_site = nullptr;
+  Node* const native_context = a->LoadNativeContext(context);
+  Node* const array_map = a->LoadJSArrayElementsMap(kind, native_context);
+
+  CLabel return_empty_array(a, CLabel::kDeferred);
+
+  // If limit is zero, return an empty array.
+  {
+    CLabel next(a), if_limitiszero(a, CLabel::kDeferred);
+    a->Branch(a->SmiEqual(limit, smi_zero), &return_empty_array, &next);
+    a->Bind(&next);
+  }
+
+  Node* const string_length = a->LoadStringLength(string);
+
+  // If passed the empty {string}, return either an empty array or a singleton
+  // array depending on whether the {regexp} matches.
+  {
+    CLabel next(a), if_stringisempty(a, CLabel::kDeferred);
+    a->Branch(a->SmiEqual(string_length, smi_zero), &if_stringisempty, &next);
+
+    a->Bind(&if_stringisempty);
+    {
+      Node* const last_match_info = a->LoadContextElement(
+          native_context, Context::REGEXP_LAST_MATCH_INFO_INDEX);
+
+      Callable exec_callable = CodeFactory::RegExpExec(isolate);
+      Node* const match_indices = a->CallStub(
+          exec_callable, context, regexp, string, smi_zero, last_match_info);
+
+      CLabel return_singleton_array(a);
+      a->Branch(a->WordEqual(match_indices, null), &return_singleton_array,
+                &return_empty_array);
+
+      a->Bind(&return_singleton_array);
+      {
+        Node* const length = a->SmiConstant(1);
+        Node* const capacity = a->IntPtrConstant(1);
+        Node* const result = a->AllocateJSArray(kind, array_map, capacity,
+                                                length, allocation_site, mode);
+
+        Node* const fixed_array = a->LoadElements(result);
+        a->StoreFixedArrayElement(fixed_array, 0, string);
+
+        a->Return(result);
+      }
+    }
+
+    a->Bind(&next);
+  }
+
+  // Loop preparations.
+
+  GrowableFixedArray array(a);
+
+  CVariable var_last_matched_until(a, MachineRepresentation::kTagged);
+  CVariable var_next_search_from(a, MachineRepresentation::kTagged);
+
+  var_last_matched_until.Bind(smi_zero);
+  var_next_search_from.Bind(smi_zero);
+
+  CVariable* vars[] = {array.var_array(), array.var_length(),
+                       array.var_capacity(), &var_last_matched_until,
+                       &var_next_search_from};
+  const int vars_count = sizeof(vars) / sizeof(vars[0]);
+  CLabel loop(a, vars_count, vars), push_suffix_and_out(a), out(a);
+  a->Goto(&loop);
+
+  a->Bind(&loop);
+  {
+    Node* const next_search_from = var_next_search_from.value();
+    Node* const last_matched_until = var_last_matched_until.value();
+
+    // We're done if we've reached the end of the string.
+    {
+      CLabel next(a);
+      a->Branch(a->SmiEqual(next_search_from, string_length),
+                &push_suffix_and_out, &next);
+      a->Bind(&next);
+    }
+
+    // Search for the given {regexp}.
+
+    Node* const last_match_info = a->LoadContextElement(
+        native_context, Context::REGEXP_LAST_MATCH_INFO_INDEX);
+
+    Callable exec_callable = CodeFactory::RegExpExec(isolate);
+    Node* const match_indices =
+        a->CallStub(exec_callable, context, regexp, string, next_search_from,
+                    last_match_info);
+
+    // We're done if no match was found.
+    {
+      CLabel next(a);
+      a->Branch(a->WordEqual(match_indices, null), &push_suffix_and_out, &next);
+      a->Bind(&next);
+    }
+
+    Node* const match_from = a->LoadFixedArrayElement(
+        match_indices, RegExpMatchInfo::kFirstCaptureIndex);
+
+    // We're done if the match starts beyond the string.
+    {
+      CLabel next(a);
+      a->Branch(a->WordEqual(match_from, string_length), &push_suffix_and_out,
+                &next);
+      a->Bind(&next);
+    }
+
+    Node* const match_to = a->LoadFixedArrayElement(
+        match_indices, RegExpMatchInfo::kFirstCaptureIndex + 1);
+
+    // Advance index and continue if the match is empty.
+    {
+      CLabel next(a);
+
+      a->GotoUnless(a->SmiEqual(match_to, next_search_from), &next);
+      a->GotoUnless(a->SmiEqual(match_to, last_matched_until), &next);
+
+      Node* const is_unicode = FastFlagGetter(a, regexp, JSRegExp::kUnicode);
+      Node* const new_next_search_from =
+          AdvanceStringIndex(a, string, next_search_from, is_unicode);
+      var_next_search_from.Bind(new_next_search_from);
+      a->Goto(&loop);
+
+      a->Bind(&next);
+    }
+
+    // A valid match was found, add the new substring to the array.
+    {
+      Node* const from = last_matched_until;
+      Node* const to = match_from;
+
+      Node* const substr = a->SubString(context, string, from, to);
+      array.Push(substr);
+
+      a->GotoIf(a->WordEqual(array.length(), int_limit), &out);
+    }
+
+    // Add all captures to the array.
+    {
+      Node* const num_registers = a->LoadFixedArrayElement(
+          match_indices, RegExpMatchInfo::kNumberOfCapturesIndex);
+      Node* const int_num_registers = a->SmiUntag(num_registers);
+
+      CVariable var_reg(a, MachineType::PointerRepresentation());
+      var_reg.Bind(a->IntPtrConstant(2));
+
+      CVariable* vars[] = {array.var_array(), array.var_length(),
+                           array.var_capacity(), &var_reg};
+      const int vars_count = sizeof(vars) / sizeof(vars[0]);
+      CLabel nested_loop(a, vars_count, vars), nested_loop_out(a);
+      a->Branch(a->IntPtrLessThan(var_reg.value(), int_num_registers),
+                &nested_loop, &nested_loop_out);
+
+      a->Bind(&nested_loop);
+      {
+        Node* const reg = var_reg.value();
+        Node* const from = a->LoadFixedArrayElement(
+            match_indices, reg,
+            RegExpMatchInfo::kFirstCaptureIndex * kPointerSize, mode);
+        Node* const to = a->LoadFixedArrayElement(
+            match_indices, reg,
+            (RegExpMatchInfo::kFirstCaptureIndex + 1) * kPointerSize, mode);
+
+        CLabel select_capture(a), select_undefined(a), store_value(a);
+        CVariable var_value(a, MachineRepresentation::kTagged);
+        a->Branch(a->SmiEqual(to, a->SmiConstant(-1)), &select_undefined,
+                  &select_capture);
+
+        a->Bind(&select_capture);
+        {
+          Node* const substr = a->SubString(context, string, from, to);
+          var_value.Bind(substr);
+          a->Goto(&store_value);
+        }
+
+        a->Bind(&select_undefined);
+        {
+          Node* const undefined = a->UndefinedConstant();
+          var_value.Bind(undefined);
+          a->Goto(&store_value);
+        }
+
+        a->Bind(&store_value);
+        {
+          array.Push(var_value.value());
+          a->GotoIf(a->WordEqual(array.length(), int_limit), &out);
+
+          Node* const new_reg = a->IntPtrAdd(reg, a->IntPtrConstant(2));
+          var_reg.Bind(new_reg);
+
+          a->Branch(a->IntPtrLessThan(new_reg, int_num_registers), &nested_loop,
+                    &nested_loop_out);
+        }
+      }
+
+      a->Bind(&nested_loop_out);
+    }
+
+    var_last_matched_until.Bind(match_to);
+    var_next_search_from.Bind(match_to);
+    a->Goto(&loop);
+  }
+
+  a->Bind(&push_suffix_and_out);
+  {
+    Node* const from = var_last_matched_until.value();
+    Node* const to = string_length;
+
+    Node* const substr = a->SubString(context, string, from, to);
+    array.Push(substr);
+
+    a->Goto(&out);
+  }
+
+  a->Bind(&out);
+  {
+    Node* const result = array.ToJSArray(context);
+    a->Return(result);
+  }
+
+  a->Bind(&return_empty_array);
+  {
+    Node* const length = smi_zero;
+    Node* const capacity = int_zero;
+    Node* const result = a->AllocateJSArray(kind, array_map, capacity, length,
+                                            allocation_site, mode);
+    a->Return(result);
+  }
 }
 
 }  // namespace
 
 // ES#sec-regexp.prototype-@@split
 // RegExp.prototype [ @@split ] ( string, limit )
-BUILTIN(RegExpPrototypeSplit) {
-  HandleScope scope(isolate);
-  CHECK_RECEIVER(JSReceiver, recv, "RegExp.prototype.@@split");
+void Builtins::Generate_RegExpPrototypeSplit(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
 
-  Factory* factory = isolate->factory();
+  Isolate* const isolate = a.isolate();
 
-  Handle<Object> string_obj = args.atOrUndefined(isolate, 1);
-  Handle<Object> limit_obj = args.atOrUndefined(isolate, 2);
+  Node* const undefined = a.UndefinedConstant();
 
-  Handle<String> string;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, string,
-                                     Object::ToString(isolate, string_obj));
+  Node* const maybe_receiver = a.Parameter(0);
+  Node* const maybe_string = a.Parameter(1);
+  Node* const maybe_limit = a.Parameter(2);
+  Node* const context = a.Parameter(5);
 
-  if (RegExpUtils::IsUnmodifiedRegExp(isolate, recv)) {
-    RETURN_RESULT_OR_FAILURE(
-        isolate,
-        RegExpSplit(isolate, Handle<JSRegExp>::cast(recv), string, limit_obj));
-  }
+  // Ensure {maybe_receiver} is a JSReceiver.
+  Node* const map = ThrowIfNotJSReceiver(
+      &a, isolate, context, maybe_receiver,
+      MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.@@split");
+  Node* const receiver = maybe_receiver;
 
-  Handle<JSFunction> regexp_fun = isolate->regexp_function();
-  Handle<Object> ctor;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, ctor, SpeciesConstructor(isolate, recv, regexp_fun));
+  // Convert {maybe_string} to a String.
+  Node* const string = a.ToString(context, maybe_string);
 
-  Handle<Object> flags_obj;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, flags_obj, JSObject::GetProperty(recv, factory->flags_string()));
+  CLabel fast_path(&a), slow_path(&a);
+  BranchIfFastPath(&a, context, map, &fast_path, &slow_path);
 
-  Handle<String> flags;
-  ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, flags,
-                                     Object::ToString(isolate, flags_obj));
-
-  Handle<String> u_str = factory->LookupSingleCharacterStringFromCode('u');
-  const bool unicode = (String::IndexOf(isolate, flags, u_str, 0) >= 0);
-
-  Handle<String> y_str = factory->LookupSingleCharacterStringFromCode('y');
-  const bool sticky = (String::IndexOf(isolate, flags, y_str, 0) >= 0);
-
-  Handle<String> new_flags = flags;
-  if (!sticky) {
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, new_flags,
-                                       factory->NewConsString(flags, y_str));
-  }
-
-  Handle<JSReceiver> splitter;
+  a.Bind(&fast_path);
   {
-    const int argc = 2;
+    // Convert {maybe_limit} to a uint32, capping at the maximal smi value.
+    CVariable var_limit(&a, MachineRepresentation::kTagged);
+    CLabel if_limitissmimax(&a), limit_done(&a);
 
-    ScopedVector<Handle<Object>> argv(argc);
-    argv[0] = recv;
-    argv[1] = new_flags;
-
-    Handle<JSFunction> ctor_fun = Handle<JSFunction>::cast(ctor);
-    Handle<Object> splitter_obj;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, splitter_obj, Execution::New(ctor_fun, argc, argv.start()));
-
-    splitter = Handle<JSReceiver>::cast(splitter_obj);
-  }
-
-  uint32_t limit;
-  RETURN_FAILURE_ON_EXCEPTION(isolate, ToUint32(isolate, limit_obj, &limit));
-
-  const int length = string->length();
-
-  if (limit == 0) return *factory->NewJSArray(0);
-
-  if (length == 0) {
-    Handle<Object> result;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, result, RegExpUtils::RegExpExec(isolate, splitter, string,
-                                                 factory->undefined_value()));
-
-    if (!result->IsNull(isolate)) return *factory->NewJSArray(0);
-
-    Handle<FixedArray> elems = factory->NewUninitializedFixedArray(1);
-    elems->set(0, *string);
-    return *factory->NewJSArrayWithElements(elems);
-  }
-
-  // TODO(jgruber): Wrap this in a helper class.
-  static const int kInitialArraySize = 8;
-  Handle<FixedArray> elems = factory->NewFixedArrayWithHoles(kInitialArraySize);
-  int num_elems = 0;
-
-  int string_index = 0;
-  int prev_string_index = 0;
-  while (string_index < length) {
-    RETURN_FAILURE_ON_EXCEPTION(
-        isolate, RegExpUtils::SetLastIndex(isolate, splitter, string_index));
-
-    Handle<Object> result;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, result, RegExpUtils::RegExpExec(isolate, splitter, string,
-                                                 factory->undefined_value()));
-
-    if (result->IsNull(isolate)) {
-      string_index = RegExpUtils::AdvanceStringIndex(isolate, string,
-                                                     string_index, unicode);
-      continue;
-    }
-
-    // TODO(jgruber): Extract toLength of some property into function.
-    Handle<Object> last_index_obj;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, last_index_obj, RegExpUtils::GetLastIndex(isolate, splitter));
-
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, last_index_obj, Object::ToLength(isolate, last_index_obj));
-    const int last_index = Handle<Smi>::cast(last_index_obj)->value();
-
-    const int end = std::min(last_index, length);
-    if (end == prev_string_index) {
-      string_index = RegExpUtils::AdvanceStringIndex(isolate, string,
-                                                     string_index, unicode);
-      continue;
-    }
+    a.GotoIf(a.WordEqual(maybe_limit, undefined), &if_limitissmimax);
 
     {
-      Handle<String> substr =
-          factory->NewSubString(string, prev_string_index, string_index);
-      elems = FixedArray::SetAndGrow(elems, num_elems++, substr);
-      if (num_elems == limit) {
-        return *NewJSArrayWithElements(isolate, elems, num_elems);
-      }
+      Node* const limit = a.ToUint32(context, maybe_limit);
+      a.GotoUnless(a.TaggedIsSmi(limit), &if_limitissmimax);
+
+      var_limit.Bind(limit);
+      a.Goto(&limit_done);
     }
 
-    prev_string_index = end;
-
-    Handle<Object> num_captures_obj;
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, num_captures_obj,
-        Object::GetProperty(result, isolate->factory()->length_string()));
-
-    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, num_captures_obj, Object::ToLength(isolate, num_captures_obj));
-    const int num_captures =
-        std::max(Handle<Smi>::cast(num_captures_obj)->value(), 0);
-
-    for (int i = 1; i < num_captures; i++) {
-      Handle<Object> capture;
-      ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-          isolate, capture, Object::GetElement(isolate, result, i));
-      elems = FixedArray::SetAndGrow(elems, num_elems++, capture);
-      if (num_elems == limit) {
-        return *NewJSArrayWithElements(isolate, elems, num_elems);
-      }
+    a.Bind(&if_limitissmimax);
+    {
+      // TODO(jgruber): In this case, we can probably generation of limit checks
+      // in Generate_RegExpPrototypeSplitBody.
+      Node* const smi_max = a.SmiConstant(Smi::kMaxValue);
+      var_limit.Bind(smi_max);
+      a.Goto(&limit_done);
     }
 
-    string_index = prev_string_index;
+    a.Bind(&limit_done);
+    {
+      Node* const limit = var_limit.value();
+      Generate_RegExpPrototypeSplitBody(&a, receiver, string, limit, context);
+    }
   }
 
+  a.Bind(&slow_path);
   {
-    Handle<String> substr =
-        factory->NewSubString(string, prev_string_index, length);
-    elems = FixedArray::SetAndGrow(elems, num_elems++, substr);
+    Node* const result = a.CallRuntime(Runtime::kRegExpSplit, context, receiver,
+                                       string, maybe_limit);
+    a.Return(result);
   }
-
-  return *NewJSArrayWithElements(isolate, elems, num_elems);
 }
 
 namespace {
 
-compiler::Node* ReplaceGlobalCallableFastPath(
-    CodeStubAssembler* a, compiler::Node* context, compiler::Node* regexp,
-    compiler::Node* subject_string, compiler::Node* replace_callable) {
+Node* ReplaceGlobalCallableFastPath(CodeStubAssembler* a, Node* context,
+                                    Node* regexp, Node* subject_string,
+                                    Node* replace_callable) {
   // The fast path is reached only if {receiver} is a global unmodified
   // JSRegExp instance and {replace_callable} is callable.
-
-  typedef CodeStubAssembler::Variable Variable;
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
 
   Isolate* const isolate = a->isolate();
 
@@ -1561,11 +2011,11 @@ compiler::Node* ReplaceGlobalCallableFastPath(
 
   Node* const native_context = a->LoadNativeContext(context);
 
-  Label out(a);
-  Variable var_result(a, MachineRepresentation::kTagged);
+  CLabel out(a);
+  CVariable var_result(a, MachineRepresentation::kTagged);
 
   // Set last index to 0.
-  FastStoreLastIndex(a, context, regexp, smi_zero);
+  FastStoreLastIndex(a, regexp, smi_zero);
 
   // Allocate {result_array}.
   Node* result_array;
@@ -1575,8 +2025,7 @@ compiler::Node* ReplaceGlobalCallableFastPath(
     Node* const capacity = a->IntPtrConstant(16);
     Node* const length = smi_zero;
     Node* const allocation_site = nullptr;
-    CodeStubAssembler::ParameterMode capacity_mode =
-        CodeStubAssembler::INTPTR_PARAMETERS;
+    ParameterMode capacity_mode = CodeStubAssembler::INTPTR_PARAMETERS;
 
     result_array = a->AllocateJSArray(kind, array_map, capacity, length,
                                       allocation_site, capacity_mode);
@@ -1590,7 +2039,7 @@ compiler::Node* ReplaceGlobalCallableFastPath(
                      subject_string, last_match_info, result_array);
 
   // Reset last index to 0.
-  FastStoreLastIndex(a, context, regexp, smi_zero);
+  FastStoreLastIndex(a, regexp, smi_zero);
 
   // If no matches, return the subject string.
   var_result.Bind(subject_string);
@@ -1602,14 +2051,12 @@ compiler::Node* ReplaceGlobalCallableFastPath(
 
   Node* const res_length = a->LoadJSArrayLength(res);
   Node* const res_elems = a->LoadElements(res);
-  a->CSA_ASSERT(a->HasInstanceType(res_elems, FIXED_ARRAY_TYPE));
+  CSA_ASSERT(a, a->HasInstanceType(res_elems, FIXED_ARRAY_TYPE));
 
-  CodeStubAssembler::ParameterMode mode = CodeStubAssembler::INTPTR_PARAMETERS;
   Node* const num_capture_registers = a->LoadFixedArrayElement(
-      last_match_info,
-      a->IntPtrConstant(RegExpMatchInfo::kNumberOfCapturesIndex), 0, mode);
+      last_match_info, RegExpMatchInfo::kNumberOfCapturesIndex);
 
-  Label if_hasexplicitcaptures(a), if_noexplicitcaptures(a), create_result(a);
+  CLabel if_hasexplicitcaptures(a), if_noexplicitcaptures(a), create_result(a);
   a->Branch(a->SmiEqual(num_capture_registers, a->SmiConstant(Smi::FromInt(2))),
             &if_noexplicitcaptures, &if_hasexplicitcaptures);
 
@@ -1622,32 +2069,31 @@ compiler::Node* ReplaceGlobalCallableFastPath(
     // input string and some replacements that were returned from the replace
     // function.
 
-    Variable var_match_start(a, MachineRepresentation::kTagged);
+    CVariable var_match_start(a, MachineRepresentation::kTagged);
     var_match_start.Bind(smi_zero);
 
     Node* const end = a->SmiUntag(res_length);
-    Variable var_i(a, MachineType::PointerRepresentation());
+    CVariable var_i(a, MachineType::PointerRepresentation());
     var_i.Bind(int_zero);
 
-    Variable* vars[] = {&var_i, &var_match_start};
-    Label loop(a, 2, vars);
+    CVariable* vars[] = {&var_i, &var_match_start};
+    CLabel loop(a, 2, vars);
     a->Goto(&loop);
     a->Bind(&loop);
     {
       Node* const i = var_i.value();
       a->GotoUnless(a->IntPtrLessThan(i, end), &create_result);
 
-      CodeStubAssembler::ParameterMode mode =
-          CodeStubAssembler::INTPTR_PARAMETERS;
+      ParameterMode mode = CodeStubAssembler::INTPTR_PARAMETERS;
       Node* const elem = a->LoadFixedArrayElement(res_elems, i, 0, mode);
 
-      Label if_issmi(a), if_isstring(a), loop_epilogue(a);
+      CLabel if_issmi(a), if_isstring(a), loop_epilogue(a);
       a->Branch(a->TaggedIsSmi(elem), &if_issmi, &if_isstring);
 
       a->Bind(&if_issmi);
       {
         // Integers represent slices of the original string.
-        Label if_isnegativeorzero(a), if_ispositive(a);
+        CLabel if_isnegativeorzero(a), if_ispositive(a);
         a->BranchIfSmiLessThanOrEqual(elem, smi_zero, &if_isnegativeorzero,
                                       &if_ispositive);
 
@@ -1677,7 +2123,7 @@ compiler::Node* ReplaceGlobalCallableFastPath(
 
       a->Bind(&if_isstring);
       {
-        a->Assert(a->IsStringInstanceType(a->LoadInstanceType(elem)));
+        CSA_ASSERT(a, a->IsStringInstanceType(a->LoadInstanceType(elem)));
 
         Callable call_callable = CodeFactory::Call(isolate);
         Node* const replacement_obj =
@@ -1705,8 +2151,7 @@ compiler::Node* ReplaceGlobalCallableFastPath(
 
   a->Bind(&if_hasexplicitcaptures);
   {
-    CodeStubAssembler::ParameterMode mode =
-        CodeStubAssembler::INTPTR_PARAMETERS;
+    ParameterMode mode = CodeStubAssembler::INTPTR_PARAMETERS;
 
     Node* const from = int_zero;
     Node* const to = a->SmiUntag(res_length);
@@ -1714,18 +2159,18 @@ compiler::Node* ReplaceGlobalCallableFastPath(
 
     a->BuildFastLoop(
         MachineType::PointerRepresentation(), from, to,
-        [res_elems, isolate, native_context, context, undefined,
-         replace_callable, mode](CodeStubAssembler* a, Node* index) {
+        [a, res_elems, isolate, native_context, context, undefined,
+         replace_callable, mode](Node* index) {
           Node* const elem =
               a->LoadFixedArrayElement(res_elems, index, 0, mode);
 
-          Label do_continue(a);
+          CLabel do_continue(a);
           a->GotoIf(a->TaggedIsSmi(elem), &do_continue);
 
           // elem must be an Array.
           // Use the apply argument as backing for global RegExp properties.
 
-          a->CSA_ASSERT(a->HasInstanceType(elem, JS_ARRAY_TYPE));
+          CSA_ASSERT(a, a->HasInstanceType(elem, JS_ARRAY_TYPE));
 
           // TODO(jgruber): Remove indirection through Call->ReflectApply.
           Callable call_callable = CodeFactory::Call(isolate);
@@ -1741,7 +2186,7 @@ compiler::Node* ReplaceGlobalCallableFastPath(
 
           Node* const replacement_str = a->ToString(context, replacement_obj);
           a->StoreFixedArrayElement(res_elems, index, replacement_str,
-                                    UPDATE_WRITE_BARRIER, mode);
+                                    UPDATE_WRITE_BARRIER, 0, mode);
 
           a->Goto(&do_continue);
           a->Bind(&do_continue);
@@ -1763,19 +2208,13 @@ compiler::Node* ReplaceGlobalCallableFastPath(
   return var_result.value();
 }
 
-compiler::Node* ReplaceSimpleStringFastPath(CodeStubAssembler* a,
-                                            compiler::Node* context,
-                                            compiler::Node* regexp,
-                                            compiler::Node* subject_string,
-                                            compiler::Node* replace_string) {
+Node* ReplaceSimpleStringFastPath(CodeStubAssembler* a, Node* context,
+                                  Node* regexp, Node* subject_string,
+                                  Node* replace_string) {
   // The fast path is reached only if {receiver} is an unmodified
   // JSRegExp instance, {replace_value} is non-callable, and
   // ToString({replace_value}) does not contain '$', i.e. we're doing a simple
   // string replacement.
-
-  typedef CodeStubAssembler::Variable Variable;
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
 
   Isolate* const isolate = a->isolate();
 
@@ -1783,8 +2222,8 @@ compiler::Node* ReplaceSimpleStringFastPath(CodeStubAssembler* a,
   Node* const int_zero = a->IntPtrConstant(0);
   Node* const smi_zero = a->SmiConstant(Smi::kZero);
 
-  Label out(a);
-  Variable var_result(a, MachineRepresentation::kTagged);
+  CLabel out(a);
+  CVariable var_result(a, MachineRepresentation::kTagged);
 
   // Load the last match info.
   Node* const native_context = a->LoadNativeContext(context);
@@ -1792,7 +2231,7 @@ compiler::Node* ReplaceSimpleStringFastPath(CodeStubAssembler* a,
       native_context, Context::REGEXP_LAST_MATCH_INFO_INDEX);
 
   // Is {regexp} global?
-  Label if_isglobal(a), if_isnonglobal(a);
+  CLabel if_isglobal(a), if_isnonglobal(a);
   Node* const flags = a->LoadObjectField(regexp, JSRegExp::kFlagsOffset);
   Node* const is_global =
       a->WordAnd(a->SmiUntag(flags), a->IntPtrConstant(JSRegExp::kGlobal));
@@ -1801,7 +2240,7 @@ compiler::Node* ReplaceSimpleStringFastPath(CodeStubAssembler* a,
   a->Bind(&if_isglobal);
   {
     // Hand off global regexps to runtime.
-    FastStoreLastIndex(a, context, regexp, smi_zero);
+    FastStoreLastIndex(a, regexp, smi_zero);
     Node* const result =
         a->CallRuntime(Runtime::kStringReplaceGlobalRegExpWithString, context,
                        subject_string, regexp, replace_string, last_match_info);
@@ -1817,31 +2256,26 @@ compiler::Node* ReplaceSimpleStringFastPath(CodeStubAssembler* a,
         a->CallStub(exec_callable, context, regexp, subject_string, smi_zero,
                     last_match_info);
 
-    Label if_matched(a), if_didnotmatch(a);
+    CLabel if_matched(a), if_didnotmatch(a);
     a->Branch(a->WordEqual(match_indices, null), &if_didnotmatch, &if_matched);
 
     a->Bind(&if_didnotmatch);
     {
-      FastStoreLastIndex(a, context, regexp, smi_zero);
+      FastStoreLastIndex(a, regexp, smi_zero);
       var_result.Bind(subject_string);
       a->Goto(&out);
     }
 
     a->Bind(&if_matched);
     {
-      CodeStubAssembler::ParameterMode mode =
-          CodeStubAssembler::INTPTR_PARAMETERS;
-
       Node* const subject_start = smi_zero;
       Node* const match_start = a->LoadFixedArrayElement(
-          match_indices, a->IntPtrConstant(RegExpMatchInfo::kFirstCaptureIndex),
-          0, mode);
+          match_indices, RegExpMatchInfo::kFirstCaptureIndex);
       Node* const match_end = a->LoadFixedArrayElement(
-          match_indices,
-          a->IntPtrConstant(RegExpMatchInfo::kFirstCaptureIndex + 1), 0, mode);
+          match_indices, RegExpMatchInfo::kFirstCaptureIndex + 1);
       Node* const subject_end = a->LoadStringLength(subject_string);
 
-      Label if_replaceisempty(a), if_replaceisnotempty(a);
+      CLabel if_replaceisempty(a), if_replaceisnotempty(a);
       Node* const replace_length = a->LoadStringLength(replace_string);
       a->Branch(a->SmiEqual(replace_length, smi_zero), &if_replaceisempty,
                 &if_replaceisnotempty);
@@ -1886,130 +2320,128 @@ compiler::Node* ReplaceSimpleStringFastPath(CodeStubAssembler* a,
 
 // ES#sec-regexp.prototype-@@replace
 // RegExp.prototype [ @@replace ] ( string, replaceValue )
-void Builtins::Generate_RegExpPrototypeReplace(CodeStubAssembler* a) {
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
+void Builtins::Generate_RegExpPrototypeReplace(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
 
-  Isolate* const isolate = a->isolate();
+  Isolate* const isolate = a.isolate();
 
-  Node* const maybe_receiver = a->Parameter(0);
-  Node* const maybe_string = a->Parameter(1);
-  Node* const replace_value = a->Parameter(2);
-  Node* const context = a->Parameter(5);
+  Node* const maybe_receiver = a.Parameter(0);
+  Node* const maybe_string = a.Parameter(1);
+  Node* const replace_value = a.Parameter(2);
+  Node* const context = a.Parameter(5);
 
-  Node* const int_zero = a->IntPtrConstant(0);
+  Node* const int_zero = a.IntPtrConstant(0);
 
   // Ensure {maybe_receiver} is a JSReceiver.
   Node* const map =
-      ThrowIfNotJSReceiver(a, isolate, context, maybe_receiver,
+      ThrowIfNotJSReceiver(&a, isolate, context, maybe_receiver,
                            MessageTemplate::kIncompatibleMethodReceiver,
                            "RegExp.prototype.@@replace");
   Node* const receiver = maybe_receiver;
 
   // Convert {maybe_string} to a String.
   Callable tostring_callable = CodeFactory::ToString(isolate);
-  Node* const string = a->CallStub(tostring_callable, context, maybe_string);
+  Node* const string = a.CallStub(tostring_callable, context, maybe_string);
 
   // Fast-path checks: 1. Is the {receiver} an unmodified JSRegExp instance?
-  Label checkreplacecallable(a), runtime(a, Label::kDeferred), fastpath(a);
-  BranchIfFastPath(a, context, map, &checkreplacecallable, &runtime);
+  CLabel checkreplacecallable(&a), runtime(&a, CLabel::kDeferred), fastpath(&a);
+  BranchIfFastPath(&a, context, map, &checkreplacecallable, &runtime);
 
-  a->Bind(&checkreplacecallable);
+  a.Bind(&checkreplacecallable);
   Node* const regexp = receiver;
 
   // 2. Is {replace_value} callable?
-  Label checkreplacestring(a), if_iscallable(a);
-  a->GotoIf(a->TaggedIsSmi(replace_value), &checkreplacestring);
+  CLabel checkreplacestring(&a), if_iscallable(&a);
+  a.GotoIf(a.TaggedIsSmi(replace_value), &checkreplacestring);
 
-  Node* const replace_value_map = a->LoadMap(replace_value);
-  a->Branch(a->IsCallableMap(replace_value_map), &if_iscallable,
-            &checkreplacestring);
+  Node* const replace_value_map = a.LoadMap(replace_value);
+  a.Branch(a.IsCallableMap(replace_value_map), &if_iscallable,
+           &checkreplacestring);
 
   // 3. Does ToString({replace_value}) contain '$'?
-  a->Bind(&checkreplacestring);
+  a.Bind(&checkreplacestring);
   {
     Node* const replace_string =
-        a->CallStub(tostring_callable, context, replace_value);
+        a.CallStub(tostring_callable, context, replace_value);
 
-    Node* const dollar_char = a->IntPtrConstant('$');
-    Node* const smi_minusone = a->SmiConstant(Smi::FromInt(-1));
-    a->GotoUnless(a->SmiEqual(a->StringIndexOfChar(context, replace_string,
-                                                   dollar_char, int_zero),
-                              smi_minusone),
-                  &runtime);
+    Node* const dollar_char = a.IntPtrConstant('$');
+    Node* const smi_minusone = a.SmiConstant(Smi::FromInt(-1));
+    a.GotoUnless(a.SmiEqual(a.StringIndexOfChar(context, replace_string,
+                                                dollar_char, int_zero),
+                            smi_minusone),
+                 &runtime);
 
-    a->Return(ReplaceSimpleStringFastPath(a, context, regexp, string,
-                                          replace_string));
+    a.Return(ReplaceSimpleStringFastPath(&a, context, regexp, string,
+                                         replace_string));
   }
 
   // {regexp} is unmodified and {replace_value} is callable.
-  a->Bind(&if_iscallable);
+  a.Bind(&if_iscallable);
   {
     Node* const replace_callable = replace_value;
 
     // Check if the {regexp} is global.
-    Label if_isglobal(a), if_isnotglobal(a);
-    Node* const is_global = FastFlagGetter(a, regexp, JSRegExp::kGlobal);
-    a->Branch(is_global, &if_isglobal, &if_isnotglobal);
+    CLabel if_isglobal(&a), if_isnotglobal(&a);
+    Node* const is_global = FastFlagGetter(&a, regexp, JSRegExp::kGlobal);
+    a.Branch(is_global, &if_isglobal, &if_isnotglobal);
 
-    a->Bind(&if_isglobal);
+    a.Bind(&if_isglobal);
     {
       Node* const result = ReplaceGlobalCallableFastPath(
-          a, context, regexp, string, replace_callable);
-      a->Return(result);
+          &a, context, regexp, string, replace_callable);
+      a.Return(result);
     }
 
-    a->Bind(&if_isnotglobal);
+    a.Bind(&if_isnotglobal);
     {
       Node* const result =
-          a->CallRuntime(Runtime::kStringReplaceNonGlobalRegExpWithFunction,
-                         context, string, regexp, replace_callable);
-      a->Return(result);
+          a.CallRuntime(Runtime::kStringReplaceNonGlobalRegExpWithFunction,
+                        context, string, regexp, replace_callable);
+      a.Return(result);
     }
   }
 
-  a->Bind(&runtime);
+  a.Bind(&runtime);
   {
-    Node* const result = a->CallRuntime(Runtime::kRegExpReplace, context,
-                                        receiver, string, replace_value);
-    a->Return(result);
+    Node* const result = a.CallRuntime(Runtime::kRegExpReplace, context,
+                                       receiver, string, replace_value);
+    a.Return(result);
   }
 }
 
 // Simple string matching functionality for internal use which does not modify
 // the last match info.
-void Builtins::Generate_RegExpInternalMatch(CodeStubAssembler* a) {
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
+void Builtins::Generate_RegExpInternalMatch(CodeAssemblerState* state) {
+  CodeStubAssembler a(state);
 
-  Isolate* const isolate = a->isolate();
+  Isolate* const isolate = a.isolate();
 
-  Node* const regexp = a->Parameter(1);
-  Node* const string = a->Parameter(2);
-  Node* const context = a->Parameter(5);
+  Node* const regexp = a.Parameter(1);
+  Node* const string = a.Parameter(2);
+  Node* const context = a.Parameter(5);
 
-  Node* const null = a->NullConstant();
-  Node* const smi_zero = a->SmiConstant(Smi::FromInt(0));
+  Node* const null = a.NullConstant();
+  Node* const smi_zero = a.SmiConstant(Smi::FromInt(0));
 
-  Node* const native_context = a->LoadNativeContext(context);
-  Node* const internal_match_info = a->LoadContextElement(
+  Node* const native_context = a.LoadNativeContext(context);
+  Node* const internal_match_info = a.LoadContextElement(
       native_context, Context::REGEXP_INTERNAL_MATCH_INFO_INDEX);
 
   Callable exec_callable = CodeFactory::RegExpExec(isolate);
-  Node* const match_indices = a->CallStub(
-      exec_callable, context, regexp, string, smi_zero, internal_match_info);
+  Node* const match_indices = a.CallStub(exec_callable, context, regexp, string,
+                                         smi_zero, internal_match_info);
 
-  Label if_matched(a), if_didnotmatch(a);
-  a->Branch(a->WordEqual(match_indices, null), &if_didnotmatch, &if_matched);
+  CLabel if_matched(&a), if_didnotmatch(&a);
+  a.Branch(a.WordEqual(match_indices, null), &if_didnotmatch, &if_matched);
 
-  a->Bind(&if_didnotmatch);
-  a->Return(null);
+  a.Bind(&if_didnotmatch);
+  a.Return(null);
 
-  a->Bind(&if_matched);
+  a.Bind(&if_matched);
   {
-    Node* result = ConstructNewResultFromMatchInfo(isolate, a, context,
+    Node* result = ConstructNewResultFromMatchInfo(isolate, &a, context,
                                                    match_indices, string);
-    a->Return(result);
+    a.Return(result);
   }
 }
 

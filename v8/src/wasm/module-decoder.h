@@ -37,16 +37,16 @@ V8_EXPORT_PRIVATE FunctionSig* DecodeWasmSignatureForTesting(Zone* zone,
 // Decodes the bytes of a WASM function between
 // {function_start} and {function_end}.
 V8_EXPORT_PRIVATE FunctionResult DecodeWasmFunction(Isolate* isolate,
-                                                    Zone* zone, ModuleEnv* env,
+                                                    Zone* zone,
+                                                    ModuleBytesEnv* env,
                                                     const byte* function_start,
                                                     const byte* function_end);
 
 // Extracts the function offset table from the wasm module bytes.
 // Returns a vector with <offset, length> entries, or failure if the wasm bytes
 // are detected as invalid. Note that this validation is not complete.
-FunctionOffsetsResult DecodeWasmFunctionOffsets(
-    const byte* module_start, const byte* module_end,
-    uint32_t num_imported_functions);
+FunctionOffsetsResult DecodeWasmFunctionOffsets(const byte* module_start,
+                                                const byte* module_end);
 
 V8_EXPORT_PRIVATE WasmInitExpr DecodeWasmInitExprForTesting(const byte* start,
                                                             const byte* end);
@@ -57,8 +57,7 @@ V8_EXPORT_PRIVATE WasmInitExpr DecodeWasmInitExprForTesting(const byte* start,
 // failure if the wasm bytes are detected as invalid. Note that this validation
 // is not complete.
 AsmJsOffsetsResult DecodeAsmJsOffsets(const byte* module_start,
-                                      const byte* module_end,
-                                      uint32_t num_imported_functions);
+                                      const byte* module_end);
 
 }  // namespace wasm
 }  // namespace internal

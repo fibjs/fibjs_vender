@@ -268,7 +268,7 @@ class Scanner {
     return false;
   }
 
-  int FindSymbol(DuplicateFinder* finder, int value);
+  bool FindSymbol(DuplicateFinder* finder);
 
   UnicodeCache* unicode_cache() { return unicode_cache_; }
 
@@ -284,7 +284,7 @@ class Scanner {
   }
 
   // Returns the value of the last smi that was scanned.
-  int smi_value() const { return current_.smi_value_; }
+  uint32_t smi_value() const { return current_.smi_value_; }
 
   // Seek forward to the given position.  This operation does not
   // work in general, for instance when there are pushed back
@@ -328,8 +328,6 @@ class Scanner {
     return tmp;
   }
 
-  bool IdentifierIsFutureStrictReserved(const AstRawString* string) const;
-
   bool FoundHtmlComment() const { return found_html_comment_; }
 
  private:
@@ -369,14 +367,15 @@ class Scanner {
     INLINE(void AddChar(uc32 code_unit)) {
       if (position_ >= backing_store_.length()) ExpandBuffer();
       if (is_one_byte_) {
-        if (code_unit <= unibrow::Latin1::kMaxChar) {
+        if (code_unit <= static_cast<uc32>(unibrow::Latin1::kMaxChar)) {
           backing_store_[position_] = static_cast<byte>(code_unit);
           position_ += kOneByteSize;
           return;
         }
         ConvertToTwoByte();
       }
-      if (code_unit <= unibrow::Utf16::kMaxNonSurrogateCharCode) {
+      if (code_unit <=
+          static_cast<uc32>(unibrow::Utf16::kMaxNonSurrogateCharCode)) {
         *reinterpret_cast<uint16_t*>(&backing_store_[position_]) = code_unit;
         position_ += kUC16Size;
       } else {
@@ -487,7 +486,7 @@ class Scanner {
     Location location;
     LiteralBuffer* literal_chars;
     LiteralBuffer* raw_literal_chars;
-    int smi_value_;
+    uint32_t smi_value_;
     Token::Value token;
   };
 

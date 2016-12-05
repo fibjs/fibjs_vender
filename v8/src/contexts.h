@@ -34,32 +34,36 @@ enum ContextLookupFlags {
 // must always be allocated via Heap::AllocateContext() or
 // Factory::NewContext.
 
-#define NATIVE_CONTEXT_INTRINSIC_FUNCTIONS(V)                           \
-  V(IS_ARRAYLIKE, JSFunction, is_arraylike)                             \
-  V(GENERATOR_NEXT_INTERNAL, JSFunction, generator_next_internal)       \
-  V(GET_TEMPLATE_CALL_SITE_INDEX, JSFunction, get_template_call_site)   \
-  V(MAKE_ERROR_INDEX, JSFunction, make_error)                           \
-  V(MAKE_RANGE_ERROR_INDEX, JSFunction, make_range_error)               \
-  V(MAKE_SYNTAX_ERROR_INDEX, JSFunction, make_syntax_error)             \
-  V(MAKE_TYPE_ERROR_INDEX, JSFunction, make_type_error)                 \
-  V(MAKE_URI_ERROR_INDEX, JSFunction, make_uri_error)                   \
-  V(OBJECT_DEFINE_PROPERTIES, JSFunction, object_define_properties)     \
-  V(OBJECT_DEFINE_PROPERTY, JSFunction, object_define_property)         \
-  V(OBJECT_FREEZE, JSFunction, object_freeze)                           \
-  V(OBJECT_GET_PROTOTYPE_OF, JSFunction, object_get_prototype_of)       \
-  V(OBJECT_IS_EXTENSIBLE, JSFunction, object_is_extensible)             \
-  V(OBJECT_IS_FROZEN, JSFunction, object_is_frozen)                     \
-  V(OBJECT_IS_SEALED, JSFunction, object_is_sealed)                     \
-  V(OBJECT_KEYS, JSFunction, object_keys)                               \
-  V(REGEXP_INTERNAL_MATCH, JSFunction, regexp_internal_match)           \
-  V(REFLECT_APPLY_INDEX, JSFunction, reflect_apply)                     \
-  V(REFLECT_CONSTRUCT_INDEX, JSFunction, reflect_construct)             \
-  V(REFLECT_DEFINE_PROPERTY_INDEX, JSFunction, reflect_define_property) \
-  V(REFLECT_DELETE_PROPERTY_INDEX, JSFunction, reflect_delete_property) \
-  V(SPREAD_ARGUMENTS_INDEX, JSFunction, spread_arguments)               \
-  V(SPREAD_ITERABLE_INDEX, JSFunction, spread_iterable)                 \
-  V(MATH_FLOOR_INDEX, JSFunction, math_floor)                           \
-  V(MATH_POW_INDEX, JSFunction, math_pow)
+#define NATIVE_CONTEXT_INTRINSIC_FUNCTIONS(V)                                \
+  V(IS_ARRAYLIKE, JSFunction, is_arraylike)                                  \
+  V(GENERATOR_NEXT_INTERNAL, JSFunction, generator_next_internal)            \
+  V(GET_TEMPLATE_CALL_SITE_INDEX, JSFunction, get_template_call_site)        \
+  V(MAKE_ERROR_INDEX, JSFunction, make_error)                                \
+  V(MAKE_RANGE_ERROR_INDEX, JSFunction, make_range_error)                    \
+  V(MAKE_SYNTAX_ERROR_INDEX, JSFunction, make_syntax_error)                  \
+  V(MAKE_TYPE_ERROR_INDEX, JSFunction, make_type_error)                      \
+  V(MAKE_URI_ERROR_INDEX, JSFunction, make_uri_error)                        \
+  V(OBJECT_DEFINE_PROPERTIES, JSFunction, object_define_properties)          \
+  V(OBJECT_DEFINE_PROPERTY, JSFunction, object_define_property)              \
+  V(OBJECT_FREEZE, JSFunction, object_freeze)                                \
+  V(OBJECT_GET_PROTOTYPE_OF, JSFunction, object_get_prototype_of)            \
+  V(OBJECT_IS_EXTENSIBLE, JSFunction, object_is_extensible)                  \
+  V(OBJECT_IS_FROZEN, JSFunction, object_is_frozen)                          \
+  V(OBJECT_IS_SEALED, JSFunction, object_is_sealed)                          \
+  V(OBJECT_KEYS, JSFunction, object_keys)                                    \
+  V(REGEXP_INTERNAL_MATCH, JSFunction, regexp_internal_match)                \
+  V(REFLECT_APPLY_INDEX, JSFunction, reflect_apply)                          \
+  V(REFLECT_CONSTRUCT_INDEX, JSFunction, reflect_construct)                  \
+  V(REFLECT_DEFINE_PROPERTY_INDEX, JSFunction, reflect_define_property)      \
+  V(REFLECT_DELETE_PROPERTY_INDEX, JSFunction, reflect_delete_property)      \
+  V(SPREAD_ARGUMENTS_INDEX, JSFunction, spread_arguments)                    \
+  V(SPREAD_ITERABLE_INDEX, JSFunction, spread_iterable)                      \
+  V(MATH_FLOOR_INDEX, JSFunction, math_floor)                                \
+  V(MATH_POW_INDEX, JSFunction, math_pow)                                    \
+  V(CREATE_RESOLVING_FUNCTION_INDEX, JSFunction, create_resolving_functions) \
+  V(PROMISE_INTERNAL_CONSTRUCTOR_INDEX, JSFunction,                          \
+    promise_internal_constructor)                                            \
+  V(IS_PROMISE_INDEX, JSFunction, is_promise)
 
 #define NATIVE_CONTEXT_IMPORTED_FIELDS(V)                                 \
   V(ARRAY_CONCAT_INDEX, JSFunction, array_concat)                         \
@@ -87,6 +91,7 @@ enum ContextLookupFlags {
   V(MAP_GET_METHOD_INDEX, JSFunction, map_get)                            \
   V(MAP_HAS_METHOD_INDEX, JSFunction, map_has)                            \
   V(MAP_SET_METHOD_INDEX, JSFunction, map_set)                            \
+  V(FUNCTION_HAS_INSTANCE_INDEX, JSFunction, function_has_instance)       \
   V(OBJECT_VALUE_OF, JSFunction, object_value_of)                         \
   V(OBJECT_TO_STRING, JSFunction, object_to_string)                       \
   V(PROMISE_CATCH_INDEX, JSFunction, promise_catch)                       \
@@ -97,6 +102,7 @@ enum ContextLookupFlags {
     promise_has_user_defined_reject_handler)                              \
   V(PROMISE_DEBUG_GET_INFO_INDEX, JSFunction, promise_debug_get_info)     \
   V(PROMISE_REJECT_INDEX, JSFunction, promise_reject)                     \
+  V(PROMISE_INTERNAL_REJECT_INDEX, JSFunction, promise_internal_reject)   \
   V(PROMISE_RESOLVE_INDEX, JSFunction, promise_resolve)                   \
   V(PROMISE_THEN_INDEX, JSFunction, promise_then)                         \
   V(RANGE_ERROR_FUNCTION_INDEX, JSFunction, range_error_function)         \
@@ -224,6 +230,10 @@ enum ContextLookupFlags {
   V(GENERATOR_FUNCTION_FUNCTION_INDEX, JSFunction,                             \
     generator_function_function)                                               \
   V(GENERATOR_OBJECT_PROTOTYPE_MAP_INDEX, Map, generator_object_prototype_map) \
+  V(INITIAL_ARRAY_ITERATOR_PROTOTYPE_INDEX, JSObject,                          \
+    initial_array_iterator_prototype)                                          \
+  V(INITIAL_ARRAY_ITERATOR_PROTOTYPE_MAP_INDEX, Map,                           \
+    initial_array_iterator_prototype_map)                                      \
   V(INITIAL_ARRAY_PROTOTYPE_INDEX, JSObject, initial_array_prototype)          \
   V(INITIAL_GENERATOR_PROTOTYPE_INDEX, JSObject, initial_generator_prototype)  \
   V(INITIAL_ITERATOR_PROTOTYPE_INDEX, JSObject, initial_iterator_prototype)    \
@@ -273,6 +283,9 @@ enum ContextLookupFlags {
   V(PROXY_FUNCTION_INDEX, JSFunction, proxy_function)                          \
   V(PROXY_FUNCTION_MAP_INDEX, Map, proxy_function_map)                         \
   V(PROXY_MAP_INDEX, Map, proxy_map)                                           \
+  V(PROMISE_RESOLVE_SHARED_FUN, SharedFunctionInfo,                            \
+    promise_resolve_shared_fun)                                                \
+  V(PROMISE_REJECT_SHARED_FUN, SharedFunctionInfo, promise_reject_shared_fun)  \
   V(REGEXP_EXEC_FUNCTION_INDEX, JSFunction, regexp_exec_function)              \
   V(REGEXP_FUNCTION_INDEX, JSFunction, regexp_function)                        \
   V(REGEXP_LAST_MATCH_INFO_INDEX, RegExpMatchInfo, regexp_last_match_info)     \

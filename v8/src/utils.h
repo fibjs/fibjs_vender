@@ -946,19 +946,6 @@ class BailoutId {
   int id_;
 };
 
-class TokenDispenserForFinally {
- public:
-  int GetBreakContinueToken() { return next_token_++; }
-  static const int kFallThroughToken = 0;
-  static const int kThrowToken = 1;
-  static const int kReturnToken = 2;
-
-  static const int kFirstBreakContinueToken = 3;
-  static const int kInvalidToken = -1;
-
- private:
-  int next_token_ = kFirstBreakContinueToken;
-};
 
 // ----------------------------------------------------------------------------
 // I/O support.
@@ -1640,8 +1627,30 @@ class ThreadedList final {
     friend class ThreadedList;
   };
 
+  class ConstIterator final {
+   public:
+    ConstIterator& operator++() {
+      entry_ = (*entry_)->next();
+      return *this;
+    }
+    bool operator!=(const ConstIterator& other) {
+      return entry_ != other.entry_;
+    }
+    const T* operator*() const { return *entry_; }
+
+   private:
+    explicit ConstIterator(T* const* entry) : entry_(entry) {}
+
+    T* const* entry_;
+
+    friend class ThreadedList;
+  };
+
   Iterator begin() { return Iterator(&head_); }
   Iterator end() { return Iterator(tail_); }
+
+  ConstIterator begin() const { return ConstIterator(&head_); }
+  ConstIterator end() const { return ConstIterator(tail_); }
 
   void Rewind(Iterator reset_point) {
     tail_ = reset_point.entry_;

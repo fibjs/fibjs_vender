@@ -14,11 +14,12 @@
 #include "src/compiler/all-nodes.h"
 #include "src/compiler/common-operator.h"
 #include "src/compiler/graph.h"
-#include "src/compiler/node.h"
+#include "src/compiler/js-operator.h"
 #include "src/compiler/node-properties.h"
+#include "src/compiler/node.h"
 #include "src/compiler/opcodes.h"
-#include "src/compiler/operator.h"
 #include "src/compiler/operator-properties.h"
+#include "src/compiler/operator.h"
 #include "src/compiler/schedule.h"
 #include "src/compiler/simplified-operator.h"
 #include "src/ostreams.h"
@@ -333,40 +334,35 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::Any());
       break;
     }
-    case IrOpcode::kInt32Constant:  // TODO(rossberg): rename Word32Constant?
-      // Constants have no inputs.
-      CHECK_EQ(0, input_count);
-      // Type is a 32 bit integer, signed or unsigned.
-      CheckTypeIs(node, Type::Integral32());
-      break;
-    case IrOpcode::kInt64Constant:
-      // Constants have no inputs.
-      CHECK_EQ(0, input_count);
-      // Type is internal.
-      // TODO(rossberg): Introduce proper Int64 type.
-      CheckTypeIs(node, Type::Internal());
-      break;
+    case IrOpcode::kInt32Constant:  // TODO(turbofan): rename Word32Constant?
+    case IrOpcode::kInt64Constant:  // TODO(turbofan): rename Word64Constant?
     case IrOpcode::kFloat32Constant:
     case IrOpcode::kFloat64Constant:
+    case IrOpcode::kRelocatableInt32Constant:
+    case IrOpcode::kRelocatableInt64Constant:
+      // Constants have no inputs.
+      CHECK_EQ(0, input_count);
+      // Type is empty.
+      CheckNotTyped(node);
+      break;
     case IrOpcode::kNumberConstant:
       // Constants have no inputs.
       CHECK_EQ(0, input_count);
       // Type is a number.
       CheckTypeIs(node, Type::Number());
       break;
-    case IrOpcode::kRelocatableInt32Constant:
-    case IrOpcode::kRelocatableInt64Constant:
-      CHECK_EQ(0, input_count);
-      break;
     case IrOpcode::kHeapConstant:
       // Constants have no inputs.
       CHECK_EQ(0, input_count);
+      // Type is anything.
+      CheckTypeIs(node, Type::Any());
       break;
     case IrOpcode::kExternalConstant:
+    case IrOpcode::kPointerConstant:
       // Constants have no inputs.
       CHECK_EQ(0, input_count);
-      // Type is considered internal.
-      CheckTypeIs(node, Type::Internal());
+      // Type is an external pointer.
+      CheckTypeIs(node, Type::ExternalPointer());
       break;
     case IrOpcode::kOsrValue:
       // OSR values have a value and a control input.
@@ -488,8 +484,9 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
     case IrOpcode::kStateValues:
-    case IrOpcode::kObjectState:
     case IrOpcode::kTypedStateValues:
+    case IrOpcode::kObjectState:
+    case IrOpcode::kTypedObjectState:
       // TODO(jarin): what are the constraints on these?
       break;
     case IrOpcode::kCall:
@@ -583,6 +580,10 @@ void Verifier::Visitor::Check(Node* node) {
       // Type is OtherObject.
       CheckTypeIs(node, Type::OtherObject());
       break;
+    case IrOpcode::kJSCreateKeyValueArray:
+      // Type is OtherObject.
+      CheckTypeIs(node, Type::OtherObject());
+      break;
     case IrOpcode::kJSCreateLiteralArray:
     case IrOpcode::kJSCreateLiteralObject:
     case IrOpcode::kJSCreateLiteralRegExp:
@@ -590,20 +591,43 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::OtherObject());
       break;
     case IrOpcode::kJSLoadProperty:
+      // Type can be anything.
+      CheckTypeIs(node, Type::Any());
+      CHECK(PropertyAccessOf(node->op()).feedback().IsValid());
+      break;
     case IrOpcode::kJSLoadNamed:
+      // Type can be anything.
+      CheckTypeIs(node, Type::Any());
+      CHECK(NamedAccessOf(node->op()).feedback().IsValid());
+      break;
     case IrOpcode::kJSLoadGlobal:
       // Type can be anything.
       CheckTypeIs(node, Type::Any());
+      CHECK(LoadGlobalParametersOf(node->op()).feedback().IsValid());
       break;
     case IrOpcode::kJSStoreProperty:
+      // Type is empty.
+      CheckNotTyped(node);
+      CHECK(PropertyAccessOf(node->op()).feedback().IsValid());
+      break;
     case IrOpcode::kJSStoreNamed:
+      // Type is empty.
+      CheckNotTyped(node);
+      CHECK(NamedAccessOf(node->op()).feedback().IsValid());
+      break;
     case IrOpcode::kJSStoreGlobal:
+      // Type is empty.
+      CheckNotTyped(node);
+      CHECK(StoreGlobalParametersOf(node->op()).feedback().IsValid());
+      break;
+    case IrOpcode::kJSStoreDataPropertyInLiteral:
       // Type is empty.
       CheckNotTyped(node);
       break;
     case IrOpcode::kJSDeleteProperty:
     case IrOpcode::kJSHasProperty:
     case IrOpcode::kJSInstanceOf:
+    case IrOpcode::kJSOrdinaryHasInstance:
       // Type is Boolean.
       CheckTypeIs(node, Type::Boolean());
       break;
@@ -657,6 +681,13 @@ void Verifier::Visitor::Check(Node* node) {
 
     case IrOpcode::kJSLoadMessage:
     case IrOpcode::kJSStoreMessage:
+      break;
+
+    case IrOpcode::kJSLoadModule:
+      CheckTypeIs(node, Type::Any());
+      break;
+    case IrOpcode::kJSStoreModule:
+      CheckNotTyped(node);
       break;
 
     case IrOpcode::kJSGeneratorStore:
@@ -825,6 +856,7 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::Signed32());
       break;
     case IrOpcode::kNumberToUint32:
+    case IrOpcode::kNumberToUint8Clamped:
       // Number -> Unsigned32
       CheckValueInputIs(node, 0, Type::Number());
       CheckTypeIs(node, Type::Unsigned32());
@@ -1131,6 +1163,7 @@ void Verifier::Visitor::Check(Node* node) {
     // -----------------------
     case IrOpcode::kLoad:
     case IrOpcode::kProtectedLoad:
+    case IrOpcode::kProtectedStore:
     case IrOpcode::kStore:
     case IrOpcode::kStackSlot:
     case IrOpcode::kWord32And:

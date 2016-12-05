@@ -574,18 +574,6 @@ template <class T> class PersistentBase {
   V8_INLINE void MarkIndependent();
 
   /**
-   * Marks the reference to this object partially dependent. Partially dependent
-   * handles only depend on other partially dependent handles and these
-   * dependencies are provided through object groups. It provides a way to build
-   * smaller object groups for young objects that represent only a subset of all
-   * external dependencies. This mark is automatically cleared after each
-   * garbage collection.
-   */
-  V8_INLINE V8_DEPRECATED(
-      "deprecated optimization, do not use partially dependent groups",
-      void MarkPartiallyDependent());
-
-  /**
    * Marks the reference to this object as active. The scavenge garbage
    * collection should not reclaim the objects marked as active.
    * This bit is cleared after the each garbage collection pass.
@@ -973,18 +961,12 @@ class V8_EXPORT Data {
  */
 class ScriptOriginOptions {
  public:
-  V8_INLINE ScriptOriginOptions(bool is_embedder_debug_script = false,
-                                bool is_shared_cross_origin = false,
+  V8_INLINE ScriptOriginOptions(bool is_shared_cross_origin = false,
                                 bool is_opaque = false)
-      : flags_((is_embedder_debug_script ? kIsEmbedderDebugScript : 0) |
-               (is_shared_cross_origin ? kIsSharedCrossOrigin : 0) |
+      : flags_((is_shared_cross_origin ? kIsSharedCrossOrigin : 0) |
                (is_opaque ? kIsOpaque : 0)) {}
   V8_INLINE ScriptOriginOptions(int flags)
-      : flags_(flags &
-               (kIsEmbedderDebugScript | kIsSharedCrossOrigin | kIsOpaque)) {}
-  bool IsEmbedderDebugScript() const {
-    return (flags_ & kIsEmbedderDebugScript) != 0;
-  }
+      : flags_(flags & (kIsSharedCrossOrigin | kIsOpaque)) {}
   bool IsSharedCrossOrigin() const {
     return (flags_ & kIsSharedCrossOrigin) != 0;
   }
@@ -992,11 +974,7 @@ class ScriptOriginOptions {
   int Flags() const { return flags_; }
 
  private:
-  enum {
-    kIsEmbedderDebugScript = 1,
-    kIsSharedCrossOrigin = 1 << 1,
-    kIsOpaque = 1 << 2
-  };
+  enum { kIsSharedCrossOrigin = 1, kIsOpaque = 1 << 1 };
   const int flags_;
 };
 
@@ -1011,9 +989,9 @@ class ScriptOrigin {
       Local<Integer> resource_column_offset = Local<Integer>(),
       Local<Boolean> resource_is_shared_cross_origin = Local<Boolean>(),
       Local<Integer> script_id = Local<Integer>(),
-      Local<Boolean> resource_is_embedder_debug_script = Local<Boolean>(),
       Local<Value> source_map_url = Local<Value>(),
       Local<Boolean> resource_is_opaque = Local<Boolean>());
+
   V8_INLINE Local<Value> ResourceName() const;
   V8_INLINE Local<Integer> ResourceLineOffset() const;
   V8_INLINE Local<Integer> ResourceColumnOffset() const;
@@ -1723,6 +1701,19 @@ class V8_EXPORT ValueSerializer {
      * Nothing<bool>() returned.
      */
     virtual Maybe<bool> WriteHostObject(Isolate* isolate, Local<Object> object);
+
+    /*
+     * Allocates memory for the buffer of at least the size provided. The actual
+     * size (which may be greater or equal) is written to |actual_size|. If no
+     * buffer has been allocated yet, nullptr will be provided.
+     */
+    virtual void* ReallocateBufferMemory(void* old_buffer, size_t size,
+                                         size_t* actual_size);
+
+    /*
+     * Frees a buffer allocated with |ReallocateBufferMemory|.
+     */
+    virtual void FreeBufferMemory(void* buffer);
   };
 
   explicit ValueSerializer(Isolate* isolate);
@@ -1744,7 +1735,15 @@ class V8_EXPORT ValueSerializer {
    * Returns the stored data. This serializer should not be used once the buffer
    * is released. The contents are undefined if a previous write has failed.
    */
-  std::vector<uint8_t> ReleaseBuffer();
+  V8_DEPRECATE_SOON("Use Release()", std::vector<uint8_t> ReleaseBuffer());
+
+  /*
+   * Returns the stored data (allocated using the delegate's
+   * AllocateBufferMemory) and its size. This serializer should not be used once
+   * the buffer is released. The contents are undefined if a previous write has
+   * failed.
+   */
+  V8_WARN_UNUSED_RESULT std::pair<uint8_t*, size_t> Release();
 
   /*
    * Marks an ArrayBuffer as havings its contents transferred out of band.
@@ -1810,7 +1809,6 @@ class V8_EXPORT ValueDeserializer {
    * May, for example, reject an invalid or unsupported wire format.
    */
   V8_WARN_UNUSED_RESULT Maybe<bool> ReadHeader(Local<Context> context);
-  V8_DEPRECATE_SOON("Use Local<Context> version", Maybe<bool> ReadHeader());
 
   /*
    * Deserializes a JavaScript value from the buffer.
@@ -1912,7 +1910,6 @@ class V8_EXPORT Value : public Data {
 
   /**
    * Returns true if this value is a symbol or a string.
-   * This is an experimental feature.
    */
   bool IsName() const;
 
@@ -1924,7 +1921,6 @@ class V8_EXPORT Value : public Data {
 
   /**
    * Returns true if this value is a symbol.
-   * This is an experimental feature.
    */
   bool IsSymbol() const;
 
@@ -1996,7 +1992,6 @@ class V8_EXPORT Value : public Data {
 
   /**
    * Returns true if this value is a Symbol object.
-   * This is an experimental feature.
    */
   bool IsSymbolObject() const;
 
@@ -2017,19 +2012,16 @@ class V8_EXPORT Value : public Data {
 
   /**
    * Returns true if this value is a Generator function.
-   * This is an experimental feature.
    */
   bool IsGeneratorFunction() const;
 
   /**
    * Returns true if this value is a Generator object (iterator).
-   * This is an experimental feature.
    */
   bool IsGeneratorObject() const;
 
   /**
    * Returns true if this value is a Promise.
-   * This is an experimental feature.
    */
   bool IsPromise() const;
 
@@ -2065,73 +2057,61 @@ class V8_EXPORT Value : public Data {
 
   /**
    * Returns true if this value is an ArrayBuffer.
-   * This is an experimental feature.
    */
   bool IsArrayBuffer() const;
 
   /**
    * Returns true if this value is an ArrayBufferView.
-   * This is an experimental feature.
    */
   bool IsArrayBufferView() const;
 
   /**
    * Returns true if this value is one of TypedArrays.
-   * This is an experimental feature.
    */
   bool IsTypedArray() const;
 
   /**
    * Returns true if this value is an Uint8Array.
-   * This is an experimental feature.
    */
   bool IsUint8Array() const;
 
   /**
    * Returns true if this value is an Uint8ClampedArray.
-   * This is an experimental feature.
    */
   bool IsUint8ClampedArray() const;
 
   /**
    * Returns true if this value is an Int8Array.
-   * This is an experimental feature.
    */
   bool IsInt8Array() const;
 
   /**
    * Returns true if this value is an Uint16Array.
-   * This is an experimental feature.
    */
   bool IsUint16Array() const;
 
   /**
    * Returns true if this value is an Int16Array.
-   * This is an experimental feature.
    */
   bool IsInt16Array() const;
 
   /**
    * Returns true if this value is an Uint32Array.
-   * This is an experimental feature.
    */
   bool IsUint32Array() const;
 
   /**
    * Returns true if this value is an Int32Array.
-   * This is an experimental feature.
    */
   bool IsInt32Array() const;
 
   /**
    * Returns true if this value is a Float32Array.
-   * This is an experimental feature.
    */
   bool IsFloat32Array() const;
 
   /**
    * Returns true if this value is a Float64Array.
-   * This is an experimental feature.
    */
   bool IsFloat64Array() const;
 
@@ -2143,7 +2123,6 @@ class V8_EXPORT Value : public Data {
 
   /**
    * Returns true if this value is a DataView.
-   * This is an experimental feature.
    */
   bool IsDataView() const;
 
@@ -2661,8 +2640,6 @@ class V8_EXPORT String : public Name {
 
 /**
  * A JavaScript symbol (ECMA-262 edition 6)
- *
- * This is an experimental feature. Use at your own risk.
  */
 class V8_EXPORT Symbol : public Name {
  public:
@@ -3687,7 +3664,7 @@ class V8_EXPORT Function : public Object {
   /**
    * Tells whether this function is builtin.
    */
-  bool IsBuiltin() const;
+  V8_DEPRECATED("this should no longer be used.", bool IsBuiltin() const);
 
   /**
    * Returns scriptId.
@@ -3712,7 +3689,6 @@ class V8_EXPORT Function : public Object {
 
 /**
  * An instance of the built-in Promise constructor (ES6 draft).
- * This API is experimental. Only works with --harmony flag.
  */
 class V8_EXPORT Promise : public Object {
  public:
@@ -3918,7 +3894,6 @@ enum class ArrayBufferCreationMode { kInternalized, kExternalized };
 
 /**
  * An instance of the built-in ArrayBuffer constructor (ES6 draft 15.13.5).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT ArrayBuffer : public Object {
  public:
@@ -3974,8 +3949,6 @@ class V8_EXPORT ArrayBuffer : public Object {
    *
    * The Data pointer of ArrayBuffer::Contents is always allocated with
    * Allocator::Allocate that is set via Isolate::CreateParams.
-   *
-   * This API is experimental and may change significantly.
    */
   class V8_EXPORT Contents { // NOLINT
    public:
@@ -4076,8 +4049,6 @@ class V8_EXPORT ArrayBuffer : public Object {
 /**
  * A base class for an instance of one of "views" over ArrayBuffer,
  * including TypedArrays and DataView (ES6 draft 15.13).
- *
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT ArrayBufferView : public Object {
  public:
@@ -4125,7 +4096,6 @@ class V8_EXPORT ArrayBufferView : public Object {
 /**
  * A base class for an instance of TypedArray series of constructors
  * (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT TypedArray : public ArrayBufferView {
  public:
@@ -4145,7 +4115,6 @@ class V8_EXPORT TypedArray : public ArrayBufferView {
 
 /**
  * An instance of Uint8Array constructor (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT Uint8Array : public TypedArray {
  public:
@@ -4163,7 +4132,6 @@ class V8_EXPORT Uint8Array : public TypedArray {
 
 /**
  * An instance of Uint8ClampedArray constructor (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT Uint8ClampedArray : public TypedArray {
  public:
@@ -4181,7 +4149,6 @@ class V8_EXPORT Uint8ClampedArray : public TypedArray {
 
 /**
  * An instance of Int8Array constructor (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT Int8Array : public TypedArray {
  public:
@@ -4199,7 +4166,6 @@ class V8_EXPORT Int8Array : public TypedArray {
 
 /**
  * An instance of Uint16Array constructor (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT Uint16Array : public TypedArray {
  public:
@@ -4217,7 +4183,6 @@ class V8_EXPORT Uint16Array : public TypedArray {
 
 /**
  * An instance of Int16Array constructor (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT Int16Array : public TypedArray {
  public:
@@ -4235,7 +4200,6 @@ class V8_EXPORT Int16Array : public TypedArray {
 
 /**
  * An instance of Uint32Array constructor (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT Uint32Array : public TypedArray {
  public:
@@ -4253,7 +4217,6 @@ class V8_EXPORT Uint32Array : public TypedArray {
 
 /**
  * An instance of Int32Array constructor (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT Int32Array : public TypedArray {
  public:
@@ -4271,7 +4234,6 @@ class V8_EXPORT Int32Array : public TypedArray {
 
 /**
  * An instance of Float32Array constructor (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT Float32Array : public TypedArray {
  public:
@@ -4289,7 +4251,6 @@ class V8_EXPORT Float32Array : public TypedArray {
 
 /**
  * An instance of Float64Array constructor (ES6 draft 15.13.6).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT Float64Array : public TypedArray {
  public:
@@ -4307,7 +4268,6 @@ class V8_EXPORT Float64Array : public TypedArray {
 
 /**
  * An instance of DataView constructor (ES6 draft 15.13.7).
- * This API is experimental and may change significantly.
  */
 class V8_EXPORT DataView : public ArrayBufferView {
  public:
@@ -4510,8 +4470,6 @@ class V8_EXPORT StringObject : public Object {
 
 /**
  * A Symbol object (ECMA-262 edition 6).
- *
- * This is an experimental feature. Use at your own risk.
  */
 class V8_EXPORT SymbolObject : public Object {
  public:
@@ -5136,7 +5094,11 @@ class V8_EXPORT FunctionTemplate : public Template {
   /** Get the InstanceTemplate. */
   Local<ObjectTemplate> InstanceTemplate();
 
-  /** Causes the function template to inherit from a parent function template.*/
+  /**
+   * Causes the function template to inherit from a parent function template.
+   * This means the the function's prototype.__proto__ is set to the parent
+   * function's prototype.
+   **/
   void Inherit(Local<FunctionTemplate> parent);
 
   /**
@@ -5144,6 +5106,14 @@ class V8_EXPORT FunctionTemplate : public Template {
    * of the function created by this template.
    */
   Local<ObjectTemplate> PrototypeTemplate();
+
+  /**
+   * A PrototypeProviderTemplate is another function template whose prototype
+   * property is used for this template. This is mutually exclusive with setting
+   * a prototype template indirectly by calling PrototypeTemplate() or using
+   * Inherit().
+   **/
+  void SetPrototypeProviderTemplate(Local<FunctionTemplate> prototype_provider);
 
   /**
    * Set the class name of the FunctionTemplate.  This is used for
@@ -7567,7 +7537,7 @@ class V8_EXPORT V8 {
 /**
  * Helper class to create a snapshot data blob.
  */
-class SnapshotCreator {
+class V8_EXPORT SnapshotCreator {
  public:
   enum class FunctionCodeHandling { kClear, kKeep };
 
@@ -8326,11 +8296,10 @@ class Internals {
   static const int kNodeStateIsPendingValue = 3;
   static const int kNodeStateIsNearDeathValue = 4;
   static const int kNodeIsIndependentShift = 3;
-  static const int kNodeIsPartiallyDependentShift = 4;
   static const int kNodeIsActiveShift = 4;
 
-  static const int kJSObjectType = 0xbc;
-  static const int kJSApiObjectType = 0xbb;
+  static const int kJSObjectType = 0xbd;
+  static const int kJSApiObjectType = 0xbc;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x83;
   static const int kForeignType = 0x87;
@@ -8622,17 +8591,6 @@ void PersistentBase<T>::MarkIndependent() {
                     I::kNodeIsIndependentShift);
 }
 
-
-template <class T>
-void PersistentBase<T>::MarkPartiallyDependent() {
-  typedef internal::Internals I;
-  if (this->IsEmpty()) return;
-  I::UpdateNodeFlag(reinterpret_cast<internal::Object**>(this->val_),
-                    true,
-                    I::kNodeIsPartiallyDependentShift);
-}
-
-
 template <class T>
 void PersistentBase<T>::MarkActive() {
   typedef internal::Internals I;
@@ -8860,15 +8818,12 @@ ScriptOrigin::ScriptOrigin(Local<Value> resource_name,
                            Local<Integer> resource_column_offset,
                            Local<Boolean> resource_is_shared_cross_origin,
                            Local<Integer> script_id,
-                           Local<Boolean> resource_is_embedder_debug_script,
                            Local<Value> source_map_url,
                            Local<Boolean> resource_is_opaque)
     : resource_name_(resource_name),
       resource_line_offset_(resource_line_offset),
       resource_column_offset_(resource_column_offset),
-      options_(!resource_is_embedder_debug_script.IsEmpty() &&
-                   resource_is_embedder_debug_script->IsTrue(),
-               !resource_is_shared_cross_origin.IsEmpty() &&
+      options_(!resource_is_shared_cross_origin.IsEmpty() &&
                    resource_is_shared_cross_origin->IsTrue(),
                !resource_is_opaque.IsEmpty() && resource_is_opaque->IsTrue()),
       script_id_(script_id),

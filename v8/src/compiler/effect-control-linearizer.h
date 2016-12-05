@@ -25,10 +25,12 @@ class MachineOperatorBuilder;
 class JSGraph;
 class Graph;
 class Schedule;
+class SourcePositionTable;
 
 class V8_EXPORT_PRIVATE EffectControlLinearizer {
  public:
-  EffectControlLinearizer(JSGraph* graph, Schedule* schedule, Zone* temp_zone);
+  EffectControlLinearizer(JSGraph* graph, Schedule* schedule, Zone* temp_zone,
+                          SourcePositionTable* source_positions);
 
   void Run();
 
@@ -182,6 +184,8 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
                                          Node* control);
   ValueEffectControl LowerFloat64RoundDown(Node* node, Node* effect,
                                            Node* control);
+  ValueEffectControl LowerFloat64RoundTiesEven(Node* node, Node* effect,
+                                               Node* control);
   ValueEffectControl LowerFloat64RoundTruncate(Node* node, Node* effect,
                                                Node* control);
 
@@ -193,6 +197,8 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   ValueEffectControl BuildCheckedHeapNumberOrOddballToFloat64(
       CheckTaggedInputMode mode, Node* value, Node* frame_state, Node* effect,
       Node* control);
+  ValueEffectControl BuildFloat64RoundDown(Node* value, Node* effect,
+                                           Node* control);
   ValueEffectControl LowerStringComparison(Callable const& callable, Node* node,
                                            Node* effect, Node* control);
 
@@ -222,6 +228,7 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
   Schedule* schedule_;
   Zone* temp_zone_;
   RegionObservability region_observability_ = RegionObservability::kObservable;
+  SourcePositionTable* source_positions_;
 
   SetOncePointer<Operator const> to_number_operator_;
 };

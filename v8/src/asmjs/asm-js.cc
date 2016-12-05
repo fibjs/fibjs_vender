@@ -20,6 +20,7 @@
 #include "src/wasm/wasm-js.h"
 #include "src/wasm/wasm-module-builder.h"
 #include "src/wasm/wasm-module.h"
+#include "src/wasm/wasm-objects.h"
 #include "src/wasm/wasm-result.h"
 
 typedef uint8_t byte;
@@ -152,27 +153,27 @@ bool IsStdlibMemberValid(i::Isolate* isolate, Handle<JSReceiver> stdlib,
 
 MaybeHandle<FixedArray> AsmJs::ConvertAsmToWasm(ParseInfo* info) {
   ErrorThrower thrower(info->isolate(), "Asm.js -> WebAssembly conversion");
-  wasm::AsmTyper typer(info->isolate(), info->zone(), *(info->script()),
-                       info->literal());
-  if (!typer.Validate()) {
+  wasm::AsmWasmBuilder builder(info->isolate(), info->zone(),
+                               info->ast_value_factory(), *info->script(),
+                               info->literal());
+  Handle<FixedArray> foreign_globals;
+  auto asm_wasm_result = builder.Run(&foreign_globals);
+  if (!asm_wasm_result.success) {
     DCHECK(!info->isolate()->has_pending_exception());
-    PrintF("Validation of asm.js module failed: %s", typer.error_message());
+    PrintF("Validation of asm.js module failed: %s\n",
+           builder.typer()->error_message());
     return MaybeHandle<FixedArray>();
   }
-  v8::internal::wasm::AsmWasmBuilder builder(info->isolate(), info->zone(),
-                                             info->literal(), &typer);
-  i::Handle<i::FixedArray> foreign_globals;
-  auto asm_wasm_result = builder.Run(&foreign_globals);
   wasm::ZoneBuffer* module = asm_wasm_result.module_bytes;
   wasm::ZoneBuffer* asm_offsets = asm_wasm_result.asm_offset_table;
 
-  i::MaybeHandle<i::JSObject> compiled = wasm::CreateModuleObjectFromBytes(
+  MaybeHandle<JSObject> compiled = wasm::CreateModuleObjectFromBytes(
       info->isolate(), module->begin(), module->end(), &thrower,
       internal::wasm::kAsmJsOrigin, info->script(), asm_offsets->begin(),
       asm_offsets->end());
   DCHECK(!compiled.is_null());
 
-  wasm::AsmTyper::StdlibSet uses = typer.StdlibUses();
+  wasm::AsmTyper::StdlibSet uses = builder.typer()->StdlibUses();
   Handle<FixedArray> uses_array =
       info->isolate()->factory()->NewFixedArray(static_cast<int>(uses.size()));
   int count = 0;

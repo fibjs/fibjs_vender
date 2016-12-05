@@ -26,6 +26,9 @@ class V8_EXPORT_PRIVATE AccessBuilder final
   // Provides access to a double field identified by an external reference.
   static FieldAccess ForExternalDoubleValue();
 
+  // Provides access to an uint8 field identified by an external reference.
+  static FieldAccess ForExternalUint8Value();
+
   // ===========================================================================
   // Access to heap object fields and elements (based on tagged pointer).
 
@@ -71,8 +74,8 @@ class V8_EXPORT_PRIVATE AccessBuilder final
   // Provides access to JSGeneratorObject::input_or_debug_pos() field.
   static FieldAccess ForJSGeneratorObjectInputOrDebugPos();
 
-  // Provides access to JSGeneratorObject::operand_stack() field.
-  static FieldAccess ForJSGeneratorObjectOperandStack();
+  // Provides access to JSGeneratorObject::register_file() field.
+  static FieldAccess ForJSGeneratorObjectRegisterFile();
 
   // Provides access to JSGeneratorObject::resume_mode() field.
   static FieldAccess ForJSGeneratorObjectResumeMode();
@@ -146,6 +149,12 @@ class V8_EXPORT_PRIVATE AccessBuilder final
   // Provides access to Map::prototype() field.
   static FieldAccess ForMapPrototype();
 
+  // Provides access to Module::regular_exports() field.
+  static FieldAccess ForModuleRegularExports();
+
+  // Provides access to Module::regular_imports() field.
+  static FieldAccess ForModuleRegularImports();
+
   // Provides access to Name::hash_field() field.
   static FieldAccess ForNameHashField();
 
@@ -185,6 +194,16 @@ class V8_EXPORT_PRIVATE AccessBuilder final
   // Provides access to JSGlobalObject::native_context() field.
   static FieldAccess ForJSGlobalObjectNativeContext();
 
+  // Provides access to JSArrayIterator::object() field.
+  static FieldAccess ForJSArrayIteratorObject();
+
+  // Provides access to JSArrayIterator::index() field.
+  static FieldAccess ForJSArrayIteratorIndex(InstanceType type = JS_OBJECT_TYPE,
+                                             ElementsKind kind = NO_ELEMENTS);
+
+  // Provides access to JSArrayIterator::object_map() field.
+  static FieldAccess ForJSArrayIteratorObjectMap();
+
   // Provides access to JSStringIterator::string() field.
   static FieldAccess ForJSStringIteratorString();
 
@@ -193,6 +212,9 @@ class V8_EXPORT_PRIVATE AccessBuilder final
 
   // Provides access to JSValue::value() field.
   static FieldAccess ForValue();
+
+  // Provides access to Cell::value() field.
+  static FieldAccess ForCellValue();
 
   // Provides access to arguments object fields.
   static FieldAccess ForArgumentsLength();

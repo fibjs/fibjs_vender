@@ -37,14 +37,12 @@ class AccessorInfo;
   V(ScriptEvalFromScriptPosition) \
   V(ScriptEvalFromFunctionName)   \
   V(ScriptId)                     \
-  V(ScriptLineEnds)               \
   V(ScriptLineOffset)             \
   V(ScriptName)                   \
   V(ScriptSource)                 \
   V(ScriptType)                   \
   V(ScriptSourceUrl)              \
   V(ScriptSourceMappingUrl)       \
-  V(ScriptIsEmbedderDebugScript)  \
   V(StringLength)
 
 #define ACCESSOR_SETTER_LIST(V) \

@@ -31,6 +31,14 @@ class V8_EXPORT_PRIVATE Factory final {
   // Allocates a fixed array initialized with undefined values.
   Handle<FixedArray> NewFixedArray(int size,
                                    PretenureFlag pretenure = NOT_TENURED);
+  // Tries allocating a fixed array initialized with undefined values.
+  // In case of an allocation failure (OOM) an empty handle is returned.
+  // The caller has to manually signal an
+  // v8::internal::Heap::FatalProcessOutOfMemory typically by calling
+  // NewFixedArray as a fallback.
+  MUST_USE_RESULT
+  MaybeHandle<FixedArray> TryNewFixedArray(
+      int size, PretenureFlag pretenure = NOT_TENURED);
 
   // Allocate a new fixed array with non-existing entries (the hole).
   Handle<FixedArray> NewFixedArrayWithHoles(
@@ -71,10 +79,14 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<PromiseResolveThenableJobInfo> NewPromiseResolveThenableJobInfo(
       Handle<JSReceiver> thenable, Handle<JSReceiver> then,
       Handle<JSFunction> resolve, Handle<JSFunction> reject,
-      Handle<Object> debug_id, Handle<Object> debug_name);
+      Handle<Object> debug_id, Handle<Object> debug_name,
+      Handle<Context> context);
 
   // Create a new PrototypeInfo struct.
   Handle<PrototypeInfo> NewPrototypeInfo();
+
+  // Create a new Tuple2 struct.
+  Handle<Tuple2> NewTuple2(Handle<Object> value1, Handle<Object> value2);
 
   // Create a new Tuple3 struct.
   Handle<Tuple3> NewTuple3(Handle<Object> value1, Handle<Object> value2,
@@ -310,6 +322,8 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<Context> NewBlockContext(Handle<JSFunction> function,
                                   Handle<Context> previous,
                                   Handle<ScopeInfo> scope_info);
+  // Create a promise context.
+  Handle<Context> NewPromiseResolvingFunctionContext(int length);
 
   // Allocate a new struct.  The struct is pretenured (allocated directly in
   // the old generation).
@@ -438,9 +452,6 @@ class V8_EXPORT_PRIVATE Factory final {
   // runtime.
   Handle<JSObject> NewJSObject(Handle<JSFunction> constructor,
                                PretenureFlag pretenure = NOT_TENURED);
-  // JSObject that should have a memento pointing to the allocation site.
-  Handle<JSObject> NewJSObjectWithMemento(Handle<JSFunction> constructor,
-                                          Handle<AllocationSite> site);
   // JSObject without a prototype.
   Handle<JSObject> NewJSObjectWithNullProto();
 
@@ -697,6 +708,9 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(Handle<String> name,
                                                    MaybeHandle<Code> code,
                                                    bool is_constructor);
+
+  Handle<SharedFunctionInfo> NewSharedFunctionInfoForLiteral(
+      FunctionLiteral* literal, Handle<Script> script);
 
   static bool IsFunctionModeWithPrototype(FunctionMode function_mode) {
     return (function_mode == FUNCTION_WITH_WRITEABLE_PROTOTYPE ||

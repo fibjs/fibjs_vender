@@ -35,6 +35,17 @@ class Mips64OperandGenerator final : public OperandGenerator {
     return UseRegister(node);
   }
 
+  // Use the zero register if the node has the immediate value zero, otherwise
+  // assign a register.
+  InstructionOperand UseRegisterOrImmediateZero(Node* node) {
+    if ((IsIntegerConstant(node) && (GetIntegerConstantValue(node) == 0)) ||
+        (IsFloatConstant(node) &&
+         (bit_cast<int64_t>(GetFloatConstantValue(node)) == V8_INT64_C(0)))) {
+      return UseImmediate(node);
+    }
+    return UseRegister(node);
+  }
+
   bool IsIntegerConstant(Node* node) {
     return (node->opcode() == IrOpcode::kInt32Constant) ||
            (node->opcode() == IrOpcode::kInt64Constant);
@@ -46,6 +57,19 @@ class Mips64OperandGenerator final : public OperandGenerator {
     }
     DCHECK(node->opcode() == IrOpcode::kInt64Constant);
     return OpParameter<int64_t>(node);
+  }
+
+  bool IsFloatConstant(Node* node) {
+    return (node->opcode() == IrOpcode::kFloat32Constant) ||
+           (node->opcode() == IrOpcode::kFloat64Constant);
+  }
+
+  double GetFloatConstantValue(Node* node) {
+    if (node->opcode() == IrOpcode::kFloat32Constant) {
+      return OpParameter<float>(node);
+    }
+    DCHECK_EQ(IrOpcode::kFloat64Constant, node->opcode());
+    return OpParameter<double>(node);
   }
 
   bool CanBeImmediate(Node* node, InstructionCode mode) {
@@ -69,11 +93,38 @@ class Mips64OperandGenerator final : public OperandGenerator {
       case kMips64Dadd:
       case kMips64Or32:
       case kMips64Or:
+      case kMips64Tst:
       case kMips64Xor:
         return is_uint16(value);
+      case kMips64Lb:
+      case kMips64Lbu:
+      case kMips64Sb:
+      case kMips64Lh:
+      case kMips64Lhu:
+      case kMips64Sh:
+      case kMips64Lw:
+      case kMips64Sw:
+      case kMips64Ld:
+      case kMips64Sd:
+      case kMips64Lwc1:
+      case kMips64Swc1:
       case kMips64Ldc1:
       case kMips64Sdc1:
-        return is_int16(value + kIntSize);
+      case kCheckedLoadInt8:
+      case kCheckedLoadUint8:
+      case kCheckedLoadInt16:
+      case kCheckedLoadUint16:
+      case kCheckedLoadWord32:
+      case kCheckedLoadWord64:
+      case kCheckedStoreWord8:
+      case kCheckedStoreWord16:
+      case kCheckedStoreWord32:
+      case kCheckedStoreWord64:
+      case kCheckedLoadFloat32:
+      case kCheckedLoadFloat64:
+      case kCheckedStoreFloat32:
+      case kCheckedStoreFloat64:
+        return is_int32(value);
       default:
         return is_int16(value);
     }
@@ -148,6 +199,16 @@ struct ExtendingLoadMatcher {
     DCHECK(m.IsWord64Sar());
     if (m.left().IsLoad() && m.right().Is(32) &&
         selector_->CanCover(m.node(), m.left().node())) {
+      MachineRepresentation rep =
+          LoadRepresentationOf(m.left().node()->op()).representation();
+      DCHECK(ElementSizeLog2Of(rep) == 3);
+      if (rep != MachineRepresentation::kTaggedSigned &&
+          rep != MachineRepresentation::kTaggedPointer &&
+          rep != MachineRepresentation::kTagged &&
+          rep != MachineRepresentation::kWord64) {
+        return;
+      }
+
       Mips64OperandGenerator g(selector_);
       Node* load = m.left().node();
       Node* offset = load->InputAt(1);
@@ -165,7 +226,8 @@ struct ExtendingLoadMatcher {
   }
 };
 
-bool TryEmitExtendingLoad(InstructionSelector* selector, Node* node) {
+bool TryEmitExtendingLoad(InstructionSelector* selector, Node* node,
+                          Node* output_node) {
   ExtendingLoadMatcher m(node, selector);
   Mips64OperandGenerator g(selector);
   if (m.Matches()) {
@@ -175,7 +237,7 @@ bool TryEmitExtendingLoad(InstructionSelector* selector, Node* node) {
         m.opcode() | AddressingModeField::encode(kMode_MRI);
     DCHECK(is_int32(m.immediate()));
     inputs[1] = g.TempImmediate(static_cast<int32_t>(m.immediate()));
-    InstructionOperand outputs[] = {g.DefineAsRegister(node)};
+    InstructionOperand outputs[] = {g.DefineAsRegister(output_node)};
     selector->Emit(opcode, arraysize(outputs), outputs, arraysize(inputs),
                    inputs);
     return true;
@@ -404,18 +466,23 @@ void InstructionSelector::VisitStore(Node* node) {
 
     if (g.CanBeImmediate(index, opcode)) {
       Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-           g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
+           g.UseRegister(base), g.UseImmediate(index),
+           g.UseRegisterOrImmediateZero(value));
     } else {
       InstructionOperand addr_reg = g.TempRegister();
       Emit(kMips64Dadd | AddressingModeField::encode(kMode_None), addr_reg,
            g.UseRegister(index), g.UseRegister(base));
       // Emit desired store opcode, using temp addr_reg.
       Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-           addr_reg, g.TempImmediate(0), g.UseRegister(value));
+           addr_reg, g.TempImmediate(0), g.UseRegisterOrImmediateZero(value));
     }
   }
 }
 
+void InstructionSelector::VisitProtectedStore(Node* node) {
+  // TODO(eholk)
+  UNIMPLEMENTED();
+}
 
 void InstructionSelector::VisitWord32And(Node* node) {
   Mips64OperandGenerator g(this);
@@ -726,7 +793,7 @@ void InstructionSelector::VisitWord64Shr(Node* node) {
 
 
 void InstructionSelector::VisitWord64Sar(Node* node) {
-  if (TryEmitExtendingLoad(this, node)) return;
+  if (TryEmitExtendingLoad(this, node, node)) return;
   VisitRRO(this, kMips64Dsar, node);
 }
 
@@ -802,7 +869,7 @@ void InstructionSelector::VisitInt32Add(Node* node) {
   if (m.right().opcode() == IrOpcode::kWord32Shl &&
       CanCover(node, m.left().node()) && CanCover(node, m.right().node())) {
     Int32BinopMatcher mright(m.right().node());
-    if (mright.right().HasValue()) {
+    if (mright.right().HasValue() && !m.left().HasValue()) {
       int32_t shift_value = static_cast<int32_t>(mright.right().Value());
       Emit(kMips64Lsa, g.DefineAsRegister(node), g.UseRegister(m.left().node()),
            g.UseRegister(mright.left().node()), g.TempImmediate(shift_value));
@@ -814,7 +881,7 @@ void InstructionSelector::VisitInt32Add(Node* node) {
   if (m.left().opcode() == IrOpcode::kWord32Shl &&
       CanCover(node, m.right().node()) && CanCover(node, m.left().node())) {
     Int32BinopMatcher mleft(m.left().node());
-    if (mleft.right().HasValue()) {
+    if (mleft.right().HasValue() && !m.right().HasValue()) {
       int32_t shift_value = static_cast<int32_t>(mleft.right().Value());
       Emit(kMips64Lsa, g.DefineAsRegister(node),
            g.UseRegister(m.right().node()), g.UseRegister(mleft.left().node()),
@@ -834,7 +901,7 @@ void InstructionSelector::VisitInt64Add(Node* node) {
   if (m.right().opcode() == IrOpcode::kWord64Shl &&
       CanCover(node, m.left().node()) && CanCover(node, m.right().node())) {
     Int64BinopMatcher mright(m.right().node());
-    if (mright.right().HasValue()) {
+    if (mright.right().HasValue() && !m.left().HasValue()) {
       int32_t shift_value = static_cast<int32_t>(mright.right().Value());
       Emit(kMips64Dlsa, g.DefineAsRegister(node),
            g.UseRegister(m.left().node()), g.UseRegister(mright.left().node()),
@@ -847,7 +914,7 @@ void InstructionSelector::VisitInt64Add(Node* node) {
   if (m.left().opcode() == IrOpcode::kWord64Shl &&
       CanCover(node, m.right().node()) && CanCover(node, m.left().node())) {
     Int64BinopMatcher mleft(m.left().node());
-    if (mleft.right().HasValue()) {
+    if (mleft.right().HasValue() && !m.right().HasValue()) {
       int32_t shift_value = static_cast<int32_t>(mleft.right().Value());
       Emit(kMips64Dlsa, g.DefineAsRegister(node),
            g.UseRegister(m.right().node()), g.UseRegister(mleft.left().node()),
@@ -1296,13 +1363,17 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
   if (CanCover(node, value)) {
     switch (value->opcode()) {
       case IrOpcode::kWord64Sar: {
-        Int64BinopMatcher m(value);
-        if (m.right().IsInRange(32, 63)) {
-          // After smi untagging no need for truncate. Combine sequence.
-          Emit(kMips64Dsar, g.DefineSameAsFirst(node),
-               g.UseRegister(m.left().node()),
-               g.UseImmediate(m.right().node()));
+        if (TryEmitExtendingLoad(this, value, node)) {
           return;
+        } else {
+          Int64BinopMatcher m(value);
+          if (m.right().IsInRange(32, 63)) {
+            // After smi untagging no need for truncate. Combine sequence.
+            Emit(kMips64Dsar, g.DefineSameAsFirst(node),
+                 g.UseRegister(m.left().node()),
+                 g.UseImmediate(m.right().node()));
+            return;
+          }
         }
         break;
       }
@@ -1770,14 +1841,15 @@ void InstructionSelector::VisitUnalignedStore(Node* node) {
 
   if (g.CanBeImmediate(index, opcode)) {
     Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-         g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
+         g.UseRegister(base), g.UseImmediate(index),
+         g.UseRegisterOrImmediateZero(value));
   } else {
     InstructionOperand addr_reg = g.TempRegister();
     Emit(kMips64Dadd | AddressingModeField::encode(kMode_None), addr_reg,
          g.UseRegister(index), g.UseRegister(base));
     // Emit desired store opcode, using temp addr_reg.
     Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-         addr_reg, g.TempImmediate(0), g.UseRegister(value));
+         addr_reg, g.TempImmediate(0), g.UseRegisterOrImmediateZero(value));
   }
 }
 
@@ -1879,7 +1951,7 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
                                           : g.UseRegister(length);
 
   Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-       offset_operand, length_operand, g.UseRegister(value),
+       offset_operand, length_operand, g.UseRegisterOrImmediateZero(value),
        g.UseRegister(buffer));
 }
 
@@ -1945,51 +2017,61 @@ void VisitWordCompare(InstructionSelector* selector, Node* node,
 
   // Match immediates on left or right side of comparison.
   if (g.CanBeImmediate(right, opcode)) {
-    switch (cont->condition()) {
-      case kEqual:
-      case kNotEqual:
-        if (cont->IsSet()) {
+    if (opcode == kMips64Tst) {
+      VisitCompare(selector, opcode, g.UseRegister(left), g.UseImmediate(right),
+                   cont);
+    } else {
+      switch (cont->condition()) {
+        case kEqual:
+        case kNotEqual:
+          if (cont->IsSet()) {
+            VisitCompare(selector, opcode, g.UseRegister(left),
+                         g.UseImmediate(right), cont);
+          } else {
+            VisitCompare(selector, opcode, g.UseRegister(left),
+                         g.UseRegister(right), cont);
+          }
+          break;
+        case kSignedLessThan:
+        case kSignedGreaterThanOrEqual:
+        case kUnsignedLessThan:
+        case kUnsignedGreaterThanOrEqual:
           VisitCompare(selector, opcode, g.UseRegister(left),
                        g.UseImmediate(right), cont);
-        } else {
+          break;
+        default:
           VisitCompare(selector, opcode, g.UseRegister(left),
                        g.UseRegister(right), cont);
-        }
-        break;
-      case kSignedLessThan:
-      case kSignedGreaterThanOrEqual:
-      case kUnsignedLessThan:
-      case kUnsignedGreaterThanOrEqual:
-        VisitCompare(selector, opcode, g.UseRegister(left),
-                     g.UseImmediate(right), cont);
-        break;
-      default:
-        VisitCompare(selector, opcode, g.UseRegister(left),
-                     g.UseRegister(right), cont);
+      }
     }
   } else if (g.CanBeImmediate(left, opcode)) {
     if (!commutative) cont->Commute();
-    switch (cont->condition()) {
-      case kEqual:
-      case kNotEqual:
-        if (cont->IsSet()) {
+    if (opcode == kMips64Tst) {
+      VisitCompare(selector, opcode, g.UseRegister(right), g.UseImmediate(left),
+                   cont);
+    } else {
+      switch (cont->condition()) {
+        case kEqual:
+        case kNotEqual:
+          if (cont->IsSet()) {
+            VisitCompare(selector, opcode, g.UseRegister(right),
+                         g.UseImmediate(left), cont);
+          } else {
+            VisitCompare(selector, opcode, g.UseRegister(right),
+                         g.UseRegister(left), cont);
+          }
+          break;
+        case kSignedLessThan:
+        case kSignedGreaterThanOrEqual:
+        case kUnsignedLessThan:
+        case kUnsignedGreaterThanOrEqual:
           VisitCompare(selector, opcode, g.UseRegister(right),
                        g.UseImmediate(left), cont);
-        } else {
+          break;
+        default:
           VisitCompare(selector, opcode, g.UseRegister(right),
                        g.UseRegister(left), cont);
-        }
-        break;
-      case kSignedLessThan:
-      case kSignedGreaterThanOrEqual:
-      case kUnsignedLessThan:
-      case kUnsignedGreaterThanOrEqual:
-        VisitCompare(selector, opcode, g.UseRegister(right),
-                     g.UseImmediate(left), cont);
-        break;
-      default:
-        VisitCompare(selector, opcode, g.UseRegister(right),
-                     g.UseRegister(left), cont);
+      }
     }
   } else {
     VisitCompare(selector, opcode, g.UseRegister(left), g.UseRegister(right),
@@ -2522,14 +2604,15 @@ void InstructionSelector::VisitAtomicStore(Node* node) {
 
   if (g.CanBeImmediate(index, opcode)) {
     Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-         g.UseRegister(base), g.UseImmediate(index), g.UseRegister(value));
+         g.UseRegister(base), g.UseImmediate(index),
+         g.UseRegisterOrImmediateZero(value));
   } else {
     InstructionOperand addr_reg = g.TempRegister();
     Emit(kMips64Dadd | AddressingModeField::encode(kMode_None), addr_reg,
          g.UseRegister(index), g.UseRegister(base));
     // Emit desired store opcode, using temp addr_reg.
     Emit(opcode | AddressingModeField::encode(kMode_MRI), g.NoOutput(),
-         addr_reg, g.TempImmediate(0), g.UseRegister(value));
+         addr_reg, g.TempImmediate(0), g.UseRegisterOrImmediateZero(value));
   }
 }
 

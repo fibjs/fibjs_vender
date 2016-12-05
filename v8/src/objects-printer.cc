@@ -103,6 +103,44 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     TYPED_ARRAYS(PRINT_FIXED_TYPED_ARRAY)
 #undef PRINT_FIXED_TYPED_ARRAY
 
+    case JS_TYPED_ARRAY_KEY_ITERATOR_TYPE:
+    case JS_FAST_ARRAY_KEY_ITERATOR_TYPE:
+    case JS_GENERIC_ARRAY_KEY_ITERATOR_TYPE:
+    case JS_INT8_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_UINT8_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_INT16_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_UINT16_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_INT32_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_UINT32_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FLOAT32_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FLOAT64_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_UINT8_CLAMPED_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_SMI_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_SMI_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_DOUBLE_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_DOUBLE_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_GENERIC_ARRAY_KEY_VALUE_ITERATOR_TYPE:
+    case JS_INT8_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_UINT8_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_INT16_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_UINT16_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_INT32_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_UINT32_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FLOAT32_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FLOAT64_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_UINT8_CLAMPED_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_SMI_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_SMI_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_DOUBLE_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_FAST_HOLEY_DOUBLE_ARRAY_VALUE_ITERATOR_TYPE:
+    case JS_GENERIC_ARRAY_VALUE_ITERATOR_TYPE:
+      JSArrayIterator::cast(this)->JSArrayIteratorPrint(os);
+      break;
+
     case FILLER_TYPE:
       os << "filler";
       break;
@@ -473,7 +511,7 @@ static void JSObjectPrintHeader(std::ostream& os, JSObject* obj,
 
 static void JSObjectPrintBody(std::ostream& os, JSObject* obj,  // NOLINT
                               bool print_elements = true) {
-  os << "\n - properties = {";
+  os << "\n - properties = " << Brief(obj->properties()) << " {";
   obj->PrintProperties(os);
   os << "\n }\n";
   if (print_elements && obj->elements()->length() > 0) {
@@ -559,7 +597,8 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
      << "#" << NumberOfOwnDescriptors() << ": "
      << Brief(instance_descriptors());
   if (FLAG_unbox_double_fields) {
-    os << "\n - layout descriptor: " << Brief(layout_descriptor());
+    os << "\n - layout descriptor: ";
+    layout_descriptor()->ShortPrint(os);
   }
   int nof_transitions = TransitionArray::NumberOfTransitions(raw_transitions());
   if (nof_transitions > 0) {
@@ -648,16 +687,11 @@ void FeedbackVectorSpecBase<Derived>::FeedbackVectorSpecPrint(
     return;
   }
 
-  for (int slot = 0, name_index = 0; slot < slot_count;) {
+  for (int slot = 0; slot < slot_count;) {
     FeedbackVectorSlotKind kind = This()->GetKind(slot);
     int entry_size = TypeFeedbackMetadata::GetSlotSize(kind);
     DCHECK_LT(0, entry_size);
-
     os << "\n Slot #" << slot << " " << kind;
-    if (TypeFeedbackMetadata::SlotRequiresName(kind)) {
-      os << ", " << Brief(*This()->GetName(name_index++));
-    }
-
     slot += entry_size;
   }
   os << "\n";
@@ -685,9 +719,6 @@ void TypeFeedbackMetadata::TypeFeedbackMetadataPrint(
     FeedbackVectorSlot slot = iter.Next();
     FeedbackVectorSlotKind kind = iter.kind();
     os << "\n Slot " << slot << " " << kind;
-    if (TypeFeedbackMetadata::SlotRequiresName(kind)) {
-      os << ", " << Brief(iter.name());
-    }
   }
   os << "\n";
 }
@@ -714,9 +745,6 @@ void TypeFeedbackVector::TypeFeedbackVectorPrint(std::ostream& os) {  // NOLINT
     FeedbackVectorSlotKind kind = iter.kind();
 
     os << "\n Slot " << slot << " " << kind;
-    if (TypeFeedbackMetadata::SlotRequiresName(kind)) {
-      os << ", " << Brief(iter.name());
-    }
     os << " ";
     switch (kind) {
       case FeedbackVectorSlotKind::LOAD_IC: {
@@ -953,6 +981,26 @@ void JSTypedArray::JSTypedArrayPrint(std::ostream& os) {  // NOLINT
   JSObjectPrintBody(os, this, !WasNeutered());
 }
 
+void JSArrayIterator::JSArrayIteratorPrint(std::ostream& os) {  // NOLING
+  JSObjectPrintHeader(os, this, "JSArrayIterator");
+
+  InstanceType instance_type = map()->instance_type();
+  std::string type;
+  if (instance_type <= LAST_ARRAY_KEY_ITERATOR_TYPE) {
+    type = "keys";
+  } else if (instance_type <= LAST_ARRAY_KEY_VALUE_ITERATOR_TYPE) {
+    type = "entries";
+  } else {
+    type = "values";
+  }
+
+  os << "\n - type = " << type;
+  os << "\n - object = " << Brief(object());
+  os << "\n - index = " << Brief(index());
+
+  JSObjectPrintBody(os, this);
+}
+
 void JSFixedArrayIterator::JSFixedArrayIteratorPrint(
     std::ostream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSFixedArrayIterator");
@@ -1046,18 +1094,18 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
 
 
 void JSGlobalProxy::JSGlobalProxyPrint(std::ostream& os) {  // NOLINT
-  os << "global_proxy ";
-  JSObjectPrint(os);
-  os << "native context : " << Brief(native_context());
-  os << "\n";
+  JSObjectPrintHeader(os, this, "JSGlobalProxy");
+  os << "\n - native context = " << Brief(native_context());
+  os << "\n - hash = " << Brief(hash());
+  JSObjectPrintBody(os, this);
 }
 
 
 void JSGlobalObject::JSGlobalObjectPrint(std::ostream& os) {  // NOLINT
-  os << "global ";
-  JSObjectPrint(os);
-  os << "native context : " << Brief(native_context());
-  os << "\n";
+  JSObjectPrintHeader(os, this, "JSGlobalObject");
+  os << "\n - native context = " << Brief(native_context());
+  os << "\n - global proxy = " << Brief(global_proxy());
+  JSObjectPrintBody(os, this);
 }
 
 
@@ -1171,6 +1219,7 @@ void PromiseResolveThenableJobInfo::PromiseResolveThenableJobInfoPrint(
   os << "\n - reject: " << Brief(reject());
   os << "\n - debug id: " << Brief(debug_id());
   os << "\n - debug name: " << Brief(debug_name());
+  os << "\n - context: " << Brief(context());
   os << "\n";
 }
 
@@ -1220,6 +1269,13 @@ void PrototypeInfo::PrototypeInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n - registry slot: " << registry_slot();
   os << "\n - validity cell: " << Brief(validity_cell());
   os << "\n - object create map: " << Brief(object_create_map());
+  os << "\n";
+}
+
+void Tuple2::Tuple2Print(std::ostream& os) {  // NOLINT
+  HeapObject::PrintHeader(os, "Tuple2");
+  os << "\n - value1: " << Brief(value1());
+  os << "\n - value2: " << Brief(value2());
   os << "\n";
 }
 
@@ -1401,16 +1457,24 @@ void LayoutDescriptor::Print() {
   os << std::flush;
 }
 
+void LayoutDescriptor::ShortPrint(std::ostream& os) {
+  if (IsSmi()) {
+    os << this;  // Print tagged value for easy use with "jld" gdb macro.
+  } else {
+    os << Brief(this);
+  }
+}
 
 void LayoutDescriptor::Print(std::ostream& os) {  // NOLINT
   os << "Layout descriptor: ";
-  if (IsOddball() && IsUninitialized(HeapObject::cast(this)->GetIsolate())) {
-    os << "<uninitialized>";
-  } else if (IsFastPointerLayout()) {
+  if (IsFastPointerLayout()) {
     os << "<all tagged>";
   } else if (IsSmi()) {
     os << "fast";
     PrintBitMask(os, static_cast<uint32_t>(Smi::cast(this)->value()));
+  } else if (IsOddball() &&
+             IsUninitialized(HeapObject::cast(this)->GetIsolate())) {
+    os << "<uninitialized>";
   } else {
     os << "slow";
     int len = length();
@@ -1587,6 +1651,15 @@ extern void _v8_internal_Print_DescriptorArray(void* object) {
     printf("Not a descriptor array\n");
   } else {
     reinterpret_cast<i::DescriptorArray*>(object)->Print();
+  }
+}
+
+extern void _v8_internal_Print_LayoutDescriptor(void* object) {
+  i::Object* o = reinterpret_cast<i::Object*>(object);
+  if (!o->IsLayoutDescriptor()) {
+    printf("Not a layout descriptor\n");
+  } else {
+    reinterpret_cast<i::LayoutDescriptor*>(object)->Print();
   }
 }
 

@@ -6,6 +6,7 @@
 
 #include "src/accessors.h"
 #include "src/allocation-site-scopes.h"
+#include "src/ast/ast.h"
 #include "src/base/bits.h"
 #include "src/bootstrapper.h"
 #include "src/compiler.h"
@@ -102,6 +103,14 @@ Handle<PrototypeInfo> Factory::NewPrototypeInfo() {
   return result;
 }
 
+Handle<Tuple2> Factory::NewTuple2(Handle<Object> value1,
+                                  Handle<Object> value2) {
+  Handle<Tuple2> result = Handle<Tuple2>::cast(NewStruct(TUPLE2_TYPE));
+  result->set_value1(*value1);
+  result->set_value2(*value2);
+  return result;
+}
+
 Handle<Tuple3> Factory::NewTuple3(Handle<Object> value1, Handle<Object> value2,
                                   Handle<Object> value3) {
   Handle<Tuple3> result = Handle<Tuple3>::cast(NewStruct(TUPLE3_TYPE));
@@ -137,6 +146,15 @@ Handle<FixedArray> Factory::NewFixedArray(int size, PretenureFlag pretenure) {
       FixedArray);
 }
 
+MaybeHandle<FixedArray> Factory::TryNewFixedArray(int size,
+                                                  PretenureFlag pretenure) {
+  DCHECK(0 <= size);
+  AllocationResult allocation =
+      isolate()->heap()->AllocateFixedArray(size, pretenure);
+  Object* array = NULL;
+  if (!allocation.To(&array)) return MaybeHandle<FixedArray>();
+  return Handle<FixedArray>(FixedArray::cast(array), isolate());
+}
 
 Handle<FixedArray> Factory::NewFixedArrayWithHoles(int size,
                                                    PretenureFlag pretenure) {
@@ -174,11 +192,7 @@ Handle<FixedArrayBase> Factory::NewFixedDoubleArrayWithHoles(
   DCHECK(0 <= size);
   Handle<FixedArrayBase> array = NewFixedDoubleArray(size, pretenure);
   if (size > 0) {
-    Handle<FixedDoubleArray> double_array =
-        Handle<FixedDoubleArray>::cast(array);
-    for (int i = 0; i < size; ++i) {
-      double_array->set_the_hole(i);
-    }
+    Handle<FixedDoubleArray>::cast(array)->FillWithHoles(0, size);
   }
   return array;
 }
@@ -962,6 +976,14 @@ Handle<Context> Factory::NewBlockContext(Handle<JSFunction> function,
   return context;
 }
 
+Handle<Context> Factory::NewPromiseResolvingFunctionContext(int length) {
+  DCHECK_GE(length, Context::MIN_CONTEXT_SLOTS);
+  Handle<FixedArray> array = NewFixedArray(length);
+  array->set_map_no_write_barrier(*function_context_map());
+  Handle<Context> context = Handle<Context>::cast(array);
+  context->set_extension(*the_hole_value());
+  return context;
+}
 
 Handle<Struct> Factory::NewStruct(InstanceType type) {
   CALL_HEAP_FUNCTION(
@@ -973,7 +995,8 @@ Handle<Struct> Factory::NewStruct(InstanceType type) {
 Handle<PromiseResolveThenableJobInfo> Factory::NewPromiseResolveThenableJobInfo(
     Handle<JSReceiver> thenable, Handle<JSReceiver> then,
     Handle<JSFunction> resolve, Handle<JSFunction> reject,
-    Handle<Object> debug_id, Handle<Object> debug_name) {
+    Handle<Object> debug_id, Handle<Object> debug_name,
+    Handle<Context> context) {
   Handle<PromiseResolveThenableJobInfo> result =
       Handle<PromiseResolveThenableJobInfo>::cast(
           NewStruct(PROMISE_RESOLVE_THENABLE_JOB_INFO_TYPE));
@@ -983,6 +1006,7 @@ Handle<PromiseResolveThenableJobInfo> Factory::NewPromiseResolveThenableJobInfo(
   result->set_reject(*reject);
   result->set_debug_id(*debug_id);
   result->set_debug_name(*debug_name);
+  result->set_context(*context);
   return result;
 }
 
@@ -1632,16 +1656,6 @@ Handle<JSObject> Factory::NewJSObject(Handle<JSFunction> constructor,
 }
 
 
-Handle<JSObject> Factory::NewJSObjectWithMemento(
-    Handle<JSFunction> constructor,
-    Handle<AllocationSite> site) {
-  JSFunction::EnsureHasInitialMap(constructor);
-  CALL_HEAP_FUNCTION(
-      isolate(),
-      isolate()->heap()->AllocateJSObject(*constructor, NOT_TENURED, *site),
-      JSObject);
-}
-
 Handle<JSObject> Factory::NewJSObjectWithNullProto() {
   Handle<JSObject> result = NewJSObject(isolate()->object_function());
   Handle<Map> new_map =
@@ -2001,6 +2015,12 @@ void SetupArrayBufferView(i::Isolate* isolate,
   DCHECK(byte_offset + byte_length <=
          static_cast<size_t>(buffer->byte_length()->Number()));
 
+  DCHECK_EQ(obj->GetInternalFieldCount(),
+            v8::ArrayBufferView::kInternalFieldCount);
+  for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
+    obj->SetInternalField(i, Smi::kZero);
+  }
+
   obj->set_buffer(*buffer);
 
   i::Handle<i::Object> byte_offset_object =
@@ -2070,6 +2090,11 @@ Handle<JSTypedArray> Factory::NewJSTypedArray(ElementsKind elements_kind,
                                               size_t number_of_elements,
                                               PretenureFlag pretenure) {
   Handle<JSTypedArray> obj = NewJSTypedArray(elements_kind, pretenure);
+  DCHECK_EQ(obj->GetInternalFieldCount(),
+            v8::ArrayBufferView::kInternalFieldCount);
+  for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
+    obj->SetInternalField(i, Smi::kZero);
+  }
 
   size_t element_size = GetFixedTypedArraysElementSize(elements_kind);
   ExternalArrayType array_type = GetArrayTypeFromElementsKind(elements_kind);
@@ -2199,12 +2224,11 @@ void Factory::ReinitializeJSGlobalProxy(Handle<JSGlobalProxy> object,
   // The proxy's hash should be retained across reinitialization.
   Handle<Object> hash(object->hash(), isolate());
 
-  JSObject::InvalidatePrototypeChains(*old_map);
   if (old_map->is_prototype_map()) {
     map = Map::Copy(map, "CopyAsPrototypeForJSGlobalProxy");
     map->set_is_prototype_map(true);
   }
-  JSObject::UpdatePrototypeUserRegistration(old_map, map, isolate());
+  JSObject::NotifyMapChange(old_map, map, isolate());
 
   // Check that the already allocated object has the same size and type as
   // objects allocated using the constructor.
@@ -2245,6 +2269,17 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   return shared;
 }
 
+Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfoForLiteral(
+    FunctionLiteral* literal, Handle<Script> script) {
+  Handle<Code> code = isolate()->builtins()->CompileLazy();
+  Handle<ScopeInfo> scope_info(ScopeInfo::Empty(isolate()));
+  Handle<SharedFunctionInfo> result = NewSharedFunctionInfo(
+      literal->name(), literal->materialized_literal_count(), literal->kind(),
+      code, scope_info);
+  SharedFunctionInfo::InitFromFunctionLiteral(result, literal);
+  SharedFunctionInfo::SetScript(result, script);
+  return result;
+}
 
 Handle<JSMessageObject> Factory::NewJSMessageObject(
     MessageTemplate::Template message, Handle<Object> argument,
@@ -2276,6 +2311,7 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
 
   // Set pointer fields.
   share->set_name(*name);
+  share->set_function_data(*undefined_value(), SKIP_WRITE_BARRIER);
   Handle<Code> code;
   if (!maybe_code.ToHandle(&code)) {
     code = isolate()->builtins()->Illegal();
@@ -2289,7 +2325,6 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
                      : isolate()->builtins()->ConstructedNonConstructable();
   share->SetConstructStub(*construct_stub);
   share->set_instance_class_name(*Object_string());
-  share->set_function_data(*undefined_value(), SKIP_WRITE_BARRIER);
   share->set_script(*undefined_value(), SKIP_WRITE_BARRIER);
   share->set_debug_info(DebugInfo::uninitialized(), SKIP_WRITE_BARRIER);
   share->set_function_identifier(*undefined_value(), SKIP_WRITE_BARRIER);
@@ -2297,6 +2332,7 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   Handle<TypeFeedbackMetadata> feedback_metadata =
       TypeFeedbackMetadata::New(isolate(), &empty_spec);
   share->set_feedback_metadata(*feedback_metadata, SKIP_WRITE_BARRIER);
+  share->set_function_literal_id(FunctionLiteral::kIdTypeInvalid);
 #if TRACE_MAPS
   share->set_unique_id(isolate()->GetNextUniqueSharedFunctionInfoId());
 #endif

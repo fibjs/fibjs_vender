@@ -490,6 +490,13 @@ Type* OperationTyper::NumberToUint32(Type* type) {
   return Type::Unsigned32();
 }
 
+Type* OperationTyper::NumberToUint8Clamped(Type* type) {
+  DCHECK(type->Is(Type::Number()));
+
+  if (type->Is(cache_.kUint8)) return type;
+  return cache_.kUint8;
+}
+
 Type* OperationTyper::NumberSilenceNaN(Type* type) {
   DCHECK(type->Is(Type::Number()));
   // TODO(jarin): This is a terrible hack; we definitely need a dedicated type
@@ -789,8 +796,35 @@ Type* OperationTyper::NumberShiftLeft(Type* lhs, Type* rhs) {
   DCHECK(lhs->Is(Type::Number()));
   DCHECK(rhs->Is(Type::Number()));
 
-  // TODO(turbofan): Infer a better type here.
-  return Type::Signed32();
+  if (!lhs->IsInhabited() || !rhs->IsInhabited()) return Type::None();
+
+  lhs = NumberToInt32(lhs);
+  rhs = NumberToUint32(rhs);
+
+  int32_t min_lhs = lhs->Min();
+  int32_t max_lhs = lhs->Max();
+  uint32_t min_rhs = rhs->Min();
+  uint32_t max_rhs = rhs->Max();
+  if (max_rhs > 31) {
+    // rhs can be larger than the bitmask
+    max_rhs = 31;
+    min_rhs = 0;
+  }
+
+  if (max_lhs > (kMaxInt >> max_rhs) || min_lhs < (kMinInt >> max_rhs)) {
+    // overflow possible
+    return Type::Signed32();
+  }
+
+  double min =
+      std::min(static_cast<int32_t>(static_cast<uint32_t>(min_lhs) << min_rhs),
+               static_cast<int32_t>(static_cast<uint32_t>(min_lhs) << max_rhs));
+  double max =
+      std::max(static_cast<int32_t>(static_cast<uint32_t>(max_lhs) << min_rhs),
+               static_cast<int32_t>(static_cast<uint32_t>(max_lhs) << max_rhs));
+
+  if (max == kMaxInt && min == kMinInt) return Type::Signed32();
+  return Type::Range(min, max, zone());
 }
 
 Type* OperationTyper::NumberShiftRight(Type* lhs, Type* rhs) {
@@ -802,33 +836,18 @@ Type* OperationTyper::NumberShiftRight(Type* lhs, Type* rhs) {
   lhs = NumberToInt32(lhs);
   rhs = NumberToUint32(rhs);
 
-  double min = kMinInt;
-  double max = kMaxInt;
-  if (lhs->Min() >= 0) {
-    // Right-shifting a non-negative value cannot make it negative, nor larger.
-    min = std::max(min, 0.0);
-    max = std::min(max, lhs->Max());
-    if (rhs->Min() > 0 && rhs->Max() <= 31) {
-      max = static_cast<int>(max) >> static_cast<int>(rhs->Min());
-    }
+  int32_t min_lhs = lhs->Min();
+  int32_t max_lhs = lhs->Max();
+  uint32_t min_rhs = rhs->Min();
+  uint32_t max_rhs = rhs->Max();
+  if (max_rhs > 31) {
+    // rhs can be larger than the bitmask
+    max_rhs = 31;
+    min_rhs = 0;
   }
-  if (lhs->Max() < 0) {
-    // Right-shifting a negative value cannot make it non-negative, nor smaller.
-    min = std::max(min, lhs->Min());
-    max = std::min(max, -1.0);
-    if (rhs->Min() > 0 && rhs->Max() <= 31) {
-      min = static_cast<int>(min) >> static_cast<int>(rhs->Min());
-    }
-  }
-  if (rhs->Min() > 0 && rhs->Max() <= 31) {
-    // Right-shifting by a positive value yields a small integer value.
-    double shift_min = kMinInt >> static_cast<int>(rhs->Min());
-    double shift_max = kMaxInt >> static_cast<int>(rhs->Min());
-    min = std::max(min, shift_min);
-    max = std::min(max, shift_max);
-  }
-  // TODO(jarin) Ideally, the following micro-optimization should be performed
-  // by the type constructor.
+  double min = std::min(min_lhs >> min_rhs, min_lhs >> max_rhs);
+  double max = std::max(max_lhs >> min_rhs, max_lhs >> max_rhs);
+
   if (max == kMaxInt && min == kMinInt) return Type::Signed32();
   return Type::Range(min, max, zone());
 }

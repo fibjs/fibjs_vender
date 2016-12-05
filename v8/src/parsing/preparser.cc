@@ -92,6 +92,11 @@ PreParser::PreParseResult PreParser::PreParseFunction(
   DCHECK(!track_unresolved_variables_);
   track_unresolved_variables_ = is_inner_function;
 
+  // In the preparser, we use the function literal ids to count how many
+  // FunctionLiterals were encountered. The PreParser doesn't actually persist
+  // FunctionLiterals, so there IDs don't matter.
+  ResetFunctionLiteralId();
+
   // The caller passes the function_scope which is not yet inserted into the
   // scope_state_. All scopes above the function_scope are ignored by the
   // PreParser.
@@ -103,7 +108,7 @@ PreParser::PreParseResult PreParser::PreParseFunction(
 
   PreParserFormalParameters formals(function_scope);
   bool has_duplicate_parameters = false;
-  DuplicateFinder duplicate_finder(scanner()->unicode_cache());
+  DuplicateFinder duplicate_finder;
   std::unique_ptr<ExpressionClassifier> formals_classifier;
 
   // Parse non-arrow function parameters. For arrow functions, the parameters
@@ -133,7 +138,7 @@ PreParser::PreParseResult PreParser::PreParseFunction(
   } else if (stack_overflow()) {
     return kPreParseStackOverflow;
   } else if (!*ok) {
-    DCHECK(log_.has_error());
+    DCHECK(pending_error_handler_->has_pending_error());
   } else {
     DCHECK_EQ(Token::RBRACE, scanner()->peek());
 
@@ -179,14 +184,23 @@ PreParser::Expression PreParser::ParseFunctionLiteral(
     LanguageMode language_mode, bool* ok) {
   // Function ::
   //   '(' FormalParameterList? ')' '{' FunctionBody '}'
+  const RuntimeCallStats::CounterId counters[2][2] = {
+      {&RuntimeCallStats::PreParseBackgroundNoVariableResolution,
+       &RuntimeCallStats::PreParseNoVariableResolution},
+      {&RuntimeCallStats::PreParseBackgroundWithVariableResolution,
+       &RuntimeCallStats::PreParseWithVariableResolution}};
+  RuntimeCallTimerScope runtime_timer(
+      runtime_call_stats_,
+      counters[track_unresolved_variables_][parsing_on_main_thread_]);
 
   // Parse function body.
   PreParserStatementList body;
   DeclarationScope* function_scope = NewFunctionScope(kind);
   function_scope->SetLanguageMode(language_mode);
   FunctionState function_state(&function_state_, &scope_state_, function_scope);
-  DuplicateFinder duplicate_finder(scanner()->unicode_cache());
+  DuplicateFinder duplicate_finder;
   ExpressionClassifier formals_classifier(this, &duplicate_finder);
+  GetNextFunctionLiteralId();
 
   Expect(Token::LPAREN, CHECK_OK);
   int start_position = scanner()->location().beg_pos;
@@ -243,10 +257,10 @@ PreParser::LazyParsingResult PreParser::ParseStatementListAndLogFunction(
   DCHECK_EQ(Token::RBRACE, scanner()->peek());
   int body_end = scanner()->peek_location().end_pos;
   DCHECK(this->scope()->is_function_scope());
-  log_.LogFunction(body_end, formals->num_parameters(),
-                   formals->function_length, has_duplicate_parameters,
-                   function_state_->materialized_literal_count(),
-                   function_state_->expected_property_count());
+  log_.LogFunction(
+      body_end, formals->num_parameters(), formals->function_length,
+      has_duplicate_parameters, function_state_->materialized_literal_count(),
+      function_state_->expected_property_count(), GetLastFunctionLiteralId());
   return kLazyParsingComplete;
 }
 
@@ -258,8 +272,11 @@ PreParserExpression PreParser::ExpressionFromIdentifier(
     // AstValueFactory doesn't know about it.
     factory.set_zone(zone());
     DCHECK_NOT_NULL(name.string_);
-    scope()->NewUnresolved(&factory, name.string_, start_position,
-                           NORMAL_VARIABLE);
+    VariableProxy* proxy = scope()->NewUnresolved(
+        &factory, name.string_, start_position, NORMAL_VARIABLE);
+    // We don't know whether the preparsed function assigns or not, so we set
+    // is_assigned pessimistically.
+    proxy->set_is_assigned();
   }
   return PreParserExpression::FromIdentifier(name, zone());
 }

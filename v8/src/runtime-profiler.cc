@@ -22,13 +22,10 @@ namespace internal {
 
 // Number of times a function has to be seen on the stack before it is
 // compiled for baseline.
-static const int kProfilerTicksBeforeBaseline = 1;
+static const int kProfilerTicksBeforeBaseline = 0;
 // Number of times a function has to be seen on the stack before it is
 // optimized.
 static const int kProfilerTicksBeforeOptimization = 2;
-// Number of times a interpreted function has to be seen on the stack before
-// it is optimized (with Turbofan, ignition is only optimized with Turbofan).
-static const int kProfilerTicksBeforeOptimizingInterpretedFunction = 4;
 // If the function optimization was disabled due to high deoptimization count,
 // but the function is hot and has been seen on the stack this number of times,
 // then we try to reenable optimization for this function.
@@ -39,7 +36,6 @@ static const int kProfilerTicksBeforeReenablingOptimization = 250;
 static const int kTicksWhenNotEnoughTypeInfo = 100;
 // We only have one byte to store the number of ticks.
 STATIC_ASSERT(kProfilerTicksBeforeOptimization < 256);
-STATIC_ASSERT(kProfilerTicksBeforeOptimizingInterpretedFunction < 256);
 STATIC_ASSERT(kProfilerTicksBeforeReenablingOptimization < 256);
 STATIC_ASSERT(kTicksWhenNotEnoughTypeInfo < 256);
 
@@ -114,8 +110,7 @@ static void GetICCounts(JSFunction* function, int* ic_with_type_info_count,
   // Harvest vector-ics as well
   TypeFeedbackVector* vector = function->feedback_vector();
   int with = 0, gen = 0, type_vector_ic_count = 0;
-  const bool is_interpreted =
-      function->shared()->code()->is_interpreter_trampoline_builtin();
+  const bool is_interpreted = function->shared()->IsInterpreted();
 
   vector->ComputeCounts(&with, &gen, &type_vector_ic_count, is_interpreted);
   *ic_total_count += type_vector_ic_count;
@@ -161,11 +156,7 @@ void RuntimeProfiler::Baseline(JSFunction* function,
                                OptimizationReason reason) {
   DCHECK_NE(reason, OptimizationReason::kDoNotOptimize);
   TraceRecompile(function, OptimizationReasonToString(reason), "baseline");
-
-  // TODO(4280): Fix this to check function is compiled for the interpreter
-  // once we have a standard way to check that. For now function will only
-  // have a bytecode array if compiled for the interpreter.
-  DCHECK(function->shared()->HasBytecodeArray());
+  DCHECK(function->shared()->IsInterpreted());
   function->MarkForBaseline();
 }
 
@@ -173,7 +164,7 @@ void RuntimeProfiler::AttemptOnStackReplacement(JavaScriptFrame* frame,
                                                 int loop_nesting_levels) {
   JSFunction* function = frame->function();
   SharedFunctionInfo* shared = function->shared();
-  if (!FLAG_use_osr || function->shared()->IsBuiltin()) {
+  if (!FLAG_use_osr || !function->shared()->IsUserJavaScript()) {
     return;
   }
 
@@ -403,7 +394,7 @@ OptimizationReason RuntimeProfiler::ShouldOptimizeIgnition(
   SharedFunctionInfo* shared = function->shared();
   int ticks = shared->profiler_ticks();
 
-  if (ticks >= kProfilerTicksBeforeOptimizingInterpretedFunction) {
+  if (ticks >= kProfilerTicksBeforeOptimization) {
     int typeinfo, generic, total, type_percentage, generic_percentage;
     GetICCounts(function, &typeinfo, &generic, &total, &type_percentage,
                 &generic_percentage);
@@ -456,19 +447,9 @@ void RuntimeProfiler::MarkCandidatesForOptimization() {
     JavaScriptFrame* frame = it.frame();
     JSFunction* function = frame->function();
 
-    List<JSFunction*> functions(4);
-    frame->GetFunctions(&functions);
-    for (int i = functions.length(); --i >= 0; ) {
-      SharedFunctionInfo* shared_function_info = functions[i]->shared();
-      int ticks = shared_function_info->profiler_ticks();
-      if (ticks < Smi::kMaxValue) {
-        shared_function_info->set_profiler_ticks(ticks + 1);
-      }
-    }
-
     Compiler::CompilationTier next_tier =
         Compiler::NextCompilationTier(function);
-    if (function->shared()->code()->is_interpreter_trampoline_builtin()) {
+    if (function->shared()->IsInterpreted()) {
       if (next_tier == Compiler::BASELINE) {
         MaybeBaselineIgnition(function, frame);
       } else {
@@ -478,6 +459,19 @@ void RuntimeProfiler::MarkCandidatesForOptimization() {
     } else {
       DCHECK_EQ(next_tier, Compiler::OPTIMIZED);
       MaybeOptimizeFullCodegen(function, frame, frame_count);
+    }
+
+    // Update shared function info ticks after checking for whether functions
+    // should be optimized to keep FCG (which updates ticks on code) and
+    // Ignition (which updates ticks on shared function info) in sync.
+    List<JSFunction*> functions(4);
+    frame->GetFunctions(&functions);
+    for (int i = functions.length(); --i >= 0;) {
+      SharedFunctionInfo* shared_function_info = functions[i]->shared();
+      int ticks = shared_function_info->profiler_ticks();
+      if (ticks < Smi::kMaxValue) {
+        shared_function_info->set_profiler_ticks(ticks + 1);
+      }
     }
   }
   any_ic_changed_ = false;

@@ -598,15 +598,13 @@ Type* Typer::Visitor::TypeRetain(Node* node) {
 }
 
 Type* Typer::Visitor::TypeInt32Constant(Node* node) {
-  double number = OpParameter<int32_t>(node);
-  return Type::Intersect(Type::Range(number, number, zone()),
-                         Type::Integral32(), zone());
+  UNREACHABLE();
+  return nullptr;
 }
 
-
 Type* Typer::Visitor::TypeInt64Constant(Node* node) {
-  // TODO(rossberg): This actually seems to be a PointerConstant so far...
-  return Type::Internal();  // TODO(rossberg): Add int64 bitset type?
+  UNREACHABLE();
+  return nullptr;
 }
 
 Type* Typer::Visitor::TypeRelocatableInt32Constant(Node* node) {
@@ -624,12 +622,10 @@ Type* Typer::Visitor::TypeFloat32Constant(Node* node) {
   return nullptr;
 }
 
-
 Type* Typer::Visitor::TypeFloat64Constant(Node* node) {
   UNREACHABLE();
   return nullptr;
 }
-
 
 Type* Typer::Visitor::TypeNumberConstant(Node* node) {
   double number = OpParameter<double>(node);
@@ -640,11 +636,13 @@ Type* Typer::Visitor::TypeHeapConstant(Node* node) {
   return TypeConstant(OpParameter<Handle<HeapObject>>(node));
 }
 
-
 Type* Typer::Visitor::TypeExternalConstant(Node* node) {
-  return Type::Internal();
+  return Type::ExternalPointer();
 }
 
+Type* Typer::Visitor::TypePointerConstant(Node* node) {
+  return Type::ExternalPointer();
+}
 
 Type* Typer::Visitor::TypeSelect(Node* node) {
   return Type::Union(Operand(node, 1), Operand(node, 2), zone());
@@ -820,12 +818,15 @@ Type* Typer::Visitor::TypeFrameState(Node* node) {
 
 Type* Typer::Visitor::TypeStateValues(Node* node) { return Type::Internal(); }
 
-Type* Typer::Visitor::TypeObjectState(Node* node) { return Type::Internal(); }
-
 Type* Typer::Visitor::TypeTypedStateValues(Node* node) {
   return Type::Internal();
 }
 
+Type* Typer::Visitor::TypeObjectState(Node* node) { return Type::Internal(); }
+
+Type* Typer::Visitor::TypeTypedObjectState(Node* node) {
+  return Type::Internal();
+}
 
 Type* Typer::Visitor::TypeCall(Node* node) { return Type::Any(); }
 
@@ -1102,6 +1103,9 @@ Type* Typer::Visitor::TypeJSCreateIterResultObject(Node* node) {
   return Type::OtherObject();
 }
 
+Type* Typer::Visitor::TypeJSCreateKeyValueArray(Node* node) {
+  return Type::OtherObject();
+}
 
 Type* Typer::Visitor::TypeJSCreateLiteralArray(Node* node) {
   return Type::OtherObject();
@@ -1229,6 +1233,10 @@ Type* Typer::Visitor::TypeJSStoreGlobal(Node* node) {
   return nullptr;
 }
 
+Type* Typer::Visitor::TypeJSStoreDataPropertyInLiteral(Node* node) {
+  UNREACHABLE();
+  return nullptr;
+}
 
 Type* Typer::Visitor::TypeJSDeleteProperty(Node* node) {
   return Type::Boolean();
@@ -1236,7 +1244,16 @@ Type* Typer::Visitor::TypeJSDeleteProperty(Node* node) {
 
 Type* Typer::Visitor::TypeJSHasProperty(Node* node) { return Type::Boolean(); }
 
-Type* Typer::Visitor::TypeJSInstanceOf(Node* node) { return Type::Boolean(); }
+// JS instanceof operator.
+
+Type* Typer::Visitor::JSInstanceOfTyper(Type* lhs, Type* rhs, Typer* t) {
+  return Type::Boolean();
+}
+
+Type* Typer::Visitor::JSOrdinaryHasInstanceTyper(Type* lhs, Type* rhs,
+                                                 Typer* t) {
+  return Type::Boolean();
+}
 
 // JS context operators.
 
@@ -1336,6 +1353,8 @@ Type* Typer::Visitor::JSCallFunctionTyper(Type* fun, Typer* t) {
         case kMathClz32:
           return t->cache_.kZeroToThirtyTwo;
         // Date functions.
+        case kDateNow:
+          return t->cache_.kTimeValueType;
         case kDateGetDate:
           return t->cache_.kJSDateDayType;
         case kDateGetDay:
@@ -1355,6 +1374,7 @@ Type* Typer::Visitor::JSCallFunctionTyper(Type* fun, Typer* t) {
           return t->cache_.kJSDateSecondType;
         case kDateGetTime:
           return t->cache_.kJSDateValueType;
+
         // Number functions.
         case kNumberIsFinite:
         case kNumberIsInteger:
@@ -1367,31 +1387,108 @@ Type* Typer::Visitor::JSCallFunctionTyper(Type* fun, Typer* t) {
           return t->cache_.kIntegerOrMinusZeroOrNaN;
         case kNumberToString:
           return Type::String();
+
         // String functions.
         case kStringCharCodeAt:
           return Type::Union(Type::Range(0, kMaxUInt16, t->zone()), Type::NaN(),
                              t->zone());
         case kStringCharAt:
+          return Type::String();
+        case kStringCodePointAt:
+          return Type::Union(Type::Range(0.0, String::kMaxCodePoint, t->zone()),
+                             Type::Undefined(), t->zone());
         case kStringConcat:
         case kStringFromCharCode:
+        case kStringFromCodePoint:
+          return Type::String();
+        case kStringIndexOf:
+        case kStringLastIndexOf:
+          return Type::Range(-1.0, String::kMaxLength - 1.0, t->zone());
+        case kStringEndsWith:
+        case kStringIncludes:
+          return Type::Boolean();
+        case kStringRaw:
+        case kStringRepeat:
+        case kStringSlice:
+          return Type::String();
+        case kStringStartsWith:
+          return Type::Boolean();
         case kStringSubstr:
+        case kStringSubstring:
         case kStringToLowerCase:
+        case kStringToString:
         case kStringToUpperCase:
+        case kStringTrim:
+        case kStringTrimLeft:
+        case kStringTrimRight:
+        case kStringValueOf:
           return Type::String();
 
         case kStringIterator:
         case kStringIteratorNext:
           return Type::OtherObject();
 
+        case kArrayEntries:
+        case kArrayKeys:
+        case kArrayValues:
+        case kTypedArrayEntries:
+        case kTypedArrayKeys:
+        case kTypedArrayValues:
+        case kArrayIteratorNext:
+          return Type::OtherObject();
+
         // Array functions.
+        case kArrayConcat:
+          return Type::Receiver();
+        case kArrayEvery:
+          return Type::Boolean();
+        case kArrayFill:
+        case kArrayFilter:
+          return Type::Receiver();
+        case kArrayFindIndex:
+          return Type::Range(-1, kMaxSafeInteger, t->zone());
+        case kArrayForEach:
+          return Type::Undefined();
+        case kArrayIncludes:
+          return Type::Boolean();
         case kArrayIndexOf:
+          return Type::Range(-1, kMaxSafeInteger, t->zone());
+        case kArrayJoin:
+          return Type::String();
         case kArrayLastIndexOf:
           return Type::Range(-1, kMaxSafeInteger, t->zone());
+        case kArrayMap:
+          return Type::Receiver();
         case kArrayPush:
           return t->cache_.kPositiveSafeInteger;
+        case kArrayReverse:
+        case kArraySlice:
+          return Type::Receiver();
+        case kArraySome:
+          return Type::Boolean();
+        case kArraySplice:
+          return Type::Receiver();
+        case kArrayUnshift:
+          return t->cache_.kPositiveSafeInteger;
+
         // Object functions.
         case kObjectHasOwnProperty:
           return Type::Boolean();
+
+        // RegExp functions.
+        case kRegExpCompile:
+          return Type::OtherObject();
+        case kRegExpExec:
+          return Type::Union(Type::OtherObject(), Type::Null(), t->zone());
+        case kRegExpTest:
+          return Type::Boolean();
+        case kRegExpToString:
+          return Type::String();
+
+        // Function functions.
+        case kFunctionHasInstance:
+          return Type::Boolean();
+
         // Global functions.
         case kGlobalDecodeURI:
         case kGlobalDecodeURIComponent:
@@ -1470,7 +1567,7 @@ Type* Typer::Visitor::TypeJSForInNext(Node* node) {
 Type* Typer::Visitor::TypeJSForInPrepare(Node* node) {
   STATIC_ASSERT(Map::EnumLengthBits::kMax <= FixedArray::kMaxLength);
   Type* const cache_type =
-      Type::Union(typer_->cache_.kSmi, Type::OtherInternal(), zone());
+      Type::Union(Type::SignedSmall(), Type::OtherInternal(), zone());
   Type* const cache_array = Type::OtherInternal();
   Type* const cache_length = typer_->cache_.kFixedArrayLengthType;
   return Type::Tuple(cache_type, cache_array, cache_length, zone());
@@ -1485,13 +1582,20 @@ Type* Typer::Visitor::TypeJSStoreMessage(Node* node) {
   return nullptr;
 }
 
+Type* Typer::Visitor::TypeJSLoadModule(Node* node) { return Type::Any(); }
+
+Type* Typer::Visitor::TypeJSStoreModule(Node* node) {
+  UNREACHABLE();
+  return nullptr;
+}
+
 Type* Typer::Visitor::TypeJSGeneratorStore(Node* node) {
   UNREACHABLE();
   return nullptr;
 }
 
 Type* Typer::Visitor::TypeJSGeneratorRestoreContinuation(Node* node) {
-  return typer_->cache_.kSmi;
+  return Type::SignedSmall();
 }
 
 Type* Typer::Visitor::TypeJSGeneratorRestoreRegister(Node* node) {
@@ -1566,8 +1670,7 @@ Type* Typer::Visitor::StringFromCodePointTyper(Type* type, Typer* t) {
 }
 
 Type* Typer::Visitor::TypeStringCharCodeAt(Node* node) {
-  // TODO(bmeurer): We could do better here based on inputs.
-  return Type::Range(0, kMaxUInt16, zone());
+  return typer_->cache_.kUint16;
 }
 
 Type* Typer::Visitor::TypeStringFromCharCode(Node* node) {
@@ -1647,8 +1750,6 @@ Type* Typer::Visitor::TypeLoadField(Node* node) {
 }
 
 Type* Typer::Visitor::TypeLoadBuffer(Node* node) {
-  // TODO(bmeurer): This typing is not yet correct. Since we can still access
-  // out of bounds, the type in the general case has to include Undefined.
   switch (BufferAccessOf(node->op()).external_array_type()) {
 #define TYPED_ARRAY_CASE(ElemType, type, TYPE, ctype, size) \
   case kExternal##ElemType##Array:                          \

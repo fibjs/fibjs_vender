@@ -12,12 +12,12 @@
 #include "src/ast/ast.h"
 #include "src/base/bits.h"
 #include "src/bit-vector.h"
-#include "src/code-stubs.h"
 #include "src/conversions.h"
 #include "src/crankshaft/hydrogen-types.h"
 #include "src/crankshaft/unique.h"
 #include "src/deoptimizer.h"
 #include "src/globals.h"
+#include "src/interface-descriptors.h"
 #include "src/small-pointer-list.h"
 #include "src/utils.h"
 #include "src/zone/zone.h"
@@ -186,6 +186,7 @@ class SmallMapList;
 
 enum PropertyAccessType { LOAD, STORE };
 
+Representation RepresentationFromMachineType(MachineType type);
 
 class Range final : public ZoneObject {
  public:
@@ -485,9 +486,6 @@ class HValue : public ZoneObject {
   virtual ~HValue() {}
 
   virtual SourcePosition position() const { return SourcePosition::Unknown(); }
-  virtual SourcePosition operand_position(int index) const {
-    return position();
-  }
 
   HBasicBlock* block() const { return block_; }
   void SetBlock(HBasicBlock* block);
@@ -947,99 +945,6 @@ std::ostream& operator<<(std::ostream& os, const ChangesOf& v);
     return new (zone) I(context, p1, p2, p3, p4, p5, p6);                      \
   }
 
-
-// A helper class to represent per-operand position information attached to
-// the HInstruction in the compact form. Uses tagging to distinguish between
-// case when only instruction's position is available and case when operands'
-// positions are also available.
-// In the first case it contains intruction's position as a tagged value.
-// In the second case it points to an array which contains instruction's
-// position and operands' positions.
-class HPositionInfo {
- public:
-  explicit HPositionInfo(int pos) : data_(TagPosition(pos)) { }
-
-  SourcePosition position() const {
-    if (has_operand_positions()) {
-      return operand_positions()[kInstructionPosIndex];
-    }
-    return SourcePosition::FromRaw(static_cast<int>(UntagPosition(data_)));
-  }
-
-  void set_position(SourcePosition pos) {
-    if (has_operand_positions()) {
-      operand_positions()[kInstructionPosIndex] = pos;
-    } else {
-      data_ = TagPosition(pos.raw());
-    }
-  }
-
-  void ensure_storage_for_operand_positions(Zone* zone, int operand_count) {
-    if (has_operand_positions()) {
-      return;
-    }
-
-    const int length = kFirstOperandPosIndex + operand_count;
-    SourcePosition* positions = zone->NewArray<SourcePosition>(length);
-    for (int i = 0; i < length; i++) {
-      positions[i] = SourcePosition::Unknown();
-    }
-
-    const SourcePosition pos = position();
-    data_ = reinterpret_cast<intptr_t>(positions);
-    set_position(pos);
-
-    DCHECK(has_operand_positions());
-  }
-
-  SourcePosition operand_position(int idx) const {
-    if (!has_operand_positions()) {
-      return position();
-    }
-    return *operand_position_slot(idx);
-  }
-
-  void set_operand_position(int idx, SourcePosition pos) {
-    *operand_position_slot(idx) = pos;
-  }
-
- private:
-  static const intptr_t kInstructionPosIndex = 0;
-  static const intptr_t kFirstOperandPosIndex = 1;
-
-  SourcePosition* operand_position_slot(int idx) const {
-    DCHECK(has_operand_positions());
-    return &(operand_positions()[kFirstOperandPosIndex + idx]);
-  }
-
-  bool has_operand_positions() const {
-    return !IsTaggedPosition(data_);
-  }
-
-  SourcePosition* operand_positions() const {
-    DCHECK(has_operand_positions());
-    return reinterpret_cast<SourcePosition*>(data_);
-  }
-
-  static const intptr_t kPositionTag = 1;
-  static const intptr_t kPositionShift = 1;
-  static bool IsTaggedPosition(intptr_t val) {
-    return (val & kPositionTag) != 0;
-  }
-  static intptr_t UntagPosition(intptr_t val) {
-    DCHECK(IsTaggedPosition(val));
-    return val >> kPositionShift;
-  }
-  static intptr_t TagPosition(intptr_t val) {
-    const intptr_t result = (val << kPositionShift) | kPositionTag;
-    DCHECK(UntagPosition(result) == val);
-    return result;
-  }
-
-  intptr_t data_;
-};
-
-
 class HInstruction : public HValue {
  public:
   HInstruction* next() const { return next_; }
@@ -1066,26 +971,11 @@ class HInstruction : public HValue {
   }
 
   // The position is a write-once variable.
-  SourcePosition position() const override {
-    return SourcePosition(position_.position());
-  }
-  bool has_position() const {
-    return !position().IsUnknown();
-  }
+  SourcePosition position() const override { return position_; }
+  bool has_position() const { return position_.IsKnown(); }
   void set_position(SourcePosition position) {
-    DCHECK(!has_position());
-    DCHECK(!position.IsUnknown());
-    position_.set_position(position);
-  }
-
-  SourcePosition operand_position(int index) const override {
-    const SourcePosition pos = position_.operand_position(index);
-    return pos.IsUnknown() ? position() : pos;
-  }
-  void set_operand_position(Zone* zone, int index, SourcePosition pos) {
-    DCHECK(0 <= index && index < OperandCount());
-    position_.ensure_storage_for_operand_positions(zone, OperandCount());
-    position_.set_operand_position(index, pos);
+    DCHECK(position.IsKnown());
+    position_ = position;
   }
 
   bool Dominates(HInstruction* other);
@@ -1110,7 +1000,7 @@ class HInstruction : public HValue {
       : HValue(type),
         next_(NULL),
         previous_(NULL),
-        position_(kNoSourcePosition) {
+        position_(SourcePosition::Unknown()) {
     SetDependsOnFlag(kOsrEntries);
   }
 
@@ -1124,7 +1014,7 @@ class HInstruction : public HValue {
 
   HInstruction* next_;
   HInstruction* previous_;
-  HPositionInfo position_;
+  SourcePosition position_;
 
   friend class HBasicBlock;
 };
@@ -1349,9 +1239,9 @@ class HUnaryControlInstruction : public HTemplateControlInstruction<2, 1> {
 class HBranch final : public HUnaryControlInstruction {
  public:
   DECLARE_INSTRUCTION_FACTORY_P1(HBranch, HValue*);
-  DECLARE_INSTRUCTION_FACTORY_P2(HBranch, HValue*, ToBooleanICStub::Types);
-  DECLARE_INSTRUCTION_FACTORY_P4(HBranch, HValue*, ToBooleanICStub::Types,
-                                 HBasicBlock*, HBasicBlock*);
+  DECLARE_INSTRUCTION_FACTORY_P2(HBranch, HValue*, ToBooleanHints);
+  DECLARE_INSTRUCTION_FACTORY_P4(HBranch, HValue*, ToBooleanHints, HBasicBlock*,
+                                 HBasicBlock*);
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::None();
@@ -1362,20 +1252,18 @@ class HBranch final : public HUnaryControlInstruction {
 
   std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
 
-  ToBooleanICStub::Types expected_input_types() const {
-    return expected_input_types_;
-  }
+  ToBooleanHints expected_input_types() const { return expected_input_types_; }
 
   DECLARE_CONCRETE_INSTRUCTION(Branch)
 
  private:
-  HBranch(HValue* value, ToBooleanICStub::Types expected_input_types =
-                             ToBooleanICStub::Types(),
+  HBranch(HValue* value,
+          ToBooleanHints expected_input_types = ToBooleanHint::kNone,
           HBasicBlock* true_target = NULL, HBasicBlock* false_target = NULL)
       : HUnaryControlInstruction(value, true_target, false_target),
         expected_input_types_(expected_input_types) {}
 
-  ToBooleanICStub::Types expected_input_types_;
+  ToBooleanHints expected_input_types_;
 };
 
 
@@ -1921,7 +1809,7 @@ class HEnterInlined final : public HTemplateInstruction<0> {
         function_(function),
         inlining_kind_(inlining_kind),
         syntactic_tail_call_mode_(syntactic_tail_call_mode),
-        inlining_id_(0),
+        inlining_id_(-1),
         arguments_var_(arguments_var),
         arguments_object_(arguments_object),
         return_targets_(2, zone) {}
@@ -2059,7 +1947,7 @@ class HDeclareGlobals final : public HUnaryOperation {
                                               Handle<TypeFeedbackVector>);
 
   HValue* context() { return OperandAt(0); }
-  Handle<FixedArray> pairs() const { return pairs_; }
+  Handle<FixedArray> declarations() const { return declarations_; }
   int flags() const { return flags_; }
   Handle<TypeFeedbackVector> feedback_vector() const {
     return feedback_vector_;
@@ -2072,17 +1960,17 @@ class HDeclareGlobals final : public HUnaryOperation {
   }
 
  private:
-  HDeclareGlobals(HValue* context, Handle<FixedArray> pairs, int flags,
+  HDeclareGlobals(HValue* context, Handle<FixedArray> declarations, int flags,
                   Handle<TypeFeedbackVector> feedback_vector)
       : HUnaryOperation(context),
-        pairs_(pairs),
+        declarations_(declarations),
         feedback_vector_(feedback_vector),
         flags_(flags) {
     set_representation(Representation::Tagged());
     SetAllSideEffects();
   }
 
-  Handle<FixedArray> pairs_;
+  Handle<FixedArray> declarations_;
   Handle<TypeFeedbackVector> feedback_vector_;
   int flags_;
 };
@@ -3475,12 +3363,6 @@ class HBinaryOperation : public HTemplateInstruction<3> {
     return representation();
   }
 
-  void SetOperandPositions(Zone* zone, SourcePosition left_pos,
-                           SourcePosition right_pos) {
-    set_operand_position(zone, 1, left_pos);
-    set_operand_position(zone, 2, right_pos);
-  }
-
   bool RightIsPowerOf2() {
     if (!right()->IsInteger32Constant()) return false;
     int32_t value = right()->GetInteger32Constant();
@@ -3800,8 +3682,9 @@ class HMathFloorOfDiv final : public HBinaryOperation {
 
 class HArithmeticBinaryOperation : public HBinaryOperation {
  public:
-  HArithmeticBinaryOperation(HValue* context, HValue* left, HValue* right)
-      : HBinaryOperation(context, left, right, HType::TaggedNumber()) {
+  HArithmeticBinaryOperation(HValue* context, HValue* left, HValue* right,
+                             HType type = HType::TaggedNumber())
+      : HBinaryOperation(context, left, right, type) {
     SetAllSideEffects();
     SetFlag(kFlexibleRepresentation);
     SetFlag(kTruncatingToNumber);
@@ -3891,12 +3774,6 @@ class HCompareNumericAndBranch : public HTemplateControlInstruction<2, 2> {
   bool KnownSuccessorBlock(HBasicBlock** block) override;
 
   std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
-
-  void SetOperandPositions(Zone* zone, SourcePosition left_pos,
-                           SourcePosition right_pos) {
-    set_operand_position(zone, 0, left_pos);
-    set_operand_position(zone, 1, right_pos);
-  }
 
   DECLARE_CONCRETE_INSTRUCTION(CompareNumericAndBranch)
 
@@ -4326,7 +4203,7 @@ class HAdd final : public HArithmeticBinaryOperation {
  private:
   HAdd(HValue* context, HValue* left, HValue* right,
        ExternalAddType external_add_type = NoExternalAdd)
-      : HArithmeticBinaryOperation(context, left, right),
+      : HArithmeticBinaryOperation(context, left, right, HType::Tagged()),
         external_add_type_(external_add_type) {
     SetFlag(kCanOverflow);
     switch (external_add_type_) {

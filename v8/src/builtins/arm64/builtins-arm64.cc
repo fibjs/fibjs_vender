@@ -793,14 +793,15 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   __ LoadRoot(x11, Heap::kTheHoleValueRootIndex);
   __ PushMultipleTimes(x11, w10);
 
-  // Dispatch on the kind of generator object.
-  Label old_generator;
-  __ Ldr(x3, FieldMemOperand(x4, JSFunction::kSharedFunctionInfoOffset));
-  __ Ldr(x3, FieldMemOperand(x3, SharedFunctionInfo::kFunctionDataOffset));
-  __ CompareObjectType(x3, x3, x3, BYTECODE_ARRAY_TYPE);
-  __ B(ne, &old_generator);
+  // Underlying function needs to have bytecode available.
+  if (FLAG_debug_code) {
+    __ Ldr(x3, FieldMemOperand(x4, JSFunction::kSharedFunctionInfoOffset));
+    __ Ldr(x3, FieldMemOperand(x3, SharedFunctionInfo::kFunctionDataOffset));
+    __ CompareObjectType(x3, x3, x3, BYTECODE_ARRAY_TYPE);
+    __ Assert(eq, kMissingBytecodeArray);
+  }
 
-  // New-style (ignition/turbofan) generator object
+  // Resume (Ignition/TurboFan) generator object.
   {
     __ Ldr(x0, FieldMemOperand(x4, JSFunction::kSharedFunctionInfoOffset));
     __ Ldr(w0, FieldMemOperand(
@@ -812,49 +813,6 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     __ Move(x1, x4);
     __ Ldr(x5, FieldMemOperand(x1, JSFunction::kCodeEntryOffset));
     __ Jump(x5);
-  }
-
-  // Old-style (full-codegen) generator object
-  __ bind(&old_generator);
-  {
-    // Enter a new JavaScript frame, and initialize its slots as they were when
-    // the generator was suspended.
-    FrameScope scope(masm, StackFrame::MANUAL);
-    __ Push(lr, fp);
-    __ Move(fp, jssp);
-    __ Push(cp, x4);
-
-    // Restore the operand stack.
-    __ Ldr(x0, FieldMemOperand(x1, JSGeneratorObject::kOperandStackOffset));
-    __ Ldr(w3, UntagSmiFieldMemOperand(x0, FixedArray::kLengthOffset));
-    __ Add(x0, x0, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-    __ Add(x3, x0, Operand(x3, LSL, kPointerSizeLog2));
-    {
-      Label done_loop, loop;
-      __ Bind(&loop);
-      __ Cmp(x0, x3);
-      __ B(eq, &done_loop);
-      __ Ldr(x10, MemOperand(x0, kPointerSize, PostIndex));
-      __ Push(x10);
-      __ B(&loop);
-      __ Bind(&done_loop);
-    }
-
-    // Reset operand stack so we don't leak.
-    __ LoadRoot(x10, Heap::kEmptyFixedArrayRootIndex);
-    __ Str(x10, FieldMemOperand(x1, JSGeneratorObject::kOperandStackOffset));
-
-    // Resume the generator function at the continuation.
-    __ Ldr(x10, FieldMemOperand(x4, JSFunction::kSharedFunctionInfoOffset));
-    __ Ldr(x10, FieldMemOperand(x10, SharedFunctionInfo::kCodeOffset));
-    __ Add(x10, x10, Code::kHeaderSize - kHeapObjectTag);
-    __ Ldrsw(x11, UntagSmiFieldMemOperand(
-                      x1, JSGeneratorObject::kContinuationOffset));
-    __ Add(x10, x10, x11);
-    __ Mov(x12, Smi::FromInt(JSGeneratorObject::kGeneratorExecuting));
-    __ Str(x12, FieldMemOperand(x1, JSGeneratorObject::kContinuationOffset));
-    __ Move(x0, x1);  // Continuation expects generator object in x0.
-    __ Br(x10);
   }
 
   __ Bind(&prepare_step_in_if_stepping);
@@ -1086,6 +1044,11 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     __ Assert(eq, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry);
   }
 
+  // Reset code age.
+  __ Mov(x10, Operand(BytecodeArray::kNoAgeBytecodeAge));
+  __ Strb(x10, FieldMemOperand(kInterpreterBytecodeArrayRegister,
+                               BytecodeArray::kBytecodeAgeOffset));
+
   // Load the initial bytecode offset.
   __ Mov(kInterpreterBytecodeOffsetRegister,
          Operand(BytecodeArray::kHeaderSize - kHeapObjectTag));
@@ -1310,7 +1273,7 @@ void Builtins::Generate_InterpreterPushArgsAndConstructArray(
   }
 }
 
-void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
+static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
   // Set the return address to the correct point in the interpreter entry
   // trampoline.
   Smi* interpreter_entry_return_pc_offset(
@@ -1349,6 +1312,29 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
   __ Mov(x1, Operand(x1, LSL, kPointerSizeLog2));
   __ Ldr(ip0, MemOperand(kInterpreterDispatchTableRegister, x1));
   __ Jump(ip0);
+}
+
+void Builtins::Generate_InterpreterEnterBytecodeAdvance(MacroAssembler* masm) {
+  // Advance the current bytecode offset stored within the given interpreter
+  // stack frame. This simulates what all bytecode handlers do upon completion
+  // of the underlying operation.
+  __ Ldr(x1, MemOperand(fp, InterpreterFrameConstants::kBytecodeArrayFromFp));
+  __ Ldr(x2, MemOperand(fp, InterpreterFrameConstants::kBytecodeOffsetFromFp));
+  __ Ldr(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ Push(kInterpreterAccumulatorRegister, x1, x2);
+    __ CallRuntime(Runtime::kInterpreterAdvanceBytecodeOffset);
+    __ Mov(x2, x0);  // Result is the new bytecode offset.
+    __ Pop(kInterpreterAccumulatorRegister);
+  }
+  __ Str(x2, MemOperand(fp, InterpreterFrameConstants::kBytecodeOffsetFromFp));
+
+  Generate_InterpreterEnterBytecode(masm);
+}
+
+void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
+  Generate_InterpreterEnterBytecode(masm);
 }
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
@@ -1580,14 +1566,9 @@ static void GenerateMakeCodeYoungAgainCommon(MacroAssembler* masm) {
   __ Br(x0);
 }
 
-#define DEFINE_CODE_AGE_BUILTIN_GENERATOR(C)                  \
-  void Builtins::Generate_Make##C##CodeYoungAgainEvenMarking( \
-      MacroAssembler* masm) {                                 \
-    GenerateMakeCodeYoungAgainCommon(masm);                   \
-  }                                                           \
-  void Builtins::Generate_Make##C##CodeYoungAgainOddMarking(  \
-      MacroAssembler* masm) {                                 \
-    GenerateMakeCodeYoungAgainCommon(masm);                   \
+#define DEFINE_CODE_AGE_BUILTIN_GENERATOR(C)                              \
+  void Builtins::Generate_Make##C##CodeYoungAgain(MacroAssembler* masm) { \
+    GenerateMakeCodeYoungAgainCommon(masm);                               \
   }
 CODE_AGE_LIST(DEFINE_CODE_AGE_BUILTIN_GENERATOR)
 #undef DEFINE_CODE_AGE_BUILTIN_GENERATOR
@@ -2199,7 +2180,8 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
 
   // Create the list of arguments from the array-like argumentsList.
   {
-    Label create_arguments, create_array, create_runtime, done_create;
+    Label create_arguments, create_array, create_holey_array, create_runtime,
+        done_create;
     __ JumpIfSmi(arguments_list, &create_runtime);
 
     // Load native context.
@@ -2221,7 +2203,7 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
     __ B(eq, &create_arguments);
 
     // Check if argumentsList is a fast JSArray.
-    __ CompareInstanceType(arguments_list_map, native_context, JS_ARRAY_TYPE);
+    __ CompareInstanceType(arguments_list_map, x10, JS_ARRAY_TYPE);
     __ B(eq, &create_array);
 
     // Ask the runtime to create the list (actually a FixedArray).
@@ -2246,14 +2228,42 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
     __ Mov(args, x10);
     __ B(&done_create);
 
+    // For holey JSArrays we need to check that the array prototype chain
+    // protector is intact and our prototype is the Array.prototype actually.
+    __ Bind(&create_holey_array);
+    //  -- x2 : arguments_list_map
+    //  -- x4 : native_context
+    Register arguments_list_prototype = x2;
+    __ Ldr(arguments_list_prototype,
+           FieldMemOperand(arguments_list_map, Map::kPrototypeOffset));
+    __ Ldr(x10, ContextMemOperand(native_context,
+                                  Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
+    __ Cmp(arguments_list_prototype, x10);
+    __ B(ne, &create_runtime);
+    __ LoadRoot(x10, Heap::kArrayProtectorRootIndex);
+    __ Ldrsw(x11, UntagSmiFieldMemOperand(x10, PropertyCell::kValueOffset));
+    __ Cmp(x11, Isolate::kProtectorValid);
+    __ B(ne, &create_runtime);
+    __ Ldrsw(len,
+             UntagSmiFieldMemOperand(arguments_list, JSArray::kLengthOffset));
+    __ Ldr(args, FieldMemOperand(arguments_list, JSArray::kElementsOffset));
+    __ B(&done_create);
+
     // Try to create the list from a JSArray object.
     __ Bind(&create_array);
     __ Ldr(x10, FieldMemOperand(arguments_list_map, Map::kBitField2Offset));
     __ DecodeField<Map::ElementsKindBits>(x10);
     STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
+    STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
     STATIC_ASSERT(FAST_ELEMENTS == 2);
-    // Branch for anything that's not FAST_{SMI_}ELEMENTS.
-    __ TestAndBranchIfAnySet(x10, ~FAST_ELEMENTS, &create_runtime);
+    STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
+    // Check if it is a holey array, the order of the cmp is important as
+    // anything higher than FAST_HOLEY_ELEMENTS will fall back to runtime.
+    __ Cmp(x10, FAST_HOLEY_ELEMENTS);
+    __ B(hi, &create_runtime);
+    // Only FAST_XXX after this point, FAST_HOLEY_XXX are odd values.
+    __ Tbnz(x10, 0, &create_holey_array);
+    // FAST_SMI_ELEMENTS or FAST_ELEMENTS after this point.
     __ Ldrsw(len,
              UntagSmiFieldMemOperand(arguments_list, JSArray::kLengthOffset));
     __ Ldr(args, FieldMemOperand(arguments_list, JSArray::kElementsOffset));
@@ -2287,16 +2297,24 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
 
   // Push arguments onto the stack (thisArgument is already on the stack).
   {
-    Label done, loop;
+    Label done, push, loop;
     Register src = x4;
 
     __ Add(src, args, FixedArray::kHeaderSize - kHeapObjectTag);
     __ Mov(x0, len);  // The 'len' argument for Call() or Construct().
     __ Cbz(len, &done);
+    Register the_hole_value = x11;
+    Register undefined_value = x12;
+    // We do not use the CompareRoot macro as it would do a LoadRoot behind the
+    // scenes and we want to avoid that in a loop.
+    __ LoadRoot(the_hole_value, Heap::kTheHoleValueRootIndex);
+    __ LoadRoot(undefined_value, Heap::kUndefinedValueRootIndex);
     __ Claim(len);
     __ Bind(&loop);
     __ Sub(len, len, 1);
     __ Ldr(x10, MemOperand(src, kPointerSize, PostIndex));
+    __ Cmp(x10, the_hole_value);
+    __ Csel(x10, x10, undefined_value, ne);
     __ Poke(x10, Operand(len, LSL, kPointerSizeLog2));
     __ Cbnz(len, &loop);
     __ Bind(&done);

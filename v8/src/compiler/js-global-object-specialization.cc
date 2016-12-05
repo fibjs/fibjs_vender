@@ -72,11 +72,11 @@ Reduction JSGlobalObjectSpecialization::ReduceJSLoadGlobal(Node* node) {
   // Try to lookup the name on the script context table first (lexical scoping).
   ScriptContextTableLookupResult result;
   if (LookupInScriptContextTable(name, &result)) {
-    if (result.context->is_the_hole(result.index)) return NoChange();
+    if (result.context->is_the_hole(isolate(), result.index)) return NoChange();
     Node* context = jsgraph()->HeapConstant(result.context);
     Node* value = effect = graph()->NewNode(
         javascript()->LoadContext(0, result.index, result.immutable), context,
-        context, effect);
+        effect);
     ReplaceWithValue(node, value, effect);
     return Replace(value);
   }
@@ -120,12 +120,10 @@ Reduction JSGlobalObjectSpecialization::ReduceJSLoadGlobal(Node* node) {
   if (property_details.cell_type() == PropertyCellType::kConstantType) {
     // Compute proper type based on the current value in the cell.
     if (property_cell_value->IsSmi()) {
-      property_cell_value_type = type_cache_.kSmi;
+      property_cell_value_type = Type::SignedSmall();
       representation = MachineRepresentation::kTaggedSigned;
     } else if (property_cell_value->IsNumber()) {
-      // TODO(mvstanton): Remove kHeapNumber from type cache, it's just
-      // Type::Number().
-      property_cell_value_type = type_cache_.kHeapNumber;
+      property_cell_value_type = Type::Number();
       representation = MachineRepresentation::kTaggedPointer;
     } else {
       // TODO(turbofan): Track the property_cell_value_map on the FieldAccess
@@ -155,11 +153,11 @@ Reduction JSGlobalObjectSpecialization::ReduceJSStoreGlobal(Node* node) {
   // Try to lookup the name on the script context table first (lexical scoping).
   ScriptContextTableLookupResult result;
   if (LookupInScriptContextTable(name, &result)) {
-    if (result.context->is_the_hole(result.index)) return NoChange();
+    if (result.context->is_the_hole(isolate(), result.index)) return NoChange();
     if (result.immutable) return NoChange();
     Node* context = jsgraph()->HeapConstant(result.context);
     effect = graph()->NewNode(javascript()->StoreContext(0, result.index),
-                              context, value, context, effect, control);
+                              value, context, effect, control);
     ReplaceWithValue(node, value, effect, control);
     return Replace(value);
   }
@@ -227,14 +225,9 @@ Reduction JSGlobalObjectSpecialization::ReduceJSStoreGlobal(Node* node) {
       break;
     }
     case PropertyCellType::kMutable: {
-      // Store to non-configurable, data property on the global can be lowered
-      // to a field store, even without recording a code dependency on the cell,
-      // because the property cannot be deleted or reconfigured to an accessor
-      // or interceptor property.
-      if (property_details.IsConfigurable()) {
-        // Protect lowering by recording a code dependency on the cell.
-        dependencies()->AssumePropertyCell(property_cell);
-      }
+      // Record a code dependency on the cell, and just deoptimize if the
+      // property ever becomes read-only.
+      dependencies()->AssumePropertyCell(property_cell);
       effect = graph()->NewNode(
           simplified()->StoreField(ForPropertyCellValue(
               MachineRepresentation::kTagged, Type::NonInternal(), name)),

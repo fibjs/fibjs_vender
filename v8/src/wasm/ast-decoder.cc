@@ -31,13 +31,13 @@ namespace wasm {
 #define TRACE(...)
 #endif
 
-#define CHECK_PROTOTYPE_OPCODE(flag)                   \
-  if (module_ && module_->origin == kAsmJsOrigin) {    \
-    error("Opcode not supported for asmjs modules");   \
-  }                                                    \
-  if (!FLAG_##flag) {                                  \
-    error("Invalid opcode (enable with --" #flag ")"); \
-    break;                                             \
+#define CHECK_PROTOTYPE_OPCODE(flag)                        \
+  if (module_ && module_->module->origin == kAsmJsOrigin) { \
+    error("Opcode not supported for asmjs modules");        \
+  }                                                         \
+  if (!FLAG_##flag) {                                       \
+    error("Invalid opcode (enable with --" #flag ")");      \
+    break;                                                  \
   }
 // TODO(titzer): this is only for intermediate migration.
 #define IMPLICIT_FUNCTION_END 1
@@ -88,7 +88,7 @@ struct MergeValues {
   } vals;  // Either multiple values or a single value.
 
   Value& first() {
-    DCHECK_GT(arity, 0u);
+    DCHECK_GT(arity, 0);
     return arity == 1 ? vals.first : vals.array[0];
   }
 };
@@ -227,6 +227,11 @@ class WasmDecoder : public Decoder {
   }
 
   inline bool Validate(const byte* pc, CallIndirectOperand& operand) {
+    uint32_t table_index = 0;
+    if (!module_->IsValidTable(table_index)) {
+      error("function table has to exist to execute call_indirect");
+      return false;
+    }
     if (Complete(pc, operand)) {
       return true;
     }
@@ -376,6 +381,9 @@ class WasmFullDecoder : public WasmDecoder {
   }
 
   bool Decode() {
+    if (FLAG_wasm_code_fuzzer_gen_test) {
+      PrintAstForDebugging(start_, end_);
+    }
     base::ElapsedTimer decode_timer;
     if (FLAG_trace_wasm_decode_time) {
       decode_timer.Start();
@@ -795,7 +803,8 @@ class WasmFullDecoder : public WasmDecoder {
               if (c->false_env != nullptr) {
                 // End the true branch of a one-armed if.
                 Goto(c->false_env, c->end_env);
-                if (ssa_env_->go() && stack_.size() != c->stack_depth) {
+                if (ssa_env_->go() &&
+                    static_cast<int>(stack_.size()) != c->stack_depth) {
                   error("end of if expected empty stack");
                   stack_.resize(c->stack_depth);
                 }
@@ -1109,7 +1118,7 @@ class WasmFullDecoder : public WasmDecoder {
             break;
           case kExprGrowMemory: {
             MemoryIndexOperand operand(this, pc_);
-            if (module_->origin != kAsmJsOrigin) {
+            if (module_->module->origin != kAsmJsOrigin) {
               Value val = Pop(0, kAstI32);
               Push(kAstI32, BUILD(GrowMemory, val.node));
             } else {
@@ -1159,7 +1168,7 @@ class WasmFullDecoder : public WasmDecoder {
             break;
           }
           case kAtomicPrefix: {
-            if (!module_ || module_->origin != kAsmJsOrigin) {
+            if (!module_ || module_->module->origin != kAsmJsOrigin) {
               error("Atomics are allowed only in AsmJs modules");
               break;
             }
@@ -1178,7 +1187,7 @@ class WasmFullDecoder : public WasmDecoder {
           }
           default: {
             // Deal with special asmjs opcodes.
-            if (module_ && module_->origin == kAsmJsOrigin) {
+            if (module_ && module_->module->origin == kAsmJsOrigin) {
               sig = WasmOpcodes::AsmjsSignature(opcode);
               if (sig) {
                 BuildSimpleOperator(opcode, sig);
@@ -1329,6 +1338,18 @@ class WasmFullDecoder : public WasmDecoder {
     return operand.length;
   }
 
+  unsigned ReplaceLane(WasmOpcode opcode, LocalType type) {
+    LaneOperand operand(this, pc_);
+    if (Validate(pc_, operand)) {
+      TFNode* input = Pop(0, LocalType::kSimd128).node;
+      TFNode* replacement = Pop(1, type).node;
+      TFNode* node =
+          BUILD(SimdReplaceLane, opcode, operand.lane, input, replacement);
+      Push(LocalType::kSimd128, node);
+    }
+    return operand.length;
+  }
+
   unsigned DecodeSimdOpcode(WasmOpcode opcode) {
     unsigned len = 0;
     switch (opcode) {
@@ -1338,6 +1359,14 @@ class WasmFullDecoder : public WasmDecoder {
       }
       case kExprF32x4ExtractLane: {
         len = ExtractLane(opcode, LocalType::kFloat32);
+        break;
+      }
+      case kExprI32x4ReplaceLane: {
+        len = ReplaceLane(opcode, LocalType::kWord32);
+        break;
+      }
+      case kExprF32x4ReplaceLane: {
+        len = ReplaceLane(opcode, LocalType::kFloat32);
         break;
       }
       default: {
@@ -1430,11 +1459,11 @@ class WasmFullDecoder : public WasmDecoder {
       // Unreachable code is essentially not typechecked.
       return {pc_, nullptr, kAstEnd};
     }
-    if (stack_depth == stack_.size()) {
+    if (stack_depth == static_cast<int>(stack_.size())) {
       Value val = {pc_, nullptr, kAstStmt};
       return val;
     } else {
-      DCHECK_LE(stack_depth, static_cast<int>(stack_.size()));
+      DCHECK_LE(stack_depth, stack_.size());
       Value val = Pop();
       stack_.resize(stack_depth);
       return val;
@@ -1455,8 +1484,7 @@ class WasmFullDecoder : public WasmDecoder {
       Goto(ssa_env_, c->end_env);
     } else {
       // Merge the value(s) into the end of the block.
-      if (static_cast<size_t>(c->stack_depth + c->merge.arity) >
-          stack_.size()) {
+      if (c->stack_depth + c->merge.arity > stack_.size()) {
         error(
             pc_, pc_,
             "expected at least %d values on the stack for br to @%d, found %d",
@@ -1472,7 +1500,7 @@ class WasmFullDecoder : public WasmDecoder {
     if (!ssa_env_->go()) return;
     // Merge the value(s) into the end of the block.
     int arity = static_cast<int>(c->merge.arity);
-    if (c->stack_depth + arity != stack_.size()) {
+    if (c->stack_depth + arity != static_cast<int>(stack_.size())) {
       error(pc_, pc_, "expected %d elements on the stack for fallthru to @%d",
             arity, startrel(c->pc));
       return;
@@ -1488,7 +1516,7 @@ class WasmFullDecoder : public WasmDecoder {
     if (!ssa_env_->go()) return;
     // Fallthru must match arity exactly.
     int arity = static_cast<int>(c->merge.arity);
-    if (c->stack_depth + arity != stack_.size()) {
+    if (c->stack_depth + arity != static_cast<int>(stack_.size())) {
       error(pc_, pc_, "expected %d elements on the stack for fallthru to @%d",
             arity, startrel(c->pc));
       return;
@@ -1923,7 +1951,7 @@ bool PrintAst(AccountingAllocator* allocator, const FunctionBody& body,
   // Print the local declarations.
   AstLocalDecls decls(&zone);
   BytecodeIterator i(body.start, body.end, &decls);
-  if (body.start != i.pc()) {
+  if (body.start != i.pc() && !FLAG_wasm_code_fuzzer_gen_test) {
     os << "// locals: ";
     for (auto p : decls.local_types) {
       LocalType type = p.first;
@@ -1962,7 +1990,7 @@ bool PrintAst(AccountingAllocator* allocator, const FunctionBody& body,
     os << "k" << WasmOpcodes::OpcodeName(opcode) << ",";
 
     for (size_t j = 1; j < length; ++j) {
-      os << " " << AsHex(i.pc()[j], 2) << ",";
+      os << " 0x" << AsHex(i.pc()[j], 2) << ",";
     }
 
     switch (opcode) {

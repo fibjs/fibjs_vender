@@ -240,20 +240,17 @@ class DebugInfoListNode {
   DebugInfoListNode* next_;
 };
 
-
 // Message delivered to the message handler callback. This is either a debugger
 // event or the response to a command.
-class MessageImpl: public v8::Debug::Message {
+class MessageImpl : public v8::Debug::Message {
  public:
   // Create a message object for a debug event.
-  static MessageImpl NewEvent(DebugEvent event,
-                              bool running,
+  static MessageImpl NewEvent(DebugEvent event, bool running,
                               Handle<JSObject> exec_state,
                               Handle<JSObject> event_data);
 
   // Create a message object for the response to a debug command.
-  static MessageImpl NewResponse(DebugEvent event,
-                                 bool running,
+  static MessageImpl NewResponse(DebugEvent event, bool running,
                                  Handle<JSObject> exec_state,
                                  Handle<JSObject> event_data,
                                  Handle<String> response_json,
@@ -272,23 +269,18 @@ class MessageImpl: public v8::Debug::Message {
   virtual v8::Isolate* GetIsolate() const;
 
  private:
-  MessageImpl(bool is_event,
-              DebugEvent event,
-              bool running,
-              Handle<JSObject> exec_state,
-              Handle<JSObject> event_data,
-              Handle<String> response_json,
-              v8::Debug::ClientData* client_data);
+  MessageImpl(bool is_event, DebugEvent event, bool running,
+              Handle<JSObject> exec_state, Handle<JSObject> event_data,
+              Handle<String> response_json, v8::Debug::ClientData* client_data);
 
-  bool is_event_;  // Does this message represent a debug event?
-  DebugEvent event_;  // Debug event causing the break.
-  bool running_;  // Will the VM start running after this event?
-  Handle<JSObject> exec_state_;  // Current execution state.
-  Handle<JSObject> event_data_;  // Data associated with the event.
+  bool is_event_;                 // Does this message represent a debug event?
+  DebugEvent event_;              // Debug event causing the break.
+  bool running_;                  // Will the VM start running after this event?
+  Handle<JSObject> exec_state_;   // Current execution state.
+  Handle<JSObject> event_data_;   // Data associated with the event.
   Handle<String> response_json_;  // Response JSON if message holds a response.
   v8::Debug::ClientData* client_data_;  // Client data passed with the request.
 };
-
 
 // Details of the debug event delivered to the debug event listener.
 class EventDetailsImpl : public v8::DebugInterface::EventDetails {
@@ -315,7 +307,6 @@ class EventDetailsImpl : public v8::DebugInterface::EventDetails {
   v8::Debug::ClientData* client_data_;  // Data passed to DebugBreakForCommand.
 };
 
-
 // Message send by user to v8 debugger or debugger output message.
 // In addition to command text it may contain a pointer to some user data
 // which are expected to be passed along with the command reponse to message
@@ -330,14 +321,13 @@ class CommandMessage {
   void Dispose();
   Vector<uint16_t> text() const { return text_; }
   v8::Debug::ClientData* client_data() const { return client_data_; }
+
  private:
-  CommandMessage(const Vector<uint16_t>& text,
-                 v8::Debug::ClientData* data);
+  CommandMessage(const Vector<uint16_t>& text, v8::Debug::ClientData* data);
 
   Vector<uint16_t> text_;
   v8::Debug::ClientData* client_data_;
 };
-
 
 // A Queue of CommandMessage objects.  A thread-safe version is
 // LockingCommandMessageQueue, based on this class.
@@ -349,6 +339,7 @@ class CommandMessageQueue BASE_EMBEDDED {
   CommandMessage Get();
   void Put(const CommandMessage& message);
   void Clear() { start_ = end_ = 0; }  // Queue is empty after Clear().
+
  private:
   // Doubles the size of the message queue, and copies the messages.
   void Expand();
@@ -358,7 +349,6 @@ class CommandMessageQueue BASE_EMBEDDED {
   int end_;
   int size_;  // The size of the queue buffer.  Queue can hold size-1 messages.
 };
-
 
 // LockingCommandMessageQueue is a thread-safe circular buffer of CommandMessage
 // messages.  The message data is not managed by LockingCommandMessageQueue.
@@ -371,13 +361,13 @@ class LockingCommandMessageQueue BASE_EMBEDDED {
   CommandMessage Get();
   void Put(const CommandMessage& message);
   void Clear();
+
  private:
   Logger* logger_;
   CommandMessageQueue queue_;
   mutable base::Mutex mutex_;
   DISALLOW_COPY_AND_ASSIGN(LockingCommandMessageQueue);
 };
-
 
 class DebugFeatureTracker {
  public:
@@ -416,7 +406,6 @@ class Debug {
   void OnThrow(Handle<Object> exception);
   void OnPromiseReject(Handle<Object> promise, Handle<Object> value);
   void OnCompileError(Handle<Script> script);
-  void OnBeforeCompile(Handle<Script> script);
   void OnAfterCompile(Handle<Script> script);
   void OnAsyncTaskEvent(Handle<String> type, Handle<Object> id,
                         Handle<String> name);
@@ -464,7 +453,7 @@ class Debug {
   bool GetPossibleBreakpoints(Handle<Script> script, int start_position,
                               int end_position, std::set<int>* positions);
 
-  void RecordAsyncFunction(Handle<JSGeneratorObject> generator_object);
+  void RecordGenerator(Handle<JSGeneratorObject> generator_object);
 
   // Returns whether the operation succeeded. Compilation can only be triggered
   // if a valid closure is passed as the second argument, otherwise the shared
@@ -607,13 +596,10 @@ class Debug {
                          Handle<Object> event_data,
                          v8::Debug::ClientData* client_data);
   void ProcessCompileEvent(v8::DebugEvent event, Handle<Script> script);
-  void ProcessDebugEvent(v8::DebugEvent event,
-                         Handle<JSObject> event_data,
+  void ProcessDebugEvent(v8::DebugEvent event, Handle<JSObject> event_data,
                          bool auto_continue);
-  void NotifyMessageHandler(v8::DebugEvent event,
-                            Handle<JSObject> exec_state,
-                            Handle<JSObject> event_data,
-                            bool auto_continue);
+  void NotifyMessageHandler(v8::DebugEvent event, Handle<JSObject> exec_state,
+                            Handle<JSObject> event_data, bool auto_continue);
   void InvokeMessageHandler(MessageImpl message);
 
   // Find the closest source position for a break point for a given position.

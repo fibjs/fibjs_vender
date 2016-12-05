@@ -909,14 +909,15 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     __ bind(&done_loop);
   }
 
-  // Dispatch on the kind of generator object.
-  Label old_generator;
-  __ lw(a3, FieldMemOperand(t0, JSFunction::kSharedFunctionInfoOffset));
-  __ lw(a3, FieldMemOperand(a3, SharedFunctionInfo::kFunctionDataOffset));
-  __ GetObjectType(a3, a3, a3);
-  __ Branch(&old_generator, ne, a3, Operand(BYTECODE_ARRAY_TYPE));
+  // Underlying function needs to have bytecode available.
+  if (FLAG_debug_code) {
+    __ lw(a3, FieldMemOperand(t0, JSFunction::kSharedFunctionInfoOffset));
+    __ lw(a3, FieldMemOperand(a3, SharedFunctionInfo::kFunctionDataOffset));
+    __ GetObjectType(a3, a3, a3);
+    __ Assert(eq, kMissingBytecodeArray, a3, Operand(BYTECODE_ARRAY_TYPE));
+  }
 
-  // New-style (ignition/turbofan) generator object.
+  // Resume (Ignition/TurboFan) generator object.
   {
     __ lw(a0, FieldMemOperand(t0, JSFunction::kSharedFunctionInfoOffset));
     __ lw(a0,
@@ -929,49 +930,6 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
     __ Move(a1, t0);
     __ lw(a2, FieldMemOperand(a1, JSFunction::kCodeEntryOffset));
     __ Jump(a2);
-  }
-
-  // Old-style (full-codegen) generator object
-  __ bind(&old_generator);
-  {
-    // Enter a new JavaScript frame, and initialize its slots as they were when
-    // the generator was suspended.
-    FrameScope scope(masm, StackFrame::MANUAL);
-    __ Push(ra, fp);
-    __ Move(fp, sp);
-    __ Push(cp, t0);
-
-    // Restore the operand stack.
-    __ lw(a0, FieldMemOperand(a1, JSGeneratorObject::kOperandStackOffset));
-    __ lw(a3, FieldMemOperand(a0, FixedArray::kLengthOffset));
-    __ Addu(a0, a0, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
-    __ Lsa(a3, a0, a3, kPointerSizeLog2 - 1);
-    {
-      Label done_loop, loop;
-      __ bind(&loop);
-      __ Branch(&done_loop, eq, a0, Operand(a3));
-      __ lw(t1, MemOperand(a0));
-      __ Push(t1);
-      __ Branch(USE_DELAY_SLOT, &loop);
-      __ addiu(a0, a0, kPointerSize);  // In delay slot.
-      __ bind(&done_loop);
-    }
-
-    // Reset operand stack so we don't leak.
-    __ LoadRoot(t1, Heap::kEmptyFixedArrayRootIndex);
-    __ sw(t1, FieldMemOperand(a1, JSGeneratorObject::kOperandStackOffset));
-
-    // Resume the generator function at the continuation.
-    __ lw(a3, FieldMemOperand(t0, JSFunction::kSharedFunctionInfoOffset));
-    __ lw(a3, FieldMemOperand(a3, SharedFunctionInfo::kCodeOffset));
-    __ Addu(a3, a3, Operand(Code::kHeaderSize - kHeapObjectTag));
-    __ lw(a2, FieldMemOperand(a1, JSGeneratorObject::kContinuationOffset));
-    __ SmiUntag(a2);
-    __ Addu(a3, a3, Operand(a2));
-    __ li(a2, Operand(Smi::FromInt(JSGeneratorObject::kGeneratorExecuting)));
-    __ sw(a2, FieldMemOperand(a1, JSGeneratorObject::kContinuationOffset));
-    __ Move(v0, a1);  // Continuation expects generator object in v0.
-    __ Jump(a3);
   }
 
   __ bind(&prepare_step_in_if_stepping);
@@ -1074,6 +1032,11 @@ void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
     __ Assert(eq, kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry, t0,
               Operand(BYTECODE_ARRAY_TYPE));
   }
+
+  // Reset code age.
+  DCHECK_EQ(0, BytecodeArray::kNoAgeBytecodeAge);
+  __ sb(zero_reg, FieldMemOperand(kInterpreterBytecodeArrayRegister,
+                                  BytecodeArray::kBytecodeAgeOffset));
 
   // Load initial bytecode offset.
   __ li(kInterpreterBytecodeOffsetRegister,
@@ -1300,7 +1263,7 @@ void Builtins::Generate_InterpreterPushArgsAndConstructArray(
   }
 }
 
-void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
+static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
   // Set the return address to the correct point in the interpreter entry
   // trampoline.
   Smi* interpreter_entry_return_pc_offset(
@@ -1341,6 +1304,29 @@ void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
   __ Lsa(a1, kInterpreterDispatchTableRegister, a1, kPointerSizeLog2);
   __ lw(a1, MemOperand(a1));
   __ Jump(a1);
+}
+
+void Builtins::Generate_InterpreterEnterBytecodeAdvance(MacroAssembler* masm) {
+  // Advance the current bytecode offset stored within the given interpreter
+  // stack frame. This simulates what all bytecode handlers do upon completion
+  // of the underlying operation.
+  __ lw(a1, MemOperand(fp, InterpreterFrameConstants::kBytecodeArrayFromFp));
+  __ lw(a2, MemOperand(fp, InterpreterFrameConstants::kBytecodeOffsetFromFp));
+  __ lw(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
+    __ Push(kInterpreterAccumulatorRegister, a1, a2);
+    __ CallRuntime(Runtime::kInterpreterAdvanceBytecodeOffset);
+    __ mov(a2, v0);  // Result is the new bytecode offset.
+    __ Pop(kInterpreterAccumulatorRegister);
+  }
+  __ sw(a2, MemOperand(fp, InterpreterFrameConstants::kBytecodeOffsetFromFp));
+
+  Generate_InterpreterEnterBytecode(masm);
+}
+
+void Builtins::Generate_InterpreterEnterBytecodeDispatch(MacroAssembler* masm) {
+  Generate_InterpreterEnterBytecode(masm);
 }
 
 void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
@@ -1586,14 +1572,9 @@ static void GenerateMakeCodeYoungAgainCommon(MacroAssembler* masm) {
   __ Jump(a0);
 }
 
-#define DEFINE_CODE_AGE_BUILTIN_GENERATOR(C)                  \
-  void Builtins::Generate_Make##C##CodeYoungAgainEvenMarking( \
-      MacroAssembler* masm) {                                 \
-    GenerateMakeCodeYoungAgainCommon(masm);                   \
-  }                                                           \
-  void Builtins::Generate_Make##C##CodeYoungAgainOddMarking(  \
-      MacroAssembler* masm) {                                 \
-    GenerateMakeCodeYoungAgainCommon(masm);                   \
+#define DEFINE_CODE_AGE_BUILTIN_GENERATOR(C)                              \
+  void Builtins::Generate_Make##C##CodeYoungAgain(MacroAssembler* masm) { \
+    GenerateMakeCodeYoungAgainCommon(masm);                               \
   }
 CODE_AGE_LIST(DEFINE_CODE_AGE_BUILTIN_GENERATOR)
 #undef DEFINE_CODE_AGE_BUILTIN_GENERATOR
@@ -2154,7 +2135,8 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
 
   // Create the list of arguments from the array-like argumentsList.
   {
-    Label create_arguments, create_array, create_runtime, done_create;
+    Label create_arguments, create_array, create_holey_array, create_runtime,
+        done_create;
     __ JumpIfSmi(a0, &create_runtime);
 
     // Load the map of argumentsList into a2.
@@ -2197,6 +2179,21 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
     __ mov(a0, t0);
     __ Branch(&done_create);
 
+    // For holey JSArrays we need to check that the array prototype chain
+    // protector is intact and our prototype is the Array.prototype actually.
+    __ bind(&create_holey_array);
+    __ lw(a2, FieldMemOperand(a2, Map::kPrototypeOffset));
+    __ lw(at, ContextMemOperand(t0, Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
+    __ Branch(&create_runtime, ne, a2, Operand(at));
+    __ LoadRoot(at, Heap::kArrayProtectorRootIndex);
+    __ lw(a2, FieldMemOperand(at, PropertyCell::kValueOffset));
+    __ Branch(&create_runtime, ne, a2,
+              Operand(Smi::FromInt(Isolate::kProtectorValid)));
+    __ lw(a2, FieldMemOperand(a0, JSArray::kLengthOffset));
+    __ lw(a0, FieldMemOperand(a0, JSArray::kElementsOffset));
+    __ SmiUntag(a2);
+    __ Branch(&done_create);
+
     // Try to create the list from a JSArray object.
     __ bind(&create_array);
     __ lw(a2, FieldMemOperand(a2, Map::kBitField2Offset));
@@ -2204,8 +2201,10 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
     STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
     STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
     STATIC_ASSERT(FAST_ELEMENTS == 2);
+    STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
+    __ Branch(&create_holey_array, eq, a2, Operand(FAST_HOLEY_SMI_ELEMENTS));
+    __ Branch(&create_holey_array, eq, a2, Operand(FAST_HOLEY_ELEMENTS));
     __ Branch(&create_runtime, hi, a2, Operand(FAST_ELEMENTS));
-    __ Branch(&create_runtime, eq, a2, Operand(FAST_HOLEY_SMI_ELEMENTS));
     __ lw(a2, FieldMemOperand(a0, JSArray::kLengthOffset));
     __ lw(a0, FieldMemOperand(a0, JSArray::kElementsOffset));
     __ SmiUntag(a2);
@@ -2240,11 +2239,15 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
   // Push arguments onto the stack (thisArgument is already on the stack).
   {
     __ mov(t0, zero_reg);
-    Label done, loop;
+    Label done, push, loop;
+    __ LoadRoot(t1, Heap::kTheHoleValueRootIndex);
     __ bind(&loop);
     __ Branch(&done, eq, t0, Operand(a2));
     __ Lsa(at, a0, t0, kPointerSizeLog2);
     __ lw(at, FieldMemOperand(at, FixedArray::kHeaderSize));
+    __ Branch(&push, ne, t1, Operand(at));
+    __ LoadRoot(at, Heap::kUndefinedValueRootIndex);
+    __ bind(&push);
     __ Push(at);
     __ Addu(t0, t0, Operand(1));
     __ Branch(&loop);

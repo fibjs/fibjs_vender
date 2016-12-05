@@ -268,6 +268,35 @@ void MacroAssembler::Move(DwVfpRegister dst, DwVfpRegister src,
   }
 }
 
+void MacroAssembler::Move(QwNeonRegister dst, QwNeonRegister src) {
+  if (!dst.is(src)) {
+    vmov(dst, src);
+  }
+}
+
+void MacroAssembler::Swap(DwVfpRegister srcdst0, DwVfpRegister srcdst1) {
+  if (srcdst0.is(srcdst1)) return;  // Swapping aliased registers emits nothing.
+
+  DCHECK(VfpRegisterIsAvailable(srcdst0));
+  DCHECK(VfpRegisterIsAvailable(srcdst1));
+
+  if (CpuFeatures::IsSupported(NEON)) {
+    vswp(srcdst0, srcdst1);
+  } else {
+    DCHECK(!srcdst0.is(kScratchDoubleReg));
+    DCHECK(!srcdst1.is(kScratchDoubleReg));
+    vmov(kScratchDoubleReg, srcdst0);
+    vmov(srcdst0, srcdst1);
+    vmov(srcdst1, kScratchDoubleReg);
+  }
+}
+
+void MacroAssembler::Swap(QwNeonRegister srcdst0, QwNeonRegister srcdst1) {
+  if (!srcdst0.is(srcdst1)) {
+    vswp(srcdst0, srcdst1);
+  }
+}
+
 void MacroAssembler::Mls(Register dst, Register src1, Register src2,
                          Register srcA, Condition cond) {
   if (CpuFeatures::IsSupported(ARMv7)) {
@@ -667,7 +696,7 @@ void MacroAssembler::RecordWriteCodeEntryField(Register js_function,
 
   // Save caller-saved registers, which includes js_function.
   DCHECK((kCallerSaved & js_function.bit()) != 0);
-  DCHECK_EQ(kCallerSaved & code_entry.bit(), 0);
+  DCHECK_EQ(kCallerSaved & code_entry.bit(), 0u);
   stm(db_w, sp, (kCallerSaved | lr.bit()));
 
   int argument_count = 3;
@@ -1950,7 +1979,6 @@ void MacroAssembler::Allocate(int object_size,
   // point, so we cannot just use add().
   DCHECK(object_size > 0);
   Register source = result;
-  Condition cond = al;
   int shift = 0;
   while (object_size != 0) {
     if (((object_size >> shift) & 0x03) == 0) {
@@ -1961,9 +1989,8 @@ void MacroAssembler::Allocate(int object_size,
       shift += 8;
       Operand bits_operand(bits);
       DCHECK(bits_operand.instructions_required(this) == 1);
-      add(result_end, source, bits_operand, LeaveCC, cond);
+      add(result_end, source, bits_operand);
       source = result_end;
-      cond = cc;
     }
   }
 
@@ -2162,7 +2189,6 @@ void MacroAssembler::FastAllocate(int object_size, Register result,
   // this point, so we cannot just use add().
   DCHECK(object_size > 0);
   Register source = result;
-  Condition cond = al;
   int shift = 0;
   while (object_size != 0) {
     if (((object_size >> shift) & 0x03) == 0) {
@@ -2173,9 +2199,8 @@ void MacroAssembler::FastAllocate(int object_size, Register result,
       shift += 8;
       Operand bits_operand(bits);
       DCHECK(bits_operand.instructions_required(this) == 1);
-      add(result_end, source, bits_operand, LeaveCC, cond);
+      add(result_end, source, bits_operand);
       source = result_end;
-      cond = cc;
     }
   }
 
@@ -2321,68 +2346,6 @@ void MacroAssembler::CompareRoot(Register obj,
   LoadRoot(ip, index);
   cmp(obj, ip);
 }
-
-void MacroAssembler::CheckFastObjectElements(Register map,
-                                             Register scratch,
-                                             Label* fail) {
-  STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
-  STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
-  STATIC_ASSERT(FAST_ELEMENTS == 2);
-  STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
-  ldrb(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  cmp(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
-  b(ls, fail);
-  cmp(scratch, Operand(Map::kMaximumBitField2FastHoleyElementValue));
-  b(hi, fail);
-}
-
-
-void MacroAssembler::CheckFastSmiElements(Register map,
-                                          Register scratch,
-                                          Label* fail) {
-  STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
-  STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
-  ldrb(scratch, FieldMemOperand(map, Map::kBitField2Offset));
-  cmp(scratch, Operand(Map::kMaximumBitField2FastHoleySmiElementValue));
-  b(hi, fail);
-}
-
-
-void MacroAssembler::StoreNumberToDoubleElements(
-                                      Register value_reg,
-                                      Register key_reg,
-                                      Register elements_reg,
-                                      Register scratch1,
-                                      LowDwVfpRegister double_scratch,
-                                      Label* fail,
-                                      int elements_offset) {
-  DCHECK(!AreAliased(value_reg, key_reg, elements_reg, scratch1));
-  Label smi_value, store;
-
-  // Handle smi values specially.
-  JumpIfSmi(value_reg, &smi_value);
-
-  // Ensure that the object is a heap number
-  CheckMap(value_reg,
-           scratch1,
-           isolate()->factory()->heap_number_map(),
-           fail,
-           DONT_DO_SMI_CHECK);
-
-  vldr(double_scratch, FieldMemOperand(value_reg, HeapNumber::kValueOffset));
-  VFPCanonicalizeNaN(double_scratch);
-  b(&store);
-
-  bind(&smi_value);
-  SmiToDouble(double_scratch, value_reg);
-
-  bind(&store);
-  add(scratch1, elements_reg, Operand::DoubleOffsetFromSmiKey(key_reg));
-  vstr(double_scratch,
-       FieldMemOperand(scratch1,
-                       FixedDoubleArray::kHeaderSize - elements_offset));
-}
-
 
 void MacroAssembler::CompareMap(Register obj,
                                 Register scratch,
@@ -2886,28 +2849,6 @@ void MacroAssembler::LoadContext(Register dst, int context_chain_length) {
   }
 }
 
-
-void MacroAssembler::LoadTransitionedArrayMapConditional(
-    ElementsKind expected_kind,
-    ElementsKind transitioned_kind,
-    Register map_in_out,
-    Register scratch,
-    Label* no_map_match) {
-  DCHECK(IsFastElementsKind(expected_kind));
-  DCHECK(IsFastElementsKind(transitioned_kind));
-
-  // Check that the function's map is the same as the expected cached map.
-  ldr(scratch, NativeContextMemOperand());
-  ldr(ip, ContextMemOperand(scratch, Context::ArrayMapIndex(expected_kind)));
-  cmp(map_in_out, ip);
-  b(ne, no_map_match);
-
-  // Use the transitioned cached map.
-  ldr(map_in_out,
-      ContextMemOperand(scratch, Context::ArrayMapIndex(transitioned_kind)));
-}
-
-
 void MacroAssembler::LoadNativeContextSlot(int index, Register dst) {
   ldr(dst, NativeContextMemOperand());
   ldr(dst, ContextMemOperand(dst, index));
@@ -2969,15 +2910,6 @@ void MacroAssembler::UntagAndJumpIfSmi(
   SmiUntag(dst, src, SetCC);
   b(cc, smi_case);  // Shifter carry is not set for a smi.
 }
-
-
-void MacroAssembler::UntagAndJumpIfNotSmi(
-    Register dst, Register src, Label* non_smi_case) {
-  STATIC_ASSERT(kSmiTag == 0);
-  SmiUntag(dst, src, SetCC);
-  b(cs, non_smi_case);  // Shifter carry is set for a non-smi.
-}
-
 
 void MacroAssembler::JumpIfEitherSmi(Register reg1,
                                      Register reg2,
@@ -3868,45 +3800,6 @@ Register GetRegisterThatIsNotOneOf(Register reg1,
   UNREACHABLE();
   return no_reg;
 }
-
-
-void MacroAssembler::JumpIfDictionaryInPrototypeChain(
-    Register object,
-    Register scratch0,
-    Register scratch1,
-    Label* found) {
-  DCHECK(!scratch1.is(scratch0));
-  Register current = scratch0;
-  Label loop_again, end;
-
-  // scratch contained elements pointer.
-  mov(current, object);
-  ldr(current, FieldMemOperand(current, HeapObject::kMapOffset));
-  ldr(current, FieldMemOperand(current, Map::kPrototypeOffset));
-  CompareRoot(current, Heap::kNullValueRootIndex);
-  b(eq, &end);
-
-  // Loop based on the map going up the prototype chain.
-  bind(&loop_again);
-  ldr(current, FieldMemOperand(current, HeapObject::kMapOffset));
-
-  STATIC_ASSERT(JS_PROXY_TYPE < JS_OBJECT_TYPE);
-  STATIC_ASSERT(JS_VALUE_TYPE < JS_OBJECT_TYPE);
-  ldrb(scratch1, FieldMemOperand(current, Map::kInstanceTypeOffset));
-  cmp(scratch1, Operand(JS_OBJECT_TYPE));
-  b(lo, found);
-
-  ldr(scratch1, FieldMemOperand(current, Map::kBitField2Offset));
-  DecodeField<Map::ElementsKindBits>(scratch1);
-  cmp(scratch1, Operand(DICTIONARY_ELEMENTS));
-  b(eq, found);
-  ldr(current, FieldMemOperand(current, Map::kPrototypeOffset));
-  CompareRoot(current, Heap::kNullValueRootIndex);
-  b(ne, &loop_again);
-
-  bind(&end);
-}
-
 
 #ifdef DEBUG
 bool AreAliased(Register reg1,
