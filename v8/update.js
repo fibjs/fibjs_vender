@@ -310,8 +310,9 @@ function patch_serializer() {
 
 	console.log("patch", fname);
 	var txt = fs.readTextFile(fname);
-	txt = txt.replace("if (source_hash", "// if (source_hash");
-	txt = txt.replace("if (flags_hash", "// if (flags_hash");
+	txt = txt.replace("if (source_hash", "if (0 && source_hash");
+	txt = txt.replace("if (flags_hash", "if (0 && flags_hash");
+	txt = txt.replace("if (cpu_features", "if (0 && cpu_features");
 	fs.writeFile(fname, txt);
 }
 

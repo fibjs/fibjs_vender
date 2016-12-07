@@ -369,11 +369,11 @@ SerializedCodeData::SanityCheckResult SerializedCodeData::SanityCheck(
   uint32_t c1 = GetHeaderValue(kChecksum1Offset);
   uint32_t c2 = GetHeaderValue(kChecksum2Offset);
   if (version_hash != Version::Hash()) return VERSION_MISMATCH;
-  // if (source_hash != expected_source_hash) return SOURCE_MISMATCH;
-  if (cpu_features != static_cast<uint32_t>(CpuFeatures::SupportedFeatures())) {
+  if (0 && source_hash != expected_source_hash) return SOURCE_MISMATCH;
+  if (0 && cpu_features != static_cast<uint32_t>(CpuFeatures::SupportedFeatures())) {
     return CPU_FEATURES_MISMATCH;
   }
-  // if (flags_hash != FlagList::Hash()) return FLAGS_MISMATCH;
+  if (0 && flags_hash != FlagList::Hash()) return FLAGS_MISMATCH;
   if (!Checksum(DataWithoutHeader()).Check(c1, c2)) return CHECKSUM_MISMATCH;
   return CHECK_SUCCESS;
 }
