@@ -623,7 +623,9 @@ LInstruction* LChunkBuilder::DoArithmeticD(Token::Value op,
     LOperand* left = UseRegisterAtStart(instr->BetterLeftOperand());
     LOperand* right = UseRegisterAtStart(instr->BetterRightOperand());
     LArithmeticD* result = new (zone()) LArithmeticD(op, left, right);
-    return DefineSameAsFirst(result);
+    return CpuFeatures::IsSupported(VECTOR_FACILITY)
+               ? DefineAsRegister(result)
+               : DefineSameAsFirst(result);
   }
 }
 
@@ -1357,12 +1359,6 @@ LInstruction* LChunkBuilder::DoSub(HSub* instr) {
     DCHECK(instr->left()->representation().Equals(instr->representation()));
     DCHECK(instr->right()->representation().Equals(instr->representation()));
 
-    if (instr->left()->IsConstant() &&
-        !instr->CheckFlag(HValue::kCanOverflow)) {
-      // If lhs is constant, do reverse subtraction instead.
-      return DoRSub(instr);
-    }
-
     LOperand* left = UseRegisterAtStart(instr->left());
     LOperand* right = UseOrConstantAtStart(instr->right());
     LSubI* sub = new (zone()) LSubI(left, right);
@@ -1376,21 +1372,6 @@ LInstruction* LChunkBuilder::DoSub(HSub* instr) {
   } else {
     return DoArithmeticT(Token::SUB, instr);
   }
-}
-
-LInstruction* LChunkBuilder::DoRSub(HSub* instr) {
-  DCHECK(instr->representation().IsSmiOrInteger32());
-  DCHECK(instr->left()->representation().Equals(instr->representation()));
-  DCHECK(instr->right()->representation().Equals(instr->representation()));
-  DCHECK(!instr->CheckFlag(HValue::kCanOverflow));
-
-  // Note: The lhs of the subtraction becomes the rhs of the
-  // reverse-subtraction.
-  LOperand* left = UseRegisterAtStart(instr->right());
-  LOperand* right = UseOrConstantAtStart(instr->left());
-  LRSubI* rsb = new (zone()) LRSubI(left, right);
-  LInstruction* result = DefineAsRegister(rsb);
-  return result;
 }
 
 LInstruction* LChunkBuilder::DoMultiplyAdd(HMul* mul, HValue* addend) {
@@ -1701,7 +1682,7 @@ LInstruction* LChunkBuilder::DoChange(HChange* instr) {
 }
 
 LInstruction* LChunkBuilder::DoCheckHeapObject(HCheckHeapObject* instr) {
-  LOperand* value = UseRegisterAtStart(instr->value());
+  LOperand* value = UseAtStart(instr->value());
   LInstruction* result = new (zone()) LCheckNonSmi(value);
   if (!instr->value()->type().IsHeapObject()) {
     result = AssignEnvironment(result);
@@ -1710,7 +1691,7 @@ LInstruction* LChunkBuilder::DoCheckHeapObject(HCheckHeapObject* instr) {
 }
 
 LInstruction* LChunkBuilder::DoCheckSmi(HCheckSmi* instr) {
-  LOperand* value = UseRegisterAtStart(instr->value());
+  LOperand* value = UseAtStart(instr->value());
   return AssignEnvironment(new (zone()) LCheckSmi(value));
 }
 

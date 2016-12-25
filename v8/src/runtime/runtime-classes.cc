@@ -7,8 +7,10 @@
 #include <stdlib.h>
 #include <limits>
 
+#include "src/accessors.h"
 #include "src/arguments.h"
 #include "src/debug/debug.h"
+#include "src/elements.h"
 #include "src/frames-inl.h"
 #include "src/isolate-inl.h"
 #include "src/messages.h"
@@ -24,7 +26,6 @@ RUNTIME_FUNCTION(Runtime_ThrowNonMethodError) {
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate, NewReferenceError(MessageTemplate::kNonMethod));
 }
-
 
 RUNTIME_FUNCTION(Runtime_ThrowUnsupportedSuperError) {
   HandleScope scope(isolate);
@@ -56,6 +57,47 @@ RUNTIME_FUNCTION(Runtime_ThrowStaticPrototypeError) {
   DCHECK(args.length() == 0);
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate, NewTypeError(MessageTemplate::kStaticPrototype));
+}
+
+namespace {
+
+Object* ThrowNotSuperConstructor(Isolate* isolate, Handle<Object> constructor,
+                                 Handle<JSFunction> function) {
+  Handle<Object> super_name;
+  if (constructor->IsJSFunction()) {
+    super_name = handle(Handle<JSFunction>::cast(constructor)->shared()->name(),
+                        isolate);
+  } else if (constructor->IsOddball()) {
+    DCHECK(constructor->IsNull(isolate));
+    super_name = isolate->factory()->null_string();
+  } else {
+    super_name = Object::NoSideEffectsToString(isolate, constructor);
+  }
+  // null constructor
+  if (Handle<String>::cast(super_name)->length() == 0) {
+    super_name = isolate->factory()->null_string();
+  }
+  Handle<Object> function_name(function->shared()->name(), isolate);
+  // anonymous class
+  if (Handle<String>::cast(function_name)->length() == 0) {
+    THROW_NEW_ERROR_RETURN_FAILURE(
+        isolate,
+        NewTypeError(MessageTemplate::kNotSuperConstructorAnonymousClass,
+                     super_name));
+  }
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kNotSuperConstructor, super_name,
+                            function_name));
+}
+
+}  // namespace
+
+RUNTIME_FUNCTION(Runtime_ThrowNotSuperConstructor) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 2);
+  CONVERT_ARG_HANDLE_CHECKED(Object, constructor, 0);
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 1);
+  return ThrowNotSuperConstructor(isolate, constructor, function);
 }
 
 RUNTIME_FUNCTION(Runtime_HomeObjectSymbol) {
@@ -168,6 +210,42 @@ RUNTIME_FUNCTION(Runtime_DefineClass) {
   RETURN_RESULT_OR_FAILURE(
       isolate, DefineClass(isolate, super_class, constructor, start_position,
                            end_position));
+}
+
+namespace {
+void InstallClassNameAccessor(Isolate* isolate, Handle<JSObject> object) {
+  PropertyAttributes attrs =
+      static_cast<PropertyAttributes>(DONT_ENUM | READ_ONLY);
+  // Cannot fail since this should only be called when creating an object
+  // literal.
+  CHECK(!JSObject::SetAccessor(
+             object, Accessors::FunctionNameInfo(object->GetIsolate(), attrs))
+             .is_null());
+}
+}  // anonymous namespace
+
+RUNTIME_FUNCTION(Runtime_InstallClassNameAccessor) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
+  InstallClassNameAccessor(isolate, object);
+  return *object;
+}
+
+RUNTIME_FUNCTION(Runtime_InstallClassNameAccessorWithCheck) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 1);
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
+
+  // If a property named "name" is already defined, exit.
+  Handle<Name> key = isolate->factory()->name_string();
+  if (JSObject::HasRealNamedProperty(object, key).FromMaybe(false)) {
+    return *object;
+  }
+
+  // Define the "name" accessor.
+  InstallClassNameAccessor(isolate, object);
+  return *object;
 }
 
 namespace {
@@ -384,8 +462,57 @@ RUNTIME_FUNCTION(Runtime_StoreKeyedToSuper_Sloppy) {
 RUNTIME_FUNCTION(Runtime_GetSuperConstructor) {
   SealHandleScope shs(isolate);
   DCHECK_EQ(1, args.length());
-  CONVERT_ARG_CHECKED(JSFunction, active_function, 0);
-  return active_function->map()->prototype();
+  CONVERT_ARG_HANDLE_CHECKED(JSFunction, active_function, 0);
+  Object* prototype = active_function->map()->prototype();
+  if (!prototype->IsConstructor()) {
+    return ThrowNotSuperConstructor(
+        isolate, Handle<JSFunction>::cast(handle(prototype, isolate)),
+        active_function);
+  }
+  return prototype;
+}
+
+RUNTIME_FUNCTION(Runtime_NewWithSpread) {
+  HandleScope scope(isolate);
+  DCHECK_LE(3, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(JSReceiver, constructor, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, new_target, 1);
+
+  int constructor_argc = args.length() - 2;
+  CONVERT_ARG_HANDLE_CHECKED(Object, spread, args.length() - 1);
+
+  // Iterate over the spread if we need to.
+  if (spread->IterationHasObservableEffects()) {
+    Handle<JSFunction> spread_iterable_function = isolate->spread_iterable();
+    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
+        isolate, spread,
+        Execution::Call(isolate, spread_iterable_function,
+                        isolate->factory()->undefined_value(), 1, &spread));
+  }
+
+  uint32_t spread_length;
+  Handle<JSArray> spread_array = Handle<JSArray>::cast(spread);
+  CHECK(spread_array->length()->ToArrayIndex(&spread_length));
+  int result_length = constructor_argc - 1 + spread_length;
+  ScopedVector<Handle<Object>> construct_args(result_length);
+
+  // Append each of the individual args to the result.
+  for (int i = 0; i < constructor_argc - 1; i++) {
+    construct_args[i] = args.at<Object>(2 + i);
+  }
+
+  // Append element of the spread to the result.
+  ElementsAccessor* accessor = spread_array->GetElementsAccessor();
+  for (uint32_t i = 0; i < spread_length; i++) {
+    DCHECK(accessor->HasElement(spread_array, i));
+    Handle<Object> element = accessor->Get(spread_array, i);
+    construct_args[constructor_argc - 1 + i] = element;
+  }
+
+  // Call the constructor.
+  RETURN_RESULT_OR_FAILURE(
+      isolate, Execution::New(isolate, constructor, new_target, result_length,
+                              construct_args.start()));
 }
 
 }  // namespace internal

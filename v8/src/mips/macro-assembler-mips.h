@@ -208,6 +208,12 @@ class MacroAssembler: public Assembler {
               Heap::RootListIndex index,
               BranchDelaySlot bdslot = PROTECT);
 
+// Number of instructions needed for calculation of switch table entry address
+#ifdef _MIPS_ARCH_MIPS32R6
+  static const int kSwitchTablePrologueSize = 5;
+#else
+  static const int kSwitchTablePrologueSize = 10;
+#endif
   // GetLabelFunction must be lambda '[](size_t index) -> Label*' or a
   // functor/function with 'Label *func(size_t index)' declaration.
   template <typename Func>
@@ -304,17 +310,6 @@ class MacroAssembler: public Assembler {
   void Movn(Register rd, Register rs, Register rt);
   void Movt(Register rd, Register rs, uint16_t cc = 0);
   void Movf(Register rd, Register rs, uint16_t cc = 0);
-
-  // Min, Max macros.
-  // On pre-r6 these functions may modify at and t8 registers.
-  void MinNaNCheck_d(FPURegister dst, FPURegister src1, FPURegister src2,
-                     Label* nan = nullptr);
-  void MaxNaNCheck_d(FPURegister dst, FPURegister src1, FPURegister src2,
-                     Label* nan = nullptr);
-  void MinNaNCheck_s(FPURegister dst, FPURegister src1, FPURegister src2,
-                     Label* nan = nullptr);
-  void MaxNaNCheck_s(FPURegister dst, FPURegister src1, FPURegister src2,
-                     Label* nan = nullptr);
 
   void Clz(Register rd, Register rs);
 
@@ -559,32 +554,6 @@ class MacroAssembler: public Assembler {
 
   void FastAllocate(Register object_size, Register result, Register result_new,
                     Register scratch, AllocationFlags flags);
-
-  void AllocateTwoByteString(Register result,
-                             Register length,
-                             Register scratch1,
-                             Register scratch2,
-                             Register scratch3,
-                             Label* gc_required);
-  void AllocateOneByteString(Register result, Register length,
-                             Register scratch1, Register scratch2,
-                             Register scratch3, Label* gc_required);
-  void AllocateTwoByteConsString(Register result,
-                                 Register length,
-                                 Register scratch1,
-                                 Register scratch2,
-                                 Label* gc_required);
-  void AllocateOneByteConsString(Register result, Register length,
-                                 Register scratch1, Register scratch2,
-                                 Label* gc_required);
-  void AllocateTwoByteSlicedString(Register result,
-                                   Register length,
-                                   Register scratch1,
-                                   Register scratch2,
-                                   Label* gc_required);
-  void AllocateOneByteSlicedString(Register result, Register length,
-                                   Register scratch1, Register scratch2,
-                                   Label* gc_required);
 
   // Allocates a heap number or jumps to the gc_required label if the young
   // space is full and a scavenge is needed. All registers are clobbered also
@@ -891,6 +860,15 @@ class MacroAssembler: public Assembler {
   // FP64 mode: Move the higher 32 bits of the 64-bit coprocessor register into
   // general-purpose register.
   void Mfhc1(Register rt, FPURegister fs);
+
+  void Madd_s(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft,
+              FPURegister scratch);
+  void Madd_d(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft,
+              FPURegister scratch);
+  void Msub_s(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft,
+              FPURegister scratch);
+  void Msub_d(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft,
+              FPURegister scratch);
 
   // Wrapper functions for the different cmp/branch types.
   inline void BranchF32(Label* target, Label* nan, Condition cc,
@@ -1296,6 +1274,31 @@ class MacroAssembler: public Assembler {
                     Label* overflow_label, Label* no_overflow_label,
                     Register scratch = at);
 
+  // Perform a floating-point min or max operation with the
+  // (IEEE-754-compatible) semantics of MIPS32's Release 6 MIN.fmt/MAX.fmt.
+  // Some cases, typically NaNs or +/-0.0, are expected to be rare and are
+  // handled in out-of-line code. The specific behaviour depends on supported
+  // instructions.
+  //
+  // These functions assume (and assert) that !src1.is(src2). It is permitted
+  // for the result to alias either input register.
+  void Float32Max(FPURegister dst, FPURegister src1, FPURegister src2,
+                  Label* out_of_line);
+  void Float32Min(FPURegister dst, FPURegister src1, FPURegister src2,
+                  Label* out_of_line);
+  void Float64Max(DoubleRegister dst, DoubleRegister src1, DoubleRegister src2,
+                  Label* out_of_line);
+  void Float64Min(DoubleRegister dst, DoubleRegister src1, DoubleRegister src2,
+                  Label* out_of_line);
+
+  // Generate out-of-line cases for the macros above.
+  void Float32MaxOutOfLine(FPURegister dst, FPURegister src1, FPURegister src2);
+  void Float32MinOutOfLine(FPURegister dst, FPURegister src1, FPURegister src2);
+  void Float64MaxOutOfLine(DoubleRegister dst, DoubleRegister src1,
+                           DoubleRegister src2);
+  void Float64MinOutOfLine(DoubleRegister dst, DoubleRegister src1,
+                           DoubleRegister src2);
+
   // -------------------------------------------------------------------------
   // Runtime calls.
 
@@ -1591,11 +1594,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
       Register first_object_instance_type, Register second_object_instance_type,
       Register scratch1, Register scratch2, Label* failure);
 
-  // Check if instance type is sequential one-byte string and jump to label if
-  // it is not.
-  void JumpIfInstanceTypeIsNotSequentialOneByte(Register type, Register scratch,
-                                                Label* failure);
-
   void JumpIfNotUniqueNameInstanceType(Register reg, Label* not_unique_name);
 
   void EmitSeqStringSetCharCheck(Register string,
@@ -1818,13 +1816,13 @@ template <typename Func>
 void MacroAssembler::GenerateSwitchTable(Register index, size_t case_count,
                                          Func GetLabelFunction) {
   if (kArchVariant >= kMips32r6) {
-    BlockTrampolinePoolFor(case_count + 5);
+    BlockTrampolinePoolFor(case_count + kSwitchTablePrologueSize);
     addiupc(at, 5);
     Lsa(at, at, index, kPointerSizeLog2);
     lw(at, MemOperand(at));
   } else {
     Label here;
-    BlockTrampolinePoolFor(case_count + 10);
+    BlockTrampolinePoolFor(case_count + kSwitchTablePrologueSize);
     push(ra);
     bal(&here);
     sll(at, index, kPointerSizeLog2);  // Branch delay slot.

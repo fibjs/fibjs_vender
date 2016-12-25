@@ -28,6 +28,8 @@ namespace internal {
 
 #ifdef DEBUG
 
+void AstNode::Print() { Print(Isolate::Current()); }
+
 void AstNode::Print(Isolate* isolate) {
   AstPrinter::PrintOut(isolate, this);
 }
@@ -574,6 +576,14 @@ void ObjectLiteral::BuildConstantProperties(Isolate* isolate) {
   set_depth(depth_acc);
 }
 
+bool ObjectLiteral::IsFastCloningSupported() const {
+  // FastCloneShallowObjectStub doesn't copy elements, and object literals don't
+  // support copy-on-write (COW) elements for now.
+  // TODO(mvstanton): make object literals support COW elements.
+  return fast_elements() && has_shallow_properties() &&
+         properties_count() <=
+             FastCloneShallowObjectStub::kMaximumClonedProperties;
+}
 
 void ArrayLiteral::BuildConstantElements(Isolate* isolate) {
   DCHECK_LT(first_spread_index_, 0);
@@ -637,17 +647,20 @@ void ArrayLiteral::BuildConstantElements(Isolate* isolate) {
     accessor->CopyElements(fixed_array, from_kind, elements, constants_length);
   }
 
-  // Remember both the literal's constant values as well as the ElementsKind
-  // in a 2-element FixedArray.
-  Handle<FixedArray> literals = isolate->factory()->NewFixedArray(2, TENURED);
-  literals->set(0, Smi::FromInt(kind));
-  literals->set(1, *elements);
+  // Remember both the literal's constant values as well as the ElementsKind.
+  Handle<ConstantElementsPair> literals =
+      isolate->factory()->NewConstantElementsPair(kind, elements);
 
   constant_elements_ = literals;
   set_is_simple(is_simple);
   set_depth(depth_acc);
 }
 
+bool ArrayLiteral::IsFastCloningSupported() const {
+  return depth() <= 1 &&
+         values()->length() <=
+             FastCloneShallowArrayStub::kMaximumClonedElements;
+}
 
 void ArrayLiteral::AssignFeedbackVectorSlots(Isolate* isolate,
                                              FeedbackVectorSpec* spec,

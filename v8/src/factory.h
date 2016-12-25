@@ -71,9 +71,9 @@ class V8_EXPORT_PRIVATE Factory final {
 
   // Create a new PromiseReactionJobInfo struct.
   Handle<PromiseReactionJobInfo> NewPromiseReactionJobInfo(
-      Handle<Object> value, Handle<Object> tasks, Handle<Object> deferred,
-      Handle<Object> debug_id, Handle<Object> debug_name,
-      Handle<Context> context);
+      Handle<JSPromise> promise, Handle<Object> value, Handle<Object> tasks,
+      Handle<Object> deferred, Handle<Object> debug_id,
+      Handle<Object> debug_name, Handle<Context> context);
 
   // Create a new PromiseResolveThenableJobInfo struct.
   Handle<PromiseResolveThenableJobInfo> NewPromiseResolveThenableJobInfo(
@@ -95,6 +95,10 @@ class V8_EXPORT_PRIVATE Factory final {
   // Create a new ContextExtension struct.
   Handle<ContextExtension> NewContextExtension(Handle<ScopeInfo> scope_info,
                                                Handle<Object> extension);
+
+  // Create a new ConstantElementsPair struct.
+  Handle<ConstantElementsPair> NewConstantElementsPair(
+      ElementsKind elements_kind, Handle<FixedArrayBase> constant_values);
 
   // Create a pre-tenured empty AccessorPair.
   Handle<AccessorPair> NewAccessorPair();
@@ -296,8 +300,9 @@ class V8_EXPORT_PRIVATE Factory final {
                                    Handle<JSFunction> function,
                                    Handle<ScopeInfo> scope_info);
 
-  // Create a function context.
-  Handle<Context> NewFunctionContext(int length, Handle<JSFunction> function);
+  // Create a function or eval context.
+  Handle<Context> NewFunctionContext(int length, Handle<JSFunction> function,
+                                     ScopeType scope_type);
 
   // Create a catch context.
   Handle<Context> NewCatchContext(Handle<JSFunction> function,
@@ -543,9 +548,6 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<JSMapIterator> NewJSMapIterator();
   Handle<JSSetIterator> NewJSSetIterator();
 
-  Handle<JSFixedArrayIterator> NewJSFixedArrayIterator(
-      Handle<FixedArray> array);
-
   // Allocates a bound function.
   MaybeHandle<JSBoundFunction> NewJSBoundFunction(
       Handle<JSReceiver> target_function, Handle<Object> bound_this,
@@ -648,6 +650,7 @@ class V8_EXPORT_PRIVATE Factory final {
   DECLARE_ERROR(SyntaxError)
   DECLARE_ERROR(TypeError)
   DECLARE_ERROR(WasmCompileError)
+  DECLARE_ERROR(WasmLinkError)
   DECLARE_ERROR(WasmRuntimeError)
 #undef DECLARE_ERROR
 
@@ -721,6 +724,8 @@ class V8_EXPORT_PRIVATE Factory final {
 
   Handle<Map> CreateStrictFunctionMap(FunctionMode function_mode,
                                       Handle<JSFunction> empty_function);
+
+  Handle<Map> CreateClassFunctionMap(Handle<JSFunction> empty_function);
 
   // Allocates a new JSMessageObject object.
   Handle<JSMessageObject> NewJSMessageObject(MessageTemplate::Template message,
@@ -803,6 +808,8 @@ class V8_EXPORT_PRIVATE Factory final {
 
   void SetStrictFunctionInstanceDescriptor(Handle<Map> map,
                                            FunctionMode function_mode);
+
+  void SetClassFunctionInstanceDescriptor(Handle<Map> map);
 };
 
 }  // namespace internal

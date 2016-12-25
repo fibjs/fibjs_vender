@@ -1254,6 +1254,9 @@ Reduction JSTypedLowering::ReduceJSStoreProperty(Node* node) {
   Node* value = NodeProperties::GetValueInput(node, 2);
   Type* key_type = NodeProperties::GetType(key);
   Type* value_type = NodeProperties::GetType(value);
+
+  if (!value_type->Is(Type::PlainPrimitive())) return NoChange();
+
   HeapObjectMatcher mbase(base);
   if (mbase.HasValue() && mbase.Value()->IsJSTypedArray()) {
     Handle<JSTypedArray> const array =
@@ -1272,7 +1275,6 @@ Reduction JSTypedLowering::ReduceJSStoreProperty(Node* node) {
             Handle<FixedTypedArrayBase>::cast(handle(array->elements()));
         Node* buffer = jsgraph()->PointerConstant(elements->external_pointer());
         Node* length = jsgraph()->Constant(byte_length);
-        Node* context = NodeProperties::GetContextInput(node);
         Node* effect = NodeProperties::GetEffectInput(node);
         Node* control = NodeProperties::GetControlInput(node);
         // Convert to a number first.
@@ -1281,12 +1283,8 @@ Reduction JSTypedLowering::ReduceJSStoreProperty(Node* node) {
           if (number_reduction.Changed()) {
             value = number_reduction.replacement();
           } else {
-            Node* frame_state_for_to_number =
-                NodeProperties::FindFrameStateBefore(node);
-            value = effect =
-                graph()->NewNode(javascript()->ToNumber(), value, context,
-                                 frame_state_for_to_number, effect, control);
-            control = graph()->NewNode(common()->IfSuccess(), value);
+            value =
+                graph()->NewNode(simplified()->PlainPrimitiveToNumber(), value);
           }
         }
         // Check if we can avoid the bounds check.
@@ -2067,6 +2065,15 @@ Reduction JSTypedLowering::ReduceJSForInNext(Node* node) {
   Node* frame_state = NodeProperties::GetFrameStateInput(node);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
+
+  // We know that the {index} is in Unsigned32 range here, otherwise executing
+  // the JSForInNext wouldn't be valid. Unfortunately due to OSR and generators
+  // this is not always reflected in the types, hence we might need to rename
+  // the {index} here.
+  if (!NodeProperties::GetType(index)->Is(Type::Unsigned32())) {
+    index = graph()->NewNode(common()->TypeGuard(Type::Unsigned32()), index,
+                             control);
+  }
 
   // Load the next {key} from the {cache_array}.
   Node* key = effect = graph()->NewNode(

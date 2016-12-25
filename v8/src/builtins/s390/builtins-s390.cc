@@ -1378,7 +1378,6 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ CmpSmiLiteral(index, Smi::FromInt(2), r0);
   __ blt(&gotta_call_runtime);
 
-  // Find literals.
   // r9 : native context
   // r4  : length / index
   // r8  : optimized code map
@@ -1399,25 +1398,6 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ LoadP(temp, FieldMemOperand(temp, WeakCell::kValueOffset));
   __ CmpP(temp, native_context);
   __ bne(&loop_bottom, Label::kNear);
-  // OSR id set to none?
-  __ LoadP(temp,
-           FieldMemOperand(array_pointer,
-                           SharedFunctionInfo::kOffsetToPreviousOsrAstId));
-  const int bailout_id = BailoutId::None().ToInt();
-  __ CmpSmiLiteral(temp, Smi::FromInt(bailout_id), r0);
-  __ bne(&loop_bottom, Label::kNear);
-  // Literals available?
-  __ LoadP(temp,
-           FieldMemOperand(array_pointer,
-                           SharedFunctionInfo::kOffsetToPreviousLiterals));
-  __ LoadP(temp, FieldMemOperand(temp, WeakCell::kValueOffset));
-  __ JumpIfSmi(temp, &gotta_call_runtime);
-
-  // Save the literals in the closure.
-  __ StoreP(temp, FieldMemOperand(closure, JSFunction::kLiteralsOffset), r0);
-  __ RecordWriteField(closure, JSFunction::kLiteralsOffset, temp, r6,
-                      kLRHasNotBeenSaved, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
-                      OMIT_SMI_CHECK);
 
   // Code available?
   Register entry = r6;
@@ -1427,7 +1407,7 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ LoadP(entry, FieldMemOperand(entry, WeakCell::kValueOffset));
   __ JumpIfSmi(entry, &try_shared);
 
-  // Found literals and code. Get them into the closure and return.
+  // Found code. Get it into the closure and return.
   // Store code entry in the closure.
   __ AddP(entry, entry, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ StoreP(entry, FieldMemOperand(closure, JSFunction::kCodeEntryOffset), r0);
@@ -1461,7 +1441,7 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ CmpSmiLiteral(index, Smi::FromInt(1), r0);
   __ bgt(&loop_top);
 
-  // We found neither literals nor code.
+  // We found no code.
   __ b(&gotta_call_runtime);
 
   __ bind(&try_shared);
@@ -2185,7 +2165,8 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
 
   // Create the list of arguments from the array-like argumentsList.
   {
-    Label create_arguments, create_array, create_runtime, done_create;
+    Label create_arguments, create_array, create_holey_array, create_runtime,
+        done_create;
     __ JumpIfSmi(r2, &create_runtime);
 
     // Load the map of argumentsList into r4.
@@ -2229,17 +2210,37 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
     __ LoadRR(r2, r6);
     __ b(&done_create);
 
+    // For holey JSArrays we need to check that the array prototype chain
+    // protector is intact and our prototype is the Array.prototype actually.
+    __ bind(&create_holey_array);
+    __ LoadP(r4, FieldMemOperand(r4, Map::kPrototypeOffset));
+    __ LoadP(r6, ContextMemOperand(r6, Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
+    __ CmpP(r4, r6);
+    __ bne(&create_runtime);
+    __ LoadRoot(r6, Heap::kArrayProtectorRootIndex);
+    __ LoadP(r4, FieldMemOperand(r6, PropertyCell::kValueOffset));
+    __ CmpSmiLiteral(r4, Smi::FromInt(Isolate::kProtectorValid), r0);
+    __ bne(&create_runtime);
+    __ LoadP(r4, FieldMemOperand(r2, JSArray::kLengthOffset));
+    __ LoadP(r2, FieldMemOperand(r2, JSArray::kElementsOffset));
+    __ SmiUntag(r4);
+    __ b(&done_create);
+
     // Try to create the list from a JSArray object.
+    // -- r4 and r6 must be preserved till bne create_holey_array.
     __ bind(&create_array);
-    __ LoadlB(r4, FieldMemOperand(r4, Map::kBitField2Offset));
-    __ DecodeField<Map::ElementsKindBits>(r4);
+    __ LoadlB(r7, FieldMemOperand(r4, Map::kBitField2Offset));
+    __ DecodeField<Map::ElementsKindBits>(r7);
     STATIC_ASSERT(FAST_SMI_ELEMENTS == 0);
     STATIC_ASSERT(FAST_HOLEY_SMI_ELEMENTS == 1);
     STATIC_ASSERT(FAST_ELEMENTS == 2);
-    __ CmpP(r4, Operand(FAST_ELEMENTS));
+    STATIC_ASSERT(FAST_HOLEY_ELEMENTS == 3);
+    __ CmpP(r7, Operand(FAST_HOLEY_ELEMENTS));
     __ bgt(&create_runtime);
-    __ CmpP(r4, Operand(FAST_HOLEY_SMI_ELEMENTS));
-    __ beq(&create_runtime);
+    // Only FAST_XXX after this point, FAST_HOLEY_XXX are odd values.
+    __ TestBit(r7, Map::kHasNonInstancePrototype, r0);
+    __ bne(&create_holey_array);
+    // FAST_SMI_ELEMENTS or FAST_ELEMENTS after this point.
     __ LoadP(r4, FieldMemOperand(r2, JSArray::kLengthOffset));
     __ LoadP(r2, FieldMemOperand(r2, JSArray::kElementsOffset));
     __ SmiUntag(r4);
@@ -2274,16 +2275,21 @@ void Builtins::Generate_Apply(MacroAssembler* masm) {
 
   // Push arguments onto the stack (thisArgument is already on the stack).
   {
-    Label loop, no_args;
+    __ LoadRoot(r8, Heap::kUndefinedValueRootIndex);
+    Label loop, no_args, skip;
     __ CmpP(r4, Operand::Zero());
     __ beq(&no_args);
     __ AddP(r2, r2,
             Operand(FixedArray::kHeaderSize - kHeapObjectTag - kPointerSize));
     __ LoadRR(r1, r4);
     __ bind(&loop);
-    __ LoadP(r0, MemOperand(r2, kPointerSize));
+    __ LoadP(ip, MemOperand(r2, kPointerSize));
     __ la(r2, MemOperand(r2, kPointerSize));
-    __ push(r0);
+    __ CompareRoot(ip, Heap::kTheHoleValueRootIndex);
+    __ bne(&skip, Label::kNear);
+    __ LoadRR(ip, r8);
+    __ bind(&skip);
+    __ push(ip);
     __ BranchOnCount(r1, &loop);
     __ bind(&no_args);
     __ LoadRR(r2, r4);

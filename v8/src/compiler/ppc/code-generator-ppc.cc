@@ -38,6 +38,7 @@ class PPCOperandConverter final : public InstructionOperandConverter {
       case kFlags_branch:
       case kFlags_deoptimize:
       case kFlags_set:
+      case kFlags_trap:
         return SetRC;
       case kFlags_none:
         return LeaveRC;
@@ -267,7 +268,8 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
       // Overflow checked for add/sub only.
       switch (op) {
 #if V8_TARGET_ARCH_PPC64
-        case kPPC_Add:
+        case kPPC_Add32:
+        case kPPC_Add64:
         case kPPC_Sub:
 #endif
         case kPPC_AddWithOverflow32:
@@ -280,7 +282,8 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     case kNotOverflow:
       switch (op) {
 #if V8_TARGET_ARCH_PPC64
-        case kPPC_Add:
+        case kPPC_Add32:
+        case kPPC_Add64:
         case kPPC_Sub:
 #endif
         case kPPC_AddWithOverflow32:
@@ -765,36 +768,33 @@ Condition FlagsConditionToCondition(FlagsCondition condition, ArchOpcode op) {
     DCHECK_EQ(LeaveRC, i.OutputRCBit());                      \
   } while (0)
 
-#define ASSEMBLE_ATOMIC_LOAD_INTEGER(asm_instr, asm_instrx)   \
-  do {                                                        \
-    Label done;                                               \
-    Register result = i.OutputRegister();                     \
-    AddressingMode mode = kMode_None;                         \
-    MemOperand operand = i.MemoryOperand(&mode);              \
-    __ sync();                                                \
-    if (mode == kMode_MRI) {                                  \
-    __ asm_instr(result, operand);                            \
-    } else {                                                  \
-    __ asm_instrx(result, operand);                           \
-    }                                                         \
-    __ bind(&done);                                           \
-    __ cmp(result, result);                                   \
-    __ bne(&done);                                            \
-    __ isync();                                               \
+#define ASSEMBLE_ATOMIC_LOAD_INTEGER(asm_instr, asm_instrx) \
+  do {                                                      \
+    Label done;                                             \
+    Register result = i.OutputRegister();                   \
+    AddressingMode mode = kMode_None;                       \
+    MemOperand operand = i.MemoryOperand(&mode);            \
+    if (mode == kMode_MRI) {                                \
+      __ asm_instr(result, operand);                        \
+    } else {                                                \
+      __ asm_instrx(result, operand);                       \
+    }                                                       \
+    __ lwsync();                                            \
   } while (0)
-#define ASSEMBLE_ATOMIC_STORE_INTEGER(asm_instr, asm_instrx)  \
-  do {                                                        \
-    size_t index = 0;                                         \
-    AddressingMode mode = kMode_None;                         \
-    MemOperand operand = i.MemoryOperand(&mode, &index);      \
-    Register value = i.InputRegister(index);                  \
-    __ sync();                                                \
-    if (mode == kMode_MRI) {                                  \
-      __ asm_instr(value, operand);                           \
-    } else {                                                  \
-      __ asm_instrx(value, operand);                          \
-    }                                                         \
-    DCHECK_EQ(LeaveRC, i.OutputRCBit());                      \
+#define ASSEMBLE_ATOMIC_STORE_INTEGER(asm_instr, asm_instrx) \
+  do {                                                       \
+    size_t index = 0;                                        \
+    AddressingMode mode = kMode_None;                        \
+    MemOperand operand = i.MemoryOperand(&mode, &index);     \
+    Register value = i.InputRegister(index);                 \
+    __ lwsync();                                             \
+    if (mode == kMode_MRI) {                                 \
+      __ asm_instr(value, operand);                          \
+    } else {                                                 \
+      __ asm_instrx(value, operand);                         \
+    }                                                        \
+    __ sync();                                               \
+    DCHECK_EQ(LeaveRC, i.OutputRCBit());                     \
   } while (0)
 
 void CodeGenerator::AssembleDeconstructFrame() {
@@ -1326,7 +1326,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                 63 - i.InputInt32(2), i.OutputRCBit());
       break;
 #endif
-    case kPPC_Add:
+    case kPPC_Add32:
 #if V8_TARGET_ARCH_PPC64
       if (FlagsModeField::decode(instr->opcode()) != kFlags_none) {
         ASSEMBLE_ADD_WITH_OVERFLOW();
@@ -1339,10 +1339,26 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
           __ addi(i.OutputRegister(), i.InputRegister(0), i.InputImmediate(1));
           DCHECK_EQ(LeaveRC, i.OutputRCBit());
         }
+        __ extsw(i.OutputRegister(), i.OutputRegister());
 #if V8_TARGET_ARCH_PPC64
       }
 #endif
       break;
+#if V8_TARGET_ARCH_PPC64
+    case kPPC_Add64:
+      if (FlagsModeField::decode(instr->opcode()) != kFlags_none) {
+        ASSEMBLE_ADD_WITH_OVERFLOW();
+      } else {
+        if (HasRegisterInput(instr, 1)) {
+          __ add(i.OutputRegister(), i.InputRegister(0), i.InputRegister(1),
+                 LeaveOE, i.OutputRCBit());
+        } else {
+          __ addi(i.OutputRegister(), i.InputRegister(0), i.InputImmediate(1));
+          DCHECK_EQ(LeaveRC, i.OutputRCBit());
+        }
+      }
+      break;
+#endif
     case kPPC_AddWithOverflow32:
       ASSEMBLE_ADD_WITH_OVERFLOW32();
       break;
@@ -1988,6 +2004,10 @@ void CodeGenerator::AssembleArchJump(RpoNumber target) {
   if (!IsNextInAssemblyOrder(target)) __ b(GetLabel(target));
 }
 
+void CodeGenerator::AssembleArchTrap(Instruction* instr,
+                                     FlagsCondition condition) {
+  UNREACHABLE();
+}
 
 // Assembles boolean materializations after an instruction.
 void CodeGenerator::AssembleArchBoolean(Instruction* instr,

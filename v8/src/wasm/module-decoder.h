@@ -6,7 +6,7 @@
 #define V8_WASM_MODULE_DECODER_H_
 
 #include "src/globals.h"
-#include "src/wasm/ast-decoder.h"
+#include "src/wasm/function-body-decoder.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-result.h"
 
@@ -18,7 +18,12 @@ typedef Result<const WasmModule*> ModuleResult;
 typedef Result<WasmFunction*> FunctionResult;
 typedef std::vector<std::pair<int, int>> FunctionOffsets;
 typedef Result<FunctionOffsets> FunctionOffsetsResult;
-typedef std::vector<std::vector<std::pair<int, int>>> AsmJsOffsets;
+struct AsmJsOffsetEntry {
+  int byte_offset;
+  int source_position_call;
+  int source_position_number_conversion;
+};
+typedef std::vector<std::vector<AsmJsOffsetEntry>> AsmJsOffsets;
 typedef Result<AsmJsOffsets> AsmJsOffsetsResult;
 
 // Decodes the bytes of a WASM module between {module_start} and {module_end}.

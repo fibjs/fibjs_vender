@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/builtins/builtins.h"
 #include "src/builtins/builtins-utils.h"
+#include "src/builtins/builtins.h"
 #include "src/code-factory.h"
+#include "src/code-stub-assembler.h"
 
 namespace v8 {
 namespace internal {
@@ -343,7 +344,7 @@ void Builtins::Generate_ToLength(compiler::CodeAssemblerState* state) {
     Node* len = var_len.value();
 
     // Check if {len} is a positive Smi.
-    assembler.GotoIf(assembler.WordIsPositiveSmi(len), &return_len);
+    assembler.GotoIf(assembler.TaggedIsPositiveSmi(len), &return_len);
 
     // Check if {len} is a (negative) Smi.
     assembler.GotoIf(assembler.TaggedIsSmi(len), &return_zero);
@@ -451,8 +452,7 @@ void Builtins::Generate_ToObject(compiler::CodeAssemblerState* state) {
   assembler.Bind(&if_wrapjsvalue);
   Node* native_context = assembler.LoadNativeContext(context);
   Node* constructor = assembler.LoadFixedArrayElement(
-      native_context, constructor_function_index_var.value(), 0,
-      CodeStubAssembler::INTPTR_PARAMETERS);
+      native_context, constructor_function_index_var.value());
   Node* initial_map = assembler.LoadObjectField(
       constructor, JSFunction::kPrototypeOrInitialMapOffset);
   Node* js_value = assembler.Allocate(JSValue::kSize);

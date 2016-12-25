@@ -80,6 +80,30 @@ CallConstructParameters const& CallConstructParametersOf(Operator const* op) {
   return OpParameter<CallConstructParameters>(op);
 }
 
+bool operator==(CallConstructWithSpreadParameters const& lhs,
+                CallConstructWithSpreadParameters const& rhs) {
+  return lhs.arity() == rhs.arity();
+}
+
+bool operator!=(CallConstructWithSpreadParameters const& lhs,
+                CallConstructWithSpreadParameters const& rhs) {
+  return !(lhs == rhs);
+}
+
+size_t hash_value(CallConstructWithSpreadParameters const& p) {
+  return base::hash_combine(p.arity());
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         CallConstructWithSpreadParameters const& p) {
+  return os << p.arity();
+}
+
+CallConstructWithSpreadParameters const& CallConstructWithSpreadParametersOf(
+    Operator const* op) {
+  DCHECK_EQ(IrOpcode::kJSCallConstructWithSpread, op->opcode());
+  return OpParameter<CallConstructWithSpreadParameters>(op);
+}
 
 std::ostream& operator<<(std::ostream& os, CallFunctionParameters const& p) {
   os << p.arity() << ", " << p.frequency() << ", " << p.convert_mode() << ", "
@@ -189,6 +213,37 @@ CreateCatchContextParameters const& CreateCatchContextParametersOf(
     Operator const* op) {
   DCHECK_EQ(IrOpcode::kJSCreateCatchContext, op->opcode());
   return OpParameter<CreateCatchContextParameters>(op);
+}
+
+CreateFunctionContextParameters::CreateFunctionContextParameters(
+    int slot_count, ScopeType scope_type)
+    : slot_count_(slot_count), scope_type_(scope_type) {}
+
+bool operator==(CreateFunctionContextParameters const& lhs,
+                CreateFunctionContextParameters const& rhs) {
+  return lhs.slot_count() == rhs.slot_count() &&
+         lhs.scope_type() == rhs.scope_type();
+}
+
+bool operator!=(CreateFunctionContextParameters const& lhs,
+                CreateFunctionContextParameters const& rhs) {
+  return !(lhs == rhs);
+}
+
+size_t hash_value(CreateFunctionContextParameters const& parameters) {
+  return base::hash_combine(parameters.slot_count(),
+                            static_cast<int>(parameters.scope_type()));
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         CreateFunctionContextParameters const& parameters) {
+  return os << parameters.slot_count() << ", " << parameters.scope_type();
+}
+
+CreateFunctionContextParameters const& CreateFunctionContextParametersOf(
+    Operator const* op) {
+  DCHECK_EQ(IrOpcode::kJSCreateFunctionContext, op->opcode());
+  return OpParameter<CreateFunctionContextParameters>(op);
 }
 
 bool operator==(NamedAccess const& lhs, NamedAccess const& rhs) {
@@ -456,7 +511,8 @@ CompareOperationHint CompareOperationHintOf(const Operator* op) {
   V(StoreMessage, Operator::kNoThrow, 1, 0)                 \
   V(GeneratorRestoreContinuation, Operator::kNoThrow, 1, 1) \
   V(StackCheck, Operator::kNoWrite, 0, 0)                   \
-  V(StoreDataPropertyInLiteral, Operator::kNoProperties, 5, 0)
+  V(GetSuperConstructor, Operator::kNoWrite, 1, 1)          \
+  V(StoreDataPropertyInLiteral, Operator::kNoProperties, 4, 0)
 
 #define BINARY_OP_LIST(V) \
   V(BitwiseOr)            \
@@ -647,6 +703,14 @@ const Operator* JSOperatorBuilder::CallConstruct(
       parameters);                                          // parameter
 }
 
+const Operator* JSOperatorBuilder::CallConstructWithSpread(uint32_t arity) {
+  CallConstructWithSpreadParameters parameters(arity);
+  return new (zone()) Operator1<CallConstructWithSpreadParameters>(   // --
+      IrOpcode::kJSCallConstructWithSpread, Operator::kNoProperties,  // opcode
+      "JSCallConstructWithSpread",                                    // name
+      parameters.arity(), 1, 1, 1, 1, 2,                              // counts
+      parameters);  // parameter
+}
 
 const Operator* JSOperatorBuilder::ConvertReceiver(
     ConvertReceiverMode convert_mode) {
@@ -822,8 +886,8 @@ const Operator* JSOperatorBuilder::CreateClosure(
 }
 
 const Operator* JSOperatorBuilder::CreateLiteralArray(
-    Handle<FixedArray> constant_elements, int literal_flags, int literal_index,
-    int number_of_elements) {
+    Handle<ConstantElementsPair> constant_elements, int literal_flags,
+    int literal_index, int number_of_elements) {
   CreateLiteralParameters parameters(constant_elements, number_of_elements,
                                      literal_flags, literal_index);
   return new (zone()) Operator1<CreateLiteralParameters>(        // --
@@ -857,13 +921,14 @@ const Operator* JSOperatorBuilder::CreateLiteralRegExp(
       parameters);                                                // parameter
 }
 
-
-const Operator* JSOperatorBuilder::CreateFunctionContext(int slot_count) {
-  return new (zone()) Operator1<int>(                               // --
+const Operator* JSOperatorBuilder::CreateFunctionContext(int slot_count,
+                                                         ScopeType scope_type) {
+  CreateFunctionContextParameters parameters(slot_count, scope_type);
+  return new (zone()) Operator1<CreateFunctionContextParameters>(   // --
       IrOpcode::kJSCreateFunctionContext, Operator::kNoProperties,  // opcode
       "JSCreateFunctionContext",                                    // name
       1, 1, 1, 1, 1, 2,                                             // counts
-      slot_count);                                                  // parameter
+      parameters);                                                  // parameter
 }
 
 const Operator* JSOperatorBuilder::CreateCatchContext(
@@ -886,22 +951,21 @@ const Operator* JSOperatorBuilder::CreateWithContext(
 }
 
 const Operator* JSOperatorBuilder::CreateBlockContext(
-    const Handle<ScopeInfo>& scpope_info) {
+    const Handle<ScopeInfo>& scope_info) {
   return new (zone()) Operator1<Handle<ScopeInfo>>(              // --
       IrOpcode::kJSCreateBlockContext, Operator::kNoProperties,  // opcode
       "JSCreateBlockContext",                                    // name
       1, 1, 1, 1, 1, 2,                                          // counts
-      scpope_info);                                              // parameter
+      scope_info);                                               // parameter
 }
 
-
 const Operator* JSOperatorBuilder::CreateScriptContext(
-    const Handle<ScopeInfo>& scpope_info) {
+    const Handle<ScopeInfo>& scope_info) {
   return new (zone()) Operator1<Handle<ScopeInfo>>(               // --
       IrOpcode::kJSCreateScriptContext, Operator::kNoProperties,  // opcode
       "JSCreateScriptContext",                                    // name
       1, 1, 1, 1, 1, 2,                                           // counts
-      scpope_info);                                               // parameter
+      scope_info);                                                // parameter
 }
 
 }  // namespace compiler

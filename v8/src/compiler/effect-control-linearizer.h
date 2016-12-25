@@ -143,8 +143,13 @@ class V8_EXPORT_PRIVATE EffectControlLinearizer {
                                          Node* control);
   ValueEffectControl LowerObjectIsUndetectable(Node* node, Node* effect,
                                                Node* control);
+  ValueEffectControl LowerNewRestParameterElements(Node* node, Node* effect,
+                                                   Node* control);
+  ValueEffectControl LowerNewUnmappedArgumentsElements(Node* node, Node* effect,
+                                                       Node* control);
   ValueEffectControl LowerArrayBufferWasNeutered(Node* node, Node* effect,
                                                  Node* control);
+  ValueEffectControl LowerStringCharAt(Node* node, Node* effect, Node* control);
   ValueEffectControl LowerStringCharCodeAt(Node* node, Node* effect,
                                            Node* control);
   ValueEffectControl LowerStringFromCharCode(Node* node, Node* effect,

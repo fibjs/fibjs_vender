@@ -182,8 +182,9 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
     } else {
-      if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
-        FastNewFunctionContextStub stub(isolate());
+      if (slots <= FastNewFunctionContextStub::MaximumSlots()) {
+        FastNewFunctionContextStub stub(isolate(),
+                                        info()->scope()->scope_type());
         __ li(FastNewFunctionContextDescriptor::SlotsRegister(),
               Operand(slots));
         __ CallStub(&stub);
@@ -191,6 +192,7 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
         need_write_barrier = false;
       } else {
         __ push(a1);
+        __ Push(Smi::FromInt(info()->scope()->scope_type()));
         __ CallRuntime(Runtime::kNewFunctionContext);
       }
     }
@@ -1892,16 +1894,15 @@ void LCodeGen::DoMathMinMax(LMathMinMax* instr) {
     FPURegister result_reg = ToDoubleRegister(instr->result());
     Label nan, done;
     if (operation == HMathMinMax::kMathMax) {
-      __ MaxNaNCheck_d(result_reg, left_reg, right_reg, &nan);
+      __ Float64Max(result_reg, left_reg, right_reg, &nan);
     } else {
       DCHECK(operation == HMathMinMax::kMathMin);
-      __ MinNaNCheck_d(result_reg, left_reg, right_reg, &nan);
+      __ Float64Min(result_reg, left_reg, right_reg, &nan);
     }
     __ Branch(&done);
 
     __ bind(&nan);
-    __ LoadRoot(scratch, Heap::kNanValueRootIndex);
-    __ ldc1(result_reg, FieldMemOperand(scratch, HeapNumber::kValueOffset));
+    __ add_d(result_reg, left_reg, right_reg);
 
     __ bind(&done);
   }

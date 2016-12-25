@@ -962,19 +962,20 @@ class V8_EXPORT Data {
 class ScriptOriginOptions {
  public:
   V8_INLINE ScriptOriginOptions(bool is_shared_cross_origin = false,
-                                bool is_opaque = false)
+                                bool is_opaque = false, bool is_wasm = false)
       : flags_((is_shared_cross_origin ? kIsSharedCrossOrigin : 0) |
-               (is_opaque ? kIsOpaque : 0)) {}
+               (is_wasm ? kIsWasm : 0) | (is_opaque ? kIsOpaque : 0)) {}
   V8_INLINE ScriptOriginOptions(int flags)
-      : flags_(flags & (kIsSharedCrossOrigin | kIsOpaque)) {}
+      : flags_(flags & (kIsSharedCrossOrigin | kIsOpaque | kIsWasm)) {}
   bool IsSharedCrossOrigin() const {
     return (flags_ & kIsSharedCrossOrigin) != 0;
   }
   bool IsOpaque() const { return (flags_ & kIsOpaque) != 0; }
+  bool IsWasm() const { return (flags_ & kIsWasm) != 0; }
   int Flags() const { return flags_; }
 
  private:
-  enum { kIsSharedCrossOrigin = 1, kIsOpaque = 1 << 1 };
+  enum { kIsSharedCrossOrigin = 1, kIsOpaque = 1 << 1, kIsWasm = 1 << 2 };
   const int flags_;
 };
 
@@ -990,7 +991,8 @@ class ScriptOrigin {
       Local<Boolean> resource_is_shared_cross_origin = Local<Boolean>(),
       Local<Integer> script_id = Local<Integer>(),
       Local<Value> source_map_url = Local<Value>(),
-      Local<Boolean> resource_is_opaque = Local<Boolean>());
+      Local<Boolean> resource_is_opaque = Local<Boolean>(),
+      Local<Boolean> is_wasm = Local<Boolean>());
 
   V8_INLINE Local<Value> ResourceName() const;
   V8_INLINE Local<Integer> ResourceLineOffset() const;
@@ -1474,6 +1476,11 @@ class V8_EXPORT Message {
    * the error occurred.
    */
   int GetEndPosition() const;
+
+  /**
+   * Returns the error level of the message.
+   */
+  int ErrorLevel() const;
 
   /**
    * Returns the index within the line of the first character where
@@ -3692,6 +3699,12 @@ class V8_EXPORT Function : public Object {
  */
 class V8_EXPORT Promise : public Object {
  public:
+  /**
+   * State of the promise. Each value corresponds to one of the possible values
+   * of the [[PromiseState]] field.
+   */
+  enum PromiseState { kPending, kFulfilled, kRejected };
+
   class V8_EXPORT Resolver : public Object {
    public:
     /**
@@ -3747,6 +3760,17 @@ class V8_EXPORT Promise : public Object {
    * therefore resolve/reject handlers (including default handler).
    */
   bool HasHandler();
+
+  /**
+   * Returns the content of the [[PromiseResult]] field. The Promise must not
+   * be pending.
+   */
+  Local<Value> Result();
+
+  /**
+   * Returns the value of the [[PromiseState]] field.
+   */
+  PromiseState State();
 
   V8_INLINE static Promise* Cast(Value* obj);
 
@@ -5749,6 +5773,27 @@ typedef void (*BeforeCallEnteredCallback)(Isolate*);
 typedef void (*CallCompletedCallback)(Isolate*);
 typedef void (*DeprecatedCallCompletedCallback)();
 
+/**
+ * PromiseHook with type kInit is called when a new promise is
+ * created. When a new promise is created as part of the chain in the
+ * case of Promise.then or in the intermediate promises created by
+ * Promise.{race, all}/AsyncFunctionAwait, we pass the parent promise
+ * otherwise we pass undefined.
+ *
+ * PromiseHook with type kResolve is called at the beginning of
+ * resolve or reject function defined by CreateResolvingFunctions.
+ *
+ * PromiseHook with type kBefore is called at the beginning of the
+ * PromiseReactionJob.
+ *
+ * PromiseHook with type kAfter is called right at the end of the
+ * PromiseReactionJob.
+ */
+enum class PromiseHookType { kInit, kResolve, kBefore, kAfter };
+
+typedef void (*PromiseHook)(PromiseHookType type, Local<Promise> promise,
+                            Local<Value> parent);
+
 // --- Promise Reject Callback ---
 enum PromiseRejectEvent {
   kPromiseRejectWithNoHandler = 0,
@@ -6449,6 +6494,16 @@ class V8_EXPORT Isolate {
     kUseCounterFeatureCount  // This enum value must be last.
   };
 
+  enum MessageErrorLevel {
+    kMessageLog = (1 << 0),
+    kMessageDebug = (1 << 1),
+    kMessageInfo = (1 << 2),
+    kMessageError = (1 << 3),
+    kMessageWarning = (1 << 4),
+    kMessageAll = kMessageLog | kMessageDebug | kMessageInfo | kMessageError |
+                  kMessageWarning,
+  };
+
   typedef void (*UseCounterCallback)(Isolate* isolate,
                                      UseCounterFeature feature);
 
@@ -6850,6 +6905,12 @@ class V8_EXPORT Isolate {
           DeprecatedCallCompletedCallback callback));
 
   /**
+   * Experimental: Set the PromiseHook callback for various promise
+   * lifecycle events.
+   */
+  void SetPromiseHook(PromiseHook hook);
+
+  /**
    * Set callback to notify about promise reject with no handler, or
    * revocation of such a previous notification once the handler is added.
    */
@@ -7053,7 +7114,7 @@ class V8_EXPORT Isolate {
   bool IsDead();
 
   /**
-   * Adds a message listener.
+   * Adds a message listener (errors only).
    *
    * The same message listener can be added more than once and in that
    * case it will be called more than once for each message.
@@ -7063,6 +7124,21 @@ class V8_EXPORT Isolate {
    */
   bool AddMessageListener(MessageCallback that,
                           Local<Value> data = Local<Value>());
+
+  /**
+   * Adds a message listener.
+   *
+   * The same message listener can be added more than once and in that
+   * case it will be called more than once for each message.
+   *
+   * If data is specified, it will be passed to the callback when it is called.
+   * Otherwise, the exception object will be passed to the callback instead.
+   *
+   * A listener can listen for particular error levels by providing a mask.
+   */
+  bool AddMessageListenerWithErrorLevel(MessageCallback that,
+                                        int message_levels,
+                                        Local<Value> data = Local<Value>());
 
   /**
    * Remove all message listeners from the specified callback function.
@@ -7560,7 +7636,16 @@ class V8_EXPORT SnapshotCreator {
   Isolate* GetIsolate();
 
   /**
-   * Add a context to be included in the snapshot blob.
+   * Set the default context to be included in the snapshot blob.
+   * The snapshot will not contain the global proxy, and we expect one or a
+   * global object template to create one, to be provided upon deserialization.
+   */
+  void SetDefaultContext(Local<Context> context);
+
+  /**
+   * Add additional context to be included in the snapshot blob.
+   * The snapshot will include the global proxy.
+   *
    * \returns the index of the context in the snapshot blob.
    */
   size_t AddContext(Local<Context> context);
@@ -7884,10 +7969,24 @@ class V8_EXPORT Context {
       MaybeLocal<ObjectTemplate> global_template = MaybeLocal<ObjectTemplate>(),
       MaybeLocal<Value> global_object = MaybeLocal<Value>());
 
+  /**
+   * Create a new context from a (non-default) context snapshot. There
+   * is no way to provide a global object template since we do not create
+   * a new global object from template, but we can reuse a global object.
+   *
+   * \param isolate See v8::Context::New.
+   *
+   * \param context_snapshot_index The index of the context snapshot to
+   * deserialize from. Use v8::Context::New for the default snapshot.
+   *
+   * \param extensions See v8::Context::New.
+   *
+   * \param global_object See v8::Context::New.
+   */
+
   static MaybeLocal<Context> FromSnapshot(
       Isolate* isolate, size_t context_snapshot_index,
       ExtensionConfiguration* extensions = nullptr,
-      MaybeLocal<ObjectTemplate> global_template = MaybeLocal<ObjectTemplate>(),
       MaybeLocal<Value> global_object = MaybeLocal<Value>());
 
   /**
@@ -8298,8 +8397,8 @@ class Internals {
   static const int kNodeIsIndependentShift = 3;
   static const int kNodeIsActiveShift = 4;
 
-  static const int kJSObjectType = 0xbd;
-  static const int kJSApiObjectType = 0xbc;
+  static const int kJSApiObjectType = 0xbb;
+  static const int kJSObjectType = 0xbc;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x83;
   static const int kForeignType = 0x87;
@@ -8819,13 +8918,15 @@ ScriptOrigin::ScriptOrigin(Local<Value> resource_name,
                            Local<Boolean> resource_is_shared_cross_origin,
                            Local<Integer> script_id,
                            Local<Value> source_map_url,
-                           Local<Boolean> resource_is_opaque)
+                           Local<Boolean> resource_is_opaque,
+                           Local<Boolean> is_wasm)
     : resource_name_(resource_name),
       resource_line_offset_(resource_line_offset),
       resource_column_offset_(resource_column_offset),
       options_(!resource_is_shared_cross_origin.IsEmpty() &&
                    resource_is_shared_cross_origin->IsTrue(),
-               !resource_is_opaque.IsEmpty() && resource_is_opaque->IsTrue()),
+               !resource_is_opaque.IsEmpty() && resource_is_opaque->IsTrue(),
+               !is_wasm.IsEmpty() && is_wasm->IsTrue()),
       script_id_(script_id),
       source_map_url_(source_map_url) {}
 

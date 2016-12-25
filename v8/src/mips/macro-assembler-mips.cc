@@ -2002,6 +2002,49 @@ void MacroAssembler::Mfhc1(Register rt, FPURegister fs) {
   }
 }
 
+void MacroAssembler::Madd_s(FPURegister fd, FPURegister fr, FPURegister fs,
+                            FPURegister ft, FPURegister scratch) {
+  if (IsMipsArchVariant(kMips32r2)) {
+    madd_s(fd, fr, fs, ft);
+  } else {
+    DCHECK(!fr.is(scratch) && !fs.is(scratch) && !ft.is(scratch));
+    mul_s(scratch, fs, ft);
+    add_s(fd, fr, scratch);
+  }
+}
+
+void MacroAssembler::Madd_d(FPURegister fd, FPURegister fr, FPURegister fs,
+                            FPURegister ft, FPURegister scratch) {
+  if (IsMipsArchVariant(kMips32r2)) {
+    madd_d(fd, fr, fs, ft);
+  } else {
+    DCHECK(!fr.is(scratch) && !fs.is(scratch) && !ft.is(scratch));
+    mul_d(scratch, fs, ft);
+    add_d(fd, fr, scratch);
+  }
+}
+
+void MacroAssembler::Msub_s(FPURegister fd, FPURegister fr, FPURegister fs,
+                            FPURegister ft, FPURegister scratch) {
+  if (IsMipsArchVariant(kMips32r2)) {
+    msub_s(fd, fr, fs, ft);
+  } else {
+    DCHECK(!fr.is(scratch) && !fs.is(scratch) && !ft.is(scratch));
+    mul_s(scratch, fs, ft);
+    sub_s(fd, scratch, fr);
+  }
+}
+
+void MacroAssembler::Msub_d(FPURegister fd, FPURegister fr, FPURegister fs,
+                            FPURegister ft, FPURegister scratch) {
+  if (IsMipsArchVariant(kMips32r2)) {
+    msub_d(fd, fr, fs, ft);
+  } else {
+    DCHECK(!fr.is(scratch) && !fs.is(scratch) && !ft.is(scratch));
+    mul_d(scratch, fs, ft);
+    sub_d(fd, scratch, fr);
+  }
+}
 
 void MacroAssembler::BranchFCommon(SecondaryField sizeField, Label* target,
                                    Label* nan, Condition cond, FPURegister cmp1,
@@ -2326,186 +2369,6 @@ void MacroAssembler::Movf(Register rd, Register rs, uint16_t cc) {
     bind(&done);
   } else {
     movf(rd, rs, cc);
-  }
-}
-
-#define __ masm->
-
-static bool ZeroHelper_d(MacroAssembler* masm, MaxMinKind kind, FPURegister dst,
-                         FPURegister src1, FPURegister src2, Label* equal) {
-  if (src1.is(src2)) {
-    __ Move(dst, src1);
-    return true;
-  }
-
-  Label other, compare_not_equal;
-  FPURegister left, right;
-  if (kind == MaxMinKind::kMin) {
-    left = src1;
-    right = src2;
-  } else {
-    left = src2;
-    right = src1;
-  }
-
-  __ BranchF64(&compare_not_equal, nullptr, ne, src1, src2);
-  // Left and right hand side are equal, check for -0 vs. +0.
-  __ FmoveHigh(t8, src1);
-  __ Branch(&other, eq, t8, Operand(0x80000000));
-  __ Move_d(dst, right);
-  __ Branch(equal);
-  __ bind(&other);
-  __ Move_d(dst, left);
-  __ Branch(equal);
-  __ bind(&compare_not_equal);
-  return false;
-}
-
-static bool ZeroHelper_s(MacroAssembler* masm, MaxMinKind kind, FPURegister dst,
-                         FPURegister src1, FPURegister src2, Label* equal) {
-  if (src1.is(src2)) {
-    __ Move(dst, src1);
-    return true;
-  }
-
-  Label other, compare_not_equal;
-  FPURegister left, right;
-  if (kind == MaxMinKind::kMin) {
-    left = src1;
-    right = src2;
-  } else {
-    left = src2;
-    right = src1;
-  }
-
-  __ BranchF32(&compare_not_equal, nullptr, ne, src1, src2);
-  // Left and right hand side are equal, check for -0 vs. +0.
-  __ FmoveLow(t8, src1);
-  __ Branch(&other, eq, t8, Operand(0x80000000));
-  __ Move_s(dst, right);
-  __ Branch(equal);
-  __ bind(&other);
-  __ Move_s(dst, left);
-  __ Branch(equal);
-  __ bind(&compare_not_equal);
-  return false;
-}
-
-#undef __
-
-void MacroAssembler::MinNaNCheck_d(FPURegister dst, FPURegister src1,
-                                   FPURegister src2, Label* nan) {
-  if (nan) {
-    BranchF64(nullptr, nan, eq, src1, src2);
-  }
-  if (IsMipsArchVariant(kMips32r6)) {
-    min_d(dst, src1, src2);
-  } else {
-    Label skip;
-    if (!ZeroHelper_d(this, MaxMinKind::kMin, dst, src1, src2, &skip)) {
-      if (dst.is(src1)) {
-        BranchF64(&skip, nullptr, le, src1, src2);
-        Move_d(dst, src2);
-      } else if (dst.is(src2)) {
-        BranchF64(&skip, nullptr, ge, src1, src2);
-        Move_d(dst, src1);
-      } else {
-        Label right;
-        BranchF64(&right, nullptr, gt, src1, src2);
-        Move_d(dst, src1);
-        Branch(&skip);
-        bind(&right);
-        Move_d(dst, src2);
-      }
-    }
-    bind(&skip);
-  }
-}
-
-void MacroAssembler::MaxNaNCheck_d(FPURegister dst, FPURegister src1,
-                                   FPURegister src2, Label* nan) {
-  if (nan) {
-    BranchF64(nullptr, nan, eq, src1, src2);
-  }
-  if (IsMipsArchVariant(kMips32r6)) {
-    max_d(dst, src1, src2);
-  } else {
-    Label skip;
-    if (!ZeroHelper_d(this, MaxMinKind::kMax, dst, src1, src2, &skip)) {
-      if (dst.is(src1)) {
-        BranchF64(&skip, nullptr, ge, src1, src2);
-        Move_d(dst, src2);
-      } else if (dst.is(src2)) {
-        BranchF64(&skip, nullptr, le, src1, src2);
-        Move_d(dst, src1);
-      } else {
-        Label right;
-        BranchF64(&right, nullptr, lt, src1, src2);
-        Move_d(dst, src1);
-        Branch(&skip);
-        bind(&right);
-        Move_d(dst, src2);
-      }
-    }
-    bind(&skip);
-  }
-}
-
-void MacroAssembler::MinNaNCheck_s(FPURegister dst, FPURegister src1,
-                                   FPURegister src2, Label* nan) {
-  if (nan) {
-    BranchF32(nullptr, nan, eq, src1, src2);
-  }
-  if (IsMipsArchVariant(kMips32r6)) {
-    min_s(dst, src1, src2);
-  } else {
-    Label skip;
-    if (!ZeroHelper_s(this, MaxMinKind::kMin, dst, src1, src2, &skip)) {
-      if (dst.is(src1)) {
-        BranchF32(&skip, nullptr, le, src1, src2);
-        Move_s(dst, src2);
-      } else if (dst.is(src2)) {
-        BranchF32(&skip, nullptr, ge, src1, src2);
-        Move_s(dst, src1);
-      } else {
-        Label right;
-        BranchF32(&right, nullptr, gt, src1, src2);
-        Move_s(dst, src1);
-        Branch(&skip);
-        bind(&right);
-        Move_s(dst, src2);
-      }
-    }
-    bind(&skip);
-  }
-}
-
-void MacroAssembler::MaxNaNCheck_s(FPURegister dst, FPURegister src1,
-                                   FPURegister src2, Label* nan) {
-  if (nan) {
-    BranchF32(nullptr, nan, eq, src1, src2);
-  }
-  if (IsMipsArchVariant(kMips32r6)) {
-    max_s(dst, src1, src2);
-  } else {
-    Label skip;
-    if (!ZeroHelper_s(this, MaxMinKind::kMax, dst, src1, src2, &skip)) {
-      if (dst.is(src1)) {
-        BranchF32(&skip, nullptr, ge, src1, src2);
-        Move_s(dst, src2);
-      } else if (dst.is(src2)) {
-        BranchF32(&skip, nullptr, le, src1, src2);
-        Move_s(dst, src1);
-      } else {
-        Label right;
-        BranchF32(&right, nullptr, lt, src1, src2);
-        Move_s(dst, src1);
-        Branch(&skip);
-        bind(&right);
-        Move_s(dst, src2);
-      }
-    }
-    bind(&skip);
   }
 }
 
@@ -4338,110 +4201,6 @@ void MacroAssembler::FastAllocate(Register object_size, Register result,
   Addu(result, result, Operand(kHeapObjectTag));
 }
 
-void MacroAssembler::AllocateTwoByteString(Register result,
-                                           Register length,
-                                           Register scratch1,
-                                           Register scratch2,
-                                           Register scratch3,
-                                           Label* gc_required) {
-  // Calculate the number of bytes needed for the characters in the string while
-  // observing object alignment.
-  DCHECK((SeqTwoByteString::kHeaderSize & kObjectAlignmentMask) == 0);
-  sll(scratch1, length, 1);  // Length in bytes, not chars.
-  addiu(scratch1, scratch1,
-       kObjectAlignmentMask + SeqTwoByteString::kHeaderSize);
-  And(scratch1, scratch1, Operand(~kObjectAlignmentMask));
-
-  // Allocate two-byte string in new space.
-  Allocate(scratch1, result, scratch2, scratch3, gc_required,
-           NO_ALLOCATION_FLAGS);
-
-  // Set the map, length and hash field.
-  InitializeNewString(result,
-                      length,
-                      Heap::kStringMapRootIndex,
-                      scratch1,
-                      scratch2);
-}
-
-
-void MacroAssembler::AllocateOneByteString(Register result, Register length,
-                                           Register scratch1, Register scratch2,
-                                           Register scratch3,
-                                           Label* gc_required) {
-  // Calculate the number of bytes needed for the characters in the string
-  // while observing object alignment.
-  DCHECK((SeqOneByteString::kHeaderSize & kObjectAlignmentMask) == 0);
-  DCHECK(kCharSize == 1);
-  addiu(scratch1, length, kObjectAlignmentMask + SeqOneByteString::kHeaderSize);
-  And(scratch1, scratch1, Operand(~kObjectAlignmentMask));
-
-  // Allocate one-byte string in new space.
-  Allocate(scratch1, result, scratch2, scratch3, gc_required,
-           NO_ALLOCATION_FLAGS);
-
-  // Set the map, length and hash field.
-  InitializeNewString(result, length, Heap::kOneByteStringMapRootIndex,
-                      scratch1, scratch2);
-}
-
-
-void MacroAssembler::AllocateTwoByteConsString(Register result,
-                                               Register length,
-                                               Register scratch1,
-                                               Register scratch2,
-                                               Label* gc_required) {
-  Allocate(ConsString::kSize, result, scratch1, scratch2, gc_required,
-           NO_ALLOCATION_FLAGS);
-  InitializeNewString(result,
-                      length,
-                      Heap::kConsStringMapRootIndex,
-                      scratch1,
-                      scratch2);
-}
-
-
-void MacroAssembler::AllocateOneByteConsString(Register result, Register length,
-                                               Register scratch1,
-                                               Register scratch2,
-                                               Label* gc_required) {
-  Allocate(ConsString::kSize, result, scratch1, scratch2, gc_required,
-           NO_ALLOCATION_FLAGS);
-
-  InitializeNewString(result, length, Heap::kConsOneByteStringMapRootIndex,
-                      scratch1, scratch2);
-}
-
-
-void MacroAssembler::AllocateTwoByteSlicedString(Register result,
-                                                 Register length,
-                                                 Register scratch1,
-                                                 Register scratch2,
-                                                 Label* gc_required) {
-  Allocate(SlicedString::kSize, result, scratch1, scratch2, gc_required,
-           NO_ALLOCATION_FLAGS);
-
-  InitializeNewString(result,
-                      length,
-                      Heap::kSlicedStringMapRootIndex,
-                      scratch1,
-                      scratch2);
-}
-
-
-void MacroAssembler::AllocateOneByteSlicedString(Register result,
-                                                 Register length,
-                                                 Register scratch1,
-                                                 Register scratch2,
-                                                 Label* gc_required) {
-  Allocate(SlicedString::kSize, result, scratch1, scratch2, gc_required,
-           NO_ALLOCATION_FLAGS);
-
-  InitializeNewString(result, length, Heap::kSlicedOneByteStringMapRootIndex,
-                      scratch1, scratch2);
-}
-
-
 void MacroAssembler::JumpIfNotUniqueNameInstanceType(Register reg,
                                                      Label* not_unique_name) {
   STATIC_ASSERT(kInternalizedTag == 0 && kStringTag == 0);
@@ -6061,6 +5820,179 @@ void MacroAssembler::JumpIfNotBothSequentialOneByteStrings(Register first,
                                                scratch2, failure);
 }
 
+void MacroAssembler::Float32Max(FPURegister dst, FPURegister src1,
+                                FPURegister src2, Label* out_of_line) {
+  if (src1.is(src2)) {
+    Move_s(dst, src1);
+    return;
+  }
+
+  // Check if one of operands is NaN.
+  BranchF32(nullptr, out_of_line, eq, src1, src2);
+
+  if (IsMipsArchVariant(kMips32r6)) {
+    max_s(dst, src1, src2);
+  } else {
+    Label return_left, return_right, done;
+
+    BranchF32(&return_right, nullptr, lt, src1, src2);
+    BranchF32(&return_left, nullptr, lt, src2, src1);
+
+    // Operands are equal, but check for +/-0.
+    mfc1(t8, src1);
+    Branch(&return_left, eq, t8, Operand(zero_reg));
+    Branch(&return_right);
+
+    bind(&return_right);
+    if (!src2.is(dst)) {
+      Move_s(dst, src2);
+    }
+    Branch(&done);
+
+    bind(&return_left);
+    if (!src1.is(dst)) {
+      Move_s(dst, src1);
+    }
+
+    bind(&done);
+  }
+}
+
+void MacroAssembler::Float32MaxOutOfLine(FPURegister dst, FPURegister src1,
+                                         FPURegister src2) {
+  add_s(dst, src1, src2);
+}
+
+void MacroAssembler::Float32Min(FPURegister dst, FPURegister src1,
+                                FPURegister src2, Label* out_of_line) {
+  if (src1.is(src2)) {
+    Move_s(dst, src1);
+    return;
+  }
+
+  // Check if one of operands is NaN.
+  BranchF32(nullptr, out_of_line, eq, src1, src2);
+
+  if (IsMipsArchVariant(kMips32r6)) {
+    min_s(dst, src1, src2);
+  } else {
+    Label return_left, return_right, done;
+
+    BranchF32(&return_left, nullptr, lt, src1, src2);
+    BranchF32(&return_right, nullptr, lt, src2, src1);
+
+    // Left equals right => check for -0.
+    mfc1(t8, src1);
+    Branch(&return_right, eq, t8, Operand(zero_reg));
+    Branch(&return_left);
+
+    bind(&return_right);
+    if (!src2.is(dst)) {
+      Move_s(dst, src2);
+    }
+    Branch(&done);
+
+    bind(&return_left);
+    if (!src1.is(dst)) {
+      Move_s(dst, src1);
+    }
+
+    bind(&done);
+  }
+}
+
+void MacroAssembler::Float32MinOutOfLine(FPURegister dst, FPURegister src1,
+                                         FPURegister src2) {
+  add_s(dst, src1, src2);
+}
+
+void MacroAssembler::Float64Max(DoubleRegister dst, DoubleRegister src1,
+                                DoubleRegister src2, Label* out_of_line) {
+  if (src1.is(src2)) {
+    Move_d(dst, src1);
+    return;
+  }
+
+  // Check if one of operands is NaN.
+  BranchF64(nullptr, out_of_line, eq, src1, src2);
+
+  if (IsMipsArchVariant(kMips32r6)) {
+    max_d(dst, src1, src2);
+  } else {
+    Label return_left, return_right, done;
+
+    BranchF64(&return_right, nullptr, lt, src1, src2);
+    BranchF64(&return_left, nullptr, lt, src2, src1);
+
+    // Left equals right => check for -0.
+    Mfhc1(t8, src1);
+    Branch(&return_left, eq, t8, Operand(zero_reg));
+    Branch(&return_right);
+
+    bind(&return_right);
+    if (!src2.is(dst)) {
+      Move_d(dst, src2);
+    }
+    Branch(&done);
+
+    bind(&return_left);
+    if (!src1.is(dst)) {
+      Move_d(dst, src1);
+    }
+
+    bind(&done);
+  }
+}
+
+void MacroAssembler::Float64MaxOutOfLine(DoubleRegister dst,
+                                         DoubleRegister src1,
+                                         DoubleRegister src2) {
+  add_d(dst, src1, src2);
+}
+
+void MacroAssembler::Float64Min(DoubleRegister dst, DoubleRegister src1,
+                                DoubleRegister src2, Label* out_of_line) {
+  if (src1.is(src2)) {
+    Move_d(dst, src1);
+    return;
+  }
+
+  // Check if one of operands is NaN.
+  BranchF64(nullptr, out_of_line, eq, src1, src2);
+
+  if (IsMipsArchVariant(kMips32r6)) {
+    min_d(dst, src1, src2);
+  } else {
+    Label return_left, return_right, done;
+
+    BranchF64(&return_left, nullptr, lt, src1, src2);
+    BranchF64(&return_right, nullptr, lt, src2, src1);
+
+    // Left equals right => check for -0.
+    Mfhc1(t8, src1);
+    Branch(&return_right, eq, t8, Operand(zero_reg));
+    Branch(&return_left);
+
+    bind(&return_right);
+    if (!src2.is(dst)) {
+      Move_d(dst, src2);
+    }
+    Branch(&done);
+
+    bind(&return_left);
+    if (!src1.is(dst)) {
+      Move_d(dst, src1);
+    }
+
+    bind(&done);
+  }
+}
+
+void MacroAssembler::Float64MinOutOfLine(DoubleRegister dst,
+                                         DoubleRegister src1,
+                                         DoubleRegister src2) {
+  add_d(dst, src1, src2);
+}
 
 void MacroAssembler::JumpIfBothInstanceTypesAreNotSequentialOneByte(
     Register first, Register second, Register scratch1, Register scratch2,
@@ -6075,19 +6007,6 @@ void MacroAssembler::JumpIfBothInstanceTypesAreNotSequentialOneByte(
   andi(scratch2, second, kFlatOneByteStringMask);
   Branch(failure, ne, scratch2, Operand(kFlatOneByteStringTag));
 }
-
-
-void MacroAssembler::JumpIfInstanceTypeIsNotSequentialOneByte(Register type,
-                                                              Register scratch,
-                                                              Label* failure) {
-  const int kFlatOneByteStringMask =
-      kIsNotStringMask | kStringEncodingMask | kStringRepresentationMask;
-  const int kFlatOneByteStringTag =
-      kStringTag | kOneByteStringTag | kSeqStringTag;
-  And(scratch, type, Operand(kFlatOneByteStringMask));
-  Branch(failure, ne, scratch, Operand(kFlatOneByteStringTag));
-}
-
 
 static const int kRegisterPassedArguments = 4;
 

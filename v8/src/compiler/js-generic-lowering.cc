@@ -273,6 +273,12 @@ void JSGenericLowering::LowerJSDeleteProperty(Node* node) {
                                    : Runtime::kDeleteProperty_Sloppy);
 }
 
+void JSGenericLowering::LowerJSGetSuperConstructor(Node* node) {
+  CallDescriptor::Flags flags = FrameStateFlagForCall(node);
+  Callable callable = CodeFactory::GetSuperConstructor(isolate());
+  ReplaceWithStubCall(node, callable, flags);
+}
+
 void JSGenericLowering::LowerJSInstanceOf(Node* node) {
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
   Callable callable = CodeFactory::InstanceOf(isolate());
@@ -351,14 +357,19 @@ void JSGenericLowering::LowerJSCreateClosure(Node* node) {
 
 
 void JSGenericLowering::LowerJSCreateFunctionContext(Node* node) {
-  int const slot_count = OpParameter<int>(node->op());
+  const CreateFunctionContextParameters& parameters =
+      CreateFunctionContextParametersOf(node->op());
+  int slot_count = parameters.slot_count();
+  ScopeType scope_type = parameters.scope_type();
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
 
-  if (slot_count <= FastNewFunctionContextStub::kMaximumSlots) {
-    Callable callable = CodeFactory::FastNewFunctionContext(isolate());
+  if (slot_count <= FastNewFunctionContextStub::MaximumSlots()) {
+    Callable callable =
+        CodeFactory::FastNewFunctionContext(isolate(), scope_type);
     node->InsertInput(zone(), 1, jsgraph()->Int32Constant(slot_count));
     ReplaceWithStubCall(node, callable, flags);
   } else {
+    node->InsertInput(zone(), 1, jsgraph()->SmiConstant(scope_type));
     ReplaceWithRuntimeCall(node, Runtime::kNewFunctionContext);
   }
 }
@@ -378,10 +389,10 @@ void JSGenericLowering::LowerJSCreateLiteralArray(Node* node) {
   node->InsertInput(zone(), 1, jsgraph()->SmiConstant(p.index()));
   node->InsertInput(zone(), 2, jsgraph()->HeapConstant(p.constant()));
 
-  // Use the FastCloneShallowArrayStub only for shallow boilerplates up to the
-  // initial length limit for arrays with "fast" elements kind.
+  // Use the FastCloneShallowArrayStub only for shallow boilerplates without
+  // properties up to the number of elements that the stubs can handle.
   if ((p.flags() & ArrayLiteral::kShallowElements) != 0 &&
-      p.length() < JSArray::kInitialMaxFastElementArray) {
+      p.length() < FastCloneShallowArrayStub::kMaximumClonedElements) {
     Callable callable = CodeFactory::FastCloneShallowArray(isolate());
     ReplaceWithStubCall(node, callable, flags);
   } else {
@@ -474,6 +485,12 @@ void JSGenericLowering::LowerJSCallConstruct(Node* node) {
   NodeProperties::ChangeOp(node, common()->Call(desc));
 }
 
+void JSGenericLowering::LowerJSCallConstructWithSpread(Node* node) {
+  CallConstructWithSpreadParameters const& p =
+      CallConstructWithSpreadParametersOf(node->op());
+  ReplaceWithRuntimeCall(node, Runtime::kNewWithSpread,
+                         static_cast<int>(p.arity()));
+}
 
 void JSGenericLowering::LowerJSCallFunction(Node* node) {
   CallFunctionParameters const& p = CallFunctionParametersOf(node->op());

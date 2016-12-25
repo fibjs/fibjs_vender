@@ -14,8 +14,10 @@
 #include "src/gdb-jit.h"
 #include "src/ic/accessor-assembler.h"
 #include "src/ic/handler-compiler.h"
+#include "src/ic/ic-stats.h"
 #include "src/ic/ic.h"
 #include "src/macro-assembler.h"
+#include "src/tracing/tracing-category-observer.h"
 
 namespace v8 {
 namespace internal {
@@ -112,6 +114,12 @@ Handle<Code> CodeStub::GetCodeCopy(const Code::FindAndReplacePattern& pattern) {
   return ic;
 }
 
+void CodeStub::DeleteStubFromCacheForTesting() {
+  Heap* heap = isolate_->heap();
+  Handle<UnseededNumberDictionary> dict(heap->code_stubs());
+  dict = UnseededNumberDictionary::DeleteKey(dict, GetKey());
+  heap->SetRootCodeStubs(*dict);
+}
 
 Handle<Code> PlatformCodeStub::GenerateCode() {
   Factory* factory = isolate()->factory();
@@ -470,71 +478,6 @@ void KeyedStoreICTFStub::GenerateAssembly(
   AccessorAssembler::GenerateKeyedStoreICTF(state, language_mode());
 }
 
-void StoreMapStub::GenerateAssembly(compiler::CodeAssemblerState* state) const {
-  typedef compiler::Node Node;
-  CodeStubAssembler assembler(state);
-
-  Node* receiver = assembler.Parameter(Descriptor::kReceiver);
-  Node* map = assembler.Parameter(Descriptor::kMap);
-  Node* value = assembler.Parameter(Descriptor::kValue);
-
-  assembler.StoreMap(receiver, map);
-  assembler.Return(value);
-}
-
-void StoreTransitionStub::GenerateAssembly(
-    compiler::CodeAssemblerState* state) const {
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
-  CodeStubAssembler assembler(state);
-
-  Node* receiver = assembler.Parameter(Descriptor::kReceiver);
-  Node* name = assembler.Parameter(Descriptor::kName);
-  Node* offset =
-      assembler.SmiUntag(assembler.Parameter(Descriptor::kFieldOffset));
-  Node* value = assembler.Parameter(Descriptor::kValue);
-  Node* map = assembler.Parameter(Descriptor::kMap);
-  Node* slot = assembler.Parameter(Descriptor::kSlot);
-  Node* vector = assembler.Parameter(Descriptor::kVector);
-  Node* context = assembler.Parameter(Descriptor::kContext);
-
-  Label miss(&assembler);
-
-  Representation representation = this->representation();
-  assembler.Comment("StoreTransitionStub: is_inobject: %d: representation: %s",
-                    is_inobject(), representation.Mnemonic());
-
-  Node* prepared_value =
-      assembler.PrepareValueForWrite(value, representation, &miss);
-
-  if (store_mode() == StoreTransitionStub::ExtendStorageAndStoreMapAndValue) {
-    assembler.Comment("Extend storage");
-    assembler.ExtendPropertiesBackingStore(receiver);
-  } else {
-    DCHECK(store_mode() == StoreTransitionStub::StoreMapAndValue);
-  }
-
-  // Store the new value into the "extended" object.
-  assembler.Comment("Store value");
-  assembler.StoreNamedField(receiver, offset, is_inobject(), representation,
-                            prepared_value, true);
-
-  // And finally update the map.
-  assembler.Comment("Store map");
-  assembler.StoreMap(receiver, map);
-  assembler.Return(value);
-
-  // Only store to tagged field never bails out.
-  if (!representation.IsTagged()) {
-    assembler.Bind(&miss);
-    {
-      assembler.Comment("Miss");
-      assembler.TailCallRuntime(Runtime::kStoreIC_Miss, context, value, slot,
-                                vector, receiver, name);
-    }
-  }
-}
-
 void ElementsTransitionAndStoreStub::GenerateAssembly(
     compiler::CodeAssemblerState* state) const {
   typedef CodeStubAssembler::Label Label;
@@ -609,16 +552,16 @@ void StringLengthStub::GenerateAssembly(
   assembler.Return(result);
 }
 
-#define BINARY_OP_STUB(Name)                                               \
-  void Name::GenerateAssembly(compiler::CodeAssemblerState* state) const { \
-    typedef BinaryOpWithVectorDescriptor Descriptor;                       \
-    CodeStubAssembler assembler(state);                                    \
-    assembler.Return(Generate(&assembler,                                  \
-                              assembler.Parameter(Descriptor::kLeft),      \
-                              assembler.Parameter(Descriptor::kRight),     \
-                              assembler.Parameter(Descriptor::kSlot),      \
-                              assembler.Parameter(Descriptor::kVector),    \
-                              assembler.Parameter(Descriptor::kContext))); \
+#define BINARY_OP_STUB(Name)                                                  \
+  void Name::GenerateAssembly(compiler::CodeAssemblerState* state) const {    \
+    typedef BinaryOpWithVectorDescriptor Descriptor;                          \
+    CodeStubAssembler assembler(state);                                       \
+    assembler.Return(Generate(                                                \
+        &assembler, assembler.Parameter(Descriptor::kLeft),                   \
+        assembler.Parameter(Descriptor::kRight),                              \
+        assembler.ChangeUint32ToWord(assembler.Parameter(Descriptor::kSlot)), \
+        assembler.Parameter(Descriptor::kVector),                             \
+        assembler.Parameter(Descriptor::kContext)));                          \
   }
 BINARY_OP_STUB(AddWithFeedbackStub)
 BINARY_OP_STUB(SubtractWithFeedbackStub)
@@ -1224,27 +1167,26 @@ compiler::Node* DivideWithFeedbackStub::Generate(
 
       // Do floating point division if {divisor} is zero.
       assembler->GotoIf(
-          assembler->WordEqual(divisor, assembler->IntPtrConstant(0)),
-          &bailout);
+          assembler->WordEqual(divisor, assembler->SmiConstant(0)), &bailout);
 
       // Do floating point division {dividend} is zero and {divisor} is
       // negative.
       Label dividend_is_zero(assembler), dividend_is_not_zero(assembler);
       assembler->Branch(
-          assembler->WordEqual(dividend, assembler->IntPtrConstant(0)),
+          assembler->WordEqual(dividend, assembler->SmiConstant(0)),
           &dividend_is_zero, &dividend_is_not_zero);
 
       assembler->Bind(&dividend_is_zero);
       {
         assembler->GotoIf(
-            assembler->IntPtrLessThan(divisor, assembler->IntPtrConstant(0)),
+            assembler->SmiLessThan(divisor, assembler->SmiConstant(0)),
             &bailout);
         assembler->Goto(&dividend_is_not_zero);
       }
       assembler->Bind(&dividend_is_not_zero);
 
-      Node* untagged_divisor = assembler->SmiUntag(divisor);
-      Node* untagged_dividend = assembler->SmiUntag(dividend);
+      Node* untagged_divisor = assembler->SmiToWord32(divisor);
+      Node* untagged_dividend = assembler->SmiToWord32(dividend);
 
       // Do floating point division if {dividend} is kMinInt (or kMinInt - 1
       // if the Smi size is 31) and {divisor} is -1.
@@ -1274,7 +1216,7 @@ compiler::Node* DivideWithFeedbackStub::Generate(
                         &bailout);
       var_type_feedback.Bind(
           assembler->Int32Constant(BinaryOperationFeedback::kSignedSmall));
-      var_result.Bind(assembler->SmiTag(untagged_result));
+      var_result.Bind(assembler->SmiFromWord32(untagged_result));
       assembler->Goto(&end);
 
       // Bailout: convert {dividend} and {divisor} to double and do double
@@ -1892,45 +1834,6 @@ void LoadApiGetterStub::GenerateAssembly(
                          holder, callback);
 }
 
-void StoreFieldStub::GenerateAssembly(
-    compiler::CodeAssemblerState* state) const {
-  typedef CodeStubAssembler::Label Label;
-  typedef compiler::Node Node;
-  CodeStubAssembler assembler(state);
-
-  FieldIndex index = this->index();
-  Representation representation = this->representation();
-
-  assembler.Comment("StoreFieldStub: inobject=%d, offset=%d, rep=%s",
-                    index.is_inobject(), index.offset(),
-                    representation.Mnemonic());
-
-  Node* receiver = assembler.Parameter(Descriptor::kReceiver);
-  Node* name = assembler.Parameter(Descriptor::kName);
-  Node* value = assembler.Parameter(Descriptor::kValue);
-  Node* slot = assembler.Parameter(Descriptor::kSlot);
-  Node* vector = assembler.Parameter(Descriptor::kVector);
-  Node* context = assembler.Parameter(Descriptor::kContext);
-
-  Label miss(&assembler);
-
-  Node* prepared_value =
-      assembler.PrepareValueForWrite(value, representation, &miss);
-  assembler.StoreNamedField(receiver, index, representation, prepared_value,
-                            false);
-  assembler.Return(value);
-
-  // Only stores to tagged field can't bailout.
-  if (!representation.IsTagged()) {
-    assembler.Bind(&miss);
-    {
-      assembler.Comment("Miss");
-      assembler.TailCallRuntime(Runtime::kStoreIC_Miss, context, value, slot,
-                                vector, receiver, name);
-    }
-  }
-}
-
 void StoreGlobalStub::GenerateAssembly(
     compiler::CodeAssemblerState* state) const {
   typedef CodeStubAssembler::Label Label;
@@ -2026,6 +1929,11 @@ void StoreGlobalStub::GenerateAssembly(
   }
 }
 
+void LoadFieldStub::GenerateAssembly(
+    compiler::CodeAssemblerState* state) const {
+  AccessorAssembler::GenerateLoadField(state);
+}
+
 void KeyedLoadSloppyArgumentsStub::GenerateAssembly(
     compiler::CodeAssemblerState* state) const {
   typedef CodeStubAssembler::Label Label;
@@ -2105,8 +2013,7 @@ void StoreScriptContextFieldStub::GenerateAssembly(
 
   Node* script_context = assembler.LoadScriptContext(context, context_index());
   assembler.StoreFixedArrayElement(
-      script_context, assembler.IntPtrConstant(slot_index()), value,
-      UPDATE_WRITE_BARRIER, 0, CodeStubAssembler::INTPTR_PARAMETERS);
+      script_context, assembler.IntPtrConstant(slot_index()), value);
   assembler.Return(value);
 }
 
@@ -2136,7 +2043,7 @@ void LoadIndexedInterceptorStub::GenerateAssembly(
   Node* context = assembler.Parameter(Descriptor::kContext);
 
   Label if_keyispositivesmi(&assembler), if_keyisinvalid(&assembler);
-  assembler.Branch(assembler.WordIsPositiveSmi(key), &if_keyispositivesmi,
+  assembler.Branch(assembler.TaggedIsPositiveSmi(key), &if_keyispositivesmi,
                    &if_keyisinvalid);
   assembler.Bind(&if_keyispositivesmi);
   assembler.TailCallRuntime(Runtime::kLoadElementWithInterceptor, context,
@@ -2145,15 +2052,6 @@ void LoadIndexedInterceptorStub::GenerateAssembly(
   assembler.Bind(&if_keyisinvalid);
   assembler.TailCallRuntime(Runtime::kKeyedLoadIC_Miss, context, receiver, key,
                             slot, vector);
-}
-
-// static
-bool FastCloneShallowObjectStub::IsSupported(ObjectLiteral* expr) {
-  // FastCloneShallowObjectStub doesn't copy elements, and object literals don't
-  // support copy-on-write (COW) elements for now.
-  // TODO(mvstanton): make object literals support COW elements.
-  return expr->fast_elements() && expr->has_shallow_properties() &&
-         expr->properties_count() <= kMaximumClonedProperties;
 }
 
 // static
@@ -2198,7 +2096,7 @@ compiler::Node* FastCloneShallowObjectStub::GenerateFastPath(
   Node* boilerplate_map = assembler->LoadMap(boilerplate);
   Node* instance_size = assembler->LoadMapInstanceSize(boilerplate_map);
   Node* size_in_words = assembler->WordShr(object_size, kPointerSizeLog2);
-  assembler->GotoUnless(assembler->Word32Equal(instance_size, size_in_words),
+  assembler->GotoUnless(assembler->WordEqual(instance_size, size_in_words),
                         call_runtime);
 
   Node* copy = assembler->Allocate(allocation_size);
@@ -2278,7 +2176,19 @@ void HydrogenCodeStub::TraceTransition(StateType from, StateType to) {
   // Note: Although a no-op transition is semantically OK, it is hinting at a
   // bug somewhere in our state transition machinery.
   DCHECK(from != to);
-  if (!FLAG_trace_ic) return;
+  if (V8_LIKELY(!FLAG_ic_stats)) return;
+  if (FLAG_ic_stats &
+      v8::tracing::TracingCategoryObserver::ENABLED_BY_TRACING) {
+    auto ic_stats = ICStats::instance();
+    ic_stats->Begin();
+    ICInfo& ic_info = ic_stats->Current();
+    ic_info.type = MajorName(MajorKey());
+    ic_info.state = ToString(from);
+    ic_info.state += "=>";
+    ic_info.state += ToString(to);
+    ic_stats->End();
+    return;
+  }
   OFStream os(stdout);
   os << "[";
   PrintBaseName(os);
@@ -2297,12 +2207,6 @@ void JSEntryStub::FinishCode(Handle<Code> code) {
   code->set_handler_table(*handler_table);
 }
 
-
-void LoadDictionaryElementStub::InitializeDescriptor(
-    CodeStubDescriptor* descriptor) {
-  descriptor->Initialize(
-      FUNCTION_ADDR(Runtime_KeyedLoadIC_MissFromStubFailure));
-}
 
 void HandlerStub::InitializeDescriptor(CodeStubDescriptor* descriptor) {
   DCHECK(kind() == Code::LOAD_IC || kind() == Code::KEYED_LOAD_IC);
@@ -2519,7 +2423,7 @@ compiler::Node* FastNewClosureStub::Generate(CodeStubAssembler* assembler,
   assembler->Bind(&if_class_constructor);
   {
     map_index.Bind(
-        assembler->IntPtrConstant(Context::STRICT_FUNCTION_MAP_INDEX));
+        assembler->IntPtrConstant(Context::CLASS_FUNCTION_MAP_INDEX));
     assembler->Goto(&load_map);
   }
 
@@ -2536,8 +2440,7 @@ compiler::Node* FastNewClosureStub::Generate(CodeStubAssembler* assembler,
   // as the map of the allocated object.
   Node* native_context = assembler->LoadNativeContext(context);
   Node* map_slot_value =
-      assembler->LoadFixedArrayElement(native_context, map_index.value(), 0,
-                                       CodeStubAssembler::INTPTR_PARAMETERS);
+      assembler->LoadFixedArrayElement(native_context, map_index.value());
   assembler->StoreMapNoWriteBarrier(result, map_slot_value);
 
   // Initialize the rest of the function.
@@ -2562,10 +2465,11 @@ compiler::Node* FastNewClosureStub::Generate(CodeStubAssembler* assembler,
       assembler->isolate()->builtins()->builtin(Builtins::kCompileLazy));
   Node* lazy_builtin = assembler->HeapConstant(lazy_builtin_handle);
   Node* lazy_builtin_entry = assembler->IntPtrAdd(
-      lazy_builtin,
+      assembler->BitcastTaggedToWord(lazy_builtin),
       assembler->IntPtrConstant(Code::kHeaderSize - kHeapObjectTag));
   assembler->StoreObjectFieldNoWriteBarrier(
-      result, JSFunction::kCodeEntryOffset, lazy_builtin_entry);
+      result, JSFunction::kCodeEntryOffset, lazy_builtin_entry,
+      MachineType::PointerRepresentation());
   assembler->StoreObjectFieldNoWriteBarrier(result,
                                             JSFunction::kNextFunctionLinkOffset,
                                             assembler->UndefinedConstant());
@@ -2575,32 +2479,52 @@ compiler::Node* FastNewClosureStub::Generate(CodeStubAssembler* assembler,
 
 void FastNewClosureStub::GenerateAssembly(
     compiler::CodeAssemblerState* state) const {
+  typedef compiler::Node Node;
   CodeStubAssembler assembler(state);
-  assembler.Return(
-      Generate(&assembler, assembler.Parameter(0), assembler.Parameter(1)));
+  Node* shared = assembler.Parameter(Descriptor::kSharedFunctionInfo);
+  Node* context = assembler.Parameter(Descriptor::kContext);
+  assembler.Return(Generate(&assembler, shared, context));
+}
+
+// static
+int FastNewFunctionContextStub::MaximumSlots() {
+  return FLAG_test_small_max_function_context_stub_size ? kSmallMaximumSlots
+                                                        : kMaximumSlots;
 }
 
 // static
 compiler::Node* FastNewFunctionContextStub::Generate(
     CodeStubAssembler* assembler, compiler::Node* function,
-    compiler::Node* slots, compiler::Node* context) {
+    compiler::Node* slots, compiler::Node* context, ScopeType scope_type) {
   typedef compiler::Node Node;
 
+  slots = assembler->ChangeUint32ToWord(slots);
+
+  // TODO(ishell): Use CSA::OptimalParameterMode() here.
+  CodeStubAssembler::ParameterMode mode = CodeStubAssembler::INTPTR_PARAMETERS;
   Node* min_context_slots =
-      assembler->Int32Constant(Context::MIN_CONTEXT_SLOTS);
-  Node* length = assembler->Int32Add(slots, min_context_slots);
-  Node* size = assembler->Int32Add(
-      assembler->Word32Shl(length, assembler->Int32Constant(kPointerSizeLog2)),
-      assembler->Int32Constant(FixedArray::kHeaderSize));
+      assembler->IntPtrConstant(Context::MIN_CONTEXT_SLOTS);
+  Node* length = assembler->IntPtrAdd(slots, min_context_slots);
+  Node* size =
+      assembler->GetFixedArrayAllocationSize(length, FAST_ELEMENTS, mode);
 
   // Create a new closure from the given function info in new space
   Node* function_context = assembler->Allocate(size);
 
-  assembler->StoreMapNoWriteBarrier(function_context,
-                                    Heap::kFunctionContextMapRootIndex);
-  assembler->StoreObjectFieldNoWriteBarrier(function_context,
-                                            Context::kLengthOffset,
-                                            assembler->SmiFromWord32(length));
+  Heap::RootListIndex context_type;
+  switch (scope_type) {
+    case EVAL_SCOPE:
+      context_type = Heap::kEvalContextMapRootIndex;
+      break;
+    case FUNCTION_SCOPE:
+      context_type = Heap::kFunctionContextMapRootIndex;
+      break;
+    default:
+      UNREACHABLE();
+  }
+  assembler->StoreMapNoWriteBarrier(function_context, context_type);
+  assembler->StoreObjectFieldNoWriteBarrier(
+      function_context, Context::kLengthOffset, assembler->SmiTag(length));
 
   // Set up the fixed slots.
   assembler->StoreFixedArrayElement(function_context, Context::CLOSURE_INDEX,
@@ -2622,9 +2546,10 @@ compiler::Node* FastNewFunctionContextStub::Generate(
   assembler->BuildFastFixedArrayForEach(
       function_context, FAST_ELEMENTS, min_context_slots, length,
       [assembler, undefined](Node* context, Node* offset) {
-        assembler->StoreNoWriteBarrier(MachineType::PointerRepresentation(),
-                                       context, offset, undefined);
-      });
+        assembler->StoreNoWriteBarrier(MachineRepresentation::kTagged, context,
+                                       offset, undefined);
+      },
+      mode);
 
   return function_context;
 }
@@ -2634,10 +2559,11 @@ void FastNewFunctionContextStub::GenerateAssembly(
   typedef compiler::Node Node;
   CodeStubAssembler assembler(state);
   Node* function = assembler.Parameter(Descriptor::kFunction);
-  Node* slots = assembler.Parameter(FastNewFunctionContextDescriptor::kSlots);
+  Node* slots = assembler.Parameter(Descriptor::kSlots);
   Node* context = assembler.Parameter(Descriptor::kContext);
 
-  assembler.Return(Generate(&assembler, function, slots, context));
+  assembler.Return(
+      Generate(&assembler, function, slots, context, scope_type()));
 }
 
 // static
@@ -2711,14 +2637,10 @@ compiler::Node* NonEmptyShallowClone(CodeStubAssembler* assembler,
   typedef compiler::Node Node;
   typedef CodeStubAssembler::ParameterMode ParameterMode;
 
-  ParameterMode param_mode = CodeStubAssembler::SMI_PARAMETERS;
+  ParameterMode param_mode = assembler->OptimalParameterMode();
 
   Node* length = assembler->LoadJSArrayLength(boilerplate);
-
-  if (assembler->Is64()) {
-    capacity = assembler->SmiUntag(capacity);
-    param_mode = CodeStubAssembler::INTEGER_PARAMETERS;
-  }
+  capacity = assembler->TaggedToParameter(capacity, param_mode);
 
   Node *array, *elements;
   std::tie(array, elements) =
@@ -2736,9 +2658,7 @@ compiler::Node* NonEmptyShallowClone(CodeStubAssembler* assembler,
         assembler->LoadObjectField(boilerplate_elements, offset));
   }
 
-  if (assembler->Is64()) {
-    length = assembler->SmiUntag(length);
-  }
+  length = assembler->TaggedToParameter(length, param_mode);
 
   assembler->Comment("copy boilerplate elements");
   assembler->CopyFixedArrayElements(kind, boilerplate_elements, elements,
@@ -3067,7 +2987,7 @@ void InternalArrayNoArgumentConstructorStub::GenerateAssembly(
   Node* array = assembler.AllocateJSArray(
       elements_kind(), array_map,
       assembler.IntPtrConstant(JSArray::kPreallocatedArrayElements),
-      assembler.SmiConstant(Smi::kZero), nullptr);
+      assembler.SmiConstant(Smi::kZero));
   assembler.Return(array);
 }
 

@@ -92,6 +92,11 @@ Handle<Code> CodeGenerator::GenerateCode() {
   // the frame (that is done in AssemblePrologue).
   FrameScope frame_scope(masm(), StackFrame::MANUAL);
 
+  if (info->is_source_positions_enabled()) {
+    SourcePosition source_position(info->shared_info()->start_position());
+    AssembleSourcePosition(source_position);
+  }
+
   // Place function entry hook if requested to do so.
   if (linkage()->GetIncomingDescriptor()->IsJSFunctionCall()) {
     ProfileEntryHookStub::MaybeCallEntryHook(masm());
@@ -405,6 +410,10 @@ void CodeGenerator::GetPushCompatibleMoves(Instruction* instr,
 CodeGenerator::CodeGenResult CodeGenerator::AssembleInstruction(
     Instruction* instr, const InstructionBlock* block) {
   int first_unused_stack_slot;
+  FlagsMode mode = FlagsModeField::decode(instr->opcode());
+  if (mode != kFlags_trap) {
+    AssembleSourcePosition(instr);
+  }
   bool adjust_stack =
       GetSlotAboveSPBeforeTailCall(instr, &first_unused_stack_slot);
   if (adjust_stack) AssembleTailCallBeforeGap(instr, first_unused_stack_slot);
@@ -417,12 +426,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleInstruction(
   if (instr->IsJump() && block->must_deconstruct_frame()) {
     AssembleDeconstructFrame();
   }
-  AssembleSourcePosition(instr);
   // Assemble architecture-specific code for the instruction.
   CodeGenResult result = AssembleArchInstruction(instr);
   if (result != kSuccess) return result;
 
-  FlagsMode mode = FlagsModeField::decode(instr->opcode());
   FlagsCondition condition = FlagsConditionField::decode(instr->opcode());
   switch (mode) {
     case kFlags_branch: {
@@ -474,6 +481,10 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleInstruction(
       AssembleArchBoolean(instr, condition);
       break;
     }
+    case kFlags_trap: {
+      AssembleArchTrap(instr, condition);
+      break;
+    }
     case kFlags_none: {
       break;
     }
@@ -481,10 +492,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleInstruction(
   return kSuccess;
 }
 
-
 void CodeGenerator::AssembleSourcePosition(Instruction* instr) {
   SourcePosition source_position = SourcePosition::Unknown();
+  if (instr->IsNop() && instr->AreMovesRedundant()) return;
   if (!code()->GetSourcePosition(instr, &source_position)) return;
+  AssembleSourcePosition(source_position);
+}
+
+void CodeGenerator::AssembleSourcePosition(SourcePosition source_position) {
   if (source_position == current_source_position_) return;
   current_source_position_ = source_position;
   if (!source_position.IsKnown()) return;
@@ -494,7 +509,13 @@ void CodeGenerator::AssembleSourcePosition(Instruction* instr) {
     CompilationInfo* info = this->info();
     if (!info->parse_info()) return;
     std::ostringstream buffer;
-    buffer << "-- " << source_position.InliningStack(info) << " --";
+    buffer << "-- ";
+    if (FLAG_trace_turbo) {
+      buffer << source_position;
+    } else {
+      buffer << source_position.InliningStack(info);
+    }
+    buffer << " --";
     masm()->RecordComment(StrDup(buffer.str().c_str()));
   }
 }
@@ -672,24 +693,35 @@ DeoptimizeReason CodeGenerator::GetDeoptimizationReason(
 void CodeGenerator::TranslateStateValueDescriptor(
     StateValueDescriptor* desc, StateValueList* nested,
     Translation* translation, InstructionOperandIterator* iter) {
+  // Note:
+  // If translation is null, we just skip the relevant instruction operands.
   if (desc->IsNested()) {
-    translation->BeginCapturedObject(static_cast<int>(nested->size()));
+    if (translation != nullptr) {
+      translation->BeginCapturedObject(static_cast<int>(nested->size()));
+    }
     for (auto field : *nested) {
       TranslateStateValueDescriptor(field.desc, field.nested, translation,
                                     iter);
     }
   } else if (desc->IsDuplicate()) {
-    translation->DuplicateObject(static_cast<int>(desc->id()));
+    if (translation != nullptr) {
+      translation->DuplicateObject(static_cast<int>(desc->id()));
+    }
   } else if (desc->IsPlain()) {
-    AddTranslationForOperand(translation, iter->instruction(), iter->Advance(),
-                             desc->type());
+    InstructionOperand* op = iter->Advance();
+    if (translation != nullptr) {
+      AddTranslationForOperand(translation, iter->instruction(), op,
+                               desc->type());
+    }
   } else {
     DCHECK(desc->IsOptimizedOut());
-    if (optimized_out_literal_id_ == -1) {
-      optimized_out_literal_id_ =
-          DefineDeoptimizationLiteral(isolate()->factory()->optimized_out());
+    if (translation != nullptr) {
+      if (optimized_out_literal_id_ == -1) {
+        optimized_out_literal_id_ =
+            DefineDeoptimizationLiteral(isolate()->factory()->optimized_out());
+      }
+      translation->StoreLiteral(optimized_out_literal_id_);
     }
-    translation->StoreLiteral(optimized_out_literal_id_);
   }
 }
 
@@ -701,6 +733,7 @@ void CodeGenerator::TranslateFrameStateDescriptorOperands(
   StateValueList* values = desc->GetStateValueDescriptors();
   for (StateValueList::iterator it = values->begin(); it != values->end();
        ++it, ++index) {
+    StateValueDescriptor* value_desc = (*it).desc;
     if (combine.kind() == OutputFrameStateCombine::kPokeAt) {
       // The result of the call should be placed at position
       // [index_from_top] in the stack (overwriting whatever was
@@ -709,16 +742,17 @@ void CodeGenerator::TranslateFrameStateDescriptorOperands(
           desc->GetSize(combine) - 1 - combine.GetOffsetToPokeAt();
       if (index >= index_from_top &&
           index < index_from_top + iter->instruction()->OutputCount()) {
+        DCHECK_NOT_NULL(translation);
         AddTranslationForOperand(
             translation, iter->instruction(),
             iter->instruction()->OutputAt(index - index_from_top),
             MachineType::AnyTagged());
-        iter->Advance();  // We do not use this input, but we need to
-                          // advace, as the input got replaced.
+        // Skip the instruction operands.
+        TranslateStateValueDescriptor(value_desc, (*it).nested, nullptr, iter);
         continue;
       }
     }
-    TranslateStateValueDescriptor((*it).desc, (*it).nested, translation, iter);
+    TranslateStateValueDescriptor(value_desc, (*it).nested, translation, iter);
   }
   DCHECK_EQ(desc->GetSize(OutputFrameStateCombine::Ignore()), index);
 

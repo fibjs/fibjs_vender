@@ -136,14 +136,6 @@ static Handle<Object> DebugGetProperty(LookupIterator* it,
   return it->isolate()->factory()->undefined_value();
 }
 
-
-static Handle<Object> DebugGetProperty(Handle<Object> object,
-                                       Handle<Name> name) {
-  LookupIterator it(object, name);
-  return DebugGetProperty(&it);
-}
-
-
 template <class IteratorType>
 static MaybeHandle<JSArray> GetIteratorInternalProperties(
     Isolate* isolate, Handle<IteratorType> object) {
@@ -248,24 +240,8 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
     result->set(5, generator->receiver());
     return factory->NewJSArrayWithElements(result);
   } else if (object->IsJSPromise()) {
-    Handle<JSObject> promise = Handle<JSObject>::cast(object);
-
-    Handle<Object> status_obj =
-        DebugGetProperty(promise, isolate->factory()->promise_state_symbol());
-    CHECK(status_obj->IsSmi());
-    const char* status = "rejected";
-    int status_val = Handle<Smi>::cast(status_obj)->value();
-    switch (status_val) {
-      case kPromiseFulfilled:
-        status = "resolved";
-        break;
-      case kPromisePending:
-        status = "pending";
-        break;
-      default:
-        DCHECK_EQ(kPromiseRejected, status_val);
-    }
-
+    Handle<JSPromise> promise = Handle<JSPromise>::cast(object);
+    const char* status = JSPromise::Status(promise->status());
     Handle<FixedArray> result = factory->NewFixedArray(2 * 2);
     Handle<String> promise_status =
         factory->NewStringFromAsciiChecked("[[PromiseStatus]]");
@@ -273,8 +249,7 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
     Handle<String> status_str = factory->NewStringFromAsciiChecked(status);
     result->set(1, *status_str);
 
-    Handle<Object> value_obj =
-        DebugGetProperty(promise, isolate->factory()->promise_result_symbol());
+    Handle<Object> value_obj(promise->result(), isolate);
     Handle<String> promise_value =
         factory->NewStringFromAsciiChecked("[[PromiseValue]]");
     result->set(2, *promise_value);
@@ -551,11 +526,11 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
     details->set(kFrameDetailsFrameIdIndex, *frame_id);
 
     // Add the function name.
-    Handle<Object> wasm_instance_or_undef(it.wasm_frame()->wasm_instance(),
-                                          isolate);
+    Handle<WasmCompiledModule> compiled_module(
+        it.wasm_frame()->wasm_instance()->compiled_module(), isolate);
     int func_index = it.wasm_frame()->function_index();
-    Handle<String> func_name =
-        wasm::GetWasmFunctionName(isolate, wasm_instance_or_undef, func_index);
+    Handle<String> func_name = WasmCompiledModule::GetFunctionName(
+        isolate, compiled_module, func_index);
     details->set(kFrameDetailsFunctionIndex, *func_name);
 
     // Add the script wrapper
@@ -574,14 +549,10 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
     // position, such that together with the script it uniquely identifies the
     // position.
     Handle<Object> positionValue;
-    if (position != kNoSourcePosition &&
-        !wasm_instance_or_undef->IsUndefined(isolate)) {
+    if (position != kNoSourcePosition) {
       int translated_position = position;
-      if (!wasm::WasmIsAsmJs(*wasm_instance_or_undef, isolate)) {
-        Handle<WasmCompiledModule> compiled_module(
-            WasmInstanceObject::cast(*wasm_instance_or_undef)
-                ->get_compiled_module(),
-            isolate);
+      // No further translation needed for asm.js modules.
+      if (!compiled_module->is_asm_js()) {
         translated_position +=
             wasm::GetFunctionCodeOffset(compiled_module, func_index);
       }
@@ -1268,21 +1239,19 @@ RUNTIME_FUNCTION(Runtime_DebugEvaluate) {
 
   // Check the execution state and decode arguments frame and source to be
   // evaluated.
-  DCHECK(args.length() == 6);
+  DCHECK(args.length() == 4);
   CONVERT_NUMBER_CHECKED(int, break_id, Int32, args[0]);
   CHECK(isolate->debug()->CheckExecutionState(break_id));
 
   CONVERT_SMI_ARG_CHECKED(wrapped_id, 1);
   CONVERT_NUMBER_CHECKED(int, inlined_jsframe_index, Int32, args[2]);
   CONVERT_ARG_HANDLE_CHECKED(String, source, 3);
-  CONVERT_BOOLEAN_ARG_CHECKED(disable_break, 4);
-  CONVERT_ARG_HANDLE_CHECKED(HeapObject, context_extension, 5);
 
   StackFrame::Id id = DebugFrameHelper::UnwrapFrameId(wrapped_id);
 
   RETURN_RESULT_OR_FAILURE(
-      isolate, DebugEvaluate::Local(isolate, id, inlined_jsframe_index, source,
-                                    disable_break, context_extension));
+      isolate,
+      DebugEvaluate::Local(isolate, id, inlined_jsframe_index, source));
 }
 
 
@@ -1291,17 +1260,13 @@ RUNTIME_FUNCTION(Runtime_DebugEvaluateGlobal) {
 
   // Check the execution state and decode arguments frame and source to be
   // evaluated.
-  DCHECK(args.length() == 4);
+  DCHECK(args.length() == 2);
   CONVERT_NUMBER_CHECKED(int, break_id, Int32, args[0]);
   CHECK(isolate->debug()->CheckExecutionState(break_id));
 
   CONVERT_ARG_HANDLE_CHECKED(String, source, 1);
-  CONVERT_BOOLEAN_ARG_CHECKED(disable_break, 2);
-  CONVERT_ARG_HANDLE_CHECKED(HeapObject, context_extension, 3);
 
-  RETURN_RESULT_OR_FAILURE(
-      isolate,
-      DebugEvaluate::Global(isolate, source, disable_break, context_extension));
+  RETURN_RESULT_OR_FAILURE(isolate, DebugEvaluate::Global(isolate, source));
 }
 
 

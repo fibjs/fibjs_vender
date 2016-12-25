@@ -77,6 +77,7 @@ using v8::MemoryPressureLevel;
   /* Context maps */                                                           \
   V(Map, native_context_map, NativeContextMap)                                 \
   V(Map, module_context_map, ModuleContextMap)                                 \
+  V(Map, eval_context_map, EvalContextMap)                                     \
   V(Map, script_context_map, ScriptContextMap)                                 \
   V(Map, block_context_map, BlockContextMap)                                   \
   V(Map, catch_context_map, CatchContextMap)                                   \
@@ -192,7 +193,9 @@ using v8::MemoryPressureLevel;
     ExperimentalExtraNativesSourceCache)                                       \
   /* Lists and dictionaries */                                                 \
   V(NameDictionary, empty_properties_dictionary, EmptyPropertiesDictionary)    \
-  V(Object, symbol_registry, SymbolRegistry)                                   \
+  V(NameDictionary, public_symbol_table, PublicSymbolTable)                    \
+  V(NameDictionary, api_symbol_table, ApiSymbolTable)                          \
+  V(NameDictionary, api_private_symbol_table, ApiPrivateSymbolTable)           \
   V(Object, script_list, ScriptList)                                           \
   V(UnseededNumberDictionary, code_stubs, CodeStubs)                           \
   V(FixedArray, materialized_objects, MaterializedObjects)                     \
@@ -208,6 +211,7 @@ using v8::MemoryPressureLevel;
   V(Object, weak_stack_trace_list, WeakStackTraceList)                         \
   V(Object, noscript_shared_function_infos, NoScriptSharedFunctionInfos)       \
   V(FixedArray, serialized_templates, SerializedTemplates)                     \
+  V(FixedArray, serialized_global_proxy_sizes, SerializedGlobalProxySizes)     \
   /* Configured values */                                                      \
   V(TemplateList, message_listeners, MessageListeners)                         \
   V(Code, js_entry_code, JsEntryCode)                                          \
@@ -299,6 +303,7 @@ using v8::MemoryPressureLevel;
   V(WithContextMap)                     \
   V(BlockContextMap)                    \
   V(ModuleContextMap)                   \
+  V(EvalContextMap)                     \
   V(ScriptContextMap)                   \
   V(UndefinedMap)                       \
   V(TheHoleMap)                         \
@@ -327,6 +332,7 @@ class HeapObjectsFilter;
 class HeapStats;
 class HistogramTimer;
 class Isolate;
+class LocalEmbedderHeapTracer;
 class MemoryAllocator;
 class MemoryReducer;
 class ObjectIterator;
@@ -348,8 +354,6 @@ enum ArrayStorageAllocationMode {
 };
 
 enum class ClearRecordedSlots { kYes, kNo };
-
-enum class ClearBlackArea { kYes, kNo };
 
 enum class GarbageCollectionReason {
   kUnknown = 0,
@@ -737,12 +741,8 @@ class Heap {
   // Initialize a filler object to keep the ability to iterate over the heap
   // when introducing gaps within pages. If slots could have been recorded in
   // the freed area, then pass ClearRecordedSlots::kYes as the mode. Otherwise,
-  // pass ClearRecordedSlots::kNo. If the filler was created in a black area
-  // we may want to clear the corresponding mark bits with ClearBlackArea::kYes,
-  // which is the default. ClearBlackArea::kNo does not clear the mark bits.
-  void CreateFillerObjectAt(
-      Address addr, int size, ClearRecordedSlots mode,
-      ClearBlackArea black_area_mode = ClearBlackArea::kYes);
+  // pass ClearRecordedSlots::kNo.
+  void CreateFillerObjectAt(Address addr, int size, ClearRecordedSlots mode);
 
   bool CanMoveObjectStart(HeapObject* object);
 
@@ -816,6 +816,7 @@ class Heap {
   void PrintShortHeapStatistics();
 
   inline HeapState gc_state() { return gc_state_; }
+  void SetGCState(HeapState state);
 
   inline bool IsInGCPostProcessing() { return gc_post_processing_depth_ > 0; }
 
@@ -874,6 +875,7 @@ class Heap {
   inline int GetNextTemplateSerialNumber();
 
   inline void SetSerializedTemplates(FixedArray* templates);
+  inline void SetSerializedGlobalProxySizes(FixedArray* sizes);
 
   // For post mortem debugging.
   void RememberUnmappedPage(Address page, bool compacted);
@@ -1205,23 +1207,12 @@ class Heap {
   // Embedder heap tracer support. =============================================
   // ===========================================================================
 
+  LocalEmbedderHeapTracer* local_embedder_heap_tracer() {
+    return local_embedder_heap_tracer_;
+  }
   void SetEmbedderHeapTracer(EmbedderHeapTracer* tracer);
-
-  bool UsingEmbedderHeapTracer() { return embedder_heap_tracer() != nullptr; }
-
   void TracePossibleWrapper(JSObject* js_object);
-
   void RegisterExternallyReferencedObject(Object** object);
-
-  void RegisterWrappersWithEmbedderHeapTracer();
-
-  // In order to avoid running out of memory we force tracing wrappers if there
-  // are too many of them.
-  bool RequiresImmediateWrapperProcessing();
-
-  EmbedderHeapTracer* embedder_heap_tracer() { return embedder_heap_tracer_; }
-
-  size_t wrappers_to_trace() { return wrappers_to_trace_.size(); }
 
   // ===========================================================================
   // External string table API. ================================================
@@ -1636,10 +1627,6 @@ class Heap {
     return current_gc_flags_ & kFinalizeIncrementalMarkingMask;
   }
 
-  // Checks whether both, the internal marking deque, and the embedder provided
-  // one are empty. Avoid in fast path as it potentially calls through the API.
-  bool MarkingDequesAreEmpty();
-
   void PreprocessStackTraces();
 
   // Checks whether a global GC is necessary
@@ -1819,6 +1806,23 @@ class Heap {
            static_cast<size_t>(PromotedTotalSize());
   }
 
+  // We allow incremental marking to overshoot the allocation limit for
+  // performace reasons. If the overshoot is too large then we are more
+  // eager to finalize incremental marking.
+  inline bool AllocationLimitOvershotByLargeMargin() {
+    // This guards against too eager finalization in small heaps.
+    // The number is chosen based on v8.browsing_mobile on Nexus 7v2.
+    size_t kMarginForSmallHeaps = 32u * MB;
+    if (old_generation_allocation_limit_ >= PromotedTotalSize()) return false;
+    uint64_t overshoot = PromotedTotalSize() - old_generation_allocation_limit_;
+    // Overshoot margin is 50% of allocation limit or half-way to the max heap
+    // with special handling of small heaps.
+    uint64_t margin =
+        Min(Max(old_generation_allocation_limit_ / 2, kMarginForSmallHeaps),
+            (max_old_generation_size_ - old_generation_allocation_limit_) / 2);
+    return overshoot >= margin;
+  }
+
   void UpdateTotalGCTime(double duration);
 
   bool MaximumSizeScavenge() { return maximum_size_scavenges_ > 0; }
@@ -1826,6 +1830,14 @@ class Heap {
   // ===========================================================================
   // Growing strategy. =========================================================
   // ===========================================================================
+
+  // For some webpages RAIL mode does not switch from PERFORMANCE_LOAD.
+  // This constant limits the effect of load RAIL mode on GC.
+  // The value is arbitrary and chosen as the largest load time observed in
+  // v8 browsing benchmarks.
+  static const int kMaxLoadTimeMs = 7000;
+
+  bool ShouldOptimizeForLoadTime();
 
   // Decrease the allocation limit if the new limit based on the given
   // parameters is lower than the current limit.
@@ -1858,7 +1870,7 @@ class Heap {
     return OldGenerationCapacity() + slack >= MaxOldGenerationSize();
   }
 
-  bool ShouldExpandOldGenerationOnAllocationFailure();
+  bool ShouldExpandOldGenerationOnSlowAllocation();
 
   enum class IncrementalMarkingLimit { kNoLimit, kSoftLimit, kHardLimit };
   IncrementalMarkingLimit IncrementalMarkingLimitReached();
@@ -2325,8 +2337,7 @@ class Heap {
   // The depth of HeapIterator nestings.
   int heap_iterator_depth_;
 
-  EmbedderHeapTracer* embedder_heap_tracer_;
-  std::vector<std::pair<void*, void*>> wrappers_to_trace_;
+  LocalEmbedderHeapTracer* local_embedder_heap_tracer_;
 
   // Used for testing purposes.
   bool force_oom_;

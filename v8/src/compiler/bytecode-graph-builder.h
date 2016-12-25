@@ -85,12 +85,6 @@ class BytecodeGraphBuilder {
     return MakeNode(op, arraysize(buffer), buffer, false);
   }
 
-  Node* NewNode(const Operator* op, Node* n1, Node* n2, Node* n3, Node* n4,
-                Node* n5) {
-    Node* buffer[] = {n1, n2, n3, n4, n5};
-    return MakeNode(op, arraysize(buffer), buffer, false);
-  }
-
   // Helpers to create new control nodes.
   Node* NewIfTrue() { return NewNode(common()->IfTrue()); }
   Node* NewIfFalse() { return NewNode(common()->IfFalse()); }
@@ -182,6 +176,7 @@ class BytecodeGraphBuilder {
   void BuildJumpIfToBooleanTrue();
   void BuildJumpIfToBooleanFalse();
   void BuildJumpIfNotHole();
+  void BuildJumpIfJSReceiver();
 
   // Simulates control flow by forward-propagating environments.
   void MergeIntoSuccessorEnvironment(int target_offset);
@@ -229,6 +224,9 @@ class BytecodeGraphBuilder {
   Zone* graph_zone() const { return graph()->zone(); }
   JSGraph* jsgraph() const { return jsgraph_; }
   JSOperatorBuilder* javascript() const { return jsgraph_->javascript(); }
+  SimplifiedOperatorBuilder* simplified() const {
+    return jsgraph_->simplified();
+  }
   Zone* local_zone() const { return local_zone_; }
   const Handle<BytecodeArray>& bytecode_array() const {
     return bytecode_array_;

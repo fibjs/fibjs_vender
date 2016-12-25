@@ -186,6 +186,8 @@ V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, NumberOperationHint);
 NumberOperationHint NumberOperationHintOf(const Operator* op)
     WARN_UNUSED_RESULT;
 
+int ParameterCountOf(const Operator* op) WARN_UNUSED_RESULT;
+
 PretenureFlag PretenureFlagOf(const Operator* op) WARN_UNUSED_RESULT;
 
 UnicodeEncoding UnicodeEncodingOf(const Operator*) WARN_UNUSED_RESULT;
@@ -294,6 +296,7 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* StringEqual();
   const Operator* StringLessThan();
   const Operator* StringLessThanOrEqual();
+  const Operator* StringCharAt();
   const Operator* StringCharCodeAt();
   const Operator* StringFromCharCode();
   const Operator* StringFromCodePoint(UnicodeEncoding encoding);
@@ -354,6 +357,12 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
   const Operator* ObjectIsSmi();
   const Operator* ObjectIsString();
   const Operator* ObjectIsUndetectable();
+
+  // new-rest-parameter-elements
+  const Operator* NewRestParameterElements(int parameter_count);
+
+  // new-unmapped-arguments-elements
+  const Operator* NewUnmappedArgumentsElements(int parameter_count);
 
   // array-buffer-was-neutered buffer
   const Operator* ArrayBufferWasNeutered();

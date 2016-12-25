@@ -274,6 +274,26 @@ class OutOfLineRecordWrite final : public OutOfLineCode {
   bool must_save_lr_;
 };
 
+#define CREATE_OOL_CLASS(ool_name, masm_ool_name, T)                 \
+  class ool_name final : public OutOfLineCode {                      \
+   public:                                                           \
+    ool_name(CodeGenerator* gen, T dst, T src1, T src2)              \
+        : OutOfLineCode(gen), dst_(dst), src1_(src1), src2_(src2) {} \
+                                                                     \
+    void Generate() final { __ masm_ool_name(dst_, src1_, src2_); }  \
+                                                                     \
+   private:                                                          \
+    T const dst_;                                                    \
+    T const src1_;                                                   \
+    T const src2_;                                                   \
+  }
+
+CREATE_OOL_CLASS(OutOfLineFloat32Max, Float32MaxOutOfLine, FPURegister);
+CREATE_OOL_CLASS(OutOfLineFloat32Min, Float32MinOutOfLine, FPURegister);
+CREATE_OOL_CLASS(OutOfLineFloat64Max, Float64MaxOutOfLine, DoubleRegister);
+CREATE_OOL_CLASS(OutOfLineFloat64Min, Float64MinOutOfLine, DoubleRegister);
+
+#undef CREATE_OOL_CLASS
 
 Condition FlagsConditionToConditionCmp(FlagsCondition condition) {
   switch (condition) {
@@ -1136,36 +1156,24 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
                i.InputDoubleRegister(1));
       break;
     case kMipsMaddS:
-      __ madd_s(i.OutputFloatRegister(), i.InputFloatRegister(0),
-                i.InputFloatRegister(1), i.InputFloatRegister(2));
+      __ Madd_s(i.OutputFloatRegister(), i.InputFloatRegister(0),
+                i.InputFloatRegister(1), i.InputFloatRegister(2),
+                kScratchDoubleReg);
       break;
     case kMipsMaddD:
-      __ madd_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                i.InputDoubleRegister(1), i.InputDoubleRegister(2));
-      break;
-    case kMipsMaddfS:
-      __ maddf_s(i.OutputFloatRegister(), i.InputFloatRegister(1),
-                 i.InputFloatRegister(2));
-      break;
-    case kMipsMaddfD:
-      __ maddf_d(i.OutputDoubleRegister(), i.InputDoubleRegister(1),
-                 i.InputDoubleRegister(2));
+      __ Madd_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                i.InputDoubleRegister(1), i.InputDoubleRegister(2),
+                kScratchDoubleReg);
       break;
     case kMipsMsubS:
-      __ msub_s(i.OutputFloatRegister(), i.InputFloatRegister(0),
-                i.InputFloatRegister(1), i.InputFloatRegister(2));
+      __ Msub_s(i.OutputFloatRegister(), i.InputFloatRegister(0),
+                i.InputFloatRegister(1), i.InputFloatRegister(2),
+                kScratchDoubleReg);
       break;
     case kMipsMsubD:
-      __ msub_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                i.InputDoubleRegister(1), i.InputDoubleRegister(2));
-      break;
-    case kMipsMsubfS:
-      __ msubf_s(i.OutputFloatRegister(), i.InputFloatRegister(1),
-                 i.InputFloatRegister(2));
-      break;
-    case kMipsMsubfD:
-      __ msubf_d(i.OutputDoubleRegister(), i.InputDoubleRegister(1),
-                 i.InputDoubleRegister(2));
+      __ Msub_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
+                i.InputDoubleRegister(1), i.InputDoubleRegister(2),
+                kScratchDoubleReg);
       break;
     case kMipsMulD:
       // TODO(plind): add special case: right op is -1.0, see arm port.
@@ -1243,47 +1251,39 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       break;
     }
     case kMipsFloat32Max: {
-      Label compare_nan, done_compare;
-      __ MaxNaNCheck_s(i.OutputSingleRegister(), i.InputSingleRegister(0),
-                       i.InputSingleRegister(1), &compare_nan);
-      __ Branch(&done_compare);
-      __ bind(&compare_nan);
-      __ Move(i.OutputSingleRegister(),
-              std::numeric_limits<float>::quiet_NaN());
-      __ bind(&done_compare);
+      FPURegister dst = i.OutputSingleRegister();
+      FPURegister src1 = i.InputSingleRegister(0);
+      FPURegister src2 = i.InputSingleRegister(1);
+      auto ool = new (zone()) OutOfLineFloat32Max(this, dst, src1, src2);
+      __ Float32Max(dst, src1, src2, ool->entry());
+      __ bind(ool->exit());
       break;
     }
     case kMipsFloat64Max: {
-      Label compare_nan, done_compare;
-      __ MaxNaNCheck_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                       i.InputDoubleRegister(1), &compare_nan);
-      __ Branch(&done_compare);
-      __ bind(&compare_nan);
-      __ Move(i.OutputDoubleRegister(),
-              std::numeric_limits<double>::quiet_NaN());
-      __ bind(&done_compare);
+      DoubleRegister dst = i.OutputDoubleRegister();
+      DoubleRegister src1 = i.InputDoubleRegister(0);
+      DoubleRegister src2 = i.InputDoubleRegister(1);
+      auto ool = new (zone()) OutOfLineFloat64Max(this, dst, src1, src2);
+      __ Float64Max(dst, src1, src2, ool->entry());
+      __ bind(ool->exit());
       break;
     }
     case kMipsFloat32Min: {
-      Label compare_nan, done_compare;
-      __ MinNaNCheck_s(i.OutputSingleRegister(), i.InputSingleRegister(0),
-                       i.InputSingleRegister(1), &compare_nan);
-      __ Branch(&done_compare);
-      __ bind(&compare_nan);
-      __ Move(i.OutputSingleRegister(),
-              std::numeric_limits<float>::quiet_NaN());
-      __ bind(&done_compare);
+      FPURegister dst = i.OutputSingleRegister();
+      FPURegister src1 = i.InputSingleRegister(0);
+      FPURegister src2 = i.InputSingleRegister(1);
+      auto ool = new (zone()) OutOfLineFloat32Min(this, dst, src1, src2);
+      __ Float32Min(dst, src1, src2, ool->entry());
+      __ bind(ool->exit());
       break;
     }
     case kMipsFloat64Min: {
-      Label compare_nan, done_compare;
-      __ MinNaNCheck_d(i.OutputDoubleRegister(), i.InputDoubleRegister(0),
-                       i.InputDoubleRegister(1), &compare_nan);
-      __ Branch(&done_compare);
-      __ bind(&compare_nan);
-      __ Move(i.OutputDoubleRegister(),
-              std::numeric_limits<double>::quiet_NaN());
-      __ bind(&done_compare);
+      DoubleRegister dst = i.OutputDoubleRegister();
+      DoubleRegister src1 = i.InputDoubleRegister(0);
+      DoubleRegister src2 = i.InputDoubleRegister(1);
+      auto ool = new (zone()) OutOfLineFloat64Min(this, dst, src1, src2);
+      __ Float64Min(dst, src1, src2, ool->entry());
+      __ bind(ool->exit());
       break;
     }
     case kMipsCvtSD: {
@@ -1730,6 +1730,10 @@ void CodeGenerator::AssembleArchJump(RpoNumber target) {
   if (!IsNextInAssemblyOrder(target)) __ Branch(GetLabel(target));
 }
 
+void CodeGenerator::AssembleArchTrap(Instruction* instr,
+                                     FlagsCondition condition) {
+  UNREACHABLE();
+}
 
 // Assembles boolean materializations after an instruction.
 void CodeGenerator::AssembleArchBoolean(Instruction* instr,

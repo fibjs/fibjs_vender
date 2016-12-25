@@ -419,8 +419,9 @@ class ParserBase {
     FunctionState* outer() const { return outer_function_state_; }
 
     void set_generator_object_variable(typename Types::Variable* variable) {
-      DCHECK(variable != NULL);
+      DCHECK_NOT_NULL(variable);
       DCHECK(IsResumableFunction(kind()));
+      DCHECK(scope()->has_forced_context_allocation());
       generator_object_variable_ = variable;
     }
     typename Types::Variable* generator_object_variable() const {
@@ -641,7 +642,6 @@ class ParserBase {
           scope(nullptr),
           init_block(parser->impl()->NullBlock()),
           inner_block(parser->impl()->NullBlock()),
-          for_promise_reject(false),
           bound_names(1, parser->zone()),
           tail_call_expressions(parser->zone()) {}
     IdentifierT name;
@@ -650,7 +650,6 @@ class ParserBase {
     Scope* scope;
     BlockT init_block;
     BlockT inner_block;
-    bool for_promise_reject;
     ZoneList<const AstRawString*> bound_names;
     TailCallExpressionList tail_call_expressions;
   };
@@ -674,17 +673,17 @@ class ParserBase {
         : proxy(nullptr),
           extends(parser->impl()->EmptyExpression()),
           properties(parser->impl()->NewClassPropertyList(4)),
-          instance_field_initializers(parser->impl()->NewExpressionList(0)),
           constructor(parser->impl()->EmptyFunctionLiteral()),
           has_seen_constructor(false),
-          static_initializer_var(nullptr) {}
+          has_name_static_property(false),
+          has_static_computed_names(false) {}
     VariableProxy* proxy;
     ExpressionT extends;
     typename Types::ClassPropertyList properties;
-    ExpressionListT instance_field_initializers;
     FunctionLiteralT constructor;
     bool has_seen_constructor;
-    Variable* static_initializer_var;
+    bool has_name_static_property;
+    bool has_static_computed_names;
   };
 
   DeclarationScope* NewScriptScope() const {
@@ -869,35 +868,29 @@ class ParserBase {
 
   // Checks whether an octal literal was last seen between beg_pos and end_pos.
   // If so, reports an error. Only called for strict mode and template strings.
-  void CheckOctalLiteral(int beg_pos, int end_pos,
-                         MessageTemplate::Template message, bool* ok) {
+  void CheckOctalLiteral(int beg_pos, int end_pos, bool is_template, bool* ok) {
     Scanner::Location octal = scanner()->octal_position();
     if (octal.IsValid() && beg_pos <= octal.beg_pos &&
         octal.end_pos <= end_pos) {
+      MessageTemplate::Template message =
+          is_template ? MessageTemplate::kTemplateOctalLiteral
+                      : scanner()->octal_message();
+      DCHECK_NE(message, MessageTemplate::kNone);
       impl()->ReportMessageAt(octal, message);
       scanner()->clear_octal_position();
+      if (message == MessageTemplate::kStrictDecimalWithLeadingZero) {
+        impl()->CountUsage(v8::Isolate::kDecimalWithLeadingZeroInStrictMode);
+      }
       *ok = false;
-    }
-  }
-  // for now, this check just collects statistics.
-  void CheckDecimalLiteralWithLeadingZero(int beg_pos, int end_pos) {
-    Scanner::Location token_location =
-        scanner()->decimal_with_leading_zero_position();
-    if (token_location.IsValid() && beg_pos <= token_location.beg_pos &&
-        token_location.end_pos <= end_pos) {
-      scanner()->clear_decimal_with_leading_zero_position();
-      impl()->CountUsage(v8::Isolate::kDecimalWithLeadingZeroInStrictMode);
     }
   }
 
   inline void CheckStrictOctalLiteral(int beg_pos, int end_pos, bool* ok) {
-    CheckOctalLiteral(beg_pos, end_pos, MessageTemplate::kStrictOctalLiteral,
-                      ok);
+    CheckOctalLiteral(beg_pos, end_pos, false, ok);
   }
 
   inline void CheckTemplateOctalLiteral(int beg_pos, int end_pos, bool* ok) {
-    CheckOctalLiteral(beg_pos, end_pos, MessageTemplate::kTemplateOctalLiteral,
-                      ok);
+    CheckOctalLiteral(beg_pos, end_pos, true, ok);
   }
 
   void CheckDestructuringElement(ExpressionT element, int beg_pos, int end_pos);
@@ -1168,7 +1161,7 @@ class ParserBase {
   ClassLiteralPropertyT ParseClassPropertyDefinition(
       ClassLiteralChecker* checker, bool has_extends, bool* is_computed_name,
       bool* has_seen_constructor, ClassLiteralProperty::Kind* property_kind,
-      bool* is_static, bool* ok);
+      bool* is_static, bool* has_name_static_property, bool* ok);
   FunctionLiteralT ParseClassFieldForInitializer(bool has_initializer,
                                                  bool* ok);
   ObjectLiteralPropertyT ParseObjectPropertyDefinition(
@@ -2141,8 +2134,9 @@ typename ParserBase<Impl>::ClassLiteralPropertyT
 ParserBase<Impl>::ParseClassPropertyDefinition(
     ClassLiteralChecker* checker, bool has_extends, bool* is_computed_name,
     bool* has_seen_constructor, ClassLiteralProperty::Kind* property_kind,
-    bool* is_static, bool* ok) {
-  DCHECK(has_seen_constructor != nullptr);
+    bool* is_static, bool* has_name_static_property, bool* ok) {
+  DCHECK_NOT_NULL(has_seen_constructor);
+  DCHECK_NOT_NULL(has_name_static_property);
   bool is_get = false;
   bool is_set = false;
   bool is_generator = false;
@@ -2175,6 +2169,10 @@ ParserBase<Impl>::ParseClassPropertyDefinition(
     name_expression = ParsePropertyName(
         &name, &kind, &is_generator, &is_get, &is_set, &is_async,
         is_computed_name, CHECK_OK_CUSTOM(EmptyClassLiteralProperty));
+  }
+
+  if (!*has_name_static_property && *is_static && impl()->IsName(name)) {
+    *has_name_static_property = true;
   }
 
   switch (kind) {
@@ -2307,7 +2305,6 @@ ParserBase<Impl>::ParseClassFieldForInitializer(bool has_initializer,
       FunctionLiteral::kNoDuplicateParameters,
       FunctionLiteral::kAnonymousExpression, default_eager_compile_hint_,
       initializer_scope->start_position(), true, GetNextFunctionLiteralId());
-  function_literal->set_is_class_field_initializer(true);
   return function_literal;
 }
 
@@ -3160,7 +3157,6 @@ ParserBase<Impl>::ParseLeftHandSideExpression(bool* ok) {
         // Explicit calls to the super constructor using super() perform an
         // implicit binding assignment to the 'this' variable.
         if (is_super_call) {
-          result = impl()->RewriteSuperCall(result);
           ExpressionT this_expr = impl()->ThisExpression(pos);
           result =
               factory()->NewAssignment(Token::INIT, this_expr, result, pos);
@@ -4144,7 +4140,12 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseClassLiteral(
     bool is_constructor = !class_info.has_seen_constructor;
     ClassLiteralPropertyT property = ParseClassPropertyDefinition(
         &checker, has_extends, &is_computed_name,
-        &class_info.has_seen_constructor, &property_kind, &is_static, CHECK_OK);
+        &class_info.has_seen_constructor, &property_kind, &is_static,
+        &class_info.has_name_static_property, CHECK_OK);
+    if (!class_info.has_static_computed_names && is_static &&
+        is_computed_name) {
+      class_info.has_static_computed_names = true;
+    }
     is_constructor &= class_info.has_seen_constructor;
     impl()->RewriteNonPattern(CHECK_OK);
     impl()->AccumulateFormalParameterContainmentErrors();
@@ -4164,8 +4165,6 @@ void ParserBase<Impl>::ParseAsyncFunctionBody(Scope* scope, StatementListT body,
                                               FunctionBodyType body_type,
                                               bool accept_IN, int pos,
                                               bool* ok) {
-  scope->ForceContextAllocation();
-
   impl()->PrepareAsyncFunctionBody(body, kind, pos);
 
   BlockT block = factory()->NewBlock(nullptr, 8, true, kNoSourcePosition);
@@ -5114,7 +5113,6 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseTryStatement(
   }
 
   CatchInfo catch_info(this);
-  catch_info.for_promise_reject = allow_natives() && Check(Token::MOD);
 
   if (peek() != Token::CATCH && peek() != Token::FINALLY) {
     ReportMessage(MessageTemplate::kNoCatchOrFinally);

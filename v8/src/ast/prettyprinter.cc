@@ -370,6 +370,11 @@ void CallPrinter::VisitEmptyParentheses(EmptyParentheses* node) {
   UNREACHABLE();
 }
 
+void CallPrinter::VisitGetIterator(GetIterator* node) {
+  Print("GetIterator(");
+  Find(node->iterable(), true);
+  Print(")");
+}
 
 void CallPrinter::VisitThisFunction(ThisFunction* node) {}
 
@@ -874,15 +879,16 @@ void AstPrinter::PrintTryStatement(TryStatement* node) {
     case HandlerTable::CAUGHT:
       prediction = "CAUGHT";
       break;
-    case HandlerTable::PROMISE:
-      prediction = "PROMISE";
-      break;
     case HandlerTable::DESUGARING:
       prediction = "DESUGARING";
       break;
     case HandlerTable::ASYNC_AWAIT:
       prediction = "ASYNC_AWAIT";
       break;
+    case HandlerTable::PROMISE:
+      // Catch prediction resulting in promise rejections aren't
+      // parsed by the parser.
+      UNREACHABLE();
   }
   Print(" %s\n", prediction);
 }
@@ -1136,7 +1142,14 @@ void AstPrinter::VisitCallNew(CallNew* node) {
 
 void AstPrinter::VisitCallRuntime(CallRuntime* node) {
   EmbeddedVector<char, 128> buf;
-  SNPrintF(buf, "CALL RUNTIME %s", node->debug_name());
+  if (node->is_jsruntime()) {
+    SNPrintF(
+        buf, "CALL RUNTIME %s code = %p", node->debug_name(),
+        static_cast<void*>(isolate_->context()->get(node->context_index())));
+  } else {
+    SNPrintF(buf, "CALL RUNTIME %s", node->debug_name());
+  }
+
   IndentedScope indent(this, buf.start(), node->position());
   PrintArguments(node->arguments());
 }
@@ -1181,6 +1194,10 @@ void AstPrinter::VisitEmptyParentheses(EmptyParentheses* node) {
   IndentedScope indent(this, "()", node->position());
 }
 
+void AstPrinter::VisitGetIterator(GetIterator* node) {
+  IndentedScope indent(this, "GET-ITERATOR", node->position());
+  Visit(node->iterable());
+}
 
 void AstPrinter::VisitThisFunction(ThisFunction* node) {
   IndentedScope indent(this, "THIS-FUNCTION", node->position());

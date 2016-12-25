@@ -66,6 +66,11 @@ class IncrementalMarking {
     return request_type_ == FINALIZATION && !finalize_marking_completed_;
   }
 
+  inline bool NeedsFinalization() {
+    return IsMarking() &&
+           (request_type_ == FINALIZATION || request_type_ == COMPLETE_MARKING);
+  }
+
   GCRequestType request_type() const { return request_type_; }
 
   void reset_request_type() { request_type_ = NONE; }
@@ -293,6 +298,7 @@ class IncrementalMarking {
   bool was_activated_;
   bool black_allocation_;
   bool finalize_marking_completed_;
+  bool trace_wrappers_toggle_;
 
   GCRequestType request_type_;
 

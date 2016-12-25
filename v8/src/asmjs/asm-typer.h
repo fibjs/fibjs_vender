@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "src/allocation.h"
@@ -15,6 +16,7 @@
 #include "src/ast/ast-types.h"
 #include "src/ast/ast.h"
 #include "src/effects.h"
+#include "src/messages.h"
 #include "src/type-info.h"
 #include "src/zone/zone-containers.h"
 #include "src/zone/zone.h"
@@ -67,7 +69,8 @@ class AsmTyper final {
   };
 
   ~AsmTyper() = default;
-  AsmTyper(Isolate* isolate, Zone* zone, Script* script, FunctionLiteral* root);
+  AsmTyper(Isolate* isolate, Zone* zone, Handle<Script> script,
+           FunctionLiteral* root);
 
   bool Validate();
   // Do asm.js validation in phases (to interleave with conversion to wasm).
@@ -76,7 +79,8 @@ class AsmTyper final {
   bool ValidateAfterFunctionsPhase();
   void ClearFunctionNodeTypes();
 
-  const char* error_message() const { return error_message_; }
+  Handle<JSMessageObject> error_message() const { return error_message_; }
+  const MessageLocation* message_location() const { return &message_location_; }
 
   AsmType* TypeOf(AstNode* node) const;
   AsmType* TypeOf(Variable* v) const;
@@ -136,7 +140,7 @@ class AsmTyper final {
     bool IsHeap() const { return standard_member_ == kHeap; }
 
     void MarkDefined() { missing_definition_ = false; }
-    void SetFirstForwardUse(int source_location);
+    void SetFirstForwardUse(const MessageLocation& source_location);
 
     StandardMember standard_member() const { return standard_member_; }
     void set_standard_member(StandardMember standard_member) {
@@ -151,7 +155,7 @@ class AsmTyper final {
 
     bool missing_definition() const { return missing_definition_; }
 
-    int source_location() const { return source_location_; }
+    const MessageLocation* source_location() { return &source_location_; }
 
     static VariableInfo* ForSpecialSymbol(Zone* zone,
                                           StandardMember standard_member);
@@ -163,11 +167,8 @@ class AsmTyper final {
     // missing_definition_ is set to true for forward definition - i.e., use
     // before definition.
     bool missing_definition_ = false;
-    // source_location_ holds the line number that first referenced this
-    // VariableInfo. Used for error messages.
-    // TODO(bradnelson): When merged with console change, this should
-    // become a source location.
-    int source_location_ = -1;
+    // Used for error messages.
+    MessageLocation source_location_;
   };
 
   // RAII-style manager for the in_function_ member variable.
@@ -368,7 +369,7 @@ class AsmTyper final {
 
   Isolate* isolate_;
   Zone* zone_;
-  Script* script_;
+  Handle<Script> script_;
   FunctionLiteral* root_;
   bool in_function_ = false;
 
@@ -390,12 +391,13 @@ class AsmTyper final {
 
   std::uintptr_t stack_limit_;
   bool stack_overflow_ = false;
-  ZoneMap<AstNode*, AsmType*> module_node_types_;
-  ZoneMap<AstNode*, AsmType*> function_node_types_;
+  std::unordered_map<AstNode*, AsmType*> module_node_types_;
+  std::unordered_map<AstNode*, AsmType*> function_node_types_;
   static const int kErrorMessageLimit = 128;
   AsmType* fround_type_;
   AsmType* ffi_type_;
-  char error_message_[kErrorMessageLimit];
+  Handle<JSMessageObject> error_message_;
+  MessageLocation message_location_;
   StdlibSet stdlib_uses_;
 
   SourceLayoutTracker source_layout_;

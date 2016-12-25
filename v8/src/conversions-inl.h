@@ -128,10 +128,24 @@ int32_t NumberToInt32(Object* number) {
   return DoubleToInt32(number->Number());
 }
 
-
 uint32_t NumberToUint32(Object* number) {
   if (number->IsSmi()) return Smi::cast(number)->value();
   return DoubleToUint32(number->Number());
+}
+
+uint32_t PositiveNumberToUint32(Object* number) {
+  if (number->IsSmi()) {
+    int value = Smi::cast(number)->value();
+    if (value <= 0) return 0;
+    return value;
+  }
+  DCHECK(number->IsHeapNumber());
+  double value = number->Number();
+  // Catch all values smaller than 1 and use the double-negation trick for NANs.
+  if (!(value >= 1)) return 0;
+  uint32_t max = std::numeric_limits<uint32_t>::max();
+  if (value < max) return static_cast<uint32_t>(value);
+  return max;
 }
 
 int64_t NumberToInt64(Object* number) {
@@ -154,7 +168,12 @@ bool TryNumberToSize(Object* number, size_t* result) {
   } else {
     DCHECK(number->IsHeapNumber());
     double value = HeapNumber::cast(number)->value();
-    if (value >= 0 && value <= std::numeric_limits<size_t>::max()) {
+    // If value is compared directly to the limit, the limit will be
+    // casted to a double and could end up as limit + 1,
+    // because a double might not have enough mantissa bits for it.
+    // So we might as well cast the limit first, and use < instead of <=.
+    double maxSize = static_cast<double>(std::numeric_limits<size_t>::max());
+    if (value >= 0 && value < maxSize) {
       *result = static_cast<size_t>(value);
       return true;
     } else {

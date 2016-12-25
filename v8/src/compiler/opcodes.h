@@ -25,6 +25,8 @@
   V(Deoptimize)            \
   V(DeoptimizeIf)          \
   V(DeoptimizeUnless)      \
+  V(TrapIf)                \
+  V(TrapUnless)            \
   V(Return)                \
   V(TailCall)              \
   V(Terminate)             \
@@ -142,7 +144,8 @@
   V(JSStoreGlobal)                \
   V(JSStoreDataPropertyInLiteral) \
   V(JSDeleteProperty)             \
-  V(JSHasProperty)
+  V(JSHasProperty)                \
+  V(JSGetSuperConstructor)
 
 #define JS_CONTEXT_OP_LIST(V) \
   V(JSLoadContext)            \
@@ -155,6 +158,7 @@
 
 #define JS_OTHER_OP_LIST(V)         \
   V(JSCallConstruct)                \
+  V(JSCallConstructWithSpread)      \
   V(JSCallFunction)                 \
   V(JSCallRuntime)                  \
   V(JSConvertReceiver)              \
@@ -295,6 +299,7 @@
   V(PlainPrimitiveToWord32)         \
   V(PlainPrimitiveToFloat64)        \
   V(BooleanNot)                     \
+  V(StringCharAt)                   \
   V(StringCharCodeAt)               \
   V(StringFromCharCode)             \
   V(StringFromCodePoint)            \
@@ -323,6 +328,8 @@
   V(ObjectIsSmi)                    \
   V(ObjectIsString)                 \
   V(ObjectIsUndetectable)           \
+  V(NewRestParameterElements)       \
+  V(NewUnmappedArgumentsElements)   \
   V(ArrayBufferWasNeutered)         \
   V(EnsureWritableFastElements)     \
   V(MaybeGrowFastElements)          \

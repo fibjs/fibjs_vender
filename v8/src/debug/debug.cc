@@ -453,7 +453,7 @@ bool Debug::Load() {
 
   // Disable breakpoints and interrupts while compiling and running the
   // debugger scripts including the context creation code.
-  DisableBreak disable(this, true);
+  DisableBreak disable(this);
   PostponeInterruptsScope postpone(isolate_);
 
   // Create the debugger context.
@@ -1244,11 +1244,14 @@ bool Debug::PrepareFunctionForBreakPoints(Handle<SharedFunctionInfo> shared) {
   // cover this, because the given function might have been inlined into code
   // for which no JSFunction exists.
   {
-    SharedFunctionInfo::Iterator iterator(isolate_);
+    SharedFunctionInfo::GlobalIterator iterator(isolate_);
     while (SharedFunctionInfo* shared = iterator.Next()) {
       shared->ClearCodeFromOptimizedCodeMap();
     }
   }
+
+  // The native context also has a list of OSR'd optimized code. Clear it.
+  isolate_->ClearOSROptimizedCode();
 
   // Make sure we abort incremental marking.
   isolate_->heap()->CollectAllGarbage(Heap::kMakeHeapIterableMask,
@@ -1332,24 +1335,18 @@ void FindBreakablePositions(Handle<DebugInfo> debug_info, int start_position,
 bool Debug::GetPossibleBreakpoints(Handle<Script> script, int start_position,
                                    int end_position, std::set<int>* positions) {
   while (true) {
-    if (!script->shared_function_infos()->IsWeakFixedArray()) return false;
-
-    WeakFixedArray* infos =
-        WeakFixedArray::cast(script->shared_function_infos());
     HandleScope scope(isolate_);
     List<Handle<SharedFunctionInfo>> candidates;
-    {
-      WeakFixedArray::Iterator iterator(infos);
-      SharedFunctionInfo* info;
-      while ((info = iterator.Next<SharedFunctionInfo>())) {
-        if (info->end_position() < start_position ||
-            info->start_position() >= end_position) {
-          continue;
-        }
-        if (!info->IsSubjectToDebugging()) continue;
-        if (!info->HasDebugCode() && !info->allows_lazy_compilation()) continue;
-        candidates.Add(i::handle(info));
+    SharedFunctionInfo::ScriptIterator iterator(script);
+    for (SharedFunctionInfo* info = iterator.Next(); info != nullptr;
+         info = iterator.Next()) {
+      if (info->end_position() < start_position ||
+          info->start_position() >= end_position) {
+        continue;
       }
+      if (!info->IsSubjectToDebugging()) continue;
+      if (!info->HasDebugCode() && !info->allows_lazy_compilation()) continue;
+      candidates.Add(i::handle(info));
     }
 
     bool was_compiled = false;
@@ -1459,15 +1456,14 @@ Handle<Object> Debug::FindSharedFunctionInfoInScript(Handle<Script> script,
     // find the inner most function containing this position.
     // If there is no shared function info for this script at all, there is
     // no point in looking for it by walking the heap.
-    if (!script->shared_function_infos()->IsWeakFixedArray()) break;
 
     SharedFunctionInfo* shared;
     {
       SharedFunctionInfoFinder finder(position);
-      WeakFixedArray::Iterator iterator(script->shared_function_infos());
-      SharedFunctionInfo* candidate;
-      while ((candidate = iterator.Next<SharedFunctionInfo>())) {
-        finder.NewCandidate(candidate);
+      SharedFunctionInfo::ScriptIterator iterator(script);
+      for (SharedFunctionInfo* info = iterator.Next(); info != nullptr;
+           info = iterator.Next()) {
+        finder.NewCandidate(info);
       }
       shared = finder.Result();
       if (shared == NULL) break;
@@ -1836,9 +1832,8 @@ void Debug::CallEventCallback(v8::DebugEvent event,
   in_debug_event_listener_ = true;
   if (event_listener_->IsForeign()) {
     // Invoke the C debug event listener.
-    v8::DebugInterface::EventCallback callback =
-        FUNCTION_CAST<v8::DebugInterface::EventCallback>(
-            Handle<Foreign>::cast(event_listener_)->foreign_address());
+    debug::EventCallback callback = FUNCTION_CAST<debug::EventCallback>(
+        Handle<Foreign>::cast(event_listener_)->foreign_address());
     EventDetailsImpl event_details(event,
                                    Handle<JSObject>::cast(exec_state),
                                    Handle<JSObject>::cast(event_data),
@@ -1875,16 +1870,6 @@ void Debug::ProcessCompileEvent(v8::DebugEvent event, Handle<Script> script) {
   HandleScope scope(isolate_);
   DebugScope debug_scope(this);
   if (debug_scope.failed()) return;
-
-  if (event == v8::AfterCompile) {
-    // If debugging there might be script break points registered for this
-    // script. Make sure that these break points are set.
-    Handle<Object> argv[] = {Script::GetWrapper(script)};
-    if (CallFunction("UpdateScriptBreakPoints", arraysize(argv), argv)
-            .is_null()) {
-      return;
-    }
-  }
 
   // Create the compile state object.
   Handle<Object> event_data;

@@ -80,6 +80,31 @@ std::ostream& operator<<(std::ostream&, CallConstructParameters const&);
 
 CallConstructParameters const& CallConstructParametersOf(Operator const*);
 
+// Defines the arity for a JavaScript constructor call with a spread as the last
+// parameters. This is used as a parameter by JSCallConstructWithSpread
+// operators.
+class CallConstructWithSpreadParameters final {
+ public:
+  explicit CallConstructWithSpreadParameters(uint32_t arity) : arity_(arity) {}
+
+  uint32_t arity() const { return arity_; }
+
+ private:
+  uint32_t const arity_;
+};
+
+bool operator==(CallConstructWithSpreadParameters const&,
+                CallConstructWithSpreadParameters const&);
+bool operator!=(CallConstructWithSpreadParameters const&,
+                CallConstructWithSpreadParameters const&);
+
+size_t hash_value(CallConstructWithSpreadParameters const&);
+
+std::ostream& operator<<(std::ostream&,
+                         CallConstructWithSpreadParameters const&);
+
+CallConstructWithSpreadParameters const& CallConstructWithSpreadParametersOf(
+    Operator const*);
 
 // Defines the arity and the call flags for a JavaScript function call. This is
 // used as a parameter by JSCallFunction operators.
@@ -214,6 +239,33 @@ std::ostream& operator<<(std::ostream& os,
                          CreateCatchContextParameters const& parameters);
 
 CreateCatchContextParameters const& CreateCatchContextParametersOf(
+    Operator const*);
+
+// Defines the slot count and ScopeType for a new function or eval context. This
+// is used as a parameter by the JSCreateFunctionContext operator.
+class CreateFunctionContextParameters final {
+ public:
+  CreateFunctionContextParameters(int slot_count, ScopeType scope_type);
+
+  int slot_count() const { return slot_count_; }
+  ScopeType scope_type() const { return scope_type_; }
+
+ private:
+  int const slot_count_;
+  ScopeType const scope_type_;
+};
+
+bool operator==(CreateFunctionContextParameters const& lhs,
+                CreateFunctionContextParameters const& rhs);
+bool operator!=(CreateFunctionContextParameters const& lhs,
+                CreateFunctionContextParameters const& rhs);
+
+size_t hash_value(CreateFunctionContextParameters const& parameters);
+
+std::ostream& operator<<(std::ostream& os,
+                         CreateFunctionContextParameters const& parameters);
+
+CreateFunctionContextParameters const& CreateFunctionContextParametersOf(
     Operator const*);
 
 // Defines the property of an object for a named access. This is
@@ -459,7 +511,7 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
                                 PretenureFlag pretenure);
   const Operator* CreateIterResultObject();
   const Operator* CreateKeyValueArray();
-  const Operator* CreateLiteralArray(Handle<FixedArray> constant_elements,
+  const Operator* CreateLiteralArray(Handle<ConstantElementsPair> constant,
                                      int literal_flags, int literal_index,
                                      int number_of_elements);
   const Operator* CreateLiteralObject(Handle<FixedArray> constant_properties,
@@ -478,6 +530,7 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
   const Operator* CallRuntime(const Runtime::Function* function, size_t arity);
   const Operator* CallConstruct(uint32_t arity, float frequency,
                                 VectorSlotPair const& feedback);
+  const Operator* CallConstructWithSpread(uint32_t arity);
 
   const Operator* ConvertReceiver(ConvertReceiverMode convert_mode);
 
@@ -494,6 +547,8 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
   const Operator* DeleteProperty(LanguageMode language_mode);
 
   const Operator* HasProperty();
+
+  const Operator* GetSuperConstructor();
 
   const Operator* LoadGlobal(const Handle<Name>& name,
                              const VectorSlotPair& feedback,
@@ -527,7 +582,7 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
 
   const Operator* StackCheck();
 
-  const Operator* CreateFunctionContext(int slot_count);
+  const Operator* CreateFunctionContext(int slot_count, ScopeType scope_type);
   const Operator* CreateCatchContext(const Handle<String>& name,
                                      const Handle<ScopeInfo>& scope_info);
   const Operator* CreateWithContext(const Handle<ScopeInfo>& scope_info);

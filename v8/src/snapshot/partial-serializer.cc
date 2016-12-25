@@ -23,7 +23,7 @@ PartialSerializer::~PartialSerializer() {
   OutputStatistics("PartialSerializer");
 }
 
-void PartialSerializer::Serialize(Object** o) {
+void PartialSerializer::Serialize(Object** o, bool include_global_proxy) {
   if ((*o)->IsContext()) {
     Context* context = Context::cast(*o);
     reference_map()->AddAttachedReference(context->global_proxy());

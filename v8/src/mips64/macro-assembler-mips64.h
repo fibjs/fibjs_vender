@@ -236,6 +236,13 @@ class MacroAssembler: public Assembler {
               Heap::RootListIndex index,
               BranchDelaySlot bdslot = PROTECT);
 
+// Number of instructions needed for calculation of switch table entry address
+#ifdef _MIPS_ARCH_MIPS64R6
+  static const int kSwitchTablePrologueSize = 6;
+#else
+  static const int kSwitchTablePrologueSize = 11;
+#endif
+
   // GetLabelFunction must be lambda '[](size_t index) -> Label*' or a
   // functor/function with 'Label *func(size_t index)' declaration.
   template <typename Func>
@@ -336,17 +343,6 @@ class MacroAssembler: public Assembler {
   void Movn(Register rd, Register rs, Register rt);
   void Movt(Register rd, Register rs, uint16_t cc = 0);
   void Movf(Register rd, Register rs, uint16_t cc = 0);
-
-  // Min, Max macros.
-  // On pre-r6 these functions may modify at and t8 registers.
-  void MinNaNCheck_d(FPURegister dst, FPURegister src1, FPURegister src2,
-                     Label* nan = nullptr);
-  void MaxNaNCheck_d(FPURegister dst, FPURegister src1, FPURegister src2,
-                     Label* nan = nullptr);
-  void MinNaNCheck_s(FPURegister dst, FPURegister src1, FPURegister src2,
-                     Label* nan = nullptr);
-  void MaxNaNCheck_s(FPURegister dst, FPURegister src1, FPURegister src2,
-                     Label* nan = nullptr);
 
   void Clz(Register rd, Register rs);
 
@@ -591,32 +587,6 @@ class MacroAssembler: public Assembler {
 
   void FastAllocate(Register object_size, Register result, Register result_new,
                     Register scratch, AllocationFlags flags);
-
-  void AllocateTwoByteString(Register result,
-                             Register length,
-                             Register scratch1,
-                             Register scratch2,
-                             Register scratch3,
-                             Label* gc_required);
-  void AllocateOneByteString(Register result, Register length,
-                             Register scratch1, Register scratch2,
-                             Register scratch3, Label* gc_required);
-  void AllocateTwoByteConsString(Register result,
-                                 Register length,
-                                 Register scratch1,
-                                 Register scratch2,
-                                 Label* gc_required);
-  void AllocateOneByteConsString(Register result, Register length,
-                                 Register scratch1, Register scratch2,
-                                 Label* gc_required);
-  void AllocateTwoByteSlicedString(Register result,
-                                   Register length,
-                                   Register scratch1,
-                                   Register scratch2,
-                                   Label* gc_required);
-  void AllocateOneByteSlicedString(Register result, Register length,
-                                   Register scratch1, Register scratch2,
-                                   Label* gc_required);
 
   // Allocates a heap number or jumps to the gc_required label if the young
   // space is full and a scavenge is needed. All registers are clobbered also
@@ -944,10 +914,13 @@ class MacroAssembler: public Assembler {
   void SubNanPreservePayloadAndSign_d(FPURegister fd, FPURegister fs,
                                       FPURegister ft);
 
-  void Madd_d(FPURegister fd,
-              FPURegister fr,
-              FPURegister fs,
-              FPURegister ft,
+  void Madd_s(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft,
+              FPURegister scratch);
+  void Madd_d(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft,
+              FPURegister scratch);
+  void Msub_s(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft,
+              FPURegister scratch);
+  void Msub_d(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft,
               FPURegister scratch);
 
   // Wrapper functions for the different cmp/branch types.
@@ -1411,6 +1384,29 @@ class MacroAssembler: public Assembler {
     Ret(ge, overflow_check, Operand(zero_reg), bd);
   }
 
+  // Perform a floating-point min or max operation with the
+  // (IEEE-754-compatible) semantics of MIPS32's Release 6 MIN.fmt/MAX.fmt.
+  // Some cases, typically NaNs or +/-0.0, are expected to be rare and are
+  // handled in out-of-line code. The specific behaviour depends on supported
+  // instructions.
+  //
+  // These functions assume (and assert) that !src1.is(src2). It is permitted
+  // for the result to alias either input register.
+  void Float32Max(FPURegister dst, FPURegister src1, FPURegister src2,
+                  Label* out_of_line);
+  void Float32Min(FPURegister dst, FPURegister src1, FPURegister src2,
+                  Label* out_of_line);
+  void Float64Max(FPURegister dst, FPURegister src1, FPURegister src2,
+                  Label* out_of_line);
+  void Float64Min(FPURegister dst, FPURegister src1, FPURegister src2,
+                  Label* out_of_line);
+
+  // Generate out-of-line cases for the macros above.
+  void Float32MaxOutOfLine(FPURegister dst, FPURegister src1, FPURegister src2);
+  void Float32MinOutOfLine(FPURegister dst, FPURegister src1, FPURegister src2);
+  void Float64MaxOutOfLine(FPURegister dst, FPURegister src1, FPURegister src2);
+  void Float64MinOutOfLine(FPURegister dst, FPURegister src1, FPURegister src2);
+
   // -------------------------------------------------------------------------
   // Runtime calls.
 
@@ -1741,11 +1737,6 @@ const Operand& rt = Operand(zero_reg), BranchDelaySlot bd = PROTECT
       Register first_object_instance_type, Register second_object_instance_type,
       Register scratch1, Register scratch2, Label* failure);
 
-  // Check if instance type is sequential one-byte string and jump to label if
-  // it is not.
-  void JumpIfInstanceTypeIsNotSequentialOneByte(Register type, Register scratch,
-                                                Label* failure);
-
   void JumpIfNotUniqueNameInstanceType(Register reg, Label* not_unique_name);
 
   void EmitSeqStringSetCharCheck(Register string,
@@ -1962,7 +1953,8 @@ void MacroAssembler::GenerateSwitchTable(Register index, size_t case_count,
   // Ensure that dd-ed labels following this instruction use 8 bytes aligned
   // addresses.
   if (kArchVariant >= kMips64r6) {
-    BlockTrampolinePoolFor(static_cast<int>(case_count) * 2 + 6);
+    BlockTrampolinePoolFor(static_cast<int>(case_count) * 2 +
+                           kSwitchTablePrologueSize);
     // Opposite of Align(8) as we have odd number of instructions in this case.
     if ((pc_offset() & 7) == 0) {
       nop();
@@ -1972,7 +1964,8 @@ void MacroAssembler::GenerateSwitchTable(Register index, size_t case_count,
     ld(at, MemOperand(at));
   } else {
     Label here;
-    BlockTrampolinePoolFor(static_cast<int>(case_count) * 2 + 11);
+    BlockTrampolinePoolFor(static_cast<int>(case_count) * 2 +
+                           kSwitchTablePrologueSize);
     Align(8);
     push(ra);
     bal(&here);

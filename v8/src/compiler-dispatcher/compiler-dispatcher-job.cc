@@ -21,10 +21,11 @@ namespace v8 {
 namespace internal {
 
 CompilerDispatcherJob::CompilerDispatcherJob(Isolate* isolate,
+                                             CompilerDispatcherTracer* tracer,
                                              Handle<SharedFunctionInfo> shared,
                                              size_t max_stack_size)
     : isolate_(isolate),
-      tracer_(isolate_->compiler_dispatcher_tracer()),
+      tracer_(tracer),
       shared_(Handle<SharedFunctionInfo>::cast(
           isolate_->global_handles()->Create(*shared))),
       max_stack_size_(max_stack_size),
@@ -42,6 +43,11 @@ CompilerDispatcherJob::~CompilerDispatcherJob() {
   DCHECK(status_ == CompileJobStatus::kInitial ||
          status_ == CompileJobStatus::kDone);
   i::GlobalHandles::Destroy(Handle<Object>::cast(shared_).location());
+}
+
+bool CompilerDispatcherJob::IsAssociatedWith(
+    Handle<SharedFunctionInfo> shared) const {
+  return *shared_ == *shared;
 }
 
 void CompilerDispatcherJob::PrepareToParseOnMainThread() {
@@ -177,8 +183,8 @@ bool CompilerDispatcherJob::PrepareToCompileOnMainThread() {
 
   DeferredHandleScope scope(isolate_);
   if (Compiler::Analyze(parse_info_.get())) {
-    compile_job_.reset(
-        Compiler::PrepareUnoptimizedCompilationJob(compile_info_.get()));
+    compile_job_.reset(Compiler::PrepareUnoptimizedCompilationJob(
+        compile_info_.get(), LazyCompilationMode::kAlways));
   }
   compile_info_->set_deferred_handles(scope.Detach());
 
@@ -255,6 +261,37 @@ void CompilerDispatcherJob::ResetOnMainThread() {
   }
 
   status_ = CompileJobStatus::kInitial;
+}
+
+double CompilerDispatcherJob::EstimateRuntimeOfNextStepInMs() const {
+  switch (status_) {
+    case CompileJobStatus::kInitial:
+      return tracer_->EstimatePrepareToParseInMs();
+
+    case CompileJobStatus::kReadyToParse:
+      return tracer_->EstimateParseInMs(parse_info_->end_position() -
+                                        parse_info_->start_position());
+
+    case CompileJobStatus::kParsed:
+      return tracer_->EstimateFinalizeParsingInMs();
+
+    case CompileJobStatus::kReadyToAnalyse:
+      return tracer_->EstimatePrepareToCompileInMs();
+
+    case CompileJobStatus::kReadyToCompile:
+      return tracer_->EstimateCompileInMs(
+          parse_info_->literal()->ast_node_count());
+
+    case CompileJobStatus::kCompiled:
+      return tracer_->EstimateFinalizeCompilingInMs();
+
+    case CompileJobStatus::kFailed:
+    case CompileJobStatus::kDone:
+      return 0.0;
+  }
+
+  UNREACHABLE();
+  return 0.0;
 }
 
 }  // namespace internal

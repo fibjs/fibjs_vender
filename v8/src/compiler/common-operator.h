@@ -205,6 +205,8 @@ class V8_EXPORT_PRIVATE CommonOperatorBuilder final
   const Operator* Deoptimize(DeoptimizeKind kind, DeoptimizeReason reason);
   const Operator* DeoptimizeIf(DeoptimizeReason reason);
   const Operator* DeoptimizeUnless(DeoptimizeReason reason);
+  const Operator* TrapIf(int32_t trap_id);
+  const Operator* TrapUnless(int32_t trap_id);
   const Operator* Return(int value_input_count = 1);
   const Operator* Terminate();
 
@@ -259,6 +261,12 @@ class V8_EXPORT_PRIVATE CommonOperatorBuilder final
   // Constructs a new merge or phi operator with the same opcode as {op}, but
   // with {size} inputs.
   const Operator* ResizeMergeOrPhi(const Operator* op, int size);
+
+  // Simd Operators
+  const Operator* Int32x4ExtractLane(int32_t);
+  const Operator* Int32x4ReplaceLane(int32_t);
+  const Operator* Float32x4ExtractLane(int32_t);
+  const Operator* Float32x4ReplaceLane(int32_t);
 
   // Constructs function info for frame state construction.
   const FrameStateFunctionInfo* CreateFrameStateFunctionInfo(

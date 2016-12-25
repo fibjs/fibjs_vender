@@ -180,15 +180,17 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
     } else {
-      if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
-        FastNewFunctionContextStub stub(isolate());
+      if (slots <= FastNewFunctionContextStub::MaximumSlots()) {
+        FastNewFunctionContextStub stub(isolate(),
+                                        info()->scope()->scope_type());
         __ mov(FastNewFunctionContextDescriptor::SlotsRegister(),
                Immediate(slots));
         __ CallStub(&stub);
         // Result of FastNewFunctionContextStub is always in new space.
         need_write_barrier = false;
       } else {
-        __ push(edi);
+        __ Push(edi);
+        __ Push(Smi::FromInt(info()->scope()->scope_type()));
         __ CallRuntime(Runtime::kNewFunctionContext);
       }
     }
@@ -2766,9 +2768,9 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
 
   // Normal function. Replace undefined or null with global receiver.
   __ cmp(receiver, factory()->null_value());
-  __ j(equal, &global_object, Label::kNear);
+  __ j(equal, &global_object, dist);
   __ cmp(receiver, factory()->undefined_value());
-  __ j(equal, &global_object, Label::kNear);
+  __ j(equal, &global_object, dist);
 
   // The receiver should be a JS object.
   __ test(receiver, Immediate(kSmiTagMask));
@@ -2776,7 +2778,7 @@ void LCodeGen::DoWrapReceiver(LWrapReceiver* instr) {
   __ CmpObjectType(receiver, FIRST_JS_RECEIVER_TYPE, scratch);
   DeoptimizeIf(below, instr, DeoptimizeReason::kNotAJavaScriptObject);
 
-  __ jmp(&receiver_ok, Label::kNear);
+  __ jmp(&receiver_ok, dist);
   __ bind(&global_object);
   __ mov(receiver, FieldOperand(function, JSFunction::kContextOffset));
   __ mov(receiver, ContextOperand(receiver, Context::NATIVE_CONTEXT_INDEX));

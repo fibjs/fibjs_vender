@@ -2,10 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_WASM_AST_DECODER_H_
-#define V8_WASM_AST_DECODER_H_
+#ifndef V8_WASM_FUNCTION_BODY_DECODER_H_
+#define V8_WASM_FUNCTION_BODY_DECODER_H_
+
+#include <iterator>
 
 #include "src/base/compiler-specific.h"
+#include "src/base/iterator.h"
 #include "src/globals.h"
 #include "src/signature.h"
 #include "src/wasm/decoder.h"
@@ -29,12 +32,12 @@ struct WasmGlobal;
 // Helpers for decoding different kinds of operands which follow bytecodes.
 struct LocalIndexOperand {
   uint32_t index;
-  LocalType type;
+  ValueType type;
   unsigned length;
 
   inline LocalIndexOperand(Decoder* decoder, const byte* pc) {
     index = decoder->checked_read_u32v(pc, 1, &length, "local index");
-    type = kAstStmt;
+    type = kWasmStmt;
   }
 };
 
@@ -83,14 +86,14 @@ struct ImmF64Operand {
 
 struct GlobalIndexOperand {
   uint32_t index;
-  LocalType type;
+  ValueType type;
   const WasmGlobal* global;
   unsigned length;
 
   inline GlobalIndexOperand(Decoder* decoder, const byte* pc) {
     index = decoder->checked_read_u32v(pc, 1, &length, "global index");
     global = nullptr;
-    type = kAstStmt;
+    type = kWasmStmt;
   }
 };
 
@@ -101,12 +104,12 @@ struct BlockTypeOperand {
 
   inline BlockTypeOperand(Decoder* decoder, const byte* pc) {
     uint8_t val = decoder->checked_read_u8(pc, 1, "block type");
-    LocalType type = kAstStmt;
+    ValueType type = kWasmStmt;
     length = 1;
     arity = 0;
     types = nullptr;
     if (decode_local_type(val, &type)) {
-      arity = type == kAstStmt ? 0 : 1;
+      arity = type == kWasmStmt ? 0 : 1;
       types = pc + 1;
     } else {
       // Handle multi-value blocks.
@@ -132,7 +135,7 @@ struct BlockTypeOperand {
         uint32_t offset = 1 + 1 + len + i;
         val = decoder->checked_read_u8(pc, offset, "block type");
         decode_local_type(val, &type);
-        if (type == kAstStmt) {
+        if (type == kWasmStmt) {
           decoder->error(pc, pc + offset, "invalid block type");
           return;
         }
@@ -141,34 +144,34 @@ struct BlockTypeOperand {
   }
   // Decode a byte representing a local type. Return {false} if the encoded
   // byte was invalid or {kMultivalBlock}.
-  bool decode_local_type(uint8_t val, LocalType* result) {
-    switch (static_cast<LocalTypeCode>(val)) {
+  bool decode_local_type(uint8_t val, ValueType* result) {
+    switch (static_cast<ValueTypeCode>(val)) {
       case kLocalVoid:
-        *result = kAstStmt;
+        *result = kWasmStmt;
         return true;
       case kLocalI32:
-        *result = kAstI32;
+        *result = kWasmI32;
         return true;
       case kLocalI64:
-        *result = kAstI64;
+        *result = kWasmI64;
         return true;
       case kLocalF32:
-        *result = kAstF32;
+        *result = kWasmF32;
         return true;
       case kLocalF64:
-        *result = kAstF64;
+        *result = kWasmF64;
         return true;
       case kLocalS128:
-        *result = kAstS128;
+        *result = kWasmS128;
         return true;
       default:
-        *result = kAstStmt;
+        *result = kWasmStmt;
         return false;
     }
   }
-  LocalType read_entry(unsigned index) {
+  ValueType read_entry(unsigned index) {
     DCHECK_LT(index, arity);
-    LocalType result;
+    ValueType result;
     CHECK(decode_local_type(types[index], &result));
     return result;
   }
@@ -333,12 +336,12 @@ V8_EXPORT_PRIVATE DecodeResult VerifyWasmCode(AccountingAllocator* allocator,
                                               FunctionBody& body);
 DecodeResult BuildTFGraph(AccountingAllocator* allocator, TFBuilder* builder,
                           FunctionBody& body);
-bool PrintAst(AccountingAllocator* allocator, const FunctionBody& body,
-              std::ostream& os,
-              std::vector<std::tuple<uint32_t, int, int>>* offset_table);
+bool PrintWasmCode(AccountingAllocator* allocator, const FunctionBody& body,
+                   std::ostream& os,
+                   std::vector<std::tuple<uint32_t, int, int>>* offset_table);
 
 // A simplified form of AST printing, e.g. from a debugger.
-void PrintAstForDebugging(const byte* start, const byte* end);
+void PrintWasmCodeForDebugging(const byte* start, const byte* end);
 
 inline DecodeResult VerifyWasmCode(AccountingAllocator* allocator,
                                    ModuleEnv* module, FunctionSig* sig,
@@ -355,7 +358,7 @@ inline DecodeResult BuildTFGraph(AccountingAllocator* allocator,
   return BuildTFGraph(allocator, builder, body);
 }
 
-struct AstLocalDecls {
+struct BodyLocalDecls {
   // The size of the encoded declarations.
   uint32_t decls_encoded_size;  // size of encoded declarations
 
@@ -363,15 +366,15 @@ struct AstLocalDecls {
   uint32_t total_local_count;
 
   // List of {local type, count} pairs.
-  ZoneVector<std::pair<LocalType, uint32_t>> local_types;
+  ZoneVector<std::pair<ValueType, uint32_t>> local_types;
 
   // Constructor initializes the vector.
-  explicit AstLocalDecls(Zone* zone)
+  explicit BodyLocalDecls(Zone* zone)
       : decls_encoded_size(0), total_local_count(0), local_types(zone) {}
 };
 
-V8_EXPORT_PRIVATE bool DecodeLocalDecls(AstLocalDecls& decls, const byte* start,
-                                        const byte* end);
+V8_EXPORT_PRIVATE bool DecodeLocalDecls(BodyLocalDecls& decls,
+                                        const byte* start, const byte* end);
 V8_EXPORT_PRIVATE BitVector* AnalyzeLoopAssignmentForTesting(Zone* zone,
                                                              size_t num_locals,
                                                              const byte* start,
@@ -382,41 +385,77 @@ V8_EXPORT_PRIVATE unsigned OpcodeLength(const byte* pc, const byte* end);
 
 // A simple forward iterator for bytecodes.
 class V8_EXPORT_PRIVATE BytecodeIterator : public NON_EXPORTED_BASE(Decoder) {
- public:
-  // If one wants to iterate over the bytecode without looking at {pc_offset()}.
-  class iterator {
+  // Base class for both iterators defined below.
+  class iterator_base {
    public:
-    inline iterator& operator++() {
+    inline iterator_base& operator++() {
       DCHECK_LT(ptr_, end_);
       ptr_ += OpcodeLength(ptr_, end_);
       return *this;
     }
+    inline bool operator==(const iterator_base& that) {
+      return this->ptr_ == that.ptr_;
+    }
+    inline bool operator!=(const iterator_base& that) {
+      return this->ptr_ != that.ptr_;
+    }
+
+   protected:
+    const byte* ptr_;
+    const byte* end_;
+    iterator_base(const byte* ptr, const byte* end) : ptr_(ptr), end_(end) {}
+  };
+
+ public:
+  // If one wants to iterate over the bytecode without looking at {pc_offset()}.
+  class opcode_iterator
+      : public iterator_base,
+        public std::iterator<std::input_iterator_tag, WasmOpcode> {
+   public:
     inline WasmOpcode operator*() {
       DCHECK_LT(ptr_, end_);
       return static_cast<WasmOpcode>(*ptr_);
     }
-    inline bool operator==(const iterator& that) {
-      return this->ptr_ == that.ptr_;
-    }
-    inline bool operator!=(const iterator& that) {
-      return this->ptr_ != that.ptr_;
-    }
 
    private:
     friend class BytecodeIterator;
-    const byte* ptr_;
-    const byte* end_;
-    iterator(const byte* ptr, const byte* end) : ptr_(ptr), end_(end) {}
+    opcode_iterator(const byte* ptr, const byte* end)
+        : iterator_base(ptr, end) {}
+  };
+  // If one wants to iterate over the instruction offsets without looking at
+  // opcodes.
+  class offset_iterator
+      : public iterator_base,
+        public std::iterator<std::input_iterator_tag, uint32_t> {
+   public:
+    inline uint32_t operator*() {
+      DCHECK_LT(ptr_, end_);
+      return static_cast<uint32_t>(ptr_ - start_);
+    }
+
+   private:
+    const byte* start_;
+    friend class BytecodeIterator;
+    offset_iterator(const byte* start, const byte* ptr, const byte* end)
+        : iterator_base(ptr, end), start_(start) {}
   };
 
   // Create a new {BytecodeIterator}. If the {decls} pointer is non-null,
   // assume the bytecode starts with local declarations and decode them.
   // Otherwise, do not decode local decls.
   BytecodeIterator(const byte* start, const byte* end,
-                   AstLocalDecls* decls = nullptr);
+                   BodyLocalDecls* decls = nullptr);
 
-  inline iterator begin() const { return iterator(pc_, end_); }
-  inline iterator end() const { return iterator(end_, end_); }
+  base::iterator_range<opcode_iterator> opcodes() {
+    return base::iterator_range<opcode_iterator>(opcode_iterator(pc_, end_),
+                                                 opcode_iterator(end_, end_));
+  }
+
+  base::iterator_range<offset_iterator> offsets() {
+    return base::iterator_range<offset_iterator>(
+        offset_iterator(start_, pc_, end_),
+        offset_iterator(start_, end_, end_));
+  }
 
   WasmOpcode current() {
     return static_cast<WasmOpcode>(
@@ -437,4 +476,4 @@ class V8_EXPORT_PRIVATE BytecodeIterator : public NON_EXPORTED_BASE(Decoder) {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_WASM_AST_DECODER_H_
+#endif  // V8_WASM_FUNCTION_BODY_DECODER_H_

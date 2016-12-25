@@ -257,9 +257,8 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
       SafepointEntry safepoint = code->GetSafepointEntry(it.frame()->pc());
       int deopt_index = safepoint.deoptimization_index();
       // Turbofan deopt is checked when we are patching addresses on stack.
-      bool turbofanned = code->is_turbofanned() &&
-                         function->shared()->asm_function() &&
-                         !FLAG_turbo_asm_deoptimization;
+      bool turbofanned =
+          code->is_turbofanned() && function->shared()->asm_function();
       bool safe_to_deopt =
           deopt_index != Safepoint::kNoDeoptimizationIndex || turbofanned;
       bool builtin = code->kind() == Code::BUILTIN;
@@ -2715,6 +2714,7 @@ DeoptimizedFrameInfo::DeoptimizedFrameInfo(TranslatedState* state,
 
 
 Deoptimizer::DeoptInfo Deoptimizer::GetDeoptInfo(Code* code, Address pc) {
+  CHECK(code->instruction_start() <= pc && pc <= code->instruction_end());
   SourcePosition last_position = SourcePosition::Unknown();
   DeoptimizeReason last_reason = DeoptimizeReason::kNoReason;
   int last_deopt_id = kNoDeoptimizationId;
@@ -2724,9 +2724,7 @@ Deoptimizer::DeoptInfo Deoptimizer::GetDeoptInfo(Code* code, Address pc) {
              RelocInfo::ModeMask(RelocInfo::DEOPT_INLINING_ID);
   for (RelocIterator it(code, mask); !it.done(); it.next()) {
     RelocInfo* info = it.rinfo();
-    if (info->pc() >= pc) {
-      return DeoptInfo(last_position, last_reason, last_deopt_id);
-    }
+    if (info->pc() >= pc) break;
     if (info->rmode() == RelocInfo::DEOPT_SCRIPT_OFFSET) {
       int script_offset = static_cast<int>(info->data());
       it.next();
@@ -2739,7 +2737,7 @@ Deoptimizer::DeoptInfo Deoptimizer::GetDeoptInfo(Code* code, Address pc) {
       last_reason = static_cast<DeoptimizeReason>(info->data());
     }
   }
-  return DeoptInfo(SourcePosition::Unknown(), DeoptimizeReason::kNoReason, -1);
+  return DeoptInfo(last_position, last_reason, last_deopt_id);
 }
 
 

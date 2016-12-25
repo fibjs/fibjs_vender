@@ -94,7 +94,8 @@ class WasmCompilationUnit final {
 Handle<Code> CompileWasmToJSWrapper(Isolate* isolate, Handle<JSReceiver> target,
                                     wasm::FunctionSig* sig, uint32_t index,
                                     Handle<String> module_name,
-                                    MaybeHandle<String> import_name);
+                                    MaybeHandle<String> import_name,
+                                    wasm::ModuleOrigin origin);
 
 // Wraps a given wasm code object, producing a code object.
 Handle<Code> CompileJSToWasmWrapper(Isolate* isolate,
@@ -108,7 +109,7 @@ typedef ZoneVector<Node*> NodeVector;
 class WasmGraphBuilder {
  public:
   WasmGraphBuilder(
-      Zone* z, JSGraph* g, wasm::FunctionSig* function_signature,
+      Zone* z, JSGraph* g, wasm::FunctionSig* sig,
       compiler::SourcePositionTable* source_position_table = nullptr);
 
   Node** Buffer(size_t count) {
@@ -126,11 +127,11 @@ class WasmGraphBuilder {
   //-----------------------------------------------------------------------
   Node* Error();
   Node* Start(unsigned params);
-  Node* Param(unsigned index, wasm::LocalType type);
+  Node* Param(unsigned index);
   Node* Loop(Node* entry);
   Node* Terminate(Node* effect, Node* control);
   Node* Merge(unsigned count, Node** controls);
-  Node* Phi(wasm::LocalType type, unsigned count, Node** vals, Node* control);
+  Node* Phi(wasm::ValueType type, unsigned count, Node** vals, Node* control);
   Node* EffectPhi(unsigned count, Node** effects, Node* control);
   Node* NumberConstant(int32_t value);
   Node* Uint32Constant(uint32_t value);
@@ -165,7 +166,12 @@ class WasmGraphBuilder {
   Node* Switch(unsigned count, Node* key);
   Node* IfValue(int32_t value, Node* sw);
   Node* IfDefault(Node* sw);
-  Node* Return(unsigned count, Node** vals);
+  Node* Return(unsigned count, Node** nodes);
+  template <typename... Nodes>
+  Node* Return(Node* fst, Nodes*... more) {
+    Node* arr[] = {fst, more...};
+    return Return(arraysize(arr), arr);
+  }
   Node* ReturnVoid();
   Node* Unreachable(wasm::WasmCodePosition position);
 
@@ -177,8 +183,8 @@ class WasmGraphBuilder {
   void BuildJSToWasmWrapper(Handle<Code> wasm_code, wasm::FunctionSig* sig);
   void BuildWasmToJSWrapper(Handle<JSReceiver> target, wasm::FunctionSig* sig);
 
-  Node* ToJS(Node* node, wasm::LocalType type);
-  Node* FromJS(Node* node, Node* context, wasm::LocalType type);
+  Node* ToJS(Node* node, wasm::ValueType type);
+  Node* FromJS(Node* node, Node* context, wasm::ValueType type);
   Node* Invert(Node* node);
   void EnsureFunctionTableNodes();
 
@@ -188,7 +194,7 @@ class WasmGraphBuilder {
   Node* CurrentMemoryPages();
   Node* GetGlobal(uint32_t index);
   Node* SetGlobal(uint32_t index, Node* val);
-  Node* LoadMem(wasm::LocalType type, MachineType memtype, Node* index,
+  Node* LoadMem(wasm::ValueType type, MachineType memtype, Node* index,
                 uint32_t offset, uint32_t alignment,
                 wasm::WasmCodePosition position);
   Node* StoreMem(MachineType type, Node* index, uint32_t offset,
@@ -206,7 +212,7 @@ class WasmGraphBuilder {
 
   void set_effect_ptr(Node** effect) { this->effect_ = effect; }
 
-  wasm::FunctionSig* GetFunctionSignature() { return function_signature_; }
+  wasm::FunctionSig* GetFunctionSignature() { return sig_; }
 
   void Int64LoweringForTesting();
 
@@ -217,9 +223,11 @@ class WasmGraphBuilder {
   Node* CreateS128Value(int32_t value);
 
   Node* SimdOp(wasm::WasmOpcode opcode, const NodeVector& inputs);
-  Node* SimdExtractLane(wasm::WasmOpcode opcode, uint8_t lane, Node* input);
-  Node* SimdReplaceLane(wasm::WasmOpcode opcode, uint8_t lane, Node* input,
-                        Node* replacement);
+
+  Node* SimdLaneOp(wasm::WasmOpcode opcode, uint8_t lane,
+                   const NodeVector& inputs);
+
+  bool has_simd() const { return has_simd_; }
 
  private:
   static const int kDefaultBufferSize = 16;
@@ -227,19 +235,20 @@ class WasmGraphBuilder {
 
   Zone* zone_;
   JSGraph* jsgraph_;
-  wasm::ModuleEnv* module_;
-  Node* mem_buffer_;
-  Node* mem_size_;
+  wasm::ModuleEnv* module_ = nullptr;
+  Node* mem_buffer_ = nullptr;
+  Node* mem_size_ = nullptr;
   NodeVector function_tables_;
   NodeVector function_table_sizes_;
-  Node** control_;
-  Node** effect_;
+  Node** control_ = nullptr;
+  Node** effect_ = nullptr;
   Node** cur_buffer_;
   size_t cur_bufsize_;
   Node* def_buffer_[kDefaultBufferSize];
+  bool has_simd_ = false;
 
   WasmTrapHelper* trap_;
-  wasm::FunctionSig* function_signature_;
+  wasm::FunctionSig* sig_;
   SetOncePointer<const Operator> allocate_heap_number_operator_;
 
   compiler::SourcePositionTable* source_position_table_ = nullptr;
@@ -255,7 +264,7 @@ class WasmGraphBuilder {
                       wasm::WasmCodePosition position);
 
   Node* BuildChangeEndianness(Node* node, MachineType type,
-                              wasm::LocalType wasmtype = wasm::kAstStmt);
+                              wasm::ValueType wasmtype = wasm::kWasmStmt);
 
   Node* MaskShiftCount32(Node* node);
   Node* MaskShiftCount64(Node* node);
@@ -326,8 +335,7 @@ class WasmGraphBuilder {
                        MachineType result_type, int trap_zero,
                        wasm::WasmCodePosition position);
 
-  Node* BuildJavaScriptToNumber(Node* node, Node* context, Node* effect,
-                                Node* control);
+  Node* BuildJavaScriptToNumber(Node* node, Node* context);
 
   Node* BuildChangeInt32ToTagged(Node* value);
   Node* BuildChangeFloat64ToTagged(Node* value);

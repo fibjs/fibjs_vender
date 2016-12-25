@@ -56,7 +56,7 @@ class StackFrameBase {
   virtual Handle<Object> GetScriptNameOrSourceUrl() = 0;
   virtual Handle<Object> GetMethodName() = 0;
   virtual Handle<Object> GetTypeName() = 0;
-  virtual Handle<Object> GetEvalOrigin() = 0;
+  virtual Handle<Object> GetEvalOrigin();
 
   virtual int GetPosition() const = 0;
   // Return 1-based line number, including line offset.
@@ -66,11 +66,20 @@ class StackFrameBase {
 
   virtual bool IsNative() = 0;
   virtual bool IsToplevel() = 0;
-  virtual bool IsEval() = 0;
+  virtual bool IsEval();
   virtual bool IsConstructor() = 0;
   virtual bool IsStrict() const = 0;
 
   virtual MaybeHandle<String> ToString() = 0;
+
+ protected:
+  StackFrameBase() {}
+  explicit StackFrameBase(Isolate* isolate) : isolate_(isolate) {}
+  Isolate* isolate_;
+
+ private:
+  virtual bool HasScript() const = 0;
+  virtual Handle<Script> GetScript() const = 0;
 };
 
 class JSStackFrame : public StackFrameBase {
@@ -88,7 +97,6 @@ class JSStackFrame : public StackFrameBase {
   Handle<Object> GetScriptNameOrSourceUrl() override;
   Handle<Object> GetMethodName() override;
   Handle<Object> GetTypeName() override;
-  Handle<Object> GetEvalOrigin() override;
 
   int GetPosition() const override;
   int GetLineNumber() override;
@@ -96,7 +104,6 @@ class JSStackFrame : public StackFrameBase {
 
   bool IsNative() override;
   bool IsToplevel() override;
-  bool IsEval() override;
   bool IsConstructor() override;
   bool IsStrict() const override { return is_strict_; }
 
@@ -106,10 +113,8 @@ class JSStackFrame : public StackFrameBase {
   JSStackFrame();
   void FromFrameArray(Isolate* isolate, Handle<FrameArray> array, int frame_ix);
 
-  bool HasScript() const;
-  Handle<Script> GetScript() const;
-
-  Isolate* isolate_;
+  bool HasScript() const override;
+  Handle<Script> GetScript() const override;
 
   Handle<Object> receiver_;
   Handle<JSFunction> function_;
@@ -134,7 +139,6 @@ class WasmStackFrame : public StackFrameBase {
   Handle<Object> GetScriptNameOrSourceUrl() override { return Null(); }
   Handle<Object> GetMethodName() override { return Null(); }
   Handle<Object> GetTypeName() override { return Null(); }
-  Handle<Object> GetEvalOrigin() override { return Null(); }
 
   int GetPosition() const override;
   int GetLineNumber() override { return wasm_func_index_; }
@@ -142,7 +146,6 @@ class WasmStackFrame : public StackFrameBase {
 
   bool IsNative() override { return false; }
   bool IsToplevel() override { return false; }
-  bool IsEval() override { return false; }
   bool IsConstructor() override { return false; }
   bool IsStrict() const override { return false; }
 
@@ -151,7 +154,8 @@ class WasmStackFrame : public StackFrameBase {
  protected:
   Handle<Object> Null() const;
 
-  Isolate* isolate_;
+  bool HasScript() const override;
+  Handle<Script> GetScript() const override;
 
   // TODO(wasm): Use proper typing.
   Handle<Object> wasm_instance_;
@@ -160,9 +164,11 @@ class WasmStackFrame : public StackFrameBase {
   int offset_;
 
  private:
+  WasmStackFrame();
   void FromFrameArray(Isolate* isolate, Handle<FrameArray> array, int frame_ix);
 
   friend class FrameArrayIterator;
+  friend class AsmJsWasmStackFrame;
 };
 
 class AsmJsWasmStackFrame : public WasmStackFrame {
@@ -180,6 +186,13 @@ class AsmJsWasmStackFrame : public WasmStackFrame {
   int GetColumnNumber() override;
 
   MaybeHandle<String> ToString() override;
+
+ private:
+  friend class FrameArrayIterator;
+  AsmJsWasmStackFrame();
+  void FromFrameArray(Isolate* isolate, Handle<FrameArray> array, int frame_ix);
+
+  bool is_at_number_conversion_;
 };
 
 class FrameArrayIterator {
@@ -329,7 +342,9 @@ class ErrorUtils : public AllStatic {
   T(NotIterable, "% is not iterable")                                          \
   T(NotPropertyName, "% is not a valid property name")                         \
   T(NotTypedArray, "this is not a typed array.")                               \
-  T(NotSharedTypedArray, "% is not a shared typed array.")                     \
+  T(NotSuperConstructor, "Super constructor % of % is not a constructor")      \
+  T(NotSuperConstructorAnonymousClass,                                         \
+    "Super constructor % of anonymous class is not a constructor")             \
   T(NotIntegerSharedTypedArray, "% is not an integer shared typed array.")     \
   T(NotInt32SharedTypedArray, "% is not an int32 shared typed array.")         \
   T(ObjectGetterExpectingFunction,                                             \
@@ -443,9 +458,6 @@ class ErrorUtils : public AllStatic {
   T(RegExpNonObject, "% getter called on non-object %")                        \
   T(RegExpNonRegExp, "% getter called on non-RegExp object")                   \
   T(ReinitializeIntl, "Trying to re-initialize % object.")                     \
-  T(ResolvedOptionsCalledOnNonObject,                                          \
-    "resolvedOptions method called on a non-object or on a object that is "    \
-    "not Intl.%.")                                                             \
   T(ResolverNotAFunction, "Promise resolver % is not a function")              \
   T(RestrictedFunctionProperties,                                              \
     "'caller' and 'arguments' are restricted function properties and cannot "  \
@@ -595,9 +607,13 @@ class ErrorUtils : public AllStatic {
     "In strict mode code, functions can only be declared at top level or "     \
     "inside a block.")                                                         \
   T(StrictOctalLiteral, "Octal literals are not allowed in strict mode.")      \
+  T(StrictDecimalWithLeadingZero,                                              \
+    "Decimals with leading zeros are not allowed in strict mode.")             \
+  T(StrictOctalEscape,                                                         \
+    "Octal escape sequences are not allowed in strict mode.")                  \
   T(StrictWith, "Strict mode code may not include a with statement")           \
   T(TemplateOctalLiteral,                                                      \
-    "Octal literals are not allowed in template strings.")                     \
+    "Octal escape sequences are not allowed in template strings.")             \
   T(ThisFormalParameter, "'this' is not a valid formal parameter name")        \
   T(AwaitBindingIdentifier,                                                    \
     "'await' is not a valid identifier name in an async function")             \
@@ -652,6 +668,10 @@ class ErrorUtils : public AllStatic {
   T(WasmTrapFuncSigMismatch, "function signature mismatch")                    \
   T(WasmTrapInvalidIndex, "invalid index into function table")                 \
   T(WasmTrapTypeError, "invalid type")                                         \
+  /* Asm.js validation related */                                              \
+  T(AsmJsInvalid, "Invalid asm.js: %")                                         \
+  T(AsmJsCompiled, "Converted asm.js to WebAssembly: %")                       \
+  T(AsmJsInstantiated, "Instantiated asm.js: %")                               \
   /* DataCloneError messages */                                                \
   T(DataCloneError, "% could not be cloned.")                                  \
   T(DataCloneErrorNeuteredArrayBuffer,                                         \
@@ -692,11 +712,11 @@ class MessageHandler {
   // Returns a message object for the API to use.
   static Handle<JSMessageObject> MakeMessageObject(
       Isolate* isolate, MessageTemplate::Template type,
-      MessageLocation* location, Handle<Object> argument,
+      const MessageLocation* location, Handle<Object> argument,
       Handle<JSArray> stack_frames);
 
   // Report a formatted message (needs JS allocation).
-  static void ReportMessage(Isolate* isolate, MessageLocation* loc,
+  static void ReportMessage(Isolate* isolate, const MessageLocation* loc,
                             Handle<JSMessageObject> message);
 
   static void DefaultMessageReport(Isolate* isolate, const MessageLocation* loc,
@@ -704,6 +724,12 @@ class MessageHandler {
   static Handle<String> GetMessage(Isolate* isolate, Handle<Object> data);
   static std::unique_ptr<char[]> GetLocalizedMessage(Isolate* isolate,
                                                      Handle<Object> data);
+
+ private:
+  static void ReportMessageNoExceptions(Isolate* isolate,
+                                        const MessageLocation* loc,
+                                        Handle<Object> message_obj,
+                                        v8::Local<v8::Value> api_exception_obj);
 };
 
 

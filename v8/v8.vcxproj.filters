@@ -178,6 +178,9 @@
     <Filter Include="Source Files\libsampler">
       <UniqueIdentifier>{f2a6d3b6-5280-3743-7fe3-95515bcbd0f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\objects">
+      <UniqueIdentifier>{bec766df-88ec-936a-74dd-0002d6c7e769}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\parsing">
       <UniqueIdentifier>{9ed8203f-a302-00ef-2289-9b0854c4f2cd}</UniqueIdentifier>
     </Filter>
@@ -329,6 +332,9 @@
     </ClInclude>
     <ClInclude Include="src\asmjs\switch-logic.h">
       <Filter>Source Files\asmjs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\assembler-inl.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\assembler.h">
       <Filter>Source Files</Filter>
@@ -525,6 +531,9 @@
     <ClInclude Include="src\bootstrapper.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-promise.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-utils.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -580,6 +589,9 @@
       <Filter>Source Files\compiler-dispatcher</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher-tracer.h">
+      <Filter>Source Files\compiler-dispatcher</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler-dispatcher\compiler-dispatcher.h">
       <Filter>Source Files\compiler-dispatcher</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler-dispatcher\optimizing-compile-dispatcher.h">
@@ -1110,6 +1122,9 @@
     <ClInclude Include="src\debug\debug.h">
       <Filter>Source Files\debug</Filter>
     </ClInclude>
+    <ClInclude Include="src\debug\interface-types.h">
+      <Filter>Source Files\debug</Filter>
+    </ClInclude>
     <ClInclude Include="src\debug\liveedit.h">
       <Filter>Source Files\debug</Filter>
     </ClInclude>
@@ -1236,6 +1251,9 @@
     <ClInclude Include="src\heap\code-stats.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\heap\embedder-tracing.h">
+      <Filter>Source Files\heap</Filter>
+    </ClInclude>
     <ClInclude Include="src\heap\gc-idle-time-handler.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
@@ -1359,6 +1377,9 @@
     <ClInclude Include="src\ic\ic-state.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
+    <ClInclude Include="src\ic\ic-stats.h">
+      <Filter>Source Files\ic</Filter>
+    </ClInclude>
     <ClInclude Include="src\ic\ic.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
@@ -1386,7 +1407,7 @@
     <ClInclude Include="src\interpreter\bytecode-array-iterator.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
-    <ClInclude Include="src\interpreter\bytecode-array-reverse-iterator.h">
+    <ClInclude Include="src\interpreter\bytecode-array-random-iterator.h">
       <Filter>Source Files\interpreter</Filter>
     </ClInclude>
     <ClInclude Include="src\interpreter\bytecode-array-writer.h">
@@ -1544,6 +1565,15 @@
     </ClInclude>
     <ClInclude Include="src\objects.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\object-macros-undef.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\object-macros.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\scope-info.h">
+      <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\ostreams.h">
       <Filter>Source Files</Filter>
@@ -1833,6 +1863,9 @@
     <ClInclude Include="src\string-builder.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\string-case.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\string-search.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1923,10 +1956,10 @@
     <ClInclude Include="src\vm-state.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\ast-decoder.h">
+    <ClInclude Include="src\wasm\decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\decoder.h">
+    <ClInclude Include="src\wasm\function-body-decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\leb-helper.h">
@@ -2282,9 +2315,6 @@
     <ClCompile Include="src\builtins\builtins-interpreter.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
-    <ClCompile Include="src\builtins\builtins-iterator.cc">
-      <Filter>Source Files\builtins</Filter>
-    </ClCompile>
     <ClCompile Include="src\builtins\builtins-json.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2379,6 +2409,9 @@
       <Filter>Source Files\compiler-dispatcher</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher-tracer.cc">
+      <Filter>Source Files\compiler-dispatcher</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler-dispatcher\compiler-dispatcher.cc">
       <Filter>Source Files\compiler-dispatcher</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler-dispatcher\optimizing-compile-dispatcher.cc">
@@ -3035,6 +3068,9 @@
     <ClCompile Include="src\heap\code-stats.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
+    <ClCompile Include="src\heap\embedder-tracing.cc">
+      <Filter>Source Files\heap</Filter>
+    </ClCompile>
     <ClCompile Include="src\heap\gc-idle-time-handler.cc">
       <Filter>Source Files\heap</Filter>
     </ClCompile>
@@ -3131,6 +3167,9 @@
     <ClCompile Include="src\ic\ic-state.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
+    <ClCompile Include="src\ic\ic-stats.cc">
+      <Filter>Source Files\ic</Filter>
+    </ClCompile>
     <ClCompile Include="src\ic\ic.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
@@ -3194,7 +3233,7 @@
     <ClCompile Include="src\interpreter\bytecode-array-iterator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
-    <ClCompile Include="src\interpreter\bytecode-array-reverse-iterator.cc">
+    <ClCompile Include="src\interpreter\bytecode-array-random-iterator.cc">
       <Filter>Source Files\interpreter</Filter>
     </ClCompile>
     <ClCompile Include="src\interpreter\bytecode-array-writer.cc">
@@ -3665,6 +3704,9 @@
     <ClCompile Include="src\string-builder.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\string-case.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\string-stream.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3716,7 +3758,7 @@
     <ClCompile Include="src\version.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\wasm\ast-decoder.cc">
+    <ClCompile Include="src\wasm\function-body-decoder.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\module-decoder.cc">

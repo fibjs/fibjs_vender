@@ -317,8 +317,11 @@ class MemoryChunk {
   static const intptr_t kAlignmentMask = kAlignment - 1;
 
   static const intptr_t kSizeOffset = 0;
-
-  static const intptr_t kFlagsOffset = kSizeOffset + kPointerSize;
+  static const intptr_t kFlagsOffset = kSizeOffset + kSizetSize;
+  static const intptr_t kAreaStartOffset = kFlagsOffset + kIntptrSize;
+  static const intptr_t kAreaEndOffset = kAreaStartOffset + kPointerSize;
+  static const intptr_t kReservationOffset = kAreaEndOffset + kPointerSize;
+  static const intptr_t kOwnerOffset = kReservationOffset + 2 * kPointerSize;
 
   static const size_t kMinHeaderSize =
       kSizeOffset + kSizetSize  // size_t size
@@ -768,6 +771,8 @@ class Page : public MemoryChunk {
   }
 
   size_t ShrinkToHighWaterMark();
+
+  void CreateBlackArea(Address start, Address end);
 
 #ifdef DEBUG
   void Print();

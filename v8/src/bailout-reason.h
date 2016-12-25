@@ -88,6 +88,7 @@ namespace internal {
     "The function_data field should be a BytecodeArray on interpreter entry")  \
   V(kGeneratedCodeIsTooLarge, "Generated code is too large")                   \
   V(kGenerator, "Generator")                                                   \
+  V(kGetIterator, "GetIterator")                                               \
   V(kGlobalFunctionsMustHaveInitialMap,                                        \
     "Global functions must have initial map")                                  \
   V(kGraphBuildingFailed, "Optimized graph construction failed")               \
@@ -264,7 +265,9 @@ namespace internal {
   V(kWrongArgumentCountForInvokeIntrinsic,                                     \
     "Wrong number of arguments for intrinsic")                                 \
   V(kShouldNotDirectlyEnterOsrFunction,                                        \
-    "Should not directly enter OSR-compiled function")
+    "Should not directly enter OSR-compiled function")                         \
+  V(kUnexpectedReturnFromWasmTrap,                                             \
+    "Should not return after throwing a wasm trap")
 
 #define ERROR_MESSAGES_CONSTANTS(C, T) C,
 enum BailoutReason {

@@ -210,20 +210,28 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
     "harmony restrictions on generator declarations")       \
   V(harmony_tailcalls, "harmony tail calls")                \
   V(harmony_trailing_commas,                                \
-    "harmony trailing commas in function parameter lists")  \
-  V(harmony_string_padding, "harmony String-padding methods")
+    "harmony trailing commas in function parameter lists")
 
 #ifdef V8_I18N_SUPPORT
 #define HARMONY_STAGED(V)                                          \
   HARMONY_STAGED_BASE(V)                                           \
-  V(datetime_format_to_parts, "Intl.DateTimeFormat.formatToParts") \
   V(icu_case_mapping, "case mapping with ICU rather than Unibrow")
 #else
 #define HARMONY_STAGED(V) HARMONY_STAGED_BASE(V)
 #endif
 
 // Features that are shipping (turned on by default, but internal flag remains).
-#define HARMONY_SHIPPING(V) V(harmony_async_await, "harmony async-await")
+#define HARMONY_SHIPPING_BASE(V)                \
+  V(harmony_async_await, "harmony async-await") \
+  V(harmony_string_padding, "harmony String-padding methods")
+
+#ifdef V8_I18N_SUPPORT
+#define HARMONY_SHIPPING(V) \
+  HARMONY_SHIPPING_BASE(V)  \
+  V(datetime_format_to_parts, "Intl.DateTimeFormat.formatToParts")
+#else
+#define HARMONY_SHIPPING(V) HARMONY_SHIPPING_BASE(V)
+#endif
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
 // from HARMONY_SHIPPING, all occurrences of the FLAG_ variable are removed,
@@ -419,7 +427,6 @@ DEFINE_BOOL(omit_map_checks_for_leaf_maps, true,
 
 // Flags for TurboFan.
 DEFINE_BOOL(turbo, false, "enable TurboFan compiler")
-DEFINE_IMPLICATION(turbo, turbo_asm_deoptimization)
 DEFINE_BOOL(turbo_sp_frame_access, false,
             "use stack pointer-relative access to frame wherever possible")
 DEFINE_BOOL(turbo_preprocess_ranges, true,
@@ -439,11 +446,15 @@ DEFINE_BOOL(trace_turbo_jt, false, "trace TurboFan's jump threading")
 DEFINE_BOOL(trace_turbo_ceq, false, "trace TurboFan's control equivalence")
 DEFINE_BOOL(trace_turbo_loop, false, "trace TurboFan's loop optimizations")
 DEFINE_BOOL(turbo_asm, true, "enable TurboFan for asm.js code")
-DEFINE_BOOL(turbo_asm_deoptimization, false,
-            "enable deoptimization in TurboFan for asm.js code")
 DEFINE_BOOL(turbo_verify, DEBUG_BOOL, "verify TurboFan graphs at each phase")
 DEFINE_STRING(turbo_verify_machine_graph, nullptr,
               "verify TurboFan machine graph before instruction selection")
+DEFINE_BOOL(csa_verify, DEBUG_BOOL,
+            "verify TurboFan machine graph of code stubs")
+DEFINE_BOOL(trace_csa_verify, false, "trace code stubs verification")
+DEFINE_STRING(csa_trap_on_node, nullptr,
+              "trigger break point when a node with given id is created in "
+              "given stub. The format is: StubName,NodeId")
 DEFINE_BOOL(turbo_stats, false, "print TurboFan statistics")
 DEFINE_BOOL(turbo_stats_nvp, false,
             "print TurboFan statistics in machine-readable format")
@@ -461,13 +472,12 @@ DEFINE_BOOL(turbo_verify_allocation, DEBUG_BOOL,
             "verify register allocation in TurboFan")
 DEFINE_BOOL(turbo_move_optimization, true, "optimize gap moves in TurboFan")
 DEFINE_BOOL(turbo_jt, true, "enable jump threading in TurboFan")
-DEFINE_BOOL(turbo_stress_loop_peeling, false,
-            "stress loop peeling optimization")
 DEFINE_BOOL(turbo_loop_peeling, true, "Turbofan loop peeling")
 DEFINE_BOOL(turbo_loop_variable, true, "Turbofan loop variable optimization")
 DEFINE_BOOL(turbo_cf_optimization, true, "optimize control flow in TurboFan")
 DEFINE_BOOL(turbo_frame_elision, true, "elide frames in TurboFan")
-DEFINE_BOOL(turbo_escape, true, "enable escape analysis")
+DEFINE_BOOL(turbo_escape, false, "enable escape analysis")
+DEFINE_IMPLICATION(turbo, turbo_escape)
 DEFINE_BOOL(turbo_instruction_scheduling, false,
             "enable instruction scheduling in TurboFan")
 DEFINE_BOOL(turbo_stress_instruction_scheduling, false,
@@ -506,6 +516,8 @@ DEFINE_BOOL(wasm_loop_assignment_analysis, true,
             "perform loop assignment analysis for WASM")
 
 DEFINE_BOOL(validate_asm, false, "validate asm.js modules before compiling")
+DEFINE_IMPLICATION(ignition_staging, validate_asm)
+DEFINE_BOOL(trace_asm_time, false, "log asm.js timing info to the console")
 
 DEFINE_BOOL(dump_wasm_module, false, "dump WASM module bytes")
 DEFINE_STRING(dump_wasm_module_path, NULL, "directory to dump wasm modules to")
@@ -535,6 +547,8 @@ DEFINE_BOOL(wasm_guard_pages, false,
             "add guard pages to the end of WebWassembly memory"
             " (experimental, no effect on 32-bit)")
 DEFINE_IMPLICATION(wasm_trap_handler, wasm_guard_pages)
+DEFINE_BOOL(wasm_trap_if, false,
+            "enable the use of the trap_if operator for traps")
 DEFINE_BOOL(wasm_code_fuzzer_gen_test, false,
             "Generate a test case when running the wasm-code fuzzer")
 // Profiler flags.
@@ -594,7 +608,6 @@ DEFINE_BOOL(script_streaming, true, "enable parsing on background")
 
 // bootstrapper.cc
 DEFINE_STRING(expose_natives_as, NULL, "expose natives in global object")
-DEFINE_STRING(expose_debug_as, NULL, "expose debug in global object")
 DEFINE_BOOL(expose_free_buffer, false, "expose freeBuffer extension")
 DEFINE_BOOL(expose_gc, false, "expose gc extension")
 DEFINE_STRING(expose_gc_as, NULL,
@@ -748,7 +761,7 @@ DEFINE_INT(max_incremental_marking_finalization_rounds, 3,
            "at most try this many times to finalize incremental marking")
 DEFINE_BOOL(minor_mc, false, "perform young generation mark compact GCs")
 DEFINE_NEG_IMPLICATION(minor_mc, incremental_marking)
-DEFINE_BOOL(black_allocation, false, "use black allocation")
+DEFINE_BOOL(black_allocation, true, "use black allocation")
 DEFINE_BOOL(concurrent_sweeping, true, "use concurrent sweeping")
 DEFINE_BOOL(parallel_compaction, true, "use parallel compaction")
 DEFINE_BOOL(parallel_pointer_update, true,
@@ -808,8 +821,8 @@ DEFINE_BOOL(use_idle_notification, true,
 // ic.cc
 DEFINE_BOOL(use_ic, true, "use inline caching")
 DEFINE_BOOL(trace_ic, false, "trace inline cache state transitions")
-DEFINE_BOOL_READONLY(tf_load_ic_stub, true, "use TF LoadIC stub")
-DEFINE_BOOL(tf_store_ic_stub, true, "use TF StoreIC stub")
+DEFINE_INT(ic_stats, 0, "inline cache state transitions statistics")
+DEFINE_VALUE_IMPLICATION(trace_ic, ic_stats, 1)
 
 // macro-assembler-ia32.cc
 DEFINE_BOOL(native_code_counters, false,
@@ -846,7 +859,10 @@ DEFINE_BOOL(trace_maps, false, "trace map creation")
 DEFINE_BOOL(allow_natives_syntax, false, "allow natives syntax")
 DEFINE_BOOL(trace_parse, false, "trace parsing and preparsing")
 DEFINE_BOOL(trace_preparse, false, "trace preparsing decisions")
-DEFINE_BOOL(lazy_inner_functions, false, "enable lazy parsing inner functions")
+DEFINE_BOOL(lazy_inner_functions, true, "enable lazy parsing inner functions")
+DEFINE_BOOL(aggressive_lazy_inner_functions, false,
+            "even lazier inner function parsing")
+DEFINE_IMPLICATION(aggressive_lazy_inner_functions, lazy_inner_functions)
 
 // simulator-arm.cc, simulator-arm64.cc and simulator-mips.cc
 DEFINE_BOOL(trace_sim, false, "Trace simulator execution")
@@ -950,6 +966,8 @@ DEFINE_BOOL(disable_old_api_accessors, false,
 
 DEFINE_BOOL(help, false, "Print usage message, including flags, on console")
 DEFINE_BOOL(dump_counters, false, "Dump counters on exit")
+DEFINE_BOOL(dump_counters_nvp, false,
+            "Dump counters as name-value pairs on exit")
 
 DEFINE_STRING(map_counters, "", "Map counters to a file")
 DEFINE_ARGS(js_arguments,
@@ -1084,10 +1102,9 @@ DEFINE_IMPLICATION(perf_basic_prof_only_functions, perf_basic_prof)
 DEFINE_BOOL(perf_prof, false,
             "Enable perf linux profiler (experimental annotate support).")
 DEFINE_NEG_IMPLICATION(perf_prof, compact_code_space)
-DEFINE_BOOL(perf_prof_debug_info, false,
-            "Enable debug info for perf linux profiler (experimental).")
 DEFINE_BOOL(perf_prof_unwinding_info, false,
             "Enable unwinding info for perf linux profiler (experimental).")
+DEFINE_IMPLICATION(perf_prof, perf_prof_unwinding_info)
 DEFINE_STRING(gc_fake_mmap, "/tmp/__v8_gc__",
               "Specify the name of the file for fake gc mmap used in ll_prof")
 DEFINE_BOOL(log_internal_timer_events, false, "Time internal events.")
@@ -1109,6 +1126,10 @@ DEFINE_STRING(redirect_code_traces_to, NULL,
 
 DEFINE_BOOL(hydrogen_track_positions, false,
             "track source code positions when building IR")
+
+DEFINE_BOOL(print_opt_source, false,
+            "print source code of optimized and inlined functions")
+DEFINE_IMPLICATION(hydrogen_track_positions, print_opt_source)
 
 //
 // Disassembler only flags
@@ -1134,6 +1155,9 @@ DEFINE_BOOL(test_secondary_stub_cache, false,
 DEFINE_BOOL(test_primary_stub_cache, false,
             "test primary stub cache by disabling the secondary one")
 
+DEFINE_BOOL(test_small_max_function_context_stub_size, false,
+            "enable testing the function context size overflow path "
+            "by making the maximum size smaller")
 
 // codegen-ia32.cc / codegen-arm.cc
 DEFINE_BOOL(print_code, false, "print generated code")
@@ -1179,6 +1203,7 @@ DEFINE_IMPLICATION(print_all_code, trace_codegen)
 DEFINE_BOOL(predictable, false, "enable predictable mode")
 DEFINE_IMPLICATION(predictable, single_threaded)
 DEFINE_NEG_IMPLICATION(predictable, memory_reducer)
+DEFINE_VALUE_IMPLICATION(single_threaded, wasm_num_compilation_tasks, 0)
 
 //
 // Threading related flags.

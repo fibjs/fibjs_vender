@@ -191,14 +191,15 @@ void FullCodeGenerator::Generate() {
       if (info->scope()->new_target_var() != nullptr) {
         __ Push(rdx);  // Preserve new target.
       }
-      if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
-        FastNewFunctionContextStub stub(isolate());
+      if (slots <= FastNewFunctionContextStub::MaximumSlots()) {
+        FastNewFunctionContextStub stub(isolate(), info->scope()->scope_type());
         __ Set(FastNewFunctionContextDescriptor::SlotsRegister(), slots);
         __ CallStub(&stub);
         // Result of FastNewFunctionContextStub is always in new space.
         need_write_barrier = false;
       } else {
         __ Push(rdi);
+        __ Push(Smi::FromInt(info->scope()->scope_type()));
         __ CallRuntime(Runtime::kNewFunctionContext);
       }
       if (info->scope()->new_target_var() != nullptr) {
@@ -764,8 +765,8 @@ void FullCodeGenerator::VisitFunctionDeclaration(
       FeedbackVectorSlot slot = proxy->VariableFeedbackSlot();
       DCHECK(!slot.IsInvalid());
       globals_->Add(handle(Smi::FromInt(slot.ToInt()), isolate()), zone());
-      Handle<SharedFunctionInfo> function =
-          Compiler::GetSharedFunctionInfo(declaration->fun(), script(), info_);
+      Handle<SharedFunctionInfo> function = Compiler::GetSharedFunctionInfo(
+          declaration->fun(), script(), info_, compilation_mode_);
       // Check for stack-overflow exception.
       if (function.is_null()) return SetStackOverflow();
       globals_->Add(function, zone());
@@ -1289,7 +1290,7 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   Comment cmnt(masm_, "[ ArrayLiteral");
 
-  Handle<FixedArray> constant_elements = expr->constant_elements();
+  Handle<ConstantElementsPair> constant_elements = expr->constant_elements();
   bool has_constant_fast_elements =
       IsFastObjectElementsKind(expr->constant_elements_kind());
 

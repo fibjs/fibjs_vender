@@ -23,6 +23,7 @@ class Isolate;
 class Callable;
 class CompilationInfo;
 class CompilationJob;
+enum class LazyCompilationMode;
 
 namespace compiler {
 class Node;
@@ -44,7 +45,8 @@ class Interpreter {
   static int InterruptBudget();
 
   // Creates a compilation job which will generate bytecode for |info|.
-  static CompilationJob* NewCompilationJob(CompilationInfo* info);
+  static CompilationJob* NewCompilationJob(CompilationInfo* info,
+                                           LazyCompilationMode mode);
 
   // Return bytecode handler for |bytecode|.
   Code* GetBytecodeHandler(Bytecode bytecode, OperandScale operand_scale);
@@ -75,6 +77,14 @@ class Interpreter {
   void Do##Name(InterpreterAssembler* assembler);
   BYTECODE_LIST(DECLARE_BYTECODE_HANDLER_GENERATOR)
 #undef DECLARE_BYTECODE_HANDLER_GENERATOR
+
+  typedef void (Interpreter::*BytecodeGeneratorFunc)(InterpreterAssembler*);
+
+  // Generates handler for given |bytecode| and |operand_scale| using
+  // |generator| and installs it into the dispatch table.
+  void InstallBytecodeHandler(Zone* zone, Bytecode bytecode,
+                              OperandScale operand_scale,
+                              BytecodeGeneratorFunc generator);
 
   // Generates code to perform the binary operation via |Generator|.
   template <class Generator>

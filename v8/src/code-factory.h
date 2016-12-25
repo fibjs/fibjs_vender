@@ -30,6 +30,12 @@ class Callable final BASE_EMBEDDED {
 
 class V8_EXPORT_PRIVATE CodeFactory final {
  public:
+  // CEntryStub has var-args semantics (all the arguments are passed on the
+  // stack and the arguments count is passed via register) which currently
+  // can't be expressed in CallInterfaceDescriptor. Therefore only the code
+  // is exported here.
+  static Handle<Code> RuntimeCEntry(Isolate* isolate, int result_size = 1);
+
   // Initial states for ICs.
   static Callable LoadIC(Isolate* isolate);
   static Callable LoadICInOptimizedCode(Isolate* isolate);
@@ -112,6 +118,8 @@ class V8_EXPORT_PRIVATE CodeFactory final {
 
   static Callable StringAdd(Isolate* isolate, StringAddFlags flags,
                             PretenureFlag pretenure_flag);
+  static Callable StringCharAt(Isolate* isolate);
+  static Callable StringCharCodeAt(Isolate* isolate);
   static Callable StringCompare(Isolate* isolate, Token::Value token);
   static Callable StringEqual(Isolate* isolate);
   static Callable StringNotEqual(Isolate* isolate);
@@ -122,12 +130,14 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable SubString(Isolate* isolate);
 
   static Callable Typeof(Isolate* isolate);
+  static Callable GetSuperConstructor(Isolate* isolate);
 
   static Callable FastCloneRegExp(Isolate* isolate);
   static Callable FastCloneShallowArray(Isolate* isolate);
   static Callable FastCloneShallowObject(Isolate* isolate, int length);
 
-  static Callable FastNewFunctionContext(Isolate* isolate);
+  static Callable FastNewFunctionContext(Isolate* isolate,
+                                         ScopeType scope_type);
   static Callable FastNewClosure(Isolate* isolate);
   static Callable FastNewObject(Isolate* isolate);
   static Callable FastNewRestParameter(Isolate* isolate,
@@ -140,6 +150,9 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable CopyFastSmiOrObjectElements(Isolate* isolate);
   static Callable GrowFastDoubleElements(Isolate* isolate);
   static Callable GrowFastSmiOrObjectElements(Isolate* isolate);
+
+  static Callable NewUnmappedArgumentsElements(Isolate* isolate);
+  static Callable NewRestParameterElements(Isolate* isolate);
 
   static Callable AllocateHeapNumber(Isolate* isolate);
 #define SIMD128_ALLOC(TYPE, Type, type, lane_count, lane_type) \
@@ -169,6 +182,7 @@ class V8_EXPORT_PRIVATE CodeFactory final {
 
   static Callable ArrayPush(Isolate* isolate);
   static Callable FunctionPrototypeBind(Isolate* isolate);
+  static Callable PromiseHandleReject(Isolate* isolate);
 };
 
 }  // namespace internal

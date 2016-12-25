@@ -161,7 +161,10 @@ void AstNumberingVisitor::VisitVariableProxyReference(VariableProxy* node) {
     default:
       break;
   }
-  if (IsLexicalVariableMode(node->var()->mode())) {
+  if (node->var()->binding_needs_init()) {
+    // Disable FCG+CS for all variable bindings that need explicit
+    // initialization, i.e. ES2015 style const and let, but not
+    // named function expressions.
     DisableFullCodegenAndCrankshaft(kReferenceToLetOrConstVariable);
   }
   node->set_base_id(ReserveIdRange(VariableProxy::num_ids()));
@@ -411,6 +414,13 @@ void AstNumberingVisitor::VisitEmptyParentheses(EmptyParentheses* node) {
   UNREACHABLE();
 }
 
+void AstNumberingVisitor::VisitGetIterator(GetIterator* node) {
+  IncrementNodeCount();
+  DisableFullCodegenAndCrankshaft(kGetIterator);
+  node->set_base_id(ReserveIdRange(GetIterator::num_ids()));
+  Visit(node->iterable());
+  ReserveFeedbackSlots(node);
+}
 
 void AstNumberingVisitor::VisitForInStatement(ForInStatement* node) {
   IncrementNodeCount();

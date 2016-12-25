@@ -8,10 +8,13 @@
 #include "src/arguments.h"
 #include "src/base/logging.h"
 #include "src/builtins/builtins.h"
-#include "src/code-stub-assembler.h"
 
 namespace v8 {
 namespace internal {
+
+namespace compiler {
+class CodeAssemblerState;
+}
 
 // Arguments object passed to C++ builtins.
 class BuiltinArguments : public Arguments {
@@ -27,7 +30,7 @@ class BuiltinArguments : public Arguments {
     return Arguments::operator[](index);
   }
 
-  template <class S>
+  template <class S = Object>
   Handle<S> at(int index) {
     DCHECK_LT(index, length());
     return Arguments::at<S>(index);

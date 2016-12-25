@@ -39,7 +39,8 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kPPC_RotLeftAndClear64:
     case kPPC_RotLeftAndClearLeft64:
     case kPPC_RotLeftAndClearRight64:
-    case kPPC_Add:
+    case kPPC_Add32:
+    case kPPC_Add64:
     case kPPC_AddWithOverflow32:
     case kPPC_AddPair:
     case kPPC_AddDouble:

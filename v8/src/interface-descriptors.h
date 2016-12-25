@@ -21,6 +21,7 @@ class PlatformInterfaceDescriptor;
   V(ContextOnly)                          \
   V(Load)                                 \
   V(LoadWithVector)                       \
+  V(LoadField)                            \
   V(LoadICProtoArray)                     \
   V(LoadGlobal)                           \
   V(LoadGlobalWithVector)                 \
@@ -73,6 +74,8 @@ class PlatformInterfaceDescriptor;
   V(BinaryOpWithVector)                   \
   V(CountOp)                              \
   V(StringAdd)                            \
+  V(StringCharAt)                         \
+  V(StringCharCodeAt)                     \
   V(StringCompare)                        \
   V(SubString)                            \
   V(Keyed)                                \
@@ -87,12 +90,14 @@ class PlatformInterfaceDescriptor;
   V(MathPowTagged)                        \
   V(MathPowInteger)                       \
   V(GrowArrayElements)                    \
+  V(NewArgumentsElements)                 \
   V(InterpreterDispatch)                  \
   V(InterpreterPushArgsAndCall)           \
   V(InterpreterPushArgsAndConstruct)      \
   V(InterpreterPushArgsAndConstructArray) \
   V(InterpreterCEntry)                    \
-  V(ResumeGenerator)
+  V(ResumeGenerator)                      \
+  V(PromiseHandleReject)
 
 class V8_EXPORT_PRIVATE CallInterfaceDescriptorData {
  public:
@@ -304,6 +309,18 @@ class LoadDescriptor : public CallInterfaceDescriptor {
   static const Register SlotRegister();
 };
 
+// LoadFieldDescriptor is used by the shared handler that loads a field from an
+// object based on the smi-encoded field description.
+class LoadFieldDescriptor : public CallInterfaceDescriptor {
+ public:
+  DEFINE_PARAMETERS(kReceiver, kSmiHandler)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(LoadFieldDescriptor,
+                                               CallInterfaceDescriptor)
+
+  static const Register ReceiverRegister();
+  static const Register SmiHandlerRegister();
+};
+
 class LoadGlobalDescriptor : public CallInterfaceDescriptor {
  public:
   DEFINE_PARAMETERS(kName, kSlot)
@@ -415,6 +432,7 @@ class LoadGlobalWithVectorDescriptor : public LoadGlobalDescriptor {
 
 class FastNewClosureDescriptor : public CallInterfaceDescriptor {
  public:
+  DEFINE_PARAMETERS(kSharedFunctionInfo)
   DECLARE_DESCRIPTOR(FastNewClosureDescriptor, CallInterfaceDescriptor)
 };
 
@@ -613,6 +631,7 @@ SIMD128_TYPES(SIMD128_ALLOC_DESC)
 
 class BuiltinDescriptor : public CallInterfaceDescriptor {
  public:
+  // TODO(ishell): Where is kFunction??
   DEFINE_PARAMETERS(kNewTarget, kArgumentsCount)
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(BuiltinDescriptor,
                                                CallInterfaceDescriptor)
@@ -685,6 +704,19 @@ class StringAddDescriptor : public CallInterfaceDescriptor {
   DECLARE_DESCRIPTOR(StringAddDescriptor, CallInterfaceDescriptor)
 };
 
+class StringCharAtDescriptor final : public CallInterfaceDescriptor {
+ public:
+  DEFINE_PARAMETERS(kReceiver, kPosition)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(StringCharAtDescriptor,
+                                               CallInterfaceDescriptor)
+};
+
+class StringCharCodeAtDescriptor final : public CallInterfaceDescriptor {
+ public:
+  DEFINE_PARAMETERS(kReceiver, kPosition)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(StringCharCodeAtDescriptor,
+                                               CallInterfaceDescriptor)
+};
 
 class StringCompareDescriptor : public CallInterfaceDescriptor {
  public:
@@ -779,6 +811,13 @@ class GrowArrayElementsDescriptor : public CallInterfaceDescriptor {
   static const Register KeyRegister();
 };
 
+class NewArgumentsElementsDescriptor final : public CallInterfaceDescriptor {
+ public:
+  DEFINE_PARAMETERS(kFormalParameterCount)
+  DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(NewArgumentsElementsDescriptor,
+                                               CallInterfaceDescriptor)
+};
+
 class V8_EXPORT_PRIVATE InterpreterDispatchDescriptor
     : public CallInterfaceDescriptor {
  public:
@@ -824,6 +863,13 @@ class InterpreterCEntryDescriptor : public CallInterfaceDescriptor {
 class ResumeGeneratorDescriptor final : public CallInterfaceDescriptor {
  public:
   DECLARE_DESCRIPTOR(ResumeGeneratorDescriptor, CallInterfaceDescriptor)
+};
+
+class PromiseHandleRejectDescriptor final : public CallInterfaceDescriptor {
+ public:
+  DEFINE_PARAMETERS(kPromise, kOnReject, kException)
+  DECLARE_DEFAULT_DESCRIPTOR(PromiseHandleRejectDescriptor,
+                             CallInterfaceDescriptor, kParameterCount)
 };
 
 #undef DECLARE_DESCRIPTOR_WITH_BASE

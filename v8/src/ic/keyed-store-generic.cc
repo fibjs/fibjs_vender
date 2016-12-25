@@ -118,7 +118,7 @@ void KeyedStoreGenericAssembler::TryRewriteElements(
     TrapAllocationMemento(receiver, bailout);
   }
   Label perform_transition(this), check_holey_map(this);
-  Variable var_target_map(this, MachineType::PointerRepresentation());
+  Variable var_target_map(this, MachineRepresentation::kTagged);
   // Check if the receiver has the default |from_kind| map.
   {
     Node* packed_map =
@@ -656,8 +656,7 @@ void KeyedStoreGenericAssembler::EmitGenericPropertyStore(
       Bind(&overwrite);
       {
         StoreFixedArrayElement(properties, var_name_index.value(), p->value,
-                               UPDATE_WRITE_BARRIER, kNameToValueOffset,
-                               INTPTR_PARAMETERS);
+                               UPDATE_WRITE_BARRIER, kNameToValueOffset);
         Return(p->value);
       }
     }

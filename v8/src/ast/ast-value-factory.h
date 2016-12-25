@@ -291,7 +291,6 @@ class AstValue : public ZoneObject {
   F(default, "default")                         \
   F(done, "done")                               \
   F(dot, ".")                                   \
-  F(dot_class_field_init, ".class-field-init")  \
   F(dot_for, ".for")                            \
   F(dot_generator_object, ".generator_object")  \
   F(dot_iterator, ".iterator")                  \
@@ -304,6 +303,7 @@ class AstValue : public ZoneObject {
   F(get_space, "get ")                          \
   F(length, "length")                           \
   F(let, "let")                                 \
+  F(name, "name")                               \
   F(native, "native")                           \
   F(new_target, ".new.target")                  \
   F(next, "next")                               \
@@ -332,7 +332,6 @@ class AstValueFactory {
   AstValueFactory(Zone* zone, uint32_t hash_seed)
       : string_table_(AstRawStringCompare),
         values_(nullptr),
-        smis_(),
         strings_(nullptr),
         strings_end_(&strings_),
         zone_(zone),
@@ -344,6 +343,9 @@ class AstValueFactory {
     OTHER_CONSTANTS(F)
 #undef F
     std::fill(smis_, smis_ + arraysize(smis_), nullptr);
+    std::fill(one_character_strings_,
+              one_character_strings_ + arraysize(one_character_strings_),
+              nullptr);
   }
 
   Zone* zone() const { return zone_; }
@@ -361,8 +363,6 @@ class AstValueFactory {
   const AstRawString* GetString(Handle<String> literal);
   const AstConsString* NewConsString(const AstString* left,
                                      const AstString* right);
-  const AstRawString* ConcatStrings(const AstRawString* left,
-                                    const AstRawString* right);
 
   void Internalize(Isolate* isolate);
 
@@ -423,11 +423,16 @@ class AstValueFactory {
   // they can be internalized later).
   AstValue* values_;
 
-  AstValue* smis_[kMaxCachedSmi + 1];
   // We need to keep track of strings_ in order since cons strings require their
   // members to be internalized first.
   AstString* strings_;
   AstString** strings_end_;
+
+  // Caches for faster access: small numbers, one character lowercase strings
+  // (for minified code).
+  AstValue* smis_[kMaxCachedSmi + 1];
+  AstRawString* one_character_strings_[26];
+
   Zone* zone_;
 
   uint32_t hash_seed_;

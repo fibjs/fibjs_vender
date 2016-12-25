@@ -71,8 +71,6 @@
   V(flags_string, "flags")                                         \
   V(float32x4_string, "float32x4")                                 \
   V(Float32x4_string, "Float32x4")                                 \
-  V(for_api_string, "for_api")                                     \
-  V(for_string, "for")                                             \
   V(function_string, "function")                                   \
   V(Function_string, "Function")                                   \
   V(Generator_string, "Generator")                                 \
@@ -125,9 +123,9 @@
   V(ownKeys_string, "ownKeys")                                     \
   V(position_string, "position")                                   \
   V(preventExtensions_string, "preventExtensions")                 \
-  V(private_api_string, "private_api")                             \
   V(Promise_string, "Promise")                                     \
   V(PromiseResolveThenableJob_string, "PromiseResolveThenableJob") \
+  V(promise_string, "promise")                                     \
   V(proto_string, "__proto__")                                     \
   V(prototype_string, "prototype")                                 \
   V(Proxy_string, "Proxy")                                         \
@@ -135,6 +133,8 @@
   V(RangeError_string, "RangeError")                               \
   V(ReferenceError_string, "ReferenceError")                       \
   V(RegExp_string, "RegExp")                                       \
+  V(reject_string, "reject")                                       \
+  V(resolve_string, "resolve")                                     \
   V(script_string, "script")                                       \
   V(second_string, "second")                                       \
   V(setPrototypeOf_string, "setPrototypeOf")                       \
@@ -152,7 +152,9 @@
   V(String_string, "String")                                       \
   V(symbol_string, "symbol")                                       \
   V(Symbol_string, "Symbol")                                       \
+  V(symbol_species_string, "[Symbol.species]")                     \
   V(SyntaxError_string, "SyntaxError")                             \
+  V(then_string, "then")                                           \
   V(this_string, "this")                                           \
   V(throw_string, "throw")                                         \
   V(timed_out, "timed-out")                                        \
@@ -163,6 +165,7 @@
   V(TypeError_string, "TypeError")                                 \
   V(type_string, "type")                                           \
   V(CompileError_string, "CompileError")                           \
+  V(LinkError_string, "LinkError")                                 \
   V(RuntimeError_string, "RuntimeError")                           \
   V(uint16x8_string, "uint16x8")                                   \
   V(Uint16x8_string, "Uint16x8")                                   \
@@ -213,16 +216,8 @@
   V(premonomorphic_symbol)             \
   V(promise_async_stack_id_symbol)     \
   V(promise_debug_marker_symbol)       \
-  V(promise_deferred_reaction_symbol)  \
   V(promise_forwarding_handler_symbol) \
-  V(promise_fulfill_reactions_symbol)  \
   V(promise_handled_by_symbol)         \
-  V(promise_handled_hint_symbol)       \
-  V(promise_has_handler_symbol)        \
-  V(promise_raw_symbol)                \
-  V(promise_reject_reactions_symbol)   \
-  V(promise_result_symbol)             \
-  V(promise_state_symbol)              \
   V(sealed_symbol)                     \
   V(stack_trace_symbol)                \
   V(strict_function_transition_symbol) \
@@ -230,6 +225,7 @@
 
 #define PUBLIC_SYMBOL_LIST(V)                \
   V(iterator_symbol, Symbol.iterator)        \
+  V(intl_fallback_symbol, IntlFallback)      \
   V(match_symbol, Symbol.match)              \
   V(replace_symbol, Symbol.replace)          \
   V(search_symbol, Symbol.search)            \

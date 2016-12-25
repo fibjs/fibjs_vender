@@ -283,7 +283,7 @@ class MessageImpl : public v8::Debug::Message {
 };
 
 // Details of the debug event delivered to the debug event listener.
-class EventDetailsImpl : public v8::DebugInterface::EventDetails {
+class EventDetailsImpl : public debug::EventDetails {
  public:
   EventDetailsImpl(DebugEvent event,
                    Handle<JSObject> exec_state,
@@ -753,12 +753,12 @@ class DebugScope BASE_EMBEDDED {
 // Stack allocated class for disabling break.
 class DisableBreak BASE_EMBEDDED {
  public:
-  explicit DisableBreak(Debug* debug, bool disable_break)
+  explicit DisableBreak(Debug* debug)
       : debug_(debug),
         previous_break_disabled_(debug->break_disabled_),
         previous_in_debug_event_listener_(debug->in_debug_event_listener_) {
-    debug_->break_disabled_ = disable_break;
-    debug_->in_debug_event_listener_ = disable_break;
+    debug_->break_disabled_ = true;
+    debug_->in_debug_event_listener_ = true;
   }
   ~DisableBreak() {
     debug_->break_disabled_ = previous_break_disabled_;

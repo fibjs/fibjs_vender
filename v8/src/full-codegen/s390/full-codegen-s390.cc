@@ -214,8 +214,8 @@ void FullCodeGenerator::Generate() {
       if (info->scope()->new_target_var() != nullptr) {
         __ push(r5);  // Preserve new target.
       }
-      if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
-        FastNewFunctionContextStub stub(isolate());
+      if (slots <= FastNewFunctionContextStub::MaximumSlots()) {
+        FastNewFunctionContextStub stub(isolate(), info->scope()->scope_type());
         __ mov(FastNewFunctionContextDescriptor::SlotsRegister(),
                Operand(slots));
         __ CallStub(&stub);
@@ -223,6 +223,7 @@ void FullCodeGenerator::Generate() {
         need_write_barrier = false;
       } else {
         __ push(r3);
+        __ Push(Smi::FromInt(info->scope()->scope_type()));
         __ CallRuntime(Runtime::kNewFunctionContext);
       }
       if (info->scope()->new_target_var() != nullptr) {
@@ -742,8 +743,8 @@ void FullCodeGenerator::VisitFunctionDeclaration(
       FeedbackVectorSlot slot = proxy->VariableFeedbackSlot();
       DCHECK(!slot.IsInvalid());
       globals_->Add(handle(Smi::FromInt(slot.ToInt()), isolate()), zone());
-      Handle<SharedFunctionInfo> function =
-          Compiler::GetSharedFunctionInfo(declaration->fun(), script(), info_);
+      Handle<SharedFunctionInfo> function = Compiler::GetSharedFunctionInfo(
+          declaration->fun(), script(), info_, compilation_mode_);
       // Check for stack-overflow exception.
       if (function.is_null()) return SetStackOverflow();
       globals_->Add(function, zone());
@@ -1268,11 +1269,9 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
   Comment cmnt(masm_, "[ ArrayLiteral");
 
-  Handle<FixedArray> constant_elements = expr->constant_elements();
+  Handle<ConstantElementsPair> constant_elements = expr->constant_elements();
   bool has_fast_elements =
       IsFastObjectElementsKind(expr->constant_elements_kind());
-  Handle<FixedArrayBase> constant_elements_values(
-      FixedArrayBase::cast(constant_elements->get(1)));
 
   AllocationSiteMode allocation_site_mode = TRACK_ALLOCATION_SITE;
   if (has_fast_elements && !FLAG_allocation_site_pretenuring) {
@@ -2730,11 +2729,11 @@ void FullCodeGenerator::PushFunctionArgumentForContextAllocation() {
 #if V8_TARGET_ARCH_S390X
 static const FourByteInstr kInterruptBranchInstruction = 0xA7A40011;
 static const FourByteInstr kOSRBranchInstruction = 0xA7040011;
-static const int16_t kBackEdgeBranchOffset = 0x11 * 2;
+static const int16_t kBackEdgeBranchOffsetInHalfWords = 0x11;
 #else
 static const FourByteInstr kInterruptBranchInstruction = 0xA7A4000D;
 static const FourByteInstr kOSRBranchInstruction = 0xA704000D;
-static const int16_t kBackEdgeBranchOffset = 0xD * 2;
+static const int16_t kBackEdgeBranchOffsetInHalfWords = 0xD;
 #endif
 
 void BackEdgeTable::PatchAt(Code* unoptimized_code, Address pc,
@@ -2752,7 +2751,7 @@ void BackEdgeTable::PatchAt(Code* unoptimized_code, Address pc,
       //         brasrl    r14, <interrupt stub address>
       //  <reset profiling counter>
       //  ok-label
-      patcher.masm()->brc(ge, Operand(kBackEdgeBranchOffset));
+      patcher.masm()->brc(ge, Operand(kBackEdgeBranchOffsetInHalfWords));
       break;
     }
     case ON_STACK_REPLACEMENT:
@@ -2761,7 +2760,7 @@ void BackEdgeTable::PatchAt(Code* unoptimized_code, Address pc,
       //         brasrl    r14, <interrupt stub address>
       //  <reset profiling counter>
       //  ok-label ----- pc_after points here
-      patcher.masm()->brc(CC_NOP, Operand(kBackEdgeBranchOffset));
+      patcher.masm()->brc(CC_NOP, Operand(kBackEdgeBranchOffsetInHalfWords));
       break;
   }
 

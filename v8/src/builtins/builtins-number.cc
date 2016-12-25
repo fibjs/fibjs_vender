@@ -336,7 +336,7 @@ TF_BUILTIN(NumberParseInt, CodeStubAssembler) {
 // ES6 section 20.1.3.2 Number.prototype.toExponential ( fractionDigits )
 BUILTIN(NumberPrototypeToExponential) {
   HandleScope scope(isolate);
-  Handle<Object> value = args.at<Object>(0);
+  Handle<Object> value = args.at(0);
   Handle<Object> fraction_digits = args.atOrUndefined(isolate, 1);
 
   // Unwrap the receiver {value}.
@@ -379,7 +379,7 @@ BUILTIN(NumberPrototypeToExponential) {
 // ES6 section 20.1.3.3 Number.prototype.toFixed ( fractionDigits )
 BUILTIN(NumberPrototypeToFixed) {
   HandleScope scope(isolate);
-  Handle<Object> value = args.at<Object>(0);
+  Handle<Object> value = args.at(0);
   Handle<Object> fraction_digits = args.atOrUndefined(isolate, 1);
 
   // Unwrap the receiver {value}.
@@ -422,7 +422,7 @@ BUILTIN(NumberPrototypeToFixed) {
 // ES6 section 20.1.3.4 Number.prototype.toLocaleString ( [ r1 [ , r2 ] ] )
 BUILTIN(NumberPrototypeToLocaleString) {
   HandleScope scope(isolate);
-  Handle<Object> value = args.at<Object>(0);
+  Handle<Object> value = args.at(0);
 
   // Unwrap the receiver {value}.
   if (value->IsJSValue()) {
@@ -442,7 +442,7 @@ BUILTIN(NumberPrototypeToLocaleString) {
 // ES6 section 20.1.3.5 Number.prototype.toPrecision ( precision )
 BUILTIN(NumberPrototypeToPrecision) {
   HandleScope scope(isolate);
-  Handle<Object> value = args.at<Object>(0);
+  Handle<Object> value = args.at(0);
   Handle<Object> precision = args.atOrUndefined(isolate, 1);
 
   // Unwrap the receiver {value}.
@@ -486,7 +486,7 @@ BUILTIN(NumberPrototypeToPrecision) {
 // ES6 section 20.1.3.6 Number.prototype.toString ( [ radix ] )
 BUILTIN(NumberPrototypeToString) {
   HandleScope scope(isolate);
-  Handle<Object> value = args.at<Object>(0);
+  Handle<Object> value = args.at(0);
   Handle<Object> radix = args.atOrUndefined(isolate, 1);
 
   // Unwrap the receiver {value}.
@@ -1228,23 +1228,23 @@ TF_BUILTIN(Divide, CodeStubAssembler) {
         Label bailout(this);
 
         // Do floating point division if {divisor} is zero.
-        GotoIf(WordEqual(divisor, IntPtrConstant(0)), &bailout);
+        GotoIf(SmiEqual(divisor, SmiConstant(0)), &bailout);
 
         // Do floating point division {dividend} is zero and {divisor} is
         // negative.
         Label dividend_is_zero(this), dividend_is_not_zero(this);
-        Branch(WordEqual(dividend, IntPtrConstant(0)), &dividend_is_zero,
+        Branch(SmiEqual(dividend, SmiConstant(0)), &dividend_is_zero,
                &dividend_is_not_zero);
 
         Bind(&dividend_is_zero);
         {
-          GotoIf(IntPtrLessThan(divisor, IntPtrConstant(0)), &bailout);
+          GotoIf(SmiLessThan(divisor, SmiConstant(0)), &bailout);
           Goto(&dividend_is_not_zero);
         }
         Bind(&dividend_is_not_zero);
 
-        Node* untagged_divisor = SmiUntag(divisor);
-        Node* untagged_dividend = SmiUntag(dividend);
+        Node* untagged_divisor = SmiToWord32(divisor);
+        Node* untagged_dividend = SmiToWord32(dividend);
 
         // Do floating point division if {dividend} is kMinInt (or kMinInt - 1
         // if the Smi size is 31) and {divisor} is -1.
@@ -1269,7 +1269,7 @@ TF_BUILTIN(Divide, CodeStubAssembler) {
         Node* truncated = Int32Mul(untagged_result, untagged_divisor);
         // Do floating point division if the remainder is not 0.
         GotoIf(Word32NotEqual(untagged_dividend, truncated), &bailout);
-        var_result.Bind(SmiTag(untagged_result));
+        var_result.Bind(SmiFromWord32(untagged_result));
         Goto(&end);
 
         // Bailout: convert {dividend} and {divisor} to double and do double

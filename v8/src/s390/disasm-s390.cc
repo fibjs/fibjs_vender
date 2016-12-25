@@ -566,6 +566,9 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
     case BKPT:
       Format(instr, "bkpt");
       break;
+    case LPR:
+      Format(instr, "lpr\t'r1, 'r2");
+      break;
     default:
       return false;
   }
@@ -1040,6 +1043,12 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
       Format(instr, "trap4");
       break;
     }
+    case LPGR:
+      Format(instr, "lpgr\t'r1, 'r2");
+      break;
+    case LPGFR:
+      Format(instr, "lpgfr\t'r1,'r2");
+      break;
     default:
       return false;
   }
@@ -1059,6 +1068,12 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case DUMY:
       Format(instr, "dumy\t'r1, 'd2 ( 'r2d, 'r3 )");
       break;
+#define DECODE_VRR_C_INSTRUCTIONS(name, opcode_name, opcode_value) \
+  case opcode_name:                                                \
+    Format(instr, #name "\t'f1,'f2,'f3");                          \
+    break;
+      S390_VRR_C_OPCODE_LIST(DECODE_VRR_C_INSTRUCTIONS)
+#undef DECODE_VRR_C_INSTRUCTIONS
     case LLILF:
       Format(instr, "llilf\t'r1,'i7");
       break;
@@ -1067,6 +1082,9 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
       break;
     case AFI:
       Format(instr, "afi\t'r1,'i7");
+      break;
+    case AIH:
+      Format(instr, "aih\t'r1,'i7");
       break;
     case ASI:
       Format(instr, "asi\t'd2('r3),'ic");
@@ -1088,6 +1106,12 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
       break;
     case CLFI:
       Format(instr, "clfi\t'r1,'i7");
+      break;
+    case CLIH:
+      Format(instr, "clih\t'r1,'i7");
+      break;
+    case CIH:
+      Format(instr, "cih\t'r1,'i2");
       break;
     case CFI:
       Format(instr, "cfi\t'r1,'i2");
@@ -1394,6 +1418,9 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
       break;
     case SQDB:
       Format(instr, "sqdb\t'r1,'d1('r2d, 'r3)");
+      break;
+    case PFD:
+      Format(instr, "pfd\t'm1,'d2('r2d,'r3)");
       break;
     default:
       return false;

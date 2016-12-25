@@ -181,8 +181,9 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
     } else {
-      if (slots <= FastNewFunctionContextStub::kMaximumSlots) {
-        FastNewFunctionContextStub stub(isolate());
+      if (slots <= FastNewFunctionContextStub::MaximumSlots()) {
+        FastNewFunctionContextStub stub(isolate(),
+                                        info()->scope()->scope_type());
         __ mov(FastNewFunctionContextDescriptor::SlotsRegister(),
                Operand(slots));
         __ CallStub(&stub);
@@ -190,6 +191,7 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
         need_write_barrier = false;
       } else {
         __ push(r3);
+        __ Push(Smi::FromInt(info()->scope()->scope_type()));
         __ CallRuntime(Runtime::kNewFunctionContext);
       }
     }
@@ -1725,35 +1727,12 @@ void LCodeGen::DoSubI(LSubI* instr) {
   }
 }
 
-void LCodeGen::DoRSubI(LRSubI* instr) {
-  LOperand* left = instr->left();
-  LOperand* right = instr->right();
-  LOperand* result = instr->result();
-
-  DCHECK(!instr->hydrogen()->CheckFlag(HValue::kCanOverflow) &&
-         right->IsConstantOperand());
-
-#if V8_TARGET_ARCH_S390X
-  // The overflow detection needs to be tested on the lower 32-bits.
-  // As a result, on 64-bit, we need to force 32-bit arithmetic operations
-  // to set the CC overflow bit properly.  The result is then sign-extended.
-  bool checkOverflow = instr->hydrogen()->CheckFlag(HValue::kCanOverflow);
-#else
-  bool checkOverflow = true;
-#endif
-
-  Operand right_operand = ToOperand(right);
-  __ mov(r0, right_operand);
-
-  if (!checkOverflow) {
-    __ SubP_ExtendSrc(ToRegister(result), r0, ToRegister(left));
-  } else {
-    __ Sub32(ToRegister(result), r0, ToRegister(left));
-  }
-}
-
 void LCodeGen::DoConstantI(LConstantI* instr) {
-  __ mov(ToRegister(instr->result()), Operand(instr->value()));
+  Register dst = ToRegister(instr->result());
+  if (instr->value() == 0)
+    __ XorP(dst, dst);
+  else
+    __ Load(dst, Operand(instr->value()));
 }
 
 void LCodeGen::DoConstantS(LConstantS* instr) {
@@ -1996,20 +1975,38 @@ void LCodeGen::DoArithmeticD(LArithmeticD* instr) {
   DoubleRegister left = ToDoubleRegister(instr->left());
   DoubleRegister right = ToDoubleRegister(instr->right());
   DoubleRegister result = ToDoubleRegister(instr->result());
-  // All operations except MOD are computed in-place.
-  DCHECK(instr->op() == Token::MOD || left.is(result));
   switch (instr->op()) {
     case Token::ADD:
-      __ adbr(result, right);
+      if (CpuFeatures::IsSupported(VECTOR_FACILITY)) {
+        __ vfa(result, left, right);
+      } else {
+        DCHECK(result.is(left));
+        __ adbr(result, right);
+      }
       break;
     case Token::SUB:
-      __ sdbr(result, right);
+      if (CpuFeatures::IsSupported(VECTOR_FACILITY)) {
+        __ vfs(result, left, right);
+      } else {
+        DCHECK(result.is(left));
+        __ sdbr(result, right);
+      }
       break;
     case Token::MUL:
-      __ mdbr(result, right);
+      if (CpuFeatures::IsSupported(VECTOR_FACILITY)) {
+        __ vfm(result, left, right);
+      } else {
+        DCHECK(result.is(left));
+        __ mdbr(result, right);
+      }
       break;
     case Token::DIV:
-      __ ddbr(result, right);
+      if (CpuFeatures::IsSupported(VECTOR_FACILITY)) {
+        __ vfd(result, left, right);
+      } else {
+        DCHECK(result.is(left));
+        __ ddbr(result, right);
+      }
       break;
     case Token::MOD: {
       __ PrepareCallCFunction(0, 2, scratch0());
@@ -3394,31 +3391,17 @@ void LCodeGen::DoDeferredMathAbsTaggedHeapNumber(LMathAbs* instr) {
 void LCodeGen::EmitMathAbs(LMathAbs* instr) {
   Register input = ToRegister(instr->value());
   Register result = ToRegister(instr->result());
-  Label done;
-  __ CmpP(input, Operand::Zero());
-  __ Move(result, input);
-  __ bge(&done, Label::kNear);
-  __ LoadComplementRR(result, result);
+  __ LoadPositiveP(result, input);
   // Deoptimize on overflow.
   DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow, cr0);
-  __ bind(&done);
 }
 
 #if V8_TARGET_ARCH_S390X
 void LCodeGen::EmitInteger32MathAbs(LMathAbs* instr) {
   Register input = ToRegister(instr->value());
   Register result = ToRegister(instr->result());
-  Label done;
-  __ Cmp32(input, Operand::Zero());
-  __ Move(result, input);
-  __ bge(&done, Label::kNear);
-
-  // Deoptimize on overflow.
-  __ Cmp32(input, Operand(0x80000000));
-  DeoptimizeIf(eq, instr, DeoptimizeReason::kOverflow);
-
-  __ LoadComplementRR(result, result);
-  __ bind(&done);
+  __ LoadPositive32(result, input);
+  DeoptimizeIf(overflow, instr, DeoptimizeReason::kOverflow);
 }
 #endif
 
@@ -4879,14 +4862,42 @@ void LCodeGen::DoDoubleToSmi(LDoubleToSmi* instr) {
 
 void LCodeGen::DoCheckSmi(LCheckSmi* instr) {
   LOperand* input = instr->value();
-  __ TestIfSmi(ToRegister(input));
+  if (input->IsRegister()) {
+    __ TestIfSmi(ToRegister(input));
+  } else if (input->IsStackSlot()) {
+    MemOperand value = ToMemOperand(input);
+#if !V8_TARGET_LITTLE_ENDIAN
+#if V8_TARGET_ARCH_S390X
+    __ TestIfSmi(MemOperand(value.rb(), value.offset() + 7));
+#else
+    __ TestIfSmi(MemOperand(value.rb(), value.offset() + 3));
+#endif
+#else
+    __ TestIfSmi(value);
+#endif
+  }
   DeoptimizeIf(ne, instr, DeoptimizeReason::kNotASmi, cr0);
 }
 
 void LCodeGen::DoCheckNonSmi(LCheckNonSmi* instr) {
   if (!instr->hydrogen()->value()->type().IsHeapObject()) {
     LOperand* input = instr->value();
-    __ TestIfSmi(ToRegister(input));
+    if (input->IsRegister()) {
+      __ TestIfSmi(ToRegister(input));
+    } else if (input->IsStackSlot()) {
+      MemOperand value = ToMemOperand(input);
+#if !V8_TARGET_LITTLE_ENDIAN
+#if V8_TARGET_ARCH_S390X
+      __ TestIfSmi(MemOperand(value.rb(), value.offset() + 7));
+#else
+      __ TestIfSmi(MemOperand(value.rb(), value.offset() + 3));
+#endif
+#else
+      __ TestIfSmi(value);
+#endif
+    } else {
+      UNIMPLEMENTED();
+    }
     DeoptimizeIf(eq, instr, DeoptimizeReason::kSmi, cr0);
   }
 }

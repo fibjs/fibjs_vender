@@ -4,6 +4,8 @@
 
 #include <stdlib.h>
 
+#include "src/objects/scope-info.h"
+
 #include "src/ast/context-slot-cache.h"
 #include "src/ast/scopes.h"
 #include "src/ast/variables.h"
@@ -445,6 +447,7 @@ int ScopeInfo::ContextLength() {
                        (scope_type() == BLOCK_SCOPE && CallsSloppyEval() &&
                         is_declaration_scope()) ||
                        (scope_type() == FUNCTION_SCOPE && CallsSloppyEval()) ||
+                       (scope_type() == FUNCTION_SCOPE && IsAsmModule()) ||
                        scope_type() == MODULE_SCOPE;
 
     if (has_context) {

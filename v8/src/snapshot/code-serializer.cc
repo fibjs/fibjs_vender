@@ -104,6 +104,12 @@ void CodeSerializer::SerializeObject(HeapObject* obj, HowToCode how_to_code,
     return SerializeObject(isolate()->heap()->undefined_value(), how_to_code,
                            where_to_point, skip);
   }
+
+  if (obj->IsScript()) {
+    // Wrapper object is a context-dependent JSValue. Reset it here.
+    Script::cast(obj)->set_wrapper(isolate()->heap()->undefined_value());
+  }
+
   // Past this point we should not see any (context-specific) maps anymore.
   CHECK(!obj->IsMap());
   // There should be no references to the global object embedded.
@@ -225,7 +231,7 @@ std::unique_ptr<ScriptData> WasmCompiledModuleSerializer::SerializeWasmModule(
   WasmCompiledModuleSerializer wasm_cs(isolate, 0);
   wasm_cs.reference_map()->AddAttachedReference(*isolate->native_context());
   wasm_cs.reference_map()->AddAttachedReference(
-      *compiled_module->module_bytes());
+      compiled_module->module_bytes());
   ScriptData* data = wasm_cs.Serialize(compiled_module);
   return std::unique_ptr<ScriptData>(data);
 }
@@ -262,10 +268,12 @@ MaybeHandle<FixedArray> WasmCompiledModuleSerializer::DeserializeWasmModule(
 
   MaybeHandle<HeapObject> obj = deserializer.DeserializeObject(isolate);
   if (obj.is_null() || !obj.ToHandleChecked()->IsFixedArray()) return nothing;
-  Handle<WasmCompiledModule> compiled_module =
-      Handle<WasmCompiledModule>::cast(obj.ToHandleChecked());
+  // Cast without type checks, as the module wrapper is not there yet.
+  Handle<WasmCompiledModule> compiled_module(
+      static_cast<WasmCompiledModule*>(*obj.ToHandleChecked()), isolate);
 
   WasmCompiledModule::RecreateModuleWrapper(isolate, compiled_module);
+  DCHECK(WasmCompiledModule::IsWasmCompiledModule(*compiled_module));
   return compiled_module;
 }
 
