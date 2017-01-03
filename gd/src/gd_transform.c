@@ -1,28 +1,12 @@
-/**
- * File: Transformations
- */
-
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
 #include "gd.h"
 
-/**
- * Function: gdImageFlipVertical
- *
- * Flip an image vertically
- *
- * The image is mirrored upside-down.
- *
- * Parameters:
- *   im - The image.
- *
- * See also:
- *   - <gdImageFlipHorizontal>
- *   - <gdImageFlipBoth>
- */
+/*
+	Function: gdImageFlipVertical
+*/
 BGD_DECLARE(void) gdImageFlipVertical(gdImagePtr im)
 {
 	register int x, y;
@@ -51,20 +35,9 @@ BGD_DECLARE(void) gdImageFlipVertical(gdImagePtr im)
 	return;
 }
 
-/**
- * Function: gdImageFlipHorizontal
- *
- * Flip an image horizontally
- *
- * The image is mirrored left-right.
- *
- * Parameters:
- *   im - The image.
- *
- * See also:
- *   - <gdImageFlipVertical>
- *   - <gdImageFlipBoth>
- */
+/*
+	Function: gdImageFlipHorizontal
+*/
 BGD_DECLARE(void) gdImageFlipHorizontal(gdImagePtr im)
 {
 
@@ -101,20 +74,9 @@ BGD_DECLARE(void) gdImageFlipHorizontal(gdImagePtr im)
 	}
 }
 
-/**
- * Function: gdImageFlipBoth
- *
- * Flip an image vertically and horizontally
- *
- * The image is mirrored upside-down and left-right.
- *
- * Parameters:
- *   im - The image.
- *
- * See also:
- *   - <gdImageFlipVertical>
- *   - <gdImageFlipHorizontal>
- */
+/*
+	Function: gdImageFlipBoth
+*/
 BGD_DECLARE(void) gdImageFlipBoth(gdImagePtr im)
 {
 	gdImageFlipVertical(im);

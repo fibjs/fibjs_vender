@@ -1,9 +1,3 @@
-/**
- * File: XBM IO
- *
- * Read and write XBM images.
- */
-
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
@@ -49,17 +43,14 @@
     A pointer to the new image or NULL if an error occurred.
 
   Example:
-    (start code)
 
-    gdImagePtr im;
-    FILE *in;
-    in = fopen("myxbm.xbm", "rb");
-    im = gdImageCreateFromXbm(in);
-    fclose(in);
-    // ... Use the image ...
-    gdImageDestroy(im);
-
-    (end code)
+    > gdImagePtr im;
+    > FILE *in;
+    > in = fopen("myxbm.xbm", "rb");
+    > im = gdImageCreateFromXbm(in);
+    > fclose(in);
+    > // ... Use the image ...
+    > gdImageDestroy(im);
 */
 BGD_DECLARE(gdImagePtr) gdImageCreateFromXbm(FILE * fd)
 {

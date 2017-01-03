@@ -5,14 +5,6 @@
  * http://www.csn.ul.ie/~caolan
  */
 
-
-/**
- * File: XPM Input
- *
- * Read XPM images.
- */
-
-
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
@@ -60,17 +52,14 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromXpm(char *filename)
     A pointer to the new image or NULL if an error occurred.
 
   Example:
-    (start code)
 
-    gdImagePtr im;
-    FILE *in;
-    in = fopen("myxpm.xpm", "rb");
-    im = gdImageCreateFromXpm(in);
-    fclose(in);
-    // ... Use the image ...
-    gdImageDestroy(im);
-
-    (end code)
+    > gdImagePtr im;
+    > FILE *in;
+    > in = fopen("myxpm.xpm", "rb");
+    > im = gdImageCreateFromXpm(in);
+    > fclose(in);
+    > // ... Use the image ...
+    > gdImageDestroy(im);
 
 */
 BGD_DECLARE(gdImagePtr) gdImageCreateFromXpm(char *filename)

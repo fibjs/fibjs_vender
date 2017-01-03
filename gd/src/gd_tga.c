@@ -1,9 +1,3 @@
-/**
- * File: TGA Input
- *
- * Read TGA images.
- */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -207,13 +201,12 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga )
 {
 	int pixel_block_size = (tga->bits / 8);
 	int image_block_size = (tga->width * tga->height) * pixel_block_size;
-	int* decompression_buffer = NULL;
+	uint8_t* decompression_buffer = NULL;
 	unsigned char* conversion_buffer = NULL;
 	int buffer_caret = 0;
 	int bitmap_caret = 0;
 	int i = 0;
 	int encoded_pixels;
-	int rle_size;
 
 	if(overflow2(tga->width, tga->height)) {
 		return -1;
@@ -267,7 +260,7 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga )
 		/*! \brief Read in RLE compressed RGB TGA
 		 *  Chunk load the pixel data from an RLE compressed RGB type TGA.
 		 */
-		decompression_buffer = (int*) gdMalloc(image_block_size * sizeof(int));
+		decompression_buffer = (uint8_t*) gdMalloc(image_block_size * sizeof(uint8_t));
 		if (decompression_buffer == NULL) {
 			return -1;
 		}
@@ -278,8 +271,7 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga )
 			return -1;
 		}
 
-		rle_size = gdGetBuf(conversion_buffer, image_block_size, ctx);
-		if (rle_size <= 0) {
+		if (gdGetBuf(conversion_buffer, image_block_size, ctx) != image_block_size) {
 			gdFree(conversion_buffer);
 			gdFree(decompression_buffer);
 			return -1;
@@ -287,7 +279,7 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga )
 
 		buffer_caret = 0;
 
-		while( buffer_caret < rle_size) {
+		while( buffer_caret < image_block_size) {
 			decompression_buffer[buffer_caret] = (int)conversion_buffer[buffer_caret];
 			buffer_caret++;
 		}
@@ -300,14 +292,14 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga )
 				encoded_pixels = ( ( decompression_buffer[ buffer_caret ] & ~TGA_RLE_FLAG ) + 1 );
 				buffer_caret++;
 
-				if ((bitmap_caret + (encoded_pixels * pixel_block_size)) > image_block_size) {
+				if ((bitmap_caret + (encoded_pixels * pixel_block_size)) >= image_block_size) {
 					gdFree( decompression_buffer );
 					gdFree( conversion_buffer );
 					return -1;
 				}
 
 				for (i = 0; i < encoded_pixels; i++) {
-					memcpy(tga->bitmap + bitmap_caret, decompression_buffer + buffer_caret, pixel_block_size * sizeof(int));
+					memcpy(tga->bitmap + bitmap_caret, decompression_buffer + buffer_caret, pixel_block_size);
 					bitmap_caret += pixel_block_size;
 				}
 				buffer_caret += pixel_block_size;
@@ -316,13 +308,13 @@ int read_image_tga( gdIOCtx *ctx, oTga *tga )
 				encoded_pixels = decompression_buffer[ buffer_caret ] + 1;
 				buffer_caret++;
 
-				if ((bitmap_caret + (encoded_pixels * pixel_block_size)) > image_block_size) {
+				if ((bitmap_caret + (encoded_pixels * pixel_block_size)) >= image_block_size) {
 					gdFree( decompression_buffer );
 					gdFree( conversion_buffer );
 					return -1;
 				}
 
-				memcpy(tga->bitmap + bitmap_caret, decompression_buffer + buffer_caret, encoded_pixels * pixel_block_size * sizeof(int));
+				memcpy(tga->bitmap + bitmap_caret, decompression_buffer + buffer_caret, encoded_pixels * pixel_block_size);
 				bitmap_caret += (encoded_pixels * pixel_block_size);
 				buffer_caret += (encoded_pixels * pixel_block_size);
 			}

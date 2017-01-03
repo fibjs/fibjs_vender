@@ -9,15 +9,6 @@
    No copyright info was found in the original bdf.
  */
 
-/**
- * File: Medium Bold Font
- *
- * A medium bold ISO-8859-2 raster font (7x13 pixels).
- *
- * The font is supposed to be used with <gdImageChar> and <gdImageString>
- * and their variants.
- */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -3878,11 +3869,9 @@ gdFont gdFontMediumBoldRep = {
 
 BGD_EXPORT_DATA_PROT gdFontPtr gdFontMediumBold = &gdFontMediumBoldRep;
 
-/**
- * Function: gdFontGetMediumBold
- *
- * Returns the built-in medium bold font.
- */
+/*
+	Function: gdFontGetMediumBold
+*/
 BGD_DECLARE(gdFontPtr)
 gdFontGetMediumBold (void)
 {

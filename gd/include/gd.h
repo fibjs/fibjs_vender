@@ -12,9 +12,9 @@ extern "C" {
  * whitespace, take the form GD_*_VERSION and contain the magical
  * trailing comment. */
 #define GD_MAJOR_VERSION    2           /*version605b5d1778*/
-#define GD_MINOR_VERSION    3           /*version605b5d1778*/
-#define GD_RELEASE_VERSION  0           /*version605b5d1778*/
-#define GD_EXTRA_VERSION    "-dev"      /*version605b5d1778*/
+#define GD_MINOR_VERSION    2           /*version605b5d1778*/
+#define GD_RELEASE_VERSION  3           /*version605b5d1778*/
+#define GD_EXTRA_VERSION    ""          /*version605b5d1778*/
 /* End parsable section. */
 
 /* The version string.  This is constructed from the version number
@@ -50,7 +50,7 @@ extern "C" {
 # define BGD_STDCALL
 # define BGD_EXPORT_DATA_IMPL
 #else
-# if defined(__GNUC__) || defined(__clang__)
+# if defined(HAVE_VISIBILITY) && HAVE_VISIBILITY==1
 #  define BGD_EXPORT_DATA_PROT __attribute__ ((visibility ("default")))
 #  define BGD_EXPORT_DATA_IMPL __attribute__ ((visibility ("hidden")))
 # else
@@ -132,85 +132,10 @@ extern "C" {
 #define gdRedMax 255
 #define gdGreenMax 255
 #define gdBlueMax 255
-
-/**
- * Group: Color Decomposition
- */
-
-/**
- * Macro: gdTrueColorGetAlpha
- *
- * Gets the alpha channel value
- *
- * Parameters:
- *   c - The color
- *
- * See also:
- *   - <gdTrueColorAlpha>
- */
 #define gdTrueColorGetAlpha(c) (((c) & 0x7F000000) >> 24)
-
-/**
- * Macro: gdTrueColorGetRed
- *
- * Gets the red channel value
- *
- * Parameters:
- *   c - The color
- *
- * See also:
- *   - <gdTrueColorAlpha>
- */
 #define gdTrueColorGetRed(c) (((c) & 0xFF0000) >> 16)
-
-/**
- * Macro: gdTrueColorGetGreen
- *
- * Gets the green channel value
- *
- * Parameters:
- *   c - The color
- *
- * See also:
- *   - <gdTrueColorAlpha>
- */
 #define gdTrueColorGetGreen(c) (((c) & 0x00FF00) >> 8)
-
-/**
- * Macro: gdTrueColorGetBlue
- *
- * Gets the blue channel value
- *
- * Parameters:
- *   c - The color
- *
- * See also:
- *   - <gdTrueColorAlpha>
- */
 #define gdTrueColorGetBlue(c) ((c) & 0x0000FF)
-
-/**
- * Group: Effects
- *
- * The layering effect
- * 
- * When pixels are drawn the new colors are "mixed" with the background
- * depending on the effect.
- *
- * Note that the effect does not apply to palette images, where pixels
- * are always replaced.
- *
- * Modes:
- *   gdEffectReplace    - replace pixels
- *   gdEffectAlphaBlend - blend pixels, see <gdAlphaBlend>
- *   gdEffectNormal     - default mode; same as gdEffectAlphaBlend
- *   gdEffectOverlay    - overlay pixels, see <gdLayerOverlay>
- *   gdEffectMultiply   - overlay pixels with multiply effect, see
- *                        <gdLayerMultiply>
- *
- * See also:
- *   - <gdImageAlphaBlending>
- */
 #define gdEffectReplace 0
 #define gdEffectAlphaBlend 1
 #define gdEffectNormal 2
@@ -233,35 +158,13 @@ extern "C" {
 BGD_DECLARE(int) gdAlphaBlend (int dest, int src);
 BGD_DECLARE(int) gdLayerOverlay (int dest, int src);
 BGD_DECLARE(int) gdLayerMultiply (int dest, int src);
-
-
-/**
- * Group: Color Quantization
- *
- * Enum: gdPaletteQuantizationMethod
- *
- * Constants:
- *   GD_QUANT_DEFAULT  - GD_QUANT_LIQ if libimagequant is available,
- *                       GD_QUANT_JQUANT otherwise.
- *   GD_QUANT_JQUANT   - libjpeg's old median cut. Fast, but only uses 16-bit
- *                       color.
- *   GD_QUANT_NEUQUANT - NeuQuant - approximation using Kohonen neural network.
- *   GD_QUANT_LIQ      - A combination of algorithms used in libimagequant
- *                       aiming for the highest quality at cost of speed.
- *
- * Note that GD_QUANT_JQUANT does not retain the alpha channel, and
- * GD_QUANT_NEUQUANT does not support dithering.
- *
- * See also:
- *   - <gdImageTrueColorToPaletteSetMethod>
- */
+	
 enum gdPaletteQuantizationMethod {
 	GD_QUANT_DEFAULT = 0,
-	GD_QUANT_JQUANT = 1,
-	GD_QUANT_NEUQUANT = 2,
-	GD_QUANT_LIQ = 3
+	GD_QUANT_JQUANT = 1,  /* libjpeg's old median cut. Fast, but only uses 16-bit color. */
+	GD_QUANT_NEUQUANT = 2, /* neuquant - approximation using kohonen neural network. */
+	GD_QUANT_LIQ = 3 /* combination of algorithms used in libimagequant/pngquant2 aiming for highest quality at cost of speed */
 };
-
 
 /**
  * Group: Transform
@@ -292,9 +195,8 @@ enum gdPaletteQuantizationMethod {
  *  GD_LINEAR            - bilinear interpolation
  *
  * See also:
- *  - <gdImageSetInterpolationMethod>
- *  - <gdImageGetInterpolationMethod>
- */
+ *  <gdSetInterpolationMethod>
+ **/
 typedef enum {
 	GD_DEFAULT          = 0,
 	GD_BELL,
@@ -341,9 +243,6 @@ typedef double (* interpolation_method )(double);
    receive a pointer to this type as their first argument.
 
    *gdImagePtr* is a pointer to *gdImage*.
-
-   See also:
-     <Accessor Macros>
 
    (Previous versions of this library encouraged directly manipulating
    the contents ofthe struct but we are attempting to move away from
@@ -486,7 +385,7 @@ gdPointF, *gdPointFPtr;
   A font structure, containing the bitmaps of all characters in a
   font.  Used to declare the characteristics of a font. Text-output
   functions expect these as their second argument, following the
-  <gdImagePtr> argument.  <gdFontGetSmall> and <gdFontGetLarge> both
+  <gdImagePtr> argument.  <gdFontSmall> and <gdFontGetLarge> both
   return one.
 
   You can provide your own font data by providing such a structure and
@@ -544,39 +443,17 @@ BGD_DECLARE(void) gdClearErrorMethod(void);
    gdImageSetBrush(). */
 #define gdDashSize 4
 
-/**
- * Group: Colors
- *
- * Colors are always of type int which is supposed to be at least 32 bit large.
- *
- * Kinds of colors:
- *   true colors     - ARGB values where the alpha channel is stored as most
- *                     significant, and the blue channel as least significant
- *                     byte. Note that the alpha channel only uses the 7 least
- *                     significant bits.
- *                     Don't rely on the internal representation, though, and
- *                     use <gdTrueColorAlpha> to compose a truecolor value, and
- *                     <gdTrueColorGetAlpha>, <gdTrueColorGetRed>,
- *                     <gdTrueColorGetGreen> and <gdTrueColorGetBlue> to access
- *                     the respective channels.
- *   palette indexes - The index of a color palette entry (0-255).
- *   special colors  - As listed in the following section.
- *
- * Constants: Special Colors
- *   gdStyled        - use the current style, see <gdImageSetStyle>
- *   gdBrushed       - use the current brush, see <gdImageSetBrush>
- *   gdStyledBrushed - use the current style and brush
- *   gdTiled         - use the current tile, see <gdImageSetTile>
- *   gdTransparent   - indicate transparency, what is not the same as the
- *                     transparent color index; used for lines only
- *   gdAntiAliased   - draw anti aliased
- */
+/* Special colors. */
 
 #define gdStyled (-2)
 #define gdBrushed (-3)
 #define gdStyledBrushed (-4)
 #define gdTiled (-5)
+
+/* NOT the same as the transparent color index.
+   This is used in line styles only. */
 #define gdTransparent (-6)
+
 #define gdAntiAliased (-7)
 
 /* Functions to manipulate images. */
@@ -867,21 +744,6 @@ typedef struct {
 }
 gdPoint, *gdPointPtr;
 
-/**
- * Typedef: gdRect
- *
- * A rectangle in the coordinate space of the image
- *
- * Members:
- *   x      - The x-coordinate of the upper left corner.
- *   y      - The y-coordinate of the upper left corner.
- *   width  - The width.
- *   height - The height.
- *
- * Typedef: gdRectPtr
- *
- * A pointer to a <gdRect>
- */
 typedef struct {
 	int x, y;
 	int width, height;
@@ -923,27 +785,10 @@ BGD_DECLARE(int) gdImageColorResolveAlpha (gdImagePtr im, int r, int g, int b, i
 			      ((g) << 8) +  \
 			      (b))
 
-/**
- * Group: Color Composition
- *
- * Macro: gdTrueColorAlpha
- *
- * Compose a truecolor value from its components
- *
- * Parameters:
- *   r - The red channel (0-255)
- *   g - The green channel (0-255)
- *   b - The blue channel (0-255)
- *   a - The alpha channel (0-127, where 127 is fully transparent, and 0 is
- *       completely opaque).
- *
- * See also:
- *   - <gdTrueColorGetAlpha>
- *   - <gdTrueColorGetRed>
- *   - <gdTrueColorGetGreen>
- *   - <gdTrueColorGetBlue>
- *   - <gdImageColorExactAlpha>
- */
+/* Returns a truecolor value with an alpha channel component.
+   gdAlphaMax (127, **NOT 255**) is transparent, 0 is completely
+   opaque. */
+
 #define gdTrueColorAlpha(r, g, b, a) (((a) << 24) + \
 				      ((r) << 16) + \
 				      ((g) << 8) +  \
@@ -1087,8 +932,7 @@ BGD_DECLARE(void) gdImageWebpCtx (gdImagePtr im, gdIOCtx * outfile, int quantiza
  *   gdDisposalRestoreBackground    - First allocated color of palette
  *   gdDisposalRestorePrevious      - Restore to before start of frame
  *
- * See also:
- *   - <gdImageGifAnimAdd>
+ * See also: <gdImageGifAnimAdd>
  */
 enum {
 	gdDisposalUnknown,
@@ -1117,7 +961,7 @@ BGD_DECLARE(void *) gdImageGifAnimEndPtr(int *size);
   typedef: gdSinkPtr
 
     *Note:* This interface is *obsolete* and kept only for
-    *compatibility*.  Use <gdIOCtx> instead.
+    *compatibility.  Use <gdIOCtx> instead.
 
     Represents a "sink" (destination) to which a PNG can be
     written. Programmers who do not wish to write PNGs to a file can
@@ -1281,196 +1125,35 @@ BGD_DECLARE(gdImagePtr) gdImageCopyGaussianBlurred(gdImagePtr src, int radius,
                                                    double sigma);
 
 
-/**
- * Group: Accessor Macros
- */
+/* Macros to access information about images. */
 
-/**
- * Macro: gdImageTrueColor
- *
- * Whether an image is a truecolor image.
- *
- * Parameters:
- *   im - The image.
- *
- * Returns:
- *   Non-zero if the image is a truecolor image, zero for palette images.
- */
+/* Returns nonzero if the image is a truecolor image,
+   zero for a palette image. */
 #define gdImageTrueColor(im) ((im)->trueColor)
 
-/**
- * Macro: gdImageSX
- *
- * Gets the width (in pixels) of an image.
- * 
- * Parameters:
- *   im - The image.
- */
 #define gdImageSX(im) ((im)->sx)
-
-/**
- * Macro: gdImageSY
- *
- * Gets the height (in pixels) of an image.
- *
- * Parameters:
- *   im - The image.
- */
 #define gdImageSY(im) ((im)->sy)
-
-/**
- * Macro: gdImageColorsTotal
- *
- * Gets the number of colors in the palette.
- *
- * This macro is only valid for palette images.
- *
- * Parameters:
- *   im - The image
- */
 #define gdImageColorsTotal(im) ((im)->colorsTotal)
-
-/**
- * Macro: gdImageRed
- *
- * Gets the red component value of a given color.
- *
- * Parameters:
- *   im - The image.
- *   c  - The color.
- */
 #define gdImageRed(im, c) ((im)->trueColor ? gdTrueColorGetRed(c) : \
 			   (im)->red[(c)])
-
-/**
- * Macro: gdImageGreen
- *
- * Gets the green component value of a given color.
- *
- * Parameters:
- *   im - The image.
- *   c  - The color.
- */
 #define gdImageGreen(im, c) ((im)->trueColor ? gdTrueColorGetGreen(c) : \
 			     (im)->green[(c)])
-
-/**
- * Macro: gdImageBlue
- *
- * Gets the blue component value of a given color.
- *
- * Parameters:
- *   im - The image.
- *   c  - The color.
- */
 #define gdImageBlue(im, c) ((im)->trueColor ? gdTrueColorGetBlue(c) : \
 			    (im)->blue[(c)])
-
-/**
- * Macro: gdImageAlpha
- *
- * Gets the alpha component value of a given color.
- *
- * Parameters:
- *   im - The image.
- *   c  - The color.
- */
 #define gdImageAlpha(im, c) ((im)->trueColor ? gdTrueColorGetAlpha(c) : \
 			     (im)->alpha[(c)])
-
-/**
- * Macro: gdImageGetTransparent
- *
- * Gets the transparent color of the image.
- *
- * Parameters:
- *   im - The image.
- *
- * See also:
- *   - <gdImageColorTransparent>
- */
 #define gdImageGetTransparent(im) ((im)->transparent)
-
-/**
- * Macro: gdImageGetInterlaced
- *
- * Whether an image is interlaced.
- *
- * Parameters:
- *   im - The image.
- *
- * Returns:
- *   Non-zero for interlaced images, zero otherwise.
- *
- * See also:
- *   - <gdImageInterlace>
- */
 #define gdImageGetInterlaced(im) ((im)->interlace)
 
-/**
- * Macro: gdImagePalettePixel
- *
- * Gets the color of a pixel.
- *
- * Calling this macro is only valid for palette images.
- * No bounds checking is done for the coordinates.
- *
- * Parameters:
- *   im - The image.
- *   x  - The x-coordinate.
- *   y  - The y-coordinate.
- *
- * See also:
- *   - <gdImageTrueColorPixel>
- *   - <gdImageGetPixel>
- */
+/* These macros provide direct access to pixels in
+   palette-based and truecolor images, respectively.
+   If you use these macros, you must perform your own
+   bounds checking. Use of the macro for the correct type
+   of image is also your responsibility. */
 #define gdImagePalettePixel(im, x, y) (im)->pixels[(y)][(x)]
-
-/**
- * Macro: gdImageTrueColorPixel
- *
- * Gets the color of a pixel.
- *
- * Calling this macro is only valid for truecolor images.
- * No bounds checking is done for the coordinates.
- *
- * Parameters:
- *   im - The image.
- *   x  - The x-coordinate.
- *   y  - The y-coordinate.
- *
- * See also:
- *   - <gdImagePalettePixel>
- *   - <gdImageGetTrueColorPixel>
- */
 #define gdImageTrueColorPixel(im, x, y) (im)->tpixels[(y)][(x)]
 
-/**
- * Macro: gdImageResolutionX
- *
- * Gets the horizontal resolution in DPI.
- *
- * Parameters:
- *   im - The image.
- *
- * See also:
- *   - <gdImageResolutionY>
- *   - <gdImageSetResolution>
- */
 #define gdImageResolutionX(im) (im)->res_x
-
-/**
- * Macro: gdImageResolutionY
- *
- * Gets the vertical resolution in DPI.
- *
- * Parameters:
- *   im - The image.
- *
- * See also:
- *   - <gdImageResolutionX>
- *   - <gdImageSetResolution>
- */
 #define gdImageResolutionY(im) (im)->res_y
 
 /* I/O Support routines. */
@@ -1527,7 +1210,7 @@ BGD_DECLARE(void) gdImageFlipBoth(gdImagePtr im);
  *  GD_CROP_SIDES - Crop using colors of the 4 corners
  *
  * See also:
- *   - <gdImageCropAuto>
+ *  <gdImageAutoCrop>
  **/
 enum gdCropMode {
 	GD_CROP_DEFAULT = 0,
@@ -1580,32 +1263,15 @@ gdTransformAffineCopy(gdImagePtr dst, int x0, int y0, int x1, int y1,
 */
 BGD_DECLARE(int) gdTransformAffineBoundingBox(gdRectPtr src, const double affine[6], gdRectPtr bbox);
 
-/**
- * Group: Image Comparison
- *
- * Constants:
- *   GD_CMP_IMAGE       - Actual image IS different
- *   GD_CMP_NUM_COLORS  - Number of colors in pallette differ
- *   GD_CMP_COLOR       - Image colors differ
- *   GD_CMP_SIZE_X      - Image width differs
- *   GD_CMP_SIZE_Y      - Image heights differ
- *   GD_CMP_TRANSPARENT - Transparent color differs
- *   GD_CMP_BACKGROUND  - Background color differs
- *   GD_CMP_INTERLACE   - Interlaced setting differs
- *   GD_CMP_TRUECOLOR   - Truecolor vs palette differs
- *
- * See also:
- *   - <gdImageCompare>
- */
-#define GD_CMP_IMAGE		1
-#define GD_CMP_NUM_COLORS	2
-#define GD_CMP_COLOR		4
-#define GD_CMP_SIZE_X		8
-#define GD_CMP_SIZE_Y		16
-#define GD_CMP_TRANSPARENT	32
-#define GD_CMP_BACKGROUND	64
-#define GD_CMP_INTERLACE	128
-#define GD_CMP_TRUECOLOR	256
+#define GD_CMP_IMAGE		1	/* Actual image IS different */
+#define GD_CMP_NUM_COLORS	2	/* Number of Colours in pallette differ */
+#define GD_CMP_COLOR		4	/* Image colours differ */
+#define GD_CMP_SIZE_X		8	/* Image width differs */
+#define GD_CMP_SIZE_Y		16	/* Image heights differ */
+#define GD_CMP_TRANSPARENT	32	/* Transparent colour */
+#define GD_CMP_BACKGROUND	64	/* Background colour */
+#define GD_CMP_INTERLACE	128	/* Interlaced setting */
+#define GD_CMP_TRUECOLOR	256	/* Truecolor vs palette differs */
 
 /* resolution affects ttf font rendering, particularly hinting */
 #define GD_RESOLUTION           96      /* pixels per inch */

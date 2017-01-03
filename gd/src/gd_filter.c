@@ -1,8 +1,3 @@
-/**
- * File: Image Filters
- */
-
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -189,16 +184,10 @@ BGD_DECLARE(int) gdImagePixelate(gdImagePtr im, int block_size, const unsigned i
 	return 1;
 }
 
-/**
- * Function: gdImageNegate
- *
- * Invert an image
- *
- * Parameters:
- *   src - The image.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
+/*
+	Function: gdImageNegate
+	
+	Invert src image.
  */
 BGD_DECLARE(int) gdImageNegate(gdImagePtr src)
 {
@@ -231,16 +220,10 @@ BGD_DECLARE(int) gdImageNegate(gdImagePtr src)
 	return 1;
 }
 
-/**
- * Function: gdImageGrayScale
- *
- * Convert an image to grayscale
- *
- * Parameters:
- *   src - The image.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
+/*
+	Function: gdImageGrayScale
+	
+	Convert the image src to a grayscale image.
  */
 BGD_DECLARE(int) gdImageGrayScale(gdImagePtr src)
 {
@@ -274,21 +257,10 @@ BGD_DECLARE(int) gdImageGrayScale(gdImagePtr src)
 	return 1;
 }
 
-/**
- * Function: gdImageBrightness
- *
- * Change the brightness of an image
- *
- * Parameters:
- *   src        - The image.
- *   brightness - The value to add to the color channels of all pixels.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
- *
- * See also:
- *   - <gdImageContrast>
- *   - <gdImageColor>
+/*
+	Function: gdImageBrightness
+	
+	Set the brightness level <level> for the image src.
  */
 BGD_DECLARE(int) gdImageBrightness(gdImagePtr src, int brightness)
 {
@@ -335,22 +307,8 @@ BGD_DECLARE(int) gdImageBrightness(gdImagePtr src, int brightness)
 }
 
 
-/**
- * Function: gdImageContrast
- *
- * Change the contrast of an image
- *
- * Parameters:
- *   src      - The image.
- *   contrast - The contrast adjustment value. Negative values increase, postive
- *              values decrease the contrast. The larger the absolute value, the
- *              stronger the effect.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
- *
- * See also:
- *   - <gdImageBrightness>
+/*
+	Function: gdImageContrast
  */
 BGD_DECLARE(int) gdImageContrast(gdImagePtr src, double contrast)
 {
@@ -412,23 +370,8 @@ BGD_DECLARE(int) gdImageContrast(gdImagePtr src, double contrast)
 }
 
 
-/**
- * Function: gdImageColor
- *
- * Change channel values of an image
- *
- * Parameters:
- *   src   - The image.
- *   red   - The value to add to the red channel of all pixels.
- *   green - The value to add to the green channel of all pixels.
- *   blue  - The value to add to the blue channel of all pixels.
- *   alpha - The value to add to the alpha channel of all pixels.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
- *
- * See also:
- *   - <gdImageBrightness>
+/*
+	Function: gdImageColor
  */
 BGD_DECLARE(int) gdImageColor(gdImagePtr src, const int red, const int green, const int blue, const int alpha)
 {
@@ -472,29 +415,8 @@ BGD_DECLARE(int) gdImageColor(gdImagePtr src, const int red, const int green, co
 	return 1;
 }
 
-/**
- * Function: gdImageConvolution
- *
- * Apply a convolution matrix to an image
- *
- * Depending on the matrix a wide range of effects can be accomplished, e.g.
- * blurring, sharpening, embossing and edge detection.
- *
- * Parameters:
- *   src        - The image.
- *   filter     - The 3x3 convolution matrix.
- *   filter_div - The value to divide the convoluted channel values by.
- *   offset     - The value to add to the convoluted channel values.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
- *
- * See also:
- *   - <gdImageEdgeDetectQuick>
- *   - <gdImageGaussianBlur>
- *   - <gdImageEmboss>
- *   - <gdImageMeanRemoval>
- *   - <gdImageSmooth>
+/*
+	Function: gdImageConvolution
  */
 BGD_DECLARE(int) gdImageConvolution(gdImagePtr src, float filter[3][3], float filter_div, float offset)
 {
@@ -677,22 +599,8 @@ BGD_DECLARE(int) gdImageSelectiveBlur( gdImagePtr src)
 	return 1;
 }
 
-/**
- * Function: gdImageEdgeDetectQuick
- *
- * Edge detection of an image
- *
- * (see edge_detect_quick.jpg)
- *
- * Parameters:
- *   src - The image.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
- *
- * See also:
- *   - <gdImageMeanRemoval>
- *   - <gdImageConvolution>
+/*
+	Function: gdImageEdgeDetectQuick
  */
 BGD_DECLARE(int) gdImageEdgeDetectQuick(gdImagePtr src)
 {
@@ -734,21 +642,8 @@ BGD_DECLARE(int) gdImageGaussianBlur(gdImagePtr im)
 	return gdImageConvolution(im, filter, 16, 0);
 }
 
-/**
- * Function: gdImageEmboss
- *
- * Emboss an image
- *
- * (see emboss.jpg)
- *
- * Parameters:
- *   im - The image.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
- *
- * See also:
- *   - <gdImageConvolution>
+/*
+	Function: gdImageEmboss
  */
 BGD_DECLARE(int) gdImageEmboss(gdImagePtr im)
 {
@@ -764,22 +659,8 @@ BGD_DECLARE(int) gdImageEmboss(gdImagePtr im)
 	return gdImageConvolution(im, filter, 1, 127);
 }
 
-/**
- * Function: gdImageMeanRemoval
- *
- * Mean removal of an image
- *
- * (see mean_removal.jpg)
- *
- * Parameters:
- *   im - The image.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
- *
- * See also:
- *   - <gdImageEdgeDetectQuick>
- *   - <gdImageConvolution>
+/*
+	Function: gdImageMeanRemoval
  */
 BGD_DECLARE(int) gdImageMeanRemoval(gdImagePtr im)
 {
@@ -790,22 +671,8 @@ BGD_DECLARE(int) gdImageMeanRemoval(gdImagePtr im)
 	return gdImageConvolution(im, filter, 1, 0);
 }
 
-/**
- * Function: gdImageSmooth
- *
- * Smooth an image
- *
- * (see smooth.jpg)
- *
- * Parameters:
- *   im     - The image.
- *   weight - The strength of the smoothing.
- *
- * Returns:
- *   Non-zero on success, zero on failure.
- *
- * See also:
- *   - <gdImageConvolution>
+/*
+	Function: gdImageSmooth
  */
 BGD_DECLARE(int) gdImageSmooth(gdImagePtr im, float weight)
 {
@@ -971,17 +838,15 @@ applyCoeffs(gdImagePtr src, gdImagePtr dst, double *coeffs, int radius,
     truecolor.
 
   Example:
-    (start code)
 
-    FILE *in;
-    gdImagePtr result, src;
-     
-    in = fopen("foo.png", "rb");
-    src = gdImageCreateFromPng(in);
-    
-    result = gdImageCopyGaussianBlurred(im, src->sx / 10, -1.0);
+    > FILE *in;
+    > gdImagePtr result, src;
+    > 
+    > in = fopen("foo.png", "rb");
+    > src = gdImageCreateFromPng(in);
+    >
+    > result = gdImageCopyGaussianBlurred(im, src->sx / 10, -1.0);
 
-    (end code)
 */
 
 /* TODO: Look into turning this into a generic seperable filter

@@ -1,9 +1,3 @@
-/**
- * File: GIF Input
- *
- * Read GIF images.
- */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -449,7 +443,7 @@ GetCode_(gdIOCtx *fd, CODE_STATIC_DATA *scd, int code_size, int flag, int *ZeroD
 	if(flag) {
 		scd->curbit = 0;
 		scd->lastbit = 0;
-		scd->last_byte = 2;
+		scd->last_byte = 0;
 		scd->done = FALSE;
 		return 0;
 	}
