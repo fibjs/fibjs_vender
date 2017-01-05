@@ -103,10 +103,10 @@ public:
     }
 
 public:
-    void lock();
-    void unlock();
-    bool trylock();
-    bool owned();
+    bool lock(Task_base *current = NULL);
+    void unlock(Task_base *current = NULL);
+    bool trylock(Task_base *current = NULL);
+    bool owned(Task_base *current = NULL);
 
 private:
     bool m_recursive;

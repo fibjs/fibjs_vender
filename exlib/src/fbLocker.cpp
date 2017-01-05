@@ -16,9 +16,10 @@
 namespace exlib
 {
 
-void Locker::lock()
+bool Locker::lock(Task_base *current)
 {
-    Task_base *current = Thread_base::current();
+    if (current == 0)
+        current = Thread_base::current();
 
     assert(current != 0);
     assert(m_recursive || current != m_locker);
@@ -28,14 +29,14 @@ void Locker::lock()
     if (!m_recursive && current == m_locker)
     {
         m_lock.unlock();
-        return;
+        return true;
     }
 
     if (m_locker && current != m_locker)
     {
         m_blocks.putTail(current);
         current->suspend(m_lock);
-        return;
+        return false;
     }
 
     if (++m_count == 1) {
@@ -43,11 +44,14 @@ void Locker::lock()
     }
 
     m_lock.unlock();
+
+    return true;
 }
 
-bool Locker::trylock()
+bool Locker::trylock(Task_base *current)
 {
-    Task_base *current = Thread_base::current();
+    if (current == 0)
+        current = Thread_base::current();
 
     assert(current != 0);
     assert(m_recursive || current != m_locker);
@@ -75,12 +79,17 @@ bool Locker::trylock()
     return true;
 }
 
-void Locker::unlock()
+void Locker::unlock(Task_base *current)
 {
+#ifdef DEBUG
+    if (current == 0)
+        current = Thread_base::current();
+#endif
+
     Task_base *fb = 0;
 
-    assert(Thread_base::current() != 0);
-    assert(Thread_base::current() == m_locker);
+    assert(current != 0);
+    assert(current == m_locker);
     assert(m_recursive || m_count == 1);
     assert(m_count >= 1);
 
@@ -101,9 +110,10 @@ void Locker::unlock()
         fb->resume();
 }
 
-bool Locker::owned()
+bool Locker::owned(Task_base *current)
 {
-    Task_base *current = Thread_base::current();
+    if (current == 0)
+        current = Thread_base::current();
 
     assert(current != 0);
 
