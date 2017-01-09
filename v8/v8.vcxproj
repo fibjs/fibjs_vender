@@ -115,6 +115,7 @@
     <ClInclude Include="src\bignum.h" />
     <ClInclude Include="src\bit-vector.h" />
     <ClInclude Include="src\bootstrapper.h" />
+    <ClInclude Include="src\builtins\builtins-constructor.h" />
     <ClInclude Include="src\builtins\builtins-promise.h" />
     <ClInclude Include="src\builtins\builtins-utils.h" />
     <ClInclude Include="src\builtins\builtins.h" />
@@ -168,6 +169,7 @@
     <ClInclude Include="src\compiler\frame-states.h" />
     <ClInclude Include="src\compiler\frame.h" />
     <ClInclude Include="src\compiler\gap-resolver.h" />
+    <ClInclude Include="src\compiler\graph-assembler.h" />
     <ClInclude Include="src\compiler\graph-reducer.h" />
     <ClInclude Include="src\compiler\graph-replay.h" />
     <ClInclude Include="src\compiler\graph-trimmer.h" />
@@ -626,6 +628,7 @@
     <ClInclude Include="src\zone\zone-allocator.h" />
     <ClInclude Include="src\zone\zone-chunk-list.h" />
     <ClInclude Include="src\zone\zone-containers.h" />
+    <ClInclude Include="src\zone\zone-handle-set.h" />
     <ClInclude Include="src\zone\zone-segment.h" />
     <ClInclude Include="src\zone\zone.h" />
   </ItemGroup>
@@ -700,6 +703,7 @@
     <ClCompile Include="src\builtins\builtins-boolean.cc" />
     <ClCompile Include="src\builtins\builtins-call.cc" />
     <ClCompile Include="src\builtins\builtins-callsite.cc" />
+    <ClCompile Include="src\builtins\builtins-constructor.cc" />
     <ClCompile Include="src\builtins\builtins-conversion.cc" />
     <ClCompile Include="src\builtins\builtins-dataview.cc" />
     <ClCompile Include="src\builtins\builtins-date.cc" />
@@ -709,6 +713,7 @@
     <ClCompile Include="src\builtins\builtins-generator.cc" />
     <ClCompile Include="src\builtins\builtins-global.cc" />
     <ClCompile Include="src\builtins\builtins-handler.cc" />
+    <ClCompile Include="src\builtins\builtins-ic.cc" />
     <ClCompile Include="src\builtins\builtins-internal.cc" />
     <ClCompile Include="src\builtins\builtins-interpreter.cc" />
     <ClCompile Include="src\builtins\builtins-json.cc" />
@@ -775,6 +780,7 @@
     <ClCompile Include="src\compiler\frame-states.cc" />
     <ClCompile Include="src\compiler\frame.cc" />
     <ClCompile Include="src\compiler\gap-resolver.cc" />
+    <ClCompile Include="src\compiler\graph-assembler.cc" />
     <ClCompile Include="src\compiler\graph-reducer.cc" />
     <ClCompile Include="src\compiler\graph-replay.cc" />
     <ClCompile Include="src\compiler\graph-trimmer.cc" />

@@ -6,6 +6,7 @@
 
 #include "src/ast/compile-time-value.h"
 #include "src/ast/scopes.h"
+#include "src/builtins/builtins-constructor.h"
 #include "src/code-stubs.h"
 #include "src/compilation-info.h"
 #include "src/compiler.h"
@@ -1410,20 +1411,33 @@ void BytecodeGenerator::VisitFunctionLiteral(FunctionLiteral* expr) {
 }
 
 void BytecodeGenerator::VisitClassLiteral(ClassLiteral* expr) {
-  VisitClassLiteralForRuntimeDefinition(expr);
-
-  // Load the "prototype" from the constructor.
-  Register literal = register_allocator()->NewRegister();
+  Register constructor = VisitForRegisterValue(expr->constructor());
+  {
+    RegisterAllocationScope register_scope(this);
+    RegisterList args = register_allocator()->NewRegisterList(4);
+    VisitForAccumulatorValueOrTheHole(expr->extends());
+    builder()
+        ->StoreAccumulatorInRegister(args[0])
+        .MoveRegister(constructor, args[1])
+        .LoadLiteral(Smi::FromInt(expr->start_position()))
+        .StoreAccumulatorInRegister(args[2])
+        .LoadLiteral(Smi::FromInt(expr->end_position()))
+        .StoreAccumulatorInRegister(args[3])
+        .CallRuntime(Runtime::kDefineClass, args);
+  }
   Register prototype = register_allocator()->NewRegister();
-  FeedbackVectorSlot slot = expr->PrototypeSlot();
-  builder()
-      ->StoreAccumulatorInRegister(literal)
-      .LoadNamedProperty(literal, prototype_string(), feedback_index(slot))
-      .StoreAccumulatorInRegister(prototype);
+  builder()->StoreAccumulatorInRegister(prototype);
 
-  VisitClassLiteralProperties(expr, literal, prototype);
-  BuildClassLiteralNameProperty(expr, literal);
-  builder()->CallRuntime(Runtime::kToFastProperties, literal);
+  if (FunctionLiteral::NeedsHomeObject(expr->constructor())) {
+    // Prototype is already in the accumulator.
+    builder()->StoreNamedProperty(constructor, home_object_symbol(),
+                                  feedback_index(expr->HomeObjectSlot()),
+                                  language_mode());
+  }
+
+  VisitClassLiteralProperties(expr, constructor, prototype);
+  BuildClassLiteralNameProperty(expr, constructor);
+  builder()->CallRuntime(Runtime::kToFastProperties, constructor);
   // Assign to class variable.
   if (expr->class_variable_proxy() != nullptr) {
     VariableProxy* proxy = expr->class_variable_proxy();
@@ -1435,23 +1449,8 @@ void BytecodeGenerator::VisitClassLiteral(ClassLiteral* expr) {
   }
 }
 
-void BytecodeGenerator::VisitClassLiteralForRuntimeDefinition(
-    ClassLiteral* expr) {
-  RegisterAllocationScope register_scope(this);
-  RegisterList args = register_allocator()->NewRegisterList(4);
-  VisitForAccumulatorValueOrTheHole(expr->extends());
-  builder()->StoreAccumulatorInRegister(args[0]);
-  VisitForRegisterValue(expr->constructor(), args[1]);
-  builder()
-      ->LoadLiteral(Smi::FromInt(expr->start_position()))
-      .StoreAccumulatorInRegister(args[2])
-      .LoadLiteral(Smi::FromInt(expr->end_position()))
-      .StoreAccumulatorInRegister(args[3])
-      .CallRuntime(Runtime::kDefineClass, args);
-}
-
 void BytecodeGenerator::VisitClassLiteralProperties(ClassLiteral* expr,
-                                                    Register literal,
+                                                    Register constructor,
                                                     Register prototype) {
   RegisterAllocationScope register_scope(this);
   RegisterList args = register_allocator()->NewRegisterList(4);
@@ -1465,14 +1464,18 @@ void BytecodeGenerator::VisitClassLiteralProperties(ClassLiteral* expr,
     ClassLiteral::Property* property = expr->properties()->at(i);
 
     // Set-up receiver.
-    Register new_receiver = property->is_static() ? literal : prototype;
+    Register new_receiver = property->is_static() ? constructor : prototype;
     if (new_receiver != old_receiver) {
       builder()->MoveRegister(new_receiver, receiver);
       old_receiver = new_receiver;
     }
 
-    VisitForAccumulatorValue(property->key());
-    builder()->ConvertAccumulatorToName(key);
+    if (property->key()->IsStringLiteral()) {
+      VisitForRegisterValue(property->key(), key);
+    } else {
+      VisitForAccumulatorValue(property->key());
+      builder()->ConvertAccumulatorToName(key);
+    }
 
     if (property->is_static() && property->is_computed_name()) {
       // The static prototype property is read only. We handle the non computed
@@ -1504,7 +1507,14 @@ void BytecodeGenerator::VisitClassLiteralProperties(ClassLiteral* expr,
         if (property->NeedsSetFunctionName()) {
           flags |= DataPropertyInLiteralFlag::kSetFunctionName;
         }
-        builder()->StoreDataPropertyInLiteral(receiver, key, value, flags);
+
+        FeedbackVectorSlot slot = property->GetStoreDataPropertySlot();
+        DCHECK(!slot.IsInvalid());
+
+        builder()
+            ->LoadAccumulatorWithRegister(value)
+            .StoreDataPropertyInLiteral(receiver, key, flags,
+                                        feedback_index(slot));
         break;
       }
       case ClassLiteral::Property::GETTER: {
@@ -1602,7 +1612,8 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
   // Deep-copy the literal boilerplate.
   uint8_t flags = CreateObjectLiteralFlags::Encode(
       expr->IsFastCloningSupported(),
-      FastCloneShallowObjectStub::PropertiesCount(expr->properties_count()),
+      ConstructorBuiltinsAssembler::FastCloneShallowObjectPropertiesCount(
+          expr->properties_count()),
       expr->ComputeFlags());
   // If constant properties is an empty fixed array, use our cached
   // empty_fixed_array to ensure it's only added to the constant pool once.
@@ -1624,6 +1635,7 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
     RegisterAllocationScope inner_register_scope(this);
     Literal* key = property->key()->AsLiteral();
     switch (property->kind()) {
+      case ObjectLiteral::Property::SPREAD:
       case ObjectLiteral::Property::CONSTANT:
         UNREACHABLE();
       case ObjectLiteral::Property::MATERIALIZED_LITERAL:
@@ -1745,8 +1757,13 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
           data_property_flags |= DataPropertyInLiteralFlag::kSetFunctionName;
         }
 
-        builder()->StoreDataPropertyInLiteral(literal, key, value,
-                                              data_property_flags);
+        FeedbackVectorSlot slot = property->GetStoreDataPropertySlot();
+        DCHECK(!slot.IsInvalid());
+
+        builder()
+            ->LoadAccumulatorWithRegister(value)
+            .StoreDataPropertyInLiteral(literal, key, data_property_flags,
+                                        feedback_index(slot));
         break;
       }
       case ObjectLiteral::Property::GETTER:
@@ -1765,6 +1782,13 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
                 ? Runtime::kDefineGetterPropertyUnchecked
                 : Runtime::kDefineSetterPropertyUnchecked;
         builder()->CallRuntime(function_id, args);
+        break;
+      }
+      case ObjectLiteral::Property::SPREAD: {
+        RegisterList args = register_allocator()->NewRegisterList(2);
+        builder()->MoveRegister(literal, args[0]);
+        VisitForRegisterValue(property->value(), args[1]);
+        builder()->CallRuntime(Runtime::kCopyDataProperties, args);
         break;
       }
       case ObjectLiteral::Property::PROTOTYPE:
@@ -1959,25 +1983,19 @@ void BytecodeGenerator::BuildThrowIfHole(Handle<String> name) {
   builder()->Bind(&no_reference_error);
 }
 
-void BytecodeGenerator::BuildThrowIfNotHole(Handle<String> name) {
-  // TODO(interpreter): Can the parser reduce the number of checks
-  // performed? Or should there be a ThrowIfNotHole bytecode.
-  BytecodeLabel no_reference_error, reference_error;
-  builder()
-      ->JumpIfNotHole(&reference_error)
-      .Jump(&no_reference_error)
-      .Bind(&reference_error);
-  BuildThrowReferenceError(name);
-  builder()->Bind(&no_reference_error);
-}
-
 void BytecodeGenerator::BuildHoleCheckForVariableAssignment(Variable* variable,
                                                             Token::Value op) {
   if (variable->is_this() && variable->mode() == CONST && op == Token::INIT) {
     // Perform an initialization check for 'this'. 'this' variable is the
     // only variable able to trigger bind operations outside the TDZ
     // via 'super' calls.
-    BuildThrowIfNotHole(variable->name());
+    BytecodeLabel no_reference_error, reference_error;
+    builder()
+        ->JumpIfNotHole(&reference_error)
+        .Jump(&no_reference_error)
+        .Bind(&reference_error)
+        .CallRuntime(Runtime::kThrowSuperAlreadyCalledError)
+        .Bind(&no_reference_error);
   } else {
     // Perform an initialization check for let/const declared variables.
     // E.g. let x = (x = 20); is not allowed.
@@ -3014,7 +3032,8 @@ void BytecodeGenerator::BuildNewLocalActivationContext() {
   } else {
     DCHECK(scope->is_function_scope() || scope->is_eval_scope());
     int slot_count = scope->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
-    if (slot_count <= FastNewFunctionContextStub::MaximumSlots()) {
+    if (slot_count <=
+        ConstructorBuiltinsAssembler::MaximumFunctionContextSlots()) {
       switch (scope->scope_type()) {
         case EVAL_SCOPE:
           builder()->CreateEvalContext(slot_count);

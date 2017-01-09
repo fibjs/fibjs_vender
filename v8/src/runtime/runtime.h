@@ -75,11 +75,10 @@ namespace internal {
   F(AtomicsNumWaitersForTesting, 2, 1)
 
 #define FOR_EACH_INTRINSIC_CLASSES(F)        \
-  F(ThrowNonMethodError, 0, 1)               \
   F(ThrowUnsupportedSuperError, 0, 1)        \
   F(ThrowConstructorNonCallableError, 1, 1)  \
-  F(ThrowArrayNotSubclassableError, 0, 1)    \
   F(ThrowStaticPrototypeError, 0, 1)         \
+  F(ThrowSuperAlreadyCalledError, 0, 1)      \
   F(ThrowNotSuperConstructor, 2, 1)          \
   F(HomeObjectSymbol, 0, 1)                  \
   F(DefineClass, 4, 1)                       \
@@ -290,10 +289,9 @@ namespace internal {
   F(AllocateSeqTwoByteString, 1, 1)                 \
   F(CheckIsBootstrapping, 0, 1)                     \
   F(CreateListFromArrayLike, 1, 1)                  \
-  F(CreateResolvingFunctions, 1, 1)                 \
   F(EnqueueMicrotask, 1, 1)                         \
-  F(EnqueuePromiseReactionJob, 5, 1)                \
-  F(EnqueuePromiseResolveThenableJob, 3, 1)         \
+  F(EnqueuePromiseReactionJob, 2, 1)                \
+  F(EnqueuePromiseResolveThenableJob, 1, 1)         \
   F(GetAndResetRuntimeCallStats, -1 /* <= 2 */, 1)  \
   F(ExportExperimentalFromRuntime, 1, 1)            \
   F(ExportFromRuntime, 1, 1)                        \
@@ -305,9 +303,7 @@ namespace internal {
   F(NewSyntaxError, 2, 1)                           \
   F(NewTypeError, 2, 1)                             \
   F(OrdinaryHasInstance, 2, 1)                      \
-  F(PromiseDeferred, 1, 1)                          \
   F(PromiseReject, 3, 1)                            \
-  F(PromiseFulfill, 3, 1)                           \
   F(PromiseHookInit, 2, 1)                          \
   F(PromiseHookResolve, 1, 1)                       \
   F(PromiseHookBefore, 1, 1)                        \
@@ -315,7 +311,6 @@ namespace internal {
   F(PromiseMarkAsHandled, 1, 1)                     \
   F(PromiseMarkHandledHint, 1, 1)                   \
   F(PromiseRejectEventFromStack, 2, 1)              \
-  F(PromiseRejectReactions, 1, 1)                   \
   F(PromiseRevokeReject, 1, 1)                      \
   F(PromiseResult, 1, 1)                            \
   F(PromiseStatus, 1, 1)                            \
@@ -333,6 +328,7 @@ namespace internal {
   F(ThrowGeneratorRunning, 0, 1)                    \
   F(ThrowIllegalInvocation, 0, 1)                   \
   F(ThrowIncompatibleMethodReceiver, 2, 1)          \
+  F(ThrowInvalidHint, 1, 1)                         \
   F(ThrowInvalidStringLength, 0, 1)                 \
   F(ThrowIteratorResultNotAnObject, 1, 1)           \
   F(ThrowSymbolIteratorInvalid, 0, 1)               \
@@ -411,13 +407,14 @@ namespace internal {
   F(TryMigrateInstance, 1, 1)                        \
   F(IsJSGlobalProxy, 1, 1)                           \
   F(DefineAccessorPropertyUnchecked, 5, 1)           \
-  F(DefineDataPropertyInLiteral, 4, 1)               \
+  F(DefineDataPropertyInLiteral, 6, 1)               \
   F(GetDataProperty, 2, 1)                           \
   F(GetConstructorName, 1, 1)                        \
   F(HasFastPackedElements, 1, 1)                     \
   F(ValueOf, 1, 1)                                   \
   F(IsJSReceiver, 1, 1)                              \
   F(ClassOf, 1, 1)                                   \
+  F(CopyDataProperties, 2, 1)                        \
   F(DefineGetterPropertyUnchecked, 4, 1)             \
   F(DefineSetterPropertyUnchecked, 4, 1)             \
   F(ToObject, 1, 1)                                  \

@@ -297,7 +297,7 @@ MaybeHandle<Object> Runtime::SetObjectProperty(Isolate* isolate,
 
 RUNTIME_FUNCTION(Runtime_GetPrototype) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, obj, 0);
   RETURN_RESULT_OR_FAILURE(isolate, JSReceiver::GetPrototype(isolate, obj));
 }
@@ -305,7 +305,7 @@ RUNTIME_FUNCTION(Runtime_GetPrototype) {
 
 RUNTIME_FUNCTION(Runtime_InternalSetPrototype) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
+  DCHECK_EQ(2, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, obj, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, prototype, 1);
   MAYBE_RETURN(
@@ -316,7 +316,7 @@ RUNTIME_FUNCTION(Runtime_InternalSetPrototype) {
 
 RUNTIME_FUNCTION(Runtime_OptimizeObjectForAddingMultipleProperties) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
+  DCHECK_EQ(2, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
   CONVERT_SMI_ARG_CHECKED(properties, 1);
   // Conservative upper limit to prevent fuzz tests from going OOM.
@@ -331,7 +331,7 @@ RUNTIME_FUNCTION(Runtime_OptimizeObjectForAddingMultipleProperties) {
 
 RUNTIME_FUNCTION(Runtime_GetProperty) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
+  DCHECK_EQ(2, args.length());
 
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, key, 1);
@@ -343,7 +343,7 @@ RUNTIME_FUNCTION(Runtime_GetProperty) {
 // KeyedGetProperty is called from KeyedLoadIC::GenerateGeneric.
 RUNTIME_FUNCTION(Runtime_KeyedGetProperty) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
+  DCHECK_EQ(2, args.length());
 
   CONVERT_ARG_HANDLE_CHECKED(Object, receiver_obj, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, key_obj, 1);
@@ -503,7 +503,7 @@ RUNTIME_FUNCTION(Runtime_HasProperty) {
 
 RUNTIME_FUNCTION(Runtime_GetOwnPropertyKeys) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
+  DCHECK_EQ(2, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, object, 0);
   CONVERT_SMI_ARG_CHECKED(filter_value, 1);
   PropertyFilter filter = static_cast<PropertyFilter>(filter_value);
@@ -522,7 +522,7 @@ RUNTIME_FUNCTION(Runtime_GetOwnPropertyKeys) {
 // args[0]: object
 RUNTIME_FUNCTION(Runtime_GetInterceptorInfo) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   if (!args[0]->IsJSObject()) {
     return Smi::kZero;
   }
@@ -538,7 +538,7 @@ RUNTIME_FUNCTION(Runtime_GetInterceptorInfo) {
 
 RUNTIME_FUNCTION(Runtime_ToFastProperties) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
   if (object->IsJSObject() && !object->IsJSGlobalObject()) {
     JSObject::MigrateSlowToFast(Handle<JSObject>::cast(object), 0,
@@ -550,7 +550,7 @@ RUNTIME_FUNCTION(Runtime_ToFastProperties) {
 
 RUNTIME_FUNCTION(Runtime_AllocateHeapNumber) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 0);
+  DCHECK_EQ(0, args.length());
   return *isolate->factory()->NewHeapNumber(0);
 }
 
@@ -566,7 +566,7 @@ RUNTIME_FUNCTION(Runtime_NewObject) {
 
 RUNTIME_FUNCTION(Runtime_FinalizeInstanceSize) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
 
   CONVERT_ARG_HANDLE_CHECKED(Map, initial_map, 0);
   initial_map->CompleteInobjectSlackTracking();
@@ -577,7 +577,7 @@ RUNTIME_FUNCTION(Runtime_FinalizeInstanceSize) {
 
 RUNTIME_FUNCTION(Runtime_LoadMutableDouble) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
+  DCHECK_EQ(2, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
   CONVERT_ARG_HANDLE_CHECKED(Smi, index, 1);
   CHECK((index->value() & 1) == 1);
@@ -596,7 +596,7 @@ RUNTIME_FUNCTION(Runtime_LoadMutableDouble) {
 
 RUNTIME_FUNCTION(Runtime_TryMigrateInstance) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
   if (!object->IsJSObject()) return Smi::kZero;
   Handle<JSObject> js_object = Handle<JSObject>::cast(object);
@@ -612,7 +612,7 @@ RUNTIME_FUNCTION(Runtime_TryMigrateInstance) {
 
 RUNTIME_FUNCTION(Runtime_IsJSGlobalProxy) {
   SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   CONVERT_ARG_CHECKED(Object, obj, 0);
   return isolate->heap()->ToBoolean(obj->IsJSGlobalProxy());
 }
@@ -630,7 +630,7 @@ static bool IsValidAccessor(Isolate* isolate, Handle<Object> obj) {
 //           descriptor.
 RUNTIME_FUNCTION(Runtime_DefineAccessorPropertyUnchecked) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 5);
+  DCHECK_EQ(5, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
   CHECK(!obj->IsNull(isolate));
   CONVERT_ARG_HANDLE_CHECKED(Name, name, 1);
@@ -648,11 +648,27 @@ RUNTIME_FUNCTION(Runtime_DefineAccessorPropertyUnchecked) {
 
 RUNTIME_FUNCTION(Runtime_DefineDataPropertyInLiteral) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 4);
+  DCHECK_EQ(6, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
   CONVERT_ARG_HANDLE_CHECKED(Name, name, 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, value, 2);
   CONVERT_SMI_ARG_CHECKED(flag, 3);
+  CONVERT_ARG_HANDLE_CHECKED(TypeFeedbackVector, vector, 4);
+  CONVERT_SMI_ARG_CHECKED(index, 5);
+
+  StoreDataPropertyInLiteralICNexus nexus(vector, vector->ToSlot(index));
+  if (nexus.ic_state() == UNINITIALIZED) {
+    if (name->IsUniqueName()) {
+      nexus.ConfigureMonomorphic(name, handle(object->map()));
+    } else {
+      nexus.ConfigureMegamorphic();
+    }
+  } else if (nexus.ic_state() == MONOMORPHIC) {
+    if (nexus.FindFirstMap() != object->map() ||
+        nexus.GetFeedbackExtra() != *name) {
+      nexus.ConfigureMegamorphic();
+    }
+  }
 
   DataPropertyInLiteralFlags flags =
       static_cast<DataPropertyInLiteralFlag>(flag);
@@ -680,7 +696,7 @@ RUNTIME_FUNCTION(Runtime_DefineDataPropertyInLiteral) {
 // Return property without being observable by accessors or interceptors.
 RUNTIME_FUNCTION(Runtime_GetDataProperty) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 2);
+  DCHECK_EQ(2, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, object, 0);
   CONVERT_ARG_HANDLE_CHECKED(Name, name, 1);
   return *JSReceiver::GetDataProperty(object, name);
@@ -688,7 +704,7 @@ RUNTIME_FUNCTION(Runtime_GetDataProperty) {
 
 RUNTIME_FUNCTION(Runtime_GetConstructorName) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
 
   CHECK(!object->IsUndefined(isolate) && !object->IsNull(isolate));
@@ -698,7 +714,7 @@ RUNTIME_FUNCTION(Runtime_GetConstructorName) {
 
 RUNTIME_FUNCTION(Runtime_HasFastPackedElements) {
   SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   CONVERT_ARG_CHECKED(HeapObject, obj, 0);
   return isolate->heap()->ToBoolean(
       IsFastPackedElementsKind(obj->map()->elements_kind()));
@@ -707,7 +723,7 @@ RUNTIME_FUNCTION(Runtime_HasFastPackedElements) {
 
 RUNTIME_FUNCTION(Runtime_ValueOf) {
   SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   CONVERT_ARG_CHECKED(Object, obj, 0);
   if (!obj->IsJSValue()) return obj;
   return JSValue::cast(obj)->value();
@@ -716,7 +732,7 @@ RUNTIME_FUNCTION(Runtime_ValueOf) {
 
 RUNTIME_FUNCTION(Runtime_IsJSReceiver) {
   SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   CONVERT_ARG_CHECKED(Object, obj, 0);
   return isolate->heap()->ToBoolean(obj->IsJSReceiver());
 }
@@ -724,7 +740,7 @@ RUNTIME_FUNCTION(Runtime_IsJSReceiver) {
 
 RUNTIME_FUNCTION(Runtime_ClassOf) {
   SealHandleScope shs(isolate);
-  DCHECK(args.length() == 1);
+  DCHECK_EQ(1, args.length());
   CONVERT_ARG_CHECKED(Object, obj, 0);
   if (!obj->IsJSReceiver()) return isolate->heap()->null_value();
   return JSReceiver::cast(obj)->class_name();
@@ -733,7 +749,7 @@ RUNTIME_FUNCTION(Runtime_ClassOf) {
 
 RUNTIME_FUNCTION(Runtime_DefineGetterPropertyUnchecked) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 4);
+  DCHECK_EQ(4, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
   CONVERT_ARG_HANDLE_CHECKED(Name, name, 1);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, getter, 2);
@@ -750,10 +766,26 @@ RUNTIME_FUNCTION(Runtime_DefineGetterPropertyUnchecked) {
   return isolate->heap()->undefined_value();
 }
 
+RUNTIME_FUNCTION(Runtime_CopyDataProperties) {
+  HandleScope scope(isolate);
+  DCHECK(args.length() == 2);
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, target, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, source, 1);
+
+  // 2. If source is undefined or null, let keys be an empty List.
+  if (source->IsUndefined(isolate) || source->IsNull(isolate)) {
+    return isolate->heap()->undefined_value();
+  }
+
+  MAYBE_RETURN(
+      JSReceiver::SetOrCopyDataProperties(isolate, target, source, false),
+      isolate->heap()->exception());
+  return isolate->heap()->undefined_value();
+}
 
 RUNTIME_FUNCTION(Runtime_DefineSetterPropertyUnchecked) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 4);
+  DCHECK_EQ(4, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
   CONVERT_ARG_HANDLE_CHECKED(Name, name, 1);
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, setter, 2);
@@ -921,7 +953,7 @@ RUNTIME_FUNCTION(Runtime_IsAccessCheckNeeded) {
 
 RUNTIME_FUNCTION(Runtime_CreateDataProperty) {
   HandleScope scope(isolate);
-  DCHECK(args.length() == 3);
+  DCHECK_EQ(3, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSReceiver, o, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, key, 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, value, 2);

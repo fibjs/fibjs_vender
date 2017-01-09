@@ -28,6 +28,7 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
   V(CodeMap, CodeMap)                                 \
   V(empty_string, EmptyString)                        \
   V(EmptyFixedArray, EmptyFixedArray)                 \
+  V(EmptyLiteralsArray, EmptyLiteralsArray)           \
   V(FalseValue, False)                                \
   V(FixedArrayMap, FixedArrayMap)                     \
   V(FixedCOWArrayMap, FixedCOWArrayMap)               \
@@ -135,8 +136,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   Node* IntPtrOrSmiConstant(int value, ParameterMode mode);
 
-  Node* IntPtrAddFoldConstants(Node* left, Node* right);
-  Node* IntPtrSubFoldConstants(Node* left, Node* right);
   // Round the 32bits payload of the provided word up to the next power of two.
   Node* IntPtrRoundUpToPowerOfTwo32(Node* value);
   // Select the maximum of the two provided IntPtr values.
@@ -314,6 +313,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* LoadInstanceType(Node* object);
   // Compare the instance the type of the object against the provided one.
   Node* HasInstanceType(Node* object, InstanceType type);
+  Node* DoesntHaveInstanceType(Node* object, InstanceType type);
   // Load the properties backing store of a JSObject.
   Node* LoadProperties(Node* object);
   // Load the elements backing store of a JSObject.
@@ -781,6 +781,29 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
     return WordNotEqual(WordAnd(word, IntPtrConstant(mask)), IntPtrConstant(0));
   }
 
+  // Returns true if all of the |T|'s bits in given |word32| are clear.
+  template <typename T>
+  Node* IsClearWord32(Node* word32) {
+    return IsClearWord32(word32, T::kMask);
+  }
+
+  // Returns true if all of the mask's bits in given |word32| are clear.
+  Node* IsClearWord32(Node* word32, uint32_t mask) {
+    return Word32Equal(Word32And(word32, Int32Constant(mask)),
+                       Int32Constant(0));
+  }
+
+  // Returns true if all of the |T|'s bits in given |word| are clear.
+  template <typename T>
+  Node* IsClearWord(Node* word) {
+    return IsClearWord(word, T::kMask);
+  }
+
+  // Returns true if all of the mask's bits in given |word| are clear.
+  Node* IsClearWord(Node* word, uint32_t mask) {
+    return WordEqual(WordAnd(word, IntPtrConstant(mask)), IntPtrConstant(0));
+  }
+
   void SetCounter(StatsCounter* counter, int value);
   void IncrementCounter(StatsCounter* counter, int delta);
   void DecrementCounter(StatsCounter* counter, int delta);
@@ -1047,6 +1070,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                   FixedArray::kHeaderSize);
   }
 
+  void InitializeFieldsWithRoot(Node* object, Node* start_offset,
+                                Node* end_offset, Heap::RootListIndex root);
+
   enum RelationalComparisonMode {
     kLessThan,
     kLessThanOrEqual,
@@ -1102,15 +1128,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Promise helpers
   Node* IsPromiseHookEnabled();
 
-  Node* AllocateJSPromise(Node* context);
-  void PromiseInit(Node* promise);
-
-  // Other promise fields may also be need to set/reset. This only
-  // provides a helper for certain init patterns.
-  void PromiseSet(Node* promise, Node* status, Node* result);
-
-  Node* AllocatePromiseReactionJobInfo(Node* value, Node* promise, Node* tasks,
-                                       Node* deferred, Node* context);
+  Node* AllocatePromiseReactionJobInfo(Node* promise, Node* value, Node* tasks,
+                                       Node* deferred_promise,
+                                       Node* deferred_on_resolve,
+                                       Node* deferred_on_reject, Node* context);
 
  protected:
   void DescriptorLookupLinear(Node* unique_name, Node* descriptors, Node* nof,
@@ -1205,8 +1226,23 @@ class CodeStubArguments {
 #ifdef DEBUG
 #define CSA_ASSERT(csa, x) \
   (csa)->Assert([&] { return (x); }, #x, __FILE__, __LINE__)
+#define CSA_ASSERT_JS_ARGC_OP(csa, Op, op, expected)               \
+  (csa)->Assert(                                                   \
+      [&] {                                                        \
+        const CodeAssemblerState* state = (csa)->state();          \
+        /* See Linkage::GetJSCallDescriptor(). */                  \
+        int argc_index = state->parameter_count() - 2;             \
+        compiler::Node* const argc = (csa)->Parameter(argc_index); \
+        return (csa)->Op(argc, (csa)->Int32Constant(expected));    \
+      },                                                           \
+      "argc " #op " " #expected, __FILE__, __LINE__)
+
+#define CSA_ASSERT_JS_ARGC_EQ(csa, expected) \
+  CSA_ASSERT_JS_ARGC_OP(csa, Word32Equal, ==, expected)
+
 #else
 #define CSA_ASSERT(csa, x) ((void)0)
+#define CSA_ASSERT_JS_ARGC_EQ(csa, expected) ((void)0)
 #endif
 
 #ifdef ENABLE_SLOW_DCHECKS

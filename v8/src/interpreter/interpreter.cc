@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "src/ast/prettyprinter.h"
+#include "src/builtins/builtins-constructor.h"
 #include "src/code-factory.h"
 #include "src/compilation-info.h"
 #include "src/compiler.h"
@@ -40,9 +41,41 @@ class InterpreterCompilationJob final : public CompilationJob {
   Status FinalizeJobImpl() final;
 
  private:
+  class TimerScope final {
+   public:
+    TimerScope(RuntimeCallStats* stats, RuntimeCallStats::CounterId counter_id)
+        : stats_(stats) {
+      if (V8_UNLIKELY(FLAG_runtime_stats)) {
+        RuntimeCallStats::Enter(stats_, &timer_, counter_id);
+      }
+    }
+
+    explicit TimerScope(RuntimeCallCounter* counter) : stats_(nullptr) {
+      if (V8_UNLIKELY(FLAG_runtime_stats)) {
+        timer_.Start(counter, nullptr);
+      }
+    }
+
+    ~TimerScope() {
+      if (V8_UNLIKELY(FLAG_runtime_stats)) {
+        if (stats_) {
+          RuntimeCallStats::Leave(stats_, &timer_);
+        } else {
+          timer_.Stop();
+        }
+      }
+    }
+
+   private:
+    RuntimeCallStats* stats_;
+    RuntimeCallTimer timer_;
+  };
+
   BytecodeGenerator* generator() { return &generator_; }
 
   BytecodeGenerator generator_;
+  RuntimeCallStats* runtime_call_stats_;
+  RuntimeCallCounter background_execute_counter_;
 
   DISALLOW_COPY_AND_ASSIGN(InterpreterCompilationJob);
 };
@@ -161,7 +194,9 @@ int Interpreter::InterruptBudget() {
 InterpreterCompilationJob::InterpreterCompilationJob(CompilationInfo* info,
                                                      LazyCompilationMode mode)
     : CompilationJob(info->isolate(), info, "Ignition"),
-      generator_(info, mode) {}
+      generator_(info, mode),
+      runtime_call_stats_(info->isolate()->counters()->runtime_call_stats()),
+      background_execute_counter_("CompileBackgroundIgnition") {}
 
 InterpreterCompilationJob::Status InterpreterCompilationJob::PrepareJobImpl() {
   CodeGenerator::MakeCodePrologue(info(), "interpreter");
@@ -177,11 +212,11 @@ InterpreterCompilationJob::Status InterpreterCompilationJob::PrepareJobImpl() {
 }
 
 InterpreterCompilationJob::Status InterpreterCompilationJob::ExecuteJobImpl() {
-  // TODO(5203): These timers aren't thread safe, move to using the CompilerJob
-  // timers.
-  RuntimeCallTimerScope runtimeTimer(info()->isolate(),
-                                     &RuntimeCallStats::CompileIgnition);
-  TimerEventScope<TimerEventCompileIgnition> timer(info()->isolate());
+  TimerScope runtimeTimer =
+      executed_on_background_thread()
+          ? TimerScope(&background_execute_counter_)
+          : TimerScope(runtime_call_stats_, &RuntimeCallStats::CompileIgnition);
+  // TODO(lpy): add support for background compilation RCS trace.
   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"), "V8.CompileIgnition");
 
   generator()->GenerateBytecode(stack_limit());
@@ -193,6 +228,15 @@ InterpreterCompilationJob::Status InterpreterCompilationJob::ExecuteJobImpl() {
 }
 
 InterpreterCompilationJob::Status InterpreterCompilationJob::FinalizeJobImpl() {
+  // Add background runtime call stats.
+  if (V8_UNLIKELY(FLAG_runtime_stats && executed_on_background_thread())) {
+    runtime_call_stats_->CompileBackgroundIgnition.Add(
+        &background_execute_counter_);
+  }
+
+  RuntimeCallTimerScope runtimeTimer(
+      runtime_call_stats_, &RuntimeCallStats::CompileIgnitionFinalization);
+
   Handle<BytecodeArray> bytecodes = generator()->FinalizeBytecode(isolate());
   if (generator()->HasStackOverflow()) {
     return FAILED;
@@ -817,27 +861,26 @@ void Interpreter::DoStaKeyedPropertyStrict(InterpreterAssembler* assembler) {
   DoKeyedStoreIC(ic, assembler);
 }
 
-// StaDataPropertyInLiteral <object> <name> <value> <flags>
+// StaDataPropertyInLiteral <object> <name> <flags>
 //
-// Define a property <name> with value <value> in <object>. Property attributes
-// and whether set_function_name are stored in DataPropertyInLiteralFlags
-// <flags>.
+// Define a property <name> with value from the accumulator in <object>.
+// Property attributes and whether set_function_name are stored in
+// DataPropertyInLiteralFlags <flags>.
 //
 // This definition is not observable and is used only for definitions
 // in object or class literals.
 void Interpreter::DoStaDataPropertyInLiteral(InterpreterAssembler* assembler) {
-  Node* object_reg_index = __ BytecodeOperandReg(0);
-  Node* object = __ LoadRegister(object_reg_index);
-  Node* name_reg_index = __ BytecodeOperandReg(1);
-  Node* name = __ LoadRegister(name_reg_index);
-  Node* value_reg_index = __ BytecodeOperandReg(2);
-  Node* value = __ LoadRegister(value_reg_index);
-  Node* flags = __ SmiFromWord32(__ BytecodeOperandFlag(3));
+  Node* object = __ LoadRegister(__ BytecodeOperandReg(0));
+  Node* name = __ LoadRegister(__ BytecodeOperandReg(1));
+  Node* value = __ GetAccumulator();
+  Node* flags = __ SmiFromWord32(__ BytecodeOperandFlag(2));
+  Node* vector_index = __ SmiTag(__ BytecodeOperandIdx(3));
 
+  Node* type_feedback_vector = __ LoadTypeFeedbackVector();
   Node* context = __ GetContext();
 
   __ CallRuntime(Runtime::kDefineDataPropertyInLiteral, context, object, name,
-                 value, flags);
+                 value, flags, type_feedback_vector, vector_index);
   __ Dispatch();
 }
 
@@ -1037,9 +1080,27 @@ void Interpreter::DoCompareOpWithFeedback(Token::Value compare_op,
           __ Bind(&lhs_is_not_oddball);
         }
 
-        var_type_feedback.Bind(__ SelectInt32Constant(
-            __ IsStringInstanceType(lhs_instance_type),
-            CompareOperationFeedback::kString, CompareOperationFeedback::kAny));
+        Label lhs_is_not_string(assembler);
+        __ GotoUnless(__ IsStringInstanceType(lhs_instance_type),
+                      &lhs_is_not_string);
+
+        if (Token::IsOrderedRelationalCompareOp(compare_op)) {
+          var_type_feedback.Bind(
+              __ Int32Constant(CompareOperationFeedback::kString));
+        } else {
+          var_type_feedback.Bind(__ SelectInt32Constant(
+              __ Word32Equal(
+                  __ Word32And(lhs_instance_type,
+                               __ Int32Constant(kIsNotInternalizedMask)),
+                  __ Int32Constant(kInternalizedTag)),
+              CompareOperationFeedback::kInternalizedString,
+              CompareOperationFeedback::kString));
+        }
+        __ Goto(&gather_rhs_type);
+
+        __ Bind(&lhs_is_not_string);
+        var_type_feedback.Bind(
+            __ Int32Constant(CompareOperationFeedback::kAny));
         __ Goto(&gather_rhs_type);
       }
     }
@@ -1082,11 +1143,30 @@ void Interpreter::DoCompareOpWithFeedback(Token::Value compare_op,
             __ Bind(&rhs_is_not_oddball);
           }
 
-          var_type_feedback.Bind(__ Word32Or(
-              var_type_feedback.value(),
-              __ SelectInt32Constant(__ IsStringInstanceType(rhs_instance_type),
-                                     CompareOperationFeedback::kString,
-                                     CompareOperationFeedback::kAny)));
+          Label rhs_is_not_string(assembler);
+          __ GotoUnless(__ IsStringInstanceType(rhs_instance_type),
+                        &rhs_is_not_string);
+
+          if (Token::IsOrderedRelationalCompareOp(compare_op)) {
+            var_type_feedback.Bind(__ Word32Or(
+                var_type_feedback.value(),
+                __ Int32Constant(CompareOperationFeedback::kString)));
+          } else {
+            var_type_feedback.Bind(__ Word32Or(
+                var_type_feedback.value(),
+                __ SelectInt32Constant(
+                    __ Word32Equal(
+                        __ Word32And(rhs_instance_type,
+                                     __ Int32Constant(kIsNotInternalizedMask)),
+                        __ Int32Constant(kInternalizedTag)),
+                    CompareOperationFeedback::kInternalizedString,
+                    CompareOperationFeedback::kString)));
+          }
+          __ Goto(&update_feedback);
+
+          __ Bind(&rhs_is_not_string);
+          var_type_feedback.Bind(
+              __ Int32Constant(CompareOperationFeedback::kAny));
           __ Goto(&update_feedback);
         }
       }
@@ -1566,14 +1646,276 @@ void Interpreter::DoToObject(InterpreterAssembler* assembler) {
 //
 // Increments value in the accumulator by one.
 void Interpreter::DoInc(InterpreterAssembler* assembler) {
-  DoUnaryOpWithFeedback<IncStub>(assembler);
+  typedef CodeStubAssembler::Label Label;
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Variable Variable;
+
+  Node* value = __ GetAccumulator();
+  Node* context = __ GetContext();
+  Node* slot_index = __ BytecodeOperandIdx(0);
+  Node* type_feedback_vector = __ LoadTypeFeedbackVector();
+
+  // Shared entry for floating point increment.
+  Label do_finc(assembler), end(assembler);
+  Variable var_finc_value(assembler, MachineRepresentation::kFloat64);
+
+  // We might need to try again due to ToNumber conversion.
+  Variable value_var(assembler, MachineRepresentation::kTagged);
+  Variable result_var(assembler, MachineRepresentation::kTagged);
+  Variable var_type_feedback(assembler, MachineRepresentation::kWord32);
+  Variable* loop_vars[] = {&value_var, &var_type_feedback};
+  Label start(assembler, 2, loop_vars);
+  value_var.Bind(value);
+  var_type_feedback.Bind(
+      assembler->Int32Constant(BinaryOperationFeedback::kNone));
+  assembler->Goto(&start);
+  assembler->Bind(&start);
+  {
+    value = value_var.value();
+
+    Label if_issmi(assembler), if_isnotsmi(assembler);
+    assembler->Branch(assembler->TaggedIsSmi(value), &if_issmi, &if_isnotsmi);
+
+    assembler->Bind(&if_issmi);
+    {
+      // Try fast Smi addition first.
+      Node* one = assembler->SmiConstant(Smi::FromInt(1));
+      Node* pair = assembler->IntPtrAddWithOverflow(
+          assembler->BitcastTaggedToWord(value),
+          assembler->BitcastTaggedToWord(one));
+      Node* overflow = assembler->Projection(1, pair);
+
+      // Check if the Smi addition overflowed.
+      Label if_overflow(assembler), if_notoverflow(assembler);
+      assembler->Branch(overflow, &if_overflow, &if_notoverflow);
+
+      assembler->Bind(&if_notoverflow);
+      var_type_feedback.Bind(assembler->Word32Or(
+          var_type_feedback.value(),
+          assembler->Int32Constant(BinaryOperationFeedback::kSignedSmall)));
+      result_var.Bind(
+          assembler->BitcastWordToTaggedSigned(assembler->Projection(0, pair)));
+      assembler->Goto(&end);
+
+      assembler->Bind(&if_overflow);
+      {
+        var_finc_value.Bind(assembler->SmiToFloat64(value));
+        assembler->Goto(&do_finc);
+      }
+    }
+
+    assembler->Bind(&if_isnotsmi);
+    {
+      // Check if the value is a HeapNumber.
+      Label if_valueisnumber(assembler),
+          if_valuenotnumber(assembler, Label::kDeferred);
+      Node* value_map = assembler->LoadMap(value);
+      assembler->Branch(assembler->IsHeapNumberMap(value_map),
+                        &if_valueisnumber, &if_valuenotnumber);
+
+      assembler->Bind(&if_valueisnumber);
+      {
+        // Load the HeapNumber value.
+        var_finc_value.Bind(assembler->LoadHeapNumberValue(value));
+        assembler->Goto(&do_finc);
+      }
+
+      assembler->Bind(&if_valuenotnumber);
+      {
+        // We do not require an Or with earlier feedback here because once we
+        // convert the value to a number, we cannot reach this path. We can
+        // only reach this path on the first pass when the feedback is kNone.
+        CSA_ASSERT(assembler,
+                   assembler->Word32Equal(var_type_feedback.value(),
+                                          assembler->Int32Constant(
+                                              BinaryOperationFeedback::kNone)));
+
+        Label if_valueisoddball(assembler), if_valuenotoddball(assembler);
+        Node* instance_type = assembler->LoadMapInstanceType(value_map);
+        Node* is_oddball = assembler->Word32Equal(
+            instance_type, assembler->Int32Constant(ODDBALL_TYPE));
+        assembler->Branch(is_oddball, &if_valueisoddball, &if_valuenotoddball);
+
+        assembler->Bind(&if_valueisoddball);
+        {
+          // Convert Oddball to Number and check again.
+          value_var.Bind(
+              assembler->LoadObjectField(value, Oddball::kToNumberOffset));
+          var_type_feedback.Bind(assembler->Int32Constant(
+              BinaryOperationFeedback::kNumberOrOddball));
+          assembler->Goto(&start);
+        }
+
+        assembler->Bind(&if_valuenotoddball);
+        {
+          // Convert to a Number first and try again.
+          Callable callable =
+              CodeFactory::NonNumberToNumber(assembler->isolate());
+          var_type_feedback.Bind(
+              assembler->Int32Constant(BinaryOperationFeedback::kAny));
+          value_var.Bind(assembler->CallStub(callable, context, value));
+          assembler->Goto(&start);
+        }
+      }
+    }
+  }
+
+  assembler->Bind(&do_finc);
+  {
+    Node* finc_value = var_finc_value.value();
+    Node* one = assembler->Float64Constant(1.0);
+    Node* finc_result = assembler->Float64Add(finc_value, one);
+    var_type_feedback.Bind(assembler->Word32Or(
+        var_type_feedback.value(),
+        assembler->Int32Constant(BinaryOperationFeedback::kNumber)));
+    result_var.Bind(assembler->AllocateHeapNumberWithValue(finc_result));
+    assembler->Goto(&end);
+  }
+
+  assembler->Bind(&end);
+  assembler->UpdateFeedback(var_type_feedback.value(), type_feedback_vector,
+                            slot_index);
+
+  __ SetAccumulator(result_var.value());
+  __ Dispatch();
 }
 
 // Dec
 //
 // Decrements value in the accumulator by one.
 void Interpreter::DoDec(InterpreterAssembler* assembler) {
-  DoUnaryOpWithFeedback<DecStub>(assembler);
+  typedef CodeStubAssembler::Label Label;
+  typedef compiler::Node Node;
+  typedef CodeStubAssembler::Variable Variable;
+
+  Node* value = __ GetAccumulator();
+  Node* context = __ GetContext();
+  Node* slot_index = __ BytecodeOperandIdx(0);
+  Node* type_feedback_vector = __ LoadTypeFeedbackVector();
+
+  // Shared entry for floating point decrement.
+  Label do_fdec(assembler), end(assembler);
+  Variable var_fdec_value(assembler, MachineRepresentation::kFloat64);
+
+  // We might need to try again due to ToNumber conversion.
+  Variable value_var(assembler, MachineRepresentation::kTagged);
+  Variable result_var(assembler, MachineRepresentation::kTagged);
+  Variable var_type_feedback(assembler, MachineRepresentation::kWord32);
+  Variable* loop_vars[] = {&value_var, &var_type_feedback};
+  Label start(assembler, 2, loop_vars);
+  var_type_feedback.Bind(
+      assembler->Int32Constant(BinaryOperationFeedback::kNone));
+  value_var.Bind(value);
+  assembler->Goto(&start);
+  assembler->Bind(&start);
+  {
+    value = value_var.value();
+
+    Label if_issmi(assembler), if_isnotsmi(assembler);
+    assembler->Branch(assembler->TaggedIsSmi(value), &if_issmi, &if_isnotsmi);
+
+    assembler->Bind(&if_issmi);
+    {
+      // Try fast Smi subtraction first.
+      Node* one = assembler->SmiConstant(Smi::FromInt(1));
+      Node* pair = assembler->IntPtrSubWithOverflow(
+          assembler->BitcastTaggedToWord(value),
+          assembler->BitcastTaggedToWord(one));
+      Node* overflow = assembler->Projection(1, pair);
+
+      // Check if the Smi subtraction overflowed.
+      Label if_overflow(assembler), if_notoverflow(assembler);
+      assembler->Branch(overflow, &if_overflow, &if_notoverflow);
+
+      assembler->Bind(&if_notoverflow);
+      var_type_feedback.Bind(assembler->Word32Or(
+          var_type_feedback.value(),
+          assembler->Int32Constant(BinaryOperationFeedback::kSignedSmall)));
+      result_var.Bind(
+          assembler->BitcastWordToTaggedSigned(assembler->Projection(0, pair)));
+      assembler->Goto(&end);
+
+      assembler->Bind(&if_overflow);
+      {
+        var_fdec_value.Bind(assembler->SmiToFloat64(value));
+        assembler->Goto(&do_fdec);
+      }
+    }
+
+    assembler->Bind(&if_isnotsmi);
+    {
+      // Check if the value is a HeapNumber.
+      Label if_valueisnumber(assembler),
+          if_valuenotnumber(assembler, Label::kDeferred);
+      Node* value_map = assembler->LoadMap(value);
+      assembler->Branch(assembler->IsHeapNumberMap(value_map),
+                        &if_valueisnumber, &if_valuenotnumber);
+
+      assembler->Bind(&if_valueisnumber);
+      {
+        // Load the HeapNumber value.
+        var_fdec_value.Bind(assembler->LoadHeapNumberValue(value));
+        assembler->Goto(&do_fdec);
+      }
+
+      assembler->Bind(&if_valuenotnumber);
+      {
+        // We do not require an Or with earlier feedback here because once we
+        // convert the value to a number, we cannot reach this path. We can
+        // only reach this path on the first pass when the feedback is kNone.
+        CSA_ASSERT(assembler,
+                   assembler->Word32Equal(var_type_feedback.value(),
+                                          assembler->Int32Constant(
+                                              BinaryOperationFeedback::kNone)));
+
+        Label if_valueisoddball(assembler), if_valuenotoddball(assembler);
+        Node* instance_type = assembler->LoadMapInstanceType(value_map);
+        Node* is_oddball = assembler->Word32Equal(
+            instance_type, assembler->Int32Constant(ODDBALL_TYPE));
+        assembler->Branch(is_oddball, &if_valueisoddball, &if_valuenotoddball);
+
+        assembler->Bind(&if_valueisoddball);
+        {
+          // Convert Oddball to Number and check again.
+          value_var.Bind(
+              assembler->LoadObjectField(value, Oddball::kToNumberOffset));
+          var_type_feedback.Bind(assembler->Int32Constant(
+              BinaryOperationFeedback::kNumberOrOddball));
+          assembler->Goto(&start);
+        }
+
+        assembler->Bind(&if_valuenotoddball);
+        {
+          // Convert to a Number first and try again.
+          Callable callable =
+              CodeFactory::NonNumberToNumber(assembler->isolate());
+          var_type_feedback.Bind(
+              assembler->Int32Constant(BinaryOperationFeedback::kAny));
+          value_var.Bind(assembler->CallStub(callable, context, value));
+          assembler->Goto(&start);
+        }
+      }
+    }
+  }
+
+  assembler->Bind(&do_fdec);
+  {
+    Node* fdec_value = var_fdec_value.value();
+    Node* one = assembler->Float64Constant(1.0);
+    Node* fdec_result = assembler->Float64Sub(fdec_value, one);
+    var_type_feedback.Bind(assembler->Word32Or(
+        var_type_feedback.value(),
+        assembler->Int32Constant(BinaryOperationFeedback::kNumber)));
+    result_var.Bind(assembler->AllocateHeapNumberWithValue(fdec_result));
+    assembler->Goto(&end);
+  }
+
+  assembler->Bind(&end);
+  assembler->UpdateFeedback(var_type_feedback.value(), type_feedback_vector,
+                            slot_index);
+
+  __ SetAccumulator(result_var.value());
+  __ Dispatch();
 }
 
 // LogicalNot
@@ -2288,8 +2630,9 @@ void Interpreter::DoCreateRegExpLiteral(InterpreterAssembler* assembler) {
   Node* flags = __ SmiFromWord32(__ BytecodeOperandFlag(2));
   Node* closure = __ LoadRegister(Register::function_closure());
   Node* context = __ GetContext();
-  Node* result = FastCloneRegExpStub::Generate(
-      assembler, closure, literal_index, pattern, flags, context);
+  ConstructorBuiltinsAssembler constructor_assembler(assembler->state());
+  Node* result = constructor_assembler.EmitFastCloneRegExp(
+      closure, literal_index, pattern, flags, context);
   __ SetAccumulator(result);
   __ Dispatch();
 }
@@ -2313,9 +2656,9 @@ void Interpreter::DoCreateArrayLiteral(InterpreterAssembler* assembler) {
   __ Bind(&fast_shallow_clone);
   {
     DCHECK(FLAG_allocation_site_pretenuring);
-    Node* result = FastCloneShallowArrayStub::Generate(
-        assembler, closure, literal_index, context, &call_runtime,
-        TRACK_ALLOCATION_SITE);
+    ConstructorBuiltinsAssembler constructor_assembler(assembler->state());
+    Node* result = constructor_assembler.EmitFastCloneShallowArray(
+        closure, literal_index, context, &call_runtime, TRACK_ALLOCATION_SITE);
     __ SetAccumulator(result);
     __ Dispatch();
   }
@@ -2356,8 +2699,9 @@ void Interpreter::DoCreateObjectLiteral(InterpreterAssembler* assembler) {
   __ Bind(&if_fast_clone);
   {
     // If we can do a fast clone do the fast-path in FastCloneShallowObjectStub.
-    Node* result = FastCloneShallowObjectStub::GenerateFastPath(
-        assembler, &if_not_fast_clone, closure, literal_index,
+    ConstructorBuiltinsAssembler constructor_assembler(assembler->state());
+    Node* result = constructor_assembler.EmitFastCloneShallowObject(
+        &if_not_fast_clone, closure, literal_index,
         fast_clone_properties_count);
     __ StoreRegister(result, __ BytecodeOperandReg(3));
     __ Dispatch();
@@ -2397,7 +2741,8 @@ void Interpreter::DoCreateClosure(InterpreterAssembler* assembler) {
   Label call_runtime(assembler, Label::kDeferred);
   __ GotoUnless(__ IsSetWord32<CreateClosureFlags::FastNewClosureBit>(flags),
                 &call_runtime);
-  __ SetAccumulator(FastNewClosureStub::Generate(assembler, shared, context));
+  ConstructorBuiltinsAssembler constructor_assembler(assembler->state());
+  __ SetAccumulator(constructor_assembler.EmitFastNewClosure(shared, context));
   __ Dispatch();
 
   __ Bind(&call_runtime);
@@ -2452,8 +2797,9 @@ void Interpreter::DoCreateFunctionContext(InterpreterAssembler* assembler) {
   Node* closure = __ LoadRegister(Register::function_closure());
   Node* slots = __ BytecodeOperandUImm(0);
   Node* context = __ GetContext();
-  __ SetAccumulator(FastNewFunctionContextStub::Generate(
-      assembler, closure, slots, context, FUNCTION_SCOPE));
+  ConstructorBuiltinsAssembler constructor_assembler(assembler->state());
+  __ SetAccumulator(constructor_assembler.EmitFastNewFunctionContext(
+      closure, slots, context, FUNCTION_SCOPE));
   __ Dispatch();
 }
 
@@ -2464,8 +2810,9 @@ void Interpreter::DoCreateEvalContext(InterpreterAssembler* assembler) {
   Node* closure = __ LoadRegister(Register::function_closure());
   Node* slots = __ BytecodeOperandUImm(0);
   Node* context = __ GetContext();
-  __ SetAccumulator(FastNewFunctionContextStub::Generate(
-      assembler, closure, slots, context, EVAL_SCOPE));
+  ConstructorBuiltinsAssembler constructor_assembler(assembler->state());
+  __ SetAccumulator(constructor_assembler.EmitFastNewFunctionContext(
+      closure, slots, context, EVAL_SCOPE));
   __ Dispatch();
 }
 

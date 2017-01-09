@@ -49,8 +49,6 @@ class Node;
   V(StoreBufferOverflow)                      \
   V(StoreElement)                             \
   V(SubString)                                \
-  V(LoadGlobalIC)                             \
-  V(FastNewObject)                            \
   V(FastNewRestParameter)                     \
   V(FastNewSloppyArguments)                   \
   V(FastNewStrictArguments)                   \
@@ -94,16 +92,9 @@ class Node;
   V(MultiplyWithFeedback)                     \
   V(DivideWithFeedback)                       \
   V(ModulusWithFeedback)                      \
-  V(Inc)                                      \
   V(InternalArrayNoArgumentConstructor)       \
   V(InternalArraySingleArgumentConstructor)   \
-  V(Dec)                                      \
   V(ElementsTransitionAndStore)               \
-  V(FastCloneRegExp)                          \
-  V(FastCloneShallowArray)                    \
-  V(FastCloneShallowObject)                   \
-  V(FastNewClosure)                           \
-  V(FastNewFunctionContext)                   \
   V(KeyedLoadSloppyArguments)                 \
   V(KeyedStoreSloppyArguments)                \
   V(LoadScriptContextField)                   \
@@ -111,26 +102,14 @@ class Node;
   V(NumberToString)                           \
   V(StringAdd)                                \
   V(GetProperty)                              \
-  V(LoadIC)                                   \
   V(LoadICProtoArray)                         \
-  V(KeyedLoadICTF)                            \
   V(StoreFastElement)                         \
   V(StoreGlobal)                              \
-  V(StoreIC)                                  \
-  V(KeyedStoreICTF)                           \
   V(StoreInterceptor)                         \
   V(LoadApiGetter)                            \
   V(LoadIndexedInterceptor)                   \
   V(LoadField)                                \
-  V(GrowArrayElements)                        \
-  /* These are only called from FGC and */    \
-  /* can be removed when we use ignition */   \
-  /* only */                                  \
-  V(LoadICTrampoline)                         \
-  V(LoadGlobalICTrampoline)                   \
-  V(KeyedLoadICTrampolineTF)                  \
-  V(StoreICTrampoline)                        \
-  V(KeyedStoreICTrampolineTF)
+  V(GrowArrayElements)
 
 // List of code stubs only used on ARM 32 bits platforms.
 #if V8_TARGET_ARCH_ARM
@@ -732,22 +711,6 @@ class ModulusWithFeedbackStub final : public TurboFanCodeStub {
                                                     TurboFanCodeStub);
 };
 
-class IncStub final : public TurboFanCodeStub {
- public:
-  explicit IncStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(CountOp);
-  DEFINE_TURBOFAN_UNARY_OP_CODE_STUB_WITH_FEEDBACK(Inc, TurboFanCodeStub);
-};
-
-class DecStub final : public TurboFanCodeStub {
- public:
-  explicit DecStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(CountOp);
-  DEFINE_TURBOFAN_UNARY_OP_CODE_STUB_WITH_FEEDBACK(Dec, TurboFanCodeStub);
-};
-
 class StoreInterceptorStub : public TurboFanCodeStub {
  public:
   explicit StoreInterceptorStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
@@ -787,61 +750,6 @@ class NumberToStringStub final : public TurboFanCodeStub {
   DEFINE_CALL_INTERFACE_DESCRIPTOR(TypeConversion);
   DEFINE_TURBOFAN_CODE_STUB(NumberToString, TurboFanCodeStub);
 };
-
-class FastNewClosureStub : public TurboFanCodeStub {
- public:
-  explicit FastNewClosureStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
-
-  static compiler::Node* Generate(CodeStubAssembler* assembler,
-                                  compiler::Node* shared_info,
-                                  compiler::Node* context);
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewClosure);
-  DEFINE_TURBOFAN_CODE_STUB(FastNewClosure, TurboFanCodeStub);
-};
-
-class FastNewFunctionContextStub final : public TurboFanCodeStub {
- public:
-  static int MaximumSlots();
-
-  explicit FastNewFunctionContextStub(Isolate* isolate, ScopeType scope_type)
-      : TurboFanCodeStub(isolate) {
-    minor_key_ = ScopeTypeBits::encode(scope_type);
-  }
-
-  static compiler::Node* Generate(CodeStubAssembler* assembler,
-                                  compiler::Node* function,
-                                  compiler::Node* slots,
-                                  compiler::Node* context,
-                                  ScopeType scope_type);
-
-  ScopeType scope_type() const {
-    return static_cast<ScopeType>(ScopeTypeBits::decode(minor_key_));
-  }
-
- private:
-  static const int kMaximumSlots = 0x8000;
-  static const int kSmallMaximumSlots = 10;
-
-  // FastNewFunctionContextStub can only allocate closures which fit in the
-  // new space.
-  STATIC_ASSERT(((kMaximumSlots + Context::MIN_CONTEXT_SLOTS) * kPointerSize +
-                 FixedArray::kHeaderSize) < kMaxRegularHeapObjectSize);
-
-  class ScopeTypeBits : public BitField<bool, 0, 8> {};
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewFunctionContext);
-  DEFINE_TURBOFAN_CODE_STUB(FastNewFunctionContext, TurboFanCodeStub);
-};
-
-class FastNewObjectStub final : public PlatformCodeStub {
- public:
-  explicit FastNewObjectStub(Isolate* isolate) : PlatformCodeStub(isolate) {}
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastNewObject);
-  DEFINE_PLATFORM_CODE_STUB(FastNewObject, PlatformCodeStub);
-};
-
 
 // TODO(turbofan): This stub should be possible to write in TurboFan
 // using the CodeStubAssembler very soon in a way that is as efficient
@@ -904,81 +812,6 @@ class FastNewStrictArgumentsStub final : public PlatformCodeStub {
 
  private:
   class SkipStubFrameBits : public BitField<bool, 0, 1> {};
-};
-
-class FastCloneRegExpStub final : public TurboFanCodeStub {
- public:
-  explicit FastCloneRegExpStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
-
-  static compiler::Node* Generate(CodeStubAssembler* assembler,
-                                  compiler::Node* closure,
-                                  compiler::Node* literal_index,
-                                  compiler::Node* pattern,
-                                  compiler::Node* flags,
-                                  compiler::Node* context);
-
- private:
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastCloneRegExp);
-  DEFINE_TURBOFAN_CODE_STUB(FastCloneRegExp, TurboFanCodeStub);
-};
-
-class FastCloneShallowArrayStub : public TurboFanCodeStub {
- public:
-  // Maximum number of elements in copied array (chosen so that even an array
-  // backed by a double backing store will fit into new-space).
-  static const int kMaximumClonedElements =
-      JSArray::kInitialMaxFastElementArray * kPointerSize / kDoubleSize;
-
-  FastCloneShallowArrayStub(Isolate* isolate,
-                            AllocationSiteMode allocation_site_mode)
-      : TurboFanCodeStub(isolate) {
-    minor_key_ = AllocationSiteModeBits::encode(allocation_site_mode);
-  }
-
-  static compiler::Node* Generate(CodeStubAssembler* assembler,
-                                  compiler::Node* closure,
-                                  compiler::Node* literal_index,
-                                  compiler::Node* context,
-                                  compiler::CodeAssemblerLabel* call_runtime,
-                                  AllocationSiteMode allocation_site_mode);
-
-  AllocationSiteMode allocation_site_mode() const {
-    return AllocationSiteModeBits::decode(minor_key_);
-  }
-
- private:
-  class AllocationSiteModeBits: public BitField<AllocationSiteMode, 0, 1> {};
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastCloneShallowArray);
-  DEFINE_TURBOFAN_CODE_STUB(FastCloneShallowArray, TurboFanCodeStub);
-};
-
-class FastCloneShallowObjectStub : public TurboFanCodeStub {
- public:
-  // Maximum number of properties in copied object.
-  static const int kMaximumClonedProperties = 6;
-
-  FastCloneShallowObjectStub(Isolate* isolate, int length)
-      : TurboFanCodeStub(isolate) {
-    DCHECK_GE(length, 0);
-    DCHECK_LE(length, kMaximumClonedProperties);
-    minor_key_ = LengthBits::encode(LengthBits::encode(length));
-  }
-
-  static compiler::Node* GenerateFastPath(
-      CodeStubAssembler* assembler, compiler::CodeAssemblerLabel* call_runtime,
-      compiler::Node* closure, compiler::Node* literals_index,
-      compiler::Node* properties_count);
-
-  static int PropertiesCount(int literal_length);
-
-  int length() const { return LengthBits::decode(minor_key_); }
-
- private:
-  class LengthBits : public BitField<int, 0, 4> {};
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(FastCloneShallowObject);
-  DEFINE_TURBOFAN_CODE_STUB(FastCloneShallowObject, TurboFanCodeStub);
 };
 
 class CreateAllocationSiteStub : public TurboFanCodeStub {
@@ -1794,84 +1627,6 @@ class StringCharAtGenerator {
   DISALLOW_COPY_AND_ASSIGN(StringCharAtGenerator);
 };
 
-
-class LoadICTrampolineStub : public TurboFanCodeStub {
- public:
-  explicit LoadICTrampolineStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
-
-  Code::Kind GetCodeKind() const override { return Code::LOAD_IC; }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(Load);
-  DEFINE_TURBOFAN_CODE_STUB(LoadICTrampoline, TurboFanCodeStub);
-};
-
-class LoadGlobalICTrampolineStub : public TurboFanCodeStub {
- public:
-  explicit LoadGlobalICTrampolineStub(Isolate* isolate,
-                                      const LoadGlobalICState& state)
-      : TurboFanCodeStub(isolate) {
-    minor_key_ = state.GetExtraICState();
-  }
-
-  Code::Kind GetCodeKind() const override { return Code::LOAD_GLOBAL_IC; }
-
-  TypeofMode typeof_mode() const {
-    LoadGlobalICState state(GetExtraICState());
-    return state.typeof_mode();
-  }
-
-  ExtraICState GetExtraICState() const final {
-    return static_cast<ExtraICState>(minor_key_);
-  }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(LoadGlobal);
-  DEFINE_TURBOFAN_CODE_STUB(LoadGlobalICTrampoline, TurboFanCodeStub);
-};
-
-class KeyedLoadICTrampolineTFStub : public LoadICTrampolineStub {
- public:
-  explicit KeyedLoadICTrampolineTFStub(Isolate* isolate)
-      : LoadICTrampolineStub(isolate) {}
-
-  Code::Kind GetCodeKind() const override { return Code::KEYED_LOAD_IC; }
-
-  DEFINE_TURBOFAN_CODE_STUB(KeyedLoadICTrampolineTF, LoadICTrampolineStub);
-};
-
-class StoreICTrampolineStub : public TurboFanCodeStub {
- public:
-  StoreICTrampolineStub(Isolate* isolate, const StoreICState& state)
-      : TurboFanCodeStub(isolate) {
-    minor_key_ = state.GetExtraICState();
-  }
-
-  Code::Kind GetCodeKind() const override { return Code::STORE_IC; }
-
-  ExtraICState GetExtraICState() const final {
-    return static_cast<ExtraICState>(minor_key_);
-  }
-
- protected:
-  StoreICState state() const { return StoreICState(GetExtraICState()); }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(Store);
-  DEFINE_TURBOFAN_CODE_STUB(StoreICTrampoline, TurboFanCodeStub);
-};
-
-class KeyedStoreICTrampolineTFStub : public StoreICTrampolineStub {
- public:
-  KeyedStoreICTrampolineTFStub(Isolate* isolate, const StoreICState& state)
-      : StoreICTrampolineStub(isolate, state) {}
-
-  Code::Kind GetCodeKind() const override { return Code::KEYED_STORE_IC; }
-
-  LanguageMode language_mode() const {
-    return StoreICState(GetExtraICState()).language_mode();
-  }
-
-  DEFINE_TURBOFAN_CODE_STUB(KeyedStoreICTrampolineTF, StoreICTrampolineStub);
-};
-
 class CallICTrampolineStub : public PlatformCodeStub {
  public:
   CallICTrampolineStub(Isolate* isolate, const CallICState& state)
@@ -1892,16 +1647,6 @@ class CallICTrampolineStub : public PlatformCodeStub {
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(CallFunctionWithFeedback);
   DEFINE_PLATFORM_CODE_STUB(CallICTrampoline, PlatformCodeStub);
-};
-
-class LoadICStub : public TurboFanCodeStub {
- public:
-  explicit LoadICStub(Isolate* isolate) : TurboFanCodeStub(isolate) {}
-
-  Code::Kind GetCodeKind() const override { return Code::LOAD_IC; }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(LoadWithVector);
-  DEFINE_TURBOFAN_CODE_STUB(LoadIC, TurboFanCodeStub);
 };
 
 class LoadICProtoArrayStub : public TurboFanCodeStub {
@@ -1926,72 +1671,6 @@ class LoadICProtoArrayStub : public TurboFanCodeStub {
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(LoadICProtoArray);
   DEFINE_TURBOFAN_CODE_STUB(LoadICProtoArray, TurboFanCodeStub);
-};
-
-class LoadGlobalICStub : public TurboFanCodeStub {
- public:
-  explicit LoadGlobalICStub(Isolate* isolate, const LoadGlobalICState& state)
-      : TurboFanCodeStub(isolate) {
-    minor_key_ = state.GetExtraICState();
-  }
-
-  Code::Kind GetCodeKind() const override { return Code::LOAD_GLOBAL_IC; }
-
-  TypeofMode typeof_mode() const {
-    LoadGlobalICState state(GetExtraICState());
-    return state.typeof_mode();
-  }
-
-  ExtraICState GetExtraICState() const final {
-    return static_cast<ExtraICState>(minor_key_);
-  }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(LoadGlobalWithVector);
-  DEFINE_TURBOFAN_CODE_STUB(LoadGlobalIC, TurboFanCodeStub);
-};
-
-class KeyedLoadICTFStub : public LoadICStub {
- public:
-  explicit KeyedLoadICTFStub(Isolate* isolate) : LoadICStub(isolate) {}
-
-  Code::Kind GetCodeKind() const override { return Code::KEYED_LOAD_IC; }
-
-  DEFINE_TURBOFAN_CODE_STUB(KeyedLoadICTF, LoadICStub);
-};
-
-class StoreICStub : public TurboFanCodeStub {
- public:
-  StoreICStub(Isolate* isolate, const StoreICState& state)
-      : TurboFanCodeStub(isolate) {
-    minor_key_ = state.GetExtraICState();
-  }
-
-  Code::Kind GetCodeKind() const override { return Code::STORE_IC; }
-
-  LanguageMode language_mode() const {
-    return StoreICState(GetExtraICState()).language_mode();
-  }
-
-  ExtraICState GetExtraICState() const final {
-    return static_cast<ExtraICState>(minor_key_);
-  }
-
-  DEFINE_CALL_INTERFACE_DESCRIPTOR(StoreWithVector);
-  DEFINE_TURBOFAN_CODE_STUB(StoreIC, TurboFanCodeStub);
-};
-
-class KeyedStoreICTFStub : public StoreICStub {
- public:
-  KeyedStoreICTFStub(Isolate* isolate, const StoreICState& state)
-      : StoreICStub(isolate, state) {}
-
-  Code::Kind GetCodeKind() const override { return Code::KEYED_STORE_IC; }
-
-  LanguageMode language_mode() const {
-    return StoreICState(GetExtraICState()).language_mode();
-  }
-
-  DEFINE_TURBOFAN_CODE_STUB(KeyedStoreICTF, StoreICStub);
 };
 
 class DoubleToIStub : public PlatformCodeStub {

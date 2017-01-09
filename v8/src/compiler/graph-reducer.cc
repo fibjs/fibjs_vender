@@ -25,15 +25,17 @@ enum class GraphReducer::State : uint8_t {
 
 void Reducer::Finalize() {}
 
-
 GraphReducer::GraphReducer(Zone* zone, Graph* graph, Node* dead)
     : graph_(graph),
       dead_(dead),
       state_(graph, 4),
       reducers_(zone),
       revisit_(zone),
-      stack_(zone) {}
-
+      stack_(zone) {
+  if (dead != nullptr) {
+    NodeProperties::SetType(dead_, Type::None());
+  }
+}
 
 GraphReducer::~GraphReducer() {}
 
@@ -115,15 +117,25 @@ void GraphReducer::ReduceTop() {
 
   // Recurse on an input if necessary.
   int start = entry.input_index < node->InputCount() ? entry.input_index : 0;
-  for (int i = start; i < node->InputCount(); i++) {
-    Node* input = node->InputAt(i);
-    entry.input_index = i + 1;
-    if (input != node && Recurse(input)) return;
+
+  Node::Inputs node_inputs = node->inputs();
+  auto node_inputs_begin = node_inputs.begin();
+  auto node_inputs_end = node_inputs.end();
+  DCHECK(node_inputs_end == node_inputs_begin + node->InputCount());
+
+  for (auto it = node_inputs_begin + start; it != node_inputs_end; ++it) {
+    Node* input = *it;
+    if (input != node && Recurse(input)) {
+      entry.input_index = (it - node_inputs_begin) + 1;
+      return;
+    }
   }
-  for (int i = 0; i < start; i++) {
-    Node* input = node->InputAt(i);
-    entry.input_index = i + 1;
-    if (input != node && Recurse(input)) return;
+  for (auto it = node_inputs_begin; it != node_inputs_begin + start; ++it) {
+    Node* input = *it;
+    if (input != node && Recurse(input)) {
+      entry.input_index = (it - node_inputs_begin) + 1;
+      return;
+    }
   }
 
   // Remember the max node id before reduction.
@@ -139,10 +151,15 @@ void GraphReducer::ReduceTop() {
   Node* const replacement = reduction.replacement();
   if (replacement == node) {
     // In-place update of {node}, may need to recurse on an input.
-    for (int i = 0; i < node->InputCount(); ++i) {
-      Node* input = node->InputAt(i);
-      entry.input_index = i + 1;
-      if (input != node && Recurse(input)) return;
+    Node::Inputs node_inputs = node->inputs();
+    auto node_inputs_begin = node_inputs.begin();
+    auto node_inputs_end = node_inputs.end();
+    for (auto it = node_inputs_begin; it != node_inputs_end; ++it) {
+      Node* input = *it;
+      if (input != node && Recurse(input)) {
+        entry.input_index = (it - node_inputs_begin) + 1;
+        return;
+      }
     }
   }
 

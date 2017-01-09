@@ -227,7 +227,10 @@ using v8::MemoryPressureLevel;
   V(Map, exception_map, ExceptionMap)                                          \
   V(Map, termination_exception_map, TerminationExceptionMap)                   \
   V(Map, optimized_out_map, OptimizedOutMap)                                   \
-  V(Map, stale_register_map, StaleRegisterMap)
+  V(Map, stale_register_map, StaleRegisterMap)                                 \
+  /* per-Isolate map for JSPromiseCapability. */                               \
+  /* TODO(caitp): Make this a Struct */                                        \
+  V(Map, js_promise_capability_map, JSPromiseCapabilityMap)
 
 // Entries in this list are limited to Smis and are not visited during GC.
 #define SMI_ROOT_LIST(V)                                                       \
@@ -948,6 +951,23 @@ class Heap {
 
   bool HighMemoryPressure() {
     return memory_pressure_level_.Value() != MemoryPressureLevel::kNone;
+  }
+
+  void IncreaseHeapLimitForDebugging() {
+    const size_t kDebugHeapSizeFactor = 4;
+    size_t max_limit = std::numeric_limits<size_t>::max() / 4;
+    max_old_generation_size_ =
+        Max(max_old_generation_size_,
+            Min(max_limit,
+                initial_max_old_generation_size_ * kDebugHeapSizeFactor));
+  }
+
+  void RestoreOriginalHeapLimit() {
+    // Do not set the limit lower than the live size + some slack.
+    size_t min_limit = SizeOfObjects() + SizeOfObjects() / 4;
+    max_old_generation_size_ =
+        Min(max_old_generation_size_,
+            Max(initial_max_old_generation_size_, min_limit));
   }
 
   // ===========================================================================
@@ -2127,6 +2147,7 @@ class Heap {
   size_t max_semi_space_size_;
   size_t initial_semispace_size_;
   size_t max_old_generation_size_;
+  size_t initial_max_old_generation_size_;
   size_t initial_old_generation_size_;
   bool old_generation_size_configured_;
   size_t max_executable_size_;

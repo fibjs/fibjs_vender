@@ -110,7 +110,6 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void BuildReThrow();
   void BuildAbort(BailoutReason bailout_reason);
   void BuildThrowIfHole(Handle<String> name);
-  void BuildThrowIfNotHole(Handle<String> name);
   void BuildThrowReferenceError(Handle<String> name);
   void BuildHoleCheckForVariableAssignment(Variable* variable, Token::Value op);
 
@@ -130,10 +129,9 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
   void VisitArgumentsObject(Variable* variable);
   void VisitRestArgumentsArray(Variable* rest);
   void VisitCallSuper(Call* call);
-  void VisitClassLiteralForRuntimeDefinition(ClassLiteral* expr);
-  void VisitClassLiteralProperties(ClassLiteral* expr, Register literal,
+  void VisitClassLiteralProperties(ClassLiteral* expr, Register constructor,
                                    Register prototype);
-  void BuildClassLiteralNameProperty(ClassLiteral* expr, Register literal);
+  void BuildClassLiteralNameProperty(ClassLiteral* expr, Register constructor);
   void VisitThisFunctionVariable(Variable* variable);
   void VisitNewTargetVariable(Variable* variable);
   void VisitBlockDeclarationsAndStatements(Block* stmt);

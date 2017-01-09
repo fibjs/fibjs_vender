@@ -1999,6 +1999,155 @@ Maybe<bool> JSReceiver::HasInPrototypeChain(Isolate* isolate,
   }
 }
 
+namespace {
+
+MUST_USE_RESULT Maybe<bool> FastAssign(Handle<JSReceiver> target,
+                                       Handle<Object> source, bool use_set) {
+  // Non-empty strings are the only non-JSReceivers that need to be handled
+  // explicitly by Object.assign.
+  if (!source->IsJSReceiver()) {
+    return Just(!source->IsString() || String::cast(*source)->length() == 0);
+  }
+
+  // If the target is deprecated, the object will be updated on first store. If
+  // the source for that store equals the target, this will invalidate the
+  // cached representation of the source. Preventively upgrade the target.
+  // Do this on each iteration since any property load could cause deprecation.
+  if (target->map()->is_deprecated()) {
+    JSObject::MigrateInstance(Handle<JSObject>::cast(target));
+  }
+
+  Isolate* isolate = target->GetIsolate();
+  Handle<Map> map(JSReceiver::cast(*source)->map(), isolate);
+
+  if (!map->IsJSObjectMap()) return Just(false);
+  if (!map->OnlyHasSimpleProperties()) return Just(false);
+
+  Handle<JSObject> from = Handle<JSObject>::cast(source);
+  if (from->elements() != isolate->heap()->empty_fixed_array()) {
+    return Just(false);
+  }
+
+  Handle<DescriptorArray> descriptors(map->instance_descriptors(), isolate);
+  int length = map->NumberOfOwnDescriptors();
+
+  bool stable = true;
+
+  for (int i = 0; i < length; i++) {
+    Handle<Name> next_key(descriptors->GetKey(i), isolate);
+    Handle<Object> prop_value;
+    // Directly decode from the descriptor array if |from| did not change shape.
+    if (stable) {
+      PropertyDetails details = descriptors->GetDetails(i);
+      if (!details.IsEnumerable()) continue;
+      if (details.kind() == kData) {
+        if (details.location() == kDescriptor) {
+          prop_value = handle(descriptors->GetValue(i), isolate);
+        } else {
+          Representation representation = details.representation();
+          FieldIndex index = FieldIndex::ForDescriptor(*map, i);
+          prop_value = JSObject::FastPropertyAt(from, representation, index);
+        }
+      } else {
+        ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+            isolate, prop_value, JSReceiver::GetProperty(from, next_key),
+            Nothing<bool>());
+        stable = from->map() == *map;
+      }
+    } else {
+      // If the map did change, do a slower lookup. We are still guaranteed that
+      // the object has a simple shape, and that the key is a name.
+      LookupIterator it(from, next_key, from,
+                        LookupIterator::OWN_SKIP_INTERCEPTOR);
+      if (!it.IsFound()) continue;
+      DCHECK(it.state() == LookupIterator::DATA ||
+             it.state() == LookupIterator::ACCESSOR);
+      if (!it.IsEnumerable()) continue;
+      ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+          isolate, prop_value, Object::GetProperty(&it), Nothing<bool>());
+    }
+
+    if (use_set) {
+      LookupIterator it(target, next_key, target);
+      bool call_to_js = it.IsFound() && it.state() != LookupIterator::DATA;
+      Maybe<bool> result = Object::SetProperty(
+          &it, prop_value, STRICT, Object::CERTAINLY_NOT_STORE_FROM_KEYED);
+      if (result.IsNothing()) return result;
+      if (stable && call_to_js) stable = from->map() == *map;
+    } else {
+      // 4a ii 2. Perform ? CreateDataProperty(target, nextKey, propValue).
+      bool success;
+      LookupIterator it = LookupIterator::PropertyOrElement(
+          isolate, target, next_key, &success, LookupIterator::OWN);
+      CHECK(success);
+      CHECK(
+          JSObject::CreateDataProperty(&it, prop_value, Object::THROW_ON_ERROR)
+              .FromJust());
+    }
+  }
+
+  return Just(true);
+}
+
+}  // namespace
+
+// static
+Maybe<bool> JSReceiver::SetOrCopyDataProperties(Isolate* isolate,
+                                                Handle<JSReceiver> target,
+                                                Handle<Object> source,
+                                                bool use_set) {
+  Maybe<bool> fast_assign = FastAssign(target, source, use_set);
+  if (fast_assign.IsNothing()) return Nothing<bool>();
+  if (fast_assign.FromJust()) return Just(true);
+
+  Handle<JSReceiver> from = Object::ToObject(isolate, source).ToHandleChecked();
+  // 3b. Let keys be ? from.[[OwnPropertyKeys]]().
+  Handle<FixedArray> keys;
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      isolate, keys,
+      KeyAccumulator::GetKeys(from, KeyCollectionMode::kOwnOnly, ALL_PROPERTIES,
+                              GetKeysConversion::kKeepNumbers),
+      Nothing<bool>());
+
+  // 4. Repeat for each element nextKey of keys in List order,
+  for (int j = 0; j < keys->length(); ++j) {
+    Handle<Object> next_key(keys->get(j), isolate);
+    // 4a i. Let desc be ? from.[[GetOwnProperty]](nextKey).
+    PropertyDescriptor desc;
+    Maybe<bool> found =
+        JSReceiver::GetOwnPropertyDescriptor(isolate, from, next_key, &desc);
+    if (found.IsNothing()) return Nothing<bool>();
+    // 4a ii. If desc is not undefined and desc.[[Enumerable]] is true, then
+    if (found.FromJust() && desc.enumerable()) {
+      // 4a ii 1. Let propValue be ? Get(from, nextKey).
+      Handle<Object> prop_value;
+      ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+          isolate, prop_value,
+          Runtime::GetObjectProperty(isolate, from, next_key), Nothing<bool>());
+
+      if (use_set) {
+        // 4c ii 2. Let status be ? Set(to, nextKey, propValue, true).
+        Handle<Object> status;
+        ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+            isolate, status, Runtime::SetObjectProperty(
+                                 isolate, target, next_key, prop_value, STRICT),
+            Nothing<bool>());
+      } else {
+        // 4a ii 2. Perform ! CreateDataProperty(target, nextKey, propValue).
+        bool success;
+        LookupIterator it = LookupIterator::PropertyOrElement(
+            isolate, target, next_key, &success, LookupIterator::OWN);
+        CHECK(success);
+        CHECK(JSObject::CreateDataProperty(&it, prop_value,
+                                           Object::THROW_ON_ERROR)
+                  .FromJust());
+      }
+    }
+  }
+
+  return Just(true);
+}
+
 Map* Object::GetPrototypeChainRootMap(Isolate* isolate) {
   DisallowHeapAllocation no_alloc;
   if (IsSmi()) {
@@ -9111,12 +9260,13 @@ Handle<Map> Map::CopyInitialMap(Handle<Map> map, int instance_size,
   Isolate* isolate = map->GetIsolate();
   // Strict function maps have Function as a constructor but the
   // Function's initial map is a sloppy function map. Same holds for
-  // GeneratorFunction and its initial map.
+  // GeneratorFunction / AsyncFunction and its initial map.
   Object* constructor = map->GetConstructor();
   DCHECK(constructor->IsJSFunction());
   DCHECK(*map == JSFunction::cast(constructor)->initial_map() ||
          *map == *isolate->strict_function_map() ||
-         *map == *isolate->strict_generator_function_map());
+         *map == *isolate->generator_function_map() ||
+         *map == *isolate->async_function_map());
 #endif
   // Initial maps must always own their descriptors and it's descriptor array
   // does not contain descriptors that do not belong to the map.
@@ -13208,7 +13358,7 @@ MaybeHandle<Map> JSFunction::GetDerivedMap(Isolate* isolate,
 
     // Link initial map and constructor function if the new.target is actually a
     // subclass constructor.
-    if (IsSubclassConstructor(function->shared()->kind())) {
+    if (IsDerivedConstructor(function->shared()->kind())) {
       Handle<Object> prototype(function->instance_prototype(), isolate);
       InstanceType instance_type = constructor_initial_map->instance_type();
       DCHECK(CanSubclassHaveInobjectProperties(instance_type));
@@ -13892,7 +14042,7 @@ void JSFunction::CalculateInstanceSizeForDerivedClass(
     JSFunction* func = JSFunction::cast(current);
     SharedFunctionInfo* shared = func->shared();
     expected_nof_properties += shared->expected_nof_properties();
-    if (!IsSubclassConstructor(shared->kind())) {
+    if (!IsDerivedConstructor(shared->kind())) {
       break;
     }
   }
@@ -16288,94 +16438,6 @@ bool JSObject::WasConstructedFromApiFunction() {
   }
 #endif
   return is_api_object;
-}
-
-MaybeHandle<String> Object::ObjectProtoToString(Isolate* isolate,
-                                                Handle<Object> object) {
-  if (*object == isolate->heap()->undefined_value()) {
-    return isolate->factory()->undefined_to_string();
-  }
-  if (*object == isolate->heap()->null_value()) {
-    return isolate->factory()->null_to_string();
-  }
-
-  Handle<JSReceiver> receiver =
-      Object::ToObject(isolate, object).ToHandleChecked();
-
-  // For proxies, we must check IsArray() before get(toStringTag) to comply
-  // with the specification
-  Maybe<bool> is_array = Nothing<bool>();
-  InstanceType instance_type = receiver->map()->instance_type();
-  if (instance_type == JS_PROXY_TYPE) {
-    is_array = Object::IsArray(receiver);
-    MAYBE_RETURN(is_array, MaybeHandle<String>());
-  }
-
-  Handle<String> tag;
-  Handle<Object> to_string_tag;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, to_string_tag,
-      JSReceiver::GetProperty(receiver,
-                              isolate->factory()->to_string_tag_symbol()),
-      String);
-  if (to_string_tag->IsString()) {
-    tag = Handle<String>::cast(to_string_tag);
-  } else {
-    switch (instance_type) {
-      case JS_API_OBJECT_TYPE:
-      case JS_SPECIAL_API_OBJECT_TYPE:
-        tag = handle(receiver->class_name(), isolate);
-        break;
-      case JS_ARGUMENTS_TYPE:
-        return isolate->factory()->arguments_to_string();
-      case JS_ARRAY_TYPE:
-        return isolate->factory()->array_to_string();
-      case JS_BOUND_FUNCTION_TYPE:
-      case JS_FUNCTION_TYPE:
-        return isolate->factory()->function_to_string();
-      case JS_ERROR_TYPE:
-        return isolate->factory()->error_to_string();
-      case JS_DATE_TYPE:
-        return isolate->factory()->date_to_string();
-      case JS_REGEXP_TYPE:
-        return isolate->factory()->regexp_to_string();
-      case JS_PROXY_TYPE: {
-        if (is_array.FromJust()) {
-          return isolate->factory()->array_to_string();
-        }
-        if (receiver->IsCallable()) {
-          return isolate->factory()->function_to_string();
-        }
-        return isolate->factory()->object_to_string();
-      }
-      case JS_VALUE_TYPE: {
-        Object* value = JSValue::cast(*receiver)->value();
-        if (value->IsString()) {
-          return isolate->factory()->string_to_string();
-        }
-        if (value->IsNumber()) {
-          return isolate->factory()->number_to_string();
-        }
-        if (value->IsBoolean()) {
-          return isolate->factory()->boolean_to_string();
-        }
-        if (value->IsSymbol()) {
-          return isolate->factory()->object_to_string();
-        }
-        UNREACHABLE();
-        tag = handle(receiver->class_name(), isolate);
-        break;
-      }
-      default:
-        return isolate->factory()->object_to_string();
-    }
-  }
-
-  IncrementalStringBuilder builder(isolate);
-  builder.AppendCString("[object ");
-  builder.AppendString(tag);
-  builder.AppendCharacter(']');
-  return builder.Finish();
 }
 
 const char* Symbol::PrivateSymbolToName() const {
@@ -19420,27 +19482,6 @@ void JSDate::SetValue(Object* value, bool is_value_nan) {
   } else {
     set_cache_stamp(Smi::FromInt(DateCache::kInvalidStamp), SKIP_WRITE_BARRIER);
   }
-}
-
-
-// static
-MaybeHandle<Object> JSDate::ToPrimitive(Handle<JSReceiver> receiver,
-                                        Handle<Object> hint) {
-  Isolate* const isolate = receiver->GetIsolate();
-  if (hint->IsString()) {
-    Handle<String> hint_string = Handle<String>::cast(hint);
-    if (hint_string->Equals(isolate->heap()->number_string())) {
-      return JSReceiver::OrdinaryToPrimitive(receiver,
-                                             OrdinaryToPrimitiveHint::kNumber);
-    }
-    if (hint_string->Equals(isolate->heap()->default_string()) ||
-        hint_string->Equals(isolate->heap()->string_string())) {
-      return JSReceiver::OrdinaryToPrimitive(receiver,
-                                             OrdinaryToPrimitiveHint::kString);
-    }
-  }
-  THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kInvalidHint, hint),
-                  Object);
 }
 
 

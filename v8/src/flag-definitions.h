@@ -201,7 +201,8 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
   V(harmony_do_expressions, "harmony do-expressions")                   \
   V(harmony_regexp_named_captures, "harmony regexp named captures")     \
   V(harmony_regexp_property, "harmony unicode regexp property classes") \
-  V(harmony_class_fields, "harmony public fields in class literals")
+  V(harmony_class_fields, "harmony public fields in class literals")    \
+  V(harmony_object_spread, "harmony object spread")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED_BASE(V)                              \
@@ -221,9 +222,7 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
 #endif
 
 // Features that are shipping (turned on by default, but internal flag remains).
-#define HARMONY_SHIPPING_BASE(V)                \
-  V(harmony_async_await, "harmony async-await") \
-  V(harmony_string_padding, "harmony String-padding methods")
+#define HARMONY_SHIPPING_BASE(V) V(harmony_async_await, "harmony async-await")
 
 #ifdef V8_I18N_SUPPORT
 #define HARMONY_SHIPPING(V) \
@@ -300,6 +299,7 @@ DEFINE_BOOL(string_slices, true, "use string slices")
 DEFINE_BOOL(ignition, false, "use ignition interpreter")
 DEFINE_BOOL(ignition_staging, false, "use ignition with all staged features")
 DEFINE_IMPLICATION(ignition_staging, ignition)
+DEFINE_IMPLICATION(ignition_staging, compiler_dispatcher)
 DEFINE_STRING(ignition_filter, "*", "filter for ignition interpreter")
 DEFINE_BOOL(ignition_deadcode, true,
             "use ignition dead code elimination optimizer")
@@ -665,6 +665,16 @@ DEFINE_INT(max_opt_count, 10,
 DEFINE_BOOL(compilation_cache, true, "enable compilation cache")
 
 DEFINE_BOOL(cache_prototype_transitions, true, "cache prototype transitions")
+
+// compiler-dispatcher.cc
+DEFINE_BOOL(compiler_dispatcher, false, "enable compiler dispatcher")
+DEFINE_BOOL(trace_compiler_dispatcher, false,
+            "trace compiler dispatcher activity")
+
+// compiler-dispatcher-job.cc
+DEFINE_BOOL(
+    trace_compiler_dispatcher_jobs, false,
+    "trace progress of individual jobs managed by the compiler dispatcher")
 
 // cpu-profiler.cc
 DEFINE_INT(cpu_profiler_sampling_interval, 1000,

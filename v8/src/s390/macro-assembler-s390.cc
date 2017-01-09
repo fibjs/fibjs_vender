@@ -1629,10 +1629,12 @@ void MacroAssembler::Allocate(int object_size, Register result,
     StoreP(result_end, MemOperand(top_address));
   }
 
-  // Prefetch the allocation_top's next cache line in advance to
-  // help alleviate potential cache misses.
-  // Mode 2 - Prefetch the data into a cache line for store access.
-  pfd(r2, MemOperand(result, 256));
+  if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+    // Prefetch the allocation_top's next cache line in advance to
+    // help alleviate potential cache misses.
+    // Mode 2 - Prefetch the data into a cache line for store access.
+    pfd(r2, MemOperand(result, 256));
+  }
 
   // Tag object.
   la(result, MemOperand(result, kHeapObjectTag));
@@ -1726,10 +1728,12 @@ void MacroAssembler::Allocate(Register object_size, Register result,
     StoreP(result_end, MemOperand(top_address));
   }
 
-  // Prefetch the allocation_top's next cache line in advance to
-  // help alleviate potential cache misses.
-  // Mode 2 - Prefetch the data into a cache line for store access.
-  pfd(r2, MemOperand(result, 256));
+  if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+    // Prefetch the allocation_top's next cache line in advance to
+    // help alleviate potential cache misses.
+    // Mode 2 - Prefetch the data into a cache line for store access.
+    pfd(r2, MemOperand(result, 256));
+  }
 
   // Tag object.
   la(result, MemOperand(result, kHeapObjectTag));
@@ -1784,10 +1788,12 @@ void MacroAssembler::FastAllocate(Register object_size, Register result,
   }
   StoreP(result_end, MemOperand(top_address));
 
-  // Prefetch the allocation_top's next cache line in advance to
-  // help alleviate potential cache misses.
-  // Mode 2 - Prefetch the data into a cache line for store access.
-  pfd(r2, MemOperand(result, 256));
+  if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+    // Prefetch the allocation_top's next cache line in advance to
+    // help alleviate potential cache misses.
+    // Mode 2 - Prefetch the data into a cache line for store access.
+    pfd(r2, MemOperand(result, 256));
+  }
 
   // Tag object.
   la(result, MemOperand(result, kHeapObjectTag));
@@ -1831,21 +1837,31 @@ void MacroAssembler::FastAllocate(int object_size, Register result,
 #endif
   }
 
+#if V8_TARGET_ARCH_S390X
+  // Limit to 64-bit only, as double alignment check above may adjust
+  // allocation top by an extra kDoubleSize/2.
   if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT) && is_int8(object_size)) {
     // Update allocation top.
     AddP(MemOperand(top_address), Operand(object_size));
   } else {
     // Calculate new top using result.
     AddP(result_end, result, Operand(object_size));
-
     // Update allocation top.
     StoreP(result_end, MemOperand(top_address));
   }
+#else
+  // Calculate new top using result.
+  AddP(result_end, result, Operand(object_size));
+  // Update allocation top.
+  StoreP(result_end, MemOperand(top_address));
+#endif
 
-  // Prefetch the allocation_top's next cache line in advance to
-  // help alleviate potential cache misses.
-  // Mode 2 - Prefetch the data into a cache line for store access.
-  pfd(r2, MemOperand(result, 256));
+  if (CpuFeatures::IsSupported(GENERAL_INSTR_EXT)) {
+    // Prefetch the allocation_top's next cache line in advance to
+    // help alleviate potential cache misses.
+    // Mode 2 - Prefetch the data into a cache line for store access.
+    pfd(r2, MemOperand(result, 256));
+  }
 
   // Tag object.
   la(result, MemOperand(result, kHeapObjectTag));
@@ -3120,12 +3136,10 @@ void MacroAssembler::LoadRepresentation(Register dst, const MemOperand& mem,
   DCHECK(!r.IsDouble());
   if (r.IsInteger8()) {
     LoadB(dst, mem);
-    lgbr(dst, dst);
   } else if (r.IsUInteger8()) {
     LoadlB(dst, mem);
   } else if (r.IsInteger16()) {
     LoadHalfWordP(dst, mem, scratch);
-    lghr(dst, dst);
   } else if (r.IsUInteger16()) {
     LoadHalfWordP(dst, mem, scratch);
 #if V8_TARGET_ARCH_S390X
@@ -3330,6 +3344,17 @@ void MacroAssembler::MulP(Register dst, const MemOperand& opnd) {
 #endif
 }
 
+void MacroAssembler::Sqrt(DoubleRegister result, DoubleRegister input) {
+  sqdbr(result, input);
+}
+void MacroAssembler::Sqrt(DoubleRegister result, const MemOperand& input) {
+  if (is_uint12(input.offset())) {
+    sqdb(result, input);
+  } else {
+    ldy(result, input);
+    sqdbr(result, result);
+  }
+}
 //----------------------------------------------------------------------------
 //  Add Instructions
 //----------------------------------------------------------------------------
@@ -4322,9 +4347,16 @@ void MacroAssembler::LoadDoubleLiteral(DoubleRegister result, uint64_t value,
   uint32_t lo_32 = static_cast<uint32_t>(value);
 
   // Load the 64-bit value into a GPR, then transfer it to FPR via LDGR
-  iihf(scratch, Operand(hi_32));
-  iilf(scratch, Operand(lo_32));
-  ldgr(result, scratch);
+  if (value == 0) {
+    lzdr(result);
+  } else if (lo_32 == 0) {
+    llihf(scratch, Operand(hi_32));
+    ldgr(result, scratch);
+  } else {
+    iihf(scratch, Operand(hi_32));
+    iilf(scratch, Operand(lo_32));
+    ldgr(result, scratch);
+  }
 }
 
 void MacroAssembler::LoadDoubleLiteral(DoubleRegister result, double value,
@@ -4335,13 +4367,9 @@ void MacroAssembler::LoadDoubleLiteral(DoubleRegister result, double value,
 
 void MacroAssembler::LoadFloat32Literal(DoubleRegister result, float value,
                                         Register scratch) {
-  uint32_t hi_32 = bit_cast<uint32_t>(value);
-  uint32_t lo_32 = 0;
-
-  // Load the 64-bit value into a GPR, then transfer it to FPR via LDGR
-  iihf(scratch, Operand(hi_32));
-  iilf(scratch, Operand(lo_32));
-  ldgr(result, scratch);
+  uint64_t int_val = static_cast<uint64_t>(bit_cast<uint32_t, float>(value))
+                     << 32;
+  LoadDoubleLiteral(result, int_val, scratch);
 }
 
 void MacroAssembler::CmpSmiLiteral(Register src1, Smi* smi, Register scratch) {

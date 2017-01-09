@@ -72,6 +72,10 @@ CodeAssemblerState::CodeAssemblerState(Isolate* isolate, Zone* zone,
 
 CodeAssemblerState::~CodeAssemblerState() {}
 
+int CodeAssemblerState::parameter_count() const {
+  return static_cast<int>(raw_assembler_->call_descriptor()->ParameterCount());
+}
+
 CodeAssembler::~CodeAssembler() {}
 
 class BreakOnNodeDecorator final : public GraphDecorator {
@@ -96,9 +100,32 @@ void CodeAssembler::BreakOnNode(int node_id) {
   graph->AddDecorator(decorator);
 }
 
-void CodeAssembler::CallPrologue() {}
+void CodeAssembler::RegisterCallGenerationCallbacks(
+    const CodeAssemblerCallback& call_prologue,
+    const CodeAssemblerCallback& call_epilogue) {
+  // The callback can be registered only once.
+  DCHECK(!state_->call_prologue_);
+  DCHECK(!state_->call_epilogue_);
+  state_->call_prologue_ = call_prologue;
+  state_->call_epilogue_ = call_epilogue;
+}
 
-void CodeAssembler::CallEpilogue() {}
+void CodeAssembler::UnregisterCallGenerationCallbacks() {
+  state_->call_prologue_ = nullptr;
+  state_->call_epilogue_ = nullptr;
+}
+
+void CodeAssembler::CallPrologue() {
+  if (state_->call_prologue_) {
+    state_->call_prologue_();
+  }
+}
+
+void CodeAssembler::CallEpilogue() {
+  if (state_->call_epilogue_) {
+    state_->call_epilogue_();
+  }
+}
 
 // static
 Handle<Code> CodeAssembler::GenerateCode(CodeAssemblerState* state) {
@@ -209,6 +236,10 @@ bool CodeAssembler::ToSmiConstant(Node* node, Smi*& out_value) {
 }
 
 bool CodeAssembler::ToIntPtrConstant(Node* node, intptr_t& out_value) {
+  if (node->opcode() == IrOpcode::kBitcastWordToTaggedSigned ||
+      node->opcode() == IrOpcode::kBitcastWordToTagged) {
+    node = node->InputAt(0);
+  }
   IntPtrMatcher m(node);
   if (m.HasValue()) out_value = m.Value();
   return m.HasValue();
@@ -268,6 +299,43 @@ Node* CodeAssembler::LoadStackPointer() {
   }
 CODE_ASSEMBLER_BINARY_OP_LIST(DEFINE_CODE_ASSEMBLER_BINARY_OP)
 #undef DEFINE_CODE_ASSEMBLER_BINARY_OP
+
+Node* CodeAssembler::IntPtrAdd(Node* left, Node* right) {
+  intptr_t left_constant;
+  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  intptr_t right_constant;
+  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  if (is_left_constant) {
+    if (is_right_constant) {
+      return IntPtrConstant(left_constant + right_constant);
+    }
+    if (left_constant == 0) {
+      return right;
+    }
+  } else if (is_right_constant) {
+    if (right_constant == 0) {
+      return left;
+    }
+  }
+  return raw_assembler()->IntPtrAdd(left, right);
+}
+
+Node* CodeAssembler::IntPtrSub(Node* left, Node* right) {
+  intptr_t left_constant;
+  bool is_left_constant = ToIntPtrConstant(left, left_constant);
+  intptr_t right_constant;
+  bool is_right_constant = ToIntPtrConstant(right, right_constant);
+  if (is_left_constant) {
+    if (is_right_constant) {
+      return IntPtrConstant(left_constant - right_constant);
+    }
+  } else if (is_right_constant) {
+    if (right_constant == 0) {
+      return left;
+    }
+  }
+  return raw_assembler()->IntPtrSub(left, right);
+}
 
 Node* CodeAssembler::WordShl(Node* value, int shift) {
   return (shift != 0) ? raw_assembler()->WordShl(value, IntPtrConstant(shift))
@@ -427,11 +495,11 @@ Node* CodeAssembler::CallRuntime(Runtime::FunctionId function, Node* context,
   return return_value;
 }
 
-// Instantiate CallRuntime() with up to 5 arguments.
+// Instantiate CallRuntime() with up to 6 arguments.
 #define INSTANTIATE(...)                                       \
   template V8_EXPORT_PRIVATE Node* CodeAssembler::CallRuntime( \
       Runtime::FunctionId, __VA_ARGS__);
-REPEAT_1_TO_6(INSTANTIATE, Node*)
+REPEAT_1_TO_7(INSTANTIATE, Node*)
 #undef INSTANTIATE
 
 template <class... TArgs>
@@ -450,11 +518,7 @@ Node* CodeAssembler::TailCallRuntime(Runtime::FunctionId function,
 
   Node* nodes[] = {centry, args..., ref, arity, context};
 
-  CallPrologue();
-  Node* return_value =
-      raw_assembler()->TailCallN(desc, arraysize(nodes), nodes);
-  CallEpilogue();
-  return return_value;
+  return raw_assembler()->TailCallN(desc, arraysize(nodes), nodes);
 }
 
 // Instantiate TailCallRuntime() with up to 6 arguments.

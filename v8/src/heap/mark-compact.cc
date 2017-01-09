@@ -806,8 +806,6 @@ void MarkCompactCollector::Prepare() {
     heap_->local_embedder_heap_tracer()->TracePrologue();
   }
 
-  heap_->local_embedder_heap_tracer()->EnterFinalPause();
-
   // Don't start compaction if we are in the middle of incremental
   // marking cycle. We did not collect any slots.
   if (!FLAG_never_compact && !was_marked_incrementally_) {
@@ -2136,6 +2134,7 @@ void MarkCompactCollector::ProcessEphemeralMarking(
     if (!only_process_harmony_weak_collections) {
       if (heap_->local_embedder_heap_tracer()->InUse()) {
         TRACE_GC(heap()->tracer(), GCTracer::Scope::MC_MARK_WRAPPER_TRACING);
+        heap_->local_embedder_heap_tracer()->RegisterWrappersWithRemoteTracer();
         heap_->local_embedder_heap_tracer()->Trace(
             0,
             EmbedderHeapTracer::AdvanceTracingActions(
@@ -2438,6 +2437,8 @@ void MarkCompactCollector::MarkLiveObjects() {
 #endif
 
   marking_deque()->StartUsing();
+
+  heap_->local_embedder_heap_tracer()->EnterFinalPause();
 
   {
     TRACE_GC(heap()->tracer(), GCTracer::Scope::MC_MARK_PREPARE_CODE_FLUSH);

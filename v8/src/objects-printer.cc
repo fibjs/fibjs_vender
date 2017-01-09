@@ -152,6 +152,7 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
     case JS_GENERATOR_OBJECT_TYPE:
     case JS_ARGUMENTS_TYPE:
     case JS_ERROR_TYPE:
+    case JS_PROMISE_CAPABILITY_TYPE:
       JSObject::cast(this)->JSObjectPrint(os);
       break;
     case JS_PROMISE_TYPE:
@@ -545,7 +546,9 @@ void JSPromise::JSPromisePrint(std::ostream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSPromise");
   os << "\n - status = " << JSPromise::Status(status());
   os << "\n - result = " << Brief(result());
-  os << "\n - deferreds = " << Brief(deferred());
+  os << "\n - deferred_promise: " << Brief(deferred_promise());
+  os << "\n - deferred_on_resolve: " << Brief(deferred_on_resolve());
+  os << "\n - deferred_on_reject: " << Brief(deferred_on_reject());
   os << "\n - fulfill_reactions = " << Brief(fulfill_reactions());
   os << "\n - reject_reactions = " << Brief(reject_reactions());
   os << "\n - has_handler = " << has_handler();
@@ -793,6 +796,11 @@ void TypeFeedbackVector::TypeFeedbackVectorPrint(std::ostream& os) {  // NOLINT
       }
       case FeedbackVectorSlotKind::INTERPRETER_COMPARE_IC: {
         CompareICNexus nexus(this, slot);
+        os << Code::ICState2String(nexus.StateFromFeedback());
+        break;
+      }
+      case FeedbackVectorSlotKind::STORE_DATA_PROPERTY_IN_LITERAL_IC: {
+        StoreDataPropertyInLiteralICNexus nexus(this, slot);
         os << Code::ICState2String(nexus.StateFromFeedback());
         break;
       }
@@ -1221,8 +1229,8 @@ void PromiseResolveThenableJobInfo::PromiseResolveThenableJobInfoPrint(
   os << "\n - then: " << Brief(then());
   os << "\n - resolve: " << Brief(resolve());
   os << "\n - reject: " << Brief(reject());
-  os << "\n - debug id: " << Brief(debug_id());
-  os << "\n - debug name: " << Brief(debug_name());
+  os << "\n - debug id: " << debug_id();
+  os << "\n - debug name: " << debug_name();
   os << "\n - context: " << Brief(context());
   os << "\n";
 }
@@ -1233,9 +1241,11 @@ void PromiseReactionJobInfo::PromiseReactionJobInfoPrint(
   os << "\n - promise: " << Brief(promise());
   os << "\n - value: " << Brief(value());
   os << "\n - tasks: " << Brief(tasks());
-  os << "\n - deferred: " << Brief(deferred());
-  os << "\n - debug id: " << Brief(debug_id());
-  os << "\n - debug name: " << Brief(debug_name());
+  os << "\n - deferred_promise: " << Brief(deferred_promise());
+  os << "\n - deferred_on_resolve: " << Brief(deferred_on_resolve());
+  os << "\n - deferred_on_reject: " << Brief(deferred_on_reject());
+  os << "\n - debug id: " << debug_id();
+  os << "\n - debug name: " << debug_name();
   os << "\n - reaction context: " << Brief(context());
   os << "\n";
 }

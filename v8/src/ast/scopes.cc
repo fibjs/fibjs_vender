@@ -600,11 +600,11 @@ void DeclarationScope::DeclareThis(AstValueFactory* ast_value_factory) {
   DCHECK(is_declaration_scope());
   DCHECK(has_this_declaration());
 
-  bool subclass_constructor = IsSubclassConstructor(function_kind_);
-  Variable* var = Declare(
-      zone(), ast_value_factory->this_string(),
-      subclass_constructor ? CONST : VAR, THIS_VARIABLE,
-      subclass_constructor ? kNeedsInitialization : kCreatedInitialized);
+  bool derived_constructor = IsDerivedConstructor(function_kind_);
+  Variable* var =
+      Declare(zone(), ast_value_factory->this_string(),
+              derived_constructor ? CONST : VAR, THIS_VARIABLE,
+              derived_constructor ? kNeedsInitialization : kCreatedInitialized);
   receiver_ = var;
 }
 
@@ -1037,11 +1037,10 @@ void Scope::DeclareVariableName(const AstRawString* name, VariableMode mode) {
   DCHECK(!is_eval_scope());
   DCHECK(is_declaration_scope() ||
          (IsLexicalVariableMode(mode) && is_block_scope()));
+  DCHECK(scope_info_.is_null());
 
   // Declare the variable in the declaration scope.
-  if (LookupLocal(name) == nullptr) {
-    variables_.DeclareName(zone(), name);
-  }
+  variables_.DeclareName(zone(), name);
 }
 
 VariableProxy* Scope::NewUnresolved(AstNodeFactory* factory,
@@ -1178,7 +1177,10 @@ bool Scope::AllowsLazyParsingWithoutUnresolvedVariables(
   // the parse, since context allocation of those variables is already
   // guaranteed to be correct.
   for (const Scope* s = this; s != outer; s = s->outer_scope_) {
-    if (s->is_eval_scope()) return false;
+    // Eval forces context allocation on all outer scopes, so we don't need to
+    // look at those scopes. Sloppy eval makes top-level non-lexical variables
+    // dynamic, whereas strict-mode requires context allocation.
+    if (s->is_eval_scope()) return is_sloppy(s->language_mode());
     // Catch scopes force context allocation of all variables.
     if (s->is_catch_scope()) continue;
     // With scopes do not introduce variables that need allocation.
@@ -1742,8 +1744,7 @@ bool AccessNeedsHoleCheck(Variable* var, VariableProxy* proxy, Scope* scope) {
   }
 
   if (var->is_this()) {
-    DCHECK(
-        IsSubclassConstructor(scope->GetDeclarationScope()->function_kind()));
+    DCHECK(IsDerivedConstructor(scope->GetDeclarationScope()->function_kind()));
     // TODO(littledan): implement 'this' hole check elimination.
     return true;
   }
@@ -1888,7 +1889,10 @@ bool Scope::MustAllocateInContext(Variable* var) {
   if (has_forced_context_allocation()) return true;
   if (var->mode() == TEMPORARY) return false;
   if (is_catch_scope()) return true;
-  if (is_script_scope() && IsLexicalVariableMode(var->mode())) return true;
+  if ((is_script_scope() || is_eval_scope()) &&
+      IsLexicalVariableMode(var->mode())) {
+    return true;
+  }
   return var->has_forced_context_allocation() || inner_scope_calls_eval_;
 }
 

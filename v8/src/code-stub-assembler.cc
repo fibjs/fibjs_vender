@@ -164,43 +164,6 @@ Node* CodeStubAssembler::IntPtrOrSmiConstant(int value, ParameterMode mode) {
   }
 }
 
-Node* CodeStubAssembler::IntPtrAddFoldConstants(Node* left, Node* right) {
-  int32_t left_constant;
-  bool is_left_constant = ToInt32Constant(left, left_constant);
-  int32_t right_constant;
-  bool is_right_constant = ToInt32Constant(right, right_constant);
-  if (is_left_constant) {
-    if (is_right_constant) {
-      return IntPtrConstant(left_constant + right_constant);
-    }
-    if (left_constant == 0) {
-      return right;
-    }
-  } else if (is_right_constant) {
-    if (right_constant == 0) {
-      return left;
-    }
-  }
-  return IntPtrAdd(left, right);
-}
-
-Node* CodeStubAssembler::IntPtrSubFoldConstants(Node* left, Node* right) {
-  int32_t left_constant;
-  bool is_left_constant = ToInt32Constant(left, left_constant);
-  int32_t right_constant;
-  bool is_right_constant = ToInt32Constant(right, right_constant);
-  if (is_left_constant) {
-    if (is_right_constant) {
-      return IntPtrConstant(left_constant - right_constant);
-    }
-  } else if (is_right_constant) {
-    if (right_constant == 0) {
-      return left;
-    }
-  }
-  return IntPtrSub(left, right);
-}
-
 Node* CodeStubAssembler::IntPtrRoundUpToPowerOfTwo32(Node* value) {
   Comment("IntPtrRoundUpToPowerOfTwo32");
   CSA_ASSERT(this, UintPtrLessThanOrEqual(value, IntPtrConstant(0x80000000u)));
@@ -896,10 +859,17 @@ Node* CodeStubAssembler::Allocate(Node* size_in_bytes, AllocationFlags flags) {
       new_space
           ? ExternalReference::new_space_allocation_top_address(isolate())
           : ExternalReference::old_space_allocation_top_address(isolate()));
-  Node* limit_address = ExternalConstant(
-      new_space
-          ? ExternalReference::new_space_allocation_limit_address(isolate())
-          : ExternalReference::old_space_allocation_limit_address(isolate()));
+  DCHECK_EQ(kPointerSize,
+            ExternalReference::new_space_allocation_limit_address(isolate())
+                    .address() -
+                ExternalReference::new_space_allocation_top_address(isolate())
+                    .address());
+  DCHECK_EQ(kPointerSize,
+            ExternalReference::old_space_allocation_limit_address(isolate())
+                    .address() -
+                ExternalReference::old_space_allocation_top_address(isolate())
+                    .address());
+  Node* limit_address = IntPtrAdd(top_address, IntPtrConstant(kPointerSize));
 
 #ifdef V8_HOST_ARCH_32_BIT
   if (flags & kDoubleAlignment) {
@@ -1093,6 +1063,11 @@ Node* CodeStubAssembler::LoadInstanceType(Node* object) {
 Node* CodeStubAssembler::HasInstanceType(Node* object,
                                          InstanceType instance_type) {
   return Word32Equal(LoadInstanceType(object), Int32Constant(instance_type));
+}
+
+Node* CodeStubAssembler::DoesntHaveInstanceType(Node* object,
+                                                InstanceType instance_type) {
+  return Word32NotEqual(LoadInstanceType(object), Int32Constant(instance_type));
 }
 
 Node* CodeStubAssembler::LoadProperties(Node* object) {
@@ -1513,10 +1488,10 @@ Node* CodeStubAssembler::BuildAppendJSArray(ElementsKind kind, Node* context,
   // Resize the capacity of the fixed array if it doesn't fit.
   Label fits(this, &var_elements);
   Node* first = arg_index.value();
-  Node* growth = IntPtrSubFoldConstants(args.GetLength(), first);
+  Node* growth = IntPtrSub(args.GetLength(), first);
   Node* new_length =
       IntPtrOrSmiAdd(WordToParameter(growth, mode), var_length.value(), mode);
-  GotoUnless(IntPtrOrSmiGreaterThanOrEqual(new_length, capacity, mode), &fits);
+  GotoUnless(IntPtrOrSmiGreaterThan(new_length, capacity, mode), &fits);
   Node* new_capacity = CalculateNewElementsCapacity(
       IntPtrOrSmiAdd(new_length, IntPtrOrSmiConstant(1, mode), mode), mode);
   var_elements.Bind(GrowElementsCapacity(array, var_elements.value(), kind,
@@ -1895,8 +1870,8 @@ Node* CodeStubAssembler::AllocateNameDictionary(Node* at_least_space_for) {
 
   Node* length = EntryToIndex<NameDictionary>(capacity);
   Node* store_size =
-      IntPtrAddFoldConstants(WordShl(length, IntPtrConstant(kPointerSizeLog2)),
-                             IntPtrConstant(NameDictionary::kHeaderSize));
+      IntPtrAdd(WordShl(length, IntPtrConstant(kPointerSizeLog2)),
+                IntPtrConstant(NameDictionary::kHeaderSize));
 
   Node* result = Allocate(store_size);
   Comment("Initialize NameDictionary");
@@ -1928,8 +1903,7 @@ Node* CodeStubAssembler::AllocateNameDictionary(Node* at_least_space_for) {
                                       NameDictionary::kElementsStartIndex) -
                                   kHeapObjectTag));
   Node* end_address = IntPtrAdd(
-      result_word,
-      IntPtrSubFoldConstants(store_size, IntPtrConstant(kHeapObjectTag)));
+      result_word, IntPtrSub(store_size, IntPtrConstant(kHeapObjectTag)));
   StoreFieldsNoWriteBarrier(start_address, end_address, filler);
   return result;
 }
@@ -2302,7 +2276,7 @@ void CodeStubAssembler::CopyStringCharacters(Node* from_string, Node* to_string,
   Node* to_offset =
       ElementOffsetFromIndex(to_index, to_kind, mode, header_size);
   Node* byte_count = ElementOffsetFromIndex(character_count, from_kind, mode);
-  Node* limit_offset = IntPtrAddFoldConstants(from_offset, byte_count);
+  Node* limit_offset = IntPtrAdd(from_offset, byte_count);
 
   // Prepare the fast loop
   MachineType type =
@@ -5473,7 +5447,7 @@ Node* CodeStubAssembler::ElementOffsetFromIndex(Node* index_node,
           : ((element_size_shift > 0)
                  ? WordShl(index_node, IntPtrConstant(element_size_shift))
                  : WordShr(index_node, IntPtrConstant(-element_size_shift)));
-  return IntPtrAddFoldConstants(IntPtrConstant(base_size), shifted_index);
+  return IntPtrAdd(IntPtrConstant(base_size), shifted_index);
 }
 
 Node* CodeStubAssembler::LoadTypeFeedbackVectorForStub() {
@@ -6382,6 +6356,20 @@ void CodeStubAssembler::BuildFastFixedArrayForEach(
       direction == ForEachDirection::kReverse ? -increment : increment,
       direction == ForEachDirection::kReverse ? IndexAdvanceMode::kPre
                                               : IndexAdvanceMode::kPost);
+}
+
+void CodeStubAssembler::InitializeFieldsWithRoot(
+    Node* object, Node* start_offset, Node* end_offset,
+    Heap::RootListIndex root_index) {
+  start_offset = IntPtrAdd(start_offset, IntPtrConstant(-kHeapObjectTag));
+  end_offset = IntPtrAdd(end_offset, IntPtrConstant(-kHeapObjectTag));
+  Node* root_value = LoadRoot(root_index);
+  BuildFastLoop(MachineType::PointerRepresentation(), end_offset, start_offset,
+                [this, object, root_value](Node* current) {
+                  StoreNoWriteBarrier(MachineRepresentation::kTagged, object,
+                                      current, root_value);
+                },
+                -kPointerSize, CodeStubAssembler::IndexAdvanceMode::kPre);
 }
 
 void CodeStubAssembler::BranchIfNumericRelationalComparison(
@@ -8212,7 +8200,7 @@ CodeStubArguments::CodeStubArguments(CodeStubAssembler* assembler, Node* argc)
   Node* offset = assembler->ElementOffsetFromIndex(
       argc_, FAST_ELEMENTS, CodeStubAssembler::INTPTR_PARAMETERS,
       (StandardFrameConstants::kFixedSlotCountAboveFp - 1) * kPointerSize);
-  arguments_ = assembler_->IntPtrAddFoldConstants(fp_, offset);
+  arguments_ = assembler_->IntPtrAdd(fp_, offset);
 }
 
 Node* CodeStubArguments::GetReceiver() const {
@@ -8223,8 +8211,13 @@ Node* CodeStubArguments::GetReceiver() const {
 Node* CodeStubArguments::AtIndex(Node* index,
                                  CodeStubAssembler::ParameterMode mode) const {
   typedef compiler::Node Node;
-  Node* negated_index = assembler_->IntPtrSubFoldConstants(
-      assembler_->IntPtrOrSmiConstant(0, mode), index);
+  CSA_ASSERT(assembler_, assembler_->UintPtrLessThan(
+                             mode == CodeStubAssembler::INTPTR_PARAMETERS
+                                 ? index
+                                 : assembler_->SmiUntag(index),
+                             GetLength()));
+  Node* negated_index =
+      assembler_->IntPtrSub(assembler_->IntPtrOrSmiConstant(0, mode), index);
   Node* offset =
       assembler_->ElementOffsetFromIndex(negated_index, FAST_ELEMENTS, mode, 0);
   return assembler_->Load(MachineType::AnyTagged(), arguments_, offset);
@@ -8247,10 +8240,10 @@ void CodeStubArguments::ForEach(
   if (last == nullptr) {
     last = argc_;
   }
-  Node* start = assembler_->IntPtrSubFoldConstants(
+  Node* start = assembler_->IntPtrSub(
       arguments_,
       assembler_->ElementOffsetFromIndex(first, FAST_ELEMENTS, mode));
-  Node* end = assembler_->IntPtrSubFoldConstants(
+  Node* end = assembler_->IntPtrSub(
       arguments_,
       assembler_->ElementOffsetFromIndex(last, FAST_ELEMENTS, mode));
   assembler_->BuildFastLoop(
@@ -8264,8 +8257,7 @@ void CodeStubArguments::ForEach(
 
 void CodeStubArguments::PopAndReturn(Node* value) {
   assembler_->PopAndReturn(
-      assembler_->IntPtrAddFoldConstants(argc_, assembler_->IntPtrConstant(1)),
-      value);
+      assembler_->IntPtrAdd(argc_, assembler_->IntPtrConstant(1)), value);
 }
 
 Node* CodeStubAssembler::IsFastElementsKind(Node* elements_kind) {
@@ -8328,46 +8320,30 @@ Node* CodeStubAssembler::AllocateFunctionWithMapAndContext(Node* map,
   return fun;
 }
 
-Node* CodeStubAssembler::AllocateJSPromise(Node* context) {
-  Node* const native_context = LoadNativeContext(context);
-  Node* const promise_fun =
-      LoadContextElement(native_context, Context::PROMISE_FUNCTION_INDEX);
-  Node* const initial_map =
-      LoadObjectField(promise_fun, JSFunction::kPrototypeOrInitialMapOffset);
-  Node* const instance = AllocateJSObjectFromMap(initial_map);
-
-  return instance;
-}
-
-void CodeStubAssembler::PromiseInit(Node* promise) {
-  StoreObjectField(promise, JSPromise::kStatusOffset,
-                   SmiConstant(v8::Promise::kPending));
-  StoreObjectField(promise, JSPromise::kFlagsOffset, SmiConstant(0));
-}
-
-void CodeStubAssembler::PromiseSet(Node* promise, Node* status, Node* result) {
-  CSA_ASSERT(this, TaggedIsSmi(status));
-  StoreObjectField(promise, JSPromise::kStatusOffset, status);
-  StoreObjectField(promise, JSPromise::kResultOffset, result);
-  StoreObjectField(promise, JSPromise::kFlagsOffset, SmiConstant(0));
-}
-
 Node* CodeStubAssembler::AllocatePromiseReactionJobInfo(
-    Node* value, Node* promise, Node* tasks, Node* deferred, Node* context) {
+    Node* promise, Node* value, Node* tasks, Node* deferred_promise,
+    Node* deferred_on_resolve, Node* deferred_on_reject, Node* context) {
   Node* const result = Allocate(PromiseReactionJobInfo::kSize);
   StoreMapNoWriteBarrier(result, Heap::kPromiseReactionJobInfoMapRootIndex);
-  StoreObjectFieldNoWriteBarrier(result, PromiseReactionJobInfo::kPromiseOffset,
-                                 promise);
   StoreObjectFieldNoWriteBarrier(result, PromiseReactionJobInfo::kValueOffset,
                                  value);
+  StoreObjectFieldNoWriteBarrier(result, PromiseReactionJobInfo::kPromiseOffset,
+                                 promise);
   StoreObjectFieldNoWriteBarrier(result, PromiseReactionJobInfo::kTasksOffset,
                                  tasks);
   StoreObjectFieldNoWriteBarrier(
-      result, PromiseReactionJobInfo::kDeferredOffset, deferred);
-  StoreObjectFieldRoot(result, PromiseReactionJobInfo::kDebugIdOffset,
-                       Heap::kUndefinedValueRootIndex);
-  StoreObjectFieldRoot(result, PromiseReactionJobInfo::kDebugNameOffset,
-                       Heap::kUndefinedValueRootIndex);
+      result, PromiseReactionJobInfo::kDeferredPromiseOffset, deferred_promise);
+  StoreObjectFieldNoWriteBarrier(
+      result, PromiseReactionJobInfo::kDeferredOnResolveOffset,
+      deferred_on_resolve);
+  StoreObjectFieldNoWriteBarrier(
+      result, PromiseReactionJobInfo::kDeferredOnRejectOffset,
+      deferred_on_reject);
+  StoreObjectFieldNoWriteBarrier(result, PromiseReactionJobInfo::kDebugIdOffset,
+                                 SmiConstant(kDebugPromiseNoID));
+  StoreObjectFieldNoWriteBarrier(result,
+                                 PromiseReactionJobInfo::kDebugNameOffset,
+                                 SmiConstant(kDebugNotActive));
   StoreObjectFieldNoWriteBarrier(result, PromiseReactionJobInfo::kContextOffset,
                                  context);
   return result;

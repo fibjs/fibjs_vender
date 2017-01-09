@@ -1813,7 +1813,7 @@ bool InternalPromiseHasUserDefinedRejectHandler(Isolate* isolate,
                                                 Handle<JSPromise> promise);
 
 bool PromiseHandlerCheck(Isolate* isolate, Handle<JSReceiver> handler,
-                         Handle<JSObject> deferred) {
+                         Handle<JSReceiver> deferred_promise) {
   // Recurse to the forwarding Promise, if any. This may be due to
   //  - await reaction forwarding to the throwaway Promise, which has
   //    a dependency edge to the outer Promise.
@@ -1827,16 +1827,12 @@ bool PromiseHandlerCheck(Isolate* isolate, Handle<JSReceiver> handler,
     return true;
   }
 
-  // TODO(gsathya): Remove this once we get rid of deferred objects.
-  Handle<String> promise_str = isolate->factory()->promise_string();
-  Handle<Object> deferred_promise_obj =
-      JSObject::GetDataProperty(deferred, promise_str);
-  if (!deferred_promise_obj->IsJSPromise()) {
+  if (!deferred_promise->IsJSPromise()) {
     return true;
   }
 
   return InternalPromiseHasUserDefinedRejectHandler(
-      isolate, Handle<JSPromise>::cast(deferred_promise_obj));
+      isolate, Handle<JSPromise>::cast(deferred_promise));
 }
 
 bool InternalPromiseHasUserDefinedRejectHandler(Isolate* isolate,
@@ -1859,7 +1855,7 @@ bool InternalPromiseHasUserDefinedRejectHandler(Isolate* isolate,
   }
 
   Handle<Object> queue(promise->reject_reactions(), isolate);
-  Handle<Object> deferred(promise->deferred(), isolate);
+  Handle<Object> deferred_promise(promise->deferred_promise(), isolate);
 
   if (queue->IsUndefined(isolate)) {
     return false;
@@ -1867,15 +1863,17 @@ bool InternalPromiseHasUserDefinedRejectHandler(Isolate* isolate,
 
   if (queue->IsCallable()) {
     return PromiseHandlerCheck(isolate, Handle<JSReceiver>::cast(queue),
-                               Handle<JSObject>::cast(deferred));
+                               Handle<JSReceiver>::cast(deferred_promise));
   }
 
   Handle<FixedArray> queue_arr = Handle<FixedArray>::cast(queue);
-  Handle<FixedArray> deferred_arr = Handle<FixedArray>::cast(deferred);
-  for (int i = 0; i < deferred_arr->length(); i++) {
+  Handle<FixedArray> deferred_promise_arr =
+      Handle<FixedArray>::cast(deferred_promise);
+  for (int i = 0; i < deferred_promise_arr->length(); i++) {
     Handle<JSReceiver> queue_item(JSReceiver::cast(queue_arr->get(i)));
-    Handle<JSObject> deferred_item(JSObject::cast(deferred_arr->get(i)));
-    if (PromiseHandlerCheck(isolate, queue_item, deferred_item)) {
+    Handle<JSReceiver> deferred_promise_item(
+        JSReceiver::cast(deferred_promise_arr->get(i)));
+    if (PromiseHandlerCheck(isolate, queue_item, deferred_promise_item)) {
       return true;
     }
   }
@@ -3260,31 +3258,27 @@ void Isolate::ReportPromiseReject(Handle<JSObject> promise,
 namespace {
 class PromiseDebugEventScope {
  public:
-  PromiseDebugEventScope(Isolate* isolate, Object* id, Object* name)
+  PromiseDebugEventScope(Isolate* isolate, int id, int name)
       : isolate_(isolate),
-        id_(id, isolate_),
-        name_(name, isolate_),
-        is_debug_active_(isolate_->debug()->is_active() && id_->IsNumber() &&
-                         name_->IsString()) {
+        id_(id),
+        name_(static_cast<PromiseDebugActionName>(name)),
+        is_debug_active_(isolate_->debug()->is_active() &&
+                         id != kDebugPromiseNoID && name_ != kDebugNotActive) {
     if (is_debug_active_) {
-      isolate_->debug()->OnAsyncTaskEvent(
-          isolate_->factory()->will_handle_string(), id_,
-          Handle<String>::cast(name_));
+      isolate_->debug()->OnAsyncTaskEvent(kDebugWillHandle, id_, name_);
     }
   }
 
   ~PromiseDebugEventScope() {
     if (is_debug_active_) {
-      isolate_->debug()->OnAsyncTaskEvent(
-          isolate_->factory()->did_handle_string(), id_,
-          Handle<String>::cast(name_));
+      isolate_->debug()->OnAsyncTaskEvent(kDebugDidHandle, id_, name_);
     }
   }
 
  private:
   Isolate* isolate_;
-  Handle<Object> id_;
-  Handle<Object> name_;
+  int id_;
+  PromiseDebugActionName name_;
   bool is_debug_active_;
 };
 }  // namespace
@@ -3299,15 +3293,24 @@ void Isolate::PromiseReactionJob(Handle<PromiseReactionJobInfo> info,
   Handle<Object> tasks(info->tasks(), this);
   Handle<JSFunction> promise_handle_fn = promise_handle();
   Handle<Object> undefined = factory()->undefined_value();
-  Handle<Object> deferred(info->deferred(), this);
+  Handle<Object> deferred_promise(info->deferred_promise(), this);
 
-  if (deferred->IsFixedArray()) {
+  if (deferred_promise->IsFixedArray()) {
     DCHECK(tasks->IsFixedArray());
-    Handle<FixedArray> deferred_arr = Handle<FixedArray>::cast(deferred);
+    Handle<FixedArray> deferred_promise_arr =
+        Handle<FixedArray>::cast(deferred_promise);
+    Handle<FixedArray> deferred_on_resolve_arr(
+        FixedArray::cast(info->deferred_on_resolve()), this);
+    Handle<FixedArray> deferred_on_reject_arr(
+        FixedArray::cast(info->deferred_on_reject()), this);
     Handle<FixedArray> tasks_arr = Handle<FixedArray>::cast(tasks);
-    for (int i = 0; i < deferred_arr->length(); i++) {
-      Handle<Object> argv[] = {promise, value, handle(tasks_arr->get(i), this),
-                               handle(deferred_arr->get(i), this)};
+    for (int i = 0; i < deferred_promise_arr->length(); i++) {
+      Handle<Object> argv[] = {promise,
+                               value,
+                               handle(tasks_arr->get(i), this),
+                               handle(deferred_promise_arr->get(i), this),
+                               handle(deferred_on_resolve_arr->get(i), this),
+                               handle(deferred_on_reject_arr->get(i), this)};
       *result = Execution::TryCall(this, promise_handle_fn, undefined,
                                    arraysize(argv), argv, maybe_exception);
       // If execution is terminating, just bail out.
@@ -3316,7 +3319,12 @@ void Isolate::PromiseReactionJob(Handle<PromiseReactionJobInfo> info,
       }
     }
   } else {
-    Handle<Object> argv[] = {promise, value, tasks, deferred};
+    Handle<Object> argv[] = {promise,
+                             value,
+                             tasks,
+                             deferred_promise,
+                             handle(info->deferred_on_resolve(), this),
+                             handle(info->deferred_on_reject(), this)};
     *result = Execution::TryCall(this, promise_handle_fn, undefined,
                                  arraysize(argv), argv, maybe_exception);
   }

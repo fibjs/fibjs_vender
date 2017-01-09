@@ -501,6 +501,11 @@ size_t InstructionSelector::AddOperandToStateValueDescriptor(
     StateValueList* values, InstructionOperandVector* inputs,
     OperandGenerator* g, StateObjectDeduplicator* deduplicator, Node* input,
     MachineType type, FrameStateInputKind kind, Zone* zone) {
+  if (input == nullptr) {
+    values->PushOptimizedOut();
+    return 0;
+  }
+
   switch (input->opcode()) {
     case IrOpcode::kObjectState: {
       UNREACHABLE();
@@ -1636,8 +1641,7 @@ void InstructionSelector::VisitStackSlot(Node* node) {
 }
 
 void InstructionSelector::VisitBitcastTaggedToWord(Node* node) {
-  OperandGenerator g(this);
-  Emit(kArchNop, g.DefineSameAsFirst(node), g.Use(node->InputAt(0)));
+  EmitIdentity(node);
 }
 
 void InstructionSelector::VisitBitcastWordToTagged(Node* node) {

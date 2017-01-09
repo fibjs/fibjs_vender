@@ -5,6 +5,7 @@
 #ifndef V8_AST_AST_H_
 #define V8_AST_AST_H_
 
+#include "src/assembler.h"
 #include "src/ast/ast-types.h"
 #include "src/ast/ast-value-factory.h"
 #include "src/ast/modules.h"
@@ -1327,10 +1328,14 @@ class LiteralProperty : public ZoneObject {
     return slots_[offset];
   }
 
+  FeedbackVectorSlot GetStoreDataPropertySlot() const;
+
   void SetSlot(FeedbackVectorSlot slot, int offset = 0) {
     DCHECK_LT(offset, static_cast<int>(arraysize(slots_)));
     slots_[offset] = slot;
   }
+
+  void SetStoreDataPropertySlot(FeedbackVectorSlot slot);
 
   bool NeedsSetFunctionName() const;
 
@@ -1354,8 +1359,9 @@ class ObjectLiteralProperty final : public LiteralProperty {
     COMPUTED,              // Property with computed value (execution time).
     MATERIALIZED_LITERAL,  // Property value is a materialized literal.
     GETTER,
-    SETTER,    // Property is an accessor function.
-    PROTOTYPE  // Property is __proto__.
+    SETTER,     // Property is an accessor function.
+    PROTOTYPE,  // Property is __proto__.
+    SPREAD
   };
 
   Kind kind() const { return kind_; }
@@ -1416,7 +1422,7 @@ class ObjectLiteral final : public MaterializedLiteral {
   // marked expressions, no store code is emitted.
   void CalculateEmitStore(Zone* zone);
 
-  // Determines whether the {FastCloneShallowObjectStub} can be used.
+  // Determines whether the {FastCloneShallowObject} builtin can be used.
   bool IsFastCloningSupported() const;
 
   // Assemble bitfield of flags for the CreateObjectLiteral helper.
@@ -1562,7 +1568,7 @@ class ArrayLiteral final : public MaterializedLiteral {
   // Populate the constant elements fixed array.
   void BuildConstantElements(Isolate* isolate);
 
-  // Determines whether the {FastCloneShallowArrayStub} can be used.
+  // Determines whether the {FastCloneShallowArray} builtin can be used.
   bool IsFastCloningSupported() const;
 
   // Assemble bitfield of flags for the CreateArrayLiteral helper.
@@ -2794,7 +2800,7 @@ class ClassLiteral final : public Expression {
            class_variable_proxy()->var()->IsUnallocated();
   }
 
-  FeedbackVectorSlot PrototypeSlot() const { return prototype_slot_; }
+  FeedbackVectorSlot HomeObjectSlot() const { return home_object_slot_; }
   FeedbackVectorSlot ProxySlot() const { return proxy_slot_; }
 
  private:
@@ -2815,7 +2821,7 @@ class ClassLiteral final : public Expression {
   }
 
   int end_position_;
-  FeedbackVectorSlot prototype_slot_;
+  FeedbackVectorSlot home_object_slot_;
   FeedbackVectorSlot proxy_slot_;
   VariableProxy* class_variable_proxy_;
   Expression* extends_;

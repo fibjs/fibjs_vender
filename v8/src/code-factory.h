@@ -105,8 +105,6 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable BitwiseAnd(Isolate* isolate);
   static Callable BitwiseOr(Isolate* isolate);
   static Callable BitwiseXor(Isolate* isolate);
-  static Callable Inc(Isolate* isolate);
-  static Callable Dec(Isolate* isolate);
   static Callable LessThan(Isolate* isolate);
   static Callable LessThanOrEqual(Isolate* isolate);
   static Callable GreaterThan(Isolate* isolate);
@@ -133,7 +131,8 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable GetSuperConstructor(Isolate* isolate);
 
   static Callable FastCloneRegExp(Isolate* isolate);
-  static Callable FastCloneShallowArray(Isolate* isolate);
+  static Callable FastCloneShallowArray(Isolate* isolate,
+                                        AllocationSiteMode allocation_mode);
   static Callable FastCloneShallowObject(Isolate* isolate, int length);
 
   static Callable FastNewFunctionContext(Isolate* isolate,

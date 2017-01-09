@@ -40,6 +40,8 @@ class RawMachineLabel;
 
 typedef ZoneList<CodeAssemblerVariable*> CodeAssemblerVariableList;
 
+typedef std::function<void()> CodeAssemblerCallback;
+
 #define CODE_ASSEMBLER_COMPARE_BINARY_OP_LIST(V) \
   V(Float32Equal)                                \
   V(Float32LessThan)                             \
@@ -85,9 +87,7 @@ typedef ZoneList<CodeAssemblerVariable*> CodeAssemblerVariableList;
   V(Float64Pow)                            \
   V(Float64InsertLowWord32)                \
   V(Float64InsertHighWord32)               \
-  V(IntPtrAdd)                             \
   V(IntPtrAddWithOverflow)                 \
-  V(IntPtrSub)                             \
   V(IntPtrSubWithOverflow)                 \
   V(IntPtrMul)                             \
   V(Int32Add)                              \
@@ -189,8 +189,7 @@ typedef ZoneList<CodeAssemblerVariable*> CodeAssemblerVariableList;
 class V8_EXPORT_PRIVATE CodeAssembler {
  public:
   explicit CodeAssembler(CodeAssemblerState* state) : state_(state) {}
-
-  virtual ~CodeAssembler();
+  ~CodeAssembler();
 
   static Handle<Code> GenerateCode(CodeAssemblerState* state);
 
@@ -276,6 +275,9 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   CODE_ASSEMBLER_BINARY_OP_LIST(DECLARE_CODE_ASSEMBLER_BINARY_OP)
 #undef DECLARE_CODE_ASSEMBLER_BINARY_OP
 
+  Node* IntPtrAdd(Node* left, Node* right);
+  Node* IntPtrSub(Node* left, Node* right);
+
   Node* WordShl(Node* value, int shift);
   Node* WordShr(Node* value, int shift);
   Node* Word32Shr(Node* value, int shift);
@@ -350,6 +352,18 @@ class V8_EXPORT_PRIVATE CodeAssembler {
     return CallStub(callable, context, function, arity, receiver, args...);
   }
 
+  template <class... TArgs>
+  Node* ConstructJS(Callable const& callable, Node* context, Node* new_target,
+                    TArgs... args) {
+    int argc = static_cast<int>(sizeof...(args));
+    Node* arity = Int32Constant(argc);
+    Node* receiver = LoadRoot(Heap::kUndefinedValueRootIndex);
+
+    // Construct(target, new_target, arity, receiver, arguments...)
+    return CallStub(callable, context, new_target, new_target, arity, receiver,
+                    args...);
+  }
+
   // Call to a C function with two arguments.
   Node* CallCFunction2(MachineType return_type, MachineType arg0_type,
                        MachineType arg1_type, Node* function, Node* arg0,
@@ -374,12 +388,17 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   void BreakOnNode(int node_id);
 
  protected:
-  // Enables subclasses to perform operations before and after a call.
-  virtual void CallPrologue();
-  virtual void CallEpilogue();
+  void RegisterCallGenerationCallbacks(
+      const CodeAssemblerCallback& call_prologue,
+      const CodeAssemblerCallback& call_epilogue);
+  void UnregisterCallGenerationCallbacks();
 
  private:
   RawMachineAssembler* raw_assembler() const;
+
+  // Calls respective callback registered in the state.
+  void CallPrologue();
+  void CallEpilogue();
 
   CodeAssemblerState* state_;
 
@@ -462,6 +481,7 @@ class V8_EXPORT_PRIVATE CodeAssemblerState {
   ~CodeAssemblerState();
 
   const char* name() const { return name_; }
+  int parameter_count() const;
 
  private:
   friend class CodeAssembler;
@@ -477,6 +497,8 @@ class V8_EXPORT_PRIVATE CodeAssemblerState {
   const char* name_;
   bool code_generated_;
   ZoneSet<CodeAssemblerVariable::Impl*> variables_;
+  CodeAssemblerCallback call_prologue_;
+  CodeAssemblerCallback call_epilogue_;
 
   DISALLOW_COPY_AND_ASSIGN(CodeAssemblerState);
 };

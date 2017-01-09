@@ -139,8 +139,8 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
       // Allocate the new receiver object.
       __ Push(edi);
       __ Push(edx);
-      FastNewObjectStub stub(masm->isolate());
-      __ CallStub(&stub);
+      __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+              RelocInfo::CODE_TARGET);
       __ mov(ebx, eax);
       __ Pop(edx);
       __ Pop(edi);
@@ -1126,14 +1126,14 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ test_b(FieldOperand(entry, SharedFunctionInfo::kMarkedForTierUpByteOffset),
             Immediate(1 << SharedFunctionInfo::kMarkedForTierUpBitWithinByte));
   __ j(not_zero, &gotta_call_runtime_no_stack);
-  // Is the full code valid?
+
+  // If SFI points to anything other than CompileLazy, install that.
   __ mov(entry, FieldOperand(entry, SharedFunctionInfo::kCodeOffset));
-  __ mov(ebx, FieldOperand(entry, Code::kFlagsOffset));
-  __ and_(ebx, Code::KindField::kMask);
-  __ shr(ebx, Code::KindField::kShift);
-  __ cmp(ebx, Immediate(Code::BUILTIN));
+  __ Move(ebx, masm->CodeObject());
+  __ cmp(entry, ebx);
   __ j(equal, &gotta_call_runtime_no_stack);
-  // Yes, install the full code.
+
+  // Install the SFI's code entry.
   __ lea(entry, FieldOperand(entry, Code::kHeaderSize));
   __ mov(FieldOperand(closure, JSFunction::kCodeEntryOffset), entry);
   __ RecordWriteCodeEntryField(closure, entry, ebx);
@@ -1925,8 +1925,8 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
     FrameScope scope(masm, StackFrame::MANUAL);
     __ EnterBuiltinFrame(esi, edi, ecx);
     __ Push(ebx);  // the first argument
-    FastNewObjectStub stub(masm->isolate());
-    __ CallStub(&stub);
+    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+            RelocInfo::CODE_TARGET);
     __ Pop(FieldOperand(eax, JSValue::kValueOffset));
     __ LeaveBuiltinFrame(esi, edi, ecx);
   }
@@ -2088,8 +2088,8 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     __ SmiTag(ebx);
     __ EnterBuiltinFrame(esi, edi, ebx);
     __ Push(eax);  // the first argument
-    FastNewObjectStub stub(masm->isolate());
-    __ CallStub(&stub);
+    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+            RelocInfo::CODE_TARGET);
     __ Pop(FieldOperand(eax, JSValue::kValueOffset));
     __ LeaveBuiltinFrame(esi, edi, ebx);
     __ SmiUntag(ebx);

@@ -10,6 +10,7 @@
 #include "src/ast/prettyprinter.h"
 #include "src/ast/scopes.h"
 #include "src/base/hashmap.h"
+#include "src/builtins/builtins-constructor.h"
 #include "src/builtins/builtins.h"
 #include "src/code-stubs.h"
 #include "src/contexts.h"
@@ -348,6 +349,16 @@ ObjectLiteralProperty::ObjectLiteralProperty(AstValueFactory* ast_value_factory,
   }
 }
 
+FeedbackVectorSlot LiteralProperty::GetStoreDataPropertySlot() const {
+  int offset = FunctionLiteral::NeedsHomeObject(value_) ? 1 : 0;
+  return GetSlot(offset);
+}
+
+void LiteralProperty::SetStoreDataPropertySlot(FeedbackVectorSlot slot) {
+  int offset = FunctionLiteral::NeedsHomeObject(value_) ? 1 : 0;
+  return SetSlot(slot, offset);
+}
+
 bool LiteralProperty::NeedsSetFunctionName() const {
   return is_computed_name_ &&
          (value_->IsAnonymousFunctionDefinition() ||
@@ -366,8 +377,11 @@ void ClassLiteral::AssignFeedbackVectorSlots(Isolate* isolate,
                                              FeedbackVectorSpec* spec,
                                              FeedbackVectorSlotCache* cache) {
   // This logic that computes the number of slots needed for vector store
-  // ICs must mirror FullCodeGenerator::VisitClassLiteral.
-  prototype_slot_ = spec->AddLoadICSlot();
+  // ICs must mirror BytecodeGenerator::VisitClassLiteral.
+  if (FunctionLiteral::NeedsHomeObject(constructor())) {
+    home_object_slot_ = spec->AddStoreICSlot();
+  }
+
   if (NeedsProxySlot()) {
     proxy_slot_ = spec->AddStoreICSlot();
   }
@@ -378,6 +392,8 @@ void ClassLiteral::AssignFeedbackVectorSlots(Isolate* isolate,
     if (FunctionLiteral::NeedsHomeObject(value)) {
       property->SetSlot(spec->AddStoreICSlot());
     }
+    property->SetStoreDataPropertySlot(
+        spec->AddStoreDataPropertyInLiteralICSlot());
   }
 }
 
@@ -408,6 +424,7 @@ void ObjectLiteral::AssignFeedbackVectorSlots(Isolate* isolate,
     Literal* key = property->key()->AsLiteral();
     Expression* value = property->value();
     switch (property->kind()) {
+      case ObjectLiteral::Property::SPREAD:
       case ObjectLiteral::Property::CONSTANT:
         UNREACHABLE();
       case ObjectLiteral::Property::MATERIALIZED_LITERAL:
@@ -452,6 +469,8 @@ void ObjectLiteral::AssignFeedbackVectorSlots(Isolate* isolate,
         property->SetSlot(spec->AddStoreICSlot());
       }
     }
+    property->SetStoreDataPropertySlot(
+        spec->AddStoreDataPropertyInLiteralICSlot());
   }
 }
 
@@ -577,12 +596,12 @@ void ObjectLiteral::BuildConstantProperties(Isolate* isolate) {
 }
 
 bool ObjectLiteral::IsFastCloningSupported() const {
-  // FastCloneShallowObjectStub doesn't copy elements, and object literals don't
-  // support copy-on-write (COW) elements for now.
+  // The FastCloneShallowObject builtin doesn't copy elements, and object
+  // literals don't support copy-on-write (COW) elements for now.
   // TODO(mvstanton): make object literals support COW elements.
   return fast_elements() && has_shallow_properties() &&
-         properties_count() <=
-             FastCloneShallowObjectStub::kMaximumClonedProperties;
+         properties_count() <= ConstructorBuiltinsAssembler::
+                                   kMaximumClonedShallowObjectProperties;
 }
 
 void ArrayLiteral::BuildConstantElements(Isolate* isolate) {
@@ -659,7 +678,7 @@ void ArrayLiteral::BuildConstantElements(Isolate* isolate) {
 bool ArrayLiteral::IsFastCloningSupported() const {
   return depth() <= 1 &&
          values()->length() <=
-             FastCloneShallowArrayStub::kMaximumClonedElements;
+             ConstructorBuiltinsAssembler::kMaximumClonedShallowArrayElements;
 }
 
 void ArrayLiteral::AssignFeedbackVectorSlots(Isolate* isolate,

@@ -50,7 +50,10 @@ namespace internal {
   /* Code aging */                                                             \
   CODE_AGE_LIST_WITH_ARG(DECLARE_CODE_AGE_BUILTIN, ASM)                        \
                                                                                \
+  /* Declared first for dependency reasons */                                  \
+  ASM(CompileLazy)                                                             \
   TFS(ToObject, BUILTIN, kNoExtraICState, TypeConversion)                      \
+  TFS(FastNewObject, BUILTIN, kNoExtraICState, FastNewObject)                  \
                                                                                \
   /* Calls */                                                                  \
   ASM(ArgumentsAdaptorTrampoline)                                              \
@@ -86,6 +89,30 @@ namespace internal {
   ASM(JSConstructStubGeneric)                                                  \
   ASM(JSBuiltinsConstructStub)                                                 \
   ASM(JSBuiltinsConstructStubForDerived)                                       \
+  TFS(FastNewClosure, BUILTIN, kNoExtraICState, FastNewClosure)                \
+  TFS(FastNewFunctionContextEval, BUILTIN, kNoExtraICState,                    \
+      FastNewFunctionContext)                                                  \
+  TFS(FastNewFunctionContextFunction, BUILTIN, kNoExtraICState,                \
+      FastNewFunctionContext)                                                  \
+  TFS(FastCloneRegExp, BUILTIN, kNoExtraICState, FastCloneRegExp)              \
+  TFS(FastCloneShallowArrayTrack, BUILTIN, kNoExtraICState,                    \
+      FastCloneShallowArray)                                                   \
+  TFS(FastCloneShallowArrayDontTrack, BUILTIN, kNoExtraICState,                \
+      FastCloneShallowArray)                                                   \
+  TFS(FastCloneShallowObject0, BUILTIN, kNoExtraICState,                       \
+      FastCloneShallowObject)                                                  \
+  TFS(FastCloneShallowObject1, BUILTIN, kNoExtraICState,                       \
+      FastCloneShallowObject)                                                  \
+  TFS(FastCloneShallowObject2, BUILTIN, kNoExtraICState,                       \
+      FastCloneShallowObject)                                                  \
+  TFS(FastCloneShallowObject3, BUILTIN, kNoExtraICState,                       \
+      FastCloneShallowObject)                                                  \
+  TFS(FastCloneShallowObject4, BUILTIN, kNoExtraICState,                       \
+      FastCloneShallowObject)                                                  \
+  TFS(FastCloneShallowObject5, BUILTIN, kNoExtraICState,                       \
+      FastCloneShallowObject)                                                  \
+  TFS(FastCloneShallowObject6, BUILTIN, kNoExtraICState,                       \
+      FastCloneShallowObject)                                                  \
                                                                                \
   /* Apply and entries */                                                      \
   ASM(Apply)                                                                   \
@@ -121,7 +148,6 @@ namespace internal {
   ASM(InterpreterOnStackReplacement)                                           \
                                                                                \
   /* Code life-cycle */                                                        \
-  ASM(CompileLazy)                                                             \
   ASM(CompileBaseline)                                                         \
   ASM(CompileOptimized)                                                        \
   ASM(CompileOptimizedConcurrent)                                              \
@@ -334,6 +360,10 @@ namespace internal {
   TFJ(DatePrototypeGetUTCMonth, 0)                                             \
   /* ES6 section 20.3.4.19 Date.prototype.getUTCSeconds ( ) */                 \
   TFJ(DatePrototypeGetUTCSeconds, 0)                                           \
+  /* ES6 section 20.3.4.44 Date.prototype.valueOf ( ) */                       \
+  TFJ(DatePrototypeValueOf, 0)                                                 \
+  /* ES6 section 20.3.4.45 Date.prototype [ @@toPrimitive ] ( hint ) */        \
+  TFJ(DatePrototypeToPrimitive, 1)                                             \
   CPP(DatePrototypeGetYear)                                                    \
   CPP(DatePrototypeSetYear)                                                    \
   CPP(DateNow)                                                                 \
@@ -355,11 +385,9 @@ namespace internal {
   CPP(DatePrototypeSetUTCSeconds)                                              \
   CPP(DatePrototypeToDateString)                                               \
   CPP(DatePrototypeToISOString)                                                \
-  CPP(DatePrototypeToPrimitive)                                                \
   CPP(DatePrototypeToUTCString)                                                \
   CPP(DatePrototypeToString)                                                   \
   CPP(DatePrototypeToTimeString)                                               \
-  CPP(DatePrototypeValueOf)                                                    \
   CPP(DatePrototypeToJson)                                                     \
   CPP(DateUTC)                                                                 \
                                                                                \
@@ -410,6 +438,32 @@ namespace internal {
   /* JSON */                                                                   \
   CPP(JsonParse)                                                               \
   CPP(JsonStringify)                                                           \
+                                                                               \
+  /* ICs */                                                                    \
+  TFS(LoadIC, LOAD_IC, kNoExtraICState, LoadWithVector)                        \
+  TFS(LoadICTrampoline, LOAD_IC, kNoExtraICState, Load)                        \
+  TFS(KeyedLoadIC, KEYED_LOAD_IC, kNoExtraICState, LoadWithVector)             \
+  TFS(KeyedLoadICTrampoline, KEYED_LOAD_IC, kNoExtraICState, Load)             \
+  TFS(StoreIC, STORE_IC, kNoExtraICState, StoreWithVector)                     \
+  TFS(StoreICTrampoline, STORE_IC, kNoExtraICState, Store)                     \
+  TFS(StoreICStrict, STORE_IC, StoreICState::kStrictModeState,                 \
+      StoreWithVector)                                                         \
+  TFS(StoreICStrictTrampoline, STORE_IC, StoreICState::kStrictModeState,       \
+      Store)                                                                   \
+  TFS(KeyedStoreIC, KEYED_STORE_IC, kNoExtraICState, StoreWithVector)          \
+  TFS(KeyedStoreICTrampoline, KEYED_STORE_IC, kNoExtraICState, Store)          \
+  TFS(KeyedStoreICStrict, KEYED_STORE_IC, StoreICState::kStrictModeState,      \
+      StoreWithVector)                                                         \
+  TFS(KeyedStoreICStrictTrampoline, KEYED_STORE_IC,                            \
+      StoreICState::kStrictModeState, Store)                                   \
+  TFS(LoadGlobalIC, LOAD_GLOBAL_IC, LoadGlobalICState::kNotInsideTypeOfState,  \
+      LoadGlobalWithVector)                                                    \
+  TFS(LoadGlobalICInsideTypeof, LOAD_GLOBAL_IC,                                \
+      LoadGlobalICState::kInsideTypeOfState, LoadGlobalWithVector)             \
+  TFS(LoadGlobalICTrampoline, LOAD_GLOBAL_IC,                                  \
+      LoadGlobalICState::kNotInsideTypeOfState, LoadGlobal)                    \
+  TFS(LoadGlobalICInsideTypeofTrampoline, LOAD_GLOBAL_IC,                      \
+      LoadGlobalICState::kInsideTypeOfState, LoadGlobal)                       \
                                                                                \
   /* Math */                                                                   \
   /* ES6 section 20.2.2.1 Math.abs ( x ) */                                    \
@@ -566,19 +620,21 @@ namespace internal {
   TFS(ForInFilter, BUILTIN, kNoExtraICState, ForInFilter)                      \
                                                                                \
   /* Promise */                                                                \
+  TFJ(PromiseGetCapabilitiesExecutor, 2)                                       \
+  TFJ(NewPromiseCapability, 2)                                                 \
   TFJ(PromiseConstructor, 1)                                                   \
   TFJ(PromiseInternalConstructor, 1)                                           \
   TFJ(IsPromise, 1)                                                            \
-  TFJ(CreateResolvingFunctions, 2)                                             \
   TFJ(PromiseResolveClosure, 1)                                                \
-  CPP(PromiseRejectClosure)                                                    \
+  TFJ(PromiseRejectClosure, 1)                                                 \
   TFJ(PromiseThen, 2)                                                          \
   TFJ(PromiseCatch, 1)                                                         \
-  TFJ(PromiseCreateAndSet, 2)                                                  \
   TFJ(PerformPromiseThen, 4)                                                   \
   TFJ(ResolvePromise, 2)                                                       \
   TFS(PromiseHandleReject, BUILTIN, kNoExtraICState, PromiseHandleReject)      \
-  TFJ(PromiseHandle, 4)                                                        \
+  TFJ(PromiseHandle, 6)                                                        \
+  TFJ(PromiseResolve, 1)                                                       \
+  TFJ(PromiseReject, 1)                                                        \
                                                                                \
   /* Proxy */                                                                  \
   CPP(ProxyConstructor)                                                        \
@@ -776,6 +832,9 @@ class Builtins {
       TailCallMode tail_call_mode,
       CallableType function_type = CallableType::kAny);
   Handle<Code> InterpreterPushArgsAndConstruct(CallableType function_type);
+  Handle<Code> NewFunctionContext(ScopeType scope_type);
+  Handle<Code> NewCloneShallowArray(AllocationSiteMode allocation_mode);
+  Handle<Code> NewCloneShallowObject(int length);
 
   Code* builtin(Name name) {
     // Code::cast cannot be used here since we access builtins

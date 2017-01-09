@@ -888,6 +888,14 @@ enum ScopeType : uint8_t {
   WITH_SCOPE       // The scope introduced by with.
 };
 
+// AllocationSiteMode controls whether allocations are tracked by an allocation
+// site.
+enum AllocationSiteMode {
+  DONT_TRACK_ALLOCATION_SITE,
+  TRACK_ALLOCATION_SITE,
+  LAST_ALLOCATION_SITE_MODE = TRACK_ALLOCATION_SITE
+};
+
 // The mips architecture prior to revision 5 has inverted encoding for sNaN.
 // The x87 FPU convert the sNaN to qNaN automatically when loading sNaN from
 // memmory.
@@ -1077,7 +1085,7 @@ enum FunctionKind : uint16_t {
   kConciseMethod = 1 << 2,
   kConciseGeneratorMethod = kGeneratorFunction | kConciseMethod,
   kDefaultConstructor = 1 << 3,
-  kSubclassConstructor = 1 << 4,
+  kDerivedConstructor = 1 << 4,
   kBaseConstructor = 1 << 5,
   kGetterFunction = 1 << 6,
   kSetterFunction = 1 << 7,
@@ -1085,9 +1093,9 @@ enum FunctionKind : uint16_t {
   kModule = 1 << 9,
   kAccessorFunction = kGetterFunction | kSetterFunction,
   kDefaultBaseConstructor = kDefaultConstructor | kBaseConstructor,
-  kDefaultSubclassConstructor = kDefaultConstructor | kSubclassConstructor,
+  kDefaultDerivedConstructor = kDefaultConstructor | kDerivedConstructor,
   kClassConstructor =
-      kBaseConstructor | kSubclassConstructor | kDefaultConstructor,
+      kBaseConstructor | kDerivedConstructor | kDefaultConstructor,
   kAsyncArrowFunction = kArrowFunction | kAsyncFunction,
   kAsyncConciseMethod = kAsyncFunction | kConciseMethod
 };
@@ -1103,9 +1111,9 @@ inline bool IsValidFunctionKind(FunctionKind kind) {
          kind == FunctionKind::kSetterFunction ||
          kind == FunctionKind::kAccessorFunction ||
          kind == FunctionKind::kDefaultBaseConstructor ||
-         kind == FunctionKind::kDefaultSubclassConstructor ||
+         kind == FunctionKind::kDefaultDerivedConstructor ||
          kind == FunctionKind::kBaseConstructor ||
-         kind == FunctionKind::kSubclassConstructor ||
+         kind == FunctionKind::kDerivedConstructor ||
          kind == FunctionKind::kAsyncFunction ||
          kind == FunctionKind::kAsyncArrowFunction ||
          kind == FunctionKind::kAsyncConciseMethod;
@@ -1169,10 +1177,9 @@ inline bool IsBaseConstructor(FunctionKind kind) {
   return kind & FunctionKind::kBaseConstructor;
 }
 
-
-inline bool IsSubclassConstructor(FunctionKind kind) {
+inline bool IsDerivedConstructor(FunctionKind kind) {
   DCHECK(IsValidFunctionKind(kind));
-  return kind & FunctionKind::kSubclassConstructor;
+  return kind & FunctionKind::kDerivedConstructor;
 }
 
 
@@ -1238,8 +1245,8 @@ class BinaryOperationFeedback {
 // Type feedback is encoded in such a way that, we can combine the feedback
 // at different points by performing an 'OR' operation. Type feedback moves
 // to a more generic type when we combine feedback.
-// kSignedSmall -> kNumber  -> kAny
-//                 kString  -> kAny
+// kSignedSmall        -> kNumber -> kAny
+// kInternalizedString -> kString -> kAny
 // TODO(epertoso): consider unifying this with BinaryOperationFeedback.
 class CompareOperationFeedback {
  public:
@@ -1248,8 +1255,9 @@ class CompareOperationFeedback {
     kSignedSmall = 0x01,
     kNumber = 0x3,
     kNumberOrOddball = 0x7,
-    kString = 0x8,
-    kAny = 0x1F
+    kInternalizedString = 0x8,
+    kString = 0x18,
+    kAny = 0x3F
   };
 };
 

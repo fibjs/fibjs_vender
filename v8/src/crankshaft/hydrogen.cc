@@ -3946,7 +3946,7 @@ void HOptimizedGraphBuilder::VisitExpressions(ZoneList<Expression*>* exprs,
 
 
 bool HOptimizedGraphBuilder::BuildGraph() {
-  if (IsSubclassConstructor(current_info()->literal()->kind())) {
+  if (IsDerivedConstructor(current_info()->literal()->kind())) {
     Bailout(kSuperReference);
     return false;
   }
@@ -5052,11 +5052,10 @@ void HOptimizedGraphBuilder::VisitFunctionLiteral(FunctionLiteral* expr) {
   HConstant* shared_info_value = Add<HConstant>(shared_info);
   HInstruction* instr;
   if (!expr->pretenure()) {
-    FastNewClosureStub stub(isolate());
-    FastNewClosureDescriptor descriptor(isolate());
+    Callable callable = CodeFactory::FastNewClosure(isolate());
     HValue* values[] = {shared_info_value};
-    HConstant* stub_value = Add<HConstant>(stub.GetCode());
-    instr = New<HCallWithDescriptor>(stub_value, 0, descriptor,
+    HConstant* stub_value = Add<HConstant>(callable.code());
+    instr = New<HCallWithDescriptor>(stub_value, 0, callable.descriptor(),
                                      ArrayVector(values));
   } else {
     Add<HPushArguments>(shared_info_value);
@@ -7400,7 +7399,7 @@ bool HOptimizedGraphBuilder::TryArgumentsAccess(Property* expr) {
   } else {
     // We need to take into account the KEYED_LOAD_IC feedback to guard the
     // HBoundsCheck instructions below.
-    if (!expr->IsMonomorphic()) return false;
+    if (!expr->IsMonomorphic() && !expr->IsUninitialized()) return false;
     if (IsAnyParameterContextAllocated()) return false;
     CHECK_ALIVE_OR_RETURN(VisitForValue(expr->obj(), ARGUMENTS_ALLOWED), true);
     CHECK_ALIVE_OR_RETURN(VisitForValue(expr->key()), true);
@@ -9672,7 +9671,7 @@ bool HOptimizedGraphBuilder::TryInlineArrayCall(Expression* expression,
 // Checks whether allocation using the given constructor can be inlined.
 static bool IsAllocationInlineable(Handle<JSFunction> constructor) {
   return constructor->has_initial_map() &&
-         !IsSubclassConstructor(constructor->shared()->kind()) &&
+         !IsDerivedConstructor(constructor->shared()->kind()) &&
          constructor->initial_map()->instance_type() == JS_OBJECT_TYPE &&
          constructor->initial_map()->instance_size() <
              HAllocate::kMaxInlineSize;
@@ -11287,23 +11286,35 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
         // The caller expects a branch instruction, so make it happy.
         return New<HBranch>(graph()->GetConstantTrue());
       }
-      // Can we get away with map check and not instance type check?
-      HValue* operand_to_check =
-          left->block()->block_id() < right->block()->block_id() ? left : right;
-      if (combined_type->IsClass()) {
-        Handle<Map> map = combined_type->AsClass()->Map();
-        AddCheckMap(operand_to_check, map);
-        HCompareObjectEqAndBranch* result =
-            New<HCompareObjectEqAndBranch>(left, right);
-        return result;
+      if (op == Token::EQ) {
+        // For abstract equality we need to check both sides are receivers.
+        if (combined_type->IsClass()) {
+          Handle<Map> map = combined_type->AsClass()->Map();
+          AddCheckMap(left, map);
+          AddCheckMap(right, map);
+        } else {
+          BuildCheckHeapObject(left);
+          Add<HCheckInstanceType>(left, HCheckInstanceType::IS_JS_RECEIVER);
+          BuildCheckHeapObject(right);
+          Add<HCheckInstanceType>(right, HCheckInstanceType::IS_JS_RECEIVER);
+        }
       } else {
-        BuildCheckHeapObject(operand_to_check);
-        Add<HCheckInstanceType>(operand_to_check,
-                                HCheckInstanceType::IS_JS_RECEIVER);
-        HCompareObjectEqAndBranch* result =
-            New<HCompareObjectEqAndBranch>(left, right);
-        return result;
+        // For strict equality we only need to check one side.
+        HValue* operand_to_check =
+            left->block()->block_id() < right->block()->block_id() ? left
+                                                                   : right;
+        if (combined_type->IsClass()) {
+          Handle<Map> map = combined_type->AsClass()->Map();
+          AddCheckMap(operand_to_check, map);
+        } else {
+          BuildCheckHeapObject(operand_to_check);
+          Add<HCheckInstanceType>(operand_to_check,
+                                  HCheckInstanceType::IS_JS_RECEIVER);
+        }
       }
+      HCompareObjectEqAndBranch* result =
+          New<HCompareObjectEqAndBranch>(left, right);
+      return result;
     } else {
       if (combined_type->IsClass()) {
         // TODO(bmeurer): This is an optimized version of an x < y, x > y,

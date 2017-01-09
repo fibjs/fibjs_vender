@@ -20,7 +20,7 @@ VectorSlotPair::VectorSlotPair() {}
 
 
 int VectorSlotPair::index() const {
-  return vector_.is_null() ? -1 : vector_->GetIndex(slot_);
+  return vector_.is_null() ? -1 : TypeFeedbackVector::GetIndex(slot_);
 }
 
 
@@ -244,6 +244,29 @@ CreateFunctionContextParameters const& CreateFunctionContextParametersOf(
     Operator const* op) {
   DCHECK_EQ(IrOpcode::kJSCreateFunctionContext, op->opcode());
   return OpParameter<CreateFunctionContextParameters>(op);
+}
+
+bool operator==(DataPropertyParameters const& lhs,
+                DataPropertyParameters const& rhs) {
+  return lhs.feedback() == rhs.feedback();
+}
+
+bool operator!=(DataPropertyParameters const& lhs,
+                DataPropertyParameters const& rhs) {
+  return !(lhs == rhs);
+}
+
+size_t hash_value(DataPropertyParameters const& p) {
+  return base::hash_combine(p.feedback());
+}
+
+std::ostream& operator<<(std::ostream& os, DataPropertyParameters const& p) {
+  return os;
+}
+
+DataPropertyParameters const& DataPropertyParametersOf(const Operator* op) {
+  DCHECK(op->opcode() == IrOpcode::kJSStoreDataPropertyInLiteral);
+  return OpParameter<DataPropertyParameters>(op);
 }
 
 bool operator==(NamedAccess const& lhs, NamedAccess const& rhs) {
@@ -511,8 +534,7 @@ CompareOperationHint CompareOperationHintOf(const Operator* op) {
   V(StoreMessage, Operator::kNoThrow, 1, 0)                 \
   V(GeneratorRestoreContinuation, Operator::kNoThrow, 1, 1) \
   V(StackCheck, Operator::kNoWrite, 0, 0)                   \
-  V(GetSuperConstructor, Operator::kNoWrite, 1, 1)          \
-  V(StoreDataPropertyInLiteral, Operator::kNoProperties, 4, 0)
+  V(GetSuperConstructor, Operator::kNoWrite, 1, 1)
 
 #define BINARY_OP_LIST(V) \
   V(BitwiseOr)            \
@@ -585,6 +607,8 @@ struct JSOperatorGlobalCache final {
   Name##Operator<CompareOperationHint::kNumberOrOddball>                  \
       k##Name##NumberOrOddballOperator;                                   \
   Name##Operator<CompareOperationHint::kString> k##Name##StringOperator;  \
+  Name##Operator<CompareOperationHint::kInternalizedString>               \
+      k##Name##InternalizedStringOperator;                                \
   Name##Operator<CompareOperationHint::kAny> k##Name##AnyOperator;
   COMPARE_OP_LIST(COMPARE_OP)
 #undef COMPARE_OP
@@ -636,6 +660,8 @@ BINARY_OP_LIST(BINARY_OP)
         return &cache_.k##Name##NumberOperator;                        \
       case CompareOperationHint::kNumberOrOddball:                     \
         return &cache_.k##Name##NumberOrOddballOperator;               \
+      case CompareOperationHint::kInternalizedString:                  \
+        return &cache_.k##Name##InternalizedStringOperator;            \
       case CompareOperationHint::kString:                              \
         return &cache_.k##Name##StringOperator;                        \
       case CompareOperationHint::kAny:                                 \
@@ -646,6 +672,17 @@ BINARY_OP_LIST(BINARY_OP)
   }
 COMPARE_OP_LIST(COMPARE_OP)
 #undef COMPARE_OP
+
+const Operator* JSOperatorBuilder::StoreDataPropertyInLiteral(
+    const VectorSlotPair& feedback) {
+  DataPropertyParameters parameters(feedback);
+  return new (zone()) Operator1<DataPropertyParameters>(  // --
+      IrOpcode::kJSStoreDataPropertyInLiteral,
+      Operator::kNoThrow,              // opcode
+      "JSStoreDataPropertyInLiteral",  // name
+      4, 1, 1, 0, 1, 0,                // counts
+      parameters);                     // parameter
+}
 
 const Operator* JSOperatorBuilder::ToBoolean(ToBooleanHints hints) {
   // TODO(turbofan): Cache most important versions of this operator.

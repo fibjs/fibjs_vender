@@ -10,7 +10,7 @@
 #include "src/base/macros.h"
 #include "src/globals.h"
 #include "src/handles.h"
-// #include "testing/gtest/include/gtest/gtest_prod.h"
+#include "gtest/gtest_prod.h"
 
 namespace v8 {
 namespace internal {
@@ -86,8 +86,12 @@ class V8_EXPORT_PRIVATE CompilerDispatcherJob {
   // Estimate how long the next step will take using the tracer.
   double EstimateRuntimeOfNextStepInMs() const;
 
+  // Even though the name does not imply this, ShortPrint() must only be invoked
+  // on the main thread.
+  void ShortPrint();
+
  private:
-  // FRIEND_TEST(CompilerDispatcherJobTest, ScopeChain);
+  FRIEND_TEST(CompilerDispatcherJobTest, ScopeChain);
 
   CompileJobStatus status_ = CompileJobStatus::kInitial;
   Isolate* isolate_;
@@ -110,6 +114,8 @@ class V8_EXPORT_PRIVATE CompilerDispatcherJob {
 
   bool can_parse_on_background_thread_;
   bool can_compile_on_background_thread_;
+
+  bool trace_compiler_dispatcher_jobs_;
 
   DISALLOW_COPY_AND_ASSIGN(CompilerDispatcherJob);
 };

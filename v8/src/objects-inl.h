@@ -153,6 +153,7 @@ TYPE_CHECKER(JSMap, JS_MAP_TYPE)
 TYPE_CHECKER(JSMapIterator, JS_MAP_ITERATOR_TYPE)
 TYPE_CHECKER(JSMessageObject, JS_MESSAGE_OBJECT_TYPE)
 TYPE_CHECKER(JSModuleNamespace, JS_MODULE_NAMESPACE_TYPE)
+TYPE_CHECKER(JSPromiseCapability, JS_PROMISE_CAPABILITY_TYPE)
 TYPE_CHECKER(JSPromise, JS_PROMISE_TYPE)
 TYPE_CHECKER(JSRegExp, JS_REGEXP_TYPE)
 TYPE_CHECKER(JSSet, JS_SET_TYPE)
@@ -640,6 +641,7 @@ CAST_ACCESSOR(JSObject)
 CAST_ACCESSOR(JSProxy)
 CAST_ACCESSOR(JSReceiver)
 CAST_ACCESSOR(JSRegExp)
+CAST_ACCESSOR(JSPromiseCapability)
 CAST_ACCESSOR(JSPromise)
 CAST_ACCESSOR(JSSet)
 CAST_ACCESSOR(JSSetIterator)
@@ -2173,6 +2175,8 @@ int JSObject::GetHeaderSize(InstanceType type) {
       return JSWeakMap::kSize;
     case JS_WEAK_SET_TYPE:
       return JSWeakSet::kSize;
+    case JS_PROMISE_CAPABILITY_TYPE:
+      return JSPromiseCapability::kSize;
     case JS_PROMISE_TYPE:
       return JSPromise::kSize;
     case JS_REGEXP_TYPE:
@@ -5724,16 +5728,21 @@ ACCESSORS(PromiseResolveThenableJobInfo, thenable, JSReceiver, kThenableOffset)
 ACCESSORS(PromiseResolveThenableJobInfo, then, JSReceiver, kThenOffset)
 ACCESSORS(PromiseResolveThenableJobInfo, resolve, JSFunction, kResolveOffset)
 ACCESSORS(PromiseResolveThenableJobInfo, reject, JSFunction, kRejectOffset)
-ACCESSORS(PromiseResolveThenableJobInfo, debug_id, Object, kDebugIdOffset)
-ACCESSORS(PromiseResolveThenableJobInfo, debug_name, Object, kDebugNameOffset)
+SMI_ACCESSORS(PromiseResolveThenableJobInfo, debug_id, kDebugIdOffset)
+SMI_ACCESSORS(PromiseResolveThenableJobInfo, debug_name, kDebugNameOffset)
 ACCESSORS(PromiseResolveThenableJobInfo, context, Context, kContextOffset);
 
 ACCESSORS(PromiseReactionJobInfo, promise, JSPromise, kPromiseOffset);
 ACCESSORS(PromiseReactionJobInfo, value, Object, kValueOffset);
 ACCESSORS(PromiseReactionJobInfo, tasks, Object, kTasksOffset);
-ACCESSORS(PromiseReactionJobInfo, deferred, Object, kDeferredOffset);
-ACCESSORS(PromiseReactionJobInfo, debug_id, Object, kDebugIdOffset);
-ACCESSORS(PromiseReactionJobInfo, debug_name, Object, kDebugNameOffset);
+ACCESSORS(PromiseReactionJobInfo, deferred_promise, Object,
+          kDeferredPromiseOffset);
+ACCESSORS(PromiseReactionJobInfo, deferred_on_resolve, Object,
+          kDeferredOnResolveOffset);
+ACCESSORS(PromiseReactionJobInfo, deferred_on_reject, Object,
+          kDeferredOnRejectOffset);
+SMI_ACCESSORS(PromiseReactionJobInfo, debug_id, kDebugIdOffset);
+SMI_ACCESSORS(PromiseReactionJobInfo, debug_name, kDebugNameOffset);
 ACCESSORS(PromiseReactionJobInfo, context, Context, kContextOffset);
 
 Map* PrototypeInfo::ObjectCreateMap() {
@@ -6214,10 +6223,6 @@ BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, must_use_ignition_turbo,
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, dont_flush, kDontFlush)
 BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_asm_wasm_broken,
                kIsAsmWasmBroken)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, requires_class_field_init,
-               kRequiresClassFieldInit)
-BOOL_ACCESSORS(SharedFunctionInfo, compiler_hints, is_class_field_initializer,
-               kIsClassFieldInitializer)
 
 bool Script::HasValidSource() {
   Object* src = this->source();
@@ -7089,9 +7094,15 @@ void JSTypedArray::set_length(Object* value, WriteBarrierMode mode) {
 ACCESSORS(JSTypedArray, raw_length, Object, kLengthOffset)
 #endif
 
+ACCESSORS(JSPromiseCapability, promise, Object, kPromiseOffset)
+ACCESSORS(JSPromiseCapability, resolve, Object, kResolveOffset)
+ACCESSORS(JSPromiseCapability, reject, Object, kRejectOffset)
+
 SMI_ACCESSORS(JSPromise, status, kStatusOffset)
 ACCESSORS(JSPromise, result, Object, kResultOffset)
-ACCESSORS(JSPromise, deferred, Object, kDeferredOffset)
+ACCESSORS(JSPromise, deferred_promise, Object, kDeferredPromiseOffset)
+ACCESSORS(JSPromise, deferred_on_resolve, Object, kDeferredOnResolveOffset)
+ACCESSORS(JSPromise, deferred_on_reject, Object, kDeferredOnRejectOffset)
 ACCESSORS(JSPromise, fulfill_reactions, Object, kFulfillReactionsOffset)
 ACCESSORS(JSPromise, reject_reactions, Object, kRejectReactionsOffset)
 SMI_ACCESSORS(JSPromise, flags, kFlagsOffset)

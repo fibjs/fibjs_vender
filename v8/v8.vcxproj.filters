@@ -531,6 +531,9 @@
     <ClInclude Include="src\bootstrapper.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-constructor.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-promise.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
@@ -688,6 +691,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\gap-resolver.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\graph-assembler.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\graph-reducer.h">
@@ -2064,6 +2070,9 @@
     <ClInclude Include="src\zone\zone-containers.h">
       <Filter>Source Files\zone</Filter>
     </ClInclude>
+    <ClInclude Include="src\zone\zone-handle-set.h">
+      <Filter>Source Files\zone</Filter>
+    </ClInclude>
     <ClInclude Include="src\zone\zone-segment.h">
       <Filter>Source Files\zone</Filter>
     </ClInclude>
@@ -2282,6 +2291,9 @@
     <ClCompile Include="src\builtins\builtins-callsite.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-constructor.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-conversion.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2307,6 +2319,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-handler.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-ic.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-internal.cc">
@@ -2505,6 +2520,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\gap-resolver.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\graph-assembler.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\graph-reducer.cc">

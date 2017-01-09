@@ -10,6 +10,7 @@
 #include "src/crankshaft/s390/lithium-codegen-s390.h"
 
 #include "src/base/bits.h"
+#include "src/builtins/builtins-constructor.h"
 #include "src/code-factory.h"
 #include "src/code-stubs.h"
 #include "src/crankshaft/hydrogen-osr.h"
@@ -181,13 +182,14 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
       __ CallRuntime(Runtime::kNewScriptContext);
       deopt_mode = Safepoint::kLazyDeopt;
     } else {
-      if (slots <= FastNewFunctionContextStub::MaximumSlots()) {
-        FastNewFunctionContextStub stub(isolate(),
-                                        info()->scope()->scope_type());
+      if (slots <=
+          ConstructorBuiltinsAssembler::MaximumFunctionContextSlots()) {
+        Callable callable = CodeFactory::FastNewFunctionContext(
+            isolate(), info()->scope()->scope_type());
         __ mov(FastNewFunctionContextDescriptor::SlotsRegister(),
                Operand(slots));
-        __ CallStub(&stub);
-        // Result of FastNewFunctionContextStub is always in new space.
+        __ Call(callable.code(), RelocInfo::CODE_TARGET);
+        // Result of the FastNewFunctionContext builtin is always in new space.
         need_write_barrier = false;
       } else {
         __ push(r3);
@@ -3523,9 +3525,13 @@ void LCodeGen::DoMathFround(LMathFround* instr) {
 }
 
 void LCodeGen::DoMathSqrt(LMathSqrt* instr) {
-  DoubleRegister input = ToDoubleRegister(instr->value());
   DoubleRegister result = ToDoubleRegister(instr->result());
-  __ sqdbr(result, input);
+  LOperand* input = instr->value();
+  if (input->IsDoubleRegister()) {
+    __ Sqrt(result, ToDoubleRegister(instr->value()));
+  } else {
+    __ Sqrt(result, ToMemOperand(input));
+  }
 }
 
 void LCodeGen::DoMathPowHalf(LMathPowHalf* instr) {
@@ -3909,13 +3915,14 @@ void LCodeGen::DoBoundsCheck(LBoundsCheck* instr) {
   Representation representation = instr->hydrogen()->length()->representation();
   DCHECK(representation.Equals(instr->hydrogen()->index()->representation()));
   DCHECK(representation.IsSmiOrInteger32());
+  Register temp = scratch0();
 
   Condition cc = instr->hydrogen()->allow_equality() ? lt : le;
   if (instr->length()->IsConstantOperand()) {
     int32_t length = ToInteger32(LConstantOperand::cast(instr->length()));
     Register index = ToRegister(instr->index());
     if (representation.IsSmi()) {
-      __ CmpLogicalP(index, Operand(Smi::FromInt(length)));
+      __ CmpLogicalSmiLiteral(index, Smi::FromInt(length), temp);
     } else {
       __ CmpLogical32(index, Operand(length));
     }
@@ -3924,7 +3931,7 @@ void LCodeGen::DoBoundsCheck(LBoundsCheck* instr) {
     int32_t index = ToInteger32(LConstantOperand::cast(instr->index()));
     Register length = ToRegister(instr->length());
     if (representation.IsSmi()) {
-      __ CmpLogicalP(length, Operand(Smi::FromInt(index)));
+      __ CmpLogicalSmiLiteral(length, Smi::FromInt(index), temp);
     } else {
       __ CmpLogical32(length, Operand(index));
     }

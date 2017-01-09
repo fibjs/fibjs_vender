@@ -1030,6 +1030,7 @@ Node* JSCreateLowering::AllocateArguments(Node* effect, Node* control,
   AllocationBuilder a(jsgraph(), effect, control);
   a.AllocateArray(argument_count, factory()->fixed_array_map());
   for (int i = 0; i < argument_count; ++i, ++parameters_it) {
+    DCHECK_NOT_NULL((*parameters_it).node);
     a.Store(AccessBuilder::ForFixedArraySlot(i), (*parameters_it).node);
   }
   return a.Finish();
@@ -1059,6 +1060,7 @@ Node* JSCreateLowering::AllocateRestArguments(Node* effect, Node* control,
   AllocationBuilder a(jsgraph(), effect, control);
   a.AllocateArray(num_elements, factory()->fixed_array_map());
   for (int i = 0; i < num_elements; ++i, ++parameters_it) {
+    DCHECK_NOT_NULL((*parameters_it).node);
     a.Store(AccessBuilder::ForFixedArraySlot(i), (*parameters_it).node);
   }
   return a.Finish();
@@ -1088,18 +1090,19 @@ Node* JSCreateLowering::AllocateAliasedArguments(
   // Prepare an iterator over argument values recorded in the frame state.
   Node* const parameters = frame_state->InputAt(kFrameStateParametersInput);
   StateValuesAccess parameters_access(parameters);
-  auto paratemers_it = ++parameters_access.begin();
+  auto parameters_it = ++parameters_access.begin();
 
   // The unmapped argument values recorded in the frame state are stored yet
   // another indirection away and then linked into the parameter map below,
   // whereas mapped argument values are replaced with a hole instead.
   AllocationBuilder aa(jsgraph(), effect, control);
   aa.AllocateArray(argument_count, factory()->fixed_array_map());
-  for (int i = 0; i < mapped_count; ++i, ++paratemers_it) {
+  for (int i = 0; i < mapped_count; ++i, ++parameters_it) {
     aa.Store(AccessBuilder::ForFixedArraySlot(i), jsgraph()->TheHoleConstant());
   }
-  for (int i = mapped_count; i < argument_count; ++i, ++paratemers_it) {
-    aa.Store(AccessBuilder::ForFixedArraySlot(i), (*paratemers_it).node);
+  for (int i = mapped_count; i < argument_count; ++i, ++parameters_it) {
+    DCHECK_NOT_NULL((*parameters_it).node);
+    aa.Store(AccessBuilder::ForFixedArraySlot(i), (*parameters_it).node);
   }
   Node* arguments = aa.Finish();
 
@@ -1186,9 +1189,10 @@ Node* JSCreateLowering::AllocateFastLiteral(
     Handle<Name> property_name(
         boilerplate_map->instance_descriptors()->GetKey(i), isolate());
     FieldIndex index = FieldIndex::ForDescriptor(*boilerplate_map, i);
-    FieldAccess access = {
-        kTaggedBase, index.offset(),           property_name,
-        Type::Any(), MachineType::AnyTagged(), kFullWriteBarrier};
+    FieldAccess access = {kTaggedBase,      index.offset(),
+                          property_name,    MaybeHandle<Map>(),
+                          Type::Any(),      MachineType::AnyTagged(),
+                          kFullWriteBarrier};
     Node* value;
     if (boilerplate->IsUnboxedDoubleField(index)) {
       access.machine_type = MachineType::Float64();
@@ -1249,7 +1253,7 @@ Node* JSCreateLowering::AllocateFastLiteral(
         AccessBuilder::ForJSArrayLength(boilerplate_array->GetElementsKind()),
         handle(boilerplate_array->length(), isolate()));
   }
-  for (auto const inobject_field : inobject_fields) {
+  for (auto const& inobject_field : inobject_fields) {
     builder.Store(inobject_field.first, inobject_field.second);
   }
   return builder.Finish();

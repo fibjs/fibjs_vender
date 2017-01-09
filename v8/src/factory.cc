@@ -1011,36 +1011,20 @@ Handle<Struct> Factory::NewStruct(InstanceType type) {
       Struct);
 }
 
-Handle<PromiseResolveThenableJobInfo> Factory::NewPromiseResolveThenableJobInfo(
-    Handle<JSReceiver> thenable, Handle<JSReceiver> then,
-    Handle<JSFunction> resolve, Handle<JSFunction> reject,
-    Handle<Object> debug_id, Handle<Object> debug_name,
-    Handle<Context> context) {
-  Handle<PromiseResolveThenableJobInfo> result =
-      Handle<PromiseResolveThenableJobInfo>::cast(
-          NewStruct(PROMISE_RESOLVE_THENABLE_JOB_INFO_TYPE));
-  result->set_thenable(*thenable);
-  result->set_then(*then);
-  result->set_resolve(*resolve);
-  result->set_reject(*reject);
-  result->set_debug_id(*debug_id);
-  result->set_debug_name(*debug_name);
-  result->set_context(*context);
-  return result;
-}
-
 Handle<PromiseReactionJobInfo> Factory::NewPromiseReactionJobInfo(
     Handle<JSPromise> promise, Handle<Object> value, Handle<Object> tasks,
-    Handle<Object> deferred, Handle<Object> debug_id, Handle<Object> debug_name,
-    Handle<Context> context) {
+    Handle<Object> deferred_promise, Handle<Object> deferred_on_resolve,
+    Handle<Object> deferred_on_reject, Handle<Context> context) {
   Handle<PromiseReactionJobInfo> result = Handle<PromiseReactionJobInfo>::cast(
       NewStruct(PROMISE_REACTION_JOB_INFO_TYPE));
   result->set_promise(*promise);
   result->set_value(*value);
   result->set_tasks(*tasks);
-  result->set_deferred(*deferred);
-  result->set_debug_id(*debug_id);
-  result->set_debug_name(*debug_name);
+  result->set_deferred_promise(*deferred_promise);
+  result->set_deferred_on_resolve(*deferred_on_resolve);
+  result->set_deferred_on_reject(*deferred_on_reject);
+  result->set_debug_id(kDebugPromiseFirstID);
+  result->set_debug_name(kDebugNotActive);
   result->set_context(*context);
   return result;
 }

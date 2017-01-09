@@ -165,19 +165,17 @@ void Parser::SetCachedData(ParseInfo* info) {
 }
 
 FunctionLiteral* Parser::DefaultConstructor(const AstRawString* name,
-                                            bool call_super,
-                                            int pos, int end_pos,
-                                            LanguageMode language_mode) {
+                                            bool call_super, int pos,
+                                            int end_pos) {
   int materialized_literal_count = -1;
   int expected_property_count = -1;
   const int parameter_count = 0;
   if (name == nullptr) name = ast_value_factory()->empty_string();
 
-  FunctionKind kind = call_super ? FunctionKind::kDefaultSubclassConstructor
+  FunctionKind kind = call_super ? FunctionKind::kDefaultDerivedConstructor
                                  : FunctionKind::kDefaultBaseConstructor;
   DeclarationScope* function_scope = NewFunctionScope(kind);
-  SetLanguageMode(function_scope,
-                  static_cast<LanguageMode>(language_mode | STRICT));
+  SetLanguageMode(function_scope, STRICT);
   // Set start and end position to the same value
   function_scope->set_start_position(pos);
   function_scope->set_end_position(pos);
@@ -554,6 +552,7 @@ Parser::Parser(ParseInfo* info)
   set_allow_harmony_restrictive_generators(FLAG_harmony_restrictive_generators);
   set_allow_harmony_trailing_commas(FLAG_harmony_trailing_commas);
   set_allow_harmony_class_fields(FLAG_harmony_class_fields);
+  set_allow_harmony_object_spread(FLAG_harmony_object_spread);
   for (int feature = 0; feature < v8::Isolate::kUseCounterFeatureCount;
        ++feature) {
     use_counts_[feature] = 0;
@@ -937,10 +936,8 @@ FunctionLiteral* Parser::DoParseFunction(ParseInfo* info,
       }
     } else if (IsDefaultConstructor(kind)) {
       DCHECK_EQ(scope(), outer);
-      bool is_subclass_constructor = IsSubclassConstructor(kind);
-      result = DefaultConstructor(raw_name, is_subclass_constructor,
-                                  info->start_position(), info->end_position(),
-                                  info->language_mode());
+      result = DefaultConstructor(raw_name, IsDerivedConstructor(kind),
+                                  info->start_position(), info->end_position());
     } else {
       result = ParseFunctionLiteral(
           raw_name, Scanner::Location::invalid(), kSkipFunctionNameCheck, kind,
@@ -1581,7 +1578,7 @@ bool Parser::ContainsLabel(ZoneList<const AstRawString*>* labels,
 }
 
 Expression* Parser::RewriteReturn(Expression* return_value, int pos) {
-  if (IsSubclassConstructor(function_state_->kind())) {
+  if (IsDerivedConstructor(function_state_->kind())) {
     // For subclass constructors we need to return this in case of undefined
     // return a Smi (transformed into an exception in the ConstructStub)
     // for a non object.
@@ -2755,6 +2752,7 @@ Parser::LazyParsingResult Parser::SkipFunction(
     SET_ALLOW(harmony_async_await);
     SET_ALLOW(harmony_trailing_commas);
     SET_ALLOW(harmony_class_fields);
+    SET_ALLOW(harmony_object_spread);
 #undef SET_ALLOW
   }
   // Aborting inner function preparsing would leave scopes in an inconsistent
@@ -3198,7 +3196,7 @@ ZoneList<Statement*>* Parser::ParseEagerFunctionBody(
       ParseStatementList(body, Token::RBRACE, CHECK_OK);
     }
 
-    if (IsSubclassConstructor(kind)) {
+    if (IsDerivedConstructor(kind)) {
       body->Add(factory()->NewReturnStatement(ThisExpression(kNoSourcePosition),
                                               kNoSourcePosition),
                 zone());
@@ -3334,8 +3332,8 @@ Expression* Parser::RewriteClassLiteral(const AstRawString* name,
   bool has_extends = class_info->extends != nullptr;
   bool has_default_constructor = class_info->constructor == nullptr;
   if (has_default_constructor) {
-    class_info->constructor = DefaultConstructor(
-        name, has_extends, pos, end_pos, scope()->language_mode());
+    class_info->constructor =
+        DefaultConstructor(name, has_extends, pos, end_pos);
   }
 
   scope()->set_end_position(end_pos);

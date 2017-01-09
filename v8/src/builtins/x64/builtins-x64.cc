@@ -141,8 +141,8 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
       // Allocate the new receiver object.
       __ Push(rdi);
       __ Push(rdx);
-      FastNewObjectStub stub(masm->isolate());
-      __ CallStub(&stub);
+      __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+              RelocInfo::CODE_TARGET);
       __ movp(rbx, rax);
       __ Pop(rdx);
       __ Pop(rdi);
@@ -155,9 +155,7 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
 
       // Retrieve smi-tagged arguments count from the stack.
       __ SmiToInteger32(rax, Operand(rsp, 0 * kPointerSize));
-    }
 
-    if (create_implicit_receiver) {
       // Push the allocated receiver to the stack. We need two copies
       // because we may have to return the original one and the calling
       // conventions dictate that the called function pops the receiver.
@@ -1082,14 +1080,14 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ testb(FieldOperand(entry, SharedFunctionInfo::kMarkedForTierUpByteOffset),
            Immediate(1 << SharedFunctionInfo::kMarkedForTierUpBitWithinByte));
   __ j(not_zero, &gotta_call_runtime);
-  // Is the full code valid?
+
+  // If SFI points to anything other than CompileLazy, install that.
   __ movp(entry, FieldOperand(entry, SharedFunctionInfo::kCodeOffset));
-  __ movl(rbx, FieldOperand(entry, Code::kFlagsOffset));
-  __ andl(rbx, Immediate(Code::KindField::kMask));
-  __ shrl(rbx, Immediate(Code::KindField::kShift));
-  __ cmpl(rbx, Immediate(Code::BUILTIN));
+  __ Move(rbx, masm->CodeObject());
+  __ cmpp(entry, rbx);
   __ j(equal, &gotta_call_runtime);
-  // Yes, install the full code.
+
+  // Install the SFI's code entry.
   __ leap(entry, FieldOperand(entry, Code::kHeaderSize));
   __ movp(FieldOperand(closure, JSFunction::kCodeEntryOffset), entry);
   __ RecordWriteCodeEntryField(closure, entry, r15);
@@ -1882,8 +1880,8 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
     FrameScope scope(masm, StackFrame::MANUAL);
     __ EnterBuiltinFrame(rsi, rdi, r8);
     __ Push(rbx);  // the first argument
-    FastNewObjectStub stub(masm->isolate());
-    __ CallStub(&stub);
+    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+            RelocInfo::CODE_TARGET);
     __ Pop(FieldOperand(rax, JSValue::kValueOffset));
     __ LeaveBuiltinFrame(rsi, rdi, r8);
   }
@@ -2037,8 +2035,8 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
     FrameScope scope(masm, StackFrame::MANUAL);
     __ EnterBuiltinFrame(rsi, rdi, r8);
     __ Push(rbx);  // the first argument
-    FastNewObjectStub stub(masm->isolate());
-    __ CallStub(&stub);
+    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+            RelocInfo::CODE_TARGET);
     __ Pop(FieldOperand(rax, JSValue::kValueOffset));
     __ LeaveBuiltinFrame(rsi, rdi, r8);
   }

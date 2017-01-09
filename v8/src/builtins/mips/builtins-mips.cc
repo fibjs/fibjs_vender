@@ -345,11 +345,11 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
   __ bind(&new_object);
   {
     FrameScope scope(masm, StackFrame::MANUAL);
-    FastNewObjectStub stub(masm->isolate());
     __ SmiTag(t0);
     __ EnterBuiltinFrame(cp, a1, t0);
     __ Push(a0);  // first argument
-    __ CallStub(&stub);
+    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+            RelocInfo::CODE_TARGET);
     __ Pop(a0);
     __ LeaveBuiltinFrame(cp, a1, t0);
     __ SmiUntag(t0);
@@ -496,11 +496,11 @@ void Builtins::Generate_StringConstructor_ConstructStub(MacroAssembler* masm) {
   __ bind(&new_object);
   {
     FrameScope scope(masm, StackFrame::MANUAL);
-    FastNewObjectStub stub(masm->isolate());
     __ SmiTag(t0);
     __ EnterBuiltinFrame(cp, a1, t0);
     __ Push(a0);  // first argument
-    __ CallStub(&stub);
+    __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+            RelocInfo::CODE_TARGET);
     __ Pop(a0);
     __ LeaveBuiltinFrame(cp, a1, t0);
     __ SmiUntag(t0);
@@ -589,8 +589,8 @@ void Generate_JSConstructStubHelper(MacroAssembler* masm, bool is_api_function,
     if (create_implicit_receiver) {
       // Allocate the new receiver object.
       __ Push(a1, a3);
-      FastNewObjectStub stub(masm->isolate());
-      __ CallStub(&stub);
+      __ Call(CodeFactory::FastNewObject(masm->isolate()).code(),
+              RelocInfo::CODE_TARGET);
       __ mov(t4, v0);
       __ Pop(a1, a3);
 
@@ -1456,13 +1456,13 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ And(t1, t1,
          Operand(1 << SharedFunctionInfo::kMarkedForTierUpBitWithinByte));
   __ Branch(&gotta_call_runtime_no_stack, ne, t1, Operand(zero_reg));
-  // Is the full code valid?
+
+  // If SFI points to anything other than CompileLazy, install that.
   __ lw(entry, FieldMemOperand(entry, SharedFunctionInfo::kCodeOffset));
-  __ lw(t1, FieldMemOperand(entry, Code::kFlagsOffset));
-  __ And(t1, t1, Operand(Code::KindField::kMask));
-  __ srl(t1, t1, Code::KindField::kShift);
-  __ Branch(&gotta_call_runtime_no_stack, eq, t1, Operand(Code::BUILTIN));
-  // Yes, install the full code.
+  __ Move(t1, masm->CodeObject());
+  __ Branch(&gotta_call_runtime_no_stack, eq, entry, Operand(t1));
+
+  // Install the SFI's code entry.
   __ Addu(entry, entry, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ sw(entry, FieldMemOperand(closure, JSFunction::kCodeEntryOffset));
   __ RecordWriteCodeEntryField(closure, entry, t1);

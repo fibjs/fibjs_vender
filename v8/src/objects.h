@@ -422,6 +422,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(JS_MAP_ITERATOR_TYPE)                                       \
   V(JS_WEAK_MAP_TYPE)                                           \
   V(JS_WEAK_SET_TYPE)                                           \
+  V(JS_PROMISE_CAPABILITY_TYPE)                                 \
   V(JS_PROMISE_TYPE)                                            \
   V(JS_REGEXP_TYPE)                                             \
   V(JS_ERROR_TYPE)                                              \
@@ -767,6 +768,7 @@ enum InstanceType {
   JS_MAP_ITERATOR_TYPE,
   JS_WEAK_MAP_TYPE,
   JS_WEAK_SET_TYPE,
+  JS_PROMISE_CAPABILITY_TYPE,
   JS_PROMISE_TYPE,
   JS_REGEXP_TYPE,
   JS_ERROR_TYPE,
@@ -1089,6 +1091,7 @@ template <class C> inline bool Is(Object* obj);
   V(JSDataView)                  \
   V(JSProxy)                     \
   V(JSError)                     \
+  V(JSPromiseCapability)         \
   V(JSPromise)                   \
   V(JSStringIterator)            \
   V(JSSet)                       \
@@ -1495,10 +1498,6 @@ class Object {
 #endif
 
   inline void VerifyApiCallResultType();
-
-  // ES6 19.1.3.6 Object.prototype.toString
-  MUST_USE_RESULT static MaybeHandle<String> ObjectProtoToString(
-      Isolate* isolate, Handle<Object> object);
 
   // Prints this object without details.
   void ShortPrint(FILE* out = stdout);
@@ -2002,6 +2001,12 @@ class JSReceiver: public HeapObject {
 
   MUST_USE_RESULT static Maybe<bool> HasInPrototypeChain(
       Isolate* isolate, Handle<JSReceiver> object, Handle<Object> proto);
+
+  // Reads all enumerable own properties of source and adds them to target,
+  // using either Set or CreateDataProperty depending on the use_set argument.
+  MUST_USE_RESULT static Maybe<bool> SetOrCopyDataProperties(
+      Isolate* isolate, Handle<JSReceiver> target, Handle<Object> source,
+      bool use_set);
 
   // Implementation of [[HasProperty]], ECMA-262 5th edition, section 8.12.6.
   MUST_USE_RESULT static Maybe<bool> HasProperty(LookupIterator* it);
@@ -6561,8 +6566,10 @@ class PromiseResolveThenableJobInfo : public Struct {
   DECL_ACCESSORS(then, JSReceiver)
   DECL_ACCESSORS(resolve, JSFunction)
   DECL_ACCESSORS(reject, JSFunction)
-  DECL_ACCESSORS(debug_id, Object)
-  DECL_ACCESSORS(debug_name, Object)
+
+  DECL_INT_ACCESSORS(debug_id)
+  DECL_INT_ACCESSORS(debug_name)
+
   DECL_ACCESSORS(context, Context)
 
   static const int kThenableOffset = Struct::kHeaderSize;
@@ -6590,16 +6597,27 @@ class PromiseReactionJobInfo : public Struct {
   DECL_ACCESSORS(promise, JSPromise)
   DECL_ACCESSORS(value, Object)
   DECL_ACCESSORS(tasks, Object)
-  DECL_ACCESSORS(deferred, Object)
-  DECL_ACCESSORS(debug_id, Object)
-  DECL_ACCESSORS(debug_name, Object)
+
+  // Check comment in JSPromise for information on what state these
+  // deferred fields could be in.
+  DECL_ACCESSORS(deferred_promise, Object)
+  DECL_ACCESSORS(deferred_on_resolve, Object)
+  DECL_ACCESSORS(deferred_on_reject, Object)
+
+  DECL_INT_ACCESSORS(debug_id)
+  DECL_INT_ACCESSORS(debug_name)
+
   DECL_ACCESSORS(context, Context)
 
   static const int kPromiseOffset = Struct::kHeaderSize;
   static const int kValueOffset = kPromiseOffset + kPointerSize;
   static const int kTasksOffset = kValueOffset + kPointerSize;
-  static const int kDeferredOffset = kTasksOffset + kPointerSize;
-  static const int kDebugIdOffset = kDeferredOffset + kPointerSize;
+  static const int kDeferredPromiseOffset = kTasksOffset + kPointerSize;
+  static const int kDeferredOnResolveOffset =
+      kDeferredPromiseOffset + kPointerSize;
+  static const int kDeferredOnRejectOffset =
+      kDeferredOnResolveOffset + kPointerSize;
+  static const int kDebugIdOffset = kDeferredOnRejectOffset + kPointerSize;
   static const int kDebugNameOffset = kDebugIdOffset + kPointerSize;
   static const int kContextOffset = kDebugNameOffset + kPointerSize;
   static const int kSize = kContextOffset + kPointerSize;
@@ -7439,12 +7457,6 @@ class SharedFunctionInfo: public HeapObject {
   // Indicates that code for this function cannot be flushed.
   DECL_BOOLEAN_ACCESSORS(dont_flush)
 
-  // Indicates that this is a constructor for a base class with instance fields.
-  DECL_BOOLEAN_ACCESSORS(requires_class_field_init)
-  // Indicates that this is a synthesized function to set up class instance
-  // fields.
-  DECL_BOOLEAN_ACCESSORS(is_class_field_initializer)
-
   // Indicates that this function is an asm function.
   DECL_BOOLEAN_ACCESSORS(asm_function)
 
@@ -7726,13 +7738,12 @@ class SharedFunctionInfo: public HeapObject {
     kAllowLazyCompilation,
     kMarkedForTierUp,
     kOptimizationDisabled,
-    kIsClassFieldInitializer,
+    kHasDuplicateParameters,
     kNative,
     kStrictModeFunction,
     kUsesArguments,
     kNeedsHomeObject,
     // byte 1
-    kHasDuplicateParameters,
     kForceInline,
     kIsAsmFunction,
     kIsAnonymousExpression,
@@ -7740,14 +7751,13 @@ class SharedFunctionInfo: public HeapObject {
     kIsFunction,
     kMustUseIgnitionTurbo,
     kDontFlush,
+    kIsDeclaration,
     // byte 2
     kFunctionKind,
     // rest of byte 2 and first two bits of byte 3 are used by FunctionKind
     // byte 3
     kDeserialized = kFunctionKind + 10,
-    kIsDeclaration,
     kIsAsmWasmBroken,
-    kRequiresClassFieldInit,
     kCompilerHintsCount,  // Pseudo entry
   };
   // kFunctionKind has to be byte-aligned
@@ -8509,10 +8519,6 @@ class JSDate: public JSObject {
 
   void SetValue(Object* value, bool is_value_nan);
 
-  // ES6 section 20.3.4.45 Date.prototype [ @@toPrimitive ]
-  static MUST_USE_RESULT MaybeHandle<Object> ToPrimitive(
-      Handle<JSReceiver> receiver, Handle<Object> hint);
-
   // Dispatched behavior.
   DECLARE_PRINTER(JSDate)
   DECLARE_VERIFIER(JSDate)
@@ -8633,6 +8639,36 @@ class JSMessageObject: public JSObject {
                               kSize> BodyDescriptor;
 };
 
+class JSPromise;
+
+// TODO(caitp): Make this a Struct once properties are no longer accessed from
+// JS
+class JSPromiseCapability : public JSObject {
+ public:
+  DECLARE_CAST(JSPromiseCapability)
+
+  DECLARE_VERIFIER(JSPromiseCapability)
+
+  DECL_ACCESSORS(promise, Object)
+  DECL_ACCESSORS(resolve, Object)
+  DECL_ACCESSORS(reject, Object)
+
+  static const int kPromiseOffset = JSObject::kHeaderSize;
+  static const int kResolveOffset = kPromiseOffset + kPointerSize;
+  static const int kRejectOffset = kResolveOffset + kPointerSize;
+  static const int kSize = kRejectOffset + kPointerSize;
+
+  enum InObjectPropertyIndex {
+    kPromiseIndex,
+    kResolveIndex,
+    kRejectIndex,
+    kInObjectPropertyCount  // Dummy.
+  };
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(JSPromiseCapability);
+};
+
 class JSPromise : public JSObject {
  public:
   DECL_INT_ACCESSORS(status)
@@ -8640,13 +8676,18 @@ class JSPromise : public JSObject {
 
   // There are 3 possible states for these fields --
   // 1) Undefined -- This is the zero state when there is no callback
-  // or deferred registered.
+  // or deferred fields registered.
+  //
   // 2) Object -- There is a single Callable directly attached to the
-  // fulfill_reactions, reject_reactions and the deferred JSObject is
-  // directly attached to the deferred field.
+  // fulfill_reactions, reject_reactions and the deferred fields are
+  // directly attached to the slots. In this state, deferred_promise
+  // is a JSReceiver and deferred_on_{resolve, reject} are Callables.
+  //
   // 3) FixedArray -- There is more than one callback and deferred
-  // attached to a FixedArray.
-  DECL_ACCESSORS(deferred, Object)
+  // fields attached to a FixedArray.
+  DECL_ACCESSORS(deferred_promise, Object)
+  DECL_ACCESSORS(deferred_on_resolve, Object)
+  DECL_ACCESSORS(deferred_on_reject, Object)
   DECL_ACCESSORS(fulfill_reactions, Object)
   DECL_ACCESSORS(reject_reactions, Object)
 
@@ -8670,8 +8711,13 @@ class JSPromise : public JSObject {
   // Layout description.
   static const int kStatusOffset = JSObject::kHeaderSize;
   static const int kResultOffset = kStatusOffset + kPointerSize;
-  static const int kDeferredOffset = kResultOffset + kPointerSize;
-  static const int kFulfillReactionsOffset = kDeferredOffset + kPointerSize;
+  static const int kDeferredPromiseOffset = kResultOffset + kPointerSize;
+  static const int kDeferredOnResolveOffset =
+      kDeferredPromiseOffset + kPointerSize;
+  static const int kDeferredOnRejectOffset =
+      kDeferredOnResolveOffset + kPointerSize;
+  static const int kFulfillReactionsOffset =
+      kDeferredOnRejectOffset + kPointerSize;
   static const int kRejectReactionsOffset =
       kFulfillReactionsOffset + kPointerSize;
   static const int kFlagsOffset = kRejectReactionsOffset + kPointerSize;
@@ -8990,14 +9036,6 @@ class TypeFeedbackInfo: public Struct {
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(TypeFeedbackInfo);
 };
-
-
-enum AllocationSiteMode {
-  DONT_TRACK_ALLOCATION_SITE,
-  TRACK_ALLOCATION_SITE,
-  LAST_ALLOCATION_SITE_MODE = TRACK_ALLOCATION_SITE
-};
-
 
 class AllocationSite: public Struct {
  public:

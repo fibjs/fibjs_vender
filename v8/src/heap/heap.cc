@@ -81,6 +81,7 @@ Heap::Heap()
       max_semi_space_size_(8 * (kPointerSize / 4) * MB),
       initial_semispace_size_(MB),
       max_old_generation_size_(700ul * (kPointerSize / 4) * MB),
+      initial_max_old_generation_size_(max_old_generation_size_),
       initial_old_generation_size_(max_old_generation_size_ /
                                    kInitalOldGenerationLimitFactor),
       old_generation_size_configured_(false),
@@ -1609,8 +1610,6 @@ void Heap::Scavenge() {
 
   scavenge_collector_->SelectScavengingVisitorsTable();
 
-  local_embedder_heap_tracer()->RegisterWrappersWithRemoteTracer();
-
   // Flip the semispaces.  After flipping, to space is empty, from space has
   // live objects.
   new_space_->Flip();
@@ -1717,6 +1716,10 @@ void Heap::Scavenge() {
   DCHECK_GE(PromotedSpaceSizeOfObjects(), survived_watermark);
   IncrementYoungSurvivorsCounter(PromotedSpaceSizeOfObjects() +
                                  new_space_->Size() - survived_watermark);
+
+  // Scavenger may find new wrappers by iterating objects promoted onto a black
+  // page.
+  local_embedder_heap_tracer()->RegisterWrappersWithRemoteTracer();
 
   LOG(isolate_, ResourceEvent("scavenge", "end"));
 
@@ -2266,6 +2269,9 @@ bool Heap::CreateInitialMaps() {
     ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, termination_exception);
     ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, optimized_out);
     ALLOCATE_MAP(ODDBALL_TYPE, Oddball::kSize, stale_register);
+
+    ALLOCATE_MAP(JS_PROMISE_CAPABILITY_TYPE, JSPromiseCapability::kSize,
+                 js_promise_capability);
 
     for (unsigned i = 0; i < arraysize(string_type_table); i++) {
       const StringTypeTable& entry = string_type_table[i];
@@ -2873,6 +2879,42 @@ void Heap::CreateInitialObjects() {
 
   // Initialize compilation cache.
   isolate_->compilation_cache()->Clear();
+
+  // Finish creating JSPromiseCapabilityMap
+  {
+    // TODO(caitp): This initialization can be removed once PromiseCapability
+    // object is no longer used by builtins implemented in javascript.
+    Handle<Map> map = factory->js_promise_capability_map();
+    map->set_inobject_properties_or_constructor_function_index(3);
+
+    Map::EnsureDescriptorSlack(map, 3);
+
+    PropertyAttributes attrs =
+        static_cast<PropertyAttributes>(READ_ONLY | DONT_DELETE);
+    {  // promise
+      Descriptor d = Descriptor::DataField(factory->promise_string(),
+                                           JSPromiseCapability::kPromiseIndex,
+                                           attrs, Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+
+    {  // resolve
+      Descriptor d = Descriptor::DataField(factory->resolve_string(),
+                                           JSPromiseCapability::kResolveIndex,
+                                           attrs, Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+
+    {  // reject
+      Descriptor d = Descriptor::DataField(factory->reject_string(),
+                                           JSPromiseCapability::kRejectIndex,
+                                           attrs, Representation::Tagged());
+      map->AppendDescriptor(&d);
+    }
+
+    map->set_is_extensible(false);
+    set_js_promise_capability_map(*map);
+  }
 }
 
 bool Heap::RootCanBeWrittenAfterInitialization(Heap::RootListIndex root_index) {
@@ -5057,7 +5099,7 @@ bool Heap::ConfigureHeap(size_t max_semi_space_size, size_t max_old_space_size,
 
   // The old generation is paged and needs at least one page for each space.
   int paged_space_count = LAST_PAGED_SPACE - FIRST_PAGED_SPACE + 1;
-  max_old_generation_size_ =
+  initial_max_old_generation_size_ = max_old_generation_size_ =
       Max(static_cast<size_t>(paged_space_count * Page::kPageSize),
           max_old_generation_size_);
 
