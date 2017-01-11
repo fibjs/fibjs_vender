@@ -8,35 +8,33 @@ var Compiles = {};
 var filters = [];
 
 var dis_archs = {
-	arm: 1,
-	arm64: 1,
-	mips: 1,
-	mips64: 1
+    arm: 1,
+    arm64: 1,
+    mips: 1,
+    mips64: 1
 };
 
 function do_folder(path, base) {
-	filters.push(base);
+    filters.push(base);
 
-	var dir = fs.readdir(path.replace(/\\/g, '/'));
+    var dir = fs.readdir(path.replace(/\\/g, '/'));
 
-	dir.forEach(function(f) {
-		var name = f.name;
-		if (name.substr(0, 1) !== '.') {
-			if (f.isDirectory()) {
-				if (!dis_archs[name])
-					do_folder(path + '\\' + name, base + '\\' + name);
-			} else {
-				var len = name.length;
-				var bInc = name.substr(len - 2, 2) === '.h';
-				var bCc = name.substr(len - 3, 3) === '.cc';
+    dir.forEach(function(name) {
+        var f = fs.stat(path.replace(/\\/g, '/') + '/' + name);
+        if (f.isDirectory()) {
+            if (!dis_archs[name])
+                do_folder(path + '\\' + name, base + '\\' + name);
+        } else {
+            var len = name.length;
+            var bInc = name.substr(len - 2, 2) === '.h';
+            var bCc = name.substr(len - 3, 3) === '.cc';
 
-				if (name.substr(len - 2, 2) === '.h')
-					Includes[path + '\\' + name] = base;
-				else if (name.substr(len - 3, 3) === '.cc')
-					Compiles[path + '\\' + name] = base;
-			}
-		}
-	});
+            if (name.substr(len - 2, 2) === '.h')
+                Includes[path + '\\' + name] = base;
+            else if (name.substr(len - 3, 3) === '.cc')
+                Compiles[path + '\\' + name] = base;
+        }
+    });
 }
 
 do_folder("include", "Header Files");
@@ -49,7 +47,7 @@ var txts, f, s, h;
 
 txts = [];
 for (f in Includes) {
-	txts.push('    <ClInclude Include="' + f + '" />');
+    txts.push('    <ClInclude Include="' + f + '" />');
 }
 txts.sort();
 proj = proj.replace('<ClIncludes />', txts.join('\r\n'));
@@ -57,7 +55,7 @@ proj = proj.replace('<ClIncludes />', txts.join('\r\n'));
 
 txts = [];
 for (f in Compiles) {
-	txts.push('    <ClCompile Include="' + f + '" />');
+    txts.push('    <ClCompile Include="' + f + '" />');
 }
 txts.sort();
 proj = proj.replace('<ClCompiles />', txts.join('\r\n'));
@@ -70,26 +68,26 @@ filters.sort();
 
 txts = [];
 filters.forEach(function(f) {
-	h = hash.md5(f).digest().hex();
+    h = hash.md5(f).digest().hex();
 
-	s = '    <Filter Include="' + f + '">\r\n      <UniqueIdentifier>{';
-	s += h.substr(0, 8) + '-' + h.substr(8, 4) + '-' + h.substr(12, 4) + '-' + h.substr(16, 4) + '-' + h.substr(20);
-	s += '}</UniqueIdentifier>\r\n    </Filter>';
+    s = '    <Filter Include="' + f + '">\r\n      <UniqueIdentifier>{';
+    s += h.substr(0, 8) + '-' + h.substr(8, 4) + '-' + h.substr(12, 4) + '-' + h.substr(16, 4) + '-' + h.substr(20);
+    s += '}</UniqueIdentifier>\r\n    </Filter>';
 
-	txts.push(s);
+    txts.push(s);
 });
 filter = filter.replace('<Filters />', txts.join('\r\n'));
 
 txts = [];
 for (f in Includes) {
-	txts.push('    <ClInclude Include="' + f + '">\r\n      <Filter>' + Includes[f] + '</Filter>\r\n    </ClInclude>');
+    txts.push('    <ClInclude Include="' + f + '">\r\n      <Filter>' + Includes[f] + '</Filter>\r\n    </ClInclude>');
 }
 txts.sort();
 filter = filter.replace('<ClIncludes />', txts.join('\r\n'));
 
 txts = [];
 for (f in Compiles) {
-	txts.push('    <ClCompile Include="' + f + '">\r\n      <Filter>' + Compiles[f] + '</Filter>\r\n    </ClCompile>');
+    txts.push('    <ClCompile Include="' + f + '">\r\n      <Filter>' + Compiles[f] + '</Filter>\r\n    </ClCompile>');
 }
 txts.sort();
 filter = filter.replace('<ClCompiles />', txts.join('\r\n'));

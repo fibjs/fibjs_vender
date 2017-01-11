@@ -56,16 +56,14 @@ function update_plat() {
 function clean_folder(path) {
     var dir = fs.readdir(path);
     console.log("clean", path);
-    dir.forEach(function(f) {
-        var name = f.name;
-        if (name !== '.' && name !== '..') {
-            var fname = path + '/' + name;
-            if (f.isDirectory()) {
-                clean_folder(fname);
-                fs.rmdir(fname);
-            } else
-                fs.unlink(fname);
-        }
+    dir.forEach(function(name) {
+        var fname = path + '/' + name;
+        var f = fs.stat(fname);
+        if (f.isDirectory()) {
+            clean_folder(fname);
+            fs.rmdir(fname);
+        } else
+            fs.unlink(fname);
     });
 }
 
@@ -103,12 +101,12 @@ function chk_file(fname) {
 
 function cp_folder(path, to) {
     var dir = fs.readdir(v8Folder + '/' + path);
-    dir.forEach(function(f) {
-        var name = f.name;
-        if (name !== '.' && name !== '..') {
+    dir.forEach(function(name) {
+        if (name.substr(0, 1) != '.') {
             var fname = path + '/' + name;
             var fnameto = to ? to + '/' + fname : fname;
 
+            var f = fs.stat(v8Folder + '/' + fname);
             if (f.isDirectory()) {
                 console.log(fnameto);
                 fs.mkdir(fnameto);
@@ -124,7 +122,6 @@ function cp_folder(path, to) {
         }
     });
 }
-
 
 var gens = [
     '/out/ia32.release/obj/gen/libraries.cc',
@@ -144,8 +141,7 @@ function cp_gen() {
 
 function fix_src(path, val) {
     var dir = fs.readdir(path);
-    dir.forEach(function(f) {
-        var name = f.name;
+    dir.forEach(function(name) {
         if (name.substr(name.length - 3, 3) == '.cc') {
             var fname = path + '/' + name;
             var txt = fs.readTextFile(fname);
@@ -170,16 +166,14 @@ var archs = {
 
 function patch_src(path) {
     var dir = fs.readdir(path);
-    dir.forEach(function(f) {
-        var name = f.name;
-        if (name !== '.' && name !== '..') {
-            var fname = path + '/' + name;
-            if (f.isDirectory()) {
-                if (archs[name])
-                    fix_src(fname, archs[name]);
-                else
-                    patch_src(fname);
-            }
+    dir.forEach(function(name) {
+        var fname = path + '/' + name;
+        var f = fs.stat(fname);
+        if (f.isDirectory()) {
+            if (archs[name])
+                fix_src(fname, archs[name]);
+            else
+                patch_src(fname);
         }
     });
 }
