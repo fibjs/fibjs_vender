@@ -179,7 +179,8 @@ bool IsFastLiteral(Handle<JSObject> boilerplate, int max_depth,
   int limit = boilerplate->map()->NumberOfOwnDescriptors();
   for (int i = 0; i < limit; i++) {
     PropertyDetails details = descriptors->GetDetails(i);
-    if (details.type() != DATA) continue;
+    if (details.location() != kField) continue;
+    DCHECK_EQ(kData, details.kind());
     if ((*max_properties)-- == 0) return false;
     FieldIndex field_index = FieldIndex::ForDescriptor(boilerplate->map(), i);
     if (boilerplate->IsUnboxedDoubleField(field_index)) continue;
@@ -750,23 +751,28 @@ Reduction JSCreateLowering::ReduceJSCreateArray(Node* node) {
 }
 
 Reduction JSCreateLowering::ReduceJSCreateClosure(Node* node) {
+  if (!FLAG_turbo_lower_create_closure) return NoChange();
   DCHECK_EQ(IrOpcode::kJSCreateClosure, node->opcode());
   CreateClosureParameters const& p = CreateClosureParametersOf(node->op());
   Handle<SharedFunctionInfo> shared = p.shared_info();
-
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
   Node* context = NodeProperties::GetContextInput(node);
+
   int const function_map_index =
       Context::FunctionMapIndex(shared->language_mode(), shared->kind());
   Node* function_map = jsgraph()->HeapConstant(
       handle(Map::cast(native_context()->get(function_map_index)), isolate()));
+
+  FeedbackVectorSlot slot = p.feedback().slot();
+  Node* literals = jsgraph()->HeapConstant(
+      handle(LiteralsArray::cast(p.feedback().vector()->Get(slot)), isolate()));
+
   // Note that it is only safe to embed the raw entry point of the compile
   // lazy stub into the code, because that stub is immortal and immovable.
   Node* compile_entry = jsgraph()->PointerConstant(
       jsgraph()->isolate()->builtins()->CompileLazy()->entry());
   Node* empty_fixed_array = jsgraph()->EmptyFixedArrayConstant();
-  Node* empty_literals_array = jsgraph()->EmptyLiteralsArrayConstant();
   Node* the_hole = jsgraph()->TheHoleConstant();
   Node* undefined = jsgraph()->UndefinedConstant();
   AllocationBuilder a(jsgraph(), effect, control);
@@ -775,7 +781,7 @@ Reduction JSCreateLowering::ReduceJSCreateClosure(Node* node) {
   a.Store(AccessBuilder::ForMap(), function_map);
   a.Store(AccessBuilder::ForJSObjectProperties(), empty_fixed_array);
   a.Store(AccessBuilder::ForJSObjectElements(), empty_fixed_array);
-  a.Store(AccessBuilder::ForJSFunctionLiterals(), empty_literals_array);
+  a.Store(AccessBuilder::ForJSFunctionLiterals(), literals);
   a.Store(AccessBuilder::ForJSFunctionPrototypeOrInitialMap(), the_hole);
   a.Store(AccessBuilder::ForJSFunctionSharedFunctionInfo(), shared);
   a.Store(AccessBuilder::ForJSFunctionContext(), context);
@@ -1185,7 +1191,8 @@ Node* JSCreateLowering::AllocateFastLiteral(
   for (int i = 0; i < boilerplate_nof; ++i) {
     PropertyDetails const property_details =
         boilerplate_map->instance_descriptors()->GetDetails(i);
-    if (property_details.type() != DATA) continue;
+    if (property_details.location() != kField) continue;
+    DCHECK_EQ(kData, property_details.kind());
     Handle<Name> property_name(
         boilerplate_map->instance_descriptors()->GetKey(i), isolate());
     FieldIndex index = FieldIndex::ForDescriptor(*boilerplate_map, i);

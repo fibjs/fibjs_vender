@@ -240,7 +240,7 @@ bool CompilerDispatcher::Enqueue(Handle<SharedFunctionInfo> function) {
 
   // We only handle functions (no eval / top-level code / wasm) that are
   // attached to a script.
-  if (!function->script()->IsScript() || !function->is_function() ||
+  if (!function->script()->IsScript() || function->is_toplevel() ||
       function->asm_function() || function->native()) {
     return false;
   }
@@ -259,6 +259,21 @@ bool CompilerDispatcher::Enqueue(Handle<SharedFunctionInfo> function) {
                           function->function_literal_id());
   jobs_.insert(std::make_pair(key, std::move(job)));
   ScheduleIdleTaskIfNeeded();
+  return true;
+}
+
+bool CompilerDispatcher::EnqueueAndStep(Handle<SharedFunctionInfo> function) {
+  if (!Enqueue(function)) return false;
+
+  if (trace_compiler_dispatcher_) {
+    PrintF("CompilerDispatcher: stepping ");
+    function->ShortPrint();
+    PrintF("\n");
+  }
+  JobMap::const_iterator job = GetJobFor(function);
+  DoNextStepOnMainThread(isolate_, job->second.get(),
+                         ExceptionHandling::kSwallow);
+  ConsiderJobForBackgroundProcessing(job->second.get());
   return true;
 }
 

@@ -66,7 +66,6 @@ enum ContextLookupFlags {
     promise_internal_constructor)                                       \
   V(IS_PROMISE_INDEX, JSFunction, is_promise)                           \
   V(PERFORM_PROMISE_THEN_INDEX, JSFunction, perform_promise_then)       \
-  V(PROMISE_CREATE_AND_SET_INDEX, JSFunction, promise_create_and_set)   \
   V(PROMISE_RESOLVE_INDEX, JSFunction, promise_resolve)                 \
   V(PROMISE_THEN_INDEX, JSFunction, promise_then)                       \
   V(PROMISE_HANDLE_INDEX, JSFunction, promise_handle)                   \
@@ -103,7 +102,6 @@ enum ContextLookupFlags {
   V(OBJECT_VALUE_OF, JSFunction, object_value_of)                             \
   V(OBJECT_TO_STRING, JSFunction, object_to_string)                           \
   V(PROMISE_CATCH_INDEX, JSFunction, promise_catch)                           \
-  V(PROMISE_CREATE_INDEX, JSFunction, promise_create)                         \
   V(PROMISE_FUNCTION_INDEX, JSFunction, promise_function)                     \
   V(PROMISE_REJECT_INDEX, JSFunction, promise_reject)                         \
   V(PROMISE_ID_RESOLVE_HANDLER_INDEX, JSFunction, promise_id_resolve_handler) \
@@ -249,6 +247,13 @@ enum ContextLookupFlags {
   V(INT8X16_FUNCTION_INDEX, JSFunction, int8x16_function)                      \
   V(INTERNAL_ARRAY_FUNCTION_INDEX, JSFunction, internal_array_function)        \
   V(ITERATOR_RESULT_MAP_INDEX, Map, iterator_result_map)                       \
+  V(INTL_DATE_TIME_FORMAT_FUNCTION_INDEX, JSFunction,                          \
+    intl_date_time_format_function)                                            \
+  V(INTL_NUMBER_FORMAT_FUNCTION_INDEX, JSFunction,                             \
+    intl_number_format_function)                                               \
+  V(INTL_COLLATOR_FUNCTION_INDEX, JSFunction, intl_collator_function)          \
+  V(INTL_V8_BREAK_ITERATOR_FUNCTION_INDEX, JSFunction,                         \
+    intl_v8_break_iterator_function)                                           \
   V(JS_ARRAY_FAST_SMI_ELEMENTS_MAP_INDEX, Map,                                 \
     js_array_fast_smi_elements_map_index)                                      \
   V(JS_ARRAY_FAST_HOLEY_SMI_ELEMENTS_MAP_INDEX, Map,                           \
@@ -567,15 +572,14 @@ class Context: public FixedArray {
 
   // A native context keeps track of all osrd optimized functions.
   inline bool OptimizedCodeMapIsCleared();
-  void SearchOptimizedCodeMap(SharedFunctionInfo* shared, BailoutId osr_ast_id,
-                              Code** pcode, LiteralsArray** pliterals);
+  Code* SearchOptimizedCodeMap(SharedFunctionInfo* shared,
+                               BailoutId osr_ast_id);
   int SearchOptimizedCodeMapEntry(SharedFunctionInfo* shared,
                                   BailoutId osr_ast_id);
 
   static void AddToOptimizedCodeMap(Handle<Context> native_context,
                                     Handle<SharedFunctionInfo> shared,
                                     Handle<Code> code,
-                                    Handle<LiteralsArray> literals,
                                     BailoutId osr_ast_id);
 
   // A native context holds a list of all functions with optimized code.

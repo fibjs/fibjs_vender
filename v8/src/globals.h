@@ -784,6 +784,8 @@ enum CpuFeature {
   FPR_GPR_MOV,
   LWSYNC,
   ISELECT,
+  VSX,
+  MODULO,
   // S390
   DISTINCT_OPS,
   GENERAL_INSTR_EXT,

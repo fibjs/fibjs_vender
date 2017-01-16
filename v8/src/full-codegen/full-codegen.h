@@ -25,7 +25,6 @@ class CompilationInfo;
 class CompilationJob;
 class JumpPatchSite;
 class Scope;
-enum class LazyCompilationMode;
 
 // -----------------------------------------------------------------------------
 // Full code generator.
@@ -33,15 +32,13 @@ enum class LazyCompilationMode;
 class FullCodeGenerator final : public AstVisitor<FullCodeGenerator> {
  public:
   FullCodeGenerator(MacroAssembler* masm, CompilationInfo* info,
-                    uintptr_t stack_limit, LazyCompilationMode mode);
+                    uintptr_t stack_limit);
 
   void Initialize(uintptr_t stack_limit);
 
-  static CompilationJob* NewCompilationJob(CompilationInfo* info,
-                                           LazyCompilationMode mode);
+  static CompilationJob* NewCompilationJob(CompilationInfo* info);
 
-  static bool MakeCode(CompilationInfo* info, uintptr_t stack_limit,
-                       LazyCompilationMode mode);
+  static bool MakeCode(CompilationInfo* info, uintptr_t stack_limit);
   static bool MakeCode(CompilationInfo* info);
 
   // Encode bailout state and pc-offset as a BitField<type, start, size>.
@@ -402,7 +399,6 @@ class FullCodeGenerator final : public AstVisitor<FullCodeGenerator> {
   F(IsSmi)                              \
   F(IsArray)                            \
   F(IsTypedArray)                       \
-  F(IsRegExp)                           \
   F(IsJSProxy)                          \
   F(Call)                               \
   F(IsJSReceiver)                       \
@@ -442,7 +438,8 @@ class FullCodeGenerator final : public AstVisitor<FullCodeGenerator> {
 
   // Platform-specific support for allocating a new closure based on
   // the given function info.
-  void EmitNewClosure(Handle<SharedFunctionInfo> info, bool pretenure);
+  void EmitNewClosure(Handle<SharedFunctionInfo> info, FeedbackVectorSlot slot,
+                      bool pretenure);
 
   // Re-usable portions of CallRuntime
   void EmitLoadJSRuntimeFunction(CallRuntime* expr);
@@ -802,7 +799,6 @@ class FullCodeGenerator final : public AstVisitor<FullCodeGenerator> {
   MacroAssembler* masm_;
   CompilationInfo* info_;
   Isolate* isolate_;
-  LazyCompilationMode compilation_mode_;
   Zone* zone_;
   Scope* scope_;
   Label return_label_;

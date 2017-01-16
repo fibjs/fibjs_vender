@@ -5,6 +5,7 @@
 #include "src/runtime/runtime-utils.h"
 
 #include "src/arguments.h"
+#include "src/compiler.h"
 #include "src/debug/debug-evaluate.h"
 #include "src/debug/debug-frames.h"
 #include "src/debug/debug-scopes.h"
@@ -80,8 +81,7 @@ RUNTIME_FUNCTION(Runtime_HandleDebuggerStatement) {
 RUNTIME_FUNCTION(Runtime_SetDebugEventListener) {
   SealHandleScope shs(isolate);
   DCHECK_EQ(2, args.length());
-  CHECK(args[0]->IsJSFunction() || args[0]->IsUndefined(isolate) ||
-        args[0]->IsNull(isolate));
+  CHECK(args[0]->IsJSFunction() || args[0]->IsNullOrUndefined(isolate));
   CONVERT_ARG_HANDLE_CHECKED(Object, callback, 0);
   CONVERT_ARG_HANDLE_CHECKED(Object, data, 1);
   isolate->debug()->SetEventListener(callback, data);
@@ -435,21 +435,17 @@ RUNTIME_FUNCTION(Runtime_GetFrameCount) {
     return Smi::kZero;
   }
 
+  List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
   for (StackTraceFrameIterator it(isolate, id); !it.done(); it.Advance()) {
-    List<FrameSummary> frames(FLAG_max_inlining_levels + 1);
-    if (it.is_wasm()) {
-      n++;
-    } else {
-      it.javascript_frame()->Summarize(&frames);
-      for (int i = frames.length() - 1; i >= 0; i--) {
-        // Omit functions from native and extension scripts.
-        if (frames[i].function()->shared()->IsSubjectToDebugging()) n++;
-      }
+    frames.Clear();
+    it.frame()->Summarize(&frames);
+    for (int i = frames.length() - 1; i >= 0; i--) {
+      // Omit functions from native and extension scripts.
+      if (frames[i].is_subject_to_debugging()) n++;
     }
   }
   return Smi::FromInt(n);
 }
-
 
 static const int kFrameDetailsFrameIdIndex = 0;
 static const int kFrameDetailsReceiverIndex = 1;
@@ -499,11 +495,11 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
 
   StackTraceFrameIterator it(isolate, id);
   // Inlined frame index in optimized frame, starting from outer function.
-  int inlined_jsframe_index =
+  int inlined_frame_index =
       DebugFrameHelper::FindIndexedNonNativeFrame(&it, index);
-  if (inlined_jsframe_index == -1) return heap->undefined_value();
+  if (inlined_frame_index == -1) return heap->undefined_value();
 
-  FrameInspector frame_inspector(it.frame(), inlined_jsframe_index, isolate);
+  FrameInspector frame_inspector(it.frame(), inlined_frame_index, isolate);
 
   // Traverse the saved contexts chain to find the active context for the
   // selected frame.
@@ -514,10 +510,7 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
   Handle<Object> frame_id(DebugFrameHelper::WrapFrameId(it.frame()->id()),
                           isolate);
 
-  // Find source position in unoptimized code.
-  int position = frame_inspector.GetSourcePosition();
-
-  if (it.is_wasm()) {
+  if (frame_inspector.summary().IsWasm()) {
     // Create the details array (no dynamic information for wasm).
     Handle<FixedArray> details =
         isolate->factory()->NewFixedArray(kFrameDetailsFirstDynamicIndex);
@@ -526,11 +519,7 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
     details->set(kFrameDetailsFrameIdIndex, *frame_id);
 
     // Add the function name.
-    Handle<WasmCompiledModule> compiled_module(
-        it.wasm_frame()->wasm_instance()->compiled_module(), isolate);
-    int func_index = it.wasm_frame()->function_index();
-    Handle<String> func_name = WasmCompiledModule::GetFunctionName(
-        isolate, compiled_module, func_index);
+    Handle<String> func_name = frame_inspector.summary().FunctionName();
     details->set(kFrameDetailsFunctionIndex, *func_name);
 
     // Add the script wrapper
@@ -545,20 +534,8 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
     details->set(kFrameDetailsLocalCountIndex, Smi::kZero);
 
     // Add the source position.
-    // For wasm, it is function-local, so translate it to a module-relative
-    // position, such that together with the script it uniquely identifies the
-    // position.
-    Handle<Object> positionValue;
-    if (position != kNoSourcePosition) {
-      int translated_position = position;
-      // No further translation needed for asm.js modules.
-      if (!compiled_module->is_asm_js()) {
-        translated_position +=
-            wasm::GetFunctionCodeOffset(compiled_module, func_index);
-      }
-      details->set(kFrameDetailsSourcePositionIndex,
-                   Smi::FromInt(translated_position));
-    }
+    int position = frame_inspector.summary().SourcePosition();
+    details->set(kFrameDetailsSourcePositionIndex, Smi::FromInt(position));
 
     // Add the constructor information.
     details->set(kFrameDetailsConstructCallIndex, heap->ToBoolean(false));
@@ -578,6 +555,9 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
 
     return *isolate->factory()->NewJSArrayWithElements(details);
   }
+
+  // Find source position in unoptimized code.
+  int position = frame_inspector.GetSourcePosition();
 
   // Handle JavaScript frames.
   bool is_optimized = it.frame()->is_optimized();
@@ -660,7 +640,7 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
   // the provided parameters whereas the function frame always have the number
   // of arguments matching the functions parameters. The rest of the
   // information (except for what is collected above) is the same.
-  if ((inlined_jsframe_index == 0) &&
+  if ((inlined_frame_index == 0) &&
       it.javascript_frame()->has_adapted_arguments()) {
     it.AdvanceToArgumentsFrame();
     frame_inspector.SetArgumentsFrame(it.frame());
@@ -718,7 +698,7 @@ RUNTIME_FUNCTION(Runtime_GetFrameDetails) {
   }
   if (is_optimized) {
     flags |= 1 << 1;
-    flags |= inlined_jsframe_index << 2;
+    flags |= inlined_frame_index << 2;
   }
   details->set(kFrameDetailsFlagsIndex, Smi::FromInt(flags));
 
@@ -1702,13 +1682,13 @@ Handle<Object> ScriptLocationFromLine(Isolate* isolate, Handle<Script> script,
   // additionally subtracting corresponding offsets.
 
   int32_t line = 0;
-  if (!opt_line->IsNull(isolate) && !opt_line->IsUndefined(isolate)) {
+  if (!opt_line->IsNullOrUndefined(isolate)) {
     CHECK(opt_line->IsNumber());
     line = NumberToInt32(*opt_line) - script->line_offset();
   }
 
   int32_t column = 0;
-  if (!opt_column->IsNull(isolate) && !opt_column->IsUndefined(isolate)) {
+  if (!opt_column->IsNullOrUndefined(isolate)) {
     CHECK(opt_column->IsNumber());
     column = NumberToInt32(*opt_column);
     if (line == 0) column -= script->column_offset();
@@ -1846,14 +1826,19 @@ RUNTIME_FUNCTION(Runtime_ScriptSourceLine) {
   return *str;
 }
 
-// Set one shot breakpoints for the callback function that is passed to a
-// built-in function such as Array.forEach to enable stepping into the callback,
-// if we are indeed stepping and the callback is subject to debugging.
-RUNTIME_FUNCTION(Runtime_DebugPrepareStepInIfStepping) {
+// On function call, depending on circumstances, prepare for stepping in,
+// or perform a side effect check.
+RUNTIME_FUNCTION(Runtime_DebugOnFunctionCall) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, fun, 0);
-  isolate->debug()->PrepareStepIn(fun);
+  if (isolate->debug()->last_step_action() >= StepIn) {
+    isolate->debug()->PrepareStepIn(fun);
+  }
+  if (isolate->needs_side_effect_check() &&
+      !isolate->debug()->PerformSideEffectCheck(fun)) {
+    return isolate->heap()->exception();
+  }
   return isolate->heap()->undefined_value();
 }
 
@@ -1890,24 +1875,41 @@ RUNTIME_FUNCTION(Runtime_DebugPopPromise) {
   return isolate->heap()->undefined_value();
 }
 
-RUNTIME_FUNCTION(Runtime_DebugNextMicrotaskId) {
+RUNTIME_FUNCTION(Runtime_DebugNextAsyncTaskId) {
   HandleScope scope(isolate);
-  DCHECK_EQ(0, args.length());
-  return Smi::FromInt(isolate->GetNextDebugMicrotaskId());
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
+  return Smi::FromInt(isolate->debug()->NextAsyncTaskId(promise));
 }
 
-RUNTIME_FUNCTION(Runtime_DebugAsyncTaskEvent) {
-  DCHECK_EQ(3, args.length());
+RUNTIME_FUNCTION(Runtime_DebugAsyncFunctionPromiseCreated) {
+  DCHECK_EQ(1, args.length());
   HandleScope scope(isolate);
-  CONVERT_SMI_ARG_CHECKED(type, 0);
-  CONVERT_SMI_ARG_CHECKED(id, 1);
-  CONVERT_SMI_ARG_CHECKED(name, 2);
-  isolate->debug()->OnAsyncTaskEvent(static_cast<PromiseDebugActionType>(type),
-                                     id,
-                                     static_cast<PromiseDebugActionName>(name));
+  CONVERT_ARG_HANDLE_CHECKED(JSObject, promise, 0);
+  isolate->PushPromise(promise);
+  int id = isolate->debug()->NextAsyncTaskId(promise);
+  Handle<Symbol> async_stack_id_symbol =
+      isolate->factory()->promise_async_stack_id_symbol();
+  JSObject::SetProperty(promise, async_stack_id_symbol,
+                        handle(Smi::FromInt(id), isolate), STRICT)
+      .Assert();
+  isolate->debug()->OnAsyncTaskEvent(debug::kDebugEnqueueAsyncFunction, id);
   return isolate->heap()->undefined_value();
 }
 
+RUNTIME_FUNCTION(Runtime_DebugAsyncEventEnqueueRecurring) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(JSPromise, promise, 0);
+  CONVERT_SMI_ARG_CHECKED(status, 1);
+  if (isolate->debug()->is_active()) {
+    isolate->debug()->OnAsyncTaskEvent(
+        status == v8::Promise::kFulfilled ? debug::kDebugEnqueuePromiseResolve
+                                          : debug::kDebugEnqueuePromiseReject,
+        isolate->debug()->NextAsyncTaskId(promise));
+  }
+  return isolate->heap()->undefined_value();
+}
 
 RUNTIME_FUNCTION(Runtime_DebugIsActive) {
   SealHandleScope shs(isolate);

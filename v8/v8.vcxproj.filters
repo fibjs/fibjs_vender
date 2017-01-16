@@ -279,6 +279,9 @@
     <ClInclude Include="include\v8-util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\v8-version-string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\v8-version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1554,6 +1557,9 @@
     <ClInclude Include="src\macro-assembler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\map-updater.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\messages.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1571,6 +1577,9 @@
     </ClInclude>
     <ClInclude Include="src\objects.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\module-info.h">
+      <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\object-macros-undef.h">
       <Filter>Source Files\objects</Filter>
@@ -3363,6 +3372,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\machine-type.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\map-updater.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\messages.cc">

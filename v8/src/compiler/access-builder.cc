@@ -9,6 +9,7 @@
 #include "src/frames.h"
 #include "src/handles-inl.h"
 #include "src/heap/heap.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -83,6 +84,15 @@ FieldAccess AccessBuilder::ForJSObjectInObjectProperty(Handle<Map> map,
   return access;
 }
 
+// static
+FieldAccess AccessBuilder::ForJSObjectOffset(
+    int offset, WriteBarrierKind write_barrier_kind) {
+  FieldAccess access = {kTaggedBase,         offset,
+                        MaybeHandle<Name>(), MaybeHandle<Map>(),
+                        Type::NonInternal(), MachineType::AnyTagged(),
+                        write_barrier_kind};
+  return access;
+}
 
 // static
 FieldAccess AccessBuilder::ForJSFunctionPrototypeOrInitialMap() {
@@ -687,12 +697,13 @@ FieldAccess AccessBuilder::ForArgumentsCallee() {
 
 
 // static
-FieldAccess AccessBuilder::ForFixedArraySlot(size_t index) {
+FieldAccess AccessBuilder::ForFixedArraySlot(
+    size_t index, WriteBarrierKind write_barrier_kind) {
   int offset = FixedArray::OffsetOfElementAt(static_cast<int>(index));
   FieldAccess access = {kTaggedBase,         offset,
                         Handle<Name>(),      MaybeHandle<Map>(),
                         Type::NonInternal(), MachineType::AnyTagged(),
-                        kFullWriteBarrier};
+                        write_barrier_kind};
   return access;
 }
 
@@ -839,6 +850,68 @@ ElementAccess AccessBuilder::ForTypedArrayElement(ExternalArrayType type,
   UNREACHABLE();
   ElementAccess access = {kUntaggedBase, 0, Type::None(), MachineType::None(),
                           kNoWriteBarrier};
+  return access;
+}
+
+// static
+FieldAccess AccessBuilder::ForHashTableBaseNumberOfElements() {
+  FieldAccess access = {
+      kTaggedBase,
+      FixedArray::OffsetOfElementAt(HashTableBase::kNumberOfElementsIndex),
+      MaybeHandle<Name>(),
+      MaybeHandle<Map>(),
+      Type::SignedSmall(),
+      MachineType::TaggedSigned(),
+      kNoWriteBarrier};
+  return access;
+}
+
+// static
+FieldAccess AccessBuilder::ForHashTableBaseNumberOfDeletedElement() {
+  FieldAccess access = {
+      kTaggedBase, FixedArray::OffsetOfElementAt(
+                       HashTableBase::kNumberOfDeletedElementsIndex),
+      MaybeHandle<Name>(), MaybeHandle<Map>(), Type::SignedSmall(),
+      MachineType::TaggedSigned(), kNoWriteBarrier};
+  return access;
+}
+
+// static
+FieldAccess AccessBuilder::ForHashTableBaseCapacity() {
+  FieldAccess access = {
+      kTaggedBase,
+      FixedArray::OffsetOfElementAt(HashTableBase::kCapacityIndex),
+      MaybeHandle<Name>(),
+      MaybeHandle<Map>(),
+      Type::SignedSmall(),
+      MachineType::TaggedSigned(),
+      kNoWriteBarrier};
+  return access;
+}
+
+// static
+FieldAccess AccessBuilder::ForDictionaryMaxNumberKey() {
+  FieldAccess access = {
+      kTaggedBase,
+      FixedArray::OffsetOfElementAt(NameDictionary::kMaxNumberKeyIndex),
+      MaybeHandle<Name>(),
+      MaybeHandle<Map>(),
+      Type::Any(),
+      MachineType::AnyTagged(),
+      kNoWriteBarrier};
+  return access;
+}
+
+// static
+FieldAccess AccessBuilder::ForDictionaryNextEnumerationIndex() {
+  FieldAccess access = {
+      kTaggedBase,
+      FixedArray::OffsetOfElementAt(NameDictionary::kNextEnumerationIndexIndex),
+      MaybeHandle<Name>(),
+      MaybeHandle<Map>(),
+      Type::SignedSmall(),
+      MachineType::TaggedSigned(),
+      kNoWriteBarrier};
   return access;
 }
 

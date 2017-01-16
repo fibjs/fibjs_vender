@@ -348,9 +348,10 @@ bool BytecodeGraphBuilder::Environment::StateValuesRequireUpdate(
   if (*state_values == nullptr) {
     return true;
   }
-  DCHECK_EQ((*state_values)->InputCount(), count);
+  Node::Inputs inputs = (*state_values)->inputs();
+  DCHECK_EQ(inputs.count(), count);
   for (int i = 0; i < count; i++) {
-    if ((*state_values)->InputAt(i) != values[i]) {
+    if (inputs[i] != values[i]) {
       return true;
     }
   }
@@ -443,21 +444,25 @@ Node* BytecodeGraphBuilder::Environment::Checkpoint(
 }
 
 BytecodeGraphBuilder::BytecodeGraphBuilder(
-    Zone* local_zone, CompilationInfo* info, JSGraph* jsgraph,
-    float invocation_frequency, SourcePositionTable* source_positions,
-    int inlining_id)
+    Zone* local_zone, Handle<SharedFunctionInfo> shared_info,
+    Handle<TypeFeedbackVector> feedback_vector, BailoutId osr_ast_id,
+    JSGraph* jsgraph, float invocation_frequency,
+    SourcePositionTable* source_positions, int inlining_id)
     : local_zone_(local_zone),
       jsgraph_(jsgraph),
       invocation_frequency_(invocation_frequency),
-      bytecode_array_(handle(info->shared_info()->bytecode_array())),
+      bytecode_array_(handle(shared_info->bytecode_array())),
       exception_handler_table_(
           handle(HandlerTable::cast(bytecode_array()->handler_table()))),
-      feedback_vector_(handle(info->closure()->feedback_vector())),
+      feedback_vector_(feedback_vector),
       frame_state_function_info_(common()->CreateFrameStateFunctionInfo(
           FrameStateType::kInterpretedFunction,
           bytecode_array()->parameter_count(),
-          bytecode_array()->register_count(), info->shared_info())),
-      osr_ast_id_(info->osr_ast_id()),
+          bytecode_array()->register_count(), shared_info)),
+      bytecode_iterator_(nullptr),
+      bytecode_analysis_(nullptr),
+      environment_(nullptr),
+      osr_ast_id_(osr_ast_id),
       osr_loop_offset_(-1),
       merge_environments_(local_zone),
       exception_handlers_(local_zone),
@@ -468,10 +473,7 @@ BytecodeGraphBuilder::BytecodeGraphBuilder(
       is_liveness_analysis_enabled_(FLAG_analyze_environment_liveness),
       state_values_cache_(jsgraph),
       source_positions_(source_positions),
-      start_position_(info->shared_info()->start_position(), inlining_id) {
-  // Bytecode graph builder assumes deoptimziation is enabled.
-  DCHECK(info->is_deoptimization_enabled());
-}
+      start_position_(shared_info->start_position(), inlining_id) {}
 
 Node* BytecodeGraphBuilder::GetNewTarget() {
   if (!new_target_.is_set()) {
@@ -752,6 +754,8 @@ void BytecodeGraphBuilder::VisitStaGlobalStrict() {
 }
 
 void BytecodeGraphBuilder::VisitStaDataPropertyInLiteral() {
+  PrepareEagerCheckpoint();
+
   Node* object =
       environment()->LookupRegister(bytecode_iterator().GetRegisterOperand(0));
   Node* name =
@@ -1095,12 +1099,14 @@ void BytecodeGraphBuilder::VisitPopContext() {
 void BytecodeGraphBuilder::VisitCreateClosure() {
   Handle<SharedFunctionInfo> shared_info = Handle<SharedFunctionInfo>::cast(
       bytecode_iterator().GetConstantForIndexOperand(0));
+  int const slot_id = bytecode_iterator().GetIndexOperand(1);
+  VectorSlotPair pair = CreateVectorSlotPair(slot_id);
   PretenureFlag tenured =
       interpreter::CreateClosureFlags::PretenuredBit::decode(
-          bytecode_iterator().GetFlagOperand(1))
+          bytecode_iterator().GetFlagOperand(2))
           ? TENURED
           : NOT_TENURED;
-  const Operator* op = javascript()->CreateClosure(shared_info, tenured);
+  const Operator* op = javascript()->CreateClosure(shared_info, pair, tenured);
   Node* closure = NewNode(op);
   environment()->BindAccumulator(closure);
 }
@@ -1686,7 +1692,6 @@ void BytecodeGraphBuilder::VisitTestUndefined() {
 }
 
 void BytecodeGraphBuilder::BuildCastOperator(const Operator* js_op) {
-  PrepareEagerCheckpoint();
   Node* value = NewNode(js_op, environment()->LookupAccumulator());
   environment()->BindRegister(bytecode_iterator().GetRegisterOperand(0), value,
                               Environment::kAttachFrameState);

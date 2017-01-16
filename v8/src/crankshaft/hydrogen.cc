@@ -1716,12 +1716,12 @@ HValue* HGraphBuilder::BuildUncheckedDictionaryElementLoad(HValue* receiver,
     details_index->ClearFlag(HValue::kCanOverflow);
     HValue* details = Add<HLoadKeyed>(elements, details_index, nullptr, nullptr,
                                       FAST_ELEMENTS);
-    int details_mask = PropertyDetails::TypeField::kMask;
+    int details_mask = PropertyDetails::KindField::kMask;
     details = AddUncasted<HBitwise>(Token::BIT_AND, details,
                                     Add<HConstant>(details_mask));
     IfBuilder details_compare(this);
-    details_compare.If<HCompareNumericAndBranch>(
-        details, graph()->GetConstant0(), Token::EQ);
+    details_compare.If<HCompareNumericAndBranch>(details, New<HConstant>(kData),
+                                                 Token::EQ);
     details_compare.Then();
     HValue* result_index =
         AddUncasted<HAdd>(base_index, Add<HConstant>(start_offset + 1));
@@ -4243,8 +4243,7 @@ void HOptimizedGraphBuilder::VisitBlock(Block* stmt) {
         if (declaration_scope->is_script_scope() ||
             declaration_scope->is_eval_scope()) {
           function = new (zone())
-              HLoadContextSlot(outer_context, Context::CLOSURE_INDEX,
-                               HLoadContextSlot::kNoCheck);
+              HLoadContextSlot(outer_context, Context::CLOSURE_INDEX);
         } else {
           function = New<HThisFunction>();
         }
@@ -5051,17 +5050,23 @@ void HOptimizedGraphBuilder::VisitFunctionLiteral(FunctionLiteral* expr) {
   // space for nested functions that don't need pretenuring.
   HConstant* shared_info_value = Add<HConstant>(shared_info);
   HInstruction* instr;
+  Handle<TypeFeedbackVector> vector(current_feedback_vector(), isolate());
+  HValue* vector_value = Add<HConstant>(vector);
+  int index = TypeFeedbackVector::GetIndex(expr->LiteralFeedbackSlot());
+  HValue* index_value = Add<HConstant>(index);
   if (!expr->pretenure()) {
     Callable callable = CodeFactory::FastNewClosure(isolate());
-    HValue* values[] = {shared_info_value};
+    HValue* values[] = {shared_info_value, vector_value, index_value};
     HConstant* stub_value = Add<HConstant>(callable.code());
     instr = New<HCallWithDescriptor>(stub_value, 0, callable.descriptor(),
                                      ArrayVector(values));
   } else {
     Add<HPushArguments>(shared_info_value);
+    Add<HPushArguments>(vector_value);
+    Add<HPushArguments>(index_value);
     Runtime::FunctionId function_id =
         expr->pretenure() ? Runtime::kNewClosure_Tenured : Runtime::kNewClosure;
-    instr = New<HCallRuntime>(Runtime::FunctionForId(function_id), 1);
+    instr = New<HCallRuntime>(Runtime::FunctionForId(function_id), 3);
   }
   return ast_context()->ReturnInstruction(instr, expr->id());
 }
@@ -5230,12 +5235,9 @@ void HOptimizedGraphBuilder::VisitVariableProxy(VariableProxy* expr) {
   DCHECK(current_block() != NULL);
   DCHECK(current_block()->HasPredecessor());
   Variable* variable = expr->var();
+  DCHECK(!variable->binding_needs_init());
   switch (variable->location()) {
     case VariableLocation::UNALLOCATED: {
-      if (IsLexicalVariableMode(variable->mode())) {
-        // TODO(rossberg): should this be an DCHECK?
-        return Bailout(kReferenceToGlobalLexicalVariable);
-      }
       // Handle known global constants like 'undefined' specially to avoid a
       // load from a global cell for them.
       Handle<Object> constant_value =
@@ -5297,28 +5299,13 @@ void HOptimizedGraphBuilder::VisitVariableProxy(VariableProxy* expr) {
     case VariableLocation::PARAMETER:
     case VariableLocation::LOCAL: {
       HValue* value = LookupAndMakeLive(variable);
-      if (value == graph()->GetConstantHole()) {
-        DCHECK(IsDeclaredVariableMode(variable->mode()) &&
-               variable->mode() != VAR);
-        return Bailout(kReferenceToUninitializedVariable);
-      }
       return ast_context()->ReturnValue(value);
     }
 
     case VariableLocation::CONTEXT: {
       HValue* context = BuildContextChainWalk(variable);
-      HLoadContextSlot::Mode mode;
-      switch (variable->mode()) {
-        case LET:
-        case CONST:
-          mode = HLoadContextSlot::kCheckDeoptimize;
-          break;
-        default:
-          mode = HLoadContextSlot::kNoCheck;
-          break;
-      }
       HLoadContextSlot* instr =
-          new(zone()) HLoadContextSlot(context, variable->index(), mode);
+          new (zone()) HLoadContextSlot(context, variable->index());
       return ast_context()->ReturnInstruction(instr, expr->id());
     }
 
@@ -5414,7 +5401,8 @@ static bool IsFastLiteral(Handle<JSObject> boilerplate,
     int limit = boilerplate->map()->NumberOfOwnDescriptors();
     for (int i = 0; i < limit; i++) {
       PropertyDetails details = descriptors->GetDetails(i);
-      if (details.type() != DATA) continue;
+      if (details.location() != kField) continue;
+      DCHECK_EQ(kData, details.kind());
       if ((*max_properties)-- == 0) return false;
       FieldIndex field_index = FieldIndex::ForDescriptor(boilerplate->map(), i);
       if (boilerplate->IsUnboxedDoubleField(field_index)) continue;
@@ -6536,9 +6524,7 @@ void HOptimizedGraphBuilder::HandleCompoundAssignment(Assignment* expr) {
 
   if (proxy != NULL) {
     Variable* var = proxy->var();
-    if (var->mode() == LET)  {
-      return Bailout(kUnsupportedLetCompoundAssignment);
-    }
+    DCHECK(!var->binding_needs_init());
 
     CHECK_ALIVE(VisitForValue(operation));
 
@@ -6572,25 +6558,17 @@ void HOptimizedGraphBuilder::HandleCompoundAssignment(Assignment* expr) {
           }
         }
 
-        HStoreContextSlot::Mode mode;
-
-        switch (var->mode()) {
-          case LET:
-            mode = HStoreContextSlot::kCheckDeoptimize;
-            break;
-          case CONST:
-            if (var->throw_on_const_assignment(function_language_mode())) {
-              return Bailout(kNonInitializerAssignmentToConst);
-            } else {
-              return ast_context()->ReturnValue(Pop());
-            }
-          default:
-            mode = HStoreContextSlot::kNoCheck;
+        if (var->mode() == CONST) {
+          if (var->throw_on_const_assignment(function_language_mode())) {
+            return Bailout(kNonInitializerAssignmentToConst);
+          } else {
+            return ast_context()->ReturnValue(Pop());
+          }
         }
 
         HValue* context = BuildContextChainWalk(var);
-        HStoreContextSlot* instr = Add<HStoreContextSlot>(
-            context, var->index(), mode, Top());
+        HStoreContextSlot* instr =
+            Add<HStoreContextSlot>(context, var->index(), Top());
         if (instr->HasObservableSideEffects()) {
           Add<HSimulate>(expr->AssignmentId(), REMOVABLE_SIMULATE);
         }
@@ -6648,15 +6626,14 @@ void HOptimizedGraphBuilder::VisitAssignment(Assignment* expr) {
     HandlePropertyAssignment(expr);
   } else if (proxy != NULL) {
     Variable* var = proxy->var();
+    DCHECK(!var->binding_needs_init());
 
-    if (var->mode() == CONST) {
-      if (expr->op() != Token::INIT) {
-        if (var->throw_on_const_assignment(function_language_mode())) {
-          return Bailout(kNonInitializerAssignmentToConst);
-        } else {
-          CHECK_ALIVE(VisitForValue(expr->value()));
-          return ast_context()->ReturnValue(Pop());
-        }
+    if (var->mode() == CONST && expr->op() != Token::INIT) {
+      if (var->throw_on_const_assignment(function_language_mode())) {
+        return Bailout(kNonInitializerAssignmentToConst);
+      } else {
+        CHECK_ALIVE(VisitForValue(expr->value()));
+        return ast_context()->ReturnValue(Pop());
       }
     }
 
@@ -6670,14 +6647,6 @@ void HOptimizedGraphBuilder::VisitAssignment(Assignment* expr) {
 
       case VariableLocation::PARAMETER:
       case VariableLocation::LOCAL: {
-        // Perform an initialization check for let declared variables
-        // or parameters.
-        if (var->mode() == LET && expr->op() == Token::ASSIGN) {
-          HValue* env_value = environment()->Lookup(var);
-          if (env_value == graph()->GetConstantHole()) {
-            return Bailout(kAssignmentToLetVariableBeforeInitialization);
-          }
-        }
         // We do not allow the arguments object to occur in a context where it
         // may escape, but assignments to stack-allocated locals are
         // permitted.
@@ -6703,29 +6672,9 @@ void HOptimizedGraphBuilder::VisitAssignment(Assignment* expr) {
         }
 
         CHECK_ALIVE(VisitForValue(expr->value()));
-        HStoreContextSlot::Mode mode;
-        if (expr->op() == Token::ASSIGN) {
-          switch (var->mode()) {
-            case LET:
-              mode = HStoreContextSlot::kCheckDeoptimize;
-              break;
-            case CONST:
-              // If we reached this point, the only possibility
-              // is a sloppy assignment to a function name.
-              DCHECK(function_language_mode() == SLOPPY &&
-                     !var->throw_on_const_assignment(SLOPPY));
-              return ast_context()->ReturnValue(Pop());
-            default:
-              mode = HStoreContextSlot::kNoCheck;
-          }
-        } else {
-          DCHECK_EQ(Token::INIT, expr->op());
-          mode = HStoreContextSlot::kNoCheck;
-        }
-
         HValue* context = BuildContextChainWalk(var);
-        HStoreContextSlot* instr = Add<HStoreContextSlot>(
-            context, var->index(), mode, Top());
+        HStoreContextSlot* instr =
+            Add<HStoreContextSlot>(context, var->index(), Top());
         if (instr->HasObservableSideEffects()) {
           Add<HSimulate>(expr->AssignmentId(), REMOVABLE_SIMULATE);
         }
@@ -10421,6 +10370,7 @@ void HOptimizedGraphBuilder::VisitCountOperation(CountOperation* expr) {
 
   if (proxy != NULL) {
     Variable* var = proxy->var();
+    DCHECK(!var->binding_needs_init());
     if (var->mode() == CONST) {
       return Bailout(kNonInitializerAssignmentToConst);
     }
@@ -10445,10 +10395,8 @@ void HOptimizedGraphBuilder::VisitCountOperation(CountOperation* expr) {
 
       case VariableLocation::CONTEXT: {
         HValue* context = BuildContextChainWalk(var);
-        HStoreContextSlot::Mode mode = IsLexicalVariableMode(var->mode())
-            ? HStoreContextSlot::kCheckDeoptimize : HStoreContextSlot::kNoCheck;
-        HStoreContextSlot* instr = Add<HStoreContextSlot>(context, var->index(),
-                                                          mode, after);
+        HStoreContextSlot* instr =
+            Add<HStoreContextSlot>(context, var->index(), after);
         if (instr->HasObservableSideEffects()) {
           Add<HSimulate>(expr->AssignmentId(), REMOVABLE_SIMULATE);
         }
@@ -11352,8 +11300,11 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
           // We depend on the prototype chain to stay the same, because we
           // also need to deoptimize when someone installs @@toPrimitive
           // or @@toStringTag somewhere in the prototype chain.
-          BuildCheckPrototypeMaps(handle(JSObject::cast(map->prototype())),
-                                  Handle<JSObject>::null());
+          Handle<Object> prototype(map->prototype(), isolate());
+          if (prototype->IsJSObject()) {
+            BuildCheckPrototypeMaps(Handle<JSObject>::cast(prototype),
+                                    Handle<JSObject>::null());
+          }
           AddCheckMap(left, map);
           AddCheckMap(right, map);
           // The caller expects a branch instruction, so make it happy.
@@ -11636,7 +11587,8 @@ void HOptimizedGraphBuilder::BuildEmitInObjectProperties(
   int copied_fields = 0;
   for (int i = 0; i < limit; i++) {
     PropertyDetails details = descriptors->GetDetails(i);
-    if (details.type() != DATA) continue;
+    if (details.location() != kField) continue;
+    DCHECK_EQ(kData, details.kind());
     copied_fields++;
     FieldIndex field_index = FieldIndex::ForDescriptor(*boilerplate_map, i);
 
@@ -11827,9 +11779,9 @@ void HOptimizedGraphBuilder::VisitVariableDeclaration(
     VariableDeclaration* declaration) {
   VariableProxy* proxy = declaration->proxy();
   Variable* variable = proxy->var();
+  DCHECK(!variable->binding_needs_init());
   switch (variable->location()) {
     case VariableLocation::UNALLOCATED: {
-      DCHECK(!variable->binding_needs_init());
       globals_.Add(variable->name(), zone());
       FeedbackVectorSlot slot = proxy->VariableFeedbackSlot();
       DCHECK(!slot.IsInvalid());
@@ -11839,21 +11791,7 @@ void HOptimizedGraphBuilder::VisitVariableDeclaration(
     }
     case VariableLocation::PARAMETER:
     case VariableLocation::LOCAL:
-      if (variable->binding_needs_init()) {
-        HValue* value = graph()->GetConstantHole();
-        environment()->Bind(variable, value);
-      }
-      break;
     case VariableLocation::CONTEXT:
-      if (variable->binding_needs_init()) {
-        HValue* value = graph()->GetConstantHole();
-        HValue* context = environment()->context();
-        HStoreContextSlot* store = Add<HStoreContextSlot>(
-            context, variable->index(), HStoreContextSlot::kNoCheck, value);
-        if (store->HasObservableSideEffects()) {
-          Add<HSimulate>(proxy->id(), REMOVABLE_SIMULATE);
-        }
-      }
       break;
     case VariableLocation::LOOKUP:
       return Bailout(kUnsupportedLookupSlotInDeclaration);
@@ -11891,8 +11829,8 @@ void HOptimizedGraphBuilder::VisitFunctionDeclaration(
       CHECK_ALIVE(VisitForValue(declaration->fun()));
       HValue* value = Pop();
       HValue* context = environment()->context();
-      HStoreContextSlot* store = Add<HStoreContextSlot>(
-          context, variable->index(), HStoreContextSlot::kNoCheck, value);
+      HStoreContextSlot* store =
+          Add<HStoreContextSlot>(context, variable->index(), value);
       if (store->HasObservableSideEffects()) {
         Add<HSimulate>(proxy->id(), REMOVABLE_SIMULATE);
       }
@@ -11950,16 +11888,6 @@ void HOptimizedGraphBuilder::GenerateIsTypedArray(CallRuntime* call) {
   HValue* value = Pop();
   HHasInstanceTypeAndBranch* result =
       New<HHasInstanceTypeAndBranch>(value, JS_TYPED_ARRAY_TYPE);
-  return ast_context()->ReturnControl(result, call->id());
-}
-
-
-void HOptimizedGraphBuilder::GenerateIsRegExp(CallRuntime* call) {
-  DCHECK(call->arguments()->length() == 1);
-  CHECK_ALIVE(VisitForValue(call->arguments()->at(0)));
-  HValue* value = Pop();
-  HHasInstanceTypeAndBranch* result =
-      New<HHasInstanceTypeAndBranch>(value, JS_REGEXP_TYPE);
   return ast_context()->ReturnControl(result, call->id());
 }
 

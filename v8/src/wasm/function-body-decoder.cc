@@ -422,8 +422,6 @@ class WasmDecoder : public Decoder {
         MemoryIndexOperand operand(decoder, pc);
         return 1 + operand.length;
       }
-      case kExprI8Const:
-        return 2;
       case kExprF32Const:
         return 5;
       case kExprF64Const:
@@ -619,7 +617,9 @@ class WasmFullDecoder : public WasmDecoder {
     ssa_env->effect = start;
     SetEnv("initial", ssa_env);
     if (builder_) {
-      builder_->StackCheck(position());
+      // The function-prologue stack check is associated with position 0, which
+      // is never a position of any instruction in the function.
+      builder_->StackCheck(0);
     }
   }
 
@@ -989,12 +989,6 @@ class WasmFullDecoder : public WasmDecoder {
           case kExprUnreachable: {
             BUILD(Unreachable, position());
             EndControl();
-            break;
-          }
-          case kExprI8Const: {
-            ImmI8Operand operand(this, pc_);
-            Push(kWasmI32, BUILD(Int32Constant, operand.value));
-            len = 1 + operand.length;
             break;
           }
           case kExprI32Const: {

@@ -526,10 +526,8 @@ void FullCodeGenerator::TestContext::Plug(Handle<Object> lit) const {
                                           true,
                                           true_label_,
                                           false_label_);
-  DCHECK(lit->IsNull(isolate()) || lit->IsUndefined(isolate()) ||
-         !lit->IsUndetectable());
-  if (lit->IsUndefined(isolate()) || lit->IsNull(isolate()) ||
-      lit->IsFalse(isolate())) {
+  DCHECK(lit->IsNullOrUndefined(isolate()) || !lit->IsUndetectable());
+  if (lit->IsNullOrUndefined(isolate()) || lit->IsFalse(isolate())) {
     if (false_label_ != fall_through_) __ Branch(false_label_);
   } else if (lit->IsTrue(isolate()) || lit->IsJSObject()) {
     if (true_label_ != fall_through_) __ Branch(true_label_);
@@ -790,8 +788,8 @@ void FullCodeGenerator::VisitFunctionDeclaration(
       FeedbackVectorSlot slot = proxy->VariableFeedbackSlot();
       DCHECK(!slot.IsInvalid());
       globals_->Add(handle(Smi::FromInt(slot.ToInt()), isolate()), zone());
-      Handle<SharedFunctionInfo> function = Compiler::GetSharedFunctionInfo(
-          declaration->fun(), script(), info_, compilation_mode_);
+      Handle<SharedFunctionInfo> function =
+          Compiler::GetSharedFunctionInfo(declaration->fun(), script(), info_);
       // Check for stack-overflow exception.
       if (function.is_null()) return SetStackOverflow();
       globals_->Add(function, zone());
@@ -1977,28 +1975,6 @@ void FullCodeGenerator::EmitIsTypedArray(CallRuntime* expr) {
   __ GetObjectType(v0, a1, a1);
   PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
   Split(eq, a1, Operand(JS_TYPED_ARRAY_TYPE), if_true, if_false, fall_through);
-
-  context()->Plug(if_true, if_false);
-}
-
-
-void FullCodeGenerator::EmitIsRegExp(CallRuntime* expr) {
-  ZoneList<Expression*>* args = expr->arguments();
-  DCHECK(args->length() == 1);
-
-  VisitForAccumulatorValue(args->at(0));
-
-  Label materialize_true, materialize_false;
-  Label* if_true = NULL;
-  Label* if_false = NULL;
-  Label* fall_through = NULL;
-  context()->PrepareTest(&materialize_true, &materialize_false,
-                         &if_true, &if_false, &fall_through);
-
-  __ JumpIfSmi(v0, if_false);
-  __ GetObjectType(v0, a1, a1);
-  PrepareForBailoutBeforeSplit(expr, true, if_true, if_false);
-  Split(eq, a1, Operand(JS_REGEXP_TYPE), if_true, if_false, fall_through);
 
   context()->Plug(if_true, if_false);
 }

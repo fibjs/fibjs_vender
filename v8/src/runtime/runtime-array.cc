@@ -496,8 +496,7 @@ RUNTIME_FUNCTION(Runtime_ArrayIncludes_Slow) {
 
   // If the receiver is not a special receiver type, and the length is a valid
   // element index, perform fast operation tailored to specific ElementsKinds.
-  if (object->map()->instance_type() > LAST_SPECIAL_RECEIVER_TYPE &&
-      len < kMaxUInt32 &&
+  if (!object->map()->IsSpecialReceiverMap() && len < kMaxUInt32 &&
       JSObject::PrototypeHasNoElements(isolate, JSObject::cast(*object))) {
     Handle<JSObject> obj = Handle<JSObject>::cast(object);
     ElementsAccessor* elements = obj->GetElementsAccessor();
@@ -538,7 +537,7 @@ RUNTIME_FUNCTION(Runtime_ArrayIndexOf) {
 
   // Let O be ? ToObject(this value).
   Handle<Object> receiver_obj = args.at(0);
-  if (receiver_obj->IsNull(isolate) || receiver_obj->IsUndefined(isolate)) {
+  if (receiver_obj->IsNullOrUndefined(isolate)) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNullOrUndefined,
                               isolate->factory()->NewStringFromAsciiChecked(
@@ -595,8 +594,7 @@ RUNTIME_FUNCTION(Runtime_ArrayIndexOf) {
 
   // If the receiver is not a special receiver type, and the length is a valid
   // element index, perform fast operation tailored to specific ElementsKinds.
-  if (object->map()->instance_type() > LAST_SPECIAL_RECEIVER_TYPE &&
-      len < kMaxUInt32 &&
+  if (!object->map()->IsSpecialReceiverMap() && len < kMaxUInt32 &&
       JSObject::PrototypeHasNoElements(isolate, JSObject::cast(*object))) {
     Handle<JSObject> obj = Handle<JSObject>::cast(object);
     ElementsAccessor* elements = obj->GetElementsAccessor();

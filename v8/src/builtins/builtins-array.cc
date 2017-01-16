@@ -33,7 +33,7 @@ inline bool ClampedToInteger(Isolate* isolate, Object* object, int* out) {
       *out = static_cast<int>(value);
     }
     return true;
-  } else if (object->IsUndefined(isolate) || object->IsNull(isolate)) {
+  } else if (object->IsNullOrUndefined(isolate)) {
     *out = 0;
     return true;
   } else if (object->IsBoolean()) {
@@ -239,10 +239,9 @@ void Builtins::Generate_FastArrayPush(compiler::CodeAssemblerState* state) {
     Node* descriptors = assembler.LoadMapDescriptors(map);
     Node* details = assembler.LoadFixedArrayElement(
         descriptors, DescriptorArray::ToDetailsIndex(0));
-    mask = READ_ONLY << PropertyDetails::AttributesField::kShift;
-    Node* mask_node = assembler.SmiConstant(mask);
-    test = assembler.SmiAnd(details, mask_node);
-    assembler.GotoIf(assembler.WordEqual(test, mask_node), &runtime);
+    assembler.GotoIf(
+        assembler.IsSetSmi(details, PropertyDetails::kAttributesReadOnlyMask),
+        &runtime);
 
     arg_index.Bind(assembler.IntPtrConstant(0));
     kind = assembler.DecodeWord32<Map::ElementsKindBits>(bit_field2);
@@ -1343,7 +1342,7 @@ BUILTIN(ArrayConcat) {
 
   Handle<Object> receiver = args.receiver();
   // TODO(bmeurer): Do we really care about the exact exception message here?
-  if (receiver->IsNull(isolate) || receiver->IsUndefined(isolate)) {
+  if (receiver->IsNullOrUndefined(isolate)) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNullOrUndefined,
                               isolate->factory()->NewStringFromAsciiChecked(

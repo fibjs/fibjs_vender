@@ -216,8 +216,9 @@ struct V8_EXPORT_PRIVATE WasmModule {
 
   // Creates a new instantiation of the module in the given isolate.
   static MaybeHandle<WasmInstanceObject> Instantiate(
-      Isolate* isolate, ErrorThrower* thrower, Handle<JSObject> wasm_module,
-      Handle<JSReceiver> ffi, Handle<JSArrayBuffer> memory);
+      Isolate* isolate, ErrorThrower* thrower,
+      Handle<WasmModuleObject> wasm_module, Handle<JSReceiver> ffi,
+      Handle<JSArrayBuffer> memory);
 
   MaybeHandle<WasmCompiledModule> CompileFunctions(
       Isolate* isolate, Handle<Managed<WasmModule>> module_wrapper,
@@ -234,6 +235,8 @@ struct WasmInstance {
   // -- Heap allocated --------------------------------------------------------
   Handle<Context> context;               // JavaScript native context.
   std::vector<Handle<FixedArray>> function_tables;  // indirect function tables.
+  std::vector<Handle<FixedArray>>
+      signature_tables;                    // indirect signature tables.
   std::vector<Handle<Code>> function_code;  // code objects for each function.
   // -- raw memory ------------------------------------------------------------
   byte* mem_start = nullptr;  // start of linear memory.
@@ -244,6 +247,7 @@ struct WasmInstance {
   explicit WasmInstance(const WasmModule* m)
       : module(m),
         function_tables(m->function_tables.size()),
+        signature_tables(m->function_tables.size()),
         function_code(m->functions.size()) {}
 };
 
@@ -393,6 +397,14 @@ V8_EXPORT_PRIVATE MaybeHandle<WasmModuleObject> CreateModuleObjectFromBytes(
     ModuleOrigin origin, Handle<Script> asm_js_script,
     Vector<const byte> asm_offset_table);
 
+V8_EXPORT_PRIVATE Handle<JSArray> GetImports(Isolate* isolate,
+                                             Handle<WasmModuleObject> module);
+V8_EXPORT_PRIVATE Handle<JSArray> GetExports(Isolate* isolate,
+                                             Handle<WasmModuleObject> module);
+
+V8_EXPORT_PRIVATE Handle<JSArray> GetExports(Isolate* isolate,
+                                             Handle<WasmModuleObject> module);
+
 V8_EXPORT_PRIVATE bool ValidateModuleBytes(Isolate* isolate, const byte* start,
                                            const byte* end,
                                            ErrorThrower* thrower,
@@ -427,6 +439,9 @@ int32_t GrowMemory(Isolate* isolate, Handle<WasmInstanceObject> instance,
 
 void UpdateDispatchTables(Isolate* isolate, Handle<FixedArray> dispatch_tables,
                           int index, Handle<JSFunction> js_function);
+
+void GrowDispatchTables(Isolate* isolate, Handle<FixedArray> dispatch_tables,
+                        uint32_t old_size, uint32_t count);
 
 namespace testing {
 

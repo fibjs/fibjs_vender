@@ -194,13 +194,14 @@ namespace internal {
   F(ScriptPositionInfo, 3, 1)                   \
   F(ScriptPositionInfo2, 3, 1)                  \
   F(ScriptSourceLine, 2, 1)                     \
-  F(DebugPrepareStepInIfStepping, 1, 1)         \
+  F(DebugOnFunctionCall, 1, 1)                  \
   F(DebugPrepareStepInSuspendedGenerator, 0, 1) \
   F(DebugRecordGenerator, 1, 1)                 \
   F(DebugPushPromise, 1, 1)                     \
   F(DebugPopPromise, 0, 1)                      \
-  F(DebugNextMicrotaskId, 0, 1)                 \
-  F(DebugAsyncTaskEvent, 3, 1)                  \
+  F(DebugNextAsyncTaskId, 1, 1)                 \
+  F(DebugAsyncEventEnqueueRecurring, 2, 1)      \
+  F(DebugAsyncFunctionPromiseCreated, 1, 1)     \
   F(DebugIsActive, 0, 1)                        \
   F(DebugBreakInOptimizedCode, 0, 1)
 
@@ -213,7 +214,7 @@ namespace internal {
   F(ForInNext, 4, 1)
 
 #define FOR_EACH_INTRINSIC_INTERPRETER(F) \
-  F(InterpreterNewClosure, 2, 1)          \
+  F(InterpreterNewClosure, 4, 1)          \
   F(InterpreterTraceBytecodeEntry, 3, 1)  \
   F(InterpreterTraceBytecodeExit, 3, 1)   \
   F(InterpreterAdvanceBytecodeOffset, 2, 1)
@@ -258,8 +259,7 @@ namespace internal {
   F(GetLanguageTagVariants, 1, 1)            \
   F(IsInitializedIntlObject, 1, 1)           \
   F(IsInitializedIntlObjectOfType, 2, 1)     \
-  F(MarkAsInitializedIntlObjectOfType, 3, 1) \
-  F(GetImplFromInitializedIntlObject, 1, 1)  \
+  F(MarkAsInitializedIntlObjectOfType, 2, 1) \
   F(CreateDateTimeFormat, 3, 1)              \
   F(InternalDateFormat, 2, 1)                \
   F(InternalDateFormatToParts, 2, 1)         \
@@ -290,7 +290,7 @@ namespace internal {
   F(CheckIsBootstrapping, 0, 1)                     \
   F(CreateListFromArrayLike, 1, 1)                  \
   F(EnqueueMicrotask, 1, 1)                         \
-  F(EnqueuePromiseReactionJob, 2, 1)                \
+  F(EnqueuePromiseReactionJob, 3, 1)                \
   F(EnqueuePromiseResolveThenableJob, 1, 1)         \
   F(GetAndResetRuntimeCallStats, -1 /* <= 2 */, 1)  \
   F(ExportExperimentalFromRuntime, 1, 1)            \
@@ -338,7 +338,8 @@ namespace internal {
   F(ThrowTypeError, -1 /* >= 1 */, 1)               \
   F(ThrowUndefinedOrNullToObject, 1, 1)             \
   F(Typeof, 1, 1)                                   \
-  F(UnwindAndFindExceptionHandler, 0, 1)
+  F(UnwindAndFindExceptionHandler, 0, 1)            \
+  F(AllowDynamicFunction, 1, 1)
 
 #define FOR_EACH_INTRINSIC_LITERALS(F) \
   F(CreateRegExpLiteral, 4, 1)         \
@@ -490,8 +491,8 @@ namespace internal {
   F(NewRestParameter, 1, 1)             \
   F(NewSloppyArguments, 3, 1)           \
   F(NewArgumentsElements, 2, 1)         \
-  F(NewClosure, 1, 1)                   \
-  F(NewClosure_Tenured, 1, 1)           \
+  F(NewClosure, 3, 1)                   \
+  F(NewClosure_Tenured, 3, 1)           \
   F(NewScriptContext, 2, 1)             \
   F(NewFunctionContext, 2, 1)           \
   F(PushModuleContext, 3, 1)            \
@@ -906,9 +907,11 @@ namespace internal {
   F(SerializeWasmModule, 1, 1)                \
   F(DeserializeWasmModule, 2, 1)              \
   F(IsAsmWasmCode, 1, 1)                      \
+  F(IsWasmCode, 1, 1)                         \
   F(ValidateWasmInstancesChain, 2, 1)         \
   F(ValidateWasmModuleState, 1, 1)            \
-  F(ValidateWasmOrphanedInstance, 1, 1)
+  F(ValidateWasmOrphanedInstance, 1, 1)       \
+  F(Verify, 1, 1)
 
 #define FOR_EACH_INTRINSIC_TYPEDARRAY(F)     \
   F(ArrayBufferGetByteLength, 1, 1)          \
@@ -941,7 +944,8 @@ namespace internal {
   F(ThrowWasmTrapRemByZero, 0, 1)            \
   F(ThrowWasmTrapFloatUnrepresentable, 0, 1) \
   F(ThrowWasmTrapFuncInvalid, 0, 1)          \
-  F(ThrowWasmTrapFuncSigMismatch, 0, 1)
+  F(ThrowWasmTrapFuncSigMismatch, 0, 1)      \
+  F(WasmRunInterpreter, 3, 1)
 
 #define FOR_EACH_INTRINSIC_RETURN_PAIR(F) \
   F(LoadLookupSlotForCall, 1, 2)

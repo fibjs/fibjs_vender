@@ -88,7 +88,8 @@ namespace internal {
 105, 108, 108, 101, 100, 80, 114, 111, 109, 105, 115, 101, 44, 10, 32, 32, 32,
 32, 32, 32, 104, 97, 115, 79, 119, 110, 40, 123, 32, 116, 101, 115, 116, 58, 32,
 39, 116, 101, 115, 116, 39, 32, 125, 44, 32, 39, 116, 101, 115, 116, 39, 41, 32,
-63, 32, 49, 32, 58, 32, 45, 49, 10, 32, 32, 32, 32, 41, 59, 10, 32, 32, 32, 32,
+63, 32, 49, 32, 58, 32, 45, 49, 44, 10, 32, 32, 32, 32, 32, 32, 117, 110, 100,
+101, 102, 105, 110, 101, 100, 10, 32, 32, 32, 32, 41, 59, 10, 32, 32, 32, 32,
 99, 111, 110, 115, 116, 32, 102, 117, 108, 102, 105, 108, 108, 101, 100, 80,
 114, 111, 109, 105, 115, 101, 50, 32, 61, 32, 80, 114, 111, 109, 105, 115, 101,
 95, 114, 101, 115, 111, 108, 118, 101, 40, 99, 97, 108, 108, 40, 102, 117, 110,
@@ -152,7 +153,7 @@ namespace internal {
 
   template <>
   Vector<const char> NativesCollection<EXTRAS>::GetScriptSource(int index) {
-    if (index == 0) return Vector<const char>(sources + 0, 2133);
+    if (index == 0) return Vector<const char>(sources + 0, 2150);
     return Vector<const char>("", 0);
   }
 
@@ -164,7 +165,7 @@ namespace internal {
 
   template <>
   Vector<const char> NativesCollection<EXTRAS>::GetScriptsSource() {
-    return Vector<const char>(sources, 2133);
+    return Vector<const char>(sources, 2150);
   }
 }  // internal
 }  // v8

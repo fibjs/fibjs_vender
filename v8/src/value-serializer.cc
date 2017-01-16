@@ -401,7 +401,7 @@ Maybe<bool> ValueSerializer::WriteJSReceiver(Handle<JSReceiver> receiver) {
 
   // Eliminate callable and exotic objects, which should not be serialized.
   InstanceType instance_type = receiver->map()->instance_type();
-  if (receiver->IsCallable() || (instance_type <= LAST_SPECIAL_RECEIVER_TYPE &&
+  if (receiver->IsCallable() || (IsSpecialReceiverInstanceType(instance_type) &&
                                  instance_type != JS_SPECIAL_API_OBJECT_TYPE)) {
     ThrowDataCloneError(MessageTemplate::kDataCloneError, receiver);
     return Nothing<bool>();
@@ -475,7 +475,8 @@ Maybe<bool> ValueSerializer::WriteJSObject(Handle<JSObject> object) {
 
     Handle<Object> value;
     if (V8_LIKELY(!map_changed)) map_changed = *map == object->map();
-    if (V8_LIKELY(!map_changed && details.type() == DATA)) {
+    if (V8_LIKELY(!map_changed && details.location() == kField)) {
+      DCHECK_EQ(kData, details.kind());
       FieldIndex field_index = FieldIndex::ForDescriptor(*map, i);
       value = JSObject::FastPropertyAt(object, details.representation(),
                                        field_index);
@@ -1664,8 +1665,8 @@ Maybe<uint32_t> ValueDeserializer::ReadJSObjectProperties(
                    ->NowContains(value)) {
             Handle<FieldType> value_type =
                 value->OptimalType(isolate_, expected_representation);
-            Map::GeneralizeFieldType(target, descriptor,
-                                     expected_representation, value_type);
+            Map::GeneralizeField(target, descriptor, expected_representation,
+                                 value_type);
           }
           DCHECK(target->instance_descriptors()
                      ->GetFieldType(descriptor)

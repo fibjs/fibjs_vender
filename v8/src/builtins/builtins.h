@@ -212,8 +212,8 @@ namespace internal {
   /* Handlers */                                                               \
   TFS(KeyedLoadIC_Megamorphic_TF, KEYED_LOAD_IC, kNoExtraICState,              \
       LoadWithVector)                                                          \
-  ASM(KeyedLoadIC_Miss)                                                        \
-  ASH(KeyedLoadIC_Slow, HANDLER, Code::KEYED_LOAD_IC)                          \
+  TFS(KeyedLoadIC_Miss, BUILTIN, kNoExtraICState, LoadWithVector)              \
+  TFS(KeyedLoadIC_Slow, HANDLER, Code::KEYED_LOAD_IC, LoadWithVector)          \
   TFS(KeyedStoreIC_Megamorphic_TF, KEYED_STORE_IC, kNoExtraICState,            \
       StoreWithVector)                                                         \
   TFS(KeyedStoreIC_Megamorphic_Strict_TF, KEYED_STORE_IC,                      \
@@ -224,10 +224,10 @@ namespace internal {
   TFS(LoadGlobalIC_Slow, HANDLER, Code::LOAD_GLOBAL_IC, LoadGlobalWithVector)  \
   ASH(LoadIC_Getter_ForDeopt, LOAD_IC, kNoExtraICState)                        \
   TFS(LoadIC_Miss, BUILTIN, kNoExtraICState, LoadWithVector)                   \
-  ASH(LoadIC_Normal, HANDLER, Code::LOAD_IC)                                   \
+  TFS(LoadIC_Normal, HANDLER, Code::LOAD_IC, LoadWithVector)                   \
   TFS(LoadIC_Slow, HANDLER, Code::LOAD_IC, LoadWithVector)                     \
   TFS(StoreIC_Miss, BUILTIN, kNoExtraICState, StoreWithVector)                 \
-  ASH(StoreIC_Normal, HANDLER, Code::STORE_IC)                                 \
+  TFS(StoreIC_Normal, HANDLER, Code::STORE_IC, StoreWithVector)                \
   ASH(StoreIC_Setter_ForDeopt, STORE_IC, StoreICState::kStrictModeState)       \
   TFS(StoreIC_SlowSloppy, HANDLER, Code::STORE_IC, StoreWithVector)            \
   TFS(StoreIC_SlowStrict, HANDLER, Code::STORE_IC, StoreWithVector)            \
@@ -411,6 +411,10 @@ namespace internal {
   /* ES6 section 19.2.3.6 Function.prototype [ @@hasInstance ] ( V ) */        \
   TFJ(FunctionPrototypeHasInstance, 1)                                         \
   CPP(FunctionPrototypeToString)                                               \
+                                                                               \
+  /* Belongs to Objects but is a dependency of GeneratorPrototypeResume */     \
+  TFS(CreateIterResultObject, BUILTIN, kNoExtraICState,                        \
+      CreateIterResultObject)                                                  \
                                                                                \
   /* Generator and Async */                                                    \
   CPP(GeneratorFunctionConstructor)                                            \
@@ -632,7 +636,7 @@ namespace internal {
   TFJ(PerformPromiseThen, 4)                                                   \
   TFJ(ResolvePromise, 2)                                                       \
   TFS(PromiseHandleReject, BUILTIN, kNoExtraICState, PromiseHandleReject)      \
-  TFJ(PromiseHandle, 6)                                                        \
+  TFJ(PromiseHandle, 5)                                                        \
   TFJ(PromiseResolve, 1)                                                       \
   TFJ(PromiseReject, 1)                                                        \
                                                                                \

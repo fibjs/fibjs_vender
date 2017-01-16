@@ -9,7 +9,10 @@
 #include "src/accessors.h"
 #include "src/ast/ast.h"
 #include "src/bootstrapper.h"
+#include "src/counters.h"
 #include "src/messages.h"
+#include "src/objects-inl.h"
+#include "src/objects/module-info.h"
 #include "src/parsing/parse-info.h"
 
 namespace v8 {
@@ -539,6 +542,8 @@ void DeclarationScope::HoistSloppyBlockFunctions(AstNodeFactory* factory) {
 }
 
 void DeclarationScope::Analyze(ParseInfo* info, AnalyzeMode mode) {
+  RuntimeCallTimerScope runtimeTimer(info->isolate(),
+                                     &RuntimeCallStats::CompileScopeAnalysis);
   DCHECK(info->literal() != NULL);
   DeclarationScope* scope = info->literal()->scope();
 
@@ -1032,11 +1037,14 @@ void Scope::DeclareVariableName(const AstRawString* name, VariableMode mode) {
   if (mode == VAR && !is_declaration_scope()) {
     return GetDeclarationScope()->DeclareVariableName(name, mode);
   }
-  DCHECK(!is_catch_scope());
   DCHECK(!is_with_scope());
   DCHECK(!is_eval_scope());
-  DCHECK(is_declaration_scope() ||
-         (IsLexicalVariableMode(mode) && is_block_scope()));
+  // Unlike DeclareVariable, DeclareVariableName allows declaring variables in
+  // catch scopes: Parser::RewriteCatchPattern bypasses DeclareVariable by
+  // calling DeclareLocal directly, and it doesn't make sense to add a similar
+  // bypass mechanism for PreParser.
+  DCHECK(is_declaration_scope() || (IsLexicalVariableMode(mode) &&
+                                    (is_block_scope() || is_catch_scope())));
   DCHECK(scope_info_.is_null());
 
   // Declare the variable in the declaration scope.

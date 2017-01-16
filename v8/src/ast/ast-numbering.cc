@@ -6,15 +6,19 @@
 
 #include "src/ast/ast.h"
 #include "src/ast/scopes.h"
+#include "src/compiler.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
 
 class AstNumberingVisitor final : public AstVisitor<AstNumberingVisitor> {
  public:
-  AstNumberingVisitor(Isolate* isolate, Zone* zone)
+  AstNumberingVisitor(Isolate* isolate, Zone* zone,
+                      Compiler::EagerInnerFunctionLiterals* eager_literals)
       : isolate_(isolate),
         zone_(zone),
+        eager_literals_(eager_literals),
         next_id_(BailoutId::FirstUsable().ToInt()),
         yield_count_(0),
         properties_(zone),
@@ -69,8 +73,11 @@ class AstNumberingVisitor final : public AstVisitor<AstNumberingVisitor> {
 
   BailoutReason dont_optimize_reason() const { return dont_optimize_reason_; }
 
+  Zone* zone() const { return zone_; }
+
   Isolate* isolate_;
   Zone* zone_;
+  Compiler::EagerInnerFunctionLiterals* eager_literals_;
   int next_id_;
   int yield_count_;
   AstProperties properties_;
@@ -125,6 +132,7 @@ void AstNumberingVisitor::VisitNativeFunctionLiteral(
   IncrementNodeCount();
   DisableOptimization(kNativeFunctionLiteral);
   node->set_base_id(ReserveIdRange(NativeFunctionLiteral::num_ids()));
+  ReserveFeedbackSlots(node);
 }
 
 
@@ -593,8 +601,13 @@ void AstNumberingVisitor::VisitArguments(ZoneList<Expression*>* arguments) {
 void AstNumberingVisitor::VisitFunctionLiteral(FunctionLiteral* node) {
   IncrementNodeCount();
   node->set_base_id(ReserveIdRange(FunctionLiteral::num_ids()));
+  if (eager_literals_ && node->ShouldEagerCompile()) {
+    eager_literals_->Add(new (zone())
+                             ThreadedListZoneEntry<FunctionLiteral*>(node));
+  }
   // We don't recurse into the declarations or body of the function literal:
   // you have to separately Renumber() each FunctionLiteral that you compile.
+  ReserveFeedbackSlots(node);
 }
 
 
@@ -648,10 +661,10 @@ bool AstNumberingVisitor::Renumber(FunctionLiteral* node) {
   return !HasStackOverflow();
 }
 
-
-bool AstNumbering::Renumber(Isolate* isolate, Zone* zone,
-                            FunctionLiteral* function) {
-  AstNumberingVisitor visitor(isolate, zone);
+bool AstNumbering::Renumber(
+    Isolate* isolate, Zone* zone, FunctionLiteral* function,
+    Compiler::EagerInnerFunctionLiterals* eager_literals) {
+  AstNumberingVisitor visitor(isolate, zone, eager_literals);
   return visitor.Renumber(function);
 }
 }  // namespace internal

@@ -95,6 +95,8 @@ Heap::Heap()
       survived_last_scavenge_(0),
       always_allocate_scope_count_(0),
       memory_pressure_level_(MemoryPressureLevel::kNone),
+      out_of_memory_callback_(nullptr),
+      out_of_memory_callback_data_(nullptr),
       contexts_disposed_(0),
       number_of_disposed_maps_(0),
       global_ic_age_(0),
@@ -867,6 +869,9 @@ void Heap::CollectAllAvailableGarbage(GarbageCollectionReason gc_reason) {
   // Note: as weak callbacks can execute arbitrary code, we cannot
   // hope that eventually there will be no weak callbacks invocations.
   // Therefore stop recollecting after several attempts.
+  if (gc_reason == GarbageCollectionReason::kLastResort) {
+    InvokeOutOfMemoryCallback();
+  }
   RuntimeCallTimerScope(isolate(), &RuntimeCallStats::GC_AllAvailableGarbage);
   if (isolate()->concurrent_recompilation_enabled()) {
     // The optimizing compiler may be unnecessarily holding on to memory.
@@ -2247,6 +2252,7 @@ bool Heap::CreateInitialMaps() {
 
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, scope_info)
     ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, module_info)
+    ALLOCATE_VARSIZE_MAP(FIXED_ARRAY_TYPE, type_feedback_vector)
     ALLOCATE_PRIMITIVE_MAP(HEAP_NUMBER_TYPE, HeapNumber::kSize, heap_number,
                            Context::NUMBER_FUNCTION_INDEX)
     ALLOCATE_MAP(MUTABLE_HEAP_NUMBER_TYPE, HeapNumber::kSize,
@@ -2775,6 +2781,7 @@ void Heap::CreateInitialObjects() {
                                     empty_fixed_array());
     empty_type_feedback_vector->set(TypeFeedbackVector::kInvocationCountIndex,
                                     Smi::kZero);
+    empty_type_feedback_vector->set_map(type_feedback_vector_map());
     set_empty_type_feedback_vector(*empty_type_feedback_vector);
 
     // We use a canonical empty LiteralsArray for all functions that neither
@@ -4529,6 +4536,18 @@ void Heap::MemoryPressureNotification(MemoryPressureLevel level,
           reinterpret_cast<v8::Isolate*>(isolate()),
           new MemoryPressureInterruptTask(this));
     }
+  }
+}
+
+void Heap::SetOutOfMemoryCallback(v8::debug::OutOfMemoryCallback callback,
+                                  void* data) {
+  out_of_memory_callback_ = callback;
+  out_of_memory_callback_data_ = data;
+}
+
+void Heap::InvokeOutOfMemoryCallback() {
+  if (out_of_memory_callback_) {
+    out_of_memory_callback_(out_of_memory_callback_data_);
   }
 }
 

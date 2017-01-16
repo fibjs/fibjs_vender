@@ -44,6 +44,8 @@ void Smi::SmiVerify() {
 
 
 void HeapObject::HeapObjectVerify() {
+  VerifyHeapPointer(map());
+  CHECK(map()->IsMap());
   InstanceType instance_type = map()->instance_type();
 
   if (instance_type < FIRST_NONSTRING_TYPE) {
@@ -339,7 +341,9 @@ void JSObject::JSObjectVerify() {
     DescriptorArray* descriptors = map()->instance_descriptors();
     Isolate* isolate = GetIsolate();
     for (int i = 0; i < map()->NumberOfOwnDescriptors(); i++) {
-      if (descriptors->GetDetails(i).type() == DATA) {
+      PropertyDetails details = descriptors->GetDetails(i);
+      if (details.location() == kField) {
+        DCHECK_EQ(kData, details.kind());
         Representation r = descriptors->GetDetails(i).representation();
         FieldIndex index = FieldIndex::ForDescriptor(map(), i);
         if (IsUnboxedDoubleField(index)) {
@@ -1033,14 +1037,12 @@ void PromiseResolveThenableJobInfo::PromiseResolveThenableJobInfoVerify() {
   CHECK(resolve()->IsJSFunction());
   CHECK(reject()->IsJSFunction());
   VerifySmiField(kDebugIdOffset);
-  VerifySmiField(kDebugNameOffset);
   CHECK(context()->IsContext());
 }
 
 void PromiseReactionJobInfo::PromiseReactionJobInfoVerify() {
   Isolate* isolate = GetIsolate();
   CHECK(IsPromiseReactionJobInfo());
-  CHECK(promise()->IsJSPromise());
   CHECK(value()->IsObject());
   CHECK(tasks()->IsFixedArray() || tasks()->IsCallable());
   CHECK(deferred_promise()->IsUndefined(isolate) ||
@@ -1053,7 +1055,6 @@ void PromiseReactionJobInfo::PromiseReactionJobInfoVerify() {
         deferred_on_reject()->IsCallable() ||
         deferred_on_reject()->IsFixedArray());
   VerifySmiField(kDebugIdOffset);
-  VerifySmiField(kDebugNameOffset);
   CHECK(context()->IsContext());
 }
 

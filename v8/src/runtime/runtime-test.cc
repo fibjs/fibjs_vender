@@ -699,6 +699,13 @@ RUNTIME_FUNCTION(Runtime_IsAsmWasmCode) {
   return isolate->heap()->true_value();
 }
 
+RUNTIME_FUNCTION(Runtime_IsWasmCode) {
+  SealHandleScope shs(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_CHECKED(JSFunction, function, 0);
+  bool is_js_to_wasm = function->code()->kind() == Code::JS_TO_WASM_FUNCTION;
+  return isolate->heap()->ToBoolean(is_js_to_wasm);
+}
 
 #define ELEMENTS_KIND_CHECK_RUNTIME_FUNCTION(Name)       \
   RUNTIME_FUNCTION(Runtime_Has##Name) {                  \
@@ -818,6 +825,23 @@ RUNTIME_FUNCTION(Runtime_ValidateWasmOrphanedInstance) {
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED_2(WasmInstanceObject, instance, 0);
   wasm::testing::ValidateOrphanedInstance(isolate, instance);
+  return isolate->heap()->ToBoolean(true);
+}
+
+RUNTIME_FUNCTION(Runtime_Verify) {
+  HandleScope shs(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+#ifdef VERIFY_HEAP
+  object->ObjectVerify();
+#else
+  CHECK(object->IsObject());
+  if (object->IsHeapObject()) {
+    CHECK(HeapObject::cast(*object)->map()->IsMap());
+  } else {
+    CHECK(object->IsSmi());
+  }
+#endif
   return isolate->heap()->ToBoolean(true);
 }
 

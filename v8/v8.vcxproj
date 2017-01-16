@@ -31,6 +31,7 @@
     <ClInclude Include="include\v8-profiler.h" />
     <ClInclude Include="include\v8-testing.h" />
     <ClInclude Include="include\v8-util.h" />
+    <ClInclude Include="include\v8-version-string.h" />
     <ClInclude Include="include\v8-version.h" />
     <ClInclude Include="include\v8.h" />
     <ClInclude Include="include\v8config.h" />
@@ -456,12 +457,14 @@
     <ClInclude Include="src\lookup.h" />
     <ClInclude Include="src\machine-type.h" />
     <ClInclude Include="src\macro-assembler.h" />
+    <ClInclude Include="src\map-updater.h" />
     <ClInclude Include="src\messages.h" />
     <ClInclude Include="src\msan.h" />
     <ClInclude Include="src\objects-body-descriptors-inl.h" />
     <ClInclude Include="src\objects-body-descriptors.h" />
     <ClInclude Include="src\objects-inl.h" />
     <ClInclude Include="src\objects.h" />
+    <ClInclude Include="src\objects\module-info.h" />
     <ClInclude Include="src\objects\object-macros-undef.h" />
     <ClInclude Include="src\objects\object-macros.h" />
     <ClInclude Include="src\objects\scope-info.h" />
@@ -1061,6 +1064,7 @@
     <ClCompile Include="src\lookup-cache.cc" />
     <ClCompile Include="src\lookup.cc" />
     <ClCompile Include="src\machine-type.cc" />
+    <ClCompile Include="src\map-updater.cc" />
     <ClCompile Include="src\messages.cc" />
     <ClCompile Include="src\objects-debug.cc" />
     <ClCompile Include="src\objects-printer.cc" />

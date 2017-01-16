@@ -469,9 +469,6 @@ class Block final : public BreakableStatement {
 
   class IgnoreCompletionField
       : public BitField<bool, BreakableStatement::kNextBitFieldIndex, 1> {};
-
- protected:
-  static const uint8_t kNextBitFieldIndex = IgnoreCompletionField::kNext;
 };
 
 
@@ -486,9 +483,6 @@ class DoExpression final : public Expression {
     represented_function_ = f;
   }
   bool IsAnonymousFunctionDefinition() const;
-
- protected:
-  static const uint8_t kNextBitFieldIndex = Expression::kNextBitFieldIndex;
 
  private:
   friend class AstNodeFactory;
@@ -520,8 +514,6 @@ class Declaration : public AstNode {
  protected:
   Declaration(VariableProxy* proxy, Scope* scope, int pos, NodeType type)
       : AstNode(pos, type), proxy_(proxy), scope_(scope), next_(nullptr) {}
-
-  static const uint8_t kNextBitFieldIndex = AstNode::kNextBitFieldIndex;
 
  private:
   VariableProxy* proxy_;
@@ -781,9 +773,6 @@ class ForInStatement final : public ForEachStatement {
 
   class ForInTypeField
       : public BitField<ForInType, ForEachStatement::kNextBitFieldIndex, 1> {};
-
- protected:
-  static const uint8_t kNextBitFieldIndex = ForInTypeField::kNext;
 };
 
 
@@ -1482,7 +1471,6 @@ class ObjectLiteral final : public MaterializedLiteral {
   int local_id(int n) const { return base_id() + parent_num_ids() + n; }
 
   uint32_t boilerplate_properties_;
-  FeedbackVectorSlot slot_;
   Handle<FixedArray> constant_properties_;
   ZoneList<Property*>* properties_;
 
@@ -1492,9 +1480,6 @@ class ObjectLiteral final : public MaterializedLiteral {
   };
   class MayStoreDoublesField
       : public BitField<bool, HasElementsField::kNext, 1> {};
-
- protected:
-  static const uint8_t kNextBitFieldIndex = MayStoreDoublesField::kNext;
 };
 
 
@@ -2582,6 +2567,18 @@ class FunctionLiteral final : public Expression {
   }
   LanguageMode language_mode() const;
 
+  void AssignFeedbackVectorSlots(Isolate* isolate, FeedbackVectorSpec* spec,
+                                 FeedbackVectorSlotCache* cache) {
+    // The + 1 is because we need an array with room for the literals
+    // as well as the feedback vector.
+    literal_feedback_slot_ =
+        spec->AddCreateClosureSlot(materialized_literal_count_ + 1);
+  }
+
+  FeedbackVectorSlot LiteralFeedbackSlot() const {
+    return literal_feedback_slot_;
+  }
+
   static bool NeedsHomeObject(Expression* expr);
 
   int materialized_literal_count() { return materialized_literal_count_; }
@@ -2631,8 +2628,6 @@ class FunctionLiteral final : public Expression {
   bool has_duplicate_parameters() const {
     return HasDuplicateParameters::decode(bit_field_);
   }
-
-  bool is_function() const { return IsFunction::decode(bit_field_); }
 
   // This is used as a heuristic on when to eagerly compile a function
   // literal. We consider the following constructs as hints that the
@@ -2698,7 +2693,7 @@ class FunctionLiteral final : public Expression {
                   int function_length, FunctionType function_type,
                   ParameterFlag has_duplicate_parameters,
                   EagerCompileHint eager_compile_hint, int position,
-                  bool is_function, bool has_braces, int function_literal_id)
+                  bool has_braces, int function_literal_id)
       : Expression(position, kFunctionLiteral),
         materialized_literal_count_(materialized_literal_count),
         expected_property_count_(expected_property_count),
@@ -2717,7 +2712,6 @@ class FunctionLiteral final : public Expression {
                   Pretenure::encode(false) |
                   HasDuplicateParameters::encode(has_duplicate_parameters ==
                                                  kHasDuplicateParameters) |
-                  IsFunction::encode(is_function) |
                   ShouldNotBeUsedOnceHintField::encode(false) |
                   DontOptimizeReasonField::encode(kNoReason);
     if (eager_compile_hint == kShouldEagerCompile) SetShouldEagerCompile();
@@ -2727,9 +2721,8 @@ class FunctionLiteral final : public Expression {
       : public BitField<FunctionType, Expression::kNextBitFieldIndex, 2> {};
   class Pretenure : public BitField<bool, FunctionTypeBits::kNext, 1> {};
   class HasDuplicateParameters : public BitField<bool, Pretenure::kNext, 1> {};
-  class IsFunction : public BitField<bool, HasDuplicateParameters::kNext, 1> {};
   class ShouldNotBeUsedOnceHintField
-      : public BitField<bool, IsFunction::kNext, 1> {};
+      : public BitField<bool, HasDuplicateParameters::kNext, 1> {};
   class DontOptimizeReasonField
       : public BitField<BailoutReason, ShouldNotBeUsedOnceHintField::kNext, 8> {
   };
@@ -2749,6 +2742,7 @@ class FunctionLiteral final : public Expression {
   Handle<String> inferred_name_;
   AstProperties ast_properties_;
   int function_literal_id_;
+  FeedbackVectorSlot literal_feedback_slot_;
 };
 
 // Property is used for passing information
@@ -2839,6 +2833,19 @@ class NativeFunctionLiteral final : public Expression {
  public:
   Handle<String> name() const { return name_->string(); }
   v8::Extension* extension() const { return extension_; }
+  FeedbackVectorSlot LiteralFeedbackSlot() const {
+    return literal_feedback_slot_;
+  }
+
+  void AssignFeedbackVectorSlots(Isolate* isolate, FeedbackVectorSpec* spec,
+                                 FeedbackVectorSlotCache* cache) {
+    // 0 is a magic number here. It means we are holding the literals
+    // array for a native function literal, which needs to be
+    // the empty literals array.
+    // TODO(mvstanton): The FeedbackVectorSlotCache can be adapted
+    // to always return the same slot for this case.
+    literal_feedback_slot_ = spec->AddCreateClosureSlot(0);
+  }
 
  private:
   friend class AstNodeFactory;
@@ -2851,6 +2858,7 @@ class NativeFunctionLiteral final : public Expression {
 
   const AstRawString* name_;
   v8::Extension* extension_;
+  FeedbackVectorSlot literal_feedback_slot_;
 };
 
 
@@ -3467,7 +3475,7 @@ class AstNodeFactory final BASE_EMBEDDED {
         zone_, name, ast_value_factory_, scope, body,
         materialized_literal_count, expected_property_count, parameter_count,
         function_length, function_type, has_duplicate_parameters,
-        eager_compile_hint, position, true, has_braces, function_literal_id);
+        eager_compile_hint, position, has_braces, function_literal_id);
   }
 
   // Creates a FunctionLiteral representing a top-level script, the
@@ -3482,7 +3490,7 @@ class AstNodeFactory final BASE_EMBEDDED {
         body, materialized_literal_count, expected_property_count,
         parameter_count, parameter_count, FunctionLiteral::kAnonymousExpression,
         FunctionLiteral::kNoDuplicateParameters,
-        FunctionLiteral::kShouldLazyCompile, 0, false, true,
+        FunctionLiteral::kShouldLazyCompile, 0, true,
         FunctionLiteral::kIdTypeTopLevel);
   }
 

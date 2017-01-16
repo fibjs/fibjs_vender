@@ -71,7 +71,7 @@ class V8_EXPORT_PRIVATE Factory final {
 
   // Create a new PromiseReactionJobInfo struct.
   Handle<PromiseReactionJobInfo> NewPromiseReactionJobInfo(
-      Handle<JSPromise> promise, Handle<Object> value, Handle<Object> tasks,
+      Handle<Object> value, Handle<Object> tasks,
       Handle<Object> deferred_promise, Handle<Object> deferred_on_resolve,
       Handle<Object> deferred_on_reject, Handle<Context> context);
 
@@ -570,6 +570,15 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<JSFunction> NewFunctionWithoutPrototype(Handle<String> name,
                                                  Handle<Code> code,
                                                  bool is_strict = false);
+
+  Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
+      Handle<Map> initial_map, Handle<SharedFunctionInfo> function_info,
+      Handle<Object> context_or_undefined, Handle<LiteralsArray> literals,
+      PretenureFlag pretenure = TENURED);
+
+  Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
+      Handle<SharedFunctionInfo> function_info, Handle<Context> context,
+      Handle<LiteralsArray> literals, PretenureFlag pretenure = TENURED);
 
   Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
       Handle<Map> initial_map, Handle<SharedFunctionInfo> function_info,

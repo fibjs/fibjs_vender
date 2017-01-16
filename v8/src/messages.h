@@ -23,25 +23,26 @@ class AbstractCode;
 class FrameArray;
 class JSMessageObject;
 class LookupIterator;
+class SharedFunctionInfo;
 class SourceInfo;
 
 class MessageLocation {
  public:
   MessageLocation(Handle<Script> script, int start_pos, int end_pos);
   MessageLocation(Handle<Script> script, int start_pos, int end_pos,
-                  Handle<JSFunction> function);
+                  Handle<SharedFunctionInfo> shared);
   MessageLocation();
 
   Handle<Script> script() const { return script_; }
   int start_pos() const { return start_pos_; }
   int end_pos() const { return end_pos_; }
-  Handle<JSFunction> function() const { return function_; }
+  Handle<SharedFunctionInfo> shared() const { return shared_; }
 
  private:
   Handle<Script> script_;
   int start_pos_;
   int end_pos_;
-  Handle<JSFunction> function_;
+  Handle<SharedFunctionInfo> shared_;
 };
 
 class StackFrameBase {
@@ -654,6 +655,7 @@ class ErrorUtils : public AllStatic {
   T(YieldInParameter, "Yield expression not allowed in formal parameter")      \
   /* EvalError */                                                              \
   T(CodeGenFromStrings, "%")                                                   \
+  T(NoSideEffectDebugEvaluate, "Possible side-effect in debug-evaluate")       \
   /* URIError */                                                               \
   T(URIMalformed, "URI malformed")                                             \
   /* Wasm errors (currently Error) */                                          \

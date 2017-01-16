@@ -747,13 +747,12 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   // Flood function if we are stepping.
   Label prepare_step_in_if_stepping, prepare_step_in_suspended_generator;
   Label stepping_prepared;
-  ExternalReference last_step_action =
-      ExternalReference::debug_last_step_action_address(masm->isolate());
-  STATIC_ASSERT(StepFrame > StepIn);
-  __ mov(ip, Operand(last_step_action));
+  ExternalReference debug_hook =
+      ExternalReference::debug_hook_on_function_call_address(masm->isolate());
+  __ mov(ip, Operand(debug_hook));
   __ ldrsb(ip, MemOperand(ip));
-  __ cmp(ip, Operand(StepIn));
-  __ b(ge, &prepare_step_in_if_stepping);
+  __ cmp(ip, Operand(0));
+  __ b(ne, &prepare_step_in_if_stepping);
 
   // Flood function if we need to continue stepping in the suspended generator.
   ExternalReference debug_suspended_generator =
@@ -821,7 +820,7 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
     __ Push(r1, r2, r4);
-    __ CallRuntime(Runtime::kDebugPrepareStepInIfStepping);
+    __ CallRuntime(Runtime::kDebugOnFunctionCall);
     __ Pop(r1, r2);
     __ ldr(r4, FieldMemOperand(r1, JSGeneratorObject::kFunctionOffset));
   }
@@ -1341,12 +1340,19 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   Register argument_count = r0;
   Register closure = r1;
   Register new_target = r3;
+  Register map = argument_count;
+  Register index = r2;
+
+  // Do we have a valid feedback vector?
+  __ ldr(index, FieldMemOperand(closure, JSFunction::kLiteralsOffset));
+  __ ldr(index, FieldMemOperand(index, LiteralsArray::kFeedbackVectorOffset));
+  __ JumpIfRoot(index, Heap::kUndefinedValueRootIndex,
+                &gotta_call_runtime_no_stack);
+
   __ push(argument_count);
   __ push(new_target);
   __ push(closure);
 
-  Register map = argument_count;
-  Register index = r2;
   __ ldr(map, FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
   __ ldr(map,
          FieldMemOperand(map, SharedFunctionInfo::kOptimizedCodeMapOffset));
@@ -1354,7 +1360,6 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ cmp(index, Operand(Smi::FromInt(2)));
   __ b(lt, &gotta_call_runtime);
 
-  // Find literals.
   // r3  : native context
   // r2  : length / index
   // r0  : optimized code map
@@ -1374,20 +1379,6 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ ldr(temp, FieldMemOperand(temp, WeakCell::kValueOffset));
   __ cmp(temp, native_context);
   __ b(ne, &loop_bottom);
-  // Literals available?
-  __ ldr(temp, FieldMemOperand(array_pointer,
-                               SharedFunctionInfo::kOffsetToPreviousLiterals));
-  __ ldr(temp, FieldMemOperand(temp, WeakCell::kValueOffset));
-  __ JumpIfSmi(temp, &gotta_call_runtime);
-
-  // Save the literals in the closure.
-  __ ldr(r4, MemOperand(sp, 0));
-  __ str(temp, FieldMemOperand(r4, JSFunction::kLiteralsOffset));
-  __ push(index);
-  __ RecordWriteField(r4, JSFunction::kLiteralsOffset, temp, index,
-                      kLRHasNotBeenSaved, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
-                      OMIT_SMI_CHECK);
-  __ pop(index);
 
   // Code available?
   Register entry = r4;
@@ -1397,7 +1388,7 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ ldr(entry, FieldMemOperand(entry, WeakCell::kValueOffset));
   __ JumpIfSmi(entry, &try_shared);
 
-  // Found literals and code. Get them into the closure and return.
+  // Found code. Get it into the closure and return.
   __ pop(closure);
   // Store code entry in the closure.
   __ add(entry, entry, Operand(Code::kHeaderSize - kHeapObjectTag));
@@ -1432,7 +1423,7 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ cmp(index, Operand(Smi::FromInt(1)));
   __ b(gt, &loop_top);
 
-  // We found neither literals nor code.
+  // We found no code.
   __ jmp(&gotta_call_runtime);
 
   __ bind(&try_shared);

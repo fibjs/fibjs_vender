@@ -14,6 +14,7 @@
 #include "src/allocation.h"
 #include "src/assert-scope.h"
 #include "src/base/atomic-utils.h"
+#include "src/debug/debug-interface.h"
 #include "src/globals.h"
 #include "src/heap-symbols.h"
 #include "src/list.h"
@@ -94,6 +95,7 @@ using v8::MemoryPressureLevel;
   V(Map, external_map, ExternalMap)                                            \
   V(Map, bytecode_array_map, BytecodeArrayMap)                                 \
   V(Map, module_info_map, ModuleInfoMap)                                       \
+  V(Map, type_feedback_vector_map, TypeFeedbackVectorMap)                      \
   /* String maps */                                                            \
   V(Map, native_source_string_map, NativeSourceStringMap)                      \
   V(Map, string_map, StringMap)                                                \
@@ -845,6 +847,9 @@ class Heap {
                                   bool is_isolate_locked);
   void CheckMemoryPressure();
 
+  void SetOutOfMemoryCallback(v8::debug::OutOfMemoryCallback callback,
+                              void* data);
+
   double MonotonicallyIncreasingTimeInMs();
 
   void RecordStats(HeapStats* stats, bool take_snapshot = false);
@@ -953,13 +958,16 @@ class Heap {
     return memory_pressure_level_.Value() != MemoryPressureLevel::kNone;
   }
 
-  void IncreaseHeapLimitForDebugging() {
+  size_t HeapLimitForDebugging() {
     const size_t kDebugHeapSizeFactor = 4;
     size_t max_limit = std::numeric_limits<size_t>::max() / 4;
+    return Min(max_limit,
+               initial_max_old_generation_size_ * kDebugHeapSizeFactor);
+  }
+
+  void IncreaseHeapLimitForDebugging() {
     max_old_generation_size_ =
-        Max(max_old_generation_size_,
-            Min(max_limit,
-                initial_max_old_generation_size_ * kDebugHeapSizeFactor));
+        Max(max_old_generation_size_, HeapLimitForDebugging());
   }
 
   void RestoreOriginalHeapLimit() {
@@ -968,6 +976,10 @@ class Heap {
     max_old_generation_size_ =
         Min(max_old_generation_size_,
             Max(initial_max_old_generation_size_, min_limit));
+  }
+
+  bool IsHeapLimitIncreasedForDebugging() {
+    return max_old_generation_size_ == HeapLimitForDebugging();
   }
 
   // ===========================================================================
@@ -1758,6 +1770,8 @@ class Heap {
 
   void CollectGarbageOnMemoryPressure();
 
+  void InvokeOutOfMemoryCallback();
+
   // Attempt to over-approximate the weak closure by marking object groups and
   // implicit references from global handles, but don't atomically complete
   // marking. If we continue to mark incrementally, we might have marked
@@ -2167,6 +2181,9 @@ class Heap {
   // Stores the memory pressure level that set by MemoryPressureNotification
   // and reset by a mark-compact garbage collection.
   base::AtomicValue<MemoryPressureLevel> memory_pressure_level_;
+
+  v8::debug::OutOfMemoryCallback out_of_memory_callback_;
+  void* out_of_memory_callback_data_;
 
   // For keeping track of context disposals.
   int contexts_disposed_;

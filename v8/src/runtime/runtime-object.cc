@@ -19,7 +19,7 @@ MaybeHandle<Object> Runtime::GetObjectProperty(Isolate* isolate,
                                                Handle<Object> object,
                                                Handle<Object> key,
                                                bool* is_found_out) {
-  if (object->IsUndefined(isolate) || object->IsNull(isolate)) {
+  if (object->IsNullOrUndefined(isolate)) {
     THROW_NEW_ERROR(
         isolate,
         NewTypeError(MessageTemplate::kNonObjectPropertyLoad, key, object),
@@ -63,7 +63,7 @@ static MaybeHandle<Object> KeyedGetObjectProperty(Isolate* isolate,
         if (entry != GlobalDictionary::kNotFound) {
           DCHECK(dictionary->ValueAt(entry)->IsPropertyCell());
           PropertyCell* cell = PropertyCell::cast(dictionary->ValueAt(entry));
-          if (cell->property_details().type() == DATA) {
+          if (cell->property_details().kind() == kData) {
             Object* value = cell->value();
             if (!value->IsTheHole(isolate)) {
               return Handle<Object>(value, isolate);
@@ -76,7 +76,7 @@ static MaybeHandle<Object> KeyedGetObjectProperty(Isolate* isolate,
         NameDictionary* dictionary = receiver->property_dictionary();
         int entry = dictionary->FindEntry(key);
         if ((entry != NameDictionary::kNotFound) &&
-            (dictionary->DetailsAt(entry).type() == DATA)) {
+            (dictionary->DetailsAt(entry).kind() == kData)) {
           Object* value = dictionary->ValueAt(entry);
           return Handle<Object>(value, isolate);
         }
@@ -199,7 +199,7 @@ RUNTIME_FUNCTION(Runtime_ObjectHasOwnProperty) {
         key_is_array_index
             ? index < static_cast<uint32_t>(String::cast(*object)->length())
             : key->Equals(isolate->heap()->length_string()));
-  } else if (object->IsNull(isolate) || object->IsUndefined(isolate)) {
+  } else if (object->IsNullOrUndefined(isolate)) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kUndefinedOrNullToObject));
   }
@@ -222,30 +222,8 @@ RUNTIME_FUNCTION(Runtime_ObjectCreate) {
   // function's initial map from the current native context.
   // TODO(bmeurer): Use a dedicated cache for Object.create; think about
   // slack tracking for Object.create.
-  Handle<Map> map(isolate->native_context()->object_function()->initial_map(),
-                  isolate);
-  if (map->prototype() != *prototype) {
-    if (prototype->IsNull(isolate)) {
-      map = isolate->slow_object_with_null_prototype_map();
-    } else if (prototype->IsJSObject()) {
-      Handle<JSObject> js_prototype = Handle<JSObject>::cast(prototype);
-      if (!js_prototype->map()->is_prototype_map()) {
-        JSObject::OptimizeAsPrototype(js_prototype, FAST_PROTOTYPE);
-      }
-      Handle<PrototypeInfo> info =
-          Map::GetOrCreatePrototypeInfo(js_prototype, isolate);
-      // TODO(verwaest): Use inobject slack tracking for this map.
-      if (info->HasObjectCreateMap()) {
-        map = handle(info->ObjectCreateMap(), isolate);
-      } else {
-        map = Map::CopyInitialMap(map);
-        Map::SetPrototype(map, prototype, FAST_PROTOTYPE);
-        PrototypeInfo::SetObjectCreateMap(info, map);
-      }
-    } else {
-      map = Map::TransitionToPrototype(map, prototype, REGULAR_PROTOTYPE);
-    }
-  }
+  Handle<Map> map =
+      Map::GetObjectCreateMap(Handle<HeapObject>::cast(prototype));
 
   bool is_dictionary_map = map->is_dictionary_map();
   Handle<FixedArray> object_properties;
@@ -276,7 +254,7 @@ MaybeHandle<Object> Runtime::SetObjectProperty(Isolate* isolate,
                                                Handle<Object> key,
                                                Handle<Object> value,
                                                LanguageMode language_mode) {
-  if (object->IsUndefined(isolate) || object->IsNull(isolate)) {
+  if (object->IsNullOrUndefined(isolate)) {
     THROW_NEW_ERROR(
         isolate,
         NewTypeError(MessageTemplate::kNonObjectPropertyStore, key, object),
@@ -618,7 +596,7 @@ RUNTIME_FUNCTION(Runtime_IsJSGlobalProxy) {
 }
 
 static bool IsValidAccessor(Isolate* isolate, Handle<Object> obj) {
-  return obj->IsUndefined(isolate) || obj->IsCallable() || obj->IsNull(isolate);
+  return obj->IsNullOrUndefined(isolate) || obj->IsCallable();
 }
 
 
@@ -707,7 +685,7 @@ RUNTIME_FUNCTION(Runtime_GetConstructorName) {
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
 
-  CHECK(!object->IsUndefined(isolate) && !object->IsNull(isolate));
+  CHECK(!object->IsNullOrUndefined(isolate));
   Handle<JSReceiver> recv = Object::ToObject(isolate, object).ToHandleChecked();
   return *JSReceiver::GetConstructorName(recv);
 }
