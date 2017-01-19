@@ -108,6 +108,17 @@ public:
     bool trylock(Task_base *current = NULL);
     bool owned(Task_base *current = NULL);
 
+    int32_t count()
+    {
+        int32_t cnt;
+
+        m_lock.lock();
+        cnt = m_blocks.count();
+        m_lock.unlock();
+
+        return cnt;
+    }
+
 private:
     bool m_recursive;
     int32_t m_count;
@@ -149,6 +160,17 @@ public:
     void reset();
     bool isSet();
 
+    int32_t count()
+    {
+        int32_t cnt;
+
+        m_lock.lock();
+        cnt = m_blocks.count();
+        m_lock.unlock();
+
+        return cnt;
+    }
+
 private:
     bool m_set;
     spinlock m_lock;
@@ -161,6 +183,17 @@ public:
     void wait(Locker &l);
     void notify_one();
     void notify_all();
+
+    int32_t count()
+    {
+        int32_t cnt;
+
+        m_lock.lock();
+        cnt = m_blocks.count();
+        m_lock.unlock();
+
+        return cnt;
+    }
 
 private:
     spinlock m_lock;
@@ -179,6 +212,17 @@ public:
     void wait();
     void post();
     bool trywait();
+
+    int32_t count()
+    {
+        int32_t cnt;
+
+        m_lock.lock();
+        cnt = m_blocks.count();
+        m_lock.unlock();
+
+        return cnt;
+    }
 
 private:
     int32_t m_count;
