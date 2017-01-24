@@ -418,7 +418,7 @@ Maybe<bool> ValueSerializer::WriteJSReceiver(Handle<JSReceiver> receiver) {
     case JS_API_OBJECT_TYPE: {
       Handle<JSObject> js_object = Handle<JSObject>::cast(receiver);
       Map* map = js_object->map();
-      if (FLAG_expose_wasm &&
+      if (!FLAG_wasm_disable_structured_cloning &&
           map->GetConstructor() ==
               isolate_->native_context()->wasm_module_constructor()) {
         return WriteWasmModule(js_object);
@@ -1136,8 +1136,9 @@ MaybeHandle<String> ValueDeserializer::ReadUtf8String() {
   if (!ReadVarint<uint32_t>().To(&utf8_length) ||
       utf8_length >
           static_cast<uint32_t>(std::numeric_limits<int32_t>::max()) ||
-      !ReadRawBytes(utf8_length).To(&utf8_bytes))
+      !ReadRawBytes(utf8_length).To(&utf8_bytes)) {
     return MaybeHandle<String>();
+  }
   return isolate_->factory()->NewStringFromUtf8(
       Vector<const char>::cast(utf8_bytes), pretenure_);
 }
@@ -1148,16 +1149,20 @@ MaybeHandle<String> ValueDeserializer::ReadTwoByteString() {
   if (!ReadVarint<uint32_t>().To(&byte_length) ||
       byte_length >
           static_cast<uint32_t>(std::numeric_limits<int32_t>::max()) ||
-      byte_length % sizeof(uc16) != 0 || !ReadRawBytes(byte_length).To(&bytes))
+      byte_length % sizeof(uc16) != 0 ||
+      !ReadRawBytes(byte_length).To(&bytes)) {
     return MaybeHandle<String>();
+  }
 
   // Allocate an uninitialized string so that we can do a raw memcpy into the
   // string on the heap (regardless of alignment).
+  if (byte_length == 0) return isolate_->factory()->empty_string();
   Handle<SeqTwoByteString> string;
   if (!isolate_->factory()
            ->NewRawTwoByteString(byte_length / sizeof(uc16), pretenure_)
-           .ToHandle(&string))
+           .ToHandle(&string)) {
     return MaybeHandle<String>();
+  }
 
   // Copy the bytes directly into the new string.
   // Warning: this uses host endianness.
@@ -1454,8 +1459,10 @@ MaybeHandle<JSArrayBuffer> ValueDeserializer::ReadJSArrayBuffer() {
   const bool should_initialize = false;
   Handle<JSArrayBuffer> array_buffer =
       isolate_->factory()->NewJSArrayBuffer(SharedFlag::kNotShared, pretenure_);
-  JSArrayBuffer::SetupAllocatingData(array_buffer, isolate_, byte_length,
-                                     should_initialize);
+  if (!JSArrayBuffer::SetupAllocatingData(array_buffer, isolate_, byte_length,
+                                          should_initialize)) {
+    return MaybeHandle<JSArrayBuffer>();
+  }
   memcpy(array_buffer->backing_store(), position_, byte_length);
   position_ += byte_length;
   AddObjectWithID(id, array_buffer);
@@ -1525,7 +1532,7 @@ MaybeHandle<JSArrayBufferView> ValueDeserializer::ReadJSArrayBufferView(
 }
 
 MaybeHandle<JSObject> ValueDeserializer::ReadWasmModule() {
-  if (!FLAG_expose_wasm) return MaybeHandle<JSObject>();
+  if (FLAG_wasm_disable_structured_cloning) return MaybeHandle<JSObject>();
 
   Vector<const uint8_t> encoding_tag;
   if (!ReadRawBytes(sizeof(WasmEncodingTag)).To(&encoding_tag) ||
@@ -1595,6 +1602,7 @@ static void CommitProperties(Handle<JSObject> object, Handle<Map> map,
   DisallowHeapAllocation no_gc;
   DescriptorArray* descriptors = object->map()->instance_descriptors();
   for (unsigned i = 0; i < properties.size(); i++) {
+    // Initializing store.
     object->WriteToField(i, descriptors->GetDetails(i), *properties[i]);
   }
 }

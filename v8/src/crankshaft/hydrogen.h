@@ -37,8 +37,7 @@ class HCompilationJob final : public CompilationJob {
  public:
   explicit HCompilationJob(Handle<JSFunction> function)
       : CompilationJob(function->GetIsolate(), &info_, "Crankshaft"),
-        zone_(function->GetIsolate()->allocator(), ZONE_NAME),
-        parse_info_(&zone_, handle(function->shared())),
+        parse_info_(handle(function->shared())),
         info_(&parse_info_, function),
         graph_(nullptr),
         chunk_(nullptr) {}
@@ -49,7 +48,6 @@ class HCompilationJob final : public CompilationJob {
   virtual Status FinalizeJobImpl();
 
  private:
-  Zone zone_;
   ParseInfo parse_info_;
   CompilationInfo info_;
   HGraph* graph_;
@@ -2456,7 +2454,19 @@ class HOptimizedGraphBuilder : public HGraphBuilder,
           field_type_(HType::Tagged()),
           access_(HObjectAccess::ForMap()),
           lookup_type_(NOT_FOUND),
-          details_(PropertyDetails::Empty()) {}
+          details_(PropertyDetails::Empty()),
+          store_mode_(STORE_TO_INITIALIZED_ENTRY) {}
+
+    // Ensure the full store is performed.
+    void MarkAsInitializingStore() {
+      DCHECK_EQ(STORE, access_type_);
+      store_mode_ = INITIALIZING_STORE;
+    }
+
+    StoreFieldOrKeyedMode StoreMode() {
+      DCHECK_EQ(STORE, access_type_);
+      return store_mode_;
+    }
 
     // Checkes whether this PropertyAccessInfo can be handled as a monomorphic
     // load named. It additionally fills in the fields necessary to generate the
@@ -2572,6 +2582,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder,
       transition_ = handle(target);
       number_ = transition_->LastAdded();
       details_ = transition_->instance_descriptors()->GetDetails(number_);
+      MarkAsInitializingStore();
     }
     void NotFound() {
       lookup_type_ = NOT_FOUND;
@@ -2618,6 +2629,7 @@ class HOptimizedGraphBuilder : public HGraphBuilder,
     Handle<Map> transition_;
     int number_;
     PropertyDetails details_;
+    StoreFieldOrKeyedMode store_mode_;
   };
 
   HValue* BuildMonomorphicAccess(PropertyAccessInfo* info, HValue* object,

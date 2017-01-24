@@ -56,7 +56,8 @@ namespace internal {
   F(ArraySpeciesConstructor, 1, 1)   \
   F(ArrayIncludes_Slow, 3, 1)        \
   F(ArrayIndexOf, 3, 1)              \
-  F(SpreadIterablePrepare, 1, 1)
+  F(SpreadIterablePrepare, 1, 1)     \
+  F(SpreadIterableFixed, 1, 1)
 
 #define FOR_EACH_INTRINSIC_ATOMICS(F)           \
   F(ThrowNotIntegerSharedTypedArrayError, 1, 1) \
@@ -90,8 +91,7 @@ namespace internal {
   F(StoreToSuper_Sloppy, 4, 1)               \
   F(StoreKeyedToSuper_Strict, 4, 1)          \
   F(StoreKeyedToSuper_Sloppy, 4, 1)          \
-  F(GetSuperConstructor, 1, 1)               \
-  F(NewWithSpread, -1, 1)
+  F(GetSuperConstructor, 1, 1)
 
 #define FOR_EACH_INTRINSIC_COLLECTIONS(F) \
   F(StringGetRawHashField, 1, 1)          \
@@ -148,7 +148,7 @@ namespace internal {
   F(DebugGetInternalProperties, 1, 1)           \
   F(DebugGetPropertyDetails, 2, 1)              \
   F(DebugGetProperty, 2, 1)                     \
-  F(DebugPropertyTypeFromDetails, 1, 1)         \
+  F(DebugPropertyKindFromDetails, 1, 1)         \
   F(DebugPropertyAttributesFromDetails, 1, 1)   \
   F(CheckExecutionState, 1, 1)                  \
   F(GetFrameCount, 1, 1)                        \
@@ -199,6 +199,7 @@ namespace internal {
   F(DebugRecordGenerator, 1, 1)                 \
   F(DebugPushPromise, 1, 1)                     \
   F(DebugPopPromise, 0, 1)                      \
+  F(DebugPromiseReject, 2, 1)                   \
   F(DebugNextAsyncTaskId, 1, 1)                 \
   F(DebugAsyncEventEnqueueRecurring, 2, 1)      \
   F(DebugAsyncFunctionPromiseCreated, 1, 1)     \
@@ -246,6 +247,7 @@ namespace internal {
   F(GeneratorClose, 1, 1)               \
   F(GeneratorGetFunction, 1, 1)         \
   F(GeneratorGetReceiver, 1, 1)         \
+  F(GeneratorGetContext, 1, 1)          \
   F(GeneratorGetInputOrDebugPos, 1, 1)  \
   F(GeneratorGetContinuation, 1, 1)     \
   F(GeneratorGetSourcePosition, 1, 1)   \
@@ -303,13 +305,12 @@ namespace internal {
   F(NewSyntaxError, 2, 1)                           \
   F(NewTypeError, 2, 1)                             \
   F(OrdinaryHasInstance, 2, 1)                      \
-  F(PromiseReject, 3, 1)                            \
+  F(ReportPromiseReject, 2, 1)                      \
   F(PromiseHookInit, 2, 1)                          \
   F(PromiseHookResolve, 1, 1)                       \
   F(PromiseHookBefore, 1, 1)                        \
   F(PromiseHookAfter, 1, 1)                         \
   F(PromiseMarkAsHandled, 1, 1)                     \
-  F(PromiseMarkHandledHint, 1, 1)                   \
   F(PromiseRejectEventFromStack, 2, 1)              \
   F(PromiseRevokeReject, 1, 1)                      \
   F(PromiseResult, 1, 1)                            \
@@ -383,56 +384,57 @@ namespace internal {
   F(GetHoleNaNUpper, 0, 1)             \
   F(GetHoleNaNLower, 0, 1)
 
-#define FOR_EACH_INTRINSIC_OBJECT(F)                 \
-  F(GetPrototype, 1, 1)                              \
-  F(ObjectHasOwnProperty, 2, 1)                      \
-  F(ObjectCreate, 2, 1)                              \
-  F(InternalSetPrototype, 2, 1)                      \
-  F(OptimizeObjectForAddingMultipleProperties, 2, 1) \
-  F(GetProperty, 2, 1)                               \
-  F(KeyedGetProperty, 2, 1)                          \
-  F(AddNamedProperty, 4, 1)                          \
-  F(SetProperty, 4, 1)                               \
-  F(AddElement, 3, 1)                                \
-  F(AppendElement, 2, 1)                             \
-  F(DeleteProperty_Sloppy, 2, 1)                     \
-  F(DeleteProperty_Strict, 2, 1)                     \
-  F(HasProperty, 2, 1)                               \
-  F(GetOwnPropertyKeys, 2, 1)                        \
-  F(GetInterceptorInfo, 1, 1)                        \
-  F(ToFastProperties, 1, 1)                          \
-  F(AllocateHeapNumber, 0, 1)                        \
-  F(NewObject, 2, 1)                                 \
-  F(FinalizeInstanceSize, 1, 1)                      \
-  F(LoadMutableDouble, 2, 1)                         \
-  F(TryMigrateInstance, 1, 1)                        \
-  F(IsJSGlobalProxy, 1, 1)                           \
-  F(DefineAccessorPropertyUnchecked, 5, 1)           \
-  F(DefineDataPropertyInLiteral, 6, 1)               \
-  F(GetDataProperty, 2, 1)                           \
-  F(GetConstructorName, 1, 1)                        \
-  F(HasFastPackedElements, 1, 1)                     \
-  F(ValueOf, 1, 1)                                   \
-  F(IsJSReceiver, 1, 1)                              \
-  F(ClassOf, 1, 1)                                   \
-  F(CopyDataProperties, 2, 1)                        \
-  F(DefineGetterPropertyUnchecked, 4, 1)             \
-  F(DefineSetterPropertyUnchecked, 4, 1)             \
-  F(ToObject, 1, 1)                                  \
-  F(ToPrimitive, 1, 1)                               \
-  F(ToPrimitive_Number, 1, 1)                        \
-  F(ToNumber, 1, 1)                                  \
-  F(ToInteger, 1, 1)                                 \
-  F(ToLength, 1, 1)                                  \
-  F(ToString, 1, 1)                                  \
-  F(ToName, 1, 1)                                    \
-  F(SameValue, 2, 1)                                 \
-  F(SameValueZero, 2, 1)                             \
-  F(Compare, 3, 1)                                   \
-  F(HasInPrototypeChain, 2, 1)                       \
-  F(CreateIterResultObject, 2, 1)                    \
-  F(CreateKeyValueArray, 2, 1)                       \
-  F(IsAccessCheckNeeded, 1, 1)                       \
+#define FOR_EACH_INTRINSIC_OBJECT(F)                            \
+  F(GetPrototype, 1, 1)                                         \
+  F(ObjectHasOwnProperty, 2, 1)                                 \
+  F(ObjectCreate, 2, 1)                                         \
+  F(InternalSetPrototype, 2, 1)                                 \
+  F(OptimizeObjectForAddingMultipleProperties, 2, 1)            \
+  F(GetProperty, 2, 1)                                          \
+  F(KeyedGetProperty, 2, 1)                                     \
+  F(AddNamedProperty, 4, 1)                                     \
+  F(SetProperty, 4, 1)                                          \
+  F(AddElement, 3, 1)                                           \
+  F(AppendElement, 2, 1)                                        \
+  F(DeleteProperty_Sloppy, 2, 1)                                \
+  F(DeleteProperty_Strict, 2, 1)                                \
+  F(HasProperty, 2, 1)                                          \
+  F(GetOwnPropertyKeys, 2, 1)                                   \
+  F(GetInterceptorInfo, 1, 1)                                   \
+  F(ToFastProperties, 1, 1)                                     \
+  F(AllocateHeapNumber, 0, 1)                                   \
+  F(NewObject, 2, 1)                                            \
+  F(FinalizeInstanceSize, 1, 1)                                 \
+  F(LoadMutableDouble, 2, 1)                                    \
+  F(TryMigrateInstance, 1, 1)                                   \
+  F(IsJSGlobalProxy, 1, 1)                                      \
+  F(DefineAccessorPropertyUnchecked, 5, 1)                      \
+  F(DefineDataPropertyInLiteral, 6, 1)                          \
+  F(GetDataProperty, 2, 1)                                      \
+  F(GetConstructorName, 1, 1)                                   \
+  F(HasFastPackedElements, 1, 1)                                \
+  F(ValueOf, 1, 1)                                              \
+  F(IsJSReceiver, 1, 1)                                         \
+  F(ClassOf, 1, 1)                                              \
+  F(CopyDataProperties, 2, 1)                                   \
+  F(CopyDataPropertiesWithExcludedProperties, -1 /* >= 1 */, 1) \
+  F(DefineGetterPropertyUnchecked, 4, 1)                        \
+  F(DefineSetterPropertyUnchecked, 4, 1)                        \
+  F(ToObject, 1, 1)                                             \
+  F(ToPrimitive, 1, 1)                                          \
+  F(ToPrimitive_Number, 1, 1)                                   \
+  F(ToNumber, 1, 1)                                             \
+  F(ToInteger, 1, 1)                                            \
+  F(ToLength, 1, 1)                                             \
+  F(ToString, 1, 1)                                             \
+  F(ToName, 1, 1)                                               \
+  F(SameValue, 2, 1)                                            \
+  F(SameValueZero, 2, 1)                                        \
+  F(Compare, 3, 1)                                              \
+  F(HasInPrototypeChain, 2, 1)                                  \
+  F(CreateIterResultObject, 2, 1)                               \
+  F(CreateKeyValueArray, 2, 1)                                  \
+  F(IsAccessCheckNeeded, 1, 1)                                  \
   F(CreateDataProperty, 3, 1)
 
 #define FOR_EACH_INTRINSIC_OPERATORS(F) \
@@ -962,7 +964,6 @@ namespace internal {
   F(CompareIC_Miss, 3, 1)                    \
   F(ElementsTransitionAndStoreIC_Miss, 6, 1) \
   F(KeyedLoadIC_Miss, 4, 1)                  \
-  F(KeyedLoadIC_MissFromStubFailure, 4, 1)   \
   F(KeyedStoreIC_Miss, 5, 1)                 \
   F(KeyedStoreIC_Slow, 5, 1)                 \
   F(LoadElementWithInterceptor, 2, 1)        \

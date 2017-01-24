@@ -26,6 +26,9 @@ class V8_EXPORT_PRIVATE AccessBuilder final
   // Provides access to a double field identified by an external reference.
   static FieldAccess ForExternalDoubleValue();
 
+  // Provides access to a tagged field identified by an external reference.
+  static FieldAccess ForExternalTaggedValue();
+
   // Provides access to an uint8 field identified by an external reference.
   static FieldAccess ForExternalUint8Value();
 
@@ -48,6 +51,9 @@ class V8_EXPORT_PRIVATE AccessBuilder final
   static FieldAccess ForJSObjectInObjectProperty(Handle<Map> map, int index);
   static FieldAccess ForJSObjectOffset(
       int offset, WriteBarrierKind write_barrier_kind = kFullWriteBarrier);
+
+  // Provides access to JSCollecton::table() field.
+  static FieldAccess ForJSCollectionTable();
 
   // Provides access to JSFunction::prototype_or_initial_map() field.
   static FieldAccess ForJSFunctionPrototypeOrInitialMap();
@@ -168,6 +174,9 @@ class V8_EXPORT_PRIVATE AccessBuilder final
 
   // Provides access to ConsString::second() field.
   static FieldAccess ForConsStringSecond();
+
+  // Provides access to ThinString::actual() field.
+  static FieldAccess ForThinStringActual();
 
   // Provides access to SlicedString::offset() field.
   static FieldAccess ForSlicedStringOffset();

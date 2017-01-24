@@ -85,6 +85,7 @@ namespace internal {
   ASM(ConstructProxy)                                                          \
   /* ES6 section 7.3.13 Construct (F, [argumentsList], [newTarget]) */         \
   ASM(Construct)                                                               \
+  ASM(ConstructWithSpread)                                                     \
   ASM(JSConstructStubApi)                                                      \
   ASM(JSConstructStubGeneric)                                                  \
   ASM(JSBuiltinsConstructStub)                                                 \
@@ -143,6 +144,7 @@ namespace internal {
   ASM(InterpreterPushArgsAndConstruct)                                         \
   ASM(InterpreterPushArgsAndConstructFunction)                                 \
   ASM(InterpreterPushArgsAndConstructArray)                                    \
+  ASM(InterpreterPushArgsAndConstructWithFinalSpread)                          \
   ASM(InterpreterEnterBytecodeAdvance)                                         \
   ASM(InterpreterEnterBytecodeDispatch)                                        \
   ASM(InterpreterOnStackReplacement)                                           \
@@ -206,22 +208,26 @@ namespace internal {
   TFS(ToString, BUILTIN, kNoExtraICState, TypeConversion)                      \
   TFS(ToInteger, BUILTIN, kNoExtraICState, TypeConversion)                     \
   TFS(ToLength, BUILTIN, kNoExtraICState, TypeConversion)                      \
+  TFS(ClassOf, BUILTIN, kNoExtraICState, Typeof)                               \
   TFS(Typeof, BUILTIN, kNoExtraICState, Typeof)                                \
   TFS(GetSuperConstructor, BUILTIN, kNoExtraICState, TypeConversion)           \
                                                                                \
   /* Handlers */                                                               \
-  TFS(KeyedLoadIC_Megamorphic_TF, KEYED_LOAD_IC, kNoExtraICState,              \
-      LoadWithVector)                                                          \
+  TFS(LoadICProtoArray, HANDLER, Code::LOAD_IC, LoadICProtoArray)              \
+  TFS(LoadICProtoArrayThrowIfNonexistent, HANDLER, Code::LOAD_IC,              \
+      LoadICProtoArray)                                                        \
+  TFS(KeyedLoadIC_Megamorphic, KEYED_LOAD_IC, kNoExtraICState, LoadWithVector) \
   TFS(KeyedLoadIC_Miss, BUILTIN, kNoExtraICState, LoadWithVector)              \
   TFS(KeyedLoadIC_Slow, HANDLER, Code::KEYED_LOAD_IC, LoadWithVector)          \
-  TFS(KeyedStoreIC_Megamorphic_TF, KEYED_STORE_IC, kNoExtraICState,            \
+  TFS(KeyedStoreIC_Megamorphic, KEYED_STORE_IC, kNoExtraICState,               \
       StoreWithVector)                                                         \
-  TFS(KeyedStoreIC_Megamorphic_Strict_TF, KEYED_STORE_IC,                      \
+  TFS(KeyedStoreIC_Megamorphic_Strict, KEYED_STORE_IC,                         \
       StoreICState::kStrictModeState, StoreWithVector)                         \
   ASM(KeyedStoreIC_Miss)                                                       \
   ASH(KeyedStoreIC_Slow, HANDLER, Code::KEYED_STORE_IC)                        \
   TFS(LoadGlobalIC_Miss, BUILTIN, kNoExtraICState, LoadGlobalWithVector)       \
   TFS(LoadGlobalIC_Slow, HANDLER, Code::LOAD_GLOBAL_IC, LoadGlobalWithVector)  \
+  TFS(LoadField, HANDLER, Code::LOAD_IC, LoadField)                            \
   ASH(LoadIC_Getter_ForDeopt, LOAD_IC, kNoExtraICState)                        \
   TFS(LoadIC_Miss, BUILTIN, kNoExtraICState, LoadWithVector)                   \
   TFS(LoadIC_Normal, HANDLER, Code::LOAD_IC, LoadWithVector)                   \
@@ -271,6 +277,14 @@ namespace internal {
   CPP(ArrayBufferConstructor_ConstructStub)                                    \
   CPP(ArrayBufferPrototypeGetByteLength)                                       \
   CPP(ArrayBufferIsView)                                                       \
+                                                                               \
+  /* AsyncFunction */                                                          \
+  TFJ(AsyncFunctionAwaitCaught, 3)                                             \
+  TFJ(AsyncFunctionAwaitUncaught, 3)                                           \
+  TFJ(AsyncFunctionAwaitRejectClosure, 1)                                      \
+  TFJ(AsyncFunctionAwaitResolveClosure, 1)                                     \
+  TFJ(AsyncFunctionPromiseCreate, 0)                                           \
+  TFJ(AsyncFunctionPromiseRelease, 1)                                          \
                                                                                \
   /* Boolean */                                                                \
   CPP(BooleanConstructor)                                                      \
@@ -633,12 +647,12 @@ namespace internal {
   TFJ(PromiseRejectClosure, 1)                                                 \
   TFJ(PromiseThen, 2)                                                          \
   TFJ(PromiseCatch, 1)                                                         \
-  TFJ(PerformPromiseThen, 4)                                                   \
   TFJ(ResolvePromise, 2)                                                       \
   TFS(PromiseHandleReject, BUILTIN, kNoExtraICState, PromiseHandleReject)      \
   TFJ(PromiseHandle, 5)                                                        \
   TFJ(PromiseResolve, 1)                                                       \
   TFJ(PromiseReject, 1)                                                        \
+  TFJ(InternalPromiseReject, 3)                                                \
                                                                                \
   /* Proxy */                                                                  \
   CPP(ProxyConstructor)                                                        \
@@ -791,6 +805,7 @@ namespace internal {
 
 // Forward declarations.
 class ObjectVisitor;
+enum class PushArgsConstructMode : unsigned;
 namespace compiler {
 class CodeAssemblerState;
 }
@@ -835,7 +850,7 @@ class Builtins {
   Handle<Code> InterpreterPushArgsAndCall(
       TailCallMode tail_call_mode,
       CallableType function_type = CallableType::kAny);
-  Handle<Code> InterpreterPushArgsAndConstruct(CallableType function_type);
+  Handle<Code> InterpreterPushArgsAndConstruct(PushArgsConstructMode mode);
   Handle<Code> NewFunctionContext(ScopeType scope_type);
   Handle<Code> NewCloneShallowArray(AllocationSiteMode allocation_mode);
   Handle<Code> NewCloneShallowObject(int length);
@@ -893,7 +908,7 @@ class Builtins {
       CallableType function_type);
 
   static void Generate_InterpreterPushArgsAndConstructImpl(
-      MacroAssembler* masm, CallableType function_type);
+      MacroAssembler* masm, PushArgsConstructMode mode);
 
   enum class MathMaxMinKind { kMax, kMin };
   static void Generate_MathMaxMin(MacroAssembler* masm, MathMaxMinKind kind);

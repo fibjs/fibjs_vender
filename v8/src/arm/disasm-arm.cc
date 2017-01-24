@@ -1861,7 +1861,7 @@ static const char* const barrier_option_names[] = {
 void Decoder::DecodeSpecialCondition(Instruction* instr) {
   switch (instr->SpecialValue()) {
     case 4:
-      if (instr->Bits(21, 20) == 2 && instr->Bits(11, 8) == 1 &&
+      if (instr->Bits(11, 8) == 1 && instr->Bits(21, 20) == 2 &&
           instr->Bit(6) == 1 && instr->Bit(4) == 1) {
         int Vd = instr->VFPDRegValue(kSimd128Precision);
         int Vm = instr->VFPMRegValue(kSimd128Precision);
@@ -1902,7 +1902,7 @@ void Decoder::DecodeSpecialCondition(Instruction* instr) {
         // vmul.i<size> Qd, Qm, Qn.
         out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "vmul.i%d q%d, q%d, q%d", size, Vd, Vn, Vm);
-      } else if (instr->Bits(21, 20) == 0 && instr->Bits(11, 8) == 0xe &&
+      } else if (instr->Bits(11, 8) == 0xe && instr->Bits(21, 20) == 0 &&
                  instr->Bit(4) == 0) {
         int Vd = instr->VFPDRegValue(kSimd128Precision);
         int Vm = instr->VFPMRegValue(kSimd128Precision);
@@ -1928,15 +1928,32 @@ void Decoder::DecodeSpecialCondition(Instruction* instr) {
         out_buffer_pos_ +=
             SNPrintF(out_buffer_ + out_buffer_pos_, "%s.s%d q%d, q%d, q%d", op,
                      size, Vd, Vn, Vm);
-      } else if (instr->Bit(20) == 0 && instr->Bits(11, 8) == 0xf &&
-                 instr->Bit(6) == 1 && instr->Bit(4) == 1) {
+      } else if (instr->Bits(11, 8) == 0xf && instr->Bit(20) == 0 &&
+                 instr->Bit(6) == 1) {
         int Vd = instr->VFPDRegValue(kSimd128Precision);
         int Vm = instr->VFPMRegValue(kSimd128Precision);
         int Vn = instr->VFPNRegValue(kSimd128Precision);
-        const char* op = instr->Bit(21) == 0 ? "vrecps" : "vrsqrts";
-        // vrecps/vrsqrts.f32 Qd, Qm, Qn.
-        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
-                                    "%s.f32 q%d, q%d, q%d", op, Vd, Vn, Vm);
+        if (instr->Bit(4) == 1) {
+          // vrecps/vrsqrts.f32 Qd, Qm, Qn.
+          const char* op = instr->Bit(21) == 0 ? "vrecps" : "vrsqrts";
+          out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
+                                      "%s.f32 q%d, q%d, q%d", op, Vd, Vn, Vm);
+        } else {
+          // vmin/max.f32 Qd, Qm, Qn.
+          const char* op = instr->Bit(21) == 1 ? "vmin" : "vmax";
+          out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
+                                      "%s.f32 q%d, q%d, q%d", op, Vd, Vn, Vm);
+        }
+      } else if (instr->Bits(11, 8) == 0x6) {
+        int size = kBitsPerByte * (1 << instr->Bits(21, 20));
+        int Vd = instr->VFPDRegValue(kSimd128Precision);
+        int Vm = instr->VFPMRegValue(kSimd128Precision);
+        int Vn = instr->VFPNRegValue(kSimd128Precision);
+        // vmin/vmax.s<size> Qd, Qm, Qn.
+        const char* op = instr->Bit(4) == 1 ? "vmin" : "vmax";
+        out_buffer_pos_ +=
+            SNPrintF(out_buffer_ + out_buffer_pos_, "%s.s%d q%d, q%d, q%d", op,
+                     size, Vd, Vn, Vm);
       } else {
         Unknown(instr);
       }
@@ -1979,14 +1996,14 @@ void Decoder::DecodeSpecialCondition(Instruction* instr) {
               SNPrintF(out_buffer_ + out_buffer_pos_, "vceq.i%d q%d, q%d, q%d",
                        size, Vd, Vn, Vm);
         }
-      } else if (instr->Bits(21, 20) == 1 && instr->Bits(11, 8) == 1 &&
+      } else if (instr->Bits(11, 8) == 1 && instr->Bits(21, 20) == 1 &&
                  instr->Bit(4) == 1) {
         int Vd = instr->VFPDRegValue(kSimd128Precision);
         int Vm = instr->VFPMRegValue(kSimd128Precision);
         int Vn = instr->VFPNRegValue(kSimd128Precision);
         out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "vbsl q%d, q%d, q%d", Vd, Vn, Vm);
-      } else if (instr->Bits(21, 20) == 0 && instr->Bits(11, 8) == 1 &&
+      } else if (instr->Bits(11, 8) == 1 && instr->Bits(21, 20) == 0 &&
                  instr->Bit(4) == 1) {
         if (instr->Bit(6) == 0) {
           // veor Dd, Dn, Dm
@@ -2004,7 +2021,7 @@ void Decoder::DecodeSpecialCondition(Instruction* instr) {
           out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
                                       "veor q%d, q%d, q%d", Vd, Vn, Vm);
         }
-      } else if (instr->Bit(21) == 0 && instr->Bits(11, 8) == 0xd &&
+      } else if (instr->Bits(11, 8) == 0xd && instr->Bit(21) == 0 &&
                  instr->Bit(6) == 1 && instr->Bit(4) == 1) {
         // vmul.f32 Qd, Qn, Qm
         int Vd = instr->VFPDRegValue(kSimd128Precision);
@@ -2012,7 +2029,7 @@ void Decoder::DecodeSpecialCondition(Instruction* instr) {
         int Vm = instr->VFPMRegValue(kSimd128Precision);
         out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_,
                                     "vmul.f32 q%d, q%d, q%d", Vd, Vn, Vm);
-      } else if (instr->Bit(20) == 0 && instr->Bits(11, 8) == 0xe &&
+      } else if (instr->Bits(11, 8) == 0xe && instr->Bit(20) == 0 &&
                  instr->Bit(4) == 0) {
         int Vd = instr->VFPDRegValue(kSimd128Precision);
         int Vm = instr->VFPMRegValue(kSimd128Precision);
@@ -2028,6 +2045,16 @@ void Decoder::DecodeSpecialCondition(Instruction* instr) {
         int Vn = instr->VFPNRegValue(kSimd128Precision);
         const char* op = (instr->Bit(4) == 1) ? "vcge" : "vcgt";
         // vcge/vcgt.u<size> Qd, Qm, Qn.
+        out_buffer_pos_ +=
+            SNPrintF(out_buffer_ + out_buffer_pos_, "%s.u%d q%d, q%d, q%d", op,
+                     size, Vd, Vn, Vm);
+      } else if (instr->Bits(11, 8) == 0x6) {
+        int size = kBitsPerByte * (1 << instr->Bits(21, 20));
+        int Vd = instr->VFPDRegValue(kSimd128Precision);
+        int Vm = instr->VFPMRegValue(kSimd128Precision);
+        int Vn = instr->VFPNRegValue(kSimd128Precision);
+        // vmin/vmax.u<size> Qd, Qm, Qn.
+        const char* op = instr->Bit(4) == 1 ? "vmin" : "vmax";
         out_buffer_pos_ +=
             SNPrintF(out_buffer_ + out_buffer_pos_, "%s.u%d q%d, q%d, q%d", op,
                      size, Vd, Vn, Vm);

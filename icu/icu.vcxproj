@@ -814,7 +814,7 @@
     <ClCompile Include="src\stubdata.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{1F77AB58-706B-4BB5-BE73-0000031ccccc}</ProjectGuid>
+    <ProjectGuid>{1F77AB58-706B-4BB5-BE73-0000031CCCCC}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>icu</RootNamespace>
   </PropertyGroup>

@@ -185,6 +185,31 @@ Handle<FixedArray> Factory::NewUninitializedFixedArray(int size) {
       FixedArray);
 }
 
+Handle<BoilerplateDescription> Factory::NewBoilerplateDescription(
+    int boilerplate, int all_properties, bool has_seen_proto) {
+  DCHECK_GE(all_properties, boilerplate);
+
+  int backing_store_size = all_properties - (has_seen_proto ? 1 : 0);
+  DCHECK_GE(backing_store_size, 0);
+  bool has_different_size_backing_store = boilerplate != backing_store_size;
+
+  // Space for name and value for every boilerplate property.
+  int size = 2 * boilerplate;
+
+  if (has_different_size_backing_store) {
+    // An extra entry for the backing store size.
+    size++;
+  }
+
+  Handle<BoilerplateDescription> description =
+      Handle<BoilerplateDescription>::cast(NewFixedArray(size, TENURED));
+
+  if (has_different_size_backing_store) {
+    DCHECK((boilerplate != all_properties) || has_seen_proto);
+    description->set_backing_store_size(isolate(), backing_store_size);
+  }
+  return description;
+}
 
 Handle<FixedArrayBase> Factory::NewFixedDoubleArray(int size,
                                                     PretenureFlag pretenure) {
@@ -278,6 +303,7 @@ Handle<String> Factory::InternalizeStringWithKey(StringTableKey* key) {
 MaybeHandle<String> Factory::NewStringFromOneByte(Vector<const uint8_t> string,
                                                   PretenureFlag pretenure) {
   int length = string.length();
+  if (length == 0) return empty_string();
   if (length == 1) return LookupSingleCharacterStringFromCode(string[0]);
   Handle<SeqOneByteString> result;
   ASSIGN_RETURN_ON_EXCEPTION(
@@ -371,6 +397,7 @@ MaybeHandle<String> Factory::NewStringFromUtf8SubString(
 MaybeHandle<String> Factory::NewStringFromTwoByte(const uc16* string,
                                                   int length,
                                                   PretenureFlag pretenure) {
+  if (length == 0) return empty_string();
   if (String::IsOneByte(string, length)) {
     if (length == 1) return LookupSingleCharacterStringFromCode(string[0]);
     Handle<SeqOneByteString> result;
@@ -455,39 +482,63 @@ Handle<String> Factory::NewInternalizedStringImpl(
       String);
 }
 
+namespace {
+
+MaybeHandle<Map> GetInternalizedStringMap(Factory* f, Handle<String> string) {
+  switch (string->map()->instance_type()) {
+    case STRING_TYPE:
+      return f->internalized_string_map();
+    case ONE_BYTE_STRING_TYPE:
+      return f->one_byte_internalized_string_map();
+    case EXTERNAL_STRING_TYPE:
+      return f->external_internalized_string_map();
+    case EXTERNAL_ONE_BYTE_STRING_TYPE:
+      return f->external_one_byte_internalized_string_map();
+    case EXTERNAL_STRING_WITH_ONE_BYTE_DATA_TYPE:
+      return f->external_internalized_string_with_one_byte_data_map();
+    case SHORT_EXTERNAL_STRING_TYPE:
+      return f->short_external_internalized_string_map();
+    case SHORT_EXTERNAL_ONE_BYTE_STRING_TYPE:
+      return f->short_external_one_byte_internalized_string_map();
+    case SHORT_EXTERNAL_STRING_WITH_ONE_BYTE_DATA_TYPE:
+      return f->short_external_internalized_string_with_one_byte_data_map();
+    default: return MaybeHandle<Map>();  // No match found.
+  }
+}
+
+}  // namespace
+
 MaybeHandle<Map> Factory::InternalizedStringMapForString(
     Handle<String> string) {
   // If the string is in new space it cannot be used as internalized.
   if (isolate()->heap()->InNewSpace(*string)) return MaybeHandle<Map>();
 
-  // Find the corresponding internalized string map for strings.
-  switch (string->map()->instance_type()) {
-    case STRING_TYPE:
-      return internalized_string_map();
-    case ONE_BYTE_STRING_TYPE:
-      return one_byte_internalized_string_map();
-    case EXTERNAL_STRING_TYPE:
-      return external_internalized_string_map();
-    case EXTERNAL_ONE_BYTE_STRING_TYPE:
-      return external_one_byte_internalized_string_map();
-    case EXTERNAL_STRING_WITH_ONE_BYTE_DATA_TYPE:
-      return external_internalized_string_with_one_byte_data_map();
-    case SHORT_EXTERNAL_STRING_TYPE:
-      return short_external_internalized_string_map();
-    case SHORT_EXTERNAL_ONE_BYTE_STRING_TYPE:
-      return short_external_one_byte_internalized_string_map();
-    case SHORT_EXTERNAL_STRING_WITH_ONE_BYTE_DATA_TYPE:
-      return short_external_internalized_string_with_one_byte_data_map();
-    default: return MaybeHandle<Map>();  // No match found.
-  }
+  return GetInternalizedStringMap(this, string);
 }
 
+template <class StringClass>
+Handle<StringClass> Factory::InternalizeExternalString(Handle<String> string) {
+  Handle<StringClass> cast_string = Handle<StringClass>::cast(string);
+  Handle<Map> map = GetInternalizedStringMap(this, string).ToHandleChecked();
+  Handle<StringClass> external_string = New<StringClass>(map, OLD_SPACE);
+  external_string->set_length(cast_string->length());
+  external_string->set_hash_field(cast_string->hash_field());
+  external_string->set_resource(nullptr);
+  isolate()->heap()->RegisterExternalString(*external_string);
+  return external_string;
+}
+
+template Handle<ExternalOneByteString>
+    Factory::InternalizeExternalString<ExternalOneByteString>(Handle<String>);
+template Handle<ExternalTwoByteString>
+    Factory::InternalizeExternalString<ExternalTwoByteString>(Handle<String>);
 
 MaybeHandle<SeqOneByteString> Factory::NewRawOneByteString(
     int length, PretenureFlag pretenure) {
   if (length > String::kMaxLength || length < 0) {
     THROW_NEW_ERROR(isolate(), NewInvalidStringLengthError(), SeqOneByteString);
   }
+  DCHECK(length > 0);  // Use Factory::empty_string() instead.
   CALL_HEAP_FUNCTION(
       isolate(),
       isolate()->heap()->AllocateRawOneByteString(length, pretenure),
@@ -500,6 +551,7 @@ MaybeHandle<SeqTwoByteString> Factory::NewRawTwoByteString(
   if (length > String::kMaxLength || length < 0) {
     THROW_NEW_ERROR(isolate(), NewInvalidStringLengthError(), SeqTwoByteString);
   }
+  DCHECK(length > 0);  // Use Factory::empty_string() instead.
   CALL_HEAP_FUNCTION(
       isolate(),
       isolate()->heap()->AllocateRawTwoByteString(length, pretenure),
@@ -588,6 +640,12 @@ Handle<String> ConcatStringContent(Handle<StringType> result,
 
 MaybeHandle<String> Factory::NewConsString(Handle<String> left,
                                            Handle<String> right) {
+  if (left->IsThinString()) {
+    left = handle(Handle<ThinString>::cast(left)->actual(), isolate());
+  }
+  if (right->IsThinString()) {
+    right = handle(Handle<ThinString>::cast(right)->actual(), isolate());
+  }
   int left_length = left->length();
   if (left_length == 0) return right;
   int right_length = right->length();
@@ -998,36 +1056,11 @@ Handle<Context> Factory::NewBlockContext(Handle<JSFunction> function,
   return context;
 }
 
-Handle<Context> Factory::NewPromiseResolvingFunctionContext(int length) {
-  DCHECK_GE(length, Context::MIN_CONTEXT_SLOTS);
-  Handle<FixedArray> array = NewFixedArray(length);
-  array->set_map_no_write_barrier(*function_context_map());
-  Handle<Context> context = Handle<Context>::cast(array);
-  context->set_extension(*the_hole_value());
-  return context;
-}
-
 Handle<Struct> Factory::NewStruct(InstanceType type) {
   CALL_HEAP_FUNCTION(
       isolate(),
       isolate()->heap()->AllocateStruct(type),
       Struct);
-}
-
-Handle<PromiseReactionJobInfo> Factory::NewPromiseReactionJobInfo(
-    Handle<Object> value, Handle<Object> tasks, Handle<Object> deferred_promise,
-    Handle<Object> deferred_on_resolve, Handle<Object> deferred_on_reject,
-    Handle<Context> context) {
-  Handle<PromiseReactionJobInfo> result = Handle<PromiseReactionJobInfo>::cast(
-      NewStruct(PROMISE_REACTION_JOB_INFO_TYPE));
-  result->set_value(*value);
-  result->set_tasks(*tasks);
-  result->set_deferred_promise(*deferred_promise);
-  result->set_deferred_on_resolve(*deferred_on_resolve);
-  result->set_deferred_on_reject(*deferred_on_reject);
-  result->set_debug_id(kDebugPromiseFirstID);
-  result->set_context(*context);
-  return result;
 }
 
 Handle<AliasedArgumentsEntry> Factory::NewAliasedArgumentsEntry(
@@ -1409,6 +1442,7 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
       map.is_identical_to(isolate()->strict_function_without_prototype_map()) ||
       // TODO(titzer): wasm_function_map() could be undefined here. ugly.
       (*map == context->get(Context::WASM_FUNCTION_MAP_INDEX)) ||
+      (*map == context->get(Context::NATIVE_FUNCTION_MAP_INDEX)) ||
       map.is_identical_to(isolate()->proxy_function_map()));
   return NewFunction(map, info, context);
 }
@@ -1853,8 +1887,8 @@ Handle<JSModuleNamespace> Factory::NewJSModuleNamespace() {
       Handle<JSModuleNamespace>::cast(NewJSObjectFromMap(map)));
   FieldIndex index = FieldIndex::ForDescriptor(
       *map, JSModuleNamespace::kToStringTagFieldIndex);
-  Handle<String> to_string_value = NewStringFromAsciiChecked("Module");
-  module_namespace->FastPropertyAtPut(index, *to_string_value);
+  module_namespace->FastPropertyAtPut(index,
+                                      isolate()->heap()->Module_string());
   return module_namespace;
 }
 
@@ -2503,6 +2537,13 @@ Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
   return debug_info;
 }
 
+Handle<BreakPointInfo> Factory::NewBreakPointInfo(int source_position) {
+  Handle<BreakPointInfo> new_break_point_info =
+      Handle<BreakPointInfo>::cast(NewStruct(BREAK_POINT_INFO_TYPE));
+  new_break_point_info->set_source_position(source_position);
+  new_break_point_info->set_break_point_objects(*undefined_value());
+  return new_break_point_info;
+}
 
 Handle<JSObject> Factory::NewArgumentsObject(Handle<JSFunction> callee,
                                              int length) {

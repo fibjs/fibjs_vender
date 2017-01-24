@@ -1096,7 +1096,15 @@ void Interpreter::DoCompareOpWithFeedback(Token::Value compare_op,
         __ Goto(&gather_rhs_type);
 
         __ Bind(&lhs_is_not_string);
-        var_type_feedback.Bind(__ SmiConstant(CompareOperationFeedback::kAny));
+        if (Token::IsEqualityOp(compare_op)) {
+          var_type_feedback.Bind(__ SelectSmiConstant(
+              __ IsJSReceiverInstanceType(lhs_instance_type),
+              CompareOperationFeedback::kReceiver,
+              CompareOperationFeedback::kAny));
+        } else {
+          var_type_feedback.Bind(
+              __ SmiConstant(CompareOperationFeedback::kAny));
+        }
         __ Goto(&gather_rhs_type);
       }
     }
@@ -1161,8 +1169,17 @@ void Interpreter::DoCompareOpWithFeedback(Token::Value compare_op,
           __ Goto(&update_feedback);
 
           __ Bind(&rhs_is_not_string);
-          var_type_feedback.Bind(
-              __ SmiConstant(CompareOperationFeedback::kAny));
+          if (Token::IsEqualityOp(compare_op)) {
+            var_type_feedback.Bind(
+                __ SmiOr(var_type_feedback.value(),
+                         __ SelectSmiConstant(
+                             __ IsJSReceiverInstanceType(rhs_instance_type),
+                             CompareOperationFeedback::kReceiver,
+                             CompareOperationFeedback::kAny)));
+          } else {
+            var_type_feedback.Bind(
+                __ SmiConstant(CompareOperationFeedback::kAny));
+          }
           __ Goto(&update_feedback);
         }
       }
@@ -2159,22 +2176,22 @@ void Interpreter::DoCallJSRuntime(InterpreterAssembler* assembler) {
   __ Dispatch();
 }
 
-// NewWithSpread <first_arg> <arg_count>
+// NewWithSpread <constructor> <first_arg> <arg_count>
 //
-// Call the constructor in |first_arg| with the new.target in |first_arg + 1|
-// for the |arg_count - 2| following arguments. The final argument is always a
-// spread.
+// Call the constructor in |constructor| with the first argument in register
+// |first_arg| and |arg_count| arguments in subsequent registers. The final
+// argument is always a spread. The new.target is in the accumulator.
 //
 void Interpreter::DoNewWithSpread(InterpreterAssembler* assembler) {
-  Node* first_arg_reg = __ BytecodeOperandReg(0);
+  Node* new_target = __ GetAccumulator();
+  Node* constructor_reg = __ BytecodeOperandReg(0);
+  Node* constructor = __ LoadRegister(constructor_reg);
+  Node* first_arg_reg = __ BytecodeOperandReg(1);
   Node* first_arg = __ RegisterLocation(first_arg_reg);
-  Node* args_count = __ BytecodeOperandCount(1);
+  Node* args_count = __ BytecodeOperandCount(2);
   Node* context = __ GetContext();
-
-  // Call into Runtime function NewWithSpread which does everything.
-  Node* runtime_function = __ Int32Constant(Runtime::kNewWithSpread);
-  Node* result =
-      __ CallRuntimeN(runtime_function, context, first_arg, args_count);
+  Node* result = __ CallConstructWithSpread(constructor, context, new_target,
+                                            first_arg, args_count);
   __ SetAccumulator(result);
   __ Dispatch();
 }

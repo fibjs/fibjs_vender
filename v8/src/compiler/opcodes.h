@@ -120,6 +120,7 @@
   V(JSToString)
 
 #define JS_OTHER_UNOP_LIST(V) \
+  V(JSClassOf)                \
   V(JSTypeOf)
 
 #define JS_SIMPLE_UNOP_LIST(V) \
@@ -308,6 +309,7 @@
   V(CheckMaps)                      \
   V(CheckNumber)                    \
   V(CheckInternalizedString)        \
+  V(CheckReceiver)                  \
   V(CheckString)                    \
   V(CheckSmi)                       \
   V(CheckHeapObject)                \
@@ -324,6 +326,7 @@
   V(StoreElement)                   \
   V(StoreTypedElement)              \
   V(ObjectIsCallable)               \
+  V(ObjectIsNonCallable)            \
   V(ObjectIsNumber)                 \
   V(ObjectIsReceiver)               \
   V(ObjectIsSmi)                    \

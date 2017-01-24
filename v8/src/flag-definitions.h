@@ -193,19 +193,20 @@ DEFINE_IMPLICATION(es_staging, harmony_regexp_lookbehind)
 DEFINE_IMPLICATION(es_staging, move_object_start)
 
 // Features that are still work in progress (behind individual flags).
-#define HARMONY_INPROGRESS(V)                                           \
-  V(harmony_array_prototype_values, "harmony Array.prototype.values")   \
-  V(harmony_function_sent, "harmony function.sent")                     \
-  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")             \
-  V(harmony_simd, "harmony simd")                                       \
-  V(harmony_do_expressions, "harmony do-expressions")                   \
-  V(harmony_regexp_named_captures, "harmony regexp named captures")     \
-  V(harmony_regexp_property, "harmony unicode regexp property classes") \
-  V(harmony_class_fields, "harmony public fields in class literals")    \
-  V(harmony_object_spread, "harmony object spread")
+#define HARMONY_INPROGRESS(V)                                            \
+  V(harmony_array_prototype_values, "harmony Array.prototype.values")    \
+  V(harmony_function_sent, "harmony function.sent")                      \
+  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")              \
+  V(harmony_simd, "harmony simd")                                        \
+  V(harmony_do_expressions, "harmony do-expressions")                    \
+  V(harmony_regexp_named_captures, "harmony regexp named captures")      \
+  V(harmony_regexp_property, "harmony unicode regexp property classes")  \
+  V(harmony_class_fields, "harmony public fields in class literals")     \
+  V(harmony_object_rest_spread, "harmony object rest spread properties") \
+  V(harmony_async_iteration, "harmony async iteration")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
-#define HARMONY_STAGED_BASE(V)                              \
+#define HARMONY_STAGED(V)                                   \
   V(harmony_regexp_lookbehind, "harmony regexp lookbehind") \
   V(harmony_restrictive_generators,                         \
     "harmony restrictions on generator declarations")       \
@@ -213,21 +214,14 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
   V(harmony_trailing_commas,                                \
     "harmony trailing commas in function parameter lists")
 
-#ifdef V8_I18N_SUPPORT
-#define HARMONY_STAGED(V)                                          \
-  HARMONY_STAGED_BASE(V)                                           \
-  V(icu_case_mapping, "case mapping with ICU rather than Unibrow")
-#else
-#define HARMONY_STAGED(V) HARMONY_STAGED_BASE(V)
-#endif
-
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING_BASE(V)
 
 #ifdef V8_I18N_SUPPORT
-#define HARMONY_SHIPPING(V) \
-  HARMONY_SHIPPING_BASE(V)  \
-  V(datetime_format_to_parts, "Intl.DateTimeFormat.formatToParts")
+#define HARMONY_SHIPPING(V)                                        \
+  HARMONY_SHIPPING_BASE(V)                                         \
+  V(datetime_format_to_parts, "Intl.DateTimeFormat.formatToParts") \
+  V(icu_case_mapping, "case mapping with ICU rather than Unibrow")
 #else
 #define HARMONY_SHIPPING(V) HARMONY_SHIPPING_BASE(V)
 #endif
@@ -258,7 +252,16 @@ HARMONY_SHIPPING(FLAG_SHIPPING_FEATURES)
 DEFINE_BOOL(future, false,
             "Implies all staged features that we want to ship in the "
             "not-too-far future")
-DEFINE_IMPLICATION(future, ignition_staging)
+DEFINE_IMPLICATION(future, turbo)
+
+DEFINE_IMPLICATION(turbo, ignition_staging)
+
+// TODO(rmcilroy): Remove ignition-staging and set these implications directly
+// with the turbo flag.
+DEFINE_BOOL(ignition_staging, false, "use ignition with all staged features")
+DEFINE_IMPLICATION(ignition_staging, ignition)
+DEFINE_IMPLICATION(ignition_staging, compiler_dispatcher)
+DEFINE_IMPLICATION(ignition_staging, validate_asm)
 
 // Flags for experimental implementation features.
 DEFINE_BOOL(allocation_site_pretenuring, true,
@@ -300,9 +303,6 @@ DEFINE_BOOL(string_slices, true, "use string slices")
 
 // Flags for Ignition.
 DEFINE_BOOL(ignition, false, "use ignition interpreter")
-DEFINE_BOOL(ignition_staging, false, "use ignition with all staged features")
-DEFINE_IMPLICATION(ignition_staging, ignition)
-DEFINE_IMPLICATION(ignition_staging, compiler_dispatcher)
 DEFINE_STRING(ignition_filter, "*", "filter for ignition interpreter")
 DEFINE_BOOL(ignition_deadcode, true,
             "use ignition dead code elimination optimizer")
@@ -434,7 +434,6 @@ DEFINE_BOOL(turbo_sp_frame_access, false,
             "use stack pointer-relative access to frame wherever possible")
 DEFINE_BOOL(turbo_preprocess_ranges, true,
             "run pre-register allocation heuristics")
-DEFINE_BOOL(turbo_loop_stackcheck, true, "enable stack checks in loops")
 DEFINE_STRING(turbo_filter, "~~", "optimization filter for TurboFan compiler")
 DEFINE_BOOL(trace_turbo, false, "trace generated TurboFan IR")
 DEFINE_BOOL(trace_turbo_graph, false, "trace generated TurboFan graphs")
@@ -499,6 +498,8 @@ DEFINE_NEG_IMPLICATION(minimal, use_ic)
 
 // Flags for native WebAssembly.
 DEFINE_BOOL(expose_wasm, true, "expose WASM interface to JavaScript")
+DEFINE_BOOL(wasm_disable_structured_cloning, false,
+            "disable WASM structured cloning")
 DEFINE_INT(wasm_num_compilation_tasks, 10,
            "number of parallel compilation tasks for wasm")
 DEFINE_BOOL(trace_wasm_encoder, false, "trace encoding of wasm code")
@@ -519,8 +520,7 @@ DEFINE_BOOL(wasm_break_on_decoder_error, false,
 DEFINE_BOOL(wasm_loop_assignment_analysis, true,
             "perform loop assignment analysis for WASM")
 
-DEFINE_BOOL(validate_asm, true, "validate asm.js modules before compiling")
-DEFINE_IMPLICATION(ignition_staging, validate_asm)
+DEFINE_BOOL(validate_asm, false, "validate asm.js modules before compiling")
 DEFINE_BOOL(suppress_asm_messages, false,
             "don't emit asm.js related messages (for golden file testing)")
 DEFINE_BOOL(trace_asm_time, false, "log asm.js timing info to the console")

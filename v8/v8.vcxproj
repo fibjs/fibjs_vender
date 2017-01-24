@@ -116,6 +116,7 @@
     <ClInclude Include="src\bignum.h" />
     <ClInclude Include="src\bit-vector.h" />
     <ClInclude Include="src\bootstrapper.h" />
+    <ClInclude Include="src\builtins\builtins-async.h" />
     <ClInclude Include="src\builtins\builtins-constructor.h" />
     <ClInclude Include="src\builtins\builtins-promise.h" />
     <ClInclude Include="src\builtins\builtins-utils.h" />
@@ -339,6 +340,7 @@
     <ClInclude Include="src\factory.h" />
     <ClInclude Include="src\fast-accessor-assembler.h" />
     <ClInclude Include="src\fast-dtoa.h" />
+    <ClInclude Include="src\ffi\ffi-compiler.h" />
     <ClInclude Include="src\field-index-inl.h" />
     <ClInclude Include="src\field-index.h" />
     <ClInclude Include="src\field-type.h" />
@@ -382,6 +384,7 @@
     <ClInclude Include="src\heap\spaces-inl.h" />
     <ClInclude Include="src\heap\spaces.h" />
     <ClInclude Include="src\heap\store-buffer.h" />
+    <ClInclude Include="src\i18n.h" />
     <ClInclude Include="src\ia32\assembler-ia32-inl.h" />
     <ClInclude Include="src\ia32\assembler-ia32.h" />
     <ClInclude Include="src\ia32\code-stubs-ia32.h" />
@@ -391,7 +394,6 @@
     <ClInclude Include="src\ia32\simulator-ia32.h" />
     <ClInclude Include="src\ic\access-compiler-data.h" />
     <ClInclude Include="src\ic\access-compiler.h" />
-    <ClInclude Include="src\ic\accessor-assembler-impl.h" />
     <ClInclude Include="src\ic\accessor-assembler.h" />
     <ClInclude Include="src\ic\call-optimization.h" />
     <ClInclude Include="src\ic\handler-compiler.h" />
@@ -437,6 +439,7 @@
     <ClInclude Include="src\json-parser.h" />
     <ClInclude Include="src\json-stringifier.h" />
     <ClInclude Include="src\keys.h" />
+    <ClInclude Include="src\label.h" />
     <ClInclude Include="src\layout-descriptor-inl.h" />
     <ClInclude Include="src\layout-descriptor.h" />
     <ClInclude Include="src\libplatform\default-platform.h" />
@@ -467,6 +470,7 @@
     <ClInclude Include="src\objects\module-info.h" />
     <ClInclude Include="src\objects\object-macros-undef.h" />
     <ClInclude Include="src\objects\object-macros.h" />
+    <ClInclude Include="src\objects\regexp-match-info.h" />
     <ClInclude Include="src\objects\scope-info.h" />
     <ClInclude Include="src\ostreams.h" />
     <ClInclude Include="src\parsing\duplicate-finder.h" />
@@ -511,7 +515,6 @@
     <ClInclude Include="src\profiler\tracing-cpu-profiler.h" />
     <ClInclude Include="src\profiler\unbound-queue-inl.h" />
     <ClInclude Include="src\profiler\unbound-queue.h" />
-    <ClInclude Include="src\promise-utils.h" />
     <ClInclude Include="src\property-descriptor.h" />
     <ClInclude Include="src\property-details.h" />
     <ClInclude Include="src\property.h" />
@@ -663,7 +666,6 @@
     <ClCompile Include="src\ast\context-slot-cache.cc" />
     <ClCompile Include="src\ast\modules.cc" />
     <ClCompile Include="src\ast\prettyprinter.cc" />
-    <ClCompile Include="src\ast\scopeinfo.cc" />
     <ClCompile Include="src\ast\scopes.cc" />
     <ClCompile Include="src\ast\variables.cc" />
     <ClCompile Include="src\background-parsing-task.cc" />
@@ -703,6 +705,8 @@
     <ClCompile Include="src\builtins\builtins-api.cc" />
     <ClCompile Include="src\builtins\builtins-array.cc" />
     <ClCompile Include="src\builtins\builtins-arraybuffer.cc" />
+    <ClCompile Include="src\builtins\builtins-async-function.cc" />
+    <ClCompile Include="src\builtins\builtins-async.cc" />
     <ClCompile Include="src\builtins\builtins-boolean.cc" />
     <ClCompile Include="src\builtins\builtins-call.cc" />
     <ClCompile Include="src\builtins\builtins-callsite.cc" />
@@ -950,6 +954,7 @@
     <ClCompile Include="src\factory.cc" />
     <ClCompile Include="src\fast-accessor-assembler.cc" />
     <ClCompile Include="src\fast-dtoa.cc" />
+    <ClCompile Include="src\ffi\ffi-compiler.cc" />
     <ClCompile Include="src\field-type.cc" />
     <ClCompile Include="src\fixed-dtoa.cc" />
     <ClCompile Include="src\flags.cc" />
@@ -985,6 +990,7 @@
     <ClCompile Include="src\heap\scavenger.cc" />
     <ClCompile Include="src\heap\spaces.cc" />
     <ClCompile Include="src\heap\store-buffer.cc" />
+    <ClCompile Include="src\i18n.cc" />
     <ClCompile Include="src\ia32\assembler-ia32.cc" />
     <ClCompile Include="src\ia32\code-stubs-ia32.cc" />
     <ClCompile Include="src\ia32\codegen-ia32.cc" />
@@ -1069,6 +1075,7 @@
     <ClCompile Include="src\objects-debug.cc" />
     <ClCompile Include="src\objects-printer.cc" />
     <ClCompile Include="src\objects.cc" />
+    <ClCompile Include="src\objects\scope-info.cc" />
     <ClCompile Include="src\ostreams.cc" />
     <ClCompile Include="src\parsing\duplicate-finder.cc" />
     <ClCompile Include="src\parsing\func-name-inferrer.cc" />
@@ -1106,7 +1113,6 @@
     <ClCompile Include="src\profiler\strings-storage.cc" />
     <ClCompile Include="src\profiler\tick-sample.cc" />
     <ClCompile Include="src\profiler\tracing-cpu-profiler.cc" />
-    <ClCompile Include="src\promise-utils.cc" />
     <ClCompile Include="src\property-descriptor.cc" />
     <ClCompile Include="src\property.cc" />
     <ClCompile Include="src\regexp\ia32\regexp-macro-assembler-ia32.cc" />
@@ -1310,8 +1316,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_I18N_SUPPORT;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4091;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -1331,8 +1337,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;DEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_I18N_SUPPORT;ENABLE_HANDLE_ZAPPING;VERIFY_HEAP;OBJECT_PRINT;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;TRACE_MAPS;ENABLE_SLOW_DCHECKS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4091;4244;4267;4312;4800;4838;4351;4355;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -1354,8 +1360,8 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_I18N_SUPPORT;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -1381,8 +1387,8 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;NDEBUG;NOMINMAX;V8_NO_FAST_TLS;V8_DEPRECATION_WARNINGS;V8_I18N_SUPPORT;ENABLE_HANDLE_ZAPPING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include;$(ProjectDir)\src;$(ProjectDir)\..;$(ProjectDir)\..\icu\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>

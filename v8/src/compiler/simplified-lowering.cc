@@ -2282,7 +2282,7 @@ class RepresentationSelector {
                     MachineRepresentation::kTaggedPointer);
           if (lower()) DeferReplacement(node, node->InputAt(0));
         } else {
-          VisitUnop(node, UseInfo::AnyTagged(),
+          VisitUnop(node, UseInfo::CheckedHeapObjectAsTaggedPointer(),
                     MachineRepresentation::kTaggedPointer);
         }
         return;
@@ -2306,6 +2306,17 @@ class RepresentationSelector {
         }
         return;
       }
+      case IrOpcode::kCheckReceiver: {
+        if (InputIs(node, Type::Receiver())) {
+          VisitUnop(node, UseInfo::AnyTagged(),
+                    MachineRepresentation::kTaggedPointer);
+          if (lower()) DeferReplacement(node, node->InputAt(0));
+        } else {
+          VisitUnop(node, UseInfo::CheckedHeapObjectAsTaggedPointer(),
+                    MachineRepresentation::kTaggedPointer);
+        }
+        return;
+      }
       case IrOpcode::kCheckSmi: {
         if (SmiValuesAre32Bits() && truncation.IsUsedAsWord32()) {
           VisitUnop(node, UseInfo::CheckedSignedSmallAsWord32(),
@@ -2323,7 +2334,7 @@ class RepresentationSelector {
                     MachineRepresentation::kTaggedPointer);
           if (lower()) DeferReplacement(node, node->InputAt(0));
         } else {
-          VisitUnop(node, UseInfo::AnyTagged(),
+          VisitUnop(node, UseInfo::CheckedHeapObjectAsTaggedPointer(),
                     MachineRepresentation::kTaggedPointer);
         }
         return;
@@ -2504,8 +2515,11 @@ class RepresentationSelector {
         return;
       }
       case IrOpcode::kObjectIsCallable: {
-        // TODO(turbofan): Add Type::Callable to optimize this?
-        VisitUnop(node, UseInfo::AnyTagged(), MachineRepresentation::kBit);
+        VisitObjectIs(node, Type::Callable(), lowering);
+        return;
+      }
+      case IrOpcode::kObjectIsNonCallable: {
+        VisitObjectIs(node, Type::NonCallable(), lowering);
         return;
       }
       case IrOpcode::kObjectIsNumber: {

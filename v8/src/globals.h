@@ -1215,6 +1215,29 @@ inline std::ostream& operator<<(std::ostream& os, CallableType function_type) {
   return os;
 }
 
+enum class PushArgsConstructMode : unsigned {
+  kJSFunction,
+  kWithFinalSpread,
+  kOther
+};
+
+inline size_t hash_value(PushArgsConstructMode mode) {
+  return bit_cast<unsigned>(mode);
+}
+
+inline std::ostream& operator<<(std::ostream& os, PushArgsConstructMode mode) {
+  switch (mode) {
+    case PushArgsConstructMode::kJSFunction:
+      return os << "JSFunction";
+    case PushArgsConstructMode::kWithFinalSpread:
+      return os << "WithFinalSpread";
+    case PushArgsConstructMode::kOther:
+      return os << "Other";
+  }
+  UNREACHABLE();
+  return os;
+}
+
 inline uint32_t ObjectHash(Address address) {
   // All objects are at least pointer aligned, so we can remove the trailing
   // zeros.
@@ -1247,8 +1270,9 @@ class BinaryOperationFeedback {
 // Type feedback is encoded in such a way that, we can combine the feedback
 // at different points by performing an 'OR' operation. Type feedback moves
 // to a more generic type when we combine feedback.
-// kSignedSmall        -> kNumber -> kAny
-// kInternalizedString -> kString -> kAny
+// kSignedSmall        -> kNumber   -> kAny
+// kInternalizedString -> kString   -> kAny
+//                        kReceiver -> kAny
 // TODO(epertoso): consider unifying this with BinaryOperationFeedback.
 class CompareOperationFeedback {
  public:
@@ -1259,7 +1283,8 @@ class CompareOperationFeedback {
     kNumberOrOddball = 0x7,
     kInternalizedString = 0x8,
     kString = 0x18,
-    kAny = 0x3F
+    kReceiver = 0x20,
+    kAny = 0x7F
   };
 };
 

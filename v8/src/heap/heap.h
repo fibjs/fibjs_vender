@@ -101,6 +101,8 @@ using v8::MemoryPressureLevel;
   V(Map, string_map, StringMap)                                                \
   V(Map, cons_one_byte_string_map, ConsOneByteStringMap)                       \
   V(Map, cons_string_map, ConsStringMap)                                       \
+  V(Map, thin_one_byte_string_map, ThinOneByteStringMap)                       \
+  V(Map, thin_string_map, ThinStringMap)                                       \
   V(Map, sliced_string_map, SlicedStringMap)                                   \
   V(Map, sliced_one_byte_string_map, SlicedOneByteStringMap)                   \
   V(Map, external_string_map, ExternalStringMap)                               \
@@ -216,6 +218,7 @@ using v8::MemoryPressureLevel;
   V(FixedArray, serialized_global_proxy_sizes, SerializedGlobalProxySizes)     \
   /* Configured values */                                                      \
   V(TemplateList, message_listeners, MessageListeners)                         \
+  V(InterceptorInfo, noop_interceptor_info, NoOpInterceptorInfo)               \
   V(Code, js_entry_code, JsEntryCode)                                          \
   V(Code, js_construct_entry_code, JsConstructEntryCode)                       \
   /* Oddball maps */                                                           \
@@ -747,9 +750,12 @@ class Heap {
   // when introducing gaps within pages. If slots could have been recorded in
   // the freed area, then pass ClearRecordedSlots::kYes as the mode. Otherwise,
   // pass ClearRecordedSlots::kNo.
-  void CreateFillerObjectAt(Address addr, int size, ClearRecordedSlots mode);
+  HeapObject* CreateFillerObjectAt(Address addr, int size,
+                                   ClearRecordedSlots mode);
 
   bool CanMoveObjectStart(HeapObject* object);
+
+  static bool IsImmovable(HeapObject* object);
 
   // Maintain consistency of live bytes during incremental marking.
   void AdjustLiveBytes(HeapObject* object, int by);
@@ -837,7 +843,7 @@ class Heap {
   // Support for the API.
   //
 
-  void CreateApiObjects();
+  bool CreateApiObjects();
 
   // Implements the corresponding V8 API function.
   bool IdleNotification(double deadline_in_seconds);
@@ -2130,10 +2136,6 @@ class Heap {
 
   MUST_USE_RESULT AllocationResult
       AllocateCode(int object_size, bool immovable);
-
-  MUST_USE_RESULT AllocationResult InternalizeStringWithKey(HashTableKey* key);
-
-  MUST_USE_RESULT AllocationResult InternalizeString(String* str);
 
   // ===========================================================================
 

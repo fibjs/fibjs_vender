@@ -1137,7 +1137,8 @@ JSNativeContextSpecialization::BuildPropertyAccess(
       value = effect = graph()->NewNode(simplified()->LoadField(field_access),
                                         storage, effect, control);
     } else {
-      DCHECK_EQ(AccessMode::kStore, access_mode);
+      DCHECK(access_mode == AccessMode::kStore ||
+             access_mode == AccessMode::kStoreInLiteral);
       switch (field_representation) {
         case MachineRepresentation::kFloat64: {
           value = effect = graph()->NewNode(simplified()->CheckNumber(), value,
@@ -1288,7 +1289,7 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreDataPropertyInLiteral(
     return NoChange();
   }
 
-  Handle<Map> receiver_map(map, isolate());
+  Handle<Map> receiver_map(nexus.FindFirstMap(), isolate());
   Handle<Name> cached_name =
       handle(Name::cast(nexus.GetFeedbackExtra()), isolate());
 

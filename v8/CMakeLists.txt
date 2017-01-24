@@ -2,11 +2,15 @@ cmake_minimum_required(VERSION 2.6)
 
 include(../tools/basic.cmake)
 
-include_directories("/usr/local/include/")
+include_directories(
+	"/usr/local/include/"
+	"${PROJECT_SOURCE_DIR}/../icu/include"
+)
 
 add_definitions(
 	-DV8_NO_FAST_TLS=1
 	-DV8_DEPRECATION_WARNINGS=1
+	-DV8_I18N_SUPPORT=1
 	-DENABLE_HANDLE_ZAPPING=1
 )
 

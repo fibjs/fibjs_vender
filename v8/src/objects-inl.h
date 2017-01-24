@@ -31,6 +31,7 @@
 #include "src/lookup.h"
 #include "src/objects.h"
 #include "src/objects/module-info.h"
+#include "src/objects/regexp-match-info.h"
 #include "src/objects/scope-info.h"
 #include "src/property.h"
 #include "src/prototype.h"
@@ -195,6 +196,8 @@ bool HeapObject::IsFixedArray() const {
          instance_type == TRANSITION_ARRAY_TYPE;
 }
 
+bool HeapObject::IsBoilerplateDescription() const { return IsFixedArray(); }
+
 // External objects are not extensible, so the map check is enough.
 bool HeapObject::IsExternal() const {
   return map() == GetHeap()->external_map();
@@ -273,6 +276,11 @@ bool HeapObject::IsInternalizedString() const {
 bool HeapObject::IsConsString() const {
   if (!IsString()) return false;
   return StringShape(String::cast(this)).IsCons();
+}
+
+bool HeapObject::IsThinString() const {
+  if (!IsString()) return false;
+  return StringShape(String::cast(this)).IsThin();
 }
 
 bool HeapObject::IsSlicedString() const {
@@ -609,6 +617,7 @@ bool Object::IsMinusZero() const {
 
 CAST_ACCESSOR(AbstractCode)
 CAST_ACCESSOR(ArrayList)
+CAST_ACCESSOR(BoilerplateDescription)
 CAST_ACCESSOR(Bool16x8)
 CAST_ACCESSOR(Bool32x4)
 CAST_ACCESSOR(Bool8x16)
@@ -698,6 +707,7 @@ CAST_ACCESSOR(StringTable)
 CAST_ACCESSOR(Struct)
 CAST_ACCESSOR(Symbol)
 CAST_ACCESSOR(TemplateInfo)
+CAST_ACCESSOR(ThinString)
 CAST_ACCESSOR(Uint16x8)
 CAST_ACCESSOR(Uint32x4)
 CAST_ACCESSOR(Uint8x16)
@@ -746,13 +756,10 @@ bool Object::FilterKey(PropertyFilter filter) {
 
 Handle<Object> Object::NewStorageFor(Isolate* isolate, Handle<Object> object,
                                      Representation representation) {
-  if (representation.IsSmi() && object->IsUninitialized(isolate)) {
-    return handle(Smi::kZero, isolate);
-  }
   if (!representation.IsDouble()) return object;
   double value;
   if (object->IsUninitialized(isolate)) {
-    value = 0;
+    value = bit_cast<double>(kHoleNanInt64);
   } else if (object->IsMutableHeapNumber()) {
     value = HeapNumber::cast(*object)->value();
   } else {
@@ -842,6 +849,10 @@ bool String::HasOnlyOneByteChars() {
 
 bool StringShape::IsCons() {
   return (type_ & kStringRepresentationMask) == kConsStringTag;
+}
+
+bool StringShape::IsThin() {
+  return (type_ & kStringRepresentationMask) == kThinStringTag;
 }
 
 bool StringShape::IsSliced() {
@@ -1097,12 +1108,7 @@ bool Object::ToUint32(uint32_t* value) {
   }
   if (IsHeapNumber()) {
     double num = HeapNumber::cast(this)->value();
-    if (num < 0) return false;
-    uint32_t uint_value = FastD2UI(num);
-    if (FastUI2D(uint_value) == num) {
-      *value = uint_value;
-      return true;
-    }
+    return DoubleToUint32IfEqualToSelf(num, value);
   }
   return false;
 }
@@ -2119,7 +2125,7 @@ void WeakCell::initialize(HeapObject* val) {
   // We just have to execute the generational barrier here because we never
   // mark through a weak cell and collect evacuation candidates when we process
   // all weak cells.
-  WriteBarrierMode mode = Marking::IsBlack(ObjectMarking::MarkBitFrom(this))
+  WriteBarrierMode mode = ObjectMarking::IsBlack(this)
                               ? UPDATE_WRITE_BARRIER
                               : UPDATE_WEAK_WRITE_BARRIER;
   CONDITIONAL_WRITE_BARRIER(GetHeap(), this, kValueOffset, val, mode);
@@ -2349,12 +2355,6 @@ void JSObject::WriteToField(int descriptor, PropertyDetails details,
   } else {
     RawFastPropertyAtPut(index, value);
   }
-}
-
-void JSObject::WriteToField(int descriptor, Object* value) {
-  DescriptorArray* desc = map()->instance_descriptors();
-  PropertyDetails details = desc->GetDetails(descriptor);
-  WriteToField(descriptor, details, value);
 }
 
 int JSObject::GetInObjectPropertyOffset(int index) {
@@ -3083,15 +3083,6 @@ void DescriptorArray::SetSortedKey(int descriptor_index, int pointer) {
 }
 
 
-void DescriptorArray::SetRepresentation(int descriptor_index,
-                                        Representation representation) {
-  DCHECK(!representation.IsNone());
-  PropertyDetails details = GetDetails(descriptor_index);
-  set(ToDetailsIndex(descriptor_index),
-      details.CopyWithRepresentation(representation).AsSmi());
-}
-
-
 Object** DescriptorArray::GetValueSlot(int descriptor_number) {
   DCHECK(descriptor_number < number_of_descriptors());
   return RawFieldOfElementAt(ToValueIndex(descriptor_number));
@@ -3470,16 +3461,12 @@ LiteralsArray* LiteralsArray::cast(Object* object) {
   return reinterpret_cast<LiteralsArray*>(object);
 }
 
-bool LiteralsArray::has_feedback_vector() const {
-  return !get(kVectorIndex)->IsUndefined(this->GetIsolate());
-}
 
 TypeFeedbackVector* LiteralsArray::feedback_vector() const {
-  if (length() == 0 || !has_feedback_vector()) {
+  if (length() == 0) {
     return TypeFeedbackVector::cast(
-        this->GetIsolate()->heap()->empty_type_feedback_vector());
+        const_cast<FixedArray*>(FixedArray::cast(this)));
   }
-
   return TypeFeedbackVector::cast(get(kVectorIndex));
 }
 
@@ -3679,10 +3666,19 @@ bool String::Equals(Handle<String> one, Handle<String> two) {
 
 
 Handle<String> String::Flatten(Handle<String> string, PretenureFlag pretenure) {
-  if (!string->IsConsString()) return string;
-  Handle<ConsString> cons = Handle<ConsString>::cast(string);
-  if (cons->IsFlat()) return handle(cons->first());
-  return SlowFlatten(cons, pretenure);
+  if (string->IsConsString()) {
+    Handle<ConsString> cons = Handle<ConsString>::cast(string);
+    if (cons->IsFlat()) {
+      string = handle(cons->first());
+    } else {
+      return SlowFlatten(cons, pretenure);
+    }
+  }
+  if (string->IsThinString()) {
+    string = handle(Handle<ThinString>::cast(string)->actual());
+    DCHECK(!string->IsConsString());
+  }
+  return string;
 }
 
 
@@ -3703,6 +3699,9 @@ uint16_t String::Get(int index) {
     case kSlicedStringTag | kOneByteStringTag:
     case kSlicedStringTag | kTwoByteStringTag:
       return SlicedString::cast(this)->SlicedStringGet(index);
+    case kThinStringTag | kOneByteStringTag:
+    case kThinStringTag | kTwoByteStringTag:
+      return ThinString::cast(this)->ThinStringGet(index);
     default:
       break;
   }
@@ -3734,6 +3733,7 @@ String* String::GetUnderlying() {
   DCHECK(this->IsFlat());
   DCHECK(StringShape(this).IsIndirect());
   STATIC_ASSERT(ConsString::kFirstOffset == SlicedString::kParentOffset);
+  STATIC_ASSERT(ConsString::kFirstOffset == ThinString::kActualOffset);
   const int kUnderlyingOffset = SlicedString::kParentOffset;
   return String::cast(READ_FIELD(this, kUnderlyingOffset));
 }
@@ -3784,6 +3784,11 @@ ConsString* String::VisitFlat(Visitor* visitor,
       case kConsStringTag | kOneByteStringTag:
       case kConsStringTag | kTwoByteStringTag:
         return ConsString::cast(string);
+
+      case kThinStringTag | kOneByteStringTag:
+      case kThinStringTag | kTwoByteStringTag:
+        string = ThinString::cast(string)->actual();
+        continue;
 
       default:
         UNREACHABLE();
@@ -3916,6 +3921,7 @@ void ConsString::set_second(String* value, WriteBarrierMode mode) {
   CONDITIONAL_WRITE_BARRIER(GetHeap(), this, kSecondOffset, value, mode);
 }
 
+ACCESSORS(ThinString, actual, String, kActualOffset);
 
 bool ExternalString::is_short() {
   InstanceType type = map()->instance_type();
@@ -6615,13 +6621,6 @@ void JSFunction::ReplaceCode(Code* code) {
   }
 }
 
-bool JSFunction::has_literals_array() const {
-  SharedFunctionInfo* shared = this->shared();
-
-  return (literals() != shared->GetIsolate()->heap()->empty_literals_array() ||
-          (shared->feedback_metadata()->slot_count() == 0 &&
-           shared->num_literals() == 0));
-}
 
 Context* JSFunction::context() {
   return Context::cast(READ_FIELD(this, kContextOffset));

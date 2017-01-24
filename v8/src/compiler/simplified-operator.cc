@@ -479,6 +479,7 @@ UnicodeEncoding UnicodeEncodingOf(const Operator* op) {
   V(TruncateTaggedToWord32, Operator::kNoProperties, 1, 0)       \
   V(TruncateTaggedToFloat64, Operator::kNoProperties, 1, 0)      \
   V(ObjectIsCallable, Operator::kNoProperties, 1, 0)             \
+  V(ObjectIsNonCallable, Operator::kNoProperties, 1, 0)          \
   V(ObjectIsNumber, Operator::kNoProperties, 1, 0)               \
   V(ObjectIsReceiver, Operator::kNoProperties, 1, 0)             \
   V(ObjectIsSmi, Operator::kNoProperties, 1, 0)                  \
@@ -502,6 +503,7 @@ UnicodeEncoding UnicodeEncodingOf(const Operator* op) {
   V(CheckIf, 1, 0)                      \
   V(CheckInternalizedString, 1, 1)      \
   V(CheckNumber, 1, 1)                  \
+  V(CheckReceiver, 1, 1)                \
   V(CheckSmi, 1, 1)                     \
   V(CheckString, 1, 1)                  \
   V(CheckTaggedHole, 1, 1)              \

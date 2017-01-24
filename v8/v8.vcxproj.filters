@@ -118,6 +118,9 @@
     <Filter Include="Source Files\extensions">
       <UniqueIdentifier>{799570e2-a10f-51ed-083a-05a77b0687f4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\ffi">
+      <UniqueIdentifier>{162a0a77-7696-01cd-0b5f-9ceaf92eb46d}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\full-codegen">
       <UniqueIdentifier>{9bde402c-8954-3bca-54a2-0b176651693c}</UniqueIdentifier>
     </Filter>
@@ -533,6 +536,9 @@
     </ClInclude>
     <ClInclude Include="src\bootstrapper.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\builtins-async.h">
+      <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-constructor.h">
       <Filter>Source Files\builtins</Filter>
@@ -1203,6 +1209,9 @@
     <ClInclude Include="src\fast-dtoa.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ffi\ffi-compiler.h">
+      <Filter>Source Files\ffi</Filter>
+    </ClInclude>
     <ClInclude Include="src\field-index-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1332,6 +1341,9 @@
     <ClInclude Include="src\heap\store-buffer.h">
       <Filter>Source Files\heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\i18n.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\ia32\assembler-ia32-inl.h">
       <Filter>Source Files\ia32</Filter>
     </ClInclude>
@@ -1357,9 +1369,6 @@
       <Filter>Source Files\ic</Filter>
     </ClInclude>
     <ClInclude Include="src\ic\access-compiler.h">
-      <Filter>Source Files\ic</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ic\accessor-assembler-impl.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
     <ClInclude Include="src\ic\accessor-assembler.h">
@@ -1497,6 +1506,9 @@
     <ClInclude Include="src\keys.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\label.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\layout-descriptor-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1585,6 +1597,9 @@
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\object-macros.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\regexp-match-info.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\scope-info.h">
@@ -1718,9 +1733,6 @@
     </ClInclude>
     <ClInclude Include="src\profiler\unbound-queue.h">
       <Filter>Source Files\profiler</Filter>
-    </ClInclude>
-    <ClInclude Include="src\promise-utils.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\property-descriptor.h">
       <Filter>Source Files</Filter>
@@ -2171,9 +2183,6 @@
     <ClCompile Include="src\ast\prettyprinter.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast\scopeinfo.cc">
-      <Filter>Source Files\ast</Filter>
-    </ClCompile>
     <ClCompile Include="src\ast\scopes.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
@@ -2289,6 +2298,12 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-arraybuffer.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-async-function.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-async.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-boolean.cc">
@@ -3032,6 +3047,9 @@
     <ClCompile Include="src\fast-dtoa.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ffi\ffi-compiler.cc">
+      <Filter>Source Files\ffi</Filter>
+    </ClCompile>
     <ClCompile Include="src\field-type.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3136,6 +3154,9 @@
     </ClCompile>
     <ClCompile Include="src\heap\store-buffer.cc">
       <Filter>Source Files\heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\i18n.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ia32\assembler-ia32.cc">
       <Filter>Source Files\ia32</Filter>
@@ -3389,6 +3410,9 @@
     <ClCompile Include="src\objects.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\objects\scope-info.cc">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
     <ClCompile Include="src\ostreams.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -3499,9 +3523,6 @@
     </ClCompile>
     <ClCompile Include="src\profiler\tracing-cpu-profiler.cc">
       <Filter>Source Files\profiler</Filter>
-    </ClCompile>
-    <ClCompile Include="src\promise-utils.cc">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\property-descriptor.cc">
       <Filter>Source Files</Filter>

@@ -160,14 +160,6 @@ void RelocateTableSizeReferences(Handle<FixedArray> code_table,
   }
 }
 
-Handle<Code> CreatePlaceholder(Factory* factory, Code::Kind kind) {
-  byte buffer[] = {0, 0, 0, 0};  // fake instructions.
-  CodeDesc desc = {
-      buffer, arraysize(buffer), arraysize(buffer), 0, 0, nullptr, 0, nullptr};
-  return factory->NewCode(desc, Code::KindField::encode(kind),
-                          Handle<Object>::null());
-}
-
 void FlushICache(Isolate* isolate, Handle<FixedArray> code_table) {
   for (int i = 0; i < code_table->length(); ++i) {
     Handle<Code> code = code_table->GetValueChecked<Code>(isolate, i);
@@ -412,7 +404,7 @@ void CompileSequentially(Isolate* isolate, ModuleBytesEnv* module_env,
                             str.start());
       break;
     }
-      // Install the code into the linker table.
+    // Install the code into the linker table.
     functions[i] = code;
   }
 }
@@ -469,6 +461,15 @@ void PatchDirectCallsAndContext(Handle<FixedArray> new_functions,
   wasm::Decoder decoder(nullptr, nullptr);
   int num_wasm_functions = static_cast<int>(wasm_functions->size());
   int func_index = start;
+  // We patch WASM_FUNCTION and WASM_TO_JS_FUNCTION during re-instantiation,
+  // and illegal builtins initially and after deserialization.
+  auto is_at_wasm_call = [](RelocIterator& it) {
+    Code* code = Code::GetCodeFromTargetAddress(it.rinfo()->target_address());
+    return code->kind() == Code::WASM_FUNCTION ||
+           code->kind() == Code::WASM_TO_JS_FUNCTION ||
+           code->builtin_index() == Builtins::kIllegal;
+  };
+
   // Patch all wasm functions.
   for (; func_index < num_wasm_functions; ++func_index) {
     Code* wasm_function = Code::cast(new_functions->get(func_index));
@@ -489,10 +490,7 @@ void PatchDirectCallsAndContext(Handle<FixedArray> new_functions,
         continue;
       }
       DCHECK(RelocInfo::IsCodeTarget(it.rinfo()->rmode()));
-      Code::Kind kind =
-          Code::GetCodeFromTargetAddress(it.rinfo()->target_address())->kind();
-      if (kind != Code::WASM_FUNCTION && kind != Code::WASM_TO_JS_FUNCTION)
-        continue;
+      if (!is_at_wasm_call(it)) continue;
       size_t offset = it.rinfo()->pc() - wasm_function->instruction_start();
       int byte_pos =
           AdvanceSourcePositionTableIterator(source_pos_iterator, offset);
@@ -516,10 +514,7 @@ void PatchDirectCallsAndContext(Handle<FixedArray> new_functions,
         continue;
       }
       DCHECK(RelocInfo::IsCodeTarget(it.rinfo()->rmode()));
-      Code::Kind kind =
-          Code::GetCodeFromTargetAddress(it.rinfo()->target_address())->kind();
-      if (kind != Code::WASM_FUNCTION && kind != Code::WASM_TO_JS_FUNCTION)
-        continue;
+      if (!is_at_wasm_call(it)) continue;
       ++num_wasm_calls;
       Code* new_code = Code::cast(new_functions->get(exp.index));
       DCHECK(new_code->kind() == Code::WASM_FUNCTION ||
@@ -730,6 +725,8 @@ Handle<Script> CreateWasmScript(Isolate* isolate,
                                 const ModuleWireBytes& wire_bytes) {
   Handle<Script> script =
       isolate->factory()->NewScript(isolate->factory()->empty_string());
+  FixedArray* array = isolate->native_context()->embedder_data();
+  script->set_context_data(array->get(v8::Context::kDebugIdIndex));
   script->set_type(Script::TYPE_WASM);
 
   int hash = StringHasher::HashSequentialString(
@@ -866,15 +863,17 @@ std::ostream& wasm::operator<<(std::ostream& os, const WasmFunctionName& name) {
 }
 
 WasmInstanceObject* wasm::GetOwningWasmInstance(Code* code) {
-  DCHECK(code->kind() == Code::WASM_FUNCTION);
   DisallowHeapAllocation no_gc;
+  DCHECK(code->kind() == Code::WASM_FUNCTION ||
+         code->kind() == Code::WASM_INTERPRETER_ENTRY);
   FixedArray* deopt_data = code->deoptimization_data();
   DCHECK_NOT_NULL(deopt_data);
-  DCHECK_EQ(2, deopt_data->length());
+  DCHECK_EQ(code->kind() == Code::WASM_INTERPRETER_ENTRY ? 1 : 2,
+            deopt_data->length());
   Object* weak_link = deopt_data->get(0);
   DCHECK(weak_link->IsWeakCell());
   WeakCell* cell = WeakCell::cast(weak_link);
-  if (!cell->value()) return nullptr;
+  if (cell->cleared()) return nullptr;
   return WasmInstanceObject::cast(cell->value());
 }
 
@@ -926,28 +925,21 @@ MaybeHandle<WasmCompiledModule> WasmModule::CompileFunctions(
   Handle<FixedArray> code_table =
       factory->NewFixedArray(static_cast<int>(code_table_size), TENURED);
 
-  // Initialize the code table with placeholders.
-  Handle<Code> code_placeholder =
-      CreatePlaceholder(factory, Code::WASM_FUNCTION);
+  // Initialize the code table with the illegal builtin. All call sites will be
+  // patched at instantiation.
+  Handle<Code> illegal_builtin = isolate->builtins()->Illegal();
   for (uint32_t i = 0; i < functions.size(); ++i) {
-    code_table->set(static_cast<int>(i), *code_placeholder);
-    temp_instance.function_code[i] = code_placeholder;
+    code_table->set(static_cast<int>(i), *illegal_builtin);
+    temp_instance.function_code[i] = illegal_builtin;
   }
 
   isolate->counters()->wasm_functions_per_module()->AddSample(
       static_cast<int>(functions.size()));
   if (!FLAG_trace_wasm_decoder && FLAG_wasm_num_compilation_tasks != 0) {
     // Avoid a race condition by collecting results into a second vector.
-    std::vector<Handle<Code>> results;
-    results.reserve(temp_instance.function_code.size());
-    for (size_t i = 0; i < temp_instance.function_code.size(); ++i) {
-      results.push_back(temp_instance.function_code[i]);
-    }
+    std::vector<Handle<Code>> results(temp_instance.function_code);
     CompileInParallel(isolate, &module_env, results, thrower);
-
-    for (size_t i = 0; i < results.size(); ++i) {
-      temp_instance.function_code[i] = results[i];
-    }
+    temp_instance.function_code.swap(results);
   } else {
     CompileSequentially(isolate, &module_env, temp_instance.function_code,
                         thrower);
@@ -1305,7 +1297,7 @@ class WasmInstanceBuilder {
       Address mem_start = static_cast<Address>(memory_->backing_store());
       uint32_t mem_size =
           static_cast<uint32_t>(memory_->byte_length()->Number());
-      LoadDataSegments(mem_start, mem_size);
+      if (!LoadDataSegments(mem_start, mem_size)) return nothing;
 
       uint32_t old_mem_size = compiled_module_->mem_size();
       Address old_mem_start =
@@ -1317,7 +1309,7 @@ class WasmInstanceBuilder {
                                      old_mem_size, mem_size);
       compiled_module_->set_memory(memory_);
     } else {
-      LoadDataSegments(nullptr, 0);
+      if (!LoadDataSegments(nullptr, 0)) return nothing;
     }
 
     //--------------------------------------------------------------------------
@@ -1430,6 +1422,13 @@ class WasmInstanceBuilder {
                                 v8::WeakCallbackType::kFinalizer);
       }
     }
+
+    //--------------------------------------------------------------------------
+    // Set all breakpoints that were set on the shared module.
+    //--------------------------------------------------------------------------
+    WasmSharedModuleData::SetBreakpointsOnNewInstance(
+        compiled_module_->shared(), instance);
+
     //--------------------------------------------------------------------------
     // Run the start function if one was specified.
     //--------------------------------------------------------------------------
@@ -1550,7 +1549,7 @@ class WasmInstanceBuilder {
   }
 
   // Load data segments into the memory.
-  void LoadDataSegments(Address mem_addr, size_t mem_size) {
+  bool LoadDataSegments(Address mem_addr, size_t mem_size) {
     Handle<SeqOneByteString> module_bytes(compiled_module_->module_bytes(),
                                           isolate_);
     for (const WasmDataSegment& segment : module_->data_segments) {
@@ -1558,18 +1557,19 @@ class WasmInstanceBuilder {
       // Segments of size == 0 are just nops.
       if (source_size == 0) continue;
       uint32_t dest_offset = EvalUint32InitExpr(segment.dest_addr);
-      if (dest_offset >= mem_size || source_size >= mem_size ||
-          dest_offset > (mem_size - source_size)) {
+      if (dest_offset + source_size > mem_size ||
+          dest_offset + source_size < dest_offset) {
         thrower_->LinkError("data segment (start = %" PRIu32 ", size = %" PRIu32
                             ") does not fit into memory (size = %" PRIuS ")",
                             dest_offset, source_size, mem_size);
-        return;
+        return false;
       }
       byte* dest = mem_addr + dest_offset;
       const byte* src = reinterpret_cast<const byte*>(
           module_bytes->GetCharsAddress() + segment.source_offset);
       memcpy(dest, src, source_size);
     }
+    return true;
   }
 
   void WriteGlobalValue(WasmGlobal& global, Handle<Object> value) {
@@ -1669,16 +1669,34 @@ class WasmInstanceBuilder {
           table_instance.js_wrappers = Handle<FixedArray>(
               table_instance.table_object->functions(), isolate_);
 
-          // TODO(titzer): import table size must match exactly for now.
-          int table_size = table_instance.js_wrappers->length();
-          if (table_size != static_cast<int>(table.min_size)) {
+          int imported_cur_size = table_instance.js_wrappers->length();
+          if (imported_cur_size < static_cast<int>(table.min_size)) {
             thrower_->LinkError(
-                "table import %d is wrong size (%d), expected %u", index,
-                table_size, table.min_size);
+                "table import %d is smaller than minimum %d, got %u", index,
+                table.min_size, imported_cur_size);
             return -1;
           }
 
+          if (table.has_max) {
+            int64_t imported_max_size =
+                table_instance.table_object->maximum_length();
+            if (imported_max_size < 0) {
+              thrower_->LinkError(
+                  "table import %d has no maximum length, expected %d", index,
+                  table.max_size);
+              return -1;
+            }
+            if (imported_max_size > table.max_size) {
+              thrower_->LinkError(
+                  "table import %d has maximum larger than maximum %d, "
+                  "got %" PRIx64,
+                  index, table.max_size, imported_max_size);
+              return -1;
+            }
+          }
+
           // Allocate a new dispatch table and signature table.
+          int table_size = imported_cur_size;
           table_instance.function_table =
               isolate_->factory()->NewFixedArray(table_size);
           table_instance.signature_table =
@@ -1720,11 +1738,39 @@ class WasmInstanceBuilder {
           DCHECK(WasmJs::IsWasmMemoryObject(isolate_, memory));
           instance->set_memory_object(*memory);
           memory_ = Handle<JSArrayBuffer>(memory->buffer(), isolate_);
+          uint32_t imported_cur_pages = static_cast<uint32_t>(
+              memory_->byte_length()->Number() / WasmModule::kPageSize);
+          if (imported_cur_pages < module_->min_mem_pages) {
+            thrower_->LinkError(
+                "memory import %d is smaller than maximum %u, got %u", index,
+                module_->min_mem_pages, imported_cur_pages);
+          }
+          int32_t imported_max_pages = memory->maximum_pages();
+          if (module_->has_max_mem) {
+            if (imported_max_pages < 0) {
+              thrower_->LinkError(
+                  "memory import %d has no maximum limit, expected at most %u",
+                  index, imported_max_pages);
+              return -1;
+            }
+            if (static_cast<uint32_t>(imported_max_pages) >
+                module_->max_mem_pages) {
+              thrower_->LinkError(
+                  "memory import %d has larger maximum than maximum %u, got %d",
+                  index, module_->max_mem_pages, imported_max_pages);
+              return -1;
+            }
+          }
           break;
         }
         case kExternalGlobal: {
           // Global imports are converted to numbers and written into the
           // {globals_} array buffer.
+          if (module_->globals[import.index].type == kWasmI64) {
+            ReportLinkError("global import cannot have type i64", index,
+                            module_name, import_name);
+            return -1;
+          }
           if (!value->IsNumber()) {
             ReportLinkError("global import must be a number", index,
                             module_name, import_name);
@@ -1838,6 +1884,7 @@ class WasmInstanceBuilder {
 
     PropertyDescriptor desc;
     desc.set_writable(false);
+    desc.set_enumerable(true);
 
     // Count up export indexes.
     int export_index = 0;
@@ -2139,12 +2186,23 @@ Handle<Script> wasm::GetScript(Handle<JSObject> instance) {
   return handle(compiled_module->script());
 }
 
+bool wasm::IsWasmCodegenAllowed(Isolate* isolate, Handle<Context> context) {
+  return isolate->allow_code_gen_callback() == nullptr ||
+         isolate->allow_code_gen_callback()(v8::Utils::ToLocal(context));
+}
+
 // TODO(clemensh): origin can be inferred from asm_js_script; remove it.
 MaybeHandle<WasmModuleObject> wasm::CreateModuleObjectFromBytes(
     Isolate* isolate, const byte* start, const byte* end, ErrorThrower* thrower,
     ModuleOrigin origin, Handle<Script> asm_js_script,
     Vector<const byte> asm_js_offset_table_bytes) {
   MaybeHandle<WasmModuleObject> nothing;
+
+  if (!IsWasmCodegenAllowed(isolate, isolate->native_context())) {
+    thrower->CompileError("Wasm code generation disallowed in this context");
+    return nothing;
+  }
+
   ModuleResult result = DecodeWasmModule(isolate, start, end, false, origin);
   if (result.failed()) {
     if (result.val) delete result.val;
@@ -2212,13 +2270,14 @@ int32_t wasm::GetInstanceMemorySize(Isolate* isolate,
   }
 }
 
-uint32_t GetMaxInstanceMemorySize(Isolate* isolate,
-                                  Handle<WasmInstanceObject> instance) {
+uint32_t GetMaxInstanceMemoryPages(Isolate* isolate,
+                                   Handle<WasmInstanceObject> instance) {
   if (instance->has_memory_object()) {
     Handle<WasmMemoryObject> memory_object(instance->memory_object(), isolate);
-
-    int maximum = memory_object->maximum_pages();
-    if (maximum > 0) return static_cast<uint32_t>(maximum);
+    if (memory_object->has_maximum_pages()) {
+      uint32_t maximum = static_cast<uint32_t>(memory_object->maximum_pages());
+      if (maximum < kV8MaxWasmMemoryPages) return maximum;
+    }
   }
   uint32_t compiled_max_pages = instance->compiled_module()->max_mem_pages();
   isolate->counters()->wasm_max_mem_pages_count()->AddSample(
@@ -2283,20 +2342,12 @@ void UncheckedUpdateInstanceMemory(Isolate* isolate,
                                  old_size, new_size);
 }
 
-int32_t wasm::GrowWebAssemblyMemory(Isolate* isolate, Handle<Object> receiver,
+int32_t wasm::GrowWebAssemblyMemory(Isolate* isolate,
+                                    Handle<WasmMemoryObject> receiver,
                                     uint32_t pages) {
   DCHECK(WasmJs::IsWasmMemoryObject(isolate, receiver));
   Handle<WasmMemoryObject> memory_object =
       handle(WasmMemoryObject::cast(*receiver));
-  Handle<WasmInstanceWrapper> instance_wrapper(memory_object->instances_link());
-  DCHECK(WasmInstanceWrapper::IsWasmInstanceWrapper(*instance_wrapper));
-  DCHECK(instance_wrapper->has_instance());
-  Handle<WasmInstanceObject> instance = instance_wrapper->instance_object();
-  DCHECK(IsWasmInstance(*instance));
-  if (pages == 0) return GetInstanceMemorySize(isolate, instance);
-  uint32_t max_pages = GetMaxInstanceMemorySize(isolate, instance);
-
-  // Grow memory object buffer and update instances associated with it.
   MaybeHandle<JSArrayBuffer> memory_buffer = handle(memory_object->buffer());
   Handle<JSArrayBuffer> old_buffer;
   uint32_t old_size = 0;
@@ -2306,19 +2357,46 @@ int32_t wasm::GrowWebAssemblyMemory(Isolate* isolate, Handle<Object> receiver,
     old_size = old_buffer->byte_length()->Number();
     old_mem_start = static_cast<Address>(old_buffer->backing_store());
   }
-  Handle<JSArrayBuffer> new_buffer =
-      GrowMemoryBuffer(isolate, memory_buffer, pages, max_pages);
-  if (new_buffer.is_null()) return -1;
-  DCHECK(!instance_wrapper->has_previous());
-  SetInstanceMemory(instance, *new_buffer);
-  UncheckedUpdateInstanceMemory(isolate, instance, old_mem_start, old_size);
-  while (instance_wrapper->has_next()) {
-    instance_wrapper = instance_wrapper->next_wrapper();
+  // Return current size if grow by 0
+  if (pages == 0) {
+    DCHECK(old_size % WasmModule::kPageSize == 0);
+    return (old_size / WasmModule::kPageSize);
+  }
+  Handle<JSArrayBuffer> new_buffer;
+  if (!memory_object->has_instances_link()) {
+    // Memory object does not have an instance associated with it, just grow
+    uint32_t max_pages;
+    if (memory_object->has_maximum_pages()) {
+      max_pages = static_cast<uint32_t>(memory_object->maximum_pages());
+      if (kV8MaxWasmMemoryPages < max_pages) return -1;
+    } else {
+      max_pages = kV8MaxWasmMemoryPages;
+    }
+    new_buffer = GrowMemoryBuffer(isolate, memory_buffer, pages, max_pages);
+    if (new_buffer.is_null()) return -1;
+  } else {
+    Handle<WasmInstanceWrapper> instance_wrapper(
+        memory_object->instances_link());
     DCHECK(WasmInstanceWrapper::IsWasmInstanceWrapper(*instance_wrapper));
+    DCHECK(instance_wrapper->has_instance());
     Handle<WasmInstanceObject> instance = instance_wrapper->instance_object();
     DCHECK(IsWasmInstance(*instance));
+    uint32_t max_pages = GetMaxInstanceMemoryPages(isolate, instance);
+
+    // Grow memory object buffer and update instances associated with it.
+    new_buffer = GrowMemoryBuffer(isolate, memory_buffer, pages, max_pages);
+    if (new_buffer.is_null()) return -1;
+    DCHECK(!instance_wrapper->has_previous());
     SetInstanceMemory(instance, *new_buffer);
     UncheckedUpdateInstanceMemory(isolate, instance, old_mem_start, old_size);
+    while (instance_wrapper->has_next()) {
+      instance_wrapper = instance_wrapper->next_wrapper();
+      DCHECK(WasmInstanceWrapper::IsWasmInstanceWrapper(*instance_wrapper));
+      Handle<WasmInstanceObject> instance = instance_wrapper->instance_object();
+      DCHECK(IsWasmInstance(*instance));
+      SetInstanceMemory(instance, *new_buffer);
+      UncheckedUpdateInstanceMemory(isolate, instance, old_mem_start, old_size);
+    }
   }
   memory_object->set_buffer(*new_buffer);
   DCHECK(old_size % WasmModule::kPageSize == 0);
@@ -2342,7 +2420,7 @@ int32_t wasm::GrowMemory(Isolate* isolate, Handle<WasmInstanceObject> instance,
       old_size = old_buffer->byte_length()->Number();
       old_mem_start = static_cast<Address>(old_buffer->backing_store());
     }
-    uint32_t max_pages = GetMaxInstanceMemorySize(isolate, instance_obj);
+    uint32_t max_pages = GetMaxInstanceMemoryPages(isolate, instance_obj);
     Handle<JSArrayBuffer> buffer =
         GrowMemoryBuffer(isolate, instance_buffer, pages, max_pages);
     if (buffer.is_null()) return -1;

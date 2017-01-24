@@ -636,9 +636,13 @@ void Verifier::Visitor::Check(Node* node) {
       // Type is Boolean.
       CheckTypeIs(node, Type::Boolean());
       break;
+    case IrOpcode::kJSClassOf:
+      // Type is InternaliedString \/ Null.
+      CheckTypeIs(node, Type::InternalizedStringOrNull());
+      break;
     case IrOpcode::kJSTypeOf:
-      // Type is String.
-      CheckTypeIs(node, Type::String());
+      // Type is InternalizedString.
+      CheckTypeIs(node, Type::InternalizedString());
       break;
     case IrOpcode::kJSGetSuperConstructor:
       // We don't check the input for Type::Function because
@@ -926,6 +930,7 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
     case IrOpcode::kObjectIsCallable:
+    case IrOpcode::kObjectIsNonCallable:
     case IrOpcode::kObjectIsNumber:
     case IrOpcode::kObjectIsReceiver:
     case IrOpcode::kObjectIsSmi:
@@ -1100,6 +1105,10 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kCheckNumber:
       CheckValueInputIs(node, 0, Type::Any());
       CheckTypeIs(node, Type::Number());
+      break;
+    case IrOpcode::kCheckReceiver:
+      CheckValueInputIs(node, 0, Type::Any());
+      CheckTypeIs(node, Type::Receiver());
       break;
     case IrOpcode::kCheckSmi:
       CheckValueInputIs(node, 0, Type::Any());

@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "src/ic/accessor-assembler.h"
-#include "src/ic/accessor-assembler-impl.h"
 
 #include "src/code-factory.h"
 #include "src/code-stubs.h"
@@ -14,14 +13,15 @@ namespace v8 {
 namespace internal {
 
 using compiler::CodeAssemblerState;
+using compiler::Node;
 
 //////////////////// Private helpers.
 
-Node* AccessorAssemblerImpl::TryMonomorphicCase(Node* slot, Node* vector,
-                                                Node* receiver_map,
-                                                Label* if_handler,
-                                                Variable* var_handler,
-                                                Label* if_miss) {
+Node* AccessorAssembler::TryMonomorphicCase(Node* slot, Node* vector,
+                                            Node* receiver_map,
+                                            Label* if_handler,
+                                            Variable* var_handler,
+                                            Label* if_miss) {
   Comment("TryMonomorphicCase");
   DCHECK_EQ(MachineRepresentation::kTagged, var_handler->rep());
 
@@ -51,9 +51,11 @@ Node* AccessorAssemblerImpl::TryMonomorphicCase(Node* slot, Node* vector,
   return feedback;
 }
 
-void AccessorAssemblerImpl::HandlePolymorphicCase(
-    Node* receiver_map, Node* feedback, Label* if_handler,
-    Variable* var_handler, Label* if_miss, int unroll_count) {
+void AccessorAssembler::HandlePolymorphicCase(Node* receiver_map,
+                                              Node* feedback, Label* if_handler,
+                                              Variable* var_handler,
+                                              Label* if_miss,
+                                              int unroll_count) {
   Comment("HandlePolymorphicCase");
   DCHECK_EQ(MachineRepresentation::kTagged, var_handler->rep());
 
@@ -98,7 +100,7 @@ void AccessorAssemblerImpl::HandlePolymorphicCase(
   Goto(if_miss);
 }
 
-void AccessorAssemblerImpl::HandleKeyedStorePolymorphicCase(
+void AccessorAssembler::HandleKeyedStorePolymorphicCase(
     Node* receiver_map, Node* feedback, Label* if_handler,
     Variable* var_handler, Label* if_transition_handler,
     Variable* var_transition_map_cell, Label* if_miss) {
@@ -135,7 +137,7 @@ void AccessorAssemblerImpl::HandleKeyedStorePolymorphicCase(
   Goto(if_miss);
 }
 
-void AccessorAssemblerImpl::HandleLoadICHandlerCase(
+void AccessorAssembler::HandleLoadICHandlerCase(
     const LoadICParameters* p, Node* handler, Label* miss,
     ElementSupport support_elements) {
   Comment("have_handler");
@@ -173,7 +175,7 @@ void AccessorAssemblerImpl::HandleLoadICHandlerCase(
   }
 }
 
-void AccessorAssemblerImpl::HandleLoadICSmiHandlerCase(
+void AccessorAssembler::HandleLoadICSmiHandlerCase(
     const LoadICParameters* p, Node* holder, Node* smi_handler, Label* miss,
     ElementSupport support_elements) {
   Variable var_double_value(this, MachineRepresentation::kFloat64);
@@ -295,7 +297,7 @@ void AccessorAssemblerImpl::HandleLoadICSmiHandlerCase(
   }
 }
 
-void AccessorAssemblerImpl::HandleLoadICProtoHandlerCase(
+void AccessorAssembler::HandleLoadICProtoHandlerCase(
     const LoadICParameters* p, Node* handler, Variable* var_holder,
     Variable* var_smi_handler, Label* if_smi_handler, Label* miss,
     bool throw_reference_error_if_nonexistent) {
@@ -368,15 +370,13 @@ void AccessorAssemblerImpl::HandleLoadICProtoHandlerCase(
 
   Bind(&array_handler);
   {
-    typedef LoadICProtoArrayDescriptor Descriptor;
-    LoadICProtoArrayStub stub(isolate(), throw_reference_error_if_nonexistent);
-    Node* target = HeapConstant(stub.GetCode());
-    TailCallStub(Descriptor(isolate()), target, p->context, p->receiver,
-                 p->name, p->slot, p->vector, handler);
+    TailCallStub(CodeFactory::LoadICProtoArray(
+                     isolate(), throw_reference_error_if_nonexistent),
+                 p->context, p->receiver, p->name, p->slot, p->vector, handler);
   }
 }
 
-Node* AccessorAssemblerImpl::EmitLoadICProtoArrayCheck(
+Node* AccessorAssembler::EmitLoadICProtoArrayCheck(
     const LoadICParameters* p, Node* handler, Node* handler_length,
     Node* handler_flags, Label* miss,
     bool throw_reference_error_if_nonexistent) {
@@ -438,7 +438,7 @@ Node* AccessorAssemblerImpl::EmitLoadICProtoArrayCheck(
   return holder;
 }
 
-void AccessorAssemblerImpl::HandleLoadGlobalICHandlerCase(
+void AccessorAssembler::HandleLoadGlobalICHandlerCase(
     const LoadICParameters* pp, Node* handler, Label* miss,
     bool throw_reference_error_if_nonexistent) {
   LoadICParameters p = *pp;
@@ -457,7 +457,7 @@ void AccessorAssemblerImpl::HandleLoadGlobalICHandlerCase(
                              miss, kOnlyProperties);
 }
 
-void AccessorAssemblerImpl::HandleStoreICHandlerCase(
+void AccessorAssembler::HandleStoreICHandlerCase(
     const StoreICParameters* p, Node* handler, Label* miss,
     ElementSupport support_elements) {
   Label if_smi_handler(this), if_nonsmi_handler(this);
@@ -504,7 +504,7 @@ void AccessorAssemblerImpl::HandleStoreICHandlerCase(
   }
 }
 
-void AccessorAssemblerImpl::HandleStoreICElementHandlerCase(
+void AccessorAssembler::HandleStoreICElementHandlerCase(
     const StoreICParameters* p, Node* handler, Label* miss) {
   Comment("HandleStoreICElementHandlerCase");
   Node* validity_cell = LoadObjectField(handler, Tuple2::kValue1Offset);
@@ -521,8 +521,8 @@ void AccessorAssemblerImpl::HandleStoreICElementHandlerCase(
                p->value, p->slot, p->vector);
 }
 
-void AccessorAssemblerImpl::HandleStoreICProtoHandler(
-    const StoreICParameters* p, Node* handler, Label* miss) {
+void AccessorAssembler::HandleStoreICProtoHandler(const StoreICParameters* p,
+                                                  Node* handler, Label* miss) {
   // IC dispatchers rely on these assumptions to be held.
   STATIC_ASSERT(FixedArray::kLengthOffset ==
                 StoreHandler::kTransitionCellOffset);
@@ -613,11 +613,10 @@ void AccessorAssemblerImpl::HandleStoreICProtoHandler(
   }
 }
 
-void AccessorAssemblerImpl::HandleStoreICSmiHandlerCase(Node* handler_word,
-                                                        Node* holder,
-                                                        Node* value,
-                                                        Node* transition,
-                                                        Label* miss) {
+void AccessorAssembler::HandleStoreICSmiHandlerCase(Node* handler_word,
+                                                    Node* holder, Node* value,
+                                                    Node* transition,
+                                                    Label* miss) {
   Comment(transition ? "transitioning field store" : "field store");
 
 #ifdef DEBUG
@@ -683,21 +682,22 @@ void AccessorAssemblerImpl::HandleStoreICSmiHandlerCase(Node* handler_word,
   }
 }
 
-void AccessorAssemblerImpl::HandleStoreFieldAndReturn(
-    Node* handler_word, Node* holder, Representation representation,
-    Node* value, Node* transition, Label* miss) {
+void AccessorAssembler::HandleStoreFieldAndReturn(Node* handler_word,
+                                                  Node* holder,
+                                                  Representation representation,
+                                                  Node* value, Node* transition,
+                                                  Label* miss) {
   bool transition_to_field = transition != nullptr;
   Node* prepared_value = PrepareValueForStore(
       handler_word, holder, representation, transition, value, miss);
 
-  Node* offset = DecodeWord<StoreHandler::FieldOffsetBits>(handler_word);
   Label if_inobject(this), if_out_of_object(this);
   Branch(IsSetWord<StoreHandler::IsInobjectBits>(handler_word), &if_inobject,
          &if_out_of_object);
 
   Bind(&if_inobject);
   {
-    StoreNamedField(holder, offset, true, representation, prepared_value,
+    StoreNamedField(handler_word, holder, true, representation, prepared_value,
                     transition_to_field);
     if (transition_to_field) {
       StoreMap(holder, transition);
@@ -719,7 +719,7 @@ void AccessorAssemblerImpl::HandleStoreFieldAndReturn(
       Bind(&storage_extended);
     }
 
-    StoreNamedField(holder, offset, false, representation, prepared_value,
+    StoreNamedField(handler_word, holder, false, representation, prepared_value,
                     transition_to_field);
     if (transition_to_field) {
       StoreMap(holder, transition);
@@ -728,11 +728,10 @@ void AccessorAssemblerImpl::HandleStoreFieldAndReturn(
   }
 }
 
-Node* AccessorAssemblerImpl::PrepareValueForStore(Node* handler_word,
-                                                  Node* holder,
-                                                  Representation representation,
-                                                  Node* transition, Node* value,
-                                                  Label* bailout) {
+Node* AccessorAssembler::PrepareValueForStore(Node* handler_word, Node* holder,
+                                              Representation representation,
+                                              Node* transition, Node* value,
+                                              Label* bailout) {
   if (representation.IsDouble()) {
     value = TryTaggedToFloat64(value, bailout);
 
@@ -763,7 +762,7 @@ Node* AccessorAssemblerImpl::PrepareValueForStore(Node* handler_word,
   return value;
 }
 
-void AccessorAssemblerImpl::ExtendPropertiesBackingStore(Node* object) {
+void AccessorAssembler::ExtendPropertiesBackingStore(Node* object) {
   Node* properties = LoadProperties(object);
   Node* length = LoadFixedArrayBaseLength(properties);
 
@@ -799,17 +798,17 @@ void AccessorAssemblerImpl::ExtendPropertiesBackingStore(Node* object) {
   StoreObjectField(object, JSObject::kPropertiesOffset, new_properties);
 }
 
-void AccessorAssemblerImpl::StoreNamedField(Node* object, Node* offset,
-                                            bool is_inobject,
-                                            Representation representation,
-                                            Node* value,
-                                            bool transition_to_field) {
+void AccessorAssembler::StoreNamedField(Node* handler_word, Node* object,
+                                        bool is_inobject,
+                                        Representation representation,
+                                        Node* value, bool transition_to_field) {
   bool store_value_as_double = representation.IsDouble();
   Node* property_storage = object;
   if (!is_inobject) {
     property_storage = LoadProperties(object);
   }
 
+  Node* offset = DecodeWord<StoreHandler::FieldOffsetBits>(handler_word);
   if (representation.IsDouble()) {
     if (!FLAG_unbox_double_fields || !is_inobject) {
       if (transition_to_field) {
@@ -836,9 +835,11 @@ void AccessorAssemblerImpl::StoreNamedField(Node* object, Node* offset,
   }
 }
 
-void AccessorAssemblerImpl::EmitFastElementsBoundsCheck(
-    Node* object, Node* elements, Node* intptr_index,
-    Node* is_jsarray_condition, Label* miss) {
+void AccessorAssembler::EmitFastElementsBoundsCheck(Node* object,
+                                                    Node* elements,
+                                                    Node* intptr_index,
+                                                    Node* is_jsarray_condition,
+                                                    Label* miss) {
   Variable var_length(this, MachineType::PointerRepresentation());
   Comment("Fast elements bounds check");
   Label if_array(this), length_loaded(this, &var_length);
@@ -856,11 +857,13 @@ void AccessorAssemblerImpl::EmitFastElementsBoundsCheck(
   GotoUnless(UintPtrLessThan(intptr_index, var_length.value()), miss);
 }
 
-void AccessorAssemblerImpl::EmitElementLoad(
-    Node* object, Node* elements, Node* elements_kind, Node* intptr_index,
-    Node* is_jsarray_condition, Label* if_hole, Label* rebox_double,
-    Variable* var_double_value, Label* unimplemented_elements_kind,
-    Label* out_of_bounds, Label* miss) {
+void AccessorAssembler::EmitElementLoad(Node* object, Node* elements,
+                                        Node* elements_kind, Node* intptr_index,
+                                        Node* is_jsarray_condition,
+                                        Label* if_hole, Label* rebox_double,
+                                        Variable* var_double_value,
+                                        Label* unimplemented_elements_kind,
+                                        Label* out_of_bounds, Label* miss) {
   Label if_typed_array(this), if_fast_packed(this), if_fast_holey(this),
       if_fast_double(this), if_fast_holey_double(this), if_nonfast(this),
       if_dictionary(this);
@@ -1053,8 +1056,8 @@ void AccessorAssemblerImpl::EmitElementLoad(
   }
 }
 
-void AccessorAssemblerImpl::CheckPrototype(Node* prototype_cell, Node* name,
-                                           Label* miss) {
+void AccessorAssembler::CheckPrototype(Node* prototype_cell, Node* name,
+                                       Label* miss) {
   Node* maybe_prototype = LoadWeakCellValue(prototype_cell, miss);
 
   Label done(this);
@@ -1083,9 +1086,8 @@ void AccessorAssemblerImpl::CheckPrototype(Node* prototype_cell, Node* name,
   Bind(&done);
 }
 
-void AccessorAssemblerImpl::NameDictionaryNegativeLookup(Node* object,
-                                                         Node* name,
-                                                         Label* miss) {
+void AccessorAssembler::NameDictionaryNegativeLookup(Node* object, Node* name,
+                                                     Label* miss) {
   CSA_ASSERT(this, IsDictionaryMap(LoadMap(object)));
   Node* properties = LoadProperties(object);
   // Ensure the property does not exist in a dictionary-mode object.
@@ -1098,12 +1100,12 @@ void AccessorAssemblerImpl::NameDictionaryNegativeLookup(Node* object,
 
 //////////////////// Stub cache access helpers.
 
-enum AccessorAssemblerImpl::StubCacheTable : int {
+enum AccessorAssembler::StubCacheTable : int {
   kPrimary = static_cast<int>(StubCache::kPrimary),
   kSecondary = static_cast<int>(StubCache::kSecondary)
 };
 
-Node* AccessorAssemblerImpl::StubCachePrimaryOffset(Node* name, Node* map) {
+Node* AccessorAssembler::StubCachePrimaryOffset(Node* name, Node* map) {
   // See v8::internal::StubCache::PrimaryOffset().
   STATIC_ASSERT(StubCache::kCacheIndexShift == Name::kHashShift);
   // Compute the hash of the name (use entire hash field).
@@ -1125,7 +1127,7 @@ Node* AccessorAssemblerImpl::StubCachePrimaryOffset(Node* name, Node* map) {
   return ChangeUint32ToWord(Word32And(hash, Int32Constant(mask)));
 }
 
-Node* AccessorAssemblerImpl::StubCacheSecondaryOffset(Node* name, Node* seed) {
+Node* AccessorAssembler::StubCacheSecondaryOffset(Node* name, Node* seed) {
   // See v8::internal::StubCache::SecondaryOffset().
 
   // Use the seed from the primary cache in the secondary cache.
@@ -1137,10 +1139,12 @@ Node* AccessorAssemblerImpl::StubCacheSecondaryOffset(Node* name, Node* seed) {
   return ChangeUint32ToWord(Word32And(hash, Int32Constant(mask)));
 }
 
-void AccessorAssemblerImpl::TryProbeStubCacheTable(
-    StubCache* stub_cache, StubCacheTable table_id, Node* entry_offset,
-    Node* name, Node* map, Label* if_handler, Variable* var_handler,
-    Label* if_miss) {
+void AccessorAssembler::TryProbeStubCacheTable(StubCache* stub_cache,
+                                               StubCacheTable table_id,
+                                               Node* entry_offset, Node* name,
+                                               Node* map, Label* if_handler,
+                                               Variable* var_handler,
+                                               Label* if_miss) {
   StubCache::Table table = static_cast<StubCache::Table>(table_id);
 #ifdef DEBUG
   if (FLAG_test_secondary_stub_cache && table == StubCache::kPrimary) {
@@ -1180,11 +1184,10 @@ void AccessorAssemblerImpl::TryProbeStubCacheTable(
   Goto(if_handler);
 }
 
-void AccessorAssemblerImpl::TryProbeStubCache(StubCache* stub_cache,
-                                              Node* receiver, Node* name,
-                                              Label* if_handler,
-                                              Variable* var_handler,
-                                              Label* if_miss) {
+void AccessorAssembler::TryProbeStubCache(StubCache* stub_cache, Node* receiver,
+                                          Node* name, Label* if_handler,
+                                          Variable* var_handler,
+                                          Label* if_miss) {
   Label try_secondary(this), miss(this);
 
   Counters* counters = isolate()->counters();
@@ -1217,7 +1220,7 @@ void AccessorAssemblerImpl::TryProbeStubCache(StubCache* stub_cache,
 
 //////////////////// Entry points into private implementation (one per stub).
 
-void AccessorAssemblerImpl::LoadIC(const LoadICParameters* p) {
+void AccessorAssembler::LoadIC(const LoadICParameters* p) {
   Variable var_handler(this, MachineRepresentation::kTagged);
   // TODO(ishell): defer blocks when it works.
   Label if_handler(this, &var_handler), try_polymorphic(this),
@@ -1260,7 +1263,7 @@ void AccessorAssemblerImpl::LoadIC(const LoadICParameters* p) {
   }
 }
 
-void AccessorAssemblerImpl::LoadICProtoArray(
+void AccessorAssembler::LoadICProtoArray(
     const LoadICParameters* p, Node* handler,
     bool throw_reference_error_if_nonexistent) {
   Label miss(this);
@@ -1285,8 +1288,8 @@ void AccessorAssemblerImpl::LoadICProtoArray(
   }
 }
 
-void AccessorAssemblerImpl::LoadGlobalIC(const LoadICParameters* p,
-                                         TypeofMode typeof_mode) {
+void AccessorAssembler::LoadGlobalIC(const LoadICParameters* p,
+                                     TypeofMode typeof_mode) {
   Label try_handler(this), call_handler(this), miss(this);
   Node* weak_cell =
       LoadFixedArrayElement(p->vector, p->slot, 0, SMI_PARAMETERS);
@@ -1332,7 +1335,7 @@ void AccessorAssemblerImpl::LoadGlobalIC(const LoadICParameters* p,
   }
 }
 
-void AccessorAssemblerImpl::KeyedLoadIC(const LoadICParameters* p) {
+void AccessorAssembler::KeyedLoadIC(const LoadICParameters* p) {
   Variable var_handler(this, MachineRepresentation::kTagged);
   // TODO(ishell): defer blocks when it works.
   Label if_handler(this, &var_handler), try_polymorphic(this),
@@ -1392,8 +1395,10 @@ void AccessorAssemblerImpl::KeyedLoadIC(const LoadICParameters* p) {
   }
 }
 
-void AccessorAssemblerImpl::KeyedLoadICGeneric(const LoadICParameters* p) {
+void AccessorAssembler::KeyedLoadICGeneric(const LoadICParameters* p) {
   Variable var_index(this, MachineType::PointerRepresentation());
+  Variable var_unique(this, MachineRepresentation::kTagged);
+  var_unique.Bind(p->name);  // Dummy initialization.
   Variable var_details(this, MachineRepresentation::kWord32);
   Variable var_value(this, MachineRepresentation::kTagged);
   Label if_index(this), if_unique_name(this), if_element_hole(this),
@@ -1410,8 +1415,8 @@ void AccessorAssemblerImpl::KeyedLoadICGeneric(const LoadICParameters* p) {
                               Int32Constant(LAST_CUSTOM_ELEMENTS_RECEIVER)),
          &slow);
 
-  Node* key = p->name;
-  TryToName(key, &if_index, &var_index, &if_unique_name, &slow);
+  TryToName(p->name, &if_index, &var_index, &if_unique_name, &var_unique,
+            &slow);
 
   Bind(&if_index);
   {
@@ -1460,6 +1465,7 @@ void AccessorAssemblerImpl::KeyedLoadICGeneric(const LoadICParameters* p) {
   Bind(&if_unique_name);
   {
     Comment("key is unique name");
+    Node* key = var_unique.value();
     // Check if the receiver has fast or slow properties.
     properties = LoadProperties(receiver);
     Node* properties_map = LoadMap(properties);
@@ -1518,6 +1524,7 @@ void AccessorAssemblerImpl::KeyedLoadICGeneric(const LoadICParameters* p) {
     // We checked for LAST_CUSTOM_ELEMENTS_RECEIVER before, which rules out
     // seeing global objects here (which would need special handling).
 
+    Node* key = var_unique.value();
     Variable var_name_index(this, MachineType::PointerRepresentation());
     Label dictionary_found(this, &var_name_index);
     NameDictionaryLookup<NameDictionary>(properties, key, &dictionary_found,
@@ -1548,7 +1555,7 @@ void AccessorAssemblerImpl::KeyedLoadICGeneric(const LoadICParameters* p) {
   }
 }
 
-void AccessorAssemblerImpl::StoreIC(const StoreICParameters* p) {
+void AccessorAssembler::StoreIC(const StoreICParameters* p) {
   Variable var_handler(this, MachineRepresentation::kTagged);
   // TODO(ishell): defer blocks when it works.
   Label if_handler(this, &var_handler), try_polymorphic(this),
@@ -1595,8 +1602,8 @@ void AccessorAssemblerImpl::StoreIC(const StoreICParameters* p) {
   }
 }
 
-void AccessorAssemblerImpl::KeyedStoreIC(const StoreICParameters* p,
-                                         LanguageMode language_mode) {
+void AccessorAssembler::KeyedStoreIC(const StoreICParameters* p,
+                                     LanguageMode language_mode) {
   // TODO(ishell): defer blocks when it works.
   Label miss(this /*, Label::kDeferred*/);
   {
@@ -1706,7 +1713,7 @@ void AccessorAssemblerImpl::KeyedStoreIC(const StoreICParameters* p,
 
 //////////////////// Public methods.
 
-void AccessorAssemblerImpl::GenerateLoadIC() {
+void AccessorAssembler::GenerateLoadIC() {
   typedef LoadWithVectorDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
@@ -1719,7 +1726,7 @@ void AccessorAssemblerImpl::GenerateLoadIC() {
   LoadIC(&p);
 }
 
-void AccessorAssemblerImpl::GenerateLoadICTrampoline() {
+void AccessorAssembler::GenerateLoadICTrampoline() {
   typedef LoadDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
@@ -1732,9 +1739,9 @@ void AccessorAssemblerImpl::GenerateLoadICTrampoline() {
   LoadIC(&p);
 }
 
-void AccessorAssemblerImpl::GenerateLoadICProtoArray(
+void AccessorAssembler::GenerateLoadICProtoArray(
     bool throw_reference_error_if_nonexistent) {
-  typedef LoadICProtoArrayStub::Descriptor Descriptor;
+  typedef LoadICProtoArrayDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
   Node* name = Parameter(Descriptor::kName);
@@ -1747,8 +1754,8 @@ void AccessorAssemblerImpl::GenerateLoadICProtoArray(
   LoadICProtoArray(&p, handler, throw_reference_error_if_nonexistent);
 }
 
-void AccessorAssemblerImpl::GenerateLoadField() {
-  typedef LoadFieldStub::Descriptor Descriptor;
+void AccessorAssembler::GenerateLoadField() {
+  typedef LoadFieldDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
   Node* name = nullptr;
@@ -1761,7 +1768,7 @@ void AccessorAssemblerImpl::GenerateLoadField() {
                              nullptr, kOnlyProperties);
 }
 
-void AccessorAssemblerImpl::GenerateLoadGlobalIC(TypeofMode typeof_mode) {
+void AccessorAssembler::GenerateLoadGlobalIC(TypeofMode typeof_mode) {
   typedef LoadGlobalWithVectorDescriptor Descriptor;
 
   Node* name = Parameter(Descriptor::kName);
@@ -1773,8 +1780,7 @@ void AccessorAssemblerImpl::GenerateLoadGlobalIC(TypeofMode typeof_mode) {
   LoadGlobalIC(&p, typeof_mode);
 }
 
-void AccessorAssemblerImpl::GenerateLoadGlobalICTrampoline(
-    TypeofMode typeof_mode) {
+void AccessorAssembler::GenerateLoadGlobalICTrampoline(TypeofMode typeof_mode) {
   typedef LoadGlobalDescriptor Descriptor;
 
   Node* name = Parameter(Descriptor::kName);
@@ -1786,7 +1792,7 @@ void AccessorAssemblerImpl::GenerateLoadGlobalICTrampoline(
   LoadGlobalIC(&p, typeof_mode);
 }
 
-void AccessorAssemblerImpl::GenerateKeyedLoadICTF() {
+void AccessorAssembler::GenerateKeyedLoadIC() {
   typedef LoadWithVectorDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
@@ -1799,7 +1805,7 @@ void AccessorAssemblerImpl::GenerateKeyedLoadICTF() {
   KeyedLoadIC(&p);
 }
 
-void AccessorAssemblerImpl::GenerateKeyedLoadICTrampolineTF() {
+void AccessorAssembler::GenerateKeyedLoadICTrampoline() {
   typedef LoadDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
@@ -1812,7 +1818,7 @@ void AccessorAssemblerImpl::GenerateKeyedLoadICTrampolineTF() {
   KeyedLoadIC(&p);
 }
 
-void AccessorAssemblerImpl::GenerateKeyedLoadICMegamorphic() {
+void AccessorAssembler::GenerateKeyedLoadIC_Megamorphic() {
   typedef LoadWithVectorDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
@@ -1825,7 +1831,7 @@ void AccessorAssemblerImpl::GenerateKeyedLoadICMegamorphic() {
   KeyedLoadICGeneric(&p);
 }
 
-void AccessorAssemblerImpl::GenerateStoreIC() {
+void AccessorAssembler::GenerateStoreIC() {
   typedef StoreWithVectorDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
@@ -1839,7 +1845,7 @@ void AccessorAssemblerImpl::GenerateStoreIC() {
   StoreIC(&p);
 }
 
-void AccessorAssemblerImpl::GenerateStoreICTrampoline() {
+void AccessorAssembler::GenerateStoreICTrampoline() {
   typedef StoreDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
@@ -1853,7 +1859,7 @@ void AccessorAssemblerImpl::GenerateStoreICTrampoline() {
   StoreIC(&p);
 }
 
-void AccessorAssemblerImpl::GenerateKeyedStoreICTF(LanguageMode language_mode) {
+void AccessorAssembler::GenerateKeyedStoreIC(LanguageMode language_mode) {
   typedef StoreWithVectorDescriptor Descriptor;
 
   Node* receiver = Parameter(Descriptor::kReceiver);
@@ -1867,7 +1873,7 @@ void AccessorAssemblerImpl::GenerateKeyedStoreICTF(LanguageMode language_mode) {
   KeyedStoreIC(&p, language_mode);
 }
 
-void AccessorAssemblerImpl::GenerateKeyedStoreICTrampolineTF(
+void AccessorAssembler::GenerateKeyedStoreICTrampoline(
     LanguageMode language_mode) {
   typedef StoreDescriptor Descriptor;
 
@@ -1881,49 +1887,6 @@ void AccessorAssemblerImpl::GenerateKeyedStoreICTrampolineTF(
   StoreICParameters p(context, receiver, name, value, slot, vector);
   KeyedStoreIC(&p, language_mode);
 }
-
-//////////////////// AccessorAssembler implementation.
-
-#define DISPATCH_TO_IMPL(Name)                                        \
-  void AccessorAssembler::Generate##Name(CodeAssemblerState* state) { \
-    AccessorAssemblerImpl assembler(state);                           \
-    assembler.Generate##Name();                                       \
-  }
-
-ACCESSOR_ASSEMBLER_PUBLIC_INTERFACE(DISPATCH_TO_IMPL)
-#undef DISPATCH_TO_IMPL
-
-void AccessorAssembler::GenerateLoadICProtoArray(
-    CodeAssemblerState* state, bool throw_reference_error_if_nonexistent) {
-  AccessorAssemblerImpl assembler(state);
-  assembler.GenerateLoadICProtoArray(throw_reference_error_if_nonexistent);
-}
-
-void AccessorAssembler::GenerateLoadGlobalIC(CodeAssemblerState* state,
-                                             TypeofMode typeof_mode) {
-  AccessorAssemblerImpl assembler(state);
-  assembler.GenerateLoadGlobalIC(typeof_mode);
-}
-
-void AccessorAssembler::GenerateLoadGlobalICTrampoline(
-    CodeAssemblerState* state, TypeofMode typeof_mode) {
-  AccessorAssemblerImpl assembler(state);
-  assembler.GenerateLoadGlobalICTrampoline(typeof_mode);
-}
-
-void AccessorAssembler::GenerateKeyedStoreICTF(CodeAssemblerState* state,
-                                               LanguageMode language_mode) {
-  AccessorAssemblerImpl assembler(state);
-  assembler.GenerateKeyedStoreICTF(language_mode);
-}
-
-void AccessorAssembler::GenerateKeyedStoreICTrampolineTF(
-    CodeAssemblerState* state, LanguageMode language_mode) {
-  AccessorAssemblerImpl assembler(state);
-  assembler.GenerateKeyedStoreICTrampolineTF(language_mode);
-}
-
-#undef ACCESSOR_ASSEMBLER_PUBLIC_INTERFACE
 
 }  // namespace internal
 }  // namespace v8

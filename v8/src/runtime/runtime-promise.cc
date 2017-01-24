@@ -5,7 +5,6 @@
 
 #include "src/debug/debug.h"
 #include "src/elements.h"
-#include "src/promise-utils.h"
 
 namespace v8 {
 namespace internal {
@@ -48,6 +47,16 @@ RUNTIME_FUNCTION(Runtime_PromiseRejectEventFromStack) {
         isolate->debug()->NextAsyncTaskId(promise));
   }
   PromiseRejectEvent(isolate, promise, rejected_promise, value, true);
+  return isolate->heap()->undefined_value();
+}
+
+RUNTIME_FUNCTION(Runtime_ReportPromiseReject) {
+  DCHECK_EQ(2, args.length());
+  HandleScope scope(isolate);
+  CONVERT_ARG_HANDLE_CHECKED(JSPromise, promise, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, value, 1);
+  isolate->ReportPromiseReject(Handle<JSObject>::cast(promise), value,
+                               v8::kPromiseRejectWithNoHandler);
   return isolate->heap()->undefined_value();
 }
 
@@ -130,57 +139,7 @@ void EnqueuePromiseReactionJob(Isolate* isolate, Handle<JSPromise> promise,
   isolate->EnqueueMicrotask(info);
 }
 
-void PromiseSet(Isolate* isolate, Handle<JSPromise> promise, int status,
-                Handle<Object> result) {
-  promise->set_status(status);
-  promise->set_result(*result);
-  promise->set_deferred_promise(isolate->heap()->undefined_value());
-  promise->set_deferred_on_resolve(isolate->heap()->undefined_value());
-  promise->set_deferred_on_reject(isolate->heap()->undefined_value());
-  promise->set_fulfill_reactions(isolate->heap()->undefined_value());
-  promise->set_reject_reactions(isolate->heap()->undefined_value());
-}
-
-void PromiseFulfill(Isolate* isolate, Handle<JSPromise> promise, int status,
-                    Handle<Object> value) {
-  if (isolate->debug()->is_active()) {
-    isolate->debug()->OnAsyncTaskEvent(
-        status == v8::Promise::kFulfilled ? debug::kDebugEnqueuePromiseResolve
-                                          : debug::kDebugEnqueuePromiseReject,
-        isolate->debug()->NextAsyncTaskId(promise));
-  }
-  // Check if there are any callbacks.
-  if (!promise->deferred_promise()->IsUndefined(isolate)) {
-    Handle<Object> tasks((status == v8::Promise::kFulfilled)
-                             ? promise->fulfill_reactions()
-                             : promise->reject_reactions(),
-                         isolate);
-    Handle<PromiseReactionJobInfo> info =
-        isolate->factory()->NewPromiseReactionJobInfo(
-            value, tasks, handle(promise->deferred_promise(), isolate),
-            handle(promise->deferred_on_resolve(), isolate),
-            handle(promise->deferred_on_reject(), isolate),
-            isolate->native_context());
-    EnqueuePromiseReactionJob(isolate, promise, info, status);
-  }
-
-  PromiseSet(isolate, promise, status, value);
-}
-
 }  // namespace
-
-RUNTIME_FUNCTION(Runtime_PromiseReject) {
-  DCHECK_EQ(3, args.length());
-  HandleScope scope(isolate);
-  CONVERT_ARG_HANDLE_CHECKED(JSPromise, promise, 0);
-  CONVERT_ARG_HANDLE_CHECKED(Object, reason, 1);
-  CONVERT_BOOLEAN_ARG_CHECKED(debug_event, 2);
-
-  PromiseRejectEvent(isolate, promise, promise, reason, debug_event);
-  PromiseFulfill(isolate, promise, v8::Promise::kRejected, reason);
-
-  return isolate->heap()->undefined_value();
-}
 
 RUNTIME_FUNCTION(Runtime_EnqueuePromiseReactionJob) {
   HandleScope scope(isolate);
@@ -236,15 +195,6 @@ RUNTIME_FUNCTION(Runtime_PromiseMarkAsHandled) {
   CONVERT_ARG_CHECKED(JSPromise, promise, 0);
 
   promise->set_has_handler(true);
-  return isolate->heap()->undefined_value();
-}
-
-RUNTIME_FUNCTION(Runtime_PromiseMarkHandledHint) {
-  SealHandleScope shs(isolate);
-  DCHECK_EQ(1, args.length());
-  CONVERT_ARG_CHECKED(JSPromise, promise, 0);
-
-  promise->set_handled_hint(true);
   return isolate->heap()->undefined_value();
 }
 

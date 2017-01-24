@@ -10,11 +10,16 @@ var v8Folder = path.fullpath("../../../source/js/v8/v8");
 console.log(v8Folder);
 
 process.chdir(v8Folder);
-process.run("make", [
-    "ia32.release",
-    "i18nsupport=off",
-    "-j8"
+
+process.run("tools/dev/v8gen.py", ["x64.release"]);
+
+process.run("../depot_tools/ninja", [
+    "-C",
+    "out.gn/x64.release",
+    "-j",
+    "8"
 ]);
+
 process.chdir(workFolder);
 
 var paltFolder = 'src/base/platform';
@@ -79,7 +84,6 @@ var files = {
 
 var re = [
     /^src\/d8.*$/,
-    /^src\/i18n\..*$/,
     /^.*unittest.*\.cc$/,
     /^src\/test\/.*\.cc$/
 ];
@@ -124,11 +128,11 @@ function cp_folder(path, to) {
 }
 
 var gens = [
-    '/out/ia32.release/obj/gen/libraries.cc',
-    '/out/ia32.release/obj/gen/experimental-libraries.cc',
-    '/out/ia32.release/obj/gen/extras-libraries.cc',
-    '/out/ia32.release/obj/gen/experimental-extras-libraries.cc',
-    '/out/ia32.release/obj.target/v8_base/geni/bytecode-peephole-table.cc'
+    '/out.gn/x64.release/gen/libraries.cc',
+    '/out.gn/x64.release/gen/experimental-libraries.cc',
+    '/out.gn/x64.release/gen/extras-libraries.cc',
+    '/out.gn/x64.release/gen/experimental-extras-libraries.cc',
+    '/out.gn/x64.release/gen/bytecode-peephole-table.cc'
 ];
 
 function cp_gen() {

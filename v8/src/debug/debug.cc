@@ -29,6 +29,7 @@
 #include "src/messages.h"
 #include "src/snapshot/natives.h"
 #include "src/wasm/wasm-module.h"
+#include "src/wasm/wasm-objects.h"
 
 #include "include/v8-debug.h"
 
@@ -58,15 +59,12 @@ Debug::Debug(Isolate* isolate)
   ThreadInit();
 }
 
-BreakLocation BreakLocation::FromFrame(StandardFrame* frame) {
-  // TODO(clemensh): Handle Wasm frames.
-  DCHECK(!frame->is_wasm());
-
-  auto summary = FrameSummary::GetFirst(frame).AsJavaScript();
+BreakLocation BreakLocation::FromFrame(Handle<DebugInfo> debug_info,
+                                       JavaScriptFrame* frame) {
+  auto summary = FrameSummary::GetTop(frame).AsJavaScript();
   int offset = summary.code_offset();
   Handle<AbstractCode> abstract_code = summary.abstract_code();
   if (abstract_code->IsCode()) offset = offset - 1;
-  Handle<DebugInfo> debug_info(summary.function()->shared()->GetDebugInfo());
   auto it = BreakIterator::GetIterator(debug_info, abstract_code);
   it->SkipTo(BreakIndexFromCodeOffset(debug_info, abstract_code, offset));
   return it->GetBreakLocation();
@@ -75,7 +73,7 @@ BreakLocation BreakLocation::FromFrame(StandardFrame* frame) {
 void BreakLocation::AllAtCurrentStatement(Handle<DebugInfo> debug_info,
                                           JavaScriptFrame* frame,
                                           List<BreakLocation>* result_out) {
-  auto summary = FrameSummary::GetFirst(frame).AsJavaScript();
+  auto summary = FrameSummary::GetTop(frame).AsJavaScript();
   int offset = summary.code_offset();
   Handle<AbstractCode> abstract_code = summary.abstract_code();
   if (abstract_code->IsCode()) offset = offset - 1;
@@ -516,34 +514,18 @@ void Debug::Break(JavaScriptFrame* frame) {
   // Postpone interrupt during breakpoint processing.
   PostponeInterruptsScope postpone(isolate_);
 
-  // Return if we fail to retrieve debug info for javascript frames.
-  if (frame->is_java_script()) {
-    JavaScriptFrame* js_frame = JavaScriptFrame::cast(frame);
+  // Return if we fail to retrieve debug info.
+  Handle<JSFunction> function(frame->function());
+  Handle<SharedFunctionInfo> shared(function->shared());
+  if (!EnsureDebugInfo(shared, function)) return;
+  Handle<DebugInfo> debug_info(shared->GetDebugInfo(), isolate_);
 
-    // Get the debug info (create it if it does not exist).
-    Handle<JSFunction> function(js_frame->function());
-    Handle<SharedFunctionInfo> shared(function->shared());
-    if (!EnsureDebugInfo(shared, function)) return;
-  }
-
-  BreakLocation location = BreakLocation::FromFrame(frame);
+  // Find the break location where execution has stopped.
+  BreakLocation location = BreakLocation::FromFrame(debug_info, frame);
 
   // Find actual break points, if any, and trigger debug break event.
-  MaybeHandle<FixedArray> break_points_hit;
-  if (!break_points_active()) {
-    // Don't try to find hit breakpoints.
-  } else if (frame->is_wasm_interpreter_entry()) {
-    // TODO(clemensh): Find hit breakpoints for wasm.
-    UNIMPLEMENTED();
-  } else {
-    // Get the debug info, which must exist if we reach here.
-    Handle<DebugInfo> debug_info(
-        JavaScriptFrame::cast(frame)->function()->shared()->GetDebugInfo(),
-        isolate_);
-
-    break_points_hit = CheckBreakPoints(debug_info, &location);
-  }
-
+  MaybeHandle<FixedArray> break_points_hit =
+      CheckBreakPoints(debug_info, &location);
   if (!break_points_hit.is_null()) {
     // Clear all current stepping setup.
     ClearStepping();
@@ -576,7 +558,7 @@ void Debug::Break(JavaScriptFrame* frame) {
       step_break = location.IsTailCall();
     // Fall through.
     case StepIn: {
-      FrameSummary summary = FrameSummary::GetFirst(frame);
+      FrameSummary summary = FrameSummary::GetTop(frame);
       step_break = step_break || location.IsReturn() || current_fp != last_fp ||
                    thread_local_.last_statement_position_ !=
                        summary.SourceStatementPosition();
@@ -655,7 +637,10 @@ MaybeHandle<Object> Debug::CallFunction(const char* name, int argc,
   Handle<JSFunction> fun = Handle<JSFunction>::cast(
       JSReceiver::GetProperty(isolate_, holder, name).ToHandleChecked());
   Handle<Object> undefined = isolate_->factory()->undefined_value();
-  return Execution::TryCall(isolate_, fun, undefined, argc, args);
+  MaybeHandle<Object> maybe_exception;
+  return Execution::TryCall(isolate_, fun, undefined, argc, args,
+                            Execution::MessageHandling::kReport,
+                            &maybe_exception);
 }
 
 
@@ -719,9 +704,12 @@ bool Debug::SetBreakPointForScript(Handle<Script> script,
                                    int* source_position,
                                    BreakPositionAlignment alignment) {
   if (script->type() == Script::TYPE_WASM) {
-    // TODO(clemensh): set breakpoint for wasm.
-    return false;
+    Handle<WasmCompiledModule> compiled_module(
+        WasmCompiledModule::cast(script->wasm_compiled_module()), isolate_);
+    return WasmCompiledModule::SetBreakPoint(compiled_module, source_position,
+                                             break_point_object);
   }
+
   HandleScope scope(isolate_);
 
   // Obtain shared function info for the function.
@@ -1019,7 +1007,7 @@ void Debug::PrepareStep(StepAction step_action) {
   }
 
   // Get the debug info (create it if it does not exist).
-  auto summary = FrameSummary::GetFirst(frame).AsJavaScript();
+  auto summary = FrameSummary::GetTop(frame).AsJavaScript();
   Handle<JSFunction> function(summary.function());
   Handle<SharedFunctionInfo> shared(function->shared());
   if (!EnsureDebugInfo(shared, function)) {
@@ -1027,7 +1015,8 @@ void Debug::PrepareStep(StepAction step_action) {
     return;
   }
 
-  BreakLocation location = BreakLocation::FromFrame(frame);
+  Handle<DebugInfo> debug_info(shared->GetDebugInfo());
+  BreakLocation location = BreakLocation::FromFrame(debug_info, frame);
 
   // Any step at a return is a step-out.
   if (location.IsReturn()) step_action = StepOut;
@@ -1594,11 +1583,15 @@ void Debug::SetAfterBreakTarget(JavaScriptFrame* frame) {
 bool Debug::IsBreakAtReturn(JavaScriptFrame* frame) {
   HandleScope scope(isolate_);
 
+  // Get the executing function in which the debug break occurred.
+  Handle<SharedFunctionInfo> shared(frame->function()->shared());
+
   // With no debug info there are no break points, so we can't be at a return.
-  if (!frame->function()->shared()->HasDebugInfo()) return false;
+  if (!shared->HasDebugInfo()) return false;
 
   DCHECK(!frame->is_optimized());
-  BreakLocation location = BreakLocation::FromFrame(frame);
+  Handle<DebugInfo> debug_info(shared->GetDebugInfo());
+  BreakLocation location = BreakLocation::FromFrame(debug_info, frame);
   return location.IsReturn() || location.IsTailCall();
 }
 
@@ -1720,6 +1713,16 @@ void Debug::OnPromiseReject(Handle<Object> promise, Handle<Object> value) {
   }
 }
 
+namespace {
+v8::Local<v8::Context> GetDebugEventContext(Isolate* isolate) {
+  Handle<Context> context = isolate->debug()->debugger_entry()->GetContext();
+  // Isolate::context() may have been NULL when "script collected" event
+  // occured.
+  if (context.is_null()) return v8::Local<v8::Context>();
+  Handle<Context> native_context(context->native_context());
+  return v8::Utils::ToLocal(native_context);
+}
+}  // anonymous namespace
 
 void Debug::OnException(Handle<Object> exception, Handle<Object> promise) {
   // We cannot generate debug events when JS execution is disallowed.
@@ -1759,6 +1762,21 @@ void Debug::OnException(Handle<Object> exception, Handle<Object> promise) {
   DebugScope debug_scope(this);
   if (debug_scope.failed()) return;
 
+  if (debug_event_listener_) {
+    HandleScope scope(isolate_);
+
+    // Create the execution state.
+    Handle<Object> exec_state;
+    // Bail out and don't call debugger if exception.
+    if (!MakeExecutionState().ToHandle(&exec_state)) return;
+
+    debug_event_listener_->ExceptionThrown(
+        GetDebugEventContext(isolate_),
+        v8::Utils::ToLocal(Handle<JSObject>::cast(exec_state)),
+        v8::Utils::ToLocal(exception), promise->IsJSObject(), uncaught);
+    if (!non_inspector_listener_exists()) return;
+  }
+
   // Create the event data object.
   Handle<Object> event_data;
   // Bail out and don't call debugger if exception.
@@ -1781,6 +1799,24 @@ void Debug::OnDebugBreak(Handle<Object> break_points_hit, bool auto_continue) {
 #ifdef DEBUG
   PrintBreakLocation();
 #endif  // DEBUG
+
+  if (debug_event_listener_) {
+    HandleScope scope(isolate_);
+
+    // Create the execution state.
+    Handle<Object> exec_state;
+    // Bail out and don't call debugger if exception.
+    if (!MakeExecutionState().ToHandle(&exec_state)) return;
+
+    bool previous = in_debug_event_listener_;
+    in_debug_event_listener_ = true;
+    debug_event_listener_->BreakProgramRequested(
+        GetDebugEventContext(isolate_),
+        v8::Utils::ToLocal(Handle<JSObject>::cast(exec_state)),
+        v8::Utils::ToLocal(break_points_hit));
+    in_debug_event_listener_ = previous;
+    if (!non_inspector_listener_exists()) return;
+  }
 
   HandleScope scope(isolate_);
   // Create the event data object.
@@ -1859,29 +1895,12 @@ int Debug::NextAsyncTaskId(Handle<JSObject> promise) {
   return async_id->value();
 }
 
-void Debug::SetAsyncTaskListener(debug::AsyncTaskListener listener,
-                                 void* data) {
-  async_task_listener_ = listener;
-  async_task_listener_data_ = data;
-  UpdateState();
-}
-
 void Debug::OnAsyncTaskEvent(debug::PromiseDebugActionType type, int id) {
   if (in_debug_scope() || ignore_events()) return;
 
-  if (async_task_listener_) {
-    async_task_listener_(type, id, async_task_listener_data_);
-    // There are three types of event listeners: C++ message_handler,
-    // JavaScript event listener and C++ event listener.
-    // Currently inspector still uses C++ event listener and installs
-    // more specific event listeners for part of events. Calling of
-    // C++ event listener is redundant when more specific event listener
-    // is presented. Other clients can install JavaScript event listener
-    // (e.g. some of NodeJS module).
-    bool non_inspector_listener_exists =
-        message_handler_ != nullptr ||
-        (event_listener_.is_null() && !event_listener_->IsForeign());
-    if (!non_inspector_listener_exists) return;
+  if (debug_event_listener_) {
+    debug_event_listener_->PromiseEventOccurred(type, id);
+    if (!non_inspector_listener_exists()) return;
   }
 
   HandleScope scope(isolate_);
@@ -1935,7 +1954,7 @@ void Debug::CallEventCallback(v8::DebugEvent event,
   in_debug_event_listener_ = true;
   if (event_listener_->IsForeign()) {
     // Invoke the C debug event listener.
-    debug::EventCallback callback = FUNCTION_CAST<debug::EventCallback>(
+    v8::Debug::EventCallback callback = FUNCTION_CAST<v8::Debug::EventCallback>(
         Handle<Foreign>::cast(event_listener_)->foreign_address());
     EventDetailsImpl event_details(event,
                                    Handle<JSObject>::cast(exec_state),
@@ -1960,7 +1979,6 @@ void Debug::CallEventCallback(v8::DebugEvent event,
   in_debug_event_listener_ = previous;
 }
 
-
 void Debug::ProcessCompileEvent(v8::DebugEvent event, Handle<Script> script) {
   if (ignore_events()) return;
   if (script->type() != i::Script::TYPE_NORMAL &&
@@ -1968,12 +1986,17 @@ void Debug::ProcessCompileEvent(v8::DebugEvent event, Handle<Script> script) {
     return;
   }
   SuppressDebug while_processing(this);
-
   bool in_nested_debug_scope = in_debug_scope();
-  HandleScope scope(isolate_);
   DebugScope debug_scope(this);
   if (debug_scope.failed()) return;
 
+  if (debug_event_listener_) {
+    debug_event_listener_->ScriptCompiled(ToApiHandle<debug::Script>(script),
+                                          event != v8::AfterCompile);
+    if (!non_inspector_listener_exists()) return;
+  }
+
+  HandleScope scope(isolate_);
   // Create the compile state object.
   Handle<Object> event_data;
   // Bail out and don't call debugger if exception.
@@ -2091,9 +2114,9 @@ void Debug::NotifyMessageHandler(v8::DebugEvent event,
     Handle<Object> answer_value;
     Handle<String> answer;
     MaybeHandle<Object> maybe_exception;
-    MaybeHandle<Object> maybe_result =
-        Execution::TryCall(isolate_, process_debug_request, cmd_processor, 1,
-                           request_args, &maybe_exception);
+    MaybeHandle<Object> maybe_result = Execution::TryCall(
+        isolate_, process_debug_request, cmd_processor, 1, request_args,
+        Execution::MessageHandling::kReport, &maybe_exception);
 
     if (maybe_result.ToHandle(&answer_value)) {
       if (answer_value->IsUndefined(isolate_)) {
@@ -2165,9 +2188,14 @@ void Debug::SetMessageHandler(v8::Debug::MessageHandler handler) {
   }
 }
 
+void Debug::SetDebugEventListener(debug::DebugEventListener* listener) {
+  debug_event_listener_ = listener;
+  UpdateState();
+}
+
 void Debug::UpdateState() {
   bool is_active = message_handler_ != nullptr || !event_listener_.is_null() ||
-                   async_task_listener_ != nullptr;
+                   debug_event_listener_ != nullptr;
   if (is_active || in_debug_scope()) {
     // Note that the debug context could have already been loaded to
     // bootstrap test cases.
@@ -2289,10 +2317,10 @@ void Debug::ProcessDebugMessages(bool debug_command_only) {
 void Debug::PrintBreakLocation() {
   if (!FLAG_print_break_location) return;
   HandleScope scope(isolate_);
-  JavaScriptFrameIterator iterator(isolate_);
+  StackTraceFrameIterator iterator(isolate_);
   if (iterator.done()) return;
-  JavaScriptFrame* frame = iterator.frame();
-  FrameSummary summary = FrameSummary::GetFirst(frame);
+  StandardFrame* frame = iterator.frame();
+  FrameSummary summary = FrameSummary::GetTop(frame);
   int source_position = summary.SourcePosition();
   Handle<Object> script_obj = summary.script();
   PrintF("[debug] break in function '");
@@ -2344,8 +2372,6 @@ DebugScope::DebugScope(Debug* debug)
   // frame id.
   StackTraceFrameIterator it(isolate());
   bool has_frames = !it.done();
-  // We don't currently support breaking inside wasm framess.
-  DCHECK(!has_frames || !it.is_wasm());
   debug_->thread_local_.break_frame_id_ =
       has_frames ? it.frame()->id() : StackFrame::NO_ID;
   debug_->SetNextBreakId();
@@ -2491,8 +2517,10 @@ v8::Local<v8::String> MessageImpl::GetJSON() const {
       return v8::Local<v8::String>();
     }
 
-    MaybeHandle<Object> maybe_json =
-        Execution::TryCall(isolate, fun, event_data_, 0, NULL);
+    MaybeHandle<Object> maybe_exception;
+    MaybeHandle<Object> maybe_json = Execution::TryCall(
+        isolate, fun, event_data_, 0, nullptr,
+        Execution::MessageHandling::kReport, &maybe_exception);
     Handle<Object> json;
     if (!maybe_json.ToHandle(&json) || !json->IsString()) {
       return v8::Local<v8::String>();
@@ -2502,17 +2530,6 @@ v8::Local<v8::String> MessageImpl::GetJSON() const {
     return v8::Utils::ToLocal(response_json_);
   }
 }
-
-namespace {
-v8::Local<v8::Context> GetDebugEventContext(Isolate* isolate) {
-  Handle<Context> context = isolate->debug()->debugger_entry()->GetContext();
-  // Isolate::context() may have been NULL when "script collected" event
-  // occured.
-  if (context.is_null()) return v8::Local<v8::Context>();
-  Handle<Context> native_context(context->native_context());
-  return v8::Utils::ToLocal(native_context);
-}
-}  // anonymous namespace
 
 v8::Local<v8::Context> MessageImpl::GetEventContext() const {
   Isolate* isolate = event_data_->GetIsolate();

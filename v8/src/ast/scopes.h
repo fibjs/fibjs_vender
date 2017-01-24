@@ -21,6 +21,7 @@ class AstRawString;
 class Declaration;
 class ParseInfo;
 class SloppyBlockFunctionStatement;
+class Statement;
 class StringSet;
 class VariableProxy;
 
@@ -29,15 +30,16 @@ class VariableMap: public ZoneHashMap {
  public:
   explicit VariableMap(Zone* zone);
 
-  Variable* Declare(Zone* zone, Scope* scope, const AstRawString* name,
-                    VariableMode mode, VariableKind kind,
-                    InitializationFlag initialization_flag,
-                    MaybeAssignedFlag maybe_assigned_flag = kNotAssigned,
-                    bool* added = nullptr);
+  Variable* Declare(
+      Zone* zone, Scope* scope, const AstRawString* name, VariableMode mode,
+      VariableKind kind = NORMAL_VARIABLE,
+      InitializationFlag initialization_flag = kCreatedInitialized,
+      MaybeAssignedFlag maybe_assigned_flag = kNotAssigned,
+      bool* added = nullptr);
 
   // Records that "name" exists (if not recorded yet) but doesn't create a
   // Variable. Useful for preparsing.
-  void DeclareName(Zone* zone, const AstRawString* name);
+  void DeclareName(Zone* zone, const AstRawString* name, VariableMode mode);
 
   Variable* Lookup(const AstRawString* name);
   void Remove(Variable* var);
@@ -48,9 +50,24 @@ class VariableMap: public ZoneHashMap {
 // Sloppy block-scoped function declarations to var-bind
 class SloppyBlockFunctionMap : public ZoneHashMap {
  public:
+  class Delegate : public ZoneObject {
+   public:
+    explicit Delegate(Scope* scope,
+                      SloppyBlockFunctionStatement* statement = nullptr)
+        : scope_(scope), statement_(statement), next_(nullptr) {}
+    void set_statement(Statement* statement);
+    void set_next(Delegate* next) { next_ = next; }
+    Delegate* next() const { return next_; }
+    Scope* scope() const { return scope_; }
+
+   private:
+    Scope* scope_;
+    SloppyBlockFunctionStatement* statement_;
+    Delegate* next_;
+  };
+
   explicit SloppyBlockFunctionMap(Zone* zone);
-  void Declare(Zone* zone, const AstRawString* name,
-               SloppyBlockFunctionStatement* statement);
+  void Declare(Zone* zone, const AstRawString* name, Delegate* delegate);
 };
 
 enum class AnalyzeMode { kRegular, kDebugger };
@@ -153,7 +170,8 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   // Declare a local variable in this scope. If the variable has been
   // declared before, the previously declared variable is returned.
   Variable* DeclareLocal(const AstRawString* name, VariableMode mode,
-                         InitializationFlag init_flag, VariableKind kind,
+                         InitializationFlag init_flag = kCreatedInitialized,
+                         VariableKind kind = NORMAL_VARIABLE,
                          MaybeAssignedFlag maybe_assigned_flag = kNotAssigned);
 
   Variable* DeclareVariable(Declaration* declaration, VariableMode mode,
@@ -451,9 +469,11 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   }
 
  private:
-  Variable* Declare(Zone* zone, const AstRawString* name, VariableMode mode,
-                    VariableKind kind, InitializationFlag initialization_flag,
-                    MaybeAssignedFlag maybe_assigned_flag = kNotAssigned);
+  Variable* Declare(
+      Zone* zone, const AstRawString* name, VariableMode mode,
+      VariableKind kind = NORMAL_VARIABLE,
+      InitializationFlag initialization_flag = kCreatedInitialized,
+      MaybeAssignedFlag maybe_assigned_flag = kNotAssigned);
 
   // This method should only be invoked on scopes created during parsing (i.e.,
   // not deserialized from a context). Also, since NeedsContext() is only
@@ -747,10 +767,9 @@ class DeclarationScope : public Scope {
   // initializers.
   void AddLocal(Variable* var);
 
-  void DeclareSloppyBlockFunction(const AstRawString* name,
-                                  SloppyBlockFunctionStatement* statement) {
-    sloppy_block_function_map_.Declare(zone(), name, statement);
-  }
+  void DeclareSloppyBlockFunction(
+      const AstRawString* name, Scope* scope,
+      SloppyBlockFunctionStatement* statement = nullptr);
 
   // Go through sloppy_block_function_map_ and hoist those (into this scope)
   // which should be hoisted.

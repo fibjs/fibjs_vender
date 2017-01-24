@@ -77,7 +77,8 @@ const int kDebugPromiseFirstID = 1;
 
 class BreakLocation {
  public:
-  static BreakLocation FromFrame(StandardFrame* frame);
+  static BreakLocation FromFrame(Handle<DebugInfo> debug_info,
+                                 JavaScriptFrame* frame);
 
   static void AllAtCurrentStatement(Handle<DebugInfo> debug_info,
                                     JavaScriptFrame* frame,
@@ -286,7 +287,7 @@ class MessageImpl : public v8::Debug::Message {
 };
 
 // Details of the debug event delivered to the debug event listener.
-class EventDetailsImpl : public debug::EventDetails {
+class EventDetailsImpl : public v8::Debug::EventDetails {
  public:
   EventDetailsImpl(DebugEvent event,
                    Handle<JSObject> exec_state,
@@ -466,7 +467,7 @@ class Debug {
 
   int NextAsyncTaskId(Handle<JSObject> promise);
 
-  void SetAsyncTaskListener(debug::AsyncTaskListener listener, void* data);
+  void SetDebugEventListener(debug::DebugEventListener* listener);
 
   // Returns whether the operation succeeded. Compilation can only be triggered
   // if a valid closure is passed as the second argument, otherwise the shared
@@ -580,7 +581,9 @@ class Debug {
 
   // Check whether there are commands in the command queue.
   inline bool has_commands() const { return !command_queue_.IsEmpty(); }
-  inline bool ignore_events() const { return is_suppressed_ || !is_active_; }
+  inline bool ignore_events() const {
+    return is_suppressed_ || !is_active_ || isolate_->needs_side_effect_check();
+  }
   inline bool break_disabled() const {
     return break_disabled_ || in_debug_event_listener_;
   }
@@ -591,6 +594,18 @@ class Debug {
 
   bool has_suspended_generator() const {
     return thread_local_.suspended_generator_ != Smi::kZero;
+  }
+
+  // There are three types of event listeners: C++ message_handler,
+  // JavaScript event listener and C++ event listener.
+  // Currently inspector still uses C++ event listener and installs
+  // more specific event listeners for part of events. Calling of
+  // C++ event listener is redundant when more specific event listener
+  // is presented. Other clients can install JavaScript event listener
+  // (e.g. some of NodeJS module).
+  bool non_inspector_listener_exists() const {
+    return message_handler_ != nullptr ||
+           (!event_listener_.is_null() && !event_listener_->IsForeign());
   }
 
   void OnException(Handle<Object> exception, Handle<Object> promise);
@@ -663,8 +678,7 @@ class Debug {
 
   v8::Debug::MessageHandler message_handler_;
 
-  debug::AsyncTaskListener async_task_listener_ = nullptr;
-  void* async_task_listener_data_ = nullptr;
+  debug::DebugEventListener* debug_event_listener_ = nullptr;
 
   static const int kQueueInitialSize = 4;
   base::Semaphore command_received_;  // Signaled for each command received.

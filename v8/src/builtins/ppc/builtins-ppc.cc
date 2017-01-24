@@ -753,8 +753,8 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
   __ StoreP(r5, FieldMemOperand(r4, JSGeneratorObject::kResumeModeOffset), r0);
 
   // Load suspended function and context.
-  __ LoadP(cp, FieldMemOperand(r4, JSGeneratorObject::kContextOffset));
   __ LoadP(r7, FieldMemOperand(r4, JSGeneratorObject::kFunctionOffset));
+  __ LoadP(cp, FieldMemOperand(r7, JSFunction::kContextOffset));
 
   // Flood function if we are stepping.
   Label prepare_step_in_if_stepping, prepare_step_in_suspended_generator;
@@ -1205,7 +1205,7 @@ void Builtins::Generate_InterpreterPushArgsAndCallImpl(
 
 // static
 void Builtins::Generate_InterpreterPushArgsAndConstructImpl(
-    MacroAssembler* masm, CallableType construct_type) {
+    MacroAssembler* masm, PushArgsConstructMode mode) {
   // ----------- S t a t e -------------
   // -- r3 : argument count (not including receiver)
   // -- r6 : new target
@@ -1228,7 +1228,7 @@ void Builtins::Generate_InterpreterPushArgsAndConstructImpl(
   __ bind(&skip);
 
   __ AssertUndefinedOrAllocationSite(r5, r8);
-  if (construct_type == CallableType::kJSFunction) {
+  if (mode == PushArgsConstructMode::kJSFunction) {
     __ AssertFunction(r4);
 
     // Tail call to the function-specific construct stub (still in the caller
@@ -1238,9 +1238,12 @@ void Builtins::Generate_InterpreterPushArgsAndConstructImpl(
     // Jump to the construct function.
     __ addi(ip, r7, Operand(Code::kHeaderSize - kHeapObjectTag));
     __ Jump(ip);
-
+  } else if (mode == PushArgsConstructMode::kWithFinalSpread) {
+    // Call the constructor with r3, r4, and r6 unmodified.
+    __ Jump(masm->isolate()->builtins()->ConstructWithSpread(),
+            RelocInfo::CODE_TARGET);
   } else {
-    DCHECK_EQ(construct_type, CallableType::kAny);
+    DCHECK_EQ(PushArgsConstructMode::kOther, mode);
     // Call the constructor with r3, r4, and r6 unmodified.
     __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
   }
@@ -1364,12 +1367,6 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   Register closure = r4;
   Register map = r9;
   Register index = r5;
-
-  // Do we have a valid feedback vector?
-  __ LoadP(index, FieldMemOperand(closure, JSFunction::kLiteralsOffset));
-  __ LoadP(index, FieldMemOperand(index, LiteralsArray::kFeedbackVectorOffset));
-  __ JumpIfRoot(index, Heap::kUndefinedValueRootIndex, &gotta_call_runtime);
-
   __ LoadP(map,
            FieldMemOperand(closure, JSFunction::kSharedFunctionInfoOffset));
   __ LoadP(map,
@@ -1378,6 +1375,7 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ CmpSmiLiteral(index, Smi::FromInt(2), r0);
   __ blt(&gotta_call_runtime);
 
+  // Find literals.
   // r10 : native context
   // r5  : length / index
   // r9  : optimized code map
@@ -1398,6 +1396,18 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ LoadP(temp, FieldMemOperand(temp, WeakCell::kValueOffset));
   __ cmp(temp, native_context);
   __ bne(&loop_bottom);
+  // Literals available?
+  __ LoadP(temp,
+           FieldMemOperand(array_pointer,
+                           SharedFunctionInfo::kOffsetToPreviousLiterals));
+  __ LoadP(temp, FieldMemOperand(temp, WeakCell::kValueOffset));
+  __ JumpIfSmi(temp, &gotta_call_runtime);
+
+  // Save the literals in the closure.
+  __ StoreP(temp, FieldMemOperand(closure, JSFunction::kLiteralsOffset), r0);
+  __ RecordWriteField(closure, JSFunction::kLiteralsOffset, temp, r7,
+                      kLRHasNotBeenSaved, kDontSaveFPRegs, EMIT_REMEMBERED_SET,
+                      OMIT_SMI_CHECK);
 
   // Code available?
   Register entry = r7;
@@ -1407,7 +1417,7 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ LoadP(entry, FieldMemOperand(entry, WeakCell::kValueOffset));
   __ JumpIfSmi(entry, &try_shared);
 
-  // Found code. Get it into the closure and return.
+  // Found literals and code. Get them into the closure and return.
   // Store code entry in the closure.
   __ addi(entry, entry, Operand(Code::kHeaderSize - kHeapObjectTag));
   __ StoreP(entry, FieldMemOperand(closure, JSFunction::kCodeEntryOffset), r0);
@@ -1441,7 +1451,7 @@ void Builtins::Generate_CompileLazy(MacroAssembler* masm) {
   __ CmpSmiLiteral(index, Smi::FromInt(1), r0);
   __ bgt(&loop_top);
 
-  // We found no code.
+  // We found neither literals nor code.
   __ b(&gotta_call_runtime);
 
   __ bind(&try_shared);
@@ -2800,6 +2810,143 @@ void Builtins::Generate_Construct(MacroAssembler* masm) {
   __ bind(&non_constructor);
   __ Jump(masm->isolate()->builtins()->ConstructedNonConstructable(),
           RelocInfo::CODE_TARGET);
+}
+
+void Builtins::Generate_ConstructWithSpread(MacroAssembler* masm) {
+  // ----------- S t a t e -------------
+  //  -- r3 : the number of arguments (not including the receiver)
+  //  -- r4 : the constructor to call (can be any Object)
+  //  -- r6 : the new target (either the same as the constructor or
+  //          the JSFunction on which new was invoked initially)
+  // -----------------------------------
+
+  Register argc = r3;
+  Register constructor = r4;
+  Register new_target = r6;
+
+  Register scratch = r5;
+  Register scratch2 = r9;
+
+  Register spread = r7;
+  Register spread_map = r8;
+  __ LoadP(spread, MemOperand(sp, 0));
+  __ LoadP(spread_map, FieldMemOperand(spread, HeapObject::kMapOffset));
+
+  Label runtime_call, push_args;
+  // Check that the spread is an array.
+  __ CompareInstanceType(spread_map, scratch, JS_ARRAY_TYPE);
+  __ bne(&runtime_call);
+
+  // Check that we have the original ArrayPrototype.
+  __ LoadP(scratch, FieldMemOperand(spread_map, Map::kPrototypeOffset));
+  __ LoadP(scratch2, NativeContextMemOperand());
+  __ LoadP(scratch2,
+           ContextMemOperand(scratch2, Context::INITIAL_ARRAY_PROTOTYPE_INDEX));
+  __ cmp(scratch, scratch2);
+  __ bne(&runtime_call);
+
+  // Check that the ArrayPrototype hasn't been modified in a way that would
+  // affect iteration.
+  __ LoadRoot(scratch, Heap::kArrayIteratorProtectorRootIndex);
+  __ LoadP(scratch, FieldMemOperand(scratch, Cell::kValueOffset));
+  __ CmpSmiLiteral(scratch, Smi::FromInt(Isolate::kProtectorValid), r0);
+  __ bne(&runtime_call);
+
+  // Check that the map of the initial array iterator hasn't changed.
+  __ LoadP(scratch2, NativeContextMemOperand());
+  __ LoadP(scratch,
+           ContextMemOperand(scratch2,
+                             Context::INITIAL_ARRAY_ITERATOR_PROTOTYPE_INDEX));
+  __ LoadP(scratch, FieldMemOperand(scratch, HeapObject::kMapOffset));
+  __ LoadP(scratch2,
+           ContextMemOperand(
+               scratch2, Context::INITIAL_ARRAY_ITERATOR_PROTOTYPE_MAP_INDEX));
+  __ cmp(scratch, scratch2);
+  __ bne(&runtime_call);
+
+  // For FastPacked kinds, iteration will have the same effect as simply
+  // accessing each property in order.
+  Label no_protector_check;
+  __ LoadP(scratch, FieldMemOperand(spread_map, Map::kBitField2Offset));
+  __ DecodeField<Map::ElementsKindBits>(scratch);
+  __ cmpi(scratch, Operand(FAST_HOLEY_ELEMENTS));
+  __ bgt(&runtime_call);
+  // For non-FastHoley kinds, we can skip the protector check.
+  __ cmpi(scratch, Operand(FAST_SMI_ELEMENTS));
+  __ beq(&no_protector_check);
+  __ cmpi(scratch, Operand(FAST_ELEMENTS));
+  __ beq(&no_protector_check);
+  // Check the ArrayProtector cell.
+  __ LoadRoot(scratch, Heap::kArrayProtectorRootIndex);
+  __ LoadP(scratch, FieldMemOperand(scratch, PropertyCell::kValueOffset));
+  __ CmpSmiLiteral(scratch, Smi::FromInt(Isolate::kProtectorValid), r0);
+  __ bne(&runtime_call);
+
+  __ bind(&no_protector_check);
+  // Load the FixedArray backing store.
+  __ LoadP(spread, FieldMemOperand(spread, JSArray::kElementsOffset));
+  __ b(&push_args);
+
+  __ bind(&runtime_call);
+  {
+    // Call the builtin for the result of the spread.
+    FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
+    __ SmiTag(argc);
+    __ Push(constructor, new_target, argc, spread);
+    __ CallRuntime(Runtime::kSpreadIterableFixed);
+    __ mr(spread, r3);
+    __ Pop(constructor, new_target, argc);
+    __ SmiUntag(argc);
+  }
+
+  Register spread_len = r8;
+  __ bind(&push_args);
+  {
+    // Pop the spread argument off the stack.
+    __ Pop(scratch);
+    // Calculate the new nargs including the result of the spread.
+    __ LoadP(spread_len, FieldMemOperand(spread, FixedArray::kLengthOffset));
+    __ SmiUntag(spread_len);
+    // argc += spread_len - 1. Subtract 1 for the spread itself.
+    __ add(argc, argc, spread_len);
+    __ subi(argc, argc, Operand(1));
+  }
+
+  // Check for stack overflow.
+  {
+    // Check the stack for overflow. We are not trying to catch interruptions
+    // (i.e. debug break and preemption) here, so check the "real stack limit".
+    Label done;
+    __ LoadRoot(scratch, Heap::kRealStackLimitRootIndex);
+    // Make scratch the space we have left. The stack might already be
+    // overflowed here which will cause scratch to become negative.
+    __ sub(scratch, sp, scratch);
+    // Check if the arguments will overflow the stack.
+    __ ShiftLeftImm(r0, spread_len, Operand(kPointerSizeLog2));
+    __ cmp(scratch, r0);
+    __ bgt(&done);  // Signed comparison.
+    __ TailCallRuntime(Runtime::kThrowStackOverflow);
+    __ bind(&done);
+  }
+
+  // Put the evaluated spread onto the stack as additional arguments.
+  {
+    __ li(scratch, Operand::Zero());
+    Label done, loop;
+    __ bind(&loop);
+    __ cmp(scratch, spread_len);
+    __ beq(&done);
+    __ ShiftLeftImm(r0, scratch, Operand(kPointerSizeLog2));
+    __ add(scratch2, spread, r0);
+    __ LoadP(scratch2, FieldMemOperand(scratch2, FixedArray::kHeaderSize));
+    __ Push(scratch2);
+    __ addi(scratch, scratch, Operand(1));
+    __ b(&loop);
+    __ bind(&done);
+  }
+
+  // Dispatch.
+  __ Jump(masm->isolate()->builtins()->Construct(), RelocInfo::CODE_TARGET);
 }
 
 // static

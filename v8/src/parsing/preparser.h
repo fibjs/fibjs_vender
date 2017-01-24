@@ -414,10 +414,11 @@ class PreParserList {
   // These functions make list->Add(some_expression) work (and do nothing).
   PreParserList() : length_(0), variables_(nullptr) {}
   PreParserList* operator->() { return this; }
-  void Add(T, Zone* zone);
+  void Add(const T& element, Zone* zone);
   int length() const { return length_; }
   static PreParserList Null() { return PreParserList(-1); }
   bool IsNull() const { return length_ == -1; }
+  void Set(int index, const T& element) {}
 
  private:
   explicit PreParserList(int n) : length_(n), variables_(nullptr) {}
@@ -430,7 +431,7 @@ class PreParserList {
 
 template <>
 inline void PreParserList<PreParserExpression>::Add(
-    PreParserExpression expression, Zone* zone) {
+    const PreParserExpression& expression, Zone* zone) {
   if (expression.variables_ != nullptr) {
     DCHECK(FLAG_lazy_inner_functions);
     DCHECK(zone != nullptr);
@@ -445,7 +446,7 @@ inline void PreParserList<PreParserExpression>::Add(
 }
 
 template <typename T>
-void PreParserList<T>::Add(T, Zone* zone) {
+void PreParserList<T>::Add(const T& element, Zone* zone) {
   ++length_;
 }
 
@@ -595,7 +596,8 @@ class PreParserFactory {
   PreParserExpression NewObjectLiteral(PreParserExpressionList properties,
                                        int literal_index,
                                        int boilerplate_properties,
-                                       int pos) {
+                                       bool has_seen_proto, int pos,
+                                       bool has_rest_property) {
     return PreParserExpression::ObjectLiteral(properties.variables_);
   }
   PreParserExpression NewVariableProxy(void* variable) {
@@ -886,6 +888,9 @@ class PreParser : public ParserBase<PreParser> {
                                  bool is_module = false) {
     DCHECK_NULL(scope_state_);
     DeclarationScope* scope = NewScriptScope();
+#ifdef DEBUG
+    scope->set_is_being_lazily_parsed(true);
+#endif
 
     // ModuleDeclarationInstantiation for Source Text Module Records creates a
     // new Module Environment Record whose outer lexical environment record is
@@ -935,11 +940,6 @@ class PreParser : public ParserBase<PreParser> {
   // which is set to false if parsing failed; it is unchanged otherwise.
   // By making the 'exception handling' explicit, we are forced to check
   // for failure at the call sites.
-
-  V8_INLINE PreParserStatementList ParseEagerFunctionBody(
-      PreParserIdentifier function_name, int pos,
-      const PreParserFormalParameters& parameters, FunctionKind kind,
-      FunctionLiteral::FunctionType function_type, bool* ok);
 
   // Indicates that we won't switch from the preparser to the preparser; we'll
   // just stay where we are.
@@ -1072,6 +1072,16 @@ class PreParser : public ParserBase<PreParser> {
     return PreParserStatement::Default();
   }
 
+  V8_INLINE void ParseAndRewriteGeneratorFunctionBody(
+      int pos, FunctionKind kind, PreParserStatementList body, bool* ok) {
+    ParseStatementList(body, Token::RBRACE, ok);
+  }
+  V8_INLINE void CreateFunctionNameAssignment(
+      PreParserIdentifier function_name, int pos,
+      FunctionLiteral::FunctionType function_type,
+      DeclarationScope* function_scope, PreParserStatementList result,
+      int index) {}
+
   V8_INLINE PreParserExpression RewriteDoExpression(PreParserStatement body,
                                                     int pos, bool* ok) {
     return PreParserExpression::Default();
@@ -1089,9 +1099,19 @@ class PreParser : public ParserBase<PreParser> {
   }
 
   V8_INLINE PreParserStatement DeclareFunction(
-      PreParserIdentifier variable_name, PreParserExpression function, int pos,
-      bool is_generator, bool is_async, ZoneList<const AstRawString*>* names,
+      PreParserIdentifier variable_name, PreParserExpression function,
+      VariableMode mode, int pos, bool is_generator, bool is_async,
+      bool is_sloppy_block_function, ZoneList<const AstRawString*>* names,
       bool* ok) {
+    DCHECK_NULL(names);
+    if (variable_name.string_ != nullptr) {
+      DCHECK(track_unresolved_variables_);
+      scope()->DeclareVariableName(variable_name.string_, mode);
+      if (is_sloppy_block_function) {
+        GetDeclarationScope()->DeclareSloppyBlockFunction(variable_name.string_,
+                                                          scope());
+      }
+    }
     return Statement::Default();
   }
 
@@ -1314,6 +1334,23 @@ class PreParser : public ParserBase<PreParser> {
       bool* ok) {
     return loop;
   }
+
+  V8_INLINE PreParserStatement BuildParameterInitializationBlock(
+      const PreParserFormalParameters& parameters, bool* ok) {
+    return PreParserStatement::Default();
+  }
+
+  V8_INLINE PreParserStatement
+  BuildRejectPromiseOnException(PreParserStatement init_block) {
+    return PreParserStatement::Default();
+  }
+
+  V8_INLINE void InsertSloppyBlockFunctionVarBindings(DeclarationScope* scope) {
+    scope->HoistSloppyBlockFunctions(nullptr);
+  }
+
+  V8_INLINE void InsertShadowingVarBindingInitializers(
+      PreParserStatement block) {}
 
   V8_INLINE PreParserExpression
   NewThrowReferenceError(MessageTemplate::Template message, int pos) {
@@ -1608,25 +1645,6 @@ PreParserExpression PreParser::SpreadCallNew(PreParserExpression function,
                                              PreParserExpressionList args,
                                              int pos) {
   return factory()->NewCallNew(function, args, pos);
-}
-
-PreParserStatementList PreParser::ParseEagerFunctionBody(
-    PreParserIdentifier function_name, int pos,
-    const PreParserFormalParameters& parameters, FunctionKind kind,
-    FunctionLiteral::FunctionType function_type, bool* ok) {
-  PreParserStatementList result;
-
-  Scope* inner_scope = scope();
-  if (!parameters.is_simple) inner_scope = NewScope(BLOCK_SCOPE);
-
-  {
-    BlockState block_state(&scope_state_, inner_scope);
-    ParseStatementList(result, Token::RBRACE, ok);
-    if (!*ok) return PreParserStatementList();
-  }
-
-  Expect(Token::RBRACE, ok);
-  return result;
 }
 
 PreParserExpression PreParser::CloseTemplateLiteral(TemplateLiteralState* state,

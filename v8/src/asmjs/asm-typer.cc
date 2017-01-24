@@ -385,6 +385,10 @@ AsmTyper::VariableInfo* AsmTyper::ImportLookup(Property* import) {
     return obj_info;
   }
 
+  if (!key->IsPropertyName()) {
+    return nullptr;
+  }
+
   std::unique_ptr<char[]> aname = key->AsPropertyName()->ToCString();
   ObjectTypeMap::iterator i = stdlib->find(std::string(aname.get()));
   if (i == stdlib->end()) {
@@ -568,6 +572,8 @@ bool AsmTyper::ValidateAfterFunctionsPhase() {
 }
 
 void AsmTyper::ClearFunctionNodeTypes() { function_node_types_.clear(); }
+
+AsmType* AsmTyper::TriggerParsingError() { FAIL(root_, "Parsing error"); }
 
 namespace {
 bool IsUseAsmDirective(Statement* first_statement) {

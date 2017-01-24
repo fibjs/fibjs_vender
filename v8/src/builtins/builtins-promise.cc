@@ -8,7 +8,6 @@
 #include "src/builtins/builtins.h"
 #include "src/code-factory.h"
 #include "src/code-stub-assembler.h"
-#include "src/promise-utils.h"
 
 namespace v8 {
 namespace internal {
@@ -211,23 +210,20 @@ Node* PromiseBuiltinsAssembler::CreatePromiseContext(Node* native_context,
 Node* PromiseBuiltinsAssembler::CreatePromiseResolvingFunctionsContext(
     Node* promise, Node* debug_event, Node* native_context) {
   Node* const context =
-      CreatePromiseContext(native_context, PromiseUtils::kPromiseContextLength);
-  StoreContextElementNoWriteBarrier(context, PromiseUtils::kAlreadyVisitedSlot,
+      CreatePromiseContext(native_context, kPromiseContextLength);
+  StoreContextElementNoWriteBarrier(context, kAlreadyVisitedSlot,
                                     SmiConstant(0));
-  StoreContextElementNoWriteBarrier(context, PromiseUtils::kPromiseSlot,
-                                    promise);
-  StoreContextElementNoWriteBarrier(context, PromiseUtils::kDebugEventSlot,
-                                    debug_event);
+  StoreContextElementNoWriteBarrier(context, kPromiseSlot, promise);
+  StoreContextElementNoWriteBarrier(context, kDebugEventSlot, debug_event);
   return context;
 }
 
 Node* PromiseBuiltinsAssembler::CreatePromiseGetCapabilitiesExecutorContext(
     Node* promise_capability, Node* native_context) {
-  int kContextLength = GetPromiseCapabilityExecutor::kContextLength;
+  int kContextLength = kCapabilitiesContextLength;
   Node* context = CreatePromiseContext(native_context, kContextLength);
-  StoreContextElementNoWriteBarrier(
-      context, GetPromiseCapabilityExecutor::kCapabilitySlot,
-      promise_capability);
+  StoreContextElementNoWriteBarrier(context, kCapabilitySlot,
+                                    promise_capability);
   return context;
 }
 
@@ -272,6 +268,13 @@ void PromiseBuiltinsAssembler::PromiseSetHasHandler(Node* promise) {
   Node* const flags = LoadObjectField(promise, JSPromise::kFlagsOffset);
   Node* const new_flags =
       SmiOr(flags, SmiConstant(1 << JSPromise::kHasHandlerBit));
+  StoreObjectFieldNoWriteBarrier(promise, JSPromise::kFlagsOffset, new_flags);
+}
+
+void PromiseBuiltinsAssembler::PromiseSetHandledHint(Node* promise) {
+  Node* const flags = LoadObjectField(promise, JSPromise::kFlagsOffset);
+  Node* const new_flags =
+      SmiOr(flags, SmiConstant(1 << JSPromise::kHandledHintBit));
   StoreObjectFieldNoWriteBarrier(promise, JSPromise::kFlagsOffset, new_flags);
 }
 
@@ -748,8 +751,7 @@ void PromiseBuiltinsAssembler::InternalResolvePromise(Node* context,
 
         Bind(&reject);
         // Don't cause a debug event as this case is forwarding a rejection
-        CallRuntime(Runtime::kPromiseReject, context, promise, thenable_value,
-                    FalseConstant());
+        InternalPromiseReject(context, promise, thenable_value, false);
         PromiseSetHasHandler(result);
         Goto(&out);
       }
@@ -836,8 +838,7 @@ void PromiseBuiltinsAssembler::InternalResolvePromise(Node* context,
   // 9.a Return RejectPromise(promise, then.[[Value]]).
   Bind(&if_rejectpromise);
   {
-    CallRuntime(Runtime::kPromiseReject, context, promise, var_reason.value(),
-                TrueConstant());
+    InternalPromiseReject(context, promise, var_reason.value(), true);
     Goto(&out);
   }
 
@@ -943,6 +944,52 @@ void PromiseBuiltinsAssembler::BranchIfAccessCheckFailed(
   Bind(&has_access);
 }
 
+void PromiseBuiltinsAssembler::InternalPromiseReject(Node* context,
+                                                     Node* promise, Node* value,
+                                                     Node* debug_event) {
+  Label out(this);
+  GotoUnless(IsDebugActive(), &out);
+  GotoUnless(WordEqual(TrueConstant(), debug_event), &out);
+  CallRuntime(Runtime::kDebugPromiseReject, context, promise, value);
+  Goto(&out);
+
+  Bind(&out);
+  InternalPromiseReject(context, promise, value, false);
+}
+
+// This duplicates a lot of logic from PromiseRejectEvent in
+// runtime-promise.cc
+void PromiseBuiltinsAssembler::InternalPromiseReject(Node* context,
+                                                     Node* promise, Node* value,
+                                                     bool debug_event) {
+  Label fulfill(this), report_unhandledpromise(this), run_promise_hook(this);
+
+  if (debug_event) {
+    GotoUnless(IsDebugActive(), &run_promise_hook);
+    CallRuntime(Runtime::kDebugPromiseReject, context, promise, value);
+    Goto(&run_promise_hook);
+  } else {
+    Goto(&run_promise_hook);
+  }
+
+  Bind(&run_promise_hook);
+  {
+    GotoUnless(IsPromiseHookEnabled(), &report_unhandledpromise);
+    CallRuntime(Runtime::kPromiseHookResolve, context, promise);
+    Goto(&report_unhandledpromise);
+  }
+
+  Bind(&report_unhandledpromise);
+  {
+    GotoIf(PromiseHasHandler(promise), &fulfill);
+    CallRuntime(Runtime::kReportPromiseReject, context, promise, value);
+    Goto(&fulfill);
+  }
+
+  Bind(&fulfill);
+  PromiseFulfill(context, promise, value, v8::Promise::kRejected);
+}
+
 // ES#sec-promise-reject-functions
 // Promise Reject Functions
 TF_BUILTIN(PromiseRejectClosure, PromiseBuiltinsAssembler) {
@@ -952,7 +999,7 @@ TF_BUILTIN(PromiseRejectClosure, PromiseBuiltinsAssembler) {
   Label out(this);
 
   // 3. Let alreadyResolved be F.[[AlreadyResolved]].
-  int has_already_visited_slot = PromiseUtils::kAlreadyVisitedSlot;
+  int has_already_visited_slot = kAlreadyVisitedSlot;
 
   Node* const has_already_visited =
       LoadContextElement(context, has_already_visited_slot);
@@ -966,11 +1013,11 @@ TF_BUILTIN(PromiseRejectClosure, PromiseBuiltinsAssembler) {
 
   // 2. Let promise be F.[[Promise]].
   Node* const promise =
-      LoadContextElement(context, IntPtrConstant(PromiseUtils::kPromiseSlot));
-  Node* const debug_event = LoadContextElement(
-      context, IntPtrConstant(PromiseUtils::kDebugEventSlot));
+      LoadContextElement(context, IntPtrConstant(kPromiseSlot));
+  Node* const debug_event =
+      LoadContextElement(context, IntPtrConstant(kDebugEventSlot));
 
-  CallRuntime(Runtime::kPromiseReject, context, promise, value, debug_event);
+  InternalPromiseReject(context, promise, value, debug_event);
   Return(UndefinedConstant());
 
   Bind(&out);
@@ -1119,23 +1166,6 @@ TF_BUILTIN(IsPromise, PromiseBuiltinsAssembler) {
   Return(FalseConstant());
 }
 
-TF_BUILTIN(PerformPromiseThen, PromiseBuiltinsAssembler) {
-  Node* const promise = Parameter(1);
-  Node* const on_resolve = Parameter(2);
-  Node* const on_reject = Parameter(3);
-  Node* const deferred_promise = Parameter(4);
-  Node* const context = Parameter(7);
-
-  // No deferred_on_resolve/deferred_on_reject because this is just an
-  // internal promise created by async-await.
-  Node* const result = InternalPerformPromiseThen(
-      context, promise, on_resolve, on_reject, deferred_promise,
-      UndefinedConstant(), UndefinedConstant());
-
-  // TODO(gsathya): This is unused, but value is returned according to spec.
-  Return(result);
-}
-
 // ES#sec-promise.prototype.then
 // Promise.prototype.catch ( onFulfilled, onRejected )
 TF_BUILTIN(PromiseThen, PromiseBuiltinsAssembler) {
@@ -1159,7 +1189,7 @@ TF_BUILTIN(PromiseResolveClosure, PromiseBuiltinsAssembler) {
   Label out(this);
 
   // 3. Let alreadyResolved be F.[[AlreadyResolved]].
-  int has_already_visited_slot = PromiseUtils::kAlreadyVisitedSlot;
+  int has_already_visited_slot = kAlreadyVisitedSlot;
 
   Node* const has_already_visited =
       LoadContextElement(context, has_already_visited_slot);
@@ -1173,7 +1203,7 @@ TF_BUILTIN(PromiseResolveClosure, PromiseBuiltinsAssembler) {
 
   // 2. Let promise be F.[[Promise]].
   Node* const promise =
-      LoadContextElement(context, IntPtrConstant(PromiseUtils::kPromiseSlot));
+      LoadContextElement(context, IntPtrConstant(kPromiseSlot));
 
   InternalResolvePromise(context, promise, value);
   Return(UndefinedConstant());
@@ -1207,8 +1237,7 @@ TF_BUILTIN(PromiseHandleReject, PromiseBuiltinsAssembler) {
 
   Bind(&if_internalhandler);
   {
-    CallRuntime(Runtime::kPromiseReject, context, promise, exception,
-                FalseConstant());
+    InternalPromiseReject(context, promise, exception, false);
     Return(UndefinedConstant());
   }
 
@@ -1427,8 +1456,7 @@ TF_BUILTIN(PromiseGetCapabilitiesExecutor, PromiseBuiltinsAssembler) {
   Node* const reject = Parameter(2);
   Node* const context = Parameter(5);
 
-  Node* const capability = LoadContextElement(
-      context, GetPromiseCapabilityExecutor::kCapabilitySlot);
+  Node* const capability = LoadContextElement(context, kCapabilitySlot);
 
   Label if_alreadyinvoked(this, Label::kDeferred);
   GotoIf(WordNotEqual(
@@ -1502,6 +1530,16 @@ TF_BUILTIN(PromiseReject, PromiseBuiltinsAssembler) {
         LoadObjectField(capability, JSPromiseCapability::kPromiseOffset);
     Return(promise);
   }
+}
+
+TF_BUILTIN(InternalPromiseReject, PromiseBuiltinsAssembler) {
+  Node* const promise = Parameter(1);
+  Node* const reason = Parameter(2);
+  Node* const debug_event = Parameter(3);
+  Node* const context = Parameter(6);
+
+  InternalPromiseReject(context, promise, reason, debug_event);
+  Return(UndefinedConstant());
 }
 
 }  // namespace internal

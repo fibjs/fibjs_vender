@@ -1738,12 +1738,21 @@ String* Heap::UpdateNewSpaceReferenceInExternalStringTableEntry(Heap* heap,
 
   if (!first_word.IsForwardingAddress()) {
     // Unreachable external string can be finalized.
-    heap->FinalizeExternalString(String::cast(*p));
+    String* string = String::cast(*p);
+    if (!string->IsExternalString()) {
+      // Original external string has been internalized.
+      DCHECK(string->IsThinString());
+      return NULL;
+    }
+    heap->FinalizeExternalString(string);
     return NULL;
   }
 
   // String is still reachable.
-  return String::cast(first_word.ToForwardingAddress());
+  String* string = String::cast(first_word.ToForwardingAddress());
+  if (string->IsThinString()) string = ThinString::cast(string)->actual();
+  // Internalization can replace external strings with non-external strings.
+  return string->IsExternalString() ? string : nullptr;
 }
 
 
@@ -2524,10 +2533,18 @@ AllocationResult Heap::AllocateTransitionArray(int capacity) {
   return array;
 }
 
-
-void Heap::CreateApiObjects() {
+bool Heap::CreateApiObjects() {
   HandleScope scope(isolate());
   set_message_listeners(*TemplateList::New(isolate(), 2));
+  HeapObject* obj = nullptr;
+  {
+    AllocationResult allocation = AllocateStruct(INTERCEPTOR_INFO_TYPE);
+    if (!allocation.To(&obj)) return false;
+  }
+  InterceptorInfo* info = InterceptorInfo::cast(obj);
+  info->set_flags(0);
+  set_noop_interceptor_info(info);
+  return true;
 }
 
 
@@ -3110,9 +3127,9 @@ AllocationResult Heap::AllocateBytecodeArray(int length,
   return result;
 }
 
-void Heap::CreateFillerObjectAt(Address addr, int size,
-                                ClearRecordedSlots mode) {
-  if (size == 0) return;
+HeapObject* Heap::CreateFillerObjectAt(Address addr, int size,
+                                       ClearRecordedSlots mode) {
+  if (size == 0) return nullptr;
   HeapObject* filler = HeapObject::FromAddress(addr);
   if (size == kPointerSize) {
     filler->set_map_no_write_barrier(
@@ -3134,6 +3151,7 @@ void Heap::CreateFillerObjectAt(Address addr, int size,
   // none of the maps have been created yet and are NULL.
   DCHECK((filler->map() == NULL && !deserialization_complete_) ||
          filler->map()->IsMap());
+  return filler;
 }
 
 
@@ -3151,6 +3169,11 @@ bool Heap::CanMoveObjectStart(HeapObject* object) {
   return Page::FromAddress(address)->SweepingDone();
 }
 
+bool Heap::IsImmovable(HeapObject* object) {
+  MemoryChunk* chunk = MemoryChunk::FromAddress(object->address());
+  return chunk->NeverEvacuate() || chunk->owner()->identity() == LO_SPACE;
+}
+
 void Heap::AdjustLiveBytes(HeapObject* object, int by) {
   // As long as the inspected object is black and we are currently not iterating
   // the heap using HeapIterator, we can update the live byte count. We cannot
@@ -3160,7 +3183,7 @@ void Heap::AdjustLiveBytes(HeapObject* object, int by) {
     lo_space()->AdjustLiveBytes(by);
   } else if (!in_heap_iterator() &&
              !mark_compact_collector()->sweeping_in_progress() &&
-             Marking::IsBlack(ObjectMarking::MarkBitFrom(object->address()))) {
+             ObjectMarking::IsBlack(object)) {
     DCHECK(MemoryChunk::FromAddress(object->address())->SweepingDone());
     MemoryChunk::IncrementLiveBytes(object, by);
   }
@@ -3170,6 +3193,7 @@ void Heap::AdjustLiveBytes(HeapObject* object, int by) {
 FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
                                          int elements_to_trim) {
   CHECK_NOT_NULL(object);
+  DCHECK(CanMoveObjectStart(object));
   DCHECK(!object->IsFixedTypedArrayBase());
   DCHECK(!object->IsByteArray());
   const int element_size = object->IsFixedArray() ? kPointerSize : kDoubleSize;
@@ -3196,8 +3220,10 @@ FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
   // Transfer the mark bits to their new location if the object is not within
   // a black area.
   if (!incremental_marking()->black_allocation() ||
-      !Marking::IsBlack(ObjectMarking::MarkBitFrom(new_start))) {
-    IncrementalMarking::TransferMark(this, old_start, new_start);
+      !Marking::IsBlack(
+          ObjectMarking::MarkBitFrom(HeapObject::FromAddress(new_start)))) {
+    IncrementalMarking::TransferMark(this, object,
+                                     HeapObject::FromAddress(new_start));
   }
 
   // Technically in new space this write might be omitted (except for
@@ -3208,7 +3234,7 @@ FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
   // Clear the mark bits of the black area that belongs now to the filler.
   // This is an optimization. The sweeper will release black fillers anyway.
   if (incremental_marking()->black_allocation() &&
-      Marking::IsBlackOrGrey(ObjectMarking::MarkBitFrom(old_start))) {
+      Marking::IsBlackOrGrey(ObjectMarking::MarkBitFrom(object))) {
     Page* page = Page::FromAddress(old_start);
     page->markbits()->ClearRange(
         page->AddressToMarkbitIndex(old_start),
@@ -3218,7 +3244,6 @@ FixedArrayBase* Heap::LeftTrimFixedArray(FixedArrayBase* object,
   // Initialize header of the trimmed array. Since left trimming is only
   // performed on pages which are not concurrently swept creating a filler
   // object does not require synchronization.
-  DCHECK(CanMoveObjectStart(object));
   Object** former_start = HeapObject::RawField(object, 0);
   int new_start_index = elements_to_trim * (element_size / kPointerSize);
   former_start[new_start_index] = map;
@@ -3283,11 +3308,13 @@ void Heap::RightTrimFixedArray(FixedArrayBase* object, int elements_to_trim) {
   // TODO(hpayer): We should shrink the large object page if the size
   // of the object changed significantly.
   if (!lo_space()->Contains(object)) {
-    CreateFillerObjectAt(new_end, bytes_to_trim, ClearRecordedSlots::kYes);
+    HeapObject* filler =
+        CreateFillerObjectAt(new_end, bytes_to_trim, ClearRecordedSlots::kYes);
+    DCHECK_NOT_NULL(filler);
     // Clear the mark bits of the black area that belongs now to the filler.
     // This is an optimization. The sweeper will release black fillers anyway.
     if (incremental_marking()->black_allocation() &&
-        Marking::IsBlackOrGrey(ObjectMarking::MarkBitFrom(new_end))) {
+        ObjectMarking::IsBlackOrGrey(filler)) {
       Page* page = Page::FromAddress(new_end);
       page->markbits()->ClearRange(
           page->AddressToMarkbitIndex(new_end),
@@ -3388,18 +3415,24 @@ AllocationResult Heap::AllocateCode(int object_size, bool immovable) {
   if (!allocation.To(&result)) return allocation;
   if (immovable) {
     Address address = result->address();
+    MemoryChunk* chunk = MemoryChunk::FromAddress(address);
     // Code objects which should stay at a fixed address are allocated either
     // in the first page of code space (objects on the first page of each space
-    // are never moved) or in large object space.
-    if (!code_space_->FirstPage()->Contains(address) &&
-        MemoryChunk::FromAddress(address)->owner()->identity() != LO_SPACE) {
-      // Discard the first code allocation, which was on a page where it could
-      // be moved.
-      CreateFillerObjectAt(result->address(), object_size,
-                           ClearRecordedSlots::kNo);
-      allocation = lo_space_->AllocateRaw(object_size, EXECUTABLE);
-      if (!allocation.To(&result)) return allocation;
-      OnAllocationEvent(result, object_size);
+    // are never moved), in large object space, or (during snapshot creation)
+    // the containing page is marked as immovable.
+    if (!Heap::IsImmovable(result) &&
+        !code_space_->FirstPage()->Contains(address)) {
+      if (isolate()->serializer_enabled()) {
+        chunk->MarkNeverEvacuate();
+      } else {
+        // Discard the first code allocation, which was on a page where it could
+        // be moved.
+        CreateFillerObjectAt(result->address(), object_size,
+                             ClearRecordedSlots::kNo);
+        allocation = lo_space_->AllocateRaw(object_size, EXECUTABLE);
+        if (!allocation.To(&result)) return allocation;
+        OnAllocationEvent(result, object_size);
+      }
     }
   }
 
@@ -4272,28 +4305,21 @@ void Heap::RegisterReservationsForBlackAllocation(Reservation* reservations) {
   // for marking. We just have to execute the special visiting side effect
   // code that adds objects to global data structures, e.g. for array buffers.
 
-  // Code space, map space, and large object space do not use black pages.
-  // Hence we have to color all objects of the reservation first black to avoid
-  // unnecessary marking deque load.
   if (incremental_marking()->black_allocation()) {
+    // Iterate black objects in old space, code space, map space, and large
+    // object space for side effects.
     for (int i = OLD_SPACE; i < Serializer::kNumberOfSpaces; i++) {
       const Heap::Reservation& res = reservations[i];
       for (auto& chunk : res) {
         Address addr = chunk.start;
         while (addr < chunk.end) {
           HeapObject* obj = HeapObject::FromAddress(addr);
-          Marking::MarkBlack(ObjectMarking::MarkBitFrom(obj));
-          addr += obj->Size();
-        }
-      }
-    }
-    for (int i = OLD_SPACE; i < Serializer::kNumberOfSpaces; i++) {
-      const Heap::Reservation& res = reservations[i];
-      for (auto& chunk : res) {
-        Address addr = chunk.start;
-        while (addr < chunk.end) {
-          HeapObject* obj = HeapObject::FromAddress(addr);
-          incremental_marking()->IterateBlackObject(obj);
+          // There might be grey objects due to black to grey transitions in
+          // incremental marking. E.g. see VisitNativeContextIncremental.
+          DCHECK(ObjectMarking::IsBlackOrGrey(obj));
+          if (ObjectMarking::IsBlack(obj)) {
+            incremental_marking()->IterateBlackObject(obj);
+          }
           addr += obj->Size();
         }
       }
@@ -4865,8 +4891,7 @@ void Heap::IterateAndScavengePromotedObject(HeapObject* target, int size,
   // it would be a violation of the invariant to record it's slots.
   bool record_slots = false;
   if (incremental_marking()->IsCompacting()) {
-    MarkBit mark_bit = ObjectMarking::MarkBitFrom(target);
-    record_slots = Marking::IsBlack(mark_bit);
+    record_slots = ObjectMarking::IsBlack(target);
   }
 
   IterateAndScavengePromotedObjectsVisitor visitor(this, target, record_slots);
@@ -5576,7 +5601,7 @@ bool Heap::SetUp() {
 bool Heap::CreateHeapObjects() {
   // Create initial maps.
   if (!CreateInitialMaps()) return false;
-  CreateApiObjects();
+  if (!CreateApiObjects()) return false;
 
   // Create initial objects
   CreateInitialObjects();
@@ -6104,8 +6129,7 @@ class UnreachableObjectsFilter : public HeapObjectsFilter {
 
   bool SkipObject(HeapObject* object) {
     if (object->IsFiller()) return true;
-    MarkBit mark_bit = ObjectMarking::MarkBitFrom(object);
-    return Marking::IsWhite(mark_bit);
+    return ObjectMarking::IsWhite(object);
   }
 
  private:
@@ -6117,6 +6141,8 @@ class UnreachableObjectsFilter : public HeapObjectsFilter {
       for (Object** p = start; p < end; p++) {
         if (!(*p)->IsHeapObject()) continue;
         HeapObject* obj = HeapObject::cast(*p);
+        // Use Marking instead of ObjectMarking to avoid adjusting live bytes
+        // counter.
         MarkBit mark_bit = ObjectMarking::MarkBitFrom(obj);
         if (Marking::IsWhite(mark_bit)) {
           Marking::WhiteToBlack(mark_bit);
@@ -6413,14 +6439,19 @@ void Heap::ExternalStringTable::CleanUpNewSpaceStrings() {
   int last = 0;
   Isolate* isolate = heap_->isolate();
   for (int i = 0; i < new_space_strings_.length(); ++i) {
-    if (new_space_strings_[i]->IsTheHole(isolate)) {
+    Object* o = new_space_strings_[i];
+    if (o->IsTheHole(isolate)) {
       continue;
     }
-    DCHECK(new_space_strings_[i]->IsExternalString());
-    if (heap_->InNewSpace(new_space_strings_[i])) {
-      new_space_strings_[last++] = new_space_strings_[i];
+    if (o->IsThinString()) {
+      o = ThinString::cast(o)->actual();
+      if (!o->IsExternalString()) continue;
+    }
+    DCHECK(o->IsExternalString());
+    if (heap_->InNewSpace(o)) {
+      new_space_strings_[last++] = o;
     } else {
-      old_space_strings_.Add(new_space_strings_[i]);
+      old_space_strings_.Add(o);
     }
   }
   new_space_strings_.Rewind(last);
@@ -6432,12 +6463,17 @@ void Heap::ExternalStringTable::CleanUpAll() {
   int last = 0;
   Isolate* isolate = heap_->isolate();
   for (int i = 0; i < old_space_strings_.length(); ++i) {
-    if (old_space_strings_[i]->IsTheHole(isolate)) {
+    Object* o = old_space_strings_[i];
+    if (o->IsTheHole(isolate)) {
       continue;
     }
-    DCHECK(old_space_strings_[i]->IsExternalString());
-    DCHECK(!heap_->InNewSpace(old_space_strings_[i]));
-    old_space_strings_[last++] = old_space_strings_[i];
+    if (o->IsThinString()) {
+      o = ThinString::cast(o)->actual();
+      if (!o->IsExternalString()) continue;
+    }
+    DCHECK(o->IsExternalString());
+    DCHECK(!heap_->InNewSpace(o));
+    old_space_strings_[last++] = o;
   }
   old_space_strings_.Rewind(last);
   old_space_strings_.Trim();
@@ -6450,11 +6486,21 @@ void Heap::ExternalStringTable::CleanUpAll() {
 
 void Heap::ExternalStringTable::TearDown() {
   for (int i = 0; i < new_space_strings_.length(); ++i) {
-    heap_->FinalizeExternalString(ExternalString::cast(new_space_strings_[i]));
+    Object* o = new_space_strings_[i];
+    if (o->IsThinString()) {
+      o = ThinString::cast(o)->actual();
+      if (!o->IsExternalString()) continue;
+    }
+    heap_->FinalizeExternalString(ExternalString::cast(o));
   }
   new_space_strings_.Free();
   for (int i = 0; i < old_space_strings_.length(); ++i) {
-    heap_->FinalizeExternalString(ExternalString::cast(old_space_strings_[i]));
+    Object* o = old_space_strings_[i];
+    if (o->IsThinString()) {
+      o = ThinString::cast(o)->actual();
+      if (!o->IsExternalString()) continue;
+    }
+    heap_->FinalizeExternalString(ExternalString::cast(o));
   }
   old_space_strings_.Free();
 }

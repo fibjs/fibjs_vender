@@ -391,14 +391,13 @@ RUNTIME_FUNCTION(Runtime_DebugGetProperty) {
   return *DebugGetProperty(&it);
 }
 
-
-// Return the property type calculated from the property details.
+// Return the property kind calculated from the property details.
 // args[0]: smi with property details.
-RUNTIME_FUNCTION(Runtime_DebugPropertyTypeFromDetails) {
+RUNTIME_FUNCTION(Runtime_DebugPropertyKindFromDetails) {
   SealHandleScope shs(isolate);
   DCHECK_EQ(1, args.length());
   CONVERT_PROPERTY_DETAILS_CHECKED(details, 0);
-  return Smi::FromInt(static_cast<int>(details.type()));
+  return Smi::FromInt(static_cast<int>(details.kind()));
 }
 
 
@@ -1894,6 +1893,16 @@ RUNTIME_FUNCTION(Runtime_DebugAsyncFunctionPromiseCreated) {
                         handle(Smi::FromInt(id), isolate), STRICT)
       .Assert();
   isolate->debug()->OnAsyncTaskEvent(debug::kDebugEnqueueAsyncFunction, id);
+  return isolate->heap()->undefined_value();
+}
+
+RUNTIME_FUNCTION(Runtime_DebugPromiseReject) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(2, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(JSPromise, rejected_promise, 0);
+  CONVERT_ARG_HANDLE_CHECKED(Object, value, 1);
+
+  isolate->debug()->OnPromiseReject(rejected_promise, value);
   return isolate->heap()->undefined_value();
 }
 

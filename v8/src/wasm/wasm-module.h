@@ -24,6 +24,7 @@ class WasmCompiledModule;
 class WasmDebugInfo;
 class WasmModuleObject;
 class WasmInstanceObject;
+class WasmMemoryObject;
 
 namespace compiler {
 class CallDescriptor;
@@ -179,6 +180,7 @@ struct V8_EXPORT_PRIVATE WasmModule {
   Zone* owned_zone;
   uint32_t min_mem_pages = 0;  // minimum size of the memory in 64k pages
   uint32_t max_mem_pages = 0;  // maximum size of the memory in 64k pages
+  bool has_max_mem = false;    // try if a maximum memory size exists
   bool has_memory = false;     // true if the memory was defined or imported
   bool mem_export = false;     // true if the memory is exported
   // TODO(wasm): reconcile start function index being an int with
@@ -218,7 +220,7 @@ struct V8_EXPORT_PRIVATE WasmModule {
   static MaybeHandle<WasmInstanceObject> Instantiate(
       Isolate* isolate, ErrorThrower* thrower,
       Handle<WasmModuleObject> wasm_module, Handle<JSReceiver> ffi,
-      Handle<JSArrayBuffer> memory);
+      Handle<JSArrayBuffer> memory = Handle<JSArrayBuffer>::null());
 
   MaybeHandle<WasmCompiledModule> CompileFunctions(
       Isolate* isolate, Handle<Managed<WasmModule>> module_wrapper,
@@ -397,6 +399,9 @@ V8_EXPORT_PRIVATE MaybeHandle<WasmModuleObject> CreateModuleObjectFromBytes(
     ModuleOrigin origin, Handle<Script> asm_js_script,
     Vector<const byte> asm_offset_table);
 
+V8_EXPORT_PRIVATE bool IsWasmCodegenAllowed(Isolate* isolate,
+                                            Handle<Context> context);
+
 V8_EXPORT_PRIVATE Handle<JSArray> GetImports(Isolate* isolate,
                                              Handle<WasmModuleObject> module);
 V8_EXPORT_PRIVATE Handle<JSArray> GetExports(Isolate* isolate,
@@ -431,7 +436,8 @@ int32_t GrowInstanceMemory(Isolate* isolate,
 Handle<JSArrayBuffer> NewArrayBuffer(Isolate* isolate, size_t size,
                                      bool enable_guard_regions);
 
-int32_t GrowWebAssemblyMemory(Isolate* isolate, Handle<Object> receiver,
+int32_t GrowWebAssemblyMemory(Isolate* isolate,
+                              Handle<WasmMemoryObject> receiver,
                               uint32_t pages);
 
 int32_t GrowMemory(Isolate* isolate, Handle<WasmInstanceObject> instance,

@@ -340,9 +340,18 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
                                  Block* finally_block,
                                  const CatchInfo& catch_info, int pos);
 
+  void ParseAndRewriteGeneratorFunctionBody(int pos, FunctionKind kind,
+                                            ZoneList<Statement*>* body,
+                                            bool* ok);
+  void CreateFunctionNameAssignment(const AstRawString* function_name, int pos,
+                                    FunctionLiteral::FunctionType function_type,
+                                    DeclarationScope* function_scope,
+                                    ZoneList<Statement*>* result, int index);
+
   Statement* DeclareFunction(const AstRawString* variable_name,
-                             FunctionLiteral* function, int pos,
-                             bool is_generator, bool is_async,
+                             FunctionLiteral* function, VariableMode mode,
+                             int pos, bool is_generator, bool is_async,
+                             bool is_sloppy_block_function,
                              ZoneList<const AstRawString*>* names, bool* ok);
   V8_INLINE Statement* DeclareClass(const AstRawString* variable_name,
                                     Expression* value,
@@ -532,13 +541,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
 
   Block* BuildParameterInitializationBlock(
       const ParserFormalParameters& parameters, bool* ok);
-  Block* BuildRejectPromiseOnException(Block* block, bool* ok);
-
-  // Consumes the ending }.
-  ZoneList<Statement*>* ParseEagerFunctionBody(
-      const AstRawString* function_name, int pos,
-      const ParserFormalParameters& parameters, FunctionKind kind,
-      FunctionLiteral::FunctionType function_type, bool* ok);
+  Block* BuildRejectPromiseOnException(Block* block);
 
   ZoneList<Statement*>* ParseFunction(
       const AstRawString* function_name, int pos, FunctionKind kind,
@@ -1024,8 +1027,7 @@ class V8_EXPORT_PRIVATE Parser : public NON_EXPORTED_BASE(ParserBase<Parser>) {
     auto* init_block = BuildParameterInitializationBlock(parameters, ok);
     if (!*ok) return;
     if (is_async) {
-      init_block = BuildRejectPromiseOnException(init_block, ok);
-      if (!*ok) return;
+      init_block = BuildRejectPromiseOnException(init_block);
     }
     if (init_block != nullptr) body->Add(init_block, zone());
   }
