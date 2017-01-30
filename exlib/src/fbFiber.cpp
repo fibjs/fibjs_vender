@@ -196,11 +196,10 @@ public:
         }
     }
 
-    void sleep(Task_base* now, int32_t ms)
+    void post(Task_base* now, int32_t ms)
     {
         m_acSleep.putTail(new Sleeping(now, ms));
         m_sem.Post();
-        now->suspend();
     }
 
     void cancel(Task_base* now)
@@ -245,12 +244,19 @@ void Fiber::sleep(int32_t ms, Task_base* now)
         {
             ((Fiber*)now)->m_pService->switchConext(new Sleeping(now, ms));
         }
+    } else if (now->is(OSThread::type))
+    {
+        if (ms <= 0)
+            ms = 0;
+
+        s_timer.post(now, ms);
+        now->suspend();
     } else
     {
         if (ms <= 0)
             ms = 0;
 
-        s_timer.sleep(now, ms);
+        s_timer.post(now, ms);
     }
 }
 
