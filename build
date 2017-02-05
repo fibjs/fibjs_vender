@@ -175,6 +175,7 @@ v8
 SpiderMonkey
 jssdk
 unzip
+zmq
 editline"
 
 for lib in ${libs}
