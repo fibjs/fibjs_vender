@@ -224,7 +224,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)\include;$(SolutionDir)vender;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -244,7 +244,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)\include;$(SolutionDir)vender;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -267,7 +267,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -293,7 +293,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
