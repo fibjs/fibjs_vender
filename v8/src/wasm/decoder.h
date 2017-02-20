@@ -37,6 +37,12 @@ class Decoder {
         end_(end),
         error_pc_(nullptr),
         error_pt_(nullptr) {}
+  Decoder(const byte* start, const byte* pc, const byte* end)
+      : start_(start),
+        pc_(pc),
+        end_(end),
+        error_pc_(nullptr),
+        error_pt_(nullptr) {}
 
   virtual ~Decoder() {}
 
@@ -184,8 +190,13 @@ class Decoder {
 
   // Consume {size} bytes and send them to the bit bucket, advancing {pc_}.
   void consume_bytes(uint32_t size, const char* name = "skip") {
-    TRACE("  +%d  %-20s: %d bytes\n", static_cast<int>(pc_ - start_), name,
-          size);
+#if DEBUG
+    if (name) {
+      // Only trace if the name is not null.
+      TRACE("  +%d  %-20s: %d bytes\n", static_cast<int>(pc_ - start_), name,
+            size);
+    }
+#endif
     if (checkAvailable(size)) {
       pc_ += size;
     } else {
@@ -371,8 +382,10 @@ class Decoder {
 
       int length = static_cast<int>(pc_ - pos);
       if (pc_ == end && (b & 0x80)) {
+        TRACE("\n");
         error(pc_ - 1, "varint too large");
       } else if (length == 0) {
+        TRACE("\n");
         error(pc_, "varint of length 0");
       } else if (is_signed) {
         if (length < kMaxLength) {

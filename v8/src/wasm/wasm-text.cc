@@ -5,8 +5,10 @@
 #include "src/wasm/wasm-text.h"
 
 #include "src/debug/interface-types.h"
+#include "src/objects-inl.h"
 #include "src/ostreams.h"
 #include "src/vector.h"
+#include "src/wasm/function-body-decoder-impl.h"
 #include "src/wasm/function-body-decoder.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-opcodes.h"
@@ -69,8 +71,7 @@ void wasm::PrintWasmText(const WasmModule *module,
 
   // Print the local declarations.
   BodyLocalDecls decls(&zone);
-  Vector<const byte> func_bytes = wire_bytes.module_bytes.SubVector(
-      fun->code_start_offset, fun->code_end_offset);
+  Vector<const byte> func_bytes = wire_bytes.GetFunctionBytes(fun);
   BytecodeIterator i(func_bytes.begin(), func_bytes.end(), &decls);
   DCHECK_LT(func_bytes.begin(), i.pc());
   if (!decls.type_list.empty()) {
@@ -90,8 +91,7 @@ void wasm::PrintWasmText(const WasmModule *module,
     const int kMaxIndentation = 64;
     int indentation = std::min(kMaxIndentation, 2 * control_depth);
     if (offset_table) {
-      offset_table->push_back(debug::WasmDisassemblyOffsetTableEntry(
-          i.pc_offset(), line_nr, indentation));
+      offset_table->emplace_back(i.pc_offset(), line_nr, indentation);
     }
 
     // 64 whitespaces

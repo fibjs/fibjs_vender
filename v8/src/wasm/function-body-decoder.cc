@@ -4,13 +4,17 @@
 
 #include "src/signature.h"
 
+#include "src/base/platform/elapsed-timer.h"
 #include "src/bit-vector.h"
 #include "src/flags.h"
 #include "src/handles.h"
+#include "src/objects-inl.h"
 #include "src/zone/zone-containers.h"
 
 #include "src/wasm/decoder.h"
+#include "src/wasm/function-body-decoder-impl.h"
 #include "src/wasm/function-body-decoder.h"
+#include "src/wasm/wasm-limits.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-opcodes.h"
 
@@ -85,9 +89,9 @@ struct MergeValues {
     Value first;
   } vals;  // Either multiple values or a single value.
 
-  Value& first() {
-    DCHECK_GT(arity, 0);
-    return arity == 1 ? vals.first : vals.array[0];
+  Value& operator[](size_t i) {
+    DCHECK_GT(arity, i);
+    return arity == 1 ? vals.first : vals.array[i];
   }
 };
 
@@ -104,6 +108,7 @@ struct Control {
   SsaEnv* false_env;       // false environment (only for if).
   TryInfo* try_info;       // Information used for compiling try statements.
   int32_t previous_catch;  // The previous Control (on the stack) with a catch.
+  bool unreachable;        // The current block has been ended.
 
   // Values merged into the end of this control construct.
   MergeValues merge;
@@ -116,28 +121,28 @@ struct Control {
   // Named constructors.
   static Control Block(const byte* pc, size_t stack_depth, SsaEnv* end_env,
                        int32_t previous_catch) {
-    return {pc,      kControlBlock, stack_depth,    end_env,
-            nullptr, nullptr,       previous_catch, {0, {NO_VALUE}}};
+    return {pc,      kControlBlock,  stack_depth, end_env,        nullptr,
+            nullptr, previous_catch, false,       {0, {NO_VALUE}}};
   }
 
   static Control If(const byte* pc, size_t stack_depth, SsaEnv* end_env,
                     SsaEnv* false_env, int32_t previous_catch) {
-    return {pc,        kControlIf, stack_depth,    end_env,
-            false_env, nullptr,    previous_catch, {0, {NO_VALUE}}};
+    return {pc,      kControlIf,     stack_depth, end_env,        false_env,
+            nullptr, previous_catch, false,       {0, {NO_VALUE}}};
   }
 
   static Control Loop(const byte* pc, size_t stack_depth, SsaEnv* end_env,
                       int32_t previous_catch) {
-    return {pc,      kControlLoop, stack_depth,    end_env,
-            nullptr, nullptr,      previous_catch, {0, {NO_VALUE}}};
+    return {pc,      kControlLoop,   stack_depth, end_env,        nullptr,
+            nullptr, previous_catch, false,       {0, {NO_VALUE}}};
   }
 
   static Control Try(const byte* pc, size_t stack_depth, SsaEnv* end_env,
                      Zone* zone, SsaEnv* catch_env, int32_t previous_catch) {
     DCHECK_NOT_NULL(catch_env);
     TryInfo* try_info = new (zone) TryInfo(catch_env);
-    return {pc,      kControlTry, stack_depth,    end_env,
-            nullptr, try_info,    previous_catch, {0, {NO_VALUE}}};
+    return {pc,       kControlTry,    stack_depth, end_env,        nullptr,
+            try_info, previous_catch, false,       {0, {NO_VALUE}}};
   }
 };
 
@@ -147,16 +152,6 @@ struct Control {
 #define BUILD(func, ...) \
   (build() ? CheckForException(builder_->func(__VA_ARGS__)) : nullptr)
 #define BUILD0(func) (build() ? CheckForException(builder_->func()) : nullptr)
-
-struct LaneOperand {
-  uint8_t lane;
-  unsigned length;
-
-  inline LaneOperand(Decoder* decoder, const byte* pc) {
-    lane = decoder->checked_read_u8(pc, 2, "lane");
-    length = 1;
-  }
-};
 
 // Generic Wasm bytecode decoder with utilities for decoding operands,
 // lengths, etc.
@@ -196,7 +191,7 @@ class WasmDecoder : public Decoder {
       uint32_t count = decoder->consume_u32v("local count");
       if (decoder->failed()) return false;
 
-      if ((count + type_list->size()) > kMaxNumWasmLocals) {
+      if ((count + type_list->size()) > kV8MaxWasmFunctionLocals) {
         decoder->error(decoder->pc() - 1, "local count too large");
         return false;
       }
@@ -348,9 +343,61 @@ class WasmDecoder : public Decoder {
     return true;
   }
 
-  inline bool Validate(const byte* pc, LaneOperand& operand) {
-    if (operand.lane < 0 || operand.lane > 3) {
-      error(pc_, pc_ + 2, "invalid extract lane value");
+  inline bool Validate(const byte* pc, WasmOpcode opcode,
+                       SimdLaneOperand& operand) {
+    uint8_t num_lanes = 0;
+    switch (opcode) {
+      case kExprF32x4ExtractLane:
+      case kExprF32x4ReplaceLane:
+      case kExprI32x4ExtractLane:
+      case kExprI32x4ReplaceLane:
+        num_lanes = 4;
+        break;
+      case kExprI16x8ExtractLane:
+      case kExprI16x8ReplaceLane:
+        num_lanes = 8;
+        break;
+      case kExprI8x16ExtractLane:
+      case kExprI8x16ReplaceLane:
+        num_lanes = 16;
+        break;
+      default:
+        UNREACHABLE();
+        break;
+    }
+    if (operand.lane < 0 || operand.lane >= num_lanes) {
+      error(pc_, pc_ + 2, "invalid lane index");
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  inline bool Validate(const byte* pc, WasmOpcode opcode,
+                       SimdShiftOperand& operand) {
+    uint8_t max_shift = 0;
+    switch (opcode) {
+      case kExprI32x4Shl:
+      case kExprI32x4ShrS:
+      case kExprI32x4ShrU:
+        max_shift = 32;
+        break;
+      case kExprI16x8Shl:
+      case kExprI16x8ShrS:
+      case kExprI16x8ShrU:
+        max_shift = 16;
+        break;
+      case kExprI8x16Shl:
+      case kExprI8x16ShrS:
+      case kExprI8x16ShrU:
+        max_shift = 8;
+        break;
+      default:
+        UNREACHABLE();
+        break;
+    }
+    if (operand.shift < 0 || operand.shift >= max_shift) {
+      error(pc_, pc_ + 2, "invalid shift amount");
       return false;
     } else {
       return true;
@@ -470,7 +517,7 @@ class WasmFullDecoder : public WasmDecoder {
 
   bool Decode() {
     if (FLAG_wasm_code_fuzzer_gen_test) {
-      PrintWasmCodeForDebugging(start_, end_);
+      PrintRawWasmCode(start_, end_);
     }
     base::ElapsedTimer decode_timer;
     if (FLAG_trace_wasm_decode_time) {
@@ -657,10 +704,12 @@ class WasmFullDecoder : public WasmDecoder {
     while (pc_ < end_) {  // decoding loop.
       unsigned len = 1;
       WasmOpcode opcode = static_cast<WasmOpcode>(*pc_);
-      if (!WasmOpcodes::IsPrefixOpcode(opcode)) {
-        TRACE("  @%-8d #%02x:%-20s|", startrel(pc_), opcode,
+#if DEBUG
+      if (FLAG_trace_wasm_decoder && !WasmOpcodes::IsPrefixOpcode(opcode)) {
+        TRACE("  @%-8d #%-20s|", startrel(pc_),
               WasmOpcodes::OpcodeName(opcode));
       }
+#endif
 
       FunctionSig* sig = WasmOpcodes::Signature(opcode);
       if (sig) {
@@ -723,9 +772,7 @@ class WasmFullDecoder : public WasmDecoder {
               break;
             }
 
-            if (ssa_env_->go()) {
-              MergeValuesInto(c);
-            }
+            FallThruTo(c);
             stack_.resize(c->stack_depth);
 
             DCHECK_NOT_NULL(c->try_info);
@@ -789,8 +836,8 @@ class WasmFullDecoder : public WasmDecoder {
               break;
             }
             FallThruTo(c);
-            // Switch to environment for false branch.
             stack_.resize(c->stack_depth);
+            // Switch to environment for false branch.
             SetEnv("if_else:false", c->false_env);
             c->false_env = nullptr;  // record that an else is already seen
             break;
@@ -804,7 +851,8 @@ class WasmFullDecoder : public WasmDecoder {
             Control* c = &control_.back();
             if (c->is_loop()) {
               // A loop just leaves the values on the stack.
-              TypeCheckLoopFallThru(c);
+              TypeCheckFallThru(c);
+              if (c->unreachable) PushEndValues(c);
               PopControl();
               SetEnv("loop:end", ssa_env_);
               break;
@@ -813,7 +861,7 @@ class WasmFullDecoder : public WasmDecoder {
               if (c->false_env != nullptr) {
                 // End the true branch of a one-armed if.
                 Goto(c->false_env, c->end_env);
-                if (ssa_env_->go() && stack_.size() != c->stack_depth) {
+                if (!c->unreachable && stack_.size() != c->stack_depth) {
                   error("end of if expected empty stack");
                   stack_.resize(c->stack_depth);
                 }
@@ -836,16 +884,7 @@ class WasmFullDecoder : public WasmDecoder {
             }
             FallThruTo(c);
             SetEnv(name, c->end_env);
-
-            // Push the end values onto the stack.
-            stack_.resize(c->stack_depth);
-            if (c->merge.arity == 1) {
-              stack_.push_back(c->merge.vals.first);
-            } else {
-              for (unsigned i = 0; i < c->merge.arity; i++) {
-                stack_.push_back(c->merge.vals.array[i]);
-              }
-            }
+            PushEndValues(c);
 
             if (control_.size() == 1) {
               // If at the last (implicit) control, check we are at end.
@@ -859,6 +898,8 @@ class WasmFullDecoder : public WasmDecoder {
                 TRACE("  @%-8d #xx:%-20s|", startrel(pc_), "(implicit) return");
                 DoReturn();
                 TRACE("\n");
+              } else {
+                TypeCheckFallThru(c);
               }
             }
             PopControl();
@@ -867,17 +908,8 @@ class WasmFullDecoder : public WasmDecoder {
           case kExprSelect: {
             Value cond = Pop(2, kWasmI32);
             Value fval = Pop();
-            Value tval = Pop();
-            if (tval.type == kWasmStmt || tval.type != fval.type) {
-              if (tval.type != kWasmEnd && fval.type != kWasmEnd) {
-                error("type mismatch in select");
-                break;
-              }
-            }
+            Value tval = Pop(0, fval.type);
             if (build()) {
-              DCHECK(tval.type != kWasmEnd);
-              DCHECK(fval.type != kWasmEnd);
-              DCHECK(cond.type != kWasmEnd);
               TFNode* controls[2];
               builder_->BranchNoHint(cond.node, &controls[0], &controls[1]);
               TFNode* merge = builder_->Merge(2, controls);
@@ -886,7 +918,7 @@ class WasmFullDecoder : public WasmDecoder {
               Push(tval.type, phi);
               ssa_env_->control = merge;
             } else {
-              Push(tval.type, nullptr);
+              Push(tval.type == kWasmVar ? fval.type : tval.type, nullptr);
             }
             break;
           }
@@ -928,6 +960,7 @@ class WasmFullDecoder : public WasmDecoder {
 
                 SsaEnv* copy = Steal(break_env);
                 ssa_env_ = copy;
+                MergeValues* merge = nullptr;
                 while (ok() && iterator.has_next()) {
                   uint32_t i = iterator.cur_index();
                   const byte* pos = iterator.pc();
@@ -941,6 +974,26 @@ class WasmFullDecoder : public WasmDecoder {
                                           ? BUILD(IfDefault, sw)
                                           : BUILD(IfValue, i, sw);
                   BreakTo(target);
+
+                  // Check that label types match up.
+                  Control* c = &control_[control_.size() - target - 1];
+                  if (i == 0) {
+                    merge = &c->merge;
+                  } else if (merge->arity != c->merge.arity) {
+                    error(pos, pos, "inconsistent arity in br_table target %d"
+                          " (previous was %u, this one %u)",
+                          i, merge->arity, c->merge.arity);
+                  } else if (control_.back().unreachable) {
+                    for (uint32_t j = 0; ok() && j < merge->arity; ++j) {
+                      if ((*merge)[j].type != c->merge[j].type) {
+                        error(pos, pos,
+                              "type error in br_table target %d operand %d"
+                              " (previous expected %s, this one %s)", i, j,
+                              WasmOpcodes::TypeName((*merge)[j].type),
+                              WasmOpcodes::TypeName(c->merge[j].type));
+                      }
+                    }
+                  }
                 }
                 if (failed()) break;
               } else {
@@ -1168,8 +1221,8 @@ class WasmFullDecoder : public WasmDecoder {
             len++;
             byte simd_index = checked_read_u8(pc_, 1, "simd index");
             opcode = static_cast<WasmOpcode>(opcode << 8 | simd_index);
-            TRACE("  @%-4d #%02x #%02x:%-20s|", startrel(pc_), kSimdPrefix,
-                  simd_index, WasmOpcodes::OpcodeName(opcode));
+            TRACE("  @%-4d #%-20s|", startrel(pc_),
+                  WasmOpcodes::OpcodeName(opcode));
             len += DecodeSimdOpcode(opcode);
             break;
           }
@@ -1208,6 +1261,35 @@ class WasmFullDecoder : public WasmDecoder {
 
 #if DEBUG
       if (FLAG_trace_wasm_decoder) {
+        PrintF(" ");
+        for (size_t i = 0; i < control_.size(); ++i) {
+          Control* c = &control_[i];
+          enum ControlKind {
+            kControlIf,
+            kControlBlock,
+            kControlLoop,
+            kControlTry
+          };
+          switch (c->kind) {
+            case kControlIf:
+              PrintF("I");
+              break;
+            case kControlBlock:
+              PrintF("B");
+              break;
+            case kControlLoop:
+              PrintF("L");
+              break;
+            case kControlTry:
+              PrintF("T");
+              break;
+            default:
+              break;
+          }
+          PrintF("%u", c->merge.arity);
+          if (c->unreachable) PrintF("*");
+        }
+        PrintF(" | ");
         for (size_t i = 0; i < stack_.size(); ++i) {
           Value& val = stack_[i];
           WasmOpcode opcode = static_cast<WasmOpcode>(*val.pc);
@@ -1237,6 +1319,7 @@ class WasmFullDecoder : public WasmDecoder {
             default:
               break;
           }
+          if (val.node == nullptr) PrintF("?");
         }
         PrintF("\n");
       }
@@ -1248,11 +1331,9 @@ class WasmFullDecoder : public WasmDecoder {
 
   void EndControl() {
     ssa_env_->Kill(SsaEnv::kControlEnd);
-    if (control_.empty()) {
-      stack_.clear();
-    } else {
-      DCHECK_LE(control_.back().stack_depth, stack_.size());
+    if (!control_.empty()) {
       stack_.resize(control_.back().stack_depth);
+      control_.back().unreachable = true;
     }
   }
 
@@ -1336,9 +1417,9 @@ class WasmFullDecoder : public WasmDecoder {
     return 1 + operand.length;
   }
 
-  unsigned ExtractLane(WasmOpcode opcode, ValueType type) {
-    LaneOperand operand(this, pc_);
-    if (Validate(pc_, operand)) {
+  unsigned SimdExtractLane(WasmOpcode opcode, ValueType type) {
+    SimdLaneOperand operand(this, pc_);
+    if (Validate(pc_, opcode, operand)) {
       compiler::NodeVector inputs(1, zone_);
       inputs[0] = Pop(0, ValueType::kSimd128).node;
       TFNode* node = BUILD(SimdLaneOp, opcode, operand.lane, inputs);
@@ -1347,9 +1428,9 @@ class WasmFullDecoder : public WasmDecoder {
     return operand.length;
   }
 
-  unsigned ReplaceLane(WasmOpcode opcode, ValueType type) {
-    LaneOperand operand(this, pc_);
-    if (Validate(pc_, operand)) {
+  unsigned SimdReplaceLane(WasmOpcode opcode, ValueType type) {
+    SimdLaneOperand operand(this, pc_);
+    if (Validate(pc_, opcode, operand)) {
       compiler::NodeVector inputs(2, zone_);
       inputs[1] = Pop(1, type).node;
       inputs[0] = Pop(0, ValueType::kSimd128).node;
@@ -1359,23 +1440,50 @@ class WasmFullDecoder : public WasmDecoder {
     return operand.length;
   }
 
+  unsigned SimdShiftOp(WasmOpcode opcode) {
+    SimdShiftOperand operand(this, pc_);
+    if (Validate(pc_, opcode, operand)) {
+      compiler::NodeVector inputs(1, zone_);
+      inputs[0] = Pop(0, ValueType::kSimd128).node;
+      TFNode* node = BUILD(SimdShiftOp, opcode, operand.shift, inputs);
+      Push(ValueType::kSimd128, node);
+    }
+    return operand.length;
+  }
+
   unsigned DecodeSimdOpcode(WasmOpcode opcode) {
     unsigned len = 0;
     switch (opcode) {
-      case kExprI32x4ExtractLane: {
-        len = ExtractLane(opcode, ValueType::kWord32);
-        break;
-      }
       case kExprF32x4ExtractLane: {
-        len = ExtractLane(opcode, ValueType::kFloat32);
+        len = SimdExtractLane(opcode, ValueType::kFloat32);
         break;
       }
-      case kExprI32x4ReplaceLane: {
-        len = ReplaceLane(opcode, ValueType::kWord32);
+      case kExprI32x4ExtractLane:
+      case kExprI16x8ExtractLane:
+      case kExprI8x16ExtractLane: {
+        len = SimdExtractLane(opcode, ValueType::kWord32);
         break;
       }
       case kExprF32x4ReplaceLane: {
-        len = ReplaceLane(opcode, ValueType::kFloat32);
+        len = SimdReplaceLane(opcode, ValueType::kFloat32);
+        break;
+      }
+      case kExprI32x4ReplaceLane:
+      case kExprI16x8ReplaceLane:
+      case kExprI8x16ReplaceLane: {
+        len = SimdReplaceLane(opcode, ValueType::kWord32);
+        break;
+      }
+      case kExprI32x4Shl:
+      case kExprI32x4ShrS:
+      case kExprI32x4ShrU:
+      case kExprI16x8Shl:
+      case kExprI16x8ShrS:
+      case kExprI16x8ShrU:
+      case kExprI8x16Shl:
+      case kExprI8x16ShrS:
+      case kExprI8x16ShrU: {
+        len = SimdShiftOp(opcode);
         break;
       }
       default: {
@@ -1414,9 +1522,22 @@ class WasmFullDecoder : public WasmDecoder {
   }
 
   void Push(ValueType type, TFNode* node) {
-    if (type != kWasmStmt && type != kWasmEnd) {
+    if (type != kWasmStmt) {
       stack_.push_back({pc_, node, type});
     }
+  }
+
+  void PushEndValues(Control* c) {
+    DCHECK_EQ(c, &control_.back());
+    stack_.resize(c->stack_depth);
+    if (c->merge.arity == 1) {
+      stack_.push_back(c->merge.vals.first);
+    } else {
+      for (unsigned i = 0; i < c->merge.arity; i++) {
+        stack_.push_back(c->merge.vals.array[i]);
+      }
+    }
+    DCHECK_EQ(c->stack_depth + c->merge.arity, stack_.size());
   }
 
   void PushReturns(FunctionSig* sig, TFNode** rets) {
@@ -1433,12 +1554,10 @@ class WasmFullDecoder : public WasmDecoder {
 
   Value Pop(int index, ValueType expected) {
     Value val = Pop();
-    if (val.type != expected) {
-      if (val.type != kWasmEnd) {
-        error(pc_, val.pc, "%s[%d] expected type %s, found %s of type %s",
-              SafeOpcodeNameAt(pc_), index, WasmOpcodes::TypeName(expected),
-              SafeOpcodeNameAt(val.pc), WasmOpcodes::TypeName(val.type));
-      }
+    if (val.type != expected && val.type != kWasmVar && expected != kWasmVar) {
+      error(pc_, val.pc, "%s[%d] expected type %s, found %s of type %s",
+            SafeOpcodeNameAt(pc_), index, WasmOpcodes::TypeName(expected),
+            SafeOpcodeNameAt(val.pc), WasmOpcodes::TypeName(val.type));
     }
     return val;
   }
@@ -1446,9 +1565,9 @@ class WasmFullDecoder : public WasmDecoder {
   Value Pop() {
     size_t limit = control_.empty() ? 0 : control_.back().stack_depth;
     if (stack_.size() <= limit) {
-      Value val = {pc_, nullptr, kWasmEnd};
-      if (ssa_env_->go()) {
-        // Popping past the current control start in reachable code.
+      // Popping past the current control start in reachable code.
+      Value val = {pc_, nullptr, kWasmVar};
+      if (!control_.back().unreachable) {
         error(pc_, pc_, "%s found empty stack", SafeOpcodeNameAt(pc_));
       }
       return val;
@@ -1465,17 +1584,17 @@ class WasmFullDecoder : public WasmDecoder {
   int startrel(const byte* ptr) { return static_cast<int>(ptr - start_); }
 
   void BreakTo(unsigned depth) {
-    if (!ssa_env_->go()) return;
     Control* c = &control_[control_.size() - depth - 1];
     if (c->is_loop()) {
       // This is the inner loop block, which does not have a value.
       Goto(ssa_env_, c->end_env);
     } else {
       // Merge the value(s) into the end of the block.
-      if (c->stack_depth + c->merge.arity > stack_.size()) {
+      size_t expected = control_.back().stack_depth + c->merge.arity;
+      if (stack_.size() < expected && !control_.back().unreachable) {
         error(
             pc_, pc_,
-            "expected at least %d values on the stack for br to @%d, found %d",
+            "expected at least %u values on the stack for br to @%d, found %d",
             c->merge.arity, startrel(c->pc),
             static_cast<int>(stack_.size() - c->stack_depth));
         return;
@@ -1485,37 +1604,41 @@ class WasmFullDecoder : public WasmDecoder {
   }
 
   void FallThruTo(Control* c) {
-    if (!ssa_env_->go()) return;
+    DCHECK_EQ(c, &control_.back());
     // Merge the value(s) into the end of the block.
-    int arity = static_cast<int>(c->merge.arity);
-    if (c->stack_depth + arity != stack_.size()) {
-      error(pc_, pc_, "expected %d elements on the stack for fallthru to @%d",
-            arity, startrel(c->pc));
+    size_t expected = c->stack_depth + c->merge.arity;
+    if (stack_.size() == expected ||
+        (stack_.size() < expected && c->unreachable)) {
+      MergeValuesInto(c);
+      c->unreachable = false;
       return;
     }
-    MergeValuesInto(c);
+    error(pc_, pc_, "expected %u elements on the stack for fallthru to @%d",
+          c->merge.arity, startrel(c->pc));
   }
 
-  inline Value& GetMergeValueFromStack(Control* c, int i) {
+  inline Value& GetMergeValueFromStack(Control* c, size_t i) {
     return stack_[stack_.size() - c->merge.arity + i];
   }
 
-  void TypeCheckLoopFallThru(Control* c) {
-    if (!ssa_env_->go()) return;
+  void TypeCheckFallThru(Control* c) {
+    DCHECK_EQ(c, &control_.back());
     // Fallthru must match arity exactly.
     int arity = static_cast<int>(c->merge.arity);
-    if (c->stack_depth + arity != stack_.size()) {
+    if (c->stack_depth + arity < stack_.size() ||
+        (c->stack_depth + arity != stack_.size() && !c->unreachable)) {
       error(pc_, pc_, "expected %d elements on the stack for fallthru to @%d",
             arity, startrel(c->pc));
       return;
     }
     // Typecheck the values left on the stack.
-    for (unsigned i = 0; i < c->merge.arity; i++) {
+    size_t avail = stack_.size() - c->stack_depth;
+    for (size_t i = avail >= c->merge.arity ? 0 : c->merge.arity - avail;
+         i < c->merge.arity; i++) {
       Value& val = GetMergeValueFromStack(c, i);
-      Value& old =
-          c->merge.arity == 1 ? c->merge.vals.first : c->merge.vals.array[i];
+      Value& old = c->merge[i];
       if (val.type != old.type) {
-        error(pc_, pc_, "type error in merge[%d] (expected %s, got %s)", i,
+        error(pc_, pc_, "type error in merge[%zu] (expected %s, got %s)", i,
               WasmOpcodes::TypeName(old.type), WasmOpcodes::TypeName(val.type));
         return;
       }
@@ -1525,23 +1648,24 @@ class WasmFullDecoder : public WasmDecoder {
   void MergeValuesInto(Control* c) {
     SsaEnv* target = c->end_env;
     bool first = target->state == SsaEnv::kUnreachable;
+    bool reachable = ssa_env_->go();
     Goto(ssa_env_, target);
 
-    for (unsigned i = 0; i < c->merge.arity; i++) {
+    size_t avail = stack_.size() - control_.back().stack_depth;
+    for (size_t i = avail >= c->merge.arity ? 0 : c->merge.arity - avail;
+         i < c->merge.arity; i++) {
       Value& val = GetMergeValueFromStack(c, i);
-      Value& old =
-          c->merge.arity == 1 ? c->merge.vals.first : c->merge.vals.array[i];
-      if (val.type != old.type) {
-        error(pc_, pc_, "type error in merge[%d] (expected %s, got %s)", i,
+      Value& old = c->merge[i];
+      if (val.type != old.type && val.type != kWasmVar) {
+        error(pc_, pc_, "type error in merge[%zu] (expected %s, got %s)", i,
               WasmOpcodes::TypeName(old.type), WasmOpcodes::TypeName(val.type));
         return;
       }
-      if (builder_) {
+      if (builder_ && reachable) {
+        DCHECK_NOT_NULL(val.node);
         old.node =
             first ? val.node : CreateOrMergeIntoPhi(old.type, target->control,
                                                     old.node, val.node);
-      } else {
-        old.node = nullptr;
       }
     }
   }
@@ -1566,13 +1690,13 @@ class WasmFullDecoder : public WasmDecoder {
             break;
         }
       }
-      PrintF("  env = %p, state = %c, reason = %s", static_cast<void*>(env),
+      PrintF("{set_env = %p, state = %c, reason = %s", static_cast<void*>(env),
              state, reason);
       if (env && env->control) {
         PrintF(", control = ");
         compiler::WasmGraphBuilder::PrintDebugName(env->control);
       }
-      PrintF("\n");
+      PrintF("}");
     }
 #endif
     ssa_env_ = env;
@@ -1879,16 +2003,29 @@ unsigned OpcodeLength(const byte* pc, const byte* end) {
   return WasmDecoder::OpcodeLength(&decoder, pc);
 }
 
-void PrintWasmCodeForDebugging(const byte* start, const byte* end) {
+void PrintRawWasmCode(const byte* start, const byte* end) {
   AccountingAllocator allocator;
-  OFStream os(stdout);
-  PrintWasmCode(&allocator, FunctionBodyForTesting(start, end), nullptr, os,
-                nullptr);
+  PrintRawWasmCode(&allocator, FunctionBodyForTesting(start, end), nullptr);
 }
 
-bool PrintWasmCode(AccountingAllocator* allocator, const FunctionBody& body,
-                   const wasm::WasmModule* module, std::ostream& os,
-                   std::vector<std::tuple<uint32_t, int, int>>* offset_table) {
+namespace {
+const char* RawOpcodeName(WasmOpcode opcode) {
+  switch (opcode) {
+#define DECLARE_NAME_CASE(name, opcode, sig) \
+  case kExpr##name:                          \
+    return "kExpr" #name;
+    FOREACH_OPCODE(DECLARE_NAME_CASE)
+#undef DECLARE_NAME_CASE
+    default:
+      break;
+  }
+  return "Unknown";
+}
+}  // namespace
+
+bool PrintRawWasmCode(AccountingAllocator* allocator, const FunctionBody& body,
+                      const wasm::WasmModule* module) {
+  OFStream os(stdout);
   Zone zone(allocator, ZONE_NAME);
   WasmFullDecoder decoder(&zone, module, body);
   int line_nr = 0;
@@ -1937,16 +2074,13 @@ bool PrintWasmCode(AccountingAllocator* allocator, const FunctionBody& body,
     if (opcode == kExprElse) control_depth--;
 
     int num_whitespaces = control_depth < 32 ? 2 * control_depth : 64;
-    if (offset_table) {
-      offset_table->push_back(
-          std::make_tuple(i.pc_offset(), line_nr, num_whitespaces));
-    }
 
     // 64 whitespaces
     const char* padding =
         "                                                                ";
     os.write(padding, num_whitespaces);
-    os << "k" << WasmOpcodes::OpcodeName(opcode) << ",";
+
+    os << RawOpcodeName(opcode) << ",";
 
     for (size_t j = 1; j < length; ++j) {
       os << " 0x" << AsHex(i.pc()[j], 2) << ",";

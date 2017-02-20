@@ -229,6 +229,8 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   Node* Parameter(int value);
   Node* GetJSContextParameter();
   void Return(Node* value);
+  void Return(Node* value1, Node* value2);
+  void Return(Node* value1, Node* value2, Node* value3);
   void PopAndReturn(Node* pop, Node* value);
 
   void DebugBreak();
@@ -237,7 +239,7 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   void Bind(Label* label);
   void Goto(Label* label);
   void GotoIf(Node* condition, Label* true_label);
-  void GotoUnless(Node* condition, Label* false_label);
+  void GotoIfNot(Node* condition, Label* false_label);
   void Branch(Node* condition, Label* true_label, Label* false_label);
 
   void Switch(Node* index, Label* default_label, const int32_t* case_values,
@@ -413,6 +415,8 @@ class CodeAssemblerVariable {
  public:
   explicit CodeAssemblerVariable(CodeAssembler* assembler,
                                  MachineRepresentation rep);
+  CodeAssemblerVariable(CodeAssembler* assembler, MachineRepresentation rep,
+                        Node* initial_value);
   ~CodeAssemblerVariable();
   void Bind(Node* value);
   Node* value() const;

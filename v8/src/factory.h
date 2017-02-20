@@ -5,13 +5,17 @@
 #ifndef V8_FACTORY_H_
 #define V8_FACTORY_H_
 
+#include "src/feedback-vector.h"
 #include "src/globals.h"
 #include "src/isolate.h"
 #include "src/messages.h"
-#include "src/type-feedback-vector.h"
+#include "src/objects/scope-info.h"
 
 namespace v8 {
 namespace internal {
+
+class BoilerplateDescription;
+class ConstantElementsPair;
 
 enum FunctionMode {
   // With prototype.
@@ -52,6 +56,7 @@ class V8_EXPORT_PRIVATE Factory final {
   // calculates the number of properties we need to store in the backing store.
   Handle<BoilerplateDescription> NewBoilerplateDescription(int boilerplate,
                                                            int all_properties,
+                                                           int index_keys,
                                                            bool has_seen_proto);
 
   // Allocate a new uninitialized fixed double array.
@@ -71,9 +76,6 @@ class V8_EXPORT_PRIVATE Factory final {
 
   Handle<OrderedHashSet> NewOrderedHashSet();
   Handle<OrderedHashMap> NewOrderedHashMap();
-
-  // Create a new boxed value.
-  Handle<Box> NewBox(Handle<Object> value);
 
   // Create a new PrototypeInfo struct.
   Handle<PrototypeInfo> NewPrototypeInfo();
@@ -368,6 +370,10 @@ class V8_EXPORT_PRIVATE Factory final {
 
   Handle<WeakCell> NewWeakCell(Handle<HeapObject> value);
 
+  Handle<Cell> NewNoClosuresCell(Handle<Object> value);
+  Handle<Cell> NewOneClosureCell(Handle<Object> value);
+  Handle<Cell> NewManyClosuresCell(Handle<Object> value);
+
   Handle<TransitionArray> NewTransitionArray(int capacity);
 
   // Allocate a tenured AllocationSite. It's payload is null.
@@ -437,21 +443,28 @@ class V8_EXPORT_PRIVATE Factory final {
     }
     return NewNumber(static_cast<double>(value), pretenure);
   }
-  Handle<HeapNumber> NewHeapNumber(double value,
-                                   MutableMode mode = IMMUTABLE,
-                                   PretenureFlag pretenure = NOT_TENURED);
-
+  Handle<HeapNumber> NewHeapNumber(double value, MutableMode mode = IMMUTABLE,
+                                   PretenureFlag pretenure = NOT_TENURED) {
+    Handle<HeapNumber> heap_number = NewHeapNumber(mode, pretenure);
+    heap_number->set_value(value);
+    return heap_number;
+  }
+  Handle<HeapNumber> NewHeapNumberFromBits(
+      uint64_t bits, MutableMode mode = IMMUTABLE,
+      PretenureFlag pretenure = NOT_TENURED) {
+    Handle<HeapNumber> heap_number = NewHeapNumber(mode, pretenure);
+    heap_number->set_value_as_bits(bits);
+    return heap_number;
+  }
+  // Creates mutable heap number object with value field set to hole NaN.
   Handle<HeapNumber> NewMutableHeapNumber(
       PretenureFlag pretenure = NOT_TENURED) {
-    double hole_nan = bit_cast<double>(kHoleNanInt64);
-    return NewHeapNumber(hole_nan, MUTABLE, pretenure);
+    return NewHeapNumberFromBits(kHoleNanInt64, MUTABLE, pretenure);
   }
 
-#define SIMD128_NEW_DECL(TYPE, Type, type, lane_count, lane_type) \
-  Handle<Type> New##Type(lane_type lanes[lane_count],             \
-                         PretenureFlag pretenure = NOT_TENURED);
-  SIMD128_TYPES(SIMD128_NEW_DECL)
-#undef SIMD128_NEW_DECL
+  // Creates heap number object with not yet set value field.
+  Handle<HeapNumber> NewHeapNumber(MutableMode mode,
+                                   PretenureFlag pretenure = NOT_TENURED);
 
   Handle<JSWeakMap> NewJSWeakMap();
 
@@ -462,7 +475,8 @@ class V8_EXPORT_PRIVATE Factory final {
   Handle<JSObject> NewJSObject(Handle<JSFunction> constructor,
                                PretenureFlag pretenure = NOT_TENURED);
   // JSObject without a prototype.
-  Handle<JSObject> NewJSObjectWithNullProto();
+  Handle<JSObject> NewJSObjectWithNullProto(
+      PretenureFlag pretenure = NOT_TENURED);
 
   // Global objects are pretenured and initialized based on a constructor.
   Handle<JSGlobalObject> NewJSGlobalObject(Handle<JSFunction> constructor);
@@ -584,12 +598,12 @@ class V8_EXPORT_PRIVATE Factory final {
 
   Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
       Handle<Map> initial_map, Handle<SharedFunctionInfo> function_info,
-      Handle<Object> context_or_undefined, Handle<LiteralsArray> literals,
+      Handle<Object> context_or_undefined, Handle<Cell> vector,
       PretenureFlag pretenure = TENURED);
 
   Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
       Handle<SharedFunctionInfo> function_info, Handle<Context> context,
-      Handle<LiteralsArray> literals, PretenureFlag pretenure = TENURED);
+      Handle<Cell> vector, PretenureFlag pretenure = TENURED);
 
   Handle<JSFunction> NewFunctionFromSharedFunctionInfo(
       Handle<Map> initial_map, Handle<SharedFunctionInfo> function_info,
@@ -719,8 +733,8 @@ class V8_EXPORT_PRIVATE Factory final {
 
   // Allocates a new SharedFunctionInfo object.
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(
-      Handle<String> name, int number_of_literals, FunctionKind kind,
-      Handle<Code> code, Handle<ScopeInfo> scope_info);
+      Handle<String> name, FunctionKind kind, Handle<Code> code,
+      Handle<ScopeInfo> scope_info);
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(Handle<String> name,
                                                    MaybeHandle<Code> code,
                                                    bool is_constructor);

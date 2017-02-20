@@ -12,6 +12,7 @@
 #include "src/compiler/common-operator.h"
 #include "src/compiler/graph-reducer.h"
 #include "src/compiler/js-operator.h"
+#include "src/compiler/linkage.h"
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/node-properties.h"
 #include "src/compiler/node.h"
@@ -252,10 +253,14 @@ bool VirtualObject::UpdateFrom(const VirtualObject& other) {
 class VirtualState : public ZoneObject {
  public:
   VirtualState(Node* owner, Zone* zone, size_t size)
-      : info_(size, nullptr, zone), owner_(owner) {}
+      : info_(size, nullptr, zone),
+        initialized_(static_cast<int>(size), zone),
+        owner_(owner) {}
 
   VirtualState(Node* owner, const VirtualState& state)
       : info_(state.info_.size(), nullptr, state.info_.get_allocator().zone()),
+        initialized_(state.initialized_.length(),
+                     state.info_.get_allocator().zone()),
         owner_(owner) {
     for (size_t i = 0; i < info_.size(); ++i) {
       if (state.info_[i]) {
@@ -280,6 +285,7 @@ class VirtualState : public ZoneObject {
 
  private:
   ZoneVector<VirtualObject*> info_;
+  BitVector initialized_;
   Node* owner_;
 
   DISALLOW_COPY_AND_ASSIGN(VirtualState);
@@ -375,6 +381,7 @@ VirtualObject* VirtualState::VirtualObjectFromAlias(size_t alias) {
 
 void VirtualState::SetVirtualObject(Alias alias, VirtualObject* obj) {
   info_[alias] = obj;
+  if (obj) initialized_.Add(alias);
 }
 
 bool VirtualState::UpdateFrom(VirtualState* from, Zone* zone) {
@@ -527,7 +534,8 @@ bool VirtualState::MergeFrom(MergeCache* cache, Zone* zone, Graph* graph,
         fields = std::min(obj->field_count(), fields);
       }
     }
-    if (cache->objects().size() == cache->states().size()) {
+    if (cache->objects().size() == cache->states().size() &&
+        (mergeObject || !initialized_.Contains(alias))) {
       bool initialMerge = false;
       if (!mergeObject) {
         initialMerge = true;
@@ -820,7 +828,9 @@ bool EscapeStatusAnalysis::CheckUsesForEscape(Node* uses, Node* rep,
       case IrOpcode::kPlainPrimitiveToFloat64:
       case IrOpcode::kStringCharAt:
       case IrOpcode::kStringCharCodeAt:
+      case IrOpcode::kStringIndexOf:
       case IrOpcode::kObjectIsCallable:
+      case IrOpcode::kObjectIsNonCallable:
       case IrOpcode::kObjectIsNumber:
       case IrOpcode::kObjectIsReceiver:
       case IrOpcode::kObjectIsString:
@@ -836,9 +846,9 @@ bool EscapeStatusAnalysis::CheckUsesForEscape(Node* uses, Node* rep,
         if (use->op()->EffectInputCount() == 0 &&
             uses->op()->EffectInputCount() > 0 &&
             !IrOpcode::IsJsOpcode(use->opcode())) {
-          TRACE("Encountered unaccounted use by #%d (%s)\n", use->id(),
-                use->op()->mnemonic());
-          UNREACHABLE();
+          V8_Fatal(__FILE__, __LINE__,
+                   "Encountered unaccounted use by #%d (%s)\n", use->id(),
+                   use->op()->mnemonic());
         }
         if (SetEscaped(rep)) {
           TRACE("Setting #%d (%s) to escaped because of use by #%d (%s)\n",
@@ -1066,6 +1076,19 @@ bool EscapeStatusAnalysis::IsEffectBranchPoint(Node* node) {
   return false;
 }
 
+namespace {
+
+bool HasFrameStateInput(const Operator* op) {
+  if (op->opcode() == IrOpcode::kCall || op->opcode() == IrOpcode::kTailCall) {
+    const CallDescriptor* d = CallDescriptorOf(op);
+    return d->NeedsFrameState();
+  } else {
+    return OperatorProperties::HasFrameStateInput(op);
+  }
+}
+
+}  // namespace
+
 bool EscapeAnalysis::Process(Node* node) {
   switch (node->opcode()) {
     case IrOpcode::kAllocate:
@@ -1102,7 +1125,7 @@ bool EscapeAnalysis::Process(Node* node) {
       ProcessAllocationUsers(node);
       break;
   }
-  if (OperatorProperties::HasFrameStateInput(node->op())) {
+  if (HasFrameStateInput(node->op())) {
     virtual_states_[node->id()]->SetCopyRequired();
   }
   return true;

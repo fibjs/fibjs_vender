@@ -12,8 +12,16 @@
 #include "include/v8.h"
 
 #include "src/debug/interface-types.h"
+#include "src/globals.h"
 
 namespace v8 {
+
+namespace internal {
+struct CoverageRange;
+class Coverage;
+class Script;
+}
+
 namespace debug {
 
 /**
@@ -83,16 +91,18 @@ enum ExceptionBreakState {
  */
 void ChangeBreakOnException(Isolate* isolate, ExceptionBreakState state);
 
+void SetBreakPointsActive(Isolate* isolate, bool is_active);
+
 enum StepAction {
   StepOut = 0,   // Step out of the current function.
   StepNext = 1,  // Step to the next statement in the current function.
-  StepIn = 2,    // Step into new functions invoked or the next statement
+  StepIn = 2     // Step into new functions invoked or the next statement
                  // in the current function.
-  StepFrame = 3  // Step into a new frame or return to previous frame.
 };
 
 void PrepareStep(Isolate* isolate, StepAction action);
-void ClearStepping(Isolate* isolate);
+
+bool HasNonBlackboxedFrameOnStack(Isolate* isolate);
 
 /**
  * Out-of-memory callback function.
@@ -107,7 +117,7 @@ void SetOutOfMemoryCallback(Isolate* isolate, OutOfMemoryCallback callback,
 /**
  * Native wrapper around v8::internal::Script object.
  */
-class Script {
+class V8_EXPORT_PRIVATE Script {
  public:
   v8::Isolate* GetIsolate() const;
 
@@ -123,6 +133,7 @@ class Script {
   MaybeLocal<Value> ContextData() const;
   MaybeLocal<String> Source() const;
   bool IsWasm() const;
+  bool IsModule() const;
   bool GetPossibleBreakpoints(const debug::Location& start,
                               const debug::Location& end,
                               std::vector<debug::Location>* locations) const;
@@ -139,6 +150,8 @@ class WasmScript : public Script {
   int NumFunctions() const;
   int NumImportedFunctions() const;
 
+  std::pair<int, int> GetFunctionRange(int function_index) const;
+
   debug::WasmDisassembly DisassembleFunction(int function_index) const;
 };
 
@@ -147,11 +160,11 @@ void GetLoadedScripts(Isolate* isolate, PersistentValueVector<Script>& scripts);
 MaybeLocal<UnboundScript> CompileInspectorScript(Isolate* isolate,
                                                  Local<String> source);
 
-class DebugEventListener {
+class DebugDelegate {
  public:
-  virtual ~DebugEventListener() {}
-  virtual void PromiseEventOccurred(debug::PromiseDebugActionType type,
-                                    int id) {}
+  virtual ~DebugDelegate() {}
+  virtual void PromiseEventOccurred(debug::PromiseDebugActionType type, int id,
+                                    int parent_id) {}
   virtual void ScriptCompiled(v8::Local<Script> script,
                               bool has_compile_error) {}
   virtual void BreakProgramRequested(v8::Local<v8::Context> paused_context,
@@ -160,11 +173,78 @@ class DebugEventListener {
   virtual void ExceptionThrown(v8::Local<v8::Context> paused_context,
                                v8::Local<v8::Object> exec_state,
                                v8::Local<v8::Value> exception,
-                               bool is_promise_rejection, bool is_uncaught) {}
+                               v8::Local<v8::Value> promise, bool is_uncaught) {
+  }
+  virtual bool IsFunctionBlackboxed(v8::Local<debug::Script> script,
+                                    const debug::Location& start,
+                                    const debug::Location& end) {
+    return false;
+  }
 };
 
-void SetDebugEventListener(Isolate* isolate, DebugEventListener* listener);
+void SetDebugDelegate(Isolate* isolate, DebugDelegate* listener);
 
+void ResetBlackboxedStateCache(Isolate* isolate,
+                               v8::Local<debug::Script> script);
+
+int EstimatedValueSize(Isolate* isolate, v8::Local<v8::Value> value);
+
+v8::MaybeLocal<v8::Array> EntriesPreview(Isolate* isolate,
+                                         v8::Local<v8::Value> value,
+                                         bool* is_key_value);
+
+/**
+ * Native wrapper around v8::internal::JSGeneratorObject object.
+ */
+class GeneratorObject {
+ public:
+  v8::MaybeLocal<debug::Script> Script();
+  v8::Local<v8::Function> Function();
+  debug::Location SuspendedLocation();
+  bool IsSuspended();
+
+  static v8::Local<debug::GeneratorObject> Cast(v8::Local<v8::Value> value);
+};
+
+/*
+ * Provide API layer between inspector and code coverage.
+ */
+class V8_EXPORT_PRIVATE Coverage {
+ public:
+  class V8_EXPORT_PRIVATE Range {
+   public:
+    // 0-based line and colum numbers.
+    Location Start() { return start_; }
+    Location End() { return end_; }
+    uint32_t Count();
+    size_t NestedCount();
+    Range GetNested(size_t i);
+    MaybeLocal<String> Name();
+
+   private:
+    Range(i::CoverageRange* range, Local<debug::Script> script);
+    i::CoverageRange* range_;
+    Location start_;
+    Location end_;
+    Local<debug::Script> script_;
+
+    friend class debug::Coverage;
+  };
+
+  static Coverage Collect(Isolate* isolate);
+
+  static void TogglePrecise(Isolate* isolate, bool enable);
+
+  size_t ScriptCount();
+  Local<debug::Script> GetScript(size_t i);
+  Range GetRange(size_t i);
+
+  ~Coverage();
+
+ private:
+  explicit Coverage(i::Coverage* coverage) : coverage_(coverage) {}
+  i::Coverage* coverage_;
+};
 }  // namespace debug
 }  // namespace v8
 

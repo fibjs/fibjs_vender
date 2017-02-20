@@ -354,9 +354,6 @@
     <ClInclude Include="src\ast\ast-function-literal-id-reindexer.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast\ast-literal-reindexer.h">
-      <Filter>Source Files\ast</Filter>
-    </ClInclude>
     <ClInclude Include="src\ast\ast-numbering.h">
       <Filter>Source Files\ast</Filter>
     </ClInclude>
@@ -537,13 +534,22 @@
     <ClInclude Include="src\bootstrapper.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-arguments.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-async.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-constructor.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
+    <ClInclude Include="src\builtins\builtins-object.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
     <ClInclude Include="src\builtins\builtins-promise.h">
+      <Filter>Source Files\builtins</Filter>
+    </ClInclude>
+    <ClInclude Include="src\builtins\builtins-regexp.h">
       <Filter>Source Files\builtins</Filter>
     </ClInclude>
     <ClInclude Include="src\builtins\builtins-utils.h">
@@ -759,9 +765,6 @@
     <ClInclude Include="src\compiler\js-generic-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\js-global-object-specialization.h">
-      <Filter>Source Files\compiler</Filter>
-    </ClInclude>
     <ClInclude Include="src\compiler\js-graph.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
@@ -778,6 +781,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-operator.h">
+      <Filter>Source Files\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\js-type-hint-lowering.h">
       <Filter>Source Files\compiler</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\js-typed-lowering.h">
@@ -1122,6 +1128,9 @@
     <ClInclude Include="src\dateparser.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\debug\debug-coverage.h">
+      <Filter>Source Files\debug</Filter>
+    </ClInclude>
     <ClInclude Include="src\debug\debug-evaluate.h">
       <Filter>Source Files\debug</Filter>
     </ClInclude>
@@ -1209,6 +1218,12 @@
     <ClInclude Include="src\fast-dtoa.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\feedback-vector-inl.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\feedback-vector.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\ffi\ffi-compiler.h">
       <Filter>Source Files\ffi</Filter>
     </ClInclude>
@@ -1219,6 +1234,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\field-type.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\find-and-replace-pattern.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\fixed-dtoa.h">
@@ -1590,6 +1608,9 @@
     <ClInclude Include="src\objects.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\literal-objects.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
     <ClInclude Include="src\objects\module-info.h">
       <Filter>Source Files\objects</Filter>
     </ClInclude>
@@ -1636,6 +1657,9 @@
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\parsing\preparse-data.h">
+      <Filter>Source Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsing\preparsed-scope-data.h">
       <Filter>Source Files\parsing</Filter>
     </ClInclude>
     <ClInclude Include="src\parsing\preparser.h">
@@ -1923,12 +1947,6 @@
     <ClInclude Include="src\trap-handler\trap-handler.h">
       <Filter>Source Files\trap-handler</Filter>
     </ClInclude>
-    <ClInclude Include="src\type-feedback-vector-inl.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\type-feedback-vector.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\type-hints.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -1984,6 +2002,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\decoder.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\function-body-decoder-impl.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\function-body-decoder.h">
@@ -2156,9 +2177,6 @@
     <ClCompile Include="src\ast\ast-function-literal-id-reindexer.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast\ast-literal-reindexer.cc">
-      <Filter>Source Files\ast</Filter>
-    </ClCompile>
     <ClCompile Include="src\ast\ast-numbering.cc">
       <Filter>Source Files\ast</Filter>
     </ClCompile>
@@ -2294,6 +2312,9 @@
     <ClCompile Include="src\builtins\builtins-api.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
+    <ClCompile Include="src\builtins\builtins-arguments.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
     <ClCompile Include="src\builtins\builtins-array.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
@@ -2388,6 +2409,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-typedarray.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-wasm.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins.cc">
@@ -2603,9 +2627,6 @@
     <ClCompile Include="src\compiler\js-generic-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\js-global-object-specialization.cc">
-      <Filter>Source Files\compiler</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\js-graph.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
@@ -2622,6 +2643,9 @@
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-operator.cc">
+      <Filter>Source Files\compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compiler\js-type-hint-lowering.cc">
       <Filter>Source Files\compiler</Filter>
     </ClCompile>
     <ClCompile Include="src\compiler\js-typed-lowering.cc">
@@ -2960,6 +2984,9 @@
     <ClCompile Include="src\dateparser.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\debug\debug-coverage.cc">
+      <Filter>Source Files\debug</Filter>
+    </ClCompile>
     <ClCompile Include="src\debug\debug-evaluate.cc">
       <Filter>Source Files\debug</Filter>
     </ClCompile>
@@ -3045,6 +3072,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\fast-dtoa.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\feedback-vector.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ffi\ffi-compiler.cc">
@@ -3410,6 +3440,9 @@
     <ClCompile Include="src\objects.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\objects\literal-objects.cc">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
     <ClCompile Include="src\objects\scope-info.cc">
       <Filter>Source Files\objects</Filter>
     </ClCompile>
@@ -3438,6 +3471,9 @@
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\preparse-data.cc">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsing\preparsed-scope-data.cc">
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="src\parsing\preparser.cc">
@@ -3656,9 +3692,6 @@
     <ClCompile Include="src\runtime\runtime-scopes.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
-    <ClCompile Include="src\runtime\runtime-simd.cc">
-      <Filter>Source Files\runtime</Filter>
-    </ClCompile>
     <ClCompile Include="src\runtime\runtime-strings.cc">
       <Filter>Source Files\runtime</Filter>
     </ClCompile>
@@ -3774,9 +3807,6 @@
       <Filter>Source Files\tracing</Filter>
     </ClCompile>
     <ClCompile Include="src\transitions.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\type-feedback-vector.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\type-hints.cc">

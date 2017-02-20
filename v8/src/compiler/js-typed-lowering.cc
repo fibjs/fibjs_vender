@@ -30,30 +30,6 @@ class JSBinopReduction final {
   JSBinopReduction(JSTypedLowering* lowering, Node* node)
       : lowering_(lowering), node_(node) {}
 
-  bool GetBinaryNumberOperationHint(NumberOperationHint* hint) {
-    if (lowering_->flags() & JSTypedLowering::kDeoptimizationEnabled) {
-      DCHECK_NE(0, node_->op()->ControlOutputCount());
-      DCHECK_EQ(1, node_->op()->EffectOutputCount());
-      DCHECK_EQ(1, OperatorProperties::GetFrameStateInputCount(node_->op()));
-      switch (BinaryOperationHintOf(node_->op())) {
-        case BinaryOperationHint::kSignedSmall:
-          *hint = NumberOperationHint::kSignedSmall;
-          return true;
-        case BinaryOperationHint::kSigned32:
-          *hint = NumberOperationHint::kSigned32;
-          return true;
-        case BinaryOperationHint::kNumberOrOddball:
-          *hint = NumberOperationHint::kNumberOrOddball;
-          return true;
-        case BinaryOperationHint::kAny:
-        case BinaryOperationHint::kNone:
-        case BinaryOperationHint::kString:
-          break;
-      }
-    }
-    return false;
-  }
-
   bool GetCompareNumberOperationHint(NumberOperationHint* hint) {
     if (lowering_->flags() & JSTypedLowering::kDeoptimizationEnabled) {
       DCHECK_EQ(1, node_->op()->EffectOutputCount());
@@ -98,11 +74,22 @@ class JSBinopReduction final {
     return false;
   }
 
+  bool IsStringCompareOperation() {
+    if (lowering_->flags() & JSTypedLowering::kDeoptimizationEnabled) {
+      DCHECK_EQ(1, node_->op()->EffectOutputCount());
+      return (CompareOperationHintOf(node_->op()) ==
+              CompareOperationHint::kString) &&
+             BothInputsMaybe(Type::String());
+    }
+    return false;
+  }
+
   // Check if a string addition will definitely result in creating a ConsString,
   // i.e. if the combined length of the resulting string exceeds the ConsString
   // minimum length.
   bool ShouldCreateConsString() {
     DCHECK_EQ(IrOpcode::kJSAdd, node_->opcode());
+    DCHECK(OneInputIs(Type::String()));
     if (BothInputsAre(Type::String()) ||
         ((lowering_->flags() & JSTypedLowering::kDeoptimizationEnabled) &&
          BinaryOperationHintOf(node_->op()) == BinaryOperationHint::kString)) {
@@ -144,6 +131,24 @@ class JSBinopReduction final {
     if (!right_type()->Is(Type::Receiver())) {
       Node* right_input = graph()->NewNode(simplified()->CheckReceiver(),
                                            right(), effect(), control());
+      node_->ReplaceInput(1, right_input);
+      update_effect(right_input);
+    }
+  }
+
+  // Checks that both inputs are String, and if we don't know
+  // statically that one side is already a String, insert a
+  // CheckString node.
+  void CheckInputsToString() {
+    if (!left_type()->Is(Type::String())) {
+      Node* left_input = graph()->NewNode(simplified()->CheckString(), left(),
+                                          effect(), control());
+      node_->ReplaceInput(0, left_input);
+      update_effect(left_input);
+    }
+    if (!right_type()->Is(Type::String())) {
+      Node* right_input = graph()->NewNode(simplified()->CheckString(), right(),
+                                           effect(), control());
       node_->ReplaceInput(1, right_input);
       update_effect(right_input);
     }
@@ -342,30 +347,18 @@ class JSBinopReduction final {
     return nullptr;
   }
 
-  const Operator* SpeculativeNumberOp(NumberOperationHint hint) {
+  const Operator* NumberOpFromSpeculativeNumberOp() {
     switch (node_->opcode()) {
-      case IrOpcode::kJSAdd:
-        return simplified()->SpeculativeNumberAdd(hint);
-      case IrOpcode::kJSSubtract:
-        return simplified()->SpeculativeNumberSubtract(hint);
-      case IrOpcode::kJSMultiply:
-        return simplified()->SpeculativeNumberMultiply(hint);
-      case IrOpcode::kJSDivide:
-        return simplified()->SpeculativeNumberDivide(hint);
-      case IrOpcode::kJSModulus:
-        return simplified()->SpeculativeNumberModulus(hint);
-      case IrOpcode::kJSBitwiseAnd:
-        return simplified()->SpeculativeNumberBitwiseAnd(hint);
-      case IrOpcode::kJSBitwiseOr:
-        return simplified()->SpeculativeNumberBitwiseOr(hint);
-      case IrOpcode::kJSBitwiseXor:
-        return simplified()->SpeculativeNumberBitwiseXor(hint);
-      case IrOpcode::kJSShiftLeft:
-        return simplified()->SpeculativeNumberShiftLeft(hint);
-      case IrOpcode::kJSShiftRight:
-        return simplified()->SpeculativeNumberShiftRight(hint);
-      case IrOpcode::kJSShiftRightLogical:
-        return simplified()->SpeculativeNumberShiftRightLogical(hint);
+      case IrOpcode::kSpeculativeNumberAdd:
+        return simplified()->NumberAdd();
+      case IrOpcode::kSpeculativeNumberSubtract:
+        return simplified()->NumberSubtract();
+      case IrOpcode::kSpeculativeNumberMultiply:
+        return simplified()->NumberMultiply();
+      case IrOpcode::kSpeculativeNumberDivide:
+        return simplified()->NumberDivide();
+      case IrOpcode::kSpeculativeNumberModulus:
+        return simplified()->NumberModulus();
       default:
         break;
     }
@@ -528,6 +521,13 @@ JSTypedLowering::JSTypedLowering(Editor* editor,
       dependencies_(dependencies),
       flags_(flags),
       jsgraph_(jsgraph),
+      pointer_comparable_type_(Type::Union(
+          Type::Oddball(),
+          Type::Union(
+              Type::SymbolOrReceiver(),
+              Type::HeapConstant(factory()->empty_string(), graph()->zone()),
+              graph()->zone()),
+          graph()->zone())),
       type_cache_(TypeCache::Get()) {
   for (size_t k = 0; k < arraysize(shifted_int32_ranges_); ++k) {
     double min = kMinInt / (1 << k);
@@ -536,20 +536,22 @@ JSTypedLowering::JSTypedLowering(Editor* editor,
   }
 }
 
+Reduction JSTypedLowering::ReduceSpeculativeNumberAdd(Node* node) {
+  JSBinopReduction r(this, node);
+  NumberOperationHint hint = NumberOperationHintOf(node->op());
+  if (hint == NumberOperationHint::kNumberOrOddball &&
+      r.BothInputsAre(Type::PlainPrimitive()) &&
+      r.NeitherInputCanBe(Type::StringOrReceiver())) {
+    // SpeculativeNumberAdd(x:-string, y:-string) =>
+    //     NumberAdd(ToNumber(x), ToNumber(y))
+    r.ConvertInputsToNumber();
+    return r.ChangeToPureOperator(simplified()->NumberAdd(), Type::Number());
+  }
+  return NoChange();
+}
+
 Reduction JSTypedLowering::ReduceJSAdd(Node* node) {
   JSBinopReduction r(this, node);
-  NumberOperationHint hint;
-  if (r.GetBinaryNumberOperationHint(&hint)) {
-    if (hint == NumberOperationHint::kNumberOrOddball &&
-        r.BothInputsAre(Type::PlainPrimitive()) &&
-        r.NeitherInputCanBe(Type::StringOrReceiver())) {
-      // JSAdd(x:-string, y:-string) => NumberAdd(ToNumber(x), ToNumber(y))
-      r.ConvertInputsToNumber();
-      return r.ChangeToPureOperator(simplified()->NumberAdd(), Type::Number());
-    }
-    return r.ChangeToSpeculativeOperator(
-        simplified()->SpeculativeNumberAdd(hint), Type::Number());
-  }
   if (r.BothInputsAre(Type::Number())) {
     // JSAdd(x:number, y:number) => NumberAdd(x, y)
     r.ConvertInputsToNumber();
@@ -597,16 +599,6 @@ Reduction JSTypedLowering::ReduceJSAdd(Node* node) {
 
 Reduction JSTypedLowering::ReduceNumberBinop(Node* node) {
   JSBinopReduction r(this, node);
-  NumberOperationHint hint;
-  if (r.GetBinaryNumberOperationHint(&hint)) {
-    if (hint == NumberOperationHint::kNumberOrOddball &&
-        r.BothInputsAre(Type::NumberOrOddball())) {
-      r.ConvertInputsToNumber();
-      return r.ChangeToPureOperator(r.NumberOp(), Type::Number());
-    }
-    return r.ChangeToSpeculativeOperator(r.SpeculativeNumberOp(hint),
-                                         Type::Number());
-  }
   if (r.BothInputsAre(Type::PlainPrimitive()) ||
       !(flags() & kDeoptimizationEnabled)) {
     r.ConvertInputsToNumber();
@@ -615,13 +607,20 @@ Reduction JSTypedLowering::ReduceNumberBinop(Node* node) {
   return NoChange();
 }
 
+Reduction JSTypedLowering::ReduceSpeculativeNumberBinop(Node* node) {
+  JSBinopReduction r(this, node);
+  NumberOperationHint hint = NumberOperationHintOf(node->op());
+  if (hint == NumberOperationHint::kNumberOrOddball &&
+      r.BothInputsAre(Type::NumberOrOddball())) {
+    r.ConvertInputsToNumber();
+    return r.ChangeToPureOperator(r.NumberOpFromSpeculativeNumberOp(),
+                                  Type::Number());
+  }
+  return NoChange();
+}
+
 Reduction JSTypedLowering::ReduceInt32Binop(Node* node) {
   JSBinopReduction r(this, node);
-  NumberOperationHint hint;
-  if (r.GetBinaryNumberOperationHint(&hint)) {
-    return r.ChangeToSpeculativeOperator(r.SpeculativeNumberOp(hint),
-                                         Type::Signed32());
-  }
   if (r.BothInputsAre(Type::PlainPrimitive()) ||
       !(flags() & kDeoptimizationEnabled)) {
     r.ConvertInputsToNumber();
@@ -633,12 +632,6 @@ Reduction JSTypedLowering::ReduceInt32Binop(Node* node) {
 
 Reduction JSTypedLowering::ReduceUI32Shift(Node* node, Signedness signedness) {
   JSBinopReduction r(this, node);
-  NumberOperationHint hint;
-  if (r.GetBinaryNumberOperationHint(&hint)) {
-    return r.ChangeToSpeculativeOperator(
-        r.SpeculativeNumberOp(hint),
-        signedness == kUnsigned ? Type::Unsigned32() : Type::Signed32());
-  }
   if (r.BothInputsAre(Type::PlainPrimitive()) ||
       !(flags() & kDeoptimizationEnabled)) {
     r.ConvertInputsToNumber();
@@ -820,6 +813,10 @@ Reduction JSTypedLowering::ReduceJSComparison(Node* node) {
     r.ConvertInputsToNumber();
     less_than = simplified()->NumberLessThan();
     less_than_or_equal = simplified()->NumberLessThanOrEqual();
+  } else if (r.IsStringCompareOperation()) {
+    r.CheckInputsToString();
+    less_than = simplified()->StringLessThan();
+    less_than_or_equal = simplified()->StringLessThanOrEqual();
   } else {
     return NoChange();
   }
@@ -979,6 +976,9 @@ Reduction JSTypedLowering::ReduceJSEqual(Node* node, bool invert) {
   } else if (r.IsReceiverCompareOperation()) {
     r.CheckInputsToReceiver();
     return r.ChangeToPureOperator(simplified()->ReferenceEqual(), invert);
+  } else if (r.IsStringCompareOperation()) {
+    r.CheckInputsToString();
+    return r.ChangeToPureOperator(simplified()->StringEqual(), invert);
   }
   return NoChange();
 }
@@ -993,10 +993,10 @@ Reduction JSTypedLowering::ReduceJSStrictEqual(Node* node, bool invert) {
       return Replace(replacement);
     }
   }
-  if (r.OneInputCannotBe(Type::NumberOrSimdOrString())) {
+  if (r.OneInputCannotBe(Type::NumberOrString())) {
     // For values with canonical representation (i.e. neither String, nor
-    // Simd128Value nor Number) an empty type intersection means the values
-    // cannot be strictly equal.
+    // Number) an empty type intersection means the values cannot be strictly
+    // equal.
     if (!r.left_type()->Maybe(r.right_type())) {
       Node* replacement = jsgraph()->BooleanConstant(invert);
       ReplaceWithValue(node, replacement);
@@ -1010,7 +1010,7 @@ Reduction JSTypedLowering::ReduceJSStrictEqual(Node* node, bool invert) {
   if (r.BothInputsAre(Type::Unique())) {
     return r.ChangeToPureOperator(simplified()->ReferenceEqual(), invert);
   }
-  if (r.OneInputIs(Type::NonStringUniqueOrHole())) {
+  if (r.OneInputIs(pointer_comparable_type_)) {
     return r.ChangeToPureOperator(simplified()->ReferenceEqual(), invert);
   }
   if (r.IsInternalizedStringCompareOperation()) {
@@ -1036,6 +1036,9 @@ Reduction JSTypedLowering::ReduceJSStrictEqual(Node* node, bool invert) {
     // both sides refer to the same Receiver than.
     r.CheckLeftInputToReceiver();
     return r.ChangeToPureOperator(simplified()->ReferenceEqual(), invert);
+  } else if (r.IsStringCompareOperation()) {
+    r.CheckInputsToString();
+    return r.ChangeToPureOperator(simplified()->StringEqual(), invert);
   }
   return NoChange();
 }
@@ -1071,6 +1074,14 @@ Reduction JSTypedLowering::ReduceJSToBoolean(Node* node) {
     //   => BooleanNot(ObjectIsUndetectable(x))
     node->ReplaceInput(
         0, graph()->NewNode(simplified()->ObjectIsUndetectable(), input));
+    node->TrimInputCount(1);
+    NodeProperties::ChangeOp(node, simplified()->BooleanNot());
+    return Changed(node);
+  } else if (input_type->Is(Type::String())) {
+    // JSToBoolean(x:string) => BooleanNot(ReferenceEqual(x,""))
+    node->ReplaceInput(0,
+                       graph()->NewNode(simplified()->ReferenceEqual(), input,
+                                        jsgraph()->EmptyStringConstant()));
     node->TrimInputCount(1);
     NodeProperties::ChangeOp(node, simplified()->BooleanNot());
     return Changed(node);
@@ -1715,7 +1726,6 @@ Reduction JSTypedLowering::ReduceJSConvertReceiver(Node* node) {
   Type* receiver_type = NodeProperties::GetType(receiver);
   Node* context = NodeProperties::GetContextInput(node);
   Type* context_type = NodeProperties::GetType(context);
-  Node* frame_state = NodeProperties::GetFrameStateInput(node);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
 
@@ -1762,14 +1772,15 @@ Reduction JSTypedLowering::ReduceJSConvertReceiver(Node* node) {
     Node* efalse = effect;
     Node* rfalse;
     {
-      // Convert {receiver} using the ToObjectStub.
+      // Convert {receiver} using the ToObjectStub. The call does not require a
+      // frame-state in this case, because neither null nor undefined is passed.
       Callable callable = CodeFactory::ToObject(isolate());
       CallDescriptor const* const desc = Linkage::GetStubCallDescriptor(
           isolate(), graph()->zone(), callable.descriptor(), 0,
-          CallDescriptor::kNeedsFrameState, node->op()->properties());
+          CallDescriptor::kNoFlags, node->op()->properties());
       rfalse = efalse = graph()->NewNode(
           common()->Call(desc), jsgraph()->HeapConstant(callable.code()),
-          receiver, context, frame_state, efalse);
+          receiver, context, efalse);
     }
 
     control = graph()->NewNode(common()->Merge(2), if_true, if_false);
@@ -1819,14 +1830,15 @@ Reduction JSTypedLowering::ReduceJSConvertReceiver(Node* node) {
   Node* econvert = effect;
   Node* rconvert;
   {
-    // Convert {receiver} using the ToObjectStub.
+    // Convert {receiver} using the ToObjectStub. The call does not require a
+    // frame-state in this case, because neither null nor undefined is passed.
     Callable callable = CodeFactory::ToObject(isolate());
     CallDescriptor const* const desc = Linkage::GetStubCallDescriptor(
         isolate(), graph()->zone(), callable.descriptor(), 0,
-        CallDescriptor::kNeedsFrameState, node->op()->properties());
+        CallDescriptor::kNoFlags, node->op()->properties());
     rconvert = econvert = graph()->NewNode(
         common()->Call(desc), jsgraph()->HeapConstant(callable.code()),
-        receiver, context, frame_state, econvert);
+        receiver, context, econvert);
   }
 
   // Replace {receiver} with global proxy of {context}.
@@ -1888,7 +1900,7 @@ void ReduceBuiltin(Isolate* isolate, JSGraph* jsgraph, Node* node,
   // The logic contained here is mirrored in Builtins::Generate_Adaptor.
   // Keep these in sync.
 
-  const bool is_construct = (node->opcode() == IrOpcode::kJSCallConstruct);
+  const bool is_construct = (node->opcode() == IrOpcode::kJSConstruct);
 
   DCHECK(Builtins::HasCppImplementation(builtin_index));
   DCHECK_EQ(0, flags & CallDescriptor::kSupportsTailCalls);
@@ -1948,9 +1960,9 @@ bool NeedsArgumentAdaptorFrame(Handle<SharedFunctionInfo> shared, int arity) {
 
 }  // namespace
 
-Reduction JSTypedLowering::ReduceJSCallConstruct(Node* node) {
-  DCHECK_EQ(IrOpcode::kJSCallConstruct, node->opcode());
-  CallConstructParameters const& p = CallConstructParametersOf(node->op());
+Reduction JSTypedLowering::ReduceJSConstruct(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSConstruct, node->opcode());
+  ConstructParameters const& p = ConstructParametersOf(node->op());
   DCHECK_LE(2u, p.arity());
   int const arity = static_cast<int>(p.arity() - 2);
   Node* target = NodeProperties::GetValueInput(node, 0);
@@ -2023,10 +2035,38 @@ Reduction JSTypedLowering::ReduceJSCallConstruct(Node* node) {
   return NoChange();
 }
 
+Reduction JSTypedLowering::ReduceJSCallForwardVarargs(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSCallForwardVarargs, node->opcode());
+  CallForwardVarargsParameters p = CallForwardVarargsParametersOf(node->op());
+  Node* target = NodeProperties::GetValueInput(node, 0);
+  Type* target_type = NodeProperties::GetType(target);
 
-Reduction JSTypedLowering::ReduceJSCallFunction(Node* node) {
-  DCHECK_EQ(IrOpcode::kJSCallFunction, node->opcode());
-  CallFunctionParameters const& p = CallFunctionParametersOf(node->op());
+  // Check if {target} is a JSFunction.
+  if (target_type->Is(Type::Function())) {
+    // Compute flags for the call.
+    CallDescriptor::Flags flags = CallDescriptor::kNeedsFrameState;
+    if (p.tail_call_mode() == TailCallMode::kAllow) {
+      flags |= CallDescriptor::kSupportsTailCalls;
+    }
+
+    // Patch {node} to an indirect call via CallFunctionForwardVarargs.
+    Callable callable = CodeFactory::CallFunctionForwardVarargs(isolate());
+    node->InsertInput(graph()->zone(), 0,
+                      jsgraph()->HeapConstant(callable.code()));
+    node->InsertInput(graph()->zone(), 2, jsgraph()->Constant(p.start_index()));
+    NodeProperties::ChangeOp(
+        node,
+        common()->Call(Linkage::GetStubCallDescriptor(
+            isolate(), graph()->zone(), callable.descriptor(), 1, flags)));
+    return Changed(node);
+  }
+
+  return NoChange();
+}
+
+Reduction JSTypedLowering::ReduceJSCall(Node* node) {
+  DCHECK_EQ(IrOpcode::kJSCall, node->opcode());
+  CallParameters const& p = CallParametersOf(node->op());
   int const arity = static_cast<int>(p.arity() - 2);
   ConvertReceiverMode convert_mode = p.convert_mode();
   Node* target = NodeProperties::GetValueInput(node, 0);
@@ -2035,7 +2075,6 @@ Reduction JSTypedLowering::ReduceJSCallFunction(Node* node) {
   Type* receiver_type = NodeProperties::GetType(receiver);
   Node* effect = NodeProperties::GetEffectInput(node);
   Node* control = NodeProperties::GetControlInput(node);
-  Node* frame_state = NodeProperties::FindFrameStateBefore(node);
 
   // Try to infer receiver {convert_mode} from {receiver} type.
   if (receiver_type->Is(Type::NullOrUndefined())) {
@@ -2068,7 +2107,7 @@ Reduction JSTypedLowering::ReduceJSCallFunction(Node* node) {
         !receiver_type->Is(Type::Receiver())) {
       receiver = effect =
           graph()->NewNode(javascript()->ConvertReceiver(convert_mode),
-                           receiver, context, frame_state, effect, control);
+                           receiver, context, effect, control);
       NodeProperties::ReplaceValueInput(node, receiver, 1);
     }
 
@@ -2135,8 +2174,9 @@ Reduction JSTypedLowering::ReduceJSCallFunction(Node* node) {
   // Maybe we did at least learn something about the {receiver}.
   if (p.convert_mode() != convert_mode) {
     NodeProperties::ChangeOp(
-        node, javascript()->CallFunction(p.arity(), p.frequency(), p.feedback(),
-                                         convert_mode, p.tail_call_mode()));
+        node,
+        javascript()->Call(p.arity(), p.frequency(), p.feedback(), convert_mode,
+                           p.tail_call_mode()));
     return Changed(node);
   }
 
@@ -2384,10 +2424,12 @@ Reduction JSTypedLowering::Reduce(Node* node) {
       return ReduceJSStoreModule(node);
     case IrOpcode::kJSConvertReceiver:
       return ReduceJSConvertReceiver(node);
-    case IrOpcode::kJSCallConstruct:
-      return ReduceJSCallConstruct(node);
-    case IrOpcode::kJSCallFunction:
-      return ReduceJSCallFunction(node);
+    case IrOpcode::kJSConstruct:
+      return ReduceJSConstruct(node);
+    case IrOpcode::kJSCallForwardVarargs:
+      return ReduceJSCallForwardVarargs(node);
+    case IrOpcode::kJSCall:
+      return ReduceJSCall(node);
     case IrOpcode::kJSForInNext:
       return ReduceJSForInNext(node);
     case IrOpcode::kJSLoadMessage:
@@ -2400,6 +2442,15 @@ Reduction JSTypedLowering::Reduce(Node* node) {
       return ReduceJSGeneratorRestoreContinuation(node);
     case IrOpcode::kJSGeneratorRestoreRegister:
       return ReduceJSGeneratorRestoreRegister(node);
+    // TODO(mstarzinger): Simplified operations hiding in JS-level reducer not
+    // fooling anyone. Consider moving this into a separate reducer.
+    case IrOpcode::kSpeculativeNumberAdd:
+      return ReduceSpeculativeNumberAdd(node);
+    case IrOpcode::kSpeculativeNumberSubtract:
+    case IrOpcode::kSpeculativeNumberMultiply:
+    case IrOpcode::kSpeculativeNumberDivide:
+    case IrOpcode::kSpeculativeNumberModulus:
+      return ReduceSpeculativeNumberBinop(node);
     default:
       break;
   }

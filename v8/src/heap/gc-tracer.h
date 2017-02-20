@@ -56,6 +56,7 @@ enum ScavengeSpeedMode { kForAllObjects, kForSurvivedObjects };
   F(MC_EVACUATE_CANDIDATES)                   \
   F(MC_EVACUATE_CLEAN_UP)                     \
   F(MC_EVACUATE_COPY)                         \
+  F(MC_EVACUATE_REBALANCE)                    \
   F(MC_EVACUATE_UPDATE_POINTERS)              \
   F(MC_EVACUATE_UPDATE_POINTERS_TO_EVACUATED) \
   F(MC_EVACUATE_UPDATE_POINTERS_TO_NEW)       \
@@ -86,6 +87,7 @@ enum ScavengeSpeedMode { kForAllObjects, kForSurvivedObjects };
   F(MINOR_MC_MARK_ROOTS)                      \
   F(MINOR_MC_MARK_WEAK)                       \
   F(SCAVENGER_CODE_FLUSH_CANDIDATES)          \
+  F(SCAVENGER_EVACUATE)                       \
   F(SCAVENGER_OLD_TO_NEW_POINTERS)            \
   F(SCAVENGER_ROOTS)                          \
   F(SCAVENGER_SCAVENGE)                       \

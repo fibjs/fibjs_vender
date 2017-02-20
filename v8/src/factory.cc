@@ -89,12 +89,6 @@ Handle<HeapObject> Factory::NewFillerObject(int size,
 }
 
 
-Handle<Box> Factory::NewBox(Handle<Object> value) {
-  Handle<Box> result = Handle<Box>::cast(NewStruct(BOX_TYPE));
-  result->set_value(*value);
-  return result;
-}
-
 Handle<PrototypeInfo> Factory::NewPrototypeInfo() {
   Handle<PrototypeInfo> result =
       Handle<PrototypeInfo>::cast(NewStruct(PROTOTYPE_INFO_TYPE));
@@ -186,10 +180,13 @@ Handle<FixedArray> Factory::NewUninitializedFixedArray(int size) {
 }
 
 Handle<BoilerplateDescription> Factory::NewBoilerplateDescription(
-    int boilerplate, int all_properties, bool has_seen_proto) {
-  DCHECK_GE(all_properties, boilerplate);
+    int boilerplate, int all_properties, int index_keys, bool has_seen_proto) {
+  DCHECK_GE(boilerplate, 0);
+  DCHECK_GE(all_properties, index_keys);
+  DCHECK_GE(index_keys, 0);
 
-  int backing_store_size = all_properties - (has_seen_proto ? 1 : 0);
+  int backing_store_size =
+      all_properties - index_keys - (has_seen_proto ? 1 : 0);
   DCHECK_GE(backing_store_size, 0);
   bool has_different_size_backing_store = boilerplate != backing_store_size;
 
@@ -205,7 +202,7 @@ Handle<BoilerplateDescription> Factory::NewBoilerplateDescription(
       Handle<BoilerplateDescription>::cast(NewFixedArray(size, TENURED));
 
   if (has_different_size_backing_store) {
-    DCHECK((boilerplate != all_properties) || has_seen_proto);
+    DCHECK((boilerplate != (all_properties - index_keys)) || has_seen_proto);
     description->set_backing_store_size(isolate(), backing_store_size);
   }
   return description;
@@ -792,6 +789,10 @@ Handle<String> Factory::NewProperSubString(Handle<String> str,
     str = Handle<String>(slice->parent(), isolate());
     offset += slice->offset();
   }
+  if (str->IsThinString()) {
+    Handle<ThinString> thin = Handle<ThinString>::cast(str);
+    str = handle(thin->actual(), isolate());
+  }
 
   DCHECK(str->IsSeqString() || str->IsExternalString());
   Handle<Map> map = str->IsOneByteRepresentation()
@@ -813,6 +814,7 @@ MaybeHandle<String> Factory::NewExternalStringFromOneByte(
   if (length > static_cast<size_t>(String::kMaxLength)) {
     THROW_NEW_ERROR(isolate(), NewInvalidStringLengthError(), String);
   }
+  if (length == 0) return empty_string();
 
   Handle<Map> map;
   if (resource->IsCompressible()) {
@@ -837,6 +839,7 @@ MaybeHandle<String> Factory::NewExternalStringFromTwoByte(
   if (length > static_cast<size_t>(String::kMaxLength)) {
     THROW_NEW_ERROR(isolate(), NewInvalidStringLengthError(), String);
   }
+  if (length == 0) return empty_string();
 
   // For small strings we check whether the resource contains only
   // one byte characters.  If yes, we use a different string map.
@@ -1156,7 +1159,6 @@ Handle<FixedTypedArrayBase> Factory::NewFixedTypedArray(
                      FixedTypedArrayBase);
 }
 
-
 Handle<Cell> Factory::NewCell(Handle<Object> value) {
   AllowDeferredHandleDereference convert_to_cell;
   CALL_HEAP_FUNCTION(
@@ -1165,6 +1167,23 @@ Handle<Cell> Factory::NewCell(Handle<Object> value) {
       Cell);
 }
 
+Handle<Cell> Factory::NewNoClosuresCell(Handle<Object> value) {
+  Handle<Cell> cell = NewCell(value);
+  cell->set_map_no_write_barrier(*no_closures_cell_map());
+  return cell;
+}
+
+Handle<Cell> Factory::NewOneClosureCell(Handle<Object> value) {
+  Handle<Cell> cell = NewCell(value);
+  cell->set_map_no_write_barrier(*one_closure_cell_map());
+  return cell;
+}
+
+Handle<Cell> Factory::NewManyClosuresCell(Handle<Object> value) {
+  Handle<Cell> cell = NewCell(value);
+  cell->set_map_no_write_barrier(*many_closures_cell_map());
+  return cell;
+}
 
 Handle<PropertyCell> Factory::NewPropertyCell() {
   CALL_HEAP_FUNCTION(
@@ -1308,26 +1327,12 @@ Handle<Object> Factory::NewNumberFromUint(uint32_t value,
   return NewHeapNumber(FastUI2D(value), IMMUTABLE, pretenure);
 }
 
-
-Handle<HeapNumber> Factory::NewHeapNumber(double value,
-                                          MutableMode mode,
+Handle<HeapNumber> Factory::NewHeapNumber(MutableMode mode,
                                           PretenureFlag pretenure) {
-  CALL_HEAP_FUNCTION(
-      isolate(),
-      isolate()->heap()->AllocateHeapNumber(value, mode, pretenure),
-      HeapNumber);
+  CALL_HEAP_FUNCTION(isolate(),
+                     isolate()->heap()->AllocateHeapNumber(mode, pretenure),
+                     HeapNumber);
 }
-
-
-#define SIMD128_NEW_DEF(TYPE, Type, type, lane_count, lane_type)               \
-  Handle<Type> Factory::New##Type(lane_type lanes[lane_count],                 \
-                                  PretenureFlag pretenure) {                   \
-    CALL_HEAP_FUNCTION(                                                        \
-        isolate(), isolate()->heap()->Allocate##Type(lanes, pretenure), Type); \
-  }
-SIMD128_TYPES(SIMD128_NEW_DEF)
-#undef SIMD128_NEW_DEF
-
 
 Handle<Object> Factory::NewError(Handle<JSFunction> constructor,
                                  MessageTemplate::Template template_index,
@@ -1418,7 +1423,7 @@ Handle<JSFunction> Factory::NewFunction(Handle<Map> map,
   function->set_code(info->code());
   function->set_context(*context_or_undefined);
   function->set_prototype_or_initial_map(*the_hole_value());
-  function->set_literals(LiteralsArray::cast(*empty_literals_array()));
+  function->set_feedback_vector_cell(*undefined_cell());
   function->set_next_function_link(*undefined_value(), SKIP_WRITE_BARRIER);
   isolate()->heap()->InitializeJSObjectBody(*function, *map, JSFunction::kSize);
   return function;
@@ -1551,12 +1556,12 @@ Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
 
 Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
     Handle<SharedFunctionInfo> info, Handle<Context> context,
-    Handle<LiteralsArray> literals, PretenureFlag pretenure) {
+    Handle<Cell> vector, PretenureFlag pretenure) {
   int map_index =
       Context::FunctionMapIndex(info->language_mode(), info->kind());
   Handle<Map> initial_map(Map::cast(context->native_context()->get(map_index)));
 
-  return NewFunctionFromSharedFunctionInfo(initial_map, info, context, literals,
+  return NewFunctionFromSharedFunctionInfo(initial_map, info, context, vector,
                                            pretenure);
 }
 
@@ -1581,13 +1586,22 @@ Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
 
 Handle<JSFunction> Factory::NewFunctionFromSharedFunctionInfo(
     Handle<Map> initial_map, Handle<SharedFunctionInfo> info,
-    Handle<Object> context_or_undefined, Handle<LiteralsArray> literals,
+    Handle<Object> context_or_undefined, Handle<Cell> vector,
     PretenureFlag pretenure) {
   DCHECK_EQ(JS_FUNCTION_TYPE, initial_map->instance_type());
   Handle<JSFunction> result =
       NewFunction(initial_map, info, context_or_undefined, pretenure);
 
-  result->set_literals(*literals);
+  // Bump the closure count that is encoded in the vector cell's map.
+  if (vector->map() == *no_closures_cell_map()) {
+    vector->set_map(*one_closure_cell_map());
+  } else if (vector->map() == *one_closure_cell_map()) {
+    vector->set_map(*many_closures_cell_map());
+  } else {
+    DCHECK_EQ(vector->map(), *many_closures_cell_map());
+  }
+
+  result->set_feedback_vector_cell(*vector);
   if (info->ic_age() != isolate()->heap()->global_ic_age()) {
     info->ResetForNewContext(isolate()->heap()->global_ic_age());
   }
@@ -1676,7 +1690,6 @@ Handle<Code> Factory::NewCode(const CodeDesc& desc,
   code->set_prologue_offset(prologue_offset);
   code->set_constant_pool_offset(desc.instr_size - desc.constant_pool_size);
   code->set_builtin_index(-1);
-  code->set_protected_instructions(*empty_fixed_array());
 
   if (code->kind() == Code::OPTIMIZED_FUNCTION) {
     code->set_marked_for_deoptimization(false);
@@ -1727,9 +1740,9 @@ Handle<JSObject> Factory::NewJSObject(Handle<JSFunction> constructor,
       isolate()->heap()->AllocateJSObject(*constructor, pretenure), JSObject);
 }
 
-
-Handle<JSObject> Factory::NewJSObjectWithNullProto() {
-  Handle<JSObject> result = NewJSObject(isolate()->object_function());
+Handle<JSObject> Factory::NewJSObjectWithNullProto(PretenureFlag pretenure) {
+  Handle<JSObject> result =
+      NewJSObject(isolate()->object_function(), pretenure);
   Handle<Map> new_map =
       Map::Copy(Handle<Map>(result->map()), "ObjectWithNullProto");
   Map::SetPrototype(new_map, null_value());
@@ -2332,15 +2345,14 @@ void Factory::ReinitializeJSGlobalProxy(Handle<JSGlobalProxy> object,
 }
 
 Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
-    Handle<String> name, int number_of_literals, FunctionKind kind,
-    Handle<Code> code, Handle<ScopeInfo> scope_info) {
+    Handle<String> name, FunctionKind kind, Handle<Code> code,
+    Handle<ScopeInfo> scope_info) {
   DCHECK(IsValidFunctionKind(kind));
   Handle<SharedFunctionInfo> shared = NewSharedFunctionInfo(
       name, code, IsConstructable(kind, scope_info->language_mode()));
   shared->set_scope_info(*scope_info);
   shared->set_outer_scope_info(*the_hole_value());
   shared->set_kind(kind);
-  shared->set_num_literals(number_of_literals);
   if (IsGeneratorFunction(kind)) {
     shared->set_instance_class_name(isolate()->heap()->Generator_string());
   }
@@ -2351,9 +2363,8 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfoForLiteral(
     FunctionLiteral* literal, Handle<Script> script) {
   Handle<Code> code = isolate()->builtins()->CompileLazy();
   Handle<ScopeInfo> scope_info(ScopeInfo::Empty(isolate()));
-  Handle<SharedFunctionInfo> result = NewSharedFunctionInfo(
-      literal->name(), literal->materialized_literal_count(), literal->kind(),
-      code, scope_info);
+  Handle<SharedFunctionInfo> result =
+      NewSharedFunctionInfo(literal->name(), literal->kind(), code, scope_info);
   SharedFunctionInfo::InitFromFunctionLiteral(result, literal);
   SharedFunctionInfo::SetScript(result, script);
   return result;
@@ -2405,11 +2416,11 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   share->SetConstructStub(*construct_stub);
   share->set_instance_class_name(*Object_string());
   share->set_script(*undefined_value(), SKIP_WRITE_BARRIER);
-  share->set_debug_info(DebugInfo::uninitialized(), SKIP_WRITE_BARRIER);
+  share->set_debug_info(Smi::kZero, SKIP_WRITE_BARRIER);
   share->set_function_identifier(*undefined_value(), SKIP_WRITE_BARRIER);
   StaticFeedbackVectorSpec empty_spec;
-  Handle<TypeFeedbackMetadata> feedback_metadata =
-      TypeFeedbackMetadata::New(isolate(), &empty_spec);
+  Handle<FeedbackMetadata> feedback_metadata =
+      FeedbackMetadata::New(isolate(), &empty_spec);
   share->set_feedback_metadata(*feedback_metadata, SKIP_WRITE_BARRIER);
   share->set_function_literal_id(FunctionLiteral::kIdTypeInvalid);
 #if TRACE_MAPS
@@ -2423,7 +2434,6 @@ Handle<SharedFunctionInfo> Factory::NewSharedFunctionInfo(
   share->set_length(0);
   share->set_internal_formal_parameter_count(0);
   share->set_expected_nof_properties(0);
-  share->set_num_literals(0);
   share->set_start_position_and_type(0);
   share->set_end_position(0);
   share->set_function_token_position(0);
@@ -2509,6 +2519,7 @@ Handle<String> Factory::NumberToString(Handle<Object> number,
 
 
 Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
+  DCHECK(!shared->HasDebugInfo());
   // Allocate initial fixed array for active break points before allocating the
   // debug info object to avoid allocation while setting up the debug info
   // object.
@@ -2528,6 +2539,7 @@ Handle<DebugInfo> Factory::NewDebugInfo(Handle<SharedFunctionInfo> shared) {
   Handle<DebugInfo> debug_info =
       Handle<DebugInfo>::cast(NewStruct(DEBUG_INFO_TYPE));
   debug_info->set_shared(*shared);
+  debug_info->set_debugger_hints(shared->debugger_hints());
   debug_info->set_debug_bytecode_array(*maybe_debug_bytecode_array);
   debug_info->set_break_points(*break_points);
 

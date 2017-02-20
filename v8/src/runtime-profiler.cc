@@ -57,6 +57,12 @@ static const int kMaxSizeEarlyOpt =
 static const int kMaxSizeEarlyOptIgnition =
     5 * interpreter::Interpreter::kCodeSizeMultiplier;
 
+// Certain functions are simply too big to be worth optimizing.
+// We aren't using the code size multiplier here because there is no
+// "kMaxSizeOpt" with which we would need to normalize. This constant is
+// only for optimization decisions coming into TurboFan from Ignition.
+static const int kMaxSizeOptIgnition = 250 * 1024;
+
 #define OPTIMIZATION_REASON_LIST(V)                            \
   V(DoNotOptimize, "do not optimize")                          \
   V(HotAndStable, "hot and stable")                            \
@@ -108,7 +114,7 @@ static void GetICCounts(JSFunction* function, int* ic_with_type_info_count,
   }
 
   // Harvest vector-ics as well
-  TypeFeedbackVector* vector = function->feedback_vector();
+  FeedbackVector* vector = function->feedback_vector();
   int with = 0, gen = 0, type_vector_ic_count = 0;
   const bool is_interpreted = function->shared()->IsInterpreted();
 
@@ -394,12 +400,15 @@ OptimizationReason RuntimeProfiler::ShouldOptimizeIgnition(
   SharedFunctionInfo* shared = function->shared();
   int ticks = shared->profiler_ticks();
 
+  if (shared->bytecode_array()->Size() > kMaxSizeOptIgnition) {
+    return OptimizationReason::kDoNotOptimize;
+  }
+
   if (ticks >= kProfilerTicksBeforeOptimization) {
     int typeinfo, generic, total, type_percentage, generic_percentage;
     GetICCounts(function, &typeinfo, &generic, &total, &type_percentage,
                 &generic_percentage);
-    if (type_percentage >= FLAG_type_info_threshold &&
-        generic_percentage <= FLAG_generic_ic_threshold) {
+    if (type_percentage >= FLAG_type_info_threshold) {
       // If this particular function hasn't had any ICs patched for enough
       // ticks, optimize it now.
       return OptimizationReason::kHotAndStable;
@@ -421,8 +430,7 @@ OptimizationReason RuntimeProfiler::ShouldOptimizeIgnition(
     int typeinfo, generic, total, type_percentage, generic_percentage;
     GetICCounts(function, &typeinfo, &generic, &total, &type_percentage,
                 &generic_percentage);
-    if (type_percentage >= FLAG_type_info_threshold &&
-        generic_percentage <= FLAG_generic_ic_threshold) {
+    if (type_percentage >= FLAG_type_info_threshold) {
       return OptimizationReason::kSmallFunction;
     }
   }

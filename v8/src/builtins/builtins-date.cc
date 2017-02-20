@@ -302,8 +302,8 @@ BUILTIN(DateUTC) {
   HandleScope scope(isolate);
   int const argc = args.length() - 1;
   double year = std::numeric_limits<double>::quiet_NaN();
-  double month = std::numeric_limits<double>::quiet_NaN();
-  double date = 1.0, hours = 0.0, minutes = 0.0, seconds = 0.0, ms = 0.0;
+  double month = 0.0, date = 1.0, hours = 0.0, minutes = 0.0, seconds = 0.0,
+         ms = 0.0;
   if (argc >= 1) {
     Handle<Object> year_object;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, year_object,
@@ -1099,7 +1099,7 @@ void Builtins::Generate_DatePrototypeToPrimitive(
   // Check if the {receiver} is actually a JSReceiver.
   Label receiver_is_invalid(&assembler, Label::kDeferred);
   assembler.GotoIf(assembler.TaggedIsSmi(receiver), &receiver_is_invalid);
-  assembler.GotoUnless(assembler.IsJSReceiver(receiver), &receiver_is_invalid);
+  assembler.GotoIfNot(assembler.IsJSReceiver(receiver), &receiver_is_invalid);
 
   // Dispatch to the appropriate OrdinaryToPrimitive builtin.
   Label hint_is_number(&assembler), hint_is_string(&assembler),
@@ -1116,7 +1116,7 @@ void Builtins::Generate_DatePrototypeToPrimitive(
   // Slow-case with actual string comparisons.
   Callable string_equal = CodeFactory::StringEqual(assembler.isolate());
   assembler.GotoIf(assembler.TaggedIsSmi(hint), &hint_is_invalid);
-  assembler.GotoUnless(assembler.IsString(hint), &hint_is_invalid);
+  assembler.GotoIfNot(assembler.IsString(hint), &hint_is_invalid);
   assembler.GotoIf(assembler.WordEqual(assembler.CallStub(string_equal, context,
                                                           hint, number_string),
                                        assembler.TrueConstant()),

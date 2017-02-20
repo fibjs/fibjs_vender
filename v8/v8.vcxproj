@@ -55,7 +55,6 @@
     <ClInclude Include="src\assert-scope.h" />
     <ClInclude Include="src\ast\ast-expression-rewriter.h" />
     <ClInclude Include="src\ast\ast-function-literal-id-reindexer.h" />
-    <ClInclude Include="src\ast\ast-literal-reindexer.h" />
     <ClInclude Include="src\ast\ast-numbering.h" />
     <ClInclude Include="src\ast\ast-traversal-visitor.h" />
     <ClInclude Include="src\ast\ast-type-bounds.h" />
@@ -116,9 +115,12 @@
     <ClInclude Include="src\bignum.h" />
     <ClInclude Include="src\bit-vector.h" />
     <ClInclude Include="src\bootstrapper.h" />
+    <ClInclude Include="src\builtins\builtins-arguments.h" />
     <ClInclude Include="src\builtins\builtins-async.h" />
     <ClInclude Include="src\builtins\builtins-constructor.h" />
+    <ClInclude Include="src\builtins\builtins-object.h" />
     <ClInclude Include="src\builtins\builtins-promise.h" />
+    <ClInclude Include="src\builtins\builtins-regexp.h" />
     <ClInclude Include="src\builtins\builtins-utils.h" />
     <ClInclude Include="src\builtins\builtins.h" />
     <ClInclude Include="src\cached-powers.h" />
@@ -190,13 +192,13 @@
     <ClInclude Include="src\compiler\js-create-lowering.h" />
     <ClInclude Include="src\compiler\js-frame-specialization.h" />
     <ClInclude Include="src\compiler\js-generic-lowering.h" />
-    <ClInclude Include="src\compiler\js-global-object-specialization.h" />
     <ClInclude Include="src\compiler\js-graph.h" />
     <ClInclude Include="src\compiler\js-inlining-heuristic.h" />
     <ClInclude Include="src\compiler\js-inlining.h" />
     <ClInclude Include="src\compiler\js-intrinsic-lowering.h" />
     <ClInclude Include="src\compiler\js-native-context-specialization.h" />
     <ClInclude Include="src\compiler\js-operator.h" />
+    <ClInclude Include="src\compiler\js-type-hint-lowering.h" />
     <ClInclude Include="src\compiler\js-typed-lowering.h" />
     <ClInclude Include="src\compiler\jump-threading.h" />
     <ClInclude Include="src\compiler\linkage.h" />
@@ -311,6 +313,7 @@
     <ClInclude Include="src\date.h" />
     <ClInclude Include="src\dateparser-inl.h" />
     <ClInclude Include="src\dateparser.h" />
+    <ClInclude Include="src\debug\debug-coverage.h" />
     <ClInclude Include="src\debug\debug-evaluate.h" />
     <ClInclude Include="src\debug\debug-frames.h" />
     <ClInclude Include="src\debug\debug-interface.h" />
@@ -340,10 +343,13 @@
     <ClInclude Include="src\factory.h" />
     <ClInclude Include="src\fast-accessor-assembler.h" />
     <ClInclude Include="src\fast-dtoa.h" />
+    <ClInclude Include="src\feedback-vector-inl.h" />
+    <ClInclude Include="src\feedback-vector.h" />
     <ClInclude Include="src\ffi\ffi-compiler.h" />
     <ClInclude Include="src\field-index-inl.h" />
     <ClInclude Include="src\field-index.h" />
     <ClInclude Include="src\field-type.h" />
+    <ClInclude Include="src\find-and-replace-pattern.h" />
     <ClInclude Include="src\fixed-dtoa.h" />
     <ClInclude Include="src\flag-definitions.h" />
     <ClInclude Include="src\flags.h" />
@@ -467,6 +473,7 @@
     <ClInclude Include="src\objects-body-descriptors.h" />
     <ClInclude Include="src\objects-inl.h" />
     <ClInclude Include="src\objects.h" />
+    <ClInclude Include="src\objects\literal-objects.h" />
     <ClInclude Include="src\objects\module-info.h" />
     <ClInclude Include="src\objects\object-macros-undef.h" />
     <ClInclude Include="src\objects\object-macros.h" />
@@ -483,6 +490,7 @@
     <ClInclude Include="src\parsing\parsing.h" />
     <ClInclude Include="src\parsing\preparse-data-format.h" />
     <ClInclude Include="src\parsing\preparse-data.h" />
+    <ClInclude Include="src\parsing\preparsed-scope-data.h" />
     <ClInclude Include="src\parsing\preparser.h" />
     <ClInclude Include="src\parsing\rewriter.h" />
     <ClInclude Include="src\parsing\scanner-character-streams.h" />
@@ -578,8 +586,6 @@
     <ClInclude Include="src\transitions-inl.h" />
     <ClInclude Include="src\transitions.h" />
     <ClInclude Include="src\trap-handler\trap-handler.h" />
-    <ClInclude Include="src\type-feedback-vector-inl.h" />
-    <ClInclude Include="src\type-feedback-vector.h" />
     <ClInclude Include="src\type-hints.h" />
     <ClInclude Include="src\type-info.h" />
     <ClInclude Include="src\unicode-cache-inl.h" />
@@ -599,6 +605,7 @@
     <ClInclude Include="src\vm-state-inl.h" />
     <ClInclude Include="src\vm-state.h" />
     <ClInclude Include="src\wasm\decoder.h" />
+    <ClInclude Include="src\wasm\function-body-decoder-impl.h" />
     <ClInclude Include="src\wasm\function-body-decoder.h" />
     <ClInclude Include="src\wasm\leb-helper.h" />
     <ClInclude Include="src\wasm\managed.h" />
@@ -657,7 +664,6 @@
     <ClCompile Include="src\assert-scope.cc" />
     <ClCompile Include="src\ast\ast-expression-rewriter.cc" />
     <ClCompile Include="src\ast\ast-function-literal-id-reindexer.cc" />
-    <ClCompile Include="src\ast\ast-literal-reindexer.cc" />
     <ClCompile Include="src\ast\ast-numbering.cc" />
     <ClCompile Include="src\ast\ast-types.cc" />
     <ClCompile Include="src\ast\ast-value-factory.cc" />
@@ -703,6 +709,7 @@
     <ClCompile Include="src\bit-vector.cc" />
     <ClCompile Include="src\bootstrapper.cc" />
     <ClCompile Include="src\builtins\builtins-api.cc" />
+    <ClCompile Include="src\builtins\builtins-arguments.cc" />
     <ClCompile Include="src\builtins\builtins-array.cc" />
     <ClCompile Include="src\builtins\builtins-arraybuffer.cc" />
     <ClCompile Include="src\builtins\builtins-async-function.cc" />
@@ -735,6 +742,7 @@
     <ClCompile Include="src\builtins\builtins-string.cc" />
     <ClCompile Include="src\builtins\builtins-symbol.cc" />
     <ClCompile Include="src\builtins\builtins-typedarray.cc" />
+    <ClCompile Include="src\builtins\builtins-wasm.cc" />
     <ClCompile Include="src\builtins\builtins.cc" />
     <ClCompile Include="src\builtins\ia32\builtins-ia32.cc" />
     <ClCompile Include="src\builtins\ppc\builtins-ppc.cc" />
@@ -806,13 +814,13 @@
     <ClCompile Include="src\compiler\js-create-lowering.cc" />
     <ClCompile Include="src\compiler\js-frame-specialization.cc" />
     <ClCompile Include="src\compiler\js-generic-lowering.cc" />
-    <ClCompile Include="src\compiler\js-global-object-specialization.cc" />
     <ClCompile Include="src\compiler\js-graph.cc" />
     <ClCompile Include="src\compiler\js-inlining-heuristic.cc" />
     <ClCompile Include="src\compiler\js-inlining.cc" />
     <ClCompile Include="src\compiler\js-intrinsic-lowering.cc" />
     <ClCompile Include="src\compiler\js-native-context-specialization.cc" />
     <ClCompile Include="src\compiler\js-operator.cc" />
+    <ClCompile Include="src\compiler\js-type-hint-lowering.cc" />
     <ClCompile Include="src\compiler\js-typed-lowering.cc" />
     <ClCompile Include="src\compiler\jump-threading.cc" />
     <ClCompile Include="src\compiler\linkage.cc" />
@@ -925,6 +933,7 @@
     <ClCompile Include="src\crankshaft\x87\lithium-x87.cc" />
     <ClCompile Include="src\date.cc" />
     <ClCompile Include="src\dateparser.cc" />
+    <ClCompile Include="src\debug\debug-coverage.cc" />
     <ClCompile Include="src\debug\debug-evaluate.cc" />
     <ClCompile Include="src\debug\debug-frames.cc" />
     <ClCompile Include="src\debug\debug-scopes.cc" />
@@ -954,6 +963,7 @@
     <ClCompile Include="src\factory.cc" />
     <ClCompile Include="src\fast-accessor-assembler.cc" />
     <ClCompile Include="src\fast-dtoa.cc" />
+    <ClCompile Include="src\feedback-vector.cc" />
     <ClCompile Include="src\ffi\ffi-compiler.cc" />
     <ClCompile Include="src\field-type.cc" />
     <ClCompile Include="src\fixed-dtoa.cc" />
@@ -1075,6 +1085,7 @@
     <ClCompile Include="src\objects-debug.cc" />
     <ClCompile Include="src\objects-printer.cc" />
     <ClCompile Include="src\objects.cc" />
+    <ClCompile Include="src\objects\literal-objects.cc" />
     <ClCompile Include="src\objects\scope-info.cc" />
     <ClCompile Include="src\ostreams.cc" />
     <ClCompile Include="src\parsing\duplicate-finder.cc" />
@@ -1085,6 +1096,7 @@
     <ClCompile Include="src\parsing\parsing.cc" />
     <ClCompile Include="src\parsing\pattern-rewriter.cc" />
     <ClCompile Include="src\parsing\preparse-data.cc" />
+    <ClCompile Include="src\parsing\preparsed-scope-data.cc" />
     <ClCompile Include="src\parsing\preparser.cc" />
     <ClCompile Include="src\parsing\rewriter.cc" />
     <ClCompile Include="src\parsing\scanner-character-streams.cc" />
@@ -1157,7 +1169,6 @@
     <ClCompile Include="src\runtime\runtime-proxy.cc" />
     <ClCompile Include="src\runtime\runtime-regexp.cc" />
     <ClCompile Include="src\runtime\runtime-scopes.cc" />
-    <ClCompile Include="src\runtime\runtime-simd.cc" />
     <ClCompile Include="src\runtime\runtime-strings.cc" />
     <ClCompile Include="src\runtime\runtime-symbol.cc" />
     <ClCompile Include="src\runtime\runtime-test.cc" />
@@ -1197,7 +1208,6 @@
     <ClCompile Include="src\tracing\traced-value.cc" />
     <ClCompile Include="src\tracing\tracing-category-observer.cc" />
     <ClCompile Include="src\transitions.cc" />
-    <ClCompile Include="src\type-feedback-vector.cc" />
     <ClCompile Include="src\type-hints.cc" />
     <ClCompile Include="src\type-info.cc" />
     <ClCompile Include="src\unicode-decoder.cc" />

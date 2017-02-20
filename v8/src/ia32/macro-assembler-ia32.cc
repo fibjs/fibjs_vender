@@ -685,6 +685,16 @@ void MacroAssembler::DebugBreak() {
   call(ces.GetCode(), RelocInfo::DEBUGGER_STATEMENT);
 }
 
+void MacroAssembler::MaybeDropFrames() {
+  // Check whether we need to drop frames to restart a function on the stack.
+  ExternalReference restart_fp =
+      ExternalReference::debug_restart_fp_address(isolate());
+  mov(ebx, Operand::StaticVariable(restart_fp));
+  test(ebx, ebx);
+  j(not_zero, isolate()->builtins()->FrameDropperTrampoline(),
+    RelocInfo::CODE_TARGET);
+}
+
 void MacroAssembler::Cvtsi2sd(XMMRegister dst, const Operand& src) {
   xorps(dst, dst);
   cvtsi2sd(dst, src);
@@ -1020,11 +1030,10 @@ void MacroAssembler::Prologue(bool code_pre_aging) {
   }
 }
 
-
-void MacroAssembler::EmitLoadTypeFeedbackVector(Register vector) {
+void MacroAssembler::EmitLoadFeedbackVector(Register vector) {
   mov(vector, Operand(ebp, JavaScriptFrameConstants::kFunctionOffset));
-  mov(vector, FieldOperand(vector, JSFunction::kLiteralsOffset));
-  mov(vector, FieldOperand(vector, LiteralsArray::kFeedbackVectorOffset));
+  mov(vector, FieldOperand(vector, JSFunction::kFeedbackVectorOffset));
+  mov(vector, FieldOperand(vector, Cell::kValueOffset));
 }
 
 
@@ -1685,32 +1694,6 @@ void MacroAssembler::GetMapConstructor(Register result, Register map,
   bind(&done);
 }
 
-
-void MacroAssembler::TryGetFunctionPrototype(Register function, Register result,
-                                             Register scratch, Label* miss) {
-  // Get the prototype or initial map from the function.
-  mov(result,
-      FieldOperand(function, JSFunction::kPrototypeOrInitialMapOffset));
-
-  // If the prototype or initial map is the hole, don't return it and
-  // simply miss the cache instead. This will allow us to allocate a
-  // prototype object on-demand in the runtime system.
-  cmp(result, Immediate(isolate()->factory()->the_hole_value()));
-  j(equal, miss);
-
-  // If the function does not have an initial map, we're done.
-  Label done;
-  CmpObjectType(result, MAP_TYPE, scratch);
-  j(not_equal, &done, Label::kNear);
-
-  // Get the prototype from the initial map.
-  mov(result, FieldOperand(result, Map::kPrototypeOffset));
-
-  // All done.
-  bind(&done);
-}
-
-
 void MacroAssembler::CallStub(CodeStub* stub, TypeFeedbackId ast_id) {
   DCHECK(AllowThisStubCall(stub));  // Calls are not allowed in some stubs.
   call(stub->GetCode(), RelocInfo::CODE_TARGET, ast_id);
@@ -1920,6 +1903,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
       DCHECK(actual.reg().is(eax));
       DCHECK(expected.reg().is(ebx));
     } else {
+      definitely_matches = true;
       Move(eax, actual.reg());
     }
   }

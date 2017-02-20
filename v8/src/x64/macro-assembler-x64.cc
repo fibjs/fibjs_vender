@@ -1574,6 +1574,11 @@ void MacroAssembler::JumpIfNotSmi(Register src,
   j(NegateCondition(smi), on_not_smi, near_jump);
 }
 
+void MacroAssembler::JumpIfNotSmi(Operand src, Label* on_not_smi,
+                                  Label::Distance near_jump) {
+  Condition smi = CheckSmi(src);
+  j(NegateCondition(smi), on_not_smi, near_jump);
+}
 
 void MacroAssembler::JumpUnlessNonNegativeSmi(
     Register src, Label* on_not_smi_or_negative,
@@ -2464,10 +2469,19 @@ void MacroAssembler::Push(Smi* source) {
   intptr_t smi = reinterpret_cast<intptr_t>(source);
   if (is_int32(smi)) {
     Push(Immediate(static_cast<int32_t>(smi)));
-  } else {
-    Register constant = GetSmiConstant(source);
-    Push(constant);
+    return;
   }
+  int first_byte_set = base::bits::CountTrailingZeros64(smi) / 8;
+  int last_byte_set = (63 - base::bits::CountLeadingZeros64(smi)) / 8;
+  if (first_byte_set == last_byte_set && kPointerSize == kInt64Size) {
+    // This sequence has only 7 bytes, compared to the 12 bytes below.
+    Push(Immediate(0));
+    movb(Operand(rsp, first_byte_set),
+         Immediate(static_cast<int8_t>(smi >> (8 * first_byte_set))));
+    return;
+  }
+  Register constant = GetSmiConstant(source);
+  Push(constant);
 }
 
 
@@ -4028,32 +4042,6 @@ void MacroAssembler::GetMapConstructor(Register result, Register map,
   bind(&done);
 }
 
-
-void MacroAssembler::TryGetFunctionPrototype(Register function, Register result,
-                                             Label* miss) {
-  // Get the prototype or initial map from the function.
-  movp(result,
-       FieldOperand(function, JSFunction::kPrototypeOrInitialMapOffset));
-
-  // If the prototype or initial map is the hole, don't return it and
-  // simply miss the cache instead. This will allow us to allocate a
-  // prototype object on-demand in the runtime system.
-  CompareRoot(result, Heap::kTheHoleValueRootIndex);
-  j(equal, miss);
-
-  // If the function does not have an initial map, we're done.
-  Label done;
-  CmpObjectType(result, MAP_TYPE, kScratchRegister);
-  j(not_equal, &done, Label::kNear);
-
-  // Get the prototype from the initial map.
-  movp(result, FieldOperand(result, Map::kPrototypeOffset));
-
-  // All done.
-  bind(&done);
-}
-
-
 void MacroAssembler::SetCounter(StatsCounter* counter, int value) {
   if (FLAG_native_code_counters && counter->Enabled()) {
     Operand counter_operand = ExternalOperand(ExternalReference(counter));
@@ -4087,14 +4075,19 @@ void MacroAssembler::DecrementCounter(StatsCounter* counter, int value) {
   }
 }
 
-
 void MacroAssembler::DebugBreak() {
-  Set(rax, 0);  // No arguments.
-  LoadAddress(rbx,
-              ExternalReference(Runtime::kHandleDebuggerStatement, isolate()));
-  CEntryStub ces(isolate(), 1);
-  DCHECK(AllowThisStubCall(&ces));
-  Call(ces.GetCode(), RelocInfo::DEBUGGER_STATEMENT);
+  Call(isolate()->builtins()->HandleDebuggerStatement(),
+       RelocInfo::DEBUGGER_STATEMENT);
+}
+
+void MacroAssembler::MaybeDropFrames() {
+  // Check whether we need to drop frames to restart a function on the stack.
+  ExternalReference restart_fp =
+      ExternalReference::debug_restart_fp_address(isolate());
+  Load(rbx, restart_fp);
+  testp(rbx, rbx);
+  j(not_zero, isolate()->builtins()->FrameDropperTrampoline(),
+    RelocInfo::CODE_TARGET);
 }
 
 void MacroAssembler::PrepareForTailCall(const ParameterCount& callee_args_count,
@@ -4296,6 +4289,7 @@ void MacroAssembler::InvokePrologue(const ParameterCount& expected,
       DCHECK(actual.reg().is(rax));
       DCHECK(expected.reg().is(rbx));
     } else {
+      definitely_matches = true;
       Move(rax, actual.reg());
     }
   }
@@ -4380,11 +4374,10 @@ void MacroAssembler::Prologue(bool code_pre_aging) {
   }
 }
 
-
-void MacroAssembler::EmitLoadTypeFeedbackVector(Register vector) {
+void MacroAssembler::EmitLoadFeedbackVector(Register vector) {
   movp(vector, Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
-  movp(vector, FieldOperand(vector, JSFunction::kLiteralsOffset));
-  movp(vector, FieldOperand(vector, LiteralsArray::kFeedbackVectorOffset));
+  movp(vector, FieldOperand(vector, JSFunction::kFeedbackVectorOffset));
+  movp(vector, FieldOperand(vector, Cell::kValueOffset));
 }
 
 

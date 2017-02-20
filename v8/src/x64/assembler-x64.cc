@@ -610,12 +610,9 @@ void Assembler::immediate_arithmetic_op(byte subcode,
                                         int size) {
   EnsureSpace ensure_space(this);
   emit_rex(dst, size);
-  if (is_int8(src.value_)) {
+  if (is_int8(src.value_) && RelocInfo::IsNone(src.rmode_)) {
     emit(0x83);
     emit_operand(subcode, dst);
-    if (!RelocInfo::IsNone(src.rmode_)) {
-      RecordRelocInfo(src.rmode_);
-    }
     emit(src.value_);
   } else {
     emit(0x81);
@@ -2180,7 +2177,12 @@ void Assembler::emit_test(const Operand& op, Register reg, int size) {
   bool byte_operand = size == sizeof(int8_t);
   if (byte_operand) {
     size = sizeof(int32_t);
-    if (!reg.is_byte_register()) emit_rex_32(reg, op);
+    if (!reg.is_byte_register()) {
+      // Register is not one of al, bl, cl, dl.  Its encoding needs REX.
+      emit_rex_32(reg, op);
+    } else {
+      emit_optional_rex_32(reg, op);
+    }
   } else {
     emit_rex(reg, op, size);
   }
@@ -3038,7 +3040,7 @@ void Assembler::movaps(XMMRegister dst, XMMRegister src) {
 void Assembler::shufps(XMMRegister dst, XMMRegister src, byte imm8) {
   DCHECK(is_uint8(imm8));
   EnsureSpace ensure_space(this);
-  emit_optional_rex_32(src, dst);
+  emit_optional_rex_32(dst, src);
   emit(0x0F);
   emit(0xC6);
   emit_sse_operand(dst, src);
@@ -4669,6 +4671,14 @@ void Assembler::emit_sse_operand(Register dst, XMMRegister src) {
 
 void Assembler::emit_sse_operand(XMMRegister dst) {
   emit(0xD8 | dst.low_bits());
+}
+
+void Assembler::RecordProtectedInstructionLanding(int pc_offset) {
+  EnsureSpace ensure_space(this);
+  RelocInfo rinfo(isolate(), pc(),
+                  RelocInfo::WASM_PROTECTED_INSTRUCTION_LANDING, pc_offset,
+                  nullptr);
+  reloc_info_writer.Write(&rinfo);
 }
 
 

@@ -125,12 +125,11 @@ void FullCodeGenerator::Generate() {
   // Increment invocation count for the function.
   {
     Comment cmnt(masm_, "[ Increment invocation count");
-    __ movp(rcx, FieldOperand(rdi, JSFunction::kLiteralsOffset));
-    __ movp(rcx, FieldOperand(rcx, LiteralsArray::kFeedbackVectorOffset));
+    __ movp(rcx, FieldOperand(rdi, JSFunction::kFeedbackVectorOffset));
+    __ movp(rcx, FieldOperand(rcx, Cell::kValueOffset));
     __ SmiAddConstant(
-        FieldOperand(rcx,
-                     TypeFeedbackVector::kInvocationCountIndex * kPointerSize +
-                         TypeFeedbackVector::kHeaderSize),
+        FieldOperand(rcx, FeedbackVector::kInvocationCountIndex * kPointerSize +
+                              FeedbackVector::kHeaderSize),
         Smi::FromInt(1));
   }
 
@@ -265,14 +264,16 @@ void FullCodeGenerator::Generate() {
       __ movp(rdi, Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
     }
     if (is_strict(language_mode()) || !has_simple_parameters()) {
-      FastNewStrictArgumentsStub stub(isolate());
-      __ CallStub(&stub);
+      __ call(isolate()->builtins()->FastNewStrictArguments(),
+              RelocInfo::CODE_TARGET);
+      RestoreContext();
     } else if (literal()->has_duplicate_parameters()) {
       __ Push(rdi);
       __ CallRuntime(Runtime::kNewSloppyArguments_Generic);
     } else {
-      FastNewSloppyArgumentsStub stub(isolate());
-      __ CallStub(&stub);
+      __ call(isolate()->builtins()->FastNewSloppyArguments(),
+              RelocInfo::CODE_TARGET);
+      RestoreContext();
     }
 
     SetVar(arguments, rax, rbx, rdx);
@@ -723,9 +724,10 @@ void FullCodeGenerator::VisitVariableDeclaration(
     case VariableLocation::UNALLOCATED: {
       DCHECK(!variable->binding_needs_init());
       globals_->Add(variable->name(), zone());
-      FeedbackVectorSlot slot = proxy->VariableFeedbackSlot();
+      FeedbackSlot slot = proxy->VariableFeedbackSlot();
       DCHECK(!slot.IsInvalid());
       globals_->Add(handle(Smi::FromInt(slot.ToInt()), isolate()), zone());
+      globals_->Add(isolate()->factory()->undefined_value(), zone());
       globals_->Add(isolate()->factory()->undefined_value(), zone());
       break;
     }
@@ -763,9 +765,15 @@ void FullCodeGenerator::VisitFunctionDeclaration(
   switch (variable->location()) {
     case VariableLocation::UNALLOCATED: {
       globals_->Add(variable->name(), zone());
-      FeedbackVectorSlot slot = proxy->VariableFeedbackSlot();
+      FeedbackSlot slot = proxy->VariableFeedbackSlot();
       DCHECK(!slot.IsInvalid());
       globals_->Add(handle(Smi::FromInt(slot.ToInt()), isolate()), zone());
+
+      // We need the slot where the literals array lives, too.
+      slot = declaration->fun()->LiteralFeedbackSlot();
+      DCHECK(!slot.IsInvalid());
+      globals_->Add(handle(Smi::FromInt(slot.ToInt()), isolate()), zone());
+
       Handle<SharedFunctionInfo> function =
           Compiler::GetSharedFunctionInfo(declaration->fun(), script(), info_);
       // Check for stack-overflow exception.
@@ -811,7 +819,7 @@ void FullCodeGenerator::DeclareGlobals(Handle<FixedArray> pairs) {
   // Call the runtime to declare the globals.
   __ Push(pairs);
   __ Push(Smi::FromInt(DeclareGlobalsFlags()));
-  __ EmitLoadTypeFeedbackVector(rax);
+  __ EmitLoadFeedbackVector(rax);
   __ Push(rax);
   __ CallRuntime(Runtime::kDeclareGlobals);
   // Return value is ignored.
@@ -916,7 +924,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   Comment cmnt(masm_, "[ ForInStatement");
   SetStatementPosition(stmt, SKIP_BREAK);
 
-  FeedbackVectorSlot slot = stmt->ForInFeedbackSlot();
+  FeedbackSlot slot = stmt->ForInFeedbackSlot();
 
   // Get the object to enumerate over.
   SetExpressionAsStatementPosition(stmt->enumerable());
@@ -1033,9 +1041,9 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
 
   // We need to filter the key, record slow-path here.
   int const vector_index = SmiFromSlot(slot)->value();
-  __ EmitLoadTypeFeedbackVector(rdx);
+  __ EmitLoadFeedbackVector(rdx);
   __ Move(FieldOperand(rdx, FixedArray::OffsetOfElementAt(vector_index)),
-          TypeFeedbackVector::MegamorphicSentinel(isolate()));
+          FeedbackVector::MegamorphicSentinel(isolate()));
 
   // rax contains the key. The receiver in rbx is the second argument to
   // ForInFilter. ForInFilter returns undefined if the receiver doesn't
@@ -1079,9 +1087,8 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   decrement_loop_depth();
 }
 
-
 void FullCodeGenerator::EmitSetHomeObject(Expression* initializer, int offset,
-                                          FeedbackVectorSlot slot) {
+                                          FeedbackSlot slot) {
   DCHECK(NeedsHomeObject(initializer));
   __ movp(StoreDescriptor::ReceiverRegister(), Operand(rsp, 0));
   __ movp(StoreDescriptor::ValueRegister(),
@@ -1089,10 +1096,9 @@ void FullCodeGenerator::EmitSetHomeObject(Expression* initializer, int offset,
   CallStoreIC(slot, isolate()->factory()->home_object_symbol());
 }
 
-
 void FullCodeGenerator::EmitSetHomeObjectAccumulator(Expression* initializer,
                                                      int offset,
-                                                     FeedbackVectorSlot slot) {
+                                                     FeedbackSlot slot) {
   DCHECK(NeedsHomeObject(initializer));
   __ movp(StoreDescriptor::ReceiverRegister(), rax);
   __ movp(StoreDescriptor::ValueRegister(),
@@ -1167,18 +1173,18 @@ void FullCodeGenerator::EmitAccessor(ObjectLiteralProperty* property) {
 void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
   Comment cmnt(masm_, "[ ObjectLiteral");
 
-  Handle<FixedArray> constant_properties =
+  Handle<BoilerplateDescription> constant_properties =
       expr->GetOrBuildConstantProperties(isolate());
   int flags = expr->ComputeFlags();
   if (MustCreateObjectLiteralWithRuntime(expr)) {
     __ Push(Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
-    __ Push(Smi::FromInt(expr->literal_index()));
+    __ Push(SmiFromSlot(expr->literal_slot()));
     __ Push(constant_properties);
     __ Push(Smi::FromInt(flags));
     __ CallRuntime(Runtime::kCreateObjectLiteral);
   } else {
     __ movp(rax, Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
-    __ Move(rbx, Smi::FromInt(expr->literal_index()));
+    __ Move(rbx, SmiFromSlot(expr->literal_slot()));
     __ Move(rcx, constant_properties);
     __ Move(rdx, Smi::FromInt(flags));
     Callable callable = CodeFactory::FastCloneShallowObject(
@@ -1220,7 +1226,7 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
             VisitForAccumulatorValue(value);
             DCHECK(StoreDescriptor::ValueRegister().is(rax));
             __ movp(StoreDescriptor::ReceiverRegister(), Operand(rsp, 0));
-            CallStoreIC(property->GetSlot(0), key->value());
+            CallStoreIC(property->GetSlot(0), key->value(), true);
             PrepareForBailoutForId(key->id(), BailoutState::NO_REGISTERS);
 
             if (NeedsHomeObject(value)) {
@@ -1308,13 +1314,13 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
 
   if (MustCreateArrayLiteralWithRuntime(expr)) {
     __ Push(Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
-    __ Push(Smi::FromInt(expr->literal_index()));
+    __ Push(SmiFromSlot(expr->literal_slot()));
     __ Push(constant_elements);
     __ Push(Smi::FromInt(expr->ComputeFlags()));
     __ CallRuntime(Runtime::kCreateArrayLiteral);
   } else {
     __ movp(rax, Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
-    __ Move(rbx, Smi::FromInt(expr->literal_index()));
+    __ Move(rbx, SmiFromSlot(expr->literal_slot()));
     __ Move(rcx, constant_elements);
     Callable callable =
         CodeFactory::FastCloneShallowArray(isolate(), allocation_site_mode);
@@ -1585,9 +1591,7 @@ void FullCodeGenerator::EmitBinaryOp(BinaryOperation* expr, Token::Value op) {
   context()->Plug(rax);
 }
 
-
-void FullCodeGenerator::EmitAssignment(Expression* expr,
-                                       FeedbackVectorSlot slot) {
+void FullCodeGenerator::EmitAssignment(Expression* expr, FeedbackSlot slot) {
   DCHECK(expr->IsValidReferenceExpressionOrThis());
 
   Property* prop = expr->AsProperty();
@@ -1639,7 +1643,7 @@ void FullCodeGenerator::EmitStoreToStackLocalOrContextSlot(
 }
 
 void FullCodeGenerator::EmitVariableAssignment(Variable* var, Token::Value op,
-                                               FeedbackVectorSlot slot,
+                                               FeedbackSlot slot,
                                                HoleCheckMode hole_check_mode) {
   if (var->IsUnallocated()) {
     // Global var, const, or let.
@@ -1798,8 +1802,9 @@ void FullCodeGenerator::EmitCall(Call* expr, ConvertReceiverMode mode) {
     EmitProfilingCounterHandlingForReturnSequence(true);
   }
   Handle<Code> code =
-      CodeFactory::CallIC(isolate(), mode, expr->tail_call_mode()).code();
-  __ Move(rdx, SmiFromSlot(expr->CallFeedbackICSlot()));
+      CodeFactory::CallICTrampoline(isolate(), mode, expr->tail_call_mode())
+          .code();
+  __ Set(rdx, IntFromSlot(expr->CallFeedbackICSlot()));
   __ movp(rdi, Operand(rsp, (arg_count + 1) * kPointerSize));
   __ Set(rax, arg_count);
   CallIC(code);
@@ -1839,7 +1844,7 @@ void FullCodeGenerator::VisitCallNew(CallNew* expr) {
   __ movp(rdi, Operand(rsp, arg_count * kPointerSize));
 
   // Record call targets in unoptimized code, but not in the snapshot.
-  __ EmitLoadTypeFeedbackVector(rbx);
+  __ EmitLoadFeedbackVector(rbx);
   __ Move(rdx, SmiFromSlot(expr->CallNewFeedbackSlot()));
 
   CallConstructStub stub(isolate());
@@ -2525,16 +2530,6 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
     __ testb(FieldOperand(rdx, Map::kBitFieldOffset),
              Immediate((1 << Map::kIsCallable) | (1 << Map::kIsUndetectable)));
     Split(zero, if_true, if_false, fall_through);
-// clang-format off
-#define SIMD128_TYPE(TYPE, Type, type, lane_count, lane_type)   \
-  } else if (String::Equals(check, factory->type##_string())) { \
-    __ JumpIfSmi(rax, if_false);                                \
-    __ movp(rax, FieldOperand(rax, HeapObject::kMapOffset));    \
-    __ CompareRoot(rax, Heap::k##Type##MapRootIndex);           \
-    Split(equal, if_true, if_false, fall_through);
-  SIMD128_TYPES(SIMD128_TYPE)
-#undef SIMD128_TYPE
-    // clang-format on
   } else {
     if (if_false != fall_through) __ jmp(if_false);
   }
@@ -2575,6 +2570,7 @@ void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
       SetExpressionPosition(expr);
       PopOperand(rdx);
       __ Call(isolate()->builtins()->InstanceOf(), RelocInfo::CODE_TARGET);
+      RestoreContext();
       PrepareForBailoutBeforeSplit(expr, false, NULL, NULL);
       __ CompareRoot(rax, Heap::kTrueValueRootIndex);
       Split(equal, if_true, if_false, fall_through);

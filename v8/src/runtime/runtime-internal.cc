@@ -43,19 +43,6 @@ RUNTIME_FUNCTION(Runtime_ExportFromRuntime) {
 }
 
 
-RUNTIME_FUNCTION(Runtime_ExportExperimentalFromRuntime) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(1, args.length());
-  CONVERT_ARG_HANDLE_CHECKED(JSObject, container, 0);
-  CHECK(isolate->bootstrapper()->IsActive());
-  JSObject::NormalizeProperties(container, KEEP_INOBJECT_PROPERTIES, 10,
-                                "ExportExperimentalFromRuntime");
-  Bootstrapper::ExportExperimentalFromRuntime(isolate, container);
-  JSObject::MigrateSlowToFast(container, 0, "ExportExperimentalFromRuntime");
-  return *container;
-}
-
-
 RUNTIME_FUNCTION(Runtime_InstallToContext) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
@@ -99,6 +86,13 @@ RUNTIME_FUNCTION(Runtime_ThrowStackOverflow) {
   SealHandleScope shs(isolate);
   DCHECK_LE(0, args.length());
   return isolate->StackOverflow();
+}
+
+RUNTIME_FUNCTION(Runtime_ThrowSymbolAsyncIteratorInvalid) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(0, args.length());
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kSymbolAsyncIteratorInvalid));
 }
 
 RUNTIME_FUNCTION(Runtime_ThrowTypeError) {
@@ -223,6 +217,26 @@ RUNTIME_FUNCTION(Runtime_ThrowSymbolIteratorInvalid) {
   DCHECK_EQ(0, args.length());
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate, NewTypeError(MessageTemplate::kSymbolIteratorInvalid));
+}
+
+RUNTIME_FUNCTION(Runtime_ThrowNonCallableInInstanceOfCheck) {
+  HandleScope scope(isolate);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kNonCallableInInstanceOfCheck));
+}
+
+RUNTIME_FUNCTION(Runtime_ThrowNonObjectInInstanceOfCheck) {
+  HandleScope scope(isolate);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kNonObjectInInstanceOfCheck));
+}
+
+RUNTIME_FUNCTION(Runtime_ThrowNotConstructor) {
+  HandleScope scope(isolate);
+  DCHECK_EQ(1, args.length());
+  CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
+  THROW_NEW_ERROR_RETURN_FAILURE(
+      isolate, NewTypeError(MessageTemplate::kNotConstructor, object));
 }
 
 RUNTIME_FUNCTION(Runtime_ThrowNotGeneric) {
@@ -366,7 +380,6 @@ Handle<String> RenderCallSite(Isolate* isolate, Handle<Object> object) {
 
 }  // namespace
 
-
 RUNTIME_FUNCTION(Runtime_ThrowCalledNonCallable) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
@@ -495,6 +508,13 @@ RUNTIME_FUNCTION(Runtime_AllowDynamicFunction) {
   Handle<JSObject> global_proxy(target->global_proxy(), isolate);
   return *isolate->factory()->ToBoolean(
       Builtins::AllowDynamicFunction(isolate, target, global_proxy));
+}
+
+RUNTIME_FUNCTION(Runtime_CreateAsyncFromSyncIterator) {
+  // TODO(caitp): split AsyncFromSyncIterator functionality out of
+  //              https://codereview.chromium.org/2622833002
+  UNREACHABLE();
+  return isolate->heap()->undefined_value();
 }
 
 }  // namespace internal

@@ -1029,6 +1029,8 @@ class JavaScriptFrame : public StandardFrame {
   // Return a list with {SharedFunctionInfo} objects of this frame.
   virtual void GetFunctions(List<SharedFunctionInfo*>* functions) const;
 
+  void GetFunctions(List<Handle<SharedFunctionInfo>>* functions) const;
+
   // Lookup exception handler for current {pc}, returns -1 if none found. Also
   // returns data associated with the handler site specific to the frame type:
   //  - OptimizedFrame  : Data is the stack slot count of the entire frame.
@@ -1462,8 +1464,6 @@ class JavaScriptFrameIterator BASE_EMBEDDED {
  public:
   inline explicit JavaScriptFrameIterator(Isolate* isolate);
   inline JavaScriptFrameIterator(Isolate* isolate, ThreadLocalTop* top);
-  // Skip frames until the frame with the given id is reached.
-  JavaScriptFrameIterator(Isolate* isolate, StackFrame::Id id);
 
   inline JavaScriptFrame* frame() const;
 
@@ -1485,6 +1485,7 @@ class JavaScriptFrameIterator BASE_EMBEDDED {
 class StackTraceFrameIterator BASE_EMBEDDED {
  public:
   explicit StackTraceFrameIterator(Isolate* isolate);
+  // Skip frames until the frame with the given id is reached.
   StackTraceFrameIterator(Isolate* isolate, StackFrame::Id id);
   bool done() const { return iterator_.done(); }
   void Advance();

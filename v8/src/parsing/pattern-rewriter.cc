@@ -137,22 +137,31 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
       factory()->NewVariableProxy(name, NORMAL_VARIABLE, pattern->position());
   Declaration* declaration = factory()->NewVariableDeclaration(
       proxy, descriptor_->scope, descriptor_->declaration_pos);
+
+  // When an extra declaration scope needs to be inserted to account for
+  // a sloppy eval in a default parameter or function body, the parameter
+  // needs to be declared in the function's scope, not in the varblock
+  // scope which will be used for the initializer expression.
+  Scope* outer_function_scope = nullptr;
+  if (DeclaresParameterContainingSloppyEval()) {
+    outer_function_scope = descriptor_->scope->outer_scope();
+  }
   Variable* var = parser_->Declare(
       declaration, descriptor_->declaration_kind, descriptor_->mode,
       Variable::DefaultInitializationFlag(descriptor_->mode), ok_,
-      descriptor_->hoist_scope);
+      outer_function_scope);
   if (!*ok_) return;
   DCHECK_NOT_NULL(var);
   DCHECK(proxy->is_resolved());
   DCHECK(initializer_position_ != kNoSourcePosition);
   var->set_initializer_position(initializer_position_);
 
-  // TODO(adamk): This should probably be checking hoist_scope.
-  // Move it to Parser::Declare() to make it easier to test
-  // the right scope.
-  Scope* declaration_scope = IsLexicalVariableMode(descriptor_->mode)
-                                 ? descriptor_->scope
-                                 : descriptor_->scope->GetDeclarationScope();
+  Scope* declaration_scope =
+      outer_function_scope != nullptr
+          ? outer_function_scope
+          : (IsLexicalVariableMode(descriptor_->mode)
+                 ? descriptor_->scope
+                 : descriptor_->scope->GetDeclarationScope());
   if (declaration_scope->num_var() > kMaxNumFunctionLocals) {
     parser_->ReportMessage(MessageTemplate::kTooManyVariables);
     *ok_ = false;
@@ -164,6 +173,9 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
 
   // If there's no initializer, we're done.
   if (value == nullptr) return;
+
+  Scope* var_init_scope = descriptor_->scope;
+  MarkLoopVariableAsAssigned(var_init_scope, proxy->var());
 
   // A declaration of the form:
   //
@@ -177,7 +189,6 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
   // 'v' than the 'v' in the declaration (e.g., if we are inside a
   // 'with' statement or 'catch' block). Global var declarations
   // also need special treatment.
-  Scope* var_init_scope = descriptor_->scope;
 
   if (descriptor_->mode == VAR && var_init_scope->is_script_scope()) {
     // Global variable declarations must be compiled in a specific
@@ -220,19 +231,9 @@ void Parser::PatternRewriter::VisitVariableProxy(VariableProxy* pattern) {
     // But for var declarations we need to do a new lookup.
     if (descriptor_->mode == VAR) {
       proxy = var_init_scope->NewUnresolved(factory(), name);
-      // TODO(neis): Set is_assigned on proxy.
     } else {
       DCHECK_NOT_NULL(proxy);
       DCHECK_NOT_NULL(proxy->var());
-      if (var_init_scope->is_script_scope() ||
-          var_init_scope->is_module_scope()) {
-        // We have to pessimistically assume that top-level variables will be
-        // assigned.  This is because they might be accessed by a lazily parsed
-        // top-level function, which, for efficiency, we preparse without
-        // variable tracking.  In the case of a script (not a module), they
-        // might also get accessed by another script.
-        proxy->set_is_assigned();
-      }
     }
     // Add break location for destructured sub-pattern.
     int pos = IsSubPattern() ? pattern->position() : value->position();
@@ -321,20 +322,31 @@ void Parser::PatternRewriter::VisitRewritableExpression(
   set_context(old_context);
 }
 
+bool Parser::PatternRewriter::DeclaresParameterContainingSloppyEval() const {
+  // Need to check for a binding context to make sure we have a descriptor.
+  if (IsBindingContext() &&
+      // Only relevant for parameters.
+      descriptor_->declaration_kind == DeclarationDescriptor::PARAMETER &&
+      // And only when scope is a block scope;
+      // without eval, it is a function scope.
+      scope()->is_block_scope()) {
+    DCHECK(scope()->calls_sloppy_eval());
+    DCHECK(scope()->is_declaration_scope());
+    DCHECK(scope()->outer_scope()->is_function_scope());
+    return true;
+  }
+
+  return false;
+}
+
 // When an extra declaration scope needs to be inserted to account for
 // a sloppy eval in a default parameter or function body, the expressions
 // needs to be in that new inner scope which was added after initial
 // parsing.
 void Parser::PatternRewriter::RewriteParameterScopes(Expression* expr) {
-  if (!IsBindingContext()) return;
-  if (descriptor_->declaration_kind != DeclarationDescriptor::PARAMETER) return;
-  if (!scope()->is_block_scope()) return;
-
-  DCHECK(scope()->is_declaration_scope());
-  DCHECK(scope()->outer_scope()->is_function_scope());
-  DCHECK(scope()->calls_sloppy_eval());
-
-  ReparentParameterExpressionScope(parser_->stack_limit(), expr, scope());
+  if (DeclaresParameterContainingSloppyEval()) {
+    ReparentParameterExpressionScope(parser_->stack_limit(), expr, scope());
+  }
 }
 
 void Parser::PatternRewriter::VisitObjectLiteral(ObjectLiteral* pattern,
@@ -418,8 +430,9 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
   DCHECK(block_->ignore_completion_value());
 
   auto temp = *temp_var = CreateTempVar(current_value_);
-  auto iterator = CreateTempVar(factory()->NewGetIterator(
-      factory()->NewVariableProxy(temp), kNoSourcePosition));
+  auto iterator = CreateTempVar(
+      factory()->NewGetIterator(factory()->NewVariableProxy(temp),
+                                IteratorType::kNormal, kNoSourcePosition));
   auto done =
       CreateTempVar(factory()->NewBooleanLiteral(false, kNoSourcePosition));
   auto result = CreateTempVar();
@@ -505,7 +518,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
           factory()->NewExpressionStatement(
               parser_->BuildIteratorNextResult(
                   factory()->NewVariableProxy(iterator), result,
-                  kNoSourcePosition),
+                  IteratorType::kNormal, kNoSourcePosition),
               kNoSourcePosition),
           zone());
       next_block->statements()->Add(inner_if, zone());
@@ -562,11 +575,8 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
     Variable* array;
     {
       auto empty_exprs = new (zone()) ZoneList<Expression*>(0, zone());
-      array = CreateTempVar(factory()->NewArrayLiteral(
-          empty_exprs,
-          // Reuse pattern's literal index - it is unused since there is no
-          // actual literal allocated.
-          node->literal_index(), kNoSourcePosition));
+      array = CreateTempVar(
+          factory()->NewArrayLiteral(empty_exprs, kNoSourcePosition));
     }
 
     // done = true;
@@ -579,7 +589,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
     // result = IteratorNext(iterator);
     Statement* get_next = factory()->NewExpressionStatement(
         parser_->BuildIteratorNextResult(factory()->NewVariableProxy(iterator),
-                                         result, nopos),
+                                         result, IteratorType::kNormal, nopos),
         nopos);
 
     // %AppendElement(array, result.value);
@@ -648,7 +658,7 @@ void Parser::PatternRewriter::VisitArrayLiteral(ArrayLiteral* node,
       Token::NOT, factory()->NewVariableProxy(done), nopos);
 
   parser_->FinalizeIteratorUse(scope(), completion, closing_condition, iterator,
-                               block_, target);
+                               block_, target, IteratorType::kNormal);
   block_ = target;
 }
 

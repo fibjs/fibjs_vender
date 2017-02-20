@@ -19,26 +19,17 @@ static Handle<Map> ComputeObjectLiteralMap(
     Handle<BoilerplateDescription> boilerplate_description,
     bool* is_result_from_cache) {
   int number_of_properties = boilerplate_description->backing_store_size();
-
-  for (int index = 0; index < boilerplate_description->size(); index++) {
-    Object* key = boilerplate_description->name(index);
-    uint32_t element_index = 0;
-    if (key->ToArrayIndex(&element_index)) {
-      // An index key does not require space in the property backing store.
-      number_of_properties--;
-    }
-  }
   Isolate* isolate = context->GetIsolate();
   return isolate->factory()->ObjectLiteralMapFromCache(
       context, number_of_properties, is_result_from_cache);
 }
 
 MUST_USE_RESULT static MaybeHandle<Object> CreateLiteralBoilerplate(
-    Isolate* isolate, Handle<LiteralsArray> literals,
+    Isolate* isolate, Handle<FeedbackVector> vector,
     Handle<BoilerplateDescription> boilerplate_description);
 
 MUST_USE_RESULT static MaybeHandle<Object> CreateObjectLiteralBoilerplate(
-    Isolate* isolate, Handle<LiteralsArray> literals,
+    Isolate* isolate, Handle<FeedbackVector> vector,
     Handle<BoilerplateDescription> boilerplate_description,
     bool should_have_fast_elements) {
   Handle<Context> context = isolate->native_context();
@@ -52,7 +43,7 @@ MUST_USE_RESULT static MaybeHandle<Object> CreateObjectLiteralBoilerplate(
                                             &is_result_from_cache);
 
   PretenureFlag pretenure_flag =
-      isolate->heap()->InNewSpace(*literals) ? NOT_TENURED : TENURED;
+      isolate->heap()->InNewSpace(*vector) ? NOT_TENURED : TENURED;
 
   Handle<JSObject> boilerplate =
       isolate->factory()->NewJSObjectFromMap(map, pretenure_flag);
@@ -81,7 +72,7 @@ MUST_USE_RESULT static MaybeHandle<Object> CreateObjectLiteralBoilerplate(
           Handle<BoilerplateDescription>::cast(value);
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, value,
-          CreateLiteralBoilerplate(isolate, literals, boilerplate), Object);
+          CreateLiteralBoilerplate(isolate, vector, boilerplate), Object);
     }
     MaybeHandle<Object> maybe_result;
     uint32_t element_index = 0;
@@ -114,13 +105,13 @@ MUST_USE_RESULT static MaybeHandle<Object> CreateObjectLiteralBoilerplate(
 }
 
 static MaybeHandle<Object> CreateArrayLiteralBoilerplate(
-    Isolate* isolate, Handle<LiteralsArray> literals,
+    Isolate* isolate, Handle<FeedbackVector> vector,
     Handle<ConstantElementsPair> elements) {
   // Create the JSArray.
   Handle<JSFunction> constructor = isolate->array_function();
 
   PretenureFlag pretenure_flag =
-      isolate->heap()->InNewSpace(*literals) ? NOT_TENURED : TENURED;
+      isolate->heap()->InNewSpace(*vector) ? NOT_TENURED : TENURED;
 
   Handle<JSArray> object = Handle<JSArray>::cast(
       isolate->factory()->NewJSObject(constructor, pretenure_flag));
@@ -171,7 +162,7 @@ static MaybeHandle<Object> CreateArrayLiteralBoilerplate(
               Handle<Object> result;
               ASSIGN_RETURN_ON_EXCEPTION(
                   isolate, result,
-                  CreateLiteralBoilerplate(isolate, literals, boilerplate),
+                  CreateLiteralBoilerplate(isolate, vector, boilerplate),
                   Object);
               fixed_array_values_copy->set(i, *result);
             }
@@ -186,24 +177,24 @@ static MaybeHandle<Object> CreateArrayLiteralBoilerplate(
 }
 
 MUST_USE_RESULT static MaybeHandle<Object> CreateLiteralBoilerplate(
-    Isolate* isolate, Handle<LiteralsArray> literals,
+    Isolate* isolate, Handle<FeedbackVector> vector,
     Handle<BoilerplateDescription> array) {
   Handle<HeapObject> elements = CompileTimeValue::GetElements(array);
   switch (CompileTimeValue::GetLiteralType(array)) {
     case CompileTimeValue::OBJECT_LITERAL_FAST_ELEMENTS: {
       Handle<BoilerplateDescription> props =
           Handle<BoilerplateDescription>::cast(elements);
-      return CreateObjectLiteralBoilerplate(isolate, literals, props, true);
+      return CreateObjectLiteralBoilerplate(isolate, vector, props, true);
     }
     case CompileTimeValue::OBJECT_LITERAL_SLOW_ELEMENTS: {
       Handle<BoilerplateDescription> props =
           Handle<BoilerplateDescription>::cast(elements);
-      return CreateObjectLiteralBoilerplate(isolate, literals, props, false);
+      return CreateObjectLiteralBoilerplate(isolate, vector, props, false);
     }
     case CompileTimeValue::ARRAY_LITERAL: {
       Handle<ConstantElementsPair> elems =
           Handle<ConstantElementsPair>::cast(elements);
-      return CreateArrayLiteralBoilerplate(isolate, literals, elems);
+      return CreateArrayLiteralBoilerplate(isolate, vector, elems);
     }
     default:
       UNREACHABLE();
@@ -219,13 +210,15 @@ RUNTIME_FUNCTION(Runtime_CreateRegExpLiteral) {
   CONVERT_SMI_ARG_CHECKED(index, 1);
   CONVERT_ARG_HANDLE_CHECKED(String, pattern, 2);
   CONVERT_SMI_ARG_CHECKED(flags, 3);
+  FeedbackSlot literal_slot(FeedbackVector::ToSlot(index));
 
   // Check if boilerplate exists. If not, create it first.
-  Handle<Object> boilerplate(closure->literals()->literal(index), isolate);
+  Handle<Object> boilerplate(closure->feedback_vector()->Get(literal_slot),
+                             isolate);
   if (boilerplate->IsUndefined(isolate)) {
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
         isolate, boilerplate, JSRegExp::New(pattern, JSRegExp::Flags(flags)));
-    closure->literals()->set_literal(index, *boilerplate);
+    closure->feedback_vector()->Set(literal_slot, *boilerplate);
   }
   return *JSRegExp::Copy(Handle<JSRegExp>::cast(boilerplate));
 }
@@ -239,23 +232,22 @@ RUNTIME_FUNCTION(Runtime_CreateObjectLiteral) {
   CONVERT_ARG_HANDLE_CHECKED(BoilerplateDescription, boilerplate_description,
                              2);
   CONVERT_SMI_ARG_CHECKED(flags, 3);
-  Handle<LiteralsArray> literals(closure->literals(), isolate);
+  Handle<FeedbackVector> vector(closure->feedback_vector(), isolate);
   bool should_have_fast_elements = (flags & ObjectLiteral::kFastElements) != 0;
   bool enable_mementos = (flags & ObjectLiteral::kDisableMementos) == 0;
 
-  CHECK(literals_index >= 0);
-  CHECK(literals_index < literals->literals_count());
+  FeedbackSlot literals_slot(FeedbackVector::ToSlot(literals_index));
+  CHECK(literals_slot.ToInt() < vector->slot_count());
 
   // Check if boilerplate exists. If not, create it first.
-  Handle<Object> literal_site(literals->literal(literals_index), isolate);
+  Handle<Object> literal_site(vector->Get(literals_slot), isolate);
   Handle<AllocationSite> site;
   Handle<JSObject> boilerplate;
   if (literal_site->IsUndefined(isolate)) {
     Handle<Object> raw_boilerplate;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
         isolate, raw_boilerplate,
-        CreateObjectLiteralBoilerplate(isolate, literals,
-                                       boilerplate_description,
+        CreateObjectLiteralBoilerplate(isolate, vector, boilerplate_description,
                                        should_have_fast_elements));
     boilerplate = Handle<JSObject>::cast(raw_boilerplate);
 
@@ -266,7 +258,7 @@ RUNTIME_FUNCTION(Runtime_CreateObjectLiteral) {
     creation_context.ExitScope(site, boilerplate);
 
     // Update the functions literal and return the boilerplate.
-    literals->set_literal(literals_index, *site);
+    vector->Set(literals_slot, *site);
   } else {
     site = Handle<AllocationSite>::cast(literal_site);
     boilerplate =
@@ -282,16 +274,16 @@ RUNTIME_FUNCTION(Runtime_CreateObjectLiteral) {
 }
 
 MUST_USE_RESULT static MaybeHandle<AllocationSite> GetLiteralAllocationSite(
-    Isolate* isolate, Handle<LiteralsArray> literals, int literals_index,
+    Isolate* isolate, Handle<FeedbackVector> vector, FeedbackSlot literals_slot,
     Handle<ConstantElementsPair> elements) {
   // Check if boilerplate exists. If not, create it first.
-  Handle<Object> literal_site(literals->literal(literals_index), isolate);
+  Handle<Object> literal_site(vector->Get(literals_slot), isolate);
   Handle<AllocationSite> site;
   if (literal_site->IsUndefined(isolate)) {
     Handle<Object> boilerplate;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, boilerplate,
-        CreateArrayLiteralBoilerplate(isolate, literals, elements),
+        CreateArrayLiteralBoilerplate(isolate, vector, elements),
         AllocationSite);
 
     AllocationSiteCreationContext creation_context(isolate);
@@ -302,7 +294,7 @@ MUST_USE_RESULT static MaybeHandle<AllocationSite> GetLiteralAllocationSite(
     }
     creation_context.ExitScope(site, Handle<JSObject>::cast(boilerplate));
 
-    literals->set_literal(literals_index, *site);
+    vector->Set(literals_slot, *site);
   } else {
     site = Handle<AllocationSite>::cast(literal_site);
   }
@@ -311,13 +303,13 @@ MUST_USE_RESULT static MaybeHandle<AllocationSite> GetLiteralAllocationSite(
 }
 
 static MaybeHandle<JSObject> CreateArrayLiteralImpl(
-    Isolate* isolate, Handle<LiteralsArray> literals, int literals_index,
+    Isolate* isolate, Handle<FeedbackVector> vector, FeedbackSlot literals_slot,
     Handle<ConstantElementsPair> elements, int flags) {
-  CHECK(literals_index >= 0 && literals_index < literals->literals_count());
+  CHECK(literals_slot.ToInt() < vector->slot_count());
   Handle<AllocationSite> site;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, site,
-      GetLiteralAllocationSite(isolate, literals, literals_index, elements),
+      GetLiteralAllocationSite(isolate, vector, literals_slot, elements),
       JSObject);
 
   bool enable_mementos = (flags & ArrayLiteral::kDisableMementos) == 0;
@@ -342,10 +334,11 @@ RUNTIME_FUNCTION(Runtime_CreateArrayLiteral) {
   CONVERT_ARG_HANDLE_CHECKED(ConstantElementsPair, elements, 2);
   CONVERT_SMI_ARG_CHECKED(flags, 3);
 
-  Handle<LiteralsArray> literals(closure->literals(), isolate);
+  FeedbackSlot literals_slot(FeedbackVector::ToSlot(literals_index));
+  Handle<FeedbackVector> vector(closure->feedback_vector(), isolate);
   RETURN_RESULT_OR_FAILURE(
-      isolate, CreateArrayLiteralImpl(isolate, literals, literals_index,
-                                      elements, flags));
+      isolate,
+      CreateArrayLiteralImpl(isolate, vector, literals_slot, elements, flags));
 }
 
 
@@ -356,11 +349,11 @@ RUNTIME_FUNCTION(Runtime_CreateArrayLiteralStubBailout) {
   CONVERT_SMI_ARG_CHECKED(literals_index, 1);
   CONVERT_ARG_HANDLE_CHECKED(ConstantElementsPair, elements, 2);
 
-  Handle<LiteralsArray> literals(closure->literals(), isolate);
+  Handle<FeedbackVector> vector(closure->feedback_vector(), isolate);
+  FeedbackSlot literals_slot(FeedbackVector::ToSlot(literals_index));
   RETURN_RESULT_OR_FAILURE(
-      isolate,
-      CreateArrayLiteralImpl(isolate, literals, literals_index, elements,
-                             ArrayLiteral::kShallowElements));
+      isolate, CreateArrayLiteralImpl(isolate, vector, literals_slot, elements,
+                                      ArrayLiteral::kShallowElements));
 }
 
 }  // namespace internal

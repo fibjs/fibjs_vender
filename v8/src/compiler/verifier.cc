@@ -207,6 +207,8 @@ void Verifier::Visitor::Check(Node* node) {
       }
       CHECK_EQ(1, count_true);
       CHECK_EQ(1, count_false);
+      // The condition must be a Boolean.
+      CheckValueInputIs(node, 0, Type::Boolean());
       // Type is empty.
       CheckNotTyped(node);
       break;
@@ -408,6 +410,10 @@ void Verifier::Visitor::Check(Node* node) {
       CHECK_EQ(0, effect_count);
       CHECK_EQ(0, control_count);
       CHECK_EQ(3, value_count);
+      // The condition must be a Boolean.
+      CheckValueInputIs(node, 0, Type::Boolean());
+      // Type can be anything.
+      CheckTypeIs(node, Type::Any());
       break;
     }
     case IrOpcode::kPhi: {
@@ -490,6 +496,7 @@ void Verifier::Visitor::Check(Node* node) {
     }
     case IrOpcode::kStateValues:
     case IrOpcode::kTypedStateValues:
+    case IrOpcode::kArgumentsObjectState:
     case IrOpcode::kObjectState:
     case IrOpcode::kTypedObjectState:
       // TODO(jarin): what are the constraints on these?
@@ -625,6 +632,11 @@ void Verifier::Visitor::Check(Node* node) {
       CheckNotTyped(node);
       CHECK(StoreGlobalParametersOf(node->op()).feedback().IsValid());
       break;
+    case IrOpcode::kJSStoreNamedOwn:
+      // Type is empty.
+      CheckNotTyped(node);
+      CHECK(StoreNamedOwnParametersOf(node->op()).feedback().IsValid());
+      break;
     case IrOpcode::kJSStoreDataPropertyInLiteral:
       // Type is empty.
       CheckNotTyped(node);
@@ -674,13 +686,15 @@ void Verifier::Visitor::Check(Node* node) {
       break;
     }
 
-    case IrOpcode::kJSCallConstruct:
-    case IrOpcode::kJSCallConstructWithSpread:
+    case IrOpcode::kJSConstruct:
+    case IrOpcode::kJSConstructWithSpread:
     case IrOpcode::kJSConvertReceiver:
       // Type is Receiver.
       CheckTypeIs(node, Type::Receiver());
       break;
-    case IrOpcode::kJSCallFunction:
+    case IrOpcode::kJSCallForwardVarargs:
+    case IrOpcode::kJSCall:
+    case IrOpcode::kJSCallWithSpread:
     case IrOpcode::kJSCallRuntime:
       // Type can be anything.
       CheckTypeIs(node, Type::Any());
@@ -720,6 +734,7 @@ void Verifier::Visitor::Check(Node* node) {
       break;
 
     case IrOpcode::kJSStackCheck:
+    case IrOpcode::kJSDebugger:
       // Type is empty.
       CheckNotTyped(node);
       break;
@@ -923,12 +938,20 @@ void Verifier::Visitor::Check(Node* node) {
       CheckValueInputIs(node, 0, Type::Number());
       CheckTypeIs(node, Type::String());
       break;
-    case IrOpcode::kReferenceEqual: {
+    case IrOpcode::kStringIndexOf:
+      // (String, String, SignedSmall) -> SignedSmall
+      CheckValueInputIs(node, 0, Type::String());
+      CheckValueInputIs(node, 1, Type::String());
+      CheckValueInputIs(node, 2, Type::SignedSmall());
+      CheckTypeIs(node, Type::SignedSmall());
+      break;
+
+    case IrOpcode::kReferenceEqual:
       // (Unique, Any) -> Boolean  and
       // (Any, Unique) -> Boolean
       CheckTypeIs(node, Type::Boolean());
       break;
-    }
+
     case IrOpcode::kObjectIsCallable:
     case IrOpcode::kObjectIsNonCallable:
     case IrOpcode::kObjectIsNumber:
@@ -1000,6 +1023,8 @@ void Verifier::Visitor::Check(Node* node) {
       // CheckTypeIs(node, to));
       break;
     }
+    case IrOpcode::kChangeTaggedToTaggedSigned:
+      break;
     case IrOpcode::kTruncateTaggedToFloat64: {
       // NumberOrUndefined /\ Tagged -> Number /\ UntaggedFloat64
       // TODO(neis): Activate once ChangeRepresentation works in typer.

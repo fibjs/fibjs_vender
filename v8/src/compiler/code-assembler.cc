@@ -260,6 +260,14 @@ void CodeAssembler::Return(Node* value) {
   return raw_assembler()->Return(value);
 }
 
+void CodeAssembler::Return(Node* value1, Node* value2) {
+  return raw_assembler()->Return(value1, value2);
+}
+
+void CodeAssembler::Return(Node* value1, Node* value2, Node* value3) {
+  return raw_assembler()->Return(value1, value2, value3);
+}
+
 void CodeAssembler::PopAndReturn(Node* pop, Node* value) {
   return raw_assembler()->PopAndReturn(pop, value);
 }
@@ -643,7 +651,7 @@ void CodeAssembler::GotoIf(Node* condition, Label* true_label) {
   Bind(&false_label);
 }
 
-void CodeAssembler::GotoUnless(Node* condition, Label* false_label) {
+void CodeAssembler::GotoIfNot(Node* condition, Label* false_label) {
   Label true_label(this);
   Branch(condition, &true_label, false_label);
   Bind(&true_label);
@@ -698,6 +706,13 @@ CodeAssemblerVariable::CodeAssemblerVariable(CodeAssembler* assembler,
                                              MachineRepresentation rep)
     : impl_(new (assembler->zone()) Impl(rep)), state_(assembler->state()) {
   state_->variables_.insert(impl_);
+}
+
+CodeAssemblerVariable::CodeAssemblerVariable(CodeAssembler* assembler,
+                                             MachineRepresentation rep,
+                                             Node* initial_value)
+    : CodeAssemblerVariable(assembler, rep) {
+  Bind(initial_value);
 }
 
 CodeAssemblerVariable::~CodeAssemblerVariable() {

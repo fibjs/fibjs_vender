@@ -68,7 +68,6 @@ class WasmCompilationUnit final {
 
  private:
   SourcePositionTable* BuildGraphForWasmFunction(double* decode_ms);
-  Handle<FixedArray> PackProtectedInstructions() const;
 
   wasm::ErrorThrower* thrower_;
   Isolate* isolate_;
@@ -232,6 +231,12 @@ class WasmGraphBuilder {
 
   Node* SimdLaneOp(wasm::WasmOpcode opcode, uint8_t lane,
                    const NodeVector& inputs);
+
+  Node* SimdShiftOp(wasm::WasmOpcode opcode, uint8_t shift,
+                    const NodeVector& inputs);
+
+  Node* SimdSwizzleOp(wasm::WasmOpcode opcode, uint32_t swizzle,
+                      const NodeVector& inputs);
 
   bool has_simd() const { return has_simd_; }
 

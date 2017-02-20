@@ -350,6 +350,7 @@ bool AccessInfoFactory::ComputePropertyAccessInfo(
       } else {
         DCHECK_EQ(kDescriptor, details.location());
         if (details.kind() == kData) {
+          DCHECK(!FLAG_track_constant_fields);
           *access_info = PropertyAccessInfo::DataConstant(
               MapList{receiver_map},
               handle(descriptors->GetValue(number), isolate()), holder);
@@ -372,6 +373,17 @@ bool AccessInfoFactory::ComputePropertyAccessInfo(
               return false;
             }
             if (V8_UNLIKELY(FLAG_runtime_stats)) return false;
+          }
+          if (access_mode == AccessMode::kLoad) {
+            Handle<Name> cached_property_name;
+            if (FunctionTemplateInfo::TryGetCachedPropertyName(isolate(),
+                                                               accessor)
+                    .ToHandle(&cached_property_name)) {
+              if (ComputePropertyAccessInfo(map, cached_property_name,
+                                            access_mode, access_info)) {
+                return true;
+              }
+            }
           }
           *access_info = PropertyAccessInfo::AccessorConstant(
               MapList{receiver_map}, accessor, holder);

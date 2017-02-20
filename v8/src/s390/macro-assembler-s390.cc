@@ -973,10 +973,10 @@ void MacroAssembler::Prologue(bool code_pre_aging, Register base,
   }
 }
 
-void MacroAssembler::EmitLoadTypeFeedbackVector(Register vector) {
+void MacroAssembler::EmitLoadFeedbackVector(Register vector) {
   LoadP(vector, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
-  LoadP(vector, FieldMemOperand(vector, JSFunction::kLiteralsOffset));
-  LoadP(vector, FieldMemOperand(vector, LiteralsArray::kFeedbackVectorOffset));
+  LoadP(vector, FieldMemOperand(vector, JSFunction::kFeedbackVectorOffset));
+  LoadP(vector, FieldMemOperand(vector, Cell::kValueOffset));
 }
 
 void MacroAssembler::EnterFrame(StackFrame::Type type,
@@ -1103,17 +1103,6 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
   // location.
   lay(r1, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
   StoreP(r1, MemOperand(fp, ExitFrameConstants::kSPOffset));
-}
-
-void MacroAssembler::InitializeNewString(Register string, Register length,
-                                         Heap::RootListIndex map_index,
-                                         Register scratch1, Register scratch2) {
-  SmiTag(scratch1, length);
-  LoadRoot(scratch2, map_index);
-  StoreP(scratch1, FieldMemOperand(string, String::kLengthOffset));
-  StoreP(FieldMemOperand(string, String::kHashFieldSlot),
-         Operand(String::kEmptyHashField), scratch1);
-  StoreP(scratch2, FieldMemOperand(string, HeapObject::kMapOffset));
 }
 
 int MacroAssembler::ActivationFrameAlignment() {
@@ -1476,6 +1465,17 @@ void MacroAssembler::DebugBreak() {
   Call(ces.GetCode(), RelocInfo::DEBUGGER_STATEMENT);
 }
 
+void MacroAssembler::MaybeDropFrames() {
+  // Check whether we need to drop frames to restart a function on the stack.
+  ExternalReference restart_fp =
+      ExternalReference::debug_restart_fp_address(isolate());
+  mov(r3, Operand(restart_fp));
+  LoadP(r3, MemOperand(r3));
+  CmpP(r3, Operand::Zero());
+  Jump(isolate()->builtins()->FrameDropperTrampoline(), RelocInfo::CODE_TARGET,
+       ne);
+}
+
 void MacroAssembler::PushStackHandler() {
   // Adjust this code if not the case.
   STATIC_ASSERT(StackHandlerConstants::kSize == 1 * kPointerSize);
@@ -1632,7 +1632,7 @@ void MacroAssembler::Allocate(int object_size, Register result,
     // Prefetch the allocation_top's next cache line in advance to
     // help alleviate potential cache misses.
     // Mode 2 - Prefetch the data into a cache line for store access.
-    pfd(r2, MemOperand(result, 256));
+    pfd(static_cast<Condition>(2), MemOperand(result, 256));
   }
 
   // Tag object.
@@ -1731,7 +1731,7 @@ void MacroAssembler::Allocate(Register object_size, Register result,
     // Prefetch the allocation_top's next cache line in advance to
     // help alleviate potential cache misses.
     // Mode 2 - Prefetch the data into a cache line for store access.
-    pfd(r2, MemOperand(result, 256));
+    pfd(static_cast<Condition>(2), MemOperand(result, 256));
   }
 
   // Tag object.
@@ -1791,7 +1791,7 @@ void MacroAssembler::FastAllocate(Register object_size, Register result,
     // Prefetch the allocation_top's next cache line in advance to
     // help alleviate potential cache misses.
     // Mode 2 - Prefetch the data into a cache line for store access.
-    pfd(r2, MemOperand(result, 256));
+    pfd(static_cast<Condition>(2), MemOperand(result, 256));
   }
 
   // Tag object.
@@ -1859,7 +1859,7 @@ void MacroAssembler::FastAllocate(int object_size, Register result,
     // Prefetch the allocation_top's next cache line in advance to
     // help alleviate potential cache misses.
     // Mode 2 - Prefetch the data into a cache line for store access.
-    pfd(r2, MemOperand(result, 256));
+    pfd(static_cast<Condition>(2), MemOperand(result, 256));
   }
 
   // Tag object.
@@ -1967,30 +1967,6 @@ void MacroAssembler::GetMapConstructor(Register result, Register map,
   bne(&done);
   LoadP(result, FieldMemOperand(result, Map::kConstructorOrBackPointerOffset));
   b(&loop);
-  bind(&done);
-}
-
-void MacroAssembler::TryGetFunctionPrototype(Register function, Register result,
-                                             Register scratch, Label* miss) {
-  // Get the prototype or initial map from the function.
-  LoadP(result,
-        FieldMemOperand(function, JSFunction::kPrototypeOrInitialMapOffset));
-
-  // If the prototype or initial map is the hole, don't return it and
-  // simply miss the cache instead. This will allow us to allocate a
-  // prototype object on-demand in the runtime system.
-  CompareRoot(result, Heap::kTheHoleValueRootIndex);
-  beq(miss);
-
-  // If the function does not have an initial map, we're done.
-  Label done;
-  CompareObjectType(result, scratch, scratch, MAP_TYPE);
-  bne(&done, Label::kNear);
-
-  // Get the prototype from the initial map.
-  LoadP(result, FieldMemOperand(result, Map::kPrototypeOffset));
-
-  // All done.
   bind(&done);
 }
 
@@ -3274,6 +3250,88 @@ void MacroAssembler::Mul32(Register dst, const Operand& src1) {
   msfi(dst, src1);
 }
 
+#define Generate_MulHigh32(instr) \
+  {                               \
+    lgfr(dst, src1);              \
+    instr(dst, src2);             \
+    srlg(dst, dst, Operand(32));  \
+  }
+
+void MacroAssembler::MulHigh32(Register dst, Register src1,
+                               const MemOperand& src2) {
+  Generate_MulHigh32(msgf);
+}
+
+void MacroAssembler::MulHigh32(Register dst, Register src1, Register src2) {
+  if (dst.is(src2)) {
+    std::swap(src1, src2);
+  }
+  Generate_MulHigh32(msgfr);
+}
+
+void MacroAssembler::MulHigh32(Register dst, Register src1,
+                               const Operand& src2) {
+  Generate_MulHigh32(msgfi);
+}
+
+#undef Generate_MulHigh32
+
+#define Generate_MulHighU32(instr) \
+  {                                \
+    lr(r1, src1);                  \
+    instr(r0, src2);               \
+    LoadlW(dst, r0);               \
+  }
+
+void MacroAssembler::MulHighU32(Register dst, Register src1,
+                                const MemOperand& src2) {
+  Generate_MulHighU32(ml);
+}
+
+void MacroAssembler::MulHighU32(Register dst, Register src1, Register src2) {
+  Generate_MulHighU32(mlr);
+}
+
+void MacroAssembler::MulHighU32(Register dst, Register src1,
+                                const Operand& src2) {
+  USE(dst);
+  USE(src1);
+  USE(src2);
+  UNREACHABLE();
+}
+
+#undef Generate_MulHighU32
+
+#define Generate_Mul32WithOverflowIfCCUnequal(instr) \
+  {                                                  \
+    lgfr(dst, src1);                                 \
+    instr(dst, src2);                                \
+    cgfr(dst, dst);                                  \
+  }
+
+void MacroAssembler::Mul32WithOverflowIfCCUnequal(Register dst, Register src1,
+                                                  const MemOperand& src2) {
+  Register result = dst;
+  if (src2.rx().is(dst) || src2.rb().is(dst)) dst = r0;
+  Generate_Mul32WithOverflowIfCCUnequal(msgf);
+  if (!result.is(dst)) llgfr(result, dst);
+}
+
+void MacroAssembler::Mul32WithOverflowIfCCUnequal(Register dst, Register src1,
+                                                  Register src2) {
+  if (dst.is(src2)) {
+    std::swap(src1, src2);
+  }
+  Generate_Mul32WithOverflowIfCCUnequal(msgfr);
+}
+
+void MacroAssembler::Mul32WithOverflowIfCCUnequal(Register dst, Register src1,
+                                                  const Operand& src2) {
+  Generate_Mul32WithOverflowIfCCUnequal(msgfi);
+}
+
+#undef Generate_Mul32WithOverflowIfCCUnequal
+
 void MacroAssembler::Mul64(Register dst, const MemOperand& src1) {
   if (is_int20(src1.offset())) {
     msg(dst, src1);
@@ -3289,13 +3347,17 @@ void MacroAssembler::Mul64(Register dst, const Operand& src1) {
 }
 
 void MacroAssembler::Mul(Register dst, Register src1, Register src2) {
-  if (dst.is(src2)) {
-    MulP(dst, src1);
-  } else if (dst.is(src1)) {
-    MulP(dst, src2);
+  if (CpuFeatures::IsSupported(MISC_INSTR_EXT2)) {
+    MulPWithCondition(dst, src1, src2);
   } else {
-    Move(dst, src1);
-    MulP(dst, src2);
+    if (dst.is(src2)) {
+      MulP(dst, src1);
+    } else if (dst.is(src1)) {
+      MulP(dst, src2);
+    } else {
+      Move(dst, src1);
+      MulP(dst, src2);
+    }
   }
 }
 
@@ -3308,6 +3370,108 @@ void MacroAssembler::DivP(Register dividend, Register divider) {
   dr(dividend, divider);
 #endif
 }
+
+#define Generate_Div32(instr) \
+  {                           \
+    lgfr(r1, src1);           \
+    instr(r0, src2);          \
+    LoadlW(dst, r1);          \
+  }
+
+void MacroAssembler::Div32(Register dst, Register src1,
+                           const MemOperand& src2) {
+  Generate_Div32(dsgf);
+}
+
+void MacroAssembler::Div32(Register dst, Register src1, Register src2) {
+  Generate_Div32(dsgfr);
+}
+
+void MacroAssembler::Div32(Register dst, Register src1, const Operand& src2) {
+  USE(dst);
+  USE(src1);
+  USE(src2);
+  UNREACHABLE();
+}
+
+#undef Generate_Div32
+
+#define Generate_DivU32(instr) \
+  {                            \
+    lr(r0, src1);              \
+    srdl(r0, Operand(32));     \
+    instr(r0, src2);           \
+    LoadlW(dst, r1);           \
+  }
+
+void MacroAssembler::DivU32(Register dst, Register src1,
+                            const MemOperand& src2) {
+  Generate_DivU32(dl);
+}
+
+void MacroAssembler::DivU32(Register dst, Register src1, Register src2) {
+  Generate_DivU32(dlr);
+}
+
+void MacroAssembler::DivU32(Register dst, Register src1, const Operand& src2) {
+  USE(dst);
+  USE(src1);
+  USE(src2);
+  UNREACHABLE();
+}
+
+#undef Generate_DivU32
+
+#define Generate_Mod32(instr) \
+  {                           \
+    lgfr(r1, src1);           \
+    instr(r0, src2);          \
+    LoadlW(dst, r0);          \
+  }
+
+void MacroAssembler::Mod32(Register dst, Register src1,
+                           const MemOperand& src2) {
+  Generate_Mod32(dsgf);
+}
+
+void MacroAssembler::Mod32(Register dst, Register src1, Register src2) {
+  Generate_Mod32(dsgfr);
+}
+
+void MacroAssembler::Mod32(Register dst, Register src1, const Operand& src2) {
+  USE(dst);
+  USE(src1);
+  USE(src2);
+  UNREACHABLE();
+}
+
+#undef Generate_Mod32
+
+#define Generate_ModU32(instr) \
+  {                            \
+    lr(r0, src1);              \
+    srdl(r0, Operand(32));     \
+    instr(r0, src2);           \
+    LoadlW(dst, r0);           \
+  }
+
+void MacroAssembler::ModU32(Register dst, Register src1,
+                            const MemOperand& src2) {
+  Generate_ModU32(dl);
+}
+
+void MacroAssembler::ModU32(Register dst, Register src1, Register src2) {
+  Generate_ModU32(dlr);
+}
+
+void MacroAssembler::ModU32(Register dst, Register src1, const Operand& src2) {
+  USE(dst);
+  USE(src1);
+  USE(src2);
+  UNREACHABLE();
+}
+
+#undef Generate_ModU32
 
 void MacroAssembler::MulP(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
@@ -3322,6 +3486,16 @@ void MacroAssembler::MulP(Register dst, Register src) {
   msgr(dst, src);
 #else
   msr(dst, src);
+#endif
+}
+
+void MacroAssembler::MulPWithCondition(Register dst, Register src1,
+                                       Register src2) {
+  CHECK(CpuFeatures::IsSupported(MISC_INSTR_EXT2));
+#if V8_TARGET_ARCH_S390X
+  msgrkc(dst, src1, src2);
+#else
+  msrkc(dst, src1, src2);
 #endif
 }
 
@@ -3366,6 +3540,12 @@ void MacroAssembler::Add32(Register dst, const Operand& opnd) {
     afi(dst, opnd);
 }
 
+// Add 32-bit (Register dst = Register dst + Immediate opnd)
+void MacroAssembler::Add32_RI(Register dst, const Operand& opnd) {
+  // Just a wrapper for above
+  Add32(dst, opnd);
+}
+
 // Add Pointer Size (Register dst = Register dst + Immediate opnd)
 void MacroAssembler::AddP(Register dst, const Operand& opnd) {
 #if V8_TARGET_ARCH_S390X
@@ -3388,6 +3568,13 @@ void MacroAssembler::Add32(Register dst, Register src, const Operand& opnd) {
     lr(dst, src);
   }
   Add32(dst, opnd);
+}
+
+// Add 32-bit (Register dst = Register src + Immediate opnd)
+void MacroAssembler::Add32_RRI(Register dst, Register src,
+                               const Operand& opnd) {
+  // Just a wrapper for above
+  Add32(dst, src, opnd);
 }
 
 // Add Pointer Size (Register dst = Register src + Immediate opnd)
@@ -4138,12 +4325,24 @@ void MacroAssembler::Load(Register dst, const Operand& opnd) {
 #else
     lhi(dst, opnd);
 #endif
-  } else {
+  } else if (is_int32(value)) {
 #if V8_TARGET_ARCH_S390X
     lgfi(dst, opnd);
 #else
     iilf(dst, opnd);
 #endif
+  } else if (is_uint32(value)) {
+#if V8_TARGET_ARCH_S390X
+    llilf(dst, opnd);
+#else
+    iilf(dst, opnd);
+#endif
+  } else {
+    int32_t hi_32 = static_cast<int64_t>(value) >> 32;
+    int32_t lo_32 = static_cast<int32_t>(value);
+
+    iihf(dst, Operand(hi_32));
+    iilf(dst, Operand(lo_32));
   }
 }
 
@@ -4687,6 +4886,14 @@ void MacroAssembler::LoadlB(Register dst, const MemOperand& mem) {
 #endif
 }
 
+void MacroAssembler::LoadlB(Register dst, Register src) {
+#if V8_TARGET_ARCH_S390X
+  llgcr(dst, src);
+#else
+  llcr(dst, src);
+#endif
+}
+
 void MacroAssembler::LoadLogicalReversedWordP(Register dst,
                                               const MemOperand& mem) {
   lrv(dst, mem);
@@ -5042,7 +5249,7 @@ void MacroAssembler::Popcnt32(Register dst, Register src) {
   ar(dst, r0);
   ShiftRight(r0, dst, Operand(8));
   ar(dst, r0);
-  LoadB(dst, dst);
+  LoadlB(dst, dst);
 }
 
 #ifdef V8_TARGET_ARCH_S390X
@@ -5057,7 +5264,7 @@ void MacroAssembler::Popcnt64(Register dst, Register src) {
   AddP(dst, r0);
   ShiftRightP(r0, dst, Operand(8));
   AddP(dst, r0);
-  LoadB(dst, dst);
+  LoadlB(dst, dst);
 }
 #endif
 

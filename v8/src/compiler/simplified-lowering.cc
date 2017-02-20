@@ -894,6 +894,7 @@ class RepresentationSelector {
   // Helper for handling selects.
   void VisitSelect(Node* node, Truncation truncation,
                    SimplifiedLowering* lowering) {
+    DCHECK(TypeOf(node->InputAt(0))->Is(Type::Boolean()));
     ProcessInput(node, 0, UseInfo::Bool());
 
     MachineRepresentation output =
@@ -980,7 +981,7 @@ class RepresentationSelector {
     }
   }
 
-  MachineSemantic DeoptValueSemanticOf(Type* type) {
+  static MachineSemantic DeoptValueSemanticOf(Type* type) {
     // We only need signedness to do deopt correctly.
     if (type->Is(Type::Signed32())) {
       return MachineSemantic::kInt32;
@@ -989,6 +990,29 @@ class RepresentationSelector {
     } else {
       return MachineSemantic::kAny;
     }
+  }
+
+  static MachineType DeoptMachineTypeOf(MachineRepresentation rep, Type* type) {
+    if (!type->IsInhabited()) {
+      return MachineType::None();
+    }
+    // TODO(turbofan): Special treatment for ExternalPointer here,
+    // to avoid incompatible truncations. We really need a story
+    // for the JSFunction::entry field.
+    if (type->Is(Type::ExternalPointer())) {
+      return MachineType::Pointer();
+    }
+    // Do not distinguish between various Tagged variations.
+    if (IsAnyTagged(rep)) {
+      return MachineType::AnyTagged();
+    }
+    MachineType machine_type(rep, DeoptValueSemanticOf(type));
+    DCHECK(machine_type.representation() != MachineRepresentation::kWord32 ||
+           machine_type.semantic() == MachineSemantic::kInt32 ||
+           machine_type.semantic() == MachineSemantic::kUint32);
+    DCHECK(machine_type.representation() != MachineRepresentation::kBit ||
+           type->Is(Type::Boolean()));
+    return machine_type;
   }
 
   void VisitStateValues(Node* node) {
@@ -1003,17 +1027,8 @@ class RepresentationSelector {
               ZoneVector<MachineType>(node->InputCount(), zone);
       for (int i = 0; i < node->InputCount(); i++) {
         Node* input = node->InputAt(i);
-        NodeInfo* input_info = GetInfo(input);
-        Type* input_type = TypeOf(input);
-        MachineRepresentation rep = input_type->IsInhabited()
-                                        ? input_info->representation()
-                                        : MachineRepresentation::kNone;
-        MachineType machine_type(rep, DeoptValueSemanticOf(input_type));
-        DCHECK(machine_type.representation() !=
-                   MachineRepresentation::kWord32 ||
-               machine_type.semantic() == MachineSemantic::kInt32 ||
-               machine_type.semantic() == MachineSemantic::kUint32);
-        (*types)[i] = machine_type;
+        (*types)[i] =
+            DeoptMachineTypeOf(GetInfo(input)->representation(), TypeOf(input));
       }
       SparseInputMask mask = SparseInputMaskOf(node->op());
       NodeProperties::ChangeOp(
@@ -1047,28 +1062,8 @@ class RepresentationSelector {
               ZoneVector<MachineType>(node->InputCount(), zone);
       for (int i = 0; i < node->InputCount(); i++) {
         Node* input = node->InputAt(i);
-        NodeInfo* input_info = GetInfo(input);
-        Type* input_type = TypeOf(input);
-        // TODO(turbofan): Special treatment for ExternalPointer here,
-        // to avoid incompatible truncations. We really need a story
-        // for the JSFunction::entry field.
-        if (!input_type->IsInhabited()) {
-          (*types)[i] = MachineType::None();
-        } else if (input_type->Is(Type::ExternalPointer())) {
-          (*types)[i] = MachineType::Pointer();
-        } else {
-          MachineRepresentation rep = input_type->IsInhabited()
-                                          ? input_info->representation()
-                                          : MachineRepresentation::kNone;
-          MachineType machine_type(rep, DeoptValueSemanticOf(input_type));
-          DCHECK(machine_type.representation() !=
-                     MachineRepresentation::kWord32 ||
-                 machine_type.semantic() == MachineSemantic::kInt32 ||
-                 machine_type.semantic() == MachineSemantic::kUint32);
-          DCHECK(machine_type.representation() != MachineRepresentation::kBit ||
-                 input_type->Is(Type::Boolean()));
-          (*types)[i] = machine_type;
-        }
+        (*types)[i] =
+            DeoptMachineTypeOf(GetInfo(input)->representation(), TypeOf(input));
       }
       NodeProperties::ChangeOp(node,
                                jsgraph_->common()->TypedObjectState(types));
@@ -1192,8 +1187,11 @@ class RepresentationSelector {
     // ToNumber(x) can throw if x is either a Receiver or a Symbol, so we can
     // only eliminate an unused speculative number operation if we know that
     // the inputs are PlainPrimitive, which excludes everything that's might
-    // have side effects or throws during a ToNumber conversion.
-    if (BothInputsAre(node, Type::PlainPrimitive())) {
+    // have side effects or throws during a ToNumber conversion. We are only
+    // allowed to perform a number addition if neither input is a String, even
+    // if the value is never used, so we further limit to NumberOrOddball in
+    // order to explicitly exclude String inputs.
+    if (BothInputsAre(node, Type::NumberOrOddball())) {
       if (truncation.IsUnused()) return VisitUnused(node);
     }
 
@@ -1430,10 +1428,12 @@ class RepresentationSelector {
         return;
       }
 
-      case IrOpcode::kBranch:
+      case IrOpcode::kBranch: {
+        DCHECK(TypeOf(node->InputAt(0))->Is(Type::Boolean()));
         ProcessInput(node, 0, UseInfo::Bool());
         EnqueueInput(node, NodeProperties::FirstControlIndex(node));
         return;
+      }
       case IrOpcode::kSwitch:
         ProcessInput(node, 0, UseInfo::TruncatingWord32());
         EnqueueInput(node, NodeProperties::FirstControlIndex(node));
@@ -2240,6 +2240,13 @@ class RepresentationSelector {
                   MachineRepresentation::kTaggedPointer);
         return;
       }
+      case IrOpcode::kStringIndexOf: {
+        ProcessInput(node, 0, UseInfo::AnyTagged());
+        ProcessInput(node, 1, UseInfo::AnyTagged());
+        ProcessInput(node, 2, UseInfo::TaggedSigned());
+        SetOutput(node, MachineRepresentation::kTaggedSigned);
+        return;
+      }
 
       case IrOpcode::kCheckBounds: {
         Type* index_type = TypeOf(node->InputAt(0));
@@ -2554,7 +2561,6 @@ class RepresentationSelector {
         return;
       }
       case IrOpcode::kCheckFloat64Hole: {
-        if (truncation.IsUnused()) return VisitUnused(node);
         CheckFloat64HoleMode mode = CheckFloat64HoleModeOf(node->op());
         ProcessInput(node, 0, UseInfo::TruncatingFloat64());
         ProcessRemainingInputs(node, 1);
@@ -2661,6 +2667,7 @@ class RepresentationSelector {
       case IrOpcode::kBeginRegion:
       case IrOpcode::kProjection:
       case IrOpcode::kOsrValue:
+      case IrOpcode::kArgumentsObjectState:
 // All JavaScript operators except JSToNumber have uniform handling.
 #define OPCODE_CASE(name) case IrOpcode::k##name:
         JS_SIMPLE_BINOP_LIST(OPCODE_CASE)

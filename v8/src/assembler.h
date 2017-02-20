@@ -324,6 +324,7 @@ class RelocInfo {
     WASM_GLOBAL_REFERENCE,
     WASM_MEMORY_SIZE_REFERENCE,
     WASM_FUNCTION_TABLE_SIZE_REFERENCE,
+    WASM_PROTECTED_INSTRUCTION_LANDING,
     CELL,
 
     // Everything after runtime_entry (inclusive) is not GC'ed.
@@ -473,6 +474,9 @@ class RelocInfo {
   }
   static inline bool IsWasmPtrReference(Mode mode) {
     return mode == WASM_MEMORY_REFERENCE || mode == WASM_GLOBAL_REFERENCE;
+  }
+  static inline bool IsWasmProtectedLanding(Mode mode) {
+    return mode == WASM_PROTECTED_INSTRUCTION_LANDING;
   }
 
   static inline int ModeMask(Mode mode) { return 1 << mode; }
@@ -997,7 +1001,8 @@ class ExternalReference BASE_EMBEDDED {
   static ExternalReference invoke_function_callback(Isolate* isolate);
   static ExternalReference invoke_accessor_getter_callback(Isolate* isolate);
 
-  static ExternalReference promise_hook_address(Isolate* isolate);
+  static ExternalReference promise_hook_or_debug_is_active_address(
+      Isolate* isolate);
 
   V8_EXPORT_PRIVATE static ExternalReference runtime_function_table_address(
       Isolate* isolate);
@@ -1009,6 +1014,9 @@ class ExternalReference BASE_EMBEDDED {
 
   // Used to check for suspended generator, used for stepping across await call.
   static ExternalReference debug_suspended_generator_address(Isolate* isolate);
+
+  // Used to store the frame pointer to drop to when restarting a frame.
+  static ExternalReference debug_restart_fp_address(Isolate* isolate);
 
 #ifndef V8_INTERPRETED_REGEXP
   // C functions called from RegExp generated code.

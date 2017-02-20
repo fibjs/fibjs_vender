@@ -718,6 +718,7 @@ class MacroAssembler: public Assembler {
   // Debugger Support
 
   void DebugBreak();
+  void MaybeDropFrames();
 
   // ---------------------------------------------------------------------------
   // Exception handling
@@ -833,14 +834,6 @@ class MacroAssembler: public Assembler {
   // |temp| holds |result|'s map when done, and |temp2| its instance type.
   void GetMapConstructor(Register result, Register map, Register temp,
                          Register temp2);
-
-  // Try to get function prototype of a function and puts the value in
-  // the result register. Checks that the function really is a
-  // function and jumps to the miss label if the fast checks fail. The
-  // function register will be untouched; the other registers may be
-  // clobbered.
-  void TryGetFunctionPrototype(Register function, Register result,
-                               Register scratch, Label* miss);
 
   // Compare object type for heap object.  heap_object contains a non-Smi
   // whose object type should be compared with the given type.  This both
@@ -1385,7 +1378,7 @@ class MacroAssembler: public Assembler {
   }
 
   // Load the type feedback vector from a JavaScript frame.
-  void EmitLoadTypeFeedbackVector(Register vector);
+  void EmitLoadFeedbackVector(Register vector);
 
   // Activation support.
   void EnterFrame(StackFrame::Type type,
@@ -1429,12 +1422,6 @@ class MacroAssembler: public Assembler {
                       bool* definitely_mismatches,
                       InvokeFlag flag,
                       const CallWrapper& call_wrapper);
-
-  void InitializeNewString(Register string,
-                           Register length,
-                           Heap::RootListIndex map_index,
-                           Register scratch1,
-                           Register scratch2);
 
   // Helper for implementing JumpIfNotInNewSpace and JumpIfInNewSpace.
   void InNewSpace(Register object,
