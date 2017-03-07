@@ -10,6 +10,8 @@
 
 #include "src/ic/access-compiler.h"
 
+#include "src/objects-inl.h"
+
 namespace v8 {
 namespace internal {
 

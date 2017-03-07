@@ -1939,6 +1939,7 @@ Handle<Module> Factory::NewModule(Handle<SharedFunctionInfo> code) {
   module->set_hash(isolate()->GenerateIdentityHash(Smi::kMaxValue));
   module->set_module_namespace(isolate()->heap()->undefined_value());
   module->set_requested_modules(*requested_modules);
+  module->set_status(Module::kUnprepared);
   DCHECK(!module->instantiated());
   DCHECK(!module->evaluated());
   return module;
@@ -1975,6 +1976,16 @@ Handle<JSIteratorResult> Factory::NewJSIteratorResult(Handle<Object> value,
   return js_iter_result;
 }
 
+Handle<JSAsyncFromSyncIterator> Factory::NewJSAsyncFromSyncIterator(
+    Handle<JSReceiver> sync_iterator) {
+  Handle<Map> map(isolate()->native_context()->async_from_sync_iterator_map());
+  Handle<JSAsyncFromSyncIterator> iterator =
+      Handle<JSAsyncFromSyncIterator>::cast(NewJSObjectFromMap(map));
+
+  iterator->set_sync_iterator(*sync_iterator);
+  return iterator;
+}
+
 Handle<JSMap> Factory::NewJSMap() {
   Handle<Map> map(isolate()->native_context()->js_map_map());
   Handle<JSMap> js_map = Handle<JSMap>::cast(NewJSObjectFromMap(map));
@@ -2006,6 +2017,31 @@ Handle<JSSetIterator> Factory::NewJSSetIterator() {
                      JSSetIterator);
 }
 
+ExternalArrayType Factory::GetArrayTypeFromElementsKind(ElementsKind kind) {
+  switch (kind) {
+#define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
+  case TYPE##_ELEMENTS:                                 \
+    return kExternal##Type##Array;
+    TYPED_ARRAYS(TYPED_ARRAY_CASE)
+    default:
+      UNREACHABLE();
+      return kExternalInt8Array;
+  }
+#undef TYPED_ARRAY_CASE
+}
+
+size_t Factory::GetExternalArrayElementSize(ExternalArrayType type) {
+  switch (type) {
+#define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
+  case kExternal##Type##Array:                          \
+    return size;
+    TYPED_ARRAYS(TYPED_ARRAY_CASE)
+    default:
+      UNREACHABLE();
+      return 0;
+  }
+#undef TYPED_ARRAY_CASE
+}
 
 namespace {
 
@@ -2021,21 +2057,6 @@ ElementsKind GetExternalArrayElementsKind(ExternalArrayType type) {
 #undef TYPED_ARRAY_CASE
 }
 
-
-size_t GetExternalArrayElementSize(ExternalArrayType type) {
-  switch (type) {
-#define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
-  case kExternal##Type##Array:                          \
-    return size;
-    TYPED_ARRAYS(TYPED_ARRAY_CASE)
-    default:
-      UNREACHABLE();
-      return 0;
-  }
-#undef TYPED_ARRAY_CASE
-}
-
-
 size_t GetFixedTypedArraysElementSize(ElementsKind kind) {
   switch (kind) {
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
@@ -2045,20 +2066,6 @@ size_t GetFixedTypedArraysElementSize(ElementsKind kind) {
     default:
       UNREACHABLE();
       return 0;
-  }
-#undef TYPED_ARRAY_CASE
-}
-
-
-ExternalArrayType GetArrayTypeFromElementsKind(ElementsKind kind) {
-  switch (kind) {
-#define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
-  case TYPE##_ELEMENTS:                                 \
-    return kExternal##Type##Array;
-    TYPED_ARRAYS(TYPED_ARRAY_CASE)
-    default:
-      UNREACHABLE();
-      return kExternalInt8Array;
   }
 #undef TYPED_ARRAY_CASE
 }
@@ -2320,6 +2327,7 @@ void Factory::ReinitializeJSGlobalProxy(Handle<JSGlobalProxy> object,
     map->set_is_prototype_map(true);
   }
   JSObject::NotifyMapChange(old_map, map, isolate());
+  old_map->NotifyLeafMapLayoutChange();
 
   // Check that the already allocated object has the same size and type as
   // objects allocated using the constructor.

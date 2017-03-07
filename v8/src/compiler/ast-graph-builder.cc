@@ -1197,9 +1197,8 @@ void AstGraphBuilder::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
 
 
 void AstGraphBuilder::VisitDebuggerStatement(DebuggerStatement* stmt) {
-  Node* node = NewNode(javascript()->Debugger());
-  PrepareFrameState(node, stmt->DebugBreakId());
-  environment()->MarkAllLocalsLive();
+  // Debugger statement is supported only by going through Ignition first.
+  UNREACHABLE();
 }
 
 
@@ -1997,9 +1996,6 @@ void AstGraphBuilder::VisitCompareOperation(CompareOperation* expr) {
     case Token::EQ_STRICT:
       op = javascript()->StrictEqual(hint);
       break;
-    case Token::NE_STRICT:
-      op = javascript()->StrictNotEqual(hint);
-      break;
     case Token::LT:
       op = javascript()->LessThan(hint);
       break;
@@ -2701,7 +2697,7 @@ Node* AstGraphBuilder::BuildThrowError(Node* exception, BailoutId bailout_id) {
   const Operator* op = javascript()->CallRuntime(Runtime::kThrow);
   Node* call = NewNode(op, exception);
   PrepareFrameState(call, bailout_id);
-  Node* control = NewNode(common()->Throw(), call);
+  Node* control = NewNode(common()->Throw());
   UpdateControlDependencyToLeaveFunction(control);
   return call;
 }
@@ -2713,7 +2709,7 @@ Node* AstGraphBuilder::BuildThrowReferenceError(Variable* variable,
   const Operator* op = javascript()->CallRuntime(Runtime::kThrowReferenceError);
   Node* call = NewNode(op, variable_name);
   PrepareFrameState(call, bailout_id);
-  Node* control = NewNode(common()->Throw(), call);
+  Node* control = NewNode(common()->Throw());
   UpdateControlDependencyToLeaveFunction(control);
   return call;
 }
@@ -2724,7 +2720,7 @@ Node* AstGraphBuilder::BuildThrowConstAssignError(BailoutId bailout_id) {
       javascript()->CallRuntime(Runtime::kThrowConstAssignError);
   Node* call = NewNode(op);
   PrepareFrameState(call, bailout_id);
-  Node* control = NewNode(common()->Throw(), call);
+  Node* control = NewNode(common()->Throw());
   UpdateControlDependencyToLeaveFunction(control);
   return call;
 }
@@ -2745,7 +2741,7 @@ Node* AstGraphBuilder::BuildReturn(Node* return_value) {
 
 Node* AstGraphBuilder::BuildThrow(Node* exception_value) {
   NewNode(javascript()->CallRuntime(Runtime::kReThrow), exception_value);
-  Node* control = NewNode(common()->Throw(), exception_value);
+  Node* control = NewNode(common()->Throw());
   UpdateControlDependencyToLeaveFunction(control);
   return control;
 }
@@ -2817,7 +2813,6 @@ Node* AstGraphBuilder::TryFastToBoolean(Node* input) {
     case IrOpcode::kJSEqual:
     case IrOpcode::kJSNotEqual:
     case IrOpcode::kJSStrictEqual:
-    case IrOpcode::kJSStrictNotEqual:
     case IrOpcode::kJSLessThan:
     case IrOpcode::kJSLessThanOrEqual:
     case IrOpcode::kJSGreaterThan:
@@ -2932,7 +2927,7 @@ Node* AstGraphBuilder::MakeNode(const Operator* op, int value_input_count,
     result = graph()->NewNode(op, input_count_with_deps, buffer, incomplete);
     if (!environment()->IsMarkedAsUnreachable()) {
       // Update the current control dependency for control-producing nodes.
-      if (NodeProperties::IsControl(result)) {
+      if (result->op()->ControlOutputCount() > 0) {
         environment_->UpdateControlDependency(result);
       }
       // Update the current effect dependency for effect-producing nodes.

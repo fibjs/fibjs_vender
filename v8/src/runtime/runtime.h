@@ -371,11 +371,11 @@ namespace internal {
   F(SmiLexicographicCompare, 2, 1)     \
   F(MaxSmi, 0, 1)                      \
   F(IsSmi, 1, 1)                       \
-  F(GetRootNaN, 0, 1)                  \
   F(GetHoleNaNUpper, 0, 1)             \
   F(GetHoleNaNLower, 0, 1)
 
 #define FOR_EACH_INTRINSIC_OBJECT(F)                            \
+  F(AddDictionaryProperty, 3, 1)                                \
   F(GetPrototype, 1, 1)                                         \
   F(ObjectHasOwnProperty, 2, 1)                                 \
   F(ObjectCreate, 2, 1)                                         \
@@ -609,11 +609,12 @@ namespace internal {
   F(ValidateWasmInstancesChain, 2, 1)         \
   F(ValidateWasmModuleState, 1, 1)            \
   F(ValidateWasmOrphanedInstance, 1, 1)       \
+  F(SetWasmCompileControls, 2, 1)             \
+  F(SetWasmInstantiateControls, 0, 1)         \
   F(Verify, 1, 1)
 
 #define FOR_EACH_INTRINSIC_TYPEDARRAY(F)     \
   F(ArrayBufferGetByteLength, 1, 1)          \
-  F(ArrayBufferSliceImpl, 4, 1)              \
   F(ArrayBufferNeuter, 1, 1)                 \
   F(TypedArrayInitialize, 6, 1)              \
   F(TypedArrayInitializeFromArrayLike, 4, 1) \
@@ -622,28 +623,22 @@ namespace internal {
   F(TypedArrayGetLength, 1, 1)               \
   F(TypedArrayGetBuffer, 1, 1)               \
   F(TypedArraySetFastCases, 3, 1)            \
+  F(TypedArraySortFast, 1, 1)                \
   F(TypedArrayMaxSizeInHeap, 0, 1)           \
   F(IsTypedArray, 1, 1)                      \
   F(IsSharedTypedArray, 1, 1)                \
   F(IsSharedIntegerTypedArray, 1, 1)         \
   F(IsSharedInteger32TypedArray, 1, 1)
 
-#define FOR_EACH_INTRINSIC_WASM(F)           \
-  F(WasmGrowMemory, 1, 1)                    \
-  F(WasmMemorySize, 0, 1)                    \
-  F(ThrowWasmError, 2, 1)                    \
-  F(WasmThrowTypeError, 0, 1)                \
-  F(WasmThrow, 2, 1)                         \
-  F(WasmGetCaughtExceptionValue, 1, 1)       \
-  F(ThrowWasmTrapUnreachable, 0, 1)          \
-  F(ThrowWasmTrapMemOutOfBounds, 0, 1)       \
-  F(ThrowWasmTrapDivByZero, 0, 1)            \
-  F(ThrowWasmTrapDivUnrepresentable, 0, 1)   \
-  F(ThrowWasmTrapRemByZero, 0, 1)            \
-  F(ThrowWasmTrapFloatUnrepresentable, 0, 1) \
-  F(ThrowWasmTrapFuncInvalid, 0, 1)          \
-  F(ThrowWasmTrapFuncSigMismatch, 0, 1)      \
-  F(WasmRunInterpreter, 3, 1)                \
+#define FOR_EACH_INTRINSIC_WASM(F)     \
+  F(WasmGrowMemory, 1, 1)              \
+  F(WasmMemorySize, 0, 1)              \
+  F(ThrowWasmError, 2, 1)              \
+  F(ThrowWasmErrorFromTrapIf, 1, 1)    \
+  F(WasmThrowTypeError, 0, 1)          \
+  F(WasmThrow, 2, 1)                   \
+  F(WasmGetCaughtExceptionValue, 1, 1) \
+  F(WasmRunInterpreter, 3, 1)          \
   F(WasmStackGuard, 0, 1)
 
 #define FOR_EACH_INTRINSIC_RETURN_PAIR(F) \

@@ -298,14 +298,9 @@ class Marking : public AllStatic {
   // objects.
   INLINE(static bool IsBlackOrGrey(MarkBit mark_bit)) { return mark_bit.Get(); }
 
-  INLINE(static void MarkBlack(MarkBit mark_bit)) {
-    mark_bit.Set();
-    mark_bit.Next().Set();
-  }
-
-  INLINE(static void MarkWhite(MarkBit mark_bit)) {
-    mark_bit.Clear();
-    mark_bit.Next().Clear();
+  INLINE(static void MarkWhite(MarkBit markbit)) {
+    markbit.Clear();
+    markbit.Next().Clear();
   }
 
   INLINE(static void BlackToWhite(MarkBit markbit)) {
@@ -339,11 +334,6 @@ class Marking : public AllStatic {
   INLINE(static void GreyToBlack(MarkBit markbit)) {
     DCHECK(IsGrey(markbit));
     markbit.Next().Set();
-  }
-
-  INLINE(static void AnyToGrey(MarkBit markbit)) {
-    markbit.Set();
-    markbit.Next().Clear();
   }
 
   enum ObjectColor {

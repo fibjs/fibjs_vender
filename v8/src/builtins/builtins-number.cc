@@ -6,6 +6,9 @@
 #include "src/builtins/builtins.h"
 #include "src/code-factory.h"
 #include "src/code-stub-assembler.h"
+#include "src/conversions.h"
+#include "src/counters.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -1600,15 +1603,7 @@ TF_BUILTIN(StrictEqual, CodeStubAssembler) {
   Node* rhs = Parameter(1);
   Node* context = Parameter(2);
 
-  Return(StrictEqual(kDontNegateResult, lhs, rhs, context));
-}
-
-TF_BUILTIN(StrictNotEqual, CodeStubAssembler) {
-  Node* lhs = Parameter(0);
-  Node* rhs = Parameter(1);
-  Node* context = Parameter(2);
-
-  Return(StrictEqual(kNegateResult, lhs, rhs, context));
+  Return(StrictEqual(lhs, rhs, context));
 }
 
 }  // namespace internal

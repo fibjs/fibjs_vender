@@ -85,6 +85,8 @@ typedef std::function<void()> CodeAssemblerCallback;
   V(Float64Mod)                            \
   V(Float64Atan2)                          \
   V(Float64Pow)                            \
+  V(Float64Max)                            \
+  V(Float64Min)                            \
   V(Float64InsertLowWord32)                \
   V(Float64InsertHighWord32)               \
   V(IntPtrAddWithOverflow)                 \
@@ -216,6 +218,7 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   Node* SmiConstant(Smi* value);
   Node* SmiConstant(int value);
   Node* HeapConstant(Handle<HeapObject> object);
+  Node* CStringConstant(const char* str);
   Node* BooleanConstant(bool value);
   Node* ExternalConstant(ExternalReference address);
   Node* Float64Constant(double value);
@@ -234,6 +237,7 @@ class V8_EXPORT_PRIVATE CodeAssembler {
   void PopAndReturn(Node* pop, Node* value);
 
   void DebugBreak();
+  void Unreachable();
   void Comment(const char* format, ...);
 
   void Bind(Label* label);

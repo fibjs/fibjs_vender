@@ -12,6 +12,7 @@
 
 #include <memory>
 
+#include "src/arm/assembler-arm-inl.h"
 #include "src/arm/simulator-arm.h"
 #include "src/codegen.h"
 #include "src/macro-assembler.h"

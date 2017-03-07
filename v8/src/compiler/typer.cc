@@ -284,7 +284,8 @@ class Typer::Visitor : public Reducer {
   SIMPLIFIED_SPECULATIVE_NUMBER_BINOP_LIST(DECLARE_METHOD)
 #undef DECLARE_METHOD
 
-  static Type* ObjectIsCallable(Type*, Typer*);
+  static Type* ObjectIsDetectableCallable(Type*, Typer*);
+  static Type* ObjectIsNaN(Type*, Typer*);
   static Type* ObjectIsNonCallable(Type*, Typer*);
   static Type* ObjectIsNumber(Type*, Typer*);
   static Type* ObjectIsReceiver(Type*, Typer*);
@@ -293,6 +294,7 @@ class Typer::Visitor : public Reducer {
   static Type* ObjectIsUndetectable(Type*, Typer*);
 
   static ComparisonOutcome JSCompareTyper(Type*, Type*, Typer*);
+  static ComparisonOutcome NumberCompareTyper(Type*, Type*, Typer*);
 
 #define DECLARE_METHOD(x) static Type* x##Typer(Type*, Type*, Typer*);
   JS_SIMPLE_BINOP_LIST(DECLARE_METHOD)
@@ -300,6 +302,8 @@ class Typer::Visitor : public Reducer {
 
   static Type* JSCallTyper(Type*, Typer*);
 
+  static Type* NumberLessThanTyper(Type*, Type*, Typer*);
+  static Type* NumberLessThanOrEqualTyper(Type*, Type*, Typer*);
   static Type* ReferenceEqualTyper(Type*, Type*, Typer*);
   static Type* StringFromCharCodeTyper(Type*, Typer*);
   static Type* StringFromCodePointTyper(Type*, Typer*);
@@ -503,9 +507,15 @@ Type* Typer::Visitor::ToString(Type* type, Typer* t) {
 
 // Type checks.
 
-Type* Typer::Visitor::ObjectIsCallable(Type* type, Typer* t) {
-  if (type->Is(Type::Callable())) return t->singleton_true_;
-  if (!type->Maybe(Type::Callable())) return t->singleton_false_;
+Type* Typer::Visitor::ObjectIsDetectableCallable(Type* type, Typer* t) {
+  if (type->Is(Type::DetectableCallable())) return t->singleton_true_;
+  if (!type->Maybe(Type::DetectableCallable())) return t->singleton_false_;
+  return Type::Boolean();
+}
+
+Type* Typer::Visitor::ObjectIsNaN(Type* type, Typer* t) {
+  if (type->Is(Type::NaN())) return t->singleton_true_;
+  if (!type->Maybe(Type::NaN())) return t->singleton_false_;
   return Type::Boolean();
 }
 
@@ -834,7 +844,11 @@ Type* Typer::Visitor::TypeTypedStateValues(Node* node) {
   return Type::Internal();
 }
 
-Type* Typer::Visitor::TypeArgumentsObjectState(Node* node) {
+Type* Typer::Visitor::TypeArgumentsElementsState(Node* node) {
+  return Type::Internal();
+}
+
+Type* Typer::Visitor::TypeArgumentsLengthState(Node* node) {
   return Type::Internal();
 }
 
@@ -921,11 +935,6 @@ Type* Typer::Visitor::JSStrictEqualTyper(Type* lhs, Type* rhs, Typer* t) {
 }
 
 
-Type* Typer::Visitor::JSStrictNotEqualTyper(Type* lhs, Type* rhs, Typer* t) {
-  return Invert(JSStrictEqualTyper(lhs, rhs, t), t);
-}
-
-
 // The EcmaScript specification defines the four relational comparison operators
 // (<, <=, >=, >) with the help of a single abstract one.  It behaves like <
 // but returns undefined when the inputs cannot be compared.
@@ -939,9 +948,12 @@ Typer::Visitor::ComparisonOutcome Typer::Visitor::JSCompareTyper(Type* lhs,
     return ComparisonOutcome(kComparisonTrue) |
            ComparisonOutcome(kComparisonFalse);
   }
-  lhs = ToNumber(lhs, t);
-  rhs = ToNumber(rhs, t);
+  return NumberCompareTyper(ToNumber(lhs, t), ToNumber(rhs, t), t);
+}
 
+Typer::Visitor::ComparisonOutcome Typer::Visitor::NumberCompareTyper(Type* lhs,
+                                                                     Type* rhs,
+                                                                     Typer* t) {
   // Shortcut for NaNs.
   if (lhs->Is(Type::NaN()) || rhs->Is(Type::NaN())) return kComparisonUndefined;
 
@@ -1695,10 +1707,25 @@ Type* Typer::Visitor::TypeBooleanNot(Node* node) { return Type::Boolean(); }
 
 Type* Typer::Visitor::TypeNumberEqual(Node* node) { return Type::Boolean(); }
 
-Type* Typer::Visitor::TypeNumberLessThan(Node* node) { return Type::Boolean(); }
+// static
+Type* Typer::Visitor::NumberLessThanTyper(Type* lhs, Type* rhs, Typer* t) {
+  return FalsifyUndefined(
+      NumberCompareTyper(ToNumber(lhs, t), ToNumber(rhs, t), t), t);
+}
+
+// static
+Type* Typer::Visitor::NumberLessThanOrEqualTyper(Type* lhs, Type* rhs,
+                                                 Typer* t) {
+  return FalsifyUndefined(
+      Invert(JSCompareTyper(ToNumber(rhs, t), ToNumber(lhs, t), t), t), t);
+}
+
+Type* Typer::Visitor::TypeNumberLessThan(Node* node) {
+  return TypeBinaryOp(node, NumberLessThanTyper);
+}
 
 Type* Typer::Visitor::TypeNumberLessThanOrEqual(Node* node) {
-  return Type::Boolean();
+  return TypeBinaryOp(node, NumberLessThanOrEqualTyper);
 }
 
 Type* Typer::Visitor::TypeSpeculativeNumberEqual(Node* node) {
@@ -1706,11 +1733,11 @@ Type* Typer::Visitor::TypeSpeculativeNumberEqual(Node* node) {
 }
 
 Type* Typer::Visitor::TypeSpeculativeNumberLessThan(Node* node) {
-  return Type::Boolean();
+  return TypeBinaryOp(node, NumberLessThanTyper);
 }
 
 Type* Typer::Visitor::TypeSpeculativeNumberLessThanOrEqual(Node* node) {
-  return Type::Boolean();
+  return TypeBinaryOp(node, NumberLessThanOrEqualTyper);
 }
 
 Type* Typer::Visitor::TypePlainPrimitiveToNumber(Node* node) {
@@ -1901,8 +1928,12 @@ Type* Typer::Visitor::TypeStoreTypedElement(Node* node) {
   return nullptr;
 }
 
-Type* Typer::Visitor::TypeObjectIsCallable(Node* node) {
-  return TypeUnaryOp(node, ObjectIsCallable);
+Type* Typer::Visitor::TypeObjectIsDetectableCallable(Node* node) {
+  return TypeUnaryOp(node, ObjectIsDetectableCallable);
+}
+
+Type* Typer::Visitor::TypeObjectIsNaN(Node* node) {
+  return TypeUnaryOp(node, ObjectIsNaN);
 }
 
 Type* Typer::Visitor::TypeObjectIsNonCallable(Node* node) {
@@ -1931,11 +1962,15 @@ Type* Typer::Visitor::TypeObjectIsUndetectable(Node* node) {
   return TypeUnaryOp(node, ObjectIsUndetectable);
 }
 
-Type* Typer::Visitor::TypeNewUnmappedArgumentsElements(Node* node) {
-  return Type::OtherInternal();
+Type* Typer::Visitor::TypeArgumentsLength(Node* node) {
+  return TypeCache::Get().kArgumentsLengthType;
 }
 
-Type* Typer::Visitor::TypeNewRestParameterElements(Node* node) {
+Type* Typer::Visitor::TypeArgumentsFrame(Node* node) {
+  return Type::ExternalPointer();
+}
+
+Type* Typer::Visitor::TypeNewUnmappedArgumentsElements(Node* node) {
   return Type::OtherInternal();
 }
 

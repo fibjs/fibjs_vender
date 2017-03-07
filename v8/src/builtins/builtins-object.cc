@@ -7,6 +7,10 @@
 #include "src/builtins/builtins.h"
 #include "src/code-factory.h"
 #include "src/code-stub-assembler.h"
+#include "src/counters.h"
+#include "src/keys.h"
+#include "src/lookup.h"
+#include "src/objects-inl.h"
 #include "src/property-descriptor.h"
 
 namespace v8 {
@@ -304,6 +308,17 @@ TF_BUILTIN(ObjectProtoToString, ObjectBuiltinsAssembler) {
     Bind(&return_object);
     Return(HeapConstant(isolate()->factory()->object_to_string()));
   }
+}
+
+// ES6 19.3.7 Object.prototype.valueOf
+TF_BUILTIN(ObjectPrototypeValueOf, CodeStubAssembler) {
+  Node* receiver = Parameter(0);
+  Node* context = Parameter(3);
+
+  Callable to_object = CodeFactory::ToObject(isolate());
+  receiver = CallStub(to_object, context, receiver);
+
+  Return(receiver);
 }
 
 TF_BUILTIN(ObjectCreate, ObjectBuiltinsAssembler) {

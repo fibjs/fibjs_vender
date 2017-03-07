@@ -725,8 +725,6 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
       return "no reloc 64";
     case EMBEDDED_OBJECT:
       return "embedded object";
-    case DEBUGGER_STATEMENT:
-      return "debugger statement";
     case CODE_TARGET:
       return "code target";
     case CODE_TARGET_WITH_ID:
@@ -834,7 +832,6 @@ void RelocInfo::Verify(Isolate* isolate) {
     case CELL:
       Object::VerifyPointer(target_cell());
       break;
-    case DEBUGGER_STATEMENT:
     case CODE_TARGET_WITH_ID:
     case CODE_TARGET: {
       // convert inline target address to code object
@@ -1547,6 +1544,14 @@ void* libc_memchr(void* string, int character, size_t search_length) {
 
 ExternalReference ExternalReference::libc_memchr_function(Isolate* isolate) {
   return ExternalReference(Redirect(isolate, FUNCTION_ADDR(libc_memchr)));
+}
+
+void* libc_memset(void* string, int character, size_t n) {
+  return memset(string, character, n);
+}
+
+ExternalReference ExternalReference::libc_memset_function(Isolate* isolate) {
+  return ExternalReference(Redirect(isolate, FUNCTION_ADDR(libc_memset)));
 }
 
 ExternalReference ExternalReference::page_flags(Page* page) {

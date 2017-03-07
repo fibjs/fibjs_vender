@@ -55,6 +55,11 @@ RUNTIME_FUNCTION(Runtime_WasmGrowMemory) {
   CONVERT_UINT32_ARG_CHECKED(delta_pages, 0);
   Handle<WasmInstanceObject> instance(GetWasmInstanceOnStackTop(isolate),
                                       isolate);
+
+  // Set the current isolate's context.
+  DCHECK_NULL(isolate->context());
+  isolate->set_context(instance->compiled_module()->ptr_to_native_context());
+
   return *isolate->factory()->NewNumberFromInt(
       wasm::GrowMemory(isolate, instance, delta_pages));
 }
@@ -117,20 +122,18 @@ Object* ThrowRuntimeError(Isolate* isolate, int message_id, int byte_offset,
   return isolate->Throw(*error_obj);
 }
 
+RUNTIME_FUNCTION(Runtime_ThrowWasmErrorFromTrapIf) {
+  DCHECK_EQ(1, args.length());
+  CONVERT_SMI_ARG_CHECKED(message_id, 0);
+  return ThrowRuntimeError(isolate, message_id, 0, false);
+}
+
 RUNTIME_FUNCTION(Runtime_ThrowWasmError) {
   DCHECK_EQ(2, args.length());
   CONVERT_SMI_ARG_CHECKED(message_id, 0);
   CONVERT_SMI_ARG_CHECKED(byte_offset, 1);
   return ThrowRuntimeError(isolate, message_id, byte_offset, true);
 }
-
-#define DECLARE_ENUM(name)                                                    \
-  RUNTIME_FUNCTION(Runtime_ThrowWasm##name) {                                 \
-    int message_id = wasm::WasmOpcodes::TrapReasonToMessageId(wasm::k##name); \
-    return ThrowRuntimeError(isolate, message_id, 0, false);                  \
-  }
-FOREACH_WASM_TRAPREASON(DECLARE_ENUM)
-#undef DECLARE_ENUM
 
 RUNTIME_FUNCTION(Runtime_WasmThrowTypeError) {
   HandleScope scope(isolate);
@@ -146,6 +149,10 @@ RUNTIME_FUNCTION(Runtime_WasmThrow) {
   CONVERT_SMI_ARG_CHECKED(upper, 1);
 
   const int32_t thrown_value = (upper << 16) | lower;
+
+  // Set the current isolate's context.
+  DCHECK_NULL(isolate->context());
+  isolate->set_context(GetWasmContextOnStackTop(isolate));
 
   return isolate->Throw(*isolate->factory()->NewNumberFromInt(thrown_value));
 }
@@ -178,8 +185,9 @@ RUNTIME_FUNCTION(Runtime_WasmRunInterpreter) {
   CHECK(arg_buffer_obj->IsSmi());
   uint8_t* arg_buffer = reinterpret_cast<uint8_t*>(*arg_buffer_obj);
 
-  DCHECK_EQ(isolate->context(),
-            instance->compiled_module()->ptr_to_native_context());
+  // Set the current isolate's context.
+  DCHECK_NULL(isolate->context());
+  isolate->set_context(instance->compiled_module()->ptr_to_native_context());
 
   instance->debug_info()->RunInterpreter(func_index, arg_buffer);
   return isolate->heap()->undefined_value();

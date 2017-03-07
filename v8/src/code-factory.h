@@ -38,6 +38,7 @@ class V8_EXPORT_PRIVATE CodeFactory final {
 
   // Initial states for ICs.
   static Callable LoadIC(Isolate* isolate);
+  static Callable LoadIC_Uninitialized(Isolate* isolate);
   static Callable LoadICInOptimizedCode(Isolate* isolate);
   static Callable LoadICProtoArray(Isolate* isolate, bool throw_if_nonexistent);
   static Callable LoadGlobalIC(Isolate* isolate, TypeofMode typeof_mode);
@@ -118,7 +119,6 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable Equal(Isolate* isolate);
   static Callable NotEqual(Isolate* isolate);
   static Callable StrictEqual(Isolate* isolate);
-  static Callable StrictNotEqual(Isolate* isolate);
 
   static Callable StringAdd(Isolate* isolate, StringAddFlags flags,
                             PretenureFlag pretenure_flag);
@@ -162,7 +162,6 @@ class V8_EXPORT_PRIVATE CodeFactory final {
   static Callable GrowFastSmiOrObjectElements(Isolate* isolate);
 
   static Callable NewUnmappedArgumentsElements(Isolate* isolate);
-  static Callable NewRestParameterElements(Isolate* isolate);
 
   static Callable AllocateHeapNumber(Isolate* isolate);
 

@@ -791,18 +791,13 @@ class PreParserFactory {
 
 struct PreParserFormalParameters : FormalParametersBase {
   struct Parameter : public ZoneObject {
-    Parameter(PreParserExpression pattern, bool is_destructuring, bool is_rest)
-        : pattern(pattern),
-          is_destructuring(is_destructuring),
-          is_rest(is_rest) {}
+    Parameter(ZoneList<VariableProxy*>* variables, bool is_rest)
+        : variables_(variables), is_rest(is_rest) {}
     Parameter** next() { return &next_parameter; }
     Parameter* const* next() const { return &next_parameter; }
-    bool is_nondestructuring_rest() const {
-      return is_rest && !is_destructuring;
-    }
-    PreParserExpression pattern;
+
+    ZoneList<VariableProxy*>* variables_;
     Parameter* next_parameter = nullptr;
-    bool is_destructuring : 1;
     bool is_rest : 1;
   };
   explicit PreParserFormalParameters(DeclarationScope* scope)
@@ -905,7 +900,7 @@ class PreParser : public ParserBase<PreParser> {
   // captured the syntax error), and false if a stack-overflow happened
   // during parsing.
   PreParseResult PreParseProgram(bool is_module = false) {
-    DCHECK_NULL(scope_state_);
+    DCHECK_NULL(scope_);
     DeclarationScope* scope = NewScriptScope();
 #ifdef DEBUG
     scope->set_is_being_lazily_parsed(true);
@@ -916,7 +911,7 @@ class PreParser : public ParserBase<PreParser> {
     // the global scope.
     if (is_module) scope = NewModuleScope(scope);
 
-    FunctionState top_scope(&function_state_, &scope_state_, scope);
+    FunctionState top_scope(&function_state_, &scope_, scope);
     bool ok = true;
     int start_position = scanner()->peek_location().beg_pos;
     parsing_module_ = is_module;
@@ -986,7 +981,8 @@ class PreParser : public ParserBase<PreParser> {
   }
   V8_INLINE void AddTemplateExpression(TemplateLiteralState* state,
                                        PreParserExpression expression) {}
-  V8_INLINE void AddTemplateSpan(TemplateLiteralState* state, bool tail) {}
+  V8_INLINE void AddTemplateSpan(TemplateLiteralState* state, bool should_cook,
+                                 bool tail) {}
   V8_INLINE PreParserExpression CloseTemplateLiteral(
       TemplateLiteralState* state, int start, PreParserExpression tag);
   V8_INLINE void CheckConflictingVarDeclarations(Scope* scope, bool* ok) {}
@@ -1384,16 +1380,6 @@ class PreParser : public ParserBase<PreParser> {
 
   V8_INLINE PreParserStatement BuildParameterInitializationBlock(
       const PreParserFormalParameters& parameters, bool* ok) {
-    if (track_unresolved_variables_) {
-      for (auto parameter : parameters.params) {
-        if (parameter->is_nondestructuring_rest()) break;
-        if (parameter->pattern.variables_ != nullptr) {
-          for (auto variable : *parameter->pattern.variables_) {
-            scope()->DeclareVariableName(variable->raw_name(), LET);
-          }
-        }
-      }
-    }
     return PreParserStatement::Default();
   }
 
@@ -1615,7 +1601,7 @@ class PreParser : public ParserBase<PreParser> {
     if (track_unresolved_variables_) {
       DCHECK(FLAG_lazy_inner_functions);
       parameters->params.Add(new (zone()) PreParserFormalParameters::Parameter(
-          pattern, !IsIdentifier(pattern), is_rest));
+          pattern.variables_, is_rest));
     }
     parameters->UpdateArityAndFunctionLength(!initializer.IsEmpty(), is_rest);
   }
@@ -1628,13 +1614,11 @@ class PreParser : public ParserBase<PreParser> {
     if (track_unresolved_variables_) {
       DCHECK(FLAG_lazy_inner_functions);
       for (auto parameter : parameters) {
-        bool use_name = is_simple || parameter->is_nondestructuring_rest();
-        if (use_name) {
-          DCHECK_NOT_NULL(parameter->pattern.variables_);
-          DCHECK_EQ(parameter->pattern.variables_->length(), 1);
-          auto variable = (*parameter->pattern.variables_)[0];
-          scope->DeclareParameterName(variable->raw_name(), parameter->is_rest,
-                                      ast_value_factory());
+        if (parameter->variables_ != nullptr) {
+          for (auto variable : (*parameter->variables_)) {
+            scope->DeclareParameterName(
+                variable->raw_name(), parameter->is_rest, ast_value_factory());
+          }
         }
       }
     }

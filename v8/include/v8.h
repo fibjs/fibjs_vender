@@ -1095,6 +1095,8 @@ class V8_EXPORT Module {
 
   /**
    * ModuleEvaluation
+   *
+   * Returns the completion value.
    */
   V8_WARN_UNUSED_RESULT MaybeLocal<Value> Evaluate(Local<Context> context);
 };
@@ -5947,6 +5949,21 @@ typedef void (*FailedAccessCheckCallback)(Local<Object> target,
  */
 typedef bool (*AllowCodeGenerationFromStringsCallback)(Local<Context> context);
 
+// --- WASM compilation callbacks ---
+
+/**
+ * Callback to check if a buffer source may be compiled to WASM, given
+ * the compilation is attempted as a promise or not.
+ */
+
+typedef bool (*AllowWasmCompileCallback)(Isolate* isolate, Local<Value> source,
+                                         bool as_promise);
+
+typedef bool (*AllowWasmInstantiateCallback)(Isolate* isolate,
+                                             Local<Value> module_or_bytes,
+                                             MaybeLocal<Value> ffi,
+                                             bool as_promise);
+
 // --- Garbage Collection Callbacks ---
 
 /**
@@ -6794,51 +6811,20 @@ class V8_EXPORT Isolate {
   Local<Context> GetEnteredContext();
 
   /**
+   * Returns either the last context entered through V8's C++ API, or the
+   * context of the currently running microtask while processing microtasks.
+   * If a context is entered while executing a microtask, that context is
+   * returned.
+   */
+  Local<Context> GetEnteredOrMicrotaskContext();
+
+  /**
    * Schedules an exception to be thrown when returning to JavaScript.  When an
    * exception has been scheduled it is illegal to invoke any JavaScript
    * operation; the caller must return immediately and only after the exception
    * has been handled does it become legal to invoke JavaScript operations.
    */
   Local<Value> ThrowException(Local<Value> exception);
-
-  /**
-   * Allows the host application to group objects together. If one
-   * object in the group is alive, all objects in the group are alive.
-   * After each garbage collection, object groups are removed. It is
-   * intended to be used in the before-garbage-collection callback
-   * function, for instance to simulate DOM tree connections among JS
-   * wrapper objects. Object groups for all dependent handles need to
-   * be provided for kGCTypeMarkSweepCompact collections, for all other
-   * garbage collection types it is sufficient to provide object groups
-   * for partially dependent handles only.
-   */
-  template <typename T>
-  V8_DEPRECATED("Use EmbedderHeapTracer",
-                void SetObjectGroupId(const Persistent<T>& object,
-                                      UniqueId id));
-
-  /**
-   * Allows the host application to declare implicit references from an object
-   * group to an object. If the objects of the object group are alive, the child
-   * object is alive too. After each garbage collection, all implicit references
-   * are removed. It is intended to be used in the before-garbage-collection
-   * callback function.
-   */
-  template <typename T>
-  V8_DEPRECATED("Use EmbedderHeapTracer",
-                void SetReferenceFromGroup(UniqueId id,
-                                           const Persistent<T>& child));
-
-  /**
-   * Allows the host application to declare implicit references from an object
-   * to another object. If the parent object is alive, the child object is alive
-   * too. After each garbage collection, all implicit references are removed. It
-   * is intended to be used in the before-garbage-collection callback function.
-   */
-  template <typename T, typename S>
-  V8_DEPRECATED("Use EmbedderHeapTracer",
-                void SetReference(const Persistent<T>& parent,
-                                  const Persistent<S>& child));
 
   typedef void (*GCCallback)(Isolate* isolate, GCType type,
                              GCCallbackFlags flags);
@@ -7201,6 +7187,16 @@ class V8_EXPORT Isolate {
       AllowCodeGenerationFromStringsCallback callback);
 
   /**
+   * Set the callback to invoke to check if wasm compilation from
+   * the specified object is allowed. By default, wasm compilation
+   * is allowed.
+   *
+   * Similar for instantiate.
+   */
+  void SetAllowWasmCompileCallback(AllowWasmCompileCallback callback);
+  void SetAllowWasmInstantiateCallback(AllowWasmInstantiateCallback callback);
+
+  /**
   * Check if V8 is dead and therefore unusable.  This is the case after
   * fatal errors such as out-of-memory situations.
   */
@@ -7295,9 +7291,6 @@ class V8_EXPORT Isolate {
   template <class K, class V, class Traits>
   friend class PersistentValueMapBase;
 
-  void SetObjectGroupId(internal::Object** object, UniqueId id);
-  void SetReferenceFromGroup(UniqueId id, internal::Object** object);
-  void SetReference(internal::Object** parent, internal::Object** child);
   void ReportExternalAllocationLimitReached();
 };
 
@@ -9706,33 +9699,6 @@ int64_t Isolate::AdjustAmountOfExternalAllocatedMemory(
   }
   return *external_memory;
 }
-
-
-template<typename T>
-void Isolate::SetObjectGroupId(const Persistent<T>& object,
-                               UniqueId id) {
-  TYPE_CHECK(Value, T);
-  SetObjectGroupId(reinterpret_cast<internal::Object**>(object.val_), id);
-}
-
-
-template<typename T>
-void Isolate::SetReferenceFromGroup(UniqueId id,
-                                    const Persistent<T>& object) {
-  TYPE_CHECK(Value, T);
-  SetReferenceFromGroup(id, reinterpret_cast<internal::Object**>(object.val_));
-}
-
-
-template<typename T, typename S>
-void Isolate::SetReference(const Persistent<T>& parent,
-                           const Persistent<S>& child) {
-  TYPE_CHECK(Object, T);
-  TYPE_CHECK(Value, S);
-  SetReference(reinterpret_cast<internal::Object**>(parent.val_),
-               reinterpret_cast<internal::Object**>(child.val_));
-}
-
 
 Local<Value> Context::GetEmbedderData(int index) {
 #ifndef V8_ENABLE_CHECKS

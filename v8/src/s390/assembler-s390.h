@@ -187,6 +187,7 @@ const Register kRootRegister = r10;   // Roots array pointer.
 const Register cp = r13;              // JavaScript context pointer.
 
 static const bool kSimpleFPAliasing = true;
+static const bool kSimdMaskRegisters = false;
 
 // Double word FP register.
 struct DoubleRegister {
@@ -1202,9 +1203,13 @@ class Assembler : public AssemblerBase {
 
   // Floating Point Arithmetic Instructions
   void adb(DoubleRegister r1, const MemOperand& opnd);
+  void aeb(DoubleRegister r1, const MemOperand& opnd);
   void sdb(DoubleRegister r1, const MemOperand& opnd);
+  void seb(DoubleRegister r1, const MemOperand& opnd);
   void mdb(DoubleRegister r1, const MemOperand& opnd);
+  void meeb(DoubleRegister r1, const MemOperand& opnd);
   void ddb(DoubleRegister r1, const MemOperand& opnd);
+  void deb(DoubleRegister r1, const MemOperand& opnd);
   void sqdb(DoubleRegister r1, const MemOperand& opnd);
   void ldeb(DoubleRegister r1, const MemOperand& opnd);
 

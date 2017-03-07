@@ -728,7 +728,7 @@ bool LCodeGen::GenerateDeferredCode() {
         DCHECK(info()->IsStub());
         frame_is_built_ = true;
         __ Push(lr, fp);
-        __ Mov(fp, Smi::FromInt(StackFrame::STUB));
+        __ Mov(fp, StackFrame::TypeToMarker(StackFrame::STUB));
         __ Push(fp);
         __ Add(fp, __ StackPointer(),
                TypedFrameConstants::kFixedFrameSizeFromFp);
@@ -807,7 +807,7 @@ bool LCodeGen::GenerateJumpTable() {
       UseScratchRegisterScope temps(masm());
       Register stub_marker = temps.AcquireX();
       __ Bind(&needs_frame);
-      __ Mov(stub_marker, Smi::FromInt(StackFrame::STUB));
+      __ Mov(stub_marker, StackFrame::TypeToMarker(StackFrame::STUB));
       __ Push(cp, stub_marker);
       __ Add(fp, __ StackPointer(), 2 * kPointerSize);
     }
@@ -1622,7 +1622,7 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
            MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
     __ Ldr(result, MemOperand(previous_fp,
                               CommonFrameConstants::kContextOrFrameTypeOffset));
-    __ Cmp(result, Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
+    __ Cmp(result, StackFrame::TypeToMarker(StackFrame::ARGUMENTS_ADAPTOR));
     __ Csel(result, fp, previous_fp, ne);
   } else {
     __ Mov(result, fp);
@@ -2844,7 +2844,8 @@ void LCodeGen::PrepareForTailCall(const ParameterCount& actual,
   __ Ldr(scratch2, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
   __ Ldr(scratch3,
          MemOperand(scratch2, StandardFrameConstants::kContextOffset));
-  __ Cmp(scratch3, Operand(Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR)));
+  __ Cmp(scratch3,
+         Operand(StackFrame::TypeToMarker(StackFrame::ARGUMENTS_ADAPTOR)));
   __ B(ne, &no_arguments_adaptor);
 
   // Drop current frame and load arguments count from arguments adaptor frame.

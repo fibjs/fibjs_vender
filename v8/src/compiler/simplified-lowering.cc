@@ -138,7 +138,10 @@ UseInfo TruncatingUseInfoFromRepresentation(MachineRepresentation rep) {
       return UseInfo::TruncatingWord32();
     case MachineRepresentation::kBit:
       return UseInfo::Bool();
-    case MachineRepresentation::kSimd128:  // Fall through.
+    case MachineRepresentation::kSimd128:
+    case MachineRepresentation::kSimd1x4:
+    case MachineRepresentation::kSimd1x8:
+    case MachineRepresentation::kSimd1x16:
     case MachineRepresentation::kNone:
       break;
   }
@@ -170,6 +173,7 @@ void ReplaceEffectControlUses(Node* node, Node* effect, Node* control) {
 }
 
 void ChangeToPureOp(Node* node, const Operator* new_op) {
+  DCHECK(new_op->HasProperty(Operator::kPure));
   if (node->op()->EffectInputCount() > 0) {
     DCHECK_LT(0, node->op()->ControlInputCount());
     // Disconnect the node from effect and control chains.
@@ -1982,8 +1986,26 @@ class RepresentationSelector {
         if (BothInputsAre(node, Type::PlainPrimitive())) {
           if (truncation.IsUnused()) return VisitUnused(node);
         }
+        NumberOperationHint hint = NumberOperationHintOf(node->op());
+        Type* rhs_type = GetUpperBound(node->InputAt(1));
+        if (rhs_type->Is(type_cache_.kZeroish) &&
+            (hint == NumberOperationHint::kSignedSmall ||
+             hint == NumberOperationHint::kSigned32) &&
+            !truncation.IsUsedAsWord32()) {
+          // The SignedSmall or Signed32 feedback means that the results that we
+          // have seen so far were of type Unsigned31.  We speculate that this
+          // will continue to hold.  Moreover, since the RHS is 0, the result
+          // will just be the (converted) LHS.
+          VisitBinop(node, CheckedUseInfoAsWord32FromHint(hint),
+                     MachineRepresentation::kWord32, Type::Unsigned31());
+          if (lower()) {
+            node->RemoveInput(1);
+            NodeProperties::ChangeOp(node,
+                                     simplified()->CheckedUint32ToInt32());
+          }
+          return;
+        }
         if (BothInputsAre(node, Type::NumberOrOddball())) {
-          Type* rhs_type = GetUpperBound(node->InputAt(1));
           VisitBinop(node, UseInfo::TruncatingWord32(),
                      UseInfo::TruncatingWord32(),
                      MachineRepresentation::kWord32);
@@ -1992,8 +2014,6 @@ class RepresentationSelector {
           }
           return;
         }
-        NumberOperationHint hint = NumberOperationHintOf(node->op());
-        Type* rhs_type = GetUpperBound(node->InputAt(1));
         VisitBinop(node, CheckedUseInfoAsWord32FromHint(hint),
                    MachineRepresentation::kWord32, Type::Unsigned32());
         if (lower()) {
@@ -2521,8 +2541,37 @@ class RepresentationSelector {
         }
         return;
       }
-      case IrOpcode::kObjectIsCallable: {
-        VisitObjectIs(node, Type::Callable(), lowering);
+      case IrOpcode::kObjectIsDetectableCallable: {
+        VisitObjectIs(node, Type::DetectableCallable(), lowering);
+        return;
+      }
+      case IrOpcode::kObjectIsNaN: {
+        Type* const input_type = GetUpperBound(node->InputAt(0));
+        if (input_type->Is(Type::NaN())) {
+          VisitUnop(node, UseInfo::None(), MachineRepresentation::kBit);
+          if (lower()) {
+            DeferReplacement(node, lowering->jsgraph()->Int32Constant(1));
+          }
+        } else if (!input_type->Maybe(Type::NaN())) {
+          VisitUnop(node, UseInfo::Any(), MachineRepresentation::kBit);
+          if (lower()) {
+            DeferReplacement(node, lowering->jsgraph()->Int32Constant(0));
+          }
+        } else if (input_type->Is(Type::Number())) {
+          VisitUnop(node, UseInfo::TruncatingFloat64(),
+                    MachineRepresentation::kBit);
+          if (lower()) {
+            // ObjectIsNaN(x:kRepFloat64) => Word32Equal(Float64Equal(x,x),#0)
+            Node* const input = node->InputAt(0);
+            node->ReplaceInput(
+                0, jsgraph_->graph()->NewNode(
+                       lowering->machine()->Float64Equal(), input, input));
+            node->AppendInput(jsgraph_->zone(), jsgraph_->Int32Constant(0));
+            NodeProperties::ChangeOp(node, lowering->machine()->Word32Equal());
+          }
+        } else {
+          VisitUnop(node, UseInfo::AnyTagged(), MachineRepresentation::kBit);
+        }
         return;
       }
       case IrOpcode::kObjectIsNonCallable: {
@@ -2550,10 +2599,18 @@ class RepresentationSelector {
         VisitObjectIs(node, Type::Undetectable(), lowering);
         return;
       }
-      case IrOpcode::kNewRestParameterElements:
+      case IrOpcode::kArgumentsFrame: {
+        SetOutput(node, MachineType::PointerRepresentation());
+        return;
+      }
+      case IrOpcode::kArgumentsLength: {
+        VisitUnop(node, UseInfo::PointerInt(),
+                  MachineRepresentation::kTaggedSigned);
+        return;
+      }
       case IrOpcode::kNewUnmappedArgumentsElements: {
-        ProcessRemainingInputs(node, 0);
-        SetOutput(node, MachineRepresentation::kTaggedPointer);
+        VisitBinop(node, UseInfo::PointerInt(), UseInfo::TaggedSigned(),
+                   MachineRepresentation::kTaggedPointer);
         return;
       }
       case IrOpcode::kArrayBufferWasNeutered: {
@@ -2667,7 +2724,8 @@ class RepresentationSelector {
       case IrOpcode::kBeginRegion:
       case IrOpcode::kProjection:
       case IrOpcode::kOsrValue:
-      case IrOpcode::kArgumentsObjectState:
+      case IrOpcode::kArgumentsElementsState:
+      case IrOpcode::kArgumentsLengthState:
 // All JavaScript operators except JSToNumber have uniform handling.
 #define OPCODE_CASE(name) case IrOpcode::k##name:
         JS_SIMPLE_BINOP_LIST(OPCODE_CASE)
@@ -3382,12 +3440,11 @@ void SimplifiedLowering::DoMin(Node* node, Operator const* op,
 
 void SimplifiedLowering::DoShift(Node* node, Operator const* op,
                                  Type* rhs_type) {
-  Node* const rhs = NodeProperties::GetValueInput(node, 1);
   if (!rhs_type->Is(type_cache_.kZeroToThirtyOne)) {
+    Node* const rhs = NodeProperties::GetValueInput(node, 1);
     node->ReplaceInput(1, graph()->NewNode(machine()->Word32And(), rhs,
                                            jsgraph()->Int32Constant(0x1f)));
   }
-  DCHECK(op->HasProperty(Operator::kPure));
   ChangeToPureOp(node, op);
 }
 

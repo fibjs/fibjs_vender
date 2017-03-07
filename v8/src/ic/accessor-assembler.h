@@ -24,13 +24,14 @@ class AccessorAssembler : public CodeStubAssembler {
       : CodeStubAssembler(state) {}
 
   void GenerateLoadIC();
+  void GenerateLoadIC_Uninitialized();
   void GenerateLoadField();
   void GenerateLoadICTrampoline();
   void GenerateKeyedLoadIC();
   void GenerateKeyedLoadICTrampoline();
   void GenerateKeyedLoadIC_Megamorphic();
-  void GenerateStoreIC();
-  void GenerateStoreICTrampoline();
+  void GenerateStoreIC(LanguageMode language_mode);
+  void GenerateStoreICTrampoline(LanguageMode language_mode);
 
   void GenerateLoadICProtoArray(bool throw_reference_error_if_nonexistent);
 
@@ -88,11 +89,13 @@ class AccessorAssembler : public CodeStubAssembler {
   void HandleStoreICHandlerCase(
       const StoreICParameters* p, Node* handler, Label* miss,
       ElementSupport support_elements = kOnlyProperties);
+  void JumpIfDataProperty(Node* details, Label* writable, Label* readonly);
 
  private:
   // Stub generation entry points.
 
   void LoadIC(const LoadICParameters* p);
+  void LoadIC_Uninitialized(const LoadICParameters* p);
   void LoadICProtoArray(const LoadICParameters* p, Node* handler,
                         bool throw_reference_error_if_nonexistent);
   void LoadGlobalIC(const LoadICParameters* p, TypeofMode typeof_mode);
@@ -134,6 +137,10 @@ class AccessorAssembler : public CodeStubAssembler {
                                     ExitPoint* exit_point,
                                     bool throw_reference_error_if_nonexistent);
 
+  void HandleLoadField(Node* holder, Node* handler_word,
+                       Variable* var_double_value, Label* rebox_double,
+                       ExitPoint* exit_point);
+
   Node* EmitLoadICProtoArrayCheck(const LoadICParameters* p, Node* handler,
                                   Node* handler_length, Node* handler_flags,
                                   Label* miss,
@@ -167,9 +174,11 @@ class AccessorAssembler : public CodeStubAssembler {
   void GenericElementLoad(Node* receiver, Node* receiver_map,
                           Node* instance_type, Node* index, Label* slow);
 
+  enum UseStubCache { kUseStubCache, kDontUseStubCache };
   void GenericPropertyLoad(Node* receiver, Node* receiver_map,
                            Node* instance_type, Node* key,
-                           const LoadICParameters* p, Label* slow);
+                           const LoadICParameters* p, Label* slow,
+                           UseStubCache use_stub_cache = kUseStubCache);
 
   // Low-level helpers.
 

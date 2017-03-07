@@ -96,7 +96,7 @@ class PlatformInterfaceDescriptor;
   V(ResumeGenerator)                      \
   V(FrameDropperTrampoline)               \
   V(PromiseHandleReject)                  \
-  V(WasmStackGuard)
+  V(WasmRuntimeCall)
 
 class V8_EXPORT_PRIVATE CallInterfaceDescriptorData {
  public:
@@ -889,7 +889,7 @@ class GrowArrayElementsDescriptor : public CallInterfaceDescriptor {
 
 class NewArgumentsElementsDescriptor final : public CallInterfaceDescriptor {
  public:
-  DEFINE_PARAMETERS(kFormalParameterCount)
+  DEFINE_PARAMETERS(kFrame, kLength)
   DECLARE_DESCRIPTOR_WITH_CUSTOM_FUNCTION_TYPE(NewArgumentsElementsDescriptor,
                                                CallInterfaceDescriptor)
 };
@@ -953,9 +953,9 @@ class PromiseHandleRejectDescriptor final : public CallInterfaceDescriptor {
                              CallInterfaceDescriptor, kParameterCount)
 };
 
-class WasmStackGuardDescriptor final : public CallInterfaceDescriptor {
+class WasmRuntimeCallDescriptor final : public CallInterfaceDescriptor {
  public:
-  DECLARE_DEFAULT_DESCRIPTOR(WasmStackGuardDescriptor, CallInterfaceDescriptor,
+  DECLARE_DEFAULT_DESCRIPTOR(WasmRuntimeCallDescriptor, CallInterfaceDescriptor,
                              0)
 };
 

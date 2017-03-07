@@ -48,6 +48,7 @@
 #include "src/json-parser.h"
 #include "src/json-stringifier.h"
 #include "src/messages.h"
+#include "src/objects-inl.h"
 #include "src/parsing/parser.h"
 #include "src/parsing/scanner-character-streams.h"
 #include "src/pending-compilation-error-handler.h"
@@ -2179,7 +2180,10 @@ MaybeLocal<UnboundScript> ScriptCompiler::CompileUnboundInternal(
 
 MaybeLocal<UnboundScript> ScriptCompiler::CompileUnboundScript(
     Isolate* v8_isolate, Source* source, CompileOptions options) {
-  DCHECK(!source->GetResourceOptions().IsModule());
+  Utils::ApiCheck(
+      !source->GetResourceOptions().IsModule(),
+      "v8::ScriptCompiler::CompileUnboundScript",
+      "v8::ScriptCompiler::CompileModule must be used to compile modules");
   return CompileUnboundInternal(v8_isolate, source, options);
 }
 
@@ -2187,7 +2191,10 @@ MaybeLocal<UnboundScript> ScriptCompiler::CompileUnboundScript(
 Local<UnboundScript> ScriptCompiler::CompileUnbound(Isolate* v8_isolate,
                                                     Source* source,
                                                     CompileOptions options) {
-  DCHECK(!source->GetResourceOptions().IsModule());
+  Utils::ApiCheck(
+      !source->GetResourceOptions().IsModule(),
+      "v8::ScriptCompiler::CompileUnbound",
+      "v8::ScriptCompiler::CompileModule must be used to compile modules");
   RETURN_TO_LOCAL_UNCHECKED(CompileUnboundInternal(v8_isolate, source, options),
                             UnboundScript);
 }
@@ -2196,7 +2203,9 @@ Local<UnboundScript> ScriptCompiler::CompileUnbound(Isolate* v8_isolate,
 MaybeLocal<Script> ScriptCompiler::Compile(Local<Context> context,
                                            Source* source,
                                            CompileOptions options) {
-  DCHECK(!source->GetResourceOptions().IsModule());
+  Utils::ApiCheck(
+      !source->GetResourceOptions().IsModule(), "v8::ScriptCompiler::Compile",
+      "v8::ScriptCompiler::CompileModule must be used to compile modules");
   auto isolate = context->GetIsolate();
   auto maybe = CompileUnboundInternal(isolate, source, options);
   Local<UnboundScript> result;
@@ -2218,7 +2227,9 @@ MaybeLocal<Module> ScriptCompiler::CompileModule(Isolate* isolate,
                                                  Source* source) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
 
-  DCHECK(source->GetResourceOptions().IsModule());
+  Utils::ApiCheck(source->GetResourceOptions().IsModule(),
+                  "v8::ScriptCompiler::CompileModule",
+                  "Invalid ScriptOrigin: is_module must be true");
   auto maybe = CompileUnboundInternal(isolate, source, kNoCompileOptions);
   Local<UnboundScript> unbound;
   if (!maybe.ToLocal(&unbound)) return MaybeLocal<Module>();
@@ -3262,10 +3273,9 @@ Maybe<bool> ValueDeserializer::ReadHeader(Local<Context> context) {
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
   DCHECK(read_header);
 
-  // TODO(jbroman): Today, all wire formats are "legacy". When a more supported
-  // format is added, compare the version of the internal serializer to the
-  // minimum non-legacy version number.
-  if (!private_->supports_legacy_wire_format) {
+  static const uint32_t kMinimumNonLegacyVersion = 13;
+  if (GetWireFormatVersion() < kMinimumNonLegacyVersion &&
+      !private_->supports_legacy_wire_format) {
     isolate->Throw(*isolate->factory()->NewError(
         i::MessageTemplate::kDataCloneDeserializationVersionError));
     has_pending_exception = true;
@@ -4494,33 +4504,6 @@ bool v8::Object::SetPrototype(Local<Value> value) {
   return SetPrototype(context, value).FromMaybe(false);
 }
 
-static bool HasInstanceInGlobalProxy(i::JSGlobalProxy* global_proxy,
-                                     i::FunctionTemplateInfo* target_template) {
-  auto* constructor_object = global_proxy->map()->GetConstructor();
-  if (!constructor_object->IsJSFunction()) return false;
-
-  auto* constructor = i::JSFunction::cast(constructor_object);
-  if (!constructor->shared()->function_data()->IsFunctionTemplateInfo())
-    return false;
-
-  auto* proxy_constructor_template =
-      i::FunctionTemplateInfo::cast(constructor->shared()->function_data());
-  if (!proxy_constructor_template->prototype_template()->IsObjectTemplateInfo())
-    return false;
-
-  auto* global_template = i::ObjectTemplateInfo::cast(
-      proxy_constructor_template->prototype_template());
-  // Iterate through the chain of inheriting function templates to
-  // see if the required one occurs.
-  for (i::Object* type = global_template->constructor();
-       type->IsFunctionTemplateInfo();
-       type = i::FunctionTemplateInfo::cast(type)->parent_template()) {
-    if (type == target_template) return true;
-  }
-  // Didn't find the required type in the inheritance chain.
-  return false;
-}
-
 Local<Object> v8::Object::FindInstanceInPrototypeChain(
     v8::Local<FunctionTemplate> tmpl) {
   auto self = Utils::OpenHandle(this);
@@ -4529,16 +4512,7 @@ Local<Object> v8::Object::FindInstanceInPrototypeChain(
   auto tmpl_info = *Utils::OpenHandle(*tmpl);
   while (!tmpl_info->IsTemplateFor(iter.GetCurrent<i::JSObject>())) {
     iter.Advance();
-    if (iter.IsAtEnd()) {
-      // Normally, a standard prototype walk is sufficient; however, global
-      // proxies aren't directly constructed with the supplied template.
-      // Normally, this is not a problem, because the prototype chain includes
-      // the global object; however, a remote context has no global object.
-      if (self->IsJSGlobalProxy() &&
-          HasInstanceInGlobalProxy(i::JSGlobalProxy::cast(*self), tmpl_info))
-        return Utils::ToLocal(self);
-      return Local<Object>();
-    }
+    if (iter.IsAtEnd()) return Local<Object>();
     if (!iter.GetCurrent()->IsJSObject()) return Local<Object>();
   }
   // IsTemplateFor() ensures that iter.GetCurrent() can't be a Proxy here.
@@ -5023,8 +4997,7 @@ Local<v8::Object> v8::Object::Clone() {
 
 Local<v8::Context> v8::Object::CreationContext() {
   auto self = Utils::OpenHandle(this);
-  auto context = handle(self->GetCreationContext());
-  return Utils::ToLocal(context);
+  return Utils::ToLocal(self->GetCreationContext());
 }
 
 
@@ -6606,12 +6579,13 @@ bool FunctionTemplate::HasInstance(v8::Local<v8::Value> value) {
     return true;
   }
   if (obj->IsJSGlobalProxy()) {
-    auto* global_proxy = i::JSGlobalProxy::cast(*obj);
-    // For global proxies, check the constructor's prototype instead. Remote
-    // global proxies have no global object to perform instance checks on, but
-    // the constructor's prototype's constructor corresponds to the original
-    // template used to create the context.
-    return HasInstanceInGlobalProxy(global_proxy, *self);
+    // If it's a global proxy, then test with the global object. Note that the
+    // inner global object may not necessarily be a JSGlobalObject.
+    i::PrototypeIterator iter(i::JSObject::cast(*obj)->map());
+    // The global proxy should always have a prototype, as it is a bug to call
+    // this on a detached JSGlobalProxy.
+    DCHECK(!iter.IsAtEnd());
+    return self->IsTemplateFor(iter.GetCurrent<i::JSObject>());
   }
   return false;
 }
@@ -7600,11 +7574,8 @@ MaybeLocal<WasmCompiledModule> WasmCompiledModule::Compile(Isolate* isolate,
                                                            size_t length) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   i::wasm::ErrorThrower thrower(i_isolate, "WasmCompiledModule::Deserialize()");
-  i::MaybeHandle<i::JSObject> maybe_compiled =
-      i::wasm::CreateModuleObjectFromBytes(
-          i_isolate, start, start + length, &thrower,
-          i::wasm::ModuleOrigin::kWasmOrigin, i::Handle<i::Script>::null(),
-          i::Vector<const uint8_t>::empty());
+  i::MaybeHandle<i::JSObject> maybe_compiled = i::wasm::SyncCompile(
+      i_isolate, &thrower, i::wasm::ModuleWireBytes(start, start + length));
   if (maybe_compiled.is_null()) return MaybeLocal<WasmCompiledModule>();
   return Local<WasmCompiledModule>::Cast(
       Utils::ToLocal(maybe_compiled.ToHandleChecked()));
@@ -8058,6 +8029,18 @@ v8::Local<v8::Context> Isolate::GetEnteredContext() {
   return Utils::ToLocal(i::Handle<i::Context>::cast(last));
 }
 
+v8::Local<v8::Context> Isolate::GetEnteredOrMicrotaskContext() {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  i::Handle<i::Object> last;
+  if (isolate->handle_scope_implementer()
+          ->MicrotaskContextIsLastEnteredContext()) {
+    last = isolate->handle_scope_implementer()->MicrotaskContext();
+  } else {
+    last = isolate->handle_scope_implementer()->LastEnteredContext();
+  }
+  if (last.is_null()) return Local<Context>();
+  return Utils::ToLocal(i::Handle<i::Context>::cast(last));
+}
 
 v8::Local<Value> Isolate::ThrowException(v8::Local<v8::Value> value) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
@@ -8071,31 +8054,6 @@ v8::Local<Value> Isolate::ThrowException(v8::Local<v8::Value> value) {
   }
   return v8::Undefined(reinterpret_cast<v8::Isolate*>(isolate));
 }
-
-
-void Isolate::SetObjectGroupId(internal::Object** object, UniqueId id) {
-  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(this);
-  internal_isolate->global_handles()->SetObjectGroupId(
-      i::Handle<i::Object>(object).location(), id);
-}
-
-
-void Isolate::SetReferenceFromGroup(UniqueId id, internal::Object** object) {
-  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(this);
-  internal_isolate->global_handles()->SetReferenceFromGroup(
-      id, i::Handle<i::Object>(object).location());
-}
-
-
-void Isolate::SetReference(internal::Object** parent,
-                           internal::Object** child) {
-  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(this);
-  i::Object** parent_location = i::Handle<i::Object>(parent).location();
-  internal_isolate->global_handles()->SetReference(
-      reinterpret_cast<i::HeapObject**>(parent_location),
-      i::Handle<i::Object>(child).location());
-}
-
 
 void Isolate::AddGCPrologueCallback(GCCallback callback, GCType gc_type) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
@@ -8707,6 +8665,16 @@ void Isolate::SetAllowCodeGenerationFromStringsCallback(
   isolate->set_allow_code_gen_callback(callback);
 }
 
+void Isolate::SetAllowWasmCompileCallback(AllowWasmCompileCallback callback) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  isolate->set_allow_wasm_compile_callback(callback);
+}
+
+void Isolate::SetAllowWasmInstantiateCallback(
+    AllowWasmInstantiateCallback callback) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  isolate->set_allow_wasm_instantiate_callback(callback);
+}
 
 bool Isolate::IsDead() {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
@@ -9247,7 +9215,7 @@ int GetSmiValue(i::Handle<i::FixedArray> array, int index) {
 
 bool debug::Script::GetPossibleBreakpoints(
     const debug::Location& start, const debug::Location& end,
-    std::vector<debug::Location>* locations) const {
+    bool restrict_to_function, std::vector<debug::Location>* locations) const {
   CHECK(!start.IsEmpty());
   i::Handle<i::Script> script = Utils::OpenHandle(this);
   if (script->type() == i::Script::TYPE_WASM) {
@@ -9263,18 +9231,15 @@ bool debug::Script::GetPossibleBreakpoints(
       i::Handle<i::FixedArray>::cast(i::handle(script->line_ends(), isolate));
   CHECK(line_ends->length());
 
-  int start_offset = GetSourcePosition(start);
-  int end_offset;
-  if (end.IsEmpty()) {
-    end_offset = GetSmiValue(line_ends, line_ends->length() - 1) + 1;
-  } else {
-    end_offset = GetSourcePosition(end);
-  }
+  int start_offset = GetSourceOffset(start);
+  int end_offset = end.IsEmpty()
+                       ? GetSmiValue(line_ends, line_ends->length() - 1) + 1
+                       : GetSourceOffset(end);
   if (start_offset >= end_offset) return true;
 
   std::set<int> offsets;
-  if (!isolate->debug()->GetPossibleBreakpoints(script, start_offset,
-                                                end_offset, &offsets)) {
+  if (!isolate->debug()->GetPossibleBreakpoints(
+          script, start_offset, end_offset, restrict_to_function, &offsets)) {
     return false;
   }
 
@@ -9298,7 +9263,7 @@ bool debug::Script::GetPossibleBreakpoints(
   return true;
 }
 
-int debug::Script::GetSourcePosition(const debug::Location& location) const {
+int debug::Script::GetSourceOffset(const debug::Location& location) const {
   i::Handle<i::Script> script = Utils::OpenHandle(this);
   if (script->type() == i::Script::TYPE_WASM) {
     // TODO(clemensh): Return the proper thing for wasm.
@@ -9322,6 +9287,17 @@ int debug::Script::GetSourcePosition(const debug::Location& location) const {
   if (line == 0) return std::min(column, line_offset);
   int prev_line_offset = GetSmiValue(line_ends, line - 1);
   return std::min(prev_line_offset + column + 1, line_offset);
+}
+
+v8::debug::Location debug::Script::GetSourceLocation(int offset) const {
+  i::Handle<i::Script> script = Utils::OpenHandle(this);
+  if (script->type() == i::Script::TYPE_WASM) {
+    // TODO(clemensh): Return the proper thing for wasm.
+    return v8::debug::Location();
+  }
+  i::Script::PositionInfo info;
+  i::Script::GetPositionInfo(script, offset, &info, i::Script::WITH_OFFSET);
+  return debug::Location(info.line, info.column);
 }
 
 debug::WasmScript* debug::WasmScript::Cast(debug::Script* script) {
@@ -9560,46 +9536,50 @@ Local<String> CpuProfileNode::GetFunctionName() const {
   }
 }
 
-debug::Coverage::Range::Range(i::CoverageRange* range,
-                              Local<debug::Script> script)
-    : range_(range), script_(script) {
+debug::Coverage::FunctionData::FunctionData(i::CoverageFunction* function,
+                                            Local<debug::Script> script)
+    : function_(function) {
   i::Handle<i::Script> i_script = v8::Utils::OpenHandle(*script);
   i::Script::PositionInfo start;
   i::Script::PositionInfo end;
-  i::Script::GetPositionInfo(i_script, range->start, &start,
+  i::Script::GetPositionInfo(i_script, function->start, &start,
                              i::Script::WITH_OFFSET);
-  i::Script::GetPositionInfo(i_script, range->end, &end,
+  i::Script::GetPositionInfo(i_script, function->end, &end,
                              i::Script::WITH_OFFSET);
   start_ = Location(start.line, start.column);
   end_ = Location(end.line, end.column);
 }
 
-uint32_t debug::Coverage::Range::Count() { return range_->count; }
+uint32_t debug::Coverage::FunctionData::Count() { return function_->count; }
 
-size_t debug::Coverage::Range::NestedCount() { return range_->inner.size(); }
-
-debug::Coverage::Range debug::Coverage::Range::GetNested(size_t i) {
-  return Range(&range_->inner[i], script_);
+MaybeLocal<String> debug::Coverage::FunctionData::Name() {
+  return ToApiHandle<String>(function_->name);
 }
 
-MaybeLocal<String> debug::Coverage::Range::Name() {
-  return ToApiHandle<String>(range_->name);
+Local<debug::Script> debug::Coverage::ScriptData::GetScript() {
+  return ToApiHandle<debug::Script>(script_->script);
+}
+
+size_t debug::Coverage::ScriptData::FunctionCount() {
+  return script_->functions.size();
+}
+
+debug::Coverage::FunctionData debug::Coverage::ScriptData::GetFunctionData(
+    size_t i) {
+  return FunctionData(&script_->functions.at(i), GetScript());
 }
 
 debug::Coverage::~Coverage() { delete coverage_; }
 
 size_t debug::Coverage::ScriptCount() { return coverage_->size(); }
 
-Local<debug::Script> debug::Coverage::GetScript(size_t i) {
-  return ToApiHandle<debug::Script>(coverage_->at(i).script);
+debug::Coverage::ScriptData debug::Coverage::GetScriptData(size_t i) {
+  return ScriptData(&coverage_->at(i));
 }
 
-debug::Coverage::Range debug::Coverage::GetRange(size_t i) {
-  return Range(&coverage_->at(i).toplevel, GetScript(i));
-}
-
-debug::Coverage debug::Coverage::Collect(Isolate* isolate) {
-  return Coverage(i::Coverage::Collect(reinterpret_cast<i::Isolate*>(isolate)));
+debug::Coverage debug::Coverage::Collect(Isolate* isolate, bool reset_count) {
+  return Coverage(i::Coverage::Collect(reinterpret_cast<i::Isolate*>(isolate),
+                                       reset_count));
 }
 
 void debug::Coverage::TogglePrecise(Isolate* isolate, bool enable) {
@@ -10026,13 +10006,6 @@ size_t HeapProfiler::GetProfilerMemorySize() {
   return reinterpret_cast<i::HeapProfiler*>(this)->
       GetMemorySizeUsedByProfiler();
 }
-
-
-void HeapProfiler::SetRetainedObjectInfo(UniqueId id,
-                                         RetainedObjectInfo* info) {
-  reinterpret_cast<i::HeapProfiler*>(this)->SetRetainedObjectInfo(id, info);
-}
-
 
 v8::Testing::StressType internal::Testing::stress_type_ =
     v8::Testing::kStressTypeOpt;

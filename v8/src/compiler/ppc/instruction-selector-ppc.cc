@@ -220,6 +220,9 @@ void InstructionSelector::VisitLoad(Node* node) {
     case MachineRepresentation::kWord64:  // Fall through.
 #endif
     case MachineRepresentation::kSimd128:  // Fall through.
+    case MachineRepresentation::kSimd1x4:  // Fall through.
+    case MachineRepresentation::kSimd1x8:  // Fall through.
+    case MachineRepresentation::kSimd1x16:  // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
@@ -329,6 +332,9 @@ void InstructionSelector::VisitStore(Node* node) {
       case MachineRepresentation::kWord64:  // Fall through.
 #endif
       case MachineRepresentation::kSimd128:  // Fall through.
+      case MachineRepresentation::kSimd1x4:  // Fall through.
+      case MachineRepresentation::kSimd1x8:  // Fall through.
+      case MachineRepresentation::kSimd1x16:  // Fall through.
       case MachineRepresentation::kNone:
         UNREACHABLE();
         return;
@@ -393,6 +399,9 @@ void InstructionSelector::VisitCheckedLoad(Node* node) {
     case MachineRepresentation::kWord64:  // Fall through.
 #endif
     case MachineRepresentation::kSimd128:  // Fall through.
+    case MachineRepresentation::kSimd1x4:  // Fall through.
+    case MachineRepresentation::kSimd1x8:  // Fall through.
+    case MachineRepresentation::kSimd1x16:  // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
       return;
@@ -441,6 +450,9 @@ void InstructionSelector::VisitCheckedStore(Node* node) {
     case MachineRepresentation::kWord64:  // Fall through.
 #endif
     case MachineRepresentation::kSimd128:  // Fall through.
+    case MachineRepresentation::kSimd1x4:  // Fall through.
+    case MachineRepresentation::kSimd1x8:  // Fall through.
+    case MachineRepresentation::kSimd1x16:  // Fall through.
     case MachineRepresentation::kNone:
       UNREACHABLE();
       return;

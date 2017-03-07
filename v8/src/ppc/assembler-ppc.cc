@@ -359,7 +359,7 @@ bool Assembler::Is32BitLoadIntoR12(Instr instr1, Instr instr2) {
 
 bool Assembler::IsCmpRegister(Instr instr) {
   return (((instr & kOpcodeMask) == EXT2) &&
-          ((instr & kExt2OpcodeMask) == CMP));
+          ((EXT2 | (instr & kExt2OpcodeMask)) == CMP));
 }
 
 
@@ -374,7 +374,7 @@ bool Assembler::IsAndi(Instr instr) { return ((instr & kOpcodeMask) == ANDIx); }
 #if V8_TARGET_ARCH_PPC64
 bool Assembler::IsRldicl(Instr instr) {
   return (((instr & kOpcodeMask) == EXT5) &&
-          ((instr & kExt5OpcodeMask) == RLDICL));
+          ((EXT5 | (instr & kExt5OpcodeMask)) == RLDICL));
 }
 #endif
 
@@ -386,7 +386,7 @@ bool Assembler::IsCmpImmediate(Instr instr) {
 
 bool Assembler::IsCrSet(Instr instr) {
   return (((instr & kOpcodeMask) == EXT1) &&
-          ((instr & kExt1OpcodeMask) == CREQV));
+          ((EXT1 | (instr & kExt1OpcodeMask)) == CREQV));
 }
 
 
@@ -429,7 +429,7 @@ enum {
 int Assembler::target_at(int pos) {
   Instr instr = instr_at(pos);
   // check which type of branch this is 16 or 26 bit offset
-  int opcode = instr & kOpcodeMask;
+  uint32_t opcode = instr & kOpcodeMask;
   int link;
   switch (opcode) {
     case BX:
@@ -459,7 +459,7 @@ int Assembler::target_at(int pos) {
 
 void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
   Instr instr = instr_at(pos);
-  int opcode = instr & kOpcodeMask;
+  uint32_t opcode = instr & kOpcodeMask;
 
   if (is_branch != nullptr) {
     *is_branch = (opcode == BX || opcode == BCX);
@@ -539,7 +539,7 @@ void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
 
 int Assembler::max_reach_from(int pos) {
   Instr instr = instr_at(pos);
-  int opcode = instr & kOpcodeMask;
+  uint32_t opcode = instr & kOpcodeMask;
 
   // check which type of branch this is 16 or 26 bit offset
   switch (opcode) {
@@ -650,19 +650,9 @@ void Assembler::x_form(Instr instr, Register ra, Register rs, Register rb,
   emit(instr | rs.code() * B21 | ra.code() * B16 | rb.code() * B11 | r);
 }
 
-
 void Assembler::xo_form(Instr instr, Register rt, Register ra, Register rb,
                         OEBit o, RCBit r) {
   emit(instr | rt.code() * B21 | ra.code() * B16 | rb.code() * B11 | o | r);
-}
-
-void Assembler::xx3_form(Instr instr, DoubleRegister t, DoubleRegister a,
-                         DoubleRegister b) {
-  int AX = ((a.code() & 0x20) >> 5) & 0x1;
-  int BX = ((b.code() & 0x20) >> 5) & 0x1;
-  int TX = ((t.code() & 0x20) >> 5) & 0x1;
-  emit(instr | (t.code() & 0x1F) * B21 | (a.code() & 0x1F) * B16 | (b.code()
-       & 0x1F) * B11 | AX * B2 | BX * B1 | TX);
 }
 
 void Assembler::md_form(Instr instr, Register ra, Register rs, int shift,
@@ -2255,13 +2245,13 @@ void Assembler::fcfidu(const DoubleRegister frt, const DoubleRegister frb,
 
 void Assembler::fcfidus(const DoubleRegister frt, const DoubleRegister frb,
                         RCBit rc) {
-  emit(EXT3 | FCFIDU | frt.code() * B21 | frb.code() * B11 | rc);
+  emit(EXT3 | FCFIDUS | frt.code() * B21 | frb.code() * B11 | rc);
 }
 
 
 void Assembler::fcfids(const DoubleRegister frt, const DoubleRegister frb,
                        RCBit rc) {
-  emit(EXT3 | FCFID | frt.code() * B21 | frb.code() * B11 | rc);
+  emit(EXT3 | FCFIDS | frt.code() * B21 | frb.code() * B11 | rc);
 }
 
 
@@ -2358,25 +2348,6 @@ void Assembler::fmsub(const DoubleRegister frt, const DoubleRegister fra,
                       RCBit rc) {
   emit(EXT4 | FMSUB | frt.code() * B21 | fra.code() * B16 | frb.code() * B11 |
        frc.code() * B6 | rc);
-}
-
-// Support for VSX instructions
-
-void Assembler::xsadddp(const DoubleRegister frt, const DoubleRegister fra,
-                        const DoubleRegister frb) {
-  xx3_form(EXT6 | XSADDDP, frt, fra, frb);
-}
-void Assembler::xssubdp(const DoubleRegister frt, const DoubleRegister fra,
-                        const DoubleRegister frb) {
-  xx3_form(EXT6 | XSSUBDP, frt, fra, frb);
-}
-void Assembler::xsdivdp(const DoubleRegister frt, const DoubleRegister fra,
-                        const DoubleRegister frb) {
-  xx3_form(EXT6 | XSDIVDP, frt, fra, frb);
-}
-void Assembler::xsmuldp(const DoubleRegister frt, const DoubleRegister fra,
-                        const DoubleRegister frb) {
-  xx3_form(EXT6 | XSMULDP, frt, fra, frb);
 }
 
 // Pseudo instructions.

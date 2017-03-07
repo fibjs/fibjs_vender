@@ -4044,16 +4044,6 @@ void MacroAssembler::PopRegisterAsTwoSmis(Register dst, Register scratch) {
   or_(dst, dst, scratch);
 }
 
-
-void MacroAssembler::DebugBreak() {
-  PrepareCEntryArgs(0);
-  PrepareCEntryFunction(
-      ExternalReference(Runtime::kHandleDebuggerStatement, isolate()));
-  CEntryStub ces(isolate(), 1);
-  DCHECK(AllowThisStubCall(&ces));
-  Call(ces.GetCode(), RelocInfo::DEBUGGER_STATEMENT);
-}
-
 void MacroAssembler::MaybeDropFrames() {
   // Check whether we need to drop frames to restart a function on the stack.
   ExternalReference restart_fp =
@@ -5640,7 +5630,7 @@ void MacroAssembler::LoadGlobalFunctionInitialMap(Register function,
 }
 
 void MacroAssembler::StubPrologue(StackFrame::Type type) {
-  li(at, Operand(Smi::FromInt(type)));
+  li(at, Operand(StackFrame::TypeToMarker(type)));
   PushCommonFrame(at);
 }
 
@@ -5700,7 +5690,7 @@ void MacroAssembler::EnterFrame(StackFrame::Type type) {
   stack_offset -= kPointerSize;
   sd(fp, MemOperand(sp, stack_offset));
   stack_offset -= kPointerSize;
-  li(t9, Operand(Smi::FromInt(type)));
+  li(t9, Operand(StackFrame::TypeToMarker(type)));
   sd(t9, MemOperand(sp, stack_offset));
   if (type == StackFrame::INTERNAL) {
     DCHECK_EQ(stack_offset, kPointerSize);
@@ -5757,7 +5747,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space,
   daddiu(sp, sp, -2 * kPointerSize - ExitFrameConstants::kFixedFrameSizeFromFp);
   sd(ra, MemOperand(sp, 4 * kPointerSize));
   sd(fp, MemOperand(sp, 3 * kPointerSize));
-  li(at, Operand(Smi::FromInt(frame_type)));
+  li(at, Operand(StackFrame::TypeToMarker(frame_type)));
   sd(at, MemOperand(sp, 2 * kPointerSize));
   // Set up new frame pointer.
   daddiu(fp, sp, ExitFrameConstants::kFixedFrameSizeFromFp);

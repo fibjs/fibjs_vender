@@ -68,6 +68,7 @@ enum ContextLookupFlags {
   V(REFLECT_DELETE_PROPERTY_INDEX, JSFunction, reflect_delete_property) \
   V(SPREAD_ARGUMENTS_INDEX, JSFunction, spread_arguments)               \
   V(SPREAD_ITERABLE_INDEX, JSFunction, spread_iterable)                 \
+  V(TYPED_ARRAY_INITIALIZE_INDEX, JSFunction, typed_array_initialize)   \
   V(MATH_FLOOR_INDEX, JSFunction, math_floor)                           \
   V(MATH_POW_INDEX, JSFunction, math_pow)                               \
   V(NEW_PROMISE_CAPABILITY_INDEX, JSFunction, new_promise_capability)   \
@@ -197,11 +198,14 @@ enum ContextLookupFlags {
   V(ARRAY_BUFFER_FUN_INDEX, JSFunction, array_buffer_fun)                      \
   V(ARRAY_BUFFER_MAP_INDEX, Map, array_buffer_map)                             \
   V(ARRAY_FUNCTION_INDEX, JSFunction, array_function)                          \
+  V(ASYNC_FROM_SYNC_ITERATOR_MAP_INDEX, Map, async_from_sync_iterator_map)     \
   V(ASYNC_FUNCTION_AWAIT_REJECT_SHARED_FUN, SharedFunctionInfo,                \
     async_function_await_reject_shared_fun)                                    \
   V(ASYNC_FUNCTION_AWAIT_RESOLVE_SHARED_FUN, SharedFunctionInfo,               \
     async_function_await_resolve_shared_fun)                                   \
   V(ASYNC_FUNCTION_FUNCTION_INDEX, JSFunction, async_function_constructor)     \
+  V(ASYNC_ITERATOR_VALUE_UNWRAP_SHARED_FUN, SharedFunctionInfo,                \
+    async_iterator_value_unwrap_shared_fun)                                    \
   V(BOOLEAN_FUNCTION_INDEX, JSFunction, boolean_function)                      \
   V(BOUND_FUNCTION_WITH_CONSTRUCTOR_MAP_INDEX, Map,                            \
     bound_function_with_constructor_map)                                       \
@@ -290,6 +294,14 @@ enum ContextLookupFlags {
   V(PROMISE_RESOLVE_SHARED_FUN, SharedFunctionInfo,                            \
     promise_resolve_shared_fun)                                                \
   V(PROMISE_REJECT_SHARED_FUN, SharedFunctionInfo, promise_reject_shared_fun)  \
+  V(PROMISE_THEN_FINALLY_SHARED_FUN, SharedFunctionInfo,                       \
+    promise_then_finally_shared_fun)                                           \
+  V(PROMISE_CATCH_FINALLY_SHARED_FUN, SharedFunctionInfo,                      \
+    promise_catch_finally_shared_fun)                                          \
+  V(PROMISE_VALUE_THUNK_FINALLY_SHARED_FUN, SharedFunctionInfo,                \
+    promise_value_thunk_finally_shared_fun)                                    \
+  V(PROMISE_THROWER_FINALLY_SHARED_FUN, SharedFunctionInfo,                    \
+    promise_thrower_finally_shared_fun)                                        \
   V(PROMISE_PROTOTYPE_MAP_INDEX, Map, promise_prototype_map)                   \
   V(REGEXP_EXEC_FUNCTION_INDEX, JSFunction, regexp_exec_function)              \
   V(REGEXP_FUNCTION_INDEX, JSFunction, regexp_function)                        \

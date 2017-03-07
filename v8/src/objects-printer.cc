@@ -500,11 +500,13 @@ void JSPromise::JSPromisePrint(std::ostream& os) {  // NOLINT
   os << "\n - fulfill_reactions = " << Brief(fulfill_reactions());
   os << "\n - reject_reactions = " << Brief(reject_reactions());
   os << "\n - has_handler = " << has_handler();
+  os << "\n ";
 }
 
 void JSRegExp::JSRegExpPrint(std::ostream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSRegExp");
   os << "\n - data = " << Brief(data());
+  os << "\n - source = " << Brief(source());
   JSObjectPrintBody(os, this);
 }
 
@@ -1234,10 +1236,19 @@ void ModuleInfoEntry::ModuleInfoEntryPrint(std::ostream& os) {  // NOLINT
 
 void Module::ModulePrint(std::ostream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Module");
+  // TODO(neis): Simplify once modules have a script field.
+  if (!evaluated()) {
+    SharedFunctionInfo* shared = code()->IsSharedFunctionInfo()
+                                     ? SharedFunctionInfo::cast(code())
+                                     : JSFunction::cast(code())->shared();
+    Object* origin = Script::cast(shared->script())->GetNameOrSourceURL();
+    os << "\n - origin: " << Brief(origin);
+  }
   os << "\n - code: " << Brief(code());
   os << "\n - exports: " << Brief(exports());
   os << "\n - requested_modules: " << Brief(requested_modules());
-  os << "\n - evaluated: " << evaluated();
+  os << "\n - instantiated, evaluated: " << instantiated() << ", "
+     << evaluated();
   os << "\n";
 }
 

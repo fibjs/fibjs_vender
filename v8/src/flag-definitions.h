@@ -205,14 +205,17 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
   V(harmony_function_tostring, "harmony Function.prototype.toString")   \
   V(harmony_class_fields, "harmony public fields in class literals")    \
   V(harmony_async_iteration, "harmony async iteration")                 \
-  V(harmony_dynamic_import, "harmony dynamic import")
+  V(harmony_dynamic_import, "harmony dynamic import")                   \
+  V(harmony_promise_finally, "harmony Promise.prototype.finally")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
-#define HARMONY_STAGED(V)                                   \
-  V(harmony_regexp_lookbehind, "harmony regexp lookbehind") \
-  V(harmony_restrictive_generators,                         \
-    "harmony restrictions on generator declarations")       \
-  V(harmony_object_rest_spread, "harmony object rest spread properties")
+#define HARMONY_STAGED(V)                                                \
+  V(harmony_regexp_lookbehind, "harmony regexp lookbehind")              \
+  V(harmony_restrictive_generators,                                      \
+    "harmony restrictions on generator declarations")                    \
+  V(harmony_object_rest_spread, "harmony object rest spread properties") \
+  V(harmony_template_escapes,                                            \
+    "harmony invalid escapes in tagged template literals")
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING_BASE(V) \
@@ -251,7 +254,12 @@ HARMONY_STAGED(FLAG_STAGED_FEATURES)
 HARMONY_SHIPPING(FLAG_SHIPPING_FEATURES)
 #undef FLAG_SHIPPING_FEATURES
 
-DEFINE_BOOL(future, false,
+#ifdef V8_ENABLE_FUTURE
+#define FUTURE_BOOL true
+#else
+#define FUTURE_BOOL false
+#endif
+DEFINE_BOOL(future, FUTURE_BOOL,
             "Implies all staged features that we want to ship in the "
             "not-too-far future")
 DEFINE_IMPLICATION(future, turbo)
@@ -265,7 +273,6 @@ DEFINE_IMPLICATION(turbo, thin_strings)
 DEFINE_BOOL(ignition_staging, false, "use ignition with all staged features")
 DEFINE_IMPLICATION(ignition_staging, ignition)
 DEFINE_IMPLICATION(ignition_staging, compiler_dispatcher)
-DEFINE_IMPLICATION(ignition_staging, validate_asm)
 
 // Flags for experimental implementation features.
 DEFINE_BOOL(allocation_site_pretenuring, true,
@@ -291,6 +298,8 @@ DEFINE_BOOL(track_field_types, true, "track field types")
 DEFINE_IMPLICATION(track_field_types, track_fields)
 DEFINE_IMPLICATION(track_field_types, track_heap_object_fields)
 DEFINE_BOOL(type_profile, false, "collect type information")
+DEFINE_BOOL(feedback_normalization, false,
+            "feed back normalization to constructors")
 
 // Flags for optimization types.
 DEFINE_BOOL(optimize_for_size, false,
@@ -495,6 +504,8 @@ DEFINE_BOOL(turbo_stress_instruction_scheduling, false,
             "randomly schedule instructions to stress dependency tracking")
 DEFINE_BOOL(turbo_store_elimination, true,
             "enable store-store elimination in TurboFan")
+DEFINE_BOOL(turbo_experimental, false,
+            "enable crashing features, for testing purposes only")
 // TODO(turbofan): Rename --crankshaft to --optimize eventually.
 DEFINE_IMPLICATION(turbo, crankshaft)
 
@@ -530,7 +541,7 @@ DEFINE_INT(trace_wasm_text_start, 0,
            "start function for WASM text generation (inclusive)")
 DEFINE_INT(trace_wasm_text_end, 0,
            "end function for WASM text generation (exclusive)")
-DEFINE_INT(skip_compiling_wasm_funcs, 0, "start compiling at function N")
+DEFINE_UINT(skip_compiling_wasm_funcs, 0, "start compiling at function N")
 DEFINE_BOOL(wasm_break_on_decoder_error, false,
             "debug break when wasm decoder encounters an error")
 DEFINE_BOOL(wasm_loop_assignment_analysis, true,
@@ -642,8 +653,9 @@ DEFINE_INT(min_progress_during_incremental_marking_finalization, 32,
 DEFINE_INT(max_incremental_marking_finalization_rounds, 3,
            "at most try this many times to finalize incremental marking")
 DEFINE_BOOL(minor_mc, false, "perform young generation mark compact GCs")
-DEFINE_NEG_IMPLICATION(minor_mc, incremental_marking)
 DEFINE_BOOL(black_allocation, true, "use black allocation")
+DEFINE_BOOL(concurrent_store_buffer, true,
+            "use concurrent store buffer processing")
 DEFINE_BOOL(concurrent_sweeping, true, "use concurrent sweeping")
 DEFINE_BOOL(parallel_compaction, true, "use parallel compaction")
 DEFINE_BOOL(parallel_pointer_update, true,
@@ -877,6 +889,7 @@ DEFINE_BOOL(use_idle_notification, true,
 // ic.cc
 DEFINE_BOOL(use_ic, true, "use inline caching")
 DEFINE_BOOL(trace_ic, false, "trace inline cache state transitions")
+DEFINE_IMPLICATION(trace_ic, log_code)
 DEFINE_INT(ic_stats, 0, "inline cache state transitions statistics")
 DEFINE_VALUE_IMPLICATION(trace_ic, ic_stats, 1)
 DEFINE_BOOL_READONLY(track_constant_fields, false,
@@ -1244,7 +1257,7 @@ DEFINE_BOOL(single_threaded, false, "disable the use of background tasks")
 DEFINE_NEG_IMPLICATION(single_threaded, concurrent_recompilation)
 DEFINE_NEG_IMPLICATION(single_threaded, concurrent_sweeping)
 DEFINE_NEG_IMPLICATION(single_threaded, parallel_compaction)
-
+DEFINE_NEG_IMPLICATION(single_threaded, concurrent_store_buffer)
 
 #undef FLAG
 

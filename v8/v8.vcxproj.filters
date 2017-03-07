@@ -483,6 +483,9 @@
     <ClInclude Include="src\base\platform\mutex.h">
       <Filter>Source Files\base\platform</Filter>
     </ClInclude>
+    <ClInclude Include="src\base\platform\platform-posix.h">
+      <Filter>Source Files\base\platform</Filter>
+    </ClInclude>
     <ClInclude Include="src\base\platform\platform.h">
       <Filter>Source Files\base\platform</Filter>
     </ClInclude>
@@ -511,6 +514,9 @@
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\sys-info.h">
+      <Filter>Source Files\base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\timezone-cache.h">
       <Filter>Source Files\base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\utils\random-number-generator.h">
@@ -1404,9 +1410,6 @@
     <ClInclude Include="src\ic\handler-configuration.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
-    <ClInclude Include="src\ic\ic-compiler.h">
-      <Filter>Source Files\ic</Filter>
-    </ClInclude>
     <ClInclude Include="src\ic\ic-inl.h">
       <Filter>Source Files\ic</Filter>
     </ClInclude>
@@ -1585,6 +1588,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\macro-assembler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\managed.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\map-updater.h">
@@ -2013,13 +2019,13 @@
     <ClInclude Include="src\wasm\leb-helper.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
-    <ClInclude Include="src\wasm\managed.h">
-      <Filter>Source Files\wasm</Filter>
-    </ClInclude>
     <ClInclude Include="src\wasm\module-decoder.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\signature-map.h">
+      <Filter>Source Files\wasm</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wasm\wasm-code-specialization.h">
       <Filter>Source Files\wasm</Filter>
     </ClInclude>
     <ClInclude Include="src\wasm\wasm-external-refs.h">
@@ -2322,6 +2328,9 @@
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-async-function.cc">
+      <Filter>Source Files\builtins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\builtins\builtins-async-iterator.cc">
       <Filter>Source Files\builtins</Filter>
     </ClCompile>
     <ClCompile Include="src\builtins\builtins-async.cc">
@@ -3239,9 +3248,6 @@
     <ClCompile Include="src\ic\ia32\ic-ia32.cc">
       <Filter>Source Files\ic\ia32</Filter>
     </ClCompile>
-    <ClCompile Include="src\ic\ic-compiler.cc">
-      <Filter>Source Files\ic</Filter>
-    </ClCompile>
     <ClCompile Include="src\ic\ic-state.cc">
       <Filter>Source Files\ic</Filter>
     </ClCompile>
@@ -3846,6 +3852,9 @@
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\signature-map.cc">
+      <Filter>Source Files\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="src\wasm\wasm-code-specialization.cc">
       <Filter>Source Files\wasm</Filter>
     </ClCompile>
     <ClCompile Include="src\wasm\wasm-debug.cc">

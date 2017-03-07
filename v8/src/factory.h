@@ -536,6 +536,9 @@ class V8_EXPORT_PRIVATE Factory final {
       SharedFlag shared = SharedFlag::kNotShared,
       PretenureFlag pretenure = NOT_TENURED);
 
+  ExternalArrayType GetArrayTypeFromElementsKind(ElementsKind kind);
+  size_t GetExternalArrayElementSize(ExternalArrayType type);
+
   Handle<JSTypedArray> NewJSTypedArray(ExternalArrayType type,
                                        PretenureFlag pretenure = NOT_TENURED);
 
@@ -558,6 +561,8 @@ class V8_EXPORT_PRIVATE Factory final {
                                    size_t byte_offset, size_t byte_length);
 
   Handle<JSIteratorResult> NewJSIteratorResult(Handle<Object> value, bool done);
+  Handle<JSAsyncFromSyncIterator> NewJSAsyncFromSyncIterator(
+      Handle<JSReceiver> sync_iterator);
 
   Handle<JSMap> NewJSMap();
   Handle<JSSet> NewJSSet();

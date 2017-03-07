@@ -241,6 +241,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   void GotoIfNumber(Node* value, Label* is_number);
 
   // Allocate an object of the given size.
+  Node* AllocateInNewSpace(Node* size, AllocationFlags flags = kNone);
+  Node* AllocateInNewSpace(int size, AllocationFlags flags = kNone);
   Node* Allocate(Node* size, AllocationFlags flags = kNone);
   Node* Allocate(int size, AllocationFlags flags = kNone);
   Node* InnerAllocate(Node* previous, int offset);
@@ -692,10 +694,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   Node* IsJSGlobalProxy(Node* object);
   Node* IsJSReceiverInstanceType(Node* instance_type);
   Node* IsJSReceiver(Node* object);
+  Node* IsJSReceiverMap(Node* map);
   Node* IsMap(Node* object);
   Node* IsCallableMap(Node* map);
   Node* IsCallable(Node* object);
   Node* IsBoolean(Node* object);
+  Node* IsHeapNumber(Node* object);
   Node* IsName(Node* object);
   Node* IsSymbol(Node* object);
   Node* IsPrivateSymbol(Node* object);
@@ -727,6 +731,16 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
   // Return a new string object produced by concatenating |first| with |second|.
   Node* StringAdd(Node* context, Node* first, Node* second,
                   AllocationFlags flags = kNone);
+
+  // Unpack the external string, returning a pointer that (offset-wise) looks
+  // like a sequential string.
+  // Note that this pointer is not tagged and does not point to a real
+  // sequential string instance, and may only be used to access the string
+  // data. The pointer is GC-safe as long as a reference to the container
+  // ExternalString is live.
+  // |string| must be an external string. Bailout for short external strings.
+  Node* TryDerefExternalString(Node* const string, Node* const instance_type,
+                               Label* if_bailout);
 
   // Check if |var_string| has an indirect (thin or flat cons) string type,
   // and unpack it if so.
@@ -992,6 +1006,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                          Label* if_found, Variable* var_value,
                          Label* if_not_found, Label* if_bailout);
 
+  Node* GetProperty(Node* context, Node* receiver, Handle<Name> name) {
+    return CallStub(CodeFactory::GetProperty(isolate()), context, receiver,
+                    HeapConstant(name));
+  }
+
   void LoadPropertyFromFastObject(Node* object, Node* map, Node* descriptors,
                                   Node* name_index, Variable* var_details,
                                   Variable* var_value);
@@ -1194,7 +1213,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
 
   Node* Equal(ResultMode mode, Node* lhs, Node* rhs, Node* context);
 
-  Node* StrictEqual(ResultMode mode, Node* lhs, Node* rhs, Node* context);
+  Node* StrictEqual(Node* lhs, Node* rhs, Node* context);
 
   // ECMA#sec-samevalue
   // Similar to StrictEqual except that NaNs are treated as equal and minus zero
@@ -1236,10 +1255,26 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
                                        Node* deferred_on_resolve,
                                        Node* deferred_on_reject, Node* context);
 
+  // Helpers for StackFrame markers.
+  Node* MarkerIsFrameType(Node* marker_or_function,
+                          StackFrame::Type frame_type);
+  Node* MarkerIsNotFrameType(Node* marker_or_function,
+                             StackFrame::Type frame_type);
+
   // Support for printf-style debugging
   void Print(const char* s);
   void Print(const char* prefix, Node* tagged_value);
   inline void Print(Node* tagged_value) { return Print(nullptr, tagged_value); }
+
+  template <class... TArgs>
+  Node* MakeTypeError(MessageTemplate::Template message, Node* context,
+                      TArgs... args) {
+    STATIC_ASSERT(sizeof...(TArgs) <= 3);
+    Node* const make_type_error = LoadContextElement(
+        LoadNativeContext(context), Context::MAKE_TYPE_ERROR_INDEX);
+    return CallJS(CodeFactory::Call(isolate()), context, make_type_error,
+                  UndefinedConstant(), SmiConstant(message), args...);
+  }
 
  protected:
   void DescriptorLookup(Node* unique_name, Node* descriptors, Node* bitfield3,

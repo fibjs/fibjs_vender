@@ -14,6 +14,7 @@
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/node-properties.h"
 #include "src/compiler/operator-properties.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -121,15 +122,6 @@ void JSGenericLowering::LowerJSStrictEqual(Node* node) {
   // The === operator doesn't need the current context.
   NodeProperties::ReplaceContextInput(node, jsgraph()->NoContextConstant());
   Callable callable = CodeFactory::StrictEqual(isolate());
-  node->RemoveInput(4);  // control
-  ReplaceWithStubCall(node, callable, CallDescriptor::kNoFlags,
-                      Operator::kEliminatable);
-}
-
-void JSGenericLowering::LowerJSStrictNotEqual(Node* node) {
-  // The !== operator doesn't need the current context.
-  NodeProperties::ReplaceContextInput(node, jsgraph()->NoContextConstant());
-  Callable callable = CodeFactory::StrictNotEqual(isolate());
   node->RemoveInput(4);  // control
   ReplaceWithStubCall(node, callable, CallDescriptor::kNoFlags,
                       Operator::kEliminatable);
@@ -527,8 +519,7 @@ void JSGenericLowering::LowerJSConstruct(Node* node) {
 }
 
 void JSGenericLowering::LowerJSConstructWithSpread(Node* node) {
-  ConstructWithSpreadParameters const& p =
-      ConstructWithSpreadParametersOf(node->op());
+  SpreadWithArityParameters const& p = SpreadWithArityParametersOf(node->op());
   int const arg_count = static_cast<int>(p.arity() - 2);
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);
   Callable callable = CodeFactory::ConstructWithSpread(isolate());
@@ -581,7 +572,7 @@ void JSGenericLowering::LowerJSCall(Node* node) {
 }
 
 void JSGenericLowering::LowerJSCallWithSpread(Node* node) {
-  CallWithSpreadParameters const& p = CallWithSpreadParametersOf(node->op());
+  SpreadWithArityParameters const& p = SpreadWithArityParametersOf(node->op());
   int const arg_count = static_cast<int>(p.arity() - 2);
   Callable callable = CodeFactory::CallWithSpread(isolate());
   CallDescriptor::Flags flags = FrameStateFlagForCall(node);

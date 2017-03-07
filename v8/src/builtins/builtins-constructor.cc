@@ -8,7 +8,9 @@
 #include "src/builtins/builtins.h"
 #include "src/code-factory.h"
 #include "src/code-stub-assembler.h"
+#include "src/counters.h"
 #include "src/interface-descriptors.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -234,22 +236,27 @@ Node* ConstructorBuiltinsAssembler::EmitFastNewObject(
       LoadObjectField(initial_map, Map::kConstructorOrBackPointerOffset);
   GotoIf(WordNotEqual(target, new_target_constructor), call_runtime);
 
+  Variable properties(this, MachineRepresentation::kTagged);
+
+  Label instantiate_map(this), allocate_properties(this);
+  GotoIf(IsDictionaryMap(initial_map), &allocate_properties);
+  {
+    properties.Bind(EmptyFixedArrayConstant());
+    Goto(&instantiate_map);
+  }
+  Bind(&allocate_properties);
+  {
+    properties.Bind(AllocateNameDictionary(NameDictionary::kInitialCapacity));
+    Goto(&instantiate_map);
+  }
+
+  Bind(&instantiate_map);
+
+  Node* object = AllocateJSObjectFromMap(initial_map, properties.value());
+
   Node* instance_size_words = ChangeUint32ToWord(LoadObjectField(
       initial_map, Map::kInstanceSizeOffset, MachineType::Uint8()));
   Node* instance_size =
-      WordShl(instance_size_words, IntPtrConstant(kPointerSizeLog2));
-
-  Node* object = Allocate(instance_size);
-  StoreMapNoWriteBarrier(object, initial_map);
-  Node* empty_array = LoadRoot(Heap::kEmptyFixedArrayRootIndex);
-  StoreObjectFieldNoWriteBarrier(object, JSObject::kPropertiesOffset,
-                                 empty_array);
-  StoreObjectFieldNoWriteBarrier(object, JSObject::kElementsOffset,
-                                 empty_array);
-
-  instance_size_words = ChangeUint32ToWord(LoadObjectField(
-      initial_map, Map::kInstanceSizeOffset, MachineType::Uint8()));
-  instance_size =
       WordShl(instance_size_words, IntPtrConstant(kPointerSizeLog2));
 
   // Perform in-object slack tracking if requested.
@@ -331,7 +338,7 @@ Node* ConstructorBuiltinsAssembler::EmitFastNewFunctionContext(
   Node* size = GetFixedArrayAllocationSize(length, FAST_ELEMENTS, mode);
 
   // Create a new closure from the given function info in new space
-  Node* function_context = Allocate(size);
+  Node* function_context = AllocateInNewSpace(size);
 
   Heap::RootListIndex context_type;
   switch (scope_type) {
@@ -683,7 +690,7 @@ Node* ConstructorBuiltinsAssembler::EmitFastCloneShallowObject(
   Node* size_in_words = WordShr(object_size, kPointerSizeLog2);
   GotoIfNot(WordEqual(instance_size, size_in_words), call_runtime);
 
-  Node* copy = Allocate(allocation_size);
+  Node* copy = AllocateInNewSpace(allocation_size);
 
   // Copy boilerplate elements.
   Variable offset(this, MachineType::PointerRepresentation());

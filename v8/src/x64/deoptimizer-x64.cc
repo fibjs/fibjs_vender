@@ -11,6 +11,7 @@
 #include "src/codegen.h"
 #include "src/deoptimizer.h"
 #include "src/full-codegen/full-codegen.h"
+#include "src/objects-inl.h"
 #include "src/register-configuration.h"
 #include "src/safepoint-table.h"
 

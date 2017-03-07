@@ -693,9 +693,9 @@ PipelineWasmCompilationJob::ExecuteJobImpl() {
     CommonOperatorReducer common_reducer(&graph_reducer, data->graph(),
                                          data->common(), data->machine());
     AddReducer(data, &graph_reducer, &dead_code_elimination);
-    AddReducer(data, &graph_reducer, &value_numbering);
     AddReducer(data, &graph_reducer, &machine_reducer);
     AddReducer(data, &graph_reducer, &common_reducer);
+    AddReducer(data, &graph_reducer, &value_numbering);
     graph_reducer.ReduceGraph();
     pipeline_.RunPrintAndVerify("Optimized Machine", true);
   }
@@ -949,7 +949,7 @@ struct EscapeAnalysisPhase {
   void Run(PipelineData* data, Zone* temp_zone) {
     EscapeAnalysis escape_analysis(data->graph(), data->jsgraph()->common(),
                                    temp_zone);
-    escape_analysis.Run();
+    if (!escape_analysis.Run()) return;
     JSGraphReducer graph_reducer(data->jsgraph(), temp_zone);
     EscapeAnalysisReducer escape_reducer(&graph_reducer, data->jsgraph(),
                                          &escape_analysis, temp_zone);

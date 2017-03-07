@@ -8,6 +8,7 @@
 
 #if V8_TARGET_ARCH_X64
 
+#include "src/assembler-inl.h"
 #include "src/ast/compile-time-value.h"
 #include "src/ast/scopes.h"
 #include "src/builtins/builtins-constructor.h"
@@ -18,7 +19,9 @@
 #include "src/compiler.h"
 #include "src/debug/debug.h"
 #include "src/full-codegen/full-codegen.h"
+#include "src/heap/heap-inl.h"
 #include "src/ic/ic.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -1302,15 +1305,6 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
 
   Handle<ConstantElementsPair> constant_elements =
       expr->GetOrBuildConstantElements(isolate());
-  bool has_constant_fast_elements =
-      IsFastObjectElementsKind(expr->constant_elements_kind());
-
-  AllocationSiteMode allocation_site_mode = TRACK_ALLOCATION_SITE;
-  if (has_constant_fast_elements && !FLAG_allocation_site_pretenuring) {
-    // If the only customer of allocation sites is transitioning, then
-    // we can turn it off if we don't have anywhere else to transition to.
-    allocation_site_mode = DONT_TRACK_ALLOCATION_SITE;
-  }
 
   if (MustCreateArrayLiteralWithRuntime(expr)) {
     __ Push(Operand(rbp, JavaScriptFrameConstants::kFunctionOffset));
@@ -1323,7 +1317,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
     __ Move(rbx, SmiFromSlot(expr->literal_slot()));
     __ Move(rcx, constant_elements);
     Callable callable =
-        CodeFactory::FastCloneShallowArray(isolate(), allocation_site_mode);
+        CodeFactory::FastCloneShallowArray(isolate(), TRACK_ALLOCATION_SITE);
     __ Call(callable.code(), RelocInfo::CODE_TARGET);
     RestoreContext();
   }

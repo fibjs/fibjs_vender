@@ -9,7 +9,6 @@
 #include "src/debug/interface-types.h"
 #include "src/objects.h"
 #include "src/trap-handler/trap-handler.h"
-#include "src/wasm/managed.h"
 #include "src/wasm/wasm-limits.h"
 
 namespace v8 {
@@ -421,7 +420,14 @@ class WasmDebugInfo : public FixedArray {
   static bool IsDebugInfo(Object*);
   static WasmDebugInfo* cast(Object*);
 
+  // Set a breakpoint in the given function at the given byte offset within that
+  // function. This will redirect all future calls to this function to the
+  // interpreter and will always pause at the given offset.
   static void SetBreakpoint(Handle<WasmDebugInfo>, int func_index, int offset);
+
+  // Make a function always execute in the interpreter without setting a
+  // breakpoints.
+  static void RedirectToInterpreter(Handle<WasmDebugInfo>, int func_index);
 
   void PrepareStep(StepAction);
 
@@ -434,6 +440,9 @@ class WasmDebugInfo : public FixedArray {
 
   std::unique_ptr<wasm::InterpretedFrame> GetInterpretedFrame(
       Address frame_pointer, int idx);
+
+  // Returns the number of calls / function frames executed in the interpreter.
+  uint64_t NumInterpretedCalls();
 
   DECLARE_GETTER(wasm_instance, WasmInstanceObject);
 };

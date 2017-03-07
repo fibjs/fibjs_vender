@@ -6,6 +6,7 @@
 
 #include "src/bootstrapper.h"
 #include "src/ic/ic.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -238,7 +239,6 @@ TFS_BUILTIN(GreaterThanOrEqual)
 TFS_BUILTIN(Equal)
 TFS_BUILTIN(NotEqual)
 TFS_BUILTIN(StrictEqual)
-TFS_BUILTIN(StrictNotEqual)
 TFS_BUILTIN(CreateIterResultObject)
 TFS_BUILTIN(HasProperty)
 TFS_BUILTIN(NonNumberToNumber)
@@ -257,12 +257,12 @@ TFS_BUILTIN(CopyFastSmiOrObjectElements)
 TFS_BUILTIN(GrowFastDoubleElements)
 TFS_BUILTIN(GrowFastSmiOrObjectElements)
 TFS_BUILTIN(NewUnmappedArgumentsElements)
-TFS_BUILTIN(NewRestParameterElements)
 TFS_BUILTIN(FastCloneRegExp)
 TFS_BUILTIN(FastNewClosure)
 TFS_BUILTIN(FastNewObject)
 TFS_BUILTIN(ForInFilter)
 TFS_BUILTIN(GetSuperConstructor)
+TFS_BUILTIN(LoadIC_Uninitialized)
 TFS_BUILTIN(KeyedLoadIC_Megamorphic)
 TFS_BUILTIN(PromiseHandleReject)
 TFS_BUILTIN(RegExpReplace)

@@ -5,6 +5,8 @@
 #ifndef V8_IC_H_
 #define V8_IC_H_
 
+#include "src/factory.h"
+#include "src/feedback-vector.h"
 #include "src/ic/ic-state.h"
 #include "src/macro-assembler.h"
 #include "src/messages.h"
@@ -85,6 +87,10 @@ class IC {
  protected:
   Address fp() const { return fp_; }
   Address pc() const { return *pc_address_; }
+
+  void set_slow_stub_reason(const char* reason) { slow_stub_reason_ = reason; }
+
+  Address GetAbstractPC(int* line, int* column) const;
   Isolate* isolate() const { return isolate_; }
 
   // Get the caller function object.
@@ -248,6 +254,8 @@ class IC {
   ExtraICState extra_ic_state_;
   MapHandleList target_maps_;
   bool target_maps_set_;
+
+  const char* slow_stub_reason_;
 
   FeedbackNexus* nexus_;
 
@@ -416,6 +424,14 @@ class KeyedStoreIC : public StoreIC {
  private:
   Handle<Map> ComputeTransitionedMap(Handle<Map> map,
                                      KeyedAccessStoreMode store_mode);
+
+  Handle<Object> StoreElementHandler(Handle<Map> receiver_map,
+                                     KeyedAccessStoreMode store_mode);
+
+  void StoreElementPolymorphicHandlers(MapHandleList* receiver_maps,
+                                       MapHandleList* transitioned_maps,
+                                       List<Handle<Object>>* handlers,
+                                       KeyedAccessStoreMode store_mode);
 
   friend class IC;
 };

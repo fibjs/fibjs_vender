@@ -9,14 +9,19 @@
 #if V8_TARGET_ARCH_ARM
 
 #include "src/code-stubs.h"
+
 #include "src/api-arguments.h"
+#include "src/assembler-inl.h"
 #include "src/base/bits.h"
 #include "src/bootstrapper.h"
 #include "src/codegen.h"
+#include "src/counters.h"
+#include "src/heap/heap-inl.h"
 #include "src/ic/handler-compiler.h"
 #include "src/ic/ic.h"
 #include "src/ic/stub-cache.h"
 #include "src/isolate.h"
+#include "src/objects/regexp-match-info.h"
 #include "src/regexp/jsregexp.h"
 #include "src/regexp/regexp-macro-assembler.h"
 #include "src/runtime/runtime.h"
@@ -1027,12 +1032,12 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // r2: receiver
   // r3: argc
   // r4: argv
-  int marker = type();
+  StackFrame::Type marker = type();
   if (FLAG_enable_embedded_constant_pool) {
     __ mov(r8, Operand::Zero());
   }
-  __ mov(r7, Operand(Smi::FromInt(marker)));
-  __ mov(r6, Operand(Smi::FromInt(marker)));
+  __ mov(r7, Operand(StackFrame::TypeToMarker(marker)));
+  __ mov(r6, Operand(StackFrame::TypeToMarker(marker)));
   __ mov(r5,
          Operand(ExternalReference(Isolate::kCEntryFPAddress, isolate())));
   __ ldr(r5, MemOperand(r5));
@@ -1052,11 +1057,11 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ cmp(r6, Operand::Zero());
   __ b(ne, &non_outermost_js);
   __ str(fp, MemOperand(r5));
-  __ mov(ip, Operand(Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME)));
+  __ mov(ip, Operand(StackFrame::OUTERMOST_JSENTRY_FRAME));
   Label cont;
   __ b(&cont);
   __ bind(&non_outermost_js);
-  __ mov(ip, Operand(Smi::FromInt(StackFrame::INNER_JSENTRY_FRAME)));
+  __ mov(ip, Operand(StackFrame::INNER_JSENTRY_FRAME));
   __ bind(&cont);
   __ push(ip);
 
@@ -1122,7 +1127,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // Check if the current stack frame is marked as the outermost JS frame.
   Label non_outermost_js_2;
   __ pop(r5);
-  __ cmp(r5, Operand(Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME)));
+  __ cmp(r5, Operand(StackFrame::OUTERMOST_JSENTRY_FRAME));
   __ b(ne, &non_outermost_js_2);
   __ mov(r6, Operand::Zero());
   __ mov(r5, Operand(ExternalReference(js_entry_sp)));
@@ -2570,6 +2575,9 @@ void RecordWriteStub::InformIncrementalMarker(MacroAssembler* masm) {
   regs_.RestoreCallerSaveRegisters(masm, save_fp_regs_mode());
 }
 
+void RecordWriteStub::Activate(Code* code) {
+  code->GetHeap()->incremental_marking()->ActivateGeneratedStub(code);
+}
 
 void RecordWriteStub::CheckNeedsToInformIncrementalMarker(
     MacroAssembler* masm,

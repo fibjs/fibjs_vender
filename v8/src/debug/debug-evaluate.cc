@@ -261,7 +261,7 @@ namespace {
 
 bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
   switch (id) {
-    // Whitelist for intrinsics amd runtime functions.
+    // Whitelist for intrinsics and runtime functions.
     // Conversions.
     case Runtime::kToInteger:
     case Runtime::kInlineToInteger:
@@ -271,12 +271,14 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
     case Runtime::kInlineToString:
     case Runtime::kToLength:
     case Runtime::kInlineToLength:
+    case Runtime::kToNumber:
     // Type checks.
     case Runtime::kIsJSReceiver:
     case Runtime::kInlineIsJSReceiver:
     case Runtime::kIsSmi:
     case Runtime::kInlineIsSmi:
     case Runtime::kIsArray:
+    case Runtime::kInlineIsArray:
     case Runtime::kIsFunction:
     case Runtime::kIsDate:
     case Runtime::kIsJSProxy:
@@ -284,6 +286,12 @@ bool IntrinsicHasNoSideEffect(Runtime::FunctionId id) {
     case Runtime::kIsTypedArray:
     // Loads.
     case Runtime::kLoadLookupSlotForCall:
+    // Arrays.
+    case Runtime::kArraySpeciesConstructor:
+    case Runtime::kNormalizeElements:
+    case Runtime::kGetArrayKeys:
+    case Runtime::kHasComplexElements:
+    case Runtime::kEstimateNumberOfElements:
     // Errors.
     case Runtime::kReThrow:
     case Runtime::kThrowReferenceError:
@@ -371,6 +379,7 @@ bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
     case Bytecode::kCreateUnmappedArguments:
     // Conversions.
     case Bytecode::kToObject:
+    case Bytecode::kToNumber:
     // Misc.
     case Bytecode::kForInPrepare:
     case Bytecode::kForInContinue:
@@ -396,8 +405,16 @@ bool BytecodeHasNoSideEffect(interpreter::Bytecode bytecode) {
 bool BuiltinHasNoSideEffect(Builtins::Name id) {
   switch (id) {
     // Whitelist for builtins.
+    // Object builtins.
+    case Builtins::kObjectPrototypeValueOf:
     // Array builtins.
+    case Builtins::kArrayCode:
+    case Builtins::kArrayIndexOf:
     case Builtins::kArrayPrototypeValues:
+    case Builtins::kArrayIncludes:
+    case Builtins::kArrayPrototypeEntries:
+    case Builtins::kArrayPrototypeKeys:
+    case Builtins::kArrayForEach:
     // Math builtins.
     case Builtins::kMathAbs:
     case Builtins::kMathAcos:
@@ -470,6 +487,12 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
     // JSON builtins.
     case Builtins::kJsonParse:
     case Builtins::kJsonStringify:
+    // Error builtins.
+    case Builtins::kMakeError:
+    case Builtins::kMakeTypeError:
+    case Builtins::kMakeSyntaxError:
+    case Builtins::kMakeRangeError:
+    case Builtins::kMakeURIError:
       return true;
     default:
       if (FLAG_trace_side_effect_free_debug_evaluate) {
@@ -483,7 +506,12 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
 static const Address accessors_with_no_side_effect[] = {
     // Whitelist for accessors.
     FUNCTION_ADDR(Accessors::StringLengthGetter),
-    FUNCTION_ADDR(Accessors::ArrayLengthGetter)};
+    FUNCTION_ADDR(Accessors::ArrayLengthGetter),
+    FUNCTION_ADDR(Accessors::FunctionLengthGetter),
+    FUNCTION_ADDR(Accessors::FunctionNameGetter),
+    FUNCTION_ADDR(Accessors::BoundFunctionLengthGetter),
+    FUNCTION_ADDR(Accessors::BoundFunctionNameGetter),
+};
 
 }  // anonymous namespace
 

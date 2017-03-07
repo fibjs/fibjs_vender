@@ -16,6 +16,7 @@
 #include "src/compiler/operator-properties.h"
 #include "src/compiler/type-cache.h"
 #include "src/compiler/types.h"
+#include "src/objects-inl.h"
 
 namespace v8 {
 namespace internal {
@@ -349,6 +350,10 @@ class JSBinopReduction final {
 
   const Operator* NumberOpFromSpeculativeNumberOp() {
     switch (node_->opcode()) {
+      case IrOpcode::kSpeculativeNumberLessThan:
+        return simplified()->NumberLessThan();
+      case IrOpcode::kSpeculativeNumberLessThanOrEqual:
+        return simplified()->NumberLessThanOrEqual();
       case IrOpcode::kSpeculativeNumberAdd:
         return simplified()->NumberAdd();
       case IrOpcode::kSpeculativeNumberSubtract:
@@ -713,7 +718,7 @@ Reduction JSTypedLowering::ReduceCreateConsString(Node* node) {
           javascript()->CallRuntime(Runtime::kThrowInvalidStringLength),
           context, frame_state, efalse, if_false);
       if_false = graph()->NewNode(common()->IfSuccess(), vfalse);
-      if_false = graph()->NewNode(common()->Throw(), vfalse, efalse, if_false);
+      if_false = graph()->NewNode(common()->Throw(), efalse, if_false);
       // TODO(bmeurer): This should be on the AdvancedReducer somehow.
       NodeProperties::MergeControlToEnd(graph(), common(), if_false);
       Revisit(graph()->end());
@@ -770,6 +775,15 @@ Reduction JSTypedLowering::ReduceCreateConsString(Node* node) {
   return Changed(node);
 }
 
+Reduction JSTypedLowering::ReduceSpeculativeNumberComparison(Node* node) {
+  JSBinopReduction r(this, node);
+  if (r.BothInputsAre(Type::Signed32()) ||
+      r.BothInputsAre(Type::Unsigned32())) {
+    return r.ChangeToPureOperator(r.NumberOpFromSpeculativeNumberOp());
+  }
+  return Changed(node);
+}
+
 Reduction JSTypedLowering::ReduceJSComparison(Node* node) {
   JSBinopReduction r(this, node);
   if (r.BothInputsAre(Type::String())) {
@@ -797,16 +811,12 @@ Reduction JSTypedLowering::ReduceJSComparison(Node* node) {
     return Changed(node);
   }
 
-  NumberOperationHint hint;
   const Operator* less_than;
   const Operator* less_than_or_equal;
   if (r.BothInputsAre(Type::Signed32()) ||
       r.BothInputsAre(Type::Unsigned32())) {
     less_than = simplified()->NumberLessThan();
     less_than_or_equal = simplified()->NumberLessThanOrEqual();
-  } else if (r.GetCompareNumberOperationHint(&hint)) {
-    less_than = simplified()->SpeculativeNumberLessThan(hint);
-    less_than_or_equal = simplified()->SpeculativeNumberLessThanOrEqual(hint);
   } else if (r.OneInputCannotBe(Type::StringOrReceiver()) &&
              (r.BothInputsAre(Type::PlainPrimitive()) ||
               !(flags() & kDeoptimizationEnabled))) {
@@ -839,11 +849,7 @@ Reduction JSTypedLowering::ReduceJSComparison(Node* node) {
     default:
       return NoChange();
   }
-  if (comparison->EffectInputCount() > 0) {
-    return r.ChangeToSpeculativeOperator(comparison, Type::Boolean());
-  } else {
-    return r.ChangeToPureOperator(comparison);
-  }
+  return r.ChangeToPureOperator(comparison);
 }
 
 Reduction JSTypedLowering::ReduceJSTypeOf(Node* node) {
@@ -897,7 +903,7 @@ Reduction JSTypedLowering::ReduceJSEqualTypeOf(Node* node, bool invert) {
                          graph()->NewNode(simplified()->ReferenceEqual(), input,
                                           jsgraph()->FalseConstant()));
   } else if (String::Equals(type, factory()->function_string())) {
-    value = graph()->NewNode(simplified()->ObjectIsCallable(), input);
+    value = graph()->NewNode(simplified()->ObjectIsDetectableCallable(), input);
   } else if (String::Equals(type, factory()->number_string())) {
     value = graph()->NewNode(simplified()->ObjectIsNumber(), input);
   } else if (String::Equals(type, factory()->object_string())) {
@@ -983,62 +989,62 @@ Reduction JSTypedLowering::ReduceJSEqual(Node* node, bool invert) {
   return NoChange();
 }
 
-Reduction JSTypedLowering::ReduceJSStrictEqual(Node* node, bool invert) {
+Reduction JSTypedLowering::ReduceJSStrictEqual(Node* node) {
   JSBinopReduction r(this, node);
   if (r.left() == r.right()) {
     // x === x is always true if x != NaN
-    if (!r.left_type()->Maybe(Type::NaN())) {
-      Node* replacement = jsgraph()->BooleanConstant(!invert);
-      ReplaceWithValue(node, replacement);
-      return Replace(replacement);
-    }
+    Node* replacement = graph()->NewNode(
+        simplified()->BooleanNot(),
+        graph()->NewNode(simplified()->ObjectIsNaN(), r.left()));
+    ReplaceWithValue(node, replacement);
+    return Replace(replacement);
   }
   if (r.OneInputCannotBe(Type::NumberOrString())) {
     // For values with canonical representation (i.e. neither String, nor
     // Number) an empty type intersection means the values cannot be strictly
     // equal.
     if (!r.left_type()->Maybe(r.right_type())) {
-      Node* replacement = jsgraph()->BooleanConstant(invert);
+      Node* replacement = jsgraph()->FalseConstant();
       ReplaceWithValue(node, replacement);
       return Replace(replacement);
     }
   }
 
-  Reduction const reduction = ReduceJSEqualTypeOf(node, invert);
+  Reduction const reduction = ReduceJSEqualTypeOf(node, false);
   if (reduction.Changed()) return reduction;
 
   if (r.BothInputsAre(Type::Unique())) {
-    return r.ChangeToPureOperator(simplified()->ReferenceEqual(), invert);
+    return r.ChangeToPureOperator(simplified()->ReferenceEqual());
   }
   if (r.OneInputIs(pointer_comparable_type_)) {
-    return r.ChangeToPureOperator(simplified()->ReferenceEqual(), invert);
+    return r.ChangeToPureOperator(simplified()->ReferenceEqual());
   }
   if (r.IsInternalizedStringCompareOperation()) {
     r.CheckInputsToInternalizedString();
-    return r.ChangeToPureOperator(simplified()->ReferenceEqual(), invert);
+    return r.ChangeToPureOperator(simplified()->ReferenceEqual());
   }
   if (r.BothInputsAre(Type::String())) {
-    return r.ChangeToPureOperator(simplified()->StringEqual(), invert);
+    return r.ChangeToPureOperator(simplified()->StringEqual());
   }
 
   NumberOperationHint hint;
   if (r.BothInputsAre(Type::Signed32()) ||
       r.BothInputsAre(Type::Unsigned32())) {
-    return r.ChangeToPureOperator(simplified()->NumberEqual(), invert);
+    return r.ChangeToPureOperator(simplified()->NumberEqual());
   } else if (r.GetCompareNumberOperationHint(&hint)) {
     return r.ChangeToSpeculativeOperator(
-        simplified()->SpeculativeNumberEqual(hint), invert, Type::Boolean());
+        simplified()->SpeculativeNumberEqual(hint), false, Type::Boolean());
   } else if (r.BothInputsAre(Type::Number())) {
-    return r.ChangeToPureOperator(simplified()->NumberEqual(), invert);
+    return r.ChangeToPureOperator(simplified()->NumberEqual());
   } else if (r.IsReceiverCompareOperation()) {
     // For strict equality, it's enough to know that one input is a Receiver,
     // as a strict equality comparison with a Receiver can only yield true if
     // both sides refer to the same Receiver than.
     r.CheckLeftInputToReceiver();
-    return r.ChangeToPureOperator(simplified()->ReferenceEqual(), invert);
+    return r.ChangeToPureOperator(simplified()->ReferenceEqual());
   } else if (r.IsStringCompareOperation()) {
     r.CheckInputsToString();
-    return r.ChangeToPureOperator(simplified()->StringEqual(), invert);
+    return r.ChangeToPureOperator(simplified()->StringEqual());
   }
   return NoChange();
 }
@@ -2366,9 +2372,7 @@ Reduction JSTypedLowering::Reduce(Node* node) {
     case IrOpcode::kJSNotEqual:
       return ReduceJSEqual(node, true);
     case IrOpcode::kJSStrictEqual:
-      return ReduceJSStrictEqual(node, false);
-    case IrOpcode::kJSStrictNotEqual:
-      return ReduceJSStrictEqual(node, true);
+      return ReduceJSStrictEqual(node);
     case IrOpcode::kJSLessThan:         // fall through
     case IrOpcode::kJSGreaterThan:      // fall through
     case IrOpcode::kJSLessThanOrEqual:  // fall through
@@ -2451,6 +2455,9 @@ Reduction JSTypedLowering::Reduce(Node* node) {
     case IrOpcode::kSpeculativeNumberDivide:
     case IrOpcode::kSpeculativeNumberModulus:
       return ReduceSpeculativeNumberBinop(node);
+    case IrOpcode::kSpeculativeNumberLessThan:
+    case IrOpcode::kSpeculativeNumberLessThanOrEqual:
+      return ReduceSpeculativeNumberComparison(node);
     default:
       break;
   }

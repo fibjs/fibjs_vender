@@ -6,6 +6,7 @@
 
 #include "src/accessors.h"
 #include "src/api.h"
+#include "src/assembler-inl.h"
 #include "src/ast/context-slot-cache.h"
 #include "src/base/bits.h"
 #include "src/base/once.h"
@@ -159,7 +160,8 @@ Heap::Heap()
       local_embedder_heap_tracer_(nullptr),
       fast_promotion_mode_(false),
       force_oom_(false),
-      delay_sweeper_tasks_for_testing_(false) {
+      delay_sweeper_tasks_for_testing_(false),
+      pending_layout_change_object_(nullptr) {
 // Allow build-time customization of the max semispace size. Building
 // V8 with snapshots and a non-default max semispace size is much
 // easier if you can define it as part of the build environment.
@@ -988,24 +990,6 @@ bool Heap::CollectGarbage(GarbageCollector collector,
     }
   }
 
-  if (collector == MARK_COMPACTOR && FLAG_incremental_marking &&
-      !ShouldFinalizeIncrementalMarking() && !ShouldAbortIncrementalMarking() &&
-      !incremental_marking()->IsStopped() &&
-      !incremental_marking()->should_hurry() &&
-      !incremental_marking()->NeedsFinalization() &&
-      !IsCloseToOutOfMemory(new_space_->Capacity())) {
-    if (!incremental_marking()->IsComplete() &&
-        !mark_compact_collector()->marking_deque()->IsEmpty() &&
-        !FLAG_gc_global) {
-      if (FLAG_trace_incremental_marking) {
-        isolate()->PrintWithTimestamp(
-            "[IncrementalMarking] Delaying MarkSweep.\n");
-      }
-      collector = YoungGenerationCollector();
-      collector_reason = "incremental marking delaying mark-sweep";
-    }
-  }
-
   bool next_gc_likely_to_collect_more = false;
   size_t committed_memory_before = 0;
 
@@ -1358,10 +1342,17 @@ bool Heap::PerformGarbageCollection(
         MinorMarkCompact();
         break;
       case SCAVENGER:
-        if (fast_promotion_mode_ && CanExpandOldGeneration(new_space()->Size()))
+        if (fast_promotion_mode_ &&
+            CanExpandOldGeneration(new_space()->Size())) {
+          tracer()->NotifyYoungGenerationHandling(
+              YoungGenerationHandling::kFastPromotionDuringScavenge);
           EvacuateYoungGeneration();
-        else
+        } else {
+          tracer()->NotifyYoungGenerationHandling(
+              YoungGenerationHandling::kRegularScavenge);
+
           Scavenge();
+        }
         break;
     }
 
@@ -1440,10 +1431,6 @@ void Heap::CallGCPrologueCallbacks(GCType gc_type, GCCallbackFlags flags) {
         gc_prologue_callbacks_[i].callback(isolate, gc_type, flags);
       }
     }
-  }
-  if (FLAG_trace_object_groups && (gc_type == kGCTypeIncrementalMarking ||
-                                   gc_type == kGCTypeMarkSweepCompact)) {
-    isolate_->global_handles()->PrintObjectGroups();
   }
 }
 
@@ -1792,14 +1779,16 @@ void Heap::Scavenge() {
 }
 
 void Heap::ComputeFastPromotionMode(double survival_rate) {
-  if (new_space_->IsAtMaximumCapacity() && !FLAG_optimize_for_size) {
-    fast_promotion_mode_ =
-        FLAG_fast_promotion_new_space &&
-        survival_rate >= kMinPromotedPercentForFastPromotionMode;
-    if (FLAG_trace_gc_verbose) {
-      PrintIsolate(isolate(), "Fast promotion mode: %s survival rate: %f%%\n",
-                   fast_promotion_mode_ ? "true" : "false", survival_rate);
-    }
+  const size_t survived_in_new_space =
+      survived_last_scavenge_ * 100 / new_space_->Capacity();
+  fast_promotion_mode_ =
+      !FLAG_optimize_for_size && FLAG_fast_promotion_new_space &&
+      !ShouldReduceMemory() && new_space_->IsAtMaximumCapacity() &&
+      survived_in_new_space >= kMinPromotedPercentForFastPromotionMode;
+  if (FLAG_trace_gc_verbose) {
+    PrintIsolate(
+        isolate(), "Fast promotion mode: %s survival rate: %" PRIuS "%%\n",
+        fast_promotion_mode_ ? "true" : "false", survived_in_new_space);
   }
 }
 
@@ -4292,6 +4281,29 @@ void Heap::RegisterReservationsForBlackAllocation(Reservation* reservations) {
   }
 }
 
+void Heap::NotifyObjectLayoutChange(HeapObject* object,
+                                    const DisallowHeapAllocation&) {
+  if (FLAG_incremental_marking && incremental_marking()->IsMarking()) {
+    incremental_marking()->MarkGrey(this, object);
+  }
+#ifdef VERIFY_HEAP
+  DCHECK(pending_layout_change_object_ == nullptr);
+  pending_layout_change_object_ = object;
+#endif
+}
+
+#ifdef VERIFY_HEAP
+void Heap::VerifyObjectLayoutChange(HeapObject* object, Map* new_map) {
+  if (pending_layout_change_object_ == nullptr) {
+    DCHECK(!object->IsJSObject() ||
+           !object->map()->TransitionRequiresSynchronizationWithGC(new_map));
+  } else {
+    DCHECK_EQ(pending_layout_change_object_, object);
+    pending_layout_change_object_ = nullptr;
+  }
+}
+#endif
+
 GCIdleTimeHeapState Heap::ComputeHeapState() {
   GCIdleTimeHeapState heap_state;
   heap_state.contexts_disposed = contexts_disposed_;
@@ -5227,7 +5239,6 @@ const double Heap::kMaxHeapGrowingFactorMemoryConstrained = 2.0;
 const double Heap::kMaxHeapGrowingFactorIdle = 1.5;
 const double Heap::kConservativeHeapGrowingFactor = 1.3;
 const double Heap::kTargetMutatorUtilization = 0.97;
-const double Heap::kMinPromotedPercentForFastPromotionMode = 90;
 
 // Given GC speed in bytes per ms, the allocation throughput in bytes per ms
 // (mutator speed), this function returns the heap growing factor that will

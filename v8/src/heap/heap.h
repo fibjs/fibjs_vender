@@ -377,6 +377,17 @@ enum class GarbageCollectionReason {
   // Also update src/tools/metrics/histograms/histograms.xml in chromium.
 };
 
+enum class YoungGenerationHandling {
+  kRegularScavenge = 0,
+  kFastPromotionDuringScavenge = 1,
+  // Histogram::InspectConstructionArguments in chromium requires us to have at
+  // least three buckets.
+  kUnusedBucket = 2,
+  // If you add new items here, then update the young_generation_handling in
+  // counters.h.
+  // Also update src/tools/metrics/histograms/histograms.xml in chromium.
+};
+
 // A queue of objects promoted during scavenge. Each object is accompanied by
 // its size to avoid dereferencing a map pointer for scanning. The last page in
 // to-space is used for the promotion queue. On conflict during scavenge, the
@@ -637,7 +648,7 @@ class Heap {
   // The minimum size of a HeapObject on the heap.
   static const int kMinObjectSizeInWords = 2;
 
-  static const double kMinPromotedPercentForFastPromotionMode;
+  static const int kMinPromotedPercentForFastPromotionMode = 90;
 
   STATIC_ASSERT(kUndefinedValueRootIndex ==
                 Internals::kUndefinedValueRootIndex);
@@ -1226,6 +1237,20 @@ class Heap {
   void RegisterReservationsForBlackAllocation(Reservation* reservations);
 
   IncrementalMarking* incremental_marking() { return incremental_marking_; }
+
+  // The runtime uses this function to notify potentially unsafe object layout
+  // changes that require special synchronization with the concurrent marker.
+  // A layout change is unsafe if
+  // - it removes a tagged in-object field.
+  // - it replaces a tagged in-objects field with an untagged in-object field.
+  void NotifyObjectLayoutChange(HeapObject* object,
+                                const DisallowHeapAllocation&);
+#ifdef VERIFY_HEAP
+  // This function checks that either
+  // - the map transition is safe,
+  // - or it was communicated to GC using NotifyObjectLayoutChange.
+  void VerifyObjectLayoutChange(HeapObject* object, Map* new_map);
+#endif
 
   // ===========================================================================
   // Embedder heap tracer support. =============================================
@@ -2344,6 +2369,8 @@ class Heap {
   bool force_oom_;
   bool delay_sweeper_tasks_for_testing_;
 
+  HeapObject* pending_layout_change_object_;
+
   // Classes in "heap" can be friends.
   friend class AlwaysAllocateScope;
   friend class GCCallbacksScope;
@@ -2537,65 +2564,6 @@ class WeakObjectRetainer {
   // should be returned as in some GC situations the object has been moved.
   virtual Object* RetainAs(Object* object) = 0;
 };
-
-
-#ifdef DEBUG
-// Helper class for tracing paths to a search target Object from all roots.
-// The TracePathFrom() method can be used to trace paths from a specific
-// object to the search target object.
-class PathTracer : public ObjectVisitor {
- public:
-  enum WhatToFind {
-    FIND_ALL,   // Will find all matches.
-    FIND_FIRST  // Will stop the search after first match.
-  };
-
-  // Tags 0, 1, and 3 are used. Use 2 for marking visited HeapObject.
-  static const int kMarkTag = 2;
-
-  // For the WhatToFind arg, if FIND_FIRST is specified, tracing will stop
-  // after the first match.  If FIND_ALL is specified, then tracing will be
-  // done for all matches.
-  PathTracer(Object* search_target, WhatToFind what_to_find,
-             VisitMode visit_mode)
-      : search_target_(search_target),
-        found_target_(false),
-        found_target_in_trace_(false),
-        what_to_find_(what_to_find),
-        visit_mode_(visit_mode),
-        object_stack_(20),
-        no_allocation() {}
-
-  void VisitPointers(Object** start, Object** end) override;
-
-  void Reset();
-  void TracePathFrom(Object** root);
-
-  bool found() const { return found_target_; }
-
-  static Object* const kAnyGlobalObject;
-
- protected:
-  class MarkVisitor;
-  class UnmarkVisitor;
-
-  void MarkRecursively(Object** p, MarkVisitor* mark_visitor);
-  void UnmarkRecursively(Object** p, UnmarkVisitor* unmark_visitor);
-  virtual void ProcessResults();
-
-  Object* search_target_;
-  bool found_target_;
-  bool found_target_in_trace_;
-  WhatToFind what_to_find_;
-  VisitMode visit_mode_;
-  List<Object*> object_stack_;
-
-  DisallowHeapAllocation no_allocation;  // i.e. no gc allowed.
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(PathTracer);
-};
-#endif  // DEBUG
 
 // -----------------------------------------------------------------------------
 // Allows observation of allocations.

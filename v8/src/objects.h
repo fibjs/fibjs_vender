@@ -398,6 +398,7 @@ const int kStubMinorKeyBits = kSmiValueSize - kStubMajorKeyBits - 1;
   V(JS_PROMISE_TYPE)                                            \
   V(JS_REGEXP_TYPE)                                             \
   V(JS_ERROR_TYPE)                                              \
+  V(JS_ASYNC_FROM_SYNC_ITERATOR_TYPE)                           \
   V(JS_STRING_ITERATOR_TYPE)                                    \
                                                                 \
   V(JS_TYPED_ARRAY_KEY_ITERATOR_TYPE)                           \
@@ -743,6 +744,7 @@ enum InstanceType {
   JS_PROMISE_TYPE,
   JS_REGEXP_TYPE,
   JS_ERROR_TYPE,
+  JS_ASYNC_FROM_SYNC_ITERATOR_TYPE,
   JS_STRING_ITERATOR_TYPE,
 
   JS_TYPED_ARRAY_KEY_ITERATOR_TYPE,
@@ -1039,6 +1041,7 @@ template <class C> inline bool Is(Object* obj);
   V(JSArray)                     \
   V(JSArrayBuffer)               \
   V(JSArrayBufferView)           \
+  V(JSAsyncFromSyncIterator)     \
   V(JSCollection)                \
   V(JSTypedArray)                \
   V(JSArrayIterator)             \
@@ -1434,6 +1437,11 @@ class Object {
   MUST_USE_RESULT static MaybeHandle<Object> ArraySpeciesConstructor(
       Isolate* isolate, Handle<Object> original_array);
 
+  // ES6 section 7.3.20 SpeciesConstructor ( O, defaultConstructor )
+  MUST_USE_RESULT static MaybeHandle<Object> SpeciesConstructor(
+      Isolate* isolate, Handle<JSReceiver> recv,
+      Handle<JSFunction> default_ctor);
+
   // Tries to convert an object to an array length. Returns true and sets the
   // output parameter if it succeeds.
   inline bool ToArrayLength(uint32_t* index);
@@ -1519,8 +1527,10 @@ class Object {
 
 // In objects.h to be usable without objects-inl.h inclusion.
 bool Object::IsSmi() const { return HAS_SMI_TAG(this); }
-bool Object::IsHeapObject() const { return Internals::HasHeapObjectTag(this); }
-
+bool Object::IsHeapObject() const {
+  DCHECK_EQ(!IsSmi(), Internals::HasHeapObjectTag(this));
+  return !IsSmi();
+}
 
 struct Brief {
   explicit Brief(const Object* const v) : value(v) {}
@@ -2006,7 +2016,7 @@ class JSReceiver: public HeapObject {
   // function that was used to instantiate the object).
   static Handle<String> GetConstructorName(Handle<JSReceiver> receiver);
 
-  Context* GetCreationContext();
+  Handle<Context> GetCreationContext();
 
   MUST_USE_RESULT static inline Maybe<PropertyAttributes> GetPropertyAttributes(
       Handle<JSReceiver> object, Handle<Name> name);
@@ -5838,6 +5848,16 @@ class Map: public HeapObject {
 
   int NumberOfFields();
 
+  // Returns true if transition to the given map requires special
+  // synchronization with the concurrent marker.
+  bool TransitionRequiresSynchronizationWithGC(Map* target);
+  // Returns true if transition to the given map removes a tagged in-object
+  // field.
+  bool TransitionRemovesTaggedField(Map* target);
+  // Returns true if transition to the given map replaces a tagged in-object
+  // field with an untagged in-object field.
+  bool TransitionChangesTaggedFieldToUntaggedField(Map* target);
+
   // TODO(ishell): candidate with JSObject::MigrateToMap().
   bool InstancesNeedRewriting(Map* target);
   bool InstancesNeedRewriting(Map* target, int target_number_of_fields,
@@ -6255,6 +6275,11 @@ class Map: public HeapObject {
       Handle<Map> split_map, Handle<DescriptorArray> descriptors,
       Handle<LayoutDescriptor> full_layout_descriptor);
 
+  // Fires when the layout of an object with a leaf map changes.
+  // This includes adding transitions to the leaf map or changing
+  // the descriptor array.
+  inline void NotifyLeafMapLayoutChange();
+
  private:
   // Returns the map that this (root) map transitions to if its elements_kind
   // is changed to |elements_kind|, or |nullptr| if no such map is cached yet.
@@ -6307,11 +6332,6 @@ class Map: public HeapObject {
   static Handle<Map> CopyGeneralizeAllFields(
       Handle<Map> map, ElementsKind elements_kind, int modify_index,
       PropertyKind kind, PropertyAttributes attributes, const char* reason);
-
-  // Fires when the layout of an object with a leaf map changes.
-  // This includes adding transitions to the leaf map or changing
-  // the descriptor array.
-  inline void NotifyLeafMapLayoutChange();
 
   void DeprecateTransitionTree();
 
@@ -7767,6 +7787,10 @@ class Module : public Struct {
   // Hash for this object (a random non-zero Smi).
   DECL_INT_ACCESSORS(hash)
 
+  // Internal instantiation status.
+  DECL_INT_ACCESSORS(status)
+  enum InstantiationStatus { kUnprepared, kPrepared };
+
   // The namespace object (or undefined).
   DECL_ACCESSORS(module_namespace, HeapObject)
 
@@ -7780,7 +7804,6 @@ class Module : public Struct {
 
   inline bool instantiated() const;
   inline bool evaluated() const;
-  inline void set_evaluated();
 
   // Implementation of spec operation ModuleDeclarationInstantiation.
   // Returns false if an exception occurred during instantiation, true
@@ -7809,7 +7832,8 @@ class Module : public Struct {
   static const int kModuleNamespaceOffset = kHashOffset + kPointerSize;
   static const int kRequestedModulesOffset =
       kModuleNamespaceOffset + kPointerSize;
-  static const int kSize = kRequestedModulesOffset + kPointerSize;
+  static const int kStatusOffset = kRequestedModulesOffset + kPointerSize;
+  static const int kSize = kStatusOffset + kPointerSize;
 
  private:
   static void CreateExport(Handle<Module> module, int cell_index,
@@ -7841,6 +7865,14 @@ class Module : public Struct {
   static MUST_USE_RESULT MaybeHandle<Cell> ResolveExportUsingStarExports(
       Handle<Module> module, Handle<String> name, MessageLocation loc,
       bool must_resolve, ResolveSet* resolve_set);
+
+  inline void set_evaluated();
+
+  static MUST_USE_RESULT bool PrepareInstantiate(
+      Handle<Module> module, v8::Local<v8::Context> context,
+      v8::Module::ResolveCallback callback);
+  static MUST_USE_RESULT bool FinishInstantiate(Handle<Module> module,
+                                                v8::Local<v8::Context> context);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Module);
 };
@@ -7900,6 +7932,7 @@ class JSFunction: public JSObject {
 
   // [context]: The context for this function.
   inline Context* context();
+  inline bool has_context() const;
   inline void set_context(Object* context);
   inline JSObject* global_proxy();
   inline Context* native_context();
@@ -10426,6 +10459,32 @@ class JSArrayIterator : public JSObject {
   DISALLOW_IMPLICIT_CONSTRUCTORS(JSArrayIterator);
 };
 
+// The [Async-from-Sync Iterator] object
+// (proposal-async-iteration/#sec-async-from-sync-iterator-objects)
+// An object which wraps an ordinary Iterator and converts it to behave
+// according to the Async Iterator protocol.
+// (See https://tc39.github.io/proposal-async-iteration/#sec-iteration)
+class JSAsyncFromSyncIterator : public JSObject {
+ public:
+  DECLARE_CAST(JSAsyncFromSyncIterator)
+  DECLARE_PRINTER(JSAsyncFromSyncIterator)
+  DECLARE_VERIFIER(JSAsyncFromSyncIterator)
+
+  // Async-from-Sync Iterator instances are ordinary objects that inherit
+  // properties from the %AsyncFromSyncIteratorPrototype% intrinsic object.
+  // Async-from-Sync Iterator instances are initially created with the internal
+  // slots listed in Table 4.
+  // (proposal-async-iteration/#table-async-from-sync-iterator-internal-slots)
+  DECL_ACCESSORS(sync_iterator, JSReceiver)
+
+  // Offsets of object fields.
+  static const int kSyncIteratorOffset = JSObject::kHeaderSize;
+  static const int kSize = kSyncIteratorOffset + kPointerSize;
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(JSAsyncFromSyncIterator);
+};
+
 class JSStringIterator : public JSObject {
  public:
   // Dispatched behavior.
@@ -10752,6 +10811,10 @@ class JSTypedArray: public JSArrayBufferView {
   V8_EXPORT_PRIVATE size_t element_size();
 
   Handle<JSArrayBuffer> GetBuffer();
+
+  static inline MaybeHandle<JSTypedArray> Validate(Isolate* isolate,
+                                                   Handle<Object> receiver,
+                                                   const char* method_name);
 
   // Dispatched behavior.
   DECLARE_PRINTER(JSTypedArray)

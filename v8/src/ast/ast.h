@@ -1101,7 +1101,6 @@ class TryStatement : public Statement {
 class TryCatchStatement final : public TryStatement {
  public:
   Scope* scope() { return scope_; }
-  Variable* variable() { return variable_; }
   Block* catch_block() const { return catch_block_; }
   void set_catch_block(Block* b) { catch_block_ = b; }
 
@@ -1122,18 +1121,15 @@ class TryCatchStatement final : public TryStatement {
  private:
   friend class AstNodeFactory;
 
-  TryCatchStatement(Block* try_block, Scope* scope, Variable* variable,
-                    Block* catch_block,
+  TryCatchStatement(Block* try_block, Scope* scope, Block* catch_block,
                     HandlerTable::CatchPrediction catch_prediction, int pos)
       : TryStatement(try_block, pos, kTryCatchStatement),
         scope_(scope),
-        variable_(variable),
         catch_block_(catch_block) {
     catch_prediction_ = catch_prediction;
   }
 
   Scope* scope_;
-  Variable* variable_;
   Block* catch_block_;
 };
 
@@ -1155,26 +1151,10 @@ class TryFinallyStatement final : public TryStatement {
 
 
 class DebuggerStatement final : public Statement {
- public:
-  void set_base_id(int id) { base_id_ = id; }
-  static int num_ids() { return parent_num_ids() + 1; }
-  BailoutId DebugBreakId() const { return BailoutId(local_id(0)); }
-
  private:
   friend class AstNodeFactory;
 
-  explicit DebuggerStatement(int pos)
-      : Statement(pos, kDebuggerStatement),
-        base_id_(BailoutId::None().ToInt()) {}
-
-  static int parent_num_ids() { return 0; }
-  int base_id() const {
-    DCHECK(!BailoutId(base_id_).IsNone());
-    return base_id_;
-  }
-  int local_id(int n) const { return base_id() + parent_num_ids() + n; }
-
-  int base_id_;
+  explicit DebuggerStatement(int pos) : Statement(pos, kDebuggerStatement) {}
 };
 
 
@@ -1610,10 +1590,7 @@ class ArrayLiteral final : public MaterializedLiteral {
   ZoneList<Expression*>::iterator EndValue() const { return values_->end(); }
 
   // Rewind an array literal omitting everything from the first spread on.
-  void RewindSpreads() {
-    values_->Rewind(first_spread_index_);
-    first_spread_index_ = -1;
-  }
+  void RewindSpreads();
 
   enum Flags {
     kNoFlags = 0,
@@ -3264,38 +3241,33 @@ class AstNodeFactory final BASE_EMBEDDED {
   }
 
   TryCatchStatement* NewTryCatchStatement(Block* try_block, Scope* scope,
-                                          Variable* variable,
                                           Block* catch_block, int pos) {
-    return new (zone_) TryCatchStatement(
-        try_block, scope, variable, catch_block, HandlerTable::CAUGHT, pos);
+    return new (zone_) TryCatchStatement(try_block, scope, catch_block,
+                                         HandlerTable::CAUGHT, pos);
   }
 
   TryCatchStatement* NewTryCatchStatementForReThrow(Block* try_block,
                                                     Scope* scope,
-                                                    Variable* variable,
                                                     Block* catch_block,
                                                     int pos) {
-    return new (zone_) TryCatchStatement(
-        try_block, scope, variable, catch_block, HandlerTable::UNCAUGHT, pos);
+    return new (zone_) TryCatchStatement(try_block, scope, catch_block,
+                                         HandlerTable::UNCAUGHT, pos);
   }
 
   TryCatchStatement* NewTryCatchStatementForDesugaring(Block* try_block,
                                                        Scope* scope,
-                                                       Variable* variable,
                                                        Block* catch_block,
                                                        int pos) {
-    return new (zone_) TryCatchStatement(
-        try_block, scope, variable, catch_block, HandlerTable::DESUGARING, pos);
+    return new (zone_) TryCatchStatement(try_block, scope, catch_block,
+                                         HandlerTable::DESUGARING, pos);
   }
 
   TryCatchStatement* NewTryCatchStatementForAsyncAwait(Block* try_block,
                                                        Scope* scope,
-                                                       Variable* variable,
                                                        Block* catch_block,
                                                        int pos) {
-    return new (zone_)
-        TryCatchStatement(try_block, scope, variable, catch_block,
-                          HandlerTable::ASYNC_AWAIT, pos);
+    return new (zone_) TryCatchStatement(try_block, scope, catch_block,
+                                         HandlerTable::ASYNC_AWAIT, pos);
   }
 
   TryFinallyStatement* NewTryFinallyStatement(Block* try_block,

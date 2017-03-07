@@ -193,13 +193,18 @@ int InstructionScheduler::GetTargetInstructionFlags(
     case kArmUint8x16Max:
     case kArmUint8x16GreaterThan:
     case kArmUint8x16GreaterThanOrEqual:
+    case kArmSimd128Zero:
     case kArmSimd128And:
     case kArmSimd128Or:
     case kArmSimd128Xor:
     case kArmSimd128Not:
-    case kArmSimd32x4Select:
-    case kArmSimd16x8Select:
-    case kArmSimd8x16Select:
+    case kArmSimd128Select:
+    case kArmSimd1x4AnyTrue:
+    case kArmSimd1x4AllTrue:
+    case kArmSimd1x8AnyTrue:
+    case kArmSimd1x8AllTrue:
+    case kArmSimd1x16AnyTrue:
+    case kArmSimd1x16AllTrue:
       return kNoOpcodeFlags;
 
     case kArmVldrF32:

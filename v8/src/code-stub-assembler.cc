@@ -794,6 +794,13 @@ Node* CodeStubAssembler::AllocateRawAligned(Node* size_in_bytes,
   return address.value();
 }
 
+Node* CodeStubAssembler::AllocateInNewSpace(Node* size_in_bytes,
+                                            AllocationFlags flags) {
+  DCHECK(flags == kNone || flags == kDoubleAlignment);
+  CSA_ASSERT(this, IsRegularHeapObjectSize(size_in_bytes));
+  return Allocate(size_in_bytes, flags);
+}
+
 Node* CodeStubAssembler::Allocate(Node* size_in_bytes, AllocationFlags flags) {
   Comment("Allocate");
   bool const new_space = !(flags & kPretenured);
@@ -820,6 +827,13 @@ Node* CodeStubAssembler::Allocate(Node* size_in_bytes, AllocationFlags flags) {
 #endif
 
   return AllocateRawUnaligned(size_in_bytes, flags, top_address, limit_address);
+}
+
+Node* CodeStubAssembler::AllocateInNewSpace(int size_in_bytes,
+                                            AllocationFlags flags) {
+  CHECK(flags == kNone || flags == kDoubleAlignment);
+  DCHECK_LE(size_in_bytes, kMaxRegularHeapObjectSize);
+  return CodeStubAssembler::Allocate(IntPtrConstant(size_in_bytes), flags);
 }
 
 Node* CodeStubAssembler::Allocate(int size_in_bytes, AllocationFlags flags) {
@@ -1560,7 +1574,7 @@ Node* CodeStubAssembler::AllocateSeqOneByteString(Node* context, Node* length,
   Bind(&if_sizeissmall);
   {
     // Just allocate the SeqOneByteString in new space.
-    Node* result = Allocate(size, flags);
+    Node* result = AllocateInNewSpace(size, flags);
     DCHECK(Heap::RootIsImmortalImmovable(Heap::kOneByteStringMapRootIndex));
     StoreMapNoWriteBarrier(result, Heap::kOneByteStringMapRootIndex);
     StoreObjectFieldNoWriteBarrier(result, SeqOneByteString::kLengthOffset,
@@ -1631,7 +1645,7 @@ Node* CodeStubAssembler::AllocateSeqTwoByteString(Node* context, Node* length,
   Bind(&if_sizeissmall);
   {
     // Just allocate the SeqTwoByteString in new space.
-    Node* result = Allocate(size, flags);
+    Node* result = AllocateInNewSpace(size, flags);
     DCHECK(Heap::RootIsImmortalImmovable(Heap::kStringMapRootIndex));
     StoreMapNoWriteBarrier(result, Heap::kStringMapRootIndex);
     StoreObjectFieldNoWriteBarrier(
@@ -1853,7 +1867,7 @@ Node* CodeStubAssembler::AllocateNameDictionary(Node* at_least_space_for) {
       IntPtrAdd(WordShl(length, IntPtrConstant(kPointerSizeLog2)),
                 IntPtrConstant(NameDictionary::kHeaderSize));
 
-  Node* result = Allocate(store_size);
+  Node* result = AllocateInNewSpace(store_size);
   Comment("Initialize NameDictionary");
   // Initialize FixedArray fields.
   DCHECK(Heap::RootIsImmortalImmovable(Heap::kHashTableMapRootIndex));
@@ -1894,8 +1908,7 @@ Node* CodeStubAssembler::AllocateJSObjectFromMap(Node* map, Node* properties,
   CSA_ASSERT(this, IsMap(map));
   Node* size =
       IntPtrMul(LoadMapInstanceSize(map), IntPtrConstant(kPointerSize));
-  CSA_ASSERT(this, IsRegularHeapObjectSize(size));
-  Node* object = Allocate(size, flags);
+  Node* object = AllocateInNewSpace(size, flags);
   StoreMapNoWriteBarrier(object, map);
   InitializeJSObjectFromMap(object, map, size, properties, elements);
   return object;
@@ -1996,7 +2009,8 @@ Node* CodeStubAssembler::AllocateUninitializedJSArray(ElementsKind kind,
                                                       Node* length,
                                                       Node* allocation_site,
                                                       Node* size_in_bytes) {
-  Node* array = Allocate(size_in_bytes);
+  // Allocate space for the JSArray and the elements FixedArray in one go.
+  Node* array = AllocateInNewSpace(size_in_bytes);
 
   Comment("write JSArray headers");
   StoreMapNoWriteBarrier(array, array_map);
@@ -2694,7 +2708,7 @@ Node* CodeStubAssembler::ToThisString(Node* context, Node* value,
         CallRuntime(Runtime::kThrowCalledOnNullOrUndefined, context,
                     HeapConstant(factory()->NewStringFromAsciiChecked(
                         method_name, TENURED)));
-        Goto(&if_valueisstring);  // Never reached.
+        Unreachable();
       }
     }
   }
@@ -2793,7 +2807,7 @@ Node* CodeStubAssembler::ToThisValue(Node* context, Node* value,
     CallRuntime(Runtime::kThrowNotGeneric, context,
                 HeapConstant(factory()->NewStringFromAsciiChecked(method_name,
                                                                   TENURED)));
-    Goto(&done_loop);  // Never reached.
+    Unreachable();
   }
 
   Bind(&done_loop);
@@ -2821,8 +2835,7 @@ Node* CodeStubAssembler::ThrowIfNotInstanceType(Node* context, Node* value,
       Runtime::kThrowIncompatibleMethodReceiver, context,
       HeapConstant(factory()->NewStringFromAsciiChecked(method_name, TENURED)),
       value);
-  var_value_map.Bind(UndefinedConstant());
-  Goto(&out);  // Never reached.
+  Unreachable();
 
   Bind(&out);
   return var_value_map.value();
@@ -2891,6 +2904,11 @@ Node* CodeStubAssembler::IsJSReceiver(Node* object) {
   return IsJSReceiverInstanceType(LoadInstanceType(object));
 }
 
+Node* CodeStubAssembler::IsJSReceiverMap(Node* map) {
+  STATIC_ASSERT(LAST_JS_OBJECT_TYPE == LAST_TYPE);
+  return IsJSReceiverInstanceType(LoadMapInstanceType(map));
+}
+
 Node* CodeStubAssembler::IsJSObject(Node* object) {
   STATIC_ASSERT(LAST_JS_OBJECT_TYPE == LAST_TYPE);
   return Int32GreaterThanOrEqual(LoadInstanceType(object),
@@ -2920,6 +2938,10 @@ Node* CodeStubAssembler::IsWeakCell(Node* object) {
 
 Node* CodeStubAssembler::IsBoolean(Node* object) {
   return IsBooleanMap(LoadMap(object));
+}
+
+Node* CodeStubAssembler::IsHeapNumber(Node* object) {
+  return IsHeapNumberMap(LoadMap(object));
 }
 
 Node* CodeStubAssembler::IsName(Node* object) {
@@ -3457,23 +3479,8 @@ Node* CodeStubAssembler::SubString(Node* context, Node* string, Node* from,
   // Handle external string.
   Bind(&external_string);
   {
-    // Rule out short external strings.
-    STATIC_ASSERT(kShortExternalStringTag != 0);
-    GotoIf(Word32NotEqual(Word32And(var_instance_type.value(),
-                                    Int32Constant(kShortExternalStringMask)),
-                          Int32Constant(0)),
-           &runtime);
-
-    // Move the pointer so that offset-wise, it looks like a sequential string.
-    STATIC_ASSERT(SeqTwoByteString::kHeaderSize ==
-                  SeqOneByteString::kHeaderSize);
-
-    Node* resource_data =
-        LoadObjectField(var_string.value(), ExternalString::kResourceDataOffset,
-                        MachineType::Pointer());
-    Node* const fake_sequential_string = IntPtrSub(
-        resource_data,
-        IntPtrConstant(SeqTwoByteString::kHeaderSize - kHeapObjectTag));
+    Node* const fake_sequential_string = TryDerefExternalString(
+        var_string.value(), var_instance_type.value(), &runtime);
 
     var_result.Bind(AllocAndCopyStringCharacters(
         this, context, fake_sequential_string, var_instance_type.value(),
@@ -3520,6 +3527,48 @@ Node* CodeStubAssembler::SubString(Node* context, Node* string, Node* from,
 
   Bind(&end);
   return var_result.value();
+}
+
+namespace {
+
+Node* IsExternalStringInstanceType(CodeStubAssembler* a,
+                                   Node* const instance_type) {
+  CSA_ASSERT(a, a->IsStringInstanceType(instance_type));
+  return a->Word32Equal(
+      a->Word32And(instance_type, a->Int32Constant(kStringRepresentationMask)),
+      a->Int32Constant(kExternalStringTag));
+}
+
+Node* IsShortExternalStringInstanceType(CodeStubAssembler* a,
+                                        Node* const instance_type) {
+  CSA_ASSERT(a, a->IsStringInstanceType(instance_type));
+  STATIC_ASSERT(kShortExternalStringTag != 0);
+  return a->Word32NotEqual(
+      a->Word32And(instance_type, a->Int32Constant(kShortExternalStringMask)),
+      a->Int32Constant(0));
+}
+
+}  // namespace
+
+Node* CodeStubAssembler::TryDerefExternalString(Node* const string,
+                                                Node* const instance_type,
+                                                Label* if_bailout) {
+  Label out(this);
+
+  USE(IsExternalStringInstanceType);
+  CSA_ASSERT(this, IsExternalStringInstanceType(this, instance_type));
+  GotoIf(IsShortExternalStringInstanceType(this, instance_type), if_bailout);
+
+  // Move the pointer so that offset-wise, it looks like a sequential string.
+  STATIC_ASSERT(SeqTwoByteString::kHeaderSize == SeqOneByteString::kHeaderSize);
+
+  Node* resource_data = LoadObjectField(
+      string, ExternalString::kResourceDataOffset, MachineType::Pointer());
+  Node* const fake_sequential_string =
+      IntPtrSub(resource_data,
+                IntPtrConstant(SeqTwoByteString::kHeaderSize - kHeapObjectTag));
+
+  return fake_sequential_string;
 }
 
 void CodeStubAssembler::MaybeDerefIndirectString(Variable* var_string,
@@ -7274,8 +7323,7 @@ Node* CodeStubAssembler::Equal(ResultMode mode, Node* lhs, Node* rhs,
   return result.value();
 }
 
-Node* CodeStubAssembler::StrictEqual(ResultMode mode, Node* lhs, Node* rhs,
-                                     Node* context) {
+Node* CodeStubAssembler::StrictEqual(Node* lhs, Node* rhs, Node* context) {
   // Here's pseudo-code for the algorithm below in case of kDontNegateResult
   // mode; for kNegateResult mode we properly negate the result.
   //
@@ -7424,9 +7472,7 @@ Node* CodeStubAssembler::StrictEqual(ResultMode mode, Node* lhs, Node* rhs,
 
             Bind(&if_rhsisstring);
             {
-              Callable callable = (mode == kDontNegateResult)
-                                      ? CodeFactory::StringEqual(isolate())
-                                      : CodeFactory::StringNotEqual(isolate());
+              Callable callable = CodeFactory::StringEqual(isolate());
               result.Bind(CallStub(callable, context, lhs, rhs));
               Goto(&end);
             }
@@ -7481,13 +7527,13 @@ Node* CodeStubAssembler::StrictEqual(ResultMode mode, Node* lhs, Node* rhs,
 
   Bind(&if_equal);
   {
-    result.Bind(BooleanConstant(mode == kDontNegateResult));
+    result.Bind(TrueConstant());
     Goto(&end);
   }
 
   Bind(&if_notequal);
   {
-    result.Bind(BooleanConstant(mode == kNegateResult));
+    result.Bind(FalseConstant());
     Goto(&end);
   }
 
@@ -7572,7 +7618,7 @@ Node* CodeStubAssembler::SameValue(Node* lhs, Node* rhs, Node* context) {
 
   Bind(&strict_equal);
   {
-    Node* const is_equal = StrictEqual(kDontNegateResult, lhs, rhs, context);
+    Node* const is_equal = StrictEqual(lhs, rhs, context);
     Node* const result = WordEqual(is_equal, TrueConstant());
     var_result.Bind(result);
     Goto(&out);
@@ -7805,9 +7851,9 @@ Node* CodeStubAssembler::GetSuperConstructor(Node* active_function,
 
   Bind(&is_not_constructor);
   {
-    result.Bind(CallRuntime(Runtime::kThrowNotSuperConstructor, context,
-                            prototype, active_function));
-    Goto(&out);
+    CallRuntime(Runtime::kThrowNotSuperConstructor, context, prototype,
+                active_function);
+    Unreachable();
   }
 
   Bind(&out);
@@ -7876,18 +7922,14 @@ Node* CodeStubAssembler::InstanceOf(Node* object, Node* callable,
 
   Bind(&if_notcallable);
   {
-    Node* result =
-        CallRuntime(Runtime::kThrowNonCallableInInstanceOfCheck, context);
-    var_result.Bind(result);
-    Goto(&return_result);
+    CallRuntime(Runtime::kThrowNonCallableInInstanceOfCheck, context);
+    Unreachable();
   }
 
   Bind(&if_notreceiver);
   {
-    Node* result =
-        CallRuntime(Runtime::kThrowNonObjectInInstanceOfCheck, context);
-    var_result.Bind(result);
-    Goto(&return_result);
+    CallRuntime(Runtime::kThrowNonObjectInInstanceOfCheck, context);
+    Unreachable();
   }
 
   Bind(&return_true);
@@ -8338,6 +8380,18 @@ Node* CodeStubAssembler::AllocatePromiseReactionJobInfo(
   StoreObjectFieldNoWriteBarrier(result, PromiseReactionJobInfo::kContextOffset,
                                  context);
   return result;
+}
+
+Node* CodeStubAssembler::MarkerIsFrameType(Node* marker_or_function,
+                                           StackFrame::Type frame_type) {
+  return WordEqual(marker_or_function,
+                   IntPtrConstant(StackFrame::TypeToMarker(frame_type)));
+}
+
+Node* CodeStubAssembler::MarkerIsNotFrameType(Node* marker_or_function,
+                                              StackFrame::Type frame_type) {
+  return WordNotEqual(marker_or_function,
+                      IntPtrConstant(StackFrame::TypeToMarker(frame_type)));
 }
 
 void CodeStubAssembler::Print(const char* s) {

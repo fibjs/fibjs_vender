@@ -98,6 +98,7 @@
     <ClInclude Include="src\base\platform\condition-variable.h" />
     <ClInclude Include="src\base\platform\elapsed-timer.h" />
     <ClInclude Include="src\base\platform\mutex.h" />
+    <ClInclude Include="src\base\platform\platform-posix.h" />
     <ClInclude Include="src\base\platform\platform.h" />
     <ClInclude Include="src\base\platform\semaphore.h" />
     <ClInclude Include="src\base\platform\time.h" />
@@ -108,6 +109,7 @@
     <ClInclude Include="src\base\safe_math.h" />
     <ClInclude Include="src\base\safe_math_impl.h" />
     <ClInclude Include="src\base\sys-info.h" />
+    <ClInclude Include="src\base\timezone-cache.h" />
     <ClInclude Include="src\base\utils\random-number-generator.h" />
     <ClInclude Include="src\base\win32-headers.h" />
     <ClInclude Include="src\basic-block-profiler.h" />
@@ -405,7 +407,6 @@
     <ClInclude Include="src\ic\handler-compiler.h" />
     <ClInclude Include="src\ic\handler-configuration-inl.h" />
     <ClInclude Include="src\ic\handler-configuration.h" />
-    <ClInclude Include="src\ic\ic-compiler.h" />
     <ClInclude Include="src\ic\ic-inl.h" />
     <ClInclude Include="src\ic\ic-state.h" />
     <ClInclude Include="src\ic\ic-stats.h" />
@@ -466,6 +467,7 @@
     <ClInclude Include="src\lookup.h" />
     <ClInclude Include="src\machine-type.h" />
     <ClInclude Include="src\macro-assembler.h" />
+    <ClInclude Include="src\managed.h" />
     <ClInclude Include="src\map-updater.h" />
     <ClInclude Include="src\messages.h" />
     <ClInclude Include="src\msan.h" />
@@ -608,9 +610,9 @@
     <ClInclude Include="src\wasm\function-body-decoder-impl.h" />
     <ClInclude Include="src\wasm\function-body-decoder.h" />
     <ClInclude Include="src\wasm\leb-helper.h" />
-    <ClInclude Include="src\wasm\managed.h" />
     <ClInclude Include="src\wasm\module-decoder.h" />
     <ClInclude Include="src\wasm\signature-map.h" />
+    <ClInclude Include="src\wasm\wasm-code-specialization.h" />
     <ClInclude Include="src\wasm\wasm-external-refs.h" />
     <ClInclude Include="src\wasm\wasm-interpreter.h" />
     <ClInclude Include="src\wasm\wasm-js.h" />
@@ -713,6 +715,7 @@
     <ClCompile Include="src\builtins\builtins-array.cc" />
     <ClCompile Include="src\builtins\builtins-arraybuffer.cc" />
     <ClCompile Include="src\builtins\builtins-async-function.cc" />
+    <ClCompile Include="src\builtins\builtins-async-iterator.cc" />
     <ClCompile Include="src\builtins\builtins-async.cc" />
     <ClCompile Include="src\builtins\builtins-boolean.cc" />
     <ClCompile Include="src\builtins\builtins-call.cc" />
@@ -1018,7 +1021,6 @@
     <ClCompile Include="src\ic\ia32\access-compiler-ia32.cc" />
     <ClCompile Include="src\ic\ia32\handler-compiler-ia32.cc" />
     <ClCompile Include="src\ic\ia32\ic-ia32.cc" />
-    <ClCompile Include="src\ic\ic-compiler.cc" />
     <ClCompile Include="src\ic\ic-state.cc" />
     <ClCompile Include="src\ic\ic-stats.cc" />
     <ClCompile Include="src\ic\ic.cc" />
@@ -1221,6 +1223,7 @@
     <ClCompile Include="src\wasm\function-body-decoder.cc" />
     <ClCompile Include="src\wasm\module-decoder.cc" />
     <ClCompile Include="src\wasm\signature-map.cc" />
+    <ClCompile Include="src\wasm\wasm-code-specialization.cc" />
     <ClCompile Include="src\wasm\wasm-debug.cc" />
     <ClCompile Include="src\wasm\wasm-external-refs.cc" />
     <ClCompile Include="src\wasm\wasm-interpreter.cc" />

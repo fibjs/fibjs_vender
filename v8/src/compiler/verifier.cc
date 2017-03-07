@@ -22,6 +22,7 @@
 #include "src/compiler/operator.h"
 #include "src/compiler/schedule.h"
 #include "src/compiler/simplified-operator.h"
+#include "src/compiler/type-cache.h"
 #include "src/ostreams.h"
 
 namespace v8 {
@@ -496,7 +497,8 @@ void Verifier::Visitor::Check(Node* node) {
     }
     case IrOpcode::kStateValues:
     case IrOpcode::kTypedStateValues:
-    case IrOpcode::kArgumentsObjectState:
+    case IrOpcode::kArgumentsElementsState:
+    case IrOpcode::kArgumentsLengthState:
     case IrOpcode::kObjectState:
     case IrOpcode::kTypedObjectState:
       // TODO(jarin): what are the constraints on these?
@@ -513,7 +515,6 @@ void Verifier::Visitor::Check(Node* node) {
     case IrOpcode::kJSEqual:
     case IrOpcode::kJSNotEqual:
     case IrOpcode::kJSStrictEqual:
-    case IrOpcode::kJSStrictNotEqual:
     case IrOpcode::kJSLessThan:
     case IrOpcode::kJSGreaterThan:
     case IrOpcode::kJSLessThanOrEqual:
@@ -952,7 +953,8 @@ void Verifier::Visitor::Check(Node* node) {
       CheckTypeIs(node, Type::Boolean());
       break;
 
-    case IrOpcode::kObjectIsCallable:
+    case IrOpcode::kObjectIsDetectableCallable:
+    case IrOpcode::kObjectIsNaN:
     case IrOpcode::kObjectIsNonCallable:
     case IrOpcode::kObjectIsNumber:
     case IrOpcode::kObjectIsReceiver:
@@ -963,8 +965,17 @@ void Verifier::Visitor::Check(Node* node) {
       CheckValueInputIs(node, 0, Type::Any());
       CheckTypeIs(node, Type::Boolean());
       break;
-    case IrOpcode::kNewRestParameterElements:
+    case IrOpcode::kArgumentsLength:
+      CheckValueInputIs(node, 0, Type::ExternalPointer());
+      CheckTypeIs(node, TypeCache::Get().kArgumentsLengthType);
+      break;
+    case IrOpcode::kArgumentsFrame:
+      CheckTypeIs(node, Type::ExternalPointer());
+      break;
     case IrOpcode::kNewUnmappedArgumentsElements:
+      CheckValueInputIs(node, 0, Type::ExternalPointer());
+      CheckValueInputIs(node, 1, Type::Range(-Code::kMaxArguments,
+                                             Code::kMaxArguments, zone));
       CheckTypeIs(node, Type::OtherInternal());
       break;
     case IrOpcode::kAllocate:

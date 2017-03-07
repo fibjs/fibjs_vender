@@ -76,29 +76,29 @@ ConstructParameters const& ConstructParametersOf(Operator const* op) {
   return OpParameter<ConstructParameters>(op);
 }
 
-bool operator==(ConstructWithSpreadParameters const& lhs,
-                ConstructWithSpreadParameters const& rhs) {
+bool operator==(SpreadWithArityParameters const& lhs,
+                SpreadWithArityParameters const& rhs) {
   return lhs.arity() == rhs.arity();
 }
 
-bool operator!=(ConstructWithSpreadParameters const& lhs,
-                ConstructWithSpreadParameters const& rhs) {
+bool operator!=(SpreadWithArityParameters const& lhs,
+                SpreadWithArityParameters const& rhs) {
   return !(lhs == rhs);
 }
 
-size_t hash_value(ConstructWithSpreadParameters const& p) {
+size_t hash_value(SpreadWithArityParameters const& p) {
   return base::hash_combine(p.arity());
 }
 
-std::ostream& operator<<(std::ostream& os,
-                         ConstructWithSpreadParameters const& p) {
+std::ostream& operator<<(std::ostream& os, SpreadWithArityParameters const& p) {
   return os << p.arity();
 }
 
-ConstructWithSpreadParameters const& ConstructWithSpreadParametersOf(
+SpreadWithArityParameters const& SpreadWithArityParametersOf(
     Operator const* op) {
-  DCHECK_EQ(IrOpcode::kJSConstructWithSpread, op->opcode());
-  return OpParameter<ConstructWithSpreadParameters>(op);
+  DCHECK(op->opcode() == IrOpcode::kJSConstructWithSpread ||
+         op->opcode() == IrOpcode::kJSCallWithSpread);
+  return OpParameter<SpreadWithArityParameters>(op);
 }
 
 std::ostream& operator<<(std::ostream& os, CallParameters const& p) {
@@ -123,28 +123,6 @@ CallForwardVarargsParameters const& CallForwardVarargsParametersOf(
   return OpParameter<CallForwardVarargsParameters>(op);
 }
 
-bool operator==(CallWithSpreadParameters const& lhs,
-                CallWithSpreadParameters const& rhs) {
-  return lhs.arity() == rhs.arity();
-}
-
-bool operator!=(CallWithSpreadParameters const& lhs,
-                CallWithSpreadParameters const& rhs) {
-  return !(lhs == rhs);
-}
-
-size_t hash_value(CallWithSpreadParameters const& p) {
-  return base::hash_combine(p.arity());
-}
-
-std::ostream& operator<<(std::ostream& os, CallWithSpreadParameters const& p) {
-  return os << p.arity();
-}
-
-CallWithSpreadParameters const& CallWithSpreadParametersOf(Operator const* op) {
-  DCHECK_EQ(IrOpcode::kJSCallWithSpread, op->opcode());
-  return OpParameter<CallWithSpreadParameters>(op);
-}
 
 bool operator==(CallRuntimeParameters const& lhs,
                 CallRuntimeParameters const& rhs) {
@@ -550,7 +528,6 @@ CompareOperationHint CompareOperationHintOf(const Operator* op) {
   DCHECK(op->opcode() == IrOpcode::kJSEqual ||
          op->opcode() == IrOpcode::kJSNotEqual ||
          op->opcode() == IrOpcode::kJSStrictEqual ||
-         op->opcode() == IrOpcode::kJSStrictNotEqual ||
          op->opcode() == IrOpcode::kJSLessThan ||
          op->opcode() == IrOpcode::kJSGreaterThan ||
          op->opcode() == IrOpcode::kJSLessThanOrEqual ||
@@ -598,7 +575,6 @@ CompareOperationHint CompareOperationHintOf(const Operator* op) {
   V(Equal, Operator::kNoProperties)           \
   V(NotEqual, Operator::kNoProperties)        \
   V(StrictEqual, Operator::kPure)             \
-  V(StrictNotEqual, Operator::kPure)          \
   V(LessThan, Operator::kNoProperties)        \
   V(GreaterThan, Operator::kNoProperties)     \
   V(LessThanOrEqual, Operator::kNoProperties) \
@@ -765,8 +741,8 @@ const Operator* JSOperatorBuilder::Call(size_t arity, float frequency,
 }
 
 const Operator* JSOperatorBuilder::CallWithSpread(uint32_t arity) {
-  CallWithSpreadParameters parameters(arity);
-  return new (zone()) Operator1<CallWithSpreadParameters>(   // --
+  SpreadWithArityParameters parameters(arity);
+  return new (zone()) Operator1<SpreadWithArityParameters>(  // --
       IrOpcode::kJSCallWithSpread, Operator::kNoProperties,  // opcode
       "JSCallWithSpread",                                    // name
       parameters.arity(), 1, 1, 1, 1, 2,                     // counts
@@ -808,8 +784,8 @@ const Operator* JSOperatorBuilder::Construct(uint32_t arity, float frequency,
 }
 
 const Operator* JSOperatorBuilder::ConstructWithSpread(uint32_t arity) {
-  ConstructWithSpreadParameters parameters(arity);
-  return new (zone()) Operator1<ConstructWithSpreadParameters>(   // --
+  SpreadWithArityParameters parameters(arity);
+  return new (zone()) Operator1<SpreadWithArityParameters>(       // --
       IrOpcode::kJSConstructWithSpread, Operator::kNoProperties,  // opcode
       "JSConstructWithSpread",                                    // name
       parameters.arity(), 1, 1, 1, 1, 2,                          // counts
