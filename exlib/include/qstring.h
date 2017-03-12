@@ -36,6 +36,34 @@ inline size_t qstrlen(const char* pStr)
 }
 
 template<typename T>
+inline bool qisupper(T ch)
+{
+	return ch >= 'A' && ch <= 'Z';
+}
+
+template<typename T>
+inline bool qislower(T ch)
+{
+	return ch >= 'a' && ch <= 'z';
+}
+
+template<typename T>
+inline T qtolower(T c)
+{
+	if (qisupper(c))
+		return c + ('a' - 'A');
+	return c;
+}
+
+template<typename T>
+inline T qtoupper(T c)
+{
+	if (qislower(c))
+		return c + ('A' - 'a');
+	return c;
+}
+
+template<typename T>
 inline void qmemset(T* ptr, T value, size_t num)
 {
 	while (num--)
@@ -455,6 +483,26 @@ public:
 		return find(&c, pos, 1);
 	}
 
+public:
+	void tolower()
+	{
+		T* buf = c_buffer();
+		size_t sz = length();
+
+		while (sz--)
+			*buf++ = qtolower(*buf);
+	}
+
+	void toupper()
+	{
+		T* buf = c_buffer();
+		size_t sz = length();
+
+		while (sz--)
+			*buf++ = qtoupper(*buf);
+	}
+
+public:
 	basic_string<char> hex() const
 	{
 		basic_string<char> retVal;
