@@ -490,7 +490,10 @@ public:
 		size_t sz = length();
 
 		while (sz--)
-			*buf++ = qtolower(*buf);
+		{
+			*buf = qtolower(*buf);
+			buf++;
+		}
 	}
 
 	void toupper()
@@ -499,7 +502,10 @@ public:
 		size_t sz = length();
 
 		while (sz--)
-			*buf++ = qtoupper(*buf);
+		{
+			*buf = qtoupper(*buf);
+			buf++;
+		}
 	}
 
 public:
